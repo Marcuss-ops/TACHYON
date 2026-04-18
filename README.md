@@ -18,6 +18,7 @@ It is a native engine designed to consume declarative scene specifications and p
 - No intermediate frame dumps by default
 - Strong scene, camera, compositing, and timeline foundations
 - Programmatic, data-driven motion workflows
+- Explicit execution, caching, and parallelism models
 
 ## Current status
 
@@ -32,6 +33,14 @@ Core project documents:
 - `docs/non-goals.md`
 - `docs/architecture.md`
 - `docs/roadmap.md`
+
+Engine model documents:
+
+- `docs/execution-model.md`
+- `docs/property-model.md`
+- `docs/determinism.md`
+- `docs/parallelism.md`
+- `docs/render-job.md`
 
 System design documents:
 
@@ -52,3 +61,5 @@ System design documents:
 
 TACHYON is being shaped as a scene engine first, then a compositing engine, then a renderer and encoder.
 The goal is not to mimic browser-based video tools, but to build a native temporal dataflow engine for motion graphics and automated rendering.
+
+At its core, the project should evaluate properties in time, derive explicit render work, and produce deterministic output that scales with compute and benefits from caching and parallel execution.
