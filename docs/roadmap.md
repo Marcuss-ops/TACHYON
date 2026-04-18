@@ -10,6 +10,11 @@ Deliverables:
 - vision
 - non-goals
 - architecture overview
+- execution model
+- property model
+- determinism design
+- parallelism design
+- render job model
 - expression system design
 - effects system design
 - masking and matte design
@@ -36,6 +41,7 @@ Target systems:
 - one-node and two-node camera support
 - point of interest support
 - basic timeline evaluation
+- initial property model integration
 
 ## Phase 2 — Motion graphics core
 
@@ -59,7 +65,7 @@ Target systems:
 - expression evaluation
 - data binding
 - published template properties
-- external override flows
+- render-job override flows
 - audio-driven property hooks
 
 ## Phase 4 — Spatial and optical growth
@@ -83,6 +89,7 @@ Target systems:
 - incremental render graph work
 - memoization strategy
 - profiling and optimization loops
+- dependency-aware parallel execution
 
 ## Guiding rule
 
