@@ -33,6 +33,7 @@ Core project documents:
 - `docs/non-goals.md`
 - `docs/architecture.md`
 - `docs/roadmap.md`
+- `docs/mvp-v1.md`
 
 Engine model documents:
 
@@ -41,6 +42,9 @@ Engine model documents:
 - `docs/determinism.md`
 - `docs/parallelism.md`
 - `docs/render-job.md`
+- `docs/scene-spec.md`
+- `docs/composition-layer-model.md`
+- `docs/dependency-graph-and-invalidation.md`
 
 System design documents:
 
@@ -56,6 +60,10 @@ System design documents:
 - `docs/caching.md`
 - `docs/audio-reactivity.md`
 - `docs/data-binding.md`
+- `docs/rendering-contract.md`
+- `docs/asset-pipeline.md`
+- `docs/text-layout-and-shaping.md`
+- `docs/testing-and-compatibility.md`
 
 ## Direction summary
 
