@@ -33,6 +33,8 @@ Core project documents:
 - `docs/non-goals.md`
 - `docs/architecture.md`
 - `docs/roadmap.md`
+- `docs/scene-spec.md`
+- `docs/vertical-slice.md`
 
 Engine model documents:
 
