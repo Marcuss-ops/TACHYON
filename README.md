@@ -17,10 +17,26 @@ It is a native engine designed to consume declarative scene specifications and p
 - No JavaScript or TypeScript in the render core
 - No intermediate frame dumps by default
 - Strong scene, camera, compositing, and timeline foundations
+- Programmatic, data-driven motion workflows
+- Explicit execution, caching, and parallelism models
 
 ## Current status
 
 This repository is intentionally starting from first principles.
 The first phase focuses on project foundations and architecture documents only.
 
-See the `docs/` directory for the project vision, architecture, scene model, camera system, compositing model, and roadmap.
+## Documentation focus
+
+The most important next foundation documents are:
+
+- `docs/scene-spec.md`
+- `docs/vertical-slice.md`
+
+These move the project from high-level architecture toward concrete implementation contracts.
+
+## Direction summary
+
+TACHYON is being shaped as a scene engine first, then a compositing engine, then a renderer and encoder.
+The goal is not to mimic browser-based video tools, but to build a native temporal dataflow engine for motion graphics and automated rendering.
+
+At its core, the project should evaluate properties in time, derive explicit render work, and produce deterministic output that scales with compute and benefits from caching and parallel execution.
