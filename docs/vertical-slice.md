@@ -83,7 +83,7 @@ Required:
 Can wait until the next slice:
 
 - expressions
-n- external data bindings
+- external data bindings
 - advanced bezier easing
 
 ### 5. Transform and hierarchy
