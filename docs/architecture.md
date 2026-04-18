@@ -13,6 +13,7 @@ The architecture must make room for:
 - camera systems
 - animation evaluation
 - expressions and bindings
+- a unified property model
 - shape layers
 - masks and mattes
 - effect graphs
@@ -20,6 +21,7 @@ The architecture must make room for:
 - color management
 - deterministic caching
 - native encoding
+- explicit execution and parallel scheduling models
 
 ## Major subsystems
 
@@ -31,39 +33,47 @@ This layer defines the input contract and the public project shape.
 Responsible for internal representations of scenes, compositions, nodes, layers, precomps, nulls, lights, and cameras.
 This is the conceptual heart of the engine.
 
-### 3. Timeline and animation evaluation
+### 3. Property model
+Responsible for defining how values exist before they become concrete runtime values.
+Properties should eventually resolve from static values, keyframes, expressions, bindings, or other explicit derived sources.
+
+### 4. Timeline and animation evaluation
 Responsible for answering the question: what is true at frame or time t?
 This includes visibility, animated values, easing, interpolation, time remap, frame blending, and evaluation order.
 
-### 4. Expression and binding system
+### 5. Expression and binding system
 Responsible for deterministic expression evaluation and data-driven property wiring.
 Every animatable property should eventually be able to resolve from static values, keyframes, expressions, or data bindings.
 
-### 5. Transform and hierarchy system
+### 6. Transform and hierarchy system
 Responsible for local transforms, world transforms, anchors, parent-child chains, null-based rigs, and world-space evaluation.
 
-### 6. Camera and optics system
+### 7. Camera and optics system
 Responsible for camera pose, one-node versus two-node behavior, point of interest logic, projection matrices, focal settings, focus distance, aperture, depth of field inputs, and future optical effects.
 
-### 7. Shape and text systems
+### 8. Shape and text systems
 Responsible for vector paths, fills, strokes, trim paths, repeaters, text layout, per-glyph animation, and future extrude behavior.
 
-### 8. Effect graph and compositing
+### 9. Effect graph and compositing
 Responsible for per-layer effects, masks, mattes, adjustment layers, render passes, precomp passes, depth-aware passes, and final composite assembly.
 
-### 9. Rendering backend
+### 10. Rendering backend
 Responsible for actual pixel generation, software rasterization, text draw, shape draw, image draw, blend operations, depth handling, shadow support, and output surfaces.
 
-### 10. Color system
+### 11. Color system
 Responsible for working space definitions, linear-light assumptions, transform pipelines, and future OCIO integration.
 
-### 11. Data and template systems
-Responsible for external data ingestion, template overrides, master properties, and the boundary between reusable scene definitions and render-time parameters.
+### 12. Data and template systems
+Responsible for external data ingestion, template overrides, master properties, render-job boundaries, and the bridge between reusable scene definitions and runtime parameters.
 
-### 12. Render graph and caching
+### 13. Render graph and caching
 Responsible for pass planning, cache keys, incremental graph execution, memoization, and deterministic reuse of expensive intermediate results.
 
-### 13. Encoding layer
+### 14. Execution and parallelism model
+Responsible for turning evaluated scene state into explicit work that can be scheduled efficiently.
+This includes frame-level, pass-level, and other dependency-aware parallel execution opportunities.
+
+### 15. Encoding layer
 Responsible for converting frames and audio into final media output.
 This layer should remain downstream of rendering.
 
@@ -71,7 +81,7 @@ This layer should remain downstream of rendering.
 
 The engine should generally flow in this direction:
 
-spec -> scene -> evaluation -> render graph -> renderer -> encoder
+spec -> bindings and overrides -> property resolution -> evaluation -> render graph -> renderer -> encoder
 
 The reverse direction should be avoided wherever possible.
 
@@ -102,6 +112,10 @@ They are part of what makes the engine programmatic.
 ### Rule 7
 Caching must be deterministic and based on explicit inputs.
 If a result cannot be keyed and reused safely, it is not ready to become a first-class subsystem.
+
+### Rule 8
+Parallel execution must not change output.
+Scheduling strategy is an optimization layer, not a semantic layer.
 
 ## Phase one intent
 
