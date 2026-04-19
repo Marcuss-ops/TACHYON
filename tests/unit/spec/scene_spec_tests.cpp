@@ -141,6 +141,36 @@ bool run_scene_spec_tests() {
         const auto job_path = tests_root() / "fixtures" / "jobs" / "canonical_render_job.json";
         const std::vector<std::string> args = {
             "tachyon",
+            "inspect",
+            "--scene",
+            path.string(),
+            "--job",
+            job_path.string()
+        };
+
+        std::vector<char*> argv;
+        argv.reserve(args.size());
+        for (const auto& arg : args) {
+            argv.push_back(const_cast<char*>(arg.c_str()));
+        }
+
+        StreamCapture capture_out(std::cout);
+        StreamCapture capture_err(std::cerr);
+        const int exit_code = tachyon::run_cli(static_cast<int>(argv.size()), argv.data());
+        check_true(exit_code == 0, "CLI inspect should accept canonical scene and job fixtures");
+        check_true(capture_out.str().find("scene summary") != std::string::npos, "CLI inspect should report scene summary");
+        check_true(capture_out.str().find("assets") != std::string::npos, "CLI inspect should report assets");
+        check_true(capture_out.str().find("render plan") != std::string::npos, "CLI inspect should report render plan");
+        check_true(capture_out.str().find("render graph") != std::string::npos, "CLI inspect should report render graph");
+        check_true(capture_out.str().find("steps:") != std::string::npos, "CLI inspect should report graph step count");
+        check_true(capture_err.str().empty(), "CLI inspect should not emit errors for canonical fixtures");
+    }
+
+    {
+        const auto path = tests_root() / "fixtures" / "scenes" / "canonical_scene.json";
+        const auto job_path = tests_root() / "fixtures" / "jobs" / "canonical_render_job.json";
+        const std::vector<std::string> args = {
+            "tachyon",
             "render",
             "--scene",
             path.string(),
