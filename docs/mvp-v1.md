@@ -6,23 +6,35 @@ This document defines the first implementation slice that should make TACHYON re
 
 ## MVP goal
 
-Deliver a small but serious vertical slice of a deterministic headless motion graphics engine.
+Deliver a small but serious vertical slice of a deterministic headless motion graphics and compositing engine.
 
 ## In scope
 
-- scene spec v0
+- scene spec v1 foundation with validation
 - one renderable composition
 - solid, image, text, shape, precomp, null, and camera layers
 - 2D transforms and a narrow 2.5D camera model
 - opacity and basic blending
 - masks and a basic track matte path
-- a minimal effect set
+- a minimal effect host
+- a very small first effect set
 - template overrides
 - frame rendering and encoded output
+
+## Suggested first effect set
+
+- Gaussian Blur
+- Fill
+- Tint
+- Levels
+- Curves
+- Drop Shadow
+- Glow
 
 ## Out of scope
 
 - full general-purpose 3D scene systems
+- Embree-backed path tracing in the first slice
 - particles
 - advanced physics
 - realtime preview UI
@@ -37,3 +49,7 @@ The MVP should prefer correct semantics and deterministic output over feature co
 ## Success condition
 
 A user should be able to describe a scene, feed it to the engine, and obtain a visually credible rendered result from a CPU-first headless pipeline.
+
+## Follow-up rule
+
+Physically based 3D rendering is a deliberate expansion path after the compositor, text system, scene contract, and effect host have become real.
