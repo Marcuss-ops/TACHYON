@@ -26,6 +26,8 @@ add_library(TachyonCore
     renderer2d/layer_to_draw_command.cpp
     renderer2d/draw_list_rasterizer.cpp
     renderer2d/evaluated_composition_renderer.cpp
+    renderer2d/path_rasterizer.cpp
+    renderer2d/effect_host.cpp
     text/font.cpp
     text/layout.cpp
     output/png_sequence_sink.cpp

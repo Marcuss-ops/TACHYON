@@ -315,7 +315,7 @@ TextRasterSurface rasterize_text_rgba(
     }
 
     for (const PositionedGlyph& positioned : layout.glyphs) {
-        const GlyphBitmap* glyph = font.find_glyph(positioned.codepoint);
+        const GlyphBitmap* glyph = font.find_scaled_glyph(positioned.codepoint, layout.scale);
         if (glyph == nullptr || glyph->width == 0U || glyph->height == 0U) {
             continue;
         }
@@ -327,23 +327,17 @@ TextRasterSurface rasterize_text_rgba(
                     continue;
                 }
 
-                for (std::uint32_t dy = 0; dy < layout.scale; ++dy) {
-                    for (std::uint32_t dx = 0; dx < layout.scale; ++dx) {
-                        const std::int32_t out_x =
-                            positioned.x + static_cast<std::int32_t>(source_x * layout.scale + dx);
-                        const std::int32_t out_y =
-                            positioned.y + static_cast<std::int32_t>(source_y * layout.scale + dy);
+                const std::int32_t out_x = positioned.x + static_cast<std::int32_t>(source_x);
+                const std::int32_t out_y = positioned.y + static_cast<std::int32_t>(source_y);
 
-                        if (out_x < 0 || out_y < 0) {
-                            continue;
-                        }
-
-                        surface.blend_pixel(static_cast<std::uint32_t>(out_x),
-                                            static_cast<std::uint32_t>(out_y),
-                                            style.fill_color,
-                                            alpha);
-                    }
+                if (out_x < 0 || out_y < 0) {
+                    continue;
                 }
+
+                surface.blend_pixel(static_cast<std::uint32_t>(out_x),
+                                    static_cast<std::uint32_t>(out_y),
+                                    style.fill_color,
+                                    alpha);
             }
         }
     }
