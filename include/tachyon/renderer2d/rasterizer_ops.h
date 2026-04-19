@@ -15,32 +15,39 @@ struct Blender {
 };
 
 inline Color blend_mode_color(Color src, Color dest, BlendMode mode) {
+    if (mode == BlendMode::Normal) {
+        return detail::composite_src_over_linear(src, dest);
+    }
+
+    detail::LinearPremultipliedPixel src_linear = detail::to_premultiplied(src, detail::TransferCurve::Srgb);
+    detail::LinearPremultipliedPixel dst_linear = detail::to_premultiplied(dest, detail::TransferCurve::Srgb);
+
+    detail::LinearPremultipliedPixel out;
+
     switch (mode) {
     case BlendMode::Normal:
-        return Blender::composite_premultiplied(src, dest);
+        break; // Handled above
     case BlendMode::Additive:
-        return Color{
-            static_cast<std::uint8_t>(std::clamp<int>(src.r + dest.r, 0, 255)),
-            static_cast<std::uint8_t>(std::clamp<int>(src.g + dest.g, 0, 255)),
-            static_cast<std::uint8_t>(std::clamp<int>(src.b + dest.b, 0, 255)),
-            static_cast<std::uint8_t>(std::clamp<int>(src.a + dest.a, 0, 255))
-        };
+        out.r = std::min(1.0f, src_linear.r + dst_linear.r);
+        out.g = std::min(1.0f, src_linear.g + dst_linear.g);
+        out.b = std::min(1.0f, src_linear.b + dst_linear.b);
+        out.a = std::min(1.0f, src_linear.a + dst_linear.a);
+        break;
     case BlendMode::Multiply:
-        return Color{
-            static_cast<std::uint8_t>((static_cast<std::uint32_t>(src.r) * dest.r) / 255U),
-            static_cast<std::uint8_t>((static_cast<std::uint32_t>(src.g) * dest.g) / 255U),
-            static_cast<std::uint8_t>((static_cast<std::uint32_t>(src.b) * dest.b) / 255U),
-            static_cast<std::uint8_t>(std::clamp<int>((src.a + dest.a) / 2, 0, 255))
-        };
+        out.r = src_linear.r * dst_linear.r + dst_linear.r * (1.0f - src_linear.a);
+        out.g = src_linear.g * dst_linear.g + dst_linear.g * (1.0f - src_linear.a);
+        out.b = src_linear.b * dst_linear.b + dst_linear.b * (1.0f - src_linear.a);
+        out.a = src_linear.a + dst_linear.a - src_linear.a * dst_linear.a;
+        break;
     case BlendMode::Screen:
-        return Color{
-            static_cast<std::uint8_t>(255U - ((255U - src.r) * (255U - dest.r) / 255U)),
-            static_cast<std::uint8_t>(255U - ((255U - src.g) * (255U - dest.g) / 255U)),
-            static_cast<std::uint8_t>(255U - ((255U - src.b) * (255U - dest.b) / 255U)),
-            static_cast<std::uint8_t>(std::clamp<int>((src.a + dest.a) / 2, 0, 255))
-        };
+        out.r = src_linear.r + dst_linear.r - src_linear.r * dst_linear.r;
+        out.g = src_linear.g + dst_linear.g - src_linear.g * dst_linear.g;
+        out.b = src_linear.b + dst_linear.b - src_linear.b * dst_linear.b;
+        out.a = src_linear.a + dst_linear.a - src_linear.a * dst_linear.a;
+        break;
     }
-    return src;
+
+    return detail::from_premultiplied(out, detail::TransferCurve::Srgb);
 }
 
 struct ClearPrimitive {
