@@ -55,6 +55,7 @@ Engine model documents:
 - `docs/composition-layer-model.md`
 - `docs/camera-system.md`
 - `docs/dependency-graph-and-invalidation.md`
+- `docs/error-handling.md`
 
 System design documents:
 
@@ -62,6 +63,7 @@ System design documents:
 - `docs/expression-runtime.md`
 - `docs/effects.md`
 - `docs/effects-priority-matrix.md`
+- `docs/effect-registry.md`
 - `docs/masking.md`
 - `docs/shape-system.md`
 - `docs/text-animator.md`
@@ -80,6 +82,14 @@ System design documents:
 - `docs/decode-encode.md`
 - `docs/encoder-output.md`
 - `docs/testing-and-compatibility.md`
+- `docs/performance-tiers.md`
+- `docs/low-end-strategy.md`
+
+Runtime and integration documents:
+
+- `docs/cli.md`
+- `docs/api.md`
+- `docs/packaging-runtime-layout.md`
 
 ## Direction summary
 
