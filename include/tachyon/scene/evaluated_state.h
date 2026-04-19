@@ -26,7 +26,8 @@ enum class LayerType {
     Text,
     Camera,
     Precomp,
-    Light
+    Light,
+    Video
 };
 
 struct EvaluatedCompositionState;
@@ -95,6 +96,10 @@ struct EvaluatedLayerState {
 
     std::optional<std::string> precomp_id;
     std::unique_ptr<EvaluatedCompositionState> nested_composition;
+
+    // Asset reference for Image/Video
+    std::optional<std::string> asset_id;
+    std::optional<std::string> asset_path;
 };
 
 struct EvaluatedCameraState {
@@ -116,76 +121,6 @@ struct EvaluatedCompositionState {
     std::vector<EvaluatedLightState> lights;
     EvaluatedCameraState camera;
 };
-
-inline EvaluatedLayerState::EvaluatedLayerState(const EvaluatedLayerState& other)
-    : layer_index(other.layer_index),
-      id(other.id),
-      name(other.name),
-      type(other.type),
-      blend_mode(other.blend_mode),
-      enabled(other.enabled),
-      active(other.active),
-      visible(other.visible),
-      is_3d(other.is_3d),
-      is_adjustment_layer(other.is_adjustment_layer),
-      local_time_seconds(other.local_time_seconds),
-      child_time_seconds(other.child_time_seconds),
-      opacity(other.opacity),
-      local_transform(other.local_transform),
-      world_matrix(other.world_matrix),
-      world_position3(other.world_position3),
-      width(other.width),
-      height(other.height),
-      text_content(other.text_content),
-      fill_color(other.fill_color),
-      shape_path(other.shape_path),
-      effects(other.effects),
-      track_matte_type(other.track_matte_type),
-      track_matte_layer_index(other.track_matte_layer_index),
-      precomp_id(other.precomp_id) {
-    if (other.nested_composition) {
-        nested_composition = std::make_unique<EvaluatedCompositionState>(*other.nested_composition);
-    }
-}
-
-inline EvaluatedLayerState& EvaluatedLayerState::operator=(const EvaluatedLayerState& other) {
-    if (this == &other) {
-        return *this;
-    }
-
-    layer_index = other.layer_index;
-    id = other.id;
-    name = other.name;
-    type = other.type;
-    blend_mode = other.blend_mode;
-    enabled = other.enabled;
-    active = other.active;
-    visible = other.visible;
-    is_3d = other.is_3d;
-    is_adjustment_layer = other.is_adjustment_layer;
-    local_time_seconds = other.local_time_seconds;
-    child_time_seconds = other.child_time_seconds;
-    opacity = other.opacity;
-    local_transform = other.local_transform;
-    world_matrix = other.world_matrix;
-    world_position3 = other.world_position3;
-    width = other.width;
-    height = other.height;
-    text_content = other.text_content;
-    fill_color = other.fill_color;
-    shape_path = other.shape_path;
-    effects = other.effects;
-    track_matte_type = other.track_matte_type;
-    track_matte_layer_index = other.track_matte_layer_index;
-    precomp_id = other.precomp_id;
-    if (other.nested_composition) {
-        nested_composition = std::make_unique<EvaluatedCompositionState>(*other.nested_composition);
-    } else {
-        nested_composition.reset();
-    }
-
-    return *this;
-}
 
 } // namespace scene
 } // namespace tachyon

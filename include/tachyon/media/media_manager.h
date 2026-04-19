@@ -17,13 +17,25 @@ public:
     MediaManager() = default;
 
     const renderer2d::SurfaceRGBA* get_image(const std::filesystem::path& path, DiagnosticBag* diagnostics = nullptr);
-    VideoDecoder* get_video_decoder(const std::filesystem::path& path);
+    
+    /**
+     * Acquires a VideoDecoder for the given path from a pool.
+     * Must be returned via release_video_decoder.
+     */
+    VideoDecoder* acquire_video_decoder(const std::filesystem::path& path);
+    void release_video_decoder(const std::filesystem::path& path, VideoDecoder* decoder);
+
     DiagnosticBag consume_diagnostics();
     void clear_cache();
 
 private:
+    struct VideoPool {
+        std::vector<std::unique_ptr<VideoDecoder>> available;
+        std::mutex mutex;
+    };
+
     ImageManager m_image_manager;
-    std::map<std::string, std::unique_ptr<VideoDecoder>> m_video_cache;
+    std::map<std::string, std::shared_ptr<VideoPool>> m_video_pools;
     mutable std::mutex m_mutex;
 };
 

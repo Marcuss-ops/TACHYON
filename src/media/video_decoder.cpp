@@ -169,6 +169,7 @@ bool VideoDecoder::open(const std::filesystem::path& path) {
         return false;
     }
 
+    m_last_pts = -1.0;
     return true;
 #endif
 }
@@ -267,18 +268,29 @@ std::optional<VideoDecoder::CachedVideoFrame> VideoDecoder::decode_frame_at_or_a
         return std::nullopt;
     }
 
-    const int64_t seek_target = m_stream_time_base > 0.0
-        ? static_cast<int64_t>(seconds / m_stream_time_base)
-        : 0;
-    if (av_seek_frame(m_format_context, m_stream_index, seek_target, AVSEEK_FLAG_BACKWARD) < 0) {
-        return std::nullopt;
+    // Optimization: avoid seeking if we are within a reasonable forward window
+    const double sequential_window = 2.0; // seconds
+    bool needs_seek = true;
+    if (m_last_pts >= 0.0 && seconds >= m_last_pts && seconds <= m_last_pts + sequential_window) {
+        needs_seek = false;
     }
-    avcodec_flush_buffers(m_codec_context);
+
+    if (needs_seek) {
+        const int64_t seek_target = m_stream_time_base > 0.0
+            ? static_cast<int64_t>(seconds / m_stream_time_base)
+            : 0;
+        if (av_seek_frame(m_format_context, m_stream_index, seek_target, AVSEEK_FLAG_BACKWARD) < 0) {
+            return std::nullopt;
+        }
+        avcodec_flush_buffers(m_codec_context);
+        m_last_pts = -1.0;
+    }
 
     std::optional<CachedVideoFrame> previous;
     std::optional<CachedVideoFrame> best;
     double best_delta = std::numeric_limits<double>::max();
 
+    int consecutive_failures = 0;
     while (av_read_frame(m_format_context, m_packet) >= 0) {
         if (m_packet->stream_index != m_stream_index) {
             av_packet_unref(m_packet);
@@ -288,6 +300,8 @@ std::optional<VideoDecoder::CachedVideoFrame> VideoDecoder::decode_frame_at_or_a
         if (avcodec_send_packet(m_codec_context, m_packet) >= 0) {
             while (avcodec_receive_frame(m_codec_context, m_frame) >= 0) {
                 const double pts_seconds = frame_timestamp_seconds(m_frame, m_stream_time_base);
+                m_last_pts = pts_seconds;
+                
                 auto converted = convert_current_frame(pts_seconds, m_frame);
                 av_frame_unref(m_frame);
                 if (!converted.has_value()) {
@@ -315,6 +329,10 @@ std::optional<VideoDecoder::CachedVideoFrame> VideoDecoder::decode_frame_at_or_a
                     best = converted;
                 }
             }
+            consecutive_failures = 0;
+        } else {
+            consecutive_failures++;
+            if (consecutive_failures > 10) break;
         }
 
         av_packet_unref(m_packet);

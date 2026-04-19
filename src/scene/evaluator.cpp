@@ -291,6 +291,7 @@ LayerType map_layer_type(const std::string& type) {
     if (type == "shape") return LayerType::Shape;
     if (type == "mask") return LayerType::Mask;
     if (type == "image") return LayerType::Image;
+    if (type == "video") return LayerType::Video;
     if (type == "text") return LayerType::Text;
     if (type == "camera") return LayerType::Camera;
     if (type == "precomp") return LayerType::Precomp;
@@ -302,7 +303,8 @@ EvaluatedLayerState make_layer_state(
     const LayerSpec& layer,
     std::size_t layer_index,
     std::int64_t frame_number,
-    double composition_time_seconds) {
+    double composition_time_seconds,
+    const SceneSpec* scene) {
     (void)frame_number;
     EvaluatedLayerState evaluated;
     evaluated.layer_index = layer_index;
@@ -370,6 +372,16 @@ EvaluatedLayerState make_layer_state(
 
     evaluated.track_matte_type = layer.track_matte_type;
     evaluated.precomp_id = layer.precomp_id;
+
+    if ((evaluated.type == LayerType::Image || evaluated.type == LayerType::Video) && scene) {
+        for (const auto& asset : scene->assets) {
+            if (asset.id == evaluated.id || asset.id == evaluated.name) {
+                evaluated.asset_id = asset.id;
+                evaluated.asset_path = asset.path;
+                break;
+            }
+        }
+    }
 
     return evaluated;
 }
@@ -467,14 +479,15 @@ const EvaluatedLayerState& resolve_layer_state(
             context.composition.layers[layer_index],
             layer_index,
             context.frame_number,
-            context.composition_time_seconds);
+            context.composition_time_seconds,
+            context.scene);
         return *context.cache[layer_index];
     }
 
     context.visiting[layer_index] = true;
 
     const auto& layer = context.composition.layers[layer_index];
-    EvaluatedLayerState evaluated = make_layer_state(layer, layer_index, context.frame_number, context.composition_time_seconds);
+    EvaluatedLayerState evaluated = make_layer_state(layer, layer_index, context.frame_number, context.composition_time_seconds, context.scene);
 
     // Resolve parent
     if (layer.parent.has_value() && !layer.parent->empty()) {
@@ -540,7 +553,7 @@ EvaluatedLayerState evaluate_layer_state(
     double composition_time_seconds,
     const ::tachyon::audio::AudioAnalyzer* audio_analyzer) {
     (void)audio_analyzer;
-    return make_layer_state(layer, 0, frame_number, composition_time_seconds);
+    return make_layer_state(layer, 0, frame_number, composition_time_seconds, nullptr);
 }
 
 EvaluatedCameraState evaluate_camera_state(
