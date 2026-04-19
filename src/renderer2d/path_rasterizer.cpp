@@ -14,8 +14,14 @@ struct Contour {
 
 Color apply_opacity(Color color, float opacity) {
     const float clamped = std::clamp(opacity, 0.0f, 1.0f);
-    color.a = static_cast<std::uint8_t>(std::lround(static_cast<float>(color.a) * clamped));
-    return color;
+    const float alpha = static_cast<float>(color.a) * clamped;
+    const float premultiplied = alpha / 255.0f;
+    return Color{
+        static_cast<std::uint8_t>(std::lround(static_cast<float>(color.r) * premultiplied)),
+        static_cast<std::uint8_t>(std::lround(static_cast<float>(color.g) * premultiplied)),
+        static_cast<std::uint8_t>(std::lround(static_cast<float>(color.b) * premultiplied)),
+        static_cast<std::uint8_t>(std::lround(alpha))
+    };
 }
 
 float distance_to_segment_squared(const math::Vector2& point, const math::Vector2& a, const math::Vector2& b) {
@@ -61,6 +67,7 @@ void flatten_cubic(
 }
 
 std::vector<Contour> build_contours(const PathGeometry& path) {
+    constexpr float kCloseEpsilon = 0.01f;
     std::vector<Contour> contours;
     Contour current;
     math::Vector2 current_point{};
@@ -68,8 +75,12 @@ std::vector<Contour> build_contours(const PathGeometry& path) {
     bool contour_open = false;
 
     auto close_contour = [&]() {
-        if (contour_open && current.points.size() >= 2U && current.points.front().x != current.points.back().x && current.points.front().y != current.points.back().y) {
-            current.points.push_back(current.points.front());
+        if (contour_open && current.points.size() >= 2U) {
+            const math::Vector2& first = current.points.front();
+            const math::Vector2& last = current.points.back();
+            if (std::abs(first.x - last.x) > kCloseEpsilon || std::abs(first.y - last.y) > kCloseEpsilon) {
+                current.points.push_back(current.points.front());
+            }
         }
         if (!current.points.empty()) {
             contours.push_back(std::move(current));
