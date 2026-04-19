@@ -36,63 +36,51 @@ Core project documents:
 - `docs/architecture.md`
 - `docs/roadmap.md`
 - `docs/mvp-v1.md`
-- `docs/render-strategy.md`
-- `docs/pixel-pipeline.md`
+- `docs/render-backend-strategy.md`
+- `docs/path-tracing-cpu.md`
+- `docs/2d-3d-compositing-boundary.md`
 
 Engine model documents:
 
 - `docs/execution-model.md`
 - `docs/property-model.md`
+- `docs/property-animation-system.md`
+- `docs/animation-system.md`
 - `docs/determinism.md`
 - `docs/parallelism.md`
 - `docs/render-job.md`
+- `docs/scene-model.md`
+- `docs/scene-spec-v1.md`
 - `docs/scene-spec.md`
 - `docs/composition-layer-model.md`
-- `docs/camera-and-3d-scene.md`
+- `docs/camera-system.md`
 - `docs/dependency-graph-and-invalidation.md`
 
 System design documents:
 
 - `docs/expression-system.md`
+- `docs/expression-runtime.md`
 - `docs/effects.md`
+- `docs/effects-priority-matrix.md`
 - `docs/masking.md`
 - `docs/shape-system.md`
-- `docs/implementation-gaps.md`
-- `docs/3d-mesh-and-extrusion.md`
 - `docs/text-animator.md`
 - `docs/text-layout-and-shaping.md`
 - `docs/light-system.md`
-- `docs/lighting-and-materials.md`
 - `docs/time-system.md`
-- `docs/motion-blur.md`
 - `docs/template-system.md`
 - `docs/color-management.md`
 - `docs/caching.md`
 - `docs/audio-reactivity.md`
+- `docs/audio-driven-animation.md`
 - `docs/data-binding.md`
 - `docs/rendering-contract.md`
 - `docs/asset-pipeline.md`
-- `docs/decode-encode.md`
-- `docs/voice-over-and-subtitles.md`
-- `docs/multi-format-output.md`
 - `docs/testing-and-compatibility.md`
-
-
-## The Vision: AE Quality on Low-End Hardware
-
-TACHYON is uniquely designed to bridge the gap between high-end cinematic quality and accessible hardware. 
-By focusing on a native C++ core, tile-based rendering, and deterministic simulation, we aim to deliver:
-
-- **Pro-grade Fidelity**: 32-bit linear workflow and accumulated motion blur.
-- **Resource Efficiency**: Optimized for performance on limited CPU/RAM environments.
-- **Programmatic Power**: A professional compositing engine that feels like "Headless After Effects".
-
-Detailed strategy can be found in `docs/low-end-strategy.md`.
 
 ## Direction summary
 
-
-TACHYON is being shaped as a scene engine first, then a compositing and media engine, then a hybrid renderer and encoder.
-The goal is not to mimic browser-based video tools, but to build a native temporal dataflow engine for motion graphics, automated rendering, serious text and subtitle workflows, and offline 3D image synthesis.
+TACHYON is a scene engine first, then a compositing and media engine, then a hybrid renderer and encoder.
+Specialized render backends may exist, including a CPU-first physically based 3D path, but they remain subordinate to the engine's declarative scene, compositing, and determinism contracts.
 
 At its core, the project should evaluate properties in time, derive explicit render work, choose the appropriate 2D or 3D rendering path, and produce deterministic output that scales with compute and benefits from caching and parallel execution.
