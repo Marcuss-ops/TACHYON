@@ -13,12 +13,16 @@ namespace renderer2d {
 enum class DrawCommandKind {
     Clear,
     SolidRect,
+    MaskRect,
     TexturedQuad,
     Line
 };
 
 enum class BlendMode {
-    Normal
+    Normal,
+    Additive,
+    Multiply,
+    Screen
 };
 
 struct ClearCommand {
@@ -29,6 +33,10 @@ struct SolidRectCommand {
     RectI rect;
     Color color{Color::white()};
     float opacity{1.0f};
+};
+
+struct MaskRectCommand {
+    RectI rect;
 };
 
 struct TexturedQuadCommand {
@@ -55,6 +63,7 @@ struct DrawCommand2D {
     std::optional<RectI> clip;
     std::optional<ClearCommand> clear;
     std::optional<SolidRectCommand> solid_rect;
+    std::optional<MaskRectCommand> mask_rect;
     std::optional<TexturedQuadCommand> textured_quad;
     std::optional<LineCommand> line;
 };

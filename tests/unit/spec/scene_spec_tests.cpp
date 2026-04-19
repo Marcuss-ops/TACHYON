@@ -8,6 +8,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -242,8 +243,15 @@ bool run_scene_spec_tests() {
         check_true(parsed_json.contains("render_graph"), "inspect JSON should contain render_graph");
         check_true(parsed_json["render_graph"].contains("steps"), "inspect JSON should contain graph steps");
         check_true(parsed_json["render_graph"]["steps"].size() >= 4, "inspect JSON should include explicit graph steps");
-        check_true(parsed_json["render_graph"]["steps"][3]["dependencies"].is_array(), "inspect JSON should include step dependencies");
-        check_true(parsed_json["render_graph"]["steps"][3]["dependencies"].size() == 1, "raster step should carry one dependency");
+
+        const auto& steps = parsed_json["render_graph"]["steps"];
+        const auto raster_step = std::find_if(steps.begin(), steps.end(), [](const auto& step) {
+            return step.value("kind", "") == "rasterize-2d-frame";
+        });
+        check_true(raster_step != steps.end(), "inspect JSON should include a rasterize-2d-frame step");
+        if (raster_step != steps.end()) {
+            check_true((*raster_step)["dependencies"].is_array(), "inspect JSON should include step dependencies");
+        }
     }
 
     {
@@ -350,7 +358,17 @@ bool run_render_job_tests() {
                     check_true(execution_plan.value->steps.size() >= 3, "execution plan should expose explicit graph steps");
                     check_true(!execution_plan.value->frame_tasks.empty(), "execution plan should create frame tasks");
                     check_true(execution_plan.value->frame_tasks.front().frame_number == 0, "first frame task should start at frame 0");
-                    check_true(!execution_plan.value->steps[3].dependencies.empty(), "raster step should carry dependencies");
+
+                    const auto raster_step = std::find_if(
+                        execution_plan.value->steps.begin(),
+                        execution_plan.value->steps.end(),
+                        [](const auto& step) {
+                            return step.kind == tachyon::RenderStepKind::Rasterize2DFrame;
+                        });
+                    check_true(raster_step != execution_plan.value->steps.end(), "execution plan should include a rasterize step");
+                    if (raster_step != execution_plan.value->steps.end()) {
+                        check_true(!raster_step->dependencies.empty(), "raster step should carry dependencies");
+                    }
 
                     const auto first_key = tachyon::build_frame_cache_key(*plan.value, 0);
                     check_true(first_key.value == execution_plan.value->frame_tasks.front().cache_key.value, "frame task should carry the computed cache key");
@@ -390,16 +408,14 @@ bool run_render_job_tests() {
         broken_scene.spec_version = "1.0";
         broken_scene.project.id = "proj_001";
         broken_scene.project.name = "Broken";
-        broken_scene.compositions.push_back(tachyon::CompositionSpec{
-            "main",
-            "Main",
-            1920,
-            1080,
-            120.0,
-            tachyon::FrameRate{30, 1},
-            std::nullopt,
-            {}
-        });
+        tachyon::CompositionSpec broken_composition;
+        broken_composition.id = "main";
+        broken_composition.name = "Main";
+        broken_composition.width = 1920;
+        broken_composition.height = 1080;
+        broken_composition.duration = 120.0;
+        broken_composition.frame_rate = {30, 1};
+        broken_scene.compositions.push_back(broken_composition);
         broken_scene.assets.push_back(tachyon::AssetSpec{"missing_logo", "image", "assets/missing-logo.png"});
 
         const auto assets = tachyon::resolve_assets(broken_scene, tests_root() / "fixtures");

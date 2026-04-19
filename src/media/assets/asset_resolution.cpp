@@ -11,8 +11,8 @@ ResolutionResult<AssetResolutionTable> resolve_assets(const SceneSpec& scene, co
         resolved.asset_id = asset.id;
         resolved.type = asset.type;
         
-        // Resolve path relative to root_dir
-        std::filesystem::path source_path(asset.source);
+        const std::filesystem::path source_value = asset.source.empty() ? std::filesystem::path(asset.path) : std::filesystem::path(asset.source);
+        std::filesystem::path source_path(source_value);
         if (source_path.is_relative()) {
             resolved.absolute_path = std::filesystem::absolute(root_dir / source_path);
         } else {

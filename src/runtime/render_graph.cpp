@@ -53,10 +53,12 @@ FrameCacheKey make_key(const RenderPlan& plan, std::int64_t frame_number) {
     append_part(stream, "profile_name", plan.output.profile.name);
     append_part(stream, "profile_class", plan.output.profile.class_name);
     append_part(stream, "container", plan.output.profile.container);
+    append_part(stream, "alpha_mode", plan.output.profile.alpha_mode);
     append_part(stream, "video_codec", plan.output.profile.video.codec);
     append_part(stream, "pixel_format", plan.output.profile.video.pixel_format);
     append_part(stream, "rate_control", plan.output.profile.video.rate_control_mode);
     append_optional(stream, "crf", plan.output.profile.video.crf);
+    append_part(stream, "color_space", plan.output.profile.color.space);
     append_part(stream, "color_transfer", plan.output.profile.color.transfer);
     append_part(stream, "color_range", plan.output.profile.color.range);
 
@@ -87,6 +89,7 @@ ResolutionResult<RenderExecutionPlan> build_render_execution_plan(const RenderPl
     execution.render_plan = plan;
     execution.resolved_asset_count = resolved_asset_count;
 
+    execution.steps.push_back(make_step("validate-contracts", RenderStepKind::ValidateContracts, "validate locked core contracts"));
     execution.steps.push_back(make_step("resolve-scene", RenderStepKind::ResolveScene, "resolve scene inputs"));
     execution.steps.push_back(make_step("resolve-composition", RenderStepKind::ResolveComposition, "resolve target composition"));
     execution.steps.push_back(make_step("prepare-frame-cache-keys", RenderStepKind::PrepareFrameCacheKeys, "prepare per-frame cache keys"));
@@ -99,6 +102,9 @@ ResolutionResult<RenderExecutionPlan> build_render_execution_plan(const RenderPl
         task.cache_key = key;
         task.cacheable = true;
         task.invalidates_when_changed = {
+            "version",
+            "project.authoring_tool",
+            "project.root_seed",
             "composition.id",
             "composition_target",
             "frame_number",
@@ -107,15 +113,18 @@ ResolutionResult<RenderExecutionPlan> build_render_execution_plan(const RenderPl
             "composition.frame_rate",
             "composition.layer_count",
             "composition.background",
+            "asset.alpha_mode",
             "seed_policy_mode",
             "compatibility_mode",
             "output.profile.name",
             "output.profile.class",
             "output.profile.container",
+            "output.profile.alpha_mode",
             "output.profile.video.codec",
             "output.profile.video.pixel_format",
             "output.profile.video.rate_control_mode",
             "output.profile.video.crf",
+            "output.profile.color.space",
             "output.profile.color.transfer",
             "output.profile.color.range"
         };
@@ -146,6 +155,8 @@ bool frame_cache_entry_matches(const FrameCacheEntry& entry, const FrameCacheKey
 
 std::string render_step_kind_string(RenderStepKind kind) {
     switch (kind) {
+    case RenderStepKind::ValidateContracts:
+        return "validate-contracts";
     case RenderStepKind::ResolveScene:
         return "resolve-scene";
     case RenderStepKind::ResolveComposition:

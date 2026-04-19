@@ -19,6 +19,8 @@ renderer2d::Color layer_debug_color(const timeline::EvaluatedLayerState& layer) 
     using timeline::LayerType;
     switch (layer.type) {
         case LayerType::Solid: return renderer2d::Color{64, 128, 255, 255};
+        case LayerType::Shape: return renderer2d::Color{64, 255, 160, 255};
+        case LayerType::Mask: return renderer2d::Color{0, 0, 0, 0};
         case LayerType::Text: return renderer2d::Color{255, 255, 255, 255};
         case LayerType::Image: return renderer2d::Color{255, 180, 64, 255};
         case LayerType::Camera: return renderer2d::Color{0, 0, 0, 0};
@@ -63,13 +65,20 @@ std::vector<renderer2d::DrawCommand2D> build_draw_commands_from_evaluated_state(
             continue;
         }
         renderer2d::DrawCommand2D command;
-        command.kind = renderer2d::DrawCommandKind::SolidRect;
         const auto rect = layer_rect(state, *layer);
-        command.solid_rect.emplace(renderer2d::SolidRectCommand{
-            renderer2d::RectI{rect.x, rect.y, rect.width, rect.height},
-            rect.color,
-            1.0f
-        });
+        if (layer->type == timeline::LayerType::Mask) {
+            command.kind = renderer2d::DrawCommandKind::MaskRect;
+            command.mask_rect.emplace(renderer2d::MaskRectCommand{
+                renderer2d::RectI{rect.x, rect.y, rect.width, rect.height}
+            });
+        } else {
+            command.kind = renderer2d::DrawCommandKind::SolidRect;
+            command.solid_rect.emplace(renderer2d::SolidRectCommand{
+                renderer2d::RectI{rect.x, rect.y, rect.width, rect.height},
+                rect.color,
+                1.0f
+            });
+        }
         commands.push_back(command);
     }
 

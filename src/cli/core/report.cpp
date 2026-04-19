@@ -16,11 +16,16 @@ json make_diagnostics_json() {
 
 json make_scene_json(const SceneSpec& scene) {
     json result;
+    result["version"] = scene.version;
     result["spec_version"] = scene.spec_version;
     result["project"] = {
         {"id", scene.project.id},
-        {"name", scene.project.name}
+        {"name", scene.project.name},
+        {"authoring_tool", scene.project.authoring_tool}
     };
+    if (scene.project.root_seed.has_value()) {
+        result["project"]["root_seed"] = *scene.project.root_seed;
+    }
     result["asset_count"] = scene.assets.size();
     result["composition_count"] = scene.compositions.size();
     return result;
@@ -44,6 +49,8 @@ json make_render_plan_json(const RenderPlan& plan) {
         {"job_id", plan.job_id},
         {"scene_ref", plan.scene_ref},
         {"composition_target", plan.composition_target},
+        {"seed_policy_mode", plan.seed_policy_mode},
+        {"compatibility_mode", plan.compatibility_mode},
         {"frame_range", {
             {"start", plan.frame_range.start},
             {"end", plan.frame_range.end}
@@ -56,7 +63,13 @@ json make_render_plan_json(const RenderPlan& plan) {
             {"profile", {
                 {"name", plan.output.profile.name},
                 {"class", plan.output.profile.class_name},
-                {"container", plan.output.profile.container}
+                {"container", plan.output.profile.container},
+                {"alpha_mode", plan.output.profile.alpha_mode},
+                {"color", {
+                    {"space", plan.output.profile.color.space},
+                    {"transfer", plan.output.profile.color.transfer},
+                    {"range", plan.output.profile.color.range}
+                }}
             }}
         }}
     };
@@ -120,7 +133,9 @@ void print_inspect_report_text(
     std::ostream& out) {
     out << "scene summary\n";
     out << "  project: " << scene.project.id << " / " << scene.project.name << '\n';
+    out << "  version: " << scene.version << '\n';
     out << "  spec version: " << scene.spec_version << '\n';
+    out << "  authoring tool: " << scene.project.authoring_tool << '\n';
     out << "  assets: " << scene.assets.size() << '\n';
     out << "  compositions: " << scene.compositions.size() << '\n';
 

@@ -10,6 +10,8 @@ constexpr float kDegToRad = 3.14159265f / 180.0f;
 
 LayerType parse_layer_type(const std::string& type) {
     if (type == "solid") return LayerType::Solid;
+    if (type == "shape") return LayerType::Shape;
+    if (type == "mask") return LayerType::Mask;
     if (type == "image") return LayerType::Image;
     if (type == "text") return LayerType::Text;
     if (type == "camera") return LayerType::Camera;
@@ -88,7 +90,7 @@ EvaluatedLayerState evaluate_layer_state(const LayerSpec& layer, double composit
         out.text = EvaluatedTextPayload{layer.name};
     } else if (out.type == LayerType::Image) {
         out.image = EvaluatedImagePayload{layer.id};
-    } else if (out.type == LayerType::Solid) {
+    } else if (out.type == LayerType::Solid || out.type == LayerType::Shape) {
         out.solid = EvaluatedSolidPayload{"default"};
     }
 

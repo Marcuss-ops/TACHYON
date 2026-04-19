@@ -50,28 +50,32 @@ bool run_draw_list_builder_tests() {
     {
         auto composition = make_base_composition();
         composition.layers.push_back(make_layer("solid_01", tachyon::timeline::LayerType::Solid, 10.0f, 20.0f, 2.0f, 3.0f, 0.5));
+        composition.layers.push_back(make_layer("shape_01", tachyon::timeline::LayerType::Shape, 30.0f, 40.0f, 1.0f, 1.0f, 0.6));
+        composition.layers.push_back(make_layer("mask_01", tachyon::timeline::LayerType::Mask, 45.0f, 55.0f, 1.0f, 1.0f, 1.0));
         composition.layers.push_back(make_layer("image_01", tachyon::timeline::LayerType::Image, 50.0f, 60.0f, 1.0f, 1.0f, 0.75));
         composition.layers.push_back(make_layer("text_01", tachyon::timeline::LayerType::Text, 100.0f, 120.0f, 1.0f, 2.0f, 0.9));
 
         const auto draw_list = tachyon::renderer2d::DrawListBuilder::build(composition);
-        check_true(draw_list.commands.size() == 4, "draw list should include one clear command and three layer commands");
+        check_true(draw_list.commands.size() == 6, "draw list should include one clear command and five layer commands");
         check_true(draw_list.commands[0].kind == tachyon::renderer2d::DrawCommandKind::Clear, "first command should be clear");
         check_true(draw_list.commands[1].kind == tachyon::renderer2d::DrawCommandKind::SolidRect, "solid layer should map to solid rect command");
-        check_true(draw_list.commands[2].kind == tachyon::renderer2d::DrawCommandKind::TexturedQuad, "image layer should map to textured quad command");
-        check_true(draw_list.commands[3].kind == tachyon::renderer2d::DrawCommandKind::TexturedQuad, "text layer should map to textured quad command");
+        check_true(draw_list.commands[2].kind == tachyon::renderer2d::DrawCommandKind::SolidRect, "shape layer should map to solid rect command");
+        check_true(draw_list.commands[3].kind == tachyon::renderer2d::DrawCommandKind::MaskRect, "mask layer should map to mask rect command");
+        check_true(draw_list.commands[4].kind == tachyon::renderer2d::DrawCommandKind::TexturedQuad, "image layer should map to textured quad command");
+        check_true(draw_list.commands[5].kind == tachyon::renderer2d::DrawCommandKind::TexturedQuad, "text layer should map to textured quad command");
 
         check_true(draw_list.commands[1].solid_rect.has_value(), "solid rect command should carry solid rect payload");
         check_true(draw_list.commands[1].solid_rect->rect.width == 200, "solid rect width should scale with layer scale x");
         check_true(draw_list.commands[1].solid_rect->rect.height == 300, "solid rect height should scale with layer scale y");
         check_true(draw_list.commands[1].solid_rect->opacity == 0.5f, "solid rect opacity should propagate from layer state");
 
-        check_true(draw_list.commands[2].textured_quad.has_value(), "image command should carry textured quad payload");
-        check_true(draw_list.commands[2].textured_quad->texture.id == "image:image_01", "image textured quad should use deterministic image texture handle");
-        check_true(draw_list.commands[2].textured_quad->opacity == 0.75f, "image opacity should propagate to textured quad");
+        check_true(draw_list.commands[4].textured_quad.has_value(), "image command should carry textured quad payload");
+        check_true(draw_list.commands[4].textured_quad->texture.id == "image:image_01", "image textured quad should use deterministic image texture handle");
+        check_true(draw_list.commands[4].textured_quad->opacity == 0.75f, "image opacity should propagate to textured quad");
 
-        check_true(draw_list.commands[3].textured_quad.has_value(), "text command should carry textured quad payload");
-        check_true(draw_list.commands[3].textured_quad->texture.id == "text:text_01", "text textured quad should use deterministic text texture handle");
-        check_true(draw_list.commands[3].textured_quad->opacity == 0.9f, "text opacity should propagate to textured quad");
+        check_true(draw_list.commands[5].textured_quad.has_value(), "text command should carry textured quad payload");
+        check_true(draw_list.commands[5].textured_quad->texture.id == "text:text_01", "text textured quad should use deterministic text texture handle");
+        check_true(draw_list.commands[5].textured_quad->opacity == 0.9f, "text opacity should propagate to textured quad");
     }
 
     {

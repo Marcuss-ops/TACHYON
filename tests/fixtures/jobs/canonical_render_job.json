@@ -2,6 +2,8 @@
   "job_id": "job_001",
   "scene_ref": "scene.json",
   "composition_target": "main",
+  "seed_policy_mode": "deterministic",
+  "compatibility_mode": "locked_v1",
   "frame_range": {
     "start": 0,
     "end": 120
@@ -15,6 +17,7 @@
       "name": "delivery_h264_mp4",
       "class": "delivery",
       "container": "mp4",
+      "alpha_mode": "preserved",
       "video": {
         "codec": "h264",
         "pixel_format": "yuv420p",
@@ -29,6 +32,7 @@
         "max_frames_in_queue": 8
       },
       "color": {
+        "space": "bt709",
         "transfer": "bt709",
         "range": "tv"
       }
