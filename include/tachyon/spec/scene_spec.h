@@ -107,18 +107,20 @@ struct AnimatedScalarSpec {
     std::optional<AudioBandType> audio_band;
     double audio_min{0.0};
     double audio_max{1.0};
+    std::optional<std::string> expression;
 
     [[nodiscard]] bool empty() const noexcept {
-        return !value.has_value() && keyframes.empty() && !audio_band.has_value();
+        return !value.has_value() && keyframes.empty() && !audio_band.has_value() && !expression.has_value();
     }
 };
 
 struct AnimatedVector2Spec {
     std::optional<math::Vector2> value;
     std::vector<Vector2KeyframeSpec> keyframes;
+    std::optional<std::string> expression;
 
     [[nodiscard]] bool empty() const noexcept {
-        return !value.has_value() && keyframes.empty();
+        return !value.has_value() && keyframes.empty() && !expression.has_value();
     }
 };
 
@@ -131,9 +133,10 @@ struct AnimatedVector3Spec {
         animation::CubicBezierEasing bezier{animation::CubicBezierEasing::linear()};
     };
     std::vector<Keyframe> keyframes;
+    std::optional<std::string> expression;
 
     [[nodiscard]] bool empty() const noexcept {
-        return !value.has_value() && keyframes.empty();
+        return !value.has_value() && keyframes.empty() && !expression.has_value();
     }
 };
 

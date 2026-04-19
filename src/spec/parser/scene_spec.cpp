@@ -348,11 +348,16 @@ void parse_optional_scalar_property(const json& object, const char* key, Animate
             return;
         }
 
+        if (value.contains("expression") && value.at("expression").is_string()) {
+            property.expression = value.at("expression").get<std::string>();
+            return;
+        }
+
         if (property.value.has_value()) {
             return;
         }
 
-        diagnostics.add_error("scene.layer.property_invalid", std::string(key) + " must contain a numeric value or keyframes when provided as an object", make_path(path, key));
+        diagnostics.add_error("scene.layer.property_invalid", std::string(key) + " must contain a numeric value, keyframes, or expression when provided as an object", make_path(path, key));
         return;
     }
 
@@ -392,11 +397,16 @@ void parse_optional_vector_property(const json& object, const char* key, Animate
             return;
         }
 
+        if (value.contains("expression") && value.at("expression").is_string()) {
+            property.expression = value.at("expression").get<std::string>();
+            return;
+        }
+
         if (property.value.has_value()) {
             return;
         }
 
-        diagnostics.add_error("scene.layer.property_invalid", std::string(key) + " must contain a vector value or keyframes when provided as an object", make_path(path, key));
+        diagnostics.add_error("scene.layer.property_invalid", std::string(key) + " must contain a vector value, keyframes, or expression when provided as an object", make_path(path, key));
         return;
     }
 
