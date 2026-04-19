@@ -1,4 +1,5 @@
 #include "tachyon/timeline/evaluator.h"
+#include "tachyon/core/animation/easing.h"
 #include "tachyon/core/camera/camera_state.h"
 
 #include <cmath>
@@ -28,7 +29,8 @@ double evaluate_scalar(const AnimatedScalarSpec& spec, double time_seconds, doub
                 const double span = b.time - a.time;
                 if (span <= 0.0) return b.value;
                 const double t = (time_seconds - a.time) / span;
-                return a.value + (b.value - a.value) * t;
+                const double eased = animation::apply_easing(t, a.easing, a.bezier);
+                return a.value + (b.value - a.value) * eased;
             }
         }
         return spec.keyframes.back().value;
@@ -45,8 +47,10 @@ math::Vector2 evaluate_vector2(const AnimatedVector2Spec& spec, double time_seco
             if (time_seconds <= b.time) {
                 const double span = b.time - a.time;
                 if (span <= 0.0) return b.value;
-                const float t = static_cast<float>((time_seconds - a.time) / span);
-                return a.value + (b.value - a.value) * t;
+                const double t = (time_seconds - a.time) / span;
+                const double eased = animation::apply_easing(t, a.easing, a.bezier);
+                const float weight = static_cast<float>(eased);
+                return a.value + (b.value - a.value) * weight;
             }
         }
         return spec.keyframes.back().value;

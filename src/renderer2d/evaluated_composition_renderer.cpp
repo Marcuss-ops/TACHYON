@@ -9,6 +9,7 @@
 #include <cmath>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -34,6 +35,7 @@ struct RenderLayerView {
     math::Vector2 scale{math::Vector2::one()};
     std::string id;
     std::string label;
+    std::optional<scene::EvaluatedShapePath> shape_path;
 };
 
 renderer2d::Color premultiply_color(renderer2d::Color color) {
@@ -74,6 +76,30 @@ renderer2d::RectI layer_bounds(const RenderLayerView& layer, std::int64_t compos
     };
 }
 
+renderer2d::PathGeometry build_shape_path(const RenderLayerView& layer) {
+    renderer2d::PathGeometry path;
+    if (!layer.shape_path.has_value() || layer.shape_path->points.empty()) {
+        return path;
+    }
+
+    for (std::size_t index = 0; index < layer.shape_path->points.size(); ++index) {
+        const auto& point = layer.shape_path->points[index];
+        const float x = layer.position.x + point.position.x * layer.scale.x;
+        const float y = layer.position.y + point.position.y * layer.scale.y;
+        if (index == 0U) {
+            path.commands.push_back(renderer2d::PathCommand{renderer2d::PathVerb::MoveTo, {x, y}});
+        } else {
+            path.commands.push_back(renderer2d::PathCommand{renderer2d::PathVerb::LineTo, {x, y}});
+        }
+    }
+
+    if (layer.shape_path->closed) {
+        path.commands.push_back(renderer2d::PathCommand{renderer2d::PathVerb::Close});
+    }
+
+    return path;
+}
+
 RenderLayerView to_view(const scene::EvaluatedLayerState& layer) {
     RenderLayerView view;
     view.visible = layer.visible;
@@ -83,6 +109,7 @@ RenderLayerView to_view(const scene::EvaluatedLayerState& layer) {
     view.scale = layer.scale;
     view.id = layer.id;
     view.label = layer.name.empty() ? layer.id : layer.name;
+    view.shape_path = layer.shape_path;
 
     if (layer.type == "solid") view.kind = RenderLayerKind::Solid;
     else if (layer.type == "shape") view.kind = RenderLayerKind::Shape;
@@ -251,14 +278,16 @@ void render_layer(
             break;
         }
         case RenderLayerKind::Shape: {
-            renderer2d::PathGeometry path;
-            path.commands = {
-                {renderer2d::PathVerb::MoveTo, {static_cast<float>(bounds.x), static_cast<float>(bounds.y)}},
-                {renderer2d::PathVerb::LineTo, {static_cast<float>(bounds.x + bounds.width), static_cast<float>(bounds.y)}},
-                {renderer2d::PathVerb::LineTo, {static_cast<float>(bounds.x + bounds.width), static_cast<float>(bounds.y + bounds.height)}},
-                {renderer2d::PathVerb::LineTo, {static_cast<float>(bounds.x), static_cast<float>(bounds.y + bounds.height)}},
-                {renderer2d::PathVerb::Close}
-            };
+            renderer2d::PathGeometry path = build_shape_path(layer);
+            if (path.commands.empty()) {
+                path.commands = {
+                    {renderer2d::PathVerb::MoveTo, {static_cast<float>(bounds.x), static_cast<float>(bounds.y)}},
+                    {renderer2d::PathVerb::LineTo, {static_cast<float>(bounds.x + bounds.width), static_cast<float>(bounds.y)}},
+                    {renderer2d::PathVerb::LineTo, {static_cast<float>(bounds.x + bounds.width), static_cast<float>(bounds.y + bounds.height)}},
+                    {renderer2d::PathVerb::LineTo, {static_cast<float>(bounds.x), static_cast<float>(bounds.y + bounds.height)}},
+                    {renderer2d::PathVerb::Close}
+                };
+            }
 
             renderer2d::FillPathStyle fill_style;
             fill_style.fill_color = color_with_opacity(renderer2d::Color{64, 255, 160, 255}, layer.opacity);

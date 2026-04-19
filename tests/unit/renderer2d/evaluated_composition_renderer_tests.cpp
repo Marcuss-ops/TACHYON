@@ -33,6 +33,14 @@ bool run_evaluated_composition_renderer_tests() {
     shape.position = {8.0f, 8.0f};
     shape.scale = {1.0f, 1.0f};
     shape.layer_index = 0;
+    shape.shape_path = scene::EvaluatedShapePath{
+        {
+            {scene::EvaluatedShapePathPoint{{0.0f, 0.0f}}},
+            {scene::EvaluatedShapePathPoint{{32.0f, 0.0f}}},
+            {scene::EvaluatedShapePathPoint{{16.0f, 24.0f}}}
+        },
+        true
+    };
     state.layers.push_back(shape);
 
     scene::EvaluatedLayerState text;
@@ -66,6 +74,7 @@ bool run_evaluated_composition_renderer_tests() {
     check_true(surface.width() == 128, "surface width should match composition");
     check_true(surface.height() == 64, "surface height should match composition");
     check_true(surface.get_pixel(16, 16).a > 0, "shape layer should render visible pixels");
+    check_true(surface.get_pixel(38, 28).a == 0, "shape path should not fill the whole bounds");
 
     bool text_visible = false;
     for (std::uint32_t y = 0; y < surface.height(); ++y) {

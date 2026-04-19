@@ -1,5 +1,6 @@
 #include "tachyon/scene/evaluator.h"
 
+#include "tachyon/core/animation/easing.h"
 #include "tachyon/core/math/quaternion.h"
 #include "tachyon/core/math/transform2.h"
 #include "tachyon/timeline/time.h"
@@ -66,7 +67,8 @@ double sample_scalar(const AnimatedScalarSpec& property, double fallback, double
             return next.value;
         }
         const double alpha = (local_time_seconds - previous.time) / duration;
-        return previous.value + (next.value - previous.value) * alpha;
+        const double eased = animation::apply_easing(alpha, previous.easing, previous.bezier);
+        return previous.value + (next.value - previous.value) * eased;
     }
 
     return keyframes.back().value;
@@ -99,8 +101,10 @@ math::Vector2 sample_vector2(const AnimatedVector2Spec& property, const math::Ve
         if (duration <= 0.0) {
             return next.value;
         }
-        const float alpha = static_cast<float>((local_time_seconds - previous.time) / duration);
-        return previous.value * (1.0f - alpha) + next.value * alpha;
+        const double alpha = (local_time_seconds - previous.time) / duration;
+        const double eased = animation::apply_easing(alpha, previous.easing, previous.bezier);
+        const float weight = static_cast<float>(eased);
+        return previous.value * (1.0f - weight) + next.value * weight;
     }
 
     return keyframes.back().value;
@@ -145,6 +149,15 @@ EvaluatedLayerState make_layer_state(
     evaluated.world_scale = evaluated.scale;
     evaluated.world_opacity = evaluated.opacity;
     evaluated.visible = evaluated.enabled && evaluated.active && evaluated.opacity > 0.0;
+    if (layer.shape_path.has_value()) {
+        EvaluatedShapePath shape_path;
+        shape_path.closed = layer.shape_path->closed;
+        shape_path.points.reserve(layer.shape_path->points.size());
+        for (const auto& point : layer.shape_path->points) {
+            shape_path.points.push_back(EvaluatedShapePathPoint{point.position});
+        }
+        evaluated.shape_path = std::move(shape_path);
+    }
     return evaluated;
 }
 
