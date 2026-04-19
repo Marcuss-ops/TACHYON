@@ -8,9 +8,12 @@ bool run_framebuffer_tests();
 bool run_rasterizer_tests();
 bool run_surface_tests();
 bool run_draw_list_builder_tests();
+bool run_frame_cache_tests();
+bool run_frame_executor_tests();
 bool run_property_tests();
 bool run_expression_tests();
 bool run_scene_evaluator_tests();
+bool run_render_session_tests();
 bool run_timeline_tests();
 bool run_text_tests();
 
@@ -55,8 +58,23 @@ int main() {
         return 1;
     }
 
+    if (!run_frame_cache_tests()) {
+        std::cerr << "frame cache tests failed\n";
+        return 1;
+    }
+
+    if (!run_frame_executor_tests()) {
+        std::cerr << "frame executor tests failed\n";
+        return 1;
+    }
+
     if (!run_scene_evaluator_tests()) {
         std::cerr << "scene evaluator tests failed\n";
+        return 1;
+    }
+
+    if (!run_render_session_tests()) {
+        std::cerr << "render session tests failed\n";
         return 1;
     }
 
