@@ -5,6 +5,7 @@ add_executable(TachyonTests
     unit/media/asset_resolution_tests.cpp
     unit/render/framebuffer_tests.cpp
     unit/render/rasterizer_tests.cpp
+    unit/renderer2d/surface_tests.cpp
     unit/scene/evaluator_tests.cpp
     unit/spec/scene_spec_tests.cpp
     unit/text/text_tests.cpp
