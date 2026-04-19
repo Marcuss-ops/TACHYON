@@ -10,6 +10,10 @@ namespace {
 
 using json = nlohmann::json;
 
+json make_diagnostics_json() {
+    return json::array();
+}
+
 json make_scene_json(const SceneSpec& scene) {
     json result;
     result["spec_version"] = scene.spec_version;
@@ -176,8 +180,11 @@ std::string make_inspect_report_json(
     const std::optional<RenderPlan>& render_plan,
     const std::optional<RenderExecutionPlan>& execution_plan) {
     json report;
+    report["report_type"] = "inspect";
     report["scene"] = make_scene_json(scene);
     report["assets"] = make_assets_json(assets);
+    report["status"] = REPORT_STATUS_OK;
+    report["diagnostics"] = make_diagnostics_json();
     if (render_plan.has_value()) {
         report["render_plan"] = make_render_plan_json(*render_plan);
     }
@@ -195,11 +202,14 @@ std::string make_validate_report_json(
     bool job_valid,
     const std::optional<RenderJob>& job) {
     json report;
+    report["report_type"] = "validate";
     report["schema_version"] = VALIDATE_REPORT_SCHEMA_VERSION;
     report["scene"] = make_scene_json(scene);
     report["scene_valid"] = scene_valid;
     report["job_valid"] = job_valid;
     report["assets"] = make_assets_json(assets);
+    report["status"] = REPORT_STATUS_OK;
+    report["diagnostics"] = make_diagnostics_json();
     if (job.has_value()) {
         report["job"] = make_render_job_json(*job);
     }
@@ -213,9 +223,12 @@ std::string make_render_report_json(
     const RenderExecutionPlan& execution_plan,
     const RasterizedFrame2D& first_frame) {
     json report;
+    report["report_type"] = "render";
     report["schema_version"] = RENDER_REPORT_SCHEMA_VERSION;
     report["scene"] = make_scene_json(scene);
     report["assets"] = make_assets_json(assets);
+    report["status"] = REPORT_STATUS_OK;
+    report["diagnostics"] = make_diagnostics_json();
     report["render_plan"] = make_render_plan_json(render_plan);
     report["render_graph"] = make_render_graph_json(execution_plan);
     report["first_frame"] = {

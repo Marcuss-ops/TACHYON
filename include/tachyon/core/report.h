@@ -17,6 +17,7 @@ namespace tachyon {
 constexpr const char* INSPECT_REPORT_SCHEMA_VERSION = "1.0";
 constexpr const char* VALIDATE_REPORT_SCHEMA_VERSION = "1.0";
 constexpr const char* RENDER_REPORT_SCHEMA_VERSION = "1.0";
+constexpr const char* REPORT_STATUS_OK = "ok";
 
 void print_inspect_report_text(
     const SceneSpec& scene,
