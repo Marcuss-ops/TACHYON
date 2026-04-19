@@ -16,18 +16,12 @@
 #include <optional>
 #include <string>
 #include <vector>
-#include <map>
-
 namespace tachyon {
 namespace {
 
 using renderer2d::Color;
 using renderer2d::RectI;
 using renderer2d::SurfaceRGBA;
-
-struct RenderContext {
-    std::map<std::string, RasterizedFrame2D> precomp_cache;
-};
 
 int g_precomp_recursion_depth = 0;
 
@@ -145,7 +139,7 @@ void render_layer_to_surface(
     const RectI& render_region,
     const RenderPlan& plan,
     const FrameRenderTask& task,
-    RenderContext& context,
+    renderer2d::RenderContext& context,
     const scene::EvaluatedCameraState& camera) {
 
     (void)plan;
@@ -211,12 +205,13 @@ void render_layer_to_surface(
 
 // Forward declaration
 RasterizedFrame2D render_composition_recursive(
+    const std::string& composition_id,
     const std::vector<scene::EvaluatedLayerState>& layers,
     std::int64_t width,
     std::int64_t height,
     const RenderPlan& plan,
     const FrameRenderTask& task,
-    RenderContext& context);
+    renderer2d::RenderContext& context);
 
 void render_layer_recursive(
     const scene::EvaluatedLayerState& layer,
@@ -224,7 +219,7 @@ void render_layer_recursive(
     const RectI& tile,
     const RenderPlan& plan,
     const FrameRenderTask& task,
-    RenderContext& context,
+    renderer2d::RenderContext& context,
     const scene::EvaluatedCameraState& camera,
     SurfaceRGBA& surface) {
     
@@ -238,6 +233,7 @@ void render_layer_recursive(
         if (g_precomp_recursion_depth < 8) {
             g_precomp_recursion_depth++;
             RasterizedFrame2D nested = render_composition_recursive(
+                layer.nested_composition->composition_id,
                 layer.nested_composition->layers,
                 layer.nested_composition->width,
                 layer.nested_composition->height,
@@ -257,12 +253,13 @@ void render_layer_recursive(
 }
 
 RasterizedFrame2D render_composition_recursive(
+    const std::string& composition_id,
     const std::vector<scene::EvaluatedLayerState>& layers,
     std::int64_t width,
     std::int64_t height,
     const RenderPlan& plan,
     const FrameRenderTask& task,
-    RenderContext& context) {
+    renderer2d::RenderContext& context) {
 
     RasterizedFrame2D frame;
     frame.width = width;
@@ -289,7 +286,7 @@ RasterizedFrame2D render_composition_recursive(
         scene::EvaluatedCameraState sample_camera;
 
         if (plan.scene_spec != nullptr) {
-            const auto sample_state = scene::evaluate_scene_composition_state(*plan.scene_spec, plan.composition.id, sample_time);
+            const auto sample_state = scene::evaluate_scene_composition_state(*plan.scene_spec, composition_id, sample_time);
             if (sample_state.has_value()) {
                 sample_layers = sample_state->layers;
                 sample_camera = sample_state->camera;
@@ -328,9 +325,9 @@ RasterizedFrame2D render_composition_recursive(
 RasterizedFrame2D render_evaluated_composition_2d(
     const scene::EvaluatedCompositionState& state,
     const RenderPlan& plan,
-    const FrameRenderTask& task) {
-    RenderContext context;
-    return render_composition_recursive(state.layers, state.width, state.height, plan, task, context);
+    const FrameRenderTask& task,
+    renderer2d::RenderContext& context) {
+    return render_composition_recursive(state.composition_id, state.layers, state.width, state.height, plan, task, context);
 }
 
 } // namespace tachyon
