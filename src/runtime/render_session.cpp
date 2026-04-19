@@ -1,35 +1,10 @@
 #include "tachyon/runtime/render_session.h"
 
-#include <filesystem>
-#include <iomanip>
-#include <sstream>
+#include "tachyon/output/frame_output_sink.h"
+
+#include <memory>
 
 namespace tachyon {
-namespace {
-
-std::filesystem::path resolve_frame_output_path(const std::filesystem::path& output_path, std::int64_t frame_number) {
-    if (output_path.empty()) {
-        return {};
-    }
-
-    std::filesystem::path directory = output_path;
-    std::string stem = "frame";
-
-    if (output_path.has_extension()) {
-        directory = output_path.parent_path();
-        stem = output_path.stem().string();
-    }
-
-    if (directory.empty()) {
-        directory = ".";
-    }
-
-    std::ostringstream filename;
-    filename << stem << '_' << std::setw(6) << std::setfill('0') << frame_number << ".png";
-    return directory / filename.str();
-}
-
-} // namespace
 
 RenderSessionResult RenderSession::render(
     const SceneSpec& scene,
@@ -37,20 +12,46 @@ RenderSessionResult RenderSession::render(
     const std::filesystem::path& output_path) {
 
     RenderSessionResult result;
+
+    RenderPlan effective_plan = execution_plan.render_plan;
+    if (!output_path.empty()) {
+        effective_plan.output.destination.path = output_path.string();
+    }
+
+    std::unique_ptr<output::FrameOutputSink> sink = output::create_frame_output_sink(effective_plan);
+    if (sink) {
+        result.output_configured = true;
+        if (!sink->begin(effective_plan)) {
+            result.output_error = sink->last_error();
+            return result;
+        }
+    }
+
     for (const auto& task : execution_plan.frame_tasks) {
-        ExecutedFrame frame = execute_frame_task(scene, execution_plan.render_plan, task, m_cache);
+        ExecutedFrame frame = execute_frame_task(scene, effective_plan, task, m_cache);
         if (frame.cache_hit) {
             ++result.cache_hits;
         } else {
             ++result.cache_misses;
         }
 
-        const std::filesystem::path frame_output_path = resolve_frame_output_path(output_path, frame.frame_number);
-        if (!frame_output_path.empty()) {
-            frame.frame.save_png(frame_output_path);
+        if (sink) {
+            const output::OutputFramePacket packet{frame.frame_number, &frame.frame};
+            if (!sink->write_frame(packet)) {
+                result.output_error = sink->last_error();
+            } else {
+                ++result.frames_written;
+            }
         }
 
         result.frames.push_back(std::move(frame));
+        if (!result.output_error.empty()) {
+            break;
+        }
+    }
+
+    if (sink && result.output_error.empty() && !sink->finish()) {
+        result.output_error = sink->last_error();
     }
 
     return result;
