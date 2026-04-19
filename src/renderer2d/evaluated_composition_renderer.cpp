@@ -4,6 +4,7 @@
 #include "tachyon/renderer2d/path_rasterizer.h"
 #include "tachyon/renderer2d/rasterizer_ops.h"
 #include "tachyon/media/image_manager.h"
+#include "tachyon/runtime/tile_scheduler.h"
 #include "tachyon/text/font.h"
 #include "tachyon/text/layout.h"
 
@@ -85,6 +86,14 @@ renderer2d::RectI full_rect(std::int64_t width, std::int64_t height) {
     return renderer2d::RectI{0, 0, static_cast<int>(width), static_cast<int>(height)};
 }
 
+renderer2d::RectI inflate_rect(const renderer2d::RectI& rect, int margin, std::int64_t width, std::int64_t height) {
+    const int x0 = std::max(0, rect.x - margin);
+    const int y0 = std::max(0, rect.y - margin);
+    const int x1 = std::min(static_cast<int>(width), rect.x + rect.width + margin);
+    const int y1 = std::min(static_cast<int>(height), rect.y + rect.height + margin);
+    return renderer2d::RectI{x0, y0, std::max(0, x1 - x0), std::max(0, y1 - y0)};
+}
+
 renderer2d::RectI layer_bounds(const RenderLayerView& layer, std::int64_t composition_width, std::int64_t composition_height) {
     int base_w = static_cast<int>(layer.width);
     int base_h = static_cast<int>(layer.height);
@@ -153,6 +162,22 @@ renderer2d::PathGeometry build_shape_path(const RenderLayerView& layer) {
     }
 
     return path;
+}
+
+renderer2d::PathGeometry translate_path(const renderer2d::PathGeometry& path, int dx, int dy) {
+    renderer2d::PathGeometry translated;
+    translated.commands.reserve(path.commands.size());
+    for (const auto& command : path.commands) {
+        renderer2d::PathCommand copy = command;
+        copy.p0.x -= static_cast<float>(dx);
+        copy.p0.y -= static_cast<float>(dy);
+        copy.p1.x -= static_cast<float>(dx);
+        copy.p1.y -= static_cast<float>(dy);
+        copy.p2.x -= static_cast<float>(dx);
+        copy.p2.y -= static_cast<float>(dy);
+        translated.commands.push_back(copy);
+    }
+    return translated;
 }
 
 RenderLayerView to_view(const scene::EvaluatedLayerState& layer) {
@@ -289,6 +314,30 @@ void composite_surface(renderer2d::SurfaceRGBA& destination, const renderer2d::S
     }
 }
 
+void composite_surface_at(
+    renderer2d::SurfaceRGBA& destination,
+    const renderer2d::SurfaceRGBA& source,
+    int offset_x,
+    int offset_y,
+    const renderer2d::RectI& clip) {
+
+    const renderer2d::RectI bounds = intersect_rects(
+        clip,
+        renderer2d::RectI{offset_x, offset_y, static_cast<int>(source.width()), static_cast<int>(source.height())});
+    if (bounds.width <= 0 || bounds.height <= 0) {
+        return;
+    }
+
+    for (int y = bounds.y; y < bounds.y + bounds.height; ++y) {
+        for (int x = bounds.x; x < bounds.x + bounds.width; ++x) {
+            const renderer2d::Color pixel = source.get_pixel(static_cast<std::uint32_t>(x - offset_x), static_cast<std::uint32_t>(y - offset_y));
+            if (pixel.a != 0U) {
+                destination.blend_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), pixel);
+            }
+        }
+    }
+}
+
 thread_local int g_precomp_recursion_depth = 0;
 
 RasterizedFrame2D render_composition_recursive(
@@ -303,30 +352,43 @@ void render_layer_to_surface(
     const RenderLayerView& layer,
     std::int64_t composition_width,
     std::int64_t composition_height,
-    const renderer2d::RectI& active_clip,
+    const renderer2d::RectI& render_region,
     const RenderPlan& plan,
     const FrameRenderTask& task) {
 
-    (void)active_clip;
-
     const renderer2d::RectI bounds = layer_bounds(layer, composition_width, composition_height);
+    const renderer2d::RectI clipped = intersect_rects(bounds, render_region);
+    if (clipped.width <= 0 || clipped.height <= 0) {
+        return;
+    }
+    const renderer2d::RectI local_clip{
+        clipped.x - render_region.x,
+        clipped.y - render_region.y,
+        clipped.width,
+        clipped.height
+    };
+    layer_surface.set_clip_rect(local_clip);
 
     switch (layer.kind) {
         case RenderLayerKind::Solid: {
             const renderer2d::Color color = color_with_opacity(layer.fill_color, layer.opacity);
-            layer_surface.fill_rect(bounds, color);
+            layer_surface.fill_rect(renderer2d::RectI{local_clip.x, local_clip.y, local_clip.width, local_clip.height}, color);
             break;
         }
         case RenderLayerKind::Shape: {
             renderer2d::PathGeometry path = build_shape_path(layer);
             if (path.commands.empty()) {
+                const int local_x = bounds.x - render_region.x;
+                const int local_y = bounds.y - render_region.y;
                 path.commands = {
-                    {renderer2d::PathVerb::MoveTo, {static_cast<float>(bounds.x), static_cast<float>(bounds.y)}},
-                    {renderer2d::PathVerb::LineTo, {static_cast<float>(bounds.x + bounds.width), static_cast<float>(bounds.y)}},
-                    {renderer2d::PathVerb::LineTo, {static_cast<float>(bounds.x + bounds.width), static_cast<float>(bounds.y + bounds.height)}},
-                    {renderer2d::PathVerb::LineTo, {static_cast<float>(bounds.x), static_cast<float>(bounds.y + bounds.height)}},
+                    {renderer2d::PathVerb::MoveTo, {static_cast<float>(local_x), static_cast<float>(local_y)}},
+                    {renderer2d::PathVerb::LineTo, {static_cast<float>(local_x + clipped.width), static_cast<float>(local_y)}},
+                    {renderer2d::PathVerb::LineTo, {static_cast<float>(local_x + clipped.width), static_cast<float>(local_y + clipped.height)}},
+                    {renderer2d::PathVerb::LineTo, {static_cast<float>(local_x), static_cast<float>(local_y + clipped.height)}},
                     {renderer2d::PathVerb::Close}
                 };
+            } else {
+                path = translate_path(path, render_region.x, render_region.y);
             }
 
             renderer2d::FillPathStyle fill_style;
@@ -348,12 +410,12 @@ void render_layer_to_surface(
                 style.pixel_size = 14;
                 style.fill_color = color_with_opacity(layer.fill_color, layer.opacity);
                 text::TextBox box;
-                box.width = static_cast<std::uint32_t>(bounds.width);
-                box.height = static_cast<std::uint32_t>(bounds.height);
+                box.width = static_cast<std::uint32_t>(clipped.width);
+                box.height = static_cast<std::uint32_t>(clipped.height);
                 box.multiline = true;
                 const text::TextRasterSurface text_surface = text::rasterize_text_rgba(*font, layer.label, style, box, text::TextAlignment::Left);
-                const int offset_x = bounds.x;
-                const int offset_y = bounds.y;
+                const int offset_x = bounds.x - render_region.x;
+                const int offset_y = bounds.y - render_region.y;
                 for (uint32_t y = 0; y < text_surface.height(); ++y) {
                     for (uint32_t x = 0; x < text_surface.width(); ++x) {
                         const auto pixel = text_surface.get_pixel(x, y);
@@ -368,14 +430,16 @@ void render_layer_to_surface(
         case RenderLayerKind::Image: {
             const renderer2d::SurfaceRGBA* texture = media::ImageManager::instance().get_image(layer.label);
             if (texture) {
-                for (int y = 0; y < bounds.height; ++y) {
-                    for (int x = 0; x < bounds.width; ++x) {
-                        uint32_t tx = static_cast<uint32_t>(static_cast<float>(x) / static_cast<float>(bounds.width) * static_cast<float>(texture->width()));
-                        uint32_t ty = static_cast<uint32_t>(static_cast<float>(y) / static_cast<float>(bounds.height) * static_cast<float>(texture->height()));
+                const int local_x = bounds.x - render_region.x;
+                const int local_y = bounds.y - render_region.y;
+                for (int y = 0; y < clipped.height; ++y) {
+                    for (int x = 0; x < clipped.width; ++x) {
+                        uint32_t tx = static_cast<uint32_t>(static_cast<float>(x) / static_cast<float>(std::max(1, clipped.width)) * static_cast<float>(texture->width()));
+                        uint32_t ty = static_cast<uint32_t>(static_cast<float>(y) / static_cast<float>(std::max(1, clipped.height)) * static_cast<float>(texture->height()));
                         renderer2d::Color p = texture->get_pixel(tx, ty);
                         p = color_with_opacity(p, layer.opacity);
                         if (p.a > 0) {
-                            layer_surface.blend_pixel(bounds.x + x, bounds.y + y, p);
+                            layer_surface.blend_pixel(local_x + x, local_y + y, p);
                         }
                     }
                 }
@@ -390,14 +454,16 @@ void render_layer_to_surface(
 
                 if (nested_frame.surface.has_value()) {
                     const auto* texture = &(*nested_frame.surface);
-                    for (int y = 0; y < bounds.height; ++y) {
-                        for (int x = 0; x < bounds.width; ++x) {
-                            uint32_t tx = static_cast<uint32_t>(static_cast<float>(x) / static_cast<float>(bounds.width) * static_cast<float>(texture->width()));
-                            uint32_t ty = static_cast<uint32_t>(static_cast<float>(y) / static_cast<float>(bounds.height) * static_cast<float>(texture->height()));
+                    const int local_x = bounds.x - render_region.x;
+                    const int local_y = bounds.y - render_region.y;
+                    for (int y = 0; y < clipped.height; ++y) {
+                        for (int x = 0; x < clipped.width; ++x) {
+                            uint32_t tx = static_cast<uint32_t>(static_cast<float>(x) / static_cast<float>(std::max(1, clipped.width)) * static_cast<float>(texture->width()));
+                            uint32_t ty = static_cast<uint32_t>(static_cast<float>(y) / static_cast<float>(std::max(1, clipped.height)) * static_cast<float>(texture->height()));
                             renderer2d::Color p = texture->get_pixel(tx, ty);
                             p = color_with_opacity(p, layer.opacity);
                             if (p.a > 0) {
-                                layer_surface.blend_pixel(bounds.x + x, bounds.y + y, p);
+                                layer_surface.blend_pixel(local_x + x, local_y + y, p);
                             }
                         }
                     }
@@ -425,6 +491,8 @@ void render_layer_to_surface(
 
         layer_surface = host.apply(effect_spec.type, layer_surface, params);
     }
+
+    layer_surface.reset_clip_rect();
 }
 
 RasterizedFrame2D render_composition_recursive(
@@ -443,34 +511,49 @@ RasterizedFrame2D render_composition_recursive(
 
     std::vector<RenderLayerView> views;
     views.reserve(layers.size());
-    for (const auto& l : layers) views.push_back(to_view(l));
-
+    for (const auto& l : layers) {
+        views.push_back(to_view(l));
+    }
     std::stable_sort(views.begin(), views.end(), [](const auto& a, const auto& b) { return a.z_order < b.z_order; });
 
-    // Map to keep track of rendered surfaces for mattes
-    std::map<std::size_t, std::shared_ptr<renderer2d::SurfaceRGBA>> rendered_cache;
+    scene::EvaluatedCompositionState roi_state;
+    roi_state.width = width;
+    roi_state.height = height;
+    roi_state.layers = layers;
+    const TileGrid tile_grid = build_tile_grid(roi_state, 256);
+    const bool use_tiles = tile_grid.roi.width > 0 &&
+        (tile_grid.tiles.size() > 1 ||
+         tile_grid.roi.x != 0 ||
+         tile_grid.roi.y != 0 ||
+         tile_grid.roi.width != width ||
+         tile_grid.roi.height != height);
 
-    for (const auto& layer : views) {
-        if (!layer.visible || layer.kind == RenderLayerKind::Camera) continue;
+    const std::vector<renderer2d::RectI> render_tiles = use_tiles
+        ? tile_grid.tiles
+        : std::vector<renderer2d::RectI>{renderer2d::RectI{0, 0, static_cast<int>(width), static_cast<int>(height)}};
 
-        auto layer_surface_ptr = std::make_shared<renderer2d::SurfaceRGBA>(frame.surface->width(), frame.surface->height());
-        layer_surface_ptr->clear(renderer2d::Color::transparent());
-        
-        renderer2d::RectI active_clip = full_rect(width, height);
-        render_layer_to_surface(*layer_surface_ptr, layer, width, height, active_clip, plan, task);
-
-        // Apply track matte if needed
-        if (layer.track_matte_type != TrackMatteType::None && layer.track_matte_layer_index.has_value()) {
-            auto it = rendered_cache.find(*layer.track_matte_layer_index);
-            if (it != rendered_cache.end()) {
-                apply_track_matte(*layer_surface_ptr, *it->second, layer.track_matte_type);
+    for (const auto& tile : render_tiles) {
+        const renderer2d::RectI render_region = use_tiles ? inflate_rect(tile, 32, width, height) : tile;
+        std::map<std::size_t, std::shared_ptr<renderer2d::SurfaceRGBA>> rendered_cache;
+        for (const auto& layer : views) {
+            if (!layer.visible || layer.kind == RenderLayerKind::Camera) {
+                continue;
             }
+
+            auto layer_surface = std::make_shared<renderer2d::SurfaceRGBA>(render_region.width, render_region.height);
+            layer_surface->clear(renderer2d::Color::transparent());
+            render_layer_to_surface(*layer_surface, layer, width, height, render_region, plan, task);
+
+            if (layer.track_matte_type != TrackMatteType::None && layer.track_matte_layer_index.has_value()) {
+                auto it = rendered_cache.find(*layer.track_matte_layer_index);
+                if (it != rendered_cache.end()) {
+                    apply_track_matte(*layer_surface, *it->second, layer.track_matte_type);
+                }
+            }
+
+            rendered_cache[layer.layer_index] = layer_surface;
+            composite_surface_at(*frame.surface, *layer_surface, render_region.x, render_region.y, tile);
         }
-
-        // Cache the surface by its ORIGINAL layer index
-        rendered_cache[layer.layer_index] = layer_surface_ptr;
-
-        composite_surface(*frame.surface, *layer_surface_ptr, active_clip);
     }
 
     return frame;

@@ -28,6 +28,7 @@ add_library(TachyonCore
     runtime/frame_executor.cpp
     runtime/render_graph.cpp
     runtime/render_session.cpp
+    runtime/tile_scheduler.cpp
     runtime/jobs/render_job.cpp
     runtime/jobs/render_plan.cpp
     scene/evaluator.cpp

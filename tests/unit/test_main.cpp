@@ -13,6 +13,7 @@ bool run_path_rasterizer_tests();
 bool run_frame_cache_tests();
 bool run_frame_executor_tests();
 bool run_frame_output_sink_tests();
+bool run_tile_scheduler_tests();
 bool run_property_tests();
 bool run_expression_tests();
 bool run_scene_evaluator_tests();
@@ -93,6 +94,11 @@ int main() {
 
     if (!run_frame_output_sink_tests()) {
         std::cerr << "frame output sink tests failed\n";
+        return 1;
+    }
+
+    if (!run_tile_scheduler_tests()) {
+        std::cerr << "tile scheduler tests failed\n";
         return 1;
     }
 
