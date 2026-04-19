@@ -31,12 +31,29 @@ A render job defines a concrete execution request:
 The render job is the boundary object between orchestration and the engine core.
 The engine should consume render jobs and resolve them into evaluated scenes before raster work begins.
 
+## Output contract note
+
+The render job should reference explicit output profiles or equivalent structured output settings rather than raw ad hoc encoder flags only.
+
+At minimum, a render job should be able to express:
+
+- target composition
+- output destination
+- output profile or codec container choice
+- frame range or full-range render intent
+- audio mode
+- quality tier where relevant
+- seeds or compatibility locks where relevant
+
+Detailed encoder behavior belongs in `docs/encoder-output.md`.
+
 ## Design rules
 
 1. Scene specs should remain reusable and stable.
 2. Render jobs should carry only the runtime differences needed for one execution.
 3. Overrides and data inputs must flow through the template and property systems, not through ad hoc patching.
 4. The same render job should be reproducible.
+5. Output-affecting settings must be explicit enough to reproduce the same deliverable.
 
 ## Guiding principle
 
