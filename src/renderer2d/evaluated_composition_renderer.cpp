@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <iomanip>
 #include <future>
 #include <mutex>
 #include <filesystem>
@@ -112,17 +113,6 @@ RectI union_rects(const RectI& a, const RectI& b) {
     return RectI{x0, y0, x1 - x0, y1 - y0};
 }
 
-RectI clamp_to_frame(const RectI& rect, std::int64_t width, std::int64_t height) {
-    const int x0 = std::max(0, rect.x);
-    const int y0 = std::max(0, rect.y);
-    const int x1 = std::min(static_cast<int>(width), rect.x + rect.width);
-    const int y1 = std::min(static_cast<int>(height), rect.y + rect.height);
-    if (x1 <= x0 || y1 <= y0) {
-        return RectI{0, 0, 0, 0};
-    }
-    return RectI{x0, y0, x1 - x0, y1 - y0};
-}
-
 RectI layer_bounds(const scene::EvaluatedLayerState& layer, std::int64_t comp_w, std::int64_t comp_h) {
     int base_width = static_cast<int>(layer.width);
     int base_height = static_cast<int>(layer.height);
@@ -201,6 +191,17 @@ renderer2d::BlendMode parse_blend_mode(const std::string& mode) {
     return renderer2d::BlendMode::Normal;
 }
 
+std::uint64_t fnv1a64(std::string_view value) {
+    constexpr std::uint64_t kOffset = 1469598103934665603ULL;
+    constexpr std::uint64_t kPrime = 1099511628211ULL;
+    std::uint64_t hash = kOffset;
+    for (unsigned char ch : value) {
+        hash ^= static_cast<std::uint64_t>(ch);
+        hash *= kPrime;
+    }
+    return hash;
+}
+
 std::string build_composition_hash(const scene::EvaluatedCompositionState& state) {
     std::ostringstream stream;
     stream << state.composition_id << ';'
@@ -216,16 +217,39 @@ std::string build_composition_hash(const scene::EvaluatedCompositionState& state
     return stream.str();
 }
 
-std::string build_precomp_cache_key(
+std::string build_layer_cache_signature(
     const scene::EvaluatedLayerState& layer,
     const scene::EvaluatedCompositionState& nested,
     double child_time_seconds) {
 
     std::ostringstream stream;
-    const std::int64_t child_frame_number = nested.frame_rate.value() > 0.0
-        ? static_cast<std::int64_t>(std::llround(child_time_seconds * nested.frame_rate.value()))
-        : 0;
-    stream << layer.id << '|' << build_composition_hash(nested) << '|' << child_frame_number;
+    stream << layer.id << '|'
+           << layer.name << '|'
+           << static_cast<int>(layer.type) << '|'
+           << layer.visible << '|'
+           << layer.active << '|'
+           << layer.is_3d << '|'
+           << layer.is_adjustment_layer << '|'
+           << layer.blend_mode << '|'
+           << layer.opacity << '|'
+           << layer.local_transform.position.x << ',' << layer.local_transform.position.y << '|'
+           << layer.local_transform.scale.x << ',' << layer.local_transform.scale.y << '|'
+           << layer.world_position3.x << ',' << layer.world_position3.y << ',' << layer.world_position3.z << '|'
+           << layer.width << 'x' << layer.height << '|'
+           << layer.precomp_id.value_or("") << '|'
+           << std::fixed << std::setprecision(6) << child_time_seconds << '|'
+           << build_composition_hash(nested);
+    return stream.str();
+}
+
+std::string build_precomp_cache_key(
+    const scene::EvaluatedLayerState& layer,
+    const scene::EvaluatedCompositionState& nested,
+    double child_time_seconds) {
+
+    const std::string signature = build_layer_cache_signature(layer, nested, child_time_seconds);
+    std::ostringstream stream;
+    stream << std::hex << fnv1a64(signature);
     return stream.str();
 }
 
@@ -348,39 +372,7 @@ void render_layer_to_surface(
     (void)context;
 
     if (layer.is_3d && camera.available) {
-        // Perspective Quad Warping logic
-        const float w = static_cast<float>(layer.width);
-        const float h = static_cast<float>(layer.height);
-        
-        // Generate 4 corners in local space
-        math::Vector3 p[4] = {
-            {-w/2, -h/2, 0}, {w/2, -h/2, 0}, {w/2, h/2, 0}, {-w/2, h/2, 0}
-        };
-
-        // Transform to world space
-        for (int i = 0; i < 4; ++i) {
-            p[i].x = p[i].x * layer.local_transform.scale.x + layer.world_position3.x;
-            p[i].y = p[i].y * layer.local_transform.scale.y + layer.world_position3.y;
-            p[i].z = p[i].z + layer.world_position3.z;
-        }
-
-        renderer2d::raster::PerspectiveWarpQuad quad;
-        quad.opacity = static_cast<float>(layer.opacity);
-        
-        auto project = [&](const math::Vector3& v, renderer2d::raster::Vertex3D& out, const math::Vector2& uv) {
-            const math::Vector3 eye_vec = v - camera.position;
-            const float z = eye_vec.length();
-            const math::Vector2 screen = camera.camera.project_point(v, static_cast<float>(comp_w), static_cast<float>(comp_h));
-            out.position = {screen.x - render_region.x, screen.y - render_region.y, 0.0f};
-            out.uv = uv;
-            out.one_over_w = z > 0.01f ? 1.0f / z : 1.0f;
-        };
-
-        project(p[0], quad.v0, {0,0});
-        project(p[1], quad.v1, {1,0});
-        project(p[2], quad.v2, {1,1});
-        project(p[3], quad.v3, {0,1});
-
+        // Perspective Quad Warping logic placeholder
         return;
     }
 
@@ -394,21 +386,11 @@ void render_layer_to_surface(
 
     if (layer.type == scene::LayerType::Solid) {
         layer_surface.fill_rect({lx, ly, bounds.width, bounds.height}, color_with_opacity(from_spec(layer.fill_color), static_cast<float>(layer.opacity)));
+    } else if (layer.type == scene::LayerType::Image || layer.type == scene::LayerType::Text) {
+        // Placeholder for image/text rendering in software renderer
+        layer_surface.fill_rect({lx, ly, bounds.width, bounds.height}, color_with_opacity(from_spec(layer.fill_color), static_cast<float>(layer.opacity) * 0.5f));
     }
 }
-
-// Forward declaration
-RasterizedFrame2D render_composition_recursive(
-    const std::string& composition_id,
-    const std::vector<scene::EvaluatedLayerState>& layers,
-    const std::vector<scene::EvaluatedLightState>& lights,
-    std::int64_t width,
-    std::int64_t height,
-    const RenderPlan& plan,
-    const FrameRenderTask& task,
-    renderer2d::RenderContext& context,
-    double composition_time_seconds,
-    int precomp_recursion_depth);
 
 void render_layer_recursive(
     const scene::EvaluatedLayerState& layer,
@@ -426,7 +408,8 @@ void render_layer_recursive(
     if (!layer.visible) return;
 
     const RectI bounds = layer_bounds(layer, width, height);
-    if (intersect_rects(bounds, tile).width <= 0 || intersect_rects(bounds, tile).height <= 0) {
+    const RectI influence = intersect_rects(bounds, tile);
+    if (influence.width <= 0 || influence.height <= 0) {
         return;
     }
 
@@ -434,9 +417,31 @@ void render_layer_recursive(
     ls.clear(Color::transparent());
     std::optional<SurfaceRGBA> adjustment_original;
 
-    bool has_rendered_content = false;
-
-    if (layer.type == scene::LayerType::Precomp && layer.nested_composition) {
+    if (layer.is_adjustment_layer) {
+        // Step 2: Adjustment Layers - Pass underlying composite to the layer
+        SurfaceRGBA original(static_cast<std::uint32_t>(influence.width), static_cast<std::uint32_t>(influence.height));
+        for (int y = 0; y < influence.height; ++y) {
+            for (int x = 0; x < influence.width; ++x) {
+                original.set_pixel(
+                    static_cast<std::uint32_t>(x),
+                    static_cast<std::uint32_t>(y),
+                    surface.get_pixel(static_cast<std::uint32_t>(influence.x - tile.x + x), static_cast<std::uint32_t>(influence.y - tile.y + y)));
+            }
+        }
+        adjustment_original = original;
+        
+        // Use a tile-sized surface for effects logic consistency
+        ls = SurfaceRGBA(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height));
+        ls.clear(Color::transparent());
+        for (int y = 0; y < influence.height; ++y) {
+            for (int x = 0; x < influence.width; ++x) {
+                ls.set_pixel(
+                    static_cast<std::uint32_t>(influence.x - tile.x + x),
+                    static_cast<std::uint32_t>(influence.y - tile.y + y),
+                    original.get_pixel(x, y));
+            }
+        }
+    } else if (layer.type == scene::LayerType::Precomp && layer.nested_composition) {
         if (precomp_recursion_depth < 8) {
             const std::string cache_key = build_precomp_cache_key(layer, *layer.nested_composition, layer.child_time_seconds);
             RasterizedFrame2D nested;
@@ -464,28 +469,10 @@ void render_layer_recursive(
                     nested_y,
                     RectI{0, 0, tile.width, tile.height},
                     renderer2d::BlendMode::Normal);
-                has_rendered_content = true;
             }
         }
-    }
-
-    if (layer.type != scene::LayerType::Precomp || !has_rendered_content) {
-        if (layer.is_adjustment_layer) {
-            const RectI influence = intersect_rects(bounds, tile);
-            SurfaceRGBA original(static_cast<std::uint32_t>(influence.width), static_cast<std::uint32_t>(influence.height));
-            for (int y = 0; y < influence.height; ++y) {
-                for (int x = 0; x < influence.width; ++x) {
-                    original.set_pixel(
-                        static_cast<std::uint32_t>(x),
-                        static_cast<std::uint32_t>(y),
-                        surface.get_pixel(static_cast<std::uint32_t>(influence.x - tile.x + x), static_cast<std::uint32_t>(influence.y - tile.y + y)));
-                }
-            }
-            adjustment_original = original;
-            ls = original;
-        } else {
-            render_layer_to_surface(ls, layer, lights, width, height, tile, plan, task, context, camera);
-        }
+    } else {
+        render_layer_to_surface(ls, layer, lights, width, height, tile, plan, task, context, camera);
     }
 
     if (context.policy.effects_enabled && !layer.effects.empty()) {
@@ -504,33 +491,25 @@ void render_layer_recursive(
     }
 
     if (layer.is_adjustment_layer) {
-        const RectI influence = intersect_rects(bounds, tile);
         const std::vector<std::uint8_t> mask = build_adjustment_mask(layer, influence);
         const float alpha = std::clamp(static_cast<float>(layer.opacity), 0.0f, 1.0f);
-        for (int y = 0; y < tile.height; ++y) {
-            for (int x = 0; x < tile.width; ++x) {
-                const int fx = tile.x + x;
-                const int fy = tile.y + y;
-                if (fx < influence.x || fy < influence.y || fx >= influence.x + influence.width || fy >= influence.y + influence.height) {
-                    continue;
-                }
-
-                const std::size_t local_x = static_cast<std::size_t>(fx - influence.x);
-                const std::size_t local_y = static_cast<std::size_t>(fy - influence.y);
-                const std::size_t mask_index = local_y * static_cast<std::size_t>(influence.width) + local_x;
+        for (int y = 0; y < influence.height; ++y) {
+            for (int x = 0; x < influence.width; ++x) {
+                const std::size_t mask_index = static_cast<std::size_t>(y) * static_cast<std::size_t>(influence.width) + static_cast<std::size_t>(x);
                 if (!mask.empty() && mask[mask_index] == 0U) {
                     continue;
                 }
 
-                const renderer2d::Color orig_pixel = adjustment_original.has_value()
-                    ? adjustment_original->get_pixel(static_cast<std::uint32_t>(local_x), static_cast<std::uint32_t>(local_y))
-                    : ls.get_pixel(static_cast<std::uint32_t>(local_x), static_cast<std::uint32_t>(local_y));
-                renderer2d::Color eff_pixel = ls.get_pixel(static_cast<std::uint32_t>(local_x), static_cast<std::uint32_t>(local_y));
+                const int tx = influence.x - tile.x + x;
+                const int ty = influence.y - tile.y + y;
+                
+                const renderer2d::Color orig_pixel = adjustment_original->get_pixel(x, y);
+                renderer2d::Color eff_pixel = ls.get_pixel(tx, ty);
                 eff_pixel.r = static_cast<std::uint8_t>(std::clamp(orig_pixel.r * (1.0f - alpha) + eff_pixel.r * alpha, 0.0f, 255.0f));
                 eff_pixel.g = static_cast<std::uint8_t>(std::clamp(orig_pixel.g * (1.0f - alpha) + eff_pixel.g * alpha, 0.0f, 255.0f));
                 eff_pixel.b = static_cast<std::uint8_t>(std::clamp(orig_pixel.b * (1.0f - alpha) + eff_pixel.b * alpha, 0.0f, 255.0f));
                 eff_pixel.a = orig_pixel.a;
-                surface.set_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), eff_pixel);
+                surface.set_pixel(static_cast<std::uint32_t>(tx), static_cast<std::uint32_t>(ty), eff_pixel);
             }
         }
     } else {
@@ -646,23 +625,10 @@ RasterizedFrame2D render_composition_recursive(
             roi = union_rects(roi, layer_bounds(layer, scaled_width, scaled_height));
         }
     }
-    roi = clamp_to_frame(roi, scaled_width, scaled_height);
-
     const int tile_size = context.policy.tile_size > 0 ? context.policy.tile_size : 256;
-    std::vector<RectI> tiles;
-    if (roi.width > 0 && roi.height > 0) {
-        for (int y = roi.y; y < roi.y + roi.height; y += tile_size) {
-            for (int x = roi.x; x < roi.x + roi.width; x += tile_size) {
-                const int tile_width = std::min(tile_size, roi.x + roi.width - x);
-                const int tile_height = std::min(tile_size, roi.y + roi.height - y);
-                tiles.push_back(RectI{x, y, tile_width, tile_height});
-            }
-        }
-    }
-
-    if (tiles.empty()) {
-        tiles.push_back(RectI{0, 0, static_cast<int>(scaled_width), static_cast<int>(scaled_height)});
-    }
+    const TileGrid tile_grid = build_tile_grid(roi, scaled_width, scaled_height, tile_size);
+    const std::vector<RectI> fallback_tiles{RectI{0, 0, static_cast<int>(scaled_width), static_cast<int>(scaled_height)}};
+    const std::vector<RectI>& tiles = tile_grid.tiles.empty() ? fallback_tiles : tile_grid.tiles;
 
     for (const auto& tile : tiles) {
         AccumulationBuffer accumulation(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height), working_curve);
