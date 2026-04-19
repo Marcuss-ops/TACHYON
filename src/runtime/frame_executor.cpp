@@ -1,5 +1,6 @@
 #include "tachyon/runtime/frame_executor.h"
 
+#include "tachyon/renderer2d/evaluated_composition_renderer.h"
 #include "tachyon/renderer2d/draw_list_builder.h"
 #include "tachyon/renderer2d/draw_list_rasterizer.h"
 #include "tachyon/scene/evaluator.h"
@@ -163,7 +164,7 @@ ExecutedFrame execute_frame_task(const SceneSpec& scene, const RenderPlan& plan,
 
     const EvaluatedFrameState state = evaluate_frame_state(scene, plan, task, scene_signature);
     const renderer2d::DrawList2D draw_list = build_draw_list(state);
-    const RasterizedFrame2D rasterized = render_draw_list_2d(plan, task, draw_list);
+    const RasterizedFrame2D rasterized = tachyon::render_evaluated_composition_2d(state.composition_state, plan, task);
 
     renderer2d::Framebuffer frame(
         static_cast<std::uint32_t>(state.composition_state.width),

@@ -8,6 +8,7 @@ bool run_framebuffer_tests();
 bool run_rasterizer_tests();
 bool run_surface_tests();
 bool run_draw_list_builder_tests();
+bool run_evaluated_composition_renderer_tests();
 bool run_path_rasterizer_tests();
 bool run_frame_cache_tests();
 bool run_frame_executor_tests();
@@ -60,6 +61,11 @@ int main() {
 
     if (!run_draw_list_builder_tests()) {
         std::cerr << "draw list builder tests failed\n";
+        return 1;
+    }
+
+    if (!run_evaluated_composition_renderer_tests()) {
+        std::cerr << "evaluated composition renderer tests failed\n";
         return 1;
     }
 
