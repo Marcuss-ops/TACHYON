@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/core/math/vector2.h"
 #include "tachyon/runtime/diagnostics.h"
 
 #include <cstdint>
@@ -33,9 +34,43 @@ struct FrameRate {
     }
 };
 
+struct ScalarKeyframeSpec {
+    double time{0.0};
+    double value{0.0};
+};
+
+struct Vector2KeyframeSpec {
+    double time{0.0};
+    math::Vector2 value{math::Vector2::zero()};
+};
+
+struct AnimatedScalarSpec {
+    std::optional<double> value;
+    std::vector<ScalarKeyframeSpec> keyframes;
+
+    [[nodiscard]] bool empty() const noexcept {
+        return !value.has_value() && keyframes.empty();
+    }
+};
+
+struct AnimatedVector2Spec {
+    std::optional<math::Vector2> value;
+    std::vector<Vector2KeyframeSpec> keyframes;
+
+    [[nodiscard]] bool empty() const noexcept {
+        return !value.has_value() && keyframes.empty();
+    }
+};
+
 struct Transform2D {
     std::optional<double> position_x;
     std::optional<double> position_y;
+    std::optional<double> rotation;
+    std::optional<double> scale_x;
+    std::optional<double> scale_y;
+    AnimatedVector2Spec position_property;
+    AnimatedScalarSpec rotation_property;
+    AnimatedVector2Spec scale_property;
 };
 
 struct LayerSpec {
@@ -49,6 +84,7 @@ struct LayerSpec {
     double opacity{1.0};
     std::optional<std::string> parent;
     Transform2D transform;
+    AnimatedScalarSpec opacity_property;
 };
 
 struct CompositionSpec {
