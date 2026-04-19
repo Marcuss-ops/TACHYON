@@ -4,8 +4,10 @@
 
 #include <array>
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdint>
+#include <string>
 #include <string_view>
 
 namespace tachyon::renderer2d {
@@ -128,10 +130,6 @@ inline float linear_to_transfer_component(float value, TransferCurve curve) {
     }
 }
 
-inline LinearPremultipliedPixel to_premultiplied(Color color, TransferCurve transfer_curve);
-inline Color from_premultiplied(const LinearPremultipliedPixel& pixel, TransferCurve transfer_curve);
-inline Color composite_src_over(Color src, Color dst, TransferCurve transfer_curve);
-
 inline Color premultiply(Color color) {
     color.r = static_cast<std::uint8_t>((static_cast<std::uint32_t>(color.r) * color.a + 127U) / 255U);
     color.g = static_cast<std::uint8_t>((static_cast<std::uint32_t>(color.g) * color.a + 127U) / 255U);
@@ -145,6 +143,10 @@ struct LinearPremultipliedPixel {
     float b{0.0f};
     float a{0.0f};
 };
+
+inline LinearPremultipliedPixel to_premultiplied(Color color, TransferCurve transfer_curve);
+inline Color from_premultiplied(const LinearPremultipliedPixel& pixel, TransferCurve transfer_curve);
+inline Color composite_src_over(Color src, Color dst, TransferCurve transfer_curve);
 
 inline LinearPremultipliedPixel to_linear_premultiplied(Color color) {
     return to_premultiplied(color, TransferCurve::Srgb);

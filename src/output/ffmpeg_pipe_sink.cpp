@@ -1,4 +1,5 @@
 #include "tachyon/output/frame_output_sink.h"
+#include "tachyon/renderer2d/color_transfer.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -92,6 +93,27 @@ std::vector<unsigned char> pack_frame_bytes(const renderer2d::Framebuffer& frame
     return bytes;
 }
 
+renderer2d::Framebuffer convert_frame(
+    const renderer2d::Framebuffer& frame,
+    renderer2d::detail::TransferCurve source_curve,
+    renderer2d::detail::TransferCurve output_curve) {
+
+    if (source_curve == output_curve) {
+        return frame;
+    }
+
+    renderer2d::Framebuffer converted(frame.width(), frame.height());
+    for (std::uint32_t y = 0; y < frame.height(); ++y) {
+        for (std::uint32_t x = 0; x < frame.width(); ++x) {
+            converted.set_pixel(x, y, renderer2d::detail::convert_color_transfer(
+                frame.get_pixel(x, y),
+                source_curve,
+                output_curve));
+        }
+    }
+    return converted;
+}
+
 class FfmpegPipeSink final : public FrameOutputSink {
 public:
     ~FfmpegPipeSink() override {
@@ -104,6 +126,8 @@ public:
     bool begin(const RenderPlan& plan) override {
         m_last_error.clear();
         m_plan = &plan;
+        m_source_transfer = renderer2d::detail::parse_transfer_curve(plan.working_space);
+        m_output_transfer = renderer2d::detail::parse_transfer_curve(plan.output.profile.color.transfer);
 
         if (plan.output.destination.path.empty()) {
             m_last_error = "ffmpeg output requires a destination path";
@@ -146,7 +170,8 @@ public:
             return false;
         }
 
-        const std::vector<unsigned char> bytes = pack_frame_bytes(*packet.frame);
+        const renderer2d::Framebuffer converted = convert_frame(*packet.frame, m_source_transfer, m_output_transfer);
+        const std::vector<unsigned char> bytes = pack_frame_bytes(converted);
         const std::size_t written = std::fwrite(bytes.data(), 1, bytes.size(), m_pipe);
         if (written != bytes.size()) {
             m_last_error = "failed to write frame bytes to ffmpeg";
@@ -179,6 +204,8 @@ public:
 private:
     const RenderPlan* m_plan{nullptr};
     FILE* m_pipe{nullptr};
+    renderer2d::detail::TransferCurve m_source_transfer{renderer2d::detail::TransferCurve::Srgb};
+    renderer2d::detail::TransferCurve m_output_transfer{renderer2d::detail::TransferCurve::Srgb};
     std::string m_last_error;
 };
 

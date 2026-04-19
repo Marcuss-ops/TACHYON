@@ -1,4 +1,5 @@
 #include "tachyon/output/frame_output_sink.h"
+#include "tachyon/renderer2d/color_transfer.h"
 
 #include <algorithm>
 #include <cctype>
@@ -52,6 +53,8 @@ public:
         m_last_error.clear();
         m_destination = std::filesystem::path(plan.output.destination.path);
         m_overwrite = plan.output.destination.overwrite;
+        m_source_transfer = renderer2d::detail::parse_transfer_curve(plan.working_space);
+        m_output_transfer = renderer2d::detail::parse_transfer_curve(plan.output.profile.color.transfer);
         m_next_index = 1;
 
         if (m_destination.empty()) {
@@ -85,7 +88,8 @@ public:
             return false;
         }
 
-        if (!packet.frame->save_png(frame_path)) {
+        renderer2d::Framebuffer converted = convert_frame(*packet.frame, m_source_transfer, m_output_transfer);
+        if (!converted.save_png(frame_path)) {
             m_last_error = "failed to write png frame: " + frame_path.string();
             return false;
         }
@@ -103,9 +107,32 @@ public:
     }
 
 private:
+    static renderer2d::Framebuffer convert_frame(
+        const renderer2d::Framebuffer& frame,
+        renderer2d::detail::TransferCurve source_curve,
+        renderer2d::detail::TransferCurve output_curve) {
+
+        if (source_curve == output_curve) {
+            return frame;
+        }
+
+        renderer2d::Framebuffer converted(frame.width(), frame.height());
+        for (std::uint32_t y = 0; y < frame.height(); ++y) {
+            for (std::uint32_t x = 0; x < frame.width(); ++x) {
+                converted.set_pixel(x, y, renderer2d::detail::convert_color_transfer(
+                    frame.get_pixel(x, y),
+                    source_curve,
+                    output_curve));
+            }
+        }
+        return converted;
+    }
+
     std::filesystem::path m_destination;
     bool m_overwrite{false};
     std::size_t m_next_index{1};
+    renderer2d::detail::TransferCurve m_source_transfer{renderer2d::detail::TransferCurve::Srgb};
+    renderer2d::detail::TransferCurve m_output_transfer{renderer2d::detail::TransferCurve::Srgb};
     std::string m_last_error;
 };
 
