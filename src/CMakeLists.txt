@@ -10,6 +10,8 @@ add_library(TachyonCore
     runtime/jobs/render_job.cpp
     runtime/jobs/render_plan.cpp
     runtime/render_graph.cpp
+    scene/evaluator.cpp
+    timeline/time.cpp
     renderer2d/raster/cpu_rasterizer.cpp
     renderer2d/framebuffer.cpp
     text/font.cpp
