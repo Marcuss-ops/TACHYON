@@ -6,6 +6,7 @@
 #include "tachyon/core/math/transform3.h"
 #include "tachyon/core/math/vector2.h"
 #include "tachyon/core/math/vector3.h"
+#include "tachyon/renderer2d/texture_handle.h"
 
 #include <optional>
 #include <string>
@@ -23,10 +24,12 @@ enum class LayerType {
 
 struct EvaluatedTextPayload {
     std::string text;
+    renderer2d::TextureHandle texture;
 };
 
 struct EvaluatedImagePayload {
     std::string asset_id;
+    renderer2d::TextureHandle texture;
 };
 
 struct EvaluatedSolidPayload {
