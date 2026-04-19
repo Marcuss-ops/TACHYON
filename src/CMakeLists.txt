@@ -21,6 +21,7 @@ add_library(TachyonCore
     timeline/frame_evaluator.cpp
     renderer2d/raster/cpu_rasterizer.cpp
     renderer2d/surface_rgba.cpp
+    renderer2d/project_card.cpp
     renderer2d/draw_list_builder.cpp
     renderer2d/layer_to_draw_command.cpp
     renderer2d/draw_list_rasterizer.cpp
