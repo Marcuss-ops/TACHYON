@@ -8,11 +8,13 @@
 #include "tachyon/runtime/render_graph.h"
 #include "tachyon/runtime/render_plan.h"
 #include "tachyon/runtime/render_job.h"
+#include "tachyon/runtime/batch_runner.h"
 #include "tachyon/runtime/render_session.h"
 #include "tachyon/spec/scene_spec.h"
 
 #include <filesystem>
 #include <iostream>
+#include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
 #include <utility>
@@ -55,7 +57,8 @@ void print_help(std::ostream& out) {
     out << "  tachyon version\n";
     out << "  tachyon validate --scene <file> [--job <file>] [--json]\n";
     out << "  tachyon inspect --scene <file> [--job <file>] [--json]\n";
-    out << "  tachyon render --scene <file> --job <file> [--out <file>] [--json]\n";
+    out << "  tachyon render --scene <file> --job <file> [--out <file>] [--workers <n>] [--json]\n";
+    out << "  tachyon render --batch <jobs.json> [--workers <n>] [--json]\n";
 }
 
 bool load_scene_context(const std::filesystem::path& scene_path, SceneContext& context, std::ostream& err) {
@@ -97,6 +100,48 @@ bool load_render_job(const std::filesystem::path& job_path, RenderJob& job, std:
 
     job = *parsed.value;
     return true;
+}
+
+void print_batch_result_text(const RenderBatchResult& batch_result, std::ostream& out) {
+    out << "batch jobs: " << batch_result.jobs.size() << '\n';
+    out << "succeeded: " << batch_result.succeeded << '\n';
+    out << "failed: " << batch_result.failed << '\n';
+    for (const auto& job : batch_result.jobs) {
+        out << (job.success ? "[ok] " : "[fail] ");
+        out << job.request.scene_path.string() << " | " << job.request.job_path.string();
+        if (job.request.output_override.has_value()) {
+            out << " -> " << job.request.output_override->string();
+        }
+        if (!job.error.empty()) {
+            out << " | " << job.error;
+        }
+        out << '\n';
+    }
+}
+
+nlohmann::json make_batch_result_json(const RenderBatchResult& batch_result) {
+    nlohmann::json root;
+    root["jobs_total"] = batch_result.jobs.size();
+    root["succeeded"] = batch_result.succeeded;
+    root["failed"] = batch_result.failed;
+    root["jobs"] = nlohmann::json::array();
+    for (const auto& job : batch_result.jobs) {
+        nlohmann::json item;
+        item["success"] = job.success;
+        item["scene_path"] = job.request.scene_path.string();
+        item["job_path"] = job.request.job_path.string();
+        if (job.request.output_override.has_value()) {
+            item["output_override"] = job.request.output_override->string();
+        }
+        item["error"] = job.error;
+        item["frames_rendered"] = job.session_result.frames.size();
+        item["cache_hits"] = job.session_result.cache_hits;
+        item["cache_misses"] = job.session_result.cache_misses;
+        item["frames_written"] = job.session_result.frames_written;
+        item["output_error"] = job.session_result.output_error;
+        root["jobs"].push_back(std::move(item));
+    }
+    return root;
 }
 
 void print_execution_plan(
@@ -198,6 +243,34 @@ bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostr
 }
 
 bool run_render_command(const CliOptions& options, std::ostream& out, std::ostream& err) {
+    if (!options.batch_path.empty()) {
+        const auto parsed_batch = parse_render_batch_file(options.batch_path);
+        if (!parsed_batch.ok()) {
+            print_diagnostics(parsed_batch.diagnostics, err);
+            return false;
+        }
+
+        const auto validation = validate_render_batch_spec(*parsed_batch.value);
+        if (!validation.ok()) {
+            print_diagnostics(validation.diagnostics, err);
+            return false;
+        }
+
+        const auto batch_result = run_render_batch(*parsed_batch.value, options.worker_count);
+        if (!batch_result.value.has_value()) {
+            print_diagnostics(batch_result.diagnostics, err);
+            return false;
+        }
+
+        if (options.json_output) {
+            out << make_batch_result_json(*batch_result.value).dump(2) << '\n';
+        } else {
+            print_batch_result_text(*batch_result.value, out);
+        }
+
+        return batch_result.ok();
+    }
+
     SceneContext context;
     if (!load_scene_context(options.scene_path, context, err)) {
         return false;
@@ -228,7 +301,7 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
     const std::filesystem::path output_path = job.output.destination.path.empty()
         ? std::filesystem::path{}
         : std::filesystem::path(job.output.destination.path);
-    const RenderSessionResult session_result = session.render(context.scene, *execution_result.value, output_path);
+    const RenderSessionResult session_result = session.render(context.scene, *execution_result.value, output_path, options.worker_count);
     if (!session_result.output_error.empty()) {
         err << "render output failed: " << session_result.output_error << '\n';
         return false;
@@ -297,7 +370,7 @@ int run_cli(int argc, char** argv) {
     }
 
     if (options.command == "render") {
-        if (options.scene_path.empty() || options.job_path.empty()) {
+        if (options.batch_path.empty() && (options.scene_path.empty() || options.job_path.empty())) {
             std::cerr << "--scene and --job are required\n";
             return 1;
         }

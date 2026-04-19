@@ -1,5 +1,6 @@
 #include "tachyon/core/cli_options.h"
 
+#include <exception>
 #include <string>
 #include <vector>
 
@@ -12,6 +13,20 @@ std::string require_argument(const std::vector<std::string>& args, std::size_t& 
     }
     ++index;
     return args[index];
+}
+
+std::size_t parse_worker_count(const std::string& value, DiagnosticBag& diagnostics) {
+    try {
+        const std::size_t parsed = static_cast<std::size_t>(std::stoull(value));
+        if (parsed == 0) {
+            diagnostics.add_error("cli.workers_invalid", "--workers must be greater than zero");
+            return 0;
+        }
+        return parsed;
+    } catch (const std::exception&) {
+        diagnostics.add_error("cli.workers_invalid", "invalid value for --workers: " + value);
+        return 0;
+    }
 }
 
 } // namespace
@@ -47,6 +62,15 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
             options.job_path = value;
             continue;
         }
+        if (arg == "--batch") {
+            const std::string value = require_argument(args, index);
+            if (value.empty()) {
+                result.diagnostics.add_error("cli.batch_missing", "missing value for --batch");
+                return result;
+            }
+            options.batch_path = value;
+            continue;
+        }
         if (arg == "--out") {
             const std::string value = require_argument(args, index);
             if (value.empty()) {
@@ -54,6 +78,15 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
                 return result;
             }
             options.output_override = value;
+            continue;
+        }
+        if (arg == "--workers") {
+            const std::string value = require_argument(args, index);
+            if (value.empty()) {
+                result.diagnostics.add_error("cli.workers_missing", "missing value for --workers");
+                return result;
+            }
+            options.worker_count = parse_worker_count(value, result.diagnostics);
             continue;
         }
         if (arg == "--json") {
@@ -65,7 +98,9 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
         return result;
     }
 
-    result.value = std::move(options);
+    if (result.diagnostics.ok()) {
+        result.value = std::move(options);
+    }
     return result;
 }
 

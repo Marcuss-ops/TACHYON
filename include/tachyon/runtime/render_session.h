@@ -21,6 +21,11 @@ struct RenderSessionResult {
 class RenderSession {
 public:
     RenderSessionResult render(const SceneSpec& scene, const RenderExecutionPlan& execution_plan, const std::filesystem::path& output_path = {});
+    RenderSessionResult render(
+        const SceneSpec& scene,
+        const RenderExecutionPlan& execution_plan,
+        const std::filesystem::path& output_path,
+        std::size_t worker_count);
 
     FrameCache& cache() { return m_cache; }
     const FrameCache& cache() const { return m_cache; }

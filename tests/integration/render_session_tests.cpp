@@ -108,7 +108,7 @@ bool run_render_session_tests() {
     check_true(std::filesystem::exists("tests/output/runtime_seq/frame_000001.png"), "First PNG output exists");
     check_true(std::filesystem::exists("tests/output/runtime_seq/frame_000003.png"), "Third PNG output exists");
 
-    const RenderSessionResult second = session.render(scene, execution_plan, "tests/output/runtime_seq");
+    const RenderSessionResult second = session.render(scene, execution_plan, "tests/output/runtime_seq", 2);
     check_true(second.cache_hits == 3, "Second pass reuses cache for all frames");
     check_true(second.frames_written == 3, "Second pass also writes three output frames");
     check_true(second.output_error.empty(), "Second pass completes without output error");

@@ -1,41 +1,44 @@
 # Core Engine Library
 add_library(TachyonCore
-    core/model/tachyon.cpp
+    cli/core/cli.cpp
+    cli/core/options.cpp
+    cli/core/report.cpp
+    core/camera/camera_state.cpp
+    core/expressions/expression_engine.cpp
     core/math/matrix4x4.cpp
     core/math/quaternion.cpp
     core/math/transform3.cpp
-    core/camera/camera_state.cpp
-    core/expressions/expression_engine.cpp
+    core/model/tachyon.cpp
+    media/image_manager.cpp
     media/assets/asset_resolution.cpp
-    spec/parser/scene_spec.cpp
-    scene/evaluator.cpp
-    runtime/jobs/render_job.cpp
-    runtime/jobs/render_plan.cpp
+    output/ffmpeg_pipe_sink.cpp
+    output/png_sequence_sink.cpp
+    renderer2d/draw_list_builder.cpp
+    renderer2d/draw_list_rasterizer.cpp
+    renderer2d/effect_host.cpp
+    renderer2d/evaluated_composition_renderer.cpp
+    renderer2d/framebuffer.cpp
+    renderer2d/layer_to_draw_command.cpp
+    renderer2d/path_rasterizer.cpp
+    renderer2d/project_card.cpp
+    renderer2d/surface_rgba.cpp
+    renderer2d/raster/cpu_rasterizer.cpp
+    runtime/batch_runner.cpp
     runtime/frame_cache.cpp
     runtime/frame_executor.cpp
-    runtime/render_session.cpp
     runtime/render_graph.cpp
-    timeline/time_resolver.cpp
-    timeline/layer_evaluator.cpp
-    timeline/camera_evaluator.cpp
-    timeline/frame_evaluator.cpp
-    renderer2d/raster/cpu_rasterizer.cpp
-    renderer2d/surface_rgba.cpp
-    renderer2d/project_card.cpp
-    renderer2d/draw_list_builder.cpp
-    renderer2d/layer_to_draw_command.cpp
-    renderer2d/draw_list_rasterizer.cpp
-    renderer2d/evaluated_composition_renderer.cpp
-    renderer2d/path_rasterizer.cpp
-    renderer2d/effect_host.cpp
+    runtime/render_session.cpp
+    runtime/jobs/render_job.cpp
+    runtime/jobs/render_plan.cpp
+    scene/evaluator.cpp
+    spec/parser/scene_spec.cpp
     text/font.cpp
     text/layout.cpp
-    output/png_sequence_sink.cpp
-    output/ffmpeg_pipe_sink.cpp
+    timeline/camera_evaluator.cpp
+    timeline/frame_evaluator.cpp
+    timeline/layer_evaluator.cpp
     timeline/time.cpp
-    cli/core/report.cpp
-    cli/core/options.cpp
-    cli/core/cli.cpp
+    timeline/time_resolver.cpp
 )
 
 target_include_directories(TachyonCore

@@ -9,6 +9,13 @@
 namespace tachyon::renderer2d {
 namespace {
 
+Color premultiply_color(Color color) {
+    color.r = static_cast<std::uint8_t>((static_cast<std::uint32_t>(color.r) * color.a + 127U) / 255U);
+    color.g = static_cast<std::uint8_t>((static_cast<std::uint32_t>(color.g) * color.a + 127U) / 255U);
+    color.b = static_cast<std::uint8_t>((static_cast<std::uint32_t>(color.b) * color.a + 127U) / 255U);
+    return color;
+}
+
 struct PremultipliedPixel {
     float r{0.0f};
     float g{0.0f};
@@ -254,6 +261,66 @@ SurfaceRGBA EffectHost::apply(const std::string& name, const SurfaceRGBA& input,
         return input;
     }
     return it->second->apply(input, params);
+}
+
+SurfaceRGBA FillEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
+    const Color fill_color = get_color(params, "color", Color::white());
+    
+    SurfaceRGBA output(input.width(), input.height());
+    for (std::uint32_t y = 0; y < input.height(); ++y) {
+        for (std::uint32_t x = 0; x < input.width(); ++x) {
+            const Color base = input.get_pixel(x, y);
+            if (base.a == 0) {
+                output.set_pixel(x, y, Color::transparent());
+                continue;
+            }
+            
+            // Keep original alpha, but set RGB to fill color
+            Color out = fill_color;
+            out.a = base.a;
+            output.set_pixel(x, y, premultiply_color(out));
+        }
+    }
+    return output;
+}
+
+SurfaceRGBA TintEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
+    const Color tint_color = get_color(params, "color", Color::white());
+    const float amount = get_scalar(params, "amount", 1.0f);
+    
+    const float tr = static_cast<float>(tint_color.r) / 255.0f;
+    const float tg = static_cast<float>(tint_color.g) / 255.0f;
+    const float tb = static_cast<float>(tint_color.b) / 255.0f;
+
+    SurfaceRGBA output(input.width(), input.height());
+    for (std::uint32_t y = 0; y < input.height(); ++y) {
+        for (std::uint32_t x = 0; x < input.width(); ++x) {
+            Color base = input.get_pixel(x, y);
+            if (base.a == 0) {
+                output.set_pixel(x, y, Color::transparent());
+                continue;
+            }
+
+            // Unmultiply
+            float alpha = static_cast<float>(base.a) / 255.0f;
+            float r = static_cast<float>(base.r) / (255.0f * alpha);
+            float g = static_cast<float>(base.g) / (255.0f * alpha);
+            float b = static_cast<float>(base.b) / (255.0f * alpha);
+
+            // Interpolate towards tint
+            r = r + (r * tr - r) * amount;
+            g = g + (g * tg - g) * amount;
+            b = b + (b * tb - b) * amount;
+
+            // Remultiply
+            base.r = static_cast<uint8_t>(std::clamp(r * 255.0f * alpha, 0.0f, 255.0f));
+            base.g = static_cast<uint8_t>(std::clamp(g * 255.0f * alpha, 0.0f, 255.0f));
+            base.b = static_cast<uint8_t>(std::clamp(b * 255.0f * alpha, 0.0f, 255.0f));
+            
+            output.set_pixel(x, y, base);
+        }
+    }
+    return output;
 }
 
 } // namespace tachyon::renderer2d

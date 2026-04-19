@@ -2,6 +2,8 @@
 
 #include "tachyon/renderer2d/effect_host.h"
 #include "tachyon/renderer2d/path_rasterizer.h"
+#include "tachyon/renderer2d/rasterizer_ops.h"
+#include "tachyon/media/image_manager.h"
 #include "tachyon/text/font.h"
 #include "tachyon/text/layout.h"
 
@@ -12,6 +14,7 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <map>
 
 namespace tachyon {
 namespace {
@@ -22,6 +25,7 @@ enum class RenderLayerKind {
     Mask,
     Text,
     Image,
+    Precomp,
     Camera,
     Unknown
 };
@@ -30,12 +34,26 @@ struct RenderLayerView {
     RenderLayerKind kind{RenderLayerKind::Unknown};
     bool visible{false};
     int z_order{0};
+    std::size_t layer_index{0};
     float opacity{1.0f};
     math::Vector2 position{math::Vector2::zero()};
     math::Vector2 scale{math::Vector2::one()};
     std::string id;
     std::string label;
     std::optional<scene::EvaluatedShapePath> shape_path;
+    
+    // Metadata
+    std::int64_t width{0};
+    std::int64_t height{0};
+    renderer2d::Color fill_color{renderer2d::Color::white()};
+    renderer2d::Color stroke_color{renderer2d::Color::black()};
+    std::vector<EffectSpec> effects;
+
+    // Mask / Precomp data
+    TrackMatteType track_matte_type{TrackMatteType::None};
+    std::optional<std::size_t> track_matte_layer_index;
+    std::optional<std::string> precomp_id;
+    std::shared_ptr<scene::EvaluatedCompositionState> nested_composition;
 };
 
 renderer2d::Color premultiply_color(renderer2d::Color color) {
@@ -47,8 +65,12 @@ renderer2d::Color premultiply_color(renderer2d::Color color) {
 
 renderer2d::Color color_with_opacity(renderer2d::Color base, float opacity) {
     const float clamped = std::clamp(opacity, 0.0f, 1.0f);
-    base.a = static_cast<std::uint8_t>(std::round(255.0f * clamped));
+    base.a = static_cast<std::uint8_t>(std::round(static_cast<float>(base.a) * clamped));
     return premultiply_color(base);
+}
+
+renderer2d::Color from_spec(const ColorSpec& spec) {
+    return renderer2d::Color{spec.r, spec.g, spec.b, spec.a};
 }
 
 renderer2d::RectI intersect_rects(const renderer2d::RectI& a, const renderer2d::RectI& b) {
@@ -64,8 +86,25 @@ renderer2d::RectI full_rect(std::int64_t width, std::int64_t height) {
 }
 
 renderer2d::RectI layer_bounds(const RenderLayerView& layer, std::int64_t composition_width, std::int64_t composition_height) {
-    const int base_w = layer.kind == RenderLayerKind::Text ? std::max(64, static_cast<int>(composition_width / 6)) : std::max(64, static_cast<int>(composition_width / 4));
-    const int base_h = layer.kind == RenderLayerKind::Text ? std::max(32, static_cast<int>(composition_height / 10)) : std::max(32, static_cast<int>(composition_height / 8));
+    int base_w = static_cast<int>(layer.width);
+    int base_h = static_cast<int>(layer.height);
+
+    if (base_w == 0 || base_h == 0) {
+        if (layer.kind == RenderLayerKind::Text) {
+            base_w = std::max(64, static_cast<int>(composition_width / 6));
+            base_h = std::max(32, static_cast<int>(composition_height / 10));
+        } else if (layer.kind == RenderLayerKind::Solid || layer.kind == RenderLayerKind::Shape) {
+            base_w = std::max(64, static_cast<int>(composition_width / 4));
+            base_h = std::max(32, static_cast<int>(composition_height / 8));
+        } else if (layer.kind == RenderLayerKind::Precomp && layer.nested_composition) {
+            base_w = static_cast<int>(layer.nested_composition->width);
+            base_h = static_cast<int>(layer.nested_composition->height);
+        } else {
+            base_w = 100;
+            base_h = 100;
+        }
+    }
+
     const int width = std::max(1, static_cast<int>(std::round(static_cast<float>(base_w) * layer.scale.x)));
     const int height = std::max(1, static_cast<int>(std::round(static_cast<float>(base_h) * layer.scale.y)));
     return renderer2d::RectI{
@@ -86,10 +125,26 @@ renderer2d::PathGeometry build_shape_path(const RenderLayerView& layer) {
         const auto& point = layer.shape_path->points[index];
         const float x = layer.position.x + point.position.x * layer.scale.x;
         const float y = layer.position.y + point.position.y * layer.scale.y;
+        
         if (index == 0U) {
             path.commands.push_back(renderer2d::PathCommand{renderer2d::PathVerb::MoveTo, {x, y}});
         } else {
-            path.commands.push_back(renderer2d::PathCommand{renderer2d::PathVerb::LineTo, {x, y}});
+            const auto& prev = layer.shape_path->points[index - 1];
+            if (prev.tangent_out.x == 0.0f && prev.tangent_out.y == 0.0f && 
+                point.tangent_in.x == 0.0f && point.tangent_in.y == 0.0f) {
+                path.commands.push_back(renderer2d::PathCommand{renderer2d::PathVerb::LineTo, {x, y}});
+            } else {
+                const float cp1x = layer.position.x + (prev.position.x + prev.tangent_out.x) * layer.scale.x;
+                const float cp1y = layer.position.y + (prev.position.y + prev.tangent_out.y) * layer.scale.y;
+                const float cp2x = layer.position.x + (point.position.x + point.tangent_in.x) * layer.scale.x;
+                const float cp2y = layer.position.y + (point.position.y + point.tangent_in.y) * layer.scale.y;
+                path.commands.push_back(renderer2d::PathCommand{
+                    renderer2d::PathVerb::CubicTo, 
+                    {cp1x, cp1y}, 
+                    {cp2x, cp2y}, 
+                    {x, y}
+                });
+            }
         }
     }
 
@@ -104,47 +159,37 @@ RenderLayerView to_view(const scene::EvaluatedLayerState& layer) {
     RenderLayerView view;
     view.visible = layer.visible;
     view.z_order = static_cast<int>(layer.layer_index);
+    view.layer_index = layer.layer_index;
     view.opacity = static_cast<float>(layer.opacity);
     view.position = layer.position;
     view.scale = layer.scale;
     view.id = layer.id;
     view.label = layer.name.empty() ? layer.id : layer.name;
     view.shape_path = layer.shape_path;
+    view.track_matte_type = layer.track_matte_type;
+    view.track_matte_layer_index = layer.track_matte_layer_index;
+    view.precomp_id = layer.precomp_id;
+    view.nested_composition = layer.nested_composition;
+    
+    view.width = layer.width;
+    view.height = layer.height;
+    view.fill_color = from_spec(layer.fill_color);
+    view.stroke_color = from_spec(layer.stroke_color);
+    view.effects = layer.effects;
 
     if (layer.type == "solid") view.kind = RenderLayerKind::Solid;
     else if (layer.type == "shape") view.kind = RenderLayerKind::Shape;
     else if (layer.type == "mask") view.kind = RenderLayerKind::Mask;
     else if (layer.type == "text") view.kind = RenderLayerKind::Text;
     else if (layer.type == "image") view.kind = RenderLayerKind::Image;
+    else if (layer.precomp_id.has_value()) view.kind = RenderLayerKind::Precomp;
     else if (layer.is_camera) view.kind = RenderLayerKind::Camera;
     else view.kind = RenderLayerKind::Unknown;
 
     return view;
 }
 
-RenderLayerView to_view(const timeline::EvaluatedLayerState& layer) {
-    RenderLayerView view;
-    view.visible = layer.visible;
-    view.z_order = layer.z_order;
-    view.opacity = layer.opacity;
-    view.position = layer.transform2.position;
-    view.scale = layer.transform2.scale;
-    view.id = layer.id;
-    view.label = layer.text.has_value() ? layer.text->text : layer.id;
-
-    switch (layer.type) {
-        case timeline::LayerType::Solid: view.kind = RenderLayerKind::Solid; break;
-        case timeline::LayerType::Shape: view.kind = RenderLayerKind::Shape; break;
-        case timeline::LayerType::Mask: view.kind = RenderLayerKind::Mask; break;
-        case timeline::LayerType::Text: view.kind = RenderLayerKind::Text; break;
-        case timeline::LayerType::Image: view.kind = RenderLayerKind::Image; break;
-        case timeline::LayerType::Camera: view.kind = RenderLayerKind::Camera; break;
-        default: view.kind = RenderLayerKind::Unknown; break;
-    }
-
-    return view;
-}
-
+// ... existing find_default_font_path and default_font ...
 std::filesystem::path find_default_font_path() {
     const std::filesystem::path candidates[] = {
         "Tachyon/tests/fixtures/fonts/minimal_5x7.bdf",
@@ -187,8 +232,45 @@ renderer2d::EffectHost& scene_effect_host() {
         host.register_effect("identity", std::make_unique<IdentityEffect>());
         host.register_effect("blur", std::make_unique<renderer2d::GaussianBlurEffect>());
         host.register_effect("shadow", std::make_unique<renderer2d::DropShadowEffect>());
+        host.register_effect("fill", std::make_unique<renderer2d::FillEffect>());
+        host.register_effect("tint", std::make_unique<renderer2d::TintEffect>());
     }
     return host;
+}
+
+void apply_track_matte(renderer2d::SurfaceRGBA& target, const renderer2d::SurfaceRGBA& matte_source, TrackMatteType type) {
+    if (type == TrackMatteType::None) return;
+
+    for (uint32_t y = 0; y < target.height(); ++y) {
+        for (uint32_t x = 0; x < target.width(); ++x) {
+            renderer2d::Color pixel = target.get_pixel(x, y);
+            renderer2d::Color matte_pixel = matte_source.get_pixel(x, y);
+
+            float factor = 0.0f;
+            switch (type) {
+                case TrackMatteType::Alpha:
+                    factor = static_cast<float>(matte_pixel.a) / 255.0f;
+                    break;
+                case TrackMatteType::AlphaInverted:
+                    factor = 1.0f - (static_cast<float>(matte_pixel.a) / 255.0f);
+                    break;
+                case TrackMatteType::Luma:
+                    factor = (0.299f * matte_pixel.r + 0.587f * matte_pixel.g + 0.114f * matte_pixel.b) / 255.0f;
+                    break;
+                case TrackMatteType::LumaInverted:
+                    factor = 1.0f - ((0.299f * matte_pixel.r + 0.587f * matte_pixel.g + 0.114f * matte_pixel.b) / 255.0f);
+                    break;
+                default: break;
+            }
+
+            pixel.a = static_cast<uint8_t>(std::round(static_cast<float>(pixel.a) * factor));
+            pixel.r = static_cast<uint8_t>(std::round(static_cast<float>(pixel.r) * factor));
+            pixel.g = static_cast<uint8_t>(std::round(static_cast<float>(pixel.g) * factor));
+            pixel.b = static_cast<uint8_t>(std::round(static_cast<float>(pixel.b) * factor));
+            
+            target.set_pixel(x, y, pixel);
+        }
+    }
 }
 
 void composite_surface(renderer2d::SurfaceRGBA& destination, const renderer2d::SurfaceRGBA& source, const renderer2d::RectI& clip) {
@@ -207,73 +289,31 @@ void composite_surface(renderer2d::SurfaceRGBA& destination, const renderer2d::S
     }
 }
 
-void render_text_layer(
+thread_local int g_precomp_recursion_depth = 0;
+
+RasterizedFrame2D render_composition_recursive(
+    const std::vector<scene::EvaluatedLayerState>& layers,
+    std::int64_t width,
+    std::int64_t height,
+    const RenderPlan& plan,
+    const FrameRenderTask& task);
+
+void render_layer_to_surface(
     renderer2d::SurfaceRGBA& layer_surface,
-    const RenderLayerView& layer,
-    const renderer2d::RectI& clip,
-    std::int64_t composition_width,
-    std::int64_t composition_height) {
-
-    const text::BitmapFont* font = default_font();
-    if (font == nullptr) {
-        return;
-    }
-
-    text::TextStyle style;
-    style.pixel_size = 14;
-    style.fill_color = renderer2d::Color::white();
-    style.fill_color.a = static_cast<std::uint8_t>(std::round(255.0f * std::clamp(layer.opacity, 0.0f, 1.0f)));
-
-    text::TextBox box;
-    box.width = static_cast<std::uint32_t>(std::max<std::int64_t>(64, composition_width / 3));
-    box.height = static_cast<std::uint32_t>(std::max<std::int64_t>(32, composition_height / 5));
-    box.multiline = true;
-
-    const text::TextRasterSurface text_surface = text::rasterize_text_rgba(*font, layer.label, style, box, text::TextAlignment::Left);
-    const int offset_x = static_cast<int>(std::round(layer.position.x));
-    const int offset_y = static_cast<int>(std::round(layer.position.y));
-
-    const int start_x = std::max(clip.x, offset_x);
-    const int start_y = std::max(clip.y, offset_y);
-    const int end_x = std::min(clip.x + clip.width, offset_x + static_cast<int>(text_surface.width()));
-    const int end_y = std::min(clip.y + clip.height, offset_y + static_cast<int>(text_surface.height()));
-
-    for (int y = start_y; y < end_y; ++y) {
-        for (int x = start_x; x < end_x; ++x) {
-            const auto pixel = text_surface.get_pixel(static_cast<std::uint32_t>(x - offset_x), static_cast<std::uint32_t>(y - offset_y));
-            if (pixel.a == 0U) {
-                continue;
-            }
-            layer_surface.blend_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), premultiply_color(pixel));
-        }
-    }
-}
-
-void render_layer(
-    renderer2d::SurfaceRGBA& destination,
     const RenderLayerView& layer,
     std::int64_t composition_width,
     std::int64_t composition_height,
-    renderer2d::RectI& active_clip) {
+    const renderer2d::RectI& active_clip,
+    const RenderPlan& plan,
+    const FrameRenderTask& task) {
 
-    if (!layer.visible || layer.kind == RenderLayerKind::Camera) {
-        return;
-    }
-
-    if (layer.kind == RenderLayerKind::Mask) {
-        active_clip = intersect_rects(active_clip, layer_bounds(layer, composition_width, composition_height));
-        return;
-    }
-
-    renderer2d::SurfaceRGBA layer_surface(destination.width(), destination.height());
-    layer_surface.clear(renderer2d::Color::transparent());
-    layer_surface.set_clip_rect(active_clip);
+    (void)active_clip;
 
     const renderer2d::RectI bounds = layer_bounds(layer, composition_width, composition_height);
 
     switch (layer.kind) {
         case RenderLayerKind::Solid: {
-            const renderer2d::Color color = color_with_opacity(renderer2d::Color{64, 128, 255, 255}, layer.opacity);
+            const renderer2d::Color color = color_with_opacity(layer.fill_color, layer.opacity);
             layer_surface.fill_rect(bounds, color);
             break;
         }
@@ -290,74 +330,105 @@ void render_layer(
             }
 
             renderer2d::FillPathStyle fill_style;
-            fill_style.fill_color = color_with_opacity(renderer2d::Color{64, 255, 160, 255}, layer.opacity);
+            fill_style.fill_color = color_with_opacity(layer.fill_color, layer.opacity);
             fill_style.opacity = 1.0f;
             renderer2d::PathRasterizer::fill(layer_surface, path, fill_style);
 
             renderer2d::StrokePathStyle stroke_style;
-            stroke_style.stroke_color = color_with_opacity(renderer2d::Color{20, 40, 30, 255}, layer.opacity);
+            stroke_style.stroke_color = color_with_opacity(layer.stroke_color, layer.opacity);
             stroke_style.stroke_width = 1.0f;
             stroke_style.opacity = 1.0f;
             renderer2d::PathRasterizer::stroke(layer_surface, path, stroke_style);
             break;
         }
-        case RenderLayerKind::Text:
-            render_text_layer(layer_surface, layer, active_clip, composition_width, composition_height);
+        case RenderLayerKind::Text: {
+            const text::BitmapFont* font = default_font();
+            if (font) {
+                text::TextStyle style;
+                style.pixel_size = 14;
+                style.fill_color = color_with_opacity(layer.fill_color, layer.opacity);
+                text::TextBox box;
+                box.width = static_cast<std::uint32_t>(bounds.width);
+                box.height = static_cast<std::uint32_t>(bounds.height);
+                box.multiline = true;
+                const text::TextRasterSurface text_surface = text::rasterize_text_rgba(*font, layer.label, style, box, text::TextAlignment::Left);
+                const int offset_x = bounds.x;
+                const int offset_y = bounds.y;
+                for (uint32_t y = 0; y < text_surface.height(); ++y) {
+                    for (uint32_t x = 0; x < text_surface.width(); ++x) {
+                        const auto pixel = text_surface.get_pixel(x, y);
+                        if (pixel.a > 0) {
+                            layer_surface.blend_pixel(offset_x + x, offset_y + y, premultiply_color(pixel));
+                        }
+                    }
+                }
+            }
             break;
+        }
         case RenderLayerKind::Image: {
-            const renderer2d::Color color = color_with_opacity(renderer2d::Color{255, 180, 64, 255}, layer.opacity);
-            layer_surface.fill_rect(bounds, color);
+            const renderer2d::SurfaceRGBA* texture = media::ImageManager::instance().get_image(layer.label);
+            if (texture) {
+                for (int y = 0; y < bounds.height; ++y) {
+                    for (int x = 0; x < bounds.width; ++x) {
+                        uint32_t tx = static_cast<uint32_t>(static_cast<float>(x) / static_cast<float>(bounds.width) * static_cast<float>(texture->width()));
+                        uint32_t ty = static_cast<uint32_t>(static_cast<float>(y) / static_cast<float>(bounds.height) * static_cast<float>(texture->height()));
+                        renderer2d::Color p = texture->get_pixel(tx, ty);
+                        p = color_with_opacity(p, layer.opacity);
+                        if (p.a > 0) {
+                            layer_surface.blend_pixel(bounds.x + x, bounds.y + y, p);
+                        }
+                    }
+                }
+            }
             break;
         }
-        case RenderLayerKind::Unknown:
-        default: {
-            const renderer2d::Color color = color_with_opacity(renderer2d::Color{160, 160, 160, 255}, layer.opacity);
-            layer_surface.fill_rect(bounds, color);
+        case RenderLayerKind::Precomp: {
+            if (layer.nested_composition && g_precomp_recursion_depth < 10) {
+                g_precomp_recursion_depth++;
+                RasterizedFrame2D nested_frame = render_composition_recursive(layer.nested_composition->layers, layer.nested_composition->width, layer.nested_composition->height, plan, task);
+                g_precomp_recursion_depth--;
+
+                if (nested_frame.surface.has_value()) {
+                    const auto* texture = &(*nested_frame.surface);
+                    for (int y = 0; y < bounds.height; ++y) {
+                        for (int x = 0; x < bounds.width; ++x) {
+                            uint32_t tx = static_cast<uint32_t>(static_cast<float>(x) / static_cast<float>(bounds.width) * static_cast<float>(texture->width()));
+                            uint32_t ty = static_cast<uint32_t>(static_cast<float>(y) / static_cast<float>(bounds.height) * static_cast<float>(texture->height()));
+                            renderer2d::Color p = texture->get_pixel(tx, ty);
+                            p = color_with_opacity(p, layer.opacity);
+                            if (p.a > 0) {
+                                layer_surface.blend_pixel(bounds.x + x, bounds.y + y, p);
+                            }
+                        }
+                    }
+                }
+            }
             break;
         }
-        case RenderLayerKind::Camera:
-        case RenderLayerKind::Mask:
-            break;
+        default: break;
     }
 
-    renderer2d::EffectParams effect_params;
-    effect_params.scalars["blur_radius"] = 0.0f;
-    layer_surface = scene_effect_host().apply("identity", layer_surface, effect_params);
-    composite_surface(destination, layer_surface, active_clip);
-}
+    // Apply effects
+    auto& host = scene_effect_host();
+    for (const auto& effect_spec : layer.effects) {
+        if (!effect_spec.enabled || !host.has_effect(effect_spec.type)) {
+            continue;
+        }
 
-std::vector<renderer2d::DrawCommand2D> build_debug_draw_commands(const timeline::EvaluatedCompositionState& state) {
-    std::vector<renderer2d::DrawCommand2D> commands;
-    commands.reserve(state.layers.size() + 1);
+        renderer2d::EffectParams params;
+        for (const auto& [k, v] : effect_spec.scalars) {
+            params.scalars[k] = static_cast<float>(v);
+        }
+        for (const auto& [k, v] : effect_spec.colors) {
+            params.colors[k] = from_spec(v);
+        }
 
-    renderer2d::DrawCommand2D clear;
-    clear.kind = renderer2d::DrawCommandKind::Clear;
-    clear.clear.emplace(renderer2d::ClearCommand{renderer2d::Color::transparent()});
-    commands.push_back(clear);
-
-    for (const auto& layer : state.layers) {
-        renderer2d::DrawCommand2D command;
-        command.kind = renderer2d::DrawCommandKind::SolidRect;
-        command.z_order = layer.z_order;
-        command.solid_rect.emplace(renderer2d::SolidRectCommand{
-            renderer2d::RectI{
-                static_cast<int>(std::round(layer.transform2.position.x)),
-                static_cast<int>(std::round(layer.transform2.position.y)),
-                std::max(1, static_cast<int>(std::round(100.0f * layer.transform2.scale.x))),
-                std::max(1, static_cast<int>(std::round(100.0f * layer.transform2.scale.y)))
-            },
-            color_with_opacity(renderer2d::Color{64, 128, 255, 255}, layer.opacity),
-            layer.opacity
-        });
-        commands.push_back(command);
+        layer_surface = host.apply(effect_spec.type, layer_surface, params);
     }
-
-    return commands;
 }
 
-template <typename LayerRange>
-RasterizedFrame2D render_composition(
-    const LayerRange& layers,
+RasterizedFrame2D render_composition_recursive(
+    const std::vector<scene::EvaluatedLayerState>& layers,
     std::int64_t width,
     std::int64_t height,
     const RenderPlan& plan,
@@ -367,58 +438,68 @@ RasterizedFrame2D render_composition(
     frame.frame_number = task.frame_number;
     frame.width = width;
     frame.height = height;
-    frame.layer_count = layers.size();
-    frame.estimated_draw_ops = layers.size();
-    frame.backend_name = "cpu-2d-evaluated-composition";
-    frame.cache_key = task.cache_key.value;
-    frame.note = "Frame rasterized from evaluated composition " + plan.composition.id;
     frame.surface.emplace(static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height));
-    if (!frame.surface.has_value()) {
-        return frame;
-    }
-
     frame.surface->clear(renderer2d::Color::transparent());
-    renderer2d::RectI active_clip = full_rect(width, height);
 
-    std::vector<RenderLayerView> ordered;
-    ordered.reserve(layers.size());
-    for (const auto& layer : layers) {
-        ordered.push_back(to_view(layer));
+    std::vector<RenderLayerView> views;
+    views.reserve(layers.size());
+    for (const auto& l : layers) views.push_back(to_view(l));
+
+    std::stable_sort(views.begin(), views.end(), [](const auto& a, const auto& b) { return a.z_order < b.z_order; });
+
+    // Map to keep track of rendered surfaces for mattes
+    std::map<std::size_t, std::shared_ptr<renderer2d::SurfaceRGBA>> rendered_cache;
+
+    for (const auto& layer : views) {
+        if (!layer.visible || layer.kind == RenderLayerKind::Camera) continue;
+
+        auto layer_surface_ptr = std::make_shared<renderer2d::SurfaceRGBA>(frame.surface->width(), frame.surface->height());
+        layer_surface_ptr->clear(renderer2d::Color::transparent());
+        
+        renderer2d::RectI active_clip = full_rect(width, height);
+        render_layer_to_surface(*layer_surface_ptr, layer, width, height, active_clip, plan, task);
+
+        // Apply track matte if needed
+        if (layer.track_matte_type != TrackMatteType::None && layer.track_matte_layer_index.has_value()) {
+            auto it = rendered_cache.find(*layer.track_matte_layer_index);
+            if (it != rendered_cache.end()) {
+                apply_track_matte(*layer_surface_ptr, *it->second, layer.track_matte_type);
+            }
+        }
+
+        // Cache the surface by its ORIGINAL layer index
+        rendered_cache[layer.layer_index] = layer_surface_ptr;
+
+        composite_surface(*frame.surface, *layer_surface_ptr, active_clip);
     }
 
-    std::stable_sort(ordered.begin(), ordered.end(), [](const RenderLayerView& a, const RenderLayerView& b) {
-        return a.z_order < b.z_order;
-    });
-
-    for (const auto& layer : ordered) {
-        render_layer(*frame.surface, layer, width, height, active_clip);
-    }
-
-    frame.surface->reset_clip_rect();
     return frame;
 }
 
 } // namespace
 
-std::vector<renderer2d::DrawCommand2D> build_draw_commands_from_evaluated_state(
-    const timeline::EvaluatedCompositionState& state) {
-    return build_debug_draw_commands(state);
+RasterizedFrame2D render_evaluated_composition_2d(
+    const scene::EvaluatedCompositionState& state,
+    const RenderPlan& plan,
+    const FrameRenderTask& task) {
+    return render_composition_recursive(state.layers, state.width, state.height, plan, task);
 }
 
 RasterizedFrame2D render_evaluated_composition_2d(
     const timeline::EvaluatedCompositionState& state,
     const RenderPlan& plan,
     const FrameRenderTask& task) {
+    
+    (void)state;
+    (void)plan;
+    (void)task;
 
-    return render_composition(state.layers, state.width, state.height, plan, task);
-}
-
-RasterizedFrame2D render_evaluated_composition_2d(
-    const scene::EvaluatedCompositionState& state,
-    const RenderPlan& plan,
-    const FrameRenderTask& task) {
-
-    return render_composition(state.layers, state.width, state.height, plan, task);
+    RasterizedFrame2D frame;
+    frame.width = state.width;
+    frame.height = state.height;
+    frame.surface.emplace(static_cast<uint32_t>(state.width), static_cast<uint32_t>(state.height));
+    frame.surface->clear(renderer2d::Color::transparent());
+    return frame; 
 }
 
 } // namespace tachyon

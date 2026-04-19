@@ -17,13 +17,20 @@ bool run_property_tests();
 bool run_expression_tests();
 bool run_scene_evaluator_tests();
 bool run_render_session_tests();
+bool run_render_batch_tests();
 bool run_parallax_cards_tests();
 bool run_timeline_tests();
 bool run_glyph_cache_tests();
 bool run_text_tests();
 bool run_effect_host_tests();
+bool run_precomp_mask_tests();
 
 int main() {
+    if (!run_precomp_mask_tests()) {
+        std::cerr << "precomp and mask tests failed\n";
+        return 1;
+    }
+
     if (!run_math_tests()) {
         std::cerr << "math tests failed\n";
         return 1;
@@ -99,6 +106,11 @@ int main() {
         return 1;
     }
 
+    if (!run_render_batch_tests()) {
+        std::cerr << "render batch tests failed\n";
+        return 1;
+    }
+
     if (!run_parallax_cards_tests()) {
         std::cerr << "camera card tests failed\n";
         return 1;
@@ -121,6 +133,11 @@ int main() {
 
     if (!run_effect_host_tests()) {
         std::cerr << "effect host tests failed\n";
+        return 1;
+    }
+
+    if (!run_precomp_mask_tests()) {
+        std::cerr << "precomp and mask tests failed\n";
         return 1;
     }
 

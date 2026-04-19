@@ -12,11 +12,16 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <memory>
 
 namespace tachyon::scene {
 
+struct EvaluatedCompositionState;
+
 struct EvaluatedShapePathPoint {
     math::Vector2 position{math::Vector2::zero()};
+    math::Vector2 tangent_in{math::Vector2::zero()};
+    math::Vector2 tangent_out{math::Vector2::zero()};
 };
 
 struct EvaluatedShapePath {
@@ -50,9 +55,19 @@ struct EvaluatedLayerState {
     math::Vector2 world_position{math::Vector2::zero()};
     double world_rotation_degrees{0.0};
     math::Vector2 world_scale{math::Vector2::one()};
+    std::int64_t width{0};
+    std::int64_t height{0};
+    ColorSpec fill_color{255, 255, 255, 255};
+    ColorSpec stroke_color{0, 0, 0, 255};
     std::optional<std::string> parent;
     std::optional<std::size_t> parent_index;
     std::optional<EvaluatedShapePath> shape_path;
+    std::vector<EffectSpec> effects;
+    TrackMatteType track_matte_type{TrackMatteType::None};
+    std::optional<std::string> track_matte_layer_id;
+    std::optional<std::size_t> track_matte_layer_index;
+    std::optional<std::string> precomp_id;
+    std::shared_ptr<EvaluatedCompositionState> nested_composition;
 };
 
 struct EvaluatedCameraState {

@@ -4,6 +4,7 @@
 #include "tachyon/runtime/render_graph.h"
 
 #include <cstddef>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -30,6 +31,7 @@ public:
 
 private:
     std::unordered_map<std::string, CachedFrame> m_entries;
+    mutable std::mutex m_mutex;
     mutable std::size_t m_hit_count{0};
     mutable std::size_t m_miss_count{0};
 };
