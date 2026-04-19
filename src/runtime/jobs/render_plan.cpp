@@ -81,6 +81,7 @@ ResolutionResult<RenderPlan> build_render_plan(const SceneSpec& scene, const Ren
     plan.motion_blur_shutter_angle = job.motion_blur_shutter_angle;
     plan.seed_policy_mode = job.seed_policy_mode;
     plan.compatibility_mode = job.compatibility_mode;
+    plan.scene_spec = &scene;
 
     result.value = std::move(plan);
     return result;

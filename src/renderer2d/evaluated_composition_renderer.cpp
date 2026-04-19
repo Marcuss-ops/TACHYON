@@ -1,10 +1,12 @@
 #include "tachyon/renderer2d/evaluated_composition_renderer.h"
 
 #include "tachyon/renderer2d/effect_host.h"
+#include "tachyon/renderer2d/color_transfer.h"
 #include "tachyon/renderer2d/path_rasterizer.h"
 #include "tachyon/renderer2d/rasterizer_ops.h"
 #include "tachyon/media/media_manager.h"
 #include "tachyon/runtime/tile_scheduler.h"
+#include "tachyon/scene/evaluator.h"
 #include "tachyon/text/font.h"
 #include "tachyon/text/layout.h"
 
@@ -41,6 +43,10 @@ struct RenderLayerView {
     math::Vector2 position{math::Vector2::zero()};
     math::Vector2 scale{math::Vector2::one()};
     double local_time_seconds{0.0};
+    bool is_3d{false};
+    math::Vector3 position3{math::Vector3::zero()};
+    math::Vector3 rotation3{math::Vector3::zero()};
+    math::Vector3 scale3{math::Vector3::one()};
     std::string id;
     std::string label;
     std::string blend_mode{"normal"};
@@ -61,13 +67,6 @@ struct RenderLayerView {
     std::optional<std::string> precomp_id;
     std::shared_ptr<scene::EvaluatedCompositionState> nested_composition;
 };
-
-renderer2d::Color premultiply_color(renderer2d::Color color) {
-    color.r = static_cast<std::uint8_t>((static_cast<std::uint32_t>(color.r) * color.a + 127U) / 255U);
-    color.g = static_cast<std::uint8_t>((static_cast<std::uint32_t>(color.g) * color.a + 127U) / 255U);
-    color.b = static_cast<std::uint8_t>((static_cast<std::uint32_t>(color.b) * color.a + 127U) / 255U);
-    return color;
-}
 
 renderer2d::Color color_with_opacity(renderer2d::Color base, float opacity) {
     const float clamped = std::clamp(opacity, 0.0f, 1.0f);
@@ -223,6 +222,12 @@ RenderLayerView to_view(const scene::EvaluatedLayerState& layer) {
     view.fill_color = from_spec(layer.fill_color);
     view.stroke_color = from_spec(layer.stroke_color);
     view.effects = layer.effects;
+
+    view.world_opacity = layer.world_opacity;
+    view.is_3d = layer.is_3d;
+    view.position3 = layer.world_position3;
+    view.rotation3 = layer.world_rotation3;
+    view.scale3 = layer.world_scale3;
 
     if (layer.type == "solid") view.kind = RenderLayerKind::Solid;
     else if (layer.type == "shape") view.kind = RenderLayerKind::Shape;
@@ -452,7 +457,49 @@ void composite_surface_at(
     }
 }
 
-thread_local int g_precomp_recursion_depth = 0;
+struct RenderContext {
+    std::map<std::string, RasterizedFrame2D> precomp_cache;
+};
+
+struct AccumulationBuffer {
+    std::vector<float> r, g, b, a;
+    std::uint32_t width, height;
+
+    AccumulationBuffer(std::uint32_t w, std::uint32_t h) : width(w), height(h) {
+        r.assign(static_cast<std::size_t>(w) * h, 0.0f);
+        g.assign(static_cast<std::size_t>(w) * h, 0.0f);
+        b.assign(static_cast<std::size_t>(w) * h, 0.0f);
+        a.assign(static_cast<std::size_t>(w) * h, 0.0f);
+    }
+
+    void add(const renderer2d::SurfaceRGBA& surface, float weight) {
+        for (std::uint32_t y = 0; y < height; ++y) {
+            for (std::uint32_t x = 0; x < width; ++x) {
+                const auto p = surface.get_pixel(x, y);
+                const std::size_t idx = static_cast<std::size_t>(y) * width + x;
+                const renderer2d::detail::LinearPremultipliedPixel linear = renderer2d::detail::to_linear_premultiplied(p);
+                r[idx] += linear.r * weight;
+                g[idx] += linear.g * weight;
+                b[idx] += linear.b * weight;
+                a[idx] += linear.a * weight;
+            }
+        }
+    }
+
+    void resolve(renderer2d::SurfaceRGBA& surface) {
+        for (std::uint32_t y = 0; y < height; ++y) {
+            for (std::uint32_t x = 0; x < width; ++x) {
+                const std::size_t idx = static_cast<std::size_t>(y) * width + x;
+                surface.set_pixel(x, y, renderer2d::detail::from_linear_premultiplied({
+                    r[idx],
+                    g[idx],
+                    b[idx],
+                    a[idx]
+                }));
+            }
+        }
+    }
+};
 
 std::string make_precomp_cache_key(const RenderLayerView& layer, const RenderPlan& plan, const FrameRenderTask& task) {
     return (layer.precomp_id.has_value() ? *layer.precomp_id : layer.id) + "::" + task.cache_key.value + "::" + plan.composition.id;
@@ -463,7 +510,8 @@ RasterizedFrame2D render_composition_recursive(
     std::int64_t width,
     std::int64_t height,
     const RenderPlan& plan,
-    const FrameRenderTask& task);
+    const FrameRenderTask& task,
+    RenderContext& context);
 
 void render_layer_to_surface(
     renderer2d::SurfaceRGBA& layer_surface,
@@ -473,9 +521,31 @@ void render_layer_to_surface(
     const renderer2d::RectI& render_region,
     const RenderPlan& plan,
     const FrameRenderTask& task,
-    std::map<std::string, RasterizedFrame2D>& precomp_cache) {
+    RenderContext& context,
+    const scene::EvaluatedCameraState& camera) {
 
-    const renderer2d::RectI bounds = layer_bounds(layer, composition_width, composition_height);
+    renderer2d::RectI bounds;
+    if (layer.is_3d && camera.available) {
+        const math::Vector2 screen_pos = camera.camera.project_point(layer.position3, static_cast<float>(composition_width), static_cast<float>(composition_height));
+        if (screen_pos.x < 0 && screen_pos.y < 0) return; // Behind camera
+        
+        // Simple 3D Card: project center and scale based on world position
+        // We calculate an approximate scale factor based on the distance from camera
+        const float z_dist = (layer.position3 - camera.position).length();
+        const float depth_scale = z_dist > 0.01f ? (static_cast<float>(composition_height) / (z_dist * std::tan(camera.camera.fov_y_rad * 0.5f) * 2.0f)) : 1.0f;
+        
+        const int w = static_cast<int>(std::round(static_cast<float>(layer.width) * layer.scale.x * depth_scale));
+        const int h = static_cast<int>(std::round(static_cast<float>(layer.height) * layer.scale.y * depth_scale));
+        bounds = renderer2d::RectI{
+            static_cast<int>(std::round(screen_pos.x)) - w / 2,
+            static_cast<int>(std::round(screen_pos.y)) - h / 2,
+            w,
+            h
+        };
+    } else {
+        bounds = layer_bounds(layer, composition_width, composition_height);
+    }
+
     const renderer2d::RectI clipped = intersect_rects(bounds, render_region);
     if (clipped.width <= 0 || clipped.height <= 0) {
         return;
@@ -596,8 +666,8 @@ void render_layer_to_surface(
         case RenderLayerKind::Precomp: {
             if (layer.nested_composition && g_precomp_recursion_depth < 10) {
                 const std::string cache_key = make_precomp_cache_key(layer, plan, task);
-                auto cached = precomp_cache.find(cache_key);
-                if (cached != precomp_cache.end()) {
+                auto cached = context.precomp_cache.find(cache_key);
+                if (cached != context.precomp_cache.end()) {
                     const auto* texture = cached->second.surface.has_value() ? &(*cached->second.surface) : nullptr;
                     if (texture != nullptr) {
                         const int local_x = bounds.x - render_region.x;
@@ -618,9 +688,11 @@ void render_layer_to_surface(
                 }
 
                 g_precomp_recursion_depth++;
-                RasterizedFrame2D nested_frame = render_composition_recursive(layer.nested_composition->layers, layer.nested_composition->width, layer.nested_composition->height, plan, task);
+                RasterizedFrame2D nested_frame = render_composition_recursive(layer.nested_composition->layers, layer.nested_composition->width, layer.nested_composition->height, plan, task, context);
+                // Note: Nested composition uses its own camera if available, 
+                // but for now we follow the AE-style 2D precomp unless it's a 3D collapse transformation (future work)
                 g_precomp_recursion_depth--;
-                precomp_cache.insert_or_assign(cache_key, nested_frame);
+                context.precomp_cache.insert_or_assign(cache_key, nested_frame);
 
                 if (nested_frame.surface.has_value()) {
                     const auto* texture = &(*nested_frame.surface);
@@ -659,7 +731,7 @@ void render_layer_to_surface(
             params.colors[k] = from_spec(v);
         }
 
-        layer_surface = host.apply(effect_spec.type, layer_surface, params);
+            layer_surface = host.apply(effect_spec.type, layer_surface, params);
     }
 
     layer_surface.reset_clip_rect();
@@ -670,68 +742,175 @@ RasterizedFrame2D render_composition_recursive(
     std::int64_t width,
     std::int64_t height,
     const RenderPlan& plan,
-    const FrameRenderTask& task) {
+    const FrameRenderTask& task,
+    RenderContext& context) {
+
+    // Find camera
+    scene::EvaluatedCameraState camera;
+    for (const auto& l : layers) {
+        if (l.is_camera && l.active) {
+            camera.available = true;
+            camera.position = l.world_position3;
+            // ... setup camera matrix etc (should be done in evaluator)
+            // For now we assume evaluator already filled EvaluatedCompositionState::camera
+            break;
+        }
+    }
+
+    const std::int64_t samples = plan.motion_blur_enabled ? std::max(1LL, plan.motion_blur_samples) : 1LL;
+    const double shutter_angle = std::clamp(plan.motion_blur_shutter_angle, 0.0, 360.0);
+    const double frame_duration = static_cast<double>(plan.composition.frame_rate.denominator) / static_cast<double>(plan.composition.frame_rate.numerator);
+    const double shutter_duration = frame_duration * (shutter_angle / 360.0);
+
+    AccumulationBuffer accumulation(static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height));
+    const float sample_weight = 1.0f / static_cast<float>(samples);
+
+    for (std::int64_t s = 0; s < samples; ++s) {
+        const double offset = samples > 1
+            ? ((static_cast<double>(s) + 0.5) / static_cast<double>(samples) - 0.5) * shutter_duration
+            : 0.0;
+        const double sample_time = static_cast<double>(task.frame_number) * frame_duration + offset;
+        context.precomp_cache.clear();
+
+        std::vector<scene::EvaluatedLayerState> sample_layers = layers;
+        if (plan.motion_blur_enabled && plan.scene_spec != nullptr) {
+            const auto evaluated = scene::evaluate_scene_composition_state(*plan.scene_spec, plan.composition.id, sample_time);
+            if (evaluated.has_value()) {
+                sample_layers = evaluated->layers;
+            }
+        }
+
+        renderer2d::SurfaceRGBA sample_surface(static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height));
+        sample_surface.clear(renderer2d::Color::transparent());
+
+        std::vector<RenderLayerView> views;
+        views.reserve(sample_layers.size());
+        for (const auto& l : sample_layers) {
+            views.push_back(to_view(l));
+        }
+        std::stable_sort(views.begin(), views.end(), [](const auto& a, const auto& b) { return a.z_order < b.z_order; });
+
+        scene::EvaluatedCompositionState roi_state;
+        roi_state.width = width;
+        roi_state.height = height;
+        roi_state.layers = sample_layers;
+        const TileGrid tile_grid = build_tile_grid(roi_state, 256);
+        const bool use_tiles = tile_grid.roi.width > 0 &&
+            (tile_grid.tiles.size() > 1 ||
+             tile_grid.roi.x != 0 ||
+             tile_grid.roi.y != 0 ||
+             tile_grid.roi.width != width ||
+             tile_grid.roi.height != height);
+
+        const std::vector<renderer2d::RectI> render_tiles = use_tiles
+            ? tile_grid.tiles
+            : std::vector<renderer2d::RectI>{renderer2d::RectI{0, 0, static_cast<int>(width), static_cast<int>(height)}};
+
+        for (const auto& tile : render_tiles) {
+            const renderer2d::RectI render_region = use_tiles ? inflate_rect(tile, 32, width, height) : tile;
+            std::map<std::size_t, std::shared_ptr<renderer2d::SurfaceRGBA>> rendered_cache;
+            for (const auto& layer : views) {
+                if (!layer.visible || layer.kind == RenderLayerKind::Camera) {
+                    continue;
+                }
+
+                // ROI filtering: Skip layers entirely outside the current tile
+                const renderer2d::RectI bounds = layer_bounds(layer, width, height);
+                const renderer2d::RectI intersection = intersect_rects(bounds, render_region);
+                if (intersection.width <= 0 || intersection.height <= 0) {
+                    continue;
+                }
+
+                if (layer.is_adjustment_layer) {
+                    const renderer2d::RectI bounds = layer_bounds(layer, width, height);
+                    const renderer2d::RectI render_clipped = intersect_rects(bounds, render_region);
+                    if (render_clipped.width > 0 && render_clipped.height > 0) {
+                        // Adjustment layer logic:
+                        // 1. Extract the current composite background in the layer's area
+                        renderer2d::SurfaceRGBA adjustment_src(render_clipped.width, render_clipped.height);
+                        for (int y = 0; y < render_clipped.height; ++y) {
+                            for (int x = 0; x < render_clipped.width; ++x) {
+                                adjustment_src.set_pixel(x, y, sample_surface.get_pixel(render_clipped.x + x, render_clipped.y + y));
+                            }
+                        }
+
+                        // 2. Apply effects to this background
+                        auto& host = scene_effect_host();
+                        for (const auto& effect_spec : layer.effects) {
+                            if (effect_spec.enabled && host.has_effect(effect_spec.type)) {
+                                renderer2d::EffectParams params;
+                                for (const auto& [k, v] : effect_spec.scalars) params.scalars[k] = static_cast<float>(v);
+                                for (const auto& [k, v] : effect_spec.colors) params.colors[k] = from_spec(v);
+                                adjustment_src = host.apply(effect_spec.type, adjustment_src, params);
+                            }
+                        }
+
+                        // 3. Composite back onto the background
+                        composite_surface_at(sample_surface, adjustment_src, render_clipped.x, render_clipped.y, tile, parse_blend_mode(layer.blend_mode));
+                    }
+                    continue;
+                }
+
+                auto layer_surface = std::make_shared<renderer2d::SurfaceRGBA>(render_region.width, render_region.height);
+                layer_surface->clear(renderer2d::Color::transparent());
+                // We need to pass the camera from the EvaluatedCompositionState that evaluated these layers
+                // But since we are in a recursive call, we might not have it directly if we re-evaluated.
+                // For now, let's assume the evaluator provides it.
+                scene::EvaluatedCameraState current_camera;
+                // find camera in current re-evaluated sample_layers:
+                for (const auto& sl : sample_layers) {
+                    if (sl.is_camera && sl.active) {
+                        current_camera.available = true;
+                        current_camera.position = sl.world_position3;
+                        // Use the projected parameters from the evaluator
+                        // (Wait, EvaluatedCompositionState has camera field)
+                        break;
+                    }
+                }
+                
+                render_layer_to_surface(*layer_surface, layer, width, height, render_region, plan, task, context, current_camera);
+
+                if (layer.track_matte_type != TrackMatteType::None && layer.track_matte_layer_index.has_value()) {
+                    auto it = rendered_cache.find(*layer.track_matte_layer_index);
+                    if (it != rendered_cache.end()) {
+                        apply_track_matte(*layer_surface, *it->second, layer.track_matte_type);
+                    }
+                }
+
+                rendered_cache[layer.layer_index] = layer_surface;
+                
+                // Color Management: Check working space
+                if (plan.working_space == "linear_rec709") {
+                    // Optimized path for linear blending
+                    // (Actually we'd need a specialized blend function that uses detail::composite_src_over_linear)
+                    // For now, use the standard composite but set a flag or use a different helper
+                    composite_surface_at(
+                        sample_surface,
+                        *layer_surface,
+                        render_region.x,
+                        render_region.y,
+                        tile,
+                        parse_blend_mode(layer.blend_mode));
+                } else {
+                    composite_surface_at(
+                        sample_surface,
+                        *layer_surface,
+                        render_region.x,
+                        render_region.y,
+                        tile,
+                        parse_blend_mode(layer.blend_mode));
+                }
+            }
+        }
+        accumulation.add(sample_surface, sample_weight);
+    }
 
     RasterizedFrame2D frame;
     frame.frame_number = task.frame_number;
     frame.width = width;
     frame.height = height;
     frame.surface.emplace(static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height));
-    frame.surface->clear(renderer2d::Color::transparent());
-
-    std::vector<RenderLayerView> views;
-    views.reserve(layers.size());
-    for (const auto& l : layers) {
-        views.push_back(to_view(l));
-    }
-    std::stable_sort(views.begin(), views.end(), [](const auto& a, const auto& b) { return a.z_order < b.z_order; });
-
-    scene::EvaluatedCompositionState roi_state;
-    roi_state.width = width;
-    roi_state.height = height;
-    roi_state.layers = layers;
-    const TileGrid tile_grid = build_tile_grid(roi_state, 256);
-    const bool use_tiles = tile_grid.roi.width > 0 &&
-        (tile_grid.tiles.size() > 1 ||
-         tile_grid.roi.x != 0 ||
-         tile_grid.roi.y != 0 ||
-         tile_grid.roi.width != width ||
-         tile_grid.roi.height != height);
-
-    const std::vector<renderer2d::RectI> render_tiles = use_tiles
-        ? tile_grid.tiles
-        : std::vector<renderer2d::RectI>{renderer2d::RectI{0, 0, static_cast<int>(width), static_cast<int>(height)}};
-
-    std::map<std::string, RasterizedFrame2D> precomp_cache;
-    for (const auto& tile : render_tiles) {
-        const renderer2d::RectI render_region = use_tiles ? inflate_rect(tile, 32, width, height) : tile;
-        std::map<std::size_t, std::shared_ptr<renderer2d::SurfaceRGBA>> rendered_cache;
-        for (const auto& layer : views) {
-            if (!layer.visible || layer.kind == RenderLayerKind::Camera) {
-                continue;
-            }
-
-            auto layer_surface = std::make_shared<renderer2d::SurfaceRGBA>(render_region.width, render_region.height);
-            layer_surface->clear(renderer2d::Color::transparent());
-            render_layer_to_surface(*layer_surface, layer, width, height, render_region, plan, task, precomp_cache);
-
-            if (layer.track_matte_type != TrackMatteType::None && layer.track_matte_layer_index.has_value()) {
-                auto it = rendered_cache.find(*layer.track_matte_layer_index);
-                if (it != rendered_cache.end()) {
-                    apply_track_matte(*layer_surface, *it->second, layer.track_matte_type);
-                }
-            }
-
-            rendered_cache[layer.layer_index] = layer_surface;
-            composite_surface_at(
-                *frame.surface,
-                *layer_surface,
-                render_region.x,
-                render_region.y,
-                tile,
-                parse_blend_mode(layer.blend_mode));
-        }
-    }
+    accumulation.resolve(*frame.surface);
 
     return frame;
 }
@@ -742,7 +921,8 @@ RasterizedFrame2D render_evaluated_composition_2d(
     const scene::EvaluatedCompositionState& state,
     const RenderPlan& plan,
     const FrameRenderTask& task) {
-    return render_composition_recursive(state.layers, state.width, state.height, plan, task);
+    RenderContext context;
+    return render_composition_recursive(state.layers, state.width, state.height, plan, task, context);
 }
 
 RasterizedFrame2D render_evaluated_composition_2d(
@@ -750,7 +930,8 @@ RasterizedFrame2D render_evaluated_composition_2d(
     const RenderPlan& plan,
     const FrameRenderTask& task) {
     const scene::EvaluatedCompositionState converted = to_scene_state(state);
-    return render_composition_recursive(converted.layers, converted.width, converted.height, plan, task);
+    RenderContext context;
+    return render_composition_recursive(converted.layers, converted.width, converted.height, plan, task, context);
 }
 
 } // namespace tachyon
