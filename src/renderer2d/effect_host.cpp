@@ -1,4 +1,5 @@
 #include "tachyon/renderer2d/effect_host.h"
+#include "tachyon/renderer2d/render_context.h"
 
 #include <array>
 #include <algorithm>
