@@ -38,6 +38,13 @@ struct LinePrimitive {
     Color color;
 };
 
+struct TexturedVertex2D {
+    float x{0.0F};
+    float y{0.0F};
+    float u{0.0F};
+    float v{0.0F};
+};
+
 struct TexturedQuadPrimitive {
     int x{0};
     int y{0};
@@ -45,6 +52,47 @@ struct TexturedQuadPrimitive {
     int height{0};
     const SurfaceRGBA* texture{nullptr};
     Color tint{Color::white()};
+    bool use_custom_vertices{false};
+    TexturedVertex2D vertices[4]{};
+
+    static TexturedQuadPrimitive axis_aligned(
+        int x,
+        int y,
+        int width,
+        int height,
+        const SurfaceRGBA* texture,
+        Color tint = Color::white()) {
+        TexturedQuadPrimitive quad;
+        quad.x = x;
+        quad.y = y;
+        quad.width = width;
+        quad.height = height;
+        quad.texture = texture;
+        quad.tint = tint;
+        quad.vertices[0] = TexturedVertex2D{static_cast<float>(x), static_cast<float>(y), 0.0F, 0.0F};
+        quad.vertices[1] = TexturedVertex2D{static_cast<float>(x + width), static_cast<float>(y), 1.0F, 0.0F};
+        quad.vertices[2] = TexturedVertex2D{static_cast<float>(x + width), static_cast<float>(y + height), 1.0F, 1.0F};
+        quad.vertices[3] = TexturedVertex2D{static_cast<float>(x), static_cast<float>(y + height), 0.0F, 1.0F};
+        return quad;
+    }
+
+    static TexturedQuadPrimitive custom(
+        const TexturedVertex2D& v0,
+        const TexturedVertex2D& v1,
+        const TexturedVertex2D& v2,
+        const TexturedVertex2D& v3,
+        const SurfaceRGBA* texture,
+        Color tint = Color::white()) {
+        TexturedQuadPrimitive quad;
+        quad.texture = texture;
+        quad.tint = tint;
+        quad.use_custom_vertices = true;
+        quad.vertices[0] = v0;
+        quad.vertices[1] = v1;
+        quad.vertices[2] = v2;
+        quad.vertices[3] = v3;
+        return quad;
+    }
 };
 
 struct DrawCommand2D {
