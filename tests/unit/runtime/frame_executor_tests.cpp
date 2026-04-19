@@ -102,8 +102,21 @@ bool run_frame_executor_tests() {
     check_true(!changed.cache_hit, "Changed parameter invalidates cached frame");
 
     const EvaluatedFrameState state = evaluate_frame_state(scene, plan, make_task(2));
-    const DrawList2D draw_list = build_draw_list(state);
-    check_true(!draw_list.rects.empty(), "Draw list contains at least one rect");
+    const renderer2d::DrawList2D draw_list = build_draw_list(state);
+    check_true(!draw_list.commands.empty(), "Draw list contains commands");
+    if (!draw_list.commands.empty()) {
+        check_true(draw_list.commands.front().kind == renderer2d::DrawCommandKind::Clear,
+                   "First draw command is Clear");
+    }
+    check_true(draw_list.commands.size() == 2, "Single solid layer produces clear plus one layer command");
+    if (draw_list.commands.size() >= 2) {
+        check_true(draw_list.commands[1].kind == renderer2d::DrawCommandKind::SolidRect,
+                   "Solid layer maps to SolidRect command");
+    }
+
+    const ExecutedFrame rendered = execute_frame_task(scene, plan, make_task(2), cache);
+    check_true(rendered.draw_command_count == draw_list.commands.size(),
+               "Executor reports draw command count from renderer draw list");
 
     return g_failures == 0;
 }
