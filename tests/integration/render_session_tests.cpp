@@ -93,15 +93,22 @@ bool run_render_session_tests() {
     const SceneSpec scene = make_scene();
     const RenderExecutionPlan execution_plan = make_execution_plan();
 
+    std::filesystem::remove_all("tests/output/runtime_seq");
     std::filesystem::create_directories("tests/output/runtime_seq");
     const RenderSessionResult first = session.render(scene, execution_plan, "tests/output/runtime_seq");
     check_true(first.frames.size() == 3, "Render session produces three frames");
     check_true(first.cache_misses == 3, "First pass is all cache misses");
+    check_true(first.frames_written == 3, "First pass writes three output frames");
+    check_true(first.output_error.empty(), "First pass completes without output error");
     check_true(first.frames[0].frame.width() == 160, "Frame width matches composition");
     check_true(first.frames[0].frame.height() == 90, "Frame height matches composition");
+    check_true(std::filesystem::exists("tests/output/runtime_seq/frame_000001.png"), "First PNG output exists");
+    check_true(std::filesystem::exists("tests/output/runtime_seq/frame_000003.png"), "Third PNG output exists");
 
     const RenderSessionResult second = session.render(scene, execution_plan, "tests/output/runtime_seq");
     check_true(second.cache_hits == 3, "Second pass reuses cache for all frames");
+    check_true(second.frames_written == 3, "Second pass also writes three output frames");
+    check_true(second.output_error.empty(), "Second pass completes without output error");
 
     return g_failures == 0;
 }
