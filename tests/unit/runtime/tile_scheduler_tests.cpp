@@ -41,6 +41,11 @@ bool run_tile_scheduler_tests() {
     check_true(grid.tiles[0].x == 32 && grid.tiles[0].y == 48, "First tile should start at ROI origin");
     check_true(grid.tiles[0].width <= 256 && grid.tiles[0].height <= 256, "Tile size should be capped by tile size");
 
+    const TileGrid roi_grid = build_tile_grid(renderer2d::RectI{64, 80, 300, 180}, state.width, state.height, 128);
+    check_true(roi_grid.roi.x == 64 && roi_grid.roi.y == 80, "ROI overload should preserve the requested origin");
+    check_true(roi_grid.tiles.size() > 1, "ROI overload should split large regions into multiple tiles");
+    check_true(roi_grid.tiles.front().width <= 128 && roi_grid.tiles.front().height <= 128, "ROI overload should cap tiles");
+
     scene::EvaluatedCompositionState empty_state;
     empty_state.width = 640;
     empty_state.height = 360;

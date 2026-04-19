@@ -33,6 +33,8 @@ public:
 
     FrameCache& cache() { return m_cache; }
     const FrameCache& cache() const { return m_cache; }
+    std::shared_ptr<renderer2d::PrecompCache> precomp_cache() { return m_precomp_cache; }
+    std::shared_ptr<const renderer2d::PrecompCache> precomp_cache() const { return m_precomp_cache; }
 
 private:
     FrameCache m_cache;
