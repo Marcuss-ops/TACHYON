@@ -10,7 +10,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Determine platform and compiler details
 # Determine platform and compiler details
 if(MSVC)
-    add_compile_options(/W4 /WX /permissive- /utf-8)
+    add_compile_options(/W4 /WX /permissive- /utf-8 /FS)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 else()
     add_compile_options(-Wall -Wextra -Wpedantic -Werror)
