@@ -1,521 +1,683 @@
-# Tachyon 3D Rendering — Spec di Implementazione
+# Tachyon 3D Rendering — Implementation Spec
 
-**Data**: 2026-04-19  
-**Target**: implementazione completa del pipeline 3D CPU AE-style  
-**Prerequisiti di build già presenti**: FreeType, HarfBuzz, ffmpeg, nlohmann_json
-
----
-
-## Stato attuale del codebase (baseline)
-
-Già esistente e funzionante:
-- `EvaluatedLightState`: type, position, direction, color, intensity, attenuation — **mancano** cone, falloff, shadows
-- `EvaluatedCameraState`: position, `CameraState` (fov, aspect, near/far, view matrix, projection matrix, `project_point`)
-- `EvaluatedLayerState`: `is_3d`, `world_position3`, `world_matrix` — **mancano** orientation XYZ, anchor_point_3d, material options
-- `PerspectiveRasterizer`: disegna quad planari con perspective-correct UV
-- `DepthBuffer`: stub in `surface_rgba.cpp` — da completare e integrare nel rasterizer
-- `EvaluatedCompositionState`: ha già `std::vector<EvaluatedLightState> lights`
+**Date**: 2026-04-19  
+**Status**: Reference document — read before writing any 3D code  
+**Prerequisites already in build**: FreeType, HarfBuzz, ffmpeg, nlohmann_json
 
 ---
 
-## Librerie esterne necessarie
+## A. Assumptions and Conventions
 
-### Phase 1 — Nessuna libreria nuova
+### A.1 Coordinate System
 
-Il pipeline 3D base (depth buffer, luci, DOF, material) è matematica pura. Nessuna dipendenza aggiuntiva.
+- **Right-handed, Y-up**: X = right, Y = up, Z = out of screen (toward viewer)
+- Camera looks down **−Z** in camera space
+- AE uses a left-handed Y-down system — every AE position import must negate Y and Z
+- `Vector3::forward()` = `{0, 0, -1}` (already correct in `vector3.h`)
 
-### Phase 2 — Import modelli (opzionale, post-MVP)
+### A.2 Matrix Layout
 
-| Libreria | Uso | Come ottenerla |
-|---------|-----|----------------|
-| **tinygltf** | Import GLTF/GLB con animazioni | Header-only, `FetchContent_Declare` da `https://github.com/syoyo/tinygltf.git` |
-| **cgltf** | Alternativa più leggera a tinygltf | Single-header, copia diretta in `third_party/` |
-| **stb_image** | Caricamento HDRI per IBL | Già probabilmente disponibile via ffmpeg; altrimenti single-header |
+- **Column-major** `Matrix4x4` (already in codebase)
+- Concatenation order: `M_world = M_parent * M_local` (left-multiply parent)
+- `world_matrix` in `EvaluatedLayerState` stores the full object-to-world transform
+- View matrix: `look_at(eye, target, up)` — already in `matrix4x4.cpp`
+- Projection matrix: `perspective(fov_y, aspect, near_z, far_z)` — already in `camera_state.h`
 
-Per Phase 1 (domani) non serve nulla di nuovo.
+### A.3 Units
 
----
+| Field | Unit |
+|---|---|
+| Position X/Y/Z | AE pixels (same scale as 2D) |
+| Rotation X/Y/Z | **Degrees** in JSON/spec, converted to radians at eval time |
+| Zoom (camera) | AE Zoom value (pixels at distance=1 unit) |
+| FOV | Derived: `fov_y = 2 * atan(comp_height / (2 * zoom))` |
+| Attenuation distances | AE pixels |
+| Spot cone angles | Degrees in JSON, radians internally |
 
-## Phase 1 — Fondamenta 3D (1 giornata)
+### A.4 Rotation Order
 
-### 1.1 Strutture dati da estendere
+AE applies rotations as: **Z then Y then X** (intrinsic, object-space).  
+World matrix construction: `M_rot = Rx * Ry * Rz` (left-to-right = outer-to-inner).
 
-#### `EvaluatedLayerState` — aggiungere in `evaluated_state.h`
+### A.5 Anchor Point
 
-```cpp
-// 3D Transform completo
-math::Vector3 orientation_xyz{math::Vector3::zero()};   // Euler XYZ in gradi
-math::Vector3 anchor_point_3d{math::Vector3::zero()};
+- 2D anchor already in `Transform2`
+- 3D anchor (`anchor_point_3d`) offsets the object origin before rotation/scale
+- Formula: `M_local = T(pos) * R(orient) * T(-anchor) * S(scale)`
 
-// Material Options (premere AA in AE)
-struct MaterialOptions {
-    bool  casts_shadows{true};
-    bool  accepts_shadows{true};
-    bool  accepts_lights{true};
-    float ambient{100.0f};         // 0-100%
-    float diffuse{100.0f};         // 0-100%
-    float specular_intensity{50.0f};
-    float specular_shininess{5.0f};
-    float metal{0.0f};             // 0% = highlight colore luce, 100% = colore layer
-    float light_transmission{0.0f};// 0-100%, per vetri
-};
-MaterialOptions material;
+### A.6 Data Flow
+
+```
+SceneSpec (JSON)
+    └─> Evaluator::evaluate_layer()
+            └─> EvaluatedLayerState { world_matrix, world_position3, material, ... }
+                    └─> FrameExecutor / EvaluatedCompositionRenderer
+                            └─> project 3D layers → 2D sprites
+                            └─> sort by inv_z (painter's algorithm)
+                            └─> composite with depth buffer
 ```
 
-#### `EvaluatedLightState` — aggiungere in `evaluated_state.h`
+### A.7 Camera Type
+
+| AE type | Definition |
+|---|---|
+| One-node | Camera points at `orientation` Euler angles (no target point) |
+| Two-node | Camera always points at **Point of Interest** (`poi`) regardless of position |
+
+Default when no camera layer: orthographic approximation — camera at `{comp_w/2, comp_h/2, -1000}`, looking toward `{comp_w/2, comp_h/2, 0}`.
+
+---
+
+## B. MVP Scope
+
+### B.1 IN (this implementation)
+
+- Depth buffer (inv_z per pixel) + painter's algorithm (back-to-front sort)
+- Flat shading with Blinn-Phong per 3D layer (per-layer, not per-pixel mesh shading)
+- World matrix construction from position / orientation / scale / anchor_point_3d
+- Camera: one-node and two-node, Zoom→FOV conversion
+- Camera: depth-of-field as post-process gaussian blur (not ray-traced)
+- Lights: ambient, parallel (directional), point, spot
+- Spot: cone angle + penumbra, falloff types (none / smooth / linear / inverse_square)
+- Light color + intensity
+- Material per layer: ambient_coeff, diffuse_coeff, specular_coeff, shininess, metal_flag
+- Z-sort of 3D layers before 2D compositing
+- Integration into existing `EvaluatedCompositionRenderer` (not a new renderer)
+
+### B.2 OUT (explicit non-goals for this implementation)
+
+- Shadow maps or ray-traced shadows of any kind
+- Mesh import / OBJ loading
+- Image-Based Lighting (IBL), HDR environment maps
+- Physically Based Rendering (PBR) beyond Blinn-Phong
+- Subsurface scattering, refraction, reflection maps
+- Per-pixel (fragment) shading of arbitrary geometry
+- GPU acceleration
+- Motion blur on 3D geometry (only 2D sub-frame sampling, already implemented)
+- Volumetric effects (fog, atmosphere)
+- Skinning / animation rigs
+
+---
+
+## C. Data Structures (precise)
+
+### C.1 `EvaluatedLightState` — additions
+
+Current state is missing: cone angles, falloff type, shadow flag.
 
 ```cpp
 struct EvaluatedLightState {
     std::string layer_id;
-    std::string type; // "ambient" | "parallel" | "point" | "spot"
+    std::string type;          // "ambient" | "parallel" | "point" | "spot"
     math::Vector3 position{math::Vector3::zero()};
-    math::Vector3 direction{0.0f, 0.0f, -1.0f}; // normalizzato
-
+    math::Vector3 direction{0.0f, 0.0f, -1.0f};  // normalized, world space
     ColorSpec color{255, 255, 255, 255};
-    float intensity{100.0f};      // 0-100+%, può essere negativa
+    float intensity{1.0f};
 
-    // Spot
-    float cone_angle{90.0f};      // gradi
-    float cone_feather{50.0f};    // 0-100%
+    // Attenuation (point + spot only)
+    float attenuation_near{0.0f};   // distance where full intensity starts
+    float attenuation_far{1000.0f}; // distance where intensity reaches 0
 
-    // Falloff
-    std::string falloff{"none"};  // "none" | "smooth" | "inverse_square_clamped"
-    float falloff_radius{0.0f};
-    float falloff_distance{500.0f};
+    // Spot cone (spot only)
+    float cone_angle_rad{0.698f};       // ~40 deg half-angle (inner cone)
+    float cone_feather_rad{0.175f};     // ~10 deg penumbra width
 
-    // Ombre
-    bool  casts_shadows{false};
-    float shadow_darkness{100.0f};
-    float shadow_diffusion{0.0f};
+    // Falloff shape
+    // "none" | "smooth" | "linear" | "inverse_square"
+    std::string falloff_type{"smooth"};
+
+    // Shadows — reserved for future, always false in MVP
+    bool casts_shadows{false};
 };
 ```
 
-#### `EvaluatedCameraState` — estendere
+### C.2 `EvaluatedCameraState` — additions
 
 ```cpp
 struct EvaluatedCameraState {
     bool available{false};
     std::string layer_id;
-
-    // Tipo camera
-    std::string camera_type{"one_node"}; // "one_node" | "two_node"
     math::Vector3 position{math::Vector3::zero()};
-    math::Vector3 point_of_interest{0.0f, 0.0f, 0.0f}; // solo two-node
-
-    // Ottica
-    float zoom{877.0f};           // distanza lente-piano immagine (px a 100%)
-    float focal_length{50.0f};    // mm
-    float film_size{36.0f};       // mm, default 35mm full frame
-    float angle_of_view{39.6f};   // gradi, calcolato da focal_length/film_size
+    math::Vector3 point_of_interest{0.0f, 0.0f, 0.0f}; // two-node target
+    bool is_two_node{true};  // AE default
 
     // Depth of Field
-    bool  dof_enabled{false};
-    float focus_distance{1000.0f};
-    float aperture{4.0f};         // f-stop
-    float blur_level{100.0f};     // % di intensità bokeh
+    bool dof_enabled{false};
+    float focus_distance{1000.0f};  // AE pixels along camera axis
+    float aperture{1.0f};           // controls blur radius
+    float blur_level{1.0f};         // 0..1 scale on blur radius
 
-    camera::CameraState camera;   // view + projection matrix calcolati
+    camera::CameraState camera;     // fov_y_rad, aspect, near_z, far_z + matrices
 };
 ```
 
----
-
-### 1.2 Depth Buffer
-
-**File**: `include/tachyon/renderer2d/depth_buffer.h` + `src/renderer2d/depth_buffer.cpp`
+### C.3 `EvaluatedLayerState` — additions
 
 ```cpp
-// depth_buffer.h
-struct DepthBuffer {
-    std::vector<float> inv_z;   // 1/z per pixel (perspective-correct)
-    std::uint32_t width{0};
-    std::uint32_t height{0};
+// Add to EvaluatedLayerState (below world_matrix):
 
+math::Vector3 orientation_xyz_deg{math::Vector3::zero()}; // Euler X/Y/Z degrees
+math::Vector3 anchor_point_3d{math::Vector3::zero()};     // object-space anchor
+math::Vector3 scale_3d{1.0f, 1.0f, 1.0f};                // per-axis scale
+
+struct MaterialOptions {
+    float ambient_coeff{0.5f};
+    float diffuse_coeff{0.5f};
+    float specular_coeff{0.0f};
+    float shininess{15.0f};
+    bool  metal{false};  // metal: specular color = layer color (not white)
+};
+MaterialOptions material;
+
+// Computed by evaluator, used by renderer
+math::Vector3 world_normal{0.0f, 0.0f, 1.0f}; // normal of the layer plane in world space
+```
+
+### C.4 `DepthBuffer`
+
+New type, lives in `include/tachyon/renderer2d/depth_buffer.h`:
+
+```cpp
+namespace tachyon::renderer2d {
+
+class DepthBuffer {
+public:
     DepthBuffer() = default;
-    DepthBuffer(std::uint32_t w, std::uint32_t h);
+    DepthBuffer(int width, int height);
 
-    void clear();
-    // Ritorna true se il frammento è visibile e aggiorna il buffer
-    bool test_and_write(int x, int y, float inv_z_val);
+    void clear();  // fills with 0 (nothing in front)
+
+    // Returns true if inv_z passes (i.e. is in front of stored value).
+    // If passes, writes inv_z to buffer.
+    bool test_and_write(int x, int y, float inv_z);
+
+    float get(int x, int y) const;
+
+private:
+    int width_{0};
+    int height_{0};
+    std::vector<float> data_;  // inv_z values, 0 = empty
 };
+
+} // namespace tachyon::renderer2d
 ```
 
-```cpp
-// depth_buffer.cpp
-DepthBuffer::DepthBuffer(std::uint32_t w, std::uint32_t h)
-    : inv_z(static_cast<std::size_t>(w) * h, 0.0f), width(w), height(h) {}
-
-void DepthBuffer::clear() {
-    std::fill(inv_z.begin(), inv_z.end(), 0.0f);
-}
-
-bool DepthBuffer::test_and_write(int x, int y, float inv_z_val) {
-    if (x < 0 || y < 0 || x >= static_cast<int>(width) || y >= static_cast<int>(height))
-        return false;
-    const std::size_t idx = static_cast<std::size_t>(y) * width + x;
-    if (inv_z_val <= inv_z[idx]) return false;
-    inv_z[idx] = inv_z_val;
-    return true;
-}
-```
-
-**Integrazione nel PerspectiveRasterizer**: ogni frammento chiama `depth_buffer->test_and_write(x, y, frag_inv_z)`. Se false, skip. Questo sostituisce il depth sort by camera distance (che fallisce con layer intersecanti).
-
-**Dove vive**: `DepthBuffer` viene allocato in `render_composition_recursive` per frame e passato nel `RenderContext` (non globale — già nel contesto per thread-safety).
+**inv_z convention**: `inv_z = 1.0f / z_camera` where `z_camera > 0` for visible objects.  
+Larger inv_z → closer → wins depth test.  
+At near plane (z = near_z): `inv_z_max = 1.0f / near_z`.
 
 ---
 
-### 1.3 Calcolo matrice world per layer 3D
+## D. World Matrix Construction
 
-L'attuale `world_matrix` nel layer è `Matrix4x4::identity()`. Va calcolata dall'evaluator usando position, orientation, anchor_point.
+### D.1 Formula
 
-**In `evaluator.cpp`**, quando `layer.is_3d`:
+```
+M_world = M_parent_world * T(position) * Rx(ox) * Ry(oy) * Rz(oz) * T(-anchor) * S(scale)
+```
+
+where `ox, oy, oz` are orientation angles in **radians** (converted from degrees at eval time).
+
+### D.2 `build_layer_world_matrix` (in `src/scene/evaluator.cpp`)
 
 ```cpp
 math::Matrix4x4 build_layer_world_matrix(
+    const math::Matrix4x4& parent_world,
     const math::Vector3& position,
-    const math::Vector3& orientation_xyz_deg,  // Euler XYZ
-    const math::Vector3& anchor_point,
-    const math::Vector3& scale) {
+    const math::Vector3& orientation_deg,
+    const math::Vector3& scale,
+    const math::Vector3& anchor_point)
+{
+    using M = math::Matrix4x4;
+    const float deg2rad = math::kPi / 180.0f;
 
-    // AE order: TRS con pivot all'anchor point
-    const float rx = orientation_xyz_deg.x * M_PI / 180.0f;
-    const float ry = orientation_xyz_deg.y * M_PI / 180.0f;
-    const float rz = orientation_xyz_deg.z * M_PI / 180.0f;
+    auto Rx = M::rotation_x(orientation_deg.x * deg2rad);
+    auto Ry = M::rotation_y(orientation_deg.y * deg2rad);
+    auto Rz = M::rotation_z(orientation_deg.z * deg2rad);
+    auto R  = Rx * Ry * Rz;
 
-    const auto T_pos    = Matrix4x4::translation(position);
-    const auto R_x      = Matrix4x4::rotation_x(rx);
-    const auto R_y      = Matrix4x4::rotation_y(ry);
-    const auto R_z      = Matrix4x4::rotation_z(rz);
-    const auto S        = Matrix4x4::scale(scale);
-    const auto T_anchor = Matrix4x4::translation(-anchor_point);
+    auto T_pos    = M::translation(position.x, position.y, position.z);
+    auto T_anchor = M::translation(-anchor_point.x, -anchor_point.y, -anchor_point.z);
+    auto S        = M::scaling(scale.x, scale.y, scale.z);
 
-    // AE TRS: Position * Rz * Ry * Rx * Scale * (-AnchorPoint)
-    return T_pos * R_z * R_y * R_x * S * T_anchor;
+    auto M_local = T_pos * R * T_anchor * S;
+    return parent_world * M_local;
+}
+```
+
+### D.3 World Normal
+
+For a flat layer (all 3D layers are billboards or planes), the surface normal in object space is `{0, 0, 1}`.  
+World normal = `normalize(M_rot * {0,0,1})` where `M_rot = Rx*Ry*Rz` (upper-left 3×3 of world matrix).
+
+Extract from `world_matrix`:
+
+```cpp
+math::Vector3 extract_world_normal(const math::Matrix4x4& m) {
+    // Column 2 of rotation part (Z column)
+    math::Vector3 n{m.m[2][0], m.m[2][1], m.m[2][2]};
+    return n.normalized();
 }
 ```
 
 ---
 
-### 1.4 Camera — calcolo view matrix
+## E. Camera Construction
 
-**One-node**: la camera usa `transform` direttamente (posizione + orientazione esplicita).
-
-**Two-node**: la camera punta sempre verso `point_of_interest`.
-
-```cpp
-math::Matrix4x4 build_two_node_view_matrix(
-    const math::Vector3& position,
-    const math::Vector3& point_of_interest,
-    const math::Vector3& up = {0, 1, 0}) {
-
-    // LookAt standard
-    const math::Vector3 forward = (point_of_interest - position).normalized();
-    const math::Vector3 right   = up.cross(forward).normalized();
-    const math::Vector3 true_up = forward.cross(right);
-    // costruire la matrice view 4x4 da right, true_up, forward, position
-    return math::Matrix4x4::look_at(position, point_of_interest, up);
-}
-```
-
-**Zoom → FOV**: in AE, `zoom` è la distanza in pixel dal film al lente a 100% scala. La conversione in FOV:
+### E.1 Zoom → FOV
 
 ```cpp
 float zoom_to_fov_y(float zoom, float comp_height) {
-    // angle_of_view = 2 * atan(film_size / (2 * focal_length))
-    // In AE: zoom è espresso in pixel della composizione
-    return 2.0f * std::atan(comp_height / (2.0f * zoom));
+    // AE: zoom = distance at which 1 unit subtends exactly 1 pixel
+    // half_height_at_zoom = comp_height / 2 pixels at distance = zoom
+    return 2.0f * std::atan(comp_height * 0.5f / zoom);
 }
 ```
 
-Aggiornare `CameraState::fov_y_rad` dall'evaluator usando zoom e comp_height.
+Default zoom when not set: `comp_height / (2 * tan(30°))` ≈ AE default.
+
+### E.2 View Matrix
+
+```cpp
+math::Matrix4x4 build_view_matrix(
+    const math::Vector3& eye,
+    const math::Vector3& poi,      // two-node target
+    bool is_two_node,
+    const math::Vector3& orientation_deg)  // one-node euler
+{
+    if (is_two_node) {
+        math::Vector3 up{0.0f, 1.0f, 0.0f};
+        // Handle degenerate: eye == poi → return identity view
+        if ((poi - eye).length_sq() < 1e-8f) return math::Matrix4x4::identity();
+        return math::Matrix4x4::look_at(eye, poi, up);
+    } else {
+        // One-node: apply orientation Euler to camera-space forward
+        const float d2r = math::kPi / 180.0f;
+        auto Rx = math::Matrix4x4::rotation_x(orientation_deg.x * d2r);
+        auto Ry = math::Matrix4x4::rotation_y(orientation_deg.y * d2r);
+        auto Rz = math::Matrix4x4::rotation_z(orientation_deg.z * d2r);
+        math::Vector3 fwd = (Rx * Ry * Rz).transform_direction(math::Vector3::forward());
+        math::Vector3 target = eye + fwd;
+        math::Vector3 up{0.0f, 1.0f, 0.0f};
+        return math::Matrix4x4::look_at(eye, target, up);
+    }
+}
+```
 
 ---
 
-### 1.5 Illuminazione per-layer (flat shading)
+## F. Lighting Model
 
-**In `evaluated_composition_renderer.cpp`**, dopo aver proiettato i corner del layer ma prima del rasterize, calcolare il colore netto del layer considerando le luci.
+### F.1 Light Contribution per Layer
 
 ```cpp
-renderer2d::Color apply_lighting_to_layer(
-    renderer2d::Color base_color,
-    const scene::EvaluatedLayerState& layer,
-    const std::vector<scene::EvaluatedLightState>& lights,
+struct LightResult { float r, g, b; };  // linear, premultiplied factor
+
+LightResult compute_light_contribution(
+    const EvaluatedLightState& light,
     const math::Vector3& layer_world_pos,
-    const math::Vector3& layer_normal)  // normale calcolata dalla world_matrix
+    const math::Vector3& layer_world_normal,
+    const math::Vector3& view_dir_normalized,   // toward camera
+    const EvaluatedLayerState::MaterialOptions& mat)
 {
-    if (!layer.material.accepts_lights || lights.empty()) {
-        return base_color;
+    float light_r = light.color.r / 255.0f * light.intensity;
+    float light_g = light.color.g / 255.0f * light.intensity;
+    float light_b = light.color.b / 255.0f * light.intensity;
+
+    if (light.type == "ambient") {
+        return { light_r * mat.ambient_coeff,
+                 light_g * mat.ambient_coeff,
+                 light_b * mat.ambient_coeff };
     }
 
-    const float base_r = static_cast<float>(base_color.r) / 255.0f;
-    const float base_g = static_cast<float>(base_color.g) / 255.0f;
-    const float base_b = static_cast<float>(base_color.b) / 255.0f;
+    // Direction to light
+    math::Vector3 L;
+    float atten = 1.0f;
 
-    float r = base_r * layer.material.ambient / 100.0f * 0.1f; // ambient floor
-    float g = base_g * layer.material.ambient / 100.0f * 0.1f;
-    float b = base_b * layer.material.ambient / 100.0f * 0.1f;
+    if (light.type == "parallel") {
+        L = (-light.direction).normalized();
+    } else {
+        // point or spot
+        math::Vector3 to_light = light.position - layer_world_pos;
+        float dist = to_light.length();
+        L = (dist > 1e-6f) ? to_light * (1.0f / dist) : math::Vector3{0,1,0};
+        atten = compute_falloff(dist, light);
+    }
 
-    for (const auto& light : lights) {
-        const float light_r = static_cast<float>(light.color.r) / 255.0f;
-        const float light_g = static_cast<float>(light.color.g) / 255.0f;
-        const float light_b = static_cast<float>(light.color.b) / 255.0f;
-        const float intensity = light.intensity / 100.0f;
-
-        if (light.type == "ambient") {
-            r += base_r * light_r * intensity * layer.material.diffuse / 100.0f;
-            g += base_g * light_g * intensity * layer.material.diffuse / 100.0f;
-            b += base_b * light_b * intensity * layer.material.diffuse / 100.0f;
-            continue;
-        }
-
-        math::Vector3 light_dir;
-        float attenuation = 1.0f;
-
-        if (light.type == "parallel") {
-            light_dir = (-light.direction).normalized();
-        } else if (light.type == "point" || light.type == "spot") {
-            light_dir = (light.position - layer_world_pos).normalized();
-            const float dist = (light.position - layer_world_pos).length();
-            attenuation = compute_falloff(light, dist);
-        }
-
-        const float ndotl = std::max(0.0f, layer_normal.dot(light_dir));
-
-        // Diffuse
-        const float diff = ndotl * intensity * attenuation * layer.material.diffuse / 100.0f;
-        r += base_r * light_r * diff;
-        g += base_g * light_g * diff;
-        b += base_b * light_b * diff;
-
-        // Specular (Blinn-Phong)
-        if (layer.material.specular_intensity > 0.0f) {
-            // half_vec richiede la direzione verso la camera
-            // passare camera_pos nel context per questo calcolo
-            const float spec_power = layer.material.specular_shininess * 10.0f;
-            // ... calcolo highlight speculare
-            const float metal_factor = layer.material.metal / 100.0f;
-            // metal=0: highlight bianco (colore luce)
-            // metal=1: highlight colore layer
-            // ...
-        }
-
-        // Spot cone falloff
-        if (light.type == "spot") {
-            const float cone_cos     = std::cos(light.cone_angle * 0.5f * M_PI / 180.0f);
-            const float feather_cos  = std::cos((light.cone_angle * 0.5f + light.cone_feather * 0.5f) * M_PI / 180.0f);
-            const float spot_dot     = (-light_dir).dot(light.direction.normalized());
-            const float spot_factor  = std::clamp((spot_dot - feather_cos) / (cone_cos - feather_cos + 1e-6f), 0.0f, 1.0f);
-            r *= spot_factor; g *= spot_factor; b *= spot_factor;
+    // Spot cone
+    if (light.type == "spot") {
+        float cos_angle = math::Vector3::dot((-light.direction).normalized(), L);
+        float inner_cos = std::cos(light.cone_angle_rad);
+        float outer_cos = std::cos(light.cone_angle_rad + light.cone_feather_rad);
+        if (cos_angle < outer_cos) return {0, 0, 0};
+        if (cos_angle < inner_cos) {
+            float t = (cos_angle - outer_cos) / std::max(inner_cos - outer_cos, 1e-6f);
+            atten *= t * t;  // smooth falloff in penumbra
         }
     }
 
-    return renderer2d::Color{
-        static_cast<std::uint8_t>(std::clamp(std::lround(r * 255.0f), 0L, 255L)),
-        static_cast<std::uint8_t>(std::clamp(std::lround(g * 255.0f), 0L, 255L)),
-        static_cast<std::uint8_t>(std::clamp(std::lround(b * 255.0f), 0L, 255L)),
-        base_color.a
-    };
-}
+    // Diffuse
+    float NdotL = std::max(0.0f, math::Vector3::dot(layer_world_normal, L));
+    float diffuse = mat.diffuse_coeff * NdotL;
 
-float compute_falloff(const scene::EvaluatedLightState& light, float dist) {
-    if (light.falloff == "none") return 1.0f;
-    if (dist <= light.falloff_radius) return 1.0f;
-    const float t = (dist - light.falloff_radius) / (light.falloff_distance - light.falloff_radius + 1e-6f);
-    if (light.falloff == "smooth") return std::max(0.0f, 1.0f - t);
-    if (light.falloff == "inverse_square_clamped") return 1.0f / (1.0f + t * t);
-    return 1.0f;
+    // Specular (Blinn-Phong)
+    float specular = 0.0f;
+    if (mat.specular_coeff > 0.0f && NdotL > 0.0f) {
+        math::Vector3 H = (L + view_dir_normalized).normalized();
+        float NdotH = std::max(0.0f, math::Vector3::dot(layer_world_normal, H));
+        specular = mat.specular_coeff * std::pow(NdotH, mat.shininess);
+    }
+
+    // Metal: specular color tinted by layer color (handled in caller)
+    float total = (diffuse + specular) * atten;
+    return { light_r * total, light_g * total, light_b * total };
 }
 ```
 
-**Normale del layer**: estratta dalla colonna Z della `world_matrix` dopo rotazione.
+### F.2 Falloff Computation
 
 ```cpp
-math::Vector3 layer_normal_from_world_matrix(const math::Matrix4x4& world) {
-    // La colonna Z della rotazione è la normale del piano del layer
-    return math::Vector3{world.m[2], world.m[6], world.m[10]}.normalized();
+float compute_falloff(float dist, const EvaluatedLightState& light) {
+    float near = light.attenuation_near;
+    float far  = light.attenuation_far;
+
+    if (dist <= near) return 1.0f;
+    if (dist >= far)  return 0.0f;
+    if (far <= near)  return 0.0f;  // degenerate: treat as off at far
+
+    float t = (dist - near) / (far - near);  // 0..1
+
+    if (light.falloff_type == "none")           return 1.0f;
+    if (light.falloff_type == "linear")         return 1.0f - t;
+    if (light.falloff_type == "inverse_square") return 1.0f / (1.0f + t * t * 10.0f);
+    // "smooth" (default)
+    return (1.0f - t) * (1.0f - t);
 }
 ```
+
+### F.3 Applying Lighting to a Layer's Sprite
+
+After projecting a 3D layer to its 2D billboard position, apply a **scalar tint** to its rendered surface:
+
+```cpp
+// Accumulate all lights
+float acc_r = 0, acc_g = 0, acc_b = 0;
+for (const auto& light : composition.lights) {
+    auto contrib = compute_light_contribution(
+        light, layer.world_position3, layer.world_normal,
+        view_dir, layer.material);
+    acc_r += contrib.r;
+    acc_g += contrib.g;
+    acc_b += contrib.b;
+}
+// Clamp to [0, 1]
+acc_r = std::min(1.0f, acc_r);
+acc_g = std::min(1.0f, acc_g);
+acc_b = std::min(1.0f, acc_b);
+
+// Apply to every pixel of the layer surface (premultiplied-safe):
+// out.r = pixel.r * acc_r, etc. (alpha unchanged)
+```
+
+Metal flag: when `mat.metal == true`, the specular highlight color = layer's base color, not white. Implement by passing layer color to `compute_light_contribution` and multiplying specular term by `layer_color / 255.0f`.
 
 ---
 
-### 1.6 Depth of Field — post-process Gaussian blur
+## G. Depth of Field (Post-Process)
 
-Il DOF in AE è un blur gaussiano applicato ai layer fuori fuoco. L'implementazione CPU più semplice e corretta:
+DOF is applied after all 3D layers are composited onto the frame but before 2D layers:
 
-1. Renderizzare tutti i layer normalmente (con depth buffer).
-2. Per ogni pixel, calcolare `depth = 1.0f / depth_buffer.inv_z[pixel]`.
-3. `circle_of_confusion = aperture * abs(depth - focus_distance) / depth`.
-4. Applicare blur gaussiano con `sigma = circle_of_confusion * blur_level / 100.0f`.
-
-Per CPU, un blur gaussiano separable (pass orizzontale + verticale) è O(N·W) invece di O(N·W²).
+### G.1 Blur Radius per Layer
 
 ```cpp
-renderer2d::Framebuffer apply_dof_blur(
-    const renderer2d::Framebuffer& input,
-    const DepthBuffer& depth_buf,
-    const scene::EvaluatedCameraState& cam)
+float dof_blur_radius(
+    float z_world,          // distance of layer center from camera along camera axis
+    const EvaluatedCameraState& cam)
 {
-    if (!cam.dof_enabled) return input;
+    if (!cam.dof_enabled) return 0.0f;
 
-    // Calcola per ogni pixel il CoC (Circle of Confusion)
-    const std::uint32_t w = input.width();
-    const std::uint32_t h = input.height();
-    std::vector<float> coc(w * h, 0.0f);
+    float focus_dist = cam.focus_distance;
+    float defocus = std::abs(z_world - focus_dist);
 
-    for (std::uint32_t y = 0; y < h; ++y) {
-        for (std::uint32_t x = 0; x < w; ++x) {
-            const std::size_t idx = y * w + x;
-            const float inv_z = depth_buf.inv_z[idx];
-            if (inv_z <= 0.0f) continue;
-            const float depth = 1.0f / inv_z;
-            const float dof_scale = cam.blur_level / 100.0f;
-            coc[idx] = std::abs(depth - cam.focus_distance) /
-                       (cam.focus_distance + 1e-6f) *
-                       cam.aperture * dof_scale * 50.0f; // 50 = fattore di scala empirico
-        }
-    }
+    // AE-style: aperture controls circle of confusion
+    // blur_radius = aperture * (defocus / focus_dist) * blur_level * scale_factor
+    const float scale = 0.5f;  // empirical, matches AE visual at default settings
+    float r = cam.aperture * (defocus / std::max(focus_dist, 1.0f))
+              * cam.blur_level * scale;
 
-    // Gaussian blur separable con sigma variabile per pixel
-    // Semplificazione: blur uniforme basato sulla mediana CoC della regione
-    // (per un DOF fisicamente corretto servono scatter-as-gather o bokeh filter)
-    return gaussian_blur_variable(input, coc);
+    return std::min(r, 50.0f);  // cap at 50px to prevent runaway
 }
 ```
 
-Per il MVP: blur uniforme basato su `max(coc)` della composizione — visivamente accettabile, non fisicamente preciso. Il DOF fisicamente corretto è Phase 2.
+### G.2 Application
+
+- Per 3D layer: compute blur radius from its `world_position3` projected onto camera axis
+- Apply separable gaussian blur to the layer's rendered surface before compositing
+- Layers at exactly `focus_distance` get radius ≈ 0 (no blur)
+- Bokeh shape: circular approximation via two-pass separable gaussian
 
 ---
 
-## Phase 2 — Shadow Maps (post-MVP)
+## H. Integration into EvaluatedCompositionRenderer
 
-Le ombre richiedono un secondo render pass dalla prospettiva della luce.
+### H.1 Rendering Order
 
-### Solo per luce "parallel" (proiezione ortografica, più semplice)
+1. Collect all 3D layers (`layer.is_3d == true`)
+2. Project each to screen position (MVP transform)
+3. Compute inv_z for each
+4. Sort 3D layers back-to-front by inv_z ascending (farthest first)
+5. Render each 3D layer as a 2D sprite at its projected position (with lighting tint + DOF blur)
+6. Write to depth buffer
+7. Continue normal 2D layer stack on top of 3D result
 
-```
-Pass 1 — Shadow Map:
-  Proiezione ortografica dalla direzione della luce
-  Per ogni layer 3D: rasterizza nella shadow_map solo il depth
-  Output: shadow_map texture (float buffer 1 canale)
+### H.2 Projection
 
-Pass 2 — Render principale:
-  Per ogni frammento visibile:
-    Trasformare la posizione world in light space
-    Campionare shadow_map[light_space.xy]
-    Se shadow_map[light_space.xy] < light_space.z → in ombra
-    in_shadow_factor = lerp(1.0, shadow_darkness/100, in_shadow)
-    Moltiplicare colore per in_shadow_factor
-```
-
-**Shadow Diffusion** = PCF (Percentage Closer Filtering): campionare la shadow map in un kernel NxN intorno al punto e fare media. Kernel size = `shadow_diffusion`.
-
-**Casts Shadows Only**: `layer.material.casts_shadows` ma `!layer.material.accepts_lights` → il layer non appare nel render principale ma contribuisce alla shadow map. Da implementare come flag nel rasterizer.
-
----
-
-## Phase 3 — Import GLTF (post-MVP)
-
-**Libreria**: `tinygltf` (header-only, MIT license)
-
-```cmake
-FetchContent_Declare(
-    tinygltf
-    GIT_REPOSITORY https://github.com/syoyo/tinygltf.git
-    GIT_TAG        v2.9.3
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-)
-set(TINYGLTF_HEADER_ONLY ON CACHE BOOL "" FORCE)
-set(TINYGLTF_INSTALL OFF CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(tinygltf)
-```
-
-**Struttura dati**:
 ```cpp
-struct GltfMesh {
-    std::vector<math::Vector3> vertices;
-    std::vector<math::Vector3> normals;
-    std::vector<math::Vector2> uvs;
-    std::vector<std::uint32_t> indices;  // triangoli
-    // Material index
+struct ProjectedLayer {
+    std::size_t layer_index;
+    float screen_x, screen_y;   // center in comp pixels
+    float scale_factor;          // perspective scale relative to identity
+    float inv_z;
+    float z_camera;              // for DOF
 };
 
-struct GltfModel {
-    std::vector<GltfMesh> meshes;
-    std::vector<AnimationTrack> animations;
-    // Camera e light estratte dal file
-};
-```
+ProjectedLayer project_3d_layer(
+    const EvaluatedLayerState& layer,
+    const math::Matrix4x4& view,
+    const math::Matrix4x4& proj,
+    float comp_width, float comp_height)
+{
+    // Transform layer center (world_position3) to clip space
+    math::Vector4 world_pos{layer.world_position3.x,
+                            layer.world_position3.y,
+                            layer.world_position3.z, 1.0f};
+    math::Vector4 clip = proj * view * world_pos;
 
-Il rasterizer 3D CPU esistente (PerspectiveRasterizer) gestisce già quad UV-mapped. Estenderlo per triangoli arbitrari aggiungendo `draw_triangle()`.
+    // Perspective divide
+    float w = clip.w;
+    if (std::abs(w) < 1e-6f) return {}; // behind camera
+    float ndc_x = clip.x / w;
+    float ndc_y = clip.y / w;
 
----
+    // NDC [-1,1] to screen [0, comp_w] x [0, comp_h]
+    float sx = (ndc_x + 1.0f) * 0.5f * comp_width;
+    float sy = (1.0f - ndc_y) * 0.5f * comp_height;  // Y flip (NDC up → screen down)
 
-## Phase 4 — Image-Based Lighting (IBL)
+    float z_cam = (view * world_pos).z;  // negative for visible (cam looks -Z)
+    float inv_z = (z_cam < 0.0f) ? -1.0f / z_cam : 0.0f;
 
-**Libreria per HDRI**: `stb_image.h` (single-header, già disponibile in molte build)
+    // Scale factor: ratio of perspective zoom at this depth vs identity
+    float scale_f = (z_cam < 0.0f) ? std::abs(1.0f / z_cam) : 0.0f;
 
-```cmake
-# stb è header-only, basta copiare stb_image.h in third_party/
-```
-
-**Pipeline IBL**:
-1. Caricare HDRI (formato `.hdr`, float32 per canale).
-2. Convertire in cubemap 6 facce (equirectangular → cubemap).
-3. Pre-calcolare irradiance map (integrazione emisferica) per l'illuminazione diffusa.
-4. Usare l'irradiance map al posto delle luci ambient per illuminare i layer.
-
-Per il MVP: campionamento diretto dell'equirectangular (senza cubemap) — più semplice, visivamente accettabile.
-
----
-
-## Ordine di implementazione consigliato per domani
-
-```
-Mattina (3-4 ore):
-  1. Estendere EvaluatedLightState e EvaluatedCameraState con tutti i parametri AE
-  2. Estendere EvaluatedLayerState con MaterialOptions e orientation_xyz
-  3. Implementare DepthBuffer e integrarlo nel PerspectiveRasterizer
-  4. Calcolare world_matrix corretta (TRS con anchor point) in evaluator.cpp
-
-Pomeriggio (3-4 ore):
-  5. Implementare apply_lighting_to_layer (ambient + parallel + point + spot)
-  6. Implementare compute_falloff
-  7. Implementare two-node camera (look_at matrix)
-  8. Test: scena con 3 layer 3D, 1 camera two-node, 2 luci (ambient + point)
-
-Sera (1-2 ore):
-  9. DOF post-process (blur gaussiano semplificato)
-  10. Test di regressione per tutto il 3D path
+    return { layer.layer_index, sx, sy, scale_f, inv_z, std::abs(z_cam) };
+}
 ```
 
 ---
 
-## File da creare / modificare
+## I. Edge Cases
 
-| File | Azione |
-|------|--------|
-| `include/tachyon/scene/evaluated_state.h` | Estendere EvaluatedLightState, EvaluatedCameraState, EvaluatedLayerState |
-| `include/tachyon/renderer2d/depth_buffer.h` | Nuovo |
-| `src/renderer2d/depth_buffer.cpp` | Nuovo |
-| `src/renderer2d/raster/perspective_rasterizer.cpp` | Integrare DepthBuffer, aggiungere draw_triangle |
-| `src/renderer2d/evaluated_composition_renderer.cpp` | apply_lighting_to_layer, DOF, passaggio lights nel render loop |
-| `src/scene/evaluator.cpp` | build_layer_world_matrix, two-node camera look_at, compute_child_time per lights |
-| `include/tachyon/core/camera/camera_state.h` | Aggiungere look_at, zoom_to_fov |
-| `src/CMakeLists.txt` | Aggiungere depth_buffer.cpp |
-| `tests/unit/renderer2d/3d_lighting_tests.cpp` | Nuovo — test flat shading, shadow, DOF |
+| Scenario | Handling |
+|---|---|
+| `zoom <= 0` | Clamp to 1.0 with a warning log; never produce NaN FOV |
+| `attenuation_far <= attenuation_near` | Treat as zero radius light (degenerate), return `atten = 0` |
+| `attenuation_far == attenuation_near` | Same as above (avoid division by zero) |
+| Layer behind camera (`z_cam >= 0`) | Skip projection, do not render |
+| Layer at exactly camera position | Skip (`inv_z` → ∞) |
+| World matrix determinant ≈ 0 | Skip layer, log warning — degenerate transform |
+| `poi == camera position` (two-node degenerate) | Return `Matrix4x4::identity()` for view, log warning |
+| No camera layer in composition | Use default: pos={cx, cy, -1000}, poi={cx, cy, 0} (orthographic-like) |
+| All lights missing | Layer receives zero lighting → black; at least one ambient recommended |
+| `focus_distance <= 0` | Clamp to 1.0 |
+| Spot with `cone_angle_rad <= 0` | Treat as point light |
+| `shininess <= 0` | Clamp to 0.1 to avoid pow(x, 0) = 1 artifact |
+| `scale_3d component == 0` | Skip layer (zero-area), log warning |
 
 ---
 
-## Checklist domani mattina
+## J. Test Plan
 
-- [ ] `EvaluatedLightState` ha: cone_angle, cone_feather, falloff, casts_shadows, shadow_darkness, shadow_diffusion, intensity negativa
-- [ ] `EvaluatedCameraState` ha: camera_type, point_of_interest, zoom, focal_length, film_size, dof_enabled, focus_distance, aperture, blur_level
-- [ ] `EvaluatedLayerState` ha: orientation_xyz, anchor_point_3d, MaterialOptions
-- [ ] `DepthBuffer` compila e test_and_write funziona
-- [ ] `PerspectiveRasterizer::draw_quad` usa il depth buffer
-- [ ] `build_layer_world_matrix` produce TRS corretto (verificare con un layer ruotato 45° su X)
-- [ ] `apply_lighting_to_layer` produce risultati visibili su un solid layer bianco con luce point colorata
-- [ ] Two-node camera punta correttamente al point of interest (verificare con layer fuori centro)
-- [ ] DOF blur si applica quando `dof_enabled = true`
-- [ ] Tutti i test esistenti passano ancora (nessuna regressione)
+### J.1 Unit Tests (`tests/unit/renderer2d/3d_*`)
+
+| Test | What to verify |
+|---|---|
+| `world_matrix_identity` | Layer at origin, no rotation, no scale → identity matrix |
+| `world_matrix_translation` | Layer at (100, 200, 300) → world_position3 matches |
+| `world_matrix_rotation_x` | 90° X rotation → Y axis becomes Z axis |
+| `world_matrix_anchor` | Anchor at (50,0,0) + pos at (100,0,0) → center at (50,0,0) |
+| `camera_zoom_to_fov` | zoom=comp_h/2 → fov_y=90°; zoom→∞ → fov_y→0 |
+| `camera_two_node_view` | Camera at (0,0,-500) looking at origin → correct view matrix |
+| `camera_one_node_view` | 0° orientation → same as looking at origin |
+| `falloff_smooth` | dist=near → 1.0; dist=far → 0.0; dist=midpoint → 0.25 |
+| `falloff_degenerate` | far <= near → always 0 |
+| `spot_outside_cone` | Point outside outer cone → contribution = 0 |
+| `spot_inside_inner` | Point inside inner cone → full attenuation (no penumbra reduction) |
+| `ambient_light` | Ambient only → acc = ambient_coeff * intensity |
+| `parallel_light_ndotl` | Light normal-on → full diffuse; light 90° → zero |
+| `depth_buffer_test_and_write` | Two layers at same pixel, closer wins |
+| `depth_buffer_clear` | After clear, all inv_z = 0 |
+| `dof_blur_radius_at_focus` | z == focus_distance → radius ≈ 0 |
+| `dof_blur_radius_beyond_focus` | z > focus_distance → radius increases with aperture |
+
+### J.2 Visual Acceptance Tests (`tests/visual/3d_*`)
+
+Each test renders a known scene and compares against a reference PNG (pixel-diff ≤ 2%):
+
+| Scene | Validates |
+|---|---|
+| Single solid layer at z=0 under ambient-only → should match 2D render | Lighting math does not destroy flat 2D layers |
+| Two solid layers at different Z, one occluding the other | Depth sort (painter's algorithm) |
+| Solid layer at z=−500 with parallel light at 45° | Correct diffuse shading on a billboard |
+| Point light falloff: layer at near/mid/far distance | Attenuation curve shapes |
+| Spot cone test: layer in inner / penumbra / outer zones | Cone and penumbra boundaries |
+| Two-node camera pointing at offset target | View matrix, projection, Y-flip |
+| DOF: three layers at near/focus/far — middle sharp | DOF blur increases with defocus |
+
+---
+
+## K. Performance Budget
+
+Target: 1080p frame, 4 active 3D layers, 4 lights, single thread.
+
+| Operation | Budget |
+|---|---|
+| World matrix construction (all layers) | < 0.5 ms |
+| Light accumulation (4 lights × 4 layers) | < 0.2 ms |
+| DOF gaussian blur (50px radius, 1 layer) | < 10 ms |
+| Depth sort | < 0.1 ms |
+| Total 3D overhead per frame (excluding rasterization) | < 15 ms |
+
+Rasterization cost is shared with the existing 2D pipeline and not counted here.
+
+---
+
+## L. Explicit Non-Goals (this implementation)
+
+- Shadows (reserved for future — field `casts_shadows` exists but is always `false`)
+- Reflections on surfaces
+- Environment maps / IBL
+- Refraction
+- Volumetric fog
+- Per-pixel fragment shading of geometry (all shading is per-layer, not per-texel)
+- Mesh import from OBJ/FBX/glTF
+- Skeletal animation
+- Motion blur on 3D world positions (only 2D sub-frame sampling is supported)
+- GPU/Vulkan/OpenGL acceleration
+- Render-to-texture for 3D layers
+
+---
+
+## M. File Breakdown
+
+| File | Change |
+|---|---|
+| `include/tachyon/scene/evaluated_state.h` | Add `orientation_xyz_deg`, `anchor_point_3d`, `scale_3d`, `MaterialOptions`, `world_normal` to `EvaluatedLayerState`; add DOF + POI + `is_two_node` to `EvaluatedCameraState`; add cone/falloff fields to `EvaluatedLightState` |
+| `src/scene/evaluator.cpp` | Implement `build_layer_world_matrix`, compute `world_normal`, populate new fields from `LayerSpec` |
+| `include/tachyon/renderer2d/depth_buffer.h` | New: `DepthBuffer` class |
+| `src/renderer2d/depth_buffer.cpp` | New: `DepthBuffer` implementation |
+| `src/renderer2d/evaluated_composition_renderer.cpp` | Add 3D layer projection, z-sort, depth buffer, lighting tint, DOF blur pass |
+| `src/CMakeLists.txt` | Add `renderer2d/depth_buffer.cpp` |
+| `tests/unit/renderer2d/3d_world_matrix_tests.cpp` | New: world matrix unit tests |
+| `tests/unit/renderer2d/3d_lighting_tests.cpp` | New: lighting/falloff unit tests |
+| `tests/unit/renderer2d/3d_depth_buffer_tests.cpp` | New: depth buffer unit tests |
+| `tests/CMakeLists.txt` | Add new test files |
+
+---
+
+## N. AE JSON Field Mapping
+
+Fields expected in `LayerSpec` for 3D layers:
+
+```json
+{
+  "is_3d": true,
+  "position": [x, y, z],
+  "orientation": [rx_deg, ry_deg, rz_deg],
+  "scale": [sx_percent, sy_percent, sz_percent],
+  "anchor_point": [ax, ay, az],
+  "material_options": {
+    "ambient": 0.5,
+    "diffuse": 0.5,
+    "specular": 0.0,
+    "shininess": 15.0,
+    "metal": false
+  }
+}
+```
+
+Light layer fields:
+
+```json
+{
+  "type": "spot",
+  "position": [x, y, z],
+  "direction": [dx, dy, dz],
+  "color": [r, g, b],
+  "intensity": 1.0,
+  "attenuation_near": 0.0,
+  "attenuation_far": 1000.0,
+  "cone_angle": 40.0,
+  "cone_feather": 10.0,
+  "falloff": "smooth"
+}
+```
+
+Camera layer fields:
+
+```json
+{
+  "type": "camera",
+  "position": [x, y, z],
+  "point_of_interest": [px, py, pz],
+  "is_two_node": true,
+  "zoom": 1000.0,
+  "dof_enabled": false,
+  "focus_distance": 1000.0,
+  "aperture": 1.0,
+  "blur_level": 1.0
+}
+```
+
+---
+
+*End of spec. All implementation must conform to this document. Any deviation requires updating the spec first.*
