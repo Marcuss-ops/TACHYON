@@ -1,6 +1,7 @@
 # Core Engine Library
 add_library(TachyonCore
     core/model/tachyon.cpp
+    core/math/matrix4x4.cpp
     spec/parser/scene_spec.cpp
     runtime/jobs/render_job.cpp
     runtime/jobs/render_plan.cpp
