@@ -150,9 +150,12 @@ bool run_render_contract_tests() {
                 const auto plan_one = tachyon::build_render_plan(*scene_parsed.value, *parsed.value);
                 check_true(plan_one.value.has_value(), "baseline render plan builds");
                 if (plan_one.value.has_value()) {
+                    check_true(plan_one.value->composition.solid_layer_count == 1, "composition layer counts are summarized");
+                    check_true(plan_one.value->composition.precomp_layer_count == 0, "composition precomp count is summarized");
                     const auto exec_one = tachyon::build_render_execution_plan(*plan_one.value, 0);
                     check_true(exec_one.value.has_value(), "baseline execution plan builds");
                     if (exec_one.value.has_value() && !exec_one.value->frame_tasks.empty()) {
+                        check_true(exec_one.value->steps.size() >= 6, "render graph exposes ROI/cache preparation steps");
                         const auto key_one = exec_one.value->frame_tasks.front().cache_key.value;
 
                         tachyon::RenderJob modified_job = *parsed.value;

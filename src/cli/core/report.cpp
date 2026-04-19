@@ -52,6 +52,21 @@ json make_render_plan_json(const RenderPlan& plan) {
         {"quality_tier", plan.quality_tier},
         {"compositing_alpha_mode", plan.compositing_alpha_mode},
         {"working_space", plan.working_space},
+        {"composition", {
+            {"id", plan.composition.id},
+            {"name", plan.composition.name},
+            {"width", plan.composition.width},
+            {"height", plan.composition.height},
+            {"duration", plan.composition.duration},
+            {"layer_count", plan.composition.layer_count},
+            {"solid_layer_count", plan.composition.solid_layer_count},
+            {"shape_layer_count", plan.composition.shape_layer_count},
+            {"mask_layer_count", plan.composition.mask_layer_count},
+            {"image_layer_count", plan.composition.image_layer_count},
+            {"text_layer_count", plan.composition.text_layer_count},
+            {"precomp_layer_count", plan.composition.precomp_layer_count},
+            {"track_matte_layer_count", plan.composition.track_matte_layer_count}
+        }},
         {"motion_blur_enabled", plan.motion_blur_enabled},
         {"motion_blur_samples", plan.motion_blur_samples},
         {"motion_blur_shutter_angle", plan.motion_blur_shutter_angle},
@@ -159,6 +174,13 @@ void print_inspect_report_text(
         out << "  quality tier: " << render_plan->quality_tier << '\n';
         out << "  compositing alpha: " << render_plan->compositing_alpha_mode << '\n';
         out << "  working space: " << render_plan->working_space << '\n';
+        out << "  layer counts: solid=" << render_plan->composition.solid_layer_count
+            << " shape=" << render_plan->composition.shape_layer_count
+            << " mask=" << render_plan->composition.mask_layer_count
+            << " image=" << render_plan->composition.image_layer_count
+            << " text=" << render_plan->composition.text_layer_count
+            << " precomp=" << render_plan->composition.precomp_layer_count
+            << " matte=" << render_plan->composition.track_matte_layer_count << '\n';
         out << "  motion blur: " << (render_plan->motion_blur_enabled ? "enabled" : "disabled") << '\n';
         if (render_plan->motion_blur_enabled) {
             out << "  motion blur samples: " << render_plan->motion_blur_samples << '\n';

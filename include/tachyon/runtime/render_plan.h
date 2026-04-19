@@ -20,6 +20,13 @@ struct CompositionSummary {
     FrameRate frame_rate;
     std::optional<std::string> background;
     std::size_t layer_count{0};
+    std::size_t solid_layer_count{0};
+    std::size_t shape_layer_count{0};
+    std::size_t mask_layer_count{0};
+    std::size_t image_layer_count{0};
+    std::size_t text_layer_count{0};
+    std::size_t precomp_layer_count{0};
+    std::size_t track_matte_layer_count{0};
 };
 
 struct RenderPlan {
