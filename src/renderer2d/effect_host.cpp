@@ -244,6 +244,39 @@ SurfaceRGBA DropShadowEffect::apply(const SurfaceRGBA& input, const EffectParams
     return output;
 }
 
+SurfaceRGBA GlowEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
+    const float blur_radius = get_scalar(params, "radius", get_scalar(params, "blur_radius", 4.0f));
+    const float strength = std::max(0.0f, get_scalar(params, "strength", 1.0f));
+
+    if (input.width() == 0U || input.height() == 0U) {
+        return input;
+    }
+
+    const SurfaceRGBA blurred = blur_surface(input, blur_radius);
+    SurfaceRGBA output(input.width(), input.height());
+
+    for (std::uint32_t y = 0; y < input.height(); ++y) {
+        for (std::uint32_t x = 0; x < input.width(); ++x) {
+            const Color base = input.get_pixel(x, y);
+            const Color glow = blurred.get_pixel(x, y);
+
+            const auto add_channel = [strength](std::uint8_t lhs, std::uint8_t rhs) -> std::uint8_t {
+                const float sum = static_cast<float>(lhs) + static_cast<float>(rhs) * strength;
+                return static_cast<std::uint8_t>(std::clamp(std::lround(sum), 0L, 255L));
+            };
+
+            output.set_pixel(x, y, Color{
+                add_channel(base.r, glow.r),
+                add_channel(base.g, glow.g),
+                add_channel(base.b, glow.b),
+                base.a
+            });
+        }
+    }
+
+    return output;
+}
+
 void EffectHost::register_effect(std::string name, std::unique_ptr<Effect> effect) {
     if (!effect) {
         throw std::invalid_argument("effect must not be null");

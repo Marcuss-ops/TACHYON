@@ -27,9 +27,11 @@ bool run_effect_host_tests() {
     EffectHost host;
     host.register_effect("blur", std::make_unique<GaussianBlurEffect>());
     host.register_effect("shadow", std::make_unique<DropShadowEffect>());
+    host.register_effect("glow", std::make_unique<GlowEffect>());
 
     check_true(host.has_effect("blur"), "Registered blur effect");
     check_true(host.has_effect("shadow"), "Registered shadow effect");
+    check_true(host.has_effect("glow"), "Registered glow effect");
 
     EffectParams blur_params;
     blur_params.scalars["blur_radius"] = 1.5f;
@@ -45,6 +47,15 @@ bool run_effect_host_tests() {
     const SurfaceRGBA shadowed = host.apply("shadow", source, shadow_params);
     check_true(shadowed.get_pixel(8, 8).a > 0, "Drop shadow preserves source pixel");
     check_true(shadowed.get_pixel(10, 10).a > 0, "Drop shadow offsets blurred alpha");
+
+    EffectParams glow_params;
+    glow_params.scalars["radius"] = 1.5f;
+    glow_params.scalars["strength"] = 1.0f;
+    const SurfaceRGBA glowed = host.apply("glow", source, glow_params);
+    check_true(glowed.get_pixel(8, 8).a == source.get_pixel(8, 8).a, "Glow preserves alpha");
+    check_true(glowed.get_pixel(8, 8).r >= source.get_pixel(8, 8).r, "Glow keeps center visible");
+    check_true(glowed.get_pixel(9, 8).a == 0, "Glow does not spread alpha to empty background");
+    check_true(glowed.get_pixel(9, 8).r > 0, "Glow spreads RGB to neighboring pixel");
 
     return g_failures == 0;
 }

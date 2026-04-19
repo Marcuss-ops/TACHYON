@@ -29,6 +29,11 @@ public:
     SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
 };
 
+class GlowEffect final : public Effect {
+public:
+    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
+};
+
 class FillEffect final : public Effect {
 public:
     SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
