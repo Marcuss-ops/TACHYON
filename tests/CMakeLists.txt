@@ -8,6 +8,7 @@ add_executable(TachyonTests
     unit/render/rasterizer_tests.cpp
     unit/renderer2d/surface_tests.cpp
     unit/renderer2d/draw_list_builder_tests.cpp
+    unit/renderer2d/evaluated_composition_renderer_tests.cpp
     unit/renderer2d/path_rasterizer_tests.cpp
     unit/runtime/frame_cache_tests.cpp
     unit/runtime/frame_executor_tests.cpp
