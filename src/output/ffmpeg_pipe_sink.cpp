@@ -7,6 +7,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #if defined(_WIN32)
@@ -43,11 +44,67 @@ std::string resolve_output_pixel_format(const OutputContract& contract) {
     return contract.profile.video.pixel_format.empty() ? "yuv420p" : contract.profile.video.pixel_format;
 }
 
+std::string ffmpeg_color_primaries(std::string_view value) {
+    const auto primaries = renderer2d::detail::parse_color_primaries(value);
+    switch (primaries) {
+    case renderer2d::detail::ColorPrimaries::Bt709:
+        return "bt709";
+    case renderer2d::detail::ColorPrimaries::DciP3:
+        return "smpte432";
+    case renderer2d::detail::ColorPrimaries::Rec2020:
+        return "bt2020";
+    case renderer2d::detail::ColorPrimaries::AcesAP1:
+        return "unknown";
+    case renderer2d::detail::ColorPrimaries::AcesAP0:
+        return "unknown";
+    case renderer2d::detail::ColorPrimaries::Srgb:
+    default:
+        return "bt709";
+    }
+}
+
+std::string ffmpeg_transfer_characteristics(std::string_view value) {
+    const auto curve = renderer2d::detail::parse_transfer_curve(value);
+    switch (curve) {
+    case renderer2d::detail::TransferCurve::Linear:
+        return "linear";
+    case renderer2d::detail::TransferCurve::Bt709:
+        return "bt709";
+    case renderer2d::detail::TransferCurve::Srgb:
+    default:
+        return "iec61966-2-1";
+    }
+}
+
+std::string ffmpeg_colorspace(std::string_view value) {
+    const auto primaries = renderer2d::detail::parse_color_primaries(value);
+    switch (primaries) {
+    case renderer2d::detail::ColorPrimaries::Rec2020:
+        return "bt2020nc";
+    case renderer2d::detail::ColorPrimaries::DciP3:
+    case renderer2d::detail::ColorPrimaries::Srgb:
+    case renderer2d::detail::ColorPrimaries::Bt709:
+    case renderer2d::detail::ColorPrimaries::AcesAP1:
+    case renderer2d::detail::ColorPrimaries::AcesAP0:
+    default:
+        return "bt709";
+    }
+}
+
+std::string ffmpeg_color_range(std::string_view value) {
+    const auto range = renderer2d::detail::parse_color_range(value);
+    return range == renderer2d::detail::ColorRange::Limited ? "tv" : "pc";
+}
+
 std::string build_ffmpeg_command(const RenderPlan& plan) {
     const double fps = plan.composition.frame_rate.value();
     const std::filesystem::path destination = std::filesystem::path(plan.output.destination.path);
     const bool overwrite = plan.output.destination.overwrite;
     const std::string pixel_format = resolve_output_pixel_format(plan.output);
+    const std::string color_primaries = ffmpeg_color_primaries(plan.output.profile.color.space);
+    const std::string color_trc = ffmpeg_transfer_characteristics(plan.output.profile.color.transfer);
+    const std::string colorspace = ffmpeg_colorspace(plan.output.profile.color.space);
+    const std::string color_range = ffmpeg_color_range(plan.output.profile.color.range);
 
     std::ostringstream command;
     command << "ffmpeg "
@@ -56,11 +113,25 @@ std::string build_ffmpeg_command(const RenderPlan& plan) {
             << " -pix_fmt rgba"
             << " -s " << plan.composition.width << 'x' << plan.composition.height
             << " -r " << fps
-            << " -i -"
-            << " -an";
+            << " -i -";
+
+    // Multi-track Audio (Musk-YouTube Edition)
+    const auto& tracks = plan.output.profile.audio.tracks;
+    for (const auto& track : tracks) {
+        if (!track.source_path.empty()) {
+            command << " -i " << quote_path(track.source_path);
+        }
+    }
+
+    command << " -color_primaries " << color_primaries
+            << " -color_trc " << color_trc
+            << " -colorspace " << colorspace
+            << " -color_range " << color_range;
 
     if (!plan.output.profile.video.codec.empty()) {
         command << " -c:v " << plan.output.profile.video.codec;
+    } else {
+        command << " -c:v libx264";
     }
 
     if (plan.output.profile.video.rate_control_mode == "crf" && plan.output.profile.video.crf.has_value()) {
@@ -71,6 +142,25 @@ std::string build_ffmpeg_command(const RenderPlan& plan) {
         command << " -pix_fmt " << pixel_format;
     }
 
+    // Filter Complex for Audio Mixing
+    if (!tracks.empty()) {
+        command << " -filter_complex \"";
+        for (std::size_t i = 0; i < tracks.size(); ++i) {
+            const auto& track = tracks[i];
+            const std::int64_t delay_ms = static_cast<std::int64_t>(track.start_offset_seconds * 1000.0);
+            command << "[" << (i + 1) << ":a]adelay=" << delay_ms << "|" << delay_ms 
+                    << ",volume=" << track.volume << "[a" << i << "];";
+        }
+        
+        for (std::size_t i = 0; i < tracks.size(); ++i) {
+            command << "[a" << i << "]";
+        }
+        command << "amix=inputs=" << tracks.size() << ":duration=first[outa]\" -map 0:v -map \"[outa]\"";
+        command << " -c:a aac -b:a 192k -shortest";
+    } else {
+        command << " -an";
+    }
+
     if (plan.output.profile.container == "mp4") {
         command << " -movflags +faststart";
     }
@@ -79,41 +169,32 @@ std::string build_ffmpeg_command(const RenderPlan& plan) {
     return command.str();
 }
 
-std::vector<unsigned char> pack_frame_bytes(const renderer2d::Framebuffer& frame) {
-    std::vector<unsigned char> bytes;
-    bytes.reserve(static_cast<std::size_t>(frame.width()) * static_cast<std::size_t>(frame.height()) * 4U);
-
-    for (std::uint32_t packed : frame.pixels()) {
-        bytes.push_back(static_cast<unsigned char>(packed & 0xFFU));
-        bytes.push_back(static_cast<unsigned char>((packed >> 8U) & 0xFFU));
-        bytes.push_back(static_cast<unsigned char>((packed >> 16U) & 0xFFU));
-        bytes.push_back(static_cast<unsigned char>((packed >> 24U) & 0xFFU));
-    }
-
-    return bytes;
-}
-
-renderer2d::Framebuffer convert_frame(
+std::vector<unsigned char> convert_and_pack_frame_bytes(
     const renderer2d::Framebuffer& frame,
     renderer2d::detail::TransferCurve source_curve,
     renderer2d::detail::ColorSpace source_space,
     renderer2d::detail::TransferCurve output_curve,
-    renderer2d::detail::ColorSpace output_space) {
+    renderer2d::detail::ColorSpace output_space,
+    renderer2d::detail::ColorRange output_range) {
 
-    if (source_curve == output_curve && source_space == output_space) {
-        return frame;
-    }
+    std::vector<unsigned char> bytes;
+    bytes.reserve(static_cast<std::size_t>(frame.width()) * static_cast<std::size_t>(frame.height()) * 4U);
 
-    renderer2d::Framebuffer converted(frame.width(), frame.height());
     for (std::uint32_t y = 0; y < frame.height(); ++y) {
         for (std::uint32_t x = 0; x < frame.width(); ++x) {
-            converted.set_pixel(x, y, renderer2d::detail::convert_color(
+            auto pixel = renderer2d::detail::convert_color(
                 frame.get_pixel(x, y),
                 source_curve, source_space,
-                output_curve, output_space));
+                output_curve, output_space);
+            pixel = renderer2d::detail::apply_range_mode(pixel, output_range);
+            bytes.push_back(pixel.r);
+            bytes.push_back(pixel.g);
+            bytes.push_back(pixel.b);
+            bytes.push_back(pixel.a);
         }
     }
-    return converted;
+
+    return bytes;
 }
 
 class FfmpegPipeSink final : public FrameOutputSink {
@@ -132,6 +213,7 @@ public:
         m_source_space = renderer2d::detail::parse_color_space(plan.working_space);
         m_output_transfer = renderer2d::detail::parse_transfer_curve(plan.output.profile.color.transfer);
         m_output_space = renderer2d::detail::parse_color_space(plan.output.profile.color.space);
+        m_output_range = renderer2d::detail::parse_color_range(plan.output.profile.color.range);
 
         if (plan.output.destination.path.empty()) {
             m_last_error = "ffmpeg output requires a destination path";
@@ -174,8 +256,11 @@ public:
             return false;
         }
 
-        const renderer2d::Framebuffer converted = convert_frame(*packet.frame, m_source_transfer, m_source_space, m_output_transfer, m_output_space);
-        const std::vector<unsigned char> bytes = pack_frame_bytes(converted);
+        const std::vector<unsigned char> bytes = convert_and_pack_frame_bytes(
+            *packet.frame,
+            m_source_transfer, m_source_space,
+            m_output_transfer, m_output_space,
+            m_output_range);
         const std::size_t written = std::fwrite(bytes.data(), 1, bytes.size(), m_pipe);
         if (written != bytes.size()) {
             m_last_error = "failed to write frame bytes to ffmpeg";
@@ -212,6 +297,7 @@ private:
     renderer2d::detail::ColorSpace m_source_space{renderer2d::detail::ColorSpace::Srgb};
     renderer2d::detail::TransferCurve m_output_transfer{renderer2d::detail::TransferCurve::Srgb};
     renderer2d::detail::ColorSpace m_output_space{renderer2d::detail::ColorSpace::Srgb};
+    renderer2d::detail::ColorRange m_output_range{renderer2d::detail::ColorRange::Full};
     std::string m_last_error;
 };
 

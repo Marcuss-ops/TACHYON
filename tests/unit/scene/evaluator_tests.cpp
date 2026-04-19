@@ -34,42 +34,6 @@ std::string read_text_file(const std::filesystem::path& path) {
     }
 
     std::ostringstream buffer;
-#include "tachyon/scene/evaluator.h"
-
-#include <filesystem>
-#include <fstream>
-#include <cmath>
-#include <iostream>
-#include <sstream>
-#include <string>
-
-namespace {
-
-int g_failures = 0;
-
-void check_true(bool condition, const std::string& message) {
-    if (!condition) {
-        ++g_failures;
-        std::cerr << "FAIL: " << message << '\n';
-    }
-}
-
-bool nearly_equal(double a, double b) {
-    return std::abs(a - b) < 1e-6;
-}
-
-const std::filesystem::path& tests_root() {
-    static const std::filesystem::path root = TACHYON_TESTS_SOURCE_DIR;
-    return root;
-}
-
-std::string read_text_file(const std::filesystem::path& path) {
-    std::ifstream input(path, std::ios::in | std::ios::binary);
-    if (!input.is_open()) {
-        return {};
-    }
-
-    std::ostringstream buffer;
     buffer << input.rdbuf();
     return buffer.str();
 }
@@ -90,7 +54,7 @@ bool run_scene_evaluator_tests() {
             const auto validation = tachyon::validate_scene_spec(*parsed.value);
             check_true(validation.ok(), "scene graph fixture should validate");
 
-            const auto evaluated = tachyon::scene::evaluate_composition_state(parsed.value->compositions.front(), 30);
+            const auto evaluated = tachyon::scene::evaluate_composition_state(parsed.value->compositions.front(), 30LL);
             check_true(evaluated.layers.size() == 2, "scene graph should preserve layer order");
             if (evaluated.layers.size() == 2) {
                 check_true(evaluated.layers[0].id == "parent", "parent should stay first in stack order");
@@ -146,7 +110,7 @@ bool run_scene_evaluator_tests() {
         composition.frame_rate = {30, 1};
         composition.layers.push_back(layer);
 
-        const auto evaluated = tachyon::scene::evaluate_composition_state(composition, 60);
+        const auto evaluated = tachyon::scene::evaluate_composition_state(composition, 60LL);
         check_true(nearly_equal(evaluated.composition_time_seconds, 2.0), "frame 60 at 30 fps should evaluate at 2 seconds");
         check_true(evaluated.layers.size() == 1, "composition should evaluate exactly one layer");
         check_true(nearly_equal(evaluated.layers[0].local_time_seconds, 1.0), "layer local time should be composition time minus start time");
@@ -183,12 +147,14 @@ bool run_scene_evaluator_tests() {
         camera_layer.id = "camera_01";
         camera_layer.type = "camera";
         camera_layer.name = "Camera";
+        camera_layer.enabled = true;
+        camera_layer.is_3d = true;
         camera_layer.start_time = 0.0;
         camera_layer.in_point = 0.0;
         camera_layer.out_point = 10.0;
-        camera_layer.transform.position_property.value = tachyon::math::Vector2{15.0f, 25.0f};
-        camera_layer.transform.rotation_property.value = 30.0;
-        camera_layer.transform.scale_property.value = tachyon::math::Vector2{1.5f, 1.5f};
+        camera_layer.transform3d.position_property.value = tachyon::math::Vector3{15.0f, 25.0f, 0.0f};
+        camera_layer.transform3d.rotation_property.value = tachyon::math::Vector3{0.0f, 0.0f, 30.0f};
+        camera_layer.transform3d.scale_property.value = tachyon::math::Vector3{1.5f, 1.5f, 1.0f};
 
         tachyon::CompositionSpec composition;
         composition.id = "camera_comp";
@@ -205,14 +171,72 @@ bool run_scene_evaluator_tests() {
         scene.project.name = "Evaluator";
         scene.compositions.push_back(composition);
 
-        const auto evaluated = tachyon::scene::evaluate_scene_composition_state(scene, "camera_comp", 30);
+        const auto evaluated = tachyon::scene::evaluate_scene_composition_state(scene, "camera_comp", 30LL);
         check_true(evaluated.has_value(), "scene evaluator should resolve composition by id");
         if (evaluated.has_value()) {
             check_true(evaluated->camera.available, "camera state should be available when a camera layer is active");
             check_true(evaluated->camera.layer_id == "camera_01", "camera state should point at the active camera layer");
             check_true(nearly_equal(evaluated->camera.position.x, 15.0), "camera position x should evaluate from camera layer");
-            check_true(evaluated->camera.position.y, 25.0), "camera position y should evaluate from camera layer");
+            check_true(nearly_equal(evaluated->camera.position.y, 25.0), "camera position y should evaluate from camera layer");
             check_true(nearly_equal(evaluated->camera.camera.aspect, 1920.0 / 1080.0), "camera aspect should derive from composition size");
+        }
+    }
+
+    {
+        tachyon::LayerSpec precomp_layer;
+        precomp_layer.id = "precomp_01";
+        precomp_layer.type = "precomp";
+        precomp_layer.name = "Precomp";
+        precomp_layer.enabled = true;
+        precomp_layer.start_time = 0.0;
+        precomp_layer.in_point = 0.0;
+        precomp_layer.out_point = 10.0;
+        precomp_layer.precomp_id = std::string{"child_comp"};
+        precomp_layer.time_remap_property.value = 1.5;
+
+        tachyon::LayerSpec child_solid;
+        child_solid.id = "child_solid";
+        child_solid.type = "solid";
+        child_solid.name = "Child Solid";
+        child_solid.enabled = true;
+        child_solid.start_time = 0.0;
+        child_solid.in_point = 0.0;
+        child_solid.out_point = 10.0;
+        child_solid.opacity = 1.0;
+
+        tachyon::CompositionSpec child_comp;
+        child_comp.id = "child_comp";
+        child_comp.name = "Child";
+        child_comp.width = 320;
+        child_comp.height = 180;
+        child_comp.duration = 10.0;
+        child_comp.frame_rate = {30, 1};
+        child_comp.layers.push_back(child_solid);
+
+        tachyon::CompositionSpec parent_comp;
+        parent_comp.id = "parent_comp";
+        parent_comp.name = "Parent";
+        parent_comp.width = 320;
+        parent_comp.height = 180;
+        parent_comp.duration = 10.0;
+        parent_comp.frame_rate = {30, 1};
+        parent_comp.layers.push_back(precomp_layer);
+
+        tachyon::SceneSpec scene;
+        scene.spec_version = "1.0";
+        scene.project.id = "proj_remap";
+        scene.project.name = "Remap";
+        scene.compositions.push_back(child_comp);
+        scene.compositions.push_back(parent_comp);
+
+        const auto evaluated = tachyon::scene::evaluate_scene_composition_state(scene, "parent_comp", 0LL);
+        check_true(evaluated.has_value(), "time remap scene should evaluate");
+        if (evaluated.has_value()) {
+            check_true(nearly_equal(evaluated->layers[0].child_time_seconds, 1.5), "time remap should compute child time from property");
+            check_true(evaluated->layers[0].nested_composition != nullptr, "precomp layer should resolve nested composition");
+            if (evaluated->layers[0].nested_composition != nullptr) {
+                check_true(nearly_equal(evaluated->layers[0].nested_composition->composition_time_seconds, 1.5), "nested composition should inherit remapped child time");
+            }
         }
     }
 

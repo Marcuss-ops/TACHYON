@@ -126,8 +126,11 @@ RasterizedFrame2D render_draw_list_2d(
     const RectI full_clip{0, 0, static_cast<int>(frame.width), static_cast<int>(frame.height)};
     RectI active_clip = full_clip;
 
-    std::vector<const renderer2d::DrawCommand2D*> ordered_commands;
-    ordered_commands.reserve(draw_list.commands.size());
+    thread_local std::vector<const renderer2d::DrawCommand2D*> ordered_commands;
+    ordered_commands.clear();
+    if (ordered_commands.capacity() < draw_list.commands.size()) {
+        ordered_commands.reserve(draw_list.commands.size());
+    }
     for (const auto& command : draw_list.commands) {
         ordered_commands.push_back(&command);
     }
@@ -135,7 +138,7 @@ RasterizedFrame2D render_draw_list_2d(
     if (!ordered_commands.empty()) {
         const bool has_clear = ordered_commands.front()->kind == renderer2d::DrawCommandKind::Clear;
         const auto sort_begin = has_clear ? ordered_commands.begin() + 1 : ordered_commands.begin();
-        std::stable_sort(sort_begin, ordered_commands.end(), [](const auto* left, const auto* right) {
+        std::sort(sort_begin, ordered_commands.end(), [](const auto* left, const auto* right) {
             return left->z_order < right->z_order;
         });
     }
@@ -183,7 +186,7 @@ RasterizedFrame2D render_draw_list_2d(
                         warp.v1 = {math::Vector3{q.p1.x, q.p1.y, 0.0f}, math::Vector2{1.0f, 0.0f}, q.w1};
                         warp.v2 = {math::Vector3{q.p2.x, q.p2.y, 0.0f}, math::Vector2{1.0f, 1.0f}, q.w2};
                         warp.v3 = {math::Vector3{q.p3.x, q.p3.y, 0.0f}, math::Vector2{0.0f, 1.0f}, q.w3};
-                        warp.texture = q.texture.surface.get();
+                        warp.texture = q.texture.surface;
                         warp.opacity = q.opacity;
 
                         renderer2d::raster::PerspectiveRasterizer::draw_quad(*frame.surface, warp);

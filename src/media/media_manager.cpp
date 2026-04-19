@@ -1,16 +1,9 @@
 #include "tachyon/media/media_manager.h"
 
-#include "tachyon/media/image_manager.h"
-
 namespace tachyon::media {
 
-MediaManager& MediaManager::instance() {
-    static MediaManager inst;
-    return inst;
-}
-
-const renderer2d::SurfaceRGBA* MediaManager::get_image(const std::filesystem::path& path) {
-    return ImageManager::instance().get_image(path);
+const renderer2d::SurfaceRGBA* MediaManager::get_image(const std::filesystem::path& path, DiagnosticBag* diagnostics) {
+    return m_image_manager.get_image(path, diagnostics);
 }
 
 VideoDecoder* MediaManager::get_video_decoder(const std::filesystem::path& path) {
@@ -33,9 +26,13 @@ VideoDecoder* MediaManager::get_video_decoder(const std::filesystem::path& path)
 
 void MediaManager::clear_cache() {
     std::lock_guard<std::mutex> lock(m_mutex);
-    m_image_cache.clear();
+    m_image_manager.clear_cache();
     m_video_cache.clear();
-    ImageManager::instance().clear_cache();
+}
+
+DiagnosticBag MediaManager::consume_diagnostics() {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return m_image_manager.consume_diagnostics();
 }
 
 } // namespace tachyon::media

@@ -1,5 +1,6 @@
 #include "tachyon/output/frame_output_sink.h"
 #include "tachyon/renderer2d/framebuffer.h"
+#include "tachyon/renderer2d/color_transfer.h"
 #include "tachyon/runtime/render_plan.h"
 
 #include <filesystem>
@@ -86,6 +87,15 @@ bool run_frame_output_sink_tests() {
         auto sink = output::create_frame_output_sink(plan);
         check_true(static_cast<bool>(sink), "MP4 plan resolves to an output sink");
         check_true(output::output_requests_video_file(plan.output), "MP4 plan selects video file output");
+    }
+
+    {
+        const auto limited = renderer2d::detail::apply_range_mode(renderer2d::Color{255, 255, 255, 255}, renderer2d::detail::ColorRange::Limited);
+        check_true(limited.r == 235 && limited.g == 235 && limited.b == 235, "Limited range clamps RGB to legal white");
+        const auto matrix = renderer2d::detail::primaries_conversion_matrix(
+            renderer2d::detail::ColorPrimaries::Bt709,
+            renderer2d::detail::ColorPrimaries::DciP3);
+        check_true(matrix.m[0] != 0.0f, "Primaries conversion matrix is populated");
     }
 
     return g_failures == 0;

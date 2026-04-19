@@ -89,17 +89,19 @@ bool run_frame_executor_tests() {
     g_failures = 0;
 
     FrameCache cache;
+    RenderContext render_context;
+    render_context.policy = make_quality_policy("draft");
     const RenderPlan plan = make_plan();
     const SceneSpec scene = make_scene();
 
-    const ExecutedFrame first = execute_frame_task(scene, plan, make_task(0), cache);
-    const ExecutedFrame second = execute_frame_task(scene, plan, make_task(0), cache);
+    const ExecutedFrame first = execute_frame_task(scene, plan, make_task(0), cache, render_context);
+    const ExecutedFrame second = execute_frame_task(scene, plan, make_task(0), cache, render_context);
     check_true(!first.cache_hit, "First execution is cache miss");
     check_true(second.cache_hit, "Second execution is cache hit");
 
     FrameCache isolated_cache;
-    const ExecutedFrame original = execute_frame_task(scene, plan, make_task(1), isolated_cache);
-    const ExecutedFrame changed = execute_frame_task(make_scene(25.0), plan, make_task(1), isolated_cache);
+    const ExecutedFrame original = execute_frame_task(scene, plan, make_task(1), isolated_cache, render_context);
+    const ExecutedFrame changed = execute_frame_task(make_scene(25.0), plan, make_task(1), isolated_cache, render_context);
     check_true(!original.cache_hit, "Original frame renders normally");
     check_true(!changed.cache_hit, "Changed parameter invalidates cached frame");
 
@@ -116,9 +118,13 @@ bool run_frame_executor_tests() {
                    "Solid layer maps to SolidRect command");
     }
 
-    const ExecutedFrame rendered = execute_frame_task(scene, plan, make_task(2), cache);
+    const ExecutedFrame rendered = execute_frame_task(scene, plan, make_task(2), cache, render_context);
     check_true(rendered.draw_command_count == draw_list.commands.size(),
                "Executor reports draw command count from renderer draw list");
+    check_true(rendered.frame.width() == static_cast<std::uint32_t>(plan.composition.width),
+               "Draft policy should still return a full-size frame after upscale");
+    check_true(rendered.frame.height() == static_cast<std::uint32_t>(plan.composition.height),
+               "Draft policy should still return a full-size frame after upscale");
 
     return g_failures == 0;
 }

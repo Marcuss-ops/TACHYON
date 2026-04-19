@@ -1,9 +1,12 @@
 #pragma once
 
 #include "tachyon/runtime/frame_executor.h"
+#include "tachyon/runtime/diagnostics.h"
+#include "tachyon/renderer2d/render_context.h"
 
 #include <cstddef>
 #include <filesystem>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -16,6 +19,7 @@ struct RenderSessionResult {
     std::size_t frames_written{0};
     bool output_configured{false};
     std::string output_error;
+    DiagnosticBag diagnostics;
 };
 
 class RenderSession {
@@ -32,6 +36,7 @@ public:
 
 private:
     FrameCache m_cache;
+    std::shared_ptr<renderer2d::PrecompCache> m_precomp_cache{std::make_shared<renderer2d::PrecompCache>()};
 };
 
 } // namespace tachyon

@@ -4,6 +4,7 @@ bool run_scene_spec_tests();
 bool run_render_job_tests();
 bool run_math_tests();
 bool run_asset_resolution_tests();
+bool run_image_manager_tests();
 bool run_framebuffer_tests();
 bool run_rasterizer_tests();
 bool run_surface_tests();
@@ -50,6 +51,11 @@ int main() {
 
     if (!run_asset_resolution_tests()) {
         std::cerr << "asset resolution tests failed\n";
+        return 1;
+    }
+
+    if (!run_image_manager_tests()) {
+        std::cerr << "image manager tests failed\n";
         return 1;
     }
 

@@ -10,6 +10,16 @@
 namespace tachyon {
 namespace renderer2d {
 
+namespace {
+
+constexpr std::uint32_t kRedShift = 0U;
+constexpr std::uint32_t kGreenShift = 8U;
+constexpr std::uint32_t kBlueShift = 16U;
+constexpr std::uint32_t kAlphaShift = 24U;
+constexpr std::uint32_t kByteMask = 0xFFU;
+
+} // namespace
+
 SurfaceRGBA::SurfaceRGBA(uint32_t width, uint32_t height)
     : m_width(width),
       m_height(height),
@@ -18,18 +28,18 @@ SurfaceRGBA::SurfaceRGBA(uint32_t width, uint32_t height)
 }
 
 uint32_t SurfaceRGBA::pack(Color color) {
-    return (static_cast<uint32_t>(color.a) << 24U) |
-           (static_cast<uint32_t>(color.b) << 16U) |
-           (static_cast<uint32_t>(color.g) << 8U) |
+    return (static_cast<uint32_t>(color.a) << kAlphaShift) |
+           (static_cast<uint32_t>(color.b) << kBlueShift) |
+           (static_cast<uint32_t>(color.g) << kGreenShift) |
            (static_cast<uint32_t>(color.r));
 }
 
 Color SurfaceRGBA::unpack(uint32_t packed) {
     return Color{
-        static_cast<uint8_t>(packed & 0xFFU),
-        static_cast<uint8_t>((packed >> 8U) & 0xFFU),
-        static_cast<uint8_t>((packed >> 16U) & 0xFFU),
-        static_cast<uint8_t>((packed >> 24U) & 0xFFU)
+        static_cast<uint8_t>(packed & kByteMask),
+        static_cast<uint8_t>((packed >> kGreenShift) & kByteMask),
+        static_cast<uint8_t>((packed >> kBlueShift) & kByteMask),
+        static_cast<uint8_t>((packed >> kAlphaShift) & kByteMask)
     };
 }
 
@@ -61,6 +71,14 @@ void SurfaceRGBA::clear(Color color) {
     std::fill(m_pixels.begin(), m_pixels.end(), pack(color));
 }
 
+void SurfaceRGBA::clear_depth(float depth) {
+    if (m_depth_buffer.size() != m_pixels.size()) {
+        m_depth_buffer.assign(m_pixels.size(), depth);
+    } else {
+        std::fill(m_depth_buffer.begin(), m_depth_buffer.end(), depth);
+    }
+}
+
 bool SurfaceRGBA::set_clip_rect(const RectI& rect) {
     const RectI surface_bounds{0, 0, static_cast<int>(m_width), static_cast<int>(m_height)};
     m_clip_rect = intersect_rects(surface_bounds, rect);
@@ -84,6 +102,13 @@ bool SurfaceRGBA::set_pixel(uint32_t x, uint32_t y, Color color) {
     return true;
 }
 
+bool SurfaceRGBA::set_pixel_with_depth(uint32_t x, uint32_t y, Color color, float inv_z) {
+    if (test_and_write_depth(x, y, inv_z)) {
+        return set_pixel(x, y, color);
+    }
+    return false;
+}
+
 Color SurfaceRGBA::blend_src_over_premultiplied(Color src_straight, Color dst_straight) {
     return detail::composite_src_over_linear(src_straight, dst_straight);
 }
@@ -99,6 +124,23 @@ bool SurfaceRGBA::blend_pixel(uint32_t x, uint32_t y, Color color) {
     return true;
 }
 
+bool SurfaceRGBA::test_and_write_depth(uint32_t x, uint32_t y, float inv_z) {
+    if (!in_bounds(x, y) || !in_clip(x, y)) {
+        return false;
+    }
+
+    if (m_depth_buffer.empty()) {
+        clear_depth(0.0f);
+    }
+
+    const std::size_t index = static_cast<std::size_t>(y) * m_width + x;
+    if (inv_z >= m_depth_buffer[index]) {
+        m_depth_buffer[index] = inv_z;
+        return true;
+    }
+    return false;
+}
+
 std::optional<Color> SurfaceRGBA::try_get_pixel(uint32_t x, uint32_t y) const {
     if (!in_bounds(x, y)) {
         return std::nullopt;
@@ -110,6 +152,13 @@ std::optional<Color> SurfaceRGBA::try_get_pixel(uint32_t x, uint32_t y) const {
 Color SurfaceRGBA::get_pixel(uint32_t x, uint32_t y) const {
     const auto pixel = try_get_pixel(x, y);
     return pixel.has_value() ? *pixel : Color::transparent();
+}
+
+float SurfaceRGBA::get_depth(uint32_t x, uint32_t y) const {
+    if (!in_bounds(x, y) || m_depth_buffer.empty()) {
+        return 0.0f;
+    }
+    return m_depth_buffer[static_cast<std::size_t>(y) * m_width + x];
 }
 
 void SurfaceRGBA::fill_rect(const RectI& rect, Color color, bool blend) {

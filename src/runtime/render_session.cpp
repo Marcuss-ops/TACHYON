@@ -74,6 +74,10 @@ RenderSessionResult RenderSession::render(
     RenderSessionResult result;
     RenderContext context(m_precomp_cache);
     context.policy = make_quality_policy(execution_plan.render_plan.quality_tier);
+    context.renderer2d.policy = context.policy;
+    if (context.renderer2d.precomp_cache) {
+        context.renderer2d.precomp_cache->max_bytes = context.policy.precomp_cache_budget;
+    }
 
     RenderPlan effective_plan = execution_plan.render_plan;
     if (!output_path.empty()) {

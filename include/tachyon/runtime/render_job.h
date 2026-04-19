@@ -21,11 +21,18 @@ struct OutputVideoProfile {
     std::optional<double> crf;
 };
 
+struct AudioTrack {
+    std::string source_path;
+    double volume{1.0};
+    double start_offset_seconds{0.0};
+};
+
 struct OutputAudioProfile {
     std::string mode;
     std::string codec;
     std::optional<std::int64_t> sample_rate;
     std::optional<std::int64_t> channels;
+    std::vector<AudioTrack> tracks;
 };
 
 struct OutputBufferingProfile {
@@ -72,6 +79,7 @@ struct RenderJob {
     bool motion_blur_enabled{false};
     std::int64_t motion_blur_samples{0};
     double motion_blur_shutter_angle{180.0};
+    std::string motion_blur_curve{"box"};
     std::string seed_policy_mode{"stable"};
     std::string compatibility_mode;
 };

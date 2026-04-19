@@ -476,6 +476,19 @@ LayerSpec parse_layer(const json& object, const std::string& path, DiagnosticBag
         layer.stroke_width = object.at("stroke_width").get<float>();
     }
 
+    if (object.contains("light_type")) {
+        layer.light_type = object.at("light_type").get<std::string>();
+    }
+    if (object.contains("intensity")) {
+        layer.intensity = object.at("intensity").get<double>();
+    }
+    if (object.contains("attenuation_near")) {
+        layer.attenuation_near = object.at("attenuation_near").get<double>();
+    }
+    if (object.contains("attenuation_far")) {
+        layer.attenuation_far = object.at("attenuation_far").get<double>();
+    }
+
     return layer;
 }
 
@@ -728,7 +741,8 @@ ValidationResult validate_scene_spec(const SceneSpec& scene) {
                     "precomp",
                     "null",
                     "camera",
-                    "video"
+                    "video",
+                    "light"
                 };
                 if (!allowed_types.contains(layer.type)) {
                     result.diagnostics.add_error("scene.layer.type_unsupported", "unsupported layer type: " + layer.type, layer_path + ".type");

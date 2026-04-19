@@ -35,6 +35,8 @@ tachyon::scene::EvaluatedLayerState make_layer(
     tachyon::scene::EvaluatedLayerState layer;
     layer.id = id;
     layer.type = type;
+    layer.enabled = true;
+    layer.active = true;
     layer.visible = true;
     layer.opacity = static_cast<float>(opacity);
     layer.local_transform.position = {x, y};

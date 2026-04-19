@@ -59,7 +59,7 @@ bool run_precomp_mask_tests() {
         
         scene.compositions.push_back(main_comp);
         
-        auto evaluated = scene::evaluate_scene_composition_state(scene, "main", 0);
+        auto evaluated = scene::evaluate_scene_composition_state(scene, "main", 0LL);
         check_true(evaluated.has_value(), "main comp should be evaluated");
         if (evaluated) {
             check_true(evaluated->layers.size() == 1, "main comp should have 1 layer");
@@ -90,7 +90,7 @@ bool run_precomp_mask_tests() {
         masked_layer.track_matte_layer_id = "matte";
         comp.layers.push_back(masked_layer);
         
-        auto evaluated = scene::evaluate_composition_state(comp, 0);
+        auto evaluated = scene::evaluate_composition_state(comp, 0LL);
         check_true(evaluated.layers.size() == 2, "evaluated comp should have 2 layers");
         check_true(evaluated.layers[1].track_matte_layer_index.has_value(), "masked layer should have matte layer index");
         if (evaluated.layers[1].track_matte_layer_index) {

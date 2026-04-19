@@ -1,4 +1,5 @@
 #include "tachyon/text/font.h"
+#include "tachyon/text/font_registry.h"
 #include "tachyon/text/layout.h"
 
 #include <filesystem>
@@ -20,6 +21,15 @@ std::filesystem::path fixture_path() {
     return std::filesystem::path(TACHYON_TESTS_SOURCE_DIR) / "fixtures" / "fonts" / "minimal_5x7.bdf";
 }
 
+std::filesystem::path first_existing_path(std::initializer_list<std::filesystem::path> candidates) {
+    for (const auto& candidate : candidates) {
+        if (std::filesystem::exists(candidate)) {
+            return candidate;
+        }
+    }
+    return {};
+}
+
 } // namespace
 
 bool run_text_tests() {
@@ -31,6 +41,17 @@ bool run_text_tests() {
     if (!font.is_loaded()) {
         return false;
     }
+
+    FontRegistry registry;
+    check_true(registry.load_bdf("primary", fixture_path()), "Registry loads BDF font");
+    check_true(registry.default_font() != nullptr, "Registry exposes default font");
+    check_true(registry.find("primary") != nullptr, "Registry resolves named font");
+    check_true(registry.set_default("primary"), "Registry can switch default font");
+
+    for (int i = 0; i < 14; ++i) {
+        check_true(registry.load_bdf("font_" + std::to_string(i), fixture_path()), "Registry accepts additional font slots");
+    }
+    check_true(!registry.load_bdf("font_overflow", fixture_path()), "Registry rejects fonts beyond capacity");
 
     check_true(font.ascent() == 7, "Font ascent parsed");
     check_true(font.line_height() == 7, "Font line height parsed");
@@ -146,6 +167,31 @@ bool run_text_tests() {
             const std::uint32_t sample_x = static_cast<std::uint32_t>(std::max<std::int32_t>(0, second.x + std::max<std::int32_t>(1, second.width / 2)));
             const std::uint32_t sample_y = static_cast<std::uint32_t>(std::max<std::int32_t>(0, second.y + std::max<std::int32_t>(1, second.height / 2)));
             check_true(animated_surface.get_pixel(sample_x, sample_y).a == 0, "Per-glyph opacity can hide later glyphs");
+        }
+    }
+
+    {
+        const auto ttf_path = first_existing_path({
+            "C:/Windows/Fonts/segoeui.ttf",
+            "C:/Windows/Fonts/arial.ttf",
+            "C:/Windows/Fonts/tahoma.ttf"
+        });
+
+        if (!ttf_path.empty()) {
+            BitmapFont ttf_font;
+            check_true(ttf_font.load_ttf(ttf_path, 24), "Load system TTF font");
+            if (ttf_font.is_loaded()) {
+                TextBox box;
+                box.width = 220;
+                box.height = 64;
+                box.multiline = false;
+
+                const TextLayoutResult layout = layout_text(ttf_font, "HarfBuzz", style, box, TextAlignment::Left);
+                check_true(!layout.glyphs.empty(), "TTF layout emits glyphs");
+                if (!layout.glyphs.empty()) {
+                    check_true(layout.glyphs.front().font_glyph_index != 0U, "TTF layout stores shaped glyph indices");
+                }
+            }
         }
     }
 

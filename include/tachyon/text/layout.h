@@ -47,6 +47,7 @@ struct TextBox {
 
 struct PositionedGlyph {
     std::uint32_t codepoint{0};
+    std::uint32_t font_glyph_index{0};
     std::int32_t x{0};
     std::int32_t y{0};
     std::int32_t width{0};

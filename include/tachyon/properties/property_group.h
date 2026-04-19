@@ -7,8 +7,9 @@
 
 #include <string>
 #include <unordered_map>
-#include <memory>
+#include <any>
 #include <stdexcept>
+#include <utility>
 
 namespace tachyon {
 namespace properties {
@@ -20,9 +21,8 @@ namespace properties {
  * (transforms, camera rigs, compositing layers, text animators, etc.).
  *
  * Design decisions:
- *  - Properties are type-erased via shared_ptr<void> in the storage map so that
- *    heterogeneous types can coexist in a single group without virtual dispatch
- *    overhead on access (the caller knows the type at access point).
+ *  - Properties are type-erased via std::any in the storage map so that
+ *    heterogeneous types can coexist in a single group without shared ownership.
  *  - A second map stores std::string names for diagnostics/introspection.
  *  - All sample() calls are deferred to the typed AnimatableProperty<T> to
  *    maintain full determinism.
@@ -39,8 +39,7 @@ public:
      */
     template <typename T>
     void declare_static(const std::string& prop_name, const T& default_value) {
-        auto prop = std::make_shared<AnimatableProperty<T>>(prop_name, default_value);
-        m_props[prop_name] = prop;
+        m_props[prop_name] = AnimatableProperty<T>(prop_name, default_value);
     }
 
     /**
@@ -49,8 +48,7 @@ public:
     template <typename T>
     void declare_animated(const std::string& prop_name,
                           animation::AnimationCurve<T> curve) {
-        auto prop = std::make_shared<AnimatableProperty<T>>(prop_name, std::move(curve));
-        m_props[prop_name] = prop;
+        m_props[prop_name] = AnimatableProperty<T>(prop_name, std::move(curve));
     }
 
     // --- Access ----------------------------------------------------------------
@@ -64,7 +62,10 @@ public:
         auto it = m_props.find(prop_name);
         if (it == m_props.end())
             throw std::runtime_error("PropertyGroup: unknown property '" + prop_name + "'");
-        auto* typed = static_cast<AnimatableProperty<T>*>(it->second.get());
+        auto* typed = std::any_cast<AnimatableProperty<T>>(&it->second);
+        if (!typed) {
+            throw std::runtime_error("PropertyGroup: wrong property type for '" + prop_name + "'");
+        }
         return *typed;
     }
 
@@ -73,7 +74,10 @@ public:
         auto it = m_props.find(prop_name);
         if (it == m_props.end())
             throw std::runtime_error("PropertyGroup: unknown property '" + prop_name + "'");
-        const auto* typed = static_cast<const AnimatableProperty<T>*>(it->second.get());
+        const auto* typed = std::any_cast<AnimatableProperty<T>>(&it->second);
+        if (!typed) {
+            throw std::runtime_error("PropertyGroup: wrong property type for '" + prop_name + "'");
+        }
         return *typed;
     }
 
@@ -96,9 +100,7 @@ public:
 private:
     std::string m_name;
 
-    // Type-erased storage: prop_name -> shared_ptr<AnimatableProperty<T>>
-    // We store it as shared_ptr<void> so heterogeneous types can coexist.
-    std::unordered_map<std::string, std::shared_ptr<void>> m_props;
+    std::unordered_map<std::string, std::any> m_props;
 };
 
 // ---------------------------------------------------------------------------

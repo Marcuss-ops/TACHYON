@@ -16,7 +16,17 @@ namespace detail {
 enum class ColorSpace {
     Srgb,
     Bt709,
-    DciP3
+    DciP3,
+    Rec2020,
+    AcesAP1,
+    AcesAP0
+};
+
+using ColorPrimaries = ColorSpace;
+
+enum class ColorRange {
+    Full,
+    Limited
 };
 
 enum class TransferCurve {
@@ -42,7 +52,54 @@ inline ColorSpace parse_color_space(std::string_view value) {
     if (lower == "p3" || lower == "dci-p3" || lower == "display-p3") {
         return ColorSpace::DciP3;
     }
+    if (lower == "rec2020" || lower == "bt2020") {
+        return ColorSpace::Rec2020;
+    }
+    if (lower == "aces-ap1" || lower == "acescg") {
+        return ColorSpace::AcesAP1;
+    }
+    if (lower == "aces-ap0" || lower == "aces2065-1") {
+        return ColorSpace::AcesAP0;
+    }
     return ColorSpace::Srgb;
+}
+
+inline ColorPrimaries parse_color_primaries(std::string_view value) {
+    std::string lower;
+    lower.reserve(value.size());
+    for (unsigned char ch : value) {
+        lower.push_back(static_cast<char>(std::tolower(ch)));
+    }
+
+    if (lower == "bt709" || lower == "rec709") {
+        return ColorPrimaries::Bt709;
+    }
+    if (lower == "p3" || lower == "dci-p3" || lower == "display-p3") {
+        return ColorPrimaries::DciP3;
+    }
+    if (lower == "rec2020" || lower == "bt2020") {
+        return ColorPrimaries::Rec2020;
+    }
+    if (lower == "aces-ap1" || lower == "acescg") {
+        return ColorPrimaries::AcesAP1;
+    }
+    if (lower == "aces-ap0" || lower == "aces2065-1") {
+        return ColorPrimaries::AcesAP0;
+    }
+    return ColorPrimaries::Srgb;
+}
+
+inline ColorRange parse_color_range(std::string_view value) {
+    std::string lower;
+    lower.reserve(value.size());
+    for (unsigned char ch : value) {
+        lower.push_back(static_cast<char>(std::tolower(ch)));
+    }
+
+    if (lower == "tv" || lower == "limited" || lower == "legal") {
+        return ColorRange::Limited;
+    }
+    return ColorRange::Full;
 }
 
 inline TransferCurve parse_transfer_curve(std::string_view value) {
@@ -229,6 +286,96 @@ inline Color composite_src_over(Color src, Color dst, TransferCurve transfer_cur
     }, transfer_curve);
 }
 
+struct Matrix3x3 {
+    float m[9]{};
+};
+
+inline Matrix3x3 multiply(const Matrix3x3& a, const Matrix3x3& b) {
+    Matrix3x3 result;
+    for (int row = 0; row < 3; ++row) {
+        for (int col = 0; col < 3; ++col) {
+            result.m[row * 3 + col] =
+                a.m[row * 3 + 0] * b.m[0 * 3 + col] +
+                a.m[row * 3 + 1] * b.m[1 * 3 + col] +
+                a.m[row * 3 + 2] * b.m[2 * 3 + col];
+        }
+    }
+    return result;
+}
+
+inline Matrix3x3 invert(const Matrix3x3& matrix) {
+    const float a = matrix.m[0], b = matrix.m[1], c = matrix.m[2];
+    const float d = matrix.m[3], e = matrix.m[4], f = matrix.m[5];
+    const float g = matrix.m[6], h = matrix.m[7], i = matrix.m[8];
+
+    const float A =   e * i - f * h;
+    const float B = -(d * i - f * g);
+    const float C =   d * h - e * g;
+    const float D = -(b * i - c * h);
+    const float E =   a * i - c * g;
+    const float F = -(a * h - b * g);
+    const float G =   b * f - c * e;
+    const float H = -(a * f - c * d);
+    const float I =   a * e - b * d;
+
+    const float det = a * A + b * B + c * C;
+    if (std::abs(det) <= 1.0e-8f) {
+        return Matrix3x3{};
+    }
+
+    const float inv_det = 1.0f / det;
+    return Matrix3x3{{
+        A * inv_det, D * inv_det, G * inv_det,
+        B * inv_det, E * inv_det, H * inv_det,
+        C * inv_det, F * inv_det, I * inv_det
+    }};
+}
+
+inline Matrix3x3 rgb_to_xyz_matrix(ColorPrimaries primaries) {
+    switch (primaries) {
+    case ColorPrimaries::Bt709:
+    case ColorPrimaries::Srgb:
+        return Matrix3x3{{
+            0.41239079926595934f, 0.3575843393838780f, 0.1804807884018343f,
+            0.21263900587151027f, 0.7151686787677560f, 0.0721923153607337f,
+            0.01933081871559182f, 0.1191947797946260f, 0.9505321522496607f
+        }};
+    case ColorPrimaries::DciP3:
+        return Matrix3x3{{
+            0.4865709486482162f, 0.2656676931690931f, 0.1982172852343625f,
+            0.2289745640697488f, 0.6917385218365064f, 0.0792869140937450f,
+            0.0000000000000000f, 0.0451133818589026f, 1.0439443689009760f
+        }};
+    case ColorPrimaries::Rec2020:
+        return Matrix3x3{{
+            0.6369580483012914f, 0.1446169035862083f, 0.1688809751641721f,
+            0.2627002120112671f, 0.6779980715188708f, 0.0593017164698620f,
+            0.0000000000000000f, 0.0280726930490874f, 1.0609850577107910f
+        }};
+    case ColorPrimaries::AcesAP1:
+        return Matrix3x3{{
+            0.6624541811085053f, 0.1340042064564331f, 0.1561876870049078f,
+            0.2722287167809145f, 0.6740817658111484f, 0.0536895174079370f,
+           -0.0055746494903940f, 0.0040607335289820f, 1.0103391003129970f
+        }};
+    case ColorPrimaries::AcesAP0:
+        return Matrix3x3{{
+            0.9525523959381863f, 0.0000000000000000f, 0.0000936786313940f,
+            0.3439664497650750f, 0.7281660966134850f, -0.0721325463785600f,
+            0.0000000000000000f, 0.0000000000000000f, 1.0088251843528410f
+        }};
+    }
+    return Matrix3x3{{
+        0.41239079926595934f, 0.3575843393838780f, 0.1804807884018343f,
+        0.21263900587151027f, 0.7151686787677560f, 0.0721923153607337f,
+        0.01933081871559182f, 0.1191947797946260f, 0.9505321522496607f
+    }};
+}
+
+inline Matrix3x3 primaries_conversion_matrix(ColorPrimaries source, ColorPrimaries destination) {
+    return multiply(invert(rgb_to_xyz_matrix(destination)), rgb_to_xyz_matrix(source));
+}
+
 inline Color convert_color(
     Color color,
     TransferCurve source_curve, ColorSpace source_space,
@@ -242,28 +389,46 @@ inline Color convert_color(
 
     if (source_space != dest_space && linear.a > 0.0f) {
         const float inv_a = 1.0f / linear.a;
-        float r = linear.r * inv_a;
-        float g = linear.g * inv_a;
-        float b = linear.b * inv_a;
-
-        if ((source_space == ColorSpace::Srgb || source_space == ColorSpace::Bt709) && dest_space == ColorSpace::DciP3) {
-            const float out_r = r * 0.8224621f + g * 0.177538f + b * 0.0f;
-            const float out_g = r * 0.0331941f + g * 0.9668058f + b * 0.0f;
-            const float out_b = r * 0.0170827f + g * 0.0723974f + b * 0.9105199f;
-            r = out_r; g = out_g; b = out_b;
-        } else if (source_space == ColorSpace::DciP3 && (dest_space == ColorSpace::Srgb || dest_space == ColorSpace::Bt709)) {
-            const float out_r = r * 1.2249401f + g * -0.2249404f + b * 0.0f;
-            const float out_g = r * -0.0420569f + g * 1.0420571f + b * 0.0f;
-            const float out_b = r * -0.0196376f + g * -0.0786361f + b * 1.0982735f;
-            r = out_r; g = out_g; b = out_b;
-        }
-
-        linear.r = std::max(0.0f, r) * linear.a;
-        linear.g = std::max(0.0f, g) * linear.a;
-        linear.b = std::max(0.0f, b) * linear.a;
+        const float r = linear.r * inv_a;
+        const float g = linear.g * inv_a;
+        const float b = linear.b * inv_a;
+        const Matrix3x3 matrix = primaries_conversion_matrix(static_cast<ColorPrimaries>(source_space), static_cast<ColorPrimaries>(dest_space));
+        const float out_r = matrix.m[0] * r + matrix.m[1] * g + matrix.m[2] * b;
+        const float out_g = matrix.m[3] * r + matrix.m[4] * g + matrix.m[5] * b;
+        const float out_b = matrix.m[6] * r + matrix.m[7] * g + matrix.m[8] * b;
+        linear.r = std::max(0.0f, out_r) * linear.a;
+        linear.g = std::max(0.0f, out_g) * linear.a;
+        linear.b = std::max(0.0f, out_b) * linear.a;
     }
 
     return from_premultiplied(linear, dest_curve);
+}
+
+inline Color apply_primaries_matrix(Color color, const Matrix3x3& matrix) {
+    const float r = static_cast<float>(color.r) / 255.0f;
+    const float g = static_cast<float>(color.g) / 255.0f;
+    const float b = static_cast<float>(color.b) / 255.0f;
+    const float out_r = matrix.m[0] * r + matrix.m[1] * g + matrix.m[2] * b;
+    const float out_g = matrix.m[3] * r + matrix.m[4] * g + matrix.m[5] * b;
+    const float out_b = matrix.m[6] * r + matrix.m[7] * g + matrix.m[8] * b;
+    return Color{
+        static_cast<std::uint8_t>(std::clamp(std::lround(std::clamp(out_r, 0.0f, 1.0f) * 255.0f), 0L, 255L)),
+        static_cast<std::uint8_t>(std::clamp(std::lround(std::clamp(out_g, 0.0f, 1.0f) * 255.0f), 0L, 255L)),
+        static_cast<std::uint8_t>(std::clamp(std::lround(std::clamp(out_b, 0.0f, 1.0f) * 255.0f), 0L, 255L)),
+        color.a
+    };
+}
+
+inline Color apply_range_mode(Color color, ColorRange range) {
+    if (range == ColorRange::Full) {
+        return color;
+    }
+
+    auto scale = [](std::uint8_t value) -> std::uint8_t {
+        return static_cast<std::uint8_t>(std::clamp<int>(16 + (static_cast<int>(value) * 219) / 255, 16, 235));
+    };
+
+    return Color{scale(color.r), scale(color.g), scale(color.b), color.a};
 }
 
 } // namespace detail

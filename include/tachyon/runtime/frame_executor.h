@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tachyon/renderer2d/draw_command.h"
+#include "tachyon/runtime/render_context.h"
 #include "tachyon/runtime/frame_cache.h"
 #include "tachyon/runtime/render_plan.h"
 #include "tachyon/runtime/render_graph.h"
@@ -35,6 +36,11 @@ EvaluatedFrameState evaluate_frame_state(
     const FrameRenderTask& task,
     const std::string& scene_signature);
 renderer2d::DrawList2D build_draw_list(const EvaluatedFrameState& state);
-ExecutedFrame execute_frame_task(const SceneSpec& scene, const RenderPlan& plan, const FrameRenderTask& task, FrameCache& cache);
+ExecutedFrame execute_frame_task(
+    const SceneSpec& scene,
+    const RenderPlan& plan,
+    const FrameRenderTask& task,
+    FrameCache& cache,
+    RenderContext& context);
 
 } // namespace tachyon

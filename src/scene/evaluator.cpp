@@ -212,6 +212,7 @@ LayerType map_layer_type(const std::string& type) {
     if (type == "text") return LayerType::Text;
     if (type == "camera") return LayerType::Camera;
     if (type == "precomp") return LayerType::Precomp;
+    if (type == "light") return LayerType::Light;
     return LayerType::Unknown;
 }
 
@@ -303,6 +304,26 @@ const EvaluatedLayerState& resolve_layer_state(
     std::size_t layer_index,
     EvaluationContext& context);
 
+EvaluatedLightState evaluate_light_state(
+    const EvaluatedLayerState& layer_state,
+    const LayerSpec& spec) {
+    EvaluatedLightState light;
+    light.layer_id = layer_state.id;
+    light.type = spec.light_type.value_or("point");
+    light.position = layer_state.world_position3;
+    
+    // Direction can be derived from world matrix (forward vector)
+    const auto forward = layer_state.world_matrix.transform_vector({0.0f, 0.0f, -1.0f}).normalized();
+    light.direction = forward;
+    
+    light.color = spec.fill_color;
+    light.intensity = static_cast<float>(spec.intensity.value_or(layer_state.opacity));
+    light.attenuation_near = static_cast<float>(spec.attenuation_near.value_or(0.0));
+    light.attenuation_far = static_cast<float>(spec.attenuation_far.value_or(1000.0));
+    
+    return light;
+}
+
 EvaluatedCompositionState evaluate_composition_internal(
     const SceneSpec* scene,
     const CompositionSpec& composition,
@@ -336,7 +357,12 @@ EvaluatedCompositionState evaluate_composition_internal(
     }
 
     for (std::size_t index = 0; index < composition.layers.size(); ++index) {
-        evaluated.layers.push_back(resolve_layer_state(index, context));
+        const auto& layer_state = resolve_layer_state(index, context);
+        if (layer_state.type == LayerType::Light) {
+            evaluated.lights.push_back(evaluate_light_state(layer_state, composition.layers[index]));
+        } else {
+            evaluated.layers.push_back(layer_state);
+        }
     }
 
     evaluated.camera = evaluate_camera_state(composition, evaluated.layers, frame_number, composition_time_seconds);

@@ -27,6 +27,14 @@ void SurfaceRGBA::clear(Color color) {
     std::fill(m_pixels.begin(), m_pixels.end(), pack(color));
 }
 
+void SurfaceRGBA::clear_depth(float depth) {
+    if (m_depth_buffer.size() != m_pixels.size()) {
+        m_depth_buffer.assign(m_pixels.size(), depth);
+    } else {
+        std::fill(m_depth_buffer.begin(), m_depth_buffer.end(), depth);
+    }
+}
+
 bool SurfaceRGBA::set_clip_rect(const RectI& rect) {
     const RectI bounds{0, 0, static_cast<int>(m_width), static_cast<int>(m_height)};
     m_clip_rect = intersect_rects(bounds, rect);
@@ -50,6 +58,13 @@ bool SurfaceRGBA::set_pixel(uint32_t x, uint32_t y, Color color) {
     return true;
 }
 
+bool SurfaceRGBA::set_pixel_with_depth(uint32_t x, uint32_t y, Color color, float inv_z) {
+    if (test_and_write_depth(x, y, inv_z)) {
+        return set_pixel(x, y, color);
+    }
+    return false;
+}
+
 bool SurfaceRGBA::blend_pixel(uint32_t x, uint32_t y, Color color) {
     if (!in_bounds(x, y) || !in_clip(x, y)) {
         return false;
@@ -59,6 +74,23 @@ bool SurfaceRGBA::blend_pixel(uint32_t x, uint32_t y, Color color) {
     const Color dst = unpack(m_pixels[index]);
     m_pixels[index] = pack(blend_src_over_premultiplied(color, dst));
     return true;
+}
+
+bool SurfaceRGBA::test_and_write_depth(uint32_t x, uint32_t y, float inv_z) {
+    if (!in_bounds(x, y) || !in_clip(x, y)) {
+        return false;
+    }
+
+    if (m_depth_buffer.empty()) {
+        clear_depth(0.0f); // Auto-initialize depth buffer if used
+    }
+
+    const std::size_t index = static_cast<std::size_t>(y) * m_width + x;
+    if (inv_z >= m_depth_buffer[index]) {
+        m_depth_buffer[index] = inv_z;
+        return true;
+    }
+    return false;
 }
 
 std::optional<Color> SurfaceRGBA::try_get_pixel(uint32_t x, uint32_t y) const {
@@ -71,6 +103,13 @@ std::optional<Color> SurfaceRGBA::try_get_pixel(uint32_t x, uint32_t y) const {
 Color SurfaceRGBA::get_pixel(uint32_t x, uint32_t y) const {
     const auto pixel = try_get_pixel(x, y);
     return pixel.has_value() ? *pixel : Color::transparent();
+}
+
+float SurfaceRGBA::get_depth(uint32_t x, uint32_t y) const {
+    if (!in_bounds(x, y) || m_depth_buffer.empty()) {
+        return 0.0f;
+    }
+    return m_depth_buffer[static_cast<std::size_t>(y) * m_width + x];
 }
 
 void SurfaceRGBA::fill_rect(const RectI& rect, Color color, bool blend) {
