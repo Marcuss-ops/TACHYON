@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.15)
 project(TACHYON VERSION 0.1.0 LANGUAGES CXX)
 
+include(FetchContent)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -14,6 +16,13 @@ endif()
 
 # Include directories
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+# Header-only JSON dependency for the first scene/job parser slice
+FetchContent_Declare(
+    nlohmann_json
+    URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
+)
+FetchContent_MakeAvailable(nlohmann_json)
 
 # Subdirectories
 add_subdirectory(src)
