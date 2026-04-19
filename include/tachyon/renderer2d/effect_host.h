@@ -29,6 +29,16 @@ public:
     SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
 };
 
+class FillEffect final : public Effect {
+public:
+    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
+};
+
+class TintEffect final : public Effect {
+public:
+    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
+};
+
 class EffectHost {
 public:
     void register_effect(std::string name, std::unique_ptr<Effect> effect);

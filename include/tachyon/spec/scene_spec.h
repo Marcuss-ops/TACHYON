@@ -9,8 +9,17 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 namespace tachyon {
+
+enum class TrackMatteType {
+    None,
+    Alpha,
+    AlphaInverted,
+    Luma,
+    LumaInverted
+};
 
 struct AssetSpec {
     std::string id;
@@ -53,8 +62,22 @@ struct Vector2KeyframeSpec {
     animation::CubicBezierEasing bezier{animation::CubicBezierEasing::linear()};
 };
 
+struct ColorSpec {
+    std::uint8_t r{255}, g{255}, b{255}, a{255};
+};
+
+struct EffectSpec {
+    std::string type;
+    std::string id;
+    bool enabled{true};
+    std::unordered_map<std::string, double> scalars;
+    std::unordered_map<std::string, ColorSpec> colors;
+};
+
 struct ShapePathPointSpec {
     math::Vector2 position{math::Vector2::zero()};
+    math::Vector2 tangent_in{math::Vector2::zero()};
+    math::Vector2 tangent_out{math::Vector2::zero()};
 };
 
 struct ShapePathSpec {
@@ -100,11 +123,19 @@ struct LayerSpec {
     double in_point{0.0};
     double out_point{0.0};
     double opacity{1.0};
+    std::int64_t width{0};
+    std::int64_t height{0};
+    ColorSpec fill_color{255, 255, 255, 255};
+    ColorSpec stroke_color{0, 0, 0, 255};
     std::optional<std::string> parent;
     Transform2D transform;
     std::optional<ShapePathSpec> shape_path;
+    std::vector<EffectSpec> effects;
     AnimatedScalarSpec opacity_property;
     AnimatedScalarSpec time_remap_property;
+    TrackMatteType track_matte_type{TrackMatteType::None};
+    std::optional<std::string> track_matte_layer_id;
+    std::optional<std::string> precomp_id;
 };
 
 struct CompositionSpec {

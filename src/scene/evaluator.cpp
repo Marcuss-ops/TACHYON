@@ -10,6 +10,9 @@
 #include <cstddef>
 #include <optional>
 #include <unordered_map>
+#include <vector>
+#include <string>
+#include <memory>
 
 namespace tachyon {
 namespace scene {
@@ -149,26 +152,89 @@ EvaluatedLayerState make_layer_state(
     evaluated.world_scale = evaluated.scale;
     evaluated.world_opacity = evaluated.opacity;
     evaluated.visible = evaluated.enabled && evaluated.active && evaluated.opacity > 0.0;
+    
+    evaluated.width = layer.width;
+    evaluated.height = layer.height;
+    evaluated.fill_color = layer.fill_color;
+    evaluated.stroke_color = layer.stroke_color;
+    evaluated.effects = layer.effects;
+
     if (layer.shape_path.has_value()) {
         EvaluatedShapePath shape_path;
         shape_path.closed = layer.shape_path->closed;
         shape_path.points.reserve(layer.shape_path->points.size());
         for (const auto& point : layer.shape_path->points) {
-            shape_path.points.push_back(EvaluatedShapePathPoint{point.position});
+            shape_path.points.push_back(EvaluatedShapePathPoint{
+                point.position,
+                point.tangent_in,
+                point.tangent_out
+            });
         }
         evaluated.shape_path = std::move(shape_path);
     }
+
+    evaluated.track_matte_type = layer.track_matte_type;
+    evaluated.track_matte_layer_id = layer.track_matte_layer_id;
+    evaluated.precomp_id = layer.precomp_id;
+
     return evaluated;
 }
 
 struct EvaluationContext {
+    const SceneSpec* scene{nullptr};
     const CompositionSpec& composition;
     std::int64_t frame_number{0};
     double composition_time_seconds{0.0};
     std::unordered_map<std::string, std::size_t> layer_indices;
     std::vector<std::optional<EvaluatedLayerState>> cache;
     std::vector<bool> visiting;
+    std::vector<std::string> composition_stack;
 };
+
+const EvaluatedLayerState& resolve_layer_state(
+    std::size_t layer_index,
+    EvaluationContext& context);
+
+EvaluatedCompositionState evaluate_composition_internal(
+    const SceneSpec* scene,
+    const CompositionSpec& composition,
+    std::int64_t frame_number,
+    std::vector<std::string> stack) {
+    
+    const auto frame = timeline::sample_frame(composition.frame_rate, frame_number);
+
+    EvaluatedCompositionState evaluated;
+    evaluated.composition_id = composition.id;
+    evaluated.composition_name = composition.name;
+    evaluated.width = composition.width;
+    evaluated.height = composition.height;
+    evaluated.frame_rate = composition.frame_rate;
+    evaluated.frame_number = frame.frame_number;
+    evaluated.composition_time_seconds = frame.composition_time_seconds;
+    evaluated.layers.reserve(composition.layers.size());
+
+    EvaluationContext context{
+        scene,
+        composition,
+        frame_number,
+        frame.composition_time_seconds,
+        {},
+        std::vector<std::optional<EvaluatedLayerState>>(composition.layers.size()),
+        std::vector<bool>(composition.layers.size(), false),
+        std::move(stack)
+    };
+
+    for (std::size_t index = 0; index < composition.layers.size(); ++index) {
+        context.layer_indices.emplace(composition.layers[index].id, index);
+    }
+
+    for (std::size_t index = 0; index < composition.layers.size(); ++index) {
+        evaluated.layers.push_back(resolve_layer_state(index, context));
+    }
+
+    evaluated.camera = evaluate_camera_state(composition, evaluated.layers, frame_number, frame.composition_time_seconds);
+    return evaluated;
+}
 
 const EvaluatedLayerState& resolve_layer_state(
     std::size_t layer_index,
@@ -191,9 +257,10 @@ const EvaluatedLayerState& resolve_layer_state(
     const auto& layer = context.composition.layers[layer_index];
     EvaluatedLayerState evaluated = make_layer_state(layer, layer_index, context.frame_number, context.composition_time_seconds);
 
+    // Resolve parent
     if (layer.parent.has_value() && !layer.parent->empty()) {
         const auto parent_it = context.layer_indices.find(*layer.parent);
-        if (parent_it != context.layer_indices.end() && parent_it->second < layer_index) {
+        if (parent_it != context.layer_indices.end() && parent_it->second != layer_index) {
             const auto& parent = resolve_layer_state(parent_it->second, context);
             evaluated.parent_index = parent_it->second;
             evaluated.depth = parent.depth + 1;
@@ -213,6 +280,38 @@ const EvaluatedLayerState& resolve_layer_state(
                 evaluated.world_scale);
             evaluated.world_opacity = parent.world_opacity * evaluated.opacity;
             evaluated.visible = evaluated.enabled && evaluated.active && parent.visible && evaluated.world_opacity > 0.0;
+        }
+    }
+
+    // Resolve track matte
+    if (evaluated.track_matte_layer_id.has_value() && !evaluated.track_matte_layer_id->empty()) {
+        const auto matte_it = context.layer_indices.find(*evaluated.track_matte_layer_id);
+        if (matte_it != context.layer_indices.end()) {
+            evaluated.track_matte_layer_index = matte_it->second;
+        }
+    }
+
+    // Resolve precomp
+    if (evaluated.precomp_id.has_value() && !evaluated.precomp_id->empty() && context.scene) {
+        bool circular = false;
+        for (const auto& id : context.composition_stack) {
+            if (id == *evaluated.precomp_id) {
+                circular = true;
+                break;
+            }
+        }
+
+        if (!circular) {
+            for (const auto& comp : context.scene->compositions) {
+                if (comp.id == *evaluated.precomp_id) {
+                    std::vector<std::string> next_stack = context.composition_stack;
+                    next_stack.push_back(context.composition.id);
+                    evaluated.nested_composition = std::make_shared<EvaluatedCompositionState>(
+                        evaluate_composition_internal(context.scene, comp, context.frame_number, std::move(next_stack))
+                    );
+                    break;
+                }
+            }
         }
     }
 
@@ -263,37 +362,7 @@ EvaluatedCameraState evaluate_camera_state(
 }
 
 EvaluatedCompositionState evaluate_composition_state(const CompositionSpec& composition, std::int64_t frame_number) {
-    const auto frame = timeline::sample_frame(composition.frame_rate, frame_number);
-
-    EvaluatedCompositionState evaluated;
-    evaluated.composition_id = composition.id;
-    evaluated.composition_name = composition.name;
-    evaluated.width = composition.width;
-    evaluated.height = composition.height;
-    evaluated.frame_rate = composition.frame_rate;
-    evaluated.frame_number = frame.frame_number;
-    evaluated.composition_time_seconds = frame.composition_time_seconds;
-    evaluated.layers.reserve(composition.layers.size());
-
-    EvaluationContext context{
-        composition,
-        frame_number,
-        frame.composition_time_seconds,
-        {},
-        std::vector<std::optional<EvaluatedLayerState>>(composition.layers.size()),
-        std::vector<bool>(composition.layers.size(), false)
-    };
-
-    for (std::size_t index = 0; index < composition.layers.size(); ++index) {
-        context.layer_indices.emplace(composition.layers[index].id, index);
-    }
-
-    for (std::size_t index = 0; index < composition.layers.size(); ++index) {
-        evaluated.layers.push_back(resolve_layer_state(index, context));
-    }
-
-    evaluated.camera = evaluate_camera_state(composition, evaluated.layers, frame_number, frame.composition_time_seconds);
-    return evaluated;
+    return evaluate_composition_internal(nullptr, composition, frame_number, {});
 }
 
 std::optional<EvaluatedCompositionState> evaluate_scene_composition_state(
@@ -303,7 +372,7 @@ std::optional<EvaluatedCompositionState> evaluate_scene_composition_state(
 ) {
     for (const auto& composition : scene.compositions) {
         if (composition.id == composition_id) {
-            return evaluate_composition_state(composition, frame_number);
+            return evaluate_composition_internal(&scene, composition, frame_number, {});
         }
     }
     return std::nullopt;
