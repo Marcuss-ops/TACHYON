@@ -8,6 +8,7 @@ add_library(TachyonCore
     runtime/jobs/render_plan.cpp
     runtime/render_graph.cpp
     renderer2d/raster/cpu_rasterizer.cpp
+    cli/core/report.cpp
     cli/core/cli.cpp
 )
 
