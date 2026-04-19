@@ -34,8 +34,46 @@ void print_help(std::ostream& out) {
     out << "TACHYON " << version_string() << '\n';
     out << "Usage:\n";
     out << "  tachyon version\n";
-    out << "  tachyon validate --scene <file>\n";
+    out << "  tachyon validate --scene <file> [--job <file>]\n";
     out << "  tachyon render --scene <file> --job <file> [--out <file>]\n";
+}
+
+bool validate_scene_file(const std::filesystem::path& scene_path, std::ostream& out, std::ostream& err, bool print_success) {
+    const auto parsed = parse_scene_spec_file(scene_path);
+    if (!parsed.value.has_value()) {
+        print_diagnostics(parsed.diagnostics, err);
+        return false;
+    }
+
+    const auto validation = validate_scene_spec(*parsed.value);
+    if (!validation.ok()) {
+        print_diagnostics(validation.diagnostics, err);
+        return false;
+    }
+
+    if (print_success) {
+        out << "scene spec valid\n";
+    }
+    return true;
+}
+
+bool validate_job_file(const std::filesystem::path& job_path, std::ostream& out, std::ostream& err, bool print_success) {
+    const auto parsed = parse_render_job_file(job_path);
+    if (!parsed.value.has_value()) {
+        print_diagnostics(parsed.diagnostics, err);
+        return false;
+    }
+
+    const auto validation = validate_render_job(*parsed.value);
+    if (!validation.ok()) {
+        print_diagnostics(validation.diagnostics, err);
+        return false;
+    }
+
+    if (print_success) {
+        out << "render job valid\n";
+    }
+    return true;
 }
 
 } // namespace
@@ -93,17 +131,15 @@ int run_cli(int argc, char** argv) {
             std::cerr << "--scene is required\n";
             return 1;
         }
-        const auto parsed = parse_scene_spec_file(scene_path);
-        if (!parsed.value.has_value()) {
-            print_diagnostics(parsed.diagnostics, std::cerr);
+
+        if (!validate_scene_file(scene_path, std::cout, std::cerr, true)) {
             return 2;
         }
-        const auto validation = validate_scene_spec(*parsed.value);
-        if (!validation.ok()) {
-            print_diagnostics(validation.diagnostics, std::cerr);
+
+        if (!job_path.empty() && !validate_job_file(job_path, std::cout, std::cerr, true)) {
             return 2;
         }
-        std::cout << "scene spec valid\n";
+
         return 0;
     }
 
@@ -113,14 +149,7 @@ int run_cli(int argc, char** argv) {
             return 1;
         }
 
-        const auto scene = parse_scene_spec_file(scene_path);
-        if (!scene.value.has_value()) {
-            print_diagnostics(scene.diagnostics, std::cerr);
-            return 2;
-        }
-        const auto scene_validation = validate_scene_spec(*scene.value);
-        if (!scene_validation.ok()) {
-            print_diagnostics(scene_validation.diagnostics, std::cerr);
+        if (!validate_scene_file(scene_path, std::cout, std::cerr, false)) {
             return 2;
         }
 

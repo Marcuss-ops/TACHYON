@@ -1,0 +1,40 @@
+{
+  "job_id": "job_001",
+  "scene_ref": "scene.json",
+  "composition_target": "main",
+  "frame_range": {
+    "start": 0,
+    "end": 120
+  },
+  "output": {
+    "destination": {
+      "path": "out/intro.mp4",
+      "overwrite": false
+    },
+    "profile": {
+      "name": "delivery_h264_mp4",
+      "class": "delivery",
+      "container": "mp4",
+      "video": {
+        "codec": "h264",
+        "pixel_format": "yuv420p",
+        "rate_control_mode": "crf",
+        "crf": 18
+      },
+      "audio": {
+        "mode": "encode",
+        "codec": "aac",
+        "sample_rate": 48000,
+        "channels": 2
+      },
+      "buffering": {
+        "strategy": "pipe",
+        "max_frames_in_queue": 8
+      },
+      "color": {
+        "transfer": "bt709",
+        "range": "tv"
+      }
+    }
+  }
+}
