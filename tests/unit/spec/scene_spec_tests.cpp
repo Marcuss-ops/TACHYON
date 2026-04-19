@@ -271,7 +271,7 @@ bool run_scene_spec_tests() {
         check_true(capture_out.str().find("render execution plan valid") != std::string::npos, "CLI render should report graph success");
         check_true(capture_out.str().find("resolved assets: 2") != std::string::npos, "CLI render should report resolved asset count");
         check_true(capture_out.str().find("graph steps:") != std::string::npos, "CLI render should report graph step count");
-        check_true(capture_out.str().find("2d refined backend: cpu-2d-refined") != std::string::npos, "CLI render should report 2D refined backend");
+        check_true(capture_out.str().find("2d refined backend: cpu-2d-surface-rgba") != std::string::npos, "CLI render should report 2D refined backend");
         check_true(capture_out.str().find("composition: main") != std::string::npos, "CLI render should print resolved composition info");
         check_true(capture_err.str().empty(), "CLI render should not emit errors for canonical fixtures");
     }
@@ -311,7 +311,7 @@ bool run_scene_spec_tests() {
         check_true(parsed_json.contains("render_plan"), "render JSON should contain render_plan");
         check_true(parsed_json.contains("render_graph"), "render JSON should contain render_graph");
         check_true(parsed_json.contains("first_frame"), "render JSON should contain first_frame");
-        check_true(parsed_json["first_frame"]["backend_name"] == "cpu-2d-refined", "render JSON should report the refined backend");
+        check_true(parsed_json["first_frame"]["backend_name"] == "cpu-2d-surface-rgba", "render JSON should report the refined backend");
     }
 
     return g_failures == 0;
@@ -372,7 +372,7 @@ bool run_render_job_tests() {
                     check_true(compatibility_key.value != first_key.value, "compatibility mode should affect frame cache identity");
 
                     const auto rasterized = tachyon::render_frame_2d_stub(*plan.value, execution_plan.value->frame_tasks.front());
-                    check_true(rasterized.backend_name == "cpu-2d-refined", "2D refined renderer should report its backend");
+                    check_true(rasterized.backend_name == "cpu-2d-surface-rgba", "2D refined renderer should report its backend");
                     check_true(rasterized.layer_count == 1, "2D stub renderer should reflect composition layer count");
                     check_true(rasterized.estimated_draw_ops == 5, "2D stub renderer should derive deterministic draw ops");
                 }

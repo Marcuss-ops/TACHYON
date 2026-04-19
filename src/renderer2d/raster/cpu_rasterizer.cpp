@@ -1,8 +1,6 @@
 #include "tachyon/renderer2d/rasterizer.h"
 #include <cmath>
 
-#include "../surface_rgba.cpp"
-
 namespace tachyon {
 namespace renderer2d {
 

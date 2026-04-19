@@ -88,18 +88,14 @@ Color SurfaceRGBA::blend_src_over_premultiplied(Color src_straight, Color dst_st
     const uint32_t dst_a = dst_straight.a;
     const uint32_t inv_src_a = 255U - src_a;
 
-    const uint32_t src_r_p = (static_cast<uint32_t>(src_straight.r) * src_a + 127U) / 255U;
-    const uint32_t src_g_p = (static_cast<uint32_t>(src_straight.g) * src_a + 127U) / 255U;
-    const uint32_t src_b_p = (static_cast<uint32_t>(src_straight.b) * src_a + 127U) / 255U;
-
     const uint32_t dst_r_p = (static_cast<uint32_t>(dst_straight.r) * dst_a + 127U) / 255U;
     const uint32_t dst_g_p = (static_cast<uint32_t>(dst_straight.g) * dst_a + 127U) / 255U;
     const uint32_t dst_b_p = (static_cast<uint32_t>(dst_straight.b) * dst_a + 127U) / 255U;
 
     const uint32_t out_a = src_a + (dst_a * inv_src_a + 127U) / 255U;
-    const uint32_t out_r_p = src_r_p + (dst_r_p * inv_src_a + 127U) / 255U;
-    const uint32_t out_g_p = src_g_p + (dst_g_p * inv_src_a + 127U) / 255U;
-    const uint32_t out_b_p = src_b_p + (dst_b_p * inv_src_a + 127U) / 255U;
+    const uint32_t out_r_p = static_cast<uint32_t>(src_straight.r) + (dst_r_p * inv_src_a + 127U) / 255U;
+    const uint32_t out_g_p = static_cast<uint32_t>(src_straight.g) + (dst_g_p * inv_src_a + 127U) / 255U;
+    const uint32_t out_b_p = static_cast<uint32_t>(src_straight.b) + (dst_b_p * inv_src_a + 127U) / 255U;
 
     if (out_a == 0U) {
         return Color::transparent();
