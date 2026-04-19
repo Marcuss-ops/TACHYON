@@ -12,6 +12,8 @@ add_library(TachyonCore
     runtime/render_graph.cpp
     renderer2d/raster/cpu_rasterizer.cpp
     renderer2d/framebuffer.cpp
+    text/font.cpp
+    text/layout.cpp
     cli/core/report.cpp
     cli/core/options.cpp
     cli/core/cli.cpp
