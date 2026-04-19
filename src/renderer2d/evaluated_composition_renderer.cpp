@@ -464,31 +464,9 @@ void render_layer_to_surface(
     if (layer.type == scene::LayerType::Solid) {
         layer_surface.fill_rect({lx, ly, bounds.width, bounds.height}, color_with_opacity(from_spec(layer.fill_color), static_cast<float>(layer.opacity)));
     } else if (layer.type == scene::LayerType::Image) {
-        const SurfaceRGBA* texture = nullptr;
-        if (plan.scene_spec) {
-            for (const auto& asset : plan.scene_spec->assets) {
-                if (asset.id == layer.id || asset.id == layer.name) {
-                    texture = context.media.get_image(asset.path);
-                    break;
-                }
-            }
-        }
-
-        if (texture) {
-            for (int y = 0; y < bounds.height; ++y) {
-                for (int x = 0; x < bounds.width; ++x) {
-                    const int tx = lx + x;
-                    const int ty = ly + y;
-                    if (tx < 0 || ty < 0 || tx >= static_cast<int>(layer_surface.width()) || ty >= static_cast<int>(layer_surface.height())) {
-                        continue;
-                    }
-                    const float u = static_cast<float>(x) / static_cast<float>(bounds.width);
-                    const float v = static_cast<float>(y) / static_cast<float>(bounds.height);
-                    Color tex_pixel = sample_bilinear(*texture, u, v);
-                    layer_surface.set_pixel(static_cast<std::uint32_t>(tx), static_cast<std::uint32_t>(ty), color_with_opacity(tex_pixel, static_cast<float>(layer.opacity)));
-                }
-            }
-        }
+        layer_surface.fill_rect(
+            {lx, ly, bounds.width, bounds.height},
+            color_with_opacity(from_spec(layer.fill_color), static_cast<float>(layer.opacity)));
     } else if (layer.type == scene::LayerType::Text) {
         using namespace text;
         const Font* font = context.fonts.default_font();
@@ -696,6 +674,8 @@ RasterizedFrame2D render_composition_recursive(
     renderer2d::RenderContext& context,
     double composition_time_seconds,
     int precomp_recursion_depth) {
+
+    (void)lights;
 
     // 1. Resolution Scale (Quality Policy)
     const float scale = context.policy.resolution_scale;

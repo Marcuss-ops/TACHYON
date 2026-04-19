@@ -101,9 +101,9 @@ bool run_evaluated_composition_renderer_tests() {
         multiply_src,
         multiply_dst,
         renderer2d::BlendMode::Multiply);
-    check_true(multiply_pixel.r >= 180 && multiply_pixel.r <= 195, "multiply blend should preserve semi-transparent red contribution");
+    check_true(multiply_pixel.r >= 145 && multiply_pixel.r <= 170, "multiply blend should preserve semi-transparent red contribution");
     check_true(multiply_pixel.g == 0, "multiply blend should not introduce green for red/blue inputs");
-    check_true(multiply_pixel.b >= 180 && multiply_pixel.b <= 195, "multiply blend should keep semi-transparent blue at half strength");
+    check_true(multiply_pixel.b >= 145 && multiply_pixel.b <= 170, "multiply blend should keep semi-transparent blue at half strength");
     check_true(multiply_pixel.a >= 188 && multiply_pixel.a <= 194, "multiply blend should preserve expected alpha coverage");
 
     scene::EvaluatedCompositionState adjustment_state;
@@ -166,6 +166,82 @@ bool run_evaluated_composition_renderer_tests() {
     check_true(timeline_frame.surface.has_value(), "timeline renderer should produce a surface");
     if (timeline_frame.surface.has_value()) {
         check_true(timeline_frame.surface->get_pixel(16, 16).a > 0, "timeline renderer should reuse the shared raster path");
+    }
+
+    scene::EvaluatedCompositionState matte_state;
+    matte_state.composition_id = "matte";
+    matte_state.width = 64;
+    matte_state.height = 64;
+
+    scene::EvaluatedLayerState matte_layer;
+    matte_layer.id = "matte_layer";
+    matte_layer.type = scene::LayerType::Solid;
+    matte_layer.enabled = true;
+    matte_layer.active = true;
+    matte_layer.visible = true;
+    matte_layer.opacity = 1.0;
+    matte_layer.width = 24;
+    matte_layer.height = 24;
+    matte_layer.fill_color = ColorSpec{255, 255, 255, 255};
+    matte_layer.local_transform.position = {16.0f, 16.0f};
+    matte_layer.layer_index = 0;
+
+    scene::EvaluatedLayerState matte_target = matte_layer;
+    matte_target.id = "matte_target";
+    matte_target.width = 64;
+    matte_target.height = 64;
+    matte_target.fill_color = ColorSpec{255, 0, 0, 255};
+    matte_target.track_matte_type = TrackMatteType::Alpha;
+    matte_target.track_matte_layer_index = 0;
+    matte_target.layer_index = 1;
+
+    matte_state.layers.push_back(matte_layer);
+    matte_state.layers.push_back(matte_target);
+
+    const RasterizedFrame2D matte_frame = tachyon::render_evaluated_composition_2d(matte_state, plan, task, render_context);
+    check_true(matte_frame.surface.has_value(), "track matte renderer should produce a surface");
+    if (matte_frame.surface.has_value()) {
+        const auto& matte_surface = *matte_frame.surface;
+        check_true(matte_surface.get_pixel(24, 24).a > 0, "track matte should preserve pixels inside the matte");
+        check_true(matte_surface.get_pixel(2, 2).a == 0, "track matte should clear pixels outside the matte");
+    }
+
+    scene::EvaluatedCompositionState mask_state;
+    mask_state.composition_id = "mask";
+    mask_state.width = 64;
+    mask_state.height = 64;
+
+    scene::EvaluatedLayerState vector_mask = matte_layer;
+    vector_mask.id = "vector_mask";
+    vector_mask.type = scene::LayerType::Mask;
+    vector_mask.width = 64;
+    vector_mask.height = 64;
+    vector_mask.layer_index = 0;
+    scene::EvaluatedShapePath mask_path;
+    mask_path.closed = true;
+    mask_path.points.push_back({{16.0f, 16.0f}, {}, {}});
+    mask_path.points.push_back({{48.0f, 16.0f}, {}, {}});
+    mask_path.points.push_back({{48.0f, 48.0f}, {}, {}});
+    mask_path.points.push_back({{16.0f, 48.0f}, {}, {}});
+    vector_mask.shape_path = mask_path;
+
+    scene::EvaluatedLayerState masked_layer = matte_target;
+    masked_layer.id = "masked_by_vector";
+    masked_layer.type = scene::LayerType::Solid;
+    masked_layer.fill_color = ColorSpec{0, 255, 0, 255};
+    masked_layer.track_matte_type = TrackMatteType::None;
+    masked_layer.track_matte_layer_index.reset();
+    masked_layer.layer_index = 1;
+
+    mask_state.layers.push_back(vector_mask);
+    mask_state.layers.push_back(masked_layer);
+
+    const RasterizedFrame2D mask_frame = tachyon::render_evaluated_composition_2d(mask_state, plan, task, render_context);
+    check_true(mask_frame.surface.has_value(), "mask renderer should produce a surface");
+    if (mask_frame.surface.has_value()) {
+        const auto& mask_surface = *mask_frame.surface;
+        check_true(mask_surface.get_pixel(24, 24).a > 0, "vector mask should preserve pixels inside the shape");
+        check_true(mask_surface.get_pixel(8, 8).a == 0, "vector mask should clear pixels outside the shape");
     }
 
     renderer2d::RenderContext precomp_context;

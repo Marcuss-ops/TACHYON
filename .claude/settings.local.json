@@ -16,7 +16,9 @@
       "Bash(cmake --build build --config Release)",
       "Bash(./build/tests/Release/TachyonTests.exe)",
       "Bash(cmake --version)",
-      "Bash(cmake -S . -B build)"
+      "Bash(cmake -S . -B build)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }
