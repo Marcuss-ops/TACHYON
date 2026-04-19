@@ -15,6 +15,7 @@ add_executable(TachyonTests
     unit/spec/scene_spec_tests.cpp
     unit/text/text_tests.cpp
     integration/render_session_tests.cpp
+    integration/parallax_cards_tests.cpp
 )
 
 set(TACHYON_TESTS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
