@@ -24,18 +24,18 @@ bool run_frame_cache_tests() {
     FrameCache cache;
     CachedFrame frame{
         FrameCacheEntry{FrameCacheKey{"frame:A"}, "frame A"},
-        "state:v1",
+        "scene:v1",
         tachyon::renderer2d::Framebuffer(16, 16),
         {"scene.parameter"}
     };
     frame.frame.clear(tachyon::renderer2d::Color::red());
     cache.store(frame);
 
-    check_true(cache.lookup(FrameCacheKey{"frame:A"}, "state:v1") != nullptr, "Cache hit with matching fingerprint");
-    check_true(cache.lookup(FrameCacheKey{"frame:A"}, "state:v2") == nullptr, "Cache miss when fingerprint changes");
+    check_true(cache.lookup(FrameCacheKey{"frame:A"}, "scene:v1") != nullptr, "Cache hit with matching scene signature");
+    check_true(cache.lookup(FrameCacheKey{"frame:A"}, "scene:v2") == nullptr, "Cache miss when scene signature changes");
 
     cache.invalidate("scene.parameter");
-    check_true(cache.lookup(FrameCacheKey{"frame:A"}, "state:v1") == nullptr, "Invalidation removes dependent entry");
+    check_true(cache.lookup(FrameCacheKey{"frame:A"}, "scene:v1") == nullptr, "Invalidation removes dependent entry");
 
     return g_failures == 0;
 }
