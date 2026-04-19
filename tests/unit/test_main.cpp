@@ -14,6 +14,7 @@ bool run_property_tests();
 bool run_expression_tests();
 bool run_scene_evaluator_tests();
 bool run_render_session_tests();
+bool run_parallax_cards_tests();
 bool run_timeline_tests();
 bool run_text_tests();
 
@@ -75,6 +76,11 @@ int main() {
 
     if (!run_render_session_tests()) {
         std::cerr << "render session tests failed\n";
+        return 1;
+    }
+
+    if (!run_parallax_cards_tests()) {
+        std::cerr << "camera card tests failed\n";
         return 1;
     }
 
