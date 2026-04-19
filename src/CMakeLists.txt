@@ -14,7 +14,7 @@ add_library(TachyonCore
     scene/evaluator.cpp
     timeline/time.cpp
     renderer2d/raster/cpu_rasterizer.cpp
-    renderer2d/framebuffer.cpp
+    renderer2d/surface_rgba.cpp
     text/font.cpp
     text/layout.cpp
     cli/core/report.cpp

@@ -6,7 +6,7 @@ namespace tachyon {
 namespace math {
 
 Matrix4x4 Transform3::to_matrix() const {
-    return compose_trs(position, rotation, scale);
+    return math::compose_trs(position, rotation, scale);
 }
 
 Matrix4x4 Transform3::to_inverse_matrix() const {
