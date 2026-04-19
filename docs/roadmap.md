@@ -12,32 +12,34 @@ Deliverables:
 - architecture overview
 - execution model
 - property model
+- property animation model
+- animation system design
 - determinism design
 - parallelism design
 - render job model
+- scene model design
 - scene spec design
-- render strategy design
-- pixel pipeline design
-- camera and 3D scene design
-- lighting and materials design
-- 3D mesh and extrusion design
+- render backend strategy
+- 2D and 3D compositing boundary
 - expression system design
+- expression runtime design
 - effects system design
+- effects priority matrix
 - masking and matte design
 - shape system design
 - text animator design
 - text layout and shaping design
+- camera system design
+- light system design
 - time system design
-- motion blur design
 - color management design
 - asset pipeline design
-- decode and encode design
-- voice-over and subtitles design
-- multi-format output design
 - deterministic caching design
 - audio reactivity design
+- audio-driven animation design
 - data binding design
 - testing and compatibility design
+- CPU path tracing direction
 
 ## Phase 1 — Core 2D scene and compositing engine
 
@@ -53,6 +55,8 @@ Target systems:
 - basic timeline evaluation
 - initial property model integration
 - image and solid layer rendering
+- first text path
+- first shape path
 - first compositing path
 - encoded output through a native media pipeline
 
@@ -62,12 +66,13 @@ Turn the scene engine into a usable motion graphics engine.
 
 Target systems:
 
-- shape layers
 - masks and track mattes
-- text layout foundation
+- serious text layout foundation
 - text animator framework
 - subtitle burn-in path
-- first effect graph path
+- first effect host path
+- first effect set from the priority matrix
+- adjustment-layer semantics
 - initial multi-format output support
 
 Initial feature cut for this phase:
@@ -85,27 +90,29 @@ Make the engine truly reusable, automatable, and media-pipeline friendly.
 Target systems:
 
 - expression evaluation
+- bounded expression runtime
 - data binding
 - scene parameter overrides
 - render-job override flows
+- audio feature ingestion
 - audio-driven property hooks
 - voice-over timing hooks
 - subtitle timing and forced-alignment integration points
 
 ## Phase 4 — 3D scene and offline rendering
 
-Expand the engine into a serious CPU-first 3D rendering system.
+Expand the engine into a serious CPU-first 3D rendering system without collapsing the compositor into a monolithic renderer.
 
 Target systems:
 
-- perspective and orthographic cameras
+- perspective cameras with explicit lens and DOF semantics
 - lights and materials
-- mesh import
-- text and shape extrusion
-- hybrid 2D and 3D render planning
+- glTF-first mesh import
+- render-pass contract for 3D layers and precomps
 - Embree-backed ray intersection path
-- Open Image Denoise integration
-- early path-traced lighting, reflections, refractions, and DOF
+- Open Image Denoise integration as an explicit post-render stage
+- early path-traced lighting, reflections, refractions, shadows, and DOF
+- text and shape extrusion after the scene and text foundations are stable
 
 ## Phase 5 — Performance and scale
 
