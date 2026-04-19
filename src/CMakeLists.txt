@@ -2,6 +2,9 @@
 add_library(TachyonCore
     core/model/tachyon.cpp
     core/math/matrix4x4.cpp
+    core/math/quaternion.cpp
+    core/math/transform3.cpp
+    core/camera/camera_state.cpp
     media/assets/asset_resolution.cpp
     spec/parser/scene_spec.cpp
     runtime/jobs/render_job.cpp
