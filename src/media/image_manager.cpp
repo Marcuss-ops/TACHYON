@@ -2,16 +2,31 @@
 
 #include <iostream>
 
-// Integration of stb_image for real decoding. 
-// If stb_image.h is missing, uncomment the implementation once the header is available.
 #define STB_IMAGE_IMPLEMENTATION
-#define STBI_NO_STDIO
-#if __has_include("stb_image.h")
-    #include "stb_image.h"
-    #define TACHYON_HAS_STBI
-#endif
+#include "stb_image.h"
 
 namespace tachyon::media {
+
+static std::unique_ptr<renderer2d::SurfaceRGBA> decode_image(const std::filesystem::path& path) {
+    int w, h, channels;
+    unsigned char* data = stbi_load(path.string().c_str(), &w, &h, &channels, 4);
+    if (!data) return nullptr;
+
+    auto surface = std::make_unique<renderer2d::SurfaceRGBA>(static_cast<uint32_t>(w), static_cast<uint32_t>(h));
+    for (int y = 0; y < h; ++y) {
+        for (int x = 0; x < w; ++x) {
+            int i = (y * w + x) * 4;
+            renderer2d::Color c{data[i], data[i+1], data[i+2], data[i+3]};
+            // premoltiplica subito — il resto del motore se lo aspetta
+            c.r = static_cast<uint8_t>((uint32_t)c.r * c.a / 255U);
+            c.g = static_cast<uint8_t>((uint32_t)c.g * c.a / 255U);
+            c.b = static_cast<uint8_t>((uint32_t)c.b * c.a / 255U);
+            surface->set_pixel(static_cast<uint32_t>(x), static_cast<uint32_t>(y), c);
+        }
+    }
+    stbi_image_free(data);
+    return surface;
+}
 
 ImageManager& ImageManager::instance() {
     static ImageManager inst;
@@ -20,36 +35,23 @@ ImageManager& ImageManager::instance() {
 
 const renderer2d::SurfaceRGBA* ImageManager::get_image(const std::filesystem::path& path) {
     const std::string key = path.string();
+
+    { // lookup cached image
+        std::lock_guard<std::mutex> lock(m_mutex);
+        auto it = m_cache.find(key);
+        if (it != m_cache.end()) return it->second.get();
+    }
+
+    // decode outside the lock (expensive)
+    auto surface = decode_image(path);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+    // double-check: another thread might have loaded it in the meantime
     auto it = m_cache.find(key);
-    if (it != m_cache.end()) {
-        return it->second.get();
-    }
-
-    // Try to load real image (conceptual placeholder for now)
-    std::unique_ptr<renderer2d::SurfaceRGBA> surface;
-
-#ifdef TACHYON_HAS_STBI
-    // Real implementation using stb_image
-    /*
-    int width, height, channels;
-    unsigned char* data = stbi_load(path.c_str(), &width, &height, &channels, 4);
-    if (data) {
-        surface = std::make_unique<renderer2d::SurfaceRGBA>(width, height);
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
-                int offset = (y * width + x) * 4;
-                surface->set_pixel(x, y, renderer2d::Color{
-                    data[offset], data[offset + 1], data[offset + 2], data[offset + 3]
-                });
-            }
-        }
-        stbi_image_free(data);
-    }
-    */
-#endif
+    if (it != m_cache.end()) return it->second.get();
 
     if (!surface) {
-        // Fallback: Generate a diagnostic pattern
+        // Fallback: Generate a diagnostic pattern if decoding failed
         surface = std::make_unique<renderer2d::SurfaceRGBA>(256, 256);
         for (uint32_t y = 0; y < 256; ++y) {
             for (uint32_t x = 0; x < 256; ++x) {
@@ -63,14 +65,16 @@ const renderer2d::SurfaceRGBA* ImageManager::get_image(const std::filesystem::pa
                 }
             }
         }
-        std::cout << "[ImageManager] Generated fallback pattern for: " << key << std::endl;
+        std::cout << "[ImageManager] Generated fallback pattern for missing/corrupt image: " << key << std::endl;
     }
 
+    const renderer2d::SurfaceRGBA* ptr = surface.get();
     m_cache[key] = std::move(surface);
-    return m_cache[key].get();
+    return ptr;
 }
 
 void ImageManager::clear_cache() {
+    std::lock_guard<std::mutex> lock(m_mutex);
     m_cache.clear();
 }
 

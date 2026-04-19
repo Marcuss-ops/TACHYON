@@ -132,6 +132,30 @@ bool read_scalar_like(const json& value, double& out) {
     return false;
 }
 
+std::optional<AudioBandType> parse_audio_band_type(const json& value) {
+    if (!value.is_string()) {
+        return std::nullopt;
+    }
+
+    const std::string band = value.get<std::string>();
+    if (band == "bass") {
+        return AudioBandType::Bass;
+    }
+    if (band == "mid") {
+        return AudioBandType::Mid;
+    }
+    if (band == "high") {
+        return AudioBandType::High;
+    }
+    if (band == "presence") {
+        return AudioBandType::Presence;
+    }
+    if (band == "rms") {
+        return AudioBandType::Rms;
+    }
+    return std::nullopt;
+}
+
 bool read_vector2_object(const json& value, math::Vector2& out) {
     if (!value.is_object()) {
         return false;
@@ -248,6 +272,23 @@ void parse_optional_scalar_property(const json& object, const char* key, Animate
     if (value.is_object()) {
         if (value.contains("value") && value.at("value").is_number()) {
             property.value = value.at("value").get<double>();
+        }
+
+        if (value.contains("audio_band")) {
+            const auto audio_band = parse_audio_band_type(value.at("audio_band"));
+            if (audio_band.has_value()) {
+                property.audio_band = *audio_band;
+                if (value.contains("min") && value.at("min").is_number()) {
+                    property.audio_min = value.at("min").get<double>();
+                }
+                if (value.contains("max") && value.at("max").is_number()) {
+                    property.audio_max = value.at("max").get<double>();
+                }
+                return;
+            }
+
+            diagnostics.add_error("scene.layer.property_invalid", std::string(key) + ".audio_band must be bass, mid, high, presence, or rms", make_path(path, key));
+            return;
         }
 
         if (value.contains("keyframes") && value.at("keyframes").is_array()) {
@@ -426,6 +467,13 @@ LayerSpec parse_layer(const json& object, const std::string& path, DiagnosticBag
     parse_shape_path(object, layer, path, diagnostics);
 
     parse_optional_scalar_property(object, "time_remap", layer.time_remap_property, path, diagnostics);
+
+    if (object.contains("text_content")) {
+        layer.text_content = object.at("text_content").get<std::string>();
+    }
+    if (object.contains("stroke_width")) {
+        layer.stroke_width = object.at("stroke_width").get<float>();
+    }
 
     return layer;
 }
@@ -674,7 +722,8 @@ ValidationResult validate_scene_spec(const SceneSpec& scene) {
                     "mask",
                     "precomp",
                     "null",
-                    "camera"
+                    "camera",
+                    "video"
                 };
                 if (!allowed_types.contains(layer.type)) {
                     result.diagnostics.add_error("scene.layer.type_unsupported", "unsupported layer type: " + layer.type, layer_path + ".type");
