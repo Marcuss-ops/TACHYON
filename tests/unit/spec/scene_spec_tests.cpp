@@ -2,6 +2,8 @@
 #include "tachyon/runtime/render_job.h"
 #include "tachyon/spec/scene_spec.h"
 
+#include <nlohmann/json.hpp>
+
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -100,6 +102,43 @@ bool run_scene_spec_tests() {
     }
 
     {
+        const std::vector<std::string> args = {"tachyon", "--help"};
+        std::vector<char*> argv;
+        argv.reserve(args.size());
+        for (const auto& arg : args) {
+            argv.push_back(const_cast<char*>(arg.c_str()));
+        }
+
+        StreamCapture capture_out(std::cout);
+        StreamCapture capture_err(std::cerr);
+        const int exit_code = tachyon::run_cli(static_cast<int>(argv.size()), argv.data());
+        check_true(exit_code == 0, "CLI --help should exit successfully");
+        check_true(capture_out.str().find("Usage:") != std::string::npos, "CLI --help should print usage");
+        check_true(capture_err.str().empty(), "CLI --help should not emit errors");
+    }
+
+    {
+        const std::vector<std::string> args = {"tachyon", "version", "--json"};
+        std::vector<char*> argv;
+        argv.reserve(args.size());
+        for (const auto& arg : args) {
+            argv.push_back(const_cast<char*>(arg.c_str()));
+        }
+
+        StreamCapture capture_out(std::cout);
+        StreamCapture capture_err(std::cerr);
+        const int exit_code = tachyon::run_cli(static_cast<int>(argv.size()), argv.data());
+        check_true(exit_code == 0, "CLI version --json should exit successfully");
+        check_true(capture_err.str().empty(), "CLI version --json should not emit errors");
+        const auto parsed_json = nlohmann::json::parse(capture_out.str());
+        check_true(parsed_json["report_type"] == "version", "version JSON should include report type");
+        check_true(parsed_json["schema_name"] == "tachyon.version.report", "version JSON should include schema name");
+        check_true(parsed_json["schema_version"] == "1.0", "version JSON should include schema version");
+        check_true(parsed_json["diagnostics"].is_array(), "version JSON should include diagnostics array");
+        check_true(!parsed_json["diagnostics"].empty(), "version JSON diagnostics should not be empty");
+    }
+
+    {
         const auto path = tests_root() / "fixtures" / "scenes" / "canonical_scene.json";
         const auto job_path = tests_root() / "fixtures" / "jobs" / "canonical_render_job.json";
         const std::vector<std::string> args = {
@@ -124,6 +163,108 @@ bool run_scene_spec_tests() {
         check_true(capture_out.str().find("scene spec valid") != std::string::npos, "CLI validate should report scene success");
         check_true(capture_out.str().find("render job valid") != std::string::npos, "CLI validate should report job success");
         check_true(capture_err.str().empty(), "CLI validate should not emit errors for canonical fixtures");
+    }
+
+    {
+        const auto path = tests_root() / "fixtures" / "scenes" / "canonical_scene.json";
+        const auto job_path = tests_root() / "fixtures" / "jobs" / "canonical_render_job.json";
+        const std::vector<std::string> args = {
+            "tachyon",
+            "validate",
+            "--scene",
+            path.string(),
+            "--job",
+            job_path.string(),
+            "--json"
+        };
+
+        std::vector<char*> argv;
+        argv.reserve(args.size());
+        for (const auto& arg : args) {
+            argv.push_back(const_cast<char*>(arg.c_str()));
+        }
+
+        StreamCapture capture_out(std::cout);
+        StreamCapture capture_err(std::cerr);
+        const int exit_code = tachyon::run_cli(static_cast<int>(argv.size()), argv.data());
+        check_true(exit_code == 0, "CLI validate --json should accept canonical scene and job fixtures");
+        check_true(capture_err.str().empty(), "CLI validate --json should not emit errors for canonical fixtures");
+        const auto parsed_json = nlohmann::json::parse(capture_out.str());
+        check_true(parsed_json["report_type"] == "validate", "validate JSON should include report type");
+        check_true(parsed_json["schema_name"] == "tachyon.validate.report", "validate JSON should include schema name");
+        check_true(parsed_json["schema_version"] == "1.1", "validate JSON should include schema version");
+        check_true(parsed_json["diagnostics"].is_array(), "validate JSON should include diagnostics array");
+        check_true(!parsed_json["diagnostics"].empty(), "validate JSON diagnostics should not be empty");
+        check_true(parsed_json["scene_valid"].get<bool>(), "validate JSON should mark the scene as valid");
+        check_true(parsed_json["job_valid"].get<bool>(), "validate JSON should mark the job as valid");
+    }
+
+    {
+        const auto path = tests_root() / "fixtures" / "scenes" / "canonical_scene.json";
+        const auto job_path = tests_root() / "fixtures" / "jobs" / "canonical_render_job.json";
+        const std::vector<std::string> args = {
+            "tachyon",
+            "inspect",
+            "--scene",
+            path.string(),
+            "--job",
+            job_path.string(),
+            "--json"
+        };
+
+        std::vector<char*> argv;
+        argv.reserve(args.size());
+        for (const auto& arg : args) {
+            argv.push_back(const_cast<char*>(arg.c_str()));
+        }
+
+        StreamCapture capture_out(std::cout);
+        StreamCapture capture_err(std::cerr);
+        const int exit_code = tachyon::run_cli(static_cast<int>(argv.size()), argv.data());
+        check_true(exit_code == 0, "CLI inspect --json should accept canonical scene and job fixtures");
+        check_true(capture_err.str().empty(), "CLI inspect --json should not emit errors for canonical fixtures");
+        const auto parsed_json = nlohmann::json::parse(capture_out.str());
+        check_true(parsed_json["report_type"] == "inspect", "inspect JSON should include report type");
+        check_true(parsed_json["schema_name"] == "tachyon.inspect.report", "inspect JSON should include schema name");
+        check_true(parsed_json["schema_version"] == "1.1", "inspect JSON should include schema version");
+        check_true(parsed_json["diagnostics"].is_array(), "inspect JSON should include diagnostics array");
+        check_true(!parsed_json["diagnostics"].empty(), "inspect JSON diagnostics should not be empty");
+        check_true(parsed_json.contains("render_plan"), "inspect JSON should contain render plan");
+    }
+
+    {
+        const auto path = tests_root() / "fixtures" / "scenes" / "canonical_scene.json";
+        const auto job_path = tests_root() / "fixtures" / "jobs" / "canonical_render_job.json";
+        const std::vector<std::string> args = {
+            "tachyon",
+            "render",
+            "--scene",
+            path.string(),
+            "--job",
+            job_path.string(),
+            "--json"
+        };
+
+        std::vector<char*> argv;
+        argv.reserve(args.size());
+        for (const auto& arg : args) {
+            argv.push_back(const_cast<char*>(arg.c_str()));
+        }
+
+        StreamCapture capture_out(std::cout);
+        StreamCapture capture_err(std::cerr);
+        const int exit_code = tachyon::run_cli(static_cast<int>(argv.size()), argv.data());
+        check_true(exit_code == 0, "CLI render --json should accept canonical scene and job fixtures");
+        check_true(capture_err.str().empty(), "CLI render --json should not emit errors for canonical fixtures");
+        const auto parsed_json = nlohmann::json::parse(capture_out.str());
+        check_true(parsed_json["report_type"] == "render", "render JSON should include report type");
+        check_true(parsed_json["schema_name"] == "tachyon.render.report", "render JSON should include schema name");
+        check_true(parsed_json["schema_version"] == "1.1", "render JSON should include schema version");
+        check_true(parsed_json["status"] == "warning", "render JSON should report warning status for the stub backend");
+        check_true(parsed_json["diagnostics"].is_array(), "render JSON should include diagnostics array");
+        check_true(!parsed_json["diagnostics"].empty(), "render JSON diagnostics should not be empty");
+        check_true(parsed_json["diagnostics"].back()["severity"] == "warning", "render JSON should carry a warning diagnostic");
+        check_true(parsed_json["diagnostics"].back()["code"] == "cli.render.stub_backend_only", "render JSON should identify the stub backend warning");
     }
 
     return g_failures == 0;
