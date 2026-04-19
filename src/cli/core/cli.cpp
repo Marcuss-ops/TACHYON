@@ -8,6 +8,7 @@
 #include "tachyon/runtime/render_graph.h"
 #include "tachyon/runtime/render_plan.h"
 #include "tachyon/runtime/render_job.h"
+#include "tachyon/runtime/render_session.h"
 #include "tachyon/spec/scene_spec.h"
 
 #include <filesystem>
@@ -98,7 +99,11 @@ bool load_render_job(const std::filesystem::path& job_path, RenderJob& job, std:
     return true;
 }
 
-void print_execution_plan(const RenderExecutionPlan& execution_plan, const RasterizedFrame2D& rasterized_first_frame, std::ostream& out) {
+void print_execution_plan(
+    const RenderExecutionPlan& execution_plan,
+    const RasterizedFrame2D& rasterized_first_frame,
+    const RenderSessionResult& session_result,
+    std::ostream& out) {
     out << "render execution plan valid\n";
     out << "scene: " << execution_plan.render_plan.scene_ref << '\n';
     out << "job: " << execution_plan.render_plan.job_id << '\n';
@@ -109,10 +114,13 @@ void print_execution_plan(const RenderExecutionPlan& execution_plan, const Raste
     out << "resolved assets: " << execution_plan.resolved_asset_count << '\n';
     out << "graph steps: " << execution_plan.steps.size() << '\n';
     out << "frame tasks: " << execution_plan.frame_tasks.size() << '\n';
+    out << "rendered frames: " << session_result.frames.size() << '\n';
+    out << "cache hits: " << session_result.cache_hits << '\n';
+    out << "cache misses: " << session_result.cache_misses << '\n';
     out << "first frame cache key: " << rasterized_first_frame.cache_key << '\n';
-    out << "2d refined backend: " << rasterized_first_frame.backend_name << '\n';
-    out << "2d stub draw ops: " << rasterized_first_frame.estimated_draw_ops << '\n';
-    out << "note: pixel rendering is not wired yet; this command validates the graph and stub raster slice\n";
+    out << "2d runtime backend: " << rasterized_first_frame.backend_name << '\n';
+    out << "first frame draw ops: " << rasterized_first_frame.estimated_draw_ops << '\n';
+    out << "note: frame-by-frame execution is active and writes PNG sequence output when a destination path is provided\n";
 }
 
 bool run_validate_command(const CliOptions& options, std::ostream& out, std::ostream& err) {
@@ -210,9 +218,23 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
         return false;
     }
 
-    const auto first_frame = execution_result.value->frame_tasks.empty()
-        ? RasterizedFrame2D{}
-        : render_frame_2d_stub(*plan_result.value, execution_result.value->frame_tasks.front());
+    RenderSession session;
+    const std::filesystem::path output_path = job.output.destination.path.empty()
+        ? std::filesystem::path{}
+        : std::filesystem::path(job.output.destination.path);
+    const RenderSessionResult session_result = session.render(context.scene, *execution_result.value, output_path);
+
+    RasterizedFrame2D first_frame;
+    if (!session_result.frames.empty()) {
+        first_frame.frame_number = session_result.frames.front().frame_number;
+        first_frame.width = session_result.frames.front().frame.width();
+        first_frame.height = session_result.frames.front().frame.height();
+        first_frame.layer_count = plan_result.value->composition.layer_count;
+        first_frame.estimated_draw_ops = session_result.frames.front().draw_command_count;
+        first_frame.backend_name = "cpu-frame-executor";
+        first_frame.cache_key = session_result.frames.front().cache_key.value;
+        first_frame.note = session_result.frames.front().cache_hit ? "cache-hit" : "cache-miss";
+    }
 
     if (options.json_output) {
         out << make_render_report_json(context.scene, context.assets, *plan_result.value, *execution_result.value, first_frame) << '\n';
@@ -221,7 +243,7 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
 
     out << "scene file: " << options.scene_path.string() << '\n';
     out << "job file: " << options.job_path.string() << '\n';
-    print_execution_plan(*execution_result.value, first_frame, out);
+    print_execution_plan(*execution_result.value, first_frame, session_result, out);
     return true;
 }
 
