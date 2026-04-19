@@ -90,5 +90,25 @@ bool run_evaluated_composition_renderer_tests() {
     }
     check_true(text_visible, "text layer should render visible pixels");
 
+    timeline::EvaluatedCompositionState timeline_state;
+    timeline_state.composition_id = "timeline_main";
+    timeline_state.width = 64;
+    timeline_state.height = 64;
+
+    timeline::EvaluatedLayerState timeline_layer;
+    timeline_layer.id = "timeline_solid";
+    timeline_layer.type = timeline::LayerType::Solid;
+    timeline_layer.visible = true;
+    timeline_layer.opacity = 1.0f;
+    timeline_layer.transform2.position = {8.0f, 8.0f};
+    timeline_layer.transform2.scale = {1.0f, 1.0f};
+    timeline_state.layers.push_back(timeline_layer);
+
+    const RasterizedFrame2D timeline_frame = tachyon::render_evaluated_composition_2d(timeline_state, plan, task);
+    check_true(timeline_frame.surface.has_value(), "timeline renderer should produce a surface");
+    if (timeline_frame.surface.has_value()) {
+        check_true(timeline_frame.surface->get_pixel(16, 16).a > 0, "timeline renderer should reuse the shared raster path");
+    }
+
     return g_failures == 0;
 }

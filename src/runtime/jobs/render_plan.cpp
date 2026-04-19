@@ -15,6 +15,20 @@ const CompositionSpec* find_composition(const SceneSpec& scene, const std::strin
     return &(*it);
 }
 
+std::size_t count_layers_with_type(const CompositionSpec& composition, const std::string& type) {
+    return static_cast<std::size_t>(std::count_if(
+        composition.layers.begin(),
+        composition.layers.end(),
+        [&](const LayerSpec& layer) { return layer.type == type; }));
+}
+
+std::size_t count_layers_with_track_matte(const CompositionSpec& composition) {
+    return static_cast<std::size_t>(std::count_if(
+        composition.layers.begin(),
+        composition.layers.end(),
+        [&](const LayerSpec& layer) { return layer.track_matte_type != TrackMatteType::None; }));
+}
+
 CompositionSummary make_summary(const CompositionSpec& composition) {
     CompositionSummary summary;
     summary.id = composition.id;
@@ -25,6 +39,16 @@ CompositionSummary make_summary(const CompositionSpec& composition) {
     summary.frame_rate = composition.frame_rate;
     summary.background = composition.background;
     summary.layer_count = composition.layers.size();
+    summary.solid_layer_count = count_layers_with_type(composition, "solid");
+    summary.shape_layer_count = count_layers_with_type(composition, "shape");
+    summary.mask_layer_count = count_layers_with_type(composition, "mask");
+    summary.image_layer_count = count_layers_with_type(composition, "image");
+    summary.text_layer_count = count_layers_with_type(composition, "text");
+    summary.precomp_layer_count = static_cast<std::size_t>(std::count_if(
+        composition.layers.begin(),
+        composition.layers.end(),
+        [](const LayerSpec& layer) { return layer.precomp_id.has_value(); }));
+    summary.track_matte_layer_count = count_layers_with_track_matte(composition);
     return summary;
 }
 
