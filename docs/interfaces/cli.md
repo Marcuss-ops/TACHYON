@@ -20,6 +20,8 @@ tachyon validate --scene scene.json
 tachyon info
 ```
 
+The initial implementation supports `version`, `validate`, and a contract-checking `render` command that validates scene and job inputs before any pixel backend exists.
+
 ## Required behavior
 
 - exit codes must distinguish validation failure, runtime failure, and success

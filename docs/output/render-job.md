@@ -89,6 +89,8 @@ Detailed encoder behavior belongs in `docs/encoder-output.md`.
 5. Output-affecting settings must be explicit enough to reproduce the same deliverable.
 6. Output targets should be explicit and not inferred from scene authoring alone.
 
+The first code slice uses JSON render jobs matching this shape, with the render command validating the contract before pixel generation exists.
+
 ## Guiding principle
 
 A reusable motion template plus a concrete render job should be enough to produce a deterministic output without redefining the entire scene each time.

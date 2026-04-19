@@ -25,14 +25,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(nlohmann_json)
 
-# Subdirectories
-add_subdirectory(src)
-add_subdirectory(tests)
-# add_subdirectory(examples)
-
 # Version header generation
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/include/tachyon/version.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/include/tachyon/version.h
 )
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
+
+# Subdirectories
+add_subdirectory(src)
+add_subdirectory(tests)
+# add_subdirectory(examples)
