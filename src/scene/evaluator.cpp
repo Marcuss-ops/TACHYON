@@ -73,21 +73,28 @@ double sample_scalar(
         return property.value.value_or(fallback);
     }
 
-    std::vector<ScalarKeyframeSpec> keyframes = property.keyframes;
-    std::stable_sort(keyframes.begin(), keyframes.end(), [](const auto& a, const auto& b) {
-        return a.time < b.time;
-    });
-
-    if (local_time_seconds <= keyframes.front().time) {
-        return keyframes.front().value;
+    const std::vector<ScalarKeyframeSpec>* keyframes = &property.keyframes;
+    std::vector<ScalarKeyframeSpec> sorted_keyframes;
+    if (!std::is_sorted(keyframes->begin(), keyframes->end(), [](const auto& a, const auto& b) {
+            return a.time < b.time;
+        })) {
+        sorted_keyframes = property.keyframes;
+        std::stable_sort(sorted_keyframes.begin(), sorted_keyframes.end(), [](const auto& a, const auto& b) {
+            return a.time < b.time;
+        });
+        keyframes = &sorted_keyframes;
     }
-    if (local_time_seconds >= keyframes.back().time) {
-        return keyframes.back().value;
+
+    if (local_time_seconds <= keyframes->front().time) {
+        return keyframes->front().value;
+    }
+    if (local_time_seconds >= keyframes->back().time) {
+        return keyframes->back().value;
     }
 
-    for (std::size_t index = 1; index < keyframes.size(); ++index) {
-        const auto& previous = keyframes[index - 1];
-        const auto& next = keyframes[index];
+    for (std::size_t index = 1; index < keyframes->size(); ++index) {
+        const auto& previous = (*keyframes)[index - 1];
+        const auto& next = (*keyframes)[index];
         if (local_time_seconds > next.time) {
             continue;
         }
@@ -100,7 +107,7 @@ double sample_scalar(
         return previous.value + (next.value - previous.value) * eased;
     }
 
-    return keyframes.back().value;
+    return keyframes->back().value;
 }
 
 math::Vector2 sample_vector2(const AnimatedVector2Spec& property, const math::Vector2& fallback, double local_time_seconds) {
@@ -108,21 +115,28 @@ math::Vector2 sample_vector2(const AnimatedVector2Spec& property, const math::Ve
         return property.value.value_or(fallback);
     }
 
-    std::vector<Vector2KeyframeSpec> keyframes = property.keyframes;
-    std::stable_sort(keyframes.begin(), keyframes.end(), [](const auto& a, const auto& b) {
-        return a.time < b.time;
-    });
-
-    if (local_time_seconds <= keyframes.front().time) {
-        return keyframes.front().value;
+    const std::vector<Vector2KeyframeSpec>* keyframes = &property.keyframes;
+    std::vector<Vector2KeyframeSpec> sorted_keyframes;
+    if (!std::is_sorted(keyframes->begin(), keyframes->end(), [](const auto& a, const auto& b) {
+            return a.time < b.time;
+        })) {
+        sorted_keyframes = property.keyframes;
+        std::stable_sort(sorted_keyframes.begin(), sorted_keyframes.end(), [](const auto& a, const auto& b) {
+            return a.time < b.time;
+        });
+        keyframes = &sorted_keyframes;
     }
-    if (local_time_seconds >= keyframes.back().time) {
-        return keyframes.back().value;
+
+    if (local_time_seconds <= keyframes->front().time) {
+        return keyframes->front().value;
+    }
+    if (local_time_seconds >= keyframes->back().time) {
+        return keyframes->back().value;
     }
 
-    for (std::size_t index = 1; index < keyframes.size(); ++index) {
-        const auto& previous = keyframes[index - 1];
-        const auto& next = keyframes[index];
+    for (std::size_t index = 1; index < keyframes->size(); ++index) {
+        const auto& previous = (*keyframes)[index - 1];
+        const auto& next = (*keyframes)[index];
         if (local_time_seconds > next.time) {
             continue;
         }
@@ -136,7 +150,7 @@ math::Vector2 sample_vector2(const AnimatedVector2Spec& property, const math::Ve
         return previous.value * (1.0f - weight) + next.value * weight;
     }
 
-    return keyframes.back().value;
+    return keyframes->back().value;
 }
 
 math::Vector3 sample_vector3(const AnimatedVector3Spec& property, const math::Vector3& fallback, double local_time_seconds) {
@@ -144,21 +158,28 @@ math::Vector3 sample_vector3(const AnimatedVector3Spec& property, const math::Ve
         return property.value.value_or(fallback);
     }
 
-    std::vector<AnimatedVector3Spec::Keyframe> keyframes = property.keyframes;
-    std::stable_sort(keyframes.begin(), keyframes.end(), [](const auto& a, const auto& b) {
-        return a.time < b.time;
-    });
-
-    if (local_time_seconds <= keyframes.front().time) {
-        return keyframes.front().value;
+    const std::vector<AnimatedVector3Spec::Keyframe>* keyframes = &property.keyframes;
+    std::vector<AnimatedVector3Spec::Keyframe> sorted_keyframes;
+    if (!std::is_sorted(keyframes->begin(), keyframes->end(), [](const auto& a, const auto& b) {
+            return a.time < b.time;
+        })) {
+        sorted_keyframes = property.keyframes;
+        std::stable_sort(sorted_keyframes.begin(), sorted_keyframes.end(), [](const auto& a, const auto& b) {
+            return a.time < b.time;
+        });
+        keyframes = &sorted_keyframes;
     }
-    if (local_time_seconds >= keyframes.back().time) {
-        return keyframes.back().value;
+
+    if (local_time_seconds <= keyframes->front().time) {
+        return keyframes->front().value;
+    }
+    if (local_time_seconds >= keyframes->back().time) {
+        return keyframes->back().value;
     }
 
-    for (std::size_t index = 1; index < keyframes.size(); ++index) {
-        const auto& previous = keyframes[index - 1];
-        const auto& next = keyframes[index];
+    for (std::size_t index = 1; index < keyframes->size(); ++index) {
+        const auto& previous = (*keyframes)[index - 1];
+        const auto& next = (*keyframes)[index];
         if (local_time_seconds > next.time) {
             continue;
         }
@@ -172,7 +193,7 @@ math::Vector3 sample_vector3(const AnimatedVector3Spec& property, const math::Ve
         return previous.value * (1.0f - weight) + next.value * weight;
     }
 
-    return keyframes.back().value;
+    return keyframes->back().value;
 }
 
 math::Transform2 make_transform2(const math::Vector2& position, double rotation_degrees, const math::Vector2& scale) {
@@ -211,6 +232,7 @@ EvaluatedLayerState make_layer_state(
     evaluated.is_adjustment_layer = layer.is_adjustment_layer;
     evaluated.local_time_seconds = timeline::local_time_from_composition(composition_time_seconds, layer.start_time);
     const double remapped_time = sample_scalar(layer.time_remap_property, evaluated.local_time_seconds, evaluated.local_time_seconds);
+    evaluated.child_time_seconds = remapped_time;
     evaluated.active = layer.enabled && composition_time_seconds >= layer.in_point && composition_time_seconds <= layer.out_point;
     evaluated.opacity = sample_scalar(layer.opacity_property, layer.opacity, remapped_time);
     
@@ -220,7 +242,8 @@ EvaluatedLayerState make_layer_state(
     
     evaluated.local_transform = make_transform2(pos, rot, scl);
     evaluated.world_matrix = evaluated.local_transform.to_matrix();
-    
+    evaluated.world_position3 = math::Vector3{pos.x, pos.y, 0.0f};
+
     if (layer.is_3d) {
         const math::Vector3 pos3 = sample_vector3(layer.transform3d.position_property, {pos.x, pos.y, 0.0f}, remapped_time);
         const math::Vector3 rot3 = sample_vector3(layer.transform3d.rotation_property, {0.0f, 0.0f, static_cast<float>(rot)}, remapped_time);
@@ -376,8 +399,15 @@ const EvaluatedLayerState& resolve_layer_state(
                 if (comp.id == *evaluated.precomp_id) {
                     std::vector<std::string> next_stack = context.composition_stack;
                     next_stack.push_back(context.composition.id);
-                    evaluated.nested_composition = std::make_shared<EvaluatedCompositionState>(
-                        evaluate_composition_internal(context.scene, comp, context.frame_number, context.composition_time_seconds, std::move(next_stack))
+                    
+                    const std::int64_t child_frame_number = static_cast<std::int64_t>(std::llround(
+                        evaluated.child_time_seconds * 
+                        static_cast<double>(comp.frame_rate.numerator) / 
+                        static_cast<double>(comp.frame_rate.denominator)
+                    ));
+
+                    evaluated.nested_composition = std::make_unique<EvaluatedCompositionState>(
+                        evaluate_composition_internal(context.scene, comp, child_frame_number, evaluated.child_time_seconds, std::move(next_stack))
                     );
                     break;
                 }
