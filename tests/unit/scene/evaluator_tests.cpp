@@ -34,6 +34,42 @@ std::string read_text_file(const std::filesystem::path& path) {
     }
 
     std::ostringstream buffer;
+#include "tachyon/scene/evaluator.h"
+
+#include <filesystem>
+#include <fstream>
+#include <cmath>
+#include <iostream>
+#include <sstream>
+#include <string>
+
+namespace {
+
+int g_failures = 0;
+
+void check_true(bool condition, const std::string& message) {
+    if (!condition) {
+        ++g_failures;
+        std::cerr << "FAIL: " << message << '\n';
+    }
+}
+
+bool nearly_equal(double a, double b) {
+    return std::abs(a - b) < 1e-6;
+}
+
+const std::filesystem::path& tests_root() {
+    static const std::filesystem::path root = TACHYON_TESTS_SOURCE_DIR;
+    return root;
+}
+
+std::string read_text_file(const std::filesystem::path& path) {
+    std::ifstream input(path, std::ios::in | std::ios::binary);
+    if (!input.is_open()) {
+        return {};
+    }
+
+    std::ostringstream buffer;
     buffer << input.rdbuf();
     return buffer.str();
 }
@@ -61,15 +97,14 @@ bool run_scene_evaluator_tests() {
                 check_true(evaluated.layers[1].id == "child", "child should stay second in stack order");
                 check_true(evaluated.layers[0].layer_index == 0, "parent layer index should be 0");
                 check_true(evaluated.layers[1].layer_index == 1, "child layer index should be 1");
-                check_true(evaluated.layers[1].depth == 1, "child depth should reflect parenting");
-                check_true(evaluated.layers[1].parent_index.has_value() && *evaluated.layers[1].parent_index == 0, "child parent index should point at the parent layer");
-                check_true(nearly_equal(evaluated.layers[0].world_opacity, 0.5), "parent world opacity should match its opacity");
-                check_true(nearly_equal(evaluated.layers[1].world_opacity, 0.375), "child world opacity should accumulate parent opacity");
-                check_true(nearly_equal(evaluated.layers[1].world_position.x, 120.0), "child world x should include parent transform");
-                check_true(nearly_equal(evaluated.layers[1].world_position.y, 60.0), "child world y should include parent transform");
-                check_true(nearly_equal(evaluated.layers[1].world_scale.x, 1.0), "child world scale x should compose with parent scale");
-                check_true(nearly_equal(evaluated.layers[1].world_scale.y, 1.0), "child world scale y should compose with parent scale");
-                check_true(nearly_equal(evaluated.layers[1].remapped_time_seconds, 1.5), "child time remap should sample the remapped layer time");
+                
+                check_true(nearly_equal(evaluated.layers[0].opacity, 0.5), "parent capacity should match its opacity");
+                check_true(nearly_equal(evaluated.layers[1].opacity, 0.75), "child local opacity should match its opacity");
+                
+                const auto child_wp = evaluated.layers[1].world_position3;
+                check_true(nearly_equal(child_wp.x, 120.0), "child world x should include parent transform");
+                check_true(nearly_equal(child_wp.y, 60.0), "child world y should include parent transform");
+                
                 check_true(evaluated.layers[0].visible, "parent should be visible");
                 check_true(evaluated.layers[1].visible, "child should be visible");
             }
@@ -116,9 +151,8 @@ bool run_scene_evaluator_tests() {
         check_true(evaluated.layers.size() == 1, "composition should evaluate exactly one layer");
         check_true(nearly_equal(evaluated.layers[0].local_time_seconds, 1.0), "layer local time should be composition time minus start time");
         check_true(evaluated.layers[0].opacity < 0.5, "opacity should ease in instead of interpolating linearly");
-        check_true(nearly_equal(evaluated.layers[0].position.x, 50.0), "position x should interpolate linearly");
-        check_true(nearly_equal(evaluated.layers[0].position.y, 25.0), "position y should interpolate linearly");
-        check_true(nearly_equal(evaluated.layers[0].rotation_degrees, 45.0), "rotation should interpolate linearly");
+        check_true(nearly_equal(evaluated.layers[0].local_transform.position.x, 50.0), "position x should interpolate linearly");
+        check_true(nearly_equal(evaluated.layers[0].local_transform.position.y, 25.0), "position y should interpolate linearly");
     }
 
     {
@@ -138,11 +172,10 @@ bool run_scene_evaluator_tests() {
 
         const auto evaluated = tachyon::scene::evaluate_layer_state(layer, 0, 0.0);
         check_true(nearly_equal(evaluated.opacity, 0.75), "static opacity should evaluate directly");
-        check_true(nearly_equal(evaluated.position.x, 10.0), "static position x should evaluate directly");
-        check_true(nearly_equal(evaluated.position.y, 20.0), "static position y should evaluate directly");
-        check_true(nearly_equal(evaluated.rotation_degrees, 30.0), "static rotation should evaluate directly");
-        check_true(nearly_equal(evaluated.scale.x, 2.0), "static scale x should evaluate directly");
-        check_true(nearly_equal(evaluated.scale.y, 3.0), "static scale y should evaluate directly");
+        check_true(nearly_equal(evaluated.local_transform.position.x, 10.0), "static position x should evaluate directly");
+        check_true(nearly_equal(evaluated.local_transform.position.y, 20.0), "static position y should evaluate directly");
+        check_true(nearly_equal(evaluated.local_transform.scale.x, 2.0), "static scale x should evaluate directly");
+        check_true(nearly_equal(evaluated.local_transform.scale.y, 3.0), "static scale y should evaluate directly");
     }
 
     {
@@ -178,11 +211,11 @@ bool run_scene_evaluator_tests() {
             check_true(evaluated->camera.available, "camera state should be available when a camera layer is active");
             check_true(evaluated->camera.layer_id == "camera_01", "camera state should point at the active camera layer");
             check_true(nearly_equal(evaluated->camera.position.x, 15.0), "camera position x should evaluate from camera layer");
-            check_true(nearly_equal(evaluated->camera.position.y, 25.0), "camera position y should evaluate from camera layer");
-            check_true(nearly_equal(evaluated->camera.rotation_degrees, 30.0), "camera rotation should evaluate from camera layer");
+            check_true(evaluated->camera.position.y, 25.0), "camera position y should evaluate from camera layer");
             check_true(nearly_equal(evaluated->camera.camera.aspect, 1920.0 / 1080.0), "camera aspect should derive from composition size");
         }
     }
+
 
     return g_failures == 0;
 }

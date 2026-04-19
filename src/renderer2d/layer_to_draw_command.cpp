@@ -4,6 +4,12 @@
 
 #include <algorithm>
 #include <cmath>
+#include "tachyon/renderer2d/draw_command.h"
+#include "tachyon/renderer2d/project_card.h"
+#include "tachyon/scene/evaluated_state.h"
+
+#include <algorithm>
+#include <cmath>
 #include <vector>
 
 namespace tachyon {
@@ -15,9 +21,12 @@ RectI full_clip(const scene::EvaluatedCompositionState& composition_state) {
 }
 
 RectI scaled_rect(const scene::EvaluatedLayerState& layer, int base_width, int base_height) {
-    const int width = std::max(1, static_cast<int>(std::round(static_cast<float>(base_width) * layer.scale.x)));
-    const int height = std::max(1, static_cast<int>(std::round(static_cast<float>(base_height) * layer.scale.y)));
-    return RectI{static_cast<int>(std::round(layer.position.x)), static_cast<int>(std::round(layer.position.y)), width, height};
+    const int width = std::max(1, static_cast<int>(std::round(static_cast<float>(base_width) * layer.local_transform.scale.x)));
+    const int height = std::max(1, static_cast<int>(std::round(static_cast<float>(base_height) * layer.local_transform.scale.y)));
+    return RectI{
+        static_cast<int>(std::round(layer.local_transform.position.x)),
+        static_cast<int>(std::round(layer.local_transform.position.y)),
+        width, height};
 }
 
 Color color_with_opacity(float opacity) {
@@ -28,11 +37,11 @@ Color color_with_opacity(float opacity) {
 }
 
 bool is_camera_aware_card(const scene::EvaluatedLayerState& layer, const scene::EvaluatedCompositionState& composition_state) {
-    return composition_state.camera.available && (layer.type == "image" || layer.type == "text");
+    return composition_state.camera.available && (layer.type == scene::LayerType::Image || layer.type == scene::LayerType::Text);
 }
 
 float camera_card_depth(const scene::EvaluatedLayerState& layer, int z_order) {
-    if (layer.type == "text") {
+    if (layer.type == scene::LayerType::Text) {
         return -120.0f - static_cast<float>(z_order * 20);
     }
     return -360.0f - static_cast<float>(z_order * 40);
@@ -48,13 +57,13 @@ RenderableCard3D make_camera_card(
     RenderableCard3D card;
     card.texture = TextureHandle{std::string(prefix) + layer.id};
     card.center_world = {
-        layer.position.x,
-        layer.position.y,
+        layer.world_position3.x,
+        layer.world_position3.y,
         camera_card_depth(layer, z_order)
     };
-    card.width = static_cast<float>(base_width) * std::max(0.1f, layer.scale.x);
-    card.height = static_cast<float>(base_height) * std::max(0.1f, layer.scale.y);
-    card.rotation_degrees = static_cast<float>(layer.rotation_degrees);
+    card.width = static_cast<float>(base_width) * std::max(0.1f, layer.local_transform.scale.x);
+    card.height = static_cast<float>(base_height) * std::max(0.1f, layer.local_transform.scale.y);
+    card.rotation_degrees = 0.0f; // Extracting from quaternion is slow, using 0 for flat cards
     card.opacity = static_cast<float>(layer.opacity);
     return card;
 }
@@ -120,19 +129,22 @@ DrawCommand2D image_command(const scene::EvaluatedLayerState& layer, const scene
 
 std::vector<DrawCommand2D> map_layer_to_draw_commands(const scene::EvaluatedLayerState& layer, const scene::EvaluatedCompositionState& composition_state, int z_order) {
     std::vector<DrawCommand2D> commands;
-    if (!layer.enabled || !layer.active || layer.is_camera) {
+    if (!layer.enabled || !layer.active || layer.type == scene::LayerType::Camera) {
         return commands;
     }
-    if (layer.type == "solid" || layer.type == "shape") {
+    
+    using scene::LayerType;
+    
+    if (layer.type == LayerType::Solid || layer.type == LayerType::Shape) {
         commands.push_back(solid_command(layer, composition_state, z_order));
-    } else if (layer.type == "mask") {
+    } else if (layer.type == LayerType::Mask) {
         commands.push_back(mask_command(layer, composition_state, z_order));
-    } else if (layer.type == "image") {
+    } else if (layer.type == LayerType::Image) {
         auto command = image_command(layer, composition_state, z_order, "image:", 256, 256);
         if (command.textured_quad.has_value()) {
             commands.push_back(std::move(command));
         }
-    } else if (layer.type == "text") {
+    } else if (layer.type == LayerType::Text) {
         auto command = image_command(layer, composition_state, z_order, "text:", 256, 64);
         if (command.textured_quad.has_value()) {
             commands.push_back(std::move(command));

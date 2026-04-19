@@ -41,10 +41,10 @@ renderer2d::RectI layer_bounds(const scene::EvaluatedLayerState& layer, std::int
     int base_height = static_cast<int>(layer.height);
 
     if (base_width <= 0 || base_height <= 0) {
-        if (layer.type == "text") {
+        if (layer.type == scene::LayerType::Text) {
             base_width = std::max(64, static_cast<int>(composition_width / 6));
             base_height = std::max(32, static_cast<int>(composition_height / 10));
-        } else if (layer.type == "solid" || layer.type == "shape" || layer.type == "mask") {
+        } else if (layer.type == scene::LayerType::Solid || layer.type == scene::LayerType::Shape || layer.type == scene::LayerType::Mask) {
             base_width = std::max(64, static_cast<int>(composition_width / 4));
             base_height = std::max(32, static_cast<int>(composition_height / 8));
         } else if (layer.precomp_id.has_value() && layer.nested_composition) {
@@ -57,10 +57,10 @@ renderer2d::RectI layer_bounds(const scene::EvaluatedLayerState& layer, std::int
     }
 
     renderer2d::RectI bounds{
-        static_cast<int>(std::round(layer.position.x)),
-        static_cast<int>(std::round(layer.position.y)),
-        std::max(1, static_cast<int>(std::round(static_cast<float>(base_width) * layer.scale.x))),
-        std::max(1, static_cast<int>(std::round(static_cast<float>(base_height) * layer.scale.y)))
+        static_cast<int>(std::round(layer.local_transform.position.x)),
+        static_cast<int>(std::round(layer.local_transform.position.y)),
+        std::max(1, static_cast<int>(std::round(static_cast<float>(base_width) * layer.local_transform.scale.x))),
+        std::max(1, static_cast<int>(std::round(static_cast<float>(base_height) * layer.local_transform.scale.y)))
     };
 
     return bounds;

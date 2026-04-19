@@ -107,8 +107,8 @@ std::string build_fingerprint(const scene::EvaluatedCompositionState& state) {
     stream << state.composition_id << ';' << state.frame_number << ';' << state.width << 'x' << state.height << ';';
     for (const auto& layer : state.layers) {
         stream << layer.id << ':' << layer.active << ':' << layer.opacity << ':'
-               << layer.position.x << ':' << layer.position.y << ':'
-               << layer.rotation_degrees << ':' << layer.scale.x << ':' << layer.scale.y << ';';
+               << layer.local_transform.position.x << ':' << layer.local_transform.position.y << ':'
+               << layer.local_transform.scale.x << ':' << layer.local_transform.scale.y << ';';
     }
     return stream.str();
 }

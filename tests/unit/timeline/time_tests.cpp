@@ -30,7 +30,7 @@ bool run_timeline_tests() {
         const auto sample = tachyon::timeline::sample_frame(frame_rate, 15);
         check_true(sample.frame_number == 15, "sample_frame should preserve the requested frame number");
         check_true(std::abs(sample.composition_time_seconds - 0.5) < 1e-9, "frame 15 at 30 fps should sample to 0.5 seconds");
-        check_true(nearly_equal(tachyon::timeline::frame_to_seconds(45, frame_rate), 1.5), "frame_to_seconds resolves frame 45 at 30 fps");
+        check_true(nearly_equal(tachyon::timeline::frame_to_seconds(frame_rate, 45), 1.5), "frame_to_seconds resolves frame 45 at 30 fps");
     }
 
     {

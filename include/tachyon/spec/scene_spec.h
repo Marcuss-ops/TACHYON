@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tachyon/core/math/vector2.h"
+#include "tachyon/core/math/vector3.h"
 #include "tachyon/core/animation/easing.h"
 #include "tachyon/runtime/diagnostics.h"
 
@@ -102,6 +103,15 @@ struct AnimatedScalarSpec {
 
     [[nodiscard]] bool empty() const noexcept {
         return !value.has_value() && keyframes.empty() && !audio_band.has_value();
+    }
+};
+
+struct AnimatedVector2Spec {
+    std::optional<math::Vector2> value;
+    std::vector<Vector2KeyframeSpec> keyframes;
+
+    [[nodiscard]] bool empty() const noexcept {
+        return !value.has_value() && keyframes.empty();
     }
 };
 
