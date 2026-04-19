@@ -104,6 +104,8 @@ struct DrawCommand2D {
     };
 
     Kind kind{Kind::Clear};
+    bool has_clip_rect{false};
+    RectI clip_rect{};
     ClearPrimitive clear{};
     RectPrimitive rect{};
     LinePrimitive line{};
@@ -135,6 +137,12 @@ struct DrawCommand2D {
         command.kind = Kind::TexturedQuad;
         command.textured_quad = textured_quad_primitive;
         return command;
+    }
+
+    DrawCommand2D& with_clip_rect(const RectI& rect) {
+        has_clip_rect = true;
+        clip_rect = rect;
+        return *this;
     }
 };
 
