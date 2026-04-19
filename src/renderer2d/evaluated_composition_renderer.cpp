@@ -17,6 +17,7 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
+#include <unordered_set>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -182,6 +183,55 @@ std::vector<std::uint8_t> build_adjustment_mask(
     }
 
     return mask;
+}
+
+float matte_strength_from_pixel(const renderer2d::Color& pixel, TrackMatteType matte_type) {
+    const float alpha = static_cast<float>(pixel.a) / 255.0f;
+    const float luma = (0.299f * static_cast<float>(pixel.r) +
+                        0.587f * static_cast<float>(pixel.g) +
+                        0.114f * static_cast<float>(pixel.b)) / 255.0f;
+    const float strength = (matte_type == TrackMatteType::Alpha ||
+                            matte_type == TrackMatteType::AlphaInverted)
+        ? alpha
+        : luma;
+    if (matte_type == TrackMatteType::AlphaInverted ||
+        matte_type == TrackMatteType::LumaInverted) {
+        return std::clamp(1.0f - strength, 0.0f, 1.0f);
+    }
+    return std::clamp(strength, 0.0f, 1.0f);
+}
+
+void apply_track_matte(
+    SurfaceRGBA& target,
+    const SurfaceRGBA& matte_surface,
+    TrackMatteType matte_type,
+    const RectI& influence) {
+
+    if (matte_type == TrackMatteType::None || influence.width <= 0 || influence.height <= 0) {
+        return;
+    }
+
+    const int start_x = std::max(0, influence.x);
+    const int start_y = std::max(0, influence.y);
+    const int end_x = std::min(static_cast<int>(target.width()), influence.x + influence.width);
+    const int end_y = std::min(static_cast<int>(target.height()), influence.y + influence.height);
+
+    for (int y = start_y; y < end_y; ++y) {
+        for (int x = start_x; x < end_x; ++x) {
+            const Color matte_pixel = matte_surface.get_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y));
+            const float strength = matte_strength_from_pixel(matte_pixel, matte_type);
+            Color value = target.get_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y));
+            if (strength <= 0.0f) {
+                value = Color::transparent();
+            } else if (strength < 1.0f) {
+                value.r = static_cast<std::uint8_t>(std::clamp(std::lround(static_cast<float>(value.r) * strength), 0L, 255L));
+                value.g = static_cast<std::uint8_t>(std::clamp(std::lround(static_cast<float>(value.g) * strength), 0L, 255L));
+                value.b = static_cast<std::uint8_t>(std::clamp(std::lround(static_cast<float>(value.b) * strength), 0L, 255L));
+                value.a = static_cast<std::uint8_t>(std::clamp(std::lround(static_cast<float>(value.a) * strength), 0L, 255L));
+            }
+            target.set_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), value);
+        }
+    }
 }
 
 renderer2d::BlendMode parse_blend_mode(const std::string& mode) {
@@ -392,7 +442,20 @@ void render_layer_to_surface(
     }
 }
 
+RasterizedFrame2D render_composition_recursive(
+    const std::string& composition_id,
+    const std::vector<scene::EvaluatedLayerState>& layers,
+    const std::vector<scene::EvaluatedLightState>& lights,
+    std::int64_t width,
+    std::int64_t height,
+    const RenderPlan& plan,
+    const FrameRenderTask& task,
+    renderer2d::RenderContext& context,
+    double composition_time_seconds,
+    int precomp_recursion_depth);
+
 void render_layer_recursive(
+    const std::vector<scene::EvaluatedLayerState>& all_layers,
     const scene::EvaluatedLayerState& layer,
     const std::vector<scene::EvaluatedLightState>& lights,
     std::int64_t width,
@@ -403,7 +466,8 @@ void render_layer_recursive(
     renderer2d::RenderContext& context,
     const scene::EvaluatedCameraState& camera,
     SurfaceRGBA& surface,
-    int precomp_recursion_depth) {
+    int precomp_recursion_depth,
+    bool allow_track_matte) {
     
     if (!layer.visible) return;
 
@@ -487,6 +551,34 @@ void render_layer_recursive(
                 }
                 ls = context.effects.apply(effect_spec.type, ls, params);
             }
+        }
+    }
+
+    if (allow_track_matte &&
+        layer.track_matte_type != TrackMatteType::None &&
+        layer.track_matte_layer_index.has_value() &&
+        *layer.track_matte_layer_index < all_layers.size()) {
+
+        const scene::EvaluatedLayerState& matte_layer = all_layers[*layer.track_matte_layer_index];
+        if (matte_layer.visible) {
+            SurfaceRGBA matte_surface(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height));
+            matte_surface.clear(Color::transparent());
+            render_layer_recursive(
+                all_layers,
+                matte_layer,
+                lights,
+                width,
+                height,
+                tile,
+                plan,
+                task,
+                context,
+                camera,
+                matte_surface,
+                precomp_recursion_depth + 1,
+                false);
+
+            apply_track_matte(ls, matte_surface, layer.track_matte_type, RectI{0, 0, tile.width, tile.height});
         }
     }
 
@@ -635,12 +727,28 @@ RasterizedFrame2D render_composition_recursive(
         SurfaceRGBA tile_surface(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height));
         SurfaceRGBA tile_resolved(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height));
 
+        std::vector<bool> matte_providers(sample_states.empty() ? 0U : sample_states.front().layers.size(), false);
         for (std::size_t sample = 0; sample < sample_states.size(); ++sample) {
             tile_surface.clear(Color::transparent());
             const auto& sample_state = sample_states[sample];
 
+            if (matte_providers.size() != sample_state.layers.size()) {
+                matte_providers.assign(sample_state.layers.size(), false);
+            }
+            std::fill(matte_providers.begin(), matte_providers.end(), false);
+            for (const auto& matte_candidate : sample_state.layers) {
+                if (matte_candidate.track_matte_type != TrackMatteType::None &&
+                    matte_candidate.track_matte_layer_index.has_value() &&
+                    *matte_candidate.track_matte_layer_index < matte_providers.size()) {
+                    matte_providers[*matte_candidate.track_matte_layer_index] = true;
+                }
+            }
+
             for (const auto& layer : sample_state.layers) {
                 if (!layer.visible || layer.type == scene::LayerType::Camera) {
+                    continue;
+                }
+                if (layer.layer_index < matte_providers.size() && matte_providers[layer.layer_index]) {
                     continue;
                 }
 
@@ -649,7 +757,20 @@ RasterizedFrame2D render_composition_recursive(
                     continue;
                 }
 
-                render_layer_recursive(layer, sample_state.lights, scaled_width, scaled_height, tile, plan, task, context, sample_state.camera, tile_surface, precomp_recursion_depth);
+                render_layer_recursive(
+                    sample_state.layers,
+                    layer,
+                    sample_state.lights,
+                    scaled_width,
+                    scaled_height,
+                    tile,
+                    plan,
+                    task,
+                    context,
+                    sample_state.camera,
+                    tile_surface,
+                    precomp_recursion_depth,
+                    true);
             }
 
             accumulation.add(tile_surface, sample_weights[sample]);
