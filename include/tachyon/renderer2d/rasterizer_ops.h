@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tachyon/renderer2d/draw_command.h"
+#include "tachyon/renderer2d/color_transfer.h"
 #include "tachyon/renderer2d/framebuffer.h"
 #include <algorithm>
 
@@ -9,17 +10,7 @@ namespace renderer2d {
 
 struct Blender {
     static Color composite_premultiplied(Color src, Color dest) {
-        if (src.a == 255) return src;
-        if (src.a == 0) return dest;
-
-        uint32_t inv_a = 255 - src.a;
-
-        return Color{
-            static_cast<uint8_t>(std::clamp<uint32_t>(src.r + (dest.r * inv_a + 127) / 255, 0, 255)),
-            static_cast<uint8_t>(std::clamp<uint32_t>(src.g + (dest.g * inv_a + 127) / 255, 0, 255)),
-            static_cast<uint8_t>(std::clamp<uint32_t>(src.b + (dest.b * inv_a + 127) / 255, 0, 255)),
-            static_cast<uint8_t>(std::clamp<uint32_t>(src.a + (dest.a * inv_a + 127) / 255, 0, 255))
-        };
+        return detail::composite_src_over_linear(src, dest);
     }
 };
 

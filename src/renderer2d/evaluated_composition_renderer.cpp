@@ -46,6 +46,8 @@ struct RenderLayerView {
     // Metadata
     std::int64_t width{0};
     std::int64_t height{0};
+    float stroke_width{1.0f};
+    std::string text_content;
     renderer2d::Color fill_color{renderer2d::Color::white()};
     renderer2d::Color stroke_color{renderer2d::Color::black()};
     std::vector<EffectSpec> effects;
@@ -198,6 +200,8 @@ RenderLayerView to_view(const scene::EvaluatedLayerState& layer) {
     
     view.width = layer.width;
     view.height = layer.height;
+    view.stroke_width = static_cast<float>(layer.stroke_width);
+    view.text_content = layer.text_content;
     view.fill_color = from_spec(layer.fill_color);
     view.stroke_color = from_spec(layer.stroke_color);
     view.effects = layer.effects;
@@ -218,7 +222,13 @@ RenderLayerView to_view(const scene::EvaluatedLayerState& layer) {
 std::filesystem::path find_default_font_path() {
     const std::filesystem::path candidates[] = {
         "Tachyon/tests/fixtures/fonts/minimal_5x7.bdf",
-        "tests/fixtures/fonts/minimal_5x7.bdf"
+        "tests/fixtures/fonts/minimal_5x7.bdf",
+        "../tests/fixtures/fonts/minimal_5x7.bdf",
+        "../../tests/fixtures/fonts/minimal_5x7.bdf",
+        "../../../tests/fixtures/fonts/minimal_5x7.bdf",
+        "../Tachyon/tests/fixtures/fonts/minimal_5x7.bdf",
+        "../../Tachyon/tests/fixtures/fonts/minimal_5x7.bdf",
+        "../../../Tachyon/tests/fixtures/fonts/minimal_5x7.bdf"
     };
 
     for (const auto& candidate : candidates) {
@@ -398,7 +408,7 @@ void render_layer_to_surface(
 
             renderer2d::StrokePathStyle stroke_style;
             stroke_style.stroke_color = color_with_opacity(layer.stroke_color, layer.opacity);
-            stroke_style.stroke_width = 1.0f;
+            stroke_style.stroke_width = layer.stroke_width;
             stroke_style.opacity = 1.0f;
             renderer2d::PathRasterizer::stroke(layer_surface, path, stroke_style);
             break;
@@ -406,6 +416,8 @@ void render_layer_to_surface(
         case RenderLayerKind::Text: {
             const text::BitmapFont* font = default_font();
             if (font) {
+                const std::string& text_value = layer.text_content.empty() ? layer.label : layer.text_content;
+                if (!text_value.empty()) {
                 text::TextStyle style;
                 style.pixel_size = 14;
                 style.fill_color = color_with_opacity(layer.fill_color, layer.opacity);
@@ -413,7 +425,7 @@ void render_layer_to_surface(
                 box.width = static_cast<std::uint32_t>(clipped.width);
                 box.height = static_cast<std::uint32_t>(clipped.height);
                 box.multiline = true;
-                const text::TextRasterSurface text_surface = text::rasterize_text_rgba(*font, layer.label, style, box, text::TextAlignment::Left);
+                const text::TextRasterSurface text_surface = text::rasterize_text_rgba(*font, text_value, style, box, text::TextAlignment::Left);
                 const int offset_x = bounds.x - render_region.x;
                 const int offset_y = bounds.y - render_region.y;
                 for (uint32_t y = 0; y < text_surface.height(); ++y) {
@@ -423,6 +435,7 @@ void render_layer_to_surface(
                             layer_surface.blend_pixel(offset_x + x, offset_y + y, premultiply_color(pixel));
                         }
                     }
+                }
                 }
             }
             break;

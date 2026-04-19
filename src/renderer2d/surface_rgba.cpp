@@ -1,4 +1,5 @@
 #include "tachyon/renderer2d/framebuffer.h"
+#include "tachyon/renderer2d/color_transfer.h"
 
 #include <algorithm>
 #include <string>
@@ -84,22 +85,7 @@ bool SurfaceRGBA::set_pixel(uint32_t x, uint32_t y, Color color) {
 }
 
 Color SurfaceRGBA::blend_src_over_premultiplied(Color src_straight, Color dst_straight) {
-    const uint32_t inv_src_a = 255U - static_cast<uint32_t>(src_straight.a);
-    const uint32_t out_r = static_cast<uint32_t>(src_straight.r) + ((static_cast<uint32_t>(dst_straight.r) * inv_src_a + 127U) / 255U);
-    const uint32_t out_g = static_cast<uint32_t>(src_straight.g) + ((static_cast<uint32_t>(dst_straight.g) * inv_src_a + 127U) / 255U);
-    const uint32_t out_b = static_cast<uint32_t>(src_straight.b) + ((static_cast<uint32_t>(dst_straight.b) * inv_src_a + 127U) / 255U);
-    const uint32_t out_a = static_cast<uint32_t>(src_straight.a) + ((static_cast<uint32_t>(dst_straight.a) * inv_src_a + 127U) / 255U);
-
-    if (out_a == 0U) {
-        return Color::transparent();
-    }
-
-    return Color{
-        static_cast<uint8_t>(std::clamp<uint32_t>(out_r, 0U, 255U)),
-        static_cast<uint8_t>(std::clamp<uint32_t>(out_g, 0U, 255U)),
-        static_cast<uint8_t>(std::clamp<uint32_t>(out_b, 0U, 255U)),
-        static_cast<uint8_t>(std::clamp<uint32_t>(out_a, 0U, 255U))
-    };
+    return detail::composite_src_over_linear(src_straight, dst_straight);
 }
 
 bool SurfaceRGBA::blend_pixel(uint32_t x, uint32_t y, Color color) {

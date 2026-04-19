@@ -32,8 +32,8 @@ bool run_rasterizer_tests() {
         CPURasterizer::draw_rect(fb, {30, 30, 40, 40, {128, 0, 0, 128}});
 
         Color blended = fb.get_pixel(50, 50);
-        check_true(blended.r == 128, "Alpha blending: red channel");
-        check_true(blended.b >= 127 && blended.b <= 128, "Alpha blending: blue channel");
+        check_true(blended.r >= 187 && blended.r <= 189, "Linear-light alpha blending: red channel");
+        check_true(blended.b >= 187 && blended.b <= 189, "Linear-light alpha blending: blue channel");
     }
 
     {
