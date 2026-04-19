@@ -164,7 +164,10 @@ bool run_scene_spec_tests() {
         check_true(capture_err.str().empty(), "CLI validate --json should not emit errors for canonical fixtures");
 
         const auto parsed_json = nlohmann::json::parse(capture_out.str());
+        check_true(parsed_json["report_type"] == "validate", "validate JSON should include report type");
         check_true(parsed_json["schema_version"] == "1.0", "validate JSON should include schema version");
+        check_true(parsed_json["status"] == "ok", "validate JSON should report success status");
+        check_true(parsed_json["diagnostics"].is_array(), "validate JSON should include diagnostics array");
         check_true(parsed_json["scene_valid"].get<bool>(), "validate JSON should mark the scene as valid");
         check_true(parsed_json["job_valid"].get<bool>(), "validate JSON should mark the job as valid");
         check_true(parsed_json.contains("scene"), "validate JSON should contain scene");
@@ -229,6 +232,9 @@ bool run_scene_spec_tests() {
 
         const auto json_text = capture_out.str();
         const auto parsed_json = nlohmann::json::parse(json_text);
+        check_true(parsed_json["report_type"] == "inspect", "inspect JSON should include report type");
+        check_true(parsed_json["status"] == "ok", "inspect JSON should report success status");
+        check_true(parsed_json["diagnostics"].is_array(), "inspect JSON should include diagnostics array");
         check_true(parsed_json.contains("scene"), "inspect JSON should contain scene");
         check_true(parsed_json.contains("assets"), "inspect JSON should contain assets");
         check_true(parsed_json.contains("render_plan"), "inspect JSON should contain render_plan");
@@ -295,7 +301,10 @@ bool run_scene_spec_tests() {
         check_true(capture_err.str().empty(), "CLI render --json should not emit errors for canonical fixtures");
 
         const auto parsed_json = nlohmann::json::parse(capture_out.str());
+        check_true(parsed_json["report_type"] == "render", "render JSON should include report type");
         check_true(parsed_json["schema_version"] == "1.0", "render JSON should include schema version");
+        check_true(parsed_json["status"] == "ok", "render JSON should report success status");
+        check_true(parsed_json["diagnostics"].is_array(), "render JSON should include diagnostics array");
         check_true(parsed_json.contains("scene"), "render JSON should contain scene");
         check_true(parsed_json.contains("assets"), "render JSON should contain assets");
         check_true(parsed_json.contains("render_plan"), "render JSON should contain render_plan");
