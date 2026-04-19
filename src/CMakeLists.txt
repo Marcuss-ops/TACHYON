@@ -8,6 +8,7 @@ add_library(TachyonCore
     core/expressions/expression_engine.cpp
     media/assets/asset_resolution.cpp
     spec/parser/scene_spec.cpp
+    scene/evaluator.cpp
     runtime/jobs/render_job.cpp
     runtime/jobs/render_plan.cpp
     runtime/render_graph.cpp
@@ -19,6 +20,7 @@ add_library(TachyonCore
     renderer2d/surface_rgba.cpp
     text/font.cpp
     text/layout.cpp
+    timeline/time.cpp
     cli/core/report.cpp
     cli/core/options.cpp
     cli/core/cli.cpp

@@ -85,6 +85,7 @@ struct LayerSpec {
     std::optional<std::string> parent;
     Transform2D transform;
     AnimatedScalarSpec opacity_property;
+    AnimatedScalarSpec time_remap_property;
 };
 
 struct CompositionSpec {

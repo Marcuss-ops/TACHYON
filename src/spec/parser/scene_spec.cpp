@@ -85,19 +85,101 @@ std::string make_path(const std::string& parent, const std::string& child) {
     return parent + "." + child;
 }
 
+bool read_vector2_like(const json& value, math::Vector2& out) {
+    if (value.is_array()) {
+        if (value.size() < 2 || !value[0].is_number() || !value[1].is_number()) {
+            return false;
+        }
+        out = {
+            static_cast<float>(value[0].get<double>()),
+            static_cast<float>(value[1].get<double>())
+        };
+        return true;
+    }
+
+    if (value.is_number()) {
+        const float scalar = static_cast<float>(value.get<double>());
+        out = {scalar, scalar};
+        return true;
+    }
+
+    return false;
+}
+
+bool read_scalar_like(const json& value, double& out) {
+    if (value.is_number()) {
+        out = value.get<double>();
+        return true;
+    }
+
+    if (value.is_array() && !value.empty() && value[0].is_number()) {
+        out = value[0].get<double>();
+        return true;
+    }
+
+    return false;
+}
+
+void parse_optional_scalar_property(const json& object, const char* key, AnimatedScalarSpec& property, const std::string& path, DiagnosticBag& diagnostics) {
+    if (!object.contains(key) || object.at(key).is_null()) {
+        return;
+    }
+
+    const auto& value = object.at(key);
+    if (value.is_number()) {
+        property.value = value.get<double>();
+        return;
+    }
+
+    if (value.is_object()) {
+        if (value.contains("value") && value.at("value").is_number()) {
+            property.value = value.at("value").get<double>();
+            return;
+        }
+        diagnostics.add_error("scene.layer.property_invalid", std::string(key) + " must contain a numeric value when provided as an object", make_path(path, key));
+        return;
+    }
+
+    diagnostics.add_error("scene.layer.property_invalid", std::string(key) + " must be a number or object", make_path(path, key));
+}
+
 void parse_transform(const json& object, LayerSpec& layer, const std::string& path, DiagnosticBag& diagnostics) {
-    if (!object.contains("position") || object.at("position").is_null()) {
-        return;
+    if (object.contains("position") && !object.at("position").is_null()) {
+        math::Vector2 position;
+        if (!read_vector2_like(object.at("position"), position)) {
+            diagnostics.add_error("scene.transform.position_invalid", "position must be a number or array with at least two numbers", make_path(path, "transform.position"));
+        } else {
+            layer.transform.position_x = static_cast<double>(position.x);
+            layer.transform.position_y = static_cast<double>(position.y);
+        }
     }
 
-    const auto& position = object.at("position");
-    if (!position.is_array() || position.size() != 2 || !position[0].is_number() || !position[1].is_number()) {
-        diagnostics.add_error("scene.transform.position_invalid", "position must be an array of two numbers", make_path(path, "transform.position"));
-        return;
+    if (object.contains("rotation") && !object.at("rotation").is_null()) {
+        double rotation = 0.0;
+        if (read_scalar_like(object.at("rotation"), rotation)) {
+            layer.transform.rotation = rotation;
+        } else {
+            diagnostics.add_error("scene.transform.rotation_invalid", "rotation must be a number or array with at least one number", make_path(path, "transform.rotation"));
+        }
     }
 
-    layer.transform.position_x = position[0].get<double>();
-    layer.transform.position_y = position[1].get<double>();
+    if (object.contains("scale") && !object.at("scale").is_null()) {
+        if (object.at("scale").is_array()) {
+            const auto& scale = object.at("scale");
+            if (scale.size() < 2 || !scale[0].is_number() || !scale[1].is_number()) {
+                diagnostics.add_error("scene.transform.scale_invalid", "scale must be a number or array with at least two numbers", make_path(path, "transform.scale"));
+            } else {
+                layer.transform.scale_x = scale[0].get<double>();
+                layer.transform.scale_y = scale[1].get<double>();
+            }
+        } else if (object.at("scale").is_number()) {
+            const double scale = object.at("scale").get<double>();
+            layer.transform.scale_x = scale;
+            layer.transform.scale_y = scale;
+        } else {
+            diagnostics.add_error("scene.transform.scale_invalid", "scale must be a number or array with at least two numbers", make_path(path, "transform.scale"));
+        }
+    }
 }
 
 LayerSpec parse_layer(const json& object, const std::string& path, DiagnosticBag& diagnostics) {
@@ -122,6 +204,8 @@ LayerSpec parse_layer(const json& object, const std::string& path, DiagnosticBag
     if (object.contains("transform") && object.at("transform").is_object()) {
         parse_transform(object.at("transform"), layer, path, diagnostics);
     }
+
+    parse_optional_scalar_property(object, "time_remap", layer.time_remap_property, path, diagnostics);
 
     return layer;
 }

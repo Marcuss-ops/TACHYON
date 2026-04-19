@@ -1,10 +1,13 @@
 #pragma once
 
 #include "tachyon/core/camera/camera_state.h"
+#include "tachyon/core/math/matrix4x4.h"
+#include "tachyon/core/math/transform2.h"
 #include "tachyon/core/math/vector2.h"
 #include "tachyon/core/math/vector3.h"
 #include "tachyon/spec/scene_spec.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -13,20 +16,33 @@
 namespace tachyon::scene {
 
 struct EvaluatedLayerState {
+    std::size_t layer_index{0};
+    std::size_t depth{0};
     std::string id;
     std::string type;
     std::string name;
     bool enabled{false};
     bool active{false};
+    bool visible{false};
     bool is_camera{false};
     std::int64_t frame_number{0};
     double composition_time_seconds{0.0};
     double local_time_seconds{0.0};
+    double remapped_time_seconds{0.0};
     double opacity{1.0};
+    double world_opacity{1.0};
     math::Vector2 position{math::Vector2::zero()};
     double rotation_degrees{0.0};
     math::Vector2 scale{math::Vector2::one()};
+    math::Transform2 local_transform{math::Transform2::identity()};
+    math::Transform2 world_transform{math::Transform2::identity()};
+    math::Matrix4x4 local_matrix;
+    math::Matrix4x4 world_matrix;
+    math::Vector2 world_position{math::Vector2::zero()};
+    double world_rotation_degrees{0.0};
+    math::Vector2 world_scale{math::Vector2::one()};
     std::optional<std::string> parent;
+    std::optional<std::size_t> parent_index;
 };
 
 struct EvaluatedCameraState {
