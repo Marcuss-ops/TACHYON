@@ -28,6 +28,8 @@ add_library(TachyonCore
     renderer2d/evaluated_composition_renderer.cpp
     text/font.cpp
     text/layout.cpp
+    output/png_sequence_sink.cpp
+    output/ffmpeg_pipe_sink.cpp
     timeline/time.cpp
     cli/core/report.cpp
     cli/core/options.cpp
