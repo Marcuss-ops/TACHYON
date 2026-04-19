@@ -20,6 +20,18 @@ The project should eventually include at least:
 - visual regression tests
 - text layout tests
 - caching and invalidation tests
+- scene spec compatibility tests
+- render job compatibility tests
+- low-end performance tier tests
+
+## Baseline fixtures
+
+The test suite should include:
+
+- golden scenes for common motion design patterns
+- golden frames for visual regression
+- benchmark scenes for CPU and memory profiling
+- negative fixtures for invalid specs and missing assets
 
 ## Visual regression
 
@@ -33,6 +45,13 @@ The engine should version:
 - scene spec expectations
 - render-job expectations
 - behavior changes that alter output
+
+Compatibility policy should distinguish:
+
+- additive changes
+- warning-level changes
+- output-breaking changes
+- schema-breaking changes
 
 ## Rule
 

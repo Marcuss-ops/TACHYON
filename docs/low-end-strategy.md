@@ -85,3 +85,11 @@ The biggest wins usually come from:
 - narrower first-release scope
 
 Low-end success is mostly an architecture problem, not a heroic micro-optimization problem.
+
+## 7. Performance tier mapping
+
+The quality tiers above should map to concrete engine behavior:
+
+- Draft: smallest memory footprint, fewer passes, aggressive caching, lower sample counts
+- High: balanced CPU cost, full text and compositing fidelity, denoise enabled where useful
+- Cinematic: maximum quality, full 3D sampling, longer render times, overnight-friendly settings

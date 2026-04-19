@@ -22,6 +22,27 @@ The text system should define:
 - text box constraints
 - baseline rules
 - per-glyph addressability for animation
+- glyph metrics
+- wrapping and alignment
+- text-on-path layout
+- per-run and per-word selection boundaries
+
+## Minimum layout contract
+
+The engine should keep layout results explicit enough to answer:
+
+- what glyph is placed at what position
+- which font and fallback resolved it
+- how line breaks were chosen
+- what transforms apply to each run
+- what the baseline and advance metrics were
+
+## Shaping rules
+
+- shaping should happen before animation
+- animation should operate on resolved runs or glyphs, not raw Unicode text
+- font fallback must be deterministic for the same inputs
+- text-on-path should preserve the same logical ordering guarantees where possible
 
 ## Determinism requirement
 

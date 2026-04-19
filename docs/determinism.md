@@ -37,6 +37,14 @@ Determinism enables:
 - time-of-day or environment-dependent execution
 - uncontrolled parallel write behavior
 
+## Determinism contract
+
+- seed policy must be part of the render job or scene version
+- sample ordering must be stable for the same job and engine version
+- floating-point precision assumptions must be documented
+- cache keys must include all visible inputs
+- any compatibility-breaking change must be versioned intentionally
+
 ## Architectural implications
 
 Determinism affects:

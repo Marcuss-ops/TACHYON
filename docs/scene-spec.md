@@ -5,6 +5,8 @@
 This document defines the first concrete external scene contract for TACHYON.
 It turns architectural direction into a buildable input model.
 
+This is the authoritative spec contract for authored scene data. The `scene-spec-v1.md` document remains a companion summary, but this file carries the formal shape.
+
 ## Top-level shape
 
 A scene document should contain:
@@ -15,6 +17,38 @@ A scene document should contain:
 - `compositions`
 - `templates`
 - `render_defaults`
+
+## Example
+
+```yaml
+spec_version: "1.0"
+project:
+  id: "proj_001"
+  name: "Intro"
+assets:
+  - id: "logo"
+    type: "image"
+    source: "assets/logo.png"
+compositions:
+  - id: "main"
+    name: "Main"
+    width: 1920
+    height: 1080
+    duration: 120
+    frame_rate: 30
+    layers:
+      - id: "title"
+        type: "text"
+        name: "Title"
+        start_time: 0
+        in_point: 0
+        out_point: 120
+        transform:
+          position: [960, 540]
+        opacity: 1
+render_defaults:
+  output: "mp4"
+```
 
 ## Composition contract
 
@@ -69,6 +103,13 @@ A property should allow one of the following authoring forms:
 - expression reference
 - external binding reference
 - template override reference
+
+## Versioning and compatibility
+
+- `spec_version` is required and must be semver-like or otherwise explicitly parseable.
+- New optional fields should be additive by default.
+- Behavior changes that alter output must be versioned intentionally.
+- Unknown fields should be rejectable in strict mode and warnable in lenient mode.
 
 ## Validation goals
 

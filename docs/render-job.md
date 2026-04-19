@@ -26,6 +26,39 @@ A render job defines a concrete execution request:
 - output settings
 - seeds or compatibility parameters where required
 
+## Canonical shape
+
+A render job should at least define:
+
+- `job_id`
+- `scene_ref`
+- `composition_target`
+- `frame_range`
+- `output`
+- `overrides`
+- `assets_snapshot`
+- `seed_policy`
+- `compatibility_mode`
+
+## Example
+
+```yaml
+job_id: "job_001"
+scene_ref: "scene.json"
+composition_target: "main"
+frame_range:
+  start: 0
+  end: 120
+output:
+  format: "mp4"
+  path: "out/intro.mp4"
+overrides:
+  title.text: "Hello"
+seed_policy:
+  mode: "stable"
+compatibility_mode: "v1"
+```
+
 ## Architectural role
 
 The render job is the boundary object between orchestration and the engine core.
@@ -54,6 +87,7 @@ Detailed encoder behavior belongs in `docs/encoder-output.md`.
 3. Overrides and data inputs must flow through the template and property systems, not through ad hoc patching.
 4. The same render job should be reproducible.
 5. Output-affecting settings must be explicit enough to reproduce the same deliverable.
+6. Output targets should be explicit and not inferred from scene authoring alone.
 
 ## Guiding principle
 
