@@ -9,6 +9,11 @@
       "id": "logo",
       "type": "image",
       "source": "assets/logo.png"
+    },
+    {
+      "id": "background",
+      "type": "image",
+      "source": "assets/background.png"
     }
   ],
   "compositions": [
