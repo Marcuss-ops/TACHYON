@@ -8,12 +8,12 @@ namespace tachyon {
 namespace renderer2d {
 
 std::vector<DrawCommand2D> map_layer_to_draw_commands(
-    const scene::EvaluatedLayerState& layer,
-    const scene::EvaluatedCompositionState& composition_state,
+    const timeline::EvaluatedLayerState& layer,
+    const timeline::EvaluatedCompositionState& composition_state,
     int z_order
 );
 
-DrawList2D DrawListBuilder::build(const scene::EvaluatedCompositionState& composition_state) {
+DrawList2D DrawListBuilder::build(const timeline::EvaluatedCompositionState& composition_state) {
     DrawList2D draw_list;
 
     DrawCommand2D clear_command;
