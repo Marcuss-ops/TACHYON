@@ -47,6 +47,30 @@ bool run_path_rasterizer_tests() {
 
         PathGeometry path;
         path.commands = {
+            {PathVerb::MoveTo, {4.0f, 4.0f}},
+            {PathVerb::LineTo, {24.0f, 4.0f}},
+            {PathVerb::LineTo, {24.0f, 24.0f}},
+            {PathVerb::LineTo, {4.0f, 24.0f}},
+            {PathVerb::Close}
+        };
+
+        FillPathStyle style;
+        style.fill_color = Color{255, 0, 0, 128};
+        style.opacity = 0.5f;
+
+        PathRasterizer::fill(surface, path, style);
+        const Color pixel = surface.get_pixel(8, 8);
+        check_true(pixel.a > 0, "Semi-transparent fill keeps alpha");
+        check_true(pixel.r < 255, "Semi-transparent fill premultiplies color");
+        check_true(pixel.g == 0 && pixel.b == 0, "Semi-transparent fill preserves channel balance");
+    }
+
+    {
+        SurfaceRGBA surface(32, 32);
+        surface.clear(Color::transparent());
+
+        PathGeometry path;
+        path.commands = {
             {PathVerb::MoveTo, {4.0f, 16.0f}},
             {PathVerb::LineTo, {28.0f, 16.0f}}
         };
