@@ -59,6 +59,7 @@ tachyon::RenderExecutionPlan make_execution_plan() {
     plan.composition.frame_rate = {30, 1};
     plan.composition.layer_count = 1;
     plan.output.destination.path = "tests/output/runtime_seq";
+    plan.output.destination.overwrite = true;
     plan.output.profile.name = "png-seq";
     plan.output.profile.class_name = "image-sequence";
     plan.output.profile.container = "png";
