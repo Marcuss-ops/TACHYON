@@ -7,6 +7,7 @@ add_executable(TachyonTests
     unit/render/framebuffer_tests.cpp
     unit/render/rasterizer_tests.cpp
     unit/renderer2d/surface_tests.cpp
+    unit/renderer2d/draw_list_builder_tests.cpp
     unit/scene/evaluator_tests.cpp
     unit/timeline/time_tests.cpp
     unit/spec/scene_spec_tests.cpp
