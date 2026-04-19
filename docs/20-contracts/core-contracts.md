@@ -1,11 +1,9 @@
-# Core Contracts
+# Core Contracts (v1.0.0-LOCKED)
 
-## Purpose
+## STATUS: LOCKED
+This document, together with the [Canonical Engine Contract](file:///c:/Users/pater/Pyt/Tachyon/docs/20-contracts/canonical-engine-contract.md), is the foundational law for TACHYON development.
 
-This document locks the foundational contracts that the rest of TACHYON should build on.
-
-These rules exist to prevent expensive rewrites later.
-They should be treated as engine-level agreements rather than local implementation details.
+Any deviation requires a formal architectural review.
 
 ## 1. Space conventions
 
