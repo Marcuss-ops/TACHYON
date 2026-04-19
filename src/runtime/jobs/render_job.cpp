@@ -219,18 +219,53 @@ ValidationResult validate_render_job(const RenderJob& job) {
         result.diagnostics.add_error("job.output.container_missing", "output.profile.container is required", "output.profile.container");
     }
 
+    if (job.output.profile.name.empty()) {
+        result.diagnostics.add_error("job.output.profile_name_missing", "output.profile.name is required", "output.profile.name");
+    }
+
+    if (job.output.profile.class_name.empty()) {
+        result.diagnostics.add_error("job.output.profile_class_missing", "output.profile.class is required", "output.profile.class");
+    }
+
     if (job.output.profile.video.codec.empty()) {
         result.diagnostics.add_error("job.output.video_codec_missing", "output.profile.video.codec is required", "output.profile.video.codec");
+    }
+
+    if (job.output.profile.video.pixel_format.empty()) {
+        result.diagnostics.add_error("job.output.pixel_format_missing", "output.profile.video.pixel_format is required", "output.profile.video.pixel_format");
+    }
+
+    if (job.output.profile.video.rate_control_mode.empty()) {
+        result.diagnostics.add_error("job.output.rate_control_mode_missing", "output.profile.video.rate_control_mode is required", "output.profile.video.rate_control_mode");
     }
 
     if (job.output.profile.buffering.strategy.empty()) {
         result.diagnostics.add_error("job.output.buffering_missing", "output.profile.buffering.strategy is required", "output.profile.buffering.strategy");
     }
 
+    if (job.output.profile.color.transfer.empty()) {
+        result.diagnostics.add_error("job.output.color_transfer_missing", "output.profile.color.transfer is required", "output.profile.color.transfer");
+    }
+
+    if (job.output.profile.color.range.empty()) {
+        result.diagnostics.add_error("job.output.color_range_missing", "output.profile.color.range is required", "output.profile.color.range");
+    }
+
     if (!job.output.profile.audio.mode.empty()) {
         const auto& mode = job.output.profile.audio.mode;
         if (mode != "none" && mode != "passthrough" && mode != "encode") {
             result.diagnostics.add_error("job.output.audio_mode_invalid", "audio mode must be none, passthrough, or encode", "output.profile.audio.mode");
+        }
+        if (mode == "encode") {
+            if (job.output.profile.audio.codec.empty()) {
+                result.diagnostics.add_error("job.output.audio_codec_missing", "output.profile.audio.codec is required when audio.mode is encode", "output.profile.audio.codec");
+            }
+            if (!job.output.profile.audio.sample_rate.has_value()) {
+                result.diagnostics.add_error("job.output.audio_sample_rate_missing", "output.profile.audio.sample_rate is required when audio.mode is encode", "output.profile.audio.sample_rate");
+            }
+            if (!job.output.profile.audio.channels.has_value()) {
+                result.diagnostics.add_error("job.output.audio_channels_missing", "output.profile.audio.channels is required when audio.mode is encode", "output.profile.audio.channels");
+            }
         }
     }
 
