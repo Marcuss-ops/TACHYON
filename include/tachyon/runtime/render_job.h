@@ -34,6 +34,7 @@ struct OutputBufferingProfile {
 };
 
 struct OutputColorProfile {
+    std::string space;
     std::string transfer;
     std::string range;
 };
@@ -42,6 +43,7 @@ struct OutputProfile {
     std::string name;
     std::string class_name;
     std::string container;
+    std::string alpha_mode;
     OutputVideoProfile video;
     OutputAudioProfile audio;
     OutputBufferingProfile buffering;

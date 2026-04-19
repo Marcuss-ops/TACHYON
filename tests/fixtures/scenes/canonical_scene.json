@@ -1,8 +1,10 @@
 {
+  "version": "1.0.0",
   "spec_version": "1.0",
   "project": {
     "id": "proj_001",
-    "name": "Canonical Scene"
+    "name": "Canonical Scene",
+    "authoring_tool": "Tachyon Group A"
   },
   "assets": [
     {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/renderer2d/draw_command.h"
 #include "tachyon/renderer2d/framebuffer.h"
 #include <algorithm>
 
@@ -21,6 +22,35 @@ struct Blender {
         };
     }
 };
+
+inline Color blend_mode_color(Color src, Color dest, BlendMode mode) {
+    switch (mode) {
+    case BlendMode::Normal:
+        return Blender::composite_premultiplied(src, dest);
+    case BlendMode::Additive:
+        return Color{
+            static_cast<std::uint8_t>(std::clamp<int>(src.r + dest.r, 0, 255)),
+            static_cast<std::uint8_t>(std::clamp<int>(src.g + dest.g, 0, 255)),
+            static_cast<std::uint8_t>(std::clamp<int>(src.b + dest.b, 0, 255)),
+            static_cast<std::uint8_t>(std::clamp<int>(src.a + dest.a, 0, 255))
+        };
+    case BlendMode::Multiply:
+        return Color{
+            static_cast<std::uint8_t>((static_cast<std::uint32_t>(src.r) * dest.r) / 255U),
+            static_cast<std::uint8_t>((static_cast<std::uint32_t>(src.g) * dest.g) / 255U),
+            static_cast<std::uint8_t>((static_cast<std::uint32_t>(src.b) * dest.b) / 255U),
+            static_cast<std::uint8_t>(std::clamp<int>((src.a + dest.a) / 2, 0, 255))
+        };
+    case BlendMode::Screen:
+        return Color{
+            static_cast<std::uint8_t>(255U - ((255U - src.r) * (255U - dest.r) / 255U)),
+            static_cast<std::uint8_t>(255U - ((255U - src.g) * (255U - dest.g) / 255U)),
+            static_cast<std::uint8_t>(255U - ((255U - src.b) * (255U - dest.b) / 255U)),
+            static_cast<std::uint8_t>(std::clamp<int>((src.a + dest.a) / 2, 0, 255))
+        };
+    }
+    return src;
+}
 
 struct ClearPrimitive {
     Color color{Color::transparent()};

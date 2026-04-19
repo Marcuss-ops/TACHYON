@@ -17,6 +17,8 @@ namespace tachyon::timeline {
 enum class LayerType {
     Unknown,
     Solid,
+    Shape,
+    Mask,
     Image,
     Text,
     Camera,

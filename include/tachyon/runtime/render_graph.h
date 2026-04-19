@@ -12,6 +12,7 @@
 namespace tachyon {
 
 enum class RenderStepKind {
+    ValidateContracts,
     ResolveScene,
     ResolveComposition,
     PrepareFrameCacheKeys,

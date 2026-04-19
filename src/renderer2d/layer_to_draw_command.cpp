@@ -71,6 +71,16 @@ DrawCommand2D solid_command(const scene::EvaluatedLayerState& layer, const scene
     return command;
 }
 
+DrawCommand2D mask_command(const scene::EvaluatedLayerState& layer, const scene::EvaluatedCompositionState& composition_state, int z_order) {
+    DrawCommand2D command;
+    command.kind = DrawCommandKind::MaskRect;
+    command.z_order = z_order;
+    command.blend_mode = BlendMode::Normal;
+    command.clip = full_clip(composition_state);
+    command.mask_rect.emplace(MaskRectCommand{scaled_rect(layer, 100, 100)});
+    return command;
+}
+
 DrawCommand2D image_command(const scene::EvaluatedLayerState& layer, const scene::EvaluatedCompositionState& composition_state, int z_order, const char* prefix, int base_width, int base_height) {
     DrawCommand2D command;
     command.kind = DrawCommandKind::TexturedQuad;
@@ -113,8 +123,10 @@ std::vector<DrawCommand2D> map_layer_to_draw_commands(const scene::EvaluatedLaye
     if (!layer.enabled || !layer.active || layer.is_camera) {
         return commands;
     }
-    if (layer.type == "solid") {
+    if (layer.type == "solid" || layer.type == "shape") {
         commands.push_back(solid_command(layer, composition_state, z_order));
+    } else if (layer.type == "mask") {
+        commands.push_back(mask_command(layer, composition_state, z_order));
     } else if (layer.type == "image") {
         auto command = image_command(layer, composition_state, z_order, "image:", 256, 256);
         if (command.textured_quad.has_value()) {

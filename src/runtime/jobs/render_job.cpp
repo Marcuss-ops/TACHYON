@@ -72,6 +72,7 @@ OutputProfile parse_output_profile(const json& object, const std::string& path, 
     read_string(object, "name", profile.name);
     read_string(object, "class", profile.class_name);
     read_string(object, "container", profile.container);
+    read_string(object, "alpha_mode", profile.alpha_mode);
 
     if (object.contains("video") && object.at("video").is_object()) {
         const auto& video = object.at("video");
@@ -116,6 +117,7 @@ OutputProfile parse_output_profile(const json& object, const std::string& path, 
 
     if (object.contains("color") && object.at("color").is_object()) {
         const auto& color = object.at("color");
+        read_string(color, "space", profile.color.space);
         read_string(color, "transfer", profile.color.transfer);
         read_string(color, "range", profile.color.range);
     }
@@ -249,6 +251,32 @@ ValidationResult validate_render_job(const RenderJob& job) {
 
     if (job.output.profile.color.range.empty()) {
         result.diagnostics.add_error("job.output.color_range_missing", "output.profile.color.range is required", "output.profile.color.range");
+    }
+
+    if (job.output.profile.color.space.empty()) {
+        result.diagnostics.add_error("job.output.color_space_missing", "output.profile.color.space is required", "output.profile.color.space");
+    }
+
+    if (job.output.profile.alpha_mode.empty()) {
+        result.diagnostics.add_error("job.output.alpha_mode_missing", "output.profile.alpha_mode is required", "output.profile.alpha_mode");
+    } else if (job.output.profile.alpha_mode != "discarded" &&
+               job.output.profile.alpha_mode != "preserved" &&
+               job.output.profile.alpha_mode != "unsupported") {
+        result.diagnostics.add_error("job.output.alpha_mode_invalid", "output.profile.alpha_mode must be discarded, preserved, or unsupported", "output.profile.alpha_mode");
+    }
+
+    if (!job.seed_policy_mode.empty() &&
+        job.seed_policy_mode != "stable" &&
+        job.seed_policy_mode != "deterministic" &&
+        job.seed_policy_mode != "random") {
+        result.diagnostics.add_error("job.seed_policy_mode_invalid", "seed_policy_mode must be stable, deterministic, or random", "seed_policy_mode");
+    }
+
+    if (!job.compatibility_mode.empty() &&
+        job.compatibility_mode != "locked_v1" &&
+        job.compatibility_mode != "legacy" &&
+        job.compatibility_mode != "current") {
+        result.diagnostics.add_warning("job.compatibility_mode_unrecognized", "compatibility_mode should be one of locked_v1, legacy, or current", "compatibility_mode");
     }
 
     if (!job.output.profile.audio.mode.empty()) {

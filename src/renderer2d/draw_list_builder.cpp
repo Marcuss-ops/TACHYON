@@ -27,6 +27,10 @@ timeline::EvaluatedCompositionState to_timeline_state(const scene::EvaluatedComp
         converted_layer.transform2.scale = layer.scale;
         if (layer.type == "solid") {
             converted_layer.type = timeline::LayerType::Solid;
+        } else if (layer.type == "shape") {
+            converted_layer.type = timeline::LayerType::Shape;
+        } else if (layer.type == "mask") {
+            converted_layer.type = timeline::LayerType::Mask;
         } else if (layer.type == "image") {
             converted_layer.type = timeline::LayerType::Image;
         } else if (layer.type == "text") {
@@ -120,6 +124,26 @@ DrawCommand2D solid_command(const scene::EvaluatedLayerState& layer, const scene
     return command;
 }
 
+DrawCommand2D mask_command(const scene::EvaluatedLayerState& layer, const scene::EvaluatedCompositionState& composition_state, int z_order) {
+    DrawCommand2D command;
+    command.kind = DrawCommandKind::MaskRect;
+    command.z_order = z_order;
+    command.blend_mode = BlendMode::Normal;
+    command.clip = full_clip(composition_state);
+    command.mask_rect.emplace(MaskRectCommand{scaled_rect(layer, 100, 100)});
+    return command;
+}
+
+DrawCommand2D mask_command(const timeline::EvaluatedLayerState& layer, const timeline::EvaluatedCompositionState& composition_state, int z_order) {
+    DrawCommand2D command;
+    command.kind = DrawCommandKind::MaskRect;
+    command.z_order = z_order;
+    command.blend_mode = BlendMode::Normal;
+    command.clip = full_clip(composition_state);
+    command.mask_rect.emplace(MaskRectCommand{scaled_rect(layer, 100, 100)});
+    return command;
+}
+
 DrawCommand2D image_command(const scene::EvaluatedLayerState& layer, const scene::EvaluatedCompositionState& composition_state, int z_order, const char* prefix, int base_width, int base_height) {
     DrawCommand2D command;
     command.kind = DrawCommandKind::TexturedQuad;
@@ -174,7 +198,7 @@ DrawList2D DrawListBuilder::build(const timeline::EvaluatedCompositionState& com
             continue;
         }
 
-        if (layer.type == timeline::LayerType::Solid) {
+        if (layer.type == timeline::LayerType::Solid || layer.type == timeline::LayerType::Shape) {
             draw_list.commands.emplace_back();
             DrawCommand2D& command = draw_list.commands.back();
             command.kind = DrawCommandKind::SolidRect;
@@ -186,6 +210,11 @@ DrawList2D DrawListBuilder::build(const timeline::EvaluatedCompositionState& com
                 Color::white(),
                 static_cast<float>(layer.opacity)
             });
+            continue;
+        }
+
+        if (layer.type == timeline::LayerType::Mask) {
+            draw_list.commands.push_back(mask_command(layer, composition_state, static_cast<int>(index)));
             continue;
         }
 
@@ -229,8 +258,10 @@ DrawList2D DrawListBuilder::build(const scene::EvaluatedCompositionState& compos
             continue;
         }
 
-        if (layer.type == "solid") {
+        if (layer.type == "solid" || layer.type == "shape") {
             draw_list.commands.push_back(solid_command(layer, composition_state, static_cast<int>(index)));
+        } else if (layer.type == "mask") {
+            draw_list.commands.push_back(mask_command(layer, composition_state, static_cast<int>(index)));
         } else if (layer.type == "image") {
             auto command = image_command(layer, composition_state, static_cast<int>(index), "image:", 256, 256);
             if (command.textured_quad.has_value()) {

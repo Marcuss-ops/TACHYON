@@ -14,12 +14,16 @@ namespace tachyon {
 struct AssetSpec {
     std::string id;
     std::string type;
+    std::string path;
     std::string source;
+    std::optional<std::string> alpha_mode;
 };
 
 struct ProjectSpec {
     std::string id;
     std::string name;
+    std::string authoring_tool;
+    std::optional<std::int64_t> root_seed;
 };
 
 struct FrameRate {
@@ -93,6 +97,7 @@ struct CompositionSpec {
     std::string name;
     std::int64_t width{0};
     std::int64_t height{0};
+    std::optional<std::int64_t> fps;
     double duration{0.0};
     FrameRate frame_rate;
     std::optional<std::string> background;
@@ -104,6 +109,7 @@ struct RenderDefaults {
 };
 
 struct SceneSpec {
+    std::string version;
     std::string spec_version;
     ProjectSpec project;
     std::vector<AssetSpec> assets;

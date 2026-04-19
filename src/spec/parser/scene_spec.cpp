@@ -75,6 +75,18 @@ bool read_bool(const json& object, const char* key, bool& out) {
     return true;
 }
 
+bool read_optional_int(const json& object, const char* key, std::optional<std::int64_t>& out) {
+    if (!object.contains(key) || object.at(key).is_null()) {
+        return false;
+    }
+    const auto& value = object.at(key);
+    if (!value.is_number_integer()) {
+        return false;
+    }
+    out = value.get<std::int64_t>();
+    return true;
+}
+
 std::string make_path(const std::string& parent, const std::string& child) {
     if (parent.empty()) {
         return child;
@@ -210,6 +222,10 @@ LayerSpec parse_layer(const json& object, const std::string& path, DiagnosticBag
     return layer;
 }
 
+bool is_asset_alpha_mode_valid(const std::string& mode) {
+    return mode == "premultiplied" || mode == "straight" || mode == "opaque";
+}
+
 CompositionSpec parse_composition(const json& object, const std::string& path, DiagnosticBag& diagnostics) {
     CompositionSpec composition;
     read_string(object, "id", composition.id);
@@ -217,6 +233,11 @@ CompositionSpec parse_composition(const json& object, const std::string& path, D
     read_number(object, "width", composition.width);
     read_number(object, "height", composition.height);
     read_number(object, "duration", composition.duration);
+    if (object.contains("fps") && object.at("fps").is_number_integer()) {
+        composition.fps = object.at("fps").get<std::int64_t>();
+        composition.frame_rate.numerator = *composition.fps;
+        composition.frame_rate.denominator = 1;
+    }
 
     if (object.contains("frame_rate")) {
         const auto& frame_rate = object.at("frame_rate");
@@ -258,9 +279,20 @@ AssetSpec parse_asset(const json& object, const std::string& path, DiagnosticBag
     read_string(object, "id", asset.id);
     read_string(object, "type", asset.type);
     read_string(object, "source", asset.source);
+    read_string(object, "path", asset.path);
+
+    if (object.contains("alpha_mode") && object.at("alpha_mode").is_string()) {
+        asset.alpha_mode = object.at("alpha_mode").get<std::string>();
+    }
 
     if (asset.id.empty()) {
         diagnostics.add_error("scene.asset.id_missing", "asset id is required", make_path(path, "id"));
+    }
+    if (asset.source.empty() && !asset.path.empty()) {
+        asset.source = asset.path;
+    }
+    if (asset.alpha_mode.has_value() && !is_asset_alpha_mode_valid(*asset.alpha_mode)) {
+        diagnostics.add_error("scene.asset.alpha_mode_invalid", "alpha_mode must be premultiplied, straight, or opaque", make_path(path, "alpha_mode"));
     }
     return asset;
 }
@@ -284,11 +316,18 @@ ParseResult<SceneSpec> parse_scene_spec_json(const std::string& text) {
     }
 
     SceneSpec scene;
+    read_string(root, "version", scene.version);
     read_string(root, "spec_version", scene.spec_version);
+    if (scene.spec_version.empty() && !scene.version.empty()) {
+        scene.spec_version = scene.version;
+    }
 
     if (root.contains("project") && root.at("project").is_object()) {
-        read_string(root.at("project"), "id", scene.project.id);
-        read_string(root.at("project"), "name", scene.project.name);
+        const auto& project = root.at("project");
+        read_string(project, "id", scene.project.id);
+        read_string(project, "name", scene.project.name);
+        read_string(project, "authoring_tool", scene.project.authoring_tool);
+        read_optional_int(project, "root_seed", scene.project.root_seed);
     } else {
         result.diagnostics.add_error("scene.project.missing", "project object is required", "project");
     }
@@ -352,12 +391,26 @@ ParseResult<SceneSpec> parse_scene_spec_file(const std::filesystem::path& path) 
 ValidationResult validate_scene_spec(const SceneSpec& scene) {
     ValidationResult result;
 
-    if (!is_version_like(scene.spec_version)) {
+    if (scene.spec_version.empty()) {
+        result.diagnostics.add_error("scene.version_missing", "version/spec_version is required", "version");
+    } else if (!is_version_like(scene.spec_version)) {
         result.diagnostics.add_error("scene.spec_version.invalid", "spec_version must be parseable and version-like", "spec_version");
     }
 
     if (scene.project.id.empty()) {
         result.diagnostics.add_error("scene.project.id_missing", "project.id is required", "project.id");
+    }
+
+    if (scene.project.name.empty()) {
+        result.diagnostics.add_error("scene.project.name_missing", "project.name is required", "project.name");
+    }
+
+    if (scene.project.authoring_tool.empty()) {
+        result.diagnostics.add_warning("scene.project.authoring_tool_missing", "project.authoring_tool should be set for locked contract scenes", "project.authoring_tool");
+    }
+
+    if (scene.project.root_seed.has_value() && *scene.project.root_seed < 0) {
+        result.diagnostics.add_error("scene.project.root_seed_invalid", "project.root_seed must be non-negative", "project.root_seed");
     }
 
     if (scene.compositions.empty()) {
@@ -383,6 +436,10 @@ ValidationResult validate_scene_spec(const SceneSpec& scene) {
             result.diagnostics.add_error("scene.composition.duration_invalid", "composition duration must be positive", composition_path + ".duration");
         }
 
+        if (composition.fps.has_value() && *composition.fps <= 0) {
+            result.diagnostics.add_error("scene.composition.fps_invalid", "fps must be positive", composition_path + ".fps");
+        }
+
         if (composition.frame_rate.numerator <= 0 || composition.frame_rate.denominator <= 0) {
             result.diagnostics.add_error("scene.composition.frame_rate_invalid", "frame_rate must be positive", composition_path + ".frame_rate");
         }
@@ -406,6 +463,7 @@ ValidationResult validate_scene_spec(const SceneSpec& scene) {
                     "image",
                     "text",
                     "shape",
+                    "mask",
                     "precomp",
                     "null",
                     "camera"
@@ -425,6 +483,10 @@ ValidationResult validate_scene_spec(const SceneSpec& scene) {
 
             if (layer.parent.has_value() && !layer.parent->empty() && !layer_ids.contains(*layer.parent)) {
                 result.diagnostics.add_error("scene.layer.parent_missing", "layer.parent must reference an earlier layer id in the same composition", layer_path + ".parent");
+            }
+
+            if (layer.type == "mask" && layer.opacity <= 0.0) {
+                result.diagnostics.add_warning("scene.layer.mask_transparent", "mask layers with zero opacity do not affect clipping", layer_path + ".opacity");
             }
         }
     }

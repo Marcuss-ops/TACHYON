@@ -61,9 +61,11 @@ tachyon::RenderPlan make_plan() {
     plan.output.profile.name = "png-seq";
     plan.output.profile.class_name = "image-sequence";
     plan.output.profile.container = "png";
+    plan.output.profile.alpha_mode = "preserved";
     plan.output.profile.video.codec = "png";
     plan.output.profile.video.pixel_format = "rgba8";
     plan.output.profile.video.rate_control_mode = "fixed";
+    plan.output.profile.color.space = "bt709";
     plan.output.profile.color.transfer = "srgb";
     plan.output.profile.color.range = "full";
     plan.frame_range = {0, 2};
