@@ -30,6 +30,19 @@ struct Quaternion {
         };
     }
 
+    static Quaternion from_euler(const Vector3& degrees_yxz) {
+        float rad_x = degrees_yxz.x * (3.14159265f / 180.0f);
+        float rad_y = degrees_yxz.y * (3.14159265f / 180.0f);
+        float rad_z = degrees_yxz.z * (3.14159265f / 180.0f);
+
+        Quaternion qx = from_axis_angle({1, 0, 0}, rad_x);
+        Quaternion qy = from_axis_angle({0, 1, 0}, rad_y);
+        Quaternion qz = from_axis_angle({0, 0, 1}, rad_z);
+
+        // Order Y -> X -> Z (Tait-Bryan)
+        return qz * qx * qy;
+    }
+
     Quaternion operator*(const Quaternion& q) const {
         return {
             w * q.x + x * q.w + y * q.z - z * q.y,
@@ -50,6 +63,8 @@ struct Quaternion {
         }
         return identity();
     }
+
+    struct Matrix4x4 to_matrix() const;
 };
 
 } // namespace math
