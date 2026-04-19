@@ -122,6 +122,19 @@ Target systems:
 - memory budget enforcement
 - render quality tiers for weak CPU environments
 
+## Execution backlog
+
+The project still needs these concrete runtime blocks before it feels like a real headless motion engine:
+
+- scene graph runtime
+- serious 2D compositing
+- media pipeline
+- programmatic interface
+- CPU offline 3D
+- performance on weak machines
+
+The detailed gap list lives in `docs/implementation-gaps.md`.
+
 ## Guiding rule
 
 The project should grow in system depth before feature breadth.

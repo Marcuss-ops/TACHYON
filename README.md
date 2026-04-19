@@ -57,6 +57,7 @@ System design documents:
 - `docs/effects.md`
 - `docs/masking.md`
 - `docs/shape-system.md`
+- `docs/implementation-gaps.md`
 - `docs/3d-mesh-and-extrusion.md`
 - `docs/text-animator.md`
 - `docs/text-layout-and-shaping.md`
