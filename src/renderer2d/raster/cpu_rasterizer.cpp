@@ -161,7 +161,7 @@ RasterizedFrame2D render_frame_2d(
     frame.estimated_draw_ops = commands.size();
     frame.backend_name = "cpu-2d-surface-rgba";
     frame.cache_key = task.cache_key.value;
-    frame.note = "2D frame rasterized into SurfaceRGBA using premultiplied alpha draw commands";
+    frame.note = "Public 2D pixel renderer producing SurfaceRGBA with premultiplied alpha, opacity, textured quads, and per-command clip";
     frame.surface.emplace(static_cast<std::uint32_t>(std::max<std::int64_t>(0, frame.width)),
                           static_cast<std::uint32_t>(std::max<std::int64_t>(0, frame.height)));
 
@@ -170,8 +170,15 @@ RasterizedFrame2D render_frame_2d(
     }
 
     frame.surface->clear(renderer2d::Color::transparent());
+    frame.surface->reset_clip_rect();
 
     for (const renderer2d::DrawCommand2D& command : commands) {
+        if (command.has_clip_rect) {
+            frame.surface->set_clip_rect(command.clip_rect);
+        } else {
+            frame.surface->reset_clip_rect();
+        }
+
         switch (command.kind) {
             case renderer2d::DrawCommand2D::Kind::Clear:
                 frame.surface->clear(command.clear.color);
@@ -188,6 +195,7 @@ RasterizedFrame2D render_frame_2d(
         }
     }
 
+    frame.surface->reset_clip_rect();
     return frame;
 }
 
