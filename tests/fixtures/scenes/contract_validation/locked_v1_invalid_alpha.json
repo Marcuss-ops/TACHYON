@@ -1,0 +1,16 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "name": "Invalid Alpha Type",
+    "authoring_tool": "Tachyon Group A"
+  },
+  "assets": [
+    {
+      "id": "bad_asset",
+      "type": "image",
+      "path": "assets/bad.png",
+      "alpha_mode": "raw" 
+    }
+  ],
+  "compositions": []
+}
