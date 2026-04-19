@@ -4,6 +4,8 @@ add_library(TachyonCore
     spec/parser/scene_spec.cpp
     runtime/jobs/render_job.cpp
     runtime/jobs/render_plan.cpp
+    runtime/render_graph.cpp
+    renderer2d/raster/cpu_rasterizer.cpp
     cli/core/cli.cpp
 )
 
