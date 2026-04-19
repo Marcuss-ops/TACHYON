@@ -157,6 +157,7 @@ EvaluatedLayerState make_layer_state(
     evaluated.id = layer.id;
     evaluated.type = layer.type;
     evaluated.name = layer.name;
+    evaluated.blend_mode = layer.blend_mode;
     evaluated.enabled = layer.enabled;
     evaluated.is_camera = layer.type == "camera";
     evaluated.frame_number = frame_number;

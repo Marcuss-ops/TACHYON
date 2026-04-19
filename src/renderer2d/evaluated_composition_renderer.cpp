@@ -43,6 +43,7 @@ struct RenderLayerView {
     double local_time_seconds{0.0};
     std::string id;
     std::string label;
+    std::string blend_mode{"normal"};
     std::optional<scene::EvaluatedShapePath> shape_path;
     
     // Metadata
@@ -70,8 +71,8 @@ renderer2d::Color premultiply_color(renderer2d::Color color) {
 
 renderer2d::Color color_with_opacity(renderer2d::Color base, float opacity) {
     const float clamped = std::clamp(opacity, 0.0f, 1.0f);
-    base.a = static_cast<std::uint8_t>(std::round(static_cast<float>(base.a) * clamped));
-    return premultiply_color(base);
+    base.a = static_cast<std::uint8_t>(std::lround(static_cast<float>(base.a) * clamped));
+    return base;
 }
 
 renderer2d::Color from_spec(const ColorSpec& spec) {
@@ -88,6 +89,19 @@ renderer2d::RectI intersect_rects(const renderer2d::RectI& a, const renderer2d::
 
 renderer2d::RectI full_rect(std::int64_t width, std::int64_t height) {
     return renderer2d::RectI{0, 0, static_cast<int>(width), static_cast<int>(height)};
+}
+
+renderer2d::BlendMode parse_blend_mode(const std::string& blend_mode) {
+    if (blend_mode == "additive") {
+        return renderer2d::BlendMode::Additive;
+    }
+    if (blend_mode == "multiply") {
+        return renderer2d::BlendMode::Multiply;
+    }
+    if (blend_mode == "screen") {
+        return renderer2d::BlendMode::Screen;
+    }
+    return renderer2d::BlendMode::Normal;
 }
 
 renderer2d::RectI inflate_rect(const renderer2d::RectI& rect, int margin, std::int64_t width, std::int64_t height) {
@@ -195,6 +209,7 @@ RenderLayerView to_view(const scene::EvaluatedLayerState& layer) {
     view.local_time_seconds = layer.local_time_seconds;
     view.id = layer.id;
     view.label = layer.name.empty() ? layer.id : layer.name;
+    view.blend_mode = layer.blend_mode;
     view.shape_path = layer.shape_path;
     view.track_matte_type = layer.track_matte_type;
     view.track_matte_layer_index = layer.track_matte_layer_index;
@@ -271,6 +286,8 @@ renderer2d::EffectHost& scene_effect_host() {
         host.register_effect("identity", std::make_unique<IdentityEffect>());
         host.register_effect("blur", std::make_unique<renderer2d::GaussianBlurEffect>());
         host.register_effect("shadow", std::make_unique<renderer2d::DropShadowEffect>());
+        host.register_effect("levels", std::make_unique<renderer2d::LevelsEffect>());
+        host.register_effect("curves", std::make_unique<renderer2d::CurvesEffect>());
         host.register_effect("fill", std::make_unique<renderer2d::FillEffect>());
         host.register_effect("tint", std::make_unique<renderer2d::TintEffect>());
     }
@@ -312,7 +329,11 @@ void apply_track_matte(renderer2d::SurfaceRGBA& target, const renderer2d::Surfac
     }
 }
 
-void composite_surface(renderer2d::SurfaceRGBA& destination, const renderer2d::SurfaceRGBA& source, const renderer2d::RectI& clip) {
+void composite_surface(
+    renderer2d::SurfaceRGBA& destination,
+    const renderer2d::SurfaceRGBA& source,
+    const renderer2d::RectI& clip,
+    renderer2d::BlendMode blend_mode) {
     const renderer2d::RectI bounds = intersect_rects(clip, renderer2d::RectI{0, 0, static_cast<int>(destination.width()), static_cast<int>(destination.height())});
     if (bounds.width <= 0 || bounds.height <= 0) {
         return;
@@ -322,7 +343,14 @@ void composite_surface(renderer2d::SurfaceRGBA& destination, const renderer2d::S
         for (int x = bounds.x; x < bounds.x + bounds.width; ++x) {
             const renderer2d::Color pixel = source.get_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y));
             if (pixel.a != 0U) {
-                destination.blend_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), pixel);
+                if (blend_mode == renderer2d::BlendMode::Normal) {
+                    destination.blend_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), pixel);
+                } else if (const auto dest = destination.try_get_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y)); dest.has_value()) {
+                    destination.set_pixel(
+                        static_cast<std::uint32_t>(x),
+                        static_cast<std::uint32_t>(y),
+                        renderer2d::blend_mode_color(pixel, *dest, blend_mode));
+                }
             }
         }
     }
@@ -333,7 +361,8 @@ void composite_surface_at(
     const renderer2d::SurfaceRGBA& source,
     int offset_x,
     int offset_y,
-    const renderer2d::RectI& clip) {
+    const renderer2d::RectI& clip,
+    renderer2d::BlendMode blend_mode) {
 
     const renderer2d::RectI bounds = intersect_rects(
         clip,
@@ -346,7 +375,14 @@ void composite_surface_at(
         for (int x = bounds.x; x < bounds.x + bounds.width; ++x) {
             const renderer2d::Color pixel = source.get_pixel(static_cast<std::uint32_t>(x - offset_x), static_cast<std::uint32_t>(y - offset_y));
             if (pixel.a != 0U) {
-                destination.blend_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), pixel);
+                if (blend_mode == renderer2d::BlendMode::Normal) {
+                    destination.blend_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), pixel);
+                } else if (const auto dest = destination.try_get_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y)); dest.has_value()) {
+                    destination.set_pixel(
+                        static_cast<std::uint32_t>(x),
+                        static_cast<std::uint32_t>(y),
+                        renderer2d::blend_mode_color(pixel, *dest, blend_mode));
+                }
             }
         }
     }
@@ -438,7 +474,7 @@ void render_layer_to_surface(
                     for (uint32_t x = 0; x < text_surface.width(); ++x) {
                         const auto pixel = text_surface.get_pixel(x, y);
                         if (pixel.a > 0) {
-                            layer_surface.blend_pixel(offset_x + x, offset_y + y, premultiply_color(pixel));
+                            layer_surface.blend_pixel(offset_x + x, offset_y + y, pixel);
                         }
                     }
                 }
@@ -594,7 +630,13 @@ RasterizedFrame2D render_composition_recursive(
             }
 
             rendered_cache[layer.layer_index] = layer_surface;
-            composite_surface_at(*frame.surface, *layer_surface, render_region.x, render_region.y, tile);
+            composite_surface_at(
+                *frame.surface,
+                *layer_surface,
+                render_region.x,
+                render_region.y,
+                tile,
+                parse_blend_mode(layer.blend_mode));
         }
     }
 

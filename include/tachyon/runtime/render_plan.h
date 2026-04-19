@@ -29,6 +29,12 @@ struct RenderPlan {
     CompositionSummary composition;
     FrameRange frame_range;
     OutputContract output;
+    std::string quality_tier{"high"};
+    std::string compositing_alpha_mode{"premultiplied"};
+    std::string working_space{"linear_rec709"};
+    bool motion_blur_enabled{false};
+    std::int64_t motion_blur_samples{0};
+    double motion_blur_shutter_angle{180.0};
     std::string seed_policy_mode;
     std::string compatibility_mode;
 };
