@@ -185,7 +185,10 @@ const EvaluatedLayerState& resolve_layer_state(
             evaluated.parent_index = parent_it->second;
             evaluated.depth = parent.depth + 1;
             evaluated.world_matrix = parent.world_matrix * evaluated.local_matrix;
-            evaluated.world_position = evaluated.world_matrix.transform_point({0.0f, 0.0f, 0.0f});
+            {
+                const auto wp3 = evaluated.world_matrix.transform_point({0.0f, 0.0f, 0.0f});
+                evaluated.world_position = {wp3.x, wp3.y};
+            }
             evaluated.world_rotation_degrees = parent.world_rotation_degrees + evaluated.rotation_degrees;
             evaluated.world_scale = {
                 parent.world_scale.x * evaluated.scale.x,
