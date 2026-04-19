@@ -70,6 +70,14 @@ Target systems:
 - first effect graph path
 - initial multi-format output support
 
+Initial feature cut for this phase:
+
+- solid, shape, text, image, video, audio, null, camera, light, mesh 3D, precomp, adjustment layers
+- shape paths with bezier curves, stroke, fill, trim paths, repeater, and offset path
+- text animators for position, rotation, scale, opacity, tracking, and fill
+- per-word or per-character selectors, including range and expression selectors
+- a compact effect set centered on blur, glow, shadow, color correction, distortion, grain, and LUT application
+
 ## Phase 3 — Programmatic and data-driven engine
 
 Make the engine truly reusable, automatable, and media-pipeline friendly.
@@ -96,6 +104,7 @@ Target systems:
 - text and shape extrusion
 - hybrid 2D and 3D render planning
 - Embree-backed ray intersection path
+- Open Image Denoise integration
 - early path-traced lighting, reflections, refractions, and DOF
 
 ## Phase 5 — Performance and scale

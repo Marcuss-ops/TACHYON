@@ -19,8 +19,9 @@ The shape layer architecture should support:
 
 - trim paths
 - repeater
-- boolean operations
-- offset and expansion workflows later
+- offset path
+- boolean operations later
+- path expansion workflows later
 
 ## Architectural role
 

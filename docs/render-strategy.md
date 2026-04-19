@@ -32,7 +32,7 @@ That means the 3D renderer should be designed around:
 - Embree for acceleration structures and ray intersection
 - a narrow physically based path integrator
 - deterministic sampling and seeded randomness
-- optional CPU denoising with beauty plus auxiliary buffers
+- optional CPU denoising with Open Image Denoise
 - explicit AOV support where needed for denoising and compositing
 
 ## Why this direction fits TACHYON
@@ -103,13 +103,38 @@ Recommended order:
 The first serious 3D slice should target:
 
 - perspective camera
+- camera depth of field with focal length, aperture, focus distance, and bokeh shape
 - mesh layer
 - extruded text or extruded shape support
-- directional, point, spot, and environment lighting
+- directional, point, spot, area, and environment lighting
 - a narrow PBR material model
 - beauty, depth, normal, and albedo outputs where useful
 - deterministic seeds
 - optional denoise stage
+
+## Realistic scope for the first release
+
+The first 3D release should be intentionally narrow. The goal is cinema-grade output for a few important shot classes, not a feature-complete DCC clone.
+
+Recommended initial scope:
+
+- mesh, text extrusion, and shape extrusion
+- glTF import for assets that matter
+- PBR materials with a compact parameter set
+- ray-traced shadows, reflections, refractions, GI, motion blur, and DOF
+- IBL through HDRI
+- Embree-backed BVH and intersection handling
+- OIDN as an optional post-pass for low-sample renders
+
+Not first-release priorities:
+
+- volumes
+- cloth
+- fluids
+- particles
+- procedural node-based material systems
+- interactive viewport parity
+- broad simulation features
 
 ## Non-goals for the first 3D slice
 

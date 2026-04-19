@@ -21,6 +21,8 @@ A CPU-first path tracer aligns with the project direction because it offers:
 - predictable server deployment
 - natural support for offline quality features
 
+The intended implementation should pair Embree for BVH and ray intersection with a compact path integrator and optional Open Image Denoise for low-sample output.
+
 ## Intended use cases
 
 The path tracing backend should primarily serve:
@@ -59,6 +61,31 @@ The first 3D asset scope should be:
 - extruded text and shapes later
 - glTF import for mesh assets
 - PBR material inputs kept small and explicit
+
+## Realistic feature cut
+
+The backend should stay aggressively focused. The target is not "everything 3D", but the subset that gives the biggest quality gain for YouTube-style and cinematic clips.
+
+Keep in scope early:
+
+- mesh layers
+- extruded text
+- extruded shapes
+- perspective cameras
+- point, spot, directional, and area lights
+- HDRI environment lighting
+- motion blur
+- depth of field
+- ray-traced shadows, reflections, refractions, and GI
+
+Defer until later:
+
+- volumetrics
+- hair
+- cloth
+- particles
+- large procedural material graphs
+- full simulation stacks
 
 ## First material scope
 
@@ -106,6 +133,8 @@ At minimum it should be able to emit:
 - normal
 - albedo
 - motion vectors
+
+The first denoise-ready contract should also keep enough auxiliary data around for OIDN-style reconstruction when the pipeline wants it.
 
 ## Denoising position
 

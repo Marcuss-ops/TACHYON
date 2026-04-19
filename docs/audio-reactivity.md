@@ -10,6 +10,9 @@ This is useful for music-driven motion, equalizer-like graphics, beat-reactive b
 - amplitude extraction
 - band analysis
 - future transient or beat detection
+- waveform extraction for path generation
+- onset detection for beat sync
+- forced alignment hooks for subtitle timing
 - exposure of audio-derived values to expressions and animation systems
 
 ## Architectural role

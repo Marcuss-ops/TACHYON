@@ -40,6 +40,33 @@ A future expression evaluator should be able to read:
 - published template properties
 - bound external data values
 
+## Lua direction
+
+Lua is the preferred expression language candidate for TACHYON.
+
+If the scene spec uses Lua as the expression surface, then expressions are just Lua functions over a constrained context instead of a custom parser with a bespoke AST and evaluator.
+
+That buys:
+
+- a small, well-understood language
+- deterministic sandboxing options
+- simpler authoring for procedural motion
+- easier embedding in a native engine
+- lower implementation risk than inventing a new expression language
+
+The Lua environment should still be restricted:
+
+- no filesystem access
+- no network access
+- no unsafe native bindings
+- no hidden global state
+- deterministic helpers only
+
+## Why this matters
+
+Expression systems become expensive when the engine invents yet another mini-language, parser, and runtime.
+Lua lets TACHYON keep the expression slot powerful without turning the renderer core into a language project.
+
 ## Architectural rule
 
 Expressions are not a patch on top of animation.
@@ -47,5 +74,5 @@ They are part of the core property evaluation model.
 
 ## Implementation direction
 
-The engine should leave room for an internal expression VM or sandboxed runtime.
-The exact execution technology can be chosen later, but the architectural slot must already exist.
+The engine should keep the expression slot separate from the renderer and compatible with a sandboxed Lua runtime.
+The exact host embedding can be chosen later, but the architectural slot must already exist.
