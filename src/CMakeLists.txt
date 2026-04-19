@@ -1,5 +1,10 @@
 # Core Engine Library
-add_library(TachyonCore src/tachyon.cpp)
+add_library(TachyonCore
+    tachyon.cpp
+    scene_spec.cpp
+    render_job.cpp
+    cli.cpp
+)
 
 target_include_directories(TachyonCore
     PUBLIC 
@@ -7,8 +12,16 @@ target_include_directories(TachyonCore
         $<INSTALL_INTERFACE:include>
 )
 
-# Placeholder for future source files
-# target_sources(TachyonCore PRIVATE core.cpp)
+target_link_libraries(TachyonCore
+    PUBLIC
+        nlohmann_json::nlohmann_json
+)
 
-# Link dependencies (none yet)
-# target_link_libraries(TachyonCore PRIVATE ...)
+add_executable(tachyon
+    main.cpp
+)
+
+target_link_libraries(tachyon
+    PRIVATE
+        TachyonCore
+)

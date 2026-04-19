@@ -1,11 +1,13 @@
-#include <gtest/gtest.h>
-#include "tachyon/version.h"
+#include <iostream>
 
-TEST(TachyonCoreTests, VersionCheck) {
-    EXPECT_STREQ(TACHYON_VERSION_STR, "0.1.0");
-}
+bool run_scene_spec_tests();
 
-int main(int argc, char **argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+int main() {
+    if (!run_scene_spec_tests()) {
+        std::cerr << "tests failed\n";
+        return 1;
+    }
+
+    std::cout << "all tests passed\n";
+    return 0;
 }
