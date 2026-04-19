@@ -5,6 +5,7 @@
 #include "tachyon/core/math/transform2.h"
 #include "tachyon/audio/audio_analyzer.h"
 #include "tachyon/timeline/time.h"
+#include "tachyon/core/expressions/expression_engine.h"
 
 #include <algorithm>
 #include <cmath>
@@ -60,6 +61,18 @@ double sample_scalar(
     double fallback,
     double local_time_seconds,
     const ::tachyon::audio::AudioAnalyzer* audio_analyzer = nullptr) {
+
+    if (property.expression.has_value() && !property.expression->empty()) {
+        expressions::ExpressionContext expr_ctx;
+        expr_ctx.variables["t"] = local_time_seconds;
+        expr_ctx.variables["time"] = local_time_seconds;
+        expr_ctx.variables["value"] = fallback; 
+        auto result = expressions::ExpressionEvaluator::evaluate(*property.expression, expr_ctx);
+        if (result.success) {
+            return result.value;
+        }
+    }
+
     if (property.audio_band.has_value() && audio_analyzer) {
         const ::tachyon::audio::AudioBands bands = audio_analyzer->analyze_frame(local_time_seconds);
         const double band_value = sample_audio_band(bands, *property.audio_band);
@@ -111,6 +124,16 @@ double sample_scalar(
 }
 
 math::Vector2 sample_vector2(const AnimatedVector2Spec& property, const math::Vector2& fallback, double local_time_seconds) {
+    if (property.expression.has_value() && !property.expression->empty()) {
+        expressions::ExpressionContext expr_ctx;
+        expr_ctx.variables["t"] = local_time_seconds;
+        expr_ctx.variables["time"] = local_time_seconds;
+        auto result = expressions::ExpressionEvaluator::evaluate(*property.expression, expr_ctx);
+        if (result.success) {
+            return { static_cast<float>(result.value), static_cast<float>(result.value) };
+        }
+    }
+
     if (property.keyframes.empty()) {
         return property.value.value_or(fallback);
     }
@@ -154,6 +177,16 @@ math::Vector2 sample_vector2(const AnimatedVector2Spec& property, const math::Ve
 }
 
 math::Vector3 sample_vector3(const AnimatedVector3Spec& property, const math::Vector3& fallback, double local_time_seconds) {
+    if (property.expression.has_value() && !property.expression->empty()) {
+        expressions::ExpressionContext expr_ctx;
+        expr_ctx.variables["t"] = local_time_seconds;
+        expr_ctx.variables["time"] = local_time_seconds;
+        auto result = expressions::ExpressionEvaluator::evaluate(*property.expression, expr_ctx);
+        if (result.success) {
+            return { static_cast<float>(result.value), static_cast<float>(result.value), static_cast<float>(result.value) };
+        }
+    }
+
     if (property.keyframes.empty()) {
         return property.value.value_or(fallback);
     }
