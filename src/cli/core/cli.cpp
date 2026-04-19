@@ -115,12 +115,18 @@ void print_execution_plan(
     out << "graph steps: " << execution_plan.steps.size() << '\n';
     out << "frame tasks: " << execution_plan.frame_tasks.size() << '\n';
     out << "rendered frames: " << session_result.frames.size() << '\n';
+    out << "written frames: " << session_result.frames_written << '\n';
     out << "cache hits: " << session_result.cache_hits << '\n';
     out << "cache misses: " << session_result.cache_misses << '\n';
     out << "first frame cache key: " << rasterized_first_frame.cache_key << '\n';
     out << "2d runtime backend: " << rasterized_first_frame.backend_name << '\n';
     out << "first frame draw ops: " << rasterized_first_frame.estimated_draw_ops << '\n';
-    out << "note: frame-by-frame execution is active and writes PNG sequence output when a destination path is provided\n";
+    if (session_result.output_configured) {
+        out << "output: configured via render plan\n";
+    }
+    if (!session_result.output_error.empty()) {
+        out << "output error: " << session_result.output_error << '\n';
+    }
 }
 
 bool run_validate_command(const CliOptions& options, std::ostream& out, std::ostream& err) {
@@ -223,6 +229,10 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
         ? std::filesystem::path{}
         : std::filesystem::path(job.output.destination.path);
     const RenderSessionResult session_result = session.render(context.scene, *execution_result.value, output_path);
+    if (!session_result.output_error.empty()) {
+        err << "render output failed: " << session_result.output_error << '\n';
+        return false;
+    }
 
     RasterizedFrame2D first_frame;
     if (!session_result.frames.empty()) {
