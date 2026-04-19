@@ -1,6 +1,7 @@
 add_executable(TachyonTests
     unit/test_main.cpp
     unit/core/math_tests.cpp
+    unit/media/asset_resolution_tests.cpp
     unit/spec/scene_spec_tests.cpp
 )
 

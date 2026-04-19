@@ -1,4 +1,5 @@
 #include "tachyon/core/cli.h"
+#include "tachyon/media/asset_resolution.h"
 #include "tachyon/renderer2d/rasterizer.h"
 #include "tachyon/runtime/render_graph.h"
 #include "tachyon/runtime/render_job.h"
@@ -71,6 +72,12 @@ bool run_scene_spec_tests() {
         if (parsed.value.has_value()) {
             const auto validation = tachyon::validate_scene_spec(*parsed.value);
             check_true(validation.ok(), "canonical scene spec should validate");
+
+            const auto assets = tachyon::resolve_assets(*parsed.value, tests_root() / "fixtures");
+            check_true(assets.value.has_value(), "canonical scene assets should resolve");
+            if (assets.value.has_value()) {
+                check_true(assets.value->size() == 2, "canonical scene should resolve two assets");
+            }
         }
     }
 
@@ -152,6 +159,7 @@ bool run_scene_spec_tests() {
         const int exit_code = tachyon::run_cli(static_cast<int>(argv.size()), argv.data());
         check_true(exit_code == 0, "CLI render should accept canonical scene and job fixtures");
         check_true(capture_out.str().find("render execution plan valid") != std::string::npos, "CLI render should report graph success");
+        check_true(capture_out.str().find("resolved assets: 2") != std::string::npos, "CLI render should report resolved asset count");
         check_true(capture_out.str().find("graph steps:") != std::string::npos, "CLI render should report graph step count");
         check_true(capture_out.str().find("2d stub backend: cpu-2d-stub") != std::string::npos, "CLI render should report 2D stub backend");
         check_true(capture_out.str().find("composition: main") != std::string::npos, "CLI render should print resolved composition info");
@@ -183,9 +191,13 @@ bool run_render_job_tests() {
             const auto plan = tachyon::build_render_plan(*scene.value, *parsed.value);
             check_true(plan.value.has_value(), "canonical scene and job should build a render plan");
             if (plan.value.has_value()) {
-                const auto execution_plan = tachyon::build_render_execution_plan(*plan.value);
+                const auto assets = tachyon::resolve_assets(*scene.value, tests_root() / "fixtures");
+                check_true(assets.value.has_value(), "canonical scene assets should resolve for render planning");
+
+                const auto execution_plan = tachyon::build_render_execution_plan(*plan.value, assets.value.has_value() ? assets.value->size() : 0);
                 check_true(execution_plan.value.has_value(), "canonical render plan should build an execution plan");
                 if (execution_plan.value.has_value()) {
+                    check_true(execution_plan.value->resolved_asset_count == 2, "execution plan should carry the resolved asset count");
                     check_true(execution_plan.value->steps.size() >= 3, "execution plan should expose explicit graph steps");
                     check_true(!execution_plan.value->frame_tasks.empty(), "execution plan should create frame tasks");
                     check_true(execution_plan.value->frame_tasks.front().frame_number == 0, "first frame task should start at frame 0");
@@ -221,6 +233,28 @@ bool run_render_job_tests() {
                 check_true(plan.value->output.destination.path == "out/intro.mp4", "render plan should keep output destination");
             }
         }
+    }
+
+    {
+        tachyon::SceneSpec broken_scene;
+        broken_scene.spec_version = "1.0";
+        broken_scene.project.id = "proj_001";
+        broken_scene.project.name = "Broken";
+        broken_scene.compositions.push_back(tachyon::CompositionSpec{
+            "main",
+            "Main",
+            1920,
+            1080,
+            120.0,
+            tachyon::FrameRate{30, 1},
+            std::nullopt,
+            {}
+        });
+        broken_scene.assets.push_back(tachyon::AssetSpec{"missing_logo", "image", "assets/missing-logo.png"});
+
+        const auto assets = tachyon::resolve_assets(broken_scene, tests_root() / "fixtures");
+        check_true(!assets.value.has_value(), "missing asset should fail resolution");
+        check_true(!assets.diagnostics.ok(), "missing asset should emit diagnostics");
     }
 
     {
