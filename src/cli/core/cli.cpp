@@ -1,6 +1,8 @@
 #include "tachyon/core/cli.h"
 
 #include "tachyon/core/core.h"
+#include "tachyon/renderer2d/rasterizer.h"
+#include "tachyon/runtime/render_graph.h"
 #include "tachyon/runtime/render_plan.h"
 #include "tachyon/runtime/render_job.h"
 #include "tachyon/spec/scene_spec.h"
@@ -77,15 +79,19 @@ bool validate_job_file(const std::filesystem::path& job_path, std::ostream& out,
     return true;
 }
 
-void print_render_plan(const RenderPlan& plan, std::ostream& out) {
-    out << "render plan valid\n";
-    out << "scene: " << plan.scene_ref << '\n';
-    out << "job: " << plan.job_id << '\n';
-    out << "composition: " << plan.composition_target << " (" << plan.composition.width << "x" << plan.composition.height
-        << " @ " << plan.composition.frame_rate.value() << " fps, " << plan.composition.layer_count << " layers)\n";
-    out << "frames: " << plan.frame_range.start << " -> " << plan.frame_range.end << '\n';
-    out << "output: " << plan.output.destination.path << '\n';
-    out << "note: pixel rendering is not wired yet; this command validates the contract slice\n";
+void print_execution_plan(const RenderExecutionPlan& execution_plan, const RasterizedFrame2D& rasterized_first_frame, std::ostream& out) {
+    out << "render execution plan valid\n";
+    out << "scene: " << execution_plan.render_plan.scene_ref << '\n';
+    out << "job: " << execution_plan.render_plan.job_id << '\n';
+    out << "composition: " << execution_plan.render_plan.composition_target << " (" << execution_plan.render_plan.composition.width << "x" << execution_plan.render_plan.composition.height
+        << " @ " << execution_plan.render_plan.composition.frame_rate.value() << " fps, " << execution_plan.render_plan.composition.layer_count << " layers)\n";
+    out << "frames: " << execution_plan.render_plan.frame_range.start << " -> " << execution_plan.render_plan.frame_range.end << '\n';
+    out << "graph steps: " << execution_plan.steps.size() << '\n';
+    out << "frame tasks: " << execution_plan.frame_tasks.size() << '\n';
+    out << "first frame cache key: " << rasterized_first_frame.cache_key << '\n';
+    out << "2d stub backend: " << rasterized_first_frame.backend_name << '\n';
+    out << "2d stub draw ops: " << rasterized_first_frame.estimated_draw_ops << '\n';
+    out << "note: pixel rendering is not wired yet; this command validates the graph and stub raster slice\n";
 }
 
 } // namespace
@@ -194,9 +200,19 @@ int run_cli(int argc, char** argv) {
             return 2;
         }
 
+        const auto execution_plan = build_render_execution_plan(*plan.value);
+        if (!execution_plan.value.has_value()) {
+            print_diagnostics(execution_plan.diagnostics, std::cerr);
+            return 2;
+        }
+
+        const auto first_frame = execution_plan.value->frame_tasks.empty()
+            ? RasterizedFrame2D{}
+            : render_frame_2d_stub(*plan.value, execution_plan.value->frame_tasks.front());
+
         std::cout << "scene file: " << scene_path.string() << '\n';
         std::cout << "job file: " << job_path.string() << '\n';
-        print_render_plan(*plan.value, std::cout);
+        print_execution_plan(*execution_plan.value, first_frame, std::cout);
         return 0;
     }
 

@@ -1,4 +1,6 @@
 #include "tachyon/core/cli.h"
+#include "tachyon/renderer2d/rasterizer.h"
+#include "tachyon/runtime/render_graph.h"
 #include "tachyon/runtime/render_job.h"
 #include "tachyon/runtime/render_plan.h"
 #include "tachyon/spec/scene_spec.h"
@@ -149,7 +151,9 @@ bool run_scene_spec_tests() {
         StreamCapture capture_err(std::cerr);
         const int exit_code = tachyon::run_cli(static_cast<int>(argv.size()), argv.data());
         check_true(exit_code == 0, "CLI render should accept canonical scene and job fixtures");
-        check_true(capture_out.str().find("render plan valid") != std::string::npos, "CLI render should report plan success");
+        check_true(capture_out.str().find("render execution plan valid") != std::string::npos, "CLI render should report graph success");
+        check_true(capture_out.str().find("graph steps:") != std::string::npos, "CLI render should report graph step count");
+        check_true(capture_out.str().find("2d stub backend: cpu-2d-stub") != std::string::npos, "CLI render should report 2D stub backend");
         check_true(capture_out.str().find("composition: main") != std::string::npos, "CLI render should print resolved composition info");
         check_true(capture_err.str().empty(), "CLI render should not emit errors for canonical fixtures");
     }
@@ -179,6 +183,38 @@ bool run_render_job_tests() {
             const auto plan = tachyon::build_render_plan(*scene.value, *parsed.value);
             check_true(plan.value.has_value(), "canonical scene and job should build a render plan");
             if (plan.value.has_value()) {
+                const auto execution_plan = tachyon::build_render_execution_plan(*plan.value);
+                check_true(execution_plan.value.has_value(), "canonical render plan should build an execution plan");
+                if (execution_plan.value.has_value()) {
+                    check_true(execution_plan.value->steps.size() >= 3, "execution plan should expose explicit graph steps");
+                    check_true(!execution_plan.value->frame_tasks.empty(), "execution plan should create frame tasks");
+                    check_true(execution_plan.value->frame_tasks.front().frame_number == 0, "first frame task should start at frame 0");
+
+                    const auto first_key = tachyon::build_frame_cache_key(*plan.value, 0);
+                    check_true(first_key.value == execution_plan.value->frame_tasks.front().cache_key.value, "frame task should carry the computed cache key");
+
+                    tachyon::FrameCacheEntry matching_entry{first_key, "cached frame"};
+                    check_true(tachyon::frame_cache_entry_matches(matching_entry, first_key), "cache entry should match its own key");
+
+                    tachyon::FrameCacheEntry stale_entry{tachyon::build_frame_cache_key(*plan.value, 1), "cached frame"};
+                    check_true(!tachyon::frame_cache_entry_matches(stale_entry, first_key), "different frame keys should invalidate cache entries");
+
+                    tachyon::RenderPlan output_path_variant = *plan.value;
+                    output_path_variant.output.destination.path = "out/other.mp4";
+                    const auto output_path_key = tachyon::build_frame_cache_key(output_path_variant, 0);
+                    check_true(output_path_key.value == first_key.value, "output path should not affect frame cache identity");
+
+                    tachyon::RenderPlan compatibility_variant = *plan.value;
+                    compatibility_variant.compatibility_mode = "legacy";
+                    const auto compatibility_key = tachyon::build_frame_cache_key(compatibility_variant, 0);
+                    check_true(compatibility_key.value != first_key.value, "compatibility mode should affect frame cache identity");
+
+                    const auto rasterized = tachyon::render_frame_2d_stub(*plan.value, execution_plan.value->frame_tasks.front());
+                    check_true(rasterized.backend_name == "cpu-2d-stub", "2D stub renderer should report its backend");
+                    check_true(rasterized.layer_count == 1, "2D stub renderer should reflect composition layer count");
+                    check_true(rasterized.estimated_draw_ops == 5, "2D stub renderer should derive deterministic draw ops");
+                }
+
                 check_true(plan.value->composition.id == "main", "render plan should resolve the target composition");
                 check_true(plan.value->composition.layer_count == 1, "render plan should carry the composition summary");
                 check_true(plan.value->composition.width == 1920, "render plan should preserve composition width");
@@ -239,6 +275,10 @@ bool run_render_job_tests() {
             unresolved.composition_target = "missing";
             const auto plan = tachyon::build_render_plan(*scene_again.value, unresolved);
             check_true(!plan.value.has_value(), "missing composition target should fail render plan construction");
+
+            if (plan.diagnostics.ok()) {
+                check_true(false, "missing composition target should add a diagnostic");
+            }
         }
     }
 
