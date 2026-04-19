@@ -21,6 +21,7 @@ timeline::EvaluatedCompositionState to_timeline_state(const scene::EvaluatedComp
     for (const auto& layer : composition_state.layers) {
         timeline::EvaluatedLayerState converted_layer;
         converted_layer.id = layer.id;
+        converted_layer.blend_mode = layer.blend_mode;
         converted_layer.visible = layer.visible;
         converted_layer.opacity = static_cast<float>(layer.opacity);
         converted_layer.transform2.position = layer.position;
@@ -50,6 +51,19 @@ RectI full_clip(const timeline::EvaluatedCompositionState& composition_state) {
 
 RectI full_clip(const scene::EvaluatedCompositionState& composition_state) {
     return RectI{0, 0, static_cast<int>(composition_state.width), static_cast<int>(composition_state.height)};
+}
+
+BlendMode parse_blend_mode(const std::string& blend_mode) {
+    if (blend_mode == "additive") {
+        return BlendMode::Additive;
+    }
+    if (blend_mode == "multiply") {
+        return BlendMode::Multiply;
+    }
+    if (blend_mode == "screen") {
+        return BlendMode::Screen;
+    }
+    return BlendMode::Normal;
 }
 
 RectI scaled_rect(const timeline::EvaluatedLayerState& layer, int base_width, int base_height) {
@@ -118,7 +132,7 @@ DrawCommand2D solid_command(const scene::EvaluatedLayerState& layer, const scene
     DrawCommand2D command;
     command.kind = DrawCommandKind::SolidRect;
     command.z_order = z_order;
-    command.blend_mode = BlendMode::Normal;
+    command.blend_mode = parse_blend_mode(layer.blend_mode);
     command.clip = full_clip(composition_state);
     command.solid_rect.emplace(SolidRectCommand{rect, color_with_opacity(static_cast<float>(layer.opacity)), static_cast<float>(layer.opacity)});
     return command;
@@ -128,7 +142,7 @@ DrawCommand2D mask_command(const scene::EvaluatedLayerState& layer, const scene:
     DrawCommand2D command;
     command.kind = DrawCommandKind::MaskRect;
     command.z_order = z_order;
-    command.blend_mode = BlendMode::Normal;
+    command.blend_mode = parse_blend_mode(layer.blend_mode);
     command.clip = full_clip(composition_state);
     command.mask_rect.emplace(MaskRectCommand{scaled_rect(layer, 100, 100)});
     return command;
@@ -138,7 +152,7 @@ DrawCommand2D mask_command(const timeline::EvaluatedLayerState& layer, const tim
     DrawCommand2D command;
     command.kind = DrawCommandKind::MaskRect;
     command.z_order = z_order;
-    command.blend_mode = BlendMode::Normal;
+    command.blend_mode = parse_blend_mode(layer.blend_mode);
     command.clip = full_clip(composition_state);
     command.mask_rect.emplace(MaskRectCommand{scaled_rect(layer, 100, 100)});
     return command;
@@ -147,7 +161,7 @@ DrawCommand2D mask_command(const timeline::EvaluatedLayerState& layer, const tim
 DrawCommand2D image_command(const scene::EvaluatedLayerState& layer, const scene::EvaluatedCompositionState& composition_state, int z_order, const char* prefix, int base_width, int base_height) {
     DrawCommand2D command;
     command.kind = DrawCommandKind::TexturedQuad;
-    command.blend_mode = BlendMode::Normal;
+    command.blend_mode = parse_blend_mode(layer.blend_mode);
     command.clip = full_clip(composition_state);
 
     if (is_camera_aware_card(layer, composition_state)) {
@@ -198,12 +212,12 @@ DrawList2D DrawListBuilder::build(const timeline::EvaluatedCompositionState& com
             continue;
         }
 
-        if (layer.type == timeline::LayerType::Solid || layer.type == timeline::LayerType::Shape) {
-            draw_list.commands.emplace_back();
-            DrawCommand2D& command = draw_list.commands.back();
-            command.kind = DrawCommandKind::SolidRect;
-            command.z_order = static_cast<int>(index);
-            command.blend_mode = BlendMode::Normal;
+    if (layer.type == timeline::LayerType::Solid || layer.type == timeline::LayerType::Shape) {
+        draw_list.commands.emplace_back();
+        DrawCommand2D& command = draw_list.commands.back();
+        command.kind = DrawCommandKind::SolidRect;
+        command.z_order = static_cast<int>(index);
+        command.blend_mode = parse_blend_mode(layer.blend_mode);
             command.clip = full_clip(composition_state);
             command.solid_rect.emplace(SolidRectCommand{
                 scaled_rect(layer, 100, 100),
@@ -223,7 +237,7 @@ DrawList2D DrawListBuilder::build(const timeline::EvaluatedCompositionState& com
             DrawCommand2D& command = draw_list.commands.back();
             command.kind = DrawCommandKind::TexturedQuad;
             command.z_order = static_cast<int>(index);
-            command.blend_mode = BlendMode::Normal;
+            command.blend_mode = parse_blend_mode(layer.blend_mode);
             command.clip = full_clip(composition_state);
 
             TexturedQuadCommand quad;

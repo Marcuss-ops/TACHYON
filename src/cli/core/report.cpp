@@ -49,6 +49,27 @@ json make_render_plan_json(const RenderPlan& plan) {
         {"job_id", plan.job_id},
         {"scene_ref", plan.scene_ref},
         {"composition_target", plan.composition_target},
+        {"quality_tier", plan.quality_tier},
+        {"compositing_alpha_mode", plan.compositing_alpha_mode},
+        {"working_space", plan.working_space},
+        {"composition", {
+            {"id", plan.composition.id},
+            {"name", plan.composition.name},
+            {"width", plan.composition.width},
+            {"height", plan.composition.height},
+            {"duration", plan.composition.duration},
+            {"layer_count", plan.composition.layer_count},
+            {"solid_layer_count", plan.composition.solid_layer_count},
+            {"shape_layer_count", plan.composition.shape_layer_count},
+            {"mask_layer_count", plan.composition.mask_layer_count},
+            {"image_layer_count", plan.composition.image_layer_count},
+            {"text_layer_count", plan.composition.text_layer_count},
+            {"precomp_layer_count", plan.composition.precomp_layer_count},
+            {"track_matte_layer_count", plan.composition.track_matte_layer_count}
+        }},
+        {"motion_blur_enabled", plan.motion_blur_enabled},
+        {"motion_blur_samples", plan.motion_blur_samples},
+        {"motion_blur_shutter_angle", plan.motion_blur_shutter_angle},
         {"seed_policy_mode", plan.seed_policy_mode},
         {"compatibility_mode", plan.compatibility_mode},
         {"frame_range", {
@@ -150,6 +171,21 @@ void print_inspect_report_text(
         out << "  job: " << render_plan->job_id << '\n';
         out << "  scene ref: " << render_plan->scene_ref << '\n';
         out << "  composition target: " << render_plan->composition_target << '\n';
+        out << "  quality tier: " << render_plan->quality_tier << '\n';
+        out << "  compositing alpha: " << render_plan->compositing_alpha_mode << '\n';
+        out << "  working space: " << render_plan->working_space << '\n';
+        out << "  layer counts: solid=" << render_plan->composition.solid_layer_count
+            << " shape=" << render_plan->composition.shape_layer_count
+            << " mask=" << render_plan->composition.mask_layer_count
+            << " image=" << render_plan->composition.image_layer_count
+            << " text=" << render_plan->composition.text_layer_count
+            << " precomp=" << render_plan->composition.precomp_layer_count
+            << " matte=" << render_plan->composition.track_matte_layer_count << '\n';
+        out << "  motion blur: " << (render_plan->motion_blur_enabled ? "enabled" : "disabled") << '\n';
+        if (render_plan->motion_blur_enabled) {
+            out << "  motion blur samples: " << render_plan->motion_blur_samples << '\n';
+            out << "  shutter angle: " << render_plan->motion_blur_shutter_angle << '\n';
+        }
         out << "  frame range: " << render_plan->frame_range.start << " -> " << render_plan->frame_range.end << '\n';
         out << "  output: " << render_plan->output.destination.path << '\n';
     }

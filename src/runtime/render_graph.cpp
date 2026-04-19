@@ -18,6 +18,10 @@ void append_part(std::ostringstream& stream, const char* key, double value) {
     stream << key << '=' << value << ';';
 }
 
+void append_part(std::ostringstream& stream, const char* key, bool value) {
+    stream << key << '=' << (value ? 1 : 0) << ';';
+}
+
 void append_optional(std::ostringstream& stream, const char* key, const std::optional<std::string>& value) {
     if (value.has_value()) {
         append_part(stream, key, *value);
@@ -47,7 +51,20 @@ FrameCacheKey make_key(const RenderPlan& plan, std::int64_t frame_number) {
     append_part(stream, "fps_den", plan.composition.frame_rate.denominator);
     append_part(stream, "duration", plan.composition.duration);
     append_part(stream, "layer_count", static_cast<std::int64_t>(plan.composition.layer_count));
+    append_part(stream, "solid_layer_count", static_cast<std::int64_t>(plan.composition.solid_layer_count));
+    append_part(stream, "shape_layer_count", static_cast<std::int64_t>(plan.composition.shape_layer_count));
+    append_part(stream, "mask_layer_count", static_cast<std::int64_t>(plan.composition.mask_layer_count));
+    append_part(stream, "image_layer_count", static_cast<std::int64_t>(plan.composition.image_layer_count));
+    append_part(stream, "text_layer_count", static_cast<std::int64_t>(plan.composition.text_layer_count));
+    append_part(stream, "precomp_layer_count", static_cast<std::int64_t>(plan.composition.precomp_layer_count));
+    append_part(stream, "track_matte_layer_count", static_cast<std::int64_t>(plan.composition.track_matte_layer_count));
     append_optional(stream, "background", plan.composition.background);
+    append_part(stream, "quality_tier", plan.quality_tier);
+    append_part(stream, "compositing_alpha_mode", plan.compositing_alpha_mode);
+    append_part(stream, "working_space", plan.working_space);
+    append_part(stream, "motion_blur_enabled", plan.motion_blur_enabled);
+    append_part(stream, "motion_blur_samples", plan.motion_blur_samples);
+    append_part(stream, "motion_blur_shutter_angle", plan.motion_blur_shutter_angle);
     append_part(stream, "seed", plan.seed_policy_mode);
     append_part(stream, "compat", plan.compatibility_mode);
     append_part(stream, "profile_name", plan.output.profile.name);
@@ -93,6 +110,8 @@ ResolutionResult<RenderExecutionPlan> build_render_execution_plan(const RenderPl
     execution.steps.push_back(make_step("resolve-scene", RenderStepKind::ResolveScene, "resolve scene inputs"));
     execution.steps.push_back(make_step("resolve-composition", RenderStepKind::ResolveComposition, "resolve target composition"));
     execution.steps.push_back(make_step("prepare-frame-cache-keys", RenderStepKind::PrepareFrameCacheKeys, "prepare per-frame cache keys"));
+    execution.steps.push_back(make_step("prepare-layer-regions", RenderStepKind::PrepareLayerRegions, "prepare layer ROI hints"));
+    execution.steps.push_back(make_step("prepare-layer-caches", RenderStepKind::PrepareLayerCaches, "prepare matte and precomp caches"));
 
     for (std::int64_t frame = plan.frame_range.start; frame <= plan.frame_range.end; ++frame) {
         const FrameCacheKey key = build_frame_cache_key(plan, frame);
@@ -112,7 +131,20 @@ ResolutionResult<RenderExecutionPlan> build_render_execution_plan(const RenderPl
             "composition.height",
             "composition.frame_rate",
             "composition.layer_count",
+            "composition.solid_layer_count",
+            "composition.shape_layer_count",
+            "composition.mask_layer_count",
+            "composition.image_layer_count",
+            "composition.text_layer_count",
+            "composition.precomp_layer_count",
+            "composition.track_matte_layer_count",
             "composition.background",
+            "quality_tier",
+            "compositing_alpha_mode",
+            "working_space",
+            "motion_blur_enabled",
+            "motion_blur_samples",
+            "motion_blur_shutter_angle",
             "asset.alpha_mode",
             "seed_policy_mode",
             "compatibility_mode",
@@ -163,6 +195,10 @@ std::string render_step_kind_string(RenderStepKind kind) {
         return "resolve-composition";
     case RenderStepKind::PrepareFrameCacheKeys:
         return "prepare-frame-cache-keys";
+    case RenderStepKind::PrepareLayerRegions:
+        return "prepare-layer-regions";
+    case RenderStepKind::PrepareLayerCaches:
+        return "prepare-layer-caches";
     case RenderStepKind::Rasterize2DFrame:
         return "rasterize-2d-frame";
     case RenderStepKind::EncodeOutput:

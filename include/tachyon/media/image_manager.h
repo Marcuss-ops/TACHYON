@@ -5,6 +5,7 @@
 #include <map>
 #include <memory>
 #include <filesystem>
+#include <mutex>
 
 namespace tachyon::media {
 
@@ -28,6 +29,7 @@ private:
     ~ImageManager() = default;
 
     std::map<std::string, std::unique_ptr<renderer2d::SurfaceRGBA>> m_cache;
+    mutable std::mutex m_mutex;
 };
 
 } // namespace tachyon::media
