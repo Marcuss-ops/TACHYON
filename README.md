@@ -77,7 +77,20 @@ System design documents:
 - `docs/multi-format-output.md`
 - `docs/testing-and-compatibility.md`
 
+
+## The Vision: AE Quality on Low-End Hardware
+
+TACHYON is uniquely designed to bridge the gap between high-end cinematic quality and accessible hardware. 
+By focusing on a native C++ core, tile-based rendering, and deterministic simulation, we aim to deliver:
+
+- **Pro-grade Fidelity**: 32-bit linear workflow and accumulated motion blur.
+- **Resource Efficiency**: Optimized for performance on limited CPU/RAM environments.
+- **Programmatic Power**: A professional compositing engine that feels like "Headless After Effects".
+
+Detailed strategy can be found in `docs/low-end-strategy.md`.
+
 ## Direction summary
+
 
 TACHYON is being shaped as a scene engine first, then a compositing and media engine, then a hybrid renderer and encoder.
 The goal is not to mimic browser-based video tools, but to build a native temporal dataflow engine for motion graphics, automated rendering, serious text and subtitle workflows, and offline 3D image synthesis.
