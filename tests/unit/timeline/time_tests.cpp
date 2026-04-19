@@ -84,13 +84,13 @@ bool run_timeline_tests() {
         const auto evaluated = evaluate_composition_frame(EvaluationRequest{&scene, "main", 45});
         check_true(evaluated.has_value(), "evaluate_composition_frame returns a value");
         if (evaluated.has_value()) {
-            check_true(nearly_equal(evaluated->time_seconds, 1.5), "evaluated composition time matches frame number");
+            check_true(nearly_equal(evaluated->composition_time_seconds, 1.5), "evaluated composition time matches frame number");
             check_true(evaluated->layers.size() == 3, "composition with 3 layers produces 3 evaluated states");
             check_true(evaluated->layers[1].visible, "title layer visible at frame 45");
             check_true(nearly_equal(evaluated->layers[1].opacity, 0.5), "linear keyframe opacity resolves correctly");
-            check_true(nearly_equal(evaluated->layers[1].transform2.position.x, 50.0), "linear keyframe x resolves correctly");
-            check_true(nearly_equal(evaluated->layers[1].transform2.position.y, 25.0), "linear keyframe y resolves correctly");
-            check_true(evaluated->camera.enabled, "camera evaluata correttamente");
+            check_true(nearly_equal(evaluated->layers[1].local_transform.position.x, 50.0), "linear keyframe x resolves correctly");
+            check_true(nearly_equal(evaluated->layers[1].local_transform.position.y, 25.0), "linear keyframe y resolves correctly");
+            check_true(evaluated->camera.available, "camera evaluata correttamente");
             check_true(nearly_equal(evaluated->camera.position.x, 10.0), "camera x position resolved");
             check_true(nearly_equal(evaluated->camera.position.y, 20.0), "camera y position resolved");
         }

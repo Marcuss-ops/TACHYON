@@ -28,9 +28,9 @@ bool run_tile_scheduler_tests() {
     scene::EvaluatedLayerState layer;
     layer.visible = true;
     layer.active = true;
-    layer.type = "shape";
-    layer.position = {32.0f, 48.0f};
-    layer.scale = {1.0f, 1.0f};
+    layer.type = scene::LayerType::Shape;
+    layer.local_transform.position = {32.0f, 48.0f};
+    layer.local_transform.scale = {1.0f, 1.0f};
     layer.width = 128;
     layer.height = 96;
     state.layers.push_back(layer);
