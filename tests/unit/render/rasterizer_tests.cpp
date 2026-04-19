@@ -132,6 +132,27 @@ bool run_rasterizer_tests() {
     }
 
     {
+        RenderPlan plan;
+        plan.composition.width = 32;
+        plan.composition.height = 32;
+        plan.composition.layer_count = 1;
+
+        FrameRenderTask task;
+        task.frame_number = 7;
+        task.cache_key.value = "frame-clip";
+
+        std::vector<DrawCommand2D> commands;
+        commands.push_back(DrawCommand2D::make_clear(Color::black()));
+        commands.push_back(DrawCommand2D::make_rect({0, 0, 20, 20, Color::white()}).with_clip_rect({4, 4, 6, 6}));
+
+        RasterizedFrame2D frame = render_frame_2d(plan, task, commands);
+        check_true(frame.surface.has_value(), "Clipped frame renderer returns a surface");
+        check_true(frame.surface->get_pixel(2, 2).r == 0, "Clip prevents drawing outside the clip rect");
+        check_true(frame.surface->get_pixel(5, 5).r == 255, "Clip allows drawing inside the clip rect");
+        check_true(frame.surface->save_png("tests/output/frame_renderer_clipped.png"), "Frame renderer surface is savable");
+    }
+
+    {
         Framebuffer fb(800, 450);
         fb.clear({20, 25, 30, 255});
 
