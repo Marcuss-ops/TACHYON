@@ -288,6 +288,29 @@ inline Color composite_src_over(Color src, Color dst, TransferCurve transfer_cur
 
 struct Matrix3x3 {
     float m[9]{};
+
+    static const Matrix3x3& identity() {
+        static const Matrix3x3 id{{1, 0, 0, 0, 1, 0, 0, 0, 1}};
+        return id;
+    }
+
+    static const Matrix3x3& rec709_to_p3() {
+        static const Matrix3x3 m{{
+            0.8224621f, 0.177538f, 0.0f,
+            0.0331941f, 0.9668058f, 0.0f,
+            0.0170827f, 0.0723974f, 0.9105199f
+        }};
+        return m;
+    }
+
+    static const Matrix3x3& p3_to_rec709() {
+        static const Matrix3x3 m{{
+            1.2249401f, -0.2249404f, 0.0f,
+            -0.0420569f, 1.0420571f, 0.0f,
+            -0.0196376f, -0.0786361f, 1.0982735f
+        }};
+        return m;
+    }
 };
 
 inline Matrix3x3 multiply(const Matrix3x3& a, const Matrix3x3& b) {
