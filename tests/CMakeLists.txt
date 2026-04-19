@@ -5,6 +5,7 @@ add_executable(TachyonTests
     unit/media/asset_resolution_tests.cpp
     unit/render/framebuffer_tests.cpp
     unit/spec/scene_spec_tests.cpp
+    unit/text/text_tests.cpp
 )
 
 set(TACHYON_TESTS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
