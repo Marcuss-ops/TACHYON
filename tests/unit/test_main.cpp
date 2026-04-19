@@ -6,6 +6,7 @@ bool run_math_tests();
 bool run_asset_resolution_tests();
 bool run_framebuffer_tests();
 bool run_property_tests();
+bool run_text_tests();
 
 int main() {
     if (!run_math_tests()) {
@@ -25,6 +26,11 @@ int main() {
 
     if (!run_framebuffer_tests()) {
         std::cerr << "framebuffer tests failed\n";
+        return 1;
+    }
+
+    if (!run_text_tests()) {
+        std::cerr << "text tests failed\n";
         return 1;
     }
 
