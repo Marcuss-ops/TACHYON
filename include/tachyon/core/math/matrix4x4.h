@@ -8,6 +8,8 @@
 namespace tachyon {
 namespace math {
 
+struct Quaternion;
+
 /**
  * 4x4 matrix, column-major storage.
  * Identity:
@@ -28,7 +30,7 @@ struct Matrix4x4 {
     static Matrix4x4 rotation_y(float angle_rad);
     static Matrix4x4 rotation_z(float angle_rad);
 
-    static Matrix4x4 from_quaternion(const struct Quaternion& q);
+    static Matrix4x4 from_quaternion(const Quaternion& q);
 
     static Matrix4x4 look_at(const Vector3& eye, const Vector3& target, const Vector3& up);
 
@@ -45,6 +47,12 @@ struct Matrix4x4 {
     [[nodiscard]] Vector3 transform_point(const Vector3& v) const;
     [[nodiscard]] Vector3 transform_vector(const Vector3& v) const;
 };
+
+[[nodiscard]] Matrix4x4 compose_trs(const Vector3& translation, const Quaternion& rotation, const Vector3& scale);
+[[nodiscard]] Vector3 transform_point(const Matrix4x4& matrix, const Vector3& point);
+[[nodiscard]] Vector3 transform_vector(const Matrix4x4& matrix, const Vector3& vector);
+[[nodiscard]] Matrix4x4 look_at(const Vector3& eye, const Vector3& target, const Vector3& up);
+[[nodiscard]] Matrix4x4 inverse_affine(const Matrix4x4& matrix);
 
 std::ostream& operator<<(std::ostream& out, const Matrix4x4& m);
 
