@@ -25,6 +25,40 @@ Expressions must be:
 - reproducible
 - safe to evaluate during rendering
 
+## Recommended execution choice
+
+Lua is a strong fit for the first expression runtime because it is lightweight, embeddable, easy to sandbox, and mature enough for host-driven extension.
+
+That makes it attractive for:
+
+- property expressions
+- selector logic
+- utility math helpers
+- small template-side scripting hooks
+
+## Why Lua
+
+Lua fits TACHYON better than a browser-style scripting stack because it is:
+
+- small and easy to embed in a native C++ engine
+- fast enough for expression workloads without dragging in a large runtime
+- simple to sandbox compared with broader general-purpose environments
+- well suited to host-controlled APIs and deterministic evaluation models
+
+## Important boundary
+
+The canonical scene specification should remain declarative and versioned.
+Lua should not replace the scene spec as the primary project format.
+
+That means:
+
+- scene structure should stay in a validated data format
+- expressions may be authored as Lua snippets or references
+- host APIs exposed to Lua should remain narrow and deterministic
+- render output must not depend on unrestricted user scripting behavior
+
+Keeping this boundary protects validation, compatibility, caching, and tooling.
+
 ## Planned expression context
 
 A future expression evaluator should be able to read:
@@ -40,39 +74,30 @@ A future expression evaluator should be able to read:
 - published template properties
 - bound external data values
 
-## Lua direction
-
-Lua is the preferred expression language candidate for TACHYON.
-
-If the scene spec uses Lua as the expression surface, then expressions are just Lua functions over a constrained context instead of a custom parser with a bespoke AST and evaluator.
-
-That buys:
-
-- a small, well-understood language
-- deterministic sandboxing options
-- simpler authoring for procedural motion
-- easier embedding in a native engine
-- lower implementation risk than inventing a new expression language
-
-The Lua environment should still be restricted:
-
-- no filesystem access
-- no network access
-- no unsafe native bindings
-- no hidden global state
-- deterministic helpers only
-
-## Why this matters
-
-Expression systems become expensive when the engine invents yet another mini-language, parser, and runtime.
-Lua lets TACHYON keep the expression slot powerful without turning the renderer core into a language project.
-
 ## Architectural rule
 
 Expressions are not a patch on top of animation.
 They are part of the core property evaluation model.
 
+## First host API direction
+
+The first expression host surface should stay small:
+
+- numeric and vector math
+- time access
+- property reads
+- seeded random
+- clamp, remap, smoothstep, easing helpers
+- text selector and range selector helpers later
+
+## Non-goals for the first version
+
+- unrestricted file I/O
+- network access
+- mutation of scene topology during render
+- hidden global state
+- broad standard-library exposure
+
 ## Implementation direction
 
-The engine should keep the expression slot separate from the renderer and compatible with a sandboxed Lua runtime.
-The exact host embedding can be chosen later, but the architectural slot must already exist.
+The engine should reserve a stable expression slot in the property pipeline and start with a deliberately narrow Lua host API rather than a broad custom language or an unsafe general scripting environment.
