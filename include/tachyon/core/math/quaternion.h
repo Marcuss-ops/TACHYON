@@ -19,9 +19,9 @@ struct Quaternion {
     static Quaternion identity() { return {0.0f, 0.0f, 0.0f, 1.0f}; }
 
     static Quaternion from_axis_angle(const Vector3& axis, float angle_rad) {
-        float half_angle = angle_rad * 0.5f;
-        float s = std::sin(half_angle);
-        Vector3 aligned_axis = axis.normalized();
+        const float half_angle = angle_rad * 0.5f;
+        const float s = std::sin(half_angle);
+        const Vector3 aligned_axis = axis.normalized();
         return {
             aligned_axis.x * s,
             aligned_axis.y * s,
@@ -31,16 +31,15 @@ struct Quaternion {
     }
 
     static Quaternion from_euler(const Vector3& degrees_yxz) {
-        float rad_x = degrees_yxz.x * (3.14159265f / 180.0f);
-        float rad_y = degrees_yxz.y * (3.14159265f / 180.0f);
-        float rad_z = degrees_yxz.z * (3.14159265f / 180.0f);
+        const float rad_x = degrees_yxz.x * (3.14159265f / 180.0f);
+        const float rad_y = degrees_yxz.y * (3.14159265f / 180.0f);
+        const float rad_z = degrees_yxz.z * (3.14159265f / 180.0f);
 
-        Quaternion qx = from_axis_angle({1, 0, 0}, rad_x);
-        Quaternion qy = from_axis_angle({0, 1, 0}, rad_y);
-        Quaternion qz = from_axis_angle({0, 0, 1}, rad_z);
+        const Quaternion qx = from_axis_angle({1, 0, 0}, rad_x);
+        const Quaternion qy = from_axis_angle({0, 1, 0}, rad_y);
+        const Quaternion qz = from_axis_angle({0, 0, 1}, rad_z);
 
-        // Order Y -> X -> Z (Tait-Bryan)
-        return qz * qx * qy;
+        return (qz * qx * qy).normalized();
     }
 
     Quaternion operator*(const Quaternion& q) const {
@@ -52,16 +51,25 @@ struct Quaternion {
         };
     }
 
+    [[nodiscard]] Quaternion conjugated() const { return {-x, -y, -z, w}; }
+
     [[nodiscard]] float length_squared() const { return x * x + y * y + z * z + w * w; }
     [[nodiscard]] float length() const { return std::sqrt(length_squared()); }
 
     [[nodiscard]] Quaternion normalized() const {
-        float len = length();
+        const float len = length();
         if (len > 0.0f) {
-            float inv_len = 1.0f / len;
+            const float inv_len = 1.0f / len;
             return {x * inv_len, y * inv_len, z * inv_len, w * inv_len};
         }
         return identity();
+    }
+
+    [[nodiscard]] Vector3 rotate_vector(const Vector3& v) const {
+        const Quaternion n = normalized();
+        const Quaternion qv{v.x, v.y, v.z, 0.0f};
+        const Quaternion result = n * qv * n.conjugated();
+        return {result.x, result.y, result.z};
     }
 
     struct Matrix4x4 to_matrix() const;
