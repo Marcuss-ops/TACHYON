@@ -176,6 +176,37 @@ bool parse_vector2_value(const json& value, math::Vector2& out) {
     return read_vector2_like(value, out) || read_vector2_object(value, out);
 }
 
+bool parse_color_value(const json& value, ColorSpec& out) {
+    if (value.is_array()) {
+        if (value.size() < 3) return false;
+        out.r = static_cast<std::uint8_t>(std::clamp(value[0].get<int>(), 0, 255));
+        out.g = static_cast<std::uint8_t>(std::clamp(value[1].get<int>(), 0, 255));
+        out.b = static_cast<std::uint8_t>(std::clamp(value[2].get<int>(), 0, 255));
+        if (value.size() >= 4) {
+            out.a = static_cast<std::uint8_t>(std::clamp(value[3].get<int>(), 0, 255));
+        } else {
+            out.a = 255;
+        }
+        return true;
+    }
+
+    if (value.is_object()) {
+        if (value.contains("r") && value.contains("g") && value.contains("b")) {
+            out.r = static_cast<std::uint8_t>(std::clamp(value.at("r").get<int>(), 0, 255));
+            out.g = static_cast<std::uint8_t>(std::clamp(value.at("g").get<int>(), 0, 255));
+            out.b = static_cast<std::uint8_t>(std::clamp(value.at("b").get<int>(), 0, 255));
+            if (value.contains("a")) {
+                out.a = static_cast<std::uint8_t>(std::clamp(value.at("a").get<int>(), 0, 255));
+            } else {
+                out.a = 255;
+            }
+            return true;
+        }
+    }
+
+    return false;
+}
+
 animation::EasingPreset parse_easing_preset(const json& value) {
     if (!value.is_string()) {
         return animation::EasingPreset::None;
@@ -253,6 +284,17 @@ bool parse_vector2_keyframe(const json& object, Vector2KeyframeSpec& keyframe, c
     }
     if (!object.contains("value") || !parse_vector2_value(object.at("value"), keyframe.value)) {
         diagnostics.add_error("scene.layer.keyframe.value_invalid", "vector2 keyframe value must be array or object", path + ".value");
+        return false;
+    }
+    return true;
+}
+
+bool parse_color_keyframe(const json& object, ColorKeyframeSpec& keyframe, const std::string& path, DiagnosticBag& diagnostics) {
+    if (!parse_keyframe_common(object, keyframe, path, diagnostics)) {
+        return false;
+    }
+    if (!object.contains("value") || !parse_color_value(object.at("value"), keyframe.value)) {
+        diagnostics.add_error("scene.layer.keyframe.value_invalid", "color keyframe value must be array or object", path + ".value");
         return false;
     }
     return true;
@@ -359,6 +401,50 @@ void parse_optional_vector_property(const json& object, const char* key, Animate
     }
 
     diagnostics.add_error("scene.layer.property_invalid", std::string(key) + " must be a vector or object", make_path(path, key));
+}
+
+void parse_optional_color_property(const json& object, const char* key, AnimatedColorSpec& property, const std::string& path, DiagnosticBag& diagnostics) {
+    if (!object.contains(key) || object.at(key).is_null()) {
+        return;
+    }
+
+    const auto& value = object.at(key);
+    ColorSpec color_value;
+    if (parse_color_value(value, color_value)) {
+        property.value = color_value;
+        return;
+    }
+
+    if (value.is_object()) {
+        if (value.contains("value") && parse_color_value(value.at("value"), color_value)) {
+            property.value = color_value;
+            return;
+        }
+
+        if (value.contains("keyframes") && value.at("keyframes").is_array()) {
+            const auto& keyframes = value.at("keyframes");
+            for (std::size_t index = 0; index < keyframes.size(); ++index) {
+                if (!keyframes[index].is_object()) {
+                    diagnostics.add_error("scene.layer.keyframe.invalid", "color keyframe entries must be objects", make_path(path, key) + ".keyframes[" + std::to_string(index) + "]");
+                    continue;
+                }
+                ColorKeyframeSpec keyframe;
+                if (parse_color_keyframe(keyframes[index], keyframe, make_path(path, key) + ".keyframes[" + std::to_string(index) + "]", diagnostics)) {
+                    property.keyframes.push_back(keyframe);
+                }
+            }
+            return;
+        }
+
+        if (property.value.has_value()) {
+            return;
+        }
+
+        diagnostics.add_error("scene.layer.property_invalid", std::string(key) + " must contain a color value or keyframes when provided as an object", make_path(path, key));
+        return;
+    }
+
+    diagnostics.add_error("scene.layer.property_invalid", std::string(key) + " must be a color or object", make_path(path, key));
 }
 
 void parse_transform(const json& object, LayerSpec& layer, const std::string& path, DiagnosticBag& diagnostics) {
@@ -476,18 +562,16 @@ LayerSpec parse_layer(const json& object, const std::string& path, DiagnosticBag
         layer.stroke_width = object.at("stroke_width").get<float>();
     }
 
+    parse_optional_color_property(object, "fill_color", layer.fill_color, path, diagnostics);
+    parse_optional_color_property(object, "stroke_color", layer.stroke_color, path, diagnostics);
+
     if (object.contains("light_type")) {
         layer.light_type = object.at("light_type").get<std::string>();
     }
-    if (object.contains("intensity")) {
-        layer.intensity = object.at("intensity").get<double>();
-    }
-    if (object.contains("attenuation_near")) {
-        layer.attenuation_near = object.at("attenuation_near").get<double>();
-    }
-    if (object.contains("attenuation_far")) {
-        layer.attenuation_far = object.at("attenuation_far").get<double>();
-    }
+    
+    parse_optional_scalar_property(object, "intensity", layer.intensity, path, diagnostics);
+    parse_optional_scalar_property(object, "attenuation_near", layer.attenuation_near, path, diagnostics);
+    parse_optional_scalar_property(object, "attenuation_far", layer.attenuation_far, path, diagnostics);
 
     return layer;
 }
