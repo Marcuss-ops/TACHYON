@@ -51,6 +51,16 @@ struct ParseResult {
     }
 };
 
+template <typename T>
+struct ResolutionResult {
+    std::optional<T> value;
+    DiagnosticBag diagnostics;
+
+    [[nodiscard]] bool ok() const noexcept {
+        return value.has_value() && diagnostics.ok();
+    }
+};
+
 struct ValidationResult {
     DiagnosticBag diagnostics;
 

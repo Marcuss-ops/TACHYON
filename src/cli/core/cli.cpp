@@ -1,6 +1,7 @@
 #include "tachyon/core/cli.h"
 
 #include "tachyon/core/core.h"
+#include "tachyon/runtime/render_plan.h"
 #include "tachyon/runtime/render_job.h"
 #include "tachyon/spec/scene_spec.h"
 
@@ -74,6 +75,17 @@ bool validate_job_file(const std::filesystem::path& job_path, std::ostream& out,
         out << "render job valid\n";
     }
     return true;
+}
+
+void print_render_plan(const RenderPlan& plan, std::ostream& out) {
+    out << "render plan valid\n";
+    out << "scene: " << plan.scene_ref << '\n';
+    out << "job: " << plan.job_id << '\n';
+    out << "composition: " << plan.composition_target << " (" << plan.composition.width << "x" << plan.composition.height
+        << " @ " << plan.composition.frame_rate.value() << " fps, " << plan.composition.layer_count << " layers)\n";
+    out << "frames: " << plan.frame_range.start << " -> " << plan.frame_range.end << '\n';
+    out << "output: " << plan.output.destination.path << '\n';
+    out << "note: pixel rendering is not wired yet; this command validates the contract slice\n";
 }
 
 } // namespace
@@ -170,11 +182,21 @@ int run_cli(int argc, char** argv) {
             return 2;
         }
 
-        std::cout << "render plan valid\n";
-        std::cout << "scene: " << scene_path.string() << '\n';
-        std::cout << "job: " << job_path.string() << '\n';
-        std::cout << "output: " << resolved_job.output.destination.path << '\n';
-        std::cout << "note: pixel rendering is not wired yet; this command validates the contract slice\n";
+        const auto scene = parse_scene_spec_file(scene_path);
+        if (!scene.value.has_value()) {
+            print_diagnostics(scene.diagnostics, std::cerr);
+            return 2;
+        }
+
+        const auto plan = build_render_plan(*scene.value, resolved_job);
+        if (!plan.value.has_value()) {
+            print_diagnostics(plan.diagnostics, std::cerr);
+            return 2;
+        }
+
+        std::cout << "scene file: " << scene_path.string() << '\n';
+        std::cout << "job file: " << job_path.string() << '\n';
+        print_render_plan(*plan.value, std::cout);
         return 0;
     }
 
