@@ -105,9 +105,15 @@ struct AnimatedScalarSpec {
     }
 };
 
-struct AnimatedVector2Spec {
-    std::optional<math::Vector2> value;
-    std::vector<Vector2KeyframeSpec> keyframes;
+struct AnimatedVector3Spec {
+    std::optional<math::Vector3> value;
+    struct Keyframe {
+        double time{0.0};
+        math::Vector3 value{math::Vector3::zero()};
+        animation::EasingPreset easing{animation::EasingPreset::None};
+        animation::CubicBezierEasing bezier{animation::CubicBezierEasing::linear()};
+    };
+    std::vector<Keyframe> keyframes;
 
     [[nodiscard]] bool empty() const noexcept {
         return !value.has_value() && keyframes.empty();
@@ -123,6 +129,12 @@ struct Transform2D {
     AnimatedVector2Spec position_property;
     AnimatedScalarSpec rotation_property;
     AnimatedVector2Spec scale_property;
+};
+
+struct Transform3D {
+    AnimatedVector3Spec position_property;
+    AnimatedVector3Spec rotation_property; // Euler angles in degrees
+    AnimatedVector3Spec scale_property;
 };
 
 struct LayerSpec {
@@ -142,7 +154,10 @@ struct LayerSpec {
     ColorSpec fill_color{255, 255, 255, 255};
     ColorSpec stroke_color{0, 0, 0, 255};
     std::optional<std::string> parent;
+    bool is_3d{false};
+    bool is_adjustment_layer{false};
     Transform2D transform;
+    Transform3D transform3d;
     std::optional<ShapePathSpec> shape_path;
     std::vector<EffectSpec> effects;
     AnimatedScalarSpec opacity_property;

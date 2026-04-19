@@ -31,10 +31,23 @@ namespace tachyon::scene {
     const audio::AudioAnalyzer* audio_analyzer = nullptr
 );
 
+[[nodiscard]] EvaluatedCompositionState evaluate_composition_state(
+    const CompositionSpec& composition,
+    double composition_time_seconds,
+    const audio::AudioAnalyzer* audio_analyzer = nullptr
+);
+
 [[nodiscard]] std::optional<EvaluatedCompositionState> evaluate_scene_composition_state(
     const SceneSpec& scene,
     const std::string& composition_id,
     std::int64_t frame_number,
+    const audio::AudioAnalyzer* audio_analyzer = nullptr
+);
+
+[[nodiscard]] std::optional<EvaluatedCompositionState> evaluate_scene_composition_state(
+    const SceneSpec& scene,
+    const std::string& composition_id,
+    double composition_time_seconds,
     const audio::AudioAnalyzer* audio_analyzer = nullptr
 );
 

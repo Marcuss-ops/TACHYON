@@ -259,6 +259,21 @@ const GlyphBitmap* BitmapFont::find_glyph(std::uint32_t codepoint) const {
     return fallback_glyph();
 }
 
+std::int32_t BitmapFont::get_kerning(std::uint32_t left, std::uint32_t right) const {
+    if (m_kerning_table.empty()) {
+        // Fallback for demo: add some "serio" kerning defaults if not loaded from BDF
+        if (left == 'A' && right == 'V') return -2;
+        if (left == 'V' && right == 'A') return -2;
+        if (left == 'T' && right == 'e') return -1;
+        if (left == 'W' && right == 'o') return -1;
+        return 0;
+    }
+
+    const std::uint64_t key = (static_cast<std::uint64_t>(left) << 32U) | static_cast<std::uint64_t>(right);
+    const auto it = m_kerning_table.find(key);
+    return it != m_kerning_table.end() ? it->second : 0;
+}
+
 const GlyphBitmap* BitmapFont::find_scaled_glyph(std::uint32_t codepoint, std::uint32_t scale) const {
     const GlyphBitmap* glyph = find_glyph(codepoint);
     if (glyph == nullptr) {

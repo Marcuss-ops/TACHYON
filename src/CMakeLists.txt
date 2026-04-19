@@ -20,7 +20,6 @@ add_library(TachyonCore
     renderer2d/draw_list_rasterizer.cpp
     renderer2d/effect_host.cpp
     renderer2d/evaluated_composition_renderer.cpp
-    renderer2d/framebuffer.cpp
     renderer2d/layer_to_draw_command.cpp
     renderer2d/path_rasterizer.cpp
     renderer2d/project_card.cpp

@@ -40,6 +40,8 @@ struct EvaluatedLayerState {
     bool active{false};
     bool visible{false};
     bool is_camera{false};
+    bool is_3d{false};
+    bool is_adjustment_layer{false};
     std::int64_t frame_number{0};
     double composition_time_seconds{0.0};
     double local_time_seconds{0.0};
@@ -54,8 +56,11 @@ struct EvaluatedLayerState {
     math::Matrix4x4 local_matrix;
     math::Matrix4x4 world_matrix;
     math::Vector2 world_position{math::Vector2::zero()};
+    math::Vector3 world_position3{math::Vector3::zero()};
     double world_rotation_degrees{0.0};
+    math::Vector3 world_rotation3{math::Vector3::zero()};
     math::Vector2 world_scale{math::Vector2::one()};
+    math::Vector3 world_scale3{math::Vector3::one()};
     std::int64_t width{0};
     std::int64_t height{0};
     float stroke_width{0.0f};
