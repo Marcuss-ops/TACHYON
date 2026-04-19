@@ -29,7 +29,14 @@ The first phase focuses on project foundations and architecture documents before
 
 ## Documentation map
 
-Core project documents:
+The canonical navigation entry for the documentation set is:
+
+- `docs/README.md`
+
+The repository is currently transitioning from a flat `docs/` structure to a grouped structure under subfolders.
+Older flat documents remain valid during this migration.
+
+### Core project documents
 
 - `docs/vision.md`
 - `docs/non-goals.md`
@@ -40,7 +47,7 @@ Core project documents:
 - `docs/path-tracing-cpu.md`
 - `docs/2d-3d-compositing-boundary.md`
 
-Engine model documents:
+### Engine model documents
 
 - `docs/execution-model.md`
 - `docs/property-model.md`
@@ -57,7 +64,18 @@ Engine model documents:
 - `docs/dependency-graph-and-invalidation.md`
 - `docs/error-handling.md`
 
-System design documents:
+### Grouped contract documents
+
+- `docs/contracts/core-contracts.md`
+- `docs/render/surface-and-aov-contract.md`
+- `docs/runtime/memory-and-resource-policy.md`
+- `docs/runtime/quality-tiers.md`
+- `docs/output/output-profile-schema.md`
+- `docs/interfaces/cli-and-api-contract.md`
+- `docs/observability/diagnostics-and-profiling.md`
+- `docs/testing/canonical-scenes.md`
+
+### System design documents
 
 - `docs/expression-system.md`
 - `docs/expression-runtime.md`
@@ -85,7 +103,7 @@ System design documents:
 - `docs/performance-tiers.md`
 - `docs/low-end-strategy.md`
 
-Runtime and integration documents:
+### Runtime and integration documents
 
 - `docs/cli.md`
 - `docs/api.md`
