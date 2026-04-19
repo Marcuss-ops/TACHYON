@@ -1,9 +1,9 @@
 # Core Engine Library
 add_library(TachyonCore
-    tachyon.cpp
-    scene_spec.cpp
-    render_job.cpp
-    cli.cpp
+    core/model/tachyon.cpp
+    spec/parser/scene_spec.cpp
+    runtime/jobs/render_job.cpp
+    cli/core/cli.cpp
 )
 
 target_include_directories(TachyonCore
@@ -18,7 +18,7 @@ target_link_libraries(TachyonCore
 )
 
 add_executable(tachyon
-    main.cpp
+    cli/render/main.cpp
 )
 
 target_link_libraries(tachyon

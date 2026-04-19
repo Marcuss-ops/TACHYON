@@ -1,6 +1,6 @@
 add_executable(TachyonTests
-    test_main.cpp
-    scene_spec_tests.cpp
+    unit/test_main.cpp
+    unit/spec/scene_spec_tests.cpp
 )
 
 target_link_libraries(TachyonTests

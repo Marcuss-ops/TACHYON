@@ -1,5 +1,5 @@
-#include "tachyon/render_job.h"
-#include "tachyon/scene_spec.h"
+#include "tachyon/runtime/render_job.h"
+#include "tachyon/spec/scene_spec.h"
 
 #include <iostream>
 #include <string>
