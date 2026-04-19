@@ -149,7 +149,13 @@ renderer2d::DrawList2D build_draw_list(const EvaluatedFrameState& state) {
     return renderer2d::DrawListBuilder::build(state.composition_state);
 }
 
-ExecutedFrame execute_frame_task(const SceneSpec& scene, const RenderPlan& plan, const FrameRenderTask& task, FrameCache& cache) {
+ExecutedFrame execute_frame_task(
+    const SceneSpec& scene,
+    const RenderPlan& plan,
+    const FrameRenderTask& task,
+    FrameCache& cache,
+    RenderContext& context) {
+    (void)context;
     const std::string scene_signature = build_scene_signature(scene);
 
     if (const CachedFrame* cached = cache.lookup(task.cache_key, scene_signature)) {
@@ -165,7 +171,7 @@ ExecutedFrame execute_frame_task(const SceneSpec& scene, const RenderPlan& plan,
 
     const EvaluatedFrameState state = evaluate_frame_state(scene, plan, task, scene_signature);
     const renderer2d::DrawList2D draw_list = build_draw_list(state);
-    const RasterizedFrame2D rasterized = tachyon::render_evaluated_composition_2d(state.composition_state, plan, task);
+    const RasterizedFrame2D rasterized = tachyon::render_evaluated_composition_2d(state.composition_state, plan, task, context.renderer2d);
 
     renderer2d::Framebuffer frame(
         static_cast<std::uint32_t>(state.composition_state.width),
