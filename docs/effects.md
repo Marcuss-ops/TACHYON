@@ -36,14 +36,22 @@ src/effects/
 ## Initial built-in priorities
 
 - gaussian blur
-- levels or curves
 - glow
 - drop shadow
+- levels or curves
+- hue saturation
 - fill
 - tint
-- chroma key
+- fractal noise
 - displacement map
-- corner pin
+- gradient ramp
+- feather
+- stroke
+- camera lens blur
+- chromatic aberration
+- vignette
+- film grain
+- LUT application
 
 ## Design rules
 

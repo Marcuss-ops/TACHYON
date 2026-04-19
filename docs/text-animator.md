@@ -21,6 +21,13 @@ The architecture should support per-glyph animation of:
 - fill and styling parameters
 - tracking and spacing-related controls
 
+The first supported selectors should include:
+
+- range selectors
+- expression selectors
+- temporal offsets
+- seeded random selection
+
 ## Selection logic
 
 Selectors should eventually support:
@@ -44,6 +51,8 @@ src/text/
 ├── range_selector.cpp
 └── text_3d_extrude.cpp
 ```
+
+Extrusion should support bevelled 3D title cards as an explicit first-class use case.
 
 ## Design rules
 
