@@ -10,6 +10,7 @@ bool run_surface_tests();
 bool run_draw_list_builder_tests();
 bool run_frame_cache_tests();
 bool run_frame_executor_tests();
+bool run_frame_output_sink_tests();
 bool run_property_tests();
 bool run_expression_tests();
 bool run_scene_evaluator_tests();
@@ -66,6 +67,11 @@ int main() {
 
     if (!run_frame_executor_tests()) {
         std::cerr << "frame executor tests failed\n";
+        return 1;
+    }
+
+    if (!run_frame_output_sink_tests()) {
+        std::cerr << "frame output sink tests failed\n";
         return 1;
     }
 
