@@ -4,8 +4,10 @@
 #include "tachyon/runtime/render_plan.h"
 
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <string>
+#include <vector>
 
 namespace {
 
@@ -57,6 +59,50 @@ tachyon::RenderPlan make_mp4_plan() {
     return plan;
 }
 
+std::filesystem::path write_silence_wav(const std::filesystem::path& path, std::uint32_t sample_rate, std::uint16_t channels, std::uint32_t frames) {
+    const std::uint16_t bits_per_sample = 16;
+    const std::uint16_t block_align = static_cast<std::uint16_t>(channels * (bits_per_sample / 8U));
+    const std::uint32_t byte_rate = sample_rate * block_align;
+    const std::uint32_t data_size = frames * block_align;
+    const std::uint32_t riff_size = 36U + data_size;
+
+    std::ofstream output(path, std::ios::binary);
+    if (!output.is_open()) {
+        return {};
+    }
+
+    auto write_u16 = [&](std::uint16_t value) {
+        output.put(static_cast<char>(value & 0xFFU));
+        output.put(static_cast<char>((value >> 8U) & 0xFFU));
+    };
+    auto write_u32 = [&](std::uint32_t value) {
+        output.put(static_cast<char>(value & 0xFFU));
+        output.put(static_cast<char>((value >> 8U) & 0xFFU));
+        output.put(static_cast<char>((value >> 16U) & 0xFFU));
+        output.put(static_cast<char>((value >> 24U) & 0xFFU));
+    };
+
+    output.write("RIFF", 4);
+    write_u32(riff_size);
+    output.write("WAVE", 4);
+
+    output.write("fmt ", 4);
+    write_u32(16U);
+    write_u16(1U);
+    write_u16(channels);
+    write_u32(sample_rate);
+    write_u32(byte_rate);
+    write_u16(block_align);
+    write_u16(bits_per_sample);
+
+    output.write("data", 4);
+    write_u32(data_size);
+
+    const std::vector<char> silence(data_size, 0);
+    output.write(silence.data(), static_cast<std::streamsize>(silence.size()));
+    return path;
+}
+
 } // namespace
 
 bool run_frame_output_sink_tests() {
@@ -96,6 +142,37 @@ bool run_frame_output_sink_tests() {
             renderer2d::detail::ColorPrimaries::Bt709,
             renderer2d::detail::ColorPrimaries::DciP3);
         check_true(matrix.m[0] != 0.0f, "Primaries conversion matrix is populated");
+    }
+
+    {
+        std::filesystem::create_directories("tests/output/frame_sink");
+        const std::filesystem::path wav_path = write_silence_wav("tests/output/frame_sink/silence.wav", 44100, 2, 4410);
+        check_true(!wav_path.empty(), "synthetic wav fixture was written");
+        if (!wav_path.empty()) {
+            RenderPlan plan = make_mp4_plan();
+            plan.output.destination.path = "tests/output/frame_sink/audio_mux.mp4";
+            plan.output.destination.overwrite = true;
+            plan.output.profile.audio.mode = "encode";
+            plan.output.profile.audio.codec = "aac";
+            plan.output.profile.audio.sample_rate = 44100;
+            plan.output.profile.audio.channels = 2;
+            plan.output.profile.audio.tracks.push_back(tachyon::AudioTrack{
+                wav_path.string(),
+                1.0,
+                0.0
+            });
+
+            auto sink = output::create_frame_output_sink(plan);
+            check_true(static_cast<bool>(sink), "Audio mux plan resolves to an output sink");
+            if (sink) {
+                check_true(sink->begin(plan), "Audio mux sink begins successfully");
+                renderer2d::Framebuffer frame(8, 8);
+                frame.clear(renderer2d::Color::blue());
+                check_true(sink->write_frame({0, &frame}), "Audio mux sink writes first frame");
+                check_true(sink->finish(), "Audio mux sink finishes cleanly");
+                check_true(std::filesystem::exists("tests/output/frame_sink/audio_mux.mp4"), "Audio mux output exists");
+            }
+        }
     }
 
     return g_failures == 0;

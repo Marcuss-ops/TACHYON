@@ -3,6 +3,8 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <chrono>
+#include <cmath>
 #include <filesystem>
 #include <memory>
 #include <sstream>
@@ -96,9 +98,15 @@ std::string ffmpeg_color_range(std::string_view value) {
     return range == renderer2d::detail::ColorRange::Limited ? "tv" : "pc";
 }
 
-std::string build_ffmpeg_command(const RenderPlan& plan) {
+std::filesystem::path make_temp_video_path(const std::filesystem::path& destination) {
+    std::filesystem::path temp_dir = std::filesystem::temp_directory_path();
+    const auto stamp = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+    const std::string stem = destination.stem().string().empty() ? "tachyon" : destination.stem().string();
+    return temp_dir / (stem + ".tachyon.video." + std::to_string(static_cast<long long>(stamp)) + ".mkv");
+}
+
+std::string build_video_pass_command(const RenderPlan& plan, const std::filesystem::path& output_path, bool include_faststart) {
     const double fps = plan.composition.frame_rate.value();
-    const std::filesystem::path destination = std::filesystem::path(plan.output.destination.path);
     const bool overwrite = plan.output.destination.overwrite;
     const std::string pixel_format = resolve_output_pixel_format(plan.output);
     const std::string color_primaries = ffmpeg_color_primaries(plan.output.profile.color.space);
@@ -113,15 +121,8 @@ std::string build_ffmpeg_command(const RenderPlan& plan) {
             << " -pix_fmt rgba"
             << " -s " << plan.composition.width << 'x' << plan.composition.height
             << " -r " << fps
-            << " -i -";
-
-    // Multi-track Audio (Musk-YouTube Edition)
-    const auto& tracks = plan.output.profile.audio.tracks;
-    for (const auto& track : tracks) {
-        if (!track.source_path.empty()) {
-            command << " -i " << quote_path(track.source_path);
-        }
-    }
+            << " -i -"
+            << " -an";
 
     command << " -color_primaries " << color_primaries
             << " -color_trc " << color_trc
@@ -142,30 +143,77 @@ std::string build_ffmpeg_command(const RenderPlan& plan) {
         command << " -pix_fmt " << pixel_format;
     }
 
-    // Filter Complex for Audio Mixing
-    if (!tracks.empty()) {
-        command << " -filter_complex \"";
-        for (std::size_t i = 0; i < tracks.size(); ++i) {
-            const auto& track = tracks[i];
-            const std::int64_t delay_ms = static_cast<std::int64_t>(track.start_offset_seconds * 1000.0);
-            command << "[" << (i + 1) << ":a]adelay=" << delay_ms << "|" << delay_ms 
-                    << ",volume=" << track.volume << "[a" << i << "];";
+    if (include_faststart && plan.output.profile.container == "mp4") {
+        command << " -movflags +faststart";
+    }
+
+    command << ' ' << quote_path(output_path);
+    return command.str();
+}
+
+std::string build_audio_mux_command(const RenderPlan& plan, const std::filesystem::path& temp_video_path) {
+    const bool overwrite = plan.output.destination.overwrite;
+    const std::string color_primaries = ffmpeg_color_primaries(plan.output.profile.color.space);
+    const std::string color_trc = ffmpeg_transfer_characteristics(plan.output.profile.color.transfer);
+    const std::string colorspace = ffmpeg_colorspace(plan.output.profile.color.space);
+    const std::string color_range = ffmpeg_color_range(plan.output.profile.color.range);
+    const auto& tracks = plan.output.profile.audio.tracks;
+
+    std::vector<std::size_t> active_tracks;
+    active_tracks.reserve(tracks.size());
+    for (std::size_t i = 0; i < tracks.size(); ++i) {
+        if (!tracks[i].source_path.empty()) {
+            active_tracks.push_back(i);
         }
-        
-        for (std::size_t i = 0; i < tracks.size(); ++i) {
-            command << "[a" << i << "]";
-        }
-        command << "amix=inputs=" << tracks.size() << ":duration=first[outa]\" -map 0:v -map \"[outa]\"";
-        command << " -c:a aac -b:a 192k -shortest";
-    } else {
+    }
+
+    std::ostringstream command;
+    command << "ffmpeg "
+            << (overwrite ? "-y" : "-n")
+            << " -i " << quote_path(temp_video_path);
+
+    for (const std::size_t index : active_tracks) {
+        command << " -i " << quote_path(tracks[index].source_path);
+    }
+
+    command << " -color_primaries " << color_primaries
+            << " -color_trc " << color_trc
+            << " -colorspace " << colorspace
+            << " -color_range " << color_range;
+
+    command << " -c:v copy";
+
+    if (active_tracks.empty()) {
         command << " -an";
+    } else {
+        command << " -filter_complex \"";
+        for (std::size_t mix_index = 0; mix_index < active_tracks.size(); ++mix_index) {
+            const auto& track = tracks[active_tracks[mix_index]];
+            const std::int64_t delay_ms = static_cast<std::int64_t>(std::llround(track.start_offset_seconds * 1000.0));
+            command << "[" << (mix_index + 1) << ":a]adelay=" << delay_ms << "|" << delay_ms
+                    << ",volume=" << track.volume << "[a" << mix_index << "];";
+        }
+
+        for (std::size_t mix_index = 0; mix_index < active_tracks.size(); ++mix_index) {
+            command << "[a" << mix_index << "]";
+        }
+        command << "amix=inputs=" << active_tracks.size() << ":duration=longest:dropout_transition=0[outa]\""
+                << " -map 0:v -map \"[outa]\"";
+
+        if (!plan.output.profile.audio.codec.empty()) {
+            command << " -c:a " << plan.output.profile.audio.codec;
+        } else {
+            command << " -c:a aac";
+        }
+
+        command << " -shortest";
     }
 
     if (plan.output.profile.container == "mp4") {
         command << " -movflags +faststart";
     }
 
-    command << ' ' << quote_path(destination);
+    command << ' ' << quote_path(std::filesystem::path(plan.output.destination.path));
     return command.str();
 }
 
@@ -204,6 +252,10 @@ public:
             TACHYON_PCLOSE(m_pipe);
             m_pipe = nullptr;
         }
+        if (!m_temp_video_path.empty()) {
+            std::error_code ec;
+            std::filesystem::remove(m_temp_video_path, ec);
+        }
     }
 
     bool begin(const RenderPlan& plan) override {
@@ -225,17 +277,22 @@ public:
             return false;
         }
 
-        if (!plan.output.profile.audio.mode.empty() && plan.output.profile.audio.mode != "none") {
-            m_last_error = "ffmpeg pipe sink currently supports audio.mode = none only";
-            return false;
-        }
+        m_needs_audio_mux = !plan.output.profile.audio.mode.empty() &&
+                            plan.output.profile.audio.mode != "none" &&
+                            !plan.output.profile.audio.tracks.empty();
 
         const std::filesystem::path destination(plan.output.destination.path);
         if (!destination.parent_path().empty()) {
             std::filesystem::create_directories(destination.parent_path());
         }
 
-        const std::string command = build_ffmpeg_command(plan);
+        if (m_needs_audio_mux) {
+            m_temp_video_path = make_temp_video_path(destination);
+        }
+
+        const std::string command = m_needs_audio_mux
+            ? build_video_pass_command(plan, m_temp_video_path, false)
+            : build_video_pass_command(plan, destination, true);
         m_pipe = TACHYON_POPEN(command.c_str(), "wb");
         if (m_pipe == nullptr) {
             m_last_error = "failed to open ffmpeg pipe";
@@ -273,6 +330,9 @@ public:
     bool finish() override {
         m_last_error.clear();
         if (m_pipe == nullptr) {
+            if (m_needs_audio_mux) {
+                return finalize_audio_mux();
+            }
             return true;
         }
 
@@ -283,6 +343,10 @@ public:
             return false;
         }
 
+        if (m_needs_audio_mux) {
+            return finalize_audio_mux();
+        }
+
         return true;
     }
 
@@ -291,13 +355,40 @@ public:
     }
 
 private:
+    bool finalize_audio_mux() {
+        if (m_plan == nullptr) {
+            m_last_error = "ffmpeg mux finalization requires a render plan";
+            return false;
+        }
+
+        const std::string mux_command = build_audio_mux_command(*m_plan, m_temp_video_path);
+        FILE* mux_pipe = TACHYON_POPEN(mux_command.c_str(), "wb");
+        if (mux_pipe == nullptr) {
+            m_last_error = "failed to open ffmpeg audio mux pass";
+            return false;
+        }
+
+        const int mux_status = TACHYON_PCLOSE(mux_pipe);
+        if (mux_status != 0) {
+            m_last_error = "ffmpeg audio mux pass exited with a non-zero status";
+            return false;
+        }
+
+        std::error_code ec;
+        std::filesystem::remove(m_temp_video_path, ec);
+        m_temp_video_path.clear();
+        return true;
+    }
+
     const RenderPlan* m_plan{nullptr};
     FILE* m_pipe{nullptr};
+    std::filesystem::path m_temp_video_path;
     renderer2d::detail::TransferCurve m_source_transfer{renderer2d::detail::TransferCurve::Srgb};
     renderer2d::detail::ColorSpace m_source_space{renderer2d::detail::ColorSpace::Srgb};
     renderer2d::detail::TransferCurve m_output_transfer{renderer2d::detail::TransferCurve::Srgb};
     renderer2d::detail::ColorSpace m_output_space{renderer2d::detail::ColorSpace::Srgb};
     renderer2d::detail::ColorRange m_output_range{renderer2d::detail::ColorRange::Full};
+    bool m_needs_audio_mux{false};
     std::string m_last_error;
 };
 
