@@ -25,89 +25,40 @@ It is a native engine designed to consume declarative scene specifications and p
 ## Current status
 
 This repository is intentionally starting from first principles.
-The first phase focuses on project foundations and architecture documents before implementation depth arrives.
+The current focus is on locking architecture, contracts, and subsystem boundaries before implementation depth grows.
 
-## Documentation map
+## Documentation
 
 The canonical navigation entry for the documentation set is:
 
 - `docs/README.md`
 
-The repository is currently transitioning from a flat `docs/` structure to a grouped structure under subfolders.
-Older flat documents remain valid during this migration.
+The documentation is organized with a numbered structure so contributors can move from project vision to engine contracts to subsystem behavior in a stable order.
 
-### Core project documents
+### Documentation layout
 
-- `docs/vision.md`
-- `docs/non-goals.md`
-- `docs/architecture.md`
-- `docs/roadmap.md`
-- `docs/mvp-v1.md`
-- `docs/render-backend-strategy.md`
-- `docs/path-tracing-cpu.md`
-- `docs/2d-3d-compositing-boundary.md`
+- `docs/00-project/` — vision, non-goals, roadmap, MVP scope
+- `docs/10-architecture/` — architecture, execution model, determinism, parallelism, scene foundations
+- `docs/20-contracts/` — cross-cutting engine contracts such as rendering, surfaces, output, CLI/API, and compatibility
+- `docs/30-scene-and-animation/` — scene spec, layers, properties, animation, templates, expressions, and timing
+- `docs/40-2d-compositing/` — shapes, masks, effects, text, motion blur, and color-related compositing behavior
+- `docs/50-3d/` — cameras, lights, backend strategy, path tracing, and 2D/3D boundaries
+- `docs/60-runtime/` — caching, memory policy, quality tiers, profiling, and low-end execution strategy
+- `docs/70-media-io/` — asset pipeline, decode/encode, render jobs, and output delivery
+- `docs/80-audio/` — audio reactivity and audio-driven animation
+- `docs/90-testing/` — canonical scenes and validation-oriented documentation
 
-### Engine model documents
+## Recommended reading order
 
-- `docs/execution-model.md`
-- `docs/property-model.md`
-- `docs/property-animation-system.md`
-- `docs/animation-system.md`
-- `docs/determinism.md`
-- `docs/parallelism.md`
-- `docs/render-job.md`
-- `docs/scene-model.md`
-- `docs/scene-spec-v1.md`
-- `docs/scene-spec.md`
-- `docs/composition-layer-model.md`
-- `docs/camera-system.md`
-- `docs/dependency-graph-and-invalidation.md`
-- `docs/error-handling.md`
+For a new contributor, the best path is:
 
-### Grouped contract documents
-
-- `docs/contracts/core-contracts.md`
-- `docs/render/surface-and-aov-contract.md`
-- `docs/runtime/memory-and-resource-policy.md`
-- `docs/runtime/quality-tiers.md`
-- `docs/output/output-profile-schema.md`
-- `docs/interfaces/cli-and-api-contract.md`
-- `docs/observability/diagnostics-and-profiling.md`
-- `docs/testing/canonical-scenes.md`
-
-### System design documents
-
-- `docs/expression-system.md`
-- `docs/expression-runtime.md`
-- `docs/effects.md`
-- `docs/effects-priority-matrix.md`
-- `docs/effect-registry.md`
-- `docs/masking.md`
-- `docs/shape-system.md`
-- `docs/text-animator.md`
-- `docs/text-layout-and-shaping.md`
-- `docs/light-system.md`
-- `docs/time-system.md`
-- `docs/motion-blur.md`
-- `docs/template-system.md`
-- `docs/color-management.md`
-- `docs/caching.md`
-- `docs/audio-reactivity.md`
-- `docs/audio-driven-animation.md`
-- `docs/data-binding.md`
-- `docs/rendering-contract.md`
-- `docs/asset-pipeline.md`
-- `docs/decode-encode.md`
-- `docs/encoder-output.md`
-- `docs/testing-and-compatibility.md`
-- `docs/performance-tiers.md`
-- `docs/low-end-strategy.md`
-
-### Runtime and integration documents
-
-- `docs/cli.md`
-- `docs/api.md`
-- `docs/packaging-runtime-layout.md`
+1. `docs/README.md`
+2. `docs/00-project/vision.md`
+3. `docs/00-project/non-goals.md`
+4. `docs/10-architecture/architecture.md`
+5. `docs/00-project/roadmap.md`
+6. `docs/00-project/mvp-v1.md`
+7. the relevant contract and subsystem folders for the area being worked on
 
 ## Direction summary
 
