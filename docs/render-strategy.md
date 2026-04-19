@@ -25,12 +25,12 @@ TACHYON should therefore avoid forcing all work through one renderer when two sp
 
 ## Chosen direction for 3D
 
-The preferred offline 3D path should be CPU path tracing built around Embree-class ray intersection infrastructure.
+The preferred offline 3D path should be CPU ray tracing or path tracing built around Embree.
 
 That means the 3D renderer should be designed around:
 
-- Embree for acceleration structures and ray intersection
-- a narrow physically based path integrator
+- Intel Embree for acceleration structures and ray intersection
+- a narrow physically based integrator owned by TACHYON
 - deterministic sampling and seeded randomness
 - optional CPU denoising with Open Image Denoise
 - explicit AOV support where needed for denoising and compositing
@@ -69,16 +69,15 @@ This path should prioritize crisp edges, stable sampling, strong alpha behavior,
 The 3D rendering path should own workloads that genuinely benefit from physically based rendering:
 
 - mesh layers
-- extruded text
-- extruded shapes
 - real lights
-- materials
+- compact material models
 - ray-traced shadows
 - reflections and refractions
 - depth of field
 - motion blur
 - global illumination
 - HDRI image-based lighting
+- extrusion later where it materially improves title-card workflows
 
 ## Shared engine rule
 
@@ -94,7 +93,7 @@ Recommended order:
 
 1. establish the 2D compositing baseline
 2. establish the render graph and pass model
-3. add a narrow offline 3D path through Embree-backed path tracing
+3. add a narrow offline 3D path through Embree-backed rendering
 4. compose 3D outputs back into the 2D stack through explicit passes
 5. add denoising and AOV-aware workflows only after the basic pipeline is correct
 
@@ -103,38 +102,26 @@ Recommended order:
 The first serious 3D slice should target:
 
 - perspective camera
-- camera depth of field with focal length, aperture, focus distance, and bokeh shape
 - mesh layer
-- extruded text or extruded shape support
-- directional, point, spot, area, and environment lighting
-- a narrow PBR material model
-- beauty, depth, normal, and albedo outputs where useful
+- directional, point, and spot lights
+- a narrow opaque PBR material model
+- beauty, depth, normal, and albedo outputs
 - deterministic seeds
 - optional denoise stage
+- explicit compositing handoff
 
-## Realistic scope for the first release
+## Realistic scope after the first 3D slice
 
-The first 3D release should be intentionally narrow. The goal is cinema-grade output for a few important shot classes, not a feature-complete DCC clone.
+Only after the first slice is stable should TACHYON add:
 
-Recommended initial scope:
-
-- mesh, text extrusion, and shape extrusion
-- glTF import for assets that matter
-- PBR materials with a compact parameter set
-- ray-traced shadows, reflections, refractions, GI, motion blur, and DOF
-- IBL through HDRI
-- Embree-backed BVH and intersection handling
-- OIDN as an optional post-pass for low-sample renders
-
-Not first-release priorities:
-
-- volumes
-- cloth
-- fluids
-- particles
-- procedural node-based material systems
-- interactive viewport parity
-- broad simulation features
+- extruded text
+- extruded shapes
+- area lights
+- stronger depth of field controls
+- camera bokeh shape
+- motion blur refinement
+- glTF import
+- richer HDRI workflows
 
 ## Non-goals for the first 3D slice
 
