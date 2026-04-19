@@ -36,7 +36,7 @@ std::string quote_path(const std::filesystem::path& path) {
 }
 
 std::string resolve_output_pixel_format(const OutputContract& contract) {
-    if (contract.output.profile.video.pixel_format == "rgba8") {
+    if (contract.profile.video.pixel_format == "rgba8") {
         return "rgba";
     }
     return contract.profile.video.pixel_format.empty() ? "yuv420p" : contract.profile.video.pixel_format;
