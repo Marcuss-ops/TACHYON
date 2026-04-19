@@ -6,6 +6,7 @@ bool run_math_tests();
 bool run_asset_resolution_tests();
 bool run_framebuffer_tests();
 bool run_rasterizer_tests();
+bool run_surface_tests();
 bool run_property_tests();
 bool run_scene_evaluator_tests();
 bool run_text_tests();
@@ -39,6 +40,11 @@ int main() {
 
     if (!run_rasterizer_tests()) {
         std::cerr << "rasterizer tests failed\n";
+        return 1;
+    }
+
+    if (!run_surface_tests()) {
+        std::cerr << "surface tests failed\n";
         return 1;
     }
 
