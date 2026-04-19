@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/core/core.h"
 #include "tachyon/media/asset_resolution.h"
 #include "tachyon/renderer2d/rasterizer.h"
 #include "tachyon/runtime/diagnostics.h"
