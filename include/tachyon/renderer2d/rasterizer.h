@@ -1,4 +1,5 @@
 #pragma once
+#include "tachyon/renderer2d/draw_command.h"
 #include "tachyon/renderer2d/rasterizer_ops.h"
 #include "tachyon/renderer2d/framebuffer.h"
 #include "tachyon/runtime/render_graph.h"

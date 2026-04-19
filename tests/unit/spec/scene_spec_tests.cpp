@@ -271,7 +271,7 @@ bool run_scene_spec_tests() {
         check_true(capture_out.str().find("render execution plan valid") != std::string::npos, "CLI render should report graph success");
         check_true(capture_out.str().find("resolved assets: 2") != std::string::npos, "CLI render should report resolved asset count");
         check_true(capture_out.str().find("graph steps:") != std::string::npos, "CLI render should report graph step count");
-        check_true(capture_out.str().find("2d refined backend: cpu-2d-surface-rgba") != std::string::npos, "CLI render should report 2D refined backend");
+        check_true(capture_out.str().find("2d runtime backend: cpu-frame-executor") != std::string::npos, "CLI render should report the runtime backend");
         check_true(capture_out.str().find("composition: main") != std::string::npos, "CLI render should print resolved composition info");
         check_true(capture_err.str().empty(), "CLI render should not emit errors for canonical fixtures");
     }
@@ -311,7 +311,7 @@ bool run_scene_spec_tests() {
         check_true(parsed_json.contains("render_plan"), "render JSON should contain render_plan");
         check_true(parsed_json.contains("render_graph"), "render JSON should contain render_graph");
         check_true(parsed_json.contains("first_frame"), "render JSON should contain first_frame");
-        check_true(parsed_json["first_frame"]["backend_name"] == "cpu-2d-surface-rgba", "render JSON should report the refined backend");
+        check_true(parsed_json["first_frame"]["backend_name"] == "cpu-frame-executor", "render JSON should report the runtime backend");
     }
 
     return g_failures == 0;

@@ -30,9 +30,9 @@ bool run_surface_tests() {
     {
         SurfaceRGBA surface(4, 4);
         surface.clear(Color::blue());
-        surface.blend_pixel(1, 1, {255, 0, 0, 128});
+        surface.blend_pixel(1, 1, {128, 0, 0, 128});
         const Color pixel = surface.get_pixel(1, 1);
-        check_true(pixel.r >= 127 && pixel.r <= 128, "Alpha over red channel");
+        check_true(pixel.r == 128, "Alpha over red channel");
         check_true(pixel.b >= 127 && pixel.b <= 128, "Alpha over blue channel");
         check_true(pixel.a == 255, "Alpha over output alpha");
     }

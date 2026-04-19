@@ -19,7 +19,7 @@ const CachedFrame* FrameCache::lookup(const FrameCacheKey& key, const std::strin
 }
 
 void FrameCache::store(CachedFrame frame) {
-    m_entries[frame.entry.key.value] = std::move(frame);
+    m_entries.insert_or_assign(frame.entry.key.value, std::move(frame));
 }
 
 void FrameCache::invalidate(const std::string& changed_parameter) {

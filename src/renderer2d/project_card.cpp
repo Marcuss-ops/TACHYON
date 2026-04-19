@@ -43,10 +43,12 @@ ProjectedCard3D project_card_to_screen(
     const math::Vector2 screen_p2 = camera.project_point(world_p2, viewport_width, viewport_height);
     const math::Vector2 screen_p3 = camera.project_point(world_p3, viewport_width, viewport_height);
 
-    if (screen_p0.x < 0.0f || screen_p0.y < 0.0f ||
-        screen_p1.x < 0.0f || screen_p1.y < 0.0f ||
-        screen_p2.x < 0.0f || screen_p2.y < 0.0f ||
-        screen_p3.x < 0.0f || screen_p3.y < 0.0f) {
+    const bool all_behind =
+        screen_p0.x < 0.0f && screen_p0.y < 0.0f &&
+        screen_p1.x < 0.0f && screen_p1.y < 0.0f &&
+        screen_p2.x < 0.0f && screen_p2.y < 0.0f &&
+        screen_p3.x < 0.0f && screen_p3.y < 0.0f;
+    if (all_behind) {
         return projected;
     }
 

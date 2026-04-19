@@ -43,7 +43,10 @@ std::vector<renderer2d::DrawCommand2D> build_draw_commands_from_evaluated_state(
 
     std::vector<renderer2d::DrawCommand2D> commands;
     commands.reserve(state.layers.size() + 1);
-    commands.push_back(renderer2d::DrawCommand2D::make_clear(renderer2d::Color::transparent()));
+    renderer2d::DrawCommand2D clear;
+    clear.kind = renderer2d::DrawCommandKind::Clear;
+    clear.clear.emplace(renderer2d::ClearCommand{renderer2d::Color::transparent()});
+    commands.push_back(clear);
 
     std::vector<const timeline::EvaluatedLayerState*> ordered;
     ordered.reserve(state.layers.size());
@@ -59,7 +62,15 @@ std::vector<renderer2d::DrawCommand2D> build_draw_commands_from_evaluated_state(
         if (!layer->visible || layer->type == timeline::LayerType::Camera) {
             continue;
         }
-        commands.push_back(renderer2d::DrawCommand2D::make_rect(layer_rect(state, *layer)));
+        renderer2d::DrawCommand2D command;
+        command.kind = renderer2d::DrawCommandKind::SolidRect;
+        const auto rect = layer_rect(state, *layer);
+        command.solid_rect.emplace(renderer2d::SolidRectCommand{
+            renderer2d::RectI{rect.x, rect.y, rect.width, rect.height},
+            rect.color,
+            1.0f
+        });
+        commands.push_back(command);
     }
 
     return commands;

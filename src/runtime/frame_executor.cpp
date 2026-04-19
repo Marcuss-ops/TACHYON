@@ -73,13 +73,12 @@ ExecutedFrame execute_frame_task(const SceneSpec& scene, const RenderPlan& plan,
     }
 
     if (task.cacheable) {
-        CachedFrame cached;
-        cached.entry.key = task.cache_key;
-        cached.entry.note = state.composition_summary;
-        cached.state_fingerprint = state.state_fingerprint;
-        cached.frame = frame;
-        cached.invalidates_when_changed = task.invalidates_when_changed;
-        cache.store(std::move(cached));
+        cache.store(CachedFrame{
+            FrameCacheEntry{task.cache_key, state.composition_summary},
+            state.state_fingerprint,
+            frame,
+            task.invalidates_when_changed
+        });
     }
 
     ExecutedFrame executed;

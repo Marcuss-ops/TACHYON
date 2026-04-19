@@ -115,11 +115,33 @@ bool run_rasterizer_tests() {
         texture.set_pixel(0, 1, {255, 255, 255, 255});
         texture.set_pixel(1, 1, {255, 255, 255, 255});
 
-        std::vector<DrawCommand2D> commands;
-        commands.push_back(DrawCommand2D::make_clear({10, 20, 30, 255}));
-        commands.push_back(DrawCommand2D::make_rect({4, 4, 12, 8, {0, 0, 255, 255}}));
-        commands.push_back(DrawCommand2D::make_line({0, 0, 10, 0, {0, 255, 0, 255}}));
-        commands.push_back(DrawCommand2D::make_textured_quad(TexturedQuadPrimitive::axis_aligned(20, 10, 6, 6, &texture, {255, 0, 0, 255})));
+        std::vector<renderer2d::DrawCommand2D> commands;
+        renderer2d::DrawCommand2D clear;
+        clear.kind = renderer2d::DrawCommandKind::Clear;
+        clear.clear.emplace(renderer2d::ClearCommand{{10, 20, 30, 255}});
+        commands.push_back(clear);
+
+        renderer2d::DrawCommand2D rect;
+        rect.kind = renderer2d::DrawCommandKind::SolidRect;
+        rect.solid_rect.emplace(renderer2d::SolidRectCommand{RectI{4, 4, 12, 8}, {0, 0, 255, 255}, 1.0f});
+        commands.push_back(rect);
+
+        renderer2d::DrawCommand2D line;
+        line.kind = renderer2d::DrawCommandKind::Line;
+        line.line.emplace(renderer2d::LineCommand{0, 0, 10, 0, {0, 255, 0, 255}});
+        commands.push_back(line);
+
+        renderer2d::DrawCommand2D textured;
+        textured.kind = renderer2d::DrawCommandKind::TexturedQuad;
+        textured.textured_quad.emplace(renderer2d::TexturedQuadCommand{
+            renderer2d::TextureHandle{"test-texture"},
+            {20.0F, 10.0F},
+            {26.0F, 10.0F},
+            {26.0F, 16.0F},
+            {20.0F, 16.0F},
+            1.0F
+        });
+        commands.push_back(textured);
 
         RasterizedFrame2D frame = render_frame_2d(plan, task, commands);
         check_true(frame.surface.has_value(), "Frame renderer returns a surface");
@@ -141,9 +163,17 @@ bool run_rasterizer_tests() {
         task.frame_number = 7;
         task.cache_key.value = "frame-clip";
 
-        std::vector<DrawCommand2D> commands;
-        commands.push_back(DrawCommand2D::make_clear(Color::black()));
-        commands.push_back(DrawCommand2D::make_rect({0, 0, 20, 20, Color::white()}).with_clip_rect({4, 4, 6, 6}));
+        std::vector<renderer2d::DrawCommand2D> commands;
+        renderer2d::DrawCommand2D clear;
+        clear.kind = renderer2d::DrawCommandKind::Clear;
+        clear.clear.emplace(renderer2d::ClearCommand{Color::black()});
+        commands.push_back(clear);
+
+        renderer2d::DrawCommand2D rect;
+        rect.kind = renderer2d::DrawCommandKind::SolidRect;
+        rect.solid_rect.emplace(renderer2d::SolidRectCommand{RectI{0, 0, 20, 20}, Color::white(), 1.0f});
+        rect.clip.emplace(RectI{4, 4, 6, 6});
+        commands.push_back(rect);
 
         RasterizedFrame2D frame = render_frame_2d(plan, task, commands);
         check_true(frame.surface.has_value(), "Clipped frame renderer returns a surface");
