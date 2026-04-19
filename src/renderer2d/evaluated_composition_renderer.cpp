@@ -7,6 +7,7 @@
 #include "tachyon/runtime/tile_scheduler.h"
 #include "tachyon/text/font.h"
 #include "tachyon/text/layout.h"
+#include "tachyon/media/media_manager.h"
 
 #include <algorithm>
 #include <cctype>
@@ -30,21 +31,22 @@ using renderer2d::RectI;
 using renderer2d::SurfaceRGBA;
 
 struct AccumulationBuffer {
-    std::vector<float> r;
-    std::vector<float> g;
-    std::vector<float> b;
-    std::vector<float> a;
+    std::vector<float>& r;
+    std::vector<float>& g;
+    std::vector<float>& b;
+    std::vector<float>& a;
     std::uint32_t width{0};
     std::uint32_t height{0};
     renderer2d::detail::TransferCurve transfer_curve{renderer2d::detail::TransferCurve::Srgb};
 
-    AccumulationBuffer(std::uint32_t w, std::uint32_t h, renderer2d::detail::TransferCurve curve)
-        : width(w), height(h), transfer_curve(curve) {
+    AccumulationBuffer(std::uint32_t w, std::uint32_t h, renderer2d::detail::TransferCurve curve, renderer2d::RenderContext& context)
+        : r(context.accumulation_buffer->r), g(context.accumulation_buffer->g), b(context.accumulation_buffer->b), a(context.accumulation_buffer->a), width(w), height(h), transfer_curve(curve) {
         const std::size_t size = static_cast<std::size_t>(w) * static_cast<std::size_t>(h);
-        r.assign(size, 0.0f);
-        g.assign(size, 0.0f);
-        b.assign(size, 0.0f);
-        a.assign(size, 0.0f);
+        context.accumulation_buffer->ensure_capacity(size);
+        std::fill(r.begin(), r.begin() + size, 0.0f);
+        std::fill(g.begin(), g.begin() + size, 0.0f);
+        std::fill(b.begin(), b.begin() + size, 0.0f);
+        std::fill(a.begin(), a.begin() + size, 0.0f);
     }
 
     void add(const SurfaceRGBA& surface, float weight) {
@@ -404,6 +406,32 @@ void composite_surface_at(SurfaceRGBA& dest, const SurfaceRGBA& src, int x, int 
     }
 }
 
+Color sample_bilinear(const SurfaceRGBA& surface, float u, float v) {
+    const float x = u * (static_cast<float>(surface.width()) - 1.0f);
+    const float y = v * (static_cast<float>(surface.height()) - 1.0f);
+    const int x0 = static_cast<int>(std::floor(x));
+    const int y0 = static_cast<int>(std::floor(y));
+    const int x1 = std::min(x0 + 1, static_cast<int>(surface.width()) - 1);
+    const int y1 = std::min(y0 + 1, static_cast<int>(surface.height()) - 1);
+
+    const float dx = x - static_cast<float>(x0);
+    const float dy = y - static_cast<float>(y0);
+
+    const Color c00 = surface.get_pixel(static_cast<std::uint32_t>(x0), static_cast<std::uint32_t>(y0));
+    const Color c10 = surface.get_pixel(static_cast<std::uint32_t>(x1), static_cast<std::uint32_t>(y0));
+    const Color c01 = surface.get_pixel(static_cast<std::uint32_t>(x0), static_cast<std::uint32_t>(y1));
+    const Color c11 = surface.get_pixel(static_cast<std::uint32_t>(x1), static_cast<std::uint32_t>(y1));
+
+    auto lerp = [](float a, float b, float t) { return a + (b - a) * t; };
+
+    return Color{
+        static_cast<std::uint8_t>(lerp(lerp(static_cast<float>(c00.r), static_cast<float>(c10.r), dx), lerp(static_cast<float>(c01.r), static_cast<float>(c11.r), dx), dy)),
+        static_cast<std::uint8_t>(lerp(lerp(static_cast<float>(c00.g), static_cast<float>(c10.g), dx), lerp(static_cast<float>(c01.g), static_cast<float>(c11.g), dx), dy)),
+        static_cast<std::uint8_t>(lerp(lerp(static_cast<float>(c00.b), static_cast<float>(c10.b), dx), lerp(static_cast<float>(c01.b), static_cast<float>(c11.b), dx), dy)),
+        static_cast<std::uint8_t>(lerp(lerp(static_cast<float>(c00.a), static_cast<float>(c10.a), dx), lerp(static_cast<float>(c01.a), static_cast<float>(c11.a), dx), dy))
+    };
+}
+
 void render_layer_to_surface(
     SurfaceRGBA& layer_surface,
     const scene::EvaluatedLayerState& layer,
@@ -419,7 +447,6 @@ void render_layer_to_surface(
     (void)lights;
     (void)plan;
     (void)task;
-    (void)context;
 
     if (layer.is_3d && camera.available) {
         // Perspective Quad Warping logic placeholder
@@ -436,9 +463,58 @@ void render_layer_to_surface(
 
     if (layer.type == scene::LayerType::Solid) {
         layer_surface.fill_rect({lx, ly, bounds.width, bounds.height}, color_with_opacity(from_spec(layer.fill_color), static_cast<float>(layer.opacity)));
-    } else if (layer.type == scene::LayerType::Image || layer.type == scene::LayerType::Text) {
-        // Placeholder for image/text rendering in software renderer
-        layer_surface.fill_rect({lx, ly, bounds.width, bounds.height}, color_with_opacity(from_spec(layer.fill_color), static_cast<float>(layer.opacity) * 0.5f));
+    } else if (layer.type == scene::LayerType::Image) {
+        const SurfaceRGBA* texture = nullptr;
+        if (plan.scene_spec) {
+            for (const auto& asset : plan.scene_spec->assets) {
+                if (asset.id == layer.id || asset.id == layer.name) {
+                    texture = context.media.get_image(asset.path);
+                    break;
+                }
+            }
+        }
+
+        if (texture) {
+            for (int y = 0; y < bounds.height; ++y) {
+                for (int x = 0; x < bounds.width; ++x) {
+                    const int tx = lx + x;
+                    const int ty = ly + y;
+                    if (tx < 0 || ty < 0 || tx >= static_cast<int>(layer_surface.width()) || ty >= static_cast<int>(layer_surface.height())) {
+                        continue;
+                    }
+                    const float u = static_cast<float>(x) / static_cast<float>(bounds.width);
+                    const float v = static_cast<float>(y) / static_cast<float>(bounds.height);
+                    Color tex_pixel = sample_bilinear(*texture, u, v);
+                    layer_surface.set_pixel(static_cast<std::uint32_t>(tx), static_cast<std::uint32_t>(ty), color_with_opacity(tex_pixel, static_cast<float>(layer.opacity)));
+                }
+            }
+        }
+    } else if (layer.type == scene::LayerType::Text) {
+        using namespace text;
+        const Font* font = context.fonts.default_font();
+        if (font) {
+            TextStyle style;
+            style.pixel_size = static_cast<std::uint32_t>(std::abs(layer.local_transform.scale.y) * 48.0f);
+            style.fill_color = from_spec(layer.fill_color);
+            
+            TextBox box;
+            box.width = static_cast<std::uint32_t>(bounds.width);
+            box.height = static_cast<std::uint32_t>(bounds.height);
+            
+            TextRasterSurface raster = rasterize_text_rgba(*font, layer.text_content, style, box, TextAlignment::Center);
+            
+            for (std::uint32_t y = 0; y < raster.height(); ++y) {
+                for (std::uint32_t x = 0; x < raster.width(); ++x) {
+                    const int tx = lx + static_cast<int>(x);
+                    const int ty = ly + static_cast<int>(y);
+                    if (tx < 0 || ty < 0 || tx >= static_cast<int>(layer_surface.width()) || ty >= static_cast<int>(layer_surface.height())) {
+                        continue;
+                    }
+                    Color p = raster.get_pixel(x, y);
+                    layer_surface.set_pixel(static_cast<std::uint32_t>(tx), static_cast<std::uint32_t>(ty), color_with_opacity(p, static_cast<float>(layer.opacity)));
+                }
+            }
+        }
     }
 }
 
@@ -621,8 +697,6 @@ RasterizedFrame2D render_composition_recursive(
     double composition_time_seconds,
     int precomp_recursion_depth) {
 
-    (void)lights;
-
     // 1. Resolution Scale (Quality Policy)
     const float scale = context.policy.resolution_scale;
     const std::int64_t scaled_width = static_cast<std::int64_t>(std::max(1.0f, static_cast<float>(width) * scale));
@@ -723,7 +797,7 @@ RasterizedFrame2D render_composition_recursive(
     const std::vector<RectI>& tiles = tile_grid.tiles.empty() ? fallback_tiles : tile_grid.tiles;
 
     for (const auto& tile : tiles) {
-        AccumulationBuffer accumulation(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height), working_curve);
+        AccumulationBuffer accumulation(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height), working_curve, context);
         SurfaceRGBA tile_surface(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height));
         SurfaceRGBA tile_resolved(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height));
 
