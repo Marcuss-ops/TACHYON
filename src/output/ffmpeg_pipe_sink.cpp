@@ -121,6 +121,9 @@ std::string build_video_pass_command(const RenderPlan& plan, const std::filesyst
             << " -pix_fmt rgba"
             << " -s " << plan.composition.width << 'x' << plan.composition.height
             << " -r " << fps
+            << " -color_primaries " << color_primaries
+            << " -color_trc " << color_trc
+            << " -color_range " << color_range
             << " -i -"
             << " -an";
 
