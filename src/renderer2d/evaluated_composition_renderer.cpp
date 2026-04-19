@@ -1,5 +1,6 @@
 #include "tachyon/renderer2d/evaluated_composition_renderer.h"
 
+#include "tachyon/renderer2d/color_transfer.h"
 #include "tachyon/renderer2d/rasterizer_ops.h"
 #include "tachyon/renderer2d/raster/perspective_rasterizer.h"
 #include "tachyon/scene/evaluator.h"
@@ -30,13 +31,18 @@ struct RenderContext {
 
 int g_precomp_recursion_depth = 0;
 
-scene::EvaluatedCompositionState to_scene_state(const timeline::EvaluatedCompositionState& state) {
+scene::EvaluatedCompositionState to_scene_state(
+    const timeline::EvaluatedCompositionState& state,
+    const RenderPlan& plan,
+    const FrameRenderTask& task) {
     scene::EvaluatedCompositionState scene_state;
     scene_state.composition_id = state.composition_id;
     scene_state.composition_name = state.composition_name;
     scene_state.width = state.width;
     scene_state.height = state.height;
-    scene_state.frame_number = state.frame_number;
+    scene_state.frame_rate = plan.composition.frame_rate;
+    scene_state.frame_number = task.frame_number;
+    scene_state.composition_time_seconds = state.time_seconds;
     
     for (const auto& layer : state.layers) {
         scene::EvaluatedLayerState sl;
@@ -78,6 +84,53 @@ scene::EvaluatedCompositionState to_scene_state(const timeline::EvaluatedComposi
     
     return scene_state;
 }
+
+struct AccumulationBuffer {
+    std::vector<float> r;
+    std::vector<float> g;
+    std::vector<float> b;
+    std::vector<float> a;
+    std::uint32_t width{0};
+    std::uint32_t height{0};
+    renderer2d::detail::TransferCurve transfer_curve{renderer2d::detail::TransferCurve::Srgb};
+
+    AccumulationBuffer(std::uint32_t w, std::uint32_t h, renderer2d::detail::TransferCurve curve)
+        : width(w), height(h), transfer_curve(curve) {
+        const std::size_t size = static_cast<std::size_t>(w) * static_cast<std::size_t>(h);
+        r.assign(size, 0.0f);
+        g.assign(size, 0.0f);
+        b.assign(size, 0.0f);
+        a.assign(size, 0.0f);
+    }
+
+    void add(const SurfaceRGBA& surface, float weight) {
+        for (std::uint32_t y = 0; y < height; ++y) {
+            for (std::uint32_t x = 0; x < width; ++x) {
+                const auto p = surface.get_pixel(x, y);
+                const std::size_t idx = static_cast<std::size_t>(y) * width + x;
+                const auto linear = renderer2d::detail::to_premultiplied(p, transfer_curve);
+                r[idx] += linear.r * weight;
+                g[idx] += linear.g * weight;
+                b[idx] += linear.b * weight;
+                a[idx] += linear.a * weight;
+            }
+        }
+    }
+
+    void resolve(SurfaceRGBA& surface) const {
+        for (std::uint32_t y = 0; y < height; ++y) {
+            for (std::uint32_t x = 0; x < width; ++x) {
+                const std::size_t idx = static_cast<std::size_t>(y) * width + x;
+                surface.set_pixel(x, y, renderer2d::detail::from_premultiplied({
+                    r[idx],
+                    g[idx],
+                    b[idx],
+                    a[idx]
+                }, transfer_curve));
+            }
+        }
+    }
+};
 
 Color from_spec(const ColorSpec& spec) {
     return Color{
@@ -258,82 +311,55 @@ RasterizedFrame2D render_composition_recursive(
     frame.surface.emplace(static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height));
     frame.surface->clear(Color::transparent());
 
+    const renderer2d::detail::TransferCurve working_curve = renderer2d::detail::parse_transfer_curve(plan.working_space);
     const int num_samples = plan.motion_blur_enabled ? std::max(1, static_cast<int>(plan.motion_blur_samples)) : 1;
     const double shutter_angle = std::max(0.0, std::min(360.0, plan.motion_blur_shutter_angle));
-    const double shutter_seconds = (shutter_angle / 360.0) * (1.0 / (static_cast<double>(plan.composition.frame_rate.numerator) / static_cast<double>(plan.composition.frame_rate.denominator)));
+    const double frame_duration = static_cast<double>(plan.composition.frame_rate.denominator) / static_cast<double>(plan.composition.frame_rate.numerator);
+    const double shutter_seconds = frame_duration * (shutter_angle / 360.0);
 
-    // Pre-calculate weights
-    std::vector<double> sample_weights(num_samples, 1.0);
-    double total_weight = 0.0;
-    for (int s = 0; s < num_samples; ++s) {
-        if (plan.motion_blur_curve == "gaussian") {
-            const double x = (num_samples > 1) ? (static_cast<double>(s) / static_cast<double>(num_samples - 1) - 0.5) * 2.0 : 0.0;
-            sample_weights[s] = std::exp(-2.0 * x * x);
-        } else if (plan.motion_blur_curve == "triangle") {
-            const double x = (num_samples > 1) ? (static_cast<double>(s) / static_cast<double>(num_samples - 1) - 0.5) * 2.0 : 0.0;
-            sample_weights[s] = std::max(0.0, 1.0 - std::abs(x));
-        }
-        total_weight += sample_weights[s];
-    }
+    AccumulationBuffer accumulation(static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height), working_curve);
+    const float sample_weight = 1.0f / static_cast<float>(num_samples);
 
-    std::vector<std::uint32_t> accumulation_results(width * height * 4, 0);
-    std::mutex accumulation_mutex;
-
-    std::vector<std::future<void>> sample_futures;
     for (int sample = 0; sample < num_samples; ++sample) {
-        sample_futures.push_back(std::async(std::launch::async, [&, sample, width, height]() {
-            const double weight = sample_weights[sample];
-            const double time_offset = (num_samples > 1) 
-                ? (static_cast<double>(sample) / static_cast<double>(num_samples - 1) - 0.5) * shutter_seconds
-                : 0.0;
-            const double sample_time = task.time_seconds + time_offset;
+        const double time_offset = (num_samples > 1)
+            ? (static_cast<double>(sample) / static_cast<double>(num_samples - 1) - 0.5) * shutter_seconds
+            : 0.0;
+        const double sample_time = static_cast<double>(task.frame_number) * frame_duration + time_offset;
 
-            auto sample_state = scene::evaluate_scene_composition_state(*plan.scene_spec, plan.composition.id, sample_time);
-            if (!sample_state.has_value()) return;
+        std::vector<scene::EvaluatedLayerState> sample_layers = layers;
+        scene::EvaluatedCameraState sample_camera;
 
-            SurfaceRGBA sample_surface(static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height));
-            sample_surface.clear(Color::transparent());
-
-            scene::EvaluatedCameraState sample_camera;
-            for (const auto& l : sample_state->layers) {
-                if (l.is_camera && l.visible) {
-                    sample_camera.available = true;
-                    sample_camera.camera = l.camera;
-                    sample_camera.position = l.position3;
-                    break;
-                }
+        if (plan.scene_spec != nullptr) {
+            const auto sample_state = scene::evaluate_scene_composition_state(*plan.scene_spec, plan.composition.id, sample_time);
+            if (sample_state.has_value()) {
+                sample_layers = sample_state->layers;
+                sample_camera = sample_state->camera;
             }
+        }
 
-            std::vector<scene::EvaluatedLayerState> sorted_layers = sample_state->layers;
-            std::stable_sort(sorted_layers.begin(), sorted_layers.end(), [&](const auto& a, const auto& b) {
-                if (a.is_3d && b.is_3d) {
-                    const float dist_a = (a.position3 - sample_camera.position).length_squared();
-                    const float dist_b = (b.position3 - sample_camera.position).length_squared();
-                    return dist_a > dist_b; 
-                }
-                return false;
-            });
+        SurfaceRGBA sample_surface(static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height));
+        sample_surface.clear(Color::transparent());
 
-            for (const auto& layer : sorted_layers) {
-                if (!layer.visible || layer.is_camera) continue;
-                render_layer_recursive(layer, width, height, RectI{0, 0, (int)width, (int)height}, plan, task, context, sample_camera, sample_surface);
+        std::stable_sort(sample_layers.begin(), sample_layers.end(), [&](const auto& a, const auto& b) {
+            if (a.is_3d && b.is_3d && sample_camera.available) {
+                const float dist_a = (a.position3 - sample_camera.position).length_squared();
+                const float dist_b = (b.position3 - sample_camera.position).length_squared();
+                return dist_a > dist_b;
             }
+            return a.layer_index < b.layer_index;
+        });
 
-            std::lock_guard<std::mutex> lock(accumulation_mutex);
-            const std::uint8_t* src = sample_surface.pixels_data();
-            for (size_t i = 0; i < width * height * 4; ++i) {
-                accumulation_results[i] += static_cast<std::uint32_t>(static_cast<double>(src[i]) * weight);
+        for (const auto& layer : sample_layers) {
+            if (!layer.visible || layer.is_camera) {
+                continue;
             }
-        }));
+            render_layer_recursive(layer, width, height, RectI{0, 0, static_cast<int>(width), static_cast<int>(height)}, plan, task, context, sample_camera, sample_surface);
+        }
+
+        accumulation.add(sample_surface, sample_weight);
     }
 
-    for (auto& f : sample_futures) f.get();
-
-    const double inv_total_weight = total_weight > 0.001 ? 1.0 / total_weight : 1.0;
-    std::uint8_t* dest = frame.surface->pixels_data();
-    for (size_t i = 0; i < width * height * 4; ++i) {
-        dest[i] = static_cast<std::uint8_t>(std::clamp(static_cast<double>(accumulation_results[i]) * inv_total_weight, 0.0, 255.0));
-    }
+    accumulation.resolve(*frame.surface);
 
     return frame;
 }
@@ -352,7 +378,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
     const timeline::EvaluatedCompositionState& state,
     const RenderPlan& plan,
     const FrameRenderTask& task) {
-    const scene::EvaluatedCompositionState converted = to_scene_state(state);
+    const scene::EvaluatedCompositionState converted = to_scene_state(state, plan, task);
     RenderContext context;
     return render_composition_recursive(converted.layers, converted.width, converted.height, plan, task, context);
 }
