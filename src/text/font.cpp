@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <limits>
 #include <sstream>
 
 namespace tachyon::text {
@@ -62,6 +63,54 @@ std::optional<std::uint32_t> BitmapFont::parse_hex_row(const std::string& line) 
     return value;
 }
 
+std::uint64_t BitmapFont::scaled_cache_key(std::uint32_t codepoint, std::uint32_t scale) {
+    return (static_cast<std::uint64_t>(codepoint) << 32U) | static_cast<std::uint64_t>(scale);
+}
+
+const GlyphBitmap* BitmapFont::scale_glyph(std::uint32_t codepoint, const GlyphBitmap& glyph, std::uint32_t scale) const {
+    if (scale <= 1U) {
+        return &glyph;
+    }
+
+    const std::uint64_t key = scaled_cache_key(codepoint, scale);
+    const auto cache_it = m_scaled_glyph_cache.find(key);
+    if (cache_it != m_scaled_glyph_cache.end()) {
+        return cache_it->second.get();
+    }
+
+    auto scaled = std::make_shared<GlyphBitmap>();
+    scaled->width = glyph.width * scale;
+    scaled->height = glyph.height * scale;
+    scaled->x_offset = glyph.x_offset * static_cast<std::int32_t>(scale);
+    scaled->y_offset = glyph.y_offset * static_cast<std::int32_t>(scale);
+    scaled->advance_x = glyph.advance_x * static_cast<std::int32_t>(scale);
+    scaled->alpha_mask.assign(static_cast<std::size_t>(scaled->width) * static_cast<std::size_t>(scaled->height), 0U);
+
+    if (glyph.width != 0U && glyph.height != 0U) {
+        for (std::uint32_t source_y = 0; source_y < glyph.height; ++source_y) {
+            for (std::uint32_t source_x = 0; source_x < glyph.width; ++source_x) {
+                const std::uint8_t alpha = glyph.alpha_mask[source_y * glyph.width + source_x];
+                if (alpha == 0U) {
+                    continue;
+                }
+
+                for (std::uint32_t dy = 0; dy < scale; ++dy) {
+                    for (std::uint32_t dx = 0; dx < scale; ++dx) {
+                        const std::size_t dst_index =
+                            (static_cast<std::size_t>(source_y) * scale + dy) * scaled->width +
+                            (static_cast<std::size_t>(source_x) * scale + dx);
+                        scaled->alpha_mask[dst_index] = alpha;
+                    }
+                }
+            }
+        }
+    }
+
+    const GlyphBitmap* scaled_ptr = scaled.get();
+    m_scaled_glyph_cache.emplace(key, std::move(scaled));
+    return scaled_ptr;
+}
+
 bool BitmapFont::load_bdf(const std::filesystem::path& path) {
     std::ifstream input(path);
     if (!input.is_open()) {
@@ -74,6 +123,7 @@ bool BitmapFont::load_bdf(const std::filesystem::path& path) {
     m_line_height = 0;
     m_default_advance = 0;
     m_glyphs.clear();
+    m_scaled_glyph_cache.clear();
 
     GlyphBuilder builder;
     bool reading_bitmap = false;
@@ -207,6 +257,19 @@ const GlyphBitmap* BitmapFont::find_glyph(std::uint32_t codepoint) const {
         return &it->second;
     }
     return fallback_glyph();
+}
+
+const GlyphBitmap* BitmapFont::find_scaled_glyph(std::uint32_t codepoint, std::uint32_t scale) const {
+    const GlyphBitmap* glyph = find_glyph(codepoint);
+    if (glyph == nullptr) {
+        return nullptr;
+    }
+
+    if (scale <= 1U) {
+        return glyph;
+    }
+
+    return scale_glyph(codepoint, *glyph, scale);
 }
 
 const GlyphBitmap* BitmapFont::fallback_glyph() const {

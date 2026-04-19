@@ -8,6 +8,7 @@ bool run_framebuffer_tests();
 bool run_rasterizer_tests();
 bool run_surface_tests();
 bool run_draw_list_builder_tests();
+bool run_path_rasterizer_tests();
 bool run_frame_cache_tests();
 bool run_frame_executor_tests();
 bool run_frame_output_sink_tests();
@@ -17,7 +18,9 @@ bool run_scene_evaluator_tests();
 bool run_render_session_tests();
 bool run_parallax_cards_tests();
 bool run_timeline_tests();
+bool run_glyph_cache_tests();
 bool run_text_tests();
+bool run_effect_host_tests();
 
 int main() {
     if (!run_math_tests()) {
@@ -60,6 +63,11 @@ int main() {
         return 1;
     }
 
+    if (!run_path_rasterizer_tests()) {
+        std::cerr << "path rasterizer tests failed\n";
+        return 1;
+    }
+
     if (!run_frame_cache_tests()) {
         std::cerr << "frame cache tests failed\n";
         return 1;
@@ -95,8 +103,18 @@ int main() {
         return 1;
     }
 
+    if (!run_glyph_cache_tests()) {
+        std::cerr << "glyph cache tests failed\n";
+        return 1;
+    }
+
     if (!run_text_tests()) {
         std::cerr << "text tests failed\n";
+        return 1;
+    }
+
+    if (!run_effect_host_tests()) {
+        std::cerr << "effect host tests failed\n";
         return 1;
     }
 
