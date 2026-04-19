@@ -4,17 +4,21 @@
 #include "tachyon/renderer2d/rasterizer_ops.h"
 #include "tachyon/renderer2d/raster/perspective_rasterizer.h"
 #include "tachyon/scene/evaluator.h"
+#include "tachyon/runtime/tile_scheduler.h"
 #include "tachyon/text/font.h"
 #include "tachyon/text/layout.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <future>
 #include <mutex>
 #include <filesystem>
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 namespace tachyon {
 namespace {
@@ -22,8 +26,6 @@ namespace {
 using renderer2d::Color;
 using renderer2d::RectI;
 using renderer2d::SurfaceRGBA;
-
-int g_precomp_recursion_depth = 0;
 
 struct AccumulationBuffer {
     std::vector<float> r;
@@ -95,17 +97,101 @@ RectI intersect_rects(const RectI& a, const RectI& b) {
     return RectI{x0, y0, x1 - x0, y1 - y0};
 }
 
+RectI union_rects(const RectI& a, const RectI& b) {
+    if (a.width <= 0 || a.height <= 0) {
+        return b;
+    }
+    if (b.width <= 0 || b.height <= 0) {
+        return a;
+    }
+
+    const int x0 = std::min(a.x, b.x);
+    const int y0 = std::min(a.y, b.y);
+    const int x1 = std::max(a.x + a.width, b.x + b.width);
+    const int y1 = std::max(a.y + a.height, b.y + b.height);
+    return RectI{x0, y0, x1 - x0, y1 - y0};
+}
+
+RectI clamp_to_frame(const RectI& rect, std::int64_t width, std::int64_t height) {
+    const int x0 = std::max(0, rect.x);
+    const int y0 = std::max(0, rect.y);
+    const int x1 = std::min(static_cast<int>(width), rect.x + rect.width);
+    const int y1 = std::min(static_cast<int>(height), rect.y + rect.height);
+    if (x1 <= x0 || y1 <= y0) {
+        return RectI{0, 0, 0, 0};
+    }
+    return RectI{x0, y0, x1 - x0, y1 - y0};
+}
+
 RectI layer_bounds(const scene::EvaluatedLayerState& layer, std::int64_t comp_w, std::int64_t comp_h) {
-    (void)comp_w;
-    (void)comp_h;
-    // Basic 2D bounds for ROI filtering
-    const int w = static_cast<int>(std::round(static_cast<float>(layer.width) * std::abs(layer.local_transform.scale.x)));
-    const int h = static_cast<int>(std::round(static_cast<float>(layer.height) * std::abs(layer.local_transform.scale.y)));
+    int base_width = static_cast<int>(layer.width);
+    int base_height = static_cast<int>(layer.height);
+
+    if (base_width <= 0 || base_height <= 0) {
+        if (layer.type == scene::LayerType::Text) {
+            base_width = std::max(64, static_cast<int>(comp_w / 6));
+            base_height = std::max(32, static_cast<int>(comp_h / 10));
+        } else if (layer.type == scene::LayerType::Solid || layer.type == scene::LayerType::Shape || layer.type == scene::LayerType::Mask) {
+            base_width = std::max(64, static_cast<int>(comp_w / 4));
+            base_height = std::max(32, static_cast<int>(comp_h / 8));
+        } else if (layer.precomp_id.has_value() && layer.nested_composition) {
+            base_width = static_cast<int>(layer.nested_composition->width);
+            base_height = static_cast<int>(layer.nested_composition->height);
+        } else {
+            base_width = 100;
+            base_height = 100;
+        }
+    }
+
+    const int w = std::max(1, static_cast<int>(std::round(static_cast<float>(base_width) * std::abs(layer.local_transform.scale.x))));
+    const int h = std::max(1, static_cast<int>(std::round(static_cast<float>(base_height) * std::abs(layer.local_transform.scale.y))));
     return RectI{
         static_cast<int>(std::round(layer.local_transform.position.x)) - w / 2,
         static_cast<int>(std::round(layer.local_transform.position.y)) - h / 2,
         w, h
     };
+}
+
+bool point_in_polygon(const std::vector<scene::EvaluatedShapePathPoint>& points, float px, float py) {
+    if (points.size() < 3) {
+        return false;
+    }
+
+    bool inside = false;
+    std::size_t previous = points.size() - 1;
+    for (std::size_t current = 0; current < points.size(); previous = current++) {
+        const auto& a = points[previous].position;
+        const auto& b = points[current].position;
+        const bool intersects = ((a.y > py) != (b.y > py)) &&
+            (px < (b.x - a.x) * (py - a.y) / ((b.y - a.y) != 0.0f ? (b.y - a.y) : 1.0f) + a.x);
+        if (intersects) {
+            inside = !inside;
+        }
+    }
+    return inside;
+}
+
+std::vector<std::uint8_t> build_adjustment_mask(
+    const scene::EvaluatedLayerState& layer,
+    const RectI& influence) {
+
+    std::vector<std::uint8_t> mask(static_cast<std::size_t>(std::max(influence.width, 0)) * static_cast<std::size_t>(std::max(influence.height, 0)), 1U);
+    if (!layer.shape_path.has_value() || layer.shape_path->points.size() < 3 || influence.width <= 0 || influence.height <= 0) {
+        return mask;
+    }
+
+    const auto& path = *layer.shape_path;
+    for (int y = 0; y < influence.height; ++y) {
+        for (int x = 0; x < influence.width; ++x) {
+            const float px = static_cast<float>(x) + 0.5f;
+            const float py = static_cast<float>(y) + 0.5f;
+            if (!point_in_polygon(path.points, px, py)) {
+                mask[static_cast<std::size_t>(y) * static_cast<std::size_t>(influence.width) + static_cast<std::size_t>(x)] = 0U;
+            }
+        }
+    }
+
+    return mask;
 }
 
 renderer2d::BlendMode parse_blend_mode(const std::string& mode) {
@@ -115,18 +201,131 @@ renderer2d::BlendMode parse_blend_mode(const std::string& mode) {
     return renderer2d::BlendMode::Normal;
 }
 
+std::string build_composition_hash(const scene::EvaluatedCompositionState& state) {
+    std::ostringstream stream;
+    stream << state.composition_id << ';'
+           << state.width << 'x' << state.height << ';'
+           << state.frame_rate.numerator << '/' << state.frame_rate.denominator << ';'
+           << state.layers.size() << ';';
+    for (const auto& layer : state.layers) {
+        stream << layer.id << ':' << static_cast<int>(layer.type) << ':' << layer.visible << ':'
+               << layer.active << ':' << layer.opacity << ':'
+               << layer.local_transform.position.x << ':' << layer.local_transform.position.y << ':'
+               << layer.local_transform.scale.x << ':' << layer.local_transform.scale.y << ';';
+    }
+    return stream.str();
+}
+
+std::string build_precomp_cache_key(
+    const scene::EvaluatedLayerState& layer,
+    const scene::EvaluatedCompositionState& nested,
+    double child_time_seconds) {
+
+    std::ostringstream stream;
+    const std::int64_t child_frame_number = nested.frame_rate.value() > 0.0
+        ? static_cast<std::int64_t>(std::llround(child_time_seconds * nested.frame_rate.value()))
+        : 0;
+    stream << layer.id << '|' << build_composition_hash(nested) << '|' << child_frame_number;
+    return stream.str();
+}
+
+std::string to_lower_ascii(std::string_view value) {
+    std::string lower;
+    lower.reserve(value.size());
+    for (unsigned char ch : value) {
+        lower.push_back(static_cast<char>(std::tolower(ch)));
+    }
+    return lower;
+}
+
+enum class MotionBlurCurve {
+    Box,
+    Triangle,
+    Gaussian
+};
+
+MotionBlurCurve parse_motion_blur_curve(std::string_view value) {
+    const std::string lower = to_lower_ascii(value);
+    if (lower == "triangle") {
+        return MotionBlurCurve::Triangle;
+    }
+    if (lower == "gaussian") {
+        return MotionBlurCurve::Gaussian;
+    }
+    return MotionBlurCurve::Box;
+}
+
+std::vector<float> make_motion_blur_weights(int sample_count, std::string_view curve_name) {
+    std::vector<float> weights(static_cast<std::size_t>(std::max(sample_count, 0)), 0.0f);
+    if (sample_count <= 0) {
+        return weights;
+    }
+
+    const MotionBlurCurve curve = parse_motion_blur_curve(curve_name);
+    float total = 0.0f;
+    for (int sample = 0; sample < sample_count; ++sample) {
+        const float t = sample_count > 1
+            ? (2.0f * static_cast<float>(sample) / static_cast<float>(sample_count - 1) - 1.0f)
+            : 0.0f;
+
+        float weight = 1.0f;
+        switch (curve) {
+        case MotionBlurCurve::Box:
+            weight = 1.0f;
+            break;
+        case MotionBlurCurve::Triangle:
+            weight = std::max(0.0f, 1.0f - std::abs(t));
+            break;
+        case MotionBlurCurve::Gaussian: {
+            constexpr float sigma = 0.35f;
+            const float variance = sigma * sigma;
+            weight = std::exp(-(t * t) / (2.0f * variance));
+            break;
+        }
+        }
+
+        weights[static_cast<std::size_t>(sample)] = weight;
+        total += weight;
+    }
+
+    if (total <= 0.0f) {
+        const float uniform = 1.0f / static_cast<float>(sample_count);
+        std::fill(weights.begin(), weights.end(), uniform);
+        return weights;
+    }
+
+    for (float& weight : weights) {
+        weight /= total;
+    }
+    return weights;
+}
+
 void composite_surface_at(SurfaceRGBA& dest, const SurfaceRGBA& src, int x, int y, const RectI& clip, renderer2d::BlendMode mode) {
-    (void)mode;
     const RectI src_rect{x, y, static_cast<int>(src.width()), static_cast<int>(src.height())};
     const RectI clipped = intersect_rects(src_rect, clip);
     if (clipped.width <= 0 || clipped.height <= 0) return;
 
     for (int cy = clipped.y; cy < clipped.y + clipped.height; ++cy) {
         for (int cx = clipped.x; cx < clipped.x + clipped.width; ++cx) {
-            Color p = src.get_pixel(cx - x, cy - y);
-            if (p.a > 0) {
-                dest.blend_pixel(cx, cy, p);
+            const Color src_pixel = src.get_pixel(static_cast<std::uint32_t>(cx - x), static_cast<std::uint32_t>(cy - y));
+            if (src_pixel.a == 0) {
+                continue;
             }
+
+            if (mode == renderer2d::BlendMode::Normal) {
+                dest.blend_pixel(static_cast<std::uint32_t>(cx), static_cast<std::uint32_t>(cy), src_pixel);
+                continue;
+            }
+
+            const auto dst_pixel = dest.try_get_pixel(static_cast<std::uint32_t>(cx), static_cast<std::uint32_t>(cy));
+            if (!dst_pixel.has_value()) {
+                continue;
+            }
+
+            dest.set_pixel(
+                static_cast<std::uint32_t>(cx),
+                static_cast<std::uint32_t>(cy),
+                renderer2d::blend_mode_color(src_pixel, *dst_pixel, mode));
         }
     }
 }
@@ -143,6 +342,8 @@ void render_layer_to_surface(
     const scene::EvaluatedCameraState& camera) {
 
     (void)plan;
+    (void)task;
+    (void)context;
 
     if (layer.is_3d && camera.available) {
         // Perspective Quad Warping logic
@@ -178,15 +379,6 @@ void render_layer_to_surface(
         project(p[2], quad.v2, {1,1});
         project(p[3], quad.v3, {0,1});
 
-        // Resolve texture
-        if (layer.type == scene::LayerType::Precomp && layer.nested_composition) {
-            std::string ck = "precomp_" + layer.id + "_" + std::to_string(task.frame_number);
-            auto it = context.precomp_cache.find(ck);
-            if (it != context.precomp_cache.end() && it->second.surface.has_value()) {
-                quad.texture = &(*it->second.surface);
-                renderer2d::raster::PerspectiveRasterizer::draw_quad(layer_surface, quad);
-            }
-        }
         return;
     }
 
@@ -211,7 +403,9 @@ RasterizedFrame2D render_composition_recursive(
     std::int64_t height,
     const RenderPlan& plan,
     const FrameRenderTask& task,
-    renderer2d::RenderContext& context);
+    renderer2d::RenderContext& context,
+    double composition_time_seconds,
+    int precomp_recursion_depth);
 
 void render_layer_recursive(
     const scene::EvaluatedLayerState& layer,
@@ -221,40 +415,74 @@ void render_layer_recursive(
     const FrameRenderTask& task,
     renderer2d::RenderContext& context,
     const scene::EvaluatedCameraState& camera,
-    SurfaceRGBA& surface) {
+    SurfaceRGBA& surface,
+    int precomp_recursion_depth) {
     
     if (!layer.visible) return;
 
-    if (layer.type == scene::LayerType::Precomp && layer.nested_composition) {
-        if (g_precomp_recursion_depth < 8) {
-            g_precomp_recursion_depth++;
-            RasterizedFrame2D nested = render_composition_recursive(
-                layer.nested_composition->composition_id,
-                layer.nested_composition->layers,
-                layer.nested_composition->width,
-                layer.nested_composition->height,
-                plan, task, context);
-            g_precomp_recursion_depth--;
-            
-            std::string ck = "precomp_" + layer.id + "_" + std::to_string(task.frame_number);
-            context.precomp_cache[ck] = std::move(nested);
-        }
+    const RectI bounds = layer_bounds(layer, width, height);
+    if (intersect_rects(bounds, tile).width <= 0 || intersect_rects(bounds, tile).height <= 0) {
+        return;
     }
 
     SurfaceRGBA ls(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height));
     ls.clear(Color::transparent());
-    
-    if (layer.is_adjustment_layer) {
-        for (int y = 0; y < tile.height; ++y) {
-            for (int x = 0; x < tile.width; ++x) {
-                ls.set_pixel(x, y, surface.get_pixel(tile.x + x, tile.y + y));
+    std::optional<SurfaceRGBA> adjustment_original;
+
+    bool has_rendered_content = false;
+
+    if (layer.type == scene::LayerType::Precomp && layer.nested_composition) {
+        if (precomp_recursion_depth < 8) {
+            const std::string cache_key = build_precomp_cache_key(layer, *layer.nested_composition, layer.child_time_seconds);
+            RasterizedFrame2D nested;
+            bool cache_hit = context.policy.precomp_cache_enabled && context.precomp_cache && context.precomp_cache->lookup(cache_key, nested);
+            if (!cache_hit) {
+                nested = render_composition_recursive(
+                    layer.nested_composition->composition_id,
+                    layer.nested_composition->layers,
+                    layer.nested_composition->width,
+                    layer.nested_composition->height,
+                    plan, task, context, layer.child_time_seconds, precomp_recursion_depth + 1);
+                if (context.policy.precomp_cache_enabled && context.precomp_cache) {
+                    context.precomp_cache->store(cache_key, nested);
+                }
+            }
+
+            if (nested.surface.has_value()) {
+                const int nested_x = bounds.x - tile.x;
+                const int nested_y = bounds.y - tile.y;
+                composite_surface_at(
+                    ls,
+                    *nested.surface,
+                    nested_x,
+                    nested_y,
+                    RectI{0, 0, tile.width, tile.height},
+                    renderer2d::BlendMode::Normal);
+                has_rendered_content = true;
             }
         }
-    } else {
-        render_layer_to_surface(ls, layer, width, height, tile, plan, task, context, camera);
     }
-    
-    if (!layer.effects.empty()) {
+
+    if (layer.type != scene::LayerType::Precomp || !has_rendered_content) {
+        if (layer.is_adjustment_layer) {
+            const RectI influence = intersect_rects(bounds, tile);
+            SurfaceRGBA original(static_cast<std::uint32_t>(influence.width), static_cast<std::uint32_t>(influence.height));
+            for (int y = 0; y < influence.height; ++y) {
+                for (int x = 0; x < influence.width; ++x) {
+                    original.set_pixel(
+                        static_cast<std::uint32_t>(x),
+                        static_cast<std::uint32_t>(y),
+                        surface.get_pixel(static_cast<std::uint32_t>(influence.x - tile.x + x), static_cast<std::uint32_t>(influence.y - tile.y + y)));
+                }
+            }
+            adjustment_original = original;
+            ls = original;
+        } else {
+            render_layer_to_surface(ls, layer, width, height, tile, plan, task, context, camera);
+        }
+    }
+
+    if (context.policy.effects_enabled && !layer.effects.empty()) {
         for (const auto& effect_spec : layer.effects) {
             if (effect_spec.enabled && context.effects.has_effect(effect_spec.type)) {
                 renderer2d::EffectParams params;
@@ -268,27 +496,35 @@ void render_layer_recursive(
             }
         }
     }
-    
+
     if (layer.is_adjustment_layer) {
-        SurfaceRGBA alpha_surface(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height));
-        alpha_surface.clear(Color::transparent());
-        render_layer_to_surface(alpha_surface, layer, width, height, tile, plan, task, context, camera);
-        
+        const RectI influence = intersect_rects(bounds, tile);
+        const std::vector<std::uint8_t> mask = build_adjustment_mask(layer, influence);
+        const float alpha = std::clamp(static_cast<float>(layer.opacity), 0.0f, 1.0f);
         for (int y = 0; y < tile.height; ++y) {
             for (int x = 0; x < tile.width; ++x) {
-                float alpha = static_cast<float>(alpha_surface.get_pixel(x, y).a) / 255.0f;
-                alpha *= static_cast<float>(layer.opacity);
-                if (alpha > 0.0f) {
-                    renderer2d::Color eff_pixel = ls.get_pixel(x, y);
-                    if (alpha < 1.0f) {
-                        renderer2d::Color orig_pixel = surface.get_pixel(tile.x + x, tile.y + y);
-                        eff_pixel.r = static_cast<std::uint8_t>(orig_pixel.r * (1.0f - alpha) + eff_pixel.r * alpha);
-                        eff_pixel.g = static_cast<std::uint8_t>(orig_pixel.g * (1.0f - alpha) + eff_pixel.g * alpha);
-                        eff_pixel.b = static_cast<std::uint8_t>(orig_pixel.b * (1.0f - alpha) + eff_pixel.b * alpha);
-                        eff_pixel.a = orig_pixel.a;
-                    }
-                    surface.set_pixel(tile.x + x, tile.y + y, eff_pixel);
+                const int fx = tile.x + x;
+                const int fy = tile.y + y;
+                if (fx < influence.x || fy < influence.y || fx >= influence.x + influence.width || fy >= influence.y + influence.height) {
+                    continue;
                 }
+
+                const std::size_t local_x = static_cast<std::size_t>(fx - influence.x);
+                const std::size_t local_y = static_cast<std::size_t>(fy - influence.y);
+                const std::size_t mask_index = local_y * static_cast<std::size_t>(influence.width) + local_x;
+                if (!mask.empty() && mask[mask_index] == 0U) {
+                    continue;
+                }
+
+                const renderer2d::Color orig_pixel = adjustment_original.has_value()
+                    ? adjustment_original->get_pixel(static_cast<std::uint32_t>(local_x), static_cast<std::uint32_t>(local_y))
+                    : ls.get_pixel(static_cast<std::uint32_t>(local_x), static_cast<std::uint32_t>(local_y));
+                renderer2d::Color eff_pixel = ls.get_pixel(static_cast<std::uint32_t>(local_x), static_cast<std::uint32_t>(local_y));
+                eff_pixel.r = static_cast<std::uint8_t>(std::clamp(orig_pixel.r * (1.0f - alpha) + eff_pixel.r * alpha, 0.0f, 255.0f));
+                eff_pixel.g = static_cast<std::uint8_t>(std::clamp(orig_pixel.g * (1.0f - alpha) + eff_pixel.g * alpha, 0.0f, 255.0f));
+                eff_pixel.b = static_cast<std::uint8_t>(std::clamp(orig_pixel.b * (1.0f - alpha) + eff_pixel.b * alpha, 0.0f, 255.0f));
+                eff_pixel.a = orig_pixel.a;
+                surface.set_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), eff_pixel);
             }
         }
     } else {
@@ -303,63 +539,150 @@ RasterizedFrame2D render_composition_recursive(
     std::int64_t height,
     const RenderPlan& plan,
     const FrameRenderTask& task,
-    renderer2d::RenderContext& context) {
+    renderer2d::RenderContext& context,
+    double composition_time_seconds,
+    int precomp_recursion_depth) {
+
+    // 1. Resolution Scale (Quality Policy)
+    const float scale = context.policy.resolution_scale;
+    const std::int64_t scaled_width = static_cast<std::int64_t>(std::max(1.0f, static_cast<float>(width) * scale));
+    const std::int64_t scaled_height = static_cast<std::int64_t>(std::max(1.0f, static_cast<float>(height) * scale));
+
+    // 2. Precomp Cache Lookup
+    std::string cache_key;
+    if (context.precomp_cache) {
+        // Build a robust cache key: ID + Size + Time + QualityTier
+        cache_key = composition_id + "|" + 
+                    std::to_string(scaled_width) + "x" + std::to_string(scaled_height) + "|" +
+                    std::to_string(composition_time_seconds) + "|" +
+                    plan.quality_tier;
+        
+        RasterizedFrame2D cached;
+        if (context.precomp_cache->lookup(cache_key, cached)) {
+            return cached;
+        }
+    }
 
     RasterizedFrame2D frame;
-    frame.width = width;
-    frame.height = height;
-    frame.surface.emplace(static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height));
+    frame.width = scaled_width;
+    frame.height = scaled_height;
+    frame.surface.emplace(static_cast<std::uint32_t>(scaled_width), static_cast<std::uint32_t>(scaled_height));
     frame.surface->clear(Color::transparent());
 
     const renderer2d::detail::TransferCurve working_curve = renderer2d::detail::parse_transfer_curve(plan.working_space);
-    const int num_samples = plan.motion_blur_enabled ? std::max(1, static_cast<int>(plan.motion_blur_samples)) : 1;
+    const int requested_samples = plan.motion_blur_samples > 0 ? static_cast<int>(plan.motion_blur_samples) : 8;
+    const int capped_samples = std::min(requested_samples, context.policy.motion_blur_sample_cap);
+    const int num_samples = plan.motion_blur_enabled ? std::max(1, capped_samples) : 1;
     const double shutter_angle = std::max(0.0, std::min(360.0, plan.motion_blur_shutter_angle));
     const double frame_duration = static_cast<double>(plan.composition.frame_rate.denominator) / static_cast<double>(plan.composition.frame_rate.numerator);
     const double shutter_seconds = frame_duration * (shutter_angle / 360.0);
+    const std::vector<float> sample_weights = make_motion_blur_weights(num_samples, plan.motion_blur_curve);
 
-    AccumulationBuffer accumulation(static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height), working_curve);
-    const float sample_weight = 1.0f / static_cast<float>(num_samples);
+    struct SampleRenderState {
+        std::vector<scene::EvaluatedLayerState> layers;
+        scene::EvaluatedCameraState camera;
+    };
+
+    std::vector<SampleRenderState> sample_states;
+    sample_states.reserve(static_cast<std::size_t>(num_samples));
 
     for (int sample = 0; sample < num_samples; ++sample) {
         const double time_offset = (num_samples > 1)
             ? (static_cast<double>(sample) / static_cast<double>(num_samples - 1) - 0.5) * shutter_seconds
             : 0.0;
-        const double sample_time = static_cast<double>(task.frame_number) * frame_duration + time_offset;
+        const double sample_time = composition_time_seconds + time_offset;
 
-        std::vector<scene::EvaluatedLayerState> sample_layers = layers;
-        scene::EvaluatedCameraState sample_camera;
+        SampleRenderState sample_state;
+        sample_state.layers = layers;
 
         if (plan.scene_spec != nullptr) {
-            const auto sample_state = scene::evaluate_scene_composition_state(*plan.scene_spec, composition_id, sample_time);
-            if (sample_state.has_value()) {
-                sample_layers = sample_state->layers;
-                sample_camera = sample_state->camera;
+            const auto evaluated_state = scene::evaluate_scene_composition_state(*plan.scene_spec, composition_id, sample_time);
+            if (evaluated_state.has_value()) {
+                sample_state.layers = evaluated_state->layers;
+                sample_state.camera = evaluated_state->camera;
             }
         }
 
-        SurfaceRGBA sample_surface(static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height));
-        sample_surface.clear(Color::transparent());
+        // Apply resolution scale to layer positions/sizes in the evaluated state
+        if (scale != 1.0f) {
+            for (auto& layer : sample_state.layers) {
+                layer.local_transform.position.x *= scale;
+                layer.local_transform.position.y *= scale;
+                layer.local_transform.scale.x *= scale;
+                layer.local_transform.scale.y *= scale;
+                // Note: 3D positions might need different handling if they are in world units
+            }
+        }
 
-        std::stable_sort(sample_layers.begin(), sample_layers.end(), [&](const auto& a, const auto& b) {
-            if (a.is_3d && b.is_3d && sample_camera.available) {
-                const float dist_a = (a.world_position3 - sample_camera.position).length_squared();
-                const float dist_b = (b.world_position3 - sample_camera.position).length_squared();
+        std::stable_sort(sample_state.layers.begin(), sample_state.layers.end(), [&](const auto& a, const auto& b) {
+            if (a.is_3d && b.is_3d && sample_state.camera.available) {
+                const float dist_a = (a.world_position3 - sample_state.camera.position).length_squared();
+                const float dist_b = (b.world_position3 - sample_state.camera.position).length_squared();
                 return dist_a > dist_b;
             }
             return a.layer_index < b.layer_index;
         });
 
-        for (const auto& layer : sample_layers) {
-            if (!layer.visible || layer.type == scene::LayerType::Camera) {
-                continue;
-            }
-            render_layer_recursive(layer, width, height, RectI{0, 0, static_cast<int>(width), static_cast<int>(height)}, plan, task, context, sample_camera, sample_surface);
-        }
-
-        accumulation.add(sample_surface, sample_weight);
+        sample_states.push_back(std::move(sample_state));
     }
 
-    accumulation.resolve(*frame.surface);
+    RectI roi{0, 0, 0, 0};
+    for (const auto& sample_state : sample_states) {
+        for (const auto& layer : sample_state.layers) {
+            roi = union_rects(roi, layer_bounds(layer, scaled_width, scaled_height));
+        }
+    }
+    roi = clamp_to_frame(roi, scaled_width, scaled_height);
+
+    const int tile_size = context.policy.tile_size > 0 ? context.policy.tile_size : 256;
+    std::vector<RectI> tiles;
+    if (roi.width > 0 && roi.height > 0) {
+        for (int y = roi.y; y < roi.y + roi.height; y += tile_size) {
+            for (int x = roi.x; x < roi.x + roi.width; x += tile_size) {
+                const int tile_width = std::min(tile_size, roi.x + roi.width - x);
+                const int tile_height = std::min(tile_size, roi.y + roi.height - y);
+                tiles.push_back(RectI{x, y, tile_width, tile_height});
+            }
+        }
+    }
+
+    if (tiles.empty()) {
+        tiles.push_back(RectI{0, 0, static_cast<int>(scaled_width), static_cast<int>(scaled_height)});
+    }
+
+    for (const auto& tile : tiles) {
+        AccumulationBuffer accumulation(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height), working_curve);
+        SurfaceRGBA tile_surface(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height));
+        SurfaceRGBA tile_resolved(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height));
+
+        for (std::size_t sample = 0; sample < sample_states.size(); ++sample) {
+            tile_surface.clear(Color::transparent());
+            const auto& sample_state = sample_states[sample];
+
+            for (const auto& layer : sample_state.layers) {
+                if (!layer.visible || layer.type == scene::LayerType::Camera) {
+                    continue;
+                }
+
+                const RectI bounds = layer_bounds(layer, scaled_width, scaled_height);
+                if (intersect_rects(bounds, tile).width <= 0 || intersect_rects(bounds, tile).height <= 0) {
+                    continue;
+                }
+
+                render_layer_recursive(layer, scaled_width, scaled_height, tile, plan, task, context, sample_state.camera, tile_surface, precomp_recursion_depth);
+            }
+
+            accumulation.add(tile_surface, sample_weights[sample]);
+        }
+
+        accumulation.resolve(tile_resolved);
+        composite_surface_at(*frame.surface, tile_resolved, tile.x, tile.y, RectI{tile.x, tile.y, tile.width, tile.height}, renderer2d::BlendMode::Normal);
+    }
+
+    // 3. Store in Precomp Cache
+    if (context.precomp_cache && !cache_key.empty()) {
+        context.precomp_cache->store(cache_key, frame);
+    }
 
     return frame;
 }
@@ -371,7 +694,16 @@ RasterizedFrame2D render_evaluated_composition_2d(
     const RenderPlan& plan,
     const FrameRenderTask& task,
     renderer2d::RenderContext& context) {
-    return render_composition_recursive(state.composition_id, state.layers, state.width, state.height, plan, task, context);
+    return render_composition_recursive(
+        state.composition_id,
+        state.layers,
+        state.width,
+        state.height,
+        plan,
+        task,
+        context,
+        state.composition_time_seconds,
+        0);
 }
 
 } // namespace tachyon

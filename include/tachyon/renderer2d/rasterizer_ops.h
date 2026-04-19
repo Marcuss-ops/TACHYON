@@ -34,10 +34,24 @@ inline Color blend_mode_color(Color src, Color dest, BlendMode mode) {
         out.a = std::min(1.0f, src_linear.a + dst_linear.a);
         break;
     case BlendMode::Multiply:
-        out.r = src_linear.r * dst_linear.r + dst_linear.r * (1.0f - src_linear.a);
-        out.g = src_linear.g * dst_linear.g + dst_linear.g * (1.0f - src_linear.a);
-        out.b = src_linear.b * dst_linear.b + dst_linear.b * (1.0f - src_linear.a);
-        out.a = src_linear.a + dst_linear.a - src_linear.a * dst_linear.a;
+        {
+            const float src_a = std::clamp(src_linear.a, 0.0f, 1.0f);
+            const float dst_a = std::clamp(dst_linear.a, 0.0f, 1.0f);
+            const float src_r = src_a > 0.0f ? src_linear.r / src_a : 0.0f;
+            const float src_g = src_a > 0.0f ? src_linear.g / src_a : 0.0f;
+            const float src_b = src_a > 0.0f ? src_linear.b / src_a : 0.0f;
+            const float dst_r = dst_a > 0.0f ? dst_linear.r / dst_a : 0.0f;
+            const float dst_g = dst_a > 0.0f ? dst_linear.g / dst_a : 0.0f;
+            const float dst_b = dst_a > 0.0f ? dst_linear.b / dst_a : 0.0f;
+            const float blended_a = src_a + dst_a - src_a * dst_a;
+            const float blended_r = src_r * dst_r;
+            const float blended_g = src_g * dst_g;
+            const float blended_b = src_b * dst_b;
+            out.r = blended_r * src_a * dst_a + src_linear.r * (1.0f - dst_a) + dst_linear.r * (1.0f - src_a);
+            out.g = blended_g * src_a * dst_a + src_linear.g * (1.0f - dst_a) + dst_linear.g * (1.0f - src_a);
+            out.b = blended_b * src_a * dst_a + src_linear.b * (1.0f - dst_a) + dst_linear.b * (1.0f - src_a);
+            out.a = blended_a;
+        }
         break;
     case BlendMode::Screen:
         out.r = src_linear.r + dst_linear.r - src_linear.r * dst_linear.r;
