@@ -3,14 +3,13 @@
 #include "tachyon/renderer2d/framebuffer.h"
 #include "tachyon/runtime/render_graph.h"
 
-#include <string>
 #include <cstdint>
+#include <optional>
+#include <span>
+#include <string>
 
 namespace tachyon {
 
-/**
- * Metadata for a rasterized 2D frame.
- */
 struct RasterizedFrame2D {
     std::int64_t frame_number{0};
     std::int64_t width{0};
@@ -20,24 +19,25 @@ struct RasterizedFrame2D {
     std::string backend_name;
     std::string cache_key;
     std::string note;
+    std::optional<renderer2d::SurfaceRGBA> surface;
 };
 
 namespace renderer2d {
 
-/**
- * High-level 2D rasterizer using the CPU.
- */
 class CPURasterizer {
 public:
     static void draw_rect(Framebuffer& fb, const RectPrimitive& rect);
     static void draw_line(Framebuffer& fb, const LinePrimitive& line);
+    static void draw_textured_quad(Framebuffer& fb, const TexturedQuadPrimitive& quad);
 };
 
 } // namespace renderer2d
 
-/**
- * Current stub for the 2D rasterization path.
- */
+RasterizedFrame2D render_frame_2d(
+    const RenderPlan& plan,
+    const FrameRenderTask& task,
+    std::span<const renderer2d::DrawCommand2D> commands);
+
 RasterizedFrame2D render_frame_2d_stub(const RenderPlan& plan, const FrameRenderTask& task);
 
 } // namespace tachyon
