@@ -1,5 +1,7 @@
 #include "tachyon/timeline/evaluator.h"
 
+#include "tachyon/core/animation/easing.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -32,7 +34,8 @@ double evaluate_scalar(const AnimatedScalarSpec& spec, double time_seconds, doub
                     return next.value;
                 }
                 const double t = (time_seconds - prev.time) / span;
-                return prev.value + (next.value - prev.value) * t;
+                const double eased = animation::apply_easing(t, prev.easing, prev.bezier);
+                return prev.value + (next.value - prev.value) * eased;
             }
         }
         return spec.keyframes.back().value;
@@ -53,8 +56,10 @@ math::Vector2 evaluate_vector2(const AnimatedVector2Spec& spec, double time_seco
                 if (span <= 0.0) {
                     return next.value;
                 }
-                const float t = static_cast<float>((time_seconds - prev.time) / span);
-                return prev.value + (next.value - prev.value) * t;
+                const double t = (time_seconds - prev.time) / span;
+                const double eased = animation::apply_easing(t, prev.easing, prev.bezier);
+                const float weight = static_cast<float>(eased);
+                return prev.value + (next.value - prev.value) * weight;
             }
         }
         return spec.keyframes.back().value;

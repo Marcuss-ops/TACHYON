@@ -132,6 +132,108 @@ bool read_scalar_like(const json& value, double& out) {
     return false;
 }
 
+bool read_vector2_object(const json& value, math::Vector2& out) {
+    if (!value.is_object()) {
+        return false;
+    }
+
+    if (!value.contains("x") || !value.contains("y") || !value.at("x").is_number() || !value.at("y").is_number()) {
+        return false;
+    }
+
+    out = {
+        static_cast<float>(value.at("x").get<double>()),
+        static_cast<float>(value.at("y").get<double>())
+    };
+    return true;
+}
+
+bool parse_vector2_value(const json& value, math::Vector2& out) {
+    return read_vector2_like(value, out) || read_vector2_object(value, out);
+}
+
+animation::EasingPreset parse_easing_preset(const json& value) {
+    if (!value.is_string()) {
+        return animation::EasingPreset::None;
+    }
+
+    const std::string easing = value.get<std::string>();
+    if (easing == "ease_in" || easing == "easeIn") {
+        return animation::EasingPreset::EaseIn;
+    }
+    if (easing == "ease_out" || easing == "easeOut") {
+        return animation::EasingPreset::EaseOut;
+    }
+    if (easing == "ease_in_out" || easing == "easeInOut") {
+        return animation::EasingPreset::EaseInOut;
+    }
+    if (easing == "custom" || easing == "bezier") {
+        return animation::EasingPreset::Custom;
+    }
+    return animation::EasingPreset::None;
+}
+
+animation::CubicBezierEasing parse_bezier(const json& value) {
+    animation::CubicBezierEasing bezier = animation::CubicBezierEasing::linear();
+    if (!value.is_object()) {
+        return bezier;
+    }
+
+    if (value.contains("cx1") && value.at("cx1").is_number()) {
+        bezier.cx1 = value.at("cx1").get<double>();
+    }
+    if (value.contains("cy1") && value.at("cy1").is_number()) {
+        bezier.cy1 = value.at("cy1").get<double>();
+    }
+    if (value.contains("cx2") && value.at("cx2").is_number()) {
+        bezier.cx2 = value.at("cx2").get<double>();
+    }
+    if (value.contains("cy2") && value.at("cy2").is_number()) {
+        bezier.cy2 = value.at("cy2").get<double>();
+    }
+    return bezier;
+}
+
+template <typename KeyframeT>
+bool parse_keyframe_common(const json& object, KeyframeT& keyframe, const std::string& path, DiagnosticBag& diagnostics) {
+    if (!object.contains("time") || !object.at("time").is_number()) {
+        diagnostics.add_error("scene.layer.keyframe.time_invalid", "keyframe.time must be numeric", path + ".time");
+        return false;
+    }
+
+    keyframe.time = object.at("time").get<double>();
+    if (object.contains("easing")) {
+        keyframe.easing = parse_easing_preset(object.at("easing"));
+        if (keyframe.easing == animation::EasingPreset::Custom && object.contains("bezier")) {
+            keyframe.bezier = parse_bezier(object.at("bezier"));
+        }
+    }
+    return true;
+}
+
+bool parse_scalar_keyframe(const json& object, ScalarKeyframeSpec& keyframe, const std::string& path, DiagnosticBag& diagnostics) {
+    if (!parse_keyframe_common(object, keyframe, path, diagnostics)) {
+        return false;
+    }
+    if (!object.contains("value") || !object.at("value").is_number()) {
+        diagnostics.add_error("scene.layer.keyframe.value_invalid", "scalar keyframe value must be numeric", path + ".value");
+        return false;
+    }
+    keyframe.value = object.at("value").get<double>();
+    return true;
+}
+
+bool parse_vector2_keyframe(const json& object, Vector2KeyframeSpec& keyframe, const std::string& path, DiagnosticBag& diagnostics) {
+    if (!parse_keyframe_common(object, keyframe, path, diagnostics)) {
+        return false;
+    }
+    if (!object.contains("value") || !parse_vector2_value(object.at("value"), keyframe.value)) {
+        diagnostics.add_error("scene.layer.keyframe.value_invalid", "vector2 keyframe value must be array or object", path + ".value");
+        return false;
+    }
+    return true;
+}
+
 void parse_optional_scalar_property(const json& object, const char* key, AnimatedScalarSpec& property, const std::string& path, DiagnosticBag& diagnostics) {
     if (!object.contains(key) || object.at(key).is_null()) {
         return;
@@ -146,13 +248,76 @@ void parse_optional_scalar_property(const json& object, const char* key, Animate
     if (value.is_object()) {
         if (value.contains("value") && value.at("value").is_number()) {
             property.value = value.at("value").get<double>();
+        }
+
+        if (value.contains("keyframes") && value.at("keyframes").is_array()) {
+            const auto& keyframes = value.at("keyframes");
+            for (std::size_t index = 0; index < keyframes.size(); ++index) {
+                if (!keyframes[index].is_object()) {
+                    diagnostics.add_error("scene.layer.keyframe.invalid", "scalar keyframe entries must be objects", make_path(path, key) + ".keyframes[" + std::to_string(index) + "]");
+                    continue;
+                }
+                ScalarKeyframeSpec keyframe;
+                if (parse_scalar_keyframe(keyframes[index], keyframe, make_path(path, key) + ".keyframes[" + std::to_string(index) + "]", diagnostics)) {
+                    property.keyframes.push_back(keyframe);
+                }
+            }
             return;
         }
-        diagnostics.add_error("scene.layer.property_invalid", std::string(key) + " must contain a numeric value when provided as an object", make_path(path, key));
+
+        if (property.value.has_value()) {
+            return;
+        }
+
+        diagnostics.add_error("scene.layer.property_invalid", std::string(key) + " must contain a numeric value or keyframes when provided as an object", make_path(path, key));
         return;
     }
 
     diagnostics.add_error("scene.layer.property_invalid", std::string(key) + " must be a number or object", make_path(path, key));
+}
+
+void parse_optional_vector_property(const json& object, const char* key, AnimatedVector2Spec& property, const std::string& path, DiagnosticBag& diagnostics) {
+    if (!object.contains(key) || object.at(key).is_null()) {
+        return;
+    }
+
+    const auto& value = object.at(key);
+    math::Vector2 vector_value;
+    if (parse_vector2_value(value, vector_value)) {
+        property.value = vector_value;
+        return;
+    }
+
+    if (value.is_object()) {
+        if (value.contains("value") && parse_vector2_value(value.at("value"), vector_value)) {
+            property.value = vector_value;
+            return;
+        }
+
+        if (value.contains("keyframes") && value.at("keyframes").is_array()) {
+            const auto& keyframes = value.at("keyframes");
+            for (std::size_t index = 0; index < keyframes.size(); ++index) {
+                if (!keyframes[index].is_object()) {
+                    diagnostics.add_error("scene.layer.keyframe.invalid", "vector keyframe entries must be objects", make_path(path, key) + ".keyframes[" + std::to_string(index) + "]");
+                    continue;
+                }
+                Vector2KeyframeSpec keyframe;
+                if (parse_vector2_keyframe(keyframes[index], keyframe, make_path(path, key) + ".keyframes[" + std::to_string(index) + "]", diagnostics)) {
+                    property.keyframes.push_back(keyframe);
+                }
+            }
+            return;
+        }
+
+        if (property.value.has_value()) {
+            return;
+        }
+
+        diagnostics.add_error("scene.layer.property_invalid", std::string(key) + " must contain a vector value or keyframes when provided as an object", make_path(path, key));
+        return;
+    }
+
+    diagnostics.add_error("scene.layer.property_invalid", std::string(key) + " must be a vector or object", make_path(path, key));
 }
 
 void parse_transform(const json& object, LayerSpec& layer, const std::string& path, DiagnosticBag& diagnostics) {
@@ -192,6 +357,46 @@ void parse_transform(const json& object, LayerSpec& layer, const std::string& pa
             diagnostics.add_error("scene.transform.scale_invalid", "scale must be a number or array with at least two numbers", make_path(path, "transform.scale"));
         }
     }
+
+    parse_optional_vector_property(object, "position_property", layer.transform.position_property, path, diagnostics);
+    parse_optional_scalar_property(object, "rotation_property", layer.transform.rotation_property, path, diagnostics);
+    parse_optional_vector_property(object, "scale_property", layer.transform.scale_property, path, diagnostics);
+}
+
+void parse_shape_path(const json& object, LayerSpec& layer, const std::string& path, DiagnosticBag& diagnostics) {
+    if (!object.contains("shape_path") || object.at("shape_path").is_null()) {
+        return;
+    }
+
+    const auto& shape_path = object.at("shape_path");
+    if (!shape_path.is_object()) {
+        diagnostics.add_error("scene.layer.shape_path_invalid", "shape_path must be an object", make_path(path, "shape_path"));
+        return;
+    }
+
+    if (!shape_path.contains("points") || !shape_path.at("points").is_array()) {
+        diagnostics.add_error("scene.layer.shape_path_invalid", "shape_path.points must be an array", make_path(path, "shape_path.points"));
+        return;
+    }
+
+    ShapePathSpec parsed;
+    if (shape_path.contains("closed") && shape_path.at("closed").is_boolean()) {
+        parsed.closed = shape_path.at("closed").get<bool>();
+    }
+
+    const auto& points = shape_path.at("points");
+    for (std::size_t index = 0; index < points.size(); ++index) {
+        ShapePathPointSpec point;
+        if (!parse_vector2_value(points[index], point.position)) {
+            diagnostics.add_error("scene.layer.shape_path_point_invalid", "shape_path points must be vector2-like", make_path(path, "shape_path.points[" + std::to_string(index) + "]"));
+            continue;
+        }
+        parsed.points.push_back(point);
+    }
+
+    if (!parsed.points.empty()) {
+        layer.shape_path = std::move(parsed);
+    }
 }
 
 LayerSpec parse_layer(const json& object, const std::string& path, DiagnosticBag& diagnostics) {
@@ -216,6 +421,9 @@ LayerSpec parse_layer(const json& object, const std::string& path, DiagnosticBag
     if (object.contains("transform") && object.at("transform").is_object()) {
         parse_transform(object.at("transform"), layer, path, diagnostics);
     }
+
+    parse_optional_scalar_property(object, "opacity_property", layer.opacity_property, path, diagnostics);
+    parse_shape_path(object, layer, path, diagnostics);
 
     parse_optional_scalar_property(object, "time_remap", layer.time_remap_property, path, diagnostics);
 
@@ -487,6 +695,10 @@ ValidationResult validate_scene_spec(const SceneSpec& scene) {
 
             if (layer.type == "mask" && layer.opacity <= 0.0) {
                 result.diagnostics.add_warning("scene.layer.mask_transparent", "mask layers with zero opacity do not affect clipping", layer_path + ".opacity");
+            }
+
+            if (layer.type == "shape" && (!layer.shape_path.has_value() || layer.shape_path->points.empty())) {
+                result.diagnostics.add_warning("scene.layer.shape_path_missing", "shape layers should define shape_path for real geometry", layer_path + ".shape_path");
             }
         }
     }

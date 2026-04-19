@@ -97,6 +97,10 @@ bool run_scene_evaluator_tests() {
             {2.0, 90.0}
         };
         layer.transform.scale_property.value = tachyon::math::Vector2{1.0f, 1.0f};
+        layer.opacity_property.keyframes = {
+            {0.0, 0.0, tachyon::animation::EasingPreset::EaseIn},
+            {2.0, 1.0}
+        };
 
         tachyon::CompositionSpec composition;
         composition.id = "main";
@@ -111,7 +115,7 @@ bool run_scene_evaluator_tests() {
         check_true(nearly_equal(evaluated.composition_time_seconds, 2.0), "frame 60 at 30 fps should evaluate at 2 seconds");
         check_true(evaluated.layers.size() == 1, "composition should evaluate exactly one layer");
         check_true(nearly_equal(evaluated.layers[0].local_time_seconds, 1.0), "layer local time should be composition time minus start time");
-        check_true(nearly_equal(evaluated.layers[0].opacity, 0.5), "opacity should interpolate linearly at local time 1 second");
+        check_true(evaluated.layers[0].opacity < 0.5, "opacity should ease in instead of interpolating linearly");
         check_true(nearly_equal(evaluated.layers[0].position.x, 50.0), "position x should interpolate linearly");
         check_true(nearly_equal(evaluated.layers[0].position.y, 25.0), "position y should interpolate linearly");
         check_true(nearly_equal(evaluated.layers[0].rotation_degrees, 45.0), "rotation should interpolate linearly");

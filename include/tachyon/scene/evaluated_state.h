@@ -15,6 +15,15 @@
 
 namespace tachyon::scene {
 
+struct EvaluatedShapePathPoint {
+    math::Vector2 position{math::Vector2::zero()};
+};
+
+struct EvaluatedShapePath {
+    std::vector<EvaluatedShapePathPoint> points;
+    bool closed{true};
+};
+
 struct EvaluatedLayerState {
     std::size_t layer_index{0};
     std::size_t depth{0};
@@ -43,6 +52,7 @@ struct EvaluatedLayerState {
     math::Vector2 world_scale{math::Vector2::one()};
     std::optional<std::string> parent;
     std::optional<std::size_t> parent_index;
+    std::optional<EvaluatedShapePath> shape_path;
 };
 
 struct EvaluatedCameraState {

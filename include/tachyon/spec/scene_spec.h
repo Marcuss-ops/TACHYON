@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tachyon/core/math/vector2.h"
+#include "tachyon/core/animation/easing.h"
 #include "tachyon/runtime/diagnostics.h"
 
 #include <cstdint>
@@ -41,11 +42,24 @@ struct FrameRate {
 struct ScalarKeyframeSpec {
     double time{0.0};
     double value{0.0};
+    animation::EasingPreset easing{animation::EasingPreset::None};
+    animation::CubicBezierEasing bezier{animation::CubicBezierEasing::linear()};
 };
 
 struct Vector2KeyframeSpec {
     double time{0.0};
     math::Vector2 value{math::Vector2::zero()};
+    animation::EasingPreset easing{animation::EasingPreset::None};
+    animation::CubicBezierEasing bezier{animation::CubicBezierEasing::linear()};
+};
+
+struct ShapePathPointSpec {
+    math::Vector2 position{math::Vector2::zero()};
+};
+
+struct ShapePathSpec {
+    std::vector<ShapePathPointSpec> points;
+    bool closed{true};
 };
 
 struct AnimatedScalarSpec {
@@ -88,6 +102,7 @@ struct LayerSpec {
     double opacity{1.0};
     std::optional<std::string> parent;
     Transform2D transform;
+    std::optional<ShapePathSpec> shape_path;
     AnimatedScalarSpec opacity_property;
     AnimatedScalarSpec time_remap_property;
 };

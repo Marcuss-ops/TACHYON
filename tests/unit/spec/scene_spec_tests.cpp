@@ -255,6 +255,54 @@ bool run_scene_spec_tests() {
     }
 
     {
+        const std::string text = R"({
+            "spec_version": "1.0",
+            "project": { "id": "proj_shape", "name": "Shape Scene" },
+            "compositions": [
+                {
+                    "id": "main",
+                    "name": "Main",
+                    "width": 320,
+                    "height": 180,
+                    "duration": 10,
+                    "frame_rate": 30,
+                    "layers": [
+                        {
+                            "id": "shape_01",
+                            "type": "shape",
+                            "name": "Triangle",
+                            "opacity_property": {
+                                "keyframes": [
+                                    { "time": 0, "value": 0, "easing": "ease_in" },
+                                    { "time": 1, "value": 1 }
+                                ]
+                            },
+                            "shape_path": {
+                                "closed": true,
+                                "points": [[0, 0], [40, 0], [20, 30]]
+                            }
+                        }
+                    ]
+                }
+            ]
+        })";
+
+        const auto parsed = tachyon::parse_scene_spec_json(text);
+        check_true(parsed.value.has_value(), "shape scene should parse");
+        if (parsed.value.has_value()) {
+            const auto& layer = parsed.value->compositions.front().layers.front();
+            check_true(layer.shape_path.has_value(), "shape path should parse");
+            if (layer.shape_path.has_value()) {
+                check_true(layer.shape_path->points.size() == 3, "shape path should keep all points");
+            }
+            check_true(layer.opacity_property.keyframes.size() == 2, "opacity keyframes should parse");
+            if (!layer.opacity_property.keyframes.empty()) {
+                check_true(layer.opacity_property.keyframes.front().easing == tachyon::animation::EasingPreset::EaseIn, "keyframe easing should parse");
+            }
+        }
+    }
+
+    {
         const auto path = tests_root() / "fixtures" / "scenes" / "canonical_scene.json";
         const auto job_path = tests_root() / "fixtures" / "jobs" / "canonical_render_job.json";
         const std::vector<std::string> args = {
