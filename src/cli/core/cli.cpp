@@ -1,6 +1,7 @@
 #include "tachyon/core/cli.h"
 
 #include "tachyon/core/core.h"
+#include "tachyon/media/asset_resolution.h"
 #include "tachyon/renderer2d/rasterizer.h"
 #include "tachyon/runtime/render_graph.h"
 #include "tachyon/runtime/render_plan.h"
@@ -33,6 +34,20 @@ std::string require_argument(const std::vector<std::string>& args, std::size_t& 
     return args[index];
 }
 
+std::filesystem::path scene_asset_root(const std::filesystem::path& scene_path) {
+    const auto scene_dir = scene_path.parent_path();
+    if (scene_dir.empty()) {
+        return scene_dir;
+    }
+
+    const auto folder_name = scene_dir.filename().string();
+    if ((folder_name == "scenes" || folder_name == "project") && !scene_dir.parent_path().empty()) {
+        return scene_dir.parent_path();
+    }
+
+    return scene_dir;
+}
+
 void print_help(std::ostream& out) {
     out << "TACHYON " << version_string() << '\n';
     out << "Usage:\n";
@@ -51,6 +66,12 @@ bool validate_scene_file(const std::filesystem::path& scene_path, std::ostream& 
     const auto validation = validate_scene_spec(*parsed.value);
     if (!validation.ok()) {
         print_diagnostics(validation.diagnostics, err);
+        return false;
+    }
+
+    const auto assets = resolve_assets(*parsed.value, scene_asset_root(scene_path));
+    if (!assets.value.has_value()) {
+        print_diagnostics(assets.diagnostics, err);
         return false;
     }
 
@@ -86,6 +107,7 @@ void print_execution_plan(const RenderExecutionPlan& execution_plan, const Raste
     out << "composition: " << execution_plan.render_plan.composition_target << " (" << execution_plan.render_plan.composition.width << "x" << execution_plan.render_plan.composition.height
         << " @ " << execution_plan.render_plan.composition.frame_rate.value() << " fps, " << execution_plan.render_plan.composition.layer_count << " layers)\n";
     out << "frames: " << execution_plan.render_plan.frame_range.start << " -> " << execution_plan.render_plan.frame_range.end << '\n';
+    out << "resolved assets: " << execution_plan.resolved_asset_count << '\n';
     out << "graph steps: " << execution_plan.steps.size() << '\n';
     out << "frame tasks: " << execution_plan.frame_tasks.size() << '\n';
     out << "first frame cache key: " << rasterized_first_frame.cache_key << '\n';
@@ -200,7 +222,13 @@ int run_cli(int argc, char** argv) {
             return 2;
         }
 
-        const auto execution_plan = build_render_execution_plan(*plan.value);
+        const auto assets = resolve_assets(*scene.value, scene_asset_root(scene_path));
+        if (!assets.value.has_value()) {
+            print_diagnostics(assets.diagnostics, std::cerr);
+            return 2;
+        }
+
+        const auto execution_plan = build_render_execution_plan(*plan.value, assets.value->size());
         if (!execution_plan.value.has_value()) {
             print_diagnostics(execution_plan.diagnostics, std::cerr);
             return 2;

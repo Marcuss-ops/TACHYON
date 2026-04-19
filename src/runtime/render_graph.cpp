@@ -75,7 +75,7 @@ RenderGraphStep make_step(std::string id, RenderStepKind kind, std::string label
 
 } // namespace
 
-ResolutionResult<RenderExecutionPlan> build_render_execution_plan(const RenderPlan& plan) {
+ResolutionResult<RenderExecutionPlan> build_render_execution_plan(const RenderPlan& plan, std::size_t resolved_asset_count) {
     ResolutionResult<RenderExecutionPlan> result;
 
     if (plan.frame_range.end < plan.frame_range.start) {
@@ -85,6 +85,7 @@ ResolutionResult<RenderExecutionPlan> build_render_execution_plan(const RenderPl
 
     RenderExecutionPlan execution;
     execution.render_plan = plan;
+    execution.resolved_asset_count = resolved_asset_count;
 
     execution.steps.push_back(make_step("resolve-scene", RenderStepKind::ResolveScene, "resolve scene inputs"));
     execution.steps.push_back(make_step("resolve-composition", RenderStepKind::ResolveComposition, "resolve target composition"));

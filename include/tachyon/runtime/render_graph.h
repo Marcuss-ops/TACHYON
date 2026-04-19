@@ -45,11 +45,12 @@ struct FrameRenderTask {
 
 struct RenderExecutionPlan {
     RenderPlan render_plan;
+    std::size_t resolved_asset_count{0};
     std::vector<RenderGraphStep> steps;
     std::vector<FrameRenderTask> frame_tasks;
 };
 
-ResolutionResult<RenderExecutionPlan> build_render_execution_plan(const RenderPlan& plan);
+ResolutionResult<RenderExecutionPlan> build_render_execution_plan(const RenderPlan& plan, std::size_t resolved_asset_count = 0);
 FrameCacheKey build_frame_cache_key(const RenderPlan& plan, std::int64_t frame_number);
 bool frame_cache_entry_matches(const FrameCacheEntry& entry, const FrameCacheKey& expected_key);
 std::string render_step_kind_string(RenderStepKind kind);
