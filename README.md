@@ -27,6 +27,16 @@ It is a native engine designed to consume declarative scene specifications and p
 This repository is intentionally starting from first principles.
 The current focus is on locking architecture, contracts, and subsystem boundaries before implementation depth grows.
 
+## Local toolchain
+
+If `cmake` or `msbuild` are not visible in a fresh shell, run:
+
+```powershell
+.\scripts\Enable-DevTools.ps1 -PersistUserPath
+```
+
+This script adds the local CMake and Visual Studio Build Tools locations to the current session and can persist them to the user PATH.
+
 ## Documentation
 
 The canonical navigation entry for the documentation set is:
