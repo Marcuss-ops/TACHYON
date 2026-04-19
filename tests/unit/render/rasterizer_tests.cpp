@@ -1,4 +1,5 @@
 #include "tachyon/renderer2d/rasterizer.h"
+#include "tachyon/renderer2d/draw_list_rasterizer.h"
 #include "tachyon/renderer2d/framebuffer.h"
 
 #include <filesystem>
@@ -180,6 +181,41 @@ bool run_rasterizer_tests() {
         check_true(frame.surface->get_pixel(2, 2).r == 0, "Clip prevents drawing outside the clip rect");
         check_true(frame.surface->get_pixel(5, 5).r == 255, "Clip allows drawing inside the clip rect");
         check_true(frame.surface->save_png("tests/output/frame_renderer_clipped.png"), "Frame renderer surface is savable");
+    }
+
+    {
+        RenderPlan plan;
+        plan.composition.width = 32;
+        plan.composition.height = 32;
+        plan.composition.layer_count = 2;
+
+        FrameRenderTask task;
+        task.frame_number = 21;
+        task.cache_key.value = "frame-z-order";
+
+        renderer2d::DrawList2D draw_list;
+
+        renderer2d::DrawCommand2D clear;
+        clear.kind = renderer2d::DrawCommandKind::Clear;
+        clear.clear.emplace(renderer2d::ClearCommand{Color::black()});
+        draw_list.commands.push_back(clear);
+
+        renderer2d::DrawCommand2D top_layer;
+        top_layer.kind = renderer2d::DrawCommandKind::SolidRect;
+        top_layer.z_order = 10;
+        top_layer.solid_rect.emplace(renderer2d::SolidRectCommand{RectI{4, 4, 16, 16}, {255, 0, 0, 255}, 1.0f});
+        draw_list.commands.push_back(top_layer);
+
+        renderer2d::DrawCommand2D bottom_layer;
+        bottom_layer.kind = renderer2d::DrawCommandKind::SolidRect;
+        bottom_layer.z_order = 0;
+        bottom_layer.solid_rect.emplace(renderer2d::SolidRectCommand{RectI{4, 4, 16, 16}, {0, 0, 255, 255}, 1.0f});
+        draw_list.commands.push_back(bottom_layer);
+
+        RasterizedFrame2D frame = render_draw_list_2d(plan, task, draw_list);
+        check_true(frame.surface.has_value(), "Draw list rasterizer returns a surface");
+        check_true(frame.surface->get_pixel(8, 8).r == 255, "Lower z-order command should render before the higher z-order command");
+        check_true(frame.surface->get_pixel(8, 8).b == 0, "Higher z-order command should be on top");
     }
 
     {

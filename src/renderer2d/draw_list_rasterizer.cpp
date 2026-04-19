@@ -2,6 +2,9 @@
 
 #include "tachyon/renderer2d/rasterizer_ops.h"
 
+#include <algorithm>
+#include <vector>
+
 namespace tachyon {
 namespace {
 
@@ -37,44 +40,58 @@ RasterizedFrame2D render_draw_list_2d(
 
     frame.surface->clear(renderer2d::Color::transparent());
 
+    std::vector<const renderer2d::DrawCommand2D*> ordered_commands;
+    ordered_commands.reserve(draw_list.commands.size());
     for (const auto& command : draw_list.commands) {
-        if (command.clip.has_value()) {
-            frame.surface->set_clip_rect(*command.clip);
+        ordered_commands.push_back(&command);
+    }
+
+    if (!ordered_commands.empty()) {
+        const bool has_clear = ordered_commands.front()->kind == renderer2d::DrawCommandKind::Clear;
+        const auto sort_begin = has_clear ? ordered_commands.begin() + 1 : ordered_commands.begin();
+        std::stable_sort(sort_begin, ordered_commands.end(), [](const auto* left, const auto* right) {
+            return left->z_order < right->z_order;
+        });
+    }
+
+    for (const auto* command : ordered_commands) {
+        if (command->clip.has_value()) {
+            frame.surface->set_clip_rect(*command->clip);
         } else {
             frame.surface->reset_clip_rect();
         }
 
-        switch (command.kind) {
+        switch (command->kind) {
             case renderer2d::DrawCommandKind::Clear:
-                if (command.clear.has_value()) {
-                    frame.surface->clear(command.clear->color);
+                if (command->clear.has_value()) {
+                    frame.surface->clear(command->clear->color);
                 }
                 break;
             case renderer2d::DrawCommandKind::SolidRect:
-                if (command.solid_rect.has_value()) {
+                if (command->solid_rect.has_value()) {
                     renderer2d::CPURasterizer::draw_rect(*frame.surface,
-                        renderer2d::RectPrimitive{command.solid_rect->rect.x, command.solid_rect->rect.y,
-                                                  command.solid_rect->rect.width, command.solid_rect->rect.height,
-                                                  command.solid_rect->color});
+                        renderer2d::RectPrimitive{command->solid_rect->rect.x, command->solid_rect->rect.y,
+                                                  command->solid_rect->rect.width, command->solid_rect->rect.height,
+                                                  command->solid_rect->color});
                 }
                 break;
             case renderer2d::DrawCommandKind::Line:
-                if (command.line.has_value()) {
+                if (command->line.has_value()) {
                     renderer2d::CPURasterizer::draw_line(*frame.surface,
-                        renderer2d::LinePrimitive{command.line->x0, command.line->y0,
-                                                  command.line->x1, command.line->y1,
-                                                  command.line->color});
+                        renderer2d::LinePrimitive{command->line->x0, command->line->y0,
+                                                  command->line->x1, command->line->y1,
+                                                  command->line->color});
                 }
                 break;
             case renderer2d::DrawCommandKind::TexturedQuad:
-                if (command.textured_quad.has_value()) {
-                    const int min_x = static_cast<int>(std::min({command.textured_quad->p0.x, command.textured_quad->p1.x, command.textured_quad->p2.x, command.textured_quad->p3.x}));
-                    const int min_y = static_cast<int>(std::min({command.textured_quad->p0.y, command.textured_quad->p1.y, command.textured_quad->p2.y, command.textured_quad->p3.y}));
-                    const int max_x = static_cast<int>(std::max({command.textured_quad->p0.x, command.textured_quad->p1.x, command.textured_quad->p2.x, command.textured_quad->p3.x}));
-                    const int max_y = static_cast<int>(std::max({command.textured_quad->p0.y, command.textured_quad->p1.y, command.textured_quad->p2.y, command.textured_quad->p3.y}));
+                if (command->textured_quad.has_value()) {
+                    const int min_x = static_cast<int>(std::min({command->textured_quad->p0.x, command->textured_quad->p1.x, command->textured_quad->p2.x, command->textured_quad->p3.x}));
+                    const int min_y = static_cast<int>(std::min({command->textured_quad->p0.y, command->textured_quad->p1.y, command->textured_quad->p2.y, command->textured_quad->p3.y}));
+                    const int max_x = static_cast<int>(std::max({command->textured_quad->p0.x, command->textured_quad->p1.x, command->textured_quad->p2.x, command->textured_quad->p3.x}));
+                    const int max_y = static_cast<int>(std::max({command->textured_quad->p0.y, command->textured_quad->p1.y, command->textured_quad->p2.y, command->textured_quad->p3.y}));
                     renderer2d::CPURasterizer::draw_rect(*frame.surface,
                         renderer2d::RectPrimitive{min_x, min_y, std::max(1, max_x - min_x), std::max(1, max_y - min_y),
-                                                  placeholder_textured_color(command.textured_quad->opacity)});
+                                                  placeholder_textured_color(command->textured_quad->opacity)});
                 }
                 break;
         }
