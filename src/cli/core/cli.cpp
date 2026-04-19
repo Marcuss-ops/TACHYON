@@ -53,6 +53,7 @@ void print_help(std::ostream& out) {
     out << "Usage:\n";
     out << "  tachyon version\n";
     out << "  tachyon validate --scene <file> [--job <file>]\n";
+    out << "  tachyon inspect --scene <file> [--job <file>]\n";
     out << "  tachyon render --scene <file> --job <file> [--out <file>]\n";
 }
 
@@ -100,6 +101,45 @@ bool validate_job_file(const std::filesystem::path& job_path, std::ostream& out,
     return true;
 }
 
+void print_scene_summary(const SceneSpec& scene, std::ostream& out) {
+    out << "scene summary\n";
+    out << "  project: " << scene.project.id << " / " << scene.project.name << '\n';
+    out << "  spec version: " << scene.spec_version << '\n';
+    out << "  assets: " << scene.assets.size() << '\n';
+    out << "  compositions: " << scene.compositions.size() << '\n';
+}
+
+void print_asset_summary(const AssetResolutionTable& assets, std::ostream& out) {
+    out << "assets\n";
+    out << "  resolved: " << assets.size() << '\n';
+    for (const auto& [asset_id, asset] : assets) {
+        out << "  - " << asset_id << " [" << asset.type << "] -> " << asset.absolute_path.string() << '\n';
+    }
+}
+
+void print_render_plan_summary(const RenderPlan& plan, std::ostream& out) {
+    out << "render plan\n";
+    out << "  job: " << plan.job_id << '\n';
+    out << "  scene ref: " << plan.scene_ref << '\n';
+    out << "  composition target: " << plan.composition_target << '\n';
+    out << "  frame range: " << plan.frame_range.start << " -> " << plan.frame_range.end << '\n';
+    out << "  output: " << plan.output.destination.path << '\n';
+}
+
+void print_render_graph_summary(const RenderExecutionPlan& execution_plan, std::ostream& out) {
+    out << "render graph\n";
+    out << "  resolved assets: " << execution_plan.resolved_asset_count << '\n';
+    out << "  steps: " << execution_plan.steps.size() << '\n';
+    for (const auto& step : execution_plan.steps) {
+        out << "  - " << step.id << " [" << render_step_kind_string(step.kind) << "]";
+        if (step.frame_number.has_value()) {
+            out << " frame=" << *step.frame_number;
+        }
+        out << '\n';
+    }
+    out << "  frame tasks: " << execution_plan.frame_tasks.size() << '\n';
+}
+
 void print_execution_plan(const RenderExecutionPlan& execution_plan, const RasterizedFrame2D& rasterized_first_frame, std::ostream& out) {
     out << "render execution plan valid\n";
     out << "scene: " << execution_plan.render_plan.scene_ref << '\n';
@@ -114,6 +154,60 @@ void print_execution_plan(const RenderExecutionPlan& execution_plan, const Raste
     out << "2d stub backend: " << rasterized_first_frame.backend_name << '\n';
     out << "2d stub draw ops: " << rasterized_first_frame.estimated_draw_ops << '\n';
     out << "note: pixel rendering is not wired yet; this command validates the graph and stub raster slice\n";
+}
+
+bool inspect_scene_file(const std::filesystem::path& scene_path, const std::filesystem::path& job_path, std::ostream& out, std::ostream& err) {
+    const auto scene = parse_scene_spec_file(scene_path);
+    if (!scene.value.has_value()) {
+        print_diagnostics(scene.diagnostics, err);
+        return false;
+    }
+
+    const auto scene_validation = validate_scene_spec(*scene.value);
+    if (!scene_validation.ok()) {
+        print_diagnostics(scene_validation.diagnostics, err);
+        return false;
+    }
+
+    const auto assets = resolve_assets(*scene.value, scene_asset_root(scene_path));
+    if (!assets.value.has_value()) {
+        print_diagnostics(assets.diagnostics, err);
+        return false;
+    }
+
+    print_scene_summary(*scene.value, out);
+    print_asset_summary(*assets.value, out);
+
+    if (!job_path.empty()) {
+        const auto job = parse_render_job_file(job_path);
+        if (!job.value.has_value()) {
+            print_diagnostics(job.diagnostics, err);
+            return false;
+        }
+
+        const auto job_validation = validate_render_job(*job.value);
+        if (!job_validation.ok()) {
+            print_diagnostics(job_validation.diagnostics, err);
+            return false;
+        }
+
+        const auto plan = build_render_plan(*scene.value, *job.value);
+        if (!plan.value.has_value()) {
+            print_diagnostics(plan.diagnostics, err);
+            return false;
+        }
+
+        const auto execution_plan = build_render_execution_plan(*plan.value, assets.value->size());
+        if (!execution_plan.value.has_value()) {
+            print_diagnostics(execution_plan.diagnostics, err);
+            return false;
+        }
+
+        print_render_plan_summary(*plan.value, out);
+        print_render_graph_summary(*execution_plan.value, out);
+    }
+
+    return true;
 }
 
 } // namespace
@@ -177,6 +271,19 @@ int run_cli(int argc, char** argv) {
         }
 
         if (!job_path.empty() && !validate_job_file(job_path, std::cout, std::cerr, true)) {
+            return 2;
+        }
+
+        return 0;
+    }
+
+    if (command == "inspect") {
+        if (scene_path.empty()) {
+            std::cerr << "--scene is required\n";
+            return 1;
+        }
+
+        if (!inspect_scene_file(scene_path, job_path, std::cout, std::cerr)) {
             return 2;
         }
 
