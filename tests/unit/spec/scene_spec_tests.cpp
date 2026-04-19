@@ -143,6 +143,40 @@ bool run_scene_spec_tests() {
         const auto job_path = tests_root() / "fixtures" / "jobs" / "canonical_render_job.json";
         const std::vector<std::string> args = {
             "tachyon",
+            "validate",
+            "--scene",
+            path.string(),
+            "--job",
+            job_path.string(),
+            "--json"
+        };
+
+        std::vector<char*> argv;
+        argv.reserve(args.size());
+        for (const auto& arg : args) {
+            argv.push_back(const_cast<char*>(arg.c_str()));
+        }
+
+        StreamCapture capture_out(std::cout);
+        StreamCapture capture_err(std::cerr);
+        const int exit_code = tachyon::run_cli(static_cast<int>(argv.size()), argv.data());
+        check_true(exit_code == 0, "CLI validate --json should accept canonical scene and job fixtures");
+        check_true(capture_err.str().empty(), "CLI validate --json should not emit errors for canonical fixtures");
+
+        const auto parsed_json = nlohmann::json::parse(capture_out.str());
+        check_true(parsed_json["schema_version"] == "1.0", "validate JSON should include schema version");
+        check_true(parsed_json["scene_valid"].get<bool>(), "validate JSON should mark the scene as valid");
+        check_true(parsed_json["job_valid"].get<bool>(), "validate JSON should mark the job as valid");
+        check_true(parsed_json.contains("scene"), "validate JSON should contain scene");
+        check_true(parsed_json.contains("assets"), "validate JSON should contain assets");
+        check_true(parsed_json.contains("job"), "validate JSON should contain job");
+    }
+
+    {
+        const auto path = tests_root() / "fixtures" / "scenes" / "canonical_scene.json";
+        const auto job_path = tests_root() / "fixtures" / "jobs" / "canonical_render_job.json";
+        const std::vector<std::string> args = {
+            "tachyon",
             "inspect",
             "--scene",
             path.string(),
@@ -200,7 +234,7 @@ bool run_scene_spec_tests() {
         check_true(parsed_json.contains("render_plan"), "inspect JSON should contain render_plan");
         check_true(parsed_json.contains("render_graph"), "inspect JSON should contain render_graph");
         check_true(parsed_json["render_graph"].contains("steps"), "inspect JSON should contain graph steps");
-        check_true(parsed_json["render_graph"]["steps"].size() >= 3, "inspect JSON should include explicit graph steps");
+        check_true(parsed_json["render_graph"]["steps"].size() >= 4, "inspect JSON should include explicit graph steps");
         check_true(parsed_json["render_graph"]["steps"][3]["dependencies"].is_array(), "inspect JSON should include step dependencies");
         check_true(parsed_json["render_graph"]["steps"][3]["dependencies"].size() == 1, "raster step should carry one dependency");
     }
@@ -233,6 +267,41 @@ bool run_scene_spec_tests() {
         check_true(capture_out.str().find("2d stub backend: cpu-2d-stub") != std::string::npos, "CLI render should report 2D stub backend");
         check_true(capture_out.str().find("composition: main") != std::string::npos, "CLI render should print resolved composition info");
         check_true(capture_err.str().empty(), "CLI render should not emit errors for canonical fixtures");
+    }
+
+    {
+        const auto path = tests_root() / "fixtures" / "scenes" / "canonical_scene.json";
+        const auto job_path = tests_root() / "fixtures" / "jobs" / "canonical_render_job.json";
+        const std::vector<std::string> args = {
+            "tachyon",
+            "render",
+            "--scene",
+            path.string(),
+            "--job",
+            job_path.string(),
+            "--json"
+        };
+
+        std::vector<char*> argv;
+        argv.reserve(args.size());
+        for (const auto& arg : args) {
+            argv.push_back(const_cast<char*>(arg.c_str()));
+        }
+
+        StreamCapture capture_out(std::cout);
+        StreamCapture capture_err(std::cerr);
+        const int exit_code = tachyon::run_cli(static_cast<int>(argv.size()), argv.data());
+        check_true(exit_code == 0, "CLI render --json should accept canonical scene and job fixtures");
+        check_true(capture_err.str().empty(), "CLI render --json should not emit errors for canonical fixtures");
+
+        const auto parsed_json = nlohmann::json::parse(capture_out.str());
+        check_true(parsed_json["schema_version"] == "1.0", "render JSON should include schema version");
+        check_true(parsed_json.contains("scene"), "render JSON should contain scene");
+        check_true(parsed_json.contains("assets"), "render JSON should contain assets");
+        check_true(parsed_json.contains("render_plan"), "render JSON should contain render_plan");
+        check_true(parsed_json.contains("render_graph"), "render JSON should contain render_graph");
+        check_true(parsed_json.contains("first_frame"), "render JSON should contain first_frame");
+        check_true(parsed_json["first_frame"]["backend_name"] == "cpu-2d-stub", "render JSON should report the stub backend");
     }
 
     return g_failures == 0;

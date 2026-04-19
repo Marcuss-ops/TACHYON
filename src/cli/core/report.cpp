@@ -58,6 +58,22 @@ json make_render_plan_json(const RenderPlan& plan) {
     };
 }
 
+json make_render_job_json(const RenderJob& job) {
+    return {
+        {"job_id", job.job_id},
+        {"scene_ref", job.scene_ref},
+        {"composition_target", job.composition_target},
+        {"frame_range", {
+            {"start", job.frame_range.start},
+            {"end", job.frame_range.end}
+        }},
+        {"output", {
+            {"path", job.output.destination.path},
+            {"overwrite", job.output.destination.overwrite}
+        }}
+    };
+}
+
 json make_render_graph_json(const RenderExecutionPlan& execution_plan) {
     json steps = json::array();
     for (const auto& step : execution_plan.steps) {
@@ -168,6 +184,50 @@ std::string make_inspect_report_json(
     if (execution_plan.has_value()) {
         report["render_graph"] = make_render_graph_json(*execution_plan);
     }
+    report["schema_version"] = INSPECT_REPORT_SCHEMA_VERSION;
+    return report.dump(2);
+}
+
+std::string make_validate_report_json(
+    const SceneSpec& scene,
+    const AssetResolutionTable& assets,
+    bool scene_valid,
+    bool job_valid,
+    const std::optional<RenderJob>& job) {
+    json report;
+    report["schema_version"] = VALIDATE_REPORT_SCHEMA_VERSION;
+    report["scene"] = make_scene_json(scene);
+    report["scene_valid"] = scene_valid;
+    report["job_valid"] = job_valid;
+    report["assets"] = make_assets_json(assets);
+    if (job.has_value()) {
+        report["job"] = make_render_job_json(*job);
+    }
+    return report.dump(2);
+}
+
+std::string make_render_report_json(
+    const SceneSpec& scene,
+    const AssetResolutionTable& assets,
+    const RenderPlan& render_plan,
+    const RenderExecutionPlan& execution_plan,
+    const RasterizedFrame2D& first_frame) {
+    json report;
+    report["schema_version"] = RENDER_REPORT_SCHEMA_VERSION;
+    report["scene"] = make_scene_json(scene);
+    report["assets"] = make_assets_json(assets);
+    report["render_plan"] = make_render_plan_json(render_plan);
+    report["render_graph"] = make_render_graph_json(execution_plan);
+    report["first_frame"] = {
+        {"frame_number", first_frame.frame_number},
+        {"width", first_frame.width},
+        {"height", first_frame.height},
+        {"layer_count", first_frame.layer_count},
+        {"estimated_draw_ops", first_frame.estimated_draw_ops},
+        {"backend_name", first_frame.backend_name},
+        {"cache_key", first_frame.cache_key},
+        {"note", first_frame.note}
+    };
     return report.dump(2);
 }
 

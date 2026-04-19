@@ -1,8 +1,11 @@
 #pragma once
 
 #include "tachyon/media/asset_resolution.h"
+#include "tachyon/renderer2d/rasterizer.h"
 #include "tachyon/runtime/render_graph.h"
+#include "tachyon/runtime/diagnostics.h"
 #include "tachyon/runtime/render_plan.h"
+#include "tachyon/runtime/render_job.h"
 #include "tachyon/spec/scene_spec.h"
 
 #include <optional>
@@ -10,6 +13,10 @@
 #include <string>
 
 namespace tachyon {
+
+constexpr const char* INSPECT_REPORT_SCHEMA_VERSION = "1.0";
+constexpr const char* VALIDATE_REPORT_SCHEMA_VERSION = "1.0";
+constexpr const char* RENDER_REPORT_SCHEMA_VERSION = "1.0";
 
 void print_inspect_report_text(
     const SceneSpec& scene,
@@ -23,5 +30,19 @@ std::string make_inspect_report_json(
     const AssetResolutionTable& assets,
     const std::optional<RenderPlan>& render_plan,
     const std::optional<RenderExecutionPlan>& execution_plan);
+
+std::string make_validate_report_json(
+    const SceneSpec& scene,
+    const AssetResolutionTable& assets,
+    bool scene_valid,
+    bool job_valid,
+    const std::optional<RenderJob>& job);
+
+std::string make_render_report_json(
+    const SceneSpec& scene,
+    const AssetResolutionTable& assets,
+    const RenderPlan& render_plan,
+    const RenderExecutionPlan& execution_plan,
+    const RasterizedFrame2D& first_frame);
 
 } // namespace tachyon
