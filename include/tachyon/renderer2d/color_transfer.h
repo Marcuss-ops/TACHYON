@@ -13,6 +13,12 @@
 namespace tachyon::renderer2d {
 namespace detail {
 
+enum class ColorSpace {
+    Srgb,
+    Bt709,
+    DciP3
+};
+
 enum class TransferCurve {
     Linear,
     Srgb,
@@ -21,6 +27,22 @@ enum class TransferCurve {
 
 inline std::string_view ascii_lower(std::string_view value) {
     return value;
+}
+
+inline ColorSpace parse_color_space(std::string_view value) {
+    std::string lower;
+    lower.reserve(value.size());
+    for (unsigned char ch : value) {
+        lower.push_back(static_cast<char>(std::tolower(ch)));
+    }
+
+    if (lower == "bt709" || lower == "rec709") {
+        return ColorSpace::Bt709;
+    }
+    if (lower == "p3" || lower == "dci-p3" || lower == "display-p3") {
+        return ColorSpace::DciP3;
+    }
+    return ColorSpace::Srgb;
 }
 
 inline TransferCurve parse_transfer_curve(std::string_view value) {
@@ -207,12 +229,41 @@ inline Color composite_src_over(Color src, Color dst, TransferCurve transfer_cur
     }, transfer_curve);
 }
 
-inline Color convert_color_transfer(Color color, TransferCurve source_curve, TransferCurve destination_curve) {
-    if (source_curve == destination_curve) {
+inline Color convert_color(
+    Color color,
+    TransferCurve source_curve, ColorSpace source_space,
+    TransferCurve dest_curve, ColorSpace dest_space) {
+
+    if (source_curve == dest_curve && source_space == dest_space) {
         return color;
     }
 
-    return from_premultiplied(to_premultiplied(color, source_curve), destination_curve);
+    LinearPremultipliedPixel linear = to_premultiplied(color, source_curve);
+
+    if (source_space != dest_space && linear.a > 0.0f) {
+        const float inv_a = 1.0f / linear.a;
+        float r = linear.r * inv_a;
+        float g = linear.g * inv_a;
+        float b = linear.b * inv_a;
+
+        if ((source_space == ColorSpace::Srgb || source_space == ColorSpace::Bt709) && dest_space == ColorSpace::DciP3) {
+            const float out_r = r * 0.8224621f + g * 0.177538f + b * 0.0f;
+            const float out_g = r * 0.0331941f + g * 0.9668058f + b * 0.0f;
+            const float out_b = r * 0.0170827f + g * 0.0723974f + b * 0.9105199f;
+            r = out_r; g = out_g; b = out_b;
+        } else if (source_space == ColorSpace::DciP3 && (dest_space == ColorSpace::Srgb || dest_space == ColorSpace::Bt709)) {
+            const float out_r = r * 1.2249401f + g * -0.2249404f + b * 0.0f;
+            const float out_g = r * -0.0420569f + g * 1.0420571f + b * 0.0f;
+            const float out_b = r * -0.0196376f + g * -0.0786361f + b * 1.0982735f;
+            r = out_r; g = out_g; b = out_b;
+        }
+
+        linear.r = std::max(0.0f, r) * linear.a;
+        linear.g = std::max(0.0f, g) * linear.a;
+        linear.b = std::max(0.0f, b) * linear.a;
+    }
+
+    return from_premultiplied(linear, dest_curve);
 }
 
 } // namespace detail
