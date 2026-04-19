@@ -16,6 +16,75 @@ Color multiply_premultiplied(Color sample, Color tint) {
     };
 }
 
+float edge_function(float ax, float ay, float bx, float by, float px, float py) {
+    return (px - ax) * (by - ay) - (py - ay) * (bx - ax);
+}
+
+Color sample_texture_nearest(const SurfaceRGBA& texture, float u, float v, Color tint) {
+    const std::uint32_t src_width = texture.width();
+    const std::uint32_t src_height = texture.height();
+    if (src_width == 0U || src_height == 0U) {
+        return Color::transparent();
+    }
+
+    const float clamped_u = std::clamp(u, 0.0F, 1.0F);
+    const float clamped_v = std::clamp(v, 0.0F, 1.0F);
+    const std::uint32_t src_x = std::min(src_width - 1U, static_cast<std::uint32_t>(clamped_u * static_cast<float>(src_width - 1U) + 0.5F));
+    const std::uint32_t src_y = std::min(src_height - 1U, static_cast<std::uint32_t>(clamped_v * static_cast<float>(src_height - 1U) + 0.5F));
+    return multiply_premultiplied(texture.get_pixel(src_x, src_y), tint);
+}
+
+void rasterize_textured_triangle(
+    Framebuffer& fb,
+    const SurfaceRGBA& texture,
+    const TexturedVertex2D& a,
+    const TexturedVertex2D& b,
+    const TexturedVertex2D& c,
+    Color tint) {
+
+    const float area = edge_function(a.x, a.y, b.x, b.y, c.x, c.y);
+    if (std::fabs(area) < 1e-6F) {
+        return;
+    }
+
+    const float min_x = std::floor(std::min({a.x, b.x, c.x}));
+    const float max_x = std::ceil(std::max({a.x, b.x, c.x}));
+    const float min_y = std::floor(std::min({a.y, b.y, c.y}));
+    const float max_y = std::ceil(std::max({a.y, b.y, c.y}));
+
+    for (int y = static_cast<int>(min_y); y <= static_cast<int>(max_y); ++y) {
+        for (int x = static_cast<int>(min_x); x <= static_cast<int>(max_x); ++x) {
+            const float px = static_cast<float>(x) + 0.5F;
+            const float py = static_cast<float>(y) + 0.5F;
+
+            const float w0 = edge_function(b.x, b.y, c.x, c.y, px, py);
+            const float w1 = edge_function(c.x, c.y, a.x, a.y, px, py);
+            const float w2 = edge_function(a.x, a.y, b.x, b.y, px, py);
+
+            const bool inside =
+                (area > 0.0F && w0 >= 0.0F && w1 >= 0.0F && w2 >= 0.0F) ||
+                (area < 0.0F && w0 <= 0.0F && w1 <= 0.0F && w2 <= 0.0F);
+            if (!inside) {
+                continue;
+            }
+
+            const float inv_area = 1.0F / area;
+            const float alpha = w0 * inv_area;
+            const float beta = w1 * inv_area;
+            const float gamma = w2 * inv_area;
+
+            const float u = alpha * a.u + beta * b.u + gamma * c.u;
+            const float v = alpha * a.v + beta * b.v + gamma * c.v;
+
+            if (x >= 0 && y >= 0) {
+                fb.blend_pixel(static_cast<std::uint32_t>(x),
+                               static_cast<std::uint32_t>(y),
+                               sample_texture_nearest(texture, u, v, tint));
+            }
+        }
+    }
+}
+
 } // namespace
 
 void CPURasterizer::draw_rect(Framebuffer& fb, const RectPrimitive& rect) {
@@ -55,35 +124,26 @@ void CPURasterizer::draw_line(Framebuffer& fb, const LinePrimitive& line) {
 }
 
 void CPURasterizer::draw_textured_quad(Framebuffer& fb, const TexturedQuadPrimitive& quad) {
-    if (quad.texture == nullptr || quad.width <= 0 || quad.height <= 0) {
+    if (quad.texture == nullptr) {
         return;
     }
 
-    const std::uint32_t src_width = quad.texture->width();
-    const std::uint32_t src_height = quad.texture->height();
-    if (src_width == 0U || src_height == 0U) {
-        return;
-    }
-
-    for (int dy = 0; dy < quad.height; ++dy) {
-        const float v = quad.height == 1 ? 0.0F : static_cast<float>(dy) / static_cast<float>(quad.height - 1);
-        const std::uint32_t src_y = std::min(src_height - 1U, static_cast<std::uint32_t>(v * static_cast<float>(src_height - 1U)));
-
-        for (int dx = 0; dx < quad.width; ++dx) {
-            const float u = quad.width == 1 ? 0.0F : static_cast<float>(dx) / static_cast<float>(quad.width - 1);
-            const std::uint32_t src_x = std::min(src_width - 1U, static_cast<std::uint32_t>(u * static_cast<float>(src_width - 1U)));
-
-            const int out_x = quad.x + dx;
-            const int out_y = quad.y + dy;
-            if (out_x < 0 || out_y < 0) {
-                continue;
-            }
-
-            const Color sampled = quad.texture->get_pixel(src_x, src_y);
-            const Color tinted = multiply_premultiplied(sampled, quad.tint);
-            fb.blend_pixel(static_cast<std::uint32_t>(out_x), static_cast<std::uint32_t>(out_y), tinted);
+    if (!quad.use_custom_vertices) {
+        if (quad.width <= 0 || quad.height <= 0) {
+            return;
         }
+
+        const TexturedVertex2D v0{static_cast<float>(quad.x), static_cast<float>(quad.y), 0.0F, 0.0F};
+        const TexturedVertex2D v1{static_cast<float>(quad.x + quad.width), static_cast<float>(quad.y), 1.0F, 0.0F};
+        const TexturedVertex2D v2{static_cast<float>(quad.x + quad.width), static_cast<float>(quad.y + quad.height), 1.0F, 1.0F};
+        const TexturedVertex2D v3{static_cast<float>(quad.x), static_cast<float>(quad.y + quad.height), 0.0F, 1.0F};
+        rasterize_textured_triangle(fb, *quad.texture, v0, v1, v2, quad.tint);
+        rasterize_textured_triangle(fb, *quad.texture, v0, v2, v3, quad.tint);
+        return;
     }
+
+    rasterize_textured_triangle(fb, *quad.texture, quad.vertices[0], quad.vertices[1], quad.vertices[2], quad.tint);
+    rasterize_textured_triangle(fb, *quad.texture, quad.vertices[0], quad.vertices[2], quad.vertices[3], quad.tint);
 }
 
 } // namespace renderer2d
