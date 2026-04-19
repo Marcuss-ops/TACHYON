@@ -37,6 +37,16 @@ If `cmake` or `msbuild` are not visible in a fresh shell, run:
 
 This script adds the local CMake and Visual Studio Build Tools locations to the current session and can persist them to the user PATH.
 
+## Build
+
+Use the root build script for the standard build flow:
+
+```powershell
+.\build.ps1 -Configuration Debug -RunTests
+```
+
+If you only want to compile, omit `-RunTests`.
+
 ## Documentation
 
 The canonical navigation entry for the documentation set is:

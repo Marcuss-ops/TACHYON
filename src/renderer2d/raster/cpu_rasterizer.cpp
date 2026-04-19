@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <vector>
 
 namespace tachyon {
 namespace renderer2d {
@@ -173,24 +174,60 @@ RasterizedFrame2D render_frame_2d(
     frame.surface->reset_clip_rect();
 
     for (const renderer2d::DrawCommand2D& command : commands) {
-        if (command.has_clip_rect) {
-            frame.surface->set_clip_rect(command.clip_rect);
+        if (command.clip.has_value()) {
+            frame.surface->set_clip_rect(*command.clip);
         } else {
             frame.surface->reset_clip_rect();
         }
 
         switch (command.kind) {
-            case renderer2d::DrawCommand2D::Kind::Clear:
-                frame.surface->clear(command.clear.color);
+            case renderer2d::DrawCommandKind::Clear:
+                if (command.clear.has_value()) {
+                    frame.surface->clear(command.clear->color);
+                }
                 break;
-            case renderer2d::DrawCommand2D::Kind::Rect:
-                renderer2d::CPURasterizer::draw_rect(*frame.surface, command.rect);
+            case renderer2d::DrawCommandKind::SolidRect:
+                if (command.solid_rect.has_value()) {
+                    renderer2d::CPURasterizer::draw_rect(
+                        *frame.surface,
+                        renderer2d::RectPrimitive{
+                            command.solid_rect->rect.x,
+                            command.solid_rect->rect.y,
+                            command.solid_rect->rect.width,
+                            command.solid_rect->rect.height,
+                            command.solid_rect->color
+                        });
+                }
                 break;
-            case renderer2d::DrawCommand2D::Kind::Line:
-                renderer2d::CPURasterizer::draw_line(*frame.surface, command.line);
+            case renderer2d::DrawCommandKind::Line:
+                if (command.line.has_value()) {
+                    renderer2d::CPURasterizer::draw_line(
+                        *frame.surface,
+                        renderer2d::LinePrimitive{
+                            command.line->x0,
+                            command.line->y0,
+                            command.line->x1,
+                            command.line->y1,
+                            command.line->color
+                        });
+                }
                 break;
-            case renderer2d::DrawCommand2D::Kind::TexturedQuad:
-                renderer2d::CPURasterizer::draw_textured_quad(*frame.surface, command.textured_quad);
+            case renderer2d::DrawCommandKind::TexturedQuad:
+                if (command.textured_quad.has_value()) {
+                    const int min_x = static_cast<int>(std::min({command.textured_quad->p0.x, command.textured_quad->p1.x, command.textured_quad->p2.x, command.textured_quad->p3.x}));
+                    const int min_y = static_cast<int>(std::min({command.textured_quad->p0.y, command.textured_quad->p1.y, command.textured_quad->p2.y, command.textured_quad->p3.y}));
+                    const int max_x = static_cast<int>(std::max({command.textured_quad->p0.x, command.textured_quad->p1.x, command.textured_quad->p2.x, command.textured_quad->p3.x}));
+                    const int max_y = static_cast<int>(std::max({command.textured_quad->p0.y, command.textured_quad->p1.y, command.textured_quad->p2.y, command.textured_quad->p3.y}));
+                    renderer2d::CPURasterizer::draw_rect(
+                        *frame.surface,
+                        renderer2d::RectPrimitive{
+                            min_x,
+                            min_y,
+                            std::max(1, max_x - min_x),
+                            std::max(1, max_y - min_y),
+                            renderer2d::Color::white()
+                        });
+                }
                 break;
         }
     }
@@ -200,7 +237,65 @@ RasterizedFrame2D render_frame_2d(
 }
 
 RasterizedFrame2D render_frame_2d_stub(const RenderPlan& plan, const FrameRenderTask& task) {
-    return render_frame_2d(plan, task, {});
+    static thread_local renderer2d::Framebuffer stub_texture(1, 1);
+    stub_texture.clear(renderer2d::Color::white());
+    stub_texture.set_pixel(0, 0, renderer2d::Color::white());
+
+    const int width = static_cast<int>(std::max<std::int64_t>(1, plan.composition.width));
+    const int height = static_cast<int>(std::max<std::int64_t>(1, plan.composition.height));
+    const int quarter_width = std::max(1, width / 4);
+    const int quarter_height = std::max(1, height / 4);
+    const int fifth_width = std::max(1, width / 5);
+    const int fifth_height = std::max(1, height / 5);
+
+    std::vector<renderer2d::DrawCommand2D> commands;
+    commands.reserve(5);
+    renderer2d::DrawCommand2D clear;
+    clear.kind = renderer2d::DrawCommandKind::Clear;
+    clear.clear.emplace(renderer2d::ClearCommand{renderer2d::Color::transparent()});
+    commands.push_back(clear);
+
+    renderer2d::DrawCommand2D rect;
+    rect.kind = renderer2d::DrawCommandKind::SolidRect;
+    rect.solid_rect.emplace(renderer2d::SolidRectCommand{
+        renderer2d::RectI{0, 0, quarter_width, quarter_height},
+        renderer2d::Color{64, 96, 160, 255},
+        1.0f
+    });
+    commands.push_back(rect);
+
+    renderer2d::DrawCommand2D line;
+    line.kind = renderer2d::DrawCommandKind::Line;
+    line.line.emplace(renderer2d::LineCommand{
+        0,
+        0,
+        static_cast<int>(std::max<std::int64_t>(0, width - 1)),
+        static_cast<int>(std::max<std::int64_t>(0, height - 1)),
+        renderer2d::Color{0, 255, 128, 255}
+    });
+    commands.push_back(line);
+
+    renderer2d::DrawCommand2D textured;
+    textured.kind = renderer2d::DrawCommandKind::TexturedQuad;
+    textured.textured_quad.emplace(renderer2d::TexturedQuadCommand{
+        renderer2d::TextureHandle{"stub"},
+        {static_cast<float>(std::max(0, width / 3)), static_cast<float>(std::max(0, height / 3))},
+        {static_cast<float>(std::max(0, width / 3) + fifth_width), static_cast<float>(std::max(0, height / 3))},
+        {static_cast<float>(std::max(0, width / 3) + fifth_width), static_cast<float>(std::max(0, height / 3) + fifth_height)},
+        {static_cast<float>(std::max(0, width / 3)), static_cast<float>(std::max(0, height / 3) + fifth_height)},
+        1.0f
+    });
+    commands.push_back(textured);
+
+    renderer2d::DrawCommand2D last_rect;
+    last_rect.kind = renderer2d::DrawCommandKind::SolidRect;
+    last_rect.solid_rect.emplace(renderer2d::SolidRectCommand{
+        renderer2d::RectI{std::max(0, width / 2 - 8), std::max(0, height / 2 - 8), 16, 16},
+        renderer2d::Color{220, 80, 80, 192},
+        1.0f
+    });
+    commands.push_back(last_rect);
+    return render_frame_2d(plan, task, commands);
 }
 
 } // namespace tachyon

@@ -40,7 +40,6 @@ float camera_card_depth(const scene::EvaluatedLayerState& layer, int z_order) {
 
 RenderableCard3D make_camera_card(
     const scene::EvaluatedLayerState& layer,
-    const scene::EvaluatedCompositionState& composition_state,
     int z_order,
     const char* prefix,
     int base_width,
@@ -61,12 +60,14 @@ RenderableCard3D make_camera_card(
 }
 
 DrawCommand2D solid_command(const scene::EvaluatedLayerState& layer, const scene::EvaluatedCompositionState& composition_state, int z_order) {
+    const RectI rect = scaled_rect(layer, 100, 100);
+    const Color color = color_with_opacity(static_cast<float>(layer.opacity));
     DrawCommand2D command;
     command.kind = DrawCommandKind::SolidRect;
     command.z_order = z_order;
     command.blend_mode = BlendMode::Normal;
     command.clip = full_clip(composition_state);
-    command.solid_rect = SolidRectCommand{scaled_rect(layer, 100, 100), color_with_opacity(static_cast<float>(layer.opacity)), static_cast<float>(layer.opacity)};
+    command.solid_rect.emplace(SolidRectCommand{rect, color, static_cast<float>(layer.opacity)});
     return command;
 }
 
@@ -77,7 +78,7 @@ DrawCommand2D image_command(const scene::EvaluatedLayerState& layer, const scene
     command.clip = full_clip(composition_state);
 
     if (is_camera_aware_card(layer, composition_state)) {
-        const RenderableCard3D card = make_camera_card(layer, composition_state, z_order, prefix, base_width, base_height);
+        const RenderableCard3D card = make_camera_card(layer, z_order, prefix, base_width, base_height);
         const ProjectedCard3D projected = project_card_to_screen(
             card,
             composition_state.camera.camera,

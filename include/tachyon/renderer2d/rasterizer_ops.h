@@ -95,7 +95,7 @@ struct TexturedQuadPrimitive {
     }
 };
 
-struct DrawCommand2D {
+struct RasterizerCommand2D {
     enum class Kind {
         Clear,
         Rect,
@@ -111,37 +111,37 @@ struct DrawCommand2D {
     LinePrimitive line{};
     TexturedQuadPrimitive textured_quad{};
 
-    static DrawCommand2D make_clear(Color color) {
-        DrawCommand2D command;
+    static RasterizerCommand2D make_clear(Color color) {
+        RasterizerCommand2D command;
         command.kind = Kind::Clear;
         command.clear = ClearPrimitive{color};
         return command;
     }
 
-    static DrawCommand2D make_rect(const RectPrimitive& rect_primitive) {
-        DrawCommand2D command;
+    static RasterizerCommand2D make_rect(const RectPrimitive& rect_primitive) {
+        RasterizerCommand2D command;
         command.kind = Kind::Rect;
         command.rect = rect_primitive;
         return command;
     }
 
-    static DrawCommand2D make_line(const LinePrimitive& line_primitive) {
-        DrawCommand2D command;
+    static RasterizerCommand2D make_line(const LinePrimitive& line_primitive) {
+        RasterizerCommand2D command;
         command.kind = Kind::Line;
         command.line = line_primitive;
         return command;
     }
 
-    static DrawCommand2D make_textured_quad(const TexturedQuadPrimitive& textured_quad_primitive) {
-        DrawCommand2D command;
+    static RasterizerCommand2D make_textured_quad(const TexturedQuadPrimitive& textured_quad_primitive) {
+        RasterizerCommand2D command;
         command.kind = Kind::TexturedQuad;
         command.textured_quad = textured_quad_primitive;
         return command;
     }
 
-    DrawCommand2D& with_clip_rect(const RectI& rect) {
+    RasterizerCommand2D& with_clip_rect(const RectI& clip_rect_value) {
         has_clip_rect = true;
-        clip_rect = rect;
+        this->clip_rect = clip_rect_value;
         return *this;
     }
 };

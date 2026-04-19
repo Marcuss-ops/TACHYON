@@ -84,27 +84,20 @@ bool SurfaceRGBA::set_pixel(uint32_t x, uint32_t y, Color color) {
 }
 
 Color SurfaceRGBA::blend_src_over_premultiplied(Color src_straight, Color dst_straight) {
-    const uint32_t src_a = src_straight.a;
-    const uint32_t dst_a = dst_straight.a;
-    const uint32_t inv_src_a = 255U - src_a;
-
-    const uint32_t dst_r_p = (static_cast<uint32_t>(dst_straight.r) * dst_a + 127U) / 255U;
-    const uint32_t dst_g_p = (static_cast<uint32_t>(dst_straight.g) * dst_a + 127U) / 255U;
-    const uint32_t dst_b_p = (static_cast<uint32_t>(dst_straight.b) * dst_a + 127U) / 255U;
-
-    const uint32_t out_a = src_a + (dst_a * inv_src_a + 127U) / 255U;
-    const uint32_t out_r_p = static_cast<uint32_t>(src_straight.r) + (dst_r_p * inv_src_a + 127U) / 255U;
-    const uint32_t out_g_p = static_cast<uint32_t>(src_straight.g) + (dst_g_p * inv_src_a + 127U) / 255U;
-    const uint32_t out_b_p = static_cast<uint32_t>(src_straight.b) + (dst_b_p * inv_src_a + 127U) / 255U;
+    const uint32_t inv_src_a = 255U - static_cast<uint32_t>(src_straight.a);
+    const uint32_t out_r = static_cast<uint32_t>(src_straight.r) + ((static_cast<uint32_t>(dst_straight.r) * inv_src_a + 127U) / 255U);
+    const uint32_t out_g = static_cast<uint32_t>(src_straight.g) + ((static_cast<uint32_t>(dst_straight.g) * inv_src_a + 127U) / 255U);
+    const uint32_t out_b = static_cast<uint32_t>(src_straight.b) + ((static_cast<uint32_t>(dst_straight.b) * inv_src_a + 127U) / 255U);
+    const uint32_t out_a = static_cast<uint32_t>(src_straight.a) + ((static_cast<uint32_t>(dst_straight.a) * inv_src_a + 127U) / 255U);
 
     if (out_a == 0U) {
         return Color::transparent();
     }
 
     return Color{
-        static_cast<uint8_t>(std::clamp<uint32_t>((out_r_p * 255U + out_a / 2U) / out_a, 0U, 255U)),
-        static_cast<uint8_t>(std::clamp<uint32_t>((out_g_p * 255U + out_a / 2U) / out_a, 0U, 255U)),
-        static_cast<uint8_t>(std::clamp<uint32_t>((out_b_p * 255U + out_a / 2U) / out_a, 0U, 255U)),
+        static_cast<uint8_t>(std::clamp<uint32_t>(out_r, 0U, 255U)),
+        static_cast<uint8_t>(std::clamp<uint32_t>(out_g, 0U, 255U)),
+        static_cast<uint8_t>(std::clamp<uint32_t>(out_b, 0U, 255U)),
         static_cast<uint8_t>(std::clamp<uint32_t>(out_a, 0U, 255U))
     };
 }
