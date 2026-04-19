@@ -1,4 +1,5 @@
 #include "tachyon/renderer2d/framebuffer.h"
+#include "tachyon/renderer2d/color_transfer.h"
 
 #include "stb_image_write.h"
 
@@ -10,13 +11,7 @@ namespace renderer2d {
 namespace {
 
 Color blend_premultiplied(Color src, Color dst) {
-    const std::uint32_t inv_a = 255U - src.a;
-    return Color{
-        static_cast<std::uint8_t>(std::clamp<std::uint32_t>(src.r + ((dst.r * inv_a + 127U) / 255U), 0U, 255U)),
-        static_cast<std::uint8_t>(std::clamp<std::uint32_t>(src.g + ((dst.g * inv_a + 127U) / 255U), 0U, 255U)),
-        static_cast<std::uint8_t>(std::clamp<std::uint32_t>(src.b + ((dst.b * inv_a + 127U) / 255U), 0U, 255U)),
-        static_cast<std::uint8_t>(std::clamp<std::uint32_t>(src.a + ((dst.a * inv_a + 127U) / 255U), 0U, 255U))
-    };
+    return detail::composite_src_over_linear(src, dst);
 }
 
 } // namespace

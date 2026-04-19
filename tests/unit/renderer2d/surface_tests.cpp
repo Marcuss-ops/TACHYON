@@ -32,8 +32,8 @@ bool run_surface_tests() {
         surface.clear(Color::blue());
         surface.blend_pixel(1, 1, {128, 0, 0, 128});
         const Color pixel = surface.get_pixel(1, 1);
-        check_true(pixel.r == 128, "Alpha over red channel");
-        check_true(pixel.b >= 127 && pixel.b <= 128, "Alpha over blue channel");
+        check_true(pixel.r >= 187 && pixel.r <= 189, "Linear-light blend lifts red channel");
+        check_true(pixel.b >= 187 && pixel.b <= 189, "Linear-light blend lifts blue channel");
         check_true(pixel.a == 255, "Alpha over output alpha");
     }
 
