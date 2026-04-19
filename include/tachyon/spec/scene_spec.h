@@ -175,6 +175,12 @@ struct LayerSpec {
     TrackMatteType track_matte_type{TrackMatteType::None};
     std::optional<std::string> track_matte_layer_id;
     std::optional<std::string> precomp_id;
+
+    // Light specific
+    std::optional<std::string> light_type;
+    std::optional<double> intensity;
+    std::optional<double> attenuation_near;
+    std::optional<double> attenuation_far;
 };
 
 struct CompositionSpec {

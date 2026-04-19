@@ -78,7 +78,11 @@ ResolutionResult<RenderPlan> build_render_plan(const SceneSpec& scene, const Ren
     plan.working_space = job.working_space;
     plan.motion_blur_enabled = job.motion_blur_enabled;
     plan.motion_blur_samples = job.motion_blur_samples;
+    if (plan.motion_blur_enabled && plan.motion_blur_samples <= 0) {
+        plan.motion_blur_samples = 8;
+    }
     plan.motion_blur_shutter_angle = job.motion_blur_shutter_angle;
+    plan.motion_blur_curve = job.motion_blur_curve;
     plan.seed_policy_mode = job.seed_policy_mode;
     plan.compatibility_mode = job.compatibility_mode;
     plan.scene_spec = &scene;

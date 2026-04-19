@@ -74,20 +74,32 @@ void draw_scanline(
     const std::uint32_t tex_h = texture->height();
 
     for (int x = x_start; x < x_end; ++x) {
-        // Perspective divide
-        float inv_w = 1.0f / one_w;
-        float u = u_w * inv_w;
-        float v = v_w * inv_w;
+        // Perspective correct depth test
+        // one_w is 1/z in screen space
+        if (surface.test_and_write_depth(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), one_w)) {
+            // Perspective divide for UV mapping
+            float inv_w = 1.0f / one_w;
+            float u = u_w * inv_w;
+            float v = v_w * inv_w;
 
-        // Wrap/Clamp UV (assume repeat for now or clamp)
-        int tx = std::clamp(static_cast<int>(u * tex_w), 0, static_cast<int>(tex_w - 1));
-        int ty = std::clamp(static_cast<int>(v * tex_h), 0, static_cast<int>(tex_h - 1));
+            // Wrap/Clamp UV (assume repeat for now or clamp)
+            int tx = std::clamp(static_cast<int>(u * tex_w), 0, static_cast<int>(tex_w - 1));
+            int ty = std::clamp(static_cast<int>(v * tex_h), 0, static_cast<int>(tex_h - 1));
 
-        Color color = texture->get_pixel(tx, ty);
-        if (opacity < 1.0f) {
-            color.a = static_cast<std::uint8_t>(color.a * opacity);
+            Color color = texture->get_pixel(tx, ty);
+            if (opacity < 1.0f) {
+                color.a = static_cast<std::uint8_t>(color.a * opacity);
+            }
+            
+            // If opaque, we already wrote the depth, just set the pixel.
+            // If semi-transparent, we blend (note: depth buffer and transparency 
+            // is always a trade-off, but AE-style uses painter's + depth test).
+            if (color.a == 255) {
+                surface.set_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), color);
+            } else if (color.a > 0) {
+                surface.blend_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), color);
+            }
         }
-        surface.blend_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), color);
 
         u_w += step_u_w;
         v_w += step_v_w;

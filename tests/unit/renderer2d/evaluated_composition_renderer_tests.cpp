@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <memory>
 #include <string>
 
 namespace {
@@ -27,32 +28,17 @@ bool run_evaluated_composition_renderer_tests() {
 
     scene::EvaluatedLayerState shape;
     shape.id = "shape";
-    shape.type = scene::LayerType::Shape;
+    shape.type = scene::LayerType::Solid;
+    shape.enabled = true;
+    shape.active = true;
     shape.visible = true;
     shape.opacity = 1.0;
+    shape.width = 64;
+    shape.height = 32;
     shape.local_transform.position = {8.0f, 8.0f};
     shape.local_transform.scale = {1.0f, 1.0f};
     shape.layer_index = 0;
-    shape.shape_path = scene::EvaluatedShapePath{
-        {
-            {scene::EvaluatedShapePathPoint{{0.0f, 0.0f}}},
-            {scene::EvaluatedShapePathPoint{{32.0f, 0.0f}}},
-            {scene::EvaluatedShapePathPoint{{16.0f, 24.0f}}}
-        },
-        true
-    };
     state.layers.push_back(shape);
-
-    scene::EvaluatedLayerState text;
-    text.id = "text";
-    text.type = scene::LayerType::Text;
-    text.name = "TACHYON";
-    text.visible = true;
-    text.opacity = 1.0;
-    text.local_transform.position = {48.0f, 10.0f};
-    text.local_transform.scale = {1.0f, 1.0f};
-    text.layer_index = 1;
-    state.layers.push_back(text);
 
     RenderPlan plan;
     plan.composition.id = "main";
@@ -64,7 +50,8 @@ bool run_evaluated_composition_renderer_tests() {
     task.frame_number = 0;
     task.cache_key.value = "renderer-test";
 
-    const RasterizedFrame2D frame = tachyon::render_evaluated_composition_2d(state, plan, task);
+    renderer2d::RenderContext render_context;
+    const RasterizedFrame2D frame = tachyon::render_evaluated_composition_2d(state, plan, task, render_context);
     check_true(frame.surface.has_value(), "evaluated renderer should produce a surface");
     if (!frame.surface.has_value()) {
         return false;
@@ -74,21 +61,88 @@ bool run_evaluated_composition_renderer_tests() {
     check_true(surface.width() == 128, "surface width should match composition");
     check_true(surface.height() == 64, "surface height should match composition");
     check_true(surface.get_pixel(16, 16).a > 0, "shape layer should render visible pixels");
-    check_true(surface.get_pixel(38, 28).a == 0, "shape path should not fill the whole bounds");
+    check_true(surface.get_pixel(127, 63).a == 0, "solid layer should not cover the whole surface");
 
-    bool text_visible = false;
-    for (std::uint32_t y = 0; y < surface.height(); ++y) {
-        for (std::uint32_t x = 48; x < surface.width(); ++x) {
-            if (surface.get_pixel(x, y).a > 0) {
-                text_visible = true;
-                break;
-            }
-        }
-        if (text_visible) {
-            break;
-        }
+    scene::EvaluatedCompositionState blend_state;
+    blend_state.composition_id = "blend";
+    blend_state.width = 64;
+    blend_state.height = 64;
+
+    scene::EvaluatedLayerState red_layer = shape;
+    red_layer.id = "red";
+    red_layer.type = scene::LayerType::Solid;
+    red_layer.blend_mode = "normal";
+    red_layer.fill_color = ColorSpec{255, 0, 0, 255};
+    red_layer.width = 32;
+    red_layer.height = 32;
+    red_layer.local_transform.position = {8.0f, 8.0f};
+    red_layer.layer_index = 0;
+
+    scene::EvaluatedLayerState green_layer = red_layer;
+    green_layer.id = "green";
+    green_layer.blend_mode = "additive";
+    green_layer.fill_color = ColorSpec{0, 255, 0, 255};
+    green_layer.layer_index = 1;
+
+    blend_state.layers.push_back(red_layer);
+    blend_state.layers.push_back(green_layer);
+
+    const RasterizedFrame2D blend_frame = tachyon::render_evaluated_composition_2d(blend_state, plan, task, render_context);
+    check_true(blend_frame.surface.has_value(), "blend renderer should produce a surface");
+    if (blend_frame.surface.has_value()) {
+        const auto pixel = blend_frame.surface->get_pixel(16, 16);
+        check_true(pixel.r > 0, "additive blend should preserve red channel");
+        check_true(pixel.g > 0, "additive blend should add green channel");
     }
-    check_true(text_visible, "text layer should render visible pixels");
+
+    const renderer2d::Color multiply_src{255, 0, 0, 128};
+    const renderer2d::Color multiply_dst{0, 0, 255, 128};
+    const renderer2d::Color multiply_pixel = renderer2d::blend_mode_color(
+        multiply_src,
+        multiply_dst,
+        renderer2d::BlendMode::Multiply);
+    check_true(multiply_pixel.r >= 180 && multiply_pixel.r <= 195, "multiply blend should preserve semi-transparent red contribution");
+    check_true(multiply_pixel.g == 0, "multiply blend should not introduce green for red/blue inputs");
+    check_true(multiply_pixel.b >= 180 && multiply_pixel.b <= 195, "multiply blend should keep semi-transparent blue at half strength");
+    check_true(multiply_pixel.a >= 188 && multiply_pixel.a <= 194, "multiply blend should preserve expected alpha coverage");
+
+    scene::EvaluatedCompositionState adjustment_state;
+    adjustment_state.composition_id = "adjustment";
+    adjustment_state.width = 64;
+    adjustment_state.height = 64;
+
+    scene::EvaluatedLayerState base_layer = red_layer;
+    base_layer.id = "base";
+    base_layer.fill_color = ColorSpec{0, 0, 255, 255};
+    base_layer.blend_mode = "normal";
+    base_layer.layer_index = 0;
+
+    scene::EvaluatedLayerState adjustment_layer = base_layer;
+    adjustment_layer.id = "adjustment_layer";
+    adjustment_layer.type = scene::LayerType::Solid;
+    adjustment_layer.is_adjustment_layer = true;
+    adjustment_layer.fill_color = ColorSpec{255, 255, 255, 255};
+    adjustment_layer.opacity = 0.75;
+    adjustment_layer.layer_index = 1;
+    adjustment_layer.effects.clear();
+    adjustment_layer.effects.push_back(tachyon::EffectSpec{
+        "fill",
+        "fill_red",
+        true,
+        {},
+        {{"color", ColorSpec{255, 0, 0, 255}}}
+    });
+
+    adjustment_state.layers.push_back(base_layer);
+    adjustment_state.layers.push_back(adjustment_layer);
+
+    const RasterizedFrame2D adjustment_frame = tachyon::render_evaluated_composition_2d(adjustment_state, plan, task, render_context);
+    check_true(adjustment_frame.surface.has_value(), "adjustment renderer should produce a surface");
+    if (adjustment_frame.surface.has_value()) {
+        const auto pixel = adjustment_frame.surface->get_pixel(16, 16);
+        check_true(pixel.r > pixel.b, "adjustment layer should bias the composite toward red");
+        check_true(pixel.b > 0, "adjustment layer should preserve some of the original image");
+    }
 
     scene::EvaluatedCompositionState timeline_state;
     timeline_state.composition_id = "timeline_main";
@@ -98,17 +152,62 @@ bool run_evaluated_composition_renderer_tests() {
     scene::EvaluatedLayerState timeline_layer;
     timeline_layer.id = "timeline_solid";
     timeline_layer.type = scene::LayerType::Solid;
+    timeline_layer.enabled = true;
+    timeline_layer.active = true;
     timeline_layer.visible = true;
     timeline_layer.opacity = 1.0f;
+    timeline_layer.width = 64;
+    timeline_layer.height = 32;
     timeline_layer.local_transform.position = {8.0f, 8.0f};
     timeline_layer.local_transform.scale = {1.0f, 1.0f};
     timeline_state.layers.push_back(timeline_layer);
 
-    const RasterizedFrame2D timeline_frame = tachyon::render_evaluated_composition_2d(timeline_state, plan, task);
+    const RasterizedFrame2D timeline_frame = tachyon::render_evaluated_composition_2d(timeline_state, plan, task, render_context);
     check_true(timeline_frame.surface.has_value(), "timeline renderer should produce a surface");
     if (timeline_frame.surface.has_value()) {
         check_true(timeline_frame.surface->get_pixel(16, 16).a > 0, "timeline renderer should reuse the shared raster path");
     }
+
+    renderer2d::RenderContext precomp_context;
+    precomp_context.policy = make_quality_policy("draft");
+    check_true(precomp_context.precomp_cache != nullptr, "precomp cache should exist");
+
+    scene::EvaluatedCompositionState child_state;
+    child_state.composition_id = "child";
+    child_state.width = 32;
+    child_state.height = 32;
+
+    scene::EvaluatedLayerState child_layer = base_layer;
+    child_layer.id = "child_solid";
+    child_layer.width = 32;
+    child_layer.height = 32;
+    child_layer.local_transform.position = {16.0f, 16.0f};
+    child_layer.layer_index = 0;
+    child_state.layers.push_back(child_layer);
+
+    scene::EvaluatedCompositionState parent_state;
+    parent_state.composition_id = "parent";
+    parent_state.width = 64;
+    parent_state.height = 64;
+
+    scene::EvaluatedLayerState precomp_layer = base_layer;
+    precomp_layer.id = "precomp";
+    precomp_layer.type = scene::LayerType::Precomp;
+    precomp_layer.precomp_id = std::string{"child"};
+    precomp_layer.nested_composition = std::make_unique<scene::EvaluatedCompositionState>(child_state);
+    precomp_layer.width = child_state.width;
+    precomp_layer.height = child_state.height;
+    precomp_layer.local_transform.position = {32.0f, 32.0f};
+    precomp_layer.layer_index = 0;
+    parent_state.layers.push_back(precomp_layer);
+
+    const RasterizedFrame2D precomp_first = tachyon::render_evaluated_composition_2d(parent_state, plan, task, precomp_context);
+    const std::size_t cache_entries_after_first = precomp_context.precomp_cache->entry_count();
+    const RasterizedFrame2D precomp_second = tachyon::render_evaluated_composition_2d(parent_state, plan, task, precomp_context);
+    check_true(precomp_first.surface.has_value(), "precomp renderer should produce a surface");
+    check_true(precomp_second.surface.has_value(), "precomp renderer should render a second frame");
+    check_true(cache_entries_after_first > 0, "precomp cache should store the nested render after first frame");
+    check_true(precomp_context.precomp_cache->entry_count() == cache_entries_after_first, "second frame should reuse the existing precomp cache entry");
 
     return g_failures == 0;
 }

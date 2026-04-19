@@ -2,7 +2,6 @@
 
 #include "tachyon/renderer2d/framebuffer.h"
 
-#include <memory>
 #include <string>
 
 namespace tachyon {
@@ -10,10 +9,10 @@ namespace renderer2d {
 
 struct TextureHandle {
     std::string id;
-    std::shared_ptr<SurfaceRGBA> surface;
+    const SurfaceRGBA* surface{nullptr};
 
     [[nodiscard]] bool valid() const noexcept {
-        return !id.empty() && static_cast<bool>(surface);
+        return !id.empty() && surface != nullptr;
     }
 };
 

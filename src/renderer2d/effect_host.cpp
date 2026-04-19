@@ -433,4 +433,69 @@ SurfaceRGBA TintEffect::apply(const SurfaceRGBA& input, const EffectParams& para
     return output;
 }
 
+bool PrecompCache::lookup(const std::string& key, RasterizedFrame2D& frame) const {
+    std::scoped_lock lock(m_mutex);
+    const auto it = m_entries.find(key);
+    if (it == m_entries.end()) {
+        return false;
+    }
+
+    frame = it->second;
+    return true;
+}
+
+namespace {
+
+std::size_t estimate_frame_bytes(const RasterizedFrame2D& frame) {
+    if (!frame.surface.has_value()) {
+        return 0;
+    }
+
+    return static_cast<std::size_t>(frame.surface->width()) * static_cast<std::size_t>(frame.surface->height()) * 4U;
+}
+
+} // namespace
+
+void PrecompCache::store(std::string key, RasterizedFrame2D frame) {
+    std::scoped_lock lock(m_mutex);
+    const std::size_t new_bytes = estimate_frame_bytes(frame);
+    if (new_bytes == 0 || max_bytes == 0 || new_bytes > max_bytes) {
+        return;
+    }
+
+    const auto existing = m_entries.find(key);
+    if (existing != m_entries.end()) {
+        m_current_bytes -= estimate_frame_bytes(existing->second);
+        m_entries.erase(existing);
+    }
+
+    if (m_current_bytes + new_bytes > max_bytes) {
+        m_entries.clear();
+        m_current_bytes = 0;
+    }
+
+    if (new_bytes > max_bytes || m_current_bytes + new_bytes > max_bytes) {
+        return;
+    }
+
+    m_current_bytes += new_bytes;
+    m_entries.insert_or_assign(std::move(key), std::move(frame));
+}
+
+void PrecompCache::clear() {
+    std::scoped_lock lock(m_mutex);
+    m_entries.clear();
+    m_current_bytes = 0;
+}
+
+std::size_t PrecompCache::entry_count() const {
+    std::scoped_lock lock(m_mutex);
+    return m_entries.size();
+}
+
+std::size_t PrecompCache::current_bytes() const {
+    std::scoped_lock lock(m_mutex);
+    return m_current_bytes;
+}
+
 } // namespace tachyon::renderer2d

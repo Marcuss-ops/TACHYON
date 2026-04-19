@@ -5,7 +5,11 @@
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
+#include <span>
 #include <string_view>
+
+#include <hb-ft.h>
+#include <hb.h>
 
 namespace tachyon::text {
 namespace {
@@ -63,6 +67,62 @@ std::uint32_t choose_scale(const BitmapFont& font, const TextStyle& style) {
     const std::uint32_t requested = style.pixel_size == 0 ? static_cast<std::uint32_t>(font.line_height()) : style.pixel_size;
     const std::uint32_t base = static_cast<std::uint32_t>(std::max(1, font.line_height()));
     return std::max<std::uint32_t>(1, requested / base);
+}
+
+struct ShapedGlyphRun {
+    struct Glyph {
+        std::uint32_t codepoint{0};
+        std::uint32_t font_glyph_index{0};
+        std::int32_t advance_x{0};
+        std::int32_t offset_x{0};
+        std::int32_t offset_y{0};
+    };
+
+    std::vector<Glyph> glyphs;
+    std::int32_t width{0};
+};
+
+ShapedGlyphRun shape_run_with_harfbuzz(const BitmapFont& font, std::span<const std::uint32_t> codepoints, std::uint32_t scale) {
+    ShapedGlyphRun run;
+    if (!font.has_freetype_face() || codepoints.empty()) {
+        return run;
+    }
+
+    hb_font_t* hb_font = hb_ft_font_create_referenced(static_cast<FT_Face>(font.freetype_face()));
+    if (hb_font == nullptr) {
+        return run;
+    }
+
+    hb_buffer_t* buffer = hb_buffer_create();
+    hb_buffer_add_utf32(buffer, codepoints.data(), static_cast<int>(codepoints.size()), 0, static_cast<int>(codepoints.size()));
+    hb_buffer_guess_segment_properties(buffer);
+    hb_buffer_set_cluster_level(buffer, HB_BUFFER_CLUSTER_LEVEL_MONOTONE_CHARACTERS);
+    hb_shape(hb_font, buffer, nullptr, 0);
+
+    unsigned int glyph_count = 0;
+    hb_glyph_info_t* infos = hb_buffer_get_glyph_infos(buffer, &glyph_count);
+    hb_glyph_position_t* positions = hb_buffer_get_glyph_positions(buffer, &glyph_count);
+
+    run.glyphs.reserve(glyph_count);
+    for (unsigned int i = 0; i < glyph_count; ++i) {
+        const std::uint32_t glyph_index = infos[i].codepoint;
+        const std::int32_t advance_x = static_cast<std::int32_t>(std::lround(static_cast<float>(positions[i].x_advance) / 64.0f));
+        const std::int32_t offset_x = static_cast<std::int32_t>(std::lround(static_cast<float>(positions[i].x_offset) / 64.0f));
+        const std::int32_t offset_y = static_cast<std::int32_t>(std::lround(static_cast<float>(-positions[i].y_offset) / 64.0f));
+        const std::uint32_t source_index = static_cast<std::uint32_t>(std::min<std::size_t>(infos[i].cluster, codepoints.size() - 1U));
+        run.glyphs.push_back(ShapedGlyphRun::Glyph{
+            codepoints[source_index],
+            glyph_index,
+            advance_x * static_cast<std::int32_t>(scale),
+            offset_x * static_cast<std::int32_t>(scale),
+            offset_y * static_cast<std::int32_t>(scale)
+        });
+        run.width += advance_x * static_cast<std::int32_t>(scale);
+    }
+
+    hb_buffer_destroy(buffer);
+    hb_font_destroy(hb_font);
+    return run;
 }
 
 bool is_breakable_space(std::uint32_t codepoint) {
@@ -211,6 +271,176 @@ TextLayoutResult layout_text(
 
     const auto codepoints = decode_utf8(utf8_text);
 
+    if (font.has_freetype_face()) {
+        std::int32_t pen_x = 0;
+        std::int32_t pen_y = 0;
+        std::int32_t current_line_width = 0;
+        std::size_t line_start = 0;
+        std::size_t last_break_codepoint_index = 0;
+        std::size_t last_break_glyph_index = 0;
+        std::int32_t last_break_line_width = 0;
+        bool have_break = false;
+        bool last_was_space = true;
+        std::size_t current_word_index = 0;
+        const std::int32_t tracking_advance = static_cast<std::int32_t>(std::lround(options.tracking * static_cast<float>(scale)));
+
+        for (std::size_t index = 0; index < codepoints.size();) {
+            const std::uint32_t codepoint = codepoints[index];
+
+            if (codepoint == static_cast<std::uint32_t>('\n')) {
+                finalize_line(result,
+                              line_start,
+                              result.glyphs.size() - line_start,
+                              current_line_width,
+                              pen_y,
+                              alignment,
+                              text_box.width);
+                pen_x = 0;
+                current_line_width = 0;
+                pen_y += scaled_line_height;
+                line_start = result.glyphs.size();
+                have_break = false;
+                last_was_space = true;
+                ++index;
+                continue;
+            }
+
+            if (is_breakable_space(codepoint)) {
+                const GlyphBitmap* glyph = font.find_glyph(codepoint);
+                if (glyph == nullptr) {
+                    ++index;
+                    last_was_space = true;
+                    continue;
+                }
+
+                if (!last_was_space && !result.glyphs.empty()) {
+                    have_break = true;
+                    last_break_codepoint_index = index;
+                    last_break_glyph_index = result.glyphs.size();
+                    last_break_line_width = current_line_width;
+                    ++current_word_index;
+                }
+
+                const std::int32_t glyph_advance = std::max(1, glyph->advance_x) * static_cast<std::int32_t>(scale);
+                result.glyphs.push_back(PositionedGlyph{
+                    codepoint,
+                    font.glyph_index_for_codepoint(codepoint),
+                    pen_x + glyph->x_offset * static_cast<std::int32_t>(scale),
+                    pen_y + (font.ascent() - static_cast<std::int32_t>(glyph->height) - glyph->y_offset) * static_cast<std::int32_t>(scale),
+                    static_cast<std::int32_t>(glyph->width) * static_cast<std::int32_t>(scale),
+                    static_cast<std::int32_t>(glyph->height) * static_cast<std::int32_t>(scale),
+                    glyph_advance,
+                    result.glyphs.size(),
+                    current_word_index,
+                    true
+                });
+
+                pen_x += glyph_advance;
+                if (tracking_advance != 0) {
+                    pen_x += tracking_advance;
+                }
+                current_line_width = pen_x;
+                last_was_space = true;
+                ++index;
+                continue;
+            }
+
+            const std::size_t run_start = index;
+            while (index < codepoints.size() &&
+                   codepoints[index] != static_cast<std::uint32_t>('\n') &&
+                   !is_breakable_space(codepoints[index])) {
+                ++index;
+            }
+
+            const std::span<const std::uint32_t> run_span(codepoints.data() + run_start, index - run_start);
+            const ShapedGlyphRun shaped = shape_run_with_harfbuzz(font, run_span, scale);
+            if (!last_was_space && !result.glyphs.empty()) {
+                ++current_word_index;
+            }
+
+            if (wrap_width > 0 && text_box.multiline && options.word_wrap && pen_x > 0 && (pen_x + shaped.width) > wrap_width) {
+                if (have_break && last_break_glyph_index > line_start) {
+                    result.glyphs.resize(last_break_glyph_index);
+                    finalize_line(result,
+                                  line_start,
+                                  last_break_glyph_index - line_start,
+                                  last_break_line_width,
+                                  pen_y,
+                                  alignment,
+                                  text_box.width);
+                    index = last_break_codepoint_index;
+                } else {
+                    finalize_line(result,
+                                  line_start,
+                                  result.glyphs.size() - line_start,
+                                  current_line_width,
+                                  pen_y,
+                                  alignment,
+                                  text_box.width);
+                }
+                pen_x = 0;
+                current_line_width = 0;
+                pen_y += scaled_line_height;
+                line_start = result.glyphs.size();
+                have_break = false;
+                last_was_space = true;
+                continue;
+            }
+
+            for (const auto& glyph_run : shaped.glyphs) {
+                const GlyphBitmap* glyph = font.find_glyph_by_index(glyph_run.font_glyph_index);
+                if (glyph == nullptr) {
+                    continue;
+                }
+
+                result.glyphs.push_back(PositionedGlyph{
+                    glyph_run.codepoint,
+                    glyph_run.font_glyph_index,
+                    pen_x + glyph->x_offset * static_cast<std::int32_t>(scale) + glyph_run.offset_x,
+                    pen_y + (font.ascent() - static_cast<std::int32_t>(glyph->height) - glyph->y_offset) * static_cast<std::int32_t>(scale) + glyph_run.offset_y,
+                    static_cast<std::int32_t>(glyph->width) * static_cast<std::int32_t>(scale),
+                    static_cast<std::int32_t>(glyph->height) * static_cast<std::int32_t>(scale),
+                    glyph_run.advance_x,
+                    result.glyphs.size(),
+                    current_word_index,
+                    false
+                });
+
+                pen_x += glyph_run.advance_x;
+                if (tracking_advance != 0) {
+                    pen_x += tracking_advance;
+                }
+                current_line_width = pen_x;
+            }
+
+            last_was_space = false;
+        }
+
+        finalize_line(result,
+                      line_start,
+                      result.glyphs.size() - line_start,
+                      current_line_width,
+                      pen_y,
+                      alignment,
+                      text_box.width);
+
+        if (!result.lines.empty()) {
+            result.height = static_cast<std::uint32_t>(result.lines.back().y + scaled_line_height);
+        } else {
+            result.height = static_cast<std::uint32_t>(scaled_line_height);
+        }
+
+        if (text_box.height > 0U) {
+            result.height = std::min(result.height, text_box.height);
+        }
+
+        if (result.width == 0U) {
+            result.width = text_box.width > 0U ? text_box.width : 0U;
+        }
+
+        return result;
+    }
+
     std::int32_t pen_x = 0;
     std::int32_t pen_y = 0;
     std::int32_t current_line_width = 0;
@@ -314,6 +544,7 @@ TextLayoutResult layout_text(
 
         result.glyphs.push_back(PositionedGlyph{
             codepoint,
+            font.glyph_index_for_codepoint(codepoint),
             draw_x,
             draw_y,
             glyph_width,
@@ -382,7 +613,9 @@ TextRasterSurface rasterize_text_rgba(
     }
 
     for (const PositionedGlyph& positioned : layout.glyphs) {
-        const GlyphBitmap* glyph = font.find_scaled_glyph(positioned.codepoint, layout.scale);
+        const GlyphBitmap* glyph = font.has_freetype_face()
+            ? font.find_glyph_by_index(positioned.font_glyph_index)
+            : font.find_scaled_glyph(positioned.codepoint, layout.scale);
         if (glyph == nullptr || glyph->width == 0U || glyph->height == 0U) {
             continue;
         }

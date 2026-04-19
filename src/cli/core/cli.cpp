@@ -311,6 +311,10 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
         return false;
     }
 
+    if (!session_result.diagnostics.diagnostics.empty()) {
+        print_diagnostics(session_result.diagnostics, err);
+    }
+
     RasterizedFrame2D first_frame;
     if (!session_result.frames.empty()) {
         first_frame.frame_number = session_result.frames.front().frame_number;
@@ -324,7 +328,7 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
     }
 
     if (options.json_output) {
-        out << make_render_report_json(context.scene, context.assets, *plan_result.value, *execution_result.value, first_frame) << '\n';
+        out << make_render_report_json(context.scene, context.assets, *plan_result.value, *execution_result.value, session_result.diagnostics, first_frame) << '\n';
         return true;
     }
 

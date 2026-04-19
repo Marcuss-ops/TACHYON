@@ -133,6 +133,10 @@ bool is_alpha_mode_valid(const std::string& mode) {
     return mode == "premultiplied" || mode == "straight" || mode == "opaque";
 }
 
+bool is_motion_blur_curve_valid(const std::string& curve) {
+    return curve == "box" || curve == "triangle" || curve == "gaussian";
+}
+
 } // namespace
 
 ParseResult<RenderJob> parse_render_job_json(const std::string& text) {
@@ -174,6 +178,9 @@ ParseResult<RenderJob> parse_render_job_json(const std::string& text) {
     }
     if (root.contains("motion_blur_shutter_angle") && root.at("motion_blur_shutter_angle").is_number()) {
         job.motion_blur_shutter_angle = root.at("motion_blur_shutter_angle").get<double>();
+    }
+    if (root.contains("motion_blur_curve") && root.at("motion_blur_curve").is_string()) {
+        job.motion_blur_curve = root.at("motion_blur_curve").get<std::string>();
     }
 
     if (root.contains("frame_range") && root.at("frame_range").is_object()) {
@@ -255,18 +262,18 @@ ValidationResult validate_render_job(const RenderJob& job) {
     }
 
     if (job.motion_blur_enabled) {
-        if (job.motion_blur_samples <= 0) {
-            result.diagnostics.add_error(
-                "job.motion_blur_samples_invalid",
-                "motion_blur_samples must be greater than zero when motion blur is enabled",
-                "motion_blur_samples");
-        }
-
         if (job.motion_blur_shutter_angle < 0.0 || job.motion_blur_shutter_angle > 360.0) {
             result.diagnostics.add_error(
                 "job.motion_blur_shutter_angle_invalid",
                 "motion_blur_shutter_angle must be between 0 and 360",
                 "motion_blur_shutter_angle");
+        }
+
+        if (!is_motion_blur_curve_valid(job.motion_blur_curve)) {
+            result.diagnostics.add_error(
+                "job.motion_blur_curve_invalid",
+                "motion_blur_curve must be box, triangle, or gaussian",
+                "motion_blur_curve");
         }
     }
 

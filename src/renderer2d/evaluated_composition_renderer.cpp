@@ -333,6 +333,7 @@ void composite_surface_at(SurfaceRGBA& dest, const SurfaceRGBA& src, int x, int 
 void render_layer_to_surface(
     SurfaceRGBA& layer_surface,
     const scene::EvaluatedLayerState& layer,
+    const std::vector<scene::EvaluatedLightState>& lights,
     std::int64_t comp_w,
     std::int64_t comp_h,
     const RectI& render_region,
@@ -341,6 +342,7 @@ void render_layer_to_surface(
     renderer2d::RenderContext& context,
     const scene::EvaluatedCameraState& camera) {
 
+    (void)lights;
     (void)plan;
     (void)task;
     (void)context;
@@ -399,6 +401,7 @@ void render_layer_to_surface(
 RasterizedFrame2D render_composition_recursive(
     const std::string& composition_id,
     const std::vector<scene::EvaluatedLayerState>& layers,
+    const std::vector<scene::EvaluatedLightState>& lights,
     std::int64_t width,
     std::int64_t height,
     const RenderPlan& plan,
@@ -409,7 +412,9 @@ RasterizedFrame2D render_composition_recursive(
 
 void render_layer_recursive(
     const scene::EvaluatedLayerState& layer,
-    std::int64_t width, std::int64_t height,
+    const std::vector<scene::EvaluatedLightState>& lights,
+    std::int64_t width,
+    std::int64_t height,
     const RectI& tile,
     const RenderPlan& plan,
     const FrameRenderTask& task,
@@ -440,6 +445,7 @@ void render_layer_recursive(
                 nested = render_composition_recursive(
                     layer.nested_composition->composition_id,
                     layer.nested_composition->layers,
+                    layer.nested_composition->lights,
                     layer.nested_composition->width,
                     layer.nested_composition->height,
                     plan, task, context, layer.child_time_seconds, precomp_recursion_depth + 1);
@@ -478,7 +484,7 @@ void render_layer_recursive(
             adjustment_original = original;
             ls = original;
         } else {
-            render_layer_to_surface(ls, layer, width, height, tile, plan, task, context, camera);
+            render_layer_to_surface(ls, layer, lights, width, height, tile, plan, task, context, camera);
         }
     }
 
@@ -535,6 +541,7 @@ void render_layer_recursive(
 RasterizedFrame2D render_composition_recursive(
     const std::string& composition_id,
     const std::vector<scene::EvaluatedLayerState>& layers,
+    const std::vector<scene::EvaluatedLightState>& lights,
     std::int64_t width,
     std::int64_t height,
     const RenderPlan& plan,
@@ -542,6 +549,8 @@ RasterizedFrame2D render_composition_recursive(
     renderer2d::RenderContext& context,
     double composition_time_seconds,
     int precomp_recursion_depth) {
+
+    (void)lights;
 
     // 1. Resolution Scale (Quality Policy)
     const float scale = context.policy.resolution_scale;
@@ -580,6 +589,7 @@ RasterizedFrame2D render_composition_recursive(
 
     struct SampleRenderState {
         std::vector<scene::EvaluatedLayerState> layers;
+        std::vector<scene::EvaluatedLightState> lights;
         scene::EvaluatedCameraState camera;
     };
 
@@ -599,6 +609,7 @@ RasterizedFrame2D render_composition_recursive(
             const auto evaluated_state = scene::evaluate_scene_composition_state(*plan.scene_spec, composition_id, sample_time);
             if (evaluated_state.has_value()) {
                 sample_state.layers = evaluated_state->layers;
+                sample_state.lights = evaluated_state->lights;
                 sample_state.camera = evaluated_state->camera;
             }
         }
@@ -610,7 +621,10 @@ RasterizedFrame2D render_composition_recursive(
                 layer.local_transform.position.y *= scale;
                 layer.local_transform.scale.x *= scale;
                 layer.local_transform.scale.y *= scale;
-                // Note: 3D positions might need different handling if they are in world units
+            }
+            for (auto& light : sample_state.lights) {
+                light.position.x *= scale;
+                light.position.y *= scale;
             }
         }
 
@@ -669,7 +683,7 @@ RasterizedFrame2D render_composition_recursive(
                     continue;
                 }
 
-                render_layer_recursive(layer, scaled_width, scaled_height, tile, plan, task, context, sample_state.camera, tile_surface, precomp_recursion_depth);
+                render_layer_recursive(layer, sample_state.lights, scaled_width, scaled_height, tile, plan, task, context, sample_state.camera, tile_surface, precomp_recursion_depth);
             }
 
             accumulation.add(tile_surface, sample_weights[sample]);
@@ -697,6 +711,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
     return render_composition_recursive(
         state.composition_id,
         state.layers,
+        state.lights,
         state.width,
         state.height,
         plan,

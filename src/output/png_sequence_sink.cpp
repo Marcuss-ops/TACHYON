@@ -57,6 +57,7 @@ public:
         m_source_space = renderer2d::detail::parse_color_space(plan.working_space);
         m_output_transfer = renderer2d::detail::parse_transfer_curve(plan.output.profile.color.transfer);
         m_output_space = renderer2d::detail::parse_color_space(plan.output.profile.color.space);
+        m_output_range = renderer2d::detail::parse_color_range(plan.output.profile.color.range);
         m_next_index = 1;
 
         if (m_destination.empty()) {
@@ -90,7 +91,11 @@ public:
             return false;
         }
 
-        renderer2d::Framebuffer converted = convert_frame(*packet.frame, m_source_transfer, m_source_space, m_output_transfer, m_output_space);
+        renderer2d::Framebuffer converted = convert_frame(
+            *packet.frame,
+            m_source_transfer, m_source_space,
+            m_output_transfer, m_output_space,
+            m_output_range);
         if (!converted.save_png(frame_path)) {
             m_last_error = "failed to write png frame: " + frame_path.string();
             return false;
@@ -114,19 +119,22 @@ private:
         renderer2d::detail::TransferCurve source_curve,
         renderer2d::detail::ColorSpace source_space,
         renderer2d::detail::TransferCurve output_curve,
-        renderer2d::detail::ColorSpace output_space) {
+        renderer2d::detail::ColorSpace output_space,
+        renderer2d::detail::ColorRange output_range) {
 
-        if (source_curve == output_curve && source_space == output_space) {
+        if (source_curve == output_curve && source_space == output_space && output_range == renderer2d::detail::ColorRange::Full) {
             return frame;
         }
 
         renderer2d::Framebuffer converted(frame.width(), frame.height());
         for (std::uint32_t y = 0; y < frame.height(); ++y) {
             for (std::uint32_t x = 0; x < frame.width(); ++x) {
-                converted.set_pixel(x, y, renderer2d::detail::convert_color(
+                auto pixel = renderer2d::detail::convert_color(
                     frame.get_pixel(x, y),
                     source_curve, source_space,
-                    output_curve, output_space));
+                    output_curve, output_space);
+                pixel = renderer2d::detail::apply_range_mode(pixel, output_range);
+                converted.set_pixel(x, y, pixel);
             }
         }
         return converted;
@@ -139,6 +147,7 @@ private:
     renderer2d::detail::ColorSpace m_source_space{renderer2d::detail::ColorSpace::Srgb};
     renderer2d::detail::TransferCurve m_output_transfer{renderer2d::detail::TransferCurve::Srgb};
     renderer2d::detail::ColorSpace m_output_space{renderer2d::detail::ColorSpace::Srgb};
+    renderer2d::detail::ColorRange m_output_range{renderer2d::detail::ColorRange::Full};
     std::string m_last_error;
 };
 

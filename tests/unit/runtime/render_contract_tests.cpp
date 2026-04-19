@@ -21,7 +21,7 @@ void check_true(bool condition, const std::string& message) {
     }
 }
 
-std::string render_job_json(std::string quality_tier, bool motion_blur_enabled, std::int64_t samples) {
+std::string render_job_json(std::string quality_tier, bool motion_blur_enabled, std::int64_t samples, std::string motion_blur_curve = "box") {
     nlohmann::json root = {
         {"job_id", "job_01"},
         {"scene_ref", "scene_01"},
@@ -32,6 +32,7 @@ std::string render_job_json(std::string quality_tier, bool motion_blur_enabled, 
         {"motion_blur_enabled", motion_blur_enabled},
         {"motion_blur_samples", samples},
         {"motion_blur_shutter_angle", 180.0},
+        {"motion_blur_curve", motion_blur_curve},
         {"output", {
             {"destination", {
                 {"path", "tests/output/render_contract.mp4"},
@@ -118,7 +119,27 @@ bool run_render_contract_tests() {
             check_true(parsed.value->quality_tier == "cinematic", "quality tier parses");
             check_true(parsed.value->motion_blur_enabled, "motion blur enabled parses");
             check_true(parsed.value->motion_blur_samples == 8, "motion blur sample count parses");
+            check_true(parsed.value->motion_blur_curve == "box", "motion blur curve parses");
             check_true(parsed.value->working_space == "linear_rec709", "working space parses");
+        }
+    }
+
+    {
+        const auto parsed = tachyon::parse_render_job_json(render_job_json("high", true, 0));
+        check_true(parsed.value.has_value(), "motion blur job parses with zero samples");
+        if (parsed.value.has_value()) {
+            const auto validation = tachyon::validate_render_job(*parsed.value);
+            check_true(validation.ok(), "motion blur job validates with zero samples");
+
+            const auto scene_parsed = tachyon::parse_scene_spec_json(scene_json("normal"));
+            check_true(scene_parsed.value.has_value(), "motion blur scene parses");
+            if (scene_parsed.value.has_value()) {
+                const auto plan = tachyon::build_render_plan(*scene_parsed.value, *parsed.value);
+                check_true(plan.value.has_value(), "motion blur plan builds with zero samples");
+                if (plan.value.has_value()) {
+                    check_true(plan.value->motion_blur_samples == 8, "motion blur zero samples defaults to eight");
+                }
+            }
         }
     }
 
@@ -129,7 +150,7 @@ bool run_render_contract_tests() {
             const auto validation = tachyon::validate_scene_spec(*parsed.value);
             check_true(validation.ok(), "scene validates with blend mode");
 
-            const auto evaluated = tachyon::scene::evaluate_scene_composition_state(*parsed.value, "main", 0);
+            const auto evaluated = tachyon::scene::evaluate_scene_composition_state(*parsed.value, "main", 0LL);
             check_true(evaluated.has_value(), "scene evaluation resolves composition");
             if (evaluated.has_value()) {
                 check_true(!evaluated->layers.empty(), "scene evaluation emits layers");

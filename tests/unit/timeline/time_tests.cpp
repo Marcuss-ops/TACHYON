@@ -70,10 +70,13 @@ bool run_timeline_tests() {
         LayerSpec cam;
         cam.id = "cam1";
         cam.type = "camera";
+        cam.enabled = true;
+        cam.is_3d = true;
         cam.in_point = 0.0;
         cam.out_point = 10.0;
-        cam.transform.position_x = 10.0;
-        cam.transform.position_y = 20.0;
+        cam.transform3d.position_property.value = tachyon::math::Vector3{10.0f, 20.0f, 0.0f};
+        cam.transform3d.rotation_property.value = tachyon::math::Vector3{0.0f, 0.0f, 0.0f};
+        cam.transform3d.scale_property.value = tachyon::math::Vector3{1.0f, 1.0f, 1.0f};
 
         comp.layers = {bg, title, cam};
         scene.compositions.push_back(comp);

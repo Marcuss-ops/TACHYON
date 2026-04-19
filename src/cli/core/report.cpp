@@ -10,8 +10,21 @@ namespace {
 
 using json = nlohmann::json;
 
+json make_diagnostics_json(const DiagnosticBag& diagnostics) {
+    json result = json::array();
+    for (const auto& diagnostic : diagnostics.diagnostics) {
+        result.push_back({
+            {"severity", diagnostic_severity_string(diagnostic.severity)},
+            {"code", diagnostic.code},
+            {"message", diagnostic.message},
+            {"path", diagnostic.path}
+        });
+    }
+    return result;
+}
+
 json make_diagnostics_json() {
-    return json::array();
+    return make_diagnostics_json(DiagnosticBag{});
 }
 
 json make_scene_json(const SceneSpec& scene) {
@@ -235,7 +248,7 @@ std::string make_inspect_report_json(
     report["scene"] = make_scene_json(scene);
     report["assets"] = make_assets_json(assets);
     report["status"] = REPORT_STATUS_OK;
-    report["diagnostics"] = make_diagnostics_json();
+    report["diagnostics"] = make_diagnostics_json(DiagnosticBag{});
     if (render_plan.has_value()) {
         report["render_plan"] = make_render_plan_json(*render_plan);
     }
@@ -260,7 +273,7 @@ std::string make_validate_report_json(
     report["job_valid"] = job_valid;
     report["assets"] = make_assets_json(assets);
     report["status"] = REPORT_STATUS_OK;
-    report["diagnostics"] = make_diagnostics_json();
+    report["diagnostics"] = make_diagnostics_json(DiagnosticBag{});
     if (job.has_value()) {
         report["job"] = make_render_job_json(*job);
     }
@@ -272,14 +285,15 @@ std::string make_render_report_json(
     const AssetResolutionTable& assets,
     const RenderPlan& render_plan,
     const RenderExecutionPlan& execution_plan,
+    const DiagnosticBag& diagnostics,
     const RasterizedFrame2D& first_frame) {
     json report;
     report["report_type"] = "render";
     report["schema_version"] = RENDER_REPORT_SCHEMA_VERSION;
     report["scene"] = make_scene_json(scene);
     report["assets"] = make_assets_json(assets);
-    report["status"] = REPORT_STATUS_OK;
-    report["diagnostics"] = make_diagnostics_json();
+    report["status"] = diagnostics.ok() && !diagnostics.has_warnings() ? REPORT_STATUS_OK : "warning";
+    report["diagnostics"] = make_diagnostics_json(diagnostics);
     report["render_plan"] = make_render_plan_json(render_plan);
     report["render_graph"] = make_render_graph_json(execution_plan);
     report["first_frame"] = {

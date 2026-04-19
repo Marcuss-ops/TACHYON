@@ -38,11 +38,18 @@ add_library(TachyonCore
     scene/evaluator.cpp
     spec/parser/scene_spec.cpp
     text/font.cpp
+    text/font_registry.cpp
     text/layout.cpp
     timeline/frame_evaluator.cpp
     timeline/time.cpp
     timeline/time_resolver.cpp
 )
+
+if(MSVC)
+    target_compile_options(TachyonCore PRIVATE /W4 /WX /permissive- /utf-8 /FS)
+else()
+    target_compile_options(TachyonCore PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
 
 target_include_directories(TachyonCore
     PUBLIC 
@@ -54,6 +61,8 @@ target_include_directories(TachyonCore
 target_link_libraries(TachyonCore
     PUBLIC
         nlohmann_json::nlohmann_json
+        freetype
+        harfbuzz
         avcodec
         avformat
         avutil
