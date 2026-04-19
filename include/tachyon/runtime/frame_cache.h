@@ -12,14 +12,14 @@ namespace tachyon {
 
 struct CachedFrame {
     FrameCacheEntry entry;
-    std::string state_fingerprint;
+    std::string scene_signature;
     renderer2d::Framebuffer frame;
     std::vector<std::string> invalidates_when_changed;
 };
 
 class FrameCache {
 public:
-    const CachedFrame* lookup(const FrameCacheKey& key, const std::string& state_fingerprint) const;
+    const CachedFrame* lookup(const FrameCacheKey& key, const std::string& scene_signature) const;
     void store(CachedFrame frame);
     void invalidate(const std::string& changed_parameter);
     void clear();

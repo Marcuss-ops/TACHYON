@@ -2,14 +2,14 @@
 
 namespace tachyon {
 
-const CachedFrame* FrameCache::lookup(const FrameCacheKey& key, const std::string& state_fingerprint) const {
+const CachedFrame* FrameCache::lookup(const FrameCacheKey& key, const std::string& scene_signature) const {
     const auto it = m_entries.find(key.value);
     if (it == m_entries.end()) {
         ++m_miss_count;
         return nullptr;
     }
 
-    if (it->second.state_fingerprint != state_fingerprint) {
+    if (it->second.scene_signature != scene_signature) {
         ++m_miss_count;
         return nullptr;
     }
