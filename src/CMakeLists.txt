@@ -5,6 +5,7 @@ add_library(TachyonCore
     core/math/quaternion.cpp
     core/math/transform3.cpp
     core/camera/camera_state.cpp
+    core/expressions/expression_engine.cpp
     media/assets/asset_resolution.cpp
     spec/parser/scene_spec.cpp
     runtime/jobs/render_job.cpp

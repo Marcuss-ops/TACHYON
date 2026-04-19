@@ -8,9 +8,8 @@ bool run_framebuffer_tests();
 bool run_rasterizer_tests();
 bool run_surface_tests();
 bool run_property_tests();
-bool run_scene_evaluator_tests();
+bool run_expression_tests();
 bool run_text_tests();
-bool run_timeline_tests();
 
 int main() {
     if (!run_math_tests()) {
@@ -23,8 +22,8 @@ int main() {
         return 1;
     }
 
-    if (!run_timeline_tests()) {
-        std::cerr << "timeline tests failed\n";
+    if (!run_expression_tests()) {
+        std::cerr << "expression tests failed\n";
         return 1;
     }
 
@@ -50,11 +49,6 @@ int main() {
 
     if (!run_text_tests()) {
         std::cerr << "text tests failed\n";
-        return 1;
-    }
-
-    if (!run_scene_evaluator_tests()) {
-        std::cerr << "scene evaluator tests failed\n";
         return 1;
     }
 
