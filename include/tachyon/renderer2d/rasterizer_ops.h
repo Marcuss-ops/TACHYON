@@ -6,14 +6,7 @@
 namespace tachyon {
 namespace renderer2d {
 
-/**
- * Utility for Premultiplied Alpha Blending (SrcOver).
- */
 struct Blender {
-    /**
-     * Blends a source pixel onto a destination pixel using Premultiplied Alpha.
-     * Formula: Result = Src + Dest * (1 - Src.Alpha)
-     */
     static Color composite_premultiplied(Color src, Color dest) {
         if (src.a == 255) return src;
         if (src.a == 0) return dest;
@@ -29,22 +22,72 @@ struct Blender {
     }
 };
 
-/**
- * Basic rectangle primitive.
- */
+struct ClearPrimitive {
+    Color color{Color::transparent()};
+};
+
 struct RectPrimitive {
     int x{0}, y{0};
     int width{0}, height{0};
     Color color;
 };
 
-/**
- * Basic line primitive.
- */
 struct LinePrimitive {
     int x0{0}, y0{0};
     int x1{0}, y1{0};
     Color color;
+};
+
+struct TexturedQuadPrimitive {
+    int x{0};
+    int y{0};
+    int width{0};
+    int height{0};
+    const SurfaceRGBA* texture{nullptr};
+    Color tint{Color::white()};
+};
+
+struct DrawCommand2D {
+    enum class Kind {
+        Clear,
+        Rect,
+        Line,
+        TexturedQuad
+    };
+
+    Kind kind{Kind::Clear};
+    ClearPrimitive clear{};
+    RectPrimitive rect{};
+    LinePrimitive line{};
+    TexturedQuadPrimitive textured_quad{};
+
+    static DrawCommand2D make_clear(Color color) {
+        DrawCommand2D command;
+        command.kind = Kind::Clear;
+        command.clear = ClearPrimitive{color};
+        return command;
+    }
+
+    static DrawCommand2D make_rect(const RectPrimitive& rect_primitive) {
+        DrawCommand2D command;
+        command.kind = Kind::Rect;
+        command.rect = rect_primitive;
+        return command;
+    }
+
+    static DrawCommand2D make_line(const LinePrimitive& line_primitive) {
+        DrawCommand2D command;
+        command.kind = Kind::Line;
+        command.line = line_primitive;
+        return command;
+    }
+
+    static DrawCommand2D make_textured_quad(const TexturedQuadPrimitive& textured_quad_primitive) {
+        DrawCommand2D command;
+        command.kind = Kind::TexturedQuad;
+        command.textured_quad = textured_quad_primitive;
+        return command;
+    }
 };
 
 } // namespace renderer2d
