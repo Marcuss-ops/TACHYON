@@ -225,10 +225,6 @@ void render_layer_recursive(
     
     if (!layer.visible) return;
 
-    if (layer.is_adjustment_layer) {
-        return;
-    }
-
     if (layer.type == scene::LayerType::Precomp && layer.nested_composition) {
         if (g_precomp_recursion_depth < 8) {
             g_precomp_recursion_depth++;
@@ -247,9 +243,57 @@ void render_layer_recursive(
 
     SurfaceRGBA ls(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height));
     ls.clear(Color::transparent());
-    render_layer_to_surface(ls, layer, width, height, tile, plan, task, context, camera);
     
-    composite_surface_at(surface, ls, 0, 0, RectI{0, 0, tile.width, tile.height}, parse_blend_mode(layer.blend_mode));
+    if (layer.is_adjustment_layer) {
+        for (int y = 0; y < tile.height; ++y) {
+            for (int x = 0; x < tile.width; ++x) {
+                ls.set_pixel(x, y, surface.get_pixel(tile.x + x, tile.y + y));
+            }
+        }
+    } else {
+        render_layer_to_surface(ls, layer, width, height, tile, plan, task, context, camera);
+    }
+    
+    if (!layer.effects.empty()) {
+        for (const auto& effect_spec : layer.effects) {
+            if (effect_spec.enabled && context.effects.has_effect(effect_spec.type)) {
+                renderer2d::EffectParams params;
+                for (const auto& kv : effect_spec.scalars) {
+                    params.scalars[kv.first] = static_cast<float>(kv.second);
+                }
+                for (const auto& kv : effect_spec.colors) {
+                    params.colors[kv.first] = renderer2d::Color{kv.second.r, kv.second.g, kv.second.b, kv.second.a};
+                }
+                ls = context.effects.apply(effect_spec.type, ls, params);
+            }
+        }
+    }
+    
+    if (layer.is_adjustment_layer) {
+        SurfaceRGBA alpha_surface(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height));
+        alpha_surface.clear(Color::transparent());
+        render_layer_to_surface(alpha_surface, layer, width, height, tile, plan, task, context, camera);
+        
+        for (int y = 0; y < tile.height; ++y) {
+            for (int x = 0; x < tile.width; ++x) {
+                float alpha = static_cast<float>(alpha_surface.get_pixel(x, y).a) / 255.0f;
+                alpha *= static_cast<float>(layer.opacity);
+                if (alpha > 0.0f) {
+                    renderer2d::Color eff_pixel = ls.get_pixel(x, y);
+                    if (alpha < 1.0f) {
+                        renderer2d::Color orig_pixel = surface.get_pixel(tile.x + x, tile.y + y);
+                        eff_pixel.r = static_cast<std::uint8_t>(orig_pixel.r * (1.0f - alpha) + eff_pixel.r * alpha);
+                        eff_pixel.g = static_cast<std::uint8_t>(orig_pixel.g * (1.0f - alpha) + eff_pixel.g * alpha);
+                        eff_pixel.b = static_cast<std::uint8_t>(orig_pixel.b * (1.0f - alpha) + eff_pixel.b * alpha);
+                        eff_pixel.a = orig_pixel.a;
+                    }
+                    surface.set_pixel(tile.x + x, tile.y + y, eff_pixel);
+                }
+            }
+        }
+    } else {
+        composite_surface_at(surface, ls, 0, 0, RectI{0, 0, tile.width, tile.height}, parse_blend_mode(layer.blend_mode));
+    }
 }
 
 RasterizedFrame2D render_composition_recursive(
