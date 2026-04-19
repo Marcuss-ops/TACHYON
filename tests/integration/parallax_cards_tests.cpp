@@ -16,15 +16,15 @@ void check_true(bool condition, const std::string& message) {
     }
 }
 
-tachyon::scene::EvaluatedLayerState make_layer(const std::string& id, const std::string& type, float x, float y, float scale_x, float scale_y, double opacity) {
+tachyon::scene::EvaluatedLayerState make_layer(const std::string& id, tachyon::scene::LayerType type, float x, float y, float scale_x, float scale_y, double opacity) {
     tachyon::scene::EvaluatedLayerState layer;
     layer.id = id;
     layer.type = type;
     layer.name = id;
     layer.enabled = true;
     layer.active = true;
-    layer.position = {x, y};
-    layer.scale = {scale_x, scale_y};
+    layer.local_transform.position = {x, y};
+    layer.local_transform.scale = {scale_x, scale_y};
     layer.opacity = opacity;
     return layer;
 }
@@ -58,8 +58,8 @@ bool run_parallax_cards_tests() {
         math::Quaternion::identity(),
         math::Vector3::one());
 
-    composition.layers.push_back(make_layer("image_far", "image", 0.0f, 0.0f, 1.0f, 1.0f, 1.0));
-    composition.layers.push_back(make_layer("text_near", "text", 0.0f, 0.0f, 1.0f, 1.0f, 1.0));
+    composition.layers.push_back(make_layer("image_far", tachyon::scene::LayerType::Image, 0.0f, 0.0f, 1.0f, 1.0f, 1.0));
+    composition.layers.push_back(make_layer("text_near", tachyon::scene::LayerType::Text, 0.0f, 0.0f, 1.0f, 1.0f, 1.0));
 
     const auto draw_list = renderer2d::DrawListBuilder::build(composition);
     check_true(draw_list.commands.size() == 3, "parallax draw list should include clear plus two cards");

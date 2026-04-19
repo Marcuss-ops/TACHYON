@@ -27,11 +27,11 @@ bool run_evaluated_composition_renderer_tests() {
 
     scene::EvaluatedLayerState shape;
     shape.id = "shape";
-    shape.type = "shape";
+    shape.type = scene::LayerType::Shape;
     shape.visible = true;
     shape.opacity = 1.0;
-    shape.position = {8.0f, 8.0f};
-    shape.scale = {1.0f, 1.0f};
+    shape.local_transform.position = {8.0f, 8.0f};
+    shape.local_transform.scale = {1.0f, 1.0f};
     shape.layer_index = 0;
     shape.shape_path = scene::EvaluatedShapePath{
         {
@@ -45,12 +45,12 @@ bool run_evaluated_composition_renderer_tests() {
 
     scene::EvaluatedLayerState text;
     text.id = "text";
-    text.type = "text";
+    text.type = scene::LayerType::Text;
     text.name = "TACHYON";
     text.visible = true;
     text.opacity = 1.0;
-    text.position = {48.0f, 10.0f};
-    text.scale = {1.0f, 1.0f};
+    text.local_transform.position = {48.0f, 10.0f};
+    text.local_transform.scale = {1.0f, 1.0f};
     text.layer_index = 1;
     state.layers.push_back(text);
 
@@ -90,18 +90,18 @@ bool run_evaluated_composition_renderer_tests() {
     }
     check_true(text_visible, "text layer should render visible pixels");
 
-    timeline::EvaluatedCompositionState timeline_state;
+    scene::EvaluatedCompositionState timeline_state;
     timeline_state.composition_id = "timeline_main";
     timeline_state.width = 64;
     timeline_state.height = 64;
 
-    timeline::EvaluatedLayerState timeline_layer;
+    scene::EvaluatedLayerState timeline_layer;
     timeline_layer.id = "timeline_solid";
-    timeline_layer.type = timeline::LayerType::Solid;
+    timeline_layer.type = scene::LayerType::Solid;
     timeline_layer.visible = true;
     timeline_layer.opacity = 1.0f;
-    timeline_layer.transform2.position = {8.0f, 8.0f};
-    timeline_layer.transform2.scale = {1.0f, 1.0f};
+    timeline_layer.local_transform.position = {8.0f, 8.0f};
+    timeline_layer.local_transform.scale = {1.0f, 1.0f};
     timeline_state.layers.push_back(timeline_layer);
 
     const RasterizedFrame2D timeline_frame = tachyon::render_evaluated_composition_2d(timeline_state, plan, task);

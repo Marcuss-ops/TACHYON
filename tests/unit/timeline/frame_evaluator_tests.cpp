@@ -64,24 +64,24 @@ bool run_scene_evaluator_tests() {
     comp.layers = {bg, title, cam};
     scene.compositions.push_back(comp);
 
-    const auto evaluated = evaluate_composition_frame(EvaluationRequest{&scene, "main", 45});
-    check_true(evaluated.has_value(), "evaluate_composition_frame returns a state");
-    if (!evaluated.has_value()) {
-        return false;
-    }
+        const auto evaluated = evaluate_composition_frame(EvaluationRequest{&scene, "main", 45});
+        check_true(evaluated.has_value(), "evaluate_composition_frame returns a state");
+        if (!evaluated.has_value()) {
+            return false;
+        }
 
-    check_true(nearly_equal(evaluated->composition_time_seconds, 1.5), "frame 45 at 30 fps resolves to 1.5 seconds");
-    check_true(evaluated->layers.size() == 3, "composition with 3 layers produces 3 evaluated states");
+        check_true(nearly_equal(evaluated->composition_time_seconds, 1.5), "frame 45 at 30 fps resolves to 1.5 seconds");
+        check_true(evaluated->layers.size() == 3, "composition with 3 layers produces 3 evaluated states");
 
-    check_true(evaluated->layers[0].visible, "background layer visible in range");
-    check_true(evaluated->layers[1].visible, "title layer visible inside in/out window");
-    check_true(nearly_equal(evaluated->layers[1].opacity, 1.0), "linear keyframe opacity resolved at local time");
-    check_true(nearly_equal(evaluated->layers[1].local_transform.position.x, 50.0), "linear keyframe position.x resolves halfway");
-    check_true(nearly_equal(evaluated->layers[1].local_transform.position.y, 25.0), "linear keyframe position.y resolves halfway");
+        check_true(evaluated->layers[0].visible, "background layer visible in range");
+        check_true(evaluated->layers[1].visible, "title layer visible inside in/out window");
+        check_true(nearly_equal(evaluated->layers[1].opacity, 1.0), "linear keyframe opacity resolved at local time");
+        check_true(nearly_equal(evaluated->layers[1].local_transform.position.x, 50.0), "linear keyframe position.x resolves halfway");
+        check_true(nearly_equal(evaluated->layers[1].local_transform.position.y, 25.0), "linear keyframe position.y resolves halfway");
 
-    check_true(evaluated->camera.available, "camera layer resolves an available camera state");
-    check_true(nearly_equal(evaluated->camera.position.x, 10.0), "camera x position evaluated correctly");
-    check_true(nearly_equal(evaluated->camera.position.y, 20.0), "camera y position evaluated correctly");
+        check_true(evaluated->camera.available, "camera layer resolves an available camera state");
+        check_true(nearly_equal(evaluated->camera.position.x, 10.0), "camera x position evaluated correctly");
+        check_true(nearly_equal(evaluated->camera.position.y, 20.0), "camera y position evaluated correctly");
     
     const auto proj = evaluated->camera.camera.get_projection_matrix();
     check_true(nearly_equal(proj[11], -1.0), "camera projection uses perspective clip convention");

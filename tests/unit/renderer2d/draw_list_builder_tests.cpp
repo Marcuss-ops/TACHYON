@@ -14,31 +14,31 @@ void check_true(bool condition, const std::string& message) {
     }
 }
 
-tachyon::timeline::EvaluatedCompositionState make_base_composition() {
-    tachyon::timeline::EvaluatedCompositionState composition;
+tachyon::scene::EvaluatedCompositionState make_base_composition() {
+    tachyon::scene::EvaluatedCompositionState composition;
     composition.composition_id = "main";
     composition.width = 1920;
     composition.height = 1080;
-    composition.time_seconds = 0.0;
+    composition.composition_time_seconds = 0.0;
     return composition;
 }
 
-tachyon::timeline::EvaluatedLayerState make_layer(
+tachyon::scene::EvaluatedLayerState make_layer(
     const std::string& id,
-    tachyon::timeline::LayerType type,
+    tachyon::scene::LayerType type,
     float x,
     float y,
     float scale_x,
     float scale_y,
     double opacity) {
 
-    tachyon::timeline::EvaluatedLayerState layer;
+    tachyon::scene::EvaluatedLayerState layer;
     layer.id = id;
     layer.type = type;
     layer.visible = true;
     layer.opacity = static_cast<float>(opacity);
-    layer.transform2.position = {x, y};
-    layer.transform2.scale = {scale_x, scale_y};
+    layer.local_transform.position = {x, y};
+    layer.local_transform.scale = {scale_x, scale_y};
     return layer;
 }
 
@@ -49,11 +49,11 @@ bool run_draw_list_builder_tests() {
 
     {
         auto composition = make_base_composition();
-        composition.layers.push_back(make_layer("solid_01", tachyon::timeline::LayerType::Solid, 10.0f, 20.0f, 2.0f, 3.0f, 0.5));
-        composition.layers.push_back(make_layer("shape_01", tachyon::timeline::LayerType::Shape, 30.0f, 40.0f, 1.0f, 1.0f, 0.6));
-        composition.layers.push_back(make_layer("mask_01", tachyon::timeline::LayerType::Mask, 45.0f, 55.0f, 1.0f, 1.0f, 1.0));
-        composition.layers.push_back(make_layer("image_01", tachyon::timeline::LayerType::Image, 50.0f, 60.0f, 1.0f, 1.0f, 0.75));
-        composition.layers.push_back(make_layer("text_01", tachyon::timeline::LayerType::Text, 100.0f, 120.0f, 1.0f, 2.0f, 0.9));
+        composition.layers.push_back(make_layer("solid_01", tachyon::scene::LayerType::Solid, 10.0f, 20.0f, 2.0f, 3.0f, 0.5));
+        composition.layers.push_back(make_layer("shape_01", tachyon::scene::LayerType::Shape, 30.0f, 40.0f, 1.0f, 1.0f, 0.6));
+        composition.layers.push_back(make_layer("mask_01", tachyon::scene::LayerType::Mask, 45.0f, 55.0f, 1.0f, 1.0f, 1.0));
+        composition.layers.push_back(make_layer("image_01", tachyon::scene::LayerType::Image, 50.0f, 60.0f, 1.0f, 1.0f, 0.75));
+        composition.layers.push_back(make_layer("text_01", tachyon::scene::LayerType::Text, 100.0f, 120.0f, 1.0f, 2.0f, 0.9));
 
         const auto draw_list = tachyon::renderer2d::DrawListBuilder::build(composition);
         check_true(draw_list.commands.size() == 6, "draw list should include one clear command and five layer commands");
@@ -80,8 +80,8 @@ bool run_draw_list_builder_tests() {
 
     {
         auto composition = make_base_composition();
-        composition.layers.push_back(make_layer("top", tachyon::timeline::LayerType::Image, 0.0f, 0.0f, 1.0f, 1.0f, 1.0));
-        composition.layers.push_back(make_layer("bottom", tachyon::timeline::LayerType::Solid, 0.0f, 0.0f, 1.0f, 1.0f, 1.0));
+        composition.layers.push_back(make_layer("top", tachyon::scene::LayerType::Image, 0.0f, 0.0f, 1.0f, 1.0f, 1.0));
+        composition.layers.push_back(make_layer("bottom", tachyon::scene::LayerType::Solid, 0.0f, 0.0f, 1.0f, 1.0f, 1.0));
 
         const auto draw_list = tachyon::renderer2d::DrawListBuilder::build(composition);
         check_true(draw_list.commands.size() == 3, "draw list should keep one clear and two layer commands");
