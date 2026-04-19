@@ -1,0 +1,6 @@
+C:/Users/pater/Pyt/Tachyon/build/CMakeFiles/ALL_BUILD.dir
+C:/Users/pater/Pyt/Tachyon/build/CMakeFiles/ZERO_CHECK.dir
+C:/Users/pater/Pyt/Tachyon/build/_deps/nlohmann_json-build/CMakeFiles/ALL_BUILD.dir
+C:/Users/pater/Pyt/Tachyon/build/src/CMakeFiles/TachyonCore.dir
+C:/Users/pater/Pyt/Tachyon/build/src/CMakeFiles/tachyon.dir
+C:/Users/pater/Pyt/Tachyon/build/tests/CMakeFiles/TachyonTests.dir

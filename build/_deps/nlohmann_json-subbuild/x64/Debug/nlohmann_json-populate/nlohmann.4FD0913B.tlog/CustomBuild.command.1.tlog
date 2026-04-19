@@ -1,0 +1,152 @@
+^C:\USERS\PATER\PYT\TACHYON\BUILD\_DEPS\NLOHMANN_JSON-SUBBUILD\CMAKEFILES\4E9393AAC8CF77ECF95DCA3E26385207\NLOHMANN_JSON-POPULATE-MKDIR.RULE
+setlocal
+"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -Dcfgdir=/Debug -P C:/Users/pater/Pyt/Tachyon/build/_deps/nlohmann_json-subbuild/nlohmann_json-populate-prefix/tmp/nlohmann_json-populate-mkdirs.cmake
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E touch C:/Users/pater/Pyt/Tachyon/build/_deps/nlohmann_json-subbuild/nlohmann_json-populate-prefix/src/nlohmann_json-populate-stamp/Debug/nlohmann_json-populate-mkdir
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\PATER\PYT\TACHYON\BUILD\_DEPS\NLOHMANN_JSON-SUBBUILD\CMAKEFILES\4E9393AAC8CF77ECF95DCA3E26385207\NLOHMANN_JSON-POPULATE-DOWNLOAD.RULE
+setlocal
+cd C:\Users\pater\Pyt\Tachyon\build\_deps
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -DCMAKE_MESSAGE_LOG_LEVEL=VERBOSE -P C:/Users/pater/Pyt/Tachyon/build/_deps/nlohmann_json-subbuild/nlohmann_json-populate-prefix/src/nlohmann_json-populate-stamp/download-nlohmann_json-populate.cmake
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -DCMAKE_MESSAGE_LOG_LEVEL=VERBOSE -P C:/Users/pater/Pyt/Tachyon/build/_deps/nlohmann_json-subbuild/nlohmann_json-populate-prefix/src/nlohmann_json-populate-stamp/verify-nlohmann_json-populate.cmake
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -DCMAKE_MESSAGE_LOG_LEVEL=VERBOSE -P C:/Users/pater/Pyt/Tachyon/build/_deps/nlohmann_json-subbuild/nlohmann_json-populate-prefix/src/nlohmann_json-populate-stamp/extract-nlohmann_json-populate.cmake
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E touch C:/Users/pater/Pyt/Tachyon/build/_deps/nlohmann_json-subbuild/nlohmann_json-populate-prefix/src/nlohmann_json-populate-stamp/Debug/nlohmann_json-populate-download
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\PATER\PYT\TACHYON\BUILD\_DEPS\NLOHMANN_JSON-SUBBUILD\CMAKEFILES\4E9393AAC8CF77ECF95DCA3E26385207\NLOHMANN_JSON-POPULATE-UPDATE.RULE
+setlocal
+"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E echo_append
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E touch C:/Users/pater/Pyt/Tachyon/build/_deps/nlohmann_json-subbuild/nlohmann_json-populate-prefix/src/nlohmann_json-populate-stamp/Debug/nlohmann_json-populate-update
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\PATER\PYT\TACHYON\BUILD\_DEPS\NLOHMANN_JSON-SUBBUILD\CMAKEFILES\4E9393AAC8CF77ECF95DCA3E26385207\NLOHMANN_JSON-POPULATE-PATCH.RULE
+setlocal
+"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E echo_append
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E touch C:/Users/pater/Pyt/Tachyon/build/_deps/nlohmann_json-subbuild/nlohmann_json-populate-prefix/src/nlohmann_json-populate-stamp/Debug/nlohmann_json-populate-patch
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\PATER\PYT\TACHYON\BUILD\_DEPS\NLOHMANN_JSON-SUBBUILD\CMAKEFILES\4E9393AAC8CF77ECF95DCA3E26385207\NLOHMANN_JSON-POPULATE-CONFIGURE.RULE
+setlocal
+cd C:\Users\pater\Pyt\Tachyon\build\_deps\nlohmann_json-build
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E echo_append
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E touch C:/Users/pater/Pyt/Tachyon/build/_deps/nlohmann_json-subbuild/nlohmann_json-populate-prefix/src/nlohmann_json-populate-stamp/Debug/nlohmann_json-populate-configure
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\PATER\PYT\TACHYON\BUILD\_DEPS\NLOHMANN_JSON-SUBBUILD\CMAKEFILES\4E9393AAC8CF77ECF95DCA3E26385207\NLOHMANN_JSON-POPULATE-BUILD.RULE
+setlocal
+cd C:\Users\pater\Pyt\Tachyon\build\_deps\nlohmann_json-build
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E echo_append
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E touch C:/Users/pater/Pyt/Tachyon/build/_deps/nlohmann_json-subbuild/nlohmann_json-populate-prefix/src/nlohmann_json-populate-stamp/Debug/nlohmann_json-populate-build
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\PATER\PYT\TACHYON\BUILD\_DEPS\NLOHMANN_JSON-SUBBUILD\CMAKEFILES\4E9393AAC8CF77ECF95DCA3E26385207\NLOHMANN_JSON-POPULATE-INSTALL.RULE
+setlocal
+cd C:\Users\pater\Pyt\Tachyon\build\_deps\nlohmann_json-build
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E echo_append
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E touch C:/Users/pater/Pyt/Tachyon/build/_deps/nlohmann_json-subbuild/nlohmann_json-populate-prefix/src/nlohmann_json-populate-stamp/Debug/nlohmann_json-populate-install
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\PATER\PYT\TACHYON\BUILD\_DEPS\NLOHMANN_JSON-SUBBUILD\CMAKEFILES\4E9393AAC8CF77ECF95DCA3E26385207\NLOHMANN_JSON-POPULATE-TEST.RULE
+setlocal
+cd C:\Users\pater\Pyt\Tachyon\build\_deps\nlohmann_json-build
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E echo_append
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E touch C:/Users/pater/Pyt/Tachyon/build/_deps/nlohmann_json-subbuild/nlohmann_json-populate-prefix/src/nlohmann_json-populate-stamp/Debug/nlohmann_json-populate-test
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\PATER\PYT\TACHYON\BUILD\_DEPS\NLOHMANN_JSON-SUBBUILD\CMAKEFILES\FEF406275DD9B65C8ED540A757DB01B7\NLOHMANN_JSON-POPULATE-COMPLETE.RULE
+setlocal
+"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E make_directory C:/Users/pater/Pyt/Tachyon/build/_deps/nlohmann_json-subbuild/CMakeFiles/Debug
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E touch C:/Users/pater/Pyt/Tachyon/build/_deps/nlohmann_json-subbuild/CMakeFiles/Debug/nlohmann_json-populate-complete
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E touch C:/Users/pater/Pyt/Tachyon/build/_deps/nlohmann_json-subbuild/nlohmann_json-populate-prefix/src/nlohmann_json-populate-stamp/Debug/nlohmann_json-populate-done
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\PATER\PYT\TACHYON\BUILD\_DEPS\NLOHMANN_JSON-SUBBUILD\CMAKEFILES\2D8D3F9A505F44779E186EB1F2B7D146\NLOHMANN_JSON-POPULATE.RULE
+setlocal
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\PATER\PYT\TACHYON\BUILD\_DEPS\NLOHMANN_JSON-SUBBUILD\CMAKELISTS.TXT
+setlocal
+"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -SC:/Users/pater/Pyt/Tachyon/build/_deps/nlohmann_json-subbuild -BC:/Users/pater/Pyt/Tachyon/build/_deps/nlohmann_json-subbuild --check-stamp-file C:/Users/pater/Pyt/Tachyon/build/_deps/nlohmann_json-subbuild/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
