@@ -50,6 +50,8 @@ render_defaults:
   output: "mp4"
 ```
 
+The first code slice treats this shape as JSON input for the CLI and core parser, even though the example remains format-agnostic in intent.
+
 ## Composition contract
 
 A composition should contain:

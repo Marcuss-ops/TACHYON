@@ -1,14 +1,6 @@
-# Build artifacts
 build/
-bin/
-obj/
-
-# IDE specific files
-.vscode/
-.vs/
-*.user
+out/
+*.vcxproj.user
 *.suo
-
-# Operating system files
-Thumbs.db
-.DS_Store
+*.VC.db
+*.VC.VC.opendb
