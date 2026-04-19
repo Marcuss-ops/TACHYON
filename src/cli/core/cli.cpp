@@ -110,7 +110,7 @@ void print_execution_plan(const RenderExecutionPlan& execution_plan, const Raste
     out << "graph steps: " << execution_plan.steps.size() << '\n';
     out << "frame tasks: " << execution_plan.frame_tasks.size() << '\n';
     out << "first frame cache key: " << rasterized_first_frame.cache_key << '\n';
-    out << "2d stub backend: " << rasterized_first_frame.backend_name << '\n';
+    out << "2d refined backend: " << rasterized_first_frame.backend_name << '\n';
     out << "2d stub draw ops: " << rasterized_first_frame.estimated_draw_ops << '\n';
     out << "note: pixel rendering is not wired yet; this command validates the graph and stub raster slice\n";
 }
