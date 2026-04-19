@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/renderer2d/rasterizer_ops.h"
+#include "tachyon/renderer2d/draw_command.h"
 #include "tachyon/runtime/frame_cache.h"
 #include "tachyon/runtime/render_plan.h"
 #include "tachyon/runtime/render_graph.h"
@@ -9,13 +9,8 @@
 
 #include <cstddef>
 #include <string>
-#include <vector>
 
 namespace tachyon {
-
-struct DrawList2D {
-    std::vector<renderer2d::RectPrimitive> rects;
-};
 
 struct EvaluatedFrameState {
     FrameRenderTask task;
@@ -34,7 +29,7 @@ struct ExecutedFrame {
 };
 
 EvaluatedFrameState evaluate_frame_state(const SceneSpec& scene, const RenderPlan& plan, const FrameRenderTask& task);
-DrawList2D build_draw_list(const EvaluatedFrameState& state);
+renderer2d::DrawList2D build_draw_list(const EvaluatedFrameState& state);
 ExecutedFrame execute_frame_task(const SceneSpec& scene, const RenderPlan& plan, const FrameRenderTask& task, FrameCache& cache);
 
 } // namespace tachyon
