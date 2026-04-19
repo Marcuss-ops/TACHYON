@@ -1,4 +1,4 @@
-#include "tachyon/scene_spec.h"
+#include "tachyon/spec/scene_spec.h"
 
 #include <fstream>
 #include <nlohmann/json.hpp>

@@ -27,8 +27,8 @@ FetchContent_MakeAvailable(nlohmann_json)
 
 # Version header generation
 configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/tachyon/version.h.in
-    ${CMAKE_CURRENT_BINARY_DIR}/include/tachyon/version.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/tachyon/core/version.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/include/tachyon/core/version.h
 )
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 

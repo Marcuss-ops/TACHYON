@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/diagnostics.h"
+#include "tachyon/runtime/diagnostics.h"
 
 #include <cstdint>
 #include <filesystem>

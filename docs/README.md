@@ -1,125 +1,94 @@
-# Documentation Index
+# TACHYON Documentation Index
 
-This index is the starting point for navigating TACHYON's architecture and system design documents.
+Welcome to the TACHYON documentation. This repository uses a numbered architectural structure to organize design goals, contracts, and system details.
 
-The repository currently contains both older flat documents under `docs/` and a newer grouped structure under subfolders.
-This mixed structure is intentional during the transition.
+## Core Project & Vision
+- **00 Project**
+  - [Project Vision](00-project/vision.md)
+  - [Roadmap](00-project/roadmap.md)
+  - [MVP V1 Goals](00-project/mvp-v1.md)
+  - [Non-Goals](00-project/non-goals.md)
 
-## How to read the docs
+- **10 Architecture**
+  - [Core Architecture](10-architecture/architecture.md)
+  - [Execution Model](10-architecture/execution-model.md)
+  - [Determinism Policy](10-architecture/determinism.md)
+  - [Parallelism Strategy](10-architecture/parallelism.md)
+  - [Dependency Graph & Invalidation](10-architecture/dependency-graph-and-invalidation.md)
+  - [Scene Model Design](10-architecture/scene-model.md)
+  - [Pixel Pipeline](10-architecture/pixel-pipeline.md)
+  - [Error Handling](10-architecture/error-handling.md)
 
-Recommended reading order for a new contributor:
+## System Contracts
+- **20 Contracts**
+  - [Core Contracts](20-contracts/core-contracts.md)
+  - [Rendering Contract](20-contracts/rendering-contract.md)
+  - [Surface & AOV Contract](20-contracts/surface-and-aov-contract.md)
+  - [Output Profile Schema](20-contracts/output-profile-schema.md)
+  - [CLI & API Contract](20-contracts/cli-and-api-contract.md)
+  - [Testing & Compatibility](20-contracts/testing-and-compatibility.md)
+  - [API Reference](20-contracts/api.md)
+  - [CLI Reference](20-contracts/cli.md)
 
-1. `vision.md`
-2. `non-goals.md`
-3. `architecture.md`
-4. `roadmap.md`
-5. `mvp-v1.md`
-6. grouped system contracts below
+## Systems & Subsystems
+- **30 Scene & Animation**
+  - [Scene Specification](30-scene-and-animation/scene-spec.md)
+  - [Scene Spec V1](30-scene-and-animation/scene-spec-v1.md)
+  - [Composition Layer Model](30-scene-and-animation/composition-layer-model.md)
+  - [Property Model](30-scene-and-animation/property-model.md)
+  - [Property Animation System](30-scene-and-animation/property-animation-system.md)
+  - [Animation System](30-scene-and-animation/animation-system.md)
+  - [Time System](30-scene-and-animation/time-system.md)
+  - [Template System](30-scene-and-animation/template-system.md)
+  - [Data Binding](30-scene-and-animation/data-binding.md)
+  - [Expression System](30-scene-and-animation/expression-system.md)
+  - [Expression Runtime](30-scene-and-animation/expression-runtime.md)
+  - [3D Mesh & Extrusion Placeholder](30-scene-and-animation/3d-mesh-and-extrusion.md)
 
-## Grouped documentation
+- **40 2D Compositing**
+  - [Shape System](40-2d-compositing/shape-system.md)
+  - [Masking & Mattes](40-2d-compositing/masking.md)
+  - [Effects Pipeline](40-2d-compositing/effects.md)
+  - [Effects Priority Matrix](40-2d-compositing/effects-priority-matrix.md)
+  - [Effect Registry](40-2d-compositing/effect-registry.md)
+  - [Text Layout & Shaping](40-2d-compositing/text-layout-and-shaping.md)
+  - [Text Animator](40-2d-compositing/text-animator.md)
+  - [Motion Blur](40-2d-compositing/motion-blur.md)
+  - [Color Management](40-2d-compositing/color-management.md)
+  - [Compositing Logic](40-2d-compositing/compositing.md)
 
-### Contracts
-- `contracts/core-contracts.md`
-- `contracts/rendering-contract.md`
+- **50 3D**
+  - [Camera System](50-3d/camera-system.md)
+  - [Camera & 3D Scene Interactions](50-3d/camera-and-3d-scene.md)
+  - [Light System](50-3d/light-system.md)
+  - [Lighting & Materials](50-3d/lighting-and-materials.md)
+  - [2D/3D Boundary](50-3d/2d-3d-compositing-boundary.md)
+  - [Render Backend Strategy](50-3d/render-backend-strategy.md)
+  - [Render Strategy](50-3d/render-strategy.md)
+  - [Path Tracing (CPU)](50-3d/path-tracing-cpu.md)
 
-### Scene and compositing
-- `scene/composition-layer-model.md`
-- `scene/scene-model.md`
-- `scene/scene-spec.md`
-- `scene/scene-spec-v1.md`
-- `scene/camera-system.md`
-- `scene/camera-and-3d-scene.md`
-- `scene/light-system.md`
-- `scene/lighting-and-materials.md`
-- `scene/masking.md`
-- `scene/compositing.md`
-- `scene/2d-3d-compositing-boundary.md`
-- `scene/shape-system.md`
-- `scene/text-animator.md`
-- `scene/text-layout-and-shaping.md`
-- `scene/3d-mesh-and-extrusion.md`
+## Lifecycle & Resources
+- **60 Runtime**
+  - [Scaling Strategy (Caching)](60-runtime/caching.md)
+  - [Memory & Resource Policy](60-runtime/memory-and-resource-policy.md)
+  - [Quality Tiers](60-runtime/quality-tiers.md)
+  - [Performance Tiers](60-runtime/performance-tiers.md)
+  - [Low-End Hardware Strategy](60-runtime/low-end-strategy.md)
+  - [Diagnostics & Profiling](60-runtime/diagnostics-and-profiling.md)
+  - [Packaging & Runtime Layout](60-runtime/packaging-runtime-layout.md)
 
-### Render and pixel pipeline
-- `render/surface-and-aov-contract.md`
-- `render/render-strategy.md`
-- `render/render-backend-strategy.md`
-- `render/pixel-pipeline.md`
-- `render/path-tracing-cpu.md`
-- `render/motion-blur.md`
-- `render/color-management.md`
+- **70 Media IO**
+  - [Asset Pipeline](70-media-io/asset-pipeline.md)
+  - [Decode/Encode Strategy](70-media-io/decode-encode.md)
+  - [Encoder Output Contracts](70-media-io/encoder-output.md)
+  - [Render Job Logic](70-media-io/render-job.md)
+  - [Multi-Format Output](70-media-io/multi-format-output.md)
+  - [Voice-Over & Subtitles](70-media-io/voice-over-and-subtitles.md)
 
-### Runtime and execution policy
-- `runtime/memory-and-resource-policy.md`
-- `runtime/quality-tiers.md`
-- `runtime/execution-model.md`
-- `runtime/property-model.md`
-- `runtime/property-animation-system.md`
-- `runtime/animation-system.md`
-- `runtime/expression-system.md`
-- `runtime/expression-runtime.md`
-- `runtime/time-system.md`
-- `runtime/parallelism.md`
-- `runtime/caching.md`
-- `runtime/dependency-graph-and-invalidation.md`
-- `runtime/determinism.md`
-- `runtime/audio-reactivity.md`
-- `runtime/audio-driven-animation.md`
-- `runtime/effect-registry.md`
-- `runtime/effects.md`
-- `runtime/effects-priority-matrix.md`
-- `runtime/performance-tiers.md`
-- `runtime/packaging-runtime-layout.md`
+- **80 Audio**
+  - [Audio Reactivity](80-audio/audio-reactivity.md)
+  - [Audio-Driven Animation](80-audio/audio-driven-animation.md)
 
-### Output and delivery
-- `output/output-profile-schema.md`
-- `output/encoder-output.md`
-- `output/decode-encode.md`
-- `output/render-job.md`
-- `output/multi-format-output.md`
-- `output/asset-pipeline.md`
-- `output/voice-over-and-subtitles.md`
-
-### Interfaces
-- `interfaces/cli-and-api-contract.md`
-- `interfaces/api.md`
-- `interfaces/cli.md`
-
-### Observability
-- `observability/diagnostics-and-profiling.md`
-- `observability/error-handling.md`
-
-### Testing
-- `testing/canonical-scenes.md`
-- `testing/testing-and-compatibility.md`
-
-## Migration note
-
-The reorganization phase is now complete. All internal documentation has been moved to its respective category in `docs/`.
-New documents should be added to a subfolder unless they are broad top-level project docs.
-
-## Folder intent
-
-### `docs/contracts/`
-Cross-cutting rules the whole engine must obey.
-
-### `docs/scene/`
-Scene model, layers, cameras, lights, shapes, text, and compositing hierarchy.
-
-### `docs/render/`
-Render surfaces, pass semantics, compositing handoffs, and backend-facing rendering contracts.
-
-### `docs/runtime/`
-Execution, memory, quality, fallback, and operational behavior.
-
-### `docs/output/`
-Render-job output profiles, delivery targets, and encoding-adjacent schemas.
-
-### `docs/interfaces/`
-CLI and service-facing contracts.
-
-### `docs/observability/`
-Logs, metrics, profiling, debugging, and diagnostics.
-
-### `docs/testing/`
-Golden scenes, validation packs, and compatibility-oriented checks.
-
+## Validation
+- **90 Testing**
+  - [Canonical Scenes](90-testing/canonical-scenes.md)
