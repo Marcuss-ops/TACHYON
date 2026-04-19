@@ -45,7 +45,7 @@ private:
     int m_height{0};
     std::deque<CachedVideoFrame> m_frame_cache;
     mutable std::mutex m_mutex;
-    static constexpr int kMaxCachedFrames = 8;
+    static constexpr int kMaxCachedFrames = 32;
     AVFormatContext* m_format_context{nullptr};
     AVCodecContext* m_codec_context{nullptr};
     AVFrame* m_frame{nullptr};
@@ -53,6 +53,7 @@ private:
     SwsContext* m_sws_context{nullptr};
     int m_stream_index{-1};
     double m_stream_time_base{0.0};
+    double m_last_pts{-1.0};
 };
 
 } // namespace tachyon::media
