@@ -37,9 +37,7 @@ add_library(TachyonCore
     spec/parser/scene_spec.cpp
     text/font.cpp
     text/layout.cpp
-    timeline/camera_evaluator.cpp
     timeline/frame_evaluator.cpp
-    timeline/layer_evaluator.cpp
     timeline/time.cpp
     timeline/time_resolver.cpp
 )

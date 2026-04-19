@@ -31,60 +31,6 @@ struct RenderContext {
 
 int g_precomp_recursion_depth = 0;
 
-scene::EvaluatedCompositionState to_scene_state(
-    const timeline::EvaluatedCompositionState& state,
-    const RenderPlan& plan,
-    const FrameRenderTask& task) {
-    scene::EvaluatedCompositionState scene_state;
-    scene_state.composition_id = state.composition_id;
-    scene_state.composition_name = state.composition_name;
-    scene_state.width = state.width;
-    scene_state.height = state.height;
-    scene_state.frame_rate = plan.composition.frame_rate;
-    scene_state.frame_number = task.frame_number;
-    scene_state.composition_time_seconds = state.time_seconds;
-    
-    for (const auto& layer : state.layers) {
-        scene::EvaluatedLayerState sl;
-        sl.id = layer.id;
-        sl.name = layer.name;
-        sl.layer_index = layer.layer_index;
-        sl.layer_index_in_composition = layer.layer_index;
-        sl.kind = layer.kind;
-        sl.label = layer.label;
-        sl.visible = layer.visible;
-        sl.active = layer.active;
-        sl.blend_mode = layer.blend_mode;
-        sl.opacity = static_cast<float>(layer.opacity);
-        sl.position = layer.position;
-        sl.rotation_degrees = static_cast<float>(layer.rotation_degrees);
-        sl.scale = layer.scale;
-        sl.width = layer.width;
-        sl.height = layer.height;
-        sl.is_3d = layer.is_3d;
-        sl.position3 = layer.position3;
-        sl.rotation3 = layer.rotation3;
-        sl.scale3 = layer.scale3;
-        sl.is_adjustment_layer = layer.is_adjustment_layer;
-        
-        for (const auto& effect : layer.effects) {
-            scene::EffectSpec se;
-            se.type = effect.type;
-            se.enabled = effect.enabled;
-            se.scalars = effect.scalars;
-            se.colors = effect.colors;
-            sl.effects.push_back(se);
-        }
-        
-        sl.track_matte_type = layer.track_matte_type;
-        sl.track_matte_layer_index = layer.track_matte_layer_index;
-        
-        scene_state.layers.push_back(sl);
-    }
-    
-    return scene_state;
-}
-
 struct AccumulationBuffer {
     std::vector<float> r;
     std::vector<float> g;
@@ -134,10 +80,10 @@ struct AccumulationBuffer {
 
 Color from_spec(const ColorSpec& spec) {
     return Color{
-        static_cast<std::uint8_t>(std::clamp(spec.r, 0, 255)),
-        static_cast<std::uint8_t>(std::clamp(spec.g, 0, 255)),
-        static_cast<std::uint8_t>(std::clamp(spec.b, 0, 255)),
-        static_cast<std::uint8_t>(std::clamp(spec.a, 0, 255))
+        static_cast<std::uint8_t>(std::clamp(static_cast<int>(spec.r), 0, 255)),
+        static_cast<std::uint8_t>(std::clamp(static_cast<int>(spec.g), 0, 255)),
+        static_cast<std::uint8_t>(std::clamp(static_cast<int>(spec.b), 0, 255)),
+        static_cast<std::uint8_t>(std::clamp(static_cast<int>(spec.a), 0, 255))
     };
 }
 
@@ -156,12 +102,14 @@ RectI intersect_rects(const RectI& a, const RectI& b) {
 }
 
 RectI layer_bounds(const scene::EvaluatedLayerState& layer, std::int64_t comp_w, std::int64_t comp_h) {
+    (void)comp_w;
+    (void)comp_h;
     // Basic 2D bounds for ROI filtering
-    const int w = static_cast<int>(std::round(static_cast<float>(layer.width) * std::abs(layer.scale.x)));
-    const int h = static_cast<int>(std::round(static_cast<float>(layer.height) * std::abs(layer.scale.y)));
+    const int w = static_cast<int>(std::round(static_cast<float>(layer.width) * std::abs(layer.local_transform.scale.x)));
+    const int h = static_cast<int>(std::round(static_cast<float>(layer.height) * std::abs(layer.local_transform.scale.y)));
     return RectI{
-        static_cast<int>(std::round(layer.position.x)) - w / 2,
-        static_cast<int>(std::round(layer.position.y)) - h / 2,
+        static_cast<int>(std::round(layer.local_transform.position.x)) - w / 2,
+        static_cast<int>(std::round(layer.local_transform.position.y)) - h / 2,
         w, h
     };
 }
@@ -174,6 +122,7 @@ renderer2d::BlendMode parse_blend_mode(const std::string& mode) {
 }
 
 void composite_surface_at(SurfaceRGBA& dest, const SurfaceRGBA& src, int x, int y, const RectI& clip, renderer2d::BlendMode mode) {
+    (void)mode;
     const RectI src_rect{x, y, static_cast<int>(src.width()), static_cast<int>(src.height())};
     const RectI clipped = intersect_rects(src_rect, clip);
     if (clipped.width <= 0 || clipped.height <= 0) return;
@@ -183,8 +132,6 @@ void composite_surface_at(SurfaceRGBA& dest, const SurfaceRGBA& src, int x, int 
             Color p = src.get_pixel(cx - x, cy - y);
             if (p.a > 0) {
                 dest.blend_pixel(cx, cy, p);
-                // Note: We ignore blending mode for now in this simplified helper to focus on 3D/Parallel
-                // In production, we'd use renderer2d::detail::composite_src_over_linear here
             }
         }
     }
@@ -201,6 +148,8 @@ void render_layer_to_surface(
     RenderContext& context,
     const scene::EvaluatedCameraState& camera) {
 
+    (void)plan;
+
     if (layer.is_3d && camera.available) {
         // Perspective Quad Warping logic
         const float w = static_cast<float>(layer.width);
@@ -211,22 +160,18 @@ void render_layer_to_surface(
             {-w/2, -h/2, 0}, {w/2, -h/2, 0}, {w/2, h/2, 0}, {-w/2, h/2, 0}
         };
 
-        // Transform to world space (using layer.position3, etc - Simplified TRS for now)
-        // In real impl, we'd use a full Matrix4x4 from the evaluator
+        // Transform to world space
         for (int i = 0; i < 4; ++i) {
-            p[i].x = p[i].x * layer.scale3.x + layer.position3.x;
-            p[i].y = p[i].y * layer.scale3.y + layer.position3.y;
-            p[i].z = p[i].z * layer.scale3.z + layer.position3.z;
+            p[i].x = p[i].x * layer.local_transform.scale.x + layer.world_position3.x;
+            p[i].y = p[i].y * layer.local_transform.scale.y + layer.world_position3.y;
+            p[i].z = p[i].z + layer.world_position3.z;
         }
 
         renderer2d::raster::PerspectiveWarpQuad quad;
-        quad.opacity = layer.opacity;
+        quad.opacity = static_cast<float>(layer.opacity);
         
         auto project = [&](const math::Vector3& v, renderer2d::raster::Vertex3D& out, const math::Vector2& uv) {
-            // Manual projection to get 1/w
-            // Following CameraState::project_point logic but keeping 1/w
             const math::Vector3 eye_vec = v - camera.position;
-            // Simplified perspective: distance from camera
             const float z = eye_vec.length();
             const math::Vector2 screen = camera.camera.project_point(v, static_cast<float>(comp_w), static_cast<float>(comp_h));
             out.position = {screen.x - render_region.x, screen.y - render_region.y, 0.0f};
@@ -240,8 +185,7 @@ void render_layer_to_surface(
         project(p[3], quad.v3, {0,1});
 
         // Resolve texture
-        if (layer.kind == RenderLayerKind::Precomp && layer.nested_composition) {
-            // Search in cache
+        if (layer.type == scene::LayerType::Precomp && layer.nested_composition) {
             std::string ck = "precomp_" + layer.id + "_" + std::to_string(task.frame_number);
             auto it = context.precomp_cache.find(ck);
             if (it != context.precomp_cache.end() && it->second.surface.has_value()) {
@@ -252,7 +196,7 @@ void render_layer_to_surface(
         return;
     }
 
-    // Fallback 2D Rendering (Solid, Shape, etc.)
+    // Fallback 2D Rendering
     const RectI bounds = layer_bounds(layer, comp_w, comp_h);
     const RectI clipped = intersect_rects(bounds, render_region);
     if (clipped.width <= 0 || clipped.height <= 0) return;
@@ -260,11 +204,12 @@ void render_layer_to_surface(
     const int lx = bounds.x - render_region.x;
     const int ly = bounds.y - render_region.y;
 
-    if (layer.kind == RenderLayerKind::Solid) {
-        layer_surface.fill_rect({lx, ly, bounds.width, bounds.height}, color_with_opacity(layer.fill_color, layer.opacity));
+    if (layer.type == scene::LayerType::Solid) {
+        layer_surface.fill_rect({lx, ly, bounds.width, bounds.height}, color_with_opacity(from_spec(layer.fill_color), static_cast<float>(layer.opacity)));
     }
 }
 
+// Forward declaration
 RasterizedFrame2D render_composition_recursive(
     const std::vector<scene::EvaluatedLayerState>& layers,
     std::int64_t width,
@@ -286,11 +231,25 @@ void render_layer_recursive(
     if (!layer.visible) return;
 
     if (layer.is_adjustment_layer) {
-        // Adjust background in sample_surface (Simplified implementation)
         return;
     }
 
-    SurfaceRGBA ls(tile.width, tile.height);
+    if (layer.type == scene::LayerType::Precomp && layer.nested_composition) {
+        if (g_precomp_recursion_depth < 8) {
+            g_precomp_recursion_depth++;
+            RasterizedFrame2D nested = render_composition_recursive(
+                layer.nested_composition->layers,
+                layer.nested_composition->width,
+                layer.nested_composition->height,
+                plan, task, context);
+            g_precomp_recursion_depth--;
+            
+            std::string ck = "precomp_" + layer.id + "_" + std::to_string(task.frame_number);
+            context.precomp_cache[ck] = std::move(nested);
+        }
+    }
+
+    SurfaceRGBA ls(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height));
     ls.clear(Color::transparent());
     render_layer_to_surface(ls, layer, width, height, tile, plan, task, context, camera);
     
@@ -342,15 +301,15 @@ RasterizedFrame2D render_composition_recursive(
 
         std::stable_sort(sample_layers.begin(), sample_layers.end(), [&](const auto& a, const auto& b) {
             if (a.is_3d && b.is_3d && sample_camera.available) {
-                const float dist_a = (a.position3 - sample_camera.position).length_squared();
-                const float dist_b = (b.position3 - sample_camera.position).length_squared();
+                const float dist_a = (a.world_position3 - sample_camera.position).length_squared();
+                const float dist_b = (b.world_position3 - sample_camera.position).length_squared();
                 return dist_a > dist_b;
             }
             return a.layer_index < b.layer_index;
         });
 
         for (const auto& layer : sample_layers) {
-            if (!layer.visible || layer.is_camera) {
+            if (!layer.visible || layer.type == scene::LayerType::Camera) {
                 continue;
             }
             render_layer_recursive(layer, width, height, RectI{0, 0, static_cast<int>(width), static_cast<int>(height)}, plan, task, context, sample_camera, sample_surface);
@@ -372,15 +331,6 @@ RasterizedFrame2D render_evaluated_composition_2d(
     const FrameRenderTask& task) {
     RenderContext context;
     return render_composition_recursive(state.layers, state.width, state.height, plan, task, context);
-}
-
-RasterizedFrame2D render_evaluated_composition_2d(
-    const timeline::EvaluatedCompositionState& state,
-    const RenderPlan& plan,
-    const FrameRenderTask& task) {
-    const scene::EvaluatedCompositionState converted = to_scene_state(state, plan, task);
-    RenderContext context;
-    return render_composition_recursive(converted.layers, converted.width, converted.height, plan, task, context);
 }
 
 } // namespace tachyon
