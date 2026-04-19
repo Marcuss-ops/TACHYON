@@ -3,6 +3,7 @@
 #include "stb_image_write.h"
 
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <string_view>
 
@@ -62,6 +63,10 @@ std::uint32_t choose_scale(const BitmapFont& font, const TextStyle& style) {
     const std::uint32_t requested = style.pixel_size == 0 ? static_cast<std::uint32_t>(font.line_height()) : style.pixel_size;
     const std::uint32_t base = static_cast<std::uint32_t>(std::max(1, font.line_height()));
     return std::max<std::uint32_t>(1, requested / base);
+}
+
+bool is_breakable_space(std::uint32_t codepoint) {
+    return codepoint == static_cast<std::uint32_t>(' ') || codepoint == static_cast<std::uint32_t>('\t');
 }
 
 std::int32_t aligned_x_offset(TextAlignment alignment, std::uint32_t box_width, std::int32_t line_width) {
@@ -189,7 +194,8 @@ TextLayoutResult layout_text(
     std::string_view utf8_text,
     const TextStyle& style,
     const TextBox& text_box,
-    TextAlignment alignment) {
+    TextAlignment alignment,
+    const TextLayoutOptions& options) {
 
     TextLayoutResult result;
     if (!font.is_loaded()) {
@@ -209,6 +215,13 @@ TextLayoutResult layout_text(
     std::int32_t pen_y = 0;
     std::int32_t current_line_width = 0;
     std::size_t line_start = 0;
+    std::size_t last_break_codepoint_index = 0;
+    std::size_t last_break_glyph_index = 0;
+    std::int32_t last_break_line_width = 0;
+    bool have_break = false;
+    bool last_was_space = true;
+    std::size_t current_word_index = 0;
+    const std::int32_t tracking_advance = static_cast<std::int32_t>(std::lround(options.tracking * static_cast<float>(scale)));
 
     for (std::size_t index = 0; index < codepoints.size(); ++index) {
         const std::uint32_t codepoint = codepoints[index];
@@ -225,6 +238,8 @@ TextLayoutResult layout_text(
             current_line_width = 0;
             pen_y += scaled_line_height;
             line_start = result.glyphs.size();
+            have_break = false;
+            last_was_space = true;
             continue;
         }
 
@@ -233,26 +248,51 @@ TextLayoutResult layout_text(
             continue;
         }
 
+        const bool whitespace = is_breakable_space(codepoint);
+        if (!whitespace && last_was_space && !result.glyphs.empty()) {
+            ++current_word_index;
+        }
+        if (!whitespace && result.glyphs.empty()) {
+            current_word_index = 0;
+        }
+
         const std::int32_t glyph_advance = std::max(1, glyph->advance_x) * static_cast<std::int32_t>(scale);
         const bool should_wrap =
             text_box.multiline &&
+            options.word_wrap &&
             wrap_width > 0 &&
             pen_x > 0 &&
             (pen_x + glyph_advance) > wrap_width &&
-            codepoint != static_cast<std::uint32_t>(' ');
+            !whitespace;
 
         if (should_wrap) {
-            finalize_line(result,
-                          line_start,
-                          result.glyphs.size() - line_start,
-                          current_line_width,
-                          pen_y,
-                          alignment,
-                          text_box.width);
+            if (have_break && last_break_glyph_index > line_start) {
+                result.glyphs.resize(last_break_glyph_index);
+                finalize_line(result,
+                              line_start,
+                              last_break_glyph_index - line_start,
+                              last_break_line_width,
+                              pen_y,
+                              alignment,
+                              text_box.width);
+                index = last_break_codepoint_index;
+            } else {
+                finalize_line(result,
+                              line_start,
+                              result.glyphs.size() - line_start,
+                              current_line_width,
+                              pen_y,
+                              alignment,
+                              text_box.width);
+            }
             pen_x = 0;
             current_line_width = 0;
             pen_y += scaled_line_height;
             line_start = result.glyphs.size();
+            have_break = false;
+            last_was_space = true;
+            current_word_index = 0;
+            continue;
         }
 
         const std::int32_t glyph_width = static_cast<std::int32_t>(glyph->width) * static_cast<std::int32_t>(scale);
@@ -268,11 +308,26 @@ TextLayoutResult layout_text(
             draw_y,
             glyph_width,
             glyph_height,
-            glyph_advance
+            glyph_advance,
+            result.glyphs.size(),
+            current_word_index,
+            whitespace
         });
 
         pen_x += glyph_advance;
+        if (tracking_advance != 0) {
+            pen_x += tracking_advance;
+        }
         current_line_width = pen_x;
+
+        if (whitespace) {
+            have_break = true;
+            last_break_codepoint_index = index;
+            last_break_glyph_index = result.glyphs.size();
+            last_break_line_width = current_line_width;
+        }
+
+        last_was_space = whitespace;
     }
 
     finalize_line(result,
@@ -305,9 +360,11 @@ TextRasterSurface rasterize_text_rgba(
     std::string_view utf8_text,
     const TextStyle& style,
     const TextBox& text_box,
-    TextAlignment alignment) {
+    TextAlignment alignment,
+    const TextLayoutOptions& layout_options,
+    const TextAnimationOptions& animation) {
 
-    const TextLayoutResult layout = layout_text(font, utf8_text, style, text_box, alignment);
+    const TextLayoutResult layout = layout_text(font, utf8_text, style, text_box, alignment, layout_options);
     TextRasterSurface surface(layout.width, layout.height);
 
     if (!font.is_loaded() || layout.width == 0U || layout.height == 0U) {
@@ -320,15 +377,38 @@ TextRasterSurface rasterize_text_rgba(
             continue;
         }
 
-        for (std::uint32_t source_y = 0; source_y < glyph->height; ++source_y) {
-            for (std::uint32_t source_x = 0; source_x < glyph->width; ++source_x) {
+        float glyph_offset_x = 0.0f;
+        float glyph_offset_y = 0.0f;
+        float glyph_scale = 1.0f;
+        float glyph_opacity = 1.0f;
+        if (animation.enabled) {
+            const float phase_seconds = animation.time_seconds - static_cast<float>(positioned.glyph_index) * 0.1f;
+            const float wave_period = std::max(0.001f, animation.wave_period_seconds);
+            const float wave_phase = (phase_seconds / wave_period) * 6.28318530717958647692f;
+
+            glyph_offset_x = animation.per_glyph_offset_x * static_cast<float>(positioned.glyph_index) + std::sin(wave_phase) * animation.wave_amplitude_x;
+            glyph_offset_y = animation.per_glyph_offset_y * static_cast<float>(positioned.glyph_index) + std::cos(wave_phase) * animation.wave_amplitude_y;
+            glyph_scale = std::max(0.05f, 1.0f + animation.per_glyph_scale_delta * static_cast<float>(positioned.glyph_index));
+            glyph_opacity = std::clamp(1.0f - animation.per_glyph_opacity_drop * static_cast<float>(positioned.glyph_index), 0.0f, 1.0f);
+        }
+
+        const std::int32_t base_x = positioned.x + static_cast<std::int32_t>(std::lround(glyph_offset_x));
+        const std::int32_t base_y = positioned.y + static_cast<std::int32_t>(std::lround(glyph_offset_y));
+        const std::uint32_t target_width = static_cast<std::uint32_t>(std::max(1, static_cast<std::int32_t>(std::lround(static_cast<float>(glyph->width) * glyph_scale))));
+        const std::uint32_t target_height = static_cast<std::uint32_t>(std::max(1, static_cast<std::int32_t>(std::lround(static_cast<float>(glyph->height) * glyph_scale))));
+
+        for (std::uint32_t target_y = 0; target_y < target_height; ++target_y) {
+            const std::uint32_t source_y = std::min(glyph->height - 1U, static_cast<std::uint32_t>(std::floor(static_cast<float>(target_y) / glyph_scale)));
+            for (std::uint32_t target_x = 0; target_x < target_width; ++target_x) {
+                const std::uint32_t source_x = std::min(glyph->width - 1U, static_cast<std::uint32_t>(std::floor(static_cast<float>(target_x) / glyph_scale)));
                 const std::uint8_t alpha = glyph->alpha_mask[source_y * glyph->width + source_x];
-                if (alpha == 0U) {
+                if (alpha == 0U || glyph_opacity <= 0.0f) {
                     continue;
                 }
 
-                const std::int32_t out_x = positioned.x + static_cast<std::int32_t>(source_x);
-                const std::int32_t out_y = positioned.y + static_cast<std::int32_t>(source_y);
+                const std::uint8_t animated_alpha = static_cast<std::uint8_t>(std::clamp(std::lround(static_cast<float>(alpha) * glyph_opacity), 0L, 255L));
+                const std::int32_t out_x = base_x + static_cast<std::int32_t>(target_x);
+                const std::int32_t out_y = base_y + static_cast<std::int32_t>(target_y);
 
                 if (out_x < 0 || out_y < 0) {
                     continue;
@@ -337,7 +417,7 @@ TextRasterSurface rasterize_text_rgba(
                 surface.blend_pixel(static_cast<std::uint32_t>(out_x),
                                     static_cast<std::uint32_t>(out_y),
                                     style.fill_color,
-                                    alpha);
+                                    animated_alpha);
             }
         }
     }
