@@ -68,6 +68,7 @@ System design documents:
 - `docs/text-layout-and-shaping.md`
 - `docs/light-system.md`
 - `docs/time-system.md`
+- `docs/motion-blur.md`
 - `docs/template-system.md`
 - `docs/color-management.md`
 - `docs/caching.md`
@@ -76,6 +77,8 @@ System design documents:
 - `docs/data-binding.md`
 - `docs/rendering-contract.md`
 - `docs/asset-pipeline.md`
+- `docs/decode-encode.md`
+- `docs/encoder-output.md`
 - `docs/testing-and-compatibility.md`
 
 ## Direction summary
