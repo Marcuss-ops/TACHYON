@@ -93,6 +93,20 @@ A property should eventually be defined through the property model and be compat
 - expressions
 - bound overrides
 
+## Expressions are not the scene format
+
+The scene spec should remain canonical authored data.
+Expressions may be attached to properties, but the whole scene should not become arbitrary executable source code.
+
+This keeps the authored contract compatible with:
+
+- schema validation
+- stable diffs
+- dependency extraction
+- caching
+- template reuse
+- clear authored versus computed boundaries
+
 ## Validation expectations
 
 The scene spec should be strict about:
@@ -103,6 +117,7 @@ The scene spec should be strict about:
 - duplicate ids where uniqueness is required
 - unresolved composition or asset references
 - invalid published property declarations
+- invalid expression references or expression source attachments
 
 ## Versioning rule
 
