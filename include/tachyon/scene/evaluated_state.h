@@ -57,6 +57,8 @@ struct EvaluatedLayerState {
     math::Vector2 world_scale{math::Vector2::one()};
     std::int64_t width{0};
     std::int64_t height{0};
+    float stroke_width{0.0f};
+    std::string text_content;
     ColorSpec fill_color{255, 255, 255, 255};
     ColorSpec stroke_color{0, 0, 0, 255};
     std::optional<std::string> parent;

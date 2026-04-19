@@ -3,7 +3,7 @@
 #include "tachyon/renderer2d/effect_host.h"
 #include "tachyon/renderer2d/path_rasterizer.h"
 #include "tachyon/renderer2d/rasterizer_ops.h"
-#include "tachyon/media/image_manager.h"
+#include "tachyon/media/media_manager.h"
 #include "tachyon/runtime/tile_scheduler.h"
 #include "tachyon/text/font.h"
 #include "tachyon/text/layout.h"
@@ -26,6 +26,7 @@ enum class RenderLayerKind {
     Mask,
     Text,
     Image,
+    Video,
     Precomp,
     Camera,
     Unknown
@@ -39,6 +40,7 @@ struct RenderLayerView {
     float opacity{1.0f};
     math::Vector2 position{math::Vector2::zero()};
     math::Vector2 scale{math::Vector2::one()};
+    double local_time_seconds{0.0};
     std::string id;
     std::string label;
     std::optional<scene::EvaluatedShapePath> shape_path;
@@ -190,6 +192,7 @@ RenderLayerView to_view(const scene::EvaluatedLayerState& layer) {
     view.opacity = static_cast<float>(layer.opacity);
     view.position = layer.position;
     view.scale = layer.scale;
+    view.local_time_seconds = layer.local_time_seconds;
     view.id = layer.id;
     view.label = layer.name.empty() ? layer.id : layer.name;
     view.shape_path = layer.shape_path;
@@ -211,6 +214,7 @@ RenderLayerView to_view(const scene::EvaluatedLayerState& layer) {
     else if (layer.type == "mask") view.kind = RenderLayerKind::Mask;
     else if (layer.type == "text") view.kind = RenderLayerKind::Text;
     else if (layer.type == "image") view.kind = RenderLayerKind::Image;
+    else if (layer.type == "video") view.kind = RenderLayerKind::Video;
     else if (layer.precomp_id.has_value()) view.kind = RenderLayerKind::Precomp;
     else if (layer.is_camera) view.kind = RenderLayerKind::Camera;
     else view.kind = RenderLayerKind::Unknown;
@@ -406,11 +410,13 @@ void render_layer_to_surface(
             fill_style.opacity = 1.0f;
             renderer2d::PathRasterizer::fill(layer_surface, path, fill_style);
 
-            renderer2d::StrokePathStyle stroke_style;
-            stroke_style.stroke_color = color_with_opacity(layer.stroke_color, layer.opacity);
-            stroke_style.stroke_width = layer.stroke_width;
-            stroke_style.opacity = 1.0f;
-            renderer2d::PathRasterizer::stroke(layer_surface, path, stroke_style);
+            if (layer.stroke_width > 0.0f) {
+                renderer2d::StrokePathStyle stroke_style;
+                stroke_style.stroke_color = color_with_opacity(layer.stroke_color, layer.opacity);
+                stroke_style.stroke_width = layer.stroke_width;
+                stroke_style.opacity = 1.0f;
+                renderer2d::PathRasterizer::stroke(layer_surface, path, stroke_style);
+            }
             break;
         }
         case RenderLayerKind::Text: {
@@ -441,7 +447,7 @@ void render_layer_to_surface(
             break;
         }
         case RenderLayerKind::Image: {
-            const renderer2d::SurfaceRGBA* texture = media::ImageManager::instance().get_image(layer.label);
+            const renderer2d::SurfaceRGBA* texture = media::MediaManager::instance().get_image(layer.label);
             if (texture) {
                 const int local_x = bounds.x - render_region.x;
                 const int local_y = bounds.y - render_region.y;
@@ -453,6 +459,29 @@ void render_layer_to_surface(
                         p = color_with_opacity(p, layer.opacity);
                         if (p.a > 0) {
                             layer_surface.blend_pixel(local_x + x, local_y + y, p);
+                        }
+                    }
+                }
+            }
+            break;
+        }
+        case RenderLayerKind::Video: {
+            media::VideoDecoder* decoder = media::MediaManager::instance().get_video_decoder(layer.label);
+            if (decoder) {
+                const auto frame = decoder->get_frame_at_time(layer.local_time_seconds);
+                if (frame.has_value()) {
+                    const auto* texture = &(*frame);
+                    const int local_x = bounds.x - render_region.x;
+                    const int local_y = bounds.y - render_region.y;
+                    for (int y = 0; y < clipped.height; ++y) {
+                        for (int x = 0; x < clipped.width; ++x) {
+                            uint32_t tx = static_cast<uint32_t>(static_cast<float>(x) / static_cast<float>(std::max(1, clipped.width)) * static_cast<float>(texture->width()));
+                            uint32_t ty = static_cast<uint32_t>(static_cast<float>(y) / static_cast<float>(std::max(1, clipped.height)) * static_cast<float>(texture->height()));
+                            renderer2d::Color p = texture->get_pixel(tx, ty);
+                            p = color_with_opacity(p, layer.opacity);
+                            if (p.a > 0) {
+                                layer_surface.blend_pixel(local_x + x, local_y + y, p);
+                            }
                         }
                     }
                 }

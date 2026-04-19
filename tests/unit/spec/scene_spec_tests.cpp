@@ -303,6 +303,51 @@ bool run_scene_spec_tests() {
     }
 
     {
+        const std::string text = R"({
+            "spec_version": "1.0",
+            "project": { "id": "proj_video", "name": "Video Scene" },
+            "compositions": [
+                {
+                    "id": "main",
+                    "name": "Main",
+                    "width": 1280,
+                    "height": 720,
+                    "duration": 12,
+                    "frame_rate": 30,
+                    "layers": [
+                        {
+                            "id": "clip_01",
+                            "type": "video",
+                            "name": "tests/fixtures/media/clip.mp4",
+                            "opacity_property": {
+                                "audio_band": "bass",
+                                "min": 0.25,
+                                "max": 0.9
+                            }
+                        }
+                    ]
+                }
+            ]
+        })";
+
+        const auto parsed = tachyon::parse_scene_spec_json(text);
+        check_true(parsed.value.has_value(), "video scene should parse");
+        if (parsed.value.has_value()) {
+            const auto& layer = parsed.value->compositions.front().layers.front();
+            check_true(layer.type == "video", "video layer type should be retained");
+            check_true(layer.opacity_property.audio_band.has_value(), "audio band mapping should parse");
+            if (layer.opacity_property.audio_band.has_value()) {
+                check_true(*layer.opacity_property.audio_band == tachyon::AudioBandType::Bass, "audio band should parse as bass");
+            }
+            check_true(layer.opacity_property.audio_min == 0.25, "audio band minimum should parse");
+            check_true(layer.opacity_property.audio_max == 0.9, "audio band maximum should parse");
+
+            const auto validation = tachyon::validate_scene_spec(*parsed.value);
+            check_true(validation.ok(), "video scene should validate");
+        }
+    }
+
+    {
         const auto path = tests_root() / "fixtures" / "scenes" / "canonical_scene.json";
         const auto job_path = tests_root() / "fixtures" / "jobs" / "canonical_render_job.json";
         const std::vector<std::string> args = {

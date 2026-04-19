@@ -21,6 +21,14 @@ enum class TrackMatteType {
     LumaInverted
 };
 
+enum class AudioBandType {
+    Bass,
+    Mid,
+    High,
+    Presence,
+    Rms
+};
+
 struct AssetSpec {
     std::string id;
     std::string type;
@@ -88,9 +96,12 @@ struct ShapePathSpec {
 struct AnimatedScalarSpec {
     std::optional<double> value;
     std::vector<ScalarKeyframeSpec> keyframes;
+    std::optional<AudioBandType> audio_band;
+    double audio_min{0.0};
+    double audio_max{1.0};
 
     [[nodiscard]] bool empty() const noexcept {
-        return !value.has_value() && keyframes.empty();
+        return !value.has_value() && keyframes.empty() && !audio_band.has_value();
     }
 };
 
@@ -125,6 +136,8 @@ struct LayerSpec {
     double opacity{1.0};
     std::int64_t width{0};
     std::int64_t height{0};
+    float stroke_width{0.0f};
+    std::string text_content;
     ColorSpec fill_color{255, 255, 255, 255};
     ColorSpec stroke_color{0, 0, 0, 255};
     std::optional<std::string> parent;

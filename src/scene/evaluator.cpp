@@ -3,6 +3,7 @@
 #include "tachyon/core/animation/easing.h"
 #include "tachyon/core/math/quaternion.h"
 #include "tachyon/core/math/transform2.h"
+#include "tachyon/audio/audio_analyzer.h"
 #include "tachyon/timeline/time.h"
 
 #include <algorithm>
@@ -42,7 +43,32 @@ double fallback_rotation(const LayerSpec& layer) {
     return layer.transform.rotation.value_or(0.0);
 }
 
-double sample_scalar(const AnimatedScalarSpec& property, double fallback, double local_time_seconds) {
+double sample_audio_band(const ::tachyon::audio::AudioBands& bands, AudioBandType band) {
+    switch (band) {
+        case AudioBandType::Bass: return bands.bass;
+        case AudioBandType::Mid: return bands.mid;
+        case AudioBandType::High: return bands.high;
+        case AudioBandType::Presence: return bands.presence;
+        case AudioBandType::Rms: return bands.rms;
+        default: break;
+    }
+    return bands.rms;
+}
+
+double sample_scalar(
+    const AnimatedScalarSpec& property,
+    double fallback,
+    double local_time_seconds,
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer = nullptr) {
+    if (property.audio_band.has_value() && audio_analyzer) {
+        const ::tachyon::audio::AudioBands bands = audio_analyzer->analyze_frame(local_time_seconds);
+        const double band_value = sample_audio_band(bands, *property.audio_band);
+        const double clamped = std::clamp(band_value, 0.0, 1.0);
+        return std::clamp(property.audio_min + (property.audio_max - property.audio_min) * clamped,
+                          std::min(property.audio_min, property.audio_max),
+                          std::max(property.audio_min, property.audio_max));
+    }
+
     if (property.keyframes.empty()) {
         return property.value.value_or(fallback);
     }
@@ -155,6 +181,8 @@ EvaluatedLayerState make_layer_state(
     
     evaluated.width = layer.width;
     evaluated.height = layer.height;
+    evaluated.stroke_width = layer.stroke_width;
+    evaluated.text_content = layer.text_content;
     evaluated.fill_color = layer.fill_color;
     evaluated.stroke_color = layer.stroke_color;
     evaluated.effects = layer.effects;
@@ -322,7 +350,12 @@ const EvaluatedLayerState& resolve_layer_state(
 
 } // namespace
 
-EvaluatedLayerState evaluate_layer_state(const LayerSpec& layer, std::int64_t frame_number, double composition_time_seconds) {
+EvaluatedLayerState evaluate_layer_state(
+    const LayerSpec& layer,
+    std::int64_t frame_number,
+    double composition_time_seconds,
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer) {
+    (void)audio_analyzer;
     return make_layer_state(layer, 0, frame_number, composition_time_seconds);
 }
 
@@ -361,15 +394,21 @@ EvaluatedCameraState evaluate_camera_state(
     return evaluated;
 }
 
-EvaluatedCompositionState evaluate_composition_state(const CompositionSpec& composition, std::int64_t frame_number) {
+EvaluatedCompositionState evaluate_composition_state(
+    const CompositionSpec& composition,
+    std::int64_t frame_number,
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer) {
+    (void)audio_analyzer;
     return evaluate_composition_internal(nullptr, composition, frame_number, {});
 }
 
 std::optional<EvaluatedCompositionState> evaluate_scene_composition_state(
     const SceneSpec& scene,
     const std::string& composition_id,
-    std::int64_t frame_number
+    std::int64_t frame_number,
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer
 ) {
+    (void)audio_analyzer;
     for (const auto& composition : scene.compositions) {
         if (composition.id == composition_id) {
             return evaluate_composition_internal(&scene, composition, frame_number, {});

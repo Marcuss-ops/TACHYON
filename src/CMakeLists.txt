@@ -9,8 +9,11 @@ add_library(TachyonCore
     core/math/quaternion.cpp
     core/math/transform3.cpp
     core/model/tachyon.cpp
+    audio/audio_analyzer.cpp
     media/image_manager.cpp
     media/assets/asset_resolution.cpp
+    media/media_manager.cpp
+    media/video_decoder.cpp
     output/ffmpeg_pipe_sink.cpp
     output/png_sequence_sink.cpp
     renderer2d/draw_list_builder.cpp
@@ -52,6 +55,11 @@ target_include_directories(TachyonCore
 target_link_libraries(TachyonCore
     PUBLIC
         nlohmann_json::nlohmann_json
+        avcodec
+        avformat
+        avutil
+        swscale
+        swresample
 )
 
 add_executable(tachyon
