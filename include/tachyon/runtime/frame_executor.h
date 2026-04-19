@@ -1,0 +1,40 @@
+#pragma once
+
+#include "tachyon/renderer2d/rasterizer_ops.h"
+#include "tachyon/runtime/frame_cache.h"
+#include "tachyon/runtime/render_plan.h"
+#include "tachyon/runtime/render_graph.h"
+#include "tachyon/scene/evaluated_state.h"
+#include "tachyon/spec/scene_spec.h"
+
+#include <cstddef>
+#include <string>
+#include <vector>
+
+namespace tachyon {
+
+struct DrawList2D {
+    std::vector<renderer2d::RectPrimitive> rects;
+};
+
+struct EvaluatedFrameState {
+    FrameRenderTask task;
+    scene::EvaluatedCompositionState composition_state;
+    std::string state_fingerprint;
+    std::string composition_summary;
+};
+
+struct ExecutedFrame {
+    std::int64_t frame_number{0};
+    FrameCacheKey cache_key;
+    bool cache_hit{false};
+    std::string state_fingerprint;
+    std::size_t draw_command_count{0};
+    renderer2d::Framebuffer frame{1, 1};
+};
+
+EvaluatedFrameState evaluate_frame_state(const SceneSpec& scene, const RenderPlan& plan, const FrameRenderTask& task);
+DrawList2D build_draw_list(const EvaluatedFrameState& state);
+ExecutedFrame execute_frame_task(const SceneSpec& scene, const RenderPlan& plan, const FrameRenderTask& task, FrameCache& cache);
+
+} // namespace tachyon
