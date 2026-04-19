@@ -8,6 +8,7 @@ add_library(TachyonCore
     runtime/jobs/render_plan.cpp
     runtime/render_graph.cpp
     renderer2d/raster/cpu_rasterizer.cpp
+    renderer2d/framebuffer.cpp
     cli/core/report.cpp
     cli/core/options.cpp
     cli/core/cli.cpp
@@ -16,6 +17,7 @@ add_library(TachyonCore
 target_include_directories(TachyonCore
     PUBLIC 
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../third_party>
         $<INSTALL_INTERFACE:include>
 )
 

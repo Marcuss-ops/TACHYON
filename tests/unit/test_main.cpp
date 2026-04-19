@@ -4,6 +4,7 @@ bool run_scene_spec_tests();
 bool run_render_job_tests();
 bool run_math_tests();
 bool run_asset_resolution_tests();
+bool run_framebuffer_tests();
 
 int main() {
     if (!run_math_tests()) {
@@ -13,6 +14,11 @@ int main() {
 
     if (!run_asset_resolution_tests()) {
         std::cerr << "asset resolution tests failed\n";
+        return 1;
+    }
+
+    if (!run_framebuffer_tests()) {
+        std::cerr << "framebuffer tests failed\n";
         return 1;
     }
 
