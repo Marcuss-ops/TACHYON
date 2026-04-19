@@ -79,6 +79,10 @@ RenderSessionResult RenderSession::render(
         context.renderer2d.precomp_cache->max_bytes = context.policy.precomp_cache_budget;
     }
 
+    const std::size_t effective_worker_count = context.policy.max_workers > 0
+        ? std::max<std::size_t>(1, std::min(worker_count, context.policy.max_workers))
+        : worker_count;
+
     RenderPlan effective_plan = execution_plan.render_plan;
     if (!output_path.empty()) {
         effective_plan.output.destination.path = output_path.string();
@@ -94,10 +98,10 @@ RenderSessionResult RenderSession::render(
     }
 
     std::vector<ExecutedFrame> rendered_frames;
-    if (worker_count <= 1 || execution_plan.frame_tasks.size() <= 1) {
+    if (effective_worker_count <= 1 || execution_plan.frame_tasks.size() <= 1) {
         render_frames_sequential(scene, execution_plan, m_cache, context, rendered_frames);
     } else {
-        render_frames_parallel(scene, execution_plan, m_cache, worker_count, context, rendered_frames);
+        render_frames_parallel(scene, execution_plan, m_cache, effective_worker_count, context, rendered_frames);
     }
 
     for (ExecutedFrame& frame : rendered_frames) {

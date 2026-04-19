@@ -66,18 +66,15 @@ renderer2d::RectI layer_bounds(const scene::EvaluatedLayerState& layer, std::int
     return bounds;
 }
 
-} // namespace
+TileGrid build_tile_grid_from_roi(
+    const renderer2d::RectI& roi,
+    std::int64_t frame_width,
+    std::int64_t frame_height,
+    int tile_size) {
 
-TileGrid build_tile_grid(const scene::EvaluatedCompositionState& state, int tile_size) {
     TileGrid grid;
     grid.tile_size = std::max(1, tile_size);
-
-    renderer2d::RectI roi{0, 0, 0, 0};
-    for (const auto& layer : state.layers) {
-        roi = union_rects(roi, layer_bounds(layer, state.width, state.height));
-    }
-
-    grid.roi = clamp_to_frame(roi, state.width, state.height);
+    grid.roi = clamp_to_frame(roi, frame_width, frame_height);
     if (grid.roi.width <= 0 || grid.roi.height <= 0) {
         return grid;
     }
@@ -91,6 +88,20 @@ TileGrid build_tile_grid(const scene::EvaluatedCompositionState& state, int tile
     }
 
     return grid;
+}
+
+} // namespace
+
+TileGrid build_tile_grid(const renderer2d::RectI& roi, std::int64_t frame_width, std::int64_t frame_height, int tile_size) {
+    return build_tile_grid_from_roi(roi, frame_width, frame_height, tile_size);
+}
+
+TileGrid build_tile_grid(const scene::EvaluatedCompositionState& state, int tile_size) {
+    renderer2d::RectI roi{0, 0, 0, 0};
+    for (const auto& layer : state.layers) {
+        roi = union_rects(roi, layer_bounds(layer, state.width, state.height));
+    }
+    return build_tile_grid_from_roi(roi, state.width, state.height, tile_size);
 }
 
 } // namespace tachyon
