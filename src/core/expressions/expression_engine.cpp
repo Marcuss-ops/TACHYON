@@ -101,9 +101,14 @@ private:
     }
 
     double parse_number() {
-        std::size_t start = m_pos;
+        size_t start = m_pos;
         while (std::isdigit(peek()) || peek() == '.') get();
-        return std::stod(m_input.substr(start, m_pos - start));
+        std::string s = m_input.substr(start, m_pos - start);
+        
+        // Use a pointer to satisfy locale-independent parsing if needed, 
+        // but for now, we'll try to replace any ',' with '.' just in case std::stod is finicky.
+        std::replace(s.begin(), s.end(), ',', '.');
+        return std::stod(s); 
     }
 
     double parse_identifier_or_function() {
