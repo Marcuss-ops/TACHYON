@@ -6,6 +6,8 @@
 #include "tachyon/runtime/render_plan.h"
 #include "tachyon/spec/scene_spec.h"
 
+#include <nlohmann/json.hpp>
+
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -171,6 +173,43 @@ bool run_scene_spec_tests() {
         const auto job_path = tests_root() / "fixtures" / "jobs" / "canonical_render_job.json";
         const std::vector<std::string> args = {
             "tachyon",
+            "inspect",
+            "--scene",
+            path.string(),
+            "--job",
+            job_path.string(),
+            "--json"
+        };
+
+        std::vector<char*> argv;
+        argv.reserve(args.size());
+        for (const auto& arg : args) {
+            argv.push_back(const_cast<char*>(arg.c_str()));
+        }
+
+        StreamCapture capture_out(std::cout);
+        StreamCapture capture_err(std::cerr);
+        const int exit_code = tachyon::run_cli(static_cast<int>(argv.size()), argv.data());
+        check_true(exit_code == 0, "CLI inspect --json should accept canonical scene and job fixtures");
+        check_true(capture_err.str().empty(), "CLI inspect --json should not emit errors for canonical fixtures");
+
+        const auto json_text = capture_out.str();
+        const auto parsed_json = nlohmann::json::parse(json_text);
+        check_true(parsed_json.contains("scene"), "inspect JSON should contain scene");
+        check_true(parsed_json.contains("assets"), "inspect JSON should contain assets");
+        check_true(parsed_json.contains("render_plan"), "inspect JSON should contain render_plan");
+        check_true(parsed_json.contains("render_graph"), "inspect JSON should contain render_graph");
+        check_true(parsed_json["render_graph"].contains("steps"), "inspect JSON should contain graph steps");
+        check_true(parsed_json["render_graph"]["steps"].size() >= 3, "inspect JSON should include explicit graph steps");
+        check_true(parsed_json["render_graph"]["steps"][3]["dependencies"].is_array(), "inspect JSON should include step dependencies");
+        check_true(parsed_json["render_graph"]["steps"][3]["dependencies"].size() == 1, "raster step should carry one dependency");
+    }
+
+    {
+        const auto path = tests_root() / "fixtures" / "scenes" / "canonical_scene.json";
+        const auto job_path = tests_root() / "fixtures" / "jobs" / "canonical_render_job.json";
+        const std::vector<std::string> args = {
+            "tachyon",
             "render",
             "--scene",
             path.string(),
@@ -231,6 +270,7 @@ bool run_render_job_tests() {
                     check_true(execution_plan.value->steps.size() >= 3, "execution plan should expose explicit graph steps");
                     check_true(!execution_plan.value->frame_tasks.empty(), "execution plan should create frame tasks");
                     check_true(execution_plan.value->frame_tasks.front().frame_number == 0, "first frame task should start at frame 0");
+                    check_true(!execution_plan.value->steps[3].dependencies.empty(), "raster step should carry dependencies");
 
                     const auto first_key = tachyon::build_frame_cache_key(*plan.value, 0);
                     check_true(first_key.value == execution_plan.value->frame_tasks.front().cache_key.value, "frame task should carry the computed cache key");
