@@ -75,6 +75,13 @@ struct ColorSpec {
     std::uint8_t r{255}, g{255}, b{255}, a{255};
 };
 
+struct ColorKeyframeSpec {
+    double time{0.0};
+    ColorSpec value{255, 255, 255, 255};
+    animation::EasingPreset easing{animation::EasingPreset::None};
+    animation::CubicBezierEasing bezier{animation::CubicBezierEasing::linear()};
+};
+
 struct EffectSpec {
     std::string type;
     std::string id;
@@ -130,6 +137,15 @@ struct AnimatedVector3Spec {
     }
 };
 
+struct AnimatedColorSpec {
+    std::optional<ColorSpec> value;
+    std::vector<ColorKeyframeSpec> keyframes;
+
+    [[nodiscard]] bool empty() const noexcept {
+        return !value.has_value() && keyframes.empty();
+    }
+};
+
 struct Transform2D {
     std::optional<double> position_x;
     std::optional<double> position_y;
@@ -161,8 +177,8 @@ struct LayerSpec {
     std::int64_t height{0};
     float stroke_width{0.0f};
     std::string text_content;
-    ColorSpec fill_color{255, 255, 255, 255};
-    ColorSpec stroke_color{0, 0, 0, 255};
+    AnimatedColorSpec fill_color;
+    AnimatedColorSpec stroke_color;
     std::optional<std::string> parent;
     bool is_3d{false};
     bool is_adjustment_layer{false};
@@ -178,9 +194,9 @@ struct LayerSpec {
 
     // Light specific
     std::optional<std::string> light_type;
-    std::optional<double> intensity;
-    std::optional<double> attenuation_near;
-    std::optional<double> attenuation_far;
+    AnimatedScalarSpec intensity;
+    AnimatedScalarSpec attenuation_near;
+    AnimatedScalarSpec attenuation_far;
 };
 
 struct CompositionSpec {

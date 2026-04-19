@@ -196,6 +196,55 @@ math::Vector3 sample_vector3(const AnimatedVector3Spec& property, const math::Ve
     return keyframes->back().value;
 }
 
+ColorSpec sample_color(const AnimatedColorSpec& property, const ColorSpec& fallback, double local_time_seconds) {
+    if (property.keyframes.empty()) {
+        return property.value.value_or(fallback);
+    }
+
+    const std::vector<ColorKeyframeSpec>* keyframes = &property.keyframes;
+    std::vector<ColorKeyframeSpec> sorted_keyframes;
+    if (!std::is_sorted(keyframes->begin(), keyframes->end(), [](const auto& a, const auto& b) {
+            return a.time < b.time;
+        })) {
+        sorted_keyframes = property.keyframes;
+        std::stable_sort(sorted_keyframes.begin(), sorted_keyframes.end(), [](const auto& a, const auto& b) {
+            return a.time < b.time;
+        });
+        keyframes = &sorted_keyframes;
+    }
+
+    if (local_time_seconds <= keyframes->front().time) {
+        return keyframes->front().value;
+    }
+    if (local_time_seconds >= keyframes->back().time) {
+        return keyframes->back().value;
+    }
+
+    for (std::size_t index = 1; index < keyframes->size(); ++index) {
+        const auto& previous = (*keyframes)[index - 1];
+        const auto& next = (*keyframes)[index];
+        if (local_time_seconds > next.time) {
+            continue;
+        }
+        const double duration = next.time - previous.time;
+        if (duration <= 0.0) {
+            return next.value;
+        }
+        const double alpha = (local_time_seconds - previous.time) / duration;
+        const double eased = animation::apply_easing(alpha, previous.easing, previous.bezier);
+        const float weight = static_cast<float>(eased);
+        
+        ColorSpec result;
+        result.r = static_cast<std::uint8_t>(std::clamp(previous.value.r * (1.0f - weight) + next.value.r * weight, 0.0f, 255.0f));
+        result.g = static_cast<std::uint8_t>(std::clamp(previous.value.g * (1.0f - weight) + next.value.g * weight, 0.0f, 255.0f));
+        result.b = static_cast<std::uint8_t>(std::clamp(previous.value.b * (1.0f - weight) + next.value.b * weight, 0.0f, 255.0f));
+        result.a = static_cast<std::uint8_t>(std::clamp(previous.value.a * (1.0f - weight) + next.value.a * weight, 0.0f, 255.0f));
+        return result;
+    }
+
+    return keyframes->back().value;
+}
+
 math::Transform2 make_transform2(const math::Vector2& position, double rotation_degrees, const math::Vector2& scale) {
     math::Transform2 transform;
     transform.position = position;
@@ -235,6 +284,7 @@ EvaluatedLayerState make_layer_state(
     const double remapped_time = sample_scalar(layer.time_remap_property, evaluated.local_time_seconds, evaluated.local_time_seconds);
     evaluated.child_time_seconds = remapped_time;
     evaluated.active = layer.enabled && composition_time_seconds >= layer.in_point && composition_time_seconds <= layer.out_point;
+    
     evaluated.opacity = sample_scalar(layer.opacity_property, layer.opacity, remapped_time);
     
     math::Vector2 pos = sample_vector2(layer.transform.position_property, fallback_position(layer), remapped_time);
@@ -266,7 +316,9 @@ EvaluatedLayerState make_layer_state(
     evaluated.width = layer.width;
     evaluated.height = layer.height;
     evaluated.text_content = layer.text_content;
-    evaluated.fill_color = layer.fill_color;
+    
+    evaluated.fill_color = sample_color(layer.fill_color, {255, 255, 255, 255}, remapped_time);
+    
     evaluated.effects = layer.effects;
 
     if (layer.shape_path.has_value()) {
@@ -306,7 +358,8 @@ const EvaluatedLayerState& resolve_layer_state(
 
 EvaluatedLightState evaluate_light_state(
     const EvaluatedLayerState& layer_state,
-    const LayerSpec& spec) {
+    const LayerSpec& spec,
+    double remapped_time) {
     EvaluatedLightState light;
     light.layer_id = layer_state.id;
     light.type = spec.light_type.value_or("point");
@@ -316,10 +369,10 @@ EvaluatedLightState evaluate_light_state(
     const auto forward = layer_state.world_matrix.transform_vector({0.0f, 0.0f, -1.0f}).normalized();
     light.direction = forward;
     
-    light.color = spec.fill_color;
-    light.intensity = static_cast<float>(spec.intensity.value_or(layer_state.opacity));
-    light.attenuation_near = static_cast<float>(spec.attenuation_near.value_or(0.0));
-    light.attenuation_far = static_cast<float>(spec.attenuation_far.value_or(1000.0));
+    light.color = sample_color(spec.fill_color, {255, 255, 255, 255}, remapped_time);
+    light.intensity = static_cast<float>(sample_scalar(spec.intensity, 1.0, remapped_time));
+    light.attenuation_near = static_cast<float>(sample_scalar(spec.attenuation_near, 0.0, remapped_time));
+    light.attenuation_far = static_cast<float>(sample_scalar(spec.attenuation_far, 1000.0, remapped_time));
     
     return light;
 }
@@ -359,7 +412,7 @@ EvaluatedCompositionState evaluate_composition_internal(
     for (std::size_t index = 0; index < composition.layers.size(); ++index) {
         const auto& layer_state = resolve_layer_state(index, context);
         if (layer_state.type == LayerType::Light) {
-            evaluated.lights.push_back(evaluate_light_state(layer_state, composition.layers[index]));
+            evaluated.lights.push_back(evaluate_light_state(layer_state, composition.layers[index], layer_state.child_time_seconds));
         } else {
             evaluated.layers.push_back(layer_state);
         }
