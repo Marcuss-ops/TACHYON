@@ -3,6 +3,7 @@ add_library(TachyonCore
     core/model/tachyon.cpp
     spec/parser/scene_spec.cpp
     runtime/jobs/render_job.cpp
+    runtime/jobs/render_plan.cpp
     cli/core/cli.cpp
 )
 

@@ -1,5 +1,6 @@
 #include "tachyon/core/cli.h"
 #include "tachyon/runtime/render_job.h"
+#include "tachyon/runtime/render_plan.h"
 #include "tachyon/spec/scene_spec.h"
 
 #include <filesystem>
@@ -126,10 +127,44 @@ bool run_scene_spec_tests() {
         check_true(capture_err.str().empty(), "CLI validate should not emit errors for canonical fixtures");
     }
 
+    {
+        const auto path = tests_root() / "fixtures" / "scenes" / "canonical_scene.json";
+        const auto job_path = tests_root() / "fixtures" / "jobs" / "canonical_render_job.json";
+        const std::vector<std::string> args = {
+            "tachyon",
+            "render",
+            "--scene",
+            path.string(),
+            "--job",
+            job_path.string()
+        };
+
+        std::vector<char*> argv;
+        argv.reserve(args.size());
+        for (const auto& arg : args) {
+            argv.push_back(const_cast<char*>(arg.c_str()));
+        }
+
+        StreamCapture capture_out(std::cout);
+        StreamCapture capture_err(std::cerr);
+        const int exit_code = tachyon::run_cli(static_cast<int>(argv.size()), argv.data());
+        check_true(exit_code == 0, "CLI render should accept canonical scene and job fixtures");
+        check_true(capture_out.str().find("render plan valid") != std::string::npos, "CLI render should report plan success");
+        check_true(capture_out.str().find("composition: main") != std::string::npos, "CLI render should print resolved composition info");
+        check_true(capture_err.str().empty(), "CLI render should not emit errors for canonical fixtures");
+    }
+
     return g_failures == 0;
 }
 
 bool run_render_job_tests() {
+    const auto scene_path = tests_root() / "fixtures" / "scenes" / "canonical_scene.json";
+    const auto scene_text = read_text_file(scene_path);
+    check_true(!scene_text.empty(), "canonical scene fixture should be readable for planning");
+
+    const auto scene = tachyon::parse_scene_spec_json(scene_text);
+    check_true(scene.value.has_value(), "canonical scene should parse for planning");
+
     const auto path = tests_root() / "fixtures" / "jobs" / "canonical_render_job.json";
     const auto text = read_text_file(path);
     check_true(!text.empty(), "canonical render job fixture should be readable");
@@ -139,10 +174,21 @@ bool run_render_job_tests() {
     if (parsed.value.has_value()) {
         const auto validation = tachyon::validate_render_job(*parsed.value);
         check_true(validation.ok(), "canonical render job should validate");
+
+        if (scene.value.has_value()) {
+            const auto plan = tachyon::build_render_plan(*scene.value, *parsed.value);
+            check_true(plan.value.has_value(), "canonical scene and job should build a render plan");
+            if (plan.value.has_value()) {
+                check_true(plan.value->composition.id == "main", "render plan should resolve the target composition");
+                check_true(plan.value->composition.layer_count == 1, "render plan should carry the composition summary");
+                check_true(plan.value->composition.width == 1920, "render plan should preserve composition width");
+                check_true(plan.value->output.destination.path == "out/intro.mp4", "render plan should keep output destination");
+            }
+        }
     }
 
     {
-        const std::string text = R"({
+        const std::string invalid_text = R"({
             "job_id": "job_invalid",
             "scene_ref": "scene.json",
             "composition_target": "main",
@@ -174,11 +220,25 @@ bool run_render_job_tests() {
             }
         })";
 
-        const auto invalid = tachyon::parse_render_job_json(text);
+        const auto invalid = tachyon::parse_render_job_json(invalid_text);
         check_true(invalid.value.has_value(), "invalid render job should still parse");
         if (invalid.value.has_value()) {
             const auto validation = tachyon::validate_render_job(*invalid.value);
             check_true(!validation.ok(), "invalid render job should fail validation");
+        }
+    }
+
+    {
+        const auto scene_text_again = read_text_file(tests_root() / "fixtures" / "scenes" / "canonical_scene.json");
+        const auto scene_again = tachyon::parse_scene_spec_json(scene_text_again);
+        const auto job_text_again = read_text_file(tests_root() / "fixtures" / "jobs" / "canonical_render_job.json");
+        const auto job_again = tachyon::parse_render_job_json(job_text_again);
+
+        if (scene_again.value.has_value() && job_again.value.has_value()) {
+            tachyon::RenderJob unresolved = *job_again.value;
+            unresolved.composition_target = "missing";
+            const auto plan = tachyon::build_render_plan(*scene_again.value, unresolved);
+            check_true(!plan.value.has_value(), "missing composition target should fail render plan construction");
         }
     }
 
