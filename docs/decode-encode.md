@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines media I/O around the render pipeline.
+This document defines media I O around the render pipeline.
 
 ## Initial scope
 
@@ -12,8 +12,24 @@ This document defines media I/O around the render pipeline.
 - video encode output
 - image sequence support later if needed
 
+## Architectural split
+
+TACHYON should keep three concerns separate:
+
+- decode of source media
+- render and compositing work
+- encode and final delivery output
+
+This document defines the high-level media I O boundary.
+Detailed delivery behavior, encoder profiles, piping strategy, and storage-aware output policy belong in `docs/encoder-output.md`.
+
 ## Design rules
 
 1. Decode and encode should stay outside the render core.
-2. Media I/O must be explicit and reproducible.
+2. Media I O must be explicit and reproducible.
 3. The engine should be able to render without depending on browser runtimes or external playback stacks.
+4. Encode backends must not silently redefine render semantics.
+
+## Guiding principle
+
+TACHYON should treat media I O as infrastructure around rendering, not as a place where scene, compositing, and delivery logic become entangled.
