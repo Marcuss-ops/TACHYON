@@ -25,9 +25,11 @@ add_library(TachyonCore
     renderer2d/project_card.cpp
     renderer2d/surface_rgba.cpp
     renderer2d/raster/cpu_rasterizer.cpp
+    renderer2d/raster/perspective_rasterizer.cpp
     runtime/batch_runner.cpp
     runtime/frame_cache.cpp
     runtime/frame_executor.cpp
+    runtime/quality_policy.cpp
     runtime/render_graph.cpp
     runtime/render_session.cpp
     runtime/tile_scheduler.cpp

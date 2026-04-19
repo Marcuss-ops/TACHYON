@@ -1,6 +1,7 @@
 #include "tachyon/runtime/render_session.h"
 
 #include "tachyon/output/frame_output_sink.h"
+#include "tachyon/runtime/render_context.h"
 
 #include <algorithm>
 #include <atomic>
@@ -15,10 +16,11 @@ void render_frames_sequential(
     const SceneSpec& scene,
     const RenderExecutionPlan& execution_plan,
     FrameCache& cache,
+    RenderContext& context,
     std::vector<ExecutedFrame>& rendered_frames) {
     rendered_frames.reserve(execution_plan.frame_tasks.size());
     for (const auto& task : execution_plan.frame_tasks) {
-        rendered_frames.push_back(execute_frame_task(scene, execution_plan.render_plan, task, cache));
+        rendered_frames.push_back(execute_frame_task(scene, execution_plan.render_plan, task, cache, context));
     }
 }
 
@@ -27,6 +29,7 @@ void render_frames_parallel(
     const RenderExecutionPlan& execution_plan,
     FrameCache& cache,
     std::size_t worker_count,
+    RenderContext& context,
     std::vector<ExecutedFrame>& rendered_frames) {
 
     const std::size_t task_count = execution_plan.frame_tasks.size();
@@ -44,7 +47,7 @@ void render_frames_parallel(
                     return;
                 }
 
-                rendered_frames[index] = execute_frame_task(scene, execution_plan.render_plan, execution_plan.frame_tasks[index], cache);
+                rendered_frames[index] = execute_frame_task(scene, execution_plan.render_plan, execution_plan.frame_tasks[index], cache, context);
             }
         }));
     }
@@ -69,6 +72,8 @@ RenderSessionResult RenderSession::render(
     const std::filesystem::path& output_path,
     std::size_t worker_count) {
     RenderSessionResult result;
+    RenderContext context(m_precomp_cache);
+    context.policy = make_quality_policy(execution_plan.render_plan.quality_tier);
 
     RenderPlan effective_plan = execution_plan.render_plan;
     if (!output_path.empty()) {
@@ -86,9 +91,9 @@ RenderSessionResult RenderSession::render(
 
     std::vector<ExecutedFrame> rendered_frames;
     if (worker_count <= 1 || execution_plan.frame_tasks.size() <= 1) {
-        render_frames_sequential(scene, execution_plan, m_cache, rendered_frames);
+        render_frames_sequential(scene, execution_plan, m_cache, context, rendered_frames);
     } else {
-        render_frames_parallel(scene, execution_plan, m_cache, worker_count, rendered_frames);
+        render_frames_parallel(scene, execution_plan, m_cache, worker_count, context, rendered_frames);
     }
 
     for (ExecutedFrame& frame : rendered_frames) {
@@ -117,6 +122,7 @@ RenderSessionResult RenderSession::render(
         result.output_error = sink->last_error();
     }
 
+    result.diagnostics = context.media.consume_diagnostics();
     return result;
 }
 
