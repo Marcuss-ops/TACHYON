@@ -1,0 +1,56 @@
+#pragma once
+
+#include "tachyon/core/camera/camera_state.h"
+#include "tachyon/core/math/vector2.h"
+#include "tachyon/core/math/vector3.h"
+#include "tachyon/spec/scene_spec.h"
+
+#include <cstdint>
+#include <optional>
+#include <string>
+#include <vector>
+
+namespace tachyon::scene {
+
+struct EvaluatedLayerState {
+    std::string id;
+    std::string type;
+    std::string name;
+    bool enabled{false};
+    bool active{false};
+    bool is_camera{false};
+    std::int64_t frame_number{0};
+    double composition_time_seconds{0.0};
+    double local_time_seconds{0.0};
+    double opacity{1.0};
+    math::Vector2 position{math::Vector2::zero()};
+    double rotation_degrees{0.0};
+    math::Vector2 scale{math::Vector2::one()};
+    std::optional<std::string> parent;
+};
+
+struct EvaluatedCameraState {
+    bool available{false};
+    std::string layer_id;
+    std::int64_t frame_number{0};
+    double composition_time_seconds{0.0};
+    double local_time_seconds{0.0};
+    math::Vector3 position{math::Vector3::zero()};
+    double rotation_degrees{0.0};
+    math::Vector3 scale{math::Vector3::one()};
+    camera::CameraState camera;
+};
+
+struct EvaluatedCompositionState {
+    std::string composition_id;
+    std::string composition_name;
+    std::int64_t width{0};
+    std::int64_t height{0};
+    FrameRate frame_rate;
+    std::int64_t frame_number{0};
+    double composition_time_seconds{0.0};
+    std::vector<EvaluatedLayerState> layers;
+    EvaluatedCameraState camera;
+};
+
+} // namespace tachyon::scene
