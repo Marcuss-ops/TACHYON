@@ -35,6 +35,7 @@ struct EvaluatedLayerState {
     std::string id;
     std::string type;
     std::string name;
+    std::string blend_mode{"normal"};
     bool enabled{false};
     bool active{false};
     bool visible{false};

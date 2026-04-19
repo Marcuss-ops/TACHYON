@@ -445,6 +445,7 @@ LayerSpec parse_layer(const json& object, const std::string& path, DiagnosticBag
     read_string(object, "id", layer.id);
     read_string(object, "type", layer.type);
     read_string(object, "name", layer.name);
+    read_string(object, "blend_mode", layer.blend_mode);
     read_bool(object, "enabled", layer.enabled);
     read_number(object, "start_time", layer.start_time);
     read_number(object, "in_point", layer.in_point);
@@ -480,6 +481,10 @@ LayerSpec parse_layer(const json& object, const std::string& path, DiagnosticBag
 
 bool is_asset_alpha_mode_valid(const std::string& mode) {
     return mode == "premultiplied" || mode == "straight" || mode == "opaque";
+}
+
+bool is_layer_blend_mode_valid(const std::string& mode) {
+    return mode == "normal" || mode == "additive" || mode == "multiply" || mode == "screen";
 }
 
 CompositionSpec parse_composition(const json& object, const std::string& path, DiagnosticBag& diagnostics) {
@@ -728,6 +733,15 @@ ValidationResult validate_scene_spec(const SceneSpec& scene) {
                 if (!allowed_types.contains(layer.type)) {
                     result.diagnostics.add_error("scene.layer.type_unsupported", "unsupported layer type: " + layer.type, layer_path + ".type");
                 }
+            }
+
+            if (layer.blend_mode.empty()) {
+                result.diagnostics.add_error("scene.layer.blend_mode_missing", "layer.blend_mode is required", layer_path + ".blend_mode");
+            } else if (!is_layer_blend_mode_valid(layer.blend_mode)) {
+                result.diagnostics.add_error(
+                    "scene.layer.blend_mode_invalid",
+                    "layer.blend_mode must be normal, additive, multiply, or screen",
+                    layer_path + ".blend_mode");
             }
 
             if (layer.in_point > layer.out_point) {

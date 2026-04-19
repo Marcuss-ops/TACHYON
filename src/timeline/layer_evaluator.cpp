@@ -71,6 +71,7 @@ EvaluatedLayerState evaluate_layer_state(const LayerSpec& layer, double composit
     EvaluatedLayerState out;
     out.id = layer.id;
     out.type = parse_layer_type(layer.type);
+    out.blend_mode = layer.blend_mode;
     out.visible = is_layer_visible_at_time(layer, composition_time_seconds, composition_duration);
     out.local_time_seconds = composition_time_seconds - layer.start_time;
     out.z_order = z_order;

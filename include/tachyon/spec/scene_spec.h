@@ -129,6 +129,7 @@ struct LayerSpec {
     std::string id;
     std::string type;
     std::string name;
+    std::string blend_mode{"normal"};
     bool enabled{true};
     double start_time{0.0};
     double in_point{0.0};

@@ -67,6 +67,7 @@ std::string build_scene_signature(const SceneSpec& scene) {
             append_part(stream, "layer.id", layer.id);
             append_part(stream, "layer.type", layer.type);
             append_part(stream, "layer.name", layer.name);
+            append_part(stream, "layer.blend_mode", layer.blend_mode);
             append_part(stream, "layer.enabled", layer.enabled);
             append_part(stream, "layer.start_time", layer.start_time);
             append_part(stream, "layer.in_point", layer.in_point);

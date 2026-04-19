@@ -155,6 +155,10 @@ void print_execution_plan(
     out << "composition: " << execution_plan.render_plan.composition_target << " (" << execution_plan.render_plan.composition.width << "x"
         << execution_plan.render_plan.composition.height << " @ " << execution_plan.render_plan.composition.frame_rate.value() << " fps, "
         << execution_plan.render_plan.composition.layer_count << " layers)\n";
+    out << "quality tier: " << execution_plan.render_plan.quality_tier << '\n';
+    out << "compositing alpha: " << execution_plan.render_plan.compositing_alpha_mode << '\n';
+    out << "working space: " << execution_plan.render_plan.working_space << '\n';
+    out << "motion blur: " << (execution_plan.render_plan.motion_blur_enabled ? "enabled" : "disabled") << '\n';
     out << "frames: " << execution_plan.render_plan.frame_range.start << " -> " << execution_plan.render_plan.frame_range.end << '\n';
     out << "resolved assets: " << execution_plan.resolved_asset_count << '\n';
     out << "graph steps: " << execution_plan.steps.size() << '\n';

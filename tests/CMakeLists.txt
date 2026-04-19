@@ -14,6 +14,7 @@ add_executable(TachyonTests
     unit/runtime/frame_executor_tests.cpp
     unit/runtime/frame_output_sink_tests.cpp
     unit/runtime/tile_scheduler_tests.cpp
+    unit/runtime/render_contract_tests.cpp
     unit/scene/evaluator_tests.cpp
     unit/scene/precomp_mask_tests.cpp
     unit/timeline/time_tests.cpp
