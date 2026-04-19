@@ -11,6 +11,9 @@ add_library(TachyonCore
     scene/evaluator.cpp
     runtime/jobs/render_job.cpp
     runtime/jobs/render_plan.cpp
+    runtime/frame_cache.cpp
+    runtime/frame_executor.cpp
+    runtime/render_session.cpp
     runtime/render_graph.cpp
     timeline/time_resolver.cpp
     timeline/layer_evaluator.cpp
