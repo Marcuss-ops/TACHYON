@@ -42,8 +42,10 @@ struct RenderPlan {
     bool motion_blur_enabled{false};
     std::int64_t motion_blur_samples{0};
     double motion_blur_shutter_angle{180.0};
+    std::string motion_blur_curve{"box"};
     std::string seed_policy_mode;
     std::string compatibility_mode;
+    const SceneSpec* scene_spec{nullptr};
 };
 
 ResolutionResult<RenderPlan> build_render_plan(const SceneSpec& scene, const RenderJob& job);

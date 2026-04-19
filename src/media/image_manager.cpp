@@ -16,11 +16,7 @@ static std::unique_ptr<renderer2d::SurfaceRGBA> decode_image(const std::filesyst
     for (int y = 0; y < h; ++y) {
         for (int x = 0; x < w; ++x) {
             int i = (y * w + x) * 4;
-            renderer2d::Color c{data[i], data[i+1], data[i+2], data[i+3]};
-            // premoltiplica subito — il resto del motore se lo aspetta
-            c.r = static_cast<uint8_t>((uint32_t)c.r * c.a / 255U);
-            c.g = static_cast<uint8_t>((uint32_t)c.g * c.a / 255U);
-            c.b = static_cast<uint8_t>((uint32_t)c.b * c.a / 255U);
+            renderer2d::Color c{data[i], data[i + 1], data[i + 2], data[i + 3]};
             surface->set_pixel(static_cast<uint32_t>(x), static_cast<uint32_t>(y), c);
         }
     }

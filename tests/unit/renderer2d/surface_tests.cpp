@@ -32,9 +32,18 @@ bool run_surface_tests() {
         surface.clear(Color::blue());
         surface.blend_pixel(1, 1, {128, 0, 0, 128});
         const Color pixel = surface.get_pixel(1, 1);
-        check_true(pixel.r >= 187 && pixel.r <= 189, "Linear-light blend lifts red channel");
+        check_true(pixel.r >= 92 && pixel.r <= 94, "Linear-light blend lifts red channel");
         check_true(pixel.b >= 187 && pixel.b <= 189, "Linear-light blend lifts blue channel");
         check_true(pixel.a == 255, "Alpha over output alpha");
+    }
+
+    {
+        SurfaceRGBA surface(2, 2);
+        surface.clear(Color::transparent());
+        surface.blend_pixel(0, 0, {255, 0, 0, 128});
+        const Color pixel = surface.get_pixel(0, 0);
+        check_true(pixel.r == 255 && pixel.g == 0 && pixel.b == 0, "Half-transparent red stays straight after blend");
+        check_true(pixel.a == 128, "Half-transparent red preserves alpha");
     }
 
     {

@@ -257,12 +257,19 @@ TextLayoutResult layout_text(
         }
 
         const std::int32_t glyph_advance = std::max(1, glyph->advance_x) * static_cast<std::int32_t>(scale);
+        
+        // Apply kerning
+        std::int32_t kerning_offset = 0;
+        if (index > 0 && !last_was_space) {
+            kerning_offset = font.get_kerning(codepoints[index - 1], codepoint) * static_cast<std::int32_t>(scale);
+        }
+        
         const bool should_wrap =
             text_box.multiline &&
             options.word_wrap &&
             wrap_width > 0 &&
             pen_x > 0 &&
-            (pen_x + glyph_advance) > wrap_width &&
+            (pen_x + glyph_advance + kerning_offset) > wrap_width &&
             !whitespace;
 
         if (should_wrap) {
@@ -295,9 +302,12 @@ TextLayoutResult layout_text(
             continue;
         }
 
+        pen_x += kerning_offset;
+
         const std::int32_t glyph_width = static_cast<std::int32_t>(glyph->width) * static_cast<std::int32_t>(scale);
         const std::int32_t glyph_height = static_cast<std::int32_t>(glyph->height) * static_cast<std::int32_t>(scale);
         const std::int32_t draw_x = pen_x + glyph->x_offset * static_cast<std::int32_t>(scale);
+
         const std::int32_t draw_y =
             pen_y +
             (font.ascent() - glyph->height - glyph->y_offset) * static_cast<std::int32_t>(scale);

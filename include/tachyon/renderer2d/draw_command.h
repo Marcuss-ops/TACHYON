@@ -45,6 +45,10 @@ struct TexturedQuadCommand {
     math::Vector2 p1{math::Vector2::zero()};
     math::Vector2 p2{math::Vector2::zero()};
     math::Vector2 p3{math::Vector2::zero()};
+    float w0{1.0f};
+    float w1{1.0f};
+    float w2{1.0f};
+    float w3{1.0f};
     float opacity{1.0f};
 };
 
