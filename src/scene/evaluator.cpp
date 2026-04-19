@@ -3,6 +3,7 @@
 #include "tachyon/core/animation/easing.h"
 #include "tachyon/core/math/quaternion.h"
 #include "tachyon/core/math/transform2.h"
+#include "tachyon/audio/audio_analyzer.h"
 #include "tachyon/timeline/time.h"
 
 #include <algorithm>
@@ -42,7 +43,32 @@ double fallback_rotation(const LayerSpec& layer) {
     return layer.transform.rotation.value_or(0.0);
 }
 
-double sample_scalar(const AnimatedScalarSpec& property, double fallback, double local_time_seconds) {
+double sample_audio_band(const ::tachyon::audio::AudioBands& bands, AudioBandType band) {
+    switch (band) {
+        case AudioBandType::Bass: return bands.bass;
+        case AudioBandType::Mid: return bands.mid;
+        case AudioBandType::High: return bands.high;
+        case AudioBandType::Presence: return bands.presence;
+        case AudioBandType::Rms: return bands.rms;
+        default: break;
+    }
+    return bands.rms;
+}
+
+double sample_scalar(
+    const AnimatedScalarSpec& property,
+    double fallback,
+    double local_time_seconds,
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer = nullptr) {
+    if (property.audio_band.has_value() && audio_analyzer) {
+        const ::tachyon::audio::AudioBands bands = audio_analyzer->analyze_frame(local_time_seconds);
+        const double band_value = sample_audio_band(bands, *property.audio_band);
+        const double clamped = std::clamp(band_value, 0.0, 1.0);
+        return std::clamp(property.audio_min + (property.audio_max - property.audio_min) * clamped,
+                          std::min(property.audio_min, property.audio_max),
+                          std::max(property.audio_min, property.audio_max));
+    }
+
     if (property.keyframes.empty()) {
         return property.value.value_or(fallback);
     }
@@ -113,6 +139,42 @@ math::Vector2 sample_vector2(const AnimatedVector2Spec& property, const math::Ve
     return keyframes.back().value;
 }
 
+math::Vector3 sample_vector3(const AnimatedVector3Spec& property, const math::Vector3& fallback, double local_time_seconds) {
+    if (property.keyframes.empty()) {
+        return property.value.value_or(fallback);
+    }
+
+    std::vector<AnimatedVector3Spec::Keyframe> keyframes = property.keyframes;
+    std::stable_sort(keyframes.begin(), keyframes.end(), [](const auto& a, const auto& b) {
+        return a.time < b.time;
+    });
+
+    if (local_time_seconds <= keyframes.front().time) {
+        return keyframes.front().value;
+    }
+    if (local_time_seconds >= keyframes.back().time) {
+        return keyframes.back().value;
+    }
+
+    for (std::size_t index = 1; index < keyframes.size(); ++index) {
+        const auto& previous = keyframes[index - 1];
+        const auto& next = keyframes[index];
+        if (local_time_seconds > next.time) {
+            continue;
+        }
+        const double duration = next.time - previous.time;
+        if (duration <= 0.0) {
+            return next.value;
+        }
+        const double alpha = (local_time_seconds - previous.time) / duration;
+        const double eased = animation::apply_easing(alpha, previous.easing, previous.bezier);
+        const float weight = static_cast<float>(eased);
+        return previous.value * (1.0f - weight) + next.value * weight;
+    }
+
+    return keyframes.back().value;
+}
+
 math::Transform2 make_transform2(const math::Vector2& position, double rotation_degrees, const math::Vector2& scale) {
     math::Transform2 transform;
     transform.position = position;
@@ -131,8 +193,11 @@ EvaluatedLayerState make_layer_state(
     evaluated.id = layer.id;
     evaluated.type = layer.type;
     evaluated.name = layer.name;
+    evaluated.blend_mode = layer.blend_mode;
     evaluated.enabled = layer.enabled;
     evaluated.is_camera = layer.type == "camera";
+    evaluated.is_3d = layer.is_3d;
+    evaluated.is_adjustment_layer = layer.is_adjustment_layer;
     evaluated.frame_number = frame_number;
     evaluated.composition_time_seconds = composition_time_seconds;
     evaluated.local_time_seconds = timeline::local_time_from_composition(composition_time_seconds, layer.start_time);
@@ -145,6 +210,26 @@ EvaluatedLayerState make_layer_state(
     evaluated.parent = layer.parent;
     evaluated.local_transform = make_transform2(evaluated.position, evaluated.rotation_degrees, evaluated.scale);
     evaluated.local_matrix = evaluated.local_transform.to_matrix();
+    
+    if (layer.is_3d) {
+        const math::Vector3 pos3 = sample_vector3(layer.transform3d.position_property, {evaluated.position.x, evaluated.position.y, 0.0f}, evaluated.remapped_time_seconds);
+        const math::Vector3 rot3 = sample_vector3(layer.transform3d.rotation_property, {0.0f, 0.0f, static_cast<float>(evaluated.rotation_degrees)}, evaluated.remapped_time_seconds);
+        const math::Vector3 scl3 = sample_vector3(layer.transform3d.scale_property, {evaluated.scale.x, evaluated.scale.y, 1.0f}, evaluated.remapped_time_seconds);
+        
+        math::Transform3 t3;
+        t3.position = pos3;
+        t3.rotation = math::Quaternion::from_euler({
+            static_cast<float>(degrees_to_radians(rot3.x)),
+            static_cast<float>(degrees_to_radians(rot3.y)),
+            static_cast<float>(degrees_to_radians(rot3.z))
+        });
+        t3.scale = scl3;
+        evaluated.local_matrix = t3.to_matrix();
+        evaluated.world_position3 = pos3;
+        evaluated.world_rotation3 = rot3;
+        evaluated.world_scale3 = scl3;
+    }
+
     evaluated.world_transform = evaluated.local_transform;
     evaluated.world_matrix = evaluated.local_matrix;
     evaluated.world_position = evaluated.position;
@@ -155,6 +240,8 @@ EvaluatedLayerState make_layer_state(
     
     evaluated.width = layer.width;
     evaluated.height = layer.height;
+    evaluated.stroke_width = layer.stroke_width;
+    evaluated.text_content = layer.text_content;
     evaluated.fill_color = layer.fill_color;
     evaluated.stroke_color = layer.stroke_color;
     evaluated.effects = layer.effects;
@@ -199,25 +286,24 @@ EvaluatedCompositionState evaluate_composition_internal(
     const SceneSpec* scene,
     const CompositionSpec& composition,
     std::int64_t frame_number,
+    double composition_time_seconds,
     std::vector<std::string> stack) {
     
-    const auto frame = timeline::sample_frame(composition.frame_rate, frame_number);
-
     EvaluatedCompositionState evaluated;
     evaluated.composition_id = composition.id;
     evaluated.composition_name = composition.name;
     evaluated.width = composition.width;
     evaluated.height = composition.height;
     evaluated.frame_rate = composition.frame_rate;
-    evaluated.frame_number = frame.frame_number;
-    evaluated.composition_time_seconds = frame.composition_time_seconds;
+    evaluated.frame_number = frame_number;
+    evaluated.composition_time_seconds = composition_time_seconds;
     evaluated.layers.reserve(composition.layers.size());
 
     EvaluationContext context{
         scene,
         composition,
         frame_number,
-        frame.composition_time_seconds,
+        composition_time_seconds,
         {},
         std::vector<std::optional<EvaluatedLayerState>>(composition.layers.size()),
         std::vector<bool>(composition.layers.size(), false),
@@ -268,11 +354,18 @@ const EvaluatedLayerState& resolve_layer_state(
             {
                 const auto wp3 = evaluated.world_matrix.transform_point({0.0f, 0.0f, 0.0f});
                 evaluated.world_position = {wp3.x, wp3.y};
+                evaluated.world_position3 = wp3;
             }
             evaluated.world_rotation_degrees = parent.world_rotation_degrees + evaluated.rotation_degrees;
+            evaluated.world_rotation3 = parent.world_rotation3 + (layer.is_3d ? sample_vector3(layer.transform3d.rotation_property, {0.0f, 0.0f, static_cast<float>(evaluated.rotation_degrees)}, evaluated.remapped_time_seconds) : math::Vector3{0, 0, static_cast<float>(evaluated.rotation_degrees)});
             evaluated.world_scale = {
                 parent.world_scale.x * evaluated.scale.x,
                 parent.world_scale.y * evaluated.scale.y
+            };
+            evaluated.world_scale3 = {
+                parent.world_scale3.x * (layer.is_3d ? evaluated.world_scale3.x : evaluated.scale.x),
+                parent.world_scale3.y * (layer.is_3d ? evaluated.world_scale3.y : evaluated.scale.y),
+                parent.world_scale3.z * (layer.is_3d ? evaluated.world_scale3.z : 1.0f)
             };
             evaluated.world_transform = make_transform2(
                 evaluated.world_position,
@@ -307,7 +400,7 @@ const EvaluatedLayerState& resolve_layer_state(
                     std::vector<std::string> next_stack = context.composition_stack;
                     next_stack.push_back(context.composition.id);
                     evaluated.nested_composition = std::make_shared<EvaluatedCompositionState>(
-                        evaluate_composition_internal(context.scene, comp, context.frame_number, std::move(next_stack))
+                        evaluate_composition_internal(context.scene, comp, context.frame_number, context.composition_time_seconds, std::move(next_stack))
                     );
                     break;
                 }
@@ -322,7 +415,12 @@ const EvaluatedLayerState& resolve_layer_state(
 
 } // namespace
 
-EvaluatedLayerState evaluate_layer_state(const LayerSpec& layer, std::int64_t frame_number, double composition_time_seconds) {
+EvaluatedLayerState evaluate_layer_state(
+    const LayerSpec& layer,
+    std::int64_t frame_number,
+    double composition_time_seconds,
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer) {
+    (void)audio_analyzer;
     return make_layer_state(layer, 0, frame_number, composition_time_seconds);
 }
 
@@ -361,18 +459,51 @@ EvaluatedCameraState evaluate_camera_state(
     return evaluated;
 }
 
-EvaluatedCompositionState evaluate_composition_state(const CompositionSpec& composition, std::int64_t frame_number) {
-    return evaluate_composition_internal(nullptr, composition, frame_number, {});
+EvaluatedCompositionState evaluate_composition_state(
+    const CompositionSpec& composition,
+    std::int64_t frame_number,
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer) {
+    (void)audio_analyzer;
+    const auto frame = timeline::sample_frame(composition.frame_rate, frame_number);
+    return evaluate_composition_internal(nullptr, composition, frame.frame_number, frame.composition_time_seconds, {});
+}
+
+EvaluatedCompositionState evaluate_composition_state(
+    const CompositionSpec& composition,
+    double composition_time_seconds,
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer) {
+    (void)audio_analyzer;
+    const std::int64_t frame_number = static_cast<std::int64_t>(std::llround(composition_time_seconds * static_cast<double>(composition.frame_rate.numerator) / static_cast<double>(composition.frame_rate.denominator)));
+    return evaluate_composition_internal(nullptr, composition, frame_number, composition_time_seconds, {});
 }
 
 std::optional<EvaluatedCompositionState> evaluate_scene_composition_state(
     const SceneSpec& scene,
     const std::string& composition_id,
-    std::int64_t frame_number
+    std::int64_t frame_number,
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer
 ) {
+    (void)audio_analyzer;
     for (const auto& composition : scene.compositions) {
         if (composition.id == composition_id) {
-            return evaluate_composition_internal(&scene, composition, frame_number, {});
+            const auto frame = timeline::sample_frame(composition.frame_rate, frame_number);
+            return evaluate_composition_internal(&scene, composition, frame.frame_number, frame.composition_time_seconds, {});
+        }
+    }
+    return std::nullopt;
+}
+
+std::optional<EvaluatedCompositionState> evaluate_scene_composition_state(
+    const SceneSpec& scene,
+    const std::string& composition_id,
+    double composition_time_seconds,
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer
+) {
+    (void)audio_analyzer;
+    for (const auto& composition : scene.compositions) {
+        if (composition.id == composition_id) {
+            const std::int64_t frame_number = static_cast<std::int64_t>(std::llround(composition_time_seconds * static_cast<double>(composition.frame_rate.numerator) / static_cast<double>(composition.frame_rate.denominator)));
+            return evaluate_composition_internal(&scene, composition, frame_number, composition_time_seconds, {});
         }
     }
     return std::nullopt;

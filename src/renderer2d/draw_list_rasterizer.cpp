@@ -1,6 +1,7 @@
 #include "tachyon/renderer2d/draw_list_rasterizer.h"
 
 #include "tachyon/renderer2d/rasterizer_ops.h"
+#include "tachyon/renderer2d/raster/perspective_rasterizer.h"
 
 #include <algorithm>
 #include <vector>
@@ -175,14 +176,18 @@ RasterizedFrame2D render_draw_list_2d(
                 break;
             case renderer2d::DrawCommandKind::TexturedQuad:
                 if (command->textured_quad.has_value()) {
-                    const int min_x = static_cast<int>(std::min({command->textured_quad->p0.x, command->textured_quad->p1.x, command->textured_quad->p2.x, command->textured_quad->p3.x}));
-                    const int min_y = static_cast<int>(std::min({command->textured_quad->p0.y, command->textured_quad->p1.y, command->textured_quad->p2.y, command->textured_quad->p3.y}));
-                    const int max_x = static_cast<int>(std::max({command->textured_quad->p0.x, command->textured_quad->p1.x, command->textured_quad->p2.x, command->textured_quad->p3.x}));
-                    const int max_y = static_cast<int>(std::max({command->textured_quad->p0.y, command->textured_quad->p1.y, command->textured_quad->p2.y, command->textured_quad->p3.y}));
-                    fill_rect_with_blend(*frame.surface,
-                        renderer2d::RectI{min_x, min_y, std::max(1, max_x - min_x), std::max(1, max_y - min_y)},
-                        placeholder_textured_color(command->textured_quad->opacity),
-                        command->blend_mode);
+                    const auto& q = *command->textured_quad;
+                    if (q.texture.valid()) {
+                        renderer2d::raster::PerspectiveWarpQuad warp;
+                        warp.v0 = {math::Vector3{q.p0.x, q.p0.y, 0.0f}, math::Vector2{0.0f, 0.0f}, q.w0};
+                        warp.v1 = {math::Vector3{q.p1.x, q.p1.y, 0.0f}, math::Vector2{1.0f, 0.0f}, q.w1};
+                        warp.v2 = {math::Vector3{q.p2.x, q.p2.y, 0.0f}, math::Vector2{1.0f, 1.0f}, q.w2};
+                        warp.v3 = {math::Vector3{q.p3.x, q.p3.y, 0.0f}, math::Vector2{0.0f, 1.0f}, q.w3};
+                        warp.texture = q.texture.surface.get();
+                        warp.opacity = q.opacity;
+
+                        renderer2d::raster::PerspectiveRasterizer::draw_quad(*frame.surface, warp);
+                    }
                 }
                 break;
             case renderer2d::DrawCommandKind::MaskRect:

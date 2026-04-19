@@ -1,5 +1,6 @@
 #include "tachyon/renderer2d/effect_host.h"
 
+#include <array>
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
@@ -45,6 +46,38 @@ Color from_premultiplied(const PremultipliedPixel& pixel) {
         static_cast<std::uint8_t>(std::clamp(std::lround(pixel.b * inv_alpha), 0L, 255L)),
         static_cast<std::uint8_t>(std::clamp(std::lround(pixel.a), 0L, 255L))
     };
+}
+
+template <typename Fn>
+std::array<std::uint8_t, 256> build_channel_lut(Fn&& mapper) {
+    std::array<std::uint8_t, 256> lut{};
+    for (std::size_t index = 0; index < lut.size(); ++index) {
+        const float input = static_cast<float>(index) / 255.0f;
+        const float output = std::clamp(mapper(input), 0.0f, 1.0f);
+        lut[index] = static_cast<std::uint8_t>(std::lround(output * 255.0f));
+    }
+    return lut;
+}
+
+SurfaceRGBA apply_channel_lut(const SurfaceRGBA& input, const std::array<std::uint8_t, 256>& lut) {
+    SurfaceRGBA output(input.width(), input.height());
+    for (std::uint32_t y = 0; y < input.height(); ++y) {
+        for (std::uint32_t x = 0; x < input.width(); ++x) {
+            const Color base = input.get_pixel(x, y);
+            if (base.a == 0U) {
+                output.set_pixel(x, y, Color::transparent());
+                continue;
+            }
+
+            output.set_pixel(x, y, Color{
+                lut[base.r],
+                lut[base.g],
+                lut[base.b],
+                base.a
+            });
+        }
+    }
+    return output;
 }
 
 std::vector<float> gaussian_kernel(float sigma) {
@@ -203,6 +236,13 @@ float get_scalar(const EffectParams& params, const std::string& key, float defau
     return it != params.scalars.end() ? it->second : default_value;
 }
 
+float normalize_unit_or_byte(float value, float default_unit_scale = 255.0f) {
+    if (value <= 1.0f) {
+        return std::clamp(value, 0.0f, 1.0f);
+    }
+    return std::clamp(value / default_unit_scale, 0.0f, 1.0f);
+}
+
 Color get_color(const EffectParams& params, const std::string& key, Color default_value) {
     const auto it = params.colors.find(key);
     return it != params.colors.end() ? it->second : default_value;
@@ -275,6 +315,42 @@ SurfaceRGBA GlowEffect::apply(const SurfaceRGBA& input, const EffectParams& para
     }
 
     return output;
+}
+
+SurfaceRGBA LevelsEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
+    const float input_black = normalize_unit_or_byte(get_scalar(params, "input_black", 0.0f));
+    const float input_white = normalize_unit_or_byte(get_scalar(params, "input_white", 255.0f));
+    const float gamma = std::max(0.0001f, get_scalar(params, "gamma", 1.0f));
+    const float output_black = normalize_unit_or_byte(get_scalar(params, "output_black", 0.0f));
+    const float output_white = normalize_unit_or_byte(get_scalar(params, "output_white", 255.0f));
+
+    const float input_range = input_white - input_black;
+    const float output_range = output_white - output_black;
+    if (input_range <= 0.0f || output_range <= 0.0f) {
+        return input;
+    }
+
+    const auto lut = build_channel_lut([&](float value) {
+        const float normalized = std::clamp((value - input_black) / input_range, 0.0f, 1.0f);
+        const float shaped = std::pow(normalized, 1.0f / gamma);
+        return output_black + shaped * output_range;
+    });
+
+    return apply_channel_lut(input, lut);
+}
+
+SurfaceRGBA CurvesEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
+    const float amount = std::clamp(get_scalar(params, "amount", get_scalar(params, "strength", 1.0f)), -1.0f, 1.0f);
+    if (amount == 0.0f) {
+        return input;
+    }
+
+    const auto lut = build_channel_lut([&](float value) {
+        const float smooth = value * value * (3.0f - 2.0f * value);
+        return value + (smooth - value) * amount;
+    });
+
+    return apply_channel_lut(input, lut);
 }
 
 void EffectHost::register_effect(std::string name, std::unique_ptr<Effect> effect) {

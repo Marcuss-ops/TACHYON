@@ -52,6 +52,7 @@ struct EvaluatedCameraState {
 struct EvaluatedLayerState {
     std::string id;
     LayerType type{LayerType::Unknown};
+    std::string blend_mode{"normal"};
     bool visible{false};
     float opacity{1.0f};
     double local_time_seconds{0.0};

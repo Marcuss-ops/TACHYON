@@ -125,6 +125,14 @@ OutputProfile parse_output_profile(const json& object, const std::string& path, 
     return profile;
 }
 
+bool is_quality_tier_valid(const std::string& tier) {
+    return tier == "draft" || tier == "high" || tier == "cinematic";
+}
+
+bool is_alpha_mode_valid(const std::string& mode) {
+    return mode == "premultiplied" || mode == "straight" || mode == "opaque";
+}
+
 } // namespace
 
 ParseResult<RenderJob> parse_render_job_json(const std::string& text) {
@@ -147,8 +155,26 @@ ParseResult<RenderJob> parse_render_job_json(const std::string& text) {
     read_string(root, "job_id", job.job_id);
     read_string(root, "scene_ref", job.scene_ref);
     read_string(root, "composition_target", job.composition_target);
+    if (root.contains("quality_tier") && root.at("quality_tier").is_string()) {
+        job.quality_tier = root.at("quality_tier").get<std::string>();
+    }
+    if (root.contains("compositing_alpha_mode") && root.at("compositing_alpha_mode").is_string()) {
+        job.compositing_alpha_mode = root.at("compositing_alpha_mode").get<std::string>();
+    }
+    if (root.contains("working_space") && root.at("working_space").is_string()) {
+        job.working_space = root.at("working_space").get<std::string>();
+    }
     read_string(root, "seed_policy_mode", job.seed_policy_mode);
     read_string(root, "compatibility_mode", job.compatibility_mode);
+    if (root.contains("motion_blur_enabled") && root.at("motion_blur_enabled").is_boolean()) {
+        job.motion_blur_enabled = root.at("motion_blur_enabled").get<bool>();
+    }
+    if (root.contains("motion_blur_samples") && root.at("motion_blur_samples").is_number_integer()) {
+        job.motion_blur_samples = root.at("motion_blur_samples").get<std::int64_t>();
+    }
+    if (root.contains("motion_blur_shutter_angle") && root.at("motion_blur_shutter_angle").is_number()) {
+        job.motion_blur_shutter_angle = root.at("motion_blur_shutter_angle").get<double>();
+    }
 
     if (root.contains("frame_range") && root.at("frame_range").is_object()) {
         const auto& frame_range = root.at("frame_range");
@@ -207,6 +233,41 @@ ValidationResult validate_render_job(const RenderJob& job) {
 
     if (job.composition_target.empty()) {
         result.diagnostics.add_error("job.composition_target_missing", "composition_target is required", "composition_target");
+    }
+
+    if (job.quality_tier.empty()) {
+        result.diagnostics.add_error("job.quality_tier_missing", "quality_tier is required", "quality_tier");
+    } else if (!is_quality_tier_valid(job.quality_tier)) {
+        result.diagnostics.add_error("job.quality_tier_invalid", "quality_tier must be draft, high, or cinematic", "quality_tier");
+    }
+
+    if (job.compositing_alpha_mode.empty()) {
+        result.diagnostics.add_error("job.compositing_alpha_mode_missing", "compositing_alpha_mode is required", "compositing_alpha_mode");
+    } else if (!is_alpha_mode_valid(job.compositing_alpha_mode)) {
+        result.diagnostics.add_error(
+            "job.compositing_alpha_mode_invalid",
+            "compositing_alpha_mode must be premultiplied, straight, or opaque",
+            "compositing_alpha_mode");
+    }
+
+    if (job.working_space.empty()) {
+        result.diagnostics.add_error("job.working_space_missing", "working_space is required", "working_space");
+    }
+
+    if (job.motion_blur_enabled) {
+        if (job.motion_blur_samples <= 0) {
+            result.diagnostics.add_error(
+                "job.motion_blur_samples_invalid",
+                "motion_blur_samples must be greater than zero when motion blur is enabled",
+                "motion_blur_samples");
+        }
+
+        if (job.motion_blur_shutter_angle < 0.0 || job.motion_blur_shutter_angle > 360.0) {
+            result.diagnostics.add_error(
+                "job.motion_blur_shutter_angle_invalid",
+                "motion_blur_shutter_angle must be between 0 and 360",
+                "motion_blur_shutter_angle");
+        }
     }
 
     if (job.frame_range.end < job.frame_range.start) {

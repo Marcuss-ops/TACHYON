@@ -33,6 +33,7 @@ public:
     std::int32_t descent() const { return m_descent; }
     std::int32_t line_height() const { return m_line_height; }
     std::int32_t default_advance() const { return m_default_advance; }
+    std::int32_t get_kerning(std::uint32_t left, std::uint32_t right) const;
     bool is_loaded() const { return m_loaded; }
 
 private:
@@ -46,6 +47,7 @@ private:
     std::int32_t m_line_height{0};
     std::int32_t m_default_advance{0};
     std::unordered_map<std::uint32_t, GlyphBitmap> m_glyphs;
+    std::unordered_map<std::uint64_t, std::int32_t> m_kerning_table;
     mutable std::unordered_map<std::uint64_t, std::shared_ptr<GlyphBitmap>> m_scaled_glyph_cache;
 };
 

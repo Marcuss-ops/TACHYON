@@ -16,6 +16,8 @@ enum class RenderStepKind {
     ResolveScene,
     ResolveComposition,
     PrepareFrameCacheKeys,
+    PrepareLayerRegions,
+    PrepareLayerCaches,
     Rasterize2DFrame,
     EncodeOutput
 };

@@ -20,6 +20,13 @@ struct CompositionSummary {
     FrameRate frame_rate;
     std::optional<std::string> background;
     std::size_t layer_count{0};
+    std::size_t solid_layer_count{0};
+    std::size_t shape_layer_count{0};
+    std::size_t mask_layer_count{0};
+    std::size_t image_layer_count{0};
+    std::size_t text_layer_count{0};
+    std::size_t precomp_layer_count{0};
+    std::size_t track_matte_layer_count{0};
 };
 
 struct RenderPlan {
@@ -29,8 +36,16 @@ struct RenderPlan {
     CompositionSummary composition;
     FrameRange frame_range;
     OutputContract output;
+    std::string quality_tier{"high"};
+    std::string compositing_alpha_mode{"premultiplied"};
+    std::string working_space{"linear_rec709"};
+    bool motion_blur_enabled{false};
+    std::int64_t motion_blur_samples{0};
+    double motion_blur_shutter_angle{180.0};
+    std::string motion_blur_curve{"box"};
     std::string seed_policy_mode;
     std::string compatibility_mode;
+    const SceneSpec* scene_spec{nullptr};
 };
 
 ResolutionResult<RenderPlan> build_render_plan(const SceneSpec& scene, const RenderJob& job);
