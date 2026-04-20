@@ -343,6 +343,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
             }
 
             // Render the 3D block
+            context.ray_tracer->set_samples_per_pixel(context.policy.ray_tracer_spp);
             context.ray_tracer->build_scene_subset(state, block_indices);
             
             renderer2d::SurfaceRGBA world_3d(static_cast<std::uint32_t>(state.width), static_cast<std::uint32_t>(state.height));
@@ -352,15 +353,20 @@ RasterizedFrame2D render_evaluated_composition_2d(
             context.ray_tracer->render(state, hdr_buffer.data(), nullptr, static_cast<int>(state.width), static_cast<int>(state.height));
             
             // Tonemap / Convert HDR float to RGBA8
+            auto process_color = [](float c) -> float {
+                float mapped = c / (1.0f + c);           // Reinhard Tone Mapping
+                return std::pow(std::clamp(mapped, 0.0f, 1.0f), 1.0f / 2.2f); // Gamma 2.2
+            };
+
             for (std::int64_t px_idx = 0; px_idx < state.width * state.height; ++px_idx) {
                 const float r = hdr_buffer[px_idx * 4 + 0];
                 const float g = hdr_buffer[px_idx * 4 + 1];
                 const float b = hdr_buffer[px_idx * 4 + 2];
                 const float a = hdr_buffer[px_idx * 4 + 3];
                 
-                const std::uint8_t ur = static_cast<std::uint8_t>(std::clamp(r * 255.0f, 0.0f, 255.0f));
-                const std::uint8_t ug = static_cast<std::uint8_t>(std::clamp(g * 255.0f, 0.0f, 255.0f));
-                const std::uint8_t ub = static_cast<std::uint8_t>(std::clamp(b * 255.0f, 0.0f, 255.0f));
+                const std::uint8_t ur = static_cast<std::uint8_t>(std::clamp(process_color(r) * 255.0f, 0.0f, 255.0f));
+                const std::uint8_t ug = static_cast<std::uint8_t>(std::clamp(process_color(g) * 255.0f, 0.0f, 255.0f));
+                const std::uint8_t ub = static_cast<std::uint8_t>(std::clamp(process_color(b) * 255.0f, 0.0f, 255.0f));
                 const std::uint8_t ua = static_cast<std::uint8_t>(std::clamp(a * 255.0f, 0.0f, 255.0f));
                 
                 world_3d.set_pixel(static_cast<std::uint32_t>(px_idx % state.width), static_cast<std::uint32_t>(px_idx / state.width), {ur, ug, ub, ua});

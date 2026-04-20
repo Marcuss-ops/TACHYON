@@ -96,8 +96,8 @@ target_link_libraries(TachyonCore
         swscale
         swresample
         embree
-        tinygltf::tinygltf
-        OpenImageDenoise
+        # tinygltf::tinygltf
+        # OpenImageDenoise
 )
 
 add_executable(tachyon
