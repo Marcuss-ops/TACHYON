@@ -1,0 +1,92 @@
+{
+  "version": "1.0",
+  "project": {
+    "id": "demo",
+    "name": "Production Demo"
+  },
+  "compositions": [
+    {
+      "id": "main",
+      "width": 1920,
+      "height": 1080,
+      "duration_seconds": 2.0,
+      "frame_rate": { "numerator": 30, "denominator": 1 },
+      "layers": [
+        {
+          "id": "bg",
+          "name": "Background",
+          "type": "solid",
+          "fill_color": [20, 20, 40],
+          "effects": [
+             { "type": "vignette", "params": { "amount": 0.8, "radius": 0.5 } }
+          ]
+        },
+        {
+          "id": "ring",
+          "name": "AnimatedRing",
+          "type": "shape",
+          "shape_path": {
+            "closed": true,
+            "points": [
+              { "position": [960, 440], "tangent_in": [50, 0], "tangent_out": [-50, 0] },
+              { "position": [860, 540], "tangent_in": [0, -50], "tangent_out": [0, 50] },
+              { "position": [960, 640], "tangent_in": [-50, 0], "tangent_out": [50, 0] },
+              { "position": [1060, 540], "tangent_in": [0, 50], "tangent_out": [0, -50] }
+            ]
+          },
+          "stroke_width": 10.0,
+          "gradient_stroke": {
+            "type": "linear",
+            "start": [860, 440],
+            "end": [1060, 640],
+            "stops": [
+              { "offset": 0.0, "color": [0, 255, 255] },
+              { "offset": 1.0, "color": [255, 0, 255] }
+            ]
+          },
+          "trim_start": 0.0,
+          "trim_end": {
+             "value": 0.0,
+             "keyframes": [
+               { "time": 0.0, "value": 0.0 },
+               { "time": 1.0, "value": 100.0 }
+             ]
+          }
+        },
+        {
+          "id": "squares",
+          "name": "RepeatedSquares",
+          "type": "shape",
+          "shape_path": {
+             "closed": true,
+             "points": [
+               { "position": [0, 0] },
+               { "position": [50, 0] },
+               { "position": [50, 50] },
+               { "position": [0, 50] }
+             ]
+          },
+          "world_position3": [500, 500, 0],
+          "fill_color": [255, 255, 255],
+          "repeater_count": 5,
+          "repeater_offset_position_x": 60.0,
+          "repeater_start_opacity": 1.0,
+          "repeater_end_opacity": 0.2,
+          "effects": [
+             { "type": "glow", "params": { "threshold": 0.5, "radius": 20.0 } }
+          ]
+        },
+        {
+          "id": "ca",
+          "name": "CA_Layer",
+          "type": "solid",
+          "fill_color": [255, 255, 255, 0],
+          "is_adjustment_layer": true,
+          "effects": [
+            { "type": "chromatic_aberration", "params": { "amount": 10.0 } }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tachyon/renderer2d/framebuffer.h"
+#include "tachyon/media/mesh_asset.h"
 #include "tachyon/runtime/diagnostics.h"
 #include <string>
 #include <map>

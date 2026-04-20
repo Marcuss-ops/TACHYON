@@ -105,6 +105,16 @@ public:
 /// Reads params.strings["lut_path"] for the file path.
 /// Reads params.scalars["lut_amount"] (0-1, default 1) for blend amount.
 /// Caches parsed LUTs by path to avoid re-parsing every frame.
+class ChromaticAberrationEffect : public Effect {
+public:
+    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
+};
+
+class VignetteEffect : public Effect {
+public:
+    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
+};
+
 class Lut3DCubeEffect : public Effect {
 public:
     SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;

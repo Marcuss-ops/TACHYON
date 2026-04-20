@@ -3,6 +3,7 @@
 #include "tachyon/core/math/transform2.h"
 #include "tachyon/core/math/vector2.h"
 #include "tachyon/renderer2d/framebuffer.h"
+#include "tachyon/renderer2d/gradient_spec.h"
 #include "tachyon/renderer2d/path_rasterizer.h"
 #include "tachyon/renderer2d/texture_handle.h"
 
@@ -68,7 +69,9 @@ struct LineCommand {
 struct ShapeCommand {
     PathGeometry geometry;
     Color fill_color{Color::white()};
+    std::optional<GradientSpec> gradient_fill;
     Color stroke_color{Color::white()};
+    std::optional<GradientSpec> gradient_stroke;
     float stroke_width{0.0f};
     LineCap line_cap{LineCap::Butt};
     LineJoin line_join{LineJoin::Miter};
@@ -96,4 +99,3 @@ struct DrawList2D {
 
 } // namespace renderer2d
 } // namespace tachyon
-
