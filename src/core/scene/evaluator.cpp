@@ -375,6 +375,9 @@ EvaluatedLayerState make_layer_state(
     evaluated.miter_limit = layer.miter_limit;
     
     evaluated.effects = layer.effects;
+    evaluated.subtitle_path = layer.subtitle_path;
+    evaluated.subtitle_outline_color = layer.subtitle_outline_color;
+    evaluated.subtitle_outline_width = layer.subtitle_outline_width;
 
     if (layer.shape_path.has_value()) {
         EvaluatedShapePath shape_path;

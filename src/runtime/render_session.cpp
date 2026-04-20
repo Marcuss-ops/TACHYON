@@ -2,6 +2,7 @@
 
 #include "tachyon/output/frame_output_sink.h"
 #include "tachyon/runtime/render_context.h"
+#include "tachyon/renderer2d/texture_resolver.h"
 
 #include <algorithm>
 #include <atomic>
@@ -72,6 +73,7 @@ RenderSessionResult RenderSession::render(
     const std::filesystem::path& output_path,
     std::size_t worker_count) {
     RenderSessionResult result;
+    renderer2d::ensure_default_text_font();
     RenderContext context(m_precomp_cache);
     context.policy = make_quality_policy(execution_plan.render_plan.quality_tier);
     context.renderer2d.policy = context.policy;
