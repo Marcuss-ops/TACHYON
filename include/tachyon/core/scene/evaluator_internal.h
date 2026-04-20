@@ -12,10 +12,7 @@
 #include <memory>
 
 namespace tachyon {
-
 namespace scene {
-
-namespace {
 
 struct EvaluationContext {
     const SceneSpec* scene{nullptr};
@@ -32,8 +29,5 @@ struct EvaluationContext {
     ::tachyon::media::MediaManager* media{nullptr};
 };
 
-} // namespace
-
 } // namespace scene
-
 } // namespace tachyon

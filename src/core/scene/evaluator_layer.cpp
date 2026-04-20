@@ -1,4 +1,4 @@
-#include "evaluator_layer.h"
+#include "tachyon/core/scene/evaluator_layer.h"
 #include "tachyon/renderer2d/animation/easing.h"
 #include "tachyon/core/math/quaternion.h"
 #include "tachyon/core/math/transform2.h"
@@ -7,7 +7,7 @@
 #include "tachyon/renderer2d/math/math_utils.h"
 #include "tachyon/core/math/vector2.h"
 #include "tachyon/core/math/vector3.h"
-#include "tachyon/media/media_asset.h"
+#include "tachyon/media/mesh_asset.h"
 
 #include <algorithm>
 #include <cmath>
@@ -21,7 +21,7 @@
 
 namespace tachyon {
 namespace scene {
-namespace {
+
 
 LayerType map_layer_type(const std::string& type) {
     if (type == "solid") return LayerType::Solid;
@@ -36,13 +36,7 @@ LayerType map_layer_type(const std::string& type) {
     return LayerType::Unknown;
 }
 
-math::Transform2 make_transform2(const math::Vector2& position, double rotation_degrees, const math::Vector2& scale) {
-    math::Transform2 transform;
-    transform.position = position;
-    transform.rotation_rad = static_cast<float>(renderer2d::math_utils::degrees_to_radians(rotation_degrees));
-    transform.scale = scale;
-    return transform;
-}
+
 
 void evaluate_mesh_animations(EvaluatedLayerState& evaluated, double time) {
     if (!evaluated.mesh_asset) return;
@@ -51,7 +45,7 @@ void evaluate_mesh_animations(EvaluatedLayerState& evaluated, double time) {
     // We'll use a temporary TRS cache for joints
     struct TRS {
         math::Vector3 translation{0,0,0};
-        math::Vector4 rotation{0,0,0,1}; // quaternion
+        math::Quaternion rotation = math::Quaternion::identity(); // quaternion
         math::Vector3 scale{1,1,1};
         bool has_t{false}, has_r{false}, has_s{false};
     };
@@ -109,9 +103,9 @@ void evaluate_mesh_animations(EvaluatedLayerState& evaluated, double time) {
                     } else if (chan.path == media::MeshAsset::AnimationChannel::Path::Rotation) {
                         // Rotation is a quaternion (X, Y, Z, W)
                         // For "fix veloce" we'll do Nlerp, but ideally Slerp
-                        math::Vector4 q0{chan.values[idx*4+0], chan.values[idx*4+1], chan.values[idx*4+2], chan.values[idx*4+3]};
-                        math::Vector4 q1{chan.values[(idx+1)*4+0], chan.values[(idx+1)*4+1], chan.values[(idx+1)*4+2], chan.values[(idx+1)*4+3]};
-                        if (math::Vector4::dot(q0, q1) < 0) q1 = q1 * -1.0f;
+                        math::Quaternion q0{chan.values[idx*4+0], chan.values[idx*4+1], chan.values[idx*4+2], chan.values[idx*4+3]};
+                        math::Quaternion q1{chan.values[(idx+1)*4+0], chan.values[(idx+1)*4+1], chan.values[(idx+1)*4+2], chan.values[(idx+1)*4+3]};
+                        if (math::Quaternion::dot(q0, q1) < 0) q1 = q1 * -1.0f;
                         trs.rotation = (q0 * (1.0f - t) + q1 * t).normalized();
                         trs.has_r = true;
                     }
@@ -133,7 +127,7 @@ void evaluate_mesh_animations(EvaluatedLayerState& evaluated, double time) {
             // Build local transform from animated TRS or original local_transform
             math::Matrix4x4 local;
             if (trs.has_t || trs.has_r || trs.has_s) {
-                local = math::Matrix4x4::from_trs(trs.translation, trs.rotation, trs.scale);
+                local = math::compose_trs(trs.translation, trs.rotation, trs.scale);
             } else {
                 local = joint.local_transform;
             }
@@ -306,7 +300,7 @@ EvaluatedLayerState make_layer_state(
     // Resolve 3D mesh asset if path is provided
     if (layer.mesh_path.has_value() && !layer.mesh_path->empty()) {
         evaluated.mesh_asset = const_cast<media::MeshAsset*>(
-            context.media.get_mesh(*layer.mesh_path, nullptr)
+            context.media->get_mesh(*layer.mesh_path, nullptr)
         );
         if (evaluated.mesh_asset) {
             evaluate_mesh_animations(evaluated, remapped_time);
@@ -427,6 +421,6 @@ EvaluatedLightState evaluate_light_state(
     return light;
 }
 
-} // namespace
+
 } // namespace scene
 } // namespace tachyon

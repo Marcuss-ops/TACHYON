@@ -40,6 +40,10 @@ add_library(TachyonCore
     runtime/render_job.cpp
     runtime/render_plan.cpp
     core/scene/evaluator.cpp
+    core/scene/evaluator_utils.cpp
+    core/scene/evaluator_layer.cpp
+    core/scene/evaluator_composition.cpp
+
     core/scene/evaluator_math.cpp
     core/spec/scene_spec.cpp
     core/spec/scene_spec_core.cpp
@@ -49,7 +53,7 @@ add_library(TachyonCore
     renderer2d/evaluated_composition/mask_renderer.cpp
     renderer2d/evaluated_composition/effect_renderer.cpp
     renderer2d/evaluated_composition/render_graph.cpp
-    renderer2d/evaluated_composition/raster.cpp
+#   renderer2d/evaluated_composition/raster.cpp
     text/font.cpp
     text/font_registry.cpp
     text/layout.cpp

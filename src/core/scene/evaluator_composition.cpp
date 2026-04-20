@@ -1,4 +1,4 @@
-#include "evaluator_composition.h"
+#include "tachyon/core/scene/evaluator_composition.h"
 #include "tachyon/timeline/time.h"
 
 #include <algorithm>
@@ -13,7 +13,7 @@
 
 namespace tachyon {
 namespace scene {
-namespace {
+
 
 const EvaluatedLayerState& resolve_layer_state(
     std::size_t layer_index,
@@ -157,7 +157,7 @@ EvaluatedCompositionState evaluate_composition_internal(
                 // For simplicity, we'll just offset position and rotation/scale in the world matrix or local
                 math::Matrix4x4 offset_transform = math::Matrix4x4::identity();
                 for (int step = 0; step < r; ++step) {
-                   offset_transform = offset_transform * math::Matrix4x4::from_trs(
+                   offset_transform = offset_transform * math::compose_trs(
                         {off_x, off_y, 0.0f},
                         math::Quaternion::from_euler({0, 0, off_rot}),
                         {off_sx, off_sy, 1.0f}
@@ -197,6 +197,6 @@ EvaluatedCompositionState evaluate_composition_internal(
     return evaluated;
 }
 
-} // namespace
+
 } // namespace scene
 } // namespace tachyon

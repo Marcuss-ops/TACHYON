@@ -1,4 +1,4 @@
-#include "evaluator_util.h"
+#include "tachyon/core/scene/evaluator_util.h"
 #include "tachyon/renderer2d/animation/easing.h"
 #include "tachyon/core/math/quaternion.h"
 #include "tachyon/core/math/transform2.h"
@@ -20,7 +20,7 @@
 
 namespace tachyon {
 namespace scene {
-namespace {
+
 
 std::uint64_t stable_string_hash(const std::string& text) {
     std::uint64_t hash = 1469598103934665603ULL;
@@ -444,6 +444,6 @@ ColorSpec sample_color(const AnimatedColorSpec& property, const ColorSpec& fallb
     return keyframes->back().value;
 }
 
-} // namespace
+
 } // namespace scene
 } // namespace tachyon

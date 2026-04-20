@@ -42,6 +42,9 @@ struct Quaternion {
         return (qz * qx * qy).normalized();
     }
 
+    Quaternion operator+(const Quaternion& other) const { return {x + other.x, y + other.y, z + other.z, w + other.w}; }
+    Quaternion operator*(float scalar) const { return {x * scalar, y * scalar, z * scalar, w * scalar}; }
+    static float dot(const Quaternion& a, const Quaternion& b) { return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w; }
     Quaternion operator*(const Quaternion& q) const {
         return {
             w * q.x + x * q.w + y * q.z - z * q.y,

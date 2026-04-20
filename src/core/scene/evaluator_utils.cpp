@@ -1,8 +1,8 @@
 #include "tachyon/core/scene/evaluator_utils.h"
 #include "tachyon/core/spec/scene_spec.h"
 #include "tachyon/renderer2d/expressions/expression_evaluator.h"
-#include "tachyon/renderer2d/audio/audio.h"
-#include "tachyon/renderer2d/animation/animation.h"
+#include "tachyon/renderer2d/audio/audio_sampling.h"
+#include "tachyon/renderer2d/animation/easing.h"
 #include "tachyon/renderer2d/math/math_utils.h"
 #include <algorithm>
 #include <cmath>
@@ -109,17 +109,7 @@ std::string resolve_template(
     return result;
 }
 
-math::Vector2 fallback_position(const LayerSpec& layer) {
-    return { layer.transform.anchor_point.x, layer.transform.anchor_point.y };
-}
 
-math::Vector2 fallback_scale(const LayerSpec& layer) {
-    return { 100.0f, 100.0f };
-}
-
-double fallback_rotation(const LayerSpec& layer) {
-    return 0.0;
-}
 
 double sample_scalar(
     const AnimatedScalarSpec& property,

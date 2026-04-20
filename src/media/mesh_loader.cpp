@@ -302,7 +302,7 @@ std::unique_ptr<MeshAsset> MeshLoader::load_from_gltf(
             const auto& val_acc = model.accessors[sampler.output];
             const auto& val_bv = model.bufferViews[val_acc.bufferView];
             const float* val_data = reinterpret_cast<const float*>(&model.buffers[val_bv.buffer].data[val_acc.byteOffset + val_bv.byteOffset]);
-            int n = (chan.path == MeshAsset::AnimationChannel::Path::Rotation) ? 4 : (chan.path == MeshAsset::AnimationChannel::Path::Weights ? model.meshes[0].weights.size() : 3);
+            int n = (chan.path == MeshAsset::AnimationChannel::Path::Rotation) ? 4 : (chan.path == MeshAsset::AnimationChannel::Path::Weights ? static_cast<int>(model.meshes[0].weights.size()) : 3);
             for (size_t i = 0; i < val_acc.count * n; ++i) chan.values.push_back(val_data[i]);
             
             anim.channels.push_back(std::move(chan));

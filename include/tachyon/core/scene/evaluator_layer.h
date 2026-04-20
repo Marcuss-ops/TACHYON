@@ -7,10 +7,7 @@
 #include <string>
 
 namespace tachyon {
-
 namespace scene {
-
-namespace {
 
 LayerType map_layer_type(const std::string& type);
 
@@ -22,8 +19,5 @@ EvaluatedLayerState make_layer_state(EvaluationContext& context, const LayerSpec
 
 EvaluatedLightState evaluate_light_state(const EvaluatedLayerState& layer_state, const LayerSpec& spec, double remapped_time);
 
-} // namespace
-
 } // namespace scene
-
 } // namespace tachyon
