@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <unordered_map>
 
 namespace tachyon {
 
@@ -91,6 +92,8 @@ struct RenderJob {
     std::string motion_blur_curve{"box"};
     std::string seed_policy_mode{"stable"};
     std::string compatibility_mode;
+    std::unordered_map<std::string, double> variables;
+    std::unordered_map<std::string, std::string> string_variables;
 };
 
 ParseResult<RenderJob> parse_render_job_json(const std::string& text);

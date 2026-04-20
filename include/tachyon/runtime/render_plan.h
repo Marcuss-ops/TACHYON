@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <unordered_map>
 
 namespace tachyon {
 
@@ -46,6 +47,8 @@ struct RenderPlan {
     std::string seed_policy_mode;
     std::string compatibility_mode;
     const SceneSpec* scene_spec{nullptr};
+    std::unordered_map<std::string, double> variables;
+    std::unordered_map<std::string, std::string> string_variables;
 };
 
 ResolutionResult<RenderPlan> build_render_plan(const SceneSpec& scene, const RenderJob& job);

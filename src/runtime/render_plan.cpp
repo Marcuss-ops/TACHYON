@@ -86,6 +86,8 @@ ResolutionResult<RenderPlan> build_render_plan(const SceneSpec& scene, const Ren
     plan.seed_policy_mode = job.seed_policy_mode;
     plan.compatibility_mode = job.compatibility_mode;
     plan.scene_spec = &scene;
+    plan.variables = job.variables;
+    plan.string_variables = job.string_variables;
 
     result.value = std::move(plan);
     return result;

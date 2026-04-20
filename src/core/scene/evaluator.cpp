@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <unordered_map>
 #include <vector>
@@ -23,6 +24,103 @@
 namespace tachyon {
 namespace scene {
 namespace {
+
+std::uint64_t stable_string_hash(const std::string& text) {
+    std::uint64_t hash = 1469598103934665603ULL;
+    for (unsigned char ch : text) {
+        hash ^= static_cast<std::uint64_t>(ch);
+        hash *= 1099511628211ULL;
+    }
+    return hash;
+}
+
+std::uint64_t hash_combine(std::uint64_t lhs, std::uint64_t rhs) {
+    lhs ^= rhs + 0x9E3779B97F4A7C15ULL + (lhs << 6) + (lhs >> 2);
+    return lhs;
+}
+
+std::uint64_t make_base_expression_seed(const SceneSpec* scene, const CompositionSpec& composition) {
+    std::uint64_t seed = scene && scene->project.root_seed.has_value()
+        ? static_cast<std::uint64_t>(*scene->project.root_seed)
+        : 0x6D6574616C736565ULL;
+    seed = hash_combine(seed, stable_string_hash(composition.id));
+    seed = hash_combine(seed, stable_string_hash(composition.name));
+    return seed;
+}
+
+std::uint64_t make_property_expression_seed(
+    const SceneSpec* scene,
+    const CompositionSpec& composition,
+    const LayerSpec& layer,
+    const char* property_name) {
+    std::uint64_t seed = make_base_expression_seed(scene, composition);
+    seed = hash_combine(seed, stable_string_hash(layer.id));
+    seed = hash_combine(seed, stable_string_hash(layer.name));
+    seed = hash_combine(seed, stable_string_hash(property_name));
+    return seed;
+}
+
+std::string trim_copy(const std::string& text) {
+    const auto first = text.find_first_not_of(" \t\r\n");
+    if (first == std::string::npos) {
+        return {};
+    }
+    const auto last = text.find_last_not_of(" \t\r\n");
+    return text.substr(first, last - first + 1);
+}
+
+std::string resolve_template(
+    const std::string& tmpl,
+    const std::unordered_map<std::string, std::string>* str_vars,
+    const std::unordered_map<std::string, double>* num_vars) {
+    if (tmpl.find("{{") == std::string::npos) return tmpl;
+
+    std::string result;
+    result.reserve(tmpl.size());
+    std::size_t cursor = 0;
+    while (cursor < tmpl.size()) {
+        const std::size_t open = tmpl.find("{{", cursor);
+        if (open == std::string::npos) {
+            result.append(tmpl, cursor, std::string::npos);
+            break;
+        }
+
+        result.append(tmpl, cursor, open - cursor);
+        const std::size_t close = tmpl.find("}}", open + 2);
+        if (close == std::string::npos) {
+            result.append(tmpl, open, std::string::npos);
+            break;
+        }
+
+        const std::string key = trim_copy(tmpl.substr(open + 2, close - (open + 2)));
+        bool found = false;
+        if (str_vars) {
+            const auto sit = str_vars->find(key);
+            if (sit != str_vars->end()) {
+                result += sit->second;
+                found = true;
+            }
+        }
+        if (!found && num_vars) {
+            const auto nit = num_vars->find(key);
+            if (nit != num_vars->end()) {
+                auto d = nit->second;
+                if (d == static_cast<long long>(d)) {
+                    result += std::to_string(static_cast<long long>(d));
+                } else {
+                    result += std::to_string(d);
+                }
+                found = true;
+            }
+        }
+
+        if (!found) {
+            result.append(tmpl, open, close - open + 2);
+        }
+        cursor = close + 2;
+    }
+    return result;
+}
 
 // Math utilities moved to renderer2d::math_utils
 
@@ -52,13 +150,22 @@ double sample_scalar(
     const AnimatedScalarSpec& property,
     double fallback,
     double local_time_seconds,
-    const ::tachyon::audio::AudioAnalyzer* audio_analyzer = nullptr) {
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer = nullptr,
+    std::uint64_t expression_seed = 0,
+    const std::unordered_map<std::string, double>* job_variables = nullptr) {
 
     if (property.expression.has_value() && !property.expression->empty()) {
         renderer2d::expressions::ExpressionContext expr_ctx;
+        if (job_variables) {
+            for (const auto& [k, v] : *job_variables) {
+                expr_ctx.variables.try_emplace(k, v);
+            }
+        }
         expr_ctx.variables["t"] = local_time_seconds;
         expr_ctx.variables["time"] = local_time_seconds;
         expr_ctx.variables["value"] = fallback;
+        expr_ctx.seed = expression_seed;
+        expr_ctx.variables["seed"] = static_cast<double>(expression_seed);
         auto result = renderer2d::expressions::ExpressionEvaluator::evaluate(*property.expression, expr_ctx);
         if (result.success) {
             return result.value;
@@ -115,11 +222,23 @@ double sample_scalar(
     return keyframes->back().value;
 }
 
-math::Vector2 sample_vector2(const AnimatedVector2Spec& property, const math::Vector2& fallback, double local_time_seconds) {
+math::Vector2 sample_vector2(
+    const AnimatedVector2Spec& property,
+    const math::Vector2& fallback,
+    double local_time_seconds,
+    std::uint64_t expression_seed = 0,
+    const std::unordered_map<std::string, double>* job_variables = nullptr) {
     if (property.expression.has_value() && !property.expression->empty()) {
         renderer2d::expressions::ExpressionContext expr_ctx;
+        if (job_variables) {
+            for (const auto& [k, v] : *job_variables) {
+                expr_ctx.variables.try_emplace(k, v);
+            }
+        }
         expr_ctx.variables["t"] = local_time_seconds;
         expr_ctx.variables["time"] = local_time_seconds;
+        expr_ctx.seed = expression_seed;
+        expr_ctx.variables["seed"] = static_cast<double>(expression_seed);
         auto result = renderer2d::expressions::ExpressionEvaluator::evaluate(*property.expression, expr_ctx);
         if (result.success) {
             return { static_cast<float>(result.value), static_cast<float>(result.value) };
@@ -179,11 +298,23 @@ math::Vector2 sample_vector2(const AnimatedVector2Spec& property, const math::Ve
     return keyframes->back().value;
 }
 
-math::Vector3 sample_vector3(const AnimatedVector3Spec& property, const math::Vector3& fallback, double local_time_seconds) {
+math::Vector3 sample_vector3(
+    const AnimatedVector3Spec& property,
+    const math::Vector3& fallback,
+    double local_time_seconds,
+    std::uint64_t expression_seed = 0,
+    const std::unordered_map<std::string, double>* job_variables = nullptr) {
     if (property.expression.has_value() && !property.expression->empty()) {
         renderer2d::expressions::ExpressionContext expr_ctx;
+        if (job_variables) {
+            for (const auto& [k, v] : *job_variables) {
+                expr_ctx.variables.try_emplace(k, v);
+            }
+        }
         expr_ctx.variables["t"] = local_time_seconds;
         expr_ctx.variables["time"] = local_time_seconds;
+        expr_ctx.seed = expression_seed;
+        expr_ctx.variables["seed"] = static_cast<double>(expression_seed);
         auto result = renderer2d::expressions::ExpressionEvaluator::evaluate(*property.expression, expr_ctx);
         if (result.success) {
             return { static_cast<float>(result.value), static_cast<float>(result.value), static_cast<float>(result.value) };
@@ -314,12 +445,14 @@ LayerType map_layer_type(const std::string& type) {
 }
 
 EvaluatedLayerState make_layer_state(
+    const CompositionSpec& composition,
     const LayerSpec& layer,
     std::size_t layer_index,
     std::int64_t frame_number,
     double composition_time_seconds,
     const SceneSpec* scene,
-    const ::tachyon::audio::AudioAnalyzer* audio_analyzer) {
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
+    EvaluationVariables vars = {}) {
     (void)frame_number;
     EvaluatedLayerState evaluated;
     evaluated.layer_index = layer_index;
@@ -331,24 +464,68 @@ EvaluatedLayerState make_layer_state(
     evaluated.is_3d = layer.is_3d;
     evaluated.is_adjustment_layer = layer.is_adjustment_layer;
     evaluated.local_time_seconds = timeline::local_time_from_composition(composition_time_seconds, layer.start_time);
-    const double remapped_time = sample_scalar(layer.time_remap_property, evaluated.local_time_seconds, evaluated.local_time_seconds);
+    const std::uint64_t layer_seed = make_property_expression_seed(scene, composition, layer, "layer");
+    const double remapped_time = sample_scalar(
+        layer.time_remap_property,
+        evaluated.local_time_seconds,
+        evaluated.local_time_seconds,
+        audio_analyzer,
+        hash_combine(layer_seed, stable_string_hash("time_remap")),
+        vars.numeric);
     evaluated.child_time_seconds = remapped_time;
     evaluated.active = layer.enabled && composition_time_seconds >= layer.in_point && composition_time_seconds <= layer.out_point;
-    
-    evaluated.opacity = sample_scalar(layer.opacity_property, layer.opacity, remapped_time, audio_analyzer);
-    
-    math::Vector2 pos = sample_vector2(layer.transform.position_property, fallback_position(layer), remapped_time);
-    double rot = sample_scalar(layer.transform.rotation_property, fallback_rotation(layer), remapped_time, audio_analyzer);
-    math::Vector2 scl = sample_vector2(layer.transform.scale_property, fallback_scale(layer), remapped_time);
+
+    evaluated.opacity = sample_scalar(
+        layer.opacity_property,
+        layer.opacity,
+        remapped_time,
+        audio_analyzer,
+        hash_combine(layer_seed, stable_string_hash("opacity")),
+        vars.numeric);
+
+    math::Vector2 pos = sample_vector2(
+        layer.transform.position_property,
+        fallback_position(layer),
+        remapped_time,
+        hash_combine(layer_seed, stable_string_hash("position")),
+        vars.numeric);
+    double rot = sample_scalar(
+        layer.transform.rotation_property,
+        fallback_rotation(layer),
+        remapped_time,
+        audio_analyzer,
+        hash_combine(layer_seed, stable_string_hash("rotation")),
+        vars.numeric);
+    math::Vector2 scl = sample_vector2(
+        layer.transform.scale_property,
+        fallback_scale(layer),
+        remapped_time,
+        hash_combine(layer_seed, stable_string_hash("scale")),
+        vars.numeric);
     
     evaluated.local_transform = make_transform2(pos, rot, scl);
     evaluated.world_matrix = evaluated.local_transform.to_matrix();
     evaluated.world_position3 = math::Vector3{pos.x, pos.y, 0.0f};
 
     if (layer.is_3d) {
-        const math::Vector3 pos3 = sample_vector3(layer.transform3d.position_property, {pos.x, pos.y, 0.0f}, remapped_time);
-        const math::Vector3 rot3 = sample_vector3(layer.transform3d.rotation_property, {0.0f, 0.0f, static_cast<float>(rot)}, remapped_time);
-        const math::Vector3 scl3 = sample_vector3(layer.transform3d.scale_property, {scl.x, scl.y, 1.0f}, remapped_time);
+        const math::Vector3 pos3 = sample_vector3(
+            layer.transform3d.position_property,
+            {pos.x, pos.y, 0.0f},
+            remapped_time,
+            hash_combine(layer_seed, stable_string_hash("position3")),
+            vars.numeric);
+        const math::Vector3 rot3 = sample_vector3(
+            layer.transform3d.rotation_property,
+            {0.0f, 0.0f, static_cast<float>(rot)},
+            remapped_time,
+            hash_combine(layer_seed, stable_string_hash("rotation3")),
+            vars.numeric);
+        const math::Vector3 scl3 = sample_vector3(
+            layer.transform3d.scale_property,
+            {scl.x, scl.y, 1.0f},
+            remapped_time,
+            hash_combine(layer_seed, stable_string_hash("scale3")),
+            vars.numeric);
         
         math::Transform3 t3;
         t3.position = pos3;
@@ -365,11 +542,17 @@ EvaluatedLayerState make_layer_state(
     evaluated.visible = evaluated.enabled && evaluated.active && evaluated.opacity > 0.0;
     evaluated.width = layer.width;
     evaluated.height = layer.height;
-    evaluated.text_content = layer.text_content;
+    evaluated.text_content = resolve_template(layer.text_content, vars.strings, vars.numeric);
     
     evaluated.fill_color = sample_color(layer.fill_color, {255, 255, 255, 255}, remapped_time);
     evaluated.stroke_color = sample_color(layer.stroke_color, {255, 255, 255, 255}, remapped_time);
-    evaluated.stroke_width = static_cast<float>(sample_scalar(layer.stroke_width_property, static_cast<double>(layer.stroke_width), remapped_time, audio_analyzer));
+    evaluated.stroke_width = static_cast<float>(sample_scalar(
+        layer.stroke_width_property,
+        static_cast<double>(layer.stroke_width),
+        remapped_time,
+        audio_analyzer,
+        hash_combine(layer_seed, stable_string_hash("stroke_width")),
+        vars.numeric));
     evaluated.line_cap = layer.line_cap;
     evaluated.line_join = layer.line_join;
     evaluated.miter_limit = layer.miter_limit;
@@ -419,6 +602,7 @@ struct EvaluationContext {
     std::vector<bool> visiting;
     std::vector<std::string> composition_stack;
     const ::tachyon::audio::AudioAnalyzer* audio_analyzer{nullptr};
+    EvaluationVariables vars;
 };
 
 EvaluatedLightState evaluate_light_state(
@@ -434,10 +618,11 @@ EvaluatedLightState evaluate_light_state(
     const auto forward = layer_state.world_matrix.transform_vector({0.0f, 0.0f, -1.0f}).normalized();
     light.direction = forward;
     
+    const std::uint64_t light_seed = hash_combine(stable_string_hash(layer_state.id), stable_string_hash(light.type));
     light.color = sample_color(spec.fill_color, {255, 255, 255, 255}, remapped_time);
-    light.intensity = static_cast<float>(sample_scalar(spec.intensity, 1.0, remapped_time));
-    light.attenuation_near = static_cast<float>(sample_scalar(spec.attenuation_near, 0.0, remapped_time));
-    light.attenuation_far = static_cast<float>(sample_scalar(spec.attenuation_far, 1000.0, remapped_time));
+    light.intensity = static_cast<float>(sample_scalar(spec.intensity, 1.0, remapped_time, nullptr, hash_combine(light_seed, stable_string_hash("intensity"))));
+    light.attenuation_near = static_cast<float>(sample_scalar(spec.attenuation_near, 0.0, remapped_time, nullptr, hash_combine(light_seed, stable_string_hash("attenuation_near"))));
+    light.attenuation_far = static_cast<float>(sample_scalar(spec.attenuation_far, 1000.0, remapped_time, nullptr, hash_combine(light_seed, stable_string_hash("attenuation_far"))));
     
     return light;
 }
@@ -452,7 +637,8 @@ EvaluatedCompositionState evaluate_composition_internal(
     std::int64_t frame_number,
     double composition_time_seconds,
     std::vector<std::string> stack,
-    const ::tachyon::audio::AudioAnalyzer* audio_analyzer) {
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
+    EvaluationVariables vars = {}) {
     
     EvaluatedCompositionState evaluated;
     evaluated.composition_id = composition.id;
@@ -473,7 +659,8 @@ EvaluatedCompositionState evaluate_composition_internal(
         std::vector<std::optional<EvaluatedLayerState>>(composition.layers.size()),
         std::vector<bool>(composition.layers.size(), false),
         std::move(stack),
-        audio_analyzer
+        audio_analyzer,
+        vars
     };
 
     for (std::size_t index = 0; index < composition.layers.size(); ++index) {
@@ -502,19 +689,29 @@ const EvaluatedLayerState& resolve_layer_state(
 
     if (context.visiting[layer_index]) {
         context.cache[layer_index] = make_layer_state(
+            context.composition,
             context.composition.layers[layer_index],
             layer_index,
             context.frame_number,
             context.composition_time_seconds,
             context.scene,
-            context.audio_analyzer);
+            context.audio_analyzer,
+            context.vars);
         return *context.cache[layer_index];
     }
 
     context.visiting[layer_index] = true;
 
     const auto& layer = context.composition.layers[layer_index];
-    EvaluatedLayerState evaluated = make_layer_state(layer, layer_index, context.frame_number, context.composition_time_seconds, context.scene, context.audio_analyzer);
+    EvaluatedLayerState evaluated = make_layer_state(
+        context.composition,
+        layer,
+        layer_index,
+        context.frame_number,
+        context.composition_time_seconds,
+        context.scene,
+        context.audio_analyzer,
+        context.vars);
 
     // Resolve parent
     if (layer.parent.has_value() && !layer.parent->empty()) {
@@ -559,7 +756,7 @@ const EvaluatedLayerState& resolve_layer_state(
                     ));
 
                     evaluated.nested_composition = std::make_unique<EvaluatedCompositionState>(
-                        evaluate_composition_internal(context.scene, comp, child_frame_number, evaluated.child_time_seconds, std::move(next_stack), context.audio_analyzer)
+                        evaluate_composition_internal(context.scene, comp, child_frame_number, evaluated.child_time_seconds, std::move(next_stack), context.audio_analyzer, context.vars)
                     );
                     break;
                 }
@@ -579,7 +776,10 @@ EvaluatedLayerState evaluate_layer_state(
     std::int64_t frame_number,
     double composition_time_seconds,
     const ::tachyon::audio::AudioAnalyzer* audio_analyzer) {
-    return make_layer_state(layer, 0, frame_number, composition_time_seconds, nullptr, audio_analyzer);
+    CompositionSpec composition;
+    composition.id = "standalone";
+    composition.name = "standalone";
+    return make_layer_state(composition, layer, 0, frame_number, composition_time_seconds, nullptr, audio_analyzer);
 }
 
 EvaluatedCameraState evaluate_camera_state(
@@ -620,29 +820,32 @@ EvaluatedCameraState evaluate_camera_state(
 EvaluatedCompositionState evaluate_composition_state(
     const CompositionSpec& composition,
     std::int64_t frame_number,
-    const ::tachyon::audio::AudioAnalyzer* audio_analyzer) {
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
+    EvaluationVariables vars) {
     const auto frame = timeline::sample_frame(composition.frame_rate, frame_number);
-    return evaluate_composition_internal(nullptr, composition, frame.frame_number, frame.composition_time_seconds, {}, audio_analyzer);
+    return evaluate_composition_internal(nullptr, composition, frame.frame_number, frame.composition_time_seconds, {}, audio_analyzer, vars);
 }
 
 EvaluatedCompositionState evaluate_composition_state(
     const CompositionSpec& composition,
     double composition_time_seconds,
-    const ::tachyon::audio::AudioAnalyzer* audio_analyzer) {
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
+    EvaluationVariables vars) {
     const std::int64_t frame_number = static_cast<std::int64_t>(std::llround(composition_time_seconds * static_cast<double>(composition.frame_rate.numerator) / static_cast<double>(composition.frame_rate.denominator)));
-    return evaluate_composition_internal(nullptr, composition, frame_number, composition_time_seconds, {}, audio_analyzer);
+    return evaluate_composition_internal(nullptr, composition, frame_number, composition_time_seconds, {}, audio_analyzer, vars);
 }
 
 std::optional<EvaluatedCompositionState> evaluate_scene_composition_state(
     const SceneSpec& scene,
     const std::string& composition_id,
     std::int64_t frame_number,
-    const ::tachyon::audio::AudioAnalyzer* audio_analyzer
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
+    EvaluationVariables vars
 ) {
     for (const auto& composition : scene.compositions) {
         if (composition.id == composition_id) {
             const auto frame = timeline::sample_frame(composition.frame_rate, frame_number);
-            return evaluate_composition_internal(&scene, composition, frame.frame_number, frame.composition_time_seconds, {}, audio_analyzer);
+            return evaluate_composition_internal(&scene, composition, frame.frame_number, frame.composition_time_seconds, {}, audio_analyzer, vars);
         }
     }
     return std::nullopt;
@@ -652,12 +855,13 @@ std::optional<EvaluatedCompositionState> evaluate_scene_composition_state(
     const SceneSpec& scene,
     const std::string& composition_id,
     double composition_time_seconds,
-    const ::tachyon::audio::AudioAnalyzer* audio_analyzer
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
+    EvaluationVariables vars
 ) {
     for (const auto& composition : scene.compositions) {
         if (composition.id == composition_id) {
             const std::int64_t frame_number = static_cast<std::int64_t>(std::llround(composition_time_seconds * static_cast<double>(composition.frame_rate.numerator) / static_cast<double>(composition.frame_rate.denominator)));
-            return evaluate_composition_internal(&scene, composition, frame_number, composition_time_seconds, {}, audio_analyzer);
+            return evaluate_composition_internal(&scene, composition, frame_number, composition_time_seconds, {}, audio_analyzer, vars);
         }
     }
     return std::nullopt;

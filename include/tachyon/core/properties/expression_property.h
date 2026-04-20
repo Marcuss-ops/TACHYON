@@ -11,6 +11,22 @@
 namespace tachyon {
 namespace properties {
 
+namespace detail {
+inline std::uint64_t stable_string_hash(const std::string& text) {
+    std::uint64_t hash = 1469598103934665603ULL;
+    for (unsigned char ch : text) {
+        hash ^= static_cast<std::uint64_t>(ch);
+        hash *= 1099511628211ULL;
+    }
+    return hash;
+}
+
+inline std::uint64_t hash_combine(std::uint64_t lhs, std::uint64_t rhs) {
+    lhs ^= rhs + 0x9E3779B97F4A7C15ULL + (lhs << 6) + (lhs >> 2);
+    return lhs;
+}
+} // namespace detail
+
 /**
  * A property driven by a math expression string.
  */
@@ -40,8 +56,9 @@ public:
         return sample(context);
     }
 
-    uint64_t hash_identity(const PropertyEvaluationContext& context) const override {
-        return static_cast<uint64_t>(std::hash<std::string>{}(m_expression) ^ (context.seed + 0x9E3779B97F4A7C15ULL));
+    std::uint64_t hash_identity(const PropertyEvaluationContext& context) const override {
+        const std::uint64_t expr_hash = detail::stable_string_hash(m_expression);
+        return detail::hash_combine(expr_hash, context.seed);
     }
 
     const std::string& get_name() const override {

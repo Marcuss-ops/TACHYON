@@ -200,7 +200,11 @@ EvaluatedFrameState evaluate_frame_state(
     const FrameRenderTask& task,
     const std::string& scene_signature) {
 
-    const auto evaluated = scene::evaluate_scene_composition_state(scene, plan.composition.id, task.frame_number);
+    const scene::EvaluationVariables vars{
+        plan.variables.empty() ? nullptr : &plan.variables,
+        plan.string_variables.empty() ? nullptr : &plan.string_variables
+    };
+    const auto evaluated = scene::evaluate_scene_composition_state(scene, plan.composition.id, task.frame_number, nullptr, vars);
     if (!evaluated.has_value()) {
         throw std::runtime_error("failed to evaluate composition state for frame");
     }

@@ -125,6 +125,58 @@ bool run_render_contract_tests() {
     }
 
     {
+        const std::string text = R"({
+            "job_id": "job_vars",
+            "scene_ref": "scene.json",
+            "composition_target": "main",
+            "variables": {
+                "shot": {
+                    "name": "Intro"
+                },
+                "music": {
+                    "bass": 0.75,
+                    "mid": 0.5
+                }
+            },
+            "output": {
+                "destination": { "path": "out/vars.mp4", "overwrite": true },
+                "profile": {
+                    "name": "vars",
+                    "class": "delivery",
+                    "container": "mp4",
+                    "alpha_mode": "preserved",
+                    "video": {
+                        "codec": "h264",
+                        "pixel_format": "yuv420p",
+                        "rate_control_mode": "crf",
+                        "crf": 18
+                    },
+                    "audio": {
+                        "mode": "none",
+                        "codec": ""
+                    },
+                    "buffering": {
+                        "strategy": "pipe"
+                    },
+                    "color": {
+                        "space": "bt709",
+                        "transfer": "bt709",
+                        "range": "tv"
+                    }
+                }
+            }
+        })";
+
+        const auto parsed = tachyon::parse_render_job_json(text);
+        check_true(parsed.value.has_value(), "render job with nested variables should parse");
+        if (parsed.value.has_value()) {
+            check_true(parsed.value->variables.at("music.bass") == 0.75, "nested numeric variable should flatten with dot notation");
+            check_true(parsed.value->variables.at("music.mid") == 0.5, "nested numeric variable should flatten recursively");
+            check_true(parsed.value->string_variables.at("shot.name") == "Intro", "nested string variable should flatten with dot notation");
+        }
+    }
+
+    {
         const auto parsed = tachyon::parse_render_job_json(render_job_json("high", true, 0));
         check_true(parsed.value.has_value(), "motion blur job parses with zero samples");
         if (parsed.value.has_value()) {

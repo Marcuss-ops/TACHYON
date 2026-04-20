@@ -31,6 +31,7 @@ bool run_expression_tests() {
     ExpressionContext ctx;
     ctx.variables["t"] = 2.0;
     ctx.variables["val"] = 10.0;
+    ctx.seed = 1234;
 
     // 1. Basic Arithmetic
     {
@@ -60,6 +61,14 @@ bool run_expression_tests() {
     {
         auto result = ExpressionEvaluator::evaluate("t * val", ctx);
         check_near(result.value, 20.0, "Variables: t * val");
+
+        result = ExpressionEvaluator::evaluate("seed + t", ctx);
+        check_near(result.value, 1236.0, "Variables: seed + t");
+
+        ExpressionContext dotted_ctx;
+        dotted_ctx.variables["music.bass"] = 3.0;
+        result = ExpressionEvaluator::evaluate("music.bass + 2", dotted_ctx);
+        check_near(result.value, 5.0, "Variables: music.bass + 2");
     }
 
     // 4. Functions
@@ -79,6 +88,7 @@ bool run_expression_tests() {
         ExpressionProperty<float> prop("osc", "sin(t * 1.570796)"); // at t=1, sin(pi/2) = 1
         tachyon::properties::PropertyEvaluationContext eval_ctx;
         eval_ctx.time = 1.0;
+        eval_ctx.seed = 99;
         
         // Let's also test the evaluator directly with the same string
         ExpressionContext direct_ctx;
@@ -95,6 +105,9 @@ bool run_expression_tests() {
              fprintf(stderr, "Prop Eval Error: %s\n", res2.error.c_str());
         }
         check_near(val, 1.0, "ExpressionProperty evaluation at t=1.0");
+
+        ExpressionProperty<float> seeded_prop("seeded", "seed + t");
+        check_near(seeded_prop.sample(eval_ctx), 100.0, "ExpressionProperty exposes deterministic seed");
     }
 
     return g_failures == 0;

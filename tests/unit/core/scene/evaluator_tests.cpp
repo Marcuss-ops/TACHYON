@@ -6,6 +6,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 
 namespace {
 
@@ -237,6 +238,43 @@ bool run_scene_evaluator_tests() {
             if (evaluated->layers[0].nested_composition != nullptr) {
                 check_true(nearly_equal(evaluated->layers[0].nested_composition->composition_time_seconds, 1.5), "nested composition should inherit remapped child time");
             }
+        }
+    }
+
+    {
+        tachyon::LayerSpec text_layer;
+        text_layer.id = "caption";
+        text_layer.type = "text";
+        text_layer.name = "Caption";
+        text_layer.text_content = "Hello {{shot.name}} / {{music.bass}}";
+
+        tachyon::CompositionSpec composition;
+        composition.id = "template_comp";
+        composition.name = "Template";
+        composition.width = 640;
+        composition.height = 360;
+        composition.duration = 5.0;
+        composition.frame_rate = {30, 1};
+        composition.layers.push_back(text_layer);
+
+        tachyon::SceneSpec scene;
+        scene.spec_version = "1.0";
+        scene.project.id = "proj_template";
+        scene.project.name = "Template";
+        scene.compositions.push_back(composition);
+
+        tachyon::scene::EvaluationVariables vars;
+        std::unordered_map<std::string, double> numeric_vars;
+        std::unordered_map<std::string, std::string> string_vars;
+        numeric_vars["music.bass"] = 0.75;
+        string_vars["shot.name"] = "Intro";
+        vars.numeric = &numeric_vars;
+        vars.strings = &string_vars;
+
+        const auto evaluated = tachyon::scene::evaluate_scene_composition_state(scene, "template_comp", 0LL, nullptr, vars);
+        check_true(evaluated.has_value(), "template scene should evaluate");
+        if (evaluated.has_value()) {
+            check_true(evaluated->layers.front().text_content == "Hello Intro / 0.750000", "template resolver should expand dotted identifiers");
         }
     }
 
