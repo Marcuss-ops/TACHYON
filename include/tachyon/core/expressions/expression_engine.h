@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -12,6 +13,7 @@ namespace expressions {
  */
 struct ExpressionContext {
     std::unordered_map<std::string, double> variables;
+    std::uint64_t seed{0};
 };
 
 /**

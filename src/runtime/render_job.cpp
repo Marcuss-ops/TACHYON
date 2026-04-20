@@ -9,6 +9,30 @@ namespace {
 
 using json = nlohmann::json;
 
+void flatten_variables(
+    const json& value,
+    const std::string& prefix,
+    std::unordered_map<std::string, double>& numeric_variables,
+    std::unordered_map<std::string, std::string>& string_variables) {
+    if (value.is_object()) {
+        for (const auto& [key, child] : value.items()) {
+            const std::string next_prefix = prefix.empty() ? key : prefix + "." + key;
+            flatten_variables(child, next_prefix, numeric_variables, string_variables);
+        }
+        return;
+    }
+
+    if (value.is_number()) {
+        numeric_variables[prefix] = value.get<double>();
+        return;
+    }
+
+    if (value.is_string()) {
+        string_variables[prefix] = value.get<std::string>();
+        return;
+    }
+}
+
 bool read_string(const json& object, const char* key, std::string& out) {
     if (!object.contains(key) || object.at(key).is_null()) {
         return false;
@@ -206,6 +230,10 @@ ParseResult<RenderJob> parse_render_job_json(const std::string& text) {
         }
     } else {
         result.diagnostics.add_error("job.output.missing", "output object is required", "output");
+    }
+
+    if (root.contains("variables") && root.at("variables").is_object()) {
+        flatten_variables(root.at("variables"), "", job.variables, job.string_variables);
     }
 
     if (result.diagnostics.ok()) {

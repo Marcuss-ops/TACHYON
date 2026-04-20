@@ -113,7 +113,7 @@ private:
 
     double parse_identifier_or_function() {
         std::size_t start = m_pos;
-        while (std::isalnum(peek()) || peek() == '_') get();
+        while (std::isalnum(peek()) || peek() == '_' || peek() == '.') get();
         std::string name = m_input.substr(start, m_pos - start);
 
         skip_whitespace();
@@ -155,7 +155,11 @@ private:
 
 EvaluationResult ExpressionEvaluator::evaluate(const std::string& expression, const ExpressionContext& context) {
     if (expression.empty()) return {0.0, false, "Empty expression"};
-    Parser parser(expression, context);
+    ExpressionContext resolved = context;
+    if (resolved.variables.find("seed") == resolved.variables.end()) {
+        resolved.variables["seed"] = static_cast<double>(resolved.seed);
+    }
+    Parser parser(expression, resolved);
     return parser.parse();
 }
 

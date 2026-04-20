@@ -104,12 +104,25 @@ ValidationResult validate_scene_spec(const SceneSpec& scene) {
     if (scene.project.id.empty()) result.diagnostics.add_error("scene.project.id_missing", "project.id is required", "project.id");
     if (scene.compositions.empty()) result.diagnostics.add_error("scene.compositions.missing", "at least one composition is required", "compositions");
 
+    std::set<std::string> asset_ids;
+    for (std::size_t i = 0; i < scene.assets.size(); ++i) {
+        const auto& asset = scene.assets[i];
+        const std::string apath = "assets[" + std::to_string(i) + "]";
+        if (asset.id.empty()) {
+            result.diagnostics.add_error("scene.asset.id_missing", "id required", apath + ".id");
+        } else if (!asset_ids.insert(asset.id).second) {
+            result.diagnostics.add_error("scene.asset.id_duplicate", "asset id must be unique", apath + ".id");
+        }
+    }
+
+    std::set<std::string> composition_ids;
     std::set<std::string> comp_ids;
     for (std::size_t i = 0; i < scene.compositions.size(); ++i) {
         const auto& comp = scene.compositions[i];
         std::string path = "compositions[" + std::to_string(i) + "]";
         if (comp.id.empty()) result.diagnostics.add_error("scene.composition.id_missing", "id required", path + ".id");
         else if (!comp_ids.insert(comp.id).second) result.diagnostics.add_error("scene.composition.id_duplicate", "id must be unique", path + ".id");
+        composition_ids.insert(comp.id);
         if (comp.width <= 0 || comp.height <= 0) result.diagnostics.add_error("scene.composition.size_invalid", "size must be positive", path + ".width");
 
         std::set<std::string> layer_ids;
@@ -119,6 +132,40 @@ ValidationResult validate_scene_spec(const SceneSpec& scene) {
             if (layer.id.empty()) result.diagnostics.add_error("scene.layer.id_missing", "id required", lpath + ".id");
             else if (!layer_ids.insert(layer.id).second) result.diagnostics.add_error("scene.layer.id_duplicate", "id duplicate", lpath + ".id");
             if (!is_layer_blend_mode_valid(layer.blend_mode)) result.diagnostics.add_error("scene.layer.blend_mode_invalid", "blend_mode invalid", lpath + ".blend_mode");
+        }
+
+        for (std::size_t j = 0; j < comp.layers.size(); ++j) {
+            const auto& layer = comp.layers[j];
+            std::string lpath = path + ".layers[" + std::to_string(j) + "]";
+
+            if (layer.parent.has_value() && !layer.parent->empty()) {
+                if (*layer.parent == layer.id) {
+                    result.diagnostics.add_error("scene.layer.parent_cycle", "layer.parent cannot reference the layer itself", lpath + ".parent");
+                } else if (!layer_ids.count(*layer.parent)) {
+                    result.diagnostics.add_error("scene.layer.parent_invalid", "layer.parent must reference an existing layer id in the same composition", lpath + ".parent");
+                }
+            }
+
+            if (layer.track_matte_layer_id.has_value() && !layer.track_matte_layer_id->empty() && !layer_ids.count(*layer.track_matte_layer_id)) {
+                result.diagnostics.add_error("scene.layer.track_matte_layer_id_invalid", "track_matte_layer_id must reference an existing layer id in the same composition", lpath + ".track_matte_layer_id");
+            }
+
+            if (layer.precomp_id.has_value() && !layer.precomp_id->empty() && !composition_ids.count(*layer.precomp_id)) {
+                result.diagnostics.add_error("scene.layer.precomp_id_invalid", "precomp_id must reference an existing composition id", lpath + ".precomp_id");
+            }
+
+            if (layer.type == "image" || layer.type == "video") {
+                bool asset_found = false;
+                for (const auto& asset : scene.assets) {
+                    if (asset.id == layer.id || asset.id == layer.name) {
+                        asset_found = true;
+                        break;
+                    }
+                }
+                if (!asset_found) {
+                    result.diagnostics.add_error("scene.layer.asset_reference_invalid", "image/video layer must match an existing asset id using layer.id or layer.name", lpath + ".asset_id");
+                }
+            }
         }
     }
     return result;

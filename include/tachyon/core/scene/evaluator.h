@@ -4,12 +4,18 @@
 
 #include <optional>
 #include <string>
+#include <unordered_map>
 
 namespace tachyon::audio {
 class AudioAnalyzer;
 }
 
 namespace tachyon::scene {
+
+struct EvaluationVariables {
+    const std::unordered_map<std::string, double>* numeric{nullptr};
+    const std::unordered_map<std::string, std::string>* strings{nullptr};
+};
 
 [[nodiscard]] EvaluatedLayerState evaluate_layer_state(
     const LayerSpec& layer,
@@ -28,27 +34,31 @@ namespace tachyon::scene {
 [[nodiscard]] EvaluatedCompositionState evaluate_composition_state(
     const CompositionSpec& composition,
     std::int64_t frame_number,
-    const audio::AudioAnalyzer* audio_analyzer = nullptr
+    const audio::AudioAnalyzer* audio_analyzer = nullptr,
+    EvaluationVariables vars = {}
 );
 
 [[nodiscard]] EvaluatedCompositionState evaluate_composition_state(
     const CompositionSpec& composition,
     double composition_time_seconds,
-    const audio::AudioAnalyzer* audio_analyzer = nullptr
+    const audio::AudioAnalyzer* audio_analyzer = nullptr,
+    EvaluationVariables vars = {}
 );
 
 [[nodiscard]] std::optional<EvaluatedCompositionState> evaluate_scene_composition_state(
     const SceneSpec& scene,
     const std::string& composition_id,
     std::int64_t frame_number,
-    const audio::AudioAnalyzer* audio_analyzer = nullptr
+    const audio::AudioAnalyzer* audio_analyzer = nullptr,
+    EvaluationVariables vars = {}
 );
 
 [[nodiscard]] std::optional<EvaluatedCompositionState> evaluate_scene_composition_state(
     const SceneSpec& scene,
     const std::string& composition_id,
     double composition_time_seconds,
-    const audio::AudioAnalyzer* audio_analyzer = nullptr
+    const audio::AudioAnalyzer* audio_analyzer = nullptr,
+    EvaluationVariables vars = {}
 );
 
 } // namespace tachyon::scene

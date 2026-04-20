@@ -89,6 +89,9 @@ bool run_scene_spec_tests() {
         const std::string text = R"({
             "spec_version": "1.0",
             "project": { "id": "proj_001", "name": "Intro" },
+            "assets": [
+                { "id": "logo", "type": "image", "source": "assets/logo.png" }
+            ],
             "compositions": [
                 {
                     "id": "main",
@@ -110,6 +113,39 @@ bool run_scene_spec_tests() {
         if (parsed.value.has_value()) {
             const auto validation = tachyon::validate_scene_spec(*parsed.value);
             check_true(!validation.ok(), "duplicate layer ids should fail validation");
+        }
+    }
+
+    {
+        const std::string text = R"({
+            "spec_version": "1.0",
+            "project": { "id": "proj_refs", "name": "Reference Scene" },
+            "assets": [
+                { "id": "logo", "type": "image", "source": "assets/logo.png" }
+            ],
+            "compositions": [
+                {
+                    "id": "main",
+                    "name": "Main",
+                    "width": 1920,
+                    "height": 1080,
+                    "duration": 120,
+                    "frame_rate": 30,
+                    "layers": [
+                        { "id": "hero", "type": "image", "name": "hero_layer", "start_time": 0, "in_point": 0, "out_point": 120, "parent": "missing_parent" },
+                        { "id": "matte_a", "type": "shape", "name": "Matte", "start_time": 0, "in_point": 0, "out_point": 120 },
+                        { "id": "foreground", "type": "video", "name": "no_asset_here", "start_time": 0, "in_point": 0, "out_point": 120, "track_matte_layer_id": "missing_matte" },
+                        { "id": "precomp_ref", "type": "precomp", "name": "Nested", "start_time": 0, "in_point": 0, "out_point": 120, "precomp_id": "missing_comp" }
+                    ]
+                }
+            ]
+        })";
+
+        const auto parsed = tachyon::parse_scene_spec_json(text);
+        check_true(parsed.value.has_value(), "reference scene should parse");
+        if (parsed.value.has_value()) {
+            const auto validation = tachyon::validate_scene_spec(*parsed.value);
+            check_true(!validation.ok(), "invalid cross references should fail validation");
         }
     }
 
