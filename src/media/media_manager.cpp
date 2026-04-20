@@ -1,4 +1,5 @@
 #include "tachyon/media/media_manager.h"
+#include "tachyon/media/mesh_loader.h"
 
 namespace tachyon::media {
 
@@ -7,6 +8,12 @@ const renderer2d::SurfaceRGBA* MediaManager::get_image(
     AlphaMode alpha_mode,
     DiagnosticBag* diagnostics) {
     return m_image_manager.get_image(path, alpha_mode, diagnostics);
+}
+
+const HDRTextureData* MediaManager::get_hdr_image(
+    const std::filesystem::path& path,
+    DiagnosticBag* diagnostics) {
+    return m_image_manager.get_hdr_image(path, diagnostics);
 }
 
 VideoDecoder* MediaManager::acquire_video_decoder(const std::filesystem::path& path) {
@@ -59,10 +66,28 @@ void MediaManager::release_video_decoder(const std::filesystem::path& path, Vide
     pool->available.emplace_back(std::unique_ptr<VideoDecoder>(decoder));
 }
 
+const MeshAsset* MediaManager::get_mesh(const std::filesystem::path& path, DiagnosticBag* diagnostics) {
+    const std::string key = path.string();
+    std::lock_guard<std::mutex> lock(m_mutex);
+    
+    auto it = m_mesh_cache.find(key);
+    if (it != m_mesh_cache.end()) {
+        return it->second.get();
+    }
+
+    auto mesh = MeshLoader::load_from_gltf(path, diagnostics);
+    if (!mesh) return nullptr;
+
+    const MeshAsset* ptr = mesh.get();
+    m_mesh_cache[key] = std::move(mesh);
+    return ptr;
+}
+
 void MediaManager::clear_cache() {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_image_manager.clear_cache();
     m_video_pools.clear();
+    m_mesh_cache.clear();
 }
 
 DiagnosticBag MediaManager::consume_diagnostics() {

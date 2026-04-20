@@ -8,9 +8,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Determine platform and compiler details
-# Determine platform and compiler details
 if(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    add_compile_options(/wd4324) # structure was padded due to alignment specifier (Embree)
 else()
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
@@ -56,6 +56,56 @@ set(HB_BUILD_DOCS OFF CACHE BOOL "Disable HarfBuzz docs" FORCE)
 set(HB_BUILD_SUBSET OFF CACHE BOOL "Disable HarfBuzz subset library" FORCE)
 set(HB_HAVE_FREETYPE ON CACHE BOOL "Enable HarfBuzz FreeType integration" FORCE)
 FetchContent_MakeAvailable(harfbuzz)
+
+# Intel Embree CPU Ray Tracing Kernels
+FetchContent_Declare(
+    embree
+    GIT_REPOSITORY https://github.com/embree/embree.git
+    GIT_TAG        v4.3.3
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+set(EMBREE_TUTORIALS OFF CACHE BOOL "Disable Embree tutorials" FORCE)
+set(EMBREE_BACKEND_ISPC OFF CACHE BOOL "Disable Embree ISPC backend" FORCE)
+set(EMBREE_ISPC_SUPPORT OFF CACHE BOOL "Disable ISPC support" FORCE)
+set(EMBREE_STATIC_LIB ON CACHE BOOL "Build Embree as static library" FORCE)
+set(EMBREE_RAY_MASK ON CACHE BOOL "Enable Embree ray masking" FORCE)
+set(EMBREE_FILTER_FUNCTION ON CACHE BOOL "Enable Embree filter functions" FORCE)
+set(EMBREE_TASKING_SYSTEM INTERNAL CACHE STRING "Use internal tasking system for Embree" FORCE)
+# Build only for the host architecture
+set(EMBREE_MAX_ISA "SSE4.2" CACHE STRING "Max ISA for Embree" FORCE) 
+# tinygltf for glTF mesh loading
+FetchContent_Declare(
+    tinygltf
+    GIT_REPOSITORY https://github.com/syoyo/tinygltf.git
+    GIT_TAG        v2.9.3
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+FetchContent_MakeAvailable(tinygltf)
+
+# OpenImageDenoise (OIDN) for high-quality path tracing results at low SPP
+FetchContent_Declare(
+    oidn
+    GIT_REPOSITORY https://github.com/OpenImageDenoise/oidn.git
+    GIT_TAG        v2.3.0
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+set(OIDN_FILTER_RT ON CACHE BOOL "Enable Ray Tracing filter" FORCE)
+set(OIDN_APPS OFF CACHE BOOL "Disable OIDN apps" FORCE)
+FetchContent_MakeAvailable(oidn)
+
+# earcut.hpp for 3D polygon triangulation (Extrusion)
+FetchContent_Declare(
+    earcut
+    GIT_REPOSITORY https://github.com/mapbox/earcut.hpp.git
+    GIT_TAG        v2.2.4
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+FetchContent_MakeAvailable(earcut)
+# earcut just provides the 'earcut.hpp' header inside its include/mapbox folder.
+# We add its include directory globally
+include_directories(${earcut_SOURCE_DIR}/include)
+
+FetchContent_MakeAvailable(embree)
 
 # Version header generation
 configure_file(

@@ -305,6 +305,7 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
     const std::filesystem::path output_path = job.output.destination.path.empty()
         ? std::filesystem::path{}
         : std::filesystem::path(job.output.destination.path);
+    
     const RenderSessionResult session_result = session.render(context.scene, *execution_result.value, output_path, options.worker_count);
     if (!session_result.output_error.empty()) {
         err << "render output failed: " << session_result.output_error << '\n';

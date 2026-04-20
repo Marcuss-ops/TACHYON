@@ -26,6 +26,22 @@ namespace tachyon {
 namespace scene {
 namespace {
 
+struct EvaluationContext {
+    const SceneSpec* scene{nullptr};
+    const CompositionSpec& composition;
+    std::int64_t frame_number{0};
+    double composition_time_seconds{0.0};
+    std::unordered_map<std::string, std::size_t> layer_indices;
+    std::vector<std::optional<EvaluatedLayerState>> cache;
+    std::vector<bool> visiting;
+    std::vector<std::string> composition_stack;
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer{nullptr};
+    EvaluationVariables vars;
+    std::unordered_map<std::string, std::vector<::tachyon::text::SubtitleEntry>> subtitle_cache;
+    // Added media manager to context
+    ::tachyon::media::MediaManager* media{nullptr};
+};
+
 std::uint64_t stable_string_hash(const std::string& text) {
     std::uint64_t hash = 1469598103934665603ULL;
     for (unsigned char ch : text) {
@@ -123,10 +139,6 @@ std::string resolve_template(
     return result;
 }
 
-// Math utilities moved to renderer2d::math_utils
-
-// Fallback functions moved to evaluator_math.cpp
-
 math::Vector2 fallback_position(const LayerSpec& layer) {
     return {
         static_cast<float>(layer.transform.position_x.value_or(0.0)),
@@ -144,8 +156,6 @@ math::Vector2 fallback_scale(const LayerSpec& layer) {
 double fallback_rotation(const LayerSpec& layer) {
     return layer.transform.rotation.value_or(0.0);
 }
-
-// Audio sampling moved to renderer2d::audio
 
 double sample_scalar(
     const AnimatedScalarSpec& property,
@@ -168,7 +178,6 @@ double sample_scalar(
         expr_ctx.seed = expression_seed;
         expr_ctx.variables["seed"] = static_cast<double>(expression_seed);
         
-        // Add audio bands to expression context
         if (audio_analyzer) {
             const ::tachyon::audio::AudioBands bands = audio_analyzer->analyze_frame(local_time_seconds);
             expr_ctx.variables["music.bass"] = bands.bass;
@@ -253,7 +262,6 @@ math::Vector2 sample_vector2(
         expr_ctx.seed = expression_seed;
         expr_ctx.variables["seed"] = static_cast<double>(expression_seed);
         
-        // Add audio bands to expression context
         if (audio_analyzer) {
             const ::tachyon::audio::AudioBands bands = audio_analyzer->analyze_frame(local_time_seconds);
             expr_ctx.variables["music.bass"] = bands.bass;
@@ -340,7 +348,6 @@ math::Vector3 sample_vector3(
         expr_ctx.seed = expression_seed;
         expr_ctx.variables["seed"] = static_cast<double>(expression_seed);
         
-        // Add audio bands to expression context
         if (audio_analyzer) {
             const ::tachyon::audio::AudioBands bands = audio_analyzer->analyze_frame(local_time_seconds);
             expr_ctx.variables["music.bass"] = bands.bass;
@@ -479,15 +486,16 @@ LayerType map_layer_type(const std::string& type) {
 }
 
 EvaluatedLayerState make_layer_state(
-    const CompositionSpec& composition,
+    EvaluationContext& context,
     const LayerSpec& layer,
-    std::size_t layer_index,
-    std::int64_t frame_number,
-    double composition_time_seconds,
-    const SceneSpec* scene,
-    const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
-    EvaluationVariables vars = {}) {
-    (void)frame_number;
+    std::size_t layer_index) {
+    
+    // Unpack context for convenience
+    const CompositionSpec& composition = context.composition;
+    const SceneSpec* scene = context.scene;
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer = context.audio_analyzer;
+    const EvaluationVariables& vars = context.vars;
+    const double composition_time_seconds = context.composition_time_seconds;
     EvaluatedLayerState evaluated;
     evaluated.layer_index = layer_index;
     evaluated.id = layer.id;
@@ -495,6 +503,7 @@ EvaluatedLayerState make_layer_state(
     evaluated.name = layer.name;
     evaluated.blend_mode = layer.blend_mode;
     evaluated.enabled = layer.enabled;
+    evaluated.visible = layer.visible;
     evaluated.is_3d = layer.is_3d;
     evaluated.is_adjustment_layer = layer.is_adjustment_layer;
     evaluated.local_time_seconds = timeline::local_time_from_composition(composition_time_seconds, layer.start_time);
@@ -551,6 +560,13 @@ EvaluatedLayerState make_layer_state(
             audio_analyzer,
             hash_combine(layer_seed, stable_string_hash("position3")),
             vars.numeric);
+        const math::Vector3 orient3 = sample_vector3(
+            layer.transform3d.orientation_property,
+            {0.0f, 0.0f, 0.0f},
+            remapped_time,
+            audio_analyzer,
+            hash_combine(layer_seed, stable_string_hash("orientation3")),
+            vars.numeric);
         const math::Vector3 rot3 = sample_vector3(
             layer.transform3d.rotation_property,
             {0.0f, 0.0f, static_cast<float>(rot)},
@@ -565,23 +581,68 @@ EvaluatedLayerState make_layer_state(
             audio_analyzer,
             hash_combine(layer_seed, stable_string_hash("scale3")),
             vars.numeric);
+        const math::Vector3 anchor3 = sample_vector3(
+            layer.transform3d.anchor_point_property,
+            {0.0f, 0.0f, 0.0f},
+            remapped_time,
+            audio_analyzer,
+            hash_combine(layer_seed, stable_string_hash("anchor_point3")),
+            vars.numeric);
         
-        math::Transform3 t3;
-        t3.position = pos3;
-        t3.rotation = math::Quaternion::from_euler({
+        evaluated.orientation_xyz_deg = orient3;
+        evaluated.anchor_point_3d = anchor3;
+        evaluated.scale_3d = scl3;
+
+        const auto t = math::Matrix4x4::translation(pos3);
+        const auto o = math::Quaternion::from_euler({
+            static_cast<float>(renderer2d::math_utils::degrees_to_radians(orient3.x)),
+            static_cast<float>(renderer2d::math_utils::degrees_to_radians(orient3.y)),
+            static_cast<float>(renderer2d::math_utils::degrees_to_radians(orient3.z))
+        }).to_matrix();
+        const auto r = math::Quaternion::from_euler({
             static_cast<float>(renderer2d::math_utils::degrees_to_radians(rot3.x)),
             static_cast<float>(renderer2d::math_utils::degrees_to_radians(rot3.y)),
             static_cast<float>(renderer2d::math_utils::degrees_to_radians(rot3.z))
-        });
-        t3.scale = scl3;
-        evaluated.world_matrix = t3.to_matrix();
+        }).to_matrix();
+        const auto s_matrix = math::Matrix4x4::scaling(scl3 / 100.0f);
+        const auto inv_a = math::Matrix4x4::translation(-anchor3);
+        
+        evaluated.world_matrix = t * o * r * s_matrix * inv_a;
         evaluated.world_position3 = pos3;
+        evaluated.world_normal = evaluated.world_matrix.transform_vector({0.0f, 0.0f, 1.0f}).normalized();
     }
+
+    evaluated.material.ambient_coeff = static_cast<float>(sample_scalar(layer.ambient_coeff, 0.1, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("ambient")), vars.numeric));
+    evaluated.material.diffuse_coeff = static_cast<float>(sample_scalar(layer.diffuse_coeff, 0.8, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("diffuse")), vars.numeric));
+    evaluated.material.specular_coeff = static_cast<float>(sample_scalar(layer.specular_coeff, 0.5, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("specular")), vars.numeric));
+    evaluated.material.shininess = static_cast<float>(sample_scalar(layer.shininess, 50.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("shininess")), vars.numeric));
+    evaluated.material.metallic = static_cast<float>(sample_scalar(layer.metallic, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("metallic")), vars.numeric));
+    evaluated.material.roughness = static_cast<float>(sample_scalar(layer.roughness, 0.5, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("roughness")), vars.numeric));
+    evaluated.material.emission = static_cast<float>(sample_scalar(layer.emission, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("emission")), vars.numeric));
+    evaluated.material.ior = static_cast<float>(sample_scalar(layer.ior, 1.45, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("ior")), vars.numeric));
+    evaluated.material.metal = layer.metal;
+
+    evaluated.extrusion_depth = static_cast<float>(sample_scalar(layer.extrusion_depth, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("extrusion")), vars.numeric));
+    evaluated.bevel_size = static_cast<float>(sample_scalar(layer.bevel_size, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("bevel")), vars.numeric));
 
     evaluated.visible = evaluated.enabled && evaluated.active && evaluated.opacity > 0.0;
     evaluated.width = layer.width;
     evaluated.height = layer.height;
+
+    // Resolve 3D mesh asset if path is provided
+    if (layer.mesh_path.has_value() && !layer.mesh_path->empty()) {
+        evaluated.mesh_asset = const_cast<media::MeshAsset*>(
+            context.media.get_mesh(*layer.mesh_path, diagnostics)
+        );
+    }
+
     evaluated.text_content = resolve_template(layer.text_content, vars.strings, vars.numeric);
+    evaluated.font_id = layer.font_id;
+    evaluated.font_size = static_cast<float>(sample_scalar(layer.font_size, 48.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("font_size")), vars.numeric));
+    
+    if (layer.alignment == "center") evaluated.text_alignment = 1;
+    else if (layer.alignment == "right") evaluated.text_alignment = 2;
+    else evaluated.text_alignment = 0;
     
     evaluated.fill_color = sample_color(layer.fill_color, {255, 255, 255, 255}, remapped_time);
     evaluated.stroke_color = sample_color(layer.stroke_color, {255, 255, 255, 255}, remapped_time);
@@ -631,19 +692,7 @@ EvaluatedLayerState make_layer_state(
     return evaluated;
 }
 
-struct EvaluationContext {
-    const SceneSpec* scene{nullptr};
-    const CompositionSpec& composition;
-    std::int64_t frame_number{0};
-    double composition_time_seconds{0.0};
-    std::unordered_map<std::string, std::size_t> layer_indices;
-    std::vector<std::optional<EvaluatedLayerState>> cache;
-    std::vector<bool> visiting;
-    std::vector<std::string> composition_stack;
-    const ::tachyon::audio::AudioAnalyzer* audio_analyzer{nullptr};
-    EvaluationVariables vars;
-    std::unordered_map<std::string, std::vector<::tachyon::text::SubtitleEntry>> subtitle_cache;
-};
+// Evaluation context moved to top
 
 EvaluatedLightState evaluate_light_state(
     const EvaluatedLayerState& layer_state,
@@ -654,7 +703,6 @@ EvaluatedLightState evaluate_light_state(
     light.type = spec.light_type.value_or("point");
     light.position = layer_state.world_position3;
     
-    // Direction can be derived from world matrix (forward vector)
     const auto forward = layer_state.world_matrix.transform_vector({0.0f, 0.0f, -1.0f}).normalized();
     light.direction = forward;
     
@@ -664,6 +712,13 @@ EvaluatedLightState evaluate_light_state(
     light.attenuation_near = static_cast<float>(sample_scalar(spec.attenuation_near, 0.0, remapped_time, nullptr, hash_combine(light_seed, stable_string_hash("attenuation_near"))));
     light.attenuation_far = static_cast<float>(sample_scalar(spec.attenuation_far, 1000.0, remapped_time, nullptr, hash_combine(light_seed, stable_string_hash("attenuation_far"))));
     
+    light.cone_angle = static_cast<float>(sample_scalar(spec.cone_angle, 90.0, remapped_time, nullptr, hash_combine(light_seed, stable_string_hash("cone_angle"))));
+    light.cone_feather = static_cast<float>(sample_scalar(spec.cone_feather, 50.0, remapped_time, nullptr, hash_combine(light_seed, stable_string_hash("cone_feather"))));
+    light.falloff_type = spec.falloff_type;
+    light.casts_shadows = spec.casts_shadows;
+    light.shadow_darkness = static_cast<float>(sample_scalar(spec.shadow_darkness, 1.0, remapped_time, nullptr, hash_combine(light_seed, stable_string_hash("shadow_darkness"))));
+    light.shadow_radius = static_cast<float>(sample_scalar(spec.shadow_radius, 0.0, remapped_time, nullptr, hash_combine(light_seed, stable_string_hash("shadow_radius"))));
+
     return light;
 }
 
@@ -678,7 +733,8 @@ EvaluatedCompositionState evaluate_composition_internal(
     double composition_time_seconds,
     std::vector<std::string> stack,
     const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
-    EvaluationVariables vars = {}) {
+    EvaluationVariables vars,
+    media::MediaManager* media) {
     
     EvaluatedCompositionState evaluated;
     evaluated.composition_id = composition.id;
@@ -700,7 +756,9 @@ EvaluatedCompositionState evaluate_composition_internal(
         std::vector<bool>(composition.layers.size(), false),
         std::move(stack),
         audio_analyzer,
-        vars
+        vars,
+        {},
+        media
     };
 
     for (std::size_t index = 0; index < composition.layers.size(); ++index) {
@@ -717,6 +775,12 @@ EvaluatedCompositionState evaluate_composition_internal(
     }
 
     evaluated.camera = evaluate_camera_state(composition, evaluated.layers, frame_number, composition_time_seconds);
+
+    // Resolve environment map
+    if (composition.environment_path.has_value() && !composition.environment_path->empty() && media) {
+        evaluated.environment_map = media->get_hdr_image(*composition.environment_path);
+    }
+
     return evaluated;
 }
 
@@ -729,14 +793,9 @@ const EvaluatedLayerState& resolve_layer_state(
 
     if (context.visiting[layer_index]) {
         context.cache[layer_index] = make_layer_state(
-            context.composition,
+            context,
             context.composition.layers[layer_index],
-            layer_index,
-            context.frame_number,
-            context.composition_time_seconds,
-            context.scene,
-            context.audio_analyzer,
-            context.vars);
+            layer_index);
         return *context.cache[layer_index];
     }
 
@@ -744,16 +803,10 @@ const EvaluatedLayerState& resolve_layer_state(
 
     const auto& layer = context.composition.layers[layer_index];
     EvaluatedLayerState evaluated = make_layer_state(
-        context.composition,
+        context,
         layer,
-        layer_index,
-        context.frame_number,
-        context.composition_time_seconds,
-        context.scene,
-        context.audio_analyzer,
-        context.vars);
+        layer_index);
 
-    // Resolve parent
     if (layer.parent.has_value() && !layer.parent->empty()) {
         const auto parent_it = context.layer_indices.find(*layer.parent);
         if (parent_it != context.layer_indices.end() && parent_it->second != layer_index) {
@@ -765,7 +818,6 @@ const EvaluatedLayerState& resolve_layer_state(
         }
     }
 
-    // Resolve track matte
     if (layer.track_matte_layer_id.has_value() && !layer.track_matte_layer_id->empty()) {
         const auto matte_it = context.layer_indices.find(*layer.track_matte_layer_id);
         if (matte_it != context.layer_indices.end()) {
@@ -773,7 +825,6 @@ const EvaluatedLayerState& resolve_layer_state(
         }
     }
 
-    // Resolve precomp
     if (evaluated.precomp_id.has_value() && !evaluated.precomp_id->empty() && context.scene) {
         bool circular = false;
         for (const auto& id : context.composition_stack) {
@@ -796,7 +847,7 @@ const EvaluatedLayerState& resolve_layer_state(
                     ));
 
                     evaluated.nested_composition = std::make_unique<EvaluatedCompositionState>(
-                        evaluate_composition_internal(context.scene, comp, child_frame_number, evaluated.child_time_seconds, std::move(next_stack), context.audio_analyzer, context.vars)
+                        evaluate_composition_internal(context.scene, comp, child_frame_number, evaluated.child_time_seconds, std::move(next_stack), context.audio_analyzer, context.vars, context.media)
                     );
                     break;
                 }
@@ -815,11 +866,29 @@ EvaluatedLayerState evaluate_layer_state(
     const LayerSpec& layer,
     std::int64_t frame_number,
     double composition_time_seconds,
-    const ::tachyon::audio::AudioAnalyzer* audio_analyzer) {
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
+    media::MediaManager* media) {
     CompositionSpec composition;
     composition.id = "standalone";
     composition.name = "standalone";
-    return make_layer_state(composition, layer, 0, frame_number, composition_time_seconds, nullptr, audio_analyzer);
+    
+    EvaluationContext context{
+        nullptr,
+        composition,
+        frame_number,
+        composition_time_seconds,
+        {},
+        {std::nullopt}, // One layer cache
+        {false},        // One layer visiting
+        {},
+        audio_analyzer,
+        {},
+        {},
+        media
+    };
+    context.layer_indices.emplace(layer.id, 0);
+
+    return make_layer_state(context, layer, 0);
 }
 
 EvaluatedCameraState evaluate_camera_state(
@@ -835,23 +904,70 @@ EvaluatedCameraState evaluate_camera_state(
         ? static_cast<float>(static_cast<double>(composition.width) / static_cast<double>(composition.height))
         : 1.0f;
 
-    for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
-        if (it->type != LayerType::Camera || !it->active) {
-            continue;
+    // Find the first active camera from top to bottom
+    const LayerSpec* camera_spec = nullptr;
+    const EvaluatedLayerState* camera_layer = nullptr;
+
+    for (std::size_t i = 0; i < composition.layers.size(); ++i) {
+        const auto& spec = composition.layers[i];
+        if (spec.type != "camera") continue;
+        
+        // Find corresponding evaluated layer
+        for (const auto& el : layers) {
+            if (el.id == spec.id && el.active) {
+                camera_spec = &spec;
+                camera_layer = &el;
+                break;
+            }
+        }
+        if (camera_spec) break;
+    }
+
+    if (camera_layer && camera_spec) {
+        evaluated.available = true;
+        evaluated.layer_id = camera_layer->id;
+        evaluated.position = camera_layer->world_position3;
+        
+        // AE Camera Logic
+        evaluated.is_two_node = camera_spec->is_two_node;
+        
+        if (evaluated.is_two_node) {
+            const std::uint64_t cam_seed = hash_combine(stable_string_hash(camera_layer->id), stable_string_hash("camera"));
+            evaluated.point_of_interest = sample_vector3(camera_spec->point_of_interest, {0,0,0}, camera_layer->child_time_seconds, nullptr, hash_combine(cam_seed, stable_string_hash("poi")));
         }
 
-        evaluated.available = true;
-        evaluated.layer_id = it->id;
-        evaluated.position = it->world_position3;
-        
-        // Extract basic TRS from world matrix for simplicity in this pass
-        // In real impl, we'd use decompose_matrix
-        evaluated.camera.transform.compose_trs(
-            evaluated.position,
-            math::Quaternion::identity(), // Simplified for now
-            math::Vector3::one()
-        );
-        break;
+        // DOF and optics
+        evaluated.dof_enabled = camera_spec->dof_enabled;
+        const std::uint64_t opt_seed = stable_string_hash(camera_layer->id);
+        evaluated.focus_distance = static_cast<float>(sample_scalar(camera_spec->focus_distance, 1000.0, camera_layer->child_time_seconds, nullptr, hash_combine(opt_seed, stable_string_hash("focus"))));
+        evaluated.aperture = static_cast<float>(sample_scalar(camera_spec->aperture, 0.0, camera_layer->child_time_seconds, nullptr, hash_combine(opt_seed, stable_string_hash("aperture"))));
+        evaluated.blur_level = static_cast<float>(sample_scalar(camera_spec->blur_level, 100.0, camera_layer->child_time_seconds, nullptr, hash_combine(opt_seed, stable_string_hash("blur"))));
+        evaluated.aperture_blades = static_cast<int>(sample_scalar(camera_spec->aperture_blades, 0.0, camera_layer->child_time_seconds, nullptr, hash_combine(opt_seed, stable_string_hash("blades"))));
+        evaluated.aperture_rotation = static_cast<float>(sample_scalar(camera_spec->aperture_rotation, 0.0, camera_layer->child_time_seconds, nullptr, hash_combine(opt_seed, stable_string_hash("aperture_rot"))));
+
+        // Use world matrix for transform
+        if (evaluated.is_two_node) {
+            const math::Quaternion look_rot = math::Quaternion::look_at(camera_layer->world_position3, evaluated.point_of_interest, {0, 1, 0});
+            evaluated.camera.transform.compose_trs(
+                camera_layer->world_position3,
+                look_rot,
+                math::Vector3::one()
+            );
+        } else {
+            // Extract rotation from world_matrix
+            const math::Matrix4x4& m = camera_layer->world_matrix;
+            const math::Vector3 right{m[0], m[1], m[2]};
+            const math::Vector3 up{m[4], m[5], m[6]};
+            const math::Vector3 forward{-m[8], -m[9], -m[10]}; // Invert Z as per convention
+            
+            evaluated.camera.transform.compose_trs(
+                camera_layer->world_position3,
+                math::Quaternion::look_at({0,0,0}, forward, up),
+                math::Vector3::one()
+            );
+        }
+        // Better: extract rotation from world_matrix
+        // For now, world_matrix is the truth.
     }
 
     return evaluated;
@@ -861,18 +977,20 @@ EvaluatedCompositionState evaluate_composition_state(
     const CompositionSpec& composition,
     std::int64_t frame_number,
     const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
-    EvaluationVariables vars) {
+    EvaluationVariables vars,
+    media::MediaManager* media) {
     const auto frame = timeline::sample_frame(composition.frame_rate, frame_number);
-    return evaluate_composition_internal(nullptr, composition, frame.frame_number, frame.composition_time_seconds, {}, audio_analyzer, vars);
+    return evaluate_composition_internal(nullptr, composition, frame.frame_number, frame.composition_time_seconds, {}, audio_analyzer, vars, media);
 }
 
 EvaluatedCompositionState evaluate_composition_state(
     const CompositionSpec& composition,
     double composition_time_seconds,
     const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
-    EvaluationVariables vars) {
+    EvaluationVariables vars,
+    media::MediaManager* media) {
     const std::int64_t frame_number = static_cast<std::int64_t>(std::llround(composition_time_seconds * static_cast<double>(composition.frame_rate.numerator) / static_cast<double>(composition.frame_rate.denominator)));
-    return evaluate_composition_internal(nullptr, composition, frame_number, composition_time_seconds, {}, audio_analyzer, vars);
+    return evaluate_composition_internal(nullptr, composition, frame_number, composition_time_seconds, {}, audio_analyzer, vars, media);
 }
 
 std::optional<EvaluatedCompositionState> evaluate_scene_composition_state(
@@ -880,12 +998,13 @@ std::optional<EvaluatedCompositionState> evaluate_scene_composition_state(
     const std::string& composition_id,
     std::int64_t frame_number,
     const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
-    EvaluationVariables vars
+    EvaluationVariables vars,
+    media::MediaManager* media
 ) {
     for (const auto& composition : scene.compositions) {
         if (composition.id == composition_id) {
             const auto frame = timeline::sample_frame(composition.frame_rate, frame_number);
-            return evaluate_composition_internal(&scene, composition, frame.frame_number, frame.composition_time_seconds, {}, audio_analyzer, vars);
+            return evaluate_composition_internal(&scene, composition, frame.frame_number, frame.composition_time_seconds, {}, audio_analyzer, vars, media);
         }
     }
     return std::nullopt;
@@ -896,12 +1015,13 @@ std::optional<EvaluatedCompositionState> evaluate_scene_composition_state(
     const std::string& composition_id,
     double composition_time_seconds,
     const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
-    EvaluationVariables vars
+    EvaluationVariables vars,
+    media::MediaManager* media
 ) {
     for (const auto& composition : scene.compositions) {
         if (composition.id == composition_id) {
             const std::int64_t frame_number = static_cast<std::int64_t>(std::llround(composition_time_seconds * static_cast<double>(composition.frame_rate.numerator) / static_cast<double>(composition.frame_rate.denominator)));
-            return evaluate_composition_internal(&scene, composition, frame_number, composition_time_seconds, {}, audio_analyzer, vars);
+            return evaluate_composition_internal(&scene, composition, frame_number, composition_time_seconds, {}, audio_analyzer, vars, media);
         }
     }
     return std::nullopt;
@@ -923,10 +1043,20 @@ EvaluatedLayerState::EvaluatedLayerState(const EvaluatedLayerState& other) {
     opacity = other.opacity;
     local_transform = other.local_transform;
     world_matrix = other.world_matrix;
+    orientation_xyz_deg = other.orientation_xyz_deg;
+    anchor_point_3d = other.anchor_point_3d;
+    scale_3d = other.scale_3d;
     world_position3 = other.world_position3;
+    world_normal = other.world_normal;
+    material = other.material;
+    extrusion_depth = other.extrusion_depth;
+    bevel_size = other.bevel_size;
     width = other.width;
     height = other.height;
     text_content = other.text_content;
+    font_id = other.font_id;
+    font_size = other.font_size;
+    text_alignment = other.text_alignment;
     fill_color = other.fill_color;
     stroke_color = other.stroke_color;
     stroke_width = other.stroke_width;
@@ -935,6 +1065,9 @@ EvaluatedLayerState::EvaluatedLayerState(const EvaluatedLayerState& other) {
     miter_limit = other.miter_limit;
     shape_path = other.shape_path;
     effects = other.effects;
+    subtitle_path = other.subtitle_path;
+    subtitle_outline_color = other.subtitle_outline_color;
+    subtitle_outline_width = other.subtitle_outline_width;
     track_matte_type = other.track_matte_type;
     track_matte_layer_index = other.track_matte_layer_index;
     precomp_id = other.precomp_id;
@@ -962,10 +1095,20 @@ EvaluatedLayerState& EvaluatedLayerState::operator=(const EvaluatedLayerState& o
     opacity = other.opacity;
     local_transform = other.local_transform;
     world_matrix = other.world_matrix;
+    orientation_xyz_deg = other.orientation_xyz_deg;
+    anchor_point_3d = other.anchor_point_3d;
+    scale_3d = other.scale_3d;
     world_position3 = other.world_position3;
+    world_normal = other.world_normal;
+    material = other.material;
+    extrusion_depth = other.extrusion_depth;
+    bevel_size = other.bevel_size;
     width = other.width;
     height = other.height;
     text_content = other.text_content;
+    font_id = other.font_id;
+    font_size = other.font_size;
+    text_alignment = other.text_alignment;
     fill_color = other.fill_color;
     stroke_color = other.stroke_color;
     stroke_width = other.stroke_width;
@@ -974,6 +1117,9 @@ EvaluatedLayerState& EvaluatedLayerState::operator=(const EvaluatedLayerState& o
     miter_limit = other.miter_limit;
     shape_path = other.shape_path;
     effects = other.effects;
+    subtitle_path = other.subtitle_path;
+    subtitle_outline_color = other.subtitle_outline_color;
+    subtitle_outline_width = other.subtitle_outline_width;
     track_matte_type = other.track_matte_type;
     track_matte_layer_index = other.track_matte_layer_index;
     precomp_id = other.precomp_id;
@@ -989,4 +1135,3 @@ EvaluatedLayerState& EvaluatedLayerState::operator=(const EvaluatedLayerState& o
 
 } // namespace scene
 } // namespace tachyon
-

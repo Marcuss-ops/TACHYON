@@ -73,6 +73,8 @@ struct Quaternion {
     }
 
     struct Matrix4x4 to_matrix() const;
+
+    static Quaternion look_at(const Vector3& eye, const Vector3& target, const Vector3& up);
 };
 
 } // namespace math

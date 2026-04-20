@@ -1,0 +1,78 @@
+{
+  "version": "1.0",
+  "spec_version": "1.0",
+  "project": {
+    "id": "pbr_test",
+    "name": "PBR 3D Test"
+  },
+  "compositions": [
+    {
+      "id": "comp1",
+      "name": "3D PBR Test",
+      "width": 1280,
+      "height": 720,
+      "duration": 1.0,
+      "fps": 30,
+      "layers": [
+        {
+          "id": "cam",
+          "type": "camera",
+          "name": "Main Camera",
+          "is_3d": true,
+          "transform": {
+            "position": [640, 360],
+            "position3_property": { "value": [640, 1500, -1500] }
+          },
+          "point_of_interest": { "value": [640, 360, 0] },
+          "dof_enabled": true,
+          "focus_distance": 2100,
+          "aperture": 40.0
+        },
+        {
+          "id": "light1",
+          "type": "light",
+          "name": "Point Light",
+          "light_type": "point",
+          "is_3d": true,
+          "transform": {
+            "position3_property": { "value": [200, 1000, -500] }
+          },
+          "color": [255, 200, 150],
+          "intensity": 5000000.0,
+          "casts_shadows": true,
+          "shadow_radius": 20.0
+        },
+        {
+          "id": "floor",
+          "type": "solid",
+          "name": "Floor",
+          "is_3d": true,
+          "width": 5000,
+          "height": 5000,
+          "fill_color": [100, 100, 100],
+          "metallic": 0.2,
+          "roughness": 0.8,
+          "transform": {
+            "position": [640, 360],
+            "orientation_property": { "value": [90, 0, 0] }
+          }
+        },
+        {
+          "id": "card",
+          "type": "solid",
+          "name": "Floating Card",
+          "is_3d": true,
+          "width": 500,
+          "height": 500,
+          "fill_color": [255, 50, 50],
+          "metallic": 0.5,
+          "roughness": 0.2,
+          "transform": {
+            "position3_property": { "value": [640, 360, -200] },
+            "rotation3_property": { "value": [20, 45, 0] }
+          }
+        }
+      ]
+    }
+  ]
+}

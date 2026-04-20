@@ -5,11 +5,13 @@
 #include "tachyon/renderer2d/draw_list_rasterizer.h"
 #include "tachyon/renderer2d/texture_resolver.h"
 #include "tachyon/core/scene/evaluator.h"
+#include "tachyon/renderer3d/ray_tracer.h"
 
 #include <sstream>
 #include <cmath>
 #include <algorithm>
 #include <stdexcept>
+#include <vector>
 
 namespace tachyon {
 namespace {
@@ -221,6 +223,40 @@ renderer2d::DrawList2D build_draw_list(const EvaluatedFrameState& state) {
     return renderer2d::DrawListBuilder::build(state.composition_state);
 }
 
+static void resolve_3d_layers_textures(
+    std::vector<scene::EvaluatedLayerState>& layers,
+    const SceneSpec& scene,
+    const RenderPlan& plan,
+    const FrameRenderTask& task,
+    FrameCache& cache,
+    RenderContext& context) {
+
+    for (auto& layer : layers) {
+        if (!layer.is_3d || !layer.visible) continue;
+
+        // 1. Resolve Image Asset textures
+        if (layer.type == LayerType::Image && !layer.asset_path.empty()) {
+            const auto* surface = context.media.get_image(layer.asset_path, media::AlphaMode::Straight);
+            if (surface) {
+                layer.texture_rgba = surface->data.data();
+                layer.width  = surface->width;
+                layer.height = surface->height;
+            }
+        }
+        
+        // 2. Resolve Precomp textures by rendering them
+        else if (layer.type == LayerType::Precomp && !layer.precomp_id.empty()) {
+            // We need to render the nested comp into a buffer
+            // For now, let's look for it in the cache or render it on the fly
+            // This is a simplified version of Ae's behavior
+            // In a full implementation, we'd have a recursive render call here
+            
+            // TODO: Full recursive render for 3D precomp textures
+            // For now, we only support Images as 3D textures in this hardening phase
+        }
+    }
+}
+
 ExecutedFrame execute_frame_task(
     const SceneSpec& scene,
     const RenderPlan& plan,
@@ -248,6 +284,9 @@ ExecutedFrame execute_frame_task(
     renderer2d::TextureResolver::resolve_textures(draw_list, scene, context.media);
 
     scene::EvaluatedCompositionState render_state = state.composition_state;
+    
+    // Resolve 3D textures/meshes
+    resolve_3d_layers_textures(render_state.layers, scene, plan, task, cache, context);
     const float resolution_scale = std::clamp(context.policy.resolution_scale, 0.1f, 1.0f);
     const bool scaled_render = resolution_scale < 0.999f;
     if (scaled_render) {
@@ -270,6 +309,64 @@ ExecutedFrame execute_frame_task(
             frame,
             static_cast<std::uint32_t>(state.composition_state.width),
             static_cast<std::uint32_t>(state.composition_state.height));
+    }
+
+    // 3D pass: composite ray-traced output over the 2D framebuffer when 3D layers exist.
+    const bool has_3d = std::any_of(render_state.layers.begin(), render_state.layers.end(),
+        [](const scene::EvaluatedLayerState& l){ return l.is_3d && l.visible; });
+
+    if (has_3d && render_state.camera.available) {
+        const int w = static_cast<int>(render_state.width);
+        const int h = static_cast<int>(render_state.height);
+        std::vector<float> hdr(static_cast<std::size_t>(w * h * 4), 0.0f);
+
+        context.ray_tracer->set_samples_per_pixel(context.policy.ray_tracer_spp);
+        context.ray_tracer->build_scene(render_state);
+        context.ray_tracer->render(render_state, hdr.data(), w, h);
+
+        // 3. Denoising pass (OIDN)
+        if (context.policy.ray_tracer_spp > 1) {
+            context.oidn_filter.setImage("color",  hdr.data(), oidn::Format::Float3, w, h, 0, 4 * sizeof(float));
+            context.oidn_filter.setImage("output", hdr.data(), oidn::Format::Float3, w, h, 0, 4 * sizeof(float));
+            context.oidn_filter.set("hdr", true);
+            context.oidn_filter.commit();
+            context.oidn_filter.execute();
+        }
+
+        // Source-over composite: 3D HDR float -> Tone Mapping -> Gamma -> uint8 on top of 2D frame.
+        for (int y = 0; y < h; ++y) {
+            for (int x = 0; x < w; ++x) {
+                const int i = (y * w + x) * 4;
+                const float src_a = hdr[i + 3];
+                if (src_a <= 0.0f) continue;
+
+                // 1. Reinhard Tone Mapping + 2. Gamma 2.2
+                auto process_color = [](float c) -> float {
+                    float mapped = c / (1.0f + c);
+                    return std::pow(std::clamp(mapped, 0.0f, 1.0f), 1.0f / 2.2f);
+                };
+
+                const float src_r = process_color(hdr[i + 0]);
+                const float src_g = process_color(hdr[i + 1]);
+                const float src_b = process_color(hdr[i + 2]);
+
+                const auto dst = frame.get_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y));
+                const float dst_a = static_cast<float>(dst.a) / 255.0f;
+                const float inv_src = 1.0f - src_a;
+                const float out_a = src_a + dst_a * inv_src;
+
+                auto blend = [&](float s, std::uint8_t d) -> std::uint8_t {
+                    const float blended = (s * src_a + (static_cast<float>(d) / 255.0f) * dst_a * inv_src)
+                                         / (out_a > 0.0f ? out_a : 1.0f);
+                    return static_cast<std::uint8_t>(std::clamp(std::lround(blended * 255.0f), 0L, 255L));
+                };
+
+                frame.set_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), renderer2d::Color{
+                    blend(src_r, dst.r), blend(src_g, dst.g), blend(src_b, dst.b),
+                    static_cast<std::uint8_t>(std::clamp(std::lround(out_a * 255.0f), 0L, 255L))
+                });
+            }
+        }
     }
 
     if (task.cacheable) {

@@ -307,8 +307,10 @@ void parse_transform(const json& object, LayerSpec& layer, const std::string& pa
     parse_optional_vector_property(object, "scale_property", layer.transform.scale_property, path, diagnostics);
     
     parse_optional_vector3_property(object, "position3_property", layer.transform3d.position_property, path, diagnostics);
+    parse_optional_vector3_property(object, "orientation_property", layer.transform3d.orientation_property, path, diagnostics);
     parse_optional_vector3_property(object, "rotation3_property", layer.transform3d.rotation_property, path, diagnostics);
     parse_optional_vector3_property(object, "scale3_property", layer.transform3d.scale_property, path, diagnostics);
+    parse_optional_vector3_property(object, "anchor_point3_property", layer.transform3d.anchor_point_property, path, diagnostics);
 }
 
 void parse_shape_path(const json& object, LayerSpec& layer, const std::string& path, DiagnosticBag& diagnostics) {
@@ -339,6 +341,8 @@ LayerSpec parse_layer(const json& object, const std::string& path, DiagnosticBag
     read_string(object, "name", layer.name);
     read_string(object, "blend_mode", layer.blend_mode);
     read_bool(object, "enabled", layer.enabled);
+    read_bool(object, "visible", layer.visible);
+    read_bool(object, "is_3d", layer.is_3d);
     read_number(object, "start_time", layer.start_time);
     read_number(object, "in_point", layer.in_point);
     read_number(object, "out_point", layer.out_point);
@@ -349,6 +353,11 @@ LayerSpec parse_layer(const json& object, const std::string& path, DiagnosticBag
     parse_shape_path(object, layer, path, diagnostics);
     parse_optional_scalar_property(object, "time_remap", layer.time_remap_property, path, diagnostics);
     if (object.contains("text_content")) layer.text_content = object.at("text_content").get<std::string>();
+    if (object.contains("font_id")) layer.font_id = object.at("font_id").get<std::string>();
+    parse_optional_scalar_property(object, "font_size", layer.font_size, path, diagnostics);
+    if (object.contains("alignment")) layer.alignment = object.at("alignment").get<std::string>();
+    if (object.contains("precomp_id")) layer.precomp_id = object.at("precomp_id").get<std::string>();
+    if (object.contains("mesh_path")) layer.mesh_path = object.at("mesh_path").get<std::string>();
     
     // Subtitle burn-in (for text layers)
     if (object.contains("subtitle_path")) layer.subtitle_path = object.at("subtitle_path").get<std::string>();
@@ -376,6 +385,37 @@ LayerSpec parse_layer(const json& object, const std::string& path, DiagnosticBag
     parse_optional_scalar_property(object, "intensity", layer.intensity, path, diagnostics);
     parse_optional_scalar_property(object, "attenuation_near", layer.attenuation_near, path, diagnostics);
     parse_optional_scalar_property(object, "attenuation_far", layer.attenuation_far, path, diagnostics);
+    parse_optional_scalar_property(object, "cone_angle", layer.cone_angle, path, diagnostics);
+    parse_optional_scalar_property(object, "cone_feather", layer.cone_feather, path, diagnostics);
+    read_string(object, "falloff_type", layer.falloff_type);
+    read_bool(object, "casts_shadows", layer.casts_shadows);
+    parse_optional_scalar_property(object, "shadow_darkness", layer.shadow_darkness, path, diagnostics);
+    parse_optional_scalar_property(object, "shadow_radius", layer.shadow_radius, path, diagnostics);
+
+    // Material options
+    parse_optional_scalar_property(object, "ambient_coeff", layer.ambient_coeff, path, diagnostics);
+    parse_optional_scalar_property(object, "diffuse_coeff", layer.diffuse_coeff, path, diagnostics);
+    parse_optional_scalar_property(object, "specular_coeff", layer.specular_coeff, path, diagnostics);
+    parse_optional_scalar_property(object, "shininess", layer.shininess, path, diagnostics);
+    parse_optional_scalar_property(object, "metallic", layer.metallic, path, diagnostics);
+    parse_optional_scalar_property(object, "roughness", layer.roughness, path, diagnostics);
+    parse_optional_scalar_property(object, "emission", layer.emission, path, diagnostics);
+    parse_optional_scalar_property(object, "ior", layer.ior, path, diagnostics);
+    read_bool(object, "metal", layer.metal);
+
+    // Extrusion
+    parse_optional_scalar_property(object, "extrusion_depth", layer.extrusion_depth, path, diagnostics);
+    parse_optional_scalar_property(object, "bevel_size", layer.bevel_size, path, diagnostics);
+
+    // Camera
+    read_bool(object, "is_two_node", layer.is_two_node);
+    parse_optional_vector3_property(object, "point_of_interest", layer.point_of_interest, path, diagnostics);
+    read_bool(object, "dof_enabled", layer.dof_enabled);
+    parse_optional_scalar_property(object, "focus_distance", layer.focus_distance, path, diagnostics);
+    parse_optional_scalar_property(object, "aperture", layer.aperture, path, diagnostics);
+    parse_optional_scalar_property(object, "blur_level", layer.blur_level, path, diagnostics);
+    parse_optional_scalar_property(object, "aperture_blades", layer.aperture_blades, path, diagnostics);
+    parse_optional_scalar_property(object, "aperture_rotation", layer.aperture_rotation, path, diagnostics);
 
     // Parse text_animators array (for text layers)
     if (object.contains("animators") && object.at("animators").is_array()) {
@@ -484,6 +524,7 @@ CompositionSpec parse_composition(const json& object, const std::string& path, D
         else if (fr.is_object()) { read_number(fr, "numerator", composition.frame_rate.numerator); read_number(fr, "denominator", composition.frame_rate.denominator); }
     }
     if (object.contains("background") && object.at("background").is_string()) composition.background = object.at("background").get<std::string>();
+    if (object.contains("environment") && object.at("environment").is_string()) composition.environment_path = object.at("environment").get<std::string>();
     if (object.contains("layers") && object.at("layers").is_array()) {
         const auto& layers = object.at("layers");
         for (std::size_t i = 0; i < layers.size(); ++i) {

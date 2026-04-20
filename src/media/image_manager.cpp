@@ -66,6 +66,22 @@ static std::unique_ptr<renderer2d::SurfaceRGBA> decode_image(const std::filesyst
     return surface;
 }
 
+static std::unique_ptr<HDRTextureData> decode_hdr_image(const std::filesystem::path& path) {
+    int w, h, channels;
+    // Environment maps are usually RGB, using 3 channels to save memory
+    float* data = stbi_loadf(path.string().c_str(), &w, &h, &channels, 3);
+    if (!data) return nullptr;
+
+    auto hdr = std::make_unique<HDRTextureData>();
+    hdr->width = w;
+    hdr->height = h;
+    hdr->channels = 3;
+    hdr->data.assign(data, data + (w * h * 3));
+
+    stbi_image_free(data);
+    return hdr;
+}
+
 const renderer2d::SurfaceRGBA* ImageManager::get_image(const std::filesystem::path& path, AlphaMode alpha_mode, DiagnosticBag* diagnostics) {
     std::string key = path.string();
     if (alpha_mode == AlphaMode::Premultiplied) key += ":premultiplied";
@@ -98,6 +114,34 @@ const renderer2d::SurfaceRGBA* ImageManager::get_image(const std::filesystem::pa
     return ptr;
 }
 
+const HDRTextureData* ImageManager::get_hdr_image(const std::filesystem::path& path, DiagnosticBag* diagnostics) {
+    const std::string key = path.string();
+
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        auto it = m_hdr_cache.find(key);
+        if (it != m_hdr_cache.end()) return it->second.get();
+    }
+
+    auto hdr = decode_hdr_image(path);
+    if (!hdr) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        record_missing_image(m_diagnostics, key, kDecodeFailedCode, (std::string(kDecodeFailedMessage) + " (HDR): " + (stbi_failure_reason() ? stbi_failure_reason() : "unknown")).c_str());
+        if (diagnostics) {
+            record_missing_image(*diagnostics, key, kDecodeFailedCode, kDecodeFailedMessage);
+        }
+        return nullptr;
+    }
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+    auto it = m_hdr_cache.find(key);
+    if (it != m_hdr_cache.end()) return it->second.get();
+
+    const HDRTextureData* ptr = hdr.get();
+    m_hdr_cache[key] = std::move(hdr);
+    return ptr;
+}
+
 DiagnosticBag ImageManager::consume_diagnostics() {
     std::lock_guard<std::mutex> lock(m_mutex);
     DiagnosticBag diagnostics;
@@ -108,6 +152,7 @@ DiagnosticBag ImageManager::consume_diagnostics() {
 void ImageManager::clear_cache() {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_cache.clear();
+    m_hdr_cache.clear();
     m_diagnostics.diagnostics.clear();
 }
 
