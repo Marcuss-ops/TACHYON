@@ -12,6 +12,7 @@
 #include <iostream>
 #include <random>
 #include <cmath>
+#include <algorithm>
 
 namespace tachyon {
 namespace renderer3d {
@@ -104,8 +105,8 @@ RayTracer::RayTracer() {
     rtcSetDeviceErrorFunction(device_, log_embree_error, nullptr);
 
     oidn_device_ = oidn::newDevice();
-    oidn_device_->commit();
-    oidn_filter_ = oidn::newFilter(oidn_device_, "RT");
+    oidn_device_.commit();
+    oidn_filter_ = oidn_device_.newFilter("RT");
 }
 
 RayTracer::~RayTracer() {
@@ -172,8 +173,9 @@ void RayTracer::internal_build_scene(const scene::EvaluatedCompositionState& sta
         if (!filter(layer_idx)) continue;
 
         if (!layer.is_3d || !layer.visible) continue;
-        if (layer.mesh_asset && !layer.mesh_asset->empty()) {
-            const auto& asset = *layer.mesh_asset;
+        const auto* media_mesh = reinterpret_cast<const media::MeshAsset*>(layer.mesh_asset);
+        if (media_mesh && !media_mesh->empty()) {
+            const auto& asset = *media_mesh;
             for (const auto& sub : asset.sub_meshes) {
                 RTCGeometry geom = rtcNewGeometry(device_, RTC_GEOMETRY_TYPE_TRIANGLE);
 
@@ -203,18 +205,8 @@ void RayTracer::internal_build_scene(const scene::EvaluatedCompositionState& sta
                                 if (j_idx < layer.joint_matrices.size()) {
                                     skinned_p += layer.joint_matrices[j_idx].transform_point(p) * w;
                                     skinned_n += layer.joint_matrices[j_idx].transform_vector(n) * w;
-        }
-    }
-
-    // Apply OIDN denoising if available and low samples
-    if (oidn_filter_ && spp <= 4) {
-        oidn_filter_->set("color", out_rgba);
-        oidn_filter_->set("output", out_rgba);
-        oidn_filter_->set("width", width);
-        oidn_filter_->set("height", height);
-        oidn_filter_->commit();
-        oidn_filter_->execute();
-    }
+                                }
+                            }
                         }
                         if (sub.vertices[i].weights[0] > 0.001f) {
                             p = skinned_p;
@@ -866,6 +858,14 @@ void RayTracer::render(const scene::EvaluatedCompositionState& state, float* out
                 out_depth[y * width + x] = accumulated_depth / spp;
             }
         }
+    }
+
+    // Apply OIDN denoising for low-SPP renders
+    if (oidn_filter_ && samples_per_pixel_ <= 4) {
+        oidn_filter_.setImage("color",  out_rgba, oidn::Format::Float3, static_cast<size_t>(width), static_cast<size_t>(height), 0, 4 * sizeof(float));
+        oidn_filter_.setImage("output", out_rgba, oidn::Format::Float3, static_cast<size_t>(width), static_cast<size_t>(height), 0, 4 * sizeof(float));
+        oidn_filter_.commit();
+        oidn_filter_.execute();
     }
 }
 

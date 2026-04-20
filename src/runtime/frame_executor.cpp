@@ -231,6 +231,8 @@ static void resolve_3d_layers_textures(
     const FrameRenderTask& task,
     FrameCache& cache,
     RenderContext& context) {
+    (void)task;
+    (void)cache;
 
     for (auto& layer : layers) {
         if (!layer.is_3d || !layer.visible) continue;

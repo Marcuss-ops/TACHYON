@@ -82,6 +82,7 @@ target_include_directories(TachyonCore
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../third_party>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../third_party/stb/include>
+        $<BUILD_INTERFACE:${oidn_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
 )
 
@@ -96,8 +97,7 @@ target_link_libraries(TachyonCore
         swscale
         swresample
         embree
-        # tinygltf::tinygltf
-        # OpenImageDenoise
+        OpenImageDenoise
 )
 
 add_executable(tachyon
