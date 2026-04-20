@@ -13,9 +13,9 @@ using DeviceRef = std::shared_ptr<Device>;
 
 class Filter {
 public:
-    void set(const char* name, int value) {}
-    void set(const char* name, float value) {}
-    void set(const char* name, void* ptr) {}
+    void set(const char* name, int value) { (void)name; (void)value; }
+    void set(const char* name, float value) { (void)name; (void)value; }
+    void set(const char* name, void* ptr) { (void)name; (void)ptr; }
     void commit() {}
     void execute() {}
 };
@@ -26,7 +26,8 @@ inline DeviceRef newDevice() {
     return std::make_shared<Device>();
 }
 
-inline FilterRef newFilter(const char* type) {
+inline FilterRef newFilter(DeviceRef device, const char* type) {
+    (void)device; (void)type;
     return std::make_shared<Filter>();
 }
 

@@ -24,8 +24,8 @@ struct RenderContext {
           policy{},
           ray_tracer(std::make_shared<renderer3d::RayTracer>()) {
         oidn_device = oidn::newDevice();
-        oidn_device.commit();
-        oidn_filter = oidn_device.newFilter("RT");
+        oidn_device->commit();
+        oidn_filter = oidn::newFilter(oidn_device, "RT");
     }
 };
 

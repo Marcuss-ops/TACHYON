@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tachyon/core/scene/evaluated_state.h"
+#include "tachyon/media/mesh_asset.h"
 #include <embree4/rtcore.h>
 #include <memory>
 #include <vector>

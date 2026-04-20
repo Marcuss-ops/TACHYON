@@ -23,12 +23,12 @@ int move_to_callback(const FT_Vector* to, void* user) {
     auto* ctx = static_cast<DecomposeContext*>(user);
     scene::EvaluatedShapePath path;
     path.closed = false;
-    
-    scene::ShapePoint pt;
+
+    scene::EvaluatedShapePathPoint pt;
     pt.position = DecomposeContext::to_vec2(to, ctx->scale);
     pt.tangent_in = {0,0};
     pt.tangent_out = {0,0};
-    
+
     path.points.push_back(pt);
     ctx->paths->push_back(std::move(path));
     ctx->last_point = pt.position;
@@ -40,11 +40,11 @@ int line_to_callback(const FT_Vector* to, void* user) {
     if (ctx->paths->empty()) return 1;
     
     auto& path = ctx->paths->back();
-    scene::ShapePoint pt;
+    scene::EvaluatedShapePathPoint pt;
     pt.position = DecomposeContext::to_vec2(to, ctx->scale);
     pt.tangent_in = {0,0};
     pt.tangent_out = {0,0};
-    
+
     path.points.push_back(pt);
     ctx->last_point = pt.position;
     return 0;
@@ -69,12 +69,12 @@ int conic_to_callback(const FT_Vector* control, const FT_Vector* to, void* user)
     if (!path.points.empty()) {
         path.points.back().tangent_out = c1 - p0;
     }
-    
-    scene::ShapePoint pt;
+
+    scene::EvaluatedShapePathPoint pt;
     pt.position = p2_quad;
     pt.tangent_in = c2 - p2_quad;
     pt.tangent_out = {0,0};
-    
+
     path.points.push_back(pt);
     ctx->last_point = pt.position;
     return 0;
@@ -93,12 +93,12 @@ int cubic_to_callback(const FT_Vector* control1, const FT_Vector* control2, cons
     if (!path.points.empty()) {
         path.points.back().tangent_out = c1 - p0;
     }
-    
-    scene::ShapePoint pt;
+
+    scene::EvaluatedShapePathPoint pt;
     pt.position = p_to;
     pt.tangent_in = c2 - p_to;
     pt.tangent_out = {0,0};
-    
+
     path.points.push_back(pt);
     ctx->last_point = pt.position;
     return 0;
