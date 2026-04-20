@@ -85,15 +85,15 @@ FetchContent_MakeAvailable(tinygltf)
 include_directories(${tinygltf_SOURCE_DIR})
 
 # OpenImageDenoise (OIDN) for high-quality path tracing results at low SPP
-# FetchContent_Declare(
-#     oidn
-#     GIT_REPOSITORY https://github.com/OpenImageDenoise/oidn.git
-#     GIT_TAG        v2.3.0
-#     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-# )
-# set(OIDN_FILTER_RT ON CACHE BOOL "Enable Ray Tracing filter" FORCE)
-# set(OIDN_APPS OFF CACHE BOOL "Disable OIDN apps" FORCE)
-# FetchContent_MakeAvailable(oidn)
+FetchContent_Declare(
+    oidn
+    GIT_REPOSITORY https://github.com/OpenImageDenoise/oidn.git
+    GIT_TAG        v2.3.0
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+set(OIDN_FILTER_RT ON CACHE BOOL "Enable Ray Tracing filter" FORCE)
+set(OIDN_APPS OFF CACHE BOOL "Disable OIDN apps" FORCE)
+FetchContent_MakeAvailable(oidn)
 
 # earcut.hpp for 3D polygon triangulation (Extrusion)
 FetchContent_Declare(
