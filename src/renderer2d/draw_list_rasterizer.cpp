@@ -144,11 +144,11 @@ RasterizedFrame2D render_draw_list_2d(
     }
 
     for (const auto* command : ordered_commands) {
-        if (command->kind == renderer2d::DrawCommandKind::MaskRect && command->mask_rect.has_value()) {
-            active_clip = intersect_rects(active_clip, command->mask_rect->rect);
-            frame.surface->set_clip_rect(active_clip);
-            continue;
-        }
+    if (command->kind == renderer2d::DrawCommandKind::MaskRect && command->mask_rect.has_value()) {
+        active_clip = intersect_rects(active_clip, command->mask_rect->rect);
+        frame.surface->set_clip_rect(active_clip);
+        continue;
+    }
 
         const RectI effective_clip = command->clip.has_value()
             ? intersect_rects(active_clip, *command->clip)
@@ -189,11 +189,48 @@ RasterizedFrame2D render_draw_list_2d(
                         warp.texture = q.texture.surface;
                         warp.opacity = q.opacity;
 
+                        warp.opacity = q.opacity;
+
                         renderer2d::raster::PerspectiveRasterizer::draw_quad(*frame.surface, warp);
                     }
                 }
                 break;
             case renderer2d::DrawCommandKind::MaskRect:
+                break;
+            case renderer2d::DrawCommandKind::Shape:
+                if (command->shape.has_value()) {
+                    const auto& s = *command->shape;
+                    PathGeometry transformed_geom = s.geometry;
+                    const auto transform_point_2d = [&s](const math::Vector2& point) {
+                        const math::Vector3 projected = s.transform.to_matrix().transform_point({point.x, point.y, 0.0f});
+                        return math::Vector2{projected.x, projected.y};
+                    };
+                    for (auto& cmd : transformed_geom.commands) {
+                         cmd.p0 = transform_point_2d(cmd.p0);
+                         if (cmd.verb == PathVerb::CubicTo) {
+                             cmd.p1 = transform_point_2d(cmd.p1);
+                             cmd.p2 = transform_point_2d(cmd.p2);
+                         }
+                    }
+                    
+                    if (s.fill_color.a > 0) {
+                        FillPathStyle fill_style;
+                        fill_style.fill_color = s.fill_color;
+                        fill_style.opacity = s.opacity;
+                        PathRasterizer::fill(*frame.surface, transformed_geom, fill_style);
+                    }
+                    
+                    if (s.stroke_color.a > 0 && s.stroke_width > 0.0f) {
+                        StrokePathStyle stroke_style;
+                        stroke_style.stroke_color = s.stroke_color;
+                        stroke_style.stroke_width = s.stroke_width;
+                        stroke_style.opacity = s.opacity;
+                        stroke_style.cap = s.line_cap;
+                        stroke_style.join = s.line_join;
+                        stroke_style.miter_limit = s.miter_limit;
+                        PathRasterizer::stroke(*frame.surface, transformed_geom, stroke_style);
+                    }
+                }
                 break;
         }
     }

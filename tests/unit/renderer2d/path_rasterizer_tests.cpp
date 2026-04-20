@@ -61,7 +61,7 @@ bool run_path_rasterizer_tests() {
         PathRasterizer::fill(surface, path, style);
         const Color pixel = surface.get_pixel(8, 8);
         check_true(pixel.a > 0, "Semi-transparent fill keeps alpha");
-        check_true(pixel.r < 255, "Semi-transparent fill premultiplies color");
+        check_true(pixel.r == 255, "Semi-transparent fill preserves source color");
         check_true(pixel.g == 0 && pixel.b == 0, "Semi-transparent fill preserves channel balance");
     }
 

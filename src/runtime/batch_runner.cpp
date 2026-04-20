@@ -4,7 +4,7 @@
 #include "tachyon/runtime/render_graph.h"
 #include "tachyon/runtime/render_job.h"
 #include "tachyon/runtime/render_plan.h"
-#include "tachyon/spec/scene_spec.h"
+#include "tachyon/core/spec/scene_spec.h"
 
 #include <algorithm>
 #include <atomic>

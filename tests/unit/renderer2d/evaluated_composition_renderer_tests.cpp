@@ -1,4 +1,11 @@
 #include "tachyon/renderer2d/evaluated_composition_renderer.h"
+#include "tachyon/core/scene/evaluated_state.h"
+#include "tachyon/core/spec/scene_spec.h"
+#include "tachyon/renderer2d/framebuffer.h"
+#include "tachyon/renderer2d/rasterizer.h"
+#include "tachyon/renderer2d/rasterizer_ops.h"
+#include "tachyon/renderer2d/render_context.h"
+#include "tachyon/renderer2d/draw_command.h"
 
 #include <cmath>
 #include <iostream>
@@ -7,9 +14,9 @@
 
 namespace {
 
-int g_failures = 0;
+static int g_failures = 0;
 
-void check_true(bool condition, const std::string& message) {
+static void check_true(bool condition, const std::string& message) {
     if (!condition) {
         ++g_failures;
         std::cerr << "FAIL: " << message << '\n';
@@ -53,9 +60,7 @@ bool run_evaluated_composition_renderer_tests() {
     renderer2d::RenderContext render_context;
     const RasterizedFrame2D frame = tachyon::render_evaluated_composition_2d(state, plan, task, render_context);
     check_true(frame.surface.has_value(), "evaluated renderer should produce a surface");
-    if (!frame.surface.has_value()) {
-        return false;
-    }
+    if (!frame.surface.has_value()) return false;
 
     const auto& surface = *frame.surface;
     check_true(surface.width() == 128, "surface width should match composition");

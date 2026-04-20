@@ -3,7 +3,8 @@
 #include "tachyon/renderer2d/evaluated_composition_renderer.h"
 #include "tachyon/renderer2d/draw_list_builder.h"
 #include "tachyon/renderer2d/draw_list_rasterizer.h"
-#include "tachyon/scene/evaluator.h"
+#include "tachyon/renderer2d/texture_resolver.h"
+#include "tachyon/core/scene/evaluator.h"
 
 #include <sstream>
 #include <cmath>
@@ -237,7 +238,11 @@ ExecutedFrame execute_frame_task(
     }
 
     const EvaluatedFrameState state = evaluate_frame_state(scene, plan, task, scene_signature);
-    const renderer2d::DrawList2D draw_list = build_draw_list(state);
+    renderer2d::DrawList2D draw_list = build_draw_list(state);
+    
+    // Resolve textures using MediaManager
+    renderer2d::TextureResolver::resolve_textures(draw_list, scene, context.media);
+
     scene::EvaluatedCompositionState render_state = state.composition_state;
     const float resolution_scale = std::clamp(context.policy.resolution_scale, 0.1f, 1.0f);
     const bool scaled_render = resolution_scale < 0.999f;

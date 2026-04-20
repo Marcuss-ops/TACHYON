@@ -4,6 +4,7 @@
 #include "tachyon/renderer2d/color_transfer.h"
 #include "tachyon/renderer2d/framebuffer.h"
 #include <algorithm>
+#include <cmath>
 
 namespace tachyon {
 namespace renderer2d {
@@ -45,6 +46,58 @@ inline Color blend_mode_color(Color src, Color dest, BlendMode mode) {
         out.b = src_linear.b + dst_linear.b - src_linear.b * dst_linear.b;
         out.a = src_linear.a + dst_linear.a - src_linear.a * dst_linear.a;
         break;
+    case BlendMode::Overlay: {
+        const auto unpremultiply = [](float channel, float alpha) {
+            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
+        };
+        const auto overlay_channel = [](float src_channel, float dst_channel) {
+            return dst_channel <= 0.5f
+                ? 2.0f * src_channel * dst_channel
+                : 1.0f - 2.0f * (1.0f - src_channel) * (1.0f - dst_channel);
+        };
+
+        const float src_a = src_linear.a;
+        const float dst_a = dst_linear.a;
+        const float src_r = unpremultiply(src_linear.r, src_a);
+        const float src_g = unpremultiply(src_linear.g, src_a);
+        const float src_b = unpremultiply(src_linear.b, src_a);
+        const float dst_r = unpremultiply(dst_linear.r, dst_a);
+        const float dst_g = unpremultiply(dst_linear.g, dst_a);
+        const float dst_b = unpremultiply(dst_linear.b, dst_a);
+
+        out.r = src_linear.r * (1.0f - dst_a) + dst_linear.r * (1.0f - src_a) + src_a * dst_a * overlay_channel(src_r, dst_r);
+        out.g = src_linear.g * (1.0f - dst_a) + dst_linear.g * (1.0f - src_a) + src_a * dst_a * overlay_channel(src_g, dst_g);
+        out.b = src_linear.b * (1.0f - dst_a) + dst_linear.b * (1.0f - src_a) + src_a * dst_a * overlay_channel(src_b, dst_b);
+        out.a = src_a + dst_a - src_a * dst_a;
+        break;
+    }
+    case BlendMode::SoftLight: {
+        const auto unpremultiply = [](float channel, float alpha) {
+            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
+        };
+        const auto soft_light_channel = [](float src_channel, float dst_channel) {
+            if (src_channel <= 0.5f) {
+                return dst_channel - (1.0f - 2.0f * src_channel) * dst_channel * (1.0f - dst_channel);
+            }
+            const float lifted = std::sqrt(std::clamp(dst_channel, 0.0f, 1.0f));
+            return dst_channel + (2.0f * src_channel - 1.0f) * (lifted - dst_channel);
+        };
+
+        const float src_a = src_linear.a;
+        const float dst_a = dst_linear.a;
+        const float src_r = unpremultiply(src_linear.r, src_a);
+        const float src_g = unpremultiply(src_linear.g, src_a);
+        const float src_b = unpremultiply(src_linear.b, src_a);
+        const float dst_r = unpremultiply(dst_linear.r, dst_a);
+        const float dst_g = unpremultiply(dst_linear.g, dst_a);
+        const float dst_b = unpremultiply(dst_linear.b, dst_a);
+
+        out.r = src_linear.r * (1.0f - dst_a) + dst_linear.r * (1.0f - src_a) + src_a * dst_a * soft_light_channel(src_r, dst_r);
+        out.g = src_linear.g * (1.0f - dst_a) + dst_linear.g * (1.0f - src_a) + src_a * dst_a * soft_light_channel(src_g, dst_g);
+        out.b = src_linear.b * (1.0f - dst_a) + dst_linear.b * (1.0f - src_a) + src_a * dst_a * soft_light_channel(src_b, dst_b);
+        out.a = src_a + dst_a - src_a * dst_a;
+        break;
+    }
     }
 
     return detail::from_premultiplied(out, detail::TransferCurve::Srgb);

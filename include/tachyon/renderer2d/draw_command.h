@@ -1,7 +1,9 @@
 #pragma once
 
+#include "tachyon/core/math/transform2.h"
 #include "tachyon/core/math/vector2.h"
 #include "tachyon/renderer2d/framebuffer.h"
+#include "tachyon/renderer2d/path_rasterizer.h"
 #include "tachyon/renderer2d/texture_handle.h"
 
 #include <optional>
@@ -15,14 +17,17 @@ enum class DrawCommandKind {
     SolidRect,
     MaskRect,
     TexturedQuad,
-    Line
+    Line,
+    Shape
 };
 
 enum class BlendMode {
     Normal,
     Additive,
     Multiply,
-    Screen
+    Screen,
+    Overlay,
+    SoftLight
 };
 
 struct ClearCommand {
@@ -60,6 +65,18 @@ struct LineCommand {
     Color color{Color::white()};
 };
 
+struct ShapeCommand {
+    PathGeometry geometry;
+    Color fill_color{Color::white()};
+    Color stroke_color{Color::white()};
+    float stroke_width{0.0f};
+    LineCap line_cap{LineCap::Butt};
+    LineJoin line_join{LineJoin::Miter};
+    float miter_limit{4.0f};
+    float opacity{1.0f};
+    math::Transform2 transform; // To apply to the points
+};
+
 struct DrawCommand2D {
     DrawCommandKind kind{DrawCommandKind::Clear};
     int z_order{0};
@@ -70,6 +87,7 @@ struct DrawCommand2D {
     std::optional<MaskRectCommand> mask_rect;
     std::optional<TexturedQuadCommand> textured_quad;
     std::optional<LineCommand> line;
+    std::optional<ShapeCommand> shape;
 };
 
 struct DrawList2D {
@@ -78,3 +96,4 @@ struct DrawList2D {
 
 } // namespace renderer2d
 } // namespace tachyon
+

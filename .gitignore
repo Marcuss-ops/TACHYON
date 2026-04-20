@@ -1,6 +1,10 @@
 build/
 out/
+tests/output/actual/
 *.vcxproj.user
 *.suo
 *.VC.db
 *.VC.VC.opendb
+
+# Logs
+logs/

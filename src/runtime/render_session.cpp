@@ -76,7 +76,7 @@ RenderSessionResult RenderSession::render(
     context.policy = make_quality_policy(execution_plan.render_plan.quality_tier);
     context.renderer2d.policy = context.policy;
     if (context.renderer2d.precomp_cache) {
-        context.renderer2d.precomp_cache->max_bytes = context.policy.precomp_cache_budget;
+        context.renderer2d.precomp_cache->set_max_bytes(context.policy.precomp_cache_budget);
     }
 
     const std::size_t effective_worker_count = context.policy.max_workers > 0

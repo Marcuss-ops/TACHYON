@@ -46,10 +46,19 @@ struct OutputColorProfile {
     std::string range;
 };
 
+enum class OutputFormat {
+    Video,
+    Gif,
+    ImageSequence,
+    ProRes,
+    WebM
+};
+
 struct OutputProfile {
     std::string name;
     std::string class_name;
     std::string container;
+    OutputFormat format{OutputFormat::Video};
     std::string alpha_mode;
     OutputVideoProfile video;
     OutputAudioProfile audio;

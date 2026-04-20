@@ -1,0 +1,21 @@
+# Simple build test for modularized renderer
+cmake_minimum_required(VERSION 3.16)
+project(TachyonRendererTest)
+
+set(CMAKE_CXX_STANDARD 17)
+
+# Include directories
+include_directories(${CMAKE_SOURCE_DIR}/include)
+
+# Source files for the modularized evaluated composition renderer
+set(RENDERER_SOURCES
+    src/renderer2d/evaluated_composition/evaluated_composition_renderer.cpp
+    src/renderer2d/evaluated_composition/layer_renderer.cpp
+    src/renderer2d/evaluated_composition/mask_renderer.cpp
+    src/renderer2d/evaluated_composition/effect_renderer.cpp
+    src/renderer2d/evaluated_composition/render_graph.cpp
+    src/renderer2d/evaluated_composition/raster/cpu_rasterizer.cpp
+    src/renderer2d/evaluated_composition/raster/perspective_rasterizer.cpp
+)
+
+add_library(tachyon_renderer_modular ${RENDERER_SOURCES})

@@ -1,6 +1,6 @@
 #include "tachyon/media/asset_resolution.h"
 #include "tachyon/runtime/diagnostics.h"
-#include "tachyon/spec/scene_spec.h"
+#include "tachyon/core/spec/scene_spec.h"
 
 #include <filesystem>
 #include <iostream>

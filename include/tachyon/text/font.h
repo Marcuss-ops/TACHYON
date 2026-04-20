@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tachyon/renderer2d/framebuffer.h"
+#include "tachyon/renderer2d/text/glyph/glyph_bitmap.h"
 
 #include <cstdint>
 #include <filesystem>
@@ -11,15 +12,6 @@
 #include <vector>
 
 namespace tachyon::text {
-
-struct GlyphBitmap {
-    std::uint32_t width{0};
-    std::uint32_t height{0};
-    std::int32_t x_offset{0};
-    std::int32_t y_offset{0};
-    std::int32_t advance_x{0};
-    std::vector<std::uint8_t> alpha_mask;
-};
 
 class Font {
 public:

@@ -1,74 +1,85 @@
 #pragma once
 
-#include "tachyon/renderer2d/rasterizer.h"
+#include "tachyon/renderer2d/framebuffer.h"
+#include "tachyon/renderer2d/precomp_cache.h"
 #include "tachyon/renderer2d/effect_host.h"
+#include "tachyon/core/spec/scene_spec.h"
+#include "tachyon/core/scene/evaluated_state.h"
 #include "tachyon/runtime/quality_policy.h"
-#include "tachyon/text/font_registry.h"
 
-#include <mutex>
-#include <memory>
-#include <string>
-#include <unordered_map>
-#include <utility>
+#include <array>
 #include <vector>
+#include <optional>
+#include <string>
+#include <memory>
 
-namespace tachyon {
+namespace tachyon::renderer2d {
 
-struct RasterizedFrame2D;
+struct EvaluatorContext {
+  std::vector<float> scalars;
+  std::vector<Color> colors;
+  std::vector<std::string> strings;
+};
 
-namespace renderer2d {
+struct LayerContext {
+  std::uint32_t index;
+  EvaluatorContext* evaluator;
+  const LayerSpec* layer;
+  float layer_time_seconds;
+  float parent_opacity;
+  std::optional<std::uint32_t> parent_index;
+  std::optional<std::string> parent_name;
+  std::optional<std::string> track_matte_layer_id;
+  std::optional<std::string> precomp_id;
+  std::optional<std::uint32_t> precomp_index;
+  std::optional<std::uint32_t> track_index;
+  bool is_3d;
+  bool is_adjustment_layer;
+  bool visible;
+  bool enabled;
+  bool time_remap_enabled;
+  float stroke_width_scale;
+  float time_remap_offset_seconds;
+  float time_remap_duration_seconds;
+  float stroke_width;
+  float start_time;
+  float in_point;
+  float out_point;
+  float opacity;
+  std::int64_t width;
+  std::int64_t height;
+  std::optional<ShapePathSpec> shape_path;
+};
 
-struct AccumulationBufferState {
+struct AccumulationBuffers {
     std::vector<float> r;
     std::vector<float> g;
     std::vector<float> b;
     std::vector<float> a;
-    
-    void ensure_capacity(std::size_t size) {
-        if (r.size() < size) {
-            r.resize(size);
-            g.resize(size);
-            b.resize(size);
-            a.resize(size);
-        }
+
+    void resize(std::size_t size) {
+        r.assign(size, 0.0f);
+        g.assign(size, 0.0f);
+        b.assign(size, 0.0f);
+        a.assign(size, 0.0f);
     }
-};
-
-struct PrecompCache {
-    std::size_t max_bytes{256ULL * 1024 * 1024};
-
-    bool lookup(const std::string& key, RasterizedFrame2D& frame) const;
-    void store(std::string key, RasterizedFrame2D frame);
-    void clear();
-    std::size_t entry_count() const;
-    std::size_t current_bytes() const;
-
-private:
-    mutable std::mutex m_mutex;
-    std::size_t m_current_bytes{0};
-    std::unordered_map<std::string, RasterizedFrame2D> m_entries;
 };
 
 struct RenderContext {
-    std::shared_ptr<PrecompCache> precomp_cache;
-    EffectHost effects;
-    QualityPolicy policy;
-    text::FontRegistry fonts;
-    int precomp_recursion_depth{0};
-    std::shared_ptr<AccumulationBufferState> accumulation_buffer{std::make_shared<AccumulationBufferState>()};
+    RenderContext(std::shared_ptr<PrecompCache> cache = nullptr) 
+        : precomp_cache(std::move(cache)) {}
 
-    explicit RenderContext(std::shared_ptr<PrecompCache> cache = std::make_shared<PrecompCache>())
-        : precomp_cache(std::move(cache)),
-          policy{} {
-        effects.register_effect("gaussian_blur", std::make_unique<GaussianBlurEffect>());
-        effects.register_effect("drop_shadow", std::make_unique<DropShadowEffect>());
-        effects.register_effect("glow", std::make_unique<GlowEffect>());
-        effects.register_effect("levels", std::make_unique<LevelsEffect>());
-        effects.register_effect("curves", std::make_unique<CurvesEffect>());
-        effects.register_effect("fill", std::make_unique<FillEffect>());
-        effects.register_effect("tint", std::make_unique<TintEffect>());
-    }
+    std::shared_ptr<Framebuffer> framebuffer;
+    std::shared_ptr<PrecompCache> precomp_cache;
+    std::shared_ptr<EffectHost> effects;
+    AccumulationBuffers accumulation_buffer;
+    QualityPolicy policy;
 };
 
-} // namespace renderer2d
-} // namespace tachyon
+struct EvaluationResult {
+  scene::EvaluatedCompositionState state;
+  std::vector<LayerContext> layers;
+  std::optional<std::string> error;
+};
+
+}  // namespace tachyon::renderer2d

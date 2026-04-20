@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/renderer2d/framebuffer.h"
-#include "tachyon/scene/evaluated_state.h"
+#include "tachyon/core/scene/evaluated_state.h"
 
 #include <cstdint>
 #include <vector>

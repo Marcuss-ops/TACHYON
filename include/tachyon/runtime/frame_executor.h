@@ -5,8 +5,8 @@
 #include "tachyon/runtime/frame_cache.h"
 #include "tachyon/runtime/render_plan.h"
 #include "tachyon/runtime/render_graph.h"
-#include "tachyon/scene/evaluated_state.h"
-#include "tachyon/spec/scene_spec.h"
+#include "tachyon/core/scene/evaluated_state.h"
+#include "tachyon/core/spec/scene_spec.h"
 
 #include <cstddef>
 #include <string>

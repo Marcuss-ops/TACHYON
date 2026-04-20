@@ -6,7 +6,7 @@
 #include "tachyon/runtime/diagnostics.h"
 #include "tachyon/runtime/render_plan.h"
 #include "tachyon/runtime/render_job.h"
-#include "tachyon/spec/scene_spec.h"
+#include "tachyon/core/spec/scene_spec.h"
 
 #include <optional>
 #include <ostream>
