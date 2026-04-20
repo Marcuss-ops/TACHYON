@@ -129,9 +129,9 @@ void RayTracer::build_scene(const scene::EvaluatedCompositionState& state) {
     if (!device_) return;
 
     scene_ = rtcNewScene(device_);
-    
+
     // Initialize environment properties from state
-    const media::HDRTextureData* new_env = state.environment_map;
+    const media::HDRTextureData* new_env = reinterpret_cast<const media::HDRTextureData*>(state.environment_map);
     if (new_env != environment_map_) {
         update_prefiltered_env(new_env);
         environment_map_ = new_env;
@@ -149,9 +149,9 @@ void RayTracer::build_scene_subset(const scene::EvaluatedCompositionState& state
     if (!device_) return;
 
     scene_ = rtcNewScene(device_);
-    
+
     // Initialize environment properties from state
-    const media::HDRTextureData* new_env = state.environment_map;
+    const media::HDRTextureData* new_env = reinterpret_cast<const media::HDRTextureData*>(state.environment_map);
     if (new_env != environment_map_) {
         update_prefiltered_env(new_env);
         environment_map_ = new_env;
