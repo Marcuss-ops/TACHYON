@@ -14,6 +14,8 @@
 
 namespace tachyon {
 
+#include "tachyon/renderer2d/gradient_spec.h"
+
 enum class TrackMatteType {
     None,
     Alpha,
@@ -74,13 +76,6 @@ struct Vector2KeyframeSpec {
     animation::CubicBezierEasing bezier{animation::CubicBezierEasing::linear()};
 };
 
-struct ColorSpec {
-    std::uint8_t r{255}, g{255}, b{255}, a{255};
-
-    [[nodiscard]] math::Vector3 to_vector3() const {
-        return {r / 255.0f, g / 255.0f, b / 255.0f};
-    }
-};
 
 struct ColorKeyframeSpec {
     double time{0.0};
@@ -256,8 +251,26 @@ struct LayerSpec {
     std::optional<std::string> track_matte_layer_id;
     std::optional<std::string> precomp_id;
     std::optional<std::string> mesh_path;
+    
+    // Trim Path properties
+    AnimatedScalarSpec trim_start;
+    AnimatedScalarSpec trim_end;
+    AnimatedScalarSpec trim_offset;
+    
+    // Repeater properties
+    AnimatedScalarSpec repeater_count;
+    AnimatedScalarSpec repeater_offset_position_x;
+    AnimatedScalarSpec repeater_offset_position_y;
+    AnimatedScalarSpec repeater_offset_rotation;
+    AnimatedScalarSpec repeater_offset_scale_x;
+    AnimatedScalarSpec repeater_offset_scale_y;
+    AnimatedScalarSpec repeater_start_opacity;
+    AnimatedScalarSpec repeater_end_opacity;
 
 
+    std::optional<GradientSpec> gradient_fill;
+    std::optional<GradientSpec> gradient_stroke;
+    
     // Text animator array (for type == "text" layers only)
     std::vector<TextAnimatorSpec> text_animators;
 

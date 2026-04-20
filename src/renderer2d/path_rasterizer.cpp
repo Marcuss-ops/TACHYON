@@ -22,6 +22,50 @@ Color apply_coverage(Color color, float opacity, float coverage) {
     return color;
 }
 
+Color sample_gradient(const GradientSpec& grad, float x, float y) {
+    if (grad.stops.empty()) return Color::white();
+    if (grad.stops.size() == 1) return Color{grad.stops[0].color.r, grad.stops[0].color.g, grad.stops[0].color.b, grad.stops[0].color.a};
+
+    float t = 0.0f;
+    const math::Vector2 p{x, y};
+    if (grad.type == GradientType::Linear) {
+        const math::Vector2 ab = grad.end - grad.start;
+        const float len2 = ab.length_squared();
+        if (len2 > 1e-6f) {
+            t = math::Vector2::dot(p - grad.start, ab) / len2;
+        }
+    } else {
+        const float d = (p - grad.start).length();
+        if (grad.radial_radius > 1e-6f) {
+            t = d / grad.radial_radius;
+        }
+    }
+    t = std::clamp(t, 0.0f, 1.0f);
+
+    // Find stops
+    const auto it = std::lower_bound(grad.stops.begin(), grad.stops.end(), t, [](const GradientStop& s, float val) {
+        return s.offset < val;
+    });
+
+    if (it == grad.stops.begin()) return Color{it->color.r, it->color.g, it->color.b, it->color.a};
+    if (it == grad.stops.end()) {
+        const auto& last = grad.stops.back();
+        return Color{last.color.r, last.color.g, last.color.b, last.color.a};
+    }
+
+    const auto& s1 = *(it - 1);
+    const auto& s2 = *it;
+    const float range = s2.offset - s1.offset;
+    const float alpha = (range > 1e-6f) ? (t - s1.offset) / range : 0.0f;
+    
+    return Color{
+        static_cast<std::uint8_t>(s1.color.r * (1.0f - alpha) + s2.color.r * alpha),
+        static_cast<std::uint8_t>(s1.color.g * (1.0f - alpha) + s2.color.g * alpha),
+        static_cast<std::uint8_t>(s1.color.b * (1.0f - alpha) + s2.color.b * alpha),
+        static_cast<std::uint8_t>(s1.color.a * (1.0f - alpha) + s2.color.a * alpha)
+    };
+}
+
 float distance_to_segment_squared(const math::Vector2& point, const math::Vector2& a, const math::Vector2& b) {
     const math::Vector2 ab = b - a;
     const float length_squared = ab.length_squared();
@@ -367,10 +411,14 @@ void rasterize_fill_polygon(SurfaceRGBA& surface, const std::vector<Contour>& co
         for (int x = start_x; x < end_x; ++x) {
             const float coverage = fill_coverage(contours, x, y, style.winding);
             if (coverage > 0.0f) {
+                Color c = style.fill_color;
+                if (style.gradient.has_value()) {
+                    c = sample_gradient(*style.gradient, static_cast<float>(x), static_cast<float>(y));
+                }
                 surface.blend_pixel(
                     static_cast<std::uint32_t>(x),
                     static_cast<std::uint32_t>(y),
-                    apply_coverage(style.fill_color, style.opacity, coverage));
+                    apply_coverage(c, style.opacity, coverage));
             }
         }
     }
@@ -409,10 +457,14 @@ void rasterize_stroke_polygon(SurfaceRGBA& surface, const std::vector<Contour>& 
             for (int x = start_x; x < end_x; ++x) {
                 const float coverage = stroke_coverage(contours, x, y, radius, style);
                 if (coverage > 0.0f) {
+                    Color c = style.stroke_color;
+                    if (style.gradient.has_value()) {
+                        c = sample_gradient(*style.gradient, static_cast<float>(x), static_cast<float>(y));
+                    }
                     surface.blend_pixel(
                         static_cast<std::uint32_t>(x),
                         static_cast<std::uint32_t>(y),
-                        apply_coverage(style.stroke_color, style.opacity, coverage));
+                        apply_coverage(c, style.opacity, coverage));
                 }
             }
         }

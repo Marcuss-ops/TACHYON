@@ -378,20 +378,63 @@ SurfaceRGBA DropShadowEffect::apply(const SurfaceRGBA& input, const EffectParams
 SurfaceRGBA GlowEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
     const float radius   = get_scalar(params, "radius", get_scalar(params, "blur_radius", 4.0f));
     const float strength = std::max(0.0f, get_scalar(params, "strength", 1.0f));
+    const float threshold = std::max(0.0f, get_scalar(params, "threshold", 0.0f));
+    
     if (input.width() == 0U || input.height() == 0U) return input;
 
-    const SurfaceRGBA blurred = blur_surface(input, radius);
+    // Create a thresholded version for the glow source
+    SurfaceRGBA source = transform_surface(input, [&](Color px) {
+        const float l = luminance(px);
+        if (l < threshold) return Color::transparent();
+        return px;
+    });
+
+    const SurfaceRGBA blurred = blur_surface(source, radius);
     SurfaceRGBA out(input.width(), input.height());
     for (std::uint32_t y = 0; y < input.height(); ++y) {
         for (std::uint32_t x = 0; x < input.width(); ++x) {
             const Color base = input.get_pixel(x, y);
             const Color glow = blurred.get_pixel(x, y);
+            
+            // Screen blend for better highlights
+            const float r = 1.0f - (1.0f - static_cast<float>(base.r) / 255.0f) * (1.0f - static_cast<float>(glow.r) / 255.0f * strength);
+            const float g = 1.0f - (1.0f - static_cast<float>(base.g) / 255.0f) * (1.0f - static_cast<float>(glow.g) / 255.0f * strength);
+            const float b = 1.0f - (1.0f - static_cast<float>(base.b) / 255.0f) * (1.0f - static_cast<float>(glow.b) / 255.0f * strength);
+            
             out.set_pixel(x, y, Color{
-                static_cast<std::uint8_t>(std::clamp(std::lround(static_cast<float>(base.r) + static_cast<float>(glow.r) * strength), 0L, 255L)),
-                static_cast<std::uint8_t>(std::clamp(std::lround(static_cast<float>(base.g) + static_cast<float>(glow.g) * strength), 0L, 255L)),
-                static_cast<std::uint8_t>(std::clamp(std::lround(static_cast<float>(base.b) + static_cast<float>(glow.b) * strength), 0L, 255L)),
+                static_cast<std::uint8_t>(std::clamp(r * 255.0f, 0.0f, 255.0f)),
+                static_cast<std::uint8_t>(std::clamp(g * 255.0f, 0.0f, 255.0f)),
+                static_cast<std::uint8_t>(std::clamp(b * 255.0f, 0.0f, 255.0f)),
                 base.a
             });
+        }
+    }
+    return out;
+}
+
+SurfaceRGBA ChromaticAberrationEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
+    const float amount = get_scalar(params, "amount", 2.0f);
+    const float x_dir = get_scalar(params, "x_direction", 1.0f);
+    const float y_dir = get_scalar(params, "y_direction", 0.0f);
+
+    const int ox = static_cast<int>(std::lround(amount * x_dir));
+    const int oy = static_cast<int>(std::lround(amount * y_dir));
+
+    SurfaceRGBA out(input.width(), input.height());
+    out.clear(Color::transparent());
+
+    for (std::uint32_t y = 0; y < input.height(); ++y) {
+        for (std::uint32_t x = 0; x < input.width(); ++x) {
+            const int rx = std::clamp(static_cast<int>(x) - ox, 0, static_cast<int>(input.width()) - 1);
+            const int ry = std::clamp(static_cast<int>(y) - oy, 0, static_cast<int>(input.height()) - 1);
+            const int bx = std::clamp(static_cast<int>(x) + ox, 0, static_cast<int>(input.width()) - 1);
+            const int by = std::clamp(static_cast<int>(y) + oy, 0, static_cast<int>(input.height()) - 1);
+
+            const Color r_px = input.get_pixel(static_cast<std::uint32_t>(rx), static_cast<std::uint32_t>(ry));
+            const Color g_px = input.get_pixel(x, y);
+            const Color b_px = input.get_pixel(static_cast<std::uint32_t>(bx), static_cast<std::uint32_t>(by));
+
+            out.set_pixel(x, y, Color{ r_px.r, g_px.g, b_px.b, g_px.a });
         }
     }
     return out;
@@ -610,6 +653,34 @@ SurfaceRGBA LUTEffect::apply(const SurfaceRGBA& input, const EffectParams& param
     });
 }
 
+SurfaceRGBA VignetteEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
+    const float amount = clamp01(get_scalar(params, "amount", 0.5f));
+    const float size = std::max(0.01f, get_scalar(params, "size", 0.5f));
+    const float centerX = get_scalar(params, "center_x", 0.5f) * static_cast<float>(input.width());
+    const float centerY = get_scalar(params, "center_y", 0.5f) * static_cast<float>(input.height());
+    const float maxDist = std::sqrt(centerX * centerX + centerY * centerY);
+
+    SurfaceRGBA out(input.width(), input.height());
+    for (std::uint32_t y = 0; y < input.height(); ++y) {
+        for (std::uint32_t x = 0; x < input.width(); ++x) {
+            const float dx = static_cast<float>(x) - centerX;
+            const float dy = static_cast<float>(y) - centerY;
+            const float dist = std::sqrt(dx * dx + dy * dy);
+            const float factor = std::clamp((dist / maxDist) / size, 0.0f, 1.0f);
+            const float v = 1.0f - factor * amount;
+
+            const Color px = input.get_pixel(x, y);
+            out.set_pixel(x, y, Color{
+                static_cast<std::uint8_t>(std::lround(static_cast<float>(px.r) * v)),
+                static_cast<std::uint8_t>(std::lround(static_cast<float>(px.g) * v)),
+                static_cast<std::uint8_t>(std::lround(static_cast<float>(px.b) * v)),
+                px.a
+            });
+        }
+    }
+    return out;
+}
+
 SurfaceRGBA Lut3DCubeEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
     // Retrieve the .cube file path from the strings map
     const auto path_it = params.strings.find("lut_path");
@@ -663,6 +734,8 @@ void EffectHost::register_builtins(EffectHost& host) {
     host.register_effect("color_balance", std::make_unique<ColorBalanceEffect>());
     host.register_effect("lut", std::make_unique<LUTEffect>());
     host.register_effect("lut3d_cube", std::make_unique<Lut3DCubeEffect>());
+    host.register_effect("chromatic_aberration", std::make_unique<ChromaticAberrationEffect>());
+    host.register_effect("vignette", std::make_unique<VignetteEffect>());
 }
 
 } // namespace tachyon::renderer2d

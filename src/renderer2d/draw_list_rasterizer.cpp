@@ -213,16 +213,18 @@ RasterizedFrame2D render_draw_list_2d(
                          }
                     }
                     
-                    if (s.fill_color.a > 0) {
+                    if (s.fill_color.a > 0 || s.gradient_fill.has_value()) {
                         FillPathStyle fill_style;
                         fill_style.fill_color = s.fill_color;
+                        fill_style.gradient = s.gradient_fill;
                         fill_style.opacity = s.opacity;
                         PathRasterizer::fill(*frame.surface, transformed_geom, fill_style);
                     }
                     
-                    if (s.stroke_color.a > 0 && s.stroke_width > 0.0f) {
+                    if ((s.stroke_color.a > 0 || s.gradient_stroke.has_value()) && s.stroke_width > 0.0f) {
                         StrokePathStyle stroke_style;
                         stroke_style.stroke_color = s.stroke_color;
+                        stroke_style.gradient = s.gradient_stroke;
                         stroke_style.stroke_width = s.stroke_width;
                         stroke_style.opacity = s.opacity;
                         stroke_style.cap = s.line_cap;

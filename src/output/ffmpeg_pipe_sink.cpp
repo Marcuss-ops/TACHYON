@@ -130,35 +130,30 @@ std::string build_video_pass_command(const RenderPlan& plan, const std::filesyst
     command << "ffmpeg "
             << (overwrite ? "-y" : "-n")
             << " -f rawvideo"
-            << " -pix_fmt " << pixel_format
+            << " -pix_fmt rgba"
             << " -s " << plan.composition.width << 'x' << plan.composition.height
             << " -r " << fps
             << " -i -"
             << " -an";
 
     if (plan.output.profile.format == OutputFormat::ProRes) {
-        command << " -c:v prores_ks -profile:v 3";
+        command << " -c:v prores_ks -profile:v 3 -vendor apl0 -pix_fmt yuv422p10le";
     } else if (plan.output.profile.format == OutputFormat::WebM) {
-        command << " -c:v libvpx-vp9";
+        command << " -c:v libvpx-vp9 -pix_fmt yuv420p";
         if (!plan.output.profile.video.crf.has_value()) {
-            command << " -crf 30";
+            command << " -crf 30 -b:v 0";
         }
     } else {
+        // Default to H.264
         if (!plan.output.profile.video.codec.empty()) {
             command << " -c:v " << plan.output.profile.video.codec;
         } else {
-            command << " -c:v libx264";
+            command << " -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p";
         }
     }
 
     if (plan.output.profile.video.rate_control_mode == "crf" && plan.output.profile.video.crf.has_value()) {
         command << " -crf " << *plan.output.profile.video.crf;
-    }
-
-    if (!pixel_format.empty()) {
-        command << " -pix_fmt " << pixel_format;
-    } else if (plan.output.profile.format == OutputFormat::WebM) {
-        command << " -pix_fmt yuv420p";
     }
 
     command << " -color_primaries " << color_primaries

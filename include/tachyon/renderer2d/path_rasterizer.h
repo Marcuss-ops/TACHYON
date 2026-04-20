@@ -2,6 +2,7 @@
 
 #include "tachyon/core/math/vector2.h"
 #include "tachyon/renderer2d/framebuffer.h"
+#include "tachyon/renderer2d/gradient_spec.h"
 
 #include <cstdint>
 #include <vector>
@@ -33,6 +34,7 @@ struct PathGeometry {
 
 struct FillPathStyle {
     Color fill_color{Color::white()};
+    std::optional<GradientSpec> gradient;
     float opacity{1.0f};
     WindingRule winding{WindingRule::NonZero};
 };
@@ -51,6 +53,7 @@ enum class LineJoin {
 
 struct StrokePathStyle {
     Color stroke_color{Color::white()};
+    std::optional<GradientSpec> gradient;
     float stroke_width{1.0f};
     float opacity{1.0f};
     LineCap cap{LineCap::Butt};

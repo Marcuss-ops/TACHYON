@@ -79,6 +79,39 @@ bool parse_vector3_value(const json& value, math::Vector3& out) {
     return read_vector3_like(value, out) || read_vector3_object(value, out);
 }
 
+bool parse_gradient_spec(const json& object, GradientSpec& out) {
+    if (!object.is_object()) return false;
+    
+    std::string type_str;
+    if (read_string(object, "type", type_str)) {
+        out.type = (type_str == "radial") ? GradientType::Radial : GradientType::Linear;
+    }
+    
+    if (object.contains("start")) parse_vector2_value(object.at("start"), out.start);
+    if (object.contains("end")) parse_vector2_value(object.at("end"), out.end);
+    
+    if (object.contains("radial_radius") && object.at("radial_radius").is_number()) {
+        out.radial_radius = static_cast<float>(object.at("radial_radius").get<double>());
+    }
+
+    if (object.contains("stops") && object.at("stops").is_array()) {
+        out.stops.clear();
+        for (const auto& stop_json : object.at("stops")) {
+            if (stop_json.is_object()) {
+                GradientStop stop;
+                if (stop_json.contains("offset") && stop_json.at("offset").is_number()) {
+                    stop.offset = static_cast<float>(stop_json.at("offset").get<double>());
+                }
+                if (stop_json.contains("color")) {
+                    parse_color_value(stop_json.at("color"), stop.color);
+                }
+                out.stops.push_back(stop);
+            }
+        }
+    }
+    return true;
+}
+
 bool parse_color_value(const json& value, ColorSpec& out) {
     if (value.is_array()) {
         if (value.size() < 3) return false;
@@ -416,6 +449,35 @@ LayerSpec parse_layer(const json& object, const std::string& path, DiagnosticBag
     parse_optional_scalar_property(object, "blur_level", layer.blur_level, path, diagnostics);
     parse_optional_scalar_property(object, "aperture_blades", layer.aperture_blades, path, diagnostics);
     parse_optional_scalar_property(object, "aperture_rotation", layer.aperture_rotation, path, diagnostics);
+    
+    // Trim Path
+    parse_optional_scalar_property(object, "trim_start", layer.trim_start, path, diagnostics);
+    parse_optional_scalar_property(object, "trim_end", layer.trim_end, path, diagnostics);
+    parse_optional_scalar_property(object, "trim_offset", layer.trim_offset, path, diagnostics);
+    
+    // Repeater
+    parse_optional_scalar_property(object, "repeater_count", layer.repeater_count, path, diagnostics);
+    parse_optional_scalar_property(object, "repeater_offset_position_x", layer.repeater_offset_position_x, path, diagnostics);
+    parse_optional_scalar_property(object, "repeater_offset_position_y", layer.repeater_offset_position_y, path, diagnostics);
+    parse_optional_scalar_property(object, "repeater_offset_rotation", layer.repeater_offset_rotation, path, diagnostics);
+    parse_optional_scalar_property(object, "repeater_offset_scale_x", layer.repeater_offset_scale_x, path, diagnostics);
+    parse_optional_scalar_property(object, "repeater_offset_scale_y", layer.repeater_offset_scale_y, path, diagnostics);
+    parse_optional_scalar_property(object, "repeater_start_opacity", layer.repeater_start_opacity, path, diagnostics);
+    parse_optional_scalar_property(object, "repeater_end_opacity", layer.repeater_end_opacity, path, diagnostics);
+    
+    // Gradients
+    if (object.contains("gradient_fill")) {
+        GradientSpec grad;
+        if (parse_gradient_spec(object.at("gradient_fill"), grad)) {
+            layer.gradient_fill = std::move(grad);
+        }
+    }
+    if (object.contains("gradient_stroke")) {
+        GradientSpec grad;
+        if (parse_gradient_spec(object.at("gradient_stroke"), grad)) {
+            layer.gradient_stroke = std::move(grad);
+        }
+    }
 
     // Parse text_animators array (for text layers)
     if (object.contains("animators") && object.at("animators").is_array()) {

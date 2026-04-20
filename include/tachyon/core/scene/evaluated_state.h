@@ -139,6 +139,9 @@ struct EvaluatedLayerState {
     std::optional<ColorSpec> subtitle_outline_color;
     float subtitle_outline_width{0.0f};
     
+    std::optional<GradientSpec> gradient_fill;
+    std::optional<GradientSpec> gradient_stroke;
+    
     TrackMatteType track_matte_type{TrackMatteType::None};
     std::optional<std::size_t> track_matte_layer_index;
 

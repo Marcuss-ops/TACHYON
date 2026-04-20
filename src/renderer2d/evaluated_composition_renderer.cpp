@@ -149,14 +149,12 @@ void composite_surface(
 
             if (blend_mode == renderer2d::BlendMode::Normal) {
                 dst.blend_pixel(ux, uy, pixel);
-                continue;
+            } else {
+                const auto dest = dst.try_get_pixel(ux, uy);
+                if (dest) {
+                    dst.set_pixel(ux, uy, renderer2d::blend_mode_color(pixel, *dest, blend_mode));
+                }
             }
-
-            const auto dest = dst.try_get_pixel(ux, uy);
-            if (!dest.has_value()) {
-                continue;
-            }
-            dst.set_pixel(ux, uy, renderer2d::blend_mode_color(pixel, *dest, blend_mode));
         }
     }
 }
@@ -252,17 +250,55 @@ renderer2d::SurfaceRGBA render_simple_layer_surface(
         return surface;
     }
 
-    const renderer2d::RectI rect = layer.shape_path.has_value()
-        ? shape_bounds_from_path(*layer.shape_path)
-        : layer_rect(layer, state.width, state.height);
+    if (layer.type == scene::LayerType::Shape && layer.shape_path.has_value()) {
+        const auto& sp = *layer.shape_path;
+        renderer2d::PathGeometry geom;
+        if (!sp.points.empty()) {
+            geom.commands.push_back({renderer2d::PathVerb::MoveTo, sp.points[0].position});
+            for (std::size_t i = 1; i < sp.points.size(); ++i) {
+                const auto& prev = sp.points[i-1];
+                const auto& curr = sp.points[i];
+                if (prev.tangent_out.length_squared() > 1e-6f || curr.tangent_in.length_squared() > 1e-6f) {
+                    geom.commands.push_back({renderer2d::PathVerb::CubicTo, prev.position + prev.tangent_out, curr.position + curr.tangent_in, curr.position});
+                } else {
+                    geom.commands.push_back({renderer2d::PathVerb::LineTo, curr.position});
+                }
+            }
+            if (sp.closed) {
+                geom.commands.push_back({renderer2d::PathVerb::Close});
+            }
+        }
 
-    if (rect.width <= 0 || rect.height <= 0) {
-        return surface;
+        // Fill
+        if (layer.fill_color.a > 0 || layer.gradient_fill.has_value()) {
+            renderer2d::FillPathStyle style;
+            style.fill_color = from_color_spec(layer.fill_color);
+            style.gradient = layer.gradient_fill;
+            style.opacity = static_cast<float>(layer.opacity);
+            renderer2d::PathRasterizer::fill(surface, geom, style);
+        }
+
+        // Stroke
+        if (layer.stroke_width > 0.0f && (layer.stroke_color.a > 0 || layer.gradient_stroke.has_value())) {
+            renderer2d::StrokePathStyle style;
+            style.stroke_color = from_color_spec(layer.stroke_color);
+            style.gradient = layer.gradient_stroke;
+            style.stroke_width = layer.stroke_width;
+            style.opacity = static_cast<float>(layer.opacity);
+            style.cap = layer.line_cap;
+            style.join = layer.line_join;
+            style.miter_limit = layer.miter_limit;
+            renderer2d::PathRasterizer::stroke(surface, geom, style);
+        }
+    } else {
+        const renderer2d::RectI rect = layer_rect(layer, state.width, state.height);
+        if (rect.width > 0 && rect.height > 0) {
+            renderer2d::Color color = from_color_spec(layer.fill_color);
+            color = apply_opacity(color, layer.opacity);
+            surface.fill_rect(rect, color, true);
+        }
     }
 
-    renderer2d::Color color = from_color_spec(layer.fill_color);
-    color = apply_opacity(color, layer.opacity);
-    surface.fill_rect(rect, color, true);
     return surface;
 }
 
@@ -395,13 +431,18 @@ RasterizedFrame2D render_evaluated_composition_2d(
             }
         }
 
-        composite_surface(dst, layer_surface, 0, 0, static_cast<renderer2d::BlendMode>(
-            layer.blend_mode == "additive" ? renderer2d::BlendMode::Additive :
-            layer.blend_mode == "multiply" ? renderer2d::BlendMode::Multiply :
-            layer.blend_mode == "screen" ? renderer2d::BlendMode::Screen :
-            layer.blend_mode == "overlay" ? renderer2d::BlendMode::Overlay :
-            layer.blend_mode == "soft_light" || layer.blend_mode == "softLight" ? renderer2d::BlendMode::SoftLight :
-            renderer2d::BlendMode::Normal));
+        auto parse_blend_mode = [](const std::string& mode_str) -> renderer2d::BlendMode {
+            std::string s = mode_str;
+            std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return std::tolower(c); });
+            if (s == "additive" || s == "add") return renderer2d::BlendMode::Additive;
+            if (s == "multiply") return renderer2d::BlendMode::Multiply;
+            if (s == "screen") return renderer2d::BlendMode::Screen;
+            if (s == "overlay") return renderer2d::BlendMode::Overlay;
+            if (s == "softlight" || s == "soft_light") return renderer2d::BlendMode::SoftLight;
+            return renderer2d::BlendMode::Normal;
+        };
+
+        composite_surface(dst, layer_surface, 0, 0, parse_blend_mode(layer.blend_mode));
     }
 
     std::vector<float> accum_r(static_cast<std::size_t>(dst.width()) * dst.height(), 0.0f);
