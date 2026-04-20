@@ -4,7 +4,6 @@
 #include "tachyon/renderer2d/text/shaping/font_shaping.h"
 #include "tachyon/core/spec/text_animator_spec.h"
 
-#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
 
 #include <algorithm>
