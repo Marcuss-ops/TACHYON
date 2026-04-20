@@ -41,13 +41,15 @@ template <typename Spec>
 math::Vector2 sample_vector2(
     const Spec& property,
     const math::Vector2& fallback,
-    double local_time_seconds);
+    double local_time_seconds,
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer = nullptr);
 
 template <typename Spec>
 math::Vector3 sample_vector3(
     const Spec& property,
     const math::Vector3& fallback,
-    double local_time_seconds);
+    double local_time_seconds,
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer = nullptr);
 
 math::Transform2 make_transform2(
     const math::Vector2& position,

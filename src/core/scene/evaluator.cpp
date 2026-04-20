@@ -166,6 +166,16 @@ double sample_scalar(
         expr_ctx.variables["value"] = fallback;
         expr_ctx.seed = expression_seed;
         expr_ctx.variables["seed"] = static_cast<double>(expression_seed);
+        
+        // Add audio bands to expression context
+        if (audio_analyzer) {
+            const ::tachyon::audio::AudioBands bands = audio_analyzer->analyze_frame(local_time_seconds);
+            expr_ctx.variables["music.bass"] = bands.bass;
+            expr_ctx.variables["music.mid"] = bands.mid;
+            expr_ctx.variables["music.high"] = bands.high;
+            expr_ctx.variables["music.rms"] = bands.rms;
+        }
+        
         auto result = renderer2d::expressions::ExpressionEvaluator::evaluate(*property.expression, expr_ctx);
         if (result.success) {
             return result.value;
@@ -226,6 +236,7 @@ math::Vector2 sample_vector2(
     const AnimatedVector2Spec& property,
     const math::Vector2& fallback,
     double local_time_seconds,
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
     std::uint64_t expression_seed = 0,
     const std::unordered_map<std::string, double>* job_variables = nullptr) {
     if (property.expression.has_value() && !property.expression->empty()) {
@@ -239,6 +250,16 @@ math::Vector2 sample_vector2(
         expr_ctx.variables["time"] = local_time_seconds;
         expr_ctx.seed = expression_seed;
         expr_ctx.variables["seed"] = static_cast<double>(expression_seed);
+        
+        // Add audio bands to expression context
+        if (audio_analyzer) {
+            const ::tachyon::audio::AudioBands bands = audio_analyzer->analyze_frame(local_time_seconds);
+            expr_ctx.variables["music.bass"] = bands.bass;
+            expr_ctx.variables["music.mid"] = bands.mid;
+            expr_ctx.variables["music.high"] = bands.high;
+            expr_ctx.variables["music.rms"] = bands.rms;
+        }
+        
         auto result = renderer2d::expressions::ExpressionEvaluator::evaluate(*property.expression, expr_ctx);
         if (result.success) {
             return { static_cast<float>(result.value), static_cast<float>(result.value) };
@@ -302,6 +323,7 @@ math::Vector3 sample_vector3(
     const AnimatedVector3Spec& property,
     const math::Vector3& fallback,
     double local_time_seconds,
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
     std::uint64_t expression_seed = 0,
     const std::unordered_map<std::string, double>* job_variables = nullptr) {
     if (property.expression.has_value() && !property.expression->empty()) {
@@ -315,6 +337,16 @@ math::Vector3 sample_vector3(
         expr_ctx.variables["time"] = local_time_seconds;
         expr_ctx.seed = expression_seed;
         expr_ctx.variables["seed"] = static_cast<double>(expression_seed);
+        
+        // Add audio bands to expression context
+        if (audio_analyzer) {
+            const ::tachyon::audio::AudioBands bands = audio_analyzer->analyze_frame(local_time_seconds);
+            expr_ctx.variables["music.bass"] = bands.bass;
+            expr_ctx.variables["music.mid"] = bands.mid;
+            expr_ctx.variables["music.high"] = bands.high;
+            expr_ctx.variables["music.rms"] = bands.rms;
+        }
+        
         auto result = renderer2d::expressions::ExpressionEvaluator::evaluate(*property.expression, expr_ctx);
         if (result.success) {
             return { static_cast<float>(result.value), static_cast<float>(result.value), static_cast<float>(result.value) };
@@ -487,6 +519,7 @@ EvaluatedLayerState make_layer_state(
         layer.transform.position_property,
         fallback_position(layer),
         remapped_time,
+        audio_analyzer,
         hash_combine(layer_seed, stable_string_hash("position")),
         vars.numeric);
     double rot = sample_scalar(
@@ -500,6 +533,7 @@ EvaluatedLayerState make_layer_state(
         layer.transform.scale_property,
         fallback_scale(layer),
         remapped_time,
+        audio_analyzer,
         hash_combine(layer_seed, stable_string_hash("scale")),
         vars.numeric);
     
@@ -512,18 +546,21 @@ EvaluatedLayerState make_layer_state(
             layer.transform3d.position_property,
             {pos.x, pos.y, 0.0f},
             remapped_time,
+            audio_analyzer,
             hash_combine(layer_seed, stable_string_hash("position3")),
             vars.numeric);
         const math::Vector3 rot3 = sample_vector3(
             layer.transform3d.rotation_property,
             {0.0f, 0.0f, static_cast<float>(rot)},
             remapped_time,
+            audio_analyzer,
             hash_combine(layer_seed, stable_string_hash("rotation3")),
             vars.numeric);
         const math::Vector3 scl3 = sample_vector3(
             layer.transform3d.scale_property,
             {scl.x, scl.y, 1.0f},
             remapped_time,
+            audio_analyzer,
             hash_combine(layer_seed, stable_string_hash("scale3")),
             vars.numeric);
         
