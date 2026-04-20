@@ -68,41 +68,37 @@ bool run_effect_host_tests() {
     check_true(p.r == 200 && p.g == 100 && p.b == 50, "Fill preserves straight RGB");
 
     PrecompCache cache;
-    cache.max_bytes = 16; 
+    cache.set_max_bytes(16);
 
-    RasterizedFrame2D frame_a;
-    frame_a.surface = SurfaceRGBA(1, 1);
-    frame_a.surface->set_pixel(0, 0, Color::red());
+    auto frame_a = std::make_shared<SurfaceRGBA>(1, 1);
+    frame_a->set_pixel(0, 0, Color::red());
 
-    RasterizedFrame2D frame_b;
-    frame_b.surface = SurfaceRGBA(1, 1);
-    frame_b.surface->set_pixel(0, 0, Color::green());
+    auto frame_b = std::make_shared<SurfaceRGBA>(1, 1);
+    frame_b->set_pixel(0, 0, Color::green());
 
-    RasterizedFrame2D frame_c;
-    frame_c.surface = SurfaceRGBA(1, 1);
-    frame_c.surface->set_pixel(0, 0, Color::blue());
+    auto frame_c = std::make_shared<SurfaceRGBA>(1, 1);
+    frame_c->set_pixel(0, 0, Color::blue());
 
     cache.store("a", frame_a);
     cache.store("b", frame_b);
     
-    RasterizedFrame2D probe;
-    check_true(cache.lookup("a", probe), "Cache returns first entry");
+    check_true(cache.lookup("a") != nullptr, "Cache returns first entry");
     
     cache.store("c", frame_c);
-    check_true(cache.lookup("a", probe), "Entry A survives");
-    check_true(cache.lookup("b", probe), "Entry B survives");
+    check_true(cache.lookup("a") != nullptr, "Entry A survives");
+    check_true(cache.lookup("b") != nullptr, "Entry B survives");
     
-    cache.max_bytes = 10;
+    cache.set_max_bytes(10);
     cache.clear();
-    cache.max_bytes = 10;
+    cache.set_max_bytes(10);
     cache.store("a", frame_a); // [a]
     cache.store("b", frame_b); // [b, a]
-    check_true(cache.lookup("a", probe), "Lookup A"); // [a, b]
+    check_true(cache.lookup("a") != nullptr, "Lookup A"); // [a, b]
     cache.store("c", frame_c); // [c, a] -> evicts b
     
-    check_true(cache.lookup("a", probe), "A survives as it was used recently");
-    check_true(!cache.lookup("b", probe), "B is evicted as it was LRU");
-    check_true(cache.lookup("c", probe), "C is present");
+    check_true(cache.lookup("a") != nullptr, "A survives as it was used recently");
+    check_true(cache.lookup("b") == nullptr, "B is evicted as it was LRU");
+    check_true(cache.lookup("c") != nullptr, "C is present");
 
     return g_failures == 0;
 }
