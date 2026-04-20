@@ -1,8 +1,8 @@
 # Core Engine Library
 add_library(TachyonCore
-    cli/core/cli.cpp
-    cli/core/options.cpp
-    cli/core/report.cpp
+    core/cli.cpp
+    core/options.cpp
+    core/report.cpp
     core/camera/camera_state.cpp
     core/expressions/expression_engine.cpp
     core/math/matrix4x4.cpp
@@ -10,8 +10,10 @@ add_library(TachyonCore
     core/math/transform3.cpp
     core/model/tachyon.cpp
     audio/audio_analyzer.cpp
+    audio/audio_decoder.cpp
+    audio/audio_mixer.cpp
     media/image_manager.cpp
-    media/assets/asset_resolution.cpp
+    media/asset_resolution.cpp
     media/media_manager.cpp
     media/video_decoder.cpp
     output/ffmpeg_pipe_sink.cpp
@@ -21,9 +23,11 @@ add_library(TachyonCore
     renderer2d/effect_host.cpp
     renderer2d/evaluated_composition_renderer.cpp
     renderer2d/layer_to_draw_command.cpp
-    renderer2d/path_rasterizer.cpp
     renderer2d/project_card.cpp
+    renderer2d/path_rasterizer.cpp
+    renderer2d/texture_resolver.cpp
     renderer2d/surface_rgba.cpp
+    renderer2d/precomp_cache.cpp
     renderer2d/raster/cpu_rasterizer.cpp
     renderer2d/raster/perspective_rasterizer.cpp
     runtime/batch_runner.cpp
@@ -33,16 +37,32 @@ add_library(TachyonCore
     runtime/render_graph.cpp
     runtime/render_session.cpp
     runtime/tile_scheduler.cpp
-    runtime/jobs/render_job.cpp
-    runtime/jobs/render_plan.cpp
-    scene/evaluator.cpp
-    spec/parser/scene_spec.cpp
+    runtime/render_job.cpp
+    runtime/render_plan.cpp
+    core/scene/evaluator.cpp
+    core/scene/evaluator_math.cpp
+    core/spec/scene_spec.cpp
+    core/spec/scene_spec_core.cpp
+    core/spec/scene_spec_json.cpp
+    core/spec/scene_spec_builder.cpp
+    renderer2d/evaluated_composition/layer_renderer.cpp
+    renderer2d/evaluated_composition/mask_renderer.cpp
+    renderer2d/evaluated_composition/effect_renderer.cpp
+    renderer2d/evaluated_composition/render_graph.cpp
+    renderer2d/evaluated_composition/raster.cpp
     text/font.cpp
     text/font_registry.cpp
     text/layout.cpp
     timeline/frame_evaluator.cpp
     timeline/time.cpp
     timeline/time_resolver.cpp
+    renderer2d/math/math_utils.cpp
+    renderer2d/audio/audio_sampling.cpp
+    renderer2d/text/utf8/utf8_decoder.cpp
+    renderer2d/text/shaping/font_shaping.cpp
+    renderer2d/text/utils/font_utils.cpp
+    renderer2d/text/freetype/freetype_manager.cpp
+    renderer2d/text/glyph/glyph_loader.cpp
 )
 
 if(MSVC)
@@ -52,9 +72,10 @@ else()
 endif()
 
 target_include_directories(TachyonCore
-    PUBLIC 
+    PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../third_party>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../third_party/stb/include>
         $<INSTALL_INTERFACE:include>
 )
 
@@ -71,7 +92,7 @@ target_link_libraries(TachyonCore
 )
 
 add_executable(tachyon
-    cli/render/main.cpp
+    main.cpp
 )
 
 target_link_libraries(tachyon
