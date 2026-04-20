@@ -349,6 +349,22 @@ LayerSpec parse_layer(const json& object, const std::string& path, DiagnosticBag
     parse_shape_path(object, layer, path, diagnostics);
     parse_optional_scalar_property(object, "time_remap", layer.time_remap_property, path, diagnostics);
     if (object.contains("text_content")) layer.text_content = object.at("text_content").get<std::string>();
+    
+    // Subtitle burn-in (for text layers)
+    if (object.contains("subtitle_path")) layer.subtitle_path = object.at("subtitle_path").get<std::string>();
+    if (object.contains("subtitle_outline_width")) layer.subtitle_outline_width = object.at("subtitle_outline_width").get<float>();
+    if (object.contains("subtitle_outline_color")) {
+        const auto& color_val = object.at("subtitle_outline_color");
+        if (color_val.is_array() && color_val.size() >= 3) {
+            ColorSpec cs;
+            cs.r = static_cast<std::uint8_t>(std::clamp(color_val[0].get<int>(), 0, 255));
+            cs.g = static_cast<std::uint8_t>(std::clamp(color_val[1].get<int>(), 0, 255));
+            cs.b = static_cast<std::uint8_t>(std::clamp(color_val[2].get<int>(), 0, 255));
+            cs.a = (color_val.size() >= 4) ? static_cast<std::uint8_t>(std::clamp(color_val[3].get<int>(), 0, 255)) : 255;
+            layer.subtitle_outline_color = cs;
+        }
+    }
+    
     if (object.contains("stroke_width")) layer.stroke_width = object.at("stroke_width").get<float>();
     parse_optional_scalar_property(object, "stroke_width_property", layer.stroke_width_property, path, diagnostics);
     if (object.contains("line_cap")) layer.line_cap = parse_line_cap(object.at("line_cap"));

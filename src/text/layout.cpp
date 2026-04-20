@@ -7,6 +7,7 @@
 #include <stb_image_write.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <filesystem>
 #include <span>
@@ -699,6 +700,79 @@ TextRasterSurface rasterize_text_rgba(
             }
         }
     }
+    return surface;
+}
+
+TextRasterSurface rasterize_text_rgba(
+    const BitmapFont& font,
+    std::string_view utf8_text,
+    const TextStyle& style,
+    const TextBox& text_box,
+    TextAlignment alignment,
+    const TextOutlineOptions& outline) {
+
+    const TextLayoutResult layout = layout_text(font, utf8_text, style, text_box, alignment, {});
+    TextRasterSurface surface(layout.width, layout.height);
+
+    if (!font.is_loaded() || layout.width == 0U || layout.height == 0U) {
+        return surface;
+    }
+
+    const float outline_width = outline.width;
+    if (outline_width <= 0.0f) {
+        TextStyle no_outline_style;
+        no_outline_style.fill_color = style.fill_color;
+        return rasterize_text_rgba(font, utf8_text, no_outline_style, text_box, alignment, {}, {});
+    }
+
+    static constexpr std::array<std::pair<std::int32_t, std::int32_t>, 8> kOutlineOffsets = {{
+        {-1, -1}, {0, -1}, {1, -1},
+        {-1,  0},          {1,  0},
+        {-1,  1}, {0,  1}, {1,  1}
+    }};
+
+    auto render_glyph_outline = [&](const PositionedGlyph& positioned, const GlyphBitmap* glyph, renderer2d::Color color) {
+        if (glyph == nullptr || glyph->width == 0U || glyph->height == 0U) return;
+        for (std::uint32_t oy = 0; oy < glyph->height; ++oy) {
+            for (std::uint32_t ox = 0; ox < glyph->width; ++ox) {
+                const std::uint8_t alpha = glyph->alpha_mask[oy * glyph->width + ox];
+                if (alpha == 0U) continue;
+                const std::int32_t base_ox = positioned.x + static_cast<std::int32_t>(ox);
+                const std::int32_t base_oy = positioned.y + static_cast<std::int32_t>(oy);
+                for (const auto& off : kOutlineOffsets) {
+                    const std::int32_t out_x = base_ox + off.first;
+                    const std::int32_t out_y = base_oy + off.second;
+                    if (out_x < 0 || out_y < 0) continue;
+                    surface.blend_pixel(static_cast<std::uint32_t>(out_x), static_cast<std::uint32_t>(out_y), color, alpha);
+                }
+            }
+        }
+    };
+
+    for (const PositionedGlyph& positioned : layout.glyphs) {
+        const GlyphBitmap* glyph = font.has_freetype_face()
+            ? font.find_glyph_by_index(positioned.font_glyph_index)
+            : font.find_scaled_glyph(positioned.codepoint, layout.scale);
+        render_glyph_outline(positioned, glyph, outline.color);
+    }
+
+    for (const PositionedGlyph& positioned : layout.glyphs) {
+        const GlyphBitmap* glyph = font.has_freetype_face()
+            ? font.find_glyph_by_index(positioned.font_glyph_index)
+            : font.find_scaled_glyph(positioned.codepoint, layout.scale);
+        if (glyph == nullptr || glyph->width == 0U || glyph->height == 0U) continue;
+        for (std::uint32_t oy = 0; oy < glyph->height; ++oy) {
+            for (std::uint32_t ox = 0; ox < glyph->width; ++ox) {
+                const std::uint8_t alpha = glyph->alpha_mask[oy * glyph->width + ox];
+                if (alpha == 0U) continue;
+                const std::int32_t out_x = positioned.x + static_cast<std::int32_t>(ox);
+                const std::int32_t out_y = positioned.y + static_cast<std::int32_t>(oy);
+                if (out_x < 0 || out_y < 0) continue;
+                surface.blend_pixel(static_cast<std::uint32_t>(out_x), static_cast<std::uint32_t>(out_y), style.fill_color, alpha);
+            }
+        }
+    }
+
     return surface;
 }
 
