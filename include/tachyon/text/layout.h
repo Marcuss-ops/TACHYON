@@ -91,6 +91,7 @@ public:
 private:
     friend TextRasterSurface rasterize_text_rgba(const BitmapFont&, std::string_view, const TextStyle&, const TextBox&, TextAlignment, const TextLayoutOptions&, const TextAnimationOptions&);
     friend TextRasterSurface rasterize_text_rgba(const BitmapFont&, std::string_view, const TextStyle&, const TextBox&, TextAlignment, float, std::span<const TextAnimatorSpec>, const TextLayoutOptions&);
+    friend TextRasterSurface rasterize_text_rgba(const BitmapFont&, std::string_view, const TextStyle&, const TextBox&, TextAlignment, const struct TextOutlineOptions&);
 
     void blend_pixel(std::uint32_t x, std::uint32_t y, renderer2d::Color color, std::uint8_t alpha);
 
@@ -128,5 +129,19 @@ TextRasterSurface rasterize_text_rgba(
     float time_seconds,
     std::span<const TextAnimatorSpec> animators,
     const TextLayoutOptions& layout_options = {});
+
+struct TextOutlineOptions {
+    float width{0.0f};
+    renderer2d::Color color{renderer2d::Color::black()};
+};
+
+/// Overload with outline support for subtitle burn-in
+TextRasterSurface rasterize_text_rgba(
+    const BitmapFont& font,
+    std::string_view utf8_text,
+    const TextStyle& style,
+    const TextBox& text_box,
+    TextAlignment alignment,
+    const TextOutlineOptions& outline);
 
 } // namespace tachyon::text
