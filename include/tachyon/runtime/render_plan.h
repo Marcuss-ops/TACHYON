@@ -49,6 +49,7 @@ struct RenderPlan {
     const SceneSpec* scene_spec{nullptr};
     std::unordered_map<std::string, double> variables;
     std::unordered_map<std::string, std::string> string_variables;
+    std::unordered_map<std::string, RenderJob::LayerOverride> layer_overrides;
 };
 
 ResolutionResult<RenderPlan> build_render_plan(const SceneSpec& scene, const RenderJob& job);

@@ -88,6 +88,7 @@ ResolutionResult<RenderPlan> build_render_plan(const SceneSpec& scene, const Ren
     plan.scene_spec = &scene;
     plan.variables = job.variables;
     plan.string_variables = job.string_variables;
+    plan.layer_overrides = job.layer_overrides;
 
     result.value = std::move(plan);
     return result;
