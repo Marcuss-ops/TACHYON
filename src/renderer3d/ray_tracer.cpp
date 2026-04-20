@@ -15,6 +15,8 @@
 namespace tachyon {
 namespace renderer3d {
 
+std::unique_ptr<media::BRDFLut> RayTracer::brdf_lut_ = nullptr;
+
 const float PI = 3.1415926535f;
 
 namespace {
@@ -47,6 +49,25 @@ math::Vector2 sample_disk(float radius, float u1, float u2) {
     float r = radius * std::sqrt(u1);
     float theta = 2.0f * PI * u2;
     return { r * std::cos(theta), r * std::sin(theta) };
+}
+
+// GGX Importance Sampling
+math::Vector3 importance_sample_ggx(float u1, float u2, const math::Vector3& N, float roughness) {
+    float a = roughness * roughness;
+    float phi = 2.0f * PI * u1;
+    float cos_theta = std::sqrt((1.0f - u2) / (1.0f + (a * a - 1.0f) * u2));
+    float sin_theta = std::sqrt(1.0f - cos_theta * cos_theta);
+
+    math::Vector3 H;
+    H.x = sin_theta * std::cos(phi);
+    H.y = sin_theta * std::sin(phi);
+    H.z = cos_theta;
+
+    math::Vector3 up = std::abs(N.z) < 0.999f ? math::Vector3{0, 0, 1} : math::Vector3{1, 0, 0};
+    math::Vector3 tangent = math::Vector3::cross(up, N).normalized();
+    math::Vector3 bitangent = math::Vector3::cross(N, tangent);
+
+    return (tangent * H.x + bitangent * H.y + N * H.z).normalized();
 }
 
 // Equirectangular HDR Sampling
@@ -105,9 +126,14 @@ void RayTracer::build_scene(const scene::EvaluatedCompositionState& state) {
     scene_ = rtcNewScene(device_);
     
     // Initialize environment properties from state
-    environment_map_ = state.environment_map;
+    const media::HDRTextureData* new_env = state.environment_map;
+    if (new_env != environment_map_) {
+        update_prefiltered_env(new_env);
+        environment_map_ = new_env;
+    }
     environment_intensity_ = state.environment_intensity;
     environment_rotation_ = state.environment_rotation;
+    ensure_brdf_lut();
 
     auto should_include = [&](std::size_t idx) { return true; };
     internal_build_scene(state, should_include);
@@ -120,9 +146,14 @@ void RayTracer::build_scene_subset(const scene::EvaluatedCompositionState& state
     scene_ = rtcNewScene(device_);
     
     // Initialize environment properties from state
-    environment_map_ = state.environment_map;
+    const media::HDRTextureData* new_env = state.environment_map;
+    if (new_env != environment_map_) {
+        update_prefiltered_env(new_env);
+        environment_map_ = new_env;
+    }
     environment_intensity_ = state.environment_intensity;
     environment_rotation_ = state.environment_rotation;
+    ensure_brdf_lut();
 
     auto should_include = [&](std::size_t idx) {
         return std::find(layer_indices.begin(), layer_indices.end(), idx) != layer_indices.end();
@@ -143,8 +174,40 @@ void RayTracer::internal_build_scene(const scene::EvaluatedCompositionState& sta
 
                 float* vertices = (float*)rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, 3 * sizeof(float), sub.vertices.size());
                 for (std::size_t i = 0; i < sub.vertices.size(); ++i) {
-                    // Combine glTF node local transform with the layer's 3D world transform
                     math::Vector3 p = sub.vertices[i].position;
+                    math::Vector3 n = sub.vertices[i].normal;
+                    
+                    // 1. Apply Morphing
+                    if (!layer.morph_weights.empty() && !sub.morph_targets.empty()) {
+                        for (size_t m = 0; m < std::min(layer.morph_weights.size(), sub.morph_targets.size()); ++m) {
+                            float w = layer.morph_weights[m];
+                            if (w > 0.001f && i < sub.morph_targets[m].positions.size()) {
+                                p += sub.morph_targets[m].positions[i] * w;
+                            }
+                        }
+                    }
+                    
+                    // 2. Apply Skinning
+                    if (!layer.joint_matrices.empty()) {
+                        math::Vector3 skinned_p{0,0,0};
+                        math::Vector3 skinned_n{0,0,0};
+                        for (int k = 0; k < 4; ++k) {
+                            float w = sub.vertices[i].weights[k];
+                            if (w > 0.001f) {
+                                uint32_t j_idx = sub.vertices[i].joints[k];
+                                if (j_idx < layer.joint_matrices.size()) {
+                                    skinned_p += layer.joint_matrices[j_idx].transform_point(p) * w;
+                                    skinned_n += layer.joint_matrices[j_idx].transform_vector(n) * w;
+                                }
+                            }
+                        }
+                        if (sub.vertices[i].weights[0] > 0.001f) {
+                            p = skinned_p;
+                            n = skinned_n.normalized();
+                        }
+                    }
+                    
+                    // Combine glTF node local transform with the layer's 3D world transform
                     math::Vector3 tp = sub.transform.transform_point(p);
                     math::Vector3 wp = layer.world_matrix.transform_point(tp);
                     
@@ -274,7 +337,26 @@ void RayTracer::internal_build_scene(const scene::EvaluatedCompositionState& sta
 }
 
 RayTracer::ShadingResult RayTracer::sample_environment(const math::Vector3& direction) {
+    return sample_environment(direction, 0.0f);
+}
+
+RayTracer::ShadingResult RayTracer::sample_environment(const math::Vector3& direction, float roughness) {
     if (environment_map_) {
+        if (prefiltered_env_ && !prefiltered_env_->levels.empty()) {
+            // Roughness 0..1 maps to levels 0..N-1
+            float level = roughness * (prefiltered_env_->levels.size() - 1);
+            int idx0 = static_cast<int>(std::floor(level));
+            int idx1 = std::min(idx0 + 1, static_cast<int>(prefiltered_env_->levels.size() - 1));
+            float f = level - idx0;
+            
+            const auto& l0 = prefiltered_env_->levels[idx0];
+            const auto& l1 = prefiltered_env_->levels[idx1];
+            
+            auto s0 = sample_equirect({l0.data, l0.width, l0.height, 3}, direction, environment_rotation_);
+            auto s1 = sample_equirect({l1.data, l1.width, l1.height, 3}, direction, environment_rotation_);
+            
+            return { (s0 * (1.0f - f) + s1 * f) * environment_intensity_, 0.0f };
+        }
         return { sample_equirect(*environment_map_, direction, environment_rotation_) * environment_intensity_, 0.0f };
     }
 
@@ -284,6 +366,115 @@ RayTracer::ShadingResult RayTracer::sample_environment(const math::Vector3& dire
     math::Vector3 sky_top = {0.2f, 0.5f, 1.0f};
     math::Vector3 sky_bottom = {0.8f, 0.9f, 1.0f};
     return {sky_bottom * (1.0f - t) + sky_top * t, 0.0f}; // alpha = 0.0 for environment
+}
+
+void RayTracer::ensure_brdf_lut() {
+    if (brdf_lut_) return;
+    
+    const int size = 512;
+    brdf_lut_ = std::make_unique<media::BRDFLut>();
+    brdf_lut_->size = size;
+    brdf_lut_->data.resize(size * size * 2);
+    
+    const int num_samples = 1024;
+    #pragma omp parallel for
+    for (int y = 0; y < size; ++y) {
+        float n_dot_v = (static_cast<float>(y) + 0.5f) / size;
+        for (int x = 0; x < size; ++x) {
+            float roughness = (static_cast<float>(x) + 0.5f) / size;
+            
+            // Numerical integration for Split-Sum BRDF
+            float a = 0.0f;
+            float b = 0.0f;
+            
+            math::Vector3 v;
+            v.x = std::sqrt(1.0f - n_dot_v * n_dot_v);
+            v.y = 0.0f;
+            v.z = n_dot_v;
+
+            for (int i = 0; i < num_samples; ++i) {
+                // Hammersley sequence or similar for importance sampling
+                // For a "fix veloce", we'll use a slightly better approximation 
+                // but still robust.
+                float u1 = static_cast<float>(i) / num_samples;
+                float u2 = static_cast<float>(i % 127) / 127.0f; // pseudo-random
+                
+                // GGX Importance Sampling
+                float alpha = roughness * roughness;
+                float phi = 2.0f * PI * u1;
+                float cos_theta = std::sqrt((1.0f - u2) / (1.0f + (alpha * alpha - 1.0f) * u2));
+                float sin_theta = std::sqrt(1.0f - cos_theta * cos_theta);
+                
+                math::Vector3 h;
+                h.x = sin_theta * std::cos(phi);
+                h.y = sin_theta * std::sin(phi);
+                h.z = cos_theta;
+                
+                math::Vector3 l = (h * 2.0f * math::Vector3::dot(v, h) - v).normalized();
+                
+                float n_dot_l = std::max(l.z, 0.0001f);
+                float n_dot_h = std::max(h.z, 0.0001f);
+                float v_dot_h = std::max(math::Vector3::dot(v, h), 0.0001f);
+                
+                if (n_dot_l > 0.0f) {
+                    // Geometry function (G_Smith)
+                    float k = (roughness * roughness) / 2.0f;
+                    auto g_v = [&](float ndv) { return ndv / (ndv * (1.0f - k) + k); };
+                    float g = g_v(n_dot_v) * g_v(n_dot_l);
+                    float g_vis = (g * v_dot_h) / (n_dot_h * n_dot_v);
+                    float fc = std::pow(1.0f - v_dot_h, 5.0f);
+                    
+                    a += (1.0f - fc) * g_vis;
+                    b += fc * g_vis;
+                }
+            }
+            
+            brdf_lut_->data[(y * size + x) * 2 + 0] = a / num_samples;
+            brdf_lut_->data[(y * size + x) * 2 + 1] = b / num_samples;
+        }
+    }
+}
+
+void RayTracer::update_prefiltered_env(const media::HDRTextureData* map) {
+    if (!map) {
+        prefiltered_env_.reset();
+        return;
+    }
+    
+    prefiltered_env_ = std::make_unique<media::PreFilteredEnvMap>();
+    const int num_levels = 5;
+    
+    for (int i = 0; i < num_levels; ++i) {
+        float roughness = static_cast<float>(i) / (num_levels - 1);
+        int w = std::max(1, map->width >> i);
+        int h = std::max(1, map->height >> i);
+        
+        media::PreFilteredEnvMap::Level level;
+        level.width = w;
+        level.height = h;
+        level.data.resize(w * h * 3);
+        
+        // Very crude downsampling / box blur to simulate roughness
+        // Real pre-filtering requires importance sampling the environment map
+        // but for a CPU renderer we can start with this or implement a faster convolution
+        #pragma omp parallel for
+        for (int y = 0; y < h; ++y) {
+            for (int x = 0; x < w; ++x) {
+                // For now, just copy or simple box filter
+                // TODO: Implement proper GGX convolution for environment map
+                float u = static_cast<float>(x) / w;
+                float v = static_cast<float>(y) / h;
+                int sx = std::clamp(static_cast<int>(u * map->width), 0, map->width - 1);
+                int sy = std::clamp(static_cast<int>(v * map->height), 0, map->height - 1);
+                int s_idx = (sy * map->width + sx) * map->channels;
+                int d_idx = (y * w + x) * 3;
+                level.data[d_idx+0] = map->data[s_idx+0];
+                level.data[d_idx+1] = map->data[s_idx+1];
+                level.data[d_idx+2] = map->data[s_idx+2];
+            }
+        }
+        prefiltered_env_->levels.push_back(std::move(level));
+    }
 }
 
 RayTracer::ShadingResult RayTracer::trace_ray(
@@ -512,13 +703,19 @@ RayTracer::ShadingResult RayTracer::trace_ray(
         }
 
         if (reflectivity > 0.01f) {
-            math::Vector3 refl_dir = (direction - normal * 2.0f * math::Vector3::dot(direction, normal)).normalized();
-            if (roughness > 0.05f) {
-                math::Vector3 perturb = {dist(rng)-0.5f, dist(rng)-0.5f, dist(rng)-0.5f};
-                refl_dir = (refl_dir + perturb * roughness).normalized();
+            math::Vector3 refl_dir;
+            if (roughness < 0.05f) {
+                refl_dir = (direction - normal * 2.0f * math::Vector3::dot(direction, normal)).normalized();
+            } else {
+                math::Vector3 h = importance_sample_ggx(dist(rng), dist(rng), normal, roughness);
+                refl_dir = (direction - h * 2.0f * math::Vector3::dot(direction, h)).normalized();
             }
-            math::Vector3 ks = fresnel_schlick(n_dot_v, f0);
-            total_lighting += ks * trace_ray(hit_pos + normal * 0.001f, refl_dir, state, rng, depth + 1).color;
+            
+            // Ensure reflection is above surface
+            if (math::Vector3::dot(refl_dir, normal) > 0.0f) {
+                math::Vector3 ks = fresnel_schlick(std::clamp(math::Vector3::dot(view_vec, normal), 0.0f, 1.0f), f0);
+                total_lighting += ks * trace_ray(hit_pos + normal * 0.001f, refl_dir, state, rng, depth + 1).color;
+            }
         }
 
         // 2. Refraction / Transmission
@@ -563,12 +760,31 @@ RayTracer::ShadingResult RayTracer::trace_ray(
             total_lighting += kd * albedo * gi_result.color;
         }
     } else {
-        // Fallback ambient / IBL
+        // Fallback ambient / IBL (Split-Sum Approximation)
         if (environment_map_) {
             math::Vector3 ks = fresnel_schlick(n_dot_v, f0);
             math::Vector3 kd = (math::Vector3{1,1,1} - ks) * (1.0f - metallic);
-            math::Vector3 diffuse_env = sample_equirect(*environment_map_, normal, environment_rotation_) * environment_intensity_;
-            total_lighting += (kd * albedo * diffuse_env) * 0.5f;
+            
+            // Diffuse IBL (very blurry env map)
+            math::Vector3 diffuse_env = sample_environment(normal, 1.0f).color;
+            
+            // Specular IBL (Split-Sum)
+            math::Vector3 refl_dir = (direction - normal * 2.0f * math::Vector3::dot(direction, normal)).normalized();
+            math::Vector3 specular_env = sample_environment(refl_dir, roughness).color;
+            
+            // LUT lookup
+            float lut_u = std::clamp(n_dot_v, 0.0f, 1.0f);
+            float lut_v = std::clamp(roughness, 0.0f, 1.0f);
+            int lut_res = brdf_lut_ ? brdf_lut_->size : 0;
+            float scale = 1.0f, bias = 0.0f;
+            if (lut_res > 0) {
+                int lx = std::clamp(static_cast<int>(lut_v * (lut_res - 1)), 0, lut_res - 1);
+                int ly = std::clamp(static_cast<int>(lut_u * (lut_res - 1)), 0, lut_res - 1);
+                scale = brdf_lut_->data[(ly * lut_res + lx) * 2 + 0];
+                bias = brdf_lut_->data[(ly * lut_res + lx) * 2 + 1];
+            }
+            
+            total_lighting += kd * albedo * diffuse_env + specular_env * (ks * scale + bias);
         } else {
             total_lighting += albedo * 0.03f;
         }

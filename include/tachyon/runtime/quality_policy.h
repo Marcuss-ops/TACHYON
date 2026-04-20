@@ -14,6 +14,8 @@ struct QualityPolicy {
     int tile_size{0};            // 0 = full frame
     std::size_t max_workers{0};  // 0 = all cores
     int ray_tracer_spp{1};       // Samples per pixel for 3D ray tracer
+    int motion_blur_samples{1};  // 1 = disabled
+    float shutter_angle{180.0f}; // 180 degrees = half frame
 };
 
 QualityPolicy make_quality_policy(const std::string& tier);

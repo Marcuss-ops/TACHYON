@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 project(TACHYON VERSION 0.1.0 LANGUAGES CXX)
 
 include(FetchContent)
@@ -81,6 +82,7 @@ FetchContent_Declare(
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 FetchContent_MakeAvailable(tinygltf)
+include_directories(${tinygltf_SOURCE_DIR})
 
 # OpenImageDenoise (OIDN) for high-quality path tracing results at low SPP
 # FetchContent_Declare(

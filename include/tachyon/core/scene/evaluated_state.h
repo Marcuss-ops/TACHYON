@@ -154,6 +154,10 @@ struct EvaluatedLayerState {
 
     // PBR Texture / 2D Surface reference
     const std::uint8_t* texture_rgba{nullptr};
+
+    // Animation state
+    std::vector<float> morph_weights;
+    std::vector<math::Matrix4x4> joint_matrices;
 };
 
 struct EvaluatedCameraState {
@@ -170,6 +174,7 @@ struct EvaluatedCameraState {
     float blur_level{1.0f};       // master level
     int   aperture_blades{0};     // 0 = circular
     float aperture_rotation{0.0f};
+    float shutter_angle{180.0f};
 
     camera::CameraState camera;
 };
