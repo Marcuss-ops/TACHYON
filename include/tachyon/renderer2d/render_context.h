@@ -66,7 +66,7 @@ struct AccumulationBuffers {
 };
 
 struct RenderContext {
-    RenderContext(std::shared_ptr<PrecompCache> cache = nullptr) 
+    RenderContext(std::shared_ptr<PrecompCache> cache = std::make_shared<PrecompCache>()) 
         : precomp_cache(std::move(cache)) {}
 
     std::shared_ptr<Framebuffer> framebuffer;

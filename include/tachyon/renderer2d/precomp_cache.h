@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <list>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -26,9 +27,16 @@ public:
     void set_max_bytes(std::size_t bytes) { max_bytes_ = bytes; }
     
 private:
+    struct Entry {
+        std::shared_ptr<SurfaceRGBA> surface;
+        std::size_t size{0};
+        std::list<std::string>::iterator lru_it;
+    };
+
     std::size_t max_bytes_;
     std::size_t current_bytes_{0};
-    std::unordered_map<std::string, std::shared_ptr<SurfaceRGBA>> cache_;
+    mutable std::list<std::string> lru_;
+    std::unordered_map<std::string, Entry> cache_;
 };
 
 } // namespace tachyon::renderer2d
