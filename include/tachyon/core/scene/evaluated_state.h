@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-namespace tachyon {
+namespace tachyon { namespace media { struct HDRTextureData; struct MeshAsset; }
 namespace scene {
 
 enum class LayerType {
@@ -153,7 +153,7 @@ struct EvaluatedLayerState {
     std::optional<std::string> asset_path;
 
     // 3D Mesh asset (loaded from glTF)
-    struct MeshAsset* mesh_asset{nullptr};
+    media::MeshAsset* mesh_asset{nullptr};
 
     // PBR Texture / 2D Surface reference
     const std::uint8_t* texture_rgba{nullptr};
@@ -191,7 +191,7 @@ struct EvaluatedCompositionState {
     std::int64_t frame_number{0};
     double composition_time_seconds{0.0};
     std::vector<EvaluatedLayerState> layers;
-    const struct HDRTextureData* environment_map{nullptr};
+    const media::HDRTextureData* environment_map{nullptr};
     float environment_intensity{1.0f};
     float environment_rotation{0.0f};
     std::vector<EvaluatedLightState> lights;

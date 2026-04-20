@@ -12,10 +12,10 @@
 #include "tachyon/renderer2d/audio/audio_sampling.h"
 #include "tachyon/text/subtitle.h"
 
-#include "evaluator_internal.h"
-#include "evaluator_utils.h"
-#include "evaluator_layer.h"
-#include "evaluator_composition.h"
+#include "tachyon/core/scene/evaluator_internal.h"
+#include "tachyon/core/scene/evaluator_utils.h"
+#include "tachyon/core/scene/evaluator_layer.h"
+#include "tachyon/core/scene/evaluator_composition.h"
 
 #include <algorithm>
 #include <cmath>

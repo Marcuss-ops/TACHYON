@@ -141,7 +141,7 @@ void RayTracer::build_scene(const scene::EvaluatedCompositionState& state) {
     environment_rotation_ = state.environment_rotation;
     ensure_brdf_lut();
 
-    auto should_include = [&](std::size_t idx) { return true; };
+    auto should_include = [&](std::size_t) { return true; };
     internal_build_scene(state, should_include);
 }
 
@@ -286,7 +286,7 @@ void RayTracer::internal_build_scene(const scene::EvaluatedCompositionState& sta
                         const auto& sub = asset_ref.sub_meshes[0];
                         
                         RTCGeometry geom = rtcNewGeometry(device_, RTC_GEOMETRY_TYPE_TRIANGLE);
-                        float* vertices = (float*)rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, 3 * sizeof(float), sub.vertices.size());
+                float* vertices = (float*)rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, 3 * sizeof(float), sub.vertices.size());
                         for (std::size_t i = 0; i < sub.vertices.size(); ++i) {
                             math::Vector3 p = sub.vertices[i].position + glyph_offset;
                             math::Vector3 wp = layer.world_matrix.transform_point(p);
@@ -452,7 +452,7 @@ void RayTracer::update_prefiltered_env(const media::HDRTextureData* map) {
     const int num_levels = 5;
     
     for (int i = 0; i < num_levels; ++i) {
-        float roughness = static_cast<float>(i) / (num_levels - 1);
+        /*float roughness = static_cast<float>(i) / (num_levels - 1);*/
         int w = std::max(1, map->width >> i);
         int h = std::max(1, map->height >> i);
         
@@ -548,7 +548,7 @@ RayTracer::ShadingResult RayTracer::trace_ray(
 
     // View vector
     math::Vector3 view_vec = -direction;
-    float n_dot_v = std::clamp(math::Vector3::dot(normal, view_vec), 0.0f, 1.0f);
+    float n_dot_v = std::clamp(static_cast<float>(math::Vector3::dot(normal, view_vec)), 0.0f, 1.0f);
     math::Vector3 hit_pos = origin + direction * rh.ray.tfar;
 
     // UV Interpolation
@@ -726,7 +726,7 @@ RayTracer::ShadingResult RayTracer::trace_ray(
         }
 
         // 2. Refraction / Transmission
-        float transmission = 1.0f - layer->opacity;
+        float transmission = 1.0f - static_cast<float>(layer->opacity);
         if (transmission > 0.01f) {
             float eta = 1.0f / layer->material.ior;
             math::Vector3 n = normal;
@@ -791,7 +791,7 @@ RayTracer::ShadingResult RayTracer::trace_ray(
                 bias = brdf_lut_->data[(ly * lut_res + lx) * 2 + 1];
             }
             
-            total_lighting += kd * albedo * diffuse_env + specular_env * (ks * scale + bias);
+            total_lighting = total_lighting + (albedo * (kd * diffuse_env)) + (specular_env * (ks * scale + math::Vector3{bias, bias, bias}));
         } else {
             total_lighting += albedo * 0.03f;
         }

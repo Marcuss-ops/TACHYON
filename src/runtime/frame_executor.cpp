@@ -230,7 +230,7 @@ static void resolve_3d_layers_textures(
     const RenderPlan& plan,
     const FrameRenderTask& task,
     FrameCache& cache,
-    RenderContext& context) {
+    RenderContext& context) { (void)scene; (void)plan; 
     (void)task;
     (void)cache;
 
@@ -265,7 +265,7 @@ ExecutedFrame execute_frame_task(
     const RenderPlan& plan,
     const FrameRenderTask& task,
     FrameCache& cache,
-    RenderContext& context) {
+    RenderContext& context) { (void)scene; (void)plan; 
     (void)context;
     const std::string scene_signature = build_scene_signature(scene);
 

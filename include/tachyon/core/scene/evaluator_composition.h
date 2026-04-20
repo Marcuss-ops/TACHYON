@@ -5,10 +5,7 @@
 #include "tachyon/core/scene/evaluator.h"
 
 namespace tachyon {
-
 namespace scene {
-
-namespace {
 
 const EvaluatedLayerState& resolve_layer_state(
     std::size_t layer_index,
@@ -24,8 +21,5 @@ EvaluatedCompositionState evaluate_composition_internal(
     EvaluationVariables vars,
     media::MediaManager* media);
 
-} // namespace
-
 } // namespace scene
-
 } // namespace tachyon
