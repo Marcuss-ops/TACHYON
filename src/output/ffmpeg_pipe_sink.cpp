@@ -45,6 +45,9 @@ std::string resolve_output_pixel_format(const OutputContract& contract) {
     if (contract.profile.video.pixel_format == "rgba8") {
         return "rgba";
     }
+    if (contract.profile.format == OutputFormat::ProRes) {
+        return "yuv422p10";
+    }
     return contract.profile.video.pixel_format.empty() ? "yuv420p" : contract.profile.video.pixel_format;
 }
 
@@ -127,7 +130,7 @@ std::string build_video_pass_command(const RenderPlan& plan, const std::filesyst
     command << "ffmpeg "
             << (overwrite ? "-y" : "-n")
             << " -f rawvideo"
-            << " -pix_fmt rgba"
+            << " -pix_fmt " << pixel_format
             << " -s " << plan.composition.width << 'x' << plan.composition.height
             << " -r " << fps
             << " -i -"
