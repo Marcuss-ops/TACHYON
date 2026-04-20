@@ -8,6 +8,7 @@
 #include "tachyon/text/layout.h"
 #include "tachyon/renderer2d/texture_resolver.h"
 #include "tachyon/core/math/matrix4x4.h"
+#include <OpenImageDenoise/oidn.hpp>
 #include <iostream>
 #include <random>
 #include <cmath>
@@ -101,6 +102,10 @@ RayTracer::RayTracer() {
         return;
     }
     rtcSetDeviceErrorFunction(device_, log_embree_error, nullptr);
+
+    oidn_device_ = oidn::newDevice();
+    oidn_device_->commit();
+    oidn_filter_ = oidn::newFilter(oidn_device_, "RT");
 }
 
 RayTracer::~RayTracer() {
@@ -198,8 +203,18 @@ void RayTracer::internal_build_scene(const scene::EvaluatedCompositionState& sta
                                 if (j_idx < layer.joint_matrices.size()) {
                                     skinned_p += layer.joint_matrices[j_idx].transform_point(p) * w;
                                     skinned_n += layer.joint_matrices[j_idx].transform_vector(n) * w;
-                                }
-                            }
+        }
+    }
+
+    // Apply OIDN denoising if available and low samples
+    if (oidn_filter_ && spp <= 4) {
+        oidn_filter_->set("color", out_rgba);
+        oidn_filter_->set("output", out_rgba);
+        oidn_filter_->set("width", width);
+        oidn_filter_->set("height", height);
+        oidn_filter_->commit();
+        oidn_filter_->execute();
+    }
                         }
                         if (sub.vertices[i].weights[0] > 0.001f) {
                             p = skinned_p;
@@ -814,6 +829,7 @@ void RayTracer::render(const scene::EvaluatedCompositionState& state, float* out
         for (int x = 0; x < width; ++x) {
             math::Vector3 accumulated_rgb{0,0,0};
             float accumulated_alpha = 0.0f;
+            float accumulated_depth = 0.0f;
             int spp = std::max(1, samples_per_pixel_);
 
             for (int s = 0; s < spp; ++s) {
