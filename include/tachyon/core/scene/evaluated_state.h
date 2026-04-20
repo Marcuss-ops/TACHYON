@@ -40,8 +40,23 @@ struct EvaluatedLightState {
     math::Vector3 direction{0.0f, 0.0f, -1.0f};
     ColorSpec color{255, 255, 255, 255};
     float intensity{1.0f};
-    float attenuation_near{0.0f};
-    float attenuation_far{1000.0f};
+    
+    // Attenuation (point + spot only)
+    float attenuation_near{0.0f};   // distance where full intensity starts
+    float attenuation_far{1000.0f}; // distance where intensity reaches 0
+
+    // Spot cone (spot only)
+    float cone_angle{90.0f};       // Full angle in degrees
+    float cone_feather{50.0f};     // 0..100 percentage
+
+    // Falloff shape
+    // "none" | "smooth" | "linear" | "inverse_square"
+    std::string falloff_type{"smooth"};
+
+    // Shadows
+    bool casts_shadows{false};
+    float shadow_darkness{1.0f}; // 0..1
+    float shadow_radius{0.0f};   // for soft shadows
 };
 
 struct EvaluatedShapePathPoint {
@@ -81,12 +96,36 @@ struct EvaluatedLayerState {
     math::Matrix4x4 world_matrix{math::Matrix4x4::identity()};
     
     // 3D Specific evaluated state
+    math::Vector3 orientation_xyz_deg{math::Vector3::zero()};
+    math::Vector3 anchor_point_3d{math::Vector3::zero()};
+    math::Vector3 scale_3d{100.0f, 100.0f, 100.0f};
+    
     math::Vector3 world_position3{math::Vector3::zero()};
+    math::Vector3 world_normal{0.0f, 0.0f, 1.0f};
+
+    struct MaterialOptions {
+        float ambient_coeff{0.5f};
+        float diffuse_coeff{0.5f};
+        float specular_coeff{0.0f};
+        float shininess{15.0f};
+        float metallic{0.0f};      // 0..1
+        float roughness{0.5f};     // 0..1
+        float emission{0.0f};      // 0..N
+        float ior{1.45f};          // Index of Refraction
+        bool  metal{false};        // legacy AE metal flag
+    };
+    MaterialOptions material;
+
+    float extrusion_depth{0.0f};
+    float bevel_size{0.0f};
     
     std::int64_t width{0};
     std::int64_t height{0};
     
     std::string text_content;
+    std::string font_id;
+    float font_size{48.0f};
+    int text_alignment{0}; // 0=Left, 1=Center, 2=Right
     ColorSpec fill_color{255, 255, 255, 255};
     ColorSpec stroke_color{255, 255, 255, 255};
     float stroke_width{0.0f};
@@ -109,12 +148,29 @@ struct EvaluatedLayerState {
     // Asset reference for Image/Video
     std::optional<std::string> asset_id;
     std::optional<std::string> asset_path;
+
+    // 3D Mesh asset (loaded from glTF)
+    struct MeshAsset* mesh_asset{nullptr};
+
+    // PBR Texture / 2D Surface reference
+    const std::uint8_t* texture_rgba{nullptr};
 };
 
 struct EvaluatedCameraState {
     bool available{false};
     std::string layer_id;
     math::Vector3 position{math::Vector3::zero()};
+    math::Vector3 point_of_interest{0.0f, 0.0f, 0.0f}; 
+    bool is_two_node{true};
+
+    // Optics & Path Tracing
+    bool  dof_enabled{false};
+    float focus_distance{1000.0f};
+    float aperture{1.0f};         // f-stop-like or radius
+    float blur_level{1.0f};       // master level
+    int   aperture_blades{0};     // 0 = circular
+    float aperture_rotation{0.0f};
+
     camera::CameraState camera;
 };
 
@@ -127,6 +183,9 @@ struct EvaluatedCompositionState {
     std::int64_t frame_number{0};
     double composition_time_seconds{0.0};
     std::vector<EvaluatedLayerState> layers;
+    const struct HDRTextureData* environment_map{nullptr};
+    float environment_intensity{1.0f};
+    float environment_rotation{0.0f};
     std::vector<EvaluatedLightState> lights;
     EvaluatedCameraState camera;
 };

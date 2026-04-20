@@ -13,6 +13,7 @@ struct QualityPolicy {
     std::size_t precomp_cache_budget{1ULL * 1024 * 1024 * 1024};
     int tile_size{0};            // 0 = full frame
     std::size_t max_workers{0};  // 0 = all cores
+    int ray_tracer_spp{1};       // Samples per pixel for 3D ray tracer
 };
 
 QualityPolicy make_quality_policy(const std::string& tier);

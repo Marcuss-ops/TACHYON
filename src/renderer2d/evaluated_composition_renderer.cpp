@@ -1,7 +1,9 @@
 #include "tachyon/renderer2d/evaluated_composition_renderer.h"
 
 #include "tachyon/renderer2d/effect_host.h"
+#include "tachyon/renderer2d/evaluated_composition/mask_renderer.h"
 #include "tachyon/renderer2d/framebuffer.h"
+#include "tachyon/renderer3d/ray_tracer.h"
 
 #include <algorithm>
 #include <cmath>
@@ -311,25 +313,62 @@ RasterizedFrame2D render_evaluated_composition_2d(
     dst.clear(renderer2d::Color::transparent());
 
     renderer2d::EffectHost& host = effect_host_for(context);
-    std::optional<renderer2d::SurfaceRGBA> active_mask;
 
+    // Identify if we have 3D layers and trigger 3D pass if available
+    bool has_3d = std::any_of(state.layers.begin(), state.layers.end(), [](const auto& l) { return l.is_3d && l.visible; });
+    std::optional<renderer2d::SurfaceRGBA> world_3d;
+    bool world_3d_composited = false;
+
+    if (has_3d) {
+        if (!context.ray_tracer) {
+            context.ray_tracer = std::make_shared<renderer3d::RayTracer>();
+        }
+        
+        context.ray_tracer->build_scene(state);
+        
+        world_3d.emplace(static_cast<std::uint32_t>(state.width), static_cast<std::uint32_t>(state.height));
+        world_3d->clear(renderer2d::Color::transparent());
+        
+        std::vector<float> hdr_buffer(static_cast<std::size_t>(state.width) * state.height * 4, 0.0f);
+        context.ray_tracer->render(state, hdr_buffer.data(), nullptr, static_cast<int>(state.width), static_cast<int>(state.height));
+        
+        // Tonemap / Convert HDR float to RGBA8
+        for (std::int64_t i = 0; i < state.width * state.height; ++i) {
+            const float r = hdr_buffer[i * 4 + 0];
+            const float g = hdr_buffer[i * 4 + 1];
+            const float b = hdr_buffer[i * 4 + 2];
+            const float a = hdr_buffer[i * 4 + 3];
+            
+            const std::uint8_t ur = static_cast<std::uint8_t>(std::clamp(r * 255.0f, 0.0f, 255.0f));
+            const std::uint8_t ug = static_cast<std::uint8_t>(std::clamp(g * 255.0f, 0.0f, 255.0f));
+            const std::uint8_t ub = static_cast<std::uint8_t>(std::clamp(b * 255.0f, 0.0f, 255.0f));
+            const std::uint8_t ua = static_cast<std::uint8_t>(std::clamp(a * 255.0f, 0.0f, 255.0f));
+            
+            world_3d->set_pixel(static_cast<std::uint32_t>(i % state.width), static_cast<std::uint32_t>(i / state.width), {ur, ug, ub, ua});
+        }
+    }
+
+    // AE Rendering Order: Bottom to Top
     for (const auto& layer : state.layers) {
         if (!layer.enabled || !layer.active) {
             continue;
         }
 
-        if (layer.type == scene::LayerType::Mask) {
-            active_mask = render_layer_surface(layer, state, plan, task, context);
-            continue;
+        // Interleave 3D: Composite the 3D world at the first 3D layer position
+        if (layer.is_3d && has_3d && !world_3d_composited) {
+            if (world_3d.has_value()) {
+                composite_surface(dst, *world_3d, 0, 0, renderer2d::BlendMode::Normal);
+            }
+            world_3d_composited = true;
+            continue; // 3D layers are handled by the 3D pass
+        } else if (layer.is_3d) {
+            continue; // Skip subsequent 3D layers as they are in the same world_3d
         }
 
         renderer2d::SurfaceRGBA layer_surface = render_layer_surface(layer, state, plan, task, context);
 
         if (layer.is_adjustment_layer) {
             layer_surface = apply_effect_pipeline(layer_surface, layer.effects, host);
-            if (active_mask.has_value()) {
-                apply_mask(layer_surface, *active_mask);
-            }
             composite_surface(dst, layer_surface, 0, 0, renderer2d::BlendMode::Normal);
             continue;
         }
@@ -342,10 +381,6 @@ RasterizedFrame2D render_evaluated_composition_2d(
             }
         }
 
-        if (active_mask.has_value()) {
-            apply_mask(layer_surface, *active_mask);
-        }
-
         composite_surface(dst, layer_surface, 0, 0, static_cast<renderer2d::BlendMode>(
             layer.blend_mode == "additive" ? renderer2d::BlendMode::Additive :
             layer.blend_mode == "multiply" ? renderer2d::BlendMode::Multiply :
@@ -353,6 +388,34 @@ RasterizedFrame2D render_evaluated_composition_2d(
             layer.blend_mode == "overlay" ? renderer2d::BlendMode::Overlay :
             layer.blend_mode == "soft_light" || layer.blend_mode == "softLight" ? renderer2d::BlendMode::SoftLight :
             renderer2d::BlendMode::Normal));
+    }
+
+    std::vector<float> accum_r(static_cast<std::size_t>(dst.width()) * dst.height(), 0.0f);
+    std::vector<float> accum_g = accum_r;
+    std::vector<float> accum_b = accum_r;
+    std::vector<float> accum_a = accum_r;
+    for (std::uint32_t y = 0; y < dst.height(); ++y) {
+        for (std::uint32_t x = 0; x < dst.width(); ++x) {
+            const std::size_t index = static_cast<std::size_t>(y) * static_cast<std::size_t>(dst.width()) + static_cast<std::size_t>(x);
+            const renderer2d::Color px = dst.get_pixel(x, y);
+            accum_r[index] = static_cast<float>(px.r) / 255.0f;
+            accum_g[index] = static_cast<float>(px.g) / 255.0f;
+            accum_b[index] = static_cast<float>(px.b) / 255.0f;
+            accum_a[index] = static_cast<float>(px.a) / 255.0f;
+        }
+    }
+
+    renderer2d::MaskRenderer::applyMask(state, context, accum_r, accum_g, accum_b, accum_a);
+    for (std::uint32_t y = 0; y < dst.height(); ++y) {
+        for (std::uint32_t x = 0; x < dst.width(); ++x) {
+            const std::size_t index = static_cast<std::size_t>(y) * static_cast<std::size_t>(dst.width()) + static_cast<std::size_t>(x);
+            dst.set_pixel(x, y, renderer2d::Color{
+                static_cast<std::uint8_t>(std::clamp(std::lround(accum_r[index] * 255.0f), 0L, 255L)),
+                static_cast<std::uint8_t>(std::clamp(std::lround(accum_g[index] * 255.0f), 0L, 255L)),
+                static_cast<std::uint8_t>(std::clamp(std::lround(accum_b[index] * 255.0f), 0L, 255L)),
+                static_cast<std::uint8_t>(std::clamp(std::lround(accum_a[index] * 255.0f), 0L, 255L))
+            });
+        }
     }
 
     return frame;

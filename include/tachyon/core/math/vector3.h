@@ -19,9 +19,11 @@ struct Vector3 {
     static constexpr Vector3 up() { return {0.0f, 1.0f, 0.0f}; }
     static constexpr Vector3 forward() { return {0.0f, 0.0f, -1.0f}; } // Right-handed, camera looks -Z
 
+    constexpr Vector3 operator-() const { return {-x, -y, -z}; }
     constexpr Vector3 operator+(const Vector3& other) const { return {x + other.x, y + other.y, z + other.z}; }
     constexpr Vector3 operator-(const Vector3& other) const { return {x - other.x, y - other.y, z - other.z}; }
     constexpr Vector3 operator*(float scalar) const { return {x * scalar, y * scalar, z * scalar}; }
+    constexpr Vector3 operator*(const Vector3& other) const { return {x * other.x, y * other.y, z * other.z}; }
     constexpr Vector3 operator/(float scalar) const { return {x / scalar, y / scalar, z / scalar}; }
 
     Vector3& operator+=(const Vector3& other) { x += other.x; y += other.y; z += other.z; return *this; }

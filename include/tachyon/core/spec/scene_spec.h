@@ -76,6 +76,10 @@ struct Vector2KeyframeSpec {
 
 struct ColorSpec {
     std::uint8_t r{255}, g{255}, b{255}, a{255};
+
+    [[nodiscard]] math::Vector3 to_vector3() const {
+        return {r / 255.0f, g / 255.0f, b / 255.0f};
+    }
 };
 
 struct ColorKeyframeSpec {
@@ -169,8 +173,10 @@ struct Transform2D {
 
 struct Transform3D {
     AnimatedVector3Spec position_property;
-    AnimatedVector3Spec rotation_property; // Euler angles in degrees
+    AnimatedVector3Spec orientation_property; // AE-style orientation (degrees)
+    AnimatedVector3Spec rotation_property;    // Euler angles (degrees)
     AnimatedVector3Spec scale_property;
+    AnimatedVector3Spec anchor_point_property;
 };
 
 // ---------------------------------------------------------------------------
@@ -227,6 +233,9 @@ struct LayerSpec {
     std::int64_t height{0};
     float stroke_width{0.0f};
     std::string text_content;
+    std::string font_id;
+    AnimatedScalarSpec font_size; // pixel size
+    std::string alignment{"left"}; // left, center, right
     AnimatedColorSpec fill_color;
     AnimatedColorSpec stroke_color;
     AnimatedScalarSpec stroke_width_property;
@@ -235,6 +244,7 @@ struct LayerSpec {
     float miter_limit{4.0f};
     std::optional<std::string> parent;
     bool is_3d{false};
+    bool visible{true};
     bool is_adjustment_layer{false};
     Transform2D transform;
     Transform3D transform3d;
@@ -245,12 +255,8 @@ struct LayerSpec {
     TrackMatteType track_matte_type{TrackMatteType::None};
     std::optional<std::string> track_matte_layer_id;
     std::optional<std::string> precomp_id;
+    std::optional<std::string> mesh_path;
 
-    // Light specific
-    std::optional<std::string> light_type;
-    AnimatedScalarSpec intensity;
-    AnimatedScalarSpec attenuation_near;
-    AnimatedScalarSpec attenuation_far;
 
     // Text animator array (for type == "text" layers only)
     std::vector<TextAnimatorSpec> text_animators;
@@ -259,6 +265,43 @@ struct LayerSpec {
     std::optional<std::string> subtitle_path;
     std::optional<ColorSpec>   subtitle_outline_color;
     float                      subtitle_outline_width{0.0f};
+
+    // Material options (compact PBR)
+    AnimatedScalarSpec ambient_coeff;
+    AnimatedScalarSpec diffuse_coeff;
+    AnimatedScalarSpec specular_coeff;
+    AnimatedScalarSpec shininess;
+    AnimatedScalarSpec metallic;
+    AnimatedScalarSpec roughness;
+    AnimatedScalarSpec emission;
+    AnimatedScalarSpec ior;
+    bool metal{false};
+
+    // Advanced 3D / Extrusion
+    AnimatedScalarSpec extrusion_depth;
+    AnimatedScalarSpec bevel_size;
+
+    // Camera specific
+    bool               is_two_node{true};
+    AnimatedVector3Spec point_of_interest;
+    bool               dof_enabled{false};
+    AnimatedScalarSpec focus_distance;
+    AnimatedScalarSpec aperture;
+    AnimatedScalarSpec blur_level;
+    AnimatedScalarSpec aperture_blades;
+    AnimatedScalarSpec aperture_rotation;
+
+    // Light specific
+    std::optional<std::string> light_type;
+    AnimatedScalarSpec intensity;
+    AnimatedScalarSpec attenuation_near;
+    AnimatedScalarSpec attenuation_far;
+    AnimatedScalarSpec cone_angle;
+    AnimatedScalarSpec cone_feather;
+    std::string        falloff_type{"smooth"};
+    bool               casts_shadows{false};
+    AnimatedScalarSpec shadow_darkness;
+    AnimatedScalarSpec shadow_radius;
 };
 
 struct CompositionSpec {
@@ -270,6 +313,7 @@ struct CompositionSpec {
     double duration{0.0};
     FrameRate frame_rate;
     std::optional<std::string> background;
+    std::optional<std::string> environment_path;
     std::vector<LayerSpec> layers;
 };
 

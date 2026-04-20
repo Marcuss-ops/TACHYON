@@ -1,5 +1,6 @@
 {
   "permissions": {
+    "defaultMode": "bypassPermissions",
     "allow": [
       "Bash(cmake --build build --config Debug)",
       "Bash(./build/tests/Debug/TachyonTests.exe)",
@@ -12,7 +13,7 @@
       "Bash(echo \"EXIT_CODE:$?\")",
       "Read(//tmp/**)",
       "Bash(start *)",
-      "Bash(powershell -Command '& '\\\\''./build/tests/Debug/TachyonTests.exe'\\\\'' 2>&1 | Select-String -Pattern '\\\\''FAIL|passed|failed|EXIT'\\\\'' | ForEach-Object { $_.Line }')",
+      "Bash(powershell -Command '& '\\''./build/tests/Debug/TachyonTests.exe'\\'' 2>&1 | Select-String -Pattern '\\''FAIL|passed|failed|EXIT'\\'' | ForEach-Object { $_.Line }')",
       "Bash(cmake --build build --config Release)",
       "Bash(./build/tests/Release/TachyonTests.exe)",
       "Bash(cmake --version)",
@@ -20,7 +21,8 @@
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
       "Bash(cmake --build build --config Release --target TachyonCore --parallel 4)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(Skill(update-config))"
     ]
   }
 }

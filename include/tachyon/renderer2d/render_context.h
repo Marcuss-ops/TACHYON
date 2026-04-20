@@ -13,6 +13,10 @@
 #include <string>
 #include <memory>
 
+namespace tachyon::renderer3d {
+class RayTracer;
+}
+
 namespace tachyon::renderer2d {
 
 struct EvaluatorContext {
@@ -74,6 +78,7 @@ struct RenderContext {
     std::shared_ptr<EffectHost> effects;
     AccumulationBuffers accumulation_buffer;
     QualityPolicy policy;
+    std::shared_ptr<renderer3d::RayTracer> ray_tracer;
 };
 
 struct EvaluationResult {

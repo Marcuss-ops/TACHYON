@@ -65,6 +65,10 @@ add_library(TachyonCore
     renderer2d/text/utils/font_utils.cpp
     renderer2d/text/freetype/freetype_manager.cpp
     renderer2d/text/glyph/glyph_loader.cpp
+    text/outline_extractor.cpp
+    renderer3d/ray_tracer.cpp
+    media/mesh_loader.cpp
+    media/extruder.cpp
 )
 
 if(MSVC)
@@ -91,6 +95,9 @@ target_link_libraries(TachyonCore
         avutil
         swscale
         swresample
+        embree
+        tinygltf::tinygltf
+        OpenImageDenoise
 )
 
 add_executable(tachyon
