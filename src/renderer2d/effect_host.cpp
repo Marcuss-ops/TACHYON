@@ -197,21 +197,150 @@ SurfaceRGBA transform_surface(const SurfaceRGBA& input, Fn&& fn) {
     return output;
 }
 
+struct PremultipliedPixel {
+    float r{0.0f};
+    float g{0.0f};
+    float b{0.0f};
+    float a{0.0f};
+};
+
+PremultipliedPixel to_premultiplied(Color color) {
+    const float alpha = static_cast<float>(color.a) / 255.0f;
+    return PremultipliedPixel{
+        static_cast<float>(color.r) * alpha,
+        static_cast<float>(color.g) * alpha,
+        static_cast<float>(color.b) * alpha,
+        static_cast<float>(color.a)
+    };
+}
+
+Color from_premultiplied(const PremultipliedPixel& px) {
+    if (px.a <= 0.0f) return Color::transparent();
+    const float inv = 255.0f / px.a;
+    return Color{
+        static_cast<std::uint8_t>(std::clamp(std::lround(px.r * inv), 0L, 255L)),
+        static_cast<std::uint8_t>(std::clamp(std::lround(px.g * inv), 0L, 255L)),
+        static_cast<std::uint8_t>(std::clamp(std::lround(px.b * inv), 0L, 255L)),
+        static_cast<std::uint8_t>(std::clamp(std::lround(px.a), 0L, 255L))
+    };
+}
+
+std::vector<float> gaussian_kernel(float sigma) {
+    const int radius = std::max(1, static_cast<int>(std::ceil(sigma * 3.0f)));
+    std::vector<float> kernel(static_cast<std::size_t>(radius * 2 + 1), 0.0f);
+    float sum = 0.0f;
+    for (int i = -radius; i <= radius; ++i) {
+        const float w = std::exp(-(static_cast<float>(i * i)) / (2.0f * sigma * sigma));
+        kernel[static_cast<std::size_t>(i + radius)] = w;
+        sum += w;
+    }
+    for (float& w : kernel) w /= sum;
+    return kernel;
+}
+
+std::vector<PremultipliedPixel> convolve_h(const std::vector<PremultipliedPixel>& in,
+                                            std::uint32_t w, std::uint32_t h,
+                                            const std::vector<float>& k) {
+    const int r = static_cast<int>(k.size() / 2U);
+    std::vector<PremultipliedPixel> out(in.size());
+    for (std::uint32_t y = 0; y < h; ++y) {
+        for (std::uint32_t x = 0; x < w; ++x) {
+            PremultipliedPixel acc{};
+            for (int d = -r; d <= r; ++d) {
+                const int sx = std::clamp(static_cast<int>(x) + d, 0, static_cast<int>(w) - 1);
+                const float wt = k[static_cast<std::size_t>(d + r)];
+                const auto& s = in[y * w + static_cast<std::uint32_t>(sx)];
+                acc.r += s.r * wt; acc.g += s.g * wt;
+                acc.b += s.b * wt; acc.a += s.a * wt;
+            }
+            out[y * w + x] = acc;
+        }
+    }
+    return out;
+}
+
+std::vector<PremultipliedPixel> convolve_v(const std::vector<PremultipliedPixel>& in,
+                                            std::uint32_t w, std::uint32_t h,
+                                            const std::vector<float>& k) {
+    const int r = static_cast<int>(k.size() / 2U);
+    std::vector<PremultipliedPixel> out(in.size());
+    for (std::uint32_t y = 0; y < h; ++y) {
+        for (std::uint32_t x = 0; x < w; ++x) {
+            PremultipliedPixel acc{};
+            for (int d = -r; d <= r; ++d) {
+                const int sy = std::clamp(static_cast<int>(y) + d, 0, static_cast<int>(h) - 1);
+                const float wt = k[static_cast<std::size_t>(d + r)];
+                const auto& s = in[static_cast<std::uint32_t>(sy) * w + x];
+                acc.r += s.r * wt; acc.g += s.g * wt;
+                acc.b += s.b * wt; acc.a += s.a * wt;
+            }
+            out[y * w + x] = acc;
+        }
+    }
+    return out;
+}
+
 SurfaceRGBA blur_surface(const SurfaceRGBA& input, float sigma) {
-    (void)sigma;
-    return input;
+    if (sigma <= 0.0f || input.width() == 0U || input.height() == 0U) return input;
+    const auto k = gaussian_kernel(sigma);
+    std::vector<PremultipliedPixel> px;
+    px.reserve(static_cast<std::size_t>(input.width()) * input.height());
+    for (std::uint32_t y = 0; y < input.height(); ++y)
+        for (std::uint32_t x = 0; x < input.width(); ++x)
+            px.push_back(to_premultiplied(input.get_pixel(x, y)));
+    const auto blurred = convolve_v(convolve_h(px, input.width(), input.height(), k),
+                                    input.width(), input.height(), k);
+    SurfaceRGBA out(input.width(), input.height());
+    for (std::uint32_t y = 0; y < input.height(); ++y)
+        for (std::uint32_t x = 0; x < input.width(); ++x)
+            out.set_pixel(x, y, from_premultiplied(blurred[y * input.width() + x]));
+    return out;
 }
 
 SurfaceRGBA blur_alpha_mask(const SurfaceRGBA& input, float sigma) {
-    (void)sigma;
-    return input;
+    if (sigma <= 0.0f || input.width() == 0U || input.height() == 0U) return input;
+    const auto k = gaussian_kernel(sigma);
+    std::vector<PremultipliedPixel> px;
+    px.reserve(static_cast<std::size_t>(input.width()) * input.height());
+    for (std::uint32_t y = 0; y < input.height(); ++y)
+        for (std::uint32_t x = 0; x < input.width(); ++x)
+            px.push_back({0.0f, 0.0f, 0.0f, static_cast<float>(input.get_pixel(x, y).a)});
+    const auto blurred = convolve_v(convolve_h(px, input.width(), input.height(), k),
+                                    input.width(), input.height(), k);
+    SurfaceRGBA out(input.width(), input.height());
+    for (std::uint32_t y = 0; y < input.height(); ++y)
+        for (std::uint32_t x = 0; x < input.width(); ++x)
+            out.set_pixel(x, y, Color{0, 0, 0,
+                static_cast<std::uint8_t>(std::clamp(std::lround(blurred[y * input.width() + x].a), 0L, 255L))});
+    return out;
 }
 
-void composite_with_offset(SurfaceRGBA& destination, const SurfaceRGBA& source, int x, int y) {
-    (void)destination;
-    (void)source;
-    (void)x;
-    (void)y;
+void composite_with_offset(SurfaceRGBA& dst, const SurfaceRGBA& src, int ox, int oy) {
+    for (std::uint32_t y = 0; y < src.height(); ++y) {
+        const int ty = static_cast<int>(y) + oy;
+        if (ty < 0 || static_cast<std::uint32_t>(ty) >= dst.height()) continue;
+        for (std::uint32_t x = 0; x < src.width(); ++x) {
+            const int tx = static_cast<int>(x) + ox;
+            if (tx < 0 || static_cast<std::uint32_t>(tx) >= dst.width()) continue;
+            dst.blend_pixel(static_cast<std::uint32_t>(tx), static_cast<std::uint32_t>(ty), src.get_pixel(x, y));
+        }
+    }
+}
+
+std::array<std::uint8_t, 256> build_channel_lut(std::function<float(float)> mapper) {
+    std::array<std::uint8_t, 256> lut{};
+    for (std::size_t i = 0; i < 256; ++i) {
+        const float in = static_cast<float>(i) / 255.0f;
+        lut[i] = static_cast<std::uint8_t>(std::lround(std::clamp(mapper(in), 0.0f, 1.0f) * 255.0f));
+    }
+    return lut;
+}
+
+SurfaceRGBA apply_channel_lut(const SurfaceRGBA& input, const std::array<std::uint8_t, 256>& lut) {
+    return transform_surface(input, [&](Color px) {
+        if (px.a == 0) return Color::transparent();
+        return Color{lut[px.r], lut[px.g], lut[px.b], px.a};
+    });
 }
 
 } // namespace
@@ -221,18 +350,65 @@ SurfaceRGBA GaussianBlurEffect::apply(const SurfaceRGBA& input, const EffectPara
 }
 
 SurfaceRGBA DropShadowEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
-    (void)params;
-    return input;
+    const float blur_radius = get_scalar(params, "blur_radius", 4.0f);
+    const int offset_x     = static_cast<int>(get_scalar(params, "offset_x", 4.0f));
+    const int offset_y     = static_cast<int>(get_scalar(params, "offset_y", 4.0f));
+    const Color shadow_color = get_color(params, "shadow_color", Color{0, 0, 0, 160});
+
+    SurfaceRGBA shadow = blur_alpha_mask(input, blur_radius);
+    for (std::uint32_t y = 0; y < shadow.height(); ++y) {
+        for (std::uint32_t x = 0; x < shadow.width(); ++x) {
+            const std::uint8_t alpha = shadow.get_pixel(x, y).a;
+            if (alpha == 0U) continue;
+            const std::uint32_t sa = static_cast<std::uint32_t>(alpha) * shadow_color.a / 255U;
+            shadow.set_pixel(x, y, Color{shadow_color.r, shadow_color.g, shadow_color.b,
+                                         static_cast<std::uint8_t>(sa)});
+        }
+    }
+
+    SurfaceRGBA out(input.width(), input.height());
+    composite_with_offset(out, shadow, offset_x, offset_y);
+    composite_with_offset(out, input, 0, 0);
+    return out;
 }
 
 SurfaceRGBA GlowEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
-    (void)params;
-    return input;
+    const float radius   = get_scalar(params, "radius", get_scalar(params, "blur_radius", 4.0f));
+    const float strength = std::max(0.0f, get_scalar(params, "strength", 1.0f));
+    if (input.width() == 0U || input.height() == 0U) return input;
+
+    const SurfaceRGBA blurred = blur_surface(input, radius);
+    SurfaceRGBA out(input.width(), input.height());
+    for (std::uint32_t y = 0; y < input.height(); ++y) {
+        for (std::uint32_t x = 0; x < input.width(); ++x) {
+            const Color base = input.get_pixel(x, y);
+            const Color glow = blurred.get_pixel(x, y);
+            out.set_pixel(x, y, Color{
+                static_cast<std::uint8_t>(std::clamp(std::lround(static_cast<float>(base.r) + static_cast<float>(glow.r) * strength), 0L, 255L)),
+                static_cast<std::uint8_t>(std::clamp(std::lround(static_cast<float>(base.g) + static_cast<float>(glow.g) * strength), 0L, 255L)),
+                static_cast<std::uint8_t>(std::clamp(std::lround(static_cast<float>(base.b) + static_cast<float>(glow.b) * strength), 0L, 255L)),
+                base.a
+            });
+        }
+    }
+    return out;
 }
 
 SurfaceRGBA LevelsEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
-    (void)params;
-    return input;
+    const float in_black  = clamp01(get_scalar(params, "input_black",  0.0f) / 255.0f);
+    const float in_white  = clamp01(get_scalar(params, "input_white",  1.0f));
+    const float gamma     = std::max(0.0001f, get_scalar(params, "gamma", 1.0f));
+    const float out_black = clamp01(get_scalar(params, "output_black", 0.0f) / 255.0f);
+    const float out_white = clamp01(get_scalar(params, "output_white", 1.0f));
+    const float in_range  = in_white - in_black;
+    const float out_range = out_white - out_black;
+    if (in_range <= 0.0f || out_range <= 0.0f) return input;
+
+    const auto lut = build_channel_lut([&](float v) {
+        const float n = clamp01((v - in_black) / in_range);
+        return out_black + std::pow(n, 1.0f / gamma) * out_range;
+    });
+    return apply_channel_lut(input, lut);
 }
 
 SurfaceRGBA CurvesEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
