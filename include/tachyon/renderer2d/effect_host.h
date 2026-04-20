@@ -1,12 +1,15 @@
 #pragma once
 
 #include "tachyon/renderer2d/color_transfer.h"
+#include "tachyon/renderer2d/color/lut3d.h"
 #include "tachyon/renderer2d/rasterizer.h"
 #include "tachyon/renderer2d/framebuffer.h"
 
 #include <array>
+#include <filesystem>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -96,6 +99,19 @@ public:
 class LUTEffect : public Effect {
 public:
     SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
+};
+
+/// Applies a 3D LUT loaded from a .cube file.
+/// Reads params.strings["lut_path"] for the file path.
+/// Reads params.scalars["lut_amount"] (0-1, default 1) for blend amount.
+/// Caches parsed LUTs by path to avoid re-parsing every frame.
+class Lut3DCubeEffect : public Effect {
+public:
+    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
+
+private:
+    mutable std::mutex m_cache_mutex;
+    mutable std::unordered_map<std::string, Lut3D> m_lut_cache;
 };
 
 }  // namespace tachyon::renderer2d

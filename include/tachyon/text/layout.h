@@ -1,10 +1,12 @@
 #pragma once
 
 #include "tachyon/text/font.h"
+#include "tachyon/core/spec/text_animator_spec.h"
 
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -88,6 +90,7 @@ public:
 
 private:
     friend TextRasterSurface rasterize_text_rgba(const BitmapFont&, std::string_view, const TextStyle&, const TextBox&, TextAlignment, const TextLayoutOptions&, const TextAnimationOptions&);
+    friend TextRasterSurface rasterize_text_rgba(const BitmapFont&, std::string_view, const TextStyle&, const TextBox&, TextAlignment, float, std::span<const TextAnimatorSpec>, const TextLayoutOptions&);
 
     void blend_pixel(std::uint32_t x, std::uint32_t y, renderer2d::Color color, std::uint8_t alpha);
 
@@ -112,5 +115,18 @@ TextRasterSurface rasterize_text_rgba(
     TextAlignment alignment,
     const TextLayoutOptions& layout_options = {},
     const TextAnimationOptions& animation = {});
+
+/// Overload with per-character Text Animator support.
+/// Each animator in @p animators is evaluated at @p time_seconds.
+/// The selector coverage is blended per glyph before rasterization.
+TextRasterSurface rasterize_text_rgba(
+    const BitmapFont& font,
+    std::string_view utf8_text,
+    const TextStyle& style,
+    const TextBox& text_box,
+    TextAlignment alignment,
+    float time_seconds,
+    std::span<const TextAnimatorSpec> animators,
+    const TextLayoutOptions& layout_options = {});
 
 } // namespace tachyon::text

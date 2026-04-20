@@ -1,15 +1,18 @@
 #include "tachyon/renderer2d/effect_host.h"
 #include "tachyon/renderer2d/render_context.h"
+#include "tachyon/renderer2d/color/lut3d.h"
 
 #include <array>
 #include <fstream>
 #include <functional>
+#include <mutex>
 #include <stdexcept>
 #include <utility>
 #include <vector>
 #include <algorithm>
 #include <cmath>
 #include <sstream>
+#include <unordered_map>
 
 namespace tachyon::renderer2d {
 
@@ -607,6 +610,47 @@ SurfaceRGBA LUTEffect::apply(const SurfaceRGBA& input, const EffectParams& param
     });
 }
 
+SurfaceRGBA Lut3DCubeEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
+    // Retrieve the .cube file path from the strings map
+    const auto path_it = params.strings.find("lut_path");
+    if (path_it == params.strings.end() || path_it->second.empty()) {
+        return input;
+    }
+
+    const float amount = clamp01(get_scalar(params, "lut_amount", 1.0f));
+    if (amount <= 0.0f) {
+        return input;
+    }
+
+    // Load (and cache) the LUT — per-call cache keyed by path
+    Lut3D lut;
+    {
+        std::lock_guard<std::mutex> lock(m_cache_mutex);
+        const auto cache_it = m_lut_cache.find(path_it->second);
+        if (cache_it != m_lut_cache.end()) {
+            lut = cache_it->second;
+        } else {
+            auto load_result = load_lut_cube(std::filesystem::path(path_it->second));
+            if (!load_result.ok() || !load_result.value.has_value()) {
+                // Failed to load — return input unchanged rather than crashing
+                return input;
+            }
+            lut = std::move(*load_result.value);
+            m_lut_cache[path_it->second] = lut;
+        }
+    }
+
+    if (!lut.is_valid()) {
+        return input;
+    }
+
+    return transform_surface(input, [&](Color pixel) {
+        if (pixel.a == 0) return pixel;
+        const Color graded = apply_lut3d(lut, pixel);
+        return amount < 1.0f ? lerp_color(pixel, graded, amount) : graded;
+    });
+}
+
 void EffectHost::register_builtins(EffectHost& host) {
     host.register_effect("gaussian_blur", std::make_unique<GaussianBlurEffect>());
     host.register_effect("drop_shadow", std::make_unique<DropShadowEffect>());
@@ -618,6 +662,7 @@ void EffectHost::register_builtins(EffectHost& host) {
     host.register_effect("hue_saturation", std::make_unique<HueSaturationEffect>());
     host.register_effect("color_balance", std::make_unique<ColorBalanceEffect>());
     host.register_effect("lut", std::make_unique<LUTEffect>());
+    host.register_effect("lut3d_cube", std::make_unique<Lut3DCubeEffect>());
 }
 
 } // namespace tachyon::renderer2d

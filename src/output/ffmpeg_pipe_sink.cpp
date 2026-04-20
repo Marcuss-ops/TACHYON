@@ -107,6 +107,13 @@ std::filesystem::path make_temp_video_path(const std::filesystem::path& destinat
     return temp_dir / (stem + ".tachyon.video." + std::to_string(static_cast<long long>(stamp)) + ".mkv");
 }
 
+std::filesystem::path make_temp_palette_path(const std::filesystem::path& destination) {
+    std::filesystem::path temp_dir = std::filesystem::temp_directory_path();
+    const auto stamp = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+    const std::string stem = destination.stem().string().empty() ? "tachyon" : destination.stem().string();
+    return temp_dir / (stem + ".tachyon.palette." + std::to_string(static_cast<long long>(stamp)) + ".png");
+}
+
 std::string build_video_pass_command(const RenderPlan& plan, const std::filesystem::path& output_path, bool include_faststart) {
     const double fps = plan.composition.frame_rate.value();
     const bool overwrite = plan.output.destination.overwrite;
@@ -332,6 +339,76 @@ public:
     }
 
 private:
+    bool finalize_gif() {
+        if (m_plan == nullptr) {
+            m_last_error = "gif finalization requires a render plan";
+            return false;
+        }
+
+        const std::filesystem::path destination(m_plan->output.destination.path);
+        const std::filesystem::path palette_path = make_temp_palette_path(destination);
+        const bool overwrite = m_plan->output.destination.overwrite;
+
+        // Pass 1: generate an optimised 256-colour palette from the temp video
+        std::ostringstream pass1;
+        pass1 << "ffmpeg "
+              << (overwrite ? "-y" : "-n")
+              << " -i " << quote_path(m_temp_video_path)
+              << " -vf \"palettegen=max_colors=256:stats_mode=full\""
+              << " " << quote_path(palette_path);
+
+        FILE* p1 = TACHYON_POPEN(pass1.str().c_str(), "rb");
+        if (p1 == nullptr) {
+            m_last_error = "gif pass 1 (palettegen): failed to launch ffmpeg";
+            return false;
+        }
+        const int p1_status = TACHYON_PCLOSE(p1);
+        if (p1_status != 0) {
+            m_last_error = "gif pass 1 (palettegen): ffmpeg exited with error";
+            return false;
+        }
+
+        // Pass 2: encode GIF using the palette
+        std::ostringstream pass2;
+        pass2 << "ffmpeg "
+              << (overwrite ? "-y" : "-n")
+              << " -i " << quote_path(m_temp_video_path)
+              << " -i " << quote_path(palette_path)
+              << " -lavfi \"paletteuse=dither=bayer\""
+              << " " << quote_path(destination);
+
+        FILE* p2 = TACHYON_POPEN(pass2.str().c_str(), "rb");
+        if (p2 == nullptr) {
+            m_last_error = "gif pass 2 (paletteuse): failed to launch ffmpeg";
+            return false;
+        }
+        const int p2_status = TACHYON_PCLOSE(p2);
+        if (p2_status != 0) {
+            m_last_error = "gif pass 2 (paletteuse): ffmpeg exited with error";
+            return false;
+        }
+
+        // Cleanup temp files
+        std::error_code ec;
+        std::filesystem::remove(m_temp_video_path, ec);
+        std::filesystem::remove(palette_path, ec);
+        m_temp_video_path.clear();
+        return true;
+    }
+
+    bool finalize_post_processing() {
+        if (m_plan == nullptr) {
+            return true;
+        }
+        if (m_plan->output.profile.format == OutputFormat::Gif) {
+            return finalize_gif();
+        }
+        if (m_needs_audio_mux) {
+            return finalize_audio_mux();
+        }
+        return true;
+    }
+
     bool finalize_audio_mux() {
         if (m_plan == nullptr) {
             m_last_error = "ffmpeg mux finalization requires a render plan";

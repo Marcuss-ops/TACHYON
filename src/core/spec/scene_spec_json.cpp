@@ -360,8 +360,95 @@ LayerSpec parse_layer(const json& object, const std::string& path, DiagnosticBag
     parse_optional_scalar_property(object, "intensity", layer.intensity, path, diagnostics);
     parse_optional_scalar_property(object, "attenuation_near", layer.attenuation_near, path, diagnostics);
     parse_optional_scalar_property(object, "attenuation_far", layer.attenuation_far, path, diagnostics);
+
+    // Parse text_animators array (for text layers)
+    if (object.contains("animators") && object.at("animators").is_array()) {
+        const auto& anim_array = object.at("animators");
+        for (std::size_t ai = 0; ai < anim_array.size(); ++ai) {
+            const auto& anim_obj = anim_array[ai];
+            if (!anim_obj.is_object()) continue;
+
+            TextAnimatorSpec anim;
+
+            // Selector
+            if (anim_obj.contains("selector") && anim_obj.at("selector").is_object()) {
+                const auto& sel = anim_obj.at("selector");
+                if (sel.contains("type") && sel.at("type").is_string())
+                    anim.selector.type = sel.at("type").get<std::string>();
+                if (sel.contains("start") && sel.at("start").is_number())
+                    anim.selector.start = sel.at("start").get<double>();
+                if (sel.contains("end") && sel.at("end").is_number())
+                    anim.selector.end = sel.at("end").get<double>();
+            }
+
+            // Opacity
+            if (anim_obj.contains("opacity")) {
+                const auto& op = anim_obj.at("opacity");
+                if (op.is_number()) {
+                    anim.properties.opacity_value = op.get<double>();
+                } else if (op.is_object() && op.contains("keyframes") && op.at("keyframes").is_array()) {
+                    const auto& kfs = op.at("keyframes");
+                    for (std::size_t ki = 0; ki < kfs.size(); ++ki) {
+                        ScalarKeyframeSpec k;
+                        if (parse_scalar_keyframe(kfs[ki], k, path + ".animators[" + std::to_string(ai) + "].opacity.keyframes[" + std::to_string(ki) + "]", diagnostics))
+                            anim.properties.opacity_keyframes.push_back(k);
+                    }
+                }
+            }
+
+            // Position offset
+            if (anim_obj.contains("position")) {
+                const auto& pos = anim_obj.at("position");
+                math::Vector2 pv;
+                if (parse_vector2_value(pos, pv)) {
+                    anim.properties.position_offset_value = pv;
+                } else if (pos.is_object() && pos.contains("keyframes") && pos.at("keyframes").is_array()) {
+                    const auto& kfs = pos.at("keyframes");
+                    for (std::size_t ki = 0; ki < kfs.size(); ++ki) {
+                        Vector2KeyframeSpec k;
+                        if (parse_vector2_keyframe(kfs[ki], k, path + ".animators[" + std::to_string(ai) + "].position.keyframes[" + std::to_string(ki) + "]", diagnostics))
+                            anim.properties.position_offset_keyframes.push_back(k);
+                    }
+                }
+            }
+
+            // Scale
+            if (anim_obj.contains("scale")) {
+                const auto& sc = anim_obj.at("scale");
+                if (sc.is_number()) {
+                    anim.properties.scale_value = sc.get<double>();
+                } else if (sc.is_object() && sc.contains("keyframes") && sc.at("keyframes").is_array()) {
+                    const auto& kfs = sc.at("keyframes");
+                    for (std::size_t ki = 0; ki < kfs.size(); ++ki) {
+                        ScalarKeyframeSpec k;
+                        if (parse_scalar_keyframe(kfs[ki], k, path + ".animators[" + std::to_string(ai) + "].scale.keyframes[" + std::to_string(ki) + "]", diagnostics))
+                            anim.properties.scale_keyframes.push_back(k);
+                    }
+                }
+            }
+
+            // Rotation
+            if (anim_obj.contains("rotation")) {
+                const auto& rot = anim_obj.at("rotation");
+                if (rot.is_number()) {
+                    anim.properties.rotation_value = rot.get<double>();
+                } else if (rot.is_object() && rot.contains("keyframes") && rot.at("keyframes").is_array()) {
+                    const auto& kfs = rot.at("keyframes");
+                    for (std::size_t ki = 0; ki < kfs.size(); ++ki) {
+                        ScalarKeyframeSpec k;
+                        if (parse_scalar_keyframe(kfs[ki], k, path + ".animators[" + std::to_string(ai) + "].rotation.keyframes[" + std::to_string(ki) + "]", diagnostics))
+                            anim.properties.rotation_keyframes.push_back(k);
+                    }
+                }
+            }
+
+            layer.text_animators.push_back(std::move(anim));
+        }
+    }
+
     return layer;
 }
+
 
 CompositionSpec parse_composition(const json& object, const std::string& path, DiagnosticBag& diagnostics) {
     CompositionSpec composition;

@@ -5,7 +5,6 @@
 #include "tachyon/core/animation/easing.h"
 #include "tachyon/runtime/diagnostics.h"
 #include "tachyon/renderer2d/path_rasterizer.h"
-
 #include <cstdint>
 #include <filesystem>
 #include <optional>
@@ -92,6 +91,7 @@ struct EffectSpec {
     bool enabled{true};
     std::unordered_map<std::string, double> scalars;
     std::unordered_map<std::string, ColorSpec> colors;
+    std::unordered_map<std::string, std::string> strings;
 };
 
 struct ShapePathPointSpec {
@@ -173,7 +173,47 @@ struct Transform3D {
     AnimatedVector3Spec scale_property;
 };
 
+// ---------------------------------------------------------------------------
+// Text Animator structs (used by LayerSpec for type == "text" layers)
+// ---------------------------------------------------------------------------
+
+/// Defines which characters are affected by an animator and by how much.
+/// For "range" type, character i of N total gets:
+///   coverage = clamp((i/N - start) / (end - start), 0, 1)
+struct TextAnimatorSelectorSpec {
+    std::string type{"range"}; // "range" | "all"
+    double start{0.0};
+    double end{1.0};
+};
+
+/// Animatable per-character properties driven by a TextAnimatorSpec.
+/// Each property can hold a static value OR keyframes — not both.
+/// The evaluated value is then scaled by the selector coverage.
+struct TextAnimatorPropertySpec {
+    // Opacity in [0, 1] (1 = fully opaque)
+    std::optional<double>            opacity_value;
+    std::vector<ScalarKeyframeSpec>  opacity_keyframes;
+
+    // Position offset in pixels (local glyph space)
+    std::optional<math::Vector2>          position_offset_value;
+    std::vector<Vector2KeyframeSpec>      position_offset_keyframes;
+
+    // Uniform scale around glyph centre (1 = no change)
+    std::optional<double>            scale_value;
+    std::vector<ScalarKeyframeSpec>  scale_keyframes;
+
+    // Rotation in degrees around glyph centre
+    std::optional<double>            rotation_value;
+    std::vector<ScalarKeyframeSpec>  rotation_keyframes;
+};
+
+struct TextAnimatorSpec {
+    TextAnimatorSelectorSpec  selector;
+    TextAnimatorPropertySpec  properties;
+};
+
 struct LayerSpec {
+
     std::string id;
     std::string type;
     std::string name;
@@ -211,6 +251,14 @@ struct LayerSpec {
     AnimatedScalarSpec intensity;
     AnimatedScalarSpec attenuation_near;
     AnimatedScalarSpec attenuation_far;
+
+    // Text animator array (for type == "text" layers only)
+    std::vector<TextAnimatorSpec> text_animators;
+
+    // Subtitle burn-in (for type == "text" layers with subtitle_path set)
+    std::optional<std::string> subtitle_path;
+    std::optional<ColorSpec>   subtitle_outline_color;
+    float                      subtitle_outline_width{0.0f};
 };
 
 struct CompositionSpec {

@@ -53,9 +53,11 @@ add_library(TachyonCore
     text/font.cpp
     text/font_registry.cpp
     text/layout.cpp
+    text/subtitle.cpp
     timeline/frame_evaluator.cpp
     timeline/time.cpp
     timeline/time_resolver.cpp
+    renderer2d/color/lut3d.cpp
     renderer2d/math/math_utils.cpp
     renderer2d/audio/audio_sampling.cpp
     renderer2d/text/utf8/utf8_decoder.cpp

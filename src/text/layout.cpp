@@ -2,6 +2,7 @@
 
 #include "tachyon/renderer2d/text/utf8/utf8_decoder.h"
 #include "tachyon/renderer2d/text/shaping/font_shaping.h"
+#include "tachyon/core/spec/text_animator_spec.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
@@ -570,6 +571,135 @@ TextRasterSurface rasterize_text_rgba(
         }
     }
 
+    return surface;
+}
+
+} // namespace tachyon::text
+
+// ---------------------------------------------------------------------------
+// Text Animator helpers and per-character rasterize overload
+// ---------------------------------------------------------------------------
+namespace tachyon::text {
+namespace {
+
+double sample_scalar_kfs(
+    const std::optional<double>& static_val,
+    const std::vector<ScalarKeyframeSpec>& keyframes,
+    float t) {
+    if (keyframes.empty()) return static_val.value_or(0.0);
+    if (keyframes.size() == 1U || t <= static_cast<float>(keyframes.front().time)) return keyframes.front().value;
+    if (t >= static_cast<float>(keyframes.back().time)) return keyframes.back().value;
+    for (std::size_t i = 0; i + 1 < keyframes.size(); ++i) {
+        const double t0 = keyframes[i].time, t1 = keyframes[i+1].time;
+        if (static_cast<double>(t) >= t0 && static_cast<double>(t) <= t1) {
+            const double a = (t1 > t0) ? (static_cast<double>(t) - t0) / (t1 - t0) : 0.0;
+            return keyframes[i].value + a * (keyframes[i+1].value - keyframes[i].value);
+        }
+    }
+    return keyframes.back().value;
+}
+
+math::Vector2 sample_vector2_kfs(
+    const std::optional<math::Vector2>& static_val,
+    const std::vector<Vector2KeyframeSpec>& keyframes,
+    float t) {
+    if (keyframes.empty()) return static_val.value_or(math::Vector2{0.0f, 0.0f});
+    if (keyframes.size() == 1U || t <= static_cast<float>(keyframes.front().time)) return keyframes.front().value;
+    if (t >= static_cast<float>(keyframes.back().time)) return keyframes.back().value;
+    for (std::size_t i = 0; i + 1 < keyframes.size(); ++i) {
+        const double t0 = keyframes[i].time, t1 = keyframes[i+1].time;
+        if (static_cast<double>(t) >= t0 && static_cast<double>(t) <= t1) {
+            const float a = static_cast<float>((t1 > t0) ? (static_cast<double>(t) - t0) / (t1 - t0) : 0.0);
+            const math::Vector2& va = keyframes[i].value;
+            const math::Vector2& vb = keyframes[i+1].value;
+            return math::Vector2{va.x + (vb.x - va.x) * a, va.y + (vb.y - va.y) * a};
+        }
+    }
+    return keyframes.back().value;
+}
+
+float compute_coverage(const TextAnimatorSelectorSpec& selector, std::size_t i, std::size_t N) {
+    if (selector.type == "all" || N == 0U) return 1.0f;
+    const float t = static_cast<float>(i) / static_cast<float>(N);
+    const float start = static_cast<float>(selector.start);
+    const float end   = static_cast<float>(selector.end);
+    const float span  = end - start;
+    if (span <= 0.0f) return (t >= start) ? 1.0f : 0.0f;
+    return std::clamp((t - start) / span, 0.0f, 1.0f);
+}
+
+} // namespace
+
+TextRasterSurface rasterize_text_rgba(
+    const BitmapFont& font,
+    std::string_view utf8_text,
+    const TextStyle& style,
+    const TextBox& text_box,
+    TextAlignment alignment,
+    float time_seconds,
+    std::span<const TextAnimatorSpec> animators,
+    const TextLayoutOptions& layout_options) {
+
+    const TextLayoutResult layout = layout_text(font, utf8_text, style, text_box, alignment, layout_options);
+    TextRasterSurface surface(layout.width, layout.height);
+    if (!font.is_loaded() || layout.width == 0U || layout.height == 0U) return surface;
+
+    const std::size_t total_glyphs = layout.glyphs.size();
+
+    for (std::size_t gi = 0; gi < total_glyphs; ++gi) {
+        const PositionedGlyph& positioned = layout.glyphs[gi];
+        const GlyphBitmap* glyph = font.has_freetype_face()
+            ? font.find_glyph_by_index(positioned.font_glyph_index)
+            : font.find_scaled_glyph(positioned.codepoint, layout.scale);
+        if (glyph == nullptr || glyph->width == 0U || glyph->height == 0U) continue;
+
+        float acc_opacity  = 1.0f;
+        float acc_offset_x = 0.0f;
+        float acc_offset_y = 0.0f;
+        float acc_scale    = 1.0f;
+
+        for (const TextAnimatorSpec& anim : animators) {
+            const float cov = compute_coverage(anim.selector, gi, total_glyphs);
+            if (cov <= 0.0f) continue;
+            const TextAnimatorPropertySpec& p = anim.properties;
+            if (p.opacity_value.has_value() || !p.opacity_keyframes.empty()) {
+                const double v = sample_scalar_kfs(p.opacity_value, p.opacity_keyframes, time_seconds);
+                acc_opacity *= static_cast<float>(1.0 + (v - 1.0) * static_cast<double>(cov));
+            }
+            if (p.position_offset_value.has_value() || !p.position_offset_keyframes.empty()) {
+                const math::Vector2 pv = sample_vector2_kfs(p.position_offset_value, p.position_offset_keyframes, time_seconds);
+                acc_offset_x += pv.x * cov;
+                acc_offset_y += pv.y * cov;
+            }
+            if (p.scale_value.has_value() || !p.scale_keyframes.empty()) {
+                const double v = sample_scalar_kfs(p.scale_value, p.scale_keyframes, time_seconds);
+                acc_scale *= static_cast<float>(1.0 + (v - 1.0) * static_cast<double>(cov));
+            }
+        }
+
+        acc_opacity = std::clamp(acc_opacity, 0.0f, 1.0f);
+        acc_scale   = std::max(0.05f, acc_scale);
+        if (acc_opacity <= 0.0f) continue;
+
+        const std::int32_t base_x = positioned.x + static_cast<std::int32_t>(std::lround(acc_offset_x));
+        const std::int32_t base_y = positioned.y + static_cast<std::int32_t>(std::lround(acc_offset_y));
+        const std::uint32_t tw = static_cast<std::uint32_t>(std::max(1, static_cast<std::int32_t>(std::lround(static_cast<float>(glyph->width)  * acc_scale))));
+        const std::uint32_t th = static_cast<std::uint32_t>(std::max(1, static_cast<std::int32_t>(std::lround(static_cast<float>(glyph->height) * acc_scale))));
+
+        for (std::uint32_t ty = 0; ty < th; ++ty) {
+            const std::uint32_t sy = std::min(glyph->height - 1U, static_cast<std::uint32_t>(std::floor(static_cast<float>(ty) / acc_scale)));
+            for (std::uint32_t tx = 0; tx < tw; ++tx) {
+                const std::uint32_t sx = std::min(glyph->width - 1U, static_cast<std::uint32_t>(std::floor(static_cast<float>(tx) / acc_scale)));
+                const std::uint8_t alpha = glyph->alpha_mask[sy * glyph->width + sx];
+                if (alpha == 0U) continue;
+                const std::uint8_t final_alpha = static_cast<std::uint8_t>(std::clamp(std::lround(static_cast<float>(alpha) * acc_opacity), 0L, 255L));
+                const std::int32_t out_x = base_x + static_cast<std::int32_t>(tx);
+                const std::int32_t out_y = base_y + static_cast<std::int32_t>(ty);
+                if (out_x < 0 || out_y < 0) continue;
+                surface.blend_pixel(static_cast<std::uint32_t>(out_x), static_cast<std::uint32_t>(out_y), style.fill_color, final_alpha);
+            }
+        }
+    }
     return surface;
 }
 
