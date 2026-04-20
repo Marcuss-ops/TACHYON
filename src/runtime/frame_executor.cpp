@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <vector>
+#include <filesystem>
 
 namespace tachyon {
 namespace {
@@ -235,17 +236,17 @@ static void resolve_3d_layers_textures(
         if (!layer.is_3d || !layer.visible) continue;
 
         // 1. Resolve Image Asset textures
-        if (layer.type == LayerType::Image && !layer.asset_path.empty()) {
-            const auto* surface = context.media.get_image(layer.asset_path, media::AlphaMode::Straight);
+        if (layer.type == scene::LayerType::Image && layer.asset_path.has_value() && !layer.asset_path->empty()) {
+            const auto* surface = context.media.get_image(std::filesystem::path(*layer.asset_path), media::AlphaMode::Straight);
             if (surface) {
-                layer.texture_rgba = surface->data.data();
-                layer.width  = surface->width;
-                layer.height = surface->height;
+                layer.texture_rgba = reinterpret_cast<const std::uint8_t*>(surface->pixels().data());
+                layer.width  = static_cast<std::int64_t>(surface->width());
+                layer.height = static_cast<std::int64_t>(surface->height());
             }
         }
         
         // 2. Resolve Precomp textures by rendering them
-        else if (layer.type == LayerType::Precomp && !layer.precomp_id.empty()) {
+        else if (layer.type == scene::LayerType::Precomp && layer.precomp_id.has_value() && !layer.precomp_id->empty()) {
             // We need to render the nested comp into a buffer
             // For now, let's look for it in the cache or render it on the fly
             // This is a simplified version of Ae's behavior
@@ -290,7 +291,7 @@ ExecutedFrame execute_frame_task(
     mb_samples = std::clamp(mb_samples, 1, context.policy.motion_blur_sample_cap);
     
     const float shutter_angle = mb_enabled ? static_cast<float>(plan.motion_blur_shutter_angle) : 0.0f;
-    const float shutter_duration = (shutter_angle / 360.0f) * (1.0f / static_cast<float>(plan.composition.frame_rate.to_double()));
+    const float shutter_duration = (shutter_angle / 360.0f) * (1.0f / static_cast<float>(plan.composition.frame_rate.value()));
 
     std::vector<float> accum_r(static_cast<std::size_t>(state.composition_state.width) * state.composition_state.height, 0.0f);
     std::vector<float> accum_g = accum_r;
