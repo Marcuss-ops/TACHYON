@@ -4,6 +4,7 @@
 #include <embree4/rtcore.h>
 #include <memory>
 #include <vector>
+#include <functional>
 
 namespace tachyon {
 namespace renderer3d {
@@ -25,6 +26,11 @@ public:
      * This should be called once per frame before rendering.
      */
     void build_scene(const scene::EvaluatedCompositionState& state);
+
+    /**
+     * Overload to build scene for a specific subset of layers (for interleaving).
+     */
+    void build_scene_subset(const scene::EvaluatedCompositionState& state, const std::vector<std::size_t>& layer_indices);
 
     /**
      * Renders a 3D pass for the current scene.
@@ -71,6 +77,8 @@ private:
 
     void cleanup_scene();
     static void log_embree_error(void* userPtr, RTCError code, const char* str);
+
+    void internal_build_scene(const scene::EvaluatedCompositionState& state, const std::function<bool(std::size_t)>& filter);
 };
 
 } // namespace renderer3d

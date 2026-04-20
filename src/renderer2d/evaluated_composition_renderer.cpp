@@ -315,54 +315,62 @@ RasterizedFrame2D render_evaluated_composition_2d(
     renderer2d::EffectHost& host = effect_host_for(context);
 
     // Identify if we have 3D layers and trigger 3D pass if available
-    bool has_3d = std::any_of(state.layers.begin(), state.layers.end(), [](const auto& l) { return l.is_3d && l.visible; });
-    std::optional<renderer2d::SurfaceRGBA> world_3d;
-    bool world_3d_composited = false;
-
-    if (has_3d) {
-        if (!context.ray_tracer) {
-            context.ray_tracer = std::make_shared<renderer3d::RayTracer>();
-        }
-        
-        context.ray_tracer->build_scene(state);
-        
-        world_3d.emplace(static_cast<std::uint32_t>(state.width), static_cast<std::uint32_t>(state.height));
-        world_3d->clear(renderer2d::Color::transparent());
-        
-        std::vector<float> hdr_buffer(static_cast<std::size_t>(state.width) * state.height * 4, 0.0f);
-        context.ray_tracer->render(state, hdr_buffer.data(), nullptr, static_cast<int>(state.width), static_cast<int>(state.height));
-        
-        // Tonemap / Convert HDR float to RGBA8
-        for (std::int64_t i = 0; i < state.width * state.height; ++i) {
-            const float r = hdr_buffer[i * 4 + 0];
-            const float g = hdr_buffer[i * 4 + 1];
-            const float b = hdr_buffer[i * 4 + 2];
-            const float a = hdr_buffer[i * 4 + 3];
-            
-            const std::uint8_t ur = static_cast<std::uint8_t>(std::clamp(r * 255.0f, 0.0f, 255.0f));
-            const std::uint8_t ug = static_cast<std::uint8_t>(std::clamp(g * 255.0f, 0.0f, 255.0f));
-            const std::uint8_t ub = static_cast<std::uint8_t>(std::clamp(b * 255.0f, 0.0f, 255.0f));
-            const std::uint8_t ua = static_cast<std::uint8_t>(std::clamp(a * 255.0f, 0.0f, 255.0f));
-            
-            world_3d->set_pixel(static_cast<std::uint32_t>(i % state.width), static_cast<std::uint32_t>(i / state.width), {ur, ug, ub, ua});
-        }
+    bool has_any_3d = std::any_of(state.layers.begin(), state.layers.end(), [](const auto& l) { return l.is_3d && l.visible; });
+    if (has_any_3d && !context.ray_tracer) {
+        context.ray_tracer = std::make_shared<renderer3d::RayTracer>();
     }
 
     // AE Rendering Order: Bottom to Top
-    for (const auto& layer : state.layers) {
+    for (std::size_t i = 0; i < state.layers.size(); ++i) {
+        const auto& layer = state.layers[i];
         if (!layer.enabled || !layer.active) {
             continue;
         }
 
-        // Interleave 3D: Composite the 3D world at the first 3D layer position
-        if (layer.is_3d && has_3d && !world_3d_composited) {
-            if (world_3d.has_value()) {
-                composite_surface(dst, *world_3d, 0, 0, renderer2d::BlendMode::Normal);
+        if (layer.is_3d && layer.visible) {
+            // Found a 3D block. Collect contiguous 3D layers.
+            std::vector<std::size_t> block_indices;
+            block_indices.push_back(i);
+            std::size_t last_block_idx = i;
+            for (std::size_t j = i + 1; j < state.layers.size(); ++j) {
+                if (state.layers[j].is_3d && state.layers[j].visible && state.layers[j].enabled && state.layers[j].active) {
+                    block_indices.push_back(j);
+                    last_block_idx = j;
+                } else if (state.layers[j].enabled && state.layers[j].active) {
+                    // Contiguous 3D space is broken by a 2D layer
+                    break;
+                }
             }
-            world_3d_composited = true;
-            continue; // 3D layers are handled by the 3D pass
-        } else if (layer.is_3d) {
-            continue; // Skip subsequent 3D layers as they are in the same world_3d
+
+            // Render the 3D block
+            context.ray_tracer->build_scene_subset(state, block_indices);
+            
+            renderer2d::SurfaceRGBA world_3d(static_cast<std::uint32_t>(state.width), static_cast<std::uint32_t>(state.height));
+            world_3d.clear(renderer2d::Color::transparent());
+            
+            std::vector<float> hdr_buffer(static_cast<std::size_t>(state.width) * state.height * 4, 0.0f);
+            context.ray_tracer->render(state, hdr_buffer.data(), nullptr, static_cast<int>(state.width), static_cast<int>(state.height));
+            
+            // Tonemap / Convert HDR float to RGBA8
+            for (std::int64_t px_idx = 0; px_idx < state.width * state.height; ++px_idx) {
+                const float r = hdr_buffer[px_idx * 4 + 0];
+                const float g = hdr_buffer[px_idx * 4 + 1];
+                const float b = hdr_buffer[px_idx * 4 + 2];
+                const float a = hdr_buffer[px_idx * 4 + 3];
+                
+                const std::uint8_t ur = static_cast<std::uint8_t>(std::clamp(r * 255.0f, 0.0f, 255.0f));
+                const std::uint8_t ug = static_cast<std::uint8_t>(std::clamp(g * 255.0f, 0.0f, 255.0f));
+                const std::uint8_t ub = static_cast<std::uint8_t>(std::clamp(b * 255.0f, 0.0f, 255.0f));
+                const std::uint8_t ua = static_cast<std::uint8_t>(std::clamp(a * 255.0f, 0.0f, 255.0f));
+                
+                world_3d.set_pixel(static_cast<std::uint32_t>(px_idx % state.width), static_cast<std::uint32_t>(px_idx / state.width), {ur, ug, ub, ua});
+            }
+
+            composite_surface(dst, world_3d, 0, 0, renderer2d::BlendMode::Normal);
+            
+            // Advance loop index to after the block
+            i = last_block_idx;
+            continue;
         }
 
         renderer2d::SurfaceRGBA layer_surface = render_layer_surface(layer, state, plan, task, context);

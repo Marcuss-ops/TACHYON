@@ -108,7 +108,33 @@ void RayTracer::build_scene(const scene::EvaluatedCompositionState& state) {
     environment_map_ = state.environment_map;
     environment_intensity_ = state.environment_intensity;
     environment_rotation_ = state.environment_rotation;
-    for (const auto& layer : state.layers) {
+
+    auto should_include = [&](std::size_t idx) { return true; };
+    internal_build_scene(state, should_include);
+}
+
+void RayTracer::build_scene_subset(const scene::EvaluatedCompositionState& state, const std::vector<std::size_t>& layer_indices) {
+    cleanup_scene();
+    if (!device_) return;
+
+    scene_ = rtcNewScene(device_);
+    
+    // Initialize environment properties from state
+    environment_map_ = state.environment_map;
+    environment_intensity_ = state.environment_intensity;
+    environment_rotation_ = state.environment_rotation;
+
+    auto should_include = [&](std::size_t idx) {
+        return std::find(layer_indices.begin(), layer_indices.end(), idx) != layer_indices.end();
+    };
+    internal_build_scene(state, should_include);
+}
+
+void RayTracer::internal_build_scene(const scene::EvaluatedCompositionState& state, const std::function<bool(std::size_t)>& filter) {
+    for (std::size_t layer_idx = 0; layer_idx < state.layers.size(); ++layer_idx) {
+        const auto& layer = state.layers[layer_idx];
+        if (!filter(layer_idx)) continue;
+
         if (!layer.is_3d || !layer.visible) continue;
         if (layer.mesh_asset && !layer.mesh_asset->empty()) {
             const auto& asset = *layer.mesh_asset;
