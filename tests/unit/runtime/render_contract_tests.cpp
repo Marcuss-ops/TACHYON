@@ -1,6 +1,6 @@
-#include "tachyon/runtime/render_graph.h"
-#include "tachyon/runtime/render_job.h"
-#include "tachyon/runtime/render_plan.h"
+#include "tachyon/runtime/core/render_graph.h"
+#include "tachyon/runtime/execution/render_job.h"
+#include "tachyon/runtime/execution/render_plan.h"
 #include "tachyon/core/scene/evaluator.h"
 #include "tachyon/core/spec/scene_spec.h"
 

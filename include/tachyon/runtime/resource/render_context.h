@@ -3,7 +3,7 @@
 #include "tachyon/media/media_manager.h"
 #include "tachyon/renderer2d/render_context.h"
 #include "tachyon/renderer3d/ray_tracer.h"
-#include "tachyon/runtime/quality_policy.h"
+#include "tachyon/runtime/execution/quality_policy.h"
 #include <OpenImageDenoise/oidn.hpp>
 
 #include <memory>

@@ -3,7 +3,7 @@
 #include "tachyon/core/math/vector2.h"
 #include "tachyon/core/math/vector3.h"
 #include "tachyon/core/animation/easing.h"
-#include "tachyon/runtime/diagnostics.h"
+#include "tachyon/runtime/core/diagnostics.h"
 #include "tachyon/renderer2d/path_rasterizer.h"
 #include <cstdint>
 #include <filesystem>

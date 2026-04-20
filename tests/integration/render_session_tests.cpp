@@ -1,4 +1,6 @@
-#include "tachyon/runtime/render_session.h"
+#include "tachyon/runtime/execution/render_session.h"
+#include "tachyon/core/spec/scene_compiler.h"
+#include "tachyon/runtime/core/compiled_scene.h"
 
 #include <filesystem>
 #include <iostream>
@@ -179,9 +181,16 @@ bool run_render_session_tests() {
     const SceneSpec scene = make_scene();
     const RenderExecutionPlan execution_plan = make_execution_plan();
 
+    SceneCompiler compiler;
+    const auto compiled_result = compiler.compile(scene);
+    if (!compiled_result.ok()) {
+        std::cerr << "FAIL: Scene compilation failed\n";
+        return false;
+    }
+
     std::filesystem::remove_all("tests/output/runtime_seq");
     std::filesystem::create_directories("tests/output/runtime_seq");
-    const RenderSessionResult first = session.render(scene, execution_plan, "tests/output/runtime_seq");
+    const RenderSessionResult first = session.render(scene, *compiled_result.value, execution_plan, "tests/output/runtime_seq");
     check_true(first.frames.size() == 3, "Render session produces three frames");
     check_true(first.cache_misses == 3, "First pass is all cache misses");
     check_true(first.frames_written == 3, "First pass writes three output frames");
@@ -191,7 +200,7 @@ bool run_render_session_tests() {
     check_true(std::filesystem::exists("tests/output/runtime_seq/frame_000001.png"), "First PNG output exists");
     check_true(std::filesystem::exists("tests/output/runtime_seq/frame_000003.png"), "Third PNG output exists");
 
-    const RenderSessionResult second = session.render(scene, execution_plan, "tests/output/runtime_seq", 2);
+    const RenderSessionResult second = session.render(scene, *compiled_result.value, execution_plan, "tests/output/runtime_seq", 2);
     check_true(second.cache_hits == 3, "Second pass reuses cache for all frames");
     check_true(second.frames_written == 3, "Second pass also writes three output frames");
     check_true(second.output_error.empty(), "Second pass completes without output error");
@@ -200,12 +209,19 @@ bool run_render_session_tests() {
     std::filesystem::create_directories("tests/output/runtime_precomp");
     const SceneSpec precomp_scene = make_precomp_scene();
     const RenderExecutionPlan precomp_plan = make_precomp_execution_plan();
-    const RenderSessionResult precomp_first = session.render(precomp_scene, precomp_plan, "tests/output/runtime_precomp");
+    
+    const auto compiled_precomp = compiler.compile(precomp_scene);
+    if (!compiled_precomp.ok()) {
+        std::cerr << "FAIL: Precomp scene compilation failed\n";
+        return false;
+    }
+
+    const RenderSessionResult precomp_first = session.render(precomp_scene, *compiled_precomp.value, precomp_plan, "tests/output/runtime_precomp");
     const std::size_t precomp_entries_after_first = session.precomp_cache()->entry_count();
     check_true(precomp_first.output_error.empty(), "Precomp pass completes without output error");
     check_true(precomp_entries_after_first > 0, "Precomp cache should store at least one entry");
 
-    const RenderSessionResult precomp_second = session.render(precomp_scene, precomp_plan, "tests/output/runtime_precomp");
+    const RenderSessionResult precomp_second = session.render(precomp_scene, *compiled_precomp.value, precomp_plan, "tests/output/runtime_precomp");
     const std::size_t precomp_entries_after_second = session.precomp_cache()->entry_count();
     check_true(precomp_second.output_error.empty(), "Second precomp pass completes without output error");
     check_true(precomp_entries_after_second == precomp_entries_after_first, "Precomp cache should persist across render calls");

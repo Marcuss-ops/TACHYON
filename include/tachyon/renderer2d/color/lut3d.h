@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/renderer2d/framebuffer.h"
-#include "tachyon/runtime/diagnostics.h"
+#include "tachyon/runtime/core/diagnostics.h"
 
 #include <filesystem>
 #include <vector>

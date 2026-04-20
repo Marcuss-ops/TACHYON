@@ -16,10 +16,12 @@ add_executable(TachyonTests
     unit/renderer2d/path_rasterizer_aa_tests.cpp
     unit/renderer2d/effect_host_tests.cpp
     unit/runtime/frame_cache_tests.cpp
+    unit/runtime/backbone_tests.cpp
     unit/runtime/frame_executor_tests.cpp
     unit/runtime/frame_output_sink_tests.cpp
     unit/runtime/tile_scheduler_tests.cpp
     unit/runtime/render_contract_tests.cpp
+    unit/runtime/expression_vm_tests.cpp
     unit/core/scene/evaluator_tests.cpp
     unit/core/scene/precomp_mask_tests.cpp
     unit/timeline/time_tests.cpp

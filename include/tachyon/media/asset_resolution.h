@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/runtime/diagnostics.h"
+#include "tachyon/runtime/core/diagnostics.h"
 #include "tachyon/core/spec/scene_spec.h"
 
 #include <filesystem>

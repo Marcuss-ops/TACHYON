@@ -5,12 +5,14 @@
 #include "tachyon/core/report.h"
 #include "tachyon/media/asset_resolution.h"
 #include "tachyon/renderer2d/rasterizer.h"
-#include "tachyon/runtime/render_graph.h"
-#include "tachyon/runtime/render_plan.h"
-#include "tachyon/runtime/render_job.h"
-#include "tachyon/runtime/batch_runner.h"
-#include "tachyon/runtime/render_session.h"
+#include "tachyon/runtime/core/render_graph.h"
+#include "tachyon/runtime/execution/render_plan.h"
+#include "tachyon/runtime/execution/render_job.h"
+#include "tachyon/runtime/execution/batch_runner.h"
+#include "tachyon/runtime/execution/render_session.h"
 #include "tachyon/core/spec/scene_spec.h"
+#include "tachyon/core/spec/scene_compiler.h"
+#include "tachyon/runtime/core/compiled_scene.h"
 
 #include <filesystem>
 #include <iostream>
@@ -301,12 +303,19 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
         return false;
     }
 
+    SceneCompiler compiler;
+    const auto compiled_result = compiler.compile(context.scene);
+    if (!compiled_result.ok()) {
+        print_diagnostics(compiled_result.diagnostics, err);
+        return false;
+    }
+
     RenderSession session;
     const std::filesystem::path output_path = job.output.destination.path.empty()
         ? std::filesystem::path{}
         : std::filesystem::path(job.output.destination.path);
     
-    const RenderSessionResult session_result = session.render(context.scene, *execution_result.value, output_path, options.worker_count);
+    const RenderSessionResult session_result = session.render(context.scene, *compiled_result.value, *execution_result.value, output_path, options.worker_count);
     if (!session_result.output_error.empty()) {
         err << "render output failed: " << session_result.output_error << '\n';
         return false;

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/renderer2d/framebuffer.h"
-#include "tachyon/runtime/render_graph.h"
+#include "tachyon/runtime/core/render_graph.h"
 
 #include <cstddef>
 #include <mutex>
@@ -13,14 +13,14 @@ namespace tachyon {
 
 struct CachedFrame {
     FrameCacheEntry entry;
-    std::string scene_signature;
+    std::uint64_t scene_hash{0};
     renderer2d::Framebuffer frame;
     std::vector<std::string> invalidates_when_changed;
 };
 
 class FrameCache {
 public:
-    const CachedFrame* lookup(const FrameCacheKey& key, const std::string& scene_signature) const;
+    const CachedFrame* lookup(const FrameCacheKey& key, std::uint64_t scene_hash) const;
     void store(CachedFrame frame);
     void invalidate(const std::string& changed_parameter);
     void clear();

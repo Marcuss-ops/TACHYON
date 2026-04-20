@@ -1,4 +1,4 @@
-#include "tachyon/runtime/frame_cache.h"
+#include "tachyon/runtime/cache/frame_cache.h"
 
 #include <iostream>
 #include <string>
@@ -24,18 +24,18 @@ bool run_frame_cache_tests() {
     FrameCache cache;
     CachedFrame frame{
         FrameCacheEntry{FrameCacheKey{"frame:A"}, "frame A"},
-        "scene:v1",
+        12345ULL, // scene_hash instead of "scene:v1"
         tachyon::renderer2d::Framebuffer(16, 16),
         {"scene.parameter"}
     };
     frame.frame.clear(tachyon::renderer2d::Color::red());
     cache.store(frame);
 
-    check_true(cache.lookup(FrameCacheKey{"frame:A"}, "scene:v1") != nullptr, "Cache hit with matching scene signature");
-    check_true(cache.lookup(FrameCacheKey{"frame:A"}, "scene:v2") == nullptr, "Cache miss when scene signature changes");
+    check_true(cache.lookup(FrameCacheKey{"frame:A"}, 12345ULL) != nullptr, "Cache hit with matching scene hash");
+    check_true(cache.lookup(FrameCacheKey{"frame:A"}, 67890ULL) == nullptr, "Cache miss when scene hash changes");
 
     cache.invalidate("scene.parameter");
-    check_true(cache.lookup(FrameCacheKey{"frame:A"}, "scene:v1") == nullptr, "Invalidation removes dependent entry");
+    check_true(cache.lookup(FrameCacheKey{"frame:A"}, 12345ULL) == nullptr, "Invalidation removes dependent entry");
 
     return g_failures == 0;
 }

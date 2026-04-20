@@ -1,4 +1,4 @@
-#include "tachyon/runtime/frame_executor.h"
+#include "tachyon/runtime/execution/frame_executor.h"
 
 #include "tachyon/renderer2d/evaluated_composition_renderer.h"
 #include "tachyon/renderer2d/draw_list_builder.h"
@@ -16,108 +16,6 @@
 
 namespace tachyon {
 namespace {
-
-void append_part(std::ostringstream& stream, const char* key, const std::string& value) {
-    stream << key << '=' << value << ';';
-}
-
-void append_part(std::ostringstream& stream, const char* key, std::int64_t value) {
-    stream << key << '=' << value << ';';
-}
-
-void append_part(std::ostringstream& stream, const char* key, double value) {
-    stream << key << '=' << value << ';';
-}
-
-void append_part(std::ostringstream& stream, const char* key, bool value) {
-    stream << key << '=' << (value ? 1 : 0) << ';';
-}
-
-void append_optional(std::ostringstream& stream, const char* key, const std::optional<std::string>& value) {
-    if (value.has_value()) {
-        append_part(stream, key, *value);
-    }
-}
-
-void append_optional(std::ostringstream& stream, const char* key, const std::optional<double>& value) {
-    if (value.has_value()) {
-        append_part(stream, key, *value);
-    }
-}
-
-std::string build_scene_signature(const SceneSpec& scene) {
-    std::ostringstream stream;
-    append_part(stream, "spec_version", scene.spec_version);
-    append_part(stream, "project.id", scene.project.id);
-    append_part(stream, "project.name", scene.project.name);
-    append_part(stream, "asset_count", static_cast<std::int64_t>(scene.assets.size()));
-    for (const auto& asset : scene.assets) {
-        append_part(stream, "asset.id", asset.id);
-        append_part(stream, "asset.type", asset.type);
-        append_part(stream, "asset.source", asset.source);
-    }
-
-    append_part(stream, "composition_count", static_cast<std::int64_t>(scene.compositions.size()));
-    for (const auto& composition : scene.compositions) {
-        append_part(stream, "composition.id", composition.id);
-        append_part(stream, "composition.name", composition.name);
-        append_part(stream, "composition.width", composition.width);
-        append_part(stream, "composition.height", composition.height);
-        append_part(stream, "composition.duration", composition.duration);
-        append_part(stream, "composition.frame_rate.numerator", composition.frame_rate.numerator);
-        append_part(stream, "composition.frame_rate.denominator", composition.frame_rate.denominator);
-        append_optional(stream, "composition.background", composition.background);
-        append_part(stream, "composition.layer_count", static_cast<std::int64_t>(composition.layers.size()));
-
-        for (const auto& layer : composition.layers) {
-            append_part(stream, "layer.id", layer.id);
-            append_part(stream, "layer.type", layer.type);
-            append_part(stream, "layer.name", layer.name);
-            append_part(stream, "layer.blend_mode", layer.blend_mode);
-            append_part(stream, "layer.enabled", layer.enabled);
-            append_part(stream, "layer.start_time", layer.start_time);
-            append_part(stream, "layer.in_point", layer.in_point);
-            append_part(stream, "layer.out_point", layer.out_point);
-            append_part(stream, "layer.opacity", layer.opacity);
-            append_optional(stream, "layer.parent", layer.parent);
-            append_optional(stream, "layer.transform.position_x", layer.transform.position_x);
-            append_optional(stream, "layer.transform.position_y", layer.transform.position_y);
-            append_optional(stream, "layer.transform.rotation", layer.transform.rotation);
-            append_optional(stream, "layer.transform.scale_x", layer.transform.scale_x);
-            append_optional(stream, "layer.transform.scale_y", layer.transform.scale_y);
-
-            append_part(stream, "layer.opacity_keyframes", static_cast<std::int64_t>(layer.opacity_property.keyframes.size()));
-            append_optional(stream, "layer.opacity_value", layer.opacity_property.value);
-            append_part(stream, "layer.time_remap_keyframes", static_cast<std::int64_t>(layer.time_remap_property.keyframes.size()));
-            append_optional(stream, "layer.time_remap_value", layer.time_remap_property.value);
-            append_part(stream, "layer.transform.position_keyframes", static_cast<std::int64_t>(layer.transform.position_property.keyframes.size()));
-            if (layer.transform.position_property.value.has_value()) {
-                append_part(stream, "layer.transform.position_value_x", layer.transform.position_property.value->x);
-                append_part(stream, "layer.transform.position_value_y", layer.transform.position_property.value->y);
-            }
-            append_part(stream, "layer.transform.rotation_keyframes", static_cast<std::int64_t>(layer.transform.rotation_property.keyframes.size()));
-            append_optional(stream, "layer.transform.rotation_value", layer.transform.rotation_property.value);
-            append_part(stream, "layer.transform.scale_keyframes", static_cast<std::int64_t>(layer.transform.scale_property.keyframes.size()));
-            if (layer.transform.scale_property.value.has_value()) {
-                append_part(stream, "layer.transform.scale_value_x", layer.transform.scale_property.value->x);
-                append_part(stream, "layer.transform.scale_value_y", layer.transform.scale_property.value->y);
-            }
-        }
-    }
-
-    return stream.str();
-}
-
-std::string build_fingerprint(const scene::EvaluatedCompositionState& state) {
-    std::ostringstream stream;
-    stream << state.composition_id << ';' << state.frame_number << ';' << state.width << 'x' << state.height << ';';
-    for (const auto& layer : state.layers) {
-        stream << layer.id << ':' << layer.active << ':' << layer.opacity << ':'
-               << layer.local_transform.position.x << ':' << layer.local_transform.position.y << ':'
-               << layer.local_transform.scale.x << ':' << layer.local_transform.scale.y << ';';
-    }
-    return stream.str();
-}
 
 std::string build_summary(const scene::EvaluatedCompositionState& state) {
     std::ostringstream stream;
@@ -193,15 +91,11 @@ renderer2d::Framebuffer resize_frame_bilinear(
 
 } // namespace
 
-EvaluatedFrameState evaluate_frame_state(const SceneSpec& scene, const RenderPlan& plan, const FrameRenderTask& task) {
-    return evaluate_frame_state(scene, plan, task, build_scene_signature(scene));
-}
-
 EvaluatedFrameState evaluate_frame_state(
     const SceneSpec& scene,
+    const CompiledScene& compiled_scene,
     const RenderPlan& plan,
-    const FrameRenderTask& task,
-    const std::string& scene_signature) {
+    const FrameRenderTask& task) {
 
     const scene::EvaluationVariables vars{
         plan.variables.empty() ? nullptr : &plan.variables,
@@ -215,7 +109,7 @@ EvaluatedFrameState evaluate_frame_state(
     EvaluatedFrameState state;
     state.task = task;
     state.composition_state = *evaluated;
-    state.scene_signature = scene_signature;
+    state.scene_hash = compiled_scene.scene_hash;
     state.composition_summary = build_summary(state.composition_state);
     return state;
 }
@@ -237,7 +131,6 @@ static void resolve_3d_layers_textures(
     for (auto& layer : layers) {
         if (!layer.is_3d || !layer.visible) continue;
 
-        // 1. Resolve Image Asset textures
         if (layer.type == scene::LayerType::Image && layer.asset_path.has_value() && !layer.asset_path->empty()) {
             const auto* surface = context.media.get_image(std::filesystem::path(*layer.asset_path), media::AlphaMode::Straight);
             if (surface) {
@@ -246,44 +139,33 @@ static void resolve_3d_layers_textures(
                 layer.height = static_cast<std::int64_t>(surface->height());
             }
         }
-        
-        // 2. Resolve Precomp textures by rendering them
-        else if (layer.type == scene::LayerType::Precomp && layer.precomp_id.has_value() && !layer.precomp_id->empty()) {
-            // We need to render the nested comp into a buffer
-            // For now, let's look for it in the cache or render it on the fly
-            // This is a simplified version of Ae's behavior
-            // In a full implementation, we'd have a recursive render call here
-            
-            // TODO: Full recursive render for 3D precomp textures
-            // For now, we only support Images as 3D textures in this hardening phase
-        }
     }
 }
 
 ExecutedFrame execute_frame_task(
     const SceneSpec& scene,
+    const CompiledScene& compiled_scene,
     const RenderPlan& plan,
     const FrameRenderTask& task,
     FrameCache& cache,
-    RenderContext& context) { (void)scene; (void)plan; 
-    (void)context;
-    const std::string scene_signature = build_scene_signature(scene);
+    RenderContext& context) { 
+    
+    const std::uint64_t scene_hash = compiled_scene.scene_hash;
 
-    if (const CachedFrame* cached = cache.lookup(task.cache_key, scene_signature)) {
+    if (const CachedFrame* cached = cache.lookup(task.cache_key, scene_hash)) {
         ExecutedFrame frame;
         frame.frame_number = task.frame_number;
         frame.cache_key = task.cache_key;
         frame.cache_hit = true;
-        frame.scene_signature = scene_signature;
+        frame.scene_hash = scene_hash;
         frame.draw_command_count = 0;
         frame.frame = cached->frame;
         return frame;
     }
 
-    const EvaluatedFrameState state = evaluate_frame_state(scene, plan, task, scene_signature);
+    const EvaluatedFrameState state = evaluate_frame_state(scene, compiled_scene, plan, task);
     renderer2d::DrawList2D draw_list = build_draw_list(state);
     
-    // Resolve textures using MediaManager
     renderer2d::TextureResolver::resolve_textures(draw_list, scene, context.media);
 
     const float resolution_scale = std::clamp(context.policy.resolution_scale, 0.1f, 1.0f);
@@ -304,7 +186,6 @@ ExecutedFrame execute_frame_task(
         float t_offset = (mb_samples > 1) ? (static_cast<float>(s) / (mb_samples - 1) - 0.5f) * shutter_duration : 0.0f;
         double subframe_time = state.composition_state.composition_time_seconds + t_offset;
 
-        // Re-evaluate state for this subframe
         const scene::EvaluationVariables vars{
             plan.variables.empty() ? nullptr : &plan.variables,
             plan.string_variables.empty() ? nullptr : &plan.string_variables
@@ -320,7 +201,6 @@ ExecutedFrame execute_frame_task(
             render_state.height = std::max<std::int64_t>(static_cast<std::int64_t>(1), static_cast<std::int64_t>(std::lround(static_cast<double>(render_state.height) * resolution_scale)));
         }
 
-        // Adjust SPP if multiple subframes
         int original_spp = context.policy.ray_tracer_spp;
         if (mb_samples > 1) {
             context.renderer2d.policy.ray_tracer_spp = std::max(1, original_spp / mb_samples);
@@ -367,11 +247,10 @@ ExecutedFrame execute_frame_task(
             static_cast<std::uint32_t>(state.composition_state.height));
     }
 
-
     if (task.cacheable) {
         cache.store(CachedFrame{
             FrameCacheEntry{task.cache_key, state.composition_summary},
-            state.scene_signature,
+            state.scene_hash,
             frame,
             task.invalidates_when_changed
         });
@@ -381,7 +260,7 @@ ExecutedFrame execute_frame_task(
     executed.frame_number = task.frame_number;
     executed.cache_key = task.cache_key;
     executed.cache_hit = false;
-    executed.scene_signature = state.scene_signature;
+    executed.scene_hash = state.scene_hash;
     executed.draw_command_count = draw_list.commands.size();
     executed.frame = std::move(frame);
     return executed;
