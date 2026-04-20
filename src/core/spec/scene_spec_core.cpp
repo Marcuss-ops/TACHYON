@@ -32,6 +32,19 @@ bool is_layer_blend_mode_valid(const std::string& mode) {
     return mode == "normal" || mode == "additive" || mode == "multiply" || mode == "screen" || mode == "overlay" || mode == "soft_light" || mode == "softLight";
 }
 
+bool looks_like_media_path(const std::string& value) {
+    if (value.empty()) {
+        return false;
+    }
+
+    const std::filesystem::path path(value);
+    if (path.has_extension()) {
+        return true;
+    }
+
+    return value.find('/') != std::string::npos || value.find('\\') != std::string::npos;
+}
+
 ParseResult<SceneSpec> parse_scene_spec_json(const std::string& text) {
     ParseResult<SceneSpec> result;
     json root;
@@ -162,7 +175,7 @@ ValidationResult validate_scene_spec(const SceneSpec& scene) {
                         break;
                     }
                 }
-                if (!asset_found) {
+                if (!asset_found && !looks_like_media_path(layer.name)) {
                     result.diagnostics.add_error("scene.layer.asset_reference_invalid", "image/video layer must match an existing asset id using layer.id or layer.name", lpath + ".asset_id");
                 }
             }

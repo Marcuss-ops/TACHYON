@@ -10,6 +10,7 @@
 #include "tachyon/core/math/vector2.h"
 #include "tachyon/core/math/vector3.h"
 #include "tachyon/renderer2d/audio/audio_sampling.h"
+#include "tachyon/text/subtitle.h"
 
 #include <algorithm>
 #include <cmath>
@@ -641,7 +642,7 @@ struct EvaluationContext {
     std::vector<std::string> composition_stack;
     const ::tachyon::audio::AudioAnalyzer* audio_analyzer{nullptr};
     EvaluationVariables vars;
-    std::unordered_map<std::string, std::vector<text::SubtitleEntry>> subtitle_cache;
+    std::unordered_map<std::string, std::vector<::tachyon::text::SubtitleEntry>> subtitle_cache;
 };
 
 EvaluatedLightState evaluate_light_state(
