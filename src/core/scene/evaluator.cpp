@@ -173,6 +173,7 @@ double sample_scalar(
             expr_ctx.variables["music.bass"] = bands.bass;
             expr_ctx.variables["music.mid"] = bands.mid;
             expr_ctx.variables["music.high"] = bands.high;
+            expr_ctx.variables["music.presence"] = bands.presence;
             expr_ctx.variables["music.rms"] = bands.rms;
         }
         
