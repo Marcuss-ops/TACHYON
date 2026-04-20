@@ -16,7 +16,7 @@ static void process_node(const tinygltf::Model& model, const tinygltf::Node& nod
     if (node.matrix.size() == 16) {
         float m[16];
         for (int i = 0; i < 16; ++i) m[i] = static_cast<float>(node.matrix[i]);
-        local_transform = math::Matrix4x4(m);
+        local_transform = math::Matrix4x4(&m[0]);
     } else {
         // 2. TRS
         math::Matrix4x4 t = math::Matrix4x4::identity();
@@ -24,9 +24,9 @@ static void process_node(const tinygltf::Model& model, const tinygltf::Node& nod
         math::Matrix4x4 s = math::Matrix4x4::identity();
 
         if (node.translation.size() == 3) {
-            t.m[3][0] = static_cast<float>(node.translation[0]);
-            t.m[3][1] = static_cast<float>(node.translation[1]);
-            t.m[3][2] = static_cast<float>(node.translation[2]);
+            t.data[12] = static_cast<float>(node.translation[0]);
+            t.data[13] = static_cast<float>(node.translation[1]);
+            t.data[14] = static_cast<float>(node.translation[2]);
         }
         if (node.rotation.size() == 4) {
              // Quaternion to Matrix (simplified, assuming we have a math helper or we do it here)
@@ -38,14 +38,14 @@ static void process_node(const tinygltf::Model& model, const tinygltf::Node& nod
              float xx = x * x2, xy = x * y2, xz = x * z2;
              float yy = y * y2, yz = y * z2, zz = z * z2;
              float wx = w * x2, wy = w * y2, wz = w * z2;
-             r.m[0][0] = 1.0f - (yy + zz); r.m[0][1] = xy + wz;        r.m[0][2] = xz - wy;
-             r.m[1][0] = xy - wz;        r.m[1][1] = 1.0f - (xx + zz); r.m[1][2] = yz + wx;
-             r.m[2][0] = xz + wy;        r.m[2][1] = yz - wx;        r.m[2][2] = 1.0f - (xx + yy);
+             r.data[0] = 1.0f - (yy + zz); r.data[1] = xy + wz;        r.data[2] = xz - wy;
+             r.data[4] = xy - wz;        r.data[5] = 1.0f - (xx + zz); r.data[6] = yz + wx;
+             r.data[8] = xz + wy;        r.data[9] = yz - wx;        r.data[10] = 1.0f - (xx + yy);
         }
         if (node.scale.size() == 3) {
-            s.m[0][0] = static_cast<float>(node.scale[0]);
-            s.m[1][1] = static_cast<float>(node.scale[1]);
-            s.m[2][2] = static_cast<float>(node.scale[2]);
+            s.data[0] = static_cast<float>(node.scale[0]);
+            s.data[5] = static_cast<float>(node.scale[1]);
+            s.data[10] = static_cast<float>(node.scale[2]);
         }
         local_transform = t * r * s;
     }
