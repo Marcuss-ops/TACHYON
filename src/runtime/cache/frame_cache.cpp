@@ -1,8 +1,8 @@
-#include "tachyon/runtime/frame_cache.h"
+#include "tachyon/runtime/cache/frame_cache.h"
 
 namespace tachyon {
 
-const CachedFrame* FrameCache::lookup(const FrameCacheKey& key, const std::string& scene_signature) const {
+const CachedFrame* FrameCache::lookup(const FrameCacheKey& key, std::uint64_t scene_hash) const {
     std::scoped_lock lock(m_mutex);
     const auto it = m_entries.find(key.value);
     if (it == m_entries.end()) {
@@ -10,7 +10,7 @@ const CachedFrame* FrameCache::lookup(const FrameCacheKey& key, const std::strin
         return nullptr;
     }
 
-    if (it->second.scene_signature != scene_signature) {
+    if (it->second.scene_hash != scene_hash) {
         ++m_miss_count;
         return nullptr;
     }

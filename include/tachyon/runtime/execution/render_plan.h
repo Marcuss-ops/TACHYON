@@ -1,7 +1,7 @@
 #pragma once
 
-#include "tachyon/runtime/diagnostics.h"
-#include "tachyon/runtime/render_job.h"
+#include "tachyon/runtime/core/diagnostics.h"
+#include "tachyon/runtime/execution/render_job.h"
 #include "tachyon/core/spec/scene_spec.h"
 
 #include <cstddef>

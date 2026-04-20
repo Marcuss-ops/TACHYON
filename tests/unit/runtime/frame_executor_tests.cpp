@@ -1,4 +1,6 @@
-#include "tachyon/runtime/frame_executor.h"
+#include "tachyon/runtime/execution/frame_executor.h"
+#include "tachyon/core/spec/scene_compiler.h"
+#include "tachyon/runtime/core/compiled_scene.h"
 
 #include <iostream>
 #include <string>
@@ -94,18 +96,28 @@ bool run_frame_executor_tests() {
     const RenderPlan plan = make_plan();
     const SceneSpec scene = make_scene();
 
-    const ExecutedFrame first = execute_frame_task(scene, plan, make_task(0), cache, render_context);
-    const ExecutedFrame second = execute_frame_task(scene, plan, make_task(0), cache, render_context);
+    SceneCompiler compiler;
+    const auto compiled_result = compiler.compile(scene);
+    if (!compiled_result.ok()) {
+        std::cerr << "FAIL: Scene compilation failed\n";
+        return false;
+    }
+
+    const ExecutedFrame first = execute_frame_task(scene, *compiled_result.value, plan, make_task(0), cache, render_context);
+    const ExecutedFrame second = execute_frame_task(scene, *compiled_result.value, plan, make_task(0), cache, render_context);
     check_true(!first.cache_hit, "First execution is cache miss");
     check_true(second.cache_hit, "Second execution is cache hit");
 
     FrameCache isolated_cache;
-    const ExecutedFrame original = execute_frame_task(scene, plan, make_task(1), isolated_cache, render_context);
-    const ExecutedFrame changed = execute_frame_task(make_scene(25.0), plan, make_task(1), isolated_cache, render_context);
+    const ExecutedFrame original = execute_frame_task(scene, *compiled_result.value, plan, make_task(1), isolated_cache, render_context);
+    
+    const SceneSpec scene_changed = make_scene(25.0);
+    const auto compiled_changed = compiler.compile(scene_changed);
+    const ExecutedFrame changed = execute_frame_task(scene_changed, *compiled_changed.value, plan, make_task(1), isolated_cache, render_context);
     check_true(!original.cache_hit, "Original frame renders normally");
     check_true(!changed.cache_hit, "Changed parameter invalidates cached frame");
 
-    const EvaluatedFrameState state = evaluate_frame_state(scene, plan, make_task(2));
+    const EvaluatedFrameState state = evaluate_frame_state(scene, *compiled_result.value, plan, make_task(2));
     const renderer2d::DrawList2D draw_list = build_draw_list(state);
     check_true(!draw_list.commands.empty(), "Draw list contains commands");
     if (!draw_list.commands.empty()) {
@@ -118,7 +130,7 @@ bool run_frame_executor_tests() {
                    "Solid layer maps to SolidRect command");
     }
 
-    const ExecutedFrame rendered = execute_frame_task(scene, plan, make_task(2), cache, render_context);
+    const ExecutedFrame rendered = execute_frame_task(scene, *compiled_result.value, plan, make_task(2), cache, render_context);
     check_true(rendered.draw_command_count == draw_list.commands.size(),
                "Executor reports draw command count from renderer draw list");
     check_true(rendered.frame.width() == static_cast<std::uint32_t>(plan.composition.width),

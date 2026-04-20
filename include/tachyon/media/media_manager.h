@@ -4,7 +4,7 @@
 #include "tachyon/media/mesh_asset.h"
 #include "tachyon/media/video_decoder.h"
 #include "tachyon/renderer2d/framebuffer.h"
-#include "tachyon/runtime/diagnostics.h"
+#include "tachyon/runtime/core/diagnostics.h"
 
 #include <filesystem>
 #include <map>

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "tachyon/runtime/frame_executor.h"
-#include "tachyon/runtime/diagnostics.h"
+#include "tachyon/runtime/execution/frame_executor.h"
+#include "tachyon/runtime/core/diagnostics.h"
 #include "tachyon/renderer2d/render_context.h"
 
 #include <cstddef>
@@ -24,9 +24,10 @@ struct RenderSessionResult {
 
 class RenderSession {
 public:
-    RenderSessionResult render(const SceneSpec& scene, const RenderExecutionPlan& execution_plan, const std::filesystem::path& output_path = {});
+    RenderSessionResult render(const SceneSpec& scene, const CompiledScene& compiled_scene, const RenderExecutionPlan& execution_plan, const std::filesystem::path& output_path = {});
     RenderSessionResult render(
         const SceneSpec& scene,
+        const CompiledScene& compiled_scene,
         const RenderExecutionPlan& execution_plan,
         const std::filesystem::path& output_path,
         std::size_t worker_count);

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "tachyon/runtime/diagnostics.h"
-#include "tachyon/runtime/render_session.h"
+#include "tachyon/runtime/core/diagnostics.h"
+#include "tachyon/runtime/execution/render_session.h"
 
 #include <cstddef>
 #include <filesystem>

@@ -5,7 +5,7 @@
 #include "tachyon/renderer2d/effect_host.h"
 #include "tachyon/core/spec/scene_spec.h"
 #include "tachyon/core/scene/evaluated_state.h"
-#include "tachyon/runtime/quality_policy.h"
+#include "tachyon/runtime/execution/quality_policy.h"
 
 #include <array>
 #include <vector>

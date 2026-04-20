@@ -25,7 +25,9 @@ bool run_blend_modes_tests();
 bool run_evaluated_composition_renderer_tests();
 bool run_path_rasterizer_tests();
 bool run_path_rasterizer_aa_tests();
+bool run_expression_vm_tests();
 bool run_frame_cache_tests();
+bool run_runtime_backbone_tests();
 bool run_frame_executor_tests();
 bool run_frame_output_sink_tests();
 bool run_tile_scheduler_tests();
@@ -103,6 +105,10 @@ int main() {
         std::cerr << "frame cache tests failed\n";
         return 1;
     }
+    if (!run_step("runtime_backbone", run_runtime_backbone_tests)) {
+        std::cerr << "runtime backbone tests failed\n";
+        return 1;
+    }
     if (!run_step("frame_executor", run_frame_executor_tests)) {
         std::cerr << "frame executor tests failed\n";
         return 1;
@@ -163,6 +169,11 @@ int main() {
         std::cerr << "render job tests failed\n";
         return 1;
     }
-    std::cout << "all tests passed\n";
+    if (!run_step("expression_vm", run_expression_vm_tests)) {
+        std::cerr << "expression vm tests failed\n";
+        return 1;
+    }
+
+    std::cout << "All tests passed!\n";
     return 0;
 }

@@ -43,6 +43,7 @@ Welcome to the TACHYON documentation. This repository uses a numbered architectu
   - [Data Binding](30-scene-and-animation/data-binding.md)
   - [Expression System](30-scene-and-animation/expression-system.md)
   - [Expression Runtime](30-scene-and-animation/expression-runtime.md)
+  - [Remotion-Style Authoring Map](30-scene-and-animation/remotion-style-authoring-map.md)
   - [3D Mesh & Extrusion Placeholder](30-scene-and-animation/3d-mesh-and-extrusion.md)
 
 - **40 2D Compositing**
