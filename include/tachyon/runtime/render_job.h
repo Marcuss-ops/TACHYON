@@ -94,6 +94,18 @@ struct RenderJob {
     std::string compatibility_mode;
     std::unordered_map<std::string, double> variables;
     std::unordered_map<std::string, std::string> string_variables;
+    
+    struct LayerOverride {
+        std::optional<double> opacity;
+        std::optional<bool> enabled;
+        std::optional<std::string> text_content;
+        std::optional<double> position_x;
+        std::optional<double> position_y;
+        std::optional<double> scale_x;
+        std::optional<double> scale_y;
+        std::optional<double> rotation;
+    };
+    std::unordered_map<std::string, LayerOverride> layer_overrides;
 };
 
 ParseResult<RenderJob> parse_render_job_json(const std::string& text);

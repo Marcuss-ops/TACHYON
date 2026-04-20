@@ -641,6 +641,7 @@ struct EvaluationContext {
     std::vector<std::string> composition_stack;
     const ::tachyon::audio::AudioAnalyzer* audio_analyzer{nullptr};
     EvaluationVariables vars;
+    std::unordered_map<std::string, std::vector<text::SubtitleEntry>> subtitle_cache;
 };
 
 EvaluatedLightState evaluate_light_state(

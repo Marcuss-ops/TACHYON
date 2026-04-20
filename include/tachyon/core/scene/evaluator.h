@@ -15,6 +15,7 @@ namespace tachyon::scene {
 struct EvaluationVariables {
     const std::unordered_map<std::string, double>* numeric{nullptr};
     const std::unordered_map<std::string, std::string>* strings{nullptr};
+    const std::unordered_map<std::string, RenderJob::LayerOverride>* layer_overrides{nullptr};
 };
 
 [[nodiscard]] EvaluatedLayerState evaluate_layer_state(
