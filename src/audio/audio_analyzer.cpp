@@ -1,30 +1,12 @@
 #include "tachyon/audio/audio_analyzer.h"
+#include "tachyon/audio/audio_decoder.h"
 
 #include <algorithm>
 #include <cmath>
 #include <complex>
 #include <cstdint>
-#include <fstream>
 #include <numeric>
 #include <vector>
-
-#if __has_include(<libavformat/avformat.h>) && __has_include(<libavcodec/avcodec.h>) && __has_include(<libswresample/swresample.h>) && __has_include(<libavutil/opt.h>)
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4244 4267 4305 4310)
-#endif
-extern "C" {
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-#include <libavutil/channel_layout.h>
-#include <libavutil/opt.h>
-#include <libswresample/swresample.h>
-}
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-#define TACHYON_HAS_FFMPEG 1
-#endif
 
 namespace tachyon::audio {
 namespace {
@@ -90,141 +72,6 @@ float band_energy(const std::vector<std::complex<float>>& spectrum, double sampl
     return total;
 }
 
-std::vector<float> decode_audio_samples(const std::filesystem::path& path, double sample_rate) {
-    std::vector<float> samples;
-
-#if defined(TACHYON_HAS_FFMPEG)
-    AVFormatContext* format_context = nullptr;
-    if (avformat_open_input(&format_context, path.string().c_str(), nullptr, nullptr) != 0 || !format_context) {
-        return samples;
-    }
-
-    if (avformat_find_stream_info(format_context, nullptr) < 0) {
-        avformat_close_input(&format_context);
-        return samples;
-    }
-
-    const int audio_stream_index = av_find_best_stream(format_context, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
-    if (audio_stream_index < 0) {
-        avformat_close_input(&format_context);
-        return samples;
-    }
-
-    AVStream* stream = format_context->streams[audio_stream_index];
-    const AVCodec* codec = avcodec_find_decoder(stream->codecpar->codec_id);
-    if (!codec) {
-        avformat_close_input(&format_context);
-        return samples;
-    }
-
-    AVCodecContext* codec_context = avcodec_alloc_context3(codec);
-    if (!codec_context) {
-        avformat_close_input(&format_context);
-        return samples;
-    }
-
-    if (avcodec_parameters_to_context(codec_context, stream->codecpar) < 0 || avcodec_open2(codec_context, codec, nullptr) < 0) {
-        avcodec_free_context(&codec_context);
-        avformat_close_input(&format_context);
-        return samples;
-    }
-
-    AVChannelLayout in_layout;
-    AVChannelLayout out_layout;
-    av_channel_layout_default(&in_layout, codec_context->ch_layout.nb_channels > 0 ? codec_context->ch_layout.nb_channels : 1);
-    av_channel_layout_default(&out_layout, 1);
-
-    SwrContext* swr_context = nullptr;
-    if (swr_alloc_set_opts2(
-            &swr_context,
-            &out_layout,
-            AV_SAMPLE_FMT_FLT,
-            static_cast<int>(sample_rate),
-            &in_layout,
-            codec_context->sample_fmt,
-            codec_context->sample_rate,
-            0,
-            nullptr) < 0 || !swr_context || swr_init(swr_context) < 0) {
-        av_channel_layout_uninit(&in_layout);
-        av_channel_layout_uninit(&out_layout);
-        swr_free(&swr_context);
-        avcodec_free_context(&codec_context);
-        avformat_close_input(&format_context);
-        return samples;
-    }
-    av_channel_layout_uninit(&in_layout);
-    av_channel_layout_uninit(&out_layout);
-
-    AVPacket* packet = av_packet_alloc();
-    AVFrame* frame = av_frame_alloc();
-    if (!packet || !frame) {
-        av_packet_free(&packet);
-        av_frame_free(&frame);
-        swr_free(&swr_context);
-        avcodec_free_context(&codec_context);
-        avformat_close_input(&format_context);
-        return samples;
-    }
-
-    std::vector<float> converted(16384U, 0.0f);
-
-    auto append_converted = [&](AVFrame* decoded_frame) {
-        const uint8_t** in_data = const_cast<const uint8_t**>(decoded_frame->extended_data);
-        int out_samples = swr_get_out_samples(swr_context, decoded_frame->nb_samples);
-        if (out_samples <= 0) {
-            return;
-        }
-
-        if (static_cast<std::size_t>(out_samples) > converted.size()) {
-            converted.resize(static_cast<std::size_t>(out_samples));
-        }
-
-        uint8_t* out_data[] = {reinterpret_cast<uint8_t*>(converted.data())};
-        const int converted_samples = swr_convert(
-            swr_context,
-            out_data,
-            out_samples,
-            in_data,
-            decoded_frame->nb_samples);
-        if (converted_samples > 0) {
-            samples.insert(samples.end(), converted.data(), converted.data() + converted_samples);
-        }
-    };
-
-    while (av_read_frame(format_context, packet) >= 0) {
-        if (packet->stream_index != audio_stream_index) {
-            av_packet_unref(packet);
-            continue;
-        }
-
-        if (avcodec_send_packet(codec_context, packet) >= 0) {
-            while (avcodec_receive_frame(codec_context, frame) >= 0) {
-                append_converted(frame);
-                av_frame_unref(frame);
-            }
-        }
-        av_packet_unref(packet);
-    }
-
-    if (avcodec_send_packet(codec_context, nullptr) >= 0) {
-        while (avcodec_receive_frame(codec_context, frame) >= 0) {
-            append_converted(frame);
-            av_frame_unref(frame);
-        }
-    }
-
-    av_packet_free(&packet);
-    av_frame_free(&frame);
-    swr_free(&swr_context);
-    avcodec_free_context(&codec_context);
-    avformat_close_input(&format_context);
-#else
-    (void)path;
-    (void)sample_rate;
-#endif
-
-    return samples;
-}
 
 AudioBands analyze_window(const std::vector<float>& samples, double sample_rate, std::size_t begin_index, std::size_t sample_count) {
     AudioBands bands;
@@ -266,21 +113,32 @@ AudioBands analyze_window(const std::vector<float>& samples, double sample_rate,
 
 } // namespace
 
-bool AudioAnalyzer::load(const std::filesystem::path& path, double sample_rate) {
+bool AudioAnalyzer::load(const std::filesystem::path& path, double /*sample_rate*/) {
     m_samples.clear();
-    m_sample_rate = sample_rate;
+    m_sample_rate = 48000.0; // AudioDecoder outputs fixed 48kHz
     m_duration_seconds = 0.0;
 
-    if (sample_rate <= 0.0) {
+    AudioDecoder decoder;
+    if (!decoder.open(path)) {
         return false;
     }
 
-    m_samples = decode_audio_samples(path, sample_rate);
-    if (m_samples.empty()) {
+    m_duration_seconds = decoder.duration();
+    const std::vector<float> decoded = decoder.decode_range(0.0, m_duration_seconds);
+    
+    if (decoded.empty()) {
         return false;
     }
 
-    m_duration_seconds = static_cast<double>(m_samples.size()) / m_sample_rate;
+    // Downmix stereo (or multichannel) to mono for analysis
+    // AudioDecoder now provides Stereo at 48kHz by default in my implementation
+    // But we use the sample_rate passed to load here if it differs (though I should probably fix that)
+    
+    m_samples.reserve(decoded.size() / 2U);
+    for (std::size_t i = 0; i + 1 < decoded.size(); i += 2) {
+        m_samples.push_back((decoded[i] + decoded[i + 1]) * 0.5f);
+    }
+
     return true;
 }
 

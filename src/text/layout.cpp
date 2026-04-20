@@ -1,6 +1,10 @@
 #include "tachyon/text/layout.h"
 
-#include "stb_image_write.h"
+#include "tachyon/renderer2d/text/utf8/utf8_decoder.h"
+#include "tachyon/renderer2d/text/shaping/font_shaping.h"
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
 
 #include <algorithm>
 #include <cmath>
@@ -14,54 +18,7 @@
 namespace tachyon::text {
 namespace {
 
-std::vector<std::uint32_t> decode_utf8(std::string_view text) {
-    std::vector<std::uint32_t> codepoints;
-    codepoints.reserve(text.size());
-
-    for (std::size_t i = 0; i < text.size();) {
-        const unsigned char lead = static_cast<unsigned char>(text[i]);
-        if ((lead & 0x80U) == 0U) {
-            codepoints.push_back(lead);
-            ++i;
-            continue;
-        }
-
-        if ((lead & 0xE0U) == 0xC0U && i + 1 < text.size()) {
-            const auto cp =
-                ((static_cast<std::uint32_t>(lead & 0x1FU)) << 6U) |
-                (static_cast<std::uint32_t>(static_cast<unsigned char>(text[i + 1]) & 0x3FU));
-            codepoints.push_back(cp);
-            i += 2;
-            continue;
-        }
-
-        if ((lead & 0xF0U) == 0xE0U && i + 2 < text.size()) {
-            const auto cp =
-                ((static_cast<std::uint32_t>(lead & 0x0FU)) << 12U) |
-                ((static_cast<std::uint32_t>(static_cast<unsigned char>(text[i + 1]) & 0x3FU)) << 6U) |
-                (static_cast<std::uint32_t>(static_cast<unsigned char>(text[i + 2]) & 0x3FU));
-            codepoints.push_back(cp);
-            i += 3;
-            continue;
-        }
-
-        if ((lead & 0xF8U) == 0xF0U && i + 3 < text.size()) {
-            const auto cp =
-                ((static_cast<std::uint32_t>(lead & 0x07U)) << 18U) |
-                ((static_cast<std::uint32_t>(static_cast<unsigned char>(text[i + 1]) & 0x3FU)) << 12U) |
-                ((static_cast<std::uint32_t>(static_cast<unsigned char>(text[i + 2]) & 0x3FU)) << 6U) |
-                (static_cast<std::uint32_t>(static_cast<unsigned char>(text[i + 3]) & 0x3FU));
-            codepoints.push_back(cp);
-            i += 4;
-            continue;
-        }
-
-        codepoints.push_back(static_cast<std::uint32_t>('?'));
-        ++i;
-    }
-
-    return codepoints;
-}
+// UTF-8 decoding moved to renderer2d::text::utf8
 
 std::uint32_t choose_scale(const BitmapFont& font, const TextStyle& style) {
     const std::uint32_t requested = style.pixel_size == 0 ? static_cast<std::uint32_t>(font.line_height()) : style.pixel_size;
@@ -69,61 +26,9 @@ std::uint32_t choose_scale(const BitmapFont& font, const TextStyle& style) {
     return std::max<std::uint32_t>(1, requested / base);
 }
 
-struct ShapedGlyphRun {
-    struct Glyph {
-        std::uint32_t codepoint{0};
-        std::uint32_t font_glyph_index{0};
-        std::int32_t advance_x{0};
-        std::int32_t offset_x{0};
-        std::int32_t offset_y{0};
-    };
+// ShapedGlyphRun moved to renderer2d::text::shaping
 
-    std::vector<Glyph> glyphs;
-    std::int32_t width{0};
-};
-
-ShapedGlyphRun shape_run_with_harfbuzz(const BitmapFont& font, std::span<const std::uint32_t> codepoints, std::uint32_t scale) {
-    ShapedGlyphRun run;
-    if (!font.has_freetype_face() || codepoints.empty()) {
-        return run;
-    }
-
-    hb_font_t* hb_font = hb_ft_font_create_referenced(static_cast<FT_Face>(font.freetype_face()));
-    if (hb_font == nullptr) {
-        return run;
-    }
-
-    hb_buffer_t* buffer = hb_buffer_create();
-    hb_buffer_add_utf32(buffer, codepoints.data(), static_cast<int>(codepoints.size()), 0, static_cast<int>(codepoints.size()));
-    hb_buffer_guess_segment_properties(buffer);
-    hb_buffer_set_cluster_level(buffer, HB_BUFFER_CLUSTER_LEVEL_MONOTONE_CHARACTERS);
-    hb_shape(hb_font, buffer, nullptr, 0);
-
-    unsigned int glyph_count = 0;
-    hb_glyph_info_t* infos = hb_buffer_get_glyph_infos(buffer, &glyph_count);
-    hb_glyph_position_t* positions = hb_buffer_get_glyph_positions(buffer, &glyph_count);
-
-    run.glyphs.reserve(glyph_count);
-    for (unsigned int i = 0; i < glyph_count; ++i) {
-        const std::uint32_t glyph_index = infos[i].codepoint;
-        const std::int32_t advance_x = static_cast<std::int32_t>(std::lround(static_cast<float>(positions[i].x_advance) / 64.0f));
-        const std::int32_t offset_x = static_cast<std::int32_t>(std::lround(static_cast<float>(positions[i].x_offset) / 64.0f));
-        const std::int32_t offset_y = static_cast<std::int32_t>(std::lround(static_cast<float>(-positions[i].y_offset) / 64.0f));
-        const std::uint32_t source_index = static_cast<std::uint32_t>(std::min<std::size_t>(infos[i].cluster, codepoints.size() - 1U));
-        run.glyphs.push_back(ShapedGlyphRun::Glyph{
-            codepoints[source_index],
-            glyph_index,
-            advance_x * static_cast<std::int32_t>(scale),
-            offset_x * static_cast<std::int32_t>(scale),
-            offset_y * static_cast<std::int32_t>(scale)
-        });
-        run.width += advance_x * static_cast<std::int32_t>(scale);
-    }
-
-    hb_buffer_destroy(buffer);
-    hb_font_destroy(hb_font);
-    return run;
-}
+// Font shaping moved to renderer2d::text::shaping
 
 bool is_breakable_space(std::uint32_t codepoint) {
     return codepoint == static_cast<std::uint32_t>(' ') || codepoint == static_cast<std::uint32_t>('\t');
@@ -269,7 +174,7 @@ TextLayoutResult layout_text(
     result.scale = scale;
     result.line_height = scaled_line_height;
 
-    const auto codepoints = decode_utf8(utf8_text);
+    const auto codepoints = renderer2d::text::utf8::decode_utf8(utf8_text);
 
     if (font.has_freetype_face()) {
         std::int32_t pen_x = 0;
@@ -352,8 +257,8 @@ TextLayoutResult layout_text(
                 ++index;
             }
 
-            const std::span<const std::uint32_t> run_span(codepoints.data() + run_start, index - run_start);
-            const ShapedGlyphRun shaped = shape_run_with_harfbuzz(font, run_span, scale);
+            const std::vector<std::uint32_t> run_span(codepoints.begin() + run_start, codepoints.begin() + index);
+            const renderer2d::text::shaping::ShapedGlyphRun shaped = renderer2d::text::shaping::shape_run_with_harfbuzz(font, run_span, scale);
             if (!last_was_space && !result.glyphs.empty()) {
                 ++current_word_index;
             }

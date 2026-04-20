@@ -10,6 +10,12 @@
 
 namespace tachyon::media {
 
+enum class AlphaMode {
+    Straight,
+    Premultiplied,
+    Ignore
+};
+
 class ImageManager {
 public:
     ImageManager() = default;
@@ -19,7 +25,10 @@ public:
      * Returns a pointer to the surface. On failure, a fallback surface is returned
      * and diagnostics are recorded.
      */
-    const renderer2d::SurfaceRGBA* get_image(const std::filesystem::path& path, DiagnosticBag* diagnostics = nullptr);
+    const renderer2d::SurfaceRGBA* get_image(
+        const std::filesystem::path& path, 
+        AlphaMode alpha_mode = AlphaMode::Straight,
+        DiagnosticBag* diagnostics = nullptr);
 
     /**
      * Consume and clear accumulated media diagnostics.

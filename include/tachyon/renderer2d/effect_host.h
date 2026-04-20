@@ -1,16 +1,22 @@
 #pragma once
 
+#include "tachyon/renderer2d/color_transfer.h"
+#include "tachyon/renderer2d/rasterizer.h"
 #include "tachyon/renderer2d/framebuffer.h"
 
+#include <array>
+#include <functional>
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace tachyon::renderer2d {
 
 struct EffectParams {
     std::unordered_map<std::string, float> scalars;
     std::unordered_map<std::string, Color> colors;
+    std::unordered_map<std::string, std::string> strings;
 };
 
 class Effect {
@@ -19,49 +25,77 @@ public:
     virtual SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const = 0;
 };
 
-class GaussianBlurEffect final : public Effect {
-public:
-    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
-};
-
-class DropShadowEffect final : public Effect {
-public:
-    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
-};
-
-class GlowEffect final : public Effect {
-public:
-    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
-};
-
-class LevelsEffect final : public Effect {
-public:
-    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
-};
-
-class CurvesEffect final : public Effect {
-public:
-    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
-};
-
-class FillEffect final : public Effect {
-public:
-    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
-};
-
-class TintEffect final : public Effect {
-public:
-    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
-};
-
 class EffectHost {
-public:
-    void register_effect(std::string name, std::unique_ptr<Effect> effect);
-    bool has_effect(const std::string& name) const;
-    SurfaceRGBA apply(const std::string& name, const SurfaceRGBA& input, const EffectParams& params) const;
+ public:
+  EffectHost() = default;
+  virtual ~EffectHost() = default;
 
-private:
-    std::unordered_map<std::string, std::unique_ptr<Effect>> m_effects;
+  virtual void register_effect(std::string name, std::unique_ptr<Effect> effect) = 0;
+  virtual bool has_effect(const std::string& name) const = 0;
+  virtual SurfaceRGBA apply(const std::string& name,
+                            const SurfaceRGBA& input,
+                            const EffectParams& params) const = 0;
+  virtual SurfaceRGBA apply_pipeline(
+      const SurfaceRGBA& input,
+      const std::vector<std::pair<std::string, EffectParams>>& pipeline) const = 0;
+
+  static void register_builtins(EffectHost& host);
+
+ protected:
+  std::unordered_map<std::string, std::unique_ptr<Effect>> m_effects;
 };
 
-} // namespace tachyon::renderer2d
+std::unique_ptr<EffectHost> create_effect_host();
+
+// Built-in Effect declarations
+class GaussianBlurEffect : public Effect {
+public:
+    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
+};
+
+class DropShadowEffect : public Effect {
+public:
+    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
+};
+
+class GlowEffect : public Effect {
+public:
+    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
+};
+
+class LevelsEffect : public Effect {
+public:
+    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
+};
+
+class CurvesEffect : public Effect {
+public:
+    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
+};
+
+class FillEffect : public Effect {
+public:
+    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
+};
+
+class TintEffect : public Effect {
+public:
+    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
+};
+
+class HueSaturationEffect : public Effect {
+public:
+    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
+};
+
+class ColorBalanceEffect : public Effect {
+public:
+    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
+};
+
+class LUTEffect : public Effect {
+public:
+    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
+};
+
+}  // namespace tachyon::renderer2d

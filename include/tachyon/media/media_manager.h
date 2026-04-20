@@ -16,7 +16,10 @@ class MediaManager {
 public:
     MediaManager() = default;
 
-    const renderer2d::SurfaceRGBA* get_image(const std::filesystem::path& path, DiagnosticBag* diagnostics = nullptr);
+    const renderer2d::SurfaceRGBA* get_image(
+        const std::filesystem::path& path, 
+        AlphaMode alpha_mode = AlphaMode::Straight,
+        DiagnosticBag* diagnostics = nullptr);
     
     /**
      * Acquires a VideoDecoder for the given path from a pool.

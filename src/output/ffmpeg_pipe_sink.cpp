@@ -1,5 +1,7 @@
 #include "tachyon/output/frame_output_sink.h"
 #include "tachyon/renderer2d/color_transfer.h"
+#include "tachyon/audio/audio_mixer.h"
+#include "tachyon/audio/audio_decoder.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -121,21 +123,22 @@ std::string build_video_pass_command(const RenderPlan& plan, const std::filesyst
             << " -pix_fmt rgba"
             << " -s " << plan.composition.width << 'x' << plan.composition.height
             << " -r " << fps
-            << " -color_primaries " << color_primaries
-            << " -color_trc " << color_trc
-            << " -color_range " << color_range
             << " -i -"
             << " -an";
 
-    command << " -color_primaries " << color_primaries
-            << " -color_trc " << color_trc
-            << " -colorspace " << colorspace
-            << " -color_range " << color_range;
-
-    if (!plan.output.profile.video.codec.empty()) {
-        command << " -c:v " << plan.output.profile.video.codec;
+    if (plan.output.profile.format == OutputFormat::ProRes) {
+        command << " -c:v prores_ks -profile:v 3";
+    } else if (plan.output.profile.format == OutputFormat::WebM) {
+        command << " -c:v libvpx-vp9";
+        if (!plan.output.profile.video.crf.has_value()) {
+            command << " -crf 30";
+        }
     } else {
-        command << " -c:v libx264";
+        if (!plan.output.profile.video.codec.empty()) {
+            command << " -c:v " << plan.output.profile.video.codec;
+        } else {
+            command << " -c:v libx264";
+        }
     }
 
     if (plan.output.profile.video.rate_control_mode == "crf" && plan.output.profile.video.crf.has_value()) {
@@ -144,7 +147,14 @@ std::string build_video_pass_command(const RenderPlan& plan, const std::filesyst
 
     if (!pixel_format.empty()) {
         command << " -pix_fmt " << pixel_format;
+    } else if (plan.output.profile.format == OutputFormat::WebM) {
+        command << " -pix_fmt yuv420p";
     }
+
+    command << " -color_primaries " << color_primaries
+            << " -color_trc " << color_trc
+            << " -colorspace " << colorspace
+            << " -color_range " << color_range;
 
     if (include_faststart && plan.output.profile.container == "mp4") {
         command << " -movflags +faststart";
@@ -154,30 +164,18 @@ std::string build_video_pass_command(const RenderPlan& plan, const std::filesyst
     return command.str();
 }
 
-std::string build_audio_mux_command(const RenderPlan& plan, const std::filesystem::path& temp_video_path) {
+std::string build_audio_mux_command(const RenderPlan& plan, const std::filesystem::path& temp_video_path, const std::filesystem::path& master_audio_path) {
     const bool overwrite = plan.output.destination.overwrite;
     const std::string color_primaries = ffmpeg_color_primaries(plan.output.profile.color.space);
     const std::string color_trc = ffmpeg_transfer_characteristics(plan.output.profile.color.transfer);
     const std::string colorspace = ffmpeg_colorspace(plan.output.profile.color.space);
     const std::string color_range = ffmpeg_color_range(plan.output.profile.color.range);
-    const auto& tracks = plan.output.profile.audio.tracks;
-
-    std::vector<std::size_t> active_tracks;
-    active_tracks.reserve(tracks.size());
-    for (std::size_t i = 0; i < tracks.size(); ++i) {
-        if (!tracks[i].source_path.empty()) {
-            active_tracks.push_back(i);
-        }
-    }
 
     std::ostringstream command;
     command << "ffmpeg "
             << (overwrite ? "-y" : "-n")
-            << " -i " << quote_path(temp_video_path);
-
-    for (const std::size_t index : active_tracks) {
-        command << " -i " << quote_path(tracks[index].source_path);
-    }
+            << " -i " << quote_path(temp_video_path)
+            << " -i " << quote_path(master_audio_path);
 
     command << " -color_primaries " << color_primaries
             << " -color_trc " << color_trc
@@ -186,36 +184,17 @@ std::string build_audio_mux_command(const RenderPlan& plan, const std::filesyste
 
     command << " -c:v copy";
 
-    if (active_tracks.empty()) {
-        command << " -an";
+    if (!plan.output.profile.audio.codec.empty()) {
+        command << " -c:a " << plan.output.profile.audio.codec;
     } else {
-        command << " -filter_complex \"";
-        for (std::size_t mix_index = 0; mix_index < active_tracks.size(); ++mix_index) {
-            const auto& track = tracks[active_tracks[mix_index]];
-            const std::int64_t delay_ms = static_cast<std::int64_t>(std::llround(track.start_offset_seconds * 1000.0));
-            command << "[" << (mix_index + 1) << ":a]adelay=" << delay_ms << "|" << delay_ms
-                    << ",volume=" << track.volume << "[a" << mix_index << "];";
-        }
-
-        for (std::size_t mix_index = 0; mix_index < active_tracks.size(); ++mix_index) {
-            command << "[a" << mix_index << "]";
-        }
-        command << "amix=inputs=" << active_tracks.size() << ":duration=longest:dropout_transition=0[outa]\""
-                << " -map 0:v -map \"[outa]\"";
-
-        if (!plan.output.profile.audio.codec.empty()) {
-            command << " -c:a " << plan.output.profile.audio.codec;
-        } else {
-            command << " -c:a aac";
-        }
-
-        command << " -shortest";
+        command << " -c:a aac";
     }
 
     if (plan.output.profile.container == "mp4") {
         command << " -movflags +faststart";
     }
 
+    command << " -shortest";
     command << ' ' << quote_path(std::filesystem::path(plan.output.destination.path));
     return command.str();
 }
@@ -283,17 +262,19 @@ public:
         m_needs_audio_mux = !plan.output.profile.audio.mode.empty() &&
                             plan.output.profile.audio.mode != "none" &&
                             !plan.output.profile.audio.tracks.empty();
+        
+        bool needs_temp_video = m_needs_audio_mux || plan.output.profile.format == OutputFormat::Gif;
 
         const std::filesystem::path destination(plan.output.destination.path);
         if (!destination.parent_path().empty()) {
             std::filesystem::create_directories(destination.parent_path());
         }
 
-        if (m_needs_audio_mux) {
+        if (needs_temp_video) {
             m_temp_video_path = make_temp_video_path(destination);
         }
 
-        const std::string command = m_needs_audio_mux
+        const std::string command = needs_temp_video
             ? build_video_pass_command(plan, m_temp_video_path, false)
             : build_video_pass_command(plan, destination, true);
         m_pipe = TACHYON_POPEN(command.c_str(), "wb");
@@ -333,10 +314,7 @@ public:
     bool finish() override {
         m_last_error.clear();
         if (m_pipe == nullptr) {
-            if (m_needs_audio_mux) {
-                return finalize_audio_mux();
-            }
-            return true;
+            return finalize_post_processing();
         }
 
         const int status = TACHYON_PCLOSE(m_pipe);
@@ -346,11 +324,7 @@ public:
             return false;
         }
 
-        if (m_needs_audio_mux) {
-            return finalize_audio_mux();
-        }
-
-        return true;
+        return finalize_post_processing();
     }
 
     const std::string& last_error() const override {
@@ -364,7 +338,39 @@ private:
             return false;
         }
 
-        const std::string mux_command = build_audio_mux_command(*m_plan, m_temp_video_path);
+        // Step 1: Perform Audio Mix to a Master WAV
+        const std::filesystem::path destination(m_plan->output.destination.path);
+        const std::filesystem::path master_audio_path = destination.parent_path() / (destination.stem().string() + ".tachyon.master_audio.wav");
+
+        audio::AudioMixer mixer;
+        for (const auto& track_spec : m_plan->output.profile.audio.tracks) {
+            if (track_spec.source_path.empty()) continue;
+            auto decoder = std::make_shared<audio::AudioDecoder>();
+            if (decoder->open(track_spec.source_path)) {
+                mixer.add_track(decoder, {track_spec.start_offset_seconds, static_cast<float>(track_spec.volume)});
+            }
+        }
+
+        std::ostringstream audio_cmd;
+        audio_cmd << "ffmpeg -y -f f32le -ar 48000 -ac 2 -i - " << quote_path(master_audio_path);
+        FILE* audio_pipe = TACHYON_POPEN(audio_cmd.str().c_str(), "wb");
+        if (!audio_pipe) {
+            m_last_error = "failed to open ffmpeg for master audio mix";
+            return false;
+        }
+
+        const double duration = m_plan->composition.duration;
+        const double chunk_duration = 1.0;
+        std::vector<float> mix_buffer;
+        for (double t = 0.0; t < duration; t += chunk_duration) {
+            double current_chunk = std::min(chunk_duration, duration - t);
+            mixer.mix(t, current_chunk, mix_buffer);
+            std::fwrite(mix_buffer.data(), sizeof(float), mix_buffer.size(), audio_pipe);
+        }
+        TACHYON_PCLOSE(audio_pipe);
+
+        // Step 2: Mux Video + Master Audio
+        const std::string mux_command = build_audio_mux_command(*m_plan, m_temp_video_path, master_audio_path);
         FILE* mux_pipe = TACHYON_POPEN(mux_command.c_str(), "wb");
         if (mux_pipe == nullptr) {
             m_last_error = "failed to open ffmpeg audio mux pass";
@@ -377,8 +383,10 @@ private:
             return false;
         }
 
+        // Step 3: Cleanup
         std::error_code ec;
         std::filesystem::remove(m_temp_video_path, ec);
+        std::filesystem::remove(master_audio_path, ec);
         m_temp_video_path.clear();
         return true;
     }

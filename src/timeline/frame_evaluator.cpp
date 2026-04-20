@@ -1,5 +1,5 @@
 #include "tachyon/timeline/evaluator.h"
-#include "tachyon/scene/evaluator.h"
+#include "tachyon/core/scene/evaluator.h"
 
 namespace tachyon::timeline {
 

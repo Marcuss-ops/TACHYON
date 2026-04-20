@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/spec/scene_spec.h"
+#include "tachyon/core/spec/scene_spec.h"
 
 #include <filesystem>
 #include <vector>

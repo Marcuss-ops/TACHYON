@@ -37,10 +37,25 @@ struct FillPathStyle {
     WindingRule winding{WindingRule::NonZero};
 };
 
+enum class LineCap {
+    Butt,
+    Round,
+    Square
+};
+
+enum class LineJoin {
+    Miter,
+    Round,
+    Bevel
+};
+
 struct StrokePathStyle {
     Color stroke_color{Color::white()};
     float stroke_width{1.0f};
     float opacity{1.0f};
+    LineCap cap{LineCap::Butt};
+    LineJoin join{LineJoin::Miter};
+    float miter_limit{4.0f};
 };
 
 class PathRasterizer {

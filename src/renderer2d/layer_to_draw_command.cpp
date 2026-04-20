@@ -1,12 +1,12 @@
 #include "tachyon/renderer2d/draw_command.h"
 #include "tachyon/renderer2d/project_card.h"
-#include "tachyon/scene/evaluated_state.h"
+#include "tachyon/core/scene/evaluated_state.h"
 
 #include <algorithm>
 #include <cmath>
 #include "tachyon/renderer2d/draw_command.h"
 #include "tachyon/renderer2d/project_card.h"
-#include "tachyon/scene/evaluated_state.h"
+#include "tachyon/core/scene/evaluated_state.h"
 
 #include <algorithm>
 #include <cmath>
@@ -18,6 +18,19 @@ namespace {
 
 RectI full_clip(const scene::EvaluatedCompositionState& composition_state) {
     return RectI{0, 0, static_cast<int>(composition_state.width), static_cast<int>(composition_state.height)};
+}
+
+Color map_color(const ColorSpec& spec) {
+    return Color{spec.r, spec.g, spec.b, spec.a};
+}
+
+BlendMode map_blend_mode(const std::string& mode) {
+    if (mode == "additive") return BlendMode::Additive;
+    if (mode == "multiply") return BlendMode::Multiply;
+    if (mode == "screen") return BlendMode::Screen;
+    if (mode == "overlay") return BlendMode::Overlay;
+    if (mode == "soft_light" || mode == "softLight") return BlendMode::SoftLight;
+    return BlendMode::Normal;
 }
 
 RectI scaled_rect(const scene::EvaluatedLayerState& layer, int base_width, int base_height) {
@@ -125,7 +138,98 @@ DrawCommand2D image_command(const scene::EvaluatedLayerState& layer, const scene
     return command;
 }
 
+DrawCommand2D shape_command(const scene::EvaluatedLayerState& layer, const scene::EvaluatedCompositionState& composition_state, int z_order) {
+    DrawCommand2D command;
+    command.kind = DrawCommandKind::Shape;
+    command.z_order = z_order;
+    command.blend_mode = map_blend_mode(layer.blend_mode);
+    command.clip = full_clip(composition_state);
+    
+    ShapeCommand shape;
+    shape.fill_color = map_color(layer.fill_color);
+    shape.stroke_color = map_color(layer.stroke_color);
+    shape.stroke_width = layer.stroke_width;
+    shape.line_cap = layer.line_cap;
+    shape.line_join = layer.line_join;
+    shape.miter_limit = layer.miter_limit;
+    shape.opacity = static_cast<float>(layer.opacity);
+    shape.transform = layer.local_transform;
+    
+    if (layer.shape_path.has_value()) {
+        const auto& points = layer.shape_path->points;
+        for (std::size_t i = 0; i < points.size(); ++i) {
+            const auto& pt = points[i];
+            if (i == 0) {
+                shape.geometry.commands.push_back({PathVerb::MoveTo, pt.position});
+            } else {
+                const auto& prev = points[i-1];
+                if ((prev.tangent_out.x == 0.0f && prev.tangent_out.y == 0.0f) && 
+                    (pt.tangent_in.x == 0.0f && pt.tangent_in.y == 0.0f)) {
+                    shape.geometry.commands.push_back({PathVerb::LineTo, pt.position});
+                } else {
+                    shape.geometry.commands.push_back({
+                        PathVerb::CubicTo, 
+                        prev.position + prev.tangent_out,
+                        pt.position + pt.tangent_in,
+                        pt.position
+                    });
+                }
+            }
+        }
+        if (layer.shape_path->closed && !points.empty()) {
+             const auto& last = points.back();
+             const auto& first = points.front();
+             if ((last.tangent_out.x != 0.0f || last.tangent_out.y != 0.0f) || 
+                 (first.tangent_in.x != 0.0f || first.tangent_in.y != 0.0f)) {
+                 shape.geometry.commands.push_back({
+                     PathVerb::CubicTo,
+                     last.position + last.tangent_out,
+                     first.position + first.tangent_in,
+                     first.position
+                 });
+             }
+             shape.geometry.commands.push_back({PathVerb::Close});
+        }
+    }
+    
+    command.shape.emplace(std::move(shape));
+    return command;
+}
+
 } // namespace
+
+DrawList2D generate_draw_list(const scene::EvaluatedCompositionState& state) {
+    DrawList2D list;
+    int z_order = 0;
+    
+    for (const auto& layer : state.layers) {
+        if (!layer.visible) {
+            z_order++;
+            continue;
+        }
+
+        switch (layer.type) {
+            case scene::LayerType::Solid:
+                list.commands.push_back(solid_command(layer, state, z_order));
+                break;
+            case scene::LayerType::Mask:
+                list.commands.push_back(mask_command(layer, state, z_order));
+                break;
+            case scene::LayerType::Image:
+            case scene::LayerType::Video:
+                list.commands.push_back(image_command(layer, state, z_order, "asset:", static_cast<int>(layer.width), static_cast<int>(layer.height)));
+                break;
+            case scene::LayerType::Shape:
+                list.commands.push_back(shape_command(layer, state, z_order));
+                break;
+            default:
+                break;
+        }
+        z_order++;
+    }
+    
+    return list;
+}
 
 std::vector<DrawCommand2D> map_layer_to_draw_commands(const scene::EvaluatedLayerState& layer, const scene::EvaluatedCompositionState& composition_state, int z_order) {
     std::vector<DrawCommand2D> commands;
@@ -135,8 +239,10 @@ std::vector<DrawCommand2D> map_layer_to_draw_commands(const scene::EvaluatedLaye
     
     using scene::LayerType;
     
-    if (layer.type == LayerType::Solid || layer.type == LayerType::Shape) {
+    if (layer.type == LayerType::Solid) {
         commands.push_back(solid_command(layer, composition_state, z_order));
+    } else if (layer.type == LayerType::Shape) {
+        commands.push_back(shape_command(layer, composition_state, z_order));
     } else if (layer.type == LayerType::Mask) {
         commands.push_back(mask_command(layer, composition_state, z_order));
     } else if (layer.type == LayerType::Image) {

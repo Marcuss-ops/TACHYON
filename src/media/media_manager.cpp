@@ -2,8 +2,11 @@
 
 namespace tachyon::media {
 
-const renderer2d::SurfaceRGBA* MediaManager::get_image(const std::filesystem::path& path, DiagnosticBag* diagnostics) {
-    return m_image_manager.get_image(path, diagnostics);
+const renderer2d::SurfaceRGBA* MediaManager::get_image(
+    const std::filesystem::path& path, 
+    AlphaMode alpha_mode,
+    DiagnosticBag* diagnostics) {
+    return m_image_manager.get_image(path, alpha_mode, diagnostics);
 }
 
 VideoDecoder* MediaManager::acquire_video_decoder(const std::filesystem::path& path) {

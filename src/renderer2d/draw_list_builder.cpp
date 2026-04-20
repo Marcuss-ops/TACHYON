@@ -24,6 +24,12 @@ BlendMode parse_blend_mode(const std::string& blend_mode) {
     if (blend_mode == "screen") {
         return BlendMode::Screen;
     }
+    if (blend_mode == "overlay") {
+        return BlendMode::Overlay;
+    }
+    if (blend_mode == "soft_light" || blend_mode == "softLight") {
+        return BlendMode::SoftLight;
+    }
     return BlendMode::Normal;
 }
 

@@ -15,13 +15,14 @@ struct OutputFramePacket {
 };
 
 class FrameOutputSink {
-public:
-    virtual ~FrameOutputSink() = default;
+    public:
+        virtual ~FrameOutputSink() = default;
 
-    virtual bool begin(const RenderPlan& plan) = 0;
-    virtual bool write_frame(const OutputFramePacket& packet) = 0;
-    virtual bool finish() = 0;
-    [[nodiscard]] virtual const std::string& last_error() const = 0;
+        virtual bool begin(const RenderPlan& plan) = 0;
+        virtual bool write_frame(const OutputFramePacket& packet) = 0;
+        virtual bool finish() = 0;
+        virtual bool finalize_post_processing() { return true; }
+        [[nodiscard]] virtual const std::string& last_error() const = 0;
 };
 
 std::unique_ptr<FrameOutputSink> create_png_sequence_sink();

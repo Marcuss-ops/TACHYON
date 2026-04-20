@@ -12,16 +12,14 @@ struct Contour {
     std::vector<math::Vector2> points;
 };
 
-Color apply_opacity(Color color, float opacity) {
-    const float clamped = std::clamp(opacity, 0.0f, 1.0f);
-    const float alpha = static_cast<float>(color.a) * clamped;
-    const float premultiplied = alpha / 255.0f;
-    return Color{
-        static_cast<std::uint8_t>(std::lround(static_cast<float>(color.r) * premultiplied)),
-        static_cast<std::uint8_t>(std::lround(static_cast<float>(color.g) * premultiplied)),
-        static_cast<std::uint8_t>(std::lround(static_cast<float>(color.b) * premultiplied)),
-        static_cast<std::uint8_t>(std::lround(alpha))
-    };
+constexpr int kCoverageSamples = 4;
+
+Color apply_coverage(Color color, float opacity, float coverage) {
+    const float clamped_opacity = std::clamp(opacity, 0.0f, 1.0f);
+    const float clamped_coverage = std::clamp(coverage, 0.0f, 1.0f);
+    const float alpha = static_cast<float>(color.a) * clamped_opacity * clamped_coverage;
+    color.a = static_cast<std::uint8_t>(std::lround(std::clamp(alpha, 0.0f, 255.0f)));
+    return color;
 }
 
 float distance_to_segment_squared(const math::Vector2& point, const math::Vector2& a, const math::Vector2& b) {
@@ -181,6 +179,166 @@ int winding_number(const std::vector<Contour>& contours, const math::Vector2& po
     return winding;
 }
 
+bool point_inside_non_zero(const std::vector<Contour>& contours, const math::Vector2& point) {
+    return winding_number(contours, point) != 0;
+}
+
+float fill_coverage(const std::vector<Contour>& contours, int x, int y, WindingRule winding) {
+    int covered_samples = 0;
+    const float inv_samples = 1.0f / static_cast<float>(kCoverageSamples * kCoverageSamples);
+
+    for (int sample_y = 0; sample_y < kCoverageSamples; ++sample_y) {
+        for (int sample_x = 0; sample_x < kCoverageSamples; ++sample_x) {
+            const float px = static_cast<float>(x) + (static_cast<float>(sample_x) + 0.5f) / static_cast<float>(kCoverageSamples);
+            const float py = static_cast<float>(y) + (static_cast<float>(sample_y) + 0.5f) / static_cast<float>(kCoverageSamples);
+            const math::Vector2 sample{px, py};
+            const bool inside = winding == WindingRule::EvenOdd
+                ? point_inside_even_odd(contours, sample)
+                : point_inside_non_zero(contours, sample);
+            if (inside) {
+                ++covered_samples;
+            }
+        }
+    }
+
+    return static_cast<float>(covered_samples) * inv_samples;
+}
+
+float stroke_coverage(const std::vector<Contour>& contours, int x, int y, float radius, const StrokePathStyle& style) {
+    if (radius <= 0.0f) {
+        return 0.0f;
+    }
+
+    const float radius_squared = radius * radius;
+    int covered_samples = 0;
+    const float inv_samples = 1.0f / static_cast<float>(kCoverageSamples * kCoverageSamples);
+
+    for (int sample_y = 0; sample_y < kCoverageSamples; ++sample_y) {
+        for (int sample_x = 0; sample_x < kCoverageSamples; ++sample_x) {
+            const math::Vector2 sample{
+                static_cast<float>(x) + (static_cast<float>(sample_x) + 0.5f) / static_cast<float>(kCoverageSamples),
+                static_cast<float>(y) + (static_cast<float>(sample_y) + 0.5f) / static_cast<float>(kCoverageSamples)
+            };
+
+            bool covered = false;
+            for (const Contour& contour : contours) {
+                if (contour.points.size() < 2U) continue;
+
+                // 1. Check segments and joints
+                for (std::size_t i = 0; i + 1U < contour.points.size(); ++i) {
+                    const math::Vector2& a = contour.points[i];
+                    const math::Vector2& b = contour.points[i+1];
+                    const math::Vector2 ab = b - a;
+                    const float len2 = ab.length_squared();
+                    if (len2 < 1e-6f) continue;
+
+                    const float t = math::Vector2::dot(sample - a, ab) / len2;
+                    
+                    // Cap/Join Clipping
+                    float t_min = 0.0f;
+                    float t_max = 1.0f;
+                    
+                    // At start of contour
+                    if (i == 0) {
+                        if (style.cap == LineCap::Square) t_min = -radius / std::sqrt(len2);
+                        // Round/Butt handle via distance below
+                    }
+                    
+                    // At end of contour
+                    if (i + 2 == contour.points.size()) {
+                        if (style.cap == LineCap::Square) t_max = 1.0f + radius / std::sqrt(len2);
+                    }
+
+                    if (t >= t_min && t <= t_max) {
+                        const math::Vector2 projection = a + ab * std::clamp(t, 0.0f, 1.0f);
+                        if ((sample - projection).length_squared() <= radius_squared) {
+                            covered = true;
+                            break;
+                        }
+                    }
+
+                    // Handle Round Caps (if not clipped by Butt/Square logic)
+                    if (style.cap == LineCap::Round) {
+                        if (i == 0 && (sample - a).length_squared() <= radius_squared) {
+                            covered = true;
+                            break;
+                        }
+                        if (i + 2 == contour.points.size() && (sample - b).length_squared() <= radius_squared) {
+                            covered = true;
+                            break;
+                        }
+                    }
+
+                    // Handle Joins
+                    if (i + 2 < contour.points.size()) {
+                        const math::Vector2& next_c = contour.points[i+2];
+                        const math::Vector2 bc = next_c - b;
+                        const float len_bc2 = bc.length_squared();
+                        
+                        if (len_bc2 > 1e-6f) {
+                            if (style.join == LineJoin::Round) {
+                                if ((sample - b).length_squared() <= radius_squared) {
+                                    covered = true;
+                                    break;
+                                }
+                            } else {
+                                // Miter/Bevel Join logic
+                                const math::Vector2 v1 = ab / std::sqrt(len2);
+                                const math::Vector2 v2 = bc / std::sqrt(len_bc2);
+                                const math::Vector2 n1{-v1.y, v1.x};
+                                const math::Vector2 n2{-v2.y, v2.x};
+                                
+                                // Determine the "outer" side based on winding
+                                float cross = v1.x * v2.y - v1.y * v2.x;
+                                float side = (cross > 0) ? 1.0f : -1.0f;
+                                
+                                const math::Vector2 miter_dir = (n1 + n2);
+                                const float miter_len2 = miter_dir.length_squared();
+                                
+                                if (miter_len2 > 1e-6f) {
+                                    const math::Vector2 miter_vec = miter_dir * (2.0f * radius / miter_len2);
+                                    const float miter_scale = std::sqrt(miter_len2) / 2.0f; // cos(theta/2) equivalent
+                                    
+                                    // Check if point is inside the join wedge
+                                    // Point must be on the outer side and within the miter area
+                                    const math::Vector2 rel = sample - b;
+                                    const float d1 = math::Vector2::dot(rel, n1 * side);
+                                    const float d2 = math::Vector2::dot(rel, n2 * side);
+                                    
+                                    if (d1 > 0 && d2 > 0) {
+                                        if (style.join == LineJoin::Miter && (miter_scale > 0 && 1.0f / miter_scale <= style.miter_limit)) {
+                                            // Inside miter: point must be within both offset planes
+                                            if (d1 <= radius && d2 <= radius) {
+                                                covered = true;
+                                                break;
+                                            }
+                                        } else {
+                                            // Bevel/Miter fallback: point must be within the bevel triangle
+                                            // Triangle: B, B + n1*r*side, B + n2*r*side
+                                            const float d_bevel = math::Vector2::dot(rel, v2 - v1);
+                                            if (d1 <= radius && d2 <= radius && d_bevel <= 0) {
+                                                covered = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if (covered) break;
+            }
+
+            if (covered) {
+                ++covered_samples;
+            }
+        }
+    }
+
+    return static_cast<float>(covered_samples) * inv_samples;
+}
+
 void rasterize_fill_polygon(SurfaceRGBA& surface, const std::vector<Contour>& contours, const FillPathStyle& style) {
     if (contours.empty()) {
         return;
@@ -204,16 +362,15 @@ void rasterize_fill_polygon(SurfaceRGBA& surface, const std::vector<Contour>& co
     const int start_y = std::max(0, static_cast<int>(std::floor(min_y)));
     const int end_x = std::min(static_cast<int>(surface.width()), static_cast<int>(std::ceil(max_x)));
     const int end_y = std::min(static_cast<int>(surface.height()), static_cast<int>(std::ceil(max_y)));
-    const Color color = apply_opacity(style.fill_color, style.opacity);
 
     for (int y = start_y; y < end_y; ++y) {
         for (int x = start_x; x < end_x; ++x) {
-            const math::Vector2 sample{static_cast<float>(x) + 0.5f, static_cast<float>(y) + 0.5f};
-            const bool inside = style.winding == WindingRule::EvenOdd
-                ? point_inside_even_odd(contours, sample)
-                : winding_number(contours, sample) != 0;
-            if (inside) {
-                surface.blend_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), color);
+            const float coverage = fill_coverage(contours, x, y, style.winding);
+            if (coverage > 0.0f) {
+                surface.blend_pixel(
+                    static_cast<std::uint32_t>(x),
+                    static_cast<std::uint32_t>(y),
+                    apply_coverage(style.fill_color, style.opacity, coverage));
             }
         }
     }
@@ -225,8 +382,6 @@ void rasterize_stroke_polygon(SurfaceRGBA& surface, const std::vector<Contour>& 
     }
 
     const float radius = std::max(0.5f, style.stroke_width * 0.5f);
-    const float radius_squared = radius * radius;
-    const Color color = apply_opacity(style.stroke_color, style.opacity);
 
     for (const Contour& contour : contours) {
         if (contour.points.size() < 2U) {
@@ -252,13 +407,12 @@ void rasterize_stroke_polygon(SurfaceRGBA& surface, const std::vector<Contour>& 
 
         for (int y = start_y; y < end_y; ++y) {
             for (int x = start_x; x < end_x; ++x) {
-                const math::Vector2 sample{static_cast<float>(x) + 0.5f, static_cast<float>(y) + 0.5f};
-                float min_distance_squared = std::numeric_limits<float>::max();
-                for (std::size_t index = 0; index + 1U < contour.points.size(); ++index) {
-                    min_distance_squared = std::min(min_distance_squared, distance_to_segment_squared(sample, contour.points[index], contour.points[index + 1U]));
-                }
-                if (min_distance_squared <= radius_squared) {
-                    surface.blend_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), color);
+                const float coverage = stroke_coverage(contours, x, y, radius, style);
+                if (coverage > 0.0f) {
+                    surface.blend_pixel(
+                        static_cast<std::uint32_t>(x),
+                        static_cast<std::uint32_t>(y),
+                        apply_coverage(style.stroke_color, style.opacity, coverage));
                 }
             }
         }

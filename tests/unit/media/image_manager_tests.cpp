@@ -26,7 +26,10 @@ bool run_image_manager_tests() {
     image_manager.clear_cache();
 
     DiagnosticBag diagnostics;
-    const auto* image = image_manager.get_image(std::filesystem::path{"__missing_image_for_test__.png"}, &diagnostics);
+    const auto* image = image_manager.get_image(
+        std::filesystem::path{"__missing_image_for_test__.png"},
+        media::AlphaMode::Straight,
+        &diagnostics);
     check_true(image != nullptr, "missing image should return a fallback surface");
     if (image != nullptr) {
         check_true(image->width() == 256, "fallback surface should use the expected width");

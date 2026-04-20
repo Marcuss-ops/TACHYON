@@ -1,8 +1,8 @@
 #include "tachyon/runtime/render_graph.h"
 #include "tachyon/runtime/render_job.h"
 #include "tachyon/runtime/render_plan.h"
-#include "tachyon/scene/evaluator.h"
-#include "tachyon/spec/scene_spec.h"
+#include "tachyon/core/scene/evaluator.h"
+#include "tachyon/core/spec/scene_spec.h"
 
 #include <cmath>
 #include <iostream>
@@ -158,6 +158,24 @@ bool run_render_contract_tests() {
                     check_true(evaluated->layers.front().blend_mode == "screen", "blend mode propagates into evaluated state");
                 }
             }
+        }
+    }
+
+    {
+        const auto parsed = tachyon::parse_scene_spec_json(scene_json("overlay"));
+        check_true(parsed.value.has_value(), "scene parses with overlay blend mode");
+        if (parsed.value.has_value()) {
+            const auto validation = tachyon::validate_scene_spec(*parsed.value);
+            check_true(validation.ok(), "scene validates with overlay blend mode");
+        }
+    }
+
+    {
+        const auto parsed = tachyon::parse_scene_spec_json(scene_json("soft_light"));
+        check_true(parsed.value.has_value(), "scene parses with soft_light blend mode");
+        if (parsed.value.has_value()) {
+            const auto validation = tachyon::validate_scene_spec(*parsed.value);
+            check_true(validation.ok(), "scene validates with soft_light blend mode");
         }
     }
 

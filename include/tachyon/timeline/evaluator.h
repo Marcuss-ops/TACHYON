@@ -1,7 +1,7 @@
 #pragma once
 
-#include "tachyon/spec/scene_spec.h"
-#include "tachyon/scene/evaluated_state.h"
+#include "tachyon/core/spec/scene_spec.h"
+#include "tachyon/core/scene/evaluated_state.h"
 #include "tachyon/timeline/time.h"
 
 #include <cstdint>
