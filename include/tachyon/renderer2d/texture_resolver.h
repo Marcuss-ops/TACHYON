@@ -4,26 +4,28 @@
 #include "tachyon/media/media_manager.h"
 #include "tachyon/core/spec/scene_spec.h"
 #include "tachyon/text/subtitle.h"
+#include "tachyon/text/font.h"
 
 #include <memory>
-
-namespace tachyon { class BitmapFont; }
+#include <vector>
 
 namespace tachyon::renderer2d {
 
 class TextRenderConfig {
 public:
     static TextRenderConfig& instance();
-    void set_font(const BitmapFont* font) { font_ = font; }
-    const BitmapFont* font() const { return font_; }
-    void set_subtitle_entries(const std::vector<text::SubtitleEntry>* entries) { subtitle_entries_ = entries; }
-    const std::vector<text::SubtitleEntry>* subtitle_entries() const { return subtitle_entries_; }
+    void set_font(const tachyon::text::BitmapFont* font) { font_ = font; }
+    const tachyon::text::BitmapFont* font() const { return font_; }
+    void set_subtitle_entries(const std::vector<::tachyon::text::SubtitleEntry>* entries) { subtitle_entries_ = entries; }
+    const std::vector<::tachyon::text::SubtitleEntry>* subtitle_entries() const { return subtitle_entries_; }
 
 private:
     TextRenderConfig() = default;
-    const BitmapFont* font_ = nullptr;
-    const std::vector<text::SubtitleEntry>* subtitle_entries_ = nullptr;
+    const tachyon::text::BitmapFont* font_ = nullptr;
+    const std::vector<::tachyon::text::SubtitleEntry>* subtitle_entries_ = nullptr;
 };
+
+void ensure_default_text_font();
 
 /**
  * Resolves TextureHandle string IDs to actual SurfaceRGBA pointers.

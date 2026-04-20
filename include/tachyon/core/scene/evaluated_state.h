@@ -96,6 +96,9 @@ struct EvaluatedLayerState {
     
     std::optional<EvaluatedShapePath> shape_path;
     std::vector<EffectSpec> effects;
+    std::optional<std::string> subtitle_path;
+    std::optional<ColorSpec> subtitle_outline_color;
+    float subtitle_outline_width{0.0f};
     
     TrackMatteType track_matte_type{TrackMatteType::None};
     std::optional<std::size_t> track_matte_layer_index;
