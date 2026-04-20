@@ -12,7 +12,9 @@ media::AlphaMode TextureResolver::parse_alpha_mode(const std::optional<std::stri
 void TextureResolver::resolve_textures(
     DrawList2D& draw_list, 
     const SceneSpec& scene,
-    media::MediaManager& media_manager) {
+    media::MediaManager& media_manager,
+    double time_seconds) {
+    (void)time_seconds; // Reserved for subtitle burn-in integration
 
     // Helper map to avoid repeated lookups
     // Maps asset_id -> SurfaceRGBA*
