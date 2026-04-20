@@ -27,7 +27,8 @@
 #include <string>
 #include <memory>
 
-
+namespace tachyon {
+namespace scene {
 
 EvaluatedLayerState evaluate_layer_state(
     const LayerSpec& layer,

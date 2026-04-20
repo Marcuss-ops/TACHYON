@@ -35,9 +35,9 @@ namespace {
 }
 
 MeshAsset::SubMesh Extruder::extrude_shape(
-    const scene::EvaluatedShapePath& path, 
-    float depth, 
-    float bevel_size) 
+    const scene::EvaluatedShapePath& path,
+    float depth,
+    float /*bevel_size*/)
 {
     MeshAsset::SubMesh mesh;
     if (path.points.empty()) return mesh;

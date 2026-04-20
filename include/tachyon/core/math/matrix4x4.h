@@ -22,6 +22,7 @@ struct Matrix4x4 {
     std::array<float, 16> data{};
 
     Matrix4x4() = default;
+    explicit Matrix4x4(const float* src) { std::copy(src, src + 16, data.begin()); }
 
     static Matrix4x4 identity();
     static Matrix4x4 translation(const Vector3& velocity);
