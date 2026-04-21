@@ -14,12 +14,10 @@ namespace tachyon::renderer2d {
 namespace detail {
 
 enum class ColorSpace {
-    Srgb,
-    Bt709,
-    DciP3,
-    Rec2020,
-    AcesAP1,
-    AcesAP0
+    sRGB,
+    Linear,
+    Rec709,
+    DisplayP3
 };
 
 using ColorPrimaries = ColorSpace;
@@ -31,7 +29,7 @@ enum class ColorRange {
 
 enum class TransferCurve {
     Linear,
-    Srgb,
+    sRGB,
     Bt709
 };
 
@@ -47,21 +45,15 @@ inline ColorSpace parse_color_space(std::string_view value) {
     }
 
     if (lower == "bt709" || lower == "rec709") {
-        return ColorSpace::Bt709;
+        return ColorSpace::Rec709;
     }
     if (lower == "p3" || lower == "dci-p3" || lower == "display-p3") {
-        return ColorSpace::DciP3;
+        return ColorSpace::DisplayP3;
     }
-    if (lower == "rec2020" || lower == "bt2020") {
-        return ColorSpace::Rec2020;
+    if (lower == "linear") {
+        return ColorSpace::Linear;
     }
-    if (lower == "aces-ap1" || lower == "acescg") {
-        return ColorSpace::AcesAP1;
-    }
-    if (lower == "aces-ap0" || lower == "aces2065-1") {
-        return ColorSpace::AcesAP0;
-    }
-    return ColorSpace::Srgb;
+    return ColorSpace::sRGB;
 }
 
 inline ColorPrimaries parse_color_primaries(std::string_view value) {
@@ -72,21 +64,15 @@ inline ColorPrimaries parse_color_primaries(std::string_view value) {
     }
 
     if (lower == "bt709" || lower == "rec709") {
-        return ColorPrimaries::Bt709;
+        return ColorPrimaries::Rec709;
     }
     if (lower == "p3" || lower == "dci-p3" || lower == "display-p3") {
-        return ColorPrimaries::DciP3;
+        return ColorPrimaries::DisplayP3;
     }
-    if (lower == "rec2020" || lower == "bt2020") {
-        return ColorPrimaries::Rec2020;
+    if (lower == "linear") {
+        return ColorPrimaries::Linear;
     }
-    if (lower == "aces-ap1" || lower == "acescg") {
-        return ColorPrimaries::AcesAP1;
-    }
-    if (lower == "aces-ap0" || lower == "aces2065-1") {
-        return ColorPrimaries::AcesAP0;
-    }
-    return ColorPrimaries::Srgb;
+    return ColorPrimaries::sRGB;
 }
 
 inline ColorRange parse_color_range(std::string_view value) {
@@ -115,7 +101,7 @@ inline TransferCurve parse_transfer_curve(std::string_view value) {
     if (lower == "bt709" || lower == "rec709" || lower == "gamma_2.4") {
         return TransferCurve::Bt709;
     }
-    return TransferCurve::Srgb;
+    return TransferCurve::sRGB;
 }
 
 inline const std::array<float, 256>& srgb_to_linear_lut() {
@@ -171,6 +157,28 @@ inline float linear_to_srgb_component_float(float value) {
         : 1.055f * std::pow(clamped, 1.0f / 2.4f) - 0.055f;
 }
 
+// User-facing Phase 1 helpers
+inline float sRGB_to_Linear_f(float value) { return srgb_to_linear_component(value); }
+inline float Linear_to_sRGB_f(float value) { return linear_to_srgb_component_float(value); }
+
+inline Color sRGB_to_Linear(Color srgb) {
+    return Color{
+        sRGB_to_Linear_f(srgb.r / 255.0f),
+        sRGB_to_Linear_f(srgb.g / 255.0f),
+        sRGB_to_Linear_f(srgb.b / 255.0f),
+        srgb.a / 255.0f
+    };
+}
+
+inline Color Linear_to_sRGB(Color linear) {
+    return Color{
+        Linear_to_sRGB_f(linear.r) * 255.0f,
+        Linear_to_sRGB_f(linear.g) * 255.0f,
+        Linear_to_sRGB_f(linear.b) * 255.0f,
+        linear.a * 255.0f
+    };
+}
+
 inline float bt709_to_linear_component(float value) {
     const float clamped = std::clamp(value, 0.0f, 1.0f);
     return clamped < 0.081f
@@ -186,33 +194,37 @@ inline float linear_to_bt709_component(float value) {
 }
 
 inline float transfer_to_linear_component(float value, TransferCurve curve) {
+    const float normalized = std::clamp(value, 0.0f, 1.0f);
     switch (curve) {
     case TransferCurve::Linear:
-        return std::clamp(value, 0.0f, 1.0f);
+        return normalized;
     case TransferCurve::Bt709:
-        return bt709_to_linear_component(value);
-    case TransferCurve::Srgb:
+        return bt709_to_linear_component(normalized);
+    case TransferCurve::sRGB:
     default:
-        return srgb_to_linear_component(value);
+        return srgb_to_linear_component(normalized);
     }
 }
 
 inline float linear_to_transfer_component(float value, TransferCurve curve) {
+    const float normalized = std::clamp(value, 0.0f, 1.0f);
     switch (curve) {
     case TransferCurve::Linear:
-        return std::clamp(value, 0.0f, 1.0f);
+        return normalized;
     case TransferCurve::Bt709:
-        return linear_to_bt709_component(value);
-    case TransferCurve::Srgb:
+        return linear_to_bt709_component(normalized);
+    case TransferCurve::sRGB:
     default:
-        return linear_to_srgb_component_float(value);
+        return linear_to_srgb_component_float(normalized);
     }
 }
 
 inline Color premultiply(Color color) {
-    color.r = static_cast<std::uint8_t>((static_cast<std::uint32_t>(color.r) * color.a + 127U) / 255U);
-    color.g = static_cast<std::uint8_t>((static_cast<std::uint32_t>(color.g) * color.a + 127U) / 255U);
-    color.b = static_cast<std::uint8_t>((static_cast<std::uint32_t>(color.b) * color.a + 127U) / 255U);
+    const float alpha = std::clamp(color.a, 0.0f, 1.0f);
+    color.r *= alpha;
+    color.g *= alpha;
+    color.b *= alpha;
+    color.a = alpha;
     return color;
 }
 
@@ -228,18 +240,18 @@ inline Color from_premultiplied(const LinearPremultipliedPixel& pixel, TransferC
 inline Color composite_src_over(Color src, Color dst, TransferCurve transfer_curve);
 
 inline LinearPremultipliedPixel to_linear_premultiplied(Color color) {
-    return to_premultiplied(color, TransferCurve::Srgb);
+    return to_premultiplied(color, TransferCurve::Linear);
 }
 
 inline LinearPremultipliedPixel to_premultiplied(Color color, TransferCurve transfer_curve) {
-    const float alpha = static_cast<float>(color.a) / 255.0f;
+    const float alpha = std::clamp(color.a, 0.0f, 1.0f);
     if (alpha <= 0.0f) {
         return {};
     }
 
-    const float r = transfer_to_linear_component(static_cast<float>(color.r) / 255.0f, transfer_curve);
-    const float g = transfer_to_linear_component(static_cast<float>(color.g) / 255.0f, transfer_curve);
-    const float b = transfer_to_linear_component(static_cast<float>(color.b) / 255.0f, transfer_curve);
+    const float r = transfer_to_linear_component(color.r, transfer_curve);
+    const float g = transfer_to_linear_component(color.g, transfer_curve);
+    const float b = transfer_to_linear_component(color.b, transfer_curve);
     return LinearPremultipliedPixel{
         r * alpha,
         g * alpha,
@@ -249,7 +261,7 @@ inline LinearPremultipliedPixel to_premultiplied(Color color, TransferCurve tran
 }
 
 inline Color from_linear_premultiplied(const LinearPremultipliedPixel& pixel) {
-    return from_premultiplied(pixel, TransferCurve::Srgb);
+    return from_premultiplied(pixel, TransferCurve::Linear);
 }
 
 inline Color from_premultiplied(const LinearPremultipliedPixel& pixel, TransferCurve transfer_curve) {
@@ -261,16 +273,11 @@ inline Color from_premultiplied(const LinearPremultipliedPixel& pixel, TransferC
     const float r = linear_to_transfer_component(pixel.r * inv_a, transfer_curve);
     const float g = linear_to_transfer_component(pixel.g * inv_a, transfer_curve);
     const float b = linear_to_transfer_component(pixel.b * inv_a, transfer_curve);
-    return Color{
-        static_cast<std::uint8_t>(std::clamp(std::lround(r * 255.0f), 0L, 255L)),
-        static_cast<std::uint8_t>(std::clamp(std::lround(g * 255.0f), 0L, 255L)),
-        static_cast<std::uint8_t>(std::clamp(std::lround(b * 255.0f), 0L, 255L)),
-        static_cast<uint8_t>(std::clamp(std::lround(pixel.a * 255.0f), 0L, 255L))
-    };
+    return Color{ r, g, b, pixel.a };
 }
 
 inline Color composite_src_over_linear(Color src, Color dst) {
-    return composite_src_over(src, dst, TransferCurve::Srgb);
+    return composite_src_over(src, dst, TransferCurve::Linear);
 }
 
 inline Color composite_src_over(Color src, Color dst, TransferCurve transfer_curve) {
@@ -356,43 +363,27 @@ inline Matrix3x3 invert(const Matrix3x3& matrix) {
 
 inline Matrix3x3 rgb_to_xyz_matrix(ColorPrimaries primaries) {
     switch (primaries) {
-    case ColorPrimaries::Bt709:
-    case ColorPrimaries::Srgb:
+    case ColorPrimaries::Rec709:
+    case ColorPrimaries::sRGB:
         return Matrix3x3{{
             0.41239079926595934f, 0.3575843393838780f, 0.1804807884018343f,
             0.21263900587151027f, 0.7151686787677560f, 0.0721923153607337f,
             0.01933081871559182f, 0.1191947797946260f, 0.9505321522496607f
         }};
-    case ColorPrimaries::DciP3:
+    case ColorPrimaries::DisplayP3:
         return Matrix3x3{{
             0.4865709486482162f, 0.2656676931690931f, 0.1982172852343625f,
             0.2289745640697488f, 0.6917385218365064f, 0.0792869140937450f,
             0.0000000000000000f, 0.0451133818589026f, 1.0439443689009760f
         }};
-    case ColorPrimaries::Rec2020:
+    case ColorPrimaries::Linear: // Assume sRGB primaries for now
         return Matrix3x3{{
-            0.6369580483012914f, 0.1446169035862083f, 0.1688809751641721f,
-            0.2627002120112671f, 0.6779980715188708f, 0.0593017164698620f,
-            0.0000000000000000f, 0.0280726930490874f, 1.0609850577107910f
-        }};
-    case ColorPrimaries::AcesAP1:
-        return Matrix3x3{{
-            0.6624541811085053f, 0.1340042064564331f, 0.1561876870049078f,
-            0.2722287167809145f, 0.6740817658111484f, 0.0536895174079370f,
-           -0.0055746494903940f, 0.0040607335289820f, 1.0103391003129970f
-        }};
-    case ColorPrimaries::AcesAP0:
-        return Matrix3x3{{
-            0.9525523959381863f, 0.0000000000000000f, 0.0000936786313940f,
-            0.3439664497650750f, 0.7281660966134850f, -0.0721325463785600f,
-            0.0000000000000000f, 0.0000000000000000f, 1.0088251843528410f
+            0.41239079926595934f, 0.3575843393838780f, 0.1804807884018343f,
+            0.21263900587151027f, 0.7151686787677560f, 0.0721923153607337f,
+            0.01933081871559182f, 0.1191947797946260f, 0.9505321522496607f
         }};
     }
-    return Matrix3x3{{
-        0.41239079926595934f, 0.3575843393838780f, 0.1804807884018343f,
-        0.21263900587151027f, 0.7151686787677560f, 0.0721923153607337f,
-        0.01933081871559182f, 0.1191947797946260f, 0.9505321522496607f
-    }};
+    return Matrix3x3::identity();
 }
 
 inline Matrix3x3 primaries_conversion_matrix(ColorPrimaries source, ColorPrimaries destination) {
@@ -428,18 +419,13 @@ inline Color convert_color(
 }
 
 inline Color apply_primaries_matrix(Color color, const Matrix3x3& matrix) {
-    const float r = static_cast<float>(color.r) / 255.0f;
-    const float g = static_cast<float>(color.g) / 255.0f;
-    const float b = static_cast<float>(color.b) / 255.0f;
+    const float r = color.r;
+    const float g = color.g;
+    const float b = color.b;
     const float out_r = matrix.m[0] * r + matrix.m[1] * g + matrix.m[2] * b;
     const float out_g = matrix.m[3] * r + matrix.m[4] * g + matrix.m[5] * b;
     const float out_b = matrix.m[6] * r + matrix.m[7] * g + matrix.m[8] * b;
-    return Color{
-        static_cast<std::uint8_t>(std::clamp(std::lround(std::clamp(out_r, 0.0f, 1.0f) * 255.0f), 0L, 255L)),
-        static_cast<std::uint8_t>(std::clamp(std::lround(std::clamp(out_g, 0.0f, 1.0f) * 255.0f), 0L, 255L)),
-        static_cast<std::uint8_t>(std::clamp(std::lround(std::clamp(out_b, 0.0f, 1.0f) * 255.0f), 0L, 255L)),
-        color.a
-    };
+    return Color{out_r, out_g, out_b, color.a};
 }
 
 inline Color apply_range_mode(Color color, ColorRange range) {
@@ -447,8 +433,8 @@ inline Color apply_range_mode(Color color, ColorRange range) {
         return color;
     }
 
-    auto scale = [](std::uint8_t value) -> std::uint8_t {
-        return static_cast<std::uint8_t>(std::clamp<int>(16 + (static_cast<int>(value) * 219) / 255, 16, 235));
+    auto scale = [](float value) -> float {
+        return 16.0f + (value * 219.0f / 255.0f);
     };
 
     return Color{scale(color.r), scale(color.g), scale(color.b), color.a};

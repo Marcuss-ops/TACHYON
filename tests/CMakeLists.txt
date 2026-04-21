@@ -16,6 +16,8 @@ add_executable(TachyonTests
     unit/renderer2d/path_rasterizer_aa_tests.cpp
     unit/renderer2d/effect_host_tests.cpp
     unit/runtime/frame_cache_tests.cpp
+    unit/runtime/frame_cache_budget_tests.cpp
+    unit/runtime/tiling_integration_tests.cpp
     unit/runtime/backbone_tests.cpp
     unit/runtime/frame_executor_tests.cpp
     unit/runtime/frame_output_sink_tests.cpp
@@ -23,6 +25,8 @@ add_executable(TachyonTests
     unit/runtime/render_contract_tests.cpp
     unit/runtime/expression_vm_tests.cpp
     unit/runtime/determinism_tests.cpp
+    unit/runtime/visual_golden_tests.cpp
+    unit/runtime/visual_golden_verifier.cpp
     unit/core/scene/evaluator_tests.cpp
     unit/core/scene/precomp_mask_tests.cpp
     unit/timeline/time_tests.cpp
@@ -46,6 +50,20 @@ target_link_libraries(TachyonTests
     PRIVATE
         TachyonCore
 )
+
+if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
+    target_precompile_headers(TachyonTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")
+endif()
+
+if(MSVC)
+    file(GLOB OIDN_RUNTIME_DLLS CONFIGURE_DEPENDS "${oidn_SOURCE_DIR}/bin/*.dll")
+    add_custom_command(TARGET TachyonTests POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${OIDN_RUNTIME_DLLS}
+                $<TARGET_FILE_DIR:TachyonTests>
+        COMMAND_EXPAND_LISTS
+    )
+endif()
 
 if(MSVC)
     target_compile_options(TachyonTests PRIVATE /FS)

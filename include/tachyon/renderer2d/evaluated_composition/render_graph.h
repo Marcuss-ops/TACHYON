@@ -9,7 +9,7 @@
 namespace tachyon {
 namespace renderer2d {
 
-struct RenderContext;
+struct RenderContext2D;
 
 class RenderGraph {
 public:

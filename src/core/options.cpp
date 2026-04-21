@@ -29,6 +29,15 @@ std::size_t parse_worker_count(const std::string& value, DiagnosticBag& diagnost
     }
 }
 
+std::optional<std::size_t> parse_memory_budget_mb(const std::string& value, DiagnosticBag& diagnostics) {
+    try {
+        return static_cast<std::size_t>(std::stoull(value));
+    } catch (const std::exception&) {
+        diagnostics.add_error("cli.memory_budget_invalid", "invalid value for --memory-budget-mb: " + value);
+        return std::nullopt;
+    }
+}
+
 std::optional<FrameRange> parse_frame_range(const std::string& value, DiagnosticBag& diagnostics) {
     try {
         const std::size_t dash_pos = value.find('-');
@@ -110,6 +119,18 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
                 return result;
             }
             options.worker_count = parse_worker_count(value, result.diagnostics);
+            continue;
+        }
+        if (arg == "--memory-budget-mb") {
+            const std::string value = require_argument(args, index);
+            if (value.empty()) {
+                result.diagnostics.add_error("cli.memory_budget_missing", "missing value for --memory-budget-mb");
+                return result;
+            }
+            const auto parsed_budget = parse_memory_budget_mb(value, result.diagnostics);
+            if (parsed_budget.has_value()) {
+                options.memory_budget_bytes = (*parsed_budget) * 1024ULL * 1024ULL;
+            }
             continue;
         }
         if (arg == "--json") {

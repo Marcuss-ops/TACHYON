@@ -75,7 +75,7 @@ void fill_rect_alpha(
 
 void MaskRenderer::applyMask(
     const scene::EvaluatedCompositionState& state,
-    RenderContext& context,
+    RenderContext2D& context,
     std::vector<float>& accum_r,
     std::vector<float>& accum_g,
     std::vector<float>& accum_b,

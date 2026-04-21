@@ -28,6 +28,7 @@ enum class LayerType {
     Camera,
     Precomp,
     Light,
+    NullLayer,
     Video
 };
 
@@ -135,6 +136,7 @@ struct EvaluatedLayerState {
     
     std::optional<EvaluatedShapePath> shape_path;
     std::vector<EffectSpec> effects;
+    std::vector<TextHighlightSpec> text_highlights;
     std::optional<std::string> subtitle_path;
     std::optional<ColorSpec> subtitle_outline_color;
     float subtitle_outline_width{0.0f};

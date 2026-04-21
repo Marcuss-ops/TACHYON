@@ -99,15 +99,44 @@ bool run_expression_tests() {
         }
 
         float val = prop.sample(eval_ctx);
-        if (val == 0.0f) {
-             // Maybe it failed here too
-             auto res2 = ExpressionEvaluator::evaluate("sin(t * 1.570796)", direct_ctx);
-             fprintf(stderr, "Prop Eval Error: %s\n", res2.error.c_str());
-        }
         check_near(val, 1.0, "ExpressionProperty evaluation at t=1.0");
 
         ExpressionProperty<float> seeded_prop("seeded", "seed + t");
         check_near(seeded_prop.sample(eval_ctx), 100.0, "ExpressionProperty exposes deterministic seed");
+    }
+
+    // 6. New Built-ins
+    {
+        ctx.variables["t"] = 2.5;
+        ctx.layer_index = 3;
+        
+        auto result = ExpressionEvaluator::evaluate("pingpong(t, 2.0)", ctx);
+        check_near(result.value, 1.5, "Function: pingpong(2.5, 2.0)");
+
+        result = ExpressionEvaluator::evaluate("timeStretch(t, 0.5)", ctx);
+        check_near(result.value, 1.25, "Function: timeStretch(2.5, 0.5)");
+
+        result = ExpressionEvaluator::evaluate("stagger(10.0)", ctx);
+        check_near(result.value, 30.0, "Function: stagger(10.0) with index 3");
+
+        result = ExpressionEvaluator::evaluate("lerp(10, 20, 0.5)", ctx);
+        check_near(result.value, 15.0, "Function: lerp(10, 20, 0.5)");
+
+        result = ExpressionEvaluator::evaluate("interpolate(10, 20, 0.8)", ctx);
+        check_near(result.value, 18.0, "Function: interpolate(10, 20, 0.8)");
+
+        // spring(t, from, to, freq, damping)
+        result = ExpressionEvaluator::evaluate("spring(0.1, 0, 100, 5, 0.5)", ctx);
+        check_true(result.value > 0.0, "Function: spring() produced non-zero result");
+
+        // global context variables: index, value
+        ctx.layer_index = 7;
+        ctx.value = 42.5;
+        result = ExpressionEvaluator::evaluate("index * 10", ctx);
+        check_near(result.value, 70.0, "Global variable: index (7)");
+
+        result = ExpressionEvaluator::evaluate("value + 5", ctx);
+        check_near(result.value, 47.5, "Global variable: value (42.5)");
     }
 
     return g_failures == 0;

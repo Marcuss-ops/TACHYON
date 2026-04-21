@@ -11,6 +11,8 @@
 #include <optional>
 #include <memory>
 
+#include <functional>
+
 namespace tachyon {
 namespace scene {
 
@@ -27,6 +29,7 @@ struct EvaluationContext {
     EvaluationVariables vars;
     std::unordered_map<std::string, std::vector<::tachyon::text::SubtitleEntry>> subtitle_cache;
     ::tachyon::media::MediaManager* media{nullptr};
+    PropertySampler sampler{nullptr};
 };
 
 } // namespace scene

@@ -3,14 +3,26 @@
 namespace tachyon {
 
 void CacheKeyBuilder::add_u64(std::uint64_t value) noexcept {
+    if (m_manifest_enabled) {
+        if (!m_manifest.empty()) m_manifest += " + ";
+        m_manifest += "u64(" + std::to_string(value) + ")";
+    }
     mix(value);
 }
 
 void CacheKeyBuilder::add_u32(std::uint32_t value) noexcept {
+    if (m_manifest_enabled) {
+        if (!m_manifest.empty()) m_manifest += " + ";
+        m_manifest += "u32(" + std::to_string(value) + ")";
+    }
     mix(static_cast<std::uint64_t>(value));
 }
 
 void CacheKeyBuilder::add_f64(double value) noexcept {
+    if (m_manifest_enabled) {
+        if (!m_manifest.empty()) m_manifest += " + ";
+        m_manifest += "f64(" + std::to_string(value) + ")";
+    }
     mix(std::bit_cast<std::uint64_t>(value));
 }
 
@@ -19,10 +31,18 @@ void CacheKeyBuilder::add_f32(float value) noexcept {
 }
 
 void CacheKeyBuilder::add_bool(bool value) noexcept {
+    if (m_manifest_enabled) {
+        if (!m_manifest.empty()) m_manifest += " + ";
+        m_manifest += value ? "true" : "false";
+    }
     mix(value ? 1ULL : 0ULL);
 }
 
 void CacheKeyBuilder::add_string(std::string_view value) noexcept {
+    if (m_manifest_enabled) {
+        if (!m_manifest.empty()) m_manifest += " + ";
+        m_manifest += "string(\"" + std::string(value) + "\")";
+    }
     add_u64(static_cast<std::uint64_t>(value.size()));
     for (unsigned char ch : value) {
         mix(static_cast<std::uint64_t>(ch));

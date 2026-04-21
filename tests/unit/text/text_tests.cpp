@@ -4,7 +4,9 @@
 
 #include <filesystem>
 #include <iostream>
+#include <span>
 #include <string>
+#include <vector>
 
 namespace {
 
@@ -167,6 +169,39 @@ bool run_text_tests() {
             const std::uint32_t sample_x = static_cast<std::uint32_t>(std::max<std::int32_t>(0, second.x + std::max<std::int32_t>(1, second.width / 2)));
             const std::uint32_t sample_y = static_cast<std::uint32_t>(std::max<std::int32_t>(0, second.y + std::max<std::int32_t>(1, second.height / 2)));
             check_true(animated_surface.get_pixel(sample_x, sample_y).a == 0, "Per-glyph opacity can hide later glyphs");
+        }
+    }
+
+    {
+        TextBox box;
+        box.width = 200;
+        box.height = 64;
+        box.multiline = false;
+
+        const TextLayoutOptions layout_options;
+        const TextLayoutResult layout = layout_text(font, "HIGHLIGHT", style, box, TextAlignment::Center, layout_options);
+        const TextRasterSurface base_surface = rasterize_text_rgba(font, "HIGHLIGHT", style, box, TextAlignment::Center, layout_options);
+
+        std::vector<TextHighlightSpan> highlights;
+        highlights.push_back(TextHighlightSpan{0, 3, tachyon::renderer2d::Color{255, 236, 59, 96}, 3, 2});
+
+        const TextRasterSurface highlighted_surface = rasterize_text_rgba(
+            font,
+            "HIGHLIGHT",
+            style,
+            box,
+            TextAlignment::Center,
+            std::span<const TextHighlightSpan>(highlights.data(), highlights.size()),
+            layout_options,
+            TextAnimationOptions{});
+
+        check_true(layout.glyphs.size() >= 3, "Highlight layout emits enough glyphs");
+        if (layout.glyphs.size() >= 1) {
+            const auto& first = layout.glyphs.front();
+            const std::uint32_t sample_x = static_cast<std::uint32_t>(std::max<std::int32_t>(0, first.x - 1));
+            const std::uint32_t sample_y = static_cast<std::uint32_t>(std::max<std::int32_t>(0, first.y - 1));
+            check_true(base_surface.get_pixel(sample_x, sample_y).a == 0, "Base surface keeps highlight area transparent");
+            check_true(highlighted_surface.get_pixel(sample_x, sample_y).a > 0, "Highlight span paints a visible background");
         }
     }
 

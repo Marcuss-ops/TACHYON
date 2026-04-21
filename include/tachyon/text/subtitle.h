@@ -19,7 +19,7 @@ struct SubtitleEntry {
 /// Parse an SRT subtitle file.
 /// Handles both Unix (\n) and Windows (\r\n) line endings.
 /// Timing format: "HH:MM:SS,mmm --> HH:MM:SS,mmm"
-[[nodiscard]] ParseResult<std::vector<SubtitleEntry>>
+[[nodiscard]] ::tachyon::ParseResult<std::vector<SubtitleEntry>>
 parse_srt(const std::filesystem::path& path);
 
 /// Return the subtitle entry active at the given time, or nullptr.

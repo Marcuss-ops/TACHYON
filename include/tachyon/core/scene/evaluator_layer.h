@@ -15,7 +15,7 @@ math::Transform2 make_transform2(const math::Vector2& position, double rotation_
 
 void evaluate_mesh_animations(EvaluatedLayerState& evaluated, double time);
 
-EvaluatedLayerState make_layer_state(EvaluationContext& context, const LayerSpec& layer, std::size_t layer_index);
+EvaluatedLayerState make_layer_state(EvaluationContext& context, const LayerSpec& layer, std::size_t layer_index, double time_offset = 0.0);
 
 EvaluatedLightState evaluate_light_state(const EvaluatedLayerState& layer_state, const LayerSpec& spec, double remapped_time);
 

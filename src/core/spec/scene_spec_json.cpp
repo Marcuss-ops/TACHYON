@@ -1,5 +1,6 @@
 #include "tachyon/core/spec/scene_spec_core.h"
 #include <algorithm>
+#include <fstream>
 #include <sstream>
 
 namespace tachyon {
@@ -189,8 +190,9 @@ bool parse_keyframe_common(const json& object, KeyframeT& keyframe, const std::s
     keyframe.time = object.at("time").get<double>();
     if (object.contains("easing")) {
         keyframe.easing = parse_easing_preset(object.at("easing"));
-        if (keyframe.easing == animation::EasingPreset::Custom && object.contains("bezier")) {
-            keyframe.bezier = parse_bezier(object.at("bezier"));
+        if (keyframe.easing == animation::EasingPreset::Custom) {
+            if (object.contains("bezier")) {
+                keyframe.bezier = parse_bezier(object.at("bezier"));
         }
     }
     return true;
@@ -367,6 +369,50 @@ void parse_shape_path(const json& object, LayerSpec& layer, const std::string& p
     if (!parsed.points.empty()) layer.shape_path = std::move(parsed);
 }
 
+bool parse_text_highlight(const json& object, TextHighlightSpec& highlight, const std::string& path, DiagnosticBag& diagnostics) {
+    if (!object.is_object()) {
+        return false;
+    }
+
+    if (object.contains("start") && object.at("start").is_number_unsigned()) {
+        highlight.start_glyph = object.at("start").get<std::size_t>();
+    } else if (object.contains("start") && object.at("start").is_number_integer()) {
+        const auto value = object.at("start").get<std::int64_t>();
+        if (value < 0) {
+            diagnostics.add_error("scene.layer.highlight.start_invalid", "highlight.start must be non-negative", path + ".start");
+            return false;
+        }
+        highlight.start_glyph = static_cast<std::size_t>(value);
+    }
+
+    if (object.contains("end") && object.at("end").is_number_unsigned()) {
+        highlight.end_glyph = object.at("end").get<std::size_t>();
+    } else if (object.contains("end") && object.at("end").is_number_integer()) {
+        const auto value = object.at("end").get<std::int64_t>();
+        if (value < 0) {
+            diagnostics.add_error("scene.layer.highlight.end_invalid", "highlight.end must be non-negative", path + ".end");
+            return false;
+        }
+        highlight.end_glyph = static_cast<std::size_t>(value);
+    }
+
+    if (object.contains("color")) {
+        ColorSpec color = highlight.color;
+        if (parse_color_value(object.at("color"), color)) {
+            highlight.color = color;
+        }
+    }
+
+    if (object.contains("padding_x") && object.at("padding_x").is_number_integer()) {
+        highlight.padding_x = object.at("padding_x").get<std::int32_t>();
+    }
+    if (object.contains("padding_y") && object.at("padding_y").is_number_integer()) {
+        highlight.padding_y = object.at("padding_y").get<std::int32_t>();
+    }
+
+    return true;
+}
+
 LayerSpec parse_layer(const json& object, const std::string& path, DiagnosticBag& diagnostics) {
     LayerSpec layer;
     read_string(object, "id", layer.id);
@@ -376,6 +422,8 @@ LayerSpec parse_layer(const json& object, const std::string& path, DiagnosticBag
     read_bool(object, "enabled", layer.enabled);
     read_bool(object, "visible", layer.visible);
     read_bool(object, "is_3d", layer.is_3d);
+    read_bool(object, "motion_blur", layer.motion_blur);
+
     read_number(object, "start_time", layer.start_time);
     read_number(object, "in_point", layer.in_point);
     read_number(object, "out_point", layer.out_point);
@@ -564,6 +612,23 @@ LayerSpec parse_layer(const json& object, const std::string& path, DiagnosticBag
         }
     }
 
+    if (object.contains("text_highlights") && object.at("text_highlights").is_array()) {
+        const auto& highlight_array = object.at("text_highlights");
+        for (std::size_t hi = 0; hi < highlight_array.size(); ++hi) {
+            const auto& highlight_obj = highlight_array[hi];
+            if (!highlight_obj.is_object()) {
+                continue;
+            }
+
+            TextHighlightSpec highlight;
+            if (parse_text_highlight(highlight_obj, highlight, path + ".text_highlights[" + std::to_string(hi) + "]", diagnostics)) {
+                if (highlight.end_glyph > highlight.start_glyph) {
+                    layer.text_highlights.push_back(std::move(highlight));
+                }
+            }
+        }
+    }
+
     return layer;
 }
 
@@ -606,6 +671,65 @@ AssetSpec parse_asset(const json& object, const std::string& path, DiagnosticBag
     if (object.contains("alpha_mode") && object.at("alpha_mode").is_string()) asset.alpha_mode = object.at("alpha_mode").get<std::string>();
     if (asset.source.empty() && !asset.path.empty()) asset.source = asset.path;
     return asset;
+}
+
+ParseResult<SceneSpec> parse_scene_spec_json(const std::string& text) {
+    ParseResult<SceneSpec> result;
+    try {
+        const json parsed = json::parse(text);
+        if (!parsed.is_object()) {
+            result.diagnostics.add_error("scene.json.root_invalid", "scene root must be an object");
+            return result;
+        }
+
+        SceneSpec scene;
+        if (parsed.contains("version") && parsed.at("version").is_string()) scene.version = parsed.at("version").get<std::string>();
+        if (parsed.contains("spec_version") && parsed.at("spec_version").is_string()) scene.spec_version = parsed.at("spec_version").get<std::string>();
+        if (parsed.contains("project") && parsed.at("project").is_object()) {
+            const auto& project = parsed.at("project");
+            read_string(project, "id", scene.project.id);
+            read_string(project, "name", scene.project.name);
+            read_string(project, "authoring_tool", scene.project.authoring_tool);
+            read_optional_int(project, "root_seed", scene.project.root_seed);
+        }
+
+        if (parsed.contains("compositions") && parsed.at("compositions").is_array()) {
+            const auto& compositions = parsed.at("compositions");
+            for (std::size_t i = 0; i < compositions.size(); ++i) {
+                if (compositions[i].is_object()) {
+                    scene.compositions.push_back(parse_composition(compositions[i], make_path("scene", "compositions[" + std::to_string(i) + "]"), result.diagnostics));
+                }
+            }
+        }
+
+        if (parsed.contains("assets") && parsed.at("assets").is_array()) {
+            const auto& assets = parsed.at("assets");
+            for (std::size_t i = 0; i < assets.size(); ++i) {
+                if (assets[i].is_object()) {
+                    scene.assets.push_back(parse_asset(assets[i], make_path("scene", "assets[" + std::to_string(i) + "]"), result.diagnostics));
+                }
+            }
+        }
+
+        result.value = std::move(scene);
+        return result;
+    } catch (const std::exception& ex) {
+        result.diagnostics.add_error("scene.json.parse_failed", std::string("failed to parse scene json: ") + ex.what());
+        return result;
+    }
+}
+
+ParseResult<SceneSpec> parse_scene_spec_file(const std::filesystem::path& path) {
+    ParseResult<SceneSpec> result;
+    std::ifstream file(path);
+    if (!file) {
+        result.diagnostics.add_error("scene.file.open_failed", "failed to open scene file: " + path.string());
+        return result;
+    }
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    return parse_scene_spec_json(buffer.str());
 }
 
 } // namespace tachyon

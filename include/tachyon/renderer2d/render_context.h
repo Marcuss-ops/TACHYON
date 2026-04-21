@@ -1,10 +1,13 @@
 #pragma once
 
 #include "tachyon/renderer2d/framebuffer.h"
+#include "tachyon/renderer2d/surface_pool.h"
 #include "tachyon/renderer2d/precomp_cache.h"
 #include "tachyon/renderer2d/effect_host.h"
 #include "tachyon/core/spec/scene_spec.h"
 #include "tachyon/core/scene/evaluated_state.h"
+#include "tachyon/text/font.h"
+#include "tachyon/text/subtitle.h"
 #include "tachyon/runtime/execution/quality_policy.h"
 
 #include <array>
@@ -12,6 +15,10 @@
 #include <optional>
 #include <string>
 #include <memory>
+
+namespace tachyon::media {
+class MediaManager;
+}
 
 namespace tachyon::renderer3d {
 class RayTracer;
@@ -69,17 +76,25 @@ struct AccumulationBuffers {
     }
 };
 
-struct RenderContext {
-    RenderContext(std::shared_ptr<PrecompCache> cache = std::make_shared<PrecompCache>()) 
-        : precomp_cache(std::move(cache)) {}
+struct RenderContext2D {
+    RenderContext2D();
+    explicit RenderContext2D(std::shared_ptr<PrecompCache> cache);
 
-    std::shared_ptr<Framebuffer> framebuffer;
+    std::shared_ptr<SurfaceRGBA> framebuffer;
     std::shared_ptr<PrecompCache> precomp_cache;
+    std::shared_ptr<SurfacePool> surface_pool;
     std::shared_ptr<EffectHost> effects;
     AccumulationBuffers accumulation_buffer;
     QualityPolicy policy;
-    std::shared_ptr<renderer3d::RayTracer> ray_tracer;
+    std::shared_ptr<class ::tachyon::renderer3d::RayTracer> ray_tracer;
+
+    // Text rendering state (formerly TextRenderConfig singleton)
+    const ::tachyon::text::Font* font = nullptr;
+    const std::vector<::tachyon::text::SubtitleEntry>* subtitle_entries = nullptr;
+    ::tachyon::media::MediaManager* media_manager = nullptr;
 };
+
+using RenderContext = RenderContext2D;
 
 struct EvaluationResult {
   scene::EvaluatedCompositionState state;

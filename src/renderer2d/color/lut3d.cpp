@@ -110,11 +110,11 @@ Color apply_lut3d(const Lut3D& lut, Color input) {
     const int N = lut.size;
     const float scale = static_cast<float>(N - 1);
 
-    // Map 8-bit input to [0, N-1] float coordinates
+    // Map float input [0, 1] to [0, N-1] float coordinates
     // CUBE format: rows are B-major (B varies fastest), then G, then R
-    const float rb = (static_cast<float>(input.r) / 255.0f) * scale;
-    const float gb = (static_cast<float>(input.g) / 255.0f) * scale;
-    const float bb = (static_cast<float>(input.b) / 255.0f) * scale;
+    const float rb = input.r * scale;
+    const float gb = input.g * scale;
+    const float bb = input.b * scale;
 
     const int r0 = std::clamp(static_cast<int>(rb), 0, N - 1);
     const int g0 = std::clamp(static_cast<int>(gb), 0, N - 1);
@@ -168,9 +168,9 @@ Color apply_lut3d(const Lut3D& lut, Color input) {
     const auto c = lerp3(c0, c1, fr);
 
     return Color{
-        static_cast<std::uint8_t>(std::clamp(std::lround(c[0] * 255.0f), 0L, 255L)),
-        static_cast<std::uint8_t>(std::clamp(std::lround(c[1] * 255.0f), 0L, 255L)),
-        static_cast<std::uint8_t>(std::clamp(std::lround(c[2] * 255.0f), 0L, 255L)),
+        c[0],
+        c[1],
+        c[2],
         input.a // preserve alpha
     };
 }

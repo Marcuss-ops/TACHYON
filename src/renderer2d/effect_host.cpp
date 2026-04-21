@@ -69,10 +69,10 @@ float lerp(float a, float b, float t) {
 Color lerp_color(Color a, Color b, float t) {
     const float clamped_t = clamp01(t);
     return Color{
-        static_cast<std::uint8_t>(std::lround(lerp(static_cast<float>(a.r), static_cast<float>(b.r), clamped_t))),
-        static_cast<std::uint8_t>(std::lround(lerp(static_cast<float>(a.g), static_cast<float>(b.g), clamped_t))),
-        static_cast<std::uint8_t>(std::lround(lerp(static_cast<float>(a.b), static_cast<float>(b.b), clamped_t))),
-        static_cast<std::uint8_t>(std::lround(lerp(static_cast<float>(a.a), static_cast<float>(b.a), clamped_t)))
+        lerp(a.r, b.r, clamped_t),
+        lerp(a.g, b.g, clamped_t),
+        lerp(a.b, b.b, clamped_t),
+        lerp(a.a, b.a, clamped_t)
     };
 }
 
@@ -109,17 +109,17 @@ Color get_color(const EffectParams& params, const std::string& key, Color fallba
 
 LinearColor to_linear(Color color) {
     return LinearColor{
-        detail::srgb_to_linear_component(static_cast<float>(color.r) / 255.0f),
-        detail::srgb_to_linear_component(static_cast<float>(color.g) / 255.0f),
-        detail::srgb_to_linear_component(static_cast<float>(color.b) / 255.0f)
+        detail::srgb_to_linear_component(color.r),
+        detail::srgb_to_linear_component(color.g),
+        detail::srgb_to_linear_component(color.b)
     };
 }
 
-Color from_linear(const LinearColor& color, std::uint8_t alpha) {
+Color from_linear(const LinearColor& color, float alpha) {
     return Color{
-        detail::linear_to_srgb_component(color.r),
-        detail::linear_to_srgb_component(color.g),
-        detail::linear_to_srgb_component(color.b),
+        static_cast<float>(detail::linear_to_srgb_component(color.r)) / 255.0f,
+        static_cast<float>(detail::linear_to_srgb_component(color.g)) / 255.0f,
+        static_cast<float>(detail::linear_to_srgb_component(color.b)) / 255.0f,
         alpha
     };
 }
@@ -163,7 +163,7 @@ float hue_to_rgb(float p, float q, float t) {
     return p;
 }
 
-Color hsl_to_rgb(float h, float s, float l, std::uint8_t alpha) {
+Color hsl_to_rgb(float h, float s, float l, float alpha) {
     h = std::fmod(h, 1.0f);
     if (h < 0.0f) {
         h += 1.0f;
@@ -172,8 +172,7 @@ Color hsl_to_rgb(float h, float s, float l, std::uint8_t alpha) {
     l = clamp01(l);
 
     if (s <= 0.0f) {
-        const std::uint8_t v = static_cast<std::uint8_t>(std::lround(l * 255.0f));
-        return Color{v, v, v, alpha};
+        return Color{l, l, l, alpha};
     }
 
     const float q = l < 0.5f ? l * (1.0f + s) : l + s - l * s;
@@ -182,9 +181,9 @@ Color hsl_to_rgb(float h, float s, float l, std::uint8_t alpha) {
     const float g = hue_to_rgb(p, q, h);
     const float b = hue_to_rgb(p, q, h - 1.0f / 3.0f);
     return Color{
-        detail::linear_to_srgb_component(r),
-        detail::linear_to_srgb_component(g),
-        detail::linear_to_srgb_component(b),
+        static_cast<float>(detail::linear_to_srgb_component(r)) / 255.0f,
+        static_cast<float>(detail::linear_to_srgb_component(g)) / 255.0f,
+        static_cast<float>(detail::linear_to_srgb_component(b)) / 255.0f,
         alpha
     };
 }
@@ -208,23 +207,23 @@ struct PremultipliedPixel {
 };
 
 PremultipliedPixel to_premultiplied(Color color) {
-    const float alpha = static_cast<float>(color.a) / 255.0f;
+    const float alpha = color.a;
     return PremultipliedPixel{
-        static_cast<float>(color.r) * alpha,
-        static_cast<float>(color.g) * alpha,
-        static_cast<float>(color.b) * alpha,
-        static_cast<float>(color.a)
+        color.r * alpha,
+        color.g * alpha,
+        color.b * alpha,
+        color.a
     };
 }
 
 Color from_premultiplied(const PremultipliedPixel& px) {
     if (px.a <= 0.0f) return Color::transparent();
-    const float inv = 255.0f / px.a;
+    const float inv = 1.0f / px.a;
     return Color{
-        static_cast<std::uint8_t>(std::clamp(std::lround(px.r * inv), 0L, 255L)),
-        static_cast<std::uint8_t>(std::clamp(std::lround(px.g * inv), 0L, 255L)),
-        static_cast<std::uint8_t>(std::clamp(std::lround(px.b * inv), 0L, 255L)),
-        static_cast<std::uint8_t>(std::clamp(std::lround(px.a), 0L, 255L))
+        std::clamp(px.r * inv, 0.0f, 1.0f),
+        std::clamp(px.g * inv, 0.0f, 1.0f),
+        std::clamp(px.b * inv, 0.0f, 1.0f),
+        std::clamp(px.a, 0.0f, 1.0f)
     };
 }
 
@@ -313,8 +312,8 @@ SurfaceRGBA blur_alpha_mask(const SurfaceRGBA& input, float sigma) {
     SurfaceRGBA out(input.width(), input.height());
     for (std::uint32_t y = 0; y < input.height(); ++y)
         for (std::uint32_t x = 0; x < input.width(); ++x)
-            out.set_pixel(x, y, Color{0, 0, 0,
-                static_cast<std::uint8_t>(std::clamp(std::lround(blurred[y * input.width() + x].a), 0L, 255L))});
+            out.set_pixel(x, y, Color{0.0f, 0.0f, 0.0f,
+                std::clamp(blurred[y * input.width() + x].a, 0.0f, 1.0f)});
     return out;
 }
 
@@ -330,19 +329,23 @@ void composite_with_offset(SurfaceRGBA& dst, const SurfaceRGBA& src, int ox, int
     }
 }
 
-std::array<std::uint8_t, 256> build_channel_lut(std::function<float(float)> mapper) {
-    std::array<std::uint8_t, 256> lut{};
+std::array<float, 256> build_channel_lut(std::function<float(float)> mapper) {
+    std::array<float, 256> lut{};
     for (std::size_t i = 0; i < 256; ++i) {
         const float in = static_cast<float>(i) / 255.0f;
-        lut[i] = static_cast<std::uint8_t>(std::lround(std::clamp(mapper(in), 0.0f, 1.0f) * 255.0f));
+        lut[i] = std::clamp(mapper(in), 0.0f, 1.0f);
     }
     return lut;
 }
 
-SurfaceRGBA apply_channel_lut(const SurfaceRGBA& input, const std::array<std::uint8_t, 256>& lut) {
+SurfaceRGBA apply_channel_lut(const SurfaceRGBA& input, const std::array<float, 256>& lut) {
     return transform_surface(input, [&](Color px) {
         if (px.a == 0) return Color::transparent();
-        return Color{lut[px.r], lut[px.g], lut[px.b], px.a};
+        const auto lookup = [&](float channel) -> float {
+            const std::size_t index = static_cast<std::size_t>(std::lround(std::clamp(channel, 0.0f, 1.0f) * 255.0f));
+            return lut[index];
+        };
+        return Color{lookup(px.r), lookup(px.g), lookup(px.b), px.a};
     });
 }
 
@@ -356,16 +359,15 @@ SurfaceRGBA DropShadowEffect::apply(const SurfaceRGBA& input, const EffectParams
     const float blur_radius = get_scalar(params, "blur_radius", 4.0f);
     const int offset_x     = static_cast<int>(get_scalar(params, "offset_x", 4.0f));
     const int offset_y     = static_cast<int>(get_scalar(params, "offset_y", 4.0f));
-    const Color shadow_color = get_color(params, "shadow_color", Color{0, 0, 0, 160});
+    const Color shadow_color = get_color(params, "shadow_color", Color{0.0f, 0.0f, 0.0f, 160.0f / 255.0f});
 
     SurfaceRGBA shadow = blur_alpha_mask(input, blur_radius);
     for (std::uint32_t y = 0; y < shadow.height(); ++y) {
         for (std::uint32_t x = 0; x < shadow.width(); ++x) {
-            const std::uint8_t alpha = shadow.get_pixel(x, y).a;
-            if (alpha == 0U) continue;
-            const std::uint32_t sa = static_cast<std::uint32_t>(alpha) * shadow_color.a / 255U;
-            shadow.set_pixel(x, y, Color{shadow_color.r, shadow_color.g, shadow_color.b,
-                                         static_cast<std::uint8_t>(sa)});
+            const float alpha = shadow.get_pixel(x, y).a;
+            if (alpha <= 0.0f) continue;
+            const float sa = alpha * shadow_color.a;
+            shadow.set_pixel(x, y, Color{shadow_color.r, shadow_color.g, shadow_color.b, sa});
         }
     }
 
@@ -397,14 +399,14 @@ SurfaceRGBA GlowEffect::apply(const SurfaceRGBA& input, const EffectParams& para
             const Color glow = blurred.get_pixel(x, y);
             
             // Screen blend for better highlights
-            const float r = 1.0f - (1.0f - static_cast<float>(base.r) / 255.0f) * (1.0f - static_cast<float>(glow.r) / 255.0f * strength);
-            const float g = 1.0f - (1.0f - static_cast<float>(base.g) / 255.0f) * (1.0f - static_cast<float>(glow.g) / 255.0f * strength);
-            const float b = 1.0f - (1.0f - static_cast<float>(base.b) / 255.0f) * (1.0f - static_cast<float>(glow.b) / 255.0f * strength);
+            const float r = 1.0f - (1.0f - base.r) * (1.0f - glow.r * strength);
+            const float g = 1.0f - (1.0f - base.g) * (1.0f - glow.g * strength);
+            const float b = 1.0f - (1.0f - base.b) * (1.0f - glow.b * strength);
             
             out.set_pixel(x, y, Color{
-                static_cast<std::uint8_t>(std::clamp(r * 255.0f, 0.0f, 255.0f)),
-                static_cast<std::uint8_t>(std::clamp(g * 255.0f, 0.0f, 255.0f)),
-                static_cast<std::uint8_t>(std::clamp(b * 255.0f, 0.0f, 255.0f)),
+                std::clamp(r, 0.0f, 1.0f),
+                std::clamp(g, 0.0f, 1.0f),
+                std::clamp(b, 0.0f, 1.0f),
                 base.a
             });
         }
@@ -441,10 +443,10 @@ SurfaceRGBA ChromaticAberrationEffect::apply(const SurfaceRGBA& input, const Eff
 }
 
 SurfaceRGBA LevelsEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
-    const float in_black  = clamp01(get_scalar(params, "input_black",  0.0f) / 255.0f);
+    const float in_black  = clamp01(get_scalar(params, "input_black",  0.0f));
     const float in_white  = clamp01(get_scalar(params, "input_white",  1.0f));
     const float gamma     = std::max(0.0001f, get_scalar(params, "gamma", 1.0f));
-    const float out_black = clamp01(get_scalar(params, "output_black", 0.0f) / 255.0f);
+    const float out_black = clamp01(get_scalar(params, "output_black", 0.0f));
     const float out_white = clamp01(get_scalar(params, "output_white", 1.0f));
     const float in_range  = in_white - in_black;
     const float out_range = out_white - out_black;
@@ -511,7 +513,7 @@ SurfaceRGBA FillEffect::apply(const SurfaceRGBA& input, const EffectParams& para
             fill.r,
             fill.g,
             fill.b,
-            static_cast<std::uint8_t>(std::lround(static_cast<float>(pixel.a) * (static_cast<float>(fill.a) / 255.0f) * opacity))
+            pixel.a * (fill.a / 255.0f) * opacity
         };
         return mix < 1.0f ? lerp_color(pixel, result, mix) : result;
     });
@@ -571,9 +573,9 @@ SurfaceRGBA ColorBalanceEffect::apply(const SurfaceRGBA& input, const EffectPara
         return input;
     }
 
-    const Color shadows = get_color(params, "shadows", Color{128, 128, 128, 255});
-    const Color midtones = get_color(params, "midtones", Color{128, 128, 128, 255});
-    const Color highlights = get_color(params, "highlights", Color{128, 128, 128, 255});
+    const Color shadows = get_color(params, "shadows", Color{0.5f, 0.5f, 0.5f, 1.0f});
+    const Color midtones = get_color(params, "midtones", Color{0.5f, 0.5f, 0.5f, 1.0f});
+    const Color highlights = get_color(params, "highlights", Color{0.5f, 0.5f, 0.5f, 1.0f});
     const float shadows_amount = get_scalar(params, "shadows_amount", 0.0f);
     const float midtones_amount = get_scalar(params, "midtones_amount", 0.0f);
     const float highlights_amount = get_scalar(params, "highlights_amount", 0.0f);
@@ -581,9 +583,9 @@ SurfaceRGBA ColorBalanceEffect::apply(const SurfaceRGBA& input, const EffectPara
 
     auto color_offset = [](Color color) {
         return LinearColor{
-            (static_cast<float>(color.r) - 128.0f) / 255.0f,
-            (static_cast<float>(color.g) - 128.0f) / 255.0f,
-            (static_cast<float>(color.b) - 128.0f) / 255.0f
+            color.r - 0.5f,
+            color.g - 0.5f,
+            color.b - 0.5f
         };
     };
 
@@ -670,14 +672,104 @@ SurfaceRGBA VignetteEffect::apply(const SurfaceRGBA& input, const EffectParams& 
             const float v = 1.0f - factor * amount;
 
             const Color px = input.get_pixel(x, y);
-            out.set_pixel(x, y, Color{
-                static_cast<std::uint8_t>(std::lround(static_cast<float>(px.r) * v)),
-                static_cast<std::uint8_t>(std::lround(static_cast<float>(px.g) * v)),
-                static_cast<std::uint8_t>(std::lround(static_cast<float>(px.b) * v)),
-                px.a
-            });
+            out.set_pixel(x, y, Color{px.r * v, px.g * v, px.b * v, px.a});
         }
     }
+    return out;
+}
+
+namespace {
+
+std::uint64_t splitmix64(std::uint64_t x) {
+    x += 0x9e3779b97f4a7c15ULL;
+    x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    x = (x ^ (x >> 27)) * 0x94d049bb133111ebULL;
+    return x ^ (x >> 31);
+}
+
+float random01(std::uint64_t seed, std::uint64_t index, std::uint64_t salt) {
+    const std::uint64_t mixed = splitmix64(seed ^ (index * 0x9e3779b97f4a7c15ULL) ^ salt);
+    return static_cast<float>((mixed >> 11) * (1.0 / 9007199254740992.0));
+}
+
+void draw_disk(SurfaceRGBA& surface, int cx, int cy, int radius, Color color) {
+    if (radius <= 0) {
+        if (cx >= 0 && cy >= 0 && static_cast<std::uint32_t>(cx) < surface.width() && static_cast<std::uint32_t>(cy) < surface.height()) {
+            surface.blend_pixel(static_cast<std::uint32_t>(cx), static_cast<std::uint32_t>(cy), color);
+        }
+        return;
+    }
+
+    const int r2 = radius * radius;
+    const int min_x = std::max(0, cx - radius);
+    const int max_x = std::min(static_cast<int>(surface.width()) - 1, cx + radius);
+    const int min_y = std::max(0, cy - radius);
+    const int max_y = std::min(static_cast<int>(surface.height()) - 1, cy + radius);
+
+    for (int y = min_y; y <= max_y; ++y) {
+        for (int x = min_x; x <= max_x; ++x) {
+            const int dx = x - cx;
+            const int dy = y - cy;
+            if ((dx * dx + dy * dy) <= r2) {
+                surface.blend_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), color);
+            }
+        }
+    }
+}
+
+} // namespace
+
+SurfaceRGBA ParticleEmitterEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
+    if (input.width() == 0U || input.height() == 0U) {
+        return input;
+    }
+
+    const std::uint64_t seed = static_cast<std::uint64_t>(std::llround(get_scalar(params, "seed", 1.0f)));
+    const std::size_t count = std::max<std::size_t>(1, static_cast<std::size_t>(std::llround(get_scalar(params, "count", 48.0f))));
+    const float time = get_scalar(params, "time", 0.0f);
+    const float lifetime = std::max(0.1f, get_scalar(params, "lifetime", 1.0f));
+    const float speed = get_scalar(params, "speed", 18.0f);
+    const float gravity = get_scalar(params, "gravity", 0.0f);
+    const float spread_x = get_scalar(params, "spread_x", 1.0f);
+    const float spread_y = get_scalar(params, "spread_y", 1.0f);
+    const float radius_min = std::max(0.0f, get_scalar(params, "radius_min", 1.0f));
+    const float radius_max = std::max(radius_min, get_scalar(params, "radius_max", 3.0f));
+    const Color particle_color = get_color(params, "color", Color{1.0f, 1.0f, 1.0f, 0.65f});
+    const float opacity = clamp01(get_scalar(params, "opacity", 1.0f));
+    const float cx = get_scalar(params, "center_x", 0.5f) * static_cast<float>(input.width());
+    const float cy = get_scalar(params, "center_y", 0.5f) * static_cast<float>(input.height());
+    const float emit_w = std::max(1.0f, get_scalar(params, "emit_width", static_cast<float>(input.width())));
+    const float emit_h = std::max(1.0f, get_scalar(params, "emit_height", static_cast<float>(input.height())));
+
+    SurfaceRGBA out = input;
+    for (std::size_t i = 0; i < count; ++i) {
+        const float phase = random01(seed, i, 0x1a2b3c4dULL);
+        const float angle = random01(seed, i, 0x9e3779b9ULL) * 6.28318530718f;
+        const float radius = random01(seed, i, 0xdeadbeefULL) * 0.5f + 0.5f;
+        const float life_phase = std::fmod(phase + time / lifetime, 1.0f);
+        const float age = life_phase * lifetime;
+        const float speed_scale = speed * (0.35f + 0.65f * random01(seed, i, 0x13579bdfULL));
+
+        const float start_x = cx + (random01(seed, i, 0x2468ace0ULL) - 0.5f) * emit_w * spread_x;
+        const float start_y = cy + (random01(seed, i, 0xabcdef01ULL) - 0.5f) * emit_h * spread_y;
+        const float vx = std::cos(angle) * speed_scale * (0.25f + radius);
+        const float vy = std::sin(angle) * speed_scale * (0.25f + radius);
+
+        const float px = start_x + vx * age * 0.05f;
+        const float py = start_y + vy * age * 0.05f + 0.5f * gravity * age * age;
+        const int draw_radius = static_cast<int>(std::lround(radius_min + (radius_max - radius_min) * radius));
+
+        Color c = particle_color;
+        const float fade_in = std::min(1.0f, age / (lifetime * 0.15f));
+        const float fade_out = std::min(1.0f, (lifetime - age) / (lifetime * 0.35f));
+        c.a *= opacity * std::clamp(fade_in * fade_out, 0.0f, 1.0f);
+        if (c.a <= 0.0f) {
+            continue;
+        }
+
+        draw_disk(out, static_cast<int>(std::lround(px)), static_cast<int>(std::lround(py)), draw_radius, c);
+    }
+
     return out;
 }
 
@@ -736,6 +828,7 @@ void EffectHost::register_builtins(EffectHost& host) {
     host.register_effect("lut3d_cube", std::make_unique<Lut3DCubeEffect>());
     host.register_effect("chromatic_aberration", std::make_unique<ChromaticAberrationEffect>());
     host.register_effect("vignette", std::make_unique<VignetteEffect>());
+    host.register_effect("particle_emitter", std::make_unique<ParticleEmitterEffect>());
 }
 
 } // namespace tachyon::renderer2d

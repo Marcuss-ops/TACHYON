@@ -235,6 +235,7 @@ EvaluatedLayerState::EvaluatedLayerState(const EvaluatedLayerState& other) {
     gradient_fill = other.gradient_fill;
     gradient_stroke = other.gradient_stroke;
     effects = other.effects;
+    text_highlights = other.text_highlights;
     subtitle_path = other.subtitle_path;
     subtitle_outline_color = other.subtitle_outline_color;
     subtitle_outline_width = other.subtitle_outline_width;
@@ -246,6 +247,10 @@ EvaluatedLayerState::EvaluatedLayerState(const EvaluatedLayerState& other) {
     }
     asset_id = other.asset_id;
     asset_path = other.asset_path;
+    mesh_asset = other.mesh_asset;
+    texture_rgba = other.texture_rgba;
+    morph_weights = other.morph_weights;
+    joint_matrices = other.joint_matrices;
 }
 
 EvaluatedLayerState& EvaluatedLayerState::operator=(const EvaluatedLayerState& other) {
@@ -289,6 +294,7 @@ EvaluatedLayerState& EvaluatedLayerState::operator=(const EvaluatedLayerState& o
     gradient_fill = other.gradient_fill;
     gradient_stroke = other.gradient_stroke;
     effects = other.effects;
+    text_highlights = other.text_highlights;
     subtitle_path = other.subtitle_path;
     subtitle_outline_color = other.subtitle_outline_color;
     subtitle_outline_width = other.subtitle_outline_width;
@@ -302,6 +308,10 @@ EvaluatedLayerState& EvaluatedLayerState::operator=(const EvaluatedLayerState& o
     }
     asset_id = other.asset_id;
     asset_path = other.asset_path;
+    mesh_asset = other.mesh_asset;
+    texture_rgba = other.texture_rgba;
+    morph_weights = other.morph_weights;
+    joint_matrices = other.joint_matrices;
     return *this;
 }
 

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <array>
 #include <cstddef>
 #include <memory_resource>
 #include <type_traits>
+#include <vector>
 
 namespace tachyon {
 
@@ -11,8 +11,9 @@ class FrameArena {
 public:
     static constexpr std::size_t kDefaultBytes = 4U * 1024U * 1024U;
 
-    FrameArena() noexcept
-        : m_resource(m_buffer.data(), m_buffer.size(), std::pmr::null_memory_resource()) {}
+    explicit FrameArena(std::size_t initial_size = kDefaultBytes)
+        : m_buffer(initial_size),
+          m_resource(m_buffer.data(), m_buffer.size(), std::pmr::get_default_resource()) {}
 
     void reset() noexcept {
         m_resource.release();
@@ -28,9 +29,8 @@ public:
     }
 
 private:
-    std::array<std::byte, kDefaultBytes> m_buffer{};
+    std::vector<std::byte> m_buffer;
     std::pmr::monotonic_buffer_resource m_resource;
 };
 
 } // namespace tachyon
-

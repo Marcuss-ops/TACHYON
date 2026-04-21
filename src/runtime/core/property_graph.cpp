@@ -3,10 +3,6 @@
 namespace tachyon {
 
 std::uint32_t PropertyGraph::add_node(PropertyNode node) {
-    if (m_nodes.size() >= 64) {
-        // Hard limit due to dependency_mask being 64-bit
-        throw std::runtime_error("PropertyGraph limit exceeded: Tachyon currently supports a maximum of 64 property nodes per composition due to dependency mask constraints.");
-    }
     node.id = static_cast<std::uint32_t>(m_nodes.size());
     m_nodes.push_back(node);
     return node.id;

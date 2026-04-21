@@ -1,4 +1,5 @@
 #include "tachyon/media/image_manager.h"
+#include "tachyon/renderer2d/color_transfer.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
@@ -11,8 +12,8 @@ namespace {
 constexpr std::uint32_t kFallbackSurfaceWidth = 256U;
 constexpr std::uint32_t kFallbackSurfaceHeight = 256U;
 constexpr std::uint32_t kFallbackCheckerSize = 16U;
-constexpr renderer2d::Color kFallbackCheckerLight{255, 0, 255, 255};
-constexpr renderer2d::Color kFallbackCheckerDark{64, 0, 64, 255};
+constexpr renderer2d::Color kFallbackCheckerLight{1.0f, 0.0f, 1.0f, 1.0f};
+constexpr renderer2d::Color kFallbackCheckerDark{0.25f, 0.0f, 0.25f, 1.0f};
 constexpr const char* kDecodeFailedCode = "media.image.decode_failed";
 constexpr const char* kDecodeFailedMessage = "failed to decode image, using fallback surface";
 
@@ -46,20 +47,25 @@ static std::unique_ptr<renderer2d::SurfaceRGBA> decode_image(const std::filesyst
     // Direct access to pixels if possible, but SurfaceRGBA doesn't expose a mutable ref to the whole vector
     // So we use a faster loop
     for (uint32_t i = 0; i < uw * uh; ++i) {
-        uint8_t r = data[i * 4 + 0];
-        uint8_t g = data[i * 4 + 1];
-        uint8_t b = data[i * 4 + 2];
-        uint8_t a = data[i * 4 + 3];
+        const float r = renderer2d::detail::sRGB_to_Linear_f(static_cast<float>(data[i * 4 + 0]) / 255.0f);
+        const float g = renderer2d::detail::sRGB_to_Linear_f(static_cast<float>(data[i * 4 + 1]) / 255.0f);
+        const float b = renderer2d::detail::sRGB_to_Linear_f(static_cast<float>(data[i * 4 + 2]) / 255.0f);
+        float a = static_cast<float>(data[i * 4 + 3]) / 255.0f;
 
-        if (alpha_mode == AlphaMode::Premultiplied) {
-            r = static_cast<uint8_t>((static_cast<uint32_t>(r) * a) / 255);
-            g = static_cast<uint8_t>((static_cast<uint32_t>(g) * a) / 255);
-            b = static_cast<uint8_t>((static_cast<uint32_t>(b) * a) / 255);
-        } else if (alpha_mode == AlphaMode::Ignore) {
-            a = 255;
+        if (alpha_mode == AlphaMode::Ignore) {
+            a = 1.0f;
         }
 
-        surface->set_pixel(i % uw, i / uw, renderer2d::Color{r, g, b, a});
+        // Convert sRGB (from STB) to Linear
+        renderer2d::Color linear_color{r, g, b, a};
+
+        if (alpha_mode == AlphaMode::Premultiplied) {
+            linear_color.r *= a;
+            linear_color.g *= a;
+            linear_color.b *= a;
+        }
+
+        surface->set_pixel(i % uw, i / uw, linear_color);
     }
 
     stbi_image_free(data);

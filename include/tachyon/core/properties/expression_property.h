@@ -31,13 +31,13 @@ inline std::uint64_t hash_combine(std::uint64_t lhs, std::uint64_t rhs) {
  * A property driven by a math expression string.
  */
 template <typename T>
-class ExpressionProperty : public Property<T> {
+class ExpressionProperty {
 public:
     explicit ExpressionProperty(std::string name, std::string expression)
         : m_name(std::move(name))
         , m_expression(std::move(expression)) {}
 
-    T sample(const PropertyEvaluationContext& context) const override {
+    T sample(const PropertyEvaluationContext& context) const {
         expressions::ExpressionContext expr_ctx;
         expr_ctx.variables["t"] = context.time;
         expr_ctx.variables["time"] = context.time;
@@ -56,12 +56,12 @@ public:
         return sample(context);
     }
 
-    std::uint64_t hash_identity(const PropertyEvaluationContext& context) const override {
+    std::uint64_t hash_identity(const PropertyEvaluationContext& context) const {
         const std::uint64_t expr_hash = detail::stable_string_hash(m_expression);
         return detail::hash_combine(expr_hash, context.seed);
     }
 
-    const std::string& get_name() const override {
+    const std::string& get_name() const {
         return m_name;
     }
 

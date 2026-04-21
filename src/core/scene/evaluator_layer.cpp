@@ -33,6 +33,7 @@ LayerType map_layer_type(const std::string& type) {
     if (type == "camera") return LayerType::Camera;
     if (type == "precomp") return LayerType::Precomp;
     if (type == "light") return LayerType::Light;
+    if (type == "null") return LayerType::NullLayer;
     return LayerType::Unknown;
 }
 
@@ -156,7 +157,8 @@ void evaluate_mesh_animations(EvaluatedLayerState& evaluated, double time) {
 EvaluatedLayerState make_layer_state(
     EvaluationContext& context,
     const LayerSpec& layer,
-    std::size_t layer_index) {
+    std::size_t layer_index,
+    double time_offset) {
     
     // Unpack context for convenience
     const CompositionSpec& composition = context.composition;
@@ -164,6 +166,7 @@ EvaluatedLayerState make_layer_state(
     const ::tachyon::audio::AudioAnalyzer* audio_analyzer = context.audio_analyzer;
     const EvaluationVariables& vars = context.vars;
     const double composition_time_seconds = context.composition_time_seconds;
+    
     EvaluatedLayerState evaluated;
     evaluated.layer_index = layer_index;
     evaluated.id = layer.id;
@@ -174,7 +177,10 @@ EvaluatedLayerState make_layer_state(
     evaluated.visible = layer.visible;
     evaluated.is_3d = layer.is_3d;
     evaluated.is_adjustment_layer = layer.is_adjustment_layer;
-    evaluated.local_time_seconds = timeline::local_time_from_composition(composition_time_seconds, layer.start_time);
+    
+    // Implementation of Stagger (time offset)
+    evaluated.local_time_seconds = timeline::local_time_from_composition(composition_time_seconds, layer.start_time) + time_offset;
+    
     const std::uint64_t layer_seed = make_property_expression_seed(scene, composition, layer, "layer");
     const double remapped_time = sample_scalar(
         layer.time_remap_property,
@@ -182,17 +188,32 @@ EvaluatedLayerState make_layer_state(
         evaluated.local_time_seconds,
         audio_analyzer,
         hash_combine(layer_seed, stable_string_hash("time_remap")),
-        vars.numeric);
+        vars.numeric,
+        vars.tables,
+        static_cast<std::uint32_t>(layer_index));
     evaluated.child_time_seconds = remapped_time;
     evaluated.active = layer.enabled && composition_time_seconds >= layer.in_point && composition_time_seconds <= layer.out_point;
 
+    auto make_loop_sampler = [&](const AnimatedScalarSpec& prop, double fallback, std::uint64_t seed) {
+        return [&, prop, fallback, seed](int prop_idx, double t) -> double {
+            if (prop_idx == -1) {
+                return sample_scalar(prop, fallback, t, audio_analyzer, seed, vars.numeric, vars.tables, static_cast<std::uint32_t>(layer_index), nullptr, true);
+            }
+            return 0.0;
+        };
+    };
+
+    const std::uint64_t opacity_seed = hash_combine(layer_seed, stable_string_hash("opacity"));
     evaluated.opacity = sample_scalar(
         layer.opacity_property,
         layer.opacity,
         remapped_time,
         audio_analyzer,
-        hash_combine(layer_seed, stable_string_hash("opacity")),
-        vars.numeric);
+        opacity_seed,
+        vars.numeric,
+        vars.tables,
+        static_cast<std::uint32_t>(layer_index),
+        make_loop_sampler(layer.opacity_property, layer.opacity, opacity_seed));
 
     math::Vector2 pos = sample_vector2(
         layer.transform.position_property,
@@ -200,62 +221,113 @@ EvaluatedLayerState make_layer_state(
         remapped_time,
         audio_analyzer,
         hash_combine(layer_seed, stable_string_hash("position")),
-        vars.numeric);
+        vars.numeric,
+        vars.tables);
+        
+    // Motion Path Support
+    if (layer.motion_path_id.has_value() && !layer.motion_path_id->empty()) {
+        const auto it = context.layer_indices.find(*layer.motion_path_id);
+        if (it != context.layer_indices.end()) {
+            const auto& path_layer = context.composition.layers[it->second];
+            if (path_layer.shape_path.has_value() && !path_layer.shape_path->points.empty()) {
+                const double progress = std::clamp(sample_scalar(
+                    layer.motion_path_progress, 0.0, remapped_time, audio_analyzer,
+                    hash_combine(layer_seed, stable_string_hash("path_progress")),
+                    vars.numeric, vars.tables
+                ) / 100.0, 0.0, 1.0);
+                
+                const auto& pts = path_layer.shape_path->points;
+                if (pts.size() >= 2) {
+                    const double segment_count = static_cast<double>(pts.size() - 1);
+                    const double scaled_p = progress * segment_count;
+                    const size_t idx = std::min(static_cast<size_t>(std::floor(scaled_p)), pts.size() - 2);
+                    const float t = static_cast<float>(scaled_p - std::floor(scaled_p));
+                    
+                    if (pts[idx].tangent_out.length_squared() > 1e-6f || pts[idx+1].tangent_in.length_squared() > 1e-6f) {
+                        pos = renderer2d::math_utils::sample_bezier_spatial(
+                            pts[idx].position,
+                            pts[idx].position + pts[idx].tangent_out,
+                            pts[idx+1].position + pts[idx+1].tangent_in,
+                            pts[idx+1].position,
+                            t
+                        );
+                    } else {
+                        pos = pts[idx].position * (1.0f - t) + pts[idx+1].position * t;
+                    }
+                } else if (!pts.empty()) {
+                    pos = pts[0].position;
+                }
+            }
+        }
+    }
+
+    const std::uint64_t rot_seed = hash_combine(layer_seed, stable_string_hash("rotation"));
     double rot = sample_scalar(
         layer.transform.rotation_property,
         fallback_rotation(layer),
         remapped_time,
         audio_analyzer,
-        hash_combine(layer_seed, stable_string_hash("rotation")),
-        vars.numeric);
+        rot_seed,
+        vars.numeric,
+        vars.tables,
+        static_cast<std::uint32_t>(layer_index),
+        make_loop_sampler(layer.transform.rotation_property, fallback_rotation(layer), rot_seed));
+
     math::Vector2 scl = sample_vector2(
         layer.transform.scale_property,
         fallback_scale(layer),
         remapped_time,
         audio_analyzer,
         hash_combine(layer_seed, stable_string_hash("scale")),
-        vars.numeric);
+        vars.numeric,
+        vars.tables);
     
     evaluated.local_transform = make_transform2(pos, rot, scl);
     evaluated.world_matrix = evaluated.local_transform.to_matrix();
     evaluated.world_position3 = math::Vector3{pos.x, pos.y, 0.0f};
 
     if (layer.is_3d) {
+        const std::uint64_t pos3_seed = hash_combine(layer_seed, stable_string_hash("position3"));
         const math::Vector3 pos3 = sample_vector3(
             layer.transform3d.position_property,
             {pos.x, pos.y, 0.0f},
             remapped_time,
             audio_analyzer,
-            hash_combine(layer_seed, stable_string_hash("position3")),
-            vars.numeric);
+            pos3_seed,
+            vars.numeric,
+            vars.tables);
         const math::Vector3 orient3 = sample_vector3(
             layer.transform3d.orientation_property,
             {0.0f, 0.0f, 0.0f},
             remapped_time,
             audio_analyzer,
             hash_combine(layer_seed, stable_string_hash("orientation3")),
-            vars.numeric);
+            vars.numeric,
+            vars.tables);
         const math::Vector3 rot3 = sample_vector3(
             layer.transform3d.rotation_property,
             {0.0f, 0.0f, static_cast<float>(rot)},
             remapped_time,
             audio_analyzer,
             hash_combine(layer_seed, stable_string_hash("rotation3")),
-            vars.numeric);
+            vars.numeric,
+            vars.tables);
         const math::Vector3 scl3 = sample_vector3(
             layer.transform3d.scale_property,
             {scl.x, scl.y, 1.0f},
             remapped_time,
             audio_analyzer,
             hash_combine(layer_seed, stable_string_hash("scale3")),
-            vars.numeric);
+            vars.numeric,
+            vars.tables);
         const math::Vector3 anchor3 = sample_vector3(
             layer.transform3d.anchor_point_property,
             {0.0f, 0.0f, 0.0f},
             remapped_time,
             audio_analyzer,
             hash_combine(layer_seed, stable_string_hash("anchor_point3")),
-            vars.numeric);
+            vars.numeric,
+            vars.tables);
         
         evaluated.orientation_xyz_deg = orient3;
         evaluated.anchor_point_3d = anchor3;
@@ -280,18 +352,18 @@ EvaluatedLayerState make_layer_state(
         evaluated.world_normal = evaluated.world_matrix.transform_vector({0.0f, 0.0f, 1.0f}).normalized();
     }
 
-    evaluated.material.ambient_coeff = static_cast<float>(sample_scalar(layer.ambient_coeff, 0.1, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("ambient")), vars.numeric));
-    evaluated.material.diffuse_coeff = static_cast<float>(sample_scalar(layer.diffuse_coeff, 0.8, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("diffuse")), vars.numeric));
-    evaluated.material.specular_coeff = static_cast<float>(sample_scalar(layer.specular_coeff, 0.5, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("specular")), vars.numeric));
-    evaluated.material.shininess = static_cast<float>(sample_scalar(layer.shininess, 50.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("shininess")), vars.numeric));
-    evaluated.material.metallic = static_cast<float>(sample_scalar(layer.metallic, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("metallic")), vars.numeric));
-    evaluated.material.roughness = static_cast<float>(sample_scalar(layer.roughness, 0.5, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("roughness")), vars.numeric));
-    evaluated.material.emission = static_cast<float>(sample_scalar(layer.emission, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("emission")), vars.numeric));
-    evaluated.material.ior = static_cast<float>(sample_scalar(layer.ior, 1.45, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("ior")), vars.numeric));
+    evaluated.material.ambient_coeff = static_cast<float>(sample_scalar(layer.ambient_coeff, 0.1, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("ambient")), vars.numeric, vars.tables));
+    evaluated.material.diffuse_coeff = static_cast<float>(sample_scalar(layer.diffuse_coeff, 0.8, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("diffuse")), vars.numeric, vars.tables));
+    evaluated.material.specular_coeff = static_cast<float>(sample_scalar(layer.specular_coeff, 0.5, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("specular")), vars.numeric, vars.tables));
+    evaluated.material.shininess = static_cast<float>(sample_scalar(layer.shininess, 50.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("shininess")), vars.numeric, vars.tables));
+    evaluated.material.metallic = static_cast<float>(sample_scalar(layer.metallic, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("metallic")), vars.numeric, vars.tables));
+    evaluated.material.roughness = static_cast<float>(sample_scalar(layer.roughness, 0.5, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("roughness")), vars.numeric, vars.tables));
+    evaluated.material.emission = static_cast<float>(sample_scalar(layer.emission, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("emission")), vars.numeric, vars.tables));
+    evaluated.material.ior = static_cast<float>(sample_scalar(layer.ior, 1.45, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("ior")), vars.numeric, vars.tables));
     evaluated.material.metal = layer.metal;
 
-    evaluated.extrusion_depth = static_cast<float>(sample_scalar(layer.extrusion_depth, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("extrusion")), vars.numeric));
-    evaluated.bevel_size = static_cast<float>(sample_scalar(layer.bevel_size, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("bevel")), vars.numeric));
+    evaluated.extrusion_depth = static_cast<float>(sample_scalar(layer.extrusion_depth, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("extrusion")), vars.numeric, vars.tables));
+    evaluated.bevel_size = static_cast<float>(sample_scalar(layer.bevel_size, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("bevel")), vars.numeric, vars.tables));
 
     evaluated.visible = evaluated.enabled && evaluated.active && evaluated.opacity > 0.0;
     evaluated.width = layer.width;
@@ -309,7 +381,7 @@ EvaluatedLayerState make_layer_state(
 
     evaluated.text_content = resolve_template(layer.text_content, vars.strings, vars.numeric);
     evaluated.font_id = layer.font_id;
-    evaluated.font_size = static_cast<float>(sample_scalar(layer.font_size, 48.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("font_size")), vars.numeric));
+    evaluated.font_size = static_cast<float>(sample_scalar(layer.font_size, 48.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("font_size")), vars.numeric, vars.tables));
     
     if (layer.alignment == "center") evaluated.text_alignment = 1;
     else if (layer.alignment == "right") evaluated.text_alignment = 2;
@@ -323,17 +395,19 @@ EvaluatedLayerState make_layer_state(
         remapped_time,
         audio_analyzer,
         hash_combine(layer_seed, stable_string_hash("stroke_width")),
-        vars.numeric));
+        vars.numeric,
+        vars.tables));
     evaluated.line_cap = layer.line_cap;
     evaluated.line_join = layer.line_join;
     evaluated.miter_limit = layer.miter_limit;
     
     evaluated.effects = layer.effects;
+    evaluated.text_highlights = layer.text_highlights;
     evaluated.subtitle_path = layer.subtitle_path;
     evaluated.subtitle_outline_color = layer.subtitle_outline_color;
     evaluated.subtitle_outline_width = layer.subtitle_outline_width;
 
-    if (layer.shape_path.has_value()) {
+        if (layer.shape_path.has_value()) {
         EvaluatedShapePath shape_path;
         shape_path.closed = layer.shape_path->closed;
         shape_path.points.reserve(layer.shape_path->points.size());
@@ -345,9 +419,26 @@ EvaluatedLayerState make_layer_state(
             });
         }
 
-        const double t_start = sample_scalar(layer.trim_start, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("trim_start"))) / 100.0;
-        const double t_end = sample_scalar(layer.trim_end, 100.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("trim_end"))) / 100.0;
-        const double t_offset = sample_scalar(layer.trim_offset, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("trim_offset"))) / 360.0;
+        // Shape Morphing
+        if (!layer.morph_targets.empty()) {
+            const double weight = sample_scalar(layer.morph_weight, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("morph_weight")), vars.numeric, vars.tables) / 100.0;
+            if (weight > 1e-4) {
+                // For now, interpolate with the first target if point counts match
+                const auto& target = layer.morph_targets[0];
+                if (target.points.size() == shape_path.points.size()) {
+                    const float w = static_cast<float>(std::clamp(weight, 0.0, 1.0));
+                    for (size_t k = 0; k < shape_path.points.size(); ++k) {
+                        shape_path.points[k].position = shape_path.points[k].position * (1.0f - w) + target.points[k].position * w;
+                        shape_path.points[k].tangent_in = shape_path.points[k].tangent_in * (1.0f - w) + target.points[k].tangent_in * w;
+                        shape_path.points[k].tangent_out = shape_path.points[k].tangent_out * (1.0f - w) + target.points[k].tangent_out * w;
+                    }
+                }
+            }
+        }
+
+        const double t_start = sample_scalar(layer.trim_start, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("trim_start")), vars.numeric, vars.tables) / 100.0;
+        const double t_end = sample_scalar(layer.trim_end, 100.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("trim_end")), vars.numeric, vars.tables) / 100.0;
+        const double t_offset = sample_scalar(layer.trim_offset, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("trim_offset")), vars.numeric, vars.tables) / 360.0;
 
         if (t_start > 0.0 || t_end < 1.0 || std::abs(t_offset) > 1e-4) {
             // Apply Trim Path

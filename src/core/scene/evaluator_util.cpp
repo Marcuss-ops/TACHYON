@@ -143,7 +143,8 @@ double sample_scalar(
     double local_time_seconds,
     const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
     std::uint64_t expression_seed,
-    const std::unordered_map<std::string, double>* job_variables) {
+    const std::unordered_map<std::string, double>* job_variables,
+    const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables) {
 
     if (property.expression.has_value() && !property.expression->empty()) {
         renderer2d::expressions::ExpressionContext expr_ctx;
@@ -165,6 +166,24 @@ double sample_scalar(
             expr_ctx.variables["music.high"] = bands.high;
             expr_ctx.variables["music.presence"] = bands.presence;
             expr_ctx.variables["music.rms"] = bands.rms;
+        }
+
+        if (tables) {
+            expr_ctx.table_lookup = [tables](double table_idx, double row, double col) -> double {
+                std::vector<std::string> keys;
+                for (const auto& [k, v] : *tables) keys.push_back(k);
+                std::sort(keys.begin(), keys.end());
+                size_t idx = static_cast<size_t>(table_idx);
+                if (idx < keys.size()) {
+                    const auto& table = (*tables).at(keys[idx]);
+                    size_t r = static_cast<size_t>(row);
+                    size_t c = static_cast<size_t>(col);
+                    if (r < table.size() && c < table[r].size()) {
+                        try { return std::stod(table[r][c]); } catch (...) { return 0.0; }
+                    }
+                }
+                return 0.0;
+            };
         }
         
         auto result = renderer2d::expressions::ExpressionEvaluator::evaluate(*property.expression, expr_ctx);
@@ -229,7 +248,8 @@ math::Vector2 sample_vector2(
     double local_time_seconds,
     const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
     std::uint64_t expression_seed,
-    const std::unordered_map<std::string, double>* job_variables) {
+    const std::unordered_map<std::string, double>* job_variables,
+    const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables) {
     if (property.expression.has_value() && !property.expression->empty()) {
         renderer2d::expressions::ExpressionContext expr_ctx;
         if (job_variables) {
@@ -248,6 +268,24 @@ math::Vector2 sample_vector2(
             expr_ctx.variables["music.mid"] = bands.mid;
             expr_ctx.variables["music.high"] = bands.high;
             expr_ctx.variables["music.rms"] = bands.rms;
+        }
+
+        if (tables) {
+            expr_ctx.table_lookup = [tables](double table_idx, double row, double col) -> double {
+                std::vector<std::string> keys;
+                for (const auto& [k, v] : *tables) keys.push_back(k);
+                std::sort(keys.begin(), keys.end());
+                size_t idx = static_cast<size_t>(table_idx);
+                if (idx < keys.size()) {
+                    const auto& table = (*tables).at(keys[idx]);
+                    size_t r = static_cast<size_t>(row);
+                    size_t c = static_cast<size_t>(col);
+                    if (r < table.size() && c < table[r].size()) {
+                        try { return std::stod(table[r][c]); } catch (...) { return 0.0; }
+                    }
+                }
+                return 0.0;
+            };
         }
         
         auto result = renderer2d::expressions::ExpressionEvaluator::evaluate(*property.expression, expr_ctx);
@@ -315,7 +353,8 @@ math::Vector3 sample_vector3(
     double local_time_seconds,
     const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
     std::uint64_t expression_seed,
-    const std::unordered_map<std::string, double>* job_variables) {
+    const std::unordered_map<std::string, double>* job_variables,
+    const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables) {
     if (property.expression.has_value() && !property.expression->empty()) {
         renderer2d::expressions::ExpressionContext expr_ctx;
         if (job_variables) {
@@ -334,6 +373,24 @@ math::Vector3 sample_vector3(
             expr_ctx.variables["music.mid"] = bands.mid;
             expr_ctx.variables["music.high"] = bands.high;
             expr_ctx.variables["music.rms"] = bands.rms;
+        }
+
+        if (tables) {
+            expr_ctx.table_lookup = [tables](double table_idx, double row, double col) -> double {
+                std::vector<std::string> keys;
+                for (const auto& [k, v] : *tables) keys.push_back(k);
+                std::sort(keys.begin(), keys.end());
+                size_t idx = static_cast<size_t>(table_idx);
+                if (idx < keys.size()) {
+                    const auto& table = (*tables).at(keys[idx]);
+                    size_t r = static_cast<size_t>(row);
+                    size_t c = static_cast<size_t>(col);
+                    if (r < table.size() && c < table[r].size()) {
+                        try { return std::stod(table[r][c]); } catch (...) { return 0.0; }
+                    }
+                }
+                return 0.0;
+            };
         }
         
         auto result = renderer2d::expressions::ExpressionEvaluator::evaluate(*property.expression, expr_ctx);

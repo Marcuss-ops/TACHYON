@@ -20,4 +20,7 @@ math::Vector2 sample_bezier_spatial(const math::Vector2& p0, const math::Vector2
 
 math::Vector3 sample_bezier_spatial(const math::Vector3& p0, const math::Vector3& p1, const math::Vector3& p2, const math::Vector3& p3, float t);
 
+double noise(float x, std::uint64_t seed);
+double noise(float x, float y, std::uint64_t seed);
+
 } // namespace tachyon::renderer2d::math_utils

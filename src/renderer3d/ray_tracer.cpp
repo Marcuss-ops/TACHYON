@@ -72,22 +72,35 @@ math::Vector3 importance_sample_ggx(float u1, float u2, const math::Vector3& N, 
     return (tangent * H.x + bitangent * H.y + N * H.z).normalized();
 }
 
-// Equirectangular HDR Sampling
+// Equirectangular HDR Sampling with Bilinear Filtering
 math::Vector3 sample_equirect(const media::HDRTextureData& map, const math::Vector3& dir, float rotation) {
     float phi = std::atan2(dir.z, dir.x) + rotation * (PI / 180.0f);
     float theta = std::asin(std::clamp(dir.y, -1.0f, 1.0f));
     float u = 0.5f + phi / (2.0f * PI);
     float v = 0.5f - theta / PI;
     
-    // Simple bilinear or point sampling
-    int tx = std::clamp(static_cast<int>(u * map.width), 0, map.width - 1);
-    int ty = std::clamp(static_cast<int>(v * map.height), 0, map.height - 1);
-    int idx = (ty * map.width + tx) * map.channels;
-    
-    if (map.channels >= 3) {
+    float fx = u * map.width - 0.5f;
+    float fy = v * map.height - 0.5f;
+    int ix = static_cast<int>(std::floor(fx));
+    int iy = static_cast<int>(std::floor(fy));
+    float tx = fx - ix;
+    float ty = fy - iy;
+
+    auto get_px = [&](int x, int y) -> math::Vector3 {
+        x = (x + map.width) % map.width;
+        y = std::clamp(y, 0, map.height - 1);
+        int idx = (y * map.width + x) * map.channels;
         return { map.data[idx+0], map.data[idx+1], map.data[idx+2] };
-    }
-    return { 0, 0, 0 };
+    };
+
+    math::Vector3 p00 = get_px(ix, iy);
+    math::Vector3 p10 = get_px(ix + 1, iy);
+    math::Vector3 p01 = get_px(ix, iy + 1);
+    math::Vector3 p11 = get_px(ix + 1, iy + 1);
+
+    math::Vector3 p0 = p00 * (1.0f - tx) + p10 * tx;
+    math::Vector3 p1 = p01 * (1.0f - tx) + p11 * tx;
+    return p0 * (1.0f - ty) + p1 * ty;
 }
 }
 
@@ -125,7 +138,7 @@ void RayTracer::cleanup_scene() {
     extruded_assets_.clear();
 }
 
-void RayTracer::build_scene(const scene::EvaluatedCompositionState& state) {
+void RayTracer::build_scene(const scene::EvaluatedCompositionState& state, const text::Font* font) {
     cleanup_scene();
     if (!device_) return;
 
@@ -142,10 +155,10 @@ void RayTracer::build_scene(const scene::EvaluatedCompositionState& state) {
     ensure_brdf_lut();
 
     auto should_include = [&](std::size_t) { return true; };
-    internal_build_scene(state, should_include);
+    internal_build_scene(state, should_include, font);
 }
 
-void RayTracer::build_scene_subset(const scene::EvaluatedCompositionState& state, const std::vector<std::size_t>& layer_indices) {
+void RayTracer::build_scene_subset(const scene::EvaluatedCompositionState& state, const std::vector<std::size_t>& layer_indices, const text::Font* font) {
     cleanup_scene();
     if (!device_) return;
 
@@ -164,10 +177,10 @@ void RayTracer::build_scene_subset(const scene::EvaluatedCompositionState& state
     auto should_include = [&](std::size_t idx) {
         return std::find(layer_indices.begin(), layer_indices.end(), idx) != layer_indices.end();
     };
-    internal_build_scene(state, should_include);
+    internal_build_scene(state, should_include, font);
 }
 
-void RayTracer::internal_build_scene(const scene::EvaluatedCompositionState& state, const std::function<bool(std::size_t)>& filter) {
+void RayTracer::internal_build_scene(const scene::EvaluatedCompositionState& state, const std::function<bool(std::size_t)>& filter, const text::Font* font) {
     for (std::size_t layer_idx = 0; layer_idx < state.layers.size(); ++layer_idx) {
         const auto& layer = state.layers[layer_idx];
         if (!filter(layer_idx)) continue;
@@ -258,7 +271,6 @@ void RayTracer::internal_build_scene(const scene::EvaluatedCompositionState& sta
             instances_.push_back({geom_id, &layer, &asset_ref, &sub});
             extruded_assets_.push_back(std::move(asset));
         } else if (layer.type == scene::LayerType::Text && !layer.text_content.empty() && layer.extrusion_depth > 0.01f) {
-            const auto* font = renderer2d::TextRenderConfig::instance().font();
             if (font) {
                 text::TextStyle style;
                 style.pixel_size = static_cast<std::uint32_t>(layer.font_size);
@@ -344,7 +356,10 @@ void RayTracer::internal_build_scene(const scene::EvaluatedCompositionState& sta
 }
 
 RayTracer::ShadingResult RayTracer::sample_environment(const math::Vector3& direction) {
-    return sample_environment(direction, 0.0f);
+    auto res = sample_environment(direction, 0.0f);
+    res.albedo = {0,0,0};
+    res.normal = -direction;
+    return res;
 }
 
 RayTracer::ShadingResult RayTracer::sample_environment(const math::Vector3& direction, float roughness) {
@@ -362,9 +377,9 @@ RayTracer::ShadingResult RayTracer::sample_environment(const math::Vector3& dire
             auto s0 = sample_equirect({l0.data, l0.width, l0.height, 3}, direction, environment_rotation_);
             auto s1 = sample_equirect({l1.data, l1.width, l1.height, 3}, direction, environment_rotation_);
             
-            return { (s0 * (1.0f - f) + s1 * f) * environment_intensity_, 0.0f };
+            return { (s0 * (1.0f - f) + s1 * f) * environment_intensity_, 0.0f, 1e10f, {0,0,0}, -direction };
         }
-        return { sample_equirect(*environment_map_, direction, environment_rotation_) * environment_intensity_, 0.0f };
+        return { sample_equirect(*environment_map_, direction, environment_rotation_) * environment_intensity_, 0.0f, 1e10f, {0,0,0}, -direction };
     }
 
     // Simple vertical gradient sky fallback
@@ -372,7 +387,7 @@ RayTracer::ShadingResult RayTracer::sample_environment(const math::Vector3& dire
     // Blueish sky
     math::Vector3 sky_top = {0.2f, 0.5f, 1.0f};
     math::Vector3 sky_bottom = {0.8f, 0.9f, 1.0f};
-    return {sky_bottom * (1.0f - t) + sky_top * t, 0.0f}; // alpha = 0.0 for environment
+    return {sky_bottom * (1.0f - t) + sky_top * t, 0.0f, 1e10f, {0,0,0}, -direction}; // alpha = 0.0 for environment
 }
 
 void RayTracer::ensure_brdf_lut() {
@@ -450,9 +465,10 @@ void RayTracer::update_prefiltered_env(const media::HDRTextureData* map) {
     
     prefiltered_env_ = std::make_unique<media::PreFilteredEnvMap>();
     const int num_levels = 5;
+    const int num_samples = 1024;
     
     for (int i = 0; i < num_levels; ++i) {
-        /*float roughness = static_cast<float>(i) / (num_levels - 1);*/
+        float roughness = static_cast<float>(i) / (num_levels - 1);
         int w = std::max(1, map->width >> i);
         int h = std::max(1, map->height >> i);
         
@@ -461,23 +477,56 @@ void RayTracer::update_prefiltered_env(const media::HDRTextureData* map) {
         level.height = h;
         level.data.resize(w * h * 3);
         
-        // Very crude downsampling / box blur to simulate roughness
-        // Real pre-filtering requires importance sampling the environment map
-        // but for a CPU renderer we can start with this or implement a faster convolution
-        #pragma omp parallel for
+        #pragma omp parallel for schedule(dynamic)
         for (int y = 0; y < h; ++y) {
+            std::mt19937 rng(i * 1000 + y);
+            std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+            
             for (int x = 0; x < w; ++x) {
-                // For now, just copy or simple box filter
-                // TODO: Implement proper GGX convolution for environment map
-                float u = static_cast<float>(x) / w;
-                float v = static_cast<float>(y) / h;
-                int sx = std::clamp(static_cast<int>(u * map->width), 0, map->width - 1);
-                int sy = std::clamp(static_cast<int>(v * map->height), 0, map->height - 1);
-                int s_idx = (sy * map->width + sx) * map->channels;
+                float u = (static_cast<float>(x) + 0.5f) / w;
+                float v = (static_cast<float>(y) + 0.5f) / h;
+                
+                float phi = (u - 0.5f) * 2.0f * PI;
+                float theta = (0.5f - v) * PI;
+                
+                math::Vector3 N;
+                N.x = std::cos(theta) * std::cos(phi);
+                N.y = std::sin(theta);
+                N.z = std::cos(theta) * std::sin(phi);
+                N = N.normalized();
+                
+                math::Vector3 prefiltered_color{0, 0, 0};
+                float total_weight = 0.0f;
+                
+                if (roughness == 0.0f) {
+                    prefiltered_color = sample_equirect(*map, N, 0.0f);
+                    total_weight = 1.0f;
+                } else {
+                    for (int s = 0; s < num_samples; ++s) {
+                        float u1 = dist(rng);
+                        float u2 = dist(rng);
+                        math::Vector3 H = importance_sample_ggx(u1, u2, N, roughness);
+                        math::Vector3 L = (H * 2.0f * math::Vector3::dot(N, H) - N).normalized();
+                        
+                        float n_dot_l = std::max(math::Vector3::dot(N, L), 0.0f);
+                        if (n_dot_l > 0.0f) {
+                            prefiltered_color += sample_equirect(*map, L, 0.0f) * n_dot_l;
+                            total_weight += n_dot_l;
+                        }
+                    }
+                }
+                
                 int d_idx = (y * w + x) * 3;
-                level.data[d_idx+0] = map->data[s_idx+0];
-                level.data[d_idx+1] = map->data[s_idx+1];
-                level.data[d_idx+2] = map->data[s_idx+2];
+                if (total_weight > 0.0f) {
+                    math::Vector3 final_c = prefiltered_color / total_weight;
+                    level.data[d_idx+0] = final_c.x;
+                    level.data[d_idx+1] = final_c.y;
+                    level.data[d_idx+2] = final_c.z;
+                } else {
+                    level.data[d_idx+0] = 0;
+                    level.data[d_idx+1] = 0;
+                    level.data[d_idx+2] = 0;
+                }
             }
         }
         prefiltered_env_->levels.push_back(std::move(level));
@@ -491,7 +540,7 @@ RayTracer::ShadingResult RayTracer::trace_ray(
     std::mt19937& rng,
     int depth) 
 {
-    if (depth > kMaxBounces) return {{0,0,0}, 0.0f};
+    if (depth > kMaxBounces) return {{0,0,0}, 0.0f, 0.0f, {0,0,0}, {0,0,1}};
 
     RTCRayHit rh{};
     rh.ray.org_x = origin.x; rh.ray.org_y = origin.y; rh.ray.org_z = origin.z;
@@ -506,8 +555,7 @@ RayTracer::ShadingResult RayTracer::trace_ray(
     rtcIntersect1(scene_, &rh, &args);
 
     if (rh.hit.geomID == RTC_INVALID_GEOMETRY_ID) {
-        auto env = sample_environment(direction);
-        return { env.color, env.alpha, 1e10f }; // Infinite depth for sky
+        return sample_environment(direction);
     }
 
     const scene::EvaluatedLayerState* layer = nullptr;
@@ -522,7 +570,7 @@ RayTracer::ShadingResult RayTracer::trace_ray(
         }
     }
 
-    if (!layer) return {{1, 0, 1}, 1.0f}; // Magenta error
+    if (!layer) return {{1, 0, 1}, 1.0f, rh.ray.tfar, {1,0,1}, {0,0,1}}; // Magenta error
 
     // Baricentrics from hit
     float u = rh.hit.u;
@@ -798,7 +846,7 @@ RayTracer::ShadingResult RayTracer::trace_ray(
     }
 
     total_lighting += albedo * layer->material.emission;
-    return {total_lighting, static_cast<float>(layer->opacity), rh.ray.tfar};
+    return {total_lighting, static_cast<float>(layer->opacity), rh.ray.tfar, albedo, normal};
 }
 
 void RayTracer::render(const scene::EvaluatedCompositionState& state, float* out_rgba, float* out_depth, int width, int height) {
@@ -814,12 +862,21 @@ void RayTracer::render(const scene::EvaluatedCompositionState& state, float* out
     float tan_half_fov = std::tan(eval_cam.camera.fov_y_rad * 0.5f);
     float aspect = eval_cam.camera.aspect;
 
+    std::vector<float> albedo_aux;
+    std::vector<float> normal_aux;
+    if (oidn_filter_ && samples_per_pixel_ <= 4) {
+        albedo_aux.resize(width * height * 3);
+        normal_aux.resize(width * height * 3);
+    }
+
     #pragma omp parallel for schedule(dynamic)
     for (int y = 0; y < height; ++y) {
         std::mt19937 rng(static_cast<unsigned int>(state.frame_number + y * width));
         std::uniform_real_distribution<float> dist(0.0f, 1.0f);
         for (int x = 0; x < width; ++x) {
             math::Vector3 accumulated_rgb{0,0,0};
+            math::Vector3 first_hit_albedo{0,0,0};
+            math::Vector3 first_hit_normal{0,0,1};
             float accumulated_alpha = 0.0f;
             float accumulated_depth = 0.0f;
             int spp = std::max(1, samples_per_pixel_);
@@ -827,10 +884,6 @@ void RayTracer::render(const scene::EvaluatedCompositionState& state, float* out
             for (int s = 0; s < spp; ++s) {
                 float u = (x + (spp > 1 ? dist(rng) : 0.5f)) / width;
                 float v = (y + (spp > 1 ? dist(rng) : 0.5f)) / height;
-
-                // Motion Blur jitter (crude: we don't re-evaluate state, but we could jitter the time)
-                // Real motion blur needs state evaluation at different times.
-                // For now, let's just use the RNG to simulate it if someone wanted to.
 
                 math::Vector3 ray_dir = (forward + right * (2*u-1)*aspect*tan_half_fov + up * (1-2*v)*tan_half_fov).normalized();
                 math::Vector3 origin = cam_pos;
@@ -846,6 +899,11 @@ void RayTracer::render(const scene::EvaluatedCompositionState& state, float* out
                 accumulated_rgb += result.color;
                 accumulated_alpha += result.alpha;
                 accumulated_depth += result.depth;
+                
+                if (s == 0) {
+                    first_hit_albedo = result.albedo;
+                    first_hit_normal = result.normal;
+                }
             }
 
             int idx = (y * width + x) * 4;
@@ -857,12 +915,24 @@ void RayTracer::render(const scene::EvaluatedCompositionState& state, float* out
             if (out_depth) {
                 out_depth[y * width + x] = accumulated_depth / spp;
             }
+
+            if (!albedo_aux.empty()) {
+                int aidx = (y * width + x) * 3;
+                albedo_aux[aidx+0] = first_hit_albedo.x;
+                albedo_aux[aidx+1] = first_hit_albedo.y;
+                albedo_aux[aidx+2] = first_hit_albedo.z;
+                normal_aux[aidx+0] = first_hit_normal.x;
+                normal_aux[aidx+1] = first_hit_normal.y;
+                normal_aux[aidx+2] = first_hit_normal.z;
+            }
         }
     }
 
     // Apply OIDN denoising for low-SPP renders
     if (oidn_filter_ && samples_per_pixel_ <= 4) {
         oidn_filter_.setImage("color",  out_rgba, oidn::Format::Float3, static_cast<size_t>(width), static_cast<size_t>(height), 0, 4 * sizeof(float));
+        oidn_filter_.setImage("albedo", albedo_aux.data(), oidn::Format::Float3, static_cast<size_t>(width), static_cast<size_t>(height));
+        oidn_filter_.setImage("normal", normal_aux.data(), oidn::Format::Float3, static_cast<size_t>(width), static_cast<size_t>(height));
         oidn_filter_.setImage("output", out_rgba, oidn::Format::Float3, static_cast<size_t>(width), static_cast<size_t>(height), 0, 4 * sizeof(float));
         oidn_filter_.commit();
         oidn_filter_.execute();

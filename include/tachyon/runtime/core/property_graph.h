@@ -10,8 +10,8 @@ namespace tachyon {
 /**
  * @brief Represents a node in the execution graph for a specific property or layer.
  * 
- * Nodes are limited to 64 per composition to allow efficient status tracking 
- * via a single 64-bit dependency bitmask.
+ * Nodes participate in a dynamic execution graph with adjacency list based tracking for 
+ * efficient dependency resolution and dirty propagation.
  */
 struct TACHYON_ALIGN(16) PropertyNode {
     std::uint32_t id{0};           ///< Unique identifier within the composition.

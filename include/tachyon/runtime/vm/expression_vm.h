@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <functional>
 #include <span>
 #include <vector>
 
@@ -32,6 +33,9 @@ enum class ExpressionOp : std::uint8_t {
     ValueAtTime,
     Noise,
     Spring,
+    PingPong,
+    TimeStretch,
+    Stagger,
     Return
 };
 
@@ -48,8 +52,13 @@ struct CompiledExpression {
 struct ExpressionContext {
     double time_seconds{0.0};
     std::int64_t frame_number{0};
+    std::uint32_t layer_index{0};
     std::uint64_t seed{0};
     std::span<const double> properties{};
+    
+    /// Callback to sample a property at a specific time.
+    /// Args: (property_idx, time_seconds) -> value
+    std::function<double(std::uint32_t, double)> sample_callback;
 };
 
 class ExpressionVM {
@@ -171,12 +180,13 @@ public:
                 break;
             }
             case ExpressionOp::ValueAtTime: {
-                [[maybe_unused]] const double time_offset = pop();
-                [[maybe_unused]] const double property_idx = pop();
-                // TODO: Implement sampling from property tracks at arbitrary time
-                // This requires context to have access to compiled tracks.
-                // For now, return 0.0 or current value if property_idx matches LoadProp
-                push(0.0);
+                const double time_offset = pop();
+                const double property_idx = pop();
+                if (context.sample_callback) {
+                    push(context.sample_callback(static_cast<std::uint32_t>(property_idx), time_offset));
+                } else {
+                    push(0.0);
+                }
                 break;
             }
             case ExpressionOp::Noise: {
@@ -191,6 +201,33 @@ public:
                 const double from = pop();         // Initial displacement at t=0
                 
                 push(math_contract::spring(context.time_seconds, from, to, freq, damping));
+                break;
+            }
+            case ExpressionOp::PingPong: {
+                const double duration = pop();
+                const double t = pop();
+                if (duration <= 0.0) {
+                    push(t);
+                } else {
+                    const double fold = std::floor(t / duration);
+                    const double rem = std::fmod(t, duration);
+                    if (static_cast<std::uint64_t>(fold) % 2 == 0) {
+                        push(rem);
+                    } else {
+                        push(duration - rem);
+                    }
+                }
+                break;
+            }
+            case ExpressionOp::TimeStretch: {
+                const double scale = pop();
+                const double t = pop();
+                push(t * scale);
+                break;
+            }
+            case ExpressionOp::Stagger: {
+                const double delay = pop();
+                push(static_cast<double>(context.layer_index) * delay);
                 break;
             }
             case ExpressionOp::Return:

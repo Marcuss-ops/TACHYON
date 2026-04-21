@@ -41,65 +41,66 @@ std::string quote_path(const std::filesystem::path& path) {
     return quoted;
 }
 
+bool is_alpha_requested(const OutputProfile& profile) {
+    const std::string lower{renderer2d::detail::ascii_lower(profile.alpha_mode)};
+    return lower == "premultiplied" || lower == "straight" || lower == "unassociated";
+}
+
 std::string resolve_output_pixel_format(const OutputContract& contract) {
+    const bool alpha = is_alpha_requested(contract.profile);
+    
     if (contract.profile.video.pixel_format == "rgba8") {
         return "rgba";
     }
+    
     if (contract.profile.format == OutputFormat::ProRes) {
-        return "yuv422p10";
+        return alpha ? "yuva444p10le" : "yuv422p10le";
     }
+    
+    if (contract.profile.format == OutputFormat::WebM) {
+        return alpha ? "yuva420p" : "yuv420p";
+    }
+    
     return contract.profile.video.pixel_format.empty() ? "yuv420p" : contract.profile.video.pixel_format;
 }
 
-std::string ffmpeg_color_primaries(std::string_view value) {
-    const auto primaries = renderer2d::detail::parse_color_primaries(value);
+std::string ffmpeg_color_primaries(renderer2d::detail::ColorPrimaries primaries) {
     switch (primaries) {
-    case renderer2d::detail::ColorPrimaries::Bt709:
+    case renderer2d::detail::ColorPrimaries::Rec709:
         return "bt709";
-    case renderer2d::detail::ColorPrimaries::DciP3:
+    case renderer2d::detail::ColorPrimaries::DisplayP3:
         return "smpte432";
-    case renderer2d::detail::ColorPrimaries::Rec2020:
-        return "bt2020";
-    case renderer2d::detail::ColorPrimaries::AcesAP1:
-        return "unknown";
-    case renderer2d::detail::ColorPrimaries::AcesAP0:
-        return "unknown";
-    case renderer2d::detail::ColorPrimaries::Srgb:
+    case renderer2d::detail::ColorPrimaries::sRGB:
+    case renderer2d::detail::ColorPrimaries::Linear:
     default:
         return "bt709";
     }
 }
 
-std::string ffmpeg_transfer_characteristics(std::string_view value) {
-    const auto curve = renderer2d::detail::parse_transfer_curve(value);
+std::string ffmpeg_transfer_characteristics(renderer2d::detail::TransferCurve curve) {
     switch (curve) {
     case renderer2d::detail::TransferCurve::Linear:
         return "linear";
     case renderer2d::detail::TransferCurve::Bt709:
         return "bt709";
-    case renderer2d::detail::TransferCurve::Srgb:
+    case renderer2d::detail::TransferCurve::sRGB:
     default:
         return "iec61966-2-1";
     }
 }
 
-std::string ffmpeg_colorspace(std::string_view value) {
-    const auto primaries = renderer2d::detail::parse_color_primaries(value);
+std::string ffmpeg_colorspace(renderer2d::detail::ColorPrimaries primaries) {
     switch (primaries) {
-    case renderer2d::detail::ColorPrimaries::Rec2020:
-        return "bt2020nc";
-    case renderer2d::detail::ColorPrimaries::DciP3:
-    case renderer2d::detail::ColorPrimaries::Srgb:
-    case renderer2d::detail::ColorPrimaries::Bt709:
-    case renderer2d::detail::ColorPrimaries::AcesAP1:
-    case renderer2d::detail::ColorPrimaries::AcesAP0:
+    case renderer2d::detail::ColorPrimaries::Rec709:
+    case renderer2d::detail::ColorPrimaries::DisplayP3:
+    case renderer2d::detail::ColorPrimaries::sRGB:
+    case renderer2d::detail::ColorPrimaries::Linear:
     default:
         return "bt709";
     }
 }
 
-std::string ffmpeg_color_range(std::string_view value) {
-    const auto range = renderer2d::detail::parse_color_range(value);
+std::string ffmpeg_color_range(renderer2d::detail::ColorRange range) {
     return range == renderer2d::detail::ColorRange::Limited ? "tv" : "pc";
 }
 
@@ -120,11 +121,10 @@ std::filesystem::path make_temp_palette_path(const std::filesystem::path& destin
 std::string build_video_pass_command(const RenderPlan& plan, const std::filesystem::path& output_path, bool include_faststart) {
     const double fps = plan.composition.frame_rate.value();
     const bool overwrite = plan.output.destination.overwrite;
-    const std::string pixel_format = resolve_output_pixel_format(plan.output);
-    const std::string color_primaries = ffmpeg_color_primaries(plan.output.profile.color.space);
-    const std::string color_trc = ffmpeg_transfer_characteristics(plan.output.profile.color.transfer);
-    const std::string colorspace = ffmpeg_colorspace(plan.output.profile.color.space);
-    const std::string color_range = ffmpeg_color_range(plan.output.profile.color.range);
+    const std::string color_primaries = ffmpeg_color_primaries(renderer2d::detail::parse_color_primaries(plan.output.profile.color.space));
+    const std::string color_trc = ffmpeg_transfer_characteristics(renderer2d::detail::parse_transfer_curve(plan.output.profile.color.transfer));
+    const std::string colorspace = ffmpeg_colorspace(renderer2d::detail::parse_color_primaries(plan.output.profile.color.space));
+    const std::string color_range = ffmpeg_color_range(renderer2d::detail::parse_color_range(plan.output.profile.color.range));
 
     std::ostringstream command;
     command << "ffmpeg "
@@ -136,15 +136,25 @@ std::string build_video_pass_command(const RenderPlan& plan, const std::filesyst
             << " -i -"
             << " -an";
 
+    const bool alpha = is_alpha_requested(plan.output.profile);
+
     if (plan.output.profile.format == OutputFormat::ProRes) {
-        command << " -c:v prores_ks -profile:v 3 -vendor apl0 -pix_fmt yuv422p10le";
+        if (alpha) {
+            command << " -c:v prores_ks -profile:v 4 -vendor apl0 -bits_per_mb 8000 -pix_fmt yuva444p10le";
+        } else {
+            command << " -c:v prores_ks -profile:v 3 -vendor apl0 -pix_fmt yuv422p10le";
+        }
     } else if (plan.output.profile.format == OutputFormat::WebM) {
-        command << " -c:v libvpx-vp9 -pix_fmt yuv420p";
+        command << " -c:v libvpx-vp9";
+        if (alpha) {
+            command << " -pix_fmt yuva420p -auto-alt-ref 0";
+        } else {
+            command << " -pix_fmt yuv420p";
+        }
         if (!plan.output.profile.video.crf.has_value()) {
-            command << " -crf 30 -b:v 0";
+            command << " -crf 23 -b:v 0";
         }
     } else {
-        // Default to H.264
         if (!plan.output.profile.video.codec.empty()) {
             command << " -c:v " << plan.output.profile.video.codec;
         } else {
@@ -171,10 +181,10 @@ std::string build_video_pass_command(const RenderPlan& plan, const std::filesyst
 
 std::string build_audio_mux_command(const RenderPlan& plan, const std::filesystem::path& temp_video_path, const std::filesystem::path& master_audio_path) {
     const bool overwrite = plan.output.destination.overwrite;
-    const std::string color_primaries = ffmpeg_color_primaries(plan.output.profile.color.space);
-    const std::string color_trc = ffmpeg_transfer_characteristics(plan.output.profile.color.transfer);
-    const std::string colorspace = ffmpeg_colorspace(plan.output.profile.color.space);
-    const std::string color_range = ffmpeg_color_range(plan.output.profile.color.range);
+    const std::string color_primaries = ffmpeg_color_primaries(renderer2d::detail::parse_color_primaries(plan.output.profile.color.space));
+    const std::string color_trc = ffmpeg_transfer_characteristics(renderer2d::detail::parse_transfer_curve(plan.output.profile.color.transfer));
+    const std::string colorspace = ffmpeg_colorspace(renderer2d::detail::parse_color_primaries(plan.output.profile.color.space));
+    const std::string color_range = ffmpeg_color_range(renderer2d::detail::parse_color_range(plan.output.profile.color.range));
 
     std::ostringstream command;
     command << "ffmpeg "
@@ -206,26 +216,64 @@ std::string build_audio_mux_command(const RenderPlan& plan, const std::filesyste
 
 std::vector<unsigned char> convert_and_pack_frame_bytes(
     const renderer2d::Framebuffer& frame,
+    uint32_t target_width,
+    uint32_t target_height,
     renderer2d::detail::TransferCurve source_curve,
     renderer2d::detail::ColorSpace source_space,
     renderer2d::detail::TransferCurve output_curve,
     renderer2d::detail::ColorSpace output_space,
     renderer2d::detail::ColorRange output_range) {
 
+    const uint32_t src_w = frame.width();
+    const uint32_t src_h = frame.height();
     std::vector<unsigned char> bytes;
-    bytes.reserve(static_cast<std::size_t>(frame.width()) * static_cast<std::size_t>(frame.height()) * 4U);
+    bytes.reserve(static_cast<std::size_t>(target_width) * static_cast<std::size_t>(target_height) * 4U);
 
-    for (std::uint32_t y = 0; y < frame.height(); ++y) {
-        for (std::uint32_t x = 0; x < frame.width(); ++x) {
-            auto pixel = renderer2d::detail::convert_color(
-                frame.get_pixel(x, y),
+    const float scale_x = static_cast<float>(src_w) / static_cast<float>(target_width);
+    const float scale_y = static_cast<float>(src_h) / static_cast<float>(target_height);
+
+    for (std::uint32_t y = 0; y < target_height; ++y) {
+        for (std::uint32_t x = 0; x < target_width; ++x) {
+            renderer2d::Color pixel;
+            
+            if (src_w == target_width && src_h == target_height) {
+                pixel = frame.get_pixel(x, y);
+            } else {
+                // Bilinear Upscale
+                const float gx = (static_cast<float>(x) + 0.5f) * scale_x - 0.5f;
+                const float gy = (static_cast<float>(y) + 0.5f) * scale_y - 0.5f;
+                const int gxi = static_cast<int>(std::floor(gx));
+                const int gyi = static_cast<int>(std::floor(gy));
+                const float tx = gx - static_cast<float>(gxi);
+                const float ty = gy - static_cast<float>(gyi);
+
+                auto sample = [&](int sx, int sy) {
+                    return frame.get_pixel(
+                        static_cast<uint32_t>(std::clamp(sx, 0, static_cast<int>(src_w) - 1)),
+                        static_cast<uint32_t>(std::clamp(sy, 0, static_cast<int>(src_h) - 1))
+                    );
+                };
+
+                const auto c00 = sample(gxi, gyi);
+                const auto c10 = sample(gxi + 1, gyi);
+                const auto c01 = sample(gxi, gyi + 1);
+                const auto c11 = sample(gxi + 1, gyi + 1);
+
+                const auto top = renderer2d::Color::lerp(c00, c10, tx);
+                const auto bottom = renderer2d::Color::lerp(c01, c11, tx);
+                pixel = renderer2d::Color::lerp(top, bottom, ty);
+            }
+
+            pixel = renderer2d::detail::convert_color(
+                pixel,
                 source_curve, source_space,
                 output_curve, output_space);
             pixel = renderer2d::detail::apply_range_mode(pixel, output_range);
-            bytes.push_back(pixel.r);
-            bytes.push_back(pixel.g);
-            bytes.push_back(pixel.b);
-            bytes.push_back(pixel.a);
+            
+            bytes.push_back(static_cast<unsigned char>(std::clamp(pixel.r, 0.0f, 255.0f)));
+            bytes.push_back(static_cast<unsigned char>(std::clamp(pixel.g, 0.0f, 255.0f)));
+            bytes.push_back(static_cast<unsigned char>(std::clamp(pixel.b, 0.0f, 255.0f)));
+            bytes.push_back(static_cast<unsigned char>(std::clamp(pixel.a, 0.0f, 255.0f)));
         }
     }
 
@@ -304,6 +352,8 @@ public:
 
         const std::vector<unsigned char> bytes = convert_and_pack_frame_bytes(
             *packet.frame,
+            m_plan->composition.width,
+            m_plan->composition.height,
             m_source_transfer, m_source_space,
             m_output_transfer, m_output_space,
             m_output_range);
@@ -347,7 +397,6 @@ private:
         const std::filesystem::path palette_path = make_temp_palette_path(destination);
         const bool overwrite = m_plan->output.destination.overwrite;
 
-        // Pass 1: generate an optimised 256-colour palette from the temp video
         std::ostringstream pass1;
         pass1 << "ffmpeg "
               << (overwrite ? "-y" : "-n")
@@ -366,7 +415,6 @@ private:
             return false;
         }
 
-        // Pass 2: encode GIF using the palette
         std::ostringstream pass2;
         pass2 << "ffmpeg "
               << (overwrite ? "-y" : "-n")
@@ -386,7 +434,6 @@ private:
             return false;
         }
 
-        // Cleanup temp files
         std::error_code ec;
         std::filesystem::remove(m_temp_video_path, ec);
         std::filesystem::remove(palette_path, ec);
@@ -413,7 +460,6 @@ private:
             return false;
         }
 
-        // Step 1: Perform Audio Mix to a Master WAV
         const std::filesystem::path destination(m_plan->output.destination.path);
         const std::filesystem::path master_audio_path = destination.parent_path() / (destination.stem().string() + ".tachyon.master_audio.wav");
 
@@ -444,7 +490,6 @@ private:
         }
         TACHYON_PCLOSE(audio_pipe);
 
-        // Step 2: Mux Video + Master Audio
         const std::string mux_command = build_audio_mux_command(*m_plan, m_temp_video_path, master_audio_path);
         FILE* mux_pipe = TACHYON_POPEN(mux_command.c_str(), "wb");
         if (mux_pipe == nullptr) {
@@ -458,7 +503,6 @@ private:
             return false;
         }
 
-        // Step 3: Cleanup
         std::error_code ec;
         std::filesystem::remove(m_temp_video_path, ec);
         std::filesystem::remove(master_audio_path, ec);
@@ -469,10 +513,10 @@ private:
     const RenderPlan* m_plan{nullptr};
     FILE* m_pipe{nullptr};
     std::filesystem::path m_temp_video_path;
-    renderer2d::detail::TransferCurve m_source_transfer{renderer2d::detail::TransferCurve::Srgb};
-    renderer2d::detail::ColorSpace m_source_space{renderer2d::detail::ColorSpace::Srgb};
-    renderer2d::detail::TransferCurve m_output_transfer{renderer2d::detail::TransferCurve::Srgb};
-    renderer2d::detail::ColorSpace m_output_space{renderer2d::detail::ColorSpace::Srgb};
+    renderer2d::detail::TransferCurve m_source_transfer{renderer2d::detail::TransferCurve::sRGB};
+    renderer2d::detail::ColorSpace m_source_space{renderer2d::detail::ColorSpace::sRGB};
+    renderer2d::detail::TransferCurve m_output_transfer{renderer2d::detail::TransferCurve::sRGB};
+    renderer2d::detail::ColorSpace m_output_space{renderer2d::detail::ColorSpace::sRGB};
     renderer2d::detail::ColorRange m_output_range{renderer2d::detail::ColorRange::Full};
     bool m_needs_audio_mux{false};
     std::string m_last_error;

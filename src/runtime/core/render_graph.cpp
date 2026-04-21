@@ -2,19 +2,27 @@
 #include <algorithm>
 #include <map>
 #include <set>
+#include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace tachyon {
 
 void RenderGraph::add_edge(std::uint32_t from, std::uint32_t to, bool structural) {
     m_edges.push_back({from, to, structural});
+    m_nodes.insert(from);
+    m_nodes.insert(to);
+}
+
+void RenderGraph::add_node(std::uint32_t node_id) {
+    m_nodes.insert(node_id);
 }
 
 void RenderGraph::compile() {
     // 1. Identify all unique nodes and build adjacency list
     std::map<std::uint32_t, std::vector<std::uint32_t>> adj;
-    std::set<std::uint32_t> all_nodes;
-    
+    std::set<std::uint32_t> all_nodes = m_nodes;
+
     for (const auto& edge : m_edges) {
         adj[edge.from].push_back(edge.to);
         all_nodes.insert(edge.from);
@@ -102,6 +110,12 @@ void RenderGraph::propagate_invalidation(std::uint32_t changed_node_id, std::vec
             }
         }
     }
+}
+
+void RenderGraph::clear() {
+    m_edges.clear();
+    m_nodes.clear();
+    m_topo_order.clear();
 }
 
 

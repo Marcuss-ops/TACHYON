@@ -34,7 +34,7 @@ namespace properties {
  * @tparam T  Value type. Must satisfy the LerpTraits contract.
  */
 template <typename T>
-class AnimatableProperty : public Property<T> {
+class AnimatableProperty {
 public:
     // ---- Construction ----------------------------------------------------------
 
@@ -103,7 +103,7 @@ public:
      * - Static properties ignore ctx.time entirely.
      * - Animated properties evaluate the curve at ctx.time.
      */
-    [[nodiscard]] T sample(const PropertyEvaluationContext& ctx) const override {
+    [[nodiscard]] T sample(const PropertyEvaluationContext& ctx) const {
         if (!m_is_animated) return m_static_value;
         return m_curve.evaluate(ctx.time);
     }
@@ -115,7 +115,7 @@ public:
      * Static: version ^ name hash
      * Animated: version ^ time-bucket hash (one per segment, not per sample)
      */
-    [[nodiscard]] uint64_t hash_identity(const PropertyEvaluationContext& ctx) const override {
+    [[nodiscard]] uint64_t hash_identity(const PropertyEvaluationContext& ctx) const {
         const uint64_t name_hash = std::hash<std::string>{}(m_name);
         const uint64_t ver_hash  = m_version * 0x9E3779B97F4A7C15ULL;
 
@@ -138,7 +138,7 @@ public:
         return name_hash ^ ver_hash ^ seg_hash;
     }
 
-    [[nodiscard]] const std::string& get_name() const override { return m_name; }
+    [[nodiscard]] const std::string& get_name() const { return m_name; }
 
     // --- Inspection ------------------------------------------------------------
 
@@ -159,6 +159,9 @@ private:
     animation::AnimationCurve<T> m_curve;
     uint64_t                     m_version{1}; ///< Monotonic version counter for invalidation.
 };
+
+template <typename T>
+using ConstantProperty = AnimatableProperty<T>;
 
 } // namespace properties
 } // namespace tachyon

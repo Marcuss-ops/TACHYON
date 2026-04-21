@@ -20,16 +20,18 @@
 #include "tachyon/core/animation/easing.h"
 #include "tachyon/runtime/core/diagnostics.h"
 #include "tachyon/renderer2d/path_rasterizer.h"
+#include "tachyon/renderer2d/gradient_spec.h"
+
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <optional>
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <memory>
 
 namespace tachyon {
-
-#include "tachyon/renderer2d/gradient_spec.h"
 
 enum class TrackMatteType {
     None,
@@ -37,6 +39,20 @@ enum class TrackMatteType {
     AlphaInverted,
     Luma,
     LumaInverted
+};
+
+enum class LayerType {
+    Solid,
+    Shape,
+    Image,
+    Video,
+    Text,
+    Camera,
+    Precomp,
+    Light,
+    Mask,
+    NullLayer,
+    Unknown
 };
 
 enum class AudioBandType {
@@ -53,6 +69,18 @@ struct AssetSpec {
     std::string path;
     std::string source;
     std::optional<std::string> alpha_mode;
+};
+
+struct DataSourceSpec {
+    std::string id;
+    std::string path;
+    std::string type; // "csv", "json"
+};
+
+struct ColorManagementSpec {
+    std::string workflow{"gamma"}; // "linear", "gamma"
+    std::string working_space{"srgb"}; // "srgb", "acescg", "rec709"
+    std::string output_space{"srgb"};
 };
 
 struct ProjectSpec {
@@ -79,6 +107,11 @@ struct ScalarKeyframeSpec {
     double value{0.0};
     animation::EasingPreset easing{animation::EasingPreset::None};
     animation::CubicBezierEasing bezier{animation::CubicBezierEasing::linear()};
+    
+    double speed_in{0.0};
+    double influence_in{33.333333333};
+    double speed_out{0.0};
+    double influence_out{33.333333333};
 };
 
 struct Vector2KeyframeSpec {
@@ -89,6 +122,11 @@ struct Vector2KeyframeSpec {
 
     animation::EasingPreset easing{animation::EasingPreset::None};
     animation::CubicBezierEasing bezier{animation::CubicBezierEasing::linear()};
+
+    double speed_in{0.0};
+    double influence_in{33.333333333};
+    double speed_out{0.0};
+    double influence_out{33.333333333};
 };
 
 
@@ -97,6 +135,11 @@ struct ColorKeyframeSpec {
     ColorSpec value{255, 255, 255, 255};
     animation::EasingPreset easing{animation::EasingPreset::None};
     animation::CubicBezierEasing bezier{animation::CubicBezierEasing::linear()};
+
+    double speed_in{0.0};
+    double influence_in{33.333333333};
+    double speed_out{0.0};
+    double influence_out{33.333333333};
 };
 
 struct EffectSpec {
@@ -228,6 +271,14 @@ struct TextAnimatorSpec {
     TextAnimatorPropertySpec  properties;
 };
 
+struct TextHighlightSpec {
+    std::size_t start_glyph{0};
+    std::size_t end_glyph{0}; // exclusive
+    ColorSpec color{255, 236, 59, 96};
+    std::int32_t padding_x{3};
+    std::int32_t padding_y{2};
+};
+
 struct LayerSpec {
 
     std::string id;
@@ -256,9 +307,15 @@ struct LayerSpec {
     bool is_3d{false};
     bool visible{true};
     bool is_adjustment_layer{false};
+    bool motion_blur{false};
+    AnimatedScalarSpec repeater_stagger_delay;
+    std::optional<std::string> motion_path_id;
+    AnimatedScalarSpec motion_path_progress;
     Transform2D transform;
     Transform3D transform3d;
     std::optional<ShapePathSpec> shape_path;
+    std::vector<ShapePathSpec> morph_targets;
+    AnimatedScalarSpec morph_weight; // 0..100 percentage
     std::vector<EffectSpec> effects;
     AnimatedScalarSpec opacity_property;
     AnimatedScalarSpec time_remap_property;
@@ -288,6 +345,7 @@ struct LayerSpec {
     
     // Text animator array (for type == "text" layers only)
     std::vector<TextAnimatorSpec> text_animators;
+    std::vector<TextHighlightSpec> text_highlights;
 
     // Subtitle burn-in (for type == "text" layers with subtitle_path set)
     std::optional<std::string> subtitle_path;
@@ -357,6 +415,8 @@ struct SceneSpec {
     std::string spec_version; ///< Specific project spec version.
     ProjectSpec project;      ///< Global project metadata.
     std::vector<AssetSpec> assets;             ///< External assets (images, video, audio).
+    std::vector<DataSourceSpec> data_sources;   ///< External data sources (csv, json).
+    ColorManagementSpec color_management;       ///< Color management settings.
     std::vector<CompositionSpec> compositions; ///< All compositions in the project.
     RenderDefaults render_defaults;           ///< Default settings for output.
 };

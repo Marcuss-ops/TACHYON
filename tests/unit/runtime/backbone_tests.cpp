@@ -1,6 +1,7 @@
 #include "tachyon/core/spec/scene_compiler.h"
 #include "tachyon/runtime/cache/cache_key_builder.h"
 #include "tachyon/runtime/memory/frame_arena.h"
+#include "tachyon/runtime/core/property_graph.h"
 
 #include <iostream>
 #include <memory_resource>
@@ -90,23 +91,18 @@ bool run_runtime_backbone_tests() {
         check_true(compiled_layer.property_indices.size() == 6, "Compiled layer has 6 property indices");
     }
 
-    // Test PropertyGraph limit
+    // Test PropertyGraph growth
     auto graph = std::make_unique<PropertyGraph>();
     try {
-        for (int i = 0; i < 64; ++i) {
-            graph->add_node({});
+        std::uint32_t last_id = 0;
+        for (int i = 0; i < 65; ++i) {
+            last_id = graph->add_node({});
         }
-        bool caught = false;
-        try {
-            graph->add_node({});
-        } catch (const std::runtime_error& e) {
-            caught = true;
-            std::cerr << "Caught expected error: " << e.what() << "\n";
-        }
-        check_true(caught, "PropertyGraph throws when exceeding 64 nodes");
+        check_true(graph->nodes().size() == 65, "PropertyGraph grows past 64 nodes");
+        check_true(last_id == 64, "PropertyGraph assigns monotonic node ids");
     } catch (const std::exception& e) {
         std::cerr << "Unexpected exception: " << e.what() << "\n";
-        check_true(false, "PropertyGraph threw unexpectedly before limit");
+        check_true(false, "PropertyGraph threw unexpectedly during growth test");
     }
 
     return g_failures == 0;

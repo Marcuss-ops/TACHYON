@@ -41,6 +41,7 @@ bool run_effect_host_tests() {
     check_true(host.has_effect("fill"), "Registered fill effect");
     check_true(host.has_effect("tint"), "Registered tint effect");
     check_true(host.has_effect("hue_saturation"), "Registered hue_saturation effect");
+    check_true(host.has_effect("particle_emitter"), "Registered particle_emitter effect");
 
     RenderContext context;
     context.effects = create_effect_host();
@@ -59,6 +60,41 @@ bool run_effect_host_tests() {
     hue_params.scalars["hue"] = 180.0f;
     const SurfaceRGBA hued = host.apply("hue_saturation", source, hue_params);
     check_true(hued.get_pixel(8, 8).a == source.get_pixel(8, 8).a, "HueSaturation preserves alpha");
+
+    EffectParams particle_params;
+    particle_params.scalars["seed"] = 1234.0f;
+    particle_params.scalars["count"] = 32.0f;
+    particle_params.scalars["time"] = 0.5f;
+    particle_params.scalars["lifetime"] = 2.0f;
+    particle_params.scalars["speed"] = 20.0f;
+    particle_params.scalars["radius_min"] = 1.0f;
+    particle_params.scalars["radius_max"] = 2.0f;
+    particle_params.colors["color"] = Color{255, 180, 64, 200};
+    const SurfaceRGBA particles_a = host.apply("particle_emitter", source, particle_params);
+    const SurfaceRGBA particles_b = host.apply("particle_emitter", source, particle_params);
+    bool has_visible_particle = false;
+    for (std::uint32_t y = 0; y < particles_a.height(); ++y) {
+        for (std::uint32_t x = 0; x < particles_a.width(); ++x) {
+            if (particles_a.get_pixel(x, y).a > 0.0f) {
+                has_visible_particle = true;
+                break;
+            }
+        }
+        if (has_visible_particle) {
+            break;
+        }
+    }
+    bool particle_frames_match = true;
+    for (std::uint32_t y = 0; y < particles_a.height() && particle_frames_match; ++y) {
+        for (std::uint32_t x = 0; x < particles_a.width(); ++x) {
+            if (particles_a.get_pixel(x, y).a != particles_b.get_pixel(x, y).a) {
+                particle_frames_match = false;
+                break;
+            }
+        }
+    }
+    check_true(has_visible_particle, "Particle emitter draws visible particles");
+    check_true(particle_frames_match, "Particle emitter is deterministic for fixed seed");
 
     EffectParams fill_params;
     fill_params.colors["color"] = Color{200, 100, 50, 128};

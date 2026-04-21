@@ -2,8 +2,11 @@ param(
     [ValidateSet('dev', 'dev-fast', 'asan')]
     [string]$Preset = 'dev',
     [switch]$RunTests,
+    [switch]$ListTests,
     [string[]]$Target,
-    [string]$TestFilter
+    [string]$TestFilter,
+    [Nullable[UInt32]]$TestSeed,
+    [Nullable[int]]$TestRepeat
 )
 
 $ErrorActionPreference = 'Stop'
@@ -32,6 +35,71 @@ function Assert-LastExitCode {
 
     if ($LASTEXITCODE -ne 0) {
         throw "$Step failed with exit code $LASTEXITCODE"
+    }
+}
+
+function Invoke-TachyonTests {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$TestsExe,
+        [string]$ResolvedTestFilter,
+        [switch]$ListOnly,
+        [Nullable[UInt32]]$Seed,
+        [Nullable[int]]$Repeat
+    )
+
+    $hadTestFilter = Test-Path Env:TACHYON_TEST_FILTER
+    $previousTestFilter = $env:TACHYON_TEST_FILTER
+    $hadTestSeed = Test-Path Env:TACHYON_TEST_SEED
+    $previousTestSeed = $env:TACHYON_TEST_SEED
+    $hadTestRepeat = Test-Path Env:TACHYON_TEST_REPEAT
+    $previousTestRepeat = $env:TACHYON_TEST_REPEAT
+
+    if ($ResolvedTestFilter) {
+        $env:TACHYON_TEST_FILTER = $ResolvedTestFilter
+    }
+    if ($null -ne $Seed) {
+        $env:TACHYON_TEST_SEED = [string]$Seed
+    }
+    if ($null -ne $Repeat) {
+        $env:TACHYON_TEST_REPEAT = [string]$Repeat
+    }
+
+    try {
+        if ($ListOnly) {
+            & $TestsExe --list-tests
+        }
+        else {
+            & $TestsExe
+        }
+    }
+    finally {
+        if ($ResolvedTestFilter) {
+            if ($hadTestFilter) {
+                $env:TACHYON_TEST_FILTER = $previousTestFilter
+            }
+            else {
+                Remove-Item Env:TACHYON_TEST_FILTER -ErrorAction SilentlyContinue
+            }
+        }
+
+        if ($null -ne $Seed) {
+            if ($hadTestSeed) {
+                $env:TACHYON_TEST_SEED = $previousTestSeed
+            }
+            else {
+                Remove-Item Env:TACHYON_TEST_SEED -ErrorAction SilentlyContinue
+            }
+        }
+
+        if ($null -ne $Repeat) {
+            if ($hadTestRepeat) {
+                $env:TACHYON_TEST_REPEAT = $previousTestRepeat
+            }
+            else {
+                Remove-Item Env:TACHYON_TEST_REPEAT -ErrorAction SilentlyContinue
+            }
+        }
     }
 }
 
@@ -70,7 +138,11 @@ if ($Target -and $Target.Count -gt 0) {
 cmake @buildArgs
 Assert-LastExitCode -Step "cmake --build --preset $Preset"
 
-if ($RunTests) {
+if ($RunTests -and $ListTests) {
+    throw "Use either -RunTests or -ListTests, not both."
+}
+
+if ($ListTests) {
     $testsExe = Join-Path $buildDir 'tests\RelWithDebInfo\TachyonTests.exe'
     if (-not (Test-Path $testsExe)) {
         throw "Test binary not found: $testsExe"
@@ -81,24 +153,18 @@ if ($RunTests) {
         $resolvedTestFilter = Get-DefaultTestFilter -PresetName $Preset
     }
 
-    $hadTestFilter = Test-Path Env:TACHYON_TEST_FILTER
-    $previousTestFilter = $env:TACHYON_TEST_FILTER
-
-    if ($resolvedTestFilter) {
-        $env:TACHYON_TEST_FILTER = $resolvedTestFilter
+    Invoke-TachyonTests -TestsExe $testsExe -ResolvedTestFilter $resolvedTestFilter -ListOnly -Seed $TestSeed -Repeat $TestRepeat
+}
+elseif ($RunTests) {
+    $testsExe = Join-Path $buildDir 'tests\RelWithDebInfo\TachyonTests.exe'
+    if (-not (Test-Path $testsExe)) {
+        throw "Test binary not found: $testsExe"
     }
 
-    try {
-        & $testsExe
+    $resolvedTestFilter = $TestFilter
+    if (-not $resolvedTestFilter) {
+        $resolvedTestFilter = Get-DefaultTestFilter -PresetName $Preset
     }
-    finally {
-        if ($resolvedTestFilter) {
-            if ($hadTestFilter) {
-                $env:TACHYON_TEST_FILTER = $previousTestFilter
-            }
-            else {
-                Remove-Item Env:TACHYON_TEST_FILTER -ErrorAction SilentlyContinue
-            }
-        }
-    }
+
+    Invoke-TachyonTests -TestsExe $testsExe -ResolvedTestFilter $resolvedTestFilter -Seed $TestSeed -Repeat $TestRepeat
 }

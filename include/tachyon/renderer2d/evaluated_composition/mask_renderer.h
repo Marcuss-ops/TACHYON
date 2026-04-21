@@ -9,13 +9,13 @@
 namespace tachyon {
 namespace renderer2d {
 
-struct RenderContext;
+struct RenderContext2D;
 
 class MaskRenderer {
 public:
     static void applyMask(
         const scene::EvaluatedCompositionState& state,
-        RenderContext& context,
+        RenderContext2D& context,
         std::vector<float>& accum_r,
         std::vector<float>& accum_g,
         std::vector<float>& accum_b,

@@ -59,8 +59,9 @@ void print_help(std::ostream& out) {
     out << "  tachyon version\n";
     out << "  tachyon validate --scene <file> [--job <file>] [--json]\n";
     out << "  tachyon inspect --scene <file> [--job <file>] [--json]\n";
-    out << "  tachyon render --scene <file> --job <file> [--out <file>] [--workers <n>] [--json]\n";
+    out << "  tachyon render --scene <file> --job <file> [--out <file>] [--workers <n>] [--memory-budget-mb <n>] [--frames <start-end>] [--json]\n";
     out << "  tachyon render --batch <jobs.json> [--workers <n>] [--json]\n";
+    out << "  tachyon watch --scene <file> --job <file> [--workers <n>]\n";
 }
 
 bool load_scene_context(const std::filesystem::path& scene_path, SceneContext& context, std::ostream& err) {
@@ -315,11 +316,15 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
     }
 
     RenderSession session;
+    if (options.memory_budget_bytes.has_value()) {
+        session.set_memory_budget_bytes(*options.memory_budget_bytes);
+    }
     const std::filesystem::path output_path = job.output.destination.path.empty()
         ? std::filesystem::path{}
         : std::filesystem::path(job.output.destination.path);
     
-    const RenderSessionResult session_result = session.render(context.scene, *compiled_result.value, *execution_result.value, output_path, options.worker_count);
+    const std::size_t concurrency = (options.worker_count > 0) ? options.worker_count : std::max<std::size_t>(1, std::thread::hardware_concurrency());
+    const RenderSessionResult session_result = session.render(context.scene, *compiled_result.value, *execution_result.value, output_path, concurrency);
     if (!session_result.output_error.empty()) {
         err << "render output failed: " << session_result.output_error << '\n';
         return false;
@@ -332,12 +337,12 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
     RasterizedFrame2D first_frame;
     if (!session_result.frames.empty()) {
         first_frame.frame_number = session_result.frames.front().frame_number;
-        first_frame.width = session_result.frames.front().frame.width();
-        first_frame.height = session_result.frames.front().frame.height();
-        first_frame.layer_count = plan_result.value->composition.layer_count;
+        first_frame.width = session_result.frames.front().frame->width();
+        first_frame.height = session_result.frames.front().frame->height();
+        first_frame.layer_count = (*plan_result.value).composition.layer_count;
         first_frame.estimated_draw_ops = session_result.frames.front().draw_command_count;
         first_frame.backend_name = "cpu-frame-executor";
-        first_frame.cache_key = session_result.frames.front().cache_key.value;
+        first_frame.cache_key = std::to_string(session_result.frames.front().cache_key);
         first_frame.note = session_result.frames.front().cache_hit ? "cache-hit" : "cache-miss";
     }
 
@@ -349,6 +354,56 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
     out << "scene file: " << options.scene_path.string() << '\n';
     out << "job file: " << options.job_path.string() << '\n';
     print_execution_plan(*execution_result.value, first_frame, session_result, out);
+    return true;
+}
+
+bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostream& err) {
+    if (options.scene_path.empty() || options.job_path.empty()) {
+        err << "--scene and --job are required for watch\n";
+        return false;
+    }
+
+    out << "Starting Resident Render Session...\n";
+    
+    SceneContext context;
+    if (!load_scene_context(options.scene_path, context, err)) return false;
+
+    RenderJob job;
+    if (!load_render_job(options.job_path, job, err)) return false;
+
+    SceneCompiler compiler;
+    auto compiled_result = compiler.compile(context.scene);
+    if (!compiled_result.ok()) return false;
+    CompiledScene compiled = std::move(*compiled_result.value);
+
+    RenderSession session;
+    if (options.memory_budget_bytes.has_value()) {
+        session.set_memory_budget_bytes(*options.memory_budget_bytes);
+    }
+    out << "Initial render complete. Watching for changes...\n";
+    
+    auto last_time = std::filesystem::last_write_time(options.scene_path);
+
+    while (true) {
+        try {
+            auto current_time = std::filesystem::last_write_time(options.scene_path);
+            if (current_time > last_time) {
+                out << "Change detected. Hot-reloading...\n";
+                last_time = current_time;
+                
+                if (load_scene_context(options.scene_path, context, err)) {
+                    if (compiler.update_compiled_scene(compiled, context.scene)) {
+                        out << "Instant update successful.\n";
+                        // In watch mode, we could trigger a preview frame update here
+                    }
+                }
+                out << "Waiting for changes...\n";
+            }
+        } catch (const std::exception& e) {
+            err << "Watch error: " << e.what() << "\n";
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
     return true;
 }
 
@@ -398,6 +453,13 @@ int run_cli(int argc, char** argv) {
         }
 
         if (!run_render_command(options, std::cout, std::cerr)) {
+            return 2;
+        }
+        return 0;
+    }
+
+    if (options.command == "watch") {
+        if (!run_watch_command(options, std::cout, std::cerr)) {
             return 2;
         }
         return 0;

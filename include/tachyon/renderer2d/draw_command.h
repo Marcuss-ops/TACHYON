@@ -8,10 +8,21 @@
 #include "tachyon/renderer2d/texture_handle.h"
 
 #include <optional>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace tachyon {
 namespace renderer2d {
+
+/**
+ * @brief Runtime parameters for an effect.
+ */
+struct EffectParams {
+    std::unordered_map<std::string, float> scalars;
+    std::unordered_map<std::string, Color> colors;
+    std::unordered_map<std::string, std::string> strings;
+};
 
 enum class DrawCommandKind {
     Clear,
@@ -19,17 +30,12 @@ enum class DrawCommandKind {
     MaskRect,
     TexturedQuad,
     Line,
-    Shape
+    Shape,
+    Adjustment
 };
 
-enum class BlendMode {
-    Normal,
-    Additive,
-    Multiply,
-    Screen,
-    Overlay,
-    SoftLight
-};
+#include "tachyon/renderer2d/color/blending.h"
+
 
 struct ClearCommand {
     Color color{Color::transparent()};
@@ -80,6 +86,11 @@ struct ShapeCommand {
     math::Transform2 transform; // To apply to the points
 };
 
+struct AdjustmentCommand {
+    std::string layer_id;
+    std::vector<std::pair<std::string, EffectParams>> effects;
+};
+
 struct DrawCommand2D {
     DrawCommandKind kind{DrawCommandKind::Clear};
     int z_order{0};
@@ -91,6 +102,7 @@ struct DrawCommand2D {
     std::optional<TexturedQuadCommand> textured_quad;
     std::optional<LineCommand> line;
     std::optional<ShapeCommand> shape;
+    std::optional<AdjustmentCommand> adjustment;
 };
 
 struct DrawList2D {

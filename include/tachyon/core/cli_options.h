@@ -17,6 +17,7 @@ struct CliOptions {
     std::filesystem::path batch_path;
     std::filesystem::path output_override;
     std::size_t worker_count{1};
+    std::optional<std::size_t> memory_budget_bytes;
     bool json_output{false};
     std::optional<FrameRange> frame_range_override;
 };

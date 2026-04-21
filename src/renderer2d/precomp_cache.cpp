@@ -6,7 +6,7 @@ namespace tachyon::renderer2d {
 
 PrecompCache::PrecompCache(std::size_t max_bytes) : max_bytes_(max_bytes) {}
 
-std::shared_ptr<SurfaceRGBA> PrecompCache::get(const std::string& key) const {
+std::shared_ptr<const SurfaceRGBA> PrecompCache::get(const std::string& key) const {
     auto it = cache_.find(key);
     if (it != cache_.end()) {
         lru_.splice(lru_.begin(), lru_, it->second.lru_it);

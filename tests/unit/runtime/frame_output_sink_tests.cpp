@@ -139,8 +139,8 @@ bool run_frame_output_sink_tests() {
         const auto limited = renderer2d::detail::apply_range_mode(renderer2d::Color{255, 255, 255, 255}, renderer2d::detail::ColorRange::Limited);
         check_true(limited.r == 235 && limited.g == 235 && limited.b == 235, "Limited range clamps RGB to legal white");
         const auto matrix = renderer2d::detail::primaries_conversion_matrix(
-            renderer2d::detail::ColorPrimaries::Bt709,
-            renderer2d::detail::ColorPrimaries::DciP3);
+            renderer2d::detail::ColorPrimaries::Rec709,
+            renderer2d::detail::ColorPrimaries::DisplayP3);
         check_true(matrix.m[0] != 0.0f, "Primaries conversion matrix is populated");
     }
 

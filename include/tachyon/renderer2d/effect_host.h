@@ -16,12 +16,6 @@
 
 namespace tachyon::renderer2d {
 
-struct EffectParams {
-    std::unordered_map<std::string, float> scalars;
-    std::unordered_map<std::string, Color> colors;
-    std::unordered_map<std::string, std::string> strings;
-};
-
 class Effect {
 public:
     virtual ~Effect() = default;
@@ -111,6 +105,11 @@ public:
 };
 
 class VignetteEffect : public Effect {
+public:
+    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
+};
+
+class ParticleEmitterEffect : public Effect {
 public:
     SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
 };

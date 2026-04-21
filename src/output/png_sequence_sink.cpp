@@ -143,10 +143,10 @@ private:
     std::filesystem::path m_destination;
     bool m_overwrite{false};
     std::size_t m_next_index{1};
-    renderer2d::detail::TransferCurve m_source_transfer{renderer2d::detail::TransferCurve::Srgb};
-    renderer2d::detail::ColorSpace m_source_space{renderer2d::detail::ColorSpace::Srgb};
-    renderer2d::detail::TransferCurve m_output_transfer{renderer2d::detail::TransferCurve::Srgb};
-    renderer2d::detail::ColorSpace m_output_space{renderer2d::detail::ColorSpace::Srgb};
+    renderer2d::detail::TransferCurve m_source_transfer{renderer2d::detail::TransferCurve::sRGB};
+    renderer2d::detail::ColorSpace m_source_space{renderer2d::detail::ColorSpace::sRGB};
+    renderer2d::detail::TransferCurve m_output_transfer{renderer2d::detail::TransferCurve::sRGB};
+    renderer2d::detail::ColorSpace m_output_space{renderer2d::detail::ColorSpace::sRGB};
     renderer2d::detail::ColorRange m_output_range{renderer2d::detail::ColorRange::Full};
     std::string m_last_error;
 };

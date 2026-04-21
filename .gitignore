@@ -8,3 +8,7 @@ tests/output/actual/
 
 # Logs
 logs/
+
+# Temporary files
+*.tmp
+*.go

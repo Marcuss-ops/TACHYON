@@ -135,7 +135,7 @@ bool run_rasterizer_tests() {
         renderer2d::DrawCommand2D textured;
         textured.kind = renderer2d::DrawCommandKind::TexturedQuad;
         textured.textured_quad.emplace(renderer2d::TexturedQuadCommand{
-            renderer2d::TextureHandle{"test-texture"},
+            renderer2d::TextureHandle{"test-texture", &texture},
             {20.0F, 10.0F},
             {26.0F, 10.0F},
             {26.0F, 16.0F},
@@ -145,7 +145,7 @@ bool run_rasterizer_tests() {
         commands.push_back(textured);
 
         RasterizedFrame2D frame = render_frame_2d(plan, task, commands);
-        check_true(frame.surface.has_value(), "Frame renderer returns a surface");
+        check_true(frame.surface != nullptr, "Frame renderer returns a surface");
         check_true(frame.estimated_draw_ops == commands.size(), "Frame renderer reports executed command count");
         check_true(frame.surface->width() == 64, "Frame surface width matches render plan");
         check_true(frame.surface->height() == 36, "Frame surface height matches render plan");
@@ -177,7 +177,7 @@ bool run_rasterizer_tests() {
         commands.push_back(rect);
 
         RasterizedFrame2D frame = render_frame_2d(plan, task, commands);
-        check_true(frame.surface.has_value(), "Clipped frame renderer returns a surface");
+        check_true(frame.surface != nullptr, "Clipped frame renderer returns a surface");
         check_true(frame.surface->get_pixel(2, 2).r == 0, "Clip prevents drawing outside the clip rect");
         check_true(frame.surface->get_pixel(5, 5).r == 255, "Clip allows drawing inside the clip rect");
         check_true(frame.surface->save_png("tests/output/frame_renderer_clipped.png"), "Frame renderer surface is savable");
@@ -213,7 +213,7 @@ bool run_rasterizer_tests() {
         draw_list.commands.push_back(bottom_layer);
 
         RasterizedFrame2D frame = render_draw_list_2d(plan, task, draw_list);
-        check_true(frame.surface.has_value(), "Draw list rasterizer returns a surface");
+        check_true(frame.surface != nullptr, "Draw list rasterizer returns a surface");
         check_true(frame.surface->get_pixel(8, 8).r == 255, "Lower z-order command should render before the higher z-order command");
         check_true(frame.surface->get_pixel(8, 8).b == 0, "Higher z-order command should be on top");
     }

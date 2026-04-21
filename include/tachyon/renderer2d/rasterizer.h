@@ -3,6 +3,7 @@
 #include "tachyon/renderer2d/rasterizer_ops.h"
 #include "tachyon/renderer2d/framebuffer.h"
 #include "tachyon/runtime/core/render_graph.h"
+#include "tachyon/runtime/execution/render_plan.h"
 
 #include <cstdint>
 #include <optional>
@@ -20,7 +21,7 @@ struct RasterizedFrame2D {
     std::string backend_name;
     std::string cache_key;
     std::string note;
-    std::optional<renderer2d::SurfaceRGBA> surface;
+    std::shared_ptr<renderer2d::SurfaceRGBA> surface;
 };
 
 namespace renderer2d {

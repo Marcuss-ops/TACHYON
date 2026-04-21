@@ -15,13 +15,13 @@ struct Blender {
     }
 };
 
-inline Color blend_mode_color(Color src, Color dest, BlendMode mode) {
+inline Color blend_mode_color(Color src, Color dest, BlendMode mode, detail::TransferCurve curve = detail::TransferCurve::Linear) {
     if (mode == BlendMode::Normal) {
-        return detail::composite_src_over_linear(src, dest);
+        return detail::composite_src_over(src, dest, curve);
     }
 
-    detail::LinearPremultipliedPixel src_linear = detail::to_premultiplied(src, detail::TransferCurve::Srgb);
-    detail::LinearPremultipliedPixel dst_linear = detail::to_premultiplied(dest, detail::TransferCurve::Srgb);
+    detail::LinearPremultipliedPixel src_linear = detail::to_premultiplied(src, curve);
+    detail::LinearPremultipliedPixel dst_linear = detail::to_premultiplied(dest, curve);
 
     detail::LinearPremultipliedPixel out;
 
@@ -100,13 +100,8 @@ inline Color blend_mode_color(Color src, Color dest, BlendMode mode) {
     }
     }
 
-    return detail::from_premultiplied(out, detail::TransferCurve::Srgb);
+    return detail::from_premultiplied(out, curve);
 }
-
-struct ClearPrimitive {
-    Color color{Color::transparent()};
-};
-
 struct RectPrimitive {
     int x{0}, y{0};
     int width{0}, height{0};
@@ -124,6 +119,7 @@ struct TexturedVertex2D {
     float y{0.0F};
     float u{0.0F};
     float v{0.0F};
+    float inv_w{1.0F}; ///< Inverse W for perspective correction.
 };
 
 struct TexturedQuadPrimitive {
@@ -150,10 +146,10 @@ struct TexturedQuadPrimitive {
         quad.height = height;
         quad.texture = texture;
         quad.tint = tint;
-        quad.vertices[0] = TexturedVertex2D{static_cast<float>(x), static_cast<float>(y), 0.0F, 0.0F};
-        quad.vertices[1] = TexturedVertex2D{static_cast<float>(x + width), static_cast<float>(y), 1.0F, 0.0F};
-        quad.vertices[2] = TexturedVertex2D{static_cast<float>(x + width), static_cast<float>(y + height), 1.0F, 1.0F};
-        quad.vertices[3] = TexturedVertex2D{static_cast<float>(x), static_cast<float>(y + height), 0.0F, 1.0F};
+        quad.vertices[0] = TexturedVertex2D{static_cast<float>(x), static_cast<float>(y), 0.0F, 0.0F, 1.0F};
+        quad.vertices[1] = TexturedVertex2D{static_cast<float>(x + width), static_cast<float>(y), 1.0F, 0.0F, 1.0F};
+        quad.vertices[2] = TexturedVertex2D{static_cast<float>(x + width), static_cast<float>(y + height), 1.0F, 1.0F, 1.0F};
+        quad.vertices[3] = TexturedVertex2D{static_cast<float>(x), static_cast<float>(y + height), 0.0F, 1.0F, 1.0F};
         return quad;
     }
 
@@ -187,7 +183,7 @@ struct RasterizerCommand2D {
     Kind kind{Kind::Clear};
     bool has_clip_rect{false};
     RectI clip_rect{};
-    ClearPrimitive clear{};
+    ClearCommand clear{};
     RectPrimitive rect{};
     LinePrimitive line{};
     TexturedQuadPrimitive textured_quad{};
@@ -195,7 +191,7 @@ struct RasterizerCommand2D {
     static RasterizerCommand2D make_clear(Color color) {
         RasterizerCommand2D command;
         command.kind = Kind::Clear;
-        command.clear = ClearPrimitive{color};
+        command.clear = ClearCommand{color};
         return command;
     }
 

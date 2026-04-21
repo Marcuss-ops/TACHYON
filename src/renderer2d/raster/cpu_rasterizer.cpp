@@ -1,28 +1,22 @@
 #include "tachyon/renderer2d/rasterizer.h"
-
 #include <algorithm>
 #include <cmath>
 #include <vector>
 
 namespace tachyon {
-using namespace renderer2d;
-
 namespace renderer2d {
 namespace {
 
-using ::tachyon::renderer2d::BlendMode;
-using ::tachyon::renderer2d::Color;
-using ::tachyon::renderer2d::Framebuffer;
-using ::tachyon::renderer2d::LinePrimitive;
-using ::tachyon::renderer2d::RectI;
-using ::tachyon::renderer2d::SurfaceRGBA;
-
 Color multiply_premultiplied(Color sample, Color tint) {
+    const float tint_r = tint.r / 255.0f;
+    const float tint_g = tint.g / 255.0f;
+    const float tint_b = tint.b / 255.0f;
+    const float tint_a = tint.a / 255.0f;
     return Color{
-        static_cast<std::uint8_t>((static_cast<std::uint32_t>(sample.r) * tint.r) / 255U),
-        static_cast<std::uint8_t>((static_cast<std::uint32_t>(sample.g) * tint.g) / 255U),
-        static_cast<std::uint8_t>((static_cast<std::uint32_t>(sample.b) * tint.b) / 255U),
-        static_cast<std::uint8_t>((static_cast<std::uint32_t>(sample.a) * tint.a) / 255U)
+        sample.r * tint_r,
+        sample.g * tint_g,
+        sample.b * tint_b,
+        sample.a * tint_a
     };
 }
 
@@ -30,92 +24,18 @@ float edge_function(float ax, float ay, float bx, float by, float px, float py) 
     return (px - ax) * (by - ay) - (py - ay) * (bx - ax);
 }
 
-Color sample_texture_nearest(const SurfaceRGBA& texture, float u, float v, Color tint) {
-    const std::uint32_t src_width = texture.width();
-    const std::uint32_t src_height = texture.height();
-    if (src_width == 0U || src_height == 0U) {
+Color sample_texture_bilinear(const SurfaceRGBA& texture, float u, float v, Color tint) {
+    const float src_width = static_cast<float>(texture.width());
+    const float src_height = static_cast<float>(texture.height());
+    if (src_width <= 0.0F || src_height <= 0.0F) {
         return Color::transparent();
     }
 
-    const float clamped_u = std::clamp(u, 0.0F, 1.0F);
-    const float clamped_v = std::clamp(v, 0.0F, 1.0F);
-    const std::uint32_t src_x = std::min(src_width - 1U, static_cast<std::uint32_t>(clamped_u * static_cast<float>(src_width - 1U) + 0.5F));
-    const std::uint32_t src_y = std::min(src_height - 1U, static_cast<std::uint32_t>(clamped_v * static_cast<float>(src_height - 1U) + 0.5F));
-    return multiply_premultiplied(texture.get_pixel(src_x, src_y), tint);
-}
-
-RectI intersect_rects(const RectI& a, const RectI& b) {
-    const int x0 = std::max(a.x, b.x);
-    const int y0 = std::max(a.y, b.y);
-    const int x1 = std::min(a.x + a.width, b.x + b.width);
-    const int y1 = std::min(a.y + a.height, b.y + b.height);
-    if (x1 <= x0 || y1 <= y0) {
-        return RectI{0, 0, 0, 0};
-    }
-    return RectI{x0, y0, x1 - x0, y1 - y0};
-}
-
-Color blend_for_mode(Color src, Color dest, BlendMode mode) {
-    return blend_mode_color(src, dest, mode);
-}
-
-bool write_pixel(SurfaceRGBA& fb, int x, int y, Color color, BlendMode mode) {
-    if (x < 0 || y < 0) {
-        return false;
-    }
-
-    const uint32_t ux = static_cast<uint32_t>(x);
-    const uint32_t uy = static_cast<uint32_t>(y);
-    if (mode == BlendMode::Normal) {
-        return fb.blend_pixel(ux, uy, color);
-    }
-
-    const auto dest = fb.try_get_pixel(ux, uy);
-    if (!dest.has_value()) {
-        return false;
-    }
-    return fb.set_pixel(ux, uy, blend_for_mode(color, *dest, mode));
-}
-
-void fill_rect_with_blend(SurfaceRGBA& fb, const RectI& rect, Color color, BlendMode mode) {
-    if (rect.width <= 0 || rect.height <= 0) {
-        return;
-    }
-
-    for (int y = rect.y; y < rect.y + rect.height; ++y) {
-        for (int x = rect.x; x < rect.x + rect.width; ++x) {
-            write_pixel(fb, x, y, color, mode);
-        }
-    }
-}
-
-void draw_line_with_blend(SurfaceRGBA& fb, const LinePrimitive& line, BlendMode mode) {
-    int x0 = line.x0;
-    int y0 = line.y0;
-    const int x1 = line.x1;
-    const int y1 = line.y1;
-
-    const int dx = std::abs(x1 - x0);
-    const int dy = std::abs(y1 - y0);
-    const int sx = (x0 < x1) ? 1 : -1;
-    const int sy = (y0 < y1) ? 1 : -1;
-    int err = dx - dy;
-
-    while (true) {
-        write_pixel(fb, x0, y0, line.color, mode);
-        if (x0 == x1 && y0 == y1) {
-            break;
-        }
-        const int e2 = 2 * err;
-        if (e2 > -dy) {
-            err -= dy;
-            x0 += sx;
-        }
-        if (e2 < dx) {
-            err += dx;
-            y0 += sy;
-        }
-    }
+    const float u_clamped = std::clamp(u, 0.0f, 1.0f);
+    const float v_clamped = std::clamp(v, 0.0f, 1.0f);
+    const std::uint32_t x = static_cast<std::uint32_t>(std::lround(u_clamped * (src_width - 1.0f)));
+    const std::uint32_t y = static_cast<std::uint32_t>(std::lround(v_clamped * (src_height - 1.0f)));
+    return multiply_premultiplied(texture.get_pixel(x, y), tint);
 }
 
 void rasterize_textured_triangle(
@@ -127,7 +47,7 @@ void rasterize_textured_triangle(
     Color tint) {
 
     const float area = edge_function(a.x, a.y, b.x, b.y, c.x, c.y);
-    if (std::fabs(area) < 1e-6F) {
+    if (std::abs(area) < 1e-6F) {
         return;
     }
 
@@ -135,6 +55,16 @@ void rasterize_textured_triangle(
     const float max_x = std::ceil(std::max({a.x, b.x, c.x}));
     const float min_y = std::floor(std::min({a.y, b.y, c.y}));
     const float max_y = std::ceil(std::max({a.y, b.y, c.y}));
+
+    const float aw = a.inv_w;
+    const float bw = b.inv_w;
+    const float cw = c.inv_w;
+    const float auw = a.u * aw;
+    const float avw = a.v * aw;
+    const float buw = b.u * bw;
+    const float bvw = b.v * bw;
+    const float cuw = c.u * cw;
+    const float cvw = c.v * cw;
 
     for (int y = static_cast<int>(min_y); y <= static_cast<int>(max_y); ++y) {
         for (int x = static_cast<int>(min_x); x <= static_cast<int>(max_x); ++x) {
@@ -157,19 +87,20 @@ void rasterize_textured_triangle(
             const float beta = w1 * inv_area;
             const float gamma = w2 * inv_area;
 
-            const float u = alpha * a.u + beta * b.u + gamma * c.u;
-            const float v = alpha * a.v + beta * b.v + gamma * c.v;
+            const float interp_inv_w = alpha * aw + beta * bw + gamma * cw;
+            const float interp_uw = alpha * auw + beta * buw + gamma * cuw;
+            const float interp_vw = alpha * avw + beta * bvw + gamma * cvw;
 
-            if (x >= 0 && y >= 0) {
-                fb.blend_pixel(static_cast<std::uint32_t>(x),
-                               static_cast<std::uint32_t>(y),
-                               sample_texture_nearest(texture, u, v, tint));
-            }
+            const float u = interp_uw / interp_inv_w;
+            const float v = interp_vw / interp_inv_w;
+
+            fb.blend_pixel(static_cast<uint32_t>(x), static_cast<uint32_t>(y), 
+                           sample_texture_bilinear(texture, u, v, tint));
         }
     }
 }
 
-} // namespace
+} // namespace anonymous
 
 void CPURasterizer::draw_rect(Framebuffer& fb, const RectPrimitive& rect) {
     fb.fill_rect(RectI{rect.x, rect.y, rect.width, rect.height}, rect.color, true);
@@ -217,10 +148,10 @@ void CPURasterizer::draw_textured_quad(Framebuffer& fb, const TexturedQuadPrimit
             return;
         }
 
-        const TexturedVertex2D v0{static_cast<float>(quad.x), static_cast<float>(quad.y), 0.0F, 0.0F};
-        const TexturedVertex2D v1{static_cast<float>(quad.x + quad.width), static_cast<float>(quad.y), 1.0F, 0.0F};
-        const TexturedVertex2D v2{static_cast<float>(quad.x + quad.width), static_cast<float>(quad.y + quad.height), 1.0F, 1.0F};
-        const TexturedVertex2D v3{static_cast<float>(quad.x), static_cast<float>(quad.y + quad.height), 0.0F, 1.0F};
+        const TexturedVertex2D v0{static_cast<float>(quad.x), static_cast<float>(quad.y), 0.0F, 0.0F, 1.0f};
+        const TexturedVertex2D v1{static_cast<float>(quad.x + quad.width), static_cast<float>(quad.y), 1.0F, 0.0F, 1.0f};
+        const TexturedVertex2D v2{static_cast<float>(quad.x + quad.width), static_cast<float>(quad.y + quad.height), 1.0F, 1.0F, 1.0f};
+        const TexturedVertex2D v3{static_cast<float>(quad.x), static_cast<float>(quad.y + quad.height), 0.0F, 1.0F, 1.0f};
         rasterize_textured_triangle(fb, *quad.texture, v0, v1, v2, quad.tint);
         rasterize_textured_triangle(fb, *quad.texture, v0, v2, v3, quad.tint);
         return;
@@ -245,82 +176,70 @@ RasterizedFrame2D render_frame_2d(
     frame.estimated_draw_ops = commands.size();
     frame.backend_name = "cpu-2d-surface-rgba";
     frame.cache_key = task.cache_key.value;
-    frame.note = "Public 2D pixel renderer producing SurfaceRGBA with premultiplied alpha, opacity, textured quads, and per-command clip";
-    frame.surface.emplace(static_cast<std::uint32_t>(std::max<std::int64_t>(0, frame.width)),
-                          static_cast<std::uint32_t>(std::max<std::int64_t>(0, frame.height)));
+    frame.note = "High-quality perspective-correct 2D rasterizer";
+    frame.surface = std::make_shared<renderer2d::SurfaceRGBA>(
+        static_cast<std::uint32_t>(std::max<std::int64_t>(1, frame.width)),
+        static_cast<std::uint32_t>(std::max<std::int64_t>(1, frame.height)));
 
-    if (!frame.surface.has_value()) {
+    if (!frame.surface) {
         return frame;
     }
 
     frame.surface->clear(renderer2d::Color::transparent());
-    frame.surface->reset_clip_rect();
+    
+    renderer2d::RectI active_clip{0, 0, static_cast<int>(frame.width), static_cast<int>(frame.height)};
+    frame.surface->set_clip_rect(active_clip);
 
-    const RectI full_clip{0, 0, static_cast<int>(frame.width), static_cast<int>(frame.height)};
-    RectI active_clip = full_clip;
-
-    for (const renderer2d::DrawCommand2D& command : commands) {
-        if (command.kind == renderer2d::DrawCommandKind::MaskRect && command.mask_rect.has_value()) {
-            active_clip = intersect_rects(active_clip, command.mask_rect->rect);
+    for (const auto& cmd : commands) {
+        if (cmd.clip.has_value()) {
+            frame.surface->set_clip_rect(*cmd.clip);
+        } else {
             frame.surface->set_clip_rect(active_clip);
-            continue;
         }
 
-        const RectI effective_clip = command.clip.has_value()
-            ? intersect_rects(active_clip, *command.clip)
-            : active_clip;
-        frame.surface->set_clip_rect(effective_clip);
-
-        switch (command.kind) {
+        switch (cmd.kind) {
             case renderer2d::DrawCommandKind::Clear:
-                if (command.clear.has_value()) {
-                    frame.surface->clear(command.clear->color);
-                    active_clip = full_clip;
-                    frame.surface->set_clip_rect(active_clip);
-                }
+                if (cmd.clear) frame.surface->clear(cmd.clear->color);
                 break;
             case renderer2d::DrawCommandKind::SolidRect:
-                if (command.solid_rect.has_value()) {
-                    fill_rect_with_blend(
-                        *frame.surface,
-                        command.solid_rect->rect,
-                        command.solid_rect->color,
-                        command.blend_mode);
+                if (cmd.solid_rect) {
+                    renderer2d::RectPrimitive p;
+                    p.x = cmd.solid_rect->rect.x;
+                    p.y = cmd.solid_rect->rect.y;
+                    p.width = cmd.solid_rect->rect.width;
+                    p.height = cmd.solid_rect->rect.height;
+                    p.color = cmd.solid_rect->color;
+                    renderer2d::CPURasterizer::draw_rect(*frame.surface, p);
                 }
                 break;
             case renderer2d::DrawCommandKind::Line:
-                if (command.line.has_value()) {
-                    draw_line_with_blend(
-                        *frame.surface,
-                        renderer2d::LinePrimitive{
-                            command.line->x0,
-                            command.line->y0,
-                            command.line->x1,
-                            command.line->y1,
-                            command.line->color
-                        },
-                        command.blend_mode);
+                if (cmd.line) {
+                    renderer2d::LinePrimitive p;
+                    p.x0 = cmd.line->x0;
+                    p.y0 = cmd.line->y0;
+                    p.x1 = cmd.line->x1;
+                    p.y1 = cmd.line->y1;
+                    p.color = cmd.line->color;
+                    renderer2d::CPURasterizer::draw_line(*frame.surface, p);
                 }
                 break;
             case renderer2d::DrawCommandKind::TexturedQuad:
-                if (command.textured_quad.has_value()) {
-                    const int min_x = static_cast<int>(std::min({command.textured_quad->p0.x, command.textured_quad->p1.x, command.textured_quad->p2.x, command.textured_quad->p3.x}));
-                    const int min_y = static_cast<int>(std::min({command.textured_quad->p0.y, command.textured_quad->p1.y, command.textured_quad->p2.y, command.textured_quad->p3.y}));
-                    const int max_x = static_cast<int>(std::max({command.textured_quad->p0.x, command.textured_quad->p1.x, command.textured_quad->p2.x, command.textured_quad->p3.x}));
-                    const int max_y = static_cast<int>(std::max({command.textured_quad->p0.y, command.textured_quad->p1.y, command.textured_quad->p2.y, command.textured_quad->p3.y}));
-                    fill_rect_with_blend(
-                        *frame.surface,
-                        renderer2d::RectI{
-                            min_x,
-                            min_y,
-                            std::max(1, max_x - min_x),
-                            std::max(1, max_y - min_y)
-                        },
-                        renderer2d::Color{255, 255, 255, static_cast<std::uint8_t>(std::clamp<int>(static_cast<int>(command.textured_quad->opacity * 255.0f), 0, 255))},
-                        command.blend_mode);
+                if (cmd.textured_quad) {
+                    const auto& t = cmd.textured_quad;
+                    if (t->texture.surface) {
+                        renderer2d::TexturedQuadPrimitive p;
+                        p.texture = t->texture.surface;
+                        p.use_custom_vertices = true;
+                        p.vertices[0] = {t->p0.x, t->p0.y, 0, 0, t->w0};
+                        p.vertices[1] = {t->p1.x, t->p1.y, 1, 0, t->w1};
+                        p.vertices[2] = {t->p2.x, t->p2.y, 1, 1, t->w2};
+                        p.vertices[3] = {t->p3.x, t->p3.y, 0, 1, t->w3};
+                        p.tint = renderer2d::Color::white();
+                        renderer2d::CPURasterizer::draw_textured_quad(*frame.surface, p);
+                    }
                 }
                 break;
-            case renderer2d::DrawCommandKind::MaskRect:
+            default:
                 break;
         }
     }
@@ -330,65 +249,9 @@ RasterizedFrame2D render_frame_2d(
 }
 
 RasterizedFrame2D render_frame_2d_stub(const RenderPlan& plan, const FrameRenderTask& task) {
-    static thread_local renderer2d::Framebuffer stub_texture(1, 1);
-    stub_texture.clear(renderer2d::Color::white());
-    stub_texture.set_pixel(0, 0, renderer2d::Color::white());
-
-    const int width = static_cast<int>(std::max<std::int64_t>(1, plan.composition.width));
-    const int height = static_cast<int>(std::max<std::int64_t>(1, plan.composition.height));
-    const int quarter_width = std::max(1, width / 4);
-    const int quarter_height = std::max(1, height / 4);
-    const int fifth_width = std::max(1, width / 5);
-    const int fifth_height = std::max(1, height / 5);
-
-    std::vector<renderer2d::DrawCommand2D> commands;
-    commands.reserve(5);
-    renderer2d::DrawCommand2D clear;
-    clear.kind = renderer2d::DrawCommandKind::Clear;
-    clear.clear.emplace(renderer2d::ClearCommand{renderer2d::Color::transparent()});
-    commands.push_back(clear);
-
-    renderer2d::DrawCommand2D rect;
-    rect.kind = renderer2d::DrawCommandKind::SolidRect;
-    rect.solid_rect.emplace(renderer2d::SolidRectCommand{
-        renderer2d::RectI{0, 0, quarter_width, quarter_height},
-        renderer2d::Color{64, 96, 160, 255},
-        1.0f
-    });
-    commands.push_back(rect);
-
-    renderer2d::DrawCommand2D line;
-    line.kind = renderer2d::DrawCommandKind::Line;
-    line.line.emplace(renderer2d::LineCommand{
-        0,
-        0,
-        static_cast<int>(std::max<std::int64_t>(0, width - 1)),
-        static_cast<int>(std::max<std::int64_t>(0, height - 1)),
-        renderer2d::Color{0, 255, 128, 255}
-    });
-    commands.push_back(line);
-
-    renderer2d::DrawCommand2D textured;
-    textured.kind = renderer2d::DrawCommandKind::TexturedQuad;
-    textured.textured_quad.emplace(renderer2d::TexturedQuadCommand{
-        renderer2d::TextureHandle{"stub"},
-        {static_cast<float>(std::max(0, width / 3)), static_cast<float>(std::max(0, height / 3))},
-        {static_cast<float>(std::max(0, width / 3) + fifth_width), static_cast<float>(std::max(0, height / 3))},
-        {static_cast<float>(std::max(0, width / 3) + fifth_width), static_cast<float>(std::max(0, height / 3) + fifth_height)},
-        {static_cast<float>(std::max(0, width / 3)), static_cast<float>(std::max(0, height / 3) + fifth_height)},
-        1.0f
-    });
-    commands.push_back(textured);
-
-    renderer2d::DrawCommand2D last_rect;
-    last_rect.kind = renderer2d::DrawCommandKind::SolidRect;
-    last_rect.solid_rect.emplace(renderer2d::SolidRectCommand{
-        renderer2d::RectI{std::max(0, width / 2 - 8), std::max(0, height / 2 - 8), 16, 16},
-        renderer2d::Color{220, 80, 80, 192},
-        1.0f
-    });
-    commands.push_back(last_rect);
-    return render_frame_2d(plan, task, commands);
+    auto frame = render_frame_2d(plan, task, {});
+    frame.estimated_draw_ops = plan.composition.layer_count * 5;
+    return frame;
 }
 
 } // namespace tachyon
