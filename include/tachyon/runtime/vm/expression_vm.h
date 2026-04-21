@@ -27,6 +27,8 @@ enum class ExpressionOp : std::uint8_t {
     Clamp,
     Lerp,
     Interpolate,
+    MapRange,
+    ValueAtTime,
     Noise,
     Spring,
     Return
@@ -151,6 +153,29 @@ public:
                 const double b = pop();
                 const double a = pop();
                 push(a + (b - a) * t);
+                break;
+            }
+            case ExpressionOp::MapRange: {
+                const double outMax = pop();
+                const double outMin = pop();
+                const double inMax = pop();
+                const double inMin = pop();
+                const double value = pop();
+                if (std::abs(inMax - inMin) < 1e-9) {
+                    push(outMin);
+                } else {
+                    const double t = (value - inMin) / (inMax - inMin);
+                    push(outMin + t * (outMax - outMin));
+                }
+                break;
+            }
+            case ExpressionOp::ValueAtTime: {
+                const double time_offset = pop();
+                const double property_idx = pop();
+                // TODO: Implement sampling from property tracks at arbitrary time
+                // This requires context to have access to compiled tracks.
+                // For now, return 0.0 or current value if property_idx matches LoadProp
+                push(0.0);
                 break;
             }
             case ExpressionOp::Noise: {

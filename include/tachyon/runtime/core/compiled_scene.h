@@ -80,6 +80,8 @@ struct CompiledScene {
     std::vector<CompiledPropertyTrack> property_tracks;
     PropertyGraph property_graph;
     std::vector<CompiledExpression> expressions;
+
+    [[nodiscard]] bool is_valid() const noexcept;
 };
 
 } // namespace tachyon

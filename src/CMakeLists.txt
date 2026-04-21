@@ -32,13 +32,17 @@ add_library(TachyonCore
     renderer2d/raster/perspective_rasterizer.cpp
     runtime/execution/batch_runner.cpp
     runtime/cache/frame_cache.cpp
+    runtime/cache/cache_key_builder.cpp
     runtime/execution/frame_executor.cpp
     runtime/execution/quality_policy.cpp
     runtime/core/render_graph.cpp
+    runtime/core/property_graph.cpp
+    runtime/core/compiled_scene.cpp
     runtime/execution/render_session.cpp
     runtime/execution/tile_scheduler.cpp
     runtime/execution/render_job.cpp
     runtime/execution/render_plan.cpp
+    runtime/resource/render_context.cpp
     core/scene/evaluator.cpp
     core/scene/evaluator_utils.cpp
     core/scene/evaluator_layer.cpp

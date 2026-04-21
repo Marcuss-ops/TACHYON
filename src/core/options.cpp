@@ -29,6 +29,29 @@ std::size_t parse_worker_count(const std::string& value, DiagnosticBag& diagnost
     }
 }
 
+std::optional<FrameRange> parse_frame_range(const std::string& value, DiagnosticBag& diagnostics) {
+    try {
+        const std::size_t dash_pos = value.find('-');
+        if (dash_pos == std::string::npos) {
+            const std::int64_t frame = std::stoll(value);
+            return FrameRange{frame, frame};
+        }
+
+        const std::int64_t start = std::stoll(value.substr(0, dash_pos));
+        const std::int64_t end = std::stoll(value.substr(dash_pos + 1));
+        
+        if (start > end) {
+            diagnostics.add_error("cli.frames_invalid", "frame start must be less than or equal to end: " + value);
+            return std::nullopt;
+        }
+
+        return FrameRange{start, end};
+    } catch (const std::exception&) {
+        diagnostics.add_error("cli.frames_invalid", "invalid value for --frames: " + value + ". Expected 'start-end' or 'frame'.");
+        return std::nullopt;
+    }
+}
+
 } // namespace
 
 ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
@@ -91,6 +114,15 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
         }
         if (arg == "--json") {
             options.json_output = true;
+            continue;
+        }
+        if (arg == "--frames") {
+            const std::string value = require_argument(args, index);
+            if (value.empty()) {
+                result.diagnostics.add_error("cli.frames_missing", "missing value for --frames");
+                return result;
+            }
+            options.frame_range_override = parse_frame_range(value, result.diagnostics);
             continue;
         }
 
