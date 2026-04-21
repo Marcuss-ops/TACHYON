@@ -21,7 +21,12 @@ RectI full_clip(const scene::EvaluatedCompositionState& composition_state) {
 }
 
 Color map_color(const ColorSpec& spec) {
-    return Color{spec.r, spec.g, spec.b, spec.a};
+    return Color{
+        static_cast<float>(spec.r) / 255.0f,
+        static_cast<float>(spec.g) / 255.0f,
+        static_cast<float>(spec.b) / 255.0f,
+        static_cast<float>(spec.a) / 255.0f
+    };
 }
 
 BlendMode map_blend_mode(const std::string& mode) {
@@ -44,8 +49,7 @@ RectI scaled_rect(const scene::EvaluatedLayerState& layer, int base_width, int b
 
 Color color_with_opacity(float opacity) {
     Color color = Color::white();
-    const float clamped = std::clamp(opacity, 0.0f, 1.0f);
-    color.a = static_cast<uint8_t>(std::round(255.0f * clamped));
+    color.a = std::clamp(opacity, 0.0f, 1.0f);
     return color;
 }
 
@@ -239,6 +243,38 @@ std::vector<DrawCommand2D> map_layer_to_draw_commands(const scene::EvaluatedLaye
     
     using scene::LayerType;
     
+    if (layer.is_adjustment_layer) {
+        DrawCommand2D adjustment;
+        adjustment.kind = DrawCommandKind::Adjustment;
+        adjustment.z_order = z_order;
+        adjustment.blend_mode = map_blend_mode(layer.blend_mode);
+        adjustment.clip = full_clip(composition_state);
+        
+        AdjustmentCommand adj_cmd;
+        adj_cmd.layer_id = layer.id;
+        for (const auto& effect : layer.effects) {
+            EffectParams params;
+            for (const auto& [k, v] : effect.scalars) {
+                params.scalars[k] = static_cast<float>(v);
+            }
+            for (const auto& [k, v] : effect.colors) {
+                params.colors[k] = Color{
+                    static_cast<float>(v.r) / 255.0f,
+                    static_cast<float>(v.g) / 255.0f,
+                    static_cast<float>(v.b) / 255.0f,
+                    static_cast<float>(v.a) / 255.0f
+                };
+            }
+            for (const auto& [k, v] : effect.strings) {
+                params.strings[k] = v;
+            }
+            adj_cmd.effects.push_back({effect.type, std::move(params)});
+        }
+        adjustment.adjustment.emplace(std::move(adj_cmd));
+        commands.push_back(std::move(adjustment));
+        return commands;
+    }
+
     if (layer.type == LayerType::Solid) {
         commands.push_back(solid_command(layer, composition_state, z_order));
     } else if (layer.type == LayerType::Shape) {
@@ -260,4 +296,10 @@ std::vector<DrawCommand2D> map_layer_to_draw_commands(const scene::EvaluatedLaye
 }
 
 } // namespace renderer2d
+
+std::vector<renderer2d::DrawCommand2D> build_draw_commands_from_evaluated_state(
+    const scene::EvaluatedCompositionState& state) {
+    return renderer2d::generate_draw_list(state).commands;
+}
+
 } // namespace tachyon

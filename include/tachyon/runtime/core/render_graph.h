@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <set>
 #include <vector>
 
 namespace tachyon {
@@ -29,6 +30,14 @@ public:
      * @param structural True if structural, false if temporal.
      */
     void add_edge(std::uint32_t from, std::uint32_t to, bool structural = true);
+
+    /**
+     * @brief Registers a node in the graph even if it has no incident edges.
+     * 
+     * This is required for root compositions and other isolated nodes that still
+     * need to participate in topological ordering and execution.
+     */
+    void add_node(std::uint32_t node_id);
     
     /**
      * @brief Performs a deterministic topological sort of the graph.
@@ -51,8 +60,19 @@ public:
      */
     void clear();
 
+    /**
+     * @brief Propagates invalidation from a changed node through dependents.
+     */
+    void propagate_invalidation(std::uint32_t changed_node_id, std::vector<std::uint32_t>& invalidated_nodes);
+
+    /**
+     * @brief Increments the version of a node and records invalidated dependents.
+     */
+    void increment_node_version(std::uint32_t node_id, std::uint32_t& out_new_version);
+
 private:
     std::vector<Edge> m_edges;
+    std::set<std::uint32_t> m_nodes;
     std::vector<std::uint32_t> m_topo_order;
 };
 

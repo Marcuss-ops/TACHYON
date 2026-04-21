@@ -19,17 +19,34 @@ Color blend_premultiplied(Color src, Color dst) {
 SurfaceRGBA::SurfaceRGBA(uint32_t width, uint32_t height)
     : m_width(width),
       m_height(height),
-      m_pixels(static_cast<std::size_t>(width) * static_cast<std::size_t>(height), pack(Color::transparent())),
+      m_pixels(static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4U, 0.0f),
       m_clip_rect{0, 0, static_cast<int>(width), static_cast<int>(height)} {
+    clear(Color::transparent());
+}
+
+void SurfaceRGBA::reset(uint32_t width, uint32_t height) {
+    m_width = width;
+    m_height = height;
+    const std::size_t size = static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4U;
+    if (m_pixels.size() != size) {
+        m_pixels.resize(size);
+    }
+    m_clip_rect = RectI{0, 0, static_cast<int>(width), static_cast<int>(height)};
 }
 
 void SurfaceRGBA::clear(Color color) {
-    std::fill(m_pixels.begin(), m_pixels.end(), pack(color));
+    for (std::size_t i = 0; i < m_pixels.size(); i += 4U) {
+        m_pixels[i]     = color.r;
+        m_pixels[i + 1] = color.g;
+        m_pixels[i + 2] = color.b;
+        m_pixels[i + 3] = color.a;
+    }
 }
 
 void SurfaceRGBA::clear_depth(float depth) {
-    if (m_depth_buffer.size() != m_pixels.size()) {
-        m_depth_buffer.assign(m_pixels.size(), depth);
+    const std::size_t pixel_count = static_cast<std::size_t>(m_width) * m_height;
+    if (m_depth_buffer.size() != pixel_count) {
+        m_depth_buffer.assign(pixel_count, depth);
     } else {
         std::fill(m_depth_buffer.begin(), m_depth_buffer.end(), depth);
     }
@@ -54,7 +71,11 @@ bool SurfaceRGBA::set_pixel(uint32_t x, uint32_t y, Color color) {
         return false;
     }
 
-    m_pixels[static_cast<std::size_t>(y) * m_width + x] = pack(color);
+    const std::size_t index = (static_cast<std::size_t>(y) * m_width + x) * 4U;
+    m_pixels[index]     = color.r;
+    m_pixels[index + 1] = color.g;
+    m_pixels[index + 2] = color.b;
+    m_pixels[index + 3] = color.a;
     return true;
 }
 
@@ -70,10 +91,20 @@ bool SurfaceRGBA::blend_pixel(uint32_t x, uint32_t y, Color color) {
         return false;
     }
 
-    const std::size_t index = static_cast<std::size_t>(y) * m_width + x;
-    const Color dst = unpack(m_pixels[index]);
-    m_pixels[index] = pack(blend_src_over_premultiplied(color, dst));
+    const std::size_t index = (static_cast<std::size_t>(y) * m_width + x) * 4U;
+    const Color dst{m_pixels[index], m_pixels[index + 1], m_pixels[index + 2], m_pixels[index + 3]};
+    const Color result = blend_src_over_premultiplied(color, dst);
+    
+    m_pixels[index]     = result.r;
+    m_pixels[index + 1] = result.g;
+    m_pixels[index + 2] = result.b;
+    m_pixels[index + 3] = result.a;
     return true;
+}
+
+bool SurfaceRGBA::blend_pixel(uint32_t x, uint32_t y, Color color, float alpha) {
+    color.a *= alpha;
+    return blend_pixel(x, y, color);
 }
 
 bool SurfaceRGBA::test_and_write_depth(uint32_t x, uint32_t y, float inv_z) {
@@ -97,7 +128,8 @@ std::optional<Color> SurfaceRGBA::try_get_pixel(uint32_t x, uint32_t y) const {
     if (!in_bounds(x, y)) {
         return std::nullopt;
     }
-    return unpack(m_pixels[static_cast<std::size_t>(y) * m_width + x]);
+    const std::size_t index = (static_cast<std::size_t>(y) * m_width + x) * 4U;
+    return Color{m_pixels[index], m_pixels[index + 1], m_pixels[index + 2], m_pixels[index + 3]};
 }
 
 Color SurfaceRGBA::get_pixel(uint32_t x, uint32_t y) const {
@@ -138,14 +170,17 @@ bool SurfaceRGBA::save_png(const std::filesystem::path& path) const {
         std::filesystem::create_directories(path.parent_path());
     }
 
+    const auto to_u8 = [](float f) -> std::uint8_t {
+        return static_cast<std::uint8_t>(std::clamp(f * 255.0f, 0.0001f, 255.0f));
+    };
+
     std::vector<std::uint8_t> rgba_bytes;
-    rgba_bytes.reserve(m_pixels.size() * 4U);
-    for (const std::uint32_t packed : m_pixels) {
-        const Color color = unpack(packed);
-        rgba_bytes.push_back(color.r);
-        rgba_bytes.push_back(color.g);
-        rgba_bytes.push_back(color.b);
-        rgba_bytes.push_back(color.a);
+    rgba_bytes.reserve((m_pixels.size()));
+    for (std::size_t i = 0; i < m_pixels.size(); i += 4U) {
+        rgba_bytes.push_back(to_u8(detail::Linear_to_sRGB_f(m_pixels[i])));
+        rgba_bytes.push_back(to_u8(detail::Linear_to_sRGB_f(m_pixels[i+1])));
+        rgba_bytes.push_back(to_u8(detail::Linear_to_sRGB_f(m_pixels[i+2])));
+        rgba_bytes.push_back(to_u8(m_pixels[i+3])); // Alpha remains linear (0-1)
     }
 
     return stbi_write_png(path.string().c_str(),
@@ -165,22 +200,6 @@ bool SurfaceRGBA::in_clip(uint32_t x, uint32_t y) const {
            static_cast<int>(y) >= m_clip_rect.y &&
            static_cast<int>(x) < (m_clip_rect.x + m_clip_rect.width) &&
            static_cast<int>(y) < (m_clip_rect.y + m_clip_rect.height);
-}
-
-uint32_t SurfaceRGBA::pack(Color color) {
-    return static_cast<uint32_t>(color.r) |
-           (static_cast<uint32_t>(color.g) << 8U) |
-           (static_cast<uint32_t>(color.b) << 16U) |
-           (static_cast<uint32_t>(color.a) << 24U);
-}
-
-Color SurfaceRGBA::unpack(uint32_t packed) {
-    return Color{
-        static_cast<std::uint8_t>(packed & 0xFFU),
-        static_cast<std::uint8_t>((packed >> 8U) & 0xFFU),
-        static_cast<std::uint8_t>((packed >> 16U) & 0xFFU),
-        static_cast<std::uint8_t>((packed >> 24U) & 0xFFU)
-    };
 }
 
 Color SurfaceRGBA::blend_src_over_premultiplied(Color src_straight, Color dst_straight) {

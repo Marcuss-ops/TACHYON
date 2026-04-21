@@ -4,7 +4,7 @@ namespace tachyon::renderer2d {
 
 void EffectRenderer::applyEffects(
     EffectHost& effects,
-    RenderContext& context,
+    RenderContext2D& context,
     std::vector<float>& accum_r,
     std::vector<float>& accum_g,
     std::vector<float>& accum_b,

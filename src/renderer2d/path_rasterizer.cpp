@@ -15,16 +15,14 @@ struct Contour {
 constexpr int kCoverageSamples = 4;
 
 Color apply_coverage(Color color, float opacity, float coverage) {
-    const float clamped_opacity = std::clamp(opacity, 0.0f, 1.0f);
-    const float clamped_coverage = std::clamp(coverage, 0.0f, 1.0f);
-    const float alpha = static_cast<float>(color.a) * clamped_opacity * clamped_coverage;
-    color.a = static_cast<std::uint8_t>(std::lround(std::clamp(alpha, 0.0f, 255.0f)));
+    const float alpha = color.a * std::clamp(opacity, 0.0f, 1.0f) * std::clamp(coverage, 0.0f, 1.0f);
+    color.a = alpha;
     return color;
 }
 
 Color sample_gradient(const GradientSpec& grad, float x, float y) {
     if (grad.stops.empty()) return Color::white();
-    if (grad.stops.size() == 1) return Color{grad.stops[0].color.r, grad.stops[0].color.g, grad.stops[0].color.b, grad.stops[0].color.a};
+    if (grad.stops.size() == 1) return Color{grad.stops[0].color.r / 255.0f, grad.stops[0].color.g / 255.0f, grad.stops[0].color.b / 255.0f, grad.stops[0].color.a / 255.0f};
 
     float t = 0.0f;
     const math::Vector2 p{x, y};
@@ -47,10 +45,10 @@ Color sample_gradient(const GradientSpec& grad, float x, float y) {
         return s.offset < val;
     });
 
-    if (it == grad.stops.begin()) return Color{it->color.r, it->color.g, it->color.b, it->color.a};
+    if (it == grad.stops.begin()) return Color{it->color.r / 255.0f, it->color.g / 255.0f, it->color.b / 255.0f, it->color.a / 255.0f};
     if (it == grad.stops.end()) {
         const auto& last = grad.stops.back();
-        return Color{last.color.r, last.color.g, last.color.b, last.color.a};
+        return Color{last.color.r / 255.0f, last.color.g / 255.0f, last.color.b / 255.0f, last.color.a / 255.0f};
     }
 
     const auto& s1 = *(it - 1);
@@ -59,10 +57,10 @@ Color sample_gradient(const GradientSpec& grad, float x, float y) {
     const float alpha = (range > 1e-6f) ? (t - s1.offset) / range : 0.0f;
     
     return Color{
-        static_cast<std::uint8_t>(s1.color.r * (1.0f - alpha) + s2.color.r * alpha),
-        static_cast<std::uint8_t>(s1.color.g * (1.0f - alpha) + s2.color.g * alpha),
-        static_cast<std::uint8_t>(s1.color.b * (1.0f - alpha) + s2.color.b * alpha),
-        static_cast<std::uint8_t>(s1.color.a * (1.0f - alpha) + s2.color.a * alpha)
+        (s1.color.r * (1.0f - alpha) + s2.color.r * alpha) / 255.0f,
+        (s1.color.g * (1.0f - alpha) + s2.color.g * alpha) / 255.0f,
+        (s1.color.b * (1.0f - alpha) + s2.color.b * alpha) / 255.0f,
+        (s1.color.a * (1.0f - alpha) + s2.color.a * alpha) / 255.0f
     };
 }
 

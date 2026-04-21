@@ -27,9 +27,11 @@ enum class DiagnosticSeverity {
 
 struct Diagnostic {
     DiagnosticSeverity severity{DiagnosticSeverity::Error};
-    std::string code;
-    std::string message;
-    std::string path;
+    std::string category; ///< Category for grouping (e.g., "authoring", "runtime", "parsing")
+    std::string code;     ///< Unique stable error code.
+    std::string message;  ///< Human readable message.
+    std::string path;     ///< Path to the offending element (if applicable).
+    std::string help_link; ///< URL for detailed troubleshooting.
 };
 
 struct DiagnosticBag {
@@ -62,20 +64,20 @@ struct DiagnosticBag {
         return false;
     }
 
-    void add(DiagnosticSeverity severity, std::string code, std::string message, std::string path = {}) {
-        diagnostics.push_back(Diagnostic{severity, std::move(code), std::move(message), std::move(path)});
+    void add(DiagnosticSeverity severity, std::string category, std::string code, std::string message, std::string path = {}, std::string help_link = {}) {
+        diagnostics.push_back(Diagnostic{severity, std::move(category), std::move(code), std::move(message), std::move(path), std::move(help_link)});
     }
 
     void add_info(std::string code, std::string message, std::string path = {}) {
-        add(DiagnosticSeverity::Info, std::move(code), std::move(message), std::move(path));
+        add(DiagnosticSeverity::Info, "general", std::move(code), std::move(message), std::move(path));
     }
 
     void add_warning(std::string code, std::string message, std::string path = {}) {
-        add(DiagnosticSeverity::Warning, std::move(code), std::move(message), std::move(path));
+        add(DiagnosticSeverity::Warning, "general", std::move(code), std::move(message), std::move(path));
     }
 
     void add_error(std::string code, std::string message, std::string path = {}) {
-        add(DiagnosticSeverity::Error, std::move(code), std::move(message), std::move(path));
+        add(DiagnosticSeverity::Error, "general", std::move(code), std::move(message), std::move(path));
     }
 
     void append(const DiagnosticBag& other) {
@@ -109,6 +111,25 @@ struct ValidationResult {
     [[nodiscard]] bool ok() const noexcept {
         return diagnostics.ok();
     }
+};
+
+struct FrameDiagnostics {
+    std::size_t property_hits{0};
+    std::size_t property_misses{0};
+    std::size_t layer_hits{0};
+    std::size_t layer_misses{0};
+    std::size_t composition_hits{0};
+    std::size_t composition_misses{0};
+
+    std::size_t properties_evaluated{0};
+    std::size_t layers_evaluated{0};
+    std::size_t compositions_evaluated{0};
+
+    DiagnosticBag diagnostics;
+
+    // Cache key manifests for debugging
+    std::string frame_key_manifest;
+    std::string composition_key_manifest;
 };
 
 } // namespace tachyon

@@ -5,6 +5,13 @@
 
 namespace tachyon {
 
+enum class QualityTier {
+    Draft,
+    Preview,
+    High,
+    Cinematic
+};
+
 struct QualityPolicy {
     float resolution_scale{1.0f};
     int motion_blur_sample_cap{64};

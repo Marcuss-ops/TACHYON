@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <string>
 #include <string_view>
 #include <utility>
 #include <type_traits>
@@ -134,7 +135,8 @@ CompiledPropertyTrack compile_property_track(
     if (!property_spec.keyframes.empty()) {
         track.kind = CompiledPropertyTrack::Kind::Keyframed;
         track.keyframes.reserve(property_spec.keyframes.size());
-        for (const auto& keyframe : property_spec.keyframes) {
+        for (std::size_t i = 0; i < property_spec.keyframes.size(); ++i) {
+            const auto& keyframe = property_spec.keyframes[i];
             double val = 0.0;
             if constexpr (std::is_same_v<T, AnimatedVector2Spec>) {
                 if (id_suffix.find("_x") != std::string::npos) val = keyframe.value.x;
@@ -142,7 +144,46 @@ CompiledPropertyTrack compile_property_track(
             } else {
                 val = static_cast<double>(keyframe.value);
             }
-            track.keyframes.push_back(CompiledKeyframe{keyframe.time, val, static_cast<std::uint32_t>(keyframe.easing)});
+
+            CompiledKeyframe ck;
+            ck.time = keyframe.time;
+            ck.value = val;
+            ck.easing = static_cast<std::uint32_t>(keyframe.easing);
+            ck.cx1 = keyframe.bezier.cx1;
+            ck.cy1 = keyframe.bezier.cy1;
+            ck.cx2 = keyframe.bezier.cx2;
+            ck.cy2 = keyframe.bezier.cy2;
+
+            // If it's a custom easing and we have a next keyframe, we can compute the AE-style Bezier
+            if (keyframe.easing == animation::EasingPreset::Custom && i + 1 < property_spec.keyframes.size()) {
+                const auto& next_kf = property_spec.keyframes[i + 1];
+                double next_val = 0.0;
+                if constexpr (std::is_same_v<T, AnimatedVector2Spec>) {
+                    if (id_suffix.find("_x") != std::string::npos) next_val = next_kf.value.x;
+                    else if (id_suffix.find("_y") != std::string::npos) next_val = next_kf.value.y;
+                } else {
+                    next_val = static_cast<double>(next_kf.value);
+                }
+
+                double duration = next_kf.time - keyframe.time;
+                double delta = next_val - val;
+                
+                // AE handles are often specified via speed/influence. 
+                // We use from_ae to convert them if they seem to be set (influence != 0).
+                if (duration > 1e-6 && (keyframe.influence_out > 0.0 || next_kf.influence_in > 0.0)) {
+                    auto ae_bezier = animation::CubicBezierEasing::from_ae(
+                        keyframe.speed_out, keyframe.influence_out,
+                        next_kf.speed_in, next_kf.influence_in,
+                        duration, delta
+                    );
+                    ck.cx1 = ae_bezier.cx1;
+                    ck.cy1 = ae_bezier.cy1;
+                    ck.cx2 = ae_bezier.cx2;
+                    ck.cy2 = ae_bezier.cy2;
+                }
+            }
+
+            track.keyframes.push_back(ck);
         }
     } else {
         track.kind = CompiledPropertyTrack::Kind::Constant;
@@ -180,6 +221,7 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
     for (const auto& composition : scene.compositions) {
         CompiledComposition compiled_composition;
         compiled_composition.node = registry.create_node(CompiledNodeType::Composition);
+        compiled.graph.add_node(compiled_composition.node.node_id);
         compiled_composition.width = static_cast<std::uint32_t>(std::max<std::int64_t>(0, composition.width));
         compiled_composition.height = static_cast<std::uint32_t>(std::max<std::int64_t>(0, composition.height));
         compiled_composition.duration = composition.duration;
@@ -191,6 +233,7 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
         for (const auto& layer : composition.layers) {
             CompiledLayer compiled_layer;
             compiled_layer.node = registry.create_node(CompiledNodeType::Layer);
+            compiled.graph.add_node(compiled_layer.node.node_id);
             
             // Resolve Type
             auto type_map = [](const std::string& t) -> std::uint32_t {
@@ -205,6 +248,19 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
             
             compiled_layer.width = static_cast<std::uint32_t>(layer.width);
             compiled_layer.height = static_cast<std::uint32_t>(layer.height);
+            compiled_layer.text_content = layer.text_content;
+            compiled_layer.font_id = layer.font_id;
+            compiled_layer.font_size = static_cast<float>(layer.font_size.value.has_value() ? *layer.font_size.value : 48.0);
+            compiled_layer.text_alignment = layer.alignment == "center" ? 1 : (layer.alignment == "right" ? 2 : 0);
+            compiled_layer.fill_color = layer.fill_color.value.has_value() ? *layer.fill_color.value : ColorSpec{255, 255, 255, 255};
+            compiled_layer.stroke_color = layer.stroke_color.value.has_value() ? *layer.stroke_color.value : ColorSpec{255, 255, 255, 255};
+            compiled_layer.stroke_width = layer.stroke_width_property.value.has_value() ? static_cast<float>(*layer.stroke_width_property.value) : layer.stroke_width;
+            compiled_layer.shape_path = layer.shape_path;
+            compiled_layer.effects = layer.effects;
+            compiled_layer.text_highlights = layer.text_highlights;
+            compiled_layer.subtitle_path = layer.subtitle_path;
+            compiled_layer.subtitle_outline_color = layer.subtitle_outline_color;
+            compiled_layer.subtitle_outline_width = layer.subtitle_outline_width;
             compiled_layer.line_cap = layer.line_cap;
             compiled_layer.line_join = layer.line_join;
             compiled_layer.miter_limit = layer.miter_limit;
@@ -215,6 +271,7 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
             if (layer.visible) compiled_layer.flags |= 0x02;
             if (layer.is_3d) compiled_layer.flags |= 0x04;
             if (layer.is_adjustment_layer) compiled_layer.flags |= 0x08;
+            if (layer.motion_blur) compiled_layer.flags |= 0x10;
 
             compiled_layer.matte_type = layer.track_matte_type;
 
@@ -224,6 +281,7 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
             const auto add_track = [&](const std::string& suffix, const auto& spec, double fallback) {
                 compiled_layer.property_indices.push_back(static_cast<std::uint32_t>(compiled.property_tracks.size()));
                 auto track = compile_property_track(registry, suffix, layer.id, spec, fallback);
+                compiled.graph.add_node(track.node.node_id);
                 
                 // DATA BINDING INTEGRATION:
                 // If the track has a binding in the spec (not actually in SceneSpec yet, added for future-proofing Step 4)
@@ -307,5 +365,23 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
 }
 
 
-} // namespace tachyon
+bool SceneCompiler::update_compiled_scene(CompiledScene& existing, const SceneSpec& new_spec) const {
+    // If the structural hash (topology) hasn't changed, we can do a fast property-only update.
+    std::uint64_t new_hash = hash_scene_spec(new_spec, existing.determinism);
+    if (new_hash == existing.scene_hash) {
+        return true; 
+    }
 
+    // For a real industrial version, we would compare layer counts, IDs, etc.
+    // For Milestone 1, we replace the entire content but allow the CLI to keep the 
+    // CompiledScene object reference alive.
+    auto result = compile(new_spec);
+    if (result.ok()) {
+        existing = std::move(*result.value);
+        return true;
+    }
+
+    return false;
+}
+
+} // namespace tachyon

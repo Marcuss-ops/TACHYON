@@ -8,6 +8,8 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cstdio>
+#include <cstdlib>
 #include <future>
 #include <memory>
 #include <vector>
@@ -56,6 +58,7 @@ void render_frames_parallel(
             RenderContext local_context(context.renderer2d.precomp_cache);
             local_context.policy = context.policy;
             local_context.renderer2d.policy = context.policy;
+            local_context.renderer2d.font = context.renderer2d.font;
             
             for (;;) {
                 const std::size_t index = next_index.fetch_add(1);
@@ -94,11 +97,16 @@ RenderSessionResult RenderSession::render(
     (void)scene; // SceneSpec is no longer used in the hot path.
     
     RenderSessionResult result;
-    renderer2d::ensure_default_text_font();
+    // get_default_text_font returns the font, we'll store it in the context later if needed
+    
     RenderContext context(m_precomp_cache);
     context.policy = make_quality_policy(execution_plan.render_plan.quality_tier);
     context.renderer2d.policy = context.policy;
+    context.renderer2d.font = renderer2d::get_default_text_font();
     
+    const std::size_t cache_budget_bytes = m_memory_budget_bytes.value_or(context.policy.precomp_cache_budget);
+    m_cache.set_budget_bytes(cache_budget_bytes);
+
     if (context.renderer2d.precomp_cache) {
         context.renderer2d.precomp_cache->set_max_bytes(context.policy.precomp_cache_budget);
     }
@@ -136,7 +144,7 @@ RenderSessionResult RenderSession::render(
         }
 
         if (sink) {
-            const output::OutputFramePacket packet{frame.frame_number, &frame.frame};
+            const output::OutputFramePacket packet{frame.frame_number, frame.frame.get()};
             if (!sink->write_frame(packet)) {
                 result.output_error = sink->last_error();
             } else {
@@ -144,10 +152,56 @@ RenderSessionResult RenderSession::render(
             }
         }
 
+        // Tier 1 Diagnostics Reporting
+        const char* diag_env = std::getenv("TACHYON_DIAGNOSTICS");
+        if (diag_env && std::string_view(diag_env) == "1") {
+            const auto& d = frame.diagnostics;
+            std::printf("Frame %lld:\n", (long long)frame.frame_number);
+            std::printf("  cache: property_hits=%zu, misses=%zu\n", d.property_hits, d.property_misses);
+            std::printf("         layer_hits=%zu, misses=%zu\n", d.layer_hits, d.layer_misses);
+            std::printf("         composition_hits=%zu, misses=%zu\n", d.composition_hits, d.composition_misses);
+            std::printf("  evaluated: properties=%zu, layers=%zu, compositions=%zu\n", 
+                d.properties_evaluated, d.layers_evaluated, d.compositions_evaluated);
+            if (!d.composition_key_manifest.empty()) std::printf("  composition_key: %s\n", d.composition_key_manifest.c_str());
+            if (!d.frame_key_manifest.empty()) std::printf("  frame_key: %s\n", d.frame_key_manifest.c_str());
+        }
+
+        result.frame_diagnostics.push_back(frame.diagnostics);
         result.frames.push_back(std::move(frame));
         if (!result.output_error.empty()) {
             break;
         }
+    }
+    
+    // Tier 1 Aggregated Session Summary
+    const char* diag_env = std::getenv("TACHYON_DIAGNOSTICS");
+    if (diag_env && std::string_view(diag_env) == "1" && !result.frame_diagnostics.empty()) {
+        std::size_t total_prop_hits = 0;
+        std::size_t total_prop_misses = 0;
+        std::size_t total_layer_hits = 0;
+        std::size_t total_layer_misses = 0;
+        std::size_t total_comp_hits = 0;
+        std::size_t total_comp_misses = 0;
+
+        for (const auto& d : result.frame_diagnostics) {
+            total_prop_hits += d.property_hits;
+            total_prop_misses += d.property_misses;
+            total_layer_hits += d.layer_hits;
+            total_layer_misses += d.layer_misses;
+            total_comp_hits += d.composition_hits;
+            total_comp_misses += d.composition_misses;
+        }
+
+        std::printf("\n--- Session Diagnostic Summary ---\n");
+        const auto print_stat = [](const char* name, std::size_t hits, std::size_t misses) {
+            const std::size_t total = hits + misses;
+            const double ratio = (total > 0) ? (100.0 * hits / total) : 0.0;
+            std::printf("  %s Cache: %zu hits, %zu misses (%.1f%% hit rate)\n", name, hits, misses, ratio);
+        };
+        print_stat("Property", total_prop_hits, total_prop_misses);
+        print_stat("Layer", total_layer_hits, total_layer_misses);
+        print_stat("Composition", total_comp_hits, total_comp_misses);
+        std::printf("----------------------------------\n\n");
     }
 
     if (sink && result.output_error.empty() && !sink->finish()) {
@@ -159,4 +213,3 @@ RenderSessionResult RenderSession::render(
 }
 
 } // namespace tachyon
-

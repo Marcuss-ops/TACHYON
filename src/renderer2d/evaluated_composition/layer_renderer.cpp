@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cmath>
 #include <unordered_map>
+#include <span>
 
 namespace tachyon::renderer2d {
 
@@ -17,16 +18,16 @@ using renderer2d::Color;
 namespace {
 
 Color from_spec(const ColorSpec& spec) {
-    return Color{
-        static_cast<std::uint8_t>(std::clamp(static_cast<int>(spec.r), 0, 255)),
-        static_cast<std::uint8_t>(std::clamp(static_cast<int>(spec.g), 0, 255)),
-        static_cast<std::uint8_t>(std::clamp(static_cast<int>(spec.b), 0, 255)),
-        static_cast<std::uint8_t>(std::clamp(static_cast<int>(spec.a), 0, 255))
-    };
+    return detail::sRGB_to_Linear(Color{
+        static_cast<float>(spec.r),
+        static_cast<float>(spec.g),
+        static_cast<float>(spec.b),
+        static_cast<float>(spec.a)
+    });
 }
 
 Color color_with_opacity(Color color, float opacity) {
-    color.a = static_cast<std::uint8_t>(static_cast<float>(color.a) * std::clamp(opacity, 0.0f, 1.0f));
+    color.a *= std::clamp(opacity, 0.0f, 1.0f);
     return color;
 }
 
@@ -137,7 +138,7 @@ const std::vector<::tachyon::text::SubtitleEntry>* load_subtitle_entries(const s
 void LayerRenderer::renderLayer(
     const scene::EvaluatedLayerState& layer_state,
     const scene::EvaluatedCompositionState& comp_state,
-    RenderContext& context,
+    RenderContext2D& context,
     std::vector<float>& accum_r, std::vector<float>& accum_g, std::vector<float>& accum_b, std::vector<float>& accum_a) {
 
     switch (layer_state.type) {
@@ -151,7 +152,7 @@ void LayerRenderer::renderLayer(
 
 void LayerRenderer::renderSolidLayer(
     const scene::EvaluatedLayerState& layer, const scene::EvaluatedCompositionState& comp,
-    RenderContext& context,
+    RenderContext2D& context,
     std::vector<float>& r, std::vector<float>& g, std::vector<float>& b, std::vector<float>& a) {
     (void)layer; (void)comp; (void)context; (void)r; (void)g; (void)b; (void)a;
     // Basic solid fill logic would go here, updating accumulation buffers
@@ -159,44 +160,36 @@ void LayerRenderer::renderSolidLayer(
 
 void LayerRenderer::renderShapeLayer(
     const scene::EvaluatedLayerState& layer, const scene::EvaluatedCompositionState& comp,
-    RenderContext& context,
+    RenderContext2D& context,
     std::vector<float>& r, std::vector<float>& g, std::vector<float>& b, std::vector<float>& a) {
     (void)comp; (void)context; (void)layer; (void)r; (void)g; (void)b; (void)a;
 }
 
 void LayerRenderer::renderImageLayer(
     const scene::EvaluatedLayerState& layer, const scene::EvaluatedCompositionState& comp,
-    RenderContext& context,
+    RenderContext2D& context,
     std::vector<float>& r, std::vector<float>& g, std::vector<float>& b, std::vector<float>& a) {
     (void)comp; (void)context; (void)layer; (void)r; (void)g; (void)b; (void)a;
 }
 
 void LayerRenderer::renderTextLayer(
     const scene::EvaluatedLayerState& layer, const scene::EvaluatedCompositionState& comp,
-    RenderContext& context,
+    RenderContext2D& context,
     std::vector<float>& r, std::vector<float>& g, std::vector<float>& b, std::vector<float>& a) {
     (void)context;
-    if (!layer.subtitle_path.has_value()) {
+    const bool has_text_content = !layer.text_content.empty();
+    const bool has_subtitle = layer.subtitle_path.has_value();
+    if (!has_text_content && !has_subtitle) {
         return;
     }
 
-    const auto* font = TextRenderConfig::instance().font();
+    const auto* font = context.font;
     if (font == nullptr || !font->is_loaded()) {
         return;
     }
 
-    const auto* entries = load_subtitle_entries(*layer.subtitle_path);
-    if (entries == nullptr) {
-        return;
-    }
-
-    const ::tachyon::text::SubtitleEntry* active = ::tachyon::text::find_active_subtitle(*entries, comp.composition_time_seconds);
-    if (active == nullptr || active->text.empty()) {
-        return;
-    }
-
     ::tachyon::text::TextStyle style;
-    style.pixel_size = static_cast<std::uint32_t>(std::max<std::int32_t>(1, font->line_height()));
+    style.pixel_size = static_cast<std::uint32_t>(std::max<std::int32_t>(1, static_cast<std::int32_t>(std::lround(layer.font_size))));
     style.fill_color = from_spec(layer.fill_color);
 
     const ::tachyon::text::TextBox text_box{
@@ -205,31 +198,90 @@ void LayerRenderer::renderTextLayer(
         true
     };
 
-    const bool has_outline = layer.subtitle_outline_width > 0.0f || layer.subtitle_outline_color.has_value();
-    ::tachyon::text::TextRasterSurface subtitle_surface = has_outline
-        ? ::tachyon::text::rasterize_text_rgba(
-            *font,
-            active->text,
-            style,
-            text_box,
-            ::tachyon::text::TextAlignment::Center,
-            ::tachyon::text::TextOutlineOptions{
-                layer.subtitle_outline_width,
-                from_spec_color(layer.subtitle_outline_color, renderer2d::Color::black())
-            })
-        : ::tachyon::text::rasterize_text_rgba(
-            *font,
-            active->text,
-            style,
-            text_box,
-            ::tachyon::text::TextAlignment::Center);
+    std::string text = layer.text_content;
+    ::tachyon::text::TextAlignment alignment = ::tachyon::text::TextAlignment::Center;
+    if (layer.text_alignment == 0) {
+        alignment = ::tachyon::text::TextAlignment::Left;
+    } else if (layer.text_alignment == 2) {
+        alignment = ::tachyon::text::TextAlignment::Right;
+    }
+    bool use_outline = false;
+    ::tachyon::text::TextOutlineOptions outline{
+        layer.subtitle_outline_width,
+        from_spec_color(layer.subtitle_outline_color, renderer2d::Color::black())
+    };
+
+    if (!has_text_content && has_subtitle) {
+        const auto* entries = load_subtitle_entries(*layer.subtitle_path);
+        if (entries == nullptr) {
+            return;
+        }
+
+        const ::tachyon::text::SubtitleEntry* active = ::tachyon::text::find_active_subtitle(*entries, comp.composition_time_seconds);
+        if (active == nullptr || active->text.empty()) {
+            return;
+        }
+
+        text = active->text;
+        use_outline = layer.subtitle_outline_width > 0.0f || layer.subtitle_outline_color.has_value();
+    }
+
+    std::vector<::tachyon::text::TextHighlightSpan> highlight_spans;
+    highlight_spans.reserve(layer.text_highlights.size());
+    for (const auto& highlight : layer.text_highlights) {
+        if (highlight.end_glyph <= highlight.start_glyph) {
+            continue;
+        }
+        ::tachyon::text::TextHighlightSpan span;
+        span.start_glyph = highlight.start_glyph;
+        span.end_glyph = highlight.end_glyph;
+        span.color = from_spec(highlight.color);
+        span.padding_x = highlight.padding_x;
+        span.padding_y = highlight.padding_y;
+        highlight_spans.push_back(span);
+    }
+
+    const bool can_apply_highlights = !highlight_spans.empty();
+    ::tachyon::text::TextRasterSurface subtitle_surface =
+        can_apply_highlights
+            ? ::tachyon::text::rasterize_text_rgba(
+                *font,
+                text,
+                style,
+                text_box,
+                alignment,
+                std::span<const ::tachyon::text::TextHighlightSpan>(highlight_spans.data(), highlight_spans.size()),
+                ::tachyon::text::TextLayoutOptions{},
+                ::tachyon::text::TextAnimationOptions{})
+            : (use_outline
+                ? ::tachyon::text::rasterize_text_rgba(
+                    *font,
+                    text,
+                    style,
+                    text_box,
+                    alignment,
+                    outline)
+                : ::tachyon::text::rasterize_text_rgba(
+                    *font,
+                    text,
+                    style,
+                    text_box,
+                    alignment));
 
     if (subtitle_surface.width() == 0U || subtitle_surface.height() == 0U) {
         return;
     }
 
-    const int origin_x = std::max(0, static_cast<int>((comp.width - static_cast<std::int64_t>(subtitle_surface.width())) / 2));
-    const int origin_y = std::max(0, static_cast<int>(comp.height - static_cast<std::int64_t>(subtitle_surface.height()) - std::max<std::int64_t>(8, font->line_height() / 2)));
+    const int origin_x = has_text_content
+        ? (alignment == ::tachyon::text::TextAlignment::Left
+            ? std::max(0, static_cast<int>(std::lround(layer.local_transform.position.x)))
+            : alignment == ::tachyon::text::TextAlignment::Right
+                ? std::max(0, static_cast<int>(std::lround(layer.local_transform.position.x)) - static_cast<int>(subtitle_surface.width()))
+                : std::max(0, static_cast<int>(std::lround(layer.local_transform.position.x)) - static_cast<int>(subtitle_surface.width() / 2U)))
+        : std::max(0, static_cast<int>((comp.width - static_cast<std::int64_t>(subtitle_surface.width())) / 2));
+    const int origin_y = has_text_content
+        ? std::max(0, static_cast<int>(std::lround(layer.local_transform.position.y)) - static_cast<int>(subtitle_surface.height() / 2U))
+        : std::max<int>(0, static_cast<int>(comp.height - static_cast<std::int64_t>(subtitle_surface.height()) - std::max<std::int64_t>(8, static_cast<std::int64_t>(font->line_height() / 2))));
     blend_text_surface(subtitle_surface, origin_x, origin_y, r, g, b, a, comp.width);
 }
 

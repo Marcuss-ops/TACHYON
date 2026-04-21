@@ -1,17 +1,44 @@
 #pragma once
 
 #include "tachyon/renderer2d/draw_command.h"
+#include "tachyon/renderer2d/evaluated_composition_renderer.h"
 #include "tachyon/runtime/resource/render_context.h"
 #include "tachyon/runtime/cache/frame_cache.h"
 #include "tachyon/runtime/execution/render_plan.h"
 #include "tachyon/runtime/core/compiled_scene.h"
+#include "tachyon/runtime/core/data_snapshot.h"
+#include "tachyon/core/scene/evaluated_state.h"
 #include "tachyon/runtime/frame_arena.h"
 
+#include "tachyon/runtime/core/diagnostics.h"
 #include <cstddef>
+#include <cstdint>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace tachyon {
+
+/**
+ * @brief Result of dynamic frame execution.
+ */
+struct ExecutedFrame {
+    ExecutedFrame() = default;
+
+    std::int64_t frame_number{0};
+    std::uint64_t cache_key{0};
+    bool cache_hit{false};
+    std::uint64_t scene_hash{0};
+    std::size_t draw_command_count{0};
+    std::shared_ptr<renderer2d::Framebuffer> frame;
+    FrameDiagnostics diagnostics;
+};
+
+struct EvaluatedFrameState {
+    FrameRenderTask task;
+    scene::EvaluatedCompositionState composition_state;
+    std::uint64_t scene_hash{0};
+};
 
 /**
  * @brief High-performance frame execution engine.
@@ -34,6 +61,13 @@ public:
         const FrameRenderTask& task,
         RenderContext& context);
 
+    ExecutedFrame execute(
+        const CompiledScene& compiled_scene,
+        const RenderPlan& plan,
+        const FrameRenderTask& task,
+        const DataSnapshot& snapshot,
+        RenderContext& context);
+
 private:
     FrameArena& m_arena;
     FrameCache& m_cache;
@@ -47,34 +81,60 @@ private:
     void build_lookup_table(const CompiledScene& scene);
 
     // Internal evaluation helpers that work on CompiledNodes
-    void evaluate_node(std::uint32_t node_id, const CompiledScene& scene, const RenderPlan& plan, RenderContext& context, std::uint64_t global_key);
-    
-    void evaluate_property(const CompiledPropertyTrack& track, const RenderPlan& plan, std::uint64_t node_key);
-    void evaluate_layer(const CompiledLayer& layer, const RenderPlan& plan, RenderContext& context, std::uint64_t node_key);
-    void evaluate_composition(const CompiledComposition& comp, const RenderPlan& plan, RenderContext& context, std::uint64_t node_key);
+    void evaluate_node(
+        std::uint32_t node_id,
+        const CompiledScene& scene,
+        const RenderPlan& plan,
+        const DataSnapshot& snapshot,
+        RenderContext& context,
+        std::uint64_t composition_key,
+        std::uint64_t frame_key,
+        double frame_time_seconds,
+        const FrameRenderTask& task,
+        std::optional<std::uint64_t> main_frame_key = std::nullopt,
+        std::optional<double> main_frame_time = std::nullopt);
+
+    void evaluate_property(
+        const CompiledScene& scene,
+        const CompiledPropertyTrack& track,
+        const RenderPlan& plan,
+        const DataSnapshot& snapshot,
+        RenderContext& context,
+        std::uint64_t node_key,
+        double frame_time_seconds);
+
+    void evaluate_layer(
+        const CompiledScene& scene,
+        const CompiledLayer& layer,
+        const RenderPlan& plan,
+        const DataSnapshot& snapshot,
+        RenderContext& context,
+        std::uint64_t composition_key,
+        std::uint64_t frame_key,
+        double frame_time_seconds,
+        std::optional<std::uint64_t> main_frame_key = std::nullopt,
+        std::optional<double> main_frame_time = std::nullopt);
+
+    void evaluate_composition(
+        const CompiledScene& scene,
+        const CompiledComposition& comp,
+        const RenderPlan& plan,
+        const DataSnapshot& snapshot,
+        RenderContext& context,
+        std::uint64_t composition_key,
+        std::uint64_t node_key,
+        std::uint64_t frame_key,
+        double frame_time_seconds,
+        const FrameRenderTask& task);
 };
 
+[[nodiscard]] EvaluatedFrameState evaluate_frame_state(
+    const SceneSpec& scene,
+    const CompiledScene& compiled_scene,
+    const RenderPlan& plan,
+    const FrameRenderTask& task);
 
-/**
- * @brief Evaluated state of a single frame (transient).
- */
-struct EvaluatedFrameState {
-    FrameRenderTask task;
-    scene::EvaluatedCompositionState composition_state;
-    std::uint64_t scene_hash{0};
-};
-
-/**
- * @brief Result of dynamic frame execution.
- */
-struct ExecutedFrame {
-    std::int64_t frame_number{0};
-    std::uint64_t cache_key{0};
-    bool cache_hit{false};
-    std::uint64_t scene_hash{0};
-    std::size_t draw_command_count{0};
-    renderer2d::Framebuffer frame{1, 1};
-};
+[[nodiscard]] renderer2d::DrawList2D build_draw_list(const EvaluatedFrameState& state);
 
 // Legacy C-style wrappers for compatibility during transition
 ExecutedFrame execute_frame_task(
@@ -86,4 +146,3 @@ ExecutedFrame execute_frame_task(
     RenderContext& context);
 
 } // namespace tachyon
-

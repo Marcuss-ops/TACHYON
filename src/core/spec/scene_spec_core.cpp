@@ -76,8 +76,15 @@ ValidationResult validate_scene_spec(const SceneSpec& scene) {
         if (comp.width <= 0 || comp.height <= 0) result.diagnostics.add_error("scene.composition.size_invalid", "size must be positive", path + ".width");
 
         std::set<std::string> layer_ids;
-        for (const auto& layer : comp.layers) {
-            if (!layer.id.empty()) layer_ids.insert(layer.id);
+        for (std::size_t j = 0; j < comp.layers.size(); ++j) {
+            const auto& layer = comp.layers[j];
+            const std::string lpath = path + ".layers[" + std::to_string(j) + "]";
+            if (layer.id.empty()) {
+                continue;
+            }
+            if (!layer_ids.insert(layer.id).second) {
+                result.diagnostics.add_error("scene.layer.id_duplicate", "layer id must be unique within a composition", lpath + ".id");
+            }
         }
 
         for (std::size_t j = 0; j < comp.layers.size(); ++j) {

@@ -10,6 +10,8 @@
 #pragma once
 
 #include "tachyon/runtime/core/determinism_contract.h"
+#include "tachyon/runtime/core/data_binding.h"
+#include "tachyon/core/spec/scene_spec.h"
 #include "tachyon/runtime/vm/expression_vm.h"
 #include "tachyon/runtime/core/render_graph.h"
 
@@ -65,6 +67,10 @@ struct CompiledKeyframe {
     double time{0.0};
     double value{0.0};
     std::uint32_t easing{0};
+    double cx1{0.0};
+    double cy1{0.0};
+    double cx2{1.0};
+    double cy2{1.0};
 };
 
 struct CompiledPropertyTrack {
@@ -76,6 +82,7 @@ struct CompiledPropertyTrack {
     };
 
     CompiledNode node;
+    std::string property_id;
     Kind kind{Kind::Constant};
     double constant_value{0.0};
     std::vector<CompiledKeyframe> keyframes;
@@ -90,6 +97,21 @@ struct CompiledLayer {
     // Boundary data
     std::uint32_t width{0};
     std::uint32_t height{0};
+
+    // Render-relevant authoring data preserved for execution.
+    std::string text_content;
+    std::string font_id;
+    float font_size{48.0f};
+    int text_alignment{0};
+    ColorSpec fill_color{255, 255, 255, 255};
+    ColorSpec stroke_color{255, 255, 255, 255};
+    float stroke_width{0.0f};
+    std::optional<ShapePathSpec> shape_path;
+    std::vector<EffectSpec> effects;
+    std::vector<TextHighlightSpec> text_highlights;
+    std::optional<std::string> subtitle_path;
+    std::optional<ColorSpec> subtitle_outline_color;
+    float subtitle_outline_width{0.0f};
     
     // Evaluation state indices
     std::optional<std::uint32_t> parent_index;
@@ -122,6 +144,8 @@ struct CompiledScene {
     CompiledSceneHeader header;
     DeterminismContract determinism;
     std::uint64_t scene_hash{0};
+    std::string project_id;
+    std::string project_name;
     
     RenderGraph graph;
     
@@ -157,4 +181,3 @@ struct CompiledScene {
 };
 
 } // namespace tachyon
-

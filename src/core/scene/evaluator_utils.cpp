@@ -109,28 +109,62 @@ std::string resolve_template(
     return result;
 }
 
-
-
 double sample_scalar(
     const AnimatedScalarSpec& property,
     double fallback,
     double local_time_seconds,
     const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
     std::uint64_t expression_seed,
-    const std::unordered_map<std::string, double>* job_variables) {
+    const std::unordered_map<std::string, double>* job_variables,
+    const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables,
+    std::uint32_t layer_index,
+    PropertySampler sampler,
+    bool skip_expression) {
 
-    if (property.expression.has_value() && !property.expression->empty()) {
+    if (!skip_expression && property.expression.has_value() && !property.expression->empty()) {
         renderer2d::expressions::ExpressionContext expr_ctx;
+        expr_ctx.layer_index = layer_index;
+        expr_ctx.property_sampler = sampler;
+
+        std::vector<std::string> table_keys;
         if (job_variables) {
             for (const auto& [k, v] : *job_variables) {
                 expr_ctx.variables.try_emplace(k, v);
             }
         }
+        if (tables) {
+            expr_ctx.tables = *tables;
+            table_keys.reserve(tables->size());
+            for (const auto& [key, _] : *tables) {
+                table_keys.push_back(key);
+            }
+            std::sort(table_keys.begin(), table_keys.end());
+        }
         expr_ctx.variables["t"] = local_time_seconds;
         expr_ctx.variables["time"] = local_time_seconds;
-        expr_ctx.variables["value"] = fallback;
+        expr_ctx.value = fallback;
         expr_ctx.seed = expression_seed;
         expr_ctx.variables["seed"] = static_cast<double>(expression_seed);
+        expr_ctx.table_lookup = [tables, table_keys](double table_idx, double row, double col) -> double {
+            if (!tables || tables->empty() || table_keys.empty()) {
+                return 0.0;
+            }
+            const auto idx = static_cast<std::size_t>(std::max(0.0, std::floor(table_idx)));
+            if (idx >= table_keys.size()) {
+                return 0.0;
+            }
+            const auto& table = tables->at(table_keys[idx]);
+            const std::size_t r = static_cast<std::size_t>(std::max(0.0, std::floor(row)));
+            const std::size_t c = static_cast<std::size_t>(std::max(0.0, std::floor(col)));
+            if (r >= table.size() || c >= table[r].size()) {
+                return 0.0;
+            }
+            try {
+                return std::stod(table[r][c]);
+            } catch (...) {
+                return 0.0;
+            }
+        };
         
         if (audio_analyzer) {
             const ::tachyon::audio::AudioBands bands = audio_analyzer->analyze_frame(local_time_seconds);
@@ -139,6 +173,12 @@ double sample_scalar(
             expr_ctx.variables["music.high"] = bands.high;
             expr_ctx.variables["music.presence"] = bands.presence;
             expr_ctx.variables["music.rms"] = bands.rms;
+        }
+
+        if (!property.keyframes.empty()) {
+            expr_ctx.variables["_prop_start"] = property.keyframes.front().time;
+            expr_ctx.variables["_prop_end"] = property.keyframes.back().time;
+            expr_ctx.variables["_prop_duration"] = property.keyframes.back().time - property.keyframes.front().time;
         }
         
         auto result = renderer2d::expressions::ExpressionEvaluator::evaluate(*property.expression, expr_ctx);
@@ -203,18 +243,48 @@ math::Vector2 sample_vector2(
     double local_time_seconds,
     const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
     std::uint64_t expression_seed,
-    const std::unordered_map<std::string, double>* job_variables) {
+    const std::unordered_map<std::string, double>* job_variables,
+    const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables) {
     if (property.expression.has_value() && !property.expression->empty()) {
         renderer2d::expressions::ExpressionContext expr_ctx;
+        std::vector<std::string> table_keys;
         if (job_variables) {
             for (const auto& [k, v] : *job_variables) {
                 expr_ctx.variables.try_emplace(k, v);
             }
         }
+        if (tables) {
+            expr_ctx.tables = *tables;
+            table_keys.reserve(tables->size());
+            for (const auto& [key, _] : *tables) {
+                table_keys.push_back(key);
+            }
+            std::sort(table_keys.begin(), table_keys.end());
+        }
         expr_ctx.variables["t"] = local_time_seconds;
         expr_ctx.variables["time"] = local_time_seconds;
         expr_ctx.seed = expression_seed;
         expr_ctx.variables["seed"] = static_cast<double>(expression_seed);
+        expr_ctx.table_lookup = [tables, table_keys](double table_idx, double row, double col) -> double {
+            if (!tables || tables->empty() || table_keys.empty()) {
+                return 0.0;
+            }
+            const auto idx = static_cast<std::size_t>(std::max(0.0, std::floor(table_idx)));
+            if (idx >= table_keys.size()) {
+                return 0.0;
+            }
+            const auto& table = tables->at(table_keys[idx]);
+            const std::size_t r = static_cast<std::size_t>(std::max(0.0, std::floor(row)));
+            const std::size_t c = static_cast<std::size_t>(std::max(0.0, std::floor(col)));
+            if (r >= table.size() || c >= table[r].size()) {
+                return 0.0;
+            }
+            try {
+                return std::stod(table[r][c]);
+            } catch (...) {
+                return 0.0;
+            }
+        };
         
         if (audio_analyzer) {
             const ::tachyon::audio::AudioBands bands = audio_analyzer->analyze_frame(local_time_seconds);
@@ -289,18 +359,48 @@ math::Vector3 sample_vector3(
     double local_time_seconds,
     const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
     std::uint64_t expression_seed,
-    const std::unordered_map<std::string, double>* job_variables) {
+    const std::unordered_map<std::string, double>* job_variables,
+    const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables) {
     if (property.expression.has_value() && !property.expression->empty()) {
         renderer2d::expressions::ExpressionContext expr_ctx;
+        std::vector<std::string> table_keys;
         if (job_variables) {
             for (const auto& [k, v] : *job_variables) {
                 expr_ctx.variables.try_emplace(k, v);
             }
         }
+        if (tables) {
+            expr_ctx.tables = *tables;
+            table_keys.reserve(tables->size());
+            for (const auto& [key, _] : *tables) {
+                table_keys.push_back(key);
+            }
+            std::sort(table_keys.begin(), table_keys.end());
+        }
         expr_ctx.variables["t"] = local_time_seconds;
         expr_ctx.variables["time"] = local_time_seconds;
         expr_ctx.seed = expression_seed;
         expr_ctx.variables["seed"] = static_cast<double>(expression_seed);
+        expr_ctx.table_lookup = [tables, table_keys](double table_idx, double row, double col) -> double {
+            if (!tables || tables->empty() || table_keys.empty()) {
+                return 0.0;
+            }
+            const auto idx = static_cast<std::size_t>(std::max(0.0, std::floor(table_idx)));
+            if (idx >= table_keys.size()) {
+                return 0.0;
+            }
+            const auto& table = tables->at(table_keys[idx]);
+            const std::size_t r = static_cast<std::size_t>(std::max(0.0, std::floor(row)));
+            const std::size_t c = static_cast<std::size_t>(std::max(0.0, std::floor(col)));
+            if (r >= table.size() || c >= table[r].size()) {
+                return 0.0;
+            }
+            try {
+                return std::stod(table[r][c]);
+            } catch (...) {
+                return 0.0;
+            }
+        };
         
         if (audio_analyzer) {
             const ::tachyon::audio::AudioBands bands = audio_analyzer->analyze_frame(local_time_seconds);

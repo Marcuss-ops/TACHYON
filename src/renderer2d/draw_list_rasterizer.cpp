@@ -2,6 +2,7 @@
 
 #include "tachyon/renderer2d/rasterizer_ops.h"
 #include "tachyon/renderer2d/raster/perspective_rasterizer.h"
+#include "tachyon/renderer2d/effect_host.h"
 
 #include <algorithm>
 #include <vector>
@@ -18,11 +19,11 @@ using ::tachyon::renderer2d::RectI;
 using ::tachyon::renderer2d::SurfaceRGBA;
 
 renderer2d::Color placeholder_textured_color(float opacity) {
-    renderer2d::Color color{255, 255, 255, 255};
-    color.a = static_cast<std::uint8_t>(opacity <= 0.0f ? 0.0f : (opacity >= 1.0f ? 255.0f : opacity * 255.0f));
-    color.r = static_cast<std::uint8_t>((static_cast<std::uint32_t>(color.r) * color.a + 127U) / 255U);
-    color.g = static_cast<std::uint8_t>((static_cast<std::uint32_t>(color.g) * color.a + 127U) / 255U);
-    color.b = static_cast<std::uint8_t>((static_cast<std::uint32_t>(color.b) * color.a + 127U) / 255U);
+    renderer2d::Color color{1.0f, 1.0f, 1.0f, 1.0f};
+    color.a = std::clamp(opacity, 0.0f, 1.0f);
+    color.r *= color.a;
+    color.g *= color.a;
+    color.b *= color.a;
     return color;
 }
 
@@ -37,11 +38,11 @@ RectI intersect_rects(const RectI& a, const RectI& b) {
     return RectI{x0, y0, x1 - x0, y1 - y0};
 }
 
-Color blend_for_mode(Color src, Color dest, BlendMode mode) {
-    return blend_mode_color(src, dest, mode);
+Color blend_for_mode(Color src, Color dest, BlendMode mode, detail::TransferCurve curve) {
+    return blend_mode_color(src, dest, mode, curve);
 }
 
-bool write_pixel(SurfaceRGBA& fb, int x, int y, Color color, BlendMode mode) {
+bool write_pixel(SurfaceRGBA& fb, int x, int y, Color color, BlendMode mode, detail::TransferCurve curve) {
     if (x < 0 || y < 0) {
         return false;
     }
@@ -56,22 +57,22 @@ bool write_pixel(SurfaceRGBA& fb, int x, int y, Color color, BlendMode mode) {
     if (!dest.has_value()) {
         return false;
     }
-    return fb.set_pixel(ux, uy, blend_for_mode(color, *dest, mode));
+    return fb.set_pixel(ux, uy, blend_for_mode(color, *dest, mode, curve));
 }
 
-void fill_rect_with_blend(SurfaceRGBA& fb, const RectI& rect, Color color, BlendMode mode) {
+void fill_rect_with_blend(SurfaceRGBA& fb, const RectI& rect, Color color, BlendMode mode, detail::TransferCurve curve) {
     if (rect.width <= 0 || rect.height <= 0) {
         return;
     }
 
     for (int y = rect.y; y < rect.y + rect.height; ++y) {
         for (int x = rect.x; x < rect.x + rect.width; ++x) {
-            write_pixel(fb, x, y, color, mode);
+            write_pixel(fb, x, y, color, mode, curve);
         }
     }
 }
 
-void draw_line_with_blend(SurfaceRGBA& fb, const LinePrimitive& line, BlendMode mode) {
+void draw_line_with_blend(SurfaceRGBA& fb, const LinePrimitive& line, BlendMode mode, detail::TransferCurve curve) {
     int x0 = line.x0;
     int y0 = line.y0;
     const int x1 = line.x1;
@@ -84,7 +85,7 @@ void draw_line_with_blend(SurfaceRGBA& fb, const LinePrimitive& line, BlendMode 
     int err = dx - dy;
 
     while (true) {
-        write_pixel(fb, x0, y0, line.color, mode);
+        write_pixel(fb, x0, y0, line.color, mode, curve);
         if (x0 == x1 && y0 == y1) {
             break;
         }
@@ -116,8 +117,8 @@ RasterizedFrame2D render_draw_list_2d(
     frame.backend_name = "cpu-2d-draw-list";
     frame.cache_key = task.cache_key.value;
     frame.note = "Frame rasterized from DrawList2D";
-    frame.surface.emplace(static_cast<std::uint32_t>(frame.width), static_cast<std::uint32_t>(frame.height));
-    if (!frame.surface.has_value()) {
+    frame.surface = std::make_shared<renderer2d::SurfaceRGBA>(static_cast<std::uint32_t>(frame.width), static_cast<std::uint32_t>(frame.height));
+    if (!frame.surface) {
         return frame;
     }
 
@@ -143,6 +144,9 @@ RasterizedFrame2D render_draw_list_2d(
         });
     }
 
+    auto effect_host = renderer2d::create_effect_host();
+    renderer2d::EffectHost::register_builtins(*effect_host);
+
     for (const auto* command : ordered_commands) {
     if (command->kind == renderer2d::DrawCommandKind::MaskRect && command->mask_rect.has_value()) {
         active_clip = intersect_rects(active_clip, command->mask_rect->rect);
@@ -155,6 +159,8 @@ RasterizedFrame2D render_draw_list_2d(
             : active_clip;
         frame.surface->set_clip_rect(effective_clip);
 
+        const detail::TransferCurve working_curve = detail::parse_transfer_curve(plan.working_space);
+
         switch (command->kind) {
             case renderer2d::DrawCommandKind::Clear:
                 if (command->clear.has_value()) {
@@ -165,7 +171,7 @@ RasterizedFrame2D render_draw_list_2d(
                 break;
             case renderer2d::DrawCommandKind::SolidRect:
                 if (command->solid_rect.has_value()) {
-                    fill_rect_with_blend(*frame.surface, command->solid_rect->rect, command->solid_rect->color, command->blend_mode);
+                    fill_rect_with_blend(*frame.surface, command->solid_rect->rect, command->solid_rect->color, command->blend_mode, working_curve);
                 }
                 break;
             case renderer2d::DrawCommandKind::Line:
@@ -174,7 +180,8 @@ RasterizedFrame2D render_draw_list_2d(
                         renderer2d::LinePrimitive{command->line->x0, command->line->y0,
                                                   command->line->x1, command->line->y1,
                                                   command->line->color},
-                        command->blend_mode);
+                        command->blend_mode,
+                        working_curve);
                 }
                 break;
             case renderer2d::DrawCommandKind::TexturedQuad:
@@ -232,6 +239,11 @@ RasterizedFrame2D render_draw_list_2d(
                         stroke_style.miter_limit = s.miter_limit;
                         PathRasterizer::stroke(*frame.surface, transformed_geom, stroke_style);
                     }
+                }
+                break;
+            case renderer2d::DrawCommandKind::Adjustment:
+                if (command->adjustment.has_value()) {
+                    *frame.surface = effect_host->apply_pipeline(*frame.surface, command->adjustment->effects);
                 }
                 break;
         }

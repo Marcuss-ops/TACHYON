@@ -9,6 +9,10 @@
 #include <functional>
 #include <random>
 
+namespace tachyon::text {
+class Font;
+}
+
 namespace tachyon {
 namespace renderer3d {
 
@@ -28,12 +32,12 @@ public:
      * Builds the Embree BVH from evaluated composition state.
      * This should be called once per frame before rendering.
      */
-    void build_scene(const scene::EvaluatedCompositionState& state);
+    void build_scene(const scene::EvaluatedCompositionState& state, const text::Font* font = nullptr);
 
     /**
      * Overload to build scene for a specific subset of layers (for interleaving).
      */
-    void build_scene_subset(const scene::EvaluatedCompositionState& state, const std::vector<std::size_t>& layer_indices);
+    void build_scene_subset(const scene::EvaluatedCompositionState& state, const std::vector<std::size_t>& layer_indices, const text::Font* font = nullptr);
 
     /**
      * Renders a 3D pass for the current scene.
@@ -70,6 +74,8 @@ private:
         math::Vector3 color;
         float alpha;
         float depth;
+        math::Vector3 albedo;
+        math::Vector3 normal;
     };
 
     ShadingResult trace_ray(
@@ -90,7 +96,7 @@ private:
     void cleanup_scene();
     static void log_embree_error(void* userPtr, RTCError code, const char* str);
 
-    void internal_build_scene(const scene::EvaluatedCompositionState& state, const std::function<bool(std::size_t)>& filter);
+    void internal_build_scene(const scene::EvaluatedCompositionState& state, const std::function<bool(std::size_t)>& filter, const text::Font* font);
 };
 
 } // namespace renderer3d

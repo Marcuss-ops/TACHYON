@@ -133,9 +133,9 @@ bool run_frame_executor_tests() {
     const ExecutedFrame rendered = execute_frame_task(scene, *compiled_result.value, plan, make_task(2), cache, render_context);
     check_true(rendered.draw_command_count == draw_list.commands.size(),
                "Executor reports draw command count from renderer draw list");
-    check_true(rendered.frame.width() == static_cast<std::uint32_t>(plan.composition.width),
+    check_true(rendered.frame->width() == static_cast<std::uint32_t>(plan.composition.width),
                "Draft policy should still return a full-size frame after upscale");
-    check_true(rendered.frame.height() == static_cast<std::uint32_t>(plan.composition.height),
+    check_true(rendered.frame->height() == static_cast<std::uint32_t>(plan.composition.height),
                "Draft policy should still return a full-size frame after upscale");
 
     return g_failures == 0;

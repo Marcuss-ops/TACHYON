@@ -58,10 +58,10 @@ renderer2d::SurfaceRGBA surface_from_rgba_buffer(const std::vector<std::uint8_t>
                 static_cast<std::uint32_t>(x),
                 static_cast<std::uint32_t>(y),
                 renderer2d::Color{
-                    buffer[index + 0U],
-                    buffer[index + 1U],
-                    buffer[index + 2U],
-                    buffer[index + 3U]
+                    static_cast<float>(buffer[index + 0U]),
+                    static_cast<float>(buffer[index + 1U]),
+                    static_cast<float>(buffer[index + 2U]),
+                    static_cast<float>(buffer[index + 3U])
                 });
         }
     }

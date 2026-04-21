@@ -16,6 +16,6 @@ RasterizedFrame2D render_evaluated_composition_2d(
     const scene::EvaluatedCompositionState& state,
     const RenderPlan& plan,
     const FrameRenderTask& task,
-    renderer2d::RenderContext& context);
+    renderer2d::RenderContext2D& context);
 
 } // namespace tachyon

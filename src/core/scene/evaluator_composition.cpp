@@ -140,21 +140,24 @@ EvaluatedCompositionState evaluate_composition_internal(
         const int iterations = std::max(1, static_cast<int>(std::floor(rep_count)));
 
         if (iterations > 1) {
-            const float off_x = static_cast<float>(sample_scalar(composition.layers[index].repeater_offset_position_x, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_off_x"))));
-            const float off_y = static_cast<float>(sample_scalar(composition.layers[index].repeater_offset_position_y, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_off_y"))));
-            const float off_rot = static_cast<float>(sample_scalar(composition.layers[index].repeater_offset_rotation, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_off_rot"))));
-            const float off_sx = static_cast<float>(sample_scalar(composition.layers[index].repeater_offset_scale_x, 100.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_off_sx")))) / 100.0f;
-            const float off_sy = static_cast<float>(sample_scalar(composition.layers[index].repeater_offset_scale_y, 100.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_off_sy")))) / 100.0f;
-            const float start_op = static_cast<float>(sample_scalar(composition.layers[index].repeater_start_opacity, 100.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_op_start")))) / 100.0f;
-            const float end_op = static_cast<float>(sample_scalar(composition.layers[index].repeater_end_opacity, 100.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_op_end")))) / 100.0f;
+        const double stagger_delay = sample_scalar(composition.layers[index].repeater_stagger_delay, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("stagger_delay")));
+        const float off_x = static_cast<float>(sample_scalar(composition.layers[index].repeater_offset_position_x, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_off_x"))));
+        const float off_y = static_cast<float>(sample_scalar(composition.layers[index].repeater_offset_position_y, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_off_y"))));
+        const float off_rot = static_cast<float>(sample_scalar(composition.layers[index].repeater_offset_rotation, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_off_rot"))));
+        const float off_sx = static_cast<float>(sample_scalar(composition.layers[index].repeater_offset_scale_x, 100.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_off_sx")))) / 100.0f;
+        const float off_sy = static_cast<float>(sample_scalar(composition.layers[index].repeater_offset_scale_y, 100.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_off_sy")))) / 100.0f;
+        const float start_op = static_cast<float>(sample_scalar(composition.layers[index].repeater_start_opacity, 100.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_op_start")))) / 100.0f;
+        const float end_op = static_cast<float>(sample_scalar(composition.layers[index].repeater_end_opacity, 100.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_op_end")))) / 100.0f;
 
             for (int r = 0; r < iterations; ++r) {
-                EvaluatedLayerState repeated = base_layer;
+                // For stagger, we re-evaluate the layer state with a time offset
+                EvaluatedLayerState repeated = (stagger_delay != 0.0) 
+                    ? make_layer_state(context, composition.layers[index], index, static_cast<double>(r) * stagger_delay)
+                    : base_layer;
+
                 repeated.id = base_layer.id + "_rep_" + std::to_string(r);
                 
                 // Cumulative transform
-                // T = (T_base) * (T_offset^r)
-                // For simplicity, we'll just offset position and rotation/scale in the world matrix or local
                 math::Matrix4x4 offset_transform = math::Matrix4x4::identity();
                 for (int step = 0; step < r; ++step) {
                    offset_transform = offset_transform * math::compose_trs(
@@ -169,8 +172,8 @@ EvaluatedCompositionState evaluate_composition_internal(
                 repeated.world_position3 = wp3;
                 
                 // Opacity ramp
-                const float t = iterations > 1 ? static_cast<float>(r) / static_cast<float>(iterations - 1) : 0.0f;
-                repeated.opacity *= (start_op * (1.0f - t) + end_op * t);
+                const float t_ramp = iterations > 1 ? static_cast<float>(r) / static_cast<float>(iterations - 1) : 0.0f;
+                repeated.opacity *= (start_op * (1.0f - t_ramp) + end_op * t_ramp);
 
                 if (repeated.type == LayerType::Light) {
                     evaluated.lights.push_back(evaluate_light_state(repeated, composition.layers[index], repeated.child_time_seconds));
@@ -178,7 +181,8 @@ EvaluatedCompositionState evaluate_composition_internal(
                     evaluated.layers.push_back(std::move(repeated));
                 }
             }
-        } else {
+        }
+ else {
             if (base_layer.type == LayerType::Light) {
                 evaluated.lights.push_back(evaluate_light_state(base_layer, composition.layers[index], base_layer.child_time_seconds));
             } else {

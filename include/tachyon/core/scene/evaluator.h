@@ -15,11 +15,16 @@ namespace tachyon::audio {
 class AudioAnalyzer;
 }
 
+#include <functional>
+
 namespace tachyon::scene {
+
+typedef std::function<double(int, double)> PropertySampler;
 
 struct EvaluationVariables {
     const std::unordered_map<std::string, double>* numeric{nullptr};
     const std::unordered_map<std::string, std::string>* strings{nullptr};
+    const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables{nullptr};
     const std::unordered_map<std::string, RenderJob::LayerOverride>* layer_overrides{nullptr};
 };
 

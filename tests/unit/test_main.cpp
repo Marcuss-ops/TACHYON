@@ -1,16 +1,114 @@
 #include <iostream>
+#include <cstdlib>
+#include <cstddef>
+#include <string>
+#include <string_view>
+#include <vector>
+#include <algorithm>
+#include <random>
+#include <optional>
+#include <iomanip>
+#include <cstring>
+
+// Global seed for random tests
+uint32_t g_test_seed = 0;
+
+uint32_t get_global_random_seed() {
+    return g_test_seed;
+}
 
 namespace {
 
-bool run_step(const char* name, bool (*fn)()) {
+struct TestCase {
+    const char* name;
+    bool (*fn)();
+};
+
+std::string_view get_env_var(const char* name) {
+    if (const char* value = std::getenv(name); value && *value) {
+        return value;
+    }
+    return {};
+}
+
+std::string_view test_filter() {
+    return get_env_var("TACHYON_TEST_FILTER");
+}
+
+bool matches_filter(std::string_view name) {
+    const std::string_view filter = test_filter();
+    if (filter.empty()) {
+        return true;
+    }
+
+    std::size_t start = 0;
+    while (start <= filter.size()) {
+        const std::size_t end = filter.find(',', start);
+        const std::string_view token = filter.substr(start, end == std::string_view::npos ? std::string_view::npos : end - start);
+        if (!token.empty() && name.find(token) != std::string_view::npos) {
+            return true;
+        }
+        if (end == std::string_view::npos) {
+            break;
+        }
+        start = end + 1;
+    }
+    return false;
+}
+
+bool run_step(const char* name, bool (*fn)(), int iteration, int total_iterations) {
+    if (!matches_filter(name)) {
+        std::cerr << "[SKIP] " << name << '\n';
+        return true;
+    }
+
     std::cerr << "[RUN] " << name << '\n';
     const bool ok = fn();
-    std::cerr << "[OK] " << name << '\n';
+    
+    if (ok) {
+        if (total_iterations > 1) {
+            std::cerr << "[OK] " << name << " (" << (iteration + 1) << "/" << total_iterations << ")\n";
+        } else {
+            std::cerr << "[OK] " << name << '\n';
+        }
+    } else {
+        if (total_iterations > 1) {
+            std::cerr << "[FAIL] " << name << " (iteration " << (iteration + 1) << "/" << total_iterations << ")\n";
+        } else {
+            std::cerr << "[FAIL] " << name << '\n';
+        }
+    }
+    
     return ok;
+}
+
+uint32_t initialize_seed() {
+    std::string_view seed_str = get_env_var("TACHYON_TEST_SEED");
+    if (!seed_str.empty()) {
+        try {
+            return static_cast<uint32_t>(std::stoul(std::string(seed_str)));
+        } catch (...) {
+            // Fallback to random device if parsing fails
+        }
+    }
+    return std::random_device{}();
+}
+
+int get_repeat_count() {
+    std::string_view repeat_str = get_env_var("TACHYON_TEST_REPEAT");
+    if (!repeat_str.empty()) {
+        try {
+            return std::stoi(std::string(repeat_str));
+        } catch (...) {
+            // Fallback to 1 if parsing fails
+        }
+    }
+    return 1;
 }
 
 } // namespace
 
+// External test declarations
 bool run_scene_spec_tests();
 bool run_render_job_tests();
 bool run_math_tests();
@@ -27,6 +125,8 @@ bool run_path_rasterizer_tests();
 bool run_path_rasterizer_aa_tests();
 bool run_expression_vm_tests();
 bool run_frame_cache_tests();
+bool run_frame_cache_budget_tests();
+bool run_tiling_integration_tests();
 bool run_runtime_backbone_tests();
 bool run_frame_executor_tests();
 bool run_frame_output_sink_tests();
@@ -43,137 +143,93 @@ bool run_glyph_cache_tests();
 bool run_text_tests();
 bool run_effect_host_tests();
 bool run_precomp_mask_tests();
+bool run_golden_visual_tests();
 
-int main() {
-    if (!run_step("math", run_math_tests)) {
-        std::cerr << "math tests failed\n";
-        return 1;
-    }
-    if (!run_step("property", run_property_tests)) {
-        std::cerr << "property tests failed\n";
-        return 1;
-    }
-    if (!run_step("expression", run_expression_tests)) {
-        std::cerr << "expression tests failed\n";
-        return 1;
-    }
-    if (!run_step("asset_resolution", run_asset_resolution_tests)) {
-        std::cerr << "asset resolution tests failed\n";
-        return 1;
-    }
-    if (!run_step("image_manager", run_image_manager_tests)) {
-        std::cerr << "image manager tests failed\n";
-        return 1;
-    }
-    if (!run_step("image_decode", run_image_decode_tests)) {
-        std::cerr << "image decode tests failed\n";
-        return 1;
-    }
-    if (!run_step("framebuffer", run_framebuffer_tests)) {
-        std::cerr << "framebuffer tests failed\n";
-        return 1;
-    }
-    if (!run_step("rasterizer", run_rasterizer_tests)) {
-        std::cerr << "rasterizer tests failed\n";
-        return 1;
-    }
-    if (!run_step("surface", run_surface_tests)) {
-        std::cerr << "surface tests failed\n";
-        return 1;
-    }
-    if (!run_step("draw_list_builder", run_draw_list_builder_tests)) {
-        std::cerr << "draw list builder tests failed\n";
-        return 1;
-    }
-    if (!run_step("blend_modes", run_blend_modes_tests)) {
-        std::cerr << "blend modes tests failed\n";
-        return 1;
-    }
-    if (!run_step("evaluated_composition_renderer", run_evaluated_composition_renderer_tests)) {
-        std::cerr << "evaluated composition renderer tests failed\n";
-        return 1;
-    }
-    if (!run_step("path_rasterizer", run_path_rasterizer_tests)) {
-        std::cerr << "path rasterizer tests failed\n";
-        return 1;
-    }
-    if (!run_step("path_rasterizer_aa", run_path_rasterizer_aa_tests)) {
-        std::cerr << "path rasterizer aa tests failed\n";
-        return 1;
-    }
-    if (!run_step("frame_cache", run_frame_cache_tests)) {
-        std::cerr << "frame cache tests failed\n";
-        return 1;
-    }
-    if (!run_step("runtime_backbone", run_runtime_backbone_tests)) {
-        std::cerr << "runtime backbone tests failed\n";
-        return 1;
-    }
-    if (!run_step("frame_executor", run_frame_executor_tests)) {
-        std::cerr << "frame executor tests failed\n";
-        return 1;
-    }
-    if (!run_step("frame_output_sink", run_frame_output_sink_tests)) {
-        std::cerr << "frame output sink tests failed\n";
-        return 1;
-    }
-    if (!run_step("tile_scheduler", run_tile_scheduler_tests)) {
-        std::cerr << "tile scheduler tests failed\n";
-        return 1;
-    }
-    if (!run_step("render_contract", run_render_contract_tests)) {
-        std::cerr << "render contract tests failed\n";
-        return 1;
-    }
-    if (!run_step("scene_evaluator", run_scene_evaluator_tests)) {
-        std::cerr << "scene evaluator tests failed\n";
-        return 1;
-    }
-    if (!run_step("render_session", run_render_session_tests)) {
-        std::cerr << "render session tests failed\n";
-        return 1;
-    }
-    if (!run_step("render_batch", run_render_batch_tests)) {
-        std::cerr << "render batch tests failed\n";
-        return 1;
-    }
-    if (!run_step("parallax_cards", run_parallax_cards_tests)) {
-        std::cerr << "camera card tests failed\n";
-        return 1;
-    }
-    if (!run_step("timeline", run_timeline_tests)) {
-        std::cerr << "timeline tests failed\n";
-        return 1;
-    }
-    if (!run_step("glyph_cache", run_glyph_cache_tests)) {
-        std::cerr << "glyph cache tests failed\n";
-        return 1;
-    }
-    if (!run_step("text", run_text_tests)) {
-        std::cerr << "text tests failed\n";
-        return 1;
-    }
-    if (!run_step("effect_host", run_effect_host_tests)) {
-        std::cerr << "effect host tests failed\n";
-        return 1;
-    }
-    if (!run_step("precomp_mask", run_precomp_mask_tests)) {
-        std::cerr << "precomp and mask tests failed\n";
-        return 1;
-    }
-    if (!run_step("scene_spec", run_scene_spec_tests)) {
-        std::cerr << "scene spec tests failed\n";
-        return 1;
-    }
-    if (!run_step("render_job", run_render_job_tests)) {
-        std::cerr << "render job tests failed\n";
-        return 1;
-    }
-    if (!run_step("expression_vm", run_expression_vm_tests)) {
-        std::cerr << "expression vm tests failed\n";
-        return 1;
+
+int main(int argc, char** argv) {
+    std::vector<TestCase> tests = {
+        {"math", run_math_tests},
+        {"property", run_property_tests},
+        {"expression", run_expression_tests},
+        {"asset_resolution", run_asset_resolution_tests},
+        {"image_manager", run_image_manager_tests},
+        {"image_decode", run_image_decode_tests},
+        {"framebuffer", run_framebuffer_tests},
+        {"rasterizer", run_rasterizer_tests},
+        {"surface", run_surface_tests},
+        {"draw_list_builder", run_draw_list_builder_tests},
+        {"blend_modes", run_blend_modes_tests},
+        {"evaluated_composition_renderer", run_evaluated_composition_renderer_tests},
+        {"path_rasterizer", run_path_rasterizer_tests},
+        {"path_rasterizer_aa", run_path_rasterizer_aa_tests},
+        {"frame_cache", run_frame_cache_tests},
+        {"frame_cache_budget", run_frame_cache_budget_tests},
+        {"tiling_integration", run_tiling_integration_tests},
+        {"runtime_backbone", run_runtime_backbone_tests},
+        {"frame_executor", run_frame_executor_tests},
+        {"frame_output_sink", run_frame_output_sink_tests},
+        {"tile_scheduler", run_tile_scheduler_tests},
+        {"render_contract", run_render_contract_tests},
+        {"scene_evaluator", run_scene_evaluator_tests},
+        {"render_session", run_render_session_tests},
+        {"render_batch", run_render_batch_tests},
+        {"parallax_cards", run_parallax_cards_tests},
+        {"timeline", run_timeline_tests},
+        {"glyph_cache", run_glyph_cache_tests},
+        {"text", run_text_tests},
+        {"effect_host", run_effect_host_tests},
+        {"precomp_mask", run_precomp_mask_tests},
+        {"golden", run_golden_visual_tests},
+        {"scene_spec", run_scene_spec_tests},
+
+        {"render_job", run_render_job_tests},
+        {"expression_vm", run_expression_vm_tests},
+    };
+
+    bool list_tests = false;
+    for (int i = 1; i < argc; ++i) {
+        if (std::strcmp(argv[i], "--list-tests") == 0 || std::strcmp(argv[i], "-l") == 0) {
+            list_tests = true;
+            break;
+        }
     }
 
-    std::cout << "All tests passed!\n";
+    if (list_tests || !get_env_var("TACHYON_LIST_TESTS").empty()) {
+        std::cout << "Available tests:\n";
+        size_t max_name_len = 0;
+        for (const auto& test : tests) {
+            max_name_len = std::max(max_name_len, std::strlen(test.name));
+        }
+
+        for (size_t i = 0; i < tests.size(); ++i) {
+            std::cout << std::left << std::setw(max_name_len + 4) << tests[i].name;
+            if ((i + 1) % 2 == 0) {
+                std::cout << "\n";
+            }
+        }
+        if (tests.size() % 2 != 0) {
+            std::cout << "\n";
+        }
+        return 0;
+    }
+
+    g_test_seed = initialize_seed();
+    int repeat_count = get_repeat_count();
+
+    for (int i = 0; i < repeat_count; ++i) {
+        for (const auto& test : tests) {
+            if (!run_step(test.name, test.fn, i, repeat_count)) {
+                std::cerr << test.name << " tests failed\n";
+                return 1;
+            }
+        }
+    }
+
+    if (repeat_count > 1) {
+        std::cout << "All tests passed! (" << repeat_count << " iterations, seed=" << g_test_seed << ")\n";
+    } else {
+        std::cout << "All tests passed! (seed=" << g_test_seed << ")\n";
+    }
+
     return 0;
 }

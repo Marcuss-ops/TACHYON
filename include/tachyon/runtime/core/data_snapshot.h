@@ -14,7 +14,7 @@ namespace tachyon {
  * By comparing snapshot hashes, the engine can determine exactly which layers 
  * or effects need re-rendering.
  */
-struct TACHYON_ALIGN(16) DataSnapshot {
+struct DataSnapshot {
     std::uint64_t timestamp_ms{0};     ///< The time point this snapshot represents.
     std::uint64_t scene_hash{0};       ///< Hash of the CompiledScene this snapshot belongs to.
     

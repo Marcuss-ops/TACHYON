@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <span>
+#include <string>
 #include <string_view>
 
 namespace tachyon {
@@ -18,10 +19,15 @@ public:
     void add_string(std::string_view value) noexcept;
     void add_bytes(std::span<const std::byte> bytes) noexcept;
 
+    void enable_manifest(bool enabled) noexcept { m_manifest_enabled = enabled; }
+    [[nodiscard]] const std::string& manifest() const noexcept { return m_manifest; }
+
     [[nodiscard]] std::uint64_t finish() const noexcept;
 
 private:
     std::uint64_t m_state{0xcbf29ce484222325ULL};
+    std::string m_manifest;
+    bool m_manifest_enabled{false};
 
     static constexpr std::uint64_t avalanche(std::uint64_t value) noexcept {
         value ^= value >> 33U;

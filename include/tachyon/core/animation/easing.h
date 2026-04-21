@@ -60,6 +60,32 @@ struct CubicBezierEasing {
     static CubicBezierEasing ease_out()    { return {0.0,  0.0, 0.58, 1.0}; }
     static CubicBezierEasing ease_in_out() { return {0.42, 0.0, 0.58, 1.0}; }
     static CubicBezierEasing linear()      { return {0.0,  0.0, 1.0,  1.0}; }
+
+    /**
+     * Create from After Effects speed and influence parameters.
+     * @param speed_out     Pixels/Units per second leaving the first keyframe.
+     * @param influence_out Percentage (0-100) of the segment time the handle influences.
+     * @param speed_in      Pixels/Units per second entering the second keyframe.
+     * @param influence_in  Percentage (0-100) of the segment time the handle influences.
+     * @param duration      Time in seconds between keyframes.
+     * @param value_delta   Total change in value between keyframes.
+     */
+    static CubicBezierEasing from_ae(double speed_out, double influence_out,
+                                     double speed_in, double influence_in,
+                                     double duration, double value_delta) {
+        const double x1 = std::clamp(influence_out / 100.0, 0.0, 1.0);
+        const double x2 = 1.0 - std::clamp(influence_in / 100.0, 0.0, 1.0);
+        
+        double y1 = 0.0;
+        double y2 = 1.0;
+        
+        if (std::abs(value_delta) > 1e-8) {
+            y1 = (speed_out * duration * x1) / value_delta;
+            y2 = 1.0 - (speed_in * duration * (1.0 - x2)) / value_delta;
+        }
+        
+        return {x1, y1, x2, y2};
+    }
 };
 
 /**

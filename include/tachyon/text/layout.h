@@ -41,6 +41,14 @@ struct TextAnimationOptions {
     float wave_period_seconds{1.0f};
 };
 
+struct TextHighlightSpan {
+    std::size_t start_glyph{0};
+    std::size_t end_glyph{0}; // exclusive
+    renderer2d::Color color{renderer2d::Color{255, 236, 59, 96}};
+    std::int32_t padding_x{3};
+    std::int32_t padding_y{2};
+};
+
 struct TextBox {
     std::uint32_t width{0};
     std::uint32_t height{0};
@@ -91,6 +99,7 @@ public:
 private:
     friend TextRasterSurface rasterize_text_rgba(const BitmapFont&, std::string_view, const TextStyle&, const TextBox&, TextAlignment, const TextLayoutOptions&, const TextAnimationOptions&);
     friend TextRasterSurface rasterize_text_rgba(const BitmapFont&, std::string_view, const TextStyle&, const TextBox&, TextAlignment, float, std::span<const TextAnimatorSpec>, const TextLayoutOptions&);
+    friend TextRasterSurface rasterize_text_rgba(const BitmapFont&, std::string_view, const TextStyle&, const TextBox&, TextAlignment, std::span<const TextHighlightSpan>, const TextLayoutOptions&, const TextAnimationOptions&);
     friend TextRasterSurface rasterize_text_rgba(const BitmapFont&, std::string_view, const TextStyle&, const TextBox&, TextAlignment, const struct TextOutlineOptions&);
 
     void blend_pixel(std::uint32_t x, std::uint32_t y, renderer2d::Color color, std::uint8_t alpha);
@@ -129,6 +138,16 @@ TextRasterSurface rasterize_text_rgba(
     float time_seconds,
     std::span<const TextAnimatorSpec> animators,
     const TextLayoutOptions& layout_options = {});
+
+TextRasterSurface rasterize_text_rgba(
+    const BitmapFont& font,
+    std::string_view utf8_text,
+    const TextStyle& style,
+    const TextBox& text_box,
+    TextAlignment alignment,
+    std::span<const TextHighlightSpan> highlights,
+    const TextLayoutOptions& layout_options = {},
+    const TextAnimationOptions& animation = {});
 
 struct TextOutlineOptions {
     float width{0.0f};

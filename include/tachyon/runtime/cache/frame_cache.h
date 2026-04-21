@@ -3,13 +3,15 @@
 #include "tachyon/renderer2d/framebuffer.h"
 #include "tachyon/runtime/core/render_graph.h"
 #include "tachyon/core/scene/evaluated_state.h"
+#include "tachyon/runtime/execution/render_plan.h"
 
 #include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <memory>
 
 namespace tachyon {
 
@@ -42,6 +44,16 @@ public:
     [[nodiscard]] std::size_t hit_count() const noexcept { return m_hit_count; }
     [[nodiscard]] std::size_t miss_count() const noexcept { return m_miss_count; }
 
+    void set_budget_bytes(std::size_t bytes);
+    void evict_if_needed();
+    [[nodiscard]] std::size_t current_usage_bytes() const;
+
+    // Legacy compatibility surface for older tests.
+    void store(const CachedFrame& frame);
+    CachedFrame* lookup(const FrameCacheKey& key, std::uint64_t scene_hash);
+    const CachedFrame* lookup(const FrameCacheKey& key, std::uint64_t scene_hash) const;
+    void invalidate(const std::string& dependency);
+
 private:
     mutable std::mutex m_mutex;
     mutable std::size_t m_hit_count{0};
@@ -51,8 +63,22 @@ private:
     std::unordered_map<std::uint64_t, std::shared_ptr<scene::EvaluatedLayerState>> m_layers;
     std::unordered_map<std::uint64_t, std::shared_ptr<scene::EvaluatedCompositionState>> m_compositions;
     std::unordered_map<std::uint64_t, std::shared_ptr<renderer2d::Framebuffer>> m_frames;
+    std::vector<CachedFrame> m_legacy_frames;
+
+    enum class EntryType { Property, Layer, Composition, Frame };
+    struct EntryInfo {
+        EntryType type;
+        std::size_t size;
+    };
+    std::unordered_map<std::uint64_t, EntryInfo> m_entries;
+    std::vector<std::uint64_t> m_lru_order; // front = oldest
+
+    std::size_t m_max_budget_bytes{1024ULL * 1024 * 1024}; // 1GB default
+    std::size_t m_current_usage_bytes{0};
+
+    void touch(std::uint64_t key);
+    void remove_entry(std::uint64_t key);
 };
 
 
 } // namespace tachyon
-

@@ -11,7 +11,7 @@ namespace tachyon {
 namespace renderer2d {
 
 class CPURasterizer;
-struct RenderContext;
+struct RenderContext2D;
 
 std::vector<DrawCommand2D> build_draw_commands_from_evaluated_state(
     const scene::EvaluatedCompositionState& state);
@@ -20,7 +20,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
     const scene::EvaluatedCompositionState& state,
     const RenderPlan& plan,
     const FrameRenderTask& task,
-    RenderContext& context);
+    RenderContext2D& context);
 
 } // namespace renderer2d
 } // namespace tachyon

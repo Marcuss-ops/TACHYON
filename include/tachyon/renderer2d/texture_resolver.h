@@ -11,21 +11,11 @@
 
 namespace tachyon::renderer2d {
 
-class TextRenderConfig {
-public:
-    static TextRenderConfig& instance();
-    void set_font(const tachyon::text::BitmapFont* font) { font_ = font; }
-    const tachyon::text::BitmapFont* font() const { return font_; }
-    void set_subtitle_entries(const std::vector<::tachyon::text::SubtitleEntry>* entries) { subtitle_entries_ = entries; }
-    const std::vector<::tachyon::text::SubtitleEntry>* subtitle_entries() const { return subtitle_entries_; }
-
-private:
-    TextRenderConfig() = default;
-    const tachyon::text::BitmapFont* font_ = nullptr;
-    const std::vector<::tachyon::text::SubtitleEntry>* subtitle_entries_ = nullptr;
-};
-
-void ensure_default_text_font();
+/**
+ * Utility to find and load a default system font for text rendering.
+ * Returns nullptr if no suitable font is found.
+ */
+const tachyon::text::BitmapFont* get_default_text_font();
 
 /**
  * Resolves TextureHandle string IDs to actual SurfaceRGBA pointers.

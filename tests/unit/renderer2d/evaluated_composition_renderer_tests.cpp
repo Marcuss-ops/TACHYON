@@ -57,10 +57,10 @@ bool run_evaluated_composition_renderer_tests() {
     task.frame_number = 0;
     task.cache_key.value = "renderer-test";
 
-    renderer2d::RenderContext render_context;
+    renderer2d::RenderContext2D render_context;
     const RasterizedFrame2D frame = tachyon::render_evaluated_composition_2d(state, plan, task, render_context);
-    check_true(frame.surface.has_value(), "evaluated renderer should produce a surface");
-    if (!frame.surface.has_value()) return false;
+    check_true(frame.surface != nullptr, "evaluated renderer should produce a surface");
+    if (!frame.surface) return false;
 
     const auto& surface = *frame.surface;
     check_true(surface.width() == 128, "surface width should match composition");
@@ -93,8 +93,8 @@ bool run_evaluated_composition_renderer_tests() {
     blend_state.layers.push_back(green_layer);
 
     const RasterizedFrame2D blend_frame = tachyon::render_evaluated_composition_2d(blend_state, plan, task, render_context);
-    check_true(blend_frame.surface.has_value(), "blend renderer should produce a surface");
-    if (blend_frame.surface.has_value()) {
+    check_true(blend_frame.surface != nullptr, "blend renderer should produce a surface");
+    if (blend_frame.surface) {
         const auto pixel = blend_frame.surface->get_pixel(16, 16);
         check_true(pixel.r > 0, "additive blend should preserve red channel");
         check_true(pixel.g > 0, "additive blend should add green channel");
@@ -142,8 +142,8 @@ bool run_evaluated_composition_renderer_tests() {
     adjustment_state.layers.push_back(adjustment_layer);
 
     const RasterizedFrame2D adjustment_frame = tachyon::render_evaluated_composition_2d(adjustment_state, plan, task, render_context);
-    check_true(adjustment_frame.surface.has_value(), "adjustment renderer should produce a surface");
-    if (adjustment_frame.surface.has_value()) {
+    check_true(adjustment_frame.surface != nullptr, "adjustment renderer should produce a surface");
+    if (adjustment_frame.surface) {
         const auto pixel = adjustment_frame.surface->get_pixel(16, 16);
         check_true(pixel.r > pixel.b, "adjustment layer should bias the composite toward red");
         check_true(pixel.b > 0, "adjustment layer should preserve some of the original image");
@@ -168,8 +168,8 @@ bool run_evaluated_composition_renderer_tests() {
     timeline_state.layers.push_back(timeline_layer);
 
     const RasterizedFrame2D timeline_frame = tachyon::render_evaluated_composition_2d(timeline_state, plan, task, render_context);
-    check_true(timeline_frame.surface.has_value(), "timeline renderer should produce a surface");
-    if (timeline_frame.surface.has_value()) {
+    check_true(timeline_frame.surface != nullptr, "timeline renderer should produce a surface");
+    if (timeline_frame.surface) {
         check_true(timeline_frame.surface->get_pixel(16, 16).a > 0, "timeline renderer should reuse the shared raster path");
     }
 
@@ -204,8 +204,8 @@ bool run_evaluated_composition_renderer_tests() {
     matte_state.layers.push_back(matte_target);
 
     const RasterizedFrame2D matte_frame = tachyon::render_evaluated_composition_2d(matte_state, plan, task, render_context);
-    check_true(matte_frame.surface.has_value(), "track matte renderer should produce a surface");
-    if (matte_frame.surface.has_value()) {
+    check_true(matte_frame.surface != nullptr, "track matte renderer should produce a surface");
+    if (matte_frame.surface) {
         const auto& matte_surface = *matte_frame.surface;
         check_true(matte_surface.get_pixel(24, 24).a > 0, "track matte should preserve pixels inside the matte");
         check_true(matte_surface.get_pixel(2, 2).a == 0, "track matte should clear pixels outside the matte");
@@ -242,14 +242,14 @@ bool run_evaluated_composition_renderer_tests() {
     mask_state.layers.push_back(masked_layer);
 
     const RasterizedFrame2D mask_frame = tachyon::render_evaluated_composition_2d(mask_state, plan, task, render_context);
-    check_true(mask_frame.surface.has_value(), "mask renderer should produce a surface");
-    if (mask_frame.surface.has_value()) {
+    check_true(mask_frame.surface != nullptr, "mask renderer should produce a surface");
+    if (mask_frame.surface) {
         const auto& mask_surface = *mask_frame.surface;
         check_true(mask_surface.get_pixel(24, 24).a > 0, "vector mask should preserve pixels inside the shape");
         check_true(mask_surface.get_pixel(8, 8).a == 0, "vector mask should clear pixels outside the shape");
     }
 
-    renderer2d::RenderContext precomp_context;
+    renderer2d::RenderContext2D precomp_context;
     precomp_context.policy = make_quality_policy("draft");
     check_true(precomp_context.precomp_cache != nullptr, "precomp cache should exist");
 
@@ -285,8 +285,8 @@ bool run_evaluated_composition_renderer_tests() {
     const RasterizedFrame2D precomp_first = tachyon::render_evaluated_composition_2d(parent_state, plan, task, precomp_context);
     const std::size_t cache_entries_after_first = precomp_context.precomp_cache->entry_count();
     const RasterizedFrame2D precomp_second = tachyon::render_evaluated_composition_2d(parent_state, plan, task, precomp_context);
-    check_true(precomp_first.surface.has_value(), "precomp renderer should produce a surface");
-    check_true(precomp_second.surface.has_value(), "precomp renderer should render a second frame");
+    check_true(precomp_first.surface != nullptr, "precomp renderer should produce a surface");
+    check_true(precomp_second.surface != nullptr, "precomp renderer should render a second frame");
     check_true(cache_entries_after_first > 0, "precomp cache should store the nested render after first frame");
     check_true(precomp_context.precomp_cache->entry_count() == cache_entries_after_first, "second frame should reuse the existing precomp cache entry");
 

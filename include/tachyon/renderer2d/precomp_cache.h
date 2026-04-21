@@ -14,12 +14,12 @@ class PrecompCache {
 public:
     PrecompCache(std::size_t max_bytes = 1024 * 1024 * 512); // 512MB default
     
-    std::shared_ptr<SurfaceRGBA> get(const std::string& key) const;
+    std::shared_ptr<const SurfaceRGBA> get(const std::string& key) const;
     void put(const std::string& key, std::shared_ptr<SurfaceRGBA> surface);
     void clear();
     
     // Compatibility for tests
-    std::shared_ptr<SurfaceRGBA> lookup(const std::string& key) const { return get(key); }
+    std::shared_ptr<const SurfaceRGBA> lookup(const std::string& key) const { return get(key); }
     void store(const std::string& key, std::shared_ptr<SurfaceRGBA> surface) { put(key, std::move(surface)); }
     std::size_t entry_count() const { return cache_.size(); }
     

@@ -7,12 +7,7 @@
 
 namespace tachyon::renderer2d {
 
-TextRenderConfig& TextRenderConfig::instance() {
-    static TextRenderConfig config;
-    return config;
-}
-
-void ensure_default_text_font() {
+const tachyon::text::BitmapFont* get_default_text_font() {
     static std::once_flag once;
     static std::unique_ptr<tachyon::text::Font> default_font;
 
@@ -29,13 +24,14 @@ void ensure_default_text_font() {
 
         for (const auto& candidate : candidates) {
             if (std::filesystem::exists(candidate) && default_font->load_ttf(candidate, 48U)) {
-                TextRenderConfig::instance().set_font(default_font.get());
                 return;
             }
         }
 
         default_font.reset();
     });
+
+    return default_font ? default_font.get() : nullptr;
 }
 
 media::AlphaMode TextureResolver::parse_alpha_mode(const std::optional<std::string>& mode) {

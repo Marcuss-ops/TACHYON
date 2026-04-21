@@ -6,19 +6,21 @@
 #include "tachyon/runtime/execution/quality_policy.h"
 #include <OpenImageDenoise/oidn.hpp>
 
+#include "tachyon/runtime/core/diagnostics.h"
 #include <memory>
 
 namespace tachyon {
 
 struct RenderContext {
     media::MediaManager media;
-    renderer2d::RenderContext renderer2d;
+    renderer2d::RenderContext2D renderer2d;
     QualityPolicy policy;
     std::shared_ptr<renderer3d::RayTracer> ray_tracer;
     oidn::DeviceRef oidn_device;
     oidn::FilterRef oidn_filter;
+    FrameDiagnostics* diagnostic_tracker{nullptr};
 
-    explicit RenderContext(std::shared_ptr<renderer2d::PrecompCache> precomp_cache = std::make_shared<renderer2d::PrecompCache>());
+    explicit RenderContext(std::shared_ptr<renderer2d::PrecompCache> precomp_cache = nullptr);
 };
 
 } // namespace tachyon

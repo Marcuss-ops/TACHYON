@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -20,6 +21,7 @@ struct RenderSessionResult {
     bool output_configured{false};
     std::string output_error;
     DiagnosticBag diagnostics;
+    std::vector<FrameDiagnostics> frame_diagnostics;
 };
 
 class RenderSession {
@@ -32,6 +34,8 @@ public:
         const std::filesystem::path& output_path,
         std::size_t worker_count);
 
+    void set_memory_budget_bytes(std::size_t bytes) { m_memory_budget_bytes = bytes; }
+
     FrameCache& cache() { return m_cache; }
     const FrameCache& cache() const { return m_cache; }
     std::shared_ptr<renderer2d::PrecompCache> precomp_cache() { return m_precomp_cache; }
@@ -40,6 +44,7 @@ public:
 private:
     FrameCache m_cache;
     std::shared_ptr<renderer2d::PrecompCache> m_precomp_cache{std::make_shared<renderer2d::PrecompCache>()};
+    std::optional<std::size_t> m_memory_budget_bytes;
 };
 
 } // namespace tachyon

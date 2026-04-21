@@ -195,8 +195,8 @@ bool run_render_session_tests() {
     check_true(first.cache_misses == 3, "First pass is all cache misses");
     check_true(first.frames_written == 3, "First pass writes three output frames");
     check_true(first.output_error.empty(), "First pass completes without output error");
-    check_true(first.frames[0].frame.width() == 160, "Frame width matches composition");
-    check_true(first.frames[0].frame.height() == 90, "Frame height matches composition");
+    check_true(first.frames[0].frame->width() == 160, "Frame width matches composition");
+    check_true(first.frames[0].frame->height() == 90, "Frame height matches composition");
     check_true(std::filesystem::exists("tests/output/runtime_seq/frame_000001.png"), "First PNG output exists");
     check_true(std::filesystem::exists("tests/output/runtime_seq/frame_000003.png"), "Third PNG output exists");
 

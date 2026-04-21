@@ -17,6 +17,7 @@ add_library(TachyonCore
     media/media_manager.cpp
     media/video_decoder.cpp
     output/ffmpeg_pipe_sink.cpp
+    output/ffmpeg_video_encoder.cpp
     output/png_sequence_sink.cpp
     renderer2d/draw_list_builder.cpp
     renderer2d/draw_list_rasterizer.cpp
@@ -27,7 +28,9 @@ add_library(TachyonCore
     renderer2d/path_rasterizer.cpp
     renderer2d/texture_resolver.cpp
     renderer2d/surface_rgba.cpp
+    renderer2d/surface_pool.cpp
     renderer2d/precomp_cache.cpp
+    renderer2d/render_context.cpp
     renderer2d/raster/cpu_rasterizer.cpp
     renderer2d/raster/perspective_rasterizer.cpp
     runtime/execution/batch_runner.cpp
@@ -38,6 +41,7 @@ add_library(TachyonCore
     runtime/core/render_graph.cpp
     runtime/core/property_graph.cpp
     runtime/core/compiled_scene.cpp
+    runtime/core/tbf_codec.cpp
     runtime/execution/render_session.cpp
     runtime/execution/tile_scheduler.cpp
     runtime/execution/render_job.cpp
@@ -110,11 +114,29 @@ target_link_libraries(TachyonCore
         OpenImageDenoise
 )
 
+if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
+    target_precompile_headers(TachyonCore PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")
+endif()
+
 add_executable(tachyon
     main.cpp
 )
+
+if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
+    target_precompile_headers(tachyon PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")
+endif()
 
 target_link_libraries(tachyon
     PRIVATE
         TachyonCore
 )
+
+if(MSVC)
+    file(GLOB OIDN_RUNTIME_DLLS CONFIGURE_DEPENDS "${oidn_SOURCE_DIR}/bin/*.dll")
+    add_custom_command(TARGET tachyon POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${OIDN_RUNTIME_DLLS}
+                $<TARGET_FILE_DIR:tachyon>
+        COMMAND_EXPAND_LISTS
+    )
+endif()

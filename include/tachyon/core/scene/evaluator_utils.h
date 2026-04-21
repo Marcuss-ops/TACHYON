@@ -37,23 +37,29 @@ namespace scene {
         double local_time_seconds,
         const ::tachyon::audio::AudioAnalyzer* audio_analyzer = nullptr,
         std::uint64_t expression_seed = 0,
-        const std::unordered_map<std::string, double>* job_variables = nullptr);
+        const std::unordered_map<std::string, double>* job_variables = nullptr,
+        const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables = nullptr,
+        std::uint32_t layer_index = 0,
+        PropertySampler sampler = nullptr,
+        bool skip_expression = false);
 
     math::Vector2 sample_vector2(
         const AnimatedVector2Spec& property,
         const math::Vector2& fallback,
         double local_time_seconds,
-        const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
+        const ::tachyon::audio::AudioAnalyzer* audio_analyzer = nullptr,
         std::uint64_t expression_seed = 0,
-        const std::unordered_map<std::string, double>* job_variables = nullptr);
+        const std::unordered_map<std::string, double>* job_variables = nullptr,
+        const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables = nullptr);
 
     math::Vector3 sample_vector3(
         const AnimatedVector3Spec& property,
         const math::Vector3& fallback,
         double local_time_seconds,
-        const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
+        const ::tachyon::audio::AudioAnalyzer* audio_analyzer = nullptr,
         std::uint64_t expression_seed = 0,
-        const std::unordered_map<std::string, double>* job_variables = nullptr);
+        const std::unordered_map<std::string, double>* job_variables = nullptr,
+        const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables = nullptr);
 
     ColorSpec sample_color(const AnimatedColorSpec& property, const ColorSpec& fallback, double local_time_seconds);
 

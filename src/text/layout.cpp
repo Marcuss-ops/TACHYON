@@ -103,10 +103,10 @@ renderer2d::Color TextRasterSurface::get_pixel(std::uint32_t x, std::uint32_t y)
 
     const std::size_t index = (static_cast<std::size_t>(y) * m_width + x) * 4U;
     return renderer2d::Color{
-        m_pixels[index + 0U],
-        m_pixels[index + 1U],
-        m_pixels[index + 2U],
-        m_pixels[index + 3U]
+        static_cast<float>(m_pixels[index + 0U]) / 255.0f,
+        static_cast<float>(m_pixels[index + 1U]) / 255.0f,
+        static_cast<float>(m_pixels[index + 2U]) / 255.0f,
+        static_cast<float>(m_pixels[index + 3U]) / 255.0f
     };
 }
 
@@ -116,18 +116,19 @@ void TextRasterSurface::blend_pixel(std::uint32_t x, std::uint32_t y, renderer2d
     }
 
     const std::size_t index = (static_cast<std::size_t>(y) * m_width + x) * 4U;
-    const std::uint32_t src_alpha = (static_cast<std::uint32_t>(color.a) * alpha) / 255U;
+    const std::uint32_t src_alpha = static_cast<std::uint32_t>(std::clamp(color.a * 255.0f, 0.0f, 255.0f)) * alpha / 255U;
     const std::uint32_t dst_alpha = m_pixels[index + 3U];
     const std::uint32_t out_alpha = src_alpha + ((dst_alpha * (255U - src_alpha)) / 255U);
 
-    auto blend_channel = [&](std::uint8_t src_channel, std::size_t channel_index) {
+    auto blend_channel = [&](float src_channel_f, std::size_t channel_index) {
+        const std::uint32_t src_channel = static_cast<std::uint32_t>(std::clamp(src_channel_f * 255.0f, 0.0f, 255.0f));
         const std::uint32_t dst_channel = m_pixels[index + channel_index];
         if (out_alpha == 0U) {
             m_pixels[index + channel_index] = 0U;
             return;
         }
 
-        const std::uint32_t src_premultiplied = static_cast<std::uint32_t>(src_channel) * src_alpha;
+        const std::uint32_t src_premultiplied = src_channel * src_alpha;
         const std::uint32_t dst_premultiplied = dst_channel * dst_alpha * (255U - src_alpha) / 255U;
         m_pixels[index + channel_index] = static_cast<std::uint8_t>((src_premultiplied + dst_premultiplied) / out_alpha);
     };
@@ -628,6 +629,79 @@ float compute_coverage(const TextAnimatorSelectorSpec& selector, std::size_t i, 
     return std::clamp((t - start) / span, 0.0f, 1.0f);
 }
 
+template <typename BlendFn>
+void fill_rect(std::uint32_t surface_width, std::uint32_t surface_height, int x, int y, int width, int height, BlendFn&& blend_fn) {
+    if (width <= 0 || height <= 0 || surface_width == 0U || surface_height == 0U) {
+        return;
+    }
+
+    const int x0 = std::max(0, x);
+    const int y0 = std::max(0, y);
+    const int x1 = std::min<int>(surface_width, x + width);
+    const int y1 = std::min<int>(surface_height, y + height);
+
+    for (int py = y0; py < y1; ++py) {
+        for (int px = x0; px < x1; ++px) {
+            blend_fn(static_cast<std::uint32_t>(px), static_cast<std::uint32_t>(py));
+        }
+    }
+}
+
+struct ResolvedGlyphPaint {
+    const GlyphBitmap* glyph{nullptr};
+    std::int32_t base_x{0};
+    std::int32_t base_y{0};
+    std::uint32_t target_width{0};
+    std::uint32_t target_height{0};
+    float opacity{1.0f};
+    std::size_t glyph_index{0};
+};
+
+std::vector<ResolvedGlyphPaint> resolve_glyph_paints(
+    const BitmapFont& font,
+    const TextLayoutResult& layout,
+    const TextAnimationOptions& animation) {
+
+    std::vector<ResolvedGlyphPaint> paints;
+    paints.reserve(layout.glyphs.size());
+
+    for (const PositionedGlyph& positioned : layout.glyphs) {
+        const GlyphBitmap* glyph = font.has_freetype_face()
+            ? font.find_glyph_by_index(positioned.font_glyph_index)
+            : font.find_scaled_glyph(positioned.codepoint, layout.scale);
+        if (glyph == nullptr || glyph->width == 0U || glyph->height == 0U) {
+            continue;
+        }
+
+        float glyph_offset_x = 0.0f;
+        float glyph_offset_y = 0.0f;
+        float glyph_scale = 1.0f;
+        float glyph_opacity = 1.0f;
+        if (animation.enabled) {
+            const float phase_seconds = animation.time_seconds - static_cast<float>(positioned.glyph_index) * 0.1f;
+            const float wave_period = std::max(0.001f, animation.wave_period_seconds);
+            const float wave_phase = (phase_seconds / wave_period) * 6.28318530717958647692f;
+
+            glyph_offset_x = animation.per_glyph_offset_x * static_cast<float>(positioned.glyph_index) + std::sin(wave_phase) * animation.wave_amplitude_x;
+            glyph_offset_y = animation.per_glyph_offset_y * static_cast<float>(positioned.glyph_index) + std::cos(wave_phase) * animation.wave_amplitude_y;
+            glyph_scale = std::max(0.05f, 1.0f + animation.per_glyph_scale_delta * static_cast<float>(positioned.glyph_index));
+            glyph_opacity = std::clamp(1.0f - animation.per_glyph_opacity_drop * static_cast<float>(positioned.glyph_index), 0.0f, 1.0f);
+        }
+
+        ResolvedGlyphPaint paint;
+        paint.glyph = glyph;
+        paint.base_x = positioned.x + static_cast<std::int32_t>(std::lround(glyph_offset_x));
+        paint.base_y = positioned.y + static_cast<std::int32_t>(std::lround(glyph_offset_y));
+        paint.target_width = static_cast<std::uint32_t>(std::max(1, static_cast<std::int32_t>(std::lround(static_cast<float>(glyph->width) * glyph_scale))));
+        paint.target_height = static_cast<std::uint32_t>(std::max(1, static_cast<std::int32_t>(std::lround(static_cast<float>(glyph->height) * glyph_scale))));
+        paint.opacity = std::clamp(glyph_opacity, 0.0f, 1.0f);
+        paint.glyph_index = positioned.glyph_index;
+        paints.push_back(paint);
+    }
+
+    return paints;
+}
+
 } // namespace
 
 TextRasterSurface rasterize_text_rgba(
@@ -700,6 +774,111 @@ TextRasterSurface rasterize_text_rgba(
             }
         }
     }
+    return surface;
+}
+
+TextRasterSurface rasterize_text_rgba(
+    const BitmapFont& font,
+    std::string_view utf8_text,
+    const TextStyle& style,
+    const TextBox& text_box,
+    TextAlignment alignment,
+    std::span<const TextHighlightSpan> highlights,
+    const TextLayoutOptions& layout_options,
+    const TextAnimationOptions& animation) {
+
+    const TextLayoutResult layout = layout_text(font, utf8_text, style, text_box, alignment, layout_options);
+    TextRasterSurface surface(layout.width, layout.height);
+    if (!font.is_loaded() || layout.width == 0U || layout.height == 0U) {
+        return surface;
+    }
+
+    const std::vector<ResolvedGlyphPaint> paints = resolve_glyph_paints(font, layout, animation);
+
+    for (const TextHighlightSpan& highlight : highlights) {
+        if (highlight.end_glyph <= highlight.start_glyph || highlight.start_glyph >= paints.size()) {
+            continue;
+        }
+
+        const std::size_t begin = highlight.start_glyph;
+        const std::size_t end = std::min(highlight.end_glyph, paints.size());
+        bool found = false;
+        std::int32_t min_x = 0;
+        std::int32_t min_y = 0;
+        std::int32_t max_x = 0;
+        std::int32_t max_y = 0;
+
+        for (std::size_t i = begin; i < end; ++i) {
+            const auto& paint = paints[i];
+            if (paint.glyph == nullptr) {
+                continue;
+            }
+
+            const std::int32_t x0 = paint.base_x;
+            const std::int32_t y0 = paint.base_y;
+            const std::int32_t x1 = paint.base_x + static_cast<std::int32_t>(paint.target_width);
+            const std::int32_t y1 = paint.base_y + static_cast<std::int32_t>(paint.target_height);
+
+            if (!found) {
+                min_x = x0;
+                min_y = y0;
+                max_x = x1;
+                max_y = y1;
+                found = true;
+            } else {
+                min_x = std::min(min_x, x0);
+                min_y = std::min(min_y, y0);
+                max_x = std::max(max_x, x1);
+                max_y = std::max(max_y, y1);
+            }
+        }
+
+        if (!found) {
+            continue;
+        }
+
+        const int pad_x = std::max(0, highlight.padding_x);
+        const int pad_y = std::max(0, highlight.padding_y);
+        fill_rect(
+            surface.width(),
+            surface.height(),
+            min_x - pad_x,
+            min_y - pad_y,
+            (max_x - min_x) + pad_x * 2,
+            (max_y - min_y) + pad_y * 2,
+            [&](std::uint32_t x, std::uint32_t y) {
+                surface.blend_pixel(x, y, highlight.color, static_cast<std::uint8_t>(std::clamp(highlight.color.a * 255.0f, 0.0f, 255.0f)));
+            });
+    }
+
+    for (const auto& paint : paints) {
+        if (paint.glyph == nullptr || paint.opacity <= 0.0f) {
+            continue;
+        }
+
+        for (std::uint32_t ty = 0; ty < paint.target_height; ++ty) {
+            const float v_scale = std::max(0.05f, static_cast<float>(paint.target_height) / static_cast<float>(paint.glyph->height));
+            const std::uint32_t sy = std::min(paint.glyph->height - 1U, static_cast<std::uint32_t>(std::floor(static_cast<float>(ty) / v_scale)));
+            for (std::uint32_t tx = 0; tx < paint.target_width; ++tx) {
+                const float h_scale = std::max(0.05f, static_cast<float>(paint.target_width) / static_cast<float>(paint.glyph->width));
+                const std::uint32_t sx = std::min(paint.glyph->width - 1U, static_cast<std::uint32_t>(std::floor(static_cast<float>(tx) / h_scale)));
+                const std::uint8_t alpha = paint.glyph->alpha_mask[sy * paint.glyph->width + sx];
+                if (alpha == 0U) {
+                    continue;
+                }
+
+                const std::uint8_t final_alpha = static_cast<std::uint8_t>(std::clamp(std::lround(static_cast<float>(alpha) * paint.opacity), 0L, 255L));
+                const std::int32_t out_x = paint.base_x + static_cast<std::int32_t>(tx);
+                const std::int32_t out_y = paint.base_y + static_cast<std::int32_t>(ty);
+                if (out_x < 0 || out_y < 0) {
+                    continue;
+                }
+
+                surface.blend_pixel(static_cast<std::uint32_t>(out_x), static_cast<std::uint32_t>(out_y), style.fill_color, final_alpha);
+            }
+        }
+    }
+
     return surface;
 }
 
