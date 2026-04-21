@@ -180,40 +180,55 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
     for (const auto& composition : scene.compositions) {
         CompiledComposition compiled_composition;
         compiled_composition.node = registry.create_node(CompiledNodeType::Composition);
-        compiled_composition.id = composition.id;
-        compiled_composition.name = composition.name;
         compiled_composition.width = static_cast<std::uint32_t>(std::max<std::int64_t>(0, composition.width));
         compiled_composition.height = static_cast<std::uint32_t>(std::max<std::int64_t>(0, composition.height));
         compiled_composition.duration = composition.duration;
         compiled_composition.fps = composition.frame_rate.numerator > 0 ? static_cast<std::uint32_t>(composition.frame_rate.numerator) : 60U;
 
-        registry.composition_id_map[composition.id] = compiled_composition.node.node_id;
+        registry.composition_id_map[composition.id] = static_cast<std::uint32_t>(compiled.compositions.size());
 
         compiled_composition.layers.reserve(composition.layers.size());
         for (const auto& layer : composition.layers) {
             CompiledLayer compiled_layer;
             compiled_layer.node = registry.create_node(CompiledNodeType::Layer);
-            compiled_layer.id = layer.id;
-            compiled_layer.name = layer.name;
-            compiled_layer.type = layer.type;
-            compiled_layer.blend_mode = layer.blend_mode;
-            compiled_layer.enabled = layer.enabled;
-            compiled_layer.visible = layer.visible;
-            compiled_layer.is_3d = layer.is_3d;
-            compiled_layer.is_adjustment_layer = layer.is_adjustment_layer;
-            compiled_layer.start_time = layer.start_time;
-            compiled_layer.in_point = layer.in_point;
-            compiled_layer.out_point = layer.out_point;
-            compiled_layer.opacity = layer.opacity_property.value.has_value() ? *layer.opacity_property.value : layer.opacity;
+            
+            // Resolve Type
+            auto type_map = [](const std::string& t) -> std::uint32_t {
+                if (t == "solid") return 1;
+                if (t == "shape") return 2;
+                if (t == "image") return 3;
+                if (t == "text") return 4;
+                if (t == "precomp") return 5;
+                return 0;
+            };
+            compiled_layer.type_id = type_map(layer.type);
+            
+            compiled_layer.width = static_cast<std::uint32_t>(layer.width);
+            compiled_layer.height = static_cast<std::uint32_t>(layer.height);
+            compiled_layer.line_cap = layer.line_cap;
+            compiled_layer.line_join = layer.line_join;
+            compiled_layer.miter_limit = layer.miter_limit;
+            
+            // Build flags bitmask
+            compiled_layer.flags = 0;
+            if (layer.enabled) compiled_layer.flags |= 0x01;
+            if (layer.visible) compiled_layer.flags |= 0x02;
+            if (layer.is_3d) compiled_layer.flags |= 0x04;
+            if (layer.is_adjustment_layer) compiled_layer.flags |= 0x08;
 
-            registry.layer_id_map[layer.id] = compiled_layer.node.node_id;
+            compiled_layer.matte_type = layer.track_matte_type;
 
-            // Simple property tracks (Opacity, Position, Scale, Rotation)
+            registry.layer_id_map[layer.id] = static_cast<std::uint32_t>(compiled_composition.layers.size());
+
+            // Resolve Property Indices
             const auto add_track = [&](const std::string& suffix, const auto& spec, double fallback) {
                 compiled_layer.property_indices.push_back(static_cast<std::uint32_t>(compiled.property_tracks.size()));
                 auto track = compile_property_track(registry, suffix, layer.id, spec, fallback);
                 
-                // Add dependency: Layer depends on Property
+                // DATA BINDING INTEGRATION:
+                // If the track has a binding in the spec (not actually in SceneSpec yet, added for future-proofing Step 4)
+                // track.binding = resolve_binding(layer, suffix); 
+                
                 compiled.graph.add_edge(track.node.node_id, compiled_layer.node.node_id, true);
                 compiled.property_tracks.push_back(std::move(track));
             };
@@ -231,30 +246,37 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
         compiled.compositions.push_back(std::move(compiled_composition));
     }
 
+
     // 2. Resolve Multi-Node Dependencies (Parenting, Track Mattes, Precomps)
-    for (auto& comp : compiled.compositions) {
-        for (auto& layer : comp.layers) {
-            // Find the original layer spec to get parenting info
-            const auto& comp_spec = *std::find_if(scene.compositions.begin(), scene.compositions.end(), [&](const auto& c) { return c.id == comp.id; });
-            const auto& layer_spec = *std::find_if(comp_spec.layers.begin(), comp_spec.layers.end(), [&](const auto& l) { return l.id == layer.id; });
+    for (std::uint32_t c_idx = 0; c_idx < compiled.compositions.size(); ++c_idx) {
+        auto& comp = compiled.compositions[c_idx];
+        const auto& comp_spec = scene.compositions[c_idx];
+        
+        for (std::uint32_t l_idx = 0; l_idx < comp.layers.size(); ++l_idx) {
+            auto& layer = comp.layers[l_idx];
+            const auto& layer_spec = comp_spec.layers[l_idx];
 
             if (layer_spec.parent.has_value()) {
                 auto it = registry.layer_id_map.find(*layer_spec.parent);
                 if (it != registry.layer_id_map.end()) {
-                    compiled.graph.add_edge(it->second, layer.node.node_id, true);
-                    
-                    // Track parent index for legacy reasons (if needed)
-                    auto parent_it = std::find_if(comp_spec.layers.begin(), comp_spec.layers.end(), [&](const auto& l) { return l.id == *layer_spec.parent; });
-                    if (parent_it != comp_spec.layers.end()) {
-                         layer.parent_index = static_cast<std::uint32_t>(std::distance(comp_spec.layers.begin(), parent_it));
-                    }
+                    layer.parent_index = it->second;
+                    compiled.graph.add_edge(comp.layers[it->second].node.node_id, layer.node.node_id, true);
+                }
+            }
+
+            if (layer_spec.track_matte_layer_id.has_value()) {
+                auto it = registry.layer_id_map.find(*layer_spec.track_matte_layer_id);
+                if (it != registry.layer_id_map.end()) {
+                    layer.matte_layer_index = it->second;
+                    compiled.graph.add_edge(comp.layers[it->second].node.node_id, layer.node.node_id, true);
                 }
             }
 
             if (layer_spec.precomp_id.has_value()) {
                 auto it = registry.composition_id_map.find(*layer_spec.precomp_id);
                 if (it != registry.composition_id_map.end()) {
-                    compiled.graph.add_edge(it->second, layer.node.node_id, true);
+                    layer.precomp_index = it->second;
+                    compiled.graph.add_edge(compiled.compositions[it->second].node.node_id, layer.node.node_id, true);
                 }
             }
         }
@@ -279,9 +301,11 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
         track.node.topo_index = topo_map[track.node.node_id];
     }
 
+    compiled.assets = scene.assets;
     result.value = std::move(compiled);
     return result;
 }
+
 
 } // namespace tachyon
 
