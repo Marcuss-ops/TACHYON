@@ -18,15 +18,7 @@ struct RenderContext {
     oidn::DeviceRef oidn_device;
     oidn::FilterRef oidn_filter;
 
-    explicit RenderContext(std::shared_ptr<renderer2d::PrecompCache> precomp_cache = std::make_shared<renderer2d::PrecompCache>())
-        : media{},
-          renderer2d(std::move(precomp_cache)),
-          policy{},
-          ray_tracer(std::make_shared<renderer3d::RayTracer>()) {
-        oidn_device = oidn::newDevice();
-        oidn_device.commit();
-        oidn_filter = oidn_device.newFilter("RT");
-    }
+    explicit RenderContext(std::shared_ptr<renderer2d::PrecompCache> precomp_cache = std::make_shared<renderer2d::PrecompCache>());
 };
 
 } // namespace tachyon

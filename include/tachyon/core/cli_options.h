@@ -2,7 +2,10 @@
 
 #include "tachyon/runtime/core/diagnostics.h"
 
+#include "tachyon/runtime/execution/render_job.h"
+
 #include <filesystem>
+#include <optional>
 #include <string>
 
 namespace tachyon {
@@ -15,6 +18,7 @@ struct CliOptions {
     std::filesystem::path output_override;
     std::size_t worker_count{1};
     bool json_output{false};
+    std::optional<FrameRange> frame_range_override;
 };
 
 ParseResult<CliOptions> parse_cli_options(int argc, char** argv);

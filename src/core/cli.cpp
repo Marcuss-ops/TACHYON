@@ -291,6 +291,10 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
         job.output.destination.path = options.output_override.string();
     }
 
+    if (options.frame_range_override.has_value()) {
+        job.frame_range = *options.frame_range_override;
+    }
+
     const auto plan_result = build_render_plan(context.scene, job);
     if (!plan_result.value.has_value()) {
         print_diagnostics(plan_result.diagnostics, err);
