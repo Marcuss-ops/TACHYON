@@ -29,15 +29,15 @@ public:
 
     // Layer Level
     std::shared_ptr<const scene::EvaluatedLayerState> lookup_layer(std::uint64_t key) const;
-    void store_layer(std::uint64_t key, std::shared_ptr<scene::EvaluatedLayerState> state);
+    void store_layer(std::uint64_t key, std::shared_ptr<const scene::EvaluatedLayerState> state);
 
     // Composition Level
     std::shared_ptr<const scene::EvaluatedCompositionState> lookup_composition(std::uint64_t key) const;
-    void store_composition(std::uint64_t key, std::shared_ptr<scene::EvaluatedCompositionState> state);
+    void store_composition(std::uint64_t key, std::shared_ptr<const scene::EvaluatedCompositionState> state);
 
     // Final Frame Level
     std::shared_ptr<const renderer2d::Framebuffer> lookup_frame(std::uint64_t key) const;
-    void store_frame(std::uint64_t key, std::shared_ptr<renderer2d::Framebuffer> frame);
+    void store_frame(std::uint64_t key, std::shared_ptr<const renderer2d::Framebuffer> frame);
 
     void clear();
 
@@ -60,9 +60,9 @@ private:
     mutable std::size_t m_miss_count{0};
 
     std::unordered_map<std::uint64_t, double> m_properties;
-    std::unordered_map<std::uint64_t, std::shared_ptr<scene::EvaluatedLayerState>> m_layers;
-    std::unordered_map<std::uint64_t, std::shared_ptr<scene::EvaluatedCompositionState>> m_compositions;
-    std::unordered_map<std::uint64_t, std::shared_ptr<renderer2d::Framebuffer>> m_frames;
+    std::unordered_map<std::uint64_t, std::shared_ptr<const scene::EvaluatedLayerState>> m_layers;
+    std::unordered_map<std::uint64_t, std::shared_ptr<const scene::EvaluatedCompositionState>> m_compositions;
+    std::unordered_map<std::uint64_t, std::shared_ptr<const renderer2d::Framebuffer>> m_frames;
     std::vector<CachedFrame> m_legacy_frames;
 
     enum class EntryType { Property, Layer, Composition, Frame };

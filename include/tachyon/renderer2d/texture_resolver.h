@@ -9,13 +9,15 @@
 #include <memory>
 #include <vector>
 
+
+
 namespace tachyon::renderer2d {
 
 /**
  * Utility to find and load a default system font for text rendering.
  * Returns nullptr if no suitable font is found.
  */
-const tachyon::text::BitmapFont* get_default_text_font();
+const ::tachyon::text::Font* get_default_text_font();
 
 /**
  * Resolves TextureHandle string IDs to actual SurfaceRGBA pointers.

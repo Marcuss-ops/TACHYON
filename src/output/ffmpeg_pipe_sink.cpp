@@ -352,8 +352,8 @@ public:
 
         const std::vector<unsigned char> bytes = convert_and_pack_frame_bytes(
             *packet.frame,
-            m_plan->composition.width,
-            m_plan->composition.height,
+            static_cast<uint32_t>(m_plan->composition.width),
+            static_cast<uint32_t>(m_plan->composition.height),
             m_source_transfer, m_source_space,
             m_output_transfer, m_output_space,
             m_output_range);

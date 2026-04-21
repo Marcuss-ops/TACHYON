@@ -19,10 +19,10 @@ namespace {
 
 Color from_spec(const ColorSpec& spec) {
     return detail::sRGB_to_Linear(Color{
-        static_cast<float>(spec.r),
-        static_cast<float>(spec.g),
-        static_cast<float>(spec.b),
-        static_cast<float>(spec.a)
+        static_cast<float>(spec.r) / 255.0f,
+        static_cast<float>(spec.g) / 255.0f,
+        static_cast<float>(spec.b) / 255.0f,
+        static_cast<float>(spec.a) / 255.0f
     });
 }
 

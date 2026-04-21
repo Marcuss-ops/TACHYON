@@ -7,7 +7,7 @@
 
 namespace tachyon::renderer2d {
 
-const tachyon::text::BitmapFont* get_default_text_font() {
+const ::tachyon::text::Font* get_default_text_font() {
     static std::once_flag once;
     static std::unique_ptr<tachyon::text::Font> default_font;
 

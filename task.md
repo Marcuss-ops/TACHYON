@@ -22,13 +22,13 @@
 - [x] Integrate `OIDN` filter in `frame_executor.cpp`
 
 ## Phase 3: Data & Quality
-- [/] **System Contracts**
+- [x] **System Contracts**
     - [x] Add `version` field to `SceneSpec`
     - [x] Enhance `Diagnostic` with structured metadata
-    - [ ] Implement deterministic CLI flag management
-- [/] Implement Data Connectors
-    - [/] Load and parse CSV/JSON files
-    - [ ] Expose `data()` function to expressions
+    - [x] Implement deterministic CLI flag management
+- [x] Implement Data Connectors
+    - [x] Load and parse CSV/JSON files
+    - [x] Expose `data()` function to expressions
 - [x] Implement Linear Workflow
 
 ## Phase 4: Shading & Reflections

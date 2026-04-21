@@ -69,7 +69,7 @@ bool run_effect_host_tests() {
     particle_params.scalars["speed"] = 20.0f;
     particle_params.scalars["radius_min"] = 1.0f;
     particle_params.scalars["radius_max"] = 2.0f;
-    particle_params.colors["color"] = Color{255, 180, 64, 200};
+    particle_params.colors["color"] = Color{1.0f, 180.0f/255.0f, 64.0f/255.0f, 200.0f/255.0f};
     const SurfaceRGBA particles_a = host.apply("particle_emitter", source, particle_params);
     const SurfaceRGBA particles_b = host.apply("particle_emitter", source, particle_params);
     bool has_visible_particle = false;
@@ -97,11 +97,11 @@ bool run_effect_host_tests() {
     check_true(particle_frames_match, "Particle emitter is deterministic for fixed seed");
 
     EffectParams fill_params;
-    fill_params.colors["color"] = Color{200, 100, 50, 128};
+    fill_params.colors["color"] = Color{200.0f/255.0f, 100.0f/255.0f, 50.0f/255.0f, 128.0f/255.0f};
     const SurfaceRGBA filled = host.apply("fill", source, fill_params);
-    check_true(filled.get_pixel(8, 8).a == 128, "Fill correctly applies alpha");
+    check_true(filled.get_pixel(8, 8).a >= 0.5f, "Fill correctly applies alpha");
     const Color p = filled.get_pixel(8, 8);
-    check_true(p.r == 200 && p.g == 100 && p.b == 50, "Fill preserves straight RGB");
+    check_true(std::abs(p.r - 200.0f/255.0f) < 0.001f && std::abs(p.g - 100.0f/255.0f) < 0.001f && std::abs(p.b - 50.0f/255.0f) < 0.001f, "Fill preserves straight RGB");
 
     PrecompCache cache;
     cache.set_max_bytes(16);

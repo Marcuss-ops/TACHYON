@@ -163,19 +163,19 @@ inline float Linear_to_sRGB_f(float value) { return linear_to_srgb_component_flo
 
 inline Color sRGB_to_Linear(Color srgb) {
     return Color{
-        sRGB_to_Linear_f(srgb.r / 255.0f),
-        sRGB_to_Linear_f(srgb.g / 255.0f),
-        sRGB_to_Linear_f(srgb.b / 255.0f),
-        srgb.a / 255.0f
+        sRGB_to_Linear_f(srgb.r),
+        sRGB_to_Linear_f(srgb.g),
+        sRGB_to_Linear_f(srgb.b),
+        srgb.a
     };
 }
 
 inline Color Linear_to_sRGB(Color linear) {
     return Color{
-        Linear_to_sRGB_f(linear.r) * 255.0f,
-        Linear_to_sRGB_f(linear.g) * 255.0f,
-        Linear_to_sRGB_f(linear.b) * 255.0f,
-        linear.a * 255.0f
+        Linear_to_sRGB_f(linear.r),
+        Linear_to_sRGB_f(linear.g),
+        Linear_to_sRGB_f(linear.b),
+        linear.a
     };
 }
 
@@ -434,7 +434,7 @@ inline Color apply_range_mode(Color color, ColorRange range) {
     }
 
     auto scale = [](float value) -> float {
-        return 16.0f + (value * 219.0f / 255.0f);
+        return (16.0f + value * 219.0f) / 255.0f;
     };
 
     return Color{scale(color.r), scale(color.g), scale(color.b), color.a};

@@ -15,7 +15,7 @@ struct Blender {
     }
 };
 
-inline Color blend_mode_color(Color src, Color dest, BlendMode mode, detail::TransferCurve curve = detail::TransferCurve::Linear) {
+inline Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, detail::TransferCurve curve = detail::TransferCurve::Linear) {
     if (mode == BlendMode::Normal) {
         return detail::composite_src_over(src, dest, curve);
     }

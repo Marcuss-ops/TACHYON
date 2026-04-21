@@ -100,16 +100,16 @@ bool run_evaluated_composition_renderer_tests() {
         check_true(pixel.g > 0, "additive blend should add green channel");
     }
 
-    const renderer2d::Color multiply_src{255, 0, 0, 128};
-    const renderer2d::Color multiply_dst{0, 0, 255, 128};
+    const renderer2d::Color multiply_src{1.0f, 0.0f, 0.0f, 0.5f};
+    const renderer2d::Color multiply_dst{1.0f, 1.0f, 1.0f, 1.0f};
     const renderer2d::Color multiply_pixel = renderer2d::blend_mode_color(
         multiply_src,
         multiply_dst,
         renderer2d::BlendMode::Multiply);
-    check_true(multiply_pixel.r >= 145 && multiply_pixel.r <= 170, "multiply blend should preserve semi-transparent red contribution");
-    check_true(multiply_pixel.g == 0, "multiply blend should not introduce green for red/blue inputs");
-    check_true(multiply_pixel.b >= 145 && multiply_pixel.b <= 170, "multiply blend should keep semi-transparent blue at half strength");
-    check_true(multiply_pixel.a >= 188 && multiply_pixel.a <= 194, "multiply blend should preserve expected alpha coverage");
+    check_true(multiply_pixel.r >= 0.99f, "multiply red * white = red");
+    check_true(multiply_pixel.g == 0.0f, "multiply red * white (green) = 0");
+    check_true(multiply_pixel.b == 0.0f, "multiply red * white (blue) = 0");
+    check_true(std::abs(multiply_pixel.a - 0.5f) < 0.01f, "multiply should keep src alpha");
 
     scene::EvaluatedCompositionState adjustment_state;
     adjustment_state.composition_id = "adjustment";

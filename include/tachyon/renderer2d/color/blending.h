@@ -51,7 +51,7 @@ enum class BlendMode {
 namespace detail {
 
 inline float lum(Color c) {
-    return 0.299f * c.r + 0.587f * c.g + 0.114f * c.b;
+    return 0.2126f * c.r + 0.7152f * c.g + 0.0722f * c.b;
 }
 
 inline Color set_lum(Color c, float l) {
@@ -80,7 +80,6 @@ inline float sat(Color c) {
 }
 
 inline Color set_sat(Color c, float s) {
-    float* sorted[3];
     float values[3] = {c.r, c.g, c.b};
     int indices[3] = {0, 1, 2};
     std::sort(indices, indices + 3, [&](int i, int j) { return values[i] < values[j]; });

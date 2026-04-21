@@ -39,7 +39,7 @@ RectI intersect_rects(const RectI& a, const RectI& b) {
 }
 
 Color blend_for_mode(Color src, Color dest, BlendMode mode, detail::TransferCurve curve) {
-    return blend_mode_color(src, dest, mode, curve);
+    return blend_mode_color_with_curve(src, dest, mode, curve);
 }
 
 bool write_pixel(SurfaceRGBA& fb, int x, int y, Color color, BlendMode mode, detail::TransferCurve curve) {

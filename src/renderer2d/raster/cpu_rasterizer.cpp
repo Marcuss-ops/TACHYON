@@ -8,15 +8,11 @@ namespace renderer2d {
 namespace {
 
 Color multiply_premultiplied(Color sample, Color tint) {
-    const float tint_r = tint.r / 255.0f;
-    const float tint_g = tint.g / 255.0f;
-    const float tint_b = tint.b / 255.0f;
-    const float tint_a = tint.a / 255.0f;
     return Color{
-        sample.r * tint_r,
-        sample.g * tint_g,
-        sample.b * tint_b,
-        sample.a * tint_a
+        sample.r * tint.r,
+        sample.g * tint.g,
+        sample.b * tint.b,
+        sample.a * tint.a
     };
 }
 

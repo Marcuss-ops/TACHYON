@@ -3,6 +3,7 @@
 #include "tachyon/core/math/transform2.h"
 #include "tachyon/core/math/vector2.h"
 #include "tachyon/renderer2d/framebuffer.h"
+#include "tachyon/renderer2d/color/blending.h"
 #include "tachyon/renderer2d/gradient_spec.h"
 #include "tachyon/renderer2d/path_rasterizer.h"
 #include "tachyon/renderer2d/texture_handle.h"

@@ -513,7 +513,7 @@ SurfaceRGBA FillEffect::apply(const SurfaceRGBA& input, const EffectParams& para
             fill.r,
             fill.g,
             fill.b,
-            pixel.a * (fill.a / 255.0f) * opacity
+            pixel.a * fill.a * opacity
         };
         return mix < 1.0f ? lerp_color(pixel, result, mix) : result;
     });
