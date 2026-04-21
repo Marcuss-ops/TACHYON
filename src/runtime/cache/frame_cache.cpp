@@ -11,7 +11,7 @@ std::size_t estimate_layer_size(const scene::EvaluatedLayerState& layer) {
     size += layer.blend_mode.capacity();
     size += layer.text_content.capacity();
     size += layer.font_id.capacity();
-    size += layer.subtitle_path.capacity();
+    if (layer.subtitle_path) size += layer.subtitle_path->capacity();
     if (layer.shape_path.has_value()) {
         size += layer.shape_path->points.capacity() * sizeof(scene::EvaluatedShapePathPoint);
     }
@@ -76,7 +76,7 @@ std::shared_ptr<const scene::EvaluatedLayerState> FrameCache::lookup_layer(std::
     return nullptr;
 }
 
-void FrameCache::store_layer(std::uint64_t key, std::shared_ptr<scene::EvaluatedLayerState> state) {
+void FrameCache::store_layer(std::uint64_t key, std::shared_ptr<const scene::EvaluatedLayerState> state) {
     if (!state) return;
     std::scoped_lock lock(m_mutex);
     const std::size_t size = estimate_layer_size(*state);
@@ -103,7 +103,7 @@ std::shared_ptr<const scene::EvaluatedCompositionState> FrameCache::lookup_compo
     return nullptr;
 }
 
-void FrameCache::store_composition(std::uint64_t key, std::shared_ptr<scene::EvaluatedCompositionState> state) {
+void FrameCache::store_composition(std::uint64_t key, std::shared_ptr<const scene::EvaluatedCompositionState> state) {
     if (!state) return;
     std::scoped_lock lock(m_mutex);
     const std::size_t size = estimate_comp_size(*state);
@@ -130,7 +130,7 @@ std::shared_ptr<const renderer2d::Framebuffer> FrameCache::lookup_frame(std::uin
     return nullptr;
 }
 
-void FrameCache::store_frame(std::uint64_t key, std::shared_ptr<renderer2d::Framebuffer> frame) {
+void FrameCache::store_frame(std::uint64_t key, std::shared_ptr<const renderer2d::Framebuffer> frame) {
     if (!frame) return;
     std::scoped_lock lock(m_mutex);
     const std::size_t size = estimate_frame_size(*frame);

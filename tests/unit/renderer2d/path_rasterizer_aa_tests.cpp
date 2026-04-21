@@ -44,8 +44,8 @@ bool run_path_rasterizer_aa_tests() {
     const Color edge = surface.get_pixel(4, 8);
     const Color outside = surface.get_pixel(2, 2);
 
-    check_true(interior.a == 255, "interior pixel should stay opaque");
-    check_true(edge.a > 0 && edge.a < 255, "edge pixel should have partial coverage");
+    check_true(interior.a >= 0.99f, "interior pixel should stay opaque");
+    check_true(edge.a > 0 && edge.a < 0.99f, "edge pixel should have partial coverage");
     check_true(outside.a == 0, "outside pixel should stay transparent");
 
     SurfaceRGBA stroke_surface(32, 32);
@@ -69,7 +69,7 @@ bool run_path_rasterizer_aa_tests() {
     const Color stroke_outside = stroke_surface.get_pixel(16, 10);
 
     check_true(stroke_center.a > 0, "stroke center should receive coverage");
-    check_true(stroke_edge.a > 0 && stroke_edge.a < 255, "stroke edge should be anti-aliased");
+    check_true(stroke_edge.a > 0 && stroke_edge.a < 0.99f, "stroke edge should be anti-aliased");
     check_true(stroke_outside.a == 0, "stroke far outside should stay transparent");
 
     return g_failures == 0;

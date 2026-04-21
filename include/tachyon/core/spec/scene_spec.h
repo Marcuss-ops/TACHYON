@@ -195,6 +195,11 @@ struct AnimatedVector3Spec {
 
         animation::EasingPreset easing{animation::EasingPreset::None};
         animation::CubicBezierEasing bezier{animation::CubicBezierEasing::linear()};
+
+        double speed_in{0.0};
+        double influence_in{33.333333333};
+        double speed_out{0.0};
+        double influence_out{33.333333333};
     };
     std::vector<Keyframe> keyframes;
     std::optional<std::string> expression;

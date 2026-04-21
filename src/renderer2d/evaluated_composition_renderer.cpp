@@ -21,10 +21,10 @@ namespace {
 
 renderer2d::Color from_color_spec(const ColorSpec& spec) {
     return renderer2d::Color{
-        static_cast<float>(spec.r),
-        static_cast<float>(spec.g),
-        static_cast<float>(spec.b),
-        static_cast<float>(spec.a)
+        static_cast<float>(spec.r) / 255.0f,
+        static_cast<float>(spec.g) / 255.0f,
+        static_cast<float>(spec.b) / 255.0f,
+        static_cast<float>(spec.a) / 255.0f
     };
 }
 
@@ -178,7 +178,10 @@ void composite_surface(
             } else {
                 const auto dest = dst.try_get_pixel(ux, uy);
                 if (dest) {
-                    dst.set_pixel(ux, uy, renderer2d::blend_mode_color(pixel, *dest, blend_mode));
+                    const renderer2d::Color blended = renderer2d::blend_mode_color(pixel, *dest, blend_mode);
+                    // Standard AE behavior: The blend mode result is then composited over the destination
+                    // using the source's alpha (which is already included in 'blended.a').
+                    dst.set_pixel(ux, uy, renderer2d::detail::composite_src_over_linear(blended, *dest));
                 }
             }
         }
@@ -208,10 +211,10 @@ renderer2d::EffectParams effect_params_from_spec(const EffectSpec& spec) {
     }
     for (const auto& [key, value] : spec.colors) {
         params.colors.emplace(key, renderer2d::Color{
-            static_cast<float>(value.r),
-            static_cast<float>(value.g),
-            static_cast<float>(value.b),
-            static_cast<float>(value.a)
+            static_cast<float>(value.r) / 255.0f,
+            static_cast<float>(value.g) / 255.0f,
+            static_cast<float>(value.b) / 255.0f,
+            static_cast<float>(value.a) / 255.0f
         });
     }
     for (const auto& [key, value] : spec.strings) {
@@ -309,6 +312,17 @@ std::shared_ptr<renderer2d::SurfaceRGBA> render_simple_layer_surface(
             }
         }
 
+        if (target_rect) {
+            for (auto& cmd : geom.commands) {
+                cmd.p0.x -= static_cast<float>(target_rect->x);
+                cmd.p0.y -= static_cast<float>(target_rect->y);
+                cmd.p1.x -= static_cast<float>(target_rect->x);
+                cmd.p1.y -= static_cast<float>(target_rect->y);
+                cmd.p2.x -= static_cast<float>(target_rect->x);
+                cmd.p2.y -= static_cast<float>(target_rect->y);
+            }
+        }
+
         // Fill
         if (layer.fill_color.a > 0 || layer.gradient_fill.has_value()) {
             renderer2d::FillPathStyle style;
@@ -333,8 +347,8 @@ std::shared_ptr<renderer2d::SurfaceRGBA> render_simple_layer_surface(
     } else if (layer.type == scene::LayerType::Image && context.media_manager && layer.asset_path.has_value()) {
         const auto* texture = context.media_manager->get_image(*layer.asset_path);
         if (texture) {
-            const float w = static_cast<float>(layer.width > 0 ? layer.width : texture->width());
-            const float h = static_cast<float>(layer.height > 0 ? layer.height : texture->height());
+            const float tex_w = static_cast<float>(layer.width > 0 ? layer.width : texture->width());
+            const float tex_h = static_cast<float>(layer.height > 0 ? layer.height : texture->height());
             
             // Transform corners from layer space [0,w] x [0,h] to screen space
             auto transform_point = [&](float x, float y) -> renderer2d::TexturedVertex2D {
@@ -346,23 +360,33 @@ std::shared_ptr<renderer2d::SurfaceRGBA> render_simple_layer_surface(
                 // In AE, (0,0) is top-left of the comp.
                 return renderer2d::TexturedVertex2D{
                     tp.x, tp.y,
-                    x / w, y / h,
+                    x / tex_w, y / tex_h,
                     1.0f // inv_w for 2D is 1.0
                 };
             };
 
             renderer2d::TexturedVertex2D v0 = transform_point(0.0f, 0.0f);
-            renderer2d::TexturedVertex2D v1 = transform_point(w, 0.0f);
-            renderer2d::TexturedVertex2D v2 = transform_point(w, h);
-            renderer2d::TexturedVertex2D v3 = transform_point(0.0f, h);
+            renderer2d::TexturedVertex2D v1 = transform_point(tex_w, 0.0f);
+            renderer2d::TexturedVertex2D v2 = transform_point(tex_w, tex_h);
+            renderer2d::TexturedVertex2D v3 = transform_point(0.0f, tex_h);
 
             renderer2d::TexturedQuadPrimitive quad = renderer2d::TexturedQuadPrimitive::custom(
                 v0, v1, v2, v3, texture, from_color_spec(layer.fill_color)
             );
+            if (target_rect) {
+                for (auto& v : quad.vertices) {
+                    v.x -= static_cast<float>(target_rect->x);
+                    v.y -= static_cast<float>(target_rect->y);
+                }
+            }
             renderer2d::CPURasterizer::draw_textured_quad(*surface, quad);
         }
     } else {
-        const renderer2d::RectI rect = layer_rect(layer, state.width, state.height, context.policy.resolution_scale);
+        renderer2d::RectI rect = layer_rect(layer, state.width, state.height, context.policy.resolution_scale);
+        if (target_rect) {
+            rect.x -= target_rect->x;
+            rect.y -= target_rect->y;
+        }
         if (rect.width > 0 && rect.height > 0) {
             renderer2d::Color color = from_color_spec(layer.fill_color);
             color = apply_opacity(color, layer.opacity);
@@ -487,8 +511,8 @@ RasterizedFrame2D render_evaluated_composition_2d(
             int ox = 0;
             int oy = 0;
             if (tile_rect) {
-                ox = -tile_rect->x;
-                oy = -tile_rect->y;
+                ox = tile_rect->x;
+                oy = tile_rect->y;
             }
 
             if (layer.is_adjustment_layer) {

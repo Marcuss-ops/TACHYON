@@ -69,16 +69,16 @@ double sample_keyframed_value(const CompiledPropertyTrack& track, double fallbac
     const double alpha = (t - k0.time) / duration;
     double eased_alpha = alpha;
     
-    if (k0.easing == 4) { // EasingPreset::Custom
+    if (k0.easing == static_cast<uint32_t>(animation::EasingPreset::Custom)) { // EasingPreset::Custom
         animation::CubicBezierEasing bezier{k0.cx1, k0.cy1, k0.cx2, k0.cy2};
         eased_alpha = bezier.evaluate(alpha);
-    } else if (k0.easing != 0) { // Not EasingPreset::None
+    } else if (k0.easing != static_cast<uint32_t>(animation::EasingPreset::None)) { // Not EasingPreset::None
         // Preset-based easing
         animation::CubicBezierEasing bezier;
-        switch (k0.easing) {
-            case 1: bezier = animation::CubicBezierEasing::ease_in(); break;
-            case 2: bezier = animation::CubicBezierEasing::ease_out(); break;
-            case 3: bezier = animation::CubicBezierEasing::ease_in_out(); break;
+        switch (static_cast<animation::EasingPreset>(k0.easing)) {
+            case animation::EasingPreset::EaseIn:    bezier = animation::CubicBezierEasing::ease_in(); break;
+            case animation::EasingPreset::EaseOut:   bezier = animation::CubicBezierEasing::ease_out(); break;
+            case animation::EasingPreset::EaseInOut: bezier = animation::CubicBezierEasing::ease_in_out(); break;
             default: bezier = animation::CubicBezierEasing::linear(); break;
         }
         eased_alpha = bezier.evaluate(alpha);
@@ -387,6 +387,7 @@ void FrameExecutor::evaluate_layer(
     std::optional<double> main_frame_time) {
 
     (void)composition_key;
+    (void)main_frame_time;
     (void)plan;
     (void)context;
     (void)snapshot;

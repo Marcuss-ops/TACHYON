@@ -80,8 +80,8 @@ struct CubicBezierEasing {
         double y2 = 1.0;
         
         if (std::abs(value_delta) > 1e-8) {
-            y1 = (speed_out * duration * x1) / value_delta;
-            y2 = 1.0 - (speed_in * duration * (1.0 - x2)) / value_delta;
+            y1 = std::clamp((speed_out * duration * x1) / value_delta, 0.0, 1.0);
+            y2 = std::clamp(1.0 - (speed_in * duration * (1.0 - x2)) / value_delta, 0.0, 1.0);
         }
         
         return {x1, y1, x2, y2};

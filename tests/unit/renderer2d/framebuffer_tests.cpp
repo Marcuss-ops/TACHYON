@@ -29,7 +29,7 @@ bool run_framebuffer_tests() {
         for (uint32_t y = 0; y < 100; ++y) {
             for (uint32_t x = 0; x < 100; ++x) {
                 Color c = fb.get_pixel(x, y);
-                if (c.r != 0 || c.g != 0 || c.b != 0 || c.a != 255) {
+                if (c.r != 0 || c.g != 0 || c.b != 0 || c.a != 1.0f) {
                     all_black = false;
                     break;
                 }
@@ -48,7 +48,7 @@ bool run_framebuffer_tests() {
         fb.set_pixel(50, 50, Color::white());
         
         Color center = fb.get_pixel(50, 50);
-        check_true(center.r == 255 && center.g == 255 && center.b == 255, "White pixel at center");
+        check_true(center.r == 1.0f && center.g == 1.0f && center.b == 1.0f, "White pixel at center");
         
         Color edge = fb.get_pixel(0, 0);
         check_true(edge.r == 0 && edge.g == 0 && edge.b == 0, "Edge still black");
@@ -68,8 +68,8 @@ bool run_framebuffer_tests() {
             }
         }
         
-        check_true(fb.get_pixel(100, 100).r == 255, "Inside rectangle is red");
-        check_true(fb.get_pixel(10, 10).b == 255, "Outside rectangle is blue");
+        check_true(fb.get_pixel(100, 100).r == 1.0f, "Inside rectangle is red");
+        check_true(fb.get_pixel(10, 10).b == 1.0f, "Outside rectangle is blue");
         
         check_true(fb.save_png("tests/output/03_rectangle.png"), "Save rectangle PNG");
     }

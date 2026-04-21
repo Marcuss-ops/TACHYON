@@ -35,10 +35,10 @@ bool run_image_decode_tests() {
 
     {
         renderer2d::SurfaceRGBA source(2, 2);
-        source.set_pixel(0, 0, renderer2d::Color{255, 0, 0, 255});
-        source.set_pixel(1, 0, renderer2d::Color{0, 255, 0, 255});
-        source.set_pixel(0, 1, renderer2d::Color{0, 0, 255, 255});
-        source.set_pixel(1, 1, renderer2d::Color{255, 255, 255, 255});
+        source.set_pixel(0, 0, renderer2d::Color{1.0f, 0.0f, 0.0f, 1.0f});
+        source.set_pixel(1, 0, renderer2d::Color{0.0f, 1.0f, 0.0f, 1.0f});
+        source.set_pixel(0, 1, renderer2d::Color{0.0f, 0.0f, 1.0f, 1.0f});
+        source.set_pixel(1, 1, renderer2d::Color{1.0f, 1.0f, 1.0f, 1.0f});
 
         const std::filesystem::path png_path = out_dir / "roundtrip.png";
         check_true(source.save_png(png_path), "PNG fixture should be writable");
@@ -49,9 +49,9 @@ bool run_image_decode_tests() {
         if (decoded != nullptr) {
             check_true(decoded->width() == 2, "PNG fixture width should match");
             check_true(decoded->height() == 2, "PNG fixture height should match");
-            check_true(decoded->get_pixel(0, 0).r == 255, "PNG decode should preserve red channel");
-            check_true(decoded->get_pixel(1, 0).g == 255, "PNG decode should preserve green channel");
-            check_true(decoded->get_pixel(0, 1).b == 255, "PNG decode should preserve blue channel");
+            check_true(std::abs(decoded->get_pixel(0, 0).r - 1.0f) < 0.01f, "PNG decode should preserve red channel");
+            check_true(std::abs(decoded->get_pixel(1, 0).g - 1.0f) < 0.01f, "PNG decode should preserve green channel");
+            check_true(std::abs(decoded->get_pixel(0, 1).b - 1.0f) < 0.01f, "PNG decode should preserve blue channel");
         }
         check_true(!diagnostics.has_warnings(), "PNG decode should not emit warnings");
     }
@@ -67,9 +67,9 @@ bool run_image_decode_tests() {
             check_true(decoded->width() == 1, "JPEG fixture width should match");
             check_true(decoded->height() == 1, "JPEG fixture height should match");
             const renderer2d::Color pixel = decoded->get_pixel(0, 0);
-            check_true(pixel.r > 200, "JPEG decode should preserve a strong red component");
-            check_true(pixel.g < 80, "JPEG decode should keep green low");
-            check_true(pixel.b < 80, "JPEG decode should keep blue low");
+            check_true(pixel.r > 0.8f, "JPEG decode should preserve a strong red component");
+            check_true(pixel.g < 0.3f, "JPEG decode should keep green low");
+            check_true(pixel.b < 0.3f, "JPEG decode should keep blue low");
         }
         check_true(!diagnostics.has_warnings(), "JPEG decode should not emit warnings");
     }

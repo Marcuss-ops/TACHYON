@@ -192,7 +192,13 @@ bool parse_keyframe_common(const json& object, KeyframeT& keyframe, const std::s
         keyframe.easing = parse_easing_preset(object.at("easing"));
         if (keyframe.easing == animation::EasingPreset::Custom) {
             if (object.contains("bezier")) {
-                keyframe.bezier = parse_bezier(object.at("bezier"));
+                keyframe.bezier = parse_bezier(object.at("bezier"));
+            } else {
+                if (object.contains("speed_in")) keyframe.speed_in = object.at("speed_in").get<double>();
+                if (object.contains("influence_in")) keyframe.influence_in = object.at("influence_in").get<double>();
+                if (object.contains("speed_out")) keyframe.speed_out = object.at("speed_out").get<double>();
+                if (object.contains("influence_out")) keyframe.influence_out = object.at("influence_out").get<double>();
+            }
         }
     }
     return true;
