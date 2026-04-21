@@ -38,9 +38,22 @@ private:
     FrameArena& m_arena;
     FrameCache& m_cache;
 
+    // Node lookup maps populated once per scene execution
+    std::unordered_map<std::uint32_t, const CompiledNode*> m_node_lookup;
+    std::unordered_map<std::uint32_t, const CompiledPropertyTrack*> m_property_lookup;
+    std::unordered_map<std::uint32_t, const CompiledLayer*> m_layer_lookup;
+    std::unordered_map<std::uint32_t, const CompiledComposition*> m_composition_lookup;
+
+    void build_lookup_table(const CompiledScene& scene);
+
     // Internal evaluation helpers that work on CompiledNodes
-    void evaluate_node(std::uint32_t node_id, const CompiledScene& scene, const RenderPlan& plan, RenderContext& context);
+    void evaluate_node(std::uint32_t node_id, const CompiledScene& scene, const RenderPlan& plan, RenderContext& context, std::uint64_t global_key);
+    
+    void evaluate_property(const CompiledPropertyTrack& track, const RenderPlan& plan, std::uint64_t node_key);
+    void evaluate_layer(const CompiledLayer& layer, const RenderPlan& plan, RenderContext& context, std::uint64_t node_key);
+    void evaluate_composition(const CompiledComposition& comp, const RenderPlan& plan, RenderContext& context, std::uint64_t node_key);
 };
+
 
 /**
  * @brief Evaluated state of a single frame (transient).

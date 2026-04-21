@@ -19,53 +19,54 @@ void FrameCache::store_property(std::uint64_t key, double value) {
     m_properties[key] = value;
 }
 
-const scene::EvaluatedLayerState* FrameCache::lookup_layer(std::uint64_t key) const {
+std::shared_ptr<const scene::EvaluatedLayerState> FrameCache::lookup_layer(std::uint64_t key) const {
     std::scoped_lock lock(m_mutex);
     auto it = m_layers.find(key);
     if (it != m_layers.end()) {
         ++m_hit_count;
-        return &it->second;
+        return it->second;
     }
     ++m_miss_count;
     return nullptr;
 }
 
-void FrameCache::store_layer(std::uint64_t key, scene::EvaluatedLayerState state) {
+void FrameCache::store_layer(std::uint64_t key, std::shared_ptr<scene::EvaluatedLayerState> state) {
     std::scoped_lock lock(m_mutex);
     m_layers.insert_or_assign(key, std::move(state));
 }
 
-const scene::EvaluatedCompositionState* FrameCache::lookup_composition(std::uint64_t key) const {
+std::shared_ptr<const scene::EvaluatedCompositionState> FrameCache::lookup_composition(std::uint64_t key) const {
     std::scoped_lock lock(m_mutex);
     auto it = m_compositions.find(key);
     if (it != m_compositions.end()) {
         ++m_hit_count;
-        return &it->second;
+        return it->second;
     }
     ++m_miss_count;
     return nullptr;
 }
 
-void FrameCache::store_composition(std::uint64_t key, scene::EvaluatedCompositionState state) {
+void FrameCache::store_composition(std::uint64_t key, std::shared_ptr<scene::EvaluatedCompositionState> state) {
     std::scoped_lock lock(m_mutex);
     m_compositions.insert_or_assign(key, std::move(state));
 }
 
-const renderer2d::Framebuffer* FrameCache::lookup_frame(std::uint64_t key) const {
+std::shared_ptr<const renderer2d::Framebuffer> FrameCache::lookup_frame(std::uint64_t key) const {
     std::scoped_lock lock(m_mutex);
     auto it = m_frames.find(key);
     if (it != m_frames.end()) {
         ++m_hit_count;
-        return &it->second;
+        return it->second;
     }
     ++m_miss_count;
     return nullptr;
 }
 
-void FrameCache::store_frame(std::uint64_t key, renderer2d::Framebuffer frame) {
+void FrameCache::store_frame(std::uint64_t key, std::shared_ptr<renderer2d::Framebuffer> frame) {
     std::scoped_lock lock(m_mutex);
     m_frames.insert_or_assign(key, std::move(frame));
 }
+
 
 void FrameCache::clear() {
     std::scoped_lock lock(m_mutex);
