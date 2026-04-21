@@ -1,13 +1,9 @@
-#pragma once
-
-#include "tachyon/core/spec/scene_spec.h"
-#include "tachyon/runtime/core/compiled_scene.h"
-#include "tachyon/runtime/core/diagnostics.h"
+#include "tachyon/runtime/core/determinism_contract.h"
 
 namespace tachyon {
 
 struct SceneCompilerOptions {
-    DeterminismPolicy determinism;
+    DeterminismContract determinism;
 };
 
 class SceneCompiler {

@@ -2,50 +2,80 @@
 
 namespace tachyon {
 
-const CachedFrame* FrameCache::lookup(const FrameCacheKey& key, std::uint64_t scene_hash) const {
+bool FrameCache::lookup_property(std::uint64_t key, double& out_value) const {
     std::scoped_lock lock(m_mutex);
-    const auto it = m_entries.find(key.value);
-    if (it == m_entries.end()) {
-        ++m_miss_count;
-        return nullptr;
+    auto it = m_properties.find(key);
+    if (it != m_properties.end()) {
+        out_value = it->second;
+        ++m_hit_count;
+        return true;
     }
-
-    if (it->second.scene_hash != scene_hash) {
-        ++m_miss_count;
-        return nullptr;
-    }
-
-    ++m_hit_count;
-    return &it->second;
+    ++m_miss_count;
+    return false;
 }
 
-void FrameCache::store(CachedFrame frame) {
+void FrameCache::store_property(std::uint64_t key, double value) {
     std::scoped_lock lock(m_mutex);
-    m_entries.insert_or_assign(frame.entry.key.value, std::move(frame));
+    m_properties[key] = value;
 }
 
-void FrameCache::invalidate(const std::string& changed_parameter) {
+const scene::EvaluatedLayerState* FrameCache::lookup_layer(std::uint64_t key) const {
     std::scoped_lock lock(m_mutex);
-    for (auto it = m_entries.begin(); it != m_entries.end();) {
-        bool should_remove = false;
-        for (const auto& token : it->second.invalidates_when_changed) {
-            if (token == changed_parameter) {
-                should_remove = true;
-                break;
-            }
-        }
-
-        if (should_remove) {
-            it = m_entries.erase(it);
-        } else {
-            ++it;
-        }
+    auto it = m_layers.find(key);
+    if (it != m_layers.end()) {
+        ++m_hit_count;
+        return &it->second;
     }
+    ++m_miss_count;
+    return nullptr;
+}
+
+void FrameCache::store_layer(std::uint64_t key, scene::EvaluatedLayerState state) {
+    std::scoped_lock lock(m_mutex);
+    m_layers.insert_or_assign(key, std::move(state));
+}
+
+const scene::EvaluatedCompositionState* FrameCache::lookup_composition(std::uint64_t key) const {
+    std::scoped_lock lock(m_mutex);
+    auto it = m_compositions.find(key);
+    if (it != m_compositions.end()) {
+        ++m_hit_count;
+        return &it->second;
+    }
+    ++m_miss_count;
+    return nullptr;
+}
+
+void FrameCache::store_composition(std::uint64_t key, scene::EvaluatedCompositionState state) {
+    std::scoped_lock lock(m_mutex);
+    m_compositions.insert_or_assign(key, std::move(state));
+}
+
+const renderer2d::Framebuffer* FrameCache::lookup_frame(std::uint64_t key) const {
+    std::scoped_lock lock(m_mutex);
+    auto it = m_frames.find(key);
+    if (it != m_frames.end()) {
+        ++m_hit_count;
+        return &it->second;
+    }
+    ++m_miss_count;
+    return nullptr;
+}
+
+void FrameCache::store_frame(std::uint64_t key, renderer2d::Framebuffer frame) {
+    std::scoped_lock lock(m_mutex);
+    m_frames.insert_or_assign(key, std::move(frame));
 }
 
 void FrameCache::clear() {
     std::scoped_lock lock(m_mutex);
-    m_entries.clear();
+    m_properties.clear();
+    m_layers.clear();
+    m_compositions.clear();
+    m_frames.clear();
+    m_hit_count = 0;
+    m_miss_count = 0;
 }
 
 } // namespace tachyon
+

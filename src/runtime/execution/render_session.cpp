@@ -1,5 +1,6 @@
 #include "tachyon/runtime/execution/render_session.h"
 #include "tachyon/core/spec/scene_compiler.h"
+#include "tachyon/runtime/execution/frame_executor.h"
 
 #include "tachyon/output/frame_output_sink.h"
 #include "tachyon/runtime/resource/render_context.h"
@@ -15,20 +16,23 @@ namespace tachyon {
 namespace {
 
 void render_frames_sequential(
-    const SceneSpec& scene,
     const CompiledScene& compiled_scene,
     const RenderExecutionPlan& execution_plan,
     FrameCache& cache,
     RenderContext& context,
     std::vector<ExecutedFrame>& rendered_frames) {
+    
     rendered_frames.reserve(execution_plan.frame_tasks.size());
+    FrameArena arena;
+    FrameExecutor executor(arena, cache);
+
     for (const auto& task : execution_plan.frame_tasks) {
-        rendered_frames.push_back(execute_frame_task(scene, compiled_scene, execution_plan.render_plan, task, cache, context));
+        rendered_frames.push_back(executor.execute(compiled_scene, execution_plan.render_plan, task, context));
+        arena.reset();
     }
 }
 
 void render_frames_parallel(
-    const SceneSpec& scene,
     const CompiledScene& compiled_scene,
     const RenderExecutionPlan& execution_plan,
     FrameCache& cache,
@@ -45,13 +49,17 @@ void render_frames_parallel(
 
     for (std::size_t worker_index = 0; worker_index < thread_count; ++worker_index) {
         workers.push_back(std::async(std::launch::async, [&]() {
+            FrameArena arena;
+            FrameExecutor executor(arena, cache);
+            
             for (;;) {
                 const std::size_t index = next_index.fetch_add(1);
                 if (index >= task_count) {
                     return;
                 }
 
-                rendered_frames[index] = execute_frame_task(scene, compiled_scene, execution_plan.render_plan, execution_plan.frame_tasks[index], cache, context);
+                rendered_frames[index] = executor.execute(compiled_scene, execution_plan.render_plan, execution_plan.frame_tasks[index], context);
+                arena.reset();
             }
         }));
     }
@@ -77,11 +85,14 @@ RenderSessionResult RenderSession::render(
     const RenderExecutionPlan& execution_plan,
     const std::filesystem::path& output_path,
     std::size_t worker_count) {
+    (void)scene; // SceneSpec is no longer used in the hot path.
+    
     RenderSessionResult result;
     renderer2d::ensure_default_text_font();
     RenderContext context(m_precomp_cache);
     context.policy = make_quality_policy(execution_plan.render_plan.quality_tier);
     context.renderer2d.policy = context.policy;
+    
     if (context.renderer2d.precomp_cache) {
         context.renderer2d.precomp_cache->set_max_bytes(context.policy.precomp_cache_budget);
     }
@@ -106,9 +117,9 @@ RenderSessionResult RenderSession::render(
 
     std::vector<ExecutedFrame> rendered_frames;
     if (effective_worker_count <= 1 || execution_plan.frame_tasks.size() <= 1) {
-        render_frames_sequential(scene, compiled_scene, execution_plan, m_cache, context, rendered_frames);
+        render_frames_sequential(compiled_scene, execution_plan, m_cache, context, rendered_frames);
     } else {
-        render_frames_parallel(scene, compiled_scene, execution_plan, m_cache, effective_worker_count, context, rendered_frames);
+        render_frames_parallel(compiled_scene, execution_plan, m_cache, effective_worker_count, context, rendered_frames);
     }
 
     for (ExecutedFrame& frame : rendered_frames) {
@@ -142,3 +153,4 @@ RenderSessionResult RenderSession::render(
 }
 
 } // namespace tachyon
+

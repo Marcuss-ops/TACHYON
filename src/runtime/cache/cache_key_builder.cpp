@@ -10,6 +10,14 @@ void CacheKeyBuilder::add_u32(std::uint32_t value) noexcept {
     mix(static_cast<std::uint64_t>(value));
 }
 
+void CacheKeyBuilder::add_f64(double value) noexcept {
+    mix(std::bit_cast<std::uint64_t>(value));
+}
+
+void CacheKeyBuilder::add_f32(float value) noexcept {
+    mix(static_cast<std::uint64_t>(std::bit_cast<std::uint32_t>(value)));
+}
+
 void CacheKeyBuilder::add_bool(bool value) noexcept {
     mix(value ? 1ULL : 0ULL);
 }

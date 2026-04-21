@@ -1,61 +1,59 @@
 #pragma once
 
-#include "tachyon/runtime/core/diagnostics.h"
-#include "tachyon/runtime/execution/render_plan.h"
-
-#include <cstddef>
 #include <cstdint>
-#include <optional>
-#include <string>
 #include <vector>
 
 namespace tachyon {
 
-enum class RenderStepKind {
-    ValidateContracts,
-    ResolveScene,
-    ResolveComposition,
-    PrepareFrameCacheKeys,
-    PrepareLayerRegions,
-    PrepareLayerCaches,
-    Rasterize2DFrame,
-    EncodeOutput
-};
+/**
+ * @brief Manages the execution order and dependency relationships of the compiled scene.
+ * 
+ * The RenderGraph is built once during scene compilation and used by the 
+ * FrameExecutor to determine the minimal set of nodes that need evaluation.
+ */
+class RenderGraph {
+public:
+    /**
+     * @brief Represents a dependency edge in the graph.
+     */
+    struct Edge {
+        std::uint32_t from;
+        std::uint32_t to;
+        bool structural{true}; ///< True if structural (parent, matte), false if temporal (expressions).
+    };
 
-struct RenderGraphStep {
-    std::string id;
-    RenderStepKind kind{RenderStepKind::ResolveScene};
-    std::string label;
-    std::optional<std::int64_t> frame_number;
-    std::vector<std::string> dependencies;
-};
+    /**
+     * @brief Adds a dependency edge between nodes.
+     * @param from The source node ID (dependency).
+     * @param to The target node ID (dependent).
+     * @param structural True if structural, false if temporal.
+     */
+    void add_edge(std::uint32_t from, std::uint32_t to, bool structural = true);
+    
+    /**
+     * @brief Performs a deterministic topological sort of the graph.
+     * This establishes the m_topo_order used during execution.
+     */
+    void compile();
 
-struct FrameCacheKey {
-    std::string value;
-};
+    /**
+     * @brief Returns the nodes sorted in topological order.
+     */
+    [[nodiscard]] const std::vector<std::uint32_t>& topo_order() const noexcept { return m_topo_order; }
+    
+    /**
+     * @brief Returns all edges in the graph.
+     */
+    [[nodiscard]] const std::vector<Edge>& edges() const noexcept { return m_edges; }
 
-struct FrameCacheEntry {
-    FrameCacheKey key;
-    std::string note;
-};
+    /**
+     * @brief Clears the graph state.
+     */
+    void clear();
 
-struct FrameRenderTask {
-    std::int64_t frame_number{0};
-    FrameCacheKey cache_key;
-    bool cacheable{true};
-    std::vector<std::string> invalidates_when_changed;
+private:
+    std::vector<Edge> m_edges;
+    std::vector<std::uint32_t> m_topo_order;
 };
-
-struct RenderExecutionPlan {
-    RenderPlan render_plan;
-    std::size_t resolved_asset_count{0};
-    std::vector<RenderGraphStep> steps;
-    std::vector<FrameRenderTask> frame_tasks;
-};
-
-ResolutionResult<RenderExecutionPlan> build_render_execution_plan(const RenderPlan& plan, std::size_t resolved_asset_count = 0);
-FrameCacheKey build_frame_cache_key(const RenderPlan& plan, std::int64_t frame_number);
-bool frame_cache_entry_matches(const FrameCacheEntry& entry, const FrameCacheKey& expected_key);
-std::string render_step_kind_string(RenderStepKind kind);
 
 } // namespace tachyon
