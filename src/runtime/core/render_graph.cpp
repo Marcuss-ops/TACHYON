@@ -65,9 +65,45 @@ void RenderGraph::compile() {
     std::reverse(m_topo_order.begin(), m_topo_order.end());
 }
 
-void RenderGraph::clear() {
-    m_edges.clear();
-    m_topo_order.clear();
+void RenderGraph::increment_node_version(std::uint32_t node_id, std::uint32_t& out_new_version) {
+    // This method is called when a leaf node (property/asset) changes.
+    // The implementation of version storage is outside this class, 
+    // but we provide the logic to find all impacted dependents.
+    std::vector<std::uint32_t> affected;
+    propagate_invalidation(node_id, affected);
+    
+    // The caller will increment the version of all nodes in 'affected'.
+    out_new_version = 0; // Placeholder for the root's new version
 }
+
+void RenderGraph::propagate_invalidation(std::uint32_t changed_node_id, std::vector<std::uint32_t>& invalidated_nodes) {
+    std::vector<std::uint32_t> stack;
+    stack.push_back(changed_node_id);
+
+    // Build dependent adjacency (inverted from edges list)
+    std::map<std::uint32_t, std::vector<std::uint32_t>> dependents_map;
+    for (const auto& edge : m_edges) {
+        dependents_map[edge.from].push_back(edge.to);
+    }
+
+    std::set<std::uint32_t> visited;
+    while (!stack.empty()) {
+        std::uint32_t current = stack.back();
+        stack.pop_back();
+
+        if (visited.count(current)) continue;
+        visited.insert(current);
+        invalidated_nodes.push_back(current);
+
+        auto it = dependents_map.find(current);
+        if (it != dependents_map.end()) {
+            for (std::uint32_t dep : it->second) {
+                stack.push_back(dep);
+            }
+        }
+    }
+}
+
+
 
 } // namespace tachyon

@@ -76,39 +76,45 @@ struct CompiledPropertyTrack {
     };
 
     CompiledNode node;
-    std::string property_id;
     Kind kind{Kind::Constant};
     double constant_value{0.0};
     std::vector<CompiledKeyframe> keyframes;
     std::optional<std::uint32_t> expression_index;
+    std::optional<DataBindingSpec> binding;
 };
 
 struct CompiledLayer {
     CompiledNode node;
-    std::string id;
-    std::string name;
-    std::string type;
-    std::string blend_mode{"normal"};
+    std::uint32_t type_id{0}; // Resolved enum or index
+    
+    // Boundary data
+    std::uint32_t width{0};
+    std::uint32_t height{0};
+    
+    // Evaluation state indices
     std::optional<std::uint32_t> parent_index;
-    bool enabled{true};
-    bool visible{true};
-    bool is_3d{false};
-    bool is_adjustment_layer{false};
-    double start_time{0.0};
-    double in_point{0.0};
-    double out_point{0.0};
-    double opacity{1.0};
-    std::vector<std::uint32_t> property_indices;
+    std::optional<std::uint32_t> precomp_index;
+    std::vector<std::uint32_t> property_indices; // Indices into CompiledScene::property_tracks
+    
+    // Masking and Matte (resolved into indices)
+    TrackMatteType matte_type{TrackMatteType::None};
+    std::optional<std::uint32_t> matte_layer_index;
+    
+    // Style (captured for DrawList emission)
+    renderer2d::LineCap line_cap{renderer2d::LineCap::Butt};
+    renderer2d::LineJoin line_join{renderer2d::LineJoin::Miter};
+    float miter_limit{4.0f};
+    
+    // Visibility flags (bitmask preferred for industrial minimality)
+    std::uint8_t flags{0x01}; // 0x01 = enabled, 0x02 = visible, 0x04 = is_3d, 0x08 = adjustment
 };
 
 struct CompiledComposition {
     CompiledNode node;
-    std::string id;
-    std::string name;
     std::uint32_t width{0};
     std::uint32_t height{0};
-    double duration{0.0};
     std::uint32_t fps{60};
+    double duration{0.0};
     std::vector<CompiledLayer> layers;
 };
 
@@ -116,16 +122,17 @@ struct CompiledScene {
     CompiledSceneHeader header;
     DeterminismContract determinism;
     std::uint64_t scene_hash{0};
-    std::string project_id;
-    std::string project_name;
     
     RenderGraph graph;
     
     std::vector<CompiledComposition> compositions;
     std::vector<CompiledPropertyTrack> property_tracks;
     std::vector<CompiledExpression> expressions;
+    std::vector<AssetSpec> assets;
 
     [[nodiscard]] bool is_valid() const noexcept;
+
+
 
     /**
      * @brief Calculates a stable checksum representing the binary layout of internal structures.
