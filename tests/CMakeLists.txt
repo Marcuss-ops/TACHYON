@@ -22,6 +22,7 @@ add_executable(TachyonTests
     unit/runtime/tile_scheduler_tests.cpp
     unit/runtime/render_contract_tests.cpp
     unit/runtime/expression_vm_tests.cpp
+    unit/runtime/determinism_tests.cpp
     unit/core/scene/evaluator_tests.cpp
     unit/core/scene/precomp_mask_tests.cpp
     unit/timeline/time_tests.cpp

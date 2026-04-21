@@ -42,6 +42,7 @@ add_library(TachyonCore
     runtime/execution/tile_scheduler.cpp
     runtime/execution/render_job.cpp
     runtime/execution/render_plan.cpp
+    runtime/execution/frame_hasher.cpp
     runtime/resource/render_context.cpp
     core/scene/evaluator.cpp
     core/scene/evaluator_utils.cpp

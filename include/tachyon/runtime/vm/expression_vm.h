@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/runtime/core/math_contract.h"
 #include <array>
 #include <algorithm>
 #include <cmath>
@@ -165,13 +166,13 @@ public:
                     push(outMin);
                 } else {
                     const double t = (value - inMin) / (inMax - inMin);
-                    push(outMin + t * (outMax - outMin));
+                    push(math_contract::lerp(outMin, outMax, t));
                 }
                 break;
             }
             case ExpressionOp::ValueAtTime: {
-                const double time_offset = pop();
-                const double property_idx = pop();
+                [[maybe_unused]] const double time_offset = pop();
+                [[maybe_unused]] const double property_idx = pop();
                 // TODO: Implement sampling from property tracks at arbitrary time
                 // This requires context to have access to compiled tracks.
                 // For now, return 0.0 or current value if property_idx matches LoadProp
@@ -180,48 +181,16 @@ public:
             }
             case ExpressionOp::Noise: {
                 const std::uint64_t x = static_cast<std::uint64_t>(context.frame_number) ^ context.seed ^ static_cast<std::uint64_t>(instr.operand);
-                std::uint64_t z = x + 0x9e3779b97f4a7c15ULL;
-                z = (z ^ (z >> 30U)) * 0xbf58476d1ce4e5b9ULL;
-                z = (z ^ (z >> 27U)) * 0x94d049bb133111ebULL;
-                z ^= (z >> 31U);
-                push(static_cast<double>(z & 0xFFFFFFFFULL) / static_cast<double>(0xFFFFFFFFULL));
+                push(math_contract::noise(x));
                 break;
             }
             case ExpressionOp::Spring: {
-                // Spring(from, to, frequency, damping)
-                const double damping = pop();      // Damping ratio (0-1 = underdamped, 1 = critically, >1 = overdamped)
-                const double freq = pop();         // Frequency in Hz
-                const double to = pop();           // Target value
-                const double from = pop();         // Start value
+                const double damping = pop();      // Damping ratio (zeta)
+                const double freq = pop();         // Undamped natural frequency (Hz)
+                const double to = pop();           // Target equilibrium position
+                const double from = pop();         // Initial displacement at t=0
                 
-                const double t = context.time_seconds;
-                if (t <= 0.0) {
-                    push(from);
-                    break;
-                }
-
-                const double omega_n = freq * 2.0 * 3.14159265358979323846;
-                const double delta = from - to;
-                
-                double val = to;
-                if (damping < 1.0) {
-                    // Underdamped
-                    const double omega_d = omega_n * std::sqrt(1.0 - damping * damping);
-                    const double decay = std::exp(-damping * omega_n * t);
-                    val = to + delta * decay * (std::cos(omega_d * t) + (damping * omega_n / omega_d) * std::sin(omega_d * t));
-                } else if (damping > 1.0) {
-                    // Overdamped
-                    const double decay_a = std::exp((-damping + std::sqrt(damping * damping - 1.0)) * omega_n * t);
-                    const double decay_b = std::exp((-damping - std::sqrt(damping * damping - 1.0)) * omega_n * t);
-                    // Simplify: just linear combination of two decays
-                    val = to + delta * 0.5 * (decay_a + decay_b);
-                } else {
-                    // Critically damped
-                    const double decay = std::exp(-omega_n * t);
-                    val = to + delta * (1.0 + omega_n * t) * decay;
-                }
-                
-                push(val);
+                push(math_contract::spring(context.time_seconds, from, to, freq, damping));
                 break;
             }
             case ExpressionOp::Return:

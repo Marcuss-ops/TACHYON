@@ -1,18 +1,25 @@
 #pragma once
-
+#include "tachyon/core/api.h"
 #include <cstdint>
 #include <vector>
 #include <stdexcept>
 #include <string>
-#include <stdexcept>
 
 namespace tachyon {
 
-struct PropertyNode {
-    std::uint32_t id{0};
-    std::uint32_t track_index{0};
-    std::vector<std::uint32_t> depends_on;
-    std::vector<std::uint32_t> affects;
+/**
+ * @brief Represents a node in the execution graph for a specific property or layer.
+ * 
+ * Nodes are limited to 64 per composition to allow efficient status tracking 
+ * via a single 64-bit dependency bitmask.
+ */
+struct TACHYON_ALIGN(16) PropertyNode {
+    std::uint32_t id{0};           ///< Unique identifier within the composition.
+    std::uint32_t track_index{0};  ///< Index of the associated animation track.
+    std::uint64_t hash{0};         ///< Current value hash for change detection.
+    
+    std::vector<std::uint32_t> depends_on; ///< Indices of nodes this node depends on.
+    std::vector<std::uint32_t> affects;    ///< Indices of nodes affected by this node.
 };
 
 class PropertyGraph {

@@ -1,3 +1,18 @@
+/**
+ * @file scene_spec.h
+ * @brief Authoring specifications for the Tachyon rendering engine.
+ * 
+ * This file defines the "Authoring Boundary" (SceneSpec). These structures are 
+ * designed for ease of use by authoring tools (JSON/YAML parsers) and are not 
+ * optimized for runtime execution.
+ * 
+ * Hierarchy:
+ * - SceneSpec: The root container for a project.
+ *   - CompositionSpec: A renderable sequence (timeline).
+ *     - LayerSpec: An individual element (Transform, Opacity, Effects).
+ *       - AnimatedScalarSpec/AnimatedVectorSpec: Property tracks with keyframes or expressions.
+ */
+
 #pragma once
 
 #include "tachyon/core/math/vector2.h"
@@ -334,13 +349,16 @@ struct RenderDefaults {
     std::optional<std::string> output;
 };
 
+/**
+ * @brief Top-level container for a project or multi-composition scene.
+ */
 struct SceneSpec {
-    std::string version;
-    std::string spec_version;
-    ProjectSpec project;
-    std::vector<AssetSpec> assets;
-    std::vector<CompositionSpec> compositions;
-    RenderDefaults render_defaults;
+    std::string version;      ///< Tachyon schema version.
+    std::string spec_version; ///< Specific project spec version.
+    ProjectSpec project;      ///< Global project metadata.
+    std::vector<AssetSpec> assets;             ///< External assets (images, video, audio).
+    std::vector<CompositionSpec> compositions; ///< All compositions in the project.
+    RenderDefaults render_defaults;           ///< Default settings for output.
 };
 
 ParseResult<SceneSpec> parse_scene_spec_json(const std::string& text);
