@@ -42,16 +42,27 @@ This script adds the local CMake and Visual Studio Build Tools locations to the 
 Use the root build script for the standard build flow:
 
 ```powershell
-.\build.ps1 -Configuration Debug -RunTests
+.\build.ps1 -Preset dev -RunTests
 ```
 
 If you only want to compile, omit `-RunTests`.
+
+For a faster inner loop, use the fast preset and a focused filter:
+
+```powershell
+.\build.ps1 -Preset dev-fast -RunTests
+.\build.ps1 -Preset dev-fast -RunTests -TestFilter frame_executor
+.\build.ps1 -Preset asan -RunTests -TestFilter math
+```
+
+`dev` is the normal daily preset. `dev-fast` trims the default build set and applies a focused test filter when you do not pass one yourself. `asan` is for memory and lifetime bugs.
 
 ## Documentation
 
 The canonical navigation entry for the documentation set is:
 
 - `docs/README.md`
+- `TACHYON_ENGINEERING_RULES.md` — operational rules every contributor should read before changing code
 
 The documentation is organized with a numbered structure so contributors can move from project vision to engine contracts to subsystem behavior in a stable order.
 
@@ -78,7 +89,8 @@ For a new contributor, the best path is:
 4. `docs/10-architecture/architecture.md`
 5. `docs/00-project/roadmap.md`
 6. `docs/00-project/mvp-v1.md`
-7. the relevant contract and subsystem folders for the area being worked on
+7. `TACHYON_ENGINEERING_RULES.md`
+8. the relevant contract and subsystem folders for the area being worked on
 
 ## Direction summary
 

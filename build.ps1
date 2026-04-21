@@ -1,10 +1,39 @@
 param(
-    [ValidateSet('Debug', 'Release')]
-    [string]$Configuration = 'Debug',
-    [switch]$RunTests
+    [ValidateSet('dev', 'dev-fast', 'asan')]
+    [string]$Preset = 'dev',
+    [switch]$RunTests,
+    [string[]]$Target,
+    [string]$TestFilter
 )
 
 $ErrorActionPreference = 'Stop'
+
+function Get-DefaultTestFilter {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$PresetName
+    )
+
+    switch ($PresetName) {
+        'dev-fast' {
+            return 'math,property,expression,frame_cache,frame_executor,tile_scheduler,render_contract,scene_evaluator,scene_spec,expression_vm'
+        }
+        default {
+            return ''
+        }
+    }
+}
+
+function Assert-LastExitCode {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Step
+    )
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "$Step failed with exit code $LASTEXITCODE"
+    }
+}
 
 $repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $bootstrap = Join-Path $repoRoot 'scripts\Enable-DevTools.ps1'
@@ -15,18 +44,61 @@ if (-not (Test-Path $bootstrap)) {
 
 & $bootstrap | Out-Null
 
-$buildDir = Join-Path $repoRoot 'build'
-if (-not (Test-Path (Join-Path $buildDir 'CMakeCache.txt'))) {
-    cmake -S $repoRoot -B $buildDir
+switch ($Preset) {
+    'asan' {
+        $buildDir = Join-Path $repoRoot 'build\asan'
+    }
+    default {
+        $buildDir = Join-Path $repoRoot 'build'
+    }
 }
 
-cmake --build $buildDir --config $Configuration
+$cacheFile = Join-Path $buildDir 'CMakeCache.txt'
+$buildSystemFile = Join-Path $buildDir 'TACHYON.slnx'
+
+if (-not (Test-Path $cacheFile) -or -not (Test-Path $buildSystemFile)) {
+    cmake --preset $Preset
+    Assert-LastExitCode -Step "cmake --preset $Preset"
+}
+
+$buildArgs = @('--build', '--preset', $Preset, '--parallel')
+if ($Target -and $Target.Count -gt 0) {
+    $buildArgs += '--target'
+    $buildArgs += $Target
+}
+
+cmake @buildArgs
+Assert-LastExitCode -Step "cmake --build --preset $Preset"
 
 if ($RunTests) {
-    $testsExe = Join-Path $buildDir "tests\$Configuration\TachyonTests.exe"
+    $testsExe = Join-Path $buildDir 'tests\RelWithDebInfo\TachyonTests.exe'
     if (-not (Test-Path $testsExe)) {
         throw "Test binary not found: $testsExe"
     }
 
-    & $testsExe
+    $resolvedTestFilter = $TestFilter
+    if (-not $resolvedTestFilter) {
+        $resolvedTestFilter = Get-DefaultTestFilter -PresetName $Preset
+    }
+
+    $hadTestFilter = Test-Path Env:TACHYON_TEST_FILTER
+    $previousTestFilter = $env:TACHYON_TEST_FILTER
+
+    if ($resolvedTestFilter) {
+        $env:TACHYON_TEST_FILTER = $resolvedTestFilter
+    }
+
+    try {
+        & $testsExe
+    }
+    finally {
+        if ($resolvedTestFilter) {
+            if ($hadTestFilter) {
+                $env:TACHYON_TEST_FILTER = $previousTestFilter
+            }
+            else {
+                Remove-Item Env:TACHYON_TEST_FILTER -ErrorAction SilentlyContinue
+            }
+        }
+    }
 }

@@ -1,0 +1,74 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Visual Studio 18 2026",
+      "architecture": {
+        "value": "x64"
+      },
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "TACHYON_ENABLE_COMPILER_CACHE": "ON",
+        "TACHYON_ENABLE_PCH": "ON",
+        "CMAKE_MSVC_DEBUG_INFORMATION_FORMAT": "$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>"
+      }
+    },
+    {
+      "name": "dev",
+      "inherits": "base",
+      "description": "Daily iteration preset with RelWithDebInfo symbols and the core test loop",
+      "cacheVariables": {
+        "TACHYON_ENABLE_ASAN": "OFF"
+      }
+    },
+    {
+      "name": "dev-fast",
+      "inherits": "base",
+      "description": "Faster inner loop preset with the smallest useful default build set",
+      "cacheVariables": {
+        "TACHYON_ENABLE_ASAN": "OFF"
+      }
+    },
+    {
+      "name": "asan",
+      "inherits": "base",
+      "description": "AddressSanitizer preset for memory and lifetime bugs",
+      "binaryDir": "${sourceDir}/build/asan",
+      "cacheVariables": {
+        "TACHYON_ENABLE_ASAN": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "dev",
+      "configurePreset": "dev",
+      "configuration": "RelWithDebInfo",
+      "targets": [
+        "TachyonCore",
+        "TachyonTests",
+        "tachyon"
+      ]
+    },
+    {
+      "name": "dev-fast",
+      "configurePreset": "dev-fast",
+      "configuration": "RelWithDebInfo",
+      "targets": [
+        "TachyonCore",
+        "TachyonTests"
+      ]
+    },
+    {
+      "name": "asan",
+      "configurePreset": "asan",
+      "configuration": "RelWithDebInfo",
+      "targets": [
+        "TachyonCore",
+        "TachyonTests"
+      ]
+    }
+  ]
+}

@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.15)
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+if(POLICY CMP0141)
+    cmake_policy(SET CMP0141 NEW)
+endif()
 project(TACHYON VERSION 0.1.0 LANGUAGES CXX)
 
 include(FetchContent)
@@ -8,12 +11,40 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+option(TACHYON_ENABLE_COMPILER_CACHE "Enable sccache/clcache when available" ON)
+option(TACHYON_ENABLE_PCH "Enable precompiled headers when supported" ON)
+option(TACHYON_ENABLE_ASAN "Enable AddressSanitizer on Tachyon targets" OFF)
+
+if(MSVC)
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>")
+endif()
+
+if(TACHYON_ENABLE_ASAN)
+    if(MSVC)
+        add_compile_options(/fsanitize=address)
+        add_link_options(/fsanitize=address)
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+        add_compile_options(-fsanitize=address)
+        add_link_options(-fsanitize=address)
+    endif()
+endif()
+
 # Determine platform and compiler details
 if(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    add_definitions(-DNOMINMAX)
     add_compile_options(/wd4324) # structure was padded due to alignment specifier (Embree)
 else()
     add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+if(TACHYON_ENABLE_COMPILER_CACHE)
+    find_program(TACHYON_COMPILER_LAUNCHER NAMES sccache ccache clcache)
+    if(TACHYON_COMPILER_LAUNCHER)
+        message(STATUS "Using compiler launcher: ${TACHYON_COMPILER_LAUNCHER}")
+        set(CMAKE_CXX_COMPILER_LAUNCHER "${TACHYON_COMPILER_LAUNCHER}" CACHE FILEPATH "Compiler launcher" FORCE)
+        set(CMAKE_C_COMPILER_LAUNCHER "${TACHYON_COMPILER_LAUNCHER}" CACHE FILEPATH "Compiler launcher" FORCE)
+    endif()
 endif()
 
 # Include directories
