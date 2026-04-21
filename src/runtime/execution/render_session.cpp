@@ -52,17 +52,23 @@ void render_frames_parallel(
             FrameArena arena;
             FrameExecutor executor(arena, cache);
             
+            // Create a thread-local context to avoid races on diagnostics and media managers
+            RenderContext local_context(context.renderer2d.precomp_cache);
+            local_context.policy = context.policy;
+            local_context.renderer2d.policy = context.policy;
+            
             for (;;) {
                 const std::size_t index = next_index.fetch_add(1);
                 if (index >= task_count) {
                     return;
                 }
 
-                rendered_frames[index] = executor.execute(compiled_scene, execution_plan.render_plan, execution_plan.frame_tasks[index], context);
+                rendered_frames[index] = executor.execute(compiled_scene, execution_plan.render_plan, execution_plan.frame_tasks[index], local_context);
                 arena.reset();
             }
         }));
     }
+
 
     for (auto& worker : workers) {
         worker.get();

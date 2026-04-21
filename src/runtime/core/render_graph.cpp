@@ -36,8 +36,7 @@ void RenderGraph::compile() {
     auto visit = [&](auto self, std::uint32_t n) -> void {
         if (visited.count(n)) return;
         if (path.count(n)) {
-            // Cycle detected - in a production engine we should handle or report this.
-            return;
+            throw std::runtime_error("Circular dependency detected in RenderGraph at node " + std::to_string(n));
         }
         
         path.insert(n);
@@ -53,6 +52,7 @@ void RenderGraph::compile() {
         visited.insert(n);
         m_topo_order.push_back(n);
     };
+
 
     // 3. Process nodes in sorted order for determinism
     for (std::uint32_t n : all_nodes) {

@@ -26,16 +26,16 @@ public:
     void store_property(std::uint64_t key, double value);
 
     // Layer Level
-    const scene::EvaluatedLayerState* lookup_layer(std::uint64_t key) const;
-    void store_layer(std::uint64_t key, scene::EvaluatedLayerState state);
+    std::shared_ptr<const scene::EvaluatedLayerState> lookup_layer(std::uint64_t key) const;
+    void store_layer(std::uint64_t key, std::shared_ptr<scene::EvaluatedLayerState> state);
 
     // Composition Level
-    const scene::EvaluatedCompositionState* lookup_composition(std::uint64_t key) const;
-    void store_composition(std::uint64_t key, scene::EvaluatedCompositionState state);
+    std::shared_ptr<const scene::EvaluatedCompositionState> lookup_composition(std::uint64_t key) const;
+    void store_composition(std::uint64_t key, std::shared_ptr<scene::EvaluatedCompositionState> state);
 
     // Final Frame Level
-    const renderer2d::Framebuffer* lookup_frame(std::uint64_t key) const;
-    void store_frame(std::uint64_t key, renderer2d::Framebuffer frame);
+    std::shared_ptr<const renderer2d::Framebuffer> lookup_frame(std::uint64_t key) const;
+    void store_frame(std::uint64_t key, std::shared_ptr<renderer2d::Framebuffer> frame);
 
     void clear();
 
@@ -48,10 +48,11 @@ private:
     mutable std::size_t m_miss_count{0};
 
     std::unordered_map<std::uint64_t, double> m_properties;
-    std::unordered_map<std::uint64_t, scene::EvaluatedLayerState> m_layers;
-    std::unordered_map<std::uint64_t, scene::EvaluatedCompositionState> m_compositions;
-    std::unordered_map<std::uint64_t, renderer2d::Framebuffer> m_frames;
+    std::unordered_map<std::uint64_t, std::shared_ptr<scene::EvaluatedLayerState>> m_layers;
+    std::unordered_map<std::uint64_t, std::shared_ptr<scene::EvaluatedCompositionState>> m_compositions;
+    std::unordered_map<std::uint64_t, std::shared_ptr<renderer2d::Framebuffer>> m_frames;
 };
+
 
 } // namespace tachyon
 
