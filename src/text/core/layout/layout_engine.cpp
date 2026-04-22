@@ -356,8 +356,7 @@ public:
                     cache.put(cache_key, shaped);
                 }
 
-                // Check for line break opportunities in this subrun
-                // (Simplified: we'll check if the subrun itself contains or is a break opportunity)
+                // Check for line break opportunities in this subrun.
                 bool contains_break = false;
                 for (std::uint32_t cp : sub.codepoints) {
                     if (is_breakable_space(cp) || cp == '-' || (cp >= 0x4E00 && cp <= 0x9FFF)) {
@@ -368,7 +367,7 @@ public:
 
                 if (wrap_width > 0 && text_box.multiline && options.word_wrap && pen_x > 0 && std::abs(shaped.width) > 0 && (pen_x + std::abs(shaped.width)) > wrap_width) {
                     // Only wrap if we had a previous break opportunity or if this subrun contains one
-                    // For now, we still do simple wrapping but we could improve this to backtrack.
+                    // Keep simple wrapping here; backtracking is a future improvement.
                     finalize_line(result, line_start, result.glyphs.size() - line_start, current_line_width, pen_y, alignment, text_box.width, false);
                     pen_x = 0;
                     current_line_width = 0;
