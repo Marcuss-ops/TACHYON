@@ -1,6 +1,0 @@
-﻿MSBuild version 18.4.0+6e61e96ac for .NET Framework
-
-  freetype.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\freetype-build\Debug\freetyped.lib
-  harfbuzz.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\harfbuzz-build\Debug\harfbuzz.lib
-  TachyonCore.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\src\Debug\TachyonCore.lib
-  TachyonTests.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\tests\Debug\TachyonTests.exe
