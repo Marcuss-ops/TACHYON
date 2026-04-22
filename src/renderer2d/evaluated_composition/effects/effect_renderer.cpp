@@ -35,7 +35,7 @@ EffectParams effect_params_from_spec(const EffectSpec& spec, const ColorProfile&
 }
 
 EffectParams effect_params_from_spec(const EffectSpec& spec) {
-    return effect_params_from_spec(spec, ColorProfile::Rec709_Linear());
+    return effect_params_from_spec(spec, ColorProfile::Rec709());
 }
 
 SurfaceRGBA apply_effect_pipeline(

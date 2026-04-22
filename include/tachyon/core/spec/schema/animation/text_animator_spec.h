@@ -8,20 +8,51 @@
 namespace tachyon {
 
 struct TextAnimatorSelectorSpec {
-    std::string type{"range"}; // "range" | "all"
+    std::string type{"range"}; // "range" | "index" | "expression" | "all"
+    
+    // For "range" (percentage 0.0-1.0)
     double start{0.0};
     double end{1.0};
+    
+    // For "index" (glyph/word indices)
+    std::optional<std::size_t> start_index;
+    std::optional<std::size_t> end_index;
+    
+    // For "expression"
+    std::optional<std::string> expression;
+    
+    // Selection mode (add, subtract, intersect)
+    std::string mode{"add"};
+    
+    // Unit (characters, characters excluding spaces, words, lines)
+    std::string based_on{"characters"};
 };
 
 struct TextAnimatorPropertySpec {
     std::optional<double>            opacity_value;
     std::vector<ScalarKeyframeSpec>  opacity_keyframes;
+    
     std::optional<math::Vector2>          position_offset_value;
     std::vector<Vector2KeyframeSpec>      position_offset_keyframes;
+    
     std::optional<double>            scale_value;
     std::vector<ScalarKeyframeSpec>  scale_keyframes;
+    
     std::optional<double>            rotation_value;
     std::vector<ScalarKeyframeSpec>  rotation_keyframes;
+    
+    // Advanced properties
+    std::optional<double>            tracking_amount_value;
+    std::vector<ScalarKeyframeSpec>  tracking_amount_keyframes;
+    
+    std::optional<ColorSpec>         fill_color_value;
+    std::vector<ColorKeyframeSpec>   fill_color_keyframes;
+    
+    std::optional<ColorSpec>         stroke_color_value;
+    std::vector<ColorKeyframeSpec>   stroke_color_keyframes;
+    
+    std::optional<double>            stroke_width_value;
+    std::vector<ScalarKeyframeSpec>  stroke_width_keyframes;
 };
 
 struct TextAnimatorSpec {

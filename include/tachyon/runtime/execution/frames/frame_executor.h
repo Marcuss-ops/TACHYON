@@ -11,6 +11,7 @@
 #include "tachyon/runtime/frame_arena.h"
 
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
+#include "tachyon/output/frame_aov.h"
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -31,6 +32,7 @@ struct ExecutedFrame {
     std::uint64_t scene_hash{0};
     std::size_t draw_command_count{0};
     std::shared_ptr<renderer2d::Framebuffer> frame;
+    std::vector<output::FrameAOV> aovs;
     FrameDiagnostics diagnostics;
 };
 

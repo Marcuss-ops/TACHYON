@@ -41,7 +41,8 @@ public:
 
     void process(float* io, int nframes) override {
         // Equal power panning (approximate)
-        float theta = (m_pan + 1.0f) * (M_PI / 4.0f);
+        constexpr float kPi = 3.14159265358979323846f;
+        float theta = (m_pan + 1.0f) * (kPi / 4.0f);
         float left_gain = std::cos(theta);
         float right_gain = std::sin(theta);
 
@@ -50,6 +51,10 @@ public:
             io[i*2+1] *= right_gain;
         }
     }
+
+private:
+    float m_pan;
+};
 
 // ---------------------------------------------------------------------------
 // LimiterNode – hard ceiling to prevent clipping

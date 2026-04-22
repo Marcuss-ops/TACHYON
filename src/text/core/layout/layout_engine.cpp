@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <string_view>
 #include <vector>
 
@@ -18,6 +19,37 @@ namespace tachyon::text {
 using namespace tachyon::renderer2d::text::shaping;
 
 namespace {
+
+::tachyon::ColorSpec to_color_spec(const renderer2d::Color& color) {
+    auto to_channel = [](float value) -> std::uint8_t {
+        const float clamped = std::clamp(value, 0.0f, 1.0f);
+        return static_cast<std::uint8_t>(std::lround(clamped * 255.0f));
+    };
+    return {to_channel(color.r), to_channel(color.g), to_channel(color.b), to_channel(color.a)};
+}
+
+math::RectF make_rect(float x, float y, float width, float height) {
+    return {x, y, width, height};
+}
+
+math::RectF union_rects(const math::RectF& a, const math::RectF& b) {
+    if (a.width <= 0.0f || a.height <= 0.0f) {
+        return b;
+    }
+    if (b.width <= 0.0f || b.height <= 0.0f) {
+        return a;
+    }
+
+    const float left = std::min(a.x, b.x);
+    const float top = std::min(a.y, b.y);
+    const float right = std::max(a.x + a.width, b.x + b.width);
+    const float bottom = std::max(a.y + a.height, b.y + b.height);
+    return {left, top, right - left, bottom - top};
+}
+
+bool rect_is_empty(const math::RectF& rect) {
+    return rect.width <= 0.0f || rect.height <= 0.0f;
+}
 
 std::uint32_t choose_scale(const BitmapFont& font, const TextStyle& style) {
     const std::uint32_t requested = style.pixel_size == 0 ? static_cast<std::uint32_t>(font.line_height()) : style.pixel_size;
@@ -147,7 +179,9 @@ std::int32_t place_shaped_run(
             cluster_idx,
             cp_start,
             cp_count,
-            ws
+            ws,
+            rtl,
+            sub.font
         });
 
         if (!rtl) {
@@ -158,6 +192,81 @@ std::int32_t place_shaped_run(
     }
 
     return rtl ? pen_x + std::max<std::int32_t>(consumed, std::abs(shaped.width)) : std::max(pen_x, cursor);
+}
+
+void sync_resolved_layout(
+    TextLayoutResult& result,
+    const BitmapFont& font,
+    const TextStyle& style) {
+
+    result.ResolvedTextLayout::glyphs.clear();
+    result.ResolvedTextLayout::runs.clear();
+    result.ResolvedTextLayout::lines.clear();
+    result.ResolvedTextLayout::total_bounds = {};
+    result.ResolvedTextLayout::is_on_path = false;
+
+    const float font_size = style.pixel_size == 0U ? static_cast<float>(std::max(1, font.line_height())) : static_cast<float>(style.pixel_size);
+
+    result.ResolvedTextLayout::glyphs.reserve(result.glyphs.size());
+    for (const auto& g : result.glyphs) {
+        ResolvedGlyph resolved;
+        resolved.codepoint = g.codepoint;
+        resolved.glyph_index = static_cast<std::uint32_t>(g.glyph_index);
+        resolved.position = {static_cast<float>(g.x), static_cast<float>(g.y)};
+        resolved.advance_x = static_cast<float>(g.advance_x);
+        resolved.advance_y = 0.0f;
+        resolved.font = g.resolved_font;
+        resolved.source_index = g.cluster_codepoint_start;
+        resolved.is_rtl = g.is_rtl;
+        resolved.font_size = font_size;
+        resolved.fill_color = to_color_spec(style.fill_color);
+        resolved.stroke_color = {0, 0, 0, 0};
+        resolved.stroke_width = 0.0f;
+        resolved.bounds = make_rect(static_cast<float>(g.x), static_cast<float>(g.y), static_cast<float>(g.width), static_cast<float>(g.height));
+        result.ResolvedTextLayout::glyphs.push_back(resolved);
+        result.ResolvedTextLayout::total_bounds = rect_is_empty(result.ResolvedTextLayout::total_bounds) ? resolved.bounds : union_rects(result.ResolvedTextLayout::total_bounds, resolved.bounds);
+    }
+
+    if (!result.ResolvedTextLayout::glyphs.empty()) {
+        std::size_t run_start = 0;
+        const Font* run_font = result.ResolvedTextLayout::glyphs.front().font;
+        math::RectF run_bounds = result.ResolvedTextLayout::glyphs.front().bounds;
+        for (std::size_t i = 1; i <= result.ResolvedTextLayout::glyphs.size(); ++i) {
+            const bool run_break = i == result.ResolvedTextLayout::glyphs.size() || result.ResolvedTextLayout::glyphs[i].font != run_font;
+            if (i < result.ResolvedTextLayout::glyphs.size()) {
+                run_bounds = union_rects(run_bounds, result.ResolvedTextLayout::glyphs[i].bounds);
+            }
+            if (run_break) {
+                result.ResolvedTextLayout::runs.push_back(ResolvedTextRun{run_start, i - run_start, run_font, run_bounds});
+                if (i < result.ResolvedTextLayout::glyphs.size()) {
+                    run_start = i;
+                    run_font = result.ResolvedTextLayout::glyphs[i].font;
+                    run_bounds = result.ResolvedTextLayout::glyphs[i].bounds;
+                }
+            }
+        }
+    }
+
+    result.ResolvedTextLayout::lines.reserve(result.lines.size());
+    for (const auto& line : result.lines) {
+        math::RectF line_bounds{};
+        bool have_bounds = false;
+        const std::size_t line_end = std::min(result.glyphs.size(), line.glyph_start_index + line.glyph_count);
+        for (std::size_t i = line.glyph_start_index; i < line_end; ++i) {
+            const auto& g = result.glyphs[i];
+            const math::RectF glyph_bounds = make_rect(static_cast<float>(g.x), static_cast<float>(g.y), static_cast<float>(g.width), static_cast<float>(g.height));
+            line_bounds = have_bounds ? union_rects(line_bounds, glyph_bounds) : glyph_bounds;
+            have_bounds = true;
+        }
+        result.ResolvedTextLayout::lines.push_back(ResolvedTextLine{
+            line.glyph_start_index,
+            line.glyph_count,
+            static_cast<float>(line.y),
+            static_cast<float>(font.ascent()),
+            static_cast<float>(font.descent()),
+            have_bounds ? line_bounds : make_rect(0.0f, static_cast<float>(line.y), static_cast<float>(line.width), static_cast<float>(result.line_height))
+        });
+    }
 }
 
 } // namespace
@@ -245,6 +354,24 @@ renderer2d::RectI TextLayoutResult::get_caret_rect(std::size_t codepoint_index) 
     // If not found (e.g. at the very end), use the end of the last glyph
     const auto& last = glyphs.back();
     return {last.x + last.width, last.y, 2, last.height};
+}
+
+math::RectF ResolvedTextLayout::get_range_bounds(std::size_t start_char_index, std::size_t end_char_index) const {
+    if (start_char_index >= end_char_index || glyphs.empty()) {
+        return {};
+    }
+
+    math::RectF bounds{};
+    bool have_bounds = false;
+    for (const auto& glyph : glyphs) {
+        if (glyph.source_index < start_char_index || glyph.source_index >= end_char_index) {
+            continue;
+        }
+        bounds = have_bounds ? union_rects(bounds, glyph.bounds) : glyph.bounds;
+        have_bounds = true;
+    }
+
+    return have_bounds ? bounds : math::RectF{};
 }
 
 class InternalLayoutEngine {
@@ -386,6 +513,7 @@ public:
         else result.height = (std::uint32_t)scaled_line_height;
         if (text_box.height > 0U) result.height = std::min(result.height, text_box.height);
         if (result.width == 0U) result.width = text_box.width > 0U ? text_box.width : 0U;
+        sync_resolved_layout(result, primary_font, style);
         return result;
     }
 };

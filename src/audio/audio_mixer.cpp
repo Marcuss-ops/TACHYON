@@ -1,4 +1,5 @@
 #include "tachyon/audio/audio_mixer.h"
+#include "tachyon/audio/dsp_nodes.h"
 
 #include <algorithm>
 #include <cmath>

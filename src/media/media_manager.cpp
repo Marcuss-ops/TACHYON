@@ -16,6 +16,46 @@ const HDRTextureData* MediaManager::get_hdr_image(
     return m_image_manager.get_hdr_image(path, diagnostics);
 }
 
+const renderer2d::SurfaceRGBA* MediaManager::get_video_frame(const std::filesystem::path& path, double time, DiagnosticBag* diagnostics) {
+    // 1. Check cache first (Fast path - no I/O)
+    std::string key = path.string() + "@" + std::to_string(time);
+    const auto* cached = m_image_manager.get_image(key, AlphaMode::Straight, nullptr);
+    if (cached) return cached;
+
+    // 2. Resolve path and handle offline/loading states
+    if (m_fallback_policy == MediaFallbackPolicy::ReturnOffline) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (!m_offline_placeholder) {
+            m_offline_placeholder = std::make_shared<renderer2d::SurfaceRGBA>(1920, 1080);
+            m_offline_placeholder->clear({0.1f, 0.1f, 0.1f, 1.0f}); // Dark gray Loading/Offline state
+        }
+        return m_offline_placeholder.get();
+    }
+
+    return nullptr;
+}
+
+void MediaManager::register_asset(std::shared_ptr<MediaAsset> asset) {
+    if (!asset) return;
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_assets[asset->descriptor().original_path] = asset;
+}
+
+std::filesystem::path MediaManager::resolve_media_path(const std::filesystem::path& path) const {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    auto it = m_assets.find(path.string());
+    if (it == m_assets.end()) return path; // Fallback to original
+
+    const auto& asset = it->second;
+    if (m_use_proxies && asset->state() == MediaAssetState::ProxyAvailable) {
+        return asset->descriptor().proxy_path;
+    }
+    
+    if (asset->state() == MediaAssetState::Offline) {
+        // Return a placeholder or empty path if offline
+        return "";
+    }
+
 VideoDecoder* MediaManager::acquire_video_decoder(const std::filesystem::path& path) {
     const std::string key = path.string();
     std::shared_ptr<VideoPool> pool;

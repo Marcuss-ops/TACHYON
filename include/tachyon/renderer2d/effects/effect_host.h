@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/renderer2d/raster/draw_command.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
 #include "tachyon/renderer2d/color/lut3d.h"
 #include "tachyon/renderer2d/raster/rasterizer.h"
@@ -15,15 +16,6 @@
 #include <vector>
 
 namespace tachyon::renderer2d {
-
-struct EffectParams {
-    std::unordered_map<std::string, float> scalars;
-    std::unordered_map<std::string, Color> colors;
-    std::unordered_map<std::string, std::string> strings;
-    // Secondary surface inputs (garbage matte, background for light wrap, etc.)
-    // These are non-owning pointers; the caller guarantees lifetime.
-    std::unordered_map<std::string, const SurfaceRGBA*> aux_surfaces;
-};
 
 class Effect {
 public:

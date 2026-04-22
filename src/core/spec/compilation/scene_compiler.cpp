@@ -405,12 +405,12 @@ ResolutionResult<SceneSpec> SceneCompiler::import_external_scene(const std::file
     }
 
     if (!imp) {
-        result.errors.push_back("No importer available for format: " + ext);
+        result.diagnostics.add_error("IMPORT_ERR", "No importer available for format: " + ext);
         return result;
     }
 
     if (!imp->load(path.string())) {
-        result.errors.push_back("Failed to load scene: " + imp->last_error());
+        result.diagnostics.add_error("IMPORT_ERR", "Failed to load scene: " + imp->last_error());
         return result;
     }
 

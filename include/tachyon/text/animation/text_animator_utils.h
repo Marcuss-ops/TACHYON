@@ -10,8 +10,10 @@ namespace tachyon::text {
 
 struct TextAnimatorContext {
     std::size_t glyph_index{0};
+    std::size_t cluster_index{0};
     std::size_t word_index{0};
     float total_glyphs{0.0f};
+    float total_clusters{0.0f};
     float total_lines{0.0f};
     float time{0.0f};
 };
@@ -32,7 +34,12 @@ math::Vector2 sample_vector2_kfs(
     const std::vector<Vector2KeyframeSpec>& keyframes,
     float t);
 
-float compute_coverage(const TextAnimatorSelectorSpec& selector, std::size_t i, std::size_t N);
+::tachyon::ColorSpec sample_color_kfs(
+    const std::optional<::tachyon::ColorSpec>& static_val,
+    const std::vector<ColorKeyframeSpec>& keyframes,
+    float t);
+
+float compute_coverage(const TextAnimatorSelectorSpec& selector, const TextAnimatorContext& ctx);
 
 struct ResolvedGlyphPaint {
     const GlyphBitmap* glyph{nullptr};
@@ -41,12 +48,20 @@ struct ResolvedGlyphPaint {
     std::uint32_t target_width{0};
     std::uint32_t target_height{0};
     float opacity{1.0f};
+    
+    // New animatable fields
+    ::tachyon::ColorSpec fill_color{255, 255, 255, 255};
+    ::tachyon::ColorSpec stroke_color{0, 0, 0, 0};
+    float stroke_width{0.0f};
+    float tracking_offset{0.0f}; // Accumulated tracking
+    
     std::size_t glyph_index{0};
 };
 
 std::vector<ResolvedGlyphPaint> resolve_glyph_paints(
     const BitmapFont& font,
     const TextLayoutResult& layout,
-    const TextAnimationOptions& animation);
+    const TextAnimationOptions& animation,
+    std::span<const TextAnimatorSpec> animators = {});
 
 } // namespace tachyon::text

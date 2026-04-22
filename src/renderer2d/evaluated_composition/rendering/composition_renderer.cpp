@@ -76,13 +76,57 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     }
                 }
 
+                // Construct EvaluatedScene3D bridge from the composition subset
+                renderer3d::EvaluatedScene3D scene3d;
+                if (state.camera.available) {
+                    scene3d.camera.position = state.camera.camera.position;
+                    scene3d.camera.target = state.camera.camera.target;
+                    scene3d.camera.up = state.camera.camera.up;
+                    scene3d.camera.fov_y = state.camera.camera.fov;
+                    
+                    if (state.camera.previous_position) {
+                        scene3d.camera.previous_position = *state.camera.previous_position;
+                    } else {
+                        scene3d.camera.previous_position = state.camera.camera.position;
+                    }
+
+                    if (state.camera.previous_point_of_interest) {
+                        scene3d.camera.previous_target = *state.camera.previous_point_of_interest;
+                    } else {
+                        scene3d.camera.previous_target = state.camera.camera.target;
+                    }
+                }
+
+                for (std::size_t idx : block_indices) {
+                    const auto& l = state.layers[idx];
+                    renderer3d::EvaluatedMeshInstance inst;
+                    inst.object_id = static_cast<std::uint32_t>(idx);
+                    inst.material_id = 0;
+                    inst.world_transform = l.world_matrix;
+
+                    if (l.previous_world_matrix) {
+                        inst.previous_world_transform = *l.previous_world_matrix;
+                    } else {
+                        inst.previous_world_transform = inst.world_transform;
+                    }
+                    inst.material.base_color = l.fill_color;
+                    inst.material.opacity = static_cast<float>(l.opacity);
+                    // Assuming empty string triggers the generic quad fallback in RayTracer for now
+                    inst.mesh_asset_id = l.asset_path.value_or("");
+                    scene3d.instances.push_back(inst);
+                }
+
                 // Render the 3D block
                 context.ray_tracer->set_samples_per_pixel(context.policy.ray_tracer_spp);
-                const ::tachyon::text::Font* font_ptr = context.font_registry ? context.font_registry->default_font() : nullptr;
-                context.ray_tracer->build_scene_subset(state, block_indices, font_ptr);
+                context.ray_tracer->build_scene(scene3d);
                 
-                auto world_3d = make_surface(state.width, state.height, context);
-                std::vector<float> hdr_buffer(static_cast<std::size_t>(state.width) * state.height * 4, 0.0f);
+                const std::uint32_t w = static_cast<std::uint32_t>(state.width);
+                const std::uint32_t h = static_cast<std::uint32_t>(state.height);
+                
+                renderer3d::AOVBuffer aovs;
+                aovs.resize(w, h);
+                aovs.clear();
+
                 renderer3d::MotionBlurRenderer motion_blur;
                 renderer3d::MotionBlurRenderer::MotionBlurConfig blur_config;
                 blur_config.enabled = plan.motion_blur_enabled;
@@ -94,34 +138,37 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
                 const double frame_rate_value = state.frame_rate.value() > 0.0 ? state.frame_rate.value() : 60.0;
                 const double frame_duration_seconds = 1.0 / frame_rate_value;
+
                 context.ray_tracer->render(
-                    state,
-                    hdr_buffer.data(),
-                    depth_buffer.data(),
-                    static_cast<int>(state.width),
-                    static_cast<int>(state.height),
+                    scene3d,
+                    aovs,
                     &motion_blur,
                     task.time_seconds,
                     frame_duration_seconds);
                 
-                auto depth_aov_surf = std::make_shared<SurfaceRGBA>(state.width, state.height);
+                auto world_3d = std::make_shared<SurfaceRGBA>(w, h);
+                auto depth_aov_surf = std::make_shared<SurfaceRGBA>(w, h);
+                auto normal_aov_surf = std::make_shared<SurfaceRGBA>(w, h);
+                auto motion_vector_aov_surf = std::make_shared<SurfaceRGBA>(w, h);
                 
-                for (std::int64_t px_idx = 0; px_idx < state.width * state.height; ++px_idx) {
-                    const float r = hdr_buffer[px_idx * 4 + 0];
-                    const float g = hdr_buffer[px_idx * 4 + 1];
-                    const float b = hdr_buffer[px_idx * 4 + 2];
-                    const float a = hdr_buffer[px_idx * 4 + 3];
-                    const float d = depth_buffer[px_idx];
-                    
-                    uint32_t x = static_cast<std::uint32_t>(px_idx % state.width);
-                    uint32_t y = static_cast<std::uint32_t>(px_idx / state.width);
-                    
-                    world_3d->set_pixel(x, y, {r, g, b, a});
-                    depth_aov_surf->set_pixel(x, y, {d, 0, 0, 1.0f}); // Depth in R channel
+                for (std::uint32_t y = 0; y < h; ++y) {
+                    for (std::uint32_t x = 0; x < w; ++x) {
+                        world_3d->set_pixel(x, y, aovs.beauty_rgba.at(x, y));
+                        const float d = aovs.depth_z.at(x, y);
+                        depth_aov_surf->set_pixel(x, y, {d, 0, 0, 1.0f});
+                        
+                        const math::Vector3 n = aovs.normal_xyz.at(x, y);
+                        normal_aov_surf->set_pixel(x, y, {n.x, n.y, n.z, 1.0f});
+
+                        const math::Vector2 mv = aovs.motion_vector_xy.at(x, y);
+                        motion_vector_aov_surf->set_pixel(x, y, {mv.x, mv.y, 0.0f, 1.0f});
+                    }
                 }
 
                 // Add to AOVs
                 frame.aovs.push_back({"depth", depth_aov_surf});
+                frame.aovs.push_back({"normal", normal_aov_surf});
+                frame.aovs.push_back({"motion_vector", motion_vector_aov_surf});
 
                 composite_surface(target_surface, *world_3d, 0, 0, BlendMode::Normal);
                 i = last_block_idx;

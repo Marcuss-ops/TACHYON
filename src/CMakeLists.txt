@@ -10,6 +10,7 @@ add_library(TachyonCore
     core/report.cpp
     core/camera/camera_state.cpp
     core/expressions/expression_engine.cpp
+    core/expressions/expression_vm.cpp
     core/math/matrix4x4.cpp
     core/math/quaternion.cpp
     core/math/transform3.cpp
@@ -33,6 +34,7 @@ add_library(TachyonCore
     renderer2d/raster/draw_list_rasterizer.cpp
     renderer2d/color/blending.cpp
     renderer2d/color/lut3d.cpp
+    renderer2d/color/color_management.cpp
     renderer2d/color/color_management_system.cpp
     renderer2d/effects/effect_host.cpp
     renderer2d/effects/effect_utils.cpp
@@ -147,10 +149,10 @@ add_library(TachyonCore
     renderer3d/utilities/environment_manager.cpp
     media/mesh_loader.cpp
     media/extruder.cpp
+    importer/usd_importer.cpp
+    importer/alembic_importer.cpp
     # Feature tracker (A1 – CPU Lucas-Kanade optical flow)
     tracker/feature_tracker.cpp
-    # Scene importers (Phase 5 – USD/Alembic, compiled conditionally)
-    importer/scene_importers.cpp
     # Output sinks
     output/exr_sequence_sink.cpp
 )

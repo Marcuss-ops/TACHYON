@@ -35,21 +35,26 @@ class ExpressionProperty {
 public:
     explicit ExpressionProperty(std::string name, std::string expression)
         : m_name(std::move(name))
-        , m_expression(std::move(expression)) {}
+        , m_expression(std::move(expression)) {
+        m_compilation = expressions::ExpressionEvaluator::compile(m_expression);
+    }
 
     T sample(const PropertyEvaluationContext& context) const {
+        if (!m_compilation.success) {
+            return T{};
+        }
+
         expressions::ExpressionContext expr_ctx;
         expr_ctx.variables["t"] = context.time;
         expr_ctx.variables["time"] = context.time;
         expr_ctx.variables["seed"] = static_cast<double>(context.seed);
 
-        auto result = expressions::ExpressionEvaluator::evaluate(m_expression, expr_ctx);
-        
-        if (!result.success) {
+        try {
+            double value = expressions::ExpressionVM::execute(m_compilation.bytecode, expr_ctx);
+            return static_cast<T>(value);
+        } catch (...) {
             return T{};
         }
-
-        return static_cast<T>(result.value);
     }
 
     [[nodiscard]] T evaluate(const PropertyEvaluationContext& context) const {
@@ -65,9 +70,14 @@ public:
         return m_name;
     }
 
+    const std::vector<std::string>& get_dependencies() const {
+        return m_compilation.bytecode.names;
+    }
+
 private:
     std::string m_name;
     std::string m_expression;
+    expressions::CompilationResult m_compilation;
 };
 
 } // namespace properties

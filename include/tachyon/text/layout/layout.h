@@ -3,6 +3,7 @@
 #include "tachyon/text/fonts/font.h"
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 #include "tachyon/text/rendering/text_raster_surface.h"
+#include "tachyon/text/core/layout/resolved_text_layout.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -80,6 +81,8 @@ struct PositionedGlyph {
     std::size_t cluster_codepoint_start{0};
     std::size_t cluster_codepoint_count{1};
     bool whitespace{false};
+    bool is_rtl{false};
+    const Font* resolved_font{nullptr};
 };
 
 struct TextLine {
@@ -96,7 +99,7 @@ struct TextHitTestResult {
     bool inside_text{false};
 };
 
-struct TextLayoutResult {
+struct TextLayoutResult : public ResolvedTextLayout {
     std::uint32_t width{0};
     std::uint32_t height{0};
     std::uint32_t scale{1};

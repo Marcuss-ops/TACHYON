@@ -8,7 +8,10 @@
 #include "tachyon/renderer2d/effects/effect_common.h"
 #include "tachyon/text/layout/layout.h"
 #include "tachyon/text/animation/text_animator_utils.h"
+#include "tachyon/text/animation/text_animator_pipeline.h"
+#include "tachyon/text/animation/text_on_path.h"
 #include "tachyon/text/fonts/font_registry.h"
+#include "tachyon/core/shapes/shape_modifiers.h"
 #include <algorithm>
 #include <cmath>
 
@@ -54,13 +57,13 @@ float sample_glyph_alpha(const ::tachyon::text::GlyphBitmap& glyph, float src_x,
 
 PathGeometry build_shape_geometry(
     const scene::EvaluatedLayerState& layer,
-    const scene::EvaluatedShapePath& sp,
+    const ::tachyon::shapes::ShapePath& sp,
     const scene::EvaluatedCompositionState& state,
     const RenderContext2D& context,
     const std::optional<RectI>& target_rect) {
 
     PathGeometry geom;
-    if (sp.points.empty()) {
+    if (sp.empty()) {
         return geom;
     }
 
@@ -76,23 +79,33 @@ PathGeometry build_shape_geometry(
         return {wp.x * context.policy.resolution_scale, wp.y * context.policy.resolution_scale};
     };
 
-    geom.commands.push_back({PathVerb::MoveTo, transform_pt(sp.points[0].position)});
-    for (std::size_t i = 1; i < sp.points.size(); ++i) {
-        const auto& prev = sp.points[i - 1];
-        const auto& curr = sp.points[i];
-        if (prev.tangent_out.length_squared() > 1e-6f || curr.tangent_in.length_squared() > 1e-6f) {
-            geom.commands.push_back({
-                PathVerb::CubicTo,
-                transform_pt(prev.position + prev.tangent_out),
-                transform_pt(curr.position + curr.tangent_in),
-                transform_pt(curr.position)
-            });
-        } else {
-            geom.commands.push_back({PathVerb::LineTo, transform_pt(curr.position)});
+    for (const auto& subpath : sp.subpaths) {
+        if (subpath.vertices.empty()) continue;
+
+        geom.commands.push_back({PathVerb::MoveTo, transform_pt(math::Vector2(subpath.vertices[0].point.x, subpath.vertices[0].point.y))});
+        for (std::size_t i = 1; i < subpath.vertices.size(); ++i) {
+            const auto& prev = subpath.vertices[i - 1];
+            const auto& curr = subpath.vertices[i];
+            
+            math::Vector2 prev_p(prev.point.x, prev.point.y);
+            math::Vector2 prev_out(prev.out_tangent.x, prev.out_tangent.y);
+            math::Vector2 curr_p(curr.point.x, curr.point.y);
+            math::Vector2 curr_in(curr.in_tangent.x, curr.in_tangent.y);
+
+            if (prev_out.length_squared() > 1e-6f || curr_in.length_squared() > 1e-6f) {
+                geom.commands.push_back({
+                    PathVerb::CubicTo,
+                    transform_pt(prev_p + prev_out),
+                    transform_pt(curr_p + curr_in),
+                    transform_pt(curr_p)
+                });
+            } else {
+                geom.commands.push_back({PathVerb::LineTo, transform_pt(curr_p)});
+            }
         }
-    }
-    if (sp.closed) {
-        geom.commands.push_back({PathVerb::Close});
+        if (subpath.closed) {
+            geom.commands.push_back({PathVerb::Close});
+        }
     }
 
     if (target_rect) {
@@ -195,34 +208,14 @@ std::shared_ptr<SurfaceRGBA> render_text_layer_surface(
     Color fill_color = from_color_spec(layer.fill_color, context.working_color_space.profile);
     fill_color.a *= static_cast<float>(layer.opacity);
 
-    // Highlights
-    for (const auto& highlight : layer.text_highlights) {
-        if (highlight.start_glyph >= layout.glyphs.size()) continue;
-        const auto end = std::min<std::size_t>(highlight.end_glyph, layout.glyphs.size());
-        Color h_color = from_color_spec(highlight.color, context.working_color_space.profile);
-        
-        for (std::size_t i = highlight.start_glyph; i < end; ++i) {
-            const auto& g = layout.glyphs[i];
-            
-            auto transform_pos = [&](float lx, float ly) -> math::Vector2 {
-                math::Vector3 wp = layer.world_matrix.transform_point({lx, ly, 0.0f});
-                if (use_camera) return state.camera.camera.project_point(wp, vw, vh);
-                return {wp.x * context.policy.resolution_scale, wp.y * context.policy.resolution_scale};
-            };
+    // Apply new TextAnimatorPipeline
+    txt::TextAnimatorContext animator_ctx;
+    animator_ctx.time = static_cast<float>(layer.local_time_seconds);
+    txt::TextAnimatorPipeline::apply_animators(layout, layer.text_animators, animator_ctx);
 
-            math::Vector2 sp = transform_pos(static_cast<float>(g.x), static_cast<float>(g.y));
-            RectI h_rect;
-            h_rect.x = static_cast<int>(std::round(sp.x));
-            h_rect.y = static_cast<int>(std::round(sp.y));
-            h_rect.width = g.width;
-            h_rect.height = g.height;
-
-            if (target_rect) {
-                h_rect.x -= target_rect->x;
-                h_rect.y -= target_rect->y;
-            }
-            surface->fill_rect(h_rect, h_color, true);
-        }
+    // Apply Text-On-Path if configured
+    if (layer.shape_path.has_value() && layer.text_on_path_enabled) {
+        txt::TextOnPathModifier::apply(layout, *layer.shape_path, 0.0, true);
     }
 
     for (const auto& pg : layout.glyphs) {
@@ -232,44 +225,7 @@ std::shared_ptr<SurfaceRGBA> render_text_layer_surface(
         const txt::GlyphBitmap* glyph = font->find_glyph_by_index(pg.font_glyph_index);
         if (!glyph) continue;
 
-        float animator_offset_x = 0.0f;
-        float animator_offset_y = 0.0f;
-        float animator_scale = 1.0f;
-        float animator_opacity = 1.0f;
-        for (const auto& animator : layer.text_animators) {
-            const float coverage = txt::compute_coverage(animator.selector, pg.glyph_index, layout.glyphs.size());
-            if (coverage <= 0.0f) {
-                continue;
-            }
-
-            if (animator.properties.position_offset_value.has_value() || !animator.properties.position_offset_keyframes.empty()) {
-                const math::Vector2 offset = txt::sample_vector2_kfs(
-                    animator.properties.position_offset_value,
-                    animator.properties.position_offset_keyframes,
-                    static_cast<float>(layer.local_time_seconds));
-                animator_offset_x += offset.x * coverage;
-                animator_offset_y += offset.y * coverage;
-            }
-
-            if (animator.properties.scale_value.has_value() || !animator.properties.scale_keyframes.empty()) {
-                const double scale_value = txt::sample_scalar_kfs(
-                    animator.properties.scale_value,
-                    animator.properties.scale_keyframes,
-                    static_cast<float>(layer.local_time_seconds));
-                const float sampled_scale = std::max(0.05f, static_cast<float>(scale_value));
-                animator_scale *= 1.0f + (sampled_scale - 1.0f) * coverage;
-            }
-
-            if (animator.properties.opacity_value.has_value() || !animator.properties.opacity_keyframes.empty()) {
-                const double opacity_value = txt::sample_scalar_kfs(
-                    animator.properties.opacity_value,
-                    animator.properties.opacity_keyframes,
-                    static_cast<float>(layer.local_time_seconds));
-                const float sampled_opacity = std::clamp(static_cast<float>(opacity_value), 0.0f, 1.0f);
-                animator_opacity *= 1.0f + (sampled_opacity - 1.0f) * coverage;
-            }
-        }
-
+        // The pipeline has already modified pg.position, pg.scale, pg.rotation, pg.opacity, pg.fill_color
         auto transform_pos = [&](float lx, float ly) -> math::Vector2 {
             math::Vector3 wp = layer.world_matrix.transform_point({lx, ly, 0.0f});
             if (use_camera) {
@@ -278,17 +234,24 @@ std::shared_ptr<SurfaceRGBA> render_text_layer_surface(
             return {wp.x * context.policy.resolution_scale, wp.y * context.policy.resolution_scale};
         };
 
-        math::Vector2 sp = transform_pos(static_cast<float>(pg.x) + animator_offset_x, static_cast<float>(pg.y) + animator_offset_y);
+        math::Vector2 sp = transform_pos(static_cast<float>(pg.position.x), static_cast<float>(pg.position.y));
         
         int tx = static_cast<int>(std::round(sp.x));
         int ty = static_cast<int>(std::round(sp.y));
-        const int tw = std::max(1, static_cast<int>(std::lround(static_cast<float>(glyph->width) * layout.scale * animator_scale)));
-        const int th = std::max(1, static_cast<int>(std::lround(static_cast<float>(glyph->height) * layout.scale * animator_scale)));
+        const int tw = std::max(1, static_cast<int>(std::lround(static_cast<float>(glyph->width) * layout.scale * pg.scale.x)));
+        const int th = std::max(1, static_cast<int>(std::lround(static_cast<float>(glyph->height) * layout.scale * pg.scale.y)));
 
         if (target_rect) {
             tx -= target_rect->x;
             ty -= target_rect->y;
         }
+
+        Color final_fill = Color(
+            static_cast<float>(pg.fill_color.r) / 255.0f,
+            static_cast<float>(pg.fill_color.g) / 255.0f,
+            static_cast<float>(pg.fill_color.b) / 255.0f,
+            (static_cast<float>(pg.fill_color.a) / 255.0f) * static_cast<float>(layer.opacity)
+        );
 
         for (int y = 0; y < th; ++y) {
             const float src_y = ((static_cast<float>(y) + 0.5f) * static_cast<float>(glyph->height) / static_cast<float>(th)) - 0.5f;
@@ -296,7 +259,7 @@ std::shared_ptr<SurfaceRGBA> render_text_layer_surface(
                 const float src_x = ((static_cast<float>(x) + 0.5f) * static_cast<float>(glyph->width) / static_cast<float>(tw)) - 0.5f;
                 const float alpha = sample_glyph_alpha(*glyph, src_x, src_y);
                 if (alpha > 0.0f) {
-                    surface->blend_pixel(tx + x, ty + y, fill_color, alpha * animator_opacity);
+                    surface->blend_pixel(tx + x, ty + y, final_fill, alpha * pg.opacity);
                 }
             }
         }
@@ -355,56 +318,14 @@ std::shared_ptr<SurfaceRGBA> render_simple_layer_surface(
     }
 
     if (layer.type == scene::LayerType::Shape && layer.shape_path.has_value()) {
-        const auto& sp = *layer.shape_path;
-        PathGeometry geom;
+        ::tachyon::shapes::ShapePath modified_path = *layer.shape_path;
         
-        const bool use_camera = layer.is_3d && state.camera.available;
-        const float vw = static_cast<float>(state.width) * context.policy.resolution_scale;
-        const float vh = static_cast<float>(state.height) * context.policy.resolution_scale;
-
-        auto transform_pt = [&](const math::Vector2& lp) -> math::Vector2 {
-            math::Vector3 wp = layer.world_matrix.transform_point({lp.x, lp.y, 0.0f});
-            if (use_camera) {
-                return state.camera.camera.project_point(wp, vw, vh);
-            }
-            return {wp.x, wp.y};
-        };
-
-        if (!sp.points.empty()) {
-            geom.commands.push_back({PathVerb::MoveTo, transform_pt(sp.points[0].position)});
-            for (std::size_t i = 1; i < sp.points.size(); ++i) {
-                const auto& prev = sp.points[i-1];
-                const auto& curr = sp.points[i];
-                if (prev.tangent_out.length_squared() > 1e-6f || curr.tangent_in.length_squared() > 1e-6f) {
-                    geom.commands.push_back({
-                        PathVerb::CubicTo, 
-                        transform_pt(prev.position + prev.tangent_out), 
-                        transform_pt(curr.position + curr.tangent_in), 
-                        transform_pt(curr.position)
-                    });
-                } else {
-                    geom.commands.push_back({PathVerb::LineTo, transform_pt(curr.position)});
-                }
-            }
-            if (sp.closed) {
-                geom.commands.push_back({PathVerb::Close});
-            }
-        }
-
-        if (target_rect) {
-            for (auto& cmd : geom.commands) {
-                cmd.p0.x -= static_cast<float>(target_rect->x);
-                cmd.p0.y -= static_cast<float>(target_rect->y);
-                cmd.p1.x -= static_cast<float>(target_rect->x);
-                cmd.p1.y -= static_cast<float>(target_rect->y);
-                cmd.p2.x -= static_cast<float>(target_rect->x);
-                cmd.p2.y -= static_cast<float>(target_rect->y);
-            }
-        }
-
+        // 1. Trim Paths
         if (layer.trim_start > 0.0f || layer.trim_end < 1.0f || std::abs(layer.trim_offset) > 1e-4f) {
-            geom = PathRasterizer::trim(geom, layer.trim_start, layer.trim_end, layer.trim_offset);
+            modified_path = shapes::ShapeModifiers::trim_paths(modified_path, layer.trim_start, layer.trim_end, layer.trim_offset);
         }
+
+        PathGeometry geom = build_shape_geometry(layer, modified_path, state, context, target_rect);
 
         if (layer.fill_color.a > 0 || layer.gradient_fill.has_value()) {
             FillPathStyle style;
@@ -425,8 +346,49 @@ std::shared_ptr<SurfaceRGBA> render_simple_layer_surface(
             style.miter_limit = layer.miter_limit;
             PathRasterizer::stroke(*surface, geom, style);
         }
+    } else if (layer.type == scene::LayerType::Video && context.media_manager && layer.asset_path.has_value()) {
+        const auto* texture = context.media_manager->get_video_frame(*layer.asset_path, layer.local_time_seconds);
+        if (texture) {
+            float image_width = (layer.width > 0) ? (float)layer.width : (float)texture->width();
+            float image_height = (layer.height > 0) ? (float)layer.height : (float)texture->height();
+            
+            const bool use_camera = layer.is_3d && state.camera.available;
+            const float vw = static_cast<float>(state.width) * context.policy.resolution_scale;
+            const float vh = static_cast<float>(state.height) * context.policy.resolution_scale;
+
+                auto transform_point = [&](float x, float y) -> TexturedVertex2D {
+                    math::Vector3 wp = layer.world_matrix.transform_point({x, y, 0.0f});
+                    float inv_w = 1.0f;
+                    math::Vector2 sp;
+                    if (use_camera) {
+                        sp = state.camera.camera.project_point(wp, vw, vh);
+                        math::Matrix4x4 vp = state.camera.camera.get_projection_matrix() * state.camera.camera.get_view_matrix();
+                        const float w_clip = vp[3]*wp.x + vp[7]*wp.y + vp[11]*wp.z + vp[15];
+                        inv_w = (w_clip > 0.001f) ? 1.0f / w_clip : 0.0f;
+                    } else {
+                        sp = {wp.x * context.policy.resolution_scale, wp.y * context.policy.resolution_scale};
+                    }
+                    return TexturedVertex2D{sp.x, sp.y, x / image_width, y / image_height, inv_w};
+                };
+
+                const TexturedVertex2D v0 = transform_point(0.0f, 0.0f);
+                const TexturedVertex2D v1 = transform_point(image_width, 0.0f);
+                const TexturedVertex2D v2 = transform_point(image_width, image_height);
+                const TexturedVertex2D v3 = transform_point(0.0f, image_height);
+
+                TexturedQuadPrimitive quad = TexturedQuadPrimitive::custom(v0, v1, v2, v3, texture, from_color_spec(layer.fill_color, context.working_color_space.profile));
+                if (target_rect) {
+                    for (auto& v : quad.vertices) {
+                        v.x -= static_cast<float>(target_rect->x);
+                        v.y -= static_cast<float>(target_rect->y);
+                    }
+                }
+                CPURasterizer::draw_textured_quad(*surface, quad);
+            }
+        }
     } else if (layer.type == scene::LayerType::Image && context.media_manager && layer.asset_path.has_value()) {
-        const auto* texture = context.media_manager->get_image(*layer.asset_path);
+        std::filesystem::path resolved = context.media_manager->resolve_media_path(*layer.asset_path);
+        const auto* texture = context.media_manager->get_image(resolved);
         if (texture) {
             float image_width = 0.0f;
             float image_height = 0.0f;
@@ -519,32 +481,6 @@ std::shared_ptr<SurfaceRGBA> render_simple_layer_surface(
     }
 
     return surface;
-}
-
-std::shared_ptr<SurfaceRGBA> render_layer_surface(
-    const scene::EvaluatedLayerState& layer,
-    const scene::EvaluatedCompositionState& state,
-    const RenderPlan& plan,
-    const FrameRenderTask& task,
-    RenderContext2D& context,
-    const std::optional<RectI>& target_rect) {
-
-    switch (layer.type) {
-    case scene::LayerType::Precomp:
-        return render_precomp_surface(layer, state, plan, task, context);
-    case scene::LayerType::NullLayer: {
-        return make_surface(state.width, state.height, context);
-    }
-    case scene::LayerType::Mask:
-    case scene::LayerType::Solid:
-    case scene::LayerType::Shape:
-    case scene::LayerType::Image:
-        return render_simple_layer_surface(layer, state, context, target_rect);
-    case scene::LayerType::Text:
-        return render_text_layer_surface(layer, state, context, target_rect);
-    default:
-        return render_simple_layer_surface(layer, state, context, target_rect);
-    }
 }
 
 } // namespace tachyon::renderer2d

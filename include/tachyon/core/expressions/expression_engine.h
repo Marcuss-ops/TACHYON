@@ -4,6 +4,9 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <memory>
+#include "tachyon/core/expressions/ast.h"
+#include "tachyon/core/expressions/expression_vm.h"
 
 namespace tachyon {
 namespace expressions {
@@ -36,12 +39,25 @@ struct EvaluationResult {
 };
 
 /**
+ * Result of expression compilation.
+ */
+struct CompilationResult {
+    Bytecode bytecode;
+    std::unique_ptr<ASTNode> ast;
+    bool success{true};
+    std::string error;
+};
+
+/**
  * A lightweight math expression evaluator for Milestone 1.
  * Supports: +, -, *, /, ^, (), sin, cos, abs, clamp, and variable resolution.
  */
 class ExpressionEvaluator {
 public:
     static EvaluationResult evaluate(const std::string& expression, const ExpressionContext& context);
+    
+    // Compiles a string into an AST and Bytecode
+    static CompilationResult compile(const std::string& expression);
 };
 
 } // namespace expressions

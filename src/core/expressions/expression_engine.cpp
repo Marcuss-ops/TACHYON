@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cctype>
 #include <stdexcept>
+#include <unordered_map>
 
 namespace tachyon {
 namespace expressions {
@@ -29,25 +30,20 @@ double smooth_noise_1d(double x, std::uint64_t seed) {
 
 class Parser {
 public:
-    Parser(const std::string& input, const ExpressionContext& context)
-        : m_input(input), m_context(context), m_pos(0) {}
+    Parser(const std::string& input)
+        : m_input(input), m_pos(0) {}
 
-    EvaluationResult parse() {
-        try {
-            double value = parse_expression();
-            skip_whitespace();
-            if (m_pos < m_input.length()) {
-                throw std::runtime_error("Unexpected characters at end of expression");
-            }
-            return {value, true, ""};
-        } catch (const std::exception& e) {
-            return {0.0, false, e.what()};
+    std::unique_ptr<ASTNode> parse() {
+        auto ast = parse_expression();
+        skip_whitespace();
+        if (m_pos < m_input.length()) {
+            throw std::runtime_error("Unexpected characters at end of expression");
         }
+        return ast;
     }
 
 private:
     std::string m_input;
-    const ExpressionContext& m_context;
     std::size_t m_pos;
 
     char peek() const { return m_pos < m_input.length() ? m_input[m_pos] : '\0'; }
@@ -57,80 +53,85 @@ private:
         while (std::isspace(peek())) m_pos++;
     }
 
-    double parse_expression() {
-        double result = parse_term();
+    std::unique_ptr<ASTNode> parse_expression() {
+        auto result = parse_term();
         while (true) {
             skip_whitespace();
-            if (peek() == '+') { get(); result += parse_term(); }
-            else if (peek() == '-') { get(); result -= parse_term(); }
-            else break;
-        }
-        return result;
-    }
-
-    double parse_term() {
-        double result = parse_factor();
-        while (true) {
-            skip_whitespace();
-            if (peek() == '*') { get(); result *= parse_factor(); }
-            else if (peek() == '/') {
-                get();
-                double divisor = parse_factor();
-                if (divisor == 0.0) throw std::runtime_error("Division by zero");
-                result /= divisor;
+            if (peek() == '+') { 
+                get(); 
+                result = std::make_unique<BinaryOpNode>(BinaryOperator::Add, std::move(result), parse_term()); 
+            }
+            else if (peek() == '-') { 
+                get(); 
+                result = std::make_unique<BinaryOpNode>(BinaryOperator::Sub, std::move(result), parse_term()); 
             }
             else break;
         }
         return result;
     }
 
-    double parse_factor() {
-        double result = parse_base();
-        skip_whitespace();
-        if (peek() == '^') {
-            get();
-            result = std::pow(result, parse_factor());
+    std::unique_ptr<ASTNode> parse_term() {
+        auto result = parse_factor();
+        while (true) {
+            skip_whitespace();
+            if (peek() == '*') { 
+                get(); 
+                result = std::make_unique<BinaryOpNode>(BinaryOperator::Mul, std::move(result), parse_factor()); 
+            }
+            else if (peek() == '/') {
+                get();
+                result = std::make_unique<BinaryOpNode>(BinaryOperator::Div, std::move(result), parse_factor()); 
+            }
+            else break;
         }
         return result;
     }
 
-    double parse_base() {
+    std::unique_ptr<ASTNode> parse_factor() {
+        auto result = parse_base();
+        skip_whitespace();
+        if (peek() == '^') {
+            get();
+            result = std::make_unique<BinaryOpNode>(BinaryOperator::Pow, std::move(result), parse_factor());
+        }
+        return result;
+    }
+
+    std::unique_ptr<ASTNode> parse_base() {
         skip_whitespace();
         char c = peek();
 
         if (std::isdigit(c) || c == '.') {
             return parse_number();
-        } else if (std::isalpha(c)) {
+        } else if (std::isalpha(c) || c == '_') {
             return parse_identifier_or_function();
         } else if (c == '(') {
             get();
-            double result = parse_expression();
+            auto result = parse_expression();
             skip_whitespace();
             if (get() != ')') throw std::runtime_error("Missing closing parenthesis");
             return result;
         } else if (c == '-') {
             get();
-            return -parse_base();
+            return std::make_unique<UnaryOpNode>(UnaryOperator::Negate, parse_base());
         } else if (c == '+') {
             get();
             return parse_base();
         }
 
-        throw std::runtime_error("Expected number, variable, or parenthesis");
+        throw std::runtime_error(std::string("Expected number, variable, or parenthesis at: ") + peek());
     }
 
-    double parse_number() {
+    std::unique_ptr<ASTNode> parse_number() {
         size_t start = m_pos;
         while (std::isdigit(peek()) || peek() == '.') get();
         std::string s = m_input.substr(start, m_pos - start);
         
-        // Use a pointer to satisfy locale-independent parsing if needed, 
-        // Replace commas with dots before std::stod parsing.
         std::replace(s.begin(), s.end(), ',', '.');
-        return std::stod(s); 
+        return std::make_unique<NumberNode>(std::stod(s)); 
     }
 
-    double parse_identifier_or_function() {
+    std::unique_ptr<ASTNode> parse_identifier_or_function() {
         std::size_t start = m_pos;
         while (std::isalnum(peek()) || peek() == '_' || peek() == '.') get();
         std::string name = m_input.substr(start, m_pos - start);
@@ -138,7 +139,7 @@ private:
         skip_whitespace();
         if (peek() == '(') {
             get(); // consume '('
-            std::vector<double> args;
+            std::vector<std::unique_ptr<ASTNode>> args;
             if (peek() != ')') {
                 while (true) {
                     args.push_back(parse_expression());
@@ -148,137 +149,120 @@ private:
                 }
             }
             if (get() != ')') throw std::runtime_error("Missing closing parenthesis for function " + name);
-            return call_function(name, args);
-        }
-
-        auto it = m_context.variables.find(name);
-        if (it != m_context.variables.end()) {
-            return it->second;
-        }
-
-        throw std::runtime_error("Unknown variable: " + name);
-    }
-
-    double call_function(const std::string& name, const std::vector<double>& args) {
-        if (name == "sin") return (args.size() == 1) ? std::sin(args[0]) : throw std::runtime_error("sin() expects 1 argument");
-        if (name == "cos") return (args.size() == 1) ? std::cos(args[0]) : throw std::runtime_error("cos() expects 1 argument");
-        if (name == "abs") return (args.size() == 1) ? std::abs(args[0]) : throw std::runtime_error("abs() expects 1 argument");
-        if (name == "tan") return (args.size() == 1) ? std::tan(args[0]) : throw std::runtime_error("tan() expects 1 argument");
-        if (name == "min") return (args.size() == 2) ? std::min(args[0], args[1]) : throw std::runtime_error("min() expects 2 arguments");
-        if (name == "max") return (args.size() == 2) ? std::max(args[0], args[1]) : throw std::runtime_error("max() expects 2 arguments");
-        if (name == "clamp") return (args.size() == 3) ? std::clamp(args[0], args[1], args[2]) : throw std::runtime_error("clamp() expects 3 arguments");
-        
-        if (name == "lerp" || name == "interpolate") {
-             if (args.size() != 3) throw std::runtime_error(name + "() expects 3 arguments (a, b, t)");
-             return args[0] + (args[1] - args[0]) * args[2];
-        }
-
-        if (name == "spring") {
-            if (args.size() != 5) throw std::runtime_error("spring() expects 5 arguments (t, from, to, freq, damping)");
-            return math_contract::spring(args[0], args[1], args[2], args[3], args[4]);
-        }
-
-        if (name == "pingpong") {
-            if (args.size() != 2) throw std::runtime_error("pingpong() expects 2 arguments (time, duration)");
-            const double t = args[0];
-            const double duration = args[1];
-            if (duration <= 0.0) return t;
-            const double fold = std::floor(t / duration);
-            const double rem = std::fmod(t, duration);
-            return (static_cast<std::uint64_t>(fold) % 2 == 0) ? rem : (duration - rem);
-        }
-
-        if (name == "timeStretch") {
-            if (args.size() != 2) throw std::runtime_error("timeStretch() expects 2 arguments (time, scale)");
-            return args[0] * args[1];
-        }
-
-        if (name == "stagger") {
-            if (args.size() != 1) throw std::runtime_error("stagger() expects 1 argument (delay)");
-            return static_cast<double>(m_context.layer_index) * args[0];
-        }
-
-        if (name == "valueAtTime") {
-            if (args.size() != 2) throw std::runtime_error("valueAtTime() expects 2 arguments (property_index, time)");
-            if (m_context.property_sampler) {
-                return m_context.property_sampler(static_cast<int>(args[0]), args[1]);
-            }
-            return 0.0; 
-        }
-        if (name == "wiggle") {
-            if (args.size() < 2 || args.size() > 5) throw std::runtime_error("wiggle() expects 2-5 arguments (freq, amp, [octaves], [amp_mult], [t])");
-            const double freq = args[0];
-            const double amp = args[1];
-            const int octaves = (args.size() >= 3) ? static_cast<int>(args[2]) : 1;
-            const double amp_mult = (args.size() >= 4) ? args[3] : 0.5;
-            const double t = (args.size() >= 5) ? args[4] : m_context.variables.at("t");
-
-            double value = 0.0;
-            double current_amp = 1.0;
-            double current_freq = freq;
-            double total_amp = 0.0;
-
-            for (int i = 0; i < std::max(1, octaves); ++i) {
-                value += smooth_noise_1d(t * current_freq, m_context.seed + i) * current_amp;
-                total_amp += current_amp;
-                current_freq *= 2.0;
-                current_amp *= amp_mult;
-            }
-
-            return (value / (total_amp > 0 ? total_amp : 1.0)) * amp;
-        }
-
-        if (name == "loopOut") {
-            const double t = m_context.variables.at("t");
-            if (m_context.variables.count("_prop_duration") && m_context.property_sampler) {
-                const double start = m_context.variables.at("_prop_start");
-                const double end = m_context.variables.at("_prop_end");
-                const double duration = m_context.variables.at("_prop_duration");
-                
-                if (duration <= 0.0) return m_context.property_sampler(-1, t);
-                if (t <= end) return m_context.property_sampler(-1, t);
-
-                const double phase = std::fmod(t - end, duration);
-                return m_context.property_sampler(-1, start + phase);
-            }
-            return 0.0;
-        }
-
-        if (name == "linear" || name == "ease") {
-            if (args.size() != 5) throw std::runtime_error(name + "() expects 5 arguments (t, tMin, tMax, value1, value2)");
-            const double t = args[0];
-            const double tMin = args[1];
-            const double tMax = args[2];
-            const double v1 = args[3];
-            const double v2 = args[4];
-
-            if (tMin >= tMax) return (t <= tMin) ? v1 : v2;
-            
-            double alpha = std::clamp((t - tMin) / (tMax - tMin), 0.0, 1.0);
-            if (name == "ease") {
-                alpha = alpha * alpha * (3.0 - 2.0 * alpha); // Cubic easing
-            }
-            
-            return v1 + alpha * (v2 - v1);
-        }
-
-        if (name == "data") {
-            if (args.size() != 3) throw std::runtime_error("data() expects 3 arguments (table_idx, row, col)");
-            if (m_context.table_lookup) {
-                return m_context.table_lookup(args[0], args[1], args[2]);
-            }
-            return 0.0;
+            return std::make_unique<FunctionCallNode>(name, std::move(args));
         }
         
-        throw std::runtime_error("Unknown function: " + name);
+        // Check if it's a property access (e.g. thisComp.layer...)
+        // For simplicity, we just treat the whole "thisComp.layer.transform.position" as a single VariableNode here
+        // A true AST would split it into PropertyAccessNode. Let's stick to VariableNode for the entire path.
+        return std::make_unique<VariableNode>(name);
     }
 };
 
-EvaluationResult ExpressionEvaluator::evaluate(const std::string& expression, const ExpressionContext& context) {
-    if (expression.empty()) return {0.0, false, "Empty expression"};
-    ExpressionContext resolved = context;
+class Compiler {
+public:
+    Compiler(Bytecode& bytecode) : m_bytecode(bytecode) {}
+
+    void compile(ASTNode* node) {
+        if (!node) return;
+        
+        switch (node->type()) {
+            case ASTNodeType::Number: {
+                auto* n = static_cast<NumberNode*>(node);
+                std::uint32_t idx = add_constant(n->value);
+                m_bytecode.instructions.push_back({OpCode::PushConst, idx});
+                break;
+            }
+            case ASTNodeType::Variable: {
+                auto* v = static_cast<VariableNode*>(node);
+                std::uint32_t idx = add_name(v->name);
+                m_bytecode.instructions.push_back({OpCode::PushVar, idx});
+                break;
+            }
+            case ASTNodeType::BinaryOp: {
+                auto* b = static_cast<BinaryOpNode*>(node);
+                compile(b->left.get());
+                compile(b->right.get());
+                switch (b->op) {
+                    case BinaryOperator::Add: m_bytecode.instructions.push_back({OpCode::Add, 0}); break;
+                    case BinaryOperator::Sub: m_bytecode.instructions.push_back({OpCode::Sub, 0}); break;
+                    case BinaryOperator::Mul: m_bytecode.instructions.push_back({OpCode::Mul, 0}); break;
+                    case BinaryOperator::Div: m_bytecode.instructions.push_back({OpCode::Div, 0}); break;
+                    case BinaryOperator::Pow: m_bytecode.instructions.push_back({OpCode::Pow, 0}); break;
+                }
+                break;
+            }
+            case ASTNodeType::UnaryOp: {
+                auto* u = static_cast<UnaryOpNode*>(node);
+                compile(u->operand.get());
+                if (u->op == UnaryOperator::Negate) {
+                    m_bytecode.instructions.push_back({OpCode::Neg, 0});
+                }
+                break;
+            }
+            case ASTNodeType::FunctionCall: {
+                auto* f = static_cast<FunctionCallNode*>(node);
+                // Push arguments (left to right, but VM pops right to left, so this is correct)
+                for (auto& arg : f->arguments) {
+                    compile(arg.get());
+                }
+                std::uint32_t name_idx = add_name(f->name);
+                std::uint32_t arg_count = static_cast<std::uint32_t>(f->arguments.size());
+                std::uint32_t instr_data = (arg_count << 16) | (name_idx & 0xFFFF);
+                m_bytecode.instructions.push_back({OpCode::Call, instr_data});
+                break;
+            }
+            case ASTNodeType::PropertyAccess: {
+                // Not implemented in this basic compiler pass, fall back to variable string index
+                break;
+            }
+        }
+    }
+
+private:
+    Bytecode& m_bytecode;
+
+    std::uint32_t add_constant(double val) {
+        for (std::size_t i = 0; i < m_bytecode.constants.size(); ++i) {
+            if (m_bytecode.constants[i] == val) return static_cast<std::uint32_t>(i);
+        }
+        m_bytecode.constants.push_back(val);
+        return static_cast<std::uint32_t>(m_bytecode.constants.size() - 1);
+    }
+
+    std::uint32_t add_name(const std::string& name) {
+        for (std::size_t i = 0; i < m_bytecode.names.size(); ++i) {
+            if (m_bytecode.names[i] == name) return static_cast<std::uint32_t>(i);
+        }
+        m_bytecode.names.push_back(name);
+        return static_cast<std::uint32_t>(m_bytecode.names.size() - 1);
+    }
+};
+
+CompilationResult ExpressionEvaluator::compile(const std::string& expression) {
+    if (expression.empty()) return {{}, nullptr, false, "Empty expression"};
     
-    // Inject global context variables if not already present
+    CompilationResult result;
+    try {
+        Parser parser(expression);
+        result.ast = parser.parse();
+        
+        Compiler compiler(result.bytecode);
+        compiler.compile(result.ast.get());
+        result.bytecode.instructions.push_back({OpCode::Ret, 0});
+        result.success = true;
+    } catch (const std::exception& e) {
+        result.success = false;
+        result.error = e.what();
+    }
+    return result;
+}
+
+EvaluationResult ExpressionEvaluator::evaluate(const std::string& expression, const ExpressionContext& context) {
+    auto comp = compile(expression);
+    if (!comp.success) return {0.0, false, comp.error};
+    
+    ExpressionContext resolved = context;
     if (resolved.variables.find("seed") == resolved.variables.end()) {
         resolved.variables["seed"] = static_cast<double>(resolved.seed);
     }
@@ -289,8 +273,12 @@ EvaluationResult ExpressionEvaluator::evaluate(const std::string& expression, co
         resolved.variables["value"] = resolved.value;
     }
 
-    Parser parser(expression, resolved);
-    return parser.parse();
+    try {
+        double val = ExpressionVM::execute(comp.bytecode, resolved);
+        return {val, true, ""};
+    } catch (const std::exception& e) {
+        return {0.0, false, e.what()};
+    }
 }
 
 } // namespace expressions
