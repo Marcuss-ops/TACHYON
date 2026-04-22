@@ -2,6 +2,7 @@
 
 #include "tachyon/text/font.h"
 #include "tachyon/core/spec/text_animator_spec.h"
+#include "tachyon/text/text_raster_surface.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -82,31 +83,6 @@ struct TextLayoutResult {
     std::int32_t line_height{0};
     std::vector<TextLine> lines;
     std::vector<PositionedGlyph> glyphs;
-};
-
-class TextRasterSurface {
-public:
-    TextRasterSurface() = default;
-    TextRasterSurface(std::uint32_t width, std::uint32_t height);
-
-    std::uint32_t width() const { return m_width; }
-    std::uint32_t height() const { return m_height; }
-    const std::vector<std::uint8_t>& rgba_pixels() const { return m_pixels; }
-
-    renderer2d::Color get_pixel(std::uint32_t x, std::uint32_t y) const;
-    bool save_png(const std::filesystem::path& path) const;
-
-private:
-    friend TextRasterSurface rasterize_text_rgba(const BitmapFont&, std::string_view, const TextStyle&, const TextBox&, TextAlignment, const TextLayoutOptions&, const TextAnimationOptions&);
-    friend TextRasterSurface rasterize_text_rgba(const BitmapFont&, std::string_view, const TextStyle&, const TextBox&, TextAlignment, float, std::span<const TextAnimatorSpec>, const TextLayoutOptions&);
-    friend TextRasterSurface rasterize_text_rgba(const BitmapFont&, std::string_view, const TextStyle&, const TextBox&, TextAlignment, std::span<const TextHighlightSpan>, const TextLayoutOptions&, const TextAnimationOptions&);
-    friend TextRasterSurface rasterize_text_rgba(const BitmapFont&, std::string_view, const TextStyle&, const TextBox&, TextAlignment, const struct TextOutlineOptions&);
-
-    void blend_pixel(std::uint32_t x, std::uint32_t y, renderer2d::Color color, std::uint8_t alpha);
-
-    std::uint32_t m_width{0};
-    std::uint32_t m_height{0};
-    std::vector<std::uint8_t> m_pixels;
 };
 
 TextLayoutResult layout_text(

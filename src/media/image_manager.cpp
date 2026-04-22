@@ -1,5 +1,5 @@
 #include "tachyon/media/image_manager.h"
-#include "tachyon/renderer2d/color_transfer.h"
+#include "tachyon/renderer2d/color/color_transfer.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION

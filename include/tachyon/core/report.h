@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/media/asset_resolution.h"
-#include "tachyon/renderer2d/rasterizer.h"
+#include "tachyon/renderer2d/raster/rasterizer.h"
 #include "tachyon/runtime/core/render_graph.h"
 #include "tachyon/runtime/core/diagnostics.h"
 #include "tachyon/runtime/execution/render_plan.h"

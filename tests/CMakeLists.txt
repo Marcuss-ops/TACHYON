@@ -14,23 +14,30 @@ add_executable(TachyonTests
     unit/renderer2d/evaluated_composition_renderer_tests.cpp
     unit/renderer2d/path_rasterizer_tests.cpp
     unit/renderer2d/path_rasterizer_aa_tests.cpp
+    unit/renderer2d/tiling_tests.cpp
     unit/renderer2d/effect_host_tests.cpp
-    unit/runtime/frame_cache_tests.cpp
-    unit/runtime/frame_cache_budget_tests.cpp
-    unit/runtime/tiling_integration_tests.cpp
-    unit/runtime/backbone_tests.cpp
-    unit/runtime/frame_executor_tests.cpp
-    unit/runtime/frame_output_sink_tests.cpp
-    unit/runtime/tile_scheduler_tests.cpp
-    unit/runtime/render_contract_tests.cpp
-    unit/runtime/expression_vm_tests.cpp
-    unit/runtime/determinism_tests.cpp
-    unit/runtime/visual_golden_tests.cpp
-    unit/runtime/visual_golden_verifier.cpp
+    unit/runtime/core/frame_cache_tests.cpp
+    unit/runtime/core/frame_cache_budget_tests.cpp
+    unit/runtime/core/backbone_tests.cpp
+    unit/runtime/core/render_contract_tests.cpp
+    unit/runtime/core/expression_vm_tests.cpp
+    unit/runtime/core/determinism_tests.cpp
+    unit/runtime/core/quality_tier_tests.cpp
+    unit/runtime/execution/tiling_integration_tests.cpp
+    unit/runtime/execution/frame_executor_tests.cpp
+    unit/runtime/execution/tile_scheduler_tests.cpp
+    unit/runtime/visual/visual_golden_tests.cpp
+    unit/runtime/visual/visual_golden_verifier.cpp
+    unit/runtime/visual/golden_fixtures.cpp
+    unit/runtime/io/frame_output_sink_tests.cpp
     unit/core/scene/evaluator_tests.cpp
     unit/core/scene/precomp_mask_tests.cpp
     unit/timeline/time_tests.cpp
     unit/core/spec/scene_spec_tests.cpp
+    unit/core/spec/parsing_tests.cpp
+    unit/core/spec/validation_tests.cpp
+    unit/core/spec/cli_tests.cpp
+    unit/core/spec/render_job_tests.cpp
     unit/text/glyph_cache_tests.cpp
     unit/text/text_tests.cpp
     integration/render_session_tests.cpp

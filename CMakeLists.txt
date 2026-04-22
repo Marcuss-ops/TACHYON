@@ -12,11 +12,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(TACHYON_ENABLE_COMPILER_CACHE "Enable sccache/clcache when available" ON)
+find_package(OpenMP REQUIRED)
 option(TACHYON_ENABLE_PCH "Enable precompiled headers when supported" ON)
 option(TACHYON_ENABLE_ASAN "Enable AddressSanitizer on Tachyon targets" OFF)
 
 if(MSVC)
     set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>")
+    add_compile_options(/FS)
 endif()
 
 if(TACHYON_ENABLE_ASAN)

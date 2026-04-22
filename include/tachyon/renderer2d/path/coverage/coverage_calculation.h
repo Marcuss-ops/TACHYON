@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/renderer2d/path/contour/contour_processing.h"
-#include "tachyon/renderer2d/path_rasterizer.h"
+#include "tachyon/renderer2d/raster/path_rasterizer.h"
 
 namespace tachyon::renderer2d {
 

@@ -1,5 +1,5 @@
 #include "tachyon/output/frame_output_sink.h"
-#include "tachyon/renderer2d/color_transfer.h"
+#include "tachyon/renderer2d/color/color_transfer.h"
 
 #include <algorithm>
 #include <cctype>

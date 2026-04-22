@@ -23,7 +23,7 @@ QualityPolicy make_quality_policy(const std::string& tier) {
         policy.motion_blur_sample_cap = 64;
         policy.effects_enabled = true;
         policy.precomp_cache_budget = 1024ULL * 1024 * 1024;
-        policy.tile_size = 0;
+        policy.tile_size = 512;
         policy.max_workers = 0;
     }
     return policy;

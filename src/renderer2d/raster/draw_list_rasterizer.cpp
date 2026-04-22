@@ -1,0 +1,256 @@
+#include "tachyon/renderer2d/raster/draw_list_rasterizer.h"
+
+#include "tachyon/renderer2d/raster/rasterizer_ops.h"
+#include "tachyon/renderer2d/raster/perspective_rasterizer.h"
+#include "tachyon/renderer2d/effects/effect_host.h"
+
+#include <algorithm>
+#include <vector>
+
+namespace tachyon {
+using namespace renderer2d;
+
+namespace {
+
+using ::tachyon::renderer2d::BlendMode;
+using ::tachyon::renderer2d::Color;
+using ::tachyon::renderer2d::LinePrimitive;
+using ::tachyon::renderer2d::RectI;
+using ::tachyon::renderer2d::SurfaceRGBA;
+
+renderer2d::Color placeholder_textured_color(float opacity) {
+    renderer2d::Color color{1.0f, 1.0f, 1.0f, 1.0f};
+    color.a = std::clamp(opacity, 0.0f, 1.0f);
+    color.r *= color.a;
+    color.g *= color.a;
+    color.b *= color.a;
+    return color;
+}
+
+RectI intersect_rects(const RectI& a, const RectI& b) {
+    const int x0 = std::max(a.x, b.x);
+    const int y0 = std::max(a.y, b.y);
+    const int x1 = std::min(a.x + a.width, b.x + b.width);
+    const int y1 = std::min(a.y + a.height, b.y + b.height);
+    if (x1 <= x0 || y1 <= y0) {
+        return RectI{0, 0, 0, 0};
+    }
+    return RectI{x0, y0, x1 - x0, y1 - y0};
+}
+
+Color blend_for_mode(Color src, Color dest, BlendMode mode, detail::TransferCurve curve) {
+    return blend_mode_color_with_curve(src, dest, mode, curve);
+}
+
+bool write_pixel(SurfaceRGBA& fb, int x, int y, Color color, BlendMode mode, detail::TransferCurve curve) {
+    if (x < 0 || y < 0) {
+        return false;
+    }
+
+    const uint32_t ux = static_cast<uint32_t>(x);
+    const uint32_t uy = static_cast<uint32_t>(y);
+    if (mode == BlendMode::Normal) {
+        return fb.blend_pixel(ux, uy, color);
+    }
+
+    const auto dest = fb.try_get_pixel(ux, uy);
+    if (!dest.has_value()) {
+        return false;
+    }
+    return fb.set_pixel(ux, uy, blend_for_mode(color, *dest, mode, curve));
+}
+
+void fill_rect_with_blend(SurfaceRGBA& fb, const RectI& rect, Color color, BlendMode mode, detail::TransferCurve curve) {
+    if (rect.width <= 0 || rect.height <= 0) {
+        return;
+    }
+
+    for (int y = rect.y; y < rect.y + rect.height; ++y) {
+        for (int x = rect.x; x < rect.x + rect.width; ++x) {
+            write_pixel(fb, x, y, color, mode, curve);
+        }
+    }
+}
+
+void draw_line_with_blend(SurfaceRGBA& fb, const LinePrimitive& line, BlendMode mode, detail::TransferCurve curve) {
+    int x0 = line.x0;
+    int y0 = line.y0;
+    const int x1 = line.x1;
+    const int y1 = line.y1;
+
+    const int dx = std::abs(x1 - x0);
+    const int dy = std::abs(y1 - y0);
+    const int sx = (x0 < x1) ? 1 : -1;
+    const int sy = (y0 < y1) ? 1 : -1;
+    int err = dx - dy;
+
+    while (true) {
+        write_pixel(fb, x0, y0, line.color, mode, curve);
+        if (x0 == x1 && y0 == y1) {
+            break;
+        }
+        const int e2 = 2 * err;
+        if (e2 > -dy) {
+            err -= dy;
+            x0 += sx;
+        }
+        if (e2 < dx) {
+            err += dx;
+            y0 += sy;
+        }
+    }
+}
+
+} // namespace
+
+RasterizedFrame2D render_draw_list_2d(
+    const RenderPlan& plan,
+    const FrameRenderTask& task,
+    const renderer2d::DrawList2D& draw_list) {
+
+    RasterizedFrame2D frame;
+    frame.frame_number = task.frame_number;
+    frame.width = plan.composition.width;
+    frame.height = plan.composition.height;
+    frame.layer_count = plan.composition.layer_count;
+    frame.estimated_draw_ops = draw_list.commands.size();
+    frame.backend_name = "cpu-2d-draw-list";
+    frame.cache_key = task.cache_key.value;
+    frame.note = "Frame rasterized from DrawList2D";
+    frame.surface = std::make_shared<renderer2d::SurfaceRGBA>(static_cast<std::uint32_t>(frame.width), static_cast<std::uint32_t>(frame.height));
+    if (!frame.surface) {
+        return frame;
+    }
+
+    frame.surface->clear(renderer2d::Color::transparent());
+
+    const RectI full_clip{0, 0, static_cast<int>(frame.width), static_cast<int>(frame.height)};
+    RectI active_clip = full_clip;
+
+    thread_local std::vector<const renderer2d::DrawCommand2D*> ordered_commands;
+    ordered_commands.clear();
+    if (ordered_commands.capacity() < draw_list.commands.size()) {
+        ordered_commands.reserve(draw_list.commands.size());
+    }
+    for (const auto& command : draw_list.commands) {
+        ordered_commands.push_back(&command);
+    }
+
+    if (!ordered_commands.empty()) {
+        const bool has_clear = ordered_commands.front()->kind == renderer2d::DrawCommandKind::Clear;
+        const auto sort_begin = has_clear ? ordered_commands.begin() + 1 : ordered_commands.begin();
+        std::sort(sort_begin, ordered_commands.end(), [](const auto* left, const auto* right) {
+            return left->z_order < right->z_order;
+        });
+    }
+
+    auto effect_host = renderer2d::create_effect_host();
+    renderer2d::EffectHost::register_builtins(*effect_host);
+
+    for (const auto* command : ordered_commands) {
+    if (command->kind == renderer2d::DrawCommandKind::MaskRect && command->mask_rect.has_value()) {
+        active_clip = intersect_rects(active_clip, command->mask_rect->rect);
+        frame.surface->set_clip_rect(active_clip);
+        continue;
+    }
+
+        const RectI effective_clip = command->clip.has_value()
+            ? intersect_rects(active_clip, *command->clip)
+            : active_clip;
+        frame.surface->set_clip_rect(effective_clip);
+
+        const detail::TransferCurve working_curve = detail::parse_transfer_curve(plan.working_space);
+
+        switch (command->kind) {
+            case renderer2d::DrawCommandKind::Clear:
+                if (command->clear.has_value()) {
+                    frame.surface->clear(command->clear->color);
+                    active_clip = full_clip;
+                    frame.surface->set_clip_rect(active_clip);
+                }
+                break;
+            case renderer2d::DrawCommandKind::SolidRect:
+                if (command->solid_rect.has_value()) {
+                    fill_rect_with_blend(*frame.surface, command->solid_rect->rect, command->solid_rect->color, command->blend_mode, working_curve);
+                }
+                break;
+            case renderer2d::DrawCommandKind::Line:
+                if (command->line.has_value()) {
+                    draw_line_with_blend(*frame.surface,
+                        renderer2d::LinePrimitive{command->line->x0, command->line->y0,
+                                                  command->line->x1, command->line->y1,
+                                                  command->line->color},
+                        command->blend_mode,
+                        working_curve);
+                }
+                break;
+            case renderer2d::DrawCommandKind::TexturedQuad:
+                if (command->textured_quad.has_value()) {
+                    const auto& q = *command->textured_quad;
+                    if (q.texture.valid()) {
+                        renderer2d::raster::PerspectiveWarpQuad warp;
+                        warp.v0 = {math::Vector3{q.p0.x, q.p0.y, 0.0f}, math::Vector2{0.0f, 0.0f}, q.w0};
+                        warp.v1 = {math::Vector3{q.p1.x, q.p1.y, 0.0f}, math::Vector2{1.0f, 0.0f}, q.w1};
+                        warp.v2 = {math::Vector3{q.p2.x, q.p2.y, 0.0f}, math::Vector2{1.0f, 1.0f}, q.w2};
+                        warp.v3 = {math::Vector3{q.p3.x, q.p3.y, 0.0f}, math::Vector2{0.0f, 1.0f}, q.w3};
+                        warp.texture = q.texture.surface;
+                        warp.opacity = q.opacity;
+
+                        warp.opacity = q.opacity;
+
+                        renderer2d::raster::PerspectiveRasterizer::draw_quad(*frame.surface, warp);
+                    }
+                }
+                break;
+            case renderer2d::DrawCommandKind::MaskRect:
+                break;
+            case renderer2d::DrawCommandKind::Shape:
+                if (command->shape.has_value()) {
+                    const auto& s = *command->shape;
+                    PathGeometry transformed_geom = s.geometry;
+                    const auto transform_point_2d = [&s](const math::Vector2& point) {
+                        const math::Vector3 projected = s.transform.to_matrix().transform_point({point.x, point.y, 0.0f});
+                        return math::Vector2{projected.x, projected.y};
+                    };
+                    for (auto& cmd : transformed_geom.commands) {
+                         cmd.p0 = transform_point_2d(cmd.p0);
+                         if (cmd.verb == PathVerb::CubicTo) {
+                             cmd.p1 = transform_point_2d(cmd.p1);
+                             cmd.p2 = transform_point_2d(cmd.p2);
+                         }
+                    }
+                    
+                    if (s.fill_color.a > 0 || s.gradient_fill.has_value()) {
+                        FillPathStyle fill_style;
+                        fill_style.fill_color = s.fill_color;
+                        fill_style.gradient = s.gradient_fill;
+                        fill_style.opacity = s.opacity;
+                        PathRasterizer::fill(*frame.surface, transformed_geom, fill_style);
+                    }
+                    
+                    if ((s.stroke_color.a > 0 || s.gradient_stroke.has_value()) && s.stroke_width > 0.0f) {
+                        StrokePathStyle stroke_style;
+                        stroke_style.stroke_color = s.stroke_color;
+                        stroke_style.gradient = s.gradient_stroke;
+                        stroke_style.stroke_width = s.stroke_width;
+                        stroke_style.opacity = s.opacity;
+                        stroke_style.cap = s.line_cap;
+                        stroke_style.join = s.line_join;
+                        stroke_style.miter_limit = s.miter_limit;
+                        PathRasterizer::stroke(*frame.surface, transformed_geom, stroke_style);
+                    }
+                }
+                break;
+            case renderer2d::DrawCommandKind::Adjustment:
+                if (command->adjustment.has_value()) {
+                    *frame.surface = effect_host->apply_pipeline(*frame.surface, command->adjustment->effects);
+                }
+                break;
+        }
+    }
+
+    frame.surface->reset_clip_rect();
+    return frame;
+}
+
+} // namespace tachyon

@@ -19,8 +19,8 @@
 #include "tachyon/core/math/vector3.h"
 #include "tachyon/core/animation/easing.h"
 #include "tachyon/runtime/core/diagnostics.h"
-#include "tachyon/renderer2d/path_rasterizer.h"
-#include "tachyon/renderer2d/gradient_spec.h"
+#include "tachyon/renderer2d/raster/path_rasterizer.h"
+#include "tachyon/renderer2d/spec/gradient_spec.h"
 
 #include <cstddef>
 #include <cstdint>

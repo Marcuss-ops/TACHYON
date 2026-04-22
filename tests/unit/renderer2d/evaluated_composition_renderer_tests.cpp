@@ -1,11 +1,11 @@
-#include "tachyon/renderer2d/evaluated_composition_renderer.h"
+#include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"
 #include "tachyon/core/scene/evaluated_state.h"
 #include "tachyon/core/spec/scene_spec.h"
-#include "tachyon/renderer2d/framebuffer.h"
-#include "tachyon/renderer2d/rasterizer.h"
-#include "tachyon/renderer2d/rasterizer_ops.h"
-#include "tachyon/renderer2d/render_context.h"
-#include "tachyon/renderer2d/draw_command.h"
+#include "tachyon/renderer2d/core/framebuffer.h"
+#include "tachyon/renderer2d/raster/rasterizer.h"
+#include "tachyon/renderer2d/raster/rasterizer_ops.h"
+#include "tachyon/renderer2d/resource/render_context.h"
+#include "tachyon/renderer2d/raster/draw_command.h"
 
 #include <cmath>
 #include <iostream>

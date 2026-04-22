@@ -35,6 +35,7 @@ bool read_optional_int(const json& object, const char* key, std::optional<std::i
 bool parse_vector2_value(const json& value, math::Vector2& out);
 bool parse_vector3_value(const json& value, math::Vector3& out);
 bool parse_color_value(const json& value, ColorSpec& out);
+bool parse_gradient_spec(const json& object, GradientSpec& out);
 animation::EasingPreset parse_easing_preset(const json& value);
 animation::CubicBezierEasing parse_bezier(const json& value);
 renderer2d::LineCap parse_line_cap(const json& value);

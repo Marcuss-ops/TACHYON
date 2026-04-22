@@ -13,8 +13,9 @@
 #include "tachyon/text/subtitle.h"
 
 #include "tachyon/core/scene/evaluator_internal.h"
-#include "tachyon/core/scene/evaluator_utils.h"
-#include "tachyon/core/scene/evaluator_layer.h"
+#include "tachyon/core/scene/evaluator/hashing.h"
+#include "tachyon/core/scene/evaluator/property_sampler.h"
+#include "tachyon/core/scene/evaluator/layer_evaluator.h"
 #include "tachyon/core/scene/evaluator_composition.h"
 
 #include <algorithm>
@@ -52,7 +53,10 @@ EvaluatedLayerState evaluate_layer_state(
         audio_analyzer,
         {},
         {},
-        media
+        media,
+        {},
+        {}, // main_frame_number
+        {}  // main_frame_time_seconds
     };
     context.layer_indices.emplace(layer.id, 0);
 
@@ -234,6 +238,9 @@ EvaluatedLayerState::EvaluatedLayerState(const EvaluatedLayerState& other) {
     shape_path = other.shape_path;
     gradient_fill = other.gradient_fill;
     gradient_stroke = other.gradient_stroke;
+    trim_start = other.trim_start;
+    trim_end = other.trim_end;
+    trim_offset = other.trim_offset;
     effects = other.effects;
     text_highlights = other.text_highlights;
     subtitle_path = other.subtitle_path;
@@ -293,6 +300,9 @@ EvaluatedLayerState& EvaluatedLayerState::operator=(const EvaluatedLayerState& o
     shape_path = other.shape_path;
     gradient_fill = other.gradient_fill;
     gradient_stroke = other.gradient_stroke;
+    trim_start = other.trim_start;
+    trim_end = other.trim_end;
+    trim_offset = other.trim_offset;
     effects = other.effects;
     text_highlights = other.text_highlights;
     subtitle_path = other.subtitle_path;

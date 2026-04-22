@@ -2,7 +2,7 @@
 
 #include "tachyon/runtime/execution/frame_executor.h"
 #include "tachyon/runtime/core/diagnostics.h"
-#include "tachyon/renderer2d/render_context.h"
+#include "tachyon/renderer2d/resource/render_context.h"
 
 #include <cstddef>
 #include <filesystem>

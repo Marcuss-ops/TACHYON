@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/renderer2d/framebuffer.h"
+#include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/renderer2d/text/glyph/glyph_bitmap.h"
 
 #include <cstdint>

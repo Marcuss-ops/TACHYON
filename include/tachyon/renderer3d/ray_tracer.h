@@ -2,6 +2,7 @@
 
 #include "tachyon/core/scene/evaluated_state.h"
 #include "tachyon/media/mesh_asset.h"
+#include "tachyon/renderer3d/environment_manager.h"
 #include <embree4/rtcore.h>
 #include <OpenImageDenoise/oidn.hpp>
 #include <memory>
@@ -60,9 +61,14 @@ private:
     };
     std::vector<GeoInstance> instances_;
     std::vector<std::unique_ptr<media::MeshAsset>> extruded_assets_;
+    struct MeshCacheEntry {
+        RTCScene scene;
+    };
+    std::unordered_map<std::uint32_t, MeshCacheEntry> mesh_cache_;
+
     const media::HDRTextureData* environment_map_{nullptr};
-    std::unique_ptr<media::PreFilteredEnvMap> prefiltered_env_{nullptr};
-    static std::unique_ptr<media::BRDFLut> brdf_lut_;
+    EnvironmentManager environment_manager_;
+    
     oidn::DeviceRef oidn_device_;
     oidn::FilterRef oidn_filter_;
 
@@ -70,26 +76,12 @@ private:
     float     environment_rotation_{0.0f};
     int       samples_per_pixel_{1};
 
-    struct ShadingResult {
-        math::Vector3 color;
-        float alpha;
-        float depth;
-        math::Vector3 albedo;
-        math::Vector3 normal;
-    };
-
     ShadingResult trace_ray(
         const math::Vector3& origin,
         const math::Vector3& direction,
         const scene::EvaluatedCompositionState& state,
         std::mt19937& rng,
         int depth);
-
-    ShadingResult sample_environment(const math::Vector3& direction);
-    ShadingResult sample_environment(const math::Vector3& direction, float roughness);
-    
-    void ensure_brdf_lut();
-    void update_prefiltered_env(const media::HDRTextureData* map);
 
     static constexpr int kMaxBounces = 3;
 
