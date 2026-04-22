@@ -1,4 +1,4 @@
-#include "tachyon/runtime/execution/frame_hasher.h"
+#include "tachyon/runtime/execution/frames/frame_hasher.h"
 #include <cstring>
 
 namespace tachyon {

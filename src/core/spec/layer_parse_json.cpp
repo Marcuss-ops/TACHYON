@@ -1,4 +1,4 @@
-#include "tachyon/core/spec/scene_spec_core.h"
+#include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include <algorithm>
 
 namespace tachyon {
@@ -312,6 +312,8 @@ LayerSpec parse_layer(const json& object, const std::string& path, DiagnosticBag
             }
         }
     }
+
+    parse_optional_scalar_property(object, "mask_feather", layer.mask_feather, path, diagnostics);
 
     return layer;
 }

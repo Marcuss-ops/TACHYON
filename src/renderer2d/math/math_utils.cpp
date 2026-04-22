@@ -1,5 +1,5 @@
 #include "tachyon/renderer2d/math/math_utils.h"
-#include "tachyon/runtime/core/math_contract.h"
+#include "tachyon/runtime/core/contracts/math_contract.h"
 
 namespace tachyon::renderer2d::math_utils {
 

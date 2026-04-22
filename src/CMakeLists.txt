@@ -17,6 +17,8 @@ add_library(TachyonCore
     audio/audio_analyzer.cpp
     audio/audio_decoder.cpp
     audio/audio_mixer.cpp
+    # Audio DSP (Phase 4)
+    audio/audio_graph.cpp
     media/image_manager.cpp
     media/asset_resolution.cpp
     media/media_manager.cpp
@@ -31,12 +33,14 @@ add_library(TachyonCore
     renderer2d/raster/draw_list_rasterizer.cpp
     renderer2d/color/blending.cpp
     renderer2d/color/lut3d.cpp
+    renderer2d/color/color_management_system.cpp
     renderer2d/effects/effect_host.cpp
     renderer2d/effects/effect_utils.cpp
     renderer2d/effects/blur_effects.cpp
     renderer2d/effects/color_effects.cpp
     renderer2d/effects/particle_effects.cpp
     renderer2d/effects/utility_effects.cpp
+    renderer2d/backend/cpu_backend.cpp
     renderer2d/evaluated_composition/rendering/composition_renderer.cpp
     renderer2d/evaluated_composition/utilities/composition_utils.cpp
     renderer2d/evaluated_composition/rendering/layer_to_draw_command.cpp
@@ -143,6 +147,12 @@ add_library(TachyonCore
     renderer3d/utilities/environment_manager.cpp
     media/mesh_loader.cpp
     media/extruder.cpp
+    # Feature tracker (A1 – CPU Lucas-Kanade optical flow)
+    tracker/feature_tracker.cpp
+    # Scene importers (Phase 5 – USD/Alembic, compiled conditionally)
+    importer/scene_importers.cpp
+    # Output sinks
+    output/exr_sequence_sink.cpp
 )
 
 if(MSVC)
@@ -177,6 +187,58 @@ target_link_libraries(TachyonCore
         OpenImageDenoise
         OpenMP::OpenMP_CXX
 )
+
+# --- Optional dependencies ---
+
+# Vulkan (GPU compute backend)
+find_package(Vulkan QUIET)
+if(Vulkan_FOUND)
+    message(STATUS "[Tachyon] Vulkan found – enabling GPU compute backend")
+    target_compile_definitions(TachyonCore PUBLIC TACHYON_VULKAN)
+    target_link_libraries(TachyonCore PUBLIC Vulkan::Vulkan)
+else()
+    message(STATUS "[Tachyon] Vulkan NOT found – CPU backend only")
+endif()
+
+# OpenColorIO (OCIO colour management)
+find_package(OpenColorIO QUIET)
+if(OpenColorIO_FOUND)
+    message(STATUS "[Tachyon] OpenColorIO found – enabling OCIO adapter")
+    target_compile_definitions(TachyonCore PUBLIC TACHYON_OCIO)
+    target_link_libraries(TachyonCore PUBLIC OpenColorIO::OpenColorIO)
+else()
+    message(STATUS "[Tachyon] OpenColorIO NOT found – using built-in colour pipeline")
+endif()
+
+# OpenEXR (multi-layer EXR export)
+find_package(OpenEXR QUIET)
+if(OpenEXR_FOUND)
+    message(STATUS "[Tachyon] OpenEXR found – enabling EXR sequence sink")
+    target_compile_definitions(TachyonCore PUBLIC TACHYON_EXR)
+    target_link_libraries(TachyonCore PUBLIC OpenEXR::OpenEXR)
+else()
+    message(STATUS "[Tachyon] OpenEXR NOT found – EXR output disabled")
+endif()
+
+# OpenUSD (scene import)
+find_package(pxr QUIET)
+if(pxr_FOUND)
+    message(STATUS "[Tachyon] OpenUSD found – enabling USD scene importer")
+    target_compile_definitions(TachyonCore PUBLIC TACHYON_USD)
+    target_link_libraries(TachyonCore PUBLIC usd_ms)
+else()
+    message(STATUS "[Tachyon] OpenUSD NOT found – USD import disabled")
+endif()
+
+# Alembic (animated cache import)
+find_package(Alembic QUIET)
+if(Alembic_FOUND)
+    message(STATUS "[Tachyon] Alembic found – enabling Alembic scene importer")
+    target_compile_definitions(TachyonCore PUBLIC TACHYON_ALEMBIC)
+    target_link_libraries(TachyonCore PUBLIC Alembic::Alembic)
+else()
+    message(STATUS "[Tachyon] Alembic NOT found – Alembic import disabled")
+endif()
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
     target_precompile_headers(TachyonCore PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")

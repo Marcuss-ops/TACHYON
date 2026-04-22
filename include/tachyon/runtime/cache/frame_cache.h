@@ -1,9 +1,9 @@
 #pragma once
 
 #include "tachyon/renderer2d/core/framebuffer.h"
-#include "tachyon/runtime/core/render_graph.h"
-#include "tachyon/core/scene/evaluated_state.h"
-#include "tachyon/runtime/execution/render_plan.h"
+#include "tachyon/runtime/core/graph/render_graph.h"
+#include "tachyon/core/scene/state/evaluated_state.h"
+#include "tachyon/runtime/execution/planning/render_plan.h"
 
 #include <cstddef>
 #include <cstdint>

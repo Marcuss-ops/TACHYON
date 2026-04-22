@@ -6,16 +6,16 @@ add_executable(TachyonTests
     unit/media/asset_resolution_tests.cpp
     unit/media/image_manager_tests.cpp
     unit/media/image_decode_tests.cpp
-    unit/renderer2d/framebuffer_tests.cpp
-    unit/renderer2d/rasterizer_tests.cpp
-    unit/renderer2d/surface_tests.cpp
-    unit/renderer2d/draw_list_builder_tests.cpp
-    unit/renderer2d/blend_modes_tests.cpp
-    unit/renderer2d/evaluated_composition_renderer_tests.cpp
-    unit/renderer2d/path_rasterizer_tests.cpp
-    unit/renderer2d/path_rasterizer_aa_tests.cpp
-    unit/renderer2d/tiling_tests.cpp
-    unit/renderer2d/effect_host_tests.cpp
+    unit/renderer2d/composition/framebuffer_tests.cpp
+    unit/renderer2d/rasterization/rasterizer_tests.cpp
+    unit/renderer2d/utilities/surface_tests.cpp
+    unit/renderer2d/composition/draw_list_builder_tests.cpp
+    unit/renderer2d/effects/blend_modes_tests.cpp
+    unit/renderer2d/composition/evaluated_composition_renderer_tests.cpp
+    unit/renderer2d/rasterization/path_rasterizer_tests.cpp
+    unit/renderer2d/rasterization/path_rasterizer_aa_tests.cpp
+    unit/renderer2d/utilities/tiling_tests.cpp
+    unit/renderer2d/effects/effect_host_tests.cpp
     unit/runtime/core/frame_cache_tests.cpp
     unit/runtime/core/frame_cache_budget_tests.cpp
     unit/runtime/core/backbone_tests.cpp
@@ -34,12 +34,14 @@ add_executable(TachyonTests
     unit/core/scene/precomp_mask_tests.cpp
     unit/timeline/time_tests.cpp
     unit/core/spec/scene_spec_tests.cpp
+    unit/core/rigging_maturation_tests.cpp
     unit/core/spec/parsing_tests.cpp
     unit/core/spec/validation_tests.cpp
     unit/core/spec/cli_tests.cpp
     unit/core/spec/render_job_tests.cpp
     unit/text/glyph_cache_tests.cpp
     unit/text/text_tests.cpp
+    unit/text/editor_tests.cpp
     integration/render_session_tests.cpp
     integration/render_batch_tests.cpp
     integration/parallax_cards_tests.cpp
@@ -75,3 +77,7 @@ endif()
 if(MSVC)
     target_compile_options(TachyonTests PRIVATE /FS)
 endif()
+
+add_executable(Phase1Tests unit/text/phase1_tests.cpp)
+target_link_libraries(Phase1Tests PRIVATE TachyonCore)
+target_compile_definitions(Phase1Tests PRIVATE TACHYON_TESTS_SOURCE_DIR="${TACHYON_TESTS_SOURCE_DIR}")

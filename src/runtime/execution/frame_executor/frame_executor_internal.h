@@ -1,6 +1,6 @@
 #pragma once
-#include "tachyon/runtime/execution/frame_executor.h"
-#include "tachyon/core/scene/evaluator.h"
+#include "tachyon/runtime/execution/frames/frame_executor.h"
+#include "tachyon/core/scene/evaluation/evaluator.h"
 #include "tachyon/runtime/cache/cache_key_builder.h"
 
 namespace tachyon {

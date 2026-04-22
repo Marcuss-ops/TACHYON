@@ -1,10 +1,11 @@
 #pragma once
 
 #include "tachyon/renderer2d/raster/draw_list_builder.h"
-#include "tachyon/media/media_manager.h"
-#include "tachyon/core/spec/scene_spec.h"
-#include "tachyon/text/subtitle.h"
-#include "tachyon/text/font.h"
+#include "tachyon/media/management/media_manager.h"
+#include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/text/content/subtitle.h"
+#include "tachyon/text/fonts/font.h"
+#include "tachyon/text/fonts/font_registry.h"
 
 #include <memory>
 #include <vector>
@@ -17,7 +18,7 @@ namespace tachyon::renderer2d {
  * Utility to find and load a default system font for text rendering.
  * Returns nullptr if no suitable font is found.
  */
-const ::tachyon::text::Font* get_default_text_font();
+const ::tachyon::text::FontRegistry* get_default_font_registry();
 
 /**
  * Resolves TextureHandle string IDs to actual SurfaceRGBA pointers.

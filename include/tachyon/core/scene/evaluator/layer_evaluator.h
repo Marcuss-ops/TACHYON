@@ -1,7 +1,7 @@
 #pragma once
 
-#include "tachyon/core/scene/evaluator.h"
-#include "tachyon/core/scene/evaluator_internal.h"
+#include "tachyon/core/scene/evaluation/evaluator.h"
+#include "tachyon/core/scene/internal/evaluator_internal.h"
 
 namespace tachyon::scene {
 

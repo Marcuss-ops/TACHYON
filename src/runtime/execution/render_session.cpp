@@ -1,6 +1,6 @@
-#include "tachyon/runtime/execution/render_session.h"
-#include "tachyon/core/spec/scene_compiler.h"
-#include "tachyon/runtime/execution/frame_executor.h"
+#include "tachyon/runtime/execution/session/render_session.h"
+#include "tachyon/core/spec/compilation/scene_compiler.h"
+#include "tachyon/runtime/execution/frames/frame_executor.h"
 
 #include "tachyon/output/frame_output_sink.h"
 #include "tachyon/runtime/resource/render_context.h"
@@ -60,7 +60,7 @@ void render_frames_parallel(
             local_context.ray_tracer = context.ray_tracer;
             local_context.policy = context.policy;
             local_context.renderer2d.policy = context.policy;
-            local_context.renderer2d.font = context.renderer2d.font;
+            local_context.renderer2d.font_registry = context.renderer2d.font_registry;
             local_context.renderer2d.media_manager = context.media.get();
             
             for (;;) {
@@ -105,7 +105,7 @@ RenderSessionResult RenderSession::render(
     RenderContext context(m_precomp_cache);
     context.policy = make_quality_policy(execution_plan.render_plan.quality_tier);
     context.renderer2d.policy = context.policy;
-    context.renderer2d.font = ::tachyon::renderer2d::get_default_text_font();
+    context.renderer2d.font_registry = ::tachyon::renderer2d::get_default_font_registry();
     
     const std::size_t cache_budget_bytes = m_memory_budget_bytes.value_or(context.policy.precomp_cache_budget);
     m_cache.set_budget_bytes(cache_budget_bytes);
@@ -132,6 +132,23 @@ RenderSessionResult RenderSession::render(
         }
     }
 
+    std::vector<std::string> active_video_paths;
+    for (const auto& asset : compiled_scene.assets) {
+        if (asset.type == "video") {
+            active_video_paths.push_back(asset.path);
+        }
+    }
+    const double session_fps = (compiled_scene.compositions.empty() || compiled_scene.compositions.front().fps == 0) 
+        ? 60.0 
+        : static_cast<double>(compiled_scene.compositions.front().fps);
+    
+    // Update media prefetcher with current time
+    if (!execution_plan.frame_tasks.empty() && context.media) {
+        m_prefetcher.update(*context.media, active_video_paths, execution_plan.frame_tasks.front().time_seconds, session_fps);
+    }
+
+    // Prepare evaluation plan
+    
     std::vector<ExecutedFrame> rendered_frames;
     if (effective_worker_count <= 1 || execution_plan.frame_tasks.size() <= 1) {
         render_frames_sequential(compiled_scene, execution_plan, m_cache, context, rendered_frames);

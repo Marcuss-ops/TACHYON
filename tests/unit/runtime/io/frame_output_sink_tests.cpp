@@ -1,7 +1,7 @@
 #include "tachyon/output/frame_output_sink.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
-#include "tachyon/runtime/execution/render_plan.h"
+#include "tachyon/runtime/execution/planning/render_plan.h"
 
 #include <filesystem>
 #include <fstream>

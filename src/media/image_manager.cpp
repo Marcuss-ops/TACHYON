@@ -1,4 +1,4 @@
-#include "tachyon/media/image_manager.h"
+#include "tachyon/media/management/image_manager.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -153,6 +153,11 @@ DiagnosticBag ImageManager::consume_diagnostics() {
     DiagnosticBag diagnostics;
     diagnostics.diagnostics = std::move(m_diagnostics.diagnostics);
     return diagnostics;
+}
+
+void ImageManager::store_image(const std::string& key, std::unique_ptr<renderer2d::SurfaceRGBA> image) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_cache[key] = std::move(image);
 }
 
 void ImageManager::clear_cache() {

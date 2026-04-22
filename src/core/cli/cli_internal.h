@@ -1,7 +1,7 @@
 #pragma once
 #include "tachyon/core/cli_options.h"
-#include "tachyon/core/spec/scene_spec.h"
-#include "tachyon/media/asset_resolution.h"
+#include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/media/resolution/asset_resolution.h"
 #include <iostream>
 #include <filesystem>
 

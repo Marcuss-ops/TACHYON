@@ -1,6 +1,7 @@
-#include "tachyon/text/font.h"
-#include "tachyon/text/font_registry.h"
-#include "tachyon/text/layout.h"
+#include "tachyon/text/fonts/font.h"
+#include "tachyon/text/fonts/font_registry.h"
+#include "tachyon/text/layout/layout.h"
+#include "tachyon/text/rendering/text_raster_surface.h"
 
 #include <filesystem>
 #include <iostream>
@@ -131,6 +132,26 @@ bool run_text_tests() {
 
         fs::create_directories("tests/output");
         check_true(surface.save_png("tests/output/04_text_tachyon.png"), "Save text PNG");
+    }
+
+    {
+        TextRasterSurface surface(4, 4);
+        GlyphBitmap glyph;
+        glyph.width = 2;
+        glyph.height = 2;
+        glyph.alpha_mask = {
+            0U,   255U,
+            255U, 255U
+        };
+
+        surface.render_glyph(glyph, 0, 0, 4, 4, tachyon::renderer2d::Color::white());
+
+        const auto corner = surface.get_pixel(0, 0);
+        const auto center = surface.get_pixel(1, 1);
+        const auto edge = surface.get_pixel(2, 1);
+        check_true(corner.a < center.a, "Scaled glyph increases coverage away from the empty corner");
+        check_true(center.a > 0.0f && center.a < 1.0f, "Scaled glyph center should be partially covered");
+        check_true(edge.a > 0.0f && edge.a <= 1.0f, "Scaled glyph edge should remain covered");
     }
 
     {

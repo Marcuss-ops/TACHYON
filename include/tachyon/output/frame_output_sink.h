@@ -1,17 +1,20 @@
 #pragma once
 
 #include "tachyon/renderer2d/core/framebuffer.h"
-#include "tachyon/runtime/execution/render_plan.h"
+#include "tachyon/runtime/execution/planning/render_plan.h"
+#include "tachyon/output/frame_aov.h"
 
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace tachyon::output {
 
 struct OutputFramePacket {
     std::int64_t frame_number{0};
     const renderer2d::Framebuffer* frame{nullptr};
+    std::vector<FrameAOV> aovs;   // optional: multi-layer AOVs for EXR output
 };
 
 class FrameOutputSink {
@@ -27,9 +30,11 @@ class FrameOutputSink {
 
 std::unique_ptr<FrameOutputSink> create_png_sequence_sink();
 std::unique_ptr<FrameOutputSink> create_ffmpeg_pipe_sink();
+std::unique_ptr<FrameOutputSink> create_exr_sequence_sink();  // requires TACHYON_EXR
 std::unique_ptr<FrameOutputSink> create_frame_output_sink(const RenderPlan& plan);
 
 bool output_requests_png_sequence(const OutputContract& contract);
 bool output_requests_video_file(const OutputContract& contract);
+bool output_requests_exr(const OutputContract& contract);
 
 } // namespace tachyon::output

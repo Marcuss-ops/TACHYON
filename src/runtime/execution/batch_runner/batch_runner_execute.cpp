@@ -1,8 +1,8 @@
 #include "batch_runner_internal.h"
-#include "tachyon/core/spec/scene_compiler.h"
-#include "tachyon/runtime/execution/render_plan.h"
-#include "tachyon/runtime/execution/render_session.h"
-#include "tachyon/media/asset_resolution.h"
+#include "tachyon/core/spec/compilation/scene_compiler.h"
+#include "tachyon/runtime/execution/planning/render_plan.h"
+#include "tachyon/runtime/execution/session/render_session.h"
+#include "tachyon/media/resolution/asset_resolution.h"
 #include <atomic>
 #include <future>
 #include <algorithm>

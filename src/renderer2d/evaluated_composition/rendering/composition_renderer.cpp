@@ -7,6 +7,7 @@
 #include "tachyon/renderer3d/core/ray_tracer.h"
 #include "tachyon/renderer3d/effects/motion_blur.h"
 #include "tachyon/runtime/execution/scheduling/tile_scheduler.h"
+#include "tachyon/output/frame_aov.h"
 #include <algorithm>
 #include <cmath>
 
@@ -38,6 +39,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
     }
 
     auto& dst = *frame.surface;
+    dst.set_profile(context.cms.working_profile);
     dst.clear(Color::transparent());
 
     EffectHost& host = effect_host_for(context);
@@ -95,20 +97,31 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 context.ray_tracer->render(
                     state,
                     hdr_buffer.data(),
-                    nullptr,
+                    depth_buffer.data(),
                     static_cast<int>(state.width),
                     static_cast<int>(state.height),
                     &motion_blur,
                     task.time_seconds,
                     frame_duration_seconds);
                 
+                auto depth_aov_surf = std::make_shared<SurfaceRGBA>(state.width, state.height);
+                
                 for (std::int64_t px_idx = 0; px_idx < state.width * state.height; ++px_idx) {
                     const float r = hdr_buffer[px_idx * 4 + 0];
                     const float g = hdr_buffer[px_idx * 4 + 1];
                     const float b = hdr_buffer[px_idx * 4 + 2];
                     const float a = hdr_buffer[px_idx * 4 + 3];
-                    world_3d->set_pixel(static_cast<std::uint32_t>(px_idx % state.width), static_cast<std::uint32_t>(px_idx / state.width), {r, g, b, a});
+                    const float d = depth_buffer[px_idx];
+                    
+                    uint32_t x = static_cast<std::uint32_t>(px_idx % state.width);
+                    uint32_t y = static_cast<std::uint32_t>(px_idx / state.width);
+                    
+                    world_3d->set_pixel(x, y, {r, g, b, a});
+                    depth_aov_surf->set_pixel(x, y, {d, 0, 0, 1.0f}); // Depth in R channel
                 }
+
+                // Add to AOVs
+                frame.aovs.push_back({"depth", depth_aov_surf});
 
                 composite_surface(target_surface, *world_3d, 0, 0, BlendMode::Normal);
                 i = last_block_idx;
@@ -119,7 +132,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
             if (layer.is_adjustment_layer) {
                 if (context.policy.effects_enabled) {
-                    auto adjusted = apply_effect_pipeline(target_surface, layer.effects, host);
+                    auto adjusted = apply_effect_pipeline(target_surface, layer.effects, host, context.working_color_space.profile);
                     multiply_surface_alpha(adjusted, static_cast<float>(layer.opacity));
                     composite_surface(target_surface, adjusted, 0, 0, BlendMode::Normal);
                 }
@@ -128,7 +141,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
             // Effects
             if (context.policy.effects_enabled && !layer.effects.empty()) {
-                auto effect_surface = apply_effect_pipeline(*layer_surface, layer.effects, host);
+                auto effect_surface = apply_effect_pipeline(*layer_surface, layer.effects, host, context.cms.working_profile);
                 *layer_surface = std::move(effect_surface);
             }
 

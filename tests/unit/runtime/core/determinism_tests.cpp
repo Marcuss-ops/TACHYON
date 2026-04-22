@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
-#include "tachyon/runtime/execution/render_session.h"
-#include "tachyon/runtime/execution/frame_hasher.h"
-#include "tachyon/core/spec/scene_compiler.h"
+#include "tachyon/runtime/execution/session/render_session.h"
+#include "tachyon/runtime/execution/frames/frame_hasher.h"
+#include "tachyon/core/spec/compilation/scene_compiler.h"
 
 namespace tachyon {
 

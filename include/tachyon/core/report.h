@@ -1,12 +1,12 @@
 #pragma once
 
-#include "tachyon/media/asset_resolution.h"
+#include "tachyon/media/resolution/asset_resolution.h"
 #include "tachyon/renderer2d/raster/rasterizer.h"
-#include "tachyon/runtime/core/render_graph.h"
-#include "tachyon/runtime/core/diagnostics.h"
-#include "tachyon/runtime/execution/render_plan.h"
-#include "tachyon/runtime/execution/render_job.h"
-#include "tachyon/core/spec/scene_spec.h"
+#include "tachyon/runtime/core/graph/render_graph.h"
+#include "tachyon/runtime/core/diagnostics/diagnostics.h"
+#include "tachyon/runtime/execution/planning/render_plan.h"
+#include "tachyon/runtime/execution/jobs/render_job.h"
+#include "tachyon/core/spec/schema/objects/scene_spec.h"
 
 #include <optional>
 #include <ostream>

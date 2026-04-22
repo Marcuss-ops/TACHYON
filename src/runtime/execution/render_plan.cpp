@@ -1,4 +1,4 @@
-#include "tachyon/runtime/execution/render_plan.h"
+#include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/cache/cache_key_builder.h"
 
 #include <algorithm>
@@ -114,9 +114,14 @@ ResolutionResult<RenderExecutionPlan> build_render_execution_plan(const RenderPl
     execution_plan.render_plan = plan;
     execution_plan.resolved_asset_count = assets_count;
 
+    const double fps = plan.composition.frame_rate.numerator > 0 
+        ? static_cast<double>(plan.composition.frame_rate.numerator) / static_cast<double>(plan.composition.frame_rate.denominator)
+        : 60.0;
+
     for (std::int64_t frame = plan.frame_range.start; frame <= plan.frame_range.end; ++frame) {
         FrameRenderTask task;
         task.frame_number = frame;
+        task.time_seconds = static_cast<double>(frame) / fps;
         task.cache_key = build_frame_cache_key(plan, frame);
         task.cacheable = true;
         execution_plan.frame_tasks.push_back(std::move(task));

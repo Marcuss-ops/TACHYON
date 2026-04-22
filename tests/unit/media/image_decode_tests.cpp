@@ -1,4 +1,4 @@
-#include "tachyon/media/image_manager.h"
+#include "tachyon/media/management/image_manager.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 
 #include <filesystem>

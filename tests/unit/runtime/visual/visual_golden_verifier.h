@@ -1,6 +1,6 @@
 #pragma once
-#include "tachyon/runtime/execution/frame_executor.h"
-#include "tachyon/runtime/execution/frame_hasher.h"
+#include "tachyon/runtime/execution/frames/frame_executor.h"
+#include "tachyon/runtime/execution/frames/frame_hasher.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include <string>
 #include <vector>
