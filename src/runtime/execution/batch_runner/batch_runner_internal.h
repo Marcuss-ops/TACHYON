@@ -1,10 +1,10 @@
 #pragma once
-#include "tachyon/runtime/execution/batch_runner.h"
-#include "tachyon/runtime/execution/render_job.h"
-#include "tachyon/core/spec/scene_spec.h"
-#include "tachyon/core/spec/scene_spec_core.h"
+#include "tachyon/runtime/execution/batch/batch_runner.h"
+#include "tachyon/runtime/execution/jobs/render_job.h"
+#include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include "../../../core/cli/cli_internal.h"
-#include "tachyon/media/asset_resolution.h"
+#include "tachyon/media/resolution/asset_resolution.h"
 #include <nlohmann/json.hpp>
 #include <filesystem>
 #include <string>

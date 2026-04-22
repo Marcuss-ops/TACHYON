@@ -1,5 +1,5 @@
-#include "tachyon/media/media_manager.h"
-#include "tachyon/media/mesh_loader.h"
+#include "tachyon/media/management/media_manager.h"
+#include "tachyon/media/loading/mesh_loader.h"
 
 namespace tachyon::media {
 
@@ -81,6 +81,12 @@ const MeshAsset* MediaManager::get_mesh(const std::filesystem::path& path, Diagn
     const MeshAsset* ptr = mesh.get();
     m_mesh_cache[key] = std::move(mesh);
     return ptr;
+}
+
+void MediaManager::store_video_frame(const std::string& path, double time, std::unique_ptr<renderer2d::SurfaceRGBA> frame) {
+    // We use a specific key format for video frames: "path@time"
+    std::string key = path + "@" + std::to_string(time);
+    m_image_manager.store_image(key, std::move(frame));
 }
 
 void MediaManager::clear_cache() {

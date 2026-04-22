@@ -1,4 +1,5 @@
 #include "tachyon/output/frame_output_sink.h"
+#include "tachyon/renderer2d/color/color_management_system.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
 
 #include <algorithm>
@@ -53,11 +54,25 @@ public:
         m_last_error.clear();
         m_destination = std::filesystem::path(plan.output.destination.path);
         m_overwrite = plan.output.destination.overwrite;
-        m_source_transfer = renderer2d::detail::parse_transfer_curve(plan.working_space);
-        m_source_space = renderer2d::detail::parse_color_space(plan.working_space);
-        m_output_transfer = renderer2d::detail::parse_transfer_curve(plan.output.profile.color.transfer);
-        m_output_space = renderer2d::detail::parse_color_space(plan.output.profile.color.space);
-        m_output_range = renderer2d::detail::parse_color_range(plan.output.profile.color.range);
+        
+        // Initialize CMS for output conversion
+        m_cms = renderer2d::ColorManagementSystem::default_pipeline();
+        
+        // Map RenderPlan working space string to ColorProfile
+        // (Simplified mapping for now; in a full impl this would be more robust)
+        if (plan.working_space == "srgb") {
+            m_cms.working_profile = renderer2d::ColorProfile::sRGB();
+        } else if (plan.working_space == "linear_rec709" || plan.working_space == "rec709") {
+            m_cms.working_profile = renderer2d::ColorProfile::Rec709();
+            m_cms.working_profile.curve = renderer2d::TransferCurve::Linear;
+        } else if (plan.working_space == "acescg") {
+            m_cms.working_profile = renderer2d::ColorProfile::ACEScg();
+        }
+
+        // Map OutputContract profiles to ColorProfile
+        m_cms.output_profile.primaries = renderer2d::parse_color_primaries(plan.output.profile.color.space);
+        m_cms.output_profile.curve = renderer2d::parse_transfer_curve(plan.output.profile.color.transfer);
+
         m_next_index = 1;
 
         if (m_destination.empty()) {
@@ -91,11 +106,13 @@ public:
             return false;
         }
 
-        renderer2d::Framebuffer converted = convert_frame(
-            *packet.frame,
-            m_source_transfer, m_source_space,
-            m_output_transfer, m_output_space,
-            m_output_range);
+        // Apply colour management: Working -> Output
+        renderer2d::Framebuffer converted = *packet.frame;
+        auto graph = m_cms.build_working_to_output();
+        graph.process_surface(converted, m_cms.output_profile);
+
+        // Save as PNG (save_png will handle the final transfer curve if needed, 
+        // but CMS already applied it in build_working_to_output if output_profile.curve != Linear)
         if (!converted.save_png(frame_path)) {
             m_last_error = "failed to write png frame: " + frame_path.string();
             return false;
@@ -113,41 +130,10 @@ public:
         return m_last_error;
     }
 
-private:
-    static renderer2d::Framebuffer convert_frame(
-        const renderer2d::Framebuffer& frame,
-        renderer2d::detail::TransferCurve source_curve,
-        renderer2d::detail::ColorSpace source_space,
-        renderer2d::detail::TransferCurve output_curve,
-        renderer2d::detail::ColorSpace output_space,
-        renderer2d::detail::ColorRange output_range) {
-
-        if (source_curve == output_curve && source_space == output_space && output_range == renderer2d::detail::ColorRange::Full) {
-            return frame;
-        }
-
-        renderer2d::Framebuffer converted(frame.width(), frame.height());
-        for (std::uint32_t y = 0; y < frame.height(); ++y) {
-            for (std::uint32_t x = 0; x < frame.width(); ++x) {
-                auto pixel = renderer2d::detail::convert_color(
-                    frame.get_pixel(x, y),
-                    source_curve, source_space,
-                    output_curve, output_space);
-                pixel = renderer2d::detail::apply_range_mode(pixel, output_range);
-                converted.set_pixel(x, y, pixel);
-            }
-        }
-        return converted;
-    }
-
     std::filesystem::path m_destination;
     bool m_overwrite{false};
     std::size_t m_next_index{1};
-    renderer2d::detail::TransferCurve m_source_transfer{renderer2d::detail::TransferCurve::sRGB};
-    renderer2d::detail::ColorSpace m_source_space{renderer2d::detail::ColorSpace::sRGB};
-    renderer2d::detail::TransferCurve m_output_transfer{renderer2d::detail::TransferCurve::sRGB};
-    renderer2d::detail::ColorSpace m_output_space{renderer2d::detail::ColorSpace::sRGB};
-    renderer2d::detail::ColorRange m_output_range{renderer2d::detail::ColorRange::Full};
+    renderer2d::ColorManagementSystem m_cms;
     std::string m_last_error;
 };
 

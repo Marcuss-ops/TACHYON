@@ -1,7 +1,7 @@
-#include "tachyon/core/spec/scene_compiler.h"
+#include "tachyon/core/spec/compilation/scene_compiler.h"
 #include "tachyon/runtime/cache/cache_key_builder.h"
 #include "tachyon/runtime/memory/frame_arena.h"
-#include "tachyon/runtime/core/property_graph.h"
+#include "tachyon/runtime/core/data/property_graph.h"
 
 #include <iostream>
 #include <memory_resource>

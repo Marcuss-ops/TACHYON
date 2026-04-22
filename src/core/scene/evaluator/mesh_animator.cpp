@@ -1,6 +1,6 @@
 #include "tachyon/core/scene/evaluator/mesh_animator.h"
 #include "tachyon/core/math/quaternion.h"
-#include "tachyon/media/mesh_asset.h"
+#include "tachyon/media/loading/mesh_asset.h"
 #include <algorithm>
 #include <vector>
 

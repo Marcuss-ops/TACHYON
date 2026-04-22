@@ -16,6 +16,15 @@
 
 namespace tachyon::renderer2d {
 
+struct EffectParams {
+    std::unordered_map<std::string, float> scalars;
+    std::unordered_map<std::string, Color> colors;
+    std::unordered_map<std::string, std::string> strings;
+    // Secondary surface inputs (garbage matte, background for light wrap, etc.)
+    // These are non-owning pointers; the caller guarantees lifetime.
+    std::unordered_map<std::string, const SurfaceRGBA*> aux_surfaces;
+};
+
 class Effect {
 public:
     virtual ~Effect() = default;
@@ -46,6 +55,16 @@ std::unique_ptr<EffectHost> create_effect_host();
 
 // Built-in Effect declarations
 class GaussianBlurEffect : public Effect {
+public:
+    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
+};
+
+class DirectionalBlurEffect : public Effect {
+public:
+    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
+};
+
+class RadialBlurEffect : public Effect {
 public:
     SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
 };
@@ -95,10 +114,6 @@ public:
     SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
 };
 
-/// Applies a 3D LUT loaded from a .cube file.
-/// Reads params.strings["lut_path"] for the file path.
-/// Reads params.scalars["lut_amount"] (0-1, default 1) for blend amount.
-/// Caches parsed LUTs by path to avoid re-parsing every frame.
 class ChromaticAberrationEffect : public Effect {
 public:
     SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
@@ -126,6 +141,44 @@ public:
 private:
     mutable std::mutex m_cache_mutex;
     mutable std::unordered_map<std::string, Lut3D> m_lut_cache;
+};
+
+class ChromaKeyEffect : public Effect {
+public:
+    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
+};
+
+/// Light Wrap: samples the background at the foreground edge and blends it in,
+/// creating a natural-looking integration between keyed subject and plate.
+/// Requires params.aux_surfaces["background"] to be set by the compositor.
+class LightWrapEffect : public Effect {
+public:
+    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
+};
+
+/// Matte Refinement: choke/spread, temporal denoise, and per-channel clip
+/// applied to the alpha channel of an already-keyed layer.
+class MatteRefinementEffect : public Effect {
+public:
+    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
+
+    // Feed previous frame's alpha for temporal smoothing.
+    // Key: layer_id from params.strings["layer_id"].
+    static void set_previous_frame(const std::string& layer_id, std::vector<float> alpha);
+    static const std::vector<float>* get_previous_frame(const std::string& layer_id);
+
+private:
+    // Per-layer alpha cache for temporal smoothing (lock-free read after write per frame)
+    static std::unordered_map<std::string, std::vector<float>> s_prev_alpha;
+    static std::mutex s_cache_mutex;
+};
+
+/// Vector Blur: per-pixel motion-vector driven directional blur.
+/// Requires params.aux_surfaces["motion_vectors"] (RG = velocity in pixels/frame).
+/// Falls back to a simple radial blur if no motion vector buffer is provided.
+class VectorBlurEffect : public Effect {
+public:
+    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
 };
 
 }  // namespace tachyon::renderer2d

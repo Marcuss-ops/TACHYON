@@ -1,5 +1,5 @@
-#include "tachyon/runtime/execution/frame_executor.h"
-#include "tachyon/core/scene/evaluator.h"
+#include "tachyon/runtime/execution/frames/frame_executor.h"
+#include "tachyon/core/scene/evaluation/evaluator.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/renderer2d/raster/draw_list_builder.h"
 #include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"

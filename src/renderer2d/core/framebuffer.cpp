@@ -108,6 +108,36 @@ bool SurfaceRGBA::blend_pixel(uint32_t x, uint32_t y, Color color, float alpha) 
     return blend_pixel(x, y, color);
 }
 
+void SurfaceRGBA::blend_row(uint32_t x, uint32_t y, const Color* src_colors, size_t count) {
+    if (y >= m_height || x >= m_width || count == 0) return;
+    
+    size_t actual_count = std::min(count, static_cast<size_t>(m_width - x));
+    if (static_cast<int>(y) < m_clip_rect.y || static_cast<int>(y) >= m_clip_rect.y + m_clip_rect.height) return;
+    
+    uint32_t start_x = std::max(static_cast<uint32_t>(x), static_cast<uint32_t>(m_clip_rect.x));
+    uint32_t end_x = std::min(static_cast<uint32_t>(x + actual_count), static_cast<uint32_t>(m_clip_rect.x + m_clip_rect.width));
+    
+    if (start_x >= end_x) return;
+
+    size_t dst_idx = (static_cast<size_t>(y) * m_width + start_x) * 4U;
+    for (uint32_t cur_x = start_x; cur_x < end_x; ++cur_x) {
+        const Color& src = src_colors[cur_x - x];
+        if (src.a <= 0.0f) {
+            dst_idx += 4;
+            continue;
+        }
+
+        const Color dst{m_pixels[dst_idx], m_pixels[dst_idx + 1], m_pixels[dst_idx + 2], m_pixels[dst_idx + 3]};
+        const Color res = blend_premultiplied(src, dst);
+        
+        m_pixels[dst_idx]     = res.r;
+        m_pixels[dst_idx + 1] = res.g;
+        m_pixels[dst_idx + 2] = res.b;
+        m_pixels[dst_idx + 3] = res.a;
+        dst_idx += 4;
+    }
+}
+
 bool SurfaceRGBA::test_and_write_depth(uint32_t x, uint32_t y, float inv_z) {
     if (!in_bounds(x, y) || !in_clip(x, y)) {
         return false;
@@ -186,6 +216,10 @@ void SurfaceRGBA::blit(const SurfaceRGBA& src, int x, int y) {
 }
 
 bool SurfaceRGBA::save_png(const std::filesystem::path& path) const {
+    return save_png(path, TransferCurve::sRGB);
+}
+
+bool SurfaceRGBA::save_png(const std::filesystem::path& path, TransferCurve transfer_curve) const {
     if (m_width == 0 || m_height == 0) {
         return false;
     }
@@ -201,9 +235,12 @@ bool SurfaceRGBA::save_png(const std::filesystem::path& path) const {
     std::vector<std::uint8_t> rgba_bytes;
     rgba_bytes.reserve((m_pixels.size()));
     for (std::size_t i = 0; i < m_pixels.size(); i += 4U) {
-        rgba_bytes.push_back(to_u8(detail::Linear_to_sRGB_f(m_pixels[i])));
-        rgba_bytes.push_back(to_u8(detail::Linear_to_sRGB_f(m_pixels[i+1])));
-        rgba_bytes.push_back(to_u8(detail::Linear_to_sRGB_f(m_pixels[i+2])));
+        const auto convert = [&](float value) -> std::uint8_t {
+            return static_cast<std::uint8_t>(std::clamp(detail::linear_to_transfer_component(value, transfer_curve) * 255.0f, 0.0f, 255.0f));
+        };
+        rgba_bytes.push_back(convert(m_pixels[i]));
+        rgba_bytes.push_back(convert(m_pixels[i+1]));
+        rgba_bytes.push_back(convert(m_pixels[i+2]));
         rgba_bytes.push_back(to_u8(m_pixels[i+3])); // Alpha remains linear (0-1)
     }
 

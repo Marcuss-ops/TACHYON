@@ -2,7 +2,7 @@
 
 #include "tachyon/renderer2d/raster/draw_command.h"
 #include "tachyon/renderer2d/raster/rasterizer.h"
-#include "tachyon/runtime/core/render_graph.h"
+#include "tachyon/runtime/core/graph/render_graph.h"
 
 namespace tachyon {
 

@@ -1,10 +1,10 @@
-#include "tachyon/core/scene/evaluator_composition.h"
+#include "tachyon/core/scene/composition/evaluator_composition.h"
 #include "tachyon/core/scene/evaluator/hashing.h"
 #include "tachyon/core/scene/evaluator/property_sampler.h"
 #include "tachyon/core/scene/evaluator/layer_evaluator.h"
 #include "tachyon/core/scene/evaluator/light_evaluator.h"
 #include "tachyon/core/scene/evaluator/layer_utils.h"
-#include "tachyon/core/scene/evaluator_math.h"
+#include "tachyon/core/scene/math/evaluator_math.h"
 #include "tachyon/timeline/time.h"
 
 #include <algorithm>
@@ -201,6 +201,8 @@ EvaluatedCompositionState evaluate_composition_internal(
             }
         }
     }
+
+    solve_constraints(evaluated.layers);
 
     evaluated.camera = evaluate_camera_state(composition, evaluated.layers, frame_number, composition_time_seconds);
 

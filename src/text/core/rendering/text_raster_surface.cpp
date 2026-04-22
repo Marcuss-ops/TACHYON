@@ -1,20 +1,58 @@
 #include "tachyon/text/rendering/text_raster_surface.h"
 #include <stb_image_write.h>
 #include <algorithm>
+#include <cmath>
 
 namespace tachyon::text {
+
+namespace {
+
+float sample_glyph_alpha(const tachyon::text::GlyphBitmap& glyph, float src_x, float src_y) {
+    if (glyph.width == 0U || glyph.height == 0U || glyph.alpha_mask.empty()) {
+        return 0.0f;
+    }
+
+    const float max_x = static_cast<float>(glyph.width - 1U);
+    const float max_y = static_cast<float>(glyph.height - 1U);
+    src_x = std::clamp(src_x, 0.0f, max_x);
+    src_y = std::clamp(src_y, 0.0f, max_y);
+
+    const std::uint32_t x0 = static_cast<std::uint32_t>(std::floor(src_x));
+    const std::uint32_t y0 = static_cast<std::uint32_t>(std::floor(src_y));
+    const std::uint32_t x1 = std::min(x0 + 1U, glyph.width - 1U);
+    const std::uint32_t y1 = std::min(y0 + 1U, glyph.height - 1U);
+
+    const float fx = src_x - static_cast<float>(x0);
+    const float fy = src_y - static_cast<float>(y0);
+
+    auto alpha_at = [&](std::uint32_t x, std::uint32_t y) -> float {
+        const std::size_t index = static_cast<std::size_t>(y) * glyph.width + x;
+        if (index >= glyph.alpha_mask.size()) {
+            return 0.0f;
+        }
+        return static_cast<float>(glyph.alpha_mask[index]) / 255.0f;
+    };
+
+    const float a00 = alpha_at(x0, y0);
+    const float a10 = alpha_at(x1, y0);
+    const float a01 = alpha_at(x0, y1);
+    const float a11 = alpha_at(x1, y1);
+
+    const float ax0 = a00 + (a10 - a00) * fx;
+    const float ax1 = a01 + (a11 - a01) * fx;
+    return ax0 + (ax1 - ax0) * fy;
+}
+
+} // namespace
 
 void TextRasterSurface::render_glyph(const tachyon::text::GlyphBitmap& glyph, int tx, int ty, int tw, int th, tachyon::renderer2d::Color gc) {
     if (tw <= 0 || th <= 0 || glyph.width == 0U || glyph.height == 0U || glyph.alpha_mask.empty()) return;
     for (int y = 0; y < th; ++y) {
+        const float src_y = ((static_cast<float>(y) + 0.5f) * static_cast<float>(glyph.height) / static_cast<float>(th)) - 0.5f;
         for (int x = 0; x < tw; ++x) {
-            const float sx = static_cast<float>(x) * static_cast<float>(glyph.width) / static_cast<float>(tw);
-            const float sy = static_cast<float>(y) * static_cast<float>(glyph.height) / static_cast<float>(th);
-            const std::uint32_t gx = std::min<std::uint32_t>(static_cast<std::uint32_t>(sx), glyph.width - 1U);
-            const std::uint32_t gy = std::min<std::uint32_t>(static_cast<std::uint32_t>(sy), glyph.height - 1U);
-            const std::size_t glyph_index = static_cast<std::size_t>(gy) * glyph.width + gx;
-            const std::uint8_t alpha = glyph_index < glyph.alpha_mask.size() ? glyph.alpha_mask[glyph_index] : 0U;
-            blend_pixel(static_cast<std::uint32_t>(tx + x), static_cast<std::uint32_t>(ty + y), gc, alpha);
+            const float src_x = ((static_cast<float>(x) + 0.5f) * static_cast<float>(glyph.width) / static_cast<float>(tw)) - 0.5f;
+            const float alpha = sample_glyph_alpha(glyph, src_x, src_y);
+            blend_pixel(static_cast<std::uint32_t>(tx + x), static_cast<std::uint32_t>(ty + y), gc, static_cast<std::uint8_t>(std::lround(std::clamp(alpha, 0.0f, 1.0f) * 255.0f)));
         }
     }
 }

@@ -4,11 +4,20 @@
 #include <algorithm>
 
 #include "tachyon/renderer2d/text/shaping/font_shaping.h"
-#include "tachyon/text/font.h"
+#include "tachyon/text/fonts/font.h"
+#include "tachyon/text/layout/layout.h"
 
 namespace tachyon::renderer2d::text::shaping {
 
-ShapedGlyphRun shape_run_with_harfbuzz(const BitmapFont& font, const std::vector<std::uint32_t>& codepoints, std::uint32_t scale) {
+ShapedGlyphRun shape_run_with_harfbuzz(
+    const BitmapFont& font, 
+    const std::vector<std::uint32_t>& codepoints, 
+    std::uint32_t scale,
+    const char* script,
+    const char* language,
+    int direction,
+    const std::vector<tachyon::text::TextFeature>& features) {
+    
     ShapedGlyphRun run;
     if (!font.has_freetype_face() || codepoints.empty()) {
         return run;
@@ -21,9 +30,25 @@ ShapedGlyphRun shape_run_with_harfbuzz(const BitmapFont& font, const std::vector
 
     hb_buffer_t* buffer = hb_buffer_create();
     hb_buffer_add_utf32(buffer, codepoints.data(), static_cast<int>(codepoints.size()), 0, static_cast<int>(codepoints.size()));
+    
+    if (script) hb_buffer_set_script(buffer, hb_script_from_string(script, -1));
+    if (language) hb_buffer_set_language(buffer, hb_language_from_string(language, -1));
+    hb_buffer_set_direction(buffer, direction == 1 ? HB_DIRECTION_RTL : HB_DIRECTION_LTR);
+    
     hb_buffer_guess_segment_properties(buffer);
     hb_buffer_set_cluster_level(buffer, HB_BUFFER_CLUSTER_LEVEL_MONOTONE_CHARACTERS);
-    hb_shape(hb_font, buffer, nullptr, 0);
+    
+    std::vector<hb_feature_t> hb_features;
+    hb_features.reserve(features.size());
+    for (const auto& feat : features) {
+        hb_feature_t hbf;
+        if (hb_feature_from_string(feat.tag.c_str(), -1, &hbf)) {
+            hbf.value = feat.value;
+            hb_features.push_back(hbf);
+        }
+    }
+
+    hb_shape(hb_font, buffer, hb_features.data(), static_cast<unsigned int>(hb_features.size()));
 
     unsigned int glyph_count = 0;
     hb_glyph_info_t* infos = hb_buffer_get_glyph_infos(buffer, &glyph_count);
@@ -41,7 +66,8 @@ ShapedGlyphRun shape_run_with_harfbuzz(const BitmapFont& font, const std::vector
             glyph_index,
             advance_x * static_cast<std::int32_t>(scale),
             offset_x * static_cast<std::int32_t>(scale),
-            offset_y * static_cast<std::int32_t>(scale)
+            offset_y * static_cast<std::int32_t>(scale),
+            infos[i].cluster
         });
         run.width += advance_x * static_cast<std::int32_t>(scale);
     }

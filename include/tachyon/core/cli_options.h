@@ -1,8 +1,8 @@
 #pragma once
 
-#include "tachyon/runtime/core/diagnostics.h"
+#include "tachyon/runtime/core/diagnostics/diagnostics.h"
 
-#include "tachyon/runtime/execution/render_job.h"
+#include "tachyon/runtime/execution/jobs/render_job.h"
 
 #include <filesystem>
 #include <optional>

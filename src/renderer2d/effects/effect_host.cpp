@@ -41,7 +41,15 @@ std::unique_ptr<EffectHost> create_effect_host() {
 
 void EffectHost::register_builtins(EffectHost& host) {
     host.register_effect("gaussian_blur", std::make_unique<GaussianBlurEffect>());
+    host.register_effect("directional_blur", std::make_unique<DirectionalBlurEffect>());
+    host.register_effect("radial_blur", std::make_unique<RadialBlurEffect>());
     host.register_effect("drop_shadow", std::make_unique<DropShadowEffect>());
+    host.register_effect("glow", std::make_unique<GlowEffect>());
+    host.register_effect("levels", std::make_unique<LevelsEffect>());
+    host.register_effect("curves", std::make_unique<CurvesEffect>());
+    host.register_effect("fill", std::make_unique<FillEffect>());
+    host.register_effect("tint", std::make_unique<TintEffect>());
+    host.register_effect("hue_saturation", std::make_unique<HueSaturationEffect>());
     host.register_effect("glow", std::make_unique<GlowEffect>());
     host.register_effect("levels", std::make_unique<LevelsEffect>());
     host.register_effect("curves", std::make_unique<CurvesEffect>());
@@ -55,6 +63,10 @@ void EffectHost::register_builtins(EffectHost& host) {
     host.register_effect("vignette", std::make_unique<VignetteEffect>());
     host.register_effect("particle_emitter", std::make_unique<ParticleEmitterEffect>());
     host.register_effect("displacement_map", std::make_unique<DisplacementMapEffect>());
+    host.register_effect("chroma_key", std::make_unique<ChromaKeyEffect>());
+    host.register_effect("light_wrap", std::make_unique<LightWrapEffect>());
+    host.register_effect("matte_refinement", std::make_unique<MatteRefinementEffect>());
+    host.register_effect("vector_blur", std::make_unique<VectorBlurEffect>());
 }
 
 } // namespace tachyon::renderer2d

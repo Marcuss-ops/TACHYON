@@ -5,6 +5,8 @@
 #include <optional>
 #include <vector>
 
+#include "tachyon/renderer2d/color/color_profile.h"
+
 namespace tachyon {
 namespace renderer2d {
 
@@ -47,6 +49,7 @@ public:
     bool set_pixel_with_depth(uint32_t x, uint32_t y, Color color, float inv_z);
     bool blend_pixel(uint32_t x, uint32_t y, Color color);
     bool blend_pixel(uint32_t x, uint32_t y, Color color, float alpha);
+    void blend_row(uint32_t x, uint32_t y, const Color* src_colors, size_t count);
     bool test_and_write_depth(uint32_t x, uint32_t y, float inv_z);
 
     std::optional<Color> try_get_pixel(uint32_t x, uint32_t y) const;
@@ -57,12 +60,17 @@ public:
     void blit(const SurfaceRGBA& src, int x, int y);
 
     bool save_png(const std::filesystem::path& path) const;
+    bool save_png(const std::filesystem::path& path, TransferCurve transfer_curve) const;
+
 
     uint32_t width() const { return m_width; }
     uint32_t height() const { return m_height; }
     const std::vector<float>& pixels() const { return m_pixels; }
     std::vector<float>& mutable_pixels() { return m_pixels; }
     const std::vector<float>& depth_buffer() const { return m_depth_buffer; }
+
+    ColorProfile profile() const { return m_profile; }
+    void set_profile(ColorProfile profile) { m_profile = profile; }
 
 private:
     bool in_bounds(uint32_t x, uint32_t y) const;
@@ -72,6 +80,7 @@ private:
 
     uint32_t m_width{0};
     uint32_t m_height{0};
+    ColorProfile m_profile{ColorProfile::sRGB()};
     std::vector<float> m_pixels;
     std::vector<float> m_depth_buffer;
     RectI m_clip_rect{0, 0, 0, 0};

@@ -7,12 +7,12 @@
 
 namespace tachyon::renderer2d {
 
-const ::tachyon::text::Font* get_default_text_font() {
+const ::tachyon::text::FontRegistry* get_default_font_registry() {
     static std::once_flag once;
-    static std::unique_ptr<tachyon::text::Font> default_font;
+    static std::unique_ptr<tachyon::text::FontRegistry> default_registry;
 
     std::call_once(once, []() {
-        default_font = std::make_unique<tachyon::text::Font>();
+        default_registry = std::make_unique<tachyon::text::FontRegistry>();
 
         const std::vector<std::filesystem::path> candidates = {
             std::filesystem::path(R"(C:\Windows\Fonts\arial.ttf)"),
@@ -23,15 +23,16 @@ const ::tachyon::text::Font* get_default_text_font() {
         };
 
         for (const auto& candidate : candidates) {
-            if (std::filesystem::exists(candidate) && default_font->load_ttf(candidate, 48U)) {
-                return;
+            if (std::filesystem::exists(candidate)) {
+                if (default_registry->load_ttf("Default", candidate, 48U)) {
+                    default_registry->set_default("Default");
+                    break;
+                }
             }
         }
-
-        default_font.reset();
     });
 
-    return default_font ? default_font.get() : nullptr;
+    return default_registry ? default_registry.get() : nullptr;
 }
 
 media::AlphaMode TextureResolver::parse_alpha_mode(const std::optional<std::string>& mode) {

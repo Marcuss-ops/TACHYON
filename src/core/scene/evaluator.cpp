@@ -1,5 +1,5 @@
-#include "tachyon/core/scene/evaluator_math_forward.h"
-#include "tachyon/core/scene/evaluator.h"
+#include "tachyon/core/scene/math/evaluator_math_forward.h"
+#include "tachyon/core/scene/evaluation/evaluator.h"
 #include "tachyon/renderer2d/animation/easing.h"
 #include "tachyon/core/math/quaternion.h"
 #include "tachyon/core/math/transform2.h"
@@ -10,13 +10,13 @@
 #include "tachyon/core/math/vector2.h"
 #include "tachyon/core/math/vector3.h"
 #include "tachyon/renderer2d/audio/audio_sampling.h"
-#include "tachyon/text/subtitle.h"
+#include "tachyon/text/content/subtitle.h"
 
-#include "tachyon/core/scene/evaluator_internal.h"
+#include "tachyon/core/scene/internal/evaluator_internal.h"
 #include "tachyon/core/scene/evaluator/hashing.h"
 #include "tachyon/core/scene/evaluator/property_sampler.h"
 #include "tachyon/core/scene/evaluator/layer_evaluator.h"
-#include "tachyon/core/scene/evaluator_composition.h"
+#include "tachyon/core/scene/composition/evaluator_composition.h"
 
 #include <algorithm>
 #include <cmath>
@@ -215,6 +215,10 @@ EvaluatedLayerState::EvaluatedLayerState(const EvaluatedLayerState& other) {
     opacity = other.opacity;
     local_transform = other.local_transform;
     world_matrix = other.world_matrix;
+    parent_id = other.parent_id;
+    local_position3 = other.local_position3;
+    local_rotation3 = other.local_rotation3;
+    local_scale3 = other.local_scale3;
     orientation_xyz_deg = other.orientation_xyz_deg;
     anchor_point_3d = other.anchor_point_3d;
     scale_3d = other.scale_3d;
@@ -242,7 +246,9 @@ EvaluatedLayerState::EvaluatedLayerState(const EvaluatedLayerState& other) {
     trim_end = other.trim_end;
     trim_offset = other.trim_offset;
     effects = other.effects;
+    text_animators = other.text_animators;
     text_highlights = other.text_highlights;
+    mask_feather = other.mask_feather;
     subtitle_path = other.subtitle_path;
     subtitle_outline_color = other.subtitle_outline_color;
     subtitle_outline_width = other.subtitle_outline_width;
@@ -277,6 +283,10 @@ EvaluatedLayerState& EvaluatedLayerState::operator=(const EvaluatedLayerState& o
     opacity = other.opacity;
     local_transform = other.local_transform;
     world_matrix = other.world_matrix;
+    parent_id = other.parent_id;
+    local_position3 = other.local_position3;
+    local_rotation3 = other.local_rotation3;
+    local_scale3 = other.local_scale3;
     orientation_xyz_deg = other.orientation_xyz_deg;
     anchor_point_3d = other.anchor_point_3d;
     scale_3d = other.scale_3d;
@@ -304,7 +314,9 @@ EvaluatedLayerState& EvaluatedLayerState::operator=(const EvaluatedLayerState& o
     trim_end = other.trim_end;
     trim_offset = other.trim_offset;
     effects = other.effects;
+    text_animators = other.text_animators;
     text_highlights = other.text_highlights;
+    mask_feather = other.mask_feather;
     subtitle_path = other.subtitle_path;
     subtitle_outline_color = other.subtitle_outline_color;
     subtitle_outline_width = other.subtitle_outline_width;

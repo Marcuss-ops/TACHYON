@@ -1,4 +1,4 @@
-#include "tachyon/media/asset_resolution.h"
+#include "tachyon/media/resolution/asset_resolution.h"
 
 namespace tachyon {
 

@@ -1,4 +1,4 @@
-#include "tachyon/core/spec/scene_spec.h"
+#include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include <filesystem>
 #include <fstream>
 #include <sstream>

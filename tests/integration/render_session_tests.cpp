@@ -1,6 +1,6 @@
-#include "tachyon/runtime/execution/render_session.h"
-#include "tachyon/core/spec/scene_compiler.h"
-#include "tachyon/runtime/core/compiled_scene.h"
+#include "tachyon/runtime/execution/session/render_session.h"
+#include "tachyon/core/spec/compilation/scene_compiler.h"
+#include "tachyon/runtime/core/data/compiled_scene.h"
 
 #include <filesystem>
 #include <iostream>

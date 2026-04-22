@@ -2,7 +2,7 @@
 
 #include "tachyon/core/math/vector2.h"
 #include "tachyon/core/math/vector3.h"
-#include "tachyon/core/spec/common_spec.h"
+#include "tachyon/core/spec/schema/common/common_spec.h"
 #include <cstdint>
 #include <vector>
 

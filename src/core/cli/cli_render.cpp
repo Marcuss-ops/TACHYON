@@ -1,9 +1,9 @@
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/report.h"
-#include "tachyon/runtime/execution/render_session.h"
-#include "tachyon/runtime/execution/batch_runner.h"
-#include "tachyon/core/spec/scene_compiler.h"
+#include "tachyon/runtime/execution/session/render_session.h"
+#include "tachyon/runtime/execution/batch/batch_runner.h"
+#include "tachyon/core/spec/compilation/scene_compiler.h"
 #include "cli_internal.h"
 #include <iostream>
 #include <thread>

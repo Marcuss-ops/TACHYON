@@ -1,12 +1,12 @@
 #pragma once
 
-#include "tachyon/media/media_manager.h"
+#include "tachyon/media/management/media_manager.h"
 #include "tachyon/renderer2d/resource/render_context.h"
-#include "tachyon/renderer3d/ray_tracer.h"
-#include "tachyon/runtime/execution/quality_policy.h"
+#include "tachyon/renderer3d/core/ray_tracer.h"
+#include "tachyon/runtime/execution/planning/quality_policy.h"
 #include <OpenImageDenoise/oidn.hpp>
 
-#include "tachyon/runtime/core/diagnostics.h"
+#include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include <memory>
 
 namespace tachyon {

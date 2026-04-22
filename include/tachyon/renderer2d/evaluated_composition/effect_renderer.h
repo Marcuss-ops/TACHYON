@@ -2,7 +2,7 @@
 
 #include "tachyon/renderer2d/effects/effect_host.h"
 #include "tachyon/renderer2d/resource/render_context.h"
-#include "tachyon/core/spec/scene_spec.h"
+#include "tachyon/core/spec/schema/objects/scene_spec.h"
 
 #include <memory>
 #include <vector>
@@ -12,12 +12,14 @@ namespace renderer2d {
 
 EffectHost& effect_host_for(RenderContext2D& context);
 
+EffectParams effect_params_from_spec(const EffectSpec& spec, const ColorProfile& working_profile);
 EffectParams effect_params_from_spec(const EffectSpec& spec);
 
 SurfaceRGBA apply_effect_pipeline(
     const SurfaceRGBA& input,
     const std::vector<EffectSpec>& effects,
-    EffectHost& host);
+    EffectHost& host,
+    const ColorProfile& working_profile);
 
 } // namespace renderer2d
 } // namespace tachyon

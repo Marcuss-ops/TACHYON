@@ -2,7 +2,7 @@
 #include "tachyon/renderer2d/resource/precomp_cache.h"
 #include "tachyon/renderer2d/core/surface_pool.h"
 #include "tachyon/renderer2d/effects/effect_host.h"
-#include "tachyon/renderer3d/ray_tracer.h"
+#include "tachyon/renderer3d/core/ray_tracer.h"
 
 namespace tachyon::renderer2d {
 

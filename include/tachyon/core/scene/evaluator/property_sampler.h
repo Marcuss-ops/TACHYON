@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/core/scene/evaluator.h"
+#include "tachyon/core/scene/evaluation/evaluator.h"
 #include "tachyon/audio/audio_analyzer.h"
 #include "tachyon/core/math/vector2.h"
 #include "tachyon/core/math/vector3.h"

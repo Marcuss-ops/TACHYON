@@ -2,8 +2,9 @@
 #include "tachyon/renderer2d/raster/draw_command.h"
 #include "tachyon/renderer2d/raster/rasterizer_ops.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
-#include "tachyon/runtime/core/render_graph.h"
-#include "tachyon/runtime/execution/render_plan.h"
+#include "tachyon/runtime/core/graph/render_graph.h"
+#include "tachyon/runtime/execution/planning/render_plan.h"
+#include "tachyon/output/frame_aov.h"
 
 #include <cstdint>
 #include <optional>
@@ -22,6 +23,7 @@ struct RasterizedFrame2D {
     std::string cache_key;
     std::string note;
     std::shared_ptr<renderer2d::SurfaceRGBA> surface;
+    std::vector<output::FrameAOV> aovs;
 };
 
 namespace renderer2d {

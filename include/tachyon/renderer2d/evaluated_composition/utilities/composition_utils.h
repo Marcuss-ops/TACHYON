@@ -10,6 +10,7 @@
 namespace tachyon {
 
 renderer2d::Color from_color_spec(const ColorSpec& spec);
+renderer2d::Color from_color_spec(const ColorSpec& spec, const renderer2d::ColorProfile& working_profile);
 renderer2d::Color apply_opacity(renderer2d::Color color, double opacity);
 
 renderer2d::RectI layer_rect(

@@ -1,8 +1,8 @@
-#include "tachyon/runtime/core/render_graph.h"
-#include "tachyon/runtime/execution/render_job.h"
-#include "tachyon/runtime/execution/render_plan.h"
-#include "tachyon/core/scene/evaluator.h"
-#include "tachyon/core/spec/scene_spec.h"
+#include "tachyon/runtime/core/graph/render_graph.h"
+#include "tachyon/runtime/execution/jobs/render_job.h"
+#include "tachyon/runtime/execution/planning/render_plan.h"
+#include "tachyon/core/scene/evaluation/evaluator.h"
+#include "tachyon/core/spec/schema/objects/scene_spec.h"
 
 #include <cmath>
 #include <iostream>

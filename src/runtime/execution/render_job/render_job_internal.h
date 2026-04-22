@@ -1,6 +1,6 @@
 #pragma once
-#include "tachyon/runtime/execution/render_job.h"
-#include "tachyon/core/spec/scene_spec_core.h"
+#include "tachyon/runtime/execution/jobs/render_job.h"
+#include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include <nlohmann/json.hpp>
 #include <unordered_map>
 #include <string>

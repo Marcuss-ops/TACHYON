@@ -2,8 +2,8 @@
 
 #include "tachyon/renderer2d/raster/rasterizer.h"
 #include "tachyon/renderer2d/resource/render_context.h"
-#include "tachyon/runtime/execution/render_plan.h"
-#include "tachyon/core/scene/evaluated_state.h"
+#include "tachyon/runtime/execution/planning/render_plan.h"
+#include "tachyon/core/scene/state/evaluated_state.h"
 
 #include <cstdint>
 #include <memory>

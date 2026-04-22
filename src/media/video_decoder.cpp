@@ -1,4 +1,4 @@
-#include "tachyon/media/video_decoder.h"
+#include "tachyon/media/decoding/video_decoder.h"
 
 #include <algorithm>
 #include <cmath>
@@ -363,6 +363,12 @@ std::optional<renderer2d::SurfaceRGBA> VideoDecoder::get_frame_at_time(double se
     }
 
     return std::nullopt;
+}
+
+std::future<std::optional<renderer2d::SurfaceRGBA>> VideoDecoder::request_frame_async(double seconds) {
+    return std::async(std::launch::async, [this, seconds]() {
+        return get_frame_at_time(seconds);
+    });
 }
 
 } // namespace tachyon::media

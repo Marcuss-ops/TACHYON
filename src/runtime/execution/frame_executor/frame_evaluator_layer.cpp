@@ -102,6 +102,7 @@ void evaluate_layer(
     state->font_id = layer.font_id;
     state->font_size = layer.font_size;
     state->text_alignment = layer.text_alignment;
+    state->text_animators = layer.text_animators;
     state->text_highlights = layer.text_highlights;
     state->subtitle_path = layer.subtitle_path;
     state->subtitle_outline_color = layer.subtitle_outline_color;
@@ -145,6 +146,7 @@ void evaluate_layer(
     state->local_transform.scale.x = static_cast<float>(sample_property(3, 1.0));
     state->local_transform.scale.y = static_cast<float>(sample_property(4, 1.0));
     state->local_transform.rotation_rad = static_cast<float>(sample_property(5, 0.0) * (kPi / 180.0f));
+    state->mask_feather = static_cast<float>(sample_property(6, 0.0));
     state->active = state->enabled && state->visible && state->opacity > 0.0;
 
     executor.m_cache.store_layer(node_key, std::move(state));

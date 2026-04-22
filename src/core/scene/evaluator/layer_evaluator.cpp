@@ -304,6 +304,7 @@ EvaluatedLayerState make_layer_state(
     
     evaluated.constraints = layer.constraints;
     evaluated.ik_chains = layer.ik_chains;
+    evaluated.tracking = layer.tracking;
 
     return evaluated;
 }

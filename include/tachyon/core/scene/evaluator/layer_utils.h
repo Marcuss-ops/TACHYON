@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/core/scene/evaluator.h"
+#include "tachyon/core/scene/evaluation/evaluator.h"
 #include <string>
 
 namespace tachyon::scene {

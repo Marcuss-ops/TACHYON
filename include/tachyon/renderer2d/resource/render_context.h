@@ -4,11 +4,14 @@
 #include "tachyon/renderer2d/core/surface_pool.h"
 #include "tachyon/renderer2d/resource/precomp_cache.h"
 #include "tachyon/renderer2d/effects/effect_host.h"
-#include "tachyon/core/spec/scene_spec.h"
-#include "tachyon/core/scene/evaluated_state.h"
-#include "tachyon/text/font.h"
-#include "tachyon/text/subtitle.h"
-#include "tachyon/runtime/execution/quality_policy.h"
+#include "tachyon/renderer2d/backend/compute_backend.h"
+#include "tachyon/renderer2d/color/color_management_system.h"
+#include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/core/scene/state/evaluated_state.h"
+#include "tachyon/text/fonts/font.h"
+#include "tachyon/text/fonts/font_registry.h"
+#include "tachyon/text/content/subtitle.h"
+#include "tachyon/runtime/execution/planning/quality_policy.h"
 
 #include <array>
 #include <vector>
@@ -87,11 +90,17 @@ struct RenderContext2D {
     AccumulationBuffers accumulation_buffer;
     QualityPolicy policy;
     std::shared_ptr<class ::tachyon::renderer3d::RayTracer> ray_tracer;
+    ColorManagementSystem cms;
 
     // Text rendering state (formerly TextRenderConfig singleton)
-    const ::tachyon::text::Font* font = nullptr;
+    const ::tachyon::text::FontRegistry* font_registry = nullptr;
     const std::vector<::tachyon::text::SubtitleEntry>* subtitle_entries = nullptr;
     ::tachyon::media::MediaManager* media_manager = nullptr;
+
+    // GPU/CPU compute backend. Null = use CPU implementations directly.
+    // Set by QualityPolicy::build_render_context() or caller.
+    // Non-owning if borrowed from a session-level backend; owning if created per-context.
+    std::shared_ptr<ComputeBackend> compute_backend;
 };
 
 using RenderContext = RenderContext2D;

@@ -2,12 +2,13 @@
 #include <cmath>
 #include <algorithm>
 #include <limits>
+#include <immintrin.h>
 
 namespace tachyon::renderer2d {
 
 namespace {
 
-Color apply_coverage(Color color, float opacity, float coverage) {
+inline Color apply_coverage(Color color, float opacity, float coverage) {
     const float alpha = color.a * std::clamp(opacity, 0.0f, 1.0f) * std::clamp(coverage, 0.0f, 1.0f);
     color.a = alpha;
     return color;
@@ -80,6 +81,10 @@ void rasterize_fill_polygon(SurfaceRGBA& surface, const std::vector<Contour>& co
     const int width = static_cast<int>(surface.width());
 
     std::vector<float> coverage_buffer(width + 1, 0.0f);
+    std::optional<GradientLUT> lut;
+    if (style.gradient.has_value()) {
+        lut.emplace(*style.gradient);
+    }
 
     for (int y = start_y; y < end_y; ++y) {
         std::fill(coverage_buffer.begin(), coverage_buffer.end(), 0.0f);
@@ -141,7 +146,90 @@ void rasterize_fill_polygon(SurfaceRGBA& surface, const std::vector<Contour>& co
         }
 
         float winding = 0.0f;
-        for (int x = 0; x < width; ++x) {
+        float* row_ptr = &surface.mutable_pixels()[(static_cast<size_t>(y) * width) * 4];
+
+        float t = 0.0f;
+        float dt = 0.0f;
+        bool is_linear = false;
+        if (style.gradient.has_value() && style.gradient->type == GradientType::Linear) {
+            const auto& grad = *style.gradient;
+            const math::Vector2 ab = grad.end - grad.start;
+            const float len2 = ab.length_squared();
+            if (len2 > 1e-6f) {
+                is_linear = true;
+                dt = ab.x / len2;
+                t = math::Vector2::dot(math::Vector2(0.0f, (float)y) - grad.start, ab) / len2;
+            }
+        }
+
+#ifdef TACHYON_AVX2
+        int x = 0;
+        // AVX2 Winding loop
+        __m256 v_winding = _mm256_set1_ps(0.0f);
+        __m256 v_one = _mm256_set1_ps(1.0f);
+        __m256 v_zero = _mm256_set1_ps(0.0f);
+        __m256 v_two = _mm256_set1_ps(2.0f);
+        // __m256 v_opacity = _mm256_set1_ps(style.opacity); // Not used
+
+        for (; x <= width - 8; x += 8) {
+            __m256 v_cov = _mm256_loadu_ps(&coverage_buffer[x]);
+            
+            v_cov = _mm256_add_ps(v_cov, _mm256_castsi256_ps(_mm256_slli_si256(_mm256_castps_si256(v_cov), 4)));
+            v_cov = _mm256_add_ps(v_cov, _mm256_castsi256_ps(_mm256_slli_si256(_mm256_castps_si256(v_cov), 8)));
+            __m256 v_low = _mm256_permute2f128_ps(v_cov, v_cov, 0x00);
+            __m256 v_high = _mm256_permute2f128_ps(v_cov, v_cov, 0x11);
+            __m256 v_last_low = _mm256_shuffle_ps(v_low, v_low, _MM_SHUFFLE(3, 3, 3, 3));
+            v_high = _mm256_add_ps(v_high, v_last_low);
+            v_cov = _mm256_blend_ps(v_low, v_high, 0xF0);
+            
+            __m256 v_curr_winding = _mm256_add_ps(v_cov, v_winding);
+            
+            __m128 v_upper = _mm256_extractf128_ps(v_curr_winding, 1);
+            float last_w = _mm_cvtss_f32(_mm_shuffle_ps(v_upper, v_upper, _MM_SHUFFLE(3, 3, 3, 3)));
+            v_winding = _mm256_set1_ps(last_w);
+
+            __m256 v_abs_w = _mm256_andnot_ps(_mm256_set1_ps(-0.0f), v_curr_winding);
+            __m256 v_coverage;
+            if (style.winding == WindingRule::NonZero) {
+                v_coverage = _mm256_min_ps(v_one, v_abs_w);
+            } else {
+                __m256 v_w_div_2 = _mm256_mul_ps(v_abs_w, _mm256_set1_ps(0.5f));
+                __m256 v_w_floor = _mm256_floor_ps(v_w_div_2);
+                __m256 v_rem = _mm256_sub_ps(v_abs_w, _mm256_mul_ps(v_w_floor, v_two));
+                v_coverage = _mm256_blendv_ps(v_rem, _mm256_sub_ps(v_two, v_rem), _mm256_cmp_ps(v_rem, v_one, _CMP_GT_OQ));
+            }
+
+            __m256 v_mask = _mm256_cmp_ps(v_coverage, _mm256_set1_ps(0.001f), _CMP_GT_OQ);
+            if (_mm256_movemask_ps(v_mask) == 0) continue;
+
+            alignas(32) float covs[8];
+            _mm256_store_ps(covs, v_coverage);
+            
+            for (int j = 0; j < 8; ++j) {
+                if (covs[j] > 0.001f) {
+                    int cur_x = x + j;
+                    Color c = style.fill_color;
+                    if (lut) {
+                        float cur_t = is_linear ? std::clamp(t + (cur_x * dt), 0.0f, 1.0f) : std::clamp((math::Vector2((float)cur_x, (float)y) - style.gradient->start).length() / style.gradient->radial_radius, 0.0f, 1.0f);
+                        c = lut->sample(cur_t);
+                    }
+                    
+                    float final_a = c.a * style.opacity * covs[j];
+                    float* p = &row_ptr[cur_x * 4];
+                    float inv_a = 1.0f - final_a;
+                    p[0] = c.r * final_a + p[0] * inv_a;
+                    p[1] = c.g * final_a + p[1] * inv_a;
+                    p[2] = c.b * final_a + p[2] * inv_a;
+                    p[3] = final_a + p[3] * inv_a;
+                }
+            }
+        }
+#else
+        int x = 0;
+#endif
+
+        // Tail loop
+        for (; x < width; ++x) {
             winding += coverage_buffer[x];
             float coverage = 0.0f;
             if (style.winding == WindingRule::NonZero) {
@@ -154,13 +242,18 @@ void rasterize_fill_polygon(SurfaceRGBA& surface, const std::vector<Contour>& co
 
             if (coverage > 0.001f) {
                 Color c = style.fill_color;
-                if (style.gradient.has_value()) {
-                    c = sample_gradient(*style.gradient, static_cast<float>(x), static_cast<float>(y));
+                if (lut) {
+                    float cur_t = is_linear ? std::clamp(t + (x * dt), 0.0f, 1.0f) : std::clamp((math::Vector2((float)x, (float)y) - style.gradient->start).length() / style.gradient->radial_radius, 0.0f, 1.0f);
+                    c = lut->sample(cur_t);
                 }
-                surface.blend_pixel(
-                    static_cast<std::uint32_t>(x),
-                    static_cast<std::uint32_t>(y),
-                    apply_coverage(c, style.opacity, coverage));
+                
+                float final_a = c.a * style.opacity * coverage;
+                float* p = &row_ptr[x * 4];
+                float inv_a = 1.0f - final_a;
+                p[0] = c.r * final_a + p[0] * inv_a;
+                p[1] = c.g * final_a + p[1] * inv_a;
+                p[2] = c.b * final_a + p[2] * inv_a;
+                p[3] = final_a + p[3] * inv_a;
             }
         }
     }

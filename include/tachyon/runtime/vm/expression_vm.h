@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/runtime/core/math_contract.h"
+#include "tachyon/runtime/core/contracts/math_contract.h"
 #include <array>
 #include <algorithm>
 #include <cmath>
