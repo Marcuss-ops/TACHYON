@@ -1,4 +1,10 @@
 #include "tachyon/core/scene/evaluator_composition.h"
+#include "tachyon/core/scene/evaluator/hashing.h"
+#include "tachyon/core/scene/evaluator/property_sampler.h"
+#include "tachyon/core/scene/evaluator/layer_evaluator.h"
+#include "tachyon/core/scene/evaluator/light_evaluator.h"
+#include "tachyon/core/scene/evaluator/layer_utils.h"
+#include "tachyon/core/scene/evaluator_math.h"
 #include "tachyon/timeline/time.h"
 
 #include <algorithm>
@@ -78,7 +84,7 @@ const EvaluatedLayerState& resolve_layer_state(
                     ));
 
                     evaluated.nested_composition = std::make_unique<EvaluatedCompositionState>(
-                        evaluate_composition_internal(context.scene, comp, child_frame_number, evaluated.child_time_seconds, std::move(next_stack), context.audio_analyzer, context.vars, context.media)
+                        evaluate_composition_internal(context.scene, comp, child_frame_number, evaluated.child_time_seconds, std::move(next_stack), context.audio_analyzer, context.vars, context.media, context.main_frame_number, context.main_frame_time_seconds)
                     );
                     break;
                 }
@@ -99,7 +105,9 @@ EvaluatedCompositionState evaluate_composition_internal(
     std::vector<std::string> stack,
     const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
     EvaluationVariables vars,
-    media::MediaManager* media) {
+    media::MediaManager* media,
+    std::optional<std::int64_t> main_frame_number,
+    std::optional<double> main_frame_time_seconds) {
     
     EvaluatedCompositionState evaluated;
     evaluated.composition_id = composition.id;
@@ -123,7 +131,10 @@ EvaluatedCompositionState evaluate_composition_internal(
         audio_analyzer,
         vars,
         {},
-        media
+        media,
+        {},
+        main_frame_number,
+        main_frame_time_seconds
     };
 
     for (std::size_t index = 0; index < composition.layers.size(); ++index) {

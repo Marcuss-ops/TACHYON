@@ -56,7 +56,5 @@ math::Transform2 make_transform2(
     double rotation_degrees,
     const math::Vector2& scale);
 
-int map_layer_type(const std::string& type);
-
 } // namespace
 } // namespace scene

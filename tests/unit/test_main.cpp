@@ -144,6 +144,7 @@ bool run_text_tests();
 bool run_effect_host_tests();
 bool run_precomp_mask_tests();
 bool run_golden_visual_tests();
+namespace tachyon { bool run_tiling_tests(); }
 
 
 int main(int argc, char** argv) {
@@ -180,6 +181,7 @@ int main(int argc, char** argv) {
         {"effect_host", run_effect_host_tests},
         {"precomp_mask", run_precomp_mask_tests},
         {"golden", run_golden_visual_tests},
+        {"tiling", tachyon::run_tiling_tests},
         {"scene_spec", run_scene_spec_tests},
 
         {"render_job", run_render_job_tests},

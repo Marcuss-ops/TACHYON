@@ -16,6 +16,7 @@ namespace tachyon {
 struct TACHYON_ALIGN(16) PropertyNode {
     std::uint32_t id{0};           ///< Unique identifier within the composition.
     std::uint32_t track_index{0};  ///< Index of the associated animation track.
+    std::uint32_t version{0};      ///< Version counter for dirty tracking.
     std::uint64_t hash{0};         ///< Current value hash for change detection.
     
     std::vector<std::uint32_t> depends_on; ///< Indices of nodes this node depends on.

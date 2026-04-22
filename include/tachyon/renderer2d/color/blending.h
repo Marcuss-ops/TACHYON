@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/renderer2d/framebuffer.h"
+#include "tachyon/renderer2d/core/framebuffer.h"
 #include <algorithm>
 #include <cmath>
 
@@ -274,5 +274,7 @@ inline Color blend_mode_color(Color src, Color dst, BlendMode mode) {
     res.a = src.a;
     return res;
 }
+
+BlendMode parse_blend_mode(const std::string& name);
 
 } // namespace tachyon::renderer2d

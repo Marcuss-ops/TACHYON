@@ -71,18 +71,5 @@ math::Transform2 make_transform2(
     return transform;
 }
 
-int map_layer_type(const std::string& type) {
-    if (type == "solid") return static_cast<int>(LayerType::Solid);
-    if (type == "shape") return static_cast<int>(LayerType::Shape);
-    if (type == "mask") return static_cast<int>(LayerType::Mask);
-    if (type == "image") return static_cast<int>(LayerType::Image);
-    if (type == "video") return static_cast<int>(LayerType::Video);
-    if (type == "text") return static_cast<int>(LayerType::Text);
-    if (type == "camera") return static_cast<int>(LayerType::Camera);
-    if (type == "precomp") return static_cast<int>(LayerType::Precomp);
-    if (type == "light") return static_cast<int>(LayerType::Light);
-    return static_cast<int>(LayerType::Unknown);
-}
-
 } // namespace scene
 } // namespace tachyon

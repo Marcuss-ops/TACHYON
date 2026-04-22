@@ -1,7 +1,7 @@
-#include "tachyon/renderer2d/effect_host.h"
-#include "tachyon/renderer2d/render_context.h"
-#include "tachyon/renderer2d/rasterizer.h"
-#include "tachyon/renderer2d/framebuffer.h"
+#include "tachyon/renderer2d/effects/effect_host.h"
+#include "tachyon/renderer2d/resource/render_context.h"
+#include "tachyon/renderer2d/raster/rasterizer.h"
+#include "tachyon/renderer2d/core/framebuffer.h"
 
 #include <iostream>
 #include <memory>

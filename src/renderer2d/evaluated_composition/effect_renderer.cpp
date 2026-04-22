@@ -1,30 +1,57 @@
 #include "tachyon/renderer2d/evaluated_composition/effect_renderer.h"
+#include "composition_utils.h"
+#include "tachyon/renderer2d/color/color_transfer.h"
 
 namespace tachyon::renderer2d {
 
-void EffectRenderer::applyEffects(
-    EffectHost& effects,
-    RenderContext2D& context,
-    std::vector<float>& accum_r,
-    std::vector<float>& accum_g,
-    std::vector<float>& accum_b,
-    std::vector<float>& accum_a) {
-    (void)effects; (void)context; (void)accum_r; (void)accum_g; (void)accum_b; (void)accum_a;
+static EffectHost& builtin_effect_host() {
+    static std::unique_ptr<EffectHost> host = [] {
+        auto created = create_effect_host();
+        EffectHost::register_builtins(*created);
+        return created;
+    }();
+    return *host;
 }
 
-void EffectRenderer::applyBlurEffect(
-    const std::vector<float>& input_r,
-    const std::vector<float>& input_g,
-    const std::vector<float>& input_b,
-    const std::vector<float>& input_a,
-    std::vector<float>& output_r,
-    std::vector<float>& output_g,
-    std::vector<float>& output_b,
-    std::vector<float>& output_a,
-    float sigma) {
-    (void)input_r; (void)input_g; (void)input_b; (void)input_a;
-    (void)output_r; (void)output_g; (void)output_b; (void)output_a;
-    (void)sigma;
+EffectHost& effect_host_for(RenderContext2D& context) {
+    if (context.effects) {
+        return *context.effects;
+    }
+    return builtin_effect_host();
+}
+
+EffectParams effect_params_from_spec(const EffectSpec& spec) {
+    EffectParams params;
+    for (const auto& [key, value] : spec.scalars) {
+        params.scalars.emplace(key, static_cast<float>(value));
+    }
+    for (const auto& [key, value] : spec.colors) {
+        params.colors.emplace(key, detail::sRGB_to_Linear(Color{
+            static_cast<float>(value.r) / 255.0f,
+            static_cast<float>(value.g) / 255.0f,
+            static_cast<float>(value.b) / 255.0f,
+            static_cast<float>(value.a) / 255.0f
+        }));
+    }
+    for (const auto& [key, value] : spec.strings) {
+        params.strings.emplace(key, value);
+    }
+    return params;
+}
+
+SurfaceRGBA apply_effect_pipeline(
+    const SurfaceRGBA& input,
+    const std::vector<EffectSpec>& effects,
+    EffectHost& host) {
+
+    SurfaceRGBA current = input;
+    for (const auto& effect : effects) {
+        if (!effect.enabled || effect.type.empty()) {
+            continue;
+        }
+        current = host.apply(effect.type, current, effect_params_from_spec(effect));
+    }
+    return current;
 }
 
 } // namespace tachyon::renderer2d

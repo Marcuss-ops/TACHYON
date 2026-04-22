@@ -1,4 +1,4 @@
-#include "tachyon/renderer2d/rasterizer.h"
+#include "tachyon/renderer2d/raster/rasterizer.h"
 #include <algorithm>
 #include <cmath>
 #include <vector>

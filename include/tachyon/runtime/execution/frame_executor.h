@@ -1,7 +1,7 @@
 #pragma once
 
-#include "tachyon/renderer2d/draw_command.h"
-#include "tachyon/renderer2d/evaluated_composition_renderer.h"
+#include "tachyon/renderer2d/raster/draw_command.h"
+#include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"
 #include "tachyon/runtime/resource/render_context.h"
 #include "tachyon/runtime/cache/frame_cache.h"
 #include "tachyon/runtime/execution/render_plan.h"
@@ -126,6 +126,11 @@ private:
         std::uint64_t frame_key,
         double frame_time_seconds,
         const FrameRenderTask& task);
+
+    friend void evaluate_node(FrameExecutor&, std::uint32_t, const CompiledScene&, const RenderPlan&, const DataSnapshot&, RenderContext&, std::uint64_t, std::uint64_t, double, const FrameRenderTask&, std::optional<std::uint64_t>, std::optional<double>);
+    friend void evaluate_property(FrameExecutor&, const CompiledScene&, const CompiledPropertyTrack&, const RenderPlan&, const DataSnapshot&, RenderContext&, std::uint64_t, double);
+    friend void evaluate_layer(FrameExecutor&, const CompiledScene&, const CompiledLayer&, const RenderPlan&, const DataSnapshot&, RenderContext&, std::uint64_t, std::uint64_t, double, std::optional<std::uint64_t>, std::optional<double>);
+    friend void evaluate_composition(FrameExecutor&, const CompiledScene&, const CompiledComposition&, const RenderPlan&, const DataSnapshot&, RenderContext&, std::uint64_t, std::uint64_t, std::uint64_t, double, const FrameRenderTask&, std::optional<std::uint64_t>, std::optional<double>);
 };
 
 [[nodiscard]] EvaluatedFrameState evaluate_frame_state(

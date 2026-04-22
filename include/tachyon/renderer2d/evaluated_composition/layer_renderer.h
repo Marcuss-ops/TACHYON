@@ -1,67 +1,38 @@
 #pragma once
 
-#include "tachyon/renderer2d/rasterizer.h"
-#include "tachyon/renderer2d/render_context.h"
+#include "tachyon/renderer2d/raster/rasterizer.h"
+#include "tachyon/renderer2d/resource/render_context.h"
+#include "tachyon/runtime/execution/render_plan.h"
 #include "tachyon/core/scene/evaluated_state.h"
 
 #include <cstdint>
 #include <memory>
 #include <vector>
+#include <optional>
 
 namespace tachyon {
 namespace renderer2d {
 
-class CPURasterizer;
-struct RenderContext2D;
+std::shared_ptr<SurfaceRGBA> render_precomp_surface(
+    const scene::EvaluatedLayerState& layer,
+    const scene::EvaluatedCompositionState& state,
+    const RenderPlan& plan,
+    const FrameRenderTask& task,
+    RenderContext2D& context);
 
-class LayerRenderer {
-public:
-    static void renderLayer(
-        const scene::EvaluatedLayerState& layer_state,
-        const scene::EvaluatedCompositionState& comp_state,
-        RenderContext2D& context,
-        std::vector<float>& accum_r,
-        std::vector<float>& accum_g,
-        std::vector<float>& accum_b,
-        std::vector<float>& accum_a);
-    
-private:
-    static void renderSolidLayer(
-        const scene::EvaluatedLayerState& layer_state,
-        const scene::EvaluatedCompositionState& comp_state,
-        RenderContext2D& context,
-        std::vector<float>& accum_r,
-        std::vector<float>& accum_g,
-        std::vector<float>& accum_b,
-        std::vector<float>& accum_a);
-    
-    static void renderShapeLayer(
-        const scene::EvaluatedLayerState& layer_state,
-        const scene::EvaluatedCompositionState& comp_state,
-        RenderContext2D& context,
-        std::vector<float>& accum_r,
-        std::vector<float>& accum_g,
-        std::vector<float>& accum_b,
-        std::vector<float>& accum_a);
-    
-    static void renderImageLayer(
-        const scene::EvaluatedLayerState& layer_state,
-        const scene::EvaluatedCompositionState& comp_state,
-        RenderContext2D& context,
-        std::vector<float>& accum_r,
-        std::vector<float>& accum_g,
-        std::vector<float>& accum_b,
-        std::vector<float>& accum_a);
-    
-    static void renderTextLayer(
-        const scene::EvaluatedLayerState& layer_state,
-        const scene::EvaluatedCompositionState& comp_state,
-        RenderContext2D& context,
-        std::vector<float>& accum_r,
-        std::vector<float>& accum_g,
-        std::vector<float>& accum_b,
-        std::vector<float>& accum_a);
-};
+std::shared_ptr<SurfaceRGBA> render_simple_layer_surface(
+    const scene::EvaluatedLayerState& layer,
+    const scene::EvaluatedCompositionState& state,
+    RenderContext2D& context,
+    const std::optional<RectI>& target_rect = std::nullopt);
+
+std::shared_ptr<SurfaceRGBA> render_layer_surface(
+    const scene::EvaluatedLayerState& layer,
+    const scene::EvaluatedCompositionState& state,
+    const RenderPlan& plan,
+    const FrameRenderTask& task,
+    RenderContext2D& context,
+    const std::optional<RectI>& target_rect = std::nullopt);
 
 } // namespace renderer2d
 } // namespace tachyon

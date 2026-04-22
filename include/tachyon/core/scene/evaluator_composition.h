@@ -1,7 +1,7 @@
 #pragma once
 
-#include "evaluator_internal.h"
-#include "evaluator_layer.h"
+#include "tachyon/core/scene/evaluator_internal.h"
+#include "tachyon/core/scene/evaluator_layer.h"
 #include "tachyon/core/scene/evaluator.h"
 
 namespace tachyon {
@@ -19,7 +19,9 @@ EvaluatedCompositionState evaluate_composition_internal(
     std::vector<std::string> stack,
     const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
     EvaluationVariables vars,
-    media::MediaManager* media);
+    media::MediaManager* media,
+    std::optional<std::int64_t> main_frame_number = std::nullopt,
+    std::optional<double> main_frame_time_seconds = std::nullopt);
 
 } // namespace scene
 } // namespace tachyon

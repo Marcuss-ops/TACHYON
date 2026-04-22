@@ -1,6 +1,6 @@
-#include "tachyon/renderer2d/rasterizer.h"
-#include "tachyon/renderer2d/draw_list_rasterizer.h"
-#include "tachyon/renderer2d/framebuffer.h"
+#include "tachyon/renderer2d/raster/rasterizer.h"
+#include "tachyon/renderer2d/raster/draw_list_rasterizer.h"
+#include "tachyon/renderer2d/core/framebuffer.h"
 
 #include <filesystem>
 #include <iostream>

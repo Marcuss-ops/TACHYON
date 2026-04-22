@@ -4,7 +4,7 @@
 
 #include "tachyon/output/frame_output_sink.h"
 #include "tachyon/runtime/resource/render_context.h"
-#include "tachyon/renderer2d/texture_resolver.h"
+#include "tachyon/renderer2d/resource/texture_resolver.h"
 
 #include <algorithm>
 #include <atomic>
@@ -54,11 +54,14 @@ void render_frames_parallel(
             FrameArena arena;
             FrameExecutor executor(arena, cache);
             
-            // Create a thread-local context to avoid races on diagnostics and media managers
+            // Create a thread-local context that shares the heavy managers (media, ray_tracer)
             RenderContext local_context(context.renderer2d.precomp_cache);
+            local_context.media = context.media;
+            local_context.ray_tracer = context.ray_tracer;
             local_context.policy = context.policy;
             local_context.renderer2d.policy = context.policy;
             local_context.renderer2d.font = context.renderer2d.font;
+            local_context.renderer2d.media_manager = context.media.get();
             
             for (;;) {
                 const std::size_t index = next_index.fetch_add(1);
@@ -102,7 +105,7 @@ RenderSessionResult RenderSession::render(
     RenderContext context(m_precomp_cache);
     context.policy = make_quality_policy(execution_plan.render_plan.quality_tier);
     context.renderer2d.policy = context.policy;
-    context.renderer2d.font = renderer2d::get_default_text_font();
+    context.renderer2d.font = ::tachyon::renderer2d::get_default_text_font();
     
     const std::size_t cache_budget_bytes = m_memory_budget_bytes.value_or(context.policy.precomp_cache_budget);
     m_cache.set_budget_bytes(cache_budget_bytes);
@@ -208,7 +211,7 @@ RenderSessionResult RenderSession::render(
         result.output_error = sink->last_error();
     }
 
-    result.diagnostics = context.media.consume_diagnostics();
+    result.diagnostics = context.media->consume_diagnostics();
     return result;
 }
 

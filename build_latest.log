@@ -1,0 +1,28 @@
+MSBuild version 18.4.0+6e61e96ac for .NET Framework
+
+  Checking File Globs
+  math.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\embree-build\Debug\math.lib
+  glfw.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\earcut-build\glfw\src\Debug\glfw3.lib
+  sys.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\embree-build\Debug\sys.lib
+  tinygltf.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\tinygltf-build\Debug\tinygltf.lib
+  loader_example.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\tinygltf-build\Debug\loader_example.exe
+  freetype.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\freetype-build\Debug\freetyped.lib
+  simd.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\embree-build\Debug\simd.lib
+  bench.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\earcut-build\Debug\bench.exe
+  tests.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\earcut-build\Debug\tests.exe
+  tasking.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\embree-build\Debug\tasking.lib
+  lexers.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\embree-build\Debug\lexers.lib
+  harfbuzz.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\harfbuzz-build\Debug\harfbuzz.lib
+  embree_sse42.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\embree-build\Debug\embree_sse42.lib
+  viz.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\earcut-build\Debug\viz.exe
+  harfbuzz-gpu.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\harfbuzz-build\Debug\harfbuzz-gpu.lib
+  harfbuzz-vector.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\harfbuzz-build\Debug\harfbuzz-vector.lib
+  harfbuzz-raster.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\harfbuzz-build\Debug\harfbuzz-raster.lib
+  embree.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\embree-build\Debug\embree4.lib
+  evaluator.cpp
+  evaluator_composition.cpp
+  evaluator_layer.cpp
+  Generazione del codice in corso...
+  TachyonCore.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\src\Debug\TachyonCore.lib
+  tachyon.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\src\Debug\tachyon.exe
+  TachyonTests.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\tests\Debug\TachyonTests.exe

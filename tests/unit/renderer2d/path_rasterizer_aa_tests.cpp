@@ -1,4 +1,4 @@
-#include "tachyon/renderer2d/path_rasterizer.h"
+#include "tachyon/renderer2d/raster/path_rasterizer.h"
 
 #include <iostream>
 #include <string>

@@ -6,7 +6,7 @@
 #include "tachyon/core/math/vector2.h"
 #include "tachyon/core/math/vector3.h"
 #include "tachyon/core/spec/scene_spec.h"
-#include "tachyon/renderer2d/path_rasterizer.h"
+#include "tachyon/renderer2d/raster/path_rasterizer.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -45,13 +45,12 @@ struct EvaluatedLightState {
     // Attenuation (point + spot only)
     float attenuation_near{0.0f};   // distance where full intensity starts
     float attenuation_far{1000.0f}; // distance where intensity reaches 0
-
+    
     // Spot cone (spot only)
     float cone_angle{90.0f};       // Full angle in degrees
     float cone_feather{50.0f};     // 0..100 percentage
-
+    
     // Falloff shape
-    // "none" | "smooth" | "linear" | "inverse_square"
     std::string falloff_type{"smooth"};
 
     // Shadows
@@ -96,7 +95,6 @@ struct EvaluatedLayerState {
     math::Transform2 local_transform{math::Transform2::identity()};
     math::Matrix4x4 world_matrix{math::Matrix4x4::identity()};
     
-    // 3D Specific evaluated state
     math::Vector3 orientation_xyz_deg{math::Vector3::zero()};
     math::Vector3 anchor_point_3d{math::Vector3::zero()};
     math::Vector3 scale_3d{100.0f, 100.0f, 100.0f};
@@ -109,11 +107,11 @@ struct EvaluatedLayerState {
         float diffuse_coeff{0.5f};
         float specular_coeff{0.0f};
         float shininess{15.0f};
-        float metallic{0.0f};      // 0..1
-        float roughness{0.5f};     // 0..1
-        float emission{0.0f};      // 0..N
-        float ior{1.45f};          // Index of Refraction
-        bool  metal{false};        // legacy AE metal flag
+        float metallic{0.0f};
+        float roughness{0.5f};
+        float emission{0.0f};
+        float ior{1.45f};
+        bool  metal{false};
     };
     MaterialOptions material;
 
@@ -126,7 +124,7 @@ struct EvaluatedLayerState {
     std::string text_content;
     std::string font_id;
     float font_size{48.0f};
-    int text_alignment{0}; // 0=Left, 1=Center, 2=Right
+    int text_alignment{0}; 
     ColorSpec fill_color{255, 255, 255, 255};
     ColorSpec stroke_color{255, 255, 255, 255};
     float stroke_width{0.0f};
@@ -143,6 +141,10 @@ struct EvaluatedLayerState {
     
     std::optional<GradientSpec> gradient_fill;
     std::optional<GradientSpec> gradient_stroke;
+
+    float trim_start{0.0f};
+    float trim_end{1.0f};
+    float trim_offset{0.0f};
     
     TrackMatteType track_matte_type{TrackMatteType::None};
     std::optional<std::size_t> track_matte_layer_index;
@@ -150,17 +152,12 @@ struct EvaluatedLayerState {
     std::optional<std::string> precomp_id;
     std::unique_ptr<EvaluatedCompositionState> nested_composition;
 
-    // Asset reference for Image/Video
     std::optional<std::string> asset_id;
     std::optional<std::string> asset_path;
 
-    // 3D Mesh asset (loaded from glTF)
     media::MeshAsset* mesh_asset{nullptr};
-
-    // PBR Texture / 2D Surface reference
     const std::uint8_t* texture_rgba{nullptr};
 
-    // Animation state
     std::vector<float> morph_weights;
     std::vector<math::Matrix4x4> joint_matrices;
 };
@@ -172,12 +169,11 @@ struct EvaluatedCameraState {
     math::Vector3 point_of_interest{0.0f, 0.0f, 0.0f}; 
     bool is_two_node{true};
 
-    // Optics & Path Tracing
     bool  dof_enabled{false};
     float focus_distance{1000.0f};
-    float aperture{1.0f};         // f-stop-like or radius
-    float blur_level{1.0f};       // master level
-    int   aperture_blades{0};     // 0 = circular
+    float aperture{1.0f};
+    float blur_level{1.0f};
+    int   aperture_blades{0};
     float aperture_rotation{0.0f};
     float shutter_angle{180.0f};
 

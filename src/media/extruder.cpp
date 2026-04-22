@@ -110,16 +110,6 @@ MeshAsset::SubMesh Extruder::extrude_shape(
         mesh.vertices.push_back(v);
     }
     
-    // Insert back vertices
-    unsigned int v_offset_back = static_cast<unsigned int>(mesh.vertices.size());
-    for (const auto& p : contour) {
-        MeshAsset::Vertex v;
-        v.position = {p.x, p.y, z_back};
-        v.normal = {0, 0, -1}; // Back face normal
-        v.uv = {p.x / 100.0f, p.y / 100.0f};
-        mesh.vertices.push_back(v);
-    }
-
     // Front Cap Indices
     for (std::size_t i = 0; i < cap_indices.size(); i += 3) {
         mesh.indices.push_back(cap_indices[i] + v_offset_front);
@@ -127,48 +117,60 @@ MeshAsset::SubMesh Extruder::extrude_shape(
         mesh.indices.push_back(cap_indices[i+2] + v_offset_front);
     }
 
-    // Back Cap Indices (reversed winding)
-    for (std::size_t i = 0; i < cap_indices.size(); i += 3) {
-        mesh.indices.push_back(cap_indices[i] + v_offset_back);
-        mesh.indices.push_back(cap_indices[i+2] + v_offset_back);
-        mesh.indices.push_back(cap_indices[i+1] + v_offset_back);
-    }
+    if (std::abs(depth) > 0.001f) {
+        // Insert back vertices
+        unsigned int v_offset_back = static_cast<unsigned int>(mesh.vertices.size());
+        for (const auto& p : contour) {
+            MeshAsset::Vertex v;
+            v.position = {p.x, p.y, z_back};
+            v.normal = {0, 0, -1}; // Back face normal
+            v.uv = {p.x / 100.0f, p.y / 100.0f};
+            mesh.vertices.push_back(v);
+        }
 
-    // 4. Generate Side Walls
-    std::size_t n = contour.size();
-    for (std::size_t i = 0; i < n; ++i) {
-        std::size_t j = (i + 1) % n;
+        // Back Cap Indices (reversed winding)
+        for (std::size_t i = 0; i < cap_indices.size(); i += 3) {
+            mesh.indices.push_back(cap_indices[i] + v_offset_back);
+            mesh.indices.push_back(cap_indices[i+2] + v_offset_back);
+            mesh.indices.push_back(cap_indices[i+1] + v_offset_back);
+        }
 
-        math::Vector3 p0 = {contour[i].x, contour[i].y, z_front};
-        math::Vector3 p1 = {contour[j].x, contour[j].y, z_front};
-        math::Vector3 p2 = {contour[i].x, contour[i].y, z_back};
-        math::Vector3 p3 = {contour[j].x, contour[j].y, z_back};
+        // 4. Generate Side Walls
+        std::size_t n = contour.size();
+        for (std::size_t i = 0; i < n; ++i) {
+            std::size_t j = (i + 1) % n;
 
-        math::Vector3 v1 = p1 - p0;
-        math::Vector3 v2 = p2 - p0;
-        math::Vector3 side_normal = math::Vector3::cross(v1, v2).normalized();
+            math::Vector3 p0 = {contour[i].x, contour[i].y, z_front};
+            math::Vector3 p1 = {contour[j].x, contour[j].y, z_front};
+            math::Vector3 p2 = {contour[i].x, contour[i].y, z_back};
+            math::Vector3 p3 = {contour[j].x, contour[j].y, z_back};
 
-        unsigned int b_v0 = static_cast<unsigned int>(mesh.vertices.size());
-        
-        // Vertices 0 and 1 (Front edge)
-        MeshAsset::Vertex sv0; sv0.position = p0; sv0.normal = side_normal; sv0.uv = {0,0};
-        MeshAsset::Vertex sv1; sv1.position = p1; sv1.normal = side_normal; sv1.uv = {1,0};
-        // Vertices 2 and 3 (Back edge)
-        MeshAsset::Vertex sv2; sv2.position = p2; sv2.normal = side_normal; sv2.uv = {0,1};
-        MeshAsset::Vertex sv3; sv3.position = p3; sv3.normal = side_normal; sv3.uv = {1,1};
+            math::Vector3 v1 = p1 - p0;
+            math::Vector3 v2 = p2 - p0;
+            math::Vector3 side_normal = math::Vector3::cross(v1, v2).normalized();
 
-        mesh.vertices.push_back(sv0);
-        mesh.vertices.push_back(sv1);
-        mesh.vertices.push_back(sv2);
-        mesh.vertices.push_back(sv3);
+            unsigned int b_v0 = static_cast<unsigned int>(mesh.vertices.size());
+            
+            // Vertices 0 and 1 (Front edge)
+            MeshAsset::Vertex sv0; sv0.position = p0; sv0.normal = side_normal; sv0.uv = {0,0};
+            MeshAsset::Vertex sv1; sv1.position = p1; sv1.normal = side_normal; sv1.uv = {1,0};
+            // Vertices 2 and 3 (Back edge)
+            MeshAsset::Vertex sv2; sv2.position = p2; sv2.normal = side_normal; sv2.uv = {0,1};
+            MeshAsset::Vertex sv3; sv3.position = p3; sv3.normal = side_normal; sv3.uv = {1,1};
 
-        mesh.indices.push_back(b_v0);
-        mesh.indices.push_back(b_v0 + 2);
-        mesh.indices.push_back(b_v0 + 1);
+            mesh.vertices.push_back(sv0);
+            mesh.vertices.push_back(sv1);
+            mesh.vertices.push_back(sv2);
+            mesh.vertices.push_back(sv3);
 
-        mesh.indices.push_back(b_v0 + 1);
-        mesh.indices.push_back(b_v0 + 2);
-        mesh.indices.push_back(b_v0 + 3);
+            mesh.indices.push_back(b_v0);
+            mesh.indices.push_back(b_v0 + 2);
+            mesh.indices.push_back(b_v0 + 1);
+
+            mesh.indices.push_back(b_v0 + 1);
+            mesh.indices.push_back(b_v0 + 2);
+            mesh.indices.push_back(b_v0 + 3);
+        }
     }
 
     // Assign default white PBR so it responds nicely to lighting

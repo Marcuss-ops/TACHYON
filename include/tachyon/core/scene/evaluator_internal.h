@@ -9,9 +9,6 @@
 #include <vector>
 #include <string>
 #include <optional>
-#include <memory>
-
-#include <functional>
 
 namespace tachyon {
 namespace scene {
@@ -30,6 +27,10 @@ struct EvaluationContext {
     std::unordered_map<std::string, std::vector<::tachyon::text::SubtitleEntry>> subtitle_cache;
     ::tachyon::media::MediaManager* media{nullptr};
     PropertySampler sampler{nullptr};
+    
+    // Temporal context for selective motion blur
+    std::optional<std::int64_t> main_frame_number;
+    std::optional<double> main_frame_time_seconds;
 };
 
 } // namespace scene

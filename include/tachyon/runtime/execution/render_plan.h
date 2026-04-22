@@ -3,7 +3,7 @@
 #include "tachyon/runtime/core/diagnostics.h"
 #include "tachyon/runtime/execution/render_job.h"
 #include "tachyon/core/spec/scene_spec.h"
-#include "tachyon/renderer2d/framebuffer.h"
+#include "tachyon/renderer2d/core/framebuffer.h"
 
 #include "tachyon/runtime/execution/quality_policy.h"
 

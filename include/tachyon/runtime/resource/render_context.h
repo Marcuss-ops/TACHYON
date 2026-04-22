@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/media/media_manager.h"
-#include "tachyon/renderer2d/render_context.h"
+#include "tachyon/renderer2d/resource/render_context.h"
 #include "tachyon/renderer3d/ray_tracer.h"
 #include "tachyon/runtime/execution/quality_policy.h"
 #include <OpenImageDenoise/oidn.hpp>
@@ -12,7 +12,7 @@
 namespace tachyon {
 
 struct RenderContext {
-    media::MediaManager media;
+    std::shared_ptr<media::MediaManager> media;
     renderer2d::RenderContext2D renderer2d;
     QualityPolicy policy;
     std::shared_ptr<renderer3d::RayTracer> ray_tracer;
