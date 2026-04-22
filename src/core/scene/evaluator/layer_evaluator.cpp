@@ -5,13 +5,13 @@
 #include "tachyon/core/scene/evaluator/hashing.h"
 #include "tachyon/core/scene/evaluator/templates.h"
 
-#include "tachyon/core/scene/evaluator_math.h"
+#include "tachyon/core/scene/math/evaluator_math.h"
 #include "tachyon/renderer2d/animation/easing.h"
 #include "tachyon/core/math/quaternion.h"
 #include "tachyon/core/math/transform2.h"
 #include "tachyon/timeline/time.h"
 #include "tachyon/renderer2d/math/math_utils.h"
-#include "tachyon/media/media_manager.h"
+#include "tachyon/media/management/media_manager.h"
 
 #include <algorithm>
 #include <cmath>
@@ -90,42 +90,6 @@ EvaluatedLayerState make_layer_state(
         vars.numeric,
         vars.tables);
         
-    if (layer.motion_path_id.has_value() && !layer.motion_path_id->empty()) {
-        const auto it = context.layer_indices.find(*layer.motion_path_id);
-        if (it != context.layer_indices.end()) {
-            const auto& path_layer = context.composition.layers[it->second];
-            if (path_layer.shape_path.has_value() && !path_layer.shape_path->points.empty()) {
-                const double progress = std::clamp(sample_scalar(
-                    layer.motion_path_progress, 0.0, remapped_time, audio_analyzer,
-                    hash_combine(layer_seed, stable_string_hash("path_progress")),
-                    vars.numeric, vars.tables
-                ) / 100.0, 0.0, 1.0);
-                
-                const auto& pts = path_layer.shape_path->points;
-                if (pts.size() >= 2) {
-                    const double segment_count = static_cast<double>(pts.size() - 1);
-                    const double scaled_p = progress * segment_count;
-                    const size_t idx = std::min(static_cast<size_t>(std::floor(scaled_p)), pts.size() - 2);
-                    const float t = static_cast<float>(scaled_p - std::floor(scaled_p));
-                    
-                    if (pts[idx].tangent_out.length_squared() > 1e-6f || pts[idx+1].tangent_in.length_squared() > 1e-6f) {
-                        pos = renderer2d::math_utils::sample_bezier_spatial(
-                            pts[idx].position,
-                            pts[idx].position + pts[idx].tangent_out,
-                            pts[idx+1].position + pts[idx+1].tangent_in,
-                            pts[idx+1].position,
-                            t
-                        );
-                    } else {
-                        pos = pts[idx].position * (1.0f - t) + pts[idx+1].position * t;
-                    }
-                } else if (!pts.empty()) {
-                    pos = pts[0].position;
-                }
-            }
-        }
-    }
-
     const std::uint64_t rot_seed = hash_combine(layer_seed, stable_string_hash("rotation"));
     double rot = sample_scalar(
         layer.transform.rotation_property,
@@ -150,6 +114,10 @@ EvaluatedLayerState make_layer_state(
     evaluated.local_transform = make_transform2(pos, rot, scl);
     evaluated.world_matrix = evaluated.local_transform.to_matrix();
     evaluated.world_position3 = math::Vector3{pos.x, pos.y, 0.0f};
+    evaluated.parent_id = layer.parent.value_or("");
+    evaluated.local_position3 = {pos.x, pos.y, 0.0f};
+    evaluated.local_rotation3 = math::Quaternion::from_axis_angle({0, 0, 1}, static_cast<float>(renderer2d::math_utils::degrees_to_radians(rot)));
+    evaluated.local_scale3 = {scl.x / 100.0f, scl.y / 100.0f, 1.0f};
 
     if (layer.is_3d) {
         const std::uint64_t pos3_seed = hash_combine(layer_seed, stable_string_hash("position3"));
@@ -198,34 +166,37 @@ EvaluatedLayerState make_layer_state(
         evaluated.anchor_point_3d = anchor3;
         evaluated.scale_3d = scl3;
 
+        const math::Quaternion q_orient = math::Quaternion::from_euler(orient3);
+        const math::Quaternion q_rot = math::Quaternion::from_euler(rot3);
+        const math::Quaternion combined_rot = q_orient * q_rot;
+
+        evaluated.local_position3 = pos3;
+        evaluated.local_rotation3 = combined_rot;
+        evaluated.local_scale3 = scl3 / 100.0f;
+
         const auto t = math::Matrix4x4::translation(pos3);
-        const auto o = math::Quaternion::from_euler({
-            static_cast<float>(renderer2d::math_utils::degrees_to_radians(orient3.x)),
-            static_cast<float>(renderer2d::math_utils::degrees_to_radians(orient3.y)),
-            static_cast<float>(renderer2d::math_utils::degrees_to_radians(orient3.z))
-        }).to_matrix();
-        const auto r = math::Quaternion::from_euler({
-            static_cast<float>(renderer2d::math_utils::degrees_to_radians(rot3.x)),
-            static_cast<float>(renderer2d::math_utils::degrees_to_radians(rot3.y)),
-            static_cast<float>(renderer2d::math_utils::degrees_to_radians(rot3.z))
-        }).to_matrix();
-        const auto s_matrix = math::Matrix4x4::scaling(scl3 / 100.0f);
+        const auto r = combined_rot.to_matrix();
+        const auto s_matrix = math::Matrix4x4::scaling(evaluated.local_scale3);
         const auto inv_a = math::Matrix4x4::translation(-anchor3);
         
-        evaluated.world_matrix = t * o * r * s_matrix * inv_a;
+        evaluated.world_matrix = t * r * s_matrix * inv_a;
         evaluated.world_position3 = pos3;
         evaluated.world_normal = evaluated.world_matrix.transform_vector({0.0f, 0.0f, 1.0f}).normalized();
     }
 
-    evaluated.material.ambient_coeff = static_cast<float>(sample_scalar(layer.ambient_coeff, 0.1, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("ambient")), vars.numeric, vars.tables));
-    evaluated.material.diffuse_coeff = static_cast<float>(sample_scalar(layer.diffuse_coeff, 0.8, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("diffuse")), vars.numeric, vars.tables));
-    evaluated.material.specular_coeff = static_cast<float>(sample_scalar(layer.specular_coeff, 0.5, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("specular")), vars.numeric, vars.tables));
-    evaluated.material.shininess = static_cast<float>(sample_scalar(layer.shininess, 50.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("shininess")), vars.numeric, vars.tables));
     evaluated.material.metallic = static_cast<float>(sample_scalar(layer.metallic, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("metallic")), vars.numeric, vars.tables));
     evaluated.material.roughness = static_cast<float>(sample_scalar(layer.roughness, 0.5, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("roughness")), vars.numeric, vars.tables));
     evaluated.material.emission = static_cast<float>(sample_scalar(layer.emission, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("emission")), vars.numeric, vars.tables));
     evaluated.material.ior = static_cast<float>(sample_scalar(layer.ior, 1.45, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("ior")), vars.numeric, vars.tables));
-    evaluated.material.metal = layer.metal;
+    evaluated.material.specular = static_cast<float>(sample_scalar(layer.specular_coeff, 0.5, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("specular")), vars.numeric, vars.tables));
+    evaluated.material.subsurface = 0.0f;
+    evaluated.material.specular_tint = 0.0f;
+    evaluated.material.anisotropic = 0.0f;
+    evaluated.material.sheen = 0.0f;
+    evaluated.material.sheen_tint = 0.5f;
+    evaluated.material.clearcoat = 0.0f;
+    evaluated.material.clearcoat_roughness = 0.03f;
+    evaluated.material.transmission = 0.0f;
 
     evaluated.extrusion_depth = static_cast<float>(sample_scalar(layer.extrusion_depth, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("extrusion")), vars.numeric, vars.tables));
     evaluated.bevel_size = static_cast<float>(sample_scalar(layer.bevel_size, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("bevel")), vars.numeric, vars.tables));
@@ -249,6 +220,7 @@ EvaluatedLayerState make_layer_state(
     
     if (layer.alignment == "center") evaluated.text_alignment = 1;
     else if (layer.alignment == "right") evaluated.text_alignment = 2;
+    else if (layer.alignment == "justify") evaluated.text_alignment = 3;
     else evaluated.text_alignment = 0;
     
     evaluated.fill_color = sample_color(layer.fill_color, {255, 255, 255, 255}, remapped_time);
@@ -266,7 +238,16 @@ EvaluatedLayerState make_layer_state(
     evaluated.miter_limit = layer.miter_limit;
     
     evaluated.effects = layer.effects;
+    evaluated.text_animators = layer.text_animators;
     evaluated.text_highlights = layer.text_highlights;
+    evaluated.mask_feather = static_cast<float>(sample_scalar(
+        layer.mask_feather,
+        0.0,
+        remapped_time,
+        audio_analyzer,
+        hash_combine(layer_seed, stable_string_hash("mask_feather")),
+        vars.numeric,
+        vars.tables));
     evaluated.subtitle_path = layer.subtitle_path;
     evaluated.subtitle_outline_color = layer.subtitle_outline_color;
     evaluated.subtitle_outline_width = layer.subtitle_outline_width;
@@ -320,6 +301,9 @@ EvaluatedLayerState make_layer_state(
 
     evaluated.gradient_fill = layer.gradient_fill;
     evaluated.gradient_stroke = layer.gradient_stroke;
+    
+    evaluated.constraints = layer.constraints;
+    evaluated.ik_chains = layer.ik_chains;
 
     return evaluated;
 }

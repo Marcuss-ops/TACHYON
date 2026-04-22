@@ -1,5 +1,7 @@
 #pragma once
 
+#include "tachyon/text/layout/layout.h"
+
 #include <vector>
 #include <cstdint>
 
@@ -18,6 +20,7 @@ struct ShapedGlyphRun {
         std::int32_t advance_x{0};
         std::int32_t offset_x{0};
         std::int32_t offset_y{0};
+        std::uint32_t cluster{0};
     };
 
     std::vector<Glyph> glyphs;
@@ -26,6 +29,14 @@ struct ShapedGlyphRun {
 
 using BitmapFont = tachyon::text::Font; // Use the text module's Font class
 
-ShapedGlyphRun shape_run_with_harfbuzz(const BitmapFont& font, const std::vector<std::uint32_t>& codepoints, std::uint32_t scale);
+ShapedGlyphRun shape_run_with_harfbuzz(
+    const BitmapFont& font, 
+    const std::vector<std::uint32_t>& codepoints, 
+    std::uint32_t scale,
+    const char* script = nullptr,
+    const char* language = nullptr,
+    int direction = 0, // 0 = LTR, 1 = RTL
+    const std::vector<tachyon::text::TextFeature>& features = {}
+);
 
 } // namespace tachyon::renderer2d::text::shaping
