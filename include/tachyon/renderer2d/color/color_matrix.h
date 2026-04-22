@@ -39,6 +39,7 @@ inline Matrix3x3 rgb_to_xyz_matrix(ColorPrimaries primaries) {
         case ColorPrimaries::sRGB:
             return Matrix3x3{{0.4123908f, 0.3575843f, 0.1804808f, 0.2126390f, 0.7151687f, 0.0721923f, 0.0193308f, 0.1191948f, 0.9505322f}};
         case ColorPrimaries::DisplayP3:
+        case ColorPrimaries::P3D65:
             return Matrix3x3{{0.4865709f, 0.2656677f, 0.1982173f, 0.2289746f, 0.6917385f, 0.0792869f, 0.0000000f, 0.0451134f, 1.0439444f}};
         default: return Matrix3x3::identity();
     }

@@ -26,7 +26,7 @@ std::string ffmpeg_color_primaries(renderer2d::detail::ColorPrimaries primaries)
     switch (primaries) {
     case renderer2d::detail::ColorPrimaries::Rec709:
         return "bt709";
-    case renderer2d::detail::ColorPrimaries::DisplayP3:
+    case renderer2d::detail::ColorPrimaries::P3D65:
         return "smpte432";
     default:
         return "bt709";
@@ -37,7 +37,7 @@ std::string ffmpeg_transfer_characteristics(renderer2d::detail::TransferCurve cu
     switch (curve) {
     case renderer2d::detail::TransferCurve::Linear:
         return "linear";
-    case renderer2d::detail::TransferCurve::Bt709:
+    case renderer2d::detail::TransferCurve::Rec709:
         return "bt709";
     case renderer2d::detail::TransferCurve::sRGB:
     default:

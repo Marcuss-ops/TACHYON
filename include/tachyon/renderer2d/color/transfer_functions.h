@@ -32,7 +32,7 @@ inline float transfer_to_linear_component(float value, TransferCurve curve) {
     const float normalized = std::clamp(value, 0.0f, 1.0f);
     switch (curve) {
         case TransferCurve::Linear: return normalized;
-        case TransferCurve::Bt709: return bt709_to_linear_component(normalized);
+        case TransferCurve::Rec709: return bt709_to_linear_component(normalized);
         case TransferCurve::sRGB:
         default: return srgb_to_linear_component(normalized);
     }
@@ -42,7 +42,7 @@ inline float linear_to_transfer_component(float value, TransferCurve curve) {
     const float normalized = std::clamp(value, 0.0f, 1.0f);
     switch (curve) {
         case TransferCurve::Linear: return normalized;
-        case TransferCurve::Bt709: return linear_to_bt709_component(normalized);
+        case TransferCurve::Rec709: return linear_to_bt709_component(normalized);
         case TransferCurve::sRGB:
         default: return linear_to_srgb_component_float(normalized);
     }

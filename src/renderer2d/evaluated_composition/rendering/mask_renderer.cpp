@@ -8,6 +8,15 @@ namespace tachyon::renderer2d {
 
 namespace {
 
+PathGeometry build_mask_geometry(
+    const scene::EvaluatedLayerState& layer,
+    const scene::EvaluatedShapePath& sp,
+    const scene::EvaluatedCompositionState& state,
+    RenderContext2D& context) {
+    
+    PathGeometry geom;
+    if (sp.points.empty()) return geom;
+
     auto apply_tracking = [&](const math::Vector2& lp) -> math::Vector2 {
         if (layer.tracking.mode == "none") return lp;
         

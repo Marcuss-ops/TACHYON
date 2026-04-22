@@ -4,6 +4,7 @@
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include "tachyon/renderer2d/resource/render_context.h"
 #include "tachyon/media/streaming/media_prefetcher.h"
+#include "tachyon/media/playback_scheduler.h"
 
 #include <cstddef>
 #include <filesystem>
@@ -46,6 +47,7 @@ private:
     FrameCache m_cache;
     std::shared_ptr<renderer2d::PrecompCache> m_precomp_cache{std::make_shared<renderer2d::PrecompCache>()};
     media::MediaPrefetcher m_prefetcher;
+    std::unique_ptr<media::PlaybackScheduler> m_scheduler;
     std::optional<std::size_t> m_memory_budget_bytes;
 };
 

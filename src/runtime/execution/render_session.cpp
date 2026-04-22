@@ -40,6 +40,10 @@ void render_frames_parallel(
     FrameCache& cache,
     std::size_t worker_count,
     RenderContext& context,
+    media::MediaPrefetcher& prefetcher,
+    media::PlaybackScheduler* scheduler,
+    const CompiledScene& original_scene,
+    double session_fps,
     std::vector<ExecutedFrame>& rendered_frames) {
 
     const std::size_t task_count = execution_plan.frame_tasks.size();
@@ -69,7 +73,19 @@ void render_frames_parallel(
                     return;
                 }
 
-                rendered_frames[index] = executor.execute(compiled_scene, execution_plan.render_plan, execution_plan.frame_tasks[index], local_context);
+                const auto& task = execution_plan.frame_tasks[index];
+                
+                if (scheduler) {
+                    std::vector<std::string> active_videos;
+                    for (const auto& layer : original_scene.layers) {
+                        if (layer.type == scene::LayerType::Video && layer.asset_path) {
+                            active_videos.push_back(*layer.asset_path);
+                        }
+                    }
+                    prefetcher.update(*context.media, *scheduler, active_videos, task.time_seconds, session_fps);
+                }
+
+                rendered_frames[index] = executor.execute(compiled_scene, execution_plan.render_plan, task, local_context);
                 arena.reset();
             }
         }));
@@ -103,6 +119,18 @@ RenderSessionResult RenderSession::render(
     // get_default_text_font returns the font, we'll store it in the context later if needed
     
     RenderContext context(m_precomp_cache);
+    RenderExecutionPlan effective_plan = execution_plan;
+    const double session_fps = compiled_scene.frame_rate.value() > 0.0 ? compiled_scene.frame_rate.value() : 24.0;
+
+    if (!m_scheduler && context.media) {
+        m_scheduler = std::make_unique<media::PlaybackScheduler>(*context.media);
+    }
+
+    if (context.media) {
+        std::vector<std::string> active_videos;
+        // In a real session, we'd scan the scene for active video layers
+        // m_prefetcher.update(*context.media, *m_scheduler, active_videos, task.time_seconds, session_fps);
+    }
     context.policy = make_quality_policy(execution_plan.render_plan.quality_tier);
     context.renderer2d.policy = context.policy;
     context.renderer2d.font_registry = ::tachyon::renderer2d::get_default_font_registry();
@@ -142,21 +170,32 @@ RenderSessionResult RenderSession::render(
         ? 60.0 
         : static_cast<double>(compiled_scene.compositions.front().fps);
     
-    // Update media prefetcher with current time
-    if (!execution_plan.frame_tasks.empty() && context.media) {
-        m_prefetcher.update(*context.media, active_video_paths, execution_plan.frame_tasks.front().time_seconds, session_fps);
-    }
-
-    // Prepare evaluation plan
+    FrameArena arena;
+    FrameExecutor executor(arena, m_cache);
     
-    std::vector<ExecutedFrame> rendered_frames;
-    if (effective_worker_count <= 1 || execution_plan.frame_tasks.size() <= 1) {
-        render_frames_sequential(compiled_scene, execution_plan, m_cache, context, rendered_frames);
+    // Sequential Rendering with active prefetching
+    if (effective_worker_count <= 1) {
+        for (const auto& task : execution_plan.frame_tasks) {
+            if (context.media && m_scheduler) {
+                // Identify active video assets (simulation: assume all mentioned in task or scene)
+                std::vector<std::string> active_videos;
+                for (const auto& layer : compiled_scene.layers) {
+                    if (layer.type == scene::LayerType::Video && layer.asset_path) {
+                        active_videos.push_back(*layer.asset_path);
+                    }
+                }
+                m_prefetcher.update(*context.media, *m_scheduler, active_videos, task.time_seconds, session_fps);
+            }
+            
+            result.frames.push_back(executor.execute(compiled_scene, execution_plan.render_plan, task, context));
+            arena.reset();
+        }
     } else {
-        render_frames_parallel(compiled_scene, execution_plan, m_cache, effective_worker_count, context, rendered_frames);
+        // Parallel rendering with symmetric active prefetching
+        render_frames_parallel(compiled_scene, execution_plan, m_cache, effective_worker_count, context, m_prefetcher, m_scheduler.get(), compiled_scene, session_fps, result.frames);
     }
 
-    for (ExecutedFrame& frame : rendered_frames) {
+    for (ExecutedFrame& frame : result.frames) {
         if (frame.cache_hit) {
             ++result.cache_hits;
         } else {
@@ -164,7 +203,20 @@ RenderSessionResult RenderSession::render(
         }
 
         if (sink) {
-            const output::OutputFramePacket packet{frame.frame_number, frame.frame.get()};
+            output::OutputFramePacket packet{frame.frame_number, frame.frame.get(), frame.aovs};
+            packet.metadata.time_seconds = static_cast<double>(frame.frame_number) / session_fps;
+            packet.metadata.scene_hash = std::to_string(compiled_scene.scene_hash);
+            packet.metadata.color_space = effective_plan.working_space;
+            
+            // Basic timecode hh:mm:ss:ff
+            int ff = frame.frame_number % (int)std::round(session_fps);
+            int ss = (frame.frame_number / (int)std::round(session_fps)) % 60;
+            int mm = (frame.frame_number / ((int)std::round(session_fps) * 60)) % 60;
+            int hh = (frame.frame_number / ((int)std::round(session_fps) * 3600));
+            char tc[32];
+            snprintf(tc, sizeof(tc), "%02d:%02d:%02d:%02d", hh, mm, ss, ff);
+            packet.metadata.timecode = tc;
+
             if (!sink->write_frame(packet)) {
                 result.output_error = sink->last_error();
             } else {

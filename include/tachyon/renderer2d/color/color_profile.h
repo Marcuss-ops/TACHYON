@@ -8,8 +8,9 @@ namespace tachyon::renderer2d {
 
 enum class ColorPrimaries {
     sRGB,       // Same as Rec.709
-    Rec709 = sRGB,
+    Rec709,
     Rec2020,
+    DisplayP3,  // Display P3
     P3D65,      // Display P3
     P3DCI,      // DCI-P3 (theatrical)
     ACES_AP0,   // ACES Primaries 0 (for archival/storage)
@@ -52,6 +53,10 @@ struct ColorProfile {
 
     static ColorProfile Rec709() {
         return {ColorPrimaries::Rec709, TransferCurve::Rec709, WhitePoint::D65};
+    }
+
+    static ColorProfile DisplayP3() {
+        return {ColorPrimaries::DisplayP3, TransferCurve::Linear, WhitePoint::D65};
     }
 
     static ColorProfile Rec2020_Linear() {

@@ -91,6 +91,7 @@ struct RenderContext2D {
     QualityPolicy policy;
     std::shared_ptr<class ::tachyon::renderer3d::RayTracer> ray_tracer;
     ColorManagementSystem cms;
+    WorkingColorSpace working_color_space;
 
     // Text rendering state (formerly TextRenderConfig singleton)
     const ::tachyon::text::FontRegistry* font_registry = nullptr;

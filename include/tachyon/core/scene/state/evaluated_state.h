@@ -95,6 +95,7 @@ struct EvaluatedLayerState {
     
     math::Transform2 local_transform{math::Transform2::identity()};
     math::Matrix4x4 world_matrix{math::Matrix4x4::identity()};
+    std::optional<math::Matrix4x4> previous_world_matrix;
     
     std::string parent_id;
     math::Vector3 local_position3{math::Vector3::zero()};
@@ -185,6 +186,8 @@ struct EvaluatedCameraState {
     std::string layer_id;
     math::Vector3 position{math::Vector3::zero()};
     math::Vector3 point_of_interest{0.0f, 0.0f, 0.0f}; 
+    std::optional<math::Vector3> previous_position;
+    std::optional<math::Vector3> previous_point_of_interest;
     bool is_two_node{true};
 
     bool  dof_enabled{false};

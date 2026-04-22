@@ -21,14 +21,13 @@ renderer2d::Color from_color_spec(const ColorSpec& spec, const renderer2d::Color
 
     // Professional conversion: sRGB (Input) -> Working Space
     renderer2d::ColorTransformGraph graph;
-    graph.set_source(renderer2d::ColorProfile::sRGB());
-    graph.set_target(working_profile);
-    return graph.transform(srgb);
+    graph.build_from_to(renderer2d::ColorProfile::sRGB(), working_profile);
+    return graph.process(srgb);
 }
 
 renderer2d::Color from_color_spec(const ColorSpec& spec) {
     // Default to sRGB -> Linear (Rec.709) for backward compatibility
-    return from_color_spec(spec, renderer2d::ColorProfile::Rec709_Linear());
+    return from_color_spec(spec, renderer2d::ColorProfile::Rec709());
 }
 
 renderer2d::Color apply_opacity(renderer2d::Color color, double opacity) {

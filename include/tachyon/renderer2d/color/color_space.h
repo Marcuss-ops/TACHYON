@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/renderer2d/color/color_profile.h"
 #include <string>
 #include <string_view>
 #include <algorithm>
@@ -7,25 +8,14 @@
 
 namespace tachyon::renderer2d {
 
-enum class ColorSpace {
-    sRGB,
-    Linear,
-    Rec709,
-    DisplayP3
-};
-
-using ColorPrimaries = ColorSpace;
+using ColorSpace = ColorPrimaries;
 
 enum class ColorRange {
     Full,
     Limited
 };
 
-enum class TransferCurve {
-    Linear,
-    sRGB,
-    Bt709
-};
+using TransferCurve = ::tachyon::renderer2d::TransferCurve;
 
 inline ColorSpace parse_color_space(std::string_view value) {
     std::string lower;
@@ -34,10 +24,11 @@ inline ColorSpace parse_color_space(std::string_view value) {
         lower.push_back(static_cast<char>(std::tolower(ch)));
     }
 
-    if (lower == "bt709" || lower == "rec709") return ColorSpace::Rec709;
-    if (lower == "p3" || lower == "dci-p3" || lower == "display-p3") return ColorSpace::DisplayP3;
-    if (lower == "linear") return ColorSpace::Linear;
-    return ColorSpace::sRGB;
+    if (lower == "bt709" || lower == "rec709") return ColorPrimaries::Rec709;
+    if (lower == "display-p3") return ColorPrimaries::DisplayP3;
+    if (lower == "p3" || lower == "dci-p3") return ColorPrimaries::P3D65;
+    if (lower == "linear") return ColorPrimaries::sRGB;
+    return ColorPrimaries::sRGB;
 }
 
 inline ColorPrimaries parse_color_primaries(std::string_view value) {
@@ -63,7 +54,7 @@ inline TransferCurve parse_transfer_curve(std::string_view value) {
     }
 
     if (lower == "linear" || lower == "linear_rec709" || lower == "rec709_linear") return TransferCurve::Linear;
-    if (lower == "bt709" || lower == "rec709" || lower == "gamma_2.4") return TransferCurve::Bt709;
+    if (lower == "bt709" || lower == "rec709" || lower == "gamma_2.4") return TransferCurve::Rec709;
     return TransferCurve::sRGB;
 }
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/core/animation/animation_curve.h"
+#include "tachyon/core/animation/keyframe_track.h"
 #include "tachyon/core/properties/property.h"
 
 #include <cstdint>
@@ -18,7 +18,7 @@ namespace properties {
  *
  * A property can be in one of three modes:
  *  - Static:  a single constant value, independent of time.
- *  - Animated: a keyframed AnimationCurve<T>, evaluated at ctx.time.
+ *  - Animated: a keyframed KeyframeTrack<T>, evaluated at ctx.time.
  *  - Driven:  a user-supplied callback/expression override (future expansion).
  *
  * The value model (stored keyframes + constant) and the evaluated value are
@@ -45,12 +45,12 @@ public:
         , m_static_value(static_value)
     {}
 
-    /** Create an animated property from an existing curve. */
-    explicit AnimatableProperty(std::string name, animation::AnimationCurve<T> curve)
+    /** Create an animated property from an existing track. */
+    explicit AnimatableProperty(std::string name, animation::KeyframeTrack<T> track)
         : m_name(std::move(name))
         , m_is_animated(true)
         , m_static_value{}
-        , m_curve(std::move(curve))
+        , m_curve(std::move(track))
     {}
 
     // ---- Mutation --------------------------------------------------------------
@@ -63,9 +63,9 @@ public:
         ++m_version;
     }
 
-    /** Replace the entire animation curve. */
-    void set_curve(animation::AnimationCurve<T> curve) {
-        m_curve = std::move(curve);
+    /** Replace the entire animation track. */
+    void set_curve(animation::KeyframeTrack<T> track) {
+        m_curve = std::move(track);
         m_is_animated = !m_curve.empty();
         ++m_version;
     }
@@ -143,7 +143,7 @@ public:
     // --- Inspection ------------------------------------------------------------
 
     [[nodiscard]] bool is_animated() const { return m_is_animated; }
-    [[nodiscard]] const animation::AnimationCurve<T>& curve() const { return m_curve; }
+    [[nodiscard]] const animation::KeyframeTrack<T>& curve() const { return m_curve; }
 
     /**
      * Returns the static value (only valid when !is_animated()).
@@ -156,7 +156,7 @@ private:
     std::string                  m_name;
     bool                         m_is_animated{false};
     T                            m_static_value{};
-    animation::AnimationCurve<T> m_curve;
+    animation::KeyframeTrack<T> m_curve;
     uint64_t                     m_version{1}; ///< Monotonic version counter for invalidation.
 };
 

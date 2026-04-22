@@ -24,11 +24,11 @@ public:
 
     // Build a Tachyon SceneSpec from the loaded data.
     // May be called multiple times (e.g. for different frame ranges).
-    virtual core::SceneSpec build_scene_spec() const = 0;
+    virtual SceneSpec build_scene_spec() const = 0;
 
     // Query animated data at a specific time (seconds).
     // Returns a SceneSpec with transforms evaluated at t.
-    virtual core::SceneSpec build_scene_spec_at(double time_seconds) const {
+    virtual SceneSpec build_scene_spec_at(double time_seconds) const {
         (void)time_seconds;
         return build_scene_spec();  // default: static
     }

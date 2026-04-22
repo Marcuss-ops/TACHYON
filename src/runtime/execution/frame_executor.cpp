@@ -139,6 +139,8 @@ ExecutedFrame FrameExecutor::execute(
                     if (sub_comp) {
                         RasterizedFrame2D rasterized = render_evaluated_composition_2d(*sub_comp, plan, task, thread_context.renderer2d);
                         if (rasterized.surface) samples_surfaces[s] = rasterized.surface;
+                        // For motion blur samples, we might not want all AOVs per sample, 
+                        // but beauty is mandatory.
                     }
                 }
 
@@ -166,6 +168,7 @@ ExecutedFrame FrameExecutor::execute(
                 result.draw_command_count = draw_list.commands.size();
                 RasterizedFrame2D rasterized = render_evaluated_composition_2d(*cached_comp, plan, task, context.renderer2d);
                 if (rasterized.surface) result.frame = std::make_shared<renderer2d::Framebuffer>(std::move(*rasterized.surface));
+                result.aovs = std::move(rasterized.aovs);
             }
         }
     }

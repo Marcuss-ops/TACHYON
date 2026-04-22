@@ -11,10 +11,18 @@
 
 namespace tachyon::output {
 
+struct FrameMetadata {
+    double time_seconds{0.0};
+    std::string timecode;
+    std::string color_space{"linear_rec709"};
+    std::string scene_hash;
+};
+
 struct OutputFramePacket {
     std::int64_t frame_number{0};
     const renderer2d::Framebuffer* frame{nullptr};
     std::vector<FrameAOV> aovs;   // optional: multi-layer AOVs for EXR output
+    FrameMetadata metadata;
 };
 
 class FrameOutputSink {

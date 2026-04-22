@@ -139,6 +139,19 @@ FetchContent_MakeAvailable(earcut)
 # We add its include directory globally
 include_directories(${earcut_SOURCE_DIR}/include)
 
+# Clipper2 for boolean shape operations (Merge Paths)
+FetchContent_Declare(
+    clipper2
+    GIT_REPOSITORY https://github.com/AngusJohnson/Clipper2.git
+    GIT_TAG        Clipper2_1.3.0
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+set(CLIPPER2_UTILS OFF CACHE BOOL "Disable Clipper2 utils" FORCE)
+set(CLIPPER2_EXAMPLES OFF CACHE BOOL "Disable Clipper2 examples" FORCE)
+set(CLIPPER2_TESTS OFF CACHE BOOL "Disable Clipper2 tests" FORCE)
+FetchContent_MakeAvailable(clipper2)
+include_directories(${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/include)
+
 FetchContent_MakeAvailable(embree)
 
 # Version header generation

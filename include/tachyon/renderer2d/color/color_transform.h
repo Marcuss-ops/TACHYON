@@ -24,6 +24,7 @@ inline PrimarySet get_primary_set(ColorPrimaries primaries, WhitePoint white_poi
         case ColorPrimaries::Rec2020:
             ps.r = {0.708f, 0.292f}; ps.g = {0.170f, 0.797f}; ps.b = {0.131f, 0.046f};
             break;
+        case ColorPrimaries::DisplayP3:
         case ColorPrimaries::P3D65:
         case ColorPrimaries::P3DCI:
             ps.r = {0.680f, 0.320f}; ps.g = {0.265f, 0.690f}; ps.b = {0.150f, 0.060f};
