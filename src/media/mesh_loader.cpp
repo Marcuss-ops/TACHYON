@@ -4,7 +4,7 @@
 // tinygltf will just include stb_image.h and use the linked definitions.
 #include <tiny_gltf.h>
 
-#include "tachyon/media/mesh_loader.h"
+#include "tachyon/media/loading/mesh_loader.h"
 #include <iostream>
 
 namespace tachyon::media {
@@ -29,7 +29,7 @@ static void process_node(const tinygltf::Model& model, const tinygltf::Node& nod
             t.data[14] = static_cast<float>(node.translation[2]);
         }
         if (node.rotation.size() == 4) {
-             // Quaternion to Matrix (simplified, assuming we have a math helper or we do it here)
+             // Quaternion to matrix conversion through the local math helpers.
              float x = static_cast<float>(node.rotation[0]);
              float y = static_cast<float>(node.rotation[1]);
              float z = static_cast<float>(node.rotation[2]);

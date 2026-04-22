@@ -82,7 +82,7 @@ RenderableCard3D make_camera_card(
     };
     card.width = static_cast<float>(base_width) * std::max(0.1f, layer.local_transform.scale.x);
     card.height = static_cast<float>(base_height) * std::max(0.1f, layer.local_transform.scale.y);
-    card.rotation_degrees = 0.0f; // Simplified
+    card.rotation_degrees = 0.0f; // Default flat card orientation.
     card.opacity = static_cast<float>(layer.opacity);
     return card;
 }

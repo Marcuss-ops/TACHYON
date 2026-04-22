@@ -18,15 +18,6 @@ using ::tachyon::renderer2d::LinePrimitive;
 using ::tachyon::renderer2d::RectI;
 using ::tachyon::renderer2d::SurfaceRGBA;
 
-renderer2d::Color placeholder_textured_color(float opacity) {
-    renderer2d::Color color{1.0f, 1.0f, 1.0f, 1.0f};
-    color.a = std::clamp(opacity, 0.0f, 1.0f);
-    color.r *= color.a;
-    color.g *= color.a;
-    color.b *= color.a;
-    return color;
-}
-
 RectI intersect_rects(const RectI& a, const RectI& b) {
     const int x0 = std::max(a.x, b.x);
     const int y0 = std::max(a.y, b.y);
