@@ -88,14 +88,15 @@ void draw_scanline(
 
             Color color = texture->get_pixel(tx, ty);
             if (opacity < 1.0f) {
-                color.a *= opacity;
+                color.a = static_cast<std::uint8_t>(color.a * opacity);
             }
             
             // If opaque, we already wrote the depth, just set the pixel.
-            // If semi-transparent, we blend.
-            if (color.a >= 1.0f) {
+            // If semi-transparent, we blend (note: depth buffer and transparency 
+            // is always a trade-off, but AE-style uses painter's + depth test).
+            if (color.a == 255) {
                 surface.set_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), color);
-            } else if (color.a > 0.0f) {
+            } else if (color.a > 0) {
                 surface.blend_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), color);
             }
         }

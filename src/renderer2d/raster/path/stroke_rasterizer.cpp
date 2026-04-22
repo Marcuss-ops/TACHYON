@@ -7,6 +7,57 @@ namespace tachyon::renderer2d {
 
 namespace {
 
+struct GradientLUT {
+    static constexpr int SAMPLES = 256;
+    float r[SAMPLES];
+    float g[SAMPLES];
+    float b[SAMPLES];
+    float a[SAMPLES];
+
+    GradientLUT(const GradientSpec& spec) {
+        if (spec.stops.empty()) {
+            std::fill(r, r + SAMPLES, 1.0f);
+            std::fill(g, g + SAMPLES, 1.0f);
+            std::fill(b, b + SAMPLES, 1.0f);
+            std::fill(a, a + SAMPLES, 1.0f);
+            return;
+        }
+
+        for (int i = 0; i < SAMPLES; ++i) {
+            float t = static_cast<float>(i) / static_cast<float>(SAMPLES - 1);
+            
+            auto it = std::lower_bound(spec.stops.begin(), spec.stops.end(), t, [](const GradientStop& s, float val) {
+                return s.offset < val;
+            });
+
+            Color c;
+            if (it == spec.stops.begin()) {
+                c = Color{it->color.r / 255.0f, it->color.g / 255.0f, it->color.b / 255.0f, it->color.a / 255.0f};
+            } else if (it == spec.stops.end()) {
+                const auto& last = spec.stops.back();
+                c = Color{last.color.r / 255.0f, last.color.g / 255.0f, last.color.b / 255.0f, last.color.a / 255.0f};
+            } else {
+                const auto& s1 = *(it - 1);
+                const auto& s2 = *it;
+                float range = s2.offset - s1.offset;
+                float alpha = (range > 1e-6f) ? (t - s1.offset) / range : 0.0f;
+                c = Color{
+                    (s1.color.r * (1.0f - alpha) + s2.color.r * alpha) / 255.0f,
+                    (s1.color.g * (1.0f - alpha) + s2.color.g * alpha) / 255.0f,
+                    (s1.color.b * (1.0f - alpha) + s2.color.b * alpha) / 255.0f,
+                    (s1.color.a * (1.0f - alpha) + s2.color.a * alpha) / 255.0f
+                };
+            }
+            r[i] = c.r; g[i] = c.g; b[i] = c.b; a[i] = c.a;
+        }
+    }
+
+    inline Color sample(float t) const {
+        int idx = std::clamp(static_cast<int>(t * (SAMPLES - 1)), 0, SAMPLES - 1);
+        return {r[idx], g[idx], b[idx], a[idx]};
+    }
+};
+
 Color apply_coverage(Color color, float opacity, float coverage) {
     const float alpha = color.a * std::clamp(opacity, 0.0f, 1.0f) * std::clamp(coverage, 0.0f, 1.0f);
     color.a = alpha;
@@ -112,13 +163,47 @@ void rasterize_stroke_polygon(SurfaceRGBA& surface, const std::vector<Contour>& 
         const int end_x = std::min(static_cast<int>(surface.width()), static_cast<int>(std::ceil(max_x + radius)));
         const int end_y = std::min(static_cast<int>(surface.height()), static_cast<int>(std::ceil(max_y + radius)));
 
+        std::optional<GradientLUT> lut;
+        if (style.gradient.has_value()) {
+            lut.emplace(*style.gradient);
+        }
+
+        const bool is_linear = style.gradient.has_value() && style.gradient->type == GradientType::Linear;
+        float dt_x = 0.0f;
+        if (is_linear) {
+            const auto& grad = *style.gradient;
+            const math::Vector2 ab = grad.end - grad.start;
+            const float len2 = ab.length_squared();
+            if (len2 > 1e-6f) {
+                dt_x = ab.x / len2;
+                // t = (p-start).dot(ab) / len2
+                // Compute it per pixel to keep the implementation straightforward.
+            }
+        }
+
         for (int y = start_y; y < end_y; ++y) {
+            float t_row_base = 0.0f;
+            float dt_y = 0.0f;
+            if (is_linear) {
+                const auto& grad = *style.gradient;
+                const math::Vector2 ab = grad.end - grad.start;
+                const float len2 = ab.length_squared();
+                dt_y = ab.y / len2;
+                t_row_base = math::Vector2::dot(math::Vector2(0.5f, (float)y + 0.5f) - grad.start, ab) / len2;
+            }
+
             for (int x = start_x; x < end_x; ++x) {
                 const float coverage = stroke_coverage(contours, x, y, radius, style);
                 if (coverage > 0.0f) {
                     Color c = style.stroke_color;
-                    if (style.gradient.has_value()) {
-                        c = sample_gradient(*style.gradient, static_cast<float>(x), static_cast<float>(y));
+                    if (lut) {
+                        float cur_t = 0.0f;
+                        if (is_linear) {
+                            cur_t = t_row_base + (float)x * dt_x;
+                        } else {
+                            cur_t = (math::Vector2((float)x + 0.5f, (float)y + 0.5f) - style.gradient->start).length() / style.gradient->radial_radius;
+                        }
+                        c = lut->sample(std::clamp(cur_t, 0.0f, 1.0f));
                     }
                     surface.blend_pixel(
                         static_cast<std::uint32_t>(x),

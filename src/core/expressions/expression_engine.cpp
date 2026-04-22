@@ -1,5 +1,5 @@
 #include "tachyon/core/expressions/expression_engine.h"
-#include "tachyon/runtime/core/math_contract.h"
+#include "tachyon/runtime/core/contracts/math_contract.h"
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -125,7 +125,7 @@ private:
         std::string s = m_input.substr(start, m_pos - start);
         
         // Use a pointer to satisfy locale-independent parsing if needed, 
-        // but for now, we'll try to replace any ',' with '.' just in case std::stod is finicky.
+        // Replace commas with dots before std::stod parsing.
         std::replace(s.begin(), s.end(), ',', '.');
         return std::stod(s); 
     }
