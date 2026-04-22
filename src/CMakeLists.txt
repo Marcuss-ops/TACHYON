@@ -39,7 +39,10 @@ add_library(TachyonCore
     renderer2d/evaluated_composition/composition_utils.cpp
     renderer2d/evaluated_composition/layer_to_draw_command.cpp
     renderer2d/spec/project_card.cpp
-    renderer2d/raster/path_rasterizer.cpp
+    renderer2d/raster/path/path_flattener.cpp
+    renderer2d/raster/path/fill_rasterizer.cpp
+    renderer2d/raster/path/stroke_rasterizer.cpp
+    renderer2d/raster/path/path_trimmer.cpp
     renderer2d/resource/texture_resolver.cpp
     renderer2d/core/framebuffer.cpp
     renderer2d/core/surface_pool.cpp
