@@ -27,7 +27,11 @@ CompositionSpec parse_composition(const json& object, const std::string& path, D
     if (object.contains("layers") && object.at("layers").is_array()) {
         const auto& layers = object.at("layers");
         for (std::size_t i = 0; i < layers.size(); ++i) {
-            if (layers[i].is_object()) composition.layers.push_back(parse_layer(layers[i], make_path(path, "layers[" + std::to_string(i) + "]"), diagnostics));
+            if (layers[i].is_object()) {
+                LayerSpec layer;
+                parse_layer(layers[i], layer, make_path(path, "layers[" + std::to_string(i) + "]"), diagnostics);
+                composition.layers.push_back(std::move(layer));
+            }
         }
     }
     parse_composition_audio_tracks(composition, object, path, diagnostics);
@@ -395,6 +399,16 @@ json serialize_layer(const LayerSpec& layer) {
     if (!layer.text_highlights.empty()) {
         j["text_highlights"] = layer.text_highlights;
     }
+
+    if (!layer.repeater_count.empty()) j["repeater_count"] = serialize_scalar_property(layer.repeater_count);
+    if (!layer.repeater_stagger_delay.empty()) j["repeater_stagger_delay"] = serialize_scalar_property(layer.repeater_stagger_delay);
+    if (!layer.repeater_offset_position_x.empty()) j["repeater_offset_position_x"] = serialize_scalar_property(layer.repeater_offset_position_x);
+    if (!layer.repeater_offset_position_y.empty()) j["repeater_offset_position_y"] = serialize_scalar_property(layer.repeater_offset_position_y);
+    if (!layer.repeater_offset_rotation.empty()) j["repeater_offset_rotation"] = serialize_scalar_property(layer.repeater_offset_rotation);
+    if (!layer.repeater_offset_scale_x.empty()) j["repeater_offset_scale_x"] = serialize_scalar_property(layer.repeater_offset_scale_x);
+    if (!layer.repeater_offset_scale_y.empty()) j["repeater_offset_scale_y"] = serialize_scalar_property(layer.repeater_offset_scale_y);
+    if (!layer.repeater_start_opacity.empty()) j["repeater_start_opacity"] = serialize_scalar_property(layer.repeater_start_opacity);
+    if (!layer.repeater_end_opacity.empty()) j["repeater_end_opacity"] = serialize_scalar_property(layer.repeater_end_opacity);
 
     if (!layer.track_bindings.empty()) {
         j["track_bindings"] = json::array();

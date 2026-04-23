@@ -73,7 +73,7 @@ void parse_optional_color_property(const json& object, const char* key, Animated
 // --- Structural Parsers ---
 void parse_transform(const json& object, LayerSpec& layer, const std::string& path, DiagnosticBag& diagnostics);
 void parse_shape_path(const json& object, LayerSpec& layer, const std::string& path, DiagnosticBag& diagnostics);
-LayerSpec parse_layer(const json& object, const std::string& path, DiagnosticBag& diagnostics);
+void parse_layer(const json& object, LayerSpec& out, const std::string& path, DiagnosticBag& diagnostics);
 CompositionSpec parse_composition(const json& object, const std::string& path, DiagnosticBag& diagnostics);
 AssetSpec parse_asset(const json& object, const std::string& path, DiagnosticBag& diagnostics);
 ParseResult<SceneSpec> parse_scene_spec_file(const std::filesystem::path& path);
