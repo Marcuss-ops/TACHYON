@@ -322,7 +322,11 @@ json serialize_layer(const LayerSpec& layer) {
     }
     if (!layer.opacity_property.empty()) j["opacity"] = serialize_scalar_property(layer.opacity_property);
     if (!layer.mask_feather.empty()) j["mask_feather"] = serialize_scalar_property(layer.mask_feather);
-    j["stroke_width"] = layer.stroke_width;
+    if (!layer.stroke_width_property.empty()) {
+        j["stroke_width"] = serialize_scalar_property(layer.stroke_width_property);
+    } else {
+        j["stroke_width"] = layer.stroke_width;
+    }
 
     if (layer.parent.has_value()) j["parent"] = *layer.parent;
     if (layer.track_matte_layer_id.has_value()) j["track_matte_layer_id"] = *layer.track_matte_layer_id;
@@ -339,7 +343,10 @@ json serialize_layer(const LayerSpec& layer) {
 
     if (!layer.text_content.empty()) j["text_content"] = layer.text_content;
     if (!layer.font_id.empty()) j["font_id"] = layer.font_id;
+    if (!layer.font_size.empty()) j["font_size"] = serialize_scalar_property(layer.font_size);
     if (!layer.alignment.empty()) j["alignment"] = layer.alignment;
+    if (!layer.fill_color.empty()) j["fill_color"] = serialize_color_property(layer.fill_color);
+    if (!layer.stroke_color.empty()) j["stroke_color"] = serialize_color_property(layer.stroke_color);
     if (layer.shape_path.has_value() && !layer.shape_path->empty()) {
         json sp;
         sp["closed"] = layer.shape_path->closed;

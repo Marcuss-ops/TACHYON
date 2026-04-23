@@ -129,7 +129,9 @@ bool run_scene_spec_parsing_tests() {
                             "track_matte_type": "alpha",
                             "text_content": "Hello",
                             "font_id": "Arial",
-                            "alignment": "center"
+                            "font_size": 48,
+                            "alignment": "center",
+                            "fill_color": [255, 255, 255, 255]
                         },
                         {
                             "id": "layer3",
