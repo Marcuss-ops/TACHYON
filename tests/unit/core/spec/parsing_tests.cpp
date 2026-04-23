@@ -76,7 +76,10 @@ bool run_scene_spec_parsing_tests() {
         check_true(parsed.value.has_value(), "shape scene should parse");
         if (parsed.value.has_value()) {
             const auto& layer = parsed.value->compositions.front().layers.front();
-            check_true(!layer.shape_path.empty(), "shape path should parse");
+            check_true(layer.shape_path.has_value(), "shape path should parse");
+            check_true(!layer.shape_path->empty(), "shape path should have points");
+            check_true(layer.shape_path->points.size() == 3, "shape path should have 3 points");
+            check_true(layer.shape_path->closed, "shape path should be closed");
         }
     }
 
@@ -110,7 +113,13 @@ bool run_scene_spec_parsing_tests() {
                             "out_point": 120,
                             "opacity": 1.0,
                             "width": 1920,
-                            "height": 1080
+                            "height": 1080,
+                            "transform": {
+                                "position": [960, 540],
+                                "anchor_point": [960, 540],
+                                "scale": [100, 100],
+                                "rotation": 0
+                            }
                         },
                         {
                             "id": "layer2",
@@ -120,7 +129,28 @@ bool run_scene_spec_parsing_tests() {
                             "track_matte_type": "alpha",
                             "text_content": "Hello",
                             "font_id": "Arial",
-                            "alignment": "center"
+                            "font_size": 48,
+                            "alignment": "center",
+                            "fill_color": [255, 255, 255, 255]
+                        },
+                        {
+                            "id": "layer3",
+                            "type": "shape",
+                            "name": "Triangle",
+                            "shape_path": {
+                                "closed": true,
+                                "points": [
+                                    {"position": [0, 0], "tangent_in": [0, 0], "tangent_out": [0, 0]},
+                                    {"position": [40, 0], "tangent_in": [0, 0], "tangent_out": [0, 0]},
+                                    {"position": [20, 30], "tangent_in": [0, 0], "tangent_out": [0, 0]}
+                                ]
+                            }
+                        },
+                        {
+                            "id": "layer4",
+                            "type": "precomp",
+                            "name": "Precomp",
+                            "precomp_id": "comp1"
                         }
                     ],
                     "camera_cuts": [
@@ -186,6 +216,16 @@ bool run_scene_spec_parsing_tests() {
                     check_true(l1.opacity == l2.opacity, "roundtrip: layer[" + std::to_string(i) + "].opacity matches");
                     check_true(l1.track_matte_layer_id == l2.track_matte_layer_id, "roundtrip: layer[" + std::to_string(i) + "].track_matte_layer_id matches");
                     check_true(l1.track_matte_type == l2.track_matte_type, "roundtrip: layer[" + std::to_string(i) + "].track_matte_type matches");
+                    check_true(l1.precomp_id == l2.precomp_id, "roundtrip: layer[" + std::to_string(i) + "].precomp_id matches");
+                    check_true(l1.shape_path.has_value() == l2.shape_path.has_value(), "roundtrip: layer[" + std::to_string(i) + "].shape_path presence matches");
+                    if (l1.shape_path.has_value() && l2.shape_path.has_value()) {
+                        check_true(l1.shape_path->closed == l2.shape_path->closed, "roundtrip: layer[" + std::to_string(i) + "].shape_path.closed matches");
+                        check_true(l1.shape_path->points.size() == l2.shape_path->points.size(), "roundtrip: layer[" + std::to_string(i) + "].shape_path.points.size matches");
+                        if (!l1.shape_path->points.empty() && !l2.shape_path->points.empty()) {
+                            check_true(l1.shape_path->points[0].position.x == l2.shape_path->points[0].position.x, "roundtrip: layer[" + std::to_string(i) + "].shape_path.points[0].position.x matches");
+                            check_true(l1.shape_path->points[0].position.y == l2.shape_path->points[0].position.y, "roundtrip: layer[" + std::to_string(i) + "].shape_path.points[0].position.y matches");
+                        }
+                    }
                 }
             }
 

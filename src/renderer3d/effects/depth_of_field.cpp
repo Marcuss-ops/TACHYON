@@ -231,7 +231,7 @@ void DepthOfFieldPostPass::cinematic_bokeh_pass(
     std::vector<float> output = rgba;
     const int samples = config_.blur_samples;
     const int blades = config_.diaphragm_blades;
-    const float rotation = config_.bokeh_rotation_deg * 3.14159f / 180.0f;
+    const float rotation = config_.bokeh_rotation_deg * PI / 180.0f;
     
     // Precompute polygon or circular samples
     std::vector<std::pair<float, float>> sample_offsets;
