@@ -97,9 +97,22 @@ public:
                     glyph.stroke_color = blend_color(glyph.stroke_color, stroke, coverage);
                 }
 
-                // Stroke Width
+                 // Stroke Width
                 if (animator.properties.stroke_width_value.has_value() || !animator.properties.stroke_width_keyframes.empty()) {
                     glyph.stroke_width = glyph.stroke_width * (1.0f - coverage) + static_cast<float>(stroke_width) * coverage;
+                }
+
+                // Blur Radius
+                double blur_radius = sample_scalar_kfs(animator.properties.blur_radius_value, animator.properties.blur_radius_keyframes, t);
+                if (animator.properties.blur_radius_value.has_value() || !animator.properties.blur_radius_keyframes.empty()) {
+                    glyph.blur_radius = glyph.blur_radius * (1.0f - coverage) + static_cast<float>(blur_radius) * coverage;
+                }
+
+                // Reveal Factor
+                double reveal = sample_scalar_kfs(animator.properties.reveal_value, animator.properties.reveal_keyframes, t);
+                if (animator.properties.reveal_value.has_value() || !animator.properties.reveal_keyframes.empty()) {
+                    glyph.reveal_factor = glyph.reveal_factor * (1.0f - coverage) + static_cast<float>(reveal) * coverage;
+                    glyph.reveal_factor = std::clamp(glyph.reveal_factor, 0.0f, 1.0f);
                 }
             }
         }
