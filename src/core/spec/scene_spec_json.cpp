@@ -396,6 +396,59 @@ json serialize_layer(const LayerSpec& layer) {
         j["text_highlights"] = layer.text_highlights;
     }
 
+    if (!layer.track_bindings.empty()) {
+        j["track_bindings"] = json::array();
+        for (const auto& binding : layer.track_bindings) {
+            json b;
+            b["property_path"] = binding.property_path;
+            b["source_id"] = binding.source_id;
+            b["source_track_name"] = binding.source_track_name;
+            b["influence"] = binding.influence;
+            b["enabled"] = binding.enabled;
+            j["track_bindings"].push_back(b);
+        }
+    }
+
+    if (layer.time_remap.enabled || !layer.time_remap.keyframes.empty()) {
+        json tr;
+        tr["enabled"] = layer.time_remap.enabled;
+        switch (layer.time_remap.mode) {
+            case spec::TimeRemapMode::Hold: tr["mode"] = "hold"; break;
+            case spec::TimeRemapMode::Blend: tr["mode"] = "blend"; break;
+            case spec::TimeRemapMode::OpticalFlow: tr["mode"] = "optical_flow"; break;
+        }
+        if (!layer.time_remap.keyframes.empty()) {
+            tr["keyframes"] = json::array();
+            for (const auto& kf : layer.time_remap.keyframes) {
+                tr["keyframes"].push_back(json::array({kf.first, kf.second}));
+            }
+        }
+        j["time_remap"] = tr;
+    }
+
+    if (layer.frame_blend != spec::FrameBlendMode::Linear) {
+        switch (layer.frame_blend) {
+            case spec::FrameBlendMode::None: j["frame_blend"] = "none"; break;
+            case spec::FrameBlendMode::PixelMotion: j["frame_blend"] = "pixel_motion"; break;
+            case spec::FrameBlendMode::OpticalFlow: j["frame_blend"] = "optical_flow"; break;
+            default: break;
+        }
+    }
+
+    if (layer.camera_type != "one_node") j["camera_type"] = layer.camera_type;
+    if (!layer.camera_zoom.empty()) j["camera_zoom"] = serialize_scalar_property(layer.camera_zoom);
+    if (!layer.camera_poi.empty()) j["camera_poi"] = serialize_vector3_property(layer.camera_poi);
+
+    if (layer.camera_shake_seed != 0 || !layer.camera_shake_amplitude_pos.empty() || !layer.camera_shake_amplitude_rot.empty() || !layer.camera_shake_frequency.empty() || !layer.camera_shake_roughness.empty()) {
+        json cs;
+        cs["seed"] = layer.camera_shake_seed;
+        if (!layer.camera_shake_amplitude_pos.empty()) cs["amplitude_pos"] = serialize_scalar_property(layer.camera_shake_amplitude_pos);
+        if (!layer.camera_shake_amplitude_rot.empty()) cs["amplitude_rot"] = serialize_scalar_property(layer.camera_shake_amplitude_rot);
+        if (!layer.camera_shake_frequency.empty()) cs["frequency"] = serialize_scalar_property(layer.camera_shake_frequency);
+        if (!layer.camera_shake_roughness.empty()) cs["roughness"] = serialize_scalar_property(layer.camera_shake_roughness);
+        j["camera_shake"] = cs;
+    }
+
     return j;
 }
 
