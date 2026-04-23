@@ -305,7 +305,6 @@ void RigGraph::solve_ik(Pose& pose) const {
         std::vector<int> chain_indices;
         auto* current = end_effector;
         for (int i = 0; i < spec.chain_length && current; ++i) {
-            auto it = pose.nodes().begin();
             // This is still a bit slow, but better if we had indices in the spec
             // For now, we find index of current
             int idx = -1;

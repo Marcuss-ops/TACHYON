@@ -6,7 +6,9 @@
 #include "tachyon/renderer3d/effects/depth_of_field.h"
 #include "tachyon/renderer3d/lighting/environment_manager.h"
 #include <embree4/rtcore.h>
+#ifdef _WIN32
 #include <OpenImageDenoise/oidn.hpp>
+#endif
 #include <memory>
 #include <vector>
 #include <unordered_map>
@@ -74,8 +76,10 @@ private:
 
     EnvironmentManager environment_manager_;
     
+#ifdef _WIN32
     oidn::DeviceRef oidn_device_;
     oidn::FilterRef oidn_filter_;
+#endif
 
     int samples_per_pixel_{1};
 

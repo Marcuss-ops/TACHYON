@@ -118,14 +118,19 @@ FetchContent_MakeAvailable(tinygltf)
 include_directories(${tinygltf_SOURCE_DIR})
 
 # OpenImageDenoise (OIDN) — prebuilt binaries (avoids ISPC + TBB build requirements)
-FetchContent_Declare(
-    oidn
-    URL https://github.com/RenderKit/oidn/releases/download/v2.3.0/oidn-2.3.0.x64.windows.zip
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-)
-FetchContent_MakeAvailable(oidn)
-set(OIDN_ROOT "${oidn_SOURCE_DIR}")
-find_package(OpenImageDenoise REQUIRED PATHS "${OIDN_ROOT}" NO_DEFAULT_PATH)
+# Only enabled on Windows; Linux uses the stub path
+if(WIN32)
+    FetchContent_Declare(
+        oidn
+        URL https://github.com/RenderKit/oidn/releases/download/v2.3.0/oidn-2.3.0.x64.windows.zip
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    )
+    FetchContent_MakeAvailable(oidn)
+    set(OIDN_ROOT "${oidn_SOURCE_DIR}")
+    find_package(OpenImageDenoise REQUIRED PATHS "${OIDN_ROOT}" NO_DEFAULT_PATH)
+else()
+    message(STATUS "[Tachyon] OIDN disabled on non-Windows platform")
+endif()
 
 # earcut.hpp for 3D polygon triangulation (Extrusion)
 FetchContent_Declare(

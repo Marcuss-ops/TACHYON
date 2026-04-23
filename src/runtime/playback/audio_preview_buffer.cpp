@@ -86,7 +86,6 @@ void AudioPreviewBuffer::ola_time_stretch(
     const int frame_size = (m_sample_rate * frame_ms) / 1000 * channels;
     const int hop_in = static_cast<int>(static_cast<float>(frame_size) / (2.0f * speed));
     const int hop_out = frame_size / 2;
-    const int overlap = frame_size - hop_out;
 
     if (frame_size <= 0 || hop_in <= 0 || hop_out <= 0) return;
 

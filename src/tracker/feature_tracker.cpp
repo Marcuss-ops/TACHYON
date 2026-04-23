@@ -23,6 +23,7 @@ float GrayImage::at_bilinear(float fx, float fy) const {
 }
 
 // ---------------------------------------------------------------------------
+FeatureTracker::FeatureTracker() = default;
 FeatureTracker::FeatureTracker(Config cfg) : m_cfg(cfg) {}
 
 // ---------------------------------------------------------------------------

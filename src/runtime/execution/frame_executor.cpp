@@ -109,31 +109,6 @@ std::shared_ptr<renderer2d::Framebuffer> framebuffer_to_framebuffer(const timeli
     return dst;
 }
 
-std::shared_ptr<renderer2d::SurfaceRGBA> blend_surfaces_linear(
-    const renderer2d::SurfaceRGBA& a,
-    const renderer2d::SurfaceRGBA& b,
-    float factor) {
-    
-    if (a.width() != b.width() || a.height() != b.height()) {
-        return std::make_shared<renderer2d::SurfaceRGBA>(a);
-    }
-    
-    auto result = std::make_shared<renderer2d::SurfaceRGBA>(a.width(), a.height());
-    const auto& pixels_a = a.pixels();
-    const auto& pixels_b = b.pixels();
-    auto& pixels_res = result->mutable_pixels();
-    
-    // factor 0.0 = A, 1.0 = B
-    const float fa = 1.0f - factor;
-    const float fb = factor;
-    
-    for (size_t i = 0; i < pixels_res.size(); ++i) {
-        pixels_res[i] = pixels_a[i] * fa + pixels_b[i] * fb;
-    }
-    
-    return result;
-}
-
 } // anonymous namespace
 
 void FrameExecutor::build_lookup_table(const CompiledScene& scene) {

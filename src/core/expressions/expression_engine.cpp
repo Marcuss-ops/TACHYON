@@ -10,24 +10,6 @@
 namespace tachyon {
 namespace expressions {
 
-namespace {
-
-/**
- * @brief Deterministic 1D Smooth Noise (Cubic interpolation between hashed points).
- */
-double smooth_noise_1d(double x, std::uint64_t seed) {
-    const std::uint64_t i = static_cast<std::uint64_t>(std::floor(x));
-    const double f = x - static_cast<double>(i);
-    const double u = f * f * (3.0 - 2.0 * f); // Cubic easing
-
-    const double v0 = math_contract::noise(i + seed);
-    const double v1 = math_contract::noise(i + 1 + seed);
-    
-    return math_contract::lerp(v0, v1, u) * 2.0 - 1.0; // Map [0,1] to [-1,1]
-}
-
-} // namespace
-
 class Parser {
 public:
     Parser(const std::string& input)

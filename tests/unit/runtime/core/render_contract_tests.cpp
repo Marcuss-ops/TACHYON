@@ -206,7 +206,7 @@ bool run_render_contract_tests() {
             const auto validation = tachyon::validate_scene_spec(*parsed.value);
             check_true(validation.ok(), "scene validates with blend mode");
 
-            const auto evaluated = tachyon::scene::evaluate_scene_composition_state(*parsed.value, "main", 0LL);
+            const auto evaluated = tachyon::scene::evaluate_scene_composition_state(*parsed.value, "main", std::int64_t(0));
             check_true(evaluated.has_value(), "scene evaluation resolves composition");
             if (evaluated.has_value()) {
                 check_true(!evaluated->layers.empty(), "scene evaluation emits layers");

@@ -69,7 +69,8 @@ public:
         float ransac_min_inlier_ratio{0.5f}; // minimum inlier ratio to accept
     };
 
-    explicit FeatureTracker(Config cfg = {});
+    FeatureTracker();
+    explicit FeatureTracker(Config cfg);
     ~FeatureTracker() = default;
 
     // Detect Harris corners in the frame and return feature seed positions.

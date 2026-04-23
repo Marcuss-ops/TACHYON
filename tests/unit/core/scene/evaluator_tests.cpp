@@ -56,7 +56,7 @@ bool run_scene_evaluator_tests() {
             const auto validation = tachyon::validate_scene_spec(*parsed.value);
             check_true(validation.ok(), "scene graph fixture should validate");
 
-            const auto evaluated = tachyon::scene::evaluate_composition_state(parsed.value->compositions.front(), 30LL);
+            const auto evaluated = tachyon::scene::evaluate_composition_state(parsed.value->compositions.front(), std::int64_t(30));
             check_true(evaluated.layers.size() == 2, "scene graph should preserve layer order");
             if (evaluated.layers.size() == 2) {
                 check_true(evaluated.layers[0].id == "parent", "parent should stay first in stack order");
@@ -112,7 +112,7 @@ bool run_scene_evaluator_tests() {
         composition.frame_rate = {30, 1};
         composition.layers.push_back(layer);
 
-        const auto evaluated = tachyon::scene::evaluate_composition_state(composition, 60LL);
+        const auto evaluated = tachyon::scene::evaluate_composition_state(composition, std::int64_t(60));
         check_true(nearly_equal(evaluated.composition_time_seconds, 2.0), "frame 60 at 30 fps should evaluate at 2 seconds");
         check_true(evaluated.layers.size() == 1, "composition should evaluate exactly one layer");
         check_true(nearly_equal(evaluated.layers[0].local_time_seconds, 1.0), "layer local time should be composition time minus start time");
@@ -173,7 +173,7 @@ bool run_scene_evaluator_tests() {
         scene.project.name = "Evaluator";
         scene.compositions.push_back(composition);
 
-        const auto evaluated = tachyon::scene::evaluate_scene_composition_state(scene, "camera_comp", 30LL);
+        const auto evaluated = tachyon::scene::evaluate_scene_composition_state(scene, "camera_comp", std::int64_t(30));
         check_true(evaluated.has_value(), "scene evaluator should resolve composition by id");
         if (evaluated.has_value()) {
             check_true(evaluated->camera.available, "camera state should be available when a camera layer is active");
@@ -231,7 +231,7 @@ bool run_scene_evaluator_tests() {
         scene.compositions.push_back(child_comp);
         scene.compositions.push_back(parent_comp);
 
-        const auto evaluated = tachyon::scene::evaluate_scene_composition_state(scene, "parent_comp", 0LL);
+        const auto evaluated = tachyon::scene::evaluate_scene_composition_state(scene, "parent_comp", std::int64_t(0));
         check_true(evaluated.has_value(), "time remap scene should evaluate");
         if (evaluated.has_value()) {
             check_true(nearly_equal(evaluated->layers[0].child_time_seconds, 1.5), "time remap should compute child time from property");
@@ -272,7 +272,7 @@ bool run_scene_evaluator_tests() {
         vars.numeric = &numeric_vars;
         vars.strings = &string_vars;
 
-        const auto evaluated = tachyon::scene::evaluate_scene_composition_state(scene, "template_comp", 0LL, nullptr, vars);
+        const auto evaluated = tachyon::scene::evaluate_scene_composition_state(scene, "template_comp", std::int64_t(0), nullptr, vars);
         check_true(evaluated.has_value(), "template scene should evaluate");
         if (evaluated.has_value()) {
             check_true(evaluated->layers.front().text_content == "Hello Intro / 0.750000", "template resolver should expand dotted identifiers");

@@ -8,9 +8,11 @@ RenderContext::RenderContext(std::shared_ptr<renderer2d::PrecompCache> precomp_c
       policy{},
       ray_tracer(std::make_shared<renderer3d::RayTracer>()) {
     renderer2d.media_manager = media.get();
+#ifdef _WIN32
     oidn_device = oidn::newDevice();
     oidn_device.commit();
     oidn_filter = oidn_device.newFilter("RT");
+#endif
 }
 
 } // namespace tachyon
