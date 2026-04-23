@@ -46,8 +46,6 @@ RasterizedFrame2D render_evaluated_composition_2d(
     dst.set_profile(context.cms.working_profile);
     dst.clear(Color::transparent());
 
-    EffectHost& host = effect_host_for(context);
-
     // Identify if we have 3D layers and trigger 3D pass if available
     bool has_any_3d = std::any_of(state.layers.begin(), state.layers.end(), [](const auto& l) { return l.is_3d && l.visible; });
     if (has_any_3d && !context.ray_tracer) {
@@ -111,7 +109,8 @@ RasterizedFrame2D render_evaluated_composition_2d(
         resolver.resolve(state.layers, matte_dependencies, rendered_surfaces, matte_buffers, state.width, state.height);
     }
 
-    auto render_pass = [&](SurfaceRGBA& target_surface, const std::optional<RectI>& tile_rect = std::nullopt) {
+    auto render_pass = [&](SurfaceRGBA& target_surface, RenderContext2D& render_context, const std::optional<RectI>& tile_rect = std::nullopt) {
+        EffectHost& host = effect_host_for(render_context);
         // AE Rendering Order: Bottom to Top
         for (std::size_t i = 0; i < state.layers.size(); ++i) {
             const auto& layer = state.layers[i];
@@ -166,8 +165,8 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 }
 
                 // Render the 3D block
-                context.ray_tracer->set_samples_per_pixel(context.policy.ray_tracer_spp);
-                context.ray_tracer->build_scene(scene3d);
+                render_context.ray_tracer->set_samples_per_pixel(render_context.policy.ray_tracer_spp);
+                render_context.ray_tracer->build_scene(scene3d);
 
                 const std::uint32_t w = static_cast<std::uint32_t>(state.width);
                 const std::uint32_t h = static_cast<std::uint32_t>(state.height);
@@ -188,7 +187,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 const double frame_rate_value = state.frame_rate.value() > 0.0 ? state.frame_rate.value() : 60.0;
                 const double frame_duration_seconds = 1.0 / frame_rate_value;
 
-                context.ray_tracer->render(
+                render_context.ray_tracer->render(
                     scene3d,
                     aovs,
                     &motion_blur,
@@ -240,11 +239,11 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 continue;
             }
 
-            auto layer_surface = render_layer_surface(layer, state, plan, task, context, tile_rect);
+            auto layer_surface = render_layer_surface(layer, state, plan, task, render_context, tile_rect);
 
             if (layer.is_adjustment_layer) {
-                if (context.policy.effects_enabled) {
-                    auto adjusted = apply_effect_pipeline(target_surface, layer.effects, host, context.working_color_space.profile);
+                if (render_context.policy.effects_enabled) {
+                    auto adjusted = apply_effect_pipeline(target_surface, layer.effects, host, render_context.working_color_space.profile);
                     multiply_surface_alpha(adjusted, static_cast<float>(layer.opacity));
                     composite_surface(target_surface, adjusted, 0, 0, BlendMode::Normal);
                 }
@@ -252,8 +251,8 @@ RasterizedFrame2D render_evaluated_composition_2d(
             }
 
             // Effects
-            if (context.policy.effects_enabled && !layer.effects.empty()) {
-                auto effect_surface = apply_effect_pipeline(*layer_surface, layer.effects, host, context.cms.working_profile);
+            if (render_context.policy.effects_enabled && !layer.effects.empty()) {
+                auto effect_surface = apply_effect_pipeline(*layer_surface, layer.effects, host, render_context.cms.working_profile);
                 *layer_surface = std::move(effect_surface);
             }
 
@@ -274,22 +273,17 @@ RasterizedFrame2D render_evaluated_composition_2d(
     if (context.policy.tile_size > 0) {
         TileGrid grid = build_tile_grid({0, 0, static_cast<int>(working_width), static_cast<int>(working_height)}, working_width, working_height, context.policy.tile_size);
         
-        #pragma omp parallel for schedule(dynamic)
         for (int i = 0; i < static_cast<int>(grid.tiles.size()); ++i) {
             const auto& tile = grid.tiles[i];
             SurfaceRGBA tile_surface(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height));
             tile_surface.clear(Color::transparent());
             
             RenderContext2D thread_context = context;
-            render_pass(tile_surface, tile);
-            
-            #pragma omp critical
-            {
-                dst.blit(tile_surface, tile.x, tile.y);
-            }
+            render_pass(tile_surface, thread_context, tile);
+            dst.blit(tile_surface, tile.x, tile.y);
         }
     } else {
-        render_pass(dst);
+        render_pass(dst, context);
     }
 
     return frame;

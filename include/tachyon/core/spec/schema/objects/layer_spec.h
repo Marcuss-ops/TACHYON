@@ -4,6 +4,7 @@
 #include "tachyon/core/spec/schema/properties/property_spec.h"
 #include "tachyon/core/spec/schema/transform/transform_spec.h"
 #include "tachyon/core/spec/schema/contracts/shared_contracts.h"
+#include "tachyon/core/shapes/shape_path.h"
 #include <string>
 #include <vector>
 #include <optional>
@@ -69,7 +70,7 @@ struct LayerSpec {
     double subtitle_outline_width{2.0};
 
     // Vector Graphics
-    std::string shape_path;
+    std::optional<ShapePathSpec> shape_path;
     std::string line_cap{"butt"};
     std::string line_join{"miter"};
     double miter_limit{4.0};

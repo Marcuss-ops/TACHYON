@@ -27,7 +27,11 @@ CompositionSpec parse_composition(const json& object, const std::string& path, D
     if (object.contains("layers") && object.at("layers").is_array()) {
         const auto& layers = object.at("layers");
         for (std::size_t i = 0; i < layers.size(); ++i) {
-            if (layers[i].is_object()) composition.layers.push_back(parse_layer(layers[i], make_path(path, "layers[" + std::to_string(i) + "]"), diagnostics));
+            if (layers[i].is_object()) {
+                LayerSpec layer;
+                parse_layer(layers[i], layer, make_path(path, "layers[" + std::to_string(i) + "]"), diagnostics);
+                composition.layers.push_back(std::move(layer));
+            }
         }
     }
     parse_composition_audio_tracks(composition, object, path, diagnostics);
@@ -123,6 +127,181 @@ ParseResult<SceneSpec> parse_scene_spec_file(const std::filesystem::path& path) 
 // Serialization
 // ---------------------------------------------------------------------------
 
+static std::string serialize_easing_preset(animation::EasingPreset preset) {
+    switch (preset) {
+        case animation::EasingPreset::EaseIn: return "ease_in";
+        case animation::EasingPreset::EaseOut: return "ease_out";
+        case animation::EasingPreset::EaseInOut: return "ease_in_out";
+        case animation::EasingPreset::Custom: return "custom";
+        default: return "";
+    }
+}
+
+static json serialize_bezier(const animation::CubicBezierEasing& bezier) {
+    return {
+        {"cx1", bezier.cx1}, {"cy1", bezier.cy1},
+        {"cx2", bezier.cx2}, {"cy2", bezier.cy2}
+    };
+}
+
+static json serialize_scalar_property(const AnimatedScalarSpec& prop) {
+    if (prop.empty()) return json{};
+    if (prop.value.has_value() && prop.keyframes.empty() && !prop.audio_band.has_value() && !prop.expression.has_value()) {
+        return *prop.value;
+    }
+    json j;
+    if (prop.value.has_value()) j["value"] = *prop.value;
+    if (prop.audio_band.has_value()) {
+        switch (*prop.audio_band) {
+            case AudioBandType::Bass: j["audio_band"] = "bass"; break;
+            case AudioBandType::Mid: j["audio_band"] = "mid"; break;
+            case AudioBandType::High: j["audio_band"] = "high"; break;
+            case AudioBandType::Presence: j["audio_band"] = "presence"; break;
+            case AudioBandType::Rms: j["audio_band"] = "rms"; break;
+        }
+        j["min"] = prop.audio_min;
+        j["max"] = prop.audio_max;
+    }
+    if (!prop.keyframes.empty()) {
+        j["keyframes"] = json::array();
+        for (const auto& kf : prop.keyframes) {
+            json kj;
+            kj["time"] = kf.time;
+            kj["value"] = kf.value;
+            if (kf.easing != animation::EasingPreset::None) {
+                kj["easing"] = serialize_easing_preset(kf.easing);
+                if (kf.easing == animation::EasingPreset::Custom) {
+                    kj["bezier"] = serialize_bezier(kf.bezier);
+                }
+                kj["speed_in"] = kf.speed_in;
+                kj["influence_in"] = kf.influence_in;
+                kj["speed_out"] = kf.speed_out;
+                kj["influence_out"] = kf.influence_out;
+            }
+            j["keyframes"].push_back(kj);
+        }
+    }
+    if (prop.expression.has_value()) j["expression"] = *prop.expression;
+    return j;
+}
+
+static json serialize_vector2_property(const AnimatedVector2Spec& prop) {
+    if (prop.empty()) return json{};
+    if (prop.value.has_value() && prop.keyframes.empty() && !prop.expression.has_value()) {
+        return json::array({prop.value->x, prop.value->y});
+    }
+    json j;
+    if (prop.value.has_value()) j["value"] = json::array({prop.value->x, prop.value->y});
+    if (!prop.keyframes.empty()) {
+        j["keyframes"] = json::array();
+        for (const auto& kf : prop.keyframes) {
+            json kj;
+            kj["time"] = kf.time;
+            kj["value"] = json::array({kf.value.x, kf.value.y});
+            if (kf.tangent_in.x != 0.0f || kf.tangent_in.y != 0.0f) {
+                kj["spatial_in"] = json::array({kf.tangent_in.x, kf.tangent_in.y});
+            }
+            if (kf.tangent_out.x != 0.0f || kf.tangent_out.y != 0.0f) {
+                kj["spatial_out"] = json::array({kf.tangent_out.x, kf.tangent_out.y});
+            }
+            if (kf.easing != animation::EasingPreset::None) {
+                kj["easing"] = serialize_easing_preset(kf.easing);
+                if (kf.easing == animation::EasingPreset::Custom) {
+                    kj["bezier"] = serialize_bezier(kf.bezier);
+                }
+                kj["speed_in"] = kf.speed_in;
+                kj["influence_in"] = kf.influence_in;
+                kj["speed_out"] = kf.speed_out;
+                kj["influence_out"] = kf.influence_out;
+            }
+            j["keyframes"].push_back(kj);
+        }
+    }
+    if (prop.expression.has_value()) j["expression"] = *prop.expression;
+    return j;
+}
+
+json serialize_vector3_property(const AnimatedVector3Spec& prop) {
+    if (prop.empty()) return json{};
+    if (prop.value.has_value() && prop.keyframes.empty() && !prop.expression.has_value()) {
+        return json::array({prop.value->x, prop.value->y, prop.value->z});
+    }
+    json j;
+    if (prop.value.has_value()) j["value"] = json::array({prop.value->x, prop.value->y, prop.value->z});
+    if (!prop.keyframes.empty()) {
+        j["keyframes"] = json::array();
+        for (const auto& kf : prop.keyframes) {
+            json kj;
+            kj["time"] = kf.time;
+            kj["value"] = json::array({kf.value.x, kf.value.y, kf.value.z});
+            if (kf.tangent_in.x != 0.0f || kf.tangent_in.y != 0.0f || kf.tangent_in.z != 0.0f) {
+                kj["spatial_in"] = json::array({kf.tangent_in.x, kf.tangent_in.y, kf.tangent_in.z});
+            }
+            if (kf.tangent_out.x != 0.0f || kf.tangent_out.y != 0.0f || kf.tangent_out.z != 0.0f) {
+                kj["spatial_out"] = json::array({kf.tangent_out.x, kf.tangent_out.y, kf.tangent_out.z});
+            }
+            if (kf.easing != animation::EasingPreset::None) {
+                kj["easing"] = serialize_easing_preset(kf.easing);
+                if (kf.easing == animation::EasingPreset::Custom) {
+                    kj["bezier"] = serialize_bezier(kf.bezier);
+                }
+                kj["speed_in"] = kf.speed_in;
+                kj["influence_in"] = kf.influence_in;
+                kj["speed_out"] = kf.speed_out;
+                kj["influence_out"] = kf.influence_out;
+            }
+            j["keyframes"].push_back(kj);
+        }
+    }
+    if (prop.expression.has_value()) j["expression"] = *prop.expression;
+    return j;
+}
+
+json serialize_color_property(const AnimatedColorSpec& prop) {
+    if (prop.empty()) return json{};
+    if (prop.value.has_value() && prop.keyframes.empty()) {
+        return json::array({prop.value->r, prop.value->g, prop.value->b, prop.value->a});
+    }
+    json j;
+    if (prop.value.has_value()) {
+        j["value"] = json::array({prop.value->r, prop.value->g, prop.value->b, prop.value->a});
+    }
+    if (!prop.keyframes.empty()) {
+        j["keyframes"] = json::array();
+        for (const auto& kf : prop.keyframes) {
+            json kj;
+            kj["time"] = kf.time;
+            kj["value"] = json::array({kf.value.r, kf.value.g, kf.value.b, kf.value.a});
+            if (kf.easing != animation::EasingPreset::None) {
+                kj["easing"] = serialize_easing_preset(kf.easing);
+                if (kf.easing == animation::EasingPreset::Custom) {
+                    kj["bezier"] = serialize_bezier(kf.bezier);
+                }
+                kj["speed_in"] = kf.speed_in;
+                kj["influence_in"] = kf.influence_in;
+                kj["speed_out"] = kf.speed_out;
+                kj["influence_out"] = kf.influence_out;
+            }
+            j["keyframes"].push_back(kj);
+        }
+    }
+    return j;
+}
+
+static json serialize_transform(const Transform2D& transform) {
+    json j;
+    if (transform.position_x.has_value()) j["position_x"] = *transform.position_x;
+    if (transform.position_y.has_value()) j["position_y"] = *transform.position_y;
+    if (transform.rotation.has_value()) j["rotation"] = *transform.rotation;
+    if (transform.scale_x.has_value()) j["scale_x"] = *transform.scale_x;
+    if (transform.scale_y.has_value()) j["scale_y"] = *transform.scale_y;
+    if (!transform.anchor_point.empty()) j["anchor_point"] = serialize_vector2_property(transform.anchor_point);
+    if (!transform.position_property.empty()) j["position"] = serialize_vector2_property(transform.position_property);
+    if (!transform.rotation_property.empty()) j["rotation"] = serialize_scalar_property(transform.rotation_property);
+    if (!transform.scale_property.empty()) j["scale"] = serialize_vector2_property(transform.scale_property);
+    return j;
+}
+
 json serialize_layer(const LayerSpec& layer) {
     json j;
     j["id"] = layer.id;
@@ -141,6 +320,18 @@ json serialize_layer(const LayerSpec& layer) {
     j["width"] = layer.width;
     j["height"] = layer.height;
 
+    {
+        json t = serialize_transform(layer.transform);
+        if (!t.empty()) j["transform"] = t;
+    }
+    if (!layer.opacity_property.empty()) j["opacity"] = serialize_scalar_property(layer.opacity_property);
+    if (!layer.mask_feather.empty()) j["mask_feather"] = serialize_scalar_property(layer.mask_feather);
+    if (!layer.stroke_width_property.empty()) {
+        j["stroke_width"] = serialize_scalar_property(layer.stroke_width_property);
+    } else {
+        j["stroke_width"] = layer.stroke_width;
+    }
+
     if (layer.parent.has_value()) j["parent"] = *layer.parent;
     if (layer.track_matte_layer_id.has_value()) j["track_matte_layer_id"] = *layer.track_matte_layer_id;
     if (layer.track_matte_type != TrackMatteType::None) {
@@ -156,8 +347,47 @@ json serialize_layer(const LayerSpec& layer) {
 
     if (!layer.text_content.empty()) j["text_content"] = layer.text_content;
     if (!layer.font_id.empty()) j["font_id"] = layer.font_id;
+    if (!layer.font_size.empty()) j["font_size"] = serialize_scalar_property(layer.font_size);
     if (!layer.alignment.empty()) j["alignment"] = layer.alignment;
-    if (!layer.shape_path.empty()) j["shape_path"] = layer.shape_path;
+    if (!layer.fill_color.empty()) j["fill_color"] = serialize_color_property(layer.fill_color);
+    if (!layer.stroke_color.empty()) j["stroke_color"] = serialize_color_property(layer.stroke_color);
+    if (layer.shape_path.has_value() && !layer.shape_path->empty()) {
+        json sp;
+        sp["closed"] = layer.shape_path->closed;
+        sp["points"] = json::array();
+        for (const auto& pt : layer.shape_path->points) {
+            json pj;
+            pj["position"] = json::array({pt.position.x, pt.position.y});
+            if (pt.tangent_in.x != 0.0f || pt.tangent_in.y != 0.0f) {
+                pj["tangent_in"] = json::array({pt.tangent_in.x, pt.tangent_in.y});
+            }
+            if (pt.tangent_out.x != 0.0f || pt.tangent_out.y != 0.0f) {
+                pj["tangent_out"] = json::array({pt.tangent_out.x, pt.tangent_out.y});
+            }
+            sp["points"].push_back(pj);
+        }
+        if (!layer.shape_path->subpaths.empty()) {
+            sp["subpaths"] = json::array();
+            for (const auto& sub : layer.shape_path->subpaths) {
+                json sj;
+                sj["closed"] = sub.closed;
+                sj["vertices"] = json::array();
+                for (const auto& pt : sub.vertices) {
+                    json pj;
+                    pj["position"] = json::array({pt.position.x, pt.position.y});
+                    if (pt.tangent_in.x != 0.0f || pt.tangent_in.y != 0.0f) {
+                        pj["tangent_in"] = json::array({pt.tangent_in.x, pt.tangent_in.y});
+                    }
+                    if (pt.tangent_out.x != 0.0f || pt.tangent_out.y != 0.0f) {
+                        pj["tangent_out"] = json::array({pt.tangent_out.x, pt.tangent_out.y});
+                    }
+                    sj["vertices"].push_back(pj);
+                }
+                sp["subpaths"].push_back(sj);
+            }
+        }
+        j["shape_path"] = sp;
+    }
     if (!layer.subtitle_path.empty()) j["subtitle_path"] = layer.subtitle_path;
 
     if (!layer.effects.empty()) {
@@ -168,6 +398,69 @@ json serialize_layer(const LayerSpec& layer) {
     }
     if (!layer.text_highlights.empty()) {
         j["text_highlights"] = layer.text_highlights;
+    }
+
+    if (!layer.repeater_count.empty()) j["repeater_count"] = serialize_scalar_property(layer.repeater_count);
+    if (!layer.repeater_stagger_delay.empty()) j["repeater_stagger_delay"] = serialize_scalar_property(layer.repeater_stagger_delay);
+    if (!layer.repeater_offset_position_x.empty()) j["repeater_offset_position_x"] = serialize_scalar_property(layer.repeater_offset_position_x);
+    if (!layer.repeater_offset_position_y.empty()) j["repeater_offset_position_y"] = serialize_scalar_property(layer.repeater_offset_position_y);
+    if (!layer.repeater_offset_rotation.empty()) j["repeater_offset_rotation"] = serialize_scalar_property(layer.repeater_offset_rotation);
+    if (!layer.repeater_offset_scale_x.empty()) j["repeater_offset_scale_x"] = serialize_scalar_property(layer.repeater_offset_scale_x);
+    if (!layer.repeater_offset_scale_y.empty()) j["repeater_offset_scale_y"] = serialize_scalar_property(layer.repeater_offset_scale_y);
+    if (!layer.repeater_start_opacity.empty()) j["repeater_start_opacity"] = serialize_scalar_property(layer.repeater_start_opacity);
+    if (!layer.repeater_end_opacity.empty()) j["repeater_end_opacity"] = serialize_scalar_property(layer.repeater_end_opacity);
+
+    if (!layer.track_bindings.empty()) {
+        j["track_bindings"] = json::array();
+        for (const auto& binding : layer.track_bindings) {
+            json b;
+            b["property_path"] = binding.property_path;
+            b["source_id"] = binding.source_id;
+            b["source_track_name"] = binding.source_track_name;
+            b["influence"] = binding.influence;
+            b["enabled"] = binding.enabled;
+            j["track_bindings"].push_back(b);
+        }
+    }
+
+    if (layer.time_remap.enabled || !layer.time_remap.keyframes.empty()) {
+        json tr;
+        tr["enabled"] = layer.time_remap.enabled;
+        switch (layer.time_remap.mode) {
+            case spec::TimeRemapMode::Hold: tr["mode"] = "hold"; break;
+            case spec::TimeRemapMode::Blend: tr["mode"] = "blend"; break;
+            case spec::TimeRemapMode::OpticalFlow: tr["mode"] = "optical_flow"; break;
+        }
+        if (!layer.time_remap.keyframes.empty()) {
+            tr["keyframes"] = json::array();
+            for (const auto& kf : layer.time_remap.keyframes) {
+                tr["keyframes"].push_back(json::array({kf.first, kf.second}));
+            }
+        }
+        j["time_remap"] = tr;
+    }
+
+    if (layer.frame_blend != spec::FrameBlendMode::Linear) {
+        switch (layer.frame_blend) {
+            case spec::FrameBlendMode::None: j["frame_blend"] = "none"; break;
+            case spec::FrameBlendMode::PixelMotion: j["frame_blend"] = "pixel_motion"; break;
+            case spec::FrameBlendMode::OpticalFlow: j["frame_blend"] = "optical_flow"; break;
+            default: break;
+        }
+    }
+
+    if (layer.camera_type != "one_node") j["camera_type"] = layer.camera_type;
+    if (!layer.camera_zoom.empty()) j["camera_zoom"] = serialize_scalar_property(layer.camera_zoom);
+    if (!layer.camera_poi.empty()) j["camera_poi"] = serialize_vector3_property(layer.camera_poi);
+
+    if (layer.camera_shake_seed != 0 || !layer.camera_shake_amplitude_pos.empty() || !layer.camera_shake_amplitude_rot.empty() || !layer.camera_shake_frequency.empty() || !layer.camera_shake_roughness.empty()) {
+        json cs;
+        cs["seed"] = layer.camera_shake_seed;
+        if (!layer.camera_shake_amplitude_pos.empty()) cs["amplitude_pos"] = serialize_scalar_property(layer.camera_shake_amplitude_pos);
+        if (!layer.camera_shake_amplitude_rot.empty()) cs["amplitude_rot"] = serialize_scalar_property(layer.camera_shake_amplitude_rot);
+        if (!layer.camera_shake_frequency.empty()) cs["frequency"] = serialize_scalar_property(layer.camera_shake_frequency);
+        if (!layer.camera_shake_roughness.empty()) cs["roughness"] = serialize_scalar_property(layer.camera_shake_roughness);
+        j["camera_shake"] = cs;
     }
 
     return j;

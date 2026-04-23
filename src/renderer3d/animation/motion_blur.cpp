@@ -7,11 +7,20 @@
 
 namespace tachyon::renderer3d {
 
+namespace {
+    constexpr float kRadToDeg = 180.0f / 3.14159265358979323846f;
+    constexpr float kEpsilon = 1e-6f;
+} // namespace
+
 MotionBlurRenderer::MotionBlurRenderer() = default;
 MotionBlurRenderer::MotionBlurRenderer(const MotionBlurConfig& config) : config_(config) {}
 
 void MotionBlurRenderer::set_config(const MotionBlurConfig& config) {
     config_ = config;
+}
+
+void MotionBlurRenderer::set_quality_tier(const std::string& tier) {
+    quality_tier_ = tier;
 }
 
 std::vector<double> MotionBlurRenderer::compute_subframe_times(double frame_time, double frame_duration) const {
@@ -22,26 +31,16 @@ std::vector<double> MotionBlurRenderer::compute_subframe_times(double frame_time
     }
 
     const double shutter_duration = compute_shutter_duration(frame_duration);
-    // Center the shutter around frame_time by subtracting half duration
     const double shutter_offset = (config_.shutter_phase / 360.0) * frame_duration;
     const double start_time = frame_time - shutter_duration * 0.5 + shutter_offset;
-    
+
     if (config_.samples <= 1) {
         times.push_back(frame_time);
         return times;
     }
 
-    // Optional stochastic jitter
-    const bool use_jitter = true; // Could be moved to config
-    std::mt19937 rng(1337); // Fixed seed for deterministic output, or use config_.seed
-    std::uniform_real_distribution<double> dist(-0.5, 0.5);
-
     for (int i = 0; i < config_.samples; ++i) {
         double t = static_cast<double>(i) / static_cast<double>(config_.samples - 1);
-        if (use_jitter && i > 0 && i < config_.samples - 1) {
-             double jitter_amount = 0.5 / static_cast<double>(config_.samples - 1);
-             t += dist(rng) * jitter_amount;
-        }
         times.push_back(start_time + t * shutter_duration);
     }
     return times;
@@ -51,7 +50,7 @@ std::vector<MotionBlurRenderer::SubFrameState> MotionBlurRenderer::generate_subf
     const scene::EvaluatedCompositionState& base_state,
     double frame_time,
     double frame_duration) const {
-    
+
     auto times = compute_subframe_times(frame_time, frame_duration);
     std::vector<SubFrameState> states;
     states.reserve(times.size());
@@ -59,43 +58,39 @@ std::vector<MotionBlurRenderer::SubFrameState> MotionBlurRenderer::generate_subf
     float total_weight = 0.0f;
     for (int i = 0; i < static_cast<int>(times.size()); ++i) {
         double t = times[i];
-        
-        // Normalized time in [0, 1] between previous frame (0.0) and current frame (1.0)
+
         float normalized_t = static_cast<float>(1.0 + (t - frame_time) / frame_duration);
 
         SubFrameState s;
         s.time_seconds = t;
         s.weight = evaluate_weight(i, config_.samples);
         total_weight += s.weight;
-        
-        // Interpolate camera
+
         s.camera_matrix = interpolate_world_matrix(
             base_state.camera.previous_camera_matrix,
             base_state.camera.camera.transform.to_matrix(),
             normalized_t);
-            
+
         s.camera_position = s.camera_matrix.transform_point({0.0f, 0.0f, 0.0f});
-        s.camera_fov = base_state.camera.camera.fov_y_rad * 180.0f / 3.14159f;
+        s.camera_fov = base_state.camera.camera.fov_y_rad * kRadToDeg;
         s.focal_distance = base_state.camera.focus_distance;
         s.aperture = base_state.camera.aperture;
 
-        // Interpolate layers/objects
         s.object_states.reserve(base_state.layers.size());
         for (const auto& layer : base_state.layers) {
             SubFrameState::ObjectState os;
-            os.object_id = static_cast<std::uint32_t>(std::hash<std::string>{}(layer.id)); // Use consistent hash if ID is string
+            os.object_id = static_cast<std::uint32_t>(std::hash<std::string>{}(layer.id));
             os.world_matrix = interpolate_world_matrix(
                 layer.previous_world_matrix,
                 layer.world_matrix,
                 normalized_t);
             s.object_states.push_back(os);
         }
-        
+
         states.push_back(std::move(s));
     }
 
-    // Normalize weights
-    if (total_weight > 1e-6f) {
+    if (total_weight > kEpsilon) {
         for (auto& s : states) {
             s.weight /= total_weight;
         }
@@ -122,19 +117,47 @@ float MotionBlurRenderer::evaluate_temporal_weight(double normalized_time, const
     return 1.0f;
 }
 
+MotionBlurRenderer::VelocityResult MotionBlurRenderer::compute_object_velocity(
+    const math::Matrix4x4& prev_world_matrix,
+    const math::Matrix4x4& curr_world_matrix,
+    double delta_time) {
+
+    if (delta_time <= 0.0) {
+        return VelocityResult{};
+    }
+
+    math::Transform3 prev_trs = prev_world_matrix.to_transform();
+    math::Transform3 curr_trs = curr_world_matrix.to_transform();
+
+    VelocityResult result;
+    result.linear_velocity = (curr_trs.position - prev_trs.position) / static_cast<float>(delta_time);
+
+    math::Quaternion delta_rot = curr_trs.rotation * prev_trs.rotation.conjugated();
+    delta_rot = delta_rot.normalized();
+
+    float angle = 2.0f * std::acos(std::clamp(delta_rot.w, -1.0f, 1.0f));
+    if (std::abs(angle) > kEpsilon) {
+        float s = std::sqrt(1.0f - delta_rot.w * delta_rot.w);
+        math::Vector3 axis(delta_rot.x / s, delta_rot.y / s, delta_rot.z / s);
+        result.angular_velocity = axis * (angle / static_cast<float>(delta_time));
+    }
+
+    result.center_of_motion = curr_trs.position;
+    return result;
+}
+
 math::Matrix4x4 MotionBlurRenderer::interpolate_world_matrix(
     const math::Matrix4x4& a,
     const math::Matrix4x4& b,
     float t) {
-    
-    // Matrix interpolation: Decompose to TRS, lerp/slerp, and recompose
+
     math::Transform3 trs_a = a.to_transform();
     math::Transform3 trs_b = b.to_transform();
-    
+
     math::Vector3 pos = trs_a.position * (1.0f - t) + trs_b.position * t;
     math::Quaternion rot = math::Quaternion::slerp(trs_a.rotation, trs_b.rotation, t);
     math::Vector3 scale = trs_a.scale * (1.0f - t) + trs_b.scale * t;
-    
+
     return math::compose_trs(pos, rot, scale);
 }
 
@@ -151,6 +174,25 @@ std::string MotionBlurRenderer::cache_identity() const {
         << "|cam_blur:" << config_.enable_camera_blur
         << "|obj_blur:" << config_.enable_object_blur;
     return oss.str();
+}
+
+float MotionBlurRenderer::sample_box(float t) const {
+    (void)t;
+    return 1.0f;
+}
+
+float MotionBlurRenderer::sample_uniform(float t) const {
+    (void)t;
+    return 1.0f;
+}
+
+float MotionBlurRenderer::sample_linear(float t) const {
+    return 1.0f - std::abs(2.0f * t - 1.0f);
+}
+
+float MotionBlurRenderer::sample_cubic(float t) const {
+    float x = std::abs(2.0f * t - 1.0f);
+    return 1.0f - (x * x * (3.0f - 2.0f * x));
 }
 
 } // namespace tachyon::renderer3d

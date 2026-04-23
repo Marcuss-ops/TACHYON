@@ -38,11 +38,13 @@ const EvaluatedLayerState& resolve_layer_state(
 
     context.visiting[layer_index] = true;
 
-    const auto& layer = context.composition.layers[layer_index];
-    EvaluatedLayerState evaluated = make_layer_state(
-        context,
-        layer,
-        layer_index);
+        const auto& layer = context.composition.layers[layer_index];
+        EvaluatedLayerState evaluated = make_layer_state(
+            context,
+            layer,
+            layer_index,
+            0.0,
+            context.vars);
 
     if (layer.parent.has_value() && !layer.parent->empty()) {
         const auto parent_it = context.layer_indices.find(*layer.parent);
@@ -163,7 +165,7 @@ EvaluatedCompositionState evaluate_composition_internal(
             for (int r = 0; r < iterations; ++r) {
                 // For stagger, we re-evaluate the layer state with a time offset
                 EvaluatedLayerState repeated = (stagger_delay != 0.0) 
-                    ? make_layer_state(context, composition.layers[index], index, static_cast<double>(r) * stagger_delay)
+                    ? make_layer_state(context, composition.layers[index], index, static_cast<double>(r) * stagger_delay, context.vars)
                     : base_layer;
 
                 repeated.id = base_layer.id + "_rep_" + std::to_string(r);
