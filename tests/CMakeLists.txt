@@ -44,6 +44,7 @@ add_executable(TachyonTests
     unit/renderer2d/composition/matte_resolver_tests.cpp
     unit/renderer2d/composition/evaluated_composition_renderer_tests.cpp
     unit/editor/undo_manager_tests.cpp
+    unit/editor/autosave_manager_tests.cpp
     unit/core/rigging_maturation_tests.cpp
     unit/core/spec/parsing_tests.cpp
     unit/core/spec/validation_tests.cpp

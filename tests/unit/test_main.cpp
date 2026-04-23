@@ -135,6 +135,7 @@ bool run_render_contract_tests();
 bool run_property_tests();
 bool run_expression_tests();
 namespace tachyon::editor { bool run_undo_manager_tests(); }
+namespace tachyon::editor { bool run_autosave_manager_tests(); }
 bool run_scene_evaluator_tests();
 bool run_render_session_tests();
 bool run_render_batch_tests();
@@ -181,6 +182,7 @@ int main(int argc, char** argv) {
         {"tile_scheduler", run_tile_scheduler_tests},
         {"render_contract", run_render_contract_tests},
         {"undo_manager", tachyon::editor::run_undo_manager_tests},
+        {"autosave_manager", tachyon::editor::run_autosave_manager_tests},
         {"scene_evaluator", run_scene_evaluator_tests},
         {"render_session", run_render_session_tests},
         {"render_batch", run_render_batch_tests},
