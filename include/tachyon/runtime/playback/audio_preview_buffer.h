@@ -34,9 +34,30 @@ public:
         float speed) const;
 
     /**
+     * @brief Time-stretch audio while preserving pitch (overlap-add).
+     *
+     * @param start_time Position in seconds.
+     * @param duration Duration of the output segment.
+     * @param speed Playback speed (>0). 1.0 = normal, 2.0 = double speed.
+     * @return Interleaved PCM samples at original pitch but adjusted duration.
+     */
+    [[nodiscard]] std::vector<float> time_stretch(
+        double start_time,
+        double duration,
+        float speed) const;
+
+    /**
      * @brief Clear the buffer.
      */
     void clear();
+
+private:
+    void ola_time_stretch(
+        const float* input,
+        std::size_t input_samples,
+        float speed,
+        std::vector<float>& output,
+        int channels) const;
 
 private:
     int m_sample_rate;
