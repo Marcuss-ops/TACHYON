@@ -157,7 +157,43 @@ json serialize_layer(const LayerSpec& layer) {
     if (!layer.text_content.empty()) j["text_content"] = layer.text_content;
     if (!layer.font_id.empty()) j["font_id"] = layer.font_id;
     if (!layer.alignment.empty()) j["alignment"] = layer.alignment;
-    if (!layer.shape_path.empty()) j["shape_path"] = layer.shape_path;
+    if (layer.shape_path.has_value() && !layer.shape_path->empty()) {
+        json sp;
+        sp["closed"] = layer.shape_path->closed;
+        sp["points"] = json::array();
+        for (const auto& pt : layer.shape_path->points) {
+            json pj;
+            pj["position"] = json::array({pt.position.x, pt.position.y});
+            if (pt.tangent_in.x != 0.0f || pt.tangent_in.y != 0.0f) {
+                pj["tangent_in"] = json::array({pt.tangent_in.x, pt.tangent_in.y});
+            }
+            if (pt.tangent_out.x != 0.0f || pt.tangent_out.y != 0.0f) {
+                pj["tangent_out"] = json::array({pt.tangent_out.x, pt.tangent_out.y});
+            }
+            sp["points"].push_back(pj);
+        }
+        if (!layer.shape_path->subpaths.empty()) {
+            sp["subpaths"] = json::array();
+            for (const auto& sub : layer.shape_path->subpaths) {
+                json sj;
+                sj["closed"] = sub.closed;
+                sj["vertices"] = json::array();
+                for (const auto& pt : sub.vertices) {
+                    json pj;
+                    pj["position"] = json::array({pt.position.x, pt.position.y});
+                    if (pt.tangent_in.x != 0.0f || pt.tangent_in.y != 0.0f) {
+                        pj["tangent_in"] = json::array({pt.tangent_in.x, pt.tangent_in.y});
+                    }
+                    if (pt.tangent_out.x != 0.0f || pt.tangent_out.y != 0.0f) {
+                        pj["tangent_out"] = json::array({pt.tangent_out.x, pt.tangent_out.y});
+                    }
+                    sj["vertices"].push_back(pj);
+                }
+                sp["subpaths"].push_back(sj);
+            }
+        }
+        j["shape_path"] = sp;
+    }
     if (!layer.subtitle_path.empty()) j["subtitle_path"] = layer.subtitle_path;
 
     if (!layer.effects.empty()) {
