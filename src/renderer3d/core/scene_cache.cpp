@@ -136,7 +136,7 @@ std::uint64_t SceneCache::compute_layer_hash(const scene::EvaluatedLayerState& l
     h = mix_hash(h, static_cast<std::uint64_t>(layer.layer_index));
 
     if (layer.mesh_asset) {
-        const auto* mesh = layer.mesh_asset;
+        const auto& mesh = layer.mesh_asset;
         h = mix_hash(h, static_cast<std::uint64_t>(mesh->sub_meshes.size()));
         if (!mesh->sub_meshes.empty()) {
             h = mix_hash(h, static_cast<std::uint64_t>(mesh->sub_meshes.front().vertices.size()));

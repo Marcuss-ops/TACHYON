@@ -1,17 +1,17 @@
-#include "tachyon/renderer2d/evaluated_composition/render_graph.h"
+#include "tachyon/renderer2d/evaluated_composition/renderer2d_render_graph.h"
 
 namespace tachyon::renderer2d {
 
-RenderGraph::RenderGraph(const scene::EvaluatedCompositionState& state) : state_(state) {}
+Renderer2DRenderGraph::Renderer2DRenderGraph(const scene::EvaluatedCompositionState& state) : state_(state) {}
 
-void RenderGraph::buildDependencyGraph() {}
+void Renderer2DRenderGraph::buildDependencyGraph() {}
 
-std::vector<DrawCommand2D> RenderGraph::resolveExecutionOrder() {
+std::vector<DrawCommand2D> Renderer2DRenderGraph::resolveExecutionOrder() {
     return execution_order_;
 }
 
-void RenderGraph::topologicalSort() {}
+void Renderer2DRenderGraph::topologicalSort() {}
 
-void RenderGraph::detectCycles() {}
+void Renderer2DRenderGraph::detectCycles() {}
 
 } // namespace tachyon::renderer2d

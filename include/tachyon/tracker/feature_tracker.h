@@ -63,6 +63,10 @@ public:
         int   pyramid_levels{3};    // image pyramid levels
         float min_confidence{0.1f}; // drop features below this score
         float smooth_alpha{0.7f};   // EMA coefficient for path smoothing
+        // RANSAC parameters for robust homography estimation
+        int   ransac_iterations{200};     // RANSAC iterations for homography
+        float ransac_threshold{3.0f};   // inlier threshold in pixels
+        float ransac_min_inlier_ratio{0.5f}; // minimum inlier ratio to accept
     };
 
     explicit FeatureTracker(Config cfg = {});
@@ -90,6 +94,16 @@ public:
     static std::optional<std::vector<float>> estimate_homography(
         const std::vector<Point2f>& src,
         const std::vector<TrackPoint>& dst);
+
+    // Estimate homography with RANSAC for robust outlier rejection.
+    // Returns the best homography and fills inlier_mask with true for inliers.
+    static std::optional<std::vector<float>> estimate_homography_ransac(
+        const std::vector<Point2f>& src,
+        const std::vector<TrackPoint>& dst,
+        int iterations,
+        float threshold_px,
+        float min_inlier_ratio,
+        std::vector<bool>& inlier_mask);
 
     // Apply exponential moving average smoothing to a series of 2D points.
     static std::vector<Point2f> smooth_track(

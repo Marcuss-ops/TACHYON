@@ -9,6 +9,7 @@
 #include "tachyon/runtime/core/data/data_snapshot.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/runtime/frame_arena.h"
+#include "tachyon/runtime/resource/runtime_surface_pool.h"
 
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include "tachyon/output/frame_aov.h"
@@ -51,8 +52,11 @@ struct EvaluatedFrameState {
  */
 class FrameExecutor {
 public:
-    explicit FrameExecutor(FrameArena& arena, FrameCache& cache)
-        : m_arena(arena), m_cache(cache) {}
+    explicit FrameExecutor(FrameArena& arena, FrameCache& cache, runtime::RuntimeSurfacePool* pool = nullptr)
+        : m_arena(arena), m_cache(cache), m_pool(pool) {}
+
+    FrameCache& cache() { return m_cache; }
+    const FrameCache& cache() const { return m_cache; }
 
     /**
      * @brief Executes evaluation for a specific frame.
@@ -73,6 +77,7 @@ public:
 private:
     FrameArena& m_arena;
     FrameCache& m_cache;
+    runtime::RuntimeSurfacePool* m_pool{nullptr};
 
     // Node lookup maps populated once per scene execution
     std::unordered_map<std::uint32_t, const CompiledNode*> m_node_lookup;

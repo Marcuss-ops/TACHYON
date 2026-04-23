@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/core/expressions/expression_engine.h"
 
 #include <filesystem>
 #include <vector>
@@ -23,6 +24,9 @@ public:
     [[nodiscard]] double duration() const noexcept { return m_duration_seconds; }
     [[nodiscard]] double sample_rate() const noexcept { return m_sample_rate; }
     [[nodiscard]] bool loaded() const noexcept { return !m_samples.empty() && m_sample_rate > 0.0; }
+
+    // Convert AudioBands to AudioAnalysisData for expression engine
+    static expressions::AudioAnalysisData to_analysis_data(const AudioBands& bands);
 
 private:
     std::vector<float> m_samples;

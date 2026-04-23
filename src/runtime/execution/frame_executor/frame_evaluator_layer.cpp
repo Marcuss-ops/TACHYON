@@ -1,4 +1,5 @@
 #include "frame_executor_internal.h"
+#include "tachyon/core/shapes/shape_path.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
 
 namespace tachyon {
@@ -16,18 +17,12 @@ scene::LayerType resolve_layer_type(std::uint32_t type_id) {
     }
 }
 
-scene::EvaluatedShapePath to_evaluated_shape_path(const std::optional<ShapePathSpec>& spec) {
-    scene::EvaluatedShapePath evaluated;
-    if (!spec.has_value()) return evaluated;
-    evaluated.closed = spec->closed;
-    for (const auto& point : spec->points) {
-        evaluated.points.push_back(scene::EvaluatedShapePathPoint{
-            point.position,
-            point.tangent_in,
-            point.tangent_out
-        });
-    }
-    return evaluated;
+ShapePathSpec to_shape_path_spec(const std::optional<ShapePathSpec>& spec) {
+    ShapePathSpec result;
+    if (!spec.has_value()) return result;
+    result.closed = spec->closed;
+    result.points = spec->points;
+    return result;
 }
 
 constexpr double kPi = 3.14159265358979323846;
@@ -107,7 +102,7 @@ void evaluate_layer(
     state->subtitle_path = layer.subtitle_path;
     state->subtitle_outline_color = layer.subtitle_outline_color;
     state->subtitle_outline_width = layer.subtitle_outline_width;
-    state->shape_path = to_evaluated_shape_path(layer.shape_path);
+    state->shape_path = to_shape_path_spec(layer.shape_path);
     state->effects = layer.effects;
     state->precomp_id = layer.precomp_index.has_value() ? std::make_optional(std::to_string(*layer.precomp_index)) : std::nullopt;
     state->track_matte_type = layer.matte_type;
@@ -119,7 +114,7 @@ void evaluate_layer(
         const auto& nested_comp = scene.compositions[*layer.precomp_index];
         const std::uint64_t nested_key = build_node_key(frame_key, nested_comp.node);
         if (auto cached_nested = executor.m_cache.lookup_composition(nested_key)) {
-            state->nested_composition = std::make_unique<scene::EvaluatedCompositionState>(*cached_nested);
+            state->nested_composition = std::make_shared<scene::EvaluatedCompositionState>(*cached_nested);
         }
     }
 
@@ -140,7 +135,7 @@ void evaluate_layer(
         return fallback;
     };
 
-    state->opacity = sample_property(0, 1.0);
+    state->opacity = static_cast<float>(sample_property(0, 1.0));
     state->local_transform.position.x = static_cast<float>(sample_property(1, 0.0));
     state->local_transform.position.y = static_cast<float>(sample_property(2, 0.0));
     state->local_transform.scale.x = static_cast<float>(sample_property(3, 1.0));

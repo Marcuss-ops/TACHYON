@@ -12,8 +12,11 @@
 #include "tachyon/runtime/core/contracts/determinism_contract.h"
 #include "tachyon/runtime/core/data/data_binding.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
-#include "tachyon/runtime/vm/expression_vm.h"
-#include "tachyon/runtime/core/graph/render_graph.h"
+#include "tachyon/core/shapes/shape_path.h"
+#include "tachyon/core/expressions/expression_vm.h"
+#include "tachyon/runtime/core/graph/runtime_render_graph.h"
+#include "tachyon/core/scene/dependency_node.h"
+#include "tachyon/renderer2d/raster/path/path_types.h"
 
 #include <cstdint>
 #include <optional>
@@ -40,7 +43,7 @@ enum class CompiledNodeType : std::uint8_t {
 /**
  * @brief Base structure for any node in the compiled dependency graph.
  */
-struct CompiledNode {
+struct CompiledNode : public core::scene::DependencyNode {
     std::uint32_t node_id{0};
     std::uint32_t version{0};
     std::uint32_t topo_index{0};
@@ -131,6 +134,11 @@ struct CompiledLayer {
     
     // Visibility flags (bitmask preferred for industrial minimality)
     std::uint8_t flags{0x01}; // 0x01 = enabled, 0x02 = visible, 0x04 = is_3d, 0x08 = adjustment
+    
+    // Unified Temporal & Tracking
+    std::vector<spec::TrackBinding> track_bindings;
+    spec::TimeRemapCurve time_remap;
+    spec::FrameBlendMode frame_blend{spec::FrameBlendMode::Linear};
 };
 
 struct CompiledComposition {
@@ -140,6 +148,8 @@ struct CompiledComposition {
     std::uint32_t fps{60};
     double duration{0.0};
     std::vector<CompiledLayer> layers;
+    std::vector<spec::CameraCut> camera_cuts;
+    std::vector<spec::AudioTrackSpec> audio_tracks;
 };
 
 struct CompiledScene {
@@ -149,11 +159,11 @@ struct CompiledScene {
     std::string project_id;
     std::string project_name;
     
-    RenderGraph graph;
+    RuntimeRenderGraph graph;
     
     std::vector<CompiledComposition> compositions;
     std::vector<CompiledPropertyTrack> property_tracks;
-    std::vector<CompiledExpression> expressions;
+    std::vector<expressions::Bytecode> expressions;
     std::vector<AssetSpec> assets;
 
     [[nodiscard]] bool is_valid() const noexcept;
@@ -162,6 +172,36 @@ struct CompiledScene {
      * @brief Increments the version of the specified node and all its dependents.
      */
     void invalidate_node(std::uint32_t node_id);
+
+    /**
+     * @brief Links DependencyNode pointers across all compiled components.
+     * Must be called after vectors are fully populated and stable.
+     */
+    void link_dependency_nodes() {
+        std::unordered_map<std::uint32_t, CompiledNode*> lookup;
+        for (auto& comp : compositions) {
+            lookup[comp.node.node_id] = &comp.node;
+            for (auto& layer : comp.layers) {
+                lookup[layer.node.node_id] = &layer.node;
+            }
+        }
+        for (auto& track : property_tracks) {
+            lookup[track.node.node_id] = &track.node;
+        }
+
+        for (const auto& edge : graph.edges()) {
+            auto it_from = lookup.find(edge.from);
+            auto it_to = lookup.find(edge.to);
+            if (it_from != lookup.end() && it_to != lookup.end()) {
+                // Dependency 'from' should notify dependent 'to'
+                // Wait, in my mark_dirty, the node notifies its PARENTS.
+                // In a render graph, if A depends on B (B -> A), then B is the dependency, A is the dependent.
+                // When B changes, A must be marked dirty.
+                // So A is a 'parent' of B in the DependencyNode sense.
+                it_from->second->add_parent(it_to->second);
+            }
+        }
+    }
 
 
 

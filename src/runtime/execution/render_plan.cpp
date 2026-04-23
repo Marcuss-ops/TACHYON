@@ -169,11 +169,44 @@ FrameCacheKey build_frame_cache_key(const RenderPlan& plan, std::int64_t frame_n
     builder.add_u64(static_cast<std::uint64_t>(plan.frame_range.end));
     builder.add_u64(static_cast<std::uint64_t>(frame_number));
     builder.add_u64(static_cast<std::uint64_t>(plan.motion_blur_enabled ? 1U : 0U));
+    builder.add_u64(static_cast<std::uint64_t>(static_cast<std::uint32_t>(plan.motion_blur_mode)));
     builder.add_u64(static_cast<std::uint64_t>(plan.motion_blur_samples));
     builder.add_u64(static_cast<std::uint64_t>(plan.motion_blur_shutter_angle * 1000.0));
+    builder.add_u64(static_cast<std::uint64_t>(plan.motion_blur_shutter_phase * 1000.0));
     builder.add_u64(static_cast<std::uint64_t>(plan.composition.layer_count));
     builder.add_u64(static_cast<std::uint64_t>(plan.composition.text_layer_count));
     builder.add_u64(static_cast<std::uint64_t>(plan.composition.precomp_layer_count));
+
+    // Time Remap & Frame Blend
+    if (plan.time_remap_curve.has_value()) {
+        builder.add_bool(true);
+        builder.add_bool(plan.time_remap_curve->enabled);
+        builder.add_u32(static_cast<std::uint32_t>(plan.time_remap_curve->mode));
+        for (const auto& kf : plan.time_remap_curve->keyframes) {
+            builder.add_f32(kf.first);
+            builder.add_f32(kf.second);
+        }
+    } else {
+        builder.add_bool(false);
+    }
+    builder.add_u32(static_cast<std::uint32_t>(plan.frame_blend_mode));
+
+    // Variables (sorted for stability)
+    std::vector<std::string> var_keys;
+    for (const auto& [k, v] : plan.variables) var_keys.push_back(k);
+    std::sort(var_keys.begin(), var_keys.end());
+    for (const auto& k : var_keys) {
+        builder.add_string(k);
+        builder.add_f64(plan.variables.at(k));
+    }
+
+    std::vector<std::string> s_var_keys;
+    for (const auto& [k, v] : plan.string_variables) s_var_keys.push_back(k);
+    std::sort(s_var_keys.begin(), s_var_keys.end());
+    for (const auto& k : s_var_keys) {
+        builder.add_string(k);
+        builder.add_string(plan.string_variables.at(k));
+    }
 
     FrameCacheKey key;
     key.hash = builder.finish();
@@ -194,7 +227,8 @@ FrameCacheKey build_frame_cache_key(const RenderPlan& plan, std::int64_t frame_n
         std::to_string(frame_number) + ":mb" +
         std::to_string(plan.motion_blur_enabled ? 1 : 0) + ":" +
         std::to_string(plan.motion_blur_samples) + ":" +
-        std::to_string(static_cast<std::int64_t>(plan.motion_blur_shutter_angle * 1000.0));
+        std::to_string(static_cast<std::int64_t>(plan.motion_blur_shutter_angle * 1000.0)) + ":" +
+        std::to_string(static_cast<std::uint32_t>(plan.frame_blend_mode));
     return key;
 }
 

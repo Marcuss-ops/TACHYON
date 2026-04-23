@@ -3,9 +3,10 @@
 
 namespace tachyon::renderer3d {
 
-RayTracer::RayTracer() {
+RayTracer::RayTracer() : m_last_error("") {
     // Initialize Embree device
     device_ = rtcNewDevice(nullptr);
+    rtcSetDeviceErrorFunction(device_, log_embree_error, this);
 }
 
 RayTracer::~RayTracer() {
@@ -62,9 +63,10 @@ void RayTracer::cleanup_scene() {
 }
 
 void RayTracer::log_embree_error(void* userPtr, RTCError code, const char* str) {
-    (void)userPtr;
-    (void)code;
-    (void)str;
+    auto* self = static_cast<RayTracer*>(userPtr);
+    if (self && str) {
+        self->m_last_error = std::string("Embree error ") + std::to_string(static_cast<int>(code)) + ": " + str;
+    }
 }
 
 } // namespace tachyon::renderer3d

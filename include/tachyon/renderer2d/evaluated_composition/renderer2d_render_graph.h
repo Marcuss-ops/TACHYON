@@ -11,9 +11,9 @@ namespace renderer2d {
 
 struct RenderContext2D;
 
-class RenderGraph {
+class Renderer2DRenderGraph {
 public:
-    RenderGraph(const scene::EvaluatedCompositionState& state);
+    Renderer2DRenderGraph(const scene::EvaluatedCompositionState& state);
     
     void buildDependencyGraph();
     std::vector<DrawCommand2D> resolveExecutionOrder();

@@ -34,7 +34,8 @@ struct Diagnostic {
     std::string help_link; ///< URL for detailed troubleshooting.
 };
 
-struct DiagnosticBag {
+class DiagnosticBag {
+public:
     std::vector<Diagnostic> diagnostics;
 
     [[nodiscard]] bool ok() const noexcept {

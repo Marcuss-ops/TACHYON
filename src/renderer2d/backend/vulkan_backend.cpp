@@ -114,7 +114,7 @@ bool VulkanComputeBackend::create_descriptor_pool() {
 }
 
 VulkanBuffer* VulkanComputeBackend::alloc_buffer(VkDeviceSize bytes, uint32_t w, uint32_t h) {
-    auto* buf = new VulkanBuffer{};
+    auto buf = std::make_unique<VulkanBuffer>();
     buf->size = bytes; buf->width = w; buf->height = h;
 
     VkBufferCreateInfo bci{};
@@ -145,7 +145,7 @@ VulkanBuffer* VulkanComputeBackend::alloc_buffer(VkDeviceSize bytes, uint32_t w,
     vkAllocateMemory(m_ctx->device, &ai, nullptr, &buf->memory);
     vkBindBufferMemory(m_ctx->device, buf->buffer, buf->memory, 0);
     vkMapMemory(m_ctx->device, buf->memory, 0, bytes, 0, &buf->mapped);
-    return buf;
+    return buf.release();
 }
 
 void* VulkanComputeBackend::upload(const SurfaceRGBA& surface) {
@@ -162,11 +162,12 @@ void VulkanComputeBackend::download(void* device_ptr, SurfaceRGBA& surface) {
 }
 
 void VulkanComputeBackend::free_device_memory(void* device_ptr) {
-    auto* buf = static_cast<VulkanBuffer*>(device_ptr);
-    vkUnmapMemory(m_ctx->device, buf->memory);
-    vkDestroyBuffer(m_ctx->device, buf->buffer, nullptr);
-    vkFreeMemory(m_ctx->device, buf->memory, nullptr);
-    delete buf;
+    std::unique_ptr<VulkanBuffer> buf(static_cast<VulkanBuffer*>(device_ptr));
+    if (buf) {
+        vkUnmapMemory(m_ctx->device, buf->memory);
+        vkDestroyBuffer(m_ctx->device, buf->buffer, nullptr);
+        vkFreeMemory(m_ctx->device, buf->memory, nullptr);
+    }
 }
 
 void VulkanComputeBackend::destroy_pipeline(VulkanPipeline& p) {

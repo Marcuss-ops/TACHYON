@@ -8,10 +8,11 @@ namespace tachyon::renderer2d::expressions {
 using ExpressionContext = tachyon::expressions::ExpressionContext;
 using EvaluationResult = tachyon::expressions::EvaluationResult;
 
-class ExpressionEvaluator {
+class Renderer2DExpressionEvaluator {
 public:
     static EvaluationResult evaluate(const std::string& expression, const ExpressionContext& context) {
-        return tachyon::expressions::ExpressionEvaluator::evaluate(expression, context);
+        // Use the CoreExpressionEvaluator for evaluation
+        return tachyon::expressions::CoreExpressionEvaluator::evaluate(expression, context);
     }
 };
 

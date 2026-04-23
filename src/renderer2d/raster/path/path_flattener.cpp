@@ -9,7 +9,7 @@ void flatten_cubic(
     const math::Vector2& p1,
     const math::Vector2& p2,
     const math::Vector2& p3,
-    std::vector<math::Vector2>& out,
+    std::vector<ContourPoint>& out,
     float tolerance,
     std::uint32_t depth) {
 
@@ -19,7 +19,7 @@ void flatten_cubic(
     const float distance_2 = chord_length > 0.0f ? std::abs((p2.x - p0.x) * chord.y - (p2.y - p0.y) * chord.x) / chord_length : (p2 - p0).length();
 
     if ((std::max(distance_1, distance_2) <= tolerance) || depth >= 12U) {
-        out.push_back(p3);
+        out.push_back({p3, 0.0f, 0.0f});
         return;
     }
 
@@ -41,13 +41,15 @@ std::vector<Contour> build_contours(const PathGeometry& path) {
     math::Vector2 current_point{};
     bool has_current_point = false;
     bool contour_open = false;
+    float feather_inner = 0.0f;
+    float feather_outer = 0.0f;
 
     auto close_contour = [&]() {
         if (contour_open && current.points.size() >= 2U) {
-            const math::Vector2& first = current.points.front();
-            const math::Vector2& last = current.points.back();
-            if (std::abs(first.x - last.x) > kCloseEpsilon || std::abs(first.y - last.y) > kCloseEpsilon) {
-                current.points.push_back(current.points.front());
+            const auto& first = current.points.front();
+            const auto& last = current.points.back();
+            if (std::abs(first.point.x - last.point.x) > kCloseEpsilon || std::abs(first.point.y - last.point.y) > kCloseEpsilon) {
+                current.points.push_back(first);
             }
         }
         if (!current.points.empty()) {
@@ -62,31 +64,37 @@ std::vector<Contour> build_contours(const PathGeometry& path) {
         switch (command.verb) {
             case PathVerb::MoveTo:
                 close_contour();
-                current.points.push_back(command.p0);
+                current.points.push_back({command.p0, command.feather_inner, command.feather_outer});
                 current_point = command.p0;
+                feather_inner = command.feather_inner;
+                feather_outer = command.feather_outer;
                 has_current_point = true;
                 contour_open = true;
                 break;
             case PathVerb::LineTo:
                 if (!has_current_point) {
-                    current.points.push_back(command.p0);
+                    current.points.push_back({command.p0, feather_inner, feather_outer});
                     current_point = command.p0;
                     has_current_point = true;
                     contour_open = true;
                 } else {
-                    current.points.push_back(command.p0);
+                    current.points.push_back({command.p0, command.feather_inner, command.feather_outer});
                     current_point = command.p0;
+                    feather_inner = command.feather_inner;
+                    feather_outer = command.feather_outer;
                 }
                 break;
             case PathVerb::CubicTo:
                 if (!has_current_point) {
-                    current.points.push_back(command.p0);
+                    current.points.push_back({command.p0, feather_inner, feather_outer});
                     current_point = command.p0;
                     has_current_point = true;
                     contour_open = true;
                 }
                 flatten_cubic(current_point, command.p0, command.p1, command.p2, current.points, 0.35f);
                 current_point = command.p2;
+                feather_inner = command.feather_inner;
+                feather_outer = command.feather_outer;
                 break;
             case PathVerb::Close:
                 close_contour();
@@ -105,12 +113,12 @@ float segment_length(const math::Vector2& p0, const math::Vector2& p1, const mat
     if (verb == PathVerb::LineTo) {
         return (p1 - p0).length();
     } else if (verb == PathVerb::CubicTo) {
-        std::vector<math::Vector2> flattened;
-        flattened.push_back(p0);
+        std::vector<ContourPoint> flattened;
+        flattened.push_back({p0, 0.0f, 0.0f});
         flatten_cubic(p0, p1, p2, p3, flattened, 0.5f);
         float len = 0.0f;
         for (std::size_t i = 0; i + 1 < flattened.size(); ++i) {
-            len += (flattened[i+1] - flattened[i]).length();
+            len += (flattened[i + 1].point - flattened[i].point).length();
         }
         return len;
     }

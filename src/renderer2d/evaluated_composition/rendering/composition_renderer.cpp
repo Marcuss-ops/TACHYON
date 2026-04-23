@@ -37,6 +37,8 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
     frame.surface = std::make_shared<SurfaceRGBA>(working_width, working_height);
     if (!frame.surface) {
+        frame.note += " [ERROR: failed to allocate surface of size " + 
+                     std::to_string(working_width) + "x" + std::to_string(working_height) + "]";
         return frame;
     }
 

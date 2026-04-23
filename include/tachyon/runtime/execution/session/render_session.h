@@ -5,6 +5,9 @@
 #include "tachyon/renderer2d/resource/render_context.h"
 #include "tachyon/media/streaming/media_prefetcher.h"
 #include "tachyon/media/playback_scheduler.h"
+#include "tachyon/runtime/resource/runtime_surface_pool.h"
+#include "tachyon/runtime/execution/presentation_clock.h"
+#include "tachyon/runtime/execution/framebuffer_playback_queue.h"
 
 #include <cstddef>
 #include <filesystem>
@@ -48,6 +51,11 @@ private:
     std::shared_ptr<renderer2d::PrecompCache> m_precomp_cache{std::make_shared<renderer2d::PrecompCache>()};
     media::MediaPrefetcher m_prefetcher;
     std::unique_ptr<media::PlaybackScheduler> m_scheduler;
+    
+    std::unique_ptr<runtime::RuntimeSurfacePool> m_surface_pool;
+    std::unique_ptr<runtime::PresentationClock> m_clock;
+    std::unique_ptr<runtime::FramebufferPlaybackQueue> m_playback_queue;
+
     std::optional<std::size_t> m_memory_budget_bytes;
 };
 

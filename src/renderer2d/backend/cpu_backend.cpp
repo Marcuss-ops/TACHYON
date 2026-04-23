@@ -19,22 +19,22 @@ public:
     BackendCaps caps()  const override { return {true, true, true, false}; }
 
     void* upload(const SurfaceRGBA& surface) override {
-        size_t bytes = surface.width() * surface.height() * 4 * sizeof(float);
-        float* buf = new float[surface.width() * surface.height() * 4];
-        std::memcpy(buf, surface.pixels().data(), bytes);
-        auto* h = new CpuHandle{buf, surface.width(), surface.height()};
-        return h;
+        size_t pixel_count = surface.width() * surface.height();
+        auto data = std::make_unique<float[]>(pixel_count * 4);
+        std::memcpy(data.get(), surface.pixels().data(), pixel_count * 4 * sizeof(float));
+        
+        auto h = std::make_unique<CpuHandle>(std::move(data), surface.width(), surface.height());
+        return h.release();
     }
 
     void download(void* device_ptr, SurfaceRGBA& surface) override {
         auto* h = static_cast<CpuHandle*>(device_ptr);
         size_t bytes = h->w * h->h * 4 * sizeof(float);
-        std::memcpy(surface.mutable_pixels().data(), h->data, bytes);
+        std::memcpy(surface.mutable_pixels().data(), h->data.get(), bytes);
     }
 
     void free_device_memory(void* device_ptr) override {
         auto* h = static_cast<CpuHandle*>(device_ptr);
-        delete[] h->data;
         delete h;
     }
 
@@ -151,7 +151,13 @@ public:
     }
 
 private:
-    struct CpuHandle { float* data; uint32_t w, h; };
+    struct CpuHandle {
+        std::unique_ptr<float[]> data;
+        uint32_t w, h;
+        
+        CpuHandle(std::unique_ptr<float[]> d, uint32_t width, uint32_t height)
+            : data(std::move(d)), w(width), h(height) {}
+    };
 };
 
 // ---------------------------------------------------------------------------

@@ -113,6 +113,17 @@ AudioBands analyze_window(const std::vector<float>& samples, double sample_rate,
 
 } // namespace
 
+expressions::AudioAnalysisData AudioAnalyzer::to_analysis_data(const AudioBands& bands) {
+    expressions::AudioAnalysisData data;
+    data.bass = static_cast<double>(bands.bass);
+    data.mid = static_cast<double>(bands.mid);
+    data.high = static_cast<double>(bands.high);
+    data.presence = static_cast<double>(bands.presence);
+    data.rms = static_cast<double>(bands.rms);
+    data.amplitude = data.rms;
+    return data;
+}
+
 bool AudioAnalyzer::load(const std::filesystem::path& path, double /*sample_rate*/) {
     m_samples.clear();
     m_sample_rate = 48000.0; // AudioDecoder outputs fixed 48kHz

@@ -1,66 +1,46 @@
 #pragma once
 
-#include "tachyon/renderer2d/core/framebuffer.h"
-#include <string>
-#include <vector>
-#include <initializer_list>
-#include <cmath>
-#include <algorithm>
-#include <functional>
+#include "tachyon/renderer2d/effects/effect_common.h"
 
 namespace tachyon::renderer2d {
 
-struct EffectParams;
-
 namespace detail {
 
-struct LinearColor {
-    float r{0.0f};
-    float g{0.0f};
-    float b{0.0f};
-};
+using LinearColor = tachyon::renderer2d::LinearColor;
+using PremultipliedPixel = tachyon::renderer2d::PremultipliedPixel;
 
-struct PremultipliedPixel {
-    float r{0.0f};
-    float g{0.0f};
-    float b{0.0f};
-    float a{0.0f};
-};
+// Import functions from the main namespace for use in detail implementations
+using ::tachyon::renderer2d::clamp01;
+using ::tachyon::renderer2d::lerp;
+using ::tachyon::renderer2d::lerp_color;
 
-float clamp01(float value);
-float lerp(float a, float b, float t);
-Color lerp_color(Color a, Color b, float t);
+using ::tachyon::renderer2d::has_scalar;
+using ::tachyon::renderer2d::has_color;
+using ::tachyon::renderer2d::get_scalar;
+using ::tachyon::renderer2d::get_color;
 
-bool has_scalar(const EffectParams& params, const std::initializer_list<const char*> keys);
-bool has_color(const EffectParams& params, const std::initializer_list<const char*> keys);
-float get_scalar(const EffectParams& params, const std::string& key, float fallback);
-Color get_color(const EffectParams& params, const std::string& key, Color fallback);
+using ::tachyon::renderer2d::to_linear;
+using ::tachyon::renderer2d::from_linear;
+using ::tachyon::renderer2d::luminance;
 
-LinearColor to_linear(Color color);
-Color from_linear(const LinearColor& color, float alpha);
-float luminance(const Color& color);
+using ::tachyon::renderer2d::rgb_to_hsl;
+using ::tachyon::renderer2d::hsl_to_rgb;
 
-void rgb_to_hsl(float r, float g, float b, float& h, float& s, float& l);
-Color hsl_to_rgb(float h, float s, float l, float alpha);
+using ::tachyon::renderer2d::to_premultiplied;
+using ::tachyon::renderer2d::from_premultiplied;
 
-PremultipliedPixel to_premultiplied(Color color);
-Color from_premultiplied(const PremultipliedPixel& px);
+using ::tachyon::renderer2d::sample_texture_bilinear;
 
-Color sample_texture_bilinear(const SurfaceRGBA& texture, float u, float v, Color tint);
+using ::tachyon::renderer2d::gaussian_kernel;
+using ::tachyon::renderer2d::convolve_h;
+using ::tachyon::renderer2d::convolve_v;
 
-std::vector<float> gaussian_kernel(float sigma);
-std::vector<PremultipliedPixel> convolve_h(const std::vector<PremultipliedPixel>& in, std::uint32_t w, std::uint32_t h, const std::vector<float>& k);
-std::vector<PremultipliedPixel> convolve_v(const std::vector<PremultipliedPixel>& in, std::uint32_t w, std::uint32_t h, const std::vector<float>& k);
+using ::tachyon::renderer2d::blur_surface;
+using ::tachyon::renderer2d::blur_alpha_mask;
+using ::tachyon::renderer2d::composite_with_offset;
 
-SurfaceRGBA blur_surface(const SurfaceRGBA& input, float sigma);
-SurfaceRGBA blur_alpha_mask(const SurfaceRGBA& input, float sigma);
-void composite_with_offset(SurfaceRGBA& dst, const SurfaceRGBA& src, int ox, int oy);
-
-std::array<float, 256> build_channel_lut(std::function<float(float)> mapper);
-SurfaceRGBA apply_channel_lut(const SurfaceRGBA& input, const std::array<float, 256>& lut);
-
-float random01(std::uint64_t seed, std::uint64_t index, std::uint64_t salt);
-void draw_disk(SurfaceRGBA& surface, int cx, int cy, int radius, Color color);
+using ::tachyon::renderer2d::build_channel_lut;
+using ::tachyon::renderer2d::apply_channel_lut;
 
 template <typename Fn>
 SurfaceRGBA transform_surface(const SurfaceRGBA& input, Fn&& fn) {

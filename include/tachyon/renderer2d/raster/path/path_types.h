@@ -27,6 +27,9 @@ struct PathCommand {
     math::Vector2 p0{};
     math::Vector2 p1{};
     math::Vector2 p2{};
+    // Per-vertex feather values (for MoveTo/Close endpoints, or control points)
+    float feather_inner{0.0f};
+    float feather_outer{0.0f};
 };
 
 struct PathGeometry {
@@ -68,6 +71,8 @@ struct GradientLUT {
     float g[SAMPLES];
     float b[SAMPLES];
     float a[SAMPLES];
+
+    GradientLUT() = default;
 
     GradientLUT(const GradientSpec& spec) {
         if (spec.stops.empty()) {

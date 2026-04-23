@@ -7,25 +7,14 @@
 #include "tachyon/renderer2d/spec/gradient_spec.h"
 #include "tachyon/renderer2d/raster/path_rasterizer.h"
 #include "tachyon/renderer2d/core/texture_handle.h"
+#include "tachyon/renderer2d/effects/effect_params.h"
 
 #include <optional>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 namespace tachyon {
 namespace renderer2d {
-
-/**
- * @brief Runtime parameters for an effect.
- */
-struct EffectParams {
-    std::unordered_map<std::string, float> scalars;
-    std::unordered_map<std::string, Color> colors;
-    std::unordered_map<std::string, std::string> strings;
-    std::unordered_map<std::string, const SurfaceRGBA*> textures;
-    std::unordered_map<std::string, const SurfaceRGBA*> aux_surfaces;
-};
 
 enum class DrawCommandKind {
     Clear,
@@ -36,8 +25,6 @@ enum class DrawCommandKind {
     Shape,
     Adjustment
 };
-
-#include "tachyon/renderer2d/color/blending.h"
 
 
 struct ClearCommand {

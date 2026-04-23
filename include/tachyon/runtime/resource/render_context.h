@@ -4,6 +4,7 @@
 #include "tachyon/renderer2d/resource/render_context.h"
 #include "tachyon/renderer3d/core/ray_tracer.h"
 #include "tachyon/runtime/execution/planning/quality_policy.h"
+#include "tachyon/runtime/resource/runtime_surface_pool.h"
 #include <OpenImageDenoise/oidn.hpp>
 
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
@@ -18,6 +19,7 @@ struct RenderContext {
     std::shared_ptr<renderer3d::RayTracer> ray_tracer;
     oidn::DeviceRef oidn_device;
     oidn::FilterRef oidn_filter;
+    runtime::RuntimeSurfacePool* surface_pool{nullptr};
     FrameDiagnostics* diagnostic_tracker{nullptr};
 
     explicit RenderContext(std::shared_ptr<renderer2d::PrecompCache> precomp_cache = nullptr);

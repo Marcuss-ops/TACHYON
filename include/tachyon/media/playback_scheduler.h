@@ -50,7 +50,6 @@ public:
             
             // Basic deduplication: if exact task exists, just update priority if higher
             // In a real NLE, we'd use a set or map for O(log N) lookup
-            bool found = false;
             // We can't easily iterate a priority_queue, so we use a secondary tracking set or just push
             // For MVP deduplication, we'll just push and let the cache handle the second hit as a no-op
             // BUT to satisfy the "refinement" request, I'll add a simple tracking set.
@@ -95,9 +94,12 @@ private:
             if (!resolved_path.empty()) {
                 auto* decoder = m_manager.acquire_video_decoder(resolved_path);
                 if (decoder) {
-                    auto frame = decoder->decode_frame(task.time);
+                    auto frame = decoder->get_frame_at_time(task.time);
                     if (frame) {
-                        m_manager.store_video_frame(task.asset_id, task.time, std::move(frame));
+                        m_manager.store_video_frame(
+                            task.asset_id,
+                            task.time,
+                            std::make_unique<renderer2d::SurfaceRGBA>(*frame));
                     }
                     m_manager.release_video_decoder(resolved_path, decoder);
                 }

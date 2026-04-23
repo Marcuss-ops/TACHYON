@@ -6,6 +6,69 @@ namespace tachyon::runtime {
 
 namespace {
 
+// Migration from version 1 to 2: Added mask_feather to CompiledLayer
+CompiledLayer migrate_layer_v1_to_v2(const CompiledLayer& old) {
+    CompiledLayer layer;
+    layer.node = old.node;
+    layer.type_id = old.type_id;
+    layer.width = old.width;
+    layer.height = old.height;
+    layer.text_content = old.text_content;
+    layer.font_id = old.font_id;
+    layer.font_size = old.font_size;
+    layer.fill_color = old.fill_color;
+    layer.property_indices = old.property_indices;
+    layer.flags = old.flags;
+    layer.mask_feather = 0.0f; // Default value added in v2
+    return layer;
+}
+
+// Migration from version 2 to 3: Added audio tracks to CompiledComposition
+CompiledComposition migrate_composition_v2_to_v3(const CompiledComposition& old) {
+    CompiledComposition comp;
+    comp.node = old.node;
+    comp.width = old.width;
+    comp.height = old.height;
+    comp.fps = old.fps;
+    comp.duration = old.duration;
+    comp.layers = old.layers;
+    comp.camera_cuts = old.camera_cuts;
+    // Audio tracks are initialized as empty in v3 for v2 scenes
+    comp.audio_tracks = {}; 
+    return comp;
+}
+
+} // namespace
+
+CompiledScene TBFCodec::migrate(const CompiledScene& scene, std::uint16_t from_version) {
+    CompiledScene migrated = scene;
+    std::uint16_t ver = from_version;
+    
+    if (ver == 1) {
+        // Migrate layers from v1 to v2
+        for (auto& comp : migrated.compositions) {
+            for (auto& layer : comp.layers) {
+                // Re-create with default mask_feather
+                layer.mask_feather = 0.0f;
+            }
+        }
+        ver = 2;
+    }
+    
+    if (ver == 2) {
+        // Migrate compositions from v2 to v3
+        for (auto& comp : migrated.compositions) {
+            comp.audio_tracks = {}; // Explicitly initialize
+        }
+        ver = 3;
+    }
+    
+    migrated.header.version = current_version();
+    return migrated;
+}
+
+namespace {
+
 struct BinaryWriter {
     std::vector<std::uint8_t> buffer;
 
@@ -45,6 +108,56 @@ struct BinaryWriter {
         write(node.type);
         write_vector(node.dependencies);
         write_vector(node.dependents);
+    }
+
+    void write_track_binding(const spec::TrackBinding& b) {
+        write_string(b.property_path);
+        write_string(b.source_id);
+        write_string(b.source_track_name);
+        write(b.influence);
+        write(b.enabled);
+    }
+
+    void write_time_remap(const spec::TimeRemapCurve& tr) {
+        write(tr.enabled);
+        write(tr.mode);
+        write<std::uint32_t>(static_cast<std::uint32_t>(tr.keyframes.size()));
+        for (const auto& kf : tr.keyframes) {
+            write(kf.first);
+            write(kf.second);
+        }
+    }
+
+    void write_camera_cut(const spec::CameraCut& cut) {
+        write_string(cut.camera_id);
+        write(cut.start_seconds);
+        write(cut.end_seconds);
+    }
+
+    void write_audio_effect(const spec::AudioEffectSpec& effect) {
+        write_string(effect.type);
+        write(effect.start_time.has_value());
+        if (effect.start_time) write(*effect.start_time);
+        write(effect.duration.has_value());
+        if (effect.duration) write(*effect.duration);
+        write(effect.gain_db.has_value());
+        if (effect.gain_db) write(*effect.gain_db);
+        write(effect.cutoff_freq_hz.has_value());
+        if (effect.cutoff_freq_hz) write(*effect.cutoff_freq_hz);
+    }
+
+    void write_audio_track(const spec::AudioTrackSpec& track) {
+        write_string(track.id);
+        write_string(track.source_path);
+        write(track.volume);
+        write(track.pan);
+        write(track.start_offset_seconds);
+        
+        write_vector(track.volume_keyframes);
+        write_vector(track.pan_keyframes);
+        
+        write<std::uint32_t>(static_cast<std::uint32_t>(track.effects.size()));
+        for (const auto& effect : track.effects) write_audio_effect(effect);
     }
 };
 
@@ -106,6 +219,63 @@ struct BinaryReader {
         node.dependents = read_vector<std::uint32_t>();
         return node;
     }
+
+    spec::TrackBinding read_track_binding() {
+        spec::TrackBinding b;
+        b.property_path = read_string();
+        b.source_id = read_string();
+        b.source_track_name = read_string();
+        b.influence = read<float>();
+        b.enabled = read<bool>();
+        return b;
+    }
+
+    spec::TimeRemapCurve read_time_remap() {
+        spec::TimeRemapCurve tr;
+        tr.enabled = read<bool>();
+        tr.mode = read<spec::TimeRemapMode>();
+        std::uint32_t kf_count = read<std::uint32_t>();
+        for (std::uint32_t i = 0; i < kf_count; ++i) {
+            float first = read<float>();
+            float second = read<float>();
+            tr.keyframes.push_back({first, second});
+        }
+        return tr;
+    }
+
+    spec::CameraCut read_camera_cut() {
+        spec::CameraCut cut;
+        cut.camera_id = read_string();
+        cut.start_seconds = read<double>();
+        cut.end_seconds = read<double>();
+        return cut;
+    }
+
+    spec::AudioEffectSpec read_audio_effect() {
+        spec::AudioEffectSpec effect;
+        effect.type = read_string();
+        if (read<bool>()) effect.start_time = read<double>();
+        if (read<bool>()) effect.duration = read<double>();
+        if (read<bool>()) effect.gain_db = read<float>();
+        if (read<bool>()) effect.cutoff_freq_hz = read<float>();
+        return effect;
+    }
+
+    spec::AudioTrackSpec read_audio_track() {
+        spec::AudioTrackSpec track;
+        track.id = read_string();
+        track.source_path = read_string();
+        track.volume = read<float>();
+        track.pan = read<float>();
+        track.start_offset_seconds = read<double>();
+        
+        track.volume_keyframes = read_vector<animation::Keyframe<float>>();
+        track.pan_keyframes = read_vector<animation::Keyframe<float>>();
+        
+        std::uint32_t effect_count = read<std::uint32_t>();
+        for (std::uint32_t i = 0; i < effect_count; ++i) track.effects.push_back(read_audio_effect());
+        return track;
+    }
 };
 
 } // namespace
@@ -149,7 +319,19 @@ std::vector<std::uint8_t> TBFCodec::encode(const CompiledScene& scene) {
             writer.write(layer.fill_color);
             writer.write_vector(layer.property_indices);
             writer.write(layer.flags);
+
+            // Unified Temporal & Tracking
+            writer.write<std::uint32_t>(static_cast<std::uint32_t>(layer.track_bindings.size()));
+            for (const auto& b : layer.track_bindings) writer.write_track_binding(b);
+            writer.write_time_remap(layer.time_remap);
+            writer.write(layer.frame_blend);
         }
+
+        writer.write<std::uint32_t>(static_cast<std::uint32_t>(comp.camera_cuts.size()));
+        for (const auto& cut : comp.camera_cuts) writer.write_camera_cut(cut);
+
+        writer.write<std::uint32_t>(static_cast<std::uint32_t>(comp.audio_tracks.size()));
+        for (const auto& track : comp.audio_tracks) writer.write_audio_track(track);
     }
     
     // 6. Property Tracks
@@ -222,8 +404,22 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
             layer.fill_color = reader.read<ColorSpec>();
             layer.property_indices = reader.read_vector<std::uint32_t>();
             layer.flags = reader.read<std::uint8_t>();
+
+            // Unified Temporal & Tracking
+            std::uint32_t binding_count = reader.read<std::uint32_t>();
+            for (std::uint32_t k = 0; k < binding_count; ++k) layer.track_bindings.push_back(reader.read_track_binding());
+            layer.time_remap = reader.read_time_remap();
+            layer.frame_blend = reader.read<spec::FrameBlendMode>();
+
             comp.layers.push_back(std::move(layer));
         }
+
+        std::uint32_t cut_count = reader.read<std::uint32_t>();
+        for (std::uint32_t k = 0; k < cut_count; ++k) comp.camera_cuts.push_back(reader.read_camera_cut());
+
+        std::uint32_t audio_count = reader.read<std::uint32_t>();
+        for (std::uint32_t k = 0; k < audio_count; ++k) comp.audio_tracks.push_back(reader.read_audio_track());
+
         scene.compositions.push_back(std::move(comp));
     }
 
