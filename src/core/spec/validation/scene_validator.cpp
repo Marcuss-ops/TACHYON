@@ -98,7 +98,7 @@ void SceneValidator::validate_layer(const ::tachyon::LayerSpec& layer, const ::t
     }
 }
 
-void SceneValidator::validate_property(const ::tachyon::PropertySpec&, const std::string&, ValidationResult&) const {
+// void SceneValidator::validate_property removed: PropertySpec type no longer exists
     // Base property validation hook. The concrete property schema is still
     // normalized elsewhere, so this stays intentionally shallow for now.
 }

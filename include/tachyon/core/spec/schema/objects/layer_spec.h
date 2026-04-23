@@ -4,6 +4,7 @@
 #include "tachyon/core/spec/schema/properties/property_spec.h"
 #include "tachyon/core/spec/schema/transform/transform_spec.h"
 #include "tachyon/core/spec/schema/contracts/shared_contracts.h"
+#include "tachyon/renderer2d/path/mask_path.h"
 #include "tachyon/core/shapes/shape_path.h"
 #include <string>
 #include <vector>
@@ -104,6 +105,9 @@ struct LayerSpec {
     std::vector<std::string> effects;
     std::vector<std::string> text_animators;
     std::vector<std::string> text_highlights;
+
+    // Mask paths (roto / vector masks)
+    std::vector<renderer2d::MaskPath> mask_paths;
 
     // Temporal & Tracking (Unified)
     std::vector<spec::TrackBinding> track_bindings;
