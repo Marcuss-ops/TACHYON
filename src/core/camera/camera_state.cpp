@@ -5,7 +5,6 @@ namespace camera {
 
 math::Vector2 CameraState::project_point(const math::Vector3& world_p, float viewport_w, float viewport_h) const {
     math::Matrix4x4 view = get_view_matrix();
-    math::Matrix4x4 proj = get_projection_matrix();
     
     // 1. World -> Camera Space
     math::Vector3 camera_p = view.transform_point(world_p);

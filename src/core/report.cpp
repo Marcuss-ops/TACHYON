@@ -23,10 +23,6 @@ json make_diagnostics_json(const DiagnosticBag& diagnostics) {
     return result;
 }
 
-json make_diagnostics_json() {
-    return make_diagnostics_json(DiagnosticBag{});
-}
-
 json make_scene_json(const SceneSpec& scene) {
     json result;
     result["version"] = scene.version;

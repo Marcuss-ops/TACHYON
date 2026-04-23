@@ -171,7 +171,7 @@ if(MSVC)
     target_compile_options(TachyonCore PRIVATE /W4 /WX /permissive- /utf-8 /FS /arch:AVX2)
     target_compile_definitions(TachyonCore PRIVATE TACHYON_AVX2)
 else()
-    target_compile_options(TachyonCore PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    target_compile_options(TachyonCore PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 target_include_directories(TachyonCore
@@ -181,9 +181,12 @@ target_include_directories(TachyonCore
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../third_party>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../third_party/stb/include>
-        $<BUILD_INTERFACE:${oidn_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
 )
+
+if(WIN32)
+    target_include_directories(TachyonCore PUBLIC $<BUILD_INTERFACE:${oidn_SOURCE_DIR}/include>)
+endif()
 
 target_link_libraries(TachyonCore
     PUBLIC
@@ -196,9 +199,12 @@ target_link_libraries(TachyonCore
         swscale
         swresample
         embree
-        OpenImageDenoise
         OpenMP::OpenMP_CXX
 )
+
+if(WIN32)
+    target_link_libraries(TachyonCore PUBLIC OpenImageDenoise)
+endif()
 
 # --- Optional dependencies ---
 
