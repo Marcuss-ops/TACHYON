@@ -1,9 +1,18 @@
 #include "tachyon/core/scene/rigging/rig_graph.h"
 
+#include <algorithm>
+
 namespace tachyon::scene {
 
 void solve_constraints(std::vector<EvaluatedLayerState>& layers) {
     if (layers.empty()) return;
+
+    const bool has_rigging_data = std::any_of(layers.begin(), layers.end(), [](const auto& layer) {
+        return !layer.constraints.empty() || !layer.ik_chains.empty() || !layer.joint_matrices.empty();
+    });
+    if (!has_rigging_data) {
+        return;
+    }
 
     rigging::Pose initial_pose;
     for (const auto& layer : layers) {

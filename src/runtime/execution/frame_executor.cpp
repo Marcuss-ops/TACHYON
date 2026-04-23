@@ -1,5 +1,6 @@
 #include "tachyon/runtime/execution/frames/frame_executor.h"
 #include "tachyon/core/scene/evaluation/evaluator.h"
+#include "tachyon/core/scene/composition/evaluator_composition.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/renderer2d/raster/draw_list_builder.h"
 #include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"
@@ -15,6 +16,37 @@
 namespace tachyon {
 
 namespace {
+
+std::optional<scene::EvaluatedCompositionState> evaluate_target_composition_state(
+    const SceneSpec& scene,
+    const RenderPlan& plan,
+    const FrameRenderTask& task) {
+    for (const auto& comp : scene.compositions) {
+        if (comp.id != plan.composition_target) {
+            continue;
+        }
+
+        double fps = comp.frame_rate.value();
+        if (fps <= 0.0) {
+            fps = 24.0;
+        }
+
+        const double time = static_cast<double>(task.frame_number) / fps;
+        return scene::evaluate_composition_internal(
+            &scene,
+            comp,
+            task.frame_number,
+            time,
+            {},
+            nullptr,
+            {},
+            nullptr,
+            std::nullopt,
+            std::nullopt);
+    }
+
+    return std::nullopt;
+}
 
 /**
  * @brief Render a single frame at the given time and return the surface
@@ -375,9 +407,8 @@ EvaluatedFrameState evaluate_frame_state(const SceneSpec& scene, const CompiledS
     EvaluatedFrameState state;
     state.task = task;
     state.scene_hash = compiled_scene.scene_hash;
-    if (!scene.compositions.empty()) {
-        const auto evaluated = scene::evaluate_scene_composition_state(scene, plan.composition_target, task.frame_number);
-        if (evaluated.has_value()) state.composition_state = std::move(*evaluated);
+    if (const auto composition = evaluate_target_composition_state(scene, plan, task); composition.has_value()) {
+        state.composition_state = std::move(*composition);
     }
     return state;
 }

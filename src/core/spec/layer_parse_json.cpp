@@ -205,6 +205,10 @@ void parse_layer(const json& object, LayerSpec& out, const std::string& path, Di
     parse_effects(object, out, path, diagnostics);
     parse_text_animators(object, out, path, diagnostics);
     parse_text_highlights(object, out, path, diagnostics);
+
+    if (object.contains("time_remap") && object.at("time_remap").is_number()) {
+        out.time_remap_property.value = object.at("time_remap").get<double>();
+    }
     
     if (object.contains("parent") && object.at("parent").is_string()) out.parent = object.at("parent").get<std::string>();
     if (object.contains("track_matte_layer_id") && object.at("track_matte_layer_id").is_string()) out.track_matte_layer_id = object.at("track_matte_layer_id").get<std::string>();
