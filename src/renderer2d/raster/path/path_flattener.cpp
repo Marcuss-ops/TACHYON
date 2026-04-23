@@ -9,6 +9,10 @@ void flatten_cubic(
     const math::Vector2& p1,
     const math::Vector2& p2,
     const math::Vector2& p3,
+    float feather_inner_start,
+    float feather_outer_start,
+    float feather_inner_end,
+    float feather_outer_end,
     std::vector<ContourPoint>& out,
     float tolerance,
     std::uint32_t depth) {
@@ -19,7 +23,7 @@ void flatten_cubic(
     const float distance_2 = chord_length > 0.0f ? std::abs((p2.x - p0.x) * chord.y - (p2.y - p0.y) * chord.x) / chord_length : (p2 - p0).length();
 
     if ((std::max(distance_1, distance_2) <= tolerance) || depth >= 12U) {
-        out.push_back({p3, 0.0f, 0.0f});
+        out.push_back({p3, feather_inner_end, feather_outer_end});
         return;
     }
 
@@ -30,8 +34,11 @@ void flatten_cubic(
     const math::Vector2 p123 = (p12 + p23) * 0.5f;
     const math::Vector2 p0123 = (p012 + p123) * 0.5f;
 
-    flatten_cubic(p0, p01, p012, p0123, out, tolerance, depth + 1U);
-    flatten_cubic(p0123, p123, p23, p3, out, tolerance, depth + 1U);
+    const float fi_mid = (feather_inner_start + feather_inner_end) * 0.5f;
+    const float fo_mid = (feather_outer_start + feather_outer_end) * 0.5f;
+
+    flatten_cubic(p0, p01, p012, p0123, feather_inner_start, feather_outer_start, fi_mid, fo_mid, out, tolerance, depth + 1U);
+    flatten_cubic(p0123, p123, p23, p3, fi_mid, fo_mid, feather_inner_end, feather_outer_end, out, tolerance, depth + 1U);
 }
 
 std::vector<Contour> build_contours(const PathGeometry& path) {
@@ -91,7 +98,7 @@ std::vector<Contour> build_contours(const PathGeometry& path) {
                     has_current_point = true;
                     contour_open = true;
                 }
-                flatten_cubic(current_point, command.p0, command.p1, command.p2, current.points, 0.35f);
+                flatten_cubic(current_point, command.p0, command.p1, command.p2, feather_inner, feather_outer, command.feather_inner, command.feather_outer, current.points, 0.35f);
                 current_point = command.p2;
                 feather_inner = command.feather_inner;
                 feather_outer = command.feather_outer;
@@ -115,7 +122,7 @@ float segment_length(const math::Vector2& p0, const math::Vector2& p1, const mat
     } else if (verb == PathVerb::CubicTo) {
         std::vector<ContourPoint> flattened;
         flattened.push_back({p0, 0.0f, 0.0f});
-        flatten_cubic(p0, p1, p2, p3, flattened, 0.5f);
+        flatten_cubic(p0, p1, p2, p3, 0.0f, 0.0f, 0.0f, 0.0f, flattened, 0.5f);
         float len = 0.0f;
         for (std::size_t i = 0; i + 1 < flattened.size(); ++i) {
             len += (flattened[i + 1].point - flattened[i].point).length();

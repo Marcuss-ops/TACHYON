@@ -20,6 +20,10 @@ void flatten_cubic(
     const math::Vector2& p1,
     const math::Vector2& p2,
     const math::Vector2& p3,
+    float feather_inner_start,
+    float feather_outer_start,
+    float feather_inner_end,
+    float feather_outer_end,
     std::vector<ContourPoint>& out,
     float tolerance,
     std::uint32_t depth = 0U);
