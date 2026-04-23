@@ -64,6 +64,20 @@ float signed_distance_to_contour(const math::Vector2& p, const Contour& contour)
     return winding ? -min_dist : min_dist;
 }
 
+int winding_count_at_point(const math::Vector2& p, const Contour& contour) {
+    int winding_count = 0;
+    const std::size_t n = contour.points.size();
+    for (std::size_t i = 0; i < n; ++i) {
+        const auto& a = contour.points[i].point;
+        const auto& b = contour.points[(i + 1) % n].point;
+        if (((a.y > p.y) != (b.y > p.y)) &&
+            (p.x < (b.x - a.x) * (p.y - a.y) / (b.y - a.y + 1e-12f) + a.x)) {
+            winding_count += (b.y > a.y) ? 1 : -1;
+        }
+    }
+    return winding_count;
+}
+
 Color sample_gradient(const GradientSpec& grad, float x, float y) {
     if (grad.stops.empty()) return Color::white();
     if (grad.stops.size() == 1) return Color{grad.stops[0].color.r / 255.0f, grad.stops[0].color.g / 255.0f, grad.stops[0].color.b / 255.0f, grad.stops[0].color.a / 255.0f};
@@ -191,193 +205,68 @@ void rasterize_fill_polygon(SurfaceRGBA& surface, const std::vector<Contour>& co
                         c = lut->sample(t);
                     }
                     
-                    float final_a = c.a * style.opacity * coverage;
-                    float* p = &surface.mutable_pixels()[(static_cast<size_t>(y) * width + x) * 4];
-                    float inv_a = 1.0f - final_a;
-                    p[0] = c.r * final_a + p[0] * inv_a;
-                    p[1] = c.g * final_a + p[1] * inv_a;
-                    p[2] = c.b * final_a + p[2] * inv_a;
-                    p[3] = final_a + p[3] * inv_a;
+                    const float final_a = c.a * style.opacity * coverage;
+                    surface.blend_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), c, final_a);
                 }
             }
         }
         return;
     }
 
-    // Non-feathered path (original algorithm)
+    // Non-feathered path: supersample each pixel for stable AA coverage.
+    constexpr int kSamplesPerAxis = 4;
+    constexpr float kInvSampleCount = 1.0f / static_cast<float>(kSamplesPerAxis * kSamplesPerAxis);
+    const float sample_step = 1.0f / static_cast<float>(kSamplesPerAxis);
+
     for (int y = start_y; y < end_y; ++y) {
-        std::fill(coverage_buffer.begin(), coverage_buffer.end(), 0.0f);
-
-        for (const auto& contour : contours) {
-            for (size_t i = 0; i + 1 < contour.points.size(); ++i) {
-                const auto& p1 = contour.points[i].point;
-                const auto& p2 = contour.points[i + 1].point;
-
-                float y1 = p1.y, y2 = p2.y;
-                if (std::max(y1, y2) <= (float)y || std::min(y1, y2) >= (float)y + 1) continue;
-
-                float sy1 = std::max(std::min(y1, y2), (float)y);
-                float sy2 = std::min(std::max(y1, y2), (float)y + 1);
-                if (sy1 >= sy2) continue;
-
-                auto get_x = [&](float py) {
-                    if (std::abs(y2 - y1) < 1e-6f) return p1.x;
-                    return p1.x + (p2.x - p1.x) * (py - y1) / (y2 - y1);
-                };
-
-                float x1 = get_x(sy1);
-                float x2 = get_x(sy2);
-                float height = sy2 - sy1;
-                if (y1 > y2) height = -height;
-
-                const float min_x_seg = std::min(x1, x2);
-                const float max_x_seg = std::max(x1, x2);
-                const int ix1 = static_cast<int>(std::floor(min_x_seg));
-                const int ix2 = static_cast<int>(std::floor(max_x_seg));
-
-                if (ix1 == ix2) {
-                    const float area = height * (1.0f - (x1 + x2) * 0.5f + static_cast<float>(ix1));
-                    if (ix1 >= 0 && ix1 < width) coverage_buffer[ix1] += area;
-                } else {
-                    const float slope = (x2 - x1) / (sy2 - sy1);
-                    const float dir = (y2 > y1) ? 1.0f : -1.0f;
-                    
-                    float next_ix_x = static_cast<float>(ix1 + 1);
-                    float next_sy = sy1 + (next_ix_x - x1) / slope;
-                    float h = next_sy - sy1;
-                    coverage_buffer[std::clamp(ix1, 0, width)] += h * dir * (1.0f - (x1 + next_ix_x) * 0.5f + static_cast<float>(ix1));
-                    
-                    for (int ix = ix1 + 1; ix < ix2; ++ix) {
-                        float cur_sy = next_sy;
-                        next_ix_x = static_cast<float>(ix + 1);
-                        next_sy = sy1 + (next_ix_x - x1) / slope;
-                        h = next_sy - cur_sy;
-                        coverage_buffer[std::clamp(ix, 0, width)] += h * dir * 0.5f;
-                    }
-                    
-                    float final_h = sy2 - next_sy;
-                    coverage_buffer[std::clamp(ix2, 0, width)] += final_h * dir * (1.0f - (next_ix_x + x2) * 0.5f + static_cast<float>(ix2));
-                }
-
-                const int next_x = std::max(0, ix2 + 1);
-                if (next_x < width) coverage_buffer[next_x] += height;
-            }
-        }
-
-        float winding = 0.0f;
-        float* row_ptr = &surface.mutable_pixels()[(static_cast<size_t>(y) * width) * 4];
-
-        float t = 0.0f;
-        float dt = 0.0f;
-        bool is_linear = false;
-        if (style.gradient.has_value() && style.gradient->type == GradientType::Linear) {
-            const auto& grad = *style.gradient;
-            const math::Vector2 ab = grad.end - grad.start;
-            const float len2 = ab.length_squared();
-            if (len2 > 1e-6f) {
-                is_linear = true;
-                dt = ab.x / len2;
-                t = math::Vector2::dot(math::Vector2(0.0f, (float)y) - grad.start, ab) / len2;
-            }
-        }
-
-#ifdef TACHYON_AVX2
-        int x = 0;
-        // AVX2 Winding loop
-        __m256 v_winding = _mm256_set1_ps(0.0f);
-        __m256 v_one = _mm256_set1_ps(1.0f);
-        __m256 v_zero = _mm256_set1_ps(0.0f);
-        __m256 v_two = _mm256_set1_ps(2.0f);
-        // __m256 v_opacity = _mm256_set1_ps(style.opacity); // Not used
-
-        for (; x <= width - 8; x += 8) {
-            __m256 v_cov = _mm256_loadu_ps(&coverage_buffer[x]);
-            
-            v_cov = _mm256_add_ps(v_cov, _mm256_castsi256_ps(_mm256_slli_si256(_mm256_castps_si256(v_cov), 4)));
-            v_cov = _mm256_add_ps(v_cov, _mm256_castsi256_ps(_mm256_slli_si256(_mm256_castps_si256(v_cov), 8)));
-            __m256 v_low = _mm256_permute2f128_ps(v_cov, v_cov, 0x00);
-            __m256 v_high = _mm256_permute2f128_ps(v_cov, v_cov, 0x11);
-            __m256 v_last_low = _mm256_shuffle_ps(v_low, v_low, _MM_SHUFFLE(3, 3, 3, 3));
-            v_high = _mm256_add_ps(v_high, v_last_low);
-            v_cov = _mm256_blend_ps(v_low, v_high, 0xF0);
-            
-            __m256 v_curr_winding = _mm256_add_ps(v_cov, v_winding);
-            
-            __m128 v_upper = _mm256_extractf128_ps(v_curr_winding, 1);
-            float last_w = _mm_cvtss_f32(_mm_shuffle_ps(v_upper, v_upper, _MM_SHUFFLE(3, 3, 3, 3)));
-            v_winding = _mm256_set1_ps(last_w);
-
-            __m256 v_abs_w = _mm256_andnot_ps(_mm256_set1_ps(-0.0f), v_curr_winding);
-            __m256 v_coverage;
-            if (style.winding == WindingRule::NonZero) {
-                v_coverage = _mm256_min_ps(v_one, v_abs_w);
-            } else {
-                __m256 v_w_div_2 = _mm256_mul_ps(v_abs_w, _mm256_set1_ps(0.5f));
-                __m256 v_w_floor = _mm256_floor_ps(v_w_div_2);
-                __m256 v_rem = _mm256_sub_ps(v_abs_w, _mm256_mul_ps(v_w_floor, v_two));
-                v_coverage = _mm256_blendv_ps(v_rem, _mm256_sub_ps(v_two, v_rem), _mm256_cmp_ps(v_rem, v_one, _CMP_GT_OQ));
-            }
-
-            __m256 v_mask = _mm256_cmp_ps(v_coverage, _mm256_set1_ps(0.001f), _CMP_GT_OQ);
-            if (_mm256_movemask_ps(v_mask) == 0) continue;
-
-            alignas(32) float covs[8];
-            _mm256_store_ps(covs, v_coverage);
-            
-            for (int j = 0; j < 8; ++j) {
-                if (covs[j] > 0.001f) {
-                    int cur_x = x + j;
-                    Color c = style.fill_color;
-                    if (lut) {
-                        float cur_t = is_linear ? std::clamp(t + (cur_x * dt), 0.0f, 1.0f) : std::clamp((math::Vector2((float)cur_x, (float)y) - style.gradient->start).length() / style.gradient->radial_radius, 0.0f, 1.0f);
-                        c = lut->sample(cur_t);
-                    }
-                    
-                    float final_a = c.a * style.opacity * covs[j];
-                    float* p = &row_ptr[cur_x * 4];
-                    float inv_a = 1.0f - final_a;
-                    p[0] = c.r * final_a + p[0] * inv_a;
-                    p[1] = c.g * final_a + p[1] * inv_a;
-                    p[2] = c.b * final_a + p[2] * inv_a;
-                    p[3] = final_a + p[3] * inv_a;
-                }
-            }
-        }
-#else
-        int x = 0;
-#endif
-
-        // Tail loop
-        for (; x < width; ++x) {
-            winding += coverage_buffer[x];
+        for (int x = 0; x < width; ++x) {
             float coverage = 0.0f;
-            if (style.winding == WindingRule::NonZero) {
-                coverage = std::clamp(std::abs(winding), 0.0f, 1.0f);
-            } else {
-                float w = std::abs(winding);
-                float rem = std::fmod(w, 2.0f);
-                coverage = (rem > 1.0f) ? 2.0f - rem : rem;
-            }
+            for (int sy = 0; sy < kSamplesPerAxis; ++sy) {
+                for (int sx = 0; sx < kSamplesPerAxis; ++sx) {
+                    const math::Vector2 sample{
+                        static_cast<float>(x) + (static_cast<float>(sx) + 0.5f) * sample_step,
+                        static_cast<float>(y) + (static_cast<float>(sy) + 0.5f) * sample_step
+                    };
 
-                if (coverage > 0.001f) {
-                    Color c = style.fill_color;
-                    if (lut) {
-                        float cur_t = is_linear ? std::clamp(t + (x * dt), 0.0f, 1.0f) : std::clamp((math::Vector2((float)x, (float)y) - style.gradient->start).length() / style.gradient->radial_radius, 0.0f, 1.0f);
-                        c = lut->sample(cur_t);
+                    int total_winding = 0;
+                    for (const auto& contour : contours) {
+                        total_winding += winding_count_at_point(sample, contour);
                     }
-                    
-                    // Apply coverage and opacity to alpha channel only, preserve RGB from fill color
-                    float final_a = c.a * style.opacity * coverage;
-                    float* p = &row_ptr[x * 4];
-                    // Blend RGB channels with coverage/opacity
-                    p[0] = c.r * final_a + p[0] * (1.0f - final_a);
-                    p[1] = c.g * final_a + p[1] * (1.0f - final_a);
-                    p[2] = c.b * final_a + p[2] * (1.0f - final_a);
-                    // Update alpha channel
-                    p[3] = final_a + p[3] * (1.0f - final_a);
+
+                    const bool inside = (style.winding == WindingRule::NonZero)
+                        ? (total_winding != 0)
+                        : ((std::abs(total_winding) % 2) != 0);
+                    coverage += inside ? 1.0f : 0.0f;
                 }
             }
+
+            coverage *= kInvSampleCount;
+            if (coverage <= 0.001f) {
+                continue;
+            }
+
+            Color c = style.fill_color;
+            if (lut) {
+                const math::Vector2 pixel_pos{static_cast<float>(x) + 0.5f, static_cast<float>(y) + 0.5f};
+                float cur_t = 0.0f;
+                if (style.gradient->type == GradientType::Linear) {
+                    const auto& grad = *style.gradient;
+                    const math::Vector2 ab = grad.end - grad.start;
+                    const float len2 = ab.length_squared();
+                    if (len2 > 1e-6f) {
+                        cur_t = std::clamp(math::Vector2::dot(pixel_pos - grad.start, ab) / len2, 0.0f, 1.0f);
+                    }
+                } else {
+                    const auto& grad = *style.gradient;
+                    cur_t = std::clamp((pixel_pos - grad.start).length() / grad.radial_radius, 0.0f, 1.0f);
+                }
+                c = lut->sample(cur_t);
+            }
+
+            const float final_a = c.a * style.opacity * coverage;
+            surface.blend_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), c, final_a);
         }
     }
+}
 
 } // namespace tachyon::renderer2d
