@@ -79,13 +79,20 @@ bool AudioEncoder::open(const std::filesystem::path& output_path, const AudioExp
     m_channels = config.channels;
 
 #if !defined(TACHYON_HAS_FFMPEG)
+    fprintf(stderr, "[AudioEncoder] Error: FFmpeg not found during compilation. Cannot open %s\n", output_path.string().c_str());
     return false;
 #else
     const AVCodec* codec = find_audio_encoder(config.codec);
-    if (!codec) return false;
+    if (!codec) {
+        fprintf(stderr, "[AudioEncoder] Error: Could not find encoder for %s\n", config.codec.c_str());
+        return false;
+    }
 
     m_format_context = avformat_alloc_context();
-    if (!m_format_context) return false;
+    if (!m_format_context) {
+        fprintf(stderr, "[AudioEncoder] Error: Could not allocate format context for %s\n", output_path.string().c_str());
+        return false;
+    }
 
     const char* format_name = nullptr;
     if (config.codec == "aac") format_name = "adts";
@@ -93,7 +100,11 @@ bool AudioEncoder::open(const std::filesystem::path& output_path, const AudioExp
     else if (config.codec == "flac") format_name = "flac";
 
     AVIOContext* io = nullptr;
-    if (avio_open(&io, output_path.string().c_str(), AVIO_FLAG_WRITE) < 0) {
+    int ret = avio_open(&io, output_path.string().c_str(), AVIO_FLAG_WRITE);
+    if (ret < 0) {
+        char errbuf[256];
+        av_strerror(ret, errbuf, sizeof(errbuf));
+        fprintf(stderr, "[AudioEncoder] Error: Could not open output file %s: %s\n", output_path.string().c_str(), errbuf);
         close();
         return false;
     }
@@ -106,6 +117,7 @@ bool AudioEncoder::open(const std::filesystem::path& output_path, const AudioExp
 
     m_codec_context = avcodec_alloc_context3(codec);
     if (!m_codec_context) {
+        fprintf(stderr, "[AudioEncoder] Error: Could not allocate codec context for %s\n", output_path.string().c_str());
         close();
         return false;
     }
@@ -119,12 +131,14 @@ bool AudioEncoder::open(const std::filesystem::path& output_path, const AudioExp
     else if (config.codec == "flac") m_codec_context->sample_fmt = AV_SAMPLE_FMT_S32;
 
     if (avcodec_open2(m_codec_context, codec, nullptr) < 0) {
+        fprintf(stderr, "[AudioEncoder] Error: Could not open codec %s for %s\n", config.codec.c_str(), output_path.string().c_str());
         close();
         return false;
     }
 
     m_stream = avformat_new_stream(m_format_context, nullptr);
     if (!m_stream) {
+        fprintf(stderr, "[AudioEncoder] Error: Could not create new stream for %s\n", output_path.string().c_str());
         close();
         return false;
     }
@@ -139,6 +153,7 @@ bool AudioEncoder::open(const std::filesystem::path& output_path, const AudioExp
     }
 
     if (avformat_write_header(m_format_context, nullptr) < 0) {
+        fprintf(stderr, "[AudioEncoder] Error: Could not write header for %s\n", output_path.string().c_str());
         close();
         return false;
     }

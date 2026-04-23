@@ -112,6 +112,7 @@ add_library(TachyonCore
     audio/audio_decoder.cpp
     audio/audio_mixer.cpp
     audio/audio_graph.cpp
+    audio/audio_processor.cpp
     audio/audio_encoder.cpp
     audio/audio_export.cpp
     media/image_manager.cpp

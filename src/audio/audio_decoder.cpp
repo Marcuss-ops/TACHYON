@@ -64,33 +64,48 @@ bool AudioDecoder::open(const std::filesystem::path& path) {
     m_path = path;
 
 #if !defined(TACHYON_HAS_FFMPEG)
+    fprintf(stderr, "[AudioDecoder] Error: FFmpeg not found during compilation. Cannot open %s\n", path.string().c_str());
     return false;
 #else
-    if (avformat_open_input(&m_format_context, path.string().c_str(), nullptr, nullptr) != 0) {
+    int ret = avformat_open_input(&m_format_context, path.string().c_str(), nullptr, nullptr);
+    if (ret != 0) {
+        char errbuf[256];
+        av_strerror(ret, errbuf, sizeof(errbuf));
+        fprintf(stderr, "[AudioDecoder] Error: Could not open input file %s: %s\n", path.string().c_str(), errbuf);
         return false;
     }
 
     if (avformat_find_stream_info(m_format_context, nullptr) < 0) {
+        fprintf(stderr, "[AudioDecoder] Error: Could not find stream info for %s\n", path.string().c_str());
         return false;
     }
 
     m_stream_index = av_find_best_stream(m_format_context, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
     if (m_stream_index < 0) {
+        fprintf(stderr, "[AudioDecoder] Error: Could not find audio stream in %s\n", path.string().c_str());
         return false;
     }
 
     AVStream* stream = m_format_context->streams[m_stream_index];
     const AVCodec* codec = avcodec_find_decoder(stream->codecpar->codec_id);
     if (!codec) {
+        fprintf(stderr, "[AudioDecoder] Error: Decoder not found for codec ID %d in %s\n", stream->codecpar->codec_id, path.string().c_str());
         return false;
     }
 
     m_codec_context = avcodec_alloc_context3(codec);
     if (!m_codec_context) {
+        fprintf(stderr, "[AudioDecoder] Error: Could not allocate codec context for %s\n", path.string().c_str());
         return false;
     }
 
-    if (avcodec_parameters_to_context(m_codec_context, stream->codecpar) < 0 || avcodec_open2(m_codec_context, codec, nullptr) < 0) {
+    if (avcodec_parameters_to_context(m_codec_context, stream->codecpar) < 0) {
+        fprintf(stderr, "[AudioDecoder] Error: Could not copy codec parameters for %s\n", path.string().c_str());
+        return false;
+    }
+
+    if (avcodec_open2(m_codec_context, codec, nullptr) < 0) {
+        fprintf(stderr, "[AudioDecoder] Error: Could not open codec for %s\n", path.string().c_str());
         return false;
     }
 
@@ -112,12 +127,17 @@ bool AudioDecoder::open(const std::filesystem::path& path) {
             m_codec_context->sample_rate,
             0,
             nullptr) < 0 || !m_swr_context || swr_init(m_swr_context) < 0) {
+        fprintf(stderr, "[AudioDecoder] Error: Could not initialize resampler for %s\n", path.string().c_str());
         return false;
     }
 
     m_packet = av_packet_alloc();
     m_frame = av_frame_alloc();
-    return m_packet && m_frame;
+    if (!m_packet || !m_frame) {
+        fprintf(stderr, "[AudioDecoder] Error: Could not allocate FFmpeg primitives for %s\n", path.string().c_str());
+        return false;
+    }
+    return true;
 #endif
 }
 
