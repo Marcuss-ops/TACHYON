@@ -178,10 +178,26 @@ void rasterize_fill_polygon(SurfaceRGBA& surface, const std::vector<Contour>& co
                     if (std::abs(dist) < std::abs(min_signed_dist)) {
                         min_signed_dist = dist;
                         // Use feather from nearest point on contour
-                        // For simplicity, use the first point's feather values
                         if (!contour.points.empty()) {
-                            feather_inner = contour.points[0].feather_inner;
-                            feather_outer = contour.points[0].feather_outer;
+                            float best_t = 0.0f;
+                            float best_d = 1e6f;
+                            const std::size_t n = contour.points.size();
+                            for (std::size_t i = 0; i + 1 < n; ++i) {
+                                const auto& a = contour.points[i].point;
+                                const auto& b = contour.points[i + 1].point;
+                                math::Vector2 ab = b - a;
+                                math::Vector2 ap = pixel_pos - a;
+                                float len2 = ab.length_squared();
+                                float t = len2 > 1e-6f ? std::clamp(math::Vector2::dot(ap, ab) / len2, 0.0f, 1.0f) : 0.0f;
+                                math::Vector2 proj = a + ab * t;
+                                float d = (pixel_pos - proj).length();
+                                if (d < best_d) {
+                                    best_d = d;
+                                    best_t = t;
+                                    feather_inner = contour.points[i].feather_inner * (1.0f - t) + contour.points[i + 1].feather_inner * t;
+                                    feather_outer = contour.points[i].feather_outer * (1.0f - t) + contour.points[i + 1].feather_outer * t;
+                                }
+                            }
                         }
                     }
                 }
