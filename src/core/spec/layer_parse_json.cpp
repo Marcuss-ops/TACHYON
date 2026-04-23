@@ -209,6 +209,14 @@ LayerSpec parse_layer(const json& object, const std::string& path, DiagnosticBag
     
     if (object.contains("parent") && object.at("parent").is_string()) layer.parent = object.at("parent").get<std::string>();
     if (object.contains("track_matte_layer_id") && object.at("track_matte_layer_id").is_string()) layer.track_matte_layer_id = object.at("track_matte_layer_id").get<std::string>();
+    if (object.contains("track_matte_type") && object.at("track_matte_type").is_string()) {
+        const std::string mt = object.at("track_matte_type").get<std::string>();
+        if (mt == "alpha") layer.track_matte_type = TrackMatteType::Alpha;
+        else if (mt == "alpha_inverted") layer.track_matte_type = TrackMatteType::AlphaInverted;
+        else if (mt == "luma") layer.track_matte_type = TrackMatteType::Luma;
+        else if (mt == "luma_inverted") layer.track_matte_type = TrackMatteType::LumaInverted;
+    }
+    if (object.contains("precomp_id") && object.at("precomp_id").is_string()) layer.precomp_id = object.at("precomp_id").get<std::string>();
     
     // Text
     read_string(object, "text_content", layer.text_content);
