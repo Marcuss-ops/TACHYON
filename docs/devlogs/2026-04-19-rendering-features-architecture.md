@@ -645,7 +645,7 @@ Quando un precomp layer viene renderizzato in `render_layer_recursive`, usa `tas
 
 **Dato nel layer spec** (aggiungere a `LayerSpec` / `EvaluatedLayerState`):
 ```cpp
-struct TimeRemap {
+struct TimeRemapCurve {
     bool enabled{false};
     std::vector<Keyframe<double>> curve; // parent_time_sec → child_time_sec
 };
