@@ -3,6 +3,7 @@
 #include <cmath>
 #include <algorithm>
 #include <random>
+#include <sstream>
 
 namespace tachyon::renderer3d {
 
@@ -104,10 +105,15 @@ std::vector<MotionBlurRenderer::SubFrameState> MotionBlurRenderer::generate_subf
 }
 
 float MotionBlurRenderer::evaluate_weight(int sample_index, int total_samples) const {
-    if (total_samples <= 1) return 1.0f;
-    float t = static_cast<float>(sample_index) / static_cast<float>(total_samples - 1);
-    return evaluate_temporal_weight(t, config_.curve);
-}
+     if (total_samples <= 1) return 1.0f;
+     float t = static_cast<float>(sample_index) / static_cast<float>(total_samples - 1);
+     switch (config_.weight_curve) {
+         case MotionBlurWeightCurve::kBox: return 1.0f;
+         case MotionBlurWeightCurve::kTriangle: return 1.0f - std::abs(2.0f * t - 1.0f);
+         case MotionBlurWeightCurve::kGaussian: return static_cast<float>(std::exp(-4.0 * std::pow(2.0 * t - 1.0, 2.0)));
+         default: return 1.0f;
+     }
+ }
 
 float MotionBlurRenderer::evaluate_temporal_weight(double normalized_time, const std::string& curve) const {
     if (curve == "box") return 1.0f;
@@ -133,7 +139,18 @@ math::Matrix4x4 MotionBlurRenderer::interpolate_world_matrix(
 }
 
 double MotionBlurRenderer::compute_shutter_duration(double frame_duration) const {
-    return (config_.shutter_angle / 360.0) * frame_duration;
+     return (config_.shutter_angle / 360.0) * frame_duration;
+ }
+
+std::string MotionBlurRenderer::cache_identity() const {
+    std::ostringstream oss;
+    oss << "mb_samples:" << config_.samples
+        << "|shutter_angle:" << config_.shutter_angle
+        << "|shutter_phase:" << config_.shutter_phase
+        << "|curve:" << static_cast<int>(config_.weight_curve)
+        << "|cam_blur:" << config_.enable_camera_blur
+        << "|obj_blur:" << config_.enable_object_blur;
+    return oss.str();
 }
 
 } // namespace tachyon::renderer3d

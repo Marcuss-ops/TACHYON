@@ -49,6 +49,7 @@ add_executable(TachyonTests
     unit/core/spec/parsing_tests.cpp
     unit/core/spec/validation_tests.cpp
     unit/core/spec/cli_tests.cpp
+    unit/core/spec/scene_contract_tests.cpp
     unit/core/spec/render_job_tests.cpp
     unit/text/glyph_cache_tests.cpp
     unit/text/text_tests.cpp
@@ -57,6 +58,10 @@ add_executable(TachyonTests
     integration/render_session_tests.cpp
     integration/render_batch_tests.cpp
     integration/parallax_cards_tests.cpp
+    unit/renderer3d/temporal/time_remap_tests.cpp
+    unit/renderer3d/temporal/frame_blend_tests.cpp
+    unit/renderer3d/effects/motion_blur_tests.cpp
+    unit/renderer3d/temporal/rolling_shutter_tests.cpp
 )
 
 set(TACHYON_TESTS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
