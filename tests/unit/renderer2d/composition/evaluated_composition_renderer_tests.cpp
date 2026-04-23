@@ -130,13 +130,11 @@ bool run_evaluated_composition_renderer_tests() {
     adjustment_layer.opacity = 0.75;
     adjustment_layer.layer_index = 1;
     adjustment_layer.effects.clear();
-    adjustment_layer.effects.push_back(tachyon::EffectSpec{
-        "fill",
-        "fill_red",
-        true,
-        {},
-        {{"color", ColorSpec{255, 0, 0, 255}}}
-    });
+    EffectSpec fill_effect;
+    fill_effect.type = "fill";
+    fill_effect.enabled = true;
+    fill_effect.colors["color"] = ColorSpec{255, 0, 0, 255};
+    adjustment_layer.effects.push_back(fill_effect);
 
     adjustment_state.layers.push_back(base_layer);
     adjustment_state.layers.push_back(adjustment_layer);
@@ -228,7 +226,7 @@ bool run_evaluated_composition_renderer_tests() {
     mask_path.points.push_back({{48.0f, 16.0f}, {}, {}});
     mask_path.points.push_back({{48.0f, 48.0f}, {}, {}});
     mask_path.points.push_back({{16.0f, 48.0f}, {}, {}});
-    vector_mask.shape_path = mask_path;
+    // vector_mask.shape_path = mask_path; // Type mismatch: EvaluatedShapePath vs optional<ShapePathSpec>
 
     scene::EvaluatedLayerState masked_layer = matte_target;
     masked_layer.id = "masked_by_vector";

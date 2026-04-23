@@ -11,7 +11,7 @@ add_executable(TachyonTests
     unit/renderer2d/utilities/surface_tests.cpp
     unit/renderer2d/composition/draw_list_builder_tests.cpp
     unit/renderer2d/effects/blend_modes_tests.cpp
-    unit/renderer2d/composition/evaluated_composition_renderer_tests.cpp
+    # unit/renderer2d/composition/evaluated_composition_renderer_tests.cpp
     unit/renderer2d/rasterization/path_rasterizer_tests.cpp
     unit/renderer2d/rasterization/path_rasterizer_aa_tests.cpp
     unit/renderer2d/utilities/tiling_tests.cpp
@@ -19,9 +19,10 @@ add_executable(TachyonTests
     unit/runtime/core/frame_cache_tests.cpp
     unit/runtime/core/frame_cache_budget_tests.cpp
     unit/runtime/core/backbone_tests.cpp
-    unit/runtime/core/render_contract_tests.cpp
+    # unit/runtime/core/render_contract_tests.cpp
     unit/runtime/core/expression_vm_tests.cpp
     unit/runtime/core/determinism_tests.cpp
+    unit/runtime/io/frame_output_sink_tests.cpp
     unit/runtime/core/quality_tier_tests.cpp
     unit/runtime/execution/tiling_integration_tests.cpp
     unit/runtime/execution/frame_executor_tests.cpp
@@ -29,11 +30,19 @@ add_executable(TachyonTests
     unit/runtime/visual/visual_golden_tests.cpp
     unit/runtime/visual/visual_golden_verifier.cpp
     unit/runtime/visual/golden_fixtures.cpp
-    unit/runtime/io/frame_output_sink_tests.cpp
     unit/core/scene/evaluator_tests.cpp
     unit/core/scene/precomp_mask_tests.cpp
     unit/timeline/time_tests.cpp
+    unit/timeline/camera_cuts_tests.cpp
     unit/core/spec/scene_spec_tests.cpp
+    unit/core/camera/camera_shake_tests.cpp
+    unit/core/properties/bezier_interpolator_tests.cpp
+    unit/tracker/track_tests.cpp
+    unit/tracker/track_binding_tests.cpp
+    unit/tracker/planar_track_tests.cpp
+    unit/tracker/camera_solver_tests.cpp
+    unit/renderer2d/composition/matte_resolver_tests.cpp
+    unit/renderer2d/composition/evaluated_composition_renderer_tests.cpp
     unit/core/rigging_maturation_tests.cpp
     unit/core/spec/parsing_tests.cpp
     unit/core/spec/validation_tests.cpp
@@ -42,6 +51,7 @@ add_executable(TachyonTests
     unit/text/glyph_cache_tests.cpp
     unit/text/text_tests.cpp
     unit/text/editor_tests.cpp
+    unit/runtime/core/render_contract_tests.cpp
     integration/render_session_tests.cpp
     integration/render_batch_tests.cpp
     integration/parallax_cards_tests.cpp
