@@ -170,7 +170,11 @@ private:
         cmd << " -an \"" << output_path << "\"";
         
         video_pipe = _popen(cmd.str().c_str(), "w");
-        return video_pipe != nullptr;
+        if (!video_pipe) {
+            m_last_error = "Failed to open video pipeline: ffmpeg command failed";
+            return false;
+        }
+        return true;
     }
     
     bool initialize_audio_pipeline() {
@@ -185,7 +189,11 @@ private:
         cmd << " -vn \"" << output_path << "\"";
         
         audio_pipe = _popen(cmd.str().c_str(), "w");
-        return audio_pipe != nullptr;
+        if (!audio_pipe) {
+            m_last_error = "Failed to open audio pipeline: ffmpeg command failed";
+            return false;
+        }
+        return true;
     }
     
     bool initialize_av_pipeline() {
@@ -214,32 +222,56 @@ private:
         cmd << " \"" << output_path << "\"";
         
         av_pipe = _popen(cmd.str().c_str(), "w");
-        return av_pipe != nullptr;
+        if (!av_pipe) {
+            m_last_error = "Failed to open AV pipeline: ffmpeg command failed";
+            return false;
+        }
+        return true;
     }
     
     bool encode_video_frame(const uint8_t* rgba_data) {
-        if (!video_pipe && !av_pipe) return false;
+        if (!video_pipe && !av_pipe) {
+            m_last_error = "No video or AV pipeline open for encoding";
+            return false;
+        }
         FILE* pipe = video_pipe ? video_pipe : av_pipe;
         
         size_t frame_size = config_.width * config_.height * 4;
         size_t written = fwrite(rgba_data, 1, frame_size, pipe);
-        return written == frame_size;
+        if (written != frame_size) {
+            m_last_error = "Failed to write video frame: wrote " + std::to_string(written) + 
+                          " of " + std::to_string(frame_size) + " bytes";
+            return false;
+        }
+        return true;
     }
     
     bool encode_audio_samples(const float* samples, int num_samples) {
-        if (!audio_pipe && !av_pipe) return false;
+        if (!audio_pipe && !av_pipe) {
+            m_last_error = "No audio or AV pipeline open for encoding";
+            return false;
+        }
         FILE* pipe = audio_pipe ? audio_pipe : av_pipe;
         
         size_t byte_size = num_samples * sizeof(float);
         size_t written = fwrite(samples, 1, byte_size, pipe);
-        return written == byte_size;
+        if (written != byte_size) {
+            m_last_error = "Failed to write audio samples: wrote " + std::to_string(written) + 
+                          " of " + std::to_string(byte_size) + " bytes";
+            return false;
+        }
+        return true;
     }
     
     bool finalize_video_pipeline() {
         if (video_pipe) {
             int result = _pclose(video_pipe);
             video_pipe = nullptr;
-            return result == 0;
+            if (result != 0) {
+                m_last_error = "Video pipeline closed with error code: " + std::to_string(result);
+                return false;
+            }
+            return true;
         }
         return true;
     }
@@ -248,7 +280,11 @@ private:
         if (audio_pipe) {
             int result = _pclose(audio_pipe);
             audio_pipe = nullptr;
-            return result == 0;
+            if (result != 0) {
+                m_last_error = "Audio pipeline closed with error code: " + std::to_string(result);
+                return false;
+            }
+            return true;
         }
         return true;
     }
@@ -257,7 +293,11 @@ private:
         if (av_pipe) {
             int result = _pclose(av_pipe);
             av_pipe = nullptr;
-            return result == 0;
+            if (result != 0) {
+                m_last_error = "AV pipeline closed with error code: " + std::to_string(result);
+                return false;
+            }
+            return true;
         }
         return true;
     }
