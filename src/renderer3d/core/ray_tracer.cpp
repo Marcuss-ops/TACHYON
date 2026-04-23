@@ -1,15 +1,11 @@
 // Minimal implementation of RayTracer
 #include "tachyon/renderer3d/core/ray_tracer.h"
-#include <iostream>
 
 namespace tachyon::renderer3d {
 
 RayTracer::RayTracer() {
     // Initialize Embree device
     device_ = rtcNewDevice(nullptr);
-    if (!device_) {
-        std::cerr << "Failed to create Embree device\n";
-    }
 }
 
 RayTracer::~RayTracer() {
@@ -21,8 +17,7 @@ RayTracer::~RayTracer() {
 
 void RayTracer::build_scene(const EvaluatedScene3D& scene) {
     (void)scene;
-    // TODO: Implement scene building
-    std::cerr << "Warning: RayTracer::build_scene() is a stub\n";
+    // TODO: Implement scene building.
 }
 
 void RayTracer::render(
@@ -37,8 +32,7 @@ void RayTracer::render(
     (void)motion_blur;
     (void)frame_time_seconds;
     (void)frame_duration_seconds;
-    // TODO: Implement rendering
-    std::cerr << "Warning: RayTracer::render() is a stub\n";
+    // TODO: Implement rendering.
 }
 
 ShadingResult RayTracer::trace_ray(
@@ -71,8 +65,6 @@ void RayTracer::log_embree_error(void* userPtr, RTCError code, const char* str) 
     (void)userPtr;
     (void)code;
     (void)str;
-    // TODO: Replace with proper logging system
-    // Embree error: code, str
 }
 
 } // namespace tachyon::renderer3d

@@ -1,12 +1,29 @@
 #include "tachyon/core/scene/evaluator/property_sampler.h"
-#include "tachyon/renderer2d/expressions/expression_evaluator.h"
+#include "tachyon/renderer2d/expressions/renderer2d_expression_evaluator.h"
 #include "tachyon/renderer2d/audio/audio_sampling.h"
 #include "tachyon/renderer2d/animation/easing.h"
 #include "tachyon/renderer2d/math/math_utils.h"
 #include <algorithm>
+#include <cstdlib>
 #include <cmath>
 
 namespace tachyon::scene {
+
+namespace {
+
+constexpr float kTangentEpsilon = 1.0e-6f;
+
+double parse_table_value(const std::string& value) {
+    const char* begin = value.c_str();
+    char* end = nullptr;
+    const double parsed = std::strtod(begin, &end);
+    if (end == begin || *end != '\0') {
+        return 0.0;
+    }
+    return parsed;
+}
+
+} // namespace
 
 double sample_scalar(
     const AnimatedScalarSpec& property,
@@ -58,11 +75,7 @@ double sample_scalar(
             if (r >= table.size() || c >= table[r].size()) {
                 return 0.0;
             }
-            try {
-                return std::stod(table[r][c]);
-            } catch (...) {
-                return 0.0;
-            }
+            return parse_table_value(table[r][c]);
         };
         
         if (audio_analyzer) {
@@ -72,6 +85,9 @@ double sample_scalar(
             expr_ctx.variables["music.high"] = bands.high;
             expr_ctx.variables["music.presence"] = bands.presence;
             expr_ctx.variables["music.rms"] = bands.rms;
+
+            // Also populate the structured audio_analysis field for newer expression access
+            expr_ctx.audio_analysis = ::tachyon::audio::AudioAnalyzer::to_analysis_data(bands);
         }
 
         if (!property.keyframes.empty()) {
@@ -80,7 +96,7 @@ double sample_scalar(
             expr_ctx.variables["_prop_duration"] = property.keyframes.back().time - property.keyframes.front().time;
         }
         
-        auto result = renderer2d::expressions::ExpressionEvaluator::evaluate(*property.expression, expr_ctx);
+        auto result = renderer2d::expressions::Renderer2DExpressionEvaluator::evaluate(*property.expression, expr_ctx);
         if (result.success) {
             return result.value;
         }
@@ -178,11 +194,7 @@ math::Vector2 sample_vector2(
             if (r >= table.size() || c >= table[r].size()) {
                 return 0.0;
             }
-            try {
-                return std::stod(table[r][c]);
-            } catch (...) {
-                return 0.0;
-            }
+            return parse_table_value(table[r][c]);
         };
         
         if (audio_analyzer) {
@@ -190,10 +202,14 @@ math::Vector2 sample_vector2(
             expr_ctx.variables["music.bass"] = bands.bass;
             expr_ctx.variables["music.mid"] = bands.mid;
             expr_ctx.variables["music.high"] = bands.high;
+            expr_ctx.variables["music.presence"] = bands.presence;
             expr_ctx.variables["music.rms"] = bands.rms;
+
+            // Also populate the structured audio_analysis field
+            expr_ctx.audio_analysis = ::tachyon::audio::AudioAnalyzer::to_analysis_data(bands);
         }
         
-        auto result = renderer2d::expressions::ExpressionEvaluator::evaluate(*property.expression, expr_ctx);
+        auto result = renderer2d::expressions::Renderer2DExpressionEvaluator::evaluate(*property.expression, expr_ctx);
         if (result.success) {
             return { static_cast<float>(result.value), static_cast<float>(result.value) };
         }
@@ -234,9 +250,9 @@ math::Vector2 sample_vector2(
         }
         const double alpha = (local_time_seconds - previous.time) / duration;
         const double eased = renderer2d::animation::apply_easing(alpha, previous.easing, previous.bezier);
-        const float weight = static_cast<float>(eased);
+        const float weight = static_cast<float>(eased);        
         
-        if (previous.tangent_out.length_squared() > 1e-6f || next.tangent_in.length_squared() > 1e-6f) {
+        if (previous.tangent_out.length_squared() > kTangentEpsilon || next.tangent_in.length_squared() > kTangentEpsilon) {
             return renderer2d::math_utils::sample_bezier_spatial(
                 previous.value,
                 previous.value + previous.tangent_out,
@@ -294,11 +310,7 @@ math::Vector3 sample_vector3(
             if (r >= table.size() || c >= table[r].size()) {
                 return 0.0;
             }
-            try {
-                return std::stod(table[r][c]);
-            } catch (...) {
-                return 0.0;
-            }
+            return parse_table_value(table[r][c]);
         };
         
         if (audio_analyzer) {
@@ -309,7 +321,7 @@ math::Vector3 sample_vector3(
             expr_ctx.variables["music.rms"] = bands.rms;
         }
         
-        auto result = renderer2d::expressions::ExpressionEvaluator::evaluate(*property.expression, expr_ctx);
+        auto result = renderer2d::expressions::Renderer2DExpressionEvaluator::evaluate(*property.expression, expr_ctx);
         if (result.success) {
             return { static_cast<float>(result.value), static_cast<float>(result.value), static_cast<float>(result.value) };
         }
@@ -352,7 +364,7 @@ math::Vector3 sample_vector3(
         const double eased = renderer2d::animation::apply_easing(alpha, previous.easing, previous.bezier);
         const float weight = static_cast<float>(eased);
 
-        if (previous.tangent_out.length_squared() > 1e-6f || next.tangent_in.length_squared() > 1e-6f) {
+        if (previous.tangent_out.length_squared() > kTangentEpsilon || next.tangent_in.length_squared() > kTangentEpsilon) {
             return renderer2d::math_utils::sample_bezier_spatial(
                 previous.value,
                 previous.value + previous.tangent_out,

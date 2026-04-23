@@ -1,11 +1,30 @@
 #include "tachyon/text/content/subtitle.h"
 
+#include <charconv>
 #include <algorithm>
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <string_view>
 
 namespace tachyon::text {
+
+namespace {
+
+constexpr double kSecondsPerHour = 3600.0;
+constexpr double kSecondsPerMinute = 60.0;
+constexpr double kSecondsPerSecond = 1.0;
+constexpr double kMillisecondsPerSecond = 1000.0;
+constexpr std::size_t kSrtTimestampLength = 12;
+
+bool parse_int_token(std::string_view token, int& out_value) {
+    const char* begin = token.data();
+    const char* end = begin + token.size();
+    const auto result = std::from_chars(begin, end, out_value);
+    return result.ec == std::errc{} && result.ptr == end;
+}
+
+} // namespace
 
 // ---------------------------------------------------------------------------
 // SRT timing parser
@@ -15,21 +34,23 @@ namespace tachyon::text {
 // Returns -1 on parse failure.
 static double parse_srt_time(const std::string& token) {
     // token: "HH:MM:SS,mmm"
-    if (token.size() < 12) {
+    if (token.size() < kSrtTimestampLength) {
         return -1.0;
     }
-    try {
-        const int hh  = std::stoi(token.substr(0, 2));
-        const int mm  = std::stoi(token.substr(3, 2));
-        const int ss  = std::stoi(token.substr(6, 2));
-        const int ms  = std::stoi(token.substr(9, 3));
-        return static_cast<double>(hh) * 3600.0
-             + static_cast<double>(mm) * 60.0
-             + static_cast<double>(ss)
-             + static_cast<double>(ms) / 1000.0;
-    } catch (...) {
+    int hh = 0;
+    int mm = 0;
+    int ss = 0;
+    int ms = 0;
+    if (!parse_int_token(std::string_view(token).substr(0, 2), hh) ||
+        !parse_int_token(std::string_view(token).substr(3, 2), mm) ||
+        !parse_int_token(std::string_view(token).substr(6, 2), ss) ||
+        !parse_int_token(std::string_view(token).substr(9, 3), ms)) {
         return -1.0;
     }
+    return static_cast<double>(hh) * kSecondsPerHour
+         + static_cast<double>(mm) * kSecondsPerMinute
+         + static_cast<double>(ss) * kSecondsPerSecond
+         + static_cast<double>(ms) / kMillisecondsPerSecond;
 }
 
 // Parse "HH:MM:SS,mmm --> HH:MM:SS,mmm" timing line.
@@ -100,8 +121,11 @@ ParseResult<std::vector<SubtitleEntry>> parse_srt(const std::filesystem::path& p
                     if (ch < '0' || ch > '9') { all_digits = false; break; }
                 }
                 if (all_digits) {
-                    current.index = std::stoi(line);
-                    state = State::Timing;
+                    int parsed_index = 0;
+                    if (parse_int_token(line, parsed_index)) {
+                        current.index = parsed_index;
+                        state = State::Timing;
+                    }
                 }
                 // Non-integer non-blank line in Blank state â†’ try timing directly
                 else {

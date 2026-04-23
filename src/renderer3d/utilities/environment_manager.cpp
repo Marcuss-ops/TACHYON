@@ -5,6 +5,18 @@
 
 namespace tachyon::renderer3d {
 
+namespace {
+
+constexpr int kBrdfLutSize = 512;
+constexpr int kBrdfSampleCount = 1024;
+constexpr int kPrefilterLevelCount = 5;
+constexpr int kPrefilterSampleCount = 1024;
+constexpr float kHalf = 0.5f;
+constexpr float kQuarter = 0.25f;
+constexpr float kMinDot = 0.0001f;
+
+} // namespace
+
 std::unique_ptr<media::BRDFLut> EnvironmentManager::brdf_lut_ = nullptr;
 
 EnvironmentManager::EnvironmentManager() = default;
@@ -13,17 +25,17 @@ EnvironmentManager::~EnvironmentManager() = default;
 void EnvironmentManager::ensure_brdf_lut() {
     if (brdf_lut_) return;
     
-    const int size = 512;
+    const int size = kBrdfLutSize;
     brdf_lut_ = std::make_unique<media::BRDFLut>();
     brdf_lut_->size = size;
     brdf_lut_->data.resize(size * size * 2);
     
-    const int num_samples = 1024;
+    const int num_samples = kBrdfSampleCount;
     #pragma omp parallel for
     for (int y = 0; y < size; ++y) {
-        float n_dot_v = (static_cast<float>(y) + 0.5f) / size;
+        float n_dot_v = (static_cast<float>(y) + kHalf) / size;
         for (int x = 0; x < size; ++x) {
-            float roughness = (static_cast<float>(x) + 0.5f) / size;
+            float roughness = (static_cast<float>(x) + kHalf) / size;
             
             float a = 0.0f;
             float b = 0.0f;
@@ -40,9 +52,9 @@ void EnvironmentManager::ensure_brdf_lut() {
                 math::Vector3 h = pbr::importance_sample_ggx(u1, u2, {0,0,1}, roughness);
                 math::Vector3 l = (h * 2.0f * math::Vector3::dot(v, h) - v).normalized();
                 
-                float n_dot_l = std::max(l.z, 0.0001f);
-                float n_dot_h = std::max(h.z, 0.0001f);
-                float v_dot_h = std::max(math::Vector3::dot(v, h), 0.0001f);
+                float n_dot_l = std::max(l.z, kMinDot);
+                float n_dot_h = std::max(h.z, kMinDot);
+                float v_dot_h = std::max(math::Vector3::dot(v, h), kMinDot);
                 
                 if (n_dot_l > 0.0f) {
                     float k = (roughness * roughness) / 2.0f;
@@ -69,8 +81,8 @@ void EnvironmentManager::update_prefiltered_env(const media::HDRTextureData* map
     }
     
     prefiltered_env_ = std::make_unique<media::PreFilteredEnvMap>();
-    const int num_levels = 5;
-    const int num_samples = 1024;
+    const int num_levels = kPrefilterLevelCount;
+    const int num_samples = kPrefilterSampleCount;
     
     for (int i = 0; i < num_levels; ++i) {
         float roughness = static_cast<float>(i) / (num_levels - 1);
@@ -88,11 +100,11 @@ void EnvironmentManager::update_prefiltered_env(const media::HDRTextureData* map
             std::uniform_real_distribution<float> dist(0.0f, 1.0f);
             
             for (int x = 0; x < w; ++x) {
-                float u = (static_cast<float>(x) + 0.5f) / w;
-                float v = (static_cast<float>(y) + 0.5f) / h;
+                float u = (static_cast<float>(x) + kHalf) / w;
+                float v = (static_cast<float>(y) + kHalf) / h;
                 
-                float phi = (u - 0.5f) * 2.0f * pbr::PI;
-                float theta = (0.5f - v) * pbr::PI;
+                float phi = (u - kHalf) * 2.0f * pbr::PI;
+                float theta = (kHalf - v) * pbr::PI;
                 
                 math::Vector3 N;
                 N.x = std::cos(theta) * std::cos(phi);
@@ -138,14 +150,14 @@ void EnvironmentManager::update_prefiltered_env(const media::HDRTextureData* map
     }
 }
 
-ShadingResult EnvironmentManager::sample_environment(const math::Vector3& direction, const media::HDRTextureData* environment_map, float intensity, float rotation) {
+EnvironmentSample EnvironmentManager::sample_environment(const math::Vector3& direction, const media::HDRTextureData* environment_map, float intensity, float rotation) {
     auto res = sample_environment(direction, environment_map, intensity, rotation, 0.0f);
     res.albedo = {0,0,0};
     res.normal = -direction;
     return res;
 }
 
-ShadingResult EnvironmentManager::sample_environment(const math::Vector3& direction, const media::HDRTextureData* environment_map, float intensity, float rotation, float roughness) {
+EnvironmentSample EnvironmentManager::sample_environment(const math::Vector3& direction, const media::HDRTextureData* environment_map, float intensity, float rotation, float roughness) {
     if (environment_map) {
         if (prefiltered_env_ && !prefiltered_env_->levels.empty()) {
             float level = roughness * (prefiltered_env_->levels.size() - 1);
@@ -164,7 +176,7 @@ ShadingResult EnvironmentManager::sample_environment(const math::Vector3& direct
         return { pbr::sample_equirect(*environment_map, direction, rotation) * intensity, 0.0f, 1e10f, {0,0,0}, -direction };
     }
 
-    float t = 0.5f * (direction.y + 1.0f);
+    float t = kHalf * (direction.y + 1.0f);
     math::Vector3 sky_top = {0.2f, 0.5f, 1.0f};
     math::Vector3 sky_bottom = {0.8f, 0.9f, 1.0f};
     return {sky_bottom * (1.0f - t) + sky_top * t, 0.0f, 1e10f, {0,0,0}, -direction};
