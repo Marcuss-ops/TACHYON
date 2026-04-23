@@ -251,5 +251,57 @@ bool run_text_tests() {
         }
     }
 
+    {
+        // Test TextAnimatorPipeline with blur and reveal properties
+        using namespace tachyon;
+        using namespace tachyon::text;
+
+        // Create a simple ResolvedTextLayout with a few glyphs
+        ResolvedTextLayout layout;
+        layout.glyphs.resize(3);
+        layout.glyphs[0].position = {0.0f, 0.0f};
+        layout.glyphs[0].opacity = 1.0f;
+        layout.glyphs[0].blur_radius = 0.0f;
+        layout.glyphs[0].reveal_factor = 1.0f;
+
+        layout.glyphs[1].position = {10.0f, 0.0f};
+        layout.glyphs[1].opacity = 1.0f;
+        layout.glyphs[1].blur_radius = 0.0f;
+        layout.glyphs[1].reveal_factor = 1.0f;
+
+        layout.glyphs[2].position = {20.0f, 0.0f};
+        layout.glyphs[2].opacity = 1.0f;
+        layout.glyphs[2].blur_radius = 0.0f;
+        layout.glyphs[2].reveal_factor = 1.0f;
+
+        // Create an animator with blur and reveal properties
+        TextAnimatorSpec animator;
+        animator.selector.type = "range";
+        animator.selector.start = 0.0;
+        animator.selector.end = 100.0;  // Full range
+
+        // Set blur radius to 5.0
+        animator.properties.blur_radius_value = 5.0;
+
+        // Set reveal to 0.5 (half revealed)
+        animator.properties.reveal_value = 0.5;
+
+        // Apply animator
+        TextAnimatorContext ctx;
+        ctx.total_glyphs = static_cast<float>(layout.glyphs.size());
+        ctx.time = 1.0f;
+
+        std::vector<TextAnimatorSpec> animators = {animator};
+        TextAnimatorPipeline::apply_animators(layout, animators, ctx);
+
+        // Verify blur was applied
+        check_true(layout.glyphs[0].blur_radius > 0.0f, "Blur radius applied to glyph 0");
+        check_true(layout.glyphs[1].blur_radius > 0.0f, "Blur radius applied to glyph 1");
+        check_true(layout.glyphs[2].blur_radius > 0.0f, "Blur radius applied to glyph 2");
+
+        // Verify reveal was applied (with coverage=1.0, reveal should be 0.5)
+        check_true(layout.glyphs[0].reveal_factor < 1.0f, "Reveal factor reduced by animator");
+    }
+
     return g_failures == 0;
 }

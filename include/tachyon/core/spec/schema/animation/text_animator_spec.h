@@ -59,6 +59,15 @@ struct TextAnimatorPropertySpec {
     
     std::optional<double>            stroke_width_value;
     std::vector<ScalarKeyframeSpec>  stroke_width_keyframes;
+
+    // Blur effect (gaussian blur radius in pixels)
+    std::optional<double>            blur_radius_value;
+    std::vector<ScalarKeyframeSpec>  blur_radius_keyframes;
+
+    // Reveal effect (0.0 = fully hidden, 1.0 = fully revealed)
+    // Applies a trim/reveal effect to glyphs based on coverage
+    std::optional<double>            reveal_value;
+    std::vector<ScalarKeyframeSpec>  reveal_keyframes;
 };
 
 struct TextAnimatorSpec {

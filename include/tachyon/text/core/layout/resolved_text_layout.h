@@ -66,7 +66,13 @@ struct ResolvedGlyph {
     ::tachyon::math::Vector2 scale{1.0f, 1.0f};
     float rotation{0.0f}; // in degrees
     bool is_rtl{false};
-    
+
+    // Blur effect (gaussian blur radius in pixels)
+    float blur_radius{0.0f};
+
+    // Reveal effect (0.0 = fully hidden, 1.0 = fully revealed)
+    float reveal_factor{1.0f};
+
     // Bounding box of the glyph (relative to its position)
     ::tachyon::math::RectF bounds;
 };
