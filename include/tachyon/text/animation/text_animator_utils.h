@@ -12,6 +12,7 @@ struct TextAnimatorContext {
     std::size_t glyph_index{0};
     std::size_t cluster_index{0};
     std::size_t word_index{0};
+    std::size_t line_index{0};
     float total_glyphs{0.0f};
     float total_clusters{0.0f};
     float total_lines{0.0f};

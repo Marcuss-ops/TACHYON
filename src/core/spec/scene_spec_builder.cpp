@@ -42,8 +42,8 @@ struct SceneSpecBuilder::SceneSpecBuilderImpl {
             CompositionSpec comp;
             comp.id = id_.has_value() ? *id_ : "default";
             comp.name = name_.has_value() ? *name_ : "Unnamed";
-            comp.width = width_;
-            comp.height = height_;
+            comp.width = static_cast<int>(width_);
+            comp.height = static_cast<int>(height_);
             comp.duration = duration_;
             if (fps_.has_value()) {
                 comp.fps = *fps_;

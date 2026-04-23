@@ -71,5 +71,29 @@ Matrix4x4 Quaternion::to_matrix() const {
     return Matrix4x4::from_quaternion(*this);
 }
 
+Quaternion Quaternion::slerp(const Quaternion& a, const Quaternion& b, float t) {
+    float dot = Quaternion::dot(a, b);
+    
+    Quaternion q1 = a;
+    if (dot < 0.0f) {
+        dot = -dot;
+        q1 = Quaternion(-a.x, -a.y, -a.z, -a.w);
+    }
+
+    if (dot > 0.9995f) {
+        return (q1 * (1.0f - t) + b * t).normalized();
+    }
+
+    float theta_0 = std::acos(dot);
+    float theta = theta_0 * t;
+    float sin_theta = std::sin(theta);
+    float sin_theta_0 = std::sin(theta_0);
+
+    float s0 = std::cos(theta) - dot * sin_theta / sin_theta_0;
+    float s1 = sin_theta / sin_theta_0;
+
+    return (q1 * s0 + b * s1).normalized();
+}
+
 } // namespace math
 } // namespace tachyon

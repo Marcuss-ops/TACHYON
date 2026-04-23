@@ -2,6 +2,7 @@
 
 #include "tachyon/core/animation/keyframe_track.h"
 #include "tachyon/core/properties/property.h"
+#include "tachyon/core/scene/dependency_node.h"
 
 #include <cstdint>
 #include <functional>
@@ -13,12 +14,24 @@ namespace tachyon {
 namespace properties {
 
 /**
+ * LinkedPropertySource — an external provider of property values (e.g. tracker, expressions).
+ */
+template <typename T>
+class LinkedPropertySource {
+public:
+    virtual ~LinkedPropertySource() = default;
+    [[nodiscard]] virtual T sample(double time) const = 0;
+    [[nodiscard]] virtual uint64_t hash_identity(double time) const = 0;
+};
+
+/**
  * AnimatableProperty<T> — the unified property used throughout the engine for
  * transform, opacity, camera parameters, text properties, etc.
  *
  * A property can be in one of three modes:
  *  - Static:  a single constant value, independent of time.
  *  - Animated: a keyframed KeyframeTrack<T>, evaluated at ctx.time.
+ *  - Linked:   a value driven by an external source (e.g. Tracker).
  *  - Driven:  a user-supplied callback/expression override (future expansion).
  *
  * The value model (stored keyframes + constant) and the evaluated value are
@@ -34,40 +47,61 @@ namespace properties {
  * @tparam T  Value type. Must satisfy the LerpTraits contract.
  */
 template <typename T>
-class AnimatableProperty {
+class AnimatableProperty : public tachyon::core::scene::DependencyNode {
 public:
     // ---- Construction ----------------------------------------------------------
 
     /** Create a static (non-animated) property. */
     explicit AnimatableProperty(std::string name, const T& static_value)
         : m_name(std::move(name))
-        , m_is_animated(false)
+        , m_mode(PropertyMode::Static)
         , m_static_value(static_value)
     {}
 
     /** Create an animated property from an existing track. */
     explicit AnimatableProperty(std::string name, animation::KeyframeTrack<T> track)
         : m_name(std::move(name))
-        , m_is_animated(true)
+        , m_mode(PropertyMode::Animated)
         , m_static_value{}
         , m_curve(std::move(track))
+    {}
+
+    /** Create a linked property driven by an external source. */
+    explicit AnimatableProperty(std::string name, std::shared_ptr<LinkedPropertySource<T>> source)
+        : m_name(std::move(name))
+        , m_mode(PropertyMode::Linked)
+        , m_static_value{}
+        , m_linked_source(std::move(source))
     {}
 
     // ---- Mutation --------------------------------------------------------------
 
     /** Replace the static value.  Clears any existing curve and stops animation. */
-    void set_static(const T& value) {
+    void set_static(const T& value, uint64_t tick = 0) {
         m_static_value = value;
-        m_is_animated = false;
+        m_mode = PropertyMode::Static;
         m_curve = {};
+        m_linked_source = nullptr;
         ++m_version;
+        mark_dirty(tick);
     }
 
     /** Replace the entire animation track. */
-    void set_curve(animation::KeyframeTrack<T> track) {
+    void set_curve(animation::KeyframeTrack<T> track, uint64_t tick = 0) {
         m_curve = std::move(track);
-        m_is_animated = !m_curve.empty();
+        m_mode = m_curve.empty() ? PropertyMode::Static : PropertyMode::Animated;
+        m_linked_source = nullptr;
         ++m_version;
+        mark_dirty(tick);
+    }
+
+    /** Set the property to be driven by an external source. */
+    void set_linked(std::shared_ptr<LinkedPropertySource<T>> source, uint64_t tick = 0) {
+        m_linked_source = std::move(source);
+        m_mode = m_linked_source ? PropertyMode::Linked : PropertyMode::Static;
+        m_curve = {};
+        ++m_version;
+        mark_dirty(tick);
     }
 
     /**
@@ -76,7 +110,8 @@ public:
      */
     void add_keyframe(double time, const T& value,
                       animation::InterpolationMode mode = animation::InterpolationMode::Linear,
-                      animation::EasingPreset easing    = animation::EasingPreset::None) {
+                      animation::EasingPreset easing    = animation::EasingPreset::None,
+                      uint64_t tick = 0) {
         animation::Keyframe<T> kf;
         kf.time     = time;
         kf.value    = value;
@@ -85,8 +120,10 @@ public:
         kf.easing   = easing;
         m_curve.add_keyframe(kf);
         m_curve.sort();
-        m_is_animated = true;
+        m_mode = PropertyMode::Animated;
+        m_linked_source = nullptr;
         ++m_version;
+        mark_dirty(tick);
     }
 
     /**
@@ -104,8 +141,12 @@ public:
      * - Animated properties evaluate the curve at ctx.time.
      */
     [[nodiscard]] T sample(const PropertyEvaluationContext& ctx) const {
-        if (!m_is_animated) return m_static_value;
-        return m_curve.evaluate(ctx.time);
+        switch (m_mode) {
+            case PropertyMode::Static:   return m_static_value;
+            case PropertyMode::Animated: return m_curve.evaluate(ctx.time);
+            case PropertyMode::Linked:   return m_linked_source ? m_linked_source->sample(ctx.time) : m_static_value;
+        }
+        return m_static_value;
     }
 
     /**
@@ -119,8 +160,12 @@ public:
         const uint64_t name_hash = std::hash<std::string>{}(m_name);
         const uint64_t ver_hash  = m_version * 0x9E3779B97F4A7C15ULL;
 
-        if (!m_is_animated) {
+        if (m_mode == PropertyMode::Static) {
             return name_hash ^ ver_hash ^ 0xCAFEBABEDEADBEEFULL;
+        }
+
+        if (m_mode == PropertyMode::Linked) {
+            return name_hash ^ ver_hash ^ (m_linked_source ? m_linked_source->hash_identity(ctx.time) : 0);
         }
 
         // For animated properties: hash based on which segment contains ctx.time
@@ -142,7 +187,7 @@ public:
 
     // --- Inspection ------------------------------------------------------------
 
-    [[nodiscard]] bool is_animated() const { return m_is_animated; }
+    [[nodiscard]] bool is_animated() const { return m_mode == PropertyMode::Animated; }
     [[nodiscard]] const animation::KeyframeTrack<T>& curve() const { return m_curve; }
 
     /**
@@ -153,10 +198,13 @@ public:
     [[nodiscard]] const T& static_value() const { return m_static_value; }
 
 private:
+    enum class PropertyMode { Static, Animated, Linked };
+
     std::string                  m_name;
-    bool                         m_is_animated{false};
+    PropertyMode                 m_mode{PropertyMode::Static};
     T                            m_static_value{};
     animation::KeyframeTrack<T> m_curve;
+    std::shared_ptr<LinkedPropertySource<T>> m_linked_source;
     uint64_t                     m_version{1}; ///< Monotonic version counter for invalidation.
 };
 

@@ -239,7 +239,7 @@ private:
     }
 };
 
-CompilationResult ExpressionEvaluator::compile(const std::string& expression) {
+CompilationResult CoreExpressionEvaluator::compile(const std::string& expression) {
     if (expression.empty()) return {{}, nullptr, false, "Empty expression"};
     
     CompilationResult result;
@@ -258,7 +258,7 @@ CompilationResult ExpressionEvaluator::compile(const std::string& expression) {
     return result;
 }
 
-EvaluationResult ExpressionEvaluator::evaluate(const std::string& expression, const ExpressionContext& context) {
+EvaluationResult CoreExpressionEvaluator::evaluate(const std::string& expression, const ExpressionContext& context) {
     auto comp = compile(expression);
     if (!comp.success) return {0.0, false, comp.error};
     

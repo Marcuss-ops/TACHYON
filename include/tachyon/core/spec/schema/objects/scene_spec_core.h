@@ -2,12 +2,16 @@
 
 #include <nlohmann/json.hpp>
 #include <optional>
+#include <filesystem>
 #include <string>
 #include <vector>
 
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include "tachyon/core/math/vector2.h"
 #include "tachyon/core/math/vector3.h"
+#include "tachyon/renderer2d/spec/gradient_spec.h"
+#include "tachyon/renderer2d/raster/path/path_types.h"
 
 namespace tachyon {
 
@@ -21,6 +25,18 @@ std::string make_path(const std::string& parent, const std::string& child);
 template <typename T>
 bool read_number(const json& object, const char* key, T& out) {
     if (!object.contains(key) || object.at(key).is_null()) return false;
+    const auto& value = object.at(key);
+    if (!value.is_number()) return false;
+    out = value.get<T>();
+    return true;
+}
+
+template <typename T>
+bool read_number(const json& object, const char* key, std::optional<T>& out) {
+    if (!object.contains(key) || object.at(key).is_null()) {
+        out = std::nullopt;
+        return false;
+    }
     const auto& value = object.at(key);
     if (!value.is_number()) return false;
     out = value.get<T>();
@@ -60,5 +76,8 @@ void parse_shape_path(const json& object, LayerSpec& layer, const std::string& p
 LayerSpec parse_layer(const json& object, const std::string& path, DiagnosticBag& diagnostics);
 CompositionSpec parse_composition(const json& object, const std::string& path, DiagnosticBag& diagnostics);
 AssetSpec parse_asset(const json& object, const std::string& path, DiagnosticBag& diagnostics);
+ParseResult<SceneSpec> parse_scene_spec_file(const std::filesystem::path& path);
+ParseResult<SceneSpec> parse_scene_spec_json(const std::string& text);
+ValidationResult validate_scene_spec(const SceneSpec& scene);
 
 } // namespace tachyon

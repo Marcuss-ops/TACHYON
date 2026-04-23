@@ -1,4 +1,5 @@
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
+#include "tachyon/core/spec/scene_spec_audio.h"
 #include <fstream>
 #include <sstream>
 
@@ -29,6 +30,21 @@ CompositionSpec parse_composition(const json& object, const std::string& path, D
             if (layers[i].is_object()) composition.layers.push_back(parse_layer(layers[i], make_path(path, "layers[" + std::to_string(i) + "]"), diagnostics));
         }
     }
+    parse_composition_audio_tracks(composition, object, path, diagnostics);
+    
+    if (object.contains("camera_cuts") && object.at("camera_cuts").is_array()) {
+        const auto& cuts = object.at("camera_cuts");
+        for (std::size_t i = 0; i < cuts.size(); ++i) {
+            if (!cuts[i].is_object()) continue;
+            const auto& c = cuts[i];
+            spec::CameraCut cut;
+            read_string(c, "camera_id", cut.camera_id);
+            read_number(c, "start_seconds", cut.start_seconds);
+            read_number(c, "end_seconds", cut.end_seconds);
+            composition.camera_cuts.push_back(std::move(cut));
+        }
+    }
+    
     return composition;
 }
 

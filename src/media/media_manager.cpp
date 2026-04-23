@@ -3,20 +3,28 @@
 
 namespace tachyon::media {
 
+MediaManager::MediaManager()
+    : m_proxy_worker(std::make_unique<ProxyWorker>(m_proxy_manifest)) {}
+
+MediaManager::~MediaManager() = default;
+
 const renderer2d::SurfaceRGBA* MediaManager::get_image(
     const std::filesystem::path& path, 
     AlphaMode alpha_mode,
     DiagnosticBag* diagnostics) {
+    (void)diagnostics;
     return m_image_manager.get_image(path, alpha_mode, diagnostics);
 }
 
 const HDRTextureData* MediaManager::get_hdr_image(
     const std::filesystem::path& path,
     DiagnosticBag* diagnostics) {
+    (void)diagnostics;
     return m_image_manager.get_hdr_image(path, diagnostics);
 }
 
 const renderer2d::SurfaceRGBA* MediaManager::get_video_frame(const std::filesystem::path& path, double time, DiagnosticBag* diagnostics) {
+    (void)diagnostics;
     // 1. Check cache first (Fast path - no I/O)
     std::string key = path.string() + "@" + std::to_string(time);
     const auto* cached = m_image_manager.get_image(key, AlphaMode::Straight, nullptr);
@@ -42,9 +50,17 @@ void MediaManager::register_asset(std::shared_ptr<MediaAsset> asset) {
 }
 
 std::filesystem::path MediaManager::resolve_media_path(const std::filesystem::path& path) const {
+    if (m_use_proxies) {
+        // Try global manifest resolution
+        std::string resolved = m_proxy_manifest.resolve_for_playback(path.string(), 1280);
+        if (resolved != path.string()) {
+            return resolved;
+        }
+    }
+
     std::lock_guard<std::mutex> lock(m_mutex);
     auto it = m_assets.find(path.string());
-    if (it == m_assets.end()) return path; // Fallback to original
+    if (it == m_assets.end()) return path;
 
     const auto& asset = it->second;
     if (m_use_proxies && asset->state() == MediaAssetState::ProxyAvailable) {
@@ -52,9 +68,11 @@ std::filesystem::path MediaManager::resolve_media_path(const std::filesystem::pa
     }
     
     if (asset->state() == MediaAssetState::Offline) {
-        // Return a placeholder or empty path if offline
         return "";
     }
+
+    return asset->descriptor().original_path;
+}
 
 VideoDecoder* MediaManager::acquire_video_decoder(const std::filesystem::path& path) {
     const std::string key = path.string();

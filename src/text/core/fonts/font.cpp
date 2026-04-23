@@ -16,12 +16,12 @@
 namespace tachyon::text {
 
 namespace {
-std::atomic<std::uint64_t> g_next_font_id{1};
+std::atomic<std::uint64_t> next_font_id{1};
 }
 
 using namespace tachyon::renderer2d::text;
 
-Font::Font() : m_id(g_next_font_id.fetch_add(1, std::memory_order_relaxed)) {}
+Font::Font() : m_id(next_font_id.fetch_add(1, std::memory_order_relaxed)) {}
 
 Font::~Font() {
     if (m_ft_face) {
