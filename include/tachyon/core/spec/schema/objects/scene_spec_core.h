@@ -80,4 +80,9 @@ ParseResult<SceneSpec> parse_scene_spec_file(const std::filesystem::path& path);
 ParseResult<SceneSpec> parse_scene_spec_json(const std::string& text);
 ValidationResult validate_scene_spec(const SceneSpec& scene);
 
+// --- Serialization ---
+json serialize_scene_spec(const SceneSpec& scene);
+json serialize_composition(const CompositionSpec& comp);
+json serialize_layer(const LayerSpec& layer);
+
 } // namespace tachyon

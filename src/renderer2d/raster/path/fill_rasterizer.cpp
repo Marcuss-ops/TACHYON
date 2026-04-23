@@ -359,23 +359,25 @@ void rasterize_fill_polygon(SurfaceRGBA& surface, const std::vector<Contour>& co
                 coverage = (rem > 1.0f) ? 2.0f - rem : rem;
             }
 
-            if (coverage > 0.001f) {
-                Color c = style.fill_color;
-                if (lut) {
-                    float cur_t = is_linear ? std::clamp(t + (x * dt), 0.0f, 1.0f) : std::clamp((math::Vector2((float)x, (float)y) - style.gradient->start).length() / style.gradient->radial_radius, 0.0f, 1.0f);
-                    c = lut->sample(cur_t);
+                if (coverage > 0.001f) {
+                    Color c = style.fill_color;
+                    if (lut) {
+                        float cur_t = is_linear ? std::clamp(t + (x * dt), 0.0f, 1.0f) : std::clamp((math::Vector2((float)x, (float)y) - style.gradient->start).length() / style.gradient->radial_radius, 0.0f, 1.0f);
+                        c = lut->sample(cur_t);
+                    }
+                    
+                    // Apply coverage and opacity to alpha channel only, preserve RGB from fill color
+                    float final_a = c.a * style.opacity * coverage;
+                    float* p = &row_ptr[x * 4];
+                    // Blend RGB channels with coverage/opacity
+                    p[0] = c.r * final_a + p[0] * (1.0f - final_a);
+                    p[1] = c.g * final_a + p[1] * (1.0f - final_a);
+                    p[2] = c.b * final_a + p[2] * (1.0f - final_a);
+                    // Update alpha channel
+                    p[3] = final_a + p[3] * (1.0f - final_a);
                 }
-                
-                float final_a = c.a * style.opacity * coverage;
-                float* p = &row_ptr[x * 4];
-                float inv_a = 1.0f - final_a;
-                p[0] = c.r * final_a + p[0] * inv_a;
-                p[1] = c.g * final_a + p[1] * inv_a;
-                p[2] = c.b * final_a + p[2] * inv_a;
-                p[3] = final_a + p[3] * inv_a;
             }
         }
     }
-}
 
 } // namespace tachyon::renderer2d
