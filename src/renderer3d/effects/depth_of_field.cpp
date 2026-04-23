@@ -185,14 +185,24 @@ void DepthOfFieldPostPass::circular_convolution_pass(
                 float sx = (float)x + offset.first * radius;
                 float sy = (float)y + offset.second * radius;
                 
-                if (sx < 0 || sx >= width || sy < 0 || sy >= height) continue;
+                int ix = static_cast<int>(std::clamp(sx, 0.0f, static_cast<float>(width) - 1.0f));
+                int iy = static_cast<int>(std::clamp(sy, 0.0f, static_cast<float>(height) - 1.0f));
                 
-                std::size_t sidx = (std::size_t)sy * width + (std::size_t)sx;
+                std::size_t sidx = static_cast<std::size_t>(iy) * width + static_cast<std::size_t>(ix);
                 float sd = depth[sidx];
+                float sr = compute_coc_radius(sd, config_.focal_distance, config_.aperture_fstop,
+                                               config_.focal_length_mm, config_.sensor_width_mm);
                 
-                // Depth-aware bokeh: highlights should bleed into foreground, but foreground shouldn't bleed into background
-                // Simple version: weight by depth difference
-                float weight = (sd > d) ? BACKGROUND_WEIGHT : FOREGROUND_WEIGHT;
+                // Per-sample CoC-based depth-aware weighting:
+                // A sample contributes fully if its CoC radius is >= its distance from center.
+                // Foreground bleeds more than background to avoid halos.
+                float sample_dist = std::sqrt(offset.first * offset.first + offset.second * offset.second) * radius;
+                float weight = 1.0f;
+                if (sr < sample_dist && sd < d) {
+                    weight = BACKGROUND_WEIGHT;
+                } else if (sr < sample_dist && sd > d) {
+                    weight = FOREGROUND_WEIGHT;
+                }
                 
                 r_sum += rgba[sidx * 4 + 0] * weight;
                 g_sum += rgba[sidx * 4 + 1] * weight;
@@ -264,18 +274,20 @@ void DepthOfFieldPostPass::cinematic_bokeh_pass(
                 float sx = (float)x + offset.first * radius;
                 float sy = (float)y + offset.second * radius;
                 
-                if (sx < 0 || sx >= width || sy < 0 || sy >= height) continue;
+                int ix = static_cast<int>(std::clamp(sx, 0.0f, static_cast<float>(width) - 1.0f));
+                int iy = static_cast<int>(std::clamp(sy, 0.0f, static_cast<float>(height) - 1.0f));
                 
-                std::size_t sidx = (std::size_t)sy * width + (std::size_t)sx;
+                std::size_t sidx = static_cast<std::size_t>(iy) * width + static_cast<std::size_t>(ix);
                 float sd = depth[sidx];
+                float sr = compute_coc_radius(sd, config_.focal_distance, config_.aperture_fstop,
+                                               config_.focal_length_mm, config_.sensor_width_mm);
                 
-                // Cinematic depth-aware bokeh:
+                // Per-sample CoC-based depth-aware weighting:
+                float sample_dist = std::sqrt(offset.first * offset.first + offset.second * offset.second) * radius;
                 float weight = 1.0f;
-                if (sd > d + FOREGROUND_DEPTH_THRESHOLD) {
-                    // Background sample, shouldn't bleed much over foreground pixel
+                if (sr < sample_dist && sd < d) {
                     weight = BACKGROUND_WEIGHT;
-                } else if (sd < d - FOREGROUND_DEPTH_THRESHOLD) {
-                    // Foreground sample bleeding onto background, higher weight
+                } else if (sr < sample_dist && sd > d) {
                     weight = FOREGROUND_WEIGHT;
                 }
                 
