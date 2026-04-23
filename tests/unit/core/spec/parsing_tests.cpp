@@ -137,6 +137,12 @@ bool run_scene_spec_parsing_tests() {
                                     {"position": [20, 30], "tangent_in": [0, 0], "tangent_out": [0, 0]}
                                 ]
                             }
+                        },
+                        {
+                            "id": "layer4",
+                            "type": "precomp",
+                            "name": "Precomp",
+                            "precomp_id": "comp1"
                         }
                     ],
                     "camera_cuts": [
@@ -202,6 +208,7 @@ bool run_scene_spec_parsing_tests() {
                     check_true(l1.opacity == l2.opacity, "roundtrip: layer[" + std::to_string(i) + "].opacity matches");
                     check_true(l1.track_matte_layer_id == l2.track_matte_layer_id, "roundtrip: layer[" + std::to_string(i) + "].track_matte_layer_id matches");
                     check_true(l1.track_matte_type == l2.track_matte_type, "roundtrip: layer[" + std::to_string(i) + "].track_matte_type matches");
+                    check_true(l1.precomp_id == l2.precomp_id, "roundtrip: layer[" + std::to_string(i) + "].precomp_id matches");
                     check_true(l1.shape_path.has_value() == l2.shape_path.has_value(), "roundtrip: layer[" + std::to_string(i) + "].shape_path presence matches");
                     if (l1.shape_path.has_value() && l2.shape_path.has_value()) {
                         check_true(l1.shape_path->closed == l2.shape_path->closed, "roundtrip: layer[" + std::to_string(i) + "].shape_path.closed matches");
