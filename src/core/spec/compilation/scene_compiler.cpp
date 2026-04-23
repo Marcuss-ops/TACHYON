@@ -314,7 +314,7 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
             compiled_layer.stroke_color = layer.stroke_color.value.has_value() ? *layer.stroke_color.value : ColorSpec{255, 255, 255, 255};
             compiled_layer.stroke_width = layer.stroke_width_property.value.has_value() ? static_cast<float>(*layer.stroke_width_property.value) : static_cast<float>(layer.stroke_width);
             
-            // compiled_layer.shape_path = layer.shape_path; // Type mismatch: string vs optional<ShapePathSpec>
+            compiled_layer.shape_path = layer.shape_path;
             // compiled_layer.effects = layer.effects; // Type mismatch: vector<string> vs vector<EffectSpec>
             // compiled_layer.text_animators = layer.text_animators; // Type mismatch
             // compiled_layer.text_highlights = layer.text_highlights; // Type mismatch

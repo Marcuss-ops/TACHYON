@@ -21,11 +21,90 @@ void parse_transform(const json& object, LayerSpec& layer, const std::string& pa
     if (transform.contains("rotation")) read_number(transform, "rotation", layer.transform.rotation);
 }
 
-void parse_shape_path(const json& object, LayerSpec& layer, const std::string& path, DiagnosticBag& diagnostics) {
-    (void)path; (void)diagnostics;
-    if (object.contains("shape_path") && object.at("shape_path").is_string()) {
-        layer.shape_path = object.at("shape_path").get<std::string>();
+static bool parse_point2d(const json& arr, math::Vector2& out) {
+    if (!arr.is_array() || arr.size() < 2) return false;
+    out.x = arr[0].get<float>();
+    out.y = arr[1].get<float>();
+    return true;
+}
+
+static void parse_path_vertex(const json& obj, PathVertex& vertex) {
+    if (obj.is_array() && obj.size() >= 2) {
+        vertex.point.x = obj[0].get<float>();
+        vertex.point.y = obj[1].get<float>();
+        vertex.position = vertex.point;
+        vertex.in_tangent = math::Vector2{0.0f, 0.0f};
+        vertex.out_tangent = math::Vector2{0.0f, 0.0f};
+        vertex.tangent_in = math::Vector2{0.0f, 0.0f};
+        vertex.tangent_out = math::Vector2{0.0f, 0.0f};
+    } else if (obj.is_object()) {
+        if (obj.contains("position") && obj.at("position").is_array()) {
+            parse_point2d(obj.at("position"), vertex.position);
+            vertex.point = vertex.position;
+        }
+        if (obj.contains("in_tangent") && obj.at("in_tangent").is_array()) {
+            parse_point2d(obj.at("in_tangent"), vertex.in_tangent);
+            vertex.tangent_in = vertex.in_tangent;
+        }
+        if (obj.contains("out_tangent") && obj.at("out_tangent").is_array()) {
+            parse_point2d(obj.at("out_tangent"), vertex.out_tangent);
+            vertex.tangent_out = vertex.out_tangent;
+        }
+        if (obj.contains("tangent_in") && obj.at("tangent_in").is_array()) {
+            parse_point2d(obj.at("tangent_in"), vertex.tangent_in);
+            vertex.in_tangent = vertex.tangent_in;
+        }
+        if (obj.contains("tangent_out") && obj.at("tangent_out").is_array()) {
+            parse_point2d(obj.at("tangent_out"), vertex.tangent_out);
+            vertex.out_tangent = vertex.tangent_out;
+        }
     }
+}
+
+void parse_shape_path(const json& object, LayerSpec& layer, const std::string& path, DiagnosticBag& diagnostics) {
+    (void)path;
+    if (!object.contains("shape_path")) return;
+    const auto& sp = object.at("shape_path");
+
+    // Legacy string format: warn and ignore
+    if (sp.is_string()) {
+        diagnostics.add_warning("layer.shape_path.legacy_string", "shape_path as string is deprecated; use object format");
+        return;
+    }
+
+    if (!sp.is_object()) {
+        diagnostics.add_error("layer.shape_path.invalid", "shape_path must be an object");
+        return;
+    }
+
+    ShapePathSpec spec;
+    read_bool(sp, "closed", spec.closed);
+
+    if (sp.contains("points") && sp.at("points").is_array()) {
+        for (const auto& p : sp.at("points")) {
+            PathVertex vertex;
+            parse_path_vertex(p, vertex);
+            spec.points.push_back(std::move(vertex));
+        }
+    }
+
+    if (sp.contains("subpaths") && sp.at("subpaths").is_array()) {
+        for (const auto& s : sp.at("subpaths")) {
+            if (!s.is_object()) continue;
+            ShapeSubpath sub;
+            read_bool(s, "closed", sub.closed);
+            if (s.contains("vertices") && s.at("vertices").is_array()) {
+                for (const auto& v : s.at("vertices")) {
+                    PathVertex vertex;
+                    parse_path_vertex(v, vertex);
+                    sub.vertices.push_back(std::move(vertex));
+                }
+            }
+            spec.subpaths.push_back(std::move(sub));
+        }
+    }
+
+    layer.shape_path = std::move(spec);
 }
 
 void parse_effects(const json& object, LayerSpec& layer, const std::string& path, DiagnosticBag& diagnostics) {
