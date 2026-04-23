@@ -2,6 +2,7 @@
 #include "tachyon/renderer2d/evaluated_composition/utilities/composition_utils.h"
 #include "tachyon/renderer2d/evaluated_composition/layer_renderer.h"
 #include "tachyon/renderer2d/evaluated_composition/effect_renderer.h"
+#include "tachyon/renderer2d/evaluated_composition/renderer2d_matte_resolver.h"
 #include "tachyon/renderer2d/color/blending.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
 #include "tachyon/renderer3d/core/ray_tracer.h"
@@ -10,6 +11,7 @@
 #include "tachyon/output/frame_aov.h"
 #include <algorithm>
 #include <cmath>
+#include <unordered_map>
 
 namespace tachyon {
 using namespace renderer2d;
@@ -50,6 +52,63 @@ RasterizedFrame2D render_evaluated_composition_2d(
         context.ray_tracer = std::make_shared<renderer3d::RayTracer>();
     }
 
+    // First pass: collect rendered surfaces for matte resolution
+    // Second pass: composite with resolved mattes
+    std::unordered_map<std::string, std::shared_ptr<SurfaceRGBA>> rendered_surfaces;
+    std::vector<MatteDependency> matte_dependencies;
+
+    // Build matte dependency list from layers
+    for (std::size_t i = 0; i < state.layers.size(); ++i) {
+        const auto& layer = state.layers[i];
+        if (layer.track_matte_layer_index.has_value() && layer.track_matte_type != TrackMatteType::None) {
+            const auto matte_idx = *layer.track_matte_layer_index;
+            if (matte_idx < state.layers.size() && !state.layers[matte_idx].id.empty() && !layer.id.empty()) {
+                MatteDependency dep;
+                dep.source_layer_id = state.layers[matte_idx].id;
+                dep.target_layer_id = layer.id;
+                // Map TrackMatteType to MatteMode
+                switch (layer.track_matte_type) {
+                    case TrackMatteType::Alpha: dep.mode = MatteMode::Alpha; break;
+                    case TrackMatteType::AlphaInverted: dep.mode = MatteMode::AlphaInverted; break;
+                    case TrackMatteType::Luma: dep.mode = MatteMode::Luma; break;
+                    case TrackMatteType::LumaInverted: dep.mode = MatteMode::LumaInverted; break;
+                    default: dep.mode = MatteMode::Alpha; break;
+                }
+                matte_dependencies.push_back(dep);
+            }
+        }
+    }
+
+    // Render all layers and collect surfaces
+    for (std::size_t i = 0; i < state.layers.size(); ++i) {
+        const auto& layer = state.layers[i];
+        if (!layer.enabled || !layer.active || layer.id.empty()) {
+            continue;
+        }
+
+        // Skip 3D layers for now (they're handled separately)
+        if (layer.is_3d && layer.visible) {
+            continue;
+        }
+
+        auto layer_surface = render_layer_surface(layer, state, plan, task, context, std::nullopt);
+        if (layer_surface) {
+            rendered_surfaces[layer.id] = layer_surface;
+        }
+    }
+
+    // Resolve matte dependencies using MatteResolver
+    Renderer2DMatteResolver resolver;
+    std::string validation_error;
+    if (!matte_dependencies.empty() && !resolver.validate(state.layers, matte_dependencies, validation_error)) {
+        frame.note += " [matte validation warning: " + validation_error + "]";
+    }
+
+    std::vector<std::vector<float>> matte_buffers;
+    if (!matte_dependencies.empty()) {
+        resolver.resolve(state.layers, matte_dependencies, rendered_surfaces, matte_buffers, state.width, state.height);
+    }
+
     auto render_pass = [&](SurfaceRGBA& target_surface, const std::optional<RectI>& tile_rect = std::nullopt) {
         // AE Rendering Order: Bottom to Top
         for (std::size_t i = 0; i < state.layers.size(); ++i) {
@@ -62,7 +121,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 if (tile_rect) {
                     continue; // Skip 3D blocks in tiled mode.
                 }
-                
+
                 // Found a 3D block. Collect contiguous 3D layers.
                 std::vector<std::size_t> block_indices;
                 block_indices.push_back(i);
@@ -79,22 +138,15 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 // Construct EvaluatedScene3D bridge from the composition subset
                 renderer3d::EvaluatedScene3D scene3d;
                 if (state.camera.available) {
-                    scene3d.camera.position = state.camera.camera.position;
-                    scene3d.camera.target = state.camera.camera.target;
-                    scene3d.camera.up = state.camera.camera.up;
-                    scene3d.camera.fov_y = state.camera.camera.fov;
-                    
-                    if (state.camera.previous_position) {
-                        scene3d.camera.previous_position = *state.camera.previous_position;
-                    } else {
-                        scene3d.camera.previous_position = state.camera.camera.position;
-                    }
-
-                    if (state.camera.previous_point_of_interest) {
-                        scene3d.camera.previous_target = *state.camera.previous_point_of_interest;
-                    } else {
-                        scene3d.camera.previous_target = state.camera.camera.target;
-                    }
+                    scene3d.camera.position = state.camera.position;
+                    scene3d.camera.target = state.camera.point_of_interest;
+                    scene3d.camera.up = {0.0f, 1.0f, 0.0f};
+                    scene3d.camera.fov_y = state.camera.angle_of_view;
+                    scene3d.camera.focal_length_mm = state.camera.focal_length;
+                    scene3d.camera.focal_distance = state.camera.focus_distance;
+                    scene3d.camera.aperture = state.camera.aperture;
+                    scene3d.camera.previous_position = state.camera.position;
+                    scene3d.camera.previous_target = state.camera.point_of_interest;
                 }
 
                 for (std::size_t idx : block_indices) {
@@ -103,12 +155,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     inst.object_id = static_cast<std::uint32_t>(idx);
                     inst.material_id = 0;
                     inst.world_transform = l.world_matrix;
-
-                    if (l.previous_world_matrix) {
-                        inst.previous_world_transform = *l.previous_world_matrix;
-                    } else {
-                        inst.previous_world_transform = inst.world_transform;
-                    }
+                    inst.previous_world_transform = l.previous_world_matrix;
                     inst.material.base_color = l.fill_color;
                     inst.material.opacity = static_cast<float>(l.opacity);
                     // Assuming empty string triggers the generic quad fallback in RayTracer for now
@@ -119,10 +166,10 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 // Render the 3D block
                 context.ray_tracer->set_samples_per_pixel(context.policy.ray_tracer_spp);
                 context.ray_tracer->build_scene(scene3d);
-                
+
                 const std::uint32_t w = static_cast<std::uint32_t>(state.width);
                 const std::uint32_t h = static_cast<std::uint32_t>(state.height);
-                
+
                 renderer3d::AOVBuffer aovs;
                 aovs.resize(w, h);
                 aovs.clear();
@@ -145,22 +192,38 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     &motion_blur,
                     task.time_seconds,
                     frame_duration_seconds);
-                
+
                 auto world_3d = std::make_shared<SurfaceRGBA>(w, h);
                 auto depth_aov_surf = std::make_shared<SurfaceRGBA>(w, h);
                 auto normal_aov_surf = std::make_shared<SurfaceRGBA>(w, h);
                 auto motion_vector_aov_surf = std::make_shared<SurfaceRGBA>(w, h);
-                
+
                 for (std::uint32_t y = 0; y < h; ++y) {
                     for (std::uint32_t x = 0; x < w; ++x) {
-                        world_3d->set_pixel(x, y, aovs.beauty_rgba.at(x, y));
-                        const float d = aovs.depth_z.at(x, y);
+                        const std::size_t pixel_index = (static_cast<std::size_t>(y) * w + x) * 4;
+                        world_3d->set_pixel(x, y, {
+                            aovs.beauty_rgba[pixel_index + 0],
+                            aovs.beauty_rgba[pixel_index + 1],
+                            aovs.beauty_rgba[pixel_index + 2],
+                            aovs.beauty_rgba[pixel_index + 3]
+                        });
+
+                        const float d = aovs.depth_z[static_cast<std::size_t>(y) * w + x];
                         depth_aov_surf->set_pixel(x, y, {d, 0, 0, 1.0f});
-                        
-                        const math::Vector3 n = aovs.normal_xyz.at(x, y);
+
+                        const std::size_t normal_index = (static_cast<std::size_t>(y) * w + x) * 3;
+                        const math::Vector3 n{
+                            aovs.normal_xyz[normal_index + 0],
+                            aovs.normal_xyz[normal_index + 1],
+                            aovs.normal_xyz[normal_index + 2]
+                        };
                         normal_aov_surf->set_pixel(x, y, {n.x, n.y, n.z, 1.0f});
 
-                        const math::Vector2 mv = aovs.motion_vector_xy.at(x, y);
+                        const std::size_t mv_index = (static_cast<std::size_t>(y) * w + x) * 2;
+                        const math::Vector2 mv{
+                            aovs.motion_vector_xy[mv_index + 0],
+                            aovs.motion_vector_xy[mv_index + 1]
+                        };
                         motion_vector_aov_surf->set_pixel(x, y, {mv.x, mv.y, 0.0f, 1.0f});
                     }
                 }
@@ -195,14 +258,9 @@ RasterizedFrame2D render_evaluated_composition_2d(
             // Opacity
             multiply_surface_alpha(*layer_surface, static_cast<float>(layer.opacity));
 
-            // Track Matte
-            if (layer.track_matte_layer_index.has_value() && layer.track_matte_type != TrackMatteType::None) {
-                const auto matte_idx = *layer.track_matte_layer_index;
-                if (matte_idx < state.layers.size()) {
-                    const auto& matte_layer = state.layers[matte_idx];
-                    auto matte_surface = render_layer_surface(matte_layer, state, plan, task, context, tile_rect);
-                    apply_mask(*layer_surface, *matte_surface, layer.track_matte_type);
-                }
+            // Apply resolved matte if available
+            if (i < matte_buffers.size() && !matte_buffers[i].empty()) {
+                apply_matte_buffer(*layer_surface, matte_buffers[i], state.width, state.height);
             }
 
             // Final Composite
