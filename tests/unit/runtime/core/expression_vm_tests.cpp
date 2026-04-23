@@ -1,4 +1,5 @@
-#include "tachyon/runtime/vm/expression_vm.h"
+#include "tachyon/core/expressions/expression_vm.h"
+#include "tachyon/core/expressions/expression_engine.h"
 #include <iostream>
 #include <cmath>
 #include <vector>
@@ -17,66 +18,63 @@ void check_near(double actual, double expected, const std::string& message, doub
 } // namespace
 
 bool run_expression_vm_tests() {
-    using namespace tachyon;
+    using namespace tachyon::expressions;
 
-    // 1. Test Interpolate / Lerp
+    // 1. Basic Arithmetic: 10 + 20
     {
-        CompiledExpression expr;
-        expr.code = {
-            {ExpressionOp::PushConst, 0}, // a
-            {ExpressionOp::PushConst, 1}, // b
-            {ExpressionOp::PushConst, 2}, // t
-            {ExpressionOp::Interpolate, 0},
-            {ExpressionOp::Return, 0}
+        Bytecode code;
+        code.instructions = {
+            {OpCode::PushConst, 0}, // 10.0
+            {OpCode::PushConst, 1}, // 20.0
+            {OpCode::Add, 0},
+            {OpCode::Ret, 0}
         };
-        expr.constants = { 10.0, 20.0, 0.5 };
+        code.constants = { 10.0, 20.0 };
 
         ExpressionContext ctx;
-        double result = ExpressionVM::evaluate(expr, ctx);
-        check_near(result, 15.0, "Interpolate(10, 20, 0.5)");
+        double result = ExpressionVM::execute(code, ctx);
+        check_near(result, 30.0, "Basic Add: 10 + 20");
     }
 
-    // 2. Test Spring (Underdamped)
+    // 2. Variables: x * 5
     {
-        CompiledExpression expr;
-        // Spring(from=100, to=0, freq=2, damping=0.5)
-        expr.code = {
-            {ExpressionOp::PushConst, 0}, // from
-            {ExpressionOp::PushConst, 1}, // to
-            {ExpressionOp::PushConst, 2}, // freq
-            {ExpressionOp::PushConst, 3}, // damping
-            {ExpressionOp::Spring, 0},
-            {ExpressionOp::Return, 0}
+        Bytecode code;
+        code.instructions = {
+            {OpCode::PushVar, 0},   // "x"
+            {OpCode::PushConst, 0}, // 5.0
+            {OpCode::Mul, 0},
+            {OpCode::Ret, 0}
         };
-        expr.constants = { 100.0, 0.0, 2.0, 0.5 };
+        code.constants = { 5.0 };
+        code.names = { "x" };
 
         ExpressionContext ctx;
-        ctx.time_seconds = 0.0;
-        check_near(ExpressionVM::evaluate(expr, ctx), 100.0, "Spring start value");
-
-        ctx.time_seconds = 10.0; // Long time after
-        check_near(ExpressionVM::evaluate(expr, ctx), 0.0, "Spring settled value", 0.1);
+        ctx.variables["x"] = 7.0;
+        double result = ExpressionVM::execute(code, ctx);
+        check_near(result, 35.0, "Variables: 7 * 5");
     }
 
-    // 3. Test Spring (Critically Damped)
+    // 3. Complex expression: (a + b) * c - d / e
+    // (10 + 5) * 2 - 8 / 4 = 15 * 2 - 2 = 30 - 2 = 28
     {
-        CompiledExpression expr;
-        expr.code = {
-            {ExpressionOp::PushConst, 0}, // from
-            {ExpressionOp::PushConst, 1}, // to
-            {ExpressionOp::PushConst, 2}, // freq
-            {ExpressionOp::PushConst, 3}, // damping
-            {ExpressionOp::Spring, 0},
-            {ExpressionOp::Return, 0}
+        Bytecode code;
+        code.instructions = {
+            {OpCode::PushConst, 0}, // 10
+            {OpCode::PushConst, 1}, // 5
+            {OpCode::Add, 0},       // 15
+            {OpCode::PushConst, 2}, // 2
+            {OpCode::Mul, 0},       // 30
+            {OpCode::PushConst, 3}, // 8
+            {OpCode::PushConst, 4}, // 4
+            {OpCode::Div, 0},       // 2
+            {OpCode::Sub, 0},       // 28
+            {OpCode::Ret, 0}
         };
-        expr.constants = { 100.0, 0.0, 5.0, 1.0 }; // damping=1.0
+        code.constants = { 10.0, 5.0, 2.0, 8.0, 4.0 };
 
         ExpressionContext ctx;
-        ctx.time_seconds = 0.5;
-        double val = ExpressionVM::evaluate(expr, ctx);
-        // At t=0.5, freq=5, omega_n = 5 * 2pi = 31.415
-        // decay = exp(-31.415 * 0.5) = exp(-15.7) ~= 0
-        check_near(val, 0.0, "Critically damped settles fast", 0.01);
+        double result = ExpressionVM::execute(code, ctx);
+        check_near(result, 28.0, "Complex: (10 + 5) * 2 - 8 / 4");
     }
 
     return g_failures == 0;

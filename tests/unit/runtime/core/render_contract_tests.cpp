@@ -1,8 +1,12 @@
-#include "tachyon/runtime/core/graph/render_graph.h"
+#include "tachyon/runtime/core/graph/runtime_render_graph.h"
+
+// For backward compatibility
+using RenderGraph = tachyon::RuntimeRenderGraph;
 #include "tachyon/runtime/execution/jobs/render_job.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/core/scene/evaluation/evaluator.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 
 #include <cmath>
 #include <iostream>

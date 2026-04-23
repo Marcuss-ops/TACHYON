@@ -1,4 +1,5 @@
 #include "tachyon/core/scene/evaluation/evaluator.h"
+#include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 
 #include <filesystem>
 #include <fstream>

@@ -1,4 +1,5 @@
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include <filesystem>
 #include <fstream>
 #include <sstream>
@@ -72,7 +73,7 @@ bool run_scene_spec_parsing_tests() {
         check_true(parsed.value.has_value(), "shape scene should parse");
         if (parsed.value.has_value()) {
             const auto& layer = parsed.value->compositions.front().layers.front();
-            check_true(layer.shape_path.has_value(), "shape path should parse");
+            check_true(!layer.shape_path.empty(), "shape path should parse");
         }
     }
 

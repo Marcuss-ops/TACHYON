@@ -139,6 +139,14 @@ bool run_render_session_tests();
 bool run_render_batch_tests();
 bool run_parallax_cards_tests();
 bool run_timeline_tests();
+bool run_camera_cuts_tests();
+bool run_camera_shake_tests();
+bool run_bezier_interpolator_tests();
+bool run_track_tests();
+bool run_track_binding_tests();
+bool run_planar_track_tests();
+bool run_camera_solver_tests();
+bool run_matte_resolver_tests();
 bool run_glyph_cache_tests();
 bool run_text_tests();
 bool run_effect_host_tests();
@@ -176,6 +184,14 @@ int main(int argc, char** argv) {
         {"render_batch", run_render_batch_tests},
         {"parallax_cards", run_parallax_cards_tests},
         {"timeline", run_timeline_tests},
+        {"camera_cuts", run_camera_cuts_tests},
+        {"camera_shake", run_camera_shake_tests},
+        {"bezier_interpolator", run_bezier_interpolator_tests},
+        {"track", run_track_tests},
+        {"track_binding", run_track_binding_tests},
+        {"planar_track", run_planar_track_tests},
+        {"camera_solver", run_camera_solver_tests},
+        {"matte_resolver", run_matte_resolver_tests},
         {"glyph_cache", run_glyph_cache_tests},
         {"text", run_text_tests},
         {"effect_host", run_effect_host_tests},
