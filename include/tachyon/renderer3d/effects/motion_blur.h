@@ -32,13 +32,17 @@ public:
         std::vector<ObjectState> object_states;
     };
 
-    struct MotionBlurConfig {
-        bool enabled{false};
-        int samples{8};
-        double shutter_angle{180.0};
-        double shutter_phase{-90.0};
-        std::string curve{"box"};
-    };
+enum class MotionBlurWeightCurve { kBox, kTriangle, kGaussian };
+
+     struct MotionBlurConfig {
+         bool enabled{false};
+         int samples{8};
+         double shutter_angle{180.0};
+         double shutter_phase{-90.0};
+         MotionBlurWeightCurve weight_curve{MotionBlurWeightCurve::kBox};
+         bool enable_camera_blur{true};
+         bool enable_object_blur{true};
+     };
 
     MotionBlurRenderer();
     explicit MotionBlurRenderer(const MotionBlurConfig& config);
@@ -86,8 +90,9 @@ public:
         int culled_objects{0};
     };
 
-    const ProfileData& get_profile() const { return profile_; }
-    void reset_profile() { profile_ = {}; }
+const ProfileData& get_profile() const { return profile_; }
+     void reset_profile() { profile_ = {}; }
+     std::string cache_identity() const;
 
 private:
     MotionBlurConfig config_;

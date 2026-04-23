@@ -147,6 +147,9 @@ add_library(TachyonCore
     text/core/content/subtitle.cpp
     text/core/animation/text_animator_utils.cpp
     text/editing/text_editor.cpp
+    renderer3d/temporal/time_remap_curve.cpp
+    renderer3d/temporal/frame_blend_mode.cpp
+    renderer3d/temporal/rolling_shutter.cpp
     text/core/rendering/text_raster_surface.cpp
     tracker/feature_tracker.cpp
     tracker/track.cpp
