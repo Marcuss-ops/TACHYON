@@ -15,8 +15,17 @@ SurfaceRGBA CurvesEffect::apply(const SurfaceRGBA& input, const EffectParams& pa
 }
 
 SurfaceRGBA FillEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
-    (void)params;
-    return input; // Stub implementation
+    const Color fill_color = get_color(params, "color", Color{1.0f, 1.0f, 1.0f, 1.0f});
+    SurfaceRGBA out = input;
+    for (std::uint32_t y = 0; y < out.height(); ++y) {
+        for (std::uint32_t x = 0; x < out.width(); ++x) {
+            const Color px = out.get_pixel(x, y);
+            if (px.a <= 0.0f) continue;
+            // Preserve alpha, replace RGB with fill color
+            out.set_pixel(x, y, Color{fill_color.r, fill_color.g, fill_color.b, px.a});
+        }
+    }
+    return out;
 }
 
 SurfaceRGBA TintEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
