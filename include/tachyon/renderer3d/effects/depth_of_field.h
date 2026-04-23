@@ -2,6 +2,7 @@
 
 #include "tachyon/renderer3d/core/aov_buffer.h"
 #include "tachyon/core/math/vector3.h"
+#include "tachyon/runtime/execution/planning/quality_policy.h"
 
 #include <vector>
 #include <cstdint>
@@ -32,6 +33,38 @@ struct DepthOfFieldConfig {
     int diaphragm_blades{0};        // 0=circle, 3+=polygonal shape
     float bokeh_rotation_deg{0.0f}; // Rotation of the polygonal shape
     BokehQualityTier quality{BokehQualityTier::Preview};
+
+    /**
+     * @brief Create a DoF config from a render QualityPolicy.
+     *
+     * Maps technical quality parameters (max blur radius, sample count) from
+     * the tier. Artistic parameters (focal_distance, aperture) use defaults
+     * unless overridden by the caller.
+     */
+    static DepthOfFieldConfig from_quality_policy(
+        const ::tachyon::QualityPolicy& policy,
+        float focal_distance = 10.0f,
+        float aperture_fstop = 2.8f,
+        float focal_length_mm = 35.0f,
+        float sensor_width_mm = 36.0f)
+    {
+        DepthOfFieldConfig config;
+        config.enabled = policy.dof_sample_count > 1;
+        config.focal_distance = focal_distance;
+        config.aperture_fstop = aperture_fstop;
+        config.focal_length_mm = focal_length_mm;
+        config.sensor_width_mm = sensor_width_mm;
+        config.max_blur_radius_px = policy.max_coc_radius_px;
+        config.blur_samples = policy.dof_sample_count;
+        if (policy.dof_sample_count <= 4) {
+            config.quality = BokehQualityTier::Draft;
+        } else if (policy.dof_sample_count <= 16) {
+            config.quality = BokehQualityTier::Preview;
+        } else {
+            config.quality = BokehQualityTier::Final;
+        }
+        return config;
+    }
 };
 
 class DepthOfFieldPostPass {
