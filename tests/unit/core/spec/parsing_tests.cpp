@@ -8,6 +8,8 @@
 
 namespace {
 
+using json = nlohmann::json;
+
 int g_failures = 0;
 
 const std::filesystem::path& tests_root() {

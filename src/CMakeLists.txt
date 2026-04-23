@@ -92,6 +92,7 @@ add_library(TachyonCore
     renderer2d/raster/path/path_flattener.cpp
     renderer2d/raster/path/fill_rasterizer.cpp
     renderer2d/raster/path/stroke_rasterizer.cpp
+    renderer2d/raster/mask_rasterizer.cpp
     renderer2d/raster/path/path_trimmer.cpp
     renderer2d/raster/cpu_rasterizer.cpp
     renderer2d/raster/perspective_rasterizer.cpp

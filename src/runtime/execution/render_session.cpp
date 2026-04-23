@@ -109,6 +109,8 @@ RenderSessionResult RenderSession::render(
         fps,
         rendered_frames);
 
+    result.frames = std::move(rendered_frames);
+
     // Audio Export
     if (!compiled_scene.compositions.empty() && !compiled_scene.compositions.front().audio_tracks.empty()) {
         audio::AudioExporter exporter;
