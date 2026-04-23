@@ -113,7 +113,13 @@ bool run_scene_spec_parsing_tests() {
                             "out_point": 120,
                             "opacity": 1.0,
                             "width": 1920,
-                            "height": 1080
+                            "height": 1080,
+                            "transform": {
+                                "position": [960, 540],
+                                "anchor_point": [960, 540],
+                                "scale": [100, 100],
+                                "rotation": 0
+                            }
                         },
                         {
                             "id": "layer2",
