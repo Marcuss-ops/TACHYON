@@ -95,7 +95,7 @@ bool run_expression_tests() {
         direct_ctx.variables["t"] = 1.0;
         auto direct_res = ExpressionEvaluator::evaluate("sin(t * 1.570796)", direct_ctx);
         if (!direct_res.success) {
-            fprintf(stderr, "Evaluator Error: %s\n", direct_res.error.c_str());
+            std::cerr << "Evaluator Error: " << direct_res.error << '\n';
         }
 
         float val = prop.sample(eval_ctx);

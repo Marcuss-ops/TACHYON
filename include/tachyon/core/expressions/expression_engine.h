@@ -12,6 +12,18 @@ namespace tachyon {
 namespace expressions {
 
 /**
+ * Audio analysis data exposed to expressions.
+ */
+struct AudioAnalysisData {
+    double bass{0.0};
+    double mid{0.0};
+    double high{0.0};
+    double presence{0.0};
+    double rms{0.0};
+    double amplitude{0.0}; // Overall amplitude (same as rms)
+};
+
+/**
  * Context for expression evaluation, providing variable resolution (e.g., 't').
  */
 struct ExpressionContext {
@@ -27,6 +39,9 @@ struct ExpressionContext {
     // Callback for data(table_id, row, col)
     // First argument is table index (as double)
     std::function<double(double, double, double)> table_lookup;
+
+    // Audio analysis data for expression access
+    AudioAnalysisData audio_analysis;
 };
 
 /**
@@ -51,14 +66,18 @@ struct CompilationResult {
 /**
  * A lightweight math expression evaluator for Milestone 1.
  * Supports: +, -, *, /, ^, (), sin, cos, abs, clamp, and variable resolution.
+ * This is the core expression evaluator, separate from Renderer2DExpressionEvaluator.
  */
-class ExpressionEvaluator {
+class CoreExpressionEvaluator {
 public:
     static EvaluationResult evaluate(const std::string& expression, const ExpressionContext& context);
     
     // Compiles a string into an AST and Bytecode
     static CompilationResult compile(const std::string& expression);
 };
+
+// Backward-compatible alias for older callers and tests.
+using ExpressionEvaluator = CoreExpressionEvaluator;
 
 } // namespace expressions
 } // namespace tachyon
