@@ -123,6 +123,181 @@ ParseResult<SceneSpec> parse_scene_spec_file(const std::filesystem::path& path) 
 // Serialization
 // ---------------------------------------------------------------------------
 
+static std::string serialize_easing_preset(animation::EasingPreset preset) {
+    switch (preset) {
+        case animation::EasingPreset::EaseIn: return "ease_in";
+        case animation::EasingPreset::EaseOut: return "ease_out";
+        case animation::EasingPreset::EaseInOut: return "ease_in_out";
+        case animation::EasingPreset::Custom: return "custom";
+        default: return "";
+    }
+}
+
+static json serialize_bezier(const animation::CubicBezierEasing& bezier) {
+    return {
+        {"cx1", bezier.cx1}, {"cy1", bezier.cy1},
+        {"cx2", bezier.cx2}, {"cy2", bezier.cy2}
+    };
+}
+
+static json serialize_scalar_property(const AnimatedScalarSpec& prop) {
+    if (prop.empty()) return json{};
+    if (prop.value.has_value() && prop.keyframes.empty() && !prop.audio_band.has_value() && !prop.expression.has_value()) {
+        return *prop.value;
+    }
+    json j;
+    if (prop.value.has_value()) j["value"] = *prop.value;
+    if (prop.audio_band.has_value()) {
+        switch (*prop.audio_band) {
+            case AudioBandType::Bass: j["audio_band"] = "bass"; break;
+            case AudioBandType::Mid: j["audio_band"] = "mid"; break;
+            case AudioBandType::High: j["audio_band"] = "high"; break;
+            case AudioBandType::Presence: j["audio_band"] = "presence"; break;
+            case AudioBandType::Rms: j["audio_band"] = "rms"; break;
+        }
+        j["min"] = prop.audio_min;
+        j["max"] = prop.audio_max;
+    }
+    if (!prop.keyframes.empty()) {
+        j["keyframes"] = json::array();
+        for (const auto& kf : prop.keyframes) {
+            json kj;
+            kj["time"] = kf.time;
+            kj["value"] = kf.value;
+            if (kf.easing != animation::EasingPreset::None) {
+                kj["easing"] = serialize_easing_preset(kf.easing);
+                if (kf.easing == animation::EasingPreset::Custom) {
+                    kj["bezier"] = serialize_bezier(kf.bezier);
+                }
+                kj["speed_in"] = kf.speed_in;
+                kj["influence_in"] = kf.influence_in;
+                kj["speed_out"] = kf.speed_out;
+                kj["influence_out"] = kf.influence_out;
+            }
+            j["keyframes"].push_back(kj);
+        }
+    }
+    if (prop.expression.has_value()) j["expression"] = *prop.expression;
+    return j;
+}
+
+static json serialize_vector2_property(const AnimatedVector2Spec& prop) {
+    if (prop.empty()) return json{};
+    if (prop.value.has_value() && prop.keyframes.empty() && !prop.expression.has_value()) {
+        return json::array({prop.value->x, prop.value->y});
+    }
+    json j;
+    if (prop.value.has_value()) j["value"] = json::array({prop.value->x, prop.value->y});
+    if (!prop.keyframes.empty()) {
+        j["keyframes"] = json::array();
+        for (const auto& kf : prop.keyframes) {
+            json kj;
+            kj["time"] = kf.time;
+            kj["value"] = json::array({kf.value.x, kf.value.y});
+            if (kf.tangent_in.x != 0.0f || kf.tangent_in.y != 0.0f) {
+                kj["spatial_in"] = json::array({kf.tangent_in.x, kf.tangent_in.y});
+            }
+            if (kf.tangent_out.x != 0.0f || kf.tangent_out.y != 0.0f) {
+                kj["spatial_out"] = json::array({kf.tangent_out.x, kf.tangent_out.y});
+            }
+            if (kf.easing != animation::EasingPreset::None) {
+                kj["easing"] = serialize_easing_preset(kf.easing);
+                if (kf.easing == animation::EasingPreset::Custom) {
+                    kj["bezier"] = serialize_bezier(kf.bezier);
+                }
+                kj["speed_in"] = kf.speed_in;
+                kj["influence_in"] = kf.influence_in;
+                kj["speed_out"] = kf.speed_out;
+                kj["influence_out"] = kf.influence_out;
+            }
+            j["keyframes"].push_back(kj);
+        }
+    }
+    if (prop.expression.has_value()) j["expression"] = *prop.expression;
+    return j;
+}
+
+json serialize_vector3_property(const AnimatedVector3Spec& prop) {
+    if (prop.empty()) return json{};
+    if (prop.value.has_value() && prop.keyframes.empty() && !prop.expression.has_value()) {
+        return json::array({prop.value->x, prop.value->y, prop.value->z});
+    }
+    json j;
+    if (prop.value.has_value()) j["value"] = json::array({prop.value->x, prop.value->y, prop.value->z});
+    if (!prop.keyframes.empty()) {
+        j["keyframes"] = json::array();
+        for (const auto& kf : prop.keyframes) {
+            json kj;
+            kj["time"] = kf.time;
+            kj["value"] = json::array({kf.value.x, kf.value.y, kf.value.z});
+            if (kf.tangent_in.x != 0.0f || kf.tangent_in.y != 0.0f || kf.tangent_in.z != 0.0f) {
+                kj["spatial_in"] = json::array({kf.tangent_in.x, kf.tangent_in.y, kf.tangent_in.z});
+            }
+            if (kf.tangent_out.x != 0.0f || kf.tangent_out.y != 0.0f || kf.tangent_out.z != 0.0f) {
+                kj["spatial_out"] = json::array({kf.tangent_out.x, kf.tangent_out.y, kf.tangent_out.z});
+            }
+            if (kf.easing != animation::EasingPreset::None) {
+                kj["easing"] = serialize_easing_preset(kf.easing);
+                if (kf.easing == animation::EasingPreset::Custom) {
+                    kj["bezier"] = serialize_bezier(kf.bezier);
+                }
+                kj["speed_in"] = kf.speed_in;
+                kj["influence_in"] = kf.influence_in;
+                kj["speed_out"] = kf.speed_out;
+                kj["influence_out"] = kf.influence_out;
+            }
+            j["keyframes"].push_back(kj);
+        }
+    }
+    if (prop.expression.has_value()) j["expression"] = *prop.expression;
+    return j;
+}
+
+json serialize_color_property(const AnimatedColorSpec& prop) {
+    if (prop.empty()) return json{};
+    if (prop.value.has_value() && prop.keyframes.empty()) {
+        return json::array({prop.value->r, prop.value->g, prop.value->b, prop.value->a});
+    }
+    json j;
+    if (prop.value.has_value()) {
+        j["value"] = json::array({prop.value->r, prop.value->g, prop.value->b, prop.value->a});
+    }
+    if (!prop.keyframes.empty()) {
+        j["keyframes"] = json::array();
+        for (const auto& kf : prop.keyframes) {
+            json kj;
+            kj["time"] = kf.time;
+            kj["value"] = json::array({kf.value.r, kf.value.g, kf.value.b, kf.value.a});
+            if (kf.easing != animation::EasingPreset::None) {
+                kj["easing"] = serialize_easing_preset(kf.easing);
+                if (kf.easing == animation::EasingPreset::Custom) {
+                    kj["bezier"] = serialize_bezier(kf.bezier);
+                }
+                kj["speed_in"] = kf.speed_in;
+                kj["influence_in"] = kf.influence_in;
+                kj["speed_out"] = kf.speed_out;
+                kj["influence_out"] = kf.influence_out;
+            }
+            j["keyframes"].push_back(kj);
+        }
+    }
+    return j;
+}
+
+static json serialize_transform(const Transform2D& transform) {
+    json j;
+    if (transform.position_x.has_value()) j["position_x"] = *transform.position_x;
+    if (transform.position_y.has_value()) j["position_y"] = *transform.position_y;
+    if (transform.rotation.has_value()) j["rotation"] = *transform.rotation;
+    if (transform.scale_x.has_value()) j["scale_x"] = *transform.scale_x;
+    if (transform.scale_y.has_value()) j["scale_y"] = *transform.scale_y;
+    if (!transform.anchor_point.empty()) j["anchor_point"] = serialize_vector2_property(transform.anchor_point);
+    if (!transform.position_property.empty()) j["position"] = serialize_vector2_property(transform.position_property);
+    if (!transform.rotation_property.empty()) j["rotation"] = serialize_scalar_property(transform.rotation_property);
+    if (!transform.scale_property.empty()) j["scale"] = serialize_vector2_property(transform.scale_property);
+    return j;
+}
+
 json serialize_layer(const LayerSpec& layer) {
     json j;
     j["id"] = layer.id;
@@ -140,6 +315,14 @@ json serialize_layer(const LayerSpec& layer) {
     j["opacity"] = layer.opacity;
     j["width"] = layer.width;
     j["height"] = layer.height;
+
+    {
+        json t = serialize_transform(layer.transform);
+        if (!t.empty()) j["transform"] = t;
+    }
+    if (!layer.opacity_property.empty()) j["opacity"] = serialize_scalar_property(layer.opacity_property);
+    if (!layer.mask_feather.empty()) j["mask_feather"] = serialize_scalar_property(layer.mask_feather);
+    j["stroke_width"] = layer.stroke_width;
 
     if (layer.parent.has_value()) j["parent"] = *layer.parent;
     if (layer.track_matte_layer_id.has_value()) j["track_matte_layer_id"] = *layer.track_matte_layer_id;
