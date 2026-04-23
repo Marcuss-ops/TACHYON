@@ -165,6 +165,7 @@ add_library(TachyonCore
     importer/usd_importer.cpp
     importer/alembic_importer.cpp
     camera_cut_contract.cpp
+    editor/undo/undo_manager.cpp
 )
 
 if(MSVC)
