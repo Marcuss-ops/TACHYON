@@ -84,11 +84,11 @@ bool run_runtime_backbone_tests() {
     if (compiled_result.ok()) {
         const auto& compiled = *compiled_result.value;
         check_true(compiled.compositions.size() == 1, "Compiled scene has one composition");
-        // We now emit Opacity, PosX, PosY, ScaleX, ScaleY, Rotation = 6 tracks
-        check_true(compiled.property_tracks.size() == 6, "Compiled scene emits 6 transformation tracks");
+        // We now emit Opacity, PosX, PosY, ScaleX, ScaleY, Rotation, MaskFeather = 7 tracks
+        check_true(compiled.property_tracks.size() == 7, "Compiled scene emits 7 transformation tracks");
         
         const auto& compiled_layer = compiled.compositions[0].layers[0];
-        check_true(compiled_layer.property_indices.size() == 6, "Compiled layer has 6 property indices");
+        check_true(compiled_layer.property_indices.size() == 7, "Compiled layer has 7 property indices");
     }
 
     // Test PropertyGraph growth
