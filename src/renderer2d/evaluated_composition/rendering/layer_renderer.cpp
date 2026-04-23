@@ -19,6 +19,22 @@ namespace tachyon::renderer2d {
 
 namespace {
 
+::tachyon::shapes::ShapePath to_shape_path(const scene::EvaluatedShapePath& path) {
+    ::tachyon::shapes::ShapePath out;
+    ::tachyon::shapes::ShapeSubpath subpath;
+    subpath.closed = path.closed;
+    subpath.vertices.reserve(path.points.size());
+    for (const auto& point : path.points) {
+        subpath.vertices.push_back(::tachyon::shapes::PathVertex{
+            point.position,
+            point.tangent_in,
+            point.tangent_out
+        });
+    }
+    out.subpaths.push_back(std::move(subpath));
+    return out;
+}
+
 float sample_glyph_alpha(const ::tachyon::text::GlyphBitmap& glyph, float src_x, float src_y) {
     if (glyph.width == 0U || glyph.height == 0U || glyph.alpha_mask.empty()) {
         return 0.0f;
@@ -79,10 +95,26 @@ PathGeometry build_shape_geometry(
         return {wp.x * context.policy.resolution_scale, wp.y * context.policy.resolution_scale};
     };
 
+    // Check if we have mask path with per-vertex feather
+    const bool has_mask_feather = layer.mask_path.has_value();
+    const auto& mask_vertices = has_mask_feather ? layer.mask_path->vertices : std::vector<MaskVertex>{};
+
     for (const auto& subpath : sp.subpaths) {
         if (subpath.vertices.empty()) continue;
 
-        geom.commands.push_back({PathVerb::MoveTo, transform_pt(math::Vector2(subpath.vertices[0].point.x, subpath.vertices[0].point.y))});
+        // Get feather values for this vertex if available
+        float feather_inner = 0.0f;
+        float feather_outer = 0.0f;
+        if (has_mask_feather && !mask_vertices.empty()) {
+            // Match by index - assuming subpath vertices correspond to mask vertices
+            std::size_t idx = static_cast<std::size_t>(&subpath - &sp.subpaths[0]);
+            if (idx < mask_vertices.size()) {
+                feather_inner = mask_vertices[idx].feather_inner;
+                feather_outer = mask_vertices[idx].feather_outer;
+            }
+        }
+
+        geom.commands.push_back({PathVerb::MoveTo, transform_pt(math::Vector2(subpath.vertices[0].point.x, subpath.vertices[0].point.y)), {}, {}, feather_inner, feather_outer});
         for (std::size_t i = 1; i < subpath.vertices.size(); ++i) {
             const auto& prev = subpath.vertices[i - 1];
             const auto& curr = subpath.vertices[i];
@@ -92,19 +124,27 @@ PathGeometry build_shape_geometry(
             math::Vector2 curr_p(curr.point.x, curr.point.y);
             math::Vector2 curr_in(curr.in_tangent.x, curr.in_tangent.y);
 
+            // Update feather for this vertex
+            if (has_mask_feather && i < mask_vertices.size()) {
+                feather_inner = mask_vertices[i].feather_inner;
+                feather_outer = mask_vertices[i].feather_outer;
+            }
+
             if (prev_out.length_squared() > 1e-6f || curr_in.length_squared() > 1e-6f) {
                 geom.commands.push_back({
                     PathVerb::CubicTo,
                     transform_pt(prev_p + prev_out),
                     transform_pt(curr_p + curr_in),
-                    transform_pt(curr_p)
+                    transform_pt(curr_p),
+                    feather_inner,
+                    feather_outer
                 });
             } else {
-                geom.commands.push_back({PathVerb::LineTo, transform_pt(curr_p)});
+                geom.commands.push_back({PathVerb::LineTo, transform_pt(curr_p), {}, {}, feather_inner, feather_outer});
             }
         }
         if (subpath.closed) {
-            geom.commands.push_back({PathVerb::Close});
+            geom.commands.push_back({PathVerb::Close, {}, {}, {}, feather_inner, feather_outer});
         }
     }
 
@@ -136,7 +176,7 @@ std::shared_ptr<SurfaceRGBA> render_mask_layer_surface(
         return surface;
     }
 
-    const Color mask_color{0.0f, 0.0f, 0.0f, static_cast<float>(std::clamp(layer.opacity, 0.0, 1.0))};
+    const Color mask_color{0.0f, 0.0f, 0.0f, static_cast<float>(std::clamp(static_cast<double>(layer.opacity), 0.0, 1.0))};
 
     if (layer.shape_path.has_value()) {
         const PathGeometry geom = build_shape_geometry(layer, *layer.shape_path, state, context, target_rect);
@@ -158,10 +198,8 @@ std::shared_ptr<SurfaceRGBA> render_mask_layer_surface(
         }
     }
 
-    const float feather = std::max(0.0f, layer.mask_feather * context.policy.resolution_scale);
-    if (feather > 0.0f) {
-        return std::make_shared<SurfaceRGBA>(blur_alpha_mask(*surface, feather));
-    }
+    // Note: Feather is now handled in the rasterizer via per-vertex feather values
+    // The old post-rasterization blur has been removed
 
     return surface;
 }
@@ -218,7 +256,7 @@ std::shared_ptr<SurfaceRGBA> render_text_layer_surface(
         txt::TextOnPathModifier::apply(layout, *layer.shape_path, 0.0, true);
     }
 
-    for (const auto& pg : layout.glyphs) {
+    for (const auto& pg : layout.ResolvedTextLayout::glyphs) {
         const txt::Font* font = context.font_registry->find_by_id(pg.font_id);
         if (!font) continue;
 
@@ -238,8 +276,8 @@ std::shared_ptr<SurfaceRGBA> render_text_layer_surface(
         
         int tx = static_cast<int>(std::round(sp.x));
         int ty = static_cast<int>(std::round(sp.y));
-        const int tw = std::max(1, static_cast<int>(std::lround(static_cast<float>(glyph->width) * layout.scale * pg.scale.x)));
-        const int th = std::max(1, static_cast<int>(std::lround(static_cast<float>(glyph->height) * layout.scale * pg.scale.y)));
+        const int tw = (std::max)(1, static_cast<int>(std::lround(static_cast<float>(glyph->width) * layout.scale * pg.scale.x)));
+        const int th = (std::max)(1, static_cast<int>(std::lround(static_cast<float>(glyph->height) * layout.scale * pg.scale.y)));
 
         if (target_rect) {
             tx -= target_rect->x;
@@ -384,7 +422,6 @@ std::shared_ptr<SurfaceRGBA> render_simple_layer_surface(
                     }
                 }
                 CPURasterizer::draw_textured_quad(*surface, quad);
-            }
         }
     } else if (layer.type == scene::LayerType::Image && context.media_manager && layer.asset_path.has_value()) {
         std::filesystem::path resolved = context.media_manager->resolve_media_path(*layer.asset_path);
@@ -481,6 +518,21 @@ std::shared_ptr<SurfaceRGBA> render_simple_layer_surface(
     }
 
     return surface;
+}
+
+std::shared_ptr<SurfaceRGBA> render_layer_surface(
+    const scene::EvaluatedLayerState& layer,
+    const scene::EvaluatedCompositionState& state,
+    const RenderPlan& plan,
+    const FrameRenderTask& task,
+    RenderContext2D& context,
+    const std::optional<RectI>& target_rect) {
+
+    if (layer.type == scene::LayerType::Precomp) {
+        return render_precomp_surface(layer, state, plan, task, context);
+    } else {
+        return render_simple_layer_surface(layer, state, context, target_rect);
+    }
 }
 
 } // namespace tachyon::renderer2d

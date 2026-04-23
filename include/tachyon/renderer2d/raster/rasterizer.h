@@ -2,7 +2,7 @@
 #include "tachyon/renderer2d/raster/draw_command.h"
 #include "tachyon/renderer2d/raster/rasterizer_ops.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
-#include "tachyon/runtime/core/graph/render_graph.h"
+#include "tachyon/runtime/core/graph/runtime_render_graph.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/output/frame_aov.h"
 

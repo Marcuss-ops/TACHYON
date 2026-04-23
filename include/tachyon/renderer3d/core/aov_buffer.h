@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <algorithm>
 
 namespace tachyon::renderer3d {
 
@@ -25,6 +26,19 @@ struct AOVBuffer {
     // IDs for masking in compositing
     std::vector<std::uint32_t> object_id;
     std::vector<std::uint32_t> material_id;
+
+    void resize(std::uint32_t w, std::uint32_t h) {
+        allocate(w, h);
+    }
+
+    void clear() {
+        std::fill(beauty_rgba.begin(), beauty_rgba.end(), 0.0f);
+        std::fill(depth_z.begin(), depth_z.end(), 0.0f);
+        std::fill(normal_xyz.begin(), normal_xyz.end(), 0.0f);
+        std::fill(motion_vector_xy.begin(), motion_vector_xy.end(), 0.0f);
+        std::fill(object_id.begin(), object_id.end(), 0u);
+        std::fill(material_id.begin(), material_id.end(), 0u);
+    }
 
     void allocate(std::uint32_t w, std::uint32_t h) {
         width = w;

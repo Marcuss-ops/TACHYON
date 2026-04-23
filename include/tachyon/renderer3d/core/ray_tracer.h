@@ -3,6 +3,7 @@
 #include "tachyon/renderer3d/core/evaluated_scene_3d.h"
 #include "tachyon/renderer3d/core/aov_buffer.h"
 #include "tachyon/renderer3d/effects/motion_blur.h"
+#include "tachyon/renderer3d/effects/depth_of_field.h"
 #include "tachyon/renderer3d/lighting/environment_manager.h"
 #include <embree4/rtcore.h>
 #include <OpenImageDenoise/oidn.hpp>
@@ -10,6 +11,7 @@
 #include <vector>
 #include <unordered_map>
 #include <random>
+#include <string>
 
 namespace tachyon::renderer3d {
 
@@ -82,9 +84,15 @@ private:
         const math::Vector3& direction,
         const EvaluatedScene3D& scene,
         std::mt19937& rng,
-        int depth);
+        int depth,
+        float time = 0.0f);
 
     static constexpr int kMaxBounces = 3;
+
+    const std::string& last_error() const { return m_last_error; }
+
+private:
+    std::string m_last_error;
 
     void cleanup_scene();
     static void log_embree_error(void* userPtr, RTCError code, const char* str);

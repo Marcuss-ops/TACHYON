@@ -36,7 +36,7 @@ public:
     explicit ExpressionProperty(std::string name, std::string expression)
         : m_name(std::move(name))
         , m_expression(std::move(expression)) {
-        m_compilation = expressions::ExpressionEvaluator::compile(m_expression);
+        m_compilation = expressions::CoreExpressionEvaluator::compile(m_expression);
     }
 
     T sample(const PropertyEvaluationContext& context) const {

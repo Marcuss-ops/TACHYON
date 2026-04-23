@@ -52,9 +52,18 @@ void RayTracer::build_scene(const EvaluatedScene3D& scene) {
         RTCGeometry inst = rtcNewGeometry(device_, RTC_GEOMETRY_TYPE_INSTANCE); 
         rtcSetGeometryInstancedScene(inst, sub_scene);
         
-        const auto& m = instance.world_transform; 
-        float t[12] = { m[0], m[1], m[2], m[4], m[5], m[6], m[8], m[9], m[10], m[12], m[13], m[14] };
-        rtcSetGeometryTransform(inst, 0, RTC_FORMAT_FLOAT3X4_ROW_MAJOR, t); 
+        const auto& m_curr = instance.world_transform; 
+        if (instance.previous_world_transform.has_value()) {
+            const auto& m_prev = *instance.previous_world_transform;
+            rtcSetGeometryTimeStepCount(inst, 2);
+            float t_prev[12] = { m_prev[0], m_prev[1], m_prev[2], m_prev[4], m_prev[5], m_prev[6], m_prev[8], m_prev[9], m_prev[10], m_prev[12], m_prev[13], m_prev[14] };
+            float t_curr[12] = { m_curr[0], m_curr[1], m_curr[2], m_curr[4], m_curr[5], m_curr[6], m_curr[8], m_curr[9], m_curr[10], m_curr[12], m_curr[13], m_curr[14] };
+            rtcSetGeometryTransform(inst, 0, RTC_FORMAT_FLOAT3X4_ROW_MAJOR, t_prev); 
+            rtcSetGeometryTransform(inst, 1, RTC_FORMAT_FLOAT3X4_ROW_MAJOR, t_curr);
+        } else {
+            float t[12] = { m_curr[0], m_curr[1], m_curr[2], m_curr[4], m_curr[5], m_curr[6], m_curr[8], m_curr[9], m_curr[10], m_curr[12], m_curr[13], m_curr[14] };
+            rtcSetGeometryTransform(inst, 0, RTC_FORMAT_FLOAT3X4_ROW_MAJOR, t); 
+        }
         rtcCommitGeometry(inst);
         
         unsigned int geom_id = rtcAttachGeometry(scene_, inst);

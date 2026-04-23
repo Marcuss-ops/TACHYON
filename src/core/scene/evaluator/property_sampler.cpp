@@ -12,13 +12,14 @@ namespace tachyon::scene {
 namespace {
 
 constexpr float kTangentEpsilon = 1.0e-6f;
+constexpr double kDefaultTableValue = 0.0;
 
 double parse_table_value(const std::string& value) {
     const char* begin = value.c_str();
     char* end = nullptr;
     const double parsed = std::strtod(begin, &end);
     if (end == begin || *end != '\0') {
-        return 0.0;
+        return kDefaultTableValue;
     }
     return parsed;
 }

@@ -27,13 +27,31 @@ public:
     virtual BackendCaps caps()  const = 0;
 
     // --- Buffer lifecycle ---
-    // Upload surface pixels to device memory. Returns an opaque device handle.
-    // Caller must call free_device_memory() when done.
+    /**
+     * @brief Upload surface pixels to device memory.
+     * 
+     * This method acts as an allocator and transfers ownership of the allocated 
+     * device memory to the caller. The returned opaque handle MUST be freed 
+     * by calling free_device_memory().
+     * 
+     * @param surface Source pixels.
+     * @return An opaque device handle (ownership transferred to caller).
+     */
     virtual void* upload(const SurfaceRGBA& surface) = 0;
 
-    // Download device buffer back to an existing surface (must be same dimensions).
+    /**
+     * @brief Download device buffer back to an existing surface.
+     * 
+     * @param device_ptr Opaque handle returned by upload().
+     * @param surface Destination surface (must have correct dimensions).
+     */
     virtual void download(void* device_ptr, SurfaceRGBA& surface) = 0;
 
+    /**
+     * @brief Free device memory allocated by upload().
+     * 
+     * @param device_ptr Opaque handle returned by upload().
+     */
     virtual void free_device_memory(void* device_ptr) = 0;
 
     // --- Compute operations ---

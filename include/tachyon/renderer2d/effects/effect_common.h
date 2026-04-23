@@ -1,24 +1,12 @@
 #pragma once
 
-#include "tachyon/renderer2d/effects/effect_host.h"
+#include "tachyon/renderer2d/effects/effect_params.h"
+#include "tachyon/renderer2d/effects/color_types.h"
 #include <algorithm>
 #include <cmath>
 #include <vector>
 
 namespace tachyon::renderer2d {
-
-struct LinearColor {
-    float r{0.0f};
-    float g{0.0f};
-    float b{0.0f};
-};
-
-struct PremultipliedPixel {
-    float r{0.0f};
-    float g{0.0f};
-    float b{0.0f};
-    float a{0.0f};
-};
 
 float clamp01(float value);
 float lerp(float a, float b, float t);

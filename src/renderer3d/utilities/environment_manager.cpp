@@ -6,7 +6,7 @@
 namespace tachyon::renderer3d {
 
 namespace {
-
+ 
 constexpr int kBrdfLutSize = 512;
 constexpr int kBrdfSampleCount = 1024;
 constexpr int kPrefilterLevelCount = 5;
@@ -15,6 +15,30 @@ constexpr float kHalf = 0.5f;
 constexpr float kQuarter = 0.25f;
 constexpr float kMinDot = 0.0001f;
 
+// Hammersley sequence constants
+constexpr int kHammersleyModulo = 127;
+
+// BRDF computation constants
+constexpr float kRoughnessDivisor = 2.0f;
+constexpr float kFresnelPower = 5.0f;
+constexpr int kBrdfChannelCount = 2;
+
+// Color channel constants
+constexpr int kRgbChannelCount = 3;
+
+// Mipmap level constants
+constexpr int kMipShift = 1;
+
+// Spherical coordinate constants
+constexpr float kPhiScale = 2.0f;
+
+// Ray tracing constants
+constexpr float kMaxDistance = 1e10f;
+
+// Default sky gradient colors
+constexpr math::Vector3 kSkyTopColor{0.2f, 0.5f, 1.0f};
+constexpr math::Vector3 kSkyBottomColor{0.8f, 0.9f, 1.0f};
+ 
 } // namespace
 
 std::unique_ptr<media::BRDFLut> EnvironmentManager::brdf_lut_ = nullptr;
@@ -47,7 +71,7 @@ void EnvironmentManager::ensure_brdf_lut() {
 
             for (int i = 0; i < num_samples; ++i) {
                 float u1 = static_cast<float>(i) / num_samples;
-                float u2 = static_cast<float>(i % 127) / 127.0f;
+                float u2 = static_cast<float>(i % kHammersleyModulo) / static_cast<float>(kHammersleyModulo);
                 
                 math::Vector3 h = pbr::importance_sample_ggx(u1, u2, {0,0,1}, roughness);
                 math::Vector3 l = (h * 2.0f * math::Vector3::dot(v, h) - v).normalized();
@@ -57,19 +81,19 @@ void EnvironmentManager::ensure_brdf_lut() {
                 float v_dot_h = std::max(math::Vector3::dot(v, h), kMinDot);
                 
                 if (n_dot_l > 0.0f) {
-                    float k = (roughness * roughness) / 2.0f;
+                    float k = (roughness * roughness) / kRoughnessDivisor;
                     auto g_v = [&](float ndv) { return ndv / (ndv * (1.0f - k) + k); };
                     float g = g_v(n_dot_v) * g_v(n_dot_l);
                     float g_vis = (g * v_dot_h) / (n_dot_h * n_dot_v);
-                    float fc = std::pow(1.0f - v_dot_h, 5.0f);
+                    float fc = std::pow(1.0f - v_dot_h, kFresnelPower);
                     
                     a += (1.0f - fc) * g_vis;
                     b += fc * g_vis;
                 }
             }
             
-            brdf_lut_->data[(y * size + x) * 2 + 0] = a / num_samples;
-            brdf_lut_->data[(y * size + x) * 2 + 1] = b / num_samples;
+            brdf_lut_->data[(y * size + x) * kBrdfChannelCount + 0] = a / num_samples;
+            brdf_lut_->data[(y * size + x) * kBrdfChannelCount + 1] = b / num_samples;
         }
     }
 }
@@ -92,7 +116,7 @@ void EnvironmentManager::update_prefiltered_env(const media::HDRTextureData* map
         media::PreFilteredEnvMap::Level level;
         level.width = w;
         level.height = h;
-        level.data.resize(w * h * 3);
+        level.data.resize(w * h * kRgbChannelCount);
         
         #pragma omp parallel for schedule(dynamic)
         for (int y = 0; y < h; ++y) {
@@ -103,7 +127,7 @@ void EnvironmentManager::update_prefiltered_env(const media::HDRTextureData* map
                 float u = (static_cast<float>(x) + kHalf) / w;
                 float v = (static_cast<float>(y) + kHalf) / h;
                 
-                float phi = (u - kHalf) * 2.0f * pbr::PI;
+                float phi = (u - kHalf) * kPhiScale * pbr::PI;
                 float theta = (kHalf - v) * pbr::PI;
                 
                 math::Vector3 N;
@@ -133,7 +157,7 @@ void EnvironmentManager::update_prefiltered_env(const media::HDRTextureData* map
                     }
                 }
                 
-                int d_idx = (y * w + x) * 3;
+                int d_idx = (y * w + x) * kRgbChannelCount;
                 if (total_weight > 0.0f) {
                     math::Vector3 final_c = prefiltered_color / total_weight;
                     level.data[d_idx+0] = final_c.x;
@@ -168,18 +192,16 @@ EnvironmentSample EnvironmentManager::sample_environment(const math::Vector3& di
             const auto& l0 = prefiltered_env_->levels[idx0];
             const auto& l1 = prefiltered_env_->levels[idx1];
             
-            auto s0 = pbr::sample_equirect({l0.data, l0.width, l0.height, 3}, direction, rotation);
-            auto s1 = pbr::sample_equirect({l1.data, l1.width, l1.height, 3}, direction, rotation);
+            auto s0 = pbr::sample_equirect({l0.data, l0.width, l0.height, kRgbChannelCount}, direction, rotation);
+            auto s1 = pbr::sample_equirect({l1.data, l1.width, l1.height, kRgbChannelCount}, direction, rotation);
             
-            return { (s0 * (1.0f - f) + s1 * f) * intensity, 0.0f, 1e10f, {0,0,0}, -direction };
+            return { (s0 * (1.0f - f) + s1 * f) * intensity, 0.0f, kMaxDistance, {0,0,0}, -direction };
         }
-        return { pbr::sample_equirect(*environment_map, direction, rotation) * intensity, 0.0f, 1e10f, {0,0,0}, -direction };
+        return { pbr::sample_equirect(*environment_map, direction, rotation) * intensity, 0.0f, kMaxDistance, {0,0,0}, -direction };
     }
 
     float t = kHalf * (direction.y + 1.0f);
-    math::Vector3 sky_top = {0.2f, 0.5f, 1.0f};
-    math::Vector3 sky_bottom = {0.8f, 0.9f, 1.0f};
-    return {sky_bottom * (1.0f - t) + sky_top * t, 0.0f, 1e10f, {0,0,0}, -direction};
+    return {kSkyBottomColor * (1.0f - t) + kSkyTopColor * t, 0.0f, kMaxDistance, {0,0,0}, -direction};
 }
 
 } // namespace tachyon::renderer3d

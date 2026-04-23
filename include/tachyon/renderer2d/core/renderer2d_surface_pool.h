@@ -25,7 +25,7 @@ public:
      * The returned shared_ptr has a custom deleter that returns the surface 
      * to this pool instead of deleting it.
      */
-    std::shared_ptr<SurfaceRGBA> acquire(uint32_t width, uint32_t height);
+    std::shared_ptr<SurfaceRGBA> acquire(std::uint32_t width, std::uint32_t height);
 
     /**
      * Clear all pooled memory.
@@ -40,8 +40,8 @@ private:
     void release(SurfaceRGBA* surface);
 
     struct PoolEntry {
-        uint32_t width;
-        uint32_t height;
+        std::uint32_t width;
+        std::uint32_t height;
         
         bool operator==(const PoolEntry& other) const {
             return width == other.width && height == other.height;

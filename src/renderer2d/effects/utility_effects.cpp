@@ -1,3 +1,4 @@
+#include "tachyon/renderer2d/effects/effect_host.h"
 #include "tachyon/renderer2d/effects/effect_common.h"
 
 namespace tachyon::renderer2d {

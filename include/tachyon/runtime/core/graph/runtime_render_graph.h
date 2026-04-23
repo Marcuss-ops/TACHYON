@@ -9,10 +9,10 @@ namespace tachyon {
 /**
  * @brief Manages the execution order and dependency relationships of the compiled scene.
  * 
- * The RenderGraph is built once during scene compilation and used by the 
+ * The RuntimeRenderGraph is built once during scene compilation and used by the 
  * FrameExecutor to determine the minimal set of nodes that need evaluation.
  */
-class RenderGraph {
+class RuntimeRenderGraph {
 public:
     /**
      * @brief Represents a dependency edge in the graph.

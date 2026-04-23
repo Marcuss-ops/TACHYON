@@ -420,6 +420,122 @@ std::optional<std::vector<float>> FeatureTracker::estimate_homography(
 }
 
 // ---------------------------------------------------------------------------
+// RANSAC homography estimation
+// ---------------------------------------------------------------------------
+std::optional<std::vector<float>> FeatureTracker::estimate_homography_ransac(
+    const std::vector<Point2f>& src,
+    const std::vector<TrackPoint>& dst,
+    int iterations,
+    float threshold_px,
+    float min_inlier_ratio,
+    std::vector<bool>& inlier_mask) {
+
+    // Build valid correspondence list
+    std::vector<std::pair<Point2f, Point2f>> pairs;
+    std::vector<size_t> valid_indices;
+    for (size_t i = 0; i < std::min(src.size(), dst.size()); ++i) {
+        if (!dst[i].occluded && dst[i].confidence > 0.2f) {
+            pairs.push_back({src[i], dst[i].position});
+            valid_indices.push_back(i);
+        }
+    }
+
+    if (pairs.size() < 4) return std::nullopt;
+
+    // Prepare subset containers for DLT (needs exactly 4 points)
+    std::vector<Point2f> subset_src(4);
+    std::vector<TrackPoint> subset_dst(4);
+
+    std::optional<std::vector<float>> best_H;
+    int best_inliers = 0;
+    std::vector<bool> best_mask;
+
+    // Simple RNG (deterministic seeded for reproducibility)
+    uint32_t rng_state = 12345u;
+    auto rng = [&]() -> uint32_t {
+        rng_state ^= rng_state << 13;
+        rng_state ^= rng_state >> 17;
+        rng_state ^= rng_state << 5;
+        return rng_state;
+    };
+
+    for (int iter = 0; iter < iterations; ++iter) {
+        // Randomly sample 4 unique points
+        std::vector<size_t> idx(pairs.size());
+        for (size_t i = 0; i < idx.size(); ++i) idx[i] = i;
+        // Fisher-Yates shuffle first 4
+        for (int i = (int)idx.size() - 1; i >= (int)idx.size() - 4; --i) {
+            uint32_t r = rng() % (i + 1);
+            std::swap(idx[i], idx[r]);
+        }
+
+        for (int j = 0; j < 4; ++j) {
+            subset_src[j] = pairs[idx[idx.size() - 1 - j]].first;
+            subset_dst[j] = {pairs[idx[idx.size() - 1 - j]].second, 1.0f, false};
+        }
+
+        auto H = estimate_homography(subset_src, subset_dst);
+        if (!H) continue;
+
+        // Count inliers
+        const auto& h = *H;
+        int inliers = 0;
+        std::vector<bool> mask(pairs.size(), false);
+        for (size_t i = 0; i < pairs.size(); ++i) {
+            float x = pairs[i].first.x, y = pairs[i].first.y;
+            float w = h[6]*x + h[7]*y + h[8];
+            if (std::abs(w) < 1e-6f) continue;
+            float px = (h[0]*x + h[1]*y + h[2]) / w;
+            float py = (h[3]*x + h[4]*y + h[5]) / w;
+            float dx = px - pairs[i].second.x;
+            float dy = py - pairs[i].second.y;
+            float dist = std::sqrt(dx*dx + dy*dy);
+            if (dist < threshold_px) {
+                mask[i] = true;
+                ++inliers;
+            }
+        }
+
+        if (inliers > best_inliers) {
+            best_inliers = inliers;
+            best_H = H;
+            best_mask = std::move(mask);
+        }
+    }
+
+    float inlier_ratio = (float)best_inliers / (float)pairs.size();
+    if (!best_H || inlier_ratio < min_inlier_ratio) {
+        inlier_mask.clear();
+        return std::nullopt;
+    }
+
+    // Re-estimate on all inliers for refinement
+    std::vector<Point2f> inlier_src;
+    std::vector<TrackPoint> inlier_dst;
+    inlier_src.reserve(best_inliers);
+    inlier_dst.reserve(best_inliers);
+    for (size_t i = 0; i < best_mask.size(); ++i) {
+        if (best_mask[i]) {
+            inlier_src.push_back(pairs[i].first);
+            inlier_dst.push_back({pairs[i].second, 1.0f, false});
+        }
+    }
+
+    auto refined = estimate_homography(inlier_src, inlier_dst);
+    if (refined) best_H = refined;
+
+    // Map back to original indices
+    inlier_mask.assign(src.size(), false);
+    for (size_t i = 0; i < best_mask.size(); ++i) {
+        if (best_mask[i]) {
+            inlier_mask[valid_indices[i]] = true;
+        }
+    }
+
+    return best_H;
+}
+
+// ---------------------------------------------------------------------------
 // Exponential Moving Average path smoothing
 // ---------------------------------------------------------------------------
 std::vector<Point2f> FeatureTracker::smooth_track(

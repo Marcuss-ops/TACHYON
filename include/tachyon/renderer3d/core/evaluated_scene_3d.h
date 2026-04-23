@@ -32,6 +32,7 @@ struct EvaluatedLight {
 
 struct EvaluatedMaterial {
     ::tachyon::ColorSpec base_color{255, 255, 255, 255};
+    float opacity{1.0f};
     float metallic{0.0f};
     float roughness{0.5f};
     float emission_strength{0.0f};
@@ -61,8 +62,19 @@ struct EvaluatedCamera3D {
     std::optional<::tachyon::math::Vector3> previous_up;
     
     float fov_y{45.0f};
+    float focal_length_mm{35.0f}; // Physical focal length
     float focal_distance{100.0f}; // For Depth of Field
     float aperture{0.0f};         // 0 = Pinhole camera (no DoF)
+    
+    // Camera Shake (Phase 4)
+    bool shake_enabled{false};
+    float shake_amplitude{0.0f};   // World units
+    float shake_frequency{1.0f};   // Hz
+    std::uint32_t shake_seed{0};   // Deterministic seed
+    
+    // Multi-Camera Cuts (Phase 5)
+    std::string camera_id{""};
+    bool is_active_camera{true};
 };
 
 /**

@@ -1,4 +1,5 @@
-#include "tachyon/renderer2d/effects/effect_common.h"
+#include "tachyon/renderer2d/effects/effect_host.h"
+#include "tachyon/renderer2d/effects/effect_utils.h"
 
 namespace tachyon::renderer2d {
 
@@ -14,11 +15,11 @@ SurfaceRGBA DirectionalBlurEffect::apply(const SurfaceRGBA& input, const EffectP
     if (amount <= 0.0f || input.width() == 0U || input.height() == 0U) {
         return input;
     }
-
+    
     const float inv_samples = 1.0f / static_cast<float>(samples);
     SurfaceRGBA out(input.width(), input.height());
     out.clear(Color::transparent());
-
+    
     for (std::uint32_t y = 0; y < input.height(); ++y) {
         for (std::uint32_t x = 0; x < input.width(); ++x) {
             LinearColor acc{0.0f, 0.0f, 0.0f};
@@ -53,22 +54,20 @@ SurfaceRGBA RadialBlurEffect::apply(const SurfaceRGBA& input, const EffectParams
     if (amount <= 0.0f || input.width() == 0U || input.height() == 0U) {
         return input;
     }
-
+    
     const float cx = center_x * static_cast<float>(input.width());
     const float cy = center_y * static_cast<float>(input.height());
     SurfaceRGBA out(input.width(), input.height());
     out.clear(Color::transparent());
-
+    
     for (std::uint32_t y = 0; y < input.height(); ++y) {
         for (std::uint32_t x = 0; x < input.width(); ++x) {
-            const float dx = static_cast<float>(x) - cx;
-            const float dy = static_cast<float>(y) - cy;
             LinearColor acc{0.0f, 0.0f, 0.0f};
             float acc_a = 0.0f;
             for (int s = 0; s < samples; ++s) {
                 const float t = static_cast<float>(s) / static_cast<float>(samples - 1);
-                const float sample_x = static_cast<float>(x) + dx * amount * (t - 0.5f) * 2.0f;
-                const float sample_y = static_cast<float>(y) + dy * amount * (t - 0.5f) * 2.0f;
+                const float sample_x = cx + (static_cast<float>(x) - cx) * (1.0f + amount * t);
+                const float sample_y = cy + (static_cast<float>(y) - cy) * (1.0f + amount * t);
                 const Color sample = sample_texture_bilinear(
                     input,
                     sample_x / std::max(1.0f, static_cast<float>(input.width())),

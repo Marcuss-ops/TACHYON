@@ -1,4 +1,5 @@
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include <nlohmann/json.hpp>
 #include <fstream>
 #include <sstream>
 #include <vector>
@@ -6,8 +7,6 @@
 #include <unordered_map>
 
 namespace tachyon::scene {
-
-#include <nlohmann/json.hpp>
 
 std::vector<std::vector<std::string>> load_csv(const std::string& path) {
     std::vector<std::vector<std::string>> table;

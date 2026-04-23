@@ -50,12 +50,6 @@ void EffectHost::register_builtins(EffectHost& host) {
     host.register_effect("fill", std::make_unique<FillEffect>());
     host.register_effect("tint", std::make_unique<TintEffect>());
     host.register_effect("hue_saturation", std::make_unique<HueSaturationEffect>());
-    host.register_effect("glow", std::make_unique<GlowEffect>());
-    host.register_effect("levels", std::make_unique<LevelsEffect>());
-    host.register_effect("curves", std::make_unique<CurvesEffect>());
-    host.register_effect("fill", std::make_unique<FillEffect>());
-    host.register_effect("tint", std::make_unique<TintEffect>());
-    host.register_effect("hue_saturation", std::make_unique<HueSaturationEffect>());
     host.register_effect("color_balance", std::make_unique<ColorBalanceEffect>());
     host.register_effect("lut", std::make_unique<LUTEffect>());
     host.register_effect("lut3d_cube", std::make_unique<Lut3DCubeEffect>());

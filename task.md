@@ -64,6 +64,18 @@
 
 ## Phase 8: Hardening & Industrialization
 - [ ] Quality Tiers (Draft, Preview, Production)
-- [ ] Memory Budget Enforcement (FrameCache LRU)
-- [ ] Tiling + ROI (Simplified 4K support)
+- [x] Memory Budget Enforcement (FrameCache LRU)
+- [x] Tiling + ROI (Smart Invalidation)
 - [ ] ASAN End-to-End Verification
+
+## Phase 9: Production Pipeline & Subsystems
+- [x] Variable-feather Bezier masks (implementation + eval)
+- [x] AI-assisted RotoBrush engine (FeatureTracker integration)
+- [x] Multi-channel Audio Mixer (panning, limiter, sinc-interpolation)
+- [x] AudioVideoExporter (frame-accurate sync)
+- [x] Persistent Disk Cache system
+- [x] Playback Engine (background rendering, pre-fetching, ROI)
+- [x] Physical Camera & 3D Solver (PnP DLT, Motion Blur, DoF, Shake)
+- [x] Modular roadmap documentation (tracking, roto, playback, etc.)
+- [x] Vectorized Mask Rasterizer (AVX2)
+- [x] Multi-Camera Timeline Cuts (Composition explicit cuts)

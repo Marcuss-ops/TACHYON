@@ -16,8 +16,20 @@ public:
     struct SubFrameState {
         double time_seconds{0.0};
         math::Vector3 camera_position;
+        math::Vector3 camera_target;
+        math::Vector3 camera_up{0.0f, 1.0f, 0.0f};
         math::Matrix4x4 camera_matrix;
         float camera_fov{60.0f};
+        float focal_distance{100.0f};
+        float aperture{0.0f};
+        float weight{1.0f};
+
+        // NEW: Interpolated matrices for all objects in the scene
+        struct ObjectState {
+            std::uint32_t object_id;
+            math::Matrix4x4 world_matrix;
+        };
+        std::vector<ObjectState> object_states;
     };
 
     struct MotionBlurConfig {

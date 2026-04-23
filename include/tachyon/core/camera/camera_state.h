@@ -14,7 +14,17 @@ namespace camera {
 struct CameraState {
     math::Transform3 transform;
     
-    float fov_y_rad{0.785398f}; // ~45 degrees
+    // Two-Node Camera
+    math::Vector3 target_position{0.0f, 0.0f, 0.0f};
+    bool use_target{false};
+
+    // Physical Camera Model
+    float focal_length_mm{35.0f};
+    float sensor_width_mm{36.0f}; // Full frame
+    float aperture_fstop{2.8f};
+    float focus_distance{10.0f};
+
+    float fov_y_rad{0.785398f}; // Computed from focal length if not manual
     float aspect{1.777778f};   // 16:9
     float near_z{0.1f};
     float far_z{1000.0f};
@@ -25,6 +35,9 @@ struct CameraState {
      * View Matrix: Inverse of the camera's world transform.
      */
     [[nodiscard]] math::Matrix4x4 get_view_matrix() const {
+        if (use_target) {
+            return math::Matrix4x4::look_at(transform.position, target_position, math::Vector3{0.0f, 1.0f, 0.0f});
+        }
         return transform.to_inverse_matrix();
     }
 
@@ -32,7 +45,14 @@ struct CameraState {
      * Projection Matrix: Maps camera-space to clip-space.
      */
     [[nodiscard]] math::Matrix4x4 get_projection_matrix() const {
-        return math::Matrix4x4::perspective(fov_y_rad, aspect, near_z, far_z);
+        // Calculate FOV from focal length if needed
+        float effective_fov = fov_y_rad;
+        if (focal_length_mm > 0.0f) {
+            // fov = 2 * atan(sensor_height / (2 * focal_length))
+            float sensor_height = sensor_width_mm / aspect;
+            effective_fov = 2.0f * std::atan(sensor_height / (2.0f * focal_length_mm));
+        }
+        return math::Matrix4x4::perspective(effective_fov, aspect, near_z, far_z);
     }
 
     /**

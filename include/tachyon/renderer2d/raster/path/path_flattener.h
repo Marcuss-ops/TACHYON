@@ -5,8 +5,14 @@
 
 namespace tachyon::renderer2d {
 
+struct ContourPoint {
+    math::Vector2 point;
+    float feather_inner{0.0f};
+    float feather_outer{0.0f};
+};
+
 struct Contour {
-    std::vector<math::Vector2> points;
+    std::vector<ContourPoint> points;
 };
 
 void flatten_cubic(
@@ -14,7 +20,7 @@ void flatten_cubic(
     const math::Vector2& p1,
     const math::Vector2& p2,
     const math::Vector2& p3,
-    std::vector<math::Vector2>& out,
+    std::vector<ContourPoint>& out,
     float tolerance,
     std::uint32_t depth = 0U);
 

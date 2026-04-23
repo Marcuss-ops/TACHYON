@@ -1,8 +1,8 @@
-#include "tachyon/renderer2d/core/surface_pool.h"
+#include "tachyon/renderer2d/core/renderer2d_surface_pool.h"
 
 namespace tachyon::renderer2d {
 
-std::shared_ptr<SurfaceRGBA> SurfacePool::acquire(uint32_t width, uint32_t height) {
+std::shared_ptr<SurfaceRGBA> SurfacePool::acquire(std::uint32_t width, std::uint32_t height) {
     std::lock_guard<std::mutex> lock(m_mutex);
     
     PoolEntry entry{width, height};

@@ -1,9 +1,26 @@
 #pragma once
 
+#include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/renderer2d/color/transfer_functions.h"
 #include "tachyon/renderer2d/color/color_matrix.h"
 
+#include <algorithm>
+#include <cstdint>
+#include <vector>
+
 namespace tachyon::renderer2d {
+
+/**
+ * @brief Alpha representation mode.
+ *
+ * TACHYON uses premultiplied alpha internally for compositing
+ * because it produces correct results under filtering, scaling,
+ * and blending.  Straight alpha is supported at I/O boundaries.
+ */
+enum class AlphaMode {
+    Straight,       ///< RGB and A stored separately (R,G,B not scaled by A)
+    Premultiplied   ///< RGB already multiplied by A (standard for compositing)
+};
 
 enum class BlendMode {
     Normal,
@@ -83,6 +100,20 @@ inline Color convert_color(Color color, TransferCurve src_c, ColorSpace src_s, T
         linear.b = std::max(0.0f, matrix.m[6] * r + matrix.m[7] * g + matrix.m[8] * b) * linear.a;
     }
     return from_premultiplied(linear, dst_c);
+}
+
+inline void apply_matte_buffer(SurfaceRGBA& surface, const std::vector<float>& matte, std::int64_t width, std::int64_t height) {
+    if (matte.empty()) return;
+    const std::size_t pixel_count = static_cast<std::size_t>(width * height);
+    for (std::size_t i = 0; i < pixel_count && i < matte.size(); ++i) {
+        const std::int64_t x = static_cast<std::int64_t>(i % static_cast<std::size_t>(width));
+        const std::int64_t y = static_cast<std::int64_t>(i / static_cast<std::size_t>(width));
+        if (x >= 0 && x < static_cast<std::int64_t>(surface.width()) && y >= 0 && y < static_cast<std::int64_t>(surface.height())) {
+            auto px = surface.get_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y));
+            px.a *= std::clamp(matte[i], 0.0f, 1.0f);
+            surface.set_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), px);
+        }
+    }
 }
 
 } // namespace tachyon::renderer2d

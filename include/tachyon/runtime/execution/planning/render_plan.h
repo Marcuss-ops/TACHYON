@@ -4,6 +4,7 @@
 #include "tachyon/runtime/execution/jobs/render_job.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
+#include "tachyon/timeline/time_remap.h"
 
 #include "tachyon/runtime/execution/planning/quality_policy.h"
 
@@ -59,6 +60,10 @@ struct RenderPlan {
     double motion_blur_shutter_angle{180.0};
     double motion_blur_shutter_phase{-90.0};
     std::string motion_blur_curve{"box"};
+
+    // Time Remap & Frame Blend
+    std::optional<timeline::TimeRemapCurve> time_remap_curve;
+    timeline::FrameBlendMode frame_blend_mode{timeline::FrameBlendMode::Linear};
     
     std::string seed_policy_mode;
     std::string compatibility_mode;

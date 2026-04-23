@@ -1,11 +1,15 @@
 #pragma once
 
 #include "tachyon/renderer2d/core/framebuffer.h"
-#include "tachyon/renderer2d/core/surface_pool.h"
+#include "tachyon/renderer2d/core/renderer2d_surface_pool.h"
+
+// For backward compatibility
+using SurfacePool = tachyon::renderer2d::SurfacePool;
 #include "tachyon/renderer2d/resource/precomp_cache.h"
 #include "tachyon/renderer2d/effects/effect_host.h"
 #include "tachyon/renderer2d/backend/compute_backend.h"
 #include "tachyon/renderer2d/color/color_management_system.h"
+#include "tachyon/core/shapes/shape_path.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/text/fonts/font.h"
@@ -92,6 +96,8 @@ struct RenderContext2D {
     std::shared_ptr<class ::tachyon::renderer3d::RayTracer> ray_tracer;
     ColorManagementSystem cms;
     WorkingColorSpace working_color_space;
+    int width{0};
+    int height{0};
 
     // Text rendering state (formerly TextRenderConfig singleton)
     const ::tachyon::text::FontRegistry* font_registry = nullptr;

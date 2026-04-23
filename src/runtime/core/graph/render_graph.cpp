@@ -1,4 +1,4 @@
-#include "tachyon/runtime/core/graph/render_graph.h"
+#include "tachyon/runtime/core/graph/runtime_render_graph.h"
 #include <algorithm>
 #include <map>
 #include <set>
@@ -8,17 +8,17 @@
 
 namespace tachyon {
 
-void RenderGraph::add_edge(std::uint32_t from, std::uint32_t to, bool structural) {
+void RuntimeRenderGraph::add_edge(std::uint32_t from, std::uint32_t to, bool structural) {
     m_edges.push_back({from, to, structural});
     m_nodes.insert(from);
     m_nodes.insert(to);
 }
 
-void RenderGraph::add_node(std::uint32_t node_id) {
+void RuntimeRenderGraph::add_node(std::uint32_t node_id) {
     m_nodes.insert(node_id);
 }
 
-void RenderGraph::compile() {
+void RuntimeRenderGraph::compile() {
     // 1. Identify all unique nodes and build adjacency list
     std::map<std::uint32_t, std::vector<std::uint32_t>> adj;
     std::set<std::uint32_t> all_nodes = m_nodes;
@@ -44,7 +44,7 @@ void RenderGraph::compile() {
     auto visit = [&](auto self, std::uint32_t n) -> void {
         if (visited.count(n)) return;
         if (path.count(n)) {
-            throw std::runtime_error("Circular dependency detected in RenderGraph at node " + std::to_string(n));
+            throw std::runtime_error("Circular dependency detected in RuntimeRenderGraph at node " + std::to_string(n));
         }
         
         path.insert(n);
@@ -61,7 +61,7 @@ void RenderGraph::compile() {
         m_topo_order.push_back(n);
     };
 
-
+    
     // 3. Process nodes in sorted order for determinism
     for (std::uint32_t n : all_nodes) {
         if (visited.count(n) == 0) {
@@ -73,7 +73,7 @@ void RenderGraph::compile() {
     std::reverse(m_topo_order.begin(), m_topo_order.end());
 }
 
-void RenderGraph::increment_node_version(std::uint32_t node_id, std::uint32_t& out_new_version) {
+void RuntimeRenderGraph::increment_node_version(std::uint32_t node_id, std::uint32_t& out_new_version) {
     // This method is called when a leaf node (property/asset) changes.
     // The implementation of version storage is outside this class, 
     // but we provide the logic to find all impacted dependents.
@@ -84,7 +84,7 @@ void RenderGraph::increment_node_version(std::uint32_t node_id, std::uint32_t& o
     out_new_version = 0; // Placeholder for the root's new version
 }
 
-void RenderGraph::propagate_invalidation(std::uint32_t changed_node_id, std::vector<std::uint32_t>& invalidated_nodes) {
+void RuntimeRenderGraph::propagate_invalidation(std::uint32_t changed_node_id, std::vector<std::uint32_t>& invalidated_nodes) {
     std::vector<std::uint32_t> stack;
     stack.push_back(changed_node_id);
 
@@ -112,7 +112,7 @@ void RenderGraph::propagate_invalidation(std::uint32_t changed_node_id, std::vec
     }
 }
 
-void RenderGraph::clear() {
+void RuntimeRenderGraph::clear() {
     m_edges.clear();
     m_nodes.clear();
     m_topo_order.clear();
