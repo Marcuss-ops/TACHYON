@@ -1,5 +1,7 @@
 #include "tachyon/core/scene/evaluation/evaluator.h"
+#include "tachyon/core/scene/composition/evaluator_composition.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
+#include "tachyon/core/scene/evaluator/layer_evaluator.h"
 #include "tachyon/core/math/matrix4x4.h"
 #include "tachyon/core/math/vector3.h"
 #include "tachyon/core/camera/camera_shake.h"
@@ -60,7 +62,7 @@ EvaluatedCameraState evaluate_camera_state(
     
     evaluated.available = true;
     evaluated.layer_id = camera_layer->id;
-    evaluated.position = camera_layer->world_position3;
+    evaluated.position = camera_layer->world_matrix.to_transform().position;
     evaluated.camera_type = camera_layer->camera_type;
     evaluated.zoom = camera_layer->zoom;
     evaluated.point_of_interest = camera_layer->poi;
@@ -135,25 +137,17 @@ EvaluatedCompositionState evaluate_composition_state(
     const audio::AudioAnalyzer* audio_analyzer,
     EvaluationVariables vars,
     media::MediaManager* media) {
-    
-    (void)frame_number;
-    (void)audio_analyzer;
-    (void)vars;
-    (void)media;
-    
-    // Fallback implementation: use evaluator_composition logic
-    // In a real implementation, this would call the internal resolve_layer_state etc.
-    EvaluatedCompositionState state;
-    state.composition_id = composition.id;
-    state.width = composition.width;
-    state.height = composition.height;
-    
-    // ... evaluate layers ...
-    
-    // Evaluate camera
-    state.camera = evaluate_camera_state(composition, state.layers, frame_number, composition_time_seconds);
-    
-    return state;
+    return evaluate_composition_internal(
+        nullptr,
+        composition,
+        frame_number,
+        composition_time_seconds,
+        {},
+        audio_analyzer,
+        std::move(vars),
+        media,
+        std::nullopt,
+        std::nullopt);
 }
 
 EvaluatedCompositionState evaluate_composition_state(
@@ -192,9 +186,12 @@ std::optional<EvaluatedCompositionState> evaluate_scene_composition_state(
 
     for (const auto& comp : scene.compositions) {
         if (comp.id == composition_id) {
-            double fps = 24.0; // Default if not specified
+            double fps = comp.frame_rate.value();
+            if (fps <= 0.0) fps = 24.0;
             double time = static_cast<double>(frame_number) / fps;
-            return evaluate_composition_state(comp, frame_number, time, audio_analyzer, vars, media);
+            return evaluate_composition_internal(
+                &scene, comp, frame_number, time,
+                {}, audio_analyzer, vars, media, std::nullopt, std::nullopt);
         }
     }
     return std::nullopt;
@@ -210,9 +207,12 @@ std::optional<EvaluatedCompositionState> evaluate_scene_composition_state(
 
     for (const auto& comp : scene.compositions) {
         if (comp.id == composition_id) {
-            double fps = 24.0;
+            double fps = comp.frame_rate.value();
+            if (fps <= 0.0) fps = 24.0;
             std::int64_t frame = static_cast<std::int64_t>(composition_time_seconds * fps);
-            return evaluate_composition_state(comp, frame, composition_time_seconds, audio_analyzer, vars, media);
+            return evaluate_composition_internal(
+                &scene, comp, frame, composition_time_seconds,
+                {}, audio_analyzer, vars, media, std::nullopt, std::nullopt);
         }
     }
     return std::nullopt;
@@ -224,26 +224,29 @@ EvaluatedLayerState evaluate_layer_state(
     double composition_time_seconds,
     const audio::AudioAnalyzer* audio_analyzer,
     media::MediaManager* media) {
-    
-    (void)frame_number;
-    (void)audio_analyzer;
-    (void)media;
-    
-    EvaluatedLayerState evaluated;
-    evaluated.layer_id = layer.id;
-    evaluated.id = layer.id;
-    evaluated.name = layer.name;
-    evaluated.type = LayerType::Video; // Simplified
-    evaluated.enabled = layer.enabled;
-    evaluated.visible = layer.visible;
-    evaluated.is_3d = layer.is_3d;
-    evaluated.is_adjustment_layer = layer.is_adjustment_layer;
-    evaluated.width = layer.width;
-    evaluated.height = layer.height;
-    evaluated.local_time_seconds = composition_time_seconds - layer.start_time;
-    evaluated.active = layer.enabled;
-    
-    return evaluated;
+    CompositionSpec composition;
+    composition.frame_rate = {30, 1};
+    composition.layers.push_back(layer);
+
+    EvaluationContext context{
+        nullptr,
+        composition,
+        frame_number,
+        composition_time_seconds,
+        {},
+        std::vector<std::optional<EvaluatedLayerState>>(composition.layers.size()),
+        std::vector<bool>(composition.layers.size(), false),
+        {},
+        audio_analyzer,
+        {},
+        {},
+        media,
+        {},
+        std::nullopt,
+        std::nullopt
+    };
+
+    return make_layer_state(context, context.composition.layers.front(), 0, 0.0, {});
 }
 
 } // namespace tachyon::scene

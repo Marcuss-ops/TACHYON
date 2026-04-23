@@ -5,6 +5,7 @@
 #include "tachyon/runtime/resource/render_context.h"
 #include "tachyon/runtime/resource/runtime_surface_pool.h"
 #include "tachyon/renderer2d/resource/precomp_cache.h"
+#include "tachyon/output/frame_output_sink.h"
 #include "tachyon/media/streaming/media_prefetcher.h"
 #include "tachyon/audio/audio_export.h"
 
@@ -15,6 +16,27 @@
 #include <thread>
 
 namespace tachyon {
+
+namespace {
+
+output::OutputFramePacket make_output_packet(const ExecutedFrame& frame) {
+    output::OutputFramePacket packet;
+    packet.frame_number = frame.frame_number;
+    packet.frame = frame.frame.get();
+    packet.metadata.time_seconds = static_cast<double>(frame.frame_number);
+    packet.metadata.scene_hash = std::to_string(frame.scene_hash);
+    packet.metadata.color_space = "linear_rec709";
+    return packet;
+}
+
+std::string output_path_or_plan(const std::filesystem::path& output_path, const RenderPlan& plan) {
+    if (!output_path.empty()) {
+        return output_path.string();
+    }
+    return plan.output.destination.path;
+}
+
+} // namespace
 
 void render_frames_parallel(
     const CompiledScene& compiled_scene,
@@ -43,7 +65,7 @@ void render_frames_parallel(
     for (std::size_t worker_index = 0; worker_index < thread_count; ++worker_index) {
         workers.push_back(std::async(std::launch::async, [&]() {
             FrameArena arena;
-            FrameExecutor executor(arena, cache, context.surface_pool);
+            FrameExecutor executor(arena, cache, nullptr);
             
             // Create a thread-local context
             ::tachyon::RenderContext local_context(context.renderer2d.precomp_cache);
@@ -81,15 +103,18 @@ RenderSessionResult RenderSession::render(
 
     (void)scene;
     RenderSessionResult result;
-    
-    FrameCache cache;
-    auto precomp_cache = std::make_shared<renderer2d::PrecompCache>();
-    ::tachyon::RenderContext context(precomp_cache);
-    
+
+    RenderExecutionPlan effective_plan = execution_plan;
+    const std::string resolved_output_path = output_path_or_plan(output_path, execution_plan.render_plan);
+    if (!resolved_output_path.empty()) {
+        effective_plan.render_plan.output.destination.path = resolved_output_path;
+    }
+
+    ::tachyon::RenderContext context(m_precomp_cache);
     std::uint32_t w = static_cast<std::uint32_t>(execution_plan.render_plan.composition.width);
     std::uint32_t h = static_cast<std::uint32_t>(execution_plan.render_plan.composition.height);
-    runtime::RuntimeSurfacePool surface_pool(w, h, 10);
-    context.surface_pool = &surface_pool;
+    m_surface_pool = std::make_unique<runtime::RuntimeSurfacePool>(w, h, 10);
+    context.surface_pool = m_surface_pool.get();
     
     media::MediaPrefetcher prefetcher;
     std::vector<ExecutedFrame> rendered_frames;
@@ -99,8 +124,8 @@ RenderSessionResult RenderSession::render(
 
     render_frames_parallel(
         compiled_scene,
-        execution_plan,
-        cache,
+        effective_plan,
+        m_cache,
         worker_count,
         context,
         prefetcher,
@@ -110,6 +135,39 @@ RenderSessionResult RenderSession::render(
         rendered_frames);
 
     result.frames = std::move(rendered_frames);
+    for (const auto& frame : result.frames) {
+        if (frame.cache_hit) {
+            ++result.cache_hits;
+        } else {
+            ++result.cache_misses;
+        }
+    }
+
+    std::unique_ptr<output::FrameOutputSink> sink = output::create_frame_output_sink(effective_plan.render_plan);
+    if (sink) {
+        if (!sink->begin(effective_plan.render_plan)) {
+            result.output_error = sink->last_error();
+            return result;
+        }
+
+        result.output_configured = true;
+        for (const auto& frame : result.frames) {
+            if (!frame.frame) {
+                continue;
+            }
+
+            output::OutputFramePacket packet = make_output_packet(frame);
+            if (!sink->write_frame(packet)) {
+                result.output_error = sink->last_error();
+                break;
+            }
+            ++result.frames_written;
+        }
+
+        if (result.output_error.empty() && !sink->finish()) {
+            result.output_error = sink->last_error();
+        }
+    }
 
     // Audio Export
     if (!compiled_scene.compositions.empty() && !compiled_scene.compositions.front().audio_tracks.empty()) {
@@ -123,7 +181,6 @@ RenderSessionResult RenderSession::render(
         exporter.export_to(audio_path, audio_config);
     }
 
-    result.output_configured = true;
     return result;
 }
 

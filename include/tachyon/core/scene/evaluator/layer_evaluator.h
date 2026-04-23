@@ -9,6 +9,7 @@ EvaluatedLayerState make_layer_state(
     EvaluationContext& context,
     const LayerSpec& layer,
     std::size_t layer_index,
-    double time_offset = 0.0);
+    double time_offset = 0.0,
+    const EvaluationVariables& vars = {});
 
 } // namespace tachyon::scene
