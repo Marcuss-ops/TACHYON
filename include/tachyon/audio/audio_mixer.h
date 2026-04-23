@@ -2,6 +2,7 @@
 
 #include "tachyon/audio/audio_decoder.h"
 #include "tachyon/audio/audio_graph.h"
+#include "tachyon/audio/audio_processor.h"
 
 #include <memory>
 #include <string>
@@ -13,8 +14,7 @@ class PresentationClock;
 }
 }
 
-namespace tachyon {
-namespace audio {
+namespace tachyon::audio {
 
 struct AudioTrackMixParams {
   double start_offset_seconds{0.0};
@@ -33,35 +33,22 @@ public:
                  const AudioTrackMixParams &params,
                  const std::string &bus_id = "master");
 
-  // Mixes stereo 48kHz audio into the output buffer for the given time range.
-  // out_stereo_pcm must have at least static_cast<size_t>(duration_seconds *
-  // 48000) * 2 capacity.
   void mix(double startTimeSeconds, double durationSeconds,
            std::vector<float> &out_stereo_pcm);
 
   void clear_tracks();
 
-  AudioGraph &master_graph() { return m_graph; }
+  AudioGraph &master_graph() { return m_processor.graph(); }
 
   void set_presentation_clock(runtime::PresentationClock *clock) {
     m_presentation_clock = clock;
   }
 
 private:
-  struct Track {
-    std::shared_ptr<AudioDecoder> decoder;
-    AudioTrackMixParams params;
-    std::string bus_id;
-  };
-
-  std::vector<Track> m_tracks;
-  AudioGraph m_graph;
+  AudioProcessor m_processor;
+  runtime::PresentationClock *m_presentation_clock{nullptr};
 
   static constexpr int kTargetSampleRate = 48000;
-  static constexpr int kTargetChannels = 2;
-
-  runtime::PresentationClock *m_presentation_clock{nullptr};
 };
 
-} // namespace audio
-} // namespace tachyon
+} // namespace tachyon::audio

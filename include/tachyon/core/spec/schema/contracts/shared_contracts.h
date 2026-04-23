@@ -118,6 +118,8 @@ struct AudioTrackSpec {
     float volume{1.0f};
     float pan{0.0f}; // -1.0 (left) to 1.0 (right)
     double start_offset_seconds{0.0};
+    float playback_speed{1.0f}; // 1.0 = normal, 0.5 = slow, 2.0 = fast
+    float pitch_shift{1.0f};    // 1.0 = normal, 0.5 = octave down, 2.0 = octave up
     
     std::vector<animation::Keyframe<float>> volume_keyframes;
     std::vector<animation::Keyframe<float>> pan_keyframes;
