@@ -4,10 +4,10 @@
 #include <set>
 #include <string>
 
-#include "tachyon/base/logging.h"
-#include "tachyon/math/vector2.h"
-#include "tachyon/math/vector3.h"
-#include "tachyon/renderer/renderer2d.h"
+// #include "tachyon/base/logging.h"
+#include "tachyon/core/math/vector2.h"
+#include "tachyon/core/math/vector3.h"
+// #include "tachyon/renderer/renderer2d.h"
 
 namespace tachyon {
 

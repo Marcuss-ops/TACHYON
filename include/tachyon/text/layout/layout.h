@@ -83,6 +83,12 @@ struct PositionedGlyph {
     bool whitespace{false};
     bool is_rtl{false};
     const Font* resolved_font{nullptr};
+
+    // Animatable properties added to support TextAnimatorPipeline
+    math::Vector2 scale{1.0f, 1.0f};
+    float rotation{0.0f};
+    float opacity{1.0f};
+    ColorSpec fill_color{255, 255, 255, 255};
 };
 
 struct TextLine {

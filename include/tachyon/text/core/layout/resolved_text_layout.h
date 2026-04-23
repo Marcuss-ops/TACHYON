@@ -38,7 +38,8 @@ struct GlyphCluster {
  */
 struct ResolvedGlyph {
     std::uint32_t codepoint;
-    std::uint32_t glyph_index;
+    std::uint32_t font_glyph_index;
+    std::uint64_t font_id;
     
     // Position relative to the layout origin (baseline start)
     ::tachyon::math::Vector2 position;
@@ -52,6 +53,9 @@ struct ResolvedGlyph {
     
     // Reference to the logical cluster
     std::size_t cluster_index;
+
+    // The index in the original source string
+    std::size_t source_index;
     
     // Styling attributes (these can be animated/overridden per glyph)
     float font_size;
@@ -70,7 +74,7 @@ struct ResolvedGlyph {
 /**
  * @brief A contiguous run of glyphs sharing the same font, size, and styling spans.
  */
-struct TextRun {
+struct ResolvedTextRun {
     std::size_t start_glyph_index;
     std::size_t length;
     const Font* font{nullptr};
@@ -82,7 +86,7 @@ struct TextRun {
 /**
  * @brief A line of text, resulting from word-wrapping or hard breaks.
  */
-struct TextLine {
+struct ResolvedTextLine {
     std::size_t start_glyph_index;
     std::size_t length;
     
@@ -111,8 +115,8 @@ struct Paragraph {
 struct ResolvedTextLayout {
     std::vector<ResolvedGlyph> glyphs;
     std::vector<GlyphCluster> clusters;
-    std::vector<TextRun> runs;
-    std::vector<TextLine> lines;
+    std::vector<ResolvedTextRun> runs;
+    std::vector<ResolvedTextLine> lines;
     std::vector<Paragraph> paragraphs;
     
     // Overall bounding box of the entire layout

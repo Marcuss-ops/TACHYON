@@ -211,7 +211,8 @@ void sync_resolved_layout(
     for (const auto& g : result.glyphs) {
         ResolvedGlyph resolved;
         resolved.codepoint = g.codepoint;
-        resolved.glyph_index = static_cast<std::uint32_t>(g.glyph_index);
+        resolved.font_glyph_index = g.font_glyph_index;
+        resolved.font_id = g.font_id;
         resolved.position = {static_cast<float>(g.x), static_cast<float>(g.y)};
         resolved.advance_x = static_cast<float>(g.advance_x);
         resolved.advance_y = 0.0f;
@@ -237,7 +238,7 @@ void sync_resolved_layout(
                 run_bounds = union_rects(run_bounds, result.ResolvedTextLayout::glyphs[i].bounds);
             }
             if (run_break) {
-                result.ResolvedTextLayout::runs.push_back(ResolvedTextRun{run_start, i - run_start, run_font, run_bounds});
+                result.ResolvedTextLayout::runs.push_back(ResolvedTextRun{run_start, i - run_start, run_font, font_size, run_bounds});
                 if (i < result.ResolvedTextLayout::glyphs.size()) {
                     run_start = i;
                     run_font = result.ResolvedTextLayout::glyphs[i].font;

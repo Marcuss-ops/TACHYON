@@ -38,7 +38,7 @@ public:
         Point2D p3 = v2.point;
 
         auto lerp = [](Point2D a, Point2D b, double t) -> Point2D {
-            return {a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t};
+            return {static_cast<float>(a.x + (b.x - a.x) * t), static_cast<float>(a.y + (b.y - a.y) * t)};
         };
 
         Point2D q0 = lerp(p0, p1, t);
@@ -100,8 +100,8 @@ public:
                     double t = (double)j / samples;
                     double it = 1.0 - t;
                     Point2D pt = {
-                        it*it*it*p0.x + 3*it*it*t*p1.x + 3*it*t*t*p2.x + t*t*t*p3.x,
-                        it*it*it*p0.y + 3*it*it*t*p1.y + 3*it*t*t*p2.y + t*t*t*p3.y
+                        static_cast<float>(it*it*it*p0.x + 3*it*it*t*p1.x + 3*it*t*t*p2.x + t*t*t*p3.x),
+                        static_cast<float>(it*it*it*p0.y + 3*it*it*t*p1.y + 3*it*t*t*p2.y + t*t*t*p3.y)
                     };
                     len += std::sqrt(std::pow(pt.x - prev.x, 2) + std::pow(pt.y - prev.y, 2));
                     prev = pt;
@@ -217,23 +217,23 @@ public:
                         pt.y -= transform.anchor_point.y;
                         
                         // Scale
-                        pt.x *= sx;
-                        pt.y *= sy;
+                        pt.x *= static_cast<float>(sx);
+                        pt.y *= static_cast<float>(sy);
                         
                         // Rotate
                         double rx = pt.x * cos_a - pt.y * sin_a;
                         double ry = pt.x * sin_a + pt.y * cos_a;
                         
                         // Translate & restore anchor
-                        return {rx + tx + transform.anchor_point.x, ry + ty + transform.anchor_point.y};
+                        return {static_cast<float>(rx + tx + transform.anchor_point.x), static_cast<float>(ry + ty + transform.anchor_point.y)};
                     };
 
                     new_v.point = apply_transform(v.point);
                     
                     // Tangents are vectors, they only scale and rotate, no translation or anchor offset
                     auto apply_vector_transform = [&](Point2D vec) -> Point2D {
-                        vec.x *= sx; vec.y *= sy;
-                        return {vec.x * cos_a - vec.y * sin_a, vec.x * sin_a + vec.y * cos_a};
+                        vec.x *= static_cast<float>(sx); vec.y *= static_cast<float>(sy);
+                        return {static_cast<float>(vec.x * cos_a - vec.y * sin_a), static_cast<float>(vec.x * sin_a + vec.y * cos_a)};
                     };
 
                     new_v.in_tangent = apply_vector_transform(v.in_tangent);
@@ -273,11 +273,11 @@ public:
 
                 Point2D normal = {-(t_in.y + t_out.y), (t_in.x + t_out.x)};
                 double len = std::sqrt(normal.x * normal.x + normal.y * normal.y);
-                if (len > 1e-6) { normal.x /= len; normal.y /= len; }
+                if (len > 1e-6) { normal.x /= static_cast<float>(len); normal.y /= static_cast<float>(len); }
 
                 PathVertex new_v = curr;
-                new_v.point.x += normal.x * amount;
-                new_v.point.y += normal.y * amount;
+                new_v.point.x += static_cast<float>(normal.x * amount);
+                new_v.point.y += static_cast<float>(normal.y * amount);
                 offset_sub.vertices.push_back(new_v);
             }
             result.subpaths.push_back(offset_sub);
@@ -295,6 +295,7 @@ public:
         auto flatten_subpath = [](const ShapeSubpath& sub, PathsD& paths) {
             PathD path;
             const double tolerance = 0.5; // Adaptive tessellation tolerance
+            (void)tolerance;
             
             for (size_t i = 0; i < sub.vertices.size(); ++i) {
                 const auto& v1 = sub.vertices[i];
@@ -347,7 +348,11 @@ public:
                 ShapeSubpath sub;
                 sub.closed = true;
                 for (const auto& pt : c_path) {
-                    sub.vertices.push_back({{pt.x, pt.y}, {0,0}, {0,0}});
+                    sub.vertices.push_back({
+                        {static_cast<float>(pt.x), static_cast<float>(pt.y)},
+                        {0.0f, 0.0f},
+                        {0.0f, 0.0f}
+                    });
                 }
                 sp.subpaths.push_back(sub);
             }
@@ -392,8 +397,8 @@ public:
                 double cos_a = std::cos(twist_rad);
                 double sin_a = std::sin(twist_rad);
                 
-                v.point.x = center.x + dx * cos_a - dy * sin_a;
-                v.point.y = center.y + dx * sin_a + dy * cos_a;
+                v.point.x = static_cast<float>(center.x + dx * cos_a - dy * sin_a);
+                v.point.y = static_cast<float>(center.y + dx * sin_a + dy * cos_a);
             }
             result.subpaths.push_back(twisted);
         }

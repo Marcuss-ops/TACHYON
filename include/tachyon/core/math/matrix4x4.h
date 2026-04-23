@@ -47,6 +47,7 @@ struct Matrix4x4 {
 
     [[nodiscard]] Vector3 transform_point(const Vector3& v) const;
     [[nodiscard]] Vector3 transform_vector(const Vector3& v) const;
+    [[nodiscard]] struct Transform3 to_transform() const;
 };
 
 [[nodiscard]] Matrix4x4 compose_trs(const Vector3& translation, const Quaternion& rotation, const Vector3& scale);

@@ -32,7 +32,7 @@ public:
         for (const auto& subpath : path.subpaths) {
             if (subpath.vertices.empty()) continue;
             
-            size_t start_idx = points_lut.size();
+            (void)points_lut.size();
             points_lut.push_back(subpath.vertices[0].point);
             if (arc_lengths.empty()) arc_lengths.push_back(0.0);
             else arc_lengths.push_back(total_length);
@@ -55,8 +55,8 @@ public:
                     double t3 = t2 * t;
                     
                     shapes::Point2D pt = {
-                        it3 * p0.x + 3 * it2 * t * p1.x + 3 * it * t2 * p2.x + t3 * p3.x,
-                        it3 * p0.y + 3 * it2 * t * p1.y + 3 * it * t2 * p2.y + t3 * p3.y
+                        static_cast<float>(it3 * p0.x + 3 * it2 * t * p1.x + 3 * it * t2 * p2.x + t3 * p3.x),
+                        static_cast<float>(it3 * p0.y + 3 * it2 * t * p1.y + 3 * it * t2 * p2.y + t3 * p3.y)
                     };
                     
                     double dist = std::sqrt(std::pow(pt.x - points_lut.back().x, 2) + std::pow(pt.y - points_lut.back().y, 2));
@@ -76,12 +76,11 @@ public:
                 shapes::Point2D p3 = v1.point;
                 for (int s = 1; s <= samples; ++s) {
                     double t = static_cast<double>(s) / samples;
-                    double it = 1.0 - t;
                     double t2 = t * t;
                     double t3 = t2 * t;
                     shapes::Point2D pt = {
-                        (1-t)*(1-t)*(1-t) * p0.x + 3*(1-t)*(1-t)*t * p1.x + 3*(1-t)*t*t * p2.x + t3 * p3.x,
-                        (1-t)*(1-t)*(1-t) * p0.y + 3*(1-t)*(1-t)*t * p1.y + 3*(1-t)*t*t * p2.y + t3 * p3.y
+                        static_cast<float>((1-t)*(1-t)*(1-t) * p0.x + 3*(1-t)*(1-t)*t * p1.x + 3*(1-t)*t*t * p2.x + t3 * p3.x),
+                        static_cast<float>((1-t)*(1-t)*(1-t) * p0.y + 3*(1-t)*(1-t)*t * p1.y + 3*(1-t)*t*t * p2.y + t3 * p3.y)
                     };
                     double dist = std::sqrt(std::pow(pt.x - points_lut.back().x, 2) + std::pow(pt.y - points_lut.back().y, 2));
                     total_length += dist;
@@ -122,8 +121,8 @@ public:
             shapes::Point2D pt1 = points_lut[idx + 1];
             
             shapes::Point2D final_pos = {
-                pt0.x + (pt1.x - pt0.x) * f,
-                pt0.y + (pt1.y - pt0.y) * f
+                static_cast<float>(pt0.x + (pt1.x - pt0.x) * f),
+                static_cast<float>(pt0.y + (pt1.y - pt0.y) * f)
             };
             
             if (align_perpendicular) {
@@ -134,8 +133,8 @@ public:
                 glyph.rotation += static_cast<float>(angle_rad * 180.0 / 3.14159265358979323846);
                 
                 double baseline_offset = glyph.position.y - layout.total_bounds.y;
-                final_pos.x -= std::sin(angle_rad) * baseline_offset;
-                final_pos.y += std::cos(angle_rad) * baseline_offset;
+                final_pos.x -= static_cast<float>(std::sin(angle_rad) * baseline_offset);
+                final_pos.y += static_cast<float>(std::cos(angle_rad) * baseline_offset);
             }
             
             glyph.position.x = static_cast<float>(final_pos.x - (glyph.bounds.width * 0.5));

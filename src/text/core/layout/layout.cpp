@@ -9,6 +9,10 @@
 namespace tachyon::text {
 
 namespace {
+constexpr float TWO_PI = 6.28318530717958647692f;
+} // namespace
+
+namespace {
 
 template <typename BlendFn>
 void fill_rect(std::uint32_t surface_width, std::uint32_t surface_height, int x, int y, int width, int height, BlendFn&& blend_fn) {
@@ -33,7 +37,12 @@ AnimatorSample sample_animator(
     float time_seconds) {
 
     AnimatorSample sample;
-    const float coverage = compute_coverage(animator.selector, glyph.glyph_index, layout.glyphs.size());
+    TextAnimatorContext ctx;
+    ctx.glyph_index = glyph.glyph_index;
+    ctx.total_glyphs = static_cast<float>(layout.glyphs.size());
+    ctx.time = time_seconds;
+
+    const float coverage = compute_coverage(animator.selector, ctx);
     if (coverage <= 0.0f) {
         return sample;
     }
@@ -82,7 +91,7 @@ TextRasterSurface rasterize_text_rgba(
         if (animation.enabled) {
             const float phase_seconds = animation.time_seconds - static_cast<float>(positioned.glyph_index) * 0.1f;
             const float wave_period = std::max(0.001f, animation.wave_period_seconds);
-            const float wave_phase = (phase_seconds / wave_period) * 6.28318530717958647692f;
+            const float wave_phase = (phase_seconds / wave_period) * TWO_PI;
 
             ox = animation.per_glyph_offset_x * static_cast<float>(positioned.glyph_index) + std::sin(wave_phase) * animation.wave_amplitude_x;
             oy = animation.per_glyph_offset_y * static_cast<float>(positioned.glyph_index) + std::cos(wave_phase) * animation.wave_amplitude_y;
@@ -179,7 +188,7 @@ TextRasterSurface rasterize_text_rgba(
         if (animation.enabled) {
             const float phase_seconds = animation.time_seconds - static_cast<float>(positioned.glyph_index) * 0.1f;
             const float wave_period = std::max(0.001f, animation.wave_period_seconds);
-            const float wave_phase = (phase_seconds / wave_period) * 6.28318530717958647692f;
+            const float wave_phase = (phase_seconds / wave_period) * TWO_PI;
             ox = animation.per_glyph_offset_x * static_cast<float>(positioned.glyph_index) + std::sin(wave_phase) * animation.wave_amplitude_x;
             oy = animation.per_glyph_offset_y * static_cast<float>(positioned.glyph_index) + std::cos(wave_phase) * animation.wave_amplitude_y;
             sc = std::max(0.05f, 1.0f + animation.per_glyph_scale_delta * static_cast<float>(positioned.glyph_index));

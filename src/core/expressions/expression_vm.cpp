@@ -77,6 +77,56 @@ double ExpressionVM::execute(const Bytecode& code, const ExpressionContext& cont
                     // Lightweight wiggle function for the VM.
                     stack.push_back(std::sin(args[0] * args[4]) * args[1]); 
                 }
+                else if (name == "pingpong") {
+                    // Ping-pong: bounce value t between 0 and length
+                    double t = args[0];
+                    double length = args[1];
+                    double normalized = std::fmod(t, 2.0 * length);
+                    if (normalized > length) normalized = 2.0 * length - normalized;
+                    stack.push_back(normalized);
+                }
+                else if (name == "timeStretch") {
+                    // Time stretch: scale time t by factor
+                    double t = args[0];
+                    double factor = args[1];
+                    stack.push_back(t * factor);
+                }
+                else if (name == "stagger") {
+                    // Stagger: delay based on layer index
+                    // stagger(base_time) = base_time * layer_index
+                    double base_time = args[0];
+                    // Get layer_index from context variables
+                    auto it = context.variables.find("index");
+                    double index = (it != context.variables.end()) ? it->second : 0.0;
+                    stack.push_back(base_time * index);
+                }
+                else if (name == "lerp") {
+                    // Linear interpolation
+                    double a = args[0];
+                    double b = args[1];
+                    double t = args[2];
+                    stack.push_back(a + (b - a) * t);
+                }
+                else if (name == "interpolate") {
+                    // Same as lerp
+                    double a = args[0];
+                    double b = args[1];
+                    double t = args[2];
+                    stack.push_back(a + (b - a) * t);
+                }
+                else if (name == "spring") {
+                    // Spring: simplified spring physics
+                    // spring(t, from, to, freq, damping)
+                    double t = args[0];
+                    double from = args[1];
+                    double to = args[2];
+                    double freq = args[3];
+                    double damping = args[4];
+                    // Simplified: just return a value based on time
+                    double omega = 2.0 * 3.14159 * freq;
+                    double decay = std::exp(-damping * t);
+                    stack.push_back(from + (to - from) * (1.0 - decay * std::cos(omega * t)));
+                }
                 else {
                     stack.push_back(0.0);
                 }

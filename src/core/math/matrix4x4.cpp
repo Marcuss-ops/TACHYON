@@ -1,5 +1,6 @@
 #include "tachyon/core/math/matrix4x4.h"
 #include "tachyon/core/math/quaternion.h"
+#include "tachyon/core/math/transform3.h"
 
 #include <cmath>
 #include <limits>
@@ -223,6 +224,54 @@ Vector3 Matrix4x4::transform_vector(const Vector3& v) const {
         data[1] * v.x + data[5] * v.y + data[9] * v.z,
         data[2] * v.x + data[6] * v.y + data[10] * v.z
     };
+}
+
+Transform3 Matrix4x4::to_transform() const {
+    Transform3 trs;
+    trs.position = {data[12], data[13], data[14]};
+
+    // Extract scale
+    trs.scale.x = Vector3(data[0], data[1], data[2]).length();
+    trs.scale.y = Vector3(data[4], data[5], data[6]).length();
+    trs.scale.z = Vector3(data[8], data[9], data[10]).length();
+
+    // Remove scale to get rotation matrix
+    Matrix4x4 rot = *this;
+    if (std::abs(trs.scale.x) > kEpsilon) { rot.data[0] /= trs.scale.x; rot.data[1] /= trs.scale.x; rot.data[2] /= trs.scale.x; }
+    if (std::abs(trs.scale.y) > kEpsilon) { rot.data[4] /= trs.scale.y; rot.data[5] /= trs.scale.y; rot.data[6] /= trs.scale.y; }
+    if (std::abs(trs.scale.z) > kEpsilon) { rot.data[8] /= trs.scale.z; rot.data[9] /= trs.scale.z; rot.data[10] /= trs.scale.z; }
+
+    // Convert rotation matrix to quaternion
+    // Simplified conversion, similar to Quaternion::look_at logic
+    float tr = rot.data[0] + rot.data[5] + rot.data[10];
+    if (tr > 0.0f) {
+        float s = std::sqrt(tr + 1.0f) * 2.0f;
+        trs.rotation.w = 0.25f * s;
+        trs.rotation.x = (rot.data[6] - rot.data[9]) / s;
+        trs.rotation.y = (rot.data[8] - rot.data[2]) / s;
+        trs.rotation.z = (rot.data[1] - rot.data[4]) / s;
+    } else if ((rot.data[0] > rot.data[5]) && (rot.data[0] > rot.data[10])) {
+        float s = std::sqrt(1.0f + rot.data[0] - rot.data[5] - rot.data[10]) * 2.0f;
+        trs.rotation.w = (rot.data[6] - rot.data[9]) / s;
+        trs.rotation.x = 0.25f * s;
+        trs.rotation.y = (rot.data[1] + rot.data[4]) / s;
+        trs.rotation.z = (rot.data[8] + rot.data[2]) / s;
+    } else if (rot.data[5] > rot.data[10]) {
+        float s = std::sqrt(1.0f + rot.data[5] - rot.data[0] - rot.data[10]) * 2.0f;
+        trs.rotation.w = (rot.data[8] - rot.data[2]) / s;
+        trs.rotation.x = (rot.data[1] + rot.data[4]) / s;
+        trs.rotation.y = 0.25f * s;
+        trs.rotation.z = (rot.data[6] + rot.data[9]) / s;
+    } else {
+        float s = std::sqrt(1.0f + rot.data[10] - rot.data[0] - rot.data[5]) * 2.0f;
+        trs.rotation.w = (rot.data[1] - rot.data[4]) / s;
+        trs.rotation.x = (rot.data[8] + rot.data[2]) / s;
+        trs.rotation.y = (rot.data[6] + rot.data[9]) / s;
+        trs.rotation.z = 0.25f * s;
+    }
+    trs.rotation = trs.rotation.normalized();
+
+    return trs;
 }
 
 Matrix4x4 compose_trs(const Vector3& translation, const Quaternion& rotation, const Vector3& scale) {

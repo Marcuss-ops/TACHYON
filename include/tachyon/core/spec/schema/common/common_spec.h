@@ -3,6 +3,7 @@
 #include "tachyon/core/math/vector3.h"
 #include <string>
 #include <cstdint>
+#include <map>
 
 namespace tachyon {
 
@@ -42,6 +43,14 @@ enum class AudioBandType {
     High,
     Presence,
     Rms
+};
+
+struct EffectSpec {
+    bool enabled{true};
+    std::string type;
+    std::map<std::string, double> scalars;
+    std::map<std::string, ColorSpec> colors;
+    std::map<std::string, std::string> strings;
 };
 
 } // namespace tachyon

@@ -1,45 +1,45 @@
 #pragma once
 
+#include "tachyon/core/math/vector2.h"
+
 #include <vector>
 
 namespace tachyon::shapes {
 
-struct Point2D {
-    double x{0.0};
-    double y{0.0};
+using Point2D = math::Vector2;
 
-    Point2D operator+(const Point2D& other) const { return {x + other.x, y + other.y}; }
-    Point2D operator-(const Point2D& other) const { return {x - other.x, y - other.y}; }
-    Point2D operator*(double scalar) const { return {x * scalar, y * scalar}; }
-};
-
-/**
- * @brief A vertex on a bezier path, storing its position and tangents.
- */
 struct PathVertex {
     Point2D point;
-    Point2D in_tangent;  // Relative to point
-    Point2D out_tangent; // Relative to point
+    Point2D in_tangent{0.0f, 0.0f};
+    Point2D out_tangent{0.0f, 0.0f};
+    Point2D position;
+    Point2D tangent_in;
+    Point2D tangent_out;
 };
 
-/**
- * @brief A continuous sequence of cubic bezier segments.
- */
 struct ShapeSubpath {
     std::vector<PathVertex> vertices;
     bool closed{false};
-
-    [[nodiscard]] bool empty() const { return vertices.empty(); }
-    [[nodiscard]] std::size_t size() const { return vertices.size(); }
 };
 
-/**
- * @brief A full shape path, consisting of multiple subpaths (e.g. for holes).
- */
-struct ShapePath {
+struct ShapePathSpec {
+    std::vector<PathVertex> points;
+    bool closed{false};
     std::vector<ShapeSubpath> subpaths;
 
-    [[nodiscard]] bool empty() const { return subpaths.empty(); }
+    [[nodiscard]] bool empty() const noexcept {
+        return points.empty() && subpaths.empty();
+    }
 };
 
+using ShapePath = ShapePathSpec;
+
 } // namespace tachyon::shapes
+
+namespace tachyon {
+using Point2D = shapes::Point2D;
+using PathVertex = shapes::PathVertex;
+using ShapeSubpath = shapes::ShapeSubpath;
+using ShapePathSpec = shapes::ShapePathSpec;
+using ShapePath = shapes::ShapePath;
+} // namespace tachyon
