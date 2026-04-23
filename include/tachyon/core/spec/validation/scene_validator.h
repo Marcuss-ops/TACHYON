@@ -37,7 +37,7 @@ public:
 private:
     void validate_composition(const ::tachyon::CompositionSpec& comp, const ::tachyon::SceneSpec& scene, ValidationResult& out) const;
     void validate_layer(const ::tachyon::LayerSpec& layer, const ::tachyon::CompositionSpec& comp, const ::tachyon::SceneSpec& scene, const std::string& path, ValidationResult& out) const;
-    void validate_property(const ::tachyon::PropertySpec& prop, const std::string& path, ValidationResult& out) const;
+    // Property validation hook removed: PropertySpec type no longer exists
     
     // Checks for circular precomp references
     void check_cycles(const ::tachyon::SceneSpec& scene, ValidationResult& out) const;

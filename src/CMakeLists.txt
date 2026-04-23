@@ -116,6 +116,7 @@ add_library(TachyonCore
     audio/audio_processor.cpp
     audio/audio_encoder.cpp
     audio/audio_export.cpp
+    tracker/optical_flow.cpp
     media/image_manager.cpp
     media/asset_resolution.cpp
     media/media_manager.cpp

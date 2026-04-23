@@ -271,3 +271,40 @@ void parse_layer(const json& object, LayerSpec& out, const std::string& path, Di
 }
 
 } // namespace tachyon
+
+void parse_mask_paths(const json& object, LayerSpec& layer, const std::string& path, DiagnosticBag& diagnostics) {
+    (void)path; (void)diagnostics;
+    if (!object.contains("mask_paths") || !object.at("mask_paths").is_array()) return;
+    const auto& mask_paths = object.at("mask_paths");
+    for (std::size_t i = 0; i < mask_paths.size(); ++i) {
+        if (!mask_paths[i].is_object()) continue;
+        const auto& mp = mask_paths[i];
+        renderer2d::MaskPath mask_path;
+        if (mp.contains("vertices") && mp.at("vertices").is_array()) {
+            const auto& vertices = mp.at("vertices");
+            for (std::size_t v = 0; v < vertices.size(); ++v) {
+                if (!vertices[v].is_object()) continue;
+                const auto& vert = vertices[v];
+                renderer2d::MaskVertex vertex;
+                if (vert.contains("position") && vert.at("position").is_array() && vert.at("position").size() >= 2) {
+                    vertex.position.x = vert.at("position")[0].get<float>();
+                    vertex.position.y = vert.at("position")[1].get<float>();
+                }
+                if (vert.contains("in_tangent") && vert.at("in_tangent").is_array() && vert.at("in_tangent").size() >= 2) {
+                    vertex.in_tangent.x = vert.at("in_tangent")[0].get<float>();
+                    vertex.in_tangent.y = vert.at("in_tangent")[1].get<float>();
+                }
+                if (vert.contains("out_tangent") && vert.at("out_tangent").is_array() && vert.at("out_tangent").size() >= 2) {
+                    vertex.out_tangent.x = vert.at("out_tangent")[0].get<float>();
+                    vertex.out_tangent.y = vert.at("out_tangent")[1].get<float>();
+                }
+                read_number(vert, "feather_inner", vertex.feather_inner);
+                read_number(vert, "feather_outer", vertex.feather_outer);
+                mask_path.vertices.push_back(std::move(vertex));
+            }
+        }
+        if (mp.contains("is_closed") && mp.at("is_closed").is_boolean()) mask_path.is_closed = mp.at("is_closed").get<bool>();
+        if (mp.contains("is_inverted") && mp.at("is_inverted").is_boolean()) mask_path.is_inverted = mp.at("is_inverted").get<bool>();
+        layer.mask_paths.push_back(std::move(mask_path));
+    }
+}
