@@ -10,7 +10,7 @@
   },
   "output": {
     "destination": {
-      "path": "output/frame_%05d.png",
+      "path": "output/frame.png",
       "overwrite": true
     },
     "profile": {

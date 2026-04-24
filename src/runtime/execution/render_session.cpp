@@ -74,6 +74,7 @@ void render_frames_parallel(
             local_context.ray_tracer = context.ray_tracer;
             local_context.policy = context.policy;
             local_context.surface_pool = context.surface_pool;
+            local_context.renderer2d.font_registry = context.renderer2d.font_registry;
             
             for (;;) {
                 const std::size_t index = next_index.fetch_add(1);

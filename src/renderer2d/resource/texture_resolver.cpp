@@ -1,27 +1,34 @@
 #include "tachyon/renderer2d/resource/texture_resolver.h"
 
-#include <filesystem>
+#include <iostream>
 #include <memory>
-#include <mutex>
 #include <vector>
 
 namespace tachyon::renderer2d {
 
 const ::tachyon::text::FontRegistry* get_default_font_registry() {
     static std::once_flag once;
-    static std::unique_ptr<tachyon::text::FontRegistry> default_registry;
-
+    static ::tachyon::text::FontRegistry* default_registry = nullptr;
+    
     std::call_once(once, []() {
-        default_registry = std::make_unique<tachyon::text::FontRegistry>();
-
+        default_registry = new ::tachyon::text::FontRegistry();
+        
         const std::vector<std::filesystem::path> candidates = {
+            // Windows paths
             std::filesystem::path(R"(C:\Windows\Fonts\arial.ttf)"),
             std::filesystem::path(R"(C:\Windows\Fonts\Arial.ttf)"),
             std::filesystem::path(R"(C:\Windows\Fonts\arialuni.ttf)"),
             std::filesystem::path(R"(C:\Windows\Fonts\LiberationSans-Regular.ttf)"),
-            std::filesystem::path(R"(C:\Windows\Fonts\DejaVuSans.ttf)")
+            std::filesystem::path(R"(C:\Windows\Fonts\DejaVuSans.ttf)"),
+            // Linux paths
+            std::filesystem::path("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"),
+            std::filesystem::path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+            std::filesystem::path("/usr/share/fonts/truetype/freefont/FreeSans.ttf"),
+            std::filesystem::path("/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf"),
+            std::filesystem::path("/usr/share/fonts/TTF/DejaVuSans.ttf"),
+            std::filesystem::path("/usr/share/fonts/TTF/LiberationSans-Regular.ttf")
         };
-
+        
         for (const auto& candidate : candidates) {
             if (std::filesystem::exists(candidate)) {
                 if (default_registry->load_ttf("Default", candidate, 48U)) {
@@ -31,8 +38,8 @@ const ::tachyon::text::FontRegistry* get_default_font_registry() {
             }
         }
     });
-
-    return default_registry ? default_registry.get() : nullptr;
+    
+    return default_registry;
 }
 
 media::AlphaMode TextureResolver::parse_alpha_mode(const std::optional<std::string>& mode) {
