@@ -54,6 +54,9 @@ private:
     void validate_duplicate_ids(const ::tachyon::CompositionSpec& comp, ValidationResult& out) const;
     void validate_camera_cuts(const ::tachyon::CompositionSpec& comp, ValidationResult& out) const;
     void validate_track_bindings(const ::tachyon::LayerSpec& layer, const std::string& path, ValidationResult& out) const;
+    void validate_keyframes(const ::tachyon::LayerSpec& layer, const std::string& path, ValidationResult& out) const;
+    void validate_font_reference(const ::tachyon::LayerSpec& layer, const ::tachyon::SceneSpec& scene, const std::string& path, ValidationResult& out) const;
+    void validate_file_reference(const ::tachyon::LayerSpec& layer, const std::string& path, ValidationResult& out) const;
     // Property validation hook removed: PropertySpec type no longer exists
     
     // Checks for circular precomp references
