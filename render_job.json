@@ -1,0 +1,30 @@
+{
+  "job_id": "job_test_text",
+  "scene_ref": "scene.json",
+  "composition_target": "main",
+  "seed_policy_mode": "deterministic",
+  "compatibility_mode": "locked_v1",
+  "frame_range": {
+    "start": 0,
+    "end": 29
+  },
+  "output": {
+    "destination": {
+      "path": "output/frame_%05d.png",
+      "overwrite": true
+    },
+    "profile": {
+      "name": "test",
+      "class": "delivery",
+      "container": "png_sequence",
+      "alpha_mode": "preserved",
+      "video": {
+        "codec": "png",
+        "pixel_format": "rgba"
+      },
+      "audio": {
+        "mode": "none"
+      }
+    }
+  }
+}
