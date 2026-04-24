@@ -11,6 +11,7 @@
 #include <OpenImageDenoise/oidn.hpp>
 #endif
 #include <memory>
+#include <optional>
 #include <vector>
 #include <unordered_map>
 #include <random>
@@ -67,6 +68,7 @@ private:
         unsigned int geom_id;
         std::uint32_t object_id;
         std::uint32_t material_id;
+        std::string mesh_asset_id;
         EvaluatedMaterial material;
         ::tachyon::math::Matrix4x4 world_transform;
         std::optional<::tachyon::math::Matrix4x4> previous_world_transform;
@@ -74,8 +76,22 @@ private:
     
     std::vector<GeoInstance> instances_;
     
+    struct MeshVertex {
+        ::tachyon::math::Vector3 position;
+        ::tachyon::math::Vector3 normal;
+        ::tachyon::math::Vector2 uv;
+    };
+
     struct MeshCacheEntry {
-        RTCScene scene;
+        RTCScene scene{nullptr};
+        const media::MeshAsset* asset{nullptr};
+        struct SubMeshCache {
+            std::vector<MeshVertex> vertices;
+            std::vector<unsigned int> indices;
+            media::MaterialData material;
+        };
+        std::vector<SubMeshCache> submeshes;
+        std::unordered_map<unsigned int, std::size_t> geom_id_to_submesh;
     };
     std::unordered_map<std::string, MeshCacheEntry> mesh_cache_;
 

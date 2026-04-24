@@ -28,14 +28,18 @@ const HDRTextureData* MediaManager::get_hdr_image(
 }
 
 const renderer2d::SurfaceRGBA* MediaManager::get_video_frame(const std::filesystem::path& path, double time, DiagnosticBag* diagnostics) {
-    (void)diagnostics;
     // 1. Resolve path based on purpose (Playback is default for these calls)
     std::filesystem::path resolved = resolve_media_path(path, ResolutionPurpose::Playback);
 
-    // 2. Check cache first (Fast path - no I/O)
-    std::string key = resolved.string() + "@" + std::to_string(time);
-    const auto* cached = m_image_manager.get_image(key, AlphaMode::Straight, nullptr);
-    if (cached) return cached;
+    const std::string key = resolved.string() + "@" + std::to_string(time);
+
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        auto it = m_video_frame_cache.find(key);
+        if (it != m_video_frame_cache.end()) {
+            return it->second.get();
+        }
+    }
 
     // 3. Handle offline/loading states
     if (m_fallback_policy == MediaFallbackPolicy::ReturnOffline && resolved.empty()) {
@@ -47,7 +51,31 @@ const renderer2d::SurfaceRGBA* MediaManager::get_video_frame(const std::filesyst
         return m_offline_placeholder.get();
     }
 
-    return nullptr;
+    VideoDecoder* decoder = acquire_video_decoder(resolved);
+    if (!decoder) {
+        if (diagnostics) {
+            diagnostics->add_error("media.video.decode_failed", "failed to acquire video decoder", resolved.string());
+        }
+        return nullptr;
+    }
+
+    std::optional<renderer2d::SurfaceRGBA> decoded = decoder->get_frame_at_time(time);
+    release_video_decoder(resolved, decoder);
+    if (!decoded.has_value()) {
+        if (diagnostics) {
+            diagnostics->add_error("media.video.decode_failed", "failed to decode video frame", resolved.string());
+        }
+        return nullptr;
+    }
+
+    auto frame = std::make_unique<renderer2d::SurfaceRGBA>(*decoded);
+    const renderer2d::SurfaceRGBA* ptr = frame.get();
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_video_frame_cache[key] = std::move(frame);
+    }
+    m_image_manager.store_image(key, std::make_unique<renderer2d::SurfaceRGBA>(*ptr));
+    return ptr;
 }
 
 void MediaManager::register_asset(std::shared_ptr<MediaAsset> asset) {
@@ -168,13 +196,21 @@ const MeshAsset* MediaManager::get_mesh(const std::filesystem::path& path, Diagn
 void MediaManager::store_video_frame(const std::string& path, double time, std::unique_ptr<renderer2d::SurfaceRGBA> frame) {
     // We use a specific key format for video frames: "path@time"
     std::string key = path + "@" + std::to_string(time);
-    m_image_manager.store_image(key, std::move(frame));
+    const renderer2d::SurfaceRGBA* ptr = frame.get();
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_video_frame_cache[key] = std::move(frame);
+    }
+    if (ptr) {
+        m_image_manager.store_image(key, std::make_unique<renderer2d::SurfaceRGBA>(*ptr));
+    }
 }
 
 void MediaManager::clear_cache() {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_image_manager.clear_cache();
     m_video_pools.clear();
+    m_video_frame_cache.clear();
     m_mesh_cache.clear();
 }
 

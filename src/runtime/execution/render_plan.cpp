@@ -53,7 +53,20 @@ void hash_animated_scalar(CacheKeyBuilder& builder, const AnimatedScalarSpec& sp
     if (spec.value.has_value()) {
         builder.add_f64(*spec.value);
     }
-    hash_keyframes(builder, spec.keyframes);
+    builder.add_u64(static_cast<std::uint64_t>(spec.keyframes.size()));
+    for (const auto& kf : spec.keyframes) {
+        builder.add_f64(kf.time);
+        builder.add_f64(kf.value);
+        builder.add_u64(static_cast<std::uint64_t>(kf.easing));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cx1 * 1000000.0));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cy1 * 1000000.0));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cx2 * 1000000.0));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cy2 * 1000000.0));
+        builder.add_f64(kf.speed_in);
+        builder.add_f64(kf.influence_in);
+        builder.add_f64(kf.speed_out);
+        builder.add_f64(kf.influence_out);
+    }
     builder.add_bool(spec.audio_band.has_value());
     if (spec.audio_band.has_value()) {
         builder.add_u32(static_cast<std::uint32_t>(*spec.audio_band));

@@ -110,6 +110,7 @@ private:
 
     ImageManager m_image_manager;
     std::map<std::string, std::shared_ptr<VideoPool>> m_video_pools;
+    std::map<std::string, std::unique_ptr<renderer2d::SurfaceRGBA>> m_video_frame_cache;
     std::map<std::string, std::unique_ptr<MeshAsset>> m_mesh_cache;
     std::unordered_map<std::string, std::shared_ptr<MediaAsset>> m_assets;
     
