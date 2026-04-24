@@ -52,9 +52,6 @@ public:
     // Fast resampling for scrub preview (reversible, lower quality)
     void resample_for_scrub(const std::vector<float>& input, float speed, std::vector<float>& output);
 
-    // Pitch-correct time stretch (WSOLA)
-    void time_stretch(float speed, float pitch_ratio, const std::vector<float>& input, std::vector<float>& output);
-
     // Reverse playback (explicit case)
     void reverse_audio(std::vector<float>& audio);
 
@@ -65,11 +62,8 @@ private:
     // Internal resampling and mixing logic
     void mix_track(const TrackInstance& track, double startTimeSeconds, double durationSeconds, int sampleRate, std::vector<float>& mix_buffer);
     
-    // WSOLA Time-stretch implementation
-    void apply_wsola(const std::vector<float>& input, float speed, std::vector<float>& output);
-    
-    // Fallback resampling when quality is low
-    void fallback_resample(const std::vector<float>& input, float ratio, std::vector<float>& output);
+    // Pitch-correct WSOLA time-stretch implementation
+    void apply_time_stretch(const std::vector<float>& input, float speed, std::vector<float>& output);
 
     std::vector<TrackInstance> m_tracks;
     AudioGraph m_graph;

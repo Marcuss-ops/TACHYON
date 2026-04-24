@@ -55,6 +55,7 @@ add_executable(TachyonTests
     unit/text/glyph_cache_tests.cpp
     unit/text/text_tests.cpp
     unit/text/editor_tests.cpp
+    unit/audio/test_audio_pitch_correct.cpp
     unit/runtime/core/render_contract_tests.cpp
     integration/render_session_tests.cpp
     integration/render_batch_tests.cpp

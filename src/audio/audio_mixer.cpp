@@ -21,6 +21,8 @@ void AudioMixer::add_track(std::shared_ptr<AudioDecoder> decoder,
     track_spec.volume = params.volume;
     track_spec.pan = params.pan;
     track_spec.playback_speed = params.playback_speed;
+    track_spec.pitch_shift = params.pitch_shift;
+    track_spec.pitch_correct = params.pitch_correct;
     
     m_processor.add_track(std::move(decoder), track_spec, bus_id);
 }

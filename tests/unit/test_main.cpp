@@ -155,6 +155,7 @@ bool run_effect_host_tests();
 bool run_precomp_mask_tests();
 bool run_golden_visual_tests();
 bool run_motion_blur_tests();
+bool run_audio_pitch_correct_tests();
 namespace tachyon { bool run_tiling_tests(); }
 
 
@@ -205,6 +206,7 @@ int main(int argc, char** argv) {
         {"tiling", tachyon::run_tiling_tests},
         {"scene_spec", run_scene_spec_tests},
         {"motion_blur", run_motion_blur_tests},
+        {"audio_pitch_correct", run_audio_pitch_correct_tests},
 
         {"render_job", run_render_job_tests},
         {"expression_vm", run_expression_vm_tests},

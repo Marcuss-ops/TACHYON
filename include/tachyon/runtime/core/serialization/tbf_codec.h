@@ -15,6 +15,7 @@ namespace tachyon::runtime {
  * - Version 1: Initial format
  * - Version 2: Added mask_feather to CompiledLayer
  * - Version 3: Added audio tracks to CompiledComposition
+ * - Version 4: Added playback_speed, pitch_shift, pitch_correct to AudioTrackSpec
  */
 class TBFCodec {
 public:
@@ -43,7 +44,7 @@ public:
     /**
      * @brief Returns the current binary format version.
      */
-    static constexpr std::uint16_t current_version() { return 3; }
+    static constexpr std::uint16_t current_version() { return 4; }
 
     /**
      * @brief Migrates an older format to the current version.

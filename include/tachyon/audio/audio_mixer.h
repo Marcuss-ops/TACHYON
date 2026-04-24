@@ -21,6 +21,8 @@ struct AudioTrackMixParams {
   float volume{1.0f};
   float pan{0.0f};            // -1.0 (L) to 1.0 (R)
   float playback_speed{1.0f}; // 1.0 = normal, 0.5 = slow, 2.0 = fast
+  float pitch_shift{1.0f};    // 1.0 = normal, 0.5 = octave down, 2.0 = octave up
+  bool pitch_correct{false};  // true = preserve pitch when speed changes (WSOLA)
   bool enabled{true};
 };
 
