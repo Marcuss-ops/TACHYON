@@ -4,9 +4,11 @@
 #include "tachyon/core/scene/evaluator/templates.h"
 #include "tachyon/core/scene/math/evaluator_math.h"
 #include "tachyon/core/scene/evaluator/hashing.h"
+#include "tachyon/core/scene/evaluator/camera2d_evaluator.h"
 
 #include <algorithm>
 #include <cmath>
+#include <optional>
 
 namespace tachyon::scene {
 
@@ -147,6 +149,24 @@ EvaluatedLayerState make_layer_state(
             {prev_pos2.x, prev_pos2.y, 0.0f},
             math::Quaternion::from_euler({0.0f, 0.0f, static_cast<float>(prev_rot_deg)}),
             {prev_scale2.x, prev_scale2.y, 1.0f});
+
+        // Apply 2D camera transform with parallax
+        if (layer.has_parallax && !context.composition.cameras_2d.empty()) {
+            std::string camera_id = layer.camera2d_id.value_or(context.composition.active_camera2d_id.value_or(""));
+            if (!camera_id.empty()) {
+                auto cam_it = std::find_if(context.composition.cameras_2d.begin(), context.composition.cameras_2d.end(),
+                    [&](const Camera2DSpec& c) { return c.id == camera_id; });
+                if (cam_it != context.composition.cameras_2d.end()) {
+                    EvaluatedCamera2D camera = evaluate_camera2d(*cam_it, local_t);
+                    math::Vector2 transformed_pos = apply_camera2d_transform(camera, layer, layer.parallax_factor, pos2);
+                    evaluated.world_matrix = math::compose_trs(
+                        {transformed_pos.x, transformed_pos.y, 0.0f},
+                        math::Quaternion::from_euler({0.0f, 0.0f, static_cast<float>(rot_deg)}),
+                        {scale2.x, scale2.y, 1.0f});
+                    evaluated.local_transform.position = transformed_pos;
+                }
+            }
+        }
     }
 
     // Camera specific
