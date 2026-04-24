@@ -3,6 +3,7 @@
 #include <unordered_set>
 #include <queue>
 #include <algorithm>
+#include <fstream>
 
 namespace tachyon::core {
 
@@ -52,6 +53,18 @@ void SceneValidator::validate_composition(const ::tachyon::CompositionSpec& comp
     
     if (comp.width <= 0 || comp.height <= 0) {
         out.issues.push_back({ValidationIssue::Severity::Error, "composition." + comp.id + ".dimensions", "Invalid dimensions."});
+        out.error_count++;
+    }
+
+    // Validate FPS
+    if (comp.fps <= 0.0f) {
+        out.issues.push_back({ValidationIssue::Severity::Error, "composition." + comp.id + ".fps", "FPS must be greater than 0."});
+        out.error_count++;
+    }
+
+    // Validate duration
+    if (comp.duration_seconds <= 0.0f) {
+        out.issues.push_back({ValidationIssue::Severity::Error, "composition." + comp.id + ".duration_seconds", "Duration must be greater than 0."});
         out.error_count++;
     }
 
@@ -198,6 +211,27 @@ void SceneValidator::validate_layer(const ::tachyon::LayerSpec& layer, const ::t
         out.error_count++;
     }
 
+    // Validate layer duration
+    if (layer.duration_seconds <= 0.0f) {
+        out.issues.push_back({ValidationIssue::Severity::Error, path + ".duration_seconds", "Layer duration must be greater than 0."});
+        out.error_count++;
+    }
+
+    // Validate layer start time
+    if (layer.start_offset_seconds < 0.0f) {
+        out.issues.push_back({ValidationIssue::Severity::Error, path + ".start_offset_seconds", "Layer start time cannot be negative."});
+        out.error_count++;
+    }
+
+    // Check if layer extends beyond composition duration
+    float layer_end = layer.start_offset_seconds + layer.duration_seconds;
+    if (layer_end > comp.duration_seconds + 0.001f) { // small epsilon for floating point comparison
+        out.issues.push_back({ValidationIssue::Severity::Warning, path + ".duration_seconds", 
+            "Layer extends beyond composition duration (layer ends at " + std::to_string(layer_end) + 
+            "s, composition is " + std::to_string(comp.duration_seconds) + "s)."});
+        out.warning_count++;
+    }
+
     if (layer.opacity < 0.0 || layer.opacity > 1.0) {
         out.issues.push_back({ValidationIssue::Severity::Error, path + ".opacity", "Layer opacity must be between 0 and 1."});
         out.error_count++;
@@ -208,11 +242,24 @@ void SceneValidator::validate_layer(const ::tachyon::LayerSpec& layer, const ::t
         out.error_count++;
     }
 
+    // Validate keyframes are within layer time range
+    validate_keyframes(layer, path, out);
+
     // Validate track bindings
     validate_track_bindings(layer, path, out);
     
     // Validate safe area for text layers
     validate_safe_area(layer, comp, path, out);
+
+    // Validate font references for text layers
+    if (layer.type == "text") {
+        validate_font_reference(layer, scene, path, out);
+    }
+
+    // Validate file references for image/video layers
+    if (layer.type == "image" || layer.type == "video") {
+        validate_file_reference(layer, path, out);
+    }
 
     // Track matte validation: if a matte layer is specified, it must exist and must not be self
     if (layer.track_matte_layer_id.has_value() && !layer.track_matte_layer_id->empty()) {
@@ -404,6 +451,88 @@ void SceneValidator::check_cycles(const ::tachyon::SceneSpec& scene, ValidationR
     if (processed2 != precomp_in_degree.size()) {
         out.issues.push_back({ValidationIssue::Severity::Error, "scene.precomp", "Cycle detected in precomp references."});
         out.error_count++;
+    }
+}
+
+void SceneValidator::validate_keyframes(const ::tachyon::LayerSpec& layer, const std::string& path, ValidationResult& out) const {
+    // Validate that keyframe times are within the layer's time range
+    float layer_start = layer.start_offset_seconds;
+    float layer_end = layer_start + layer.duration_seconds;
+    
+    // Check transform keyframes
+    for (const auto& kf : layer.transform.position.keyframes) {
+        if (kf.time < layer_start - 0.001f || kf.time > layer_end + 0.001f) {
+            out.issues.push_back({ValidationIssue::Severity::Warning, 
+                path + ".transform.position.keyframes",
+                "Keyframe at time " + std::to_string(kf.time) + "s is outside layer time range [" + 
+                std::to_string(layer_start) + "s, " + std::to_string(layer_end) + "s]."});
+            out.warning_count++;
+        }
+    }
+    
+    for (const auto& kf : layer.transform.scale.keyframes) {
+        if (kf.time < layer_start - 0.001f || kf.time > layer_end + 0.001f) {
+            out.issues.push_back({ValidationIssue::Severity::Warning, 
+                path + ".transform.scale.keyframes",
+                "Keyframe at time " + std::to_string(kf.time) + "s is outside layer time range."});
+            out.warning_count++;
+        }
+    }
+    
+    for (const auto& kf : layer.transform.rotation.keyframes) {
+        if (kf.time < layer_start - 0.001f || kf.time > layer_end + 0.001f) {
+            out.issues.push_back({ValidationIssue::Severity::Warning, 
+                path + ".transform.rotation.keyframes",
+                "Keyframe at time " + std::to_string(kf.time) + "s is outside layer time range."});
+            out.warning_count++;
+        }
+    }
+    
+    for (const auto& kf : layer.opacity_keyframes) {
+        if (kf.time < layer_start - 0.001f || kf.time > layer_end + 0.001f) {
+            out.issues.push_back({ValidationIssue::Severity::Warning, 
+                path + ".opacity_keyframes",
+                "Keyframe at time " + std::to_string(kf.time) + "s is outside layer time range."});
+            out.warning_count++;
+        }
+    }
+}
+
+void SceneValidator::validate_font_reference(const ::tachyon::LayerSpec& layer, const ::tachyon::SceneSpec& scene, const std::string& path, ValidationResult& out) const {
+    if (!layer.text_options.font_id.empty()) {
+        bool font_found = false;
+        for (const auto& font : scene.font_manifest.entries) {
+            if (font.id == layer.text_options.font_id) {
+                font_found = true;
+                break;
+            }
+        }
+        if (!font_found) {
+            out.issues.push_back({ValidationIssue::Severity::Error, 
+                path + ".text_options.font_id",
+                "Font ID '" + layer.text_options.font_id + "' not found in font manifest."});
+            out.error_count++;
+        }
+    }
+}
+
+void SceneValidator::validate_file_reference(const ::tachyon::LayerSpec& layer, const std::string& path, ValidationResult& out) const {
+    std::string file_path;
+    if (layer.type == "image") {
+        file_path = layer.image_source.path;
+    } else if (layer.type == "video") {
+        file_path = layer.video_source.path;
+    }
+    
+    if (!file_path.empty()) {
+        // Check if file exists (simple check, doesn't validate absolute vs relative paths perfectly)
+        std::ifstream file(file_path);
+        if (!file.good()) {
+            out.issues.push_back({ValidationIssue::Severity::Error, 
+                path + ".source.path",
+                "File not found: " + file_path});
+            out.error_count++;
+        }
     }
 }
 
