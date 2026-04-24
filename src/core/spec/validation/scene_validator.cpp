@@ -2,11 +2,15 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <queue>
+#include <algorithm>
 
 namespace tachyon::core {
 
 ValidationResult SceneValidator::validate(const ::tachyon::SceneSpec& scene) const {
     ValidationResult result;
+
+    // Validate schema version first
+    validate_schema_version(scene, result);
 
     if (scene.compositions.empty()) {
         result.issues.push_back({ValidationIssue::Severity::Error, "scene", "Scene has no compositions."});
@@ -22,6 +26,24 @@ ValidationResult SceneValidator::validate(const ::tachyon::SceneSpec& scene) con
     return result;
 }
 
+void SceneValidator::validate_schema_version(const ::tachyon::SceneSpec& scene, ValidationResult& out) const {
+    // Check if schema version is present and valid
+    if (scene.schema_version.major == 0) {
+        out.issues.push_back({ValidationIssue::Severity::Warning, "scene.schema_version", 
+            "Schema version is 0.0.0. This may indicate an older file format."});
+        out.warning_count++;
+    }
+    
+    // Future: Add version compatibility checks here
+    // For now, we just warn about very old versions
+    static const SchemaVersion min_supported{0, 9, 0};
+    if (scene.schema_version < min_supported) {
+        out.issues.push_back({ValidationIssue::Severity::Error, "scene.schema_version",
+            "Schema version " + scene.schema_version.to_string() + " is not supported. Minimum required: " + min_supported.to_string()});
+        out.error_count++;
+    }
+}
+
 void SceneValidator::validate_composition(const ::tachyon::CompositionSpec& comp, const ::tachyon::SceneSpec& scene, ValidationResult& out) const {
     if (comp.id.empty()) {
         out.issues.push_back({ValidationIssue::Severity::Error, "composition", "Composition ID cannot be empty."});
@@ -33,8 +55,140 @@ void SceneValidator::validate_composition(const ::tachyon::CompositionSpec& comp
         out.error_count++;
     }
 
+    // Validate duplicate IDs within composition
+    validate_duplicate_ids(comp, out);
+    
+    // Validate camera cuts
+    validate_camera_cuts(comp, out);
+
     for (std::size_t i = 0; i < comp.layers.size(); ++i) {
         validate_layer(comp.layers[i], comp, scene, "composition." + comp.id + ".layers[" + std::to_string(i) + "]", out);
+    }
+}
+
+void SceneValidator::validate_duplicate_ids(const ::tachyon::CompositionSpec& comp, ValidationResult& out) const {
+    std::unordered_set<std::string> seen_ids;
+    
+    // Check layer IDs
+    for (std::size_t i = 0; i < comp.layers.size(); ++i) {
+        const auto& layer = comp.layers[i];
+        if (!layer.id.empty()) {
+            if (seen_ids.count(layer.id)) {
+                out.issues.push_back({ValidationIssue::Severity::Error, 
+                    "composition." + comp.id + ".layers[" + std::to_string(i) + "].id",
+                    "Duplicate layer ID: " + layer.id});
+                out.error_count++;
+            }
+            seen_ids.insert(layer.id);
+        }
+    }
+    
+    // Check camera IDs
+    for (std::size_t i = 0; i < comp.cameras_2d.size(); ++i) {
+        const auto& cam = comp.cameras_2d[i];
+        if (!cam.id.empty()) {
+            if (seen_ids.count(cam.id)) {
+                out.issues.push_back({ValidationIssue::Severity::Error,
+                    "composition." + comp.id + ".cameras_2d[" + std::to_string(i) + "].id",
+                    "Duplicate camera ID: " + cam.id});
+                out.error_count++;
+            }
+            seen_ids.insert(cam.id);
+        }
+    }
+    
+    // Check audio track IDs
+    for (std::size_t i = 0; i < comp.audio_tracks.size(); ++i) {
+        const auto& track = comp.audio_tracks[i];
+        if (!track.id.empty()) {
+            if (seen_ids.count(track.id)) {
+                out.issues.push_back({ValidationIssue::Severity::Error,
+                    "composition." + comp.id + ".audio_tracks[" + std::to_string(i) + "].id",
+                    "Duplicate audio track ID: " + track.id});
+                out.error_count++;
+            }
+            seen_ids.insert(track.id);
+        }
+    }
+}
+
+void SceneValidator::validate_camera_cuts(const ::tachyon::CompositionSpec& comp, ValidationResult& out) const {
+    // Check for overlapping camera cuts
+    for (std::size_t i = 0; i < comp.camera_cuts.size(); ++i) {
+        const auto& cut_i = comp.camera_cuts[i];
+        
+        // Validate time range
+        if (cut_i.start_seconds < 0) {
+            out.issues.push_back({ValidationIssue::Severity::Error,
+                "composition." + comp.id + ".camera_cuts[" + std::to_string(i) + "].start_seconds",
+                "Camera cut start time cannot be negative."});
+            out.error_count++;
+        }
+        
+        if (cut_i.end_seconds < cut_i.start_seconds) {
+            out.issues.push_back({ValidationIssue::Severity::Error,
+                "composition." + comp.id + ".camera_cuts[" + std::to_string(i) + "]",
+                "Camera cut end time must be >= start time."});
+            out.error_count++;
+        }
+        
+        // Check for overlaps with other cuts
+        for (std::size_t j = i + 1; j < comp.camera_cuts.size(); ++j) {
+            const auto& cut_j = comp.camera_cuts[j];
+            
+            // Two cuts overlap if one starts before the other ends
+            bool overlaps = (cut_i.start_seconds < cut_j.end_seconds) && (cut_j.start_seconds < cut_i.end_seconds);
+            
+            if (overlaps) {
+                out.issues.push_back({ValidationIssue::Severity::Error,
+                    "composition." + comp.id + ".camera_cuts",
+                    "Overlapping camera cuts at indices " + std::to_string(i) + " and " + std::to_string(j)});
+                out.error_count++;
+            }
+        }
+        
+        // Validate camera reference exists
+        bool camera_found = false;
+        for (const auto& cam : comp.cameras_2d) {
+            if (cam.id == cut_i.camera_id) {
+                camera_found = true;
+                break;
+            }
+        }
+        if (!camera_found && !cut_i.camera_id.empty()) {
+            out.issues.push_back({ValidationIssue::Severity::Error,
+                "composition." + comp.id + ".camera_cuts[" + std::to_string(i) + "].camera_id",
+                "Camera cut references non-existent camera: " + cut_i.camera_id});
+            out.error_count++;
+        }
+    }
+}
+
+void SceneValidator::validate_track_bindings(const ::tachyon::LayerSpec& layer, const std::string& path, ValidationResult& out) const {
+    // Validate track bindings reference valid sources
+    for (std::size_t i = 0; i < layer.track_bindings.size(); ++i) {
+        const auto& binding = layer.track_bindings[i];
+        
+        if (binding.source_id.empty()) {
+            out.issues.push_back({ValidationIssue::Severity::Error,
+                path + ".track_bindings[" + std::to_string(i) + "].source_id",
+                "Track binding source_id cannot be empty."});
+            out.error_count++;
+        }
+        
+        if (binding.source_track_name.empty()) {
+            out.issues.push_back({ValidationIssue::Severity::Error,
+                path + ".track_bindings[" + std::to_string(i) + "].source_track_name",
+                "Track binding source_track_name cannot be empty."});
+            out.error_count++;
+        }
+        
+        if (binding.influence < 0.0f || binding.influence > 1.0f) {
+            out.issues.push_back({ValidationIssue::Severity::Warning,
+                path + ".track_bindings[" + std::to_string(i) + "].influence",
+                "Track binding influence should be between 0.0 and 1.0."});
+            out.warning_count++;
+        }
     }
 }
 
@@ -53,6 +207,9 @@ void SceneValidator::validate_layer(const ::tachyon::LayerSpec& layer, const ::t
         out.issues.push_back({ValidationIssue::Severity::Error, path + ".dimensions", "Layer dimensions cannot be negative."});
         out.error_count++;
     }
+
+    // Validate track bindings
+    validate_track_bindings(layer, path, out);
 
     // Track matte validation: if a matte layer is specified, it must exist and must not be self
     if (layer.track_matte_layer_id.has_value() && !layer.track_matte_layer_id->empty()) {

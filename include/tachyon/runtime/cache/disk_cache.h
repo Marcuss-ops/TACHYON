@@ -11,6 +11,8 @@ namespace tachyon::runtime {
 
 /**
  * @brief Identifies a specific render result for caching.
+ * 
+ * Must include ALL fields that affect visible output to ensure cache correctness.
  */
 struct CacheKey {
     std::uint64_t identity{0};
@@ -19,7 +21,38 @@ struct CacheKey {
     int quality_tier{1};         ///< 0=draft, 1=preview, 2=final.
     std::string aov_type{"beauty"}; ///< "beauty", "depth", "motion_vectors", etc.
     
+    // Temporal effects fields (must be included in cache identity)
+    spec::TimeRemapMode time_remap_mode{spec::TimeRemapMode::Blend};
+    spec::FrameBlendMode frame_blend_mode{spec::FrameBlendMode::Linear};
+    float frame_blend_strength{1.0f};
+    
+    // Motion blur parameters
+    float shutter_angle_deg{180.0f};
+    int motion_blur_samples{8};
+    std::uint32_t motion_blur_seed{0};
+    
+    // Proxy settings
+    bool use_proxy{false};
+    std::string proxy_variant_id;
+    
     [[nodiscard]] std::string to_filename() const;
+    
+    /// Build a complete cache key including all temporal and quality settings
+    static CacheKey build(
+        std::uint64_t identity,
+        const std::string& node_path,
+        double frame_time,
+        int quality_tier = 1,
+        const std::string& aov_type = "beauty",
+        const spec::TimeRemapMode time_remap = spec::TimeRemapMode::Blend,
+        const spec::FrameBlendMode blend_mode = spec::FrameBlendMode::Linear,
+        float blend_strength = 1.0f,
+        float shutter_angle = 180.0f,
+        int mb_samples = 8,
+        std::uint32_t mb_seed = 0,
+        bool proxy = false,
+        const std::string& proxy_id = ""
+    );
 };
 
 /**
