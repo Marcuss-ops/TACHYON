@@ -36,6 +36,12 @@ RayTracer::RayTracer(media::MediaManager* media_manager)
     : media_manager_(media_manager), m_last_error("") {
     device_ = rtcNewDevice(nullptr);
     rtcSetDeviceErrorFunction(device_, log_embree_error, this);
+#ifdef _WIN32
+    oidn_device_ = oidn::newDevice();
+    if (oidn_device_) {
+        oidn_device_.commit();
+    }
+#endif
 }
 
 RayTracer::~RayTracer() {
@@ -144,6 +150,9 @@ void RayTracer::render(
             out_buffer.normal_xyz[idx * 3 + 0] = pixel_normal.x;
             out_buffer.normal_xyz[idx * 3 + 1] = pixel_normal.y;
             out_buffer.normal_xyz[idx * 3 + 2] = pixel_normal.z;
+            out_buffer.albedo_rgb[idx * 3 + 0] = pixel_albedo.x;
+            out_buffer.albedo_rgb[idx * 3 + 1] = pixel_albedo.y;
+            out_buffer.albedo_rgb[idx * 3 + 2] = pixel_albedo.z;
             out_buffer.motion_vector_xy[idx * 2 + 0] = pixel_motion.x;
             out_buffer.motion_vector_xy[idx * 2 + 1] = pixel_motion.y;
             out_buffer.object_id[idx] = pixel_obj_id;
@@ -160,6 +169,43 @@ void RayTracer::denoise_aov_buffer(AOVBuffer& buffer) const {
     if (buffer.width == 0 || buffer.height == 0 || buffer.beauty_rgba.empty()) {
         return;
     }
+
+#ifdef _WIN32
+    if (oidn_device_) {
+        auto filter = oidn_device_.newFilter("RT");
+        if (filter) {
+            const std::uint32_t w = buffer.width;
+            const std::uint32_t h = buffer.height;
+            std::vector<float> denoised_rgb(static_cast<std::size_t>(w) * static_cast<std::size_t>(h) * 3U, 0.0f);
+
+            filter.setImage("color", buffer.beauty_rgba.data(), oidn::Format::Float3, w, h, 0, 4U * sizeof(float), 4U * w * sizeof(float));
+            if (!buffer.albedo_rgb.empty()) {
+                filter.setImage("albedo", buffer.albedo_rgb.data(), oidn::Format::Float3, w, h, 0, 3U * sizeof(float), 3U * w * sizeof(float));
+            }
+            if (!buffer.normal_xyz.empty()) {
+                filter.setImage("normal", buffer.normal_xyz.data(), oidn::Format::Float3, w, h, 0, 3U * sizeof(float), 3U * w * sizeof(float));
+            }
+            filter.setImage("output", denoised_rgb.data(), oidn::Format::Float3, w, h, 0, 3U * sizeof(float), 3U * w * sizeof(float));
+            filter.set("hdr", true);
+            filter.set("cleanAux", true);
+            filter.commit();
+            filter.execute();
+
+            const char* error_message = nullptr;
+            const auto error_code = oidn_device_.getError(error_message);
+            if (error_code == oidn::Error::None) {
+                for (std::size_t i = 0; i < static_cast<std::size_t>(w) * static_cast<std::size_t>(h); ++i) {
+                    const std::size_t src_idx = i * 3U;
+                    const std::size_t dst_idx = i * 4U;
+                    buffer.beauty_rgba[dst_idx + 0] = denoised_rgb[src_idx + 0];
+                    buffer.beauty_rgba[dst_idx + 1] = denoised_rgb[src_idx + 1];
+                    buffer.beauty_rgba[dst_idx + 2] = denoised_rgb[src_idx + 2];
+                }
+                return;
+            }
+        }
+    }
+#endif
 
     const std::vector<float> src = buffer.beauty_rgba;
     const std::vector<float> src_depth = buffer.depth_z;
