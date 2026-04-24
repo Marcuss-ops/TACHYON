@@ -12,3 +12,4 @@ logs/
 # Temporary files
 *.tmp
 *.go
+output/
