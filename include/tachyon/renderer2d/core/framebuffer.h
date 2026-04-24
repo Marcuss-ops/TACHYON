@@ -88,5 +88,65 @@ private:
 
 using Framebuffer = SurfaceRGBA;
 
+// ---------------------------------------------------------------------------
+// FramebufferRGBA8 – 8-bit per channel (32-bit total)
+// ---------------------------------------------------------------------------
+class FramebufferRGBA8 {
+public:
+    FramebufferRGBA8() = default;
+    FramebufferRGBA8(uint32_t width, uint32_t height);
+
+    void reset(uint32_t width, uint32_t height);
+
+    uint32_t width() const { return m_width; }
+    uint32_t height() const { return m_height; }
+    const std::vector<uint8_t>& pixels() const { return m_pixels; }
+    std::vector<uint8_t>& mutable_pixels() { return m_pixels; }
+
+    bool set_pixel(uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+    Color get_pixel(uint32_t x, uint32_t y) const;
+
+    void clear(uint8_t r = 0, uint8_t g = 0, uint8_t b = 0, uint8_t a = 0);
+
+    bool save_png(const std::filesystem::path& path) const;
+
+private:
+    bool in_bounds(uint32_t x, uint32_t y) const;
+
+    uint32_t m_width{0};
+    uint32_t m_height{0};
+    std::vector<uint8_t> m_pixels; // RGBA interleaved
+};
+
+// ---------------------------------------------------------------------------
+// FramebufferRGBA16 – 16-bit per channel (64-bit total)
+// ---------------------------------------------------------------------------
+class FramebufferRGBA16 {
+public:
+    FramebufferRGBA16() = default;
+    FramebufferRGBA16(uint32_t width, uint32_t height);
+
+    void reset(uint32_t width, uint32_t height);
+
+    uint32_t width() const { return m_width; }
+    uint32_t height() const { return m_height; }
+    const std::vector<uint16_t>& pixels() const { return m_pixels; }
+    std::vector<uint16_t>& mutable_pixels() { return m_pixels; }
+
+    bool set_pixel(uint32_t x, uint32_t y, uint16_t r, uint16_t g, uint16_t b, uint16_t a);
+    Color get_pixel(uint32_t x, uint32_t y) const;
+
+    void clear(uint16_t r = 0, uint16_t g = 0, uint16_t b = 0, uint16_t a = 0);
+
+    bool save_png(const std::filesystem::path& path) const;
+
+private:
+    bool in_bounds(uint32_t x, uint32_t y) const;
+
+    uint32_t m_width{0};
+    uint32_t m_height{0};
+    std::vector<uint16_t> m_pixels; // RGBA interleaved
+};
+
 } // namespace renderer2d
 } // namespace tachyon

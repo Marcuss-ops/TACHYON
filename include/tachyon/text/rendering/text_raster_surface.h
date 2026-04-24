@@ -2,7 +2,14 @@
 
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/renderer2d/text/glyph/glyph_bitmap.h"
-#include "tachyon/renderer2d/layout.h"
+namespace tachyon::text {
+struct GradientSpec;
+struct GradientStop;
+struct ResolvedTextLayout;
+struct TextGlowOptions;
+struct TextShadowOptions;
+struct TextStyle;
+} // namespace tachyon::text
 
 #include <vector>
 #include <cstdint>

@@ -73,4 +73,55 @@ SurfaceRGBA VectorBlurEffect::apply(const SurfaceRGBA& input, const EffectParams
     return input; // Stub implementation
 }
 
+SurfaceRGBA MotionBlur2DEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
+    const int samples = static_cast<int>(get_scalar(params, "samples", 8.0f));
+    const float angle_deg = get_scalar(params, "angle", 0.0f);
+    const float distance = get_scalar(params, "distance", 10.0f);
+    const float shutter_angle = get_scalar(params, "shutter_angle", 180.0f) / 360.0f;
+
+    if (samples <= 1 || distance <= 0.0f) return input;
+
+    const float angle_rad = angle_deg * 3.14159265358979323846f / 180.0f;
+    const float dx = std::cos(angle_rad) * distance * shutter_angle;
+    const float dy = std::sin(angle_rad) * distance * shutter_angle;
+
+    SurfaceRGBA out = input;
+    out.clear(Color::transparent());
+
+    for (int s = 0; s < samples; ++s) {
+        const float t = (s / static_cast<float>(samples - 1)) - 0.5f;
+        const int offset_x = static_cast<int>(dx * t);
+        const int offset_y = static_cast<int>(dy * t);
+        const float weight = 1.0f / samples;
+
+        for (std::uint32_t y = 0; y < input.height(); ++y) {
+            for (std::uint32_t x = 0; x < input.width(); ++x) {
+                int src_x = static_cast<int>(x) - offset_x;
+                int src_y = static_cast<int>(y) - offset_y;
+                if (src_x >= 0 && src_x < static_cast<int>(input.width()) &&
+                    src_y >= 0 && src_y < static_cast<int>(input.height())) {
+                    Color src = input.get_pixel(static_cast<std::uint32_t>(src_x),
+                                                static_cast<std::uint32_t>(src_y));
+                    src.a *= weight;
+                    Color dst = out.get_pixel(x, y);
+                    out.set_pixel(x, y, Color{ dst.r + src.r, dst.g + src.g, dst.b + src.b, dst.a + src.a });
+                }
+            }
+        }
+    }
+
+    // Normalize alpha
+    for (std::uint32_t y = 0; y < out.height(); ++y) {
+        for (std::uint32_t x = 0; x < out.width(); ++x) {
+            Color px = out.get_pixel(x, y);
+            if (px.a > 0.0f) {
+                float inv_a = 1.0f / px.a;
+                out.set_pixel(x, y, Color{ px.r * inv_a, px.g * inv_a, px.b * inv_a, 1.0f });
+            }
+        }
+    }
+
+    return out;
+}
+
 } // namespace tachyon::renderer2d
