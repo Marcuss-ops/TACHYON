@@ -1,4 +1,5 @@
 #include "render_job_internal.h"
+#include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 
 namespace tachyon {
 
@@ -11,6 +12,31 @@ ValidationResult validate_render_job(const RenderJob& job) {
 
     if (job.scene_ref.empty()) {
         result.diagnostics.add_error("job.scene_ref_missing", "scene_ref is required", "scene_ref");
+    } else {
+        // Check for missing font manifest when text layers are present.
+        // Load the scene spec to inspect.
+        auto scene_result = parse_scene_spec_file(std::filesystem::path(job.scene_ref));
+        if (scene_result.value.has_value()) {
+            const auto& scene = *scene_result.value;
+            if (!scene.font_manifest.has_value()) {
+                bool has_text = false;
+                for (const auto& comp : scene.compositions) {
+                    for (const auto& layer : comp.layers) {
+                        if (layer.type == "text") {
+                            has_text = true;
+                            break;
+                        }
+                    }
+                    if (has_text) break;
+                }
+                if (has_text) {
+                    result.diagnostics.add_warning(
+                        "job.font_manifest.missing",
+                        "scene missing font_manifest but contains text layers; fonts may not load correctly"
+                    );
+                }
+            }
+        }
     }
 
     if (job.composition_target.empty()) {
