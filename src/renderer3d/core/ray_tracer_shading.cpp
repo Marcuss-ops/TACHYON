@@ -9,6 +9,65 @@ namespace tachyon::renderer3d {
 
 using namespace pbr;
 
+namespace {
+
+constexpr float kTextureEpsilon = 1e-6f;
+
+math::Vector3 transform_normal(const math::Matrix4x4& matrix, const math::Vector3& normal) {
+    const math::Matrix4x4 inv = matrix.inverse_affine();
+    math::Vector3 transformed {
+        inv[0] * normal.x + inv[4] * normal.y + inv[8] * normal.z,
+        inv[1] * normal.x + inv[5] * normal.y + inv[9] * normal.z,
+        inv[2] * normal.x + inv[6] * normal.y + inv[10] * normal.z
+    };
+    return transformed.normalized();
+}
+
+math::Vector3 sample_texture_bilinear(const media::TextureData& tex, const math::Vector2& uv) {
+    if (tex.data.empty() || tex.width <= 0 || tex.height <= 0 || tex.channels <= 0) {
+        return math::Vector3{1.0f, 1.0f, 1.0f};
+    }
+
+    const float u = uv.x - std::floor(uv.x);
+    const float v = uv.y - std::floor(uv.y);
+    const float x = u * static_cast<float>(std::max(1, tex.width - 1));
+    const float y = (1.0f - v) * static_cast<float>(std::max(1, tex.height - 1));
+
+    const int x0 = std::clamp(static_cast<int>(std::floor(x)), 0, tex.width - 1);
+    const int y0 = std::clamp(static_cast<int>(std::floor(y)), 0, tex.height - 1);
+    const int x1 = std::clamp(x0 + 1, 0, tex.width - 1);
+    const int y1 = std::clamp(y0 + 1, 0, tex.height - 1);
+
+    const float tx = x - static_cast<float>(x0);
+    const float ty = y - static_cast<float>(y0);
+
+    auto texel = [&](int px, int py) -> math::Vector3 {
+        const std::size_t idx = (static_cast<std::size_t>(py) * static_cast<std::size_t>(tex.width) + static_cast<std::size_t>(px)) * static_cast<std::size_t>(tex.channels);
+        const float r = tex.data[idx + 0] / 255.0f;
+        const float g = tex.channels > 1 ? tex.data[idx + 1] / 255.0f : r;
+        const float b = tex.channels > 2 ? tex.data[idx + 2] / 255.0f : r;
+        return {r, g, b};
+    };
+
+    const math::Vector3 c00 = texel(x0, y0);
+    const math::Vector3 c10 = texel(x1, y0);
+    const math::Vector3 c01 = texel(x0, y1);
+    const math::Vector3 c11 = texel(x1, y1);
+    const math::Vector3 cx0 = c00 * (1.0f - tx) + c10 * tx;
+    const math::Vector3 cx1 = c01 * (1.0f - tx) + c11 * tx;
+    return cx0 * (1.0f - ty) + cx1 * ty;
+}
+
+math::Vector3 safe_normalize(const math::Vector3& v, const math::Vector3& fallback) {
+    const float len2 = v.length_squared();
+    if (len2 > kTextureEpsilon) {
+        return v / std::sqrt(len2);
+    }
+    return fallback;
+}
+
+} // namespace
+
 ShadingResult RayTracer::trace_ray(
     const math::Vector3& origin,
     const math::Vector3& direction,
@@ -71,7 +130,7 @@ ShadingResult RayTracer::trace_ray(
     // Hit - find instance
     const GeoInstance* hit_instance = nullptr;
     for (const auto& inst : instances_) {
-        if (inst.geom_id == rh.hit.geomID) {
+        if (inst.geom_id == rh.hit.geomID || inst.geom_id == rh.hit.instID[0]) {
             hit_instance = &inst;
             break;
         }
@@ -91,25 +150,80 @@ ShadingResult RayTracer::trace_ray(
         return result;
     }
 
-    // Compute hit position and normal
-    math::Vector3 normal = {rh.hit.Ng_x, rh.hit.Ng_y, rh.hit.Ng_z};
-    normal = normal.normalized();
+    const math::Vector3 hit_pos = origin + direction * rh.ray.tfar;
 
-    // Transform normal using the inverse-transpose of the world transform.
-    const math::Matrix4x4 normal_matrix = hit_instance->world_transform.inverse_affine();
-    math::Vector3 world_normal = {
-        normal_matrix[0] * normal.x + normal_matrix[4] * normal.y + normal_matrix[8] * normal.z,
-        normal_matrix[1] * normal.x + normal_matrix[5] * normal.y + normal_matrix[9] * normal.z,
-        normal_matrix[2] * normal.x + normal_matrix[6] * normal.y + normal_matrix[10] * normal.z
-    };
-    world_normal = world_normal.normalized();
+    const MeshCacheEntry* mesh_entry = nullptr;
+    auto mesh_it = mesh_cache_.find(hit_instance->mesh_asset_id);
+    if (mesh_it != mesh_cache_.end()) {
+        mesh_entry = &mesh_it->second;
+    }
 
-    math::Vector3 hit_pos = origin + direction * rh.ray.tfar;
+    const MeshCacheEntry::SubMeshCache* submesh = nullptr;
+    if (mesh_entry) {
+        auto geom_it = mesh_entry->geom_id_to_submesh.find(rh.hit.geomID);
+        if (geom_it == mesh_entry->geom_id_to_submesh.end() && rh.hit.instID[0] != RTC_INVALID_GEOMETRY_ID) {
+            geom_it = mesh_entry->geom_id_to_submesh.find(rh.hit.instID[0]);
+        }
+        if (geom_it != mesh_entry->geom_id_to_submesh.end() && geom_it->second < mesh_entry->submeshes.size()) {
+            submesh = &mesh_entry->submeshes[geom_it->second];
+        }
+        if (!submesh && !mesh_entry->submeshes.empty()) {
+            submesh = &mesh_entry->submeshes.front();
+        }
+    }
 
-    // Use EvaluatedMaterial directly (not through MaterialEvaluator)
+    math::Vector3 geometric_normal = {rh.hit.Ng_x, rh.hit.Ng_y, rh.hit.Ng_z};
+    geometric_normal = safe_normalize(geometric_normal, math::Vector3{0.0f, 0.0f, 1.0f});
+
+    math::Vector3 world_normal = geometric_normal;
+    math::Vector2 hit_uv{0.0f, 0.0f};
+    math::Vector3 tangent_world{0.0f, 0.0f, 0.0f};
+    math::Vector3 bitangent_world{0.0f, 0.0f, 0.0f};
+    math::Vector3 interpolated_normal = geometric_normal;
+
+    if (submesh && submesh->vertices.size() >= 3 && submesh->indices.size() >= 3) {
+        const std::size_t tri_index = static_cast<std::size_t>(rh.hit.primID) * 3U;
+        if (tri_index + 2U < submesh->indices.size()) {
+            const unsigned int i0 = submesh->indices[tri_index + 0U];
+            const unsigned int i1 = submesh->indices[tri_index + 1U];
+            const unsigned int i2 = submesh->indices[tri_index + 2U];
+            if (i0 < submesh->vertices.size() && i1 < submesh->vertices.size() && i2 < submesh->vertices.size()) {
+                const auto& v0 = submesh->vertices[i0];
+                const auto& v1 = submesh->vertices[i1];
+                const auto& v2 = submesh->vertices[i2];
+                const float w0 = std::max(0.0f, 1.0f - rh.hit.u - rh.hit.v);
+                const float w1 = rh.hit.u;
+                const float w2 = rh.hit.v;
+
+                interpolated_normal = safe_normalize(
+                    v0.normal * w0 + v1.normal * w1 + v2.normal * w2,
+                    geometric_normal);
+                hit_uv = v0.uv * w0 + v1.uv * w1 + v2.uv * w2;
+
+                const math::Vector3 p0 = v0.position;
+                const math::Vector3 p1 = v1.position;
+                const math::Vector3 p2 = v2.position;
+                const math::Vector3 edge1 = p1 - p0;
+                const math::Vector3 edge2 = p2 - p0;
+                const math::Vector2 duv1 = v1.uv - v0.uv;
+                const math::Vector2 duv2 = v2.uv - v0.uv;
+                const float denom = duv1.x * duv2.y - duv1.y * duv2.x;
+                if (std::abs(denom) > kTextureEpsilon) {
+                    const float inv = 1.0f / denom;
+                    const math::Vector3 tangent = (edge1 * duv2.y - edge2 * duv1.y) * inv;
+                    const math::Vector3 bitangent = (edge2 * duv1.x - edge1 * duv2.x) * inv;
+                    tangent_world = safe_normalize(hit_instance->world_transform.transform_vector(tangent), math::Vector3{1.0f, 0.0f, 0.0f});
+                    bitangent_world = safe_normalize(hit_instance->world_transform.transform_vector(bitangent), math::Vector3{0.0f, 1.0f, 0.0f});
+                }
+            }
+        }
+    }
+
+    world_normal = safe_normalize(
+        transform_normal(hit_instance->world_transform, interpolated_normal),
+        geometric_normal);
+
     const EvaluatedMaterial& mat = hit_instance->material;
-
-    // Simple material evaluation
     math::Vector3 albedo = {
         mat.base_color.r / 255.0f,
         mat.base_color.g / 255.0f,
@@ -117,6 +231,33 @@ ShadingResult RayTracer::trace_ray(
     };
     float metallic = std::clamp(mat.metallic, 0.0f, 1.0f);
     float roughness = std::max(mat.roughness, 0.05f);
+
+    if (mesh_entry && mesh_entry->asset && submesh) {
+        const auto& material = submesh->material;
+        if (material.base_color_texture_idx >= 0 && material.base_color_texture_idx < static_cast<int>(mesh_entry->asset->textures.size())) {
+            const auto& tex = mesh_entry->asset->textures[material.base_color_texture_idx];
+            const math::Vector3 tex_color = sample_texture_bilinear(tex, hit_uv);
+            albedo = albedo * tex_color;
+        }
+        if (material.metallic_roughness_texture_idx >= 0 && material.metallic_roughness_texture_idx < static_cast<int>(mesh_entry->asset->textures.size())) {
+            const auto& tex = mesh_entry->asset->textures[material.metallic_roughness_texture_idx];
+            const math::Vector3 tex_mr = sample_texture_bilinear(tex, hit_uv);
+            roughness = std::max(0.05f, roughness * tex_mr.y);
+            metallic = std::clamp(metallic * tex_mr.z, 0.0f, 1.0f);
+        }
+        if (material.normal_texture_idx >= 0 && material.normal_texture_idx < static_cast<int>(mesh_entry->asset->textures.size())) {
+            const auto& tex = mesh_entry->asset->textures[material.normal_texture_idx];
+            const math::Vector3 normal_sample = sample_texture_bilinear(tex, hit_uv) * 2.0f - math::Vector3{1.0f, 1.0f, 1.0f};
+            math::Vector3 tangent_normal = safe_normalize(normal_sample, math::Vector3{0.0f, 0.0f, 1.0f});
+            if (tangent_world.length_squared() > kTextureEpsilon && bitangent_world.length_squared() > kTextureEpsilon) {
+                world_normal = safe_normalize(
+                    tangent_world * tangent_normal.x +
+                    bitangent_world * tangent_normal.y +
+                    world_normal * tangent_normal.z,
+                    world_normal);
+            }
+        }
+    }
 
     math::Vector3 view_dir = (-direction).normalized();
     float n_dot_v = std::clamp(math::Vector3::dot(world_normal, view_dir), 0.0f, 1.0f);

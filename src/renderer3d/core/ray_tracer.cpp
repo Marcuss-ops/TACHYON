@@ -8,6 +8,30 @@
 
 namespace tachyon::renderer3d {
 
+namespace {
+
+math::Vector2 sample_concentric_disk(float u1, float u2) {
+    const float sx = 2.0f * u1 - 1.0f;
+    const float sy = 2.0f * u2 - 1.0f;
+
+    if (sx == 0.0f && sy == 0.0f) {
+        return {0.0f, 0.0f};
+    }
+
+    float r = 0.0f;
+    float theta = 0.0f;
+    if (std::abs(sx) > std::abs(sy)) {
+        r = sx;
+        theta = (3.1415926535f / 4.0f) * (sy / sx);
+    } else {
+        r = sy;
+        theta = (3.1415926535f / 2.0f) - (3.1415926535f / 4.0f) * (sx / sy);
+    }
+    return {r * std::cos(theta), r * std::sin(theta)};
+}
+
+} // namespace
+
 RayTracer::RayTracer(media::MediaManager* media_manager) 
     : media_manager_(media_manager), m_last_error("") {
     device_ = rtcNewDevice(nullptr);
@@ -81,6 +105,17 @@ void RayTracer::render(
                 float v = (1.0f - 2.0f * py) * half_height;
                 math::Vector3 direction = (cam_forward + cam_right * u + cam_up * v).normalized();
                 math::Vector3 origin = cam.position;
+
+                if (cam.aperture > 0.0f && cam.focal_distance > 0.0f) {
+                    const float lens_radius = std::max(0.0f, cam.focal_length_mm / std::max(cam.aperture, 1.0f)) * 0.001f;
+                    const math::Vector2 lens = sample_concentric_disk(
+                        static_cast<float>(rng()) / static_cast<float>(rng.max()),
+                        static_cast<float>(rng()) / static_cast<float>(rng.max()));
+                    const math::Vector3 lens_offset = cam_right * (lens.x * lens_radius) + cam_up * (lens.y * lens_radius);
+                    const math::Vector3 focus_point = cam.position + direction * cam.focal_distance;
+                    origin = origin + lens_offset;
+                    direction = (focus_point - origin).normalized();
+                }
 
                 ShadingResult sample = trace_ray(origin, direction, scene, rng, 0, time);
                 pixel_color = pixel_color + sample.color;
