@@ -6,6 +6,14 @@
     "name": "Scene A White",
     "authoring_tool": "tachyon-studio"
   },
+  "assets": [
+    {
+      "id": "scene_a_white_basic",
+      "type": "image",
+      "path": "../../output/scene_a_white_basic.png",
+      "source": "../../output/scene_a_white_basic.png"
+    }
+  ],
   "compositions": [
     {
       "id": "main",
@@ -17,9 +25,9 @@
       "background": "#ffffff",
       "layers": [
         {
-          "id": "white_solid",
-          "name": "White Solid",
-          "type": "solid",
+          "id": "scene_a_white_basic",
+          "name": "scene_a_white_basic",
+          "type": "image",
           "blend_mode": "normal",
           "enabled": true,
           "visible": true,
@@ -28,8 +36,7 @@
           "out_point": 120,
           "opacity": 1,
           "width": 1920,
-          "height": 1080,
-          "fill_color": [255, 255, 255, 255]
+          "height": 1080
         }
       ]
     }
