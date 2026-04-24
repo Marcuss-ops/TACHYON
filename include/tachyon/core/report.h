@@ -37,7 +37,8 @@ std::string make_validate_report_json(
     const AssetResolutionTable& assets,
     bool scene_valid,
     bool job_valid,
-    const std::optional<RenderJob>& job);
+    const std::optional<RenderJob>& job,
+    const core::ValidationResult& validation_result);
 
 std::string make_render_report_json(
     const SceneSpec& scene,

@@ -260,7 +260,8 @@ std::string make_validate_report_json(
     const AssetResolutionTable& assets,
     bool scene_valid,
     bool job_valid,
-    const std::optional<RenderJob>& job) {
+    const std::optional<RenderJob>& job,
+    const core::ValidationResult& validation_result) {
     json report;
     report["report_type"] = "validate";
     report["schema_version"] = VALIDATE_REPORT_SCHEMA_VERSION;
@@ -268,8 +269,29 @@ std::string make_validate_report_json(
     report["scene_valid"] = scene_valid;
     report["job_valid"] = job_valid;
     report["assets"] = make_assets_json(assets);
-    report["status"] = REPORT_STATUS_OK;
+    report["status"] = validation_result.is_valid() ? REPORT_STATUS_OK : REPORT_STATUS_ERROR;
     report["diagnostics"] = make_diagnostics_json(DiagnosticBag{});
+    
+    // Add validation issues
+    json issues_json = json::array();
+    for (const auto& issue : validation_result.issues) {
+        json issue_obj;
+        switch (issue.severity) {
+            case core::ValidationIssue::Severity::Fatal: issue_obj["severity"] = "fatal"; break;
+            case core::ValidationIssue::Severity::Error: issue_obj["severity"] = "error"; break;
+            case core::ValidationIssue::Severity::Warning: issue_obj["severity"] = "warning"; break;
+        }
+        issue_obj["path"] = issue.path;
+        issue_obj["message"] = issue.message;
+        issues_json.push_back(issue_obj);
+    }
+    report["validation_issues"] = issues_json;
+    report["validation_summary"] = {
+        {"errors", validation_result.error_count},
+        {"warnings", validation_result.warning_count},
+        {"fatal", validation_result.fatal_count}
+    };
+    
     if (job.has_value()) {
         report["job"] = make_render_job_json(*job);
     }
