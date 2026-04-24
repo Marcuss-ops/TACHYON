@@ -103,7 +103,7 @@ private:
     std::string environment_map_id_;
     
 #ifdef _WIN32
-    oidn::DeviceRef oidn_device_;
+    mutable oidn::DeviceRef oidn_device_;
     oidn::FilterRef oidn_filter_;
 #endif
 
