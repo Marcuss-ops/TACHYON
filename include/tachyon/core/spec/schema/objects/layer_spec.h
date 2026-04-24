@@ -85,6 +85,11 @@ struct LayerSpec {
     AnimatedScalarSpec camera_zoom;
     AnimatedVector3Spec camera_poi;
 
+    // 2D Camera integration
+    bool has_parallax{true};
+    float parallax_factor{1.0f};
+    std::optional<std::string> camera2d_id;
+
     // Camera Shake
     uint64_t camera_shake_seed{0};
     AnimatedScalarSpec camera_shake_amplitude_pos;

@@ -1,8 +1,10 @@
 #pragma once
 #include "tachyon/core/spec/schema/contracts/shared_contracts.h"
+#include "tachyon/tracker/optical_flow.h"
 #include <vector>
 #include <utility>
 #include <string>
+#include <memory>
 
 namespace tachyon::timeline {
 
@@ -33,5 +35,45 @@ struct FrameBlendParams {
     const TimeRemapCurve& curve, 
     float dest_time, 
     float frame_duration);
+
+/**
+ * @brief Evaluator for time remapping with optical flow support.
+ */
+class TimeRemapEvaluator {
+public:
+    struct Config {
+        float optical_flow_confidence_threshold{0.5f};
+        bool enable_pixel_motion{true};
+        bool enable_optical_flow_warping{true};
+    };
+
+    explicit TimeRemapEvaluator(const Config& config = Config());
+    
+    /**
+     * @brief Evaluate source time with fallback based on confidence.
+     */
+    float evaluate(const TimeRemapCurve& curve, float dest_time, float frame_duration) const;
+    
+    /**
+     * @brief Get frame blend result with optical flow warping if enabled.
+     */
+    FrameBlendResult evaluate_with_flow(
+        const TimeRemapCurve& curve,
+        float dest_time,
+        float frame_duration,
+        const tracker::OpticalFlowResult* flow_result = nullptr) const;
+    
+    /**
+     * @brief Warp pixels using optical flow for pixel motion blending.
+     */
+    std::vector<float> warp_frame(
+        const std::vector<float>& frame,
+        int width, int height, int channels,
+        const tracker::OpticalFlowResult& flow,
+        float warp_factor = 1.0f) const;
+
+private:
+    Config config_;
+};
 
 } // namespace tachyon::timeline
