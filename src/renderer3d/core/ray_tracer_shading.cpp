@@ -98,9 +98,9 @@ ShadingResult RayTracer::trace_ray(
     // Transform normal using the inverse-transpose of the world transform.
     const math::Matrix4x4 normal_matrix = hit_instance->world_transform.inverse_affine();
     math::Vector3 world_normal = {
-        normal_matrix[0] * normal.x + normal_matrix[1] * normal.y + normal_matrix[2] * normal.z,
-        normal_matrix[4] * normal.x + normal_matrix[5] * normal.y + normal_matrix[6] * normal.z,
-        normal_matrix[8] * normal.x + normal_matrix[9] * normal.y + normal_matrix[10] * normal.z
+        normal_matrix[0] * normal.x + normal_matrix[4] * normal.y + normal_matrix[8] * normal.z,
+        normal_matrix[1] * normal.x + normal_matrix[5] * normal.y + normal_matrix[9] * normal.z,
+        normal_matrix[2] * normal.x + normal_matrix[6] * normal.y + normal_matrix[10] * normal.z
     };
     world_normal = world_normal.normalized();
 
