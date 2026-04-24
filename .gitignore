@@ -19,3 +19,9 @@ debug/render_*/
 studio/library/animations/transitions/Output/
 studio/library/animations/transitions/*/output/*.mp4
 studio/library/animations/transitions/*/output/*.png
+
+# Debug/temp render job files in root
+render_job_*.json
+render_scene_*.json
+scene_*_test.json
+test_*.json
