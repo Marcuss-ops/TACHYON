@@ -276,5 +276,134 @@ RectI SurfaceRGBA::intersect_rects(const RectI& a, const RectI& b) const {
     return RectI{x0, y0, std::max(0, x1 - x0), std::max(0, y1 - y0)};
 }
 
+// ---------------------------------------------------------------------------
+// FramebufferRGBA8 implementation
+// ---------------------------------------------------------------------------
+FramebufferRGBA8::FramebufferRGBA8(uint32_t width, uint32_t height)
+    : m_width(width), m_height(height) {
+    m_pixels.resize(static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4);
+    clear();
+}
+
+void FramebufferRGBA8::reset(uint32_t width, uint32_t height) {
+    m_width = width;
+    m_height = height;
+    m_pixels.resize(static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4);
+}
+
+bool FramebufferRGBA8::in_bounds(uint32_t x, uint32_t y) const {
+    return x < m_width && y < m_height;
+}
+
+bool FramebufferRGBA8::set_pixel(uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+    if (!in_bounds(x, y)) return false;
+    const std::size_t idx = (static_cast<std::size_t>(y) * m_width + x) * 4;
+    m_pixels[idx] = r;
+    m_pixels[idx + 1] = g;
+    m_pixels[idx + 2] = b;
+    m_pixels[idx + 3] = a;
+    return true;
+}
+
+Color FramebufferRGBA8::get_pixel(uint32_t x, uint32_t y) const {
+    if (!in_bounds(x, y)) return Color::transparent();
+    const std::size_t idx = (static_cast<std::size_t>(y) * m_width + x) * 4;
+    return Color{
+        m_pixels[idx] / 255.0f,
+        m_pixels[idx + 1] / 255.0f,
+        m_pixels[idx + 2] / 255.0f,
+        m_pixels[idx + 3] / 255.0f
+    };
+}
+
+void FramebufferRGBA8::clear(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+    for (std::size_t i = 0; i < m_pixels.size(); i += 4) {
+        m_pixels[i] = r;
+        m_pixels[i + 1] = g;
+        m_pixels[i + 2] = b;
+        m_pixels[i + 3] = a;
+    }
+}
+
+bool FramebufferRGBA8::save_png(const std::filesystem::path& path) const {
+    if (m_width == 0 || m_height == 0) return false;
+    if (!path.parent_path().empty()) {
+        std::filesystem::create_directories(path.parent_path());
+    }
+    return stbi_write_png(path.string().c_str(),
+                          static_cast<int>(m_width),
+                          static_cast<int>(m_height),
+                          4,
+                          m_pixels.data(),
+                          static_cast<int>(m_width * 4)) != 0;
+}
+
+// ---------------------------------------------------------------------------
+// FramebufferRGBA16 implementation
+// ---------------------------------------------------------------------------
+FramebufferRGBA16::FramebufferRGBA16(uint32_t width, uint32_t height)
+    : m_width(width), m_height(height) {
+    m_pixels.resize(static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4);
+    clear();
+}
+
+void FramebufferRGBA16::reset(uint32_t width, uint32_t height) {
+    m_width = width;
+    m_height = height;
+    m_pixels.resize(static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4);
+}
+
+bool FramebufferRGBA16::in_bounds(uint32_t x, uint32_t y) const {
+    return x < m_width && y < m_height;
+}
+
+bool FramebufferRGBA16::set_pixel(uint32_t x, uint32_t y, uint16_t r, uint16_t g, uint16_t b, uint16_t a) {
+    if (!in_bounds(x, y)) return false;
+    const std::size_t idx = (static_cast<std::size_t>(y) * m_width + x) * 4;
+    m_pixels[idx] = r;
+    m_pixels[idx + 1] = g;
+    m_pixels[idx + 2] = b;
+    m_pixels[idx + 3] = a;
+    return true;
+}
+
+Color FramebufferRGBA16::get_pixel(uint32_t x, uint32_t y) const {
+    if (!in_bounds(x, y)) return Color::transparent();
+    const std::size_t idx = (static_cast<std::size_t>(y) * m_width + x) * 4;
+    return Color{
+        m_pixels[idx] / 65535.0f,
+        m_pixels[idx + 1] / 65535.0f,
+        m_pixels[idx + 2] / 65535.0f,
+        m_pixels[idx + 3] / 65535.0f
+    };
+}
+
+void FramebufferRGBA16::clear(uint16_t r, uint16_t g, uint16_t b, uint16_t a) {
+    for (std::size_t i = 0; i < m_pixels.size(); i += 4) {
+        m_pixels[i] = r;
+        m_pixels[i + 1] = g;
+        m_pixels[i + 2] = b;
+        m_pixels[i + 3] = a;
+    }
+}
+
+bool FramebufferRGBA16::save_png(const std::filesystem::path& path) const {
+    if (m_width == 0 || m_height == 0) return false;
+    if (!path.parent_path().empty()) {
+        std::filesystem::create_directories(path.parent_path());
+    }
+    // Convert RGBA16 to RGBA8 for PNG output
+    std::vector<std::uint8_t> rgba8(m_pixels.size());
+    for (std::size_t i = 0; i < m_pixels.size(); ++i) {
+        rgba8[i] = static_cast<std::uint8_t>(m_pixels[i] >> 8);
+    }
+    return stbi_write_png(path.string().c_str(),
+                          static_cast<int>(m_width),
+                          static_cast<int>(m_height),
+                          4,
+                          rgba8.data(),
+                          static_cast<int>(m_width * 4)) != 0;
+}
+
 } // namespace renderer2d
 } // namespace tachyon

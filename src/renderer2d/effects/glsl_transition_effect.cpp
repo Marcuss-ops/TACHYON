@@ -173,7 +173,15 @@ const std::unordered_map<std::string, TransitionFn> kTransitionFns = {
 
 SurfaceRGBA GlslTransitionEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
     const float t = transition_progress(params);
-    const auto transition = transition_id_from_params(params);
+    using TransitionFn = decltype(kTransitionFns.begin()->second);
+    const auto transition_it = params.strings.find("transition_id");
+    TransitionFn transition_fn = nullptr;
+    if (transition_it != params.strings.end()) {
+        const auto fn_it = kTransitionFns.find(transition_it->second);
+        if (fn_it != kTransitionFns.end()) {
+            transition_fn = fn_it->second;
+        }
+    }
 
     const SurfaceRGBA* to_surface = nullptr;
     if (const auto to_it = params.aux_surfaces.find("transition_to"); to_it != params.aux_surfaces.end()) {
@@ -199,9 +207,8 @@ SurfaceRGBA GlslTransitionEffect::apply(const SurfaceRGBA& input, const EffectPa
             const float v = (static_cast<float>(y) + 0.5f) / height;
             Color out = sample_transition_source(input, to_surface, u, v);
 
-            auto fn_it = kTransitionFns.find(transition);
-            if (fn_it != kTransitionFns.end()) {
-                out = fn_it->second(u, v, t, input, to_surface);
+    if (transition_fn != nullptr) {
+        out = transition_fn(u, v, t, input, to_surface);
             } else {
                 out = lerp_surface_color(input, to_surface, u, v, t);
             }

@@ -178,4 +178,11 @@ public:
     SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
 };
 
+/// Motion Blur 2D: simulates motion blur by blending multiple offset samples.
+/// Uses params.values["shutter_angle"] (default 180.0) and params.values["samples"] (default 8).
+class MotionBlur2DEffect : public Effect {
+public:
+    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
+};
+
 }  // namespace tachyon::renderer2d

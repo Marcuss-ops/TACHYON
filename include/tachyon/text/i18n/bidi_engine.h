@@ -8,9 +8,28 @@
 namespace tachyon::text {
 
 enum class CharacterDirection {
-    LTR,
-    RTL,
-    Neutral
+    // Strong types
+    LTR,      // Left-to-Right
+    RTL,      // Right-to-Left
+    AL,       // Arabic Letter (strong RTL)
+    // Weak types
+    EN,       // European Number
+    AN,       // Arabic Number
+    ES,       // European Separator
+    CS,       // Common Separator
+    NSM,      // Non-Spacing Mark
+    // Neutral types
+    Neutral,  // Default neutral
+    B,        // Paragraph Separator
+    S,        // Segment Separator
+    WS,       // White Space
+    ON,       // Other Neutral
+    // Explicit directional controls
+    LRE,      // Left-to-Right Embedding
+    RLE,      // Right-to-Left Embedding
+    LRO,      // Left-to-Right Override
+    RLO,      // Right-to-Left Override
+    PDF       // Pop Directional Format
 };
 
 struct BidiRun {

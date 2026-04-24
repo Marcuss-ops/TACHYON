@@ -62,6 +62,7 @@ void EffectHost::register_builtins(EffectHost& host) {
     host.register_effect("light_wrap", std::make_unique<LightWrapEffect>());
     host.register_effect("matte_refinement", std::make_unique<MatteRefinementEffect>());
     host.register_effect("vector_blur", std::make_unique<VectorBlurEffect>());
+    host.register_effect("motion_blur_2d", std::make_unique<MotionBlur2DEffect>());
 }
 
 } // namespace tachyon::renderer2d

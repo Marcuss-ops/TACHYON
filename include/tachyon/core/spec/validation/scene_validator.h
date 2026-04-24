@@ -61,6 +61,12 @@ private:
     
     // Checks for circular precomp references
     void check_cycles(const ::tachyon::SceneSpec& scene, ValidationResult& out) const;
+
+    // Validate audio file references exist
+    void validate_audio_files(const ::tachyon::CompositionSpec& comp, const std::string& path, ValidationResult& out) const;
+
+    // Estimate memory usage for the scene (in bytes)
+    std::size_t estimate_memory(const ::tachyon::SceneSpec& scene) const;
 };
 
 } // namespace tachyon::core

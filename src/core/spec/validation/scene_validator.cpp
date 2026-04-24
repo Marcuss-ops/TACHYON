@@ -123,6 +123,9 @@ void SceneValidator::validate_duplicate_ids(const ::tachyon::CompositionSpec& co
             seen_ids.insert(track.id);
         }
     }
+
+    // Validate audio file references
+    validate_audio_files(comp, "composition." + comp.id, out);
 }
 
 void SceneValidator::validate_camera_cuts(const ::tachyon::CompositionSpec& comp, ValidationResult& out) const {
@@ -534,6 +537,43 @@ void SceneValidator::validate_file_reference(const ::tachyon::LayerSpec& layer, 
             out.error_count++;
         }
     }
+}
+
+void SceneValidator::validate_audio_files(const ::tachyon::CompositionSpec& comp, const std::string& path, ValidationResult& out) const {
+    for (std::size_t i = 0; i < comp.audio_tracks.size(); ++i) {
+        const auto& track = comp.audio_tracks[i];
+        if (!track.file_path.empty()) {
+            std::ifstream file(track.file_path);
+            if (!file.good()) {
+                out.issues.push_back({ValidationIssue::Severity::Error,
+                    path + ".audio_tracks[" + std::to_string(i) + "].file_path",
+                    "Audio file not found: " + track.file_path});
+                out.error_count++;
+            }
+        }
+    }
+}
+
+std::size_t SceneValidator::estimate_memory(const ::tachyon::SceneSpec& scene) const {
+    std::size_t total = 0;
+    
+    for (const auto& comp : scene.compositions) {
+        // Estimate framebuffer memory: width * height * 4 bytes/pixel * some overhead
+        std::size_t framebuffer_bytes = static_cast<std::size_t>(comp.width) * 
+                                       static_cast<std::size_t>(comp.height) * 4ULL * 2ULL; // double-buffered
+        total += framebuffer_bytes;
+        
+        // Estimate layer memory
+        total += comp.layers.size() * 1024; // ~1KB per layer overhead
+        
+        // Estimate audio memory (assuming 2 channels, 48kHz, 4 bytes/sample)
+        for (const auto& track : comp.audio_tracks) {
+            std::size_t duration_samples = static_cast<std::size_t>(track.duration_seconds * 48000.0f);
+            total += duration_samples * 2 * 4; // stereo, 32-bit float
+        }
+    }
+    
+    return total;
 }
 
 } // namespace tachyon::core

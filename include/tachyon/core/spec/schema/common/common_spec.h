@@ -63,6 +63,8 @@ struct EffectSpec {
     std::map<std::string, double> scalars;
     std::map<std::string, ColorSpec> colors;
     std::map<std::string, std::string> strings;
+
+    [[nodiscard]] EffectSpec evaluate(double time_seconds) const;
 };
 
 inline void to_json(nlohmann::json& j, const EffectSpec& e) {

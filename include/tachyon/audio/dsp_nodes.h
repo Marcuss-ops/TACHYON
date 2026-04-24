@@ -76,6 +76,75 @@ private:
 };
 
 // ---------------------------------------------------------------------------
+// FadeNode – fade in/out and trim for audio regions
+// ---------------------------------------------------------------------------
+class FadeNode : public AudioNode {
+public:
+    enum class FadeType { Linear, Exponential };
+
+    FadeNode() = default;
+
+    void set_fade_in(float duration_samples, FadeType type = FadeType::Linear) {
+        m_fade_in_samples = duration_samples;
+        m_fade_in_type = type;
+    }
+
+    void set_fade_out(float duration_samples, FadeType type = FadeType::Linear) {
+        m_fade_out_samples = duration_samples;
+        m_fade_out_type = type;
+    }
+
+    void set_trim(float start_sample, float end_sample) {
+        m_trim_start = start_sample;
+        m_trim_end = end_sample;
+    }
+
+    void process(float* io, int nframes) override {
+        const int total_samples = nframes * 2;
+        for (int i = 0; i < total_samples; i += 2) {
+            float sample_index = i / 2 + m_processed_samples;
+
+            if (sample_index < m_trim_start || (m_trim_end > 0 && sample_index >= m_trim_end)) {
+                io[i] = io[i + 1] = 0.0f;
+                continue;
+            }
+
+            float gain = 1.0f;
+            float local_index = sample_index - m_trim_start;
+
+            if (m_fade_in_samples > 0 && local_index < m_fade_in_samples) {
+                float t = local_index / m_fade_in_samples;
+                gain *= (m_fade_in_type == FadeType::Linear) ? t : t * t;
+            }
+
+            if (m_fade_out_samples > 0 && m_trim_end > m_trim_start) {
+                float remaining = m_trim_end - sample_index;
+                if (remaining < m_fade_out_samples && remaining > 0) {
+                    float t = remaining / m_fade_out_samples;
+                    gain *= (m_fade_out_type == FadeType::Linear) ? t : t * t;
+                }
+            }
+
+            io[i] *= gain;
+            io[i + 1] *= gain;
+        }
+        m_processed_samples += nframes;
+    }
+
+    void reset() override { m_processed_samples = 0; }
+    std::string name() const override { return "Fade"; }
+
+private:
+    float m_fade_in_samples = 0.0f;
+    float m_fade_out_samples = 0.0f;
+    float m_trim_start = 0.0f;
+    float m_trim_end = 0.0f;
+    FadeType m_fade_in_type = FadeType::Linear;
+    FadeType m_fade_out_type = FadeType::Linear;
+    float m_processed_samples = 0.0f;
+};
+
+// ---------------------------------------------------------------------------
 // CompressorNode – sidechain ducker for audio ducking
 // ---------------------------------------------------------------------------
 struct DuckerConfig {

@@ -107,6 +107,232 @@ struct AnimatedColorSpec {
     }
 };
 
+// JSON serialization for keyframe types
+inline void to_json(nlohmann::json& j, const ScalarKeyframeSpec& k) {
+    j["time"] = k.time;
+    j["value"] = k.value;
+    j["easing"] = static_cast<int>(k.easing);
+    j["bezier"] = nlohmann::json{{"cx1", k.bezier.cx1}, {"cy1", k.bezier.cy1}, {"cx2", k.bezier.cx2}, {"cy2", k.bezier.cy2}};
+    j["speed_in"] = k.speed_in;
+    j["influence_in"] = k.influence_in;
+    j["speed_out"] = k.speed_out;
+    j["influence_out"] = k.influence_out;
+}
+
+inline void from_json(const nlohmann::json& j, ScalarKeyframeSpec& k) {
+    if (j.contains("time") && j.at("time").is_number()) k.time = j.at("time").get<double>();
+    if (j.contains("value") && j.at("value").is_number()) k.value = j.at("value").get<double>();
+    if (j.contains("easing") && j.at("easing").is_number()) k.easing = static_cast<animation::EasingPreset>(j.at("easing").get<int>());
+    if (j.contains("bezier") && j.at("bezier").is_object()) {
+        auto& b = j.at("bezier");
+        if (b.contains("cx1") && b.at("cx1").is_number()) k.bezier.cx1 = b.at("cx1").get<double>();
+        if (b.contains("cy1") && b.at("cy1").is_number()) k.bezier.cy1 = b.at("cy1").get<double>();
+        if (b.contains("cx2") && b.at("cx2").is_number()) k.bezier.cx2 = b.at("cx2").get<double>();
+        if (b.contains("cy2") && b.at("cy2").is_number()) k.bezier.cy2 = b.at("cy2").get<double>();
+    }
+    if (j.contains("speed_in") && j.at("speed_in").is_number()) k.speed_in = j.at("speed_in").get<double>();
+    if (j.contains("influence_in") && j.at("influence_in").is_number()) k.influence_in = j.at("influence_in").get<double>();
+    if (j.contains("speed_out") && j.at("speed_out").is_number()) k.speed_out = j.at("speed_out").get<double>();
+    if (j.contains("influence_out") && j.at("influence_out").is_number()) k.influence_out = j.at("influence_out").get<double>();
+}
+
+inline void to_json(nlohmann::json& j, const Vector2KeyframeSpec& k) {
+    j["time"] = k.time;
+    j["value"] = nlohmann::json{{"x", k.value.x}, {"y", k.value.y}};
+    j["tangent_in"] = nlohmann::json{{"x", k.tangent_in.x}, {"y", k.tangent_in.y}};
+    j["tangent_out"] = nlohmann::json{{"x", k.tangent_out.x}, {"y", k.tangent_out.y}};
+    j["easing"] = static_cast<int>(k.easing);
+    j["bezier"] = nlohmann::json{{"cx1", k.bezier.cx1}, {"cy1", k.bezier.cy1}, {"cx2", k.bezier.cx2}, {"cy2", k.bezier.cy2}};
+    j["speed_in"] = k.speed_in;
+    j["influence_in"] = k.influence_in;
+    j["speed_out"] = k.speed_out;
+    j["influence_out"] = k.influence_out;
+}
+
+inline void from_json(const nlohmann::json& j, Vector2KeyframeSpec& k) {
+    if (j.contains("time") && j.at("time").is_number()) k.time = j.at("time").get<double>();
+    if (j.contains("value") && j.at("value").is_object()) {
+        auto& v = j.at("value");
+        if (v.contains("x") && v.at("x").is_number()) k.value.x = v.at("x").get<float>();
+        if (v.contains("y") && v.at("y").is_number()) k.value.y = v.at("y").get<float>();
+    }
+    if (j.contains("tangent_in") && j.at("tangent_in").is_object()) {
+        auto& v = j.at("tangent_in");
+        if (v.contains("x") && v.at("x").is_number()) k.tangent_in.x = v.at("x").get<float>();
+        if (v.contains("y") && v.at("y").is_number()) k.tangent_in.y = v.at("y").get<float>();
+    }
+    if (j.contains("tangent_out") && j.at("tangent_out").is_object()) {
+        auto& v = j.at("tangent_out");
+        if (v.contains("x") && v.at("x").is_number()) k.tangent_out.x = v.at("x").get<float>();
+        if (v.contains("y") && v.at("y").is_number()) k.tangent_out.y = v.at("y").get<float>();
+    }
+    if (j.contains("easing") && j.at("easing").is_number()) k.easing = static_cast<animation::EasingPreset>(j.at("easing").get<int>());
+    if (j.contains("bezier") && j.at("bezier").is_object()) {
+        auto& b = j.at("bezier");
+        if (b.contains("cx1") && b.at("cx1").is_number()) k.bezier.cx1 = b.at("cx1").get<double>();
+        if (b.contains("cy1") && b.at("cy1").is_number()) k.bezier.cy1 = b.at("cy1").get<double>();
+        if (b.contains("cx2") && b.at("cx2").is_number()) k.bezier.cx2 = b.at("cx2").get<double>();
+        if (b.contains("cy2") && b.at("cy2").is_number()) k.bezier.cy2 = b.at("cy2").get<double>();
+    }
+    if (j.contains("speed_in") && j.at("speed_in").is_number()) k.speed_in = j.at("speed_in").get<double>();
+    if (j.contains("influence_in") && j.at("influence_in").is_number()) k.influence_in = j.at("influence_in").get<double>();
+    if (j.contains("speed_out") && j.at("speed_out").is_number()) k.speed_out = j.at("speed_out").get<double>();
+    if (j.contains("influence_out") && j.at("influence_out").is_number()) k.influence_out = j.at("influence_out").get<double>();
+}
+
+inline void to_json(nlohmann::json& j, const ColorKeyframeSpec& k) {
+    j["time"] = k.time;
+    j["value"] = k.value;
+    j["easing"] = static_cast<int>(k.easing);
+    j["bezier"] = nlohmann::json{{"cx1", k.bezier.cx1}, {"cy1", k.bezier.cy1}, {"cx2", k.bezier.cx2}, {"cy2", k.bezier.cy2}};
+    j["speed_in"] = k.speed_in;
+    j["influence_in"] = k.influence_in;
+    j["speed_out"] = k.speed_out;
+    j["influence_out"] = k.influence_out;
+}
+
+inline void from_json(const nlohmann::json& j, ColorKeyframeSpec& k) {
+    if (j.contains("time") && j.at("time").is_number()) k.time = j.at("time").get<double>();
+    if (j.contains("value") && j.at("value").is_object()) from_json(j.at("value"), k.value);
+    if (j.contains("easing") && j.at("easing").is_number()) k.easing = static_cast<animation::EasingPreset>(j.at("easing").get<int>());
+    if (j.contains("bezier") && j.at("bezier").is_object()) {
+        auto& b = j.at("bezier");
+        if (b.contains("cx1") && b.at("cx1").is_number()) k.bezier.cx1 = b.at("cx1").get<double>();
+        if (b.contains("cy1") && b.at("cy1").is_number()) k.bezier.cy1 = b.at("cy1").get<double>();
+        if (b.contains("cx2") && b.at("cx2").is_number()) k.bezier.cx2 = b.at("cx2").get<double>();
+        if (b.contains("cy2") && b.at("cy2").is_number()) k.bezier.cy2 = b.at("cy2").get<double>();
+    }
+    if (j.contains("speed_in") && j.at("speed_in").is_number()) k.speed_in = j.at("speed_in").get<double>();
+    if (j.contains("influence_in") && j.at("influence_in").is_number()) k.influence_in = j.at("influence_in").get<double>();
+    if (j.contains("speed_out") && j.at("speed_out").is_number()) k.speed_out = j.at("speed_out").get<double>();
+    if (j.contains("influence_out") && j.at("influence_out").is_number()) k.influence_out = j.at("influence_out").get<double>();
+}
+
+// JSON serialization for animated types
+inline void to_json(nlohmann::json& j, const AnimatedScalarSpec& a) {
+    if (a.value.has_value()) j["value"] = a.value.value();
+    if (!a.keyframes.empty()) j["keyframes"] = a.keyframes;
+    if (a.audio_band.has_value()) j["audio_band"] = static_cast<int>(a.audio_band.value());
+    if (a.audio_min != 0.0) j["audio_min"] = a.audio_min;
+    if (a.audio_max != 1.0) j["audio_max"] = a.audio_max;
+    if (a.expression.has_value()) j["expression"] = a.expression.value();
+}
+
+inline void from_json(const nlohmann::json& j, AnimatedScalarSpec& a) {
+    if (j.contains("value") && j.at("value").is_number()) a.value = j.at("value").get<double>();
+    if (j.contains("keyframes") && j.at("keyframes").is_array()) {
+        a.keyframes = j.at("keyframes").get<std::vector<ScalarKeyframeSpec>>();
+    }
+    if (j.contains("audio_band") && j.at("audio_band").is_number()) a.audio_band = static_cast<AudioBandType>(j.at("audio_band").get<int>());
+    if (j.contains("audio_min") && j.at("audio_min").is_number()) a.audio_min = j.at("audio_min").get<double>();
+    if (j.contains("audio_max") && j.at("audio_max").is_number()) a.audio_max = j.at("audio_max").get<double>();
+    if (j.contains("expression") && j.at("expression").is_string()) a.expression = j.at("expression").get<std::string>();
+}
+
+inline void to_json(nlohmann::json& j, const AnimatedVector2Spec& a) {
+    if (a.value.has_value()) j["value"] = nlohmann::json{{"x", a.value.value().x}, {"y", a.value.value().y}};
+    if (!a.keyframes.empty()) j["keyframes"] = a.keyframes;
+    if (a.expression.has_value()) j["expression"] = a.expression.value();
+}
+
+inline void from_json(const nlohmann::json& j, AnimatedVector2Spec& a) {
+    if (j.contains("value") && j.at("value").is_object()) {
+        auto& v = j.at("value");
+        math::Vector2 val;
+        if (v.contains("x") && v.at("x").is_number()) val.x = v.at("x").get<float>();
+        if (v.contains("y") && v.at("y").is_number()) val.y = v.at("y").get<float>();
+        a.value = val;
+    }
+    if (j.contains("keyframes") && j.at("keyframes").is_array()) {
+        a.keyframes = j.at("keyframes").get<std::vector<Vector2KeyframeSpec>>();
+    }
+    if (j.contains("expression") && j.at("expression").is_string()) a.expression = j.at("expression").get<std::string>();
+}
+
+inline void to_json(nlohmann::json& j, const AnimatedVector3Spec::Keyframe& k) {
+    j["time"] = k.time;
+    j["value"] = nlohmann::json{{"x", k.value.x}, {"y", k.value.y}, {"z", k.value.z}};
+    j["tangent_in"] = nlohmann::json{{"x", k.tangent_in.x}, {"y", k.tangent_in.y}, {"z", k.tangent_in.z}};
+    j["tangent_out"] = nlohmann::json{{"x", k.tangent_out.x}, {"y", k.tangent_out.y}, {"z", k.tangent_out.z}};
+    j["easing"] = static_cast<int>(k.easing);
+    j["bezier"] = nlohmann::json{{"cx1", k.bezier.cx1}, {"cy1", k.bezier.cy1}, {"cx2", k.bezier.cx2}, {"cy2", k.bezier.cy2}};
+    j["speed_in"] = k.speed_in;
+    j["influence_in"] = k.influence_in;
+    j["speed_out"] = k.speed_out;
+    j["influence_out"] = k.influence_out;
+}
+
+inline void from_json(const nlohmann::json& j, AnimatedVector3Spec::Keyframe& k) {
+    if (j.contains("time") && j.at("time").is_number()) k.time = j.at("time").get<double>();
+    if (j.contains("value") && j.at("value").is_object()) {
+        auto& v = j.at("value");
+        if (v.contains("x") && v.at("x").is_number()) k.value.x = v.at("x").get<float>();
+        if (v.contains("y") && v.at("y").is_number()) k.value.y = v.at("y").get<float>();
+        if (v.contains("z") && v.at("z").is_number()) k.value.z = v.at("z").get<float>();
+    }
+    if (j.contains("tangent_in") && j.at("tangent_in").is_object()) {
+        auto& v = j.at("tangent_in");
+        if (v.contains("x") && v.at("x").is_number()) k.tangent_in.x = v.at("x").get<float>();
+        if (v.contains("y") && v.at("y").is_number()) k.tangent_in.y = v.at("y").get<float>();
+        if (v.contains("z") && v.at("z").is_number()) k.tangent_in.z = v.at("z").get<float>();
+    }
+    if (j.contains("tangent_out") && j.at("tangent_out").is_object()) {
+        auto& v = j.at("tangent_out");
+        if (v.contains("x") && v.at("x").is_number()) k.tangent_out.x = v.at("x").get<float>();
+        if (v.contains("y") && v.at("y").is_number()) k.tangent_out.y = v.at("y").get<float>();
+        if (v.contains("z") && v.at("z").is_number()) k.tangent_out.z = v.at("z").get<float>();
+    }
+    if (j.contains("easing") && j.at("easing").is_number()) k.easing = static_cast<animation::EasingPreset>(j.at("easing").get<int>());
+    if (j.contains("bezier") && j.at("bezier").is_object()) {
+        auto& b = j.at("bezier");
+        if (b.contains("cx1") && b.at("cx1").is_number()) k.bezier.cx1 = b.at("cx1").get<double>();
+        if (b.contains("cy1") && b.at("cy1").is_number()) k.bezier.cy1 = b.at("cy1").get<double>();
+        if (b.contains("cx2") && b.at("cx2").is_number()) k.bezier.cx2 = b.at("cx2").get<double>();
+        if (b.contains("cy2") && b.at("cy2").is_number()) k.bezier.cy2 = b.at("cy2").get<double>();
+    }
+    if (j.contains("speed_in") && j.at("speed_in").is_number()) k.speed_in = j.at("speed_in").get<double>();
+    if (j.contains("influence_in") && j.at("influence_in").is_number()) k.influence_in = j.at("influence_in").get<double>();
+    if (j.contains("speed_out") && j.at("speed_out").is_number()) k.speed_out = j.at("speed_out").get<double>();
+    if (j.contains("influence_out") && j.at("influence_out").is_number()) k.influence_out = j.at("influence_out").get<double>();
+}
+
+inline void to_json(nlohmann::json& j, const AnimatedVector3Spec& a) {
+    if (a.value.has_value()) j["value"] = nlohmann::json{{"x", a.value.value().x}, {"y", a.value.value().y}, {"z", a.value.value().z}};
+    if (!a.keyframes.empty()) j["keyframes"] = a.keyframes;
+    if (a.expression.has_value()) j["expression"] = a.expression.value();
+}
+
+inline void from_json(const nlohmann::json& j, AnimatedVector3Spec& a) {
+    if (j.contains("value") && j.at("value").is_object()) {
+        auto& v = j.at("value");
+        math::Vector3 val;
+        if (v.contains("x") && v.at("x").is_number()) val.x = v.at("x").get<float>();
+        if (v.contains("y") && v.at("y").is_number()) val.y = v.at("y").get<float>();
+        if (v.contains("z") && v.at("z").is_number()) val.z = v.at("z").get<float>();
+        a.value = val;
+    }
+    if (j.contains("keyframes") && j.at("keyframes").is_array()) {
+        a.keyframes = j.at("keyframes").get<std::vector<AnimatedVector3Spec::Keyframe>>();
+    }
+    if (j.contains("expression") && j.at("expression").is_string()) a.expression = j.at("expression").get<std::string>();
+}
+
+inline void to_json(nlohmann::json& j, const AnimatedColorSpec& a) {
+    if (a.value.has_value()) j["value"] = a.value.value();
+    if (!a.keyframes.empty()) j["keyframes"] = a.keyframes;
+}
+
+inline void from_json(const nlohmann::json& j, AnimatedColorSpec& a) {
+    if (j.contains("value") && j.at("value").is_object()) {
+        ColorSpec c;
+        from_json(j.at("value"), c);
+        a.value = c;
+    }
+    if (j.contains("keyframes") && j.at("keyframes").is_array()) {
+        a.keyframes = j.at("keyframes").get<std::vector<ColorKeyframeSpec>>();
+    }
+}
+
 /**
  * @brief Effect specification with support for animated parameters over time.
  * 
