@@ -5,6 +5,7 @@ namespace tachyon::renderer2d::text::shaping {
 std::size_t ShapingCacheKeyHash::operator()(const ShapingCacheKey& key) const {
     std::size_t hash = 17;
     hash = hash * 31 + std::hash<std::uint64_t>()(key.font_id);
+    hash = hash * 31 + std::hash<std::uint64_t>()(key.content_hash);
     hash = hash * 31 + std::hash<std::uint32_t>()(key.scale);
     hash = hash * 31 + std::hash<int>()(key.direction);
     hash = hash * 31 + std::hash<std::string>()(key.script);
