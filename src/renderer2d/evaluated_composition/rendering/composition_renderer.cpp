@@ -181,7 +181,14 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 blur_config.samples = static_cast<int>(std::max<std::int64_t>(1, plan.motion_blur_samples));
                 blur_config.shutter_angle = plan.motion_blur_shutter_angle;
                 blur_config.shutter_phase = plan.motion_blur_shutter_phase;
-                blur_config.curve = plan.motion_blur_curve;
+                // Convert string to MotionBlurWeightCurve enum
+                if (plan.motion_blur_curve == "triangle") {
+                    blur_config.weight_curve = renderer3d::MotionBlurRenderer::MotionBlurWeightCurve::kTriangle;
+                } else if (plan.motion_blur_curve == "gaussian") {
+                    blur_config.weight_curve = renderer3d::MotionBlurRenderer::MotionBlurWeightCurve::kGaussian;
+                } else {
+                    blur_config.weight_curve = renderer3d::MotionBlurRenderer::MotionBlurWeightCurve::kBox;
+                }
                 motion_blur.set_config(blur_config);
 
                 const double frame_rate_value = state.frame_rate.value() > 0.0 ? state.frame_rate.value() : 60.0;

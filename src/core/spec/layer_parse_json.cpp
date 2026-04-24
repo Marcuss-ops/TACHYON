@@ -270,8 +270,6 @@ void parse_layer(const json& object, LayerSpec& out, const std::string& path, Di
     }
 }
 
-} // namespace tachyon
-
 void parse_mask_paths(const json& object, LayerSpec& layer, const std::string& path, DiagnosticBag& diagnostics) {
     (void)path; (void)diagnostics;
     if (!object.contains("mask_paths") || !object.at("mask_paths").is_array()) return;
@@ -308,3 +306,5 @@ void parse_mask_paths(const json& object, LayerSpec& layer, const std::string& p
         layer.mask_paths.push_back(std::move(mask_path));
     }
 }
+
+} // namespace tachyon

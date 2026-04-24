@@ -1,10 +1,14 @@
-// Minimal implementation of RayTracer
+// Implementation of RayTracer - render() orchestration only
 #include "tachyon/renderer3d/core/ray_tracer.h"
+#include "tachyon/core/math/vector3.h"
+#include "tachyon/core/math/matrix4x4.h"
+#include <algorithm>
+#include <cmath>
+#include <random>
 
 namespace tachyon::renderer3d {
 
 RayTracer::RayTracer() : m_last_error("") {
-    // Initialize Embree device
     device_ = rtcNewDevice(nullptr);
     rtcSetDeviceErrorFunction(device_, log_embree_error, this);
 }
@@ -16,50 +20,113 @@ RayTracer::~RayTracer() {
     }
 }
 
-void RayTracer::build_scene(const EvaluatedScene3D& scene) {
-    (void)scene;
-    // TODO: Implement scene building.
-}
-
 void RayTracer::render(
     const EvaluatedScene3D& scene,
     AOVBuffer& out_buffer,
-    const MotionBlurRenderer* motion_blur,
+    const MotionBlurRenderer* /*motion_blur*/,
     double frame_time_seconds,
     double frame_duration_seconds) {
-    
-    (void)scene;
-    (void)out_buffer;
-    (void)motion_blur;
-    (void)frame_time_seconds;
     (void)frame_duration_seconds;
-    // TODO: Implement rendering.
-}
 
-ShadingResult RayTracer::trace_ray(
-    const math::Vector3& origin,
-    const math::Vector3& direction,
-    const EvaluatedScene3D& scene,
-    std::mt19937& rng,
-    int depth,
-    float time) {
+    if (!scene_ || scene.instances.empty()) {
+        return;
+    }
+
+    const auto& cam = scene.camera;
+    const int width = static_cast<int>(out_buffer.width);
+    const int height = static_cast<int>(out_buffer.height);
     
-    (void)origin;
-    (void)direction;
-    (void)scene;
-    (void)rng;
-    (void)depth;
-    (void)time;
-    
-    ShadingResult result;
-    result.color = math::Vector3{0.0f, 0.0f, 0.0f};
-    result.alpha = 0.0f;
-    result.depth = 1e6f;
-    return result;
+    if (width <= 0 || height <= 0) {
+        return;
+    }
+
+    out_buffer.clear();
+
+    std::random_device rd;
+    std::mt19937 rng(rd());
+
+    const float time = static_cast<float>(frame_time_seconds);
+
+    // Compute camera vectors
+    math::Vector3 cam_forward = (cam.target - cam.position).normalized();
+    math::Vector3 cam_right = math::Vector3::cross(cam_forward, cam.up).normalized();
+    math::Vector3 cam_up = math::Vector3::cross(cam_right, cam_forward).normalized();
+    float fov_rad = cam.fov_y * 3.1415926535f / 180.0f;
+    float half_height = std::tan(fov_rad * 0.5f);
+    float aspect = static_cast<float>(width) / static_cast<float>(height);
+
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            math::Vector3 pixel_color = {0.0f, 0.0f, 0.0f};
+            float pixel_alpha = 0.0f;
+            float pixel_depth = 1e6f;
+            math::Vector3 pixel_normal = {0.0f, 0.0f, 1.0f};
+            math::Vector3 pixel_albedo = {0.0f, 0.0f, 0.0f};
+            math::Vector2 pixel_motion = {0.0f, 0.0f};
+            std::uint32_t pixel_obj_id = 0;
+            std::uint32_t pixel_mat_id = 0;
+
+            for (int s = 0; s < samples_per_pixel_; ++s) {
+                // Generate camera ray with jitter for anti-aliasing
+                float jitter_x = (samples_per_pixel_ > 1) ? (static_cast<float>(rng() & 0xFFFF) / 65535.0f - 0.5f) : 0.0f;
+                float jitter_y = (samples_per_pixel_ > 1) ? (static_cast<float>(rng() & 0xFFFF) / 65535.0f - 0.5f) : 0.0f;
+
+                float px = (static_cast<float>(x) + 0.5f + jitter_x) / static_cast<float>(width);
+                float py = (static_cast<float>(y) + 0.5f + jitter_y) / static_cast<float>(height);
+
+                // Generate camera ray
+                float u = (2.0f * px - 1.0f) * aspect * half_height;
+                float v = (1.0f - 2.0f * py) * half_height;
+                math::Vector3 direction = (cam_forward + cam_right * u + cam_up * v).normalized();
+                math::Vector3 origin = cam.position;
+
+                ShadingResult sample = trace_ray(origin, direction, scene, rng, 0, time);
+                pixel_color = pixel_color + sample.color;
+                pixel_alpha = std::max(pixel_alpha, sample.alpha);
+                pixel_depth = std::min(pixel_depth, sample.depth);
+                pixel_normal = pixel_normal + sample.normal;
+                pixel_albedo = pixel_albedo + sample.albedo;
+                pixel_motion = pixel_motion + sample.motion_vector;
+                pixel_obj_id = sample.object_id;
+                pixel_mat_id = sample.material_id;
+            }
+
+            float inv_samples = 1.0f / static_cast<float>(samples_per_pixel_);
+            pixel_color = pixel_color * inv_samples;
+            pixel_normal = (samples_per_pixel_ > 1) ? (pixel_normal * inv_samples).normalized() : pixel_normal;
+            pixel_albedo = pixel_albedo * inv_samples;
+            pixel_motion = pixel_motion * inv_samples;
+
+            // Write to AOV buffer vectors directly
+            std::size_t idx = static_cast<std::size_t>(y) * width + x;
+            out_buffer.beauty_rgba[idx * 4 + 0] = pixel_color.x;
+            out_buffer.beauty_rgba[idx * 4 + 1] = pixel_color.y;
+            out_buffer.beauty_rgba[idx * 4 + 2] = pixel_color.z;
+            out_buffer.beauty_rgba[idx * 4 + 3] = pixel_alpha;
+            out_buffer.depth_z[idx] = pixel_depth;
+            out_buffer.normal_xyz[idx * 3 + 0] = pixel_normal.x;
+            out_buffer.normal_xyz[idx * 3 + 1] = pixel_normal.y;
+            out_buffer.normal_xyz[idx * 3 + 2] = pixel_normal.z;
+            out_buffer.motion_vector_xy[idx * 2 + 0] = pixel_motion.x;
+            out_buffer.motion_vector_xy[idx * 2 + 1] = pixel_motion.y;
+            out_buffer.object_id[idx] = pixel_obj_id;
+            out_buffer.material_id[idx] = pixel_mat_id;
+        }
+    }
 }
 
 void RayTracer::cleanup_scene() {
-    // TODO: Clean up Embree scene
+    if (scene_) {
+        rtcReleaseScene(scene_);
+        scene_ = nullptr;
+    }
+    instances_.clear();
+    for (auto& [key, entry] : mesh_cache_) {
+        if (entry.scene) {
+            rtcReleaseScene(entry.scene);
+        }
+    }
+    mesh_cache_.clear();
 }
 
 void RayTracer::log_embree_error(void* userPtr, RTCError code, const char* str) {
