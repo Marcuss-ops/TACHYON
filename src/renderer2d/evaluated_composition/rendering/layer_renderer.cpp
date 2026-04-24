@@ -6,6 +6,7 @@
 #include "tachyon/renderer2d/color/color_transfer.h"
 #include "tachyon/renderer2d/color/blending.h"
 #include "tachyon/renderer2d/effects/effect_common.h"
+#include "tachyon/text/content/word_timestamps.h"
 #include "tachyon/text/layout/layout.h"
 #include "tachyon/text/animation/text_animator_utils.h"
 #include "tachyon/text/animation/text_animator_pipeline.h"
@@ -69,6 +70,33 @@ float sample_glyph_alpha(const ::tachyon::text::GlyphBitmap& glyph, float src_x,
     const float ax0 = a00 + (a10 - a00) * fx;
     const float ax1 = a01 + (a11 - a01) * fx;
     return ax0 + (ax1 - ax0) * fy;
+}
+
+std::optional<::tachyon::text::TextHighlightSpan> word_index_to_highlight_span(
+    const ::tachyon::text::TextLayoutResult& layout,
+    std::size_t word_index) {
+
+    std::size_t glyph_start = layout.glyphs.size();
+    std::size_t glyph_end = 0;
+
+    for (std::size_t i = 0; i < layout.glyphs.size(); ++i) {
+        if (layout.glyphs[i].word_index == word_index) {
+            if (i < glyph_start) glyph_start = i;
+            if (i + 1 > glyph_end) glyph_end = i + 1;
+        }
+    }
+
+    if (glyph_start >= layout.glyphs.size()) {
+        return std::nullopt;
+    }
+
+    ::tachyon::text::TextHighlightSpan span;
+    span.start_glyph = glyph_start;
+    span.end_glyph = glyph_end;
+    span.color = {255, 236, 59, 160};
+    span.padding_x = 3;
+    span.padding_y = 2;
+    return span;
 }
 
 PathGeometry build_shape_geometry(
@@ -156,10 +184,24 @@ PathGeometry build_shape_geometry(
             cmd.p1.y -= static_cast<float>(target_rect->y);
             cmd.p2.x -= static_cast<float>(target_rect->x);
             cmd.p2.y -= static_cast<float>(target_rect->y);
+}
+    }
+
+    // Render word_timestamp highlights (active word highlighting)
+    for (const auto& span : highlight_spans) {
+        if (span.start_glyph >= layout.glyphs.size()) continue;
+        const auto end = std::min<size_t>(span.end_glyph, layout.glyphs.size());
+        for (size_t i = span.start_glyph; i < end; ++i) {
+            const auto& g = layout.glyphs[i];
+            int px = g.x - static_cast<int>(span.padding_x);
+            int py = g.y - static_cast<int>(span.padding_y);
+            int pw = g.width + static_cast<int>(span.padding_x * 2);
+            int ph = g.height + static_cast<int>(span.padding_y * 2);
+            surface->fill_rect({px, py, pw, ph}, span.color, true);
         }
     }
 
-    return geom;
+    return surface;
 }
 
 std::shared_ptr<SurfaceRGBA> render_mask_layer_surface(
@@ -254,6 +296,22 @@ std::shared_ptr<SurfaceRGBA> render_text_layer_surface(
     // Apply Text-On-Path if configured
     if (layer.shape_path.has_value() && layer.text_on_path_enabled) {
         txt::TextOnPathModifier::apply(layout, *layer.shape_path, 0.0, true);
+    }
+
+    std::vector<txt::TextHighlightSpan> highlight_spans;
+
+    // Bridge: word_timestamp_path -> active word highlight
+    if (layer.word_timestamp_path.has_value() && !layer.word_timestamp_path->empty()) {
+        auto track_result = txt::parse_word_timestamps(*layer.word_timestamp_path);
+        if (track_result.ok()) {
+            int word_idx = txt::find_active_word_index(track_result.value, layer.local_time_seconds);
+            if (word_idx >= 0) {
+                auto span = word_index_to_highlight_span(layout, static_cast<std::size_t>(word_idx));
+                if (span.has_value()) {
+                    highlight_spans.push_back(*span);
+                }
+            }
+        }
     }
 
     for (const auto& pg : layout.ResolvedTextLayout::glyphs) {
