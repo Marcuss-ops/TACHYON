@@ -16,10 +16,18 @@ struct AudioBands {
     float rms{0.0f};
 };
 
+struct BeatMap {
+    std::vector<double> beat_times_seconds;  // tempo di ogni beat
+    double bpm{0.0};
+};
+
 class AudioAnalyzer {
 public:
     bool load(const std::filesystem::path& path, double sample_rate);
     AudioBands analyze_frame(double composition_time_seconds, double window_seconds = 1.0 / 30.0) const;
+    
+    // Beat detection: onset detection su banda bass
+    BeatMap detect_beats(float onset_threshold = 0.15f) const;
 
     [[nodiscard]] double duration() const noexcept { return m_duration_seconds; }
     [[nodiscard]] double sample_rate() const noexcept { return m_sample_rate; }

@@ -166,4 +166,60 @@ AudioBands AudioAnalyzer::analyze_frame(double composition_time_seconds, double 
     return analyze_window(m_samples, m_sample_rate, begin_index, sample_count);
 }
 
+BeatMap AudioAnalyzer::detect_beats(float onset_threshold) const {
+    BeatMap beat_map;
+    if (!loaded() || m_samples.empty()) {
+        return beat_map;
+    }
+
+    // Analisi su finestre di 1/30s (circa 33ms a 48kHz = ~1600 samples)
+    const double window_seconds = 1.0 / 30.0;
+    const std::size_t window_samples = static_cast<std::size_t>(window_seconds * m_sample_rate);
+    const std::size_t total_windows = m_samples.size() / window_samples;
+    
+    if (total_windows < 2) {
+        return beat_map;
+    }
+
+    // Calcola energia bass per ogni finestra
+    std::vector<float> bass_energy_per_window;
+    bass_energy_per_window.reserve(total_windows);
+    
+    for (std::size_t i = 0; i < total_windows; ++i) {
+        const std::size_t begin_index = i * window_samples;
+        AudioBands bands = analyze_window(m_samples, m_sample_rate, begin_index, window_samples);
+        bass_energy_per_window.push_back(bands.bass);
+    }
+
+    // Rileva onset: delta di energia > threshold
+    std::vector<double> beat_times;
+    for (std::size_t i = 1; i < bass_energy_per_window.size(); ++i) {
+        float delta = bass_energy_per_window[i] - bass_energy_per_window[i - 1];
+        if (delta > onset_threshold) {
+            double beat_time = static_cast<double>(i) * window_seconds;
+            beat_times.push_back(beat_time);
+        }
+    }
+
+    // Calcola BPM medio dai gap tra beat consecutivi
+    if (beat_times.size() >= 2) {
+        std::vector<double> gaps;
+        gaps.reserve(beat_times.size() - 1);
+        for (std::size_t i = 1; i < beat_times.size(); ++i) {
+            double gap = beat_times[i] - beat_times[i - 1];
+            if (gap > 0.3 && gap < 2.0) { // Filtra gap irrealistici (30-200 BPM)
+                gaps.push_back(gap);
+            }
+        }
+        
+        if (!gaps.empty()) {
+            double avg_gap = std::accumulate(gaps.begin(), gaps.end(), 0.0) / static_cast<double>(gaps.size());
+            beat_map.bpm = 60.0 / avg_gap;
+        }
+    }
+
+    beat_map.beat_times_seconds = std::move(beat_times);
+    return beat_map;
+}
+
 } // namespace tachyon::audio

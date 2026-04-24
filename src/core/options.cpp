@@ -173,6 +173,29 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
             options.frame_range_override = parse_frame_range(value, result.diagnostics);
             continue;
         }
+        if (arg == "--frame") {
+            const std::string value = require_argument(args, index);
+            if (value.empty()) {
+                result.diagnostics.add_error("cli.frame_missing", "missing value for --frame");
+                return result;
+            }
+            try {
+                options.preview_frame_number = std::stoi(value);
+            } catch (const std::exception&) {
+                result.diagnostics.add_error("cli.frame_invalid", "invalid value for --frame: " + value);
+                return result;
+            }
+            continue;
+        }
+        if (arg == "--out" && options.command == "preview-frame") {
+            const std::string value = require_argument(args, index);
+            if (value.empty()) {
+                result.diagnostics.add_error("cli.out_missing", "missing value for --out");
+                return result;
+            }
+            options.preview_output = value;
+            continue;
+        }
 
         result.diagnostics.add_error("cli.flag_unknown", "unknown flag: " + arg, arg);
         return result;
