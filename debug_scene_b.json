@@ -1,0 +1,17 @@
+{
+  "job_id": "debug_b",
+  "scene_ref": "studio/library/scenes/scene_b_red.json",
+  "composition_target": "main",
+  "frame_range": { "start": 0, "end": 0 },
+  "output": {
+    "destination": { "path": "debug/render_b/b.png", "overwrite": true },
+    "profile": {
+      "name": "png-sequence",
+      "class_name": "png-sequence",
+      "container": "png",
+      "alpha_mode": "preserved",
+      "video": { "codec": "png", "pixel_format": "rgba8", "rate_control_mode": "fixed" },
+      "color": { "space": "bt709", "transfer": "srgb", "range": "full" }
+    }
+  }
+}
