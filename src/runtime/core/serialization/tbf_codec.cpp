@@ -62,6 +62,12 @@ CompiledScene TBFCodec::migrate(const CompiledScene& scene, std::uint16_t from_v
         }
         ver = 3;
     }
+
+    if (ver == 3) {
+        // Migrate from v3 to v4: AudioTrackSpec gained playback_speed, pitch_shift, pitch_correct.
+        // Default values already match the spec (1.0f, 1.0f, false), so this is a no-op structural migration.
+        ver = 4;
+    }
     
     migrated.header.version = current_version();
     return migrated;
@@ -158,6 +164,11 @@ struct BinaryWriter {
         
         write<std::uint32_t>(static_cast<std::uint32_t>(track.effects.size()));
         for (const auto& effect : track.effects) write_audio_effect(effect);
+
+        // Version 4 fields
+        write(track.playback_speed);
+        write(track.pitch_shift);
+        write(track.pitch_correct);
     }
 };
 
@@ -165,6 +176,7 @@ struct BinaryReader {
     const std::vector<std::uint8_t>& buffer;
     std::size_t pos{0};
     bool error{false};
+    std::uint16_t file_version{0};
 
     template<typename T>
     T read() {
@@ -274,6 +286,12 @@ struct BinaryReader {
         
         std::uint32_t effect_count = read<std::uint32_t>();
         for (std::uint32_t i = 0; i < effect_count; ++i) track.effects.push_back(read_audio_effect());
+
+        if (file_version >= 4) {
+            track.playback_speed = read<float>();
+            track.pitch_shift = read<float>();
+            track.pitch_correct = read<bool>();
+        }
         return track;
     }
 };
@@ -362,6 +380,7 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
     scene.header = reader.read<CompiledSceneHeader>();
     if (scene.header.magic != 0x54414348U) return std::nullopt;
     if (scene.header.layout_checksum != CompiledScene::calculate_layout_checksum()) return std::nullopt;
+    reader.file_version = scene.header.version;
     
     // 2. Metadata
     scene.project_id = reader.read_string();
@@ -448,6 +467,11 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
     if (reader.error) return std::nullopt;
 
     scene.graph.compile();
+
+    if (scene.header.version < current_version()) {
+        scene = migrate(scene, scene.header.version);
+    }
+
     return scene;
 }
 

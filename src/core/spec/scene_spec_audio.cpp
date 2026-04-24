@@ -71,6 +71,15 @@ AudioTrackSpec parse_audio_track(const json& object, const std::string& path, Di
     if (object.contains("start_offset_seconds") && object.at("start_offset_seconds").is_number()) {
         track.start_offset_seconds = object.at("start_offset_seconds").get<double>();
     }
+    if (object.contains("playback_speed") && object.at("playback_speed").is_number()) {
+        track.playback_speed = object.at("playback_speed").get<float>();
+    }
+    if (object.contains("pitch_shift") && object.at("pitch_shift").is_number()) {
+        track.pitch_shift = object.at("pitch_shift").get<float>();
+    }
+    if (object.contains("pitch_correct") && object.at("pitch_correct").is_boolean()) {
+        track.pitch_correct = object.at("pitch_correct").get<bool>();
+    }
 
     if (object.contains("volume_keyframes") && object.at("volume_keyframes").is_array()) {
         const auto& kfs = object.at("volume_keyframes");
