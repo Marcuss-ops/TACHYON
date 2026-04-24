@@ -77,7 +77,7 @@ void parse_layer(const json& object, LayerSpec& out, const std::string& path, Di
 CompositionSpec parse_composition(const json& object, const std::string& path, DiagnosticBag& diagnostics);
 AssetSpec parse_asset(const json& object, const std::string& path, DiagnosticBag& diagnostics);
 ParseResult<SceneSpec> parse_scene_spec_file(const std::filesystem::path& path);
-ParseResult<SceneSpec> parse_scene_spec_json(const std::string& text);
+ParseResult<SceneSpec> parse_scene_spec_json(const std::string& text, const std::filesystem::path& base_dir = {});
 ValidationResult validate_scene_spec(const SceneSpec& scene);
 
 // --- Serialization ---

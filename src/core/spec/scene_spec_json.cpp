@@ -65,7 +65,7 @@ AssetSpec parse_asset(const json& object, const std::string& path, DiagnosticBag
     return asset;
 }
 
-ParseResult<SceneSpec> parse_scene_spec_json(const std::string& text) {
+ParseResult<SceneSpec> parse_scene_spec_json(const std::string& text, const std::filesystem::path& base_dir) {
     ParseResult<SceneSpec> result;
     try {
         const json parsed = json::parse(text);
@@ -107,12 +107,16 @@ ParseResult<SceneSpec> parse_scene_spec_json(const std::string& text) {
         if (parsed.contains("font_manifest") && parsed.at("font_manifest").is_string()) {
             std::string fm_path = parsed.at("font_manifest").get<std::string>();
             scene.font_manifest_path = fm_path;
-            auto manifest_opt = FontManifestParser::parse_file(std::filesystem::path(fm_path));
+            std::filesystem::path fm_fs_path(fm_path);
+            if (fm_fs_path.is_relative() && !base_dir.empty()) {
+                fm_fs_path = base_dir / fm_fs_path;
+            }
+            auto manifest_opt = FontManifestParser::parse_file(fm_fs_path);
             if (manifest_opt.has_value()) {
                 scene.font_manifest = std::move(*manifest_opt);
             } else {
                 result.diagnostics.add_warning("scene.font_manifest.load_failed",
-                    "failed to load font manifest from: " + fm_path);
+                    "failed to load font manifest from: " + fm_fs_path.string());
             }
         }
 
@@ -134,7 +138,8 @@ ParseResult<SceneSpec> parse_scene_spec_file(const std::filesystem::path& path) 
 
     std::stringstream buffer;
     buffer << file.rdbuf();
-    return parse_scene_spec_json(buffer.str());
+    std::filesystem::path base_dir = path.parent_path();
+    return parse_scene_spec_json(buffer.str(), base_dir);
 }
 
 // ---------------------------------------------------------------------------
