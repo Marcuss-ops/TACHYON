@@ -12,10 +12,13 @@ namespace tachyon {
 
 struct CliOptions {
     std::string command;
+    std::filesystem::path library_path;
+    std::optional<std::string> transition_id;
     std::filesystem::path scene_path;
     std::filesystem::path job_path;
     std::filesystem::path batch_path;
     std::filesystem::path output_override;
+    std::filesystem::path output_dir;  // Common output directory for studio-demo
     std::size_t worker_count{1};
     std::optional<std::size_t> memory_budget_bytes;
     bool json_output{false};

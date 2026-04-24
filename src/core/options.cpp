@@ -85,6 +85,24 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
             options.scene_path = value;
             continue;
         }
+        if (arg == "--library") {
+            const std::string value = require_argument(args, index);
+            if (value.empty()) {
+                result.diagnostics.add_error("cli.library_missing", "missing value for --library");
+                return result;
+            }
+            options.library_path = value;
+            continue;
+        }
+        if (arg == "--transition") {
+            const std::string value = require_argument(args, index);
+            if (value.empty()) {
+                result.diagnostics.add_error("cli.transition_missing", "missing value for --transition");
+                return result;
+            }
+            options.transition_id = value;
+            continue;
+        }
         if (arg == "--job") {
             const std::string value = require_argument(args, index);
             if (value.empty()) {
@@ -131,6 +149,15 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
             if (parsed_budget.has_value()) {
                 options.memory_budget_bytes = (*parsed_budget) * 1024ULL * 1024ULL;
             }
+            continue;
+        }
+        if (arg == "--output-dir") {
+            const std::string value = require_argument(args, index);
+            if (value.empty()) {
+                result.diagnostics.add_error("cli.output_dir_missing", "missing value for --output-dir");
+                return result;
+            }
+            options.output_dir = value;
             continue;
         }
         if (arg == "--json") {

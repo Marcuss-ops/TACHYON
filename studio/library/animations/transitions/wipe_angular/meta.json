@@ -1,0 +1,10 @@
+{
+  "schema": "tachyon.animation_transition/1.0",
+  "id": "wipe_angular",
+  "name": "Wipe Angular",
+  "pack": "normal",
+  "duration_seconds": 2.0,
+  "entry": "v1.glsl",
+  "thumb": "thumb.png",
+  "source": "transitions/normal/04_wipe_angular.glsl"
+}

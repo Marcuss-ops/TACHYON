@@ -1,0 +1,164 @@
+﻿{
+    "schema":  "tachyon.library_manifest/2.0",
+    "generated_by":  "tachyon-studio",
+    "schemas":  {
+                    "scene":  "system/scene.schema.json"
+                },
+    "content":  {
+                    "lexicon":  {
+                                    "phrases":  "content/lexicon/phrases",
+                                    "words":  "content/lexicon/words",
+                                    "names":  "content/lexicon/names",
+                                    "numbers":  "content/lexicon/numbers"
+                                },
+                    "images":  "content/images"
+                },
+    "animations":  {
+                       "transitions":  [
+                                           {
+                                               "id":  "circle_iris",
+                                               "name":  "Circle Iris",
+                                               "path":  "animations/transitions/circle_iris/meta.json",
+                                               "duration_seconds":  2,
+                                               "demo_path":  "animations/transitions/circle_iris/demo.json",
+                                               "output_path":  "animations/transitions/circle_iris/output"
+                                           },
+                                           {
+                                               "id":  "crossfade",
+                                               "name":  "Crossfade",
+                                               "path":  "animations/transitions/crossfade/meta.json",
+                                               "duration_seconds":  2,
+                                               "demo_path":  "animations/transitions/crossfade/demo.json",
+                                               "output_path":  "animations/transitions/crossfade/output"
+                                           },
+                                           {
+                                               "id":  "directional_blur_wipe",
+                                               "name":  "Directional Blur Wipe",
+                                               "path":  "animations/transitions/directional_blur_wipe/meta.json",
+                                               "duration_seconds":  2,
+                                               "demo_path":  "animations/transitions/directional_blur_wipe/demo.json",
+                                               "output_path":  "animations/transitions/directional_blur_wipe/output"
+                                           },
+                                           {
+                                               "id":  "fade_to_black",
+                                               "name":  "Fade to Black",
+                                               "path":  "animations/transitions/fade_to_black/meta.json",
+                                               "duration_seconds":  2,
+                                               "demo_path":  "animations/transitions/fade_to_black/demo.json",
+                                               "output_path":  "animations/transitions/fade_to_black/output"
+                                           },
+                                           {
+                                               "id":  "glitch_slice",
+                                               "name":  "Glitch Slice",
+                                               "path":  "animations/transitions/glitch_slice/meta.json",
+                                               "duration_seconds":  2,
+                                               "demo_path":  "animations/transitions/glitch_slice/demo.json",
+                                               "output_path":  "animations/transitions/glitch_slice/output"
+                                           },
+                                           {
+                                               "id":  "luma_dissolve",
+                                               "name":  "Luma Dissolve",
+                                               "path":  "animations/transitions/luma_dissolve/meta.json",
+                                               "duration_seconds":  2,
+                                               "demo_path":  "animations/transitions/luma_dissolve/demo.json",
+                                               "output_path":  "animations/transitions/luma_dissolve/output"
+                                           },
+                                           {
+                                               "id":  "pixelate",
+                                               "name":  "Pixelate",
+                                               "path":  "animations/transitions/pixelate/meta.json",
+                                               "duration_seconds":  2,
+                                               "demo_path":  "animations/transitions/pixelate/demo.json",
+                                               "output_path":  "animations/transitions/pixelate/output"
+                                           },
+                                           {
+                                               "id":  "push_left",
+                                               "name":  "Push Left",
+                                               "path":  "animations/transitions/push_left/meta.json",
+                                               "duration_seconds":  2,
+                                               "demo_path":  "animations/transitions/push_left/demo.json",
+                                               "output_path":  "animations/transitions/push_left/output"
+                                           },
+                                           {
+                                               "id":  "rgb_split",
+                                               "name":  "RGB Split",
+                                               "path":  "animations/transitions/rgb_split/meta.json",
+                                               "duration_seconds":  2,
+                                               "demo_path":  "animations/transitions/rgb_split/demo.json",
+                                               "output_path":  "animations/transitions/rgb_split/output"
+                                           },
+                                           {
+                                               "id":  "slide_easing",
+                                               "name":  "Slide Easing",
+                                               "path":  "animations/transitions/slide_easing/meta.json",
+                                               "duration_seconds":  2,
+                                               "demo_path":  "animations/transitions/slide_easing/demo.json",
+                                               "output_path":  "animations/transitions/slide_easing/output"
+                                           },
+                                           {
+                                               "id":  "spin",
+                                               "name":  "Spin",
+                                               "path":  "animations/transitions/spin/meta.json",
+                                               "duration_seconds":  2,
+                                               "demo_path":  "animations/transitions/spin/demo.json",
+                                               "output_path":  "animations/transitions/spin/output"
+                                           },
+                                           {
+                                               "id":  "wipe_angular",
+                                               "name":  "Wipe Angular",
+                                               "path":  "animations/transitions/wipe_angular/meta.json",
+                                               "duration_seconds":  2,
+                                               "demo_path":  "animations/transitions/wipe_angular/demo.json",
+                                               "output_path":  "animations/transitions/wipe_angular/output"
+                                           },
+                                           {
+                                               "id":  "wipe_linear",
+                                               "name":  "Wipe Linear",
+                                               "path":  "animations/transitions/wipe_linear/meta.json",
+                                               "duration_seconds":  2,
+                                               "demo_path":  "animations/transitions/wipe_linear/demo.json",
+                                               "output_path":  "animations/transitions/wipe_linear/output"
+                                           },
+                                           {
+                                               "id":  "zoom_blur",
+                                               "name":  "Zoom Blur",
+                                               "path":  "animations/transitions/zoom_blur/meta.json",
+                                               "duration_seconds":  2,
+                                               "demo_path":  "animations/transitions/zoom_blur/demo.json",
+                                               "output_path":  "animations/transitions/zoom_blur/output"
+                                           },
+                                           {
+                                               "id":  "zoom_in",
+                                               "name":  "Zoom In",
+                                               "path":  "animations/transitions/zoom_in/meta.json",
+                                               "duration_seconds":  2,
+                                               "demo_path":  "animations/transitions/zoom_in/demo.json",
+                                               "output_path":  "animations/transitions/zoom_in/output"
+                                           }
+                                       ],
+                       "text":  [
+
+                                ],
+                       "stock":  [
+                                     {
+                                         "id":  "stock",
+                                         "path":  "animations/stock"
+                                     }
+                                 ]
+                   },
+    "scenes":  [
+                   {
+                       "id":  "public_scene_a_white",
+                       "name":  "Scene A White",
+                       "path":  "scenes/scene_a_white.json"
+                   },
+                   {
+                       "id":  "public_scene_b_red",
+                       "name":  "Scene B Red",
+                       "path":  "scenes/scene_b_red.json"
+                   }
+               ],
+    "system":  {
+                   "stack":  "system/stack"
+               }
+}

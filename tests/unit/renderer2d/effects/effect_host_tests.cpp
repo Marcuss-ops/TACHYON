@@ -103,6 +103,21 @@ bool run_effect_host_tests() {
     const Color p = filled.get_pixel(8, 8);
     check_true(std::abs(p.r - 200.0f/255.0f) < 0.001f && std::abs(p.g - 100.0f/255.0f) < 0.001f && std::abs(p.b - 50.0f/255.0f) < 0.001f, "Fill preserves straight RGB");
 
+    SurfaceRGBA transition_from(8, 8);
+    transition_from.clear(Color::red());
+    SurfaceRGBA transition_to(8, 8);
+    transition_to.clear(Color::blue());
+
+    EffectParams transition_params;
+    transition_params.scalars["t"] = 1.0f;
+    transition_params.strings["transition_id"] = "crossfade";
+    transition_params.strings["shader_path"] = "studio/library/animations/transitions/crossfade/v1.glsl";
+    transition_params.aux_surfaces["transition_to"] = &transition_to;
+    const SurfaceRGBA transitioned = host.apply("glsl_transition", transition_from, transition_params);
+    const Color transition_center = transitioned.get_pixel(4, 4);
+    check_true(transition_center.b > 0.8f, "Glsl transition reaches the target surface");
+    check_true(transition_center.r < 0.3f, "Glsl transition reduces the source surface when t=1");
+
     PrecompCache cache;
     cache.set_max_bytes(16);
 

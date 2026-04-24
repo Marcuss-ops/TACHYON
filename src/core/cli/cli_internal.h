@@ -15,5 +15,6 @@ bool run_validate_command(const CliOptions& options, std::ostream& out, std::ost
 bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostream& err);
 bool run_render_command(const CliOptions& options, std::ostream& out, std::ostream& err);
 bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostream& err);
+bool run_studio_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err);
 
 } // namespace tachyon

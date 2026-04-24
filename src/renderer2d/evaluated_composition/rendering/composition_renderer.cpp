@@ -274,7 +274,13 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
             if (layer.is_adjustment_layer) {
                 if (render_context.policy.effects_enabled) {
-                    auto adjusted = apply_effect_pipeline(target_surface, layer.effects, host, render_context.working_color_space.profile);
+                    auto adjusted = apply_effect_pipeline(
+                        target_surface,
+                        layer.effects,
+                        host,
+                        render_context.working_color_space.profile,
+                        rendered_surfaces,
+                        layer.id);
                     multiply_surface_alpha(adjusted, static_cast<float>(layer.opacity));
                     composite_surface(target_surface, adjusted, 0, 0, BlendMode::Normal);
                 }
@@ -283,7 +289,13 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
             // Effects
             if (render_context.policy.effects_enabled && !layer.effects.empty()) {
-                auto effect_surface = apply_effect_pipeline(*layer_surface, layer.effects, host, render_context.cms.working_profile);
+                auto effect_surface = apply_effect_pipeline(
+                    *layer_surface,
+                    layer.effects,
+                    host,
+                    render_context.cms.working_profile,
+                    rendered_surfaces,
+                    layer.id);
                 *layer_surface = std::move(effect_surface);
             }
 
