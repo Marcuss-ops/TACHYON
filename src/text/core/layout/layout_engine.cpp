@@ -560,9 +560,15 @@ TextLayoutResult layout_text(
     TextAlignment alignment,
     const TextLayoutOptions& options) {
 
-    const auto fallback_chain = registry.get_fallback_chain(font_name);
+    auto fallback_chain = registry.get_fallback_chain(font_name);
     if (fallback_chain.empty()) {
-        return {};
+        // Font not found - try default font
+        const Font* default_font = registry.default_font();
+        if (default_font) {
+            fallback_chain = {default_font};
+        } else {
+            return {};
+        }
     }
     return InternalLayoutEngine::layout(fallback_chain, utf8_text, style, text_box, alignment, options);
 }
