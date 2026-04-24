@@ -282,7 +282,9 @@ std::string make_render_report_json(
     const RenderPlan& render_plan,
     const RenderExecutionPlan& execution_plan,
     const DiagnosticBag& diagnostics,
-    const RasterizedFrame2D& first_frame) {
+    const RasterizedFrame2D& first_frame,
+    std::size_t cache_hits,
+    std::size_t cache_misses) {
     json report;
     report["report_type"] = "render";
     report["schema_version"] = RENDER_REPORT_SCHEMA_VERSION;
@@ -302,6 +304,16 @@ std::string make_render_report_json(
         {"cache_key", first_frame.cache_key},
         {"note", first_frame.note}
     };
+    
+    // Add cache statistics
+    std::size_t total_ops = cache_hits + cache_misses;
+    double hit_rate = (total_ops > 0) ? static_cast<double>(cache_hits) / static_cast<double>(total_ops) : 0.0;
+    report["cache"] = {
+        {"hits", cache_hits},
+        {"misses", cache_misses},
+        {"hit_rate", hit_rate}
+    };
+    
     return report.dump(2);
 }
 

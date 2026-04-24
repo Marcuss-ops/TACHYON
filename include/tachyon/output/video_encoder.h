@@ -17,6 +17,13 @@ struct VideoEncoderOptions {
     std::string color_space{"srgb"};
     std::string color_transfer{"srgb"};
     std::string color_range{"full"};
+    
+    // Encoding quality settings
+    int crf{23};                        // 0-51, 18=visually lossless, 23=default (H.264/VP9)
+    int bitrate_kbps{0};                // 0 = usa CRF, >0 = bitrate target
+    std::string preset{"medium"};       // ultrafast/fast/medium/slow/veryslow
+    int audio_bitrate_kbps{192};        // Audio bitrate in kbps
+    bool faststart{true};               // mp4 moov atom in testa (streaming-friendly)
 };
 
 class VideoEncoderBackend {

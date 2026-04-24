@@ -86,6 +86,21 @@ struct DuckerConfig {
     float sidechain_gain{1.0f};     // gain applied to sidechain input
 };
 
+struct AudioTrackMixParams {
+  double start_offset_seconds{0.0};
+  float volume{1.0f};
+  float pan{0.0f};            // -1.0 (L) to 1.0 (R)
+  float playback_speed{1.0f}; // 1.0 = normal, 0.5 = slow, 2.0 = fast
+  float pitch_shift{1.0f};    // 1.0 = normal, 0.5 = octave down, 2.0 = octave up
+  bool pitch_correct{false};  // true = preserve pitch when speed changes (WSOLA)
+  bool enabled{true};
+  bool is_sidechain_source{false};  // true = voiceover/narration (provides sidechain signal)
+  DuckerConfig duck_config{};       // ducking config (used when this track ducks others)
+};
+
+// ---------------------------------------------------------------------------
+// CompressorNode – sidechain ducker for audio ducking
+// ---------------------------------------------------------------------------
 class CompressorNode : public AudioNode {
 public:
     explicit CompressorNode(const DuckerConfig& config = DuckerConfig())
