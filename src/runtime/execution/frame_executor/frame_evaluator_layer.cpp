@@ -1,6 +1,9 @@
 #include "frame_executor_internal.h"
 #include "tachyon/core/shapes/shape_path.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
+#include "tachyon/text/content/word_timestamps.h"
+#include "tachyon/runtime/core/data/compiled_scene.h"
+#include <filesystem>
 
 namespace tachyon {
 
@@ -102,7 +105,9 @@ void evaluate_layer(
     state->subtitle_path = layer.subtitle_path;
     state->subtitle_outline_color = layer.subtitle_outline_color;
     state->subtitle_outline_width = layer.subtitle_outline_width;
+    state->word_timestamp_path = layer.word_timestamp_path;
     state->shape_path = to_shape_path_spec(layer.shape_path);
+    state->shape_spec = layer.shape_spec;
     state->effects = layer.effects;
     state->precomp_id = layer.precomp_index.has_value() ? std::make_optional(std::to_string(*layer.precomp_index)) : std::nullopt;
     state->track_matte_type = layer.matte_type;

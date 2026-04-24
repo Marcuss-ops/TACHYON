@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <limits>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -15,7 +16,7 @@ namespace tachyon::text {
 
 class FontRegistry {
 public:
-    static constexpr std::size_t kMaxFonts = 15;
+    static constexpr std::size_t kMaxFonts = std::numeric_limits<std::size_t>::max();
 
     bool load_bdf(const std::string& name, const std::filesystem::path& path);
     bool load_ttf(const std::string& name, const std::filesystem::path& path, std::uint32_t pixel_size);

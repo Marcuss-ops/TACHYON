@@ -11,6 +11,7 @@
 #include "tachyon/renderer2d/spec/gradient_spec.h"
 #include "tachyon/renderer2d/path/mask_path.h"
 #include "tachyon/renderer2d/raster/path/path_types.h"
+#include "tachyon/text/content/word_timestamps.h"
 #include <vector>
 #include <string>
 #include <memory>
@@ -104,6 +105,7 @@ struct EvaluatedLayerState {
     ColorSpec stroke_color{255, 255, 255, 255};
     float stroke_width{0.0f};
     std::optional<ShapePathSpec> shape_path;
+    std::optional<ShapeSpec> shape_spec;
     std::optional<renderer2d::MaskPath> mask_path;
     std::vector<EffectSpec> effects;
     std::vector<TextAnimatorSpec> text_animators;

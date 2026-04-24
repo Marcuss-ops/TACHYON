@@ -75,4 +75,94 @@ private:
     float m_ceiling;
 };
 
+// ---------------------------------------------------------------------------
+// CompressorNode – sidechain ducker for audio ducking
+// ---------------------------------------------------------------------------
+struct DuckerConfig {
+    float threshold_db{-20.0f};      // dB, sidechain threshold
+    float ratio{4.0f};              // compression ratio (4:1)
+    float attack_ms{10.0f};         // attack time in ms
+    float release_ms{200.0f};       // release time in ms
+    float sidechain_gain{1.0f};     // gain applied to sidechain input
+};
+
+class CompressorNode : public AudioNode {
+public:
+    explicit CompressorNode(const DuckerConfig& config = DuckerConfig())
+        : m_config(config),
+          m_current_gain(1.0f),
+          m_envelope(0.0f) {
+        // Precompute attack/release coefficients based on sample rate
+        const float sample_rate = static_cast<float>(kDSPSampleRate);
+        const float attack_samples = m_config.attack_ms * 0.001f * sample_rate;
+        const float release_samples = m_config.release_ms * 0.001f * sample_rate;
+        m_attack_coeff = std::exp(-1.0f / attack_samples);
+        m_release_coeff = std::exp(-1.0f / release_samples);
+        m_threshold_linear = std::pow(10.0f, m_config.threshold_db / 20.0f);
+    }
+
+    // Set the sidechain audio buffer (interleaved stereo, same nframes as main process)
+    void set_sidechain(const float* sidechain, int nframes) {
+        m_sidechain = sidechain;
+        m_sidechain_nframes = nframes;
+    }
+
+    void process(float* io, int nframes) override {
+        if (!m_sidechain || m_sidechain_nframes < nframes) {
+            // No sidechain or insufficient sidechain data: no compression
+            return;
+        }
+
+        const int total_samples = nframes * 2; // interleaved stereo
+        for (int i = 0; i < total_samples; ++i) {
+            // Compute sidechain peak for this sample
+            float sidechain_sample = std::abs(m_sidechain[i]) * m_config.sidechain_gain;
+            
+            // Update envelope follower (peak-based)
+            if (sidechain_sample > m_envelope) {
+                m_envelope = m_attack_coeff * m_envelope + (1.0f - m_attack_coeff) * sidechain_sample;
+            } else {
+                m_envelope = m_release_coeff * m_envelope + (1.0f - m_release_coeff) * sidechain_sample;
+            }
+
+            // Compute gain reduction if envelope exceeds threshold
+            float target_gain = 1.0f;
+            if (m_envelope > m_threshold_linear) {
+                float envelope_db = 20.0f * std::log10(m_envelope);
+                float gain_reduction_db = (envelope_db - m_config.threshold_db) * (1.0f - 1.0f / m_config.ratio);
+                target_gain = std::pow(10.0f, -gain_reduction_db / 20.0f);
+            }
+
+            // Smooth gain changes to avoid clicks
+            m_current_gain = 0.9f * m_current_gain + 0.1f * target_gain;
+
+            // Apply gain to main audio (music bus)
+            io[i] *= m_current_gain;
+        }
+
+        // Reset sidechain after processing to avoid stale data
+        m_sidechain = nullptr;
+        m_sidechain_nframes = 0;
+    }
+
+    std::string name() const override { return "Compressor (Ducker)"; }
+
+    void reset() override {
+        m_current_gain = 1.0f;
+        m_envelope = 0.0f;
+        m_sidechain = nullptr;
+        m_sidechain_nframes = 0;
+    }
+
+private:
+    DuckerConfig m_config;
+    float m_threshold_linear;
+    float m_attack_coeff;
+    float m_release_coeff;
+    float m_current_gain;
+    float m_envelope;
+    const float* m_sidechain = nullptr;
+    int m_sidechain_nframes = 0;
+};
+
 } // namespace tachyon::audio

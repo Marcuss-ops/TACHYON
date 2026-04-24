@@ -47,9 +47,9 @@ RectI scaled_rect(const scene::EvaluatedLayerState& layer, int base_width, int b
         width, height};
 }
 
-Color color_with_opacity(float opacity) {
-    Color color = Color::white();
-    color.a = std::clamp(opacity, 0.0f, 1.0f);
+Color color_with_opacity(const ColorSpec& spec, float opacity) {
+    Color color = map_color(spec);
+    color.a *= std::clamp(opacity, 0.0f, 1.0f);
     return color;
 }
 
@@ -86,8 +86,10 @@ RenderableCard3D make_camera_card(
 }
 
 DrawCommand2D solid_command(const scene::EvaluatedLayerState& layer, const scene::EvaluatedCompositionState& composition_state, int z_order) {
-    const RectI rect = scaled_rect(layer, 100, 100);
-    const Color color = color_with_opacity(static_cast<float>(layer.opacity));
+    const int base_width = layer.width > 0 ? layer.width : static_cast<int>(composition_state.width);
+    const int base_height = layer.height > 0 ? layer.height : static_cast<int>(composition_state.height);
+    const RectI rect = scaled_rect(layer, base_width, base_height);
+    const Color color = color_with_opacity(layer.fill_color, static_cast<float>(layer.opacity));
     DrawCommand2D command;
     command.kind = DrawCommandKind::SolidRect;
     command.z_order = z_order;

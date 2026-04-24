@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
+#include <unordered_map>
 
 namespace tachyon::renderer2d {
 namespace {
@@ -42,6 +43,132 @@ Color lerp_surface_color(const SurfaceRGBA& a, const SurfaceRGBA* b, float u, fl
     return Color::lerp(ca, cb, clamp01(t));
 }
 
+using TransitionFn = Color(*)(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface);
+
+Color transition_fade_to_black(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    const Color black = Color::black();
+    if (t < 0.5f) {
+        return Color::lerp(sample_uv(input, u, v), black, t * 2.0f);
+    } else {
+        const float tt = (t - 0.5f) * 2.0f;
+        return Color::lerp(black, sample_transition_source(input, to_surface, u, v), tt);
+    }
+}
+
+Color transition_wipe_linear(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    return (u < t) ? sample_transition_source(input, to_surface, u, v) : sample_uv(input, u, v);
+}
+
+Color transition_wipe_angular(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    const float angle = t * 6.28318530718f;
+    const float ux = u - 0.5f;
+    const float vy = v - 0.5f;
+    const float a = std::atan2(vy, ux) + 3.14159265359f;
+    return (a < angle) ? sample_transition_source(input, to_surface, u, v) : sample_uv(input, u, v);
+}
+
+Color transition_push_left(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    return sample_transition_source(input, to_surface, u + t, v);
+}
+
+Color transition_slide_easing(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    const float eased = t * t * (3.0f - 2.0f * t);
+    return sample_transition_source(input, to_surface, u + eased, v);
+}
+
+Color transition_zoom_in(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    const float zoom = std::max(0.001f, 1.0f - t);
+    const float su = 0.5f + (u - 0.5f) / zoom;
+    const float sv = 0.5f + (v - 0.5f) / zoom;
+    return sample_transition_source(input, to_surface, su, sv);
+}
+
+Color transition_zoom_blur(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    const float zoom = std::max(0.001f, 1.0f - t);
+    const float su = 0.5f + (u - 0.5f) / zoom;
+    const float sv = 0.5f + (v - 0.5f) / zoom;
+    Color acc = Color::transparent();
+    constexpr int samples = 6;
+    for (int i = 0; i < samples; ++i) {
+        const float s = static_cast<float>(i) / static_cast<float>(samples - 1);
+        const float offset = (s - 0.5f) * t * 0.12f;
+        acc = Color::lerp(acc, sample_transition_source(input, to_surface, su + offset, sv + offset), 1.0f / static_cast<float>(samples));
+    }
+    return acc;
+}
+
+Color transition_spin(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    const float angle = t * 6.28318530718f;
+    const float dx = u - 0.5f;
+    const float dy = v - 0.5f;
+    const float c = std::cos(angle);
+    const float s = std::sin(angle);
+    const float ru = 0.5f + dx * c - dy * s;
+    const float rv = 0.5f + dx * s + dy * c;
+    return sample_transition_source(input, to_surface, ru, rv);
+}
+
+Color transition_circle_iris(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    const float radius = std::sqrt((u - 0.5f) * (u - 0.5f) + (v - 0.5f) * (v - 0.5f));
+    return (radius < t * 0.75f) ? sample_transition_source(input, to_surface, u, v) : sample_uv(input, u, v);
+}
+
+Color transition_pixelate(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    const float grid = std::max(2.0f, 20.0f - 19.0f * t);
+    const float pu = std::floor(u * grid) / grid;
+    const float pv = std::floor(v * grid) / grid;
+    return sample_transition_source(input, to_surface, pu, pv);
+}
+
+Color transition_glitch_slice(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    const float band = std::floor(v * 10.0f);
+    const float jitter = std::sin(band * 12.0f + t * 10.0f) * 0.02f;
+    return sample_transition_source(input, to_surface, u + jitter, v);
+}
+
+Color transition_rgb_split(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    const float r = sample_transition_source(input, to_surface, u + 0.01f * t, v).r;
+    const float g = sample_transition_source(input, to_surface, u, v).g;
+    const float b = sample_transition_source(input, to_surface, u - 0.01f * t, v).b;
+    const float a = sample_transition_source(input, to_surface, u, v).a;
+    return {r, g, b, a};
+}
+
+Color transition_luma_dissolve(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    const float noise = std::fmod(std::sin((u * 123.4f + v * 456.7f) * 12.9898f) * 43758.5453f, 1.0f);
+    return (noise < t) ? sample_transition_source(input, to_surface, u, v) : sample_uv(input, u, v);
+}
+
+Color transition_directional_blur_wipe(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    const float slide = std::clamp(t * 1.5f, 0.0f, 1.0f);
+    const float sigma = 0.01f + 0.04f * t;
+    Color acc = Color::transparent();
+    constexpr int samples = 5;
+    for (int i = 0; i < samples; ++i) {
+        const float s = static_cast<float>(i) / static_cast<float>(samples - 1);
+        const float off = (s - 0.5f) * sigma;
+        acc = Color::lerp(acc, sample_transition_source(input, to_surface, u + slide + off, v), 1.0f / static_cast<float>(samples));
+    }
+    return acc;
+}
+
+const std::unordered_map<std::string, TransitionFn> kTransitionFns = {
+    {"fade_to_black", transition_fade_to_black},
+    {"wipe_linear", transition_wipe_linear},
+    {"wipe_angular", transition_wipe_angular},
+    {"push_left", transition_push_left},
+    {"slide_easing", transition_slide_easing},
+    {"zoom_in", transition_zoom_in},
+    {"zoom_blur", transition_zoom_blur},
+    {"spin", transition_spin},
+    {"circle_iris", transition_circle_iris},
+    {"pixelate", transition_pixelate},
+    {"glitch_slice", transition_glitch_slice},
+    {"rgb_split", transition_rgb_split},
+    {"luma_dissolve", transition_luma_dissolve},
+    {"directional_blur_wipe", transition_directional_blur_wipe},
+};
+
 }  // namespace
 
 SurfaceRGBA GlslTransitionEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
@@ -65,9 +192,6 @@ SurfaceRGBA GlslTransitionEffect::apply(const SurfaceRGBA& input, const EffectPa
 
     const float width = static_cast<float>(std::max<std::uint32_t>(1U, input.width()));
     const float height = static_cast<float>(std::max<std::uint32_t>(1U, input.height()));
-    const float angle = t * 6.28318530718f;
-    const float eased = t * t * (3.0f - 2.0f * t);
-    const float zoom = std::max(0.001f, 1.0f - t);
 
     for (std::uint32_t y = 0; y < input.height(); ++y) {
         for (std::uint32_t x = 0; x < input.width(); ++x) {
@@ -75,80 +199,9 @@ SurfaceRGBA GlslTransitionEffect::apply(const SurfaceRGBA& input, const EffectPa
             const float v = (static_cast<float>(y) + 0.5f) / height;
             Color out = sample_transition_source(input, to_surface, u, v);
 
-            if (transition == "fade_to_black") {
-                const Color black = Color::black();
-                if (t < 0.5f) {
-                    out = Color::lerp(sample_uv(input, u, v), black, t * 2.0f);
-                } else {
-                    const float tt = (t - 0.5f) * 2.0f;
-                    out = Color::lerp(black, sample_transition_source(input, to_surface, u, v), tt);
-                }
-            } else if (transition == "wipe_linear") {
-                out = (u < t) ? sample_transition_source(input, to_surface, u, v) : sample_uv(input, u, v);
-            } else if (transition == "wipe_angular") {
-                const float ux = u - 0.5f;
-                const float vy = v - 0.5f;
-                const float a = std::atan2(vy, ux) + 3.14159265359f;
-                out = (a < angle) ? sample_transition_source(input, to_surface, u, v) : sample_uv(input, u, v);
-            } else if (transition == "push_left") {
-                out = sample_transition_source(input, to_surface, u + t, v);
-            } else if (transition == "slide_easing") {
-                out = sample_transition_source(input, to_surface, u + eased, v);
-            } else if (transition == "zoom_in") {
-                const float su = 0.5f + (u - 0.5f) / zoom;
-                const float sv = 0.5f + (v - 0.5f) / zoom;
-                out = sample_transition_source(input, to_surface, su, sv);
-            } else if (transition == "zoom_blur") {
-                const float su = 0.5f + (u - 0.5f) / zoom;
-                const float sv = 0.5f + (v - 0.5f) / zoom;
-                Color acc = Color::transparent();
-                constexpr int samples = 6;
-                for (int i = 0; i < samples; ++i) {
-                    const float s = static_cast<float>(i) / static_cast<float>(samples - 1);
-                    const float offset = (s - 0.5f) * t * 0.12f;
-                    acc = Color::lerp(acc, sample_transition_source(input, to_surface, su + offset, sv + offset), 1.0f / static_cast<float>(samples));
-                }
-                out = acc;
-            } else if (transition == "spin") {
-                const float dx = u - 0.5f;
-                const float dy = v - 0.5f;
-                const float c = std::cos(angle);
-                const float s = std::sin(angle);
-                const float ru = 0.5f + dx * c - dy * s;
-                const float rv = 0.5f + dx * s + dy * c;
-                out = sample_transition_source(input, to_surface, ru, rv);
-            } else if (transition == "circle_iris") {
-                const float radius = std::sqrt((u - 0.5f) * (u - 0.5f) + (v - 0.5f) * (v - 0.5f));
-                out = (radius < t * 0.75f) ? sample_transition_source(input, to_surface, u, v) : sample_uv(input, u, v);
-            } else if (transition == "pixelate") {
-                const float grid = std::max(2.0f, 20.0f - 19.0f * t);
-                const float pu = std::floor(u * grid) / grid;
-                const float pv = std::floor(v * grid) / grid;
-                out = sample_transition_source(input, to_surface, pu, pv);
-            } else if (transition == "glitch_slice") {
-                const float band = std::floor(v * 10.0f);
-                const float jitter = std::sin(band * 12.0f + t * 10.0f) * 0.02f;
-                out = sample_transition_source(input, to_surface, u + jitter, v);
-            } else if (transition == "rgb_split") {
-                const float r = sample_transition_source(input, to_surface, u + 0.01f * t, v).r;
-                const float g = sample_transition_source(input, to_surface, u, v).g;
-                const float b = sample_transition_source(input, to_surface, u - 0.01f * t, v).b;
-                const float a = sample_transition_source(input, to_surface, u, v).a;
-                out = {r, g, b, a};
-            } else if (transition == "luma_dissolve") {
-                const float noise = std::fmod(std::sin((u * 123.4f + v * 456.7f) * 12.9898f) * 43758.5453f, 1.0f);
-                out = (noise < t) ? sample_transition_source(input, to_surface, u, v) : sample_uv(input, u, v);
-            } else if (transition == "directional_blur_wipe") {
-                const float slide = std::clamp(t * 1.5f, 0.0f, 1.0f);
-                const float sigma = 0.01f + 0.04f * t;
-                Color acc = Color::transparent();
-                constexpr int samples = 5;
-                for (int i = 0; i < samples; ++i) {
-                    const float s = static_cast<float>(i) / static_cast<float>(samples - 1);
-                    const float off = (s - 0.5f) * sigma;
-                    acc = Color::lerp(acc, sample_transition_source(input, to_surface, u + slide + off, v), 1.0f / static_cast<float>(samples));
-                }
-                out = acc;
+            auto fn_it = kTransitionFns.find(transition);
+            if (fn_it != kTransitionFns.end()) {
+                out = fn_it->second(u, v, t, input, to_surface);
             } else {
                 out = lerp_surface_color(input, to_surface, u, v, t);
             }
