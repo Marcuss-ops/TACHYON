@@ -26,7 +26,7 @@ float RollingShutterEffect::exposure_offset(float position) const {
     }
 }
 
-std::vector<double> RollingShutterEffect::adjust_subframe_times(const std::vector<double>& times, float frame_height) const {
+std::vector<double> RollingShutterEffect::adjust_subframe_times(const std::vector<double>& times, float /*frame_height*/) const {
     if (!is_enabled() || times.empty()) return times;
     std::vector<double> adjusted;
     adjusted.reserve(times.size());

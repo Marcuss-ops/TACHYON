@@ -343,15 +343,28 @@ math::Vector2 sample_vector2_kfs(
 float compute_coverage(const TextAnimatorSelectorSpec& selector, const TextAnimatorContext& ctx) {
     if (selector.type == "all" || ctx.total_glyphs <= kZero) return kOne;
 
+    // For characters_excluding_spaces, skip spaces entirely (return 0 coverage)
+    if (selector.based_on == "characters_excluding_spaces" && ctx.is_space) {
+        return kZero;
+    }
+
     // Index selector: explicit start/end index
     if (selector.type == "index") {
         const std::size_t start_idx = selector.start_index.value_or(0);
         const std::size_t end_idx = selector.end_index.value_or(ctx.total_glyphs);
         std::size_t idx = ctx.glyph_index;
-        if (selector.based_on == "words" && ctx.total_clusters > kZero) {
+        
+        // For cluster-based selection, use cluster_index to preserve shaping
+        if (selector.based_on == "clusters") {
+            idx = ctx.cluster_index;
+        } else if (selector.based_on == "words" && ctx.total_clusters > kZero) {
             idx = ctx.word_index;
         } else if (selector.based_on == "lines" && ctx.total_lines > kZero) {
             idx = ctx.line_index;
+        } else if (selector.based_on == "characters_excluding_spaces") {
+            // For excluding spaces, we need to compute a non-space character index
+            // This is approximated using glyph_index but callers should pre-compute
+            idx = ctx.glyph_index;
         }
         return (idx >= start_idx && idx < end_idx) ? kOne : kZero;
     }
@@ -382,10 +395,18 @@ float compute_coverage(const TextAnimatorSelectorSpec& selector, const TextAnima
 
     // Compute normalized position t based on based_on mode
     float t = kZero;
-    if (selector.based_on == "words" && ctx.total_clusters > kZero) {
+    
+    if (selector.based_on == "clusters") {
+        // Cluster-based: preserves shaping boundaries
+        t = (ctx.total_clusters > kOne) ? static_cast<float>(ctx.cluster_index) / static_cast<float>(ctx.total_clusters - kOne) : kZero;
+    } else if (selector.based_on == "words" && ctx.total_clusters > kZero) {
         t = (ctx.total_clusters > kOne) ? static_cast<float>(ctx.word_index) / static_cast<float>(ctx.total_clusters - kOne) : kZero;
     } else if (selector.based_on == "lines" && ctx.total_lines > kZero) {
         t = (ctx.total_lines > kOne) ? static_cast<float>(ctx.line_index) / static_cast<float>(ctx.total_lines - kOne) : kZero;
+    } else if (selector.based_on == "characters_excluding_spaces") {
+        // For non-space characters, we use the glyph index but this should be
+        // a consecutive index that skips spaces (callers need to pre-compute)
+        t = (ctx.total_glyphs > kOne) ? static_cast<float>(ctx.glyph_index) / static_cast<float>(ctx.total_glyphs - kOne) : kZero;
     } else {
         t = (ctx.total_glyphs > kOne) ? static_cast<float>(ctx.glyph_index) / static_cast<float>(ctx.total_glyphs - kOne) : kZero;
     }
@@ -410,6 +431,12 @@ std::vector<ResolvedGlyphPaint> resolve_glyph_paints(
 
     std::vector<ResolvedGlyphPaint> paints;
     paints.reserve(layout.glyphs.size());
+
+    // Pre-compute total clusters for selectors
+    float total_clusters_float = 0.0f;
+    for (const auto& g : layout.glyphs) {
+        total_clusters_float = std::max(total_clusters_float, static_cast<float>(g.cluster_index + 1));
+    }
 
     for (const PositionedGlyph& positioned : layout.glyphs) {
         const GlyphBitmap* glyph = font.has_freetype_face()
@@ -444,9 +471,13 @@ std::vector<ResolvedGlyphPaint> resolve_glyph_paints(
             ctx.cluster_index = positioned.cluster_index;
             ctx.word_index = positioned.word_index;
             ctx.total_glyphs = static_cast<float>(layout.glyphs.size());
-            ctx.total_clusters = static_cast<float>(layout.clusters.size());
+            ctx.total_clusters = total_clusters_float;
             ctx.total_lines = static_cast<float>(layout.lines.size());
             ctx.time = animation.time_seconds;
+            ctx.cluster_codepoint_start = positioned.cluster_codepoint_start;
+            ctx.cluster_codepoint_count = positioned.cluster_codepoint_count;
+            ctx.is_space = positioned.whitespace;
+            ctx.is_rtl = positioned.is_rtl;
 
             // Compute line_index for this glyph
             ctx.line_index = 0;
