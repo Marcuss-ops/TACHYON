@@ -1,5 +1,6 @@
 build/
 out/
+output/
 tests/output/actual/
 *.vcxproj.user
 *.suo
@@ -12,4 +13,9 @@ logs/
 # Temporary files
 *.tmp
 *.go
-output/
+
+# Rendered output (regenerable)
+debug/render_*/
+studio/library/animations/transitions/Output/
+studio/library/animations/transitions/*/output/*.mp4
+studio/library/animations/transitions/*/output/*.png
