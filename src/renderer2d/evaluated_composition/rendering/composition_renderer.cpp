@@ -112,8 +112,10 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
     auto render_pass = [&](SurfaceRGBA& target_surface, RenderContext2D& render_context, const std::optional<RectI>& tile_rect = std::nullopt) {
         EffectHost& host = effect_host_for(render_context);
-        // AE Rendering Order: Bottom to Top
-        for (std::size_t i = 0; i < state.layers.size(); ++i) {
+        // AE Rendering Order: Bottom to Top (index 0 = top in AE/Tachyon)
+        // Render bottom layers FIRST, top layers LAST (so top appears on top)
+        for (int idx = static_cast<int>(state.layers.size()) - 1; idx >= 0; --idx) {
+            const std::size_t i = static_cast<std::size_t>(idx);
             const auto& layer = state.layers[i];
             if (!layer.enabled || !layer.active) {
                 continue;
@@ -266,7 +268,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 frame.aovs.push_back({"motion_vector", motion_vector_aov_surf});
 
                 composite_surface(target_surface, *world_3d, 0, 0, BlendMode::Normal);
-                i = last_block_idx;
+                idx = static_cast<int>(last_block_idx);
                 continue;
             }
 
