@@ -13,6 +13,7 @@ namespace tachyon::renderer2d::text::shaping {
 
 struct ShapingCacheKey {
     std::uint64_t font_id;
+    std::uint64_t content_hash;
     std::uint32_t scale;
     int direction;
     std::string script;
@@ -22,6 +23,7 @@ struct ShapingCacheKey {
 
     bool operator==(const ShapingCacheKey& other) const {
         return font_id == other.font_id &&
+               content_hash == other.content_hash &&
                scale == other.scale &&
                direction == other.direction &&
                script == other.script &&

@@ -13,6 +13,7 @@ bool load_scene_context(const std::filesystem::path& scene_path, SceneSpec& scen
 
 bool run_validate_command(const CliOptions& options, std::ostream& out, std::ostream& err);
 bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostream& err);
+bool run_inspect_fonts_command(const CliOptions& options, std::ostream& out, std::ostream& err);
 bool run_render_command(const CliOptions& options, std::ostream& out, std::ostream& err);
 bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostream& err);
 bool run_studio_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err);
