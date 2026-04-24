@@ -28,12 +28,30 @@ public:
                           std::to_string(options.width) + "x" + std::to_string(options.height) + 
                           " -r " + std::to_string(options.fps) + " -i - ";
         
+        // Video codec and quality settings
         if (options.codec == "prores") {
             cmd += "-c:v prores_ks -profile:v 3 ";
         } else if (options.codec == "vp9") {
             cmd += "-c:v libvpx-vp9 ";
+            if (options.bitrate_kbps > 0) {
+                cmd += "-b:v " + std::to_string(options.bitrate_kbps) + "k ";
+            } else {
+                cmd += "-crf " + std::to_string(options.crf) + " ";
+            }
         } else {
-            cmd += "-c:v libx264 -preset fast -crf 18 ";
+            // Default: H.264
+            cmd += "-c:v libx264 ";
+            cmd += "-preset " + options.preset + " ";
+            if (options.bitrate_kbps > 0) {
+                cmd += "-b:v " + std::to_string(options.bitrate_kbps) + "k ";
+            } else {
+                cmd += "-crf " + std::to_string(options.crf) + " ";
+            }
+        }
+        
+        // MP4 faststart for streaming
+        if (options.faststart) {
+            cmd += "-movflags +faststart ";
         }
         
         cmd += "\"" + output_path + "\"";

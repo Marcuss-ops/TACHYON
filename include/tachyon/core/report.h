@@ -45,6 +45,8 @@ std::string make_render_report_json(
     const RenderPlan& render_plan,
     const RenderExecutionPlan& execution_plan,
     const DiagnosticBag& diagnostics,
-    const RasterizedFrame2D& first_frame);
+    const RasterizedFrame2D& first_frame,
+    std::size_t cache_hits = 0,
+    std::size_t cache_misses = 0);
 
 } // namespace tachyon
