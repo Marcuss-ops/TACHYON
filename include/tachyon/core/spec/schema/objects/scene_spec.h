@@ -37,7 +37,7 @@ struct SceneSpec {
     std::vector<CompositionSpec> compositions;
     std::vector<AssetSpec> assets;
     std::vector<DataSourceSpec> data_sources;
-    std::optional<FontManifest> font_manifest;
+    std::optional<text::FontManifest> font_manifest;
     std::optional<std::string> font_manifest_path;
 };
 

@@ -10,9 +10,11 @@
 #include "cli_internal.h"
 
 #include <cmath>
+#include <functional>
 #include <fstream>
 #include <iostream>
 #include <algorithm>
+#include <map>
 #include <vector>
 #include <sstream>
 #include <nlohmann/json.hpp>
@@ -28,11 +30,18 @@ struct TransitionDemoConfig {
     std::filesystem::path output_dir;
     std::string file_prefix;
     std::string output_format{"mp4"};
-    double duration_seconds{2.0};
+    double duration_seconds{0.2};
+    double lead_in_seconds{0.9};
+    double lead_out_seconds{0.9};
     double progress_start{0.0};
     double progress_end{1.0};
     std::size_t preview_frame_count{12};
     float preview_resolution_scale{1.0f};
+};
+
+struct CachedSceneStill {
+    renderer2d::SurfaceRGBA frame;
+    double fps{30.0};
 };
 
 nlohmann::json read_json_file(const std::filesystem::path& path, DiagnosticBag& diagnostics) {
@@ -168,6 +177,26 @@ std::optional<renderer2d::SurfaceRGBA> render_scene_still(
     return *session_result.frames.front().frame;
 }
 
+std::optional<std::reference_wrapper<const CachedSceneStill>> render_scene_still_cached(
+    const std::filesystem::path& scene_path,
+    std::map<std::filesystem::path, CachedSceneStill>& cache,
+    std::ostream& err) {
+    const auto cache_it = cache.find(scene_path);
+    if (cache_it != cache.end()) {
+        return std::cref(cache_it->second);
+    }
+
+    double fps = 30.0;
+    const auto frame = render_scene_still(scene_path, err, fps);
+    if (!frame.has_value()) {
+        return std::nullopt;
+    }
+
+    auto [insert_it, inserted] = cache.emplace(scene_path, CachedSceneStill{*frame, fps});
+    (void)inserted;
+    return std::cref(insert_it->second);
+}
+
 renderer2d::SurfaceRGBA resize_surface(const renderer2d::SurfaceRGBA& src, std::uint32_t width, std::uint32_t height) {
     if (src.width() == width && src.height() == height) {
         return src;
@@ -225,34 +254,26 @@ RenderPlan make_output_plan(const std::filesystem::path& output_dir, const std::
 
 bool render_transition_demo(
     const TransitionDemoConfig& demo,
+    const renderer2d::SurfaceRGBA& source,
+    const renderer2d::SurfaceRGBA& target,
     const std::filesystem::path& transition_shader_path,
     const std::filesystem::path& output_dir_override,
     std::ostream& out,
     std::ostream& err) {
-    double source_fps = 30.0;
-    const auto source_frame = render_scene_still(demo.source_scene, err, source_fps);
-    if (!source_frame.has_value()) {
-        return false;
-    }
-    double target_fps = 30.0;
-    const auto target_frame = render_scene_still(demo.target_scene, err, target_fps);
-    if (!target_frame.has_value()) {
-        return false;
-    }
-
-    const renderer2d::SurfaceRGBA source = *source_frame;
-    const renderer2d::SurfaceRGBA target = resize_surface(*target_frame, source.width(), source.height());
     const bool final_video = demo.output_format == "mp4" || demo.output_format == "mov" || demo.output_format == "mkv" || demo.output_format == "webm";
-    const renderer2d::SurfaceRGBA preview_source = preview_surface(source, demo.preview_resolution_scale);
-    const renderer2d::SurfaceRGBA preview_target = preview_surface(target, demo.preview_resolution_scale);
+    const float render_scale = final_video ? 0.5f : demo.preview_resolution_scale;
+    const renderer2d::SurfaceRGBA preview_source = preview_surface(source, render_scale);
+    const renderer2d::SurfaceRGBA preview_target = preview_surface(target, render_scale);
+    const double fps = final_video ? 15.0 : 30.0;
+    const double total_duration_seconds = demo.lead_in_seconds + demo.duration_seconds + demo.lead_out_seconds;
 
     auto host = renderer2d::create_effect_host();
     renderer2d::EffectHost::register_builtins(*host);
 
     const std::filesystem::path final_output_dir = output_dir_override.empty() ? demo.output_dir : output_dir_override;
     RenderPlan output_plan = make_output_plan(final_output_dir, demo.file_prefix);
-    output_plan.composition.width = static_cast<std::int64_t>(preview_source.width());
-    output_plan.composition.height = static_cast<std::int64_t>(preview_source.height());
+    output_plan.composition.width = static_cast<std::int64_t>(final_video ? source.width() : preview_source.width());
+    output_plan.composition.height = static_cast<std::int64_t>(final_video ? source.height() : preview_source.height());
     if (final_video) {
         output_plan.output.destination.path = (final_output_dir / (demo.file_prefix + ".mp4")).generic_string();
         output_plan.output.profile.class_name = "video";
@@ -261,7 +282,8 @@ bool render_transition_demo(
         output_plan.output.profile.video.pixel_format = "yuv420p";
         output_plan.output.profile.video.rate_control_mode = "fixed";
         output_plan.output.profile.alpha_mode = "opaque";
-        output_plan.composition.frame_rate = {30, 1};
+        output_plan.composition.frame_rate = {15, 1};
+        output_plan.composition.duration = total_duration_seconds;
     }
     auto sink = output::create_frame_output_sink(output_plan);
     if (!sink) {
@@ -275,14 +297,29 @@ bool render_transition_demo(
     }
 
     const std::size_t frame_count = final_video
-        ? std::max<std::size_t>(2, static_cast<std::size_t>(demo.duration_seconds * 30.0))
+        ? std::max<std::size_t>(2, static_cast<std::size_t>(std::llround(total_duration_seconds * fps)))
         : std::max<std::size_t>(2, demo.preview_frame_count);
     const double progress_span = demo.progress_end - demo.progress_start;
+    const std::size_t lead_in_frames = std::max<std::size_t>(1, static_cast<std::size_t>(std::floor(demo.lead_in_seconds * fps)));
+    const std::size_t lead_out_frames = std::max<std::size_t>(1, static_cast<std::size_t>(std::floor(demo.lead_out_seconds * fps)));
+    const std::size_t transition_frames = std::max<std::size_t>(2, frame_count - lead_in_frames - lead_out_frames);
     std::size_t written = 0;
 
     for (std::size_t index = 0; index < frame_count; ++index) {
-        const double normalized = frame_count == 1 ? 1.0 : static_cast<double>(index) / static_cast<double>(frame_count - 1);
-        const float t = static_cast<float>(demo.progress_start + progress_span * normalized);
+        float t = 0.0f;
+        if (index < lead_in_frames) {
+            t = 0.0f;
+        } else if (index < lead_in_frames + transition_frames) {
+            const std::size_t local_index = index - lead_in_frames;
+            const double normalized = transition_frames == 1
+                ? 1.0
+                : static_cast<double>(local_index) / static_cast<double>(transition_frames - 1);
+            t = static_cast<float>(demo.progress_start + progress_span * normalized);
+        } else if (index < lead_in_frames + transition_frames + lead_out_frames) {
+            t = 1.0f;
+        } else {
+            t = 1.0f;
+        }
 
         renderer2d::EffectParams params;
         params.scalars["t"] = t;
@@ -292,11 +329,14 @@ bool render_transition_demo(
         params.aux_surfaces["transition_to"] = &preview_target;
 
         const renderer2d::SurfaceRGBA blended = host->apply("glsl_transition", preview_source, params);
+        const renderer2d::SurfaceRGBA output_frame = final_video
+            ? resize_surface(blended, static_cast<std::uint32_t>(source.width()), static_cast<std::uint32_t>(source.height()))
+            : blended;
 
         output::OutputFramePacket packet;
         packet.frame_number = static_cast<std::int64_t>(index + 1);
-        packet.frame = &blended;
-        packet.metadata.time_seconds = demo.duration_seconds * normalized;
+        packet.frame = &output_frame;
+        packet.metadata.time_seconds = static_cast<double>(index) / fps;
         packet.metadata.timecode = std::to_string(index + 1);
         packet.metadata.scene_hash = demo.transition_id;
 
@@ -345,6 +385,7 @@ bool run_studio_demo_command(const CliOptions& options, std::ostream& out, std::
 
     std::ostringstream silent_out;
     std::ostream& demo_out = options.json_output ? static_cast<std::ostream&>(silent_out) : out;
+    std::map<std::filesystem::path, CachedSceneStill> scene_still_cache;
 
     bool all_ok = true;
     for (const auto& transition : transitions) {
@@ -355,7 +396,24 @@ bool run_studio_demo_command(const CliOptions& options, std::ostream& out, std::
             all_ok = false;
             continue;
         }
-        if (!render_transition_demo(*demo, transition.shader_path, options.output_dir, demo_out, err)) {
+
+        const auto source_still = render_scene_still_cached(demo->source_scene, scene_still_cache, err);
+        if (!source_still.has_value()) {
+            all_ok = false;
+            continue;
+        }
+        const auto target_still = render_scene_still_cached(demo->target_scene, scene_still_cache, err);
+        if (!target_still.has_value()) {
+            all_ok = false;
+            continue;
+        }
+
+        const renderer2d::SurfaceRGBA resized_target = resize_surface(
+            target_still->get().frame,
+            source_still->get().frame.width(),
+            source_still->get().frame.height());
+
+        if (!render_transition_demo(*demo, source_still->get().frame, resized_target, transition.shader_path, options.output_dir, demo_out, err)) {
             all_ok = false;
         }
     }

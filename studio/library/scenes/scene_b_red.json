@@ -6,6 +6,14 @@
     "name": "Scene B Red",
     "authoring_tool": "tachyon-studio"
   },
+  "assets": [
+    {
+      "id": "scene_b_red_basic",
+      "type": "image",
+      "path": "../../output/scene_b_red_basic.png",
+      "source": "../../output/scene_b_red_basic.png"
+    }
+  ],
   "compositions": [
     {
       "id": "main",
@@ -17,9 +25,9 @@
       "background": "#ff0000",
       "layers": [
         {
-          "id": "red_solid",
-          "name": "Red Solid",
-          "type": "solid",
+          "id": "scene_b_red_basic",
+          "name": "scene_b_red_basic",
+          "type": "image",
           "blend_mode": "normal",
           "enabled": true,
           "visible": true,
@@ -28,8 +36,7 @@
           "out_point": 120,
           "opacity": 1,
           "width": 1920,
-          "height": 1080,
-          "fill_color": [255, 0, 0, 255]
+          "height": 1080
         }
       ]
     }
