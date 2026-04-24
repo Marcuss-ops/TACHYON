@@ -1,194 +1,406 @@
 # Camera 2D
 
-## Stato attuale
+> **Goal:** Implement 2D camera system with parallax support and layer-level transform evaluation.
 
-### Cosa esiste
-| Componente | File | Stato |
-|---|---|---|
-| `CameraState` (3D) | `include/tachyon/core/camera/camera_state.h` | ✓ completo — view/projection/MVP matrix |
-| `camera_type`, `camera_zoom`, `camera_poi` | `LayerSpec` | ✓ spec esistente |
-| `camera_shake_*` (seed, amplitude, frequency, roughness) | `LayerSpec` | ✓ keyframeable |
-| `camera_cuts.h` | `include/tachyon/timeline/camera_cuts.h` | ✓ |
-| `EvaluatedCameraState` | `include/tachyon/core/scene/state/evaluated_camera_state.h` | ✓ |
+## Current State
 
-### Cosa manca
-La `CameraState` esistente è 3D (prospettiva, focal length). Per composizioni 2D serve un sistema separato: la camera non è un layer ma un **viewport transform** applicato all'intera composizione prima del compositing.
+Tachyon has **2D layer transforms** implemented but lacks a dedicated 2D camera model.
 
-Pan, zoom, rotate e shake in 2D non richiedono prospettiva — sono una `Transform2D` applicata al framebuffer finale o alla posizione di ogni layer.
+**What exists:**
+- ✅ `Transform2D` in `layer_spec.h` (position, rotation, scale, anchor_point)
+- ✅ `include/tachyon/core/scene/evaluator/layer_evaluator.h` (evaluates layer transforms)
+- ✅ `include/tachyon/renderer2d/resource/render_context.h` (render context for 2D)
+- ✅ Parallax test skeleton in `tests/integration/parallax_cards_tests.cpp`
+
+**What is missing:**
+- `Camera2DSpec` — dedicated 2D camera specification
+- `EvaluatedCamera2D` — evaluated camera state at a given time
+- `apply_camera2d_transform()` — function to apply camera transform to layers
+- `parallax_factor` per layer — depth-based parallax multiplier
+- Camera layer type in `LayerSpec::type`
 
 ---
 
-## Architettura da implementare
+## Phase 1 — Define Camera2DSpec
 
-### Modello concettuale
-```
-[Composizione 2D] — layer stack valutati normalmente
-        ↓
-[Camera2D Transform] — pan, zoom, rotate applicato come viewport
-        ↓
-[Framebuffer output]
-```
+**Status:** ❌ Not implemented
 
-La camera non modifica i layer. Trasforma il **punto di vista** da cui la composizione viene letta nel framebuffer di output.
+### Data Model
 
-### Strutture da aggiungere
-
-**`include/tachyon/core/spec/schema/objects/composition_spec.h`** — aggiungere:
 ```cpp
+// include/tachyon/core/spec/schema/objects/camera2d_spec.h
+#pragma once
+
+#include "tachyon/core/spec/schema/properties/property_spec.h"
+#include "tachyon/core/math/vector2.h"
+
+namespace tachyon {
+
 struct Camera2DSpec {
-    // Pivot point (composition center by default)
-    float pivot_x{0.0f};
-    float pivot_y{0.0f};
-
-    // Animated properties (keyframeable)
-    AnimatedVector2Spec position;    // pan offset in pixels
-    AnimatedScalarSpec  zoom;        // 1.0 = no zoom, 2.0 = 2x
-    AnimatedScalarSpec  rotation;    // degrees
-    AnimatedScalarSpec  shake_amplitude_pos;
-    AnimatedScalarSpec  shake_amplitude_rot;
-    AnimatedScalarSpec  shake_frequency;
-    std::uint64_t       shake_seed{0};
-
-    bool enabled{false};
+    std::string id;
+    std::string name{"2D Camera"};
+    
+    bool enabled{true};
+    bool visible{true};
+    
+    // Zoom (equivalent to focal length in 2D space)
+    AnimatedScalarSpec zoom; // default 1.0, range [0.1, 10.0]
+    
+    // Position in world space
+    AnimatedVector2Spec position;
+    
+    // Rotation in degrees
+    AnimatedScalarSpec rotation; // degrees
+    
+    // Scale
+    AnimatedVector2Spec scale; // default (1,1)
+    
+    // Anchor point (point of interest / zoom center)
+    AnimatedVector2Spec anchor_point;
+    
+    // Depth of field (2D approximation via blur)
+    AnimatedScalarSpec focus_distance; // for parallax calculations
+    
+    // Viewport dimensions
+    int viewport_width{1920};
+    int viewport_height{1080};
 };
+
+} // namespace tachyon
 ```
 
-**`include/tachyon/core/scene/state/evaluated_state.h`** — aggiungere a `EvaluatedCompositionState`:
+### Files to Create
+
+```
+include/tachyon/core/spec/schema/objects/camera2d_spec.h    # NEW
+```
+
+### Files to Modify
+
+```
+include/tachyon/core/spec/schema/objects/layer_spec.h    # ADD: camera2d_spec field
+include/tachyon/core/spec/schema/objects/composition_spec.h  # ADD: active_camera2d_id
+src/core/spec/layer_parse_json.cpp    # ADD: Parse Camera2DSpec from JSON
+```
+
+---
+
+## Phase 2 — Implement EvaluatedCamera2D
+
+**Status:** ❌ Not implemented
+
+### Data Model
+
 ```cpp
+// include/tachyon/core/scene/state/evaluated_camera2d_state.h
+#pragma once
+
+#include "tachyon/core/math/matrix3x3.h"
+#include "tachyon/core/math/vector2.h"
+
+namespace tachyon {
+
 struct EvaluatedCamera2D {
-    float pan_x{0.0f};
-    float pan_y{0.0f};
+    math::Vector2 position;
+    float rotation; // radians
+    math::Vector2 scale;
+    math::Vector2 anchor_point;
     float zoom{1.0f};
-    float rotation_deg{0.0f};
-    math::Transform2 viewport_transform;
+    
+    // Derived transform matrix (camera space to screen space)
+    math::Matrix3x3 view_matrix;
+    
+    // Inverse for transforming layers into camera space
+    math::Matrix3x3 inverse_view_matrix;
+    
+    // Viewport
+    int viewport_width{1920};
+    int viewport_height{1080};
+    
+    // Compute matrices from components
+    void recalculate_matrices();
 };
-std::optional<EvaluatedCamera2D> camera_2d;
+
+} // namespace tachyon
+```
+
+### Files to Create
+
+```
+include/tachyon/core/scene/state/evaluated_camera2d_state.h    # NEW
+src/core/scene/state/evaluated_camera2d_state.cpp              # NEW
 ```
 
 ---
 
-## Step 1 — Evaluator camera 2D
+## Phase 3 — Implement apply_camera2d_transform()
 
-**`src/core/scene/evaluator/camera2d_evaluator.cpp`** — nuovo file:
+**Status:** ❌ Not implemented
+
+### Function Signature
+
 ```cpp
-EvaluatedCamera2D evaluate_camera_2d(
-    const Camera2DSpec& spec,
-    double time_seconds,
-    uint32_t frame_number)
-{
-    EvaluatedCamera2D cam;
-    auto pos = sample_vector2(spec.position, time_seconds);
-    cam.pan_x = pos.x;
-    cam.pan_y = pos.y;
-    cam.zoom  = static_cast<float>(sample_scalar(spec.zoom, 1.0, time_seconds));
-    cam.rotation_deg = static_cast<float>(sample_scalar(spec.rotation, 0.0, time_seconds));
+// include/tachyon/core/scene/evaluator/camera2d_evaluator.h
+#pragma once
 
-    // Camera shake: noise-based offset seeded per frame
-    float shake_amp = static_cast<float>(sample_scalar(spec.shake_amplitude_pos, 0.0, time_seconds));
-    if (shake_amp > 0.0f) {
-        float freq = static_cast<float>(sample_scalar(spec.shake_frequency, 8.0, time_seconds));
-        float t = static_cast<float>(time_seconds) * freq;
-        cam.pan_x += shake_amp * noise1d(spec.shake_seed,     t);
-        cam.pan_y += shake_amp * noise1d(spec.shake_seed + 1, t);
-    }
+#include "tachyon/core/scene/state/evaluated_camera2d_state.h"
+#include "tachyon/core/spec/schema/objects/layer_spec.h"
+#include "tachyon/core/math/matrix3x3.h"
 
-    // Build viewport transform: scale → rotate → translate
-    cam.viewport_transform = math::Transform2::identity();
-    cam.viewport_transform = cam.viewport_transform.scaled(cam.zoom, cam.zoom);
-    cam.viewport_transform = cam.viewport_transform.rotated(cam.rotation_deg * kDegToRad);
-    cam.viewport_transform = cam.viewport_transform.translated(cam.pan_x, cam.pan_y);
-    return cam;
+namespace tachyon {
+
+// Apply camera transform to a layer, taking parallax into account
+math::Matrix3x3 apply_camera2d_transform(
+    const EvaluatedCamera2D& camera,
+    const LayerSpec& layer,
+    float layer_parallax_factor,
+    const math::Matrix3x3& layer_world_matrix);
+
+// Evaluate camera at a specific time
+EvaluatedCamera2D evaluate_camera2d(
+    const Camera2DSpec& camera_spec,
+    double time_seconds);
+
+} // namespace tachyon
+```
+
+### Implementation Logic
+
+```cpp
+// src/core/scene/evaluator/camera2d_evaluator.cpp
+#include "tachyon/core/scene/evaluator/camera2d_evaluator.h"
+
+namespace tachyon {
+
+math::Matrix3x3 apply_camera2d_transform(
+    const EvaluatedCamera2D& camera,
+    const LayerSpec& layer,
+    float layer_parallax_factor,
+    const math::Matrix3x3& layer_world_matrix) {
+    
+    // Parallax: layers with higher parallax_factor are more affected by camera movement
+    // A layer at the same depth as the camera (parallax_factor=1.0) moves with camera
+    // A layer far away (parallax_factor=0.0) stays still
+    // A layer closer than camera (parallax_factor>1.0) moves more than camera
+    
+    math::Vector2 parallax_offset = camera.position * (1.0f - layer_parallax_factor);
+    
+    // Build parallax adjustment matrix
+    math::Matrix3x3 parallax_matrix = math::Matrix3x3::make_translation(parallax_offset);
+    
+    // Apply camera inverse view to bring layer into camera space
+    // Then apply parallax adjustment
+    return camera.inverse_view_matrix * parallax_matrix * layer_world_matrix;
 }
+
+EvaluatedCamera2D evaluate_camera2d(
+    const Camera2DSpec& camera_spec,
+    double time_seconds) {
+    
+    EvaluatedCamera2D result;
+    result.position = camera_spec.position.evaluate(time_seconds);
+    result.rotation = camera_spec.rotation.evaluate(time_seconds);
+    result.scale = camera_spec.scale.evaluate(time_seconds);
+    result.anchor_point = camera_spec.anchor_point.evaluate(time_seconds);
+    result.zoom = camera_spec.zoom.evaluate(time_seconds);
+    result.viewport_width = camera_spec.viewport_width;
+    result.viewport_height = camera_spec.viewport_height;
+    
+    result.recalculate_matrices();
+    
+    return result;
+}
+
+} // namespace tachyon
+```
+
+### Files to Create
+
+```
+include/tachyon/core/scene/evaluator/camera2d_evaluator.h    # NEW
+src/core/scene/evaluator/camera2d_evaluator.cpp              # NEW
 ```
 
 ---
 
-## Step 2 — Applicazione nel compositor
+## Phase 4 — Add parallax_factor to LayerSpec
 
-**`src/renderer2d/evaluated_composition/rendering/composition_renderer.cpp`** — dopo aver composited tutti i layer nel framebuffer intermedio, prima di scrivere l'output:
+**Status:** ❌ Not implemented
+
+### Modification to LayerSpec
 
 ```cpp
-if (composition_state.camera_2d.has_value()) {
-    const auto& cam = *composition_state.camera_2d;
-    // Applica il viewport transform con bilinear sampling
-    apply_camera2d_transform(output_framebuffer, cam.viewport_transform, comp_width, comp_height);
-}
+// In include/tachyon/core/spec/schema/objects/layer_spec.h
+struct LayerSpec {
+    // ... existing fields ...
+    
+    // 2D Camera integration
+    bool has_parallax{true};           // Does this layer respond to camera?
+    float parallax_factor{1.0f};      // 0.0 = no parallax (background), 1.0 = full parallax, >1.0 = closer than camera
+    
+    // If empty, uses composition's active camera. If set, uses this specific camera.
+    std::optional<std::string> camera2d_id;
+    
+    // ... rest of fields ...
+};
 ```
 
-**`apply_camera2d_transform`** — inverti la transform per ogni pixel di output, campiona con bilinear:
+### Files to Modify
+
+```
+include/tachyon/core/spec/schema/objects/layer_spec.h    # ADD: parallax fields
+src/core/spec/layer_parse_json.cpp                       # ADD: Parse parallax fields
+```
+
+---
+
+## Phase 5 — Integrate into Layer Evaluator
+
+**Status:** ❌ Not implemented
+
+### Modification to Layer Evaluator
+
+The layer evaluator must:
+1. Resolve active camera (from layer's `camera2d_id` or composition's `active_camera2d_id`)
+2. Evaluate camera at current time
+3. Apply camera transform with parallax to layer's world matrix
+4. Pass transformed geometry to renderer
+
 ```cpp
-void apply_camera2d_transform(SurfaceRGBA& dst, const Transform2& cam_to_world, int w, int h) {
-    auto world_to_cam = cam_to_world.inverted();
-    SurfaceRGBA src = dst; // copia
-    for (int y = 0; y < h; ++y) {
-        for (int x = 0; x < w; ++x) {
-            auto world_pt = world_to_cam.transform_point({(float)x, (float)y});
-            dst.set_pixel(x, y, src.sample_bilinear(world_pt.x, world_pt.y));
+// In src/core/scene/evaluator/layer_evaluator.cpp
+#include "tachyon/core/scene/evaluator/camera2d_evaluator.h"
+
+void evaluate_layer_with_camera(
+    const LayerSpec& layer,
+    double time,
+    const std::unordered_map<std::string, Camera2DSpec>& cameras,
+    const std::string& active_camera_id,
+    EvaluatedLayer& result) {
+    
+    // Evaluate layer transform (existing code)
+    math::Matrix3x3 layer_world = evaluate_layer_transform(layer, time);
+    
+    // Apply camera if layer has parallax
+    if (layer.has_parallax && !cameras.empty()) {
+        std::string camera_id = layer.camera2d_id.value_or(active_camera_id);
+        auto cam_it = cameras.find(camera_id);
+        if (cam_it != cameras.end()) {
+            EvaluatedCamera2D camera = evaluate_camera2d(cam_it->second, time);
+            layer_world = apply_camera2d_transform(
+                camera, layer, layer.parallax_factor, layer_world);
         }
     }
+    
+    result.world_matrix = layer_world;
 }
 ```
 
----
+### Files to Modify
 
-## Step 3 — Parallax layers
-
-Il parallax si ottiene **prima** di applicare la camera globale. Ogni layer ha un campo `parallax_factor` (0.0 = fisso, 1.0 = si muove con la camera, 0.5 = si muove a metà):
-
-```cpp
-// In LayerSpec aggiungere:
-float parallax_factor{1.0f};
 ```
-
-Nell'evaluator, la posizione di ogni layer viene traslata di:
-```cpp
-layer_state.local_transform.position.x += camera_pan_x * layer.parallax_factor;
-layer_state.local_transform.position.y += camera_pan_y * layer.parallax_factor;
+src/core/scene/evaluator/layer_evaluator.cpp    # ADD: Camera integration
+include/tachyon/core/scene/evaluator/layer_evaluator.h    # ADD: Camera integration declarations
 ```
-
-Il background (factor 0) rimane fisso. Il testo in primo piano (factor 1.2) si muove più veloce. Questo simula la profondità senza prospettiva reale.
 
 ---
 
-## JSON finale
+## Phase 6 — JSON Spec Example
 
 ```json
 {
-  "id": "main_comp",
-  "width": 1920, "height": 1080,
-  "camera_2d": {
-    "enabled": true,
-    "zoom": {"keyframes": [
-      {"time": 0.0, "value": 1.0},
-      {"time": 5.0, "value": 1.15}
-    ]},
-    "position": {"keyframes": [
-      {"time": 0.0, "value": [0, 0]},
-      {"time": 5.0, "value": [-80, 20]}
-    ]},
-    "shake_amplitude_pos": 0.0,
-    "shake_frequency": 8.0,
-    "shake_seed": 42
-  },
-  "layers": [
-    {"id": "bg",   "type": "image", "parallax_factor": 0.0},
-    {"id": "mid",  "type": "image", "parallax_factor": 0.5},
-    {"id": "text", "type": "text",  "parallax_factor": 1.0}
-  ]
+    "layers": [
+        {
+            "id": "cam_main",
+            "name": "Main 2D Camera",
+            "type": "camera2d",
+            "camera2d_spec": {
+                "position": { "x": { "value": 0 }, "y": { "value": 0 } },
+                "rotation": { "value": 0 },
+                "scale": { "x": { "value": 1 }, "y": { "value": 1 } },
+                "anchor_point": { "x": { "value": 960 }, "y": { "value": 540 } },
+                "zoom": { "value": 1.0 },
+                "viewport_width": 1920,
+                "viewport_height": 1080
+            }
+        },
+        {
+            "id": "bg_layer",
+            "name": "Background",
+            "type": "solid",
+            "parallax_factor": 0.0,
+            "has_parallax": true,
+            "transform": {
+                "position": { "x": { "value": 960 }, "y": { "value": 540 } }
+            }
+        },
+        {
+            "id": "mid_layer",
+            "name": "Midground",
+            "type": "solid",
+            "parallax_factor": 0.5,
+            "has_parallax": true
+        },
+        {
+            "id": "fg_layer",
+            "name": "Foreground",
+            "type": "solid",
+            "parallax_factor": 1.0,
+            "has_parallax": true
+        }
+    ],
+    "active_camera2d_id": "cam_main"
 }
 ```
 
 ---
 
-## Ordine di implementazione
+## Implementation Priority
+
+1. ⬜ Phase 1: Define `Camera2DSpec` data model
+2. ⬜ Phase 2: Implement `EvaluatedCamera2D` with matrix calculations
+3. ⬜ Phase 3: Implement `apply_camera2d_transform()` with parallax
+4. ⬜ Phase 4: Add `parallax_factor` to `LayerSpec`
+5. ⬜ Phase 5: Integrate camera evaluation into layer evaluator
+6. ⬜ Phase 6: Write tests for parallax behavior
+7. ⬜ Phase 7: Update JSON parsing and serialization
+
+---
+
+## Tests to Write
 
 ```
-1. Camera2DSpec in CompositionSpec + parser JSON
-2. EvaluatedCamera2D in EvaluatedCompositionState
-3. camera2d_evaluator.cpp — evaluate_camera_2d()
-4. apply_camera2d_transform() nel compositor
-5. parallax_factor in LayerSpec + applicazione nell'evaluator layer
-6. Follow object: calcola pan automatico in base alla posizione di un layer target
+tests/unit/core/camera2d/camera2d_spec_tests.cpp         # NEW: Camera2DSpec parsing
+tests/unit/core/camera2d/camera2d_evaluator_tests.cpp    # NEW: Transform application
+tests/unit/core/camera2d/parallax_tests.cpp              # NEW: Parallax factor behavior
+tests/integration/parallax_cards_tests.cpp                # MODIFY: Use real camera2d
 ```
 
-Item 4 è il core — tutto il resto si aggiunge sopra senza cambiare l'architettura.
+### Test Cases
+
+- [ ] Camera with parallax_factor=0.0 should not move with camera
+- [ ] Camera with parallax_factor=1.0 should move exactly with camera
+- [ ] Camera with parallax_factor=0.5 should move at half speed
+- [ ] Camera zoom should affect all layers uniformly
+- [ ] Anchor point should define camera pivot point
+- [ ] Nested cameras (camera2d_id override) should work per-layer
+- [ ] Layers with has_parallax=false should ignore camera entirely
+
+---
+
+## Dependencies
+
+- `Transform2D` (exists in `layer_spec.h`)
+- `AnimatedVector2Spec`, `AnimatedScalarSpec` (exist in properties)
+- `math::Matrix3x3` (may need to verify exists or implement)
+- `math::Vector2` (exists)
+- Layer evaluator (exists, needs modification)
+
+---
+
+## Notes
+
+- Camera2D uses 3x3 matrices (2D affine transform) unlike Camera3D which uses 4x4
+- Parallax is a simplification of 3D depth for 2D compositions
+- Multiple cameras can exist; active camera is either per-layer or composition-wide
+- Zoom is equivalent to focal length but in 2D screen space
+- No near/far planes needed — 2D camera is always orthographic
