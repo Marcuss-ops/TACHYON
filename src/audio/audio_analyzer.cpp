@@ -117,10 +117,9 @@ expressions::AudioAnalysisData AudioAnalyzer::to_analysis_data(const AudioBands&
     expressions::AudioAnalysisData data;
     data.bass = static_cast<double>(bands.bass);
     data.mid = static_cast<double>(bands.mid);
-    data.high = static_cast<double>(bands.high);
-    data.presence = static_cast<double>(bands.presence);
+    data.treble = static_cast<double>(bands.high); // Map legacy high band to treble
     data.rms = static_cast<double>(bands.rms);
-    data.amplitude = data.rms;
+    data.beat = 0.0; // Beat detection not yet implemented
     return data;
 }
 

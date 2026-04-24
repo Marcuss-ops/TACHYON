@@ -1,7 +1,10 @@
 #include "tachyon/text/rendering/text_raster_surface.h"
+#include "tachyon/text/layout/layout.h"
 #include <stb_image_write.h>
 #include <algorithm>
 #include <cmath>
+#include <vector>
+#include <numeric>
 
 namespace tachyon::text {
 
@@ -129,6 +132,132 @@ void TextRasterSurface::blend_pixel(std::uint32_t x, std::uint32_t y, tachyon::r
     blend_channel(color.g, 1U);
     blend_channel(color.b, 2U);
     m_pixels[index + 3U] = static_cast<std::uint8_t>(out_alpha);
+}
+
+void TextRasterSurface::apply_gaussian_blur(float radius) {
+    if (radius <= 0.0f || m_width == 0U || m_height == 0U) return;
+
+    const int r = static_cast<int>(std::ceil(radius));
+    const float sigma = radius;
+    const int kernel_size = r * 2 + 1;
+    std::vector<float> kernel(kernel_size);
+    float sum = 0.0f;
+
+    for (int i = 0; i < kernel_size; ++i) {
+        const float x = static_cast<float>(i - r);
+        kernel[i] = std::exp(-(x * x) / (2.0f * sigma * sigma));
+        sum += kernel[i];
+    }
+    for (int i = 0; i < kernel_size; ++i) {
+        kernel[i] /= sum;
+    }
+
+    std::vector<std::uint8_t> temp(m_pixels.size());
+    for (std::size_t i = 0; i < m_pixels.size(); ++i) {
+        temp[i] = m_pixels[i];
+    }
+
+    // Horizontal pass
+    for (std::uint32_t y = 0; y < m_height; ++y) {
+        for (std::uint32_t x = 0; x < m_width; ++x) {
+            float r_acc = 0.0f, g_acc = 0.0f, b_acc = 0.0f, a_acc = 0.0f;
+            for (int k = 0; k < kernel_size; ++k) {
+                const int sample_x = static_cast<int>(x) + k - r;
+                if (sample_x >= 0 && sample_x < static_cast<int>(m_width)) {
+                    const std::size_t idx = (static_cast<std::size_t>(y) * m_width + static_cast<std::size_t>(sample_x)) * 4U;
+                    const float w = kernel[k];
+                    r_acc += temp[idx + 0U] * w;
+                    g_acc += temp[idx + 1U] * w;
+                    b_acc += temp[idx + 2U] * w;
+                    a_acc += temp[idx + 3U] * w;
+                }
+            }
+            const std::size_t idx = (static_cast<std::size_t>(y) * m_width + x) * 4U;
+            m_pixels[idx + 0U] = static_cast<std::uint8_t>(std::clamp(r_acc, 0.0f, 255.0f));
+            m_pixels[idx + 1U] = static_cast<std::uint8_t>(std::clamp(g_acc, 0.0f, 255.0f));
+            m_pixels[idx + 2U] = static_cast<std::uint8_t>(std::clamp(b_acc, 0.0f, 255.0f));
+            m_pixels[idx + 3U] = static_cast<std::uint8_t>(std::clamp(a_acc, 0.0f, 255.0f));
+        }
+    }
+
+    for (std::size_t i = 0; i < m_pixels.size(); ++i) {
+        temp[i] = m_pixels[i];
+    }
+
+    // Vertical pass
+    for (std::uint32_t x = 0; x < m_width; ++x) {
+        for (std::uint32_t y = 0; y < m_height; ++y) {
+            float r_acc = 0.0f, g_acc = 0.0f, b_acc = 0.0f, a_acc = 0.0f;
+            for (int k = 0; k < kernel_size; ++k) {
+                const int sample_y = static_cast<int>(y) + k - r;
+                if (sample_y >= 0 && sample_y < static_cast<int>(m_height)) {
+                    const std::size_t idx = (static_cast<std::size_t>(sample_y) * m_width + static_cast<std::size_t>(x)) * 4U;
+                    const float w = kernel[k];
+                    r_acc += temp[idx + 0U] * w;
+                    g_acc += temp[idx + 1U] * w;
+                    b_acc += temp[idx + 2U] * w;
+                    a_acc += temp[idx + 3U] * w;
+                }
+            }
+            const std::size_t idx = (static_cast<std::size_t>(y) * m_width + x) * 4U;
+            m_pixels[idx + 0U] = static_cast<std::uint8_t>(std::clamp(r_acc, 0.0f, 255.0f));
+            m_pixels[idx + 1U] = static_cast<std::uint8_t>(std::clamp(g_acc, 0.0f, 255.0f));
+            m_pixels[idx + 2U] = static_cast<std::uint8_t>(std::clamp(b_acc, 0.0f, 255.0f));
+            m_pixels[idx + 3U] = static_cast<std::uint8_t>(std::clamp(a_acc, 0.0f, 255.0f));
+        }
+    }
+}
+
+void TextRasterSurface::apply_shadow(const TextShadowOptions& options) {
+    if (!options.enabled) return;
+
+    TextRasterSurface shadow_surface(m_width, m_height);
+    shadow_surface.m_pixels = m_pixels;
+
+    shadow_surface.apply_gaussian_blur(options.blur_radius);
+
+    for (std::uint32_t y = 0; y < m_height; ++y) {
+        for (std::uint32_t x = 0; x < m_width; ++x) {
+            const int sx = static_cast<int>(x) + static_cast<int>(options.offset_x);
+            const int sy = static_cast<int>(y) + static_cast<int>(options.offset_y);
+            if (sx >= 0 && sx < static_cast<int>(m_width) && sy >= 0 && sy < static_cast<int>(m_height)) {
+                const std::size_t src_idx = (static_cast<std::size_t>(sy) * m_width + static_cast<std::size_t>(sx)) * 4U;
+                const float shadow_alpha = shadow_surface.m_pixels[src_idx + 3U] / 255.0f;
+                const float src_alpha = options.color.a * shadow_alpha;
+                if (src_alpha > 0.0f) {
+                    blend_pixel(x, y, options.color, static_cast<std::uint8_t>(src_alpha * 255.0f));
+                }
+            }
+        }
+    }
+}
+
+void TextRasterSurface::apply_glow(const TextGlowOptions& options) {
+    if (!options.enabled) return;
+
+    TextRasterSurface glow_surface(m_width, m_height);
+    for (std::uint32_t y = 0; y < m_height; ++y) {
+        for (std::uint32_t x = 0; x < m_width; ++x) {
+            const std::size_t idx = (static_cast<std::size_t>(y) * m_width + x) * 4U;
+            glow_surface.m_pixels[idx + 0U] = m_pixels[idx + 3U];
+            glow_surface.m_pixels[idx + 1U] = m_pixels[idx + 3U];
+            glow_surface.m_pixels[idx + 2U] = m_pixels[idx + 3U];
+            glow_surface.m_pixels[idx + 3U] = m_pixels[idx + 3U];
+        }
+    }
+
+    glow_surface.apply_gaussian_blur(options.radius);
+
+    for (std::uint32_t y = 0; y < m_height; ++y) {
+        for (std::uint32_t x = 0; x < m_width; ++x) {
+            const std::size_t idx = (static_cast<std::size_t>(y) * m_width + x) * 4U;
+            const float glow_alpha = glow_surface.m_pixels[idx + 3U] / 255.0f;
+            const float src_alpha = options.color.a * glow_alpha;
+            if (src_alpha > 0.0f) {
+                blend_pixel(x, y, options.color, static_cast<std::uint8_t>(src_alpha * 255.0f));
+            }
+        }
+    }
 }
 
 bool TextRasterSurface::save_png(const std::filesystem::path& path) const {

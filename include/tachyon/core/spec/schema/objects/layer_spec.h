@@ -71,6 +71,9 @@ struct LayerSpec {
     ColorSpec subtitle_outline_color{0, 0, 0, 255};
     double subtitle_outline_width{2.0};
 
+    // Word timestamps for text highlight animation (word_highlight mode)
+    std::string word_timestamp_path;
+
     // Vector Graphics
     std::optional<ShapePathSpec> shape_path;
     std::string line_cap{"butt"};

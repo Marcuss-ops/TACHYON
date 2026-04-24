@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <cstdint>
+#include "tachyon/core/expressions/expression_engine.h"
 
 namespace tachyon {
 namespace audio {
@@ -81,6 +82,17 @@ public:
     
     // Reset smoothing state
     void reset();
+
+    // Convert BandLevels to AudioAnalysisData for expression engine
+    static expressions::AudioAnalysisData to_analysis_data(const BandLevels& levels) {
+        expressions::AudioAnalysisData data;
+        data.bass = static_cast<double>(levels.bass);
+        data.mid = static_cast<double>(levels.mid);
+        data.treble = static_cast<double>(levels.treble);
+        data.rms = static_cast<double>(levels.overall); // overall = full spectrum RMS
+        data.beat = 0.0; // Beat detection not yet implemented
+        return data;
+    }
     
 private:
     class Impl;

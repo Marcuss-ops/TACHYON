@@ -1,4 +1,8 @@
 #include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"
+
+#ifdef _MSC_VER
+#pragma warning(disable:4456)
+#endif
 #include "tachyon/renderer2d/evaluated_composition/utilities/composition_utils.h"
 #include "tachyon/renderer2d/evaluated_composition/layer_renderer.h"
 #include "tachyon/renderer2d/evaluated_composition/effect_renderer.h"
@@ -112,10 +116,8 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
     auto render_pass = [&](SurfaceRGBA& target_surface, RenderContext2D& render_context, const std::optional<RectI>& tile_rect = std::nullopt) {
         EffectHost& host = effect_host_for(render_context);
-        // AE Rendering Order: Bottom to Top (index 0 = top in AE/Tachyon)
-        // Render bottom layers FIRST, top layers LAST (so top appears on top)
-        for (int idx = static_cast<int>(state.layers.size()) - 1; idx >= 0; --idx) {
-            const std::size_t i = static_cast<std::size_t>(idx);
+        // Render layers in stack order so higher layers can affect the composite below them.
+        for (std::size_t i = 0; i < state.layers.size(); ++i) {
             const auto& layer = state.layers[i];
             if (!layer.enabled || !layer.active) {
                 continue;
@@ -126,15 +128,16 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     continue; // Skip 3D blocks in tiled mode.
                 }
 
-                // Found a 3D block. Collect contiguous 3D layers.
+                // Found a 3D block. Collect contiguous 3D layers in stack order.
                 std::vector<std::size_t> block_indices;
                 block_indices.push_back(i);
                 std::size_t last_block_idx = i;
                 for (std::size_t j = i + 1; j < state.layers.size(); ++j) {
-                    if (state.layers[j].is_3d && state.layers[j].visible && state.layers[j].enabled && state.layers[j].active) {
+                    const auto& scan_layer = state.layers[j];
+                    if (scan_layer.is_3d && scan_layer.visible && scan_layer.enabled && scan_layer.active) {
                         block_indices.push_back(j);
                         last_block_idx = j;
-                    } else if (state.layers[j].enabled && state.layers[j].active) {
+                    } else if (scan_layer.enabled && scan_layer.active) {
                         break;
                     }
                 }
@@ -153,10 +156,10 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     scene3d.camera.previous_target = state.camera.point_of_interest;
                 }
 
-                for (std::size_t idx : block_indices) {
-                    const auto& l = state.layers[idx];
+                for (std::size_t block_idx : block_indices) {
+                    const auto& l = state.layers[block_idx];
                     renderer3d::EvaluatedMeshInstance inst;
-                    inst.object_id = static_cast<std::uint32_t>(idx);
+                    inst.object_id = static_cast<std::uint32_t>(block_idx);
                     inst.material_id = 0;
                     inst.world_transform = l.world_matrix;
                     inst.previous_world_transform = l.previous_world_matrix;
@@ -268,7 +271,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 frame.aovs.push_back({"motion_vector", motion_vector_aov_surf});
 
                 composite_surface(target_surface, *world_3d, 0, 0, BlendMode::Normal);
-                idx = static_cast<int>(last_block_idx);
+                i = last_block_idx;
                 continue;
             }
 

@@ -110,6 +110,7 @@ struct CompiledLayer {
     ColorSpec stroke_color{255, 255, 255, 255};
     float stroke_width{0.0f};
     std::optional<ShapePathSpec> shape_path;
+    std::optional<ShapeSpec> shape_spec;
     std::vector<EffectSpec> effects;
     std::vector<TextAnimatorSpec> text_animators;
     std::vector<TextHighlightSpec> text_highlights;
@@ -117,6 +118,7 @@ struct CompiledLayer {
     std::optional<std::string> subtitle_path;
     std::optional<ColorSpec> subtitle_outline_color;
     float subtitle_outline_width{0.0f};
+    std::optional<std::string> word_timestamp_path;
     
     // Evaluation state indices
     std::optional<std::uint32_t> parent_index;

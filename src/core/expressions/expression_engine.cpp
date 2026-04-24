@@ -255,6 +255,13 @@ EvaluationResult CoreExpressionEvaluator::evaluate(const std::string& expression
         resolved.variables["value"] = resolved.value;
     }
 
+    // Populate audio analysis variables for expression access
+    resolved.variables["audio.bass"] = resolved.audio_analysis.bass;
+    resolved.variables["audio.mid"] = resolved.audio_analysis.mid;
+    resolved.variables["audio.treble"] = resolved.audio_analysis.treble;
+    resolved.variables["audio.rms"] = resolved.audio_analysis.rms;
+    resolved.variables["audio.beat"] = resolved.audio_analysis.beat;
+
     try {
         double val = ExpressionVM::execute(comp.bytecode, resolved);
         return {val, true, ""};

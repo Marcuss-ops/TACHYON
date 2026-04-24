@@ -13,14 +13,14 @@ namespace expressions {
 
 /**
  * Audio analysis data exposed to expressions.
+ * Access in expressions via: audio.bass, audio.mid, audio.treble, audio.rms, audio.beat
  */
 struct AudioAnalysisData {
-    double bass{0.0};
-    double mid{0.0};
-    double high{0.0};
-    double presence{0.0};
-    double rms{0.0};
-    double amplitude{0.0}; // Overall amplitude (same as rms)
+    double bass{0.0};      // 0.0 - 1.0, maps to AudioReactivityEngine::BandLevels.bass
+    double mid{0.0};       // 0.0 - 1.0, maps to AudioReactivityEngine::BandLevels.mid
+    double treble{0.0};    // 0.0 - 1.0, maps to AudioReactivityEngine::BandLevels.treble
+    double rms{0.0};       // 0.0 - 1.0, maps to AudioReactivityEngine::BandLevels.overall
+    double beat{0.0};      // 0.0 or 1.0, beat detection (not yet implemented)
 };
 
 /**

@@ -205,6 +205,56 @@ void parse_time_remap(const json& object, LayerSpec& layer, const std::string& p
     }
 }
 
+void parse_shape_spec(const json& object, LayerSpec& layer, const std::string& path, DiagnosticBag& diagnostics) {
+    (void)path; (void)diagnostics;
+    if (object.contains("shape_type")) {
+        ShapeSpec ss;
+        read_string(object, "shape_type", ss.type);
+        read_number(object, "x", ss.x);
+        read_number(object, "y", ss.y);
+        read_number(object, "width", ss.width);
+        read_number(object, "height", ss.height);
+        read_number(object, "radius", ss.radius);
+        read_number(object, "sides", ss.sides);
+        read_number(object, "inner_radius", ss.inner_radius);
+        read_number(object, "outer_radius", ss.outer_radius);
+        read_number(object, "x1", ss.x1);
+        read_number(object, "y1", ss.y1);
+        read_number(object, "head_size", ss.head_size);
+        read_number(object, "tail_x", ss.tail_x);
+        read_number(object, "tail_y", ss.tail_y);
+        read_number(object, "stroke_width", ss.stroke_width);
+        read_string(object, "line_cap", ss.line_cap);
+        read_string(object, "line_join", ss.line_join);
+        read_number(object, "dash_offset", ss.dash_offset);
+        if (object.contains("dash_array") && object.at("dash_array").is_array()) {
+            for (const auto& dash : object.at("dash_array")) {
+                if (dash.is_number()) ss.dash_array.push_back(dash.get<float>());
+            }
+        }
+        
+        ColorSpec c_fill, c_stroke;
+        if (parse_color_value(object.value("fill_color", json::array()), c_fill)) ss.fill_color = c_fill;
+        if (parse_color_value(object.value("stroke_color", json::array()), c_stroke)) ss.stroke_color = c_stroke;
+
+        if (object.contains("gradient_fill")) {
+            renderer2d::GradientSpec grad;
+            if (parse_gradient_spec(object.at("gradient_fill"), grad)) {
+                ss.gradient_fill = grad;
+            }
+        }
+
+        if (object.contains("gradient_stroke")) {
+            renderer2d::GradientSpec grad;
+            if (parse_gradient_spec(object.at("gradient_stroke"), grad)) {
+                ss.gradient_stroke = grad;
+            }
+        }
+
+        layer.shape_spec = ss;
+    }
+}
+
 void parse_layer(const json& object, LayerSpec& out, const std::string& path, DiagnosticBag& diagnostics) {
     read_string(object, "id", out.id);
     read_string(object, "name", out.name);
