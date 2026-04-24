@@ -1,5 +1,6 @@
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include "tachyon/core/spec/scene_spec_audio.h"
+#include "tachyon/text/fonts/font_manifest.h"
 #include <fstream>
 #include <sstream>
 
@@ -99,6 +100,19 @@ ParseResult<SceneSpec> parse_scene_spec_json(const std::string& text) {
                 if (assets[i].is_object()) {
                     scene.assets.push_back(parse_asset(assets[i], make_path("scene", "assets[" + std::to_string(i) + "]"), result.diagnostics));
                 }
+            }
+        }
+
+        // Parse font_manifest if present
+        if (parsed.contains("font_manifest") && parsed.at("font_manifest").is_string()) {
+            std::string fm_path = parsed.at("font_manifest").get<std::string>();
+            scene.font_manifest_path = fm_path;
+            auto manifest_opt = FontManifestParser::parse_file(std::filesystem::path(fm_path));
+            if (manifest_opt.has_value()) {
+                scene.font_manifest = std::move(*manifest_opt);
+            } else {
+                result.diagnostics.add_warning("scene.font_manifest.load_failed",
+                    "failed to load font manifest from: " + fm_path);
             }
         }
 

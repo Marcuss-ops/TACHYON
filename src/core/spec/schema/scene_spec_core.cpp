@@ -146,6 +146,27 @@ ValidationResult validate_scene_spec(const SceneSpec& scene) {
             }
         }
     }
+
+    // Warning if font manifest missing but text layers present
+    if (!scene.font_manifest.has_value()) {
+        bool has_text_layer = false;
+        for (const auto& comp : scene.compositions) {
+            for (const auto& layer : comp.layers) {
+                if (layer.type == "text") {
+                    has_text_layer = true;
+                    break;
+                }
+            }
+            if (has_text_layer) break;
+        }
+        if (has_text_layer) {
+            result.diagnostics.add_warning(
+                "scene.font_manifest.missing",
+                "font_manifest not provided, but text layers are present; fonts may not load correctly"
+            );
+        }
+    }
+
     return result;
 }
 

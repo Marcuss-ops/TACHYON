@@ -13,6 +13,7 @@
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 #include "tachyon/core/spec/schema/objects/composition_spec.h"
+#include "tachyon/text/fonts/font_manifest.h"
 
 #include <filesystem>
 #include <string>
@@ -36,6 +37,8 @@ struct SceneSpec {
     std::vector<CompositionSpec> compositions;
     std::vector<AssetSpec> assets;
     std::vector<DataSourceSpec> data_sources;
+    std::optional<FontManifest> font_manifest;
+    std::optional<std::string> font_manifest_path;
 };
 
 ParseResult<SceneSpec> parse_scene_spec_file(const std::filesystem::path& path);
