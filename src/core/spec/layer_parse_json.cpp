@@ -307,6 +307,13 @@ void parse_layer(const json& object, LayerSpec& out, const std::string& path, Di
     read_number(object, "stroke_width", out.stroke_width);
     parse_optional_scalar_property(object, "stroke_width", out.stroke_width_property, path, diagnostics);
     
+    // Subtitle & Word Timestamps
+    read_string(object, "subtitle_path", out.subtitle_path);
+    read_string(object, "word_timestamp_path", out.word_timestamp_path);
+    
+    read_number(object, "subtitle_outline_width", out.subtitle_outline_width);
+    parse_optional_color_property(object, "subtitle_outline_color", out.subtitle_outline_color, path, diagnostics);
+    
     // Repeater
     parse_optional_scalar_property(object, "repeater_count", out.repeater_count, path, diagnostics);
     parse_optional_scalar_property(object, "repeater_stagger_delay", out.repeater_stagger_delay, path, diagnostics);
