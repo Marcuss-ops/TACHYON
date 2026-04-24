@@ -31,6 +31,134 @@ std::size_t count_layers_with_track_matte(const CompositionSpec& composition) {
         [&](const LayerSpec& layer) { return layer.track_matte_type != TrackMatteType::None; }));
 }
 
+template <typename T>
+void hash_keyframes(CacheKeyBuilder& builder, const std::vector<T>& keyframes) {
+    builder.add_u64(static_cast<std::uint64_t>(keyframes.size()));
+    for (const auto& kf : keyframes) {
+        builder.add_f64(kf.time);
+        builder.add_u64(static_cast<std::uint64_t>(kf.easing));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cx1 * 1000000.0));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cy1 * 1000000.0));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cx2 * 1000000.0));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cy2 * 1000000.0));
+        builder.add_f64(kf.speed_in);
+        builder.add_f64(kf.influence_in);
+        builder.add_f64(kf.speed_out);
+        builder.add_f64(kf.influence_out);
+    }
+}
+
+void hash_animated_scalar(CacheKeyBuilder& builder, const AnimatedScalarSpec& spec) {
+    builder.add_bool(spec.value.has_value());
+    if (spec.value.has_value()) {
+        builder.add_f64(*spec.value);
+    }
+    hash_keyframes(builder, spec.keyframes);
+    builder.add_bool(spec.audio_band.has_value());
+    if (spec.audio_band.has_value()) {
+        builder.add_u32(static_cast<std::uint32_t>(*spec.audio_band));
+    }
+    builder.add_f64(spec.audio_min);
+    builder.add_f64(spec.audio_max);
+    builder.add_bool(spec.expression.has_value());
+    if (spec.expression.has_value()) {
+        builder.add_string(*spec.expression);
+    }
+}
+
+void hash_animated_vector2(CacheKeyBuilder& builder, const AnimatedVector2Spec& spec) {
+    builder.add_bool(spec.value.has_value());
+    if (spec.value.has_value()) {
+        builder.add_f64(spec.value->x);
+        builder.add_f64(spec.value->y);
+    }
+    builder.add_u64(static_cast<std::uint64_t>(spec.keyframes.size()));
+    for (const auto& kf : spec.keyframes) {
+        builder.add_f64(kf.time);
+        builder.add_f64(kf.value.x);
+        builder.add_f64(kf.value.y);
+        builder.add_f64(kf.tangent_in.x);
+        builder.add_f64(kf.tangent_in.y);
+        builder.add_f64(kf.tangent_out.x);
+        builder.add_f64(kf.tangent_out.y);
+        builder.add_u32(static_cast<std::uint32_t>(kf.easing));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cx1 * 1000000.0));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cy1 * 1000000.0));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cx2 * 1000000.0));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cy2 * 1000000.0));
+        builder.add_f64(kf.speed_in);
+        builder.add_f64(kf.influence_in);
+        builder.add_f64(kf.speed_out);
+        builder.add_f64(kf.influence_out);
+    }
+    builder.add_bool(spec.expression.has_value());
+    if (spec.expression.has_value()) {
+        builder.add_string(*spec.expression);
+    }
+}
+
+void hash_animated_vector3(CacheKeyBuilder& builder, const AnimatedVector3Spec& spec) {
+    builder.add_bool(spec.value.has_value());
+    if (spec.value.has_value()) {
+        builder.add_f64(spec.value->x);
+        builder.add_f64(spec.value->y);
+        builder.add_f64(spec.value->z);
+    }
+    builder.add_u64(static_cast<std::uint64_t>(spec.keyframes.size()));
+    for (const auto& kf : spec.keyframes) {
+        builder.add_f64(kf.time);
+        builder.add_f64(kf.value.x);
+        builder.add_f64(kf.value.y);
+        builder.add_f64(kf.value.z);
+        builder.add_f64(kf.tangent_in.x);
+        builder.add_f64(kf.tangent_in.y);
+        builder.add_f64(kf.tangent_in.z);
+        builder.add_f64(kf.tangent_out.x);
+        builder.add_f64(kf.tangent_out.y);
+        builder.add_f64(kf.tangent_out.z);
+        builder.add_u32(static_cast<std::uint32_t>(kf.easing));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cx1 * 1000000.0));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cy1 * 1000000.0));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cx2 * 1000000.0));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cy2 * 1000000.0));
+        builder.add_f64(kf.speed_in);
+        builder.add_f64(kf.influence_in);
+        builder.add_f64(kf.speed_out);
+        builder.add_f64(kf.influence_out);
+    }
+    builder.add_bool(spec.expression.has_value());
+    if (spec.expression.has_value()) {
+        builder.add_string(*spec.expression);
+    }
+}
+
+void hash_animated_color(CacheKeyBuilder& builder, const AnimatedColorSpec& spec) {
+    builder.add_bool(spec.value.has_value());
+    if (spec.value.has_value()) {
+        builder.add_u32(spec.value->r);
+        builder.add_u32(spec.value->g);
+        builder.add_u32(spec.value->b);
+        builder.add_u32(spec.value->a);
+    }
+    builder.add_u64(static_cast<std::uint64_t>(spec.keyframes.size()));
+    for (const auto& kf : spec.keyframes) {
+        builder.add_f64(kf.time);
+        builder.add_u32(kf.value.r);
+        builder.add_u32(kf.value.g);
+        builder.add_u32(kf.value.b);
+        builder.add_u32(kf.value.a);
+        builder.add_u32(static_cast<std::uint32_t>(kf.easing));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cx1 * 1000000.0));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cy1 * 1000000.0));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cx2 * 1000000.0));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cy2 * 1000000.0));
+        builder.add_f64(kf.speed_in);
+        builder.add_f64(kf.influence_in);
+        builder.add_f64(kf.speed_out);
+        builder.add_f64(kf.influence_out);
+    }
+}
+
 CompositionSummary make_summary(const CompositionSpec& composition) {
     CompositionSummary summary;
     summary.id = composition.id;
@@ -118,16 +246,73 @@ std::uint64_t hash_scene_content(const SceneSpec& scene) {
             builder.add_string(layer.light_type);
             builder.add_string(layer.falloff_type);
             builder.add_bool(layer.casts_shadows);
+            hash_animated_scalar(builder, layer.opacity_property);
+            hash_animated_scalar(builder, layer.mask_feather);
+            hash_animated_scalar(builder, layer.time_remap_property);
+            hash_animated_scalar(builder, layer.font_size);
+            hash_animated_scalar(builder, layer.stroke_width_property);
+            hash_animated_scalar(builder, layer.repeater_count);
+            hash_animated_scalar(builder, layer.repeater_stagger_delay);
+            hash_animated_scalar(builder, layer.repeater_offset_position_x);
+            hash_animated_scalar(builder, layer.repeater_offset_position_y);
+            hash_animated_scalar(builder, layer.repeater_offset_rotation);
+            hash_animated_scalar(builder, layer.repeater_offset_scale_x);
+            hash_animated_scalar(builder, layer.repeater_offset_scale_y);
+            hash_animated_scalar(builder, layer.repeater_start_opacity);
+            hash_animated_scalar(builder, layer.repeater_end_opacity);
+            hash_animated_scalar(builder, layer.light_intensity);
+            hash_animated_scalar(builder, layer.attenuation_near);
+            hash_animated_scalar(builder, layer.attenuation_far);
+            hash_animated_scalar(builder, layer.cone_angle);
+            hash_animated_scalar(builder, layer.cone_feather);
+            hash_animated_scalar(builder, layer.shadow_darkness);
+            hash_animated_scalar(builder, layer.shadow_radius);
+            hash_animated_scalar(builder, layer.camera_zoom);
+            hash_animated_vector3(builder, layer.camera_poi);
+            hash_animated_scalar(builder, layer.camera_shake_amplitude_pos);
+            hash_animated_scalar(builder, layer.camera_shake_amplitude_rot);
+            hash_animated_scalar(builder, layer.camera_shake_frequency);
+            hash_animated_scalar(builder, layer.camera_shake_roughness);
+            hash_animated_color(builder, layer.fill_color);
+            hash_animated_color(builder, layer.stroke_color);
+            hash_animated_color(builder, layer.light_color);
             builder.add_u64(static_cast<std::uint64_t>(layer.effects.size()));
             for (const auto& effect : layer.effects) builder.add_string(effect);
             builder.add_u64(static_cast<std::uint64_t>(layer.text_animators.size()));
             for (const auto& animator : layer.text_animators) builder.add_string(animator);
             builder.add_u64(static_cast<std::uint64_t>(layer.text_highlights.size()));
             for (const auto& highlight : layer.text_highlights) builder.add_string(highlight);
-            builder.add_u64(static_cast<std::uint64_t>(layer.mask_paths.size()));
             builder.add_u64(static_cast<std::uint64_t>(layer.track_bindings.size()));
+            for (const auto& binding : layer.track_bindings) {
+                builder.add_string(binding.property_path);
+                builder.add_string(binding.source_id);
+                builder.add_string(binding.source_track_name);
+                builder.add_f64(binding.influence);
+                builder.add_bool(binding.enabled);
+            }
+            builder.add_u64(static_cast<std::uint64_t>(layer.mask_paths.size()));
+            for (const auto& mask : layer.mask_paths) {
+                builder.add_u64(static_cast<std::uint64_t>(mask.vertices.size()));
+                builder.add_bool(mask.is_closed);
+                builder.add_bool(mask.is_inverted);
+                for (const auto& vertex : mask.vertices) {
+                    builder.add_f64(vertex.position.x);
+                    builder.add_f64(vertex.position.y);
+                    builder.add_f64(vertex.in_tangent.x);
+                    builder.add_f64(vertex.in_tangent.y);
+                    builder.add_f64(vertex.out_tangent.x);
+                    builder.add_f64(vertex.out_tangent.y);
+                    builder.add_f64(vertex.feather_inner);
+                    builder.add_f64(vertex.feather_outer);
+                }
+            }
             builder.add_bool(layer.time_remap.enabled);
             builder.add_u32(static_cast<std::uint32_t>(layer.time_remap.mode));
+            builder.add_u64(static_cast<std::uint64_t>(layer.time_remap.keyframes.size()));
+            for (const auto& kf : layer.time_remap.keyframes) {
+                builder.add_f64(kf.first);
+                builder.add_f64(kf.second);
+            }
             builder.add_u32(static_cast<std::uint32_t>(layer.frame_blend));
         }
     }

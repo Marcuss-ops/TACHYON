@@ -147,12 +147,9 @@ void FrameCache::store_frame(const FrameCacheKey& key, std::shared_ptr<const ren
 
 std::shared_ptr<const renderer2d::Framebuffer> FrameCache::lookup_frame(std::uint64_t key) const {
     std::scoped_lock lock(m_mutex);
-    auto it = m_frames.find(key);
-    if (it != m_frames.end()) {
-        ++m_hit_count;
-        const_cast<FrameCache*>(this)->touch(key);
-        return it->second.framebuffer;
-    }
+    (void)key;
+    // Legacy hash-only lookup is intentionally not a hit path anymore.
+    // Full FrameCacheKey lookup is required to avoid silent collisions.
     ++m_miss_count;
     return nullptr;
 }
