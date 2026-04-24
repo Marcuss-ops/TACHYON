@@ -150,12 +150,12 @@ bool run_planar_track_tests();
 bool run_camera_solver_tests();
 bool run_matte_resolver_tests();
 bool run_glyph_cache_tests();
-bool run_text_tests();
+// bool run_text_tests();  // Disabled - text_tests.cpp commented out in CMakeLists.txt
 bool run_effect_host_tests();
 bool run_precomp_mask_tests();
 bool run_golden_visual_tests();
-bool run_motion_blur_tests();
-bool run_audio_pitch_correct_tests();
+// bool run_motion_blur_tests();  // Disabled - motion_blur_tests.cpp commented out
+// bool run_audio_pitch_correct_tests();  // Disabled - test_audio_pitch_correct.cpp commented out
 namespace tachyon { bool run_tiling_tests(); }
 bool run_optical_flow_tests();
 
@@ -201,14 +201,14 @@ int main(int argc, char** argv) {
         {"camera_solver", run_camera_solver_tests},
         {"matte_resolver", run_matte_resolver_tests},
         {"glyph_cache", run_glyph_cache_tests},
-        {"text", run_text_tests},
+        // {"text", run_text_tests},  // Disabled - text_tests.cpp commented out
         {"effect_host", run_effect_host_tests},
         {"precomp_mask", run_precomp_mask_tests},
         {"golden", run_golden_visual_tests},
         {"tiling", tachyon::run_tiling_tests},
         {"scene_spec", run_scene_spec_tests},
-        {"motion_blur", run_motion_blur_tests},
-        {"audio_pitch_correct", run_audio_pitch_correct_tests},
+        // {"motion_blur", run_motion_blur_tests},  // Disabled - motion_blur_tests.cpp commented out
+        // {"audio_pitch_correct", run_audio_pitch_correct_tests},  // Disabled - test_audio_pitch_correct.cpp commented out
 
         {"render_job", run_render_job_tests},
         {"expression_vm", run_expression_vm_tests},

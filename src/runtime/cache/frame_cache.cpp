@@ -118,13 +118,40 @@ void FrameCache::store_composition(std::uint64_t key, std::shared_ptr<const scen
     evict_if_needed();
 }
 
+std::shared_ptr<const renderer2d::Framebuffer> FrameCache::lookup_frame(const FrameCacheKey& key) const {
+    std::scoped_lock lock(m_mutex);
+    auto it = m_frames.find(key.hash);
+    if (it != m_frames.end() && it->second.key_value == key.value) {
+        ++m_hit_count;
+        const_cast<FrameCache*>(this)->touch(key.hash);
+        return it->second.framebuffer;
+    }
+    ++m_miss_count;
+    return nullptr;
+}
+
+void FrameCache::store_frame(const FrameCacheKey& key, std::shared_ptr<const renderer2d::Framebuffer> frame) {
+    if (!frame) return;
+    std::scoped_lock lock(m_mutex);
+    const std::size_t size = estimate_frame_size(*frame);
+    if (m_entries.contains(key.hash)) {
+        remove_entry(key.hash);
+    }
+
+    m_frames.insert_or_assign(key.hash, FrameEntry{key.value, frame});
+    m_current_usage_bytes += size;
+    m_entries[key.hash] = EntryInfo{EntryType::Frame, size};
+    m_lru_order.push_back(key.hash);
+    evict_if_needed();
+}
+
 std::shared_ptr<const renderer2d::Framebuffer> FrameCache::lookup_frame(std::uint64_t key) const {
     std::scoped_lock lock(m_mutex);
     auto it = m_frames.find(key);
     if (it != m_frames.end()) {
         ++m_hit_count;
         const_cast<FrameCache*>(this)->touch(key);
-        return it->second;
+        return it->second.framebuffer;
     }
     ++m_miss_count;
     return nullptr;
@@ -138,7 +165,7 @@ void FrameCache::store_frame(std::uint64_t key, std::shared_ptr<const renderer2d
         remove_entry(key);
     }
 
-    m_frames.insert_or_assign(key, frame);
+    m_frames.insert_or_assign(key, FrameEntry{"", frame});
     m_current_usage_bytes += size;
     m_entries[key] = EntryInfo{EntryType::Frame, size};
     m_lru_order.push_back(key);

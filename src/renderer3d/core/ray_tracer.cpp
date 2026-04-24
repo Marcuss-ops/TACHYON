@@ -8,7 +8,8 @@
 
 namespace tachyon::renderer3d {
 
-RayTracer::RayTracer() : m_last_error("") {
+RayTracer::RayTracer(media::MediaManager* media_manager) 
+    : media_manager_(media_manager), m_last_error("") {
     device_ = rtcNewDevice(nullptr);
     rtcSetDeviceErrorFunction(device_, log_embree_error, this);
 }
@@ -28,19 +29,20 @@ void RayTracer::render(
     double frame_duration_seconds) {
     (void)frame_duration_seconds;
 
-    if (!scene_ || scene.instances.empty()) {
-        return;
-    }
-
-    const auto& cam = scene.camera;
     const int width = static_cast<int>(out_buffer.width);
     const int height = static_cast<int>(out_buffer.height);
-    
+
     if (width <= 0 || height <= 0) {
         return;
     }
 
     out_buffer.clear();
+
+    if (!scene_ || scene.instances.empty()) {
+        return;
+    }
+
+    const auto& cam = scene.camera;
 
     std::random_device rd;
     std::mt19937 rng(rd());
@@ -113,6 +115,79 @@ void RayTracer::render(
             out_buffer.material_id[idx] = pixel_mat_id;
         }
     }
+
+    if (denoiser_enabled_) {
+        denoise_aov_buffer(out_buffer);
+    }
+}
+
+void RayTracer::denoise_aov_buffer(AOVBuffer& buffer) const {
+    if (buffer.width == 0 || buffer.height == 0 || buffer.beauty_rgba.empty()) {
+        return;
+    }
+
+    const std::vector<float> src = buffer.beauty_rgba;
+    const std::vector<float> src_depth = buffer.depth_z;
+    const std::vector<float> src_normal = buffer.normal_xyz;
+    const std::uint32_t w = buffer.width;
+    const std::uint32_t h = buffer.height;
+
+    auto normal_at = [&](std::uint32_t x, std::uint32_t y) -> math::Vector3 {
+        const std::size_t idx = (static_cast<std::size_t>(y) * w + x) * 3;
+        return {src_normal[idx + 0], src_normal[idx + 1], src_normal[idx + 2]};
+    };
+
+    auto color_at = [&](std::uint32_t x, std::uint32_t y) -> math::Vector3 {
+        const std::size_t idx = (static_cast<std::size_t>(y) * w + x) * 4;
+        return {src[idx + 0], src[idx + 1], src[idx + 2]};
+    };
+
+    std::vector<float> dst = src;
+    const float kDepthSigma = 0.08f;
+    const float kNormalSigma = 0.35f;
+    const float kColorSigma = 0.25f;
+
+    for (std::uint32_t y = 0; y < h; ++y) {
+        for (std::uint32_t x = 0; x < w; ++x) {
+            const std::size_t pidx = static_cast<std::size_t>(y) * w + x;
+            const float depth = src_depth[pidx];
+            const math::Vector3 normal = normal_at(x, y);
+            const math::Vector3 center = color_at(x, y);
+
+            math::Vector3 accum{0.0f, 0.0f, 0.0f};
+            float wsum = 0.0f;
+
+            for (int oy = -1; oy <= 1; ++oy) {
+                const int ny = std::clamp(static_cast<int>(y) + oy, 0, static_cast<int>(h) - 1);
+                for (int ox = -1; ox <= 1; ++ox) {
+                    const int nx = std::clamp(static_cast<int>(x) + ox, 0, static_cast<int>(w) - 1);
+                    const std::size_t nidx = static_cast<std::size_t>(ny) * w + static_cast<std::size_t>(nx);
+                    const float ndepth = src_depth[nidx];
+                    const math::Vector3 nnormal = normal_at(static_cast<std::uint32_t>(nx), static_cast<std::uint32_t>(ny));
+                    const math::Vector3 ncolor = color_at(static_cast<std::uint32_t>(nx), static_cast<std::uint32_t>(ny));
+
+                    const float depth_weight = std::exp(-std::abs(ndepth - depth) / kDepthSigma);
+                    const float normal_weight = std::exp(-std::max(0.0f, 1.0f - math::Vector3::dot(normal, nnormal)) / kNormalSigma);
+                    const float color_dist = (ncolor - center).length();
+                    const float color_weight = std::exp(-color_dist / kColorSigma);
+                    const float weight = depth_weight * normal_weight * color_weight;
+
+                    accum += ncolor * weight;
+                    wsum += weight;
+                }
+            }
+
+            if (wsum > 1.0e-6f) {
+                accum /= wsum;
+                const std::size_t out_idx = pidx * 4;
+                dst[out_idx + 0] = accum.x;
+                dst[out_idx + 1] = accum.y;
+                dst[out_idx + 2] = accum.z;
+            }
+        }
+    }
+
+    buffer.beauty_rgba = std::move(dst);
 }
 
 void RayTracer::cleanup_scene() {
@@ -127,6 +202,7 @@ void RayTracer::cleanup_scene() {
         }
     }
     mesh_cache_.clear();
+    current_env_map_ = nullptr;
 }
 
 void RayTracer::log_embree_error(void* userPtr, RTCError code, const char* str) {

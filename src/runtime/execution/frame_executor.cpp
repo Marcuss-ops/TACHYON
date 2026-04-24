@@ -309,7 +309,7 @@ ExecutedFrame FrameExecutor::execute(
 
                     RenderContext thread_context = context;
                     thread_context.renderer2d.accumulation_buffer.resize(0);
-                    thread_context.ray_tracer = std::make_shared<renderer3d::RayTracer>();
+                    thread_context.ray_tracer = std::make_shared<renderer3d::RayTracer>(thread_context.renderer2d.media_manager);
                     thread_context.renderer2d.ray_tracer = thread_context.ray_tracer;
 
                     const auto& topo_order = compiled_scene.graph.topo_order();

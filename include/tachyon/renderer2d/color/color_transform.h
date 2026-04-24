@@ -3,6 +3,7 @@
 #include "tachyon/renderer2d/color/color_profile.h"
 #include "tachyon/renderer2d/color/color_matrix.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
+#include <array>
 #include <cmath>
 #include <algorithm>
 

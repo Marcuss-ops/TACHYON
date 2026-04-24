@@ -101,7 +101,6 @@ void SceneValidator::validate_layer(const ::tachyon::LayerSpec& layer, const ::t
 // void SceneValidator::validate_property removed: PropertySpec type no longer exists
     // Base property validation hook. The concrete property schema is still
     // normalized elsewhere, so this stays intentionally shallow for now.
-}
 
 void SceneValidator::check_cycles(const ::tachyon::SceneSpec& scene, ValidationResult& out) const {
     // Check matte dependency cycles within each composition

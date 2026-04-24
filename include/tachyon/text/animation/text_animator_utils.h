@@ -17,6 +17,12 @@ struct TextAnimatorContext {
     float total_clusters{0.0f};
     float total_lines{0.0f};
     float time{0.0f};
+    
+    // Cluster-aware fields for shape-preserving animation
+    std::size_t cluster_codepoint_start{0};
+    std::size_t cluster_codepoint_count{1};
+    bool is_space{false};  // True if this glyph represents whitespace
+    bool is_rtl{false};   // True if this glyph is in RTL run
 };
 
 template <typename T>

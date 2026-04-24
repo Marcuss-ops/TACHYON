@@ -66,6 +66,7 @@ add_library(TachyonCore
     core/spec/schema/scene_spec_core.cpp
     core/spec/scene_spec_json.cpp
     core/spec/scene_spec_builder.cpp
+    core/spec/validation/scene_validator.cpp
     core/spec/scene_spec_audio.cpp
     renderer2d/raster/draw_list_builder.cpp
     renderer2d/raster/draw_list_rasterizer.cpp
@@ -117,7 +118,9 @@ add_library(TachyonCore
     audio/audio_encoder.cpp
     audio/audio_export.cpp
     tracker/optical_flow.cpp
+    tracker/camera_solver.cpp
     media/image_manager.cpp
+    media/asset_manager.cpp
     media/asset_resolution.cpp
     media/media_manager.cpp
     media/video_decoder.cpp
@@ -156,6 +159,8 @@ add_library(TachyonCore
     tracker/track.cpp
     tracker/track_binding.cpp
     renderer3d/core/ray_tracer.cpp
+    renderer3d/core/ray_tracer_shading.cpp
+    renderer3d/core/ray_tracer_scene.cpp
     renderer3d/core/scene_cache.cpp
     renderer3d/animation/motion_blur.cpp
     renderer3d/animation/animation3d.cpp
