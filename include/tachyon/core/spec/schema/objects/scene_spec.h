@@ -30,9 +30,43 @@ struct ProjectSpec {
     std::optional<std::int64_t> root_seed;
 };
 
+/**
+ * @brief Schema version for scene serialization compatibility.
+ * 
+ * Increment major version when breaking changes are made.
+ * Increment minor version when new optional fields are added.
+ * Increment patch version for bug fixes only.
+ */
+struct SchemaVersion {
+    std::uint32_t major{1};
+    std::uint32_t minor{0};
+    std::uint32_t patch{0};
+    
+    [[nodiscard]] std::string to_string() const {
+        return std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch);
+    }
+    
+    [[nodiscard]] static SchemaVersion from_string(const std::string& str) {
+        SchemaVersion result;
+        std::sscanf(str.c_str(), "%u.%u.%u", &result.major, &result.minor, &result.patch);
+        return result;
+    }
+    
+    [[nodiscard]] bool operator<(const SchemaVersion& other) const {
+        if (major != other.major) return major < other.major;
+        if (minor != other.minor) return minor < other.minor;
+        return patch < other.patch;
+    }
+    
+    [[nodiscard]] bool operator>=(const SchemaVersion& other) const {
+        return !(*this < other);
+    }
+};
+
 struct SceneSpec {
-    std::string version{"1.0"};
-    std::string spec_version{"1.0.0"};
+    SchemaVersion schema_version{1, 0, 0};  ///< Schema version for migration support
+    std::string version{"1.0"};              ///< Legacy version field (deprecated)
+    std::string spec_version{"1.0.0"};       ///< Legacy spec version (deprecated)
     ProjectSpec project;
     std::vector<CompositionSpec> compositions;
     std::vector<AssetSpec> assets;

@@ -24,6 +24,18 @@ struct ValidationResult {
     std::size_t warning_count{0};
 };
 
+/**
+ * @brief Validates scene specifications for structural integrity and reference consistency.
+ * 
+ * Validation checks include:
+ * - Schema version compatibility
+ * - Duplicate ID detection (layers, tracks, cameras, audio)
+ * - Dangling reference detection (precomps, assets, matte sources)
+ * - Matte dependency cycle detection
+ * - Precomp reference cycle detection
+ * - Overlapping camera cuts
+ * - Track binding validation
+ */
 class SceneValidator {
 public:
     SceneValidator() = default;
@@ -35,8 +47,12 @@ public:
     ValidationResult validate(const ::tachyon::SceneSpec& scene) const;
 
 private:
+    void validate_schema_version(const ::tachyon::SceneSpec& scene, ValidationResult& out) const;
     void validate_composition(const ::tachyon::CompositionSpec& comp, const ::tachyon::SceneSpec& scene, ValidationResult& out) const;
     void validate_layer(const ::tachyon::LayerSpec& layer, const ::tachyon::CompositionSpec& comp, const ::tachyon::SceneSpec& scene, const std::string& path, ValidationResult& out) const;
+    void validate_duplicate_ids(const ::tachyon::CompositionSpec& comp, ValidationResult& out) const;
+    void validate_camera_cuts(const ::tachyon::CompositionSpec& comp, ValidationResult& out) const;
+    void validate_track_bindings(const ::tachyon::LayerSpec& layer, const std::string& path, ValidationResult& out) const;
     // Property validation hook removed: PropertySpec type no longer exists
     
     // Checks for circular precomp references
