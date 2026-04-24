@@ -1,0 +1,55 @@
+{
+    "fonts": [
+        {
+            "id": "inter-regular",
+            "family": "Inter",
+            "src": "assets/fonts/Inter-Regular.ttf",
+            "weight": 400,
+            "style": "normal",
+            "format": "truetype"
+        },
+        {
+            "id": "inter-bold",
+            "family": "Inter",
+            "src": "assets/fonts/Inter-Bold.ttf",
+            "weight": 700,
+            "style": "normal",
+            "format": "truetype"
+        },
+        {
+            "id": "inter-italic",
+            "family": "Inter",
+            "src": "assets/fonts/Inter-Italic.ttf",
+            "weight": 400,
+            "style": "italic",
+            "format": "truetype"
+        },
+        {
+            "id": "noto-sans",
+            "family": "Noto Sans",
+            "src": "assets/fonts/NotoSans-Regular.ttf",
+            "weight": 400,
+            "style": "normal",
+            "format": "truetype",
+            "isFallback": true
+        },
+        {
+            "id": "noto-emoji",
+            "family": "Noto Color Emoji",
+            "src": "assets/fonts/NotoColorEmoji.ttf",
+            "weight": 400,
+            "style": "normal",
+            "format": "truetype",
+            "isFallback": true
+        }
+    ],
+    "fontFallbacks": {
+        "Inter": ["Noto Sans", "Noto Color Emoji"]
+    },
+    "policy": {
+        "missingFont": "error",
+        "missingGlyph": "fallback",
+        "failOnMissingFont": true,
+        "preloadFonts": true
+    }
+}

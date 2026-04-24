@@ -303,7 +303,7 @@ bool Font::has_glyph(std::uint32_t codepoint) const {
 
 const GlyphBitmap* Font::find_glyph_by_index(std::uint32_t glyph_index) const {
     if (!m_is_freetype) {
-        return find_glyph(glyph_index);
+        return nullptr;
     }
 
     auto it = m_ft_index_cache.find(glyph_index);
@@ -331,8 +331,6 @@ std::int32_t Font::get_kerning(std::uint32_t left, std::uint32_t right) const {
     }
 
     if (m_kerning_table.empty()) {
-        if (left == 'A' && right == 'V') return -2;
-        if (left == 'V' && right == 'A') return -2;
         return 0;
     }
 
