@@ -26,7 +26,7 @@ ResolutionResult<AssetResolutionTable> resolve_assets(const SceneSpec& scene, co
 
 struct AssetReport {
     struct Entry {
-        std::string type;   // "image", "video", "audio", "font"
+        std::string type;   // "image", "video", "audio", "font", "data_source", "subtitle", "unknown"
         std::filesystem::path path;
         bool exists{false};
         std::string error;
@@ -37,6 +37,9 @@ struct AssetReport {
     std::size_t video_count{0};
     std::size_t audio_count{0};
     std::size_t font_count{0};
+    std::size_t data_source_count{0};
+    std::size_t subtitle_count{0};
+    std::size_t unknown_count{0};
     bool all_present{false};
 };
 
