@@ -24,6 +24,8 @@ struct CliOptions {
     std::optional<std::size_t> memory_budget_bytes;
     bool json_output{false};
     std::optional<FrameRange> frame_range_override;
+    std::optional<int> preview_frame_number;  // For preview-frame command
+    std::filesystem::path preview_output;     // Output PNG path for preview-frame
 };
 
 ParseResult<CliOptions> parse_cli_options(int argc, char** argv);

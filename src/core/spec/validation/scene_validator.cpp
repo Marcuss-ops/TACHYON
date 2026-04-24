@@ -210,6 +210,9 @@ void SceneValidator::validate_layer(const ::tachyon::LayerSpec& layer, const ::t
 
     // Validate track bindings
     validate_track_bindings(layer, path, out);
+    
+    // Validate safe area for text layers
+    validate_safe_area(layer, comp, path, out);
 
     // Track matte validation: if a matte layer is specified, it must exist and must not be self
     if (layer.track_matte_layer_id.has_value() && !layer.track_matte_layer_id->empty()) {
@@ -252,6 +255,55 @@ void SceneValidator::validate_layer(const ::tachyon::LayerSpec& layer, const ::t
                 out.error_count++;
             }
         }
+    }
+}
+
+void SceneValidator::validate_safe_area(const ::tachyon::LayerSpec& layer, const ::tachyon::CompositionSpec& comp, const std::string& path, ValidationResult& out) const {
+    // Safe area YouTube = 10% margine su tutti i lati
+    // Se layer ha testo E posizione fuori dall'area sicura → Warning
+    
+    // Applica solo a layer di tipo text
+    if (layer.type != "text") {
+        return;
+    }
+    
+    const float safe_x = comp.width * 0.10f;
+    const float safe_y = comp.height * 0.10f;
+    const float safe_width = comp.width - 2.0f * safe_x;
+    const float safe_height = comp.height - 2.0f * safe_y;
+    
+    // Calcola bounding box del layer
+    const float layer_left = layer.transform.position.x;
+    const float layer_top = layer.transform.position.y;
+    const float layer_right = layer_left + layer.width;
+    const float layer_bottom = layer_top + layer.height;
+    
+    // Controlla se il layer esce dalla safe area
+    bool outside_safe = false;
+    std::string violation_details;
+    
+    if (layer_left < safe_x) {
+        outside_safe = true;
+        violation_details += "Left edge outside safe area. ";
+    }
+    if (layer_top < safe_y) {
+        outside_safe = true;
+        violation_details += "Top edge outside safe area. ";
+    }
+    if (layer_right > safe_x + safe_width) {
+        outside_safe = true;
+        violation_details += "Right edge outside safe area. ";
+    }
+    if (layer_bottom > safe_y + safe_height) {
+        outside_safe = true;
+        violation_details += "Bottom edge outside safe area. ";
+    }
+    
+    if (outside_safe) {
+        out.issues.push_back({ValidationIssue::Severity::Warning, 
+            path + ".transform.position",
+            "Text layer may be outside YouTube safe area (10% margin). " + violation_details});
+        out.warning_count++;
     }
 }
 

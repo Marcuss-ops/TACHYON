@@ -16,6 +16,7 @@ void print_help(std::ostream& out) {
     out << "  tachyon inspect --scene <file> [--job <file>] [--json]\n";
     out << "  tachyon render --scene <file> --job <file> [--out <file>] [--workers <n>] [--memory-budget-mb <n>] [--frames <start-end>] [--json]\n";
     out << "  tachyon render --batch <jobs.json> [--workers <n>] [--json]\n";
+    out << "  tachyon preview-frame --scene <file> --job <file> --frame <n> --out <file.png>\n";
     out << "  tachyon watch --scene <file> --job <file> [--workers <n>]\n";
     out << "  tachyon studio-demo [--library <dir>] [--transition <id>] [--output-dir <dir>] [--json]\n";
 }
@@ -57,6 +58,14 @@ int run_cli(int argc, char** argv) {
             return 1;
         }
         return run_render_command(options, std::cout, std::cerr) ? 0 : 2;
+    }
+
+    if (options.command == "preview-frame") {
+        if (options.scene_path.empty() || options.job_path.empty() || !options.preview_frame_number.has_value() || options.preview_output.empty()) {
+            std::cerr << "--scene, --job, --frame and --out are required for preview-frame\n";
+            return 1;
+        }
+        return run_preview_frame_command(options, std::cout, std::cerr) ? 0 : 2;
     }
 
     if (options.command == "watch") {
