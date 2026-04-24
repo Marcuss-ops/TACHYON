@@ -36,7 +36,17 @@ EvaluatedLayerState make_layer_state(
     evaluated.blend_mode = layer.blend_mode;
 
     const double t = context.composition_time_seconds + time_offset;
-    const double local_t = t - layer.start_time;
+    double local_t = t - layer.start_time;
+
+    // Apply loop and hold_last_frame behavior
+    const double layer_duration = layer.out_point - layer.in_point;
+    if (layer.loop && layer_duration > 0.0) {
+        local_t = std::fmod(local_t, layer_duration);
+    }
+    if (layer.hold_last_frame && local_t > layer_duration) {
+        local_t = layer_duration;
+    }
+
     evaluated.local_time_seconds = local_t;
     evaluated.child_time_seconds = sample_scalar(
         layer.time_remap_property,
@@ -50,7 +60,15 @@ EvaluatedLayerState make_layer_state(
 
     evaluated.active = layer.enabled && (t >= layer.in_point && t < layer.out_point);
     const double frame_duration = 1.0 / context.composition.frame_rate.value();
-    const double prev_local_t = (t - frame_duration) - layer.start_time;
+    double prev_local_t = (t - frame_duration) - layer.start_time;
+
+    // Apply loop and hold_last_frame to prev_local_t as well
+    if (layer.loop && layer_duration > 0.0) {
+        prev_local_t = std::fmod(prev_local_t, layer_duration);
+    }
+    if (layer.hold_last_frame && prev_local_t > layer_duration) {
+        prev_local_t = layer_duration;
+    }
 
     // Sample Properties
     evaluated.mask_feather = static_cast<float>(sample_scalar(
@@ -152,6 +170,8 @@ EvaluatedLayerState make_layer_state(
     evaluated.fill_color = sample_color(layer.fill_color, {255,255,255,255}, local_t);
     evaluated.stroke_color = sample_color(layer.stroke_color, {0,0,0,255}, local_t);
     evaluated.stroke_width = static_cast<float>(sample_scalar(layer.stroke_width_property, layer.stroke_width, local_t, context.audio_analyzer));
+
+    evaluated.effects = layer.effects;
 
     return evaluated;
 }

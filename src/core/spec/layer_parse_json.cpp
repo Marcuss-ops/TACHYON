@@ -111,7 +111,33 @@ void parse_effects(const json& object, LayerSpec& layer, const std::string& path
     (void)path; (void)diagnostics;
     if (object.contains("effects") && object.at("effects").is_array()) {
         for (const auto& effect : object.at("effects")) {
-            if (effect.is_string()) layer.effects.push_back(effect.get<std::string>());
+            if (!effect.is_object()) continue;
+            EffectSpec spec;
+            read_string(effect, "type", spec.type);
+            read_bool(effect, "enabled", spec.enabled);
+            if (effect.contains("scalars") && effect.at("scalars").is_object()) {
+                for (auto& [key, val] : effect.at("scalars").items()) {
+                    if (val.is_number()) spec.scalars[key] = val.get<double>();
+                }
+            }
+            if (effect.contains("colors") && effect.at("colors").is_object()) {
+                for (auto& [key, val] : effect.at("colors").items()) {
+                    if (val.is_object()) {
+                        ColorSpec color;
+                        read_number(val, "r", color.r);
+                        read_number(val, "g", color.g);
+                        read_number(val, "b", color.b);
+                        read_number(val, "a", color.a);
+                        spec.colors[key] = color;
+                    }
+                }
+            }
+            if (effect.contains("strings") && effect.at("strings").is_object()) {
+                for (auto& [key, val] : effect.at("strings").items()) {
+                    if (val.is_string()) spec.strings[key] = val.get<std::string>();
+                }
+            }
+            layer.effects.push_back(std::move(spec));
         }
     }
 }
@@ -252,6 +278,33 @@ void parse_layer(const json& object, LayerSpec& out, const std::string& path, Di
         else if (fb == "linear") out.frame_blend = spec::FrameBlendMode::Linear;
         else if (fb == "pixel_motion") out.frame_blend = spec::FrameBlendMode::PixelMotion;
         else if (fb == "optical_flow") out.frame_blend = spec::FrameBlendMode::OpticalFlow;
+    }
+
+    // Timing shorthand
+    read_number(object, "duration", out.duration);
+
+    // Animation presets
+    read_string(object, "in", out.in_preset);
+    read_string(object, "during", out.during_preset);
+    read_string(object, "out", out.out_preset);
+    read_number(object, "in_duration", out.in_duration);
+    read_number(object, "out_duration", out.out_duration);
+
+    // Playback behavior
+    read_bool(object, "loop", out.loop);
+    read_bool(object, "hold_last_frame", out.hold_last_frame);
+
+    // Markers
+    if (object.contains("markers") && object.at("markers").is_array()) {
+        const auto& markers = object.at("markers");
+        for (const auto& m : markers) {
+            if (!m.is_object()) continue;
+            LayerSpec::MarkerSpec marker;
+            read_number(m, "time", marker.time);
+            read_string(m, "label", marker.label);
+            read_string(m, "color", marker.color);
+            out.markers.push_back(std::move(marker));
+        }
     }
     
     // Camera
