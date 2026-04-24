@@ -22,12 +22,12 @@ Tachyon has a `MaskRenderer` but needs the pipeline layers around it.
 
 ## 1. Variable-Feather Bezier Masks
 
-**Status:** ✅ Initial implementation complete (schema and path model)
+**Status:** ✅ Complete
 
 ### Current State
 - ✅ Mask rasterization exists
-- ⚠️ Feather is currently scalar/scoped to layer-level blur, not per-vertex feather ramps
-- ❌ Scene schema for mask vertices and feather metadata is missing
+- ✅ Feather is per-vertex with inner/outer ramps
+- ✅ Scene schema for mask vertices and feather metadata is complete
 
 ### Implementation Rules
 - Keep mask as path + per-segment or per-vertex feather data
@@ -39,45 +39,47 @@ Tachyon has a `MaskRenderer` but needs the pipeline layers around it.
 > **Important:** Do NOT model feather as post blur only.
 > That produces wrong edge shape and breaks compositing semantics.
 
-### Files to Modify/Create
+### Files Modified/Created
 ```
-include/tachyon/renderer2d/path/mask_path.h  # Extend with per-vertex feather
-src/renderer2d/evaluated_composition/mask_renderer.cpp  # Generate inner/outer alpha ramps
-src/renderer2d/rasterizer/mask_rasterizer.cpp  # New: feather-aware rasterization
-docs/NextImplementation/scene_contracts.md    # Shared reference and schema rules
+include/tachyon/renderer2d/path/mask_path.h         # ✅ Extended with per-vertex feather
+src/renderer2d/evaluated_composition/rendering/mask_renderer.cpp  # ✅ Inner/outer alpha ramps
+src/renderer2d/evaluated_composition/rendering/feathered_mask_renderer.cpp  # ✅ Dedicated renderer class
+docs/NextImplementation/roto_masking.md             # ✅ Updated status
 ```
 
-### Data Model (Planned)
+### Data Model (Implemented)
 ```cpp
 struct MaskVertex {
     Point2f position;
     Point2f in_tangent;
     Point2f out_tangent;
-    float feather_in{0.0f};   // inner feather radius
-    float feather_out{0.0f};  // outer feather radius
+    float feather_inner{0.0f};   // inner feather radius
+    float feather_outer{0.0f};  // outer feather radius
 };
 
 struct MaskPath {
     std::vector<MaskVertex> vertices;
     bool closed{true};
+    bool inverted{false};
 };
 
 // Mask rasterizer generates inner/outer alpha ramps:
 // Inner: 1.0 → 0.0 over feather_in
 // Outer: 0.0 → 1.0 over feather_out
-// Result: inner_ramp * outer_ramp
+// Result: linear interpolation across total range
 ```
 
 ---
 
 ## 2. AI Roto Brush
 
-**Status:** ⚠️ Contract defined, implementation partial
+**Status:** ✅ Complete (optical-flow propagation implemented)
 
 ### Current State
-- ✅ `include/tachyon/ai/segmentation_provider.h` (interface only)
-- ⚠️ `src/ai/roto_brush.cpp` exists as a fallback path, but propagation is still a hold-frame fallback
-- ❌ No actual model inference code
+- ✅ `include/tachyon/ai/segmentation_provider.h` (interface complete)
+- ✅ `src/ai/roto_brush.cpp` (full implementation with optical flow propagation)
+- ✅ `include/tachyon/roto/roto_brush.h` (public API header)
+- ⚠️ No actual model inference code (SAM2 optional, falls back to manual roto)
 
 ### Implementation Rules
 - Treat AI segmentation as **matte generator**, not special render mode
@@ -87,35 +89,55 @@ struct MaskPath {
 - **SAM2 or similar model must be optional accelerator, NOT hard runtime dependency**
 - Persist results through the shared matte and scene contracts
 
-### Files to Create
+### Files Created/Modified
 ```
-src/ai/roto_brush.cpp                    # RotoBrush implementation
-src/ai/segmentation_provider.cpp         # Concrete provider (SAM2 or fallback)
-src/tracker/optical_flow_seed.cpp        # Flow-assisted propagation
-include/tachyon/roto/roto_brush.h        # Public roto brush contract
+src/ai/roto_brush.cpp                    # ✅ Full RotoBrush implementation
+include/tachyon/roto/roto_brush.h        # ✅ Public roto brush contract
+src/tracker/optical_flow.cpp             # ✅ Used for mask propagation
 ```
 
-### Data Model (Planned)
+### Data Model (Implemented)
 ```cpp
 class RotoBrush {
 public:
     struct Config {
         std::string model_path; // SAM2 or similar, optional
         float propagation_threshold{0.5f};
+        bool use_optical_flow{true};
+        int max_propagation_distance{50};
     };
     
     // Generate matte from user scribble + optional AI
-    std::vector<float> generate_matte(
+    SegmentationMask generate_matte(
         const GrayImage& frame,
-        const std::vector<Point2f>& scribble_points,
-        const Config& cfg);
+        const std::vector<SegmentationPrompt>& prompts);
     
-    // Propagate to next frame using optical flow from FeatureTracker
-    std::vector<float> propagate(
-        const std::vector<float>& prev_matte,
-        const std::vector<TrackPoint>& flow_vectors);
+    // Propagate to next frame using optical flow
+    SegmentationMask propagate(
+        const GrayImage& prev_frame,
+        const GrayImage& next_frame,
+        const SegmentationMask& prev_mask,
+        const OpticalFlowResult* flow = nullptr);
+    
+    // Convert alpha matte to bezier path
+    MaskPath matte_to_path(
+        const SegmentationMask& mask,
+        float simplify_threshold = 2.0f);
+    
+    // Generate sequence with auto re-segmentation
+    std::vector<SegmentationMask> generate_sequence(
+        const std::vector<GrayImage>& frames,
+        int start_frame,
+        const std::vector<SegmentationPrompt>& initial_prompts);
 };
 ```
+
+### Features Implemented
+- ✅ Optical flow-based mask warping with bilinear interpolation
+- ✅ Confidence-aware propagation with fallback to hold-frame
+- ✅ Douglas-Peucker contour simplification for matte-to-path conversion
+- ✅ Automatic re-segmentation after max propagation distance
+- ✅ Graceful fallback when no AI provider available
 
 ---
 
@@ -168,11 +190,13 @@ public:
 ## Implementation Priority
 1. ✅ Define shared scene schema for masks and mattes
 2. ✅ Extend mask path with per-vertex feather
-3. ⬜ Update MaskRenderer for inner/outer alpha ramps
+3. ✅ Update MaskRenderer for inner/outer alpha ramps
 4. ✅ Implement matte resolver in compositing pipeline
-5. ⬜ Integrate track matte semantics into render graph
-6. ⬜ RotoBrush implementation (depends on SAM2 or similar model)
-7. ⬜ Optical flow-assisted propagation
+5. ✅ Integrate track matte semantics into render graph
+6. ✅ RotoBrush implementation (optical flow propagation complete, SAM2 optional)
+7. ✅ Optical flow-assisted propagation
+
+**All core roto masking features are now implemented.** Optional AI model integration (SAM2) remains behind the `TACHYON_SAM2` flag as designed.
 
 ---
 
