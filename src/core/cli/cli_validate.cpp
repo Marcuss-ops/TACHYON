@@ -1,6 +1,7 @@
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/report.h"
+#include "tachyon/core/spec/validation/scene_validator.h"
 #include "cli_internal.h"
 #include <iostream>
 
@@ -10,6 +11,10 @@ bool run_validate_command(const CliOptions& options, std::ostream& out, std::ost
     SceneSpec scene;
     AssetResolutionTable assets;
     if (!load_scene_context(options.scene_path, scene, assets, err)) return false;
+
+    // Run the actual SceneValidator
+    core::SceneValidator validator;
+    auto validation_result = validator.validate(scene);
 
     std::optional<RenderJob> job;
     bool job_valid = false;
@@ -24,13 +29,39 @@ bool run_validate_command(const CliOptions& options, std::ostream& out, std::ost
     }
 
     if (options.json_output) {
-        out << make_validate_report_json(scene, assets, true, job_valid, job) << '\n';
-        return true;
+        out << make_validate_report_json(scene, assets, validation_result.is_valid(), job_valid, job, validation_result) << '\n';
+        return validation_result.is_valid();
+    }
+
+    // Print validation results
+    if (!validation_result.is_valid()) {
+        err << "Validation FAILED\n";
+        for (const auto& issue : validation_result.issues) {
+            const char* severity_str = "";
+            switch (issue.severity) {
+                case core::ValidationIssue::Severity::Fatal: severity_str = "FATAL"; break;
+                case core::ValidationIssue::Severity::Error: severity_str = "ERROR"; break;
+                case core::ValidationIssue::Severity::Warning: severity_str = "WARNING"; break;
+            }
+            err << "[" << severity_str << "] " << issue.path << ": " << issue.message << "\n";
+        }
+        err << "Summary: " << validation_result.fatal_count << " fatal, " 
+            << validation_result.error_count << " errors, " 
+            << validation_result.warning_count << " warnings\n";
+        return false;
     }
 
     out << "scene spec valid\n";
     out << "resolved assets: " << assets.size() << '\n';
     if (job_valid) out << "render job valid\n";
+    if (validation_result.warning_count > 0) {
+        out << "warnings: " << validation_result.warning_count << "\n";
+        for (const auto& issue : validation_result.issues) {
+            if (issue.severity == core::ValidationIssue::Severity::Warning) {
+                out << "[WARNING] " << issue.path << ": " << issue.message << "\n";
+            }
+        }
+    }
     return true;
 }
 
