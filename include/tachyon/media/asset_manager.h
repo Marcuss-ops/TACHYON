@@ -81,18 +81,26 @@ private:
 class ProxyGenerator {
 public:
     struct ProxySettings {
-        int max_resolution = 1920; // max width for proxy
-        int video_bitrate_kbps = 2000;
-        std::string video_codec = "libx264";
-        int audio_bitrate_kbps = 128;
-        std::string audio_codec = "aac";
-        bool include_audio = true;
-        float speed_factor = 1.0f; // playback speed of proxy
+        int max_resolution; // max width for proxy
+        int video_bitrate_kbps;
+        std::string video_codec;
+        int audio_bitrate_kbps;
+        std::string audio_codec;
+        bool include_audio;
+        float speed_factor; // playback speed of proxy
+
+        ProxySettings() : max_resolution(1920),
+                         video_bitrate_kbps(2000),
+                         video_codec("libx264"),
+                         audio_bitrate_kbps(128),
+                         audio_codec("aac"),
+                         include_audio(true),
+                         speed_factor(1.0f) {}
     };
     
     static bool generate_video_proxy(const std::string& input_path, 
                                    const std::string& output_path,
-                                   const ProxySettings& settings = {});
+                                   const ProxySettings& settings = ProxySettings());
     
     static bool generate_image_proxy(const std::string& input_path,
                                    const std::string& output_path,

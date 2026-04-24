@@ -54,12 +54,15 @@ enum class FlowFallbackMode { kHold, kBlend, kAffine, kHomography, kPrevious };
 class OpticalFlowConsumer {
 public:
     struct Config {
-        float high_confidence_threshold{0.7f};   // Use flow directly
-        float low_confidence_threshold{0.3f};    // Fallback to blend/hold/zero
-        float blend_factor{0.5f};                // Blend ratio when confidence is medium
-        bool enable_hold_for_low_conf{true};      // true = hold previous, false = zero motion
+        float high_confidence_threshold;   // Use flow directly
+        float low_confidence_threshold;    // Fallback to blend/hold/zero
+        float blend_factor;                // Blend ratio when confidence is medium
+        bool enable_hold_for_low_conf;      // true = hold previous, false = zero motion
 
-        Config() = default;
+        Config() : high_confidence_threshold(0.7f),
+                   low_confidence_threshold(0.3f),
+                   blend_factor(0.5f),
+                   enable_hold_for_low_conf(true) {}
     };
 
     enum class Action { kFlow, kBlend, kHold, kZeroMotion };
@@ -98,18 +101,27 @@ private:
 class OpticalFlowCalculator {
 public:
     struct Config {
-        int pyramid_levels{3};
-        int window_size{15};
-        int iterations{3};
-        float confidence_threshold{0.3f};      // Below this -> explicitly degraded
-        bool enable_temporal_smoothing{true};
-        bool enable_occlusion_detection{true};
-        FlowFallbackMode fallback{FlowFallbackMode::kPrevious};
-        float eigenvalue_threshold{0.01f};     // Minimum eigenvalue for valid flow
-        float max_flow_magnitude{50.0f};       // Flow above this is heavily penalised
-        float fb_consistency_threshold{2.0f};  // Max forward-backward error in pixels
+        int pyramid_levels;
+        int window_size;
+        int iterations;
+        float confidence_threshold;      // Below this -> explicitly degraded
+        bool enable_temporal_smoothing;
+        bool enable_occlusion_detection;
+        FlowFallbackMode fallback;
+        float eigenvalue_threshold;     // Minimum eigenvalue for valid flow
+        float max_flow_magnitude;       // Flow above this is heavily penalised
+        float fb_consistency_threshold;  // Max forward-backward error in pixels
 
-        Config() = default;
+        Config() : pyramid_levels(3),
+                   window_size(15),
+                   iterations(3),
+                   confidence_threshold(0.3f),
+                   enable_temporal_smoothing(true),
+                   enable_occlusion_detection(true),
+                   fallback(FlowFallbackMode::kPrevious),
+                   eigenvalue_threshold(0.01f),
+                   max_flow_magnitude(50.0f),
+                   fb_consistency_threshold(2.0f) {}
     };
 
     explicit OpticalFlowCalculator(const Config& config = Config());
