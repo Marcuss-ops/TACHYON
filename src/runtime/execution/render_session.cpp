@@ -5,6 +5,7 @@
 #include "tachyon/runtime/resource/render_context.h"
 #include "tachyon/runtime/resource/runtime_surface_pool.h"
 #include "tachyon/renderer2d/resource/precomp_cache.h"
+#include "tachyon/renderer2d/resource/texture_resolver.h"
 #include "tachyon/output/frame_output_sink.h"
 #include "tachyon/media/streaming/media_prefetcher.h"
 #include "tachyon/audio/audio_export.h"
@@ -111,6 +112,7 @@ RenderSessionResult RenderSession::render(
     }
 
     ::tachyon::RenderContext context(m_precomp_cache);
+    context.renderer2d.font_registry = ::tachyon::renderer2d::get_default_font_registry();
     std::uint32_t w = static_cast<std::uint32_t>(execution_plan.render_plan.composition.width);
     std::uint32_t h = static_cast<std::uint32_t>(execution_plan.render_plan.composition.height);
     m_surface_pool = std::make_unique<runtime::RuntimeSurfacePool>(w, h, 10);

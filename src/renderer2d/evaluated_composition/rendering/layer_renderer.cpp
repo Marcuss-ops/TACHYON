@@ -384,6 +384,8 @@ std::shared_ptr<SurfaceRGBA> render_simple_layer_surface(
             style.miter_limit = layer.miter_limit;
             PathRasterizer::stroke(*surface, geom, style);
         }
+    } else if (layer.type == scene::LayerType::Text) {
+        return render_text_layer_surface(layer, state, context, target_rect);
     } else if (layer.type == scene::LayerType::Video && context.media_manager && layer.asset_path.has_value()) {
         const auto* texture = context.media_manager->get_video_frame(*layer.asset_path, layer.local_time_seconds);
         if (texture) {
