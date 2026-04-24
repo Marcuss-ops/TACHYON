@@ -1,5 +1,6 @@
 #include "batch_runner_internal.h"
 #include "tachyon/core/spec/compilation/scene_compiler.h"
+#include "tachyon/core/spec/compilation/preset_compiler.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/execution/session/render_session.h"
 #include "tachyon/media/resolution/asset_resolution.h"
@@ -55,6 +56,16 @@ ResolutionResult<RenderBatchResult> run_render_batch(const RenderBatchSpec& spec
                 if (!load_scene_context(request.scene_path, scene, assets, diagnostics)) {
                     job_result.error = summarize_diagnostics(diagnostics, "failed to load scene");
                     batch_result.jobs[index] = std::move(job_result); continue;
+                }
+
+                // Expand preset animations into concrete keyframes
+                {
+                    PresetLibrary preset_library;
+                    const std::filesystem::path preset_dir = request.scene_path.parent_path() / "presets";
+                    if (preset_library.load_from_directory(preset_dir)) {
+                        PresetCompiler compiler(preset_library);
+                        compiler.expand(scene);
+                    }
                 }
 
                 RenderJob job;

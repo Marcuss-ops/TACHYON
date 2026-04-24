@@ -6,6 +6,7 @@
 #include "tachyon/core/spec/schema/contracts/shared_contracts.h"
 #include "tachyon/renderer2d/path/mask_path.h"
 #include "tachyon/core/shapes/shape_path.h"
+#include "tachyon/core/spec/schema/shapes/shape_spec.h"
 #include <string>
 #include <vector>
 #include <optional>
@@ -102,7 +103,7 @@ struct LayerSpec {
     AnimatedScalarSpec shadow_radius;
 
     // Effects & Animators (Skeletons)
-    std::vector<std::string> effects;
+    std::vector<EffectSpec> effects;
     std::vector<std::string> text_animators;
     std::vector<std::string> text_highlights;
 
@@ -113,6 +114,28 @@ struct LayerSpec {
     std::vector<spec::TrackBinding> track_bindings;
     spec::TimeRemapCurve time_remap;
     spec::FrameBlendMode frame_blend{spec::FrameBlendMode::Linear};
+
+    // Timing shorthand
+    std::optional<double> duration;
+
+    // Animation presets
+    std::string in_preset;
+    std::string during_preset;
+    std::string out_preset;
+    float in_duration{0.4f};
+    float out_duration{0.4f};
+
+    // Playback behavior
+    bool loop{false};
+    bool hold_last_frame{false};
+
+    // Markers
+    struct MarkerSpec {
+        double time{0.0};
+        std::string label;
+        std::string color{"#ffffff"};
+    };
+    std::vector<MarkerSpec> markers;
 };
 
 } // namespace tachyon
