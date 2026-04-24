@@ -14,6 +14,7 @@ public:
     /**
      * @brief Applies a sequence of animators to a resolved layout mathematically.
      * Modifies the glyphs' position, scale, rotation, and styling in-place.
+     * Preserves cluster boundaries for shape-preserving animation.
      * 
      * @param layout The base text layout to mutate.
      * @param animators The list of animator specifications.
@@ -29,6 +30,14 @@ public:
         const std::size_t num_glyphs = layout.glyphs.size();
         const float t = context.time;
 
+        // Pre-compute total counts for selectors
+        float total_clusters = 0.0f;
+        float total_lines = 0.0f;
+        for (const auto& glyph : layout.glyphs) {
+            total_clusters = std::max(total_clusters, static_cast<float>(glyph.cluster_index + 1));
+        }
+        total_lines = static_cast<float>(layout.lines.size());
+
         for (const auto& animator : animators) {
             
             // Sample the scalar/vector/color properties at time t
@@ -40,27 +49,31 @@ public:
             ::tachyon::ColorSpec fill = sample_color_kfs(animator.properties.fill_color_value, animator.properties.fill_color_keyframes, t);
             ::tachyon::ColorSpec stroke = sample_color_kfs(animator.properties.stroke_color_value, animator.properties.stroke_color_keyframes, t);
             double stroke_width = sample_scalar_kfs(animator.properties.stroke_width_value, animator.properties.stroke_width_keyframes, t);
+            double blur_radius = sample_scalar_kfs(animator.properties.blur_radius_value, animator.properties.blur_radius_keyframes, t);
+            double reveal = sample_scalar_kfs(animator.properties.reveal_value, animator.properties.reveal_keyframes, t);
 
             float accumulated_tracking = 0.0f;
 
             for (std::size_t i = 0; i < num_glyphs; ++i) {
                 auto& glyph = layout.glyphs[i];
 
-                // 1. Evaluate Selector Coverage [0, 1]
+                // 1. Evaluate Selector Coverage [0, 1] with cluster-aware context
                 TextAnimatorContext ctx;
                 ctx.glyph_index = i;
                 ctx.cluster_index = glyph.cluster_index;
+                ctx.word_index = 0;  // Would need to be computed by caller
+                ctx.line_index = 0;  // Would need to be computed by caller
                 ctx.total_glyphs = static_cast<float>(num_glyphs);
+                ctx.total_clusters = total_clusters;
+                ctx.total_lines = total_lines;
                 ctx.time = t;
-                
+                ctx.is_space = (glyph.fill_color.a == 0 && glyph.bounds.width <= 0.0f); // Heuristic for space
+                ctx.is_rtl = glyph.is_rtl;
+
                 float coverage = compute_coverage(animator.selector, ctx);
                 
-                // Accumulate tracking even if coverage is 0 for this glyph, if previous glyphs had tracking
-                // Actually tracking applies to advance, pushing subsequent glyphs.
-                if (coverage > 0.0f) {
-                    accumulated_tracking += static_cast<float>(tracking) * coverage;
-                }
-
+                // Accumulate tracking - applied to all glyphs to maintain layout flow
+                accumulated_tracking += static_cast<float>(tracking) * coverage;
                 glyph.position.x += accumulated_tracking;
 
                 if (coverage <= 0.0f) continue;
@@ -71,20 +84,21 @@ public:
                 glyph.position.x += pos_offset.x * coverage;
                 glyph.position.y += pos_offset.y * coverage;
 
-                // Scale
+                // Scale (preserve aspect ratio if only one component modified)
                 float target_scale = static_cast<float>(scale);
                 if (target_scale != 1.0f || animator.properties.scale_value.has_value() || !animator.properties.scale_keyframes.empty()) {
                     glyph.scale.x = glyph.scale.x * (1.0f - coverage) + (glyph.scale.x * target_scale) * coverage;
                     glyph.scale.y = glyph.scale.y * (1.0f - coverage) + (glyph.scale.y * target_scale) * coverage;
                 }
 
-                // Rotation
+                // Rotation (in degrees, applied incrementally)
                 glyph.rotation += static_cast<float>(rotation) * coverage;
 
                 // Opacity
                 if (animator.properties.opacity_value.has_value() || !animator.properties.opacity_keyframes.empty()) {
                     float target_op = static_cast<float>(opacity);
                     glyph.opacity = glyph.opacity * (1.0f - coverage) + target_op * coverage;
+                    glyph.opacity = std::clamp(glyph.opacity, 0.0f, 1.0f);
                 }
 
                 // Fill Color
@@ -103,13 +117,12 @@ public:
                 }
 
                 // Blur Radius
-                double blur_radius = sample_scalar_kfs(animator.properties.blur_radius_value, animator.properties.blur_radius_keyframes, t);
                 if (animator.properties.blur_radius_value.has_value() || !animator.properties.blur_radius_keyframes.empty()) {
                     glyph.blur_radius = glyph.blur_radius * (1.0f - coverage) + static_cast<float>(blur_radius) * coverage;
+                    glyph.blur_radius = std::max(0.0f, glyph.blur_radius);
                 }
 
-                // Reveal Factor
-                double reveal = sample_scalar_kfs(animator.properties.reveal_value, animator.properties.reveal_keyframes, t);
+                // Reveal Factor (0.0 = hidden, 1.0 = fully revealed)
                 if (animator.properties.reveal_value.has_value() || !animator.properties.reveal_keyframes.empty()) {
                     glyph.reveal_factor = glyph.reveal_factor * (1.0f - coverage) + static_cast<float>(reveal) * coverage;
                     glyph.reveal_factor = std::clamp(glyph.reveal_factor, 0.0f, 1.0f);

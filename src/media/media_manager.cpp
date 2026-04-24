@@ -13,25 +13,32 @@ const renderer2d::SurfaceRGBA* MediaManager::get_image(
     AlphaMode alpha_mode,
     DiagnosticBag* diagnostics) {
     (void)diagnostics;
-    return m_image_manager.get_image(path, alpha_mode, diagnostics);
+    
+    std::filesystem::path resolved = resolve_media_path(path, ResolutionPurpose::Playback);
+    return m_image_manager.get_image(resolved, alpha_mode, diagnostics);
 }
 
 const HDRTextureData* MediaManager::get_hdr_image(
     const std::filesystem::path& path,
     DiagnosticBag* diagnostics) {
     (void)diagnostics;
-    return m_image_manager.get_hdr_image(path, diagnostics);
+    
+    std::filesystem::path resolved = resolve_media_path(path, ResolutionPurpose::Playback);
+    return m_image_manager.get_hdr_image(resolved, diagnostics);
 }
 
 const renderer2d::SurfaceRGBA* MediaManager::get_video_frame(const std::filesystem::path& path, double time, DiagnosticBag* diagnostics) {
     (void)diagnostics;
-    // 1. Check cache first (Fast path - no I/O)
-    std::string key = path.string() + "@" + std::to_string(time);
+    // 1. Resolve path based on purpose (Playback is default for these calls)
+    std::filesystem::path resolved = resolve_media_path(path, ResolutionPurpose::Playback);
+
+    // 2. Check cache first (Fast path - no I/O)
+    std::string key = resolved.string() + "@" + std::to_string(time);
     const auto* cached = m_image_manager.get_image(key, AlphaMode::Straight, nullptr);
     if (cached) return cached;
 
-    // 2. Resolve path and handle offline/loading states
-    if (m_fallback_policy == MediaFallbackPolicy::ReturnOffline) {
+    // 3. Handle offline/loading states
+    if (m_fallback_policy == MediaFallbackPolicy::ReturnOffline && resolved.empty()) {
         std::lock_guard<std::mutex> lock(m_mutex);
         if (!m_offline_placeholder) {
             m_offline_placeholder = std::make_shared<renderer2d::SurfaceRGBA>(1920, 1080);
@@ -46,11 +53,25 @@ const renderer2d::SurfaceRGBA* MediaManager::get_video_frame(const std::filesyst
 void MediaManager::register_asset(std::shared_ptr<MediaAsset> asset) {
     if (!asset) return;
     std::lock_guard<std::mutex> lock(m_mutex);
-    m_assets[asset->descriptor().original_path] = asset;
+    m_assets[asset->id()] = asset;
 }
 
-std::filesystem::path MediaManager::resolve_media_path(const std::filesystem::path& path) const {
-    if (m_use_proxies) {
+std::filesystem::path MediaManager::get_asset_path(const std::string& asset_id) const {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    auto it = m_assets.find(asset_id);
+    if (it != m_assets.end()) {
+        return it->second->descriptor().original_path;
+    }
+    return {};
+}
+
+std::filesystem::path MediaManager::resolve_media_path(
+    const std::filesystem::path& path,
+    ResolutionPurpose purpose) const {
+    
+    const bool allow_proxy = (purpose == ResolutionPurpose::Playback) && m_use_proxies;
+
+    if (allow_proxy) {
         // Try global manifest resolution
         std::string resolved = m_proxy_manifest.resolve_for_playback(path.string(), 1280);
         if (resolved != path.string()) {
@@ -63,12 +84,15 @@ std::filesystem::path MediaManager::resolve_media_path(const std::filesystem::pa
     if (it == m_assets.end()) return path;
 
     const auto& asset = it->second;
-    if (m_use_proxies && asset->state() == MediaAssetState::ProxyAvailable) {
+    if (allow_proxy && asset->state() == MediaAssetState::ProxyAvailable) {
         return asset->descriptor().proxy_path;
     }
     
     if (asset->state() == MediaAssetState::Offline) {
-        return "";
+        if (m_fallback_policy == MediaFallbackPolicy::ReturnOffline) {
+             return ""; // Will trigger placeholder
+        }
+        return path; // Try anyway
     }
 
     return asset->descriptor().original_path;

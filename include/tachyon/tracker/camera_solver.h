@@ -57,6 +57,8 @@ public:
         float sensor_width_mm{36.0f};
         std::optional<float> initial_focal_length_mm;
         int bundle_adjustment_iterations{10};
+        int frame_width{1920};
+        int frame_height{1080};
     };
     
     /**
@@ -66,8 +68,11 @@ public:
      *               samples at consistent time intervals.
      * @param config Solver configuration including sensor size and focal guess.
      * @return A CameraTrack with keyframes at each unique sample time.
-     * 
-     * TODO: Replace placeholder with bundle adjustment or PnP solver.
+     *
+     * The solver uses 2D->2D correspondences between consecutive frames,
+     * estimates the Fundamental Matrix with the 8-point algorithm, lifts it to
+     * an Essential Matrix, decomposes the relative pose, then accumulates the
+     * camera trajectory.
      */
     [[nodiscard]] CameraTrack solve(
         const std::vector<Track>& tracks,

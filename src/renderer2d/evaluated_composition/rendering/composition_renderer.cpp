@@ -6,6 +6,7 @@
 #include "tachyon/renderer2d/color/blending.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
 #include "tachyon/renderer3d/core/ray_tracer.h"
+#include "tachyon/renderer3d/effects/depth_of_field.h"
 #include "tachyon/renderer3d/effects/motion_blur.h"
 #include "tachyon/runtime/execution/scheduling/tile_scheduler.h"
 #include "tachyon/output/frame_aov.h"
@@ -49,7 +50,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
     // Identify if we have 3D layers and trigger 3D pass if available
     bool has_any_3d = std::any_of(state.layers.begin(), state.layers.end(), [](const auto& l) { return l.is_3d && l.visible; });
     if (has_any_3d && !context.ray_tracer) {
-        context.ray_tracer = std::make_shared<renderer3d::RayTracer>();
+        context.ray_tracer = std::make_shared<renderer3d::RayTracer>(context.media_manager);
     }
 
     // First pass: collect rendered surfaces for matte resolution
@@ -166,6 +167,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
                 // Render the 3D block
                 render_context.ray_tracer->set_samples_per_pixel(render_context.policy.ray_tracer_spp);
+                render_context.ray_tracer->set_denoiser_enabled(render_context.policy.denoiser_enabled);
                 render_context.ray_tracer->build_scene(scene3d);
 
                 const std::uint32_t w = static_cast<std::uint32_t>(state.width);
@@ -200,6 +202,28 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     &motion_blur,
                     task.time_seconds,
                     frame_duration_seconds);
+
+                if (plan.dof.enabled || render_context.policy.dof_sample_count > 1) {
+                    renderer3d::DepthOfFieldConfig dof_config = renderer3d::DepthOfFieldConfig::from_quality_policy(
+                        render_context.policy,
+                        scene3d.camera.focal_distance,
+                        scene3d.camera.aperture,
+                        scene3d.camera.focal_length_mm,
+                        36.0f);
+                    dof_config.enabled = plan.dof.enabled || render_context.policy.dof_sample_count > 1;
+                    if (plan.dof.aperture > 0.0) {
+                        dof_config.aperture_fstop = static_cast<float>(plan.dof.aperture);
+                    }
+                    if (plan.dof.focus_distance > 0.0) {
+                        dof_config.focal_distance = static_cast<float>(plan.dof.focus_distance);
+                    }
+                    if (plan.dof.focal_length > 0.0) {
+                        dof_config.focal_length_mm = static_cast<float>(plan.dof.focal_length);
+                    }
+                    renderer3d::DepthOfFieldPostPass dof_pass(dof_config);
+                    const math::Vector3 camera_forward = (scene3d.camera.target - scene3d.camera.position).normalized();
+                    dof_pass.apply(aovs, scene3d.camera.position, camera_forward);
+                }
 
                 auto world_3d = std::make_shared<SurfaceRGBA>(w, h);
                 auto depth_aov_surf = std::make_shared<SurfaceRGBA>(w, h);

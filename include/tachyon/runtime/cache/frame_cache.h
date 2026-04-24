@@ -36,8 +36,12 @@ public:
     void store_composition(std::uint64_t key, std::shared_ptr<const scene::EvaluatedCompositionState> state);
 
     // Final Frame Level
-    std::shared_ptr<const renderer2d::Framebuffer> lookup_frame(std::uint64_t key) const;
-    void store_frame(std::uint64_t key, std::shared_ptr<const renderer2d::Framebuffer> frame);
+    std::shared_ptr<const renderer2d::Framebuffer> lookup_frame(const FrameCacheKey& key) const;
+    void store_frame(const FrameCacheKey& key, std::shared_ptr<const renderer2d::Framebuffer> frame);
+
+    // Old overloads for internal use / simple keys
+    std::shared_ptr<const renderer2d::Framebuffer> lookup_frame(std::uint64_t hash) const;
+    void store_frame(std::uint64_t hash, std::shared_ptr<const renderer2d::Framebuffer> frame);
 
     void clear();
 
@@ -62,7 +66,11 @@ private:
     std::unordered_map<std::uint64_t, double> m_properties;
     std::unordered_map<std::uint64_t, std::shared_ptr<const scene::EvaluatedLayerState>> m_layers;
     std::unordered_map<std::uint64_t, std::shared_ptr<const scene::EvaluatedCompositionState>> m_compositions;
-    std::unordered_map<std::uint64_t, std::shared_ptr<const renderer2d::Framebuffer>> m_frames;
+    struct FrameEntry {
+        std::string key_value;
+        std::shared_ptr<const renderer2d::Framebuffer> framebuffer;
+    };
+    std::unordered_map<std::uint64_t, FrameEntry> m_frames;
     std::vector<CachedFrame> m_legacy_frames;
 
     enum class EntryType { Property, Layer, Composition, Frame };

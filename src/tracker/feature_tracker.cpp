@@ -1,4 +1,5 @@
 #include "tachyon/tracker/feature_tracker.h"
+#include <array>
 #include <algorithm>
 #include <cmath>
 #include <numeric>

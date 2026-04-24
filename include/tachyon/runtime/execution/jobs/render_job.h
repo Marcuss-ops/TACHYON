@@ -93,6 +93,7 @@ struct RenderJob {
     std::string motion_blur_curve{"box"};
     std::string seed_policy_mode{"stable"};
     std::string compatibility_mode;
+    bool proxy_enabled{false};
     std::unordered_map<std::string, double> variables;
     std::unordered_map<std::string, std::string> string_variables;
     

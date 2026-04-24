@@ -46,12 +46,109 @@ CompositionSummary make_summary(const CompositionSpec& composition) {
     summary.mask_layer_count = count_layers_with_type(composition, "mask");
     summary.image_layer_count = count_layers_with_type(composition, "image");
     summary.text_layer_count = count_layers_with_type(composition, "text");
-    summary.precomp_layer_count = static_cast<std::size_t>(std::count_if(
-        composition.layers.begin(),
-        composition.layers.end(),
-        [](const LayerSpec& layer) { return layer.precomp_id.has_value(); }));
+    summary.precomp_layer_count = count_layers_with_type(composition, "precomp");
     summary.track_matte_layer_count = count_layers_with_track_matte(composition);
     return summary;
+}
+
+std::uint64_t hash_scene_content(const SceneSpec& scene) {
+    CacheKeyBuilder builder;
+    builder.add_string(scene.project.id);
+    builder.add_string(scene.project.name);
+    builder.add_string(scene.project.authoring_tool);
+    builder.add_bool(scene.project.root_seed.has_value());
+    if (scene.project.root_seed.has_value()) {
+        builder.add_u64(static_cast<std::uint64_t>(*scene.project.root_seed));
+    }
+    builder.add_u64(static_cast<std::uint64_t>(scene.compositions.size()));
+    for (const auto& comp : scene.compositions) {
+        builder.add_string(comp.id);
+        builder.add_string(comp.name);
+        builder.add_u64(static_cast<std::uint64_t>(comp.width));
+        builder.add_u64(static_cast<std::uint64_t>(comp.height));
+        builder.add_u64(static_cast<std::uint64_t>(comp.duration * 1000.0));
+        builder.add_u64(static_cast<std::uint64_t>(comp.frame_rate.numerator));
+        builder.add_u64(static_cast<std::uint64_t>(comp.frame_rate.denominator));
+        builder.add_bool(comp.fps.has_value());
+        if (comp.fps.has_value()) {
+            builder.add_u64(static_cast<std::uint64_t>(*comp.fps));
+        }
+        builder.add_bool(comp.background.has_value());
+        if (comp.background.has_value()) {
+            builder.add_string(*comp.background);
+        }
+        builder.add_bool(comp.environment_path.has_value());
+        if (comp.environment_path.has_value()) {
+            builder.add_string(*comp.environment_path);
+        }
+        builder.add_u64(static_cast<std::uint64_t>(comp.layers.size()));
+        for (const auto& layer : comp.layers) {
+            builder.add_string(layer.id);
+            builder.add_string(layer.name);
+            builder.add_string(layer.type);
+            builder.add_string(layer.blend_mode);
+            builder.add_bool(layer.enabled);
+            builder.add_bool(layer.visible);
+            builder.add_bool(layer.is_3d);
+            builder.add_bool(layer.is_adjustment_layer);
+            builder.add_bool(layer.motion_blur);
+            builder.add_u64(static_cast<std::uint64_t>(layer.start_time * 1000.0));
+            builder.add_u64(static_cast<std::uint64_t>(layer.in_point * 1000.0));
+            builder.add_u64(static_cast<std::uint64_t>(layer.out_point * 1000.0));
+            builder.add_u64(static_cast<std::uint64_t>(layer.opacity * 1000000.0));
+            builder.add_u64(static_cast<std::uint64_t>(layer.width));
+            builder.add_u64(static_cast<std::uint64_t>(layer.height));
+            builder.add_bool(layer.parent.has_value());
+            if (layer.parent.has_value()) builder.add_string(*layer.parent);
+            builder.add_bool(layer.track_matte_layer_id.has_value());
+            if (layer.track_matte_layer_id.has_value()) builder.add_string(*layer.track_matte_layer_id);
+            builder.add_u32(static_cast<std::uint32_t>(layer.track_matte_type));
+            builder.add_bool(layer.precomp_id.has_value());
+            if (layer.precomp_id.has_value()) builder.add_string(*layer.precomp_id);
+            builder.add_string(layer.text_content);
+            builder.add_string(layer.font_id);
+            builder.add_string(layer.alignment);
+            builder.add_u64(static_cast<std::uint64_t>(layer.stroke_width * 1000000.0));
+            builder.add_string(layer.subtitle_path);
+            builder.add_string(layer.line_cap);
+            builder.add_string(layer.line_join);
+            builder.add_u64(static_cast<std::uint64_t>(layer.miter_limit * 1000.0));
+            builder.add_string(layer.camera_type);
+            builder.add_u64(static_cast<std::uint64_t>(layer.camera_shake_seed));
+            builder.add_string(layer.light_type);
+            builder.add_string(layer.falloff_type);
+            builder.add_bool(layer.casts_shadows);
+            builder.add_u64(static_cast<std::uint64_t>(layer.effects.size()));
+            for (const auto& effect : layer.effects) builder.add_string(effect);
+            builder.add_u64(static_cast<std::uint64_t>(layer.text_animators.size()));
+            for (const auto& animator : layer.text_animators) builder.add_string(animator);
+            builder.add_u64(static_cast<std::uint64_t>(layer.text_highlights.size()));
+            for (const auto& highlight : layer.text_highlights) builder.add_string(highlight);
+            builder.add_u64(static_cast<std::uint64_t>(layer.mask_paths.size()));
+            builder.add_u64(static_cast<std::uint64_t>(layer.track_bindings.size()));
+            builder.add_bool(layer.time_remap.enabled);
+            builder.add_u32(static_cast<std::uint32_t>(layer.time_remap.mode));
+            builder.add_u32(static_cast<std::uint32_t>(layer.frame_blend));
+        }
+    }
+    builder.add_u64(static_cast<std::uint64_t>(scene.assets.size()));
+    for (const auto& asset : scene.assets) {
+        builder.add_string(asset.id);
+        builder.add_string(asset.type);
+        builder.add_string(asset.path);
+        builder.add_string(asset.source);
+        builder.add_bool(asset.alpha_mode.has_value());
+        if (asset.alpha_mode.has_value()) {
+            builder.add_string(*asset.alpha_mode);
+        }
+    }
+    builder.add_u64(static_cast<std::uint64_t>(scene.data_sources.size()));
+    for (const auto& ds : scene.data_sources) {
+        builder.add_string(ds.id);
+        builder.add_string(ds.path);
+        builder.add_string(ds.type);
+    }
+    return builder.finish();
 }
 
 } // namespace
@@ -92,6 +189,11 @@ ResolutionResult<RenderPlan> build_render_plan(const SceneSpec& scene, const Ren
     plan.variables = job.variables;
     plan.string_variables = job.string_variables;
     plan.layer_overrides = job.layer_overrides;
+
+    // Canonical fields correctly populated
+    plan.scene_hash = hash_scene_content(scene);
+    plan.contract_version = 1;
+    plan.proxy_enabled = job.proxy_enabled;
 
     result.value = std::move(plan);
     return result;
@@ -176,6 +278,19 @@ FrameCacheKey build_frame_cache_key(const RenderPlan& plan, std::int64_t frame_n
     builder.add_u64(static_cast<std::uint64_t>(plan.composition.layer_count));
     builder.add_u64(static_cast<std::uint64_t>(plan.composition.text_layer_count));
     builder.add_u64(static_cast<std::uint64_t>(plan.composition.precomp_layer_count));
+
+    // New Canonical Fields
+    builder.add_u64(plan.scene_hash);
+    builder.add_u32(static_cast<std::uint32_t>(plan.contract_version));
+    builder.add_bool(plan.proxy_enabled);
+    builder.add_string(plan.ocio.config_path);
+    builder.add_string(plan.ocio.display);
+    builder.add_string(plan.ocio.view);
+    builder.add_string(plan.ocio.look);
+    builder.add_bool(plan.dof.enabled);
+    builder.add_f64(plan.dof.aperture);
+    builder.add_f64(plan.dof.focus_distance);
+    builder.add_f64(plan.dof.focal_length);
 
     // Time Remap & Frame Blend
     if (plan.time_remap_curve.has_value()) {

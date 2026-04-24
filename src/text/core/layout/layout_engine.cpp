@@ -202,10 +202,30 @@ void sync_resolved_layout(
     result.ResolvedTextLayout::glyphs.clear();
     result.ResolvedTextLayout::runs.clear();
     result.ResolvedTextLayout::lines.clear();
+    result.ResolvedTextLayout::clusters.clear();
     result.ResolvedTextLayout::total_bounds = {};
     result.ResolvedTextLayout::is_on_path = false;
 
     const float font_size = style.pixel_size == 0U ? static_cast<float>(std::max(1, font.line_height())) : static_cast<float>(style.pixel_size);
+
+    // Build cluster map from PositionedGlyph data
+    std::map<std::size_t, std::vector<std::size_t>> cluster_to_glyphs;
+    for (std::size_t i = 0; i < result.glyphs.size(); ++i) {
+        const auto& g = result.glyphs[i];
+        cluster_to_glyphs[g.cluster_index].push_back(i);
+    }
+
+    // Populate clusters vector
+    for (const auto& [cluster_idx, glyph_indices] : cluster_to_glyphs) {
+        if (glyph_indices.empty()) continue;
+        const auto& first_glyph = result.glyphs[glyph_indices.front()];
+        GlyphCluster cluster;
+        cluster.source_text_start = first_glyph.cluster_codepoint_start;
+        cluster.source_text_length = first_glyph.cluster_codepoint_count;
+        cluster.glyph_start = glyph_indices.front();
+        cluster.glyph_count = glyph_indices.size();
+        result.ResolvedTextLayout::clusters.push_back(cluster);
+    }
 
     result.ResolvedTextLayout::glyphs.reserve(result.glyphs.size());
     for (const auto& g : result.glyphs) {
@@ -218,11 +238,17 @@ void sync_resolved_layout(
         resolved.advance_y = 0.0f;
         resolved.font = g.resolved_font;
         resolved.source_index = g.cluster_codepoint_start;
+        resolved.cluster_index = g.cluster_index;
         resolved.is_rtl = g.is_rtl;
         resolved.font_size = font_size;
         resolved.fill_color = to_color_spec(style.fill_color);
         resolved.stroke_color = {0, 0, 0, 0};
         resolved.stroke_width = 0.0f;
+        resolved.opacity = 1.0f;
+        resolved.scale = {1.0f, 1.0f};
+        resolved.rotation = 0.0f;
+        resolved.blur_radius = 0.0f;
+        resolved.reveal_factor = 1.0f;
         resolved.bounds = make_rect(static_cast<float>(g.x), static_cast<float>(g.y), static_cast<float>(g.width), static_cast<float>(g.height));
         result.ResolvedTextLayout::glyphs.push_back(resolved);
         result.ResolvedTextLayout::total_bounds = rect_is_empty(result.ResolvedTextLayout::total_bounds) ? resolved.bounds : union_rects(result.ResolvedTextLayout::total_bounds, resolved.bounds);

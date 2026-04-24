@@ -68,6 +68,25 @@ struct RenderPlan {
     std::string seed_policy_mode;
     std::string compatibility_mode;
     const SceneSpec* scene_spec{nullptr};
+    
+    std::uint64_t scene_hash{0};
+    int contract_version{1};
+    bool proxy_enabled{false};
+    
+    struct OCIOConfig {
+        std::string config_path;
+        std::string display;
+        std::string view;
+        std::string look;
+    } ocio;
+
+    struct DoFParams {
+        bool enabled{false};
+        double aperture{0.0};
+        double focus_distance{0.0};
+        double focal_length{0.0};
+    } dof;
+
     std::unordered_map<std::string, double> variables;
     std::unordered_map<std::string, std::string> string_variables;
     std::unordered_map<std::string, RenderJob::LayerOverride> layer_overrides;

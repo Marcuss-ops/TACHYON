@@ -5,6 +5,7 @@
 #include "tachyon/renderer3d/effects/motion_blur.h"
 #include "tachyon/renderer3d/effects/depth_of_field.h"
 #include "tachyon/renderer3d/lighting/environment_manager.h"
+#include "tachyon/media/management/media_manager.h"
 #include <embree4/rtcore.h>
 #ifdef _WIN32
 #include <OpenImageDenoise/oidn.hpp>
@@ -30,7 +31,7 @@ struct ShadingResult {
 
 class RayTracer {
 public:
-    RayTracer();
+    explicit RayTracer(media::MediaManager* media_manager = nullptr);
     ~RayTracer();
 
     RayTracer(const RayTracer&) = delete;
@@ -53,10 +54,14 @@ public:
         double frame_duration_seconds = 0.0);
     
     void set_samples_per_pixel(int spp) { samples_per_pixel_ = spp; }
+    void set_denoiser_enabled(bool enabled) { denoiser_enabled_ = enabled; }
 
 private:
     RTCDevice device_{nullptr};
     RTCScene  scene_{nullptr};
+
+    media::MediaManager* media_manager_{nullptr};
+    const media::HDRTextureData* current_env_map_{nullptr};
 
     struct GeoInstance {
         unsigned int geom_id;
@@ -76,12 +81,18 @@ private:
 
     EnvironmentManager environment_manager_;
     
+    // Environment members (required by build_scene/render)
+    float environment_intensity_{1.0f};
+    float environment_rotation_{0.0f};
+    std::string environment_map_id_;
+    
 #ifdef _WIN32
     oidn::DeviceRef oidn_device_;
     oidn::FilterRef oidn_filter_;
 #endif
 
     int samples_per_pixel_{1};
+    bool denoiser_enabled_{false};
 
     ShadingResult trace_ray(
         const math::Vector3& origin,
@@ -92,6 +103,7 @@ private:
         float time = 0.0f);
 
     static constexpr int kMaxBounces = 3;
+    static constexpr float kMaxBounceThreshold = 0.001f;
 
     const std::string& last_error() const { return m_last_error; }
 
@@ -99,6 +111,7 @@ private:
     std::string m_last_error;
 
     void cleanup_scene();
+    void denoise_aov_buffer(AOVBuffer& buffer) const;
     static void log_embree_error(void* userPtr, RTCError code, const char* str);
 };
 

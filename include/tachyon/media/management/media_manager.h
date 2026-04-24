@@ -25,6 +25,12 @@ enum class MediaFallbackPolicy {
     UseOriginal       // Use original even if proxy requested
 };
 
+enum class ResolutionPurpose {
+    Playback,
+    Export,
+    Analysis
+};
+
 class MediaManager {
 public:
     MediaManager();
@@ -53,9 +59,17 @@ public:
     void register_asset(std::shared_ptr<MediaAsset> asset);
 
     /**
+     * @brief Gets the path for an asset by its ID.
+     * @return The original path of the asset, or empty path if not found.
+     */
+    std::filesystem::path get_asset_path(const std::string& asset_id) const;
+
+    /**
      * @brief Resolves the best available path for an asset.
      */
-    std::filesystem::path resolve_media_path(const std::filesystem::path& path) const;
+    std::filesystem::path resolve_media_path(
+        const std::filesystem::path& path,
+        ResolutionPurpose purpose = ResolutionPurpose::Playback) const;
 
     /**
      * Acquires a VideoDecoder for the given path from a pool.

@@ -3,7 +3,11 @@
 #include "tachyon/renderer2d/effects/effect_params.h"
 #include "tachyon/renderer2d/effects/color_types.h"
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <functional>
+#include <string>
+#include <initializer_list>
 #include <vector>
 
 namespace tachyon::renderer2d {

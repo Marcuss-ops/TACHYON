@@ -92,6 +92,9 @@ ParseResult<RenderJob> parse_render_job_json(const std::string& text) {
     }
     read_string(root, "seed_policy_mode", job.seed_policy_mode);
     read_string(root, "compatibility_mode", job.compatibility_mode);
+    if (root.contains("proxy_enabled") && root.at("proxy_enabled").is_boolean()) {
+        job.proxy_enabled = root.at("proxy_enabled").get<bool>();
+    }
     if (root.contains("motion_blur_enabled") && root.at("motion_blur_enabled").is_boolean()) {
         job.motion_blur_enabled = root.at("motion_blur_enabled").get<bool>();
     }

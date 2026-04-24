@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <optional>
 
 namespace tachyon::renderer3d {
 

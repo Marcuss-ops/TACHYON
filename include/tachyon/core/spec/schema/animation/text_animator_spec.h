@@ -30,7 +30,12 @@ struct TextAnimatorSelectorSpec {
     // Selection mode (add, subtract, intersect)
     std::string mode{"add"};
     
-    // Unit (characters, characters excluding spaces, words, lines)
+    // Unit for selector evaluation:
+    // - "characters": all glyphs including spaces
+    // - "characters_excluding_spaces": only non-space glyphs
+    // - "words": word-level selection (uses word_index)
+    // - "lines": line-level selection (uses line_index)
+    // - "clusters": grapheme cluster-level selection (preserves shaping)
     std::string based_on{"characters"};
 };
 

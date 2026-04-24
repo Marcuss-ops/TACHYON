@@ -6,7 +6,7 @@ RenderContext::RenderContext(std::shared_ptr<renderer2d::PrecompCache> precomp_c
     : media(std::make_shared<media::MediaManager>()),
       renderer2d(std::move(precomp_cache)),
       policy{},
-      ray_tracer(std::make_shared<renderer3d::RayTracer>()) {
+      ray_tracer(std::make_shared<renderer3d::RayTracer>(media.get())) {
     renderer2d.media_manager = media.get();
 #ifdef _WIN32
     oidn_device = oidn::newDevice();
