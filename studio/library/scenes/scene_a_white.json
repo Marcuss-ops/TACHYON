@@ -1,0 +1,37 @@
+{
+  "version": "1.0",
+  "spec_version": "1.0.0",
+  "project": {
+    "id": "public_scene_a_white",
+    "name": "Scene A White",
+    "authoring_tool": "tachyon-studio"
+  },
+  "compositions": [
+    {
+      "id": "main",
+      "name": "Main",
+      "width": 1920,
+      "height": 1080,
+      "duration": 120,
+      "frame_rate": 30,
+      "background": "#ffffff",
+      "layers": [
+        {
+          "id": "white_solid",
+          "name": "White Solid",
+          "type": "solid",
+          "blend_mode": "normal",
+          "enabled": true,
+          "visible": true,
+          "is_3d": false,
+          "in_point": 0,
+          "out_point": 120,
+          "opacity": 1,
+          "width": 1920,
+          "height": 1080,
+          "fill_color": [255, 255, 255, 255]
+        }
+      ]
+    }
+  ]
+}

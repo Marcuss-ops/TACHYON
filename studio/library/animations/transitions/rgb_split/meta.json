@@ -1,0 +1,10 @@
+{
+  "schema": "tachyon.animation_transition/1.0",
+  "id": "rgb_split",
+  "name": "RGB Split",
+  "pack": "normal",
+  "duration_seconds": 2.0,
+  "entry": "v1.glsl",
+  "thumb": "thumb.png",
+  "source": "transitions/normal/13_rgb_split.glsl"
+}

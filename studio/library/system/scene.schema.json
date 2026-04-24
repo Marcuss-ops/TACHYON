@@ -1,0 +1,172 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "tachyon.library.scene.schema/1.0",
+  "title": "Tachyon SceneSpec",
+  "type": "object",
+  "required": ["version", "spec_version", "project", "compositions"],
+  "properties": {
+    "version": { "type": "string" },
+    "spec_version": { "type": "string" },
+    "project": {
+      "type": "object",
+      "required": ["id", "name", "authoring_tool"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "authoring_tool": { "type": "string" },
+        "root_seed": { "type": "integer" }
+      },
+      "additionalProperties": true
+    },
+    "compositions": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/composition" },
+      "minItems": 1
+    },
+    "assets": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/asset" }
+    },
+    "data_sources": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/data_source" }
+    }
+  },
+  "definitions": {
+    "composition": {
+      "type": "object",
+      "required": ["id", "name", "width", "height", "duration", "frame_rate", "layers"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "duration": { "type": "number", "minimum": 0 },
+        "frame_rate": {
+          "type": "object",
+          "properties": {
+            "numerator": { "type": "integer" },
+            "denominator": { "type": "integer" }
+          },
+          "additionalProperties": true
+        },
+        "fps": { "type": "integer" },
+        "background": { "type": "string" },
+        "environment_path": { "type": "string" },
+        "layers": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/layer" }
+        },
+        "audio_tracks": {
+          "type": "array",
+          "items": { "type": "object", "additionalProperties": true }
+        },
+        "camera_cuts": {
+          "type": "array",
+          "items": { "type": "object", "additionalProperties": true }
+        }
+      },
+      "additionalProperties": true
+    },
+    "layer": {
+      "type": "object",
+      "required": ["id", "name", "type"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "blend_mode": { "type": "string" },
+        "enabled": { "type": "boolean" },
+        "visible": { "type": "boolean" },
+        "is_3d": { "type": "boolean" },
+        "is_adjustment_layer": { "type": "boolean" },
+        "motion_blur": { "type": "boolean" },
+        "start_time": { "type": "number" },
+        "in_point": { "type": "number" },
+        "out_point": { "type": "number" },
+        "opacity": { "type": "number" },
+        "width": { "type": "integer" },
+        "height": { "type": "integer" },
+        "parent": { "type": ["string", "null"] },
+        "track_matte_layer_id": { "type": ["string", "null"] },
+        "track_matte_type": { "type": "string" },
+        "precomp_id": { "type": ["string", "null"] },
+        "text_content": { "type": "string" },
+        "font_id": { "type": "string" },
+        "alignment": { "type": "string" },
+        "fill_color": { "$ref": "#/definitions/color_spec" },
+        "stroke_color": { "$ref": "#/definitions/color_spec" },
+        "stroke_width": { "type": "number" },
+        "effects": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/effect_spec" }
+        },
+        "text_animators": {
+          "type": "array",
+          "items": { "type": "object", "additionalProperties": true }
+        },
+        "text_highlights": {
+          "type": "array",
+          "items": { "type": "object", "additionalProperties": true }
+        },
+        "mask_paths": {
+          "type": "array",
+          "items": { "type": "object", "additionalProperties": true }
+        },
+        "track_bindings": {
+          "type": "array",
+          "items": { "type": "object", "additionalProperties": true }
+        },
+        "time_remap": { "type": "object", "additionalProperties": true },
+        "frame_blend": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "effect_spec": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "type": { "type": "string" },
+        "scalars": { "type": "object", "additionalProperties": { "type": "number" } },
+        "colors": { "type": "object", "additionalProperties": { "$ref": "#/definitions/color_spec" } },
+        "strings": { "type": "object", "additionalProperties": { "type": "string" } }
+      },
+      "additionalProperties": true
+    },
+    "asset": {
+      "type": "object",
+      "required": ["id", "type", "path", "source"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string" },
+        "path": { "type": "string" },
+        "source": { "type": "string" },
+        "alpha_mode": { "type": ["string", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "data_source": {
+      "type": "object",
+      "required": ["id", "path", "type"],
+      "properties": {
+        "id": { "type": "string" },
+        "path": { "type": "string" },
+        "type": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "color_spec": {
+      "type": "object",
+      "required": ["r", "g", "b", "a"],
+      "properties": {
+        "r": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "g": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "b": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "a": { "type": "integer", "minimum": 0, "maximum": 255 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": true
+}

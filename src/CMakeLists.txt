@@ -24,6 +24,7 @@ add_library(TachyonCore
     runtime/playback/playback_engine.cpp
     runtime/playback/audio_preview_buffer.cpp
     runtime/execution/render_session.cpp
+    core/c_api.cpp
     runtime/core/graph/render_graph.cpp
     runtime/core/data/property_graph.cpp
     runtime/core/data/compiled_scene.cpp
@@ -33,6 +34,7 @@ add_library(TachyonCore
     core/cli/cli_validate.cpp
     core/cli/cli_inspect.cpp
     core/cli/cli_render.cpp
+    core/cli/cli_demo.cpp
     core/cli/cli_watch.cpp
     core/options.cpp
     core/report.cpp
@@ -75,6 +77,7 @@ add_library(TachyonCore
     renderer2d/color/color_management.cpp
     renderer2d/color/color_management_system.cpp
     renderer2d/effects/effect_host.cpp
+    renderer2d/effects/glsl_transition_effect.cpp
     renderer2d/effects/effect_utils.cpp
     renderer2d/effects/blur_effects.cpp
     renderer2d/effects/color_effects.cpp
@@ -155,6 +158,7 @@ add_library(TachyonCore
     renderer3d/temporal/frame_blend_mode.cpp
     renderer3d/temporal/rolling_shutter.cpp
     text/core/rendering/text_raster_surface.cpp
+    studio/studio_library.cpp
     tracker/feature_tracker.cpp
     tracker/track.cpp
     tracker/track_binding.cpp

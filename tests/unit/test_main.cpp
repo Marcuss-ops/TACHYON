@@ -140,6 +140,7 @@ bool run_scene_evaluator_tests();
 bool run_render_session_tests();
 bool run_render_batch_tests();
 bool run_parallax_cards_tests();
+bool run_studio_library_tests();
 bool run_timeline_tests();
 bool run_camera_cuts_tests();
 bool run_camera_shake_tests();
@@ -191,6 +192,7 @@ int main(int argc, char** argv) {
         {"render_session", run_render_session_tests},
         {"render_batch", run_render_batch_tests},
         {"parallax_cards", run_parallax_cards_tests},
+        {"studio_library", run_studio_library_tests},
         {"timeline", run_timeline_tests},
         {"camera_cuts", run_camera_cuts_tests},
         {"camera_shake", run_camera_shake_tests},

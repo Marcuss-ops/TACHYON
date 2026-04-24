@@ -1,0 +1,10 @@
+{
+  "schema": "tachyon.animation_transition/1.0",
+  "id": "crossfade",
+  "name": "Crossfade",
+  "pack": "normal",
+  "duration_seconds": 2.0,
+  "entry": "v1.glsl",
+  "thumb": "thumb.png",
+  "source": "transitions/normal/01_crossfade.glsl"
+}

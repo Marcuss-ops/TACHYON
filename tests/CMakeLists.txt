@@ -16,6 +16,7 @@ add_executable(TachyonTests
     unit/renderer2d/rasterization/path_rasterizer_aa_tests.cpp
     unit/renderer2d/utilities/tiling_tests.cpp
     unit/renderer2d/effects/effect_host_tests.cpp
+    unit/studio/studio_library_tests.cpp
     unit/runtime/core/frame_cache_tests.cpp
     unit/runtime/core/frame_cache_budget_tests.cpp
     unit/runtime/core/backbone_tests.cpp

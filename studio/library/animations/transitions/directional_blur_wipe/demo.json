@@ -1,0 +1,25 @@
+{
+    "schema": "tachyon.transition_demo/1.0",
+    "transition_id": "directional_blur_wipe",
+    "name": "Directional Blur Wipe Demo",
+    "source_scene": "../../../scenes/scene_a_white.json",
+    "target_scene": "../../../scenes/scene_b_red.json",
+    "transition": {
+        "meta": "meta.json",
+        "shader": "v1.glsl",
+        "duration_seconds": 2,
+        "progress": {
+            "start": 0,
+            "end": 1
+        }
+    },
+    "preview": {
+        "frame_count": 12,
+        "resolution_scale": 1.0
+    },
+    "output": {
+        "directory": "output",
+        "file_prefix": "directional_blur_wipe",
+        "format": "mp4"
+    }
+}

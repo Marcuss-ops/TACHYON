@@ -17,6 +17,7 @@ void print_help(std::ostream& out) {
     out << "  tachyon render --scene <file> --job <file> [--out <file>] [--workers <n>] [--memory-budget-mb <n>] [--frames <start-end>] [--json]\n";
     out << "  tachyon render --batch <jobs.json> [--workers <n>] [--json]\n";
     out << "  tachyon watch --scene <file> --job <file> [--workers <n>]\n";
+    out << "  tachyon studio-demo [--library <dir>] [--transition <id>] [--output-dir <dir>] [--json]\n";
 }
 
 } // namespace
@@ -60,6 +61,10 @@ int run_cli(int argc, char** argv) {
 
     if (options.command == "watch") {
         return run_watch_command(options, std::cout, std::cerr) ? 0 : 2;
+    }
+
+    if (options.command == "studio-demo") {
+        return run_studio_demo_command(options, std::cout, std::cerr) ? 0 : 2;
     }
 
     print_help(std::cerr);

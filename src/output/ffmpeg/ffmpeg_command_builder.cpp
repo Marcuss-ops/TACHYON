@@ -102,6 +102,12 @@ std::string build_ffmpeg_video_command(const RenderPlan& plan, const std::filesy
         } else {
             command << " -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p";
         }
+
+        if (!plan.output.profile.video.pixel_format.empty()) {
+            command << " -pix_fmt " << plan.output.profile.video.pixel_format;
+        } else if (plan.output.profile.video.codec == "libx264" || plan.output.profile.video.codec == "libx265") {
+            command << " -pix_fmt yuv420p";
+        }
     }
 
     if (plan.output.profile.video.rate_control_mode == "crf" && plan.output.profile.video.crf.has_value()) {
