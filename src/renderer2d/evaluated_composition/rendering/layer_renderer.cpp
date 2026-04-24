@@ -281,6 +281,81 @@ std::shared_ptr<SurfaceRGBA> render_text_layer_surface(
 
     txt::TextLayoutResult layout = txt::layout_text(*context.font_registry, layer.font_id, layer.text_content, style, box, align);
 
+    // Render background box if enabled (BEFORE glyphs)
+    if (style.background_box.enabled && !layout.ResolvedTextLayout::glyphs.empty()) {
+        // Calculate bounding box of all glyphs
+        float min_x = std::numeric_limits<float>::max();
+        float min_y = std::numeric_limits<float>::max();
+        float max_x = std::numeric_limits<float>::lowest();
+        float max_y = std::numeric_limits<float>::lowest();
+        
+        for (const auto& pg : layout.ResolvedTextLayout::glyphs) {
+            const txt::Font* font = context.font_registry->find_by_id(pg.font_id);
+            if (!font) continue;
+            const txt::GlyphBitmap* glyph = font->find_glyph_by_index(pg.font_glyph_index);
+            if (!glyph) continue;
+            
+            float gx = static_cast<float>(pg.position.x);
+            float gy = static_cast<float>(pg.position.y);
+            float gw = static_cast<float>(glyph->width) * layout.scale * pg.scale.x;
+            float gh = static_cast<float>(glyph->height) * layout.scale * pg.scale.y;
+            
+            min_x = std::min(min_x, gx);
+            min_y = std::min(min_y, gy);
+            max_x = std::max(max_x, gx + gw);
+            max_y = std::max(max_y, gy + gh);
+        }
+        
+        // Add padding
+        const auto& bg = style.background_box;
+        min_x -= bg.padding_left;
+        min_y -= bg.padding_top;
+        max_x += bg.padding_right;
+        max_y += bg.padding_bottom;
+        
+        // Transform to world space and then to screen space
+        const bool use_camera = layer.is_3d && state.camera.available;
+        const float vw = static_cast<float>(state.width) * context.policy.resolution_scale;
+        const float vh = static_cast<float>(state.height) * context.policy.resolution_scale;
+        
+        auto transform_pos = [&](float lx, float ly) -> math::Vector2 {
+            math::Vector3 wp = layer.world_matrix.transform_point({lx, ly, 0.0f});
+            if (use_camera) {
+                return state.camera.camera.project_point(wp, vw, vh);
+            }
+            return {wp.x * context.policy.resolution_scale, wp.y * context.policy.resolution_scale};
+        };
+        
+        math::Vector2 tl = transform_pos(min_x, min_y);
+        math::Vector2 br = transform_pos(max_x, max_y);
+        
+        int x = static_cast<int>(std::round(tl.x));
+        int y = static_cast<int>(std::round(tl.y));
+        int w = static_cast<int>(std::round(br.x - tl.x));
+        int h = static_cast<int>(std::round(br.y - tl.y));
+        
+        if (target_rect) {
+            x -= target_rect->x;
+            y -= target_rect->y;
+        }
+        
+        // Draw rounded rectangle background
+        Color bg_color = bg.fill_color;
+        bg_color.a *= static_cast<float>(layer.opacity);
+        
+        if (w > 0 && h > 0) {
+            PathGeometry bg_geom;
+            bg_geom.add_rounded_rect(RectF(static_cast<float>(x), static_cast<float>(y), 
+                                           static_cast<float>(w), static_cast<float>(h)), 
+                                     bg.corner_radius * context.policy.resolution_scale);
+            
+            FillPathStyle bg_style;
+            bg_style.fill_color = bg_color;
+            bg_style.opacity = 1.0f;
+            PathRasterizer::fill(*surface, bg_geom, bg_style);
+        }
+    }
+
     const bool use_camera = layer.is_3d && state.camera.available;
     const float vw = static_cast<float>(state.width) * context.policy.resolution_scale;
     const float vh = static_cast<float>(state.height) * context.policy.resolution_scale;

@@ -111,7 +111,8 @@ struct LayerSpec {
     AnimatedScalarSpec shadow_radius;
 
     // Effects & Animators (Skeletons)
-    std::vector<EffectSpec> effects;
+    std::vector<EffectSpec> effects;  // Backward compatible static effects
+    std::vector<AnimatedEffectSpec> animated_effects;  // Keyframeable effects
     std::vector<std::string> text_animators;
     std::vector<std::string> text_highlights;
 

@@ -43,6 +43,17 @@ struct TextGlowOptions {
     bool enabled{false};
 };
 
+struct TextBackgroundBox {
+    renderer2d::Color fill_color{0.0f, 0.0f, 0.0f, 128.0f / 255.0f}; // Semi-transparent black
+    renderer2d::Color stroke_color{1.0f, 1.0f, 1.0f, 0.0f}; // No stroke by default
+    float corner_radius{4.0f};
+    float padding_left{6.0f};
+    float padding_right{6.0f};
+    float padding_top{3.0f};
+    float padding_bottom{3.0f};
+    bool enabled{false};
+};
+
 struct GradientStop {
     float position{0.0f}; // 0.0 to 1.0
     renderer2d::Color color;
@@ -61,6 +72,7 @@ struct TextStyle {
     std::optional<GradientSpec> gradient;
     TextShadowOptions shadow;
     TextGlowOptions glow;
+    TextBackgroundBox background_box;
 };
 
 struct TextLayoutOptions {

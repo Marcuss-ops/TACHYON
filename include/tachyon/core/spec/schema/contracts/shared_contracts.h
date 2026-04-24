@@ -118,9 +118,19 @@ struct AudioTrackSpec {
     float volume{1.0f};
     float pan{0.0f}; // -1.0 (left) to 1.0 (right)
     double start_offset_seconds{0.0};
+    double in_point_seconds{0.0};      // Trim: start point within source file
+    double out_point_seconds{-1.0};    // Trim: end point (-1 = use full duration)
     float playback_speed{1.0f}; // 1.0 = normal, 0.5 = slow, 2.0 = fast
     float pitch_shift{1.0f};    // 1.0 = normal, 0.5 = octave down, 2.0 = octave up
     bool pitch_correct{false};  // true = preserve pitch when speed changes (WSOLA time-stretch)
+    
+    // Fade in/out (in seconds, relative to track start after trim)
+    double fade_in_duration{0.0};
+    double fade_out_duration{0.0};
+    
+    // Normalization
+    bool normalize_to_lufs{false};
+    float target_lufs{-14.0f};  // YouTube target
     
     std::vector<animation::Keyframe<float>> volume_keyframes;
     std::vector<animation::Keyframe<float>> pan_keyframes;
