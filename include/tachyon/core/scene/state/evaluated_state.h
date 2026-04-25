@@ -108,6 +108,7 @@ struct EvaluatedLayerState {
     std::optional<ShapeSpec> shape_spec;
     std::optional<renderer2d::MaskPath> mask_path;
     std::vector<EffectSpec> effects;
+    std::vector<AnimatedEffectSpec> animated_effects;
     std::vector<TextAnimatorSpec> text_animators;
     std::vector<TextHighlightSpec> text_highlights;
     std::vector<ConstraintSpec> constraints;

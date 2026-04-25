@@ -25,6 +25,24 @@ SurfaceRGBA apply_effect_pipeline(
 SurfaceRGBA apply_effect_pipeline(
     const SurfaceRGBA& input,
     const std::vector<EffectSpec>& effects,
+    const std::vector<AnimatedEffectSpec>& animated_effects,
+    double local_time_seconds,
+    EffectHost& host,
+    const ColorProfile& working_profile);
+
+SurfaceRGBA apply_effect_pipeline(
+    const SurfaceRGBA& input,
+    const std::vector<EffectSpec>& effects,
+    EffectHost& host,
+    const ColorProfile& working_profile,
+    const std::unordered_map<std::string, std::shared_ptr<SurfaceRGBA>>& surfaces,
+    const std::string& current_layer_id);
+
+SurfaceRGBA apply_effect_pipeline(
+    const SurfaceRGBA& input,
+    const std::vector<EffectSpec>& effects,
+    const std::vector<AnimatedEffectSpec>& animated_effects,
+    double local_time_seconds,
     EffectHost& host,
     const ColorProfile& working_profile,
     const std::unordered_map<std::string, std::shared_ptr<SurfaceRGBA>>& surfaces,

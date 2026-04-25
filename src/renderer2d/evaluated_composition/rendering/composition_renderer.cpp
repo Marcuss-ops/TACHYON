@@ -282,6 +282,8 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     auto adjusted = apply_effect_pipeline(
                         target_surface,
                         layer.effects,
+                        layer.animated_effects,
+                        layer.local_time_seconds,
                         host,
                         render_context.working_color_space.profile,
                         rendered_surfaces,
@@ -293,10 +295,12 @@ RasterizedFrame2D render_evaluated_composition_2d(
             }
 
             // Effects
-            if (render_context.policy.effects_enabled && !layer.effects.empty()) {
+            if (render_context.policy.effects_enabled && (!layer.effects.empty() || !layer.animated_effects.empty())) {
                 auto effect_surface = apply_effect_pipeline(
                     *layer_surface,
                     layer.effects,
+                    layer.animated_effects,
+                    layer.local_time_seconds,
                     host,
                     render_context.cms.working_profile,
                     rendered_surfaces,
