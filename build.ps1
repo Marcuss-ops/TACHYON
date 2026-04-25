@@ -321,7 +321,7 @@ if (-not $NoBuild) {
 
 # Run tests if requested
 if ($Test) {
-    $testExe = Join-Path $buildDir 'tests' 'TachyonTests.exe'
+    $testExe = Join-Path $buildDir 'tests\TachyonTests.exe'
     if (-not (Test-Path $testExe)) {
         if ($NoBuild) {
             throw "Test executable not found at $testExe and -NoBuild specified."

@@ -74,9 +74,13 @@ add_library(TachyonCore SHARED
     core/spec/compilation/scene_compiler.cpp
     core/spec/schema/scene_spec.cpp
     core/spec/schema/scene_spec_core.cpp
-    core/spec/scene_spec_json.cpp
+    core/spec/scene_spec_serialize.cpp
+    core/spec/scene_spec_parse.cpp
     core/spec/scene_spec_builder.cpp
-    core/spec/validation/scene_validator.cpp
+    core/spec/validation/scene_validator_layer.cpp
+    core/spec/validation/scene_validator_schema.cpp
+    core/spec/validation/scene_validator_utils.cpp
+    core/spec/validation/scene_validator_composition.cpp
     core/spec/scene_spec_audio.cpp
     renderer2d/raster/draw_list_builder.cpp
     renderer2d/raster/draw_list_rasterizer.cpp
@@ -160,6 +164,10 @@ add_library(TachyonCore SHARED
     timeline/camera_cuts.cpp
     text/bidi/bidi_engine.cpp
     text/core/animation/text_animator_utils.cpp
+    text/core/animation/text_animator_paints.cpp
+    text/core/animation/text_animator_sampling.cpp
+    text/core/animation/text_animator_context.cpp
+    text/core/animation/text_animator_coverage.cpp
     text/core/fonts/font.cpp
     text/core/fonts/font_registry.cpp
     text/core/fonts/font_face.cpp
