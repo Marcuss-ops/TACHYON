@@ -93,6 +93,7 @@ src\CMakeFiles\TachyonCore.dir\renderer2d\backend\cpu_backend.cpp.obj
 src\CMakeFiles\TachyonCore.dir\renderer2d\evaluated_composition\matte_resolver.cpp.obj
 src\CMakeFiles\TachyonCore.dir\renderer2d\evaluated_composition\rendering\composition_renderer.cpp.obj
 src\CMakeFiles\TachyonCore.dir\renderer2d\evaluated_composition\rendering\text_mesh_builder.cpp.obj
+src\CMakeFiles\TachyonCore.dir\renderer2d\evaluated_composition\rendering\media_card_mesh_builder.cpp.obj
 src\CMakeFiles\TachyonCore.dir\renderer2d\evaluated_composition\rendering\layer_renderer_simple.cpp.obj
 src\CMakeFiles\TachyonCore.dir\renderer2d\evaluated_composition\rendering\layer_renderer_procedural.cpp.obj
 src\CMakeFiles\TachyonCore.dir\renderer2d\evaluated_composition\utilities\composition_utils.cpp.obj
@@ -142,6 +143,8 @@ src\CMakeFiles\TachyonCore.dir\media\management\proxy_manifest.cpp.obj
 src\CMakeFiles\TachyonCore.dir\media\management\proxy_worker.cpp.obj
 src\CMakeFiles\TachyonCore.dir\media\mesh_loader.cpp.obj
 src\CMakeFiles\TachyonCore.dir\media\extruder.cpp.obj
+src\CMakeFiles\TachyonCore.dir\media\stb_image_impl.cpp.obj
+src\CMakeFiles\TachyonCore.dir\media\tinygltf_impl.cpp.obj
 src\CMakeFiles\TachyonCore.dir\output\ffmpeg\ffmpeg_pipe_sink.cpp.obj
 src\CMakeFiles\TachyonCore.dir\output\ffmpeg\ffmpeg_command_builder.cpp.obj
 src\CMakeFiles\TachyonCore.dir\output\ffmpeg\ffmpeg_utils.cpp.obj

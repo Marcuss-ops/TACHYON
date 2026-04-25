@@ -9396,8 +9396,8 @@ FILEVERSION          2,13,3,0
 PRODUCTVERSION       2,13,3,0
 FILEFLAGSMASK        0x0000003FL
 
-
-
+FILEFLAGS            0x00000001L
+#line 31 "C:\\Users\\pater\\Pyt\\Tachyon\\build-ninja\\_deps\\freetype-src\\src\\base\\ftver.rc"
 
 
 
