@@ -76,8 +76,8 @@ ResolvedFont FontResolver::resolve(const FontRequest& request) const {
     result.face = face;
 
     if (face) {
-        result.instance = get_or_create_instance(*face, request.pixel_size,
-                                                 request.hinting, request.render_mode);
+        result.instance = const_cast<FontResolver*>(this)->get_or_create_instance(*face, request.pixel_size,
+                                                             request.hinting, request.render_mode);
     }
 
     return result;

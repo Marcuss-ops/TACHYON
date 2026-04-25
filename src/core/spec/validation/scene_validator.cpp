@@ -30,7 +30,7 @@ ValidationResult SceneValidator::validate(const ::tachyon::SceneSpec& scene) con
 void SceneValidator::validate_schema_version(const ::tachyon::SceneSpec& scene, ValidationResult& out) const {
     // Check if schema version is present and valid
     if (scene.schema_version.major == 0) {
-        out.issues.push_back({ValidationIssue::Severity::Warning, "scene.schema_version", 
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning, "scene.schema_version", 
             "Schema version is 0.0.0. This may indicate an older file format."});
         out.warning_count++;
     }
@@ -39,7 +39,7 @@ void SceneValidator::validate_schema_version(const ::tachyon::SceneSpec& scene, 
     // For now, we just warn about very old versions
     static const SchemaVersion min_supported{0, 9, 0};
     if (scene.schema_version < min_supported) {
-        out.issues.push_back({ValidationIssue::Severity::Error, "scene.schema_version",
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, "scene.schema_version",
             "Schema version " + scene.schema_version.to_string() + " is not supported. Minimum required: " + min_supported.to_string()});
         out.error_count++;
     }
@@ -47,24 +47,24 @@ void SceneValidator::validate_schema_version(const ::tachyon::SceneSpec& scene, 
 
 void SceneValidator::validate_composition(const ::tachyon::CompositionSpec& comp, const ::tachyon::SceneSpec& scene, ValidationResult& out) const {
     if (comp.id.empty()) {
-        out.issues.push_back({ValidationIssue::Severity::Error, "composition", "Composition ID cannot be empty."});
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, "composition", "Composition ID cannot be empty."});
         out.error_count++;
     }
     
     if (comp.width <= 0 || comp.height <= 0) {
-        out.issues.push_back({ValidationIssue::Severity::Error, "composition." + comp.id + ".dimensions", "Invalid dimensions."});
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, "composition." + comp.id + ".dimensions", "Invalid dimensions."});
         out.error_count++;
     }
 
     // Validate FPS
     if (comp.fps <= 0.0f) {
-        out.issues.push_back({ValidationIssue::Severity::Error, "composition." + comp.id + ".fps", "FPS must be greater than 0."});
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, "composition." + comp.id + ".fps", "FPS must be greater than 0."});
         out.error_count++;
     }
 
     // Validate duration
-    if (comp.duration_seconds <= 0.0f) {
-        out.issues.push_back({ValidationIssue::Severity::Error, "composition." + comp.id + ".duration_seconds", "Duration must be greater than 0."});
+    if (comp.duration <= 0.0f) {
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, "composition." + comp.id + ".duration", "Duration must be greater than 0."});
         out.error_count++;
     }
 
@@ -87,7 +87,7 @@ void SceneValidator::validate_duplicate_ids(const ::tachyon::CompositionSpec& co
         const auto& layer = comp.layers[i];
         if (!layer.id.empty()) {
             if (seen_ids.count(layer.id)) {
-                out.issues.push_back({ValidationIssue::Severity::Error, 
+                out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, 
                     "composition." + comp.id + ".layers[" + std::to_string(i) + "].id",
                     "Duplicate layer ID: " + layer.id});
                 out.error_count++;
@@ -101,7 +101,7 @@ void SceneValidator::validate_duplicate_ids(const ::tachyon::CompositionSpec& co
         const auto& cam = comp.cameras_2d[i];
         if (!cam.id.empty()) {
             if (seen_ids.count(cam.id)) {
-                out.issues.push_back({ValidationIssue::Severity::Error,
+                out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error,
                     "composition." + comp.id + ".cameras_2d[" + std::to_string(i) + "].id",
                     "Duplicate camera ID: " + cam.id});
                 out.error_count++;
@@ -115,7 +115,7 @@ void SceneValidator::validate_duplicate_ids(const ::tachyon::CompositionSpec& co
         const auto& track = comp.audio_tracks[i];
         if (!track.id.empty()) {
             if (seen_ids.count(track.id)) {
-                out.issues.push_back({ValidationIssue::Severity::Error,
+                out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error,
                     "composition." + comp.id + ".audio_tracks[" + std::to_string(i) + "].id",
                     "Duplicate audio track ID: " + track.id});
                 out.error_count++;
@@ -135,14 +135,14 @@ void SceneValidator::validate_camera_cuts(const ::tachyon::CompositionSpec& comp
         
         // Validate time range
         if (cut_i.start_seconds < 0) {
-            out.issues.push_back({ValidationIssue::Severity::Error,
+            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error,
                 "composition." + comp.id + ".camera_cuts[" + std::to_string(i) + "].start_seconds",
                 "Camera cut start time cannot be negative."});
             out.error_count++;
         }
         
         if (cut_i.end_seconds < cut_i.start_seconds) {
-            out.issues.push_back({ValidationIssue::Severity::Error,
+            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error,
                 "composition." + comp.id + ".camera_cuts[" + std::to_string(i) + "]",
                 "Camera cut end time must be >= start time."});
             out.error_count++;
@@ -156,7 +156,7 @@ void SceneValidator::validate_camera_cuts(const ::tachyon::CompositionSpec& comp
             bool overlaps = (cut_i.start_seconds < cut_j.end_seconds) && (cut_j.start_seconds < cut_i.end_seconds);
             
             if (overlaps) {
-                out.issues.push_back({ValidationIssue::Severity::Error,
+                out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error,
                     "composition." + comp.id + ".camera_cuts",
                     "Overlapping camera cuts at indices " + std::to_string(i) + " and " + std::to_string(j)});
                 out.error_count++;
@@ -172,7 +172,7 @@ void SceneValidator::validate_camera_cuts(const ::tachyon::CompositionSpec& comp
             }
         }
         if (!camera_found && !cut_i.camera_id.empty()) {
-            out.issues.push_back({ValidationIssue::Severity::Error,
+            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error,
                 "composition." + comp.id + ".camera_cuts[" + std::to_string(i) + "].camera_id",
                 "Camera cut references non-existent camera: " + cut_i.camera_id});
             out.error_count++;
@@ -186,21 +186,21 @@ void SceneValidator::validate_track_bindings(const ::tachyon::LayerSpec& layer, 
         const auto& binding = layer.track_bindings[i];
         
         if (binding.source_id.empty()) {
-            out.issues.push_back({ValidationIssue::Severity::Error,
+            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error,
                 path + ".track_bindings[" + std::to_string(i) + "].source_id",
                 "Track binding source_id cannot be empty."});
             out.error_count++;
         }
         
         if (binding.source_track_name.empty()) {
-            out.issues.push_back({ValidationIssue::Severity::Error,
+            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error,
                 path + ".track_bindings[" + std::to_string(i) + "].source_track_name",
                 "Track binding source_track_name cannot be empty."});
             out.error_count++;
         }
         
         if (binding.influence < 0.0f || binding.influence > 1.0f) {
-            out.issues.push_back({ValidationIssue::Severity::Warning,
+            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning,
                 path + ".track_bindings[" + std::to_string(i) + "].influence",
                 "Track binding influence should be between 0.0 and 1.0."});
             out.warning_count++;
@@ -210,38 +210,44 @@ void SceneValidator::validate_track_bindings(const ::tachyon::LayerSpec& layer, 
 
 void SceneValidator::validate_layer(const ::tachyon::LayerSpec& layer, const ::tachyon::CompositionSpec& comp, const ::tachyon::SceneSpec& scene, const std::string& path, ValidationResult& out) const {
     if (layer.id.empty()) {
-        out.issues.push_back({ValidationIssue::Severity::Error, path + ".id", "Layer ID cannot be empty."});
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".id", "Layer ID cannot be empty."});
         out.error_count++;
     }
 
     // Validate layer duration
-    if (layer.duration_seconds <= 0.0f) {
-        out.issues.push_back({ValidationIssue::Severity::Error, path + ".duration_seconds", "Layer duration must be greater than 0."});
+    auto layer_duration = layer.duration.has_value() ? layer.duration.value() : (layer.out_point - layer.in_point);
+    if (layer_duration <= 0.0) {
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".duration", "Layer duration must be greater than 0."});
         out.error_count++;
     }
 
     // Validate layer start time
-    if (layer.start_offset_seconds < 0.0f) {
-        out.issues.push_back({ValidationIssue::Severity::Error, path + ".start_offset_seconds", "Layer start time cannot be negative."});
+    if (layer.start_time < 0.0f) {
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".start_time", "Layer start time cannot be negative."});
         out.error_count++;
     }
 
     // Check if layer extends beyond composition duration
-    float layer_end = layer.start_offset_seconds + layer.duration_seconds;
-    if (layer_end > comp.duration_seconds + 0.001f) { // small epsilon for floating point comparison
-        out.issues.push_back({ValidationIssue::Severity::Warning, path + ".duration_seconds", 
+    float layer_end = static_cast<float>(layer.start_time);
+    if (layer.duration.has_value()) {
+        layer_end += static_cast<float>(layer.duration.value());
+    } else {
+        layer_end += static_cast<float>(layer.out_point - layer.in_point);
+    }
+    if (layer_end > comp.duration + 0.001f) { // small epsilon for floating point comparison
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning, path + ".duration", 
             "Layer extends beyond composition duration (layer ends at " + std::to_string(layer_end) + 
-            "s, composition is " + std::to_string(comp.duration_seconds) + "s)."});
+            "s, composition is " + std::to_string(comp.duration) + "s)."});
         out.warning_count++;
     }
 
     if (layer.opacity < 0.0 || layer.opacity > 1.0) {
-        out.issues.push_back({ValidationIssue::Severity::Error, path + ".opacity", "Layer opacity must be between 0 and 1."});
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".opacity", "Layer opacity must be between 0 and 1."});
         out.error_count++;
     }
 
     if (layer.width < 0 || layer.height < 0) {
-        out.issues.push_back({ValidationIssue::Severity::Error, path + ".dimensions", "Layer dimensions cannot be negative."});
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".dimensions", "Layer dimensions cannot be negative."});
         out.error_count++;
     }
 
@@ -267,7 +273,7 @@ void SceneValidator::validate_layer(const ::tachyon::LayerSpec& layer, const ::t
     // Track matte validation: if a matte layer is specified, it must exist and must not be self
     if (layer.track_matte_layer_id.has_value() && !layer.track_matte_layer_id->empty()) {
         if (*layer.track_matte_layer_id == layer.id) {
-            out.issues.push_back({ValidationIssue::Severity::Error, path + ".track_matte_layer_id", "Track matte layer cannot reference itself."});
+            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".track_matte_layer_id", "Track matte layer cannot reference itself."});
             out.error_count++;
         } else {
             bool found = false;
@@ -278,19 +284,19 @@ void SceneValidator::validate_layer(const ::tachyon::LayerSpec& layer, const ::t
                 }
             }
             if (!found) {
-                out.issues.push_back({ValidationIssue::Severity::Error, path + ".track_matte_layer_id", "References non-existent layer: " + *layer.track_matte_layer_id});
+                out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".track_matte_layer_id", "References non-existent layer: " + *layer.track_matte_layer_id});
                 out.error_count++;
             }
         }
         // Validate that track_matte_type is not None when a matte layer is specified
         if (layer.track_matte_type == TrackMatteType::None) {
-            out.issues.push_back({ValidationIssue::Severity::Warning, path + ".track_matte_type", "track_matte_layer_id is set but track_matte_type is None."});
+            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning, path + ".track_matte_type", "track_matte_layer_id is set but track_matte_type is None."});
         }
     }
 
     if (layer.type == "precomp") {
         if (!layer.precomp_id.has_value() || layer.precomp_id->empty()) {
-            out.issues.push_back({ValidationIssue::Severity::Error, path + ".precomp_id", "Precomp layer requires a composition reference."});
+            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".precomp_id", "Precomp layer requires a composition reference."});
             out.error_count++;
         } else {
             bool found = false;
@@ -301,7 +307,7 @@ void SceneValidator::validate_layer(const ::tachyon::LayerSpec& layer, const ::t
                 }
             }
             if (!found) {
-                out.issues.push_back({ValidationIssue::Severity::Error, path + ".precomp_id", "References non-existent composition: " + *layer.precomp_id});
+                out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".precomp_id", "References non-existent composition: " + *layer.precomp_id});
                 out.error_count++;
             }
         }
@@ -323,8 +329,8 @@ void SceneValidator::validate_safe_area(const ::tachyon::LayerSpec& layer, const
     const float safe_height = comp.height - 2.0f * safe_y;
     
     // Calcola bounding box del layer
-    const float layer_left = layer.transform.position.x;
-    const float layer_top = layer.transform.position.y;
+    const float layer_left = static_cast<float>(layer.transform.position_x.value_or(0.0));
+    const float layer_top = static_cast<float>(layer.transform.position_y.value_or(0.0));
     const float layer_right = layer_left + layer.width;
     const float layer_bottom = layer_top + layer.height;
     
@@ -350,7 +356,7 @@ void SceneValidator::validate_safe_area(const ::tachyon::LayerSpec& layer, const
     }
     
     if (outside_safe) {
-        out.issues.push_back({ValidationIssue::Severity::Warning, 
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning, 
             path + ".transform.position",
             "Text layer may be outside YouTube safe area (10% margin). " + violation_details});
         out.warning_count++;
@@ -405,7 +411,7 @@ void SceneValidator::check_cycles(const ::tachyon::SceneSpec& scene, ValidationR
             }
         }
         if (processed != matte_in_degree.size()) {
-            out.issues.push_back({ValidationIssue::Severity::Error, "composition." + comp.id + ".matte", "Cycle detected in track matte dependencies."});
+            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, "composition." + comp.id + ".matte", "Cycle detected in track matte dependencies."});
             out.error_count++;
         }
     }
@@ -452,49 +458,54 @@ void SceneValidator::check_cycles(const ::tachyon::SceneSpec& scene, ValidationR
         }
     }
     if (processed2 != precomp_in_degree.size()) {
-        out.issues.push_back({ValidationIssue::Severity::Error, "scene.precomp", "Cycle detected in precomp references."});
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, "scene.precomp", "Cycle detected in precomp references."});
         out.error_count++;
     }
 }
 
 void SceneValidator::validate_keyframes(const ::tachyon::LayerSpec& layer, const std::string& path, ValidationResult& out) const {
     // Validate that keyframe times are within the layer's time range
-    float layer_start = layer.start_offset_seconds;
-    float layer_end = layer_start + layer.duration_seconds;
+    float layer_start = static_cast<float>(layer.start_time);
+    float layer_end = layer_start;
+    if (layer.duration.has_value()) {
+        layer_end += static_cast<float>(layer.duration.value());
+    } else {
+        layer_end += static_cast<float>(layer.out_point - layer.in_point);
+    }
     
     // Check transform keyframes
-    for (const auto& kf : layer.transform.position.keyframes) {
+    for (const auto& kf : layer.transform.position_property.keyframes) {
         if (kf.time < layer_start - 0.001f || kf.time > layer_end + 0.001f) {
-            out.issues.push_back({ValidationIssue::Severity::Warning, 
-                path + ".transform.position.keyframes",
+            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning, 
+                path + ".transform.position_property.keyframes",
                 "Keyframe at time " + std::to_string(kf.time) + "s is outside layer time range [" + 
                 std::to_string(layer_start) + "s, " + std::to_string(layer_end) + "s]."});
             out.warning_count++;
         }
     }
     
-    for (const auto& kf : layer.transform.scale.keyframes) {
+    for (const auto& kf : layer.transform.scale_property.keyframes) {
         if (kf.time < layer_start - 0.001f || kf.time > layer_end + 0.001f) {
-            out.issues.push_back({ValidationIssue::Severity::Warning, 
-                path + ".transform.scale.keyframes",
+            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning, 
+                path + ".transform.scale_property.keyframes",
                 "Keyframe at time " + std::to_string(kf.time) + "s is outside layer time range."});
             out.warning_count++;
         }
     }
     
-    for (const auto& kf : layer.transform.rotation.keyframes) {
+    for (const auto& kf : layer.transform.rotation_property.keyframes) {
         if (kf.time < layer_start - 0.001f || kf.time > layer_end + 0.001f) {
-            out.issues.push_back({ValidationIssue::Severity::Warning, 
-                path + ".transform.rotation.keyframes",
+            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning, 
+                path + ".transform.rotation_property.keyframes",
                 "Keyframe at time " + std::to_string(kf.time) + "s is outside layer time range."});
             out.warning_count++;
         }
     }
     
-    for (const auto& kf : layer.opacity_keyframes) {
+    for (const auto& kf : layer.opacity_property.keyframes) {
         if (kf.time < layer_start - 0.001f || kf.time > layer_end + 0.001f) {
-            out.issues.push_back({ValidationIssue::Severity::Warning, 
-                path + ".opacity_keyframes",
+            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning, 
+                path + ".opacity_property.keyframes",
                 "Keyframe at time " + std::to_string(kf.time) + "s is outside layer time range."});
             out.warning_count++;
         }
@@ -502,18 +513,18 @@ void SceneValidator::validate_keyframes(const ::tachyon::LayerSpec& layer, const
 }
 
 void SceneValidator::validate_font_reference(const ::tachyon::LayerSpec& layer, const ::tachyon::SceneSpec& scene, const std::string& path, ValidationResult& out) const {
-    if (!layer.text_options.font_id.empty()) {
+    if (!layer.font_id.empty() && scene.font_manifest.has_value()) {
         bool font_found = false;
-        for (const auto& font : scene.font_manifest.entries) {
-            if (font.id == layer.text_options.font_id) {
+        for (const auto& font : scene.font_manifest->fonts) {
+            if (font.id == layer.font_id) {
                 font_found = true;
                 break;
             }
         }
         if (!font_found) {
-            out.issues.push_back({ValidationIssue::Severity::Error, 
-                path + ".text_options.font_id",
-                "Font ID '" + layer.text_options.font_id + "' not found in font manifest."});
+            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, 
+                path + ".font_id",
+                "Font ID '" + layer.font_id + "' not found in font manifest."});
             out.error_count++;
         }
     }
@@ -522,16 +533,18 @@ void SceneValidator::validate_font_reference(const ::tachyon::LayerSpec& layer, 
 void SceneValidator::validate_file_reference(const ::tachyon::LayerSpec& layer, const std::string& path, ValidationResult& out) const {
     std::string file_path;
     if (layer.type == "image") {
-        file_path = layer.image_source.path;
+        // Image source path not available in current LayerSpec
+        return;
     } else if (layer.type == "video") {
-        file_path = layer.video_source.path;
+        // Video source path not available in current LayerSpec
+        return;
     }
     
     if (!file_path.empty()) {
         // Check if file exists (simple check, doesn't validate absolute vs relative paths perfectly)
         std::ifstream file(file_path);
         if (!file.good()) {
-            out.issues.push_back({ValidationIssue::Severity::Error, 
+            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, 
                 path + ".source.path",
                 "File not found: " + file_path});
             out.error_count++;
@@ -542,12 +555,12 @@ void SceneValidator::validate_file_reference(const ::tachyon::LayerSpec& layer, 
 void SceneValidator::validate_audio_files(const ::tachyon::CompositionSpec& comp, const std::string& path, ValidationResult& out) const {
     for (std::size_t i = 0; i < comp.audio_tracks.size(); ++i) {
         const auto& track = comp.audio_tracks[i];
-        if (!track.file_path.empty()) {
-            std::ifstream file(track.file_path);
+        if (!track.source_path.empty()) {
+            std::ifstream file(track.source_path);
             if (!file.good()) {
-                out.issues.push_back({ValidationIssue::Severity::Error,
-                    path + ".audio_tracks[" + std::to_string(i) + "].file_path",
-                    "Audio file not found: " + track.file_path});
+                out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error,
+                    path + ".audio_tracks[" + std::to_string(i) + "].source_path",
+                    "Audio file not found: " + track.source_path});
                 out.error_count++;
             }
         }
@@ -568,7 +581,15 @@ std::size_t SceneValidator::estimate_memory(const ::tachyon::SceneSpec& scene) c
         
         // Estimate audio memory (assuming 2 channels, 48kHz, 4 bytes/sample)
         for (const auto& track : comp.audio_tracks) {
-            std::size_t duration_samples = static_cast<std::size_t>(track.duration_seconds * 48000.0f);
+            // Calculate duration from trim points
+            double duration_seconds = 0.0;
+            if (track.out_point_seconds > track.in_point_seconds) {
+                duration_seconds = track.out_point_seconds - track.in_point_seconds;
+            } else if (track.out_point_seconds == -1.0) {
+                // Full duration unknown, skip memory estimation for this track
+                continue;
+            }
+            std::size_t duration_samples = static_cast<std::size_t>(duration_seconds * 48000.0f);
             total += duration_samples * 2 * 4; // stereo, 32-bit float
         }
     }

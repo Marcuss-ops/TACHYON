@@ -289,26 +289,6 @@ TextRasterSurface rasterize_text_rgba(
 
     return surface;
 }
-    }
-
-    for (const PositionedGlyph& positioned : layout.glyphs) {
-        const GlyphBitmap* glyph = font.has_freetype_face() ? font.find_glyph_by_index(positioned.font_glyph_index) : font.find_scaled_glyph(positioned.codepoint, layout.scale);
-        if (!glyph || glyph->width == 0U || glyph->height == 0U) continue;
-        float ox = 0.0f, oy = 0.0f, sc = 1.0f, op = 1.0f;
-        if (animation.enabled) {
-            const float phase_seconds = animation.time_seconds - static_cast<float>(positioned.glyph_index) * 0.1f;
-            const float wave_period = std::max(0.001f, animation.wave_period_seconds);
-            const float wave_phase = (phase_seconds / wave_period) * TWO_PI;
-            ox = animation.per_glyph_offset_x * static_cast<float>(positioned.glyph_index) + std::sin(wave_phase) * animation.wave_amplitude_x;
-            oy = animation.per_glyph_offset_y * static_cast<float>(positioned.glyph_index) + std::cos(wave_phase) * animation.wave_amplitude_y;
-            sc = std::max(0.05f, 1.0f + animation.per_glyph_scale_delta * static_cast<float>(positioned.glyph_index));
-            op = std::clamp(1.0f - animation.per_glyph_opacity_drop * static_cast<float>(positioned.glyph_index), 0.0f, 1.0f);
-        }
-        renderer2d::Color color = style.fill_color; color.a *= op;
-        surface.render_glyph(*glyph, positioned.x + (int)std::lround(ox), positioned.y + (int)std::lround(oy), (int)std::lround((float)glyph->width * layout.scale * sc), (int)std::lround((float)glyph->height * layout.scale * sc), color);
-    }
-    return surface;
-}
 
 TextRasterSurface rasterize_text_rgba(
     const BitmapFont& font,

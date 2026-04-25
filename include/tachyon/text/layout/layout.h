@@ -211,40 +211,6 @@ struct TextOutlineOptions {
     renderer2d::Color color{renderer2d::Color::black()};
 };
 
-struct TextShadowOptions {
-    float offset_x{2.0f};
-    float offset_y{4.0f};
-    float blur_radius{4.0f};
-    renderer2d::Color color{0.0f, 0.0f, 0.0f, 180.0f / 255.0f};
-    bool enabled{false};
-};
-
-struct TextGlowOptions {
-    float radius{8.0f};
-    renderer2d::Color color{1.0f, 1.0f, 1.0f, 120.0f / 255.0f};
-    bool enabled{false};
-};
-
-struct GradientStop {
-    float position{0.0f}; // 0.0 to 1.0
-    renderer2d::Color color;
-};
-
-struct GradientSpec {
-    enum class Type { Linear, Radial } type{Type::Linear};
-    float angle_degrees{0.0f}; // For linear gradient
-    std::vector<GradientStop> stops;
-};
-
-struct TextStyle {
-    std::uint32_t pixel_size{0};
-    renderer2d::Color fill_color{renderer2d::Color::white()};
-    std::vector<TextFeature> features;
-    std::optional<GradientSpec> gradient;
-    TextShadowOptions shadow;
-    TextGlowOptions glow;
-};
-
 /// Overload with outline support for subtitle burn-in
 TextRasterSurface rasterize_text_rgba(
     const BitmapFont& font,

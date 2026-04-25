@@ -80,13 +80,13 @@ FontPreloadResult FontPreloader::preload_faces_for_scene(const std::vector<std::
 
 bool FontPreloader::validate_font_coverage(const FontManifest& manifest,
                                             const std::vector<std::uint32_t>& required_codepoints,
-                                            FontManifestPolicy::MissingGlyphPolicy policy) const {
+                                            MissingGlyphPolicy policy) const {
     for (const auto& entry : manifest.fonts) {
         for (const auto& face : m_owned_faces) {
-            if (face->info().src == entry.src) {
+            if (face->info().path == entry.src) {
                 for (auto cp : required_codepoints) {
                     if (!face->has_glyph(cp)) {
-                        if (policy == FontManifestPolicy::MissingGlyphPolicy::Error) {
+                        if (policy == MissingGlyphPolicy::Error) {
                             return false;
                         }
                     }
