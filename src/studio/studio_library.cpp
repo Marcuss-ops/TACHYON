@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <fstream>
 #include <sstream>
+#include <random>
+#include <chrono>
 
 namespace tachyon {
 namespace {
@@ -176,6 +178,26 @@ EffectSpec StudioLibrary::build_transition_effect(
     effect.strings["manifest_path"] = transition->manifest_path.generic_string();
     effect.strings["pack_id"] = transition->pack_id;
     return effect;
+}
+
+std::string StudioLibrary::random_transition_id(uint32_t seed) const {
+    if (m_transitions.empty()) {
+        return "crossfade";
+    }
+    if (seed == 0) {
+        seed = static_cast<uint32_t>(std::chrono::steady_clock::now().time_since_epoch().count());
+    }
+    std::mt19937 rng(seed);
+    std::uniform_int_distribution<size_t> dist(0, m_transitions.size() - 1);
+    return m_transitions[dist(rng)].id;
+}
+
+EffectSpec StudioLibrary::build_random_transition(
+    const std::string& from_layer_id,
+    const std::string& to_layer_id,
+    uint32_t seed) const {
+    const std::string transition_id = random_transition_id(seed);
+    return build_transition_effect(transition_id, from_layer_id, to_layer_id, 0.0);
 }
 
 }  // namespace tachyon

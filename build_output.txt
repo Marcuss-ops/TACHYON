@@ -1,0 +1,991 @@
+MSBuild version 18.4.0+6e61e96ac for .NET Framework
+
+  Checking File Globs
+  tasking.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\embree-build\Debug\tasking.lib
+  math.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\embree-build\Debug\math.lib
+  simd.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\embree-build\Debug\simd.lib
+  freetype.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\freetype-build\Debug\freetyped.lib
+  sys.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\embree-build\Debug\sys.lib
+  harfbuzz.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\harfbuzz-build\Debug\harfbuzz.lib
+  embree_sse42.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\embree-build\Debug\embree_sse42.lib
+  lexers.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\embree-build\Debug\lexers.lib
+  embree.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\embree-build\Debug\embree4.lib
+  tile_scheduler.cpp
+  frame_executor.cpp
+  render_plan.cpp
+C:\Users\pater\Pyt\Tachyon\src\runtime\execution\render_plan.cpp(293,62): error C2664: 'void tachyon::CacheKeyBuilder::add_string(std::string_view) noexcept': impossibile convertire l'argomento 1 da 'const _Ty' a 'std::string_view' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\runtime\execution\render_plan.cpp(293,62): error C2664:         with [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\runtime\execution\render_plan.cpp(293,62): error C2664:         [ [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\runtime\execution\render_plan.cpp(293,62): error C2664:             _Ty=tachyon::EffectSpec [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\runtime\execution\render_plan.cpp(293,62): error C2664:         ] [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\src\runtime\execution\render_plan.cpp(293,73):
+      Non Š disponibile alcun operatore di conversione definito dall'utente oppure non Š possibile chiamare l'operatore
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\runtime\cache\cache_key_builder.h(19,10):
+      vedere la dichiarazione di 'tachyon::CacheKeyBuilder::add_string'
+      C:\Users\pater\Pyt\Tachyon\src\runtime\execution\render_plan.cpp(293,62):
+      durante la ricerca di corrispondenza con l'elenco di argomenti '(const _Ty)'
+          with
+          [
+              _Ty=tachyon::EffectSpec
+          ]
+  
+  frame_executor_utils.cpp
+  frame_evaluator_node.cpp
+  frame_evaluator_property.cpp
+  frame_evaluator_layer.cpp
+C:\Users\pater\Pyt\Tachyon\src\runtime\execution\frame_executor\frame_evaluator_layer.cpp(108,12): error C2039: 'word_timestamp_path': non Š un membro di 'tachyon::scene::EvaluatedLayerState' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\scene\state\evaluated_state.h(73,8):
+      vedere la dichiarazione di 'tachyon::scene::EvaluatedLayerState'
+  
+  frame_evaluator_composition.cpp
+  render_job_parse.cpp
+  render_job_validate.cpp
+  render_job_utils.cpp
+  batch_runner_execute.cpp
+  batch_runner_parse.cpp
+  batch_runner_utils.cpp
+  batch_runner_validate.cpp
+  frame_cache.cpp
+  playback_queue.cpp
+  playback_engine.cpp
+  render_session.cpp
+C:\Users\pater\Pyt\Tachyon\include\tachyon\audio\audio_export.h(26,25): error C3646: 'get_loudness_measurement': identificatore di override sconosciuto [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/runtime/execution/render_session.cpp')
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\audio\audio_export.h(26,49): error C2059: errore di sintassi: '(' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/runtime/execution/render_session.cpp')
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\audio\audio_export.h(26,58): error C2334: token imprevisti prima di '{'. Il corpo apparente della funzione verr… ignorato. [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/runtime/execution/render_session.cpp')
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\audio\audio_export.h(35,19): error C3646: 'm_loudness_meter': identificatore di override sconosciuto [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/runtime/execution/render_session.cpp')
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\audio\audio_export.h(35,5): error C4430: identificatore di tipo mancante, verr… utilizzato int. Nota: default-int non Š pi— supportato in C++ [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/runtime/execution/render_session.cpp')
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\audio\audio_export.h(36,25): error C3646: 'm_loudness_measurement': identificatore di override sconosciuto [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/runtime/execution/render_session.cpp')
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\audio\audio_export.h(36,5): error C4430: identificatore di tipo mancante, verr… utilizzato int. Nota: default-int non Š pi— supportato in C++ [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/runtime/execution/render_session.cpp')
+  
+  c_api.cpp
+  Generazione del codice in corso...
+  Compilazione in corso...
+  compiled_scene.cpp
+  disk_cache.cpp
+  cli.cpp
+  cli_utils.cpp
+C:\Users\pater\Pyt\Tachyon\include\tachyon\core\report.h(41,11): error C2653: 'core' non Š il nome di una classe o di uno spazio dei nomi [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/core/cli/cli_utils.cpp')
+  
+  cli_validate.cpp
+C:\Users\pater\Pyt\Tachyon\include\tachyon\core\report.h(41,11): error C2653: 'core' non Š il nome di una classe o di uno spazio dei nomi [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/core/cli/cli_validate.cpp')
+  
+C:\Users\pater\Pyt\Tachyon\src\core\cli\cli_validate.cpp(32,16): error C2664: 'std::string tachyon::make_validate_report_json(const tachyon::SceneSpec &,const tachyon::AssetResolutionTable &,bool,bool,const std::optional<tachyon::RenderJob> &,const tachyon::ValidationResult &)': impossibile convertire l'argomento 6 da 'tachyon::core::ValidationResult' a 'const tachyon::ValidationResult &' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\src\core\cli\cli_validate.cpp(32,103):
+      Motivo: impossibile convertire da 'tachyon::core::ValidationResult' a 'const tachyon::ValidationResult'
+      C:\Users\pater\Pyt\Tachyon\src\core\cli\cli_validate.cpp(32,103):
+      Non Š disponibile alcun operatore di conversione definito dall'utente oppure non Š possibile chiamare l'operatore
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\report.h(35,13):
+      vedere la dichiarazione di 'tachyon::make_validate_report_json'
+      C:\Users\pater\Pyt\Tachyon\src\core\cli\cli_validate.cpp(32,16):
+      durante la ricerca di corrispondenza con l'elenco di argomenti '(tachyon::SceneSpec, tachyon::AssetResolutionTable, bool, bool, std::optional<tachyon::RenderJob>, tachyon::core::ValidationResult)'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\cli\cli_validate.cpp(32,13): error C2088: non Š possibile applicare l'operatore predefinito '<<' a un operando di tipo 'std::ostream' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  cli_inspect.cpp
+C:\Users\pater\Pyt\Tachyon\include\tachyon\core\report.h(41,11): error C2653: 'core' non Š il nome di una classe o di uno spazio dei nomi [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/core/cli/cli_inspect.cpp')
+  
+C:\Users\pater\Pyt\Tachyon\src\core\cli\cli_inspect.cpp(59,21): error C2653: 'FontManifestParser' non Š il nome di una classe o di uno spazio dei nomi [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\cli\cli_inspect.cpp(59,41): error C3861: 'parse_file': identificatore non trovato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\cli\cli_inspect.cpp(65,5): error C2065: 'FontCoverageReporter': identificatore non dichiarato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\cli\cli_inspect.cpp(65,26): error C2146: errore di sintassi: ';' mancante prima dell'identificatore 'reporter' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\cli\cli_inspect.cpp(65,26): error C3861: 'reporter': identificatore non trovato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\cli\cli_inspect.cpp(66,20): error C2065: 'reporter': identificatore non dichiarato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\cli\cli_inspect.cpp(70,37): error C3536: summary': utilizzo non consentito prima della relativa inizializzazione [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\cli\cli_inspect.cpp(71,32): error C2530: 'report': i riferimenti devono essere inizializzati [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\cli\cli_inspect.cpp(73,46): error C3536: report': utilizzo non consentito prima della relativa inizializzazione [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\cli\cli_inspect.cpp(93,26): error C2530: 'report': i riferimenti devono essere inizializzati [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\cli\cli_inspect.cpp(93,26): error C3531: 'report': un simbolo il cui tipo contiene 'auto' deve contenere un inizializzatore [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\cli\cli_inspect.cpp(93,33): error C2143: errore di sintassi: ';' mancante prima di ':' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\cli\cli_inspect.cpp(93,55): error C2143: errore di sintassi: ';' mancante prima di ')' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\cli\cli_inspect.cpp(101,27): error C3531: 'cp': un simbolo il cui tipo contiene 'auto' deve contenere un inizializzatore [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\cli\cli_inspect.cpp(101,30): error C2143: errore di sintassi: ';' mancante prima di ':' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\cli\cli_inspect.cpp(101,57): error C2143: errore di sintassi: ';' mancante prima di ')' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\cli\cli_inspect.cpp(102,33): error C2593: 'operator <<' Š ambiguo [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(480,39):
+      potrebbe essere 'std::basic_ostream<char,std::char_traits<char>> &std::basic_ostream<char,std::char_traits<char>>::operator <<(std::basic_streambuf<char,std::char_traits<char>> *)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(448,39):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::basic_ostream<char,std::char_traits<char>>::operator <<(const void *)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(430,39):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::basic_ostream<char,std::char_traits<char>>::operator <<(long double)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(412,39):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::basic_ostream<char,std::char_traits<char>>::operator <<(double)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(394,39):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::basic_ostream<char,std::char_traits<char>>::operator <<(float)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(376,39):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::basic_ostream<char,std::char_traits<char>>::operator <<(unsigned __int64)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(358,39):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::basic_ostream<char,std::char_traits<char>>::operator <<(__int64)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(340,39):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::basic_ostream<char,std::char_traits<char>>::operator <<(unsigned long)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(322,39):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::basic_ostream<char,std::char_traits<char>>::operator <<(long)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(303,39):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::basic_ostream<char,std::char_traits<char>>::operator <<(unsigned int)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(277,39):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::basic_ostream<char,std::char_traits<char>>::operator <<(int)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(258,39):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::basic_ostream<char,std::char_traits<char>>::operator <<(unsigned short)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(224,39):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::basic_ostream<char,std::char_traits<char>>::operator <<(short)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(206,39):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::basic_ostream<char,std::char_traits<char>>::operator <<(bool)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(200,39):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::basic_ostream<char,std::char_traits<char>>::operator <<(std::ios_base &(__cdecl *)(std::ios_base &))'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(194,39):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::basic_ostream<char,std::char_traits<char>>::operator <<(std::basic_ios<char,std::char_traits<char>> &(__cdecl *)(std::basic_ios<char,std::char_traits<char>> &))'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(189,39):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::basic_ostream<char,std::char_traits<char>>::operator <<(std::basic_ostream<char,std::char_traits<char>> &(__cdecl *)(std::basic_ostream<char,std::char_traits<char>> &))'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(475,20):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::basic_ostream<char,std::char_traits<char>>::operator <<<void>(std::nullptr_t)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(688,32):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::operator <<<char,std::char_traits<char>>(std::basic_ostream<char,std::char_traits<char>> &,const char *)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(732,32):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::operator <<<char,std::char_traits<char>>(std::basic_ostream<char,std::char_traits<char>> &,char)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(768,31):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::operator <<<std::char_traits<char>>(std::basic_ostream<char,std::char_traits<char>> &,const char *)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(813,31):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::operator <<<std::char_traits<char>>(std::basic_ostream<char,std::char_traits<char>> &,char)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(930,31):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::operator <<<std::char_traits<char>>(std::basic_ostream<char,std::char_traits<char>> &,const signed char *)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(936,31):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::operator <<<std::char_traits<char>>(std::basic_ostream<char,std::char_traits<char>> &,signed char)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(941,31):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::operator <<<std::char_traits<char>>(std::basic_ostream<char,std::char_traits<char>> &,const unsigned char *)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(947,31):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::operator <<<std::char_traits<char>>(std::basic_ostream<char,std::char_traits<char>> &,unsigned char)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(955,31):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::operator <<<std::char_traits<char>>(std::basic_ostream<char,std::char_traits<char>> &,const char8_t *)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(961,31):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::operator <<<std::char_traits<char>>(std::basic_ostream<char,std::char_traits<char>> &,char8_t)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(969,31):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::operator <<<std::char_traits<char>>(std::basic_ostream<char,std::char_traits<char>> &,wchar_t)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(972,31):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::operator <<<std::char_traits<char>>(std::basic_ostream<char,std::char_traits<char>> &,const wchar_t *)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(976,31):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::operator <<<std::char_traits<char>>(std::basic_ostream<char,std::char_traits<char>> &,char16_t)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(978,31):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::operator <<<std::char_traits<char>>(std::basic_ostream<char,std::char_traits<char>> &,char32_t)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(986,31):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::operator <<<std::char_traits<char>>(std::basic_ostream<char,std::char_traits<char>> &,const char16_t *)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(988,31):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::operator <<<std::char_traits<char>>(std::basic_ostream<char,std::char_traits<char>> &,const char32_t *)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\__msvc_ostream.hpp(1031,32):
+      o 'std::basic_ostream<char,std::char_traits<char>> &std::operator <<<char,std::char_traits<char>>(std::basic_ostream<char,std::char_traits<char>> &,const std::error_code &)'
+      C:\Users\pater\Pyt\Tachyon\src\core\cli\cli_inspect.cpp(102,33):
+      durante la ricerca di corrispondenza con l'elenco di argomenti '(std::basic_ostream<char,std::char_traits<char>>, <errore>)'
+  
+  cli_render.cpp
+C:\Users\pater\Pyt\Tachyon\include\tachyon\core\report.h(41,11): error C2653: 'core' non Š il nome di una classe o di uno spazio dei nomi [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/core/cli/cli_render.cpp')
+  
+  cli_demo.cpp
+  cli_watch.cpp
+  report.cpp
+C:\Users\pater\Pyt\Tachyon\include\tachyon\core\report.h(41,11): error C2653: 'core' non Š il nome di una classe o di uno spazio dei nomi [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/core/report.cpp')
+  
+C:\Users\pater\Pyt\Tachyon\src\core\report.cpp(264,11): error C2653: 'core' non Š il nome di una classe o di uno spazio dei nomi [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\report.cpp(272,42): error C2039: 'is_valid': non Š un membro di 'tachyon::ValidationResult' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\runtime\core\diagnostics\diagnostics.h(109,8):
+      vedere la dichiarazione di 'tachyon::ValidationResult'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\report.cpp(272,74): error C2065: 'REPORT_STATUS_ERROR': identificatore non dichiarato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\report.cpp(277,48): error C2039: 'issues': non Š un membro di 'tachyon::ValidationResult' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\runtime\core\diagnostics\diagnostics.h(109,8):
+      vedere la dichiarazione di 'tachyon::ValidationResult'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\report.cpp(277,22): error C2530: 'issue': i riferimenti devono essere inizializzati [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\report.cpp(277,22): error C3531: 'issue': un simbolo il cui tipo contiene 'auto' deve contenere un inizializzatore [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\report.cpp(277,28): error C2143: errore di sintassi: ';' mancante prima di ':' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\report.cpp(277,54): error C2143: errore di sintassi: ';' mancante prima di ')' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\report.cpp(280,18): error C2653: 'core' non Š il nome di una classe o di uno spazio dei nomi [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\report.cpp(280,51): error C2065: 'Fatal': identificatore non dichiarato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\report.cpp(280,51): error C2131: l'espressione costante non ha restituito una costante [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\src\core\report.cpp(280,51):
+      Š stata rilevata un'espressione o una sottoespressione non costante
+  
+C:\Users\pater\Pyt\Tachyon\src\core\report.cpp(281,18): error C2653: 'core' non Š il nome di una classe o di uno spazio dei nomi [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\report.cpp(281,51): error C2065: 'Error': identificatore non dichiarato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\report.cpp(281,51): error C2131: l'espressione costante non ha restituito una costante [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\src\core\report.cpp(281,51):
+      Š stata rilevata un'espressione o una sottoespressione non costante
+  
+C:\Users\pater\Pyt\Tachyon\src\core\report.cpp(282,18): error C2653: 'core' non Š il nome di una classe o di uno spazio dei nomi [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\report.cpp(282,51): error C2065: 'Warning': identificatore non dichiarato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\report.cpp(282,51): error C2131: l'espressione costante non ha restituito una costante [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\src\core\report.cpp(282,51):
+      Š stata rilevata un'espressione o una sottoespressione non costante
+  
+C:\Users\pater\Pyt\Tachyon\src\core\report.cpp(290,38): error C2039: 'error_count': non Š un membro di 'tachyon::ValidationResult' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\runtime\core\diagnostics\diagnostics.h(109,8):
+      vedere la dichiarazione di 'tachyon::ValidationResult'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\report.cpp(291,40): error C2039: 'warning_count': non Š un membro di 'tachyon::ValidationResult' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\runtime\core\diagnostics\diagnostics.h(109,8):
+      vedere la dichiarazione di 'tachyon::ValidationResult'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\report.cpp(292,37): error C2039: 'fatal_count': non Š un membro di 'tachyon::ValidationResult' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\runtime\core\diagnostics\diagnostics.h(109,8):
+      vedere la dichiarazione di 'tachyon::ValidationResult'
+  
+  evaluator.cpp
+  evaluator_composition.cpp
+  evaluator_math.cpp
+  hashing.cpp
+  property_sampler.cpp
+  layer_utils.cpp
+  mesh_animator.cpp
+  light_evaluator.cpp
+  layer_evaluator.cpp
+  rig_graph.cpp
+  Generazione del codice in corso...
+  Compilazione in corso...
+  constraint_solver.cpp
+  json_parse_helpers.cpp
+  layer_parse_json.cpp
+C:\Users\pater\Pyt\Tachyon\src\core\spec\layer_parse_json.cpp(241,25): error C2039: 'GradientSpec': non Š un membro di 'tachyon::renderer2d' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\renderer2d\raster\path\path_types.h(11,11):
+      vedere la dichiarazione di 'tachyon::renderer2d'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\layer_parse_json.cpp(248,25): error C2039: 'GradientSpec': non Š un membro di 'tachyon::renderer2d' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\renderer2d\raster\path\path_types.h(11,11):
+      vedere la dichiarazione di 'tachyon::renderer2d'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\layer_parse_json.cpp(254,15): error C2039: 'shape_spec': non Š un membro di 'tachyon::LayerSpec' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\objects\layer_spec.h(16,8):
+      vedere la dichiarazione di 'tachyon::LayerSpec'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\layer_parse_json.cpp(315,5): error C2664: 'void tachyon::parse_optional_color_property(const tachyon::json &,const char *,tachyon::AnimatedColorSpec &,const std::string &,tachyon::DiagnosticBag &)': impossibile convertire l'argomento 3 da 'tachyon::ColorSpec' a 'tachyon::AnimatedColorSpec &' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\objects\scene_spec_core.h(71,6):
+      vedere la dichiarazione di 'tachyon::parse_optional_color_property'
+      C:\Users\pater\Pyt\Tachyon\src\core\spec\layer_parse_json.cpp(315,5):
+      durante la ricerca di corrispondenza con l'elenco di argomenti '(const tachyon::json, const char [23], tachyon::ColorSpec, const std::string, tachyon::DiagnosticBag)'
+  
+  property_parse_json.cpp
+  scene_compiler.cpp
+  scene_spec.cpp
+  scene_spec_core.cpp
+  scene_spec_json.cpp
+C:\Users\pater\Pyt\Tachyon\src\core\spec\scene_spec_json.cpp(114,33): error C2653: 'FontManifestParser' non Š il nome di una classe o di uno spazio dei nomi [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\scene_spec_json.cpp(114,53): error C3861: 'parse_file': identificatore non trovato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\scene_spec_json.cpp(116,22): error C2593: 'operator =' Š ambiguo [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\optional(641,1):
+      potrebbe essere 'std::optional<tachyon::text::FontManifest> &std::optional<tachyon::text::FontManifest>::operator =(std::optional<tachyon::text::FontManifest> &&)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\optional(641,1):
+      o 'std::optional<tachyon::text::FontManifest> &std::optional<tachyon::text::FontManifest>::operator =(const std::optional<tachyon::text::FontManifest> &)'
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\optional(300,28):
+      o 'std::optional<tachyon::text::FontManifest> &std::optional<tachyon::text::FontManifest>::operator =(std::nullopt_t) noexcept'
+      C:\Users\pater\Pyt\Tachyon\src\core\spec\scene_spec_json.cpp(116,22):
+      durante la ricerca di corrispondenza con l'elenco di argomenti '(std::optional<tachyon::text::FontManifest>, <errore>)'
+  
+  scene_spec_builder.cpp
+  scene_validator.cpp
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(66,14): error C2039: 'duration_seconds': non Š un membro di 'tachyon::CompositionSpec' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\objects\composition_spec.h(28,8):
+      vedere la dichiarazione di 'tachyon::CompositionSpec'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(218,15): error C2039: 'duration_seconds': non Š un membro di 'tachyon::LayerSpec' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\objects\layer_spec.h(16,8):
+      vedere la dichiarazione di 'tachyon::LayerSpec'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(224,15): error C2039: 'start_offset_seconds': non Š un membro di 'tachyon::LayerSpec' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\objects\layer_spec.h(16,8):
+      vedere la dichiarazione di 'tachyon::LayerSpec'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(230,29): error C2039: 'start_offset_seconds': non Š un membro di 'tachyon::LayerSpec' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\objects\layer_spec.h(16,8):
+      vedere la dichiarazione di 'tachyon::LayerSpec'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(230,58): error C2039: 'duration_seconds': non Š un membro di 'tachyon::LayerSpec' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\objects\layer_spec.h(16,8):
+      vedere la dichiarazione di 'tachyon::LayerSpec'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(231,26): error C2039: 'duration_seconds': non Š un membro di 'tachyon::CompositionSpec' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\objects\composition_spec.h(28,8):
+      vedere la dichiarazione di 'tachyon::CompositionSpec'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(234,56): error C2039: 'duration_seconds': non Š un membro di 'tachyon::CompositionSpec' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\objects\composition_spec.h(28,8):
+      vedere la dichiarazione di 'tachyon::CompositionSpec'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(326,46): error C2039: 'position': non Š un membro di 'tachyon::Transform2D' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\transform\transform_spec.h(7,8):
+      vedere la dichiarazione di 'tachyon::Transform2D'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(326,17): error C2737: 'layer_left': l'oggetto const deve essere inizializzato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(327,45): error C2039: 'position': non Š un membro di 'tachyon::Transform2D' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\transform\transform_spec.h(7,8):
+      vedere la dichiarazione di 'tachyon::Transform2D'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(327,17): error C2737: 'layer_top': l'oggetto const deve essere inizializzato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(462,31): error C2039: 'start_offset_seconds': non Š un membro di 'tachyon::LayerSpec' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\objects\layer_spec.h(16,8):
+      vedere la dichiarazione di 'tachyon::LayerSpec'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(463,43): error C2039: 'duration_seconds': non Š un membro di 'tachyon::LayerSpec' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\objects\layer_spec.h(16,8):
+      vedere la dichiarazione di 'tachyon::LayerSpec'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(466,43): error C2039: 'position': non Š un membro di 'tachyon::Transform2D' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\transform\transform_spec.h(7,8):
+      vedere la dichiarazione di 'tachyon::Transform2D'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(466,22): error C2530: 'kf': i riferimenti devono essere inizializzati [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(466,22): error C3531: 'kf': un simbolo il cui tipo contiene 'auto' deve contenere un inizializzatore [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(466,25): error C2143: errore di sintassi: ';' mancante prima di ':' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(466,61): error C2143: errore di sintassi: ';' mancante prima di ')' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(467,16): error C2228: l'elemento a sinistra di '.' deve avere una classe, struttura o unione [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(476,43): error C2039: 'scale': non Š un membro di 'tachyon::Transform2D' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\transform\transform_spec.h(7,8):
+      vedere la dichiarazione di 'tachyon::Transform2D'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(476,22): error C2530: 'kf': i riferimenti devono essere inizializzati [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(476,22): error C3531: 'kf': un simbolo il cui tipo contiene 'auto' deve contenere un inizializzatore [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(476,25): error C2143: errore di sintassi: ';' mancante prima di ':' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(476,58): error C2143: errore di sintassi: ';' mancante prima di ')' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(477,16): error C2228: l'elemento a sinistra di '.' deve avere una classe, struttura o unione [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(485,52): error C2039: 'keyframes': non Š un membro di 'std::optional<double>' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\optional(227,7):
+      vedere la dichiarazione di 'std::optional<double>'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(485,22): error C2530: 'kf': i riferimenti devono essere inizializzati [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(485,22): error C3531: 'kf': un simbolo il cui tipo contiene 'auto' deve contenere un inizializzatore [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(485,25): error C2143: errore di sintassi: ';' mancante prima di ':' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(485,61): error C2143: errore di sintassi: ';' mancante prima di ')' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(486,16): error C2228: l'elemento a sinistra di '.' deve avere una classe, struttura o unione [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(494,33): error C2039: 'opacity_keyframes': non Š un membro di 'tachyon::LayerSpec' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\objects\layer_spec.h(16,8):
+      vedere la dichiarazione di 'tachyon::LayerSpec'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(494,22): error C2530: 'kf': i riferimenti devono essere inizializzati [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(494,22): error C3531: 'kf': un simbolo il cui tipo contiene 'auto' deve contenere un inizializzatore [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(494,25): error C2143: errore di sintassi: ';' mancante prima di ':' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(494,50): error C2143: errore di sintassi: ';' mancante prima di ')' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(495,16): error C2228: l'elemento a sinistra di '.' deve avere una classe, struttura o unione [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(505,16): error C2039: 'text_options': non Š un membro di 'tachyon::LayerSpec' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\objects\layer_spec.h(16,8):
+      vedere la dichiarazione di 'tachyon::LayerSpec'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(507,53): error C2039: 'entries': non Š un membro di 'std::optional<tachyon::text::FontManifest>' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\include\optional(227,7):
+      vedere la dichiarazione di 'std::optional<tachyon::text::FontManifest>'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(507,26): error C2530: 'font': i riferimenti devono essere inizializzati [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(507,26): error C3531: 'font': un simbolo il cui tipo contiene 'auto' deve contenere un inizializzatore [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(507,31): error C2143: errore di sintassi: ';' mancante prima di ':' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(507,60): error C2143: errore di sintassi: ';' mancante prima di ')' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(508,34): error C2039: 'text_options': non Š un membro di 'tachyon::LayerSpec' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\objects\layer_spec.h(16,8):
+      vedere la dichiarazione di 'tachyon::LayerSpec'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(516,37): error C2039: 'text_options': non Š un membro di 'tachyon::LayerSpec' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\objects\layer_spec.h(16,8):
+      vedere la dichiarazione di 'tachyon::LayerSpec'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(525,27): error C2039: 'image_source': non Š un membro di 'tachyon::LayerSpec' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\objects\layer_spec.h(16,8):
+      vedere la dichiarazione di 'tachyon::LayerSpec'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(527,27): error C2039: 'video_source': non Š un membro di 'tachyon::LayerSpec' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\objects\layer_spec.h(16,8):
+      vedere la dichiarazione di 'tachyon::LayerSpec'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(545,20): error C2039: 'file_path': non Š un membro di 'tachyon::spec::AudioTrackSpec' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\contracts\shared_contracts.h(115,8):
+      vedere la dichiarazione di 'tachyon::spec::AudioTrackSpec'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(546,38): error C2039: 'file_path': non Š un membro di 'tachyon::spec::AudioTrackSpec' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\contracts\shared_contracts.h(115,8):
+      vedere la dichiarazione di 'tachyon::spec::AudioTrackSpec'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(550,54): error C2039: 'file_path': non Š un membro di 'tachyon::spec::AudioTrackSpec' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\contracts\shared_contracts.h(115,8):
+      vedere la dichiarazione di 'tachyon::spec::AudioTrackSpec'
+  
+C:\Users\pater\Pyt\Tachyon\src\core\spec\validation\scene_validator.cpp(571,75): error C2039: 'duration_seconds': non Š un membro di 'tachyon::spec::AudioTrackSpec' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\contracts\shared_contracts.h(115,8):
+      vedere la dichiarazione di 'tachyon::spec::AudioTrackSpec'
+  
+  scene_spec_audio.cpp
+  draw_list_builder.cpp
+  draw_list_rasterizer.cpp
+  blending.cpp
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\color\blending.cpp(559,43): error C2220: l'avviso seguente Š considerato come errore [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\color\blending.cpp(559,43): warning C4189: 'dst_a': variabile locale inizializzata ma senza riferimenti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\color\blending.cpp(582,43): warning C4189: 'dst_a': variabile locale inizializzata ma senza riferimenti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\color\blending.cpp(604,65): warning C4189: 'dst_g': variabile locale inizializzata ma senza riferimenti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\color\blending.cpp(604,109): warning C4189: 'dst_b': variabile locale inizializzata ma senza riferimenti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\color\blending.cpp(604,21): warning C4189: 'dst_r': variabile locale inizializzata ma senza riferimenti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  effect_host.cpp
+  glsl_transition_effect.cpp
+  effect_utils.cpp
+  blur_effects.cpp
+  color_effects.cpp
+  particle_effects.cpp
+  Generazione del codice in corso...
+  Compilazione in corso...
+  utility_effects.cpp
+  matte_resolver.cpp
+  composition_renderer.cpp
+  composition_utils.cpp
+  layer_to_draw_command.cpp
+  mask_renderer.cpp
+  effect_renderer.cpp
+  layer_renderer.cpp
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(214,8): error C2011: 'tachyon::text::TextShadowOptions': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/renderer2d/evaluated_composition/rendering/layer_renderer.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(32,8):
+      vedere la dichiarazione di 'tachyon::text::TextShadowOptions'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(222,8): error C2011: 'tachyon::text::TextGlowOptions': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/renderer2d/evaluated_composition/rendering/layer_renderer.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(40,8):
+      vedere la dichiarazione di 'tachyon::text::TextGlowOptions'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(228,8): error C2011: 'tachyon::text::GradientStop': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/renderer2d/evaluated_composition/rendering/layer_renderer.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(57,8):
+      vedere la dichiarazione di 'tachyon::text::GradientStop'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(233,8): error C2011: 'tachyon::text::GradientSpec': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/renderer2d/evaluated_composition/rendering/layer_renderer.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(62,8):
+      vedere la dichiarazione di 'tachyon::text::GradientSpec'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(239,8): error C2011: 'tachyon::text::TextStyle': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/renderer2d/evaluated_composition/rendering/layer_renderer.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(191,29): error C2065: 'highlight_spans': identificatore non dichiarato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(191,22): error C2530: 'span': i riferimenti devono essere inizializzati [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(191,22): error C3531: 'span': un simbolo il cui tipo contiene 'auto' deve contenere un inizializzatore [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(191,27): error C2143: errore di sintassi: ';' mancante prima di ':' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(191,44): error C2143: errore di sintassi: ';' mancante prima di ')' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(192,33): error C2065: 'layout': identificatore non dichiarato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(193,59): error C2065: 'layout': identificatore non dichiarato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(193,20): error C2737: 'end': l'oggetto const deve essere inizializzato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(194,47): error C3536: end': utilizzo non consentito prima della relativa inizializzazione [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(194,45): warning C4018: '<': errata corrispondenza tra signed e unsigned [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(195,29): error C2065: 'layout': identificatore non dichiarato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(195,27): error C2530: 'g': i riferimenti devono essere inizializzati [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(196,22): error C3536: g': utilizzo non consentito prima della relativa inizializzazione [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(200,13): error C2065: 'surface': identificatore non dichiarato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(204,12): error C2065: 'surface': identificatore non dichiarato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(268,20): error C2079: 'style' utilizza struct 'tachyon::text::TextStyle' non definito [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(310,24): error C2530: 'bg': i riferimenti devono essere inizializzati [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(311,18): error C3536: bg': utilizzo non consentito prima della relativa inizializzazione [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(334,13): warning C4456: se si dichiara 'w', la dichiarazione locale precedente verr… nascosta [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(257,24):
+      vedere la dichiarazione di 'w'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(335,13): warning C4456: se si dichiara 'h', la dichiarazione locale precedente verr… nascosta [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(258,24):
+      vedere la dichiarazione di 'h'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(348,21): error C2039: 'add_rounded_rect': non Š un membro di 'tachyon::renderer2d::PathGeometry' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\renderer2d\raster\path\path_types.h(35,8):
+      vedere la dichiarazione di 'tachyon::renderer2d::PathGeometry'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(348,38): error C3861: 'RectF': identificatore non trovato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(379,15): error C2039: 'word_timestamp_path': non Š un membro di 'tachyon::scene::EvaluatedLayerState' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\scene\state\evaluated_state.h(73,8):
+      vedere la dichiarazione di 'tachyon::scene::EvaluatedLayerState'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(379,57): error C2039: 'word_timestamp_path': non Š un membro di 'tachyon::scene::EvaluatedLayerState' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\scene\state\evaluated_state.h(73,8):
+      vedere la dichiarazione di 'tachyon::scene::EvaluatedLayerState'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(380,63): error C2039: 'word_timestamp_path': non Š un membro di 'tachyon::scene::EvaluatedLayerState' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\scene\state\evaluated_state.h(73,8):
+      vedere la dichiarazione di 'tachyon::scene::EvaluatedLayerState'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\layer_renderer.cpp(381,13): error C3536: track_result': utilizzo non consentito prima della relativa inizializzazione [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  cpu_rasterizer.cpp
+  texture_resolver.cpp
+  audio_sampling.cpp
+  font_shaping.cpp
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(214,8): error C2011: 'tachyon::text::TextShadowOptions': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/renderer2d/text/shaping/font_shaping.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(32,8):
+      vedere la dichiarazione di 'tachyon::text::TextShadowOptions'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(222,8): error C2011: 'tachyon::text::TextGlowOptions': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/renderer2d/text/shaping/font_shaping.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(40,8):
+      vedere la dichiarazione di 'tachyon::text::TextGlowOptions'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(228,8): error C2011: 'tachyon::text::GradientStop': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/renderer2d/text/shaping/font_shaping.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(57,8):
+      vedere la dichiarazione di 'tachyon::text::GradientStop'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(233,8): error C2011: 'tachyon::text::GradientSpec': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/renderer2d/text/shaping/font_shaping.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(62,8):
+      vedere la dichiarazione di 'tachyon::text::GradientSpec'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(239,8): error C2011: 'tachyon::text::TextStyle': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/renderer2d/text/shaping/font_shaping.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+  shaping_cache.cpp
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(214,8): error C2011: 'tachyon::text::TextShadowOptions': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/renderer2d/text/shaping/shaping_cache.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(32,8):
+      vedere la dichiarazione di 'tachyon::text::TextShadowOptions'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(222,8): error C2011: 'tachyon::text::TextGlowOptions': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/renderer2d/text/shaping/shaping_cache.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(40,8):
+      vedere la dichiarazione di 'tachyon::text::TextGlowOptions'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(228,8): error C2011: 'tachyon::text::GradientStop': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/renderer2d/text/shaping/shaping_cache.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(57,8):
+      vedere la dichiarazione di 'tachyon::text::GradientStop'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(233,8): error C2011: 'tachyon::text::GradientSpec': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/renderer2d/text/shaping/shaping_cache.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(62,8):
+      vedere la dichiarazione di 'tachyon::text::GradientSpec'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(239,8): error C2011: 'tachyon::text::TextStyle': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/renderer2d/text/shaping/shaping_cache.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+  audio_analyzer.cpp
+  audio_mixer.cpp
+C:\Users\pater\Pyt\Tachyon\src\audio\audio_mixer.cpp(41,29): error C2039: 'bus': non Š un membro di 'tachyon::audio::AudioGraph' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\audio\audio_graph.h(49,7):
+      vedere la dichiarazione di 'tachyon::audio::AudioGraph'
+  
+  audio_export.cpp
+C:\Users\pater\Pyt\Tachyon\src\audio\audio_export.cpp(56,93): error C2220: l'avviso seguente Š considerato come errore [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\audio\audio_export.cpp(56,93): warning C4100: 'chunk_duration': parametro senza riferimenti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\audio\audio_export.cpp(78,29): error C2039: 'decoder': non Š un membro di 'tachyon::spec::AudioTrackSpec' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\contracts\shared_contracts.h(115,8):
+      vedere la dichiarazione di 'tachyon::spec::AudioTrackSpec'
+  
+C:\Users\pater\Pyt\Tachyon\src\audio\audio_export.cpp(78,45): error C2039: 'decoder': non Š un membro di 'tachyon::spec::AudioTrackSpec' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\spec\schema\contracts\shared_contracts.h(115,8):
+      vedere la dichiarazione di 'tachyon::spec::AudioTrackSpec'
+  
+C:\Users\pater\Pyt\Tachyon\src\audio\audio_export.cpp(185,14): error C2039: 'seek': non Š un membro di 'tachyon::audio::AudioDecoder' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\audio\audio_decoder.h(16,7):
+      vedere la dichiarazione di 'tachyon::audio::AudioDecoder'
+  
+  asset_resolution.cpp
+  extruder.cpp
+  ffmpeg_pipe_sink.cpp
+  ffmpeg_command_builder.cpp
+  Generazione del codice in corso...
+  Compilazione in corso...
+  png_sequence_sink.cpp
+  frame_evaluator.cpp
+  time.cpp
+  time_resolver.cpp
+  time_remap.cpp
+C:\Users\pater\Pyt\Tachyon\src\timeline\time_remap.cpp(10,88): error C2220: l'avviso seguente Š considerato come errore [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\timeline\time_remap.cpp(10,88): warning C4100: 'frame_duration': parametro senza riferimenti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\timeline\time_remap.cpp(47,15): warning C4189: 'total_pixels': variabile locale inizializzata ma senza riferimenti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  text_animator_utils.cpp
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(214,8): error C2011: 'tachyon::text::TextShadowOptions': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/text/core/animation/text_animator_utils.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(32,8):
+      vedere la dichiarazione di 'tachyon::text::TextShadowOptions'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(222,8): error C2011: 'tachyon::text::TextGlowOptions': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/text/core/animation/text_animator_utils.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(40,8):
+      vedere la dichiarazione di 'tachyon::text::TextGlowOptions'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(228,8): error C2011: 'tachyon::text::GradientStop': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/text/core/animation/text_animator_utils.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(57,8):
+      vedere la dichiarazione di 'tachyon::text::GradientStop'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(233,8): error C2011: 'tachyon::text::GradientSpec': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/text/core/animation/text_animator_utils.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(62,8):
+      vedere la dichiarazione di 'tachyon::text::GradientSpec'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(239,8): error C2011: 'tachyon::text::TextStyle': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/text/core/animation/text_animator_utils.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+  font_face.cpp
+C:\Users\pater\Pyt\Tachyon\src\text\core\fonts\font_face.cpp(16,38): error C2888: 'std::atomic<unsigned __int64> tachyon::text::FontFace::next_font_id': impossibile definire il simbolo all'interno dello spazio dei nomi 'anonymous-namespace' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\fonts\font_face.cpp(130,28): error C3861: 'get_ft_library': identificatore non trovato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  font_resolver.cpp
+C:\Users\pater\Pyt\Tachyon\src\text\core\fonts\font_resolver.cpp(79,27): error C2662: 'const tachyon::text::FontInstance *tachyon::text::FontResolver::get_or_create_instance(const tachyon::text::FontFace &,uint32_t,tachyon::text::HintingMode,tachyon::text::RenderMode)': impossibile convertire il puntatore 'this' da 'const tachyon::text::FontResolver' a 'tachyon::text::FontResolver &' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\src\text\core\fonts\font_resolver.cpp(79,27):
+      La conversione comporta la perdita dei qualificatori
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\fonts\font_resolver.h(47,25):
+      vedere la dichiarazione di 'tachyon::text::FontResolver::get_or_create_instance'
+      C:\Users\pater\Pyt\Tachyon\src\text\core\fonts\font_resolver.cpp(79,27):
+      durante la ricerca di corrispondenza con l'elenco di argomenti '(const tachyon::text::FontFace, const uint32_t, const tachyon::text::HintingMode, const tachyon::text::RenderMode)'
+  
+  font_preloader.cpp
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\fonts\font_preloader.h(34,54): error C2039: 'MissingGlyphPolicy': non Š un membro di 'tachyon::text::FontManifestPolicy' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/text/core/fonts/font_preloader.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\fonts\font_manifest.h(44,8):
+      vedere la dichiarazione di 'tachyon::text::FontManifestPolicy'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\fonts\font_preloader.cpp(83,65): error C2039: 'MissingGlyphPolicy': non Š un membro di 'tachyon::text::FontManifestPolicy' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\fonts\font_manifest.h(44,8):
+      vedere la dichiarazione di 'tachyon::text::FontManifestPolicy'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\fonts\font_preloader.cpp(86,30): error C2039: 'src': non Š un membro di 'tachyon::text::FontFaceInfo' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\fonts\font_face.h(38,8):
+      vedere la dichiarazione di 'tachyon::text::FontFaceInfo'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\fonts\font_preloader.cpp(89,59): error C3083: 'MissingGlyphPolicy': il simbolo a sinistra di '::' deve essere un tipo [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\fonts\font_preloader.cpp(89,79): error C2039: 'Error': non Š un membro di 'tachyon::text::FontManifestPolicy' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\fonts\font_manifest.h(44,8):
+      vedere la dichiarazione di 'tachyon::text::FontManifestPolicy'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\fonts\font_preloader.cpp(89,79): error C2065: 'Error': identificatore non dichiarato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  font_coverage_reporter.cpp
+C:\Users\pater\Pyt\Tachyon\src\text\core\fonts\font_coverage_reporter.cpp(41,37): error C2065: 'codepoints': identificatore non dichiarato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\fonts\font_coverage_reporter.cpp(42,28): error C2065: 'codepoints': identificatore non dichiarato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\fonts\font_coverage_reporter.cpp(42,23): error C3531: 'cp': un simbolo il cui tipo contiene 'auto' deve contenere un inizializzatore [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\fonts\font_coverage_reporter.cpp(42,26): error C2143: errore di sintassi: ';' mancante prima di ':' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\fonts\font_coverage_reporter.cpp(42,38): error C2143: errore di sintassi: ';' mancante prima di ')' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  layout.cpp
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(214,8): error C2011: 'tachyon::text::TextShadowOptions': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/text/core/layout/layout.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(32,8):
+      vedere la dichiarazione di 'tachyon::text::TextShadowOptions'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(222,8): error C2011: 'tachyon::text::TextGlowOptions': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/text/core/layout/layout.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(40,8):
+      vedere la dichiarazione di 'tachyon::text::TextGlowOptions'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(228,8): error C2011: 'tachyon::text::GradientStop': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/text/core/layout/layout.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(57,8):
+      vedere la dichiarazione di 'tachyon::text::GradientStop'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(233,8): error C2011: 'tachyon::text::GradientSpec': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/text/core/layout/layout.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(62,8):
+      vedere la dichiarazione di 'tachyon::text::GradientSpec'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(239,8): error C2011: 'tachyon::text::TextStyle': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/text/core/layout/layout.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(102,35): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(104,13): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(105,33): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(105,30): error C2530: 'grad': i riferimenti devono essere inizializzati [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(108,17): error C3536: grad': utilizzo non consentito prima della relativa inizializzazione [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(113,37): error C2737: 'local_t': l'oggetto const deve essere inizializzato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(130,9): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(131,28): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(133,9): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(134,30): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(177,35): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(179,13): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(180,33): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(180,30): error C2530: 'grad': i riferimenti devono essere inizializzati [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(182,17): error C3536: grad': utilizzo non consentito prima della relativa inizializzazione [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(186,37): error C2737: 'local_t': l'oggetto const deve essere inizializzato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(207,9): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(208,28): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(210,9): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(211,30): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(258,35): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(260,13): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(261,33): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(261,30): error C2530: 'grad': i riferimenti devono essere inizializzati [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(263,17): error C3536: grad': utilizzo non consentito prima della relativa inizializzazione [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(267,37): error C2737: 'local_t': l'oggetto const deve essere inizializzato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(283,9): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(284,28): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(286,9): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(287,30): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(294,46): error C2065: 'layout': identificatore non dichiarato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(294,5): error C2059: errore di sintassi: 'for' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(294,46): error C3927: '->': il tipo restituito finale non Š consentito dopo un dichiaratore non di funzione [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(294,52): error C3484: errore di sintassi: previsto '->' prima del tipo restituito [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(294,53): error C3613: manca il tipo restituito dopo '->' (verr… usato 'int') [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(294,46): error C4430: identificatore di tipo mancante, verr… utilizzato int. Nota: default-int non Š pi— supportato in C++ [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(294,53): error C2146: errore di sintassi: ';' mancante prima dell'identificatore 'glyphs' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(294,59): error C2059: errore di sintassi: ')' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(294,61): error C2143: errore di sintassi: ';' mancante prima di '{' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(294,61): error C2447: '{': intestazione di funzione mancante. Elenco formale di tipo obsoleto? [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(310,5): error C2059: errore di sintassi: 'return' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(311,1): error C2059: errore di sintassi: '}' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(311,1): error C2143: errore di sintassi: ';' mancante prima di '}' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(319,40): error C2143: errore di sintassi: ';' mancante prima di '{' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(319,40): error C2447: '{': intestazione di funzione mancante. Elenco formale di tipo obsoleto? [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(365,1): error C2059: errore di sintassi: '}' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout.cpp(365,1): error C2143: errore di sintassi: ';' mancante prima di '}' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  layout_engine.cpp
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(214,8): error C2011: 'tachyon::text::TextShadowOptions': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/text/core/layout/layout_engine.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(32,8):
+      vedere la dichiarazione di 'tachyon::text::TextShadowOptions'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(222,8): error C2011: 'tachyon::text::TextGlowOptions': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/text/core/layout/layout_engine.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(40,8):
+      vedere la dichiarazione di 'tachyon::text::TextGlowOptions'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(228,8): error C2011: 'tachyon::text::GradientStop': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/text/core/layout/layout_engine.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(57,8):
+      vedere la dichiarazione di 'tachyon::text::GradientStop'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(233,8): error C2011: 'tachyon::text::GradientSpec': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/text/core/layout/layout_engine.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(62,8):
+      vedere la dichiarazione di 'tachyon::text::GradientSpec'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(239,8): error C2011: 'tachyon::text::TextStyle': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/text/core/layout/layout_engine.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout_engine.cpp(55,37): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout_engine.cpp(55,110): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout_engine.cpp(55,25): error C2737: 'requested': l'oggetto const deve essere inizializzato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout_engine.cpp(209,29): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout_engine.cpp(209,127): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout_engine.cpp(209,17): error C2737: 'font_size': l'oggetto const deve essere inizializzato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout_engine.cpp(244,45): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout_engine.cpp(505,38): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\layout\layout_engine.cpp(509,135): error C2027: utilizzo di tipo non definito 'tachyon::text::TextStyle' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+  outline_extractor.cpp
+  text_editor.cpp
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(214,8): error C2011: 'tachyon::text::TextShadowOptions': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/text/editing/text_editor.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(32,8):
+      vedere la dichiarazione di 'tachyon::text::TextShadowOptions'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(222,8): error C2011: 'tachyon::text::TextGlowOptions': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/text/editing/text_editor.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(40,8):
+      vedere la dichiarazione di 'tachyon::text::TextGlowOptions'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(228,8): error C2011: 'tachyon::text::GradientStop': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/text/editing/text_editor.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(57,8):
+      vedere la dichiarazione di 'tachyon::text::GradientStop'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(233,8): error C2011: 'tachyon::text::GradientSpec': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/text/editing/text_editor.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(62,8):
+      vedere la dichiarazione di 'tachyon::text::GradientSpec'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(239,8): error C2011: 'tachyon::text::TextStyle': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/text/editing/text_editor.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+  text_raster_surface.cpp
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(214,8): error C2011: 'tachyon::text::TextShadowOptions': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/text/core/rendering/text_raster_surface.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(32,8):
+      vedere la dichiarazione di 'tachyon::text::TextShadowOptions'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(222,8): error C2011: 'tachyon::text::TextGlowOptions': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/text/core/rendering/text_raster_surface.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(40,8):
+      vedere la dichiarazione di 'tachyon::text::TextGlowOptions'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(228,8): error C2011: 'tachyon::text::GradientStop': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/text/core/rendering/text_raster_surface.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(57,8):
+      vedere la dichiarazione di 'tachyon::text::GradientStop'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(233,8): error C2011: 'tachyon::text::GradientSpec': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/text/core/rendering/text_raster_surface.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(62,8):
+      vedere la dichiarazione di 'tachyon::text::GradientSpec'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(239,8): error C2011: 'tachyon::text::TextStyle': ridefinizione tipo 'struct' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+  (compiling source file '../../src/text/core/rendering/text_raster_surface.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(68,8):
+      vedere la dichiarazione di 'tachyon::text::TextStyle'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\rendering\text_raster_surface.cpp(212,10): error C2027: utilizzo di tipo non definito 'tachyon::text::TextShadowOptions' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(32,8):
+      vedere la dichiarazione di 'tachyon::text::TextShadowOptions'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\rendering\text_raster_surface.cpp(217,40): error C2027: utilizzo di tipo non definito 'tachyon::text::TextShadowOptions' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(32,8):
+      vedere la dichiarazione di 'tachyon::text::TextShadowOptions'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\rendering\text_raster_surface.cpp(221,67): error C2027: utilizzo di tipo non definito 'tachyon::text::TextShadowOptions' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(32,8):
+      vedere la dichiarazione di 'tachyon::text::TextShadowOptions'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\rendering\text_raster_surface.cpp(221,23): error C2737: 'sx': l'oggetto const deve essere inizializzato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\rendering\text_raster_surface.cpp(222,67): error C2027: utilizzo di tipo non definito 'tachyon::text::TextShadowOptions' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(32,8):
+      vedere la dichiarazione di 'tachyon::text::TextShadowOptions'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\rendering\text_raster_surface.cpp(222,23): error C2737: 'sy': l'oggetto const deve essere inizializzato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\rendering\text_raster_surface.cpp(226,41): error C2027: utilizzo di tipo non definito 'tachyon::text::TextShadowOptions' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(32,8):
+      vedere la dichiarazione di 'tachyon::text::TextShadowOptions'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\rendering\text_raster_surface.cpp(226,29): error C2737: 'src_alpha': l'oggetto const deve essere inizializzato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\rendering\text_raster_surface.cpp(228,39): error C2027: utilizzo di tipo non definito 'tachyon::text::TextShadowOptions' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(32,8):
+      vedere la dichiarazione di 'tachyon::text::TextShadowOptions'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\rendering\text_raster_surface.cpp(228,21): error C2660: 'tachyon::text::TextRasterSurface::blend_pixel': la funzione non accetta 3 argomenti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\src\text\core\rendering\text_raster_surface.cpp(108,25):
+      vedere la dichiarazione di 'tachyon::text::TextRasterSurface::blend_pixel'
+      C:\Users\pater\Pyt\Tachyon\src\text\core\rendering\text_raster_surface.cpp(228,21):
+      durante la ricerca di corrispondenza con l'elenco di argomenti '(uint32_t, uint32_t, uint8_t)'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\rendering\text_raster_surface.cpp(236,10): error C2027: utilizzo di tipo non definito 'tachyon::text::TextGlowOptions' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(40,8):
+      vedere la dichiarazione di 'tachyon::text::TextGlowOptions'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\rendering\text_raster_surface.cpp(249,38): error C2027: utilizzo di tipo non definito 'tachyon::text::TextGlowOptions' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(40,8):
+      vedere la dichiarazione di 'tachyon::text::TextGlowOptions'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\rendering\text_raster_surface.cpp(255,37): error C2027: utilizzo di tipo non definito 'tachyon::text::TextGlowOptions' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(40,8):
+      vedere la dichiarazione di 'tachyon::text::TextGlowOptions'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\rendering\text_raster_surface.cpp(255,25): error C2737: 'src_alpha': l'oggetto const deve essere inizializzato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\text\core\rendering\text_raster_surface.cpp(257,35): error C2027: utilizzo di tipo non definito 'tachyon::text::TextGlowOptions' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\text\layout\layout.h(40,8):
+      vedere la dichiarazione di 'tachyon::text::TextGlowOptions'
+  
+C:\Users\pater\Pyt\Tachyon\src\text\core\rendering\text_raster_surface.cpp(257,17): error C2660: 'tachyon::text::TextRasterSurface::blend_pixel': la funzione non accetta 3 argomenti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\src\text\core\rendering\text_raster_surface.cpp(108,25):
+      vedere la dichiarazione di 'tachyon::text::TextRasterSurface::blend_pixel'
+      C:\Users\pater\Pyt\Tachyon\src\text\core\rendering\text_raster_surface.cpp(257,17):
+      durante la ricerca di corrispondenza con l'elenco di argomenti '(uint32_t, uint32_t, uint8_t)'
+  
+  track_binding.cpp
+  ray_tracer.cpp
+  ray_tracer_shading.cpp
+  ray_tracer_scene.cpp
+  scene_cache.cpp
+  Generazione del codice in corso...
+  Compilazione in corso...
+  motion_blur.cpp
+  animation3d.cpp
+  material.cpp
+  material_evaluator.cpp
+  culling.cpp
+  debug_tools.cpp
+  pbr_utils.cpp
+  usd_importer.cpp
+  alembic_importer.cpp
+  autosave_manager.cpp
+  Generazione del codice in corso...

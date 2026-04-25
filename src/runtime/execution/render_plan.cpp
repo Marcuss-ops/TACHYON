@@ -48,6 +48,140 @@ void hash_keyframes(CacheKeyBuilder& builder, const std::vector<T>& keyframes) {
     }
 }
 
+void hash_color_keyframes(CacheKeyBuilder& builder, const std::vector<ColorKeyframeSpec>& keyframes) {
+    builder.add_u64(static_cast<std::uint64_t>(keyframes.size()));
+    for (const auto& kf : keyframes) {
+        builder.add_f64(kf.time);
+        builder.add_u32(kf.value.r);
+        builder.add_u32(kf.value.g);
+        builder.add_u32(kf.value.b);
+        builder.add_u32(kf.value.a);
+        builder.add_u32(static_cast<std::uint32_t>(kf.easing));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cx1 * 1000000.0));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cy1 * 1000000.0));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cx2 * 1000000.0));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cy2 * 1000000.0));
+        builder.add_f64(kf.speed_in);
+        builder.add_f64(kf.influence_in);
+        builder.add_f64(kf.speed_out);
+        builder.add_f64(kf.influence_out);
+    }
+}
+
+void hash_vector2_keyframes(CacheKeyBuilder& builder, const std::vector<Vector2KeyframeSpec>& keyframes) {
+    builder.add_u64(static_cast<std::uint64_t>(keyframes.size()));
+    for (const auto& kf : keyframes) {
+        builder.add_f64(kf.time);
+        builder.add_f64(kf.value.x);
+        builder.add_f64(kf.value.y);
+        builder.add_f64(kf.tangent_in.x);
+        builder.add_f64(kf.tangent_in.y);
+        builder.add_f64(kf.tangent_out.x);
+        builder.add_f64(kf.tangent_out.y);
+        builder.add_u32(static_cast<std::uint32_t>(kf.easing));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cx1 * 1000000.0));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cy1 * 1000000.0));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cx2 * 1000000.0));
+        builder.add_u64(static_cast<std::uint64_t>(kf.bezier.cy2 * 1000000.0));
+        builder.add_f64(kf.speed_in);
+        builder.add_f64(kf.influence_in);
+        builder.add_f64(kf.speed_out);
+        builder.add_f64(kf.influence_out);
+    }
+}
+
+void hash_text_animator_selector(CacheKeyBuilder& builder, const TextAnimatorSelectorSpec& selector) {
+    builder.add_string(selector.type);
+    builder.add_f64(selector.start);
+    builder.add_f64(selector.end);
+    builder.add_bool(selector.start_index.has_value());
+    if (selector.start_index.has_value()) builder.add_u64(static_cast<std::uint64_t>(*selector.start_index));
+    builder.add_bool(selector.end_index.has_value());
+    if (selector.end_index.has_value()) builder.add_u64(static_cast<std::uint64_t>(*selector.end_index));
+    builder.add_bool(selector.expression.has_value());
+    if (selector.expression.has_value()) builder.add_string(*selector.expression);
+    builder.add_bool(selector.seed.has_value());
+    if (selector.seed.has_value()) builder.add_u64(*selector.seed);
+    builder.add_bool(selector.amount.has_value());
+    if (selector.amount.has_value()) builder.add_f64(*selector.amount);
+    builder.add_bool(selector.frequency.has_value());
+    if (selector.frequency.has_value()) builder.add_f64(*selector.frequency);
+    builder.add_bool(selector.random_order);
+    builder.add_string(selector.mode);
+    builder.add_string(selector.based_on);
+}
+
+void hash_text_animator_properties(CacheKeyBuilder& builder, const TextAnimatorPropertySpec& properties) {
+    builder.add_bool(properties.opacity_value.has_value());
+    if (properties.opacity_value.has_value()) builder.add_f64(*properties.opacity_value);
+    hash_keyframes(builder, properties.opacity_keyframes);
+
+    builder.add_bool(properties.position_offset_value.has_value());
+    if (properties.position_offset_value.has_value()) {
+        builder.add_f64(properties.position_offset_value->x);
+        builder.add_f64(properties.position_offset_value->y);
+    }
+    hash_vector2_keyframes(builder, properties.position_offset_keyframes);
+
+    builder.add_bool(properties.scale_value.has_value());
+    if (properties.scale_value.has_value()) builder.add_f64(*properties.scale_value);
+    hash_keyframes(builder, properties.scale_keyframes);
+
+    builder.add_bool(properties.rotation_value.has_value());
+    if (properties.rotation_value.has_value()) builder.add_f64(*properties.rotation_value);
+    hash_keyframes(builder, properties.rotation_keyframes);
+
+    builder.add_bool(properties.tracking_amount_value.has_value());
+    if (properties.tracking_amount_value.has_value()) builder.add_f64(*properties.tracking_amount_value);
+    hash_keyframes(builder, properties.tracking_amount_keyframes);
+
+    builder.add_bool(properties.fill_color_value.has_value());
+    if (properties.fill_color_value.has_value()) {
+        builder.add_u32(properties.fill_color_value->r);
+        builder.add_u32(properties.fill_color_value->g);
+        builder.add_u32(properties.fill_color_value->b);
+        builder.add_u32(properties.fill_color_value->a);
+    }
+    hash_color_keyframes(builder, properties.fill_color_keyframes);
+
+    builder.add_bool(properties.stroke_color_value.has_value());
+    if (properties.stroke_color_value.has_value()) {
+        builder.add_u32(properties.stroke_color_value->r);
+        builder.add_u32(properties.stroke_color_value->g);
+        builder.add_u32(properties.stroke_color_value->b);
+        builder.add_u32(properties.stroke_color_value->a);
+    }
+    hash_color_keyframes(builder, properties.stroke_color_keyframes);
+
+    builder.add_bool(properties.stroke_width_value.has_value());
+    if (properties.stroke_width_value.has_value()) builder.add_f64(*properties.stroke_width_value);
+    hash_keyframes(builder, properties.stroke_width_keyframes);
+
+    builder.add_bool(properties.blur_radius_value.has_value());
+    if (properties.blur_radius_value.has_value()) builder.add_f64(*properties.blur_radius_value);
+    hash_keyframes(builder, properties.blur_radius_keyframes);
+
+    builder.add_bool(properties.reveal_value.has_value());
+    if (properties.reveal_value.has_value()) builder.add_f64(*properties.reveal_value);
+    hash_keyframes(builder, properties.reveal_keyframes);
+}
+
+void hash_text_animator(CacheKeyBuilder& builder, const TextAnimatorSpec& animator) {
+    hash_text_animator_selector(builder, animator.selector);
+    hash_text_animator_properties(builder, animator.properties);
+}
+
+void hash_text_highlight(CacheKeyBuilder& builder, const TextHighlightSpec& highlight) {
+    builder.add_u64(static_cast<std::uint64_t>(highlight.start_glyph));
+    builder.add_u64(static_cast<std::uint64_t>(highlight.end_glyph));
+    builder.add_u32(highlight.color.r);
+    builder.add_u32(highlight.color.g);
+    builder.add_u32(highlight.color.b);
+    builder.add_u32(highlight.color.a);
+    builder.add_u64(static_cast<std::uint64_t>(highlight.padding_x));
+    builder.add_u64(static_cast<std::uint64_t>(highlight.padding_y));
+}
+
 void hash_animated_scalar(CacheKeyBuilder& builder, const AnimatedScalarSpec& spec) {
     builder.add_bool(spec.value.has_value());
     if (spec.value.has_value()) {
@@ -276,6 +410,9 @@ std::uint64_t hash_scene_content(const SceneSpec& scene) {
             builder.add_string(layer.font_id);
             builder.add_string(layer.alignment);
             builder.add_u64(static_cast<std::uint64_t>(layer.stroke_width * 1000000.0));
+            builder.add_u64(static_cast<std::uint64_t>(layer.extrusion_depth * 1000000.0));
+            builder.add_u64(static_cast<std::uint64_t>(layer.bevel_size * 1000000.0));
+            builder.add_u64(static_cast<std::uint64_t>(layer.hole_bevel_ratio * 1000000.0));
             builder.add_string(layer.subtitle_path);
             builder.add_string(layer.line_cap);
             builder.add_string(layer.line_join);
@@ -318,9 +455,9 @@ std::uint64_t hash_scene_content(const SceneSpec& scene) {
             builder.add_u64(static_cast<std::uint64_t>(layer.effects.size()));
             for (const auto& effect : layer.effects) hash_effect(builder, effect);
             builder.add_u64(static_cast<std::uint64_t>(layer.text_animators.size()));
-            for (const auto& animator : layer.text_animators) builder.add_string(animator);
+            for (const auto& animator : layer.text_animators) hash_text_animator(builder, animator);
             builder.add_u64(static_cast<std::uint64_t>(layer.text_highlights.size()));
-            for (const auto& highlight : layer.text_highlights) builder.add_string(highlight);
+            for (const auto& highlight : layer.text_highlights) hash_text_highlight(builder, highlight);
             builder.add_u64(static_cast<std::uint64_t>(layer.track_bindings.size()));
             for (const auto& binding : layer.track_bindings) {
                 builder.add_string(binding.property_path);

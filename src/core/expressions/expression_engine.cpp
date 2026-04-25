@@ -1,4 +1,5 @@
 #include "tachyon/core/expressions/expression_engine.h"
+#include "tachyon/core/animation/animation_primitives.h"
 #include "tachyon/runtime/core/contracts/math_contract.h"
 #include <algorithm>
 #include <cmath>
@@ -9,6 +10,20 @@
 
 namespace tachyon {
 namespace expressions {
+
+void bind_standard_expression_variables(ExpressionContext& context) {
+    context.variables.try_emplace("t", context.time);
+    context.variables.try_emplace("time", context.time);
+    context.variables.try_emplace("value", context.value);
+    context.variables.try_emplace("seed", static_cast<double>(context.seed));
+    context.variables.try_emplace("index", static_cast<double>(context.layer_index));
+    context.variables.try_emplace("thisProperty.index", static_cast<double>(context.property_index));
+    context.variables.try_emplace("thisComp.width", static_cast<double>(context.composition_width));
+    context.variables.try_emplace("thisComp.height", static_cast<double>(context.composition_height));
+    context.variables.try_emplace("thisComp.time", context.composition_time != 0.0 ? context.composition_time : context.time);
+    context.variables.try_emplace("thisLayer.index", static_cast<double>(context.layer_index));
+    context.variables.try_emplace("thisLayer.time", context.time);
+}
 
 class Parser {
 public:
@@ -93,6 +108,25 @@ private:
             skip_whitespace();
             if (get() != ')') throw std::runtime_error("Missing closing parenthesis");
             return result;
+        } else if (c == '"' || c == '\'') {
+            // String literal
+            char quote = get(); // consume opening quote
+            std::string value;
+            while (peek() != quote && peek() != '\0') {
+                if (peek() == '\\') {
+                    get(); // consume backslash
+                    char esc = get();
+                    if (esc == 'n') value += '\n';
+                    else if (esc == 't') value += '\t';
+                    else if (esc == '\\') value += '\\';
+                    else if (esc == quote) value += quote;
+                    else value += esc;
+                } else {
+                    value += get();
+                }
+            }
+            if (get() != quote) throw std::runtime_error("Missing closing quote");
+            return std::make_unique<StringNode>(std::move(value));
         } else if (c == '-') {
             get();
             return std::make_unique<UnaryOpNode>(UnaryOperator::Negate, parse_base());
@@ -153,6 +187,12 @@ public:
                 auto* n = static_cast<NumberNode*>(node);
                 std::uint32_t idx = add_constant(n->value);
                 m_bytecode.instructions.push_back({OpCode::PushConst, idx});
+                break;
+            }
+            case ASTNodeType::String: {
+                auto* s = static_cast<StringNode*>(node);
+                std::uint32_t idx = add_name(s->value);
+                m_bytecode.instructions.push_back({OpCode::PushName, idx});
                 break;
             }
             case ASTNodeType::Variable: {
@@ -245,15 +285,7 @@ EvaluationResult CoreExpressionEvaluator::evaluate(const std::string& expression
     if (!comp.success) return {0.0, false, comp.error};
     
     ExpressionContext resolved = context;
-    if (resolved.variables.find("seed") == resolved.variables.end()) {
-        resolved.variables["seed"] = static_cast<double>(resolved.seed);
-    }
-    if (resolved.variables.find("index") == resolved.variables.end()) {
-        resolved.variables["index"] = static_cast<double>(resolved.layer_index);
-    }
-    if (resolved.variables.find("value") == resolved.variables.end()) {
-        resolved.variables["value"] = resolved.value;
-    }
+    bind_standard_expression_variables(resolved);
 
     // Populate audio analysis variables for expression access
     resolved.variables["audio.bass"] = resolved.audio_analysis.bass;

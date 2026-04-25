@@ -18,5 +18,6 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
 bool run_preview_frame_command(const CliOptions& options, std::ostream& out, std::ostream& err);
 bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostream& err);
 bool run_studio_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err);
+bool run_transition_command(const CliOptions& options, std::ostream& out, std::ostream& err);
 
 } // namespace tachyon

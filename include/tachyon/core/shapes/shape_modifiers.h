@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tachyon/core/shapes/shape_path.h"
+#include "tachyon/core/math/noise.h"
 #include <vector>
 #include <cmath>
 
@@ -401,6 +402,77 @@ public:
                 v.point.y = static_cast<float>(center.y + dx * sin_a + dy * cos_a);
             }
             result.subpaths.push_back(twisted);
+        }
+        return result;
+    }
+
+    /**
+     * @brief Oscillator modifier.
+     * Applies sinusoidal oscillation to path vertices over time.
+     * 
+     * @param path Input shape path.
+     * @param frequency Oscillation frequency in Hz.
+     * @param amplitude Amplitude of oscillation in pixels.
+     * @param phase Phase offset in radians.
+     * @param time Current time in seconds.
+     * @param axis Oscillation axis: 0=X only, 1=Y only, 2=both.
+     * @return Modified shape path.
+     */
+    static ShapePath oscillator(const ShapePath& path, double frequency, double amplitude, double phase, double time, int axis = 2) {
+        if (path.empty() || amplitude == 0.0) return path;
+
+        ShapePath result;
+        float oscillation = static_cast<float>(amplitude * std::sin(2.0 * 3.141592653589793 * frequency * time + phase));
+
+        for (const auto& subpath : path.subpaths) {
+            ShapeSubpath osc_sub = subpath;
+            for (auto& v : osc_sub.vertices) {
+                if (axis == 0 || axis == 2) v.point.x += oscillation;
+                if (axis == 1 || axis == 2) v.point.y += oscillation;
+            }
+            result.subpaths.push_back(osc_sub);
+        }
+        return result;
+    }
+
+    /**
+     * @brief Noise Deform modifier.
+     * Applies Perlin noise-based deformation to path vertices.
+     * 
+     * @param path Input shape path.
+     * @param noise_scale Scale of the noise (lower = smoother, higher = more detailed).
+     * @param amplitude Deformation amplitude in pixels.
+     * @param time Time value for animated noise (used as Z coordinate).
+     * @param seed Random seed for noise generation.
+     * @return Modified shape path.
+     */
+    static ShapePath noise_deform(const ShapePath& path, double noise_scale, double amplitude, double time, uint64_t seed = 0) {
+        if (path.empty() || amplitude == 0.0) return path;
+
+        ShapePath result;
+        math::PerlinNoise noise(seed);
+        float scale = static_cast<float>(noise_scale > 0.0 ? 1.0 / noise_scale : 1.0);
+
+        for (const auto& subpath : path.subpaths) {
+            ShapeSubpath deformed = subpath;
+            for (auto& v : deformed.vertices) {
+                float n = noise.noise3d(v.point.x * scale, v.point.y * scale, static_cast<float>(time));
+                float offset = n * static_cast<float>(amplitude);
+                
+                // Apply offset in the direction of the vertex normal (approximated by tangent)
+                // For simplicity, apply radial offset from path center
+                float dx = v.point.x;
+                float dy = v.point.y;
+                float len = std::sqrt(dx * dx + dy * dy);
+                if (len > 1e-6f) {
+                    v.point.x += (dx / len) * offset;
+                    v.point.y += (dy / len) * offset;
+                } else {
+                    // For points at origin, use a default direction
+                    v.point.x += offset;
+                }
+            }
+            result.subpaths.push_back(deformed);
         }
         return result;
     }

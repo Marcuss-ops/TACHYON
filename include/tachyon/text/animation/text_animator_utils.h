@@ -15,7 +15,10 @@ struct TextAnimatorContext {
     std::size_t line_index{0};
     float total_glyphs{0.0f};
     float total_clusters{0.0f};
+    float total_words{0.0f};
     float total_lines{0.0f};
+    float non_space_glyph_index{0.0f};
+    float total_non_space_glyphs{0.0f};
     float time{0.0f};
     
     // Cluster-aware fields for shape-preserving animation
@@ -48,6 +51,16 @@ math::Vector2 sample_vector2_kfs(
 
 float compute_coverage(const TextAnimatorSelectorSpec& selector, const TextAnimatorContext& ctx);
 
+TextAnimatorContext make_text_animator_context(
+    const ResolvedTextLayout& layout,
+    std::size_t glyph_index,
+    float time);
+
+TextAnimatorContext make_text_animator_context(
+    const TextLayoutResult& layout,
+    std::size_t glyph_index,
+    float time);
+
 struct ResolvedGlyphPaint {
     const GlyphBitmap* glyph{nullptr};
     std::int32_t base_x{0};
@@ -68,7 +81,6 @@ struct ResolvedGlyphPaint {
 std::vector<ResolvedGlyphPaint> resolve_glyph_paints(
     const BitmapFont& font,
     const TextLayoutResult& layout,
-    const TextAnimationOptions& animation,
-    std::span<const TextAnimatorSpec> animators = {});
+    const TextAnimationOptions& animation);
 
 } // namespace tachyon::text

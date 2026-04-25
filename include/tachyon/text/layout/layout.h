@@ -78,18 +78,13 @@ struct TextStyle {
 struct TextLayoutOptions {
     float tracking{0.0f};
     bool word_wrap{true};
+    bool use_sdf{false};
 };
 
 struct TextAnimationOptions {
-    bool enabled{false};
+    // Runtime state shared across renderers: a local clock plus the animator set to evaluate.
     float time_seconds{0.0f};
-    float per_glyph_offset_x{0.0f};
-    float per_glyph_offset_y{0.0f};
-    float per_glyph_scale_delta{0.0f};
-    float per_glyph_opacity_drop{0.0f};
-    float wave_amplitude_x{0.0f};
-    float wave_amplitude_y{0.0f};
-    float wave_period_seconds{1.0f};
+    std::span<const TextAnimatorSpec> animators{};
 };
 
 struct TextHighlightSpan {
@@ -184,7 +179,7 @@ TextRasterSurface rasterize_text_rgba(
     const TextAnimationOptions& animation = {});
 
 /// Overload with per-character Text Animator support.
-/// Each animator in @p animators is evaluated at @p time_seconds.
+/// Each animator in @p animation.animators is evaluated at @p animation.time_seconds.
 /// The selector coverage is blended per glyph before rasterization.
 TextRasterSurface rasterize_text_rgba(
     const BitmapFont& font,
@@ -192,8 +187,7 @@ TextRasterSurface rasterize_text_rgba(
     const TextStyle& style,
     const TextBox& text_box,
     TextAlignment alignment,
-    float time_seconds,
-    std::span<const TextAnimatorSpec> animators,
+    const TextAnimationOptions& animation,
     const TextLayoutOptions& layout_options = {});
 
 TextRasterSurface rasterize_text_rgba(

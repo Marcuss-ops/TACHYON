@@ -370,6 +370,9 @@ json serialize_layer(const LayerSpec& layer) {
     if (!layer.alignment.empty()) j["alignment"] = layer.alignment;
     if (!layer.fill_color.empty()) j["fill_color"] = serialize_color_property(layer.fill_color);
     if (!layer.stroke_color.empty()) j["stroke_color"] = serialize_color_property(layer.stroke_color);
+    if (layer.extrusion_depth != 0.0) j["extrusion_depth"] = layer.extrusion_depth;
+    if (layer.bevel_size != 0.0) j["bevel_size"] = layer.bevel_size;
+    if (layer.hole_bevel_ratio != 0.0) j["hole_bevel_ratio"] = layer.hole_bevel_ratio;
     if (layer.shape_path.has_value() && !layer.shape_path->empty()) {
         json sp;
         sp["closed"] = layer.shape_path->closed;

@@ -47,6 +47,7 @@ enum class LayerType {
     Light,
     Mask,
     NullLayer,
+    Procedural,
     Unknown
 };
 

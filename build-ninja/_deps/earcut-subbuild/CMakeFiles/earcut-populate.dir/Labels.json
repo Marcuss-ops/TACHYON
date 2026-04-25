@@ -1,0 +1,46 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/earcut-subbuild/CMakeFiles/earcut-populate"
+		},
+		{
+			"file" : "C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/earcut-subbuild/CMakeFiles/earcut-populate.rule"
+		},
+		{
+			"file" : "C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/earcut-subbuild/CMakeFiles/earcut-populate-complete.rule"
+		},
+		{
+			"file" : "C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/earcut-subbuild/earcut-populate-prefix/src/earcut-populate-stamp/earcut-populate-build.rule"
+		},
+		{
+			"file" : "C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/earcut-subbuild/earcut-populate-prefix/src/earcut-populate-stamp/earcut-populate-configure.rule"
+		},
+		{
+			"file" : "C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/earcut-subbuild/earcut-populate-prefix/src/earcut-populate-stamp/earcut-populate-download.rule"
+		},
+		{
+			"file" : "C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/earcut-subbuild/earcut-populate-prefix/src/earcut-populate-stamp/earcut-populate-install.rule"
+		},
+		{
+			"file" : "C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/earcut-subbuild/earcut-populate-prefix/src/earcut-populate-stamp/earcut-populate-mkdir.rule"
+		},
+		{
+			"file" : "C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/earcut-subbuild/earcut-populate-prefix/src/earcut-populate-stamp/earcut-populate-patch.rule"
+		},
+		{
+			"file" : "C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/earcut-subbuild/earcut-populate-prefix/src/earcut-populate-stamp/earcut-populate-test.rule"
+		},
+		{
+			"file" : "C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/earcut-subbuild/earcut-populate-prefix/src/earcut-populate-stamp/earcut-populate-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"earcut-populate"
+		],
+		"name" : "earcut-populate"
+	}
+}

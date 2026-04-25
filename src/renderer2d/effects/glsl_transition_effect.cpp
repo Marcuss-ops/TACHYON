@@ -1,14 +1,20 @@
-#include "tachyon/renderer2d/effects/effect_host.h"
+#include "tachyon/renderer2d/effects/glsl_transition_effect.h"
 #include "tachyon/renderer2d/effects/effect_utils.h"
+#include "tachyon/transition_registry.h"
 #include "tachyon/core/animation/easing.h"
 
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
-#include <unordered_map>
 
 namespace tachyon::renderer2d {
-namespace {
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4244)
+#endif
+
+namespace {  // Local helpers
 
 Color sample_uv(const SurfaceRGBA& surface, float u, float v) {
     return sample_texture_bilinear(surface, std::clamp(u, 0.0f, 1.0f), std::clamp(v, 0.0f, 1.0f), Color::white());
@@ -37,15 +43,14 @@ Color sample_transition_source(const SurfaceRGBA& input, const SurfaceRGBA* aux,
 float transition_progress(const EffectParams& params) {
     float raw_t = clamp01(get_scalar(params, "t", get_scalar(params, "progress", 0.0f)));
     
-    // Apply easing if specified
     const auto preset_it = params.scalars.find("easing_preset");
     if (preset_it == params.scalars.end()) {
-        return raw_t; // No easing specified
+        return raw_t;
     }
     
     const int preset_val = static_cast<int>(preset_it->second);
     if (preset_val < 0 || preset_val > 4) {
-        return raw_t; // Invalid preset
+        return raw_t;
     }
     
     const animation::EasingPreset preset = static_cast<animation::EasingPreset>(preset_val);
@@ -68,8 +73,7 @@ Color lerp_surface_color(const SurfaceRGBA& a, const SurfaceRGBA* b, float u, fl
     return Color::lerp(ca, cb, clamp01(t));
 }
 
-using TransitionFn = Color(*)(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface);
-
+// Transition function implementations
 Color transition_fade_to_black(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
     const Color black = Color::black();
     if (t < 0.5f) {
@@ -177,68 +181,43 @@ Color transition_directional_blur_wipe(float u, float v, float t, const SurfaceR
     return acc;
 }
 
-// Runtime transition registry (replaces hardcoded kTransitionFns)
-static std::unordered_map<std::string, TransitionFn>& get_transition_registry() {
-    static std::unordered_map<std::string, TransitionFn> registry;
-    return registry;
-}
+}  // namespace
 
-// Initialize built-in transitions (called once)
-static void init_builtin_transitions() {
+void init_builtin_transitions() {
     static bool initialized = false;
     if (initialized) return;
-    auto& reg = get_transition_registry();
-    reg["fade_to_black"] = transition_fade_to_black;
-    reg["wipe_linear"] = transition_wipe_linear;
-    reg["wipe_angular"] = transition_wipe_angular;
-    reg["push_left"] = transition_push_left;
-    reg["slide_easing"] = transition_slide_easing;
-    reg["zoom_in"] = transition_zoom_in;
-    reg["zoom_blur"] = transition_zoom_blur;
-    reg["spin"] = transition_spin;
-    reg["circle_iris"] = transition_circle_iris;
-    reg["pixelate"] = transition_pixelate;
-    reg["glitch_slice"] = transition_glitch_slice;
-    reg["rgb_split"] = transition_rgb_split;
-    reg["luma_dissolve"] = transition_luma_dissolve;
-    reg["directional_blur_wipe"] = transition_directional_blur_wipe;
+    
+    auto& reg = TransitionRegistry::instance();
+    
+    reg.register_transition({"fade_to_black", "Fade to Black", "Crossfade through black", transition_fade_to_black});
+    reg.register_transition({"wipe_linear", "Linear Wipe", "Simple left-to-right wipe", transition_wipe_linear});
+    reg.register_transition({"wipe_angular", "Angular Wipe", "Angular wipe around center", transition_wipe_angular});
+    reg.register_transition({"push_left", "Push Left", "Push image to the left", transition_push_left});
+    reg.register_transition({"slide_easing", "Slide Easing", "Slide with easing", transition_slide_easing});
+    reg.register_transition({"zoom_in", "Zoom In", "Zoom into target", transition_zoom_in});
+    reg.register_transition({"zoom_blur", "Zoom Blur", "Zoom with motion blur", transition_zoom_blur});
+    reg.register_transition({"spin", "Spin", "Spin rotation", transition_spin});
+    reg.register_transition({"circle_iris", "Circle Iris", "Circular iris opener", transition_circle_iris});
+    reg.register_transition({"pixelate", "Pixelate", "Pixelation transition", transition_pixelate});
+    reg.register_transition({"glitch_slice", "Glitch Slice", "Glitchy slice effect", transition_glitch_slice});
+    reg.register_transition({"rgb_split", "RGB Split", "Color channel split", transition_rgb_split});
+    reg.register_transition({"luma_dissolve", "Luma Dissolve", "Luminance-based dissolve", transition_luma_dissolve});
+    reg.register_transition({"directional_blur_wipe", "Directional Blur Wipe", "Blur wipe with direction", transition_directional_blur_wipe});
+    
     initialized = true;
 }
 
-/**
- * Register a custom transition at runtime.
- * @param id Unique identifier for the transition (used in transition_id effect parameter).
- * @param fn Function pointer to the transition implementation.
- */
-[[maybe_unused]] void register_transition(const std::string& id, TransitionFn fn) {
-    get_transition_registry()[id] = fn;
-}
-
-/**
- * Unregister a previously registered custom transition.
- * @param id Identifier of the transition to remove.
- */
-[[maybe_unused]] void unregister_transition(const std::string& id) {
-    get_transition_registry().erase(id);
-}
-
-}  // namespace
-
 SurfaceRGBA GlslTransitionEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
-    // Initialize built-in transitions on first use
     init_builtin_transitions();
+    
     const float t = transition_progress(params);
-    using TransitionFn = decltype(get_transition_registry().begin()->second);
+    
+    const TransitionSpec* transition_spec = nullptr;
     const auto transition_it = params.strings.find("transition_id");
-    TransitionFn transition_fn = nullptr;
     if (transition_it != params.strings.end()) {
-        const auto& registry = get_transition_registry();
-        const auto fn_it = registry.find(transition_it->second);
-        if (fn_it != registry.end()) {
-            transition_fn = fn_it->second;
-        }
+        transition_spec = TransitionRegistry::instance().find(transition_it->second);
     }
-
+    
     const SurfaceRGBA* to_surface = nullptr;
     if (const auto to_it = params.aux_surfaces.find("transition_to"); to_it != params.aux_surfaces.end()) {
         to_surface = to_it->second;
@@ -247,33 +226,37 @@ SurfaceRGBA GlslTransitionEffect::apply(const SurfaceRGBA& input, const EffectPa
     } else if (const auto bg_it = params.aux_surfaces.find("background"); bg_it != params.aux_surfaces.end()) {
         to_surface = bg_it->second;
     }
-
+    
     SurfaceRGBA output(input.width(), input.height());
     output.set_profile(input.profile());
     if (input.width() == 0U || input.height() == 0U) {
         return output;
     }
-
+    
     const float width = static_cast<float>(std::max<std::uint32_t>(1U, input.width()));
     const float height = static_cast<float>(std::max<std::uint32_t>(1U, input.height()));
-
+    
     for (std::uint32_t y = 0; y < input.height(); ++y) {
         for (std::uint32_t x = 0; x < input.width(); ++x) {
             const float u = (static_cast<float>(x) + 0.5f) / width;
             const float v = (static_cast<float>(y) + 0.5f) / height;
-            Color out = sample_transition_source(input, to_surface, u, v);
-
-    if (transition_fn != nullptr) {
-        out = transition_fn(u, v, t, input, to_surface);
+            
+            Color out;
+            if (transition_spec != nullptr && transition_spec->function != nullptr) {
+                out = transition_spec->function(u, v, t, input, to_surface);
             } else {
                 out = lerp_surface_color(input, to_surface, u, v, t);
             }
-
+            
             output.set_pixel(x, y, out);
         }
     }
-
+    
     return output;
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 }  // namespace tachyon::renderer2d

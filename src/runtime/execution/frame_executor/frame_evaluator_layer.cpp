@@ -100,6 +100,8 @@ void evaluate_layer(
     state->font_id = layer.font_id;
     state->font_size = layer.font_size;
     state->text_alignment = layer.text_alignment;
+    state->extrusion_depth = layer.extrusion_depth;
+    state->bevel_size = layer.bevel_size;
     state->text_animators = layer.text_animators;
     state->text_highlights = layer.text_highlights;
     state->subtitle_path = layer.subtitle_path;

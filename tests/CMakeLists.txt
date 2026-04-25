@@ -45,6 +45,7 @@ add_executable(TachyonTests
     unit/tracker/optical_flow_tests.cpp
     unit/renderer2d/composition/matte_resolver_tests.cpp
     unit/renderer2d/composition/evaluated_composition_renderer_tests.cpp
+    unit/renderer2d/composition/text3d_preview_tests.cpp
     unit/editor/undo_manager_tests.cpp
     unit/editor/autosave_manager_tests.cpp
     # unit/renderer3d/motion_blur_tests.cpp  # Disabled - pre-existing build errors

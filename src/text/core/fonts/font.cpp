@@ -277,6 +277,60 @@ void Font::render_freetype_glyph_by_index(std::uint32_t glyph_index) const {
     m_ft_index_cache[glyph_index] = std::move(glyph);
 }
 
+void Font::render_freetype_sdf(std::uint32_t codepoint) const {
+    FT_Face face = static_cast<FT_Face>(m_ft_face);
+    if (FT_Load_Char(face, codepoint, FT_LOAD_DEFAULT)) {
+        return;
+    }
+    if (FT_Render_Glyph(face->glyph, FT_RENDER_MODE_SDF)) {
+        return;
+    }
+
+    GlyphBitmap glyph;
+    glyph.width = face->glyph->bitmap.width;
+    glyph.height = face->glyph->bitmap.rows;
+    glyph.x_offset = face->glyph->bitmap_left;
+    glyph.y_offset = face->glyph->bitmap_top - static_cast<int>(glyph.height);
+    glyph.advance_x = static_cast<std::int32_t>(face->glyph->advance.x >> 6);
+    glyph.type = GlyphType::SDF;
+
+    glyph.alpha_mask.resize(glyph.width * glyph.height);
+    for (std::uint32_t y = 0; y < glyph.height; ++y) {
+        for (std::uint32_t x = 0; x < glyph.width; ++x) {
+            glyph.alpha_mask[y * glyph.width + x] = face->glyph->bitmap.buffer[y * face->glyph->bitmap.pitch + x];
+        }
+    }
+
+    m_ft_sdf_cache[codepoint] = std::move(glyph);
+}
+
+void Font::render_freetype_sdf_by_index(std::uint32_t glyph_index) const {
+    FT_Face face = static_cast<FT_Face>(m_ft_face);
+    if (FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT)) {
+        return;
+    }
+    if (FT_Render_Glyph(face->glyph, FT_RENDER_MODE_SDF)) {
+        return;
+    }
+
+    GlyphBitmap glyph;
+    glyph.width = face->glyph->bitmap.width;
+    glyph.height = face->glyph->bitmap.rows;
+    glyph.x_offset = face->glyph->bitmap_left;
+    glyph.y_offset = face->glyph->bitmap_top - static_cast<int>(glyph.height);
+    glyph.advance_x = static_cast<std::int32_t>(face->glyph->advance.x >> 6);
+    glyph.type = GlyphType::SDF;
+
+    glyph.alpha_mask.resize(glyph.width * glyph.height);
+    for (std::uint32_t y = 0; y < glyph.height; ++y) {
+        for (std::uint32_t x = 0; x < glyph.width; ++x) {
+            glyph.alpha_mask[y * glyph.width + x] = face->glyph->bitmap.buffer[y * face->glyph->bitmap.pitch + x];
+        }
+    }
+
+    m_ft_sdf_index_cache[glyph_index] = std::move(glyph);
+}
+
 const GlyphBitmap* Font::find_glyph(std::uint32_t codepoint) const {
     if (m_is_freetype) {
         auto it = m_ft_glyph_cache.find(codepoint);
@@ -292,6 +346,18 @@ const GlyphBitmap* Font::find_glyph(std::uint32_t codepoint) const {
         return &it->second;
     }
     return fallback_glyph();
+}
+
+const GlyphBitmap* Font::find_sdf_glyph(std::uint32_t codepoint) const {
+    if (m_is_freetype) {
+        auto it = m_ft_sdf_cache.find(codepoint);
+        if (it == m_ft_sdf_cache.end()) {
+            render_freetype_sdf(codepoint);
+            it = m_ft_sdf_cache.find(codepoint);
+        }
+        return it != m_ft_sdf_cache.end() ? &it->second : fallback_glyph();
+    }
+    return find_glyph(codepoint); // No SDF for BDF fonts
 }
 
 bool Font::has_glyph(std::uint32_t codepoint) const {
@@ -312,6 +378,19 @@ const GlyphBitmap* Font::find_glyph_by_index(std::uint32_t glyph_index) const {
         it = m_ft_index_cache.find(glyph_index);
     }
     return it != m_ft_index_cache.end() ? &it->second : fallback_glyph();
+}
+
+const GlyphBitmap* Font::find_sdf_glyph_by_index(std::uint32_t glyph_index) const {
+    if (!m_is_freetype) {
+        return nullptr;
+    }
+
+    auto it = m_ft_sdf_index_cache.find(glyph_index);
+    if (it == m_ft_sdf_index_cache.end()) {
+        render_freetype_sdf_by_index(glyph_index);
+        it = m_ft_sdf_index_cache.find(glyph_index);
+    }
+    return it != m_ft_sdf_index_cache.end() ? &it->second : fallback_glyph();
 }
 
 std::uint32_t Font::glyph_index_for_codepoint(std::uint32_t codepoint) const {

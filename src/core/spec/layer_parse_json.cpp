@@ -143,19 +143,33 @@ void parse_effects(const json& object, LayerSpec& layer, const std::string& path
 }
 
 void parse_text_animators(const json& object, LayerSpec& layer, const std::string& path, DiagnosticBag& diagnostics) {
-    (void)path; (void)diagnostics;
     if (object.contains("text_animators") && object.at("text_animators").is_array()) {
         for (const auto& anim : object.at("text_animators")) {
-            if (anim.is_string()) layer.text_animators.push_back(anim.get<std::string>());
+            if (!anim.is_object()) {
+                diagnostics.add_warning("layer.text_animators.invalid", "text_animator entries must be objects", path);
+                continue;
+            }
+            try {
+                layer.text_animators.push_back(anim.get<TextAnimatorSpec>());
+            } catch (const std::exception& e) {
+                diagnostics.add_warning("layer.text_animators.parse_failed", e.what(), path);
+            }
         }
     }
 }
 
 void parse_text_highlights(const json& object, LayerSpec& layer, const std::string& path, DiagnosticBag& diagnostics) {
-    (void)path; (void)diagnostics;
     if (object.contains("text_highlights") && object.at("text_highlights").is_array()) {
         for (const auto& high : object.at("text_highlights")) {
-            if (high.is_string()) layer.text_highlights.push_back(high.get<std::string>());
+            if (!high.is_object()) {
+                diagnostics.add_warning("layer.text_highlights.invalid", "text_highlight entries must be objects", path);
+                continue;
+            }
+            try {
+                layer.text_highlights.push_back(high.get<TextHighlightSpec>());
+            } catch (const std::exception& e) {
+                diagnostics.add_warning("layer.text_highlights.parse_failed", e.what(), path);
+            }
         }
     }
 }
@@ -306,6 +320,9 @@ void parse_layer(const json& object, LayerSpec& out, const std::string& path, Di
     parse_optional_color_property(object, "stroke_color", out.stroke_color, path, diagnostics);
     read_number(object, "stroke_width", out.stroke_width);
     parse_optional_scalar_property(object, "stroke_width", out.stroke_width_property, path, diagnostics);
+    read_number(object, "extrusion_depth", out.extrusion_depth);
+    read_number(object, "bevel_size", out.bevel_size);
+    read_number(object, "hole_bevel_ratio", out.hole_bevel_ratio);
     
     // Subtitle & Word Timestamps
     read_string(object, "subtitle_path", out.subtitle_path);

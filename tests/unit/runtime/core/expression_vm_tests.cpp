@@ -77,5 +77,26 @@ bool run_expression_vm_tests() {
         check_near(result, 28.0, "Complex: (10 + 5) * 2 - 8 / 4");
     }
 
+    // 4. valueAtTime callback
+    {
+        Bytecode code;
+        code.instructions = {
+            {OpCode::PushConst, 0},
+            {OpCode::Call, (1u << 16) | 0u}, // valueAtTime(0.25)
+            {OpCode::Ret, 0}
+        };
+        code.constants = { 0.25 };
+        code.names = { "valueAtTime" };
+
+        ExpressionContext ctx;
+        ctx.value = 9.0;
+        ctx.value_at_time = [](double time) {
+            return time * 4.0;
+        };
+
+        double result = ExpressionVM::execute(code, ctx);
+        check_near(result, 1.0, "valueAtTime callback");
+    }
+
     return g_failures == 0;
 }

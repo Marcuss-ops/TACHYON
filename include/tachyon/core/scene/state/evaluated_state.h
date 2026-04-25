@@ -83,6 +83,7 @@ struct EvaluatedLayerState {
     math::Vector3 scale_3d{1.0f, 1.0f, 1.0f};
     float extrusion_depth{0.0f};
     float bevel_size{0.0f};
+    float hole_bevel_ratio{0.0f};
     math::Transform2 local_transform{math::Transform2::identity()};
     bool motion_blur{false};
     
@@ -116,6 +117,7 @@ struct EvaluatedLayerState {
     std::optional<std::string> asset_path;
     std::optional<GradientSpec> gradient_fill;
     std::optional<GradientSpec> gradient_stroke;
+    std::optional<ProceduralSpec> procedural;
     std::optional<std::string> subtitle_path;
     std::optional<std::string> word_timestamp_path;
     std::optional<ColorSpec> subtitle_outline_color;

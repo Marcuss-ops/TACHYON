@@ -56,6 +56,12 @@ struct ResolvedGlyph {
 
     // The index in the original source string
     std::size_t source_index;
+
+    // Higher-level selection metadata used by text animator selectors.
+    std::size_t word_index{0};
+    std::size_t line_index{0};
+    bool is_space{false};
+    bool whitespace{false};
     
     // Styling attributes (these can be animated/overridden per glyph)
     float font_size;

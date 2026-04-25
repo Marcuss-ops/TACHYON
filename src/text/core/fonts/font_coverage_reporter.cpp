@@ -40,9 +40,7 @@ FontCoverageSummary FontCoverageReporter::generate_report() const {
             
             std::unordered_set<std::uint32_t> codepoints;
             face.collect_codepoints(codepoints);
-            for (auto cp : codepoints) {
-                ++report.total_glyphs;
-            }
+            report.total_glyphs = codepoints.size();
 
             for (auto required_cp : m_required_codepoints) {
                 if (!face.has_glyph(required_cp)) {

@@ -9,6 +9,10 @@
 #include <memory>
 #include <optional>
 
+namespace tachyon::media {
+struct MeshAsset;
+}
+
 namespace tachyon::renderer3d {
 
 enum class LightType {
@@ -51,6 +55,7 @@ struct EvaluatedMeshInstance {
     
     // Geometry reference (would point to an asset/VBO)
     std::string mesh_asset_id;
+    std::shared_ptr<const ::tachyon::media::MeshAsset> mesh_asset;
 };
 
 struct EvaluatedCamera3D {
