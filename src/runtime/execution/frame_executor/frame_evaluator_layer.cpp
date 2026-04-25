@@ -103,7 +103,12 @@ void evaluate_layer(
     state->text_animators = layer.text_animators;
     state->text_highlights = layer.text_highlights;
     state->subtitle_path = layer.subtitle_path;
-    state->subtitle_outline_color = layer.subtitle_outline_color;
+    // Sample animated subtitle outline color to static ColorSpec
+    if (layer.subtitle_outline_color.value.has_value()) {
+        state->subtitle_outline_color = layer.subtitle_outline_color.value;
+    } else {
+        state->subtitle_outline_color = std::nullopt;
+    }
     state->subtitle_outline_width = layer.subtitle_outline_width;
     state->word_timestamp_path = layer.word_timestamp_path;
     state->shape_path = to_shape_path_spec(layer.shape_path);

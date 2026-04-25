@@ -2,6 +2,7 @@
 
 #include "tachyon/core/spec/schema/audio/audio_spec.h"
 #include "tachyon/audio/audio_encoder.h"
+#include "tachyon/audio/loudness_meter.h"
 
 #include <memory>
 #include <vector>

@@ -238,14 +238,14 @@ void parse_shape_spec(const json& object, LayerSpec& layer, const std::string& p
         if (parse_color_value(object.value("stroke_color", json::array()), c_stroke)) ss.stroke_color = c_stroke;
 
         if (object.contains("gradient_fill")) {
-            renderer2d::GradientSpec grad;
+            GradientSpec grad;
             if (parse_gradient_spec(object.at("gradient_fill"), grad)) {
                 ss.gradient_fill = grad;
             }
         }
 
         if (object.contains("gradient_stroke")) {
-            renderer2d::GradientSpec grad;
+            GradientSpec grad;
             if (parse_gradient_spec(object.at("gradient_stroke"), grad)) {
                 ss.gradient_stroke = grad;
             }

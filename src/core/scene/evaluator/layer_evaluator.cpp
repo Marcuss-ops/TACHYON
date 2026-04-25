@@ -101,6 +101,12 @@ EvaluatedLayerState make_layer_state(
         const math::Vector3 rot3 = sample_vector3(layer.transform3d.rotation_property, rotation_fallback, local_t, context.audio_analyzer);
         const math::Vector3 scale3 = sample_vector3(layer.transform3d.scale_property, scale_fallback_3d, local_t, context.audio_analyzer);
 
+        // Sample anchor point for 3D
+        const math::Vector3 anchor3 = sample_vector3(layer.transform3d.anchor_point_property,
+            math::Vector3{static_cast<float>(layer.width) * 0.5f, static_cast<float>(layer.height) * 0.5f, 0.0f},
+            local_t, context.audio_analyzer);
+
+
         evaluated.world_position3 = pos3;
         evaluated.scale_3d = scale3;
         evaluated.local_transform.position = {pos3.x, pos3.y};
@@ -132,6 +138,12 @@ EvaluatedLayerState make_layer_state(
         const double rot_deg = sample_scalar(layer.transform.rotation_property, layer.transform.rotation.value_or(0.0), local_t, context.audio_analyzer);
         const math::Vector2 scale2 = sample_vector2(layer.transform.scale_property, scale_fallback, local_t, context.audio_analyzer);
 
+        // Sample anchor point for 2D
+        const math::Vector2 anchor2 = sample_vector2(layer.transform.anchor_point,
+            math::Vector2{static_cast<float>(layer.width) * 0.5f, static_cast<float>(layer.height) * 0.5f},
+            local_t, context.audio_analyzer);
+
+
         evaluated.local_transform.position = pos2;
         evaluated.local_transform.rotation_rad = static_cast<float>(degrees_to_radians(rot_deg));
         evaluated.local_transform.scale = scale2;
@@ -145,6 +157,12 @@ EvaluatedLayerState make_layer_state(
         const math::Vector2 prev_pos2 = sample_vector2(layer.transform.position_property, position_fallback, prev_local_t, context.audio_analyzer);
         const double prev_rot_deg = sample_scalar(layer.transform.rotation_property, layer.transform.rotation.value_or(0.0), prev_local_t, context.audio_analyzer);
         const math::Vector2 prev_scale2 = sample_vector2(layer.transform.scale_property, scale_fallback, prev_local_t, context.audio_analyzer);
+
+        // Sample previous anchor point
+        const math::Vector2 prev_anchor2 = sample_vector2(layer.transform.anchor_point,
+            math::Vector2{static_cast<float>(layer.width) * 0.5f, static_cast<float>(layer.height) * 0.5f},
+            prev_local_t, context.audio_analyzer);
+
         evaluated.previous_world_matrix = math::compose_trs(
             {prev_pos2.x, prev_pos2.y, 0.0f},
             math::Quaternion::from_euler({0.0f, 0.0f, static_cast<float>(prev_rot_deg)}),

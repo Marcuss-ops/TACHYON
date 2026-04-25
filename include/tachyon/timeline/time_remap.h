@@ -42,9 +42,10 @@ struct FrameBlendParams {
 class TimeRemapEvaluator {
 public:
     struct Config {
-        float optical_flow_confidence_threshold{0.5f};
-        bool enable_pixel_motion{true};
-        bool enable_optical_flow_warping{true};
+        float optical_flow_confidence_threshold;
+        bool enable_pixel_motion;
+        bool enable_optical_flow_warping;
+        Config() : optical_flow_confidence_threshold(0.5f), enable_pixel_motion(true), enable_optical_flow_warping(true) {}
     };
 
     explicit TimeRemapEvaluator(const Config& config = Config());

@@ -111,7 +111,7 @@ ParseResult<SceneSpec> parse_scene_spec_json(const std::string& text, const std:
             if (fm_fs_path.is_relative() && !base_dir.empty()) {
                 fm_fs_path = base_dir / fm_fs_path;
             }
-            auto manifest_opt = FontManifestParser::parse_file(fm_fs_path);
+            auto manifest_opt = tachyon::text::FontManifestParser::parse_file(fm_fs_path);
             if (manifest_opt.has_value()) {
                 scene.font_manifest = std::move(*manifest_opt);
             } else {

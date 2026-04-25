@@ -116,7 +116,7 @@ struct CompiledLayer {
     std::vector<TextHighlightSpec> text_highlights;
     float mask_feather{0.0f};
     std::optional<std::string> subtitle_path;
-    std::optional<ColorSpec> subtitle_outline_color;
+    AnimatedColorSpec subtitle_outline_color;
     float subtitle_outline_width{0.0f};
     std::optional<std::string> word_timestamp_path;
     

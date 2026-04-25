@@ -110,6 +110,32 @@ void hash_animated_vector2(CacheKeyBuilder& builder, const AnimatedVector2Spec& 
     }
 }
 
+void hash_effect(CacheKeyBuilder& builder, const EffectSpec& effect) {
+    builder.add_string(effect.type);
+    builder.add_bool(effect.enabled);
+    // Hash scalars
+    builder.add_u64(static_cast<std::uint64_t>(effect.scalars.size()));
+    for (const auto& [key, val] : effect.scalars) {
+        builder.add_string(key);
+        builder.add_f64(val);
+    }
+    // Hash colors
+    builder.add_u64(static_cast<std::uint64_t>(effect.colors.size()));
+    for (const auto& [key, val] : effect.colors) {
+        builder.add_string(key);
+        builder.add_u64(val.r);
+        builder.add_u64(val.g);
+        builder.add_u64(val.b);
+        builder.add_u64(val.a);
+    }
+    // Hash strings
+    builder.add_u64(static_cast<std::uint64_t>(effect.strings.size()));
+    for (const auto& [key, val] : effect.strings) {
+        builder.add_string(key);
+        builder.add_string(val);
+    }
+}
+
 void hash_animated_vector3(CacheKeyBuilder& builder, const AnimatedVector3Spec& spec) {
     builder.add_bool(spec.value.has_value());
     if (spec.value.has_value()) {
@@ -290,7 +316,7 @@ std::uint64_t hash_scene_content(const SceneSpec& scene) {
             hash_animated_color(builder, layer.stroke_color);
             hash_animated_color(builder, layer.light_color);
             builder.add_u64(static_cast<std::uint64_t>(layer.effects.size()));
-            for (const auto& effect : layer.effects) builder.add_string(effect);
+            for (const auto& effect : layer.effects) hash_effect(builder, effect);
             builder.add_u64(static_cast<std::uint64_t>(layer.text_animators.size()));
             for (const auto& animator : layer.text_animators) builder.add_string(animator);
             builder.add_u64(static_cast<std::uint64_t>(layer.text_highlights.size()));
