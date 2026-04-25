@@ -11,14 +11,6 @@
 #include <optional>
 
 namespace tachyon::scene {
-namespace {
-
-math::Vector2 sample_vector2_fallback(const AnimatedVector2Spec& property, const math::Vector2& fallback) {
-    return property.value.value_or(fallback);
-}
-
-} // namespace
-
 EvaluatedLayerState make_layer_state(
     EvaluationContext& context,
     const LayerSpec& layer,
@@ -141,14 +133,24 @@ EvaluatedLayerState make_layer_state(
             static_cast<float>(layer.transform.scale_y.value_or(1.0))
         };
 
-        const math::Vector2 pos2 = sample_vector2_fallback(layer.transform.position_property, position_fallback);
+        const math::Vector2 pos2 = sample_vector2(
+            layer.transform.position_property,
+            position_fallback,
+            local_t,
+            context.audio_analyzer);
         const double rot_deg = sample_scalar(layer.transform.rotation_property, layer.transform.rotation.value_or(0.0), local_t, context.audio_analyzer);
-        const math::Vector2 scale2 = sample_vector2_fallback(layer.transform.scale_property, scale_fallback);
+        const math::Vector2 scale2 = sample_vector2(
+            layer.transform.scale_property,
+            scale_fallback,
+            local_t,
+            context.audio_analyzer);
 
         // Sample anchor point for 2D
-        const math::Vector2 anchor2 = sample_vector2_fallback(
+        const math::Vector2 anchor2 = sample_vector2(
             layer.transform.anchor_point,
-            math::Vector2{static_cast<float>(layer.width) * 0.5f, static_cast<float>(layer.height) * 0.5f});
+            math::Vector2{static_cast<float>(layer.width) * 0.5f, static_cast<float>(layer.height) * 0.5f},
+            local_t,
+            context.audio_analyzer);
         (void)anchor2;
 
 
@@ -162,14 +164,24 @@ EvaluatedLayerState make_layer_state(
             math::Quaternion::from_euler({0.0f, 0.0f, static_cast<float>(rot_deg)}),
             evaluated.scale_3d);
 
-        const math::Vector2 prev_pos2 = sample_vector2_fallback(layer.transform.position_property, position_fallback);
+        const math::Vector2 prev_pos2 = sample_vector2(
+            layer.transform.position_property,
+            position_fallback,
+            prev_local_t,
+            context.audio_analyzer);
         const double prev_rot_deg = sample_scalar(layer.transform.rotation_property, layer.transform.rotation.value_or(0.0), prev_local_t, context.audio_analyzer);
-        const math::Vector2 prev_scale2 = sample_vector2_fallback(layer.transform.scale_property, scale_fallback);
+        const math::Vector2 prev_scale2 = sample_vector2(
+            layer.transform.scale_property,
+            scale_fallback,
+            prev_local_t,
+            context.audio_analyzer);
 
         // Sample previous anchor point
-        const math::Vector2 prev_anchor2 = sample_vector2_fallback(
+        const math::Vector2 prev_anchor2 = sample_vector2(
             layer.transform.anchor_point,
-            math::Vector2{static_cast<float>(layer.width) * 0.5f, static_cast<float>(layer.height) * 0.5f});
+            math::Vector2{static_cast<float>(layer.width) * 0.5f, static_cast<float>(layer.height) * 0.5f},
+            prev_local_t,
+            context.audio_analyzer);
         (void)prev_anchor2;
 
         evaluated.previous_world_matrix = math::compose_trs(

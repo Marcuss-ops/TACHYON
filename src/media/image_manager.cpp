@@ -1,8 +1,6 @@
 #include "tachyon/media/management/image_manager.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
 namespace tachyon::media {

@@ -142,6 +142,8 @@ bool AudioDecoder::open(const std::filesystem::path& path) {
 }
 
 std::vector<float> AudioDecoder::decode_range(double start_sec, double duration_sec) {
+    (void)start_sec;
+    (void)duration_sec;
     std::lock_guard<std::mutex> lock(m_mutex);
     std::vector<float> samples;
 

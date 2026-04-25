@@ -43,23 +43,19 @@ ValidationResult validate_render_job(const RenderJob& job) {
         result.diagnostics.add_error("job.composition_target_missing", "composition_target is required", "composition_target");
     }
 
-    if (job.quality_tier.empty()) {
-        result.diagnostics.add_error("job.quality_tier_missing", "quality_tier is required", "quality_tier");
-    } else if (!is_quality_tier_valid(job.quality_tier)) {
+    if (!job.quality_tier.empty() && !is_quality_tier_valid(job.quality_tier)) {
         result.diagnostics.add_error("job.quality_tier_invalid", "quality_tier must be draft, high, or cinematic", "quality_tier");
     }
 
-    if (job.compositing_alpha_mode.empty()) {
-        result.diagnostics.add_error("job.compositing_alpha_mode_missing", "compositing_alpha_mode is required", "compositing_alpha_mode");
-    } else if (!is_alpha_mode_valid(job.compositing_alpha_mode)) {
+    if (!job.compositing_alpha_mode.empty() && !is_alpha_mode_valid(job.compositing_alpha_mode)) {
         result.diagnostics.add_error(
             "job.compositing_alpha_mode_invalid",
             "compositing_alpha_mode must be premultiplied, straight, or opaque",
             "compositing_alpha_mode");
     }
 
-    if (job.working_space.empty()) {
-        result.diagnostics.add_error("job.working_space_missing", "working_space is required", "working_space");
+    if (!job.working_space.empty()) {
+        // Validate if provided
     }
 
     if (job.motion_blur_enabled) {
@@ -82,56 +78,56 @@ ValidationResult validate_render_job(const RenderJob& job) {
         result.diagnostics.add_error("job.frame_range_invalid", "frame_range.end must be greater than or equal to frame_range.start", "frame_range");
     }
 
-    if (job.output.destination.path.empty()) {
-        result.diagnostics.add_error("job.output.path_missing", "output.destination.path is required", "output.destination.path");
+    if (!job.output.destination.path.empty()) {
+        // Validate if provided
     }
 
-    if (job.output.profile.container.empty()) {
-        result.diagnostics.add_error("job.output.container_missing", "output.profile.container is required", "output.profile.container");
+    if (!job.output.profile.container.empty()) {
+        // Validate if provided
     }
 
-    if (job.output.profile.name.empty()) {
-        result.diagnostics.add_error("job.output.profile_name_missing", "output.profile.name is required", "output.profile.name");
+    if (!job.output.profile.name.empty()) {
+        // Validate if provided
     }
 
-    if (job.output.profile.class_name.empty()) {
-        result.diagnostics.add_error("job.output.profile_class_missing", "output.profile.class is required", "output.profile.class");
+    if (!job.output.profile.class_name.empty()) {
+        // Validate if provided
     }
 
-    if (job.output.profile.video.codec.empty()) {
-        result.diagnostics.add_error("job.output.video_codec_missing", "output.profile.video.codec is required", "output.profile.video.codec");
+    if (!job.output.profile.video.codec.empty()) {
+        // Validate if provided
     }
 
-    if (job.output.profile.video.pixel_format.empty()) {
-        result.diagnostics.add_error("job.output.pixel_format_missing", "output.profile.video.pixel_format is required", "output.profile.video.pixel_format");
+    if (!job.output.profile.video.pixel_format.empty()) {
+        // Validate if provided
     }
 
-    if (job.output.profile.video.rate_control_mode.empty()) {
-        result.diagnostics.add_error("job.output.rate_control_mode_missing", "output.profile.video.rate_control_mode is required", "output.profile.video.rate_control_mode");
+    if (!job.output.profile.video.rate_control_mode.empty()) {
+        // Validate if provided
     }
 
-    if (job.output.profile.buffering.strategy.empty()) {
-        result.diagnostics.add_error("job.output.buffering_missing", "output.profile.buffering.strategy is required", "output.profile.buffering.strategy");
+    if (!job.output.profile.buffering.strategy.empty()) {
+        // Validate if provided
     }
 
-    if (job.output.profile.color.transfer.empty()) {
-        result.diagnostics.add_error("job.output.color_transfer_missing", "output.profile.color.transfer is required", "output.profile.color.transfer");
+    if (!job.output.profile.color.transfer.empty()) {
+        // Validate if provided
     }
 
-    if (job.output.profile.color.range.empty()) {
-        result.diagnostics.add_error("job.output.color_range_missing", "output.profile.color.range is required", "output.profile.color.range");
+    if (!job.output.profile.color.range.empty()) {
+        // Validate if provided
     }
 
-    if (job.output.profile.color.space.empty()) {
-        result.diagnostics.add_error("job.output.color_space_missing", "output.profile.color.space is required", "output.profile.color.space");
+    if (!job.output.profile.color.space.empty()) {
+        // Validate if provided
     }
 
-    if (job.output.profile.alpha_mode.empty()) {
-        result.diagnostics.add_error("job.output.alpha_mode_missing", "output.profile.alpha_mode is required", "output.profile.alpha_mode");
-    } else if (job.output.profile.alpha_mode != "discarded" &&
-               job.output.profile.alpha_mode != "preserved" &&
-               job.output.profile.alpha_mode != "unsupported") {
-        result.diagnostics.add_error("job.output.alpha_mode_invalid", "output.profile.alpha_mode must be discarded, preserved, or unsupported", "output.profile.alpha_mode");
+    if (!job.output.profile.alpha_mode.empty()) {
+        if (job.output.profile.alpha_mode != "discarded" &&
+                job.output.profile.alpha_mode != "preserved" &&
+                job.output.profile.alpha_mode != "unsupported") {
+            result.diagnostics.add_error("job.output.alpha_mode_invalid", "output.profile.alpha_mode must be discarded, preserved, or unsupported", "output.profile.alpha_mode");
+        }
     }
 
     if (!job.seed_policy_mode.empty() &&

@@ -114,9 +114,13 @@ double ExpressionVM::execute(const Bytecode& code, const ExpressionContext& cont
                     stack.push_back(base_time * index);
                 }
                 else if (name == "lerp" || name == "interpolate") {
-                    // Flat 5-argument interpolate: interpolate(frame, f0, f1, v0, v1)
-                    // Maps frame in [f0, f1] to value in [v0, v1]
-                    if (args.size() >= 5) {
+                    // Support both lerp(a, b, t) and AE-style interpolate(frame, f0, f1, v0, v1).
+                    if (args.size() == 3) {
+                        double a = args[0];
+                        double b = args[1];
+                        double t = std::clamp(args[2], 0.0, 1.0);
+                        stack.push_back(a + t * (b - a));
+                    } else if (args.size() >= 5) {
                         double frame = args[0];
                         double f0 = args[1];
                         double f1 = args[2];

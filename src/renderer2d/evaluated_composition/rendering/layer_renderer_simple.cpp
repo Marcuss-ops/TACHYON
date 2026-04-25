@@ -10,6 +10,7 @@
 #include <cmath>
 #include <limits>
 #include <span>
+#include <string>
 
 namespace tachyon::renderer2d {
 namespace {
@@ -97,6 +98,26 @@ void blit_text_surface(
     }
 }
 
+std::string make_precomp_cache_key(
+    const scene::EvaluatedLayerState& layer,
+    const scene::EvaluatedCompositionState& state,
+    const FrameRenderTask& task) {
+
+    std::string key;
+    key.reserve(128);
+    key += "precomp:";
+    key += state.composition_id;
+    key += ':';
+    key += layer.id.empty() ? layer.layer_id : layer.id;
+    key += ':';
+    key += layer.precomp_id.value_or("");
+    key += ":f";
+    key += std::to_string(task.frame_number);
+    key += ":k";
+    key += task.cache_key.value;
+    return key;
+}
+
 } // namespace
 
 std::shared_ptr<SurfaceRGBA> render_precomp_surface(
@@ -106,7 +127,21 @@ std::shared_ptr<SurfaceRGBA> render_precomp_surface(
     const FrameRenderTask& task,
     RenderContext2D& context) {
 
-    (void)layer;
+    if (context.precomp_cache && layer.nested_composition) {
+        const std::string cache_key = make_precomp_cache_key(layer, state, task);
+        if (auto cached = context.precomp_cache->get(cache_key)) {
+            return std::const_pointer_cast<SurfaceRGBA>(cached);
+        }
+
+        auto nested = render_evaluated_composition_2d(*layer.nested_composition, plan, task, context);
+        if (nested.surface) {
+            auto surface_copy = std::make_shared<SurfaceRGBA>(*nested.surface);
+            context.precomp_cache->put(cache_key, surface_copy);
+            return surface_copy;
+        }
+        return nested.surface;
+    }
+
     if (!state.layers.empty() && layer.nested_composition) {
         auto nested = render_evaluated_composition_2d(*layer.nested_composition, plan, task, context);
         return nested.surface;

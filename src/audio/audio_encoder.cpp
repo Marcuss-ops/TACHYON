@@ -25,16 +25,14 @@ extern "C" {
 
 namespace tachyon::audio {
 
+#if defined(TACHYON_HAS_FFMPEG)
 static const AVCodec* find_audio_encoder(const std::string& codec_name) {
-#if !defined(TACHYON_HAS_FFMPEG)
-    return nullptr;
-#else
     if (codec_name == "aac") return avcodec_find_encoder(AV_CODEC_ID_AAC);
     if (codec_name == "mp3") return avcodec_find_encoder(AV_CODEC_ID_MP3);
     if (codec_name == "flac") return avcodec_find_encoder(AV_CODEC_ID_FLAC);
     return avcodec_find_encoder_by_name(codec_name.c_str());
-#endif
 }
+#endif
 
 AudioEncoder::AudioEncoder() = default;
 
@@ -179,6 +177,7 @@ bool AudioEncoder::open(const std::filesystem::path& output_path, const AudioExp
 }
 
 bool AudioEncoder::encode_interleaved_float(const std::vector<float>& interleaved_samples) {
+    (void)interleaved_samples;
 #if !defined(TACHYON_HAS_FFMPEG)
     return false;
 #else

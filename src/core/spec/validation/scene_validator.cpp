@@ -56,10 +56,19 @@ void SceneValidator::validate_composition(const ::tachyon::CompositionSpec& comp
         out.error_count++;
     }
     
-    // Validate FPS
-    if (comp.fps <= 0.0f) {
-        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, "composition." + comp.id + ".fps", "FPS must be greater than 0."});
-        out.error_count++;
+    // Validate FPS - use frame_rate as primary source, fps as fallback
+    {
+        std::int64_t effective_fps = 0;
+        if (comp.fps.has_value() && *comp.fps > 0) {
+            effective_fps = *comp.fps;
+        } else if (comp.frame_rate.numerator > 0 && comp.frame_rate.denominator > 0) {
+            effective_fps = comp.frame_rate.numerator / comp.frame_rate.denominator;
+        }
+        if (effective_fps <= 0) {
+            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, "composition." + comp.id + ".fps", 
+                "FPS must be greater than 0. Set 'fps' or 'frame_rate' to a positive value."});
+            out.error_count++;
+        }
     }
     
     // Validate duration

@@ -116,6 +116,9 @@ std::vector<ScalarKeyframe> BezierInterpolator::value_to_speed_graph(
     for (std::size_t i = 0; i < value_graph.size(); ++i) {
         ScalarKeyframe speed_kf;
         speed_kf.time = value_graph[i].time;
+        if (i == 0) {
+            speed_kf.in_tangent = value_graph[i].value;
+        }
         
         if (i == 0) {
             // Forward difference at start
@@ -156,15 +159,15 @@ std::vector<ScalarKeyframe> BezierInterpolator::speed_to_value_graph(
     if (speed_graph.size() == 1) {
         ScalarKeyframe kf;
         kf.time = speed_graph[0].time;
-        kf.value = speed_graph[0].value; // Integration constant = speed value
+        kf.value = speed_graph[0].in_tangent; // Preserve original first value
         return {kf};
     }
     
     std::vector<ScalarKeyframe> value_graph;
     value_graph.reserve(speed_graph.size());
     
-    // Integration constant: first keyframe value
-    float accumulated_value = speed_graph[0].value;
+    // Integration constant: first keyframe value (stored in in_tangent by value_to_speed_graph)
+    float accumulated_value = speed_graph[0].in_tangent;
     
     for (std::size_t i = 0; i < speed_graph.size(); ++i) {
         ScalarKeyframe kf;

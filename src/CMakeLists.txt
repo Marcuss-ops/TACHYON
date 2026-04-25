@@ -94,6 +94,7 @@ add_library(TachyonCore SHARED
     renderer2d/evaluated_composition/matte_resolver.cpp
     renderer2d/evaluated_composition/rendering/composition_renderer.cpp
     renderer2d/evaluated_composition/rendering/text_mesh_builder.cpp
+    renderer2d/evaluated_composition/rendering/media_card_mesh_builder.cpp
     renderer2d/evaluated_composition/rendering/layer_renderer_simple.cpp
     renderer2d/evaluated_composition/rendering/layer_renderer_procedural.cpp
     renderer2d/evaluated_composition/utilities/composition_utils.cpp
@@ -143,6 +144,8 @@ add_library(TachyonCore SHARED
     media/management/proxy_worker.cpp
     media/mesh_loader.cpp
     media/extruder.cpp
+    media/stb_image_impl.cpp
+    media/tinygltf_impl.cpp
     output/ffmpeg/ffmpeg_pipe_sink.cpp
     output/ffmpeg/ffmpeg_command_builder.cpp
     output/ffmpeg/ffmpeg_utils.cpp
@@ -170,9 +173,8 @@ add_library(TachyonCore SHARED
     text/core/rendering/outline_extractor.cpp
     text/bidi/script_detector.cpp
     text/core/content/subtitle.cpp
-    text/core/animation/text_animator_utils.cpp
-     text/editing/text_editor.cpp
-     text/text_measure.cpp
+    text/editing/text_editor.cpp
+    text/text_measure.cpp
     renderer3d/temporal/time_remap_curve.cpp
     renderer3d/temporal/frame_blend_mode.cpp
     renderer3d/temporal/rolling_shutter.cpp
@@ -201,6 +203,18 @@ add_library(TachyonCore SHARED
     editor/autosave/autosave_manager.cpp
 )
 
+file(GLOB _tachyon_unity_excluded_sources
+    "${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/path/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/core/*.cpp"
+)
+
+list(APPEND _tachyon_unity_excluded_sources
+    "${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/mask_rasterizer.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/media/tinygltf_impl.cpp"
+)
+
 target_compile_definitions(TachyonCore
     PRIVATE
         TACHYON_SHARED
@@ -214,8 +228,12 @@ if(MSVC)
     set_target_properties(TachyonCore PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
+foreach(_source IN LISTS _tachyon_unity_excluded_sources)
+    set_source_files_properties(${_source} PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
+endforeach()
+
 if(MSVC)
-    target_compile_options(TachyonCore PRIVATE /W4 /WX /permissive- /utf-8 /FS /arch:AVX2)
+    target_compile_options(TachyonCore PRIVATE /W4 /WX /EHsc /permissive- /utf-8 /FS /arch:AVX2 /MP)
     target_compile_definitions(TachyonCore PRIVATE TACHYON_AVX2)
 else()
     target_compile_options(TachyonCore PRIVATE -Wall -Wextra -Wpedantic)
@@ -235,18 +253,34 @@ if(WIN32)
     target_include_directories(TachyonCore PUBLIC $<BUILD_INTERFACE:${oidn_SOURCE_DIR}/include>)
 endif()
 
+# FFmpeg libraries (optional)
+find_library(AVCODEC_LIBRARY avcodec)
+find_library(AVFORMAT_LIBRARY avformat)
+find_library(AVUTIL_LIBRARY avutil)
+find_library(SWSCALE_LIBRARY swscale)
+find_library(SWRESAMPLE_LIBRARY swresample)
+
 target_link_libraries(TachyonCore
     PUBLIC
         nlohmann_json::nlohmann_json
         freetype
         harfbuzz
-        avcodec
-        avformat
-        avutil
-        swscale
-        swresample
         OpenMP::OpenMP_CXX
 )
+
+if(AVCODEC_LIBRARY AND AVFORMAT_LIBRARY AND AVUTIL_LIBRARY AND SWSCALE_LIBRARY AND SWRESAMPLE_LIBRARY)
+    message(STATUS "[Tachyon] FFmpeg found - enabling video/audio support")
+    target_compile_definitions(TachyonCore PUBLIC TACHYON_HAS_FFMPEG)
+    target_link_libraries(TachyonCore PUBLIC
+        ${AVCODEC_LIBRARY}
+        ${AVFORMAT_LIBRARY}
+        ${AVUTIL_LIBRARY}
+        ${SWSCALE_LIBRARY}
+        ${SWRESAMPLE_LIBRARY}
+    )
+else()
+    message(STATUS "[Tachyon] FFmpeg NOT found - media features disabled")
+endif()
 
 if(TARGET embree)
     target_link_libraries(TachyonCore PUBLIC embree)
