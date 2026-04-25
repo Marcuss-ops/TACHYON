@@ -1,5 +1,5 @@
-# Core Engine Library (Shared for C API / DLL)
-add_library(TachyonCore SHARED
+# Core Engine Library
+add_library(TachyonCore
     runtime/execution/frame_hasher.cpp
     runtime/execution/quality_policy.cpp
     runtime/execution/tile_scheduler.cpp
@@ -25,8 +25,6 @@ add_library(TachyonCore SHARED
     runtime/playback/audio_preview_buffer.cpp
     runtime/execution/render_session.cpp
     core/c_api.cpp
-    core/transition_registry.cpp
-    core/animation_primitives.cpp
     runtime/core/graph/render_graph.cpp
     runtime/core/data/property_graph.cpp
     runtime/core/data/compiled_scene.cpp
@@ -37,14 +35,11 @@ add_library(TachyonCore SHARED
     core/cli/cli_inspect.cpp
     core/cli/cli_render.cpp
     core/cli/cli_demo.cpp
-    core/cli/cli_preview_frame.cpp
-    core/cli/cli_transition.cpp
     core/cli/cli_watch.cpp
     core/options.cpp
     core/report.cpp
     core/camera/camera_state.cpp
     core/camera/camera_shake.cpp
-    core/scene/state/evaluated_camera2d_state.cpp
     core/expressions/expression_engine.cpp
     core/expressions/expression_vm.cpp
     core/math/matrix4x4.cpp
@@ -61,7 +56,6 @@ add_library(TachyonCore SHARED
     core/scene/evaluator/layer_utils.cpp
     core/scene/evaluator/mesh_animator.cpp
     core/scene/evaluator/light_evaluator.cpp
-    core/scene/evaluator/camera2d_evaluator.cpp
     core/scene/evaluator/layer_evaluator.cpp
     core/scene/rigging/rig_graph.cpp
     core/scene/rigging/ik_solver.cpp
@@ -69,13 +63,15 @@ add_library(TachyonCore SHARED
     core/spec/json_parse_helpers.cpp
     core/spec/layer_parse_json.cpp
     core/spec/property_parse_json.cpp
-    core/spec/compilation/preset_compiler.cpp
     core/spec/compilation/scene_compiler.cpp
     core/spec/schema/scene_spec.cpp
     core/spec/schema/scene_spec_core.cpp
-    core/spec/scene_spec_json.cpp
+     core/spec/scene_spec_json.cpp
     core/spec/scene_spec_builder.cpp
-    core/spec/validation/scene_validator.cpp
+        core/spec/validation/scene_validator_schema.cpp
+    core/spec/validation/scene_validator_composition.cpp
+    core/spec/validation/scene_validator_layer.cpp
+    core/spec/validation/scene_validator_utils.cpp
     core/spec/scene_spec_audio.cpp
     renderer2d/raster/draw_list_builder.cpp
     renderer2d/raster/draw_list_rasterizer.cpp
@@ -93,14 +89,11 @@ add_library(TachyonCore SHARED
     renderer2d/backend/cpu_backend.cpp
     renderer2d/evaluated_composition/matte_resolver.cpp
     renderer2d/evaluated_composition/rendering/composition_renderer.cpp
-    renderer2d/evaluated_composition/rendering/text_mesh_builder.cpp
-    renderer2d/evaluated_composition/rendering/layer_renderer_simple.cpp
-    renderer2d/evaluated_composition/rendering/layer_renderer_procedural.cpp
     renderer2d/evaluated_composition/utilities/composition_utils.cpp
     renderer2d/evaluated_composition/rendering/layer_to_draw_command.cpp
     renderer2d/evaluated_composition/rendering/mask_renderer.cpp
     renderer2d/evaluated_composition/effects/effect_renderer.cpp
-    renderer2d/evaluated_composition/rendering/layer_renderer.cpp
+     renderer2d/evaluated_composition/rendering/layer_renderer.cpp
     renderer2d/evaluated_composition/utilities/render_graph.cpp
     renderer2d/spec/project_card.cpp
     renderer2d/raster/path/path_flattener.cpp
@@ -130,9 +123,8 @@ add_library(TachyonCore SHARED
     audio/audio_processor.cpp
     audio/audio_encoder.cpp
     audio/audio_export.cpp
-    audio/loudness_meter.cpp
     tracker/optical_flow.cpp
-    tracker/camera_solver.cpp
+     tracker/camera_solver.cpp
     media/image_manager.cpp
     media/asset_manager.cpp
     media/asset_resolution.cpp
@@ -166,13 +158,11 @@ add_library(TachyonCore SHARED
     text/core/fonts/font_coverage_reporter.cpp
     text/core/layout/layout.cpp
     text/core/layout/layout_engine.cpp
-    text/core/layout/layout_cache.cpp
     text/core/rendering/outline_extractor.cpp
     text/bidi/script_detector.cpp
     text/core/content/subtitle.cpp
     text/core/animation/text_animator_utils.cpp
-     text/editing/text_editor.cpp
-     text/text_measure.cpp
+    text/editing/text_editor.cpp
     renderer3d/temporal/time_remap_curve.cpp
     renderer3d/temporal/frame_blend_mode.cpp
     renderer3d/temporal/rolling_shutter.cpp
@@ -190,9 +180,9 @@ add_library(TachyonCore SHARED
     renderer3d/effects/depth_of_field.cpp
     renderer3d/materials/material.cpp
     renderer3d/materials/material_evaluator.cpp
-    renderer3d/materials/pbr_utils.cpp
     renderer3d/visibility/culling.cpp
     renderer3d/utilities/debug_tools.cpp
+    renderer3d/materials/pbr_utils.cpp
     renderer3d/utilities/environment_manager.cpp
     importer/usd_importer.cpp
     importer/alembic_importer.cpp
@@ -200,19 +190,6 @@ add_library(TachyonCore SHARED
     editor/undo/undo_manager.cpp
     editor/autosave/autosave_manager.cpp
 )
-
-target_compile_definitions(TachyonCore
-    PRIVATE
-        TACHYON_SHARED
-        TACHYON_EXPORTS
-        TACHYON_BUILD_DLL
-    PUBLIC
-        TACHYON_USE_DLL
-)
-
-if(MSVC)
-    set_target_properties(TachyonCore PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
-endif()
 
 if(MSVC)
     target_compile_options(TachyonCore PRIVATE /W4 /WX /permissive- /utf-8 /FS /arch:AVX2)
@@ -245,12 +222,9 @@ target_link_libraries(TachyonCore
         avutil
         swscale
         swresample
+        embree
         OpenMP::OpenMP_CXX
 )
-
-if(TARGET embree)
-    target_link_libraries(TachyonCore PUBLIC embree)
-endif()
 
 if(WIN32)
     target_link_libraries(TachyonCore PUBLIC OpenImageDenoise)
@@ -260,48 +234,48 @@ endif()
 
 find_package(Vulkan QUIET)
 if(Vulkan_FOUND)
-    message(STATUS "[Tachyon] Vulkan found - enabling GPU compute backend")
+    message(STATUS "[Tachyon] Vulkan found – enabling GPU compute backend")
     target_compile_definitions(TachyonCore PUBLIC TACHYON_VULKAN)
     target_link_libraries(TachyonCore PUBLIC Vulkan::Vulkan)
 else()
-    message(STATUS "[Tachyon] Vulkan NOT found - CPU backend only")
+    message(STATUS "[Tachyon] Vulkan NOT found – CPU backend only")
 endif()
 
 find_package(OpenColorIO QUIET)
 if(OpenColorIO_FOUND)
-    message(STATUS "[Tachyon] OpenColorIO found - enabling OCIO adapter")
+    message(STATUS "[Tachyon] OpenColorIO found – enabling OCIO adapter")
     target_compile_definitions(TachyonCore PUBLIC TACHYON_OCIO)
     target_link_libraries(TachyonCore PUBLIC OpenColorIO::OpenColorIO)
 else()
-    message(STATUS "[Tachyon] OpenColorIO NOT found - using built-in colour pipeline")
+    message(STATUS "[Tachyon] OpenColorIO NOT found – using built-in colour pipeline")
 endif()
 
 find_package(OpenEXR QUIET)
 if(OpenEXR_FOUND)
-    message(STATUS "[Tachyon] OpenEXR found - enabling EXR sequence sink")
+    message(STATUS "[Tachyon] OpenEXR found – enabling EXR sequence sink")
     target_compile_definitions(TachyonCore PUBLIC TACHYON_EXR)
     target_link_libraries(TachyonCore PUBLIC OpenEXR::OpenEXR)
     target_sources(TachyonCore PRIVATE output/exr_sequence_sink.cpp)
 else()
-    message(STATUS "[Tachyon] OpenEXR NOT found - EXR output disabled")
+    message(STATUS "[Tachyon] OpenEXR NOT found – EXR output disabled")
 endif()
 
 find_package(pxr QUIET)
 if(pxr_FOUND)
-    message(STATUS "[Tachyon] OpenUSD found - enabling USD scene importer")
+    message(STATUS "[Tachyon] OpenUSD found – enabling USD scene importer")
     target_compile_definitions(TachyonCore PUBLIC TACHYON_USD)
     target_link_libraries(TachyonCore PUBLIC usd_ms)
 else()
-    message(STATUS "[Tachyon] OpenUSD NOT found - USD import disabled")
+    message(STATUS "[Tachyon] OpenUSD NOT found – USD import disabled")
 endif()
 
 find_package(Alembic QUIET)
 if(Alembic_FOUND)
-    message(STATUS "[Tachyon] Alembic found - enabling Alembic scene importer")
+    message(STATUS "[Tachyon] Alembic found – enabling Alembic scene importer")
     target_compile_definitions(TachyonCore PUBLIC TACHYON_ALEMBIC)
     target_link_libraries(TachyonCore PUBLIC Alembic::Alembic)
 else()
-    message(STATUS "[Tachyon] Alembic NOT found - Alembic import disabled")
+    message(STATUS "[Tachyon] Alembic NOT found – Alembic import disabled")
 endif()
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
