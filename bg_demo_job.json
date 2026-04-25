@@ -1,0 +1,36 @@
+{
+    "job_id": "bg_render",
+    "scene_ref": "bg_demo",
+    "composition_target": "main",
+    "frame_range": {"start": 0, "end": 150},
+    "output": {
+        "destination": {
+            "path": "bg_demo.mp4",
+            "overwrite": true
+        },
+        "profile": {
+            "name": "mp4_h264",
+            "class_name": "mp4",
+            "container": "mp4",
+            "format": "Video",
+            "video": {
+                "codec": "libx264",
+                "pixel_format": "yuv420p",
+                "rate_control_mode": "crf",
+                "crf": 23.0
+            },
+            "audio": {
+                "mode": "none"
+            },
+            "buffering": {
+                "strategy": "auto"
+            },
+            "color": {
+                "space": "rec709",
+                "transfer": "iec61966-2-1",
+                "range": "limited"
+            }
+        }
+    },
+    "quality_tier": "high"
+}

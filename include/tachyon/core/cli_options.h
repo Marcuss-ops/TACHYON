@@ -26,6 +26,12 @@ struct CliOptions {
     std::optional<FrameRange> frame_range_override;
     std::optional<int> preview_frame_number;  // For preview-frame command
     std::filesystem::path preview_output;     // Output PNG path for preview-frame
+    // Transition command options
+    std::filesystem::path from_image;
+    std::filesystem::path to_image;
+    std::filesystem::path output_image;
+    bool random_transition{false};
+    double progress_value{0.5};
 };
 
 ParseResult<CliOptions> parse_cli_options(int argc, char** argv);

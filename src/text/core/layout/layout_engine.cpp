@@ -1,4 +1,5 @@
 #include "tachyon/text/layout/layout.h"
+#include "tachyon/text/layout/layout_cache.h"
 #include "tachyon/text/i18n/bidi_engine.h"
 #include "tachyon/text/fonts/font_registry.h"
 #include "tachyon/text/i18n/script_detector.h"
@@ -238,7 +239,10 @@ void sync_resolved_layout(
         resolved.advance_y = 0.0f;
         resolved.font = g.resolved_font;
         resolved.source_index = g.cluster_codepoint_start;
+        resolved.word_index = g.word_index;
         resolved.cluster_index = g.cluster_index;
+        resolved.is_space = g.whitespace;
+        resolved.whitespace = g.whitespace;
         resolved.is_rtl = g.is_rtl;
         resolved.font_size = font_size;
         resolved.fill_color = to_color_spec(style.fill_color);
@@ -293,6 +297,14 @@ void sync_resolved_layout(
             static_cast<float>(font.descent()),
             have_bounds ? line_bounds : make_rect(0.0f, static_cast<float>(line.y), static_cast<float>(line.width), static_cast<float>(result.line_height))
         });
+    }
+
+    for (std::size_t line_index = 0; line_index < result.ResolvedTextLayout::lines.size(); ++line_index) {
+        const auto& line = result.ResolvedTextLayout::lines[line_index];
+        const std::size_t end = std::min(result.ResolvedTextLayout::glyphs.size(), line.start_glyph_index + line.length);
+        for (std::size_t glyph_index = line.start_glyph_index; glyph_index < end; ++glyph_index) {
+            result.ResolvedTextLayout::glyphs[glyph_index].line_index = line_index;
+        }
     }
 }
 
@@ -413,6 +425,25 @@ public:
 
         TextLayoutResult result;
         if (fallback_chain.empty()) return result;
+
+        // Try layout cache first
+        LayoutCacheKey layout_cache_key;
+        layout_cache_key.text = std::string(utf8_text);
+        layout_cache_key.font_id = fallback_chain.front()->id(); // Simplified: using primary font ID
+        layout_cache_key.pixel_size = style.pixel_size;
+        layout_cache_key.features = style.features;
+        layout_cache_key.box_width = text_box.width;
+        layout_cache_key.box_height = text_box.height;
+        layout_cache_key.multiline = text_box.multiline;
+        layout_cache_key.alignment = alignment;
+        layout_cache_key.tracking = options.tracking;
+        layout_cache_key.word_wrap = options.word_wrap;
+        layout_cache_key.use_sdf = options.use_sdf;
+
+        auto& layout_cache = LayoutCache::get_instance();
+        if (layout_cache.get(layout_cache_key, result)) {
+            return result;
+        }
 
         const auto codepoints = renderer2d::text::utf8::decode_utf8(utf8_text);
         if (codepoints.empty()) return result;
@@ -541,6 +572,8 @@ public:
         if (text_box.height > 0U) result.height = std::min(result.height, text_box.height);
         if (result.width == 0U) result.width = text_box.width > 0U ? text_box.width : 0U;
         sync_resolved_layout(result, primary_font, style);
+        
+        layout_cache.put(layout_cache_key, result);
         return result;
     }
 };

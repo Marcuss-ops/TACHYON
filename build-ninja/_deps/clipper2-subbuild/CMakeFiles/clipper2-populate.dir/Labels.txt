@@ -1,0 +1,14 @@
+# Target labels
+ clipper2-populate
+# Source files and their labels
+C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/clipper2-subbuild/CMakeFiles/clipper2-populate
+C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/clipper2-subbuild/CMakeFiles/clipper2-populate.rule
+C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/clipper2-subbuild/CMakeFiles/clipper2-populate-complete.rule
+C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/clipper2-subbuild/clipper2-populate-prefix/src/clipper2-populate-stamp/clipper2-populate-build.rule
+C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/clipper2-subbuild/clipper2-populate-prefix/src/clipper2-populate-stamp/clipper2-populate-configure.rule
+C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/clipper2-subbuild/clipper2-populate-prefix/src/clipper2-populate-stamp/clipper2-populate-download.rule
+C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/clipper2-subbuild/clipper2-populate-prefix/src/clipper2-populate-stamp/clipper2-populate-install.rule
+C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/clipper2-subbuild/clipper2-populate-prefix/src/clipper2-populate-stamp/clipper2-populate-mkdir.rule
+C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/clipper2-subbuild/clipper2-populate-prefix/src/clipper2-populate-stamp/clipper2-populate-patch.rule
+C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/clipper2-subbuild/clipper2-populate-prefix/src/clipper2-populate-stamp/clipper2-populate-test.rule
+C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/clipper2-subbuild/clipper2-populate-prefix/src/clipper2-populate-stamp/clipper2-populate-update.rule

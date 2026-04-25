@@ -52,6 +52,13 @@ public:
         const std::string& to_layer_id,
         double progress = 0.0) const;
 
+    [[nodiscard]] std::string random_transition_id(uint32_t seed = 0) const;
+
+    [[nodiscard]] EffectSpec build_random_transition(
+        const std::string& from_layer_id,
+        const std::string& to_layer_id,
+        uint32_t seed = 0) const;
+
 private:
     void reset();
     bool load_scenes(const nlohmann::json& manifest);

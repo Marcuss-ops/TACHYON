@@ -6,7 +6,13 @@
 #include "tachyon/renderer3d/effects/depth_of_field.h"
 #include "tachyon/renderer3d/lighting/environment_manager.h"
 #include "tachyon/media/management/media_manager.h"
+#if __has_include(<embree4/rtcore.h>)
 #include <embree4/rtcore.h>
+#define TACHYON_HAS_EMBREE 1
+#else
+#include "tachyon/third_party/embree_stub.h"
+#define TACHYON_HAS_EMBREE 0
+#endif
 #ifdef _WIN32
 #include <OpenImageDenoise/oidn.hpp>
 #endif
@@ -84,7 +90,7 @@ private:
 
     struct MeshCacheEntry {
         RTCScene scene{nullptr};
-        const media::MeshAsset* asset{nullptr};
+        std::shared_ptr<const media::MeshAsset> asset;
         struct SubMeshCache {
             std::vector<MeshVertex> vertices;
             std::vector<unsigned int> indices;

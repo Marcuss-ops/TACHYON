@@ -196,6 +196,51 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
             options.preview_output = value;
             continue;
         }
+        if (arg == "--from") {
+            const std::string value = require_argument(args, index);
+            if (value.empty()) {
+                result.diagnostics.add_error("cli.from_missing", "missing value for --from");
+                return result;
+            }
+            options.from_image = value;
+            continue;
+        }
+        if (arg == "--to") {
+            const std::string value = require_argument(args, index);
+            if (value.empty()) {
+                result.diagnostics.add_error("cli.to_missing", "missing value for --to");
+                return result;
+            }
+            options.to_image = value;
+            continue;
+        }
+        if (arg == "--out" && options.command == "transition") {
+            const std::string value = require_argument(args, index);
+            if (value.empty()) {
+                result.diagnostics.add_error("cli.out_missing", "missing value for --out");
+                return result;
+            }
+            options.output_image = value;
+            continue;
+        }
+        if (arg == "--random") {
+            options.random_transition = true;
+            continue;
+        }
+        if (arg == "--progress") {
+            const std::string value = require_argument(args, index);
+            if (value.empty()) {
+                result.diagnostics.add_error("cli.progress_missing", "missing value for --progress");
+                return result;
+            }
+            try {
+                options.progress_value = std::stod(value);
+            } catch (const std::exception&) {
+                result.diagnostics.add_error("cli.progress_invalid", "invalid value for --progress: " + value);
+                return result;
+            }
+            continue;
+        }
 
         result.diagnostics.add_error("cli.flag_unknown", "unknown flag: " + arg, arg);
         return result;

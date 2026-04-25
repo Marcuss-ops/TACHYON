@@ -7,6 +7,7 @@ namespace tachyon::expressions {
 
 enum class OpCode : std::uint8_t {
     PushConst,
+    PushName,
     PushVar,
     Add,
     Sub,

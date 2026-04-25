@@ -121,6 +121,7 @@ bool run_surface_tests();
 bool run_draw_list_builder_tests();
 bool run_blend_modes_tests();
 bool run_evaluated_composition_renderer_tests();
+bool run_text3d_preview_tests();
 bool run_path_rasterizer_tests();
 bool run_path_rasterizer_aa_tests();
 bool run_expression_vm_tests();
@@ -175,6 +176,7 @@ int main(int argc, char** argv) {
         {"draw_list_builder", run_draw_list_builder_tests},
         {"blend_modes", run_blend_modes_tests},
         {"evaluated_composition_renderer", run_evaluated_composition_renderer_tests},
+        {"text3d_preview", run_text3d_preview_tests},
         {"path_rasterizer", run_path_rasterizer_tests},
         {"path_rasterizer_aa", run_path_rasterizer_aa_tests},
         {"frame_cache", run_frame_cache_tests},

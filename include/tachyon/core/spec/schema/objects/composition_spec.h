@@ -10,6 +10,8 @@
 #include <optional>
 #include <cstdint>
 #include <unordered_map>
+#include <map>
+#include <nlohmann/json.hpp>
 
 namespace tachyon {
 
@@ -40,6 +42,10 @@ struct CompositionSpec {
     std::vector<CameraCut> camera_cuts;
     std::vector<Camera2DSpec> cameras_2d;
     std::optional<std::string> active_camera2d_id;
+
+    /// Remotion-like input props: parameterized data for this composition.
+    /// Can be accessed in expressions via prop("key") or in layer properties.
+    std::map<std::string, nlohmann::json> input_props;
 };
 
 } // namespace tachyon

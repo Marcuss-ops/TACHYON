@@ -35,6 +35,7 @@ public:
     bool load_ttf(const std::filesystem::path& path, std::uint32_t pixel_size);
 
     const GlyphBitmap* find_glyph(std::uint32_t codepoint) const;
+    const GlyphBitmap* find_sdf_glyph(std::uint32_t codepoint) const;
     bool has_glyph(std::uint32_t codepoint) const;
     const GlyphBitmap* find_scaled_glyph(std::uint32_t codepoint, std::uint32_t scale) const;
     const GlyphBitmap* fallback_glyph() const;
@@ -61,6 +62,7 @@ public:
     void* freetype_face() const { return m_ft_face; }
     const std::vector<std::uint8_t>& font_data() const { return m_font_data; }
     const GlyphBitmap* find_glyph_by_index(std::uint32_t glyph_index) const;
+    const GlyphBitmap* find_sdf_glyph_by_index(std::uint32_t glyph_index) const;
     std::uint32_t glyph_index_for_codepoint(std::uint32_t codepoint) const;
 
     std::uint64_t id() const { return m_id; }
@@ -71,6 +73,8 @@ private:
     const GlyphBitmap* scale_glyph(std::uint32_t codepoint, const GlyphBitmap& glyph, std::uint32_t scale) const;
     void render_freetype_glyph(std::uint32_t codepoint) const;
     void render_freetype_glyph_by_index(std::uint32_t glyph_index) const;
+    void render_freetype_sdf(std::uint32_t codepoint) const;
+    void render_freetype_sdf_by_index(std::uint32_t glyph_index) const;
 
     std::uint64_t m_id;
     bool m_loaded{false};
@@ -89,6 +93,8 @@ private:
     std::vector<std::uint8_t> m_font_data;
     mutable std::unordered_map<std::uint32_t, GlyphBitmap> m_ft_glyph_cache;
     mutable std::unordered_map<std::uint32_t, GlyphBitmap> m_ft_index_cache;
+    mutable std::unordered_map<std::uint32_t, GlyphBitmap> m_ft_sdf_cache;
+    mutable std::unordered_map<std::uint32_t, GlyphBitmap> m_ft_sdf_index_cache;
 
     mutable std::unordered_map<std::uint64_t, std::unique_ptr<GlyphBitmap>> m_scaled_glyph_cache;
 };

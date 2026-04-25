@@ -30,45 +30,51 @@ public:
         const std::size_t num_glyphs = layout.glyphs.size();
         const float t = context.time;
 
-        // Pre-compute total counts for selectors
-        float total_clusters = 0.0f;
-        float total_lines = 0.0f;
-        for (const auto& glyph : layout.glyphs) {
-            total_clusters = std::max(total_clusters, static_cast<float>(glyph.cluster_index + 1));
-        }
-        total_lines = static_cast<float>(layout.lines.size());
-
         for (const auto& animator : animators) {
             
-            // Sample the scalar/vector/color properties at time t
-            double opacity = sample_scalar_kfs(animator.properties.opacity_value, animator.properties.opacity_keyframes, t);
-            math::Vector2 pos_offset = sample_vector2_kfs(animator.properties.position_offset_value, animator.properties.position_offset_keyframes, t);
-            double scale = sample_scalar_kfs(animator.properties.scale_value, animator.properties.scale_keyframes, t);
-            double rotation = sample_scalar_kfs(animator.properties.rotation_value, animator.properties.rotation_keyframes, t);
-            double tracking = sample_scalar_kfs(animator.properties.tracking_amount_value, animator.properties.tracking_amount_keyframes, t);
-            ::tachyon::ColorSpec fill = sample_color_kfs(animator.properties.fill_color_value, animator.properties.fill_color_keyframes, t);
-            ::tachyon::ColorSpec stroke = sample_color_kfs(animator.properties.stroke_color_value, animator.properties.stroke_color_keyframes, t);
-            double stroke_width = sample_scalar_kfs(animator.properties.stroke_width_value, animator.properties.stroke_width_keyframes, t);
-            double blur_radius = sample_scalar_kfs(animator.properties.blur_radius_value, animator.properties.blur_radius_keyframes, t);
-            double reveal = sample_scalar_kfs(animator.properties.reveal_value, animator.properties.reveal_keyframes, t);
+            // Calculate stagger offset multiplier based on mode
+            auto get_stagger_index = [&](std::size_t glyph_idx) -> float {
+                const auto& glyph = layout.glyphs[glyph_idx];
+                if (animator.selector.stagger_mode == "character") {
+                    return static_cast<float>(glyph_idx);
+                } else if (animator.selector.stagger_mode == "word") {
+                    return static_cast<float>(glyph.word_index);
+                } else if (animator.selector.stagger_mode == "line") {
+                    return static_cast<float>(glyph.line_index);
+                }
+                return 0.0f;
+            };
 
             float accumulated_tracking = 0.0f;
 
             for (std::size_t i = 0; i < num_glyphs; ++i) {
                 auto& glyph = layout.glyphs[i];
 
-                // 1. Evaluate Selector Coverage [0, 1] with cluster-aware context
-                TextAnimatorContext ctx;
-                ctx.glyph_index = i;
-                ctx.cluster_index = glyph.cluster_index;
-                ctx.word_index = 0;  // Would need to be computed by caller
-                ctx.line_index = 0;  // Would need to be computed by caller
-                ctx.total_glyphs = static_cast<float>(num_glyphs);
-                ctx.total_clusters = total_clusters;
-                ctx.total_lines = total_lines;
-                ctx.time = t;
-                ctx.is_space = (glyph.fill_color.a == 0 && glyph.bounds.width <= 0.0f); // Heuristic for space
-                ctx.is_rtl = glyph.is_rtl;
+                // Apply stagger delay to time for this glyph
+                float staggered_t = t;
+                if (animator.selector.stagger_mode != "none" && animator.selector.stagger_delay != 0.0) {
+                    float stagger_idx = get_stagger_index(i);
+                    float stagger_offset = stagger_idx * static_cast<float>(animator.selector.stagger_delay);
+                    staggered_t = t - stagger_offset;
+                }
+                // Ensure we don't go negative if properties don't handle it
+                if (staggered_t < 0.0f) staggered_t = 0.0f;
+
+                // Sample properties at staggered time for this glyph
+                double opacity = sample_scalar_kfs(animator.properties.opacity_value, animator.properties.opacity_keyframes, staggered_t);
+                math::Vector2 pos_offset = sample_vector2_kfs(animator.properties.position_offset_value, animator.properties.position_offset_keyframes, staggered_t);
+                double scale = sample_scalar_kfs(animator.properties.scale_value, animator.properties.scale_keyframes, staggered_t);
+                double rotation = sample_scalar_kfs(animator.properties.rotation_value, animator.properties.rotation_keyframes, staggered_t);
+                double tracking = sample_scalar_kfs(animator.properties.tracking_amount_value, animator.properties.tracking_amount_keyframes, staggered_t);
+                ::tachyon::ColorSpec fill = sample_color_kfs(animator.properties.fill_color_value, animator.properties.fill_color_keyframes, staggered_t);
+                ::tachyon::ColorSpec stroke = sample_color_kfs(animator.properties.stroke_color_value, animator.properties.stroke_color_keyframes, staggered_t);
+                double stroke_width = sample_scalar_kfs(animator.properties.stroke_width_value, animator.properties.stroke_width_keyframes, staggered_t);
+                double blur_radius = sample_scalar_kfs(animator.properties.blur_radius_value, animator.properties.blur_radius_keyframes, staggered_t);
+                double reveal = sample_scalar_kfs(animator.properties.reveal_value, animator.properties.reveal_keyframes, staggered_t);
+
+                // 1. Evaluate selector coverage using the shared context builder.
+                TextAnimatorContext ctx = make_text_animator_context(layout, i, staggered_t);
+                ctx.is_space = ctx.is_space || (glyph.bounds.width <= 0.0f && glyph.bounds.height <= 0.0f);
 
                 float coverage = compute_coverage(animator.selector, ctx);
                 

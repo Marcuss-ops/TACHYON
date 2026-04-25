@@ -50,12 +50,34 @@ float sample_glyph_alpha(const tachyon::text::GlyphBitmap& glyph, float src_x, f
 
 void TextRasterSurface::render_glyph(const tachyon::text::GlyphBitmap& glyph, int tx, int ty, int tw, int th, tachyon::renderer2d::Color gc) {
     if (tw <= 0 || th <= 0 || glyph.width == 0U || glyph.height == 0U || glyph.alpha_mask.empty()) return;
-    for (int y = 0; y < th; ++y) {
-        const float src_y = ((static_cast<float>(y) + 0.5f) * static_cast<float>(glyph.height) / static_cast<float>(th)) - 0.5f;
-        for (int x = 0; x < tw; ++x) {
-            const float src_x = ((static_cast<float>(x) + 0.5f) * static_cast<float>(glyph.width) / static_cast<float>(tw)) - 0.5f;
-            const float alpha = sample_glyph_alpha(glyph, src_x, src_y);
-            blend_pixel(static_cast<std::uint32_t>(tx + x), static_cast<std::uint32_t>(ty + y), gc, static_cast<std::uint8_t>(std::lround(std::clamp(alpha, 0.0f, 1.0f) * 255.0f)));
+    
+    if (glyph.type == tachyon::renderer2d::text::GlyphType::SDF) {
+        // SDF rendering: alpha is determined by distance from edge (usually 128/255)
+        // smoothing helps avoid aliasing
+        const float smoothing = 0.25f / (static_cast<float>(tw) / static_cast<float>(glyph.width));
+
+        for (int y = 0; y < th; ++y) {
+            const float src_y = ((static_cast<float>(y) + 0.5f) * static_cast<float>(glyph.height) / static_cast<float>(th)) - 0.5f;
+            for (int x = 0; x < tw; ++x) {
+                const float src_x = ((static_cast<float>(x) + 0.5f) * static_cast<float>(glyph.width) / static_cast<float>(tw)) - 0.5f;
+                const float dist = sample_glyph_alpha(glyph, src_x, src_y);
+                const float alpha = std::clamp((dist - 0.5f) / smoothing + 0.5f, 0.0f, 1.0f);
+                if (alpha > 0.0f) {
+                    blend_pixel(static_cast<std::uint32_t>(tx + x), static_cast<std::uint32_t>(ty + y), gc, static_cast<std::uint8_t>(alpha * 255.0f));
+                }
+            }
+        }
+    } else {
+        // Standard alpha mask rendering
+        for (int y = 0; y < th; ++y) {
+            const float src_y = ((static_cast<float>(y) + 0.5f) * static_cast<float>(glyph.height) / static_cast<float>(th)) - 0.5f;
+            for (int x = 0; x < tw; ++x) {
+                const float src_x = ((static_cast<float>(x) + 0.5f) * static_cast<float>(glyph.width) / static_cast<float>(tw)) - 0.5f;
+                const float alpha = sample_glyph_alpha(glyph, src_x, src_y);
+                if (alpha > 0.0f) {
+                    blend_pixel(static_cast<std::uint32_t>(tx + x), static_cast<std::uint32_t>(ty + y), gc, static_cast<std::uint8_t>(std::lround(std::clamp(alpha, 0.0f, 1.0f) * 255.0f)));
+                }
+            }
         }
     }
 }

@@ -9,6 +9,7 @@
 #include "tachyon/renderer2d/evaluated_composition/renderer2d_matte_resolver.h"
 #include "tachyon/renderer2d/color/blending.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
+#include "tachyon/renderer2d/evaluated_composition/rendering/text_mesh_builder.h"
 #include "tachyon/renderer3d/core/ray_tracer.h"
 #include "tachyon/renderer3d/effects/depth_of_field.h"
 #include "tachyon/renderer3d/effects/motion_blur.h"
@@ -165,8 +166,20 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     inst.previous_world_transform = l.previous_world_matrix;
                     inst.material.base_color = l.fill_color;
                     inst.material.opacity = static_cast<float>(l.opacity);
-                    // Assuming empty string triggers the generic quad fallback in RayTracer for now
-                    inst.mesh_asset_id = l.asset_path.value_or("");
+                    if (l.type == scene::LayerType::Text) {
+                        inst.mesh_asset_id = "text3d:" + l.id;
+                    }
+                    if (l.type == scene::LayerType::Text && render_context.font_registry != nullptr) {
+                        const auto text_mesh = build_text_extrusion_mesh(l, state, *render_context.font_registry);
+                        if (text_mesh.mesh) {
+                            inst.mesh_asset = text_mesh.mesh;
+                            inst.mesh_asset_id = text_mesh.cache_key;
+                        }
+                    }
+                    if (inst.mesh_asset_id.empty()) {
+                        // Fallback to a media-backed mesh if the layer already points to one.
+                        inst.mesh_asset_id = l.asset_path.value_or("");
+                    }
                     scene3d.instances.push_back(inst);
                 }
 

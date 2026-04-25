@@ -26,6 +26,151 @@ constexpr std::uint64_t kRandomUnitMask = 0xFFFFFFFFULL;
 constexpr std::size_t kRandomSeedModA = 100;
 constexpr std::size_t kRandomSeedModB = 137;
 
+std::size_t count_total_words(const std::vector<ResolvedGlyph>& glyphs) {
+    std::size_t total = 0;
+    for (const auto& glyph : glyphs) {
+        total = std::max(total, glyph.word_index + 1U);
+    }
+    return total;
+}
+
+std::size_t count_total_non_space(const std::vector<ResolvedGlyph>& glyphs) {
+    std::size_t total = 0;
+    for (const auto& glyph : glyphs) {
+        if (!glyph.is_space && !glyph.whitespace) {
+            ++total;
+        }
+    }
+    return total;
+}
+
+std::size_t count_total_words(const std::vector<PositionedGlyph>& glyphs) {
+    std::size_t total = 0;
+    for (const auto& glyph : glyphs) {
+        total = std::max(total, glyph.word_index + 1U);
+    }
+    return total;
+}
+
+std::size_t count_total_non_space(const std::vector<PositionedGlyph>& glyphs) {
+    std::size_t total = 0;
+    for (const auto& glyph : glyphs) {
+        if (!glyph.whitespace) {
+            ++total;
+        }
+    }
+    return total;
+}
+
+std::size_t find_line_index(
+    const std::vector<ResolvedTextLine>& lines,
+    std::size_t glyph_index) {
+
+    for (std::size_t line_index = 0; line_index < lines.size(); ++line_index) {
+        const auto& line = lines[line_index];
+        if (glyph_index >= line.start_glyph_index &&
+            glyph_index < line.start_glyph_index + line.length) {
+            return line_index;
+        }
+    }
+    return 0;
+}
+
+std::size_t find_line_index(
+    const std::vector<TextLine>& lines,
+    std::size_t glyph_index) {
+
+    for (std::size_t line_index = 0; line_index < lines.size(); ++line_index) {
+        const auto& line = lines[line_index];
+        if (glyph_index >= line.glyph_start_index &&
+            glyph_index < line.glyph_start_index + line.glyph_count) {
+            return line_index;
+        }
+    }
+    return 0;
+}
+
+TextAnimatorContext build_context(
+    const std::vector<ResolvedGlyph>& glyphs,
+    const std::vector<ResolvedTextLine>& lines,
+    std::size_t glyph_index,
+    float time) {
+
+    TextAnimatorContext ctx;
+    ctx.glyph_index = glyph_index;
+    ctx.time = time;
+    ctx.total_glyphs = static_cast<float>(glyphs.size());
+    std::size_t max_cluster = 0;
+    for (const auto& glyph : glyphs) {
+        max_cluster = std::max(max_cluster, glyph.cluster_index + 1U);
+    }
+    ctx.total_clusters = static_cast<float>(max_cluster);
+    ctx.total_words = static_cast<float>(count_total_words(glyphs));
+    ctx.total_lines = static_cast<float>(lines.size());
+    ctx.total_non_space_glyphs = static_cast<float>(count_total_non_space(glyphs));
+
+    std::size_t non_space_index = 0;
+    for (std::size_t i = 0; i < glyph_index && i < glyphs.size(); ++i) {
+        if (!glyphs[i].is_space && !glyphs[i].whitespace) {
+            ++non_space_index;
+        }
+    }
+    ctx.non_space_glyph_index = static_cast<float>(non_space_index);
+
+    if (glyph_index < glyphs.size()) {
+        const auto& glyph = glyphs[glyph_index];
+        ctx.cluster_index = glyph.cluster_index;
+        ctx.word_index = glyph.word_index;
+        ctx.line_index = glyph.line_index;
+        ctx.is_space = glyph.is_space || glyph.whitespace;
+        ctx.is_rtl = glyph.is_rtl;
+    }
+
+    return ctx;
+}
+
+TextAnimatorContext build_context(
+    const std::vector<PositionedGlyph>& glyphs,
+    const std::vector<TextLine>& lines,
+    std::size_t glyph_index,
+    float time) {
+
+    TextAnimatorContext ctx;
+    ctx.glyph_index = glyph_index;
+    ctx.time = time;
+    ctx.total_glyphs = static_cast<float>(glyphs.size());
+    std::size_t max_cluster = 0;
+    for (const auto& glyph : glyphs) {
+        max_cluster = std::max(max_cluster, glyph.cluster_index + 1U);
+    }
+    ctx.total_clusters = static_cast<float>(max_cluster);
+    ctx.total_words = static_cast<float>(count_total_words(glyphs));
+    ctx.total_lines = static_cast<float>(lines.size());
+    ctx.total_non_space_glyphs = static_cast<float>(count_total_non_space(glyphs));
+
+    std::size_t non_space_index = 0;
+    for (std::size_t i = 0; i < glyph_index && i < glyphs.size(); ++i) {
+        if (!glyphs[i].whitespace) {
+            ++non_space_index;
+        }
+    }
+    ctx.non_space_glyph_index = static_cast<float>(non_space_index);
+
+    if (glyph_index < glyphs.size()) {
+        const auto& glyph = glyphs[glyph_index];
+        ctx.glyph_index = glyph_index;
+        ctx.cluster_index = glyph.cluster_index;
+        ctx.word_index = glyph.word_index;
+        ctx.line_index = find_line_index(lines, glyph_index);
+        ctx.is_space = glyph.whitespace;
+        ctx.is_rtl = glyph.is_rtl;
+        ctx.cluster_codepoint_start = glyph.cluster_codepoint_start;
+        ctx.cluster_codepoint_count = glyph.cluster_codepoint_count;
+    }
+
+    return ctx;
+}
+
 float parse_float_token(const std::string& token) {
     const char* begin = token.c_str();
     char* end = nullptr;
@@ -52,7 +197,8 @@ T lerp_channel(T a, T b, float t) {
 }
 
 // Expression selector - evaluates a simple expression string
-// Supported variables: index, time, total_glyphs, total_clusters, total_lines, word_index, line_index
+// Supported variables: index, time, total_glyphs, total_clusters, total_words, total_lines,
+// non_space_index, total_non_space_glyphs, word_index, line_index, is_rtl, is_space
 // Supported operations: +, -, *, /, %, <, >, <=, >=, ==, !=, &&, ||, !, ?: (ternary), sin, cos, abs, floor, ceil, random
 // Example: "index / total_glyphs" or "time > 2 ? 1 : 0" or "random(index) * 0.5"
 float evaluate_expression(const std::string& expr, const TextAnimatorContext& ctx) {
@@ -258,9 +404,14 @@ float evaluate_expression(const std::string& expr, const TextAnimatorContext& ct
                 if (id == "time") return ctx.time;
                 if (id == "total_glyphs") return ctx.total_glyphs;
                 if (id == "total_clusters") return ctx.total_clusters;
+                if (id == "total_words") return ctx.total_words;
                 if (id == "total_lines") return ctx.total_lines;
+                if (id == "non_space_index") return ctx.non_space_glyph_index;
+                if (id == "total_non_space_glyphs") return ctx.total_non_space_glyphs;
                 if (id == "word_index") return static_cast<float>(ctx.word_index);
                 if (id == "line_index") return static_cast<float>(ctx.line_index);
+                if (id == "is_rtl") return ctx.is_rtl ? 1.0f : 0.0f;
+                if (id == "is_space" || id == "whitespace") return ctx.is_space ? 1.0f : 0.0f;
                 
                 return 0.0f;
             }
@@ -274,6 +425,26 @@ float evaluate_expression(const std::string& expr, const TextAnimatorContext& ct
 }
 
 } // namespace
+
+TextAnimatorContext make_text_animator_context(
+    const ResolvedTextLayout& layout,
+    std::size_t glyph_index,
+    float time) {
+    TextAnimatorContext ctx = build_context(layout.glyphs, layout.lines, glyph_index, time);
+    if (ctx.cluster_index < layout.clusters.size()) {
+        const auto& cluster = layout.clusters[ctx.cluster_index];
+        ctx.cluster_codepoint_start = cluster.source_text_start;
+        ctx.cluster_codepoint_count = cluster.source_text_length;
+    }
+    return ctx;
+}
+
+TextAnimatorContext make_text_animator_context(
+    const TextLayoutResult& layout,
+    std::size_t glyph_index,
+    float time) {
+    return build_context(layout.glyphs, layout.lines, glyph_index, time);
+}
 
 double sample_scalar_kfs(
     const std::optional<double>& static_val,
@@ -351,20 +522,26 @@ float compute_coverage(const TextAnimatorSelectorSpec& selector, const TextAnima
     // Index selector: explicit start/end index
     if (selector.type == "index") {
         const std::size_t start_idx = selector.start_index.value_or(0);
-        const std::size_t end_idx = selector.end_index.value_or(ctx.total_glyphs);
+        const std::size_t fallback_end =
+            selector.based_on == "clusters" ? static_cast<std::size_t>(ctx.total_clusters) :
+            selector.based_on == "words" ? static_cast<std::size_t>(ctx.total_words) :
+            selector.based_on == "lines" ? static_cast<std::size_t>(ctx.total_lines) :
+            selector.based_on == "characters_excluding_spaces" ? static_cast<std::size_t>(ctx.total_non_space_glyphs) :
+            static_cast<std::size_t>(ctx.total_glyphs);
+        const std::size_t end_idx = selector.end_index.value_or(fallback_end);
         std::size_t idx = ctx.glyph_index;
         
         // For cluster-based selection, use cluster_index to preserve shaping
         if (selector.based_on == "clusters") {
             idx = ctx.cluster_index;
-        } else if (selector.based_on == "words" && ctx.total_clusters > kZero) {
+        } else if (selector.based_on == "words" && ctx.total_words > kZero) {
             idx = ctx.word_index;
         } else if (selector.based_on == "lines" && ctx.total_lines > kZero) {
             idx = ctx.line_index;
         } else if (selector.based_on == "characters_excluding_spaces") {
-            // For excluding spaces, we need to compute a non-space character index
-            // This is approximated using glyph_index but callers should pre-compute
-            idx = ctx.glyph_index;
+            idx = ctx.is_space
+                ? static_cast<std::size_t>(ctx.total_non_space_glyphs)
+                : static_cast<std::size_t>(ctx.non_space_glyph_index);
         }
         return (idx >= start_idx && idx < end_idx) ? kOne : kZero;
     }
@@ -399,14 +576,18 @@ float compute_coverage(const TextAnimatorSelectorSpec& selector, const TextAnima
     if (selector.based_on == "clusters") {
         // Cluster-based: preserves shaping boundaries
         t = (ctx.total_clusters > kOne) ? static_cast<float>(ctx.cluster_index) / static_cast<float>(ctx.total_clusters - kOne) : kZero;
-    } else if (selector.based_on == "words" && ctx.total_clusters > kZero) {
-        t = (ctx.total_clusters > kOne) ? static_cast<float>(ctx.word_index) / static_cast<float>(ctx.total_clusters - kOne) : kZero;
+    } else if (selector.based_on == "words" && ctx.total_words > kZero) {
+        t = (ctx.total_words > kOne) ? static_cast<float>(ctx.word_index) / static_cast<float>(ctx.total_words - kOne) : kZero;
     } else if (selector.based_on == "lines" && ctx.total_lines > kZero) {
         t = (ctx.total_lines > kOne) ? static_cast<float>(ctx.line_index) / static_cast<float>(ctx.total_lines - kOne) : kZero;
     } else if (selector.based_on == "characters_excluding_spaces") {
-        // For non-space characters, we use the glyph index but this should be
-        // a consecutive index that skips spaces (callers need to pre-compute)
-        t = (ctx.total_glyphs > kOne) ? static_cast<float>(ctx.glyph_index) / static_cast<float>(ctx.total_glyphs - kOne) : kZero;
+        if (ctx.total_non_space_glyphs > kZero && !ctx.is_space) {
+            t = (ctx.total_non_space_glyphs > kOne)
+                ? static_cast<float>(ctx.non_space_glyph_index) / static_cast<float>(ctx.total_non_space_glyphs - kOne)
+                : kZero;
+        } else {
+            t = kZero;
+        }
     } else {
         t = (ctx.total_glyphs > kOne) ? static_cast<float>(ctx.glyph_index) / static_cast<float>(ctx.total_glyphs - kOne) : kZero;
     }
@@ -426,17 +607,10 @@ float compute_coverage(const TextAnimatorSelectorSpec& selector, const TextAnima
 std::vector<ResolvedGlyphPaint> resolve_glyph_paints(
     const BitmapFont& font,
     const TextLayoutResult& layout,
-    const TextAnimationOptions& animation,
-    std::span<const TextAnimatorSpec> animators) {
+    const TextAnimationOptions& animation) {
 
     std::vector<ResolvedGlyphPaint> paints;
     paints.reserve(layout.glyphs.size());
-
-    // Pre-compute total clusters for selectors
-    float total_clusters_float = 0.0f;
-    for (const auto& g : layout.glyphs) {
-        total_clusters_float = std::max(total_clusters_float, static_cast<float>(g.cluster_index + 1));
-    }
 
     for (const PositionedGlyph& positioned : layout.glyphs) {
         const GlyphBitmap* glyph = font.has_freetype_face()
@@ -454,41 +628,8 @@ std::vector<ResolvedGlyphPaint> resolve_glyph_paints(
         ::tachyon::ColorSpec fill_color = {255, 255, 255, 255};
         ::tachyon::ColorSpec stroke_color = {0, 0, 0, 0};
         float stroke_width = kZero;
-        if (animation.enabled) {
-            const float phase_seconds = animation.time_seconds - static_cast<float>(positioned.glyph_index) * kPhaseOffsetPerGlyph;
-            const float wave_period = std::max(kMinWavePeriod, animation.wave_period_seconds);
-            const float wave_phase = (phase_seconds / wave_period) * kTwoPi;
-
-            glyph_offset_x = animation.per_glyph_offset_x * static_cast<float>(positioned.glyph_index) + std::sin(wave_phase) * animation.wave_amplitude_x;
-            glyph_offset_y = animation.per_glyph_offset_y * static_cast<float>(positioned.glyph_index) + std::cos(wave_phase) * animation.wave_amplitude_y;
-            glyph_scale = std::max(kMinGlyphScale, kOne + animation.per_glyph_scale_delta * static_cast<float>(positioned.glyph_index));
-            glyph_opacity = std::clamp(kOne - animation.per_glyph_opacity_drop * static_cast<float>(positioned.glyph_index), kZero, kOne);
-        }
-
-        for (const auto& animator : animators) {
-            TextAnimatorContext ctx;
-            ctx.glyph_index = positioned.glyph_index;
-            ctx.cluster_index = positioned.cluster_index;
-            ctx.word_index = positioned.word_index;
-            ctx.total_glyphs = static_cast<float>(layout.glyphs.size());
-            ctx.total_clusters = total_clusters_float;
-            ctx.total_lines = static_cast<float>(layout.lines.size());
-            ctx.time = animation.time_seconds;
-            ctx.cluster_codepoint_start = positioned.cluster_codepoint_start;
-            ctx.cluster_codepoint_count = positioned.cluster_codepoint_count;
-            ctx.is_space = positioned.whitespace;
-            ctx.is_rtl = positioned.is_rtl;
-
-            // Compute line_index for this glyph
-            ctx.line_index = 0;
-            for (std::size_t li = 0; li < layout.lines.size(); ++li) {
-                const auto& line = layout.lines[li];
-                if (positioned.glyph_index >= line.glyph_start_index &&
-                    positioned.glyph_index < line.glyph_start_index + line.glyph_count) {
-                    ctx.line_index = li;
-                    break;
-                }
-            }
+        for (const auto& animator : animation.animators) {
+            TextAnimatorContext ctx = make_text_animator_context(layout, positioned.glyph_index, animation.time_seconds);
 
             const float coverage = compute_coverage(animator.selector, ctx);
             if (coverage <= 0.0f) {

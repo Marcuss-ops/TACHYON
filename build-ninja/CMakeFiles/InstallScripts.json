@@ -1,0 +1,16 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/Users/pater/Pyt/Tachyon/build-ninja/cmake_install.cmake",
+		"C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/nlohmann_json-build/cmake_install.cmake",
+		"C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/freetype-build/cmake_install.cmake",
+		"C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/harfbuzz-build/cmake_install.cmake",
+		"C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/tinygltf-build/cmake_install.cmake",
+		"C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/earcut-build/cmake_install.cmake",
+		"C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/earcut-build/glfw/cmake_install.cmake",
+		"C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/earcut-build/glfw/src/cmake_install.cmake",
+		"C:/Users/pater/Pyt/Tachyon/build-ninja/src/cmake_install.cmake",
+		"C:/Users/pater/Pyt/Tachyon/build-ninja/tests/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

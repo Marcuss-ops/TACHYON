@@ -1,0 +1,14 @@
+[
+{
+  "directory": "C:/Users/pater/Pyt/Tachyon/build-ninja",
+  "command": "C:\\PROGRA~1\\MICROS~2\\18\\COMMUN~1\\VC\\Tools\\MSVC\\1450~1.357\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DNOMINMAX -D_CRT_SECURE_NO_WARNINGS -IC:\\Users\\pater\\Pyt\\Tachyon\\include -MD /FS /wd4324 /Fo_deps\\tinygltf-build\\CMakeFiles\\loader_example.dir\\loader_example.cc.obj /Fd_deps\\tinygltf-build\\CMakeFiles\\loader_example.dir\\ /FS -c C:\\Users\\pater\\Pyt\\Tachyon\\build-ninja\\_deps\\tinygltf-src\\loader_example.cc",
+  "file": "C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/tinygltf-src/loader_example.cc",
+  "output": "C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/tinygltf-build/CMakeFiles/loader_example.dir/loader_example.cc.obj"
+},
+{
+  "directory": "C:/Users/pater/Pyt/Tachyon/build-ninja",
+  "command": "C:\\PROGRA~1\\MICROS~2\\18\\COMMUN~1\\VC\\Tools\\MSVC\\1450~1.357\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DNOMINMAX -D_CRT_SECURE_NO_WARNINGS -IC:\\Users\\pater\\Pyt\\Tachyon\\include -MD /FS /wd4324 /Fo_deps\\tinygltf-build\\CMakeFiles\\tinygltf.dir\\tiny_gltf.cc.obj /Fd_deps\\tinygltf-build\\CMakeFiles\\tinygltf.dir\\tinygltf.pdb /FS -c C:\\Users\\pater\\Pyt\\Tachyon\\build-ninja\\_deps\\tinygltf-src\\tiny_gltf.cc",
+  "file": "C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/tinygltf-src/tiny_gltf.cc",
+  "output": "C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/tinygltf-build/CMakeFiles/tinygltf.dir/tiny_gltf.cc.obj"
+}
+]

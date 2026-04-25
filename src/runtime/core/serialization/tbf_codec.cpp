@@ -68,6 +68,12 @@ CompiledScene TBFCodec::migrate(const CompiledScene& scene, std::uint16_t from_v
         // Default values already match the spec (1.0f, 1.0f, false), so this is a no-op structural migration.
         ver = 4;
     }
+
+    if (ver == 4) {
+        // Migrate from v4 to v5: Added text extrusion controls to CompiledLayer.
+        // Existing scenes keep the zero defaults.
+        ver = 5;
+    }
     
     migrated.header.version = current_version();
     return migrated;
@@ -335,6 +341,9 @@ std::vector<std::uint8_t> TBFCodec::encode(const CompiledScene& scene) {
             writer.write_string(layer.font_id);
             writer.write(layer.font_size);
             writer.write(layer.fill_color);
+            writer.write(layer.extrusion_depth);
+            writer.write(layer.bevel_size);
+            writer.write(layer.hole_bevel_ratio);
             writer.write_vector(layer.property_indices);
             writer.write(layer.flags);
 
@@ -421,6 +430,15 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
             layer.font_id = reader.read_string();
             layer.font_size = reader.read<float>();
             layer.fill_color = reader.read<ColorSpec>();
+            if (reader.file_version >= 5) {
+                layer.extrusion_depth = reader.read<float>();
+                layer.bevel_size = reader.read<float>();
+                layer.hole_bevel_ratio = reader.read<float>();
+            } else {
+                layer.extrusion_depth = 0.0f;
+                layer.bevel_size = 0.0f;
+                layer.hole_bevel_ratio = 0.0f;
+            }
             layer.property_indices = reader.read_vector<std::uint32_t>();
             layer.flags = reader.read<std::uint8_t>();
 

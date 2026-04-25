@@ -26,6 +26,7 @@ struct EvaluationVariables {
     const std::unordered_map<std::string, std::string>* strings{nullptr};
     const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables{nullptr};
     const std::unordered_map<std::string, RenderJob::LayerOverride>* layer_overrides{nullptr};
+    const std::map<std::string, nlohmann::json>* input_props{nullptr};
 };
 
 [[nodiscard]] EvaluatedLayerState evaluate_layer_state(

@@ -55,25 +55,36 @@ void SceneValidator::validate_composition(const ::tachyon::CompositionSpec& comp
         out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, "composition." + comp.id + ".dimensions", "Invalid dimensions."});
         out.error_count++;
     }
-
+    
     // Validate FPS
     if (comp.fps <= 0.0f) {
         out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, "composition." + comp.id + ".fps", "FPS must be greater than 0."});
         out.error_count++;
     }
-
+    
     // Validate duration
     if (comp.duration <= 0.0f) {
         out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, "composition." + comp.id + ".duration", "Duration must be greater than 0."});
         out.error_count++;
     }
-
+    
+    // Validate input_props (Remotion-like props)
+    if (!comp.input_props.empty()) {
+        for (const auto& [key, value] : comp.input_props) {
+            if (key.empty()) {
+                out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning, 
+                    "composition." + comp.id + ".input_props", "Empty key in input_props."});
+                out.warning_count++;
+            }
+        }
+    }
+    
     // Validate duplicate IDs within composition
     validate_duplicate_ids(comp, out);
     
     // Validate camera cuts
     validate_camera_cuts(comp, out);
-
+    
     for (std::size_t i = 0; i < comp.layers.size(); ++i) {
         validate_layer(comp.layers[i], comp, scene, "composition." + comp.id + ".layers[" + std::to_string(i) + "]", out);
     }
@@ -249,6 +260,19 @@ void SceneValidator::validate_layer(const ::tachyon::LayerSpec& layer, const ::t
     if (layer.width < 0 || layer.height < 0) {
         out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".dimensions", "Layer dimensions cannot be negative."});
         out.error_count++;
+    }
+
+    if (layer.extrusion_depth < 0.0) {
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".extrusion_depth", "Text extrusion depth cannot be negative."});
+        out.error_count++;
+    }
+    if (layer.bevel_size < 0.0) {
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".bevel_size", "Text bevel size cannot be negative."});
+        out.error_count++;
+    }
+    if (layer.hole_bevel_ratio < 0.0 || layer.hole_bevel_ratio > 1.0) {
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning, path + ".hole_bevel_ratio", "Hole bevel ratio should be between 0 and 1."});
+        out.warning_count++;
     }
 
     // Validate keyframes are within layer time range

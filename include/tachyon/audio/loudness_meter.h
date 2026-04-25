@@ -14,16 +14,19 @@ struct LoudnessMeasurement {
 
 class LoudnessMeter {
 public:
+    LoudnessMeter();
     void process(const float* stereo_pcm, int nframes, int sample_rate);
     LoudnessMeasurement current() const;
     void reset();
 
-private:
     // K-weighting filter state (due biquad in cascata)
     struct BiquadState {
         double x1{0.0}, x2{0.0}, y1{0.0}, y2{0.0};
         double b0{1.0}, b1{0.0}, b2{0.0}, a1{0.0}, a2{0.0};
+        double a0{1.0};
     };
+
+private:
     
     BiquadState m_k_filter_stage1;
     BiquadState m_k_filter_stage2;

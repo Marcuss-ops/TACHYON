@@ -36,12 +36,16 @@ double sample_scalar(
     const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables,
     std::uint32_t layer_index,
     PropertySampler sampler,
-    bool skip_expression) {
+    bool skip_expression,
+    const std::map<std::string, nlohmann::json>* input_props) {
 
     if (!skip_expression && property.expression.has_value() && !property.expression->empty()) {
         renderer2d::expressions::ExpressionContext expr_ctx;
+        expr_ctx.time = local_time_seconds;
+        expr_ctx.composition_time = local_time_seconds;
         expr_ctx.layer_index = layer_index;
         expr_ctx.property_sampler = sampler;
+        if (input_props) expr_ctx.input_props = *input_props;
 
         std::vector<std::string> table_keys;
         if (job_variables) {
@@ -62,6 +66,7 @@ double sample_scalar(
         expr_ctx.value = fallback;
         expr_ctx.seed = expression_seed;
         expr_ctx.variables["seed"] = static_cast<double>(expression_seed);
+        renderer2d::expressions::bind_standard_expression_variables(expr_ctx);
         expr_ctx.table_lookup = [tables, table_keys](double table_idx, double row, double col) -> double {
             if (!tables || tables->empty() || table_keys.empty()) {
                 return 0.0;
@@ -163,6 +168,8 @@ math::Vector2 sample_vector2(
     const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables) {
     if (property.expression.has_value() && !property.expression->empty()) {
         renderer2d::expressions::ExpressionContext expr_ctx;
+        expr_ctx.time = local_time_seconds;
+        expr_ctx.composition_time = local_time_seconds;
         std::vector<std::string> table_keys;
         if (job_variables) {
             for (const auto& [k, v] : *job_variables) {
@@ -181,6 +188,7 @@ math::Vector2 sample_vector2(
         expr_ctx.variables["time"] = local_time_seconds;
         expr_ctx.seed = expression_seed;
         expr_ctx.variables["seed"] = static_cast<double>(expression_seed);
+        renderer2d::expressions::bind_standard_expression_variables(expr_ctx);
         expr_ctx.table_lookup = [tables, table_keys](double table_idx, double row, double col) -> double {
             if (!tables || tables->empty() || table_keys.empty()) {
                 return 0.0;
@@ -276,9 +284,18 @@ math::Vector3 sample_vector3(
     const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
     std::uint64_t expression_seed,
     const std::unordered_map<std::string, double>* job_variables,
-    const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables) {
-    if (property.expression.has_value() && !property.expression->empty()) {
+    const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables,
+    std::uint32_t layer_index,
+    PropertySampler sampler,
+    bool skip_expression,
+    const std::map<std::string, nlohmann::json>* input_props) {
+    if (!skip_expression && property.expression.has_value() && !property.expression->empty()) {
         renderer2d::expressions::ExpressionContext expr_ctx;
+        expr_ctx.time = local_time_seconds;
+        expr_ctx.composition_time = local_time_seconds;
+        expr_ctx.layer_index = layer_index;
+        expr_ctx.property_sampler = sampler;
+        if (input_props) expr_ctx.input_props = *input_props;
         std::vector<std::string> table_keys;
         if (job_variables) {
             for (const auto& [k, v] : *job_variables) {
@@ -297,6 +314,7 @@ math::Vector3 sample_vector3(
         expr_ctx.variables["time"] = local_time_seconds;
         expr_ctx.seed = expression_seed;
         expr_ctx.variables["seed"] = static_cast<double>(expression_seed);
+        renderer2d::expressions::bind_standard_expression_variables(expr_ctx);
         expr_ctx.table_lookup = [tables, table_keys](double table_idx, double row, double col) -> double {
             if (!tables || tables->empty() || table_keys.empty()) {
                 return 0.0;

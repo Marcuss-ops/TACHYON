@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tachyon/core/scene/state/evaluated_camera2d_state.h"
+#include "tachyon/core/spec/schema/objects/camera2d_spec.h"
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 #include "tachyon/core/math/matrix3x3.h"
 #include "tachyon/core/math/vector2.h"

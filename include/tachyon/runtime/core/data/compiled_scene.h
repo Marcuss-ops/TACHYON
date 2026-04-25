@@ -109,6 +109,9 @@ struct CompiledLayer {
     ColorSpec fill_color{255, 255, 255, 255};
     ColorSpec stroke_color{255, 255, 255, 255};
     float stroke_width{0.0f};
+    float extrusion_depth{0.0f};
+    float bevel_size{0.0f};
+    float hole_bevel_ratio{0.0f};
     std::optional<ShapePathSpec> shape_path;
     std::optional<ShapeSpec> shape_spec;
     std::vector<EffectSpec> effects;

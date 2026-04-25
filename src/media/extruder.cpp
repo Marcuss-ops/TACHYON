@@ -1,6 +1,8 @@
 #include "tachyon/media/processing/extruder.h"
 #include <mapbox/earcut.hpp>
 #include <array>
+#include <algorithm>
+#include <cmath>
 
 namespace tachyon::media {
 
@@ -32,32 +34,64 @@ namespace {
             out_points.push_back(eval_bezier(p0, p1, p2, p3, t));
         }
     }
-}
 
-MeshAsset::SubMesh Extruder::extrude_shape(
-    const scene::EvaluatedShapePath& path,
-    float depth,
-    float /*bevel_size*/)
-{
-    MeshAsset::SubMesh mesh;
-    if (path.points.empty()) return mesh;
+    float signed_area(const std::vector<math::Vector2>& contour) {
+        if (contour.size() < 3U) {
+            return 0.0f;
+        }
+        float area = 0.0f;
+        for (std::size_t i = 0, j = contour.size() - 1; i < contour.size(); j = i++) {
+            area += contour[j].x * contour[i].y - contour[i].x * contour[j].y;
+        }
+        return area * 0.5f;
+    }
 
-    // 1. Flatten the shape path
-    std::vector<math::Vector2> contour;
-    if (!path.points.empty()) {
+    math::Vector2 contour_centroid(const std::vector<math::Vector2>& contour) {
+        math::Vector2 sum{0.0f, 0.0f};
+        if (contour.empty()) {
+            return sum;
+        }
+        for (const auto& p : contour) {
+            sum += p;
+        }
+        return sum / static_cast<float>(contour.size());
+    }
+
+    bool point_in_polygon(const math::Vector2& p, const std::vector<math::Vector2>& contour) {
+        if (contour.size() < 3U) {
+            return false;
+        }
+        bool inside = false;
+        for (std::size_t i = 0, j = contour.size() - 1; i < contour.size(); j = i++) {
+            const auto& a = contour[i];
+            const auto& b = contour[j];
+            const bool intersect = ((a.y > p.y) != (b.y > p.y)) &&
+                (p.x < (b.x - a.x) * (p.y - a.y) / ((b.y - a.y) == 0.0f ? 1.0e-8f : (b.y - a.y)) + a.x);
+            if (intersect) {
+                inside = !inside;
+            }
+        }
+        return inside;
+    }
+
+    std::vector<math::Vector2> flatten_shape_path(const scene::EvaluatedShapePath& path) {
+        std::vector<math::Vector2> contour;
+        if (path.points.empty()) {
+            return contour;
+        }
+
         contour.push_back(path.points[0].position);
-        
+
         for (std::size_t i = 1; i < path.points.size(); ++i) {
             const auto& pt_a = path.points[i - 1];
             const auto& pt_b = path.points[i];
-            
+
             math::Vector2 p0 = pt_a.position;
             math::Vector2 p1 = p0 + pt_a.tangent_out;
             math::Vector2 p3 = pt_b.position;
             math::Vector2 p2 = p3 + pt_b.tangent_in;
 
             if (pt_a.tangent_out.length_squared() < 0.001f && pt_b.tangent_in.length_squared() < 0.001f) {
-                // Straight line
                 contour.push_back(p3);
             } else {
                 flatten_bezier(p0, p1, p2, p3, contour);
@@ -72,112 +106,214 @@ MeshAsset::SubMesh Extruder::extrude_shape(
             math::Vector2 p3 = pt_b.position;
             math::Vector2 p2 = p3 + pt_b.tangent_in;
 
-            if (pt_a.tangent_out.length_squared() < 0.001f && pt_b.tangent_in.length_squared() < 0.001f) {
-                // Skip if closing point overlaps perfectly
-            } else {
+            if (!(pt_a.tangent_out.length_squared() < 0.001f && pt_b.tangent_in.length_squared() < 0.001f)) {
                 flatten_bezier(p0, p1, p2, p3, contour);
             }
         }
+
+        if (contour.size() >= 2U && (contour.front() - contour.back()).length_squared() < 0.001f) {
+            contour.pop_back();
+        }
+        return contour;
     }
 
-    if (contour.size() < 3) return mesh;
-
-    // Remove overlapping exact matching last point (common in closing loops)
-    if ((contour.front() - contour.back()).length_squared() < 0.001f) {
-        contour.pop_back();
-    }
-
-    // 2. Prepare for earcut
-    PolygonType polygon;
-    polygon.emplace_back(); // Outer ring
-    for (const auto& p : contour) {
-        polygon.back().push_back({p.x, p.y}); // Inverted Y is standard for AE but handle correctly downstream
-    }
-
-    std::vector<unsigned int> cap_indices = mapbox::earcut<unsigned int>(polygon);
-
-    // 3. Generate Geometry
-    float z_front = depth * 0.5f;
-    float z_back = -depth * 0.5f;
-
-    // Insert front vertices
-    unsigned int v_offset_front = static_cast<unsigned int>(mesh.vertices.size());
-    for (const auto& p : contour) {
-        MeshAsset::Vertex v;
-        v.position = {p.x, p.y, z_front};
-        v.normal = {0, 0, 1}; // Face normal
-        v.uv = {p.x / 100.0f, p.y / 100.0f}; // Simple planar map
-        mesh.vertices.push_back(v);
-    }
-    
-    // Front Cap Indices
-    for (std::size_t i = 0; i < cap_indices.size(); i += 3) {
-        mesh.indices.push_back(cap_indices[i] + v_offset_front);
-        mesh.indices.push_back(cap_indices[i+1] + v_offset_front);
-        mesh.indices.push_back(cap_indices[i+2] + v_offset_front);
-    }
-
-    if (std::abs(depth) > 0.001f) {
-        // Insert back vertices
-        unsigned int v_offset_back = static_cast<unsigned int>(mesh.vertices.size());
-        for (const auto& p : contour) {
-            MeshAsset::Vertex v;
-            v.position = {p.x, p.y, z_back};
-            v.normal = {0, 0, -1}; // Back face normal
-            v.uv = {p.x / 100.0f, p.y / 100.0f};
-            mesh.vertices.push_back(v);
+    MeshAsset::SubMesh extrude_compound_polygons(
+        const std::vector<std::vector<math::Vector2>>& rings,
+        float depth) {
+        MeshAsset::SubMesh mesh;
+        if (rings.empty()) {
+            return mesh;
         }
 
-        // Back Cap Indices (reversed winding)
-        for (std::size_t i = 0; i < cap_indices.size(); i += 3) {
-            mesh.indices.push_back(cap_indices[i] + v_offset_back);
-            mesh.indices.push_back(cap_indices[i+2] + v_offset_back);
-            mesh.indices.push_back(cap_indices[i+1] + v_offset_back);
+        PolygonType polygon;
+        polygon.reserve(rings.size());
+        for (const auto& ring : rings) {
+            if (ring.size() < 3U) {
+                continue;
+            }
+            PolygonType::value_type polygon_ring;
+            polygon_ring.reserve(ring.size());
+            for (const auto& p : ring) {
+                polygon_ring.push_back({p.x, p.y});
+            }
+            polygon.push_back(std::move(polygon_ring));
         }
 
-        // 4. Generate Side Walls
-        std::size_t n = contour.size();
-        for (std::size_t i = 0; i < n; ++i) {
-            std::size_t j = (i + 1) % n;
-
-            math::Vector3 p0 = {contour[i].x, contour[i].y, z_front};
-            math::Vector3 p1 = {contour[j].x, contour[j].y, z_front};
-            math::Vector3 p2 = {contour[i].x, contour[i].y, z_back};
-            math::Vector3 p3 = {contour[j].x, contour[j].y, z_back};
-
-            math::Vector3 v1 = p1 - p0;
-            math::Vector3 v2 = p2 - p0;
-            math::Vector3 side_normal = math::Vector3::cross(v1, v2).normalized();
-
-            unsigned int b_v0 = static_cast<unsigned int>(mesh.vertices.size());
-            
-            // Vertices 0 and 1 (Front edge)
-            MeshAsset::Vertex sv0; sv0.position = p0; sv0.normal = side_normal; sv0.uv = {0,0};
-            MeshAsset::Vertex sv1; sv1.position = p1; sv1.normal = side_normal; sv1.uv = {1,0};
-            // Vertices 2 and 3 (Back edge)
-            MeshAsset::Vertex sv2; sv2.position = p2; sv2.normal = side_normal; sv2.uv = {0,1};
-            MeshAsset::Vertex sv3; sv3.position = p3; sv3.normal = side_normal; sv3.uv = {1,1};
-
-            mesh.vertices.push_back(sv0);
-            mesh.vertices.push_back(sv1);
-            mesh.vertices.push_back(sv2);
-            mesh.vertices.push_back(sv3);
-
-            mesh.indices.push_back(b_v0);
-            mesh.indices.push_back(b_v0 + 2);
-            mesh.indices.push_back(b_v0 + 1);
-
-            mesh.indices.push_back(b_v0 + 1);
-            mesh.indices.push_back(b_v0 + 2);
-            mesh.indices.push_back(b_v0 + 3);
+        if (polygon.empty()) {
+            return mesh;
         }
+
+        const std::vector<unsigned int> cap_indices = mapbox::earcut<unsigned int>(polygon);
+        const float z_front = depth * 0.5f;
+        const float z_back = -depth * 0.5f;
+
+        for (const auto& ring : polygon) {
+            for (const auto& p : ring) {
+                MeshAsset::Vertex v;
+                v.position = {p[0], p[1], z_front};
+                v.normal = {0.0f, 0.0f, 1.0f};
+                v.uv = {p[0] / 100.0f, p[1] / 100.0f};
+                mesh.vertices.push_back(v);
+            }
+        }
+
+        for (std::size_t i = 0; i + 2 < cap_indices.size(); i += 3) {
+            mesh.indices.push_back(cap_indices[i + 0]);
+            mesh.indices.push_back(cap_indices[i + 1]);
+            mesh.indices.push_back(cap_indices[i + 2]);
+        }
+
+        if (std::abs(depth) > 0.001f) {
+            const unsigned int back_offset = static_cast<unsigned int>(mesh.vertices.size());
+            for (const auto& ring : polygon) {
+                for (const auto& p : ring) {
+                    MeshAsset::Vertex v;
+                    v.position = {p[0], p[1], z_back};
+                    v.normal = {0.0f, 0.0f, -1.0f};
+                    v.uv = {p[0] / 100.0f, p[1] / 100.0f};
+                    mesh.vertices.push_back(v);
+                }
+            }
+
+            std::size_t running_offset = 0;
+            for (const auto& ring : polygon) {
+                const std::size_t n = ring.size();
+                for (std::size_t i = 0; i < n; ++i) {
+                    const std::size_t j = (i + 1) % n;
+                    const math::Vector2 a{ring[i][0], ring[i][1]};
+                    const math::Vector2 b{ring[j][0], ring[j][1]};
+                    const math::Vector2 edge = b - a;
+                    const math::Vector2 outward = math::Vector2{edge.y, -edge.x}.normalized();
+
+                    MeshAsset::Vertex sv0; sv0.position = {a.x, a.y, z_front}; sv0.normal = {outward.x, outward.y, 0.0f}; sv0.uv = {0.0f, 0.0f};
+                    MeshAsset::Vertex sv1; sv1.position = {b.x, b.y, z_front}; sv1.normal = {outward.x, outward.y, 0.0f}; sv1.uv = {1.0f, 0.0f};
+                    MeshAsset::Vertex sv2; sv2.position = {a.x, a.y, z_back};  sv2.normal = {outward.x, outward.y, 0.0f}; sv2.uv = {0.0f, 1.0f};
+                    MeshAsset::Vertex sv3; sv3.position = {b.x, b.y, z_back};  sv3.normal = {outward.x, outward.y, 0.0f}; sv3.uv = {1.0f, 1.0f};
+
+                    const unsigned int wall_offset = static_cast<unsigned int>(mesh.vertices.size());
+                    mesh.vertices.push_back(sv0);
+                    mesh.vertices.push_back(sv1);
+                    mesh.vertices.push_back(sv2);
+                    mesh.vertices.push_back(sv3);
+
+                    mesh.indices.push_back(wall_offset + 0);
+                    mesh.indices.push_back(wall_offset + 2);
+                    mesh.indices.push_back(wall_offset + 1);
+
+                    mesh.indices.push_back(wall_offset + 1);
+                    mesh.indices.push_back(wall_offset + 2);
+                    mesh.indices.push_back(wall_offset + 3);
+                }
+                running_offset += n;
+            }
+
+            for (std::size_t i = 0; i + 2 < cap_indices.size(); i += 3) {
+                mesh.indices.push_back(back_offset + cap_indices[i + 0]);
+                mesh.indices.push_back(back_offset + cap_indices[i + 2]);
+                mesh.indices.push_back(back_offset + cap_indices[i + 1]);
+            }
+        }
+
+        mesh.material.base_color_factor = {1.0f, 1.0f, 1.0f};
+        mesh.transform = math::Matrix4x4::identity();
+        return mesh;
+    }
+}
+
+MeshAsset::SubMesh Extruder::extrude_shape(
+    const scene::EvaluatedShapePath& path,
+    float depth,
+    float /*bevel_size*/)
+{
+    return extrude_compound_polygons({flatten_shape_path(path)}, depth);
+}
+
+MeshAsset::SubMesh Extruder::extrude_shape(
+    const std::vector<scene::EvaluatedShapePath>& paths,
+    float depth,
+    float /*bevel_size*/)
+{
+    struct RingInfo {
+        std::vector<math::Vector2> contour;
+        float area{0.0f};
+        int depth{0};
+    };
+
+    std::vector<RingInfo> rings;
+    rings.reserve(paths.size());
+    for (const auto& path : paths) {
+        auto contour = flatten_shape_path(path);
+        if (contour.size() < 3U) {
+            continue;
+        }
+        rings.push_back({std::move(contour), 0.0f, 0});
     }
 
-    // Assign default white PBR so it responds nicely to lighting
-    mesh.material.base_color_factor = {1.0f, 1.0f, 1.0f};
-    mesh.transform = math::Matrix4x4::identity();
+    if (rings.empty()) {
+        return {};
+    }
 
-    return mesh;
+    for (auto& ring : rings) {
+        ring.area = signed_area(ring.contour);
+    }
+
+    for (std::size_t i = 0; i < rings.size(); ++i) {
+        const auto sample = contour_centroid(rings[i].contour);
+        int nesting_depth = 0;
+        for (std::size_t j = 0; j < rings.size(); ++j) {
+            if (i == j) {
+                continue;
+            }
+            if (std::abs(rings[j].area) <= std::abs(rings[i].area)) {
+                continue;
+            }
+            if (point_in_polygon(sample, rings[j].contour)) {
+                ++nesting_depth;
+            }
+        }
+        rings[i].depth = nesting_depth;
+    }
+
+    std::vector<MeshAsset::SubMesh> components;
+    for (std::size_t i = 0; i < rings.size(); ++i) {
+        if (rings[i].depth != 0) {
+            continue;
+        }
+
+        std::vector<std::vector<math::Vector2>> component_rings;
+        component_rings.push_back(rings[i].contour);
+
+        for (std::size_t j = 0; j < rings.size(); ++j) {
+            if (i == j || rings[j].depth != 1) {
+                continue;
+            }
+            if (point_in_polygon(contour_centroid(rings[j].contour), rings[i].contour)) {
+                component_rings.push_back(rings[j].contour);
+            }
+        }
+
+        components.push_back(extrude_compound_polygons(component_rings, depth));
+    }
+
+    if (components.empty()) {
+        return {};
+    }
+
+    if (components.size() == 1) {
+        return std::move(components.front());
+    }
+
+    MeshAsset::SubMesh merged;
+    for (auto& component : components) {
+        const unsigned int vertex_offset = static_cast<unsigned int>(merged.vertices.size());
+        merged.vertices.insert(merged.vertices.end(), component.vertices.begin(), component.vertices.end());
+        for (auto index : component.indices) {
+            merged.indices.push_back(index + vertex_offset);
+        }
+    }
+    merged.material.base_color_factor = {1.0f, 1.0f, 1.0f};
+    merged.transform = math::Matrix4x4::identity();
+    return merged;
 }
 
 } // namespace tachyon::media

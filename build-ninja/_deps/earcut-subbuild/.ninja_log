@@ -1,0 +1,21 @@
+# ninja log v5
+2	49	7988251642944729	earcut-populate-prefix/src/earcut-populate-stamp/earcut-populate-mkdir	42c35f71b846b72a
+2	49	7988251642944729	C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/earcut-subbuild/earcut-populate-prefix/src/earcut-populate-stamp/earcut-populate-mkdir	42c35f71b846b72a
+49	9795	7988251740399440	earcut-populate-prefix/src/earcut-populate-stamp/earcut-populate-download	8b8eb7dc569cdf45
+49	9795	7988251740399440	C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/earcut-subbuild/earcut-populate-prefix/src/earcut-populate-stamp/earcut-populate-download	8b8eb7dc569cdf45
+9795	9923	0	earcut-populate-prefix/src/earcut-populate-stamp/earcut-populate-update	a9dd6e075868344e
+9795	9923	0	C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/earcut-subbuild/earcut-populate-prefix/src/earcut-populate-stamp/earcut-populate-update	a9dd6e075868344e
+9933	9982	7988251742260837	earcut-populate-prefix/src/earcut-populate-stamp/earcut-populate-patch	8e32f891c8cf3728
+9933	9982	7988251742260837	C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/earcut-subbuild/earcut-populate-prefix/src/earcut-populate-stamp/earcut-populate-patch	8e32f891c8cf3728
+9982	10033	7988251742776696	earcut-populate-prefix/src/earcut-populate-stamp/earcut-populate-configure	37b68bd58156eb0d
+9982	10033	7988251742776696	C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/earcut-subbuild/earcut-populate-prefix/src/earcut-populate-stamp/earcut-populate-configure	37b68bd58156eb0d
+10033	10085	7988251743307313	earcut-populate-prefix/src/earcut-populate-stamp/earcut-populate-build	f6b0ac9b5a5fd783
+10033	10085	7988251743307313	C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/earcut-subbuild/earcut-populate-prefix/src/earcut-populate-stamp/earcut-populate-build	f6b0ac9b5a5fd783
+10085	10131	7988251743762917	earcut-populate-prefix/src/earcut-populate-stamp/earcut-populate-install	33cc2c8a959de1de
+10085	10131	7988251743762917	C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/earcut-subbuild/earcut-populate-prefix/src/earcut-populate-stamp/earcut-populate-install	33cc2c8a959de1de
+10131	10180	7988251744248355	earcut-populate-prefix/src/earcut-populate-stamp/earcut-populate-test	cad5a9b7a029ccf6
+10131	10180	7988251744248355	C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/earcut-subbuild/earcut-populate-prefix/src/earcut-populate-stamp/earcut-populate-test	cad5a9b7a029ccf6
+10180	10246	7988251744904133	CMakeFiles/earcut-populate-complete	7c68f8b2ae7110e3
+10180	10246	7988251744904133	earcut-populate-prefix/src/earcut-populate-stamp/earcut-populate-done	7c68f8b2ae7110e3
+10180	10246	7988251744904133	C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/earcut-subbuild/CMakeFiles/earcut-populate-complete	7c68f8b2ae7110e3
+10180	10246	7988251744904133	C:/Users/pater/Pyt/Tachyon/build-ninja/_deps/earcut-subbuild/earcut-populate-prefix/src/earcut-populate-stamp/earcut-populate-done	7c68f8b2ae7110e3

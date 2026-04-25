@@ -121,6 +121,8 @@ EvaluatedCompositionState evaluate_composition_internal(
     evaluated.composition_time_seconds = composition_time_seconds;
     evaluated.layers.reserve(composition.layers.size());
 
+    vars.input_props = &composition.input_props;
+
     EvaluationContext context{
         scene,
         composition,
