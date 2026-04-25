@@ -56,13 +56,13 @@ bool run_inspect_fonts_command(const CliOptions& options, std::ostream& out, std
         manifest_path = options.scene_path;
     }
  
-    auto manifest = FontManifestParser::parse_file(manifest_path);
+    auto manifest = tachyon::text::FontManifestParser::parse_file(manifest_path);
     if (!manifest) {
         err << "Failed to parse font manifest: " << manifest_path.string() << '\n';
         return false;
     }
  
-    FontCoverageReporter reporter(*manifest);
+    tachyon::text::FontCoverageReporter reporter(*manifest);
     auto summary = reporter.generate_report();
  
     if (options.json_output) {

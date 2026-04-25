@@ -68,7 +68,7 @@ struct LayerSpec {
 
     // Subtitles
     std::string subtitle_path;
-    ColorSpec subtitle_outline_color{0, 0, 0, 255};
+    AnimatedColorSpec subtitle_outline_color;
     double subtitle_outline_width{2.0};
 
     // Word timestamps for text highlight animation (word_highlight mode)
@@ -76,6 +76,7 @@ struct LayerSpec {
 
     // Vector Graphics
     std::optional<ShapePathSpec> shape_path;
+    std::optional<ShapeSpec> shape_spec;
     std::string line_cap{"butt"};
     std::string line_join{"miter"};
     double miter_limit{4.0};

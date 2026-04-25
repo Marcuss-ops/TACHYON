@@ -116,6 +116,7 @@ struct EvaluatedLayerState {
     std::optional<GradientSpec> gradient_fill;
     std::optional<GradientSpec> gradient_stroke;
     std::optional<std::string> subtitle_path;
+    std::optional<std::string> word_timestamp_path;
     std::optional<ColorSpec> subtitle_outline_color;
     float subtitle_outline_width{0.0f};
     renderer2d::LineCap line_cap{renderer2d::LineCap::Butt};

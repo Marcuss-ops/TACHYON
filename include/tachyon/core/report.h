@@ -7,6 +7,7 @@
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/execution/jobs/render_job.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/core/spec/validation/scene_validator.h"
 
 #include <optional>
 #include <ostream>
@@ -18,6 +19,7 @@ constexpr const char* INSPECT_REPORT_SCHEMA_VERSION = "1.0";
 constexpr const char* VALIDATE_REPORT_SCHEMA_VERSION = "1.0";
 constexpr const char* RENDER_REPORT_SCHEMA_VERSION = "1.0";
 constexpr const char* REPORT_STATUS_OK = "ok";
+constexpr const char* REPORT_STATUS_ERROR = "error";
 
 void print_inspect_report_text(
     const SceneSpec& scene,
