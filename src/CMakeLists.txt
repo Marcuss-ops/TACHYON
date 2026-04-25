@@ -4,7 +4,8 @@ add_library(TachyonCore SHARED
     runtime/execution/quality_policy.cpp
     runtime/execution/tile_scheduler.cpp
     runtime/execution/frame_executor.cpp
-    runtime/execution/render_plan.cpp
+    runtime/execution/render_plan_hash.cpp
+    runtime/execution/render_plan_build.cpp
     runtime/execution/frame_executor/frame_executor_utils.cpp
     runtime/execution/frame_executor/frame_evaluator_node.cpp
     runtime/execution/frame_executor/frame_evaluator_property.cpp
