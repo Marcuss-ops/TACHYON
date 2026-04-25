@@ -33,8 +33,8 @@ public:
     ~RotoBrush() = default;
 
     // Configure the roto brush
-    void set_config(const Config& config) { config_ = config; }
-    const Config& config() const { return config_; }
+    void set_config(const Config& config) { m_config = config; }
+    const Config& config() const { return m_config; }
 
     /**
      * @brief Generate matte from user scribble + optional AI.

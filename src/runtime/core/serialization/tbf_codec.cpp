@@ -374,8 +374,9 @@ std::vector<std::uint8_t> TBFCodec::encode(const CompiledScene& scene) {
     // 7. Expressions
     writer.write<std::uint32_t>(static_cast<std::uint32_t>(scene.expressions.size()));
     for (const auto& expr : scene.expressions) {
-        writer.write_vector(expr.code);
+        writer.write_vector(expr.instructions);
         writer.write_vector(expr.constants);
+        // Note: names are not serialized in this version
     }
     
     return std::move(writer.buffer);
@@ -400,7 +401,7 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
     scene.determinism = reader.read<DeterminismContract>();
     
     // 4. Graph
-    auto edges = reader.read_vector<RenderGraph::Edge>();
+    auto edges = reader.read_vector<RuntimeRenderGraph::Edge>();
     auto topo = reader.read_vector<std::uint32_t>();
     for (const auto& edge : edges) {
         scene.graph.add_edge(edge.from, edge.to, edge.structural);
@@ -476,9 +477,10 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
     // 7. Expressions
     std::uint32_t expression_count = reader.read<std::uint32_t>();
     for (std::uint32_t i = 0; i < expression_count; ++i) {
-        CompiledExpression expr;
-        expr.code = reader.read_vector<ExpressionInstr>();
+        expressions::Bytecode expr;
+        expr.instructions = reader.read_vector<expressions::Instruction>();
         expr.constants = reader.read_vector<double>();
+        // Note: names are not serialized in this version
         scene.expressions.push_back(std::move(expr));
     }
 

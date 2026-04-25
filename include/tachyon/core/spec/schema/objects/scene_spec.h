@@ -63,6 +63,18 @@ struct SchemaVersion {
     [[nodiscard]] bool operator>=(const SchemaVersion& other) const {
         return !(*this < other);
     }
+    
+    [[nodiscard]] bool operator==(const SchemaVersion& other) const {
+        return major == other.major && minor == other.minor && patch == other.patch;
+    }
+    
+    [[nodiscard]] bool operator!=(const SchemaVersion& other) const {
+        return !(*this == other);
+    }
+    
+    [[nodiscard]] bool operator<=(const SchemaVersion& other) const {
+        return *this < other || *this == other;
+    }
 };
 
 struct SceneSpec {

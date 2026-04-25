@@ -8,8 +8,8 @@ namespace {
 
 // Bilinear sampling helper (copiato da chromatic_aberration)
 inline float sample_bilinear(const Framebuffer& fb, float x, float y, int channel) {
-    const int width = static_cast<int>(fb.width);
-    const int height = static_cast<int>(fb.height);
+    const int width = static_cast<int>(fb.width());
+    const int height = static_cast<int>(fb.height());
     
     x = std::clamp(x, 0.0f, static_cast<float>(width - 1));
     y = std::clamp(y, 0.0f, static_cast<float>(height - 1));
@@ -22,15 +22,17 @@ inline float sample_bilinear(const Framebuffer& fb, float x, float y, int channe
     const float dx = x - static_cast<float>(x0);
     const float dy = y - static_cast<float>(y0);
     
+    // Sample 4 corners for this channel (RGBA: 4 channels)
     const std::size_t idx00 = static_cast<std::size_t>(y0 * width + x0) * 4 + channel;
     const std::size_t idx10 = static_cast<std::size_t>(y0 * width + x1) * 4 + channel;
     const std::size_t idx01 = static_cast<std::size_t>(y1 * width + x0) * 4 + channel;
     const std::size_t idx11 = static_cast<std::size_t>(y1 * width + x1) * 4 + channel;
     
-    const float v00 = fb.data[idx00];
-    const float v10 = fb.data[idx10];
-    const float v01 = fb.data[idx01];
-    const float v11 = fb.data[idx11];
+    // Bilinear interpolation
+    const float v00 = fb.pixels()[idx00];
+    const float v10 = fb.pixels()[idx10];
+    const float v01 = fb.pixels()[idx01];
+    const float v11 = fb.pixels()[idx11];
     
     const float v0 = v00 * (1.0f - dx) + v10 * dx;
     const float v1 = v01 * (1.0f - dx) + v11 * dx;
@@ -45,8 +47,8 @@ void apply_glitch(Framebuffer& fb, const GlitchEffect& params, int frame_number)
         return; // No effect
     }
     
-    const int width = static_cast<int>(fb.width);
-    const int height = static_cast<int>(fb.height);
+    const int width = static_cast<int>(fb.width());
+    const int height = static_cast<int>(fb.height());
     
     // RNG deterministico basato su seed + frame_number
     std::mt19937 rng(params.seed ^ static_cast<uint64_t>(frame_number));
@@ -55,11 +57,10 @@ void apply_glitch(Framebuffer& fb, const GlitchEffect& params, int frame_number)
     std::uniform_real_distribution<float> dist_rgb_shift(-params.rgb_shift_px, params.rgb_shift_px);
     
     // Crea buffer temporaneo
-    std::vector<float> original_data(fb.data.begin(), fb.data.end());
+    std::vector<float> original_data(fb.pixels().begin(), fb.pixels().end());
     Framebuffer temp_fb;
-    temp_fb.width = fb.width;
-    temp_fb.height = fb.height;
-    temp_fb.data = std::move(original_data);
+    temp_fb.reset(fb.width(), fb.height());
+    temp_fb.mutable_pixels() = std::move(original_data);
     
     // Dividi il frame in strisce orizzontali
     const float block_height = std::max(4.0f, params.block_size);
@@ -89,20 +90,20 @@ void apply_glitch(Framebuffer& fb, const GlitchEffect& params, int frame_number)
                     const std::size_t src_idx = static_cast<std::size_t>(row * width + src_x) * 4;
                     
                     // R con shift aggiuntivo
-                    fb.data[idx + 0] = sample_bilinear(temp_fb, 
+                    fb.mutable_pixels()[idx + 0] = sample_bilinear(temp_fb, 
                         static_cast<float>(src_x) + r_shift, 
                         static_cast<float>(row), 0);
                     
                     // G normale (con shift orizzontale)
-                    fb.data[idx + 1] = temp_fb.data[src_idx + 1];
+                    fb.mutable_pixels()[idx + 1] = temp_fb.pixels()[src_idx + 1];
                     
                     // B con shift aggiuntivo
-                    fb.data[idx + 2] = sample_bilinear(temp_fb, 
+                    fb.mutable_pixels()[idx + 2] = sample_bilinear(temp_fb, 
                         static_cast<float>(src_x) + b_shift, 
                         static_cast<float>(row), 2);
                     
                     // Alpha
-                    fb.data[idx + 3] = temp_fb.data[src_idx + 3];
+                    fb.mutable_pixels()[idx + 3] = temp_fb.pixels()[src_idx + 3];
                 }
             }
         }
@@ -113,10 +114,10 @@ void apply_glitch(Framebuffer& fb, const GlitchEffect& params, int frame_number)
                 for (int x = 0; x < width; ++x) {
                     const std::size_t idx = static_cast<std::size_t>(row * width + x) * 4;
                     // Rumore bianco
-                    fb.data[idx + 0] = dist_01(rng);
-                    fb.data[idx + 1] = dist_01(rng);
-                    fb.data[idx + 2] = dist_01(rng);
-                    fb.data[idx + 3] = 1.0f;
+                    fb.mutable_pixels()[idx + 0] = dist_01(rng);
+                    fb.mutable_pixels()[idx + 1] = dist_01(rng);
+                    fb.mutable_pixels()[idx + 2] = dist_01(rng);
+                    fb.mutable_pixels()[idx + 3] = 1.0f;
                 }
             }
         }
