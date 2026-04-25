@@ -23,15 +23,15 @@ void MaskRasterizer::rasterize(
             for (size_t i = 0; i + 1 < contour.points.size(); ++i) {
                 const auto& p1 = contour.points[i];
                 const auto& p2 = contour.points[i + 1];
-
-                float y1 = p1.y, y2 = p2.y;
+                
+                float y1 = p1.point.y, y2 = p2.point.y;
                 if (std::max(y1, y2) <= (float)y || std::min(y1, y2) >= (float)y + 1) continue;
 
                 float sy1 = std::max(std::min(y1, y2), (float)y);
                 float sy2 = std::min(std::max(y1, y2), (float)y + 1);
                 
                 auto get_x = [&](float py) {
-                    return p1.x + (p2.x - p1.x) * (py - y1) / (y2 - y1);
+                    return p1.point.x + (p2.point.x - p1.point.x) * (py - y1) / (y2 - y1);
                 };
 
                 float x1 = get_x(sy1);

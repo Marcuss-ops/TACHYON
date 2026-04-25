@@ -7,8 +7,8 @@ namespace {
 
 // Bilinear sampling helper
 inline float sample_bilinear(const Framebuffer& fb, float x, float y, int channel) {
-    const int width = static_cast<int>(fb.width);
-    const int height = static_cast<int>(fb.height);
+    const int width = static_cast<int>(fb.width());
+    const int height = static_cast<int>(fb.height());
     
     // Clamp coordinates
     x = std::clamp(x, 0.0f, static_cast<float>(width - 1));
@@ -29,10 +29,10 @@ inline float sample_bilinear(const Framebuffer& fb, float x, float y, int channe
     const std::size_t idx11 = static_cast<std::size_t>(y1 * width + x1) * 4 + channel;
     
     // Bilinear interpolation
-    const float v00 = fb.data[idx00];
-    const float v10 = fb.data[idx10];
-    const float v01 = fb.data[idx01];
-    const float v11 = fb.data[idx11];
+    const float v00 = fb.pixels()[idx00];
+    const float v10 = fb.pixels()[idx10];
+    const float v01 = fb.pixels()[idx01];
+    const float v11 = fb.pixels()[idx11];
     
     const float v0 = v00 * (1.0f - dx) + v10 * dx;
     const float v1 = v01 * (1.0f - dx) + v11 * dx;
@@ -47,8 +47,8 @@ void apply_chromatic_aberration(Framebuffer& fb, const ChromaticAberrationEffect
         return; // No effect
     }
     
-    const int width = static_cast<int>(fb.width);
-    const int height = static_cast<int>(fb.height);
+    const int width = static_cast<int>(fb.width());
+    const int height = static_cast<int>(fb.height());
     
     // Converti angolo in radianti e calcola direzione
     const float angle_rad = params.angle_deg * static_cast<float>(std::acos(-1.0)) / 180.0f;
@@ -56,11 +56,10 @@ void apply_chromatic_aberration(Framebuffer& fb, const ChromaticAberrationEffect
     const float dy = params.offset_pixels * std::sin(angle_rad);
     
     // Crea un buffer temporaneo per leggere i dati originali
-    std::vector<float> original_data(fb.data.begin(), fb.data.end());
+    std::vector<float> original_data(fb.pixels().begin(), fb.pixels().end());
     Framebuffer temp_fb;
-    temp_fb.width = fb.width;
-    temp_fb.height = fb.height;
-    temp_fb.data = std::move(original_data);
+    temp_fb.reset(fb.width(), fb.height());
+    temp_fb.mutable_pixels() = std::move(original_data);
     
     // Per ogni pixel, campiona R, G, B da posizioni leggermente diverse
     for (int y = 0; y < height; ++y) {
@@ -68,20 +67,20 @@ void apply_chromatic_aberration(Framebuffer& fb, const ChromaticAberrationEffect
             const std::size_t idx = static_cast<std::size_t>(y * width + x) * 4;
             
             // R → campiona da (x + dx, y + dy)
-            fb.data[idx + 0] = sample_bilinear(temp_fb, 
+            fb.mutable_pixels()[idx + 0] = sample_bilinear(temp_fb, 
                 static_cast<float>(x) + dx, 
                 static_cast<float>(y) + dy, 0);
             
             // G → campiona da (x, y) - nessun offset
-            fb.data[idx + 1] = temp_fb.data[idx + 1];
+            fb.mutable_pixels()[idx + 1] = temp_fb.pixels()[idx + 1];
             
             // B → campiona da (x - dx, y - dy)
-            fb.data[idx + 2] = sample_bilinear(temp_fb, 
+            fb.mutable_pixels()[idx + 2] = sample_bilinear(temp_fb, 
                 static_cast<float>(x) - dx, 
                 static_cast<float>(y) - dy, 2);
             
             // Alpha rimane invariato
-            fb.data[idx + 3] = temp_fb.data[idx + 3];
+            fb.mutable_pixels()[idx + 3] = temp_fb.pixels()[idx + 3];
         }
     }
 }

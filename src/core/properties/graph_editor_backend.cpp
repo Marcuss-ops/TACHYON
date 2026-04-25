@@ -92,13 +92,13 @@ void GraphEditorBackend::remove_keyframes(std::vector<ScalarKeyframe>& track, co
 }
 
 void GraphEditorBackend::set_keyframe_tangents(ScalarKeyframe& kf, 
-                                                float in_slope, float out_slope,
-                                                float in_influence, float out_influence) {
+                                                 float in_slope, float out_slope,
+                                                 float in_influence, float out_influence) {
     kf.type = InterpolationType::Bezier;
     kf.in_tangent = in_slope;
     kf.out_tangent = out_slope;
-    kf.bezier.in_influence = in_influence;
-    kf.bezier.out_influence = out_influence;
+    kf.in_influence = in_influence;
+    kf.out_influence = out_influence;
 }
 
 void GraphEditorBackend::convert_to_auto_bezier(ScalarKeyframe& kf, 
@@ -122,9 +122,7 @@ void GraphEditorBackend::convert_to_auto_bezier(ScalarKeyframe& kf,
     kf.out_tangent = avg_slope;
     
     // Auto-bezier uses symmetric control points
-    kf.bezier.cx1 = 0.33f; kf.bezier.cy1 = 0.0f;
-    kf.bezier.cx2 = 0.66f; kf.bezier.cy2 = 1.0f;
-    kf.bezier.weighted = false;
+    kf.bezier = animation::CubicBezierEasing(0.33f, 0.0f, 0.66f, 1.0f);
 }
 
 void GraphEditorBackend::convert_to_linear(ScalarKeyframe& kf) {
@@ -154,7 +152,7 @@ float GraphEditorBackend::evaluate(const std::vector<ScalarKeyframe>& track, flo
     const auto& prev = *(it - 1);
     const auto& curr = *it;
     
-    return BezierInterpolator::interpolate_scalar(prev, curr, time);
+    return BezierInterpolator::evaluate(track, time);
 }
 
 void GraphEditorBackend::snap_to_grid(std::vector<ScalarKeyframe>& track, float grid_size) {
