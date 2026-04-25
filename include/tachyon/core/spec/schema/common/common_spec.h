@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tachyon/core/math/vector3.h"
+#include "tachyon/core/animation/easing.h"
 #include <string>
 #include <cstdint>
 #include <map>
@@ -63,6 +64,10 @@ struct EffectSpec {
     std::map<std::string, double> scalars;
     std::map<std::string, ColorSpec> colors;
     std::map<std::string, std::string> strings;
+    
+    // Easing for effect progress (e.g., transition t)
+    animation::EasingPreset easing_preset{animation::EasingPreset::None};
+    animation::CubicBezierEasing custom_easing{animation::CubicBezierEasing::linear()};
 
     [[nodiscard]] EffectSpec evaluate(double time_seconds) const;
 };
@@ -91,6 +96,16 @@ inline void to_json(nlohmann::json& j, const EffectSpec& e) {
         }
         j["strings"] = strings_obj;
     }
+    // Serialize easing
+    j["easing_preset"] = static_cast<int>(e.easing_preset);
+    if (e.easing_preset == animation::EasingPreset::Custom) {
+        j["custom_easing"] = nlohmann::json{
+            {"cx1", e.custom_easing.cx1},
+            {"cy1", e.custom_easing.cy1},
+            {"cx2", e.custom_easing.cx2},
+            {"cy2", e.custom_easing.cy2}
+        };
+    }
 }
 
 inline void from_json(const nlohmann::json& j, EffectSpec& e) {
@@ -114,6 +129,17 @@ inline void from_json(const nlohmann::json& j, EffectSpec& e) {
         for (auto& [key, val] : j.at("strings").items()) {
             if (val.is_string()) e.strings[key] = val.get<std::string>();
         }
+    }
+    // Deserialize easing
+    if (j.contains("easing_preset") && j.at("easing_preset").is_number()) {
+        e.easing_preset = static_cast<animation::EasingPreset>(j.at("easing_preset").get<int>());
+    }
+    if (e.easing_preset == animation::EasingPreset::Custom && j.contains("custom_easing") && j.at("custom_easing").is_object()) {
+        const auto& bezier = j.at("custom_easing");
+        if (bezier.contains("cx1") && bezier.at("cx1").is_number()) e.custom_easing.cx1 = bezier.at("cx1").get<double>();
+        if (bezier.contains("cy1") && bezier.at("cy1").is_number()) e.custom_easing.cy1 = bezier.at("cy1").get<double>();
+        if (bezier.contains("cx2") && bezier.at("cx2").is_number()) e.custom_easing.cx2 = bezier.at("cx2").get<double>();
+        if (bezier.contains("cy2") && bezier.at("cy2").is_number()) e.custom_easing.cy2 = bezier.at("cy2").get<double>();
     }
 }
 

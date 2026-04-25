@@ -210,6 +210,7 @@ EvaluatedLayerState make_layer_state(
     evaluated.stroke_width = static_cast<float>(sample_scalar(layer.stroke_width_property, layer.stroke_width, local_t, context.audio_analyzer));
 
     evaluated.effects = layer.effects;
+    evaluated.animated_effects = layer.animated_effects;
 
     return evaluated;
 }
