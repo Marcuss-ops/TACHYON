@@ -30,8 +30,8 @@ public:
     FontPreloadResult preload_faces_for_scene(const std::vector<std::string>& font_families);
 
     bool validate_font_coverage(const FontManifest& manifest,
-                                 const std::vector<std::uint32_t>& required_codepoints,
-                                 FontManifestPolicy::MissingGlyphPolicy policy) const;
+                                   const std::vector<std::uint32_t>& required_codepoints,
+                                   MissingGlyphPolicy policy) const;
 
 private:
     FontResolver& m_resolver;

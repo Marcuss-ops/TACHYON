@@ -12,8 +12,9 @@
 
 namespace tachyon::text {
 
-namespace {
 std::atomic<std::uint64_t> FontFace::next_font_id{1};
+
+namespace {
 
 std::uint64_t compute_hash(const std::vector<std::uint8_t>& data) {
     std::uint64_t hash = 0;
@@ -22,6 +23,7 @@ std::uint64_t compute_hash(const std::vector<std::uint8_t>& data) {
     }
     return hash;
 }
+
 } // anonymous namespace
 
 std::uint64_t FontFace::compute_content_hash(const std::vector<std::uint8_t>& data) {
@@ -127,7 +129,7 @@ bool FontFace::load_from_file(const std::filesystem::path& path) {
     m_content_hash = compute_content_hash(m_font_data);
 
     FT_Face face;
-    if (FT_New_Memory_Face(get_ft_library(),
+    if (FT_New_Memory_Face(::tachyon::renderer2d::text::get_ft_library(),
                             m_font_data.data(),
                             static_cast<FT_Long>(m_font_data.size()),
                             0,

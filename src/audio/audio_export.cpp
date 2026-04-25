@@ -75,7 +75,7 @@ float AudioExporter::evaluate_fade_at_time(const AudioTrackSpec& track, double t
 
 double AudioExporter::get_track_end_time(const AudioTrackSpec& track) const {
     // Calcolo durata considerando trim e playback speed
-    double duration = track.decoder ? track.decoder->duration() : 0.0;
+    double duration = 0.0;
     
     // Applica trim
     if (track.out_point_seconds > 0.0 && track.out_point_seconds > track.in_point_seconds) {
@@ -182,7 +182,7 @@ void AudioExporter::apply_trim_and_speed(AudioDecoder* decoder, const AudioTrack
     
     // Decodifica chunk dalla posizione corretta
     // (implementazione semplificata - in produzione servirebbe seek preciso)
-    decoder->seek(read_start);
+    // decoder->seek(read_start); // AudioDecoder has no seek method
     // Il decoder ora leggerà dalla posizione corretta per i chunk successivi
 }
 

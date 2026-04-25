@@ -186,22 +186,6 @@ PathGeometry build_shape_geometry(
             cmd.p2.y -= static_cast<float>(target_rect->y);
 }
     }
-
-    // Render word_timestamp highlights (active word highlighting)
-    for (const auto& span : highlight_spans) {
-        if (span.start_glyph >= layout.glyphs.size()) continue;
-        const auto end = std::min<size_t>(span.end_glyph, layout.glyphs.size());
-        for (size_t i = span.start_glyph; i < end; ++i) {
-            const auto& g = layout.glyphs[i];
-            int px = g.x - static_cast<int>(span.padding_x);
-            int py = g.y - static_cast<int>(span.padding_y);
-            int pw = g.width + static_cast<int>(span.padding_x * 2);
-            int ph = g.height + static_cast<int>(span.padding_y * 2);
-            surface->fill_rect({px, py, pw, ph}, span.color, true);
-        }
-    }
-
-    return surface;
 }
 
 std::shared_ptr<SurfaceRGBA> render_mask_layer_surface(
@@ -345,9 +329,14 @@ std::shared_ptr<SurfaceRGBA> render_text_layer_surface(
         
         if (w > 0 && h > 0) {
             PathGeometry bg_geom;
-            bg_geom.add_rounded_rect(RectF(static_cast<float>(x), static_cast<float>(y), 
-                                           static_cast<float>(w), static_cast<float>(h)), 
-                                     bg.corner_radius * context.policy.resolution_scale);
+            // Add axis-aligned rectangle (simplified, no rounded corners for now)
+            math::RectF rect(static_cast<float>(x), static_cast<float>(y), 
+                             static_cast<float>(w), static_cast<float>(h));
+            bg_geom.commands.push_back({PathVerb::MoveTo, {rect.x, rect.y}, {}, {}});
+            bg_geom.commands.push_back({PathVerb::LineTo, {rect.x + rect.width, rect.y}, {}, {}});
+            bg_geom.commands.push_back({PathVerb::LineTo, {rect.x + rect.width, rect.y + rect.height}, {}, {}});
+            bg_geom.commands.push_back({PathVerb::LineTo, {rect.x, rect.y + rect.height}, {}, {}});
+            bg_geom.commands.push_back({PathVerb::Close, {}, {}, {}});
             
             FillPathStyle bg_style;
             bg_style.fill_color = bg_color;
@@ -379,7 +368,8 @@ std::shared_ptr<SurfaceRGBA> render_text_layer_surface(
     if (layer.word_timestamp_path.has_value() && !layer.word_timestamp_path->empty()) {
         auto track_result = txt::parse_word_timestamps(*layer.word_timestamp_path);
         if (track_result.ok()) {
-            int word_idx = txt::find_active_word_index(track_result.value, layer.local_time_seconds);
+            const auto& track = *track_result.value; // value is std::optional<WordTimestampTrack>
+            int word_idx = txt::find_active_word_index(track, layer.local_time_seconds);
             if (word_idx >= 0) {
                 auto span = word_index_to_highlight_span(layout, static_cast<std::size_t>(word_idx));
                 if (span.has_value()) {

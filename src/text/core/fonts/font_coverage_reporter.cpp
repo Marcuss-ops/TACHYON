@@ -37,7 +37,8 @@ FontCoverageSummary FontCoverageReporter::generate_report() const {
         if (face.load_from_file(entry.src)) {
             report.loaded = true;
             report.total_glyphs = 0;
-
+            
+            std::unordered_set<std::uint32_t> codepoints;
             face.collect_codepoints(codepoints);
             for (auto cp : codepoints) {
                 ++report.total_glyphs;
