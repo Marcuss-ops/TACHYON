@@ -5,6 +5,9 @@
 #include <string_view>
 
 namespace tachyon {
+// Forward declaration for function defined in render_plan_hash.cpp
+std::uint64_t hash_scene_content(const SceneSpec& scene);
+
 namespace {
 
 const CompositionSpec* find_composition(const SceneSpec& scene, const std::string& composition_id) {
