@@ -20,6 +20,19 @@ AutosaveManager::AutosaveManager(const Config& config) : config_(config) {
     }
 }
 
+namespace {
+
+bool is_newer_autosave(const fs::path& a, const fs::path& b) {
+    const auto time_a = fs::last_write_time(a);
+    const auto time_b = fs::last_write_time(b);
+    if (time_a != time_b) {
+        return time_a < time_b;
+    }
+    return a.filename().string() < b.filename().string();
+}
+
+} // namespace
+
 bool AutosaveManager::maybe_autosave(const UndoManager& undo_mgr,
                                      const SceneSpec& scene,
                                      const SerializeFn& serialize) {
@@ -84,9 +97,7 @@ std::string AutosaveManager::find_latest_autosave() const {
     if (files.empty()) return {};
 
     auto newest = *std::max_element(files.begin(), files.end(),
-        [](const fs::path& a, const fs::path& b) {
-            return fs::last_write_time(a) < fs::last_write_time(b);
-        });
+        [](const fs::path& a, const fs::path& b) { return is_newer_autosave(a, b); });
     return newest.string();
 }
 
@@ -134,9 +145,7 @@ void AutosaveManager::trim_old_versions() {
     if (files.size() <= config_.max_versions) return;
 
     std::sort(files.begin(), files.end(),
-        [](const fs::path& a, const fs::path& b) {
-            return fs::last_write_time(a) < fs::last_write_time(b);
-        });
+        [](const fs::path& a, const fs::path& b) { return is_newer_autosave(a, b); });
 
     const std::size_t to_remove = files.size() - config_.max_versions;
     for (std::size_t i = 0; i < to_remove; ++i) {

@@ -10,6 +10,7 @@
 #include "tachyon/renderer2d/color/blending.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
 #include "tachyon/renderer2d/evaluated_composition/rendering/text_mesh_builder.h"
+#include "tachyon/renderer2d/evaluated_composition/rendering/media_card_mesh_builder.h"
 #include "tachyon/renderer3d/core/ray_tracer.h"
 #include "tachyon/renderer3d/effects/depth_of_field.h"
 #include "tachyon/renderer3d/effects/motion_blur.h"
@@ -17,10 +18,49 @@
 #include "tachyon/output/frame_aov.h"
 #include <algorithm>
 #include <cmath>
+#include <array>
+#include <filesystem>
 #include <unordered_map>
 
 namespace tachyon {
 using namespace renderer2d;
+
+namespace {
+
+std::optional<std::filesystem::path> resolve_media_source(
+    const scene::EvaluatedLayerState& layer,
+    const RenderContext2D& context) {
+
+    if (!context.media_manager) {
+        return std::nullopt;
+    }
+
+    const std::array<std::string, 3> references = {
+        layer.asset_path.value_or(""),
+        layer.id,
+        layer.name
+    };
+
+    for (const auto& reference : references) {
+        if (reference.empty()) {
+            continue;
+        }
+
+        std::filesystem::path resolved = context.media_manager->get_asset_path(reference);
+        if (!resolved.empty()) {
+            return resolved;
+        }
+
+        std::filesystem::path candidate(reference);
+        if (candidate.has_extension()) {
+            return candidate;
+        }
+    }
+
+    return std::nullopt;
+}
+
+} // namespace
 
 RasterizedFrame2D render_evaluated_composition_2d(
     const scene::EvaluatedCompositionState& state,
@@ -166,9 +206,6 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     inst.previous_world_transform = l.previous_world_matrix;
                     inst.material.base_color = l.fill_color;
                     inst.material.opacity = static_cast<float>(l.opacity);
-                    if (l.type == scene::LayerType::Text) {
-                        inst.mesh_asset_id = "text3d:" + l.id;
-                    }
                     if (l.type == scene::LayerType::Text && render_context.font_registry != nullptr) {
                         const auto text_mesh = build_text_extrusion_mesh(l, state, *render_context.font_registry);
                         if (text_mesh.mesh) {
@@ -176,8 +213,41 @@ RasterizedFrame2D render_evaluated_composition_2d(
                             inst.mesh_asset_id = text_mesh.cache_key;
                         }
                     }
+                    if (!inst.mesh_asset) {
+                        if (l.type == scene::LayerType::Image || l.type == scene::LayerType::Video) {
+                            const auto media_source = resolve_media_source(l, render_context);
+                            if (media_source.has_value()) {
+                                const ::tachyon::renderer2d::SurfaceRGBA* media_frame = nullptr;
+                                if (l.type == scene::LayerType::Video) {
+                                    media_frame = render_context.media_manager->get_video_frame(*media_source, task.time_seconds);
+                                } else {
+                                    media_frame = render_context.media_manager->get_image(*media_source);
+                                }
+
+                                if (media_frame != nullptr) {
+                                    const auto media_mesh = build_textured_card_mesh(
+                                        l,
+                                        *media_frame,
+                                        media_source->generic_string() + "@" + std::to_string(task.time_seconds));
+                                    inst.mesh_asset = media_mesh.mesh;
+                                    inst.mesh_asset_id = media_mesh.cache_key;
+                                } else {
+                                    const auto fallback_mesh = build_colored_card_mesh(
+                                        l,
+                                        media_source->generic_string());
+                                    inst.mesh_asset = fallback_mesh.mesh;
+                                    inst.mesh_asset_id = fallback_mesh.cache_key;
+                                }
+                            }
+                        } else if (l.type == scene::LayerType::Solid) {
+                            const auto solid_mesh = build_colored_card_mesh(l, std::to_string(task.frame_number));
+                            inst.mesh_asset = solid_mesh.mesh;
+                            inst.mesh_asset_id = solid_mesh.cache_key;
+                        }
+                    }
+
                     if (inst.mesh_asset_id.empty()) {
-                        // Fallback to a media-backed mesh if the layer already points to one.
+                        // Fallback to a registered mesh asset if the layer already points to one.
                         inst.mesh_asset_id = l.asset_path.value_or("");
                     }
                     scene3d.instances.push_back(inst);

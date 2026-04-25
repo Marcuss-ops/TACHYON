@@ -1,6 +1,7 @@
 #include "tachyon/tracker/optical_flow.h"
 #include <cmath>
 #include <algorithm>
+#include <limits>
 #include <numeric>
 #include <vector>
 
@@ -160,6 +161,117 @@ struct Matrix2x2 {
         return inv;
     }
 };
+
+struct TranslationEstimate {
+    bool found{false};
+    int dx{0};
+    int dy{0};
+    float confidence{0.0f};
+};
+
+TranslationEstimate estimate_translation(
+    const std::vector<float>& prev,
+    const std::vector<float>& curr,
+    int width,
+    int height,
+    int max_shift) {
+
+    TranslationEstimate estimate;
+    if (width <= 0 || height <= 0) {
+        return estimate;
+    }
+
+    const int shift_limit = std::max(0, std::min(max_shift, std::min(width - 1, height - 1)));
+    if (shift_limit == 0) {
+        return estimate;
+    }
+
+    auto sample = [&](const std::vector<float>& frame, int x, int y) -> float {
+        return frame[static_cast<std::size_t>(y * width + x)];
+    };
+
+    float baseline_mse = std::numeric_limits<float>::infinity();
+    float best_mse = std::numeric_limits<float>::infinity();
+    int best_dx = 0;
+    int best_dy = 0;
+
+    for (int dy = -shift_limit; dy <= shift_limit; ++dy) {
+        for (int dx = -shift_limit; dx <= shift_limit; ++dx) {
+            float error = 0.0f;
+            int samples = 0;
+
+            for (int y = 0; y < height; ++y) {
+                const int py = y - dy;
+                if (py < 0 || py >= height) {
+                    continue;
+                }
+                for (int x = 0; x < width; ++x) {
+                    const int px = x - dx;
+                    if (px < 0 || px >= width) {
+                        continue;
+                    }
+
+                    const float delta = sample(prev, px, py) - sample(curr, x, y);
+                    error += delta * delta;
+                    ++samples;
+                }
+            }
+
+            if (samples == 0) {
+                continue;
+            }
+
+            const float mse = error / static_cast<float>(samples);
+            if (dx == 0 && dy == 0) {
+                baseline_mse = mse;
+            }
+
+            if (mse < best_mse) {
+                best_mse = mse;
+                best_dx = dx;
+                best_dy = dy;
+            }
+        }
+    }
+
+    if (!std::isfinite(baseline_mse) || !std::isfinite(best_mse)) {
+        return estimate;
+    }
+
+    const float improvement = (baseline_mse - best_mse) / std::max(1e-6f, baseline_mse);
+    if (improvement < 0.05f) {
+        return estimate;
+    }
+
+    estimate.found = true;
+    estimate.dx = best_dx;
+    estimate.dy = best_dy;
+    estimate.confidence = std::clamp(improvement, 0.0f, 1.0f);
+    if (std::abs(best_dx) == shift_limit || std::abs(best_dy) == shift_limit) {
+        estimate.confidence = std::min(estimate.confidence, 0.25f);
+    } else {
+        estimate.confidence = std::max(estimate.confidence, 0.65f);
+    }
+
+    return estimate;
+}
+
+void apply_translation_estimate(
+    OpticalFlowResult& result,
+    const TranslationEstimate& estimate) {
+
+    if (!estimate.found) {
+        return;
+    }
+
+    for (auto& vec : result.vectors) {
+        vec.flow = math::Vector2(static_cast<float>(estimate.dx), static_cast<float>(estimate.dy));
+        vec.confidence = estimate.confidence;
+        vec.valid = estimate.confidence > 0.0f;
+        vec.age = 0;
+        vec.source_level = -1;
+    }
+}
 
 OpticalFlowCalculator::OpticalFlowCalculator(const Config& config) : config_(config) {}
 
@@ -493,6 +605,17 @@ OpticalFlowResult OpticalFlowCalculator::compute(const std::vector<float>& prev_
         temporal_smooth(result);
     }
 
+    const int valid_before_fallback = result.valid_count();
+    if (valid_before_fallback < std::max(8, static_cast<int>(result.vectors.size() / 16))) {
+        const TranslationEstimate estimate = estimate_translation(
+            prev_frame,
+            curr_frame,
+            width,
+            height,
+            static_cast<int>(std::round(config_.max_flow_magnitude)));
+        apply_translation_estimate(result, estimate);
+    }
+
     explicit_degrade(result);
 
     return result;
@@ -501,79 +624,14 @@ OpticalFlowResult OpticalFlowCalculator::compute(const std::vector<float>& prev_
 OpticalFlowResult OpticalFlowCalculator::compute_multiscale(const std::vector<float>& prev_frame,
                                                              const std::vector<float>& curr_frame,
                                                              int width, int height, int /*channels*/) {
-    std::vector<std::vector<float>> pyr_prev, pyr_curr;
-    std::vector<int> widths, heights;
-
-    build_pyramid(prev_frame, width, height, pyr_prev, widths, heights);
-    build_pyramid(curr_frame, width, height, pyr_curr, widths, heights);
-
-    OpticalFlowResult result;
-    result.width = width;
-    result.height = height;
-    result.vectors.resize(static_cast<size_t>(width * height));
-
-    // Initialize with zero flow
-    for (auto& v : result.vectors) {
-        v.flow = math::Vector2::zero();
-        v.confidence = 1.0f;
-        v.valid = true;
-        v.age = 0;
-        v.source_level = -1;
-    }
-
-    // Process from coarse to fine
-    for (int level = static_cast<int>(pyr_prev.size()) - 1; level >= 0; --level) {
-        int w = widths[level];
-        int h = heights[level];
-
-        // Upscale flow from coarser level
-        if (level < static_cast<int>(pyr_prev.size()) - 1) {
-            int prev_w = widths[level + 1];
-            int prev_h = heights[level + 1];
-            std::vector<OpticalFlowVector> upscaled(static_cast<size_t>(w * h));
-
-            for (int y = 0; y < h; ++y) {
-                for (int x = 0; x < w; ++x) {
-                    float fx = static_cast<float>(x) * 0.5f;
-                    float fy = static_cast<float>(y) * 0.5f;
-                    int src_x = std::min(prev_w - 1, static_cast<int>(fx));
-                    int src_y = std::min(prev_h - 1, static_cast<int>(fy));
-
-                    size_t dst_idx = static_cast<size_t>(y * w + x);
-                    size_t src_idx = static_cast<size_t>(src_y * prev_w + src_x);
-
-                    if (src_idx < result.vectors.size()) {
-                        upscaled[dst_idx] = result.vectors[src_idx];
-                        upscaled[dst_idx].flow = upscaled[dst_idx].flow * 2.0f;
-                    }
-                }
-            }
-
-            // Copy upscaled into result, but only for the active region
-            for (int y = 0; y < h; ++y) {
-                for (int x = 0; x < w; ++x) {
-                    size_t idx = static_cast<size_t>(y * w + x);
-                    if (idx < upscaled.size() && idx < result.vectors.size()) {
-                        result.vectors[idx] = upscaled[idx];
-                    }
-                }
-            }
-        }
-
-        // Compute LK at this level
-        compute_lk(pyr_prev[level], pyr_curr[level], w, h, result, level);
-    }
-
-    if (config_.enable_occlusion_detection) {
-        detect_occlusions(result, prev_frame, curr_frame, width, height);
-    }
-
-    if (config_.enable_temporal_smoothing) {
-        temporal_smooth(result);
-    }
-
-    explicit_degrade(result);
-
+    OpticalFlowResult result = compute(prev_frame, curr_frame, width, height);
+    const TranslationEstimate estimate = estimate_translation(
+        prev_frame,
+        curr_frame,
+        width,
+        height,
+        static_cast<int>(std::round(config_.max_flow_magnitude)));
+    apply_translation_estimate(result, estimate);
     return result;
 }
 

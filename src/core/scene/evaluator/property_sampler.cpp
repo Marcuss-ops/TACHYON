@@ -165,11 +165,18 @@ math::Vector2 sample_vector2(
     const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
     std::uint64_t expression_seed,
     const std::unordered_map<std::string, double>* job_variables,
-    const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables) {
-    if (property.expression.has_value() && !property.expression->empty()) {
+    const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables,
+    std::uint32_t layer_index,
+    PropertySampler sampler,
+    bool skip_expression,
+    const std::map<std::string, nlohmann::json>* input_props) {
+    if (!skip_expression && property.expression.has_value() && !property.expression->empty()) {
         renderer2d::expressions::ExpressionContext expr_ctx;
         expr_ctx.time = local_time_seconds;
         expr_ctx.composition_time = local_time_seconds;
+        expr_ctx.layer_index = layer_index;
+        expr_ctx.property_sampler = sampler;
+        if (input_props) expr_ctx.input_props = *input_props;
         std::vector<std::string> table_keys;
         if (job_variables) {
             for (const auto& [k, v] : *job_variables) {

@@ -1,7 +1,4 @@
-#define TINYGLTF_IMPLEMENTATION
 #define TINYGLTF_NO_STB_IMAGE_WRITE
-// We don't define STB_IMAGE_IMPLEMENTATION here because it's in image_manager.cpp
-// tinygltf will just include stb_image.h and use the linked definitions.
 #include <tiny_gltf.h>
 
 #include "tachyon/media/loading/mesh_loader.h"

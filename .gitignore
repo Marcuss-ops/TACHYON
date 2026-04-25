@@ -1,18 +1,36 @@
 build/
+build-ninja/
 out/
 output/
 tests/output/actual/
+
+# Visual Studio / MSBuild artifacts
 *.vcxproj.user
 *.suo
 *.VC.db
 *.VC.VC.opendb
+*.sln.docstates
+*.user
+.vs/
+
+# Compiled objects (should be in build directory only)
+# Uncomment if stray files appear outside build-ninja:
+# *.obj
+# *.pdb
+# *.idb
+# *.ilk
+# *.exp
+# *.lib
+# *.dll
+# *.exe
 
 # Logs
 logs/
 
 # Temporary files
 *.tmp
-*.go
+*.tmp
+~$*
 
 # Rendered output (regenerable)
 debug/render_*/
@@ -25,3 +43,11 @@ render_job_*.json
 render_scene_*.json
 scene_*_test.json
 test_*.json
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
