@@ -148,6 +148,17 @@ public:
     const std::string& last_error() const { return m_last_error; }
     
 private:
+    // Member variables
+    std::string m_last_error;
+    std::string output_path;
+    AVExportConfig config_;
+    std::atomic<bool> cancelled;
+    std::atomic<float> progress;
+    
+    FILE* video_pipe = nullptr;
+    FILE* audio_pipe = nullptr;
+    FILE* av_pipe = nullptr;
+    
     bool initialize_video_pipeline() {
         std::stringstream cmd;
         cmd << "ffmpeg -y -f rawvideo -pix_fmt rgba -s " << config_.width << "x" << config_.height
@@ -169,7 +180,7 @@ private:
         
         cmd << " -an \"" << output_path << "\"";
         
-        video_pipe = _popen(cmd.str().c_str(), "w");
+        video_pipe = popen(cmd.str().c_str(), "w");
         if (!video_pipe) {
             m_last_error = "Failed to open video pipeline: ffmpeg command failed";
             return false;
@@ -179,16 +190,13 @@ private:
     
     bool initialize_audio_pipeline() {
         std::stringstream cmd;
-        cmd << "ffmpeg -y -f f32le -ar " << config_.sample_rate
-            << " -ac " << config_.audio_channels
-            << " -i -";
+        cmd << "ffmpeg -y -f f32le -acodec pcm_f32le -ar " << config_.sample_rate
+            << " -ac " << config_.audio_channels << " -i -";
         
-        cmd << " -c:a " << config_.audio_codec
-            << " -b:a " << config_.audio_bitrate_kbps << "k";
-        
+        cmd << " -c:a " << config_.audio_codec << " -b:a " << config_.audio_bitrate_kbps << "k";
         cmd << " -vn \"" << output_path << "\"";
         
-        audio_pipe = _popen(cmd.str().c_str(), "w");
+        audio_pipe = popen(cmd.str().c_str(), "w");
         if (!audio_pipe) {
             m_last_error = "Failed to open audio pipeline: ffmpeg command failed";
             return false;
@@ -198,30 +206,23 @@ private:
     
     bool initialize_av_pipeline() {
         std::stringstream cmd;
-        cmd << "ffmpeg -y";
-        
-        // Video input
-        cmd << " -f rawvideo -pix_fmt rgba -s " << config_.width << "x" << config_.height
+        cmd << "ffmpeg -y -f rawvideo -pix_fmt rgba -s " << config_.width << "x" << config_.height
             << " -r " << config_.fps << " -i -";
         
-        // Audio input
-        cmd << " -f f32le -ar " << config_.sample_rate
+        cmd << " -f f32le -acodec pcm_f32le -ar " << config_.sample_rate
             << " -ac " << config_.audio_channels << " -i -";
         
-        // Video encoding
         if (config_.use_crf) {
             cmd << " -crf " << config_.crf;
         } else {
             cmd << " -b:v " << config_.bitrate_kbps << "k";
         }
+        
         cmd << " -c:v " << config_.video_codec << " -preset " << config_.preset;
-        
-        // Audio encoding
         cmd << " -c:a " << config_.audio_codec << " -b:a " << config_.audio_bitrate_kbps << "k";
-        
         cmd << " \"" << output_path << "\"";
         
-        av_pipe = _popen(cmd.str().c_str(), "w");
+        av_pipe = popen(cmd.str().c_str(), "w");
         if (!av_pipe) {
             m_last_error = "Failed to open AV pipeline: ffmpeg command failed";
             return false;
@@ -234,13 +235,12 @@ private:
             m_last_error = "No video or AV pipeline open for encoding";
             return false;
         }
-        FILE* pipe = video_pipe ? video_pipe : av_pipe;
         
-        size_t frame_size = config_.width * config_.height * 4;
-        size_t written = fwrite(rgba_data, 1, frame_size, pipe);
-        if (written != frame_size) {
-            m_last_error = "Failed to write video frame: wrote " + std::to_string(written) + 
-                          " of " + std::to_string(frame_size) + " bytes";
+        FILE* pipe = video_pipe ? video_pipe : av_pipe;
+        const auto written = fwrite(rgba_data, 1, config_.width * config_.height * 4, pipe);
+        if (written != static_cast<size_t>(config_.width * config_.height * 4)) {
+            m_last_error = "Failed to write video frame: wrote " + std::to_string(written) +
+                " bytes, expected " + std::to_string(config_.width * config_.height * 4);
             return false;
         }
         return true;
@@ -251,13 +251,12 @@ private:
             m_last_error = "No audio or AV pipeline open for encoding";
             return false;
         }
-        FILE* pipe = audio_pipe ? audio_pipe : av_pipe;
         
-        size_t byte_size = num_samples * sizeof(float);
-        size_t written = fwrite(samples, 1, byte_size, pipe);
-        if (written != byte_size) {
-            m_last_error = "Failed to write audio samples: wrote " + std::to_string(written) + 
-                          " of " + std::to_string(byte_size) + " bytes";
+        FILE* pipe = audio_pipe ? audio_pipe : av_pipe;
+        const auto written = fwrite(samples, sizeof(float), num_samples, pipe);
+        if (written != static_cast<size_t>(num_samples)) {
+            m_last_error = "Failed to write audio samples: wrote " + std::to_string(written) +
+                " of " + std::to_string(num_samples);
             return false;
         }
         return true;
@@ -265,7 +264,7 @@ private:
     
     bool finalize_video_pipeline() {
         if (video_pipe) {
-            int result = _pclose(video_pipe);
+            int result = pclose(video_pipe);
             video_pipe = nullptr;
             if (result != 0) {
                 m_last_error = "Video pipeline closed with error code: " + std::to_string(result);
@@ -278,7 +277,7 @@ private:
     
     bool finalize_audio_pipeline() {
         if (audio_pipe) {
-            int result = _pclose(audio_pipe);
+            int result = pclose(audio_pipe);
             audio_pipe = nullptr;
             if (result != 0) {
                 m_last_error = "Audio pipeline closed with error code: " + std::to_string(result);
@@ -291,7 +290,7 @@ private:
     
     bool finalize_av_pipeline() {
         if (av_pipe) {
-            int result = _pclose(av_pipe);
+            int result = pclose(av_pipe);
             av_pipe = nullptr;
             if (result != 0) {
                 m_last_error = "AV pipeline closed with error code: " + std::to_string(result);
@@ -301,15 +300,6 @@ private:
         }
         return true;
     }
-    
-    AVExportConfig config_;
-    std::string output_path;
-    std::atomic<bool> cancelled;
-    std::atomic<float> progress;
-    
-    FILE* video_pipe = nullptr;
-    FILE* audio_pipe = nullptr;
-    FILE* av_pipe = nullptr;
 };
 
 AVExporter::AVExporter(const AVExportConfig& config) 
@@ -350,19 +340,19 @@ std::vector<std::string> get_available_containers() {
 }
 
 bool check_ffmpeg_available() {
-    FILE* pipe = _popen("ffmpeg -version", "r");
+    FILE* pipe = popen("ffmpeg -version", "r");
     if (!pipe) return false;
-    _pclose(pipe);
+    pclose(pipe);
     return true;
 }
 
 std::string get_ffmpeg_version() {
-    FILE* pipe = _popen("ffmpeg -version 2>&1", "r");
+    FILE* pipe = popen("ffmpeg -version 2>&1", "r");
     if (!pipe) return "Unknown";
     
     char buffer[256];
     std::string version = fgets(buffer, sizeof(buffer), pipe) ? buffer : "Unknown";
-    _pclose(pipe);
+    pclose(pipe);
     return version;
 }
 
