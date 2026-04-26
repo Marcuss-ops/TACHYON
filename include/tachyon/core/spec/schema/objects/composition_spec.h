@@ -32,6 +32,19 @@ struct VariableDecl {
     std::string type; // "double", "string", "Color", etc.
 };
 
+struct ComponentSpec {
+    std::string id;
+    std::string name;
+    std::vector<VariableDecl> params; // parameter declarations (typed)
+    std::vector<LayerSpec> layers; // layers inside the component
+};
+
+struct ComponentInstanceSpec {
+    std::string component_id;
+    std::string instance_id; // unique id for this instance
+    std::map<std::string, nlohmann::json> param_values; // provided values for params
+};
+
 struct CompositionSpec {
     std::string id;
     std::string name;
@@ -54,6 +67,11 @@ struct CompositionSpec {
 
     /// Typed variable declarations for template rendering
     std::vector<VariableDecl> variable_decls;
+
+    /// Reusable components with typed parameters
+    std::vector<ComponentSpec> components;
+    /// Instances of components with provided parameter values
+    std::vector<ComponentInstanceSpec> component_instances;
 };
 
 } // namespace tachyon

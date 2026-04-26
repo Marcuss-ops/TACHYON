@@ -428,6 +428,46 @@ json serialize_composition(const CompositionSpec& comp) {
         }
     }
 
+    // Serialize components
+    if (!comp.components.empty()) {
+        j["components"] = json::array();
+        for (const auto& comp_spec : comp.components) {
+            json c;
+            c["id"] = comp_spec.id;
+            c["name"] = comp_spec.name;
+            if (!comp_spec.params.empty()) {
+                json params = json::array();
+                for (const auto& param : comp_spec.params) {
+                    json p;
+                    p["name"] = param.name;
+                    p["type"] = param.type;
+                    params.push_back(p);
+                }
+                c["params"] = params;
+            }
+            // TODO: serialize layers inside component
+            j["components"].push_back(c);
+        }
+    }
+
+    // Serialize component instances
+    if (!comp.component_instances.empty()) {
+        j["component_instances"] = json::array();
+        for (const auto& inst : comp.component_instances) {
+            json i;
+            i["component_id"] = inst.component_id;
+            i["instance_id"] = inst.instance_id;
+            if (!inst.param_values.empty()) {
+                json pv = json::object();
+                for (const auto& [key, val] : inst.param_values) {
+                    pv[key] = val;
+                }
+                i["param_values"] = pv;
+            }
+            j["component_instances"].push_back(i);
+        }
+    }
+
     return j;
 }
 
