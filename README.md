@@ -39,23 +39,85 @@ This script adds the local CMake and Visual Studio Build Tools locations to the 
 
 ## Build
 
-Use the root build script for the standard build flow:
+Tachyon uses **Ninja** as the default build system with **CMakePresets** for standardized configurations. The build script `build.ps1` handles all build operations.
+
+### Quick start
 
 ```powershell
-.\build.ps1 -Preset dev -RunTests
+# Clean build (RelWithDebInfo, default)
+.\build.ps1 -RelWithDebInfo -Clean
+
+# Build without cleaning
+.\build.ps1 -RelWithDebInfo
+
+# Run tests
+.\build.ps1 -RelWithDebInfo -Test
 ```
 
-If you only want to compile, omit `-RunTests`.
+### Build presets
 
-For a faster inner loop, use the fast preset and a focused filter:
+| Preset | Description |
+|--------|-------------|
+| `Debug` | Debug symbols, no optimization |
+| `Release` | Full optimization, no debug symbols |
+| `RelWithDebInfo` | Optimization + debug info (default) |
+| `RelWithDebInfo-Unity` | Unity build for faster compilation |
+| `RelWithDebInfo-LLD` | Use lld-link linker (requires LLVM) |
+| `RelWithDebInfo-Fast` | Unity + LLD combined |
+
+### Build flags
+
+| Flag | Description |
+|------|-------------|
+| `-Debug` | Build Debug preset |
+| `-Release` | Build Release preset |
+| `-RelWithDebInfo` | Build RelWithDebInfo preset (default) |
+| `-Clean` | Delete `build-ninja/` only (preserves `.cache/`) |
+| `-CleanDeps` | Delete both `build-ninja/` and `.cache/` |
+| `-Test` | Run tests after building |
+| `-ShowSccacheStats` | Show sccache hit/miss statistics |
+
+### Examples
 
 ```powershell
-.\build.ps1 -Preset dev-fast -RunTests
-.\build.ps1 -Preset dev-fast -RunTests -TestFilter frame_executor
-.\build.ps1 -Preset asan -RunTests -TestFilter math
+# Debug build with tests
+.\build.ps1 -Debug -Clean -Test
+
+# Release build
+.\build.ps1 -Release -Clean
+
+# Check sccache statistics
+.\build.ps1 -RelWithDebInfo -ShowSccacheStats
+
+# Full clean (remove dependencies too)
+.\build.ps1 -RelWithDebInfo -CleanDeps
 ```
 
-`dev` is the normal daily preset. `dev-fast` trims the default build set and applies a focused test filter when you do not pass one yourself. `asan` is for memory and lifetime bugs.
+### Prerequisites
+
+- **CMake 3.25+** (required for CMP0141 and MSVC_DEBUG_INFORMATION_FORMAT)
+- **Visual Studio 2022** (Community/Professional/Enterprise) with C++ tools
+- **Ninja** (bundled with Visual Studio or install separately)
+- **sccache** (optional, for compiler cache)
+
+### Advanced: manual CMake commands
+
+```powershell
+# Configure (first time only)
+call "C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat" >nul
+cmake -G Ninja -B build-ninja -S . --preset relwithdebinfo
+
+# Build
+ninja -C build-ninja TachyonCore
+ninja -C build-ninja tachyon
+ninja -C build-ninja TachyonTests
+```
+
+### FreeType PDB fix
+
+The build automatically applies `/Z7` (Embedded debug format) to FreeType to avoid parallel build PDB conflicts (`C1041` errors). This is handled via `CMAKE_MSVC_DEBUG_INFORMATION_FORMAT` and target property overrides in `CMakeLists.txt`.
+
+For detailed build documentation, see [BUILD.md](BUILD.md).
 
 ## Documentation
 

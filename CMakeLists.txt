@@ -5,7 +5,25 @@ if(POLICY CMP0141)
 endif()
 project(TACHYON VERSION 0.1.0 LANGUAGES CXX)
 
+# Set FetchContent base directory before including FetchContent
+if(NOT DEFINED FETCHCONTENT_BASE_DIR)
+    set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/.cache/fetchcontent/ninja-msvc-x64" CACHE PATH "Base directory for FetchContent downloads")
+endif()
 include(FetchContent)
+
+# Unity Build support (Jumbo) - applied only to Tachyon targets
+option(TACHYON_UNITY_BUILD "Enable unity build for Tachyon targets" OFF)
+if(TACHYON_UNITY_BUILD)
+    set(TACHYON_UNITY_TARGETS TachyonCore tachyon TachyonTests)
+    foreach(tgt IN LISTS TACHYON_UNITY_TARGETS)
+        if(TARGET ${tgt})
+            set_target_properties(${tgt} PROPERTIES
+                UNITY_BUILD ON
+                UNITY_BUILD_BATCH_SIZE 8
+            )
+        endif()
+    endforeach()
+endif()
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -76,6 +94,14 @@ set(FT_WITH_HARFBUZZ OFF CACHE BOOL "Disable HarfBuzz for FreeType" FORCE)
 # Override policy so FreeType's old CMakeLists.txt does not abort configure.
 set(CMAKE_POLICY_DEFAULT_CMP0048 NEW)
 FetchContent_MakeAvailable(freetype)
+
+# Fix: force /Z7 (Embedded) for all freetype targets to avoid PDB conflicts
+if(MSVC AND freetype_SOURCE_DIR)
+    get_property(targets DIRECTORY "${freetype_SOURCE_DIR}" PROPERTY BUILDSYSTEM_TARGETS)
+    foreach(target IN LISTS targets)
+        set_property(TARGET ${target} PROPERTY MSVC_DEBUG_INFORMATION_FORMAT "Embedded")
+    endforeach()
+endif()
 
 # HarfBuzz for OpenType shaping and ligatures.
 FetchContent_Declare(
