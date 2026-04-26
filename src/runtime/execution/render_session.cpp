@@ -160,7 +160,6 @@ RenderSessionResult RenderSession::render(
                 continue;
             }
 
-             double fps = compiled_scene.compositions.empty() ? 60.0 : static_cast<double>(compiled_scene.compositions.front().fps);
              output::OutputFramePacket packet = make_output_packet(frame, fps);
             if (!sink->write_frame(packet)) {
                 result.output_error = sink->last_error();

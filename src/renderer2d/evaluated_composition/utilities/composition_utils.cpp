@@ -42,9 +42,11 @@ renderer2d::RectI layer_rect(const scene::EvaluatedLayerState& layer, std::int64
     const float scale_y = std::max(0.0f, std::abs(layer.local_transform.scale.y)) * resolution_scale;
     const int width = std::max(1, static_cast<int>(std::lround(static_cast<double>(base_width) * static_cast<double>(scale_x))));
     const int height = std::max(1, static_cast<int>(std::lround(static_cast<double>(base_height) * static_cast<double>(scale_y))));
+    const float composite_x = layer.local_transform.position.x - layer.local_transform.anchor_point.x;
+    const float composite_y = layer.local_transform.position.y - layer.local_transform.anchor_point.y;
     return renderer2d::RectI{
-        static_cast<int>(std::lround(layer.local_transform.position.x * resolution_scale)),
-        static_cast<int>(std::lround(layer.local_transform.position.y * resolution_scale)),
+        static_cast<int>(std::lround(composite_x * resolution_scale)),
+        static_cast<int>(std::lround(composite_y * resolution_scale)),
         width,
         height
     };

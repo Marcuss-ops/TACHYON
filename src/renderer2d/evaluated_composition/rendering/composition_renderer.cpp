@@ -353,7 +353,10 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 frame.aovs.push_back({"normal", normal_aov_surf});
                 frame.aovs.push_back({"motion_vector", motion_vector_aov_surf});
 
-                composite_surface(target_surface, *world_3d, 0, 0, BlendMode::Normal);
+                {
+                    auto layer_bounds = layer_rect(layer, static_cast<std::int64_t>(state.width), static_cast<std::int64_t>(state.height), res_scale);
+                    composite_surface(target_surface, *world_3d, layer_bounds.x, layer_bounds.y, BlendMode::Normal);
+                }
                 i = last_block_idx;
                 continue;
             }
