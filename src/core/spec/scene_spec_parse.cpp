@@ -61,6 +61,48 @@ CompositionSpec parse_composition(const json& object, const std::string& path, D
             composition.variable_decls.push_back(std::move(decl));
         }
     }
+
+    // Parse components
+    if (object.contains("components") && object.at("components").is_array()) {
+        const auto& comps = object.at("components");
+        for (std::size_t i = 0; i < comps.size(); ++i) {
+            if (!comps[i].is_object()) continue;
+            const auto& c = comps[i];
+            ComponentSpec comp_spec;
+            read_string(c, "id", comp_spec.id);
+            read_string(c, "name", comp_spec.name);
+            if (c.contains("params") && c.at("params").is_array()) {
+                const auto& params = c.at("params");
+                for (std::size_t j = 0; j < params.size(); ++j) {
+                    if (!params[j].is_object()) continue;
+                    VariableDecl vd;
+                    read_string(params[j], "name", vd.name);
+                    read_string(params[j], "type", vd.type);
+                    comp_spec.params.push_back(vd);
+                }
+            }
+            // TODO: parse layers inside component
+            composition.components.push_back(std::move(comp_spec));
+        }
+    }
+
+    // Parse component instances
+    if (object.contains("component_instances") && object.at("component_instances").is_array()) {
+        const auto& instances = object.at("component_instances");
+        for (std::size_t i = 0; i < instances.size(); ++i) {
+            if (!instances[i].is_object()) continue;
+            const auto& inst = instances[i];
+            ComponentInstanceSpec inst_spec;
+            read_string(inst, "component_id", inst_spec.component_id);
+            read_string(inst, "instance_id", inst_spec.instance_id);
+            if (inst.contains("param_values") && inst.at("param_values").is_object()) {
+                for (auto& [key, val] : inst.at("param_values").items()) {
+                    inst_spec.param_values[key] = val;
+                }
+            }
+            composition.component_instances.push_back(std::move(inst_spec));
+        }
+    }
     
     return composition;
 }
