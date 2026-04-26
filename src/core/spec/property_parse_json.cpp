@@ -9,6 +9,14 @@ bool parse_keyframe_common(const json& object, KeyframeT& keyframe, const std::s
         return false;
     }
     keyframe.time = object.at("time").get<double>();
+    
+    if (object.contains("interpolation")) {
+        const std::string interp = object.at("interpolation").get<std::string>();
+        if (interp == "hold") keyframe.interpolation = animation::InterpolationMode::Hold;
+        else if (interp == "bezier") keyframe.interpolation = animation::InterpolationMode::Bezier;
+        else keyframe.interpolation = animation::InterpolationMode::Linear;
+    }
+
     if (object.contains("easing")) {
         keyframe.easing = parse_easing_preset(object.at("easing"));
         if (keyframe.easing == animation::EasingPreset::Custom) {
@@ -19,6 +27,14 @@ bool parse_keyframe_common(const json& object, KeyframeT& keyframe, const std::s
                 if (object.contains("influence_in")) keyframe.influence_in = object.at("influence_in").get<double>();
                 if (object.contains("speed_out")) keyframe.speed_out = object.at("speed_out").get<double>();
                 if (object.contains("influence_out")) keyframe.influence_out = object.at("influence_out").get<double>();
+            }
+        } else if (keyframe.easing == animation::EasingPreset::Spring) {
+            if (object.contains("spring")) {
+                const auto& s = object.at("spring");
+                if (s.contains("stiffness")) keyframe.spring.stiffness = s.at("stiffness").get<double>();
+                if (s.contains("damping")) keyframe.spring.damping = s.at("damping").get<double>();
+                if (s.contains("mass")) keyframe.spring.mass = s.at("mass").get<double>();
+                if (s.contains("velocity")) keyframe.spring.velocity = s.at("velocity").get<double>();
             }
         }
     }

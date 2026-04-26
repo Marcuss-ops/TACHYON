@@ -5,6 +5,7 @@
 #include "tachyon/core/math/vector2.h"
 #include "tachyon/core/math/vector3.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
+#include "tachyon/text/animation/text_presets.h"
 #include "tachyon/text/fonts/font_registry.h"
 
 #include <array>
@@ -297,6 +298,21 @@ bool run_text3d_preview_tests() {
     check_true(static_cast<bool>(mesh.mesh), "text extrusion mesh should be generated");
     if (mesh.mesh) {
         check_true(!mesh.mesh->sub_meshes.empty(), "text extrusion mesh should contain submeshes");
+    }
+
+    ::tachyon::text::TextAnimationOptions animation;
+    animation.time_seconds = 0.0f;
+    std::vector<::tachyon::TextAnimatorSpec> animators = {
+        ::tachyon::text::make_slide_in_animator("characters_excluding_spaces", 0.03, 18.0, 0.7)
+    };
+    animation.animators = std::span<const ::tachyon::TextAnimatorSpec>(animators.data(), animators.size());
+
+    const auto animated_mesh = renderer2d::build_text_extrusion_mesh(state.layers.front(), state, font_registry, animation);
+    check_true(static_cast<bool>(animated_mesh.mesh), "animated text extrusion mesh should be generated");
+    if (mesh.mesh && animated_mesh.mesh) {
+        check_true(animated_mesh.cache_key != mesh.cache_key, "animated mesh cache key should change with animation");
+        check_true(animated_mesh.mesh->sub_meshes.front().material.base_color_factor.x < mesh.mesh->sub_meshes.front().material.base_color_factor.x,
+                   "animated text mesh should reflect opacity at start of the reveal");
     }
 
     if (mesh.mesh) {

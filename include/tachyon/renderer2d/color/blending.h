@@ -88,32 +88,10 @@ inline Color composite_src_over_linear(Color src, Color dst) {
 Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, TransferCurve curve = TransferCurve::Linear);
 Color blend_mode_color(Color src, Color dest, BlendMode mode);
 
-inline Color convert_color(Color color, TransferCurve src_c, ColorSpace src_s, TransferCurve dst_c, ColorSpace dst_s) {
-    if (src_c == dst_c && src_s == dst_s) return color;
-    auto linear = to_premultiplied(color, src_c);
-    if (src_s != dst_s && linear.a > 0.0f) {
-        const float inv_a = 1.0f / linear.a;
-        const auto matrix = primaries_conversion_matrix(static_cast<ColorPrimaries>(src_s), static_cast<ColorPrimaries>(dst_s));
-        const float r = linear.r * inv_a, g = linear.g * inv_a, b = linear.b * inv_a;
-        linear.r = std::max(0.0f, matrix.m[0] * r + matrix.m[1] * g + matrix.m[2] * b) * linear.a;
-        linear.g = std::max(0.0f, matrix.m[3] * r + matrix.m[4] * g + matrix.m[5] * b) * linear.a;
-        linear.b = std::max(0.0f, matrix.m[6] * r + matrix.m[7] * g + matrix.m[8] * b) * linear.a;
-    }
-    return from_premultiplied(linear, dst_c);
-}
+Color convert_color(Color color, TransferCurve src_c, ColorSpace src_s, TransferCurve dst_c, ColorSpace dst_s);
 
-inline void apply_matte_buffer(SurfaceRGBA& surface, const std::vector<float>& matte, std::int64_t width, std::int64_t height) {
-    if (matte.empty()) return;
-    const std::size_t pixel_count = static_cast<std::size_t>(width * height);
-    for (std::size_t i = 0; i < pixel_count && i < matte.size(); ++i) {
-        const std::int64_t x = static_cast<std::int64_t>(i % static_cast<std::size_t>(width));
-        const std::int64_t y = static_cast<std::int64_t>(i / static_cast<std::size_t>(width));
-        if (x >= 0 && x < static_cast<std::int64_t>(surface.width()) && y >= 0 && y < static_cast<std::int64_t>(surface.height())) {
-            auto px = surface.get_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y));
-            px.a *= std::clamp(matte[i], 0.0f, 1.0f);
-            surface.set_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), px);
-        }
-    }
-}
+void apply_matte_buffer(SurfaceRGBA& surface, const std::vector<float>& matte, std::int64_t width, std::int64_t height);
+
+BlendMode parse_blend_mode(const std::string& name);
 
 } // namespace tachyon::renderer2d

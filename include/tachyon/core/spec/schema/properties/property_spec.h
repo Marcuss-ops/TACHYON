@@ -3,6 +3,7 @@
 #include "tachyon/core/math/vector2.h"
 #include "tachyon/core/math/vector3.h"
 #include "tachyon/core/animation/easing.h"
+#include "tachyon/core/animation/keyframe.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/core/spec/schema/common/common_spec.h"
 #include "tachyon/renderer2d/path/mask_path.h"
@@ -16,6 +17,7 @@ namespace tachyon {
 struct ScalarKeyframeSpec {
     double time{0.0};
     double value{0.0};
+    animation::InterpolationMode interpolation{animation::InterpolationMode::Linear};
     animation::EasingPreset easing{animation::EasingPreset::None};
     animation::CubicBezierEasing bezier{animation::CubicBezierEasing::linear()};
     animation::SpringEasing spring{}; ///< Spring parameters (used when easing == Spring)
@@ -32,6 +34,7 @@ struct Vector2KeyframeSpec {
     math::Vector2 tangent_in{math::Vector2::zero()};
     math::Vector2 tangent_out{math::Vector2::zero()};
 
+    animation::InterpolationMode interpolation{animation::InterpolationMode::Linear};
     animation::EasingPreset easing{animation::EasingPreset::None};
     animation::CubicBezierEasing bezier{animation::CubicBezierEasing::linear()};
     animation::SpringEasing spring{}; ///< Spring parameters (used when easing == Spring)
@@ -45,6 +48,7 @@ struct Vector2KeyframeSpec {
 struct ColorKeyframeSpec {
     double time{0.0};
     ColorSpec value{255, 255, 255, 255};
+    animation::InterpolationMode interpolation{animation::InterpolationMode::Linear};
     animation::EasingPreset easing{animation::EasingPreset::None};
     animation::CubicBezierEasing bezier{animation::CubicBezierEasing::linear()};
     animation::SpringEasing spring{}; ///< Spring parameters (used when easing == Spring)
@@ -89,6 +93,7 @@ struct AnimatedVector3Spec {
         math::Vector3 tangent_in{math::Vector3::zero()};
         math::Vector3 tangent_out{math::Vector3::zero()};
 
+        animation::InterpolationMode interpolation{animation::InterpolationMode::Linear};
         animation::EasingPreset easing{animation::EasingPreset::None};
         animation::CubicBezierEasing bezier{animation::CubicBezierEasing::linear()};
         animation::SpringEasing spring{}; ///< Spring parameters (used when easing == Spring)
@@ -122,6 +127,7 @@ struct AnimatedColorSpec {
 struct MaskPathKeyframeSpec {
     double time{0.0};
     renderer2d::MaskPath value;
+    animation::InterpolationMode interpolation{animation::InterpolationMode::Linear};
     animation::EasingPreset easing{animation::EasingPreset::None};
     animation::CubicBezierEasing bezier{animation::CubicBezierEasing::linear()};
     animation::SpringEasing spring{}; ///< Spring parameters (used when easing == Spring)
@@ -164,6 +170,11 @@ struct AnimatedMaskPathSpec {
             const auto& kf2 = keyframes[i + 1];
             
             if (time_seconds >= kf1.time && time_seconds <= kf2.time) {
+                // Hold key: no interpolation
+                if (kf1.interpolation == animation::InterpolationMode::Hold) {
+                    return kf1.value;
+                }
+
                 double t = (time_seconds - kf1.time) / (kf2.time - kf1.time);
                 t = std::clamp(t, 0.0, 1.0);
                 

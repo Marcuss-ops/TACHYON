@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/text/fonts/font.h"
-#include "tachyon/core/spec/schema/animation/text_animator_spec.h"
+#include "tachyon/text/animation/text_animation_options.h"
 #include "tachyon/text/rendering/text_raster_surface.h"
 #include "tachyon/text/core/layout/resolved_text_layout.h"
 
@@ -81,12 +81,6 @@ struct TextLayoutOptions {
     bool use_sdf{false};
 };
 
-struct TextAnimationOptions {
-    // Runtime state shared across renderers: a local clock plus the animator set to evaluate.
-    float time_seconds{0.0f};
-    std::span<const TextAnimatorSpec> animators{};
-};
-
 struct TextHighlightSpan {
     std::size_t start_glyph{0};
     std::size_t end_glyph{0}; // exclusive
@@ -124,6 +118,10 @@ struct PositionedGlyph {
     float rotation{0.0f};
     float opacity{1.0f};
     ColorSpec fill_color{255, 255, 255, 255};
+    ColorSpec stroke_color{0, 0, 0, 0};
+    float stroke_width{0.0f};
+    float blur_radius{0.0f};
+    float reveal_factor{1.0f};
 };
 
 struct TextLine {

@@ -1,5 +1,6 @@
 #include "tachyon/text/animation/text_animator_utils.h"
-#include "tachyon/renderer2d/animation/easing.h"
+#include "tachyon/core/animation/easing.h"
+#include "tachyon/core/animation/animation_curve.h"
 #include <algorithm>
 #include <cmath>
 
@@ -24,69 +25,46 @@ T lerp_channel(T a, T b, float t) {
 
 } // namespace
 
+namespace {
+template <typename T, typename SpecT>
+T sample_kfs_via_curve(const std::optional<T>& static_val, const std::vector<SpecT>& keyframes, float t, T fallback) {
+    if (keyframes.empty()) return static_val.value_or(fallback);
+    
+    animation::AnimationCurve<T> curve;
+    for (const auto& kf : keyframes) {
+        animation::Keyframe<T> akf;
+        akf.time = kf.time;
+        akf.value = kf.value;
+        akf.out_mode = kf.interpolation;
+        akf.easing = kf.easing;
+        akf.bezier = kf.bezier;
+        akf.spring = kf.spring;
+        curve.add_keyframe(akf);
+    }
+    curve.sort();
+    return curve.evaluate(static_cast<double>(t));
+}
+}
+
 double sample_scalar_kfs(
     const std::optional<double>& static_val,
     const std::vector<ScalarKeyframeSpec>& keyframes,
     float t) {
-    if (keyframes.empty()) return static_val.value_or(0.0);
-    if (keyframes.size() == 1U || t <= static_cast<float>(keyframes.front().time)) return keyframes.front().value;
-    if (t >= static_cast<float>(keyframes.back().time)) return keyframes.back().value;
-    for (std::size_t i = 0; i + 1 < keyframes.size(); ++i) {
-        const double t0 = keyframes[i].time, t1 = keyframes[i+1].time;
-        if (static_cast<double>(t) >= t0 && static_cast<double>(t) <= t1) {
-            const double raw = (t1 > t0) ? (static_cast<double>(t) - t0) / (t1 - t0) : 0.0;
-            const double eased = tachyon::animation::apply_easing(raw, keyframes[i].easing, keyframes[i].bezier);
-            return keyframes[i].value + eased * (keyframes[i+1].value - keyframes[i].value);
-        }
-    }
-    return keyframes.back().value;
+    return sample_kfs_via_curve<double, ScalarKeyframeSpec>(static_val, keyframes, t, 0.0);
 }
 
 ::tachyon::ColorSpec sample_color_kfs(
     const std::optional<::tachyon::ColorSpec>& static_val,
     const std::vector<ColorKeyframeSpec>& keyframes,
     float t) {
-    if (keyframes.empty()) {
-        return static_val.value_or(::tachyon::ColorSpec{255, 255, 255, 255});
-    }
-    if (keyframes.size() == 1U || t <= static_cast<float>(keyframes.front().time)) {
-        return keyframes.front().value;
-    }
-    if (t >= static_cast<float>(keyframes.back().time)) {
-        return keyframes.back().value;
-    }
-
-    for (std::size_t i = 0; i + 1 < keyframes.size(); ++i) {
-        const double t0 = keyframes[i].time;
-        const double t1 = keyframes[i + 1].time;
-        if (static_cast<double>(t) >= t0 && static_cast<double>(t) <= t1) {
-            const double raw = (t1 > t0) ? (static_cast<double>(t) - t0) / (t1 - t0) : 0.0;
-            const float eased = static_cast<float>(tachyon::animation::apply_easing(raw, keyframes[i].easing, keyframes[i].bezier));
-            return blend_color(keyframes[i].value, keyframes[i + 1].value, eased);
-        }
-    }
-
-    return keyframes.back().value;
+    return sample_kfs_via_curve<::tachyon::ColorSpec, ColorKeyframeSpec>(static_val, keyframes, t, ::tachyon::ColorSpec{255, 255, 255, 255});
 }
 
 math::Vector2 sample_vector2_kfs(
     const std::optional<math::Vector2>& static_val,
     const std::vector<Vector2KeyframeSpec>& keyframes,
     float t) {
-    if (keyframes.empty()) return static_val.value_or(math::Vector2{0.0f, 0.0f});
-    if (keyframes.size() == 1U || t <= static_cast<float>(keyframes.front().time)) return keyframes.front().value;
-    if (t >= static_cast<float>(keyframes.back().time)) return keyframes.back().value;
-    for (std::size_t i = 0; i + 1 < keyframes.size(); ++i) {
-        const double t0 = keyframes[i].time, t1 = keyframes[i+1].time;
-        if (static_cast<double>(t) >= t0 && static_cast<double>(t) <= t1) {
-            const double raw = (t1 > t0) ? (static_cast<double>(t) - t0) / (t1 - t0) : 0.0;
-            const float a = static_cast<float>(tachyon::animation::apply_easing(raw, keyframes[i].easing, keyframes[i].bezier));
-            const math::Vector2& va = keyframes[i].value;
-            const math::Vector2& vb = keyframes[i+1].value;
-            return math::Vector2{va.x + (vb.x - va.x) * a, va.y + (vb.y - va.y) * a};
-        }
-    }
-    return keyframes.back().value;
+    return sample_kfs_via_curve<math::Vector2, Vector2KeyframeSpec>(static_val, keyframes, t, math::Vector2{0.0f, 0.0f});
 }
 
 } // namespace tachyon::text

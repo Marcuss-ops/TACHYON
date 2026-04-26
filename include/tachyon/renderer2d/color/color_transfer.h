@@ -14,10 +14,6 @@ inline Color apply_range_mode(Color color, ColorRange range) {
     return Color{scale(color.r), scale(color.g), scale(color.b), color.a};
 }
 
-inline std::string_view ascii_lower(std::string_view value) {
-    return value;
-}
-
 namespace detail {
     using ColorPrimaries = ::tachyon::renderer2d::ColorPrimaries;
     using ColorSpace = ::tachyon::renderer2d::ColorSpace;
@@ -36,7 +32,6 @@ namespace detail {
     using ::tachyon::renderer2d::sRGB_to_Linear_f;
     using ::tachyon::renderer2d::Linear_to_sRGB_f;
     using ::tachyon::renderer2d::linear_to_srgb_component;
-    using ::tachyon::renderer2d::ascii_lower;
 }
 
 // Forward declarations or includes for missing blend functions

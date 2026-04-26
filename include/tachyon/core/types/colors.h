@@ -20,13 +20,18 @@ struct ColorSpec {
     }
 };
 
+} // namespace tachyon
+
+#include "tachyon/core/animation/keyframe.h"
+#include "tachyon/core/animation/animation_curve.h"
+
+namespace tachyon {
+namespace animation {
+
 /**
  * LerpTraits specialization for ColorSpec.
  * Linearly interpolates each color channel independently.
  */
-template <typename T>
-struct LerpTraits;
-
 template <>
 struct LerpTraits<ColorSpec> {
     static ColorSpec lerp(const ColorSpec& a, const ColorSpec& b, double t) {
@@ -39,13 +44,6 @@ struct LerpTraits<ColorSpec> {
         };
     }
 };
-
-} // namespace tachyon
-
-#include "tachyon/core/animation/keyframe.h"
-
-namespace tachyon {
-namespace animation {
 
 template <>
 inline ColorSpec hermite_interp<ColorSpec>(const Keyframe<ColorSpec>& k0, const Keyframe<ColorSpec>& k1, double t) {

@@ -1,7 +1,8 @@
 #include "tachyon/core/scene/evaluator/property_sampler.h"
 #include "tachyon/renderer2d/expressions/renderer2d_expression_evaluator.h"
 #include "tachyon/renderer2d/audio/audio_sampling.h"
-#include "tachyon/renderer2d/animation/easing.h"
+#include "tachyon/core/animation/easing.h"
+#include "tachyon/core/animation/animation_curve.h"
 #include "tachyon/renderer2d/math/math_utils.h"
 #include <algorithm>
 #include <cstdlib>
@@ -121,41 +122,19 @@ double sample_scalar(
         return property.value.value_or(fallback);
     }
 
-    const std::vector<ScalarKeyframeSpec>* keyframes = &property.keyframes;
-    std::vector<ScalarKeyframeSpec> sorted_keyframes;
-    if (!std::is_sorted(keyframes->begin(), keyframes->end(), [](const auto& a, const auto& b) {
-            return a.time < b.time;
-        })) {
-        sorted_keyframes = property.keyframes;
-        std::stable_sort(sorted_keyframes.begin(), sorted_keyframes.end(), [](const auto& a, const auto& b) {
-            return a.time < b.time;
-        });
-        keyframes = &sorted_keyframes;
+    animation::AnimationCurve<double> curve;
+    for (const auto& kf : property.keyframes) {
+        animation::Keyframe<double> akf;
+        akf.time = kf.time;
+        akf.value = kf.value;
+        akf.out_mode = kf.interpolation;
+        akf.easing = kf.easing;
+        akf.bezier = kf.bezier;
+        akf.spring = kf.spring;
+        curve.add_keyframe(akf);
     }
-
-    if (local_time_seconds <= keyframes->front().time) {
-        return keyframes->front().value;
-    }
-    if (local_time_seconds >= keyframes->back().time) {
-        return keyframes->back().value;
-    }
-
-    for (std::size_t index = 1; index < keyframes->size(); ++index) {
-        const auto& previous = (*keyframes)[index - 1];
-        const auto& next = (*keyframes)[index];
-        if (local_time_seconds > next.time) {
-            continue;
-        }
-        const double duration = next.time - previous.time;
-        if (duration <= 0.0) {
-            return next.value;
-        }
-        const double alpha = (local_time_seconds - previous.time) / duration;
-        const double eased = renderer2d::animation::apply_easing(alpha, previous.easing, previous.bezier);
-        return previous.value + (next.value - previous.value) * eased;
-    }
-
-    return keyframes->back().value;
+    curve.sort();
+    return curve.evaluate(local_time_seconds);
 }
 
 math::Vector2 sample_vector2(
@@ -235,53 +214,24 @@ math::Vector2 sample_vector2(
         return property.value.value_or(fallback);
     }
 
-    const std::vector<Vector2KeyframeSpec>* keyframes = &property.keyframes;
-    std::vector<Vector2KeyframeSpec> sorted_keyframes;
-    if (!std::is_sorted(keyframes->begin(), keyframes->end(), [](const auto& a, const auto& b) {
-            return a.time < b.time;
-        })) {
-        sorted_keyframes = property.keyframes;
-        std::stable_sort(sorted_keyframes.begin(), sorted_keyframes.end(), [](const auto& a, const auto& b) {
-            return a.time < b.time;
-        });
-        keyframes = &sorted_keyframes;
-    }
-
-    if (local_time_seconds <= keyframes->front().time) {
-        return keyframes->front().value;
-    }
-    if (local_time_seconds >= keyframes->back().time) {
-        return keyframes->back().value;
-    }
-
-    for (std::size_t index = 1; index < keyframes->size(); ++index) {
-        const auto& previous = (*keyframes)[index - 1];
-        const auto& next = (*keyframes)[index];
-        if (local_time_seconds > next.time) {
-            continue;
-        }
-        const double duration = next.time - previous.time;
-        if (duration <= 0.0) {
-            return next.value;
-        }
-        const double alpha = (local_time_seconds - previous.time) / duration;
-        const double eased = renderer2d::animation::apply_easing(alpha, previous.easing, previous.bezier);
-        const float weight = static_cast<float>(eased);        
+    animation::AnimationCurve<math::Vector2> curve;
+    for (const auto& kf : property.keyframes) {
+        animation::Keyframe<math::Vector2> akf;
+        akf.time = kf.time;
+        akf.value = kf.value;
+        akf.out_mode = kf.interpolation;
+        akf.easing = kf.easing;
+        akf.bezier = kf.bezier;
+        akf.spring = kf.spring;
         
-        if (previous.tangent_out.length_squared() > kTangentEpsilon || next.tangent_in.length_squared() > kTangentEpsilon) {
-            return renderer2d::math_utils::sample_bezier_spatial(
-                previous.value,
-                previous.value + previous.tangent_out,
-                next.value + next.tangent_in,
-                next.value,
-                weight
-            );
-        }
-
-        return previous.value * (1.0f - weight) + next.value * weight;
+        // For Vector2, we might also have spatial tangents if out_mode is Bezier
+        akf.out_tangent_value = kf.tangent_out;
+        akf.in_tangent_value = kf.tangent_in;
+        
+        curve.add_keyframe(akf);
     }
-
-    return keyframes->back().value;
+    curve.sort();
+    return curve.evaluate(local_time_seconds);
 }
 
 math::Vector3 sample_vector3(
@@ -357,53 +307,21 @@ math::Vector3 sample_vector3(
         return property.value.value_or(fallback);
     }
 
-    const std::vector<AnimatedVector3Spec::Keyframe>* keyframes = &property.keyframes;
-    std::vector<AnimatedVector3Spec::Keyframe> sorted_keyframes;
-    if (!std::is_sorted(keyframes->begin(), keyframes->end(), [](const auto& a, const auto& b) {
-            return a.time < b.time;
-        })) {
-        sorted_keyframes = property.keyframes;
-        std::stable_sort(sorted_keyframes.begin(), sorted_keyframes.end(), [](const auto& a, const auto& b) {
-            return a.time < b.time;
-        });
-        keyframes = &sorted_keyframes;
+    animation::AnimationCurve<math::Vector3> curve;
+    for (const auto& kf : property.keyframes) {
+        animation::Keyframe<math::Vector3> akf;
+        akf.time = kf.time;
+        akf.value = kf.value;
+        akf.out_mode = kf.interpolation;
+        akf.easing = kf.easing;
+        akf.bezier = kf.bezier;
+        akf.spring = kf.spring;
+        akf.out_tangent_value = kf.tangent_out;
+        akf.in_tangent_value = kf.tangent_in;
+        curve.add_keyframe(akf);
     }
-
-    if (local_time_seconds <= keyframes->front().time) {
-        return keyframes->front().value;
-    }
-    if (local_time_seconds >= keyframes->back().time) {
-        return keyframes->back().value;
-    }
-
-    for (std::size_t index = 1; index < keyframes->size(); ++index) {
-        const auto& previous = (*keyframes)[index - 1];
-        const auto& next = (*keyframes)[index];
-        if (local_time_seconds > next.time) {
-            continue;
-        }
-        const double duration = next.time - previous.time;
-        if (duration <= 0.0) {
-            return next.value;
-        }
-        const double alpha = (local_time_seconds - previous.time) / duration;
-        const double eased = renderer2d::animation::apply_easing(alpha, previous.easing, previous.bezier);
-        const float weight = static_cast<float>(eased);
-
-        if (previous.tangent_out.length_squared() > kTangentEpsilon || next.tangent_in.length_squared() > kTangentEpsilon) {
-            return renderer2d::math_utils::sample_bezier_spatial(
-                previous.value,
-                previous.value + previous.tangent_out,
-                next.value + next.tangent_in,
-                next.value,
-                weight
-            );
-        }
-
-        return previous.value * (1.0f - weight) + next.value * weight;
-    }
-
-    return keyframes->back().value;
+    curve.sort();
+    return curve.evaluate(local_time_seconds);
 }
 
 ColorSpec sample_color(const AnimatedColorSpec& property, const ColorSpec& fallback, double local_time_seconds) {
@@ -411,48 +329,19 @@ ColorSpec sample_color(const AnimatedColorSpec& property, const ColorSpec& fallb
         return property.value.value_or(fallback);
     }
 
-    const std::vector<ColorKeyframeSpec>* keyframes = &property.keyframes;
-    std::vector<ColorKeyframeSpec> sorted_keyframes;
-    if (!std::is_sorted(keyframes->begin(), keyframes->end(), [](const auto& a, const auto& b) {
-            return a.time < b.time;
-        })) {
-        sorted_keyframes = property.keyframes;
-        std::stable_sort(sorted_keyframes.begin(), sorted_keyframes.end(), [](const auto& a, const auto& b) {
-            return a.time < b.time;
-        });
-        keyframes = &sorted_keyframes;
+    animation::AnimationCurve<ColorSpec> curve;
+    for (const auto& kf : property.keyframes) {
+        animation::Keyframe<ColorSpec> akf;
+        akf.time = kf.time;
+        akf.value = kf.value;
+        akf.out_mode = kf.interpolation;
+        akf.easing = kf.easing;
+        akf.bezier = kf.bezier;
+        akf.spring = kf.spring;
+        curve.add_keyframe(akf);
     }
-
-    if (local_time_seconds <= keyframes->front().time) {
-        return keyframes->front().value;
-    }
-    if (local_time_seconds >= keyframes->back().time) {
-        return keyframes->back().value;
-    }
-
-    for (std::size_t index = 1; index < keyframes->size(); ++index) {
-        const auto& previous = (*keyframes)[index - 1];
-        const auto& next = (*keyframes)[index];
-        if (local_time_seconds > next.time) {
-            continue;
-        }
-        const double duration = next.time - previous.time;
-        if (duration <= 0.0) {
-            return next.value;
-        }
-        const double alpha = (local_time_seconds - previous.time) / duration;
-        const double eased = renderer2d::animation::apply_easing(alpha, previous.easing, previous.bezier);
-        const float weight = static_cast<float>(eased);
-        
-        ColorSpec result;
-        result.r = static_cast<std::uint8_t>(std::clamp(previous.value.r * (1.0f - weight) + next.value.r * weight, 0.0f, 255.0f));
-        result.g = static_cast<std::uint8_t>(std::clamp(previous.value.g * (1.0f - weight) + next.value.g * weight, 0.0f, 255.0f));
-        result.b = static_cast<std::uint8_t>(std::clamp(previous.value.b * (1.0f - weight) + next.value.b * weight, 0.0f, 255.0f));
-        result.a = static_cast<std::uint8_t>(std::clamp(previous.value.a * (1.0f - weight) + next.value.a * weight, 0.0f, 255.0f));
-        return result;
-    }
-
-    return keyframes->back().value;
+    curve.sort();
+    return curve.evaluate(local_time_seconds);
 }
 
 } // namespace tachyon::scene

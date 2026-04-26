@@ -55,7 +55,7 @@ std::string ffmpeg_color_range(renderer2d::detail::ColorRange range) {
 }
 
 bool is_alpha_requested(const OutputProfile& profile) {
-    const std::string lower{renderer2d::detail::ascii_lower(profile.alpha_mode)};
+    const std::string lower{profile.alpha_mode};
     return lower == "premultiplied" || lower == "straight" || lower == "unassociated";
 }
 } // namespace

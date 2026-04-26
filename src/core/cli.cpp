@@ -14,7 +14,7 @@ void print_help(std::ostream& out) {
     out << "  tachyon version\n";
     out << "  tachyon validate --scene <file> [--job <file>] [--json]\n";
     out << "  tachyon inspect --scene <file> [--job <file>] [--json]\n";
-    out << "  tachyon render --scene <file> --job <file> [--out <file>] [--workers <n>] [--memory-budget-mb <n>] [--frames <start-end>] [--json]\n";
+    out << "  tachyon render --scene <file> --job <file> [--out <file>] [--output-dir <dir>] [--workers <n>] [--memory-budget-mb <n>] [--frames <start-end>] [--json]\n";
     out << "  tachyon render --batch <jobs.json> [--workers <n>] [--json]\n";
     out << "  tachyon preview-frame --scene <file> --job <file> --frame <n> --out <file.png>\n";
     out << "  tachyon watch --scene <file> --job <file> [--workers <n>]\n";

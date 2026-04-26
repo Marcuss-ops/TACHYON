@@ -2,6 +2,7 @@
 
 #include "tachyon/core/math/vector3.h"
 #include "tachyon/core/animation/easing.h"
+#include "tachyon/core/types/colors.h"
 #include <string>
 #include <cstdint>
 #include <map>
@@ -9,13 +10,10 @@
 
 namespace tachyon {
 
-struct ColorSpec {
-    std::uint8_t r{255}, g{255}, b{255}, a{255};
-
-    [[nodiscard]] math::Vector3 to_vector3() const {
-        return {r / 255.0f, g / 255.0f, b / 255.0f};
-    }
-};
+// ColorSpec extensions
+[[nodiscard]] inline math::Vector3 color_spec_to_vector3(const ColorSpec& c) {
+    return {c.r / 255.0f, c.g / 255.0f, c.b / 255.0f};
+}
 
 // JSON serialization declarations (implementations in common_spec_serialize.cpp)
 void to_json(nlohmann::json& j, const ColorSpec& c);
