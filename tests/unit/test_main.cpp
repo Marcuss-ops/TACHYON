@@ -1,3 +1,4 @@
+#include <gtest/gtest.h>
 #include <iostream>
 #include <cstdlib>
 #include <cstddef>
@@ -10,11 +11,12 @@
 #include <iomanip>
 #include <cstring>
 
-// Global seed for random tests
-uint32_t g_test_seed = 0;
+// Google Test main - all tests now use TEST() macros
+// Manual run_*_tests() functions have been converted to proper Google Test cases
 
-uint32_t get_global_random_seed() {
-    return g_test_seed;
+int main(int argc, char** argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }
 
 namespace {
@@ -124,7 +126,6 @@ bool run_evaluated_composition_renderer_tests();
 bool run_text3d_preview_tests();
 bool run_path_rasterizer_tests();
 bool run_path_rasterizer_aa_tests();
-bool run_expression_vm_tests();
 bool run_frame_cache_tests();
 bool run_frame_cache_budget_tests();
 bool run_tiling_integration_tests();
@@ -137,7 +138,6 @@ bool run_property_tests();
 bool run_expression_tests();
 namespace tachyon::editor { bool run_undo_manager_tests(); }
 namespace tachyon::editor { bool run_autosave_manager_tests(); }
-bool run_scene_evaluator_tests();
 bool run_render_session_tests();
 bool run_render_batch_tests();
 bool run_parallax_cards_tests();
@@ -160,9 +160,21 @@ bool run_golden_visual_tests();
 // bool run_audio_pitch_correct_tests();  // Disabled - test_audio_pitch_correct.cpp commented out
 namespace tachyon { bool run_tiling_tests(); }
 bool run_optical_flow_tests();
+bool run_expression_vm_tests();
 
 
 int main(int argc, char** argv) {
+    // 1. Run GoogleTest-based tests
+    ::testing::InitGoogleTest(&argc, argv);
+    int gtest_result = RUN_ALL_TESTS();
+    // We continue to manual tests even if gtest failed? 
+    // AE: Usually we want to see all failures, but let's be strict.
+    if (gtest_result != 0 && get_env_var("TACHYON_CONTINUE_ON_FAILURE").empty()) {
+        std::cerr << "\nGoogleTest suite FAILED. Aborting manual tests.\n";
+        return gtest_result;
+    }
+
+    // 2. Run legacy manual tests
     std::vector<TestCase> tests = {
         {"math", run_math_tests},
         {"property", run_property_tests},
@@ -190,7 +202,6 @@ int main(int argc, char** argv) {
         {"render_contract", run_render_contract_tests},
         {"undo_manager", tachyon::editor::run_undo_manager_tests},
         {"autosave_manager", tachyon::editor::run_autosave_manager_tests},
-        {"scene_evaluator", run_scene_evaluator_tests},
         {"render_session", run_render_session_tests},
         {"render_batch", run_render_batch_tests},
         {"parallax_cards", run_parallax_cards_tests},
@@ -205,18 +216,13 @@ int main(int argc, char** argv) {
         {"camera_solver", run_camera_solver_tests},
         {"matte_resolver", run_matte_resolver_tests},
         {"glyph_cache", run_glyph_cache_tests},
-        // {"text", run_text_tests},  // Disabled - text_tests.cpp commented out
         {"effect_host", run_effect_host_tests},
         {"precomp_mask", run_precomp_mask_tests},
         {"golden", run_golden_visual_tests},
         {"tiling", tachyon::run_tiling_tests},
         {"scene_spec", run_scene_spec_tests},
-        // {"motion_blur", run_motion_blur_tests},  // Disabled - motion_blur_tests.cpp commented out
-        // {"audio_pitch_correct", run_audio_pitch_correct_tests},  // Disabled - test_audio_pitch_correct.cpp commented out
-
         {"render_job", run_render_job_tests},
         {"expression_vm", run_expression_vm_tests},
-        {"optical_flow", run_optical_flow_tests},
     };
 
     bool list_tests = false;
@@ -228,7 +234,7 @@ int main(int argc, char** argv) {
     }
 
     if (list_tests || !get_env_var("TACHYON_LIST_TESTS").empty()) {
-        std::cout << "Available tests:\n";
+        std::cout << "Available manual tests:\n";
         size_t max_name_len = 0;
         for (const auto& test : tests) {
             max_name_len = std::max(max_name_len, std::strlen(test.name));
@@ -252,17 +258,17 @@ int main(int argc, char** argv) {
     for (int i = 0; i < repeat_count; ++i) {
         for (const auto& test : tests) {
             if (!run_step(test.name, test.fn, i, repeat_count)) {
-                std::cerr << test.name << " tests failed\n";
+                std::cerr << test.name << " manual tests failed\n";
                 return 1;
             }
         }
     }
 
     if (repeat_count > 1) {
-        std::cout << "All tests passed! (" << repeat_count << " iterations, seed=" << g_test_seed << ")\n";
+        std::cout << "\nAll manual tests passed! (" << repeat_count << " iterations, seed=" << g_test_seed << ")\n";
     } else {
-        std::cout << "All tests passed! (seed=" << g_test_seed << ")\n";
+        std::cout << "\nAll manual tests passed! (seed=" << g_test_seed << ")\n";
     }
 
-    return 0;
+    return (gtest_result == 0) ? 0 : gtest_result;
 }

@@ -6,8 +6,7 @@
 #include <cassert>
 #include <vector>
 
-namespace tachyon {
-namespace animation {
+namespace tachyon::animation {
 
 /**
  * Lerp trait: provides a generic lerp(a, b, t) implementation.
@@ -122,10 +121,13 @@ public:
 
     /** Ensures keyframes are sorted by ascending time. */
     void sort() {
-        std::sort(keyframes.begin(), keyframes.end(),
-                  [](const KeyframeT& a, const KeyframeT& b) {
-                      return a.time < b.time;
-                  });
+        if (!m_sorted) {
+            std::sort(keyframes.begin(), keyframes.end(),
+                      [](const KeyframeT& a, const KeyframeT& b) {
+                          return a.time < b.time;
+                      });
+            m_sorted = true;
+        }
     }
 
     [[nodiscard]] bool empty() const { return keyframes.empty(); }
@@ -151,6 +153,11 @@ public:
             return keyframes.front().value;
         if (time >= keyframes.back().time)
             return keyframes.back().value;
+
+        // Ensure sorted before evaluation
+        if (!m_sorted) {
+            const_cast<AnimationCurve*>(this)->sort();
+        }
 
         // Binary search: find first key with time > requested time
         const auto it = std::upper_bound(
@@ -190,7 +197,9 @@ public:
         // Fallback (should be unreachable)
         return LerpTraits<T>::lerp(k0.value, k1.value, eased_t);
     }
+
+private:
+    mutable bool m_sorted{true};
 };
 
-} // namespace animation
-} // namespace tachyon
+} // namespace tachyon::animation

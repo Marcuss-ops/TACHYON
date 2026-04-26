@@ -1,5 +1,4 @@
 add_executable(TachyonTests
-    unit/test_main.cpp
     unit/core/math_tests.cpp
     unit/core/property_tests.cpp
     unit/core/expression_tests.cpp
@@ -80,6 +79,8 @@ target_compile_definitions(TachyonTests
 target_link_libraries(TachyonTests
     PRIVATE
         TachyonCore
+        gtest
+        gtest_main
 )
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)

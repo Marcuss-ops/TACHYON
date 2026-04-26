@@ -174,6 +174,7 @@ add_library(TachyonCore SHARED
     text/core/animation/text_animator_sampling.cpp
     text/core/animation/text_animator_context.cpp
     text/core/animation/text_animator_coverage.cpp
+    text/core/animation/text_presets.cpp
     text/core/fonts/font.cpp
     text/core/fonts/font_registry.cpp
     text/core/fonts/font_face.cpp
@@ -215,7 +216,8 @@ add_library(TachyonCore SHARED
     importer/alembic_importer.cpp
     camera_cut_contract.cpp
     editor/undo/undo_manager.cpp
-    editor/autosave/autosave_manager.cpp
+     editor/autosave/autosave_manager.cpp
+     debug/debug_export.cpp
 )
 
 file(GLOB _tachyon_unity_excluded_sources
@@ -379,3 +381,5 @@ if(MSVC)
         COMMAND_EXPAND_LISTS
     )
 endif()
+    debug/debug_export.cpp"
+    debug/debug_export.cpp
