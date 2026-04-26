@@ -167,7 +167,6 @@ add_library(TachyonCore SHARED
     timeline/time_resolver.cpp
     timeline/time_remap.cpp
     timeline/frame_blend.cpp
-    timeline/camera_cuts.cpp
     text/bidi/bidi_engine.cpp
     text/core/animation/text_animator_utils.cpp
     text/core/animation/text_animator_paints.cpp
@@ -381,5 +380,3 @@ if(MSVC)
         COMMAND_EXPAND_LISTS
     )
 endif()
-    debug/debug_export.cpp"
-    debug/debug_export.cpp

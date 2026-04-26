@@ -1,7 +1,9 @@
 #include "tachyon/runtime/execution/frames/frame_executor.h"
 #include "tachyon/core/spec/compilation/scene_compiler.h"
 #include "tachyon/runtime/core/data/compiled_scene.h"
+#include "tachyon/core/animation/easing.h"
 
+#include <cmath>
 #include <iostream>
 #include <string>
 
@@ -43,6 +45,42 @@ tachyon::SceneSpec make_scene(double x_offset = 0.0) {
     scene.spec_version = "1.0";
     scene.project.id = "proj";
     scene.project.name = "Runtime";
+    scene.compositions.push_back(comp);
+    return scene;
+}
+
+tachyon::SceneSpec make_bezier_scene() {
+    tachyon::LayerSpec layer;
+    layer.id = "solid_bezier";
+    layer.type = "solid";
+    layer.name = "Bezier Solid";
+    layer.width = 64;
+    layer.height = 64;
+    layer.start_time = 0.0;
+    layer.in_point = 0.0;
+    layer.out_point = 2.0;
+    layer.fill_color.value = tachyon::ColorSpec{255, 255, 255, 255};
+    layer.opacity_property.keyframes.push_back({0.0, 0.0});
+    layer.opacity_property.keyframes.push_back({2.0, 1.0});
+    layer.opacity_property.keyframes.front().easing = tachyon::animation::EasingPreset::Custom;
+    layer.opacity_property.keyframes.front().speed_out = 0.0;
+    layer.opacity_property.keyframes.front().influence_out = 90.0;
+    layer.opacity_property.keyframes.back().speed_in = 0.0;
+    layer.opacity_property.keyframes.back().influence_in = 80.0;
+
+    tachyon::CompositionSpec comp;
+    comp.id = "main";
+    comp.name = "Bezier";
+    comp.width = 64;
+    comp.height = 64;
+    comp.duration = 2.0;
+    comp.frame_rate = {30, 1};
+    comp.layers.push_back(layer);
+
+    tachyon::SceneSpec scene;
+    scene.spec_version = "1.0";
+    scene.project.id = "proj";
+    scene.project.name = "Bezier Runtime";
     scene.compositions.push_back(comp);
     return scene;
 }
@@ -137,6 +175,30 @@ bool run_frame_executor_tests() {
                "Draft policy should still return a full-size frame after upscale");
     check_true(rendered.frame->height() == static_cast<std::uint32_t>(plan.composition.height),
                "Draft policy should still return a full-size frame after upscale");
+
+    const SceneSpec bezier_scene = make_bezier_scene();
+    const auto bezier_compiled = compiler.compile(bezier_scene);
+    if (!bezier_compiled.ok()) {
+        std::cerr << "FAIL: Bezier scene compilation failed\n";
+        return false;
+    }
+
+    RenderPlan bezier_plan = make_plan();
+    bezier_plan.composition.width = 64;
+    bezier_plan.composition.height = 64;
+    bezier_plan.composition.frame_rate = {30, 1};
+    bezier_plan.composition_target = "main";
+    bezier_plan.composition.id = "main";
+    bezier_plan.composition.width = 64;
+    bezier_plan.composition.height = 64;
+    bezier_plan.composition.duration = 2.0;
+
+    const ExecutedFrame bezier_frame = execute_frame_task(bezier_scene, *bezier_compiled.value, bezier_plan, make_task(30), cache, render_context);
+    check_true(bezier_frame.frame != nullptr, "Bezier frame renders");
+    if (bezier_frame.frame) {
+        const auto pixel = bezier_frame.frame->get_pixel(32, 32);
+        check_true(pixel.a > 0.0f, "Bezier opacity produces visible alpha");
+    }
 
     return g_failures == 0;
 }

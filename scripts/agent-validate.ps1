@@ -55,7 +55,7 @@ $compileDb = Join-Path $PSScriptRoot "..\build-ninja\compile_commands.json"
 if ($hasStagedCpp) {
     if (Test-Path $compileDb) {
         Write-Host "[check] Syntax check on staged C++ files..." -ForegroundColor Yellow
-        & (Join-Path $PSScriptRoot "..\build.ps1") -Verify
+        & (Join-Path $PSScriptRoot "..\build.ps1") -Check
         if ($LASTEXITCODE -ne 0) { Write-Host "Syntax check failed!" -ForegroundColor Red; exit 1 }
     } else {
         Write-Host "[skip] compile_commands.json not found -- run .\build.ps1 -Check once to generate it" -ForegroundColor Yellow

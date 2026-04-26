@@ -243,12 +243,14 @@ std::shared_ptr<SurfaceRGBA> render_simple_layer_surface(
                 if (paint.glyph == nullptr) {
                     continue;
                 }
-
+                
                 const int dx = base_x + static_cast<int>(std::lround(static_cast<float>(paint.base_x) * scale_x));
                 const int dy = base_y + static_cast<int>(std::lround(static_cast<float>(paint.base_y) * scale_y));
                 const int dw = std::max(1, static_cast<int>(std::lround(static_cast<float>(paint.target_width) * scale_x)));
                 const int dh = std::max(1, static_cast<int>(std::lround(static_cast<float>(paint.target_height) * scale_y)));
-                text_surface.render_glyph(*paint.glyph, dx, dy, dw, dh, to_color(paint.fill_color));
+                renderer2d::Color final_color = to_color(paint.fill_color);
+                final_color.a *= paint.opacity;
+                text_surface.render_glyph(*paint.glyph, dx, dy, dw, dh, final_color);
             }
 
             blit_text_surface(*surface, text_surface, 0, 0);

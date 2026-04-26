@@ -11,15 +11,23 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <filesystem>
 
 namespace {
 
 static int g_failures = 0;
 
-static void check_true(bool condition, const std::string& message) {
+static void check_true(bool condition, const std::string& message, const tachyon::renderer2d::SurfaceRGBA* dump_surface = nullptr, const std::string& dump_name = "") {
     if (!condition) {
         ++g_failures;
         std::cerr << "FAIL: " << message << '\n';
+        if (dump_surface) {
+            std::filesystem::path dump_path = "output/test_fail_" + dump_name + ".png";
+            std::filesystem::create_directories("output");
+            if (dump_surface->save_png(dump_path)) {
+                std::cerr << "  (Visual dump saved to: " << dump_path.string() << ")\n";
+            }
+        }
     }
 }
 
@@ -205,8 +213,8 @@ bool run_evaluated_composition_renderer_tests() {
     check_true(matte_frame.surface != nullptr, "track matte renderer should produce a surface");
     if (matte_frame.surface) {
         const auto& matte_surface = *matte_frame.surface;
-        check_true(matte_surface.get_pixel(24, 24).a > 0, "track matte should preserve pixels inside the matte");
-        check_true(matte_surface.get_pixel(2, 2).a == 0, "track matte should clear pixels outside the matte");
+        check_true(matte_surface.get_pixel(24, 24).a > 0, "track matte should preserve pixels inside the matte", &matte_surface, "matte_inside");
+        check_true(matte_surface.get_pixel(2, 2).a == 0, "track matte should clear pixels outside the matte", &matte_surface, "matte_outside");
     }
 
     scene::EvaluatedCompositionState mask_state;
@@ -243,8 +251,8 @@ bool run_evaluated_composition_renderer_tests() {
     check_true(mask_frame.surface != nullptr, "mask renderer should produce a surface");
     if (mask_frame.surface) {
         const auto& mask_surface = *mask_frame.surface;
-        check_true(mask_surface.get_pixel(24, 24).a > 0, "vector mask should preserve pixels inside the shape");
-        check_true(mask_surface.get_pixel(8, 8).a == 0, "vector mask should clear pixels outside the shape");
+        check_true(mask_surface.get_pixel(24, 24).a > 0, "vector mask should preserve pixels inside the shape", &mask_surface, "mask_inside");
+        check_true(mask_surface.get_pixel(8, 8).a == 0, "vector mask should clear pixels outside the shape", &mask_surface, "mask_outside");
     }
 
     renderer2d::RenderContext2D precomp_context;

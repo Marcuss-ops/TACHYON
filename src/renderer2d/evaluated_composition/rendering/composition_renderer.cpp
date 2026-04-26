@@ -235,7 +235,10 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     inst.material.base_color = l.fill_color;
                     inst.material.opacity = static_cast<float>(l.opacity);
                     if (l.type == scene::LayerType::Text && render_context.font_registry != nullptr) {
-                        const auto text_mesh = build_text_extrusion_mesh(l, state, *render_context.font_registry);
+                        ::tachyon::text::TextAnimationOptions animation{};
+                        animation.time_seconds = static_cast<float>(l.local_time_seconds);
+                        animation.animators = std::span<const ::tachyon::TextAnimatorSpec>(l.text_animators.data(), l.text_animators.size());
+                        const auto text_mesh = build_text_extrusion_mesh(l, state, *render_context.font_registry, animation);
                         if (text_mesh.mesh) {
                             inst.mesh_asset = text_mesh.mesh;
                             inst.mesh_asset_id = text_mesh.cache_key;
@@ -437,7 +440,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
             // Apply resolved matte if available
             if (i < matte_buffers.size() && !matte_buffers[i].empty()) {
-                apply_matte_buffer(*layer_surface, matte_buffers[i], state.width, state.height);
+                ::tachyon::renderer2d::apply_matte_buffer(*layer_surface, matte_buffers[i], state.width, state.height);
             }
 
             // Final Composite

@@ -183,7 +183,16 @@ set(CLIPPER2_TESTS OFF CACHE BOOL "Disable Clipper2 tests" FORCE)
 FetchContent_MakeAvailable(clipper2)
 include_directories(${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/include)
 
-# FetchContent_MakeAvailable(embree) - temporaneamente disabilitato
+# GoogleTest for unit testing
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/refs/tags/v1.15.2.tar.gz
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+# For Windows: prevent gtest from overriding our compiler/linker options
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+include_directories(${gtest_SOURCE_DIR}/googletest/include)
 
 # Version header generation
 configure_file(

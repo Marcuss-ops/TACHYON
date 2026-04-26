@@ -5,6 +5,7 @@
 #include "tachyon/runtime/execution/batch/batch_runner.h"
 #include "tachyon/core/spec/compilation/scene_compiler.h"
 #include "cli_internal.h"
+#include <filesystem>
 #include <iostream>
 #include <thread>
 
@@ -52,6 +53,28 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
 
     if (!options.output_override.empty()) job.output.destination.path = options.output_override.string();
     if (options.frame_range_override.has_value()) job.frame_range = *options.frame_range_override;
+    if (options.output_override.empty() && !options.output_dir.empty()) {
+        std::filesystem::create_directories(options.output_dir);
+
+        std::filesystem::path resolved_output_path = job.output.destination.path.empty()
+            ? std::filesystem::path()
+            : std::filesystem::path(job.output.destination.path);
+
+        if (resolved_output_path.empty()) {
+            std::filesystem::path filename = !job.job_id.empty()
+                ? std::filesystem::path(job.job_id)
+                : std::filesystem::path(!job.composition_target.empty() ? job.composition_target : "render");
+            const std::string extension = !job.output.profile.container.empty()
+                ? "." + job.output.profile.container
+                : ".mp4";
+            filename.replace_extension(extension);
+            resolved_output_path = options.output_dir / filename.filename();
+        } else {
+            resolved_output_path = options.output_dir / resolved_output_path.filename();
+        }
+
+        job.output.destination.path = resolved_output_path.generic_string();
+    }
 
     const auto plan_result = build_render_plan(scene, job);
     if (!plan_result.value.has_value()) { print_diagnostics(plan_result.diagnostics, err); return false; }

@@ -1,4 +1,6 @@
 #include "frame_executor_internal.h"
+#include "tachyon/core/animation/easing.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -28,23 +30,11 @@ double sample_keyframed_value(const CompiledPropertyTrack& track, double fallbac
     
     const double duration = k1.time - k0.time;
     if (duration <= 0.0) return k0.value;
-    
+
     const double alpha = (t - k0.time) / duration;
-    double eased_alpha = alpha;
-    
-    if (k0.easing == static_cast<uint32_t>(animation::EasingPreset::Custom)) {
-        animation::CubicBezierEasing bezier{k0.cx1, k0.cy1, k0.cx2, k0.cy2};
-        eased_alpha = bezier.evaluate(alpha);
-    } else if (k0.easing != static_cast<uint32_t>(animation::EasingPreset::None)) {
-        animation::CubicBezierEasing bezier;
-        switch (static_cast<animation::EasingPreset>(k0.easing)) {
-            case animation::EasingPreset::EaseIn:    bezier = animation::CubicBezierEasing::ease_in(); break;
-            case animation::EasingPreset::EaseOut:   bezier = animation::CubicBezierEasing::ease_out(); break;
-            case animation::EasingPreset::EaseInOut: bezier = animation::CubicBezierEasing::ease_in_out(); break;
-            default: bezier = animation::CubicBezierEasing::linear(); break;
-        }
-        eased_alpha = bezier.evaluate(alpha);
-    }
+    const auto preset = static_cast<animation::EasingPreset>(k0.easing);
+    const animation::CubicBezierEasing custom_bezier{k0.cx1, k0.cy1, k0.cx2, k0.cy2};
+    const double eased_alpha = animation::apply_easing(alpha, preset, custom_bezier);
     
     return k0.value + eased_alpha * (k1.value - k0.value);
 }

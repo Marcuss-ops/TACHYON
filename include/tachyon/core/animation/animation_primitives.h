@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tachyon/runtime/core/contracts/math_contract.h"
+#include "tachyon/core/animation/easing.h"
 
 #include <algorithm>
 #include <cmath>
@@ -16,12 +17,14 @@ namespace tachyon {
 //------------------------------------------------------------------------------
 
 /**
- * Interpolates between scalar values at specific frames.
+ * Interpolates between scalar values at specific frames with optional easing.
  *
  * Usage:
  *   float val = interpolate(frame, {0, 30}, {0.0, 1.0});
+ *   float val = interpolate(frame, {0, 30}, {0.0, 1.0}, EasingPreset::EaseInOut);
  */
-[[nodiscard]] inline double interpolate(double frame, const std::vector<double>& frames, const std::vector<double>& values) {
+[[nodiscard]] inline double interpolate(double frame, const std::vector<double>& frames, const std::vector<double>& values, 
+                                        animation::EasingPreset easing = animation::EasingPreset::None) {
     if (frames.empty() || values.empty() || frames.size() != values.size()) {
         return 0.0;
     }
@@ -36,7 +39,10 @@ namespace tachyon {
     // Find segment
     for (std::size_t i = 0; i < frames.size() - 1; ++i) {
         if (frame >= frames[i] && frame <= frames[i + 1]) {
-            const double t = (frame - frames[i]) / (frames[i + 1] - frames[i]);
+            double t = (frame - frames[i]) / (frames[i + 1] - frames[i]);
+            if (easing != animation::EasingPreset::None) {
+                t = animation::apply_easing(t, easing);
+            }
             return values[i] * (1.0 - t) + values[i + 1] * t;
         }
     }

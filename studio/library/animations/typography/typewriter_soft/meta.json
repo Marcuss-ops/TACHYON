@@ -1,0 +1,23 @@
+{
+  "schema": "tachyon.text_animation_pack/1.0",
+  "id": "typewriter_soft",
+  "name": "Typewriter Soft",
+  "category": "typography",
+  "description": "Character-by-character reveal with a soft slide and fade.",
+  "preset": {
+    "kind": "typewriter",
+    "based_on": "characters_excluding_spaces",
+    "stagger_mode": "character",
+    "stagger_delay_seconds": 0.03,
+    "reveal_duration_seconds": 0.7,
+    "slide_distance_px": 18.0,
+    "opacity_curve": "linear",
+    "reveal_curve": "linear"
+  },
+  "use_cases": [
+    "titles",
+    "numbers",
+    "dates",
+    "short phrases"
+  ]
+}

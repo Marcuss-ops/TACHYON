@@ -2,6 +2,7 @@
 
 #include "tachyon/core/scene/evaluator/hashing.h"
 #include "tachyon/media/processing/extruder.h"
+#include "tachyon/text/animation/text_animator_utils.h"
 #include "tachyon/text/layout/layout.h"
 #include "tachyon/text/rendering/outline_extractor.h"
 
@@ -20,16 +21,13 @@ namespace {
     };
 }
 
-math::Matrix4x4 translation_matrix(float x, float y, float z) {
-    return math::Matrix4x4::translation({x, y, z});
-}
-
 } // namespace
 
 TextMeshBuildResult build_text_extrusion_mesh(
     const scene::EvaluatedLayerState& layer,
     const scene::EvaluatedCompositionState& composition,
-    const ::tachyon::text::FontRegistry& font_registry) {
+    const ::tachyon::text::FontRegistry& font_registry,
+    const ::tachyon::text::TextAnimationOptions& animation) {
 
     TextMeshBuildResult result;
     if (layer.type != scene::LayerType::Text || !layer.is_3d || layer.text_content.empty()) {
@@ -84,9 +82,14 @@ TextMeshBuildResult build_text_extrusion_mesh(
     seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(layer.text_alignment));
     seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(box.width));
     seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(box.height));
+    seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(animation.time_seconds * 1000.0f)));
+    seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(animation.animators.size()));
     result.cache_key = "text3d:" + layer.id + ":" + std::to_string(seed);
 
-    for (const auto& glyph : layout.glyphs) {
+    ::tachyon::text::TextLayoutResult animated_layout = layout;
+    ::tachyon::text::apply_text_animators(animated_layout, animation.animators, animation);
+
+    for (const auto& glyph : animated_layout.glyphs) {
         const auto glyph_paths = ::tachyon::text::OutlineExtractor::extract_glyph_outline(
             *font,
             glyph.font_glyph_index,
@@ -101,7 +104,11 @@ TextMeshBuildResult build_text_extrusion_mesh(
             continue;
         }
 
-        submesh.transform = translation_matrix(static_cast<float>(glyph.x), static_cast<float>(glyph.y), 0.0f);
+        const math::Quaternion rotation = math::Quaternion::from_axis_angle({0.0f, 0.0f, 1.0f}, glyph.rotation * 3.1415926535f / 180.0f);
+        submesh.transform = math::compose_trs(
+            {static_cast<float>(glyph.x), static_cast<float>(glyph.y), 0.0f},
+            rotation,
+            {glyph.scale.x, glyph.scale.y, 1.0f});
         submesh.material.base_color_factor = {
             static_cast<float>(layer.fill_color.r) / 255.0f,
             static_cast<float>(layer.fill_color.g) / 255.0f,
@@ -109,6 +116,12 @@ TextMeshBuildResult build_text_extrusion_mesh(
         };
         submesh.material.roughness_factor = 0.45f;
         submesh.material.metallic_factor = 0.0f;
+        const float opacity_factor = std::clamp(glyph.opacity * glyph.reveal_factor, 0.0f, 1.0f);
+        submesh.material.base_color_factor = {
+            submesh.material.base_color_factor.x * opacity_factor,
+            submesh.material.base_color_factor.y * opacity_factor,
+            submesh.material.base_color_factor.z * opacity_factor
+        };
         mesh->sub_meshes.push_back(std::move(submesh));
     }
 

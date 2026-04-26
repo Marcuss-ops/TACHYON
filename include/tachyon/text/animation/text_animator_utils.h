@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/text/animation/text_animation_options.h"
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 #include "tachyon/text/layout/layout.h"
 #include <optional>
@@ -50,6 +51,11 @@ math::Vector2 sample_vector2_kfs(
     float t);
 
 float compute_coverage(const TextAnimatorSelectorSpec& selector, const TextAnimatorContext& ctx);
+
+void apply_text_animators(
+    TextLayoutResult& layout,
+    std::span<const TextAnimatorSpec> animators,
+    const TextAnimationOptions& animation);
 
 TextAnimatorContext make_text_animator_context(
     const ResolvedTextLayout& layout,

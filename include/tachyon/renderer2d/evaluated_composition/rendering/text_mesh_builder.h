@@ -2,6 +2,7 @@
 
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/text/fonts/font_registry.h"
+#include "tachyon/text/animation/text_animation_options.h"
 #include "tachyon/media/loading/mesh_asset.h"
 
 #include <memory>
@@ -17,6 +18,7 @@ struct TextMeshBuildResult {
 [[nodiscard]] TextMeshBuildResult build_text_extrusion_mesh(
     const scene::EvaluatedLayerState& layer,
     const scene::EvaluatedCompositionState& composition,
-    const ::tachyon::text::FontRegistry& font_registry);
+    const ::tachyon::text::FontRegistry& font_registry,
+    const ::tachyon::text::TextAnimationOptions& animation = {});
 
 } // namespace tachyon::renderer2d
