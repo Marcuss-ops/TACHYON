@@ -5,6 +5,42 @@ using json = nlohmann::json;
 
 namespace tachyon {
 
+void to_json(json& j, const TextAnimatorSelectorSpec& s) {
+    j = json{
+        {"type", s.type},
+        {"start", s.start},
+        {"end", s.end},
+        {"mode", s.mode},
+        {"based_on", s.based_on},
+        {"random_order", s.random_order},
+        {"stagger_mode", s.stagger_mode},
+        {"stagger_delay", s.stagger_delay}
+    };
+    if (s.start_index.has_value()) j["start_index"] = *s.start_index;
+    if (s.end_index.has_value()) j["end_index"] = *s.end_index;
+    if (s.expression.has_value()) j["expression"] = *s.expression;
+    if (s.seed.has_value()) j["seed"] = *s.seed;
+    if (s.amount.has_value()) j["amount"] = *s.amount;
+    if (s.frequency.has_value()) j["frequency"] = *s.frequency;
+}
+
+void from_json(const json& j, TextAnimatorSelectorSpec& s) {
+    if (j.contains("type") && j.at("type").is_string()) s.type = j.at("type").get<std::string>();
+    if (j.contains("start") && j.at("start").is_number()) s.start = j.at("start").get<double>();
+    if (j.contains("end") && j.at("end").is_number()) s.end = j.at("end").get<double>();
+    if (j.contains("start_index") && j.at("start_index").is_number_unsigned()) s.start_index = j.at("start_index").get<std::size_t>();
+    if (j.contains("end_index") && j.at("end_index").is_number_unsigned()) s.end_index = j.at("end_index").get<std::size_t>();
+    if (j.contains("expression") && j.at("expression").is_string()) s.expression = j.at("expression").get<std::string>();
+    if (j.contains("seed") && j.at("seed").is_number_unsigned()) s.seed = j.at("seed").get<std::uint64_t>();
+    if (j.contains("amount") && j.at("amount").is_number()) s.amount = j.at("amount").get<double>();
+    if (j.contains("frequency") && j.at("frequency").is_number()) s.frequency = j.at("frequency").get<double>();
+    if (j.contains("random_order") && j.at("random_order").is_boolean()) s.random_order = j.at("random_order").get<bool>();
+    if (j.contains("mode") && j.at("mode").is_string()) s.mode = j.at("mode").get<std::string>();
+    if (j.contains("based_on") && j.at("based_on").is_string()) s.based_on = j.at("based_on").get<std::string>();
+    if (j.contains("stagger_mode") && j.at("stagger_mode").is_string()) s.stagger_mode = j.at("stagger_mode").get<std::string>();
+    if (j.contains("stagger_delay") && j.at("stagger_delay").is_number()) s.stagger_delay = j.at("stagger_delay").get<double>();
+}
+
 void to_json(json& j, const TextAnimatorPropertySpec& p) {
     j = json{};
     if (p.opacity_value.has_value()) j["opacity_value"] = *p.opacity_value;

@@ -51,6 +51,7 @@ add_library(TachyonCore SHARED
     core/math/matrix4x4.cpp
     core/math/quaternion.cpp
     core/math/transform3.cpp
+    core/math/vector2_serialize.cpp
     core/properties/bezier_interpolator.cpp
     core/model/tachyon.cpp
     core/scene/evaluator.cpp
@@ -72,6 +73,8 @@ add_library(TachyonCore SHARED
     core/spec/property_parse_json.cpp
     core/spec/property_spec_serialize.cpp
     core/spec/text_animator_spec_serialize.cpp
+    core/spec/schema/common/common_spec_serialize.cpp
+    core/spec/schema/objects/layer_spec_serialize.cpp
     core/spec/compilation/preset_compiler.cpp
     core/spec/compilation/scene_compiler.cpp
     core/spec/schema/scene_spec.cpp
@@ -86,6 +89,7 @@ add_library(TachyonCore SHARED
     core/spec/scene_spec_audio.cpp
     renderer2d/raster/draw_list_builder.cpp
     renderer2d/raster/draw_list_rasterizer.cpp
+    renderer2d/spec/gradient_spec_serialize.cpp
     renderer2d/color/blending.cpp
     renderer2d/color/lut3d.cpp
     renderer2d/color/color_management.cpp
