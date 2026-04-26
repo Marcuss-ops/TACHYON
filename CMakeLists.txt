@@ -10,6 +10,7 @@ if(NOT DEFINED FETCHCONTENT_BASE_DIR)
     set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/.cache/fetchcontent/ninja-msvc-x64" CACHE PATH "Base directory for FetchContent downloads")
 endif()
 include(FetchContent)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Unity Build support (Jumbo) - applied only to Tachyon targets
 option(TACHYON_UNITY_BUILD "Enable unity build for Tachyon targets" OFF)
@@ -40,13 +41,11 @@ if(MSVC)
 endif()
 
 if(TACHYON_ENABLE_ASAN)
-    if(MSVC)
-        add_compile_options(/fsanitize=address)
-        add_link_options(/fsanitize=address)
-    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
-        add_compile_options(-fsanitize=address)
-        add_link_options(-fsanitize=address)
-    endif()
+if(MSVC)
+    add_compile_options(/Wall /Wextra /Wpedantic)
+else()
+    add_compile_options(-Wall -Wextra -Wpedantic -fPIC)
+endif()
 endif()
 
 # Determine platform and compiler details
@@ -84,12 +83,14 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/freetype/freetype.git
     GIT_TAG        VER-2-13-3
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    CMAKE_CACHE_ARGS
+        -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON
+        -DSKIP_INSTALL_ALL:BOOL=ON
+        -DFT_WITH_ZLIB:BOOL=OFF
+        -DFT_WITH_BZIP2:BOOL=OFF
+        -DFT_WITH_PNG:BOOL=OFF
+        -DFT_WITH_HARFBUZZ:BOOL=OFF
 )
-set(SKIP_INSTALL_ALL ON CACHE BOOL "Skip FreeType install" FORCE)
-set(FT_WITH_ZLIB OFF CACHE BOOL "Disable ZLib for FreeType" FORCE)
-set(FT_WITH_BZIP2 OFF CACHE BOOL "Disable BZip2 for FreeType" FORCE)
-set(FT_WITH_PNG OFF CACHE BOOL "Disable PNG for FreeType" FORCE)
-set(FT_WITH_HARFBUZZ OFF CACHE BOOL "Disable HarfBuzz for FreeType" FORCE)
 # CMake 4.0 dropped backward compat with cmake_minimum_required < 3.5.
 # Override policy so FreeType's old CMakeLists.txt does not abort configure.
 set(CMAKE_POLICY_DEFAULT_CMP0048 NEW)
@@ -106,16 +107,19 @@ endif()
 # HarfBuzz for OpenType shaping and ligatures.
 FetchContent_Declare(
     harfbuzz
-    GIT_REPOSITORY https://github.com/harfbuzz/harfbuzz.git
-    GIT_TAG        14.1.0
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    GIT_REPOSITORY https://github.com/harfbuzz/harfbuzz.git  
+    GIT_TAG        14.1.0  
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE  
+    CMAKE_CACHE_ARGS
+        -DHB_BUILD_UTILS:BOOL=OFF
+        -DHB_BUILD_TESTS:BOOL=OFF
+        -DHB_BUILD_DOCS:BOOL=OFF
+        -DHB_BUILD_SUBSET:BOOL=OFF
+        -DHB_HAVE_FREETYPE:BOOL=ON
+        -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON
 )
-set(HB_BUILD_UTILS OFF CACHE BOOL "Disable HarfBuzz command line utilities" FORCE)
-set(HB_BUILD_TESTS OFF CACHE BOOL "Disable HarfBuzz tests" FORCE)
-set(HB_BUILD_DOCS OFF CACHE BOOL "Disable HarfBuzz docs" FORCE)
-set(HB_BUILD_SUBSET OFF CACHE BOOL "Disable HarfBuzz subset library" FORCE)
-set(HB_HAVE_FREETYPE ON CACHE BOOL "Enable HarfBuzz FreeType integration" FORCE)
 FetchContent_MakeAvailable(harfbuzz)
+set_target_properties(harfbuzz PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # Intel Embree CPU Ray Tracing Kernels (temporarily disabled)
 # FetchContent_Declare(
