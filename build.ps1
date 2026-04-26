@@ -1,498 +1,241 @@
+# Tachyon Build Script (Improved for Windows Developers)
+[CmdletBinding()]
 param(
-    [switch]$Debug,
-    [switch]$Release,
-    [switch]$RelWithDebInfo,
     [switch]$Check,
-    [switch]$CoreOnly,
-    [switch]$TestsOnly,
-    [switch]$Verify,
-    [switch]$ErrorsOnly,
     [switch]$Clean,
-    [switch]$CleanDeps,
-    [switch]$Reconfigure,
-    [switch]$ShowSccacheStats,
     [switch]$Test,
-    [string]$TestFilter,
-    [string]$CMakeExe,
-    [string]$NinjaExe,
-    [string]$SccacheExe
+    [switch]$Details,
+    [switch]$ErrorsOnly,
+    [string]$BuildType = "Release"
 )
 
-$ErrorActionPreference = 'Stop'
-Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
 
-if ($Debug -and $Release) {
-    throw 'Use either -Debug or -Release, not both.'
-}
-if ($Debug -and $RelWithDebInfo) {
-    throw 'Use either -Debug or -RelWithDebInfo, not both.'
-}
-if ($Release -and $RelWithDebInfo) {
-    throw 'Use either -Release or -RelWithDebInfo, not both.'
-}
-if ($Check) {
-    $buildType = 'relwithdebinfo'
-    $CoreOnly = $true
-} else {
-    $buildType = if ($Release) { 'release' } elseif ($RelWithDebInfo) { 'relwithdebinfo' } else { 'debug' }
+# --- Configuration ---
+$BuildDir = "build-ninja"
+$Generator = "Ninja"
+$CMakePath = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
+$NinjaPath = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja\ninja.exe"
+$SccachePath = "sccache"
+
+# --- Helper Functions ---
+function Write-Header($msg) {
+    Write-Host "`n" + ("=" * 60) -ForegroundColor DarkCyan
+    Write-Host "  $msg" -ForegroundColor Cyan
+    Write-Host ("=" * 60) -ForegroundColor DarkCyan
 }
 
-function ConvertTo-CmdArg {
-
-    param(
-        [Parameter(Mandatory)]
-        [string]$Value
-    )
-    return '"' + ($Value -replace '"', '""') + '"'
+function Write-Success($msg) {
+    Write-Host "  [OK] $msg" -ForegroundColor Green
 }
 
-function Get-ResolvedCommandPath {
-    param(
-        [Parameter(Mandatory)]
-        [object]$Command
-    )
-    foreach ($propertyName in @('Path', 'Source', 'Definition')) {
-        $property = $Command.PSObject.Properties[$propertyName]
-        if ($property -and -not [string]::IsNullOrWhiteSpace([string]$property.Value)) {
-            return [string]$property.Value
-        }
-    }
-    return $null
+function Write-Failure($msg) {
+    Write-Host "  [FAIL] $msg" -ForegroundColor Red
 }
 
-function Resolve-Executable {
-    param(
-        [Parameter(Mandatory)]
-        [string]$Name,
-        [object[]]$Candidates = @()
-    )
-    foreach ($candidate in $Candidates) {
-        if ($null -eq $candidate) { continue }
-        if ($candidate -is [System.Array]) {
-            foreach ($nestedCandidate in $candidate) {
-                if ([string]::IsNullOrWhiteSpace($nestedCandidate)) { continue }
-                if (Test-Path -LiteralPath $nestedCandidate) {
-                    return (Resolve-Path -LiteralPath $nestedCandidate).Path
-                }
-                $command = Get-Command $nestedCandidate -ErrorAction SilentlyContinue
-                if ($command) {
-                    $resolvedPath = Get-ResolvedCommandPath -Command $command
-                    if ($resolvedPath) { return $resolvedPath }
-                }
-                if (-not ($nestedCandidate -match '[\\/]')) {
-                    $whereOutput = & where.exe $nestedCandidate 2>$null
-                    if ($LASTEXITCODE -eq 0 -and $whereOutput) {
-                        return ($whereOutput | Select-Object -First 1)
-                    }
-                }
-            }
-            continue
-        }
-        if ([string]::IsNullOrWhiteSpace($candidate)) { continue }
-        if (Test-Path -LiteralPath $candidate) {
-            return (Resolve-Path -LiteralPath $candidate).Path
-        }
-        $command = Get-Command $candidate -ErrorAction SilentlyContinue
-        if ($command) {
-            $resolvedPath = Get-ResolvedCommandPath -Command $command
-            if ($resolvedPath) { return $resolvedPath }
-        }
-        if (-not ($candidate -match '[\\/]')) {
-            $whereOutput = & where.exe $candidate 2>$null
-            if ($LASTEXITCODE -eq 0 -and $whereOutput) {
-                return ($whereOutput | Select-Object -First 1)
-            }
-        }
-    }
-    throw "Unable to locate $Name. Install it or add it to PATH."
+function Write-Warning($msg) {
+    Write-Host "  [WARN] $msg" -ForegroundColor Yellow
 }
 
-function Get-CommonExecutableCandidates {
-    param([Parameter(Mandatory)][string]$Name)
-    $candidates = New-Object System.Collections.Generic.List[string]
-    switch ($Name) {
-        'cmake' {
-            $candidates.Add('C:\Program Files\CMake\bin\cmake.exe')
-            $candidates.Add('C:\Program Files (x86)\CMake\bin\cmake.exe')
-            $candidates.Add('C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe')
-            $candidates.Add('C:\Program Files\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe')
-            $candidates.Add('C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe')
-            $candidates.Add('C:\Program Files\Microsoft Visual Studio\17\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe')
-            $candidates.Add('C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe')
-        }
-        'ninja' {
-            $candidates.Add('C:\Program Files\Ninja\ninja.exe')
-            $candidates.Add('C:\Program Files (x86)\Ninja\ninja.exe')
-            $candidates.Add('C:\Program Files\CMake\bin\ninja.exe')
-            $candidates.Add('C:\Program Files (x86)\CMake\bin\ninja.exe')
-            $candidates.Add('C:\Program Files\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja\ninja.exe')
-            $candidates.Add('C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja\ninja.exe')
-        }
-        'vcvars64.bat' {
-            $candidates.Add('C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat')
-            $candidates.Add('C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat')
-            $candidates.Add('C:\Program Files\Microsoft Visual Studio\17\Community\VC\Auxiliary\Build\vcvars64.bat')
-            $candidates.Add('C:\Program Files\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat')
-            $candidates.Add('C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat')
-        }
-    }
-    $roots = @(
-        'C:\Program Files\Microsoft Visual Studio',
-        'C:\Program Files (x86)\Microsoft Visual Studio',
-        'C:\Program Files\CMake',
-        'C:\Program Files (x86)\CMake',
-        'C:\Program Files\Ninja',
-        'C:\Program Files (x86)\Ninja'
-    )
-    foreach ($root in $roots) {
-        if (Test-Path -LiteralPath $root) {
-            $fileName = switch ($Name) {
-                'vcvars64.bat' { 'vcvars64.bat' }
-                'cmake' { 'cmake.exe' }
-                default { 'ninja.exe' }
-            }
-            $found = Get-ChildItem -Path $root -Filter $fileName -Recurse -File -ErrorAction SilentlyContinue |
-                Select-Object -ExpandProperty FullName -ErrorAction SilentlyContinue
-            foreach ($path in $found) {
-                if ($path) { $candidates.Add($path) }
-            }
-        }
-    }
-    return $candidates.ToArray()
-}
-
-function Invoke-WithVcvars {
-    param(
-        [Parameter(Mandatory)][string]$Vcvars,
-        [Parameter(Mandatory)][string]$Executable,
-        [Parameter(Mandatory)][string[]]$Arguments,
-        [switch]$PassThru
-    )
-    $commandParts = @('call', (ConvertTo-CmdArg $vcvars), '>nul', '&&', (ConvertTo-CmdArg $Executable))
-    foreach ($argument in $Arguments) {
-        $commandParts += (ConvertTo-CmdArg $argument)
-    }
-    $cmdLine = $commandParts -join ' '
-    if ($PassThru) {
-        $output = & cmd.exe /d /s /c $cmdLine 2>&1
-        $output
-    } else {
-        & cmd.exe /d /s /c $cmdLine
-        if ($LASTEXITCODE -ne 0) {
-            throw "Command failed with exit code $($LASTEXITCODE): $Executable"
-        }
+function Write-Info($msg) {
+    if (-not $ErrorsOnly) {
+        Write-Host "  [INFO] $msg" -ForegroundColor Gray
     }
 }
 
-# Check for CMake availability early with a clear error message
-if (!(Get-Command cmake -ErrorAction SilentlyContinue)) {
-    $cmakeCandidates = Get-CommonExecutableCandidates -Name 'cmake'
-    $cmakeFound = $false
-    foreach ($candidate in $cmakeCandidates) {
-        if (Test-Path -LiteralPath $candidate) {
-            $cmakeFound = $true
-            break
-        }
-    }
-    if (-not $cmakeFound) {
-        Write-Error "CMake non trovato. Installa Visual Studio con 'C++ CMake tools' o aggiungi CMake al PATH."
-        Write-Host "Percorsi cercati:" -ForegroundColor Yellow
-        foreach ($candidate in $cmakeCandidates) {
-            Write-Host "  $candidate" -ForegroundColor Yellow
-        }
-        Write-Host "`nSoluzioni:" -ForegroundColor Green
-        Write-Host "  1. Esegui: .\scripts\Enable-DevTools.ps1 -PersistUserPath" -ForegroundColor Green
-        Write-Host "  2. Installa Visual Studio con il carico di lavoro 'Sviluppo di applicazioni desktop con C++'" -ForegroundColor Green
-        exit 1
+function Write-VerboseInfo($msg) {
+    if ($Details -and -not $ErrorsOnly) {
+        Write-Host "  [DEBUG] $msg" -ForegroundColor DarkGray
     }
 }
 
-$repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$buildDir = Join-Path $repoRoot 'build-ninja'
-
-$vcvars = Resolve-Executable -Name 'vcvars64.bat' -Candidates @(
-    @(Get-CommonExecutableCandidates -Name 'vcvars64.bat')
-)
-
-$cmake = if ($CMakeExe) {
-    Resolve-Executable -Name 'cmake' -Candidates @($CMakeExe)
-} else {
-    Resolve-Executable -Name 'cmake' -Candidates @(
-        (Get-Command cmake -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue),
-        @(Get-CommonExecutableCandidates -Name 'cmake')
-    )
+function Test-CommandExists($cmd) {
+    $result = Get-Command $cmd -ErrorAction SilentlyContinue
+    return $null -ne $result
 }
 
-$ninja = if ($NinjaExe) {
-    Resolve-Executable -Name 'ninja' -Candidates @($NinjaExe)
-} else {
-    Resolve-Executable -Name 'ninja' -Candidates @(
-        (Get-Command ninja -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue),
-        @(Get-CommonExecutableCandidates -Name 'ninja')
-    )
-}
-
-$sccache = $null
-if ($SccacheExe) {
-    $sccache = Resolve-Executable -Name 'sccache' -Candidates @($SccacheExe)
-} else {
-    $sccacheCandidates = @(
-        (Get-Command sccache -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue),
-        "$env:USERPROFILE\.cargo\bin\sccache.exe",
-        'C:\Program Files\sccache\sccache.exe',
-        'C:\Program Files (x86)\sccache\sccache.exe'
-    )
-    if ($env:LOCALAPPDATA) {
-        $sccacheCandidates += Get-ChildItem -Path (Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Packages\Mozilla.sccache_Microsoft.Winget.Source_8wekyb3d8bbwe') -Filter sccache.exe -Recurse -File -ErrorAction SilentlyContinue |
-            Sort-Object FullName -Descending |
-            Select-Object -ExpandProperty FullName
-    }
+function Run-Command($cmd, $cmd_args) {
+    Write-VerboseInfo "Executing: $cmd $cmd_args"
+    
     try {
-        $sccache = Resolve-Executable -Name 'sccache' -Candidates $sccacheCandidates
-    } catch {
-        $sccache = $null
+        & $cmd @cmd_args 2>&1 | Tee-Object -Variable output
+        $exitCode = $LASTEXITCODE
+        
+        if ($exitCode -ne 0) {
+            Write-Failure "Command failed with exit code $exitCode"
+            Write-Host $output -ForegroundColor Yellow
+            throw "Command failed: ${cmd} ${cmd_args}"
+        }
+    }
+    catch {
+        Write-Failure "Exception: $_"
+        throw
     }
 }
 
-if (-not $ErrorsOnly) {
-    Write-Host "vcvars: $vcvars"
-    Write-Host "cmake : $cmake"
-    Write-Host "ninja : $ninja"
-    if ($sccache) {
-        Write-Host "sccache: $sccache"
-    }
-}
-
-if ($CleanDeps) {
-    if (Test-Path -LiteralPath $buildDir) {
-        Remove-Item -Recurse -Force -LiteralPath $buildDir
-    }
-    $fetchcontentDir = Join-Path $repoRoot '.cache\fetchcontent'
-    if (Test-Path -LiteralPath $fetchcontentDir) {
-        Remove-Item -Recurse -Force -LiteralPath $fetchcontentDir
-    }
-} elseif ($Clean -and (Test-Path -LiteralPath $buildDir)) {
-    Remove-Item -Recurse -Force -LiteralPath $buildDir
-}
-
-New-Item -ItemType Directory -Force -Path $buildDir | Out-Null
-
-$configureNeeded = $Reconfigure -or -not (Test-Path -LiteralPath (Join-Path $buildDir 'CMakeCache.txt'))
-if ($configureNeeded) {
-    $ninjaArg = ($ninja -replace '\\', '/')
-    $cmakeArgs = @(
-        '--preset', $buildType,
-        '-S', $repoRoot,
-        "-DCMAKE_MAKE_PROGRAM=$ninjaArg"
-    )
-
-    if ($sccache) {
-        $sccacheArg = ($sccache -replace '\\', '/')
-        $cmakeArgs += "-DCMAKE_CXX_COMPILER_LAUNCHER=$sccacheArg"
-        $cmakeArgs += "-DCMAKE_C_COMPILER_LAUNCHER=$sccacheArg"
-    }
-
-    Invoke-WithVcvars -Vcvars $vcvars -Executable $cmake -Arguments $cmakeArgs
-}
-
-if ($sccache) {
-    & $sccache --zero-stats | Out-Null
-}
-
-if ($CoreOnly) {
-    $buildArgs = @('--build', '--preset', $buildType, '--target', 'TachyonCore')
-} elseif ($TestsOnly) {
-    $buildArgs = @('--build', '--preset', $buildType, '--target', 'TachyonTests')
-} else {
-    $buildArgs = @('--build', '--preset', $buildType)
-}
-
-if ($ErrorsOnly) {
-    $output = Invoke-WithVcvars -Vcvars $vcvars -Executable $cmake -Arguments $buildArgs -PassThru
-    $output | Select-String -Pattern "error C|fatal error|FAILED|Error:"
-    if ($LASTEXITCODE -ne 0) {
-        throw "Command failed with exit code $($LASTEXITCODE): $cmake"
-    }
-} else {
-    Invoke-WithVcvars -Vcvars $vcvars -Executable $cmake -Arguments $buildArgs
-}
-
-if ($ShowSccacheStats -and $sccache) {
-    & $sccache --show-stats
-}
-
-if ($Test) {
-    $testExe = Join-Path $buildDir 'tests\TachyonTests.exe'
-    if (-not (Test-Path $testExe)) {
-        Write-Host "Test executable not found. Building TachyonTests..."
-        $testArgs = @('--preset', $buildType, '--target', 'TachyonTests')
-        Invoke-WithVcvars -Vcvars $vcvars -Executable $cmake -Arguments $testArgs
-    }
-    $srcDir = Join-Path $buildDir 'src'
-    $testsDir = Join-Path $buildDir 'tests'
-    $env:PATH = "$srcDir;$testsDir;" + $env:PATH
-    $testArgs = @()
-    if ($TestFilter) {
-        $testArgs += "--gtest_filter=$TestFilter"
-    }
-    Write-Host "Running tests..."
-    & $testExe $testArgs
-    $exitCode = $LASTEXITCODE
-    if ($exitCode -ne 0) {
-        throw "Tests failed with exit code $exitCode"
-    }
-}
-
-# -Verify mode: Lightweight syntax check using cl.exe /Zs
-if ($Verify) {
-    Write-Host "`n=== Verify Mode (Syntax Check) ===" -ForegroundColor Cyan
+# --- Main Build Logic ---
+try {
+    Write-Header "Tachyon Build Script"
     
-    # Check if compile_commands.json exists
-    $compileDbPath = Join-Path $buildDir 'compile_commands.json'
-    if (-not (Test-Path $compileDbPath)) {
-        Write-Host "compile_commands.json not found. Run .\build.ps1 -Check first." -ForegroundColor Red
-        exit 1
-    }
+    # 1. Environment Setup
+    Write-Header "Environment Setup"
     
-    # Get modified files
-    $modifiedFiles = @()
-    if ($TestFilter) {
-        $modifiedFiles = Get-ChildItem -Path "src", "include" -Filter "*.cpp" -Recurse | 
-            Where-Object { $_.Name -match $TestFilter } | 
-            Select-Object -ExpandProperty FullName
+    # Check if VS environment script exists
+    $vsEnvScript = ".\scripts\enable-vs-env.ps1"
+    if (Test-Path $vsEnvScript) {
+        Write-Info "Loading Visual Studio environment..."
+        . $vsEnvScript
     } else {
-        $gitStatus = git status --porcelain 2>$null
-        if ($gitStatus) {
-            $modifiedFiles = $gitStatus | ForEach-Object { $_.Substring(3) } | 
-                Where-Object { $_ -match '\.(cpp|h)$' } | 
-                ForEach-Object { Join-Path (Get-Location) $_ }
-        }
-        
-        if (-not $modifiedFiles -or $modifiedFiles.Count -eq 0) {
-            Write-Host "No modified files found. Checking all source files..." -ForegroundColor Yellow
-            $modifiedFiles = Get-ChildItem -Path "src", "include" -Filter "*.cpp" -Recurse | 
-                Select-Object -ExpandProperty FullName
-        }
+        Write-Warning "VS environment script not found at $vsEnvScript"
+        Write-Info "Attempting to build without VS environment..."
     }
     
-    Write-Host "Checking $($modifiedFiles.Count) files..." -ForegroundColor Yellow
+    # Verify tools exist
+    Write-Info "Verifying tools..."
+    $toolsOk = $true
     
-    # Read compile_commands.json
-    $compileDb = Get-Content $compileDbPath -Raw | ConvertFrom-Json
-    
-    $totalErrors = 0
-    foreach ($file in $modifiedFiles) {
-        $relativePath = $file.Substring((Get-Location).Path.Length + 1)
-        $entry = $compileDb | Where-Object { 
-            $_.file -eq $relativePath -or $_.file -eq ($relativePath -replace '\\', '/') 
-        } | Select-Object -First 1
-        
-        if (-not $entry) {
-            Write-Host "  Skipping (no compile entry): $relativePath" -ForegroundColor Yellow
-            continue
-        }
-        
-        # Build cl.exe command with /Zs (syntax check only)
-        $command = $entry.command
-        # Add /Zs after the compiler path
-        $command = $command -replace '^(.+?cl\.exe)', '$1 /Zs'
-        # Remove output file arguments
-        $command = $command -replace '/Fo"[^"]+"\s?', ''
-        $command = $command -replace '/c', '/c'  # Keep /c as /Zs implies it
-        
-        # Run syntax check
-        $tempBat = [System.IO.Path]::GetTempFileName() + ".bat"
-        $batContent = @"
-@echo off
-call "$vcvars" >nul 2>&1
-$command
-"@
-        Set-Content -Path $tempBat -Value $batContent
-        
-        $output = cmd /c $tempBat 2>&1
-        Remove-Item $tempBat -Force
-        
-        $errors = $output | Select-String -Pattern "error C|fatal error"
-        
-        if ($errors) {
-            Write-Host "  ERROR in $relativePath" -ForegroundColor Red
-            $errors | ForEach-Object { Write-Host "    $_" -ForegroundColor Red }
-            $totalErrors++
-        } else {
-            Write-Host "  OK: $relativePath" -ForegroundColor Green
-        }
-    }
-    
-    Write-Host "`n=== Verify Complete ===" -ForegroundColor Cyan
-    if ($totalErrors -gt 0) {
-        Write-Host "$totalErrors file(s) with errors" -ForegroundColor Red
-        exit 1
+    if (Test-CommandExists $CMakePath) {
+        Write-Success "CMake found: $CMakePath"
     } else {
-        Write-Host "All files passed syntax check!" -ForegroundColor Green
+        Write-Failure "CMake NOT found at: $CMakePath"
+        Write-Info "Please install Visual Studio Build Tools with CMake support"
+        $toolsOk = $false
     }
-
-    # Get modified files
-    $modifiedFiles = @()
-    if ($TestFilter) {
-        # Use TestFilter as file pattern
-        $modifiedFiles = Get-ChildItem -Path "src", "include" -Filter "*.cpp" -Recurse | 
-            Where-Object { $_.Name -match $TestFilter } | 
-            Select-Object -ExpandProperty FullName
+    
+    if (Test-CommandExists $NinjaPath) {
+        Write-Success "Ninja found: $NinjaPath"
     } else {
-        # Get git modified files
-        $gitStatus = git status --porcelain 2>$null
-        if ($gitStatus) {
-            $modifiedFiles = $gitStatus | ForEach-Object { $_.Substring(3) } | Where-Object { $_ -match '\.(cpp|h)$' } | ForEach-Object { Join-Path (Get-Location) $_ }
-        }
-        
-        # If no modified files, check all source files
-        if (-not $modifiedFiles -or $modifiedFiles.Count -eq 0) {
-            Write-Host "No modified files found. Checking all source files..." -ForegroundColor Yellow
-            $modifiedFiles = Get-ChildItem -Path "src", "include" -Filter "*.cpp" -Recurse | Select-Object -ExpandProperty FullName
-        }
+        Write-Warning "Ninja NOT found at: $NinjaPath (will rely on CMake's Ninja)"
     }
     
-    Write-Host "Checking $($modifiedFiles.Count) files..." -ForegroundColor Yellow
+    if (-not $toolsOk) {
+        throw "Required tools are missing. Please check the installation."
+    }
     
-    # Read compile_commands.json
-    $compileDb = Get-Content $compileDbPath -Raw | ConvertFrom-Json
+    # Optional: sccache stats reset
+    if (Test-CommandExists $SccachePath) {
+        Write-Info "Resetting sccache statistics..."
+        & $SccachePath --zero-stats 2>&1 | Out-Null
+    }
     
-    $totalErrors = 0
-    foreach ($file in $modifiedFiles) {
-        $relativePath = $file.Substring((Get-Location).Path.Length + 1)
-        $entry = $compileDb | Where-Object { $_.file -eq $relativePath -or $_.file -eq ($relativePath -replace '\\', '/') } | Select-Object -First 1
+    # 2. CMake Configuration (if needed)
+    if ($Clean -or -not (Test-Path "$BuildDir\build.ninja")) {
+        Write-Header "CMake Configuration"
         
-        if (-not $entry) {
-            Write-Host "  Skipping (no compile entry): $relativePath" -ForegroundColor Yellow
-            continue
+        # Ensure build directory exists
+        if (-not (Test-Path $BuildDir)) {
+            Write-Info "Creating build directory: $BuildDir"
+            New-Item -ItemType Directory -Path $BuildDir | Out-Null
         }
         
-        # Build cl.exe command with /Zs (syntax check only)
-        $clCmd = $entry.command -replace '/c', '/Zs /c' -replace '"([^"]+\.obj)"', '' -replace '/Fo"[^\"]+"', ''
+        $cmakeArgs = @(
+            "-G", $Generator,
+            "-B", $BuildDir,
+            "-DCMAKE_BUILD_TYPE=$BuildType",
+            "-DCMAKE_MAKE_PROGRAM=$NinjaPath"
+        )
         
-        # Run syntax check using Invoke-WithVcvars
-        try {
-            $output = Invoke-WithVcvars -Vcvars $vcvars -Executable "cmd" -Arguments @('/c', $clCmd) -PassThru 2>&1
-            $errors = $output | Select-String -Pattern "error C|fatal error"
-            
-            if ($errors) {
-                Write-Host "  ERROR in $relativePath" -ForegroundColor Red
-                $errors | ForEach-Object { Write-Host "    $_" -ForegroundColor Red }
-                $totalErrors++
-            } else {
-                Write-Host "  OK: $relativePath" -ForegroundColor Green
+        Run-Command $CMakePath $cmakeArgs
+        Write-Success "CMake configuration completed"
+    } else {
+        Write-Info "Build directory exists, skipping CMake configuration (use -Clean to reconfigure)"
+    }
+    
+    # 3. Build Execution
+    Write-Header "Build Execution"
+    
+    if ($Check) {
+        Write-Info "Running syntax check (build.ps1 -Check)"
+        $buildArgs = @("--build", $BuildDir, "--config", $BuildType, "--target", "HeaderSmokeTests")
+        Run-Command $CMakePath $buildArgs
+        Write-Success "Syntax check passed!"
+    } elseif ($Test) {
+        Write-Info "Building and running tests..."
+        $buildArgs = @("--build", $BuildDir, "--config", $BuildType, "--target", "TachyonTests")
+        Run-Command $CMakePath $buildArgs
+        
+        # Run tests
+        $testExe = "$BuildDir\tests\unit\TachyonTests.exe"
+        if (Test-Path $testExe) {
+            Write-Info "Running tests..."
+            & $testExe --gtest_output=text
+            if ($LASTEXITCODE -ne 0) {
+                throw "Tests failed with exit code $LASTEXITCODE"
             }
-        } catch {
-            Write-Host "  ERROR checking $relativePath`: $_" -ForegroundColor Red
-            $totalErrors++
+            Write-Success "All tests passed!"
+        } else {
+            Write-Warning "Test executable not found at: $testExe"
         }
+    } else {
+        Write-Info "Building TachyonCore..."
+        $buildArgs = @("--build", $BuildDir, "--config", $BuildType)
+        Run-Command $CMakePath $buildArgs
+        Write-Success "Build completed successfully!"
     }
     
-    Write-Host "`n=== Verify Complete ===" -ForegroundColor Cyan
-    if ($totalErrors -gt 0) {
-        Write-Host "$totalErrors file(s) with errors" -ForegroundColor Red
-        exit 1
-    } else {
-        Write-Host "All files passed syntax check!" -ForegroundColor Green
+    # 4. Summary
+    Write-Header "Build Summary"
+    Write-Success "Build type: $BuildType"
+    Write-Success "Build directory: $BuildDir"
+    
+    if (Test-CommandExists $SccachePath) {
+        Write-Header "sccache Statistics"
+        & $SccachePath --show-stats
+    }
+}
+catch {
+    Write-Header "Build FAILED"
+    Write-Failure $_.Exception.Message
+    Write-Host "`nTroubleshooting tips:" -ForegroundColor Yellow
+    Write-Host "  1. Ensure Visual Studio Build Tools are installed" -ForegroundColor Yellow
+    Write-Host "  2. Run .\scripts\enable-vs-env.ps1 manually to check VS environment" -ForegroundColor Yellow
+    Write-Host "  3. Try -Clean flag to rebuild from scratch" -ForegroundColor Yellow
+    Write-Host "  4. Check build-ninja\CMakeFiles\CMakeError.log for details" -ForegroundColor Yellow
+    exit 1
+}
+
+function Run-Command($cmd, $cmd_args) {
+    Write-Host "Executing: $cmd $cmd_args" -ForegroundColor Gray
+    & $cmd @cmd_args
+    if ($LASTEXITCODE -ne 0) {
+        throw "Command failed with exit code ${LASTEXITCODE}: ${cmd} ${cmd_args}"
+    }
+}
+
+# --- Main ---
+try {
+    Write-Header "Environment Setup"
+    
+    # Run enable-vs-env.ps1 to get cl.exe etc in PATH
+    . ./scripts/enable-vs-env.ps1
+
+    # Ensure build directory exists
+    if (!(Test-Path $BuildDir)) {
+        New-Item -ItemType Directory -Path $BuildDir | Out-Null
+    }
+
+    # Optional: sccache stats reset
+    if (Get-Command $SccachePath -ErrorAction SilentlyContinue) {
+        Write-Host "Resetting sccache statistics..."
+        & $SccachePath --zero-stats | Out-Null
+    }
+
+    Write-Header "CMake Configuration"
+    Run-Command $CMakePath @("-G", $Generator, "-B", $BuildDir, "-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_MAKE_PROGRAM=$NinjaPath")
+
+    Write-Header "Build Execution"
+    Run-Command $CMakePath @("--build", $BuildDir, "--config", "Release")
+
+    Write-Header "Build Successful"
+}
+catch {
+    Write-Host "`nBUILD FAILED!" -ForegroundColor Red
+    Write-Host $_.Exception.Message -ForegroundColor Yellow
+    exit 1
+}
+finally {
+    if (Get-Command $SccachePath -ErrorAction SilentlyContinue) {
+        Write-Header "sccache Statistics"
+        & $SccachePath --show-stats
     }
 }
