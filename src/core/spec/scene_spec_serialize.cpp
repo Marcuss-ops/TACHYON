@@ -272,6 +272,24 @@ json serialize_layer(const LayerSpec& layer) {
                 sp["subpaths"].push_back(sj);
             }
         }
+        // Serialize shape morphing fields
+        if (!layer.shape_path->morph_target_points.empty()) {
+            sp["morph_target_points"] = json::array();
+            for (const auto& pt : layer.shape_path->morph_target_points) {
+                json pj;
+                pj["position"] = json::array({pt.position.x, pt.position.y});
+                if (pt.tangent_in.x != 0.0f || pt.tangent_in.y != 0.0f) {
+                    pj["tangent_in"] = json::array({pt.tangent_in.x, pt.tangent_in.y});
+                }
+                if (pt.tangent_out.x != 0.0f || pt.tangent_out.y != 0.0f) {
+                    pj["tangent_out"] = json::array({pt.tangent_out.x, pt.tangent_out.y});
+                }
+                sp["morph_target_points"].push_back(pj);
+            }
+        }
+        if (layer.shape_path->morph_progress != 0.0) {
+            sp["morph_progress"] = layer.shape_path->morph_progress;
+        }
         j["shape_path"] = sp;
     }
     if (!layer.subtitle_path.empty()) j["subtitle_path"] = layer.subtitle_path;
@@ -390,6 +408,16 @@ json serialize_composition(const CompositionSpec& comp) {
             c["start_seconds"] = cut.start_seconds;
             c["end_seconds"] = cut.end_seconds;
             j["camera_cuts"].push_back(c);
+        }
+    }
+
+    if (!comp.variable_decls.empty()) {
+        j["variable_decls"] = json::array();
+        for (const auto& decl : comp.variable_decls) {
+            json d;
+            d["name"] = decl.name;
+            d["type"] = decl.type;
+            j["variable_decls"].push_back(d);
         }
     }
 

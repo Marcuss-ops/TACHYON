@@ -152,6 +152,8 @@ struct CompiledLayer {
     double start_time{0.0};
     // Blend mode (from SceneSpec)
     std::string blend_mode{"normal"};
+    // Asset resolution state (set at compile time, propagated to renderer)
+    bool asset_offline{false};
 };
 
 struct CompiledComposition {
@@ -173,7 +175,9 @@ struct CompiledScene {
     std::string project_name;
     
     RuntimeRenderGraph graph;
-    
+
+    std::uint64_t scene_structure_hash{0}; ///< Hash of topology only (IDs, types, graph edges). Used for incremental updates.
+
     std::vector<CompiledComposition> compositions;
     std::vector<CompiledPropertyTrack> property_tracks;
     std::vector<expressions::Bytecode> expressions;

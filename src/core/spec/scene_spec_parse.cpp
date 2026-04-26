@@ -49,6 +49,18 @@ CompositionSpec parse_composition(const json& object, const std::string& path, D
             composition.camera_cuts.push_back(std::move(cut));
         }
     }
+
+    if (object.contains("variable_decls") && object.at("variable_decls").is_array()) {
+        const auto& var_decls = object.at("variable_decls");
+        for (std::size_t i = 0; i < var_decls.size(); ++i) {
+            if (!var_decls[i].is_object()) continue;
+            const auto& v = var_decls[i];
+            VariableDecl decl;
+            read_string(v, "name", decl.name);
+            read_string(v, "type", decl.type);
+            composition.variable_decls.push_back(std::move(decl));
+        }
+    }
     
     return composition;
 }

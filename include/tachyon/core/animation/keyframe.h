@@ -33,6 +33,7 @@ struct Keyframe {
     InterpolationMode out_mode{InterpolationMode::Linear};
     EasingPreset      easing{EasingPreset::None};
     CubicBezierEasing bezier{CubicBezierEasing::linear()};
+    SpringEasing      spring{};  ///< Spring parameters (used when easing == EasingPreset::Spring)
 
     /**
      * Tangent handle for Bezier curves, expressed as a delta from this keyframe.

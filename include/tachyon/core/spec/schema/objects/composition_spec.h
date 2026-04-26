@@ -27,6 +27,11 @@ struct FrameRate {
     }
 };
 
+struct VariableDecl {
+    std::string name;
+    std::string type; // "double", "string", "Color", etc.
+};
+
 struct CompositionSpec {
     std::string id;
     std::string name;
@@ -46,6 +51,9 @@ struct CompositionSpec {
     /// Remotion-like input props: parameterized data for this composition.
     /// Can be accessed in expressions via prop("key") or in layer properties.
     std::map<std::string, nlohmann::json> input_props;
+
+    /// Typed variable declarations for template rendering
+    std::vector<VariableDecl> variable_decls;
 };
 
 } // namespace tachyon

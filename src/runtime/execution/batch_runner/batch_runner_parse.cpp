@@ -44,6 +44,13 @@ RenderBatchSpec parse_batch_spec(const json& root, const std::filesystem::path& 
             item.output_override = resolve_relative_path(base_path, job.at("output_override").get<std::string>());
         }
 
+        if (job.contains("variant_vars") && job.at("variant_vars").is_object()) {
+            const auto& vars = job.at("variant_vars");
+            for (const auto& [key, val] : vars.items()) {
+                item.variant_vars[key] = val;
+            }
+        }
+
         if (!scene_value.empty()) item.scene_path = resolve_relative_path(base_path, scene_value);
         if (!job_value.empty()) item.job_path = resolve_relative_path(base_path, job_value);
 

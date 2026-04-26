@@ -169,6 +169,28 @@ std::uint64_t hash_scene_spec(const SceneSpec& scene, const DeterminismContract&
     return builder.finish();
 }
 
+// Hashes only graph topology: composition/layer IDs, types, and structural relationships.
+// Changes here require full recompilation. Changes only to property values do not.
+std::uint64_t hash_scene_structure(const SceneSpec& scene) {
+    CacheKeyBuilder builder;
+    builder.add_u64(static_cast<std::uint64_t>(scene.compositions.size()));
+    for (const auto& composition : scene.compositions) {
+        add_string(builder, composition.id);
+        builder.add_u64(static_cast<std::uint64_t>(composition.layers.size()));
+        for (const auto& layer : composition.layers) {
+            add_string(builder, layer.id);
+            add_string(builder, layer.type);
+            builder.add_bool(layer.parent.has_value());
+            if (layer.parent.has_value()) add_string(builder, *layer.parent);
+            builder.add_bool(layer.precomp_id.has_value());
+            if (layer.precomp_id.has_value()) add_string(builder, *layer.precomp_id);
+            builder.add_bool(layer.track_matte_layer_id.has_value());
+            if (layer.track_matte_layer_id.has_value()) add_string(builder, *layer.track_matte_layer_id);
+        }
+    }
+    return builder.finish();
+}
+
 /**
  * @brief Context used during compilation to track node IDs and dependencies.
  */
@@ -188,11 +210,12 @@ struct CompilationRegistry {
 template<typename T>
 CompiledPropertyTrack compile_property_track(
     CompilationRegistry& registry,
-    const std::string& id_suffix, 
-    const std::string& layer_id, 
-    const T& property_spec, 
+    const std::string& id_suffix,
+    const std::string& layer_id,
+    const T& property_spec,
     double fallback_value,
-    std::vector<expressions::Bytecode>& expressions) {
+    std::vector<expressions::Bytecode>& expressions,
+    DiagnosticBag& diagnostics) {
     
     CompiledPropertyTrack track;
     track.node = registry.create_node(CompiledNodeType::Property);
@@ -274,8 +297,11 @@ CompiledPropertyTrack compile_property_track(
             track.expression_index = static_cast<std::uint32_t>(expressions.size());
             expressions.push_back(std::move(compile_result.bytecode));
         } else {
-            // Fallback to constant value if compilation fails
             track.kind = CompiledPropertyTrack::Kind::Constant;
+            diagnostics.add_warning("COMPILER_W002",
+                "Expression compilation failed for property '" + track.property_id +
+                "', falling back to constant value. Error: " + compile_result.error,
+                track.property_id);
         }
     }
 
@@ -315,12 +341,23 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
 
         registry.composition_id_map[composition.id] = static_cast<std::uint32_t>(compiled.compositions.size());
 
+        const std::string comp_path = "scene.compositions[" + composition.id + "]";
         compiled_composition.layers.reserve(composition.layers.size());
-        for (const auto& layer : composition.layers) {
+        for (std::size_t layer_idx = 0; layer_idx < composition.layers.size(); ++layer_idx) {
+            const auto& layer = composition.layers[layer_idx];
+            const std::string layer_path = comp_path + ".layers[" + std::to_string(layer_idx) + "]";
+
+            if (layer.id.empty()) {
+                result.diagnostics.add_error("COMPILER_E001",
+                    "Layer at index " + std::to_string(layer_idx) + " has no id — skipping.",
+                    layer_path);
+                continue;
+            }
+
             CompiledLayer compiled_layer;
             compiled_layer.node = registry.create_node(CompiledNodeType::Layer);
             compiled.graph.add_node(compiled_layer.node.node_id);
-            
+
             // Resolve Type
             auto type_map = [](const std::string& t) -> std::uint32_t {
                 if (t == "solid") return 1;
@@ -331,6 +368,23 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
                 return 0;
             };
             compiled_layer.type_id = type_map(layer.type);
+            if (compiled_layer.type_id == 0 && !layer.type.empty()) {
+                result.diagnostics.add_warning("COMPILER_W001",
+                    "Layer '" + layer.id + "' has unknown type '" + layer.type + "', will render as null layer.",
+                    layer_path);
+            }
+
+            // Asset resolution check for image/video layers
+            if (compiled_layer.type_id == 3) {
+                const bool found_in_assets = std::any_of(scene.assets.begin(), scene.assets.end(),
+                    [&](const AssetSpec& a) { return a.id == layer.id || a.id == layer.name; });
+                if (!found_in_assets) {
+                    compiled_layer.asset_offline = true;
+                    result.diagnostics.add_warning("COMPILER_W004",
+                        "Image layer '" + layer.id + "' has no matching asset in scene.assets — will render as transparent.",
+                        layer_path);
+                }
+            }
             
             compiled_layer.width = static_cast<std::uint32_t>(layer.width);
             compiled_layer.height = static_cast<std::uint32_t>(layer.height);
@@ -382,7 +436,7 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
             // Resolve Property Indices
             const auto add_track = [&](const std::string& suffix, const auto& spec, double fallback) {
                 compiled_layer.property_indices.push_back(static_cast<std::uint32_t>(compiled.property_tracks.size()));
-                auto track = compile_property_track(registry, suffix, layer.id, spec, fallback, compiled.expressions);
+                auto track = compile_property_track(registry, suffix, layer.id, spec, fallback, compiled.expressions, result.diagnostics);
                 compiled.graph.add_node(track.node.node_id);
                 
                 // DATA BINDING INTEGRATION:
@@ -454,6 +508,11 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
                 if (it != registry.composition_id_map.end()) {
                     layer.precomp_index = it->second;
                     compiled.graph.add_edge(compiled.compositions[it->second].node.node_id, layer.node.node_id, true);
+                } else {
+                    result.diagnostics.add_warning("COMPILER_W003",
+                        "Precomp layer '" + layer_spec.id + "' references unknown composition '" +
+                        *layer_spec.precomp_id + "' — layer will render empty.",
+                        "scene.compositions[" + comp_spec.id + "].layers[" + layer_spec.id + "]");
                 }
             }
         }
@@ -479,22 +538,77 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
     }
 
     compiled.assets = scene.assets;
+    compiled.scene_structure_hash = hash_scene_structure(scene);
     compiled.link_dependency_nodes();
     result.value = std::move(compiled);
     return result;
 }
 
 
-bool SceneCompiler::update_compiled_scene(CompiledScene& existing, const SceneSpec& new_spec) const {
-    // If the structural hash (topology) hasn't changed, we can do a fast property-only update.
-    std::uint64_t new_hash = hash_scene_spec(new_spec, existing.determinism);
-    if (new_hash == existing.scene_hash) {
-        return true; 
+static bool try_property_only_update(CompiledScene& existing, const SceneSpec& new_spec, std::uint64_t new_hash) {
+    if (new_spec.compositions.size() != existing.compositions.size()) return false;
+
+    for (std::size_t c_idx = 0; c_idx < new_spec.compositions.size(); ++c_idx) {
+        if (new_spec.compositions[c_idx].layers.size() != existing.compositions[c_idx].layers.size())
+            return false;
     }
 
-    // For a real industrial version, we would compare layer counts, IDs, etc.
-    // For Milestone 1, we replace the entire content but allow the CLI to keep the 
-    // CompiledScene object reference alive.
+    CompilationRegistry registry;
+    DiagnosticBag ignored;
+
+    for (std::size_t c_idx = 0; c_idx < new_spec.compositions.size(); ++c_idx) {
+        const auto& comp_spec = new_spec.compositions[c_idx];
+        auto& comp = existing.compositions[c_idx];
+
+        for (std::size_t l_idx = 0; l_idx < comp_spec.layers.size(); ++l_idx) {
+            const auto& layer_spec = comp_spec.layers[l_idx];
+            auto& compiled_layer = comp.layers[l_idx];
+
+            compiled_layer.in_time    = layer_spec.in_point;
+            compiled_layer.out_time   = layer_spec.out_point;
+            compiled_layer.start_time = layer_spec.start_time;
+            compiled_layer.blend_mode = layer_spec.blend_mode;
+            compiled_layer.fill_color   = layer_spec.fill_color.value.value_or(ColorSpec{255,255,255,255});
+            compiled_layer.stroke_color = layer_spec.stroke_color.value.value_or(ColorSpec{255,255,255,255});
+            compiled_layer.text_content = layer_spec.text_content;
+
+            const auto recompile_track = [&](std::size_t idx, const std::string& suffix, const auto& spec, double fallback) {
+                if (idx >= compiled_layer.property_indices.size()) return;
+                const std::uint32_t track_idx = compiled_layer.property_indices[idx];
+                if (track_idx >= existing.property_tracks.size()) return;
+                existing.property_tracks[track_idx] = compile_property_track(
+                    registry, suffix, layer_spec.id, spec, fallback, existing.expressions, ignored);
+            };
+
+            const auto& ap = layer_spec.transform.anchor_point;
+            recompile_track(0, ".opacity",         layer_spec.opacity_property,              layer_spec.opacity);
+            recompile_track(1, ".position_x",      layer_spec.transform.position_property,   layer_spec.transform.position_x.value_or(0.0));
+            recompile_track(2, ".position_y",      layer_spec.transform.position_property,   layer_spec.transform.position_y.value_or(0.0));
+            recompile_track(3, ".scale_x",         layer_spec.transform.scale_property,      layer_spec.transform.scale_x.value_or(1.0));
+            recompile_track(4, ".scale_y",         layer_spec.transform.scale_property,      layer_spec.transform.scale_y.value_or(1.0));
+            recompile_track(5, ".rotation",        layer_spec.transform.rotation_property,   layer_spec.transform.rotation.value_or(0.0));
+            recompile_track(6, ".mask_feather",    layer_spec.mask_feather,                  0.0);
+            recompile_track(7, ".anchor_point_x",  ap,  ap.value.has_value() ? ap.value->x : 0.0);
+            recompile_track(8, ".anchor_point_y",  ap,  ap.value.has_value() ? ap.value->y : 0.0);
+        }
+    }
+
+    existing.scene_hash = new_hash;
+    return true;
+}
+
+bool SceneCompiler::update_compiled_scene(CompiledScene& existing, const SceneSpec& new_spec) const {
+    const std::uint64_t new_hash = hash_scene_spec(new_spec, existing.determinism);
+    if (new_hash == existing.scene_hash) {
+        return true;
+    }
+
+    const std::uint64_t new_structure_hash = hash_scene_structure(new_spec);
+    if (new_structure_hash == existing.scene_structure_hash &&
+        try_property_only_update(existing, new_spec, new_hash)) {
+        return true;
+    }
+
     auto result = compile(new_spec);
     if (result.ok()) {
         existing = std::move(*result.value);

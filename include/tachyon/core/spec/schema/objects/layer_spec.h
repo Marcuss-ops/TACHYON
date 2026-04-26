@@ -38,6 +38,34 @@ struct ProceduralSpec {
     }
 };
 
+struct ParticleSpec {
+    // Emitter settings
+    std::string emitter_shape{"point"}; // "point", "circle", "rect"
+    AnimatedScalarSpec emission_rate{100.0}; // particles per second
+    AnimatedScalarSpec lifetime{2.0}; // seconds
+    AnimatedScalarSpec start_speed{100.0}; // initial velocity magnitude
+    AnimatedScalarSpec direction{0.0}; // angle in degrees
+    AnimatedScalarSpec spread{360.0}; // emission spread angle
+    
+    // Physics
+    AnimatedScalarSpec gravity{980.0}; // pixels/s^2
+    AnimatedScalarSpec drag{0.0}; // velocity damping
+    AnimatedScalarSpec turbulence{0.0}; // random force
+    
+    // Appearance
+    AnimatedScalarSpec start_size{5.0};
+    AnimatedScalarSpec end_size{0.0};
+    AnimatedColorSpec start_color{ColorSpec{255, 255, 255, 255}};
+    AnimatedColorSpec end_color{ColorSpec{255, 255, 255, 0}};
+    
+    // Blend mode for particles
+    std::string blend_mode{"normal"};
+    
+    [[nodiscard]] bool empty() const noexcept {
+        return emitter_shape.empty();
+    }
+};
+
 struct LayerSpec {
     struct MarkerSpec {
         double time{0.0};
@@ -109,7 +137,10 @@ struct LayerSpec {
     
     // Procedural layer
     std::optional<ProceduralSpec> procedural;
-
+    
+    // Particle system layer
+    std::optional<ParticleSpec> particle_spec;
+    
     // Effects & Animators
     std::vector<EffectSpec> effects;
     std::vector<AnimatedEffectSpec> animated_effects;
@@ -200,6 +231,41 @@ inline void from_json(const nlohmann::json& j, ProceduralSpec& p) {
     if (j.contains("seed") && j.at("seed").is_number()) p.seed = j.at("seed").get<uint64_t>();
     if (j.contains("angle")) p.angle = j.at("angle").get<AnimatedScalarSpec>();
     if (j.contains("spacing")) p.spacing = j.at("spacing").get<AnimatedScalarSpec>();
+}
+
+// JSON serialization for ParticleSpec
+inline void to_json(nlohmann::json& j, const ParticleSpec& p) {
+    j["emitter_shape"] = p.emitter_shape;
+    if (!p.emission_rate.empty()) j["emission_rate"] = p.emission_rate;
+    if (!p.lifetime.empty()) j["lifetime"] = p.lifetime;
+    if (!p.start_speed.empty()) j["start_speed"] = p.start_speed;
+    if (!p.direction.empty()) j["direction"] = p.direction;
+    if (!p.spread.empty()) j["spread"] = p.spread;
+    if (!p.gravity.empty()) j["gravity"] = p.gravity;
+    if (!p.drag.empty()) j["drag"] = p.drag;
+    if (!p.turbulence.empty()) j["turbulence"] = p.turbulence;
+    if (!p.start_size.empty()) j["start_size"] = p.start_size;
+    if (!p.end_size.empty()) j["end_size"] = p.end_size;
+    if (!p.start_color.empty()) j["start_color"] = p.start_color;
+    if (!p.end_color.empty()) j["end_color"] = p.end_color;
+    if (p.blend_mode != "normal") j["blend_mode"] = p.blend_mode;
+}
+
+inline void from_json(const nlohmann::json& j, ParticleSpec& p) {
+    if (j.contains("emitter_shape") && j.at("emitter_shape").is_string()) p.emitter_shape = j.at("emitter_shape").get<std::string>();
+    if (j.contains("emission_rate")) p.emission_rate = j.at("emission_rate").get<AnimatedScalarSpec>();
+    if (j.contains("lifetime")) p.lifetime = j.at("lifetime").get<AnimatedScalarSpec>();
+    if (j.contains("start_speed")) p.start_speed = j.at("start_speed").get<AnimatedScalarSpec>();
+    if (j.contains("direction")) p.direction = j.at("direction").get<AnimatedScalarSpec>();
+    if (j.contains("spread")) p.spread = j.at("spread").get<AnimatedScalarSpec>();
+    if (j.contains("gravity")) p.gravity = j.at("gravity").get<AnimatedScalarSpec>();
+    if (j.contains("drag")) p.drag = j.at("drag").get<AnimatedScalarSpec>();
+    if (j.contains("turbulence")) p.turbulence = j.at("turbulence").get<AnimatedScalarSpec>();
+    if (j.contains("start_size")) p.start_size = j.at("start_size").get<AnimatedScalarSpec>();
+    if (j.contains("end_size")) p.end_size = j.at("end_size").get<AnimatedScalarSpec>();
+    if (j.contains("start_color")) p.start_color = j.at("start_color").get<AnimatedColorSpec>();
+    if (j.contains("end_color")) p.end_color = j.at("end_color").get<AnimatedColorSpec>();
+    if (j.contains("blend_mode") && j.at("blend_mode").is_string()) p.blend_mode = j.at("blend_mode").get<std::string>();
 }
 
 } // namespace tachyon

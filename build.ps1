@@ -166,6 +166,29 @@ function Invoke-WithVcvars {
     }
 }
 
+# Check for CMake availability early with a clear error message
+if (!(Get-Command cmake -ErrorAction SilentlyContinue)) {
+    $cmakeCandidates = Get-CommonExecutableCandidates -Name 'cmake'
+    $cmakeFound = $false
+    foreach ($candidate in $cmakeCandidates) {
+        if (Test-Path -LiteralPath $candidate) {
+            $cmakeFound = $true
+            break
+        }
+    }
+    if (-not $cmakeFound) {
+        Write-Error "CMake non trovato. Installa Visual Studio con 'C++ CMake tools' o aggiungi CMake al PATH."
+        Write-Host "Percorsi cercati:" -ForegroundColor Yellow
+        foreach ($candidate in $cmakeCandidates) {
+            Write-Host "  $candidate" -ForegroundColor Yellow
+        }
+        Write-Host "`nSoluzioni:" -ForegroundColor Green
+        Write-Host "  1. Esegui: .\scripts\Enable-DevTools.ps1 -PersistUserPath" -ForegroundColor Green
+        Write-Host "  2. Installa Visual Studio con il carico di lavoro 'Sviluppo di applicazioni desktop con C++'" -ForegroundColor Green
+        exit 1
+    }
+}
+
 $repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $buildDir = Join-Path $repoRoot 'build-ninja'
 

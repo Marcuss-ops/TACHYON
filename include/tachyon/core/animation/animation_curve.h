@@ -172,7 +172,7 @@ public:
         double raw_t = (seg_len > 0.0) ? (time - k0.time) / seg_len : 0.0;
 
         // Apply easing using k0's preset
-        const double eased_t = apply_easing(raw_t, k0.easing, k0.bezier);
+        const double eased_t = apply_easing(raw_t, k0.easing, k0.bezier, k0.spring);
 
         // Choose interpolation
         switch (k0.out_mode) {

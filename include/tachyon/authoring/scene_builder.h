@@ -226,7 +226,33 @@ public:
         return *this;
     }
 
+    /// Declare a typed variable for template rendering (e.g., Var<std::string>("name"), Var<Color>("accent"))
+    template<typename T>
+    CompositionBuilder& Var(const std::string& name) {
+        VariableDecl decl;
+        decl.name = name;
+        decl.type = TypeName<T>::value();
+        spec_.variable_decls.push_back(decl);
+        return *this;
+    }
+
 private:
+    /// Type trait to map C++ types to string identifiers
+    template<typename T>
+    struct TypeName { static std::string value() { return "unknown"; } };
+
+    template<>
+    struct TypeName<std::string> { static std::string value() { return "string"; } };
+
+    template<>
+    struct TypeName<double> { static std::string value() { return "double"; } };
+
+    template<>
+    struct TypeName<float> { static std::string value() { return "float"; } };
+
+    template<>
+    struct TypeName<int> { static std::string value() { return "int"; } };
+
     CompositionSpec& spec_;
     double m_current_offset{0.0};
 };
