@@ -1,125 +1,125 @@
-# Tachyon Build Guide
+# BUILD.md
 
-## Prerequisiti
+## Quick Start
 
-- **Visual Studio 2022** (Community/Professional/Enterprise) con carico di lavoro "Sviluppo di applicazioni desktop con C++"
-- **CMake 3.25+** richiesto per `MSVC_DEBUG_INFORMATION_FORMAT` / `CMP0141`
-- **Ninja** (incluso in VS 2022 o installare separatamente)
-- **sccache** (opzionale, velocizza le compilazioni)
-
-Installare sccache:
 ```powershell
-winget install Mozilla.sccache
+.\build.ps1 -Check
 ```
 
-## Build Rapida
+This builds only `TachyonCore` with RelWithDebInfo - fastest way to catch compile errors.
 
-Usa lo script `build.ps1` con preset CMake:
+## Build Presets
+
+### Fast Check (for development)
 
 ```powershell
-# Build di sviluppo (raccomandato)
+.\build.ps1 -Check
+```
+
+Equivalent to: `cmake --build --preset relwithdebinfo --target TachyonCore`
+
+### Core Only
+
+```powershell
+.\build.ps1 -RelWithDebInfo -CoreOnly
+```
+
+Builds only the core library, skipping tests and executable.
+
+### Full Build
+
+```powershell
 .\build.ps1 -RelWithDebInfo
+```
 
-# Build release ottimizzata
-.\build.ps1 -Release
+Builds everything: TachyonCore, tachyon executable, and TachyonTests.
 
-# Build debug
+### Debug Build
+
+```powershell
 .\build.ps1 -Debug
+```
 
-# Clean build (mantiene la cache FetchContent)
-.\build.ps1 -RelWithDebInfo -Clean
+### Release Build
 
-# Clean completo (build + dipendenze)
-.\build.ps1 -RelWithDebInfo -CleanDeps
+```powershell
+.\build.ps1 -Release
+```
 
-# Build e esegui test
+## Testing
+
+### Run All Tests
+
+```powershell
 .\build.ps1 -RelWithDebInfo -Test
-
-# Mostra statistiche sccache
-.\build.ps1 -RelWithDebInfo -ShowSccacheStats
 ```
 
-## Preset CMake
-
-Il progetto usa `CMakePresets.json` con configurazioni pre-definite:
-
-- **debug**: Debug con simboli completi
-- **release**: Release ottimizzata
-- **relwithdebinfo**: Release con simboli di debug (predefinito)
-- **asan**: AddressSanitizer per debug memoria
-- **relwithdebinfo-unity**: Unity Build (Jumbo) per tempi ridotti del 30-50%
-- **relwithdebinfo-lld**: Usa lld-link linker per link più veloce
-- **relwithdebinfo-fast**: Combina Unity Build + lld-link
-
-## sccache
-
-sccache velocizza le compilazioni mettendo in cache i risultati. Dopo un clean, ricompila solo i file modificati.
-
-Configurazione consigliata in `~/.config/sccache/config.toml`:
-```toml
-[cache]
-max_size = "20GiB"
-```
-
-## FetchContent Cache
-
-Le dipendenze (FreeType, HarfBuzz, ecc.) sono scaricate in `build-ninja/.fetchcontent`. Questa directory persiste anche dopo `--Clean`, evitando riscarichi.
-
-## Unity Build (Jumbo)
-
-Abilita la compilazione unificata per ridurre i tempi del 30-50%:
+### Run Targeted Tests
 
 ```powershell
-.\build.ps1 -RelWithDebInfo -Unity
+.\build.ps1 -RelWithDebInfo -TestFilter Component
 ```
 
-Oppure imposta in `CMakePresets.json`:
-```json
-"CMAKE_UNITY_BUILD": "ON"
-```
+### Build Tests Only
 
-## Linker veloce (lld-link)
-
-Usa LLVM lld-link invece di link.exe per tempi di link ridotti:
-
-```json
-"CMAKE_LINKER": "C:/Program Files/LLVM/bin/lld-link.exe"
-```
-
-## Struttura Directory
-
-- `.cache/fetchcontent/` - Cache persistente dipendenze FetchContent (gitignore)
-- `build-ninja/` - Directory build Ninja (gitignore)
-- `src/` - Codice sorgente TachyonCore, tachyon
-- `tests/` - Test TachyonTests
-
-## Troubleshooting
-
-### Errore PDB (C1041)
-Se vedi errori di conflitto PDB, verifica che il formato debug sia `Embedded` (/Z7):
 ```powershell
-findstr /i "MSVC_DEBUG_INFORMATION_FORMAT" build-ninja/CMakeCache.txt
+.\build.ps1 -TestsOnly
 ```
-Dovrebbe mostrare: `CMAKE_MSVC_DEBUG_INFORMATION_FORMAT:STRING=$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>`
 
-### sccache non trovato
-Assicurati che sccache sia nel PATH o installato via winget. Lo script build.ps1 lo cerca automaticamente.
+## Cleaning
 
-### Build fallita
-Pulisci e ricompila:
+### Clean Build Directory
+
 ```powershell
 .\build.ps1 -RelWithDebInfo -Clean
 ```
 
-## Comandi diretti (senza build.ps1)
+### Clean Dependencies (use only when needed)
 
-Configura con preset:
 ```powershell
-call "C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat"
-cmake --preset relwithdebinfo
-cmake --build --preset relwithdebinfo
+.\build.ps1 -RelWithDebInfo -CleanDeps
 ```
 
-## CI/CD
+This removes `.cache/fetchcontent` and `build-ninja`. Only use when dependency configuration changes.
 
-Il workflow GitHub Actions (`.github/workflows/ci.yml`) usa sccache e cache FetchContent per build veloci.
+## Error-Only Output
+
+```powershell
+.\build.ps1 -Check -ErrorsOnly
+```
+
+Shows only error lines (matching "error C", "fatal error", "FAILED", "Error:").
+
+## Editor Integration
+
+### VS Code
+
+Use `Ctrl+Shift+B` to access build tasks:
+- Tachyon: Check Core
+- Tachyon: Build RelWithDebInfo
+- Tachyon: Test
+
+### clangd
+
+The project generates `compile_commands.json` automatically. Install the clangd extension in VS Code for:
+- Real-time diagnostics
+- Code completion
+- Go-to-definition
+- Include suggestions
+
+Configure `.clangd` is already set up with strict include diagnostics.
+
+## Common Workflow
+
+1. Make changes
+2. `.\build.ps1 -Check` (fast core build)
+3. Fix errors
+4. `.\build.ps1 -RelWithDebInfo -TestFilter MyFeature`
+5. `.\build.ps1 -RelWithDebInfo` (full build)
+6. Commit
+
+## Build Directories
+
+- `build-ninja/` - CMake build directory (generated)
+- `.cache/fetchcontent/` - Downloaded dependencies (generated)
+- `build-ninja/compile_commands.json` - Generated for clangd

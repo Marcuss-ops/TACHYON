@@ -59,6 +59,10 @@ EvaluatedLayerState make_layer_state(
         vars.numeric,
         vars.tables,
         static_cast<std::uint32_t>(layer_index));
+    // Apply time remap if property is not empty
+    if (!layer.time_remap_property.empty()) {
+        local_t = evaluated.child_time_seconds;
+    }
 
     evaluated.active = layer.enabled && (t >= layer.in_point && t < layer.out_point);
     const double frame_duration = 1.0 / context.composition.frame_rate.value();
