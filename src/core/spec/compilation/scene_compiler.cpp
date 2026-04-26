@@ -1,6 +1,7 @@
 #include "tachyon/core/spec/compilation/scene_compiler.h"
 #include "tachyon/runtime/cache/cache_key_builder.h"
 #include "tachyon/importer/scene_importer.h"
+#include "tachyon/core/expressions/expression_engine.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -190,7 +191,8 @@ CompiledPropertyTrack compile_property_track(
     const std::string& id_suffix, 
     const std::string& layer_id, 
     const T& property_spec, 
-    double fallback_value = 0.0) {
+    double fallback_value,
+    std::vector<expressions::Bytecode>& expressions) {
     
     CompiledPropertyTrack track;
     track.node = registry.create_node(CompiledNodeType::Property);
@@ -267,6 +269,14 @@ CompiledPropertyTrack compile_property_track(
 
     if (property_spec.expression.has_value() && !property_spec.expression->empty()) {
         track.kind = CompiledPropertyTrack::Kind::Expression;
+        auto compile_result = expressions::CoreExpressionEvaluator::compile(*property_spec.expression);
+        if (compile_result.success) {
+            track.expression_index = static_cast<std::uint32_t>(expressions.size());
+            expressions.push_back(std::move(compile_result.bytecode));
+        } else {
+            // Fallback to constant value if compilation fails
+            track.kind = CompiledPropertyTrack::Kind::Constant;
+        }
     }
 
     return track;
@@ -337,6 +347,7 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
             
             compiled_layer.shape_path = layer.shape_path;
             compiled_layer.effects = layer.effects;
+            compiled_layer.animated_effects = layer.animated_effects;
             compiled_layer.text_animators = layer.text_animators;
             compiled_layer.text_highlights = layer.text_highlights;
             
@@ -371,7 +382,7 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
             // Resolve Property Indices
             const auto add_track = [&](const std::string& suffix, const auto& spec, double fallback) {
                 compiled_layer.property_indices.push_back(static_cast<std::uint32_t>(compiled.property_tracks.size()));
-                auto track = compile_property_track(registry, suffix, layer.id, spec, fallback);
+                auto track = compile_property_track(registry, suffix, layer.id, spec, fallback, compiled.expressions);
                 compiled.graph.add_node(track.node.node_id);
                 
                 // DATA BINDING INTEGRATION:
@@ -389,11 +400,19 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
             add_track(".scale_y", layer.transform.scale_property, layer.transform.scale_y.value_or(1.0));
             add_track(".rotation", layer.transform.rotation_property, layer.transform.rotation.value_or(0.0));
             add_track(".mask_feather", layer.mask_feather, 0.0);
+            add_track(".anchor_point_x", layer.transform.anchor_point, layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->x : 0.0);
+            add_track(".anchor_point_y", layer.transform.anchor_point, layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->y : 0.0);
 
             // Populate Unified Fields
             compiled_layer.track_bindings = layer.track_bindings;
             compiled_layer.time_remap = layer.time_remap;
             compiled_layer.frame_blend = layer.frame_blend;
+
+            // Populate temporal bounds and blend mode from SceneSpec
+            compiled_layer.in_time = layer.in_point;
+            compiled_layer.out_time = layer.out_point;
+            compiled_layer.start_time = layer.start_time;
+            compiled_layer.blend_mode = layer.blend_mode;
 
             compiled_composition.layers.push_back(std::move(compiled_layer));
         }

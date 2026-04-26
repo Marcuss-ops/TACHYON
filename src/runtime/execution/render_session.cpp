@@ -20,11 +20,11 @@ namespace tachyon {
 
 namespace {
 
-output::OutputFramePacket make_output_packet(const ExecutedFrame& frame) {
+output::OutputFramePacket make_output_packet(const ExecutedFrame& frame, double fps) {
     output::OutputFramePacket packet;
     packet.frame_number = frame.frame_number;
     packet.frame = frame.frame.get();
-    packet.metadata.time_seconds = static_cast<double>(frame.frame_number);
+    packet.metadata.time_seconds = frame.frame_number / fps;
     packet.metadata.scene_hash = std::to_string(frame.scene_hash);
     packet.metadata.color_space = "linear_rec709";
     return packet;
@@ -68,13 +68,14 @@ void render_frames_parallel(
             FrameArena arena;
             FrameExecutor executor(arena, cache, nullptr);
             
-            // Create a thread-local context
-            ::tachyon::RenderContext local_context(context.renderer2d.precomp_cache);
-            local_context.media = context.media;
-            local_context.ray_tracer = context.ray_tracer;
-            local_context.policy = context.policy;
-            local_context.surface_pool = context.surface_pool;
-            local_context.renderer2d.font_registry = context.renderer2d.font_registry;
+             // Create a thread-local context
+             ::tachyon::RenderContext local_context(context.renderer2d.precomp_cache);
+             local_context.media = context.media;
+             local_context.ray_tracer = context.ray_tracer;
+             local_context.policy = context.policy;
+             local_context.surface_pool = context.surface_pool;
+             local_context.renderer2d.font_registry = context.renderer2d.font_registry;
+             local_context.renderer2d.media_manager = context.renderer2d.media_manager;
             
             for (;;) {
                 const std::size_t index = next_index.fetch_add(1);
@@ -159,7 +160,8 @@ RenderSessionResult RenderSession::render(
                 continue;
             }
 
-            output::OutputFramePacket packet = make_output_packet(frame);
+             double fps = compiled_scene.compositions.empty() ? 60.0 : static_cast<double>(compiled_scene.compositions.front().fps);
+             output::OutputFramePacket packet = make_output_packet(frame, fps);
             if (!sink->write_frame(packet)) {
                 result.output_error = sink->last_error();
                 break;

@@ -400,8 +400,8 @@ RasterizedFrame2D render_evaluated_composition_2d(
             }
 
             // Final Composite
-            int ox = 0, oy = 0;
-            composite_surface(target_surface, *layer_surface, ox, oy, parse_blend_mode(layer.blend_mode));
+            auto layer_bounds = layer_rect(layer, static_cast<std::int64_t>(state.width), static_cast<std::int64_t>(state.height), res_scale);
+            composite_surface(target_surface, *layer_surface, layer_bounds.x, layer_bounds.y, parse_blend_mode(layer.blend_mode));
         }
     };
 

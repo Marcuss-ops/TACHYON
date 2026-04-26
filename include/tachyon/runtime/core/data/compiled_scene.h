@@ -115,6 +115,7 @@ struct CompiledLayer {
     std::optional<ShapePathSpec> shape_path;
     std::optional<ShapeSpec> shape_spec;
     std::vector<EffectSpec> effects;
+    std::vector<AnimatedEffectSpec> animated_effects;
     std::vector<TextAnimatorSpec> text_animators;
     std::vector<TextHighlightSpec> text_highlights;
     float mask_feather{0.0f};
@@ -144,6 +145,13 @@ struct CompiledLayer {
     std::vector<spec::TrackBinding> track_bindings;
     spec::TimeRemapCurve time_remap;
     spec::FrameBlendMode frame_blend{spec::FrameBlendMode::Linear};
+
+    // Temporal bounds (from SceneSpec)
+    double in_time{0.0};
+    double out_time{0.0};
+    double start_time{0.0};
+    // Blend mode (from SceneSpec)
+    std::string blend_mode{"normal"};
 };
 
 struct CompiledComposition {

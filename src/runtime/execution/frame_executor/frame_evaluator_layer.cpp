@@ -116,6 +116,7 @@ void evaluate_layer(
     state->shape_path = to_shape_path_spec(layer.shape_path);
     state->shape_spec = layer.shape_spec;
     state->effects = layer.effects;
+    state->animated_effects = layer.animated_effects;
     state->precomp_id = layer.precomp_index.has_value() ? std::make_optional(std::to_string(*layer.precomp_index)) : std::nullopt;
     state->track_matte_type = layer.matte_type;
     state->track_matte_layer_index = layer.matte_layer_index.has_value()
@@ -154,7 +155,10 @@ void evaluate_layer(
     state->local_transform.scale.y = static_cast<float>(sample_property(4, 1.0));
     state->local_transform.rotation_rad = static_cast<float>(sample_property(5, 0.0) * (kPi / 180.0f));
     state->mask_feather = static_cast<float>(sample_property(6, 0.0));
-    state->active = state->enabled && state->visible && state->opacity > 0.0;
+    state->local_transform.anchor_point.x = static_cast<float>(sample_property(7, 0.0));
+    state->local_transform.anchor_point.y = static_cast<float>(sample_property(8, 0.0));
+    state->active = state->enabled && state->visible && state->opacity > 0.0
+                   && frame_time_seconds >= layer.in_time && frame_time_seconds < layer.out_time;
 
     executor.m_cache.store_layer(node_key, std::move(state));
 }
