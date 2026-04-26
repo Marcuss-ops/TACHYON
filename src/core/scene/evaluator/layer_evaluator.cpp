@@ -5,6 +5,7 @@
 #include "tachyon/core/scene/math/evaluator_math.h"
 #include "tachyon/core/scene/evaluator/hashing.h"
 #include "tachyon/core/scene/evaluator/camera2d_evaluator.h"
+#include "tachyon/core/shapes/shape_path.h"
 
 #include <algorithm>
 #include <cmath>
@@ -144,6 +145,41 @@ EvaluatedLayerState make_layer_state(
             scale_fallback,
             local_t,
             context.audio_analyzer);
+
+        // Motion Path support
+        if (layer.transform.motion_path_enabled) {
+            // Determine which shape path to use
+            std::optional<shapes::ShapePathSpec> motion_path;
+
+            if (layer.transform.motion_path_shape.has_value()) {
+                // Use inline motion path shape
+                motion_path = layer.transform.motion_path_shape;
+            } else if (layer.transform.motion_path_layer_id.has_value()) {
+                // TODO: Look up shape from referenced layer
+                // This requires access to composition layers
+            }
+
+            if (motion_path.has_value() && !motion_path->empty()) {
+                // Sample progress along path (0.0 to 1.0)
+                double path_progress = sample_scalar(
+                    layer.transform.motion_path_offset_property,
+                    0.0,
+                    local_t,
+                    context.audio_analyzer);
+                path_progress = std::clamp(path_progress, 0.0, 1.0);
+
+                // Sample position from path
+                shapes::Point2D path_pos = motion_path->sample_point(path_progress);
+                evaluated.local_transform.position = {path_pos.x, path_pos.y};
+
+                // Orient to path if enabled
+                if (layer.transform.orient_to_path) {
+                    double tangent_angle = motion_path->sample_tangent_angle(path_progress);
+                    // Convert to degrees and add to existing rotation
+                    evaluated.local_transform.rotation_rad = static_cast<float>(tangent_angle);
+                }
+            }
+        }
 
         // Sample anchor point for 2D
         const math::Vector2 anchor2 = sample_vector2(

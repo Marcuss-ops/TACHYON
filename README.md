@@ -29,7 +29,12 @@ The current focus is on locking architecture, contracts, and subsystem boundarie
 
 ## Local toolchain
 
-If `cmake` or `msbuild` are not visible in a fresh shell, run:
+Tachyon requires:
+- **Visual Studio 2022** (Community/Professional/Enterprise) with C++ desktop development workload
+- **CMake** (installed via Visual Studio or standalone)
+- **Ninja** (installed via Visual Studio or standalone)
+
+If `cmake` or `ninja` are not visible in a fresh shell, run:
 
 ```powershell
 .\scripts\Enable-DevTools.ps1 -PersistUserPath
@@ -37,11 +42,19 @@ If `cmake` or `msbuild` are not visible in a fresh shell, run:
 
 This script adds the local CMake and Visual Studio Build Tools locations to the current session and can persist them to the user PATH.
 
+### CMake location
+
+CMake is typically installed at:
+- Visual Studio 2022: `C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe`
+- Visual Studio 2019: `C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe`
+
+If cmake is not in PATH but Visual Studio is installed, use `build.ps1` which automatically finds CMake.
+
 ## Build
 
 Tachyon uses **Ninja** as the default build system with **CMakePresets** for standardized configurations. The build script `build.ps1` handles all build operations.
 
-### Quick start
+### Quick start (recommended)
 
 ```powershell
 # Clean build (RelWithDebInfo, default)
@@ -53,6 +66,22 @@ Tachyon uses **Ninja** as the default build system with **CMakePresets** for sta
 # Run tests
 .\build.ps1 -RelWithDebInfo -Test
 ```
+
+### Manual build (advanced)
+
+If you prefer manual cmake commands, you must first set up the Visual Studio environment:
+
+```powershell
+# Set up VS environment (REQUIRED for manual commands)
+cmd /c 'call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat" && cmake -G Ninja -B build-ninja -S .'
+
+# Build
+cmd /c 'call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat" && ninja -C build-ninja TachyonCore'
+cmd /c 'call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat" && ninja -C build-ninja tachyon'
+cmd /c 'call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat" && ninja -C build-ninja TachyonTests'
+```
+
+**Note**: Direct cmake/ninja commands require the Visual Studio environment to be loaded first. If you get "cmake not recognized", use `.\build.ps1` instead.
 
 ### Build presets
 

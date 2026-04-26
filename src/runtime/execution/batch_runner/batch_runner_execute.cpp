@@ -76,6 +76,15 @@ ResolutionResult<RenderBatchResult> run_render_batch(const RenderBatchSpec& spec
 
                 if (request.output_override.has_value()) job.output.destination.path = request.output_override->string();
 
+                // Apply variant variables to the render job
+                for (const auto& [key, val] : request.variant_vars) {
+                    if (val.is_string()) {
+                        job.string_variables[key] = val.get<std::string>();
+                    } else if (val.is_number()) {
+                        job.variables[key] = val.get<double>();
+                    }
+                }
+
                 const auto plan_result = build_render_plan(scene, job);
                 if (!plan_result.value.has_value()) { job_result.error = "failed to build render plan"; batch_result.jobs[index] = std::move(job_result); continue; }
 
