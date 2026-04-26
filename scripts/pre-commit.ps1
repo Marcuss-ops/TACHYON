@@ -1,90 +1,36 @@
-# PowerShell pre-commit hook for Tachyon
-# Auto-installs and runs checks before commits
+# PowerShell pre-commit hook installer for Tachyon
+# Usage: .\scripts\pre-commit.ps1 -Install
 
 param([switch]$Install)
 
 $ErrorActionPreference = 'Stop'
 $hookDir = ".git/hooks"
-$hookPath = "$hookDir/pre-commit"
-$scriptPath = "$PSScriptRoot/agent-validate.ps1"
+$scriptPath = (Resolve-Path "$PSScriptRoot\agent-validate.ps1").Path
 
 if ($Install) {
-    Write-Host "Installing pre-commit hook..." -ForegroundColor Cyan
-    
+    Write-Host "Installing git hooks..." -ForegroundColor Cyan
+
     if (-not (Test-Path $hookDir)) {
         Write-Host "Not a git repository!" -ForegroundColor Red
         exit 1
     }
-    
-    # Create PowerShell pre-commit hook
-    $hookContent = @"
-# Tachyon pre-commit hook (PowerShell)
-# Runs quick validation before allowing commit
 
-`$ErrorActionPreference = 'Stop'
+    $preCommitContent = "#!/bin/sh`n# Tachyon pre-commit hook`n# Override: TACHYON_VALIDATE_MODE=normal git commit`nMODE=`"`${TACHYON_VALIDATE_MODE:-quick}`"`nexec powershell -ExecutionPolicy Bypass -File `"$scriptPath`" -Mode `"`$MODE`"`n"
+    Set-Content -Path "$hookDir/pre-commit" -Value $preCommitContent -NoNewline
 
-`$scriptPath = '$scriptPath'
-if (Test-Path `$scriptPath) {
-    powershell -ExecutionPolicy Bypass -File "`$scriptPath" -Quick
-    if (`$LASTEXITCODE -ne 0) {
-        Write-Host "Pre-commit checks failed! Fix errors before committing." -ForegroundColor Red
-        exit 1
-    }
-} else {
-    Write-Host "Warning: agent-validate.ps1 not found" -ForegroundColor Yellow
-}
+    $prePushContent = "#!/bin/sh`n# Tachyon pre-push hook -- full build + all tests`nexec powershell -ExecutionPolicy Bypass -File `"$scriptPath`" -Mode full`n"
+    Set-Content -Path "$hookDir/pre-push" -Value $prePushContent -NoNewline
 
-exit 0
-"@
-    
-    Set-Content -Path $hookPath -Value $hookContent
-    Write-Host "Pre-commit hook installed at $hookPath" -ForegroundColor Green
+    Write-Host "pre-commit installed (default: quick ~15s)" -ForegroundColor Green
+    Write-Host "pre-push   installed (default: full ~3-5min)" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "Usage:" -ForegroundColor Cyan
+    Write-Host "  git commit                               -> quick (~15s)"
+    Write-Host "  TACHYON_VALIDATE_MODE=normal git commit  -> normal (~45s)"
+    Write-Host "  TACHYON_VALIDATE_MODE=full git commit    -> full (~3-5min)"
+    Write-Host "  git push                                 -> full (~3-5min)"
     exit 0
 }
 
-# If not installing, run the validation
-Write-Host "=== Pre-commit Check ===" -ForegroundColor Cyan
-
-# Step 1: Check for forbidden files
-Write-Host "`n[1/4] Checking for forbidden files..." -ForegroundColor Yellow
-$forbidden = @("*.obj", "*.pdb", "*.exe", "*.dll")
-$files = git diff --cached --name-only 2>$null
-foreach ($file in $files) {
-    foreach ($pattern in $forbidden) {
-        if ($file -like $pattern) {
-            Write-Host "ERROR: Attempting to commit forbidden file: $file" -ForegroundColor Red
-            exit 1
-        }
-    }
-}
-
-# Step 2: Quick build check
-Write-Host "`n[2/4] Running quick build check..." -ForegroundColor Yellow
-& .\build.ps1 -Check -ErrorsOnly 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Build check failed! Fix errors before committing." -ForegroundColor Red
-    exit 1
-}
-
-# Step 3: Header smoke tests
-Write-Host "`n[3/4] Running header smoke tests..." -ForegroundColor Yellow
-$output = cmake --build build-ninja --preset relwithdebinfo --target HeaderSmokeTests 2>&1
-$errors = $output | Select-String -Pattern "FAILED|error C"
-if ($errors) {
-    Write-Host "Header smoke tests failed!" -ForegroundColor Red
-    $errors
-    exit 1
-}
-
-# Step 4: Check for inline JSON in headers
-Write-Host "`n[4/4] Checking for inline JSON serialization in headers..." -ForegroundColor Yellow
-$headers = Get-ChildItem -Path "include/tachyon" -Filter "*.h" -Recurse
-foreach ($header in $headers) {
-    $content = Get-Content $header.FullName -Raw
-    if ($content -match "void to_json\s*\(" -or $content -match "void from_json\s*\(") {
-        Write-Host "WARNING: Inline JSON serialization found in $($header.Name)" -ForegroundColor Yellow
-        Write-Host "  Move to corresponding .cpp file (see AGENTS.md rules)" -ForegroundColor Yellow
-    }
-}
-
-Write-Host "`n=== Pre-commit Check PASSED ===" -ForegroundColor Green
+Write-Host "Run with -Install to install pre-commit and pre-push hooks." -ForegroundColor Yellow
+Write-Host "Or run .\scripts\agent-validate.ps1 -Mode quick|normal|full directly."
