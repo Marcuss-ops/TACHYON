@@ -428,6 +428,15 @@ json serialize_composition(const CompositionSpec& comp) {
         }
     }
 
+    // Serialize input_props
+    if (!comp.input_props.empty()) {
+        json ip = json::object();
+        for (const auto& [key, val] : comp.input_props) {
+            ip[key] = val;
+        }
+        j["input_props"] = ip;
+    }
+
     // Serialize components
     if (!comp.components.empty()) {
         j["components"] = json::array();
@@ -460,7 +469,7 @@ json serialize_composition(const CompositionSpec& comp) {
             if (!inst.param_values.empty()) {
                 json pv = json::object();
                 for (const auto& [key, val] : inst.param_values) {
-                    pv[key] = val;
+                    pv[key] = json::parse(val);
                 }
                 i["param_values"] = pv;
             }

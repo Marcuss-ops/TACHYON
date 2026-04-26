@@ -46,7 +46,8 @@ scene_*_test.json
 test_*.json
 
 # IDE / editor
-.vscode/
+.vscode/*
+!.vscode/tasks.json
 .idea/
 *.swp
 *.swo

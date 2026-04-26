@@ -62,6 +62,13 @@ CompositionSpec parse_composition(const json& object, const std::string& path, D
         }
     }
 
+    // Parse input_props
+    if (object.contains("input_props") && object.at("input_props").is_object()) {
+        for (auto& [key, val] : object.at("input_props").items()) {
+            composition.input_props[key] = val;
+        }
+    }
+
     // Parse components
     if (object.contains("components") && object.at("components").is_array()) {
         const auto& comps = object.at("components");
@@ -97,7 +104,7 @@ CompositionSpec parse_composition(const json& object, const std::string& path, D
             read_string(inst, "instance_id", inst_spec.instance_id);
             if (inst.contains("param_values") && inst.at("param_values").is_object()) {
                 for (auto& [key, val] : inst.at("param_values").items()) {
-                    inst_spec.param_values[key] = val;
+                    inst_spec.param_values[key] = val.dump();
                 }
             }
             composition.component_instances.push_back(std::move(inst_spec));

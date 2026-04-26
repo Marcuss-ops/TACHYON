@@ -277,6 +277,11 @@ EvaluatedLayerState make_layer_state(
         evaluated.procedural = layer.procedural;
     }
 
+    // Copy particle spec if present
+    if (layer.particle_spec.has_value()) {
+        evaluated.particle_spec = layer.particle_spec;
+    }
+
     evaluated.effects = layer.effects;
     evaluated.animated_effects = layer.animated_effects;
 

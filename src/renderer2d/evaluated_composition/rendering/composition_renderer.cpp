@@ -27,6 +27,34 @@ using namespace renderer2d;
 
 namespace {
 
+std::optional<EffectSpec> particle_spec_to_effect_spec(const ParticleSpec& spec, double time_seconds) {
+    EffectSpec effect;
+    effect.type = "particle_emitter";
+    effect.enabled = true;
+    const double emission_rate = spec.emission_rate.value.value_or(100.0);
+    const double lifetime = spec.lifetime.value.value_or(2.0);
+    const double count = std::max(1.0, emission_rate * lifetime);
+    effect.scalars["seed"] = static_cast<double>(static_cast<std::uint64_t>(time_seconds * 1000) % 1000000ULL);
+    effect.scalars["count"] = count;
+    effect.scalars["time"] = time_seconds;
+    effect.scalars["lifetime"] = lifetime;
+    effect.scalars["speed"] = spec.start_speed.value.value_or(100.0);
+    effect.scalars["gravity"] = spec.gravity.value.value_or(980.0);
+    effect.scalars["spread_x"] = 1.0;
+    effect.scalars["spread_y"] = 1.0;
+    const double start_s = spec.start_size.value.value_or(5.0);
+    const double end_s = spec.end_size.value.value_or(0.0);
+    effect.scalars["radius_min"] = std::min(start_s, end_s);
+    effect.scalars["radius_max"] = std::max(start_s, end_s);
+    effect.colors["color"] = spec.start_color.value.value_or(ColorSpec{255, 255, 255, 255});
+    effect.scalars["opacity"] = 1.0;
+    effect.scalars["center_x"] = 0.5;
+    effect.scalars["center_y"] = 0.5;
+    effect.scalars["emit_width"] = 1.0;
+    effect.scalars["emit_height"] = 1.0;
+    return effect;
+}
+
 std::optional<std::filesystem::path> resolve_media_source(
     const scene::EvaluatedLayerState& layer,
     const RenderContext2D& context) {
@@ -392,6 +420,16 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     rendered_surfaces,
                     layer.id);
                 *layer_surface = std::move(effect_surface);
+            }
+
+            // Particle effect
+            if (render_context.policy.effects_enabled && layer.particle_spec.has_value()) {
+                auto particle_effect_spec = particle_spec_to_effect_spec(*layer.particle_spec, layer.local_time_seconds);
+                if (particle_effect_spec && particle_effect_spec->enabled) {
+                    EffectParams params = effect_params_from_spec(*particle_effect_spec, render_context.cms.working_profile);
+                    auto particle_surface = host.apply("particle_emitter", *layer_surface, params);
+                    *layer_surface = std::move(particle_surface);
+                }
             }
 
             // Opacity

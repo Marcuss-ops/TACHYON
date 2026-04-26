@@ -5,6 +5,7 @@ param(
     [switch]$Check,
     [switch]$CoreOnly,
     [switch]$TestsOnly,
+    [switch]$Verify,
     [switch]$ErrorsOnly,
     [switch]$Clean,
     [switch]$CleanDeps,
@@ -23,15 +24,12 @@ Set-StrictMode -Version Latest
 if ($Debug -and $Release) {
     throw 'Use either -Debug or -Release, not both.'
 }
-
 if ($Debug -and $RelWithDebInfo) {
     throw 'Use either -Debug or -RelWithDebInfo, not both.'
 }
-
 if ($Release -and $RelWithDebInfo) {
     throw 'Use either -Release or -RelWithDebInfo, not both.'
 }
-
 if ($Check) {
     $buildType = 'relwithdebinfo'
     $CoreOnly = $true
@@ -40,6 +38,7 @@ if ($Check) {
 }
 
 function ConvertTo-CmdArg {
+
     param(
         [Parameter(Mandatory)]
         [string]$Value
@@ -117,6 +116,7 @@ function Get-CommonExecutableCandidates {
             $candidates.Add('C:\Program Files (x86)\CMake\bin\cmake.exe')
             $candidates.Add('C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe')
             $candidates.Add('C:\Program Files\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe')
+            $candidates.Add('C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe')
             $candidates.Add('C:\Program Files\Microsoft Visual Studio\17\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe')
             $candidates.Add('C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe')
         }
@@ -125,12 +125,15 @@ function Get-CommonExecutableCandidates {
             $candidates.Add('C:\Program Files (x86)\Ninja\ninja.exe')
             $candidates.Add('C:\Program Files\CMake\bin\ninja.exe')
             $candidates.Add('C:\Program Files (x86)\CMake\bin\ninja.exe')
+            $candidates.Add('C:\Program Files\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja\ninja.exe')
+            $candidates.Add('C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja\ninja.exe')
         }
         'vcvars64.bat' {
-            $candidates.Add('C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat')
-            $candidates.Add('C:\Program Files\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat')
-            $candidates.Add('C:\Program Files\Microsoft Visual Studio\17\Community\VC\Auxiliary\Build\vcvars64.bat')
             $candidates.Add('C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat')
+            $candidates.Add('C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat')
+            $candidates.Add('C:\Program Files\Microsoft Visual Studio\17\Community\VC\Auxiliary\Build\vcvars64.bat')
+            $candidates.Add('C:\Program Files\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat')
+            $candidates.Add('C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat')
         }
     }
     $roots = @(
@@ -337,5 +340,159 @@ if ($Test) {
     $exitCode = $LASTEXITCODE
     if ($exitCode -ne 0) {
         throw "Tests failed with exit code $exitCode"
+    }
+}
+
+# -Verify mode: Lightweight syntax check using cl.exe /Zs
+if ($Verify) {
+    Write-Host "`n=== Verify Mode (Syntax Check) ===" -ForegroundColor Cyan
+    
+    # Check if compile_commands.json exists
+    $compileDbPath = Join-Path $buildDir 'compile_commands.json'
+    if (-not (Test-Path $compileDbPath)) {
+        Write-Host "compile_commands.json not found. Run .\build.ps1 -Check first." -ForegroundColor Red
+        exit 1
+    }
+    
+    # Get modified files
+    $modifiedFiles = @()
+    if ($TestFilter) {
+        $modifiedFiles = Get-ChildItem -Path "src", "include" -Filter "*.cpp" -Recurse | 
+            Where-Object { $_.Name -match $TestFilter } | 
+            Select-Object -ExpandProperty FullName
+    } else {
+        $gitStatus = git status --porcelain 2>$null
+        if ($gitStatus) {
+            $modifiedFiles = $gitStatus | ForEach-Object { $_.Substring(3) } | 
+                Where-Object { $_ -match '\.(cpp|h)$' } | 
+                ForEach-Object { Join-Path (Get-Location) $_ }
+        }
+        
+        if (-not $modifiedFiles -or $modifiedFiles.Count -eq 0) {
+            Write-Host "No modified files found. Checking all source files..." -ForegroundColor Yellow
+            $modifiedFiles = Get-ChildItem -Path "src", "include" -Filter "*.cpp" -Recurse | 
+                Select-Object -ExpandProperty FullName
+        }
+    }
+    
+    Write-Host "Checking $($modifiedFiles.Count) files..." -ForegroundColor Yellow
+    
+    # Read compile_commands.json
+    $compileDb = Get-Content $compileDbPath -Raw | ConvertFrom-Json
+    
+    $totalErrors = 0
+    foreach ($file in $modifiedFiles) {
+        $relativePath = $file.Substring((Get-Location).Path.Length + 1)
+        $entry = $compileDb | Where-Object { 
+            $_.file -eq $relativePath -or $_.file -eq ($relativePath -replace '\\', '/') 
+        } | Select-Object -First 1
+        
+        if (-not $entry) {
+            Write-Host "  Skipping (no compile entry): $relativePath" -ForegroundColor Yellow
+            continue
+        }
+        
+        # Build cl.exe command with /Zs (syntax check only)
+        $command = $entry.command
+        # Add /Zs after the compiler path
+        $command = $command -replace '^(.+?cl\.exe)', '$1 /Zs'
+        # Remove output file arguments
+        $command = $command -replace '/Fo"[^"]+"\s?', ''
+        $command = $command -replace '/c', '/c'  # Keep /c as /Zs implies it
+        
+        # Run syntax check
+        $tempBat = [System.IO.Path]::GetTempFileName() + ".bat"
+        $batContent = @"
+@echo off
+call "$vcvars" >nul 2>&1
+$command
+"@
+        Set-Content -Path $tempBat -Value $batContent
+        
+        $output = cmd /c $tempBat 2>&1
+        Remove-Item $tempBat -Force
+        
+        $errors = $output | Select-String -Pattern "error C|fatal error"
+        
+        if ($errors) {
+            Write-Host "  ERROR in $relativePath" -ForegroundColor Red
+            $errors | ForEach-Object { Write-Host "    $_" -ForegroundColor Red }
+            $totalErrors++
+        } else {
+            Write-Host "  OK: $relativePath" -ForegroundColor Green
+        }
+    }
+    
+    Write-Host "`n=== Verify Complete ===" -ForegroundColor Cyan
+    if ($totalErrors -gt 0) {
+        Write-Host "$totalErrors file(s) with errors" -ForegroundColor Red
+        exit 1
+    } else {
+        Write-Host "All files passed syntax check!" -ForegroundColor Green
+    }
+
+    # Get modified files
+    $modifiedFiles = @()
+    if ($TestFilter) {
+        # Use TestFilter as file pattern
+        $modifiedFiles = Get-ChildItem -Path "src", "include" -Filter "*.cpp" -Recurse | 
+            Where-Object { $_.Name -match $TestFilter } | 
+            Select-Object -ExpandProperty FullName
+    } else {
+        # Get git modified files
+        $gitStatus = git status --porcelain 2>$null
+        if ($gitStatus) {
+            $modifiedFiles = $gitStatus | ForEach-Object { $_.Substring(3) } | Where-Object { $_ -match '\.(cpp|h)$' } | ForEach-Object { Join-Path (Get-Location) $_ }
+        }
+        
+        # If no modified files, check all source files
+        if (-not $modifiedFiles -or $modifiedFiles.Count -eq 0) {
+            Write-Host "No modified files found. Checking all source files..." -ForegroundColor Yellow
+            $modifiedFiles = Get-ChildItem -Path "src", "include" -Filter "*.cpp" -Recurse | Select-Object -ExpandProperty FullName
+        }
+    }
+    
+    Write-Host "Checking $($modifiedFiles.Count) files..." -ForegroundColor Yellow
+    
+    # Read compile_commands.json
+    $compileDb = Get-Content $compileDbPath -Raw | ConvertFrom-Json
+    
+    $totalErrors = 0
+    foreach ($file in $modifiedFiles) {
+        $relativePath = $file.Substring((Get-Location).Path.Length + 1)
+        $entry = $compileDb | Where-Object { $_.file -eq $relativePath -or $_.file -eq ($relativePath -replace '\\', '/') } | Select-Object -First 1
+        
+        if (-not $entry) {
+            Write-Host "  Skipping (no compile entry): $relativePath" -ForegroundColor Yellow
+            continue
+        }
+        
+        # Build cl.exe command with /Zs (syntax check only)
+        $clCmd = $entry.command -replace '/c', '/Zs /c' -replace '"([^"]+\.obj)"', '' -replace '/Fo"[^\"]+"', ''
+        
+        # Run syntax check using Invoke-WithVcvars
+        try {
+            $output = Invoke-WithVcvars -Vcvars $vcvars -Executable "cmd" -Arguments @('/c', $clCmd) -PassThru 2>&1
+            $errors = $output | Select-String -Pattern "error C|fatal error"
+            
+            if ($errors) {
+                Write-Host "  ERROR in $relativePath" -ForegroundColor Red
+                $errors | ForEach-Object { Write-Host "    $_" -ForegroundColor Red }
+                $totalErrors++
+            } else {
+                Write-Host "  OK: $relativePath" -ForegroundColor Green
+            }
+        } catch {
+            Write-Host "  ERROR checking $relativePath`: $_" -ForegroundColor Red
+            $totalErrors++
+        }
+    }
+    
+    Write-Host "`n=== Verify Complete ===" -ForegroundColor Cyan
+    if ($totalErrors -gt 0) {
+        Write-Host "$totalErrors file(s) with errors" -ForegroundColor Red
+        exit 1
+    } else {
+        Write-Host "All files passed syntax check!" -ForegroundColor Green
     }
 }

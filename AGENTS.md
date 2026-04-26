@@ -11,6 +11,39 @@
 - Do not commit generated files.
 - Do not commit build-ninja, .cache, output, node_modules, *.obj, *.pdb, *.exe, *.dll.
 
+## Available Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `.\scripts\setup-dev.ps1` | One-time development environment setup |
+| `.\scripts\enable-vs-env.ps1` | Load VS environment into current session (run once per shell) |
+| `.\scripts\agent-validate.ps1 -Scope "X"` | Full validation (header + core + targeted + full) |
+| `.\scripts\pre-commit.ps1 -Install` | Install pre-commit hook |
+| `.\scripts\check-test-naming.ps1` | Check test naming conventions |
+| `.\scripts\scope-validate.ps1 -Scope "X"` | Verify only scope files modified |
+
+## Windows Build Friction Fixes
+
+**Problem**: Direct `ninja`/`cl.exe` commands fail because VS environment isn't loaded.
+
+**Solution 1: Use build.ps1 (recommended)**
+```powershell
+.\build.ps1 -Check          # Builds TachyonCore (auto-loads VS env)
+.\build.ps1 -Verify         # Syntax check only (uses cl.exe /Zs)
+```
+
+**Solution 2: Load VS environment into session**
+```powershell
+.\scripts\enable-vs-env.ps1   # Now ninja, cmake, cl.exe work directly
+ninja -C build-ninja TachyonCore  # Now works!
+```
+
+**Solution 3: Lightweight syntax check**
+```powershell
+.\build.ps1 -Verify -TestFilter "Component"  # Check files matching pattern
+.\build.ps1 -Verify                           # Check modified files only
+```
+
 ## Build commands
 
 Fast check:
@@ -53,6 +86,18 @@ Quick error check:
 
 ```powershell
 .\build.ps1 -Check -ErrorsOnly
+```
+
+Header smoke tests (catches header errors early):
+
+```powershell
+cmake --build build-ninja --preset relwithdebinfo --target HeaderSmokeTests
+```
+
+Full validation script for agents:
+
+```powershell
+.\scripts\agent-validate.ps1 -Scope "Component"
 ```
 
 ## Expected workflow
