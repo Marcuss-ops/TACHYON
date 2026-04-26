@@ -1,5 +1,6 @@
 build/
 build-ninja/
+.cache/
 out/
 output/
 tests/output/actual/
@@ -14,18 +15,18 @@ tests/output/actual/
 .vs/
 
 # Compiled objects (should be in build directory only)
-# Uncomment if stray files appear outside build-ninja:
-# *.obj
-# *.pdb
-# *.idb
-# *.ilk
-# *.exp
-# *.lib
-# *.dll
-# *.exe
+*.obj
+*.pdb
+*.idb
+*.ilk
+*.exp
+*.lib
+*.dll
+*.exe
 
 # Logs
 logs/
+build_verbose.log
 
 # Temporary files
 *.tmp
