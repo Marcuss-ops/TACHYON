@@ -42,7 +42,7 @@ struct ComponentSpec {
 struct ComponentInstanceSpec {
     std::string component_id;
     std::string instance_id; // unique id for this instance
-    std::map<std::string, nlohmann::json> param_values; // provided values for params
+    std::map<std::string, std::string> param_values; // provided values for params (JSON strings)
 };
 
 struct CompositionSpec {

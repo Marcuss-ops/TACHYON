@@ -5,6 +5,11 @@
 
 namespace tachyon::renderer2d {
 
+static float smoothstep(float edge0, float edge1, float x) {
+    float t = std::clamp((x - edge0) / (edge1 - edge0), 0.0f, 1.0f);
+    return t * t * (3.0f - 2.0f * t);
+}
+
 Framebuffer SDFShapeRasterizer::rasterize(const spec::ShapeSpec& shape_spec, int width, int height) {
     Framebuffer fb(width, height);
     if (width <= 0 || height <= 0) return fb;
@@ -29,12 +34,12 @@ Framebuffer SDFShapeRasterizer::rasterize(const spec::ShapeSpec& shape_spec, int
     // SDF for rounded rectangle
     for (int py = 0; py < height; ++py) {
         for (int px = 0; px < width; ++px) {
-            float px = static_cast<float>(px);
-            float py = static_cast<float>(py);
+            float fx = static_cast<float>(px);
+            float fy = static_cast<float>(py);
 
             // Distance to rectangle boundary
-            float dx = std::abs(px - (rect_x + rect_w * 0.5f)) - rect_w * 0.5f;
-            float dy = std::abs(py - (rect_y + rect_h * 0.5f)) - rect_h * 0.5f;
+            float dx = std::abs(fx - (rect_x + rect_w * 0.5f)) - rect_w * 0.5f;
+            float dy = std::abs(fy - (rect_y + rect_h * 0.5f)) - rect_h * 0.5f;
 
             float dist;
             if (radius > 0.0f && dx < 0.0f && dy < 0.0f) {
@@ -55,7 +60,7 @@ Framebuffer SDFShapeRasterizer::rasterize(const spec::ShapeSpec& shape_spec, int
 
             Color c = shape_spec.fill_color;
             c.a = static_cast<uint8_t>(alpha * 255.0f);
-            fb.pixel(static_cast<uint32_t>(px), static_cast<uint32_t>(py)) = c;
+            fb.pixel(static_cast<uint32_t>(fx), static_cast<uint32_t>(fy)) = c;
         }
     }
 

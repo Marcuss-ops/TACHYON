@@ -118,6 +118,7 @@ struct EvaluatedLayerState {
     std::optional<GradientSpec> gradient_fill;
     std::optional<GradientSpec> gradient_stroke;
     std::optional<ProceduralSpec> procedural;
+    std::optional<ParticleSpec> particle_spec;
     std::optional<std::string> subtitle_path;
     std::optional<std::string> word_timestamp_path;
     std::optional<ColorSpec> subtitle_outline_color;
