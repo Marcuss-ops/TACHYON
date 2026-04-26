@@ -42,7 +42,7 @@ if (Test-Path $includeDir) {
     $headers = Get-ChildItem -Path $includeDir -Filter "*.h" -Recurse
     foreach ($header in $headers) {
         $content = Get-Content $header.FullName -Raw
-        if ($content -match "void to_json\s*\(" -or $content -match "void from_json\s*\(") {
+        if ($content -match "void to_json\s*\([^)]*\)\s*\{" -or $content -match "void from_json\s*\([^)]*\)\s*\{") {
             Write-Host "WARNING: inline JSON in $($header.Name) -- move to .cpp" -ForegroundColor Yellow
         }
     }

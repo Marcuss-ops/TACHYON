@@ -49,14 +49,9 @@ inline std::ostream& operator<<(std::ostream& out, const Vector2& v) {
     return out << "(" << v.x << ", " << v.y << ")";
 }
 
-inline void to_json(nlohmann::json& j, const Vector2& v) {
-    j = nlohmann::json{{"x", v.x}, {"y", v.y}};
-}
-
-inline void from_json(const nlohmann::json& j, Vector2& v) {
-    if (j.contains("x") && j.at("x").is_number()) v.x = j.at("x").get<float>();
-    if (j.contains("y") && j.at("y").is_number()) v.y = j.at("y").get<float>();
-}
+// JSON serialization declarations (implementations in vector2_serialize.cpp)
+void to_json(nlohmann::json& j, const Vector2& v);
+void from_json(const nlohmann::json& j, Vector2& v);
 
 } // namespace math
 } // namespace tachyon
