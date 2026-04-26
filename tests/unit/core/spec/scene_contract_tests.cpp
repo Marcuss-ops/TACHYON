@@ -88,9 +88,9 @@ bool run_scene_contract_tests() {
             const auto& l2 = scene2.compositions[0].layers[0];
             check_true(l1.mask_paths.size() == l2.mask_paths.size(), "roundtrip_mask: mask_paths count matches");
             if (l1.mask_paths.size() == l2.mask_paths.size() && !l1.mask_paths.empty()) {
-                check_true(l1.mask_paths[0].is_closed == l2.mask_paths[0].is_closed, "roundtrip_mask: mask_paths is_closed matches");
-                check_true(l1.mask_paths[0].is_inverted == l2.mask_paths[0].is_inverted, "roundtrip_mask: mask_paths is_inverted matches");
-                check_true(l1.mask_paths[0].vertices.size() == l2.mask_paths[0].vertices.size(), "roundtrip_mask: vertices count matches");
+                check_true(l1.mask_paths[0].value.is_closed == l2.mask_paths[0].value.is_closed, "roundtrip_mask: mask_paths is_closed matches");
+                check_true(l1.mask_paths[0].value.is_inverted == l2.mask_paths[0].value.is_inverted, "roundtrip_mask: mask_paths is_inverted matches");
+                check_true(l1.mask_paths[0].value.vertices.size() == l2.mask_paths[0].value.vertices.size(), "roundtrip_mask: vertices count matches");
             }
         }
     }
