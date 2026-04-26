@@ -1,0 +1,6 @@
+CompileFlags:
+  CompilationDatabase: build-ninja
+
+Diagnostics:
+  UnusedIncludes: Strict
+  MissingIncludes: Strict

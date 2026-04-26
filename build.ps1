@@ -2,6 +2,9 @@ param(
     [switch]$Debug,
     [switch]$Release,
     [switch]$RelWithDebInfo,
+    [switch]$Check,
+    [switch]$CoreOnly,
+    [switch]$TestsOnly,
     [switch]$Clean,
     [switch]$CleanDeps,
     [switch]$Reconfigure,
@@ -28,7 +31,12 @@ if ($Release -and $RelWithDebInfo) {
     throw 'Use either -Release or -RelWithDebInfo, not both.'
 }
 
-$buildType = if ($Release) { 'release' } elseif ($RelWithDebInfo) { 'relwithdebinfo' } else { 'debug' }
+if ($Check) {
+    $buildType = 'relwithdebinfo'
+    $CoreOnly = $true
+} else {
+    $buildType = if ($Release) { 'release' } elseif ($RelWithDebInfo) { 'relwithdebinfo' } else { 'debug' }
+}
 
 function ConvertTo-CmdArg {
     param(
@@ -279,7 +287,13 @@ if ($sccache) {
     & $sccache --zero-stats | Out-Null
 }
 
-$buildArgs = @('--build', '--preset', $buildType)
+if ($CoreOnly) {
+    $buildArgs = @('--build', '--preset', $buildType, '--target', 'TachyonCore')
+} elseif ($TestsOnly) {
+    $buildArgs = @('--build', '--preset', $buildType, '--target', 'TachyonTests')
+} else {
+    $buildArgs = @('--build', '--preset', $buildType)
+}
 Invoke-WithVcvars -Vcvars $vcvars -Executable $cmake -Arguments $buildArgs
 
 if ($ShowSccacheStats -and $sccache) {
