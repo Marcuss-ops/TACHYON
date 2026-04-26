@@ -5,6 +5,7 @@ param(
     [switch]$Check,
     [switch]$CoreOnly,
     [switch]$TestsOnly,
+    [switch]$ErrorsOnly,
     [switch]$Clean,
     [switch]$CleanDeps,
     [switch]$Reconfigure,
@@ -161,16 +162,22 @@ function Invoke-WithVcvars {
     param(
         [Parameter(Mandatory)][string]$Vcvars,
         [Parameter(Mandatory)][string]$Executable,
-        [Parameter(Mandatory)][string[]]$Arguments
+        [Parameter(Mandatory)][string[]]$Arguments,
+        [switch]$PassThru
     )
     $commandParts = @('call', (ConvertTo-CmdArg $vcvars), '>nul', '&&', (ConvertTo-CmdArg $Executable))
     foreach ($argument in $Arguments) {
         $commandParts += (ConvertTo-CmdArg $argument)
     }
     $cmdLine = $commandParts -join ' '
-    & cmd.exe /d /s /c $cmdLine
-    if ($LASTEXITCODE -ne 0) {
-        throw "Command failed with exit code $($LASTEXITCODE): $Executable"
+    if ($PassThru) {
+        $output = & cmd.exe /d /s /c $cmdLine 2>&1
+        $output
+    } else {
+        & cmd.exe /d /s /c $cmdLine
+        if ($LASTEXITCODE -ne 0) {
+            throw "Command failed with exit code $($LASTEXITCODE): $Executable"
+        }
     }
 }
 
@@ -244,11 +251,13 @@ if ($SccacheExe) {
     }
 }
 
-Write-Host "vcvars: $vcvars"
-Write-Host "cmake : $cmake"
-Write-Host "ninja : $ninja"
-if ($sccache) {
-    Write-Host "sccache: $sccache"
+if (-not $ErrorsOnly) {
+    Write-Host "vcvars: $vcvars"
+    Write-Host "cmake : $cmake"
+    Write-Host "ninja : $ninja"
+    if ($sccache) {
+        Write-Host "sccache: $sccache"
+    }
 }
 
 if ($CleanDeps) {
@@ -294,7 +303,16 @@ if ($CoreOnly) {
 } else {
     $buildArgs = @('--build', '--preset', $buildType)
 }
-Invoke-WithVcvars -Vcvars $vcvars -Executable $cmake -Arguments $buildArgs
+
+if ($ErrorsOnly) {
+    $output = Invoke-WithVcvars -Vcvars $vcvars -Executable $cmake -Arguments $buildArgs -PassThru
+    $output | Select-String -Pattern "error C|fatal error|FAILED|Error:"
+    if ($LASTEXITCODE -ne 0) {
+        throw "Command failed with exit code $($LASTEXITCODE): $cmake"
+    }
+} else {
+    Invoke-WithVcvars -Vcvars $vcvars -Executable $cmake -Arguments $buildArgs
+}
 
 if ($ShowSccacheStats -and $sccache) {
     & $sccache --show-stats

@@ -1,78 +1,97 @@
-# Tachyon Build Rules
+# AGENTS.md
 
-## Build System
+## Rules
 
-**Ninja is the standard build system for Tachyon.**
+- Always start from a clean branch.
+- Do not push directly to main.
+- Keep changes small and focused.
+- Search existing code before adding new systems.
+- Prefer extending existing architecture over duplicating logic.
+- Do not modify unrelated files.
+- Do not commit generated files.
+- Do not commit build-ninja, .cache, output, node_modules, *.obj, *.pdb, *.exe, *.dll.
 
-All builds must use Ninja generator with CMake. The build directory is `build-ninja`.
+## Build commands
 
-### Recommended: Use build.ps1 (easiest)
-
-The `build.ps1` script automatically finds CMake/Ninja in Visual Studio and handles all setup:
+Fast check:
 
 ```powershell
-# Clean build (default: RelWithDebInfo)
-.\build.ps1 -RelWithDebInfo -Clean
+.\build.ps1 -Check
+```
 
-# Build without cleaning
+Core build:
+
+```powershell
+.\build.ps1 -RelWithDebInfo -CoreOnly
+```
+
+Full build:
+
+```powershell
 .\build.ps1 -RelWithDebInfo
+```
 
-# Run tests
+Tests:
+
+```powershell
 .\build.ps1 -RelWithDebInfo -Test
 ```
 
-### Manual Build (advanced)
+Targeted tests:
 
-If you prefer manual cmake commands, you MUST set up the Visual Studio environment first:
-
-```bash
-# Configure (first time only)
-cmd /c "call ""C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat"" && cmake -G Ninja -B build-ninja -S ."
-
-# Build
-cmd /c "call ""C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat"" && ninja -C build-ninja TachyonCore"
-cmd /c "call ""C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat"" && ninja -C build-ninja tachyon"
-cmd /c "call ""C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat"" && ninja -C build-ninja TachyonTests"
+```powershell
+.\build.ps1 -RelWithDebInfo -TestFilter Component
 ```
 
-**Important**: Direct `cmake` or `ninja` commands will fail with "command not found" unless the VS environment is loaded first. If you get this error, use `.\build.ps1` instead.
+Clean deps only when necessary:
 
-### Environment Setup
-
-All manual build commands must be run after setting up the Visual Studio environment:
-
-```bash
-call "C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat" >nul
+```powershell
+.\build.ps1 -RelWithDebInfo -CleanDeps
 ```
 
-### CMake Configuration
+Quick error check:
 
-- Generator: `Ninja` (not Visual Studio)
-- Build directory: `build-ninja` (not `build`)
-- All CMakePresets must use Ninja generator
+```powershell
+.\build.ps1 -Check -ErrorsOnly
+```
 
-### Scripts
+## Expected workflow
 
-- `build.ps1` - **Recommended** - Uses Ninja and `build-ninja` directory, auto-finds CMake/Ninja
-- `run_all_tests.bat` - Uses `build-ninja` directory for test executables
-- All custom build scripts must use Ninja
+1. Inspect relevant files.
+2. Make minimal changes.
+3. Run `.\build.ps1 -Check`.
+4. Fix compile errors.
+5. Run targeted tests.
+6. Run full build only after targeted checks pass.
+7. Summarize changed files and validation commands.
 
-### Why Ninja
+## Architecture rules
 
-- Faster incremental builds
-- Better parallelization
-- Simpler build output
-- Consistent with CI/CD pipelines
+- Prefer small, local changes.
+- Do not introduce new subsystems unless explicitly requested.
+- Do not duplicate existing parsers, serializers, registries, caches, or render paths.
+- If a feature already exists in another layer, extend it instead of recreating it.
+- Keep headers lightweight.
+- Avoid inline heavy serialization logic in headers.
+- Use `nlohmann::json` only in `.cpp` files, not in headers.
+- Do not add inline `to_json`/`from_json` in header files.
 
-### Troubleshooting
+## Example prompt for agents
 
-**"cmake is not recognized"**
-- Use `.\build.ps1` which automatically finds CMake in Visual Studio installation
-- Or run `cmd /c "call "C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat" && cmake ..."`
+```
+Implement Component System serialization.
 
-**Build fails with "epsilon" or unused variable warnings treated as errors**
-- Ensure code compiles with `/WX` (warnings as errors)
-- Remove unused variables or use `(void)var;` to silence
+Scope:
+- include/tachyon/core/spec/schema/objects/composition_spec.h
+- src/core/spec/scene_spec_parse.cpp
+- src/core/spec/scene_spec_serialize.cpp
+- tests/unit/core/spec/component_spec_tests.cpp
 
-**CMake not found in PowerShell**
-- Run `.\scripts\Enable-DevTools.ps1 -PersistUserPath` to add CMake to PATH permanently
+Rules:
+- Do not add inline JSON serialization in headers.
+- Use nlohmann::json only in .cpp files.
+- Follow existing scene spec parse/serialize patterns.
+- Run .\build.ps1 -Check.
+- Run component-related tests.
+- Do not run CleanDeps unless dependency configuration changed.
+```
