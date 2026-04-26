@@ -12,10 +12,7 @@ Write-Host "=== Tachyon Agent Validation ===" -ForegroundColor Cyan
 
 # Step 1: Header smoke tests
 Write-Host "`n[1/4] Running header smoke tests..." -ForegroundColor Yellow
-Write-Host "DEBUG CWD: $(Get-Location)" -ForegroundColor Magenta
-Write-Host "DEBUG build.ps1 exists: $(Test-Path '.\build.ps1')" -ForegroundColor Magenta
-try { & .\build.ps1 -RelWithDebInfo -TestsOnly } catch { Write-Host "DEBUG: threw: $_" -ForegroundColor Magenta }
-Write-Host "DEBUG: LASTEXITCODE=$LASTEXITCODE  ?=$?" -ForegroundColor Magenta
+& .\build.ps1 -RelWithDebInfo -TestsOnly
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Header smoke tests failed!" -ForegroundColor Red
     exit 1
