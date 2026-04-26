@@ -41,18 +41,14 @@ if(MSVC)
 endif()
 
 if(TACHYON_ENABLE_ASAN)
-if(MSVC)
-    add_compile_options(/Wall /Wextra /Wpedantic)
-else()
-    add_compile_options(-Wall -Wextra -Wpedantic -fPIC)
-endif()
+    # ASAN-specific flags here if needed
 endif()
 
 # Determine platform and compiler details
 if(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
     add_definitions(-DNOMINMAX)
-    add_compile_options(/wd4324) # structure was padded due to alignment specifier (Embree)
+    add_compile_options(/W4 /wd4324) # /W4 enables common warnings, wd4324 disables padding warning
 else()
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()

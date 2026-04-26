@@ -70,6 +70,8 @@ add_library(TachyonCore SHARED
     core/spec/json_parse_helpers.cpp
     core/spec/layer_parse_json.cpp
     core/spec/property_parse_json.cpp
+    core/spec/property_spec_serialize.cpp
+    core/spec/text_animator_spec_serialize.cpp
     core/spec/compilation/preset_compiler.cpp
     core/spec/compilation/scene_compiler.cpp
     core/spec/schema/scene_spec.cpp
