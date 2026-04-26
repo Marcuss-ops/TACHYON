@@ -118,6 +118,9 @@ struct LayerSpec {
     double bevel_size{0.0};
     double hole_bevel_ratio{0.0};
     
+    // Variable font axes animation (e.g., wght, wdth, opsz)
+    std::map<std::string, AnimatedScalarSpec> font_axes;
+    
     // Subtitle & Word Timestamps
     std::string subtitle_path;
     std::string word_timestamp_path;

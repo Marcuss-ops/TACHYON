@@ -316,6 +316,14 @@ void parse_layer(const json& object, LayerSpec& out, const std::string& path, Di
     read_string(object, "font_id", out.font_id);
     parse_optional_scalar_property(object, "font_size", out.font_size, path, diagnostics);
     read_string(object, "alignment", out.alignment);
+    // Variable font axes
+    if (object.contains("font_axes") && object.at("font_axes").is_object()) {
+        for (auto& [axis_tag, axis_value] : object.at("font_axes").items()) {
+            AnimatedScalarSpec axis_spec;
+            parse_optional_scalar_property(axis_value, "", axis_spec, path, diagnostics);
+            out.font_axes[axis_tag] = axis_spec;
+        }
+    }
     parse_optional_color_property(object, "fill_color", out.fill_color, path, diagnostics);
     parse_optional_color_property(object, "stroke_color", out.stroke_color, path, diagnostics);
     read_number(object, "stroke_width", out.stroke_width);
