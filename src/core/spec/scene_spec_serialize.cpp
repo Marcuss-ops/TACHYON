@@ -232,6 +232,13 @@ json serialize_layer(const LayerSpec& layer) {
     if (!layer.font_id.empty()) j["font_id"] = layer.font_id;
     if (!layer.font_size.empty()) j["font_size"] = serialize_scalar_property(layer.font_size);
     if (!layer.alignment.empty()) j["alignment"] = layer.alignment;
+    if (!layer.font_axes.empty()) {
+        json axes_json = json::object();
+        for (const auto& [axis_tag, axis_spec] : layer.font_axes) {
+            axes_json[axis_tag] = serialize_scalar_property(axis_spec);
+        }
+        j["font_axes"] = axes_json;
+    }
     if (!layer.fill_color.empty()) j["fill_color"] = serialize_color_property(layer.fill_color);
     if (!layer.stroke_color.empty()) j["stroke_color"] = serialize_color_property(layer.stroke_color);
     if (layer.extrusion_depth != 0.0) j["extrusion_depth"] = layer.extrusion_depth;
