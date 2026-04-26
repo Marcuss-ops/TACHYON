@@ -5,6 +5,7 @@
 #include "tachyon/core/animation/easing.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/core/spec/schema/common/common_spec.h"
+#include "tachyon/renderer2d/path/mask_path.h"
 
 #include <vector>
 #include <optional>
@@ -62,6 +63,9 @@ struct AnimatedScalarSpec {
     double audio_max{1.0};
     std::optional<std::string> expression;
 
+    AnimatedScalarSpec() = default;
+    explicit AnimatedScalarSpec(double val) : value(val) {}
+
     [[nodiscard]] bool empty() const noexcept {
         return !value.has_value() && keyframes.empty() && !audio_band.has_value() && !expression.has_value();
     }
@@ -106,8 +110,97 @@ struct AnimatedColorSpec {
     std::optional<ColorSpec> value;
     std::vector<ColorKeyframeSpec> keyframes;
 
+    AnimatedColorSpec() = default;
+    explicit AnimatedColorSpec(const ColorSpec& val) : value(val) {}
+
     [[nodiscard]] bool empty() const noexcept {
         return !value.has_value() && keyframes.empty();
+    }
+};
+
+// Mask path keyframe for animated mask paths
+struct MaskPathKeyframeSpec {
+    double time{0.0};
+    renderer2d::MaskPath value;
+    animation::EasingPreset easing{animation::EasingPreset::None};
+    animation::CubicBezierEasing bezier{animation::CubicBezierEasing::linear()};
+    animation::SpringEasing spring{}; ///< Spring parameters (used when easing == Spring)
+    
+    double speed_in{0.0};
+    double influence_in{33.333333333};
+    double speed_out{0.0};
+    double influence_out{33.333333333};
+};
+
+// Animated mask path with keyframe support
+struct AnimatedMaskPathSpec {
+    std::optional<renderer2d::MaskPath> value;
+    std::vector<MaskPathKeyframeSpec> keyframes;
+    
+    [[nodiscard]] bool empty() const noexcept {
+        return !value.has_value() && keyframes.empty();
+    }
+    
+    /**
+     * @brief Evaluate the mask path at a specific time.
+     * @param time_seconds Time in seconds.
+     * @return Evaluated MaskPath (with morphing applied if keyframes present).
+     */
+    [[nodiscard]] renderer2d::MaskPath evaluate(double time_seconds) const {
+        if (keyframes.empty()) {
+            return value.value_or(renderer2d::MaskPath{});
+        }
+        
+        // Find surrounding keyframes
+        if (time_seconds <= keyframes.front().time) {
+            return keyframes.front().value;
+        }
+        if (time_seconds >= keyframes.back().time) {
+            return keyframes.back().value;
+        }
+        
+        for (size_t i = 0; i < keyframes.size() - 1; ++i) {
+            const auto& kf1 = keyframes[i];
+            const auto& kf2 = keyframes[i + 1];
+            
+            if (time_seconds >= kf1.time && time_seconds <= kf2.time) {
+                double t = (time_seconds - kf1.time) / (kf2.time - kf1.time);
+                t = std::clamp(t, 0.0, 1.0);
+                
+                // Apply easing if not None
+                if (kf1.easing != animation::EasingPreset::None) {
+                    t = animation::apply_easing(t, kf1.easing, kf1.bezier, kf1.spring);
+                }
+                
+                // Interpolate between the two mask paths
+                renderer2d::MaskPath result = kf1.value;
+                const auto& v1 = kf1.value.vertices;
+                const auto& v2 = kf2.value.vertices;
+                size_t num_vertices = std::min(v1.size(), v2.size());
+                
+                if (num_vertices > 0) {
+                    result.vertices.clear();
+                    result.vertices.reserve(num_vertices);
+                    for (size_t j = 0; j < num_vertices; ++j) {
+                        renderer2d::MaskVertex v;
+                        v.position.x = v1[j].position.x + (v2[j].position.x - v1[j].position.x) * static_cast<float>(t);
+                        v.position.y = v1[j].position.y + (v2[j].position.y - v1[j].position.y) * static_cast<float>(t);
+                        v.in_tangent.x = v1[j].in_tangent.x + (v2[j].in_tangent.x - v1[j].in_tangent.x) * static_cast<float>(t);
+                        v.in_tangent.y = v1[j].in_tangent.y + (v2[j].in_tangent.y - v1[j].in_tangent.y) * static_cast<float>(t);
+                        v.out_tangent.x = v1[j].out_tangent.x + (v2[j].out_tangent.x - v1[j].out_tangent.x) * static_cast<float>(t);
+                        v.out_tangent.y = v1[j].out_tangent.y + (v2[j].out_tangent.y - v1[j].out_tangent.y) * static_cast<float>(t);
+                        v.feather_inner = v1[j].feather_inner + (v2[j].feather_inner - v1[j].feather_inner) * static_cast<float>(t);
+                        v.feather_outer = v1[j].feather_outer + (v2[j].feather_outer - v1[j].feather_outer) * static_cast<float>(t);
+                        result.vertices.push_back(v);
+                    }
+                }
+                result.is_closed = kf1.value.is_closed;
+                result.is_inverted = kf1.value.is_inverted;
+                return result;
+            }
+        }
+        
+        return keyframes.back().value;
     }
 };
 
@@ -358,6 +451,135 @@ inline void from_json(const nlohmann::json& j, AnimatedColorSpec& a) {
     }
     if (j.contains("keyframes") && j.at("keyframes").is_array()) {
         a.keyframes = j.at("keyframes").get<std::vector<ColorKeyframeSpec>>();
+    }
+}
+
+// JSON serialization for MaskPathKeyframeSpec
+inline void to_json(nlohmann::json& j, const MaskPathKeyframeSpec& k) {
+    j["time"] = k.time;
+    // Serialize MaskPath value
+    nlohmann::json vertices_array = nlohmann::json::array();
+    for (const auto& v : k.value.vertices) {
+        nlohmann::json v_obj;
+        v_obj["position"] = nlohmann::json{{"x", v.position.x}, {"y", v.position.y}};
+        v_obj["in_tangent"] = nlohmann::json{{"x", v.in_tangent.x}, {"y", v.in_tangent.y}};
+        v_obj["out_tangent"] = nlohmann::json{{"x", v.out_tangent.x}, {"y", v.out_tangent.y}};
+        v_obj["feather_inner"] = v.feather_inner;
+        v_obj["feather_outer"] = v.feather_outer;
+        vertices_array.push_back(v_obj);
+    }
+    j["value"] = nlohmann::json{{"vertices", vertices_array}, {"is_closed", k.value.is_closed}, {"is_inverted", k.value.is_inverted}};
+    j["easing"] = static_cast<int>(k.easing);
+    j["bezier"] = nlohmann::json{{"cx1", k.bezier.cx1}, {"cy1", k.bezier.cy1}, {"cx2", k.bezier.cx2}, {"cy2", k.bezier.cy2}};
+    j["spring"] = nlohmann::json{{"stiffness", k.spring.stiffness}, {"damping", k.spring.damping}, {"mass", k.spring.mass}, {"velocity", k.spring.velocity}};
+    j["speed_in"] = k.speed_in;
+    j["influence_in"] = k.influence_in;
+    j["speed_out"] = k.speed_out;
+    j["influence_out"] = k.influence_out;
+}
+
+inline void from_json(const nlohmann::json& j, MaskPathKeyframeSpec& k) {
+    if (j.contains("time") && j.at("time").is_number()) k.time = j.at("time").get<double>();
+    if (j.contains("value") && j.at("value").is_object()) {
+        auto& v = j.at("value");
+        if (v.contains("vertices") && v.at("vertices").is_array()) {
+            for (auto& vert : v.at("vertices")) {
+                renderer2d::MaskVertex mv;
+                if (vert.contains("position") && vert.at("position").is_object()) {
+                    auto& p = vert.at("position");
+                    if (p.contains("x") && p.at("x").is_number()) mv.position.x = p.at("x").get<float>();
+                    if (p.contains("y") && p.at("y").is_number()) mv.position.y = p.at("y").get<float>();
+                }
+                if (vert.contains("in_tangent") && vert.at("in_tangent").is_object()) {
+                    auto& t = vert.at("in_tangent");
+                    if (t.contains("x") && t.at("x").is_number()) mv.in_tangent.x = t.at("x").get<float>();
+                    if (t.contains("y") && t.at("y").is_number()) mv.in_tangent.y = t.at("y").get<float>();
+                }
+                if (vert.contains("out_tangent") && vert.at("out_tangent").is_object()) {
+                    auto& t = vert.at("out_tangent");
+                    if (t.contains("x") && t.at("x").is_number()) mv.out_tangent.x = t.at("x").get<float>();
+                    if (t.contains("y") && t.at("y").is_number()) mv.out_tangent.y = t.at("y").get<float>();
+                }
+                if (vert.contains("feather_inner") && vert.at("feather_inner").is_number()) mv.feather_inner = vert.at("feather_inner").get<float>();
+                if (vert.contains("feather_outer") && vert.at("feather_outer").is_number()) mv.feather_outer = vert.at("feather_outer").get<float>();
+                k.value.vertices.push_back(mv);
+            }
+        }
+        if (v.contains("is_closed") && v.at("is_closed").is_boolean()) k.value.is_closed = v.at("is_closed").get<bool>();
+        if (v.contains("is_inverted") && v.at("is_inverted").is_boolean()) k.value.is_inverted = v.at("is_inverted").get<bool>();
+    }
+    if (j.contains("easing") && j.at("easing").is_number()) k.easing = static_cast<animation::EasingPreset>(j.at("easing").get<int>());
+    if (j.contains("bezier") && j.at("bezier").is_object()) {
+        auto& b = j.at("bezier");
+        if (b.contains("cx1") && b.at("cx1").is_number()) k.bezier.cx1 = b.at("cx1").get<double>();
+        if (b.contains("cy1") && b.at("cy1").is_number()) k.bezier.cy1 = b.at("cy1").get<double>();
+        if (b.contains("cx2") && b.at("cx2").is_number()) k.bezier.cx2 = b.at("cx2").get<double>();
+        if (b.contains("cy2") && b.at("cy2").is_number()) k.bezier.cy2 = b.at("cy2").get<double>();
+    }
+    if (j.contains("spring") && j.at("spring").is_object()) {
+        auto& s = j.at("spring");
+        if (s.contains("stiffness") && s.at("stiffness").is_number()) k.spring.stiffness = s.at("stiffness").get<double>();
+        if (s.contains("damping") && s.at("damping").is_number()) k.spring.damping = s.at("damping").get<double>();
+        if (s.contains("mass") && s.at("mass").is_number()) k.spring.mass = s.at("mass").get<double>();
+        if (s.contains("velocity") && s.at("velocity").is_number()) k.spring.velocity = s.at("velocity").get<double>();
+    }
+    if (j.contains("speed_in") && j.at("speed_in").is_number()) k.speed_in = j.at("speed_in").get<double>();
+    if (j.contains("influence_in") && j.at("influence_in").is_number()) k.influence_in = j.at("influence_in").get<double>();
+    if (j.contains("speed_out") && j.at("speed_out").is_number()) k.speed_out = j.at("speed_out").get<double>();
+    if (j.contains("influence_out") && j.at("influence_out").is_number()) k.influence_out = j.at("influence_out").get<double>();
+}
+
+// JSON serialization for AnimatedMaskPathSpec
+inline void to_json(nlohmann::json& j, const AnimatedMaskPathSpec& a) {
+    if (a.value.has_value()) {
+        nlohmann::json vertices_array = nlohmann::json::array();
+        for (const auto& v : a.value.value().vertices) {
+            nlohmann::json v_obj;
+            v_obj["position"] = nlohmann::json{{"x", v.position.x}, {"y", v.position.y}};
+            v_obj["in_tangent"] = nlohmann::json{{"x", v.in_tangent.x}, {"y", v.in_tangent.y}};
+            v_obj["out_tangent"] = nlohmann::json{{"x", v.out_tangent.x}, {"y", v.out_tangent.y}};
+            v_obj["feather_inner"] = v.feather_inner;
+            v_obj["feather_outer"] = v.feather_outer;
+            vertices_array.push_back(v_obj);
+        }
+        j["value"] = nlohmann::json{{"vertices", vertices_array}, {"is_closed", a.value.value().is_closed}, {"is_inverted", a.value.value().is_inverted}};
+    }
+    if (!a.keyframes.empty()) j["keyframes"] = a.keyframes;
+}
+
+inline void from_json(const nlohmann::json& j, AnimatedMaskPathSpec& a) {
+    if (j.contains("value") && j.at("value").is_object()) {
+        renderer2d::MaskPath mp;
+        auto& v = j.at("value");
+        if (v.contains("vertices") && v.at("vertices").is_array()) {
+            for (auto& vert : v.at("vertices")) {
+                renderer2d::MaskVertex mv;
+                if (vert.contains("position") && vert.at("position").is_object()) {
+                    auto& p = vert.at("position");
+                    if (p.contains("x") && p.at("x").is_number()) mv.position.x = p.at("x").get<float>();
+                    if (p.contains("y") && p.at("y").is_number()) mv.position.y = p.at("y").get<float>();
+                }
+                if (vert.contains("in_tangent") && vert.at("in_tangent").is_object()) {
+                    auto& t = vert.at("in_tangent");
+                    if (t.contains("x") && t.at("x").is_number()) mv.in_tangent.x = t.at("x").get<float>();
+                    if (t.contains("y") && t.at("y").is_number()) mv.in_tangent.y = t.at("y").get<float>();
+                }
+                if (vert.contains("out_tangent") && vert.at("out_tangent").is_object()) {
+                    auto& t = vert.at("out_tangent");
+                    if (t.contains("x") && t.at("x").is_number()) mv.out_tangent.x = t.at("x").get<float>();
+                    if (t.contains("y") && t.at("y").is_number()) mv.out_tangent.y = t.at("y").get<float>();
+                }
+                if (vert.contains("feather_inner") && vert.at("feather_inner").is_number()) mv.feather_inner = vert.at("feather_inner").get<float>();
+                if (vert.contains("feather_outer") && vert.at("feather_outer").is_number()) mv.feather_outer = vert.at("feather_outer").get<float>();
+                mp.vertices.push_back(mv);
+            }
+        }
+        if (v.contains("is_closed") && v.at("is_closed").is_boolean()) mp.is_closed = v.at("is_closed").get<bool>();
+        if (v.contains("is_inverted") && v.at("is_inverted").is_boolean()) mp.is_inverted = v.at("is_inverted").get<bool>();
+        a.value = mp;
+    }
+    if (j.contains("keyframes") && j.at("keyframes").is_array()) {
+        a.keyframes = j.at("keyframes").get<std::vector<MaskPathKeyframeSpec>>();
     }
 }
 
