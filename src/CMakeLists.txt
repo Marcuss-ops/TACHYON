@@ -24,7 +24,9 @@ add_library(TachyonCore SHARED
     runtime/playback/playback_queue.cpp
     runtime/playback/playback_engine.cpp
     runtime/playback/audio_preview_buffer.cpp
-    runtime/execution/render_session.cpp
+     runtime/execution/render_session.cpp
+     runtime/execution/render_session_serialization.cpp
+     runtime/execution/render_session_audio.cpp
     core/c_api.cpp
     core/transition_registry.cpp
     core/animation_primitives.cpp
@@ -92,7 +94,9 @@ add_library(TachyonCore SHARED
     renderer2d/raster/draw_list_builder.cpp
     renderer2d/raster/draw_list_rasterizer.cpp
     renderer2d/spec/gradient_spec_serialize.cpp
-    renderer2d/color/blending.cpp
+     renderer2d/color/blending.cpp
+     renderer2d/color/blending_parse.cpp
+     renderer2d/color/blending_math.cpp
     renderer2d/color/lut3d.cpp
     renderer2d/color/color_management.cpp
     renderer2d/color/color_management_system.cpp
@@ -145,7 +149,8 @@ add_library(TachyonCore SHARED
     audio/audio_encoder.cpp
     audio/audio_export.cpp
     audio/loudness_meter.cpp
-    tracker/optical_flow.cpp
+     tracker/optical_flow.cpp
+     tracker/optical_flow_translation.cpp
     tracker/camera_solver.cpp
     media/image_manager.cpp
     media/asset_manager.cpp
