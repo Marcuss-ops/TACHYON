@@ -1,0 +1,46 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Tachyon: Check Core",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/build.ps1",
+        "-Check"
+      ],
+      "group": "build",
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Tachyon: Build RelWithDebInfo",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/build.ps1",
+        "-RelWithDebInfo"
+      ],
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Tachyon: Test",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/build.ps1",
+        "-RelWithDebInfo",
+        "-Test"
+      ],
+      "problemMatcher": "$msCompile"
+    }
+  ]
+}

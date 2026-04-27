@@ -193,6 +193,14 @@ add_library(TachyonCore SHARED
     text/core/content/subtitle.cpp
     text/editing/text_editor.cpp
     text/text_measure.cpp
+    text/core/animation/text_animator_context.cpp
+    text/core/animation/text_animator_coverage.cpp
+    text/core/animation/text_animator_expression.cpp
+    text/core/animation/text_animator_paints.cpp
+    text/core/animation/text_animator_sampling.cpp
+    text/core/animation/text_animator_utils.cpp
+    text/core/animation/text_presets.cpp
+    text/bidi/bidi_engine.cpp
     renderer3d/temporal/time_remap_curve.cpp
     renderer3d/temporal/frame_blend_mode.cpp
     renderer3d/temporal/rolling_shutter.cpp
@@ -218,8 +226,9 @@ add_library(TachyonCore SHARED
     importer/alembic_importer.cpp
     camera_cut_contract.cpp
     editor/undo/undo_manager.cpp
-     editor/autosave/autosave_manager.cpp
-     debug/debug_export.cpp
+    editor/autosave/autosave_manager.cpp
+    debug/debug_export.cpp
+    debug/crash_handler.cpp
 )
 
 file(GLOB _tachyon_unity_excluded_sources
@@ -297,6 +306,11 @@ target_link_libraries(TachyonCore
         OpenMP::OpenMP_CXX
         spdlog::spdlog
 )
+
+if(TACHYON_ENABLE_TRACY)
+    target_link_libraries(TachyonCore PUBLIC TracyClient)
+    target_compile_definitions(TachyonCore PUBLIC TACHYON_TRACY_ENABLED)
+endif()
 
 if(AVCODEC_LIBRARY AND AVFORMAT_LIBRARY AND AVUTIL_LIBRARY AND SWSCALE_LIBRARY AND SWRESAMPLE_LIBRARY)
     message(STATUS "[Tachyon] FFmpeg found - enabling video/audio support")

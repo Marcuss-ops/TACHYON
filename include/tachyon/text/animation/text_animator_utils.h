@@ -52,6 +52,8 @@ math::Vector2 sample_vector2_kfs(
 
 float compute_coverage(const TextAnimatorSelectorSpec& selector, const TextAnimatorContext& ctx);
 
+float evaluate_expression_wrapper(const std::string& expr, const TextAnimatorContext& ctx);
+
 void apply_text_animators(
     TextLayoutResult& layout,
     std::span<const TextAnimatorSpec> animators,

@@ -21,6 +21,17 @@ endif()
 include(FetchContent)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+# Studio-grade performance tracking: Tracy Profiler
+option(TACHYON_ENABLE_TRACY "Enable Tracy profiler for development" OFF)
+if(TACHYON_ENABLE_TRACY)
+    FetchContent_Declare(tracy
+        GIT_REPOSITORY https://github.com/wolfpld/tracy
+        GIT_TAG v0.11.1
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    )
+    FetchContent_MakeAvailable(tracy)
+endif()
+
 # Unity Build support (Jumbo) - applied only to Tachyon targets
 option(TACHYON_UNITY_BUILD "Enable unity build for Tachyon targets" OFF)
 if(TACHYON_UNITY_BUILD)
@@ -43,7 +54,7 @@ option(TACHYON_ENABLE_COMPILER_CACHE "Enable sccache/clcache when available" ON)
 find_package(OpenMP REQUIRED)
 option(TACHYON_ENABLE_PCH "Enable precompiled headers when supported" ON)
 option(TACHYON_ENABLE_ASAN "Enable AddressSanitizer on Tachyon targets" OFF)
-option(TACHYON_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors (CI builds)" OFF)
+option(TACHYON_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors (Studio-grade strictness)" ON)
 
 if(MSVC)
     set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>")
@@ -223,6 +234,9 @@ set(SPDLOG_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(SPDLOG_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
 set(SPDLOG_BUILD_BENCH    OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(spdlog)
+
+# Once downloaded, don't check for updates every time (Studio-grade build optimization)
+set(FETCHCONTENT_UPDATES_DISCONNECTED ON CACHE BOOL "Disable FetchContent updates" FORCE)
 
 # Version header generation
 configure_file(

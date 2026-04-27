@@ -26,6 +26,14 @@
     - [x] Add `version` field to `SceneSpec`
     - [x] Enhance `Diagnostic` with structured metadata
     - [x] Implement deterministic CLI flag management
+- [x] Studio-Grade Maturity Implementation
+    - [x] Abilitazione TreatWarningsAsErrors (ON di default)
+    - [x] Infrastruttura Visual Regression (integration/golden_master.cpp)
+    - [x] Integrazione Tracy Profiler (Inclusione e ZoneScoped nei punti chiave)
+    - [x] Ottimizzazione FetchContent (Updates Disconnected)
+    - [x] Crash Reporting System (Cross-platform backtrace/minidump)
+- [x] Unificazione Motore Espressioni Testo
+- [x] Miglioramento Wiggly Selector con Organic Noise
 - [x] Implement Data Connectors
     - [x] Load and parse CSV/JSON files
     - [x] Expose `data()` function to expressions
