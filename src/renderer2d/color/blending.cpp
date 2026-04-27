@@ -56,6 +56,11 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
     LinearPremultipliedPixel dst_linear = to_premultiplied(dest, curve);
     LinearPremultipliedPixel out;
 
+    // Helper lambda to unpremultiply a channel
+    const auto unpremultiply = [](float channel, float alpha) {
+        return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
+    };
+
     switch (mode) {
     case BlendMode::Normal:
         break; // Handled above
@@ -78,9 +83,6 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
         out.a = src_linear.a + dst_linear.a - src_linear.a * dst_linear.a;
         break;
     case BlendMode::Overlay: {
-        const auto unpremultiply = [](float channel, float alpha) {
-            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
-        };
         const auto overlay_channel = [](float src_channel, float dst_channel) {
             return dst_channel <= 0.5f ? 2.0f * src_channel * dst_channel : 1.0f - 2.0f * (1.0f - src_channel) * (1.0f - dst_channel);
         };
@@ -95,9 +97,6 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
         break;
     }
     case BlendMode::SoftLight: {
-        const auto unpremultiply = [](float channel, float alpha) {
-            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
-        };
         const auto soft_light_channel = [](float src_channel, float dst_channel) {
             if (src_channel <= 0.5f) return dst_channel - (1.0f - 2.0f * src_channel) * dst_channel * (1.0f - dst_channel);
             const float lifted = std::sqrt(std::clamp(dst_channel, 0.0f, 1.0f));
@@ -114,9 +113,6 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
         break;
     }
     case BlendMode::Darken: {
-        const auto unpremultiply = [](float channel, float alpha) {
-            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
-        };
         const float src_a = src_linear.a;
         const float dst_a = dst_linear.a;
         const float src_r = unpremultiply(src_linear.r, src_a), src_g = unpremultiply(src_linear.g, src_a), src_b = unpremultiply(src_linear.b, src_a);
@@ -131,9 +127,6 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
         break;
     }
     case BlendMode::Lighten: {
-        const auto unpremultiply = [](float channel, float alpha) {
-            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
-        };
         const float src_a = src_linear.a;
         const float dst_a = dst_linear.a;
         const float src_r = unpremultiply(src_linear.r, src_a), src_g = unpremultiply(src_linear.g, src_a), src_b = unpremultiply(src_linear.b, src_a);
@@ -148,9 +141,6 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
         break;
     }
     case BlendMode::ColorDodge: {
-        const auto unpremultiply = [](float channel, float alpha) {
-            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
-        };
         const auto color_dodge = [](float src, float dst) {
             if (dst >= 1.0f) return 1.0f;
             if (src <= 0.0f) return 0.0f;
@@ -166,9 +156,6 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
         break;
     }
     case BlendMode::ColorBurn: {
-        const auto unpremultiply = [](float channel, float alpha) {
-            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
-        };
         const auto color_burn = [](float src, float dst) {
             if (dst <= 0.0f) return 0.0f;
             if (src >= 1.0f) return 1.0f;
@@ -184,9 +171,6 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
         break;
     }
     case BlendMode::HardLight: {
-        const auto unpremultiply = [](float channel, float alpha) {
-            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
-        };
         const auto hard_light = [](float src, float dst) {
             return src <= 0.5f ? 2.0f * src * dst : 1.0f - 2.0f * (1.0f - src) * (1.0f - dst);
         };
@@ -200,9 +184,6 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
         break;
     }
     case BlendMode::Difference: {
-        const auto unpremultiply = [](float channel, float alpha) {
-            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
-        };
         const float src_a = src_linear.a, dst_a = dst_linear.a;
         const float src_r = unpremultiply(src_linear.r, src_a), src_g = unpremultiply(src_linear.g, src_a), src_b = unpremultiply(src_linear.b, src_a);
         const float dst_r = unpremultiply(dst_linear.r, dst_a), dst_g = unpremultiply(dst_linear.g, dst_a), dst_b = unpremultiply(dst_linear.b, dst_a);
@@ -213,9 +194,6 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
         break;
     }
     case BlendMode::Exclusion: {
-        const auto unpremultiply = [](float channel, float alpha) {
-            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
-        };
         const float src_a = src_linear.a, dst_a = dst_linear.a;
         const float src_r = unpremultiply(src_linear.r, src_a), src_g = unpremultiply(src_linear.g, src_a), src_b = unpremultiply(src_linear.b, src_a);
         const float dst_r = unpremultiply(dst_linear.r, dst_a), dst_g = unpremultiply(dst_linear.g, dst_a), dst_b = unpremultiply(dst_linear.b, dst_a);
@@ -250,9 +228,6 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
             else if (h < 300) { r = x; g = 0; b = c; }
             else { r = c; g = 0; b = x; }
             return std::make_tuple(r + m, g + m, b + m);
-        };
-        const auto unpremultiply = [](float channel, float alpha) {
-            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
         };
         const float src_a = src_linear.a, dst_a = dst_linear.a;
         const float src_r = unpremultiply(src_linear.r, src_a), src_g = unpremultiply(src_linear.g, src_a), src_b = unpremultiply(src_linear.b, src_a);
@@ -292,9 +267,6 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
             else { r = c; g = 0; b = x; }
             return std::make_tuple(r + m, g + m, b + m);
         };
-        const auto unpremultiply = [](float channel, float alpha) {
-            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
-        };
         const float src_a = src_linear.a, dst_a = dst_linear.a;
         const float src_r = unpremultiply(src_linear.r, src_a), src_g = unpremultiply(src_linear.g, src_a), src_b = unpremultiply(src_linear.b, src_a);
         const float dst_r = unpremultiply(dst_linear.r, dst_a), dst_g = unpremultiply(dst_linear.g, dst_a), dst_b = unpremultiply(dst_linear.b, dst_a);
@@ -332,9 +304,6 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
             else if (h < 300) { r = x; g = 0; b = c; }
             else { r = c; g = 0; b = x; }
             return std::make_tuple(r + m, g + m, b + m);
-        };
-        const auto unpremultiply = [](float channel, float alpha) {
-            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
         };
         const float src_a = src_linear.a, dst_a = dst_linear.a;
         const float src_r = unpremultiply(src_linear.r, src_a), src_g = unpremultiply(src_linear.g, src_a), src_b = unpremultiply(src_linear.b, src_a);
@@ -374,9 +343,6 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
             else { r = c; g = 0; b = x; }
             return std::make_tuple(r + m, g + m, b + m);
         };
-        const auto unpremultiply = [](float channel, float alpha) {
-            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
-        };
         const float src_a = src_linear.a, dst_a = dst_linear.a;
         const float src_r = unpremultiply(src_linear.r, src_a), src_g = unpremultiply(src_linear.g, src_a), src_b = unpremultiply(src_linear.b, src_a);
         const float dst_r = unpremultiply(dst_linear.r, dst_a), dst_g = unpremultiply(dst_linear.g, dst_a), dst_b = unpremultiply(dst_linear.b, dst_a);
@@ -390,9 +356,6 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
         break;
     }
     case BlendMode::LinearDodge: {
-        const auto unpremultiply = [](float channel, float alpha) {
-            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
-        };
         const float src_a = src_linear.a, dst_a = dst_linear.a;
         const float src_r = unpremultiply(src_linear.r, src_a), src_g = unpremultiply(src_linear.g, src_a), src_b = unpremultiply(src_linear.b, src_a);
         const float dst_r = unpremultiply(dst_linear.r, dst_a), dst_g = unpremultiply(dst_linear.g, dst_a), dst_b = unpremultiply(dst_linear.b, dst_a);
@@ -403,9 +366,6 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
         break;
     }
     case BlendMode::Subtract: {
-        const auto unpremultiply = [](float channel, float alpha) {
-            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
-        };
         const float src_a = src_linear.a, dst_a = dst_linear.a;
         const float src_r = unpremultiply(src_linear.r, src_a), src_g = unpremultiply(src_linear.g, src_a), src_b = unpremultiply(src_linear.b, src_a);
         const float dst_r = unpremultiply(dst_linear.r, dst_a), dst_g = unpremultiply(dst_linear.g, dst_a), dst_b = unpremultiply(dst_linear.b, dst_a);
@@ -416,9 +376,6 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
         break;
     }
     case BlendMode::Divide: {
-        const auto unpremultiply = [](float channel, float alpha) {
-            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
-        };
         const float src_a = src_linear.a, dst_a = dst_linear.a;
         const float src_r = unpremultiply(src_linear.r, src_a), src_g = unpremultiply(src_linear.g, src_a), src_b = unpremultiply(src_linear.b, src_a);
         const float dst_r = unpremultiply(dst_linear.r, dst_a), dst_g = unpremultiply(dst_linear.g, dst_a), dst_b = unpremultiply(dst_linear.b, dst_a);
@@ -432,9 +389,6 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
         break;
     }
     case BlendMode::LinearBurn: {
-        const auto unpremultiply = [](float channel, float alpha) {
-            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
-        };
         const float src_a = src_linear.a, dst_a = dst_linear.a;
         const float src_r = unpremultiply(src_linear.r, src_a), src_g = unpremultiply(src_linear.g, src_a), src_b = unpremultiply(src_linear.b, src_a);
         const float dst_r = unpremultiply(dst_linear.r, dst_a), dst_g = unpremultiply(dst_linear.g, dst_a), dst_b = unpremultiply(dst_linear.b, dst_a);
@@ -445,9 +399,6 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
         break;
     }
     case BlendMode::VividLight: {
-        const auto unpremultiply = [](float channel, float alpha) {
-            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
-        };
         const auto vivid_light = [](float src, float dst) {
             if (src <= 0.5f) {
                 if (dst <= 0.0f) return 0.0f;
@@ -467,9 +418,6 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
         break;
     }
     case BlendMode::LinearLight: {
-        const auto unpremultiply = [](float channel, float alpha) {
-            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
-        };
         const float src_a = src_linear.a, dst_a = dst_linear.a;
         const float src_r = unpremultiply(src_linear.r, src_a), src_g = unpremultiply(src_linear.g, src_a), src_b = unpremultiply(src_linear.b, src_a);
         const float dst_r = unpremultiply(dst_linear.r, dst_a), dst_g = unpremultiply(dst_linear.g, dst_a), dst_b = unpremultiply(dst_linear.b, dst_a);
@@ -480,9 +428,6 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
         break;
     }
     case BlendMode::PinLight: {
-        const auto unpremultiply = [](float channel, float alpha) {
-            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
-        };
         const float src_a = src_linear.a, dst_a = dst_linear.a;
         const float src_r = unpremultiply(src_linear.r, src_a), src_g = unpremultiply(src_linear.g, src_a), src_b = unpremultiply(src_linear.b, src_a);
         const float dst_r = unpremultiply(dst_linear.r, dst_a), dst_g = unpremultiply(dst_linear.g, dst_a), dst_b = unpremultiply(dst_linear.b, dst_a);
@@ -497,9 +442,6 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
         break;
     }
     case BlendMode::HardMix: {
-        const auto unpremultiply = [](float channel, float alpha) {
-            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
-        };
         const float src_a = src_linear.a, dst_a = dst_linear.a;
         const float src_r = unpremultiply(src_linear.r, src_a), src_g = unpremultiply(src_linear.g, src_a), src_b = unpremultiply(src_linear.b, src_a);
         const float dst_r = unpremultiply(dst_linear.r, dst_a), dst_g = unpremultiply(dst_linear.g, dst_a), dst_b = unpremultiply(dst_linear.b, dst_a);
@@ -513,9 +455,6 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
         break;
     }
     case BlendMode::DarkerColor: {
-        const auto unpremultiply = [](float channel, float alpha) {
-            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
-        };
         const float src_a = src_linear.a, dst_a = dst_linear.a;
         const float src_r = unpremultiply(src_linear.r, src_a), src_g = unpremultiply(src_linear.g, src_a), src_b = unpremultiply(src_linear.b, src_a);
         const float dst_r = unpremultiply(dst_linear.r, dst_a), dst_g = unpremultiply(dst_linear.g, dst_a), dst_b = unpremultiply(dst_linear.b, dst_a);
@@ -530,9 +469,6 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
         break;
     }
     case BlendMode::LighterColor: {
-        const auto unpremultiply = [](float channel, float alpha) {
-            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
-        };
         const float src_a = src_linear.a, dst_a = dst_linear.a;
         const float src_r = unpremultiply(src_linear.r, src_a), src_g = unpremultiply(src_linear.g, src_a), src_b = unpremultiply(src_linear.b, src_a);
         const float dst_r = unpremultiply(dst_linear.r, dst_a), dst_g = unpremultiply(dst_linear.g, dst_a), dst_b = unpremultiply(dst_linear.b, dst_a);
@@ -557,9 +493,6 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
         const auto get_luma = [](float r, float g, float b) {
             return 0.299f * r + 0.587f * g + 0.114f * b;
         };
-        const auto unpremultiply = [](float channel, float alpha) {
-            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
-        };
         const float src_a = src_linear.a;
         const float src_r = unpremultiply(src_linear.r, src_a), src_g = unpremultiply(src_linear.g, src_a), src_b = unpremultiply(src_linear.b, src_a);
         float src_luma = get_luma(src_r, src_g, src_b);
@@ -580,9 +513,6 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
         const auto get_luma = [](float r, float g, float b) {
             return 0.299f * r + 0.587f * g + 0.114f * b;
         };
-        const auto unpremultiply = [](float channel, float alpha) {
-            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
-        };
         const float src_a = src_linear.a;
         const float src_r = unpremultiply(src_linear.r, src_a), src_g = unpremultiply(src_linear.g, src_a), src_b = unpremultiply(src_linear.b, src_a);
         float src_luma = get_luma(src_r, src_g, src_b);
@@ -600,9 +530,6 @@ Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, Transfe
         break;
     }
     case BlendMode::LuminescentPremult: {
-        const auto unpremultiply = [](float channel, float alpha) {
-            return alpha > 0.0f ? std::clamp(channel / alpha, 0.0f, 1.0f) : 0.0f;
-        };
         const float src_a = src_linear.a, dst_a = dst_linear.a;
         const float src_r = unpremultiply(src_linear.r, src_a), src_g = unpremultiply(src_linear.g, src_a), src_b = unpremultiply(src_linear.b, src_a);
         out.r = src_linear.r + dst_linear.r * (1.0f - src_r);
