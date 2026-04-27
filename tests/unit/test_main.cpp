@@ -10,6 +10,7 @@
 #include <optional>
 #include <iomanip>
 #include <cstring>
+#include "runtime/visual/golden_registry.h"
 
 // Google Test main - all tests now use TEST() macros
 // Manual run_*_tests() functions have been converted to proper Google Test cases
@@ -164,6 +165,19 @@ bool run_expression_vm_tests();
 
 
 int main(int argc, char** argv) {
+    // Parse custom flags before GoogleTest processes argv
+    for (int i = 1; i < argc; ++i) {
+        if (std::strcmp(argv[i], "--update-golden-hashes") == 0) {
+            tachyon::test::GoldenRegistry::set_update_mode(true);
+            // Remove this arg so GoogleTest doesn't complain
+            for (int j = i; j < argc - 1; ++j) {
+                argv[j] = argv[j + 1];
+            }
+            argc--;
+            i--; // re-check this index
+        }
+    }
+
     // 1. Run GoogleTest-based tests
     ::testing::InitGoogleTest(&argc, argv);
     int gtest_result = RUN_ALL_TESTS();

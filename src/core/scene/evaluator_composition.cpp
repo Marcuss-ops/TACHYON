@@ -5,6 +5,7 @@
 #include "tachyon/core/scene/evaluator/light_evaluator.h"
 #include "tachyon/core/scene/evaluator/layer_utils.h"
 #include "tachyon/core/scene/math/evaluator_math.h"
+#include "tachyon/core/scene/evaluation/evaluator.h"
 #include "tachyon/timeline/time.h"
 
 #include <algorithm>
@@ -109,6 +110,30 @@ EvaluatedCompositionState evaluate_composition_internal(
     media::MediaManager* media,
     std::optional<std::int64_t> main_frame_number,
     std::optional<double> main_frame_time_seconds) {
+
+    // Merge standard scene variables with user-provided variables
+    if (vars.include_standard_vars) {
+        double fps = static_cast<double>(composition.frame_rate.numerator) / static_cast<double>(composition.frame_rate.denominator);
+        if (fps <= 0.0) fps = 30.0;
+
+        // Build merged numeric variables
+        vars.merged_numeric = make_standard_numeric_vars(frame_number, composition_time_seconds, fps);
+        if (vars.numeric) {
+            for (const auto& [key, value] : *vars.numeric) {
+                vars.merged_numeric[key] = value;
+            }
+        }
+        vars.numeric = &vars.merged_numeric;
+
+        // Build merged string variables
+        vars.merged_strings = make_standard_string_vars();
+        if (vars.strings) {
+            for (const auto& [key, value] : *vars.strings) {
+                vars.merged_strings[key] = value;
+            }
+        }
+        vars.strings = &vars.merged_strings;
+    }
     
     // Build component indices for O(1) lookup before expansion
     std::unordered_map<std::string, std::size_t> component_indices;

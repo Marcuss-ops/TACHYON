@@ -34,6 +34,11 @@ public:
         return *this;
     }
 
+    LayerBuilder& TextContent(std::string text) {
+        spec_.text_content = std::move(text);
+        return *this;
+    }
+
     LayerBuilder& Expression(const std::string& prop, const std::string& expr) {
         if (prop == "opacity") spec_.opacity_property.expression = expr;
         else if (prop == "position") spec_.transform.position_property.expression = expr;
@@ -302,12 +307,29 @@ inline std::string interpolate(double a, double b, const std::string& t_expr = "
 }
 
 inline std::string spring(const std::string& t_expr, double from, double to, double freq, double damping) {
-    return "spring(" + t_expr + ", " + std::to_string(from) + ", " + std::to_string(to) + ", " + 
+    return "spring(" + t_expr + ", " + std::to_string(from) + ", " + std::to_string(to) + ", " +
            std::to_string(freq) + ", " + std::to_string(damping) + ")";
 }
 
 inline std::string lerp(double a, double b, const std::string& t_expr) {
     return interpolate(a, b, t_expr);
+}
+
+/// Create a template expression for a variable with optional format specifier
+/// Usage: TextVar("score") => "{{score}}"
+///        TextVar("score", "000") => "{{score:000}}"
+///        TextVar("amount", ",.2f") => "{{amount:,.2f}}"
+inline std::string TextVar(const std::string& var_name, const std::string& format_spec = "") {
+    if (format_spec.empty()) {
+        return "{{" + var_name + "}}";
+    }
+    return "{{" + var_name + ":" + format_spec + "}}";
+}
+
+/// Create a date/time template expression with format specifier
+/// Usage: TextDate("%Y-%m-%d") => "{{date:%Y-%m-%d}}"
+inline std::string TextDate(const std::string& date_format = "%Y-%m-%d") {
+    return "{{date:" + date_format + "}}";
 }
 
 } // namespace tachyon::authoring

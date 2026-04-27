@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include "tachyon/core/scene/evaluation/evaluator.h"
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
+#include "tachyon/core/scene/evaluator/templates.h"
 
 #include <filesystem>
 #include <fstream>
@@ -118,12 +119,98 @@ TEST(SceneEvaluator, TemplateResolver) {
     variables["score"] = 0.75;
     variables["config.speed"] = 2.0;
 
+    tachyon::scene::EvaluationVariables eval_vars;
+    eval_vars.numeric = &variables;
+
     const auto evaluated = tachyon::scene::evaluate_composition_state(
         parsed.value->compositions.front(),
         0.0,
         nullptr,
-        &variables
+        eval_vars
     );
-    
+
     EXPECT_EQ(evaluated.layers.front().text_content, "Hello Intro / 0.750000");
+}
+
+TEST(TemplateFormatter, NumberPadding) {
+    std::unordered_map<std::string, double> vars = {{"score", 42.0}};
+
+    std::string result = tachyon::scene::resolve_template("{{score:000}}", nullptr, &vars);
+    EXPECT_EQ(result, "042");
+
+    result = tachyon::scene::resolve_template("{{score:00000}}", nullptr, &vars);
+    EXPECT_EQ(result, "00042");
+
+    result = tachyon::scene::resolve_template("{{score:####}}", nullptr, &vars);
+    EXPECT_EQ(result, "  42");
+}
+
+TEST(TemplateFormatter, DecimalPlaces) {
+    std::unordered_map<std::string, double> vars = {{"score", 3.14159}};
+
+    std::string result = tachyon::scene::resolve_template("{{score:.2f}}", nullptr, &vars);
+    EXPECT_EQ(result, "3.14");
+
+    result = tachyon::scene::resolve_template("{{score:.4f}}", nullptr, &vars);
+    EXPECT_EQ(result, "3.1416");
+}
+
+TEST(TemplateFormatter, ThousandSeparators) {
+    std::unordered_map<std::string, double> vars = {{"amount", 1234567.89}};
+
+    std::string result = tachyon::scene::resolve_template("{{amount:,.2f}}", nullptr, &vars);
+    EXPECT_EQ(result, "1,234,567.89");
+
+    result = tachyon::scene::resolve_template("{{amount:,.0f}}", nullptr, &vars);
+    EXPECT_EQ(result, "1,234,568");
+}
+
+TEST(TemplateFormatter, DateFormat) {
+    std::unordered_map<std::string, std::string> vars = {{"today", "2026-04-27"}};
+
+    std::string result = tachyon::scene::resolve_template("{{today:%d/%m/%Y}}", &vars, nullptr);
+    EXPECT_EQ(result, "27/04/2026");
+
+    result = tachyon::scene::resolve_template("{{today:%Y-%m-%d}}", &vars, nullptr);
+    EXPECT_EQ(result, "2026-04-27");
+}
+
+TEST(TemplateFormatter, FallbackWhenMissing) {
+    std::unordered_map<std::string, double> vars = {{"score", 100.0}};
+
+    std::string result = tachyon::scene::resolve_template("Score: {{score}}, Level: {{missing}}", nullptr, &vars);
+    EXPECT_EQ(result, "Score: 100, Level: {{missing}}");
+}
+
+TEST(TemplateFormatter, StandardSceneVariables) {
+    tachyon::scene::EvaluationVariables eval_vars;
+    eval_vars.include_standard_vars = false;
+
+    auto numeric_vars = tachyon::scene::make_standard_numeric_vars(30, 1.0, 30.0);
+    auto string_vars = tachyon::scene::make_standard_string_vars();
+
+    eval_vars.numeric = &numeric_vars;
+    eval_vars.strings = &string_vars;
+
+    std::string result = tachyon::scene::resolve_template("Frame: {{frame}}, Time: {{time}}, FPS: {{fps}}", &string_vars, &numeric_vars);
+    EXPECT_TRUE(result.find("Frame: 30") != std::string::npos);
+    EXPECT_TRUE(result.find("Time: 1") != std::string::npos);
+    EXPECT_TRUE(result.find("FPS: 30") != std::string::npos);
+}
+
+TEST(TemplateFormatter, FormatNumberFunction) {
+    EXPECT_EQ(tachyon::scene::format_number(42.0, "000"), "042");
+    EXPECT_EQ(tachyon::scene::format_number(3.14159, ".2f"), "3.14");
+    EXPECT_EQ(tachyon::scene::format_number(1234567.89, ",.2f"), "1,234,567.89");
+    EXPECT_EQ(tachyon::scene::format_number(100.0, ""), "100");
+}
+
+TEST(TemplateFormatter, LocaleAwareFormatting) {
+    // Test Italian locale (dot for thousands, comma for decimal)
+    std::string result = tachyon::scene::format_number(1234567.89, ",.2f", "it-IT");
+    EXPECT_EQ(result, "1.234.567,89");
+    
+    // Test with padding in different locale
+    result = tachyon::scene::format_number(42.0, "000", "it-IT");
+    EXPECT_EQ(result, "042");
 }

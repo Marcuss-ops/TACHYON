@@ -6,6 +6,7 @@ param(
     [switch]$Test,
     [switch]$Details,
     [switch]$ErrorsOnly,
+    [switch]$CoreOnly,
     [string]$BuildType = "Release"
 )
 
@@ -58,12 +59,11 @@ function Run-Command($cmd, $cmd_args) {
     Write-VerboseInfo "Executing: $cmd $cmd_args"
     
     try {
-        & $cmd @cmd_args 2>&1 | Tee-Object -Variable output
+        & $cmd @cmd_args
         $exitCode = $LASTEXITCODE
         
         if ($exitCode -ne 0) {
             Write-Failure "Command failed with exit code $exitCode"
-            Write-Host $output -ForegroundColor Yellow
             throw "Command failed: ${cmd} ${cmd_args}"
         }
     }
@@ -154,8 +154,19 @@ try {
         $buildArgs = @("--build", $BuildDir, "--config", $BuildType, "--target", "TachyonTests")
         Run-Command $CMakePath $buildArgs
         
+        # Copy TachyonCore.dll to the tests directory so it can be found at runtime
+        $dllSource = "$BuildDir\src\TachyonCore.dll"
+        $dllDest = "$BuildDir\tests\"
+        if (Test-Path $dllSource) {
+            Write-Info "Copying TachyonCore.dll to tests directory..."
+            Copy-Item $dllSource -Destination $dllDest -Force
+            Write-Success "DLL copied successfully"
+        } else {
+            Write-Warning "TachyonCore.dll not found at: $dllSource"
+        }
+        
         # Run tests
-        $testExe = "$BuildDir\tests\unit\TachyonTests.exe"
+        $testExe = "$BuildDir\tests\TachyonTests.exe"
         if (Test-Path $testExe) {
             Write-Info "Running tests..."
             & $testExe --gtest_output=text
@@ -166,8 +177,13 @@ try {
         } else {
             Write-Warning "Test executable not found at: $testExe"
         }
+    } elseif ($CoreOnly) {
+        Write-Info "Building TachyonCore only..."
+        $buildArgs = @("--build", $BuildDir, "--config", $BuildType, "--target", "TachyonCore")
+        Run-Command $CMakePath $buildArgs
+        Write-Success "TachyonCore build completed successfully!"
     } else {
-        Write-Info "Building TachyonCore..."
+        Write-Info "Building all targets..."
         $buildArgs = @("--build", $BuildDir, "--config", $BuildType)
         Run-Command $CMakePath $buildArgs
         Write-Success "Build completed successfully!"
@@ -192,50 +208,4 @@ catch {
     Write-Host "  3. Try -Clean flag to rebuild from scratch" -ForegroundColor Yellow
     Write-Host "  4. Check build-ninja\CMakeFiles\CMakeError.log for details" -ForegroundColor Yellow
     exit 1
-}
-
-function Run-Command($cmd, $cmd_args) {
-    Write-Host "Executing: $cmd $cmd_args" -ForegroundColor Gray
-    & $cmd @cmd_args
-    if ($LASTEXITCODE -ne 0) {
-        throw "Command failed with exit code ${LASTEXITCODE}: ${cmd} ${cmd_args}"
-    }
-}
-
-# --- Main ---
-try {
-    Write-Header "Environment Setup"
-    
-    # Run enable-vs-env.ps1 to get cl.exe etc in PATH
-    . ./scripts/enable-vs-env.ps1
-
-    # Ensure build directory exists
-    if (!(Test-Path $BuildDir)) {
-        New-Item -ItemType Directory -Path $BuildDir | Out-Null
-    }
-
-    # Optional: sccache stats reset
-    if (Get-Command $SccachePath -ErrorAction SilentlyContinue) {
-        Write-Host "Resetting sccache statistics..."
-        & $SccachePath --zero-stats | Out-Null
-    }
-
-    Write-Header "CMake Configuration"
-    Run-Command $CMakePath @("-G", $Generator, "-B", $BuildDir, "-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_MAKE_PROGRAM=$NinjaPath")
-
-    Write-Header "Build Execution"
-    Run-Command $CMakePath @("--build", $BuildDir, "--config", "Release")
-
-    Write-Header "Build Successful"
-}
-catch {
-    Write-Host "`nBUILD FAILED!" -ForegroundColor Red
-    Write-Host $_.Exception.Message -ForegroundColor Yellow
-    exit 1
-}
-finally {
-    if (Get-Command $SccachePath -ErrorAction SilentlyContinue) {
-        Write-Header "sccache Statistics"
-        & $SccachePath --show-stats
-    }
 }

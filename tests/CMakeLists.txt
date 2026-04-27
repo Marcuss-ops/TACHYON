@@ -1,4 +1,5 @@
 add_executable(TachyonTests
+    unit/core/logging_tests.cpp
     unit/core/math_tests.cpp
     unit/core/property_tests.cpp
     unit/core/expression_tests.cpp
@@ -76,6 +77,11 @@ target_compile_definitions(TachyonTests
         TACHYON_TESTS_SOURCE_DIR="${TACHYON_TESTS_SOURCE_DIR}"
 )
 
+target_include_directories(TachyonTests
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
 target_link_libraries(TachyonTests
     PRIVATE
         TachyonCore
@@ -86,6 +92,14 @@ target_link_libraries(TachyonTests
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
     target_precompile_headers(TachyonTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")
 endif()
+
+# Copy test fixtures to build directory
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/fixtures"
+     DESTINATION "${CMAKE_CURRENT_BINARY_DIR}"
+)
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/unit/runtime/visual/golden_hashes.json"
+     DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/unit/runtime/visual"
+)
 
 if(MSVC)
     file(GLOB OIDN_RUNTIME_DLLS CONFIGURE_DEPENDS "${oidn_SOURCE_DIR}/bin/*.dll")

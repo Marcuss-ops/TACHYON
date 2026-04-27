@@ -3,6 +3,8 @@ set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 if(POLICY CMP0141)
     cmake_policy(SET CMP0141 NEW)
 endif()
+# Suppress deprecation warnings from dependencies (e.g., freetype with old cmake_minimum_required)
+set(CMAKE_WARN_DEPRECATED OFF CACHE BOOL "Suppress deprecation warnings" FORCE)
 project(TACHYON VERSION 0.1.0 LANGUAGES CXX)
 
 # Set FetchContent base directory before including FetchContent
@@ -41,13 +43,11 @@ option(TACHYON_ENABLE_COMPILER_CACHE "Enable sccache/clcache when available" ON)
 find_package(OpenMP REQUIRED)
 option(TACHYON_ENABLE_PCH "Enable precompiled headers when supported" ON)
 option(TACHYON_ENABLE_ASAN "Enable AddressSanitizer on Tachyon targets" OFF)
+option(TACHYON_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors (CI builds)" OFF)
 
 if(MSVC)
     set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>")
     add_compile_options(/FS)
-    # MSVC Release optimizations
-    add_compile_options($<$<CONFIG:Release>:/O2 /GL>)
-    add_link_options($<$<CONFIG:Release>:/LTCG>)
 else()
     # GCC/Clang Release optimizations
     add_compile_options($<$<CONFIG:Release>:-O3>)
@@ -99,10 +99,14 @@ FetchContent_Declare(
         -DFT_WITH_BZIP2:BOOL=OFF
         -DFT_WITH_PNG:BOOL=OFF
         -DFT_WITH_HARFBUZZ:BOOL=OFF
+        -DCMAKE_WARN_DEPRECATED:BOOL=OFF
+        -DCMAKE_POLICY_DEFAULT_CMP0048:NEW
+        -DCMAKE_POLICY_DEFAULT_CMP0141:NEW
 )
 # CMake 4.0 dropped backward compat with cmake_minimum_required < 3.5.
 # Override policy so FreeType's old CMakeLists.txt does not abort configure.
 set(CMAKE_POLICY_DEFAULT_CMP0048 NEW)
+set(CMAKE_POLICY_DEFAULT_CMP0141 NEW)
 FetchContent_MakeAvailable(freetype)
 
 # Fix: force /Z7 (Embedded) for all freetype targets to avoid PDB conflicts
@@ -116,9 +120,9 @@ endif()
 # HarfBuzz for OpenType shaping and ligatures.
 FetchContent_Declare(
     harfbuzz
-    GIT_REPOSITORY https://github.com/harfbuzz/harfbuzz.git  
-    GIT_TAG        14.1.0  
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE  
+    GIT_REPOSITORY https://github.com/harfbuzz/harfbuzz.git
+    GIT_TAG        14.1.0
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     CMAKE_CACHE_ARGS
         -DHB_BUILD_UTILS:BOOL=OFF
         -DHB_BUILD_TESTS:BOOL=OFF
@@ -126,6 +130,7 @@ FetchContent_Declare(
         -DHB_BUILD_SUBSET:BOOL=OFF
         -DHB_HAVE_FREETYPE:BOOL=ON
         -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON
+        -DCMAKE_CXX_FLAGS:STRING="/wd4702"  # Suppress unreachable code warning
 )
 FetchContent_MakeAvailable(harfbuzz)
 set_target_properties(harfbuzz PROPERTIES POSITION_INDEPENDENT_CODE ON)

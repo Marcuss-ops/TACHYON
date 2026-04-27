@@ -139,7 +139,7 @@ bool run_text_tests() {
         GlyphBitmap glyph;
         glyph.width = 2;
         glyph.height = 2;
-        glyph.alpha_mask = {
+        glyph.pixels = {
             0U,   255U,
             255U, 255U
         };

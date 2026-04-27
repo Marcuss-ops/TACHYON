@@ -5,7 +5,8 @@
 namespace tachyon::text {
 
 GlyphAtlas::Allocation GlyphAtlas::allocate(std::uint32_t width, std::uint32_t height,
-                                            const std::uint8_t* data, std::size_t data_size) {
+                                             const std::uint8_t* data, std::size_t data_size) {
+    (void)data_size;  // Suppress unused parameter warning
     Shelf* shelf = find_shelf(width, height);
     if (!shelf) {
         expand_atlas(m_width, m_height * 2);
