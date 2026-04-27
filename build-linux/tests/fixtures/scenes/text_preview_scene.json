@@ -1,0 +1,226 @@
+{
+  "version": "1.0",
+  "spec_version": "1.0",
+  "project": {
+    "id": "text_preview",
+    "name": "Text Preview",
+    "authoring_tool": "Tachyon"
+  },
+  "compositions": [
+    {
+      "id": "main",
+      "name": "Main",
+      "width": 1920,
+      "height": 1080,
+      "duration": 5,
+      "frame_rate": 15,
+      "layers": [
+        {
+          "id": "background",
+          "name": "Background",
+          "type": "solid",
+          "enabled": true,
+          "visible": true,
+          "start_time": 0,
+          "in_point": 0,
+          "out_point": 5,
+          "width": 1920,
+          "height": 1080,
+          "fill_color": [10, 14, 24, 255]
+        },
+        {
+          "id": "headline",
+          "name": "Headline",
+          "type": "text",
+          "enabled": true,
+          "visible": true,
+          "start_time": 0,
+          "in_point": 0,
+          "out_point": 5,
+          "width": 1920,
+          "height": 220,
+          "alignment": "center",
+          "text_content": "TACHYON",
+          "font_size": 136,
+          "fill_color": [245, 248, 255, 255],
+          "transform": {
+            "position_x": 0,
+            "position_y": 150
+          },
+          "text_animators": [
+            {
+              "selector": {
+                "type": "all",
+                "based_on": "characters_excluding_spaces",
+                "stagger_mode": "character",
+                "stagger_delay": 0.025
+              },
+              "properties": {
+                "opacity_keyframes": [
+                  { "time": 0, "value": 0 },
+                  { "time": 0.85, "value": 1 }
+                ],
+                "position_offset_keyframes": [
+                  { "time": 0, "value": [0, 46] },
+                  { "time": 0.85, "value": [0, 0] }
+                ],
+                "reveal_keyframes": [
+                  { "time": 0, "value": 0 },
+                  { "time": 0.85, "value": 1 }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "subhead",
+          "name": "Subhead",
+          "type": "text",
+          "enabled": true,
+          "visible": true,
+          "start_time": 0,
+          "in_point": 0,
+          "out_point": 5,
+          "width": 1920,
+          "height": 180,
+          "alignment": "center",
+          "text_content": "FRASI IMPORTANTI",
+          "font_size": 62,
+          "fill_color": [190, 198, 216, 255],
+          "transform": {
+            "position_x": 0,
+            "position_y": 320
+          },
+          "text_animators": [
+            {
+              "selector": {
+                "type": "all",
+                "based_on": "characters_excluding_spaces",
+                "stagger_mode": "character",
+                "stagger_delay": 0.035
+              },
+              "properties": {
+                "opacity_keyframes": [
+                  { "time": 0, "value": 0 },
+                  { "time": 0.75, "value": 1 }
+                ],
+                "position_offset_keyframes": [
+                  { "time": 0, "value": [0, 30] },
+                  { "time": 0.75, "value": [0, 0] }
+                ],
+                "reveal_keyframes": [
+                  { "time": 0, "value": 0 },
+                  { "time": 0.75, "value": 1 }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "date",
+          "name": "Date",
+          "type": "text",
+          "enabled": true,
+          "visible": true,
+          "start_time": 0,
+          "in_point": 0,
+          "out_point": 5,
+          "width": 1920,
+          "height": 180,
+          "alignment": "center",
+          "text_content": "27 APRILE 2026",
+          "font_size": 74,
+          "fill_color": [255, 213, 122, 255],
+          "transform": {
+            "position_x": 0,
+            "position_y": 520
+          },
+          "text_animators": [
+            {
+              "selector": {
+                "type": "all",
+                "based_on": "characters",
+                "stagger_mode": "character",
+                "stagger_delay": 0.02
+              },
+              "properties": {
+                "opacity_keyframes": [
+                  { "time": 0, "value": 0 },
+                  { "time": 0.6, "value": 1 }
+                ],
+                "position_offset_keyframes": [
+                  { "time": 0, "value": [0, 22] },
+                  { "time": 0.6, "value": [0, 0] }
+                ],
+                "tracking_amount_keyframes": [
+                  { "time": 0, "value": 18 },
+                  { "time": 0.6, "value": 0 }
+                ],
+                "scale_keyframes": [
+                  { "time": 0, "value": 0.96 },
+                  { "time": 0.6, "value": 1 }
+                ],
+                "reveal_keyframes": [
+                  { "time": 0, "value": 0 },
+                  { "time": 0.6, "value": 1 }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "numbers",
+          "name": "Numbers",
+          "type": "text",
+          "enabled": true,
+          "visible": true,
+          "start_time": 0,
+          "in_point": 0,
+          "out_point": 5,
+          "width": 1920,
+          "height": 180,
+          "alignment": "center",
+          "text_content": "001 | 128 | 2048",
+          "font_size": 56,
+          "fill_color": [101, 225, 255, 255],
+          "transform": {
+            "position_x": 0,
+            "position_y": 700
+          },
+          "text_animators": [
+            {
+              "selector": {
+                "type": "all",
+                "based_on": "characters",
+                "stagger_mode": "character",
+                "stagger_delay": 0.02
+              },
+              "properties": {
+                "opacity_keyframes": [
+                  { "time": 0, "value": 0 },
+                  { "time": 0.55, "value": 1 }
+                ],
+                "position_offset_keyframes": [
+                  { "time": 0, "value": [0, 18] },
+                  { "time": 0.55, "value": [0, 0] }
+                ],
+                "tracking_amount_keyframes": [
+                  { "time": 0, "value": 18 },
+                  { "time": 0.55, "value": 0 }
+                ],
+                "scale_keyframes": [
+                  { "time": 0, "value": 0.96 },
+                  { "time": 0.55, "value": 1 }
+                ],
+                "reveal_keyframes": [
+                  { "time": 0, "value": 0 },
+                  { "time": 0.55, "value": 1 }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

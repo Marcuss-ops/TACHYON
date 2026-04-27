@@ -29,85 +29,12 @@
 
 namespace tachyon {
 
-// Helper functions for framebuffer serialization (for checkpoint/resume)
-namespace {
+// Forward declarations for extracted serialization helpers
+std::vector<uint8_t> serialize_framebuffer(const renderer2d::Framebuffer& fb);
+std::shared_ptr<renderer2d::Framebuffer> deserialize_framebuffer(const std::vector<uint8_t>& data);
 
-std::vector<uint8_t> serialize_framebuffer(const renderer2d::Framebuffer& fb) {
-    std::vector<uint8_t> data;
-    const uint32_t width = fb.width();
-    const uint32_t height = fb.height();
-    const auto& pixels = fb.pixels();
-
-    // Header: width (4 bytes) + height (4 bytes)
-    data.resize(8 + pixels.size() * sizeof(float));
-    std::memcpy(data.data(), &width, 4);
-    std::memcpy(data.data() + 4, &height, 4);
-    std::memcpy(data.data() + 8, pixels.data(), pixels.size() * sizeof(float));
-
-    return data;
-}
-
-std::shared_ptr<renderer2d::Framebuffer> deserialize_framebuffer(const std::vector<uint8_t>& data) {
-    if (data.size() < 8) return nullptr;
-
-    uint32_t width = 0, height = 0;
-    std::memcpy(&width, data.data(), 4);
-    std::memcpy(&height, data.data() + 4, 4);
-
-    const size_t expected_pixel_bytes = width * height * 4 * sizeof(float);
-    if (data.size() < 8 + expected_pixel_bytes) return nullptr;
-
-    auto fb = std::make_shared<renderer2d::Framebuffer>(width, height);
-    std::memcpy(fb->mutable_pixels().data(), data.data() + 8, expected_pixel_bytes);
-
-    return fb;
-}
-
-} // namespace
-
-// Mux audio and video using FFmpeg command line
-bool mux_audio_video(const std::string& video_path, const std::string& audio_path, std::string& error) {
-    // Check if input files exist
-    if (!std::filesystem::exists(video_path)) {
-        error = "Video file not found: " + video_path;
-        return false;
-    }
-    if (!std::filesystem::exists(audio_path)) {
-        error = "Audio file not found: " + audio_path;
-        return false;
-    }
-
-    // Create output path (temp file)
-    std::filesystem::path video_p(video_path);
-    std::filesystem::path output_path = video_p.parent_path() / ("muxed_" + video_p.filename().string());
-
-    // Build FFmpeg command to mux audio and video
-    // -y: overwrite output file
-    // -i video_path: input video
-    // -i audio_path: input audio
-    // -c:v copy: copy video codec (no re-encode)
-    // -c:a aac: encode audio to AAC
-    // -map 0:v:0: use video from first input
-    // -map 1:a:0: use audio from second input
-    std::string command = "ffmpeg -y -i \"" + video_path + "\" -i \"" + audio_path + "\" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 \"" + output_path.string() + "\"";
-
-    int result = std::system(command.c_str());
-    if (result != 0) {
-        error = "FFmpeg mux failed with code: " + std::to_string(result);
-        return false;
-    }
-
-    // Replace original video with muxed version
-    try {
-        std::filesystem::remove(video_path);
-        std::filesystem::rename(output_path, video_path);
-    } catch (const std::exception& e) {
-        error = std::string("Failed to replace video file: ") + e.what();
-        return false;
-    }
-
-    return true;
-}
+// Forward declaration for audio muxing helper
+bool mux_audio_video(const std::string& video_path, const std::string& audio_path, std::string& error);
 
 output::OutputFramePacket make_output_packet(const ExecutedFrame& frame, double fps) {
     output::OutputFramePacket packet;

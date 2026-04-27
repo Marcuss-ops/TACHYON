@@ -1,0 +1,40 @@
+{
+  "job_id": "job_png_sequence",
+  "scene_ref": "scene_graph_minimal.json",
+  "composition_target": "main",
+  "seed_policy_mode": "deterministic",
+  "compatibility_mode": "locked_v1",
+  "frame_range": {
+    "start": 0,
+    "end": 1
+  },
+  "output": {
+    "destination": {
+      "path": "tests/output/batch_default",
+      "overwrite": true
+    },
+    "profile": {
+      "name": "png_sequence",
+      "class": "image-sequence",
+      "container": "png",
+      "alpha_mode": "preserved",
+      "video": {
+        "codec": "png",
+        "pixel_format": "rgba8",
+        "rate_control_mode": "fixed"
+      },
+      "audio": {
+        "mode": "none"
+      },
+      "buffering": {
+        "strategy": "pipe",
+        "max_frames_in_queue": 2
+      },
+      "color": {
+        "space": "bt709",
+        "transfer": "srgb",
+        "range": "full"
+      }
+    }
+  }
+}
