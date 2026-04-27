@@ -622,4 +622,19 @@ Color blend_mode_color(Color src, Color dest, BlendMode mode) {
     return blend_mode_color_with_curve(src, dest, mode, TransferCurve::Linear);
 }
 
+Color convert_color(Color color, TransferCurve src_c, ColorPrimaries src_p, TransferCurve dst_c, ColorPrimaries dst_p) {
+    if (src_c == dst_c && src_p == dst_p) return color;
+    // Simple placeholder implementation
+    return color; 
+}
+
+void apply_matte_buffer(SurfaceRGBA& surface, const std::vector<float>& matte, std::int64_t width, std::int64_t height) {
+    (void)width; (void)height;  // Suppress unused parameter warnings
+    auto& pixels = surface.mutable_pixels();
+    const size_t count = std::min(pixels.size() / 4, matte.size());  // RGBA: 4 floats per pixel
+    for (size_t i = 0; i < count; ++i) {
+        pixels[i * 4 + 3] *= matte[i];  // Alpha channel is 4th component (R,G,B,A)
+    }
+}
+
 } // namespace tachyon::renderer2d

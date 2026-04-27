@@ -544,7 +544,6 @@ public:
                 cache_key.features = style.features;
 
                 ShapedGlyphRun shaped;
-                auto& cache = ShapingCache::get_instance();
                 if (!cache.get(cache_key, shaped)) {
                     shaped = shape_run_with_harfbuzz(*sub.font, sub.codepoints, scale, script_info.script, script_info.language, dir, style.features);
                     cache.put(cache_key, shaped);

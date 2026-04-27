@@ -106,13 +106,13 @@ TEST_F(TextEditorTest, BiDi_Basics) {
     std::string mixed = "ABC \xD8\xB9\xD8\xA7\xD9\x84\xD9\x85"; // ABC [Arabic world]
     editor.set_text(mixed);
     
-    // Cluster count should be correct (4 + 1 space + 4 Arabic)
-    EXPECT_EQ(editor.get_document().cluster_count(), 9);
-    
-    // Deleting backward at the end of RTL run
-    editor.set_selection(9, 9);
-    editor.delete_backward();
+    // Cluster count: 3 Latin (ABC) + 1 space + 4 Arabic = 8 clusters
     EXPECT_EQ(editor.get_document().cluster_count(), 8);
+    
+    // Deleting backward at the end of RTL run (removes last Arabic cluster)
+    editor.set_selection(8, 8);
+    editor.delete_backward();
+    EXPECT_EQ(editor.get_document().cluster_count(), 7);
 }
 
 } // namespace tachyon::text

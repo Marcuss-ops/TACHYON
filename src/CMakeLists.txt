@@ -180,6 +180,7 @@ add_library(TachyonCore SHARED
     text/core/fonts/font_registry.cpp
     text/core/fonts/font_face.cpp
     text/core/fonts/font_instance.cpp
+    text/core/fonts/glyph_atlas.cpp
     text/core/fonts/font_manifest.cpp
     text/core/fonts/font_resolver.cpp
     text/core/fonts/font_preloader.cpp
@@ -251,10 +252,20 @@ foreach(_source IN LISTS _tachyon_unity_excluded_sources)
 endforeach()
 
 if(MSVC)
-    target_compile_options(TachyonCore PRIVATE /W4 /WX /EHsc /permissive- /utf-8 /FS /arch:AVX2 /MP)
+    target_compile_options(TachyonCore PRIVATE
+        /W4 /EHsc /permissive- /utf-8 /FS /arch:AVX2 /MP
+        $<$<CONFIG:Release>:/O2>
+        $<$<CONFIG:Release>:/GL>
+        $<$<BOOL:${TACHYON_TREAT_WARNINGS_AS_ERRORS}>:/WX>
+    )
+    target_link_options(TachyonCore PRIVATE
+        $<$<CONFIG:Release>:/LTCG>
+    )
     target_compile_definitions(TachyonCore PRIVATE TACHYON_AVX2)
 else()
-    target_compile_options(TachyonCore PRIVATE -Wall -Wextra -Wpedantic)
+    target_compile_options(TachyonCore PRIVATE -Wall -Wextra -Wpedantic
+        $<$<BOOL:${TACHYON_TREAT_WARNINGS_AS_ERRORS}>:-Werror>
+    )
 endif()
 
 target_include_directories(TachyonCore

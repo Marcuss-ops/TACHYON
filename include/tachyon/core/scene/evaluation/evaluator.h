@@ -27,7 +27,20 @@ struct EvaluationVariables {
     const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables{nullptr};
     const std::unordered_map<std::string, RenderJob::LayerOverride>* layer_overrides{nullptr};
     const std::map<std::string, nlohmann::json>* input_props{nullptr};
+    bool include_standard_vars{true};
+
+    // Merged variables (standard + user) - owned storage
+    std::unordered_map<std::string, double> merged_numeric;
+    std::unordered_map<std::string, std::string> merged_strings;
 };
+
+std::unordered_map<std::string, double> make_standard_numeric_vars(
+    std::int64_t frame_number,
+    double composition_time_seconds,
+    double frame_rate = 30.0
+);
+
+std::unordered_map<std::string, std::string> make_standard_string_vars();
 
 [[nodiscard]] EvaluatedLayerState evaluate_layer_state(
     const LayerSpec& layer,

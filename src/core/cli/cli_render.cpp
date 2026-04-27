@@ -4,12 +4,61 @@
 #include "tachyon/runtime/execution/session/render_session.h"
 #include "tachyon/runtime/execution/batch/batch_runner.h"
 #include "tachyon/core/spec/compilation/scene_compiler.h"
+#include "tachyon/core/spec/validation/scene_validator.h"
 #include "cli_internal.h"
 #include <filesystem>
 #include <iostream>
 #include <thread>
+#include <csignal>
+#include <chrono>
 
 namespace tachyon {
+
+// Global cancel flag for Ctrl+C handling
+static tachyon::CancelFlag g_cancel_flag{false};
+
+// Progress callback that shows percentage and ETA
+struct ProgressState {
+    std::chrono::steady_clock::time_point start_time;
+    std::size_t last_printed_percent{0};
+};
+
+static ProgressState g_progress_state;
+
+void progress_callback(std::size_t completed, std::size_t total) {
+    if (total == 0) return;
+
+    std::size_t percent = (completed * 100) / total;
+
+    // Only print on percent change to avoid spam
+    if (percent != g_progress_state.last_printed_percent) {
+        g_progress_state.last_printed_percent = percent;
+
+        auto now = std::chrono::steady_clock::now();
+        auto elapsed = std::chrono::duration<double>(now - g_progress_state.start_time).count();
+
+        double fps = (completed > 0) ? (completed / elapsed) : 0.0;
+        double remaining = (fps > 0) ? ((total - completed) / fps) : 0.0;
+
+        std::cout << "\rRender progress: " << percent << "% (" << completed << "/" << total << ")";
+        if (remaining > 0) {
+            std::cout << " - ETA: " << static_cast<int>(remaining) << "s";
+        }
+        std::cout << std::flush;
+
+        if (percent == 100) {
+            std::cout << "\n";
+        }
+    }
+}
+
+// SIGINT handler for Ctrl+C
+void signal_handler(int signal) {
+    if (signal == SIGINT) {
+        std::cout << "\nCtrl+C received, cancelling render...\n";
+        g_cancel_flag.store(true);
+    }
+}
 
 namespace {
 void print_execution_plan(
@@ -46,6 +95,22 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
     SceneSpec scene;
     AssetResolutionTable assets;
     if (!load_scene_context(options.scene_path, scene, assets, err)) return false;
+
+    // Scene validation - mandatory before render
+    tachyon::core::SceneValidator validator;
+    const auto validation_result = validator.validate(scene);
+    if (!validation_result.issues.empty()) {
+        err << "Scene validation issues found:\n";
+        for (const auto& issue : validation_result.issues) {
+            err << "  [" << (issue.severity == tachyon::core::ValidationIssue::Severity::Fatal ? "FATAL" :
+                        issue.severity == tachyon::core::ValidationIssue::Severity::Error ? "ERROR" : "WARNING")
+                << "] " << issue.path << ": " << issue.message << "\n";
+        }
+        if (!validation_result.is_valid()) {
+            err << "Render aborted due to validation errors.\n";
+            return false;
+        }
+    }
 
     const auto job_parsed = parse_render_job_file(options.job_path);
     if (!job_parsed.value.has_value()) { print_diagnostics(job_parsed.diagnostics, err); return false; }
@@ -87,19 +152,34 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
 
     RenderSession session;
     if (options.memory_budget_bytes.has_value()) session.set_memory_budget_bytes(*options.memory_budget_bytes);
-    
+
+    // Install SIGINT handler for Ctrl+C
+    std::signal(SIGINT, signal_handler);
+    g_cancel_flag.store(false);
+    g_progress_state = ProgressState{std::chrono::steady_clock::now(), 0};
+
     const std::size_t concurrency = (options.worker_count > 0) ? options.worker_count : std::thread::hardware_concurrency();
-    const RenderSessionResult session_result = session.render(scene, *compiled_result.value, *execution_result.value, job.output.destination.path, concurrency);
-    
+    const RenderSessionResult session_result = session.render(
+        scene, *compiled_result.value, *execution_result.value,
+        job.output.destination.path, concurrency,
+        progress_callback, g_cancel_flag);
+
+    // Reset signal handler
+    std::signal(SIGINT, SIG_DFL);
+
     if (options.json_output) {
         // Reduced JSON output for brevity in this example
-        out << "{\"status\": \"ok\", \"frames\": " << session_result.frames.size() << "}\n";
+        out << "{\"status\": \"" << (session_result.output_error.empty() ? "ok" : "error") << "\", \"frames\": " << session_result.frames_written << "}\n";
     } else {
         RasterizedFrame2D first_frame;
-        if (!session_result.frames.empty()) {
+        if (session_result.frames_written > 0) {
             first_frame.backend_name = "cpu-frame-executor";
         }
         print_execution_plan(*execution_result.value, first_frame, session_result, out);
+
+        if (!session_result.output_error.empty()) {
+            err << "Error: " << session_result.output_error << "\n";
+        }
     }
     return session_result.output_error.empty();
 }

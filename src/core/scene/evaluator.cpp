@@ -9,6 +9,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <ctime>
+#include <chrono>
 
 namespace tachyon::scene {
 
@@ -249,6 +251,46 @@ EvaluatedLayerState evaluate_layer_state(
     };
 
     return make_layer_state(context, context.composition.layers.front(), 0, 0.0, {});
+}
+
+std::unordered_map<std::string, double> make_standard_numeric_vars(
+    std::int64_t frame_number,
+    double composition_time_seconds,
+    double frame_rate) {
+    std::unordered_map<std::string, double> vars;
+    vars["frame"] = static_cast<double>(frame_number);
+    vars["time"] = composition_time_seconds;
+    vars["fps"] = frame_rate;
+    vars["frame_rate"] = frame_rate;
+    return vars;
+}
+
+std::unordered_map<std::string, std::string> make_standard_string_vars() {
+    std::unordered_map<std::string, std::string> vars;
+
+    auto now = std::chrono::system_clock::now();
+    std::time_t now_time = std::chrono::system_clock::to_time_t(now);
+    std::tm local_tm;
+#ifdef _WIN32
+    localtime_s(&local_tm, &now_time);
+#else
+    localtime_r(&now_time, &local_tm);
+#endif
+
+    char date_buf[32];
+    char time_buf[32];
+    char datetime_buf[64];
+
+    std::strftime(date_buf, sizeof(date_buf), "%Y-%m-%d", &local_tm);
+    std::strftime(time_buf, sizeof(time_buf), "%H:%M:%S", &local_tm);
+    std::strftime(datetime_buf, sizeof(datetime_buf), "%Y-%m-%d %H:%M:%S", &local_tm);
+
+    vars["date"] = date_buf;
+    vars["today"] = date_buf;
+    vars["time_str"] = time_buf;
+    vars["datetime"] = datetime_buf;
+
+    return vars;
 }
 
 } // namespace tachyon::scene

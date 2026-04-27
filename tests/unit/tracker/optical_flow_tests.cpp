@@ -37,7 +37,7 @@ std::vector<float> create_low_texture_frame(int w, int h) {
     return frame;
 }
 
-std::vector<float> create_gradient_frame(int w, int h, float dx, float dy) {
+std::vector<float> create_gradient_frame(int w, int h, float /*dx*/, float /*dy*/) {
     std::vector<float> frame(static_cast<size_t>(w * h));
     for (int y = 0; y < h; ++y) {
         for (int x = 0; x < w; ++x) {

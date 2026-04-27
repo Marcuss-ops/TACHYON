@@ -46,40 +46,40 @@ ninja -C build-ninja TachyonCore  # Now works!
 
 ## Build commands
 
-Fast check:
+Fast check (syntax check):
 
 ```powershell
 .\build.ps1 -Check
 ```
 
-Core build:
+Core build (TachyonCore only):
 
 ```powershell
-.\build.ps1 -RelWithDebInfo -CoreOnly
+.\build.ps1 -BuildType RelWithDebInfo -CoreOnly
 ```
 
 Full build:
 
 ```powershell
-.\build.ps1 -RelWithDebInfo
+.\build.ps1 -BuildType RelWithDebInfo
 ```
 
 Tests:
 
 ```powershell
-.\build.ps1 -RelWithDebInfo -Test
+.\build.ps1 -BuildType RelWithDebInfo -Test
 ```
 
 Targeted tests:
 
 ```powershell
-.\build.ps1 -RelWithDebInfo -TestFilter Component
+.\build.ps1 -BuildType RelWithDebInfo -TestFilter Component
 ```
 
-Clean deps only when necessary:
+Clean and rebuild:
 
 ```powershell
-.\build.ps1 -RelWithDebInfo -CleanDeps
+.\build.ps1 -BuildType RelWithDebInfo -Clean
 ```
 
 Quick error check:
@@ -91,7 +91,7 @@ Quick error check:
 Header smoke tests (catches header errors early):
 
 ```powershell
-cmake --build build-ninja --preset relwithdebinfo --target HeaderSmokeTests
+cmake --build build-ninja --config RelWithDebInfo --target HeaderSmokeTests
 ```
 
 Full validation script for agents:
