@@ -284,6 +284,7 @@ target_link_libraries(TachyonCore
         freetype
         harfbuzz
         OpenMP::OpenMP_CXX
+        spdlog::spdlog
 )
 
 if(AVCODEC_LIBRARY AND AVFORMAT_LIBRARY AND AVUTIL_LIBRARY AND SWSCALE_LIBRARY AND SWRESAMPLE_LIBRARY)
