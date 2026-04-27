@@ -12,7 +12,9 @@ double ExpressionVM::execute(const Bytecode& code, const ExpressionContext& cont
     std::vector<double> stack;
     stack.reserve(64);
 
-    for (const auto& instr : code.instructions) {
+    const std::size_t n_instr = code.instructions.size();
+    for (std::size_t ip = 0; ip < n_instr; ++ip) {
+        const auto& instr = code.instructions[ip];
         switch (instr.op) {
             case OpCode::PushConst:
                 stack.push_back(code.constants[instr.data]);
@@ -58,6 +60,61 @@ double ExpressionVM::execute(const Bytecode& code, const ExpressionContext& cont
             }
             case OpCode::Neg: {
                 stack.back() = -stack.back();
+                break;
+            }
+            case OpCode::Mod: {
+                double b = stack.back(); stack.pop_back();
+                double a = stack.back(); stack.pop_back();
+                stack.push_back(b != 0.0 ? std::fmod(a, b) : 0.0);
+                break;
+            }
+            case OpCode::Lt: {
+                double b = stack.back(); stack.pop_back();
+                double a = stack.back(); stack.pop_back();
+                stack.push_back(a < b ? 1.0 : 0.0);
+                break;
+            }
+            case OpCode::Gt: {
+                double b = stack.back(); stack.pop_back();
+                double a = stack.back(); stack.pop_back();
+                stack.push_back(a > b ? 1.0 : 0.0);
+                break;
+            }
+            case OpCode::Le: {
+                double b = stack.back(); stack.pop_back();
+                double a = stack.back(); stack.pop_back();
+                stack.push_back(a <= b ? 1.0 : 0.0);
+                break;
+            }
+            case OpCode::Ge: {
+                double b = stack.back(); stack.pop_back();
+                double a = stack.back(); stack.pop_back();
+                stack.push_back(a >= b ? 1.0 : 0.0);
+                break;
+            }
+            case OpCode::Eq: {
+                double b = stack.back(); stack.pop_back();
+                double a = stack.back(); stack.pop_back();
+                stack.push_back(std::abs(a - b) < 1e-12 ? 1.0 : 0.0);
+                break;
+            }
+            case OpCode::Ne: {
+                double b = stack.back(); stack.pop_back();
+                double a = stack.back(); stack.pop_back();
+                stack.push_back(std::abs(a - b) >= 1e-12 ? 1.0 : 0.0);
+                break;
+            }
+            case OpCode::JumpIfFalse: {
+                double cond = stack.back(); stack.pop_back();
+                if (cond == 0.0) {
+                    // data = absolute instruction index to jump to
+                    ip = static_cast<std::size_t>(instr.data) - 1; // -1 because loop does ++ip
+                }
+                break;
+            }
+            case OpCode::Jump: {
+                // Unconditional jump — used for ternary else branch
+                ip = static_cast<std::size_t>(instr.data) - 1;
                 break;
             }
             case OpCode::Call: {
@@ -242,6 +299,55 @@ double ExpressionVM::execute(const Bytecode& code, const ExpressionContext& cont
                         }
                     } else {
                         stack.push_back(0.0);
+                    }
+                }
+                // --- Math built-ins ---
+                else if (name == "floor") stack.push_back(std::floor(args[0]));
+                else if (name == "ceil")  stack.push_back(std::ceil(args[0]));
+                else if (name == "round") stack.push_back(std::round(args[0]));
+                else if (name == "sqrt")  stack.push_back(args[0] >= 0.0 ? std::sqrt(args[0]) : 0.0);
+                else if (name == "log")   stack.push_back(args[0] > 0.0 ? std::log(args[0]) : 0.0);
+                else if (name == "exp")   stack.push_back(std::exp(args[0]));
+                else if (name == "tan")   stack.push_back(std::tan(args[0]));
+                else if (name == "atan")  stack.push_back(std::atan(args[0]));
+                else if (name == "atan2" && args.size() >= 2) stack.push_back(std::atan2(args[0], args[1]));
+                else if (name == "degreesToRadians") stack.push_back(args[0] * (3.14159265358979323846 / 180.0));
+                else if (name == "radiansToDegrees") stack.push_back(args[0] * (180.0 / 3.14159265358979323846));
+                else if (name == "length" && args.size() >= 2) stack.push_back(std::sqrt(args[0]*args[0] + args[1]*args[1]));
+                // --- ease / easeIn / easeOut (cubic Hermite, AE-style) ---
+                // ease(t, t1, t2, v1, v2) — smooth step
+                else if ((name == "ease" || name == "easeIn" || name == "easeOut") && args.size() >= 5) {
+                    double t  = args[0], t1 = args[1], t2 = args[2];
+                    double v1 = args[3], v2 = args[4];
+                    if (t2 <= t1) { stack.push_back(v1); break; }
+                    double u = std::clamp((t - t1) / (t2 - t1), 0.0, 1.0);
+                    double s = (name == "easeIn")  ? u * u * (3.0 - 2.0 * u) * u  // quadratic ease-in only
+                             : (name == "easeOut") ? u * (2.0 - u)                 // ease-out only
+                             : u * u * (3.0 - 2.0 * u);                            // smooth step (ease)
+                    stack.push_back(v1 + s * (v2 - v1));
+                }
+                // --- loopOut / loopIn (cycle and pingpong) ---
+                else if (name == "loopOut" || name == "loopIn") {
+                    // loopOut(type_ignored, duration) — duration in seconds
+                    // Uses value_at_time to sample start/end of the loop range
+                    double duration = (args.size() >= 2) ? args[1] : 1.0;
+                    if (duration <= 0.0) { stack.push_back(context.value); break; }
+                    double t = context.time;
+                    double looped_t;
+                    if (name == "loopOut") {
+                        // cycle forward from t=0
+                        looped_t = std::fmod(t, duration);
+                        if (looped_t < 0.0) looped_t += duration;
+                    } else {
+                        // cycle backward (loopIn)
+                        double neg_t = -t;
+                        looped_t = duration - std::fmod(neg_t, duration);
+                        if (looped_t >= duration) looped_t -= duration;
+                    }
+                    if (context.value_at_time) {
+                        stack.push_back(context.value_at_time(looped_t));
+                    } else {
+                        stack.push_back(context.value);
                     }
                 }
                 else {

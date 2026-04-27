@@ -40,7 +40,10 @@ struct VariableNode : public ASTNode {
 };
 
 enum class BinaryOperator {
-    Add, Sub, Mul, Div, Pow
+    Add, Sub, Mul, Div, Pow,
+    Mod,            // %
+    Lt, Gt, Le, Ge, // <  >  <=  >=
+    Eq, Ne          // == !=
 };
 
 struct BinaryOpNode : public ASTNode {

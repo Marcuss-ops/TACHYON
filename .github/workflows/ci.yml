@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ─── Linux build + tests ───────────────────────────────────────────────────
+  build-linux:
+    name: "Linux (GCC, RelWithDebInfo)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build build-essential \
+            libavcodec-dev libavformat-dev libavutil-dev \
+            libswscale-dev libswresample-dev \
+            libfreetype6-dev libharfbuzz-dev \
+            libomp-dev
+
+      - name: Configure
+        run: |
+          cmake -G Ninja \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DTACHYON_TREAT_WARNINGS_AS_ERRORS=OFF \
+            -B build-ci -S .
+
+      - name: Build TachyonCore
+        run: cmake --build build-ci --target TachyonCore -j$(nproc)
+
+      - name: Build tests
+        run: cmake --build build-ci --target TachyonTests -j$(nproc)
+
+      - name: Run tests
+        working-directory: build-ci
+        run: ctest --output-on-failure -j$(nproc) -R ".*"
+
+  # ─── Windows build (no tests — just compile check) ─────────────────────────
+  build-windows:
+    name: "Windows (MSVC, RelWithDebInfo)"
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v4
+
+      - name: Configure
+        run: |
+          cmake -G Ninja `
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo `
+            -DTACHYON_TREAT_WARNINGS_AS_ERRORS=OFF `
+            -B build-ci -S .
+
+      - name: Build TachyonCore
+        run: cmake --build build-ci --target TachyonCore -j4
