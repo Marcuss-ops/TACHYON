@@ -77,8 +77,9 @@ add_library(TachyonCore SHARED
     core/spec/text_animator_spec_serialize.cpp
     core/spec/schema/common/common_spec_serialize.cpp
     core/spec/schema/objects/layer_spec_serialize.cpp
-    core/spec/compilation/preset_compiler.cpp
-    core/spec/compilation/scene_compiler.cpp
+     core/spec/compilation/preset_compiler.cpp
+     core/spec/compilation/scene_compiler.cpp
+     core/spec/compilation/scene_compiler_hash.cpp
     core/spec/schema/scene_spec.cpp
     core/spec/schema/scene_spec_core.cpp
     core/spec/scene_spec_serialize.cpp
@@ -185,9 +186,11 @@ add_library(TachyonCore SHARED
     text/core/fonts/font_resolver.cpp
     text/core/fonts/font_preloader.cpp
     text/core/fonts/font_coverage_reporter.cpp
-    text/core/layout/layout.cpp
-    text/core/layout/layout_engine.cpp
-    text/core/layout/layout_cache.cpp
+     text/core/layout/layout.cpp
+     text/core/layout/layout_engine.cpp
+     text/core/layout/layout_engine_helpers.cpp
+     text/core/layout/layout_engine_core.cpp
+     text/core/layout/layout_cache.cpp
     text/core/rendering/outline_extractor.cpp
     text/bidi/script_detector.cpp
     text/core/content/subtitle.cpp

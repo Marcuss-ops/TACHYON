@@ -1,0 +1,20 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/pierone/Pyt/Tachyon/build-linux/cmake_install.cmake",
+		"/home/pierone/Pyt/Tachyon/.cache/fetchcontent/ninja-gcc-linux/nlohmann_json-build/cmake_install.cmake",
+		"/home/pierone/Pyt/Tachyon/.cache/fetchcontent/ninja-gcc-linux/freetype-build/cmake_install.cmake",
+		"/home/pierone/Pyt/Tachyon/.cache/fetchcontent/ninja-gcc-linux/harfbuzz-build/cmake_install.cmake",
+		"/home/pierone/Pyt/Tachyon/.cache/fetchcontent/ninja-gcc-linux/tinygltf-build/cmake_install.cmake",
+		"/home/pierone/Pyt/Tachyon/.cache/fetchcontent/ninja-gcc-linux/earcut-build/cmake_install.cmake",
+		"/home/pierone/Pyt/Tachyon/.cache/fetchcontent/ninja-gcc-linux/earcut-build/glfw/cmake_install.cmake",
+		"/home/pierone/Pyt/Tachyon/.cache/fetchcontent/ninja-gcc-linux/earcut-build/glfw/src/cmake_install.cmake",
+		"/home/pierone/Pyt/Tachyon/.cache/fetchcontent/ninja-gcc-linux/googletest-build/cmake_install.cmake",
+		"/home/pierone/Pyt/Tachyon/.cache/fetchcontent/ninja-gcc-linux/googletest-build/googlemock/cmake_install.cmake",
+		"/home/pierone/Pyt/Tachyon/.cache/fetchcontent/ninja-gcc-linux/googletest-build/googletest/cmake_install.cmake",
+		"/home/pierone/Pyt/Tachyon/.cache/fetchcontent/ninja-gcc-linux/spdlog-build/cmake_install.cmake",
+		"/home/pierone/Pyt/Tachyon/build-linux/src/cmake_install.cmake",
+		"/home/pierone/Pyt/Tachyon/build-linux/tests/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
