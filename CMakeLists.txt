@@ -7,7 +7,14 @@ project(TACHYON VERSION 0.1.0 LANGUAGES CXX)
 
 # Set FetchContent base directory before including FetchContent
 if(NOT DEFINED FETCHCONTENT_BASE_DIR)
-    set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/.cache/fetchcontent/ninja-msvc-x64" CACHE PATH "Base directory for FetchContent downloads")
+    if(WIN32)
+        set(_fc_suffix "ninja-msvc-x64")
+    elseif(APPLE)
+        set(_fc_suffix "ninja-clang-macos")
+    else()
+        set(_fc_suffix "ninja-gcc-linux")
+    endif()
+    set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/.cache/fetchcontent/${_fc_suffix}" CACHE PATH "Base directory for FetchContent downloads")
 endif()
 include(FetchContent)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -199,6 +206,18 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 include_directories(${gtest_SOURCE_DIR}/googletest/include)
+
+# spdlog — structured logging (header-only)
+FetchContent_Declare(
+    spdlog
+    GIT_REPOSITORY https://github.com/gabime/spdlog.git
+    GIT_TAG        v1.14.1
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+set(SPDLOG_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(SPDLOG_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
+set(SPDLOG_BUILD_BENCH    OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(spdlog)
 
 # Version header generation
 configure_file(
