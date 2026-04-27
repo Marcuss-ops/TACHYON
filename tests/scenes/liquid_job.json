@@ -1,0 +1,10 @@
+{
+  "schema": "tachyon.render_job/1.0",
+  "job_id": "liquid_render",
+  "composition_target": "main",
+  "frame_range": { "start": 0, "end": 150 },
+  "output": {
+    "destination": { "path": "C:/Users/pater/Pyt/Tachyon/output/liquid_deep.mp4" },
+    "profile": { "container": "mp4", "video": { "codec": "h264", "pixel_format": "yuv420p" } }
+  }
+}

@@ -123,6 +123,7 @@ struct CompiledLayer {
     AnimatedColorSpec subtitle_outline_color;
     float subtitle_outline_width{0.0f};
     std::optional<std::string> word_timestamp_path;
+    std::optional<ProceduralSpec> procedural;
     
     // Evaluation state indices
     std::optional<std::uint32_t> parent_index;

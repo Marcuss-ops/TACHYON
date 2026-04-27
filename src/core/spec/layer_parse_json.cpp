@@ -271,6 +271,55 @@ void parse_shape_spec(const json& object, LayerSpec& layer, const std::string& p
     }
 }
 
+void parse_procedural_spec(const json& object, LayerSpec& layer, const std::string& path, DiagnosticBag& diagnostics) {
+    if (!object.contains("procedural") || !object.at("procedural").is_object()) return;
+    const auto& p = object.at("procedural");
+    const std::string p_path = make_path(path, "procedural");
+    
+    ProceduralSpec spec;
+    read_string(p, "kind", spec.kind);
+    read_number(p, "seed", spec.seed);
+    
+    // Core
+    parse_optional_scalar_property(p, "frequency", spec.frequency, p_path, diagnostics);
+    parse_optional_scalar_property(p, "speed", spec.speed, p_path, diagnostics);
+    parse_optional_scalar_property(p, "amplitude", spec.amplitude, p_path, diagnostics);
+    parse_optional_scalar_property(p, "scale", spec.scale, p_path, diagnostics);
+    parse_optional_scalar_property(p, "angle", spec.angle, p_path, diagnostics);
+    
+    // Colors
+    parse_optional_color_property(p, "color_a", spec.color_a, p_path, diagnostics);
+    parse_optional_color_property(p, "color_b", spec.color_b, p_path, diagnostics);
+    parse_optional_color_property(p, "color_c", spec.color_c, p_path, diagnostics);
+    
+    // Grid & Geometry
+    read_string(p, "shape", spec.shape);
+    parse_optional_scalar_property(p, "spacing", spec.spacing, p_path, diagnostics);
+    parse_optional_scalar_property(p, "border_width", spec.border_width, p_path, diagnostics);
+    parse_optional_color_property(p, "border_color", spec.border_color, p_path, diagnostics);
+    
+    // Warp
+    parse_optional_scalar_property(p, "warp_strength", spec.warp_strength, p_path, diagnostics);
+    parse_optional_scalar_property(p, "warp_frequency", spec.warp_frequency, p_path, diagnostics);
+    parse_optional_scalar_property(p, "warp_speed", spec.warp_speed, p_path, diagnostics);
+    
+    // Post-Process
+    parse_optional_scalar_property(p, "grain_amount", spec.grain_amount, p_path, diagnostics);
+    parse_optional_scalar_property(p, "grain_scale", spec.grain_scale, p_path, diagnostics);
+    parse_optional_scalar_property(p, "scanline_intensity", spec.scanline_intensity, p_path, diagnostics);
+    parse_optional_scalar_property(p, "scanline_frequency", spec.scanline_frequency, p_path, diagnostics);
+    parse_optional_scalar_property(p, "contrast", spec.contrast, p_path, diagnostics);
+    parse_optional_scalar_property(p, "gamma", spec.gamma, p_path, diagnostics);
+    parse_optional_scalar_property(p, "saturation", spec.saturation, p_path, diagnostics);
+
+    // Advanced
+    parse_optional_scalar_property(p, "octave_decay", spec.octave_decay, p_path, diagnostics);
+    parse_optional_scalar_property(p, "band_height", spec.band_height, p_path, diagnostics);
+    parse_optional_scalar_property(p, "band_spread", spec.band_spread, p_path, diagnostics);
+    
+    layer.procedural = std::move(spec);
+}
+
 void parse_layer(const json& object, LayerSpec& out, const std::string& path, DiagnosticBag& diagnostics) {
     read_string(object, "id", out.id);
     read_string(object, "name", out.name);
@@ -405,6 +454,8 @@ void parse_layer(const json& object, LayerSpec& out, const std::string& path, Di
         parse_optional_scalar_property(cs, "frequency", out.camera_shake_frequency, path + ".camera_shake", diagnostics);
         parse_optional_scalar_property(cs, "roughness", out.camera_shake_roughness, path + ".camera_shake", diagnostics);
     }
+    
+    parse_procedural_spec(object, out, path, diagnostics);
 }
 
 void parse_mask_paths(const json& object, LayerSpec& layer, const std::string& path, DiagnosticBag& diagnostics) {

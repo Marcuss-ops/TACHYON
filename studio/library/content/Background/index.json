@@ -1,0 +1,27 @@
+{
+  "library": "Tachyon Procedural Backgrounds",
+  "version": "1.1",
+  "base_path": "studio/library/content/Background",
+  "items": [
+    {
+      "id": "aura_pro",
+      "file": "Aura_Pro.json",
+      "tags": ["aurora", "vibrant", "warp", "grain"]
+    },
+    {
+      "id": "shape_grid_hex",
+      "file": "Shape_Grid_Hex.json",
+      "tags": ["grid", "hex", "math", "clean"]
+    },
+    {
+      "id": "silk_flow",
+      "file": "Silk_Flow.json",
+      "tags": ["silk", "soft", "elegant", "grey"]
+    },
+    {
+      "id": "dark_veil",
+      "file": "Dark_Veil.json",
+      "tags": ["dark", "mystery", "scanlines", "grain"]
+    }
+  ]
+}

@@ -122,6 +122,30 @@ bool parse_color_value(const json& value, ColorSpec& out) {
         out.a = (value.size() >= 4) ? static_cast<std::uint8_t>(std::clamp(value[3].get<int>(), 0, 255)) : 255;
         return true;
     }
+    if (value.is_string()) {
+        std::string hex = value.get<std::string>();
+        if (hex.empty()) return false;
+        if (hex[0] == '#') hex = hex.substr(1);
+        
+        uint32_t r, g, b, a = 255;
+        if (hex.length() == 6) {
+            std::sscanf(hex.c_str(), "%2x%2x%2x", &r, &g, &b);
+        } else if (hex.length() == 8) {
+            std::sscanf(hex.c_str(), "%2x%2x%2x%2x", &r, &g, &b, &a);
+        } else if (hex.length() == 3) {
+            std::sscanf(hex.c_str(), "%1x%1x%1x", &r, &g, &b);
+            r = (r << 4) | r;
+            g = (g << 4) | g;
+            b = (b << 4) | b;
+        } else {
+            return false;
+        }
+        out.r = static_cast<std::uint8_t>(r);
+        out.g = static_cast<std::uint8_t>(g);
+        out.b = static_cast<std::uint8_t>(b);
+        out.a = static_cast<std::uint8_t>(a);
+        return true;
+    }
     if (value.is_object()) {
         if (value.contains("r") && value.contains("g") && value.contains("b")) {
             out.r = static_cast<std::uint8_t>(std::clamp(value.at("r").get<int>(), 0, 255));

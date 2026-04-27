@@ -18,6 +18,7 @@ namespace tachyon::renderer2d {
 void render_procedural_layer(
     Framebuffer& fb,
     const scene::EvaluatedLayerState& evaluated,
-    double time_seconds);
+    double time_seconds,
+    const std::optional<RectI>& target_rect = std::nullopt);
 
 } // namespace tachyon::renderer2d

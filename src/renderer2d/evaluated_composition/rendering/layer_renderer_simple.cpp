@@ -266,8 +266,8 @@ std::shared_ptr<SurfaceRGBA> render_simple_layer_surface(
     }
 
     if (layer.type == scene::LayerType::Procedural) {
-        // Render procedural pattern directly to surface
-        render_procedural_layer(*surface, layer, layer.local_time_seconds);
+        // Render procedural pattern directly to surface, passing target_rect for global normalization
+        render_procedural_layer(*surface, layer, layer.local_time_seconds, target_rect);
         return surface;
     }
 

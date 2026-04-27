@@ -1,0 +1,13 @@
+{
+  "name": "Aura Modern",
+  "description": "Soft multi-octave noise with vibrant gradients. Ideal for modern UI backgrounds.",
+  "type": "procedural",
+  "procedural": {
+    "kind": "aura",
+    "frequency": 1.5,
+    "speed": 0.5,
+    "color_a": "#FF3366",
+    "color_b": "#3366FF",
+    "seed": 12345
+  }
+}
