@@ -12,6 +12,10 @@
 #include "tachyon/media/streaming/media_prefetcher.h"
 #include "tachyon/audio/audio_export.h"
 
+#ifdef TACHYON_TRACY_ENABLED
+#include <tracy/Tracy.hpp>
+#endif
+
 #include <iostream>
 #include <future>
 #include <atomic>
@@ -230,6 +234,10 @@ void render_frames_parallel(
                     return;
                 }
 
+#ifdef TACHYON_TRACY_ENABLED
+                ZoneScopedN("RenderSession::WorkerLoop::Frame");
+#endif
+
                 const std::size_t index = next_index.fetch_add(1);
                 if (index >= task_count) {
                     return;
@@ -345,6 +353,10 @@ RenderSessionResult RenderSession::render(
 
     (void)scene;
     RenderSessionResult result;
+
+#ifdef TACHYON_TRACY_ENABLED
+    ZoneScopedN("RenderSession::render");
+#endif
 
     // Start timing the entire render session
     auto session_start = std::chrono::high_resolution_clock::now();

@@ -13,6 +13,10 @@
 #include <cstdlib>
 #include <omp.h>
 
+#ifdef TACHYON_TRACY_ENABLED
+#include <tracy/Tracy.hpp>
+#endif
+
 namespace tachyon {
 
 namespace {
@@ -190,6 +194,10 @@ ExecutedFrame FrameExecutor::execute(
     const FrameRenderTask& task,
     const DataSnapshot& snapshot,
     RenderContext& context) {
+
+#ifdef TACHYON_TRACY_ENABLED
+    ZoneScopedN("FrameExecutor::execute");
+#endif
 
     if (m_node_lookup.empty()) build_lookup_table(compiled_scene);
 

@@ -1,4 +1,9 @@
 #include "tachyon/renderer2d/raster/rasterizer.h"
+
+#ifdef TACHYON_TRACY_ENABLED
+#include <tracy/Tracy.hpp>
+#endif
+
 #include <algorithm>
 #include <cmath>
 #include <vector>
@@ -165,6 +170,10 @@ RasterizedFrame2D render_frame_2d(
     const RenderPlan& plan,
     const FrameRenderTask& task,
     std::span<const renderer2d::DrawCommand2D> commands) {
+
+#ifdef TACHYON_TRACY_ENABLED
+    ZoneScopedN("render_frame_2d");
+#endif
 
     RasterizedFrame2D frame;
     frame.frame_number = task.frame_number;

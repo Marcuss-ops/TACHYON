@@ -350,6 +350,33 @@ double ExpressionVM::execute(const Bytecode& code, const ExpressionContext& cont
                         stack.push_back(context.value);
                     }
                 }
+                // --- noise / random ---
+                else if (name == "noise") {
+                    auto fade = [](double t) { return t * t * t * (t * (t * 6.0 - 15.0) + 10.0); };
+                    auto lerp = [](double a, double b, double t) { return a + t * (b - a); };
+                    auto hash = [](int x, int y = 0) {
+                        int n = x + y * 57;
+                        n = (n << 13) ^ n;
+                        return (1.0 - ((n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff) / 1073741824.0);
+                    };
+                    if (args.size() >= 2) { // 2D Noise
+                        double x = args[0], y = args[1];
+                        int X = (int)std::floor(x), Y = (int)std::floor(y);
+                        double fx = x - X, fy = y - Y;
+                        double u = fade(fx), v = fade(fy);
+                        stack.push_back(lerp(lerp(hash(X, Y), hash(X+1, Y), u), lerp(hash(X, Y+1), hash(X+1, Y+1), u), v));
+                    } else if (args.size() >= 1) { // 1D Noise
+                        double x = args[0];
+                        int X = (int)std::floor(x);
+                        double fx = x - X;
+                        stack.push_back(lerp(hash(X), hash(X + 1), fade(fx)));
+                    } else stack.push_back(0.0);
+                }
+                else if (name == "random") {
+                    std::uint64_t s = (args.size() >= 1) ? (std::uint64_t)(args[0] * 1000.0) : context.seed;
+                    s = s * 6364136223846793005ULL + 1442695040888963407ULL;
+                    stack.push_back((double)(s >> 32) / 4294967295.0);
+                }
                 else {
                     stack.push_back(0.0);
                 }
