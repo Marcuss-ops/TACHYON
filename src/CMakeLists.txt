@@ -62,12 +62,14 @@ add_library(TachyonCore SHARED
     core/scene/evaluator/property_sampler.cpp
     core/scene/evaluator/layer_utils.cpp
     core/scene/evaluator/mesh_animator.cpp
+    background_generator.cpp
     core/scene/evaluator/light_evaluator.cpp
     core/scene/evaluator/camera2d_evaluator.cpp
     core/scene/evaluator/layer_evaluator.cpp
     core/scene/rigging/rig_graph.cpp
     core/scene/rigging/ik_solver.cpp
     core/scene/rigging/constraint_solver.cpp
+    core/scene/dependency_node.cpp
     core/spec/json_parse_helpers.cpp
     core/spec/layer_parse_json.cpp
     core/spec/property_parse_json.cpp

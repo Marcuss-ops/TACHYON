@@ -4,6 +4,9 @@
 #include <sstream>
 #include <algorithm>
 
+// json typedef for implementation - keeps header clean
+using json = nlohmann::json;
+
 namespace tachyon {
 
 bool is_version_like(const std::string& version) {

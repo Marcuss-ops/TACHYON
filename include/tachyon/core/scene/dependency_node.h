@@ -9,6 +9,10 @@ namespace tachyon::core::scene {
 /**
  * @brief Base class for nodes in the dependency graph.
  * Uses a push/pull model with revision numbers (ticks) for invalidation.
+ * 
+ * Note: This class is designed for performance in critical paths.
+ * - No virtual functions (destructor is non-virtual)
+ * - Parent pointers are non-owning (nodes do not own their parents)
  */
 class DependencyNode {
 public:
@@ -27,7 +31,8 @@ public:
         return *this;
     }
 
-    virtual ~DependencyNode() = default;
+    // Non-virtual destructor for performance in critical path
+    ~DependencyNode() = default;
 
     /**
      * @brief Marks this node and all its parents as dirty for the given tick.
@@ -71,6 +76,7 @@ public:
 protected:
     std::atomic<uint64_t> m_last_modified_tick{0};
     std::atomic<uint64_t> m_last_evaluated_tick{0};
+    // Non-owning raw pointers: parents own themselves, not referenced via this vector
     std::vector<DependencyNode*> m_parents;
 };
 

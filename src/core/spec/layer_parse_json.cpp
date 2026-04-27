@@ -1,6 +1,8 @@
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include <algorithm>
 
+using json = nlohmann::json;
+
 namespace tachyon {
 
 void parse_transform(const json& object, LayerSpec& layer, const std::string& path, DiagnosticBag& diagnostics) {

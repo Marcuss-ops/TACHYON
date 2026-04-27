@@ -4,6 +4,8 @@
 #include <fstream>
 #include <sstream>
 
+using json = nlohmann::json;
+
 namespace tachyon {
 
 CompositionSpec parse_composition(const json& object, const std::string& path, DiagnosticBag& diagnostics) {

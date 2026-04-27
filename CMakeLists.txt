@@ -38,6 +38,12 @@ option(TACHYON_ENABLE_ASAN "Enable AddressSanitizer on Tachyon targets" OFF)
 if(MSVC)
     set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>")
     add_compile_options(/FS)
+    # MSVC Release optimizations
+    add_compile_options($<$<CONFIG:Release>:/O2 /GL>)
+    add_link_options($<$<CONFIG:Release>:/LTCG>)
+else()
+    # GCC/Clang Release optimizations
+    add_compile_options($<$<CONFIG:Release>:-O3>)
 endif()
 
 if(TACHYON_ENABLE_ASAN)

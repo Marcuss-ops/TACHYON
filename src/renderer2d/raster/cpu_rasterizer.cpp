@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <cmath>
 #include <vector>
+#include <chrono>
+#include <iostream>
 
 namespace tachyon {
 namespace renderer2d {
