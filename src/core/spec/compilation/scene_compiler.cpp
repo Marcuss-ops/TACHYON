@@ -13,49 +13,15 @@
 #include <nlohmann/json.hpp>
 
 namespace tachyon {
+
+// Declarations for functions defined in scene_compiler_hash.cpp
+void add_string(CacheKeyBuilder& builder, const std::string& value);
+template <typename T> void add_json(CacheKeyBuilder& builder, const T& value);
+std::uint64_t hash_scene_spec(const SceneSpec& scene, const DeterminismContract& contract);
+std::uint64_t hash_scene_structure(const SceneSpec& scene);
+
 namespace {
 
-void add_string(CacheKeyBuilder& builder, const std::string& value) {
-    builder.add_string(std::string_view{value});
-}
-
-template <typename T>
-void add_json(CacheKeyBuilder& builder, const T& value) {
-    builder.add_string(nlohmann::json(value).dump());
-}
-
-std::uint64_t hash_scene_spec(const SceneSpec& scene, const DeterminismContract& contract) {
-    CacheKeyBuilder builder;
-    builder.add_u64(contract.fingerprint());
-    
-    // O(1) root hash check! The scene.spec_hash represents the entire Merkle Tree
-    // pre-computed during JSON parsing or mutation.
-    builder.add_u64(scene.spec_hash);
-    
-    return builder.finish();
-}
-
-// Hashes only graph topology: composition/layer IDs, types, and structural relationships.
-// Changes here require full recompilation. Changes only to property values do not.
-std::uint64_t hash_scene_structure(const SceneSpec& scene) {
-    CacheKeyBuilder builder;
-    builder.add_u64(static_cast<std::uint64_t>(scene.compositions.size()));
-    for (const auto& composition : scene.compositions) {
-        add_string(builder, composition.id);
-        builder.add_u64(static_cast<std::uint64_t>(composition.layers.size()));
-        for (const auto& layer : composition.layers) {
-            add_string(builder, layer.id);
-            add_string(builder, layer.type);
-            builder.add_bool(layer.parent.has_value());
-            if (layer.parent.has_value()) add_string(builder, *layer.parent);
-            builder.add_bool(layer.precomp_id.has_value());
-            if (layer.precomp_id.has_value()) add_string(builder, *layer.precomp_id);
-            builder.add_bool(layer.track_matte_layer_id.has_value());
-            if (layer.track_matte_layer_id.has_value()) add_string(builder, *layer.track_matte_layer_id);
-        }
-    }
-    return builder.finish();
-}
 
 /**
  * @brief Context used during compilation to track node IDs and dependencies.
