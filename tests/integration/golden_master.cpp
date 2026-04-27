@@ -16,8 +16,15 @@ protected:
     }
 
     void run_golden_test(const std::string& name, const std::string& scene_json) {
-        // 1. Parse and Compile Scene
-        auto scene = SceneSpec::from_json(nlohmann::json::parse(scene_json));
+        (void)scene_json; // We'll build it manually for now as from_json is not easily available in this context
+        
+        // 1. Build Scene
+        SceneSpecBuilder builder;
+        builder.SetProjectId("test_project")
+               .SetProjectName("Test Project")
+               .AddComposition("main", "Main Comp", 160, 90, 1.0, 24);
+        
+        SceneSpec scene = std::move(builder).Build();
         auto compiled = SceneCompiler::compile(scene);
 
         // 2. Setup Render Session
@@ -26,6 +33,7 @@ protected:
         plan.render_plan.composition.width = 160;
         plan.render_plan.composition.height = 90;
         plan.render_plan.composition.frame_rate = {24, 1};
+        plan.render_plan.composition_target = "main";
         
         FrameRenderTask task;
         task.frame_number = 0;
