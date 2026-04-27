@@ -79,11 +79,11 @@ if ($Mode -eq 'normal') {
 
 # -- full: all tests --------------------------------------------------------
 Write-Host "`n[build] All tests..." -ForegroundColor Yellow
-& (Join-Path $PSScriptRoot "..\build.ps1") -RelWithDebInfo -TestsOnly
+& (Join-Path $PSScriptRoot "..\build.ps1") -BuildType RelWithDebInfo
 if ($LASTEXITCODE -ne 0) { Write-Host "Test build failed!" -ForegroundColor Red; exit 1 }
 
 Write-Host "`n[run] Tests..." -ForegroundColor Yellow
-& (Join-Path $PSScriptRoot "..\build.ps1") -RelWithDebInfo -Test
+& (Join-Path $PSScriptRoot "..\build.ps1") -BuildType RelWithDebInfo -Test
 if ($LASTEXITCODE -ne 0) { Write-Host "Tests failed!" -ForegroundColor Red; exit 1 }
 
 Write-Host "`n=== Validation PASSED [full] ===" -ForegroundColor Green
