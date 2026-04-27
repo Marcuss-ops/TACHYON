@@ -79,11 +79,13 @@ add_library(TachyonCore SHARED
     core/spec/schema/objects/layer_spec_serialize.cpp
     core/spec/compilation/preset_compiler.cpp
     core/spec/compilation/scene_compiler.cpp
+    core/spec/compilation/scene_compiler_flatten.cpp
     core/spec/schema/scene_spec.cpp
     core/spec/schema/scene_spec_core.cpp
     core/spec/scene_spec_serialize.cpp
     core/spec/scene_spec_parse.cpp
     core/spec/scene_spec_builder.cpp
+    core/spec/template_registry.cpp
     core/spec/validation/scene_validator_layer.cpp
     core/spec/validation/scene_validator_schema.cpp
     core/spec/validation/scene_validator_utils.cpp

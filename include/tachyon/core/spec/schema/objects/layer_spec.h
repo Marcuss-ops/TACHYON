@@ -89,6 +89,20 @@ struct ParticleSpec {
     }
 };
 
+struct LayerTransitionSpec {
+    std::string type{"none"}; // "fade", "slide", "zoom", "flip", "blur"
+    std::string direction{"none"}; // "up", "down", "left", "right", "random"
+    double duration{0.4};
+    animation::EasingPreset easing{animation::EasingPreset::EaseOut};
+    animation::SpringEasing spring{}; // Custom spring parameters
+    double delay{0.0};
+};
+
+struct InstanceSpec {
+    std::string source;
+    std::map<std::string, nlohmann::json> overrides;
+};
+
 struct LayerSpec {
     struct MarkerSpec {
         double time{0.0};
@@ -217,19 +231,23 @@ struct LayerSpec {
     std::optional<std::string> camera2d_id;
     float parallax_factor{1.0f};
 
-    // Animation presets
-    std::string in_preset;
+    // Animation transitions
+    LayerTransitionSpec transition_in;
+    LayerTransitionSpec transition_out;
     std::string during_preset;
-    std::string out_preset;
-    double in_duration{0.4};
-    double out_duration{0.4};
 
     // Playback behavior
     bool loop{false};
     bool hold_last_frame{false};
 
+    // Instance data (if type == "instance")
+    std::optional<InstanceSpec> instance;
+
     // Markers
     std::vector<MarkerSpec> markers;
+
+    // Cache
+    std::uint64_t spec_hash{0};
 };
 
 // JSON serialization declarations (implementations in layer_spec_serialize.cpp)

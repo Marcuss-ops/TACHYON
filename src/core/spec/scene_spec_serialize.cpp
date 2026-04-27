@@ -1,8 +1,10 @@
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include "tachyon/core/spec/scene_spec_audio.h"
 #include "tachyon/text/fonts/font_manifest.h"
+#include "tachyon/runtime/cache/cache_key_builder.h"
 #include <fstream>
 #include <sstream>
+
 
 using json = nlohmann::json;
 
@@ -187,6 +189,19 @@ static json serialize_transform(const Transform2D& transform) {
     return j;
 }
 
+static json serialize_transition(const LayerTransitionSpec& trans) {
+    if (trans.type == "none" || trans.type.empty()) return json{};
+    json j;
+    j["type"] = trans.type;
+    if (!trans.direction.empty()) j["direction"] = trans.direction;
+    j["duration"] = trans.duration;
+    if (trans.delay != 0.0) j["delay"] = trans.delay;
+    if (trans.easing != animation::EasingPreset::None) {
+        j["easing"] = serialize_easing_preset(trans.easing);
+    }
+    return j;
+}
+
 json serialize_layer(const LayerSpec& layer) {
     json j;
     j["id"] = layer.id;
@@ -209,11 +224,24 @@ json serialize_layer(const LayerSpec& layer) {
         json t = serialize_transform(layer.transform);
         if (!t.empty()) j["transform"] = t;
     }
-    if (!layer.opacity_property.empty()) j["opacity"] = serialize_scalar_property(layer.opacity_property);
-    if (!layer.mask_feather.empty()) j["mask_feather"] = serialize_scalar_property(layer.mask_feather);
-    if (!layer.stroke_width_property.empty()) {
-        j["stroke_width"] = serialize_scalar_property(layer.stroke_width_property);
-    } else {
+    
+    {
+        json tin = serialize_transition(layer.transition_in);
+        if (!tin.empty()) j["transition_in"] = tin;
+        
+        json tout = serialize_transition(layer.transition_out);
+        if (!tout.empty()) j["transition_out"] = tout;
+    }
+
+    // Auto-serialize scalar and color properties using X-Macros
+    #define TACHYON_PROPERTY_SCALAR(json_key, cpp_field, fallback) \
+        if (!layer.cpp_field.empty()) j[#json_key] = serialize_scalar_property(layer.cpp_field);
+    #define TACHYON_PROPERTY_COLOR(json_key, cpp_field, fallback) \
+        if (!layer.cpp_field.empty()) j[#json_key] = serialize_color_property(layer.cpp_field);
+    #include "tachyon/core/spec/schema/objects/layer_properties.def"
+
+    // Only serialize fallback stroke width if the animated property is empty
+    if (layer.stroke_width_property.empty() && layer.stroke_width != 0.0) {
         j["stroke_width"] = layer.stroke_width;
     }
 
@@ -232,7 +260,6 @@ json serialize_layer(const LayerSpec& layer) {
 
     if (!layer.text_content.empty()) j["text_content"] = layer.text_content;
     if (!layer.font_id.empty()) j["font_id"] = layer.font_id;
-    if (!layer.font_size.empty()) j["font_size"] = serialize_scalar_property(layer.font_size);
     if (!layer.alignment.empty()) j["alignment"] = layer.alignment;
     if (!layer.font_axes.empty()) {
         json axes_json = json::object();
@@ -241,8 +268,6 @@ json serialize_layer(const LayerSpec& layer) {
         }
         j["font_axes"] = axes_json;
     }
-    if (!layer.fill_color.empty()) j["fill_color"] = serialize_color_property(layer.fill_color);
-    if (!layer.stroke_color.empty()) j["stroke_color"] = serialize_color_property(layer.stroke_color);
     if (layer.extrusion_depth != 0.0) j["extrusion_depth"] = layer.extrusion_depth;
     if (layer.bevel_size != 0.0) j["bevel_size"] = layer.bevel_size;
     if (layer.hole_bevel_ratio != 0.0) j["hole_bevel_ratio"] = layer.hole_bevel_ratio;
@@ -313,15 +338,8 @@ json serialize_layer(const LayerSpec& layer) {
         j["text_highlights"] = layer.text_highlights;
     }
 
-    if (!layer.repeater_count.empty()) j["repeater_count"] = serialize_scalar_property(layer.repeater_count);
-    if (!layer.repeater_stagger_delay.empty()) j["repeater_stagger_delay"] = serialize_scalar_property(layer.repeater_stagger_delay);
-    if (!layer.repeater_offset_position_x.empty()) j["repeater_offset_position_x"] = serialize_scalar_property(layer.repeater_offset_position_x);
-    if (!layer.repeater_offset_position_y.empty()) j["repeater_offset_position_y"] = serialize_scalar_property(layer.repeater_offset_position_y);
-    if (!layer.repeater_offset_rotation.empty()) j["repeater_offset_rotation"] = serialize_scalar_property(layer.repeater_offset_rotation);
-    if (!layer.repeater_offset_scale_x.empty()) j["repeater_offset_scale_x"] = serialize_scalar_property(layer.repeater_offset_scale_x);
-    if (!layer.repeater_offset_scale_y.empty()) j["repeater_offset_scale_y"] = serialize_scalar_property(layer.repeater_offset_scale_y);
-    if (!layer.repeater_start_opacity.empty()) j["repeater_start_opacity"] = serialize_scalar_property(layer.repeater_start_opacity);
-    if (!layer.repeater_end_opacity.empty()) j["repeater_end_opacity"] = serialize_scalar_property(layer.repeater_end_opacity);
+    // Repeater properties are now serialized via X-Macros above
+
 
     if (!layer.track_bindings.empty()) {
         j["track_bindings"] = json::array();
@@ -363,7 +381,7 @@ json serialize_layer(const LayerSpec& layer) {
     }
 
     if (layer.camera_type != "one_node") j["camera_type"] = layer.camera_type;
-    if (!layer.camera_zoom.empty()) j["camera_zoom"] = serialize_scalar_property(layer.camera_zoom);
+
     if (!layer.camera_poi.empty()) j["camera_poi"] = serialize_vector3_property(layer.camera_poi);
 
     if (layer.camera_shake_seed != 0 || !layer.camera_shake_amplitude_pos.empty() || !layer.camera_shake_amplitude_rot.empty() || !layer.camera_shake_frequency.empty() || !layer.camera_shake_roughness.empty()) {
@@ -514,6 +532,31 @@ json serialize_scene_spec(const SceneSpec& scene) {
     }
 
     return j;
+}
+
+// ---------------------------------------------------------------------------
+// Merkle Tree Hashing
+// ---------------------------------------------------------------------------
+
+std::uint64_t compute_layer_hash(const LayerSpec& layer) {
+    CacheKeyBuilder builder;
+    builder.add_string(serialize_layer(layer).dump());
+    return builder.finish();
+}
+
+std::uint64_t compute_composition_hash(const CompositionSpec& comp) {
+    CacheKeyBuilder builder;
+    // Note: this hashes the serialized composition, which includes its layers' serialized data.
+    // In a fully optimized Merkle tree we would only hash the comp's properties + the children's spec_hashes,
+    // but the JSON serialization is perfectly deterministic and fast enough for our current scale.
+    builder.add_string(serialize_composition(comp).dump());
+    return builder.finish();
+}
+
+std::uint64_t compute_scene_hash(const SceneSpec& scene) {
+    CacheKeyBuilder builder;
+    builder.add_string(serialize_scene_spec(scene).dump());
+    return builder.finish();
 }
 
 } // namespace tachyon

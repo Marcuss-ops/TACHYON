@@ -320,6 +320,21 @@ void parse_procedural_spec(const json& object, LayerSpec& layer, const std::stri
     layer.procedural = std::move(spec);
 }
 
+void parse_transition(const json& object, LayerTransitionSpec& out, const std::string& path, DiagnosticBag& diagnostics) {
+    if (!object.is_object()) return;
+    read_string(object, "type", out.type);
+    read_string(object, "direction", out.direction);
+    read_number(object, "duration", out.duration);
+    read_number(object, "delay", out.delay);
+    
+    if (object.contains("easing")) {
+        out.easing = parse_easing_preset(object.at("easing"));
+        if (out.easing == animation::EasingPreset::Spring) {
+            parse_spring_params(object.at("spring"), out.spring);
+        }
+    }
+}
+
 void parse_layer(const json& object, LayerSpec& out, const std::string& path, DiagnosticBag& diagnostics) {
     read_string(object, "id", out.id);
     read_string(object, "name", out.name);
@@ -331,6 +346,17 @@ void parse_layer(const json& object, LayerSpec& out, const std::string& path, Di
     read_bool(object, "is_adjustment_layer", out.is_adjustment_layer);
     read_bool(object, "motion_blur", out.motion_blur);
     
+    if (out.type == "instance") {
+        InstanceSpec inst;
+        read_string(object, "source", inst.source);
+        if (object.contains("overrides") && object.at("overrides").is_object()) {
+            for (auto& [key, val] : object.at("overrides").items()) {
+                inst.overrides[key] = val;
+            }
+        }
+        out.instance = std::move(inst);
+    }
+    
     read_number(object, "start_time", out.start_time);
     read_number(object, "in_point", out.in_point);
     read_number(object, "out_point", out.out_point);
@@ -339,8 +365,14 @@ void parse_layer(const json& object, LayerSpec& out, const std::string& path, Di
     read_number(object, "height", out.height);
     
     parse_transform(object, out, path, diagnostics);
-    parse_optional_scalar_property(object, "opacity", out.opacity_property, path, diagnostics);
-    parse_optional_scalar_property(object, "mask_feather", out.mask_feather, path, diagnostics);
+    
+    // Auto-parse scalar and color properties using X-Macros
+    #define TACHYON_PROPERTY_SCALAR(json_key, cpp_field, fallback) \
+        parse_optional_scalar_property(object, #json_key, out.cpp_field, path, diagnostics);
+    #define TACHYON_PROPERTY_COLOR(json_key, cpp_field, fallback) \
+        parse_optional_color_property(object, #json_key, out.cpp_field, path, diagnostics);
+    #include "tachyon/core/spec/schema/objects/layer_properties.def"
+
     
     parse_shape_path(object, out, path, diagnostics);
     parse_effects(object, out, path, diagnostics);
@@ -365,7 +397,6 @@ void parse_layer(const json& object, LayerSpec& out, const std::string& path, Di
     // Text
     read_string(object, "text_content", out.text_content);
     read_string(object, "font_id", out.font_id);
-    parse_optional_scalar_property(object, "font_size", out.font_size, path, diagnostics);
     read_string(object, "alignment", out.alignment);
     // Variable font axes
     if (object.contains("font_axes") && object.at("font_axes").is_object()) {
@@ -375,34 +406,23 @@ void parse_layer(const json& object, LayerSpec& out, const std::string& path, Di
             out.font_axes[axis_tag] = axis_spec;
         }
     }
-    parse_optional_color_property(object, "fill_color", out.fill_color, path, diagnostics);
-    parse_optional_color_property(object, "stroke_color", out.stroke_color, path, diagnostics);
     read_number(object, "stroke_width", out.stroke_width);
-    parse_optional_scalar_property(object, "stroke_width", out.stroke_width_property, path, diagnostics);
     read_number(object, "extrusion_depth", out.extrusion_depth);
+
     read_number(object, "bevel_size", out.bevel_size);
     read_number(object, "hole_bevel_ratio", out.hole_bevel_ratio);
     
     // Subtitle & Word Timestamps
     read_string(object, "subtitle_path", out.subtitle_path);
     read_string(object, "word_timestamp_path", out.word_timestamp_path);
-    
     read_number(object, "subtitle_outline_width", out.subtitle_outline_width);
-    parse_optional_color_property(object, "subtitle_outline_color", out.subtitle_outline_color, path, diagnostics);
     
-    // Repeater
-    parse_optional_scalar_property(object, "repeater_count", out.repeater_count, path, diagnostics);
-    parse_optional_scalar_property(object, "repeater_stagger_delay", out.repeater_stagger_delay, path, diagnostics);
-    parse_optional_scalar_property(object, "repeater_offset_position_x", out.repeater_offset_position_x, path, diagnostics);
-    parse_optional_scalar_property(object, "repeater_offset_position_y", out.repeater_offset_position_y, path, diagnostics);
-    parse_optional_scalar_property(object, "repeater_offset_rotation", out.repeater_offset_rotation, path, diagnostics);
-    parse_optional_scalar_property(object, "repeater_offset_scale_x", out.repeater_offset_scale_x, path, diagnostics);
-    parse_optional_scalar_property(object, "repeater_offset_scale_y", out.repeater_offset_scale_y, path, diagnostics);
-    parse_optional_scalar_property(object, "repeater_start_opacity", out.repeater_start_opacity, path, diagnostics);
-    parse_optional_scalar_property(object, "repeater_end_opacity", out.repeater_end_opacity, path, diagnostics);
+    // Repeater and temporal properties handled by X-Macros already
 
+    
     // Temporal & Tracking
     parse_track_bindings(object, out, path, diagnostics);
+
     parse_time_remap(object, out, path, diagnostics);
     
     if (object.contains("frame_blend") && object.at("frame_blend").is_string()) {
@@ -416,12 +436,23 @@ void parse_layer(const json& object, LayerSpec& out, const std::string& path, Di
     // Timing shorthand
     read_number(object, "duration", out.duration);
 
-    // Animation presets
-    read_string(object, "in", out.in_preset);
+    // Animation transitions
+    if (object.contains("transition_in")) parse_transition(object.at("transition_in"), out.transition_in, path + ".transition_in", diagnostics);
+    if (object.contains("transition_out")) parse_transition(object.at("transition_out"), out.transition_out, path + ".transition_out", diagnostics);
+    
+    // Legacy/shorthand support
+    if (object.contains("in")) {
+        if (object.at("in").is_string()) out.transition_in.type = object.at("in").get<std::string>();
+        else if (object.at("in").is_object()) parse_transition(object.at("in"), out.transition_in, path + ".in", diagnostics);
+    }
+    if (object.contains("out")) {
+        if (object.at("out").is_string()) out.transition_out.type = object.at("out").get<std::string>();
+        else if (object.at("out").is_object()) parse_transition(object.at("out"), out.transition_out, path + ".out", diagnostics);
+    }
+
     read_string(object, "during", out.during_preset);
-    read_string(object, "out", out.out_preset);
-    read_number(object, "in_duration", out.in_duration);
-    read_number(object, "out_duration", out.out_duration);
+    if (object.contains("in_duration")) read_number(object, "in_duration", out.transition_in.duration);
+    if (object.contains("out_duration")) read_number(object, "out_duration", out.transition_out.duration);
 
     // Playback behavior
     read_bool(object, "loop", out.loop);
@@ -442,8 +473,8 @@ void parse_layer(const json& object, LayerSpec& out, const std::string& path, Di
     
     // Camera
     read_string(object, "camera_type", out.camera_type);
-    parse_optional_scalar_property(object, "camera_zoom", out.camera_zoom, path, diagnostics);
     parse_optional_vector3_property(object, "camera_poi", out.camera_poi, path, diagnostics);
+
     
     // Camera Shake
     if (object.contains("camera_shake")) {
@@ -456,6 +487,8 @@ void parse_layer(const json& object, LayerSpec& out, const std::string& path, Di
     }
     
     parse_procedural_spec(object, out, path, diagnostics);
+
+    out.spec_hash = compute_layer_hash(out);
 }
 
 void parse_mask_paths(const json& object, LayerSpec& layer, const std::string& path, DiagnosticBag& diagnostics) {

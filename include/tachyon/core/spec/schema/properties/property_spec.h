@@ -11,6 +11,7 @@
 #include <vector>
 #include <optional>
 #include <string>
+#include "tachyon/core/spec/schema/objects/template_spec.h"
 
 namespace tachyon {
 
@@ -66,6 +67,7 @@ struct AnimatedScalarSpec {
     double audio_min{0.0};
     double audio_max{1.0};
     std::optional<std::string> expression;
+    PropertyBinding binding;
 
     AnimatedScalarSpec() = default;
     explicit AnimatedScalarSpec(double val) : value(val) {}
@@ -79,6 +81,7 @@ struct AnimatedVector2Spec {
     std::optional<math::Vector2> value;
     std::vector<Vector2KeyframeSpec> keyframes;
     std::optional<std::string> expression;
+    PropertyBinding binding;
 
     [[nodiscard]] bool empty() const noexcept {
         return !value.has_value() && keyframes.empty() && !expression.has_value();
@@ -105,6 +108,7 @@ struct AnimatedVector3Spec {
     };
     std::vector<Keyframe> keyframes;
     std::optional<std::string> expression;
+    PropertyBinding binding;
 
     [[nodiscard]] bool empty() const noexcept {
         return !value.has_value() && keyframes.empty() && !expression.has_value();
@@ -114,6 +118,7 @@ struct AnimatedVector3Spec {
 struct AnimatedColorSpec {
     std::optional<ColorSpec> value;
     std::vector<ColorKeyframeSpec> keyframes;
+    PropertyBinding binding;
 
     AnimatedColorSpec() = default;
     explicit AnimatedColorSpec(const ColorSpec& val) : value(val) {}
