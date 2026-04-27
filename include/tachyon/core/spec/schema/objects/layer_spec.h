@@ -16,23 +16,46 @@
 namespace tachyon {
 
 struct ProceduralSpec {
-    std::string kind{"noise"}; // "noise" | "waves" | "stripes" | "gradient_sweep"
+    std::string kind{"noise"}; 
+    uint64_t seed{0};
+
+    // Color Palette
+    AnimatedColorSpec color_a{ColorSpec{255, 0, 0, 255}};
+    AnimatedColorSpec color_b{ColorSpec{0, 0, 255, 255}};
+    AnimatedColorSpec color_c{ColorSpec{0, 0, 0, 0}}; // Optional third color
     
-    // All parameters use existing Animated* types - reusable with expression VM
+    // Core Parameters
     AnimatedScalarSpec frequency{1.0};
     AnimatedScalarSpec speed{1.0};
     AnimatedScalarSpec amplitude{1.0};
     AnimatedScalarSpec scale{1.0};
-    
-    AnimatedColorSpec color_a{ColorSpec{255, 0, 0, 255}};
-    AnimatedColorSpec color_b{ColorSpec{0, 0, 255, 255}};
-    
-    uint64_t seed{0};
-    
-    // For waves/stripes
     AnimatedScalarSpec angle{0.0};
-    AnimatedScalarSpec spacing{50.0};
     
+    // Geometry & Grid Logic
+    std::string shape{"square"}; // square, circle, hexagon, triangle
+    AnimatedScalarSpec spacing{50.0};
+    AnimatedScalarSpec border_width{1.0};
+    AnimatedColorSpec border_color{ColorSpec{150, 150, 150, 255}};
+    
+    // Warp / Distortion Logic
+    AnimatedScalarSpec warp_strength{0.0};
+    AnimatedScalarSpec warp_frequency{5.0};
+    AnimatedScalarSpec warp_speed{2.0};
+    
+    // Post-Processing / Stylization
+    AnimatedScalarSpec grain_amount{0.0};
+    AnimatedScalarSpec grain_scale{2.0};
+    AnimatedScalarSpec scanline_intensity{0.0};
+    AnimatedScalarSpec scanline_frequency{100.0};
+    AnimatedScalarSpec contrast{1.0};
+    AnimatedScalarSpec gamma{1.0};
+    AnimatedScalarSpec saturation{1.0};
+
+    // Aurora / Advanced Noise
+    AnimatedScalarSpec octave_decay{0.5};
+    AnimatedScalarSpec band_height{0.5};
+    AnimatedScalarSpec band_spread{1.0};
+
     [[nodiscard]] bool empty() const noexcept {
         return kind.empty();
     }

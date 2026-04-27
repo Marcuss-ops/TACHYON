@@ -1,0 +1,15 @@
+{
+  "name": "Dot Grid Tech",
+  "description": "Dense magenta micro-dots on a dark background. Professional tech aesthetic.",
+  "type": "procedural",
+  "procedural": {
+    "kind": "grid",
+    "shape": "circle",
+    "spacing": 20.0,
+    "border_width": 2.0,
+    "color_a": "#FF00FF",
+    "color_b": "#080808",
+    "grain_amount": 0.05,
+    "contrast": 1.1
+  }
+}

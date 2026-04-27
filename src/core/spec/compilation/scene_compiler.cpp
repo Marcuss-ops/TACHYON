@@ -365,6 +365,7 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
                 if (t == "image") return 3;
                 if (t == "text") return 4;
                 if (t == "precomp") return 5;
+                if (t == "procedural") return 6;
                 return 0;
             };
             compiled_layer.type_id = type_map(layer.type);
@@ -410,6 +411,7 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
             compiled_layer.subtitle_outline_color = layer.subtitle_outline_color;
             compiled_layer.subtitle_outline_width = static_cast<float>(layer.subtitle_outline_width);
             compiled_layer.word_timestamp_path = layer.word_timestamp_path;
+            compiled_layer.procedural = layer.procedural;
             
             if (layer.line_cap == "round") compiled_layer.line_cap = renderer2d::LineCap::Round;
             else if (layer.line_cap == "square") compiled_layer.line_cap = renderer2d::LineCap::Square;

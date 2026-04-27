@@ -16,6 +16,7 @@ scene::LayerType resolve_layer_type(std::uint32_t type_id) {
         case 3: return scene::LayerType::Image;
         case 4: return scene::LayerType::Text;
         case 5: return scene::LayerType::Precomp;
+        case 6: return scene::LayerType::Procedural;
         default: return scene::LayerType::NullLayer;
     }
 }
@@ -98,6 +99,7 @@ void evaluate_layer(
     state->miter_limit = layer.miter_limit;
     state->text_content = layer.text_content;
     state->font_id = layer.font_id;
+    state->procedural = layer.procedural;
     state->font_size = layer.font_size;
     state->text_alignment = layer.text_alignment;
     state->extrusion_depth = layer.extrusion_depth;

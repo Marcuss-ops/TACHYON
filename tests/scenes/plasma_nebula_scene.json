@@ -1,0 +1,25 @@
+{
+  "schema": "tachyon.scene/1.0",
+  "project": { "id": "plasma_nebula_render", "name": "Plasma Nebula Render" },
+  "compositions": [
+    {
+      "id": "main",
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "duration": 5.0,
+      "layers": [
+        {
+          "id": "bg",
+          "type": "procedural",
+          "procedural": {
+            "kind": "plasma",
+            "speed": 0.8,
+            "color_a": "#220033",
+            "color_b": "#FF00AA"
+          }
+        }
+      ]
+    }
+  ]
+}

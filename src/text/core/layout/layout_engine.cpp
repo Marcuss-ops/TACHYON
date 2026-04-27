@@ -581,9 +581,22 @@ public:
         }
 
         finalize_line(result, line_start, result.glyphs.size() - line_start, current_line_width, pen_y, alignment, text_box.width, true);
-        if (!result.lines.empty()) result.height = (std::uint32_t)(result.lines.back().y + scaled_line_height);
-        else result.height = (std::uint32_t)scaled_line_height;
-        if (text_box.height > 0U) result.height = std::min(result.height, text_box.height);
+        
+        const std::uint32_t content_height = result.lines.empty() ? (std::uint32_t)scaled_line_height : (std::uint32_t)(result.lines.back().y + scaled_line_height);
+        result.height = content_height;
+
+        // Apply vertical centering if box height is specified and larger than content
+        if (text_box.height > content_height) {
+            const std::int32_t v_offset = static_cast<std::int32_t>(text_box.height - content_height) / 2;
+            for (auto& g : result.glyphs) {
+                g.y += v_offset;
+            }
+            for (auto& line : result.lines) {
+                line.y += v_offset;
+            }
+            result.height = text_box.height;
+        }
+
         if (result.width == 0U) result.width = text_box.width > 0U ? text_box.width : 0U;
         sync_resolved_layout(result, primary_font, style);
         

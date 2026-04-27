@@ -1,0 +1,61 @@
+{
+  "schema": "tachyon.scene/1.0",
+  "project": { "id": "hybrid_text_plasma", "name": "Hybrid Text Plasma" },
+  "compositions": [
+    {
+      "id": "main",
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "duration": 5.0,
+      "layers": [
+        {
+          "id": "bg_plasma",
+          "name": "Plasma Background",
+          "type": "procedural",
+          "procedural": {
+            "kind": "plasma",
+            "speed": 0.5,
+            "color_a": "#220033",
+            "color_b": "#FF00AA"
+          }
+        },
+        {
+          "id": "main_text",
+          "name": "Headline",
+          "type": "text",
+          "width": 1920,
+          "height": 1080,
+          "alignment": "center",
+          "text_content": "TACHYON ENGINE",
+          "font_size": 150,
+          "fill_color": [255, 255, 255, 255],
+          "transform": {
+            "position_x": 0,
+            "position_y": 0
+          },
+          "text_animators": [
+            {
+              "selector": {
+                "type": "all",
+                "based_on": "characters",
+                "stagger_mode": "character",
+                "stagger_delay": 0.05
+              },
+              "properties": {
+                "opacity_keyframes": [
+                  { "time": 0, "value": 0 },
+                  { "time": 1.0, "value": 1 }
+                ],
+                "position_offset_keyframes": [
+                  { "time": 0, "value": [0, 50] },
+                  { "time": 1.0, "value": [0, 0] }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
