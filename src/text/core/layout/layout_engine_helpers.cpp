@@ -122,7 +122,7 @@ std::int32_t place_shaped_run(
             pen_y + (sub.font->ascent() - static_cast<std::int32_t>(g->height) - g->y_offset) * static_cast<std::int32_t>(scale) + gr.offset_y,
             static_cast<std::int32_t>(g->width) * static_cast<std::int32_t>(scale),
             static_cast<std::int32_t>(g->height) * static_cast<std::int32_t>(scale),
-            gr.advance_x, static_cast<std::int32_t>(result.glyphs.size()), current_word_index,
+            gr.advance_x, result.glyphs.size(), current_word_index,
             cluster_idx, cp_start, cp_count, ws, rtl, sub.font
         });
         if (!rtl) cursor += glyph_advance;

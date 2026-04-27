@@ -8,14 +8,10 @@ namespace tachyon::renderer2d {
 
 BlendMode parse_blend_mode(const std::string& name);
 
-namespace {
-
 float unpremultiply(float channel, float alpha);
 std::tuple<float, float, float> rgb_to_hsl(float r, float g, float b);
 std::tuple<float, float, float> hsl_to_rgb(float h, float s, float l);
 float get_luma(float r, float g, float b);
-
-} // namespace
 
 Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, TransferCurve curve) {
     if (mode == BlendMode::Normal) {

@@ -1,0 +1,102 @@
+{
+  "project": {
+    "id": "spring_test",
+    "name": "Spring & Transition Test",
+    "authoring_tool": "Tachyon Antigravity"
+  },
+  "font_manifest": {
+    "fonts": [
+      {
+        "id": "main_font",
+        "family": "SF Pro Display",
+        "weight": 700,
+        "src": "C:/Users/pater/Pyt/Tachyon/assets/fonts/SFPRODISPLAYBOLD.OTF"
+      }
+    ]
+  },
+  "compositions": [
+    {
+      "id": "main",
+      "width": 1920,
+      "height": 1080,
+      "duration": 5.0,
+      "fps": 60,
+      "background": "#312E81",
+      "layers": [
+        {
+          "id": "bg",
+          "type": "procedural",
+          "procedural": {
+            "kind": "grid",
+            "shape": "circle",
+            "spacing": 60,
+            "color_a": "#1e1b4b",
+            "color_b": "#A855F7",
+            "warp_strength": 0.2,
+            "speed": 0.5
+          },
+          "in_point": 0.0,
+          "out_point": 5.0
+        },
+        {
+          "id": "diagnostic_solid",
+          "type": "solid",
+          "fill_color": "#00FF00",
+          "width": 400,
+          "height": 400,
+          "in_point": 0.0,
+          "out_point": 5.0,
+          "transform": {
+            "position": {
+              "keyframes": [
+                { "t": 0.0, "v": [0, 540] },
+                { "t": 1.0, "v": [960, 540], "easing": "spring", "spring": { "stiffness": 150, "damping": 12, "mass": 1.0 } }
+              ]
+            }
+          }
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "text_content": "SPRING PHYSICS",
+          "font_id": "main_font",
+          "font_size": 120,
+          "alignment": "center",
+          "fill_color": "#FFFFFF",
+          "in_point": 0.0,
+          "out_point": 5.0,
+          "transform": {
+            "position_x": 0,
+            "position_y": 200
+          },
+          "transition_in": {
+            "type": "fade",
+            "duration": 1.0
+          }
+        },
+        {
+          "id": "subtitle",
+          "type": "text",
+          "text_content": "Natural & Organic Motion",
+          "font_id": "main_font",
+          "font_size": 60,
+          "alignment": "center",
+          "fill_color": "#A855F7",
+          "in_point": 0.5,
+          "out_point": 5.0,
+          "transform": {
+            "position_x": 0,
+            "position_y": 800
+          },
+          "transition_in": {
+            "type": "slide",
+            "direction": "up",
+            "duration": 1.0,
+            "easing": "spring",
+            "spring": { "stiffness": 200, "damping": 15 }
+          }
+        }
+      ]
+    }
+  ]
+}

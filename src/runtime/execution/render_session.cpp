@@ -30,12 +30,8 @@
 namespace tachyon {
 
 // Forward declarations for extracted serialization helpers
-namespace {
-
 std::vector<uint8_t> serialize_framebuffer(const renderer2d::Framebuffer& fb);
 std::shared_ptr<renderer2d::Framebuffer> deserialize_framebuffer(const std::vector<uint8_t>& data);
-
-} // namespace
 
 // Forward declaration for audio muxing helper
 bool mux_audio_video(const std::string& video_path, const std::string& audio_path, std::string& error);

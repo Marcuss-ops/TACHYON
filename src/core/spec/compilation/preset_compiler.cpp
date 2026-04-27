@@ -93,10 +93,10 @@ void PresetCompiler::expand_layer(LayerSpec& layer) const {
     const double out_point = layer.out_point;
 
     // Expand "in" preset
-    if (!layer.in_preset.empty()) {
-        const AnimationPreset* preset = m_library.find(layer.in_preset);
+    if (!layer.transition_in.type.empty() && layer.transition_in.type != "none") {
+        const AnimationPreset* preset = m_library.find(layer.transition_in.type);
         if (preset) {
-            const double phase_end = in_point + layer.in_duration;
+            const double phase_end = in_point + layer.transition_in.duration;
             inject_phase(layer, *preset, in_point, phase_end);
         }
     }
@@ -110,10 +110,10 @@ void PresetCompiler::expand_layer(LayerSpec& layer) const {
     }
 
     // Expand "out" preset
-    if (!layer.out_preset.empty()) {
-        const AnimationPreset* preset = m_library.find(layer.out_preset);
+    if (!layer.transition_out.type.empty() && layer.transition_out.type != "none") {
+        const AnimationPreset* preset = m_library.find(layer.transition_out.type);
         if (preset) {
-            const double phase_start = out_point - layer.out_duration;
+            const double phase_start = out_point - layer.transition_out.duration;
             inject_phase(layer, *preset, phase_start, out_point);
         }
     }

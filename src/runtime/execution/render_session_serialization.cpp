@@ -4,7 +4,6 @@
 #include <cstdint>
 
 namespace tachyon {
-namespace {
 
 std::vector<uint8_t> serialize_framebuffer(const renderer2d::Framebuffer& fb) {
     std::vector<uint8_t> data;
@@ -35,6 +34,4 @@ std::shared_ptr<renderer2d::Framebuffer> deserialize_framebuffer(const std::vect
 
     return fb;
 }
-
-} // namespace
 } // namespace tachyon

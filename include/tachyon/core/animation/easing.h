@@ -141,7 +141,6 @@ struct SpringEasing {
      */
     [[nodiscard]] double evaluate(double t) const {
         if (t <= 0.0) return 0.0;
-        if (t >= 1.0) return 1.0;
 
         const double duration = 1.0;
 

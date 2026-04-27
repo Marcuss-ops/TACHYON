@@ -113,8 +113,10 @@ CompositionSpec parse_composition(const json& object, const std::string& path, D
         }
     }
     
+    composition.spec_hash = compute_composition_hash(composition);
     return composition;
 }
+
 
 AssetSpec parse_asset(const json& object, const std::string& path, DiagnosticBag& diagnostics) {
     (void)path; (void)diagnostics;
@@ -146,6 +148,27 @@ ParseResult<SceneSpec> parse_scene_spec_json(const std::string& text, const std:
             read_string(project, "name", scene.project.name);
             read_string(project, "authoring_tool", scene.project.authoring_tool);
             read_optional_int(project, "root_seed", scene.project.root_seed);
+        }
+
+        if (parsed.contains("parameters") && parsed.at("parameters").is_array()) {
+            const auto& params = parsed.at("parameters");
+            for (const auto& p : params) {
+                if (!p.is_object()) continue;
+                ParameterDefinition def;
+                read_string(p, "name", def.name);
+                std::string type_str;
+                read_string(p, "type", type_str);
+                if (type_str == "float") def.type = ParameterType::Float;
+                else if (type_str == "string") def.type = ParameterType::String;
+                else if (type_str == "color") def.type = ParameterType::Color;
+                else if (type_str == "vector2") def.type = ParameterType::Vector2;
+                else if (type_str == "bool") def.type = ParameterType::Bool;
+                
+                if (p.contains("default")) {
+                    def.default_value = p.at("default");
+                }
+                scene.parameters.push_back(std::move(def));
+            }
         }
 
         if (parsed.contains("compositions") && parsed.at("compositions").is_array()) {
@@ -183,6 +206,7 @@ ParseResult<SceneSpec> parse_scene_spec_json(const std::string& text, const std:
             }
         }
 
+        scene.spec_hash = compute_scene_hash(scene);
         result.value = std::move(scene);
         return result;
     } catch (const std::exception& ex) {

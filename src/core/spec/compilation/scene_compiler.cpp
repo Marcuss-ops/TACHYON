@@ -22,6 +22,7 @@ std::uint64_t hash_scene_structure(const SceneSpec& scene);
 
 namespace {
 
+
 /**
  * @brief Context used during compilation to track node IDs and dependencies.
  */
@@ -85,6 +86,9 @@ CompiledPropertyTrack compile_property_track(
             ck.cy1 = keyframe.bezier.cy1;
             ck.cx2 = keyframe.bezier.cx2;
             ck.cy2 = keyframe.bezier.cy2;
+            ck.spring_stiffness = keyframe.spring.stiffness;
+            ck.spring_damping = keyframe.spring.damping;
+            ck.spring_mass = keyframe.spring.mass;
 
             // If it's a custom easing and we have a next keyframe, we can compute the AE-style Bezier
             if (keyframe.easing == animation::EasingPreset::Custom && i + 1 < property_spec.keyframes.size()) {
@@ -144,7 +148,9 @@ CompiledPropertyTrack compile_property_track(
 SceneCompiler::SceneCompiler(SceneCompilerOptions options)
     : m_options(std::move(options)) {}
 
-ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) const {
+ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene_input) const {
+    SceneSpec scene = flatten_scene(scene_input);
+    
     ResolutionResult<CompiledScene> result;
     CompiledScene compiled;
     CompilationRegistry registry;
@@ -295,11 +301,13 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
             compiled_layer.time_remap = layer.time_remap;
             compiled_layer.frame_blend = layer.frame_blend;
 
-            // Populate temporal bounds and blend mode from SceneSpec
+                // Populate temporal bounds and blend mode from SceneSpec
             compiled_layer.in_time = layer.in_point;
             compiled_layer.out_time = layer.out_point;
             compiled_layer.start_time = layer.start_time;
             compiled_layer.blend_mode = layer.blend_mode;
+            compiled_layer.transition_in = layer.transition_in;
+            compiled_layer.transition_out = layer.transition_out;
 
             compiled_composition.layers.push_back(std::move(compiled_layer));
         }
@@ -401,6 +409,8 @@ static bool try_property_only_update(CompiledScene& existing, const SceneSpec& n
             compiled_layer.out_time   = layer_spec.out_point;
             compiled_layer.start_time = layer_spec.start_time;
             compiled_layer.blend_mode = layer_spec.blend_mode;
+            compiled_layer.transition_in = layer_spec.transition_in;
+            compiled_layer.transition_out = layer_spec.transition_out;
             compiled_layer.fill_color   = layer_spec.fill_color.value.value_or(ColorSpec{255,255,255,255});
             compiled_layer.stroke_color = layer_spec.stroke_color.value.value_or(ColorSpec{255,255,255,255});
             compiled_layer.text_content = layer_spec.text_content;

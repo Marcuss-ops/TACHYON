@@ -56,6 +56,7 @@ bool parse_color_value(const nlohmann::json& value, ColorSpec& out);
 bool parse_gradient_spec(const nlohmann::json& object, GradientSpec& out);
 animation::EasingPreset parse_easing_preset(const nlohmann::json& value);
 animation::CubicBezierEasing parse_bezier(const nlohmann::json& value);
+bool parse_spring_params(const nlohmann::json& value, animation::SpringEasing& out);
 renderer2d::LineCap parse_line_cap(const nlohmann::json& value);
 renderer2d::LineJoin parse_line_join(const nlohmann::json& value);
 std::optional<AudioBandType> parse_audio_band_type(const nlohmann::json& value);
@@ -86,5 +87,10 @@ ValidationResult validate_scene_spec(const SceneSpec& scene);
 nlohmann::json serialize_scene_spec(const SceneSpec& scene);
 nlohmann::json serialize_composition(const CompositionSpec& comp);
 nlohmann::json serialize_layer(const LayerSpec& layer);
+
+// --- Merkle Tree Hashing ---
+std::uint64_t compute_layer_hash(const LayerSpec& layer);
+std::uint64_t compute_composition_hash(const CompositionSpec& comp);
+std::uint64_t compute_scene_hash(const SceneSpec& scene);
 
 } // namespace tachyon
