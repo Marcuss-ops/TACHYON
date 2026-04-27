@@ -30,10 +30,10 @@ protected:
         // 2. Compile Scene
         SceneCompiler compiler;
         auto compile_result = compiler.compile(scene);
-        if (!compile_result) {
+        if (!compile_result.ok()) {
             FAIL() << "Compilation failed for " << name;
         }
-        const auto& compiled = compile_result.value();
+        const auto& compiled = compile_result.value.value();
 
         // 3. Setup Render Session
         RenderSession session;
