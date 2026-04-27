@@ -35,6 +35,11 @@ struct GlyphCluster {
 
 /**
  * @brief A shaped and positioned glyph, ready for rasterization or animation.
+ *
+ * AUTHORITATIVE representation for TextAnimatorPipeline and TextOnPathModifier.
+ * Built from the internal PositionedGlyph (integer coords) by sync_resolved_layout().
+ * All per-glyph animated properties (opacity, scale, rotation, fill_color,
+ * blur_radius, reveal_factor) live here and are mutated in-place by the animator.
  */
 struct ResolvedGlyph {
     std::uint32_t codepoint;
@@ -123,6 +128,11 @@ struct Paragraph {
  * @brief The final output contract of the TextLayoutEngine.
  * This struct is strictly deterministic and contains everything needed
  * by both the Text Animator system and the Rasterizer.
+ *
+ * Produced by sync_resolved_layout() after the layout pass completes.
+ * TextLayoutResult (layout.h) inherits from this, keeping the internal
+ * PositionedGlyph vector for integer-coordinate rasterization alongside
+ * this float-coordinate view used by animators and text-on-path.
  */
 struct ResolvedTextLayout {
     std::vector<ResolvedGlyph> glyphs;

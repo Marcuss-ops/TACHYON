@@ -4,6 +4,7 @@
 #include "tachyon/text/animation/text_animation_options.h"
 #include "tachyon/text/rendering/text_raster_surface.h"
 #include "tachyon/text/core/layout/resolved_text_layout.h"
+#include "tachyon/core/shapes/shape_path.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -214,5 +215,19 @@ TextRasterSurface rasterize_text_rgba(
 
 TextRasterSurface rasterize_layout_debug(
     const TextLayoutResult& layout);
+
+/**
+ * @brief Performs standard text layout and then maps glyphs onto a path.
+ */
+ResolvedTextLayout layout_text_on_path(
+    const BitmapFont& font,
+    std::string_view utf8_text,
+    const TextStyle& style,
+    const TextBox& text_box,
+    TextAlignment alignment,
+    const ::tachyon::shapes::ShapePath& path,
+    double path_offset = 0.0,
+    bool align_perpendicular = true,
+    const TextLayoutOptions& options = {});
 
 } // namespace tachyon::text

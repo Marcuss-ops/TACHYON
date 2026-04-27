@@ -1,5 +1,6 @@
 #include "tachyon/text/layout/layout.h"
 #include "tachyon/text/animation/text_animator_utils.h"
+#include "tachyon/text/animation/text_on_path.h"
 
 #include <algorithm>
 #include <cmath>
@@ -223,6 +224,30 @@ TextRasterSurface rasterize_text_rgba(
     }
 
     return surface;
+}
+
+ResolvedTextLayout layout_text_on_path(
+    const BitmapFont& font,
+    std::string_view utf8_text,
+    const TextStyle& style,
+    const TextBox& text_box,
+    TextAlignment alignment,
+    const shapes::ShapePath& path,
+    double path_offset,
+    bool align_perpendicular,
+    const TextLayoutOptions& options) {
+
+    // 1. Standard layout pass
+    TextLayoutResult result = layout_text(font, utf8_text, style, text_box, alignment, options);
+
+    // 2. Map glyphs onto path using arc-length parameterization
+    TextOnPathModifier::apply(
+        static_cast<ResolvedTextLayout&>(result),
+        path,
+        path_offset,
+        align_perpendicular);
+
+    return static_cast<ResolvedTextLayout>(result);
 }
 
 } // namespace tachyon::text

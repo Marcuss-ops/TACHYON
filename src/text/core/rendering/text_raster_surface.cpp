@@ -176,7 +176,10 @@ void TextRasterSurface::apply_gaussian_blur(float radius) {
     }
 
     // Horizontal pass
-    for (std::uint32_t y = 0; y < m_height; ++y) {
+#ifdef _OPENMP
+    #pragma omp parallel for schedule(static)
+#endif
+    for (int y = 0; y < static_cast<int>(m_height); ++y) {
         for (std::uint32_t x = 0; x < m_width; ++x) {
             float r_acc = 0.0f, g_acc = 0.0f, b_acc = 0.0f, a_acc = 0.0f;
             for (int k = 0; k < kernel_size; ++k) {
@@ -203,7 +206,10 @@ void TextRasterSurface::apply_gaussian_blur(float radius) {
     }
 
     // Vertical pass
-    for (std::uint32_t x = 0; x < m_width; ++x) {
+#ifdef _OPENMP
+    #pragma omp parallel for schedule(static)
+#endif
+    for (int x = 0; x < static_cast<int>(m_width); ++x) {
         for (std::uint32_t y = 0; y < m_height; ++y) {
             float r_acc = 0.0f, g_acc = 0.0f, b_acc = 0.0f, a_acc = 0.0f;
             for (int k = 0; k < kernel_size; ++k) {

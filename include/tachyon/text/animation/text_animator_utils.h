@@ -29,11 +29,8 @@ struct TextAnimatorContext {
     bool is_rtl{false};   // True if this glyph is in RTL run
 };
 
-template <typename T>
-float sample_keyframe(const T& spec, const TextAnimatorContext& ctx) {
-    (void)spec; (void)ctx;
-    return 0.0f; // Placeholder implementation to restore build
-}
+// Keyframe sampling — canonical entry points backed by AnimationCurve<T>.
+// See text_animator_sampling.cpp for the full Bezier/spring/easing implementation.
 
 double sample_scalar_kfs(
     const std::optional<double>& static_val,

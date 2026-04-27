@@ -132,6 +132,13 @@ std::int32_t place_shaped_run(
     return rtl ? pen_x + std::max<std::int32_t>(consumed, std::abs(shaped.width)) : std::max(pen_x, cursor);
 }
 
+/**
+ * @brief Synchronizes the external-facing ResolvedTextLayout (float) from the internal TextLayoutResult (integer).
+ *
+ * This function acts as the bridge between the internal layout engine (using PositionedGlyph)
+ * and the external systems (animators, path modifiers) that use ResolvedGlyph.
+ * It copies all relevant data and converts integer coordinates to float.
+ */
 void sync_resolved_layout(TextLayoutResult& result, const BitmapFont& font, const TextStyle& style) {
     result.ResolvedTextLayout::glyphs.clear();
     result.ResolvedTextLayout::runs.clear();

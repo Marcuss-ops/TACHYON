@@ -201,6 +201,7 @@ add_library(TachyonCore SHARED
     text/core/rendering/outline_extractor.cpp
     text/bidi/script_detector.cpp
     text/core/content/subtitle.cpp
+    text/core/content/word_timestamps.cpp
     text/editing/text_editor.cpp
     text/text_measure.cpp
     text/core/animation/text_animator_context.cpp
