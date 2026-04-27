@@ -9,9 +9,9 @@
 namespace tachyon::text {
 
 namespace {
-
+ 
 float sample_glyph_alpha(const tachyon::text::GlyphBitmap& glyph, float src_x, float src_y) {
-    if (glyph.width == 0U || glyph.height == 0U || glyph.alpha_mask.empty()) {
+    if (glyph.width == 0U || glyph.height == 0U || !glyph.atlas_data) {
         return 0.0f;
     }
 
@@ -29,11 +29,7 @@ float sample_glyph_alpha(const tachyon::text::GlyphBitmap& glyph, float src_x, f
     const float fy = src_y - static_cast<float>(y0);
 
     auto alpha_at = [&](std::uint32_t x, std::uint32_t y) -> float {
-        const std::size_t index = static_cast<std::size_t>(y) * glyph.width + x;
-        if (index >= glyph.alpha_mask.size()) {
-            return 0.0f;
-        }
-        return static_cast<float>(glyph.alpha_mask[index]) / 255.0f;
+        return static_cast<float>(glyph.alpha_at(x, y)) / 255.0f;
     };
 
     const float a00 = alpha_at(x0, y0);
@@ -45,11 +41,11 @@ float sample_glyph_alpha(const tachyon::text::GlyphBitmap& glyph, float src_x, f
     const float ax1 = a01 + (a11 - a01) * fx;
     return ax0 + (ax1 - ax0) * fy;
 }
-
+ 
 } // namespace
 
 void TextRasterSurface::render_glyph(const tachyon::text::GlyphBitmap& glyph, int tx, int ty, int tw, int th, tachyon::renderer2d::Color gc) {
-    if (tw <= 0 || th <= 0 || glyph.width == 0U || glyph.height == 0U || glyph.alpha_mask.empty()) return;
+    if (tw <= 0 || th <= 0 || glyph.width == 0U || glyph.height == 0U || !glyph.atlas_data) return;
     
     if (glyph.type == tachyon::renderer2d::text::GlyphType::SDF) {
         // SDF rendering: alpha is determined by distance from edge (usually 128/255)

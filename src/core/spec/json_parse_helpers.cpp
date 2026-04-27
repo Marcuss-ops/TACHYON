@@ -1,6 +1,8 @@
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include <algorithm>
 
+using json = nlohmann::json;
+
 namespace tachyon {
 
 bool read_string(const json& object, const char* key, std::string& out) {

@@ -229,21 +229,23 @@ EvaluatedLayerState evaluate_layer_state(
     composition.layers.push_back(layer);
 
     EvaluationContext context{
-        nullptr,
-        composition,
-        frame_number,
-        composition_time_seconds,
-        {},
-        std::vector<std::optional<EvaluatedLayerState>>(composition.layers.size()),
-        std::vector<bool>(composition.layers.size(), false),
-        {},
-        audio_analyzer,
-        {},
-        {},
-        media,
-        {},
-        std::nullopt,
-        std::nullopt
+        nullptr,                                                              // scene
+        composition,                                                           // composition
+        frame_number,                                                          // frame_number
+        composition_time_seconds,                                               // composition_time_seconds
+        {},                                                                    // layer_indices
+        {},                                                                    // composition_indices
+        {},                                                                    // component_indices
+        std::vector<std::optional<EvaluatedLayerState>>(composition.layers.size()), // cache
+        std::vector<bool>(composition.layers.size(), false),                    // visiting
+        {},                                                                    // composition_stack
+        audio_analyzer,                                                        // audio_analyzer
+        {},                                                                    // vars
+        {},                                                                    // subtitle_cache
+        media,                                                                 // media
+        {},                                                                    // sampler
+        std::nullopt,                                                          // main_frame_number
+        std::nullopt                                                           // main_frame_time_seconds
     };
 
     return make_layer_state(context, context.composition.layers.front(), 0, 0.0, {});

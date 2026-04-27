@@ -126,7 +126,7 @@ LoadedFont GlyphLoader::load_bdf(const std::filesystem::path& path) {
             glyph.x_offset = builder.x_offset;
             glyph.y_offset = builder.y_offset;
             glyph.advance_x = builder.advance_x > 0 ? builder.advance_x : std::max(1, builder.width);
-            glyph.alpha_mask.assign(glyph.width * glyph.height, 0U);
+            glyph.pixels.assign(glyph.width * glyph.height, 0U);
 
             for (std::size_t row = 0; row < builder.bitmap_rows.size() && row < glyph.height; ++row) {
                 const std::string bitmap_row = trim_copy(builder.bitmap_rows[row]);
@@ -145,7 +145,7 @@ LoadedFont GlyphLoader::load_bdf(const std::filesystem::path& path) {
                 }
 
                 for (std::uint32_t column = 0; column < glyph.width && column < row_bits.size(); ++column) {
-                    glyph.alpha_mask[row * glyph.width + column] = row_bits[column] != 0U ? 255U : 0U;
+                    glyph.pixels[row * glyph.width + column] = row_bits[column] != 0U ? 255U : 0U;
                 }
             }
 

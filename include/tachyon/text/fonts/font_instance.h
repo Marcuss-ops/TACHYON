@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tachyon/text/fonts/font_face.h"
+#include "tachyon/text/fonts/glyph_atlas.h"
 #include "tachyon/renderer2d/text/glyph/glyph_bitmap.h"
 
 #include <cstdint>
@@ -93,8 +94,19 @@ private:
     std::int32_t m_line_height{0};
     std::int32_t m_default_advance{0};
 
-    mutable std::unordered_map<std::uint32_t, GlyphBitmap> m_glyph_cache;
-    mutable std::unordered_map<std::uint32_t, GlyphBitmap> m_index_cache;
+    // Glyph atlas replaces per-glyph unordered_map to avoid memory fragmentation
+    GlyphAtlas m_atlas;
+    struct GlyphAtlasEntry {
+        GlyphAtlas::Allocation alloc;
+        std::int32_t x_offset{0};
+        std::int32_t y_offset{0};
+        std::int32_t advance_x{0};
+    };
+    mutable std::unordered_map<std::uint32_t, GlyphAtlasEntry> m_glyph_cache;
+    mutable std::unordered_map<std::uint32_t, GlyphAtlasEntry> m_index_cache;
+
+    // Temporary GlyphBitmap to return (avoid per-call allocation)
+    mutable GlyphBitmap m_temp_glyph;
 };
 
 } // namespace tachyon::text

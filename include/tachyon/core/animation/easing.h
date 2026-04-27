@@ -266,8 +266,6 @@ struct SpringEasing {
 }
 
 /**
-
-/**
  * Applies the correct easing for the given preset to a raw t in [0,1].
  * Returns a remapped t' in [0,1].
  */

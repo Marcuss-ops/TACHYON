@@ -4,6 +4,8 @@
 #include <fstream>
 #include <sstream>
 
+using json = nlohmann::json;
+
 namespace tachyon {
 
 // ---------------------------------------------------------------------------

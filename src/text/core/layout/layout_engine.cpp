@@ -14,6 +14,10 @@
 #include <limits>
 #include <string_view>
 #include <vector>
+#if __cplusplus >= 201703L
+#include <execution>
+#include <numeric>
+#endif
 
 namespace tachyon::text {
 
@@ -522,7 +526,11 @@ public:
                 }
             }
 
-            for (const auto& sub : subruns) {
+            // Parallel shaping
+            std::vector<ShapedGlyphRun> shaped_runs(subruns.size());
+#pragma omp parallel for
+            for (int idx = 0; idx < (int)subruns.size(); ++idx) {
+                const auto& sub = subruns[idx];
                 const int dir = (sub.direction == CharacterDirection::RTL) ? 1 : 0;
                 ScriptInfo script_info = ScriptDetector::detect_run_info(sub.codepoints.data(), sub.codepoints.size());
 
@@ -536,11 +544,18 @@ public:
                 cache_key.features = style.features;
 
                 ShapedGlyphRun shaped;
+                auto& cache = ShapingCache::get_instance();
                 if (!cache.get(cache_key, shaped)) {
                     shaped = shape_run_with_harfbuzz(*sub.font, sub.codepoints, scale, script_info.script, script_info.language, dir, style.features);
                     cache.put(cache_key, shaped);
                 }
+                shaped_runs[idx] = std::move(shaped);
+            }
 
+            // Sequential placement
+            for (size_t idx = 0; idx < subruns.size(); ++idx) {
+                const auto& sub = subruns[idx];
+                const auto& shaped = shaped_runs[idx];
                 // Check for line break opportunities in this subrun.
                 bool contains_break = false;
                 for (std::uint32_t cp : sub.codepoints) {

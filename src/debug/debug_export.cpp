@@ -1,7 +1,5 @@
 #include "tachyon/debug/debug_export.h"
-#include "tachyon/core/io/file_system.h"
 
-#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
 #include <fstream>

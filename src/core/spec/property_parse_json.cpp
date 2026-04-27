@@ -1,5 +1,7 @@
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 
+using json = nlohmann::json;
+
 namespace tachyon {
 
 template <typename KeyframeT>

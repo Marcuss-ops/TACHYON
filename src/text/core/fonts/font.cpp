@@ -125,12 +125,13 @@ const GlyphBitmap* Font::scale_glyph(std::uint32_t codepoint, const GlyphBitmap&
     scaled->x_offset = glyph.x_offset * static_cast<std::int32_t>(scale);
     scaled->y_offset = glyph.y_offset * static_cast<std::int32_t>(scale);
     scaled->advance_x = glyph.advance_x * static_cast<std::int32_t>(scale);
-    scaled->alpha_mask.assign(static_cast<std::size_t>(scaled->width) * static_cast<std::size_t>(scaled->height), 0U);
+    scaled->pixels.assign(static_cast<std::size_t>(scaled->width) * static_cast<std::size_t>(scaled->height), 0U);
 
     if (glyph.width != 0U && glyph.height != 0U) {
         for (std::uint32_t source_y = 0; source_y < glyph.height; ++source_y) {
             for (std::uint32_t source_x = 0; source_x < glyph.width; ++source_x) {
-                const std::uint8_t alpha = glyph.alpha_mask[source_y * glyph.width + source_x];
+                const std::uint8_t alpha = (source_y < glyph.pixels.size() / glyph.width) 
+                    ? glyph.pixels[source_y * glyph.width + source_x] : 0U;
                 if (alpha == 0U) {
                     continue;
                 }
@@ -140,7 +141,7 @@ const GlyphBitmap* Font::scale_glyph(std::uint32_t codepoint, const GlyphBitmap&
                         const std::size_t dst_index =
                             (static_cast<std::size_t>(source_y) * scale + dy) * scaled->width +
                             (static_cast<std::size_t>(source_x) * scale + dx);
-                        scaled->alpha_mask[dst_index] = alpha;
+                        scaled->pixels[dst_index] = alpha;
                     }
                 }
             }
@@ -244,10 +245,10 @@ void Font::render_freetype_glyph(std::uint32_t codepoint) const {
     glyph.y_offset = face->glyph->bitmap_top - static_cast<int>(glyph.height);
     glyph.advance_x = static_cast<std::int32_t>(face->glyph->advance.x >> 6);
     
-    glyph.alpha_mask.resize(glyph.width * glyph.height);
+    glyph.pixels.resize(glyph.width * glyph.height);
     for (std::uint32_t y = 0; y < glyph.height; ++y) {
         for (std::uint32_t x = 0; x < glyph.width; ++x) {
-            glyph.alpha_mask[y * glyph.width + x] = face->glyph->bitmap.buffer[y * face->glyph->bitmap.pitch + x];
+            glyph.pixels[y * glyph.width + x] = face->glyph->bitmap.buffer[y * face->glyph->bitmap.pitch + x];
         }
     }
 
@@ -267,10 +268,10 @@ void Font::render_freetype_glyph_by_index(std::uint32_t glyph_index) const {
     glyph.y_offset = face->glyph->bitmap_top - static_cast<int>(glyph.height);
     glyph.advance_x = static_cast<std::int32_t>(face->glyph->advance.x >> 6);
 
-    glyph.alpha_mask.resize(glyph.width * glyph.height);
+    glyph.pixels.resize(glyph.width * glyph.height);
     for (std::uint32_t y = 0; y < glyph.height; ++y) {
         for (std::uint32_t x = 0; x < glyph.width; ++x) {
-            glyph.alpha_mask[y * glyph.width + x] = face->glyph->bitmap.buffer[y * face->glyph->bitmap.pitch + x];
+            glyph.pixels[y * glyph.width + x] = face->glyph->bitmap.buffer[y * face->glyph->bitmap.pitch + x];
         }
     }
 
@@ -294,10 +295,10 @@ void Font::render_freetype_sdf(std::uint32_t codepoint) const {
     glyph.advance_x = static_cast<std::int32_t>(face->glyph->advance.x >> 6);
     glyph.type = GlyphType::SDF;
 
-    glyph.alpha_mask.resize(glyph.width * glyph.height);
+    glyph.pixels.resize(glyph.width * glyph.height);
     for (std::uint32_t y = 0; y < glyph.height; ++y) {
         for (std::uint32_t x = 0; x < glyph.width; ++x) {
-            glyph.alpha_mask[y * glyph.width + x] = face->glyph->bitmap.buffer[y * face->glyph->bitmap.pitch + x];
+            glyph.pixels[y * glyph.width + x] = face->glyph->bitmap.buffer[y * face->glyph->bitmap.pitch + x];
         }
     }
 
@@ -321,10 +322,10 @@ void Font::render_freetype_sdf_by_index(std::uint32_t glyph_index) const {
     glyph.advance_x = static_cast<std::int32_t>(face->glyph->advance.x >> 6);
     glyph.type = GlyphType::SDF;
 
-    glyph.alpha_mask.resize(glyph.width * glyph.height);
+    glyph.pixels.resize(glyph.width * glyph.height);
     for (std::uint32_t y = 0; y < glyph.height; ++y) {
         for (std::uint32_t x = 0; x < glyph.width; ++x) {
-            glyph.alpha_mask[y * glyph.width + x] = face->glyph->bitmap.buffer[y * face->glyph->bitmap.pitch + x];
+            glyph.pixels[y * glyph.width + x] = face->glyph->bitmap.buffer[y * face->glyph->bitmap.pitch + x];
         }
     }
 
