@@ -1,5 +1,7 @@
 build/
 build-ninja/
+build-linux/
+build-*/
 .cache/
 out/
 output/
