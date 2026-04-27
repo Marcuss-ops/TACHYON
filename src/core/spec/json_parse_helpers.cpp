@@ -165,7 +165,21 @@ animation::EasingPreset parse_easing_preset(const json& value) {
     if (easing == "ease_out" || easing == "easeOut") return animation::EasingPreset::EaseOut;
     if (easing == "ease_in_out" || easing == "easeInOut") return animation::EasingPreset::EaseInOut;
     if (easing == "custom" || easing == "bezier") return animation::EasingPreset::Custom;
+    if (easing == "spring") return animation::EasingPreset::Spring;
+    if (easing == "bounce") return animation::EasingPreset::BounceOut;
+    if (easing == "elastic") return animation::EasingPreset::ElasticOut;
+    if (easing == "back") return animation::EasingPreset::BackOut;
+    if (easing == "circ") return animation::EasingPreset::CircOut;
     return animation::EasingPreset::None;
+}
+
+bool parse_spring_params(const json& value, animation::SpringEasing& out) {
+    if (!value.is_object()) return false;
+    if (value.contains("stiffness") && value.at("stiffness").is_number()) out.stiffness = value.at("stiffness").get<double>();
+    if (value.contains("damping") && value.at("damping").is_number()) out.damping = value.at("damping").get<double>();
+    if (value.contains("mass") && value.at("mass").is_number()) out.mass = value.at("mass").get<double>();
+    if (value.contains("velocity") && value.at("velocity").is_number()) out.velocity = value.at("velocity").get<double>();
+    return true;
 }
 
 animation::CubicBezierEasing parse_bezier(const json& value) {

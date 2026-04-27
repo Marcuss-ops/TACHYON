@@ -1,0 +1,40 @@
+// X-Macro definitions for Tachyon Layer Properties
+// Format: MACRO(json_key, cpp_field, fallback_value)
+
+#ifndef TACHYON_PROPERTY_SCALAR
+#define TACHYON_PROPERTY_SCALAR(json, cpp, fallback)
+#endif
+
+#ifndef TACHYON_PROPERTY_COLOR
+#define TACHYON_PROPERTY_COLOR(json, cpp, fallback)
+#endif
+
+// Core Layer Properties
+TACHYON_PROPERTY_SCALAR(opacity, opacity_property, layer.opacity)
+TACHYON_PROPERTY_SCALAR(mask_feather, mask_feather, 0.0)
+TACHYON_PROPERTY_SCALAR(time_remap, time_remap_property, 0.0)
+
+// Text Properties
+TACHYON_PROPERTY_SCALAR(font_size, font_size, 48.0)
+TACHYON_PROPERTY_COLOR(fill_color, fill_color, ColorSpec(255, 255, 255, 255))
+TACHYON_PROPERTY_COLOR(stroke_color, stroke_color, ColorSpec(255, 255, 255, 255))
+TACHYON_PROPERTY_SCALAR(stroke_width, stroke_width_property, layer.stroke_width)
+TACHYON_PROPERTY_COLOR(subtitle_outline_color, subtitle_outline_color, ColorSpec(0, 0, 0, 255))
+
+// Repeater Properties
+TACHYON_PROPERTY_SCALAR(repeater_count, repeater_count, 0.0)
+TACHYON_PROPERTY_SCALAR(repeater_stagger_delay, repeater_stagger_delay, 0.0)
+TACHYON_PROPERTY_SCALAR(repeater_offset_position_x, repeater_offset_position_x, 0.0)
+TACHYON_PROPERTY_SCALAR(repeater_offset_position_y, repeater_offset_position_y, 0.0)
+TACHYON_PROPERTY_SCALAR(repeater_offset_rotation, repeater_offset_rotation, 0.0)
+TACHYON_PROPERTY_SCALAR(repeater_offset_scale_x, repeater_offset_scale_x, 1.0)
+TACHYON_PROPERTY_SCALAR(repeater_offset_scale_y, repeater_offset_scale_y, 1.0)
+TACHYON_PROPERTY_SCALAR(repeater_start_opacity, repeater_start_opacity, 1.0)
+TACHYON_PROPERTY_SCALAR(repeater_end_opacity, repeater_end_opacity, 0.0)
+
+// Camera Properties
+TACHYON_PROPERTY_SCALAR(camera_zoom, camera_zoom, 1000.0)
+
+// Clean up macros if they were provided as default fallbacks
+#undef TACHYON_PROPERTY_SCALAR
+#undef TACHYON_PROPERTY_COLOR

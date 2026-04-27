@@ -127,7 +127,13 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
                 result.diagnostics.add_error("cli.out_missing", "missing value for --out");
                 return result;
             }
-            options.output_override = value;
+            if (options.command == "preview-frame") {
+                options.preview_output = value;
+            } else if (options.command == "transition") {
+                options.output_image = value;
+            } else {
+                options.output_override = value;
+            }
             continue;
         }
         if (arg == "--workers") {
@@ -187,15 +193,6 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
             }
             continue;
         }
-        if (arg == "--out" && options.command == "preview-frame") {
-            const std::string value = require_argument(args, index);
-            if (value.empty()) {
-                result.diagnostics.add_error("cli.out_missing", "missing value for --out");
-                return result;
-            }
-            options.preview_output = value;
-            continue;
-        }
         if (arg == "--from") {
             const std::string value = require_argument(args, index);
             if (value.empty()) {
@@ -212,15 +209,6 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
                 return result;
             }
             options.to_image = value;
-            continue;
-        }
-        if (arg == "--out" && options.command == "transition") {
-            const std::string value = require_argument(args, index);
-            if (value.empty()) {
-                result.diagnostics.add_error("cli.out_missing", "missing value for --out");
-                return result;
-            }
-            options.output_image = value;
             continue;
         }
         if (arg == "--random") {

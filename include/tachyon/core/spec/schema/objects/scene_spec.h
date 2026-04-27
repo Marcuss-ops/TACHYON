@@ -82,11 +82,15 @@ struct SceneSpec {
     std::string version{"1.0"};              ///< Legacy version field (deprecated)
     std::string spec_version{"1.0.0"};       ///< Legacy spec version (deprecated)
     ProjectSpec project;
+    std::vector<ParameterDefinition> parameters;
     std::vector<CompositionSpec> compositions;
     std::vector<AssetSpec> assets;
     std::vector<DataSourceSpec> data_sources;
     std::optional<text::FontManifest> font_manifest;
     std::optional<std::string> font_manifest_path;
+
+    // Cache
+    std::uint64_t spec_hash{0};
 };
 
 ParseResult<SceneSpec> parse_scene_spec_file(const std::filesystem::path& path);

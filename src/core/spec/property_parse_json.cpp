@@ -89,6 +89,11 @@ void parse_optional_scalar_property(const json& object, const char* key, Animate
     const auto& value = object.at(key);
     if (value.is_number()) { property.value = value.get<double>(); return; }
     if (value.is_object()) {
+        if (value.contains("bind") && value.at("bind").is_string()) {
+            property.binding.active = true;
+            property.binding.parameter_name = value.at("bind").get<std::string>();
+            return;
+        }
         if (value.contains("value") && value.at("value").is_number()) property.value = value.at("value").get<double>();
         if (value.contains("audio_band")) {
             const auto audio_band = parse_audio_band_type(value.at("audio_band"));
@@ -135,6 +140,11 @@ void parse_optional_vector_property(const json& object, const char* key, Animate
     math::Vector2 v;
     if (parse_vector2_value(value, v)) { property.value = v; return; }
     if (value.is_object()) {
+        if (value.contains("bind") && value.at("bind").is_string()) {
+            property.binding.active = true;
+            property.binding.parameter_name = value.at("bind").get<std::string>();
+            return;
+        }
         if (value.contains("value") && parse_vector2_value(value.at("value"), v)) property.value = v;
     if (value.contains("keyframes") && value.at("keyframes").is_array()) {
         for (std::size_t i = 0; i < value.at("keyframes").size(); ++i) {
@@ -170,6 +180,11 @@ void parse_optional_vector3_property(const json& object, const char* key, Animat
     math::Vector3 v;
     if (parse_vector3_value(value, v)) { property.value = v; return; }
     if (value.is_object()) {
+        if (value.contains("bind") && value.at("bind").is_string()) {
+            property.binding.active = true;
+            property.binding.parameter_name = value.at("bind").get<std::string>();
+            return;
+        }
         if (value.contains("value") && parse_vector3_value(value.at("value"), v)) property.value = v;
     if (value.contains("keyframes") && value.at("keyframes").is_array()) {
         for (std::size_t i = 0; i < value.at("keyframes").size(); ++i) {
@@ -205,6 +220,11 @@ void parse_optional_color_property(const json& object, const char* key, Animated
     ColorSpec c;
     if (parse_color_value(value, c)) { property.value = c; return; }
     if (value.is_object()) {
+        if (value.contains("bind") && value.at("bind").is_string()) {
+            property.binding.active = true;
+            property.binding.parameter_name = value.at("bind").get<std::string>();
+            return;
+        }
         if (value.contains("value") && parse_color_value(value.at("value"), c)) property.value = c;
     if (value.contains("keyframes") && value.at("keyframes").is_array()) {
         for (std::size_t i = 0; i < value.at("keyframes").size(); ++i) {

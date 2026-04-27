@@ -74,6 +74,9 @@ struct CompiledKeyframe {
     double cy1{0.0};
     double cx2{1.0};
     double cy2{1.0};
+    double spring_stiffness{150.0};
+    double spring_damping{12.0};
+    double spring_mass{1.0};
 };
 
 struct CompiledPropertyTrack {
@@ -153,6 +156,10 @@ struct CompiledLayer {
     double start_time{0.0};
     // Blend mode (from SceneSpec)
     std::string blend_mode{"normal"};
+    // Animation transitions
+    LayerTransitionSpec transition_in;
+    LayerTransitionSpec transition_out;
+
     // Asset resolution state (set at compile time, propagated to renderer)
     bool asset_offline{false};
 };

@@ -72,6 +72,9 @@ struct CompositionSpec {
     std::vector<ComponentSpec> components;
     /// Instances of components with provided parameter values
     std::vector<ComponentInstanceSpec> component_instances;
+
+    // Cache
+    std::uint64_t spec_hash{0};
 };
 
 } // namespace tachyon
