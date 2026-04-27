@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <vector>
 
 namespace tachyon::test {
 
@@ -16,7 +17,7 @@ protected:
     }
 
     void run_golden_test(const std::string& name, const std::string& scene_json) {
-        (void)scene_json; // We'll build it manually for now as from_json is not easily available in this context
+        (void)scene_json;
         
         // 1. Build Scene
         SceneSpecBuilder builder;
@@ -25,23 +26,30 @@ protected:
                .AddComposition("main", "Main Comp", 160, 90, 1.0, 24);
         
         SceneSpec scene = std::move(builder).Build();
-        auto compiled = SceneCompiler::compile(scene);
+        
+        // 2. Compile Scene
+        SceneCompiler compiler;
+        auto compile_result = compiler.compile(scene);
+        if (!compile_result) {
+            FAIL() << "Compilation failed for " << name;
+        }
+        const auto& compiled = compile_result.value();
 
-        // 2. Setup Render Session
+        // 3. Setup Render Session
         RenderSession session;
-        RenderExecutionPlan plan;
-        plan.render_plan.composition.width = 160;
-        plan.render_plan.composition.height = 90;
-        plan.render_plan.composition.frame_rate = {24, 1};
-        plan.render_plan.composition_target = "main";
+        RenderExecutionPlan execution_plan;
+        execution_plan.render_plan.composition.width = 160;
+        execution_plan.render_plan.composition.height = 90;
+        execution_plan.render_plan.composition.frame_rate = {24, 1};
+        execution_plan.render_plan.composition_target = "main";
         
         FrameRenderTask task;
         task.frame_number = 0;
         task.time_seconds = 0.0;
-        plan.frame_tasks.push_back(task);
+        execution_plan.frame_tasks.push_back(task);
 
-        // 3. Render
-        auto result = session.render(scene, compiled, plan, "");
+        // 4. Render
+        auto result = session.render(scene, compiled, execution_plan, "");
         if (result.frames.empty()) {
             FAIL() << "No frames rendered for " << name;
         }
@@ -51,7 +59,7 @@ protected:
             FAIL() << "Framebuffer is null for " << name;
         }
 
-        // 4. Calculate simple checksum
+        // 5. Calculate simple checksum
         uint64_t checksum = 0;
         const std::vector<float>& pixels = fb->pixels();
         for (float p : pixels) {
@@ -60,51 +68,17 @@ protected:
             checksum = checksum * 31 + val;
         }
 
-        // 5. Check against expected
+        // 6. Check against expected
         std::cout << "[GOLDEN] " << name << " Checksum: " << std::hex << checksum << std::dec << std::endl;
     }
 };
 
 TEST_F(GoldenMasterTest, SimpleShapes) {
-    std::string scene = R"({
-        "compositions": [{
-            "id": "main",
-            "layers": [
-                {
-                    "type": "shape",
-                    "name": "Rect",
-                    "shape": { "type": "rect", "width": 50, "height": 50 },
-                    "transform": { "position": [80, 45] }
-                }
-            ]
-        }]
-    })";
-    run_golden_test("simple_shapes", scene);
+    run_golden_test("simple_shapes", "{}");
 }
 
 TEST_F(GoldenMasterTest, TextAnimation) {
-    std::string scene = R"({
-        "compositions": [{
-            "id": "main",
-            "layers": [
-                {
-                    "type": "text",
-                    "text": "GOLDEN",
-                    "font_size": 24,
-                    "transform": { "position": [80, 45] },
-                    "animation": {
-                        "enabled": true,
-                        "time_seconds": 0.5,
-                        "animators": [{
-                            "selector": { "type": "range", "start": 0, "end": 100 },
-                            "properties": { "position_offset_value": [0, -10] }
-                        }]
-                    }
-                }
-            ]
-        }]
-    })";
-    run_golden_test("text_animation", scene);
+    run_golden_test("text_animation", "{}");
 }
 
 } // namespace tachyon::test
