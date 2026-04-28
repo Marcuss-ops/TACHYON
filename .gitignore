@@ -32,8 +32,10 @@ build_verbose.log
 
 # Temporary files
 *.tmp
-*.tmp
 ~$*
+
+# Crash dumps
+*.dmp
 
 # Rendered output (regenerable)
 debug/render_*/
