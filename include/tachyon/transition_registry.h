@@ -2,6 +2,7 @@
 
 #include <string>
 #include <functional>
+#include <optional>
 
 namespace tachyon {
 
@@ -12,9 +13,10 @@ class SurfaceRGBA;
 
 /**
  * TransitionSpec: pure specification for a transition.
- * Contains the ID, metadata, and the function pointer.
+ * Supports both state-level and pixel-level transitions.
  */
 struct TransitionSpec {
+    // Pixel-level transition function (for surface blending)
     using TransitionFn = renderer2d::Color(*)(float u, float v, float t,
                                               const renderer2d::SurfaceRGBA& input,
                                               const renderer2d::SurfaceRGBA* to_surface);
@@ -22,12 +24,26 @@ struct TransitionSpec {
     std::string id;
     std::string name;
     std::string description;
+
+    // Pixel-level transition (blends surfaces)
     TransitionFn function{nullptr};
+
+    // State-level transition info (modifies layer properties)
+    enum class Type {
+        None,
+        Fade,   // Modify opacity
+        Slide,  // Modify position
+        Zoom,   // Modify scale
+        Flip,   // Modify rotation/scale
+        Blur    // Modify effects
+    };
+    Type state_type{Type::None};
+    std::string direction; // For slide: "up", "down", "left", "right"
 };
 
 /**
  * Runtime registry for transitions.
- * Accessible only via public API functions.
+ * Supports both state-level and pixel-level transitions.
  */
 class TransitionRegistry {
 public:
@@ -46,4 +62,4 @@ private:
     Impl* m_impl{nullptr};
 };
 
-}  // namespace tachyon
+} // namespace tachyon

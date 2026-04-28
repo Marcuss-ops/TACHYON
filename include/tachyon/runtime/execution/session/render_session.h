@@ -21,6 +21,19 @@
 
 namespace tachyon {
 
+/**
+ * @brief Render mode to distinguish preview (interactive) from final render (deterministic).
+ * 
+ * - Preview: Used by editor UI (e.g., ShapeGrid React). May include
+ *   interactive elements like hover effects, trails, lower quality for speed.
+ * - Final: Deterministic offline render for export. No interactivity,
+ *   full quality, bit-identical output for same inputs.
+ */
+enum class RenderMode {
+    Preview,  ///< Interactive preview with possible interactivity (hover, trails)
+    Final    ///< Deterministic offline render for export
+};
+
 using RenderProgressCallback = std::function<void(std::size_t frame_index, std::size_t total_frames)>;
 using CancelFlag = std::atomic<bool>;
 

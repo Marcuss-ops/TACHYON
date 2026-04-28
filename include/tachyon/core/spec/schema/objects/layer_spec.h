@@ -50,6 +50,7 @@ struct ProceduralSpec {
     AnimatedScalarSpec contrast{1.0};
     AnimatedScalarSpec gamma{1.0};
     AnimatedScalarSpec saturation{1.0};
+    AnimatedScalarSpec softness{0.0}; // Blur/softness factor for the pattern
 
     // Aurora / Advanced Noise
     AnimatedScalarSpec octave_decay{0.5};
@@ -90,13 +91,13 @@ struct ParticleSpec {
 };
 
 struct LayerTransitionSpec {
-    std::string type{"none"}; // "fade", "slide", "zoom", "flip", "blur"
+    std::string type{"none"}; // DEPRECATED: Use transition_id instead. "fade", "slide", "zoom", "flip", "blur"
     std::string direction{"none"}; // "up", "down", "left", "right", "random"
     double duration{0.4};
     animation::EasingPreset easing{animation::EasingPreset::EaseOut};
     animation::SpringEasing spring{}; // Custom spring parameters
     double delay{0.0};
-    std::string transition_id; // Registry ID for advanced transitions (e.g., "fade_to_black", "wipe_linear")
+    std::string transition_id; // Unified transition registry ID (e.g., "fade", "slide", "circle_iris", "fade_to_black")
 };
 
 struct InstanceSpec {

@@ -1,4 +1,5 @@
 #include "tachyon/text/animation/text_scene_presets.h"
+#include "tachyon/background_generator.h"
 
 namespace tachyon::text {
 
@@ -32,19 +33,29 @@ LayerSpec make_enhance_text_background_layer(const TextScenePresetOptions& optio
     bg.height = options.height;
     bg.opacity = 1.0;
     bg.procedural = ProceduralSpec{};
-    bg.procedural->kind = "aura";
-    bg.procedural->seed = 19;
-    bg.procedural->color_a = AnimatedColorSpec(options.procedural_color_a);
-    bg.procedural->color_b = AnimatedColorSpec(options.procedural_color_b);
-    bg.procedural->color_c = AnimatedColorSpec(options.procedural_color_c);
-    bg.procedural->speed = AnimatedScalarSpec(options.procedural_speed);
-    bg.procedural->frequency = AnimatedScalarSpec(options.procedural_frequency);
-    bg.procedural->amplitude = AnimatedScalarSpec(options.procedural_amplitude);
-    bg.procedural->scale = AnimatedScalarSpec(options.procedural_scale);
-    bg.procedural->grain_amount = AnimatedScalarSpec(options.procedural_grain);
-    bg.procedural->contrast = AnimatedScalarSpec(1.0);
-    bg.procedural->gamma = AnimatedScalarSpec(1.0);
-    bg.procedural->saturation = AnimatedScalarSpec(1.0);
+
+    if (options.procedural_kind == "grid") {
+        // Use ShapeGrid procedural background
+        ShapeGridParams params = options.shape_grid_params;
+        params.background_color = options.procedural_color_a;
+        params.grid_color = options.procedural_color_b;
+        *bg.procedural = GenerateShapeGridBackground(params);
+    } else {
+        // Default: aura procedural background
+        bg.procedural->kind = "aura";
+        bg.procedural->seed = 19;
+        bg.procedural->color_a = AnimatedColorSpec(options.procedural_color_a);
+        bg.procedural->color_b = AnimatedColorSpec(options.procedural_color_b);
+        bg.procedural->color_c = AnimatedColorSpec(options.procedural_color_c);
+        bg.procedural->speed = AnimatedScalarSpec(options.procedural_speed);
+        bg.procedural->frequency = AnimatedScalarSpec(options.procedural_frequency);
+        bg.procedural->amplitude = AnimatedScalarSpec(options.procedural_amplitude);
+        bg.procedural->scale = AnimatedScalarSpec(options.procedural_scale);
+        bg.procedural->grain_amount = AnimatedScalarSpec(options.procedural_grain);
+        bg.procedural->contrast = AnimatedScalarSpec(1.0);
+        bg.procedural->gamma = AnimatedScalarSpec(1.0);
+        bg.procedural->saturation = AnimatedScalarSpec(1.0);
+    }
     return bg;
 }
 
