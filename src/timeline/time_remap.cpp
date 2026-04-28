@@ -119,6 +119,8 @@ float evaluate_source_time(const TimeRemapCurve& curve, float dest_time) {
     float t = (dest_time - prev->second) / (it->second - prev->second);
     
     if (curve.mode == TimeRemapMode::Hold) {
+        // Exact match on keyframe boundary: snap to that keyframe's source time
+        if (it->second <= dest_time) return it->first;
         return prev->first;
     }
     
