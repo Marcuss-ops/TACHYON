@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
+#include <mutex>
 
 namespace tachyon::renderer2d {
 
@@ -189,27 +190,25 @@ Color transition_directional_blur_wipe(float u, float v, float t, const SurfaceR
 }  // namespace
 
 void init_builtin_transitions() {
-    static bool initialized = false;
-    if (initialized) return;
-    
-    auto& reg = TransitionRegistry::instance();
-    
-    reg.register_transition({"fade_to_black", "Fade to Black", "Crossfade through black", transition_fade_to_black});
-    reg.register_transition({"wipe_linear", "Linear Wipe", "Simple left-to-right wipe", transition_wipe_linear});
-    reg.register_transition({"wipe_angular", "Angular Wipe", "Angular wipe around center", transition_wipe_angular});
-    reg.register_transition({"push_left", "Push Left", "Push image to the left", transition_push_left});
-    reg.register_transition({"slide_easing", "Slide Easing", "Slide with easing", transition_slide_easing});
-    reg.register_transition({"zoom_in", "Zoom In", "Zoom into target", transition_zoom_in});
-    reg.register_transition({"zoom_blur", "Zoom Blur", "Zoom with motion blur", transition_zoom_blur});
-    reg.register_transition({"spin", "Spin", "Spin rotation", transition_spin});
-    reg.register_transition({"circle_iris", "Circle Iris", "Circular iris opener", transition_circle_iris});
-    reg.register_transition({"pixelate", "Pixelate", "Pixelation transition", transition_pixelate});
-    reg.register_transition({"glitch_slice", "Glitch Slice", "Glitchy slice effect", transition_glitch_slice});
-    reg.register_transition({"rgb_split", "RGB Split", "Color channel split", transition_rgb_split});
-    reg.register_transition({"luma_dissolve", "Luma Dissolve", "Luminance-based dissolve", transition_luma_dissolve});
-    reg.register_transition({"directional_blur_wipe", "Directional Blur Wipe", "Blur wipe with direction", transition_directional_blur_wipe});
-    
-    initialized = true;
+    static std::once_flag flag;
+    std::call_once(flag, []() {
+        auto& reg = TransitionRegistry::instance();
+        
+        reg.register_transition({"fade_to_black", "Fade to Black", "Crossfade through black", transition_fade_to_black});
+        reg.register_transition({"wipe_linear", "Linear Wipe", "Simple left-to-right wipe", transition_wipe_linear});
+        reg.register_transition({"wipe_angular", "Angular Wipe", "Angular wipe around center", transition_wipe_angular});
+        reg.register_transition({"push_left", "Push Left", "Push image to the left", transition_push_left});
+        reg.register_transition({"slide_easing", "Slide Easing", "Slide with easing", transition_slide_easing});
+        reg.register_transition({"zoom_in", "Zoom In", "Zoom into target", transition_zoom_in});
+        reg.register_transition({"zoom_blur", "Zoom Blur", "Zoom with motion blur", transition_zoom_blur});
+        reg.register_transition({"spin", "Spin", "Spin rotation", transition_spin});
+        reg.register_transition({"circle_iris", "Circle Iris", "Circular iris opener", transition_circle_iris});
+        reg.register_transition({"pixelate", "Pixelate", "Pixelation transition", transition_pixelate});
+        reg.register_transition({"glitch_slice", "Glitch Slice", "Glitchy slice effect", transition_glitch_slice});
+        reg.register_transition({"rgb_split", "RGB Split", "Color channel split", transition_rgb_split});
+        reg.register_transition({"luma_dissolve", "Luma Dissolve", "Luminance-based dissolve", transition_luma_dissolve});
+        reg.register_transition({"directional_blur_wipe", "Directional Blur Wipe", "Blur wipe with direction", transition_directional_blur_wipe});
+    });
 }
 
 SurfaceRGBA GlslTransitionEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {

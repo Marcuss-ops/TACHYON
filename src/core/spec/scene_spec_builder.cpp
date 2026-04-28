@@ -33,7 +33,7 @@ struct SceneSpecBuilder::SceneSpecBuilderImpl {
             fps_ = f;
             return *this;
         }
-        CompositionBuilder& SetBackground(std::optional<std::string> b) {
+        CompositionBuilder& SetBackground(std::optional<BackgroundSpec> b) {
             background_ = b;
             return *this;
         }
@@ -61,7 +61,7 @@ struct SceneSpecBuilder::SceneSpecBuilderImpl {
         std::int64_t height_{1080};
         double duration_{10.0};
         std::optional<std::int64_t> fps_;
-        std::optional<std::string> background_;
+        std::optional<BackgroundSpec> background_;
     };
 
     std::optional<std::string> project_id;
@@ -112,7 +112,7 @@ SceneSpecBuilder& SceneSpecBuilder::SetProjectRootSeed(std::optional<std::int64_
 SceneSpecBuilder& SceneSpecBuilder::AddComposition(
     std::string id, std::string name, std::int64_t width,
     std::int64_t height, double duration, std::optional<std::int64_t> fps,
-    std::optional<std::string> background) {
+    std::optional<BackgroundSpec> background) {
     SceneSpecBuilderImpl::CompositionBuilder builder;
     builder.SetId(std::move(id)).SetName(std::move(name)).SetWidth(width).SetHeight(height).SetDuration(duration).SetFps(fps).SetBackground(background);
     impl_->compositions.push_back(std::move(builder));

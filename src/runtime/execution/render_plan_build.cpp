@@ -42,7 +42,7 @@ CompositionSummary make_summary(const CompositionSpec& composition) {
     summary.height = composition.height;
     summary.duration = composition.duration;
     summary.frame_rate = composition.frame_rate;
-    summary.background = composition.background;
+    summary.background = composition.background; // Copy optional<BackgroundSpec>
     summary.layer_count = composition.layers.size();
     summary.solid_layer_count = count_layers_with_type(composition, "solid");
     summary.shape_layer_count = count_layers_with_type(composition, "shape");

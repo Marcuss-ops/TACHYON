@@ -109,7 +109,7 @@ public:
     SceneSpecBuilder& AddComposition(
         std::string id, std::string name, std::int64_t width,
         std::int64_t height, double duration, std::optional<std::int64_t> fps,
-        std::optional<std::string> background = std::nullopt);
+        std::optional<BackgroundSpec> background = std::nullopt);
 
     SceneSpec Build() &&;
 

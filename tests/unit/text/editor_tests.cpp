@@ -1,4 +1,6 @@
 #include "tachyon/text/animation/text_editor.h"
+#include "tachyon/text/animation/text_presets.h"
+#include "tachyon/text/animation/text_scene_presets.h"
 #include <gtest/gtest.h>
 
 namespace tachyon::text {
@@ -113,6 +115,42 @@ TEST_F(TextEditorTest, BiDi_Basics) {
     editor.set_selection(8, 8);
     editor.delete_backward();
     EXPECT_EQ(editor.get_document().cluster_count(), 7);
+}
+
+TEST(TextPresetTest, MinimalBackgroundBoxIsEnabledAndSubtle) {
+    const auto box = make_minimal_text_background_box();
+    EXPECT_TRUE(box.enabled);
+    EXPECT_LT(box.fill_color.a, 1.0f);
+    EXPECT_EQ(box.padding_left, box.padding_right);
+    EXPECT_EQ(box.padding_top, box.padding_bottom);
+}
+
+TEST(TextPresetTest, MinimalFadeUpAnimatesOpacityAndYOffset) {
+    const auto anim = make_minimal_fade_up_animator();
+    EXPECT_EQ(anim.name, "MinimalFadeUp");
+    EXPECT_FALSE(anim.properties.opacity_keyframes.empty());
+    EXPECT_FALSE(anim.properties.position_offset_keyframes.empty());
+}
+
+TEST(TextPresetTest, SplitLineStaggerUsesLineBasedStaggering) {
+    const auto anim = make_split_line_stagger_animator();
+    EXPECT_EQ(anim.selector.based_on, "lines");
+    EXPECT_EQ(anim.selector.stagger_mode, "line");
+    EXPECT_GT(anim.selector.stagger_delay, 0.0);
+}
+
+TEST(TextPresetTest, EnhanceTextSceneBuildsBackgroundAndTextLayers) {
+    const auto scene = make_enhance_text_scene();
+    ASSERT_EQ(scene.compositions.size(), 1u);
+
+    const auto& comp = scene.compositions.front();
+    EXPECT_TRUE(comp.background.has_value());
+    ASSERT_EQ(comp.layers.size(), 2u);
+    EXPECT_TRUE(comp.layers[0].procedural.has_value());
+    EXPECT_EQ(comp.layers[0].procedural->kind, "aura");
+    EXPECT_EQ(comp.layers[1].type, "text");
+    EXPECT_EQ(comp.layers[1].text_content, "Il testo leggero entra, respira e resta pulito.");
+    EXPECT_EQ(comp.layers[1].text_animators.size(), 3u);
 }
 
 } // namespace tachyon::text

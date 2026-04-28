@@ -1,0 +1,39 @@
+{
+  "version": "1.0",
+  "spec_version": "1.0.0",
+  "project": { "id": "yt_demo", "name": "YT Classic Grid Demo" },
+  "compositions": [
+    {
+      "id": "main",
+      "width": 1920, "height": 1080, "duration": 5.0, "fps": 60,
+      "component_instances": [
+        {
+          "component_id": "bg_yt_classic",
+          "instance_id": "background",
+          "param_values": { 
+            "bg_color": "#0A0A0A", 
+            "grid_color": "#222222", 
+            "spacing": "100.0",
+            "angle": "30.0",
+            "speed": "0.4"
+          }
+        }
+      ],
+      "layers": [
+        {
+          "id": "main_title", "type": "text", "text_content": "TACHYON",
+          "font_id": "outfit_bold", "fill_color": "#FFFFFF", "font_size": 180,
+          "alignment": "center",
+          "transform": { "position": [960, 500] }
+        },
+        {
+          "id": "sub_title", "type": "text", "text_content": "PREMIUM ENGINE",
+          "font_id": "outfit_light", "fill_color": "#AAAAAA", "font_size": 40,
+          "alignment": "center",
+          "letter_spacing": 10,
+          "transform": { "position": [960, 600] }
+        }
+      ]
+    }
+  ]
+}

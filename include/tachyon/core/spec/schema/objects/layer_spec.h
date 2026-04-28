@@ -32,7 +32,7 @@ struct ProceduralSpec {
     AnimatedScalarSpec angle{0.0};
     
     // Geometry & Grid Logic
-    std::string shape{"square"}; // square, circle, hexagon, triangle
+    std::string shape{"square"}; // square, circle
     AnimatedScalarSpec spacing{50.0};
     AnimatedScalarSpec border_width{1.0};
     AnimatedColorSpec border_color{ColorSpec{150, 150, 150, 255}};

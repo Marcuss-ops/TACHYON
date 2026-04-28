@@ -228,6 +228,62 @@ TextRasterSurface rasterize_text_rgba(
     return surface;
 }
 
+TextRasterSurface rasterize_text_rgba(
+    const BitmapFont& font,
+    const TextLayoutResult& layout,
+    const TextAnimationOptions& animation) {
+
+    TextRasterSurface surface(layout.width, layout.height);
+    if (!font.is_loaded() || layout.width == 0U || layout.height == 0U) return surface;
+
+    const std::vector<ResolvedGlyphPaint> paints = resolve_glyph_paints(font, layout, animation);
+
+    for (const auto& paint : paints) {
+        if (paint.glyph == nullptr) continue;
+        surface.render_glyph(
+            *paint.glyph,
+            paint.base_x,
+            paint.base_y,
+            static_cast<int>(paint.target_width),
+            static_cast<int>(paint.target_height),
+            renderer2d::Color{
+                static_cast<float>(paint.fill_color.r) / 255.0f,
+                static_cast<float>(paint.fill_color.g) / 255.0f,
+                static_cast<float>(paint.fill_color.b) / 255.0f,
+                static_cast<float>(paint.fill_color.a) / 255.0f * paint.opacity
+            });
+    }
+
+    return surface;
+}
+
+TextRasterSurface rasterize_text_rgba(
+    const BitmapFont& font,
+    const TextLayoutResult& layout,
+    const std::vector<ResolvedGlyphPaint>& paints) {
+
+    TextRasterSurface surface(layout.width, layout.height);
+    if (!font.is_loaded() || layout.width == 0U || layout.height == 0U) return surface;
+
+    for (const auto& paint : paints) {
+        if (paint.glyph == nullptr) continue;
+        surface.render_glyph(
+            *paint.glyph,
+            paint.base_x,
+            paint.base_y,
+            static_cast<int>(paint.target_width),
+            static_cast<int>(paint.target_height),
+            renderer2d::Color{
+                static_cast<float>(paint.fill_color.r) / 255.0f,
+                static_cast<float>(paint.fill_color.g) / 255.0f,
+                static_cast<float>(paint.fill_color.b) / 255.0f,
+                static_cast<float>(paint.fill_color.a) / 255.0f * paint.opacity
+            });
+    }
+
+    return surface;
+}
+
 ResolvedTextLayout layout_text_on_path(
     const BitmapFont& font,
     std::string_view utf8_text,

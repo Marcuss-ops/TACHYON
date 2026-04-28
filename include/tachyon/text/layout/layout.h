@@ -17,6 +17,7 @@
 namespace tachyon::text {
 
 class FontRegistry;
+struct ResolvedGlyphPaint;
 
 enum class TextAlignment {
     Left,
@@ -199,6 +200,18 @@ TextRasterSurface rasterize_text_rgba(
     std::span<const TextHighlightSpan> highlights,
     const TextLayoutOptions& layout_options = {},
     const TextAnimationOptions& animation = {});
+
+/// Overload that accepts a pre-computed layout to avoid duplicate work.
+TextRasterSurface rasterize_text_rgba(
+    const BitmapFont& font,
+    const TextLayoutResult& layout,
+    const TextAnimationOptions& animation = {});
+
+/// Overload that accepts pre-computed layout and paints to avoid all duplicate work.
+TextRasterSurface rasterize_text_rgba(
+    const BitmapFont& font,
+    const TextLayoutResult& layout,
+    const std::vector<ResolvedGlyphPaint>& paints);
 
 struct TextOutlineOptions {
     float width{0.0f};

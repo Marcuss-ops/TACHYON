@@ -1,0 +1,42 @@
+{
+  "name": "YT Classic Grid",
+  "description": "Premium YouTube-style technical grid. Dark, subtle, and professionally vignetted.",
+  "params": [
+    { "name": "bg_color", "type": "color", "default": "#0F0F0F" },
+    { "name": "grid_color", "type": "color", "default": "#1A1A1A" },
+    { "name": "spacing", "type": "double", "default": 80.0 },
+    { "name": "angle", "type": "double", "default": 45.0 },
+    { "name": "speed", "type": "double", "default": 0.5 }
+  ],
+  "layers": [
+    {
+      "id": "base_layer",
+      "type": "procedural",
+      "procedural": {
+        "kind": "grid",
+        "shape": "square",
+        "spacing": "{{spacing}}",
+        "border_width": 1.0,
+        "angle": "{{angle}}",
+        "speed": "{{speed}}",
+        "color_a": "{{bg_color}}",
+        "color_b": "{{grid_color}}",
+        "grain_amount": 0.02
+      }
+    },
+    {
+      "id": "vignette_overlay",
+      "type": "solid",
+      "gradient_fill": {
+        "type": "radial",
+        "center": { "value": [960, 540] },
+        "radius": { "value": 1100 },
+        "stops": [
+          { "offset": 0.0, "color": { "value": "#00000000" } },
+          { "offset": 1.0, "color": { "value": "#000000CC" } }
+        ]
+      },
+      "blend_mode": "multiply"
+    }
+  ]
+}

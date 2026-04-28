@@ -2,10 +2,29 @@
 
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/cache/cache_key_builder.h"
+#include "tachyon/core/math/algebra/vector2.h"
+#include "tachyon/renderer2d/core/framebuffer.h"
 #include <vector>
 #include <cstdint>
 
 namespace tachyon::hash {
+
+// Hash overloads for keyframe value types
+inline void hash_value(CacheKeyBuilder& builder, double val) {
+    builder.add_f64(val);
+}
+
+inline void hash_value(CacheKeyBuilder& builder, const math::Vector2& val) {
+    builder.add_f64(val.x);
+    builder.add_f64(val.y);
+}
+
+inline void hash_value(CacheKeyBuilder& builder, const ColorSpec& val) {
+    builder.add_u64(val.r);
+    builder.add_u64(val.g);
+    builder.add_u64(val.b);
+    builder.add_u64(val.a);
+}
 
 template <typename T>
 void hash_keyframes(CacheKeyBuilder& builder, const std::vector<T>& keyframes) {
@@ -21,6 +40,8 @@ void hash_keyframes(CacheKeyBuilder& builder, const std::vector<T>& keyframes) {
         builder.add_f64(kf.influence_in);
         builder.add_f64(kf.speed_out);
         builder.add_f64(kf.influence_out);
+        // Hash the actual keyframe value
+        hash_value(builder, kf.value);
     }
 }
 

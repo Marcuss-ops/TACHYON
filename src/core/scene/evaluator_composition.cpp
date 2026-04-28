@@ -144,19 +144,47 @@ EvaluatedCompositionState evaluate_composition_internal(
 
     // Expand component instances into layers (use pre-built index for O(1) lookup)
     CompositionSpec expanded = composition;
+    expanded.layers.clear(); // We'll rebuild layers in correct order: background components -> original layers -> regular components
+
+    std::vector<LayerSpec> background_layers;
+    std::vector<LayerSpec> regular_layers;
+
     for (const auto& inst : composition.component_instances) {
         auto comp_it = component_indices.find(inst.component_id);
         if (comp_it == component_indices.end()) continue;
         const auto& component = composition.components[comp_it->second];
 
+        // Check if this instance is a background component
+        bool is_background = composition.background.has_value() &&
+                             composition.background->is_component() &&
+                             (inst.instance_id == composition.background->value || inst.component_id == composition.background->value);
+
         for (const auto& layer : component.layers) {
             LayerSpec new_layer = layer;
             new_layer.id = inst.instance_id + "_" + layer.id;
-            // Apply param_values (basic implementation - just copy for now)
-            // TODO: Apply param_values to layer properties
-            expanded.layers.push_back(new_layer);
+
+            // Apply component instance param_values
+            for (const auto& param_decl : component.params) {
+                auto param_val_it = inst.param_values.find(param_decl.name);
+                if (param_val_it != inst.param_values.end()) {
+                    // Parse param value to JSON and apply to layer properties if applicable
+                    // For now, inject into layer's expression context via input_props
+                    expanded.input_props[inst.instance_id + "_" + param_decl.name] = nlohmann::json::parse(param_val_it->second);
+                }
+            }
+
+            if (is_background) {
+                background_layers.push_back(new_layer);
+            } else {
+                regular_layers.push_back(new_layer);
+            }
         }
     }
+
+    // Assemble layers in correct order: background components first, then original layers, then regular components
+    expanded.layers = std::move(background_layers);
+    expanded.layers.insert(expanded.layers.end(), composition.layers.begin(), composition.layers.end());
+    expanded.layers.insert(expanded.layers.end(), regular_layers.begin(), regular_layers.end());
     
     const CompositionSpec& comp = expanded;
     

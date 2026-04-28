@@ -1,3 +1,4 @@
+#include <gtest/gtest.h>
 #include "tachyon/runtime/execution/frames/frame_executor.h"
 #include "tachyon/core/spec/compilation/scene_compiler.h"
 #include "tachyon/runtime/core/data/compiled_scene.h"
@@ -81,6 +82,54 @@ tachyon::SceneSpec make_bezier_scene() {
     scene.spec_version = "1.0";
     scene.project.id = "proj";
     scene.project.name = "Bezier Runtime";
+    scene.compositions.push_back(comp);
+    return scene;
+}
+
+tachyon::SceneSpec make_background_component_scene() {
+    tachyon::LayerSpec background_layer;
+    background_layer.id = "bg_layer";
+    background_layer.type = "solid";
+    background_layer.name = "Background Layer";
+    background_layer.width = 160;
+    background_layer.height = 90;
+    background_layer.start_time = 0.0;
+    background_layer.in_point = 0.0;
+    background_layer.out_point = 2.0;
+    background_layer.fill_color.value = tachyon::ColorSpec{16, 32, 48, 255};
+
+    tachyon::ComponentSpec background_component;
+    background_component.id = "bg_component";
+    background_component.name = "Background Component";
+    background_component.layers.push_back(background_layer);
+
+    tachyon::LayerSpec foreground_layer;
+    foreground_layer.id = "fg_layer";
+    foreground_layer.type = "solid";
+    foreground_layer.name = "Foreground Layer";
+    foreground_layer.width = 160;
+    foreground_layer.height = 90;
+    foreground_layer.start_time = 0.0;
+    foreground_layer.in_point = 0.0;
+    foreground_layer.out_point = 2.0;
+    foreground_layer.fill_color.value = tachyon::ColorSpec{255, 255, 255, 255};
+
+    tachyon::CompositionSpec comp;
+    comp.id = "main";
+    comp.name = "Main";
+    comp.width = 160;
+    comp.height = 90;
+    comp.duration = 2.0;
+    comp.frame_rate = {30, 1};
+    comp.background = tachyon::BackgroundSpec::from_string("bg_component");
+    comp.components.push_back(background_component);
+    comp.component_instances.push_back({"bg_component", "bg_instance", {}});
+    comp.layers.push_back(foreground_layer);
+
+    tachyon::SceneSpec scene;
+    scene.spec_version = "1.0";
+    scene.project.id = "proj";
+    scene.project.name = "Background Component Runtime";
     scene.compositions.push_back(comp);
     return scene;
 }
@@ -200,5 +249,39 @@ bool run_frame_executor_tests() {
         check_true(pixel.a > 0.0f, "Bezier opacity produces visible alpha");
     }
 
+    const SceneSpec background_scene = make_background_component_scene();
+    const auto background_compiled = compiler.compile(background_scene);
+    if (!background_compiled.ok()) {
+        std::cerr << "FAIL: Background component scene compilation failed\n";
+        return false;
+    }
+
+    check_true(background_compiled.value->compositions.size() == 1, "Background component scene compiles one composition");
+    if (background_compiled.value->compositions.size() == 1) {
+        const auto& layers = background_compiled.value->compositions[0].layers;
+        check_true(layers.size() == 2, "Background component expands to one background layer plus one foreground layer");
+        if (layers.size() == 2) {
+            check_true(layers[0].fill_color == ColorSpec{16, 32, 48, 255}, "Background component layer is ordered behind explicit layers");
+            check_true(layers[1].fill_color == ColorSpec{255, 255, 255, 255}, "Foreground layer remains after background component");
+        }
+    }
+
     return g_failures == 0;
+}
+
+TEST(FrameExecutorBackgroundTest, BackgroundComponentIsExpandedBehindExplicitLayers) {
+    using namespace tachyon;
+
+    SceneCompiler compiler;
+    const SceneSpec scene = make_background_component_scene();
+    const auto compiled = compiler.compile(scene);
+    ASSERT_TRUE(compiled.ok());
+    ASSERT_EQ(compiled.value->compositions.size(), 1u);
+
+    const auto& layers = compiled.value->compositions[0].layers;
+    ASSERT_EQ(layers.size(), 2u);
+    const ColorSpec expected_bg{16, 32, 48, 255};
+    const ColorSpec expected_fg{255, 255, 255, 255};
+    EXPECT_EQ(layers[0].fill_color, expected_bg);
+    EXPECT_EQ(layers[1].fill_color, expected_fg);
 }

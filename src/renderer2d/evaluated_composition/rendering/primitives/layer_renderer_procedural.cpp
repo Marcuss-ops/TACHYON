@@ -30,12 +30,7 @@ float generate_shape(float u, float v, const std::string& shape, float spacing, 
 
     if (shape == "circle") {
         dist = std::sqrt(dx * dx + dy * dy) * 2.0f;
-    } else if (shape == "hexagon") {
-        float adx = std::abs(dx);
-        float ady = std::abs(dy);
-        dist = std::max(adx * 0.866025f + ady * 0.5f, ady);
-        dist *= 2.0f;
-    } else { // default square
+    } else { // default square (hexagon/triangle removed per request)
         dist = std::max(std::abs(dx), std::abs(dy)) * 2.0f;
     }
 
@@ -132,8 +127,9 @@ void render_procedural_pattern(
                 float n2 = noise.noise3d(u * freq * 2.0f + n1, v * freq * 2.0f, t * 0.5f) * octave_decay;
                 value = (n2 + 1.0f) * 0.5f * amp;
             } else if (is_grid) {
-                float grid_u = u + t * 0.02f;
-                float grid_v = v + t * 0.01f;
+                float rad = static_cast<float>(spec.angle.value.value_or(0.0) * 3.14159265358979323846 / 180.0);
+                float grid_u = u + t * std::cos(rad) * 0.5f;
+                float grid_v = v + t * std::sin(rad) * 0.5f;
                 value = generate_shape(grid_u, grid_v, shape, spacing, border);
             } else if (is_stars) {
                 float n = noise.noise3d(u * freq * 100.0f, v * freq * 100.0f, 0.0f);

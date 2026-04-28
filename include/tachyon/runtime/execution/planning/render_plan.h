@@ -7,6 +7,7 @@
 #include "tachyon/timeline/time_remap.h"
 
 #include "tachyon/runtime/execution/planning/quality_policy.h"
+#include "tachyon/core/spec/schema/objects/background_spec.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -25,7 +26,7 @@ struct CompositionSummary {
     std::int64_t height{0};
     double duration{0.0};
     FrameRate frame_rate;
-    std::optional<std::string> background;
+    std::optional<BackgroundSpec> background; ///< Typed background specification
     std::size_t layer_count{0};
     std::size_t solid_layer_count{0};
     std::size_t shape_layer_count{0};

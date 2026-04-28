@@ -33,7 +33,7 @@ src/text/
 
 ### Animation (`core/animation/`)
 - `text_animator_utils.cpp`: Per-glyph animation (typewriter, wave, etc.)
-- `text_animator_pipeline.cpp`: Animation pipeline
+- `text_animator_pipeline.h`: Animation pipeline (header-only)
 
 ### Rendering (`core/rendering/`)
 - `text_raster_surface.cpp`: Surface-based text rendering

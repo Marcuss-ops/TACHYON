@@ -98,6 +98,7 @@ add_library(TachyonCore SHARED
     core/spec/text_animator_spec_serialize.cpp
     core/spec/schema/common/common_spec_serialize.cpp
     core/spec/schema/objects/layer_spec_serialize.cpp
+    core/spec/schema/objects/background_spec.cpp
     core/shapes/shape_modifiers.cpp
     core/spec/schema/scene_spec.cpp
     core/spec/schema/scene_spec_core.cpp
@@ -229,6 +230,7 @@ add_library(TachyonCore SHARED
     text/core/animation/text_animator_context.cpp
     text/core/animation/text_animator_coverage.cpp
     text/core/animation/text_presets.cpp
+    text/core/animation/text_scene_presets.cpp
     text/core/fonts/core/font.cpp
     text/core/fonts/core/font_registry.cpp
     text/core/fonts/core/font_face.cpp
@@ -256,6 +258,7 @@ add_library(TachyonCore SHARED
     text/core/animation/text_animator_sampling.cpp
     text/core/animation/text_animator_utils.cpp
     text/core/animation/text_presets.cpp
+    text/core/animation/text_scene_presets.cpp
     text/bidi/bidi_engine.cpp
     renderer3d/temporal/time_remap_curve.cpp
     renderer3d/temporal/frame_blend_mode.cpp
@@ -316,6 +319,9 @@ target_compile_definitions(TachyonCore
 
 if(MSVC)
     set_target_properties(TachyonCore PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    if(MSVC)
+        set_target_properties(TachyonCore PROPERTIES LINK_FLAGS "/INCREMENTAL:NO")
+    endif()
 endif()
 
 foreach(_source IN LISTS _tachyon_unity_excluded_sources)

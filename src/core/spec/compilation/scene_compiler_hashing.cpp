@@ -44,7 +44,15 @@ std::uint64_t hash_scene_spec(const SceneSpec& scene, const DeterminismContract&
         builder.add_u64(static_cast<std::uint64_t>(composition.frame_rate.denominator));
         builder.add_bool(composition.background.has_value());
         if (composition.background.has_value()) {
-            add_string(builder, *composition.background);
+            builder.add_u32(static_cast<std::uint32_t>(composition.background->type));
+            add_string(builder, composition.background->value);
+            if (composition.background->parsed_color.has_value()) {
+                const auto& c = *composition.background->parsed_color;
+                builder.add_u32(c.r);
+                builder.add_u32(c.g);
+                builder.add_u32(c.b);
+                builder.add_u32(c.a);
+            }
         }
 
         builder.add_u64(static_cast<std::uint64_t>(composition.camera_cuts.size()));

@@ -5,6 +5,7 @@
 #include "tachyon/core/spec/schema/audio/audio_spec.h"
 #include "tachyon/camera_cut_contract.h"
 #include "tachyon/core/spec/schema/contracts/shared_contracts.h"
+#include "tachyon/core/spec/schema/objects/background_spec.h"
 #include <string>
 #include <vector>
 #include <optional>
@@ -53,7 +54,7 @@ struct CompositionSpec {
     double duration{10.0};
     FrameRate frame_rate;
     std::optional<std::int64_t> fps;
-    std::optional<std::string> background;
+    std::optional<BackgroundSpec> background; ///< Typed background specification
     std::optional<std::string> environment_path;
     std::vector<LayerSpec> layers;
     std::vector<AudioTrackSpec> audio_tracks;

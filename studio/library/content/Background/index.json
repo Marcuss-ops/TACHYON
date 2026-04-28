@@ -22,6 +22,11 @@
       "id": "dark_veil",
       "file": "Dark_Veil.json",
       "tags": ["dark", "mystery", "scanlines", "grain"]
+    },
+    {
+      "id": "bg_yt_classic",
+      "file": "YT_Classic_Grid.json",
+      "tags": ["youtube", "grid", "tech", "minimal"]
     }
   ]
 }

@@ -3,6 +3,7 @@
 #include "tachyon/core/scene/evaluator/hashing.h"
 #include "tachyon/media/processing/extruder.h"
 #include "tachyon/text/animation/text_animator_utils.h"
+#include "tachyon/text/animation/text_animation_options.h"
 #include "tachyon/text/layout/layout.h"
 #include "tachyon/text/rendering/outline_extractor.h"
 
@@ -19,6 +20,29 @@ namespace {
         static_cast<float>(color.b) / 255.0f,
         static_cast<float>(color.a) / 255.0f
     };
+}
+
+// Hash animator specs to include in cache key (prevents collisions when animator content changes)
+std::uint64_t hash_animators(std::span<const ::tachyon::TextAnimatorSpec> animators) {
+    std::uint64_t seed = 0;
+    for (const auto& anim : animators) {
+        // Hash name
+        seed = ::tachyon::scene::hash_combine(seed, ::tachyon::scene::stable_string_hash(anim.name));
+        // Hash selector properties
+        seed = ::tachyon::scene::hash_combine(seed, ::tachyon::scene::stable_string_hash(anim.selector.type));
+        seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(anim.selector.start * 1000.0)));
+        seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(anim.selector.end * 1000.0)));
+        seed = ::tachyon::scene::hash_combine(seed, ::tachyon::scene::stable_string_hash(anim.selector.expression.value_or("")));
+        seed = ::tachyon::scene::hash_combine(seed, ::tachyon::scene::stable_string_hash(anim.selector.shape));
+        seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(anim.selector.stagger_mode == "none" ? 0 : 1));
+        // Hash property keyframe count (captures animation changes)
+        seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(anim.properties.opacity_keyframes.size()));
+        seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(anim.properties.position_offset_keyframes.size()));
+        seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(anim.properties.scale_keyframes.size()));
+        seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(anim.properties.rotation_keyframes.size()));
+        seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(anim.properties.fill_color_keyframes.size()));
+    }
+    return seed;
 }
 
 } // namespace
@@ -83,7 +107,7 @@ TextMeshBuildResult build_text_extrusion_mesh(
     seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(box.width));
     seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(box.height));
     seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(animation.time_seconds * 1000.0f)));
-    seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(animation.animators.size()));
+    seed = ::tachyon::scene::hash_combine(seed, hash_animators(animation.animators));
     result.cache_key = "text3d:" + layer.id + ":" + std::to_string(seed);
 
     ::tachyon::text::TextLayoutResult animated_layout = layout;

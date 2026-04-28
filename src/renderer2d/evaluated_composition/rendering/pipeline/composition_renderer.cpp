@@ -28,6 +28,23 @@
 #include <unordered_map>
 
 namespace tachyon {
+
+namespace {
+
+renderer2d::Color background_spec_to_color(const BackgroundSpec& bg) {
+    if (bg.is_color() && bg.parsed_color.has_value()) {
+        const auto& c = *bg.parsed_color;
+        return renderer2d::Color{
+            static_cast<float>(c.r) / 255.0f,
+            static_cast<float>(c.g) / 255.0f,
+            static_cast<float>(c.b) / 255.0f,
+            static_cast<float>(c.a) / 255.0f
+        };
+    }
+    return renderer2d::Color::transparent();
+}
+
+} // namespace
 using namespace renderer2d;
 
 namespace {
@@ -123,7 +140,12 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
     auto& dst = *frame.surface;
     dst.set_profile(context.cms.working_profile);
-    dst.clear(Color::transparent());
+    
+    renderer2d::Color clear_color = renderer2d::Color::transparent();
+    if (plan.composition.background.has_value()) {
+        clear_color = background_spec_to_color(*plan.composition.background);
+    }
+    dst.clear(clear_color);
 
     // Identify if we have 3D layers and trigger 3D pass if available
     bool has_any_3d = std::any_of(state.layers.begin(), state.layers.end(), [](const auto& l) { return l.is_3d && l.visible; });

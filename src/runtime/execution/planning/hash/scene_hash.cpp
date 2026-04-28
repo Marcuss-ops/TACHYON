@@ -26,7 +26,15 @@ std::uint64_t hash_scene_content(const SceneSpec& scene) {
         }
         builder.add_bool(comp.background.has_value());
         if (comp.background.has_value()) {
-            builder.add_string(*comp.background);
+            builder.add_u32(static_cast<std::uint32_t>(comp.background->type));
+            builder.add_string(comp.background->value);
+            if (comp.background->parsed_color.has_value()) {
+                const auto& c = *comp.background->parsed_color;
+                builder.add_u32(c.r);
+                builder.add_u32(c.g);
+                builder.add_u32(c.b);
+                builder.add_u32(c.a);
+            }
         }
         builder.add_bool(comp.environment_path.has_value());
         if (comp.environment_path.has_value()) {
