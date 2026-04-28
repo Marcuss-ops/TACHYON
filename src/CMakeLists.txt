@@ -325,11 +325,7 @@ if(MSVC)
     target_compile_options(TachyonCore PRIVATE
         /W4 /EHsc /permissive- /utf-8 /FS /arch:AVX2 /MP
         $<$<CONFIG:Release>:/O2>
-        $<$<CONFIG:Release>:/GL>
         $<$<BOOL:${TACHYON_TREAT_WARNINGS_AS_ERRORS}>:/WX>
-    )
-    target_link_options(TachyonCore PRIVATE
-        $<$<CONFIG:Release>:/LTCG>
     )
     target_compile_definitions(TachyonCore PRIVATE TACHYON_AVX2)
 else()
