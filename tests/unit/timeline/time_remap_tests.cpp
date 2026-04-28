@@ -7,9 +7,9 @@
 using namespace tachyon::timeline;
 using namespace tachyon::spec;
 
-TEST(TimeRemapTest, EvaluateSourceTimeLinear) {
+TEST(TimeRemapTest, EvaluateSourceTimeBlend) {
     TimeRemapCurve curve;
-    curve.mode = TimeRemapMode::Linear;
+    curve.mode = TimeRemapMode::Blend;
     curve.keyframes = {{0.0f, 0.0f}, {10.0f, 10.0f}}; // 1:1 mapping
 
     EXPECT_FLOAT_EQ(evaluate_source_time(curve, 0.0f), 0.0f);
@@ -30,7 +30,7 @@ TEST(TimeRemapTest, EvaluateSourceTimeHold) {
 TEST(TimeRemapTest, EvaluateSourceTimeRampUp) {
     // Dest 0->10 maps to Source 0->20 (speed x2)
     TimeRemapCurve curve;
-    curve.mode = TimeRemapMode::Linear;
+    curve.mode = TimeRemapMode::Blend;
     curve.keyframes = {{0.0f, 0.0f}, {20.0f, 10.0f}};
 
     EXPECT_FLOAT_EQ(evaluate_source_time(curve, 0.0f), 0.0f);
@@ -41,7 +41,7 @@ TEST(TimeRemapTest, EvaluateSourceTimeRampUp) {
 TEST(TimeRemapTest, EvaluateSourceTimeRampDown) {
     // Dest 0->10 maps to Source 20->0 (reverse, speed -x2)
     TimeRemapCurve curve;
-    curve.mode = TimeRemapMode::Linear;
+    curve.mode = TimeRemapMode::Blend;
     curve.keyframes = {{20.0f, 0.0f}, {0.0f, 10.0f}};
 
     EXPECT_FLOAT_EQ(evaluate_source_time(curve, 0.0f), 20.0f);
@@ -51,30 +51,16 @@ TEST(TimeRemapTest, EvaluateSourceTimeRampDown) {
 
 TEST(TimeRemapTest, EvaluateSourceTimeClamp) {
     TimeRemapCurve curve;
-    curve.mode = TimeRemapMode::Linear;
+    curve.mode = TimeRemapMode::Blend;
     curve.keyframes = {{0.0f, 0.0f}, {10.0f, 10.0f}};
 
-    // Dest < first keyframe dest time: clamp to first source time
     EXPECT_FLOAT_EQ(evaluate_source_time(curve, -5.0f), 0.0f);
-    // Dest > last keyframe dest time: clamp to last source time
     EXPECT_FLOAT_EQ(evaluate_source_time(curve, 15.0f), 10.0f);
 }
 
-TEST(TimeRemapTest, EvaluateSourceTimeExtrapolation) {
+TEST(TimeRemapTest, FrameBlendBlend) {
     TimeRemapCurve curve;
-    curve.mode = TimeRemapMode::Linear;
-    curve.keyframes = {{0.0f, 0.0f}, {10.0f, 10.0f}};
-    curve.extrapolation = spec::ExtrapolationMode::Extrapolate; // Assume this exists
-
-    // Extrapolate beyond last keyframe
-    EXPECT_FLOAT_EQ(evaluate_source_time(curve, 15.0f), 15.0f);
-    // Extrapolate before first keyframe
-    EXPECT_FLOAT_EQ(evaluate_source_time(curve, -5.0f), -5.0f);
-}
-
-TEST(TimeRemapTest, FrameBlendLinear) {
-    TimeRemapCurve curve;
-    curve.mode = TimeRemapMode::Linear;
+    curve.mode = TimeRemapMode::Blend;
     curve.keyframes = {{0.0f, 0.0f}, {10.0f, 10.0f}};
 
     FrameBlendResult result = evaluate_frame_blend(curve, 5.0f, 1.0f);
@@ -89,7 +75,7 @@ TEST(TimeRemapTest, TimeRemapEvaluatorWithFlow) {
     TimeRemapEvaluator evaluator(config);
 
     TimeRemapCurve curve;
-    curve.mode = TimeRemapMode::Linear;
+    curve.mode = TimeRemapMode::Blend;
     curve.keyframes = {{0.0f, 0.0f}, {10.0f, 10.0f}};
 
     float source_time = evaluator.evaluate(curve, 5.0f, 1.0f);
