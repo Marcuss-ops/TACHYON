@@ -111,7 +111,6 @@ SceneSpec SceneCompiler::flatten_scene(const SceneSpec& original) const {
     // Recursion: what if the injected compositions contain instances?
     // We can run flatten iteratively until no new instances are generated.
     // For safety, limit to 5 depth.
-    int max_depth = 5;
     bool has_instances = false;
     do {
         has_instances = false;

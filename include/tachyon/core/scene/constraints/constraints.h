@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/core/math/vector3.h"
+#include "tachyon/core/math/algebra/vector3.h"
 #include <string>
 #include <vector>
 
@@ -38,3 +38,4 @@ struct IKSpec {
 };
 
 } // namespace tachyon::scene
+

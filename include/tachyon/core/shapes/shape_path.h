@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/core/math/vector2.h"
+#include "tachyon/core/math/algebra/vector2.h"
 
 #include <vector>
 #include <cmath>
@@ -199,3 +199,4 @@ using ShapeSubpath = shapes::ShapeSubpath;
 using ShapePathSpec = shapes::ShapePathSpec;
 using ShapePath = shapes::ShapePath;
 } // namespace tachyon
+

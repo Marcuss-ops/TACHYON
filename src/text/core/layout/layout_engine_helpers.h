@@ -8,7 +8,7 @@
 #include "tachyon/text/layout/cluster_iterator.h"
 #include "tachyon/text/i18n/bidi_engine.h"
 #include "tachyon/text/i18n/script_detector.h"
-#include "tachyon/text/fonts/font_registry.h"
+#include "tachyon/text/fonts/core/font_registry.h"
 #include <vector>
 #include <cstdint>
 #include <map>
@@ -49,3 +49,4 @@ void sync_resolved_layout(TextLayoutResult& result, const BitmapFont& font, cons
 } // namespace tachyon::text
 
 #endif
+

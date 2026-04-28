@@ -3,7 +3,7 @@
 #include "tachyon/renderer2d/resource/render_context.h"
 #include "tachyon/runtime/cache/frame_cache.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
-#include "tachyon/text/fonts/font_registry.h"
+#include "tachyon/text/fonts/core/font_registry.h"
 #include "cli_internal.h"
 #include <iostream>
 
@@ -109,3 +109,4 @@ bool run_preview_frame_command(const CliOptions& options, std::ostream& out, std
 }
 
 } // namespace tachyon
+

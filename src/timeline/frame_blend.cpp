@@ -1,6 +1,6 @@
 // frame_blend.cpp — Optical Flow bridge using OpticalFlowCalculator (LK pyramidal)
 #include "tachyon/timeline/frame_blend.h"
-#include "tachyon/tracker/optical_flow.h"
+#include "tachyon/tracker/algorithms/optical_flow.h"
 #include <algorithm>
 #include <cmath>
 
@@ -163,3 +163,4 @@ OpticalFlowField DefaultOpticalFlowProvider::compute_optical_flow(
 }
 
 } // namespace tachyon::timeline
+

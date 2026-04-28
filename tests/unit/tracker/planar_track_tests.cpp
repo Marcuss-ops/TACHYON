@@ -1,6 +1,6 @@
-#include "tachyon/tracker/planar_track.h"
-#include "tachyon/tracker/feature_tracker.h"
-#include "tachyon/core/math/vector2.h"
+#include "tachyon/tracker/core/planar_track.h"
+#include "tachyon/tracker/algorithms/feature_tracker.h"
+#include "tachyon/core/math/algebra/vector2.h"
 #include <cmath>
 #include <iostream>
 #include <string>
@@ -31,3 +31,5 @@ bool run_planar_track_tests() {
 
     return g_failures == 0;
 }
+
+

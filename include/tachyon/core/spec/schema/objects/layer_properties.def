@@ -23,6 +23,10 @@ TACHYON_PROPERTY_COLOR(subtitle_outline_color, subtitle_outline_color, ColorSpec
 
 // Repeater Properties
 TACHYON_PROPERTY_SCALAR(repeater_count, repeater_count, 0.0)
+TACHYON_PROPERTY_SCALAR(repeater_grid_cols, repeater_grid_cols, 1.0)
+TACHYON_PROPERTY_SCALAR(repeater_radial_radius, repeater_radial_radius, 0.0)
+TACHYON_PROPERTY_SCALAR(repeater_radial_start_angle, repeater_radial_start_angle, 0.0)
+TACHYON_PROPERTY_SCALAR(repeater_radial_end_angle, repeater_radial_end_angle, 360.0)
 TACHYON_PROPERTY_SCALAR(repeater_stagger_delay, repeater_stagger_delay, 0.0)
 TACHYON_PROPERTY_SCALAR(repeater_offset_position_x, repeater_offset_position_x, 0.0)
 TACHYON_PROPERTY_SCALAR(repeater_offset_position_y, repeater_offset_position_y, 0.0)

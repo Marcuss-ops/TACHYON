@@ -1,6 +1,6 @@
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include "tachyon/core/spec/scene_spec_audio.h"
-#include "tachyon/text/fonts/font_manifest.h"
+#include "tachyon/text/fonts/management/font_manifest.h"
 #include <fstream>
 #include <sstream>
 
@@ -90,7 +90,15 @@ CompositionSpec parse_composition(const json& object, const std::string& path, D
                     comp_spec.params.push_back(vd);
                 }
             }
-            // TODO: parse layers inside component
+            if (c.contains("layers") && c.at("layers").is_array()) {
+                const auto& layers = c.at("layers");
+                for (std::size_t j = 0; j < layers.size(); ++j) {
+                    if (!layers[j].is_object()) continue;
+                    LayerSpec layer;
+                    parse_layer(layers[j], layer, make_path(path, "components[" + std::to_string(i) + "].layers[" + std::to_string(j) + "]"), diagnostics);
+                    comp_spec.layers.push_back(std::move(layer));
+                }
+            }
             composition.components.push_back(std::move(comp_spec));
         }
     }
@@ -230,3 +238,4 @@ ParseResult<SceneSpec> parse_scene_spec_file(const std::filesystem::path& path) 
 }
 
 } // namespace tachyon
+

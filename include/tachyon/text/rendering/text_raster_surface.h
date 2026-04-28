@@ -29,7 +29,10 @@ public:
 
     tachyon::renderer2d::Color get_pixel(std::uint32_t x, std::uint32_t y) const;
     void blend_pixel(std::uint32_t x, std::uint32_t y, tachyon::renderer2d::Color color, std::uint8_t alpha);
+    
     void render_glyph(const tachyon::text::GlyphBitmap& glyph, int tx, int ty, int tw, int th, tachyon::renderer2d::Color gc);
+    void render_glyph_with_motion_blur(const tachyon::text::GlyphBitmap& glyph, int tx, int ty, int tw, int th, tachyon::renderer2d::Color gc, float vx, float vy);
+    
     void draw_rect(int x, int y, int w, int h, tachyon::renderer2d::Color color);
     void draw_line(int x0, int y0, int x1, int y1, tachyon::renderer2d::Color color);
 

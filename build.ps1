@@ -57,19 +57,20 @@ function Test-CommandExists($cmd) {
 
 function Run-Command($cmd, $cmd_args) {
     Write-VerboseInfo "Executing: $cmd $cmd_args"
-    
+
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
     try {
         & $cmd @cmd_args
         $exitCode = $LASTEXITCODE
-        
-        if ($exitCode -ne 0) {
-            Write-Failure "Command failed with exit code $exitCode"
-            throw "Command failed: ${cmd} ${cmd_args}"
-        }
     }
-    catch {
-        Write-Failure "Exception: $_"
-        throw
+    finally {
+        $ErrorActionPreference = $prev
+    }
+
+    if ($exitCode -ne 0) {
+        Write-Failure "Command failed with exit code $exitCode"
+        throw "Command failed: ${cmd} ${cmd_args}"
     }
 }
 

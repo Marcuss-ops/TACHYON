@@ -1,0 +1,18 @@
+{
+  "job_id": "video_render",
+  "composition_target": "main",
+  "frame_range": { "start": 0, "end": 299 },
+  "output": {
+    "destination": { "overwrite": true },
+    "profile": {
+      "name": "high_quality_video",
+      "class": "video_file",
+      "container": "mp4",
+      "video": {
+        "codec": "libx264",
+        "pixel_format": "yuv420p",
+        "crf": 18
+      }
+    }
+  }
+}

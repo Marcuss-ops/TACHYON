@@ -79,6 +79,7 @@ struct ResolvedGlyphPaint {
     ::tachyon::ColorSpec stroke_color{0, 0, 0, 0};
     float stroke_width{0.0f};
     float tracking_offset{0.0f}; // Accumulated tracking
+    ::tachyon::math::Vector2 motion_blur_vector{0.0f, 0.0f};
     
     std::size_t glyph_index{0};
 };

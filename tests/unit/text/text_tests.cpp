@@ -1,5 +1,5 @@
-#include "tachyon/text/fonts/font.h"
-#include "tachyon/text/fonts/font_registry.h"
+#include "tachyon/text/fonts/core/font.h"
+#include "tachyon/text/fonts/core/font_registry.h"
 #include "tachyon/text/layout/layout.h"
 #include "tachyon/text/rendering/text_raster_surface.h"
 
@@ -558,3 +558,4 @@ bool run_text_tests() {
 
     return g_failures == 0;
 }
+

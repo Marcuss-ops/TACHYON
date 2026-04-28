@@ -1,7 +1,7 @@
 #pragma once
 
-#include "tachyon/core/math/vector3.h"
-#include "tachyon/core/math/matrix4x4.h"
+#include "tachyon/core/math/algebra/vector3.h"
+#include "tachyon/core/math/algebra/matrix4x4.h"
 #include "tachyon/core/spec/schema/common/common_spec.h"
 
 #include <string>
@@ -56,6 +56,10 @@ struct EvaluatedMeshInstance {
     // Geometry reference (would point to an asset/VBO)
     std::string mesh_asset_id;
     std::shared_ptr<const ::tachyon::media::MeshAsset> mesh_asset;
+
+    // Animation/Rigging state
+    std::vector<::tachyon::math::Matrix4x4> joint_matrices;
+    std::vector<float> morph_weights;
 };
 
 struct EvaluatedCamera3D {
@@ -99,3 +103,4 @@ struct EvaluatedScene3D {
 };
 
 } // namespace tachyon::renderer3d
+

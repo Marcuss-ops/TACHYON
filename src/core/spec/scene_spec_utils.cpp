@@ -7,8 +7,8 @@
 #include <nlohmann/json.hpp>
 
 // #include "tachyon/base/logging.h"
-#include "tachyon/core/math/vector2.h"
-#include "tachyon/core/math/vector3.h"
+#include "tachyon/core/math/algebra/vector2.h"
+#include "tachyon/core/math/algebra/vector3.h"
 // #include "tachyon/renderer/renderer2d.h"
 
 namespace tachyon {

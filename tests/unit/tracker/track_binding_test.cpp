@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "tachyon/tracker/track.h"
-#include "tachyon/tracker/track_binding.h"
+#include "tachyon/tracker/core/track.h"
+#include "tachyon/tracker/core/track_binding.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include <cmath>
 
@@ -151,3 +151,4 @@ TEST_F(TrackBindingTest, TrackBindingProperties) {
 }
 
 } // namespace tachyon::tracker
+

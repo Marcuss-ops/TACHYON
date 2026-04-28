@@ -2,8 +2,8 @@
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/spec/compilation/scene_compiler.h"
 #include "tachyon/output/frame_output_sink.h"
-#include "tachyon/renderer2d/effects/effect_host.h"
-#include "tachyon/renderer2d/effects/effect_utils.h"
+#include "tachyon/renderer2d/effects/core/effect_host.h"
+#include "tachyon/renderer2d/effects/core/effect_utils.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/execution/session/render_session.h"
 #include "tachyon/studio/studio_library.h"
@@ -425,3 +425,4 @@ bool run_studio_demo_command(const CliOptions& options, std::ostream& out, std::
 }
 
 } // namespace tachyon
+

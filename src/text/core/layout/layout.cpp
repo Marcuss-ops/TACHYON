@@ -86,7 +86,7 @@ TextRasterSurface rasterize_text_rgba(
         if (paint.glyph == nullptr) {
             continue;
         }
-        surface.render_glyph(
+        surface.render_glyph_with_motion_blur(
             *paint.glyph,
             paint.base_x,
             paint.base_y,
@@ -97,7 +97,9 @@ TextRasterSurface rasterize_text_rgba(
                 static_cast<float>(paint.fill_color.g) / 255.0f,
                 static_cast<float>(paint.fill_color.b) / 255.0f,
                 static_cast<float>(paint.fill_color.a) / 255.0f * paint.opacity
-            });
+            },
+            paint.motion_blur_vector.x,
+            paint.motion_blur_vector.y);
     }
 
     // Apply shadow and glow effects

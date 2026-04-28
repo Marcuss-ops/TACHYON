@@ -124,6 +124,10 @@ void evaluate_layer(
     state->track_matte_layer_index = layer.matte_layer_index.has_value()
         ? std::make_optional(static_cast<std::size_t>(*layer.matte_layer_index))
         : std::nullopt;
+    state->in_time = layer.in_time;
+    state->out_time = layer.out_time;
+    state->transition_in = layer.transition_in;
+    state->transition_out = layer.transition_out;
 
     if (layer.precomp_index.has_value() && *layer.precomp_index < scene.compositions.size()) {
         const auto& nested_comp = scene.compositions[*layer.precomp_index];
@@ -168,7 +172,6 @@ void evaluate_layer(
     state->local_transform.anchor_point.y = static_cast<float>(sample_property(8, 0.0));
 
     // --- Transition Logic ---
-    const double layer_duration = layer.out_time - layer.in_time;
     const double relative_time = frame_time_seconds - layer.in_time;
     
     // Inbound transition

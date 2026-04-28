@@ -16,8 +16,8 @@
 
 #include "tachyon/core/properties/property.h"
 #include "tachyon/core/animation/animatable.h"
-#include "tachyon/core/math/vector3.h"
-#include "tachyon/core/math/vector2.h"
+#include "tachyon/core/math/algebra/vector3.h"
+#include "tachyon/core/math/algebra/vector2.h"
 #include "tachyon/properties/animatable_property.h"
 #include "tachyon/properties/property_group.h"
 
@@ -410,3 +410,4 @@ bool run_property_tests() {
 
     return g_failures == 0;
 }
+

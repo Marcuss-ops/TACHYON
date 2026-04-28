@@ -1,8 +1,8 @@
 #pragma once
 
 #include "tachyon/core/scene/state/evaluated_state.h"
-#include "tachyon/core/math/vector3.h"
-#include "tachyon/core/math/vector2.h"
+#include "tachyon/core/math/algebra/vector3.h"
+#include "tachyon/core/math/algebra/vector2.h"
 #include "tachyon/media/loading/mesh_asset.h"
 
 #include <cstdint>

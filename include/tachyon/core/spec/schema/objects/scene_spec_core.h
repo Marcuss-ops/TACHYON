@@ -7,8 +7,8 @@
 
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
-#include "tachyon/core/math/vector2.h"
-#include "tachyon/core/math/vector3.h"
+#include "tachyon/core/math/algebra/vector2.h"
+#include "tachyon/core/math/algebra/vector3.h"
 #include "tachyon/renderer2d/spec/gradient_spec.h"
 #include "tachyon/renderer2d/raster/path/path_types.h"
 
@@ -94,3 +94,4 @@ std::uint64_t compute_composition_hash(const CompositionSpec& comp);
 std::uint64_t compute_scene_hash(const SceneSpec& scene);
 
 } // namespace tachyon
+

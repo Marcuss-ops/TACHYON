@@ -1,4 +1,4 @@
-#include "tachyon/core/math/vector2.h"
+#include "tachyon/core/math/algebra/vector2.h"
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
@@ -17,3 +17,4 @@ void from_json(const json& j, Vector2& v) {
 
 } // namespace math
 } // namespace tachyon
+

@@ -4,7 +4,7 @@
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include "tachyon/renderer2d/resource/render_context.h"
 #include "tachyon/media/streaming/media_prefetcher.h"
-#include "tachyon/media/playback_scheduler.h"
+#include "tachyon/media/management/playback_scheduler.h"
 #include "tachyon/runtime/resource/runtime_surface_pool.h"
 #include "tachyon/runtime/execution/presentation_clock.h"
 #include "tachyon/runtime/execution/framebuffer_playback_queue.h"
@@ -115,3 +115,4 @@ private:
 };
 
 } // namespace tachyon
+

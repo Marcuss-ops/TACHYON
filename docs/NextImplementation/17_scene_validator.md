@@ -8,8 +8,8 @@
 | `validate_render_job()` | `src/runtime/execution/render_job/render_job_validate.cpp` | ✓ base |
 | CLI `tachyon validate` | `src/core/cli/cli_validate.cpp` | ✓ |
 | `AssetReport` + `build_asset_report()` | `include/tachyon/media/resolution/asset_resolution.h` | ✓ |
-| `FontPreloader` con validation | `include/tachyon/text/fonts/font_preloader.h` | ✓ |
-| `FontCoverageReporter` | `include/tachyon/text/fonts/font_coverage_reporter.h` | ✓ |
+| `FontPreloader` con validation | `include/tachyon/text/fonts/management/font_preloader.h` | ✓ |
+| `FontCoverageReporter` | `include/tachyon/text/fonts/utils/font_coverage_reporter.h` | ✓ |
 | `DiagnosticBag` + `ResolutionResult` | `runtime/core/diagnostics/diagnostics.h` | ✓ |
 
 ### Gap principali
@@ -315,3 +315,4 @@ if (!report.warnings.empty()) {
 7. CLI output formattato
 8. Integrazione nel render pipeline come gate obbligatorio
 ```
+

@@ -1,8 +1,8 @@
 #pragma once
 
 #include "tachyon/core/scene/state/evaluated_state.h"
-#include "tachyon/core/math/vector3.h"
-#include "tachyon/core/math/matrix4x4.h"
+#include "tachyon/core/math/algebra/vector3.h"
+#include "tachyon/core/math/algebra/matrix4x4.h"
 #include "tachyon/renderer3d/visibility/culling.h"
 #include "tachyon/media/loading/mesh_asset.h"
 
@@ -212,3 +212,4 @@ public:
 };
 
 } // namespace tachyon::renderer3d
+

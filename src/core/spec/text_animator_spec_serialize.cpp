@@ -14,7 +14,11 @@ void to_json(json& j, const TextAnimatorSelectorSpec& s) {
         {"based_on", s.based_on},
         {"random_order", s.random_order},
         {"stagger_mode", s.stagger_mode},
-        {"stagger_delay", s.stagger_delay}
+        {"stagger_delay", s.stagger_delay},
+        {"shape", s.shape},
+        {"offset", s.offset},
+        {"ease_high", s.ease_high},
+        {"ease_low", s.ease_low}
     };
     if (s.start_index.has_value()) j["start_index"] = *s.start_index;
     if (s.end_index.has_value()) j["end_index"] = *s.end_index;
@@ -39,6 +43,10 @@ void from_json(const json& j, TextAnimatorSelectorSpec& s) {
     if (j.contains("based_on") && j.at("based_on").is_string()) s.based_on = j.at("based_on").get<std::string>();
     if (j.contains("stagger_mode") && j.at("stagger_mode").is_string()) s.stagger_mode = j.at("stagger_mode").get<std::string>();
     if (j.contains("stagger_delay") && j.at("stagger_delay").is_number()) s.stagger_delay = j.at("stagger_delay").get<double>();
+    if (j.contains("shape") && j.at("shape").is_string()) s.shape = j.at("shape").get<std::string>();
+    if (j.contains("offset") && j.at("offset").is_number()) s.offset = j.at("offset").get<double>();
+    if (j.contains("ease_high") && j.at("ease_high").is_number()) s.ease_high = j.at("ease_high").get<double>();
+    if (j.contains("ease_low") && j.at("ease_low").is_number()) s.ease_low = j.at("ease_low").get<double>();
 }
 
 void to_json(json& j, const TextAnimatorPropertySpec& p) {

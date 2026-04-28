@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/renderer2d/effects/effect_host.h"
+#include "tachyon/renderer2d/effects/core/effect_host.h"
 #include "tachyon/renderer2d/resource/render_context.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 
@@ -50,3 +50,4 @@ SurfaceRGBA apply_effect_pipeline(
 
 } // namespace renderer2d
 } // namespace tachyon
+

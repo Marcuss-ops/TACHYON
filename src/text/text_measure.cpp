@@ -1,5 +1,5 @@
 #include "tachyon/text/layout/layout.h"
-#include "tachyon/text/fonts/font_registry.h"
+#include "tachyon/text/fonts/core/font_registry.h"
 
 #include <string_view>
 
@@ -46,3 +46,4 @@ inline TextMeasureResult measure_text(FontRegistry& registry, std::string_view t
 }
 
 }  // namespace tachyon::text
+

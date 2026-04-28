@@ -1,7 +1,7 @@
-#include "tachyon/tracker/track_binding.h"
-#include "tachyon/tracker/track.h"
+#include "tachyon/tracker/core/track_binding.h"
+#include "tachyon/tracker/core/track.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
-#include "tachyon/core/math/transform2.h"
+#include "tachyon/core/math/geometry/transform2.h"
 #include <cmath>
 #include <iostream>
 #include <string>
@@ -107,3 +107,5 @@ bool run_track_binding_tests() {
 
     return g_failures == 0;
 }
+
+

@@ -1,6 +1,6 @@
 #include "tachyon/output/frame_output_sink.h"
-#include "tachyon/audio/audio_mixer.h"
-#include "tachyon/audio/audio_decoder.h"
+#include "tachyon/audio/core/audio_mixer.h"
+#include "tachyon/audio/io/audio_decoder.h"
 #include "ffmpeg_internal.h"
 
 #include <cstdio>
@@ -185,3 +185,4 @@ std::unique_ptr<FrameOutputSink> create_ffmpeg_pipe_sink() {
 }
 
 } // namespace tachyon::output
+

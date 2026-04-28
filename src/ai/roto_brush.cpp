@@ -1,6 +1,6 @@
 #include "tachyon/roto/roto_brush.h"
 #include "tachyon/ai/segmentation_provider.h"
-#include "tachyon/tracker/optical_flow.h"
+#include "tachyon/tracker/algorithms/optical_flow.h"
 #include <algorithm>
 #include <cmath>
 #include <vector>
@@ -305,3 +305,4 @@ std::vector<SegmentationMask> RotoBrush::generate_sequence(
 }
 
 } // namespace tachyon::ai
+

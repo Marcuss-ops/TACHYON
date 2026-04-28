@@ -15,9 +15,10 @@ struct TextAnimationOptions {
     float time_seconds{0.0f};
     std::span<const TextAnimatorSpec> animators{};
 
-    // Legacy convenience control for simple staggered opacity fades.
-    // The i-th glyph loses this amount of opacity per glyph index.
     float per_glyph_opacity_drop{0.0f};
+    
+    // Motion blur intensity (0.0 = disabled, 1.0 = standard, >1.0 = exaggerated)
+    float motion_blur_intensity{1.0f};
 };
 
 } // namespace tachyon::text

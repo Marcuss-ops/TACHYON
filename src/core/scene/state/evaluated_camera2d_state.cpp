@@ -1,5 +1,5 @@
 #include "tachyon/core/scene/state/evaluated_camera2d_state.h"
-#include "tachyon/core/math/matrix3x3.h"
+#include "tachyon/core/math/algebra/matrix3x3.h"
 
 namespace tachyon {
 
@@ -17,3 +17,4 @@ void EvaluatedCamera2D::recalculate_matrices() {
 }
 
 } // namespace tachyon
+

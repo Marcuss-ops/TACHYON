@@ -116,13 +116,58 @@ float compute_coverage(const TextAnimatorSelectorSpec& selector, const TextAnima
         t = (ctx.total_glyphs > kOne) ? static_cast<float>(ctx.glyph_index) / static_cast<float>(ctx.total_glyphs - kOne) : kZero;
     }
 
-    const float start = static_cast<float>(selector.start) / kPercent;
-    const float end   = static_cast<float>(selector.end) / kPercent;
-    const float span  = end - start;
+    const float start_p = static_cast<float>(selector.start) / kPercent;
+    const float end_p   = static_cast<float>(selector.end) / kPercent;
+    const float offset_p = static_cast<float>(selector.offset) / kPercent;
 
-    if (std::abs(span) < kCoverageEpsilon) return (t >= start) ? kOne : kZero;
+    // Adjusted t by offset (wrap around 0-1)
+    float t_adj = t - offset_p;
+    while (t_adj < 0.0f) t_adj += 1.0f;
+    while (t_adj > 1.0f) t_adj -= 1.0f;
 
-    float coverage = std::clamp((t - start) / span, kZero, kOne);
+    const float span = end_p - start_p;
+    float coverage = 0.0f;
+
+    if (std::abs(span) < kCoverageEpsilon) {
+        coverage = (t_adj >= start_p) ? kOne : kZero;
+    } else {
+        float ramp = (t_adj - start_p) / span;
+        
+        if (selector.shape == "square") {
+            coverage = (ramp >= 0.0f && ramp <= 1.0f) ? kOne : kZero;
+        } else {
+            ramp = std::clamp(ramp, 0.0f, 1.0f);
+            
+            if (selector.shape == "ramp_up") {
+                coverage = ramp;
+            } else if (selector.shape == "ramp_down") {
+                coverage = 1.0f - ramp;
+            } else if (selector.shape == "triangle") {
+                coverage = (ramp <= 0.5f) ? (ramp * 2.0f) : (2.0f - ramp * 2.0f);
+            } else if (selector.shape == "round") {
+                coverage = std::sqrt(1.0f - std::pow(ramp * 2.0f - 1.0f, 2.0f));
+            } else if (selector.shape == "smooth") {
+                coverage = ramp * ramp * (3.0f - 2.0f * ramp);
+            } else {
+                coverage = ramp; // Default to linear ramp_up if unknown
+            }
+        }
+    }
+
+    // Apply AE-style easing (High/Low)
+    if (selector.ease_high != 0.0 || selector.ease_low != 0.0) {
+        float eh = std::clamp(static_cast<float>(selector.ease_high) / 100.0f, -1.0f, 1.0f);
+        float el = std::clamp(static_cast<float>(selector.ease_low) / 100.0f, -1.0f, 1.0f);
+        
+        // Simple power-based easing approximation for AE's Ease High/Low
+        if (coverage > 0.0f && coverage < 1.0f) {
+            if (eh > 0.0f) coverage = std::pow(coverage, 1.0f + eh * 2.0f);
+            else if (eh < 0.0f) coverage = 1.0f - std::pow(1.0f - coverage, 1.0f - eh * 2.0f);
+            
+            if (el > 0.0f) coverage = 1.0f - std::pow(1.0f - coverage, 1.0f + el * 2.0f);
+            else if (el < 0.0f) coverage = std::pow(coverage, 1.0f - el * 2.0f);
+        }
+    }
 
     if (selector.mode == "subtract") return kOne - coverage;
     return coverage;

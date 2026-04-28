@@ -2,9 +2,9 @@
 
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/core/scene/constraints/constraints.h"
-#include "tachyon/core/math/matrix4x4.h"
-#include "tachyon/core/math/transform2.h"
-#include "tachyon/core/math/vector3.h"
+#include "tachyon/core/math/algebra/matrix4x4.h"
+#include "tachyon/core/math/geometry/transform2.h"
+#include "tachyon/core/math/algebra/vector3.h"
 #include "tachyon/core/shapes/shape_path.h"
 #include "tachyon/core/scene/state/evaluated_camera_state.h"
 #include "tachyon/media/loading/mesh_asset.h"
@@ -12,6 +12,8 @@
 #include "tachyon/renderer2d/path/mask_path.h"
 #include "tachyon/renderer2d/raster/path/path_types.h"
 #include "tachyon/text/content/word_timestamps.h"
+#include "tachyon/core/spec/schema/objects/layer_spec.h"
+#include "tachyon/renderer2d/deform/mesh_deform.h"
 #include <vector>
 #include <string>
 #include <memory>
@@ -100,6 +102,10 @@ struct EvaluatedLayerState {
     
     double local_time_seconds{0.0};
     double child_time_seconds{0.0};
+    double in_time{0.0};
+    double out_time{0.0};
+    LayerTransitionSpec transition_in;
+    LayerTransitionSpec transition_out;
     int width{0};
     int height{0};
     ColorSpec fill_color{255, 255, 255, 255};
@@ -166,6 +172,14 @@ struct EvaluatedLayerState {
     float trim_end{1.0f};
     float trim_offset{0.0f};
 
+    // Corner pin points (4 points: TL, TR, BR, BL)
+    std::vector<math::Vector2> corner_pin;
+    bool corner_pin_enabled{false};
+
+    // Mesh deformation (AE Puppet tool style)
+    std::shared_ptr<renderer2d::DeformMesh> mesh_deform;
+    bool mesh_deform_enabled{false};
+
     bool text_on_path_enabled{false};
 };
 
@@ -187,3 +201,4 @@ struct EvaluatedCompositionState {
 };
 
 } // namespace tachyon::scene
+

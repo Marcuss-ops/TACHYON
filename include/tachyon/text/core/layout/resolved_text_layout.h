@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/core/math/vector2.h"
+#include "tachyon/core/math/algebra/vector2.h"
 #include "tachyon/core/spec/schema/common/common_spec.h"
 #include <string>
 #include <vector>
@@ -84,6 +84,9 @@ struct ResolvedGlyph {
     // Reveal effect (0.0 = fully hidden, 1.0 = fully revealed)
     float reveal_factor{1.0f};
 
+    // Motion blur (directional blur vector in pixels)
+    ::tachyon::math::Vector2 motion_blur_vector{0.0f, 0.0f};
+
     // Bounding box of the glyph (relative to its position)
     ::tachyon::math::RectF bounds;
 };
@@ -152,3 +155,4 @@ struct ResolvedTextLayout {
 };
 
 } // namespace tachyon::text
+

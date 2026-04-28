@@ -1,12 +1,12 @@
 #include <gtest/gtest.h>
 
-#include "tachyon/core/math/vector2.h"
-#include "tachyon/core/math/vector3.h"
-#include "tachyon/core/math/matrix4x4.h"
-#include "tachyon/core/math/quaternion.h"
-#include "tachyon/core/math/transform2.h"
-#include "tachyon/core/math/transform3.h"
-#include "tachyon/core/math/projection.h"
+#include "tachyon/core/math/algebra/vector2.h"
+#include "tachyon/core/math/algebra/vector3.h"
+#include "tachyon/core/math/algebra/matrix4x4.h"
+#include "tachyon/core/math/algebra/quaternion.h"
+#include "tachyon/core/math/geometry/transform2.h"
+#include "tachyon/core/math/geometry/transform3.h"
+#include "tachyon/core/math/geometry/projection.h"
 #include "tachyon/core/camera/camera_state.h"
 
 #include <cmath>
@@ -115,3 +115,4 @@ TEST(Math, CameraProjection) {
     EXPECT_EQ(screen_p3.x, -1.0f) << "Projection rejects point behind camera";
     EXPECT_EQ(screen_p3.y, -1.0f) << "Projection rejects point behind camera";
 }
+

@@ -2,8 +2,8 @@
 #include "tachyon/core/scene/composition/evaluator_composition.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/core/scene/evaluator/layer_evaluator.h"
-#include "tachyon/core/math/matrix4x4.h"
-#include "tachyon/core/math/vector3.h"
+#include "tachyon/core/math/algebra/matrix4x4.h"
+#include "tachyon/core/math/algebra/vector3.h"
 #include "tachyon/core/camera/camera_shake.h"
 #include "tachyon/camera_cut_contract.h"
 
@@ -294,3 +294,4 @@ std::unordered_map<std::string, std::string> make_standard_string_vars() {
 }
 
 } // namespace tachyon::scene
+

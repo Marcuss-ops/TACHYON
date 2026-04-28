@@ -1,7 +1,7 @@
 #pragma once
 
-#include "tachyon/core/math/vector2.h"
-#include "tachyon/core/math/vector3.h"
+#include "tachyon/core/math/algebra/vector2.h"
+#include "tachyon/core/math/algebra/vector3.h"
 #include "tachyon/core/spec/schema/common/common_spec.h"
 #include "tachyon/core/spec/schema/properties/property_spec.h"
 #include <cstdint>
@@ -139,3 +139,4 @@ void to_json(nlohmann::json& j, const AnimatedGradientSpec& g);
 void from_json(const nlohmann::json& j, AnimatedGradientSpec& g);
 
 } // namespace tachyon
+

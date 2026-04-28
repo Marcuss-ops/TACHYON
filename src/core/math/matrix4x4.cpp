@@ -1,6 +1,6 @@
-#include "tachyon/core/math/matrix4x4.h"
-#include "tachyon/core/math/quaternion.h"
-#include "tachyon/core/math/transform3.h"
+#include "tachyon/core/math/algebra/matrix4x4.h"
+#include "tachyon/core/math/algebra/quaternion.h"
+#include "tachyon/core/math/geometry/transform3.h"
 
 #include <cmath>
 #include <limits>
@@ -303,3 +303,4 @@ std::ostream& operator<<(std::ostream& out, const Matrix4x4& m) {
 
 } // namespace math
 } // namespace tachyon
+

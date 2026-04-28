@@ -4,6 +4,7 @@
 #include "tachyon/core/animation/easing.h"
 #include "tachyon/core/animation/animation_curve.h"
 #include "tachyon/renderer2d/math/math_utils.h"
+#include "tachyon/core/math/utils/noise.h"
 #include <algorithm>
 #include <cstdlib>
 #include <cmath>
@@ -123,7 +124,8 @@ double sample_scalar(
     }
 
     animation::AnimationCurve<double> curve;
-    for (const auto& kf : property.keyframes) {
+    for (size_t i = 0; i < property.keyframes.size(); ++i) {
+        const auto& kf = property.keyframes[i];
         animation::Keyframe<double> akf;
         akf.time = kf.time;
         akf.value = kf.value;
@@ -131,10 +133,37 @@ double sample_scalar(
         akf.easing = kf.easing;
         akf.bezier = kf.bezier;
         akf.spring = kf.spring;
+
+        // If it's a custom easing and we have a next keyframe, compute the AE-style Bezier
+        if (kf.easing == animation::EasingPreset::Custom && i + 1 < property.keyframes.size()) {
+            const auto& next_kf = property.keyframes[i + 1];
+            double duration = next_kf.time - kf.time;
+            double delta = next_kf.value - kf.value;
+
+            if (duration > 1e-6 && (kf.influence_out > 0.0 || next_kf.influence_in > 0.0)) {
+                akf.bezier = animation::CubicBezierEasing::from_ae(
+                    kf.speed_out, kf.influence_out,
+                    next_kf.speed_in, next_kf.influence_in,
+                    duration, delta
+                );
+            }
+        }
+
         curve.add_keyframe(akf);
     }
     curve.sort();
-    return curve.evaluate(local_time_seconds);
+    double result = curve.evaluate(local_time_seconds);
+
+    // Apply Wiggle
+    if (property.wiggle.enabled) {
+        math::PerlinNoise noise(property.wiggle.seed);
+        float n = property.wiggle.octaves > 1 
+            ? noise.fbm2d(static_cast<float>(local_time_seconds * property.wiggle.frequency), 0.0f, property.wiggle.octaves)
+            : noise.noise1d(static_cast<float>(local_time_seconds * property.wiggle.frequency));
+        result += static_cast<double>(n) * property.wiggle.amplitude;
+    }
+
+    return result;
 }
 
 math::Vector2 sample_vector2(
@@ -215,7 +244,8 @@ math::Vector2 sample_vector2(
     }
 
     animation::AnimationCurve<math::Vector2> curve;
-    for (const auto& kf : property.keyframes) {
+    for (size_t i = 0; i < property.keyframes.size(); ++i) {
+        const auto& kf = property.keyframes[i];
         animation::Keyframe<math::Vector2> akf;
         akf.time = kf.time;
         akf.value = kf.value;
@@ -227,11 +257,46 @@ math::Vector2 sample_vector2(
         // For Vector2, we might also have spatial tangents if out_mode is Bezier
         akf.out_tangent_value = kf.tangent_out;
         akf.in_tangent_value = kf.tangent_in;
+
+        // AE-style Bezier computation for temporal easing
+        if (kf.easing == animation::EasingPreset::Custom && i + 1 < property.keyframes.size()) {
+            const auto& next_kf = property.keyframes[i + 1];
+            double duration = next_kf.time - kf.time;
+            // Use distance for Vector2 value delta
+            double delta = static_cast<double>((next_kf.value - kf.value).length());
+
+            if (duration > 1e-6 && (kf.influence_out > 0.0 || next_kf.influence_in > 0.0)) {
+                akf.bezier = animation::CubicBezierEasing::from_ae(
+                    kf.speed_out, kf.influence_out,
+                    next_kf.speed_in, next_kf.influence_in,
+                    duration, delta
+                );
+            }
+        }
         
         curve.add_keyframe(akf);
     }
     curve.sort();
-    return curve.evaluate(local_time_seconds);
+    math::Vector2 result = curve.evaluate(local_time_seconds);
+
+    // Apply Wiggle
+    if (property.wiggle.enabled) {
+        math::PerlinNoise noise_x(property.wiggle.seed);
+        math::PerlinNoise noise_y(property.wiggle.seed + 12345ULL);
+        float freq = static_cast<float>(property.wiggle.frequency);
+        float amp = static_cast<float>(property.wiggle.amplitude);
+        float t = static_cast<float>(local_time_seconds);
+
+        if (property.wiggle.octaves > 1) {
+            result.x += noise_x.fbm2d(t * freq, 0.0f, property.wiggle.octaves) * amp;
+            result.y += noise_y.fbm2d(t * freq, 0.0f, property.wiggle.octaves) * amp;
+        } else {
+            result.x += noise_x.noise1d(t * freq) * amp;
+            result.y += noise_y.noise1d(t * freq) * amp;
+        }
+    }
+
+    return result;
 }
 
 math::Vector3 sample_vector3(
@@ -308,7 +373,8 @@ math::Vector3 sample_vector3(
     }
 
     animation::AnimationCurve<math::Vector3> curve;
-    for (const auto& kf : property.keyframes) {
+    for (size_t i = 0; i < property.keyframes.size(); ++i) {
+        const auto& kf = property.keyframes[i];
         animation::Keyframe<math::Vector3> akf;
         akf.time = kf.time;
         akf.value = kf.value;
@@ -318,10 +384,49 @@ math::Vector3 sample_vector3(
         akf.spring = kf.spring;
         akf.out_tangent_value = kf.tangent_out;
         akf.in_tangent_value = kf.tangent_in;
+
+        // AE-style Bezier computation for temporal easing
+        if (kf.easing == animation::EasingPreset::Custom && i + 1 < property.keyframes.size()) {
+            const auto& next_kf = property.keyframes[i + 1];
+            double duration = next_kf.time - kf.time;
+            // Use distance for Vector3 value delta
+            double delta = static_cast<double>((next_kf.value - kf.value).length());
+
+            if (duration > 1e-6 && (kf.influence_out > 0.0 || next_kf.influence_in > 0.0)) {
+                akf.bezier = animation::CubicBezierEasing::from_ae(
+                    kf.speed_out, kf.influence_out,
+                    next_kf.speed_in, next_kf.influence_in,
+                    duration, delta
+                );
+            }
+        }
+
         curve.add_keyframe(akf);
     }
     curve.sort();
-    return curve.evaluate(local_time_seconds);
+    math::Vector3 result = curve.evaluate(local_time_seconds);
+
+    // Apply Wiggle
+    if (property.wiggle.enabled) {
+        math::PerlinNoise noise_x(property.wiggle.seed);
+        math::PerlinNoise noise_y(property.wiggle.seed + 12345ULL);
+        math::PerlinNoise noise_z(property.wiggle.seed + 67890ULL);
+        float freq = static_cast<float>(property.wiggle.frequency);
+        float amp = static_cast<float>(property.wiggle.amplitude);
+        float t = static_cast<float>(local_time_seconds);
+
+        if (property.wiggle.octaves > 1) {
+            result.x += noise_x.fbm2d(t * freq, 0.0f, property.wiggle.octaves) * amp;
+            result.y += noise_y.fbm2d(t * freq, 0.0f, property.wiggle.octaves) * amp;
+            result.z += noise_z.fbm2d(t * freq, 0.0f, property.wiggle.octaves) * amp;
+        } else {
+            result.x += noise_x.noise1d(t * freq) * amp;
+            result.y += noise_y.noise1d(t * freq) * amp;
+            result.z += noise_z.noise1d(t * freq) * amp;
+        }
+    }
+
+    return result;
 }
 
 ColorSpec sample_color(const AnimatedColorSpec& property, const ColorSpec& fallback, double local_time_seconds) {
@@ -345,3 +450,4 @@ ColorSpec sample_color(const AnimatedColorSpec& property, const ColorSpec& fallb
 }
 
 } // namespace tachyon::scene
+

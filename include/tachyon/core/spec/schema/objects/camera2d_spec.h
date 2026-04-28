@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/core/spec/schema/properties/property_spec.h"
-#include "tachyon/core/math/vector2.h"
+#include "tachyon/core/math/algebra/vector2.h"
 
 namespace tachyon {
 
@@ -24,3 +24,4 @@ struct Camera2DSpec {
 };
 
 } // namespace tachyon
+

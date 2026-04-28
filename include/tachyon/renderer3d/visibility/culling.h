@@ -1,8 +1,8 @@
 #pragma once
 
 #include "tachyon/core/scene/state/evaluated_state.h"
-#include "tachyon/core/math/vector3.h"
-#include "tachyon/core/math/matrix4x4.h"
+#include "tachyon/core/math/algebra/vector3.h"
+#include "tachyon/core/math/algebra/matrix4x4.h"
 #include "tachyon/core/camera/camera_state.h"
 
 #include <cstdint>
@@ -180,3 +180,4 @@ inline SceneCulling::CullTest SceneCulling::Frustum::test_sphere(const math::Vec
 }
 
 } // namespace tachyon::renderer3d
+

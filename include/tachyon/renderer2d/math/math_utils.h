@@ -3,8 +3,8 @@
 #include <cmath>
 #include <cstdint>
 
-#include "tachyon/core/math/vector2.h"
-#include "tachyon/core/math/vector3.h"
+#include "tachyon/core/math/algebra/vector2.h"
+#include "tachyon/core/math/algebra/vector3.h"
 
 namespace tachyon::renderer2d::math_utils {
 

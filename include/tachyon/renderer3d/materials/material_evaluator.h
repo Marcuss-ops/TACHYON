@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/core/scene/state/evaluated_state.h"
-#include "tachyon/core/math/vector3.h"
+#include "tachyon/core/math/algebra/vector3.h"
 
 namespace tachyon::renderer3d {
 
@@ -39,3 +39,4 @@ public:
 };
 
 } // namespace tachyon::renderer3d
+

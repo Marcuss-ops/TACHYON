@@ -1,0 +1,16 @@
+{
+  "fonts": [
+    {
+      "id": "main_font",
+      "family": "SF Pro Display",
+      "src": "../assets/fonts/SFPRODISPLAYBOLD.OTF",
+      "weight": 700,
+      "style": "normal"
+    }
+  ],
+  "policy": {
+    "missing_font": "warn_and_default",
+    "missing_glyph": "fallback",
+    "preload_fonts": true
+  }
+}

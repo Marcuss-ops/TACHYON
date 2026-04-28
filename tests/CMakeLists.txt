@@ -3,6 +3,7 @@ add_executable(TachyonTests
     unit/core/math_tests.cpp
     unit/core/property_tests.cpp
     unit/core/expression_tests.cpp
+    unit/core/background_generator_tests.cpp
     unit/media/asset_resolution_tests.cpp
     unit/media/image_manager_tests.cpp
     unit/media/image_decode_tests.cpp
@@ -33,8 +34,9 @@ add_executable(TachyonTests
     unit/runtime/visual/golden_fixtures.cpp
     unit/core/scene/evaluator_tests.cpp
     unit/core/scene/precomp_mask_tests.cpp
-    unit/timeline/time_tests.cpp
-    unit/timeline/camera_cuts_tests.cpp
+     unit/timeline/time_tests.cpp
+     unit/timeline/time_remap_tests.cpp
+     unit/timeline/camera_cuts_tests.cpp
     unit/core/spec/scene_spec_tests.cpp
     unit/core/camera/camera_shake_tests.cpp
     unit/core/properties/bezier_interpolator_tests.cpp
@@ -44,6 +46,7 @@ add_executable(TachyonTests
     unit/tracker/camera_solver_tests.cpp
     unit/tracker/optical_flow_tests.cpp
     unit/renderer2d/composition/matte_resolver_tests.cpp
+    unit/renderer2d/raster/mesh_deform_tests.cpp
     unit/renderer2d/composition/evaluated_composition_renderer_tests.cpp
     unit/renderer2d/composition/text3d_preview_tests.cpp
     unit/editor/undo_manager_tests.cpp

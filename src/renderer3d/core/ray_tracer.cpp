@@ -1,7 +1,7 @@
 // Implementation of RayTracer - render() orchestration only
 #include "tachyon/renderer3d/core/ray_tracer.h"
-#include "tachyon/core/math/vector3.h"
-#include "tachyon/core/math/matrix4x4.h"
+#include "tachyon/core/math/algebra/vector3.h"
+#include "tachyon/core/math/algebra/matrix4x4.h"
 #include <algorithm>
 #include <cmath>
 #include <random>
@@ -294,3 +294,4 @@ void RayTracer::log_embree_error(void* userPtr, RTCError code, const char* str) 
 }
 
 } // namespace tachyon::renderer3d
+

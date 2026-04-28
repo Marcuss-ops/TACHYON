@@ -1,8 +1,8 @@
 #pragma once
 
 #include "tachyon/core/scene/state/evaluated_state.h"
-#include "tachyon/core/math/vector3.h"
-#include "tachyon/core/math/matrix4x4.h"
+#include "tachyon/core/math/algebra/vector3.h"
+#include "tachyon/core/math/algebra/matrix4x4.h"
 
 #include <cstdint>
 #include <string>
@@ -107,3 +107,4 @@ private:
 };
 
 } // namespace tachyon::renderer3d
+

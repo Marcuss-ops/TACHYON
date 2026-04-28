@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/core/scene/evaluation/evaluator.h"
-#include "tachyon/audio/audio_analyzer.h"
+#include "tachyon/audio/processing/audio_analyzer.h"
 #include "tachyon/text/content/subtitle.h"
 #include "tachyon/media/management/media_manager.h"
 
@@ -37,3 +37,4 @@ struct EvaluationContext {
 
 } // namespace scene
 } // namespace tachyon
+

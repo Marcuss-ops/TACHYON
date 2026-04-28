@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/ai/segmentation_provider.h"
-#include "tachyon/tracker/optical_flow.h"
+#include "tachyon/tracker/algorithms/optical_flow.h"
 #include "tachyon/renderer2d/path/mask_path.h"
 #include <vector>
 #include <memory>

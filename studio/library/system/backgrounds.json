@@ -49,6 +49,132 @@
           }
         }
       ]
+    },
+    {
+      "id": "bg_noise",
+      "name": "Classic Noise",
+      "params": [
+        { "name": "frequency", "type": "double", "default": 1.0 },
+        { "name": "amplitude", "type": "double", "default": 1.0 },
+        { "name": "seed", "type": "int", "default": 0 }
+      ],
+      "layers": [
+        {
+          "id": "noise_base",
+          "type": "procedural",
+          "procedural": {
+            "kind": "noise",
+            "frequency": "{{frequency}}",
+            "amplitude": "{{amplitude}}",
+            "seed": "{{seed}}",
+            "color_a": "#000000",
+            "color_b": "#FFFFFF"
+          }
+        }
+      ]
+    },
+    {
+      "id": "bg_gradient",
+      "name": "Linear Gradient",
+      "params": [
+        { "name": "color_a", "type": "color", "default": "#000000" },
+        { "name": "color_b", "type": "color", "default": "#FFFFFF" },
+        { "name": "angle", "type": "double", "default": 45.0 }
+      ],
+      "layers": [
+        {
+          "id": "grad_base",
+          "type": "solid",
+          "gradient_fill": {
+            "type": "linear",
+            "angle": "{{angle}}",
+            "stops": [
+              { "offset": 0.0, "color": "{{color_a}}" },
+              { "offset": 1.0, "color": "{{color_b}}" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "bg_waves",
+      "name": "Animated Waves",
+      "params": [
+        { "name": "frequency", "type": "double", "default": 2.0 },
+        { "name": "amplitude", "type": "double", "default": 0.5 },
+        { "name": "speed", "type": "double", "default": 1.0 }
+      ],
+      "layers": [
+        {
+          "id": "waves_base",
+          "type": "procedural",
+          "procedural": {
+            "kind": "waves",
+            "frequency": "{{frequency}}",
+            "amplitude": "{{amplitude}}",
+            "speed": "{{speed}}"
+          }
+        }
+      ]
+    },
+    {
+      "id": "bg_grid",
+      "name": "Procedural Grid",
+      "params": [
+        { "name": "spacing", "type": "double", "default": 50.0 },
+        { "name": "border", "type": "double", "default": 1.0 },
+        { "name": "shape", "type": "string", "default": "square" }
+      ],
+      "layers": [
+        {
+          "id": "grid_base",
+          "type": "procedural",
+          "procedural": {
+            "kind": "grid",
+            "spacing": "{{spacing}}",
+            "border_width": "{{border}}",
+            "shape": "{{shape}}"
+          }
+        }
+      ]
+    },
+    {
+      "id": "bg_stripes",
+      "name": "Moving Stripes",
+      "params": [
+        { "name": "angle", "type": "double", "default": 0.0 },
+        { "name": "speed", "type": "double", "default": 0.5 }
+      ],
+      "layers": [
+        {
+          "id": "stripes_base",
+          "type": "procedural",
+          "procedural": {
+            "kind": "stripes",
+            "angle": "{{angle}}",
+            "speed": "{{speed}}"
+          }
+        }
+      ]
+    },
+    {
+      "id": "bg_stars",
+      "name": "Starfield",
+      "params": [
+        { "name": "density", "type": "double", "default": 1.0 },
+        { "name": "speed", "type": "double", "default": 0.1 }
+      ],
+      "layers": [
+        {
+          "id": "stars_base",
+          "type": "procedural",
+          "procedural": {
+            "kind": "stars",
+            "frequency": "{{density}}",
+            "speed": "{{speed}}"
+          }
+        }
+      ]
     }
   ]
 }

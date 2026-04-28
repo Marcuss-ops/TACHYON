@@ -1,4 +1,4 @@
-#include "tachyon/tracker/optical_flow.h"
+#include "tachyon/tracker/algorithms/optical_flow.h"
 #include <cmath>
 #include <cstdio>
 #include <algorithm>
@@ -384,3 +384,4 @@ bool run_optical_flow_tests() {
            all_pass ? "ALL PASSED" : "SOME FAILED");
     return all_pass;
 }
+

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/core/math/vector3.h"
+#include "tachyon/core/math/algebra/vector3.h"
 #include <vector>
 
 namespace tachyon::properties {
@@ -45,3 +45,4 @@ private:
 };
 
 } // namespace tachyon::properties
+

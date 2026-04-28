@@ -1,0 +1,18 @@
+{
+  "job_id": "preview",
+  "scene_ref": "aura_scene.json",
+  "composition_target": "main",
+  "frame_range": { "start": 0, "end": 0 },
+  "output": {
+    "destination": { "path": "aura.png", "overwrite": true },
+    "profile": {
+      "name": "preview",
+      "class": "preview",
+      "container": "png",
+      "video": {
+        "codec": "png",
+        "pixel_format": "rgba"
+      }
+    }
+  }
+}

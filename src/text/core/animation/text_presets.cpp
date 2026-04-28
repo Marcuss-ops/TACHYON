@@ -1,6 +1,6 @@
 #include "tachyon/text/animation/text_presets.h"
 
-#include "tachyon/core/math/vector2.h"
+#include "tachyon/core/math/algebra/vector2.h"
 
 #include <utility>
 
@@ -146,4 +146,51 @@ void add_vector2_ramp(
         reveal_duration_seconds);
 }
 
+::tachyon::TextAnimatorSpec make_typewriter_animator(
+    double characters_per_second,
+    std::string cursor_char) {
+
+    ::tachyon::TextAnimatorSpec animator;
+    animator.name = "Typewriter";
+    animator.selector.type = "range";
+    animator.selector.based_on = "characters";
+    animator.selector.stagger_mode = "character";
+    animator.selector.stagger_delay = 1.0 / characters_per_second;
+    
+    // Opacity ramp (instant appear after stagger)
+    add_scalar_ramp(animator.properties.opacity_keyframes, 0.0, 0.0, 0.01, 1.0);
+    
+    // Cursor settings
+    animator.cursor.enabled = true;
+    animator.cursor.cursor_char = std::move(cursor_char);
+    animator.cursor.blink_rate = 4.0;
+    
+    return animator;
+}
+
+::tachyon::TextAnimatorSpec make_kinetic_blur_animator(
+    double slide_distance_px,
+    double duration_seconds) {
+
+    ::tachyon::TextAnimatorSpec animator;
+    animator.name = "KineticBlur";
+    animator.selector.type = "all";
+    animator.selector.stagger_mode = "character";
+    animator.selector.stagger_delay = 0.05;
+    
+    // High speed movement for motion blur demonstration
+    add_vector2_ramp(
+        animator.properties.position_offset_keyframes,
+        0.0,
+        math::Vector2{static_cast<float>(slide_distance_px), 0.0f},
+        duration_seconds,
+        math::Vector2{0.0f, 0.0f});
+        
+    // Opacity fade in
+    add_scalar_ramp(animator.properties.opacity_keyframes, 0.0, 0.0, duration_seconds * 0.5, 1.0);
+
+    return animator;
+}
+
 } // namespace tachyon::text
+

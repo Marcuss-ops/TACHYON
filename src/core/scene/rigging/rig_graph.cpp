@@ -1,5 +1,5 @@
 #include "tachyon/core/scene/rigging/rig_graph.h"
-#include "tachyon/core/math/quaternion.h"
+#include "tachyon/core/math/algebra/quaternion.h"
 #include <unordered_set>
 #include <queue>
 
@@ -362,3 +362,4 @@ void RigGraph::apply_to_layers(const Pose& solved_pose, std::vector<scene::Evalu
 }
 
 } // namespace tachyon::scene::rigging
+

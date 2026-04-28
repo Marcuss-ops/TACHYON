@@ -1,7 +1,7 @@
 #pragma once
 
-#include "tachyon/core/math/matrix3x3.h"
-#include "tachyon/core/math/vector2.h"
+#include "tachyon/core/math/algebra/matrix3x3.h"
+#include "tachyon/core/math/algebra/vector2.h"
 
 namespace tachyon {
 
@@ -22,3 +22,4 @@ struct EvaluatedCamera2D {
 };
 
 } // namespace tachyon
+

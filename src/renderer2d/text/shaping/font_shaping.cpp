@@ -4,7 +4,7 @@
 #include <algorithm>
 
 #include "tachyon/renderer2d/text/shaping/font_shaping.h"
-#include "tachyon/text/fonts/font.h"
+#include "tachyon/text/fonts/core/font.h"
 #include "tachyon/text/layout/layout.h"
 
 namespace tachyon::renderer2d::text::shaping {

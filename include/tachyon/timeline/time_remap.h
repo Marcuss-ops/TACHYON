@@ -1,6 +1,6 @@
 #pragma once
 #include "tachyon/core/spec/schema/contracts/shared_contracts.h"
-#include "tachyon/tracker/optical_flow.h"
+#include "tachyon/tracker/algorithms/optical_flow.h"
 #include <vector>
 #include <utility>
 #include <string>
@@ -78,3 +78,4 @@ private:
 };
 
 } // namespace tachyon::timeline
+

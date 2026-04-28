@@ -1,9 +1,9 @@
 #pragma once
 
 #include "tachyon/core/scene/evaluation/evaluator.h"
-#include "tachyon/audio/audio_analyzer.h"
-#include "tachyon/core/math/vector2.h"
-#include "tachyon/core/math/vector3.h"
+#include "tachyon/audio/processing/audio_analyzer.h"
+#include "tachyon/core/math/algebra/vector2.h"
+#include "tachyon/core/math/algebra/vector3.h"
 
 #include <unordered_map>
 #include <vector>
@@ -56,3 +56,5 @@ math::Vector3 sample_vector3(
 ColorSpec sample_color(const AnimatedColorSpec& property, const ColorSpec& fallback, double local_time_seconds);
 
 } // namespace tachyon::scene
+
+

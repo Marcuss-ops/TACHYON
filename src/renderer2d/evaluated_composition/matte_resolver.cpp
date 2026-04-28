@@ -3,8 +3,105 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <queue>
+#include <cmath>
+#include <vector>
 
 namespace tachyon::renderer2d {
+
+// ---------------------------------------------------------------------------
+// Gaussian blur for matte feathering
+// ---------------------------------------------------------------------------
+
+static float gaussian_weight(float x, float sigma) {
+    const float two_sigma_sq = 2.0f * sigma * sigma;
+    return std::exp(-(x * x) / two_sigma_sq);
+}
+
+static void gaussian_blur_horizontal(
+    const std::vector<float>& input,
+    std::vector<float>& output,
+    std::int64_t width,
+    std::int64_t height,
+    float sigma) {
+    
+    const int radius = static_cast<int>(std::ceil(2.0f * sigma));
+    const int kernel_size = 2 * radius + 1;
+    std::vector<float> kernel(kernel_size);
+    
+    float sum = 0.0f;
+    for (int i = 0; i < kernel_size; ++i) {
+        float x = static_cast<float>(i - radius);
+        kernel[i] = gaussian_weight(x, sigma);
+        sum += kernel[i];
+    }
+    for (int i = 0; i < kernel_size; ++i) {
+        kernel[i] /= sum;
+    }
+    
+    for (std::int64_t y = 0; y < height; ++y) {
+        for (std::int64_t x = 0; x < width; ++x) {
+            float accum = 0.0f;
+            for (int k = 0; k < kernel_size; ++k) {
+                int sample_x = static_cast<int>(x) + (k - radius);
+                if (sample_x >= 0 && sample_x < width) {
+                    accum += input[y * width + sample_x] * kernel[k];
+                }
+            }
+            output[y * width + x] = accum;
+        }
+    }
+}
+
+static void gaussian_blur_vertical(
+    const std::vector<float>& input,
+    std::vector<float>& output,
+    std::int64_t width,
+    std::int64_t height,
+    float sigma) {
+    
+    const int radius = static_cast<int>(std::ceil(2.0f * sigma));
+    const int kernel_size = 2 * radius + 1;
+    std::vector<float> kernel(kernel_size);
+    
+    float sum = 0.0f;
+    for (int i = 0; i < kernel_size; ++i) {
+        float x = static_cast<float>(i - radius);
+        kernel[i] = gaussian_weight(x, sigma);
+        sum += kernel[i];
+    }
+    for (int i = 0; i < kernel_size; ++i) {
+        kernel[i] /= sum;
+    }
+    
+    for (std::int64_t y = 0; y < height; ++y) {
+        for (std::int64_t x = 0; x < width; ++x) {
+            float accum = 0.0f;
+            for (int k = 0; k < kernel_size; ++k) {
+                int sample_y = static_cast<int>(y) + (k - radius);
+                if (sample_y >= 0 && sample_y < height) {
+                    accum += input[sample_y * width + x] * kernel[k];
+                }
+            }
+            output[y * width + x] = accum;
+        }
+    }
+}
+
+static void apply_feather(std::vector<float>& matte, std::int64_t width, std::int64_t height, float feather_pixels) {
+    if (feather_pixels <= 0.0f) return;
+    
+    // Convert feather radius to sigma (approximate: sigma = radius / 2.0)
+    const float sigma = feather_pixels / 2.0f;
+    const std::size_t pixel_count = static_cast<std::size_t>(width * height);
+    
+    std::vector<float> temp(pixel_count);
+    std::vector<float> temp2(pixel_count);
+    
+    // Two-pass separable Gaussian blur
+    gaussian_blur_horizontal(matte, temp, width, height, sigma);
+    gaussian_blur_vertical(temp, temp2, width, height, sigma);
+    matte = std::move(temp2);
+}
 
 // ---------------------------------------------------------------------------
 // Validation
@@ -248,6 +345,11 @@ void Renderer2DMatteResolver::resolve(
                 default:
                     break;
             }
+            
+            // Apply feather to soften matte edges
+            if (dep.feather > 0.0f) {
+                apply_feather(out_matte_buffers[tgt_idx], width, height, dep.feather);
+            }
             continue;
         }
 
@@ -342,6 +444,11 @@ void Renderer2DMatteResolver::resolve(
             default:
                 out_matte_buffers[tgt_idx].assign(pixel_count, 1.0f);
                 break;
+        }
+        
+        // Apply feather to soften matte edges
+        if (dep.feather > 0.0f) {
+            apply_feather(out_matte_buffers[tgt_idx], width, height, dep.feather);
         }
     }
 }

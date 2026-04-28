@@ -15,12 +15,12 @@
 ### 2. Procedural Modifiers
 **Files modified:**
 - `include/tachyon/core/shapes/shape_modifiers.h`
-  - Added `#include "tachyon/core/math/noise.h"`
+  - Added `#include "tachyon/core/math/utils/noise.h"`
   - Added `oscillator()` modifier - applies sinusoidal oscillation to path vertices
   - Added `noise_deform()` modifier - applies Perlin noise deformation to paths
 
 **New files:**
-- `include/tachyon/core/math/noise.h`
+- `include/tachyon/core/math/utils/noise.h`
   - Complete Perlin noise implementation (1D, 2D, 3D)
   - Fractal Brownian Motion (FBM) support
 
@@ -150,3 +150,4 @@ To build successfully:
 3. Run `GenerateBackground()` demo and render to MP4
 4. Verify expression `prop()` works with actual layer evaluation
 5. Test text animation staggering with word-by-word animations
+

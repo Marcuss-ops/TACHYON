@@ -212,13 +212,14 @@ EvaluatedCompositionState evaluate_composition_internal(
     for (std::size_t index = 0; index < comp.layers.size(); ++index) {
         const auto& base_layer = resolve_layer_state(index, context);
         
-        // Evaluate repeater count
+        // Evaluate repeater parameters
         const double remapped_time = base_layer.child_time_seconds;
         const std::uint64_t layer_seed = make_property_expression_seed(scene, comp, comp.layers[index], "layer");
         const double rep_count = sample_scalar(comp.layers[index].repeater_count, 1.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("repeater_count")), vars.numeric);
         const int iterations = std::max(1, static_cast<int>(std::floor(rep_count)));
 
         if (iterations > 1) {
+            const std::string& rep_type = comp.layers[index].repeater_type;
             const double stagger_delay = sample_scalar(comp.layers[index].repeater_stagger_delay, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("stagger_delay")));
             const float off_x = static_cast<float>(sample_scalar(comp.layers[index].repeater_offset_position_x, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_off_x"))));
             const float off_y = static_cast<float>(sample_scalar(comp.layers[index].repeater_offset_position_y, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_off_y"))));
@@ -228,35 +229,60 @@ EvaluatedCompositionState evaluate_composition_internal(
             const float start_op = static_cast<float>(sample_scalar(comp.layers[index].repeater_start_opacity, 100.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_op_start")))) / 100.0f;
             const float end_op = static_cast<float>(sample_scalar(comp.layers[index].repeater_end_opacity, 100.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_op_end")))) / 100.0f;
 
-            // Pre-compute the per-step transform matrix (constant for all steps)
-            const math::Matrix4x4 step_transform = math::compose_trs(
-                {off_x, off_y, 0.0f},
-                math::Quaternion::from_euler({0, 0, off_rot}),
-                {off_sx, off_sy, 1.0f}
-            );
-            
-            // Pre-allocate ID prefix to avoid repeated string allocations
+            int grid_cols = 1;
+            float radial_radius = 0.0f;
+            float radial_start = 0.0f;
+            float radial_end = 360.0f;
+
+            if (rep_type == "grid") {
+                grid_cols = std::max(1, static_cast<int>(std::floor(sample_scalar(comp.layers[index].repeater_grid_cols, 1.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("grid_cols"))))));
+            } else if (rep_type == "radial") {
+                radial_radius = static_cast<float>(sample_scalar(comp.layers[index].repeater_radial_radius, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rad_radius"))));
+                radial_start = static_cast<float>(sample_scalar(comp.layers[index].repeater_radial_start_angle, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rad_start"))));
+                radial_end = static_cast<float>(sample_scalar(comp.layers[index].repeater_radial_end_angle, 360.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rad_end"))));
+            }
+
             const std::string id_prefix = base_layer.id + "_rep_";
             
-            // Iterative cumulative transform (O(N) instead of O(N²))
-            math::Matrix4x4 cumulative_transform = math::Matrix4x4::identity();
-            
             for (int r = 0; r < iterations; ++r) {
-                // For stagger, we re-evaluate the layer state with a time offset
                 EvaluatedLayerState repeated = (stagger_delay != 0.0) 
                     ? make_layer_state(context, comp.layers[index], index, static_cast<double>(r) * stagger_delay, context.vars)
                     : base_layer;
             
-                // Build ID without allocation in loop (use pre-allocated prefix)
                 repeated.id = id_prefix + std::to_string(r);
             
-                // Update cumulative transform iteratively (O(1) per iteration)
-                cumulative_transform = cumulative_transform * step_transform;
-                repeated.world_matrix = repeated.world_matrix * cumulative_transform;
+                math::Matrix4x4 step_transform = math::Matrix4x4::identity();
+                
+                if (rep_type == "grid") {
+                    int col = r % grid_cols;
+                    int row = r / grid_cols;
+                    step_transform = math::compose_trs(
+                        {static_cast<float>(col) * off_x, static_cast<float>(row) * off_y, 0.0f},
+                        math::Quaternion::from_euler({0, 0, static_cast<float>(r) * off_rot}),
+                        {std::pow(off_sx, static_cast<float>(r)), std::pow(off_sy, static_cast<float>(r)), 1.0f}
+                    );
+                } else if (rep_type == "radial") {
+                    float t_rad = iterations > 1 ? static_cast<float>(r) / static_cast<float>(iterations - 1) : 0.0f;
+                    float angle_deg = radial_start + (radial_end - radial_start) * t_rad;
+                    float angle_rad = angle_deg * (3.14159265f / 180.0f);
+                    step_transform = math::compose_trs(
+                        {std::cos(angle_rad) * radial_radius, std::sin(angle_rad) * radial_radius, 0.0f},
+                        math::Quaternion::from_euler({0, 0, angle_deg + static_cast<float>(r) * off_rot}),
+                        {std::pow(off_sx, static_cast<float>(r)), std::pow(off_sy, static_cast<float>(r)), 1.0f}
+                    );
+                } else {
+                    // Linear (AE-style)
+                    step_transform = math::compose_trs(
+                        {static_cast<float>(r) * off_x, static_cast<float>(r) * off_y, 0.0f},
+                        math::Quaternion::from_euler({0, 0, static_cast<float>(r) * off_rot}),
+                        {std::pow(off_sx, static_cast<float>(r)), std::pow(off_sy, static_cast<float>(r)), 1.0f}
+                    );
+                }
+
+                repeated.world_matrix = repeated.world_matrix * step_transform;
                 const auto wp3 = repeated.world_matrix.transform_point({0.0f, 0.0f, 0.0f});
                 repeated.world_position3 = wp3;
             
-                // Opacity ramp
                 const float t_ramp = iterations > 1 ? static_cast<float>(r) / static_cast<float>(iterations - 1) : 0.0f;
                 repeated.opacity *= (start_op * (1.0f - t_ramp) + end_op * t_ramp);
             

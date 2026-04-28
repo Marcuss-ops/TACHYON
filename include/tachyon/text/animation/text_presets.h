@@ -35,4 +35,12 @@ namespace tachyon::text {
     double slide_distance_px = 18.0,
     double reveal_duration_seconds = 0.55);
 
+[[nodiscard]] ::tachyon::TextAnimatorSpec make_typewriter_animator(
+    double characters_per_second = 20.0,
+    std::string cursor_char = "|");
+
+[[nodiscard]] ::tachyon::TextAnimatorSpec make_kinetic_blur_animator(
+    double slide_distance_px = 200.0,
+    double duration_seconds = 0.5);
+
 } // namespace tachyon::text

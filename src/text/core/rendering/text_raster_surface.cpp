@@ -47,32 +47,67 @@ float sample_glyph_alpha(const tachyon::text::GlyphBitmap& glyph, float src_x, f
 void TextRasterSurface::render_glyph(const tachyon::text::GlyphBitmap& glyph, int tx, int ty, int tw, int th, tachyon::renderer2d::Color gc) {
     if (tw <= 0 || th <= 0 || glyph.width == 0U || glyph.height == 0U || (glyph.atlas_data == nullptr && glyph.pixels.empty())) return;
     
-    if (glyph.type == tachyon::renderer2d::text::GlyphType::SDF) {
-        // SDF rendering: alpha is determined by distance from edge (usually 128/255)
-        // smoothing helps avoid aliasing
-        const float smoothing = 0.25f / (static_cast<float>(tw) / static_cast<float>(glyph.width));
-
-        for (int y = 0; y < th; ++y) {
-            const float src_y = ((static_cast<float>(y) + 0.5f) * static_cast<float>(glyph.height) / static_cast<float>(th)) - 0.5f;
-            for (int x = 0; x < tw; ++x) {
-                const float src_x = ((static_cast<float>(x) + 0.5f) * static_cast<float>(glyph.width) / static_cast<float>(tw)) - 0.5f;
+    // Standard non-motion-blurred rendering
+    for (int y = 0; y < th; ++y) {
+        const float src_y = ((static_cast<float>(y) + 0.5f) * static_cast<float>(glyph.height) / static_cast<float>(th)) - 0.5f;
+        for (int x = 0; x < tw; ++x) {
+            const float src_x = ((static_cast<float>(x) + 0.5f) * static_cast<float>(glyph.width) / static_cast<float>(tw)) - 0.5f;
+            float alpha = 0.0f;
+            if (glyph.type == tachyon::renderer2d::text::GlyphType::SDF) {
+                const float smoothing = 0.25f / (static_cast<float>(tw) / static_cast<float>(glyph.width));
                 const float dist = sample_glyph_alpha(glyph, src_x, src_y);
-                const float alpha = std::clamp((dist - 0.5f) / smoothing + 0.5f, 0.0f, 1.0f);
-                if (alpha > 0.0f) {
-                    blend_pixel(static_cast<std::uint32_t>(tx + x), static_cast<std::uint32_t>(ty + y), gc, static_cast<std::uint8_t>(alpha * 255.0f));
-                }
+                alpha = std::clamp((dist - 0.5f) / smoothing + 0.5f, 0.0f, 1.0f);
+            } else {
+                alpha = sample_glyph_alpha(glyph, src_x, src_y);
+            }
+            
+            if (alpha > 0.0f) {
+                blend_pixel(static_cast<std::uint32_t>(tx + x), static_cast<std::uint32_t>(ty + y), gc, static_cast<std::uint8_t>(std::lround(std::clamp(alpha, 0.0f, 1.0f) * 255.0f)));
             }
         }
-    } else {
-        // Standard alpha mask rendering
-        for (int y = 0; y < th; ++y) {
-            const float src_y = ((static_cast<float>(y) + 0.5f) * static_cast<float>(glyph.height) / static_cast<float>(th)) - 0.5f;
-            for (int x = 0; x < tw; ++x) {
-                const float src_x = ((static_cast<float>(x) + 0.5f) * static_cast<float>(glyph.width) / static_cast<float>(tw)) - 0.5f;
-                const float alpha = sample_glyph_alpha(glyph, src_x, src_y);
-                if (alpha > 0.0f) {
-                    blend_pixel(static_cast<std::uint32_t>(tx + x), static_cast<std::uint32_t>(ty + y), gc, static_cast<std::uint8_t>(std::lround(std::clamp(alpha, 0.0f, 1.0f) * 255.0f)));
+    }
+}
+
+void TextRasterSurface::render_glyph_with_motion_blur(
+    const tachyon::text::GlyphBitmap& glyph, 
+    int tx, int ty, int tw, int th, 
+    tachyon::renderer2d::Color gc,
+    float vx, float vy) {
+    
+    const float velocity_mag = std::sqrt(vx * vx + vy * vy);
+    if (velocity_mag < 0.5f) {
+        render_glyph(glyph, tx, ty, tw, th, gc);
+        return;
+    }
+
+    // Directional motion blur: sample along the velocity vector
+    // We use a multi-tap sampling approach (usually 8-16 taps)
+    const int num_taps = std::clamp(static_cast<int>(velocity_mag), 4, 16);
+    const float inv_taps = 1.0f / static_cast<float>(num_taps);
+
+    for (int y = 0; y < th; ++y) {
+        const float base_src_y = ((static_cast<float>(y) + 0.5f) * static_cast<float>(glyph.height) / static_cast<float>(th)) - 0.5f;
+        for (int x = 0; x < tw; ++x) {
+            const float base_src_x = ((static_cast<float>(x) + 0.5f) * static_cast<float>(glyph.width) / static_cast<float>(tw)) - 0.5f;
+            
+            float accumulated_alpha = 0.0f;
+            for (int t = 0; t < num_taps; ++t) {
+                const float offset = (static_cast<float>(t) / static_cast<float>(num_taps - 1)) - 0.5f;
+                const float src_x = base_src_x - (vx * offset * static_cast<float>(glyph.width) / static_cast<float>(tw));
+                const float src_y = base_src_y - (vy * offset * static_cast<float>(glyph.height) / static_cast<float>(th));
+                
+                if (glyph.type == tachyon::renderer2d::text::GlyphType::SDF) {
+                    const float smoothing = 0.25f / (static_cast<float>(tw) / static_cast<float>(glyph.width));
+                    const float dist = sample_glyph_alpha(glyph, src_x, src_y);
+                    accumulated_alpha += std::clamp((dist - 0.5f) / smoothing + 0.5f, 0.0f, 1.0f);
+                } else {
+                    accumulated_alpha += sample_glyph_alpha(glyph, src_x, src_y);
                 }
+            }
+
+            const float alpha = accumulated_alpha * inv_taps;
+            if (alpha > 0.0f) {
+                blend_pixel(static_cast<std::uint32_t>(tx + x), static_cast<std::uint32_t>(ty + y), gc, static_cast<std::uint8_t>(std::lround(std::clamp(alpha, 0.0f, 1.0f) * 255.0f)));
             }
         }
     }

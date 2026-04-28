@@ -75,6 +75,20 @@ struct CompositionSpec {
 
     // Cache
     std::uint64_t spec_hash{0};
+
+    /**
+     * @brief High-level API to add a background component instance.
+     * @param component_id The ID of the component (e.g., "aura", "liquid").
+     * @param instance_id A unique ID for this instance.
+     * @param params Key-value pairs for component parameters.
+     */
+    void add_background(std::string component_id, std::string instance_id, std::map<std::string, std::string> params) {
+        ComponentInstanceSpec inst;
+        inst.component_id = std::move(component_id);
+        inst.instance_id = std::move(instance_id);
+        inst.param_values = std::move(params);
+        component_instances.push_back(std::move(inst));
+    }
 };
 
 } // namespace tachyon

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "tachyon/core/math/vector2.h"
-#include "tachyon/core/math/vector3.h"
+#include "tachyon/core/math/algebra/vector2.h"
+#include "tachyon/core/math/algebra/vector3.h"
 #include "tachyon/core/animation/easing.h"
 #include "tachyon/core/animation/keyframe.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
@@ -14,6 +14,14 @@
 #include "tachyon/core/spec/schema/objects/template_spec.h"
 
 namespace tachyon {
+    
+struct WiggleSpec {
+    bool   enabled{false};
+    double frequency{2.0};
+    double amplitude{50.0};
+    std::uint64_t seed{0};
+    int    octaves{1};
+};
 
 struct ScalarKeyframeSpec {
     double time{0.0};
@@ -68,6 +76,7 @@ struct AnimatedScalarSpec {
     double audio_max{1.0};
     std::optional<std::string> expression;
     PropertyBinding binding;
+    WiggleSpec      wiggle;
 
     AnimatedScalarSpec() = default;
     explicit AnimatedScalarSpec(double val) : value(val) {}
@@ -82,6 +91,7 @@ struct AnimatedVector2Spec {
     std::vector<Vector2KeyframeSpec> keyframes;
     std::optional<std::string> expression;
     PropertyBinding binding;
+    WiggleSpec      wiggle;
 
     [[nodiscard]] bool empty() const noexcept {
         return !value.has_value() && keyframes.empty() && !expression.has_value();
@@ -109,6 +119,7 @@ struct AnimatedVector3Spec {
     std::vector<Keyframe> keyframes;
     std::optional<std::string> expression;
     PropertyBinding binding;
+    WiggleSpec      wiggle;
 
     [[nodiscard]] bool empty() const noexcept {
         return !value.has_value() && keyframes.empty() && !expression.has_value();
@@ -284,3 +295,4 @@ inline EffectSpec EffectSpec::evaluate(double /*time_seconds*/) const {
 }
 
 } // namespace tachyon
+

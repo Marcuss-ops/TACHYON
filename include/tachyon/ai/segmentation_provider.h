@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/tracker/feature_tracker.h"
+#include "tachyon/tracker/algorithms/feature_tracker.h"
 #include <vector>
 #include <string>
 #include <memory>
@@ -64,3 +64,4 @@ public:
 std::unique_ptr<SegmentationProvider> create_segmentation_provider();
 
 } // namespace tachyon::ai
+

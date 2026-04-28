@@ -10,7 +10,7 @@
 | `CacheKeyBuilder` | `include/tachyon/runtime/cache/cache_key_builder.h` | ✓ |
 | `FrameHasher` | `include/tachyon/runtime/execution/frames/frame_hasher.h` | ✓ |
 | `DiskCache` | `include/tachyon/runtime/cache/disk_cache.h` | ✓ |
-| Glyph cache in `FontInstance` | `include/tachyon/text/fonts/font_instance.h` | ✓ per size |
+| Glyph cache in `FontInstance` | `include/tachyon/text/fonts/core/font_instance.h` | ✓ per size |
 | Shaping cache | `include/tachyon/renderer2d/text/shaping/shaping_cache.h` | ✓ |
 | Asset cache LRU | `CacheManager` in `asset_manager.h` | ✓ fino a 10GB |
 
@@ -189,3 +189,4 @@ Risparmio tipico: 60-80% del tempo di render per scene con background statico.
 5. Effect cache per effetti con parametri statici
 6. Metriche hit/miss esposte nel render log (già parzialmente in FrameCache)
 ```
+

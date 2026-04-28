@@ -1,7 +1,7 @@
 #include "tachyon/media/loading/mesh_loader.h"
 #include "tachyon/media/loading/mesh_asset.h"
-#include "tachyon/core/math/matrix4x4.h"
-#include "tachyon/core/math/quaternion.h"
+#include "tachyon/core/math/algebra/matrix4x4.h"
+#include "tachyon/core/math/algebra/quaternion.h"
 
 #include <iostream>
 #include <cassert>
@@ -147,3 +147,4 @@ bool run_mesh_loader_tests() {
     std::cout << "\nAll glTF loader tests passed!" << std::endl;
     return true;
 }
+

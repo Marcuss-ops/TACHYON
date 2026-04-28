@@ -1,6 +1,6 @@
 #include "tachyon/renderer3d/effects/motion_blur.h"
-#include "tachyon/core/math/matrix4x4.h"
-#include "tachyon/core/math/transform3.h"
+#include "tachyon/core/math/algebra/matrix4x4.h"
+#include "tachyon/core/math/geometry/transform3.h"
 
 #include <cmath>
 #include <iostream>
@@ -162,3 +162,4 @@ bool run_motion_blur_tests() {
 
     return g_failures == 0;
 }
+

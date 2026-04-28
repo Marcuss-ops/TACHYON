@@ -96,6 +96,7 @@ struct LayerTransitionSpec {
     animation::EasingPreset easing{animation::EasingPreset::EaseOut};
     animation::SpringEasing spring{}; // Custom spring parameters
     double delay{0.0};
+    std::string transition_id; // Registry ID for advanced transitions (e.g., "fade_to_black", "wipe_linear")
 };
 
 struct InstanceSpec {
@@ -188,7 +189,12 @@ struct LayerSpec {
     std::vector<TextHighlightSpec> text_highlights;
 
     // Repeater
+    std::string        repeater_type{"linear"}; // "linear", "grid", "radial"
     AnimatedScalarSpec repeater_count;
+    AnimatedScalarSpec repeater_grid_cols;
+    AnimatedScalarSpec repeater_radial_radius;
+    AnimatedScalarSpec repeater_radial_start_angle;
+    AnimatedScalarSpec repeater_radial_end_angle;
     AnimatedScalarSpec repeater_stagger_delay;
     AnimatedScalarSpec repeater_offset_position_x;
     AnimatedScalarSpec repeater_offset_position_y;

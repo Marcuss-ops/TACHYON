@@ -1,12 +1,12 @@
-#include "tachyon/renderer2d/evaluated_composition/rendering/text_mesh_builder.h"
+#include "tachyon/renderer2d/evaluated_composition/rendering/primitives/text_mesh_builder.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
-#include "tachyon/core/math/matrix4x4.h"
-#include "tachyon/core/math/quaternion.h"
-#include "tachyon/core/math/vector2.h"
-#include "tachyon/core/math/vector3.h"
+#include "tachyon/core/math/algebra/matrix4x4.h"
+#include "tachyon/core/math/algebra/quaternion.h"
+#include "tachyon/core/math/algebra/vector2.h"
+#include "tachyon/core/math/algebra/vector3.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/text/animation/text_presets.h"
-#include "tachyon/text/fonts/font_registry.h"
+#include "tachyon/text/fonts/core/font_registry.h"
 
 #include <array>
 #include <algorithm>
@@ -323,3 +323,5 @@ bool run_text3d_preview_tests() {
 
     return g_failures == 0;
 }
+
+

@@ -16,10 +16,6 @@ std::shared_ptr<SceneSpec> TemplateRegistry::get_template(const std::filesystem:
     // Load and parse the template
     auto result = parse_scene_spec_file(path);
     if (!result.ok()) {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        for (const auto& diag : result.diagnostics.diagnostics) {
-            // Se c'è un logger, stamperemo qui l'errore.
-        }
         return nullptr;
     }
 

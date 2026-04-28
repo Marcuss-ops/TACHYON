@@ -120,6 +120,38 @@ set(CMAKE_POLICY_DEFAULT_CMP0048 NEW)
 set(CMAKE_POLICY_DEFAULT_CMP0141 NEW)
 FetchContent_MakeAvailable(freetype)
 
+# Fix FreeType stddef.h issue on Windows: add UCRT include path
+if(MSVC AND freetype_SOURCE_DIR)
+    # Find Windows SDK UCRT path
+    if(EXISTS "C:/Program Files (x86)/Windows Kits/10/Include")
+        file(GLOB SDK_DIRS "C:/Program Files (x86)/Windows Kits/10/Include/*")
+        if(SDK_DIRS)
+            # Sort to get latest SDK version
+            list(SORT SDK_DIRS ORDER DESCENDING)
+            list(GET SDK_DIRS 0 LATEST_SDK_DIR)
+            get_filename_component(SDK_VERSION ${LATEST_SDK_DIR} NAME)
+            set(UCRT_INCLUDE_PATH "C:/Program Files (x86)/Windows Kits/10/Include/${SDK_VERSION}/ucrt")
+            if(EXISTS ${UCRT_INCLUDE_PATH})
+                message(STATUS "[Tachyon] Adding UCRT path for FreeType: ${UCRT_INCLUDE_PATH}")
+                # Add include path to freetype targets
+                get_property(freetype_targets DIRECTORY "${freetype_SOURCE_DIR}" PROPERTY BUILDSYSTEM_TARGETS)
+                if(freetype_targets)
+                    foreach(target IN LISTS freetype_targets)
+                        if(TARGET ${target})
+                            get_target_property(_type ${target} TYPE)
+                            if(_type STREQUAL "INTERFACE_LIBRARY")
+                                target_include_directories(${target} INTERFACE ${UCRT_INCLUDE_PATH})
+                            else()
+                                target_include_directories(${target} PUBLIC ${UCRT_INCLUDE_PATH})
+                            endif()
+                        endif()
+                    endforeach()
+                endif()
+            endif()
+        endif()
+    endif()
+endif()
+
 # Fix: force /Z7 (Embedded) for all freetype targets to avoid PDB conflicts
 if(MSVC AND freetype_SOURCE_DIR)
     get_property(targets DIRECTORY "${freetype_SOURCE_DIR}" PROPERTY BUILDSYSTEM_TARGETS)
@@ -222,6 +254,15 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 include_directories(${gtest_SOURCE_DIR}/googletest/include)
+
+FetchContent_Declare(
+  pugixml
+  URL https://github.com/zeux/pugixml/releases/download/v1.14/pugixml-1.14.tar.gz
+  URL_HASH SHA256=2f10e276870c64b1db6809050a75e11a897a8d7456c4be5c6b2e35a11168a015
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+FetchContent_MakeAvailable(pugixml)
+include_directories(${pugixml_SOURCE_DIR})
 
 # spdlog — structured logging (header-only)
 FetchContent_Declare(

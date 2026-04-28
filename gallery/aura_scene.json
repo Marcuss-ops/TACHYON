@@ -1,0 +1,36 @@
+{
+  "version": "1.0",
+  "spec_version": "1.0.0",
+  "project": { "id": "gallery", "name": "Gallery" },
+  "compositions": [
+    {
+      "id": "main",
+      "width": 1920, "height": 1080, "duration": 5.0,
+      "fps": 60,
+      "frame_rate": { "numerator": 60, "denominator": 1 },
+      "components": [
+        {
+          "id": "bg_aura_modern",
+          "layers": [
+            {
+              "id": "aura_base", "type": "procedural",
+              "procedural": {
+                "kind": "aura", "speed": "{{speed}}", "amplitude": "{{intensity}}",
+                "frequency": 1.5, "color_a": "{{color_primary}}", "color_b": "{{color_secondary}}"
+              }
+            }
+          ]
+        }
+      ],
+      "component_instances": [
+        {
+          "component_id": "bg_aura_modern", "instance_id": "aura",
+          "param_values": {
+            "color_primary": "#FF3366", "color_secondary": "#3366FF",
+            "speed": "0.5", "intensity": "1.0"
+          }
+        }
+      ]
+    }
+  ]
+}

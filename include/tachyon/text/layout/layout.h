@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/text/fonts/font.h"
+#include "tachyon/text/fonts/core/font.h"
 #include "tachyon/text/animation/text_animation_options.h"
 #include "tachyon/text/rendering/text_raster_surface.h"
 #include "tachyon/text/core/layout/resolved_text_layout.h"
@@ -123,6 +123,7 @@ struct PositionedGlyph {
     float stroke_width{0.0f};
     float blur_radius{0.0f};
     float reveal_factor{1.0f};
+    math::Vector2 motion_blur_vector{0.0f, 0.0f};
 };
 
 struct TextLine {
@@ -231,3 +232,4 @@ ResolvedTextLayout layout_text_on_path(
     const TextLayoutOptions& options = {});
 
 } // namespace tachyon::text
+

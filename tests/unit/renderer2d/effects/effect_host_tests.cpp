@@ -1,4 +1,4 @@
-#include "tachyon/renderer2d/effects/effect_host.h"
+#include "tachyon/renderer2d/effects/core/effect_host.h"
 #include "tachyon/renderer2d/resource/render_context.h"
 #include "tachyon/renderer2d/raster/rasterizer.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
@@ -153,3 +153,4 @@ bool run_effect_host_tests() {
 
     return g_failures == 0;
 }
+

@@ -1,4 +1,20 @@
 # Core Engine Library (Shared for C API / DLL)
+file(GLOB _tachyon_core_spec_parsing_sources CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/spec/parsing/*.cpp"
+)
+file(GLOB _tachyon_core_spec_compilation_sources CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/*.cpp"
+)
+list(REMOVE_ITEM _tachyon_core_spec_compilation_sources
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_compiler_hashing.cpp"
+)
+file(GLOB _tachyon_runtime_serialization_sources CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/runtime/core/serialization/*.cpp"
+)
+file(GLOB _tachyon_runtime_hash_sources CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/planning/hash/*.cpp"
+)
+
 add_library(TachyonCore SHARED
     runtime/execution/frame_hasher.cpp
     runtime/execution/quality_policy.cpp
@@ -25,6 +41,7 @@ add_library(TachyonCore SHARED
     runtime/playback/playback_engine.cpp
     runtime/playback/audio_preview_buffer.cpp
      runtime/execution/render_session.cpp
+     runtime/execution/render_session_parallel.cpp
      runtime/execution/render_session_serialization.cpp
      runtime/execution/render_session_audio.cpp
     core/c_api.cpp
@@ -75,16 +92,16 @@ add_library(TachyonCore SHARED
     core/spec/json_parse_helpers.cpp
     core/spec/layer_parse_json.cpp
     core/spec/property_parse_json.cpp
-    core/spec/property_spec_serialize.cpp
+    core/spec/serialization/property_scalar_serialize.cpp
+    core/spec/serialization/property_vector_serialize.cpp
+    core/spec/serialization/property_color_serialize.cpp
     core/spec/text_animator_spec_serialize.cpp
     core/spec/schema/common/common_spec_serialize.cpp
     core/spec/schema/objects/layer_spec_serialize.cpp
-    core/spec/compilation/preset_compiler.cpp
-    core/spec/compilation/scene_compiler.cpp
-    core/spec/compilation/scene_compiler_flatten.cpp
-    core/spec/compilation/scene_compiler_hash.cpp
+    core/shapes/shape_modifiers.cpp
     core/spec/schema/scene_spec.cpp
     core/spec/schema/scene_spec_core.cpp
+    core/spec/serialization/layer_serialize.cpp
     core/spec/scene_spec_serialize.cpp
     core/spec/scene_spec_parse.cpp
     core/spec/scene_spec_builder.cpp
@@ -103,31 +120,38 @@ add_library(TachyonCore SHARED
     renderer2d/color/lut3d.cpp
     renderer2d/color/color_management.cpp
     renderer2d/color/color_management_system.cpp
-    renderer2d/effects/effect_host.cpp
-    renderer2d/effects/glsl_transition_effect.cpp
-    renderer2d/effects/effect_utils.cpp
-    renderer2d/effects/blur_effects.cpp
-    renderer2d/effects/color_effects.cpp
-    renderer2d/effects/particle_effects.cpp
-    renderer2d/effects/utility_effects.cpp
+    renderer2d/effects/core/effect_host.cpp
+    renderer2d/effects/core/glsl_transition_effect.cpp
+    renderer2d/effects/core/effect_utils.cpp
+    renderer2d/effects/blur/blur_effects.cpp
+    renderer2d/effects/color/color_effects.cpp
+    renderer2d/effects/color/chromatic_aberration.cpp
+    renderer2d/effects/generators/particle_effects.cpp
+    renderer2d/effects/generators/lens_flare_effect.cpp
+    renderer2d/effects/core/utility_effects.cpp
+    renderer2d/effects/distort/glitch.cpp
+    renderer2d/effects/distort/warp_stabilizer_effect.cpp
+    renderer2d/effects/utility/number_counter_effect.cpp
     renderer2d/backend/cpu_backend.cpp
     renderer2d/evaluated_composition/matte_resolver.cpp
-    renderer2d/evaluated_composition/rendering/composition_renderer.cpp
-    renderer2d/evaluated_composition/rendering/text_mesh_builder.cpp
-    renderer2d/evaluated_composition/rendering/media_card_mesh_builder.cpp
-    renderer2d/evaluated_composition/rendering/layer_renderer_simple.cpp
-    renderer2d/evaluated_composition/rendering/layer_renderer_procedural.cpp
+    renderer2d/evaluated_composition/rendering/pipeline/composition_renderer.cpp
+    renderer2d/evaluated_composition/rendering/primitives/text_mesh_builder.cpp
+    renderer2d/evaluated_composition/rendering/primitives/media_card_mesh_builder.cpp
+    renderer2d/evaluated_composition/rendering/primitives/layer_renderer_simple.cpp
+    renderer2d/evaluated_composition/rendering/primitives/layer_renderer_procedural.cpp
     renderer2d/evaluated_composition/utilities/composition_utils.cpp
-    renderer2d/evaluated_composition/rendering/layer_to_draw_command.cpp
-    renderer2d/evaluated_composition/rendering/mask_renderer.cpp
+    renderer2d/evaluated_composition/rendering/pipeline/layer_to_draw_command.cpp
+    renderer2d/evaluated_composition/rendering/primitives/mask_renderer.cpp
     renderer2d/evaluated_composition/effects/effect_renderer.cpp
-    renderer2d/evaluated_composition/rendering/layer_renderer.cpp
+    renderer2d/evaluated_composition/rendering/pipeline/layer_renderer.cpp
     renderer2d/evaluated_composition/utilities/render_graph.cpp
     renderer2d/spec/project_card.cpp
     renderer2d/raster/path/path_flattener.cpp
     renderer2d/raster/path/fill_rasterizer.cpp
     renderer2d/raster/path/stroke_rasterizer.cpp
     renderer2d/raster/mask_rasterizer.cpp
+    renderer2d/raster/mesh_rasterizer.cpp
+    renderer2d/raster/mesh_deform_apply.cpp
     renderer2d/raster/path/path_trimmer.cpp
     renderer2d/raster/cpu_rasterizer.cpp
     renderer2d/raster/perspective_rasterizer.cpp
@@ -144,34 +168,54 @@ add_library(TachyonCore SHARED
     renderer2d/text/freetype/freetype_manager.cpp
     renderer2d/text/shaping/font_shaping.cpp
     renderer2d/text/shaping/shaping_cache.cpp
-    audio/audio_analyzer.cpp
-    audio/audio_decoder.cpp
-    audio/audio_mixer.cpp
-    audio/audio_graph.cpp
-    audio/audio_processor.cpp
-    audio/audio_encoder.cpp
-    audio/audio_export.cpp
-    audio/loudness_meter.cpp
-     tracker/optical_flow.cpp
-     tracker/optical_flow_translation.cpp
-    tracker/camera_solver.cpp
-    media/image_manager.cpp
-    media/asset_manager.cpp
-    media/asset_resolution.cpp
-    media/media_manager.cpp
-    media/video_decoder.cpp
-    media/media_prefetcher.cpp
+    audio/processing/audio_analyzer.cpp
+    audio/io/audio_decoder.cpp
+    audio/core/audio_mixer.cpp
+    audio/core/audio_graph.cpp
+    audio/processing/audio_processor.cpp
+    audio/io/audio_encoder.cpp
+    audio/io/audio_export.cpp
+    audio/processing/loudness_meter.cpp
+    audio/processing/waveform.cpp
+    tracker/algorithms/optical_flow.cpp
+    tracker/algorithms/optical_flow_math.cpp
+    tracker/algorithms/optical_flow_translation.cpp
+    tracker/algorithms/camera_solver.cpp
+    tracker/algorithms/camera_solver_keyframes.cpp
+    tracker/algorithms/camera_solver_math.cpp
+    tracker/algorithms/feature_tracker.cpp
+    tracker/algorithms/corner_detector.cpp
+    tracker/algorithms/image_pyramid.cpp
+    tracker/algorithms/lk_tracker.cpp
+    tracker/algorithms/motion_estimation.cpp
+    tracker/algorithms/track_utils.cpp
+    tracker/algorithms/planar_tracker.cpp
+    tracker/algorithms/point_tracker.cpp
+    tracker/algorithms/rolling_shutter.cpp
+    tracker/algorithms/stabilizer.cpp
+    tracker/core/track.cpp
+    tracker/core/track_binding.cpp
+    tracker/core/planar_track.cpp
+    tracker/core/planar_track_binding.cpp
+    media/management/image_manager.cpp
+    media/management/asset_manager.cpp
+    media/resolution/asset_resolution.cpp
+    media/management/media_manager.cpp
+    media/decoding/video_decoder.cpp
+    media/streaming/media_prefetcher.cpp
     media/management/proxy_manifest.cpp
     media/management/proxy_worker.cpp
-    media/mesh_loader.cpp
-    media/extruder.cpp
-    media/stb_image_impl.cpp
-    media/tinygltf_impl.cpp
+    media/loading/mesh_loader.cpp
+    media/processing/extruder.cpp
+    media/decoding/stb_image_impl.cpp
+     media/decoding/tinygltf_impl.cpp
+     media/decoding/svg_decoder_impl.cpp
     output/ffmpeg/ffmpeg_pipe_sink.cpp
     output/ffmpeg/ffmpeg_command_builder.cpp
     output/ffmpeg/ffmpeg_utils.cpp
     output/ffmpeg/ffmpeg_video_encoder.cpp
-    output/png_sequence_sink.cpp
+     output/png_sequence_sink.cpp
+     output/prores_sink.cpp
     timeline/frame_evaluator.cpp
     timeline/time.cpp
     timeline/time_resolver.cpp
@@ -184,15 +228,15 @@ add_library(TachyonCore SHARED
     text/core/animation/text_animator_context.cpp
     text/core/animation/text_animator_coverage.cpp
     text/core/animation/text_presets.cpp
-    text/core/fonts/font.cpp
-    text/core/fonts/font_registry.cpp
-    text/core/fonts/font_face.cpp
-    text/core/fonts/font_instance.cpp
-    text/core/fonts/glyph_atlas.cpp
-    text/core/fonts/font_manifest.cpp
-    text/core/fonts/font_resolver.cpp
-    text/core/fonts/font_preloader.cpp
-    text/core/fonts/font_coverage_reporter.cpp
+    text/core/fonts/core/font.cpp
+    text/core/fonts/core/font_registry.cpp
+    text/core/fonts/core/font_face.cpp
+    text/core/fonts/core/font_instance.cpp
+    text/core/fonts/utils/glyph_atlas.cpp
+    text/core/fonts/management/font_manifest.cpp
+    text/core/fonts/management/font_resolver.cpp
+    text/core/fonts/management/font_preloader.cpp
+    text/core/fonts/utils/font_coverage_reporter.cpp
      text/core/layout/layout.cpp
      text/core/layout/layout_engine.cpp
      text/core/layout/layout_engine_helpers.cpp
@@ -217,9 +261,6 @@ add_library(TachyonCore SHARED
     renderer3d/temporal/rolling_shutter.cpp
     text/core/rendering/text_raster_surface.cpp
     studio/studio_library.cpp
-    tracker/feature_tracker.cpp
-    tracker/track.cpp
-    tracker/track_binding.cpp
     renderer3d/core/ray_tracer.cpp
     renderer3d/core/ray_tracer_shading.cpp
     renderer3d/core/ray_tracer_scene.cpp
@@ -240,10 +281,19 @@ add_library(TachyonCore SHARED
     editor/autosave/autosave_manager.cpp
     debug/debug_export.cpp
     debug/crash_handler.cpp
+    ${_tachyon_core_spec_parsing_sources}
+    ${_tachyon_core_spec_compilation_sources}
+    ${_tachyon_runtime_serialization_sources}
+    ${_tachyon_runtime_hash_sources}
 )
 
 file(GLOB _tachyon_unity_excluded_sources
-    "${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/blur/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/color/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/distort/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/generators/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/utility/*.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/*.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/path/*.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/core/*.cpp"
@@ -316,6 +366,13 @@ target_link_libraries(TachyonCore
         harfbuzz
         OpenMP::OpenMP_CXX
         spdlog::spdlog
+        pugixml
+)
+
+target_sources(TachyonCore PRIVATE
+    ${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/src/clipper.engine.cpp
+    ${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/src/clipper.offset.cpp
+    ${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/src/clipper.rectclip.cpp
 )
 
 if(TACHYON_ENABLE_TRACY)

@@ -1,5 +1,5 @@
 #include "tachyon/renderer2d/raster/sdf_rasterizer.h"
-#include "tachyon/core/math/vector2.h"
+#include "tachyon/core/math/algebra/vector2.h"
 #include <cmath>
 #include <algorithm>
 
@@ -68,3 +68,4 @@ Framebuffer SDFShapeRasterizer::rasterize(const spec::ShapeSpec& shape_spec, int
 }
 
 } // namespace tachyon::renderer2d
+

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/core/math/vector3.h"
+#include "tachyon/core/math/algebra/vector3.h"
 #include "tachyon/core/animation/easing.h"
 #include "tachyon/core/types/colors.h"
 #include <string>
@@ -68,3 +68,4 @@ void to_json(nlohmann::json& j, const EffectSpec& e);
 void from_json(const nlohmann::json& j, EffectSpec& e);
 
 } // namespace tachyon
+
