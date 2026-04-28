@@ -152,6 +152,7 @@ add_library(TachyonCore SHARED
     renderer2d/raster/mask_rasterizer.cpp
     renderer2d/raster/mesh_rasterizer.cpp
     renderer2d/raster/mesh_deform_apply.cpp
+    renderer2d/deform/mesh_deform.cpp
     renderer2d/raster/path/path_trimmer.cpp
     renderer2d/raster/cpu_rasterizer.cpp
     renderer2d/raster/perspective_rasterizer.cpp
