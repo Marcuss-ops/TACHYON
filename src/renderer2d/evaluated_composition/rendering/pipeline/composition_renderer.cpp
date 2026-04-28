@@ -473,7 +473,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 *layer_surface = std::move(effect_surface);
             }
 
-            // Layer Transitions - Apply pixel-level transitions at layer boundaries
+            // Layer Transitions - Unified transition pipeline
             if (render_context.policy.effects_enabled) {
                 init_builtin_transitions();
                 const double layer_time = task.time_seconds;
@@ -493,7 +493,14 @@ RasterizedFrame2D render_evaluated_composition_2d(
                         transition_t = (relative_time - start_time) / transition_duration;
                         transition_t = std::clamp(transition_t, 0.0, 1.0);
                         transition_t = animation::apply_easing(transition_t, layer.transition_in.easing, {}, layer.transition_in.spring);
-                        transition_spec = layer.transition_in.transition_id.empty() ? nullptr : TransitionRegistry::instance().find(layer.transition_in.transition_id);
+
+                        // Unified lookup: transition_id first, then type as fallback
+                        if (!layer.transition_in.transition_id.empty()) {
+                            transition_spec = TransitionRegistry::instance().find(layer.transition_in.transition_id);
+                        } else if (layer.transition_in.type != "none") {
+                            // Look up type in registry (base transitions are now registered)
+                            transition_spec = TransitionRegistry::instance().find(layer.transition_in.type);
+                        }
                     }
                 }
 
@@ -507,7 +514,14 @@ RasterizedFrame2D render_evaluated_composition_2d(
                         transition_t = time_until_end / transition_duration;
                         transition_t = std::clamp(transition_t, 0.0, 1.0);
                         transition_t = animation::apply_easing(transition_t, layer.transition_out.easing, {}, layer.transition_out.spring);
-                        transition_spec = layer.transition_out.transition_id.empty() ? nullptr : TransitionRegistry::instance().find(layer.transition_out.transition_id);
+
+                        // Unified lookup: transition_id first, then type as fallback
+                        if (!layer.transition_out.transition_id.empty()) {
+                            transition_spec = TransitionRegistry::instance().find(layer.transition_out.transition_id);
+                        } else if (layer.transition_out.type != "none") {
+                            // Look up type in registry (base transitions are now registered)
+                            transition_spec = TransitionRegistry::instance().find(layer.transition_out.type);
+                        }
                     }
                 }
 
@@ -543,8 +557,8 @@ RasterizedFrame2D render_evaluated_composition_2d(
                         }
                         *layer_surface = std::move(transition_result);
                     }
-                    // Basic transitions (fade, slide, zoom) are handled in frame_evaluator_layer.cpp
-                    // by modifying layer state (opacity, position, scale)
+                    // Note: Basic transitions (fade, slide, zoom) are now handled via the registry
+                    // as pixel-level transitions, unifying the pipeline
                 }
             }
 

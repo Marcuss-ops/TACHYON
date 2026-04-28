@@ -78,6 +78,7 @@ void render_procedural_pattern(
     const float contrast = static_cast<float>(spec.contrast.value.value_or(1.0));
     const float gamma = static_cast<float>(spec.gamma.value.value_or(1.0));
     const float saturation = static_cast<float>(spec.saturation.value.value_or(1.0));
+    const float softness = static_cast<float>(spec.softness.value.value_or(0.0));
     const float inv_gamma = 1.0f / gamma;
     
     // Pattern type detection
@@ -118,6 +119,14 @@ void render_procedural_pattern(
                 float n2 = noise.noise3d(v * warp_freq + 0.5f, u * warp_freq + 0.5f, t * warp_speed) * warp * 0.1f;
                 u += n1;
                 v += n2;
+            }
+
+            // STAGE 1.5: SOFTNESS (coordinate jitter for soft/blurry effect)
+            if (softness > 0.0f) {
+                float jitter_u = (noise.noise2d(u * 10.0f, v * 10.0f) - 0.5f) * softness * 0.1f;
+                float jitter_v = (noise.noise2d(v * 10.0f + 0.5f, u * 10.0f + 0.5f) - 0.5f) * softness * 0.1f;
+                u += jitter_u;
+                v += jitter_v;
             }
             
             // STAGE 2: BASE PATTERN

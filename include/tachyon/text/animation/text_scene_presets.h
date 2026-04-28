@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/background_generator.h"
 #include "tachyon/core/spec/schema/objects/background_spec.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/text/animation/text_presets.h"
@@ -30,6 +31,11 @@ struct TextScenePresetOptions {
 
     std::optional<BackgroundSpec> clear_background{BackgroundSpec::from_string("#0d1117")};
     bool use_procedural_background{true};
+
+    // Procedural background kind: "aura" (default) or "grid" (ShapeGrid)
+    std::string procedural_kind{"aura"};
+
+    // Common procedural parameters
     ColorSpec procedural_color_a{14, 20, 32, 255};
     ColorSpec procedural_color_b{20, 33, 53, 255};
     ColorSpec procedural_color_c{8, 10, 18, 255};
@@ -38,6 +44,9 @@ struct TextScenePresetOptions {
     double procedural_amplitude{0.82};
     double procedural_scale{1.10};
     double procedural_grain{0.02};
+
+    // ShapeGrid-specific parameters (used when procedural_kind == "grid")
+    ShapeGridParams shape_grid_params{};
 
     std::vector<TextAnimatorSpec> text_animators;
 };

@@ -80,6 +80,44 @@ Color lerp_surface_color(const SurfaceRGBA& a, const SurfaceRGBA* b, float u, fl
 }
 
 // Transition function implementations
+
+// Base transitions (pixel-level versions)
+Color transition_fade(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    const Color a = sample_uv(input, u, v);
+    const Color b = sample_transition_source(input, to_surface, u, v);
+    return Color::lerp(a, b, t);
+}
+
+Color transition_slide(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    // Slide from input (right) to to_surface (left)
+    return sample_transition_source(input, to_surface, u - t, v);
+}
+
+Color transition_zoom(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    const float zoom = 1.0f + t;  // Zoom from 1.0 to 2.0
+    const float su = 0.5f + (u - 0.5f) / zoom;
+    const float sv = 0.5f + (v - 0.5f) / zoom;
+    return Color::lerp(sample_uv(input, u, v), sample_transition_source(input, to_surface, su, sv), t);
+}
+
+Color transition_flip(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    // Simple horizontal flip effect
+    const float fu = (u < 0.5f) ? u * 2.0f : (1.0f - u) * 2.0f;
+    return Color::lerp(sample_uv(input, fu, v), sample_transition_source(input, to_surface, u, v), t);
+}
+
+Color transition_blur(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    // Simple blur transition (box blur approximation)
+    const float radius = t * 0.1f;
+    Color acc = Color::transparent();
+    constexpr int samples = 5;
+    for (int i = 0; i < samples; ++i) {
+        const float offset = (static_cast<float>(i) / static_cast<float>(samples - 1) - 0.5f) * radius;
+        acc = Color::lerp(acc, sample_uv(input, u + offset, v), 1.0f / static_cast<float>(samples));
+    }
+    return Color::lerp(acc, sample_transition_source(input, to_surface, u, v), t);
+}
+
 Color transition_fade_to_black(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
     const Color black = Color::black();
     if (t < 0.5f) {
@@ -193,7 +231,15 @@ void init_builtin_transitions() {
     static std::once_flag flag;
     std::call_once(flag, []() {
         auto& reg = TransitionRegistry::instance();
-        
+
+        // Base transitions (pixel-level versions)
+        reg.register_transition({"fade", "Fade", "Simple crossfade transition", transition_fade});
+        reg.register_transition({"slide", "Slide", "Slide transition", transition_slide});
+        reg.register_transition({"zoom", "Zoom", "Zoom transition", transition_zoom});
+        reg.register_transition({"flip", "Flip", "Flip transition", transition_flip});
+        reg.register_transition({"blur", "Blur", "Blur transition", transition_blur});
+
+        // Advanced transitions
         reg.register_transition({"fade_to_black", "Fade to Black", "Crossfade through black", transition_fade_to_black});
         reg.register_transition({"wipe_linear", "Linear Wipe", "Simple left-to-right wipe", transition_wipe_linear});
         reg.register_transition({"wipe_angular", "Angular Wipe", "Angular wipe around center", transition_wipe_angular});

@@ -126,8 +126,8 @@ void evaluate_layer(
         : std::nullopt;
     state->in_time = layer.in_time;
     state->out_time = layer.out_time;
-    state->transition_in = layer.transition_in;
-    state->transition_out = layer.transition_out;
+    // Note: Transitions are now handled as pixel-level transitions in composition_renderer.cpp
+    // via the unified TransitionRegistry (LayerTransitionSpec::transition_id)
 
     if (layer.precomp_index.has_value() && *layer.precomp_index < scene.compositions.size()) {
         const auto& nested_comp = scene.compositions[*layer.precomp_index];
@@ -171,54 +171,9 @@ void evaluate_layer(
     state->local_transform.anchor_point.x = static_cast<float>(sample_property(7, 0.0));
     state->local_transform.anchor_point.y = static_cast<float>(sample_property(8, 0.0));
 
-    // --- Transition Logic ---
-    const double relative_time = frame_time_seconds - layer.in_time;
-    
-    // Inbound transition
-    if (layer.transition_in.type != "none" && relative_time < layer.transition_in.duration + layer.transition_in.delay) {
-        double t = (relative_time - layer.transition_in.delay) / layer.transition_in.duration;
-        t = std::clamp(t, 0.0, 1.0);
-        t = animation::apply_easing(t, layer.transition_in.easing, {}, layer.transition_in.spring);
-        
-        if (layer.transition_in.type == "fade") {
-            state->opacity *= static_cast<float>(t);
-        } else if (layer.transition_in.type == "slide") {
-            float offset_x = 0.0f, offset_y = 0.0f;
-            if (layer.transition_in.direction == "left") offset_x = static_cast<float>(scene.compositions[0].width) * (1.0f - static_cast<float>(t));
-            else if (layer.transition_in.direction == "right") offset_x = -static_cast<float>(scene.compositions[0].width) * (1.0f - static_cast<float>(t));
-            else if (layer.transition_in.direction == "up") offset_y = static_cast<float>(scene.compositions[0].height) * (1.0f - static_cast<float>(t));
-            else if (layer.transition_in.direction == "down") offset_y = -static_cast<float>(scene.compositions[0].height) * (1.0f - static_cast<float>(t));
-            state->local_transform.position.x += offset_x;
-            state->local_transform.position.y += offset_y;
-        } else if (layer.transition_in.type == "zoom") {
-            state->local_transform.scale.x *= static_cast<float>(t);
-            state->local_transform.scale.y *= static_cast<float>(t);
-        }
-    }
-    
-    // Outbound transition
-    const double time_until_end = layer.out_time - frame_time_seconds;
-    if (layer.transition_out.type != "none" && time_until_end < layer.transition_out.duration) {
-        double t = time_until_end / layer.transition_out.duration;
-        t = std::clamp(t, 0.0, 1.0);
-        t = animation::apply_easing(t, layer.transition_out.easing, {}, layer.transition_out.spring);
-        
-        if (layer.transition_out.type == "fade") {
-            state->opacity *= static_cast<float>(t);
-        } else if (layer.transition_out.type == "slide") {
-            float offset_x = 0.0f, offset_y = 0.0f;
-            float inv_t = (1.0f - static_cast<float>(t));
-            if (layer.transition_out.direction == "left") offset_x = -static_cast<float>(scene.compositions[0].width) * inv_t;
-            else if (layer.transition_out.direction == "right") offset_x = static_cast<float>(scene.compositions[0].width) * inv_t;
-            else if (layer.transition_out.direction == "up") offset_y = -static_cast<float>(scene.compositions[0].height) * inv_t;
-            else if (layer.transition_out.direction == "down") offset_y = static_cast<float>(scene.compositions[0].height) * inv_t;
-            state->local_transform.position.x += offset_x;
-            state->local_transform.position.y += offset_y;
-        } else if (layer.transition_out.type == "zoom") {
-            state->local_transform.scale.x *= static_cast<float>(t);
-            state->local_transform.scale.y *= static_cast<float>(t);
-        }
-    }
+    // Note: Transitions are now handled as pixel-level transitions in composition_renderer.cpp
+    // via the unified TransitionRegistry. LayerTransitionSpec::transition_id is used
+    // to look up transitions (including base ones like "fade", "slide", "zoom").
 
     state->active = state->enabled && state->visible && state->opacity > 0.0
                    && frame_time_seconds >= layer.in_time && frame_time_seconds < layer.out_time;
