@@ -54,10 +54,9 @@ RayTracer::~RayTracer() {
 void RayTracer::render(
     const EvaluatedScene3D& scene,
     AOVBuffer& out_buffer,
-    const MotionBlurRenderer* /*motion_blur*/,
+    const MotionBlurRenderer* motion_blur,
     double frame_time_seconds,
     double frame_duration_seconds) {
-    (void)frame_duration_seconds;
 
     const int width = static_cast<int>(out_buffer.width);
     const int height = static_cast<int>(out_buffer.height);
@@ -73,11 +72,26 @@ void RayTracer::render(
     }
 
     const auto& cam = scene.camera;
+    const bool use_motion_blur = motion_blur != nullptr && motion_blur->is_enabled() && frame_duration_seconds > 0.0;
+
+    std::vector<double> temporal_sample_times;
+    double shutter_start_time = frame_time_seconds;
+    double shutter_duration = frame_duration_seconds;
+    if (use_motion_blur) {
+        temporal_sample_times = motion_blur->compute_subframe_times(frame_time_seconds, frame_duration_seconds);
+        const auto& cfg = motion_blur->get_config();
+        shutter_duration = (cfg.shutter_angle / 360.0) * frame_duration_seconds;
+        const double shutter_offset = (cfg.shutter_phase / 360.0) * frame_duration_seconds;
+        shutter_start_time = frame_time_seconds - shutter_duration * 0.5 + shutter_offset;
+        if (temporal_sample_times.empty()) {
+            temporal_sample_times.push_back(frame_time_seconds);
+        }
+    } else {
+        temporal_sample_times.push_back(frame_time_seconds);
+    }
 
     std::random_device rd;
     std::mt19937 rng(rd());
-
-    const float time = static_cast<float>(frame_time_seconds);
 
     // Compute camera vectors
     math::Vector3 cam_forward = (cam.target - cam.position).normalized();
@@ -98,45 +112,62 @@ void RayTracer::render(
             std::uint32_t pixel_obj_id = 0;
             std::uint32_t pixel_mat_id = 0;
 
-            for (int s = 0; s < samples_per_pixel_; ++s) {
-                // Generate camera ray with jitter for anti-aliasing
-                float jitter_x = (samples_per_pixel_ > 1) ? (static_cast<float>(rng() & 0xFFFF) / 65535.0f - 0.5f) : 0.0f;
-                float jitter_y = (samples_per_pixel_ > 1) ? (static_cast<float>(rng() & 0xFFFF) / 65535.0f - 0.5f) : 0.0f;
+            const int spp = std::max(1, samples_per_pixel_);
+            const float inv_ray_sample_count = 1.0f / static_cast<float>(spp * static_cast<int>(temporal_sample_times.size()));
+            float accumulated_weight = 0.0f;
 
-                float px = (static_cast<float>(x) + 0.5f + jitter_x) / static_cast<float>(width);
-                float py = (static_cast<float>(y) + 0.5f + jitter_y) / static_cast<float>(height);
-
-                // Generate camera ray
-                float u = (2.0f * px - 1.0f) * aspect * half_height;
-                float v = (1.0f - 2.0f * py) * half_height;
-                math::Vector3 direction = (cam_forward + cam_right * u + cam_up * v).normalized();
-                math::Vector3 origin = cam.position;
-
-                if (cam.aperture > 0.0f && cam.focal_distance > 0.0f) {
-                    const float lens_radius = std::max(0.0f, cam.focal_length_mm / std::max(cam.aperture, 1.0f)) * 0.001f;
-                    const math::Vector2 lens = sample_concentric_disk(
-                        static_cast<float>(rng()) / static_cast<float>(rng.max()),
-                        static_cast<float>(rng()) / static_cast<float>(rng.max()));
-                    const math::Vector3 lens_offset = cam_right * (lens.x * lens_radius) + cam_up * (lens.y * lens_radius);
-                    const math::Vector3 focus_point = cam.position + direction * cam.focal_distance;
-                    origin = origin + lens_offset;
-                    direction = (focus_point - origin).normalized();
+            for (std::size_t temporal_index = 0; temporal_index < temporal_sample_times.size(); ++temporal_index) {
+                const double temporal_time = temporal_sample_times[temporal_index];
+                float temporal_weight = 1.0f;
+                float ray_time = 1.0f;
+                if (use_motion_blur) {
+                    temporal_weight = motion_blur->evaluate_weight(static_cast<int>(temporal_index), static_cast<int>(temporal_sample_times.size()));
+                    if (shutter_duration > 0.0) {
+                        ray_time = static_cast<float>(std::clamp((temporal_time - shutter_start_time) / shutter_duration, 0.0, 1.0));
+                    }
                 }
 
-                ShadingResult sample = trace_ray(origin, direction, scene, rng, 0, time);
-                pixel_color = pixel_color + sample.color;
-                pixel_alpha = std::max(pixel_alpha, sample.alpha);
-                pixel_depth = std::min(pixel_depth, sample.depth);
-                pixel_normal = pixel_normal + sample.normal;
-                pixel_albedo = pixel_albedo + sample.albedo;
-                pixel_motion = pixel_motion + sample.motion_vector;
-                pixel_obj_id = sample.object_id;
-                pixel_mat_id = sample.material_id;
+                for (int s = 0; s < spp; ++s) {
+                    // Generate camera ray with jitter for anti-aliasing
+                    float jitter_x = (spp > 1) ? (static_cast<float>(rng() & 0xFFFF) / 65535.0f - 0.5f) : 0.0f;
+                    float jitter_y = (spp > 1) ? (static_cast<float>(rng() & 0xFFFF) / 65535.0f - 0.5f) : 0.0f;
+
+                    float px = (static_cast<float>(x) + 0.5f + jitter_x) / static_cast<float>(width);
+                    float py = (static_cast<float>(y) + 0.5f + jitter_y) / static_cast<float>(height);
+
+                    // Generate camera ray
+                    float u = (2.0f * px - 1.0f) * aspect * half_height;
+                    float v = (1.0f - 2.0f * py) * half_height;
+                    math::Vector3 direction = (cam_forward + cam_right * u + cam_up * v).normalized();
+                    math::Vector3 origin = cam.position;
+
+                    if (cam.aperture > 0.0f && cam.focal_distance > 0.0f) {
+                        const float lens_radius = std::max(0.0f, cam.focal_length_mm / std::max(cam.aperture, 1.0f)) * 0.001f;
+                        const math::Vector2 lens = sample_concentric_disk(
+                            static_cast<float>(rng()) / static_cast<float>(rng.max()),
+                            static_cast<float>(rng()) / static_cast<float>(rng.max()));
+                        const math::Vector3 lens_offset = cam_right * (lens.x * lens_radius) + cam_up * (lens.y * lens_radius);
+                        const math::Vector3 focus_point = cam.position + direction * cam.focal_distance;
+                        origin = origin + lens_offset;
+                        direction = (focus_point - origin).normalized();
+                    }
+
+                    ShadingResult sample = trace_ray(origin, direction, scene, rng, 0, ray_time);
+                    pixel_color = pixel_color + sample.color * temporal_weight;
+                    pixel_alpha = std::max(pixel_alpha, sample.alpha);
+                    pixel_depth = std::min(pixel_depth, sample.depth);
+                    pixel_normal = pixel_normal + sample.normal * temporal_weight;
+                    pixel_albedo = pixel_albedo + sample.albedo * temporal_weight;
+                    pixel_motion = pixel_motion + sample.motion_vector * temporal_weight;
+                    pixel_obj_id = sample.object_id;
+                    pixel_mat_id = sample.material_id;
+                    accumulated_weight += temporal_weight;
+                }
             }
 
-            float inv_samples = 1.0f / static_cast<float>(samples_per_pixel_);
+            const float inv_samples = accumulated_weight > 0.0f ? 1.0f / accumulated_weight : inv_ray_sample_count;
             pixel_color = pixel_color * inv_samples;
-            pixel_normal = (samples_per_pixel_ > 1) ? (pixel_normal * inv_samples).normalized() : pixel_normal;
+            pixel_normal = (accumulated_weight > 0.0f) ? (pixel_normal * inv_samples).normalized() : pixel_normal;
             pixel_albedo = pixel_albedo * inv_samples;
             pixel_motion = pixel_motion * inv_samples;
 

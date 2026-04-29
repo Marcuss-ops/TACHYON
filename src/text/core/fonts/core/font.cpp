@@ -11,6 +11,7 @@
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include FT_MULTIPLE_MASTERS_H
 #include <atomic>
 
 namespace tachyon::text {
@@ -228,6 +229,60 @@ bool Font::load_ttf(const std::filesystem::path& path, std::uint32_t pixel_size)
     
     m_ft_glyph_cache.clear();
     m_ft_index_cache.clear();
+    m_loaded = true;
+    return true;
+}
+
+bool Font::load_ttf_from_memory(const std::uint8_t* data, std::size_t size, std::uint32_t pixel_size) {
+    if (m_ft_face) {
+        FT_Done_Face(static_cast<FT_Face>(m_ft_face));
+        m_ft_face = nullptr;
+    }
+
+    m_loaded = false;
+    m_is_freetype = false;
+    m_ascent = 0;
+    m_descent = 0;
+    m_line_height = 0;
+    m_default_advance = 0;
+    m_glyphs.clear();
+    m_kerning_table.clear();
+    m_scaled_glyph_cache.clear();
+    m_ft_glyph_cache.clear();
+    m_ft_index_cache.clear();
+    m_ft_sdf_cache.clear();
+    m_ft_sdf_index_cache.clear();
+    m_font_data.clear();
+
+    if (data == nullptr || size == 0) {
+        return false;
+    }
+
+    m_font_data.assign(data, data + size);
+
+    FT_Face face;
+    if (FT_New_Memory_Face(get_ft_library(),
+                           m_font_data.data(),
+                           static_cast<FT_Long>(m_font_data.size()),
+                           0,
+                           &face)) {
+        m_font_data.clear();
+        return false;
+    }
+
+    FT_Set_Pixel_Sizes(face, 0, pixel_size);
+
+    m_is_freetype = true;
+    m_ft_face = face;
+    m_ascent = static_cast<std::int32_t>(face->size->metrics.ascender >> 6);
+    m_descent = static_cast<std::int32_t>(face->size->metrics.descender >> 6);
+    m_line_height = static_cast<std::int32_t>(face->size->metrics.height >> 6);
+    m_default_advance = static_cast<std::int32_t>(face->max_advance_width >> 6);
+
+    m_ft_glyph_cache.clear();
+    m_ft_index_cache.clear();
+    m_ft_sdf_cache.clear();
+    m_ft_sdf_index_cache.clear();
     m_loaded = true;
     return true;
 }
@@ -453,6 +508,34 @@ const GlyphBitmap* Font::fallback_glyph() const {
     }
 
     return nullptr;
+}
+
+bool Font::set_var_axes(const std::map<std::string, float>& axes) {
+    if (!m_is_freetype || m_ft_face == nullptr || axes.empty()) return false;
+
+    FT_Face face = static_cast<FT_Face>(m_ft_face);
+    FT_MM_Var* mm_var = nullptr;
+    if (FT_Get_MM_Var(face, &mm_var) != 0 || mm_var == nullptr) return false;
+
+    std::vector<FT_Fixed> coords(mm_var->num_axis, 0);
+    // Read current coordinates as baseline
+    FT_Get_Var_Design_Coordinates(face, static_cast<FT_UInt>(coords.size()), coords.data());
+
+    for (FT_UInt i = 0; i < mm_var->num_axis; ++i) {
+        char tag_str[5] = {};
+        FT_UInt32 tag = mm_var->axis[i].tag;
+        tag_str[0] = static_cast<char>((tag >> 24) & 0xFF);
+        tag_str[1] = static_cast<char>((tag >> 16) & 0xFF);
+        tag_str[2] = static_cast<char>((tag >>  8) & 0xFF);
+        tag_str[3] = static_cast<char>((tag      ) & 0xFF);
+        auto it = axes.find(std::string(tag_str));
+        if (it != axes.end()) {
+            coords[i] = static_cast<FT_Fixed>(it->second * 65536.0f); // 16.16 fixed point
+        }
+    }
+
+    FT_Done_MM_Var(face->glyph ? face->glyph->library : nullptr, mm_var);
+    return FT_Set_Var_Design_Coordinates(face, static_cast<FT_UInt>(coords.size()), coords.data()) == 0;
 }
 
 } // namespace tachyon::text
