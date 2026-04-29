@@ -53,14 +53,15 @@ add_library(TachyonCore SHARED
     runtime/cache/disk_cache.cpp
     core/cli.cpp
     core/cli/cli_utils.cpp
-    core/cli/cli_validate.cpp
-    core/cli/cli_inspect.cpp
-    core/cli/cli_render.cpp
-    core/cli/cli_demo.cpp
-    core/cli/cli_preview_frame.cpp
-    core/cli/cli_transition.cpp
-    core/cli/cli_watch.cpp
-    core/options.cpp
+     core/cli/cli_validate.cpp
+     core/cli/cli_inspect.cpp
+     core/cli/cli_render.cpp
+     core/cli/cli_demo.cpp
+     core/cli/cli_preview_frame.cpp
+     core/cli/cli_transition.cpp
+     core/cli/cli_watch.cpp
+     core/cli/cli_fetch_fonts.cpp
+     core/options.cpp
     core/report.cpp
     core/camera/camera_state.cpp
     core/camera/camera_shake.cpp
@@ -235,10 +236,12 @@ add_library(TachyonCore SHARED
     text/core/fonts/core/font_registry.cpp
     text/core/fonts/core/font_face.cpp
     text/core/fonts/core/font_instance.cpp
+    text/core/fonts/core/embedded_fallback_font.cpp
     text/core/fonts/utils/glyph_atlas.cpp
     text/core/fonts/management/font_manifest.cpp
     text/core/fonts/management/font_resolver.cpp
     text/core/fonts/management/font_preloader.cpp
+    text/core/fonts/management/font_downloader.cpp
     text/core/fonts/utils/font_coverage_reporter.cpp
      text/core/layout/layout.cpp
      text/core/layout/layout_engine.cpp

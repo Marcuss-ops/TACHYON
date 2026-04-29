@@ -214,3 +214,65 @@ TEST(TemplateFormatter, LocaleAwareFormatting) {
     result = tachyon::scene::format_number(42.0, "000", "it-IT");
     EXPECT_EQ(result, "042");
 }
+
+TEST(SceneEvaluator, CameraFocusTargetAndGridSnap) {
+    tachyon::CompositionSpec comp;
+    comp.id = "cam";
+    comp.width = 1920;
+    comp.height = 1080;
+    comp.frame_rate = {30, 1};
+
+    tachyon::LayerSpec camera;
+    camera.id = "cam_layer";
+    camera.type = "camera";
+    camera.camera_type = "one_node";
+    camera.transform3d.position_property.value = tachyon::math::Vector3{12.3f, 19.8f, 4.6f};
+    camera.camera_focus_target_id = std::string("subject");
+    camera.camera_snap_to_grid = true;
+    camera.camera_grid_size.value = 10.0;
+    comp.layers.push_back(camera);
+
+    tachyon::LayerSpec subject;
+    subject.id = "subject";
+    subject.type = "solid";
+    subject.transform.position_property.value = tachyon::math::Vector2{103.0f, 54.0f};
+    subject.width = 100;
+    subject.height = 100;
+    comp.layers.push_back(subject);
+
+    const auto evaluated = tachyon::scene::evaluate_composition_state(comp, 0.0);
+    ASSERT_TRUE(evaluated.camera.available);
+    EXPECT_NEAR(evaluated.camera.position.x, 10.0f, 1e-4f);
+    EXPECT_NEAR(evaluated.camera.position.y, 20.0f, 1e-4f);
+    EXPECT_NEAR(evaluated.camera.position.z, 0.0f, 1e-4f);
+    EXPECT_NEAR(evaluated.camera.focus_distance, std::sqrt(93.0f * 93.0f + 34.0f * 34.0f), 1e-3f);
+    EXPECT_NEAR(evaluated.camera.point_of_interest.x, 103.0f, 1e-4f);
+    EXPECT_NEAR(evaluated.camera.point_of_interest.y, 54.0f, 1e-4f);
+}
+
+TEST(SceneEvaluator, ThreeDAnchorAffectsWorldPosition) {
+    tachyon::CompositionSpec comp;
+    comp.id = "3d_anchor";
+    comp.width = 1920;
+    comp.height = 1080;
+    comp.frame_rate = {30, 1};
+
+    tachyon::LayerSpec layer;
+    layer.id = "cube";
+    layer.type = "solid";
+    layer.is_3d = true;
+    layer.transform3d.position_property.value = tachyon::math::Vector3{10.0f, 0.0f, 0.0f};
+    layer.transform3d.orientation_property.value = tachyon::math::Vector3{0.0f, 0.0f, 0.0f};
+    layer.transform3d.rotation_property.value = tachyon::math::Vector3{0.0f, 0.0f, 0.0f};
+    layer.transform3d.scale_property.value = tachyon::math::Vector3{1.0f, 1.0f, 1.0f};
+    layer.transform3d.anchor_point_property.value = tachyon::math::Vector3{2.0f, 0.0f, 0.0f};
+    comp.layers.push_back(layer);
+
+    const auto evaluated = tachyon::scene::evaluate_composition_state(comp, 0.0);
+    ASSERT_EQ(evaluated.layers.size(), 1U);
+
+    const auto& el = evaluated.layers.front();
+    EXPECT_NEAR(el.world_position3.x, 8.0f, 1e-4f);
+    EXPECT_NEAR(el.world_position3.y, 0.0f, 1e-4f);
+    EXPECT_NEAR(el.world_position3.z, 0.0f, 1e-4f);
+}
