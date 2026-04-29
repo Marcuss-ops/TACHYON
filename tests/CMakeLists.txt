@@ -1,6 +1,8 @@
 add_executable(TachyonTests
     unit/core/logging_tests.cpp
+    unit/test_main.cpp
     unit/core/math_tests.cpp
+    unit/core/animation/extrapolation_tests.cpp
     unit/core/property_tests.cpp
     unit/core/expression_tests.cpp
     unit/core/background_generator_tests.cpp
@@ -33,6 +35,8 @@ add_executable(TachyonTests
     unit/runtime/visual/visual_golden_verifier.cpp
     unit/runtime/visual/golden_fixtures.cpp
     unit/core/scene/evaluator_tests.cpp
+    unit/renderer2d/pipeline/scene3d_bridge_tests.cpp
+    unit/core/scene/scene_builder_tests.cpp
     unit/core/scene/precomp_mask_tests.cpp
      unit/timeline/time_tests.cpp
      unit/timeline/time_remap_tests.cpp
@@ -58,8 +62,10 @@ add_executable(TachyonTests
     unit/core/spec/cli_tests.cpp
     unit/core/spec/scene_contract_tests.cpp
     unit/core/spec/render_job_tests.cpp
-    unit/text/glyph_cache_tests.cpp
-    # unit/text/text_tests.cpp  # Disabled - pre-existing build errors
+     unit/text/glyph_cache_tests.cpp
+     unit/text/text_animator_pipeline_tests.cpp
+     unit/text/font_resolver_tests.cpp
+     # unit/text/text_tests.cpp  # Disabled - pre-existing build errors
     unit/text/editor_tests.cpp
     # unit/audio/test_audio_pitch_correct.cpp  # Disabled - pre-existing build errors
     unit/runtime/core/render_contract_tests.cpp
@@ -90,7 +96,6 @@ target_link_libraries(TachyonTests
     PRIVATE
         TachyonCore
         gtest
-        gtest_main
 )
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
@@ -125,11 +130,14 @@ target_link_libraries(HeaderSmokeSceneSpec PRIVATE TachyonCore)
 add_executable(HeaderSmokeLayerSpec compile/header_smoke_layer_spec.cpp)
 target_link_libraries(HeaderSmokeLayerSpec PRIVATE TachyonCore)
 
+add_executable(HeaderSmokeSceneBuilder compile/header_smoke_scene_builder.cpp)
+target_link_libraries(HeaderSmokeSceneBuilder PRIVATE TachyonCore)
+
 add_executable(HeaderSmokeRenderJobSpec compile/header_smoke_render_job_spec.cpp)
 target_link_libraries(HeaderSmokeRenderJobSpec PRIVATE TachyonCore)
 
 add_custom_target(HeaderSmokeTests
-    DEPENDS HeaderSmokeCompositionSpec HeaderSmokeSceneSpec HeaderSmokeLayerSpec HeaderSmokeRenderJobSpec
+    DEPENDS HeaderSmokeCompositionSpec HeaderSmokeSceneSpec HeaderSmokeLayerSpec HeaderSmokeSceneBuilder HeaderSmokeRenderJobSpec
     COMMENT "Running header smoke tests to catch compilation errors early"
 )
 
