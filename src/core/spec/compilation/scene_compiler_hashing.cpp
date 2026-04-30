@@ -18,8 +18,7 @@ void add_json(CacheKeyBuilder& builder, const T& value) {
 
 std::uint64_t hash_scene_spec(const SceneSpec& scene, const DeterminismContract& contract) {
     CacheKeyBuilder builder;
-    builder.add_string(scene.version);
-    builder.add_string(scene.spec_version);
+    builder.add_string(scene.schema_version.to_string());
     add_string(builder, scene.project.id);
     add_string(builder, scene.project.name);
     add_string(builder, scene.project.authoring_tool);

@@ -15,6 +15,9 @@ void AudioProcessor::add_track(std::shared_ptr<AudioDecoder> decoder, const spec
         track.spec = spec;
         track.bus_id = bus_id;
         m_tracks.push_back(std::move(track));
+        
+        // Setup effect nodes for the newly added track
+        setup_track_effects(m_tracks.back());
     }
 }
 
@@ -317,6 +320,52 @@ void AudioProcessor::mix_track(const TrackInstance& track, double startTimeSecon
         processed.size() / 2);
     if (track_samples > 0) {
         m_graph.process_track(track.bus_id, mix_buffer.data() + out_offset_samples * 2, static_cast<int>(track_samples));
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Setup DSP nodes from AudioEffectSpec
+// ---------------------------------------------------------------------------
+void AudioProcessor::setup_track_effects(const TrackInstance& track) {
+    if (track.spec.effects.empty()) return;
+    
+    AudioBus& bus = m_graph.get_or_create_bus(track.bus_id);
+    const float sample_rate = static_cast<float>(kInternalSampleRate);
+    
+    for (const auto& effect : track.spec.effects) {
+        if (effect.type == "fade_in") {
+            auto node = std::make_shared<tachyon::audio::FadeNode>();
+            double duration = effect.duration.value_or(1.0);
+            float duration_samples = static_cast<float>(duration * sample_rate);
+            node->set_fade_in(duration_samples, tachyon::audio::FadeNode::FadeType::Linear);
+            if (effect.start_time.has_value()) {
+                float start_samples = static_cast<float>(effect.start_time.value() * sample_rate);
+                node->set_trim(start_samples, start_samples + duration_samples);
+            }
+            bus.add_node(node);
+        } else if (effect.type == "fade_out") {
+            auto node = std::make_shared<tachyon::audio::FadeNode>();
+            double duration = effect.duration.value_or(1.0);
+            float duration_samples = static_cast<float>(duration * sample_rate);
+            node->set_fade_out(duration_samples, tachyon::audio::FadeNode::FadeType::Linear);
+            if (effect.start_time.has_value()) {
+                float start_samples = static_cast<float>(effect.start_time.value() * sample_rate);
+                node->set_trim(start_samples, start_samples + duration_samples);
+            }
+            bus.add_node(node);
+        } else if (effect.type == "gain") {
+            float gain_db = effect.gain_db.value_or(0.0f);
+            float gain_linear = std::pow(10.0f, gain_db / 20.0f);
+            bus.add_node(std::make_shared<tachyon::audio::GainNode>(gain_linear));
+        } else if (effect.type == "low_pass") {
+            float cutoff = effect.cutoff_freq_hz.value_or(1000.0f);
+            bus.add_node(std::make_shared<tachyon::audio::LowPassNode>(cutoff, sample_rate));
+        } else if (effect.type == "high_pass") {
+            float cutoff = effect.cutoff_freq_hz.value_or(1000.0f);
+            bus.add_node(std::make_shared<tachyon::audio::HighPassNode>(cutoff, sample_rate));
+        } else if (effect.type == "normalize") {
+            // Normalize requires analyzing the entire track - handled separately in export path
+        }
     }
 }
 

@@ -84,7 +84,10 @@ void render_procedural_pattern(
     // Pattern type detection
     const bool is_aura = (spec.kind == "aura" || spec.kind == "nebula");
     const bool is_grid = (spec.kind == "grid");
+    const bool is_grid_lines = (spec.kind == "grid_lines");
     const bool is_stars = (spec.kind == "stars");
+    const bool is_stripes = (spec.kind == "stripes");
+    const bool is_waves = (spec.kind == "waves");
     const bool do_warp = (warp > 0.0f);
     
     const uint32_t width = fb.width();
@@ -140,12 +143,30 @@ void render_procedural_pattern(
                 float grid_u = u + t * std::cos(rad) * 0.5f;
                 float grid_v = v + t * std::sin(rad) * 0.5f;
                 value = generate_shape(grid_u, grid_v, shape, spacing, border);
+            } else if (is_grid_lines) {
+                float gu = std::fmod(u * 1920.0f / spacing, 1.0f);
+                if (gu < 0) gu += 1.0f;
+                float gv = std::fmod(v * 1080.0f / spacing, 1.0f);
+                if (gv < 0) gv += 1.0f;
+                float d_u = std::min(gu, 1.0f - gu) * spacing;
+                float d_v = std::min(gv, 1.0f - gv) * spacing;
+                value = (d_u < border || d_v < border) ? 1.0f : 0.0f;
+                value *= amp;
             } else if (is_stars) {
                 float n = noise.noise3d(u * freq * 100.0f, v * freq * 100.0f, 0.0f);
                 if (n > 0.8f) {
                     float twinkle = std::sin(t * 3.0f + n * 10.0f) * 0.5f + 0.5f;
                     value = ((n - 0.8f) / 0.2f) * twinkle * amp;
                 }
+            } else if (is_stripes) {
+                float rad = static_cast<float>(spec.angle.value.value_or(0.0) * 3.14159265358979323846 / 180.0);
+                float su = u * std::cos(rad) - v * std::sin(rad);
+                value = std::sin(su * freq * 10.0f + t) * 0.5f + 0.5f;
+                value = std::pow(value, 10.0f) * amp; // Sharper stripes
+            } else if (is_waves) {
+                float w1 = std::sin(u * freq * 10.0f + t) * 0.5f + 0.5f;
+                float w2 = std::sin(v * freq * 8.0f - t * 1.5f) * 0.5f + 0.5f;
+                value = (w1 * w2) * amp;
             } else {
                 value = (noise.noise3d(u * freq * scale, v * freq * scale, t) + 1.0f) * 0.5f * amp;
             }

@@ -94,6 +94,7 @@ void parse_procedural_spec(const json& object, LayerSpec& layer, const std::stri
     parse_optional_scalar_property(p, "contrast", spec.contrast, p_path, diagnostics);
     parse_optional_scalar_property(p, "gamma", spec.gamma, p_path, diagnostics);
     parse_optional_scalar_property(p, "saturation", spec.saturation, p_path, diagnostics);
+    parse_optional_scalar_property(p, "softness", spec.softness, p_path, diagnostics);
 
     // Advanced
     parse_optional_scalar_property(p, "octave_decay", spec.octave_decay, p_path, diagnostics);

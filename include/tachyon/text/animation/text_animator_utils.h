@@ -15,7 +15,10 @@ struct TextAnimatorContext {
     std::size_t line_index{0};
     float total_glyphs{0.0f};
     float total_clusters{0.0f};
+    float total_words{0.0f};
     float total_lines{0.0f};
+    float total_non_space_glyphs{0.0f};
+    float non_space_glyph_index{0.0f};
     float time{0.0f};
     
     // Cluster-aware fields for shape-preserving animation
@@ -55,6 +58,7 @@ struct ResolvedGlyphPaint {
     std::uint32_t target_width{0};
     std::uint32_t target_height{0};
     float opacity{1.0f};
+    math::Vector2 motion_blur_vector{0.0f, 0.0f};
     
     // New animatable fields
     ::tachyon::ColorSpec fill_color{255, 255, 255, 255};
@@ -64,6 +68,10 @@ struct ResolvedGlyphPaint {
     
     std::size_t glyph_index{0};
 };
+
+void apply_text_animators(
+    TextLayoutResult& layout,
+    const TextAnimationOptions& animation);
 
 std::vector<ResolvedGlyphPaint> resolve_glyph_paints(
     const BitmapFont& font,

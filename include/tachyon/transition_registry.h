@@ -58,8 +58,9 @@ public:
 
 private:
     TransitionRegistry();
+    ~TransitionRegistry();
     struct Impl;
-    Impl* m_impl{nullptr};
+    std::unique_ptr<Impl> m_impl;
 };
 
 } // namespace tachyon

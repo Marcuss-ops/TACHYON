@@ -3,7 +3,11 @@
 #include "tachyon/renderer2d/color/color_transfer.h"
 #include "tachyon/text/content/word_timestamps.h"
 #include "tachyon/runtime/core/data/compiled_scene.h"
+#include "tachyon/core/math/matrix4x4.h"
+#include "tachyon/core/math/quaternion.h"
+#include "tachyon/core/scene/evaluator/layer_utils.h"
 #include <filesystem>
+#include <cmath>
 
 namespace tachyon {
 
@@ -145,13 +149,86 @@ void evaluate_layer(
         return fallback;
     };
 
-    state->opacity = static_cast<float>(sample_property(0, 1.0));
-    state->local_transform.position.x = static_cast<float>(sample_property(1, 0.0));
-    state->local_transform.position.y = static_cast<float>(sample_property(2, 0.0));
-    state->local_transform.scale.x = static_cast<float>(sample_property(3, 1.0));
-    state->local_transform.scale.y = static_cast<float>(sample_property(4, 1.0));
-    state->local_transform.rotation_rad = static_cast<float>(sample_property(5, 0.0) * (kPi / 180.0f));
-    state->mask_feather = static_cast<float>(sample_property(6, 0.0));
+    state->opacity = static_cast<float>(sample_property(CompiledLayer::Opacity, 1.0));
+    state->local_transform.position.x = static_cast<float>(sample_property(CompiledLayer::PosX, 0.0));
+    state->local_transform.position.y = static_cast<float>(sample_property(CompiledLayer::PosY, 0.0));
+    state->local_transform.scale.x = static_cast<float>(sample_property(CompiledLayer::ScaleX, 1.0));
+    state->local_transform.scale.y = static_cast<float>(sample_property(CompiledLayer::ScaleY, 1.0));
+    state->local_transform.rotation_rad = static_cast<float>(sample_property(CompiledLayer::Rotation, 0.0) * (kPi / 180.0f));
+    state->mask_feather = static_cast<float>(sample_property(CompiledLayer::MaskFeather, 0.0));
+
+    if (state->is_3d) {
+        const math::Vector3 pos3{
+            static_cast<float>(sample_property(CompiledLayer::PosX, 0.0)),
+            static_cast<float>(sample_property(CompiledLayer::PosY, 0.0)),
+            static_cast<float>(sample_property(CompiledLayer::PosZ, 0.0))
+        };
+        const math::Vector3 rot3{
+            static_cast<float>(sample_property(CompiledLayer::RotationX, 0.0)),
+            static_cast<float>(sample_property(CompiledLayer::RotationY, 0.0)),
+            static_cast<float>(sample_property(CompiledLayer::RotationZ, 0.0))
+        };
+        const math::Vector3 scale3{
+            static_cast<float>(sample_property(CompiledLayer::ScaleX, 1.0)),
+            static_cast<float>(sample_property(CompiledLayer::ScaleY, 1.0)),
+            static_cast<float>(sample_property(CompiledLayer::ScaleZ, 1.0))
+        };
+        const math::Vector3 anchor3{
+            static_cast<float>(sample_property(CompiledLayer::AnchorX, static_cast<double>(state->width) * 0.5)),
+            static_cast<float>(sample_property(CompiledLayer::AnchorY, static_cast<double>(state->height) * 0.5)),
+            static_cast<float>(sample_property(CompiledLayer::AnchorZ, 0.0))
+        };
+
+        state->world_position3 = pos3;
+        state->scale_3d = scale3;
+        state->world_matrix = math::compose_trs(pos3, math::Quaternion::from_euler(rot3), scale3);
+
+        // Previous state
+        const double frame_duration = 1.0 / (scene.compositions.empty() ? 60.0 : scene.compositions[0].fps);
+        const double prev_t = frame_time_seconds - frame_duration;
+        auto sample_prev = [&](std::size_t index, double fallback) -> double {
+            if (index >= layer.property_indices.size()) return fallback;
+            return sample_keyframed_value(scene.property_tracks[layer.property_indices[index]], fallback, prev_t);
+        };
+
+        const math::Vector3 prev_pos3{
+            static_cast<float>(sample_prev(CompiledLayer::PosX, 0.0)),
+            static_cast<float>(sample_prev(CompiledLayer::PosY, 0.0)),
+            static_cast<float>(sample_prev(CompiledLayer::PosZ, 0.0))
+        };
+        const math::Vector3 prev_rot3{
+            static_cast<float>(sample_prev(CompiledLayer::RotationX, 0.0)),
+            static_cast<float>(sample_prev(CompiledLayer::RotationY, 0.0)),
+            static_cast<float>(sample_prev(CompiledLayer::RotationZ, 0.0))
+        };
+        const math::Vector3 prev_scale3{
+            static_cast<float>(sample_prev(CompiledLayer::ScaleX, 1.0)),
+            static_cast<float>(sample_prev(CompiledLayer::ScaleY, 1.0)),
+            static_cast<float>(sample_prev(CompiledLayer::ScaleZ, 1.0))
+        };
+        state->previous_world_matrix = math::compose_trs(prev_pos3, math::Quaternion::from_euler(prev_rot3), prev_scale3);
+
+        // Populate mesh for primitives
+        if (state->type == scene::LayerType::Solid || state->type == scene::LayerType::Image || state->type == scene::LayerType::Video) {
+            state->mesh_asset = scene::create_quad_mesh(static_cast<float>(state->width), static_cast<float>(state->height));
+        }
+
+        // Material properties
+        state->material.metallic = static_cast<float>(sample_property(CompiledLayer::Metallic, 0.0));
+        state->material.roughness = static_cast<float>(sample_property(CompiledLayer::Roughness, 0.5));
+        state->material.ior = static_cast<float>(sample_property(CompiledLayer::IOR, 1.45));
+        state->material.transmission = static_cast<float>(sample_property(CompiledLayer::Transmission, 0.0));
+        state->material.emission = static_cast<float>(sample_property(CompiledLayer::EmissionStrength, 0.0));
+    } else {
+        state->world_position3 = {state->local_transform.position.x, state->local_transform.position.y, 0.0f};
+        state->scale_3d = {state->local_transform.scale.x, state->local_transform.scale.y, 1.0f};
+        state->world_matrix = math::compose_trs(
+            state->world_position3,
+            math::Quaternion::from_euler({0.0f, 0.0f, static_cast<float>(sample_property(CompiledLayer::Rotation, 0.0))}),
+            state->scale_3d);
+        state->previous_world_matrix = state->world_matrix;
+    }
+
     state->active = state->enabled && state->visible && state->opacity > 0.0;
 
     executor.m_cache.store_layer(node_key, std::move(state));

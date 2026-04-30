@@ -8,8 +8,10 @@ namespace tachyon {
 namespace {
 
 std::string generate_unique_id(const std::string& prefix) {
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
+    static thread_local std::mt19937 gen([]() {
+        std::random_device rd;
+        return std::mt19937(rd());
+    }());
     static std::uniform_int_distribution<uint32_t> dis(10000, 99999);
     return prefix + "_" + std::to_string(dis(gen));
 }

@@ -62,6 +62,9 @@ private:
     // Internal resampling and mixing logic
     void mix_track(const TrackInstance& track, double startTimeSeconds, double durationSeconds, int sampleRate, std::vector<float>& mix_buffer);
     
+    // Setup DSP nodes from AudioEffectSpec
+    void setup_track_effects(const TrackInstance& track);
+    
     // Pitch-correct WSOLA time-stretch implementation
     void apply_time_stretch(const std::vector<float>& input, float speed, std::vector<float>& output);
 

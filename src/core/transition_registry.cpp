@@ -17,7 +17,8 @@ TransitionRegistry& TransitionRegistry::instance() {
     return inst;
 }
 
-TransitionRegistry::TransitionRegistry() : m_impl(new Impl) {}
+TransitionRegistry::TransitionRegistry() : m_impl(std::make_unique<Impl>()) {}
+TransitionRegistry::~TransitionRegistry() = default;
 
 void TransitionRegistry::register_transition(const TransitionSpec& spec) {
     auto it = m_impl->id_to_index.find(spec.id);

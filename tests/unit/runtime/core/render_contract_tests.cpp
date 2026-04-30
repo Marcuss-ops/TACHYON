@@ -76,8 +76,7 @@ std::string render_job_json(std::string quality_tier, bool motion_blur_enabled, 
 
 std::string scene_json(std::string blend_mode) {
     nlohmann::json root = {
-        {"version", "1.0"},
-        {"spec_version", "1.0"},
+        {"schema_version", "1.0"},
         {"project", {
             {"id", "proj_01"},
             {"name", "Contract"},

@@ -27,7 +27,7 @@ bool run_scene_contract_tests() {
     // 1. Roundtrip completo di una SceneSpec con mask_paths (parse -> serialize -> parse)
     {
         const std::string text = R"({
-            "spec_version": "1.0",
+            "schema_version": "1.0",
             "project": { "id": "mask_test", "name": "Mask Test" },
             "compositions": [
                 {
@@ -98,7 +98,7 @@ bool run_scene_contract_tests() {
     // 2. Validazione di mask_paths con vertici insufficienti (< 2) deve generare warning
     {
         const std::string text = R"({
-            "spec_version": "1.0",
+            "schema_version": "1.0",
             "project": { "id": "mask_warn", "name": "Mask Warning" },
             "compositions": [
                 {
@@ -140,7 +140,7 @@ bool run_scene_contract_tests() {
     // 3. Validazione di parent mancante deve fallire
     {
         const std::string text = R"({
-            "spec_version": "1.0",
+            "schema_version": "1.0",
             "project": { "id": "parent_test", "name": "Parent Test" },
             "compositions": [
                 {
@@ -174,7 +174,7 @@ bool run_scene_contract_tests() {
     // 4. Validazione di in_point > out_point deve fallire
     {
         const std::string text = R"({
-            "spec_version": "1.0",
+            "schema_version": "1.0",
             "project": { "id": "timing_test", "name": "Timing Test" },
             "compositions": [
                 {
@@ -208,7 +208,7 @@ bool run_scene_contract_tests() {
     // 5. Validazione di duplicate layer IDs deve fallire
     {
         const std::string text = R"({
-            "spec_version": "1.0",
+            "schema_version": "1.0",
             "project": { "id": "dup_test", "name": "Duplicate ID Test" },
             "compositions": [
                 {
@@ -248,7 +248,7 @@ bool run_scene_contract_tests() {
     // 6. Cache identity: due scene identiche (con mask_paths) devono avere lo stesso hash
     {
         const std::string text = R"({
-            "spec_version": "1.0",
+            "schema_version": "1.0",
             "project": { "id": "hash_test", "name": "Hash Test" },
             "compositions": [
                 {
@@ -297,7 +297,7 @@ bool run_scene_contract_tests() {
     // 7. Cache identity: due scene con mask_paths diversi devono avere hash diverso
     {
         const std::string text_a = R"({
-            "spec_version": "1.0",
+            "schema_version": "1.0",
             "project": { "id": "hash_diff", "name": "Hash Diff" },
             "compositions": [
                 {
@@ -329,7 +329,7 @@ bool run_scene_contract_tests() {
         })";
 
         const std::string text_b = R"({
-            "spec_version": "1.0",
+            "schema_version": "1.0",
             "project": { "id": "hash_diff", "name": "Hash Diff" },
             "compositions": [
                 {

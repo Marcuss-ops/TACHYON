@@ -1,5 +1,6 @@
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include "tachyon/core/spec/scene_spec_audio.h"
+#include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 #include "tachyon/text/fonts/font_manifest.h"
 #include <fstream>
 #include <sstream>
@@ -23,7 +24,12 @@ CompositionSpec parse_composition(const json& object, const std::string& path, D
         if (fr.is_number_integer()) { composition.frame_rate.numerator = fr.get<std::int64_t>(); composition.frame_rate.denominator = 1; }
         else if (fr.is_object()) { read_number(fr, "numerator", composition.frame_rate.numerator); read_number(fr, "denominator", composition.frame_rate.denominator); }
     }
-    if (object.contains("background") && object.at("background").is_string()) composition.background = object.at("background").get<std::string>();
+    if (object.contains("background")) {
+        const auto& bg = object.at("background");
+        if (bg.is_string() || bg.is_object()) {
+            composition.background = bg.get<BackgroundSpec>();
+        }
+    }
     if (object.contains("environment") && object.at("environment").is_string()) composition.environment_path = object.at("environment").get<std::string>();
     if (object.contains("layers") && object.at("layers").is_array()) {
         const auto& layers = object.at("layers");
@@ -75,8 +81,9 @@ ParseResult<SceneSpec> parse_scene_spec_json(const std::string& text, const std:
         }
 
         SceneSpec scene;
-        if (parsed.contains("version") && parsed.at("version").is_string()) scene.version = parsed.at("version").get<std::string>();
-        if (parsed.contains("spec_version") && parsed.at("spec_version").is_string()) scene.spec_version = parsed.at("spec_version").get<std::string>();
+        if (parsed.contains("schema_version") && parsed.at("schema_version").is_string()) {
+            scene.schema_version = SchemaVersion::from_string(parsed.at("schema_version").get<std::string>());
+        }
         if (parsed.contains("project") && parsed.at("project").is_object()) {
             const auto& project = parsed.at("project");
             read_string(project, "id", scene.project.id);
@@ -413,10 +420,16 @@ json serialize_layer(const LayerSpec& layer) {
         j["effects"] = layer.effects;
     }
     if (!layer.text_animators.empty()) {
-        j["text_animators"] = layer.text_animators;
+        j["text_animators"] = json::array();
+        for (const auto& a : layer.text_animators) {
+            j["text_animators"].push_back(a);
+        }
     }
     if (!layer.text_highlights.empty()) {
-        j["text_highlights"] = layer.text_highlights;
+        j["text_highlights"] = json::array();
+        for (const auto& h : layer.text_highlights) {
+            j["text_highlights"].push_back(h);
+        }
     }
 
     if (!layer.repeater_count.empty()) j["repeater_count"] = serialize_scalar_property(layer.repeater_count);
@@ -531,8 +544,7 @@ json serialize_composition(const CompositionSpec& comp) {
 
 json serialize_scene_spec(const SceneSpec& scene) {
     json j;
-    j["version"] = scene.version;
-    j["spec_version"] = scene.spec_version;
+    j["schema_version"] = scene.schema_version.to_string();
     j["project"] = {
         {"id", scene.project.id},
         {"name", scene.project.name},

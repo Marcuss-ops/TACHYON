@@ -11,7 +11,7 @@ namespace tachyon::presets::scene {
 // Scene preset factory functions
 // These create complete, ready-to-render scene specifications
 
-struct SceneOptions {
+struct SceneParams {
     std::string project_id = "project_default";
     std::string project_name = "Tachyon Project";
     std::string scene_id = "scene_main";
@@ -24,7 +24,7 @@ struct SceneOptions {
     bool use_procedural_background = true;
 };
 
-struct TextSceneOptions : SceneOptions {
+struct TextSceneParams : SceneParams {
     std::string text = "Hello World";
     std::string font_id;
     double font_size = 72.0;
@@ -48,9 +48,9 @@ struct TextSceneOptions : SceneOptions {
     uint64_t procedural_seed = 19;
 };
 
-[[nodiscard]] inline SceneSpec enhance(const TextSceneOptions& opts = {}) {
+[[nodiscard]] inline SceneSpec build_enhanced_text_scene(const TextSceneParams& opts = {}) {
     SceneSpec scene;
-    scene.spec_version = "1.0";
+    scene.schema_version = SchemaVersion{1, 0, 0};
     scene.project.id = opts.project_id;
     scene.project.name = opts.project_name;
 
@@ -65,7 +65,7 @@ struct TextSceneOptions : SceneOptions {
     comp.background = BackgroundSpec::from_string("rgba(0,0,0,0)");
 
     if (opts.use_procedural_background) {
-        auto bg = background::procedural::aura(
+        auto bg = background::procedural_bg::aura(
             opts.width, opts.height,
             {opts.procedural_color_a, opts.procedural_color_b,
              opts.procedural_color_c, opts.procedural_speed, 1.0,
@@ -74,7 +74,7 @@ struct TextSceneOptions : SceneOptions {
         comp.layers.push_back(bg);
     }
 
-    text::TextLayerOptions text_opts;
+    text::TextParams text_opts;
     text_opts.id = "headline";
     text_opts.text = opts.text;
     text_opts.font_id = opts.font_id;
@@ -89,14 +89,14 @@ struct TextSceneOptions : SceneOptions {
     text_opts.duration = opts.duration_seconds;
     text_opts.animators = opts.text_animators;
 
-    comp.layers.push_back(text::enhance(text_opts));
+    comp.layers.push_back(text::build_enhanced(text_opts));
     scene.compositions.push_back(std::move(comp));
     return scene;
 }
 
-[[nodiscard]] inline SceneSpec minimal(const TextSceneOptions& opts = {}) {
+[[nodiscard]] inline SceneSpec build_minimal_text_scene(const TextSceneParams& opts = {}) {
     SceneSpec scene;
-    scene.spec_version = "1.0";
+    scene.schema_version = SchemaVersion{1, 0, 0};
     scene.project.id = opts.project_id;
     scene.project.name = opts.project_name;
 
@@ -111,7 +111,7 @@ struct TextSceneOptions : SceneOptions {
     comp.background = BackgroundSpec::from_string("rgba(0,0,0,0)");
 
     if (opts.use_procedural_background) {
-        auto bg = background::procedural::aura(
+        auto bg = background::procedural_bg::aura(
             opts.width, opts.height,
             {opts.procedural_color_a, opts.procedural_color_b,
              opts.procedural_color_c, opts.procedural_speed, 1.0,
@@ -120,7 +120,7 @@ struct TextSceneOptions : SceneOptions {
         comp.layers.push_back(bg);
     }
 
-    text::TextLayerOptions text_opts;
+    text::TextParams text_opts;
     text_opts.id = "headline";
     text_opts.text = opts.text;
     text_opts.font_id = opts.font_id;
@@ -135,18 +135,103 @@ struct TextSceneOptions : SceneOptions {
     text_opts.duration = opts.duration_seconds;
     text_opts.animators = opts.text_animators;
 
-    comp.layers.push_back(text::minimal(text_opts));
+    comp.layers.push_back(text::build_minimal(text_opts));
+    scene.compositions.push_back(std::move(comp));
+    return scene;
+}
+
+[[nodiscard]] inline SceneSpec build_modern_grid_scene(const TextSceneParams& opts = {}) {
+    SceneSpec scene;
+    scene.schema_version = SchemaVersion{1, 0, 0};
+    scene.project.id = opts.project_id;
+    scene.project.name = opts.project_name;
+
+    CompositionSpec comp;
+    comp.id = opts.scene_id;
+    comp.name = opts.scene_name;
+    comp.width = opts.width;
+    comp.height = opts.height;
+    comp.duration = opts.duration_seconds;
+    comp.frame_rate.numerator = static_cast<std::int64_t>(opts.frame_rate);
+    comp.frame_rate.denominator = 1;
+    comp.background = BackgroundSpec::from_string("rgba(0,0,0,0)");
+
+    auto bg = background::procedural_bg::modern_tech_grid(
+        opts.width, opts.height,
+        background::procedural_bg::palettes::neon_grid(),
+        60.0,
+        opts.duration_seconds);
+    comp.layers.push_back(bg);
+
+    text::TextParams text_opts;
+    text_opts.id = "headline";
+    text_opts.text = opts.text;
+    text_opts.font_id = opts.font_id;
+    text_opts.font_size = opts.font_size;
+    text_opts.width = opts.text_width;
+    text_opts.height = opts.text_height;
+    text_opts.position_x = opts.text_position_x;
+    text_opts.position_y = opts.text_position_y;
+    text_opts.alignment = "center";
+    text_opts.fill_color = opts.text_fill_color;
+    text_opts.start_time = 0.0;
+    text_opts.duration = opts.duration_seconds;
+    text_opts.animators = opts.text_animators;
+
+    comp.layers.push_back(text::build_enhanced(text_opts));
+    scene.compositions.push_back(std::move(comp));
+    return scene;
+}
+
+[[nodiscard]] inline SceneSpec build_classico_premium_scene(const TextSceneParams& opts = {}) {
+    SceneSpec scene;
+    scene.schema_version = SchemaVersion{1, 0, 0};
+    scene.project.id = opts.project_id;
+    scene.project.name = opts.project_name;
+
+    CompositionSpec comp;
+    comp.id = opts.scene_id;
+    comp.name = opts.scene_name;
+    comp.width = opts.width;
+    comp.height = opts.height;
+    comp.duration = opts.duration_seconds;
+    comp.frame_rate.numerator = static_cast<std::int64_t>(opts.frame_rate);
+    comp.frame_rate.denominator = 1;
+    comp.background = BackgroundSpec::from_string("rgba(0,0,0,0)");
+
+    auto bg = background::procedural_bg::classico_premium(
+        opts.width, opts.height,
+        background::procedural_bg::palettes::premium_dark(),
+        opts.duration_seconds);
+    comp.layers.push_back(bg);
+
+    text::TextParams text_opts;
+    text_opts.id = "headline";
+    text_opts.text = opts.text;
+    text_opts.font_id = opts.font_id;
+    text_opts.font_size = opts.font_size;
+    text_opts.width = opts.text_width;
+    text_opts.height = opts.text_height;
+    text_opts.position_x = opts.text_position_x;
+    text_opts.position_y = opts.text_position_y;
+    text_opts.alignment = "center";
+    text_opts.fill_color = opts.text_fill_color;
+    text_opts.start_time = 0.0;
+    text_opts.duration = opts.duration_seconds;
+    text_opts.animators = opts.text_animators;
+
+    comp.layers.push_back(text::build_enhanced(text_opts));
     scene.compositions.push_back(std::move(comp));
     return scene;
 }
 
 [[nodiscard]] inline SceneSpec text_with_background(
     const std::string& preset_name,
-    const TextSceneOptions& opts = {}) {
+    const TextSceneParams& opts = {}) {
     if (preset_name == "minimal") {
-        return minimal(opts);
+        return build_minimal_text_scene(opts);
     }
-    return enhance(opts);
+    return build_enhanced_text_scene(opts);
 }
 
 } // namespace tachyon::presets::scene

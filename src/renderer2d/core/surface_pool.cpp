@@ -16,7 +16,12 @@ std::shared_ptr<SurfaceRGBA> SurfacePool::acquire(std::uint32_t width, std::uint
         raw_surface = new SurfaceRGBA(width, height);
     }
     
-    return std::shared_ptr<SurfaceRGBA>(raw_surface, SurfaceDeleter{shared_from_this()});
+    try {
+        return std::shared_ptr<SurfaceRGBA>(raw_surface, SurfaceDeleter{shared_from_this()});
+    } catch (...) {
+        delete raw_surface;
+        throw;
+    }
 }
 
 void SurfacePool::release(SurfaceRGBA* surface) {

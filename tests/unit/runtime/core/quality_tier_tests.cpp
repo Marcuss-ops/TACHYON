@@ -26,7 +26,6 @@ SceneSpec make_scene(std::int64_t width, std::int64_t height) {
     composition.layers.push_back(layer);
 
     SceneSpec scene;
-    scene.spec_version = "1.0";
     scene.project.id = "proj";
     scene.project.name = "Quality Tier";
     scene.compositions.push_back(std::move(composition));

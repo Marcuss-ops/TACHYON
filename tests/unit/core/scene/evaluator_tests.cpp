@@ -168,7 +168,6 @@ bool run_scene_evaluator_tests() {
         composition.layers.push_back(camera_layer);
 
         tachyon::SceneSpec scene;
-        scene.spec_version = "1.0";
         scene.project.id = "proj_001";
         scene.project.name = "Evaluator";
         scene.compositions.push_back(composition);
@@ -225,7 +224,6 @@ bool run_scene_evaluator_tests() {
         parent_comp.layers.push_back(precomp_layer);
 
         tachyon::SceneSpec scene;
-        scene.spec_version = "1.0";
         scene.project.id = "proj_remap";
         scene.project.name = "Remap";
         scene.compositions.push_back(child_comp);
@@ -259,7 +257,6 @@ bool run_scene_evaluator_tests() {
         composition.layers.push_back(text_layer);
 
         tachyon::SceneSpec scene;
-        scene.spec_version = "1.0";
         scene.project.id = "proj_template";
         scene.project.name = "Template";
         scene.compositions.push_back(composition);

@@ -136,8 +136,10 @@ void apply_properties_avx2(
 
 void apply_text_animators(
     TextLayoutResult& layout,
-    std::span<const TextAnimatorSpec> animators,
+
     const TextAnimationOptions& animation) {
+
+    auto animators = animation.animators;
 
     if (!animation.enabled || layout.glyphs.empty()) {
         return;
@@ -362,7 +364,7 @@ std::vector<ResolvedGlyphPaint> resolve_glyph_paints(
     const TextAnimationOptions& animation) {
 
     TextLayoutResult animated_layout = layout;
-    apply_text_animators(animated_layout, animation.animators, animation);
+    apply_text_animators(animated_layout, animation);
 
     std::vector<ResolvedGlyphPaint> paints;
     paints.reserve(animated_layout.glyphs.size());

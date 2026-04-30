@@ -8,6 +8,7 @@ namespace tachyon::timeline {
 TimeRemapEvaluator::TimeRemapEvaluator(const Config& config) : config_(config) {}
 
 float TimeRemapEvaluator::evaluate(const TimeRemapCurve& curve, float dest_time, float frame_duration) const {
+    (void)frame_duration;
     return evaluate_source_time(curve, dest_time);
 }
 
@@ -44,7 +45,8 @@ std::vector<float> TimeRemapEvaluator::warp_frame(
     }
     
     std::vector<float> warped(frame.size(), 0.0f);
-    const int total_pixels = width * height;
+    (void)width;
+    (void)height;
     
     // Warp each pixel using optical flow vectors
     for (int y = 0; y < height; ++y) {

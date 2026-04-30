@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tachyon/core/spec/schema/common/common_spec.h"
+#include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 
 #include <filesystem>
@@ -15,6 +16,7 @@ struct StudioSceneEntry {
     std::string id;
     std::string name;
     std::filesystem::path path;
+    bool is_cpp_preset{false};
 };
 
 struct StudioTransitionEntry {
@@ -46,6 +48,8 @@ public:
     [[nodiscard]] std::optional<StudioSceneEntry> find_scene(const std::string& id) const;
     [[nodiscard]] std::optional<StudioTransitionEntry> find_transition(const std::string& id) const;
 
+    [[nodiscard]] SceneSpec instantiate_scene(const std::string& id) const;
+
     [[nodiscard]] EffectSpec build_transition_effect(
         const std::string& transition_id,
         const std::string& from_layer_id,
@@ -56,6 +60,7 @@ private:
     void reset();
     bool load_scenes(const nlohmann::json& manifest);
     bool load_transitions(const nlohmann::json& manifest);
+    void register_cpp_presets();
 
     std::filesystem::path m_root;
     bool m_ok{false};

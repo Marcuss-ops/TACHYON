@@ -47,7 +47,7 @@ bool run_scene_spec_parsing_tests() {
 
     {
         const std::string text = R"({
-            "spec_version": "1.0",
+            "schema_version": "1.0",
             "project": { "id": "proj_shape", "name": "Shape Scene" },
             "compositions": [
                 {
@@ -86,7 +86,7 @@ bool run_scene_spec_parsing_tests() {
     // Roundtrip test: parse -> serialize -> parse
     {
         const std::string text = R"({
-            "spec_version": "1.0",
+            "schema_version": "1.0",
             "project": { "id": "rt_test", "name": "Roundtrip Test", "authoring_tool": "test" },
             "compositions": [
                 {
@@ -182,8 +182,7 @@ bool run_scene_spec_parsing_tests() {
         const auto& scene2 = *parsed2.value;
 
         // Compare top-level fields
-        check_true(scene1.version == scene2.version, "roundtrip: version matches");
-        check_true(scene1.spec_version == scene2.spec_version, "roundtrip: spec_version matches");
+        check_true(scene1.schema_version.to_string() == scene2.schema_version.to_string(), "roundtrip: schema_version matches");
         check_true(scene1.project.id == scene2.project.id, "roundtrip: project.id matches");
         check_true(scene1.project.name == scene2.project.name, "roundtrip: project.name matches");
         check_true(scene1.project.authoring_tool == scene2.project.authoring_tool, "roundtrip: project.authoring_tool matches");

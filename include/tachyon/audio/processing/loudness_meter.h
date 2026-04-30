@@ -38,6 +38,7 @@ private:
     
     int m_sample_rate{48000};
     double m_current_loudness{0.0};
+    float m_true_peak_dbfs{-70.0f};
     
     float apply_k_weighting(double sample);
     float calculate_loudness(const std::vector<float>& samples) const;

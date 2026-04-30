@@ -119,28 +119,49 @@ EvaluatedCompositionState evaluate_composition_internal(
     evaluated.frame_rate = composition.frame_rate;
     evaluated.frame_number = frame_number;
     evaluated.composition_time_seconds = composition_time_seconds;
-    evaluated.layers.reserve(composition.layers.size());
+    
+    // Evaluate background
+    if (composition.background.has_value()) {
+        if (composition.background->is_color()) {
+            auto color = composition.background->get_color();
+            if (color.has_value()) {
+                evaluated.background_color = *color;
+            }
+        }
+    }
+    
+    // Heuristic reserve: layers + sum(iterations)
+    // For a simple reserve, we can use a slightly larger factor or a more precise one
+    std::size_t total_estimated_layers = composition.layers.size();
+    for (const auto& l : composition.layers) {
+        if (l.repeater_count.binding.active || l.repeater_count.keyframes.size() > 0) {
+            total_estimated_layers += 10; // Rough estimate for animated repeaters
+        } else {
+            total_estimated_layers += std::max(0, static_cast<int>(l.repeater_count.value.value_or(1.0)) - 1);
+        }
+    }
+    evaluated.layers.reserve(total_estimated_layers);
 
     EvaluationContext context{
-        scene,
-        composition,
-        frame_number,
-        composition_time_seconds,
-        {},
-        std::vector<std::optional<EvaluatedLayerState>>(composition.layers.size()),
-        std::vector<bool>(composition.layers.size(), false),
-        std::move(stack),
-        audio_analyzer,
-        vars,
-        {},
-        media,
-        {},
-        main_frame_number,
-        main_frame_time_seconds
+        .scene = scene,
+        .composition = composition,
+        .frame_number = frame_number,
+        .composition_time_seconds = composition_time_seconds,
+        .cache = std::vector<std::optional<EvaluatedLayerState>>(composition.layers.size()),
+        .visiting = std::vector<bool>(composition.layers.size(), false),
+        .composition_stack = std::move(stack),
+        .audio_analyzer = audio_analyzer,
+        .vars = vars,
+        .media = media,
+        .main_frame_number = main_frame_number,
+        .main_frame_time_seconds = main_frame_time_seconds
     };
 
     for (std::size_t index = 0; index < composition.layers.size(); ++index) {
         context.layer_indices.emplace(composition.layers[index].id, index);
+    }
+    for (std::size_t index = 0; index < composition.cameras_2d.size(); ++index) {
+        context.camera2d_indices.emplace(composition.cameras_2d[index].id, index);
     }
 
     for (std::size_t index = 0; index < composition.layers.size(); ++index) {
@@ -162,6 +183,13 @@ EvaluatedCompositionState evaluate_composition_internal(
         const float start_op = static_cast<float>(sample_scalar(composition.layers[index].repeater_start_opacity, 100.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_op_start")))) / 100.0f;
         const float end_op = static_cast<float>(sample_scalar(composition.layers[index].repeater_end_opacity, 100.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_op_end")))) / 100.0f;
 
+        const math::Matrix4x4 step_transform = math::compose_trs(
+            {off_x, off_y, 0.0f},
+            math::Quaternion::from_euler({0, 0, off_rot}),
+            {off_sx, off_sy, 1.0f}
+        );
+        math::Matrix4x4 current_offset_transform = math::Matrix4x4::identity();
+
             for (int r = 0; r < iterations; ++r) {
                 // For stagger, we re-evaluate the layer state with a time offset
                 EvaluatedLayerState repeated = (stagger_delay != 0.0) 
@@ -170,17 +198,8 @@ EvaluatedCompositionState evaluate_composition_internal(
 
                 repeated.id = base_layer.id + "_rep_" + std::to_string(r);
                 
-                // Cumulative transform
-                math::Matrix4x4 offset_transform = math::Matrix4x4::identity();
-                for (int step = 0; step < r; ++step) {
-                   offset_transform = offset_transform * math::compose_trs(
-                        {off_x, off_y, 0.0f},
-                        math::Quaternion::from_euler({0, 0, off_rot}),
-                        {off_sx, off_sy, 1.0f}
-                    );
-                }
-                
-                repeated.world_matrix = repeated.world_matrix * offset_transform;
+                repeated.world_matrix = repeated.world_matrix * current_offset_transform;
+                current_offset_transform = current_offset_transform * step_transform;
                 const auto wp3 = repeated.world_matrix.transform_point({0.0f, 0.0f, 0.0f});
                 repeated.world_position3 = wp3;
                 

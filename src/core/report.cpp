@@ -25,8 +25,7 @@ json make_diagnostics_json(const DiagnosticBag& diagnostics) {
 
 json make_scene_json(const SceneSpec& scene) {
     json result;
-    result["version"] = scene.version;
-    result["spec_version"] = scene.spec_version;
+    result["schema_version"] = scene.schema_version.to_string();
     result["project"] = {
         {"id", scene.project.id},
         {"name", scene.project.name},
@@ -163,8 +162,7 @@ void print_inspect_report_text(
     std::ostream& out) {
     out << "scene summary\n";
     out << "  project: " << scene.project.id << " / " << scene.project.name << '\n';
-    out << "  version: " << scene.version << '\n';
-    out << "  spec version: " << scene.spec_version << '\n';
+    out << "  schema version: " << scene.schema_version.to_string() << '\n';
     out << "  authoring tool: " << scene.project.authoring_tool << '\n';
     out << "  assets: " << scene.assets.size() << '\n';
     out << "  compositions: " << scene.compositions.size() << '\n';

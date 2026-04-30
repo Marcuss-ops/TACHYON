@@ -34,10 +34,9 @@ void MediaPrefetcher::update(MediaManager& manager, PlaybackScheduler& scheduler
         std::filesystem::path resolved = manager.resolve_media_path(path);
         if (resolved.empty()) continue;
 
-        VideoDecoder* decoder = manager.acquire_video_decoder(resolved);
+        auto decoder = manager.acquire_video_decoder(resolved);
         if (!decoder) continue;
         const double duration = decoder->duration();
-        manager.release_video_decoder(resolved, decoder);
 
         for (int i = 1; i <= prefetch_count; ++i) {
             double prefetch_time = current_time + (static_cast<double>(i) / fps);

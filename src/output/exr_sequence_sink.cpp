@@ -47,6 +47,8 @@ public:
         image.width = static_cast<int>(width);
         image.height = static_cast<int>(height);
 
+        const std::size_t pixel_count = static_cast<std::size_t>(width) * static_cast<std::size_t>(height);
+        std::vector<std::unique_ptr<float[]>> image_data(image.num_channels);
         std::vector<float*> images(image.num_channels);
         std::vector<EXRChannelInfo> channels(image.num_channels);
         std::vector<int> pixel_types(image.num_channels, TINYEXR_PIXELTYPE_FLOAT);
@@ -54,10 +56,12 @@ public:
 
         // Beauty Channels
         const auto& beauty_pixels = packet.frame->pixels();
-        images[0] = new float[width * height]; // R
-        images[1] = new float[width * height]; // G
-        images[2] = new float[width * height]; // B
-        images[3] = new float[width * height]; // A
+        image_data[0] = std::make_unique<float[]>(pixel_count); // R
+        image_data[1] = std::make_unique<float[]>(pixel_count); // G
+        image_data[2] = std::make_unique<float[]>(pixel_count); // B
+        image_data[3] = std::make_unique<float[]>(pixel_count); // A
+        for (int i = 0; i < 4; ++i) images[i] = image_data[i].get();
+
         strncpy(channels[0].name, "R", 255);
         strncpy(channels[1].name, "G", 255);
         strncpy(channels[2].name, "B", 255);
@@ -65,8 +69,8 @@ public:
 
         for (uint32_t y = 0; y < height; ++y) {
             for (uint32_t x = 0; x < width; ++x) {
-                const uint32_t idx = (y * width + x);
-                const uint32_t src_idx = idx * 4;
+                const std::size_t idx = (static_cast<std::size_t>(y) * width + x);
+                const std::size_t src_idx = idx * 4;
                 images[0][idx] = beauty_pixels[src_idx + 0];
                 images[1][idx] = beauty_pixels[src_idx + 1];
                 images[2][idx] = beauty_pixels[src_idx + 2];
@@ -78,29 +82,33 @@ public:
         int current_ch = 4;
         for (const auto& aov : packet.aovs) {
             if (aov.name == "depth") {
-                images[current_ch] = new float[width * height];
+                image_data[current_ch] = std::make_unique<float[]>(pixel_count);
+                images[current_ch] = image_data[current_ch].get();
                 strncpy(channels[current_ch].name, "depth.Z", 255);
-                for (uint32_t i = 0; i < width * height; ++i) images[current_ch][i] = aov.surface->pixels()[i * 4];
+                for (std::size_t i = 0; i < pixel_count; ++i) images[current_ch][i] = aov.surface->pixels()[i * 4];
                 current_ch++;
             } else if (aov.name == "normal") {
-                images[current_ch] = new float[width * height];
-                images[current_ch+1] = new float[width * height];
-                images[current_ch+2] = new float[width * height];
+                for (int i = 0; i < 3; ++i) {
+                    image_data[current_ch + i] = std::make_unique<float[]>(pixel_count);
+                    images[current_ch + i] = image_data[current_ch + i].get();
+                }
                 strncpy(channels[current_ch].name, "normal.X", 255);
                 strncpy(channels[current_ch+1].name, "normal.Y", 255);
                 strncpy(channels[current_ch+2].name, "normal.Z", 255);
-                for (uint32_t i = 0; i < width * height; ++i) {
+                for (std::size_t i = 0; i < pixel_count; ++i) {
                     images[current_ch][i] = aov.surface->pixels()[i * 4 + 0];
                     images[current_ch+1][i] = aov.surface->pixels()[i * 4 + 1];
                     images[current_ch+2][i] = aov.surface->pixels()[i * 4 + 2];
                 }
                 current_ch += 3;
             } else if (aov.name == "motion_vector") {
-                images[current_ch] = new float[width * height];
-                images[current_ch+1] = new float[width * height];
+                for (int i = 0; i < 2; ++i) {
+                    image_data[current_ch + i] = std::make_unique<float[]>(pixel_count);
+                    images[current_ch + i] = image_data[current_ch + i].get();
+                }
                 strncpy(channels[current_ch].name, "motion_vector.U", 255);
                 strncpy(channels[current_ch+1].name, "motion_vector.V", 255);
-                for (uint32_t i = 0; i < width * height; ++i) {
+                for (std::size_t i = 0; i < pixel_count; ++i) {
                     images[current_ch][i] = aov.surface->pixels()[i * 4 + 0];
                     images[current_ch+1][i] = aov.surface->pixels()[i * 4 + 1];
                 }
@@ -136,8 +144,6 @@ public:
         const char* err = nullptr;
         int ret = SaveEXRImageToFile(&image, &header, full_path.string().c_str(), &err);
         
-        for (int i = 0; i < image.num_channels; ++i) delete[] images[i];
-
         if (ret != TINYEXR_SUCCESS) {
             m_last_error = err ? err : "Unknown EXR error";
             FreeEXRErrorMessage(err);

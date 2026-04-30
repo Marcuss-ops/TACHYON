@@ -96,16 +96,51 @@ void from_json(const json& j, TextAnimatorPropertySpec& p) {
     if (j.contains("reveal_keyframes") && j.at("reveal_keyframes").is_array()) p.reveal_keyframes = j.at("reveal_keyframes").get<std::vector<ScalarKeyframeSpec>>();
 }
 
+void to_json(json& j, const TextAnimatorCursorSpec& c) {
+    j = json{
+        {"enabled", c.enabled},
+        {"cursor_char", c.cursor_char},
+        {"blink_rate", c.blink_rate},
+        {"follow_last_glyph", c.follow_last_glyph},
+        {"offset_x", c.offset_x}
+    };
+    if (c.color_override.has_value()) {
+        j["color_override"] = *c.color_override;
+    }
+}
+
+void from_json(const json& j, TextAnimatorCursorSpec& c) {
+    if (j.contains("enabled") && j.at("enabled").is_boolean()) c.enabled = j.at("enabled").get<bool>();
+    if (j.contains("cursor_char") && j.at("cursor_char").is_string()) c.cursor_char = j.at("cursor_char").get<std::string>();
+    if (j.contains("blink_rate") && j.at("blink_rate").is_number()) c.blink_rate = j.at("blink_rate").get<double>();
+    if (j.contains("color_override") && j.at("color_override").is_object()) c.color_override = j.at("color_override").get<ColorSpec>();
+    if (j.contains("follow_last_glyph") && j.at("follow_last_glyph").is_boolean()) c.follow_last_glyph = j.at("follow_last_glyph").get<bool>();
+    if (j.contains("offset_x") && j.at("offset_x").is_number()) c.offset_x = j.at("offset_x").get<double>();
+}
+
 void to_json(json& j, const TextAnimatorSpec& a) {
-    j = json{{"selector", a.selector}, {"properties", a.properties}};
+    j = json{
+        {"selector", a.selector},
+        {"properties", a.properties},
+        {"cursor", a.cursor}
+    };
+    if (!a.name.empty()) {
+        j["name"] = a.name;
+    }
 }
 
 void from_json(const json& j, TextAnimatorSpec& a) {
+    if (j.contains("name") && j.at("name").is_string()) {
+        a.name = j.at("name").get<std::string>();
+    }
     if (j.contains("selector") && j.at("selector").is_object()) {
         a.selector = j.at("selector").get<TextAnimatorSelectorSpec>();
     }
     if (j.contains("properties") && j.at("properties").is_object()) {
         a.properties = j.at("properties").get<TextAnimatorPropertySpec>();
+    }
+    if (j.contains("cursor") && j.at("cursor").is_object()) {
+        a.cursor = j.at("cursor").get<TextAnimatorCursorSpec>();
     }
 }
 

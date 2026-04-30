@@ -1,5 +1,5 @@
 {
-  "spec_version": "1.0",
+  "schema_version": "1.0",
   "project": {
     "id": "proj_scene_graph",
     "name": "Scene Graph Minimal"

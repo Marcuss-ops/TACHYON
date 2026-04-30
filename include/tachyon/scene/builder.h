@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/core/spec/schema/objects/background_spec.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/core/spec/schema/objects/composition_spec.h"
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
@@ -12,7 +13,6 @@
 #include <vector>
 #include <memory>
 #include <utility>
-#include <nlohmann/json.hpp>
 
 namespace tachyon::scene {
 
@@ -83,6 +83,7 @@ class LayerBuilder {
     LayerSpec spec_;
 public:
     explicit LayerBuilder(std::string id);
+    explicit LayerBuilder(LayerSpec spec);
 
     LayerBuilder& type(std::string t);
     LayerBuilder& text(std::string t);
@@ -93,12 +94,38 @@ public:
     LayerBuilder& opacity(double v);
     LayerBuilder& opacity(AnimatedScalarSpec anim_spec);
     LayerBuilder& position(double x, double y);
+    LayerBuilder& size(double w, double h);
     LayerBuilder& color(const ColorSpec& c);
-    LayerBuilder& mesh(std::string path);
-    LayerBuilder& prop(std::string key, nlohmann::json val);
+    LayerBuilder& subtitle_path(std::string path);
 
+    // 3D Transform
+    LayerBuilder& position3d(double x, double y, double z);
+    LayerBuilder& rotation3d(double x, double y, double z);
+    LayerBuilder& scale3d(double x, double y, double z);
+    LayerBuilder& is_3d(bool v);
+
+    // Camera specific
+    LayerBuilder& camera_type(std::string t);
+    LayerBuilder& camera_poi(double x, double y, double z);
+    LayerBuilder& camera_zoom(double z);
+
+    // Light specific
+    LayerBuilder& light_type(std::string t);
+    LayerBuilder& light_color(const ColorSpec& c);
+    LayerBuilder& light_intensity(double i);
+    LayerBuilder& casts_shadows(bool v);
+    LayerBuilder& shadow_radius(double r);
+
+    // 3D Material extensions
+    LayerBuilder& transmission(double v);
+    LayerBuilder& ior(double v);
+    LayerBuilder& emission_strength(double v);
+
+    // Transitions
     TransitionBuilder enter();
     TransitionBuilder exit();
+
+    // Material (for 3D)
     MaterialBuilder material();
 
     [[nodiscard]] LayerSpec build() &&;
@@ -116,31 +143,17 @@ public:
     CompositionBuilder& size(int w, int h);
     CompositionBuilder& fps(int f);
     CompositionBuilder& duration(double d);
-    CompositionBuilder& background(std::string color_or_preset);
+    CompositionBuilder& background(BackgroundSpec spec);
 
-    /**
-     * @brief Adds a layer using a configuration lambda.
-     * The LayerBuilder is passed to the lambda and its spec is collected after execution.
-     */
     CompositionBuilder& layer(std::string id, std::function<void(LayerBuilder&)> fn);
-
-    /**
-     * @brief Sets an input property (Remotion style).
-     */
-    template<typename T>
-    CompositionBuilder& prop(std::string key, T value) {
-        spec_.input_props[key] = value;
-        return *this;
-    }
-
+    CompositionBuilder& camera3d_layer(std::string id, std::function<void(LayerBuilder&)> fn);
+    CompositionBuilder& light_layer(std::string id, std::function<void(LayerBuilder&)> fn);
+    CompositionBuilder& mesh_layer(std::string id, std::function<void(LayerBuilder&)> fn);
     CompositionBuilder& audio(std::string path, double volume = 1.0);
 
     [[nodiscard]] CompositionSpec build() &&;
     [[nodiscard]] CompositionSpec build() const &;
 
-    /**
-     * @brief Convenience method to wrap the composition in a SceneSpec.
-     */
     [[nodiscard]] SceneSpec build_scene();
 };
 

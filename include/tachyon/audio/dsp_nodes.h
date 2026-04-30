@@ -3,6 +3,7 @@
 #include "tachyon/audio/audio_graph.h"
 #include <algorithm>
 #include <cmath>
+#include <string>
 
 namespace tachyon::audio {
 
@@ -128,7 +129,7 @@ public:
             io[i] *= gain;
             io[i + 1] *= gain;
         }
-        m_processed_samples += nframes;
+        m_processed_samples += static_cast<float>(nframes);
     }
 
     void reset() override { m_processed_samples = 0; }
@@ -167,16 +168,14 @@ struct AudioTrackMixParams {
   DuckerConfig duck_config{};       // ducking config (used when this track ducks others)
 };
 
-// ---------------------------------------------------------------------------
-// CompressorNode – sidechain ducker for audio ducking
-// ---------------------------------------------------------------------------
 class CompressorNode : public AudioNode {
 public:
+    static constexpr int kDSPSampleRate = 48000;
+
     explicit CompressorNode(const DuckerConfig& config = DuckerConfig())
         : m_config(config),
           m_current_gain(1.0f),
           m_envelope(0.0f) {
-        // Precompute attack/release coefficients based on sample rate
         const float sample_rate = static_cast<float>(kDSPSampleRate);
         const float attack_samples = m_config.attack_ms * 0.001f * sample_rate;
         const float release_samples = m_config.release_ms * 0.001f * sample_rate;
@@ -185,31 +184,24 @@ public:
         m_threshold_linear = std::pow(10.0f, m_config.threshold_db / 20.0f);
     }
 
-    // Set the sidechain audio buffer (interleaved stereo, same nframes as main process)
     void set_sidechain(const float* sidechain, int nframes) {
         m_sidechain = sidechain;
         m_sidechain_nframes = nframes;
     }
 
     void process(float* io, int nframes) override {
-        if (!m_sidechain || m_sidechain_nframes < nframes) {
-            // No sidechain or insufficient sidechain data: no compression
-            return;
-        }
+        if (!m_sidechain || m_sidechain_nframes < nframes) return;
 
-        const int total_samples = nframes * 2; // interleaved stereo
+        const int total_samples = nframes * 2;
         for (int i = 0; i < total_samples; ++i) {
-            // Compute sidechain peak for this sample
             float sidechain_sample = std::abs(m_sidechain[i]) * m_config.sidechain_gain;
             
-            // Update envelope follower (peak-based)
             if (sidechain_sample > m_envelope) {
                 m_envelope = m_attack_coeff * m_envelope + (1.0f - m_attack_coeff) * sidechain_sample;
             } else {
                 m_envelope = m_release_coeff * m_envelope + (1.0f - m_release_coeff) * sidechain_sample;
             }
 
-            // Compute gain reduction if envelope exceeds threshold
             float target_gain = 1.0f;
             if (m_envelope > m_threshold_linear) {
                 float envelope_db = 20.0f * std::log10(m_envelope);
@@ -217,19 +209,13 @@ public:
                 target_gain = std::pow(10.0f, -gain_reduction_db / 20.0f);
             }
 
-            // Smooth gain changes to avoid clicks
             m_current_gain = 0.9f * m_current_gain + 0.1f * target_gain;
-
-            // Apply gain to main audio (music bus)
             io[i] *= m_current_gain;
         }
 
-        // Reset sidechain after processing to avoid stale data
         m_sidechain = nullptr;
         m_sidechain_nframes = 0;
     }
-
-    std::string name() const override { return "Compressor (Ducker)"; }
 
     void reset() override {
         m_current_gain = 1.0f;
@@ -238,15 +224,117 @@ public:
         m_sidechain_nframes = 0;
     }
 
+    std::string name() const override { return "Compressor (Ducker)"; }
+
 private:
     DuckerConfig m_config;
-    float m_threshold_linear;
-    float m_attack_coeff;
-    float m_release_coeff;
     float m_current_gain;
     float m_envelope;
-    const float* m_sidechain = nullptr;
-    int m_sidechain_nframes = 0;
+    float m_attack_coeff{0.0f};
+    float m_release_coeff{0.0f};
+    float m_threshold_linear{0.0f};
+    const float* m_sidechain{nullptr};
+    int m_sidechain_nframes{0};
+};
+
+// ---------------------------------------------------------------------------
+// LowPassNode – 2nd order Butterworth low-pass filter
+// ---------------------------------------------------------------------------
+class LowPassNode : public AudioNode {
+public:
+    LowPassNode(float cutoff_hz = 1000.0f, float sample_rate = 48000.0f) {
+        set_cutoff(cutoff_hz, sample_rate);
+    }
+
+    void set_cutoff(float cutoff_hz, float sample_rate = 48000.0f) {
+        const float w0 = 2.0f * 3.14159265358979323846f * cutoff_hz / sample_rate;
+        const float cos_w0 = std::cos(w0);
+        const float alpha = std::sin(w0) / (2.0f * 0.7071067811865476f);
+
+        const float a0 = 1.0f + alpha;
+        m_b0 = (1.0f - cos_w0) / 2.0f / a0;
+        m_b1 = (1.0f - cos_w0) / a0;
+        m_b2 = (1.0f - cos_w0) / 2.0f / a0;
+        m_a1 = -2.0f * cos_w0 / a0;
+        m_a2 = (1.0f - alpha) / a0;
+
+        reset();
+    }
+
+    void process(float* io, int nframes) override {
+        for (int i = 0; i < nframes * 2; ++i) {
+            const float input = io[i];
+            const float output = m_b0 * input + m_b1 * m_x1 + m_b2 * m_x2 - m_a1 * m_y1 - m_a2 * m_y2;
+            m_x2 = m_x1;
+            m_x1 = input;
+            m_y2 = m_y1;
+            m_y1 = output;
+            io[i] = output;
+        }
+    }
+
+    void reset() override {
+        m_x1 = m_x2 = 0.0f;
+        m_y1 = m_y2 = 0.0f;
+    }
+
+    std::string name() const override { return "LowPass"; }
+
+private:
+    float m_b0 = 0.0f, m_b1 = 0.0f, m_b2 = 0.0f;
+    float m_a1 = 0.0f, m_a2 = 0.0f;
+    float m_x1 = 0.0f, m_x2 = 0.0f;
+    float m_y1 = 0.0f, m_y2 = 0.0f;
+};
+
+// ---------------------------------------------------------------------------
+// HighPassNode – 2nd order Butterworth high-pass filter
+// ---------------------------------------------------------------------------
+class HighPassNode : public AudioNode {
+public:
+    HighPassNode(float cutoff_hz = 1000.0f, float sample_rate = 48000.0f) {
+        set_cutoff(cutoff_hz, sample_rate);
+    }
+
+    void set_cutoff(float cutoff_hz, float sample_rate = 48000.0f) {
+        const float w0 = 2.0f * 3.14159265358979323846f * cutoff_hz / sample_rate;
+        const float cos_w0 = std::cos(w0);
+        const float alpha = std::sin(w0) / (2.0f * 0.7071067811865476f);
+
+        const float a0 = 1.0f + alpha;
+        m_b0 = (1.0f + cos_w0) / 2.0f / a0;
+        m_b1 = -(1.0f + cos_w0) / a0;
+        m_b2 = (1.0f + cos_w0) / 2.0f / a0;
+        m_a1 = -2.0f * cos_w0 / a0;
+        m_a2 = (1.0f - alpha) / a0;
+
+        reset();
+    }
+
+    void process(float* io, int nframes) override {
+        for (int i = 0; i < nframes * 2; ++i) {
+            const float input = io[i];
+            const float output = m_b0 * input + m_b1 * m_x1 + m_b2 * m_x2 - m_a1 * m_y1 - m_a2 * m_y2;
+            m_x2 = m_x1;
+            m_x1 = input;
+            m_y2 = m_y1;
+            m_y1 = output;
+            io[i] = output;
+        }
+    }
+
+    void reset() override {
+        m_x1 = m_x2 = 0.0f;
+        m_y1 = m_y2 = 0.0f;
+    }
+
+    std::string name() const override { return "HighPass"; }
+
+private:
+    float m_b0 = 0.0f, m_b1 = 0.0f, m_b2 = 0.0f;
+    float m_a1 = 0.0f, m_a2 = 0.0f;
+    float m_x1 = 0.0f, m_x2 = 0.0f;
+    float m_y1 = 0.0f, m_y2 = 0.0f;
 };
 
 } // namespace tachyon::audio

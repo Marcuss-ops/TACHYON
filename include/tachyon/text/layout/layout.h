@@ -1,7 +1,8 @@
 #pragma once
 
-#include "tachyon/text/fonts/font.h"
+#include "tachyon/text/fonts/core/font.h"
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
+#include "tachyon/text/animation/text_animation_options.h"
 #include "tachyon/text/rendering/text_raster_surface.h"
 #include "tachyon/text/core/layout/resolved_text_layout.h"
 
@@ -80,18 +81,6 @@ struct TextLayoutOptions {
     bool word_wrap{true};
 };
 
-struct TextAnimationOptions {
-    bool enabled{false};
-    float time_seconds{0.0f};
-    float per_glyph_offset_x{0.0f};
-    float per_glyph_offset_y{0.0f};
-    float per_glyph_scale_delta{0.0f};
-    float per_glyph_opacity_drop{0.0f};
-    float wave_amplitude_x{0.0f};
-    float wave_amplitude_y{0.0f};
-    float wave_period_seconds{1.0f};
-};
-
 struct TextHighlightSpan {
     std::size_t start_glyph{0};
     std::size_t end_glyph{0}; // exclusive
@@ -128,7 +117,11 @@ struct PositionedGlyph {
     math::Vector2 scale{1.0f, 1.0f};
     float rotation{0.0f};
     float opacity{1.0f};
+    float reveal_factor{1.0f};
+    float blur_radius{0.0f};
     ColorSpec fill_color{255, 255, 255, 255};
+    ColorSpec stroke_color{0, 0, 0, 0};
+    float stroke_width{0.0f};
 };
 
 struct TextLine {

@@ -1,4 +1,7 @@
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
+#include "tachyon/core/spec/schema/common/common_spec.h"
+#include "tachyon/core/spec/schema/animation/text_animator_spec.h"
+#include "tachyon/core/scene/evaluator/layer_utils.h"
 #include <algorithm>
 
 namespace tachyon {
@@ -19,6 +22,18 @@ void parse_transform(const json& object, LayerSpec& layer, const std::string& pa
     if (transform.contains("scale_x")) read_number(transform, "scale_x", layer.transform.scale_x);
     if (transform.contains("scale_y")) read_number(transform, "scale_y", layer.transform.scale_y);
     if (transform.contains("rotation")) read_number(transform, "rotation", layer.transform.rotation);
+}
+
+void parse_transform3d(const json& object, LayerSpec& layer, const std::string& path, DiagnosticBag& diagnostics) {
+    if (!object.contains("transform3d") || !object.at("transform3d").is_object()) return;
+    const auto& transform = object.at("transform3d");
+    const std::string t_path = make_path(path, "transform3d");
+    
+    parse_optional_vector3_property(transform, "anchor_point", layer.transform3d.anchor_point_property, t_path, diagnostics);
+    parse_optional_vector3_property(transform, "position", layer.transform3d.position_property, t_path, diagnostics);
+    parse_optional_vector3_property(transform, "orientation", layer.transform3d.orientation_property, t_path, diagnostics);
+    parse_optional_vector3_property(transform, "rotation", layer.transform3d.rotation_property, t_path, diagnostics);
+    parse_optional_vector3_property(transform, "scale", layer.transform3d.scale_property, t_path, diagnostics);
 }
 
 static bool parse_point2d(const json& arr, math::Vector2& out) {
@@ -114,6 +129,10 @@ void parse_effects(const json& object, LayerSpec& layer, const std::string& path
             if (!effect.is_object()) continue;
             EffectSpec spec;
             read_string(effect, "type", spec.type);
+            // Set kind from type string
+            if (!spec.type.empty()) {
+                spec.kind = effect_kind_from_string(spec.type);
+            }
             read_bool(effect, "enabled", spec.enabled);
             if (effect.contains("scalars") && effect.at("scalars").is_object()) {
                 for (auto& [key, val] : effect.at("scalars").items()) {
@@ -146,7 +165,11 @@ void parse_text_animators(const json& object, LayerSpec& layer, const std::strin
     (void)path; (void)diagnostics;
     if (object.contains("text_animators") && object.at("text_animators").is_array()) {
         for (const auto& anim : object.at("text_animators")) {
-            if (anim.is_string()) layer.text_animators.push_back(anim.get<std::string>());
+            if (anim.is_object()) {
+                TextAnimatorSpec spec;
+                from_json(anim, spec);
+                layer.text_animators.push_back(std::move(spec));
+            }
         }
     }
 }
@@ -155,7 +178,11 @@ void parse_text_highlights(const json& object, LayerSpec& layer, const std::stri
     (void)path; (void)diagnostics;
     if (object.contains("text_highlights") && object.at("text_highlights").is_array()) {
         for (const auto& high : object.at("text_highlights")) {
-            if (high.is_string()) layer.text_highlights.push_back(high.get<std::string>());
+            if (high.is_object()) {
+                TextHighlightSpec spec;
+                from_json(high, spec);
+                layer.text_highlights.push_back(std::move(spec));
+            }
         }
     }
 }
@@ -259,6 +286,10 @@ void parse_layer(const json& object, LayerSpec& out, const std::string& path, Di
     read_string(object, "id", out.id);
     read_string(object, "name", out.name);
     read_string(object, "type", out.type);
+    // Set kind from type string
+    if (!out.type.empty()) {
+        out.kind = scene::map_layer_type(out.type);
+    }
     read_string(object, "blend_mode", out.blend_mode);
     read_bool(object, "enabled", out.enabled);
     read_bool(object, "visible", out.visible);
@@ -274,6 +305,7 @@ void parse_layer(const json& object, LayerSpec& out, const std::string& path, Di
     read_number(object, "height", out.height);
     
     parse_transform(object, out, path, diagnostics);
+    parse_transform3d(object, out, path, diagnostics);
     parse_optional_scalar_property(object, "opacity", out.opacity_property, path, diagnostics);
     parse_optional_scalar_property(object, "mask_feather", out.mask_feather, path, diagnostics);
     

@@ -128,8 +128,7 @@ Implement Component System serialization.
 
 Scope:
 - include/tachyon/core/spec/schema/objects/composition_spec.h
-- src/core/spec/scene_spec_parse.cpp
-- src/core/spec/scene_spec_serialize.cpp
+- src/core/spec/scene_spec_json.cpp
 - tests/unit/core/spec/component_spec_tests.cpp
 
 Rules:

@@ -92,7 +92,7 @@ private:
             // Execute decoding task
             auto resolved_path = m_manager.resolve_media_path(task.asset_id);
             if (!resolved_path.empty()) {
-                auto* decoder = m_manager.acquire_video_decoder(resolved_path);
+                auto decoder = m_manager.acquire_video_decoder(resolved_path);
                 if (decoder) {
                     auto frame = decoder->get_frame_at_time(task.time);
                     if (frame) {
@@ -101,7 +101,6 @@ private:
                             task.time,
                             std::make_unique<renderer2d::SurfaceRGBA>(*frame));
                     }
-                    m_manager.release_video_decoder(resolved_path, decoder);
                 }
             }
         }

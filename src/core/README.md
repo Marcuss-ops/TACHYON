@@ -50,6 +50,5 @@ src/core/
 
 ### Specification (`spec/`)
 - `scene_compiler.cpp`: Compiles scene specs to runtime format
-- `scene_spec_serialize.cpp`: JSON serialization
-- `scene_spec_parse.cpp`: JSON parsing
+- `scene_spec_json.cpp`: JSON parsing and serialization
 - `layer_parse_json.cpp`: Layer-specific JSON parsing

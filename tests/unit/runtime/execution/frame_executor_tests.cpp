@@ -40,7 +40,6 @@ tachyon::SceneSpec make_scene(double x_offset = 0.0) {
     comp.layers.push_back(layer);
 
     tachyon::SceneSpec scene;
-    scene.spec_version = "1.0";
     scene.project.id = "proj";
     scene.project.name = "Runtime";
     scene.compositions.push_back(comp);

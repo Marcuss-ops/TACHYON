@@ -1,26 +1,7 @@
 #pragma once
 
-#include <cstdint>
+#include "tachyon/core/types/color_spec.h"
 #include <algorithm>
-
-namespace tachyon {
-
-/**
- * @brief Simple 8-bit RGBA color specification used in project schemas.
- */
-struct ColorSpec {
-    std::uint8_t r{255}, g{255}, b{255}, a{255};
-
-    [[nodiscard]] bool operator==(const ColorSpec& other) const {
-        return r == other.r && g == other.g && b == other.b && a == other.a;
-    }
-
-    [[nodiscard]] bool operator!=(const ColorSpec& other) const {
-        return !(*this == other);
-    }
-};
-
-} // namespace tachyon
 
 #include "tachyon/core/animation/keyframe.h"
 #include "tachyon/core/animation/animation_curve.h"

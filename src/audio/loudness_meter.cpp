@@ -81,6 +81,7 @@ void LoudnessMeter::reset() {
     m_all_samples.clear();
     m_current_loudness = 0.0;
     m_sample_rate = 48000;
+    m_true_peak_dbfs = -70.0f;
 }
 
 void LoudnessMeter::process(const float* stereo_pcm, int nframes, int sample_rate) {
@@ -129,6 +130,12 @@ void LoudnessMeter::process(const float* stereo_pcm, int nframes, int sample_rat
         if (static_cast<int>(m_short_term_buffer.size()) > short_term_samples) {
             m_short_term_buffer.erase(m_short_term_buffer.begin());
         }
+    }
+    
+    // Aggiorna true peak massimo
+    float current_peak = find_true_peak(stereo_pcm, nframes);
+    if (current_peak > m_true_peak_dbfs) {
+        m_true_peak_dbfs = current_peak;
     }
 }
 
@@ -190,9 +197,7 @@ LoudnessMeasurement LoudnessMeter::current() const {
     measurement.short_term_lufs = calculate_loudness(m_short_term_buffer);
     measurement.integrated_lufs = calculate_loudness(m_all_samples);
     
-    // True peak viene calcolato durante process(), qui usiamo un placeholder
-    // In una implementazione completa, terremmo traccia del peak massimo
-    measurement.true_peak_dbfs = -70.0f;
+    measurement.true_peak_dbfs = m_true_peak_dbfs;
     
     return measurement;
 }

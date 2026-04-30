@@ -16,7 +16,12 @@
 - [x] **PropertyGraph Refactoring**
     - [x] Remove 64-node limit in `property_graph.cpp`
     - [x] Update `PropertyNode` for dynamic dependency tracking
-    - [x] Ensure `RenderGraph` handles larger node counts efficiently
+    - [x] Implement NativeRenderer utility
+- [x] Refactor CLI to support --preset flag
+- [x] Implement `tachyon preview` command
+- [x] Decouple procedural backgrounds from JSON
+- [x] Implement premium text presets (brushed_metal_title)
+- [ ] Systematic removal of legacy JSON parser files
 - [x] Implement Stagger in `Repeater`
 - [x] Implement Motion Path Bezier sampling
 - [x] Integrate `OIDN` filter in `frame_executor.cpp`

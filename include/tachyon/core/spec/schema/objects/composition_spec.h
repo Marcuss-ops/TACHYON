@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/core/spec/schema/objects/background_spec.h"
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 #include "tachyon/core/spec/schema/objects/camera2d_spec.h"
 #include "tachyon/core/spec/schema/audio/audio_spec.h"
@@ -33,7 +34,7 @@ struct CompositionSpec {
     double duration{10.0};
     FrameRate frame_rate;
     std::optional<std::int64_t> fps;
-    std::optional<std::string> background;
+    std::optional<BackgroundSpec> background;
     std::optional<std::string> environment_path;
     std::vector<LayerSpec> layers;
     std::vector<AudioTrackSpec> audio_tracks;

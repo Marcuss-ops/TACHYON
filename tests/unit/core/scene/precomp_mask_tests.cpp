@@ -24,8 +24,6 @@ bool run_precomp_mask_tests() {
     // test precomp evaluation
     {
         SceneSpec scene;
-        scene.version = "1.0";
-        
         CompositionSpec sub_comp;
         sub_comp.id = "sub";
         sub_comp.width = 100;

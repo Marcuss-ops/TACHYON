@@ -229,21 +229,14 @@ EvaluatedLayerState evaluate_layer_state(
     composition.layers.push_back(layer);
 
     EvaluationContext context{
-        nullptr,
-        composition,
-        frame_number,
-        composition_time_seconds,
-        {},
-        std::vector<std::optional<EvaluatedLayerState>>(composition.layers.size()),
-        std::vector<bool>(composition.layers.size(), false),
-        {},
-        audio_analyzer,
-        {},
-        {},
-        media,
-        {},
-        std::nullopt,
-        std::nullopt
+        .scene = nullptr,
+        .composition = composition,
+        .frame_number = frame_number,
+        .composition_time_seconds = composition_time_seconds,
+        .cache = std::vector<std::optional<EvaluatedLayerState>>(composition.layers.size()),
+        .visiting = std::vector<bool>(composition.layers.size(), false),
+        .audio_analyzer = audio_analyzer,
+        .media = media
     };
 
     return make_layer_state(context, context.composition.layers.front(), 0, 0.0, {});

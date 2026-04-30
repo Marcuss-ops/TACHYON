@@ -1,6 +1,6 @@
 #include "tachyon/text/layout/layout.h"
 #include "tachyon/text/i18n/bidi_engine.h"
-#include "tachyon/text/fonts/font_registry.h"
+#include "tachyon/text/fonts/core/font_registry.h"
 #include "tachyon/text/i18n/script_detector.h"
 #include "tachyon/renderer2d/text/utf8/utf8_decoder.h"
 #include "tachyon/renderer2d/text/shaping/font_shaping.h"

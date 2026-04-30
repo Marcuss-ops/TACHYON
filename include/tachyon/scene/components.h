@@ -21,11 +21,10 @@ inline LayerSpec title_card(std::string text, double in, double out) {
 /**
  * @brief Caption track component stub.
  */
-inline LayerSpec caption_track(std::string srt_path, std::string style = "viral") {
+inline LayerSpec caption_track(std::string srt_path) {
     return LayerBuilder("captions")
         .type("text")
-        .prop("subtitle_path", srt_path)
-        .prop("style", style)
+        .subtitle_path(std::move(srt_path))
         .build();
 }
 
@@ -39,8 +38,7 @@ inline CompositionSpec make_short(std::string voice, std::string srt,
     cb.audio(std::move(voice));
     cb.layer("captions", [srt = std::move(srt)](LayerBuilder& l) {
         l.type("text")
-         .prop("subtitle_path", srt)
-         .prop("style", "viral");
+         .subtitle_path(std::move(srt));
     });
     fn(cb);
     return std::move(cb).build();

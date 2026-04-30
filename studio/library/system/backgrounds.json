@@ -175,6 +175,58 @@
           }
         }
       ]
+    },
+    {
+      "id": "bg_grid_modern",
+      "name": "Modern Tech Grid",
+      "description": "Dark tech grid with neon accents and scanlines.",
+      "params": [
+        { "name": "grid_color", "type": "color", "default": "#00F2FF" },
+        { "name": "bg_color", "type": "color", "default": "#050505" },
+        { "name": "spacing", "type": "double", "default": 60.0 }
+      ],
+      "layers": [
+        {
+          "id": "grid_main",
+          "type": "procedural",
+          "procedural": {
+            "kind": "grid_lines",
+            "spacing": "{{spacing}}",
+            "border_width": 1.2,
+            "color_a": "{{bg_color}}",
+            "color_b": "{{grid_color}}",
+            "scanline_intensity": 0.15,
+            "grain_amount": 0.05,
+            "contrast": 1.1
+          }
+        }
+      ]
+    },
+    {
+      "id": "bg_classico_premium",
+      "name": "Classico Premium",
+      "description": "Elegant soft gradient with organic movement and grain.",
+      "params": [
+        { "name": "color_start", "type": "color", "default": "#0A0A0A" },
+        { "name": "color_end", "type": "color", "default": "#1A1A2E" },
+        { "name": "grain", "type": "double", "default": 0.08 }
+      ],
+      "layers": [
+        {
+          "id": "classico_base",
+          "type": "procedural",
+          "procedural": {
+            "kind": "aura",
+            "frequency": 0.8,
+            "warp_strength": 2.0,
+            "color_a": "{{color_start}}",
+            "color_b": "{{color_end}}",
+            "grain_amount": "{{grain}}",
+            "saturation": 0.9,
+            "contrast": 1.05
+          }
+        }
+      ]
     }
   ]
 }

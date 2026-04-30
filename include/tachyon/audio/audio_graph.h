@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <functional>
+#include <stdexcept>
 
 namespace tachyon::audio {
 
@@ -55,6 +56,11 @@ public:
     }
 
     AudioBus& master() { return m_master; }
+
+    AudioBus& bus(const std::string& id) {
+        for (auto& b : m_buses) if (b.id() == id) return b;
+        throw std::runtime_error("AudioBus not found: " + id);
+    }
 
     // Process a buffer: through per-track bus then master chain
     void process_track(const std::string& bus_id, float* io, int nframes) {

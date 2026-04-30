@@ -164,9 +164,16 @@ configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/include/tachyon/core/version.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/include/tachyon/version.h
 )
+
+# Build config generation for C++ loader
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/tachyon/tachyon_build_config.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/include/tachyon/tachyon_build_config.h
+)
+
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 
 # Subdirectories
 add_subdirectory(src)
 add_subdirectory(tests)
-# add_subdirectory(examples)
+add_subdirectory(examples)

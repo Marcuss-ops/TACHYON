@@ -94,7 +94,6 @@ LayerSpec make_enhance_text_layer(const TextScenePresetOptions& options) {
 
 SceneSpec make_enhance_text_scene(const TextScenePresetOptions& options) {
     SceneSpec scene;
-    scene.spec_version = "1.0";
     scene.project.id = options.project_id;
     scene.project.name = options.project_name;
 
