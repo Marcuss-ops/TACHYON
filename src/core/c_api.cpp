@@ -1,10 +1,7 @@
 #include "tachyon/core/c_api.h"
-#include "tachyon/transition_registry.h"
-#include "tachyon/core/animation/animation_primitives.h"
 
 #include "tachyon/core/spec/compilation/scene_compiler.h"
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
-#include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/runtime/execution/jobs/render_job.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/execution/session/render_session.h"
@@ -15,12 +12,8 @@
 #include <string>
 #include <thread>
 #include <utility>
-#include <unordered_map>
-#include <random>
-#include <vector>
 
 namespace tachyon {
-
 namespace {
 
 void write_error(char* error_buf, int error_buf_size, const std::string& message) {
@@ -43,13 +36,16 @@ int fail(char* error_buf, int error_buf_size, const std::string& message, int co
 
 }  // namespace
 
+}  // namespace tachyon
+
 extern "C" int tachyon_render_from_json(
     const char* scene_json,
     const char* job_json,
     const char* output_path,
     char* error_buf,
-    int error_buf_size
-) {
+    int error_buf_size) {
+    using namespace tachyon;
+
     try {
         if (scene_json == nullptr || job_json == nullptr) {
             return fail(error_buf, error_buf_size, "scene_json and job_json are required", 1);
@@ -73,8 +69,8 @@ extern "C" int tachyon_render_from_json(
             return fail(error_buf, error_buf_size, message, 1);
         }
 
-        SceneSpec scene = *scene_parsed.value;
-        RenderJob job = *job_parsed.value;
+        SceneSpec scene = std::move(*scene_parsed.value);
+        RenderJob job = std::move(*job_parsed.value);
 
         if (output_path != nullptr && output_path[0] != '\0') {
             job.output.destination.path = output_path;
@@ -120,42 +116,3 @@ extern "C" int tachyon_render_from_json(
         return fail(error_buf, error_buf_size, "unknown tachyon c api error", 5);
     }
 }
-
-extern "C" double tachyon_interpolate(double frame, const double* frames, const double* values, int count) {
-    if (!frames || !values || count <= 0) return 0.0;
-    std::vector<double> v_frames(frames, frames + count);
-    std::vector<double> v_values(values, values + count);
-    return tachyon::interpolate(frame, v_frames, v_values);
-}
-
-extern "C" double tachyon_random(const char* seed) {
-    if (!seed) return 0.0;
-    return tachyon::random(seed);
-}
-
-extern "C" double tachyon_random_range(const char* seed, double min_val, double max_val) {
-    if (!seed) return min_val;
-    return tachyon::random(seed, static_cast<float>(min_val), static_cast<float>(max_val));
-}
-
-extern "C" double tachyon_spring(double t, double from, double to, double freq, double damping) {
-    return tachyon::spring(t, from, to, freq, damping);
-}
-
-extern "C" double tachyon_noise2d(double x, double y) {
-    return tachyon::noise2d(static_cast<float>(x), static_cast<float>(y));
-}
-
-extern "C" double tachyon_noise3d(double x, double y, double z) {
-    return tachyon::noise3d(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z));
-}
-
-extern "C" double tachyon_noise4d(double x, double y, double z, double w) {
-    return tachyon::noise4d(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z), static_cast<float>(w));
-}
-
-}  // namespace tachyon
-
-#if 0
-// Legacy transition / animation C API block disabled for now.
-#endif

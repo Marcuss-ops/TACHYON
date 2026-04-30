@@ -32,7 +32,7 @@ Tachyon has **2D layer transforms** implemented but lacks a dedicated 2D camera 
 #pragma once
 
 #include "tachyon/core/spec/schema/properties/property_spec.h"
-#include "tachyon/core/math/algebra/vector2.h"
+#include "tachyon/core/math/vector2.h"
 
 namespace tachyon {
 
@@ -95,8 +95,8 @@ src/core/spec/layer_parse_json.cpp    # ADD: Parse Camera2DSpec from JSON
 // include/tachyon/core/scene/state/evaluated_camera2d_state.h
 #pragma once
 
-#include "tachyon/core/math/algebra/matrix3x3.h"
-#include "tachyon/core/math/algebra/vector2.h"
+#include "tachyon/core/math/matrix3x3.h"
+#include "tachyon/core/math/vector2.h"
 
 namespace tachyon {
 
@@ -145,7 +145,7 @@ src/core/scene/state/evaluated_camera2d_state.cpp              # NEW
 
 #include "tachyon/core/scene/state/evaluated_camera2d_state.h"
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
-#include "tachyon/core/math/algebra/matrix3x3.h"
+#include "tachyon/core/math/matrix3x3.h"
 
 namespace tachyon {
 
@@ -404,4 +404,3 @@ tests/integration/parallax_cards_tests.cpp                # MODIFY: Use real cam
 - Multiple cameras can exist; active camera is either per-layer or composition-wide
 - Zoom is equivalent to focal length but in 2D screen space
 - No near/far planes needed — 2D camera is always orthographic
-

@@ -1,5 +1,6 @@
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
+#include "tachyon/core/spec/schema/objects/background_spec.h"
 
 #include <memory>
 #include <vector>
@@ -72,8 +73,6 @@ struct SceneSpecBuilder::SceneSpecBuilderImpl {
 
     SceneSpec Build() {
         SceneSpec spec;
-        spec.version = "1.0";
-        spec.spec_version = "1.0";
         if (project_id) spec.project.id = *project_id;
         if (project_name) spec.project.name = *project_name;
         if (project_authoring_tool) spec.project.authoring_tool = *project_authoring_tool;

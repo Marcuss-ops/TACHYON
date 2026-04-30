@@ -15,8 +15,6 @@ struct RenderBatchItem {
     std::filesystem::path scene_path;
     std::filesystem::path job_path;
     std::optional<std::filesystem::path> output_override;
-    /// Variant variables to override in the render job (for template rendering)
-    std::map<std::string, nlohmann::json> variant_vars;
 };
 
 struct RenderBatchSpec {

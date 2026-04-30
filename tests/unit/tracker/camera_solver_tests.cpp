@@ -1,4 +1,4 @@
-#include "tachyon/tracker/algorithms/camera_solver.h"
+#include "tachyon/tracker/camera_solver.h"
 
 #include <cmath>
 #include <iostream>
@@ -92,5 +92,4 @@ bool run_camera_solver_tests() {
 
     return g_failures == 0;
 }
-
 

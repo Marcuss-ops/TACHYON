@@ -1,5 +1,4 @@
 #include "tachyon/output/frame_output_sink.h"
-#include "tachyon/output/prores_sink.h"
 #include "tachyon/renderer2d/color/color_management_system.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
 
@@ -180,35 +179,6 @@ std::unique_ptr<FrameOutputSink> create_png_sequence_sink() {
 
 std::unique_ptr<FrameOutputSink> create_frame_output_sink(const RenderPlan& plan) {
     if (plan.output.destination.path.empty()) {
-        return nullptr;
-    }
-
-    const auto& profile = plan.output.profile;
-    const std::string& container = profile.container;
-    const std::string& codec = profile.video.codec;
-
-    // ProRes: MOV container with prores codec
-    if (container == "mov" && codec.find("prores") != std::string::npos) {
-        ProResSinkConfig config;
-        config.profile = codec;
-        return create_prores_sink(config);
-    }
-
-    // DNxHD: MOV container with dnxhd codec
-    if (container == "mov" && codec.find("dnxhd") != std::string::npos) {
-        // TODO: Create DNxHD sink
-        return nullptr;
-    }
-
-    // GIF: gif container
-    if (container == "gif") {
-        // TODO: Create GIF sink
-        return nullptr;
-    }
-
-    // WebM: webm container
-    if (container == "webm") {
-        // TODO: Create WebM sink
         return nullptr;
     }
 

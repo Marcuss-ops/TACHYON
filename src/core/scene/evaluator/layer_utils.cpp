@@ -13,7 +13,6 @@ LayerType map_layer_type(const std::string& type) {
     if (type == "precomp") return LayerType::Precomp;
     if (type == "light") return LayerType::Light;
     if (type == "null") return LayerType::NullLayer;
-    if (type == "procedural") return LayerType::Procedural;
     return LayerType::Unknown;
 }
 

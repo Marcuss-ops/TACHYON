@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/core/math/algebra/vector3.h"
+#include "tachyon/core/math/vector3.h"
 #include <cstdint>
 
 namespace tachyon::camera {
@@ -47,4 +47,3 @@ struct CameraShake {
 };
 
 } // namespace tachyon::camera
-

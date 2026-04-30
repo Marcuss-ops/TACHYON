@@ -1,8 +1,8 @@
 #pragma once
 
 #include "tachyon/properties/animatable_property.h"
-#include "tachyon/core/math/algebra/vector2.h"
-#include "tachyon/core/math/algebra/vector3.h"
+#include "tachyon/core/math/vector2.h"
+#include "tachyon/core/math/vector3.h"
 #include "tachyon/core/animation/animation_curve.h"
 
 #include <string>
@@ -151,4 +151,3 @@ inline PropertyGroup make_camera_group(const std::string& group_name = "camera")
 
 } // namespace properties
 } // namespace tachyon
-

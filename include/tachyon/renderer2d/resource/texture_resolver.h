@@ -4,8 +4,8 @@
 #include "tachyon/media/management/media_manager.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/text/content/subtitle.h"
-#include "tachyon/text/fonts/core/font.h"
-#include "tachyon/text/fonts/core/font_registry.h"
+#include "tachyon/text/fonts/font.h"
+#include "tachyon/text/fonts/font_registry.h"
 
 #include <memory>
 #include <vector>
@@ -36,4 +36,3 @@ private:
 };
 
 } // namespace tachyon::renderer2d
-

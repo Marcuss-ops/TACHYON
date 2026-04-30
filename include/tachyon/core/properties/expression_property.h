@@ -45,19 +45,9 @@ public:
         }
 
         expressions::ExpressionContext expr_ctx;
-        expr_ctx.time = context.time;
-        expr_ctx.value = context.value;
-        expr_ctx.seed = context.seed;
-        expr_ctx.layer_index = context.layer_index;
-        expr_ctx.property_index = context.property_index;
-        expr_ctx.composition_width = context.composition_width;
-        expr_ctx.composition_height = context.composition_height;
-        expr_ctx.composition_time = context.composition_time;
-        expr_ctx.composition_id = context.composition_id;
-        expr_ctx.layer_id = context.layer_id;
-        expr_ctx.property_name = context.property_name;
-        expr_ctx.value_at_time = context.value_at_time;
-        expressions::bind_standard_expression_variables(expr_ctx);
+        expr_ctx.variables["t"] = context.time;
+        expr_ctx.variables["time"] = context.time;
+        expr_ctx.variables["seed"] = static_cast<double>(context.seed);
 
         try {
             double value = expressions::ExpressionVM::execute(m_compilation.bytecode, expr_ctx);

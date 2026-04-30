@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/renderer3d/core/aov_buffer.h"
-#include "tachyon/core/math/algebra/vector3.h"
+#include "tachyon/core/math/vector3.h"
 #include "tachyon/runtime/execution/planning/quality_policy.h"
 
 #include <vector>
@@ -99,4 +99,3 @@ private:
 };
 
 } // namespace tachyon::renderer3d
-

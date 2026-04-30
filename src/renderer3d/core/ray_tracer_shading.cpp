@@ -1,6 +1,6 @@
 #include "tachyon/renderer3d/core/ray_tracer.h"
 #include "tachyon/renderer3d/materials/pbr_utils.h"
-#include "tachyon/core/math/algebra/matrix4x4.h"
+#include "tachyon/core/math/matrix4x4.h"
 #include <algorithm>
 #include <cmath>
 #include <random>
@@ -418,4 +418,3 @@ ShadingResult RayTracer::trace_ray(
 }
 
 } // namespace tachyon::renderer3d
-

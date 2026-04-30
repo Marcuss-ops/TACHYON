@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/core/math/algebra/vector2.h"
+#include "tachyon/core/math/vector2.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/renderer2d/spec/gradient_spec.h"
 
@@ -119,4 +119,3 @@ struct GradientLUT {
 };
 
 } // namespace tachyon::renderer2d
-

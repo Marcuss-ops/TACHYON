@@ -14,11 +14,6 @@ const ::tachyon::text::FontRegistry* get_default_font_registry() {
         default_registry = new ::tachyon::text::FontRegistry();
         
         const std::vector<std::filesystem::path> candidates = {
-            // Repo-local fonts first so the renderer can use assets shipped with the project.
-            std::filesystem::path("fonts/SegoeUI.ttf"),
-            std::filesystem::path("fonts/Arial.ttf"),
-            std::filesystem::path("fonts/Tahoma.ttf"),
-            std::filesystem::path("fonts/NotoColorEmoji.ttf"),
             // Windows paths
             std::filesystem::path(R"(C:\Windows\Fonts\arial.ttf)"),
             std::filesystem::path(R"(C:\Windows\Fonts\Arial.ttf)"),

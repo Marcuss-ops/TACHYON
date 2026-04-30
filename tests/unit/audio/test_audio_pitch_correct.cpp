@@ -1,5 +1,5 @@
-#include "tachyon/audio/processing/audio_processor.h"
-#include "tachyon/audio/core/audio_mixer.h"
+#include "tachyon/audio/audio_processor.h"
+#include "tachyon/audio/audio_mixer.h"
 #include "tachyon/core/spec/schema/audio/audio_spec.h"
 #include "tachyon/runtime/core/serialization/tbf_codec.h"
 
@@ -284,4 +284,3 @@ bool run_audio_pitch_correct_tests() {
 
     return g_failures == 0;
 }
-

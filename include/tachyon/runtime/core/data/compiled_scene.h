@@ -74,9 +74,6 @@ struct CompiledKeyframe {
     double cy1{0.0};
     double cx2{1.0};
     double cy2{1.0};
-    double spring_stiffness{150.0};
-    double spring_damping{12.0};
-    double spring_mass{1.0};
 };
 
 struct CompiledPropertyTrack {
@@ -112,13 +109,9 @@ struct CompiledLayer {
     ColorSpec fill_color{255, 255, 255, 255};
     ColorSpec stroke_color{255, 255, 255, 255};
     float stroke_width{0.0f};
-    float extrusion_depth{0.0f};
-    float bevel_size{0.0f};
-    float hole_bevel_ratio{0.0f};
     std::optional<ShapePathSpec> shape_path;
     std::optional<ShapeSpec> shape_spec;
     std::vector<EffectSpec> effects;
-    std::vector<AnimatedEffectSpec> animated_effects;
     std::vector<TextAnimatorSpec> text_animators;
     std::vector<TextHighlightSpec> text_highlights;
     float mask_feather{0.0f};
@@ -126,7 +119,6 @@ struct CompiledLayer {
     AnimatedColorSpec subtitle_outline_color;
     float subtitle_outline_width{0.0f};
     std::optional<std::string> word_timestamp_path;
-    std::optional<ProceduralSpec> procedural;
     
     // Evaluation state indices
     std::optional<std::uint32_t> parent_index;
@@ -149,19 +141,6 @@ struct CompiledLayer {
     std::vector<spec::TrackBinding> track_bindings;
     spec::TimeRemapCurve time_remap;
     spec::FrameBlendMode frame_blend{spec::FrameBlendMode::Linear};
-
-    // Temporal bounds (from SceneSpec)
-    double in_time{0.0};
-    double out_time{0.0};
-    double start_time{0.0};
-    // Blend mode (from SceneSpec)
-    std::string blend_mode{"normal"};
-    // Animation transitions
-    LayerTransitionSpec transition_in;
-    LayerTransitionSpec transition_out;
-
-    // Asset resolution state (set at compile time, propagated to renderer)
-    bool asset_offline{false};
 };
 
 struct CompiledComposition {
@@ -183,9 +162,7 @@ struct CompiledScene {
     std::string project_name;
     
     RuntimeRenderGraph graph;
-
-    std::uint64_t scene_structure_hash{0}; ///< Hash of topology only (IDs, types, graph edges). Used for incremental updates.
-
+    
     std::vector<CompiledComposition> compositions;
     std::vector<CompiledPropertyTrack> property_tracks;
     std::vector<expressions::Bytecode> expressions;

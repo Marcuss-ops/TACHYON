@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/core/camera/camera_state.h"
-#include "tachyon/core/math/algebra/vector3.h"
+#include "tachyon/core/math/vector3.h"
 #include "tachyon/renderer2d/raster/draw_command.h"
 
 namespace tachyon {
@@ -30,4 +30,3 @@ ProjectedCard3D project_card_to_screen(
 
 } // namespace renderer2d
 } // namespace tachyon
-

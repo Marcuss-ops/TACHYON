@@ -120,11 +120,17 @@ ParseResult<RenderJob> parse_render_job_json(const std::string& text) {
             const auto& destination = output.at("destination");
             read_string(destination, "path", job.output.destination.path);
             read_bool(destination, "overwrite", job.output.destination.overwrite);
+        } else {
+            result.diagnostics.add_error("job.output.destination_missing", "output.destination is required", "output.destination");
         }
 
         if (output.contains("profile") && output.at("profile").is_object()) {
             job.output.profile = parse_output_profile(output.at("profile"), "output.profile", result.diagnostics);
+        } else {
+            result.diagnostics.add_error("job.output.profile_missing", "output.profile is required", "output.profile");
         }
+    } else {
+        result.diagnostics.add_error("job.output.missing", "output object is required", "output");
     }
 
     if (root.contains("variables") && root.at("variables").is_object()) {

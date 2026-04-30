@@ -1,8 +1,8 @@
 #pragma once
 
-#include "tachyon/core/math/algebra/vector3.h"
-#include "tachyon/core/math/algebra/vector2.h"
-#include "tachyon/core/math/algebra/matrix4x4.h"
+#include "tachyon/core/math/vector3.h"
+#include "tachyon/core/math/vector2.h"
+#include "tachyon/core/math/matrix4x4.h"
 #include <vector>
 #include <string>
 
@@ -105,4 +105,3 @@ struct MeshAsset {
 };
 
 } // namespace tachyon::media
-

@@ -1,5 +1,5 @@
-#include "tachyon/core/math/algebra/quaternion.h"
-#include "tachyon/core/math/algebra/matrix4x4.h"
+#include "tachyon/core/math/quaternion.h"
+#include "tachyon/core/math/matrix4x4.h"
 
 #include <cmath>
 #include <algorithm>
@@ -97,4 +97,3 @@ Quaternion Quaternion::slerp(const Quaternion& a, const Quaternion& b, float t) 
 
 } // namespace math
 } // namespace tachyon
-

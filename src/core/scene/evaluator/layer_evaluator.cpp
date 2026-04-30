@@ -5,41 +5,12 @@
 #include "tachyon/core/scene/math/evaluator_math.h"
 #include "tachyon/core/scene/evaluator/hashing.h"
 #include "tachyon/core/scene/evaluator/camera2d_evaluator.h"
-#include "tachyon/core/shapes/shape_path.h"
 
 #include <algorithm>
 #include <cmath>
 #include <optional>
 
 namespace tachyon::scene {
-namespace {
-
-math::Matrix4x4 build_world_matrix_3d(
-    const math::Vector3& position,
-    const math::Vector3& orientation_deg,
-    const math::Vector3& rotation_deg,
-    const math::Vector3& scale,
-    const math::Vector3& anchor_point) {
-
-    constexpr float kDegToRad = 3.14159265358979323846f / 180.0f;
-
-    const math::Vector3 total_rotation_deg = orientation_deg + rotation_deg;
-    const math::Matrix4x4 translation = math::Matrix4x4::translation(position);
-    const math::Matrix4x4 rotation_x = math::Matrix4x4::rotation_x(total_rotation_deg.x * kDegToRad);
-    const math::Matrix4x4 rotation_y = math::Matrix4x4::rotation_y(total_rotation_deg.y * kDegToRad);
-    const math::Matrix4x4 rotation_z = math::Matrix4x4::rotation_z(total_rotation_deg.z * kDegToRad);
-    const math::Matrix4x4 rotation = rotation_x * rotation_y * rotation_z;
-    const math::Matrix4x4 anchor = math::Matrix4x4::translation({
-        -anchor_point.x,
-        -anchor_point.y,
-        -anchor_point.z
-    });
-    const math::Matrix4x4 scale_mat = math::Matrix4x4::scaling(scale);
-
-    return translation * rotation * anchor * scale_mat;
-}
-
-} // namespace
 
 EvaluatedLayerState make_layer_state(
     EvaluationContext& context,
@@ -88,10 +59,6 @@ EvaluatedLayerState make_layer_state(
         vars.numeric,
         vars.tables,
         static_cast<std::uint32_t>(layer_index));
-    // Apply time remap if property is not empty
-    if (!layer.time_remap_property.empty()) {
-        local_t = evaluated.child_time_seconds;
-    }
 
     evaluated.active = layer.enabled && (t >= layer.in_point && t < layer.out_point);
     const double frame_duration = 1.0 / context.composition.frame_rate.value();
@@ -125,15 +92,13 @@ EvaluatedLayerState make_layer_state(
         vars.tables,
         static_cast<std::uint32_t>(layer_index)));
 
-    const bool use_3d_transform = layer.is_3d || evaluated.type == LayerType::Camera || evaluated.type == LayerType::UIHook;
+    const bool use_3d_transform = layer.is_3d || evaluated.type == LayerType::Camera;
     if (use_3d_transform) {
         const math::Vector3 position_fallback = layer.transform3d.position_property.value.value_or(math::Vector3{0.0f, 0.0f, 0.0f});
         const math::Vector3 rotation_fallback = layer.transform3d.rotation_property.value.value_or(math::Vector3{0.0f, 0.0f, 0.0f});
-        const math::Vector3 orientation_fallback = layer.transform3d.orientation_property.value.value_or(math::Vector3{0.0f, 0.0f, 0.0f});
         const math::Vector3 scale_fallback_3d = layer.transform3d.scale_property.value.value_or(math::Vector3{1.0f, 1.0f, 1.0f});
         const math::Vector3 pos3 = sample_vector3(layer.transform3d.position_property, position_fallback, local_t, context.audio_analyzer);
         const math::Vector3 rot3 = sample_vector3(layer.transform3d.rotation_property, rotation_fallback, local_t, context.audio_analyzer);
-        const math::Vector3 orientation3 = sample_vector3(layer.transform3d.orientation_property, orientation_fallback, local_t, context.audio_analyzer);
         const math::Vector3 scale3 = sample_vector3(layer.transform3d.scale_property, scale_fallback_3d, local_t, context.audio_analyzer);
 
         // Sample anchor point for 3D
@@ -147,28 +112,18 @@ EvaluatedLayerState make_layer_state(
         evaluated.local_transform.position = {pos3.x, pos3.y};
         evaluated.local_transform.rotation_rad = 0.0f;
         evaluated.local_transform.scale = {scale3.x, scale3.y};
-        evaluated.world_matrix = build_world_matrix_3d(
+        evaluated.world_matrix = math::compose_trs(
             pos3,
-            orientation3,
-            rot3,
-            scale3,
-            anchor3);
-        evaluated.world_position3 = evaluated.world_matrix.transform_point({0.0f, 0.0f, 0.0f});
-        evaluated.world_normal = evaluated.world_matrix.transform_vector({0.0f, 0.0f, 1.0f}).normalized();
+            math::Quaternion::from_euler(rot3),
+            scale3);
 
         const math::Vector3 prev_pos3 = sample_vector3(layer.transform3d.position_property, position_fallback, prev_local_t, context.audio_analyzer);
         const math::Vector3 prev_rot3 = sample_vector3(layer.transform3d.rotation_property, rotation_fallback, prev_local_t, context.audio_analyzer);
-        const math::Vector3 prev_orientation3 = sample_vector3(layer.transform3d.orientation_property, orientation_fallback, prev_local_t, context.audio_analyzer);
         const math::Vector3 prev_scale3 = sample_vector3(layer.transform3d.scale_property, scale_fallback_3d, prev_local_t, context.audio_analyzer);
-        const math::Vector3 prev_anchor3 = sample_vector3(layer.transform3d.anchor_point_property,
-            math::Vector3{static_cast<float>(layer.width) * 0.5f, static_cast<float>(layer.height) * 0.5f, 0.0f},
-            prev_local_t, context.audio_analyzer);
-        evaluated.previous_world_matrix = build_world_matrix_3d(
+        evaluated.previous_world_matrix = math::compose_trs(
             prev_pos3,
-            prev_orientation3,
-            prev_rot3,
-            prev_scale3,
-            prev_anchor3);
+            math::Quaternion::from_euler(prev_rot3),
+            prev_scale3);
     } else {
         const auto position_fallback = math::Vector2{
             static_cast<float>(layer.transform.position_x.value_or(0.0)),
@@ -179,60 +134,14 @@ EvaluatedLayerState make_layer_state(
             static_cast<float>(layer.transform.scale_y.value_or(1.0))
         };
 
-        const math::Vector2 pos2 = sample_vector2(
-            layer.transform.position_property,
-            position_fallback,
-            local_t,
-            context.audio_analyzer);
+        const math::Vector2 pos2 = sample_vector2(layer.transform.position_property, position_fallback, local_t, context.audio_analyzer);
         const double rot_deg = sample_scalar(layer.transform.rotation_property, layer.transform.rotation.value_or(0.0), local_t, context.audio_analyzer);
-        const math::Vector2 scale2 = sample_vector2(
-            layer.transform.scale_property,
-            scale_fallback,
-            local_t,
-            context.audio_analyzer);
-
-        // Motion Path support
-        if (layer.transform.motion_path_enabled) {
-            // Determine which shape path to use
-            std::optional<shapes::ShapePathSpec> motion_path;
-
-            if (layer.transform.motion_path_shape.has_value()) {
-                // Use inline motion path shape
-                motion_path = layer.transform.motion_path_shape;
-            } else if (layer.transform.motion_path_layer_id.has_value()) {
-                // TODO: Look up shape from referenced layer
-                // This requires access to composition layers
-            }
-
-            if (motion_path.has_value() && !motion_path->empty()) {
-                // Sample progress along path (0.0 to 1.0)
-                double path_progress = sample_scalar(
-                    layer.transform.motion_path_offset_property,
-                    0.0,
-                    local_t,
-                    context.audio_analyzer);
-                path_progress = std::clamp(path_progress, 0.0, 1.0);
-
-                // Sample position from path
-                shapes::Point2D path_pos = motion_path->sample_point(path_progress);
-                evaluated.local_transform.position = {path_pos.x, path_pos.y};
-
-                // Orient to path if enabled
-                if (layer.transform.orient_to_path) {
-                    double tangent_angle = motion_path->sample_tangent_angle(path_progress);
-                    // Convert to degrees and add to existing rotation
-                    evaluated.local_transform.rotation_rad = static_cast<float>(tangent_angle);
-                }
-            }
-        }
+        const math::Vector2 scale2 = sample_vector2(layer.transform.scale_property, scale_fallback, local_t, context.audio_analyzer);
 
         // Sample anchor point for 2D
-        const math::Vector2 anchor2 = sample_vector2(
-            layer.transform.anchor_point,
+        const math::Vector2 anchor2 = sample_vector2(layer.transform.anchor_point,
             math::Vector2{static_cast<float>(layer.width) * 0.5f, static_cast<float>(layer.height) * 0.5f},
-            local_t,
-            context.audio_analyzer);
-        (void)anchor2;
+            local_t, context.audio_analyzer);
 
 
         evaluated.local_transform.position = pos2;
@@ -245,25 +154,14 @@ EvaluatedLayerState make_layer_state(
             math::Quaternion::from_euler({0.0f, 0.0f, static_cast<float>(rot_deg)}),
             evaluated.scale_3d);
 
-        const math::Vector2 prev_pos2 = sample_vector2(
-            layer.transform.position_property,
-            position_fallback,
-            prev_local_t,
-            context.audio_analyzer);
+        const math::Vector2 prev_pos2 = sample_vector2(layer.transform.position_property, position_fallback, prev_local_t, context.audio_analyzer);
         const double prev_rot_deg = sample_scalar(layer.transform.rotation_property, layer.transform.rotation.value_or(0.0), prev_local_t, context.audio_analyzer);
-        const math::Vector2 prev_scale2 = sample_vector2(
-            layer.transform.scale_property,
-            scale_fallback,
-            prev_local_t,
-            context.audio_analyzer);
+        const math::Vector2 prev_scale2 = sample_vector2(layer.transform.scale_property, scale_fallback, prev_local_t, context.audio_analyzer);
 
         // Sample previous anchor point
-        const math::Vector2 prev_anchor2 = sample_vector2(
-            layer.transform.anchor_point,
+        const math::Vector2 prev_anchor2 = sample_vector2(layer.transform.anchor_point,
             math::Vector2{static_cast<float>(layer.width) * 0.5f, static_cast<float>(layer.height) * 0.5f},
-            prev_local_t,
-            context.audio_analyzer);
-        (void)prev_anchor2;
+            prev_local_t, context.audio_analyzer);
 
         evaluated.previous_world_matrix = math::compose_trs(
             {prev_pos2.x, prev_pos2.y, 0.0f},
@@ -294,11 +192,6 @@ EvaluatedLayerState make_layer_state(
         evaluated.camera_type = layer.camera_type;
         evaluated.zoom = static_cast<float>(sample_scalar(layer.camera_zoom, 877.0, local_t, context.audio_analyzer));
         evaluated.poi = sample_vector3(layer.camera_poi, {0,0,0}, local_t, context.audio_analyzer);
-        evaluated.camera_focus_target_id = layer.camera_focus_target_id;
-        evaluated.camera_action_aware = layer.camera_action_aware;
-        evaluated.camera_action_pan_strength = static_cast<float>(sample_scalar(layer.camera_action_pan_strength, 0.0, local_t, context.audio_analyzer));
-        evaluated.camera_snap_to_grid = layer.camera_snap_to_grid;
-        evaluated.camera_grid_size = static_cast<float>(sample_scalar(layer.camera_grid_size, 1.0, local_t, context.audio_analyzer));
         
         // NEW: Camera Shake
         evaluated.camera_shake_seed = layer.camera_shake_seed;
@@ -308,51 +201,15 @@ EvaluatedLayerState make_layer_state(
         evaluated.camera_shake_roughness = static_cast<float>(sample_scalar(layer.camera_shake_roughness, 0.5, local_t, context.audio_analyzer));
     }
 
-    if (evaluated.type == LayerType::UIHook) {
-        evaluated.ui_hook_camera_id = layer.ui_hook_camera_id;
-    }
-
-    // Light specific
-    if (evaluated.type == LayerType::Light) {
-        evaluated.light_type = layer.light_type;
-        evaluated.light_intensity = static_cast<float>(sample_scalar(layer.light_intensity, 1.0, local_t, context.audio_analyzer));
-        evaluated.light_color = sample_color(layer.light_color, {255, 255, 255, 255}, local_t);
-        evaluated.falloff_type = layer.falloff_type;
-        evaluated.attenuation_near = static_cast<float>(sample_scalar(layer.attenuation_near, 0.0, local_t, context.audio_analyzer));
-        evaluated.attenuation_far = static_cast<float>(sample_scalar(layer.attenuation_far, 1000.0, local_t, context.audio_analyzer));
-        evaluated.cone_angle = static_cast<float>(sample_scalar(layer.cone_angle, 45.0, local_t, context.audio_analyzer));
-        evaluated.cone_feather = static_cast<float>(sample_scalar(layer.cone_feather, 0.0, local_t, context.audio_analyzer));
-        evaluated.casts_shadows = layer.casts_shadows;
-        evaluated.shadow_darkness = static_cast<float>(sample_scalar(layer.shadow_darkness, 0.0, local_t, context.audio_analyzer));
-        evaluated.shadow_radius = static_cast<float>(sample_scalar(layer.shadow_radius, 0.0, local_t, context.audio_analyzer));
-    }
-
     // Text specific
     evaluated.text_content = resolve_template(layer.text_content, vars.strings, vars.numeric);
     evaluated.font_id = layer.font_id;
     evaluated.font_size = static_cast<float>(sample_scalar(layer.font_size, 24.0, local_t, context.audio_analyzer));
-    for (const auto& [tag, axis_spec] : layer.font_axes) {
-        evaluated.font_axes[tag] = static_cast<float>(
-            sample_scalar(axis_spec, 0.0, local_t, context.audio_analyzer));
-    }
     evaluated.fill_color = sample_color(layer.fill_color, {255,255,255,255}, local_t);
     evaluated.stroke_color = sample_color(layer.stroke_color, {0,0,0,255}, local_t);
     evaluated.stroke_width = static_cast<float>(sample_scalar(layer.stroke_width_property, layer.stroke_width, local_t, context.audio_analyzer));
-    evaluated.extrusion_depth = static_cast<float>(layer.extrusion_depth);
-    evaluated.bevel_size = static_cast<float>(layer.bevel_size);
-    
-    // Copy procedural spec if present
-    if (layer.procedural.has_value()) {
-        evaluated.procedural = layer.procedural;
-    }
-
-    // Copy particle spec if present
-    if (layer.particle_spec.has_value()) {
-        evaluated.particle_spec = layer.particle_spec;
-    }
 
     evaluated.effects = layer.effects;
-    evaluated.animated_effects = layer.animated_effects;
 
     return evaluated;
 }

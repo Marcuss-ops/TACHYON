@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/core/properties/bezier_interpolator.h"
-#include "tachyon/core/math/algebra/vector2.h"
+#include "tachyon/core/math/vector2.h"
 #include <string>
 #include <vector>
 #include <optional>
@@ -129,4 +129,3 @@ public:
 };
 
 } // namespace tachyon::properties
-

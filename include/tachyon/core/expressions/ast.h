@@ -8,7 +8,6 @@ namespace tachyon::expressions {
 
 enum class ASTNodeType {
     Number,
-    String,
     Variable,
     BinaryOp,
     UnaryOp,
@@ -27,12 +26,6 @@ struct NumberNode : public ASTNode {
     ASTNodeType type() const override { return ASTNodeType::Number; }
 };
 
-struct StringNode : public ASTNode {
-    std::string value;
-    explicit StringNode(std::string v) : value(std::move(v)) {}
-    ASTNodeType type() const override { return ASTNodeType::String; }
-};
-
 struct VariableNode : public ASTNode {
     std::string name;
     explicit VariableNode(std::string n) : name(std::move(n)) {}
@@ -40,10 +33,7 @@ struct VariableNode : public ASTNode {
 };
 
 enum class BinaryOperator {
-    Add, Sub, Mul, Div, Pow,
-    Mod,            // %
-    Lt, Gt, Le, Ge, // <  >  <=  >=
-    Eq, Ne          // == !=
+    Add, Sub, Mul, Div, Pow
 };
 
 struct BinaryOpNode : public ASTNode {

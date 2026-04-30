@@ -1,5 +1,5 @@
 #include "tachyon/renderer3d/effects/motion_blur.h"
-#include "tachyon/core/math/geometry/transform3.h"
+#include "tachyon/core/math/transform3.h"
 #include <cmath>
 #include <algorithm>
 #include <random>
@@ -196,4 +196,3 @@ float MotionBlurRenderer::sample_cubic(float t) const {
 }
 
 } // namespace tachyon::renderer3d
-

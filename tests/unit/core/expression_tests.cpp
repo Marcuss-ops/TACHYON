@@ -45,41 +45,7 @@ bool run_expression_tests() {
         check_near(result.value, 4.0, "Division: 10 / 2 - 1");
     }
 
-    // 2. AE-style contract variables
-    {
-        ExpressionContext ae_ctx;
-        ae_ctx.time = 1.5;
-        ae_ctx.composition_time = 2.0;
-        ae_ctx.composition_width = 1920;
-        ae_ctx.composition_height = 1080;
-        ae_ctx.layer_index = 4;
-        ae_ctx.property_index = 6;
-        ae_ctx.value = 12.5;
-        ae_ctx.seed = 7;
-        ae_ctx.value_at_time = [](double sample_time) {
-            return sample_time * 8.0;
-        };
-
-        auto result = ExpressionEvaluator::evaluate("t + time + value + seed + index", ae_ctx);
-        check_near(result.value, 1.5 + 1.5 + 12.5 + 7.0 + 4.0, "AE variables: t/time/value/seed/index");
-
-        result = ExpressionEvaluator::evaluate("thisComp.width + thisComp.height", ae_ctx);
-        check_near(result.value, 3000.0, "AE variables: thisComp.width + thisComp.height");
-
-        result = ExpressionEvaluator::evaluate("thisComp.time", ae_ctx);
-        check_near(result.value, 2.0, "AE variables: thisComp.time");
-
-        result = ExpressionEvaluator::evaluate("thisLayer.index", ae_ctx);
-        check_near(result.value, 4.0, "AE variables: thisLayer.index");
-
-        result = ExpressionEvaluator::evaluate("thisProperty.index", ae_ctx);
-        check_near(result.value, 6.0, "AE variables: thisProperty.index");
-
-        result = ExpressionEvaluator::evaluate("valueAtTime(0.25)", ae_ctx);
-        check_near(result.value, 2.0, "AE built-in: valueAtTime(0.25)");
-    }
-
-    // 3. Power and Unary
+    // 2. Power and Unary
     {
         auto result = ExpressionEvaluator::evaluate("2 ^ 3", ctx);
         check_near(result.value, 8.0, "Power: 2 ^ 3");
@@ -91,7 +57,7 @@ bool run_expression_tests() {
         check_near(result.value, -6.0, "Unary minus in expression: 2 * -3");
     }
 
-    // 4. Variables
+    // 3. Variables
     {
         auto result = ExpressionEvaluator::evaluate("t * val", ctx);
         check_near(result.value, 20.0, "Variables: t * val");
@@ -105,7 +71,7 @@ bool run_expression_tests() {
         check_near(result.value, 5.0, "Variables: music.bass + 2");
     }
 
-    // 5. Functions
+    // 4. Functions
     {
         auto result = ExpressionEvaluator::evaluate("sin(0)", ctx);
         check_near(result.value, 0.0, "Function: sin(0)");
@@ -117,19 +83,12 @@ bool run_expression_tests() {
         check_near(result.value, 10.0, "Function: clamp(50, 0, 10)");
     }
 
-    // 6. ExpressionProperty Integration
+    // 5. ExpressionProperty Integration
     {
         ExpressionProperty<float> prop("osc", "sin(t * 1.570796)"); // at t=1, sin(pi/2) = 1
         tachyon::properties::PropertyEvaluationContext eval_ctx;
         eval_ctx.time = 1.0;
         eval_ctx.seed = 99;
-        eval_ctx.value = 12.0;
-        eval_ctx.composition_width = 1280;
-        eval_ctx.composition_height = 720;
-        eval_ctx.layer_index = 3;
-        eval_ctx.value_at_time = [](double sample_time) {
-            return sample_time + 5.0;
-        };
         
         // Let's also test the evaluator directly with the same string
         ExpressionContext direct_ctx;
@@ -144,18 +103,9 @@ bool run_expression_tests() {
 
         ExpressionProperty<float> seeded_prop("seeded", "seed + t");
         check_near(seeded_prop.sample(eval_ctx), 100.0, "ExpressionProperty exposes deterministic seed");
-
-        ExpressionProperty<float> width_prop("width", "thisComp.width / 2");
-        check_near(width_prop.sample(eval_ctx), 640.0, "ExpressionProperty exposes thisComp.width");
-
-        ExpressionProperty<float> sample_prop("sample", "valueAtTime(0.5)");
-        check_near(sample_prop.sample(eval_ctx), 5.5, "ExpressionProperty exposes valueAtTime()");
-
-        ExpressionProperty<float> index_prop("index", "thisProperty.index");
-        check_near(index_prop.sample(eval_ctx), 0.0, "ExpressionProperty exposes thisProperty.index default");
     }
 
-    // 7. New Built-ins
+    // 6. New Built-ins
     {
         ctx.variables["t"] = 2.5;
         ctx.layer_index = 3;

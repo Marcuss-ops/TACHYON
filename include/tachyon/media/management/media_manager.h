@@ -3,7 +3,7 @@
 #include "tachyon/media/management/image_manager.h"
 #include "tachyon/media/loading/mesh_asset.h"
 #include "tachyon/media/decoding/video_decoder.h"
-#include "tachyon/audio/core/audio_mixer.h"
+#include "tachyon/audio/audio_mixer.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 
@@ -126,4 +126,3 @@ private:
 };
 
 } // namespace tachyon::media
-

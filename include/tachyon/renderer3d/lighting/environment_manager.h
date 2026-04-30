@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/core/math/algebra/vector3.h"
+#include "tachyon/core/math/vector3.h"
 #include "tachyon/media/loading/mesh_asset.h"
 #include <memory>
 #include <vector>
@@ -35,4 +35,3 @@ private:
 };
 
 } // namespace tachyon::renderer3d
-

@@ -27,31 +27,16 @@ struct TextAnimatorSelectorSpec {
     std::optional<double> frequency;
     bool random_order{false};
 
-    // AE-style Advanced Selector properties
-    std::string shape{"square"}; // "square" | "ramp_up" | "ramp_down" | "triangle" | "round" | "smooth"
-    double offset{0.0};          // Offset the range in percent
-    double ease_high{0.0};       // S-curve ease in percent (0-100)
-    double ease_low{0.0};        // S-curve ease in percent (0-100)
-    
     // Selection mode (add, subtract, intersect)
     std::string mode{"add"};
     
     // Unit for selector evaluation:
-    // ... (rest of the struct)
+    // - "characters": all glyphs including spaces
+    // - "characters_excluding_spaces": only non-space glyphs
+    // - "words": word-level selection (uses word_index)
+    // - "lines": line-level selection (uses line_index)
+    // - "clusters": grapheme cluster-level selection (preserves shaping)
     std::string based_on{"characters"};
-    
-    std::string stagger_mode{"none"};
-    
-    double stagger_delay{0.0};
-};
-
-struct TextAnimatorCursorSpec {
-    bool enabled{false};
-    std::string cursor_char{"|"};
-    double blink_rate{2.0}; // Hz (blinks per second)
-    std::optional<ColorSpec> color_override;
-    bool follow_last_glyph{true};
-    double offset_x{2.0};
 };
 
 struct TextAnimatorPropertySpec {
@@ -91,10 +76,8 @@ struct TextAnimatorPropertySpec {
 };
 
 struct TextAnimatorSpec {
-    std::string name;
     TextAnimatorSelectorSpec  selector;
     TextAnimatorPropertySpec  properties;
-    TextAnimatorCursorSpec    cursor;
 };
 
 struct TextHighlightSpec {
@@ -104,15 +87,5 @@ struct TextHighlightSpec {
     std::int32_t padding_x{3};
     std::int32_t padding_y{2};
 };
-
-// JSON serialization declarations (implementations in text_animator_spec_serialize.cpp)
-void to_json(nlohmann::json& j, const TextAnimatorSelectorSpec& s);
-void from_json(const nlohmann::json& j, TextAnimatorSelectorSpec& s);
-void to_json(nlohmann::json& j, const TextAnimatorPropertySpec& p);
-void from_json(const nlohmann::json& j, TextAnimatorPropertySpec& p);
-void to_json(nlohmann::json& j, const TextAnimatorSpec& a);
-void from_json(const nlohmann::json& j, TextAnimatorSpec& a);
-void to_json(nlohmann::json& j, const TextHighlightSpec& h);
-void from_json(const nlohmann::json& j, TextHighlightSpec& h);
 
 } // namespace tachyon

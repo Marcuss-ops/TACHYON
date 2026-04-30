@@ -1,13 +1,13 @@
 #pragma once
 
-#include "tachyon/core/math/algebra/vector2.h"
-#include "tachyon/core/math/algebra/vector3.h"
-#include "tachyon/core/math/algebra/matrix4x4.h"
-#include "tachyon/core/math/algebra/quaternion.h"
-#include "tachyon/core/math/geometry/transform2.h"
+#include "tachyon/core/math/vector2.h"
+#include "tachyon/core/math/vector3.h"
+#include "tachyon/core/math/matrix4x4.h"
+#include "tachyon/core/math/quaternion.h"
+#include "tachyon/core/math/transform2.h"
 #include "tachyon/core/animation/easing.h"
 #include "tachyon/core/expressions/expression_engine.h"
-#include "tachyon/audio/processing/audio_analyzer.h"
+#include "tachyon/audio/audio_analyzer.h"
 #include "tachyon/timeline/time.h"
 
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
@@ -58,5 +58,3 @@ math::Transform2 make_transform2(
 
 } // namespace
 } // namespace scene
-
-

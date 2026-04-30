@@ -1,8 +1,6 @@
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include <algorithm>
 
-using json = nlohmann::json;
-
 namespace tachyon {
 
 bool read_string(const json& object, const char* key, std::string& out) {
@@ -122,30 +120,6 @@ bool parse_color_value(const json& value, ColorSpec& out) {
         out.a = (value.size() >= 4) ? static_cast<std::uint8_t>(std::clamp(value[3].get<int>(), 0, 255)) : 255;
         return true;
     }
-    if (value.is_string()) {
-        std::string hex = value.get<std::string>();
-        if (hex.empty()) return false;
-        if (hex[0] == '#') hex = hex.substr(1);
-        
-        uint32_t r, g, b, a = 255;
-        if (hex.length() == 6) {
-            std::sscanf(hex.c_str(), "%2x%2x%2x", &r, &g, &b);
-        } else if (hex.length() == 8) {
-            std::sscanf(hex.c_str(), "%2x%2x%2x%2x", &r, &g, &b, &a);
-        } else if (hex.length() == 3) {
-            std::sscanf(hex.c_str(), "%1x%1x%1x", &r, &g, &b);
-            r = (r << 4) | r;
-            g = (g << 4) | g;
-            b = (b << 4) | b;
-        } else {
-            return false;
-        }
-        out.r = static_cast<std::uint8_t>(r);
-        out.g = static_cast<std::uint8_t>(g);
-        out.b = static_cast<std::uint8_t>(b);
-        out.a = static_cast<std::uint8_t>(a);
-        return true;
-    }
     if (value.is_object()) {
         if (value.contains("r") && value.contains("g") && value.contains("b")) {
             out.r = static_cast<std::uint8_t>(std::clamp(value.at("r").get<int>(), 0, 255));
@@ -165,21 +139,7 @@ animation::EasingPreset parse_easing_preset(const json& value) {
     if (easing == "ease_out" || easing == "easeOut") return animation::EasingPreset::EaseOut;
     if (easing == "ease_in_out" || easing == "easeInOut") return animation::EasingPreset::EaseInOut;
     if (easing == "custom" || easing == "bezier") return animation::EasingPreset::Custom;
-    if (easing == "spring") return animation::EasingPreset::Spring;
-    if (easing == "bounce") return animation::EasingPreset::BounceOut;
-    if (easing == "elastic") return animation::EasingPreset::ElasticOut;
-    if (easing == "back") return animation::EasingPreset::BackOut;
-    if (easing == "circ") return animation::EasingPreset::CircOut;
     return animation::EasingPreset::None;
-}
-
-bool parse_spring_params(const json& value, animation::SpringEasing& out) {
-    if (!value.is_object()) return false;
-    if (value.contains("stiffness") && value.at("stiffness").is_number()) out.stiffness = value.at("stiffness").get<double>();
-    if (value.contains("damping") && value.at("damping").is_number()) out.damping = value.at("damping").get<double>();
-    if (value.contains("mass") && value.at("mass").is_number()) out.mass = value.at("mass").get<double>();
-    if (value.contains("velocity") && value.at("velocity").is_number()) out.velocity = value.at("velocity").get<double>();
-    return true;
 }
 
 animation::CubicBezierEasing parse_bezier(const json& value) {

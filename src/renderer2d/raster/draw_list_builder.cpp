@@ -1,6 +1,5 @@
 #include "tachyon/renderer2d/raster/draw_list_builder.h"
 #include "tachyon/renderer2d/spec/project_card.h"
-#include "tachyon/renderer2d/color/blending.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -13,6 +12,25 @@ namespace {
 
 RectI full_clip(const scene::EvaluatedCompositionState& composition_state) {
     return RectI{0, 0, static_cast<int>(composition_state.width), static_cast<int>(composition_state.height)};
+}
+
+BlendMode parse_blend_mode(const std::string& blend_mode) {
+    if (blend_mode == "additive") {
+        return BlendMode::Additive;
+    }
+    if (blend_mode == "multiply") {
+        return BlendMode::Multiply;
+    }
+    if (blend_mode == "screen") {
+        return BlendMode::Screen;
+    }
+    if (blend_mode == "overlay") {
+        return BlendMode::Overlay;
+    }
+    if (blend_mode == "soft_light" || blend_mode == "softLight") {
+        return BlendMode::SoftLight;
+    }
+    return BlendMode::Normal;
 }
 
 RectI scaled_rect(const scene::EvaluatedLayerState& layer, int base_width, int base_height) {

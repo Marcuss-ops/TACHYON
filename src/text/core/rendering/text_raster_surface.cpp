@@ -9,9 +9,9 @@
 namespace tachyon::text {
 
 namespace {
- 
+
 float sample_glyph_alpha(const tachyon::text::GlyphBitmap& glyph, float src_x, float src_y) {
-    if (glyph.width == 0U || glyph.height == 0U || (glyph.atlas_data == nullptr && glyph.pixels.empty())) {
+    if (glyph.width == 0U || glyph.height == 0U || glyph.alpha_mask.empty()) {
         return 0.0f;
     }
 
@@ -29,7 +29,11 @@ float sample_glyph_alpha(const tachyon::text::GlyphBitmap& glyph, float src_x, f
     const float fy = src_y - static_cast<float>(y0);
 
     auto alpha_at = [&](std::uint32_t x, std::uint32_t y) -> float {
-        return static_cast<float>(glyph.alpha_at(x, y)) / 255.0f;
+        const std::size_t index = static_cast<std::size_t>(y) * glyph.width + x;
+        if (index >= glyph.alpha_mask.size()) {
+            return 0.0f;
+        }
+        return static_cast<float>(glyph.alpha_mask[index]) / 255.0f;
     };
 
     const float a00 = alpha_at(x0, y0);
@@ -41,74 +45,17 @@ float sample_glyph_alpha(const tachyon::text::GlyphBitmap& glyph, float src_x, f
     const float ax1 = a01 + (a11 - a01) * fx;
     return ax0 + (ax1 - ax0) * fy;
 }
- 
+
 } // namespace
 
 void TextRasterSurface::render_glyph(const tachyon::text::GlyphBitmap& glyph, int tx, int ty, int tw, int th, tachyon::renderer2d::Color gc) {
-    if (tw <= 0 || th <= 0 || glyph.width == 0U || glyph.height == 0U || (glyph.atlas_data == nullptr && glyph.pixels.empty())) return;
-    
-    // Standard non-motion-blurred rendering
+    if (tw <= 0 || th <= 0 || glyph.width == 0U || glyph.height == 0U || glyph.alpha_mask.empty()) return;
     for (int y = 0; y < th; ++y) {
         const float src_y = ((static_cast<float>(y) + 0.5f) * static_cast<float>(glyph.height) / static_cast<float>(th)) - 0.5f;
         for (int x = 0; x < tw; ++x) {
             const float src_x = ((static_cast<float>(x) + 0.5f) * static_cast<float>(glyph.width) / static_cast<float>(tw)) - 0.5f;
-            float alpha = 0.0f;
-            if (glyph.type == tachyon::renderer2d::text::GlyphType::SDF) {
-                const float smoothing = 0.25f / (static_cast<float>(tw) / static_cast<float>(glyph.width));
-                const float dist = sample_glyph_alpha(glyph, src_x, src_y);
-                alpha = std::clamp((dist - 0.5f) / smoothing + 0.5f, 0.0f, 1.0f);
-            } else {
-                alpha = sample_glyph_alpha(glyph, src_x, src_y);
-            }
-            
-            if (alpha > 0.0f) {
-                blend_pixel(static_cast<std::uint32_t>(tx + x), static_cast<std::uint32_t>(ty + y), gc, static_cast<std::uint8_t>(std::lround(std::clamp(alpha, 0.0f, 1.0f) * 255.0f)));
-            }
-        }
-    }
-}
-
-void TextRasterSurface::render_glyph_with_motion_blur(
-    const tachyon::text::GlyphBitmap& glyph, 
-    int tx, int ty, int tw, int th, 
-    tachyon::renderer2d::Color gc,
-    float vx, float vy) {
-    
-    const float velocity_mag = std::sqrt(vx * vx + vy * vy);
-    if (velocity_mag < 0.5f) {
-        render_glyph(glyph, tx, ty, tw, th, gc);
-        return;
-    }
-
-    // Directional motion blur: sample along the velocity vector
-    // We use a multi-tap sampling approach (usually 8-16 taps)
-    const int num_taps = std::clamp(static_cast<int>(velocity_mag), 4, 16);
-    const float inv_taps = 1.0f / static_cast<float>(num_taps);
-
-    for (int y = 0; y < th; ++y) {
-        const float base_src_y = ((static_cast<float>(y) + 0.5f) * static_cast<float>(glyph.height) / static_cast<float>(th)) - 0.5f;
-        for (int x = 0; x < tw; ++x) {
-            const float base_src_x = ((static_cast<float>(x) + 0.5f) * static_cast<float>(glyph.width) / static_cast<float>(tw)) - 0.5f;
-            
-            float accumulated_alpha = 0.0f;
-            for (int t = 0; t < num_taps; ++t) {
-                const float offset = (static_cast<float>(t) / static_cast<float>(num_taps - 1)) - 0.5f;
-                const float src_x = base_src_x - (vx * offset * static_cast<float>(glyph.width) / static_cast<float>(tw));
-                const float src_y = base_src_y - (vy * offset * static_cast<float>(glyph.height) / static_cast<float>(th));
-                
-                if (glyph.type == tachyon::renderer2d::text::GlyphType::SDF) {
-                    const float smoothing = 0.25f / (static_cast<float>(tw) / static_cast<float>(glyph.width));
-                    const float dist = sample_glyph_alpha(glyph, src_x, src_y);
-                    accumulated_alpha += std::clamp((dist - 0.5f) / smoothing + 0.5f, 0.0f, 1.0f);
-                } else {
-                    accumulated_alpha += sample_glyph_alpha(glyph, src_x, src_y);
-                }
-            }
-
-            const float alpha = accumulated_alpha * inv_taps;
-            if (alpha > 0.0f) {
-                blend_pixel(static_cast<std::uint32_t>(tx + x), static_cast<std::uint32_t>(ty + y), gc, static_cast<std::uint8_t>(std::lround(std::clamp(alpha, 0.0f, 1.0f) * 255.0f)));
-            }
+            const float alpha = sample_glyph_alpha(glyph, src_x, src_y);
+            blend_pixel(static_cast<std::uint32_t>(tx + x), static_cast<std::uint32_t>(ty + y), gc, static_cast<std::uint8_t>(std::lround(std::clamp(alpha, 0.0f, 1.0f) * 255.0f)));
         }
     }
 }
@@ -211,10 +158,7 @@ void TextRasterSurface::apply_gaussian_blur(float radius) {
     }
 
     // Horizontal pass
-#ifdef _OPENMP
-    #pragma omp parallel for schedule(static)
-#endif
-    for (int y = 0; y < static_cast<int>(m_height); ++y) {
+    for (std::uint32_t y = 0; y < m_height; ++y) {
         for (std::uint32_t x = 0; x < m_width; ++x) {
             float r_acc = 0.0f, g_acc = 0.0f, b_acc = 0.0f, a_acc = 0.0f;
             for (int k = 0; k < kernel_size; ++k) {
@@ -241,10 +185,7 @@ void TextRasterSurface::apply_gaussian_blur(float radius) {
     }
 
     // Vertical pass
-#ifdef _OPENMP
-    #pragma omp parallel for schedule(static)
-#endif
-    for (int x = 0; x < static_cast<int>(m_width); ++x) {
+    for (std::uint32_t x = 0; x < m_width; ++x) {
         for (std::uint32_t y = 0; y < m_height; ++y) {
             float r_acc = 0.0f, g_acc = 0.0f, b_acc = 0.0f, a_acc = 0.0f;
             for (int k = 0; k < kernel_size; ++k) {

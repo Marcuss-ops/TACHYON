@@ -1,5 +1,4 @@
 #include "tachyon/core/expressions/expression_engine.h"
-#include "tachyon/core/animation/animation_primitives.h"
 #include "tachyon/runtime/core/contracts/math_contract.h"
 #include <algorithm>
 #include <cmath>
@@ -11,27 +10,13 @@
 namespace tachyon {
 namespace expressions {
 
-void bind_standard_expression_variables(ExpressionContext& context) {
-    context.variables.try_emplace("t", context.time);
-    context.variables.try_emplace("time", context.time);
-    context.variables.try_emplace("value", context.value);
-    context.variables.try_emplace("seed", static_cast<double>(context.seed));
-    context.variables.try_emplace("index", static_cast<double>(context.layer_index));
-    context.variables.try_emplace("thisProperty.index", static_cast<double>(context.property_index));
-    context.variables.try_emplace("thisComp.width", static_cast<double>(context.composition_width));
-    context.variables.try_emplace("thisComp.height", static_cast<double>(context.composition_height));
-    context.variables.try_emplace("thisComp.time", context.composition_time != 0.0 ? context.composition_time : context.time);
-    context.variables.try_emplace("thisLayer.index", static_cast<double>(context.layer_index));
-    context.variables.try_emplace("thisLayer.time", context.time);
-}
-
 class Parser {
 public:
     Parser(const std::string& input)
         : m_input(input), m_pos(0) {}
 
     std::unique_ptr<ASTNode> parse() {
-        auto ast = parse_ternary();
+        auto ast = parse_expression();
         skip_whitespace();
         if (m_pos < m_input.length()) {
             throw std::runtime_error("Unexpected characters at end of expression");
@@ -48,48 +33,6 @@ private:
 
     void skip_whitespace() {
         while (std::isspace(peek())) m_pos++;
-    }
-
-    // Ternary: cond ? then : else
-    std::unique_ptr<ASTNode> parse_ternary() {
-        auto cond = parse_comparison();
-        skip_whitespace();
-        if (peek() == '?') {
-            get();
-            auto then_expr = parse_ternary();
-            skip_whitespace();
-            if (peek() == ':') get();
-            auto else_expr = parse_ternary();
-            std::vector<std::unique_ptr<ASTNode>> args;
-            args.push_back(std::move(cond));
-            args.push_back(std::move(then_expr));
-            args.push_back(std::move(else_expr));
-            return std::make_unique<FunctionCallNode>("__ternary__", std::move(args));
-        }
-        return cond;
-    }
-
-    // Comparison: expr (<|>|<=|>=|==|!=) expr
-    std::unique_ptr<ASTNode> parse_comparison() {
-        auto result = parse_expression();
-        while (true) {
-            skip_whitespace();
-            char c = peek();
-            if (c != '<' && c != '>' && c != '=' && c != '!') break;
-            char c2 = (m_pos + 1 < m_input.size()) ? m_input[m_pos + 1] : '\0';
-            BinaryOperator op;
-            bool matched = true;
-            if      (c == '<' && c2 == '=') { op = BinaryOperator::Le; m_pos += 2; }
-            else if (c == '>' && c2 == '=') { op = BinaryOperator::Ge; m_pos += 2; }
-            else if (c == '=' && c2 == '=') { op = BinaryOperator::Eq; m_pos += 2; }
-            else if (c == '!' && c2 == '=') { op = BinaryOperator::Ne; m_pos += 2; }
-            else if (c == '<')              { op = BinaryOperator::Lt; m_pos += 1; }
-            else if (c == '>')              { op = BinaryOperator::Gt; m_pos += 1; }
-            else { matched = false; }
-            if (!matched) break;
-            result = std::make_unique<BinaryOpNode>(op, std::move(result), parse_expression());
-        }
-        return result;
     }
 
     std::unique_ptr<ASTNode> parse_expression() {
@@ -113,17 +56,13 @@ private:
         auto result = parse_factor();
         while (true) {
             skip_whitespace();
-            if (peek() == '*') {
-                get();
-                result = std::make_unique<BinaryOpNode>(BinaryOperator::Mul, std::move(result), parse_factor());
+            if (peek() == '*') { 
+                get(); 
+                result = std::make_unique<BinaryOpNode>(BinaryOperator::Mul, std::move(result), parse_factor()); 
             }
             else if (peek() == '/') {
                 get();
-                result = std::make_unique<BinaryOpNode>(BinaryOperator::Div, std::move(result), parse_factor());
-            }
-            else if (peek() == '%') {
-                get();
-                result = std::make_unique<BinaryOpNode>(BinaryOperator::Mod, std::move(result), parse_factor());
+                result = std::make_unique<BinaryOpNode>(BinaryOperator::Div, std::move(result), parse_factor()); 
             }
             else break;
         }
@@ -154,25 +93,6 @@ private:
             skip_whitespace();
             if (get() != ')') throw std::runtime_error("Missing closing parenthesis");
             return result;
-        } else if (c == '"' || c == '\'') {
-            // String literal
-            char quote = get(); // consume opening quote
-            std::string value;
-            while (peek() != quote && peek() != '\0') {
-                if (peek() == '\\') {
-                    get(); // consume backslash
-                    char esc = get();
-                    if (esc == 'n') value += '\n';
-                    else if (esc == 't') value += '\t';
-                    else if (esc == '\\') value += '\\';
-                    else if (esc == quote) value += quote;
-                    else value += esc;
-                } else {
-                    value += get();
-                }
-            }
-            if (get() != quote) throw std::runtime_error("Missing closing quote");
-            return std::make_unique<StringNode>(std::move(value));
         } else if (c == '-') {
             get();
             return std::make_unique<UnaryOpNode>(UnaryOperator::Negate, parse_base());
@@ -235,12 +155,6 @@ public:
                 m_bytecode.instructions.push_back({OpCode::PushConst, idx});
                 break;
             }
-            case ASTNodeType::String: {
-                auto* s = static_cast<StringNode*>(node);
-                std::uint32_t idx = add_name(s->value);
-                m_bytecode.instructions.push_back({OpCode::PushName, idx});
-                break;
-            }
             case ASTNodeType::Variable: {
                 auto* v = static_cast<VariableNode*>(node);
                 std::uint32_t idx = add_name(v->name);
@@ -257,13 +171,6 @@ public:
                     case BinaryOperator::Mul: m_bytecode.instructions.push_back({OpCode::Mul, 0}); break;
                     case BinaryOperator::Div: m_bytecode.instructions.push_back({OpCode::Div, 0}); break;
                     case BinaryOperator::Pow: m_bytecode.instructions.push_back({OpCode::Pow, 0}); break;
-                    case BinaryOperator::Mod: m_bytecode.instructions.push_back({OpCode::Mod, 0}); break;
-                    case BinaryOperator::Lt:  m_bytecode.instructions.push_back({OpCode::Lt,  0}); break;
-                    case BinaryOperator::Gt:  m_bytecode.instructions.push_back({OpCode::Gt,  0}); break;
-                    case BinaryOperator::Le:  m_bytecode.instructions.push_back({OpCode::Le,  0}); break;
-                    case BinaryOperator::Ge:  m_bytecode.instructions.push_back({OpCode::Ge,  0}); break;
-                    case BinaryOperator::Eq:  m_bytecode.instructions.push_back({OpCode::Eq,  0}); break;
-                    case BinaryOperator::Ne:  m_bytecode.instructions.push_back({OpCode::Ne,  0}); break;
                 }
                 break;
             }
@@ -277,22 +184,7 @@ public:
             }
             case ASTNodeType::FunctionCall: {
                 auto* f = static_cast<FunctionCallNode*>(node);
-                // Special case: ternary (cond ? then : else)
-                if (f->name == "__ternary__" && f->arguments.size() == 3) {
-                    compile(f->arguments[0].get());
-                    std::size_t jif_pos = m_bytecode.instructions.size();
-                    m_bytecode.instructions.push_back({OpCode::JumpIfFalse, 0});
-                    compile(f->arguments[1].get());
-                    std::size_t jmp_pos = m_bytecode.instructions.size();
-                    m_bytecode.instructions.push_back({OpCode::Jump, 0});
-                    std::size_t else_start = m_bytecode.instructions.size();
-                    m_bytecode.instructions[jif_pos].data = static_cast<std::uint32_t>(else_start);
-                    compile(f->arguments[2].get());
-                    std::size_t after_else = m_bytecode.instructions.size();
-                    m_bytecode.instructions[jmp_pos].data = static_cast<std::uint32_t>(after_else);
-                    break;
-                }
-                // Normal function call
+                // Push arguments (left to right, but VM pops right to left, so this is correct)
                 for (auto& arg : f->arguments) {
                     compile(arg.get());
                 }
@@ -353,7 +245,15 @@ EvaluationResult CoreExpressionEvaluator::evaluate(const std::string& expression
     if (!comp.success) return {0.0, false, comp.error};
     
     ExpressionContext resolved = context;
-    bind_standard_expression_variables(resolved);
+    if (resolved.variables.find("seed") == resolved.variables.end()) {
+        resolved.variables["seed"] = static_cast<double>(resolved.seed);
+    }
+    if (resolved.variables.find("index") == resolved.variables.end()) {
+        resolved.variables["index"] = static_cast<double>(resolved.layer_index);
+    }
+    if (resolved.variables.find("value") == resolved.variables.end()) {
+        resolved.variables["value"] = resolved.value;
+    }
 
     // Populate audio analysis variables for expression access
     resolved.variables["audio.bass"] = resolved.audio_analysis.bass;

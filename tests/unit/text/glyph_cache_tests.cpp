@@ -1,4 +1,4 @@
-#include "tachyon/text/fonts/core/font.h"
+#include "tachyon/text/fonts/font.h"
 
 #include <filesystem>
 #include <iostream>
@@ -44,11 +44,10 @@ bool run_glyph_cache_tests() {
     if (scaled_first != nullptr) {
         check_true(scaled_first->width == base->width * 2U, "Scaled glyph width doubles");
         check_true(scaled_first->height == base->height * 2U, "Scaled glyph height doubles");
-        check_true(scaled_first->pixels.size() == base->pixels.size() * 4U, "Scaled glyph bitmap expands");
+        check_true(scaled_first->alpha_mask.size() == base->alpha_mask.size() * 4U, "Scaled glyph bitmap expands");
     }
 
     check_true(font.find_scaled_glyph(static_cast<std::uint32_t>('T'), 1U) == base, "Scale 1 reuses base glyph");
 
     return g_failures == 0;
 }
-

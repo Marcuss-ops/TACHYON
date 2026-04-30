@@ -9,7 +9,7 @@ namespace tachyon {
 class GoldenFixtureTests : public ::testing::Test {
 protected:
     void SetUp() override {
-        m_registry = std::make_unique<test::GoldenRegistry>("unit/runtime/visual/golden_hashes.json");
+        m_registry = std::make_unique<test::GoldenRegistry>("golden_hashes.json");
     }
 
     void verify_hash(const std::string& key, const ExecutedFrame& result) {
@@ -19,7 +19,9 @@ protected:
             hash = hasher.hash_pixels(result.frame->pixels());
         }
 
-        bool success = m_registry->verify_or_update(key, hash);
+        // To update hashes, change false to true here during development
+        bool update_mode = false; 
+        bool success = m_registry->verify_or_update(key, hash, update_mode);
         
         EXPECT_TRUE(success) << "Hash mismatch for " << key << ". Calculated: 0x" << std::hex << hash;
     }

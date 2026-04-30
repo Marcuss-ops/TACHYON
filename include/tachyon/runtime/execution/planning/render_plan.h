@@ -3,11 +3,11 @@
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include "tachyon/runtime/execution/jobs/render_job.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/core/spec/schema/objects/background_spec.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/timeline/time_remap.h"
 
 #include "tachyon/runtime/execution/planning/quality_policy.h"
-#include "tachyon/core/spec/schema/objects/background_spec.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -26,7 +26,7 @@ struct CompositionSummary {
     std::int64_t height{0};
     double duration{0.0};
     FrameRate frame_rate;
-    std::optional<BackgroundSpec> background; ///< Typed background specification
+    std::optional<BackgroundSpec> background;
     std::size_t layer_count{0};
     std::size_t solid_layer_count{0};
     std::size_t shape_layer_count{0};

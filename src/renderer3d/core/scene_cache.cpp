@@ -24,14 +24,6 @@ static std::uint64_t hash_vector3(const math::Vector3& v) {
     return h;
 }
 
-static std::uint64_t hash_string(const std::string& text) {
-    std::uint64_t h = 1469598103934665603ULL;
-    for (unsigned char c : text) {
-        h = mix_hash(h, static_cast<std::uint64_t>(c));
-    }
-    return h;
-}
-
 static std::uint64_t hash_matrix4x4(const math::Matrix4x4& m) {
     std::uint64_t h = 1469598103934665603ULL;
     for (int i = 0; i < 16; ++i) {
@@ -150,15 +142,6 @@ std::uint64_t SceneCache::compute_layer_hash(const scene::EvaluatedLayerState& l
             h = mix_hash(h, static_cast<std::uint64_t>(mesh->sub_meshes.front().vertices.size()));
             h = mix_hash(h, static_cast<std::uint64_t>(mesh->sub_meshes.front().indices.size()));
         }
-    }
-
-    if (layer.type == scene::LayerType::Text && layer.is_3d) {
-        h = mix_hash(h, hash_string(layer.text_content));
-        h = mix_hash(h, hash_string(layer.font_id));
-        h = mix_hash(h, hash_float(layer.font_size));
-        h = mix_hash(h, hash_float(layer.extrusion_depth));
-        h = mix_hash(h, hash_float(layer.bevel_size));
-        h = mix_hash(h, static_cast<std::uint64_t>(layer.text_alignment));
     }
 
     h = mix_hash(h, static_cast<std::uint64_t>(layer.width));

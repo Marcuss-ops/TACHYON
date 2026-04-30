@@ -47,10 +47,6 @@ struct ShapeSpec {
     std::optional<GradientSpec> gradient_stroke;
 
     float opacity{1.0f};
-
-    // Signed Distance Field rendering (Tier 3 feature)
-    bool use_sdf{false};
-    float sdf_threshold{0.5f}; // threshold for SDF contour
 };
 
 } // namespace tachyon

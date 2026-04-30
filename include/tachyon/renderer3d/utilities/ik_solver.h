@@ -1,6 +1,6 @@
 #pragma once
-#include "tachyon/core/math/algebra/vector3.h"
-#include "tachyon/core/math/algebra/quaternion.h"
+#include "tachyon/core/math/vector3.h"
+#include "tachyon/core/math/quaternion.h"
 
 namespace tachyon::renderer3d {
 
@@ -55,4 +55,3 @@ public:
 };
 
 } // namespace tachyon::renderer3d
-

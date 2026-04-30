@@ -1,5 +1,4 @@
 #include "tachyon/renderer2d/evaluated_composition/matte_resolver.h"
-#include "tachyon/renderer2d/core/framebuffer.h"
 
 // For backward compatibility, provide an alias
 using MatteResolver = tachyon::renderer2d::MatteResolver;
@@ -184,45 +183,14 @@ bool run_matte_resolver_tests() {
         src.id = "src"; src.active = false; src.visible = false;
         tgt.id = "tgt"; tgt.active = true; tgt.visible = true;
         layers = {src, tgt};
-        
+
         std::vector<MatteDependency> deps;
-        deps.push_back({"src", "tgt", MatteMode::Alpha, 0.0f});
-        
+        deps.push_back({"src", "tgt", MatteMode::Alpha});
+
         std::vector<std::vector<float>> out_buffers;
         std::unordered_map<std::string, std::shared_ptr<SurfaceRGBA>> rendered;
         resolver.resolve(layers, deps, rendered, out_buffers, 2, 2);
         check_true(nearly_equal(out_buffers[1][0], 0.0f), "invisible source -> zero matte");
-    }
-
-    // Resolve: feather blurs matte edge
-    {
-        std::vector<EvaluatedLayerState> layers;
-        EvaluatedLayerState src, tgt;
-        src.id = "src"; src.active = true; src.visible = true;
-        tgt.id = "tgt"; tgt.active = true; tgt.visible = true;
-        layers = {src, tgt};
-        
-        // Create a surface with sharp vertical edge at x=1 (left half alpha=1, right half alpha=0)
-        auto surface = std::make_shared<SurfaceRGBA>(2, 2);
-        for (uint32_t y = 0; y < 2; ++y) {
-            surface->set_pixel(0, y, {0.0f, 0.0f, 0.0f, 1.0f});  // Left: alpha=1
-            surface->set_pixel(1, y, {0.0f, 0.0f, 0.0f, 0.0f});  // Right: alpha=0
-        }
-        
-        std::vector<MatteDependency> deps;
-        deps.push_back({"src", "tgt", MatteMode::Alpha, 2.0f});  // feather=2.0 pixels
-        
-        std::vector<std::vector<float>> out_buffers;
-        std::unordered_map<std::string, std::shared_ptr<SurfaceRGBA>> rendered;
-        rendered["src"] = surface;
-        
-        resolver.resolve(layers, deps, rendered, out_buffers, 2, 2);
-        
-        // With feather, the edge should be blurred
-        // Pixel (1,0) is at the edge - should have value between 0 and 1
-        check_true(out_buffers[1].size() == 4, "feather test: buffer size");
-        bool blurred = out_buffers[1][1] > 0.0f && out_buffers[1][1] < 1.0f;
-        check_true(blurred, "feather blurs matte edge");
     }
 
     return g_failures == 0;

@@ -4,23 +4,7 @@
 #include <sstream>
 #include <algorithm>
 
-// json typedef for implementation - keeps header clean
-using json = nlohmann::json;
-
 namespace tachyon {
-
-bool is_version_like(const std::string& version) {
-    if (version.empty()) return false;
-    bool saw_digit = false;
-    bool saw_dot = false;
-    bool last_was_dot = false;
-    for (const char ch : version) {
-        if (ch >= '0' && ch <= '9') { saw_digit = true; last_was_dot = false; continue; }
-        if (ch == '.') { if (!saw_digit || last_was_dot) return false; saw_dot = true; last_was_dot = true; continue; }
-        return false;
-    }
-    return saw_digit && !last_was_dot && saw_dot;
-}
 
 std::string make_path(const std::string& parent, const std::string& child) {
     if (parent.empty()) return child;
@@ -51,8 +35,6 @@ bool looks_like_media_path(const std::string& value) {
 
 ValidationResult validate_scene_spec(const SceneSpec& scene) {
     ValidationResult result;
-    if (scene.spec_version.empty()) result.diagnostics.add_error("scene.version_missing", "version is required", "version");
-    else if (!is_version_like(scene.spec_version)) result.diagnostics.add_error("scene.spec_version.invalid", "spec_version invalid", "spec_version");
     if (scene.project.id.empty()) result.diagnostics.add_error("scene.project.id_missing", "project.id is required", "project.id");
     if (scene.compositions.empty()) result.diagnostics.add_error("scene.compositions.missing", "at least one composition is required", "compositions");
 

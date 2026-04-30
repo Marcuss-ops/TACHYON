@@ -1,7 +1,7 @@
 #pragma once
 
-#include "tachyon/core/math/algebra/vector3.h"
-#include "tachyon/core/math/algebra/vector2.h"
+#include "tachyon/core/math/vector3.h"
+#include "tachyon/core/math/vector2.h"
 #include "tachyon/media/loading/mesh_asset.h"
 #include <cmath>
 #include <algorithm>
@@ -32,4 +32,3 @@ math::Vector3 evaluate_disney_bsdf(
     const math::Vector3& L);
 
 } // namespace tachyon::renderer3d::pbr
-
