@@ -1,73 +1,94 @@
-param(
-    [switch]$PersistUserPath
-)
+<#
+.SYNOPSIS
+    Adds cmake and ninja to the current session PATH by scanning common install locations.
+.PARAMETER PersistUserPath
+    Also persist found paths to the user-level PATH (survives terminal restart).
+#>
+param([switch]$PersistUserPath)
 
-$cmakeCandidates = @(
-    'C:\Program Files\cmake-4.3.0-windows-x86_64\bin',
-    'C:\Program Files\CMake\bin',
-    'C:\Program Files (x86)\CMake\bin'
-)
+function Find-Tool([string]$Exe) {
+    # Already in PATH?
+    $found = Get-Command $Exe -ErrorAction SilentlyContinue
+    if ($found) { return (Split-Path $found.Source) }
 
-$msbuildCandidates = @(
-    'C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin',
-    'C:\Program Files\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin'
-)
+    $candidates = [System.Collections.Generic.List[string]]::new()
 
-function Resolve-ExistingPath {
-    param(
-        [string[]]$Candidates
-    )
-
-    foreach ($candidate in $Candidates) {
-        if (Test-Path $candidate) {
-            return $candidate
+    # WinGet packages (user + machine)
+    foreach ($base in @("$env:LOCALAPPDATA\Microsoft\WinGet\Packages", "$env:PROGRAMFILES\WinGet\Packages")) {
+        if (Test-Path $base) {
+            Get-ChildItem $base -Directory -ErrorAction SilentlyContinue |
+                ForEach-Object { $candidates.Add((Join-Path $_.FullName "bin")) }
         }
     }
 
+    # Scoop
+    $scoopBase = if ($env:SCOOP) { $env:SCOOP } else { "$env:USERPROFILE\scoop\apps" }
+    if (Test-Path $scoopBase) {
+        Get-ChildItem $scoopBase -Directory -ErrorAction SilentlyContinue |
+            ForEach-Object { $candidates.Add((Join-Path $_.FullName "current\bin")) }
+    }
+
+    # Chocolatey
+    $candidates.Add("$env:ChocolateyInstall\bin")
+    $candidates.Add("C:\ProgramData\chocolatey\bin")
+
+    # cmake-X.Y.Z-windows-* pattern in Program Files and user home
+    foreach ($base in @("C:\Program Files", "$env:USERPROFILE")) {
+        if (Test-Path $base) {
+            Get-ChildItem $base -Directory -Filter "cmake-*" -ErrorAction SilentlyContinue |
+                Sort-Object Name -Descending |
+                ForEach-Object { $candidates.Add((Join-Path $_.FullName "bin")) }
+        }
+    }
+
+    # Standard cmake installer
+    $candidates.Add("C:\Program Files\CMake\bin")
+    $candidates.Add("C:\Program Files (x86)\CMake\bin")
+
+    foreach ($dir in $candidates) {
+        if ($dir -and (Test-Path (Join-Path $dir $Exe))) { return $dir }
+    }
     return $null
 }
 
-$cmakeBin = Resolve-ExistingPath -Candidates $cmakeCandidates
-$msbuildBin = Resolve-ExistingPath -Candidates $msbuildCandidates
-
-if (-not $cmakeBin) {
-    throw "CMake bin directory not found. Update scripts/Enable-DevTools.ps1 with the local install path."
+function Add-ToPath([string]$Dir) {
+    if (-not $Dir) { return }
+    if (($env:PATH -split ';') -notcontains $Dir) { $env:PATH = "$Dir;$env:PATH" }
 }
 
-if (-not $msbuildBin) {
-    throw "MSBuild bin directory not found. Update scripts/Enable-DevTools.ps1 with the local install path."
+$errors = 0
+
+$cmakeDir = Find-Tool "cmake.exe"
+if ($cmakeDir) {
+    Add-ToPath $cmakeDir
+    Write-Host "  cmake : $cmakeDir" -ForegroundColor Green
+} else {
+    Write-Warning "cmake.exe not found. Install from https://cmake.org/download/"
+    $errors++
 }
 
-$pathsToAdd = @($cmakeBin, $msbuildBin)
-
-function Add-UniquePathEntries {
-    param(
-        [string]$CurrentValue,
-        [string[]]$Entries
-    )
-
-    $segments = @()
-    if ($CurrentValue) {
-        $segments = $CurrentValue -split ';' | Where-Object { $_ -and $_.Trim() -ne '' }
-    }
-
-    foreach ($entry in $Entries) {
-        if ($segments -notcontains $entry) {
-            $segments += $entry
-        }
-    }
-
-    return ($segments -join ';')
+$ninjaDir = Find-Tool "ninja.exe"
+if ($ninjaDir) {
+    Add-ToPath $ninjaDir
+    Write-Host "  ninja : $ninjaDir" -ForegroundColor Green
+} else {
+    Write-Warning "ninja.exe not found.  Run: winget install Ninja-build.Ninja"
+    $errors++
 }
-
-$env:PATH = Add-UniquePathEntries -CurrentValue $env:PATH -Entries $pathsToAdd
 
 if ($PersistUserPath) {
-    $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
-    [Environment]::SetEnvironmentVariable('Path', (Add-UniquePathEntries -CurrentValue $userPath -Entries $pathsToAdd), 'User')
+    $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+    if (-not $userPath) { $userPath = "" }
+    $changed = $false
+    foreach ($dir in @($cmakeDir, $ninjaDir)) {
+        if ($dir -and ($userPath -split ';') -notcontains $dir) {
+            $userPath += ";$dir"; $changed = $true
+        }
+    }
+    if ($changed) {
+        [Environment]::SetEnvironmentVariable("Path", $userPath.TrimStart(';'), "User")
+        Write-Host "  Paths persisted to user PATH (restart terminal to apply)." -ForegroundColor Yellow
+    }
 }
 
-Write-Host "Enabled dev tools:"
-Write-Host "  CMake:  $cmakeBin"
-Write-Host "  MSBuild: $msbuildBin"
-Write-Host "Run this shell again or start a new one to pick up persisted user PATH changes."
+if ($errors -gt 0) { exit 1 }
