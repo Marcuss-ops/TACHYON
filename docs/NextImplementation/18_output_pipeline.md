@@ -7,8 +7,8 @@
 |---|---|---|
 | `OutputProfile` con codec, pixel_format, rate_control, CRF | `render_job.h` | ✓ |
 | `OutputFormat`: Video, Gif, ImageSequence, ProRes, WebM | `render_job.h` | ✓ enum |
-| `AudioEncoder` AAC | `include/tachyon/audio/io/audio_encoder.h` | ✓ FFmpeg |
-| `AudioExporter` multi-track | `include/tachyon/audio/io/audio_export.h` | ✓ |
+| `AudioEncoder` AAC | `include/tachyon/audio/audio_encoder.h` | ✓ FFmpeg |
+| `AudioExporter` multi-track | `include/tachyon/audio/audio_export.h` | ✓ |
 | `OutputColorProfile` (space, transfer, range) | `render_job.h` | ✓ |
 | `OutputVideoProfile` (codec, pixel_format, rate_control, crf) | `render_job.h` | ✓ |
 | `OutputBufferingProfile` (strategy, max_frames_in_queue) | `render_job.h` | ✓ |
@@ -317,4 +317,3 @@ tachyon batch batch.json --preset youtube_1080p_30 --workers 4
 ```
 
 Item 1+2+3 sbloccano i preset named — il beneficio maggiore per produzione automatica.
-

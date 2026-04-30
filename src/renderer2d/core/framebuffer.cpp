@@ -6,10 +6,6 @@
 
 #include <algorithm>
 
-#ifdef __AVX2__
-#include <immintrin.h>
-#endif
-
 namespace tachyon {
 namespace renderer2d {
 

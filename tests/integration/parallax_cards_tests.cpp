@@ -1,5 +1,5 @@
 #include "tachyon/renderer2d/raster/draw_list_builder.h"
-#include "tachyon/core/math/algebra/quaternion.h"
+#include "tachyon/core/math/quaternion.h"
 
 #include <cmath>
 #include <iostream>
@@ -75,4 +75,3 @@ bool run_parallax_cards_tests() {
 
     return g_failures == 0;
 }
-

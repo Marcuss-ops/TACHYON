@@ -127,13 +127,19 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
                 result.diagnostics.add_error("cli.out_missing", "missing value for --out");
                 return result;
             }
+            options.output_override = value;
             if (options.command == "preview-frame") {
                 options.preview_output = value;
-            } else if (options.command == "transition") {
-                options.output_image = value;
-            } else {
-                options.output_override = value;
             }
+            continue;
+        }
+        if (arg == "--preset") {
+            const std::string value = require_argument(args, index);
+            if (value.empty()) {
+                result.diagnostics.add_error("cli.preset_missing", "missing value for --preset");
+                return result;
+            }
+            options.preset_id = value;
             continue;
         }
         if (arg == "--workers") {
@@ -193,40 +199,22 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
             }
             continue;
         }
-        if (arg == "--from") {
+        if (arg == "--cpp") {
             const std::string value = require_argument(args, index);
             if (value.empty()) {
-                result.diagnostics.add_error("cli.from_missing", "missing value for --from");
+                result.diagnostics.add_error("cli.cpp_missing", "missing value for --cpp");
                 return result;
             }
-            options.from_image = value;
+            options.cpp_path = value;
             continue;
         }
-        if (arg == "--to") {
+        if (arg == "--quality") {
             const std::string value = require_argument(args, index);
             if (value.empty()) {
-                result.diagnostics.add_error("cli.to_missing", "missing value for --to");
+                result.diagnostics.add_error("cli.quality_missing", "missing value for --quality");
                 return result;
             }
-            options.to_image = value;
-            continue;
-        }
-        if (arg == "--random") {
-            options.random_transition = true;
-            continue;
-        }
-        if (arg == "--progress") {
-            const std::string value = require_argument(args, index);
-            if (value.empty()) {
-                result.diagnostics.add_error("cli.progress_missing", "missing value for --progress");
-                return result;
-            }
-            try {
-                options.progress_value = std::stod(value);
-            } catch (const std::exception&) {
-                result.diagnostics.add_error("cli.progress_invalid", "invalid value for --progress: " + value);
-                return result;
-            }
+            options.quality = value;
             continue;
         }
 

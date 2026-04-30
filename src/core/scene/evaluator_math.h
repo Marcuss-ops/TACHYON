@@ -1,10 +1,10 @@
 #pragma once
 
-#include "tachyon/core/math/algebra/vector2.h"
-#include "tachyon/core/math/geometry/transform2.h"
+#include "tachyon/core/math/vector2.h"
+#include "tachyon/core/math/transform2.h"
 #include "tachyon/timeline/time.h"
 #include "tachyon/core/expressions/expression_engine.h"
-#include "tachyon/audio/processing/audio_analyzer.h"
+#include "tachyon/audio/audio_analyzer.h"
 
 #include <algorithm>
 #include <cmath>
@@ -49,4 +49,3 @@ double sample_audio_band(const ::tachyon::audio::AudioBands& bands, int band);
 } // namespace
 } // namespace scene
 } // namespace tachyon
-

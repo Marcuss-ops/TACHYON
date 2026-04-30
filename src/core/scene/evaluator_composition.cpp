@@ -5,7 +5,6 @@
 #include "tachyon/core/scene/evaluator/light_evaluator.h"
 #include "tachyon/core/scene/evaluator/layer_utils.h"
 #include "tachyon/core/scene/math/evaluator_math.h"
-#include "tachyon/core/scene/evaluation/evaluator.h"
 #include "tachyon/timeline/time.h"
 
 #include <algorithm>
@@ -74,22 +73,23 @@ const EvaluatedLayerState& resolve_layer_state(
             }
         }
 
-        if (!circular && context.scene) {
-            auto comp_it = context.composition_indices.find(*evaluated.precomp_id);
-            if (comp_it != context.composition_indices.end()) {
-                const auto& comp = context.scene->compositions[comp_it->second];
-                std::vector<std::string> next_stack = context.composition_stack;
-                next_stack.push_back(context.composition.id);
-                
-                const std::int64_t child_frame_number = static_cast<std::int64_t>(std::llround(
-                    evaluated.child_time_seconds * 
-                    static_cast<double>(comp.frame_rate.numerator) / 
-                    static_cast<double>(comp.frame_rate.denominator)
-                ));
-                
-                evaluated.nested_composition = std::make_unique<EvaluatedCompositionState>(
-                    evaluate_composition_internal(context.scene, comp, child_frame_number, evaluated.child_time_seconds, std::move(next_stack), context.audio_analyzer, context.vars, context.media, context.main_frame_number, context.main_frame_time_seconds)
-                );
+        if (!circular) {
+            for (const auto& comp : context.scene->compositions) {
+                if (comp.id == *evaluated.precomp_id) {
+                    std::vector<std::string> next_stack = context.composition_stack;
+                    next_stack.push_back(context.composition.id);
+                    
+                    const std::int64_t child_frame_number = static_cast<std::int64_t>(std::llround(
+                        evaluated.child_time_seconds * 
+                        static_cast<double>(comp.frame_rate.numerator) / 
+                        static_cast<double>(comp.frame_rate.denominator)
+                    ));
+
+                    evaluated.nested_composition = std::make_unique<EvaluatedCompositionState>(
+                        evaluate_composition_internal(context.scene, comp, child_frame_number, evaluated.child_time_seconds, std::move(next_stack), context.audio_analyzer, context.vars, context.media, context.main_frame_number, context.main_frame_time_seconds)
+                    );
+                    break;
+                }
             }
         }
     }
@@ -110,123 +110,25 @@ EvaluatedCompositionState evaluate_composition_internal(
     media::MediaManager* media,
     std::optional<std::int64_t> main_frame_number,
     std::optional<double> main_frame_time_seconds) {
-
-    // Merge standard scene variables with user-provided variables
-    if (vars.include_standard_vars) {
-        double fps = static_cast<double>(composition.frame_rate.numerator) / static_cast<double>(composition.frame_rate.denominator);
-        if (fps <= 0.0) fps = 30.0;
-
-        // Build merged numeric variables
-        vars.merged_numeric = make_standard_numeric_vars(frame_number, composition_time_seconds, fps);
-        if (vars.numeric) {
-            for (const auto& [key, value] : *vars.numeric) {
-                vars.merged_numeric[key] = value;
-            }
-        }
-        vars.numeric = &vars.merged_numeric;
-
-        // Build merged string variables
-        vars.merged_strings = make_standard_string_vars();
-        if (vars.strings) {
-            for (const auto& [key, value] : *vars.strings) {
-                vars.merged_strings[key] = value;
-            }
-        }
-        vars.strings = &vars.merged_strings;
-    }
-    
-    // Build component indices for O(1) lookup before expansion
-    std::unordered_map<std::string, std::size_t> component_indices;
-    component_indices.reserve(composition.components.size());
-    for (std::size_t i = 0; i < composition.components.size(); ++i) {
-        component_indices.emplace(composition.components[i].id, i);
-    }
-
-    // Expand component instances into layers (use pre-built index for O(1) lookup)
-    CompositionSpec expanded = composition;
-    expanded.layers.clear(); // We'll rebuild layers in correct order: background components -> original layers -> regular components
-
-    std::vector<LayerSpec> background_layers;
-    std::vector<LayerSpec> regular_layers;
-
-    for (const auto& inst : composition.component_instances) {
-        auto comp_it = component_indices.find(inst.component_id);
-        if (comp_it == component_indices.end()) continue;
-        const auto& component = composition.components[comp_it->second];
-
-        // Check if this instance is a background component
-        bool is_background = composition.background.has_value() &&
-                             composition.background->is_component() &&
-                             (inst.instance_id == composition.background->value || inst.component_id == composition.background->value);
-
-        for (const auto& layer : component.layers) {
-            LayerSpec new_layer = layer;
-            new_layer.id = inst.instance_id + "_" + layer.id;
-
-            // Apply component instance param_values
-            for (const auto& param_decl : component.params) {
-                auto param_val_it = inst.param_values.find(param_decl.name);
-                if (param_val_it != inst.param_values.end()) {
-                    // Parse param value to JSON and apply to layer properties if applicable
-                    // For now, inject into layer's expression context via input_props
-                    expanded.input_props[inst.instance_id + "_" + param_decl.name] = nlohmann::json::parse(param_val_it->second);
-                }
-            }
-
-            if (is_background) {
-                background_layers.push_back(new_layer);
-            } else {
-                regular_layers.push_back(new_layer);
-            }
-        }
-    }
-
-    // Assemble layers in correct order: background components first, then original layers, then regular components
-    expanded.layers = std::move(background_layers);
-    expanded.layers.insert(expanded.layers.end(), composition.layers.begin(), composition.layers.end());
-    expanded.layers.insert(expanded.layers.end(), regular_layers.begin(), regular_layers.end());
-    
-    const CompositionSpec& comp = expanded;
     
     EvaluatedCompositionState evaluated;
-    evaluated.composition_id = comp.id;
-    evaluated.composition_name = comp.name;
-    evaluated.width = comp.width;
-    evaluated.height = comp.height;
-    evaluated.frame_rate = comp.frame_rate;
+    evaluated.composition_id = composition.id;
+    evaluated.composition_name = composition.name;
+    evaluated.width = composition.width;
+    evaluated.height = composition.height;
+    evaluated.frame_rate = composition.frame_rate;
     evaluated.frame_number = frame_number;
     evaluated.composition_time_seconds = composition_time_seconds;
-    evaluated.layers.reserve(comp.layers.size());
-
-    vars.input_props = &comp.input_props;
-
-    // Pre-build indices for O(1) lookups (avoid building in hot loop)
-    std::unordered_map<std::string, std::size_t> layer_indices;
-    layer_indices.reserve(comp.layers.size());
-    for (std::size_t index = 0; index < comp.layers.size(); ++index) {
-        layer_indices.emplace(comp.layers[index].id, index);
-    }
-    
-    std::unordered_map<std::string, std::size_t> composition_indices;
-    if (scene) {
-        composition_indices.reserve(scene->compositions.size());
-        for (std::size_t i = 0; i < scene->compositions.size(); ++i) {
-            composition_indices.emplace(scene->compositions[i].id, i);
-        }
-    }
-
-    // component_indices already built earlier (line 113-115), reuse it
+    evaluated.layers.reserve(composition.layers.size());
 
     EvaluationContext context{
         scene,
-        comp,
+        composition,
         frame_number,
         composition_time_seconds,
-        std::move(layer_indices),
-        std::move(composition_indices),
-        std::move(component_indices),
-        std::vector<std::optional<EvaluatedLayerState>>(comp.layers.size()),
-        std::vector<bool>(comp.layers.size(), false),
+        {},
+        std::vector<std::optional<EvaluatedLayerState>>(composition.layers.size()),
+        std::vector<bool>(composition.layers.size(), false),
         std::move(stack),
         audio_analyzer,
         vars,
@@ -237,93 +139,65 @@ EvaluatedCompositionState evaluate_composition_internal(
         main_frame_time_seconds
     };
 
-    for (std::size_t index = 0; index < comp.layers.size(); ++index) {
+    for (std::size_t index = 0; index < composition.layers.size(); ++index) {
+        context.layer_indices.emplace(composition.layers[index].id, index);
+    }
+
+    for (std::size_t index = 0; index < composition.layers.size(); ++index) {
         const auto& base_layer = resolve_layer_state(index, context);
         
-        // Evaluate repeater parameters
+        // Evaluate repeater count
         const double remapped_time = base_layer.child_time_seconds;
-        const std::uint64_t layer_seed = make_property_expression_seed(scene, comp, comp.layers[index], "layer");
-        const double rep_count = sample_scalar(comp.layers[index].repeater_count, 1.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("repeater_count")), vars.numeric);
+        const std::uint64_t layer_seed = make_property_expression_seed(scene, composition, composition.layers[index], "layer");
+        const double rep_count = sample_scalar(composition.layers[index].repeater_count, 1.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("repeater_count")), vars.numeric);
         const int iterations = std::max(1, static_cast<int>(std::floor(rep_count)));
 
         if (iterations > 1) {
-            const std::string& rep_type = comp.layers[index].repeater_type;
-            const double stagger_delay = sample_scalar(comp.layers[index].repeater_stagger_delay, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("stagger_delay")));
-            const float off_x = static_cast<float>(sample_scalar(comp.layers[index].repeater_offset_position_x, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_off_x"))));
-            const float off_y = static_cast<float>(sample_scalar(comp.layers[index].repeater_offset_position_y, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_off_y"))));
-            const float off_rot = static_cast<float>(sample_scalar(comp.layers[index].repeater_offset_rotation, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_off_rot"))));
-            const float off_sx = static_cast<float>(sample_scalar(comp.layers[index].repeater_offset_scale_x, 100.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_off_sx")))) / 100.0f;
-            const float off_sy = static_cast<float>(sample_scalar(comp.layers[index].repeater_offset_scale_y, 100.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_off_sy")))) / 100.0f;
-            const float start_op = static_cast<float>(sample_scalar(comp.layers[index].repeater_start_opacity, 100.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_op_start")))) / 100.0f;
-            const float end_op = static_cast<float>(sample_scalar(comp.layers[index].repeater_end_opacity, 100.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_op_end")))) / 100.0f;
+        const double stagger_delay = sample_scalar(composition.layers[index].repeater_stagger_delay, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("stagger_delay")));
+        const float off_x = static_cast<float>(sample_scalar(composition.layers[index].repeater_offset_position_x, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_off_x"))));
+        const float off_y = static_cast<float>(sample_scalar(composition.layers[index].repeater_offset_position_y, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_off_y"))));
+        const float off_rot = static_cast<float>(sample_scalar(composition.layers[index].repeater_offset_rotation, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_off_rot"))));
+        const float off_sx = static_cast<float>(sample_scalar(composition.layers[index].repeater_offset_scale_x, 100.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_off_sx")))) / 100.0f;
+        const float off_sy = static_cast<float>(sample_scalar(composition.layers[index].repeater_offset_scale_y, 100.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_off_sy")))) / 100.0f;
+        const float start_op = static_cast<float>(sample_scalar(composition.layers[index].repeater_start_opacity, 100.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_op_start")))) / 100.0f;
+        const float end_op = static_cast<float>(sample_scalar(composition.layers[index].repeater_end_opacity, 100.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_op_end")))) / 100.0f;
 
-            int grid_cols = 1;
-            float radial_radius = 0.0f;
-            float radial_start = 0.0f;
-            float radial_end = 360.0f;
-
-            if (rep_type == "grid") {
-                grid_cols = std::max(1, static_cast<int>(std::floor(sample_scalar(comp.layers[index].repeater_grid_cols, 1.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("grid_cols"))))));
-            } else if (rep_type == "radial") {
-                radial_radius = static_cast<float>(sample_scalar(comp.layers[index].repeater_radial_radius, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rad_radius"))));
-                radial_start = static_cast<float>(sample_scalar(comp.layers[index].repeater_radial_start_angle, 0.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rad_start"))));
-                radial_end = static_cast<float>(sample_scalar(comp.layers[index].repeater_radial_end_angle, 360.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rad_end"))));
-            }
-
-            const std::string id_prefix = base_layer.id + "_rep_";
-            
             for (int r = 0; r < iterations; ++r) {
+                // For stagger, we re-evaluate the layer state with a time offset
                 EvaluatedLayerState repeated = (stagger_delay != 0.0) 
-                    ? make_layer_state(context, comp.layers[index], index, static_cast<double>(r) * stagger_delay, context.vars)
+                    ? make_layer_state(context, composition.layers[index], index, static_cast<double>(r) * stagger_delay, context.vars)
                     : base_layer;
-            
-                repeated.id = id_prefix + std::to_string(r);
-            
-                math::Matrix4x4 step_transform = math::Matrix4x4::identity();
+
+                repeated.id = base_layer.id + "_rep_" + std::to_string(r);
                 
-                if (rep_type == "grid") {
-                    int col = r % grid_cols;
-                    int row = r / grid_cols;
-                    step_transform = math::compose_trs(
-                        {static_cast<float>(col) * off_x, static_cast<float>(row) * off_y, 0.0f},
-                        math::Quaternion::from_euler({0, 0, static_cast<float>(r) * off_rot}),
-                        {std::pow(off_sx, static_cast<float>(r)), std::pow(off_sy, static_cast<float>(r)), 1.0f}
-                    );
-                } else if (rep_type == "radial") {
-                    float t_rad = iterations > 1 ? static_cast<float>(r) / static_cast<float>(iterations - 1) : 0.0f;
-                    float angle_deg = radial_start + (radial_end - radial_start) * t_rad;
-                    float angle_rad = angle_deg * (3.14159265f / 180.0f);
-                    step_transform = math::compose_trs(
-                        {std::cos(angle_rad) * radial_radius, std::sin(angle_rad) * radial_radius, 0.0f},
-                        math::Quaternion::from_euler({0, 0, angle_deg + static_cast<float>(r) * off_rot}),
-                        {std::pow(off_sx, static_cast<float>(r)), std::pow(off_sy, static_cast<float>(r)), 1.0f}
-                    );
-                } else {
-                    // Linear (AE-style)
-                    step_transform = math::compose_trs(
-                        {static_cast<float>(r) * off_x, static_cast<float>(r) * off_y, 0.0f},
-                        math::Quaternion::from_euler({0, 0, static_cast<float>(r) * off_rot}),
-                        {std::pow(off_sx, static_cast<float>(r)), std::pow(off_sy, static_cast<float>(r)), 1.0f}
+                // Cumulative transform
+                math::Matrix4x4 offset_transform = math::Matrix4x4::identity();
+                for (int step = 0; step < r; ++step) {
+                   offset_transform = offset_transform * math::compose_trs(
+                        {off_x, off_y, 0.0f},
+                        math::Quaternion::from_euler({0, 0, off_rot}),
+                        {off_sx, off_sy, 1.0f}
                     );
                 }
-
-                repeated.world_matrix = repeated.world_matrix * step_transform;
+                
+                repeated.world_matrix = repeated.world_matrix * offset_transform;
                 const auto wp3 = repeated.world_matrix.transform_point({0.0f, 0.0f, 0.0f});
                 repeated.world_position3 = wp3;
-            
+                
+                // Opacity ramp
                 const float t_ramp = iterations > 1 ? static_cast<float>(r) / static_cast<float>(iterations - 1) : 0.0f;
                 repeated.opacity *= (start_op * (1.0f - t_ramp) + end_op * t_ramp);
-            
+
                 if (repeated.type == LayerType::Light) {
-                    evaluated.lights.push_back(evaluate_light_state(repeated, comp.layers[index], repeated.child_time_seconds));
+                    evaluated.lights.push_back(evaluate_light_state(repeated, composition.layers[index], repeated.child_time_seconds));
                 } else {
                     evaluated.layers.push_back(std::move(repeated));
                 }
             }
         }
-    else {
+ else {
             if (base_layer.type == LayerType::Light) {
-                evaluated.lights.push_back(evaluate_light_state(base_layer, comp.layers[index], base_layer.child_time_seconds));
+                evaluated.lights.push_back(evaluate_light_state(base_layer, composition.layers[index], base_layer.child_time_seconds));
             } else {
                 evaluated.layers.push_back(base_layer);
             }
@@ -332,11 +206,11 @@ EvaluatedCompositionState evaluate_composition_internal(
 
     solve_constraints(evaluated.layers);
 
-    evaluated.camera = evaluate_camera_state(comp, evaluated.layers, frame_number, composition_time_seconds);
+    evaluated.camera = evaluate_camera_state(composition, evaluated.layers, frame_number, composition_time_seconds);
 
     // Resolve environment map
-    if (comp.environment_path.has_value() && !comp.environment_path->empty() && media) {
-        evaluated.environment_map = media->get_hdr_image(*comp.environment_path);
+    if (composition.environment_path.has_value() && !composition.environment_path->empty() && media) {
+        evaluated.environment_map = media->get_hdr_image(*composition.environment_path);
     }
 
     return evaluated;

@@ -2,8 +2,8 @@
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/report.h"
 #include "cli_internal.h"
-#include "tachyon/text/fonts/management/font_manifest.h"
-#include "tachyon/text/fonts/utils/font_coverage_reporter.h"
+#include "tachyon/text/fonts/font_manifest.h"
+#include "tachyon/text/fonts/font_coverage_reporter.h"
 #include <iostream>
 
 namespace tachyon {
@@ -110,4 +110,3 @@ bool run_inspect_fonts_command(const CliOptions& options, std::ostream& out, std
 }
 
 } // namespace tachyon
-

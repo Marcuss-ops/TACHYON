@@ -1,6 +1,6 @@
 #include "tachyon/roto/roto_brush.h"
 #include "tachyon/ai/segmentation_provider.h"
-#include "tachyon/tracker/algorithms/optical_flow.h"
+#include "tachyon/tracker/optical_flow.h"
 #include <algorithm>
 #include <cmath>
 #include <vector>
@@ -136,15 +136,12 @@ SegmentationMask RotoBrush::propagate(
     if (flow_result) {
         flow = *flow_result;
     } else {
-        // Convert GrayImage data to vectors for the compute function
-        std::vector<float> prev_data(prev_frame.data, prev_frame.data + prev_frame.width * prev_frame.height);
-        std::vector<float> next_data(next_frame.data, next_frame.data + next_frame.width * next_frame.height);
         flow = m_flow_calculator.compute(
-            prev_data,
-            next_data,
+            prev_frame.pixels,
+            next_frame.pixels,
             prev_frame.width,
             prev_frame.height,
-            1);
+            prev_frame.channels);
     }
     
     // Check if we have enough confidence to propagate
@@ -216,16 +213,7 @@ renderer2d::MaskPath RotoBrush::matte_to_path(
         math::Vector2 p2 = points[end];
         
         for (int i = start + 1; i < end; ++i) {
-            // Calculate distance from point to line segment
-            math::Vector2 p = points[i];
-            float dx = p2.x - p1.x;
-            float dy = p2.y - p1.y;
-            float len_sq = dx * dx + dy * dy;
-            float t = (len_sq != 0) ? ((p.x - p1.x) * dx + (p.y - p1.y) * dy) / len_sq : 0;
-            t = std::max(0.0f, std::min(1.0f, t));
-            math::Vector2 projection(p1.x + t * dx, p1.y + t * dy);
-            float dist = std::sqrt((p.x - projection.x) * (p.x - projection.x) +
-                                   (p.y - projection.y) * (p.y - projection.y));
+            float dist = math::Vector2::distance_to_line(points[i], p1, p2);
             if (dist > max_dist) {
                 max_dist = dist;
                 max_idx = i;
@@ -305,4 +293,3 @@ std::vector<SegmentationMask> RotoBrush::generate_sequence(
 }
 
 } // namespace tachyon::ai
-

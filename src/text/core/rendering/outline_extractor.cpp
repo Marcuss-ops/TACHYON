@@ -1,5 +1,5 @@
 #include "tachyon/text/rendering/outline_extractor.h"
-#include "tachyon/text/fonts/core/font.h"
+#include "tachyon/text/fonts/font.h"
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -144,4 +144,3 @@ std::vector<scene::EvaluatedShapePath> OutlineExtractor::extract_glyph_outline(
 }
 
 } // namespace tachyon::text
-

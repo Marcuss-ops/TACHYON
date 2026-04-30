@@ -13,15 +13,13 @@
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 #include "tachyon/core/spec/schema/objects/composition_spec.h"
-#include "tachyon/text/fonts/management/font_manifest.h"
+#include "tachyon/text/fonts/font_manifest.h"
 
 #include <filesystem>
 #include <string>
 #include <vector>
 #include <optional>
 #include <memory>
-#include <map>
-#include <nlohmann/json.hpp>
 
 namespace tachyon {
 
@@ -63,18 +61,6 @@ struct SchemaVersion {
     [[nodiscard]] bool operator>=(const SchemaVersion& other) const {
         return !(*this < other);
     }
-    
-    [[nodiscard]] bool operator==(const SchemaVersion& other) const {
-        return major == other.major && minor == other.minor && patch == other.patch;
-    }
-    
-    [[nodiscard]] bool operator!=(const SchemaVersion& other) const {
-        return !(*this == other);
-    }
-    
-    [[nodiscard]] bool operator<=(const SchemaVersion& other) const {
-        return *this < other || *this == other;
-    }
 };
 
 struct SceneSpec {
@@ -82,15 +68,11 @@ struct SceneSpec {
     std::string version{"1.0"};              ///< Legacy version field (deprecated)
     std::string spec_version{"1.0.0"};       ///< Legacy spec version (deprecated)
     ProjectSpec project;
-    std::vector<ParameterDefinition> parameters;
     std::vector<CompositionSpec> compositions;
     std::vector<AssetSpec> assets;
     std::vector<DataSourceSpec> data_sources;
     std::optional<text::FontManifest> font_manifest;
     std::optional<std::string> font_manifest_path;
-
-    // Cache
-    std::uint64_t spec_hash{0};
 };
 
 ParseResult<SceneSpec> parse_scene_spec_file(const std::filesystem::path& path);
@@ -109,7 +91,7 @@ public:
     SceneSpecBuilder& AddComposition(
         std::string id, std::string name, std::int64_t width,
         std::int64_t height, double duration, std::optional<std::int64_t> fps,
-        std::optional<BackgroundSpec> background = std::nullopt);
+        std::optional<std::string> background = std::nullopt);
 
     SceneSpec Build() &&;
 
@@ -119,4 +101,3 @@ private:
 };
 
 } // namespace tachyon
-

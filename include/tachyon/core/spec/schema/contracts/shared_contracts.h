@@ -90,7 +90,6 @@ struct MatteDependency {
     std::string source_layer_id;  ///< Layer that provides the matte signal.
     std::string target_layer_id;  ///< Layer that consumes the matte signal.
     MatteMode mode{MatteMode::Alpha};
-    float feather{0.0f};          ///< Feather radius in pixels for matte edge softening.
 };
 
 /**

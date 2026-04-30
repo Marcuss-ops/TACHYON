@@ -1,0 +1,17 @@
+#pragma once
+
+// Absolute path to Tachyon include directory
+#define TACHYON_INCLUDE_DIR "@CMAKE_CURRENT_SOURCE_DIR@/include"
+
+// Absolute path to third-party include directories
+#define TACHYON_JSON_INCLUDE_DIR "@nlohmann_json_SOURCE_DIR@/include"
+
+// Absolute path to the directory containing TachyonCore library
+#define TACHYON_LIB_PATH "@CMAKE_BINARY_DIR@/src"
+
+// Platform-specific library name for linking
+#ifdef _WIN32
+    #define TACHYON_CORE_LIB "TachyonCore.lib"
+#else
+    #define TACHYON_CORE_LIB "libTachyonCore.a"
+#endif

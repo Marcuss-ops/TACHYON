@@ -137,12 +137,8 @@
                                            }
                                        ],
                        "text":  [
-                                        {
-                                            "id":  "typewriter_soft",
-                                            "name":  "Typewriter Soft",
-                                            "path":  "animations/typography/typewriter_soft/meta.json"
-                                        }
-                                    ],
+
+                                ],
                        "stock":  [
                                      {
                                          "id":  "stock",

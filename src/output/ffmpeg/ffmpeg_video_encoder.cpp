@@ -71,28 +71,22 @@ public:
 
         const std::uint32_t width = frame.width();
         const std::uint32_t height = frame.height();
-        const std::size_t frame_pixels = static_cast<std::size_t>(width) * static_cast<std::size_t>(height);
-        const std::size_t frame_bytes = frame_pixels * 4;
         
-        // Pre-allocate full frame buffer to avoid per-frame allocation
-        if (m_frame_buffer.size() < frame_bytes) {
-            m_frame_buffer.resize(frame_bytes);
+        // Use a row-based buffer to reduce fwrite syscall overhead.
+        // Each pixel is 4 bytes (RGBA).
+        m_row_buffer.resize(width * 4);
+
+        for (std::uint32_t y = 0; y < height; ++y) {
+            for (std::uint32_t x = 0; x < width; ++x) {
+                const renderer2d::Color color = frame.get_pixel(x, y);
+                const std::size_t offset = x * 4;
+                m_row_buffer[offset + 0] = static_cast<std::uint8_t>(std::clamp(renderer2d::detail::Linear_to_sRGB_f(color.r) * 255.0f, 0.0f, 255.0f));
+                m_row_buffer[offset + 1] = static_cast<std::uint8_t>(std::clamp(renderer2d::detail::Linear_to_sRGB_f(color.g) * 255.0f, 0.0f, 255.0f));
+                m_row_buffer[offset + 2] = static_cast<std::uint8_t>(std::clamp(renderer2d::detail::Linear_to_sRGB_f(color.b) * 255.0f, 0.0f, 255.0f));
+                m_row_buffer[offset + 3] = static_cast<std::uint8_t>(std::clamp(color.a * 255.0f, 0.0f, 255.0f));
+            }
+            std::fwrite(m_row_buffer.data(), 1, m_row_buffer.size(), m_pipe);
         }
-        
-        const auto& pixels = frame.pixels();
-        
-        // Direct vector access - pixels are stored as [r,g,b,a, r,g,b,a, ...] floats
-        for (std::size_t i = 0; i < frame_pixels; ++i) {
-            const std::size_t src_idx = i * 4;
-            const std::size_t dst_idx = i * 4;
-            m_frame_buffer[dst_idx + 0] = static_cast<std::uint8_t>(std::clamp(renderer2d::detail::Linear_to_sRGB_f(pixels[src_idx + 0]) * 255.0f, 0.0f, 255.0f));
-            m_frame_buffer[dst_idx + 1] = static_cast<std::uint8_t>(std::clamp(renderer2d::detail::Linear_to_sRGB_f(pixels[src_idx + 1]) * 255.0f, 0.0f, 255.0f));
-            m_frame_buffer[dst_idx + 2] = static_cast<std::uint8_t>(std::clamp(renderer2d::detail::Linear_to_sRGB_f(pixels[src_idx + 2]) * 255.0f, 0.0f, 255.0f));
-            m_frame_buffer[dst_idx + 3] = static_cast<std::uint8_t>(std::clamp(pixels[src_idx + 3] * 255.0f, 0.0f, 255.0f));
-        }
-        
-        // Single write for entire frame - much faster than per-row writes
-        std::fwrite(m_frame_buffer.data(), 1, frame_bytes, m_pipe);
         
         return true;
     }
@@ -111,7 +105,7 @@ private:
     FILE* m_pipe{nullptr};
     VideoEncoderOptions m_options;
     std::string m_last_error;
-    std::vector<std::uint8_t> m_frame_buffer;  // Pre-allocated full frame buffer
+    std::vector<std::uint8_t> m_row_buffer;
 };
 
 } // namespace tachyon::output

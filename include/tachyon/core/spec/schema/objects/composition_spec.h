@@ -5,14 +5,11 @@
 #include "tachyon/core/spec/schema/audio/audio_spec.h"
 #include "tachyon/camera_cut_contract.h"
 #include "tachyon/core/spec/schema/contracts/shared_contracts.h"
-#include "tachyon/core/spec/schema/objects/background_spec.h"
 #include <string>
 #include <vector>
 #include <optional>
 #include <cstdint>
 #include <unordered_map>
-#include <map>
-#include <nlohmann/json.hpp>
 
 namespace tachyon {
 
@@ -28,24 +25,6 @@ struct FrameRate {
     }
 };
 
-struct VariableDecl {
-    std::string name;
-    std::string type; // "double", "string", "Color", etc.
-};
-
-struct ComponentSpec {
-    std::string id;
-    std::string name;
-    std::vector<VariableDecl> params; // parameter declarations (typed)
-    std::vector<LayerSpec> layers; // layers inside the component
-};
-
-struct ComponentInstanceSpec {
-    std::string component_id;
-    std::string instance_id; // unique id for this instance
-    std::map<std::string, std::string> param_values; // provided values for params (JSON strings)
-};
-
 struct CompositionSpec {
     std::string id;
     std::string name;
@@ -54,42 +33,13 @@ struct CompositionSpec {
     double duration{10.0};
     FrameRate frame_rate;
     std::optional<std::int64_t> fps;
-    std::optional<BackgroundSpec> background; ///< Typed background specification
+    std::optional<std::string> background;
     std::optional<std::string> environment_path;
     std::vector<LayerSpec> layers;
     std::vector<AudioTrackSpec> audio_tracks;
     std::vector<CameraCut> camera_cuts;
     std::vector<Camera2DSpec> cameras_2d;
     std::optional<std::string> active_camera2d_id;
-
-    /// Remotion-like input props: parameterized data for this composition.
-    /// Can be accessed in expressions via prop("key") or in layer properties.
-    std::map<std::string, nlohmann::json> input_props;
-
-    /// Typed variable declarations for template rendering
-    std::vector<VariableDecl> variable_decls;
-
-    /// Reusable components with typed parameters
-    std::vector<ComponentSpec> components;
-    /// Instances of components with provided parameter values
-    std::vector<ComponentInstanceSpec> component_instances;
-
-    // Cache
-    std::uint64_t spec_hash{0};
-
-    /**
-     * @brief High-level API to add a background component instance.
-     * @param component_id The ID of the component (e.g., "aura", "liquid").
-     * @param instance_id A unique ID for this instance.
-     * @param params Key-value pairs for component parameters.
-     */
-    void add_background(std::string component_id, std::string instance_id, std::map<std::string, std::string> params) {
-        ComponentInstanceSpec inst;
-        inst.component_id = std::move(component_id);
-        inst.instance_id = std::move(instance_id);
-        inst.param_values = std::move(params);
-        component_instances.push_back(std::move(inst));
-    }
 };
 
 } // namespace tachyon

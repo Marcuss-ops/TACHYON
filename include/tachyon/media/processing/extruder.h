@@ -3,7 +3,6 @@
 #include "tachyon/media/loading/mesh_asset.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include <memory>
-#include <vector>
 
 namespace tachyon::media {
 
@@ -16,15 +15,6 @@ public:
     static MeshAsset::SubMesh extrude_shape(
         const scene::EvaluatedShapePath& path, 
         float depth, 
-        float bevel_size);
-
-    /**
-     * Generates a 3D SubMesh from a compound glyph outline.
-     * The first-level outer contours are triangulated with their direct holes.
-     */
-    static MeshAsset::SubMesh extrude_shape(
-        const std::vector<scene::EvaluatedShapePath>& paths,
-        float depth,
         float bevel_size);
 };
 

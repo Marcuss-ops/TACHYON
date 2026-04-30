@@ -1,7 +1,7 @@
 #include "tachyon/renderer2d/resource/render_context.h"
 #include "tachyon/renderer2d/resource/precomp_cache.h"
 #include "tachyon/renderer2d/core/renderer2d_surface_pool.h"
-#include "tachyon/renderer2d/effects/core/effect_host.h"
+#include "tachyon/renderer2d/effects/effect_host.h"
 #include "tachyon/renderer3d/core/ray_tracer.h"
 
 namespace tachyon::renderer2d {
@@ -22,4 +22,3 @@ RenderContext2D::RenderContext2D(std::shared_ptr<PrecompCache> cache)
 }
 
 } // namespace tachyon::renderer2d
-

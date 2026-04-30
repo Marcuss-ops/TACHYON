@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/core/animation/animation_curve.h"
+#include "tachyon/core/animation/keyframe_track.h"
 #include "tachyon/core/properties/property.h"
 #include "tachyon/core/scene/dependency_node.h"
 
@@ -30,7 +30,7 @@ public:
  *
  * A property can be in one of three modes:
  *  - Static:  a single constant value, independent of time.
- *  - Animated: a keyframed AnimationCurve<T>, evaluated at ctx.time.
+ *  - Animated: a keyframed KeyframeTrack<T>, evaluated at ctx.time.
  *  - Linked:   a value driven by an external source (e.g. Tracker).
  *  - Driven:  a user-supplied callback/expression override (future expansion).
  *
@@ -58,12 +58,12 @@ public:
         , m_static_value(static_value)
     {}
 
-    /** Create an animated property from an existing curve. */
-    explicit AnimatableProperty(std::string name, animation::AnimationCurve<T> curve)
+    /** Create an animated property from an existing track. */
+    explicit AnimatableProperty(std::string name, animation::KeyframeTrack<T> track)
         : m_name(std::move(name))
         , m_mode(PropertyMode::Animated)
         , m_static_value{}
-        , m_curve(std::move(curve))
+        , m_curve(std::move(track))
     {}
 
     /** Create a linked property driven by an external source. */
@@ -86,9 +86,9 @@ public:
         mark_dirty(tick);
     }
 
-    /** Replace the entire animation curve. */
-    void set_curve(animation::AnimationCurve<T> curve, uint64_t tick = 0) {
-        m_curve = std::move(curve);
+    /** Replace the entire animation track. */
+    void set_curve(animation::KeyframeTrack<T> track, uint64_t tick = 0) {
+        m_curve = std::move(track);
         m_mode = m_curve.empty() ? PropertyMode::Static : PropertyMode::Animated;
         m_linked_source = nullptr;
         ++m_version;
@@ -188,7 +188,7 @@ public:
     // --- Inspection ------------------------------------------------------------
 
     [[nodiscard]] bool is_animated() const { return m_mode == PropertyMode::Animated; }
-    [[nodiscard]] const animation::AnimationCurve<T>& curve() const { return m_curve; }
+    [[nodiscard]] const animation::KeyframeTrack<T>& curve() const { return m_curve; }
 
     /**
      * Returns the static value (only valid when !is_animated()).
@@ -203,7 +203,7 @@ private:
     std::string                  m_name;
     PropertyMode                 m_mode{PropertyMode::Static};
     T                            m_static_value{};
-    animation::AnimationCurve<T> m_curve;
+    animation::KeyframeTrack<T> m_curve;
     std::shared_ptr<LinkedPropertySource<T>> m_linked_source;
     uint64_t                     m_version{1}; ///< Monotonic version counter for invalidation.
 };

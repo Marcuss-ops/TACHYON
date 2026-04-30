@@ -1,7 +1,7 @@
 #pragma once
 
-#include "tachyon/core/math/algebra/vector3.h"
-#include "tachyon/core/math/algebra/matrix4x4.h"
+#include "tachyon/core/math/vector3.h"
+#include "tachyon/core/math/matrix4x4.h"
 #include "tachyon/core/camera/camera_state.h"
 #include <string>
 #include <optional>
@@ -44,4 +44,3 @@ struct EvaluatedCameraState {
 };
 
 } // namespace tachyon::scene
-

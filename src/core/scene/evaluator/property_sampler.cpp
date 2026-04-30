@@ -1,10 +1,8 @@
 #include "tachyon/core/scene/evaluator/property_sampler.h"
 #include "tachyon/renderer2d/expressions/renderer2d_expression_evaluator.h"
 #include "tachyon/renderer2d/audio/audio_sampling.h"
-#include "tachyon/core/animation/easing.h"
-#include "tachyon/core/animation/animation_curve.h"
+#include "tachyon/renderer2d/animation/easing.h"
 #include "tachyon/renderer2d/math/math_utils.h"
-#include "tachyon/core/math/utils/noise.h"
 #include <algorithm>
 #include <cstdlib>
 #include <cmath>
@@ -38,16 +36,12 @@ double sample_scalar(
     const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables,
     std::uint32_t layer_index,
     PropertySampler sampler,
-    bool skip_expression,
-    const std::map<std::string, nlohmann::json>* input_props) {
+    bool skip_expression) {
 
     if (!skip_expression && property.expression.has_value() && !property.expression->empty()) {
         renderer2d::expressions::ExpressionContext expr_ctx;
-        expr_ctx.time = local_time_seconds;
-        expr_ctx.composition_time = local_time_seconds;
         expr_ctx.layer_index = layer_index;
         expr_ctx.property_sampler = sampler;
-        if (input_props) expr_ctx.input_props = *input_props;
 
         std::vector<std::string> table_keys;
         if (job_variables) {
@@ -68,7 +62,6 @@ double sample_scalar(
         expr_ctx.value = fallback;
         expr_ctx.seed = expression_seed;
         expr_ctx.variables["seed"] = static_cast<double>(expression_seed);
-        renderer2d::expressions::bind_standard_expression_variables(expr_ctx);
         expr_ctx.table_lookup = [tables, table_keys](double table_idx, double row, double col) -> double {
             if (!tables || tables->empty() || table_keys.empty()) {
                 return 0.0;
@@ -123,47 +116,41 @@ double sample_scalar(
         return property.value.value_or(fallback);
     }
 
-    animation::AnimationCurve<double> curve;
-    for (size_t i = 0; i < property.keyframes.size(); ++i) {
-        const auto& kf = property.keyframes[i];
-        animation::Keyframe<double> akf;
-        akf.time = kf.time;
-        akf.value = kf.value;
-        akf.out_mode = kf.interpolation;
-        akf.easing = kf.easing;
-        akf.bezier = kf.bezier;
-        akf.spring = kf.spring;
+    const std::vector<ScalarKeyframeSpec>* keyframes = &property.keyframes;
+    std::vector<ScalarKeyframeSpec> sorted_keyframes;
+    if (!std::is_sorted(keyframes->begin(), keyframes->end(), [](const auto& a, const auto& b) {
+            return a.time < b.time;
+        })) {
+        sorted_keyframes = property.keyframes;
+        std::stable_sort(sorted_keyframes.begin(), sorted_keyframes.end(), [](const auto& a, const auto& b) {
+            return a.time < b.time;
+        });
+        keyframes = &sorted_keyframes;
+    }
 
-        // If it's a custom easing and we have a next keyframe, compute the AE-style Bezier
-        if (kf.easing == animation::EasingPreset::Custom && i + 1 < property.keyframes.size()) {
-            const auto& next_kf = property.keyframes[i + 1];
-            double duration = next_kf.time - kf.time;
-            double delta = next_kf.value - kf.value;
+    if (local_time_seconds <= keyframes->front().time) {
+        return keyframes->front().value;
+    }
+    if (local_time_seconds >= keyframes->back().time) {
+        return keyframes->back().value;
+    }
 
-            if (duration > 1e-6 && (kf.influence_out > 0.0 || next_kf.influence_in > 0.0)) {
-                akf.bezier = animation::CubicBezierEasing::from_ae(
-                    kf.speed_out, kf.influence_out,
-                    next_kf.speed_in, next_kf.influence_in,
-                    duration, delta
-                );
-            }
+    for (std::size_t index = 1; index < keyframes->size(); ++index) {
+        const auto& previous = (*keyframes)[index - 1];
+        const auto& next = (*keyframes)[index];
+        if (local_time_seconds > next.time) {
+            continue;
         }
-
-        curve.add_keyframe(akf);
-    }
-    curve.sort();
-    double result = curve.evaluate(local_time_seconds);
-
-    // Apply Wiggle
-    if (property.wiggle.enabled) {
-        math::PerlinNoise noise(property.wiggle.seed);
-        float n = property.wiggle.octaves > 1 
-            ? noise.fbm2d(static_cast<float>(local_time_seconds * property.wiggle.frequency), 0.0f, property.wiggle.octaves)
-            : noise.noise1d(static_cast<float>(local_time_seconds * property.wiggle.frequency));
-        result += static_cast<double>(n) * property.wiggle.amplitude;
+        const double duration = next.time - previous.time;
+        if (duration <= 0.0) {
+            return next.value;
+        }
+        const double alpha = (local_time_seconds - previous.time) / duration;
+        const double eased = renderer2d::animation::apply_easing(alpha, previous.easing, previous.bezier);
+        return previous.value + (next.value - previous.value) * eased;
     }
 
-    return result;
+    return keyframes->back().value;
 }
 
 math::Vector2 sample_vector2(
@@ -173,18 +160,9 @@ math::Vector2 sample_vector2(
     const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
     std::uint64_t expression_seed,
     const std::unordered_map<std::string, double>* job_variables,
-    const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables,
-    std::uint32_t layer_index,
-    PropertySampler sampler,
-    bool skip_expression,
-    const std::map<std::string, nlohmann::json>* input_props) {
-    if (!skip_expression && property.expression.has_value() && !property.expression->empty()) {
+    const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables) {
+    if (property.expression.has_value() && !property.expression->empty()) {
         renderer2d::expressions::ExpressionContext expr_ctx;
-        expr_ctx.time = local_time_seconds;
-        expr_ctx.composition_time = local_time_seconds;
-        expr_ctx.layer_index = layer_index;
-        expr_ctx.property_sampler = sampler;
-        if (input_props) expr_ctx.input_props = *input_props;
         std::vector<std::string> table_keys;
         if (job_variables) {
             for (const auto& [k, v] : *job_variables) {
@@ -203,7 +181,6 @@ math::Vector2 sample_vector2(
         expr_ctx.variables["time"] = local_time_seconds;
         expr_ctx.seed = expression_seed;
         expr_ctx.variables["seed"] = static_cast<double>(expression_seed);
-        renderer2d::expressions::bind_standard_expression_variables(expr_ctx);
         expr_ctx.table_lookup = [tables, table_keys](double table_idx, double row, double col) -> double {
             if (!tables || tables->empty() || table_keys.empty()) {
                 return 0.0;
@@ -243,60 +220,53 @@ math::Vector2 sample_vector2(
         return property.value.value_or(fallback);
     }
 
-    animation::AnimationCurve<math::Vector2> curve;
-    for (size_t i = 0; i < property.keyframes.size(); ++i) {
-        const auto& kf = property.keyframes[i];
-        animation::Keyframe<math::Vector2> akf;
-        akf.time = kf.time;
-        akf.value = kf.value;
-        akf.out_mode = kf.interpolation;
-        akf.easing = kf.easing;
-        akf.bezier = kf.bezier;
-        akf.spring = kf.spring;
-        
-        // For Vector2, we might also have spatial tangents if out_mode is Bezier
-        akf.out_tangent_value = kf.tangent_out;
-        akf.in_tangent_value = kf.tangent_in;
-
-        // AE-style Bezier computation for temporal easing
-        if (kf.easing == animation::EasingPreset::Custom && i + 1 < property.keyframes.size()) {
-            const auto& next_kf = property.keyframes[i + 1];
-            double duration = next_kf.time - kf.time;
-            // Use distance for Vector2 value delta
-            double delta = static_cast<double>((next_kf.value - kf.value).length());
-
-            if (duration > 1e-6 && (kf.influence_out > 0.0 || next_kf.influence_in > 0.0)) {
-                akf.bezier = animation::CubicBezierEasing::from_ae(
-                    kf.speed_out, kf.influence_out,
-                    next_kf.speed_in, next_kf.influence_in,
-                    duration, delta
-                );
-            }
-        }
-        
-        curve.add_keyframe(akf);
-    }
-    curve.sort();
-    math::Vector2 result = curve.evaluate(local_time_seconds);
-
-    // Apply Wiggle
-    if (property.wiggle.enabled) {
-        math::PerlinNoise noise_x(property.wiggle.seed);
-        math::PerlinNoise noise_y(property.wiggle.seed + 12345ULL);
-        float freq = static_cast<float>(property.wiggle.frequency);
-        float amp = static_cast<float>(property.wiggle.amplitude);
-        float t = static_cast<float>(local_time_seconds);
-
-        if (property.wiggle.octaves > 1) {
-            result.x += noise_x.fbm2d(t * freq, 0.0f, property.wiggle.octaves) * amp;
-            result.y += noise_y.fbm2d(t * freq, 0.0f, property.wiggle.octaves) * amp;
-        } else {
-            result.x += noise_x.noise1d(t * freq) * amp;
-            result.y += noise_y.noise1d(t * freq) * amp;
-        }
+    const std::vector<Vector2KeyframeSpec>* keyframes = &property.keyframes;
+    std::vector<Vector2KeyframeSpec> sorted_keyframes;
+    if (!std::is_sorted(keyframes->begin(), keyframes->end(), [](const auto& a, const auto& b) {
+            return a.time < b.time;
+        })) {
+        sorted_keyframes = property.keyframes;
+        std::stable_sort(sorted_keyframes.begin(), sorted_keyframes.end(), [](const auto& a, const auto& b) {
+            return a.time < b.time;
+        });
+        keyframes = &sorted_keyframes;
     }
 
-    return result;
+    if (local_time_seconds <= keyframes->front().time) {
+        return keyframes->front().value;
+    }
+    if (local_time_seconds >= keyframes->back().time) {
+        return keyframes->back().value;
+    }
+
+    for (std::size_t index = 1; index < keyframes->size(); ++index) {
+        const auto& previous = (*keyframes)[index - 1];
+        const auto& next = (*keyframes)[index];
+        if (local_time_seconds > next.time) {
+            continue;
+        }
+        const double duration = next.time - previous.time;
+        if (duration <= 0.0) {
+            return next.value;
+        }
+        const double alpha = (local_time_seconds - previous.time) / duration;
+        const double eased = renderer2d::animation::apply_easing(alpha, previous.easing, previous.bezier);
+        const float weight = static_cast<float>(eased);        
+        
+        if (previous.tangent_out.length_squared() > kTangentEpsilon || next.tangent_in.length_squared() > kTangentEpsilon) {
+            return renderer2d::math_utils::sample_bezier_spatial(
+                previous.value,
+                previous.value + previous.tangent_out,
+                next.value + next.tangent_in,
+                next.value,
+                weight
+            );
+        }
+
+        return previous.value * (1.0f - weight) + next.value * weight;
+    }
+
+    return keyframes->back().value;
 }
 
 math::Vector3 sample_vector3(
@@ -306,18 +276,9 @@ math::Vector3 sample_vector3(
     const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
     std::uint64_t expression_seed,
     const std::unordered_map<std::string, double>* job_variables,
-    const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables,
-    std::uint32_t layer_index,
-    PropertySampler sampler,
-    bool skip_expression,
-    const std::map<std::string, nlohmann::json>* input_props) {
-    if (!skip_expression && property.expression.has_value() && !property.expression->empty()) {
+    const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables) {
+    if (property.expression.has_value() && !property.expression->empty()) {
         renderer2d::expressions::ExpressionContext expr_ctx;
-        expr_ctx.time = local_time_seconds;
-        expr_ctx.composition_time = local_time_seconds;
-        expr_ctx.layer_index = layer_index;
-        expr_ctx.property_sampler = sampler;
-        if (input_props) expr_ctx.input_props = *input_props;
         std::vector<std::string> table_keys;
         if (job_variables) {
             for (const auto& [k, v] : *job_variables) {
@@ -336,7 +297,6 @@ math::Vector3 sample_vector3(
         expr_ctx.variables["time"] = local_time_seconds;
         expr_ctx.seed = expression_seed;
         expr_ctx.variables["seed"] = static_cast<double>(expression_seed);
-        renderer2d::expressions::bind_standard_expression_variables(expr_ctx);
         expr_ctx.table_lookup = [tables, table_keys](double table_idx, double row, double col) -> double {
             if (!tables || tables->empty() || table_keys.empty()) {
                 return 0.0;
@@ -372,61 +332,53 @@ math::Vector3 sample_vector3(
         return property.value.value_or(fallback);
     }
 
-    animation::AnimationCurve<math::Vector3> curve;
-    for (size_t i = 0; i < property.keyframes.size(); ++i) {
-        const auto& kf = property.keyframes[i];
-        animation::Keyframe<math::Vector3> akf;
-        akf.time = kf.time;
-        akf.value = kf.value;
-        akf.out_mode = kf.interpolation;
-        akf.easing = kf.easing;
-        akf.bezier = kf.bezier;
-        akf.spring = kf.spring;
-        akf.out_tangent_value = kf.tangent_out;
-        akf.in_tangent_value = kf.tangent_in;
-
-        // AE-style Bezier computation for temporal easing
-        if (kf.easing == animation::EasingPreset::Custom && i + 1 < property.keyframes.size()) {
-            const auto& next_kf = property.keyframes[i + 1];
-            double duration = next_kf.time - kf.time;
-            // Use distance for Vector3 value delta
-            double delta = static_cast<double>((next_kf.value - kf.value).length());
-
-            if (duration > 1e-6 && (kf.influence_out > 0.0 || next_kf.influence_in > 0.0)) {
-                akf.bezier = animation::CubicBezierEasing::from_ae(
-                    kf.speed_out, kf.influence_out,
-                    next_kf.speed_in, next_kf.influence_in,
-                    duration, delta
-                );
-            }
-        }
-
-        curve.add_keyframe(akf);
-    }
-    curve.sort();
-    math::Vector3 result = curve.evaluate(local_time_seconds);
-
-    // Apply Wiggle
-    if (property.wiggle.enabled) {
-        math::PerlinNoise noise_x(property.wiggle.seed);
-        math::PerlinNoise noise_y(property.wiggle.seed + 12345ULL);
-        math::PerlinNoise noise_z(property.wiggle.seed + 67890ULL);
-        float freq = static_cast<float>(property.wiggle.frequency);
-        float amp = static_cast<float>(property.wiggle.amplitude);
-        float t = static_cast<float>(local_time_seconds);
-
-        if (property.wiggle.octaves > 1) {
-            result.x += noise_x.fbm2d(t * freq, 0.0f, property.wiggle.octaves) * amp;
-            result.y += noise_y.fbm2d(t * freq, 0.0f, property.wiggle.octaves) * amp;
-            result.z += noise_z.fbm2d(t * freq, 0.0f, property.wiggle.octaves) * amp;
-        } else {
-            result.x += noise_x.noise1d(t * freq) * amp;
-            result.y += noise_y.noise1d(t * freq) * amp;
-            result.z += noise_z.noise1d(t * freq) * amp;
-        }
+    const std::vector<AnimatedVector3Spec::Keyframe>* keyframes = &property.keyframes;
+    std::vector<AnimatedVector3Spec::Keyframe> sorted_keyframes;
+    if (!std::is_sorted(keyframes->begin(), keyframes->end(), [](const auto& a, const auto& b) {
+            return a.time < b.time;
+        })) {
+        sorted_keyframes = property.keyframes;
+        std::stable_sort(sorted_keyframes.begin(), sorted_keyframes.end(), [](const auto& a, const auto& b) {
+            return a.time < b.time;
+        });
+        keyframes = &sorted_keyframes;
     }
 
-    return result;
+    if (local_time_seconds <= keyframes->front().time) {
+        return keyframes->front().value;
+    }
+    if (local_time_seconds >= keyframes->back().time) {
+        return keyframes->back().value;
+    }
+
+    for (std::size_t index = 1; index < keyframes->size(); ++index) {
+        const auto& previous = (*keyframes)[index - 1];
+        const auto& next = (*keyframes)[index];
+        if (local_time_seconds > next.time) {
+            continue;
+        }
+        const double duration = next.time - previous.time;
+        if (duration <= 0.0) {
+            return next.value;
+        }
+        const double alpha = (local_time_seconds - previous.time) / duration;
+        const double eased = renderer2d::animation::apply_easing(alpha, previous.easing, previous.bezier);
+        const float weight = static_cast<float>(eased);
+
+        if (previous.tangent_out.length_squared() > kTangentEpsilon || next.tangent_in.length_squared() > kTangentEpsilon) {
+            return renderer2d::math_utils::sample_bezier_spatial(
+                previous.value,
+                previous.value + previous.tangent_out,
+                next.value + next.tangent_in,
+                next.value,
+                weight
+            );
+        }
+
+        return previous.value * (1.0f - weight) + next.value * weight;
+    }
+
+    return keyframes->back().value;
 }
 
 ColorSpec sample_color(const AnimatedColorSpec& property, const ColorSpec& fallback, double local_time_seconds) {
@@ -434,20 +386,48 @@ ColorSpec sample_color(const AnimatedColorSpec& property, const ColorSpec& fallb
         return property.value.value_or(fallback);
     }
 
-    animation::AnimationCurve<ColorSpec> curve;
-    for (const auto& kf : property.keyframes) {
-        animation::Keyframe<ColorSpec> akf;
-        akf.time = kf.time;
-        akf.value = kf.value;
-        akf.out_mode = kf.interpolation;
-        akf.easing = kf.easing;
-        akf.bezier = kf.bezier;
-        akf.spring = kf.spring;
-        curve.add_keyframe(akf);
+    const std::vector<ColorKeyframeSpec>* keyframes = &property.keyframes;
+    std::vector<ColorKeyframeSpec> sorted_keyframes;
+    if (!std::is_sorted(keyframes->begin(), keyframes->end(), [](const auto& a, const auto& b) {
+            return a.time < b.time;
+        })) {
+        sorted_keyframes = property.keyframes;
+        std::stable_sort(sorted_keyframes.begin(), sorted_keyframes.end(), [](const auto& a, const auto& b) {
+            return a.time < b.time;
+        });
+        keyframes = &sorted_keyframes;
     }
-    curve.sort();
-    return curve.evaluate(local_time_seconds);
+
+    if (local_time_seconds <= keyframes->front().time) {
+        return keyframes->front().value;
+    }
+    if (local_time_seconds >= keyframes->back().time) {
+        return keyframes->back().value;
+    }
+
+    for (std::size_t index = 1; index < keyframes->size(); ++index) {
+        const auto& previous = (*keyframes)[index - 1];
+        const auto& next = (*keyframes)[index];
+        if (local_time_seconds > next.time) {
+            continue;
+        }
+        const double duration = next.time - previous.time;
+        if (duration <= 0.0) {
+            return next.value;
+        }
+        const double alpha = (local_time_seconds - previous.time) / duration;
+        const double eased = renderer2d::animation::apply_easing(alpha, previous.easing, previous.bezier);
+        const float weight = static_cast<float>(eased);
+        
+        ColorSpec result;
+        result.r = static_cast<std::uint8_t>(std::clamp(previous.value.r * (1.0f - weight) + next.value.r * weight, 0.0f, 255.0f));
+        result.g = static_cast<std::uint8_t>(std::clamp(previous.value.g * (1.0f - weight) + next.value.g * weight, 0.0f, 255.0f));
+        result.b = static_cast<std::uint8_t>(std::clamp(previous.value.b * (1.0f - weight) + next.value.b * weight, 0.0f, 255.0f));
+        result.a = static_cast<std::uint8_t>(std::clamp(previous.value.a * (1.0f - weight) + next.value.a * weight, 0.0f, 255.0f));
+        return result;
+    }
+
+    return keyframes->back().value;
 }
 
 } // namespace tachyon::scene
-

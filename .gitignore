@@ -1,41 +1,41 @@
 build/
 build-ninja/
 build-linux/
-build-*/
-.cache/
 out/
 output/
 tests/output/actual/
-
-# Visual Studio / MSBuild artifacts
 *.vcxproj.user
 *.suo
 *.VC.db
 *.VC.VC.opendb
-*.sln.docstates
-*.user
-.vs/
-
-# Compiled objects (should be in build directory only)
-*.obj
-*.pdb
-*.idb
-*.ilk
-*.exp
-*.lib
-*.dll
-*.exe
 
 # Logs
 logs/
-build_verbose.log
+*.log
+log.txt
+build_output.txt
+build_err.txt
+test_log.txt
+test_output.txt
 
 # Temporary files
 *.tmp
-~$*
-
-# Crash dumps
+*.go
 *.dmp
+
+# Render outputs in root/tests
+*.mp4
+*.png
+minimal_white_*.json
+ten_minutes_*.json
+ten_minutes_scene.cpp
+job_bg.json job_red.json
+scene_bg.json scene_red.json
+shapegrid_scene.json shapegrid_job.json
+task.md
+
+# Cache
+.cache/
 
 # Rendered output (regenerable)
 debug/render_*/
@@ -43,17 +43,18 @@ studio/library/animations/transitions/Output/
 studio/library/animations/transitions/*/output/*.mp4
 studio/library/animations/transitions/*/output/*.png
 
+# Scene JSON (output/debug/cache — non sorgenti, usare spec C++)
+debug_*.json
+font_manifest.json
+render_job.json
+scene.json
+shapegrid_*.json
+scenes/*.json
+gallery/*.json
+tests/scenes/*.json
+
 # Debug/temp render job files in root
 render_job_*.json
 render_scene_*.json
 scene_*_test.json
 test_*.json
-
-# IDE / editor
-.vscode/*
-!.vscode/tasks.json
-.idea/
-*.swp
-*.swo
-*~
-

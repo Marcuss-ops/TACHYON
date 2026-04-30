@@ -1,6 +1,6 @@
 #include "tachyon/renderer2d/spec/project_card.h"
 
-#include "tachyon/core/math/algebra/quaternion.h"
+#include "tachyon/core/math/quaternion.h"
 
 #include <cmath>
 
@@ -63,4 +63,3 @@ ProjectedCard3D project_card_to_screen(
 
 } // namespace renderer2d
 } // namespace tachyon
-

@@ -2,9 +2,9 @@
 
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/core/camera/camera_state.h"
-#include "tachyon/core/math/geometry/transform3.h"
-#include "tachyon/core/math/algebra/vector3.h"
-#include "tachyon/core/math/algebra/matrix4x4.h"
+#include "tachyon/core/math/transform3.h"
+#include "tachyon/core/math/vector3.h"
+#include "tachyon/core/math/matrix4x4.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -103,4 +103,3 @@ private:
 };
 
 } // namespace tachyon::renderer3d
-

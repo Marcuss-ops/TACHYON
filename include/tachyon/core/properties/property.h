@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <string>
 #include <variant>
@@ -16,16 +15,6 @@ namespace properties {
 struct PropertyEvaluationContext {
     double time{0.0};
     uint64_t seed{0};
-    double value{0.0};
-    std::uint32_t layer_index{0};
-    std::uint32_t property_index{0};
-    std::uint32_t composition_width{0};
-    std::uint32_t composition_height{0};
-    double composition_time{0.0};
-    std::string composition_id;
-    std::string layer_id;
-    std::string property_name;
-    std::function<double(double)> value_at_time;
 };
 
 enum class PropertyType : uint8_t {

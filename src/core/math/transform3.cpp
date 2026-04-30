@@ -1,4 +1,4 @@
-#include "tachyon/core/math/geometry/transform3.h"
+#include "tachyon/core/math/transform3.h"
 
 #include <cmath>
 
@@ -15,4 +15,3 @@ Matrix4x4 Transform3::to_inverse_matrix() const {
 
 } // namespace math
 } // namespace tachyon
-

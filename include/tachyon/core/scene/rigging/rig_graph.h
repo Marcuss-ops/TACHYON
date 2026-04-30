@@ -1,7 +1,7 @@
 #pragma once
 
-#include "tachyon/core/math/algebra/matrix4x4.h"
-#include "tachyon/core/math/algebra/quaternion.h"
+#include "tachyon/core/math/matrix4x4.h"
+#include "tachyon/core/math/quaternion.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/core/scene/constraints/constraints.h"
 #include <string>
@@ -86,4 +86,3 @@ private:
 };
 
 } // namespace tachyon::scene::rigging
-

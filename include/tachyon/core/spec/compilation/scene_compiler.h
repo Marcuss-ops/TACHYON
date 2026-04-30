@@ -1,19 +1,13 @@
-#pragma once
-
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include "tachyon/runtime/core/contracts/determinism_contract.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/runtime/core/data/compiled_scene.h"
-#include "tachyon/core/spec/template_registry.h"
-#include <memory>
-#include <vector>
 #include <filesystem>
 
 namespace tachyon {
 
 struct SceneCompilerOptions {
     DeterminismContract determinism;
-    std::shared_ptr<TemplateRegistry> template_registry;
 };
 
 class SceneCompiler {
@@ -32,8 +26,6 @@ public:
      * @brief Loads an external scene (USD, Alembic) and returns a SceneSpec.
      */
     static ResolutionResult<SceneSpec> import_external_scene(const std::filesystem::path& path);
-
-    SceneSpec flatten_scene(const SceneSpec& original) const;
 
 private:
     SceneCompilerOptions m_options;

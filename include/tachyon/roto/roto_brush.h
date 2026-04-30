@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/ai/segmentation_provider.h"
-#include "tachyon/tracker/algorithms/optical_flow.h"
+#include "tachyon/tracker/optical_flow.h"
 #include "tachyon/renderer2d/path/mask_path.h"
 #include <vector>
 #include <memory>
@@ -33,8 +33,8 @@ public:
     ~RotoBrush() = default;
 
     // Configure the roto brush
-    void set_config(const Config& config) { m_config = config; }
-    const Config& config() const { return m_config; }
+    void set_config(const Config& config) { config_ = config; }
+    const Config& config() const { return config_; }
 
     /**
      * @brief Generate matte from user scribble + optional AI.

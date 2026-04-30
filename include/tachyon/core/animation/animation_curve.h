@@ -6,7 +6,8 @@
 #include <cassert>
 #include <vector>
 
-namespace tachyon::animation {
+namespace tachyon {
+namespace animation {
 
 /**
  * Lerp trait: provides a generic lerp(a, b, t) implementation.
@@ -121,13 +122,10 @@ public:
 
     /** Ensures keyframes are sorted by ascending time. */
     void sort() {
-        if (!m_sorted) {
-            std::sort(keyframes.begin(), keyframes.end(),
-                      [](const KeyframeT& a, const KeyframeT& b) {
-                          return a.time < b.time;
-                      });
-            m_sorted = true;
-        }
+        std::sort(keyframes.begin(), keyframes.end(),
+                  [](const KeyframeT& a, const KeyframeT& b) {
+                      return a.time < b.time;
+                  });
     }
 
     [[nodiscard]] bool empty() const { return keyframes.empty(); }
@@ -154,11 +152,6 @@ public:
         if (time >= keyframes.back().time)
             return keyframes.back().value;
 
-        // Ensure sorted before evaluation
-        if (!m_sorted) {
-            const_cast<AnimationCurve*>(this)->sort();
-        }
-
         // Binary search: find first key with time > requested time
         const auto it = std::upper_bound(
             keyframes.begin(), keyframes.end(), time,
@@ -179,7 +172,7 @@ public:
         double raw_t = (seg_len > 0.0) ? (time - k0.time) / seg_len : 0.0;
 
         // Apply easing using k0's preset
-        const double eased_t = apply_easing(raw_t, k0.easing, k0.bezier, k0.spring);
+        const double eased_t = apply_easing(raw_t, k0.easing, k0.bezier);
 
         // Choose interpolation
         switch (k0.out_mode) {
@@ -197,9 +190,7 @@ public:
         // Fallback (should be unreachable)
         return LerpTraits<T>::lerp(k0.value, k1.value, eased_t);
     }
-
-private:
-    mutable bool m_sorted{true};
 };
 
-} // namespace tachyon::animation
+} // namespace animation
+} // namespace tachyon

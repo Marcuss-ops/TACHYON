@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/core/math/algebra/vector2.h"
+#include "tachyon/core/math/vector2.h"
 #include "tachyon/core/spec/schema/common/common_spec.h"
 #include <string>
 #include <vector>
@@ -35,11 +35,6 @@ struct GlyphCluster {
 
 /**
  * @brief A shaped and positioned glyph, ready for rasterization or animation.
- *
- * AUTHORITATIVE representation for TextAnimatorPipeline and TextOnPathModifier.
- * Built from the internal PositionedGlyph (integer coords) by sync_resolved_layout().
- * All per-glyph animated properties (opacity, scale, rotation, fill_color,
- * blur_radius, reveal_factor) live here and are mutated in-place by the animator.
  */
 struct ResolvedGlyph {
     std::uint32_t codepoint;
@@ -61,12 +56,6 @@ struct ResolvedGlyph {
 
     // The index in the original source string
     std::size_t source_index;
-
-    // Higher-level selection metadata used by text animator selectors.
-    std::size_t word_index{0};
-    std::size_t line_index{0};
-    bool is_space{false};
-    bool whitespace{false};
     
     // Styling attributes (these can be animated/overridden per glyph)
     float font_size;
@@ -83,9 +72,6 @@ struct ResolvedGlyph {
 
     // Reveal effect (0.0 = fully hidden, 1.0 = fully revealed)
     float reveal_factor{1.0f};
-
-    // Motion blur (directional blur vector in pixels)
-    ::tachyon::math::Vector2 motion_blur_vector{0.0f, 0.0f};
 
     // Bounding box of the glyph (relative to its position)
     ::tachyon::math::RectF bounds;
@@ -131,11 +117,6 @@ struct Paragraph {
  * @brief The final output contract of the TextLayoutEngine.
  * This struct is strictly deterministic and contains everything needed
  * by both the Text Animator system and the Rasterizer.
- *
- * Produced by sync_resolved_layout() after the layout pass completes.
- * TextLayoutResult (layout.h) inherits from this, keeping the internal
- * PositionedGlyph vector for integer-coordinate rasterization alongside
- * this float-coordinate view used by animators and text-on-path.
  */
 struct ResolvedTextLayout {
     std::vector<ResolvedGlyph> glyphs;
@@ -155,4 +136,3 @@ struct ResolvedTextLayout {
 };
 
 } // namespace tachyon::text
-

@@ -4,150 +4,60 @@
     {
       "name": "base",
       "hidden": true,
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build-ninja",
+      "generator": "Visual Studio 18 2026",
+      "architecture": {
+        "value": "x64"
+      },
+      "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "TACHYON_ENABLE_COMPILER_CACHE": "ON",
         "TACHYON_ENABLE_PCH": "ON",
-        "CMAKE_POLICY_DEFAULT_CMP0141": "NEW",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+        "CMAKE_MSVC_DEBUG_INFORMATION_FORMAT": "$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>"
       }
     },
     {
-      "name": "base-windows",
-      "hidden": true,
+      "name": "dev",
       "inherits": "base",
-      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" },
+      "description": "Daily iteration preset with RelWithDebInfo symbols and the core test loop",
       "cacheVariables": {
-        "FETCHCONTENT_BASE_DIR": "${sourceDir}/.cache/fetchcontent/ninja-msvc-x64"
+        "TACHYON_ENABLE_ASAN": "OFF"
       }
     },
     {
-      "name": "base-linux",
-      "hidden": true,
+      "name": "dev-fast",
       "inherits": "base",
-      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux" },
+      "description": "Faster inner loop preset with the smallest useful default build set",
       "cacheVariables": {
-        "FETCHCONTENT_BASE_DIR": "${sourceDir}/.cache/fetchcontent/ninja-gcc-linux"
-      }
-    },
-    {
-      "name": "relwithdebinfo-unity",
-      "inherits": "relwithdebinfo",
-      "description": "RelWithDebInfo with Unity Build (Jumbo)",
-      "cacheVariables": {
-        "TACHYON_UNITY_BUILD": "ON"
-      }
-    },
-    {
-      "name": "relwithdebinfo-lld",
-      "inherits": "relwithdebinfo",
-      "description": "RelWithDebInfo with lld-link linker",
-      "cacheVariables": {
-        "CMAKE_LINKER_TYPE": "LLD"
-      }
-    },
-    {
-      "name": "relwithdebinfo-fast",
-      "inherits": "relwithdebinfo",
-      "description": "Fast build: Unity + lld-link",
-      "cacheVariables": {
-        "TACHYON_UNITY_BUILD": "ON",
-        "CMAKE_LINKER_TYPE": "LLD"
-      }
-    },
-    {
-      "name": "debug",
-      "inherits": "base-windows",
-      "description": "Debug build with full symbols (Windows)",
-      "cacheVariables": {
-        "TACHYON_ENABLE_ASAN": "OFF",
-        "CMAKE_BUILD_TYPE": "Debug"
-      }
-    },
-    {
-      "name": "release",
-      "inherits": "base-windows",
-      "description": "Release build with optimizations (Windows)",
-      "cacheVariables": {
-        "TACHYON_ENABLE_ASAN": "OFF",
-        "CMAKE_BUILD_TYPE": "Release"
-      }
-    },
-    {
-      "name": "relwithdebinfo",
-      "inherits": "base-windows",
-      "description": "Release with debug info - recommended for development (Windows)",
-      "cacheVariables": {
-        "TACHYON_ENABLE_ASAN": "OFF",
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+        "TACHYON_ENABLE_ASAN": "OFF"
       }
     },
     {
       "name": "asan",
-      "inherits": "base-windows",
-      "description": "AddressSanitizer preset for memory and lifetime bugs (Windows)",
+      "inherits": "base",
+      "description": "AddressSanitizer preset for memory and lifetime bugs",
+      "binaryDir": "${sourceDir}/build/asan",
       "cacheVariables": {
-        "TACHYON_ENABLE_ASAN": "ON",
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
-      }
-    },
-    {
-      "name": "linux-debug",
-      "inherits": "base-linux",
-      "description": "Debug build with full symbols (Linux)",
-      "cacheVariables": {
-        "TACHYON_ENABLE_ASAN": "OFF",
-        "CMAKE_BUILD_TYPE": "Debug"
-      }
-    },
-    {
-      "name": "linux-release",
-      "inherits": "base-linux",
-      "description": "Release build with optimizations (Linux)",
-      "cacheVariables": {
-        "TACHYON_ENABLE_ASAN": "OFF",
-        "CMAKE_BUILD_TYPE": "Release"
-      }
-    },
-    {
-      "name": "linux-relwithdebinfo",
-      "inherits": "base-linux",
-      "description": "Release with debug info (Linux)",
-      "cacheVariables": {
-        "TACHYON_ENABLE_ASAN": "OFF",
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+        "TACHYON_ENABLE_ASAN": "ON"
       }
     }
   ],
   "buildPresets": [
     {
-      "name": "debug",
-      "configurePreset": "debug",
-      "configuration": "Debug",
-      "targets": [
-        "TachyonCore",
-        "tachyon",
-        "TachyonTests"
-      ]
-    },
-    {
-      "name": "release",
-      "configurePreset": "release",
-      "configuration": "Release",
-      "targets": [
-        "TachyonCore",
-        "tachyon",
-        "TachyonTests"
-      ]
-    },
-    {
-      "name": "relwithdebinfo",
-      "configurePreset": "relwithdebinfo",
+      "name": "dev",
+      "configurePreset": "dev",
       "configuration": "RelWithDebInfo",
       "targets": [
         "TachyonCore",
-        "tachyon",
+        "TachyonTests",
+        "tachyon"
+      ]
+    },
+    {
+      "name": "dev-fast",
+      "configurePreset": "dev-fast",
+      "configuration": "RelWithDebInfo",
+      "targets": [
+        "TachyonCore",
         "TachyonTests"
       ]
     },
@@ -159,41 +69,6 @@
         "TachyonCore",
         "TachyonTests"
       ]
-    },
-    {
-      "name": "linux-debug",
-      "configurePreset": "linux-debug",
-      "configuration": "Debug",
-      "targets": ["TachyonCore", "tachyon", "TachyonTests"]
-    },
-    {
-      "name": "linux-release",
-      "configurePreset": "linux-release",
-      "configuration": "Release",
-      "targets": ["TachyonCore", "tachyon", "TachyonTests"]
-    },
-    {
-      "name": "linux-relwithdebinfo",
-      "configurePreset": "linux-relwithdebinfo",
-      "configuration": "RelWithDebInfo",
-      "targets": ["TachyonCore", "tachyon", "TachyonTests"]
-    }
-  ],
-  "testPresets": [
-    {
-      "name": "debug",
-      "configurePreset": "debug",
-      "configuration": "Debug"
-    },
-    {
-      "name": "release",
-      "configurePreset": "release",
-      "configuration": "Release"
-    },
-    {
-      "name": "relwithdebinfo",
-      "configurePreset": "relwithdebinfo",
-      "configuration": "RelWithDebInfo"
     }
   ]
 }

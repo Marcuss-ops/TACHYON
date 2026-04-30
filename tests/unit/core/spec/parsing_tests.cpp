@@ -1,5 +1,4 @@
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
-#include <gtest/gtest.h>
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include <nlohmann/json.hpp>
 #include <filesystem>
@@ -200,14 +199,7 @@ bool run_scene_spec_parsing_tests() {
             check_true(c1.duration == c2.duration, "roundtrip: composition duration matches");
             check_true(c1.frame_rate.numerator == c2.frame_rate.numerator, "roundtrip: frame_rate numerator matches");
             check_true(c1.frame_rate.denominator == c2.frame_rate.denominator, "roundtrip: frame_rate denominator matches");
-            check_true(c1.background.has_value() == c2.background.has_value(), "roundtrip: background presence matches");
-            if (c1.background.has_value() && c2.background.has_value()) {
-                check_true(*c1.background == *c2.background, "roundtrip: typed background matches");
-                check_true(c1.background->is_color(), "roundtrip: background is typed as color");
-                if (c1.background->parsed_color.has_value()) {
-                    check_true(c1.background->parsed_color == c2.background->parsed_color, "roundtrip: parsed background color matches");
-                }
-            }
+            check_true(c1.background == c2.background, "roundtrip: background matches");
 
             // Compare layers
             check_true(c1.layers.size() == c2.layers.size(), "roundtrip: layer count matches");
@@ -257,39 +249,4 @@ bool run_scene_spec_parsing_tests() {
     }
 
     return g_failures == 0;
-}
-
-TEST(SceneSpecBackgroundTest, RoundTripPreservesTypedBackground) {
-    const std::string text = R"({
-        "spec_version": "1.0",
-        "project": { "id": "rt_test", "name": "Roundtrip Test" },
-        "compositions": [
-            {
-                "id": "comp1",
-                "name": "Main",
-                "width": 1920,
-                "height": 1080,
-                "duration": 120,
-                "frame_rate": { "numerator": 30, "denominator": 1 },
-                "background": "#000000",
-                "layers": []
-            }
-        ]
-    })";
-
-    const auto parsed1 = tachyon::parse_scene_spec_json(text);
-    ASSERT_TRUE(parsed1.value.has_value());
-
-    const auto& scene1 = *parsed1.value;
-    ASSERT_TRUE(scene1.compositions.front().background.has_value());
-    EXPECT_TRUE(scene1.compositions.front().background->is_color());
-
-    const auto serialized = tachyon::serialize_scene_spec(scene1);
-    const auto parsed2 = tachyon::parse_scene_spec_json(serialized.dump(2));
-    ASSERT_TRUE(parsed2.value.has_value());
-    ASSERT_TRUE(parsed2.value->compositions.front().background.has_value());
-    EXPECT_EQ(parsed2.value->compositions.front().background->type,
-              scene1.compositions.front().background->type);
-    EXPECT_EQ(parsed2.value->compositions.front().background->value,
-              scene1.compositions.front().background->value);
 }

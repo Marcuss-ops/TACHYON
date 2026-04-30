@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/core/scene/evaluation/evaluator.h"
-#include "tachyon/audio/processing/audio_analyzer.h"
+#include "tachyon/audio/audio_analyzer.h"
 #include "tachyon/text/content/subtitle.h"
 #include "tachyon/media/management/media_manager.h"
 
@@ -18,9 +18,7 @@ struct EvaluationContext {
     const CompositionSpec& composition;
     std::int64_t frame_number{0};
     double composition_time_seconds{0.0};
-    std::unordered_map<std::string, std::size_t> layer_indices;      // Pre-built before evaluation
-    std::unordered_map<std::string, std::size_t> composition_indices; // Pre-built for O(1) lookup
-    std::unordered_map<std::string, std::size_t> component_indices;     // Pre-built for O(1) component lookup
+    std::unordered_map<std::string, std::size_t> layer_indices;
     std::vector<std::optional<EvaluatedLayerState>> cache;
     std::vector<bool> visiting;
     std::vector<std::string> composition_stack;
@@ -37,4 +35,3 @@ struct EvaluationContext {
 
 } // namespace scene
 } // namespace tachyon
-

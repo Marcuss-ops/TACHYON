@@ -1,0 +1,50 @@
+#pragma once
+
+#include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/runtime/execution/jobs/render_job.h"
+#include "tachyon/runtime/execution/session/render_session.h"
+#include "tachyon/runtime/core/diagnostics/diagnostics.h"
+
+#include <filesystem>
+#include <string>
+
+namespace tachyon {
+
+/**
+ * @brief High-level utility for rendering a SceneSpec directly.
+ * 
+ * This bypasses the legacy JSON-based CLI path and works directly with the 
+ * C++ specification structures.
+ */
+class NativeRenderer {
+public:
+    struct Options {
+        std::size_t worker_count{0};
+        std::optional<std::size_t> memory_budget_bytes;
+        bool verbose{false};
+    };
+
+    /**
+     * @brief Renders a composition from the given scene.
+     * 
+     * @param scene The scene specification to render.
+     * @param job The render job defining output settings and frame range.
+     * @param options Execution options (workers, memory, etc).
+     * @return RenderSessionResult containing status and frame info.
+     */
+    static RenderSessionResult render(
+        const SceneSpec& scene,
+        const RenderJob& job,
+        const Options& options = {});
+
+    /**
+     * @brief Shortcut to render a single frame to a PNG.
+     */
+    static bool render_still(
+        const SceneSpec& scene,
+        const std::string& composition_id,
+        std::int64_t frame_number,
+        const std::filesystem::path& output_path);
+};
+
+} // namespace tachyon

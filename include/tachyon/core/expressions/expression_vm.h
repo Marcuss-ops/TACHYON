@@ -7,7 +7,6 @@ namespace tachyon::expressions {
 
 enum class OpCode : std::uint8_t {
     PushConst,
-    PushName,
     PushVar,
     Add,
     Sub,
@@ -15,15 +14,6 @@ enum class OpCode : std::uint8_t {
     Div,
     Pow,
     Neg,
-    Mod,          // a % b
-    Lt,           // a < b  → 1.0 or 0.0
-    Gt,           // a > b
-    Le,           // a <= b
-    Ge,           // a >= b
-    Eq,           // a == b
-    Ne,           // a != b
-    JumpIfFalse,  // data = instruction offset to jump to if top-of-stack == 0
-    Jump,         // data = absolute instruction index to jump to
     Call, // arg = string index for name, high 16 bits = arg count
     Ret
 };

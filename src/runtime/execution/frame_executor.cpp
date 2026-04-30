@@ -13,24 +13,9 @@
 #include <cstdlib>
 #include <omp.h>
 
-#ifdef TACHYON_TRACY_ENABLED
-#include <tracy/Tracy.hpp>
-#endif
-
 namespace tachyon {
 
 namespace {
-
-float compute_motion_blur_weight(int sample_index, int total_samples, const std::string& curve) {
-    if (total_samples <= 1) return 1.0f;
-    const float t = static_cast<float>(sample_index) / static_cast<float>(total_samples - 1);
-    if (curve == "triangle") {
-        return 1.0f - std::abs(2.0f * t - 1.0f);
-    } else if (curve == "gaussian") {
-        return static_cast<float>(std::exp(-4.0 * std::pow(2.0 * t - 1.0, 2.0)));
-    }
-    return 1.0f; // box (default)
-}
 
 std::optional<scene::EvaluatedCompositionState> evaluate_target_composition_state(
     const SceneSpec& scene,
@@ -195,10 +180,6 @@ ExecutedFrame FrameExecutor::execute(
     const DataSnapshot& snapshot,
     RenderContext& context) {
 
-#ifdef TACHYON_TRACY_ENABLED
-    ZoneScopedN("FrameExecutor::execute");
-#endif
-
     if (m_node_lookup.empty()) build_lookup_table(compiled_scene);
 
     ExecutedFrame result;
@@ -340,6 +321,8 @@ ExecutedFrame FrameExecutor::execute(
                     }
                     auto sub_comp = cache().lookup_composition(root_sample_key);
                     if (sub_comp) {
+                        std::printf("[DIAG] FrameExecutor calling render_evaluated_composition_2d. Layers: %zu\n", sub_comp->layers.size());
+                        std::fflush(stdout);
                         RasterizedFrame2D rasterized = render_evaluated_composition_2d(*sub_comp, plan, task, thread_context.renderer2d);
                         if (rasterized.surface) samples_surfaces[s] = rasterized.surface;
                         // For motion blur samples, we might not want all AOVs per sample, 
@@ -348,32 +331,21 @@ ExecutedFrame FrameExecutor::execute(
                 }
 
                 std::unique_ptr<renderer2d::Framebuffer> accumulated;
-                float total_weight = 0.0f;
                 for (int s = 0; s < samples; ++s) {
-                    if (!samples_surfaces[s]) continue;
-                    const float weight = compute_motion_blur_weight(s, samples, plan.motion_blur_curve);
-                    if (weight <= 0.0f) continue;
-                    total_weight += weight;
-                    const auto& sub_pixels = samples_surfaces[s]->pixels();
-                    if (!accumulated) {
-                        accumulated = std::make_unique<renderer2d::Framebuffer>(samples_surfaces[s]->width(), samples_surfaces[s]->height());
-                        auto& acc_pixels = accumulated->mutable_pixels();
-                        acc_pixels.resize(sub_pixels.size());
-                        for (std::size_t i = 0; i < sub_pixels.size(); ++i) {
-                            acc_pixels[i] = sub_pixels[i] * weight;
-                        }
-                    } else {
-                        auto& acc_pixels = accumulated->mutable_pixels();
-                        const std::size_t count = std::min(acc_pixels.size(), sub_pixels.size());
-                        for (std::size_t i = 0; i < count; ++i) {
-                            acc_pixels[i] += sub_pixels[i] * weight;
+                    if (samples_surfaces[s]) {
+                        if (!accumulated) accumulated = std::make_unique<renderer2d::Framebuffer>(std::move(*samples_surfaces[s]));
+                        else {
+                            auto& acc_pixels = accumulated->mutable_pixels();
+                            const auto& sub_pixels = samples_surfaces[s]->pixels();
+                            const std::size_t count = std::min(acc_pixels.size(), sub_pixels.size());
+                            for (std::size_t i = 0; i < count; ++i) acc_pixels[i] += sub_pixels[i];
                         }
                     }
                 }
-                if (accumulated && total_weight > 1e-6f) {
+                if (accumulated) {
                     auto& acc_pixels = accumulated->mutable_pixels();
-                    const float inv_total_weight = 1.0f / total_weight;
-                    for (float& p : acc_pixels) p *= inv_total_weight;
+                    const float inv_samples = 1.0f / static_cast<float>(samples);
+                    for (float& p : acc_pixels) p *= inv_samples;
                     result.frame = std::shared_ptr<renderer2d::Framebuffer>(std::move(accumulated));
                 }
             } else {

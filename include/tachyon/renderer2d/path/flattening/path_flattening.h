@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/core/math/algebra/vector2.h"
+#include "tachyon/core/math/vector2.h"
 #include <vector>
 
 namespace tachyon::renderer2d {
@@ -18,4 +18,3 @@ public:
 };
 
 } // namespace tachyon::renderer2d
-

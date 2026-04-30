@@ -91,12 +91,13 @@ void PresetCompiler::expand_layer(LayerSpec& layer) const {
 
     const double in_point = layer.in_point;
     const double out_point = layer.out_point;
+    const double duration = out_point - in_point;
 
     // Expand "in" preset
-    if (!layer.transition_in.type.empty() && layer.transition_in.type != "none") {
-        const AnimationPreset* preset = m_library.find(layer.transition_in.type);
+    if (!layer.in_preset.empty()) {
+        const AnimationPreset* preset = m_library.find(layer.in_preset);
         if (preset) {
-            const double phase_end = in_point + layer.transition_in.duration;
+            const double phase_end = in_point + layer.in_duration;
             inject_phase(layer, *preset, in_point, phase_end);
         }
     }
@@ -110,10 +111,10 @@ void PresetCompiler::expand_layer(LayerSpec& layer) const {
     }
 
     // Expand "out" preset
-    if (!layer.transition_out.type.empty() && layer.transition_out.type != "none") {
-        const AnimationPreset* preset = m_library.find(layer.transition_out.type);
+    if (!layer.out_preset.empty()) {
+        const AnimationPreset* preset = m_library.find(layer.out_preset);
         if (preset) {
-            const double phase_start = out_point - layer.transition_out.duration;
+            const double phase_start = out_point - layer.out_duration;
             inject_phase(layer, *preset, phase_start, out_point);
         }
     }
@@ -130,27 +131,27 @@ void PresetCompiler::inject_phase(LayerSpec& layer,
         const double abs_t = phase_start + kf.t * phase_duration;
 
         if (kf.scale_x.has_value()) {
-            Vector2KeyframeSpec skf;
+            ScalarKeyframeSpec skf;
             skf.time = abs_t;
-            skf.value.x = static_cast<float>(*kf.scale_x);
+            skf.value = *kf.scale_x;
             layer.transform.scale_property.keyframes.push_back(std::move(skf));
         }
         if (kf.scale_y.has_value()) {
-            Vector2KeyframeSpec skf;
+            ScalarKeyframeSpec skf;
             skf.time = abs_t;
-            skf.value.y = static_cast<float>(*kf.scale_y);
+            skf.value = *kf.scale_y;
             layer.transform.scale_property.keyframes.push_back(std::move(skf));
         }
         if (kf.position_x.has_value()) {
-            Vector2KeyframeSpec skf;
+            ScalarKeyframeSpec skf;
             skf.time = abs_t;
-            skf.value.x = static_cast<float>(*kf.position_x);
+            skf.value = *kf.position_x;
             layer.transform.position_property.keyframes.push_back(std::move(skf));
         }
         if (kf.position_y.has_value()) {
-            Vector2KeyframeSpec skf;
+            ScalarKeyframeSpec skf;
             skf.time = abs_t;
-            skf.value.y = static_cast<float>(*kf.position_y);
+            skf.value = *kf.position_y;
             layer.transform.position_property.keyframes.push_back(std::move(skf));
         }
         if (kf.opacity.has_value()) {

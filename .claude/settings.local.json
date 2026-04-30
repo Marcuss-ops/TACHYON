@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "allow": [
+      "Bash(cmake --build build --config Debug)",
+      "Bash(./build/tests/Debug/TachyonTests.exe)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(grep -E \"^C:\\\\\\\\Users\\\\\\\\pater\\\\\\\\Pyt\\\\\\\\Tachyon/\\(src|include|tests\\)/\")",
+      "Bash(xargs grep *)",
+      "Bash(cmake --build build --config Debug --target TachyonTests)",
+      "Bash(cmake -S . -B build -G \"Visual Studio 17 2022\")",
+      "Bash(grep -E \"---|\\\\bpassed\\\\b|\\\\bfailed\\\\b|FAIL:\")",
+      "Bash(echo \"EXIT_CODE:$?\")",
+      "Read(//tmp/**)",
+      "Bash(start *)",
+      "Bash(powershell -Command '& '\\''./build/tests/Debug/TachyonTests.exe'\\'' 2>&1 | Select-String -Pattern '\\''FAIL|passed|failed|EXIT'\\'' | ForEach-Object { $_.Line }')",
+      "Bash(cmake --build build --config Release)",
+      "Bash(./build/tests/Release/TachyonTests.exe)",
+      "Bash(cmake --version)",
+      "Bash(cmake -S . -B build)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(cmake --build build --config Release --target TachyonCore --parallel 4)",
+      "Bash(git push *)",
+      "Bash(Skill(update-config))"
+    ]
+  }
+}

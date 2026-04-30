@@ -1,5 +1,5 @@
 #include "tachyon/renderer3d/core/ray_tracer.h"
-#include "tachyon/core/math/algebra/matrix4x4.h"
+#include "tachyon/core/math/matrix4x4.h"
 #include "tachyon/media/management/media_manager.h"
 #include <filesystem>
 
@@ -46,132 +46,79 @@ void RayTracer::build_scene(const EvaluatedScene3D& scene) {
     // Iterate evaluated instances
     for (const auto& instance : scene.instances) {
         RTCScene sub_scene = nullptr;
-        bool is_animated = !instance.joint_matrices.empty() || !instance.morph_weights.empty();
-        std::string effective_mesh_key = instance.mesh_asset_id;
-        
-        if (is_animated) {
-            effective_mesh_key += "_anim_" + std::to_string(instance.object_id);
-        }
 
-        auto it = mesh_cache_.find(effective_mesh_key);
+        auto it = mesh_cache_.find(instance.mesh_asset_id);
         if (it != mesh_cache_.end()) {
             sub_scene = it->second.scene;
         } else {
             MeshCacheEntry entry;
             entry.scene = rtcNewScene(device_);
-            
-            // Try to get mesh asset either from instance or from media manager
-            std::shared_ptr<const media::MeshAsset> mesh_asset = instance.mesh_asset;
-            if (!mesh_asset && media_manager_) {
+            entry.asset = nullptr;
+
+            if (media_manager_) {
                 std::filesystem::path mesh_path = media_manager_->get_asset_path(instance.mesh_asset_id);
                 if (!mesh_path.empty()) {
-                    if (const auto* loaded = media_manager_->get_mesh(mesh_path, nullptr)) {
-                        mesh_asset = std::shared_ptr<const media::MeshAsset>(loaded, [](const media::MeshAsset*) {});
-                    }
-                }
-            }
-            entry.asset = mesh_asset;
-
-            if (mesh_asset) {
-                entry.submeshes.reserve(mesh_asset->sub_meshes.size());
-                for (const auto& sub_mesh : mesh_asset->sub_meshes) {
-                    if (sub_mesh.vertices.empty() || sub_mesh.indices.empty() || (sub_mesh.indices.size() % 3) != 0) {
-                        continue;
-                    }
-
-                    MeshCacheEntry::SubMeshCache cached_submesh;
-                    cached_submesh.material = sub_mesh.material;
-                    cached_submesh.indices = sub_mesh.indices;
-                    cached_submesh.vertices.reserve(sub_mesh.vertices.size());
-
-                    RTCGeometry geom = rtcNewGeometry(device_, RTC_GEOMETRY_TYPE_TRIANGLE);
-                    const std::size_t vertex_count = sub_mesh.vertices.size();
-                    float* v = static_cast<float*>(rtcSetNewGeometryBuffer(
-                        geom,
-                        RTC_BUFFER_TYPE_VERTEX,
-                        0,
-                        RTC_FORMAT_FLOAT3,
-                        3 * sizeof(float),
-                        vertex_count));
-
-                    for (std::size_t i = 0; i < sub_mesh.vertices.size(); ++i) {
-                        const auto& v_orig = sub_mesh.vertices[i];
-                        math::Vector3 pos = v_orig.position;
-                        math::Vector3 normal = v_orig.normal;
-                        
-                        if (is_animated) {
-                            // 1. Apply Morph Targets
-                            if (!instance.morph_weights.empty() && !sub_mesh.morph_targets.empty()) {
-                                for (std::size_t m = 0; m < std::min(instance.morph_weights.size(), sub_mesh.morph_targets.size()); ++m) {
-                                    float weight = instance.morph_weights[m];
-                                    if (std::abs(weight) > 1e-4f) {
-                                        pos += sub_mesh.morph_targets[m].positions[i] * weight;
-                                        if (i < sub_mesh.morph_targets[m].normals.size()) {
-                                            normal += sub_mesh.morph_targets[m].normals[i] * weight;
-                                        }
-                                    }
-                                }
-                                normal = normal.normalized();
+                    entry.asset = media_manager_->get_mesh(mesh_path, nullptr);
+                    if (entry.asset && !entry.asset->empty()) {
+                        entry.submeshes.reserve(entry.asset->sub_meshes.size());
+                        for (const auto& sub_mesh : entry.asset->sub_meshes) {
+                            if (sub_mesh.vertices.empty() || sub_mesh.indices.empty() || (sub_mesh.indices.size() % 3) != 0) {
+                                continue;
                             }
-                            
-                            // 2. Apply Skinning
-                            if (!instance.joint_matrices.empty()) {
-                                math::Vector3 skinned_pos{0,0,0};
-                                math::Vector3 skinned_normal{0,0,0};
-                                float weight_sum = 0.0f;
-                                for (int k = 0; k < 4; ++k) {
-                                    float w = v_orig.weights[k];
-                                    if (w > 0.0f) {
-                                        std::uint32_t joint_idx = v_orig.joints[k];
-                                        if (joint_idx < instance.joint_matrices.size()) {
-                                            const auto& m = instance.joint_matrices[joint_idx];
-                                            skinned_pos += m.transform_point(pos) * w;
-                                            skinned_normal += m.transform_vector(normal) * w;
-                                            weight_sum += w;
-                                        }
-                                    }
-                                }
-                                if (weight_sum > 0.0f) {
-                                    pos = skinned_pos * (1.0f / weight_sum);
-                                    normal = skinned_normal.normalized();
-                                }
+
+                            MeshCacheEntry::SubMeshCache cached_submesh;
+                            cached_submesh.material = sub_mesh.material;
+                            cached_submesh.indices = sub_mesh.indices;
+                            cached_submesh.vertices.reserve(sub_mesh.vertices.size());
+
+                            for (const auto& vertex : sub_mesh.vertices) {
+                                MeshVertex transformed_vertex;
+                                transformed_vertex.position = sub_mesh.transform.transform_point(vertex.position);
+                                transformed_vertex.normal = transform_normal(sub_mesh.transform, vertex.normal);
+                                transformed_vertex.uv = vertex.uv;
+                                cached_submesh.vertices.push_back(transformed_vertex);
                             }
+
+                            RTCGeometry geom = rtcNewGeometry(device_, RTC_GEOMETRY_TYPE_TRIANGLE);
+                            const std::size_t vertex_count = cached_submesh.vertices.size();
+                            float* v = static_cast<float*>(rtcSetNewGeometryBuffer(
+                                geom,
+                                RTC_BUFFER_TYPE_VERTEX,
+                                0,
+                                RTC_FORMAT_FLOAT3,
+                                3 * sizeof(float),
+                                vertex_count));
+                            for (std::size_t i = 0; i < cached_submesh.vertices.size(); ++i) {
+                                v[i * 3 + 0] = cached_submesh.vertices[i].position.x;
+                                v[i * 3 + 1] = cached_submesh.vertices[i].position.y;
+                                v[i * 3 + 2] = cached_submesh.vertices[i].position.z;
+                            }
+
+                            const std::size_t triangle_count = cached_submesh.indices.size() / 3;
+                            unsigned int* idx = static_cast<unsigned int*>(rtcSetNewGeometryBuffer(
+                                geom,
+                                RTC_BUFFER_TYPE_INDEX,
+                                0,
+                                RTC_FORMAT_UINT3,
+                                3 * sizeof(unsigned int),
+                                triangle_count));
+                            for (std::size_t i = 0; i < cached_submesh.indices.size(); ++i) {
+                                idx[i] = cached_submesh.indices[i];
+                            }
+
+                            rtcCommitGeometry(geom);
+                            const unsigned int sub_geom_id = rtcAttachGeometry(entry.scene, geom);
+                            entry.geom_id_to_submesh[sub_geom_id] = entry.submeshes.size();
+                            entry.submeshes.push_back(std::move(cached_submesh));
+                            rtcReleaseGeometry(geom);
                         }
-
-                        MeshVertex deformed_vertex;
-                        deformed_vertex.position = sub_mesh.transform.transform_point(pos);
-                        deformed_vertex.normal = transform_normal(sub_mesh.transform, normal);
-                        deformed_vertex.uv = v_orig.uv;
-                        cached_submesh.vertices.push_back(deformed_vertex);
-
-                        v[i * 3 + 0] = deformed_vertex.position.x;
-                        v[i * 3 + 1] = deformed_vertex.position.y;
-                        v[i * 3 + 2] = deformed_vertex.position.z;
                     }
-
-                    const std::size_t triangle_count = sub_mesh.indices.size() / 3;
-                    unsigned int* idx = static_cast<unsigned int*>(rtcSetNewGeometryBuffer(
-                        geom,
-                        RTC_BUFFER_TYPE_INDEX,
-                        0,
-                        RTC_FORMAT_UINT3,
-                        3 * sizeof(unsigned int),
-                        triangle_count));
-                    for (std::size_t i = 0; i < sub_mesh.indices.size(); ++i) {
-                        idx[i] = sub_mesh.indices[i];
-                    }
-
-                    rtcCommitGeometry(geom);
-                    const unsigned int sub_geom_id = rtcAttachGeometry(entry.scene, geom);
-                    entry.geom_id_to_submesh[sub_geom_id] = entry.submeshes.size();
-                    entry.submeshes.push_back(std::move(cached_submesh));
-                    rtcReleaseGeometry(geom);
                 }
             }
 
             rtcCommitScene(entry.scene);
             sub_scene = entry.scene;
-            it = mesh_cache_.emplace(effective_mesh_key, std::move(entry)).first;
+            mesh_cache_.emplace(instance.mesh_asset_id, std::move(entry));
         }
         
         RTCGeometry inst = rtcNewGeometry(device_, RTC_GEOMETRY_TYPE_INSTANCE);
@@ -197,7 +144,7 @@ void RayTracer::build_scene(const EvaluatedScene3D& scene) {
             geom_id,
             instance.object_id,
             instance.material_id,
-            effective_mesh_key, // Use the unique key for lookup in shading pass
+            instance.mesh_asset_id,
             instance.material,
             instance.world_transform,
             instance.previous_world_transform

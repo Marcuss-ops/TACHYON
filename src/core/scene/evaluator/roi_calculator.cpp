@@ -3,15 +3,10 @@
 
 namespace tachyon::scene {
 
-// Simple Rect struct for ROI calculations
-struct Rect {
-    float x1, y1, x2, y2;
-};
-
 /**
  * @brief Computes the Region of Interest (ROI) by comparing two composition states.
  */
-Rect compute_roi(
+EvaluatedCompositionState::Rect compute_roi(
     const EvaluatedCompositionState& prev,
     const EvaluatedCompositionState& curr) 
 {
@@ -30,7 +25,8 @@ Rect compute_roi(
         bool changed = (l_prev.world_position3.x != l_curr.world_position3.x ||
                         l_prev.world_position3.y != l_curr.world_position3.y ||
                         l_prev.opacity != l_curr.opacity ||
-                        l_prev.visible != l_curr.visible);
+                        l_prev.visible != l_curr.visible ||
+                        l_prev.local_transform.matrix[0] != l_curr.local_transform.matrix[0]); // etc
 
         if (changed) {
             any_change = true;

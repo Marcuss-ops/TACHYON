@@ -74,37 +74,6 @@ struct ColorProfile {
     bool operator!=(const ColorProfile& other) const {
         return !(*this == other);
     }
-
-    std::string to_string() const {
-        switch (primaries) {
-            case ColorPrimaries::sRGB:
-            case ColorPrimaries::Rec709:
-                if (curve == TransferCurve::Linear) return "linear_rec709";
-                if (curve == TransferCurve::sRGB) return "srgb";
-                if (curve == TransferCurve::Rec709) return "rec709";
-                break;
-            case ColorPrimaries::Rec2020:
-                if (curve == TransferCurve::Linear) return "linear_rec2020";
-                if (curve == TransferCurve::PQ) return "pq_rec2020";
-                if (curve == TransferCurve::HLG) return "hlg_rec2020";
-                break;
-            case ColorPrimaries::DisplayP3:
-            case ColorPrimaries::P3D65:
-                if (curve == TransferCurve::Linear) return "linear_displayp3";
-                if (curve == TransferCurve::sRGB) return "srgb_displayp3";
-                break;
-            case ColorPrimaries::P3DCI:
-                return "dci_p3";
-            case ColorPrimaries::ACES_AP0:
-                return "aces_ap0";
-            case ColorPrimaries::ACES_AP1:
-                if (curve == TransferCurve::Linear) return "acescg";
-                break;
-            default:
-                break;
-        }
-        return "linear_rec709"; // safe fallback
-    }
 };
 
 struct WorkingColorSpace {

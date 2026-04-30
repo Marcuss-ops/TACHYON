@@ -1,6 +1,4 @@
 #include "frame_executor_internal.h"
-#include "tachyon/core/expressions/expression_vm.h"
-#include "tachyon/core/expressions/expression_engine.h"
 
 namespace tachyon {
 
@@ -45,13 +43,9 @@ void evaluate_property(
         }
     } else if (track.kind == CompiledPropertyTrack::Kind::Keyframed) {
         value = sample_keyframed_value(track, value, frame_time_seconds);
-    } else if (track.kind == CompiledPropertyTrack::Kind::Expression && track.expression_index.has_value()) {
-        const auto& bytecode = scene.expressions[track.expression_index.value()];
-        expressions::ExpressionContext expr_context;
-        expr_context.time = frame_time_seconds;
-        value = expressions::ExpressionVM::execute(bytecode, expr_context);
     }
 
+    (void)scene;
     (void)plan;
     executor.m_cache.store_property(prop_cache_key, value);
 }

@@ -2,15 +2,13 @@
 #include "tachyon/core/scene/composition/evaluator_composition.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/core/scene/evaluator/layer_evaluator.h"
-#include "tachyon/core/math/algebra/matrix4x4.h"
-#include "tachyon/core/math/algebra/vector3.h"
+#include "tachyon/core/math/matrix4x4.h"
+#include "tachyon/core/math/vector3.h"
 #include "tachyon/core/camera/camera_shake.h"
 #include "tachyon/camera_cut_contract.h"
 
 #include <algorithm>
 #include <cmath>
-#include <ctime>
-#include <chrono>
 
 namespace tachyon::scene {
 
@@ -231,67 +229,24 @@ EvaluatedLayerState evaluate_layer_state(
     composition.layers.push_back(layer);
 
     EvaluationContext context{
-        nullptr,                                                              // scene
-        composition,                                                           // composition
-        frame_number,                                                          // frame_number
-        composition_time_seconds,                                               // composition_time_seconds
-        {},                                                                    // layer_indices
-        {},                                                                    // composition_indices
-        {},                                                                    // component_indices
-        std::vector<std::optional<EvaluatedLayerState>>(composition.layers.size()), // cache
-        std::vector<bool>(composition.layers.size(), false),                    // visiting
-        {},                                                                    // composition_stack
-        audio_analyzer,                                                        // audio_analyzer
-        {},                                                                    // vars
-        {},                                                                    // subtitle_cache
-        media,                                                                 // media
-        {},                                                                    // sampler
-        std::nullopt,                                                          // main_frame_number
-        std::nullopt                                                           // main_frame_time_seconds
+        nullptr,
+        composition,
+        frame_number,
+        composition_time_seconds,
+        {},
+        std::vector<std::optional<EvaluatedLayerState>>(composition.layers.size()),
+        std::vector<bool>(composition.layers.size(), false),
+        {},
+        audio_analyzer,
+        {},
+        {},
+        media,
+        {},
+        std::nullopt,
+        std::nullopt
     };
 
     return make_layer_state(context, context.composition.layers.front(), 0, 0.0, {});
 }
 
-std::unordered_map<std::string, double> make_standard_numeric_vars(
-    std::int64_t frame_number,
-    double composition_time_seconds,
-    double frame_rate) {
-    std::unordered_map<std::string, double> vars;
-    vars["frame"] = static_cast<double>(frame_number);
-    vars["time"] = composition_time_seconds;
-    vars["fps"] = frame_rate;
-    vars["frame_rate"] = frame_rate;
-    return vars;
-}
-
-std::unordered_map<std::string, std::string> make_standard_string_vars() {
-    std::unordered_map<std::string, std::string> vars;
-
-    auto now = std::chrono::system_clock::now();
-    std::time_t now_time = std::chrono::system_clock::to_time_t(now);
-    std::tm local_tm;
-#ifdef _WIN32
-    localtime_s(&local_tm, &now_time);
-#else
-    localtime_r(&now_time, &local_tm);
-#endif
-
-    char date_buf[32];
-    char time_buf[32];
-    char datetime_buf[64];
-
-    std::strftime(date_buf, sizeof(date_buf), "%Y-%m-%d", &local_tm);
-    std::strftime(time_buf, sizeof(time_buf), "%H:%M:%S", &local_tm);
-    std::strftime(datetime_buf, sizeof(datetime_buf), "%Y-%m-%d %H:%M:%S", &local_tm);
-
-    vars["date"] = date_buf;
-    vars["today"] = date_buf;
-    vars["time_str"] = time_buf;
-    vars["datetime"] = datetime_buf;
-
-    return vars;
-}
-
 } // namespace tachyon::scene
-

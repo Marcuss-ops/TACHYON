@@ -1,13 +1,13 @@
 #pragma once
 
-#include "tachyon/core/math/geometry/transform2.h"
-#include "tachyon/core/math/algebra/vector2.h"
+#include "tachyon/core/math/transform2.h"
+#include "tachyon/core/math/vector2.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/renderer2d/color/blending.h"
 #include "tachyon/renderer2d/spec/gradient_spec.h"
 #include "tachyon/renderer2d/raster/path_rasterizer.h"
 #include "tachyon/renderer2d/core/texture_handle.h"
-#include "tachyon/renderer2d/effects/core/effect_params.h"
+#include "tachyon/renderer2d/effects/effect_params.h"
 
 #include <optional>
 #include <string>
@@ -101,5 +101,3 @@ struct DrawList2D {
 
 } // namespace renderer2d
 } // namespace tachyon
-
-

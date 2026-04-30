@@ -1,6 +1,5 @@
-#include "tachyon/text/fonts/core/font.h"
+#include "tachyon/text/fonts/font.h"
 #include "tachyon/text/layout/layout.h"
-#include "tachyon/text/layout/layout_cache.h"
 #include "tachyon/text/layout/cluster_iterator.h"
 #include "tachyon/text/i18n/bidi_engine.h"
 
@@ -19,41 +18,6 @@ void check_true(bool condition, const std::string& message) {
     } else {
         std::cout << "PASS: " << message << '\n';
     }
-}
-
-void test_layout_cache() {
-    using namespace tachyon::text;
-    std::cout << "Testing LayoutCache...\n";
-
-    LayoutCache& cache = LayoutCache::get_instance();
-    cache.clear();
-
-    LayoutCacheKey key;
-    key.text = "Hello Cache";
-    key.font_id = 1;
-    key.pixel_size = 24;
-    key.alignment = TextAlignment::Left;
-    key.tracking = 0.0f;
-    key.word_wrap = true;
-    key.multiline = true;
-    key.box_width = 0;
-    key.box_height = 0;
-    key.use_sdf = false;
-
-    TextLayoutResult result;
-    result.width = 100;
-    result.height = 30;
-
-    cache.put(key, result);
-
-    TextLayoutResult cached_result;
-    check_true(cache.get(key, cached_result), "LayoutCache retrieval");
-    check_true(cached_result.width == 100, "LayoutCache width match");
-    check_true(cached_result.height == 30, "LayoutCache height match");
-
-    // Test mismatch
-    key.text = "Different Text";
-    check_true(!cache.get(key, cached_result), "LayoutCache miss on different text");
 }
 
 void test_cluster_iterator() {
@@ -111,7 +75,6 @@ void test_bidi_paragraphs() {
 int main() {
     std::cout << "Running Phase 1 Text Foundation Tests...\n";
     
-    test_layout_cache();
     test_cluster_iterator();
     test_bidi_paragraphs();
 
@@ -123,4 +86,3 @@ int main() {
         return 1;
     }
 }
-

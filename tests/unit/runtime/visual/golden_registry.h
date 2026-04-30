@@ -3,7 +3,6 @@
 #include <iostream>
 #include <map>
 #include <string>
-#include <filesystem>
 #include <nlohmann/json.hpp>
 
 namespace tachyon::test {
@@ -13,20 +12,7 @@ namespace tachyon::test {
  */
 class GoldenRegistry {
 public:
-    static void set_update_mode(bool enabled) { s_update_mode = enabled; }
-    static bool get_update_mode() { return s_update_mode; }
-
-    explicit GoldenRegistry(std::string path) {
-        // Resolve path relative to test source dir if not absolute
-        std::filesystem::path p(path);
-        if (!p.is_absolute()) {
-#ifdef TACHYON_TESTS_SOURCE_DIR
-            p = std::filesystem::path(TACHYON_TESTS_SOURCE_DIR) / path;
-#else
-            p = std::filesystem::current_path() / path;
-#endif
-        }
-        m_path = p.string();
+    explicit GoldenRegistry(std::string path) : m_path(std::move(path)) {
         load();
     }
 
@@ -49,14 +35,7 @@ public:
             nlohmann::json j;
             f >> j;
             for (auto& [k, v] : j.items()) {
-                if (v.is_string()) {
-                    std::string s = v.get<std::string>();
-                    // Remove 0x prefix if present
-                    if (s.rfind("0x", 0) == 0) s.erase(0, 2);
-                    m_hashes[k] = std::stoull(s, nullptr, 16);
-                } else {
-                    m_hashes[k] = v.get<std::uint64_t>();
-                }
+                m_hashes[k] = v.get<std::uint64_t>();
             }
         } catch (...) {}
     }
@@ -70,9 +49,9 @@ public:
         f << j.dump(2);
     }
 
-    bool verify_or_update(const std::string& key, std::uint64_t current_hash) {
+    bool verify_or_update(const std::string& key, std::uint64_t current_hash, bool update_mode = false) {
         std::uint64_t expected = get_hash(key);
-        if (s_update_mode) {
+        if (update_mode) {
             set_hash(key, current_hash);
             save();
             return true;
@@ -81,7 +60,6 @@ public:
     }
 
 private:
-    static inline bool s_update_mode = false;
     std::string m_path;
     std::map<std::string, std::uint64_t> m_hashes;
 };

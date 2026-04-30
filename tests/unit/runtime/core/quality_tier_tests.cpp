@@ -19,8 +19,8 @@ SceneSpec make_scene(std::int64_t width, std::int64_t height) {
     CompositionSpec composition;
     composition.id = "main";
     composition.name = "Main";
-    composition.width = static_cast<int>(width);
-    composition.height = static_cast<int>(height);
+    composition.width = width;
+    composition.height = height;
     composition.duration = 1.0;
     composition.frame_rate = {30, 1};
     composition.layers.push_back(layer);
@@ -78,25 +78,22 @@ TEST(QualityTierTests, TiersProduceDifferentFramebufferSizes) {
     RenderSession session;
     const RenderExecutionPlan exec_plan = make_execution_plan(160, 90);
 
-    // Test draft tier
-    RenderExecutionPlan draft_plan = exec_plan;
-    draft_plan.render_plan.quality_tier = "draft";
-    draft_plan.render_plan.quality_policy = make_quality_policy("draft");
-    const RenderSessionResult draft_result = session.render(scene, *compiled.value, draft_plan, "");
-    ASSERT_FALSE(draft_result.frames.empty());
-    ASSERT_TRUE(draft_result.frames[0].frame);
-    EXPECT_EQ(draft_result.frames[0].frame->width(), 80U);
-    EXPECT_EQ(draft_result.frames[0].frame->height(), 45U);
+    auto run_tier = [&](const std::string& tier) {
+        RenderExecutionPlan tier_plan = exec_plan;
+        tier_plan.render_plan.quality_tier = tier;
+        const RenderSessionResult result = session.render(scene, *compiled.value, tier_plan, "");
+        ASSERT_FALSE(result.frames.empty());
+        ASSERT_TRUE(result.frames[0].frame);
+        return result.frames[0].frame;
+    };
 
-    // Test high tier (production)
-    RenderExecutionPlan high_plan = exec_plan;
-    high_plan.render_plan.quality_tier = "high";
-    high_plan.render_plan.quality_policy = make_quality_policy("high");
-    const RenderSessionResult high_result = session.render(scene, *compiled.value, high_plan, "");
-    ASSERT_FALSE(high_result.frames.empty());
-    ASSERT_TRUE(high_result.frames[0].frame);
-    EXPECT_EQ(high_result.frames[0].frame->width(), 160U);
-    EXPECT_EQ(high_result.frames[0].frame->height(), 90U);
+    auto draft_frame = run_tier("draft");
+    EXPECT_EQ(draft_frame->width(), 80U);
+    EXPECT_EQ(draft_frame->height(), 45U);
+
+    auto high_frame = run_tier("high");
+    EXPECT_EQ(high_frame->width(), 160U);
+    EXPECT_EQ(high_frame->height(), 90U);
 }
 
 TEST(QualityTierTests, DraftCapsMotionBlur) {

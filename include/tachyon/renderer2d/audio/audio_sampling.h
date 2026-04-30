@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
-#include "tachyon/audio/processing/audio_analyzer.h"
+#include "tachyon/audio/audio_analyzer.h"
 
 namespace tachyon::renderer2d::audio {
 

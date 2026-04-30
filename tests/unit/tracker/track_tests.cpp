@@ -1,4 +1,4 @@
-#include "tachyon/tracker/core/track.h"
+#include "tachyon/tracker/track.h"
 #include <cmath>
 #include <iostream>
 #include <string>
@@ -122,4 +122,3 @@ bool run_track_tests() {
 
     return g_failures == 0;
 }
-
