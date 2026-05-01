@@ -25,7 +25,7 @@ void TrackBinding::apply(float time, scene::EvaluatedLayerState& layer) const {
             if (auto affine = m_track->affine_at(time)) {
                 const auto& a = *affine; // [a, b, tx, c, d, ty]
                 // Extract rotation angle from 2x3 affine matrix
-                float angle = std::atan2(a[1], a[0]);
+                float angle = std::atan2(a[3], a[0]);
                 layer.local_transform.rotation_rad = angle;
             }
             break;
@@ -33,9 +33,9 @@ void TrackBinding::apply(float time, scene::EvaluatedLayerState& layer) const {
         case TrackBindingTarget::Scale:
             if (auto affine = m_track->affine_at(time)) {
                 const auto& a = *affine;
-                // Extract scale from affine matrix columns
-                float sx = std::sqrt(a[0]*a[0] + a[1]*a[1]);
-                float sy = std::sqrt(a[2]*a[2] + a[3]*a[3]);
+                // Extract scale from affine matrix columns.
+                float sx = std::sqrt(a[0]*a[0] + a[3]*a[3]);
+                float sy = std::sqrt(a[1]*a[1] + a[4]*a[4]);
                 layer.local_transform.scale.x = sx;
                 layer.local_transform.scale.y = sy;
             }

@@ -2,31 +2,26 @@
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/report.h"
 #include "tachyon/core/spec/validation/scene_validator.h"
-#include "tachyon/core/spec/cpp_scene_loader.h"
+#include "tachyon/core/cli_scene_loader.h"
 #include "cli_internal.h"
 #include <iostream>
 
 namespace tachyon {
 
 bool run_validate_command(const CliOptions& options, std::ostream& out, std::ostream& err) {
-    SceneSpec scene;
-    AssetResolutionTable assets;
+    SceneLoadOptions load_opts;
+    load_opts.cpp_path = options.cpp_path;
+    load_opts.scene_path = options.scene_path;
+    load_opts.preset_id = options.preset_id;
 
-    if (!options.cpp_path.empty()) {
-        if (!options.json_output) out << "[validate] Compiling scene from " << options.cpp_path.string() << "...\n";
-        const auto result = CppSceneLoader::load_from_file(options.cpp_path);
-        if (!result.success) {
-            err << "C++ Scene Loader failed:\n" << result.diagnostics << "\n";
-            return false;
-        }
-        scene = std::move(*result.scene);
-    } else if (!options.scene_path.empty()) {
-        err << "WARNING: Validating from JSON scene files is DEPRECATED. Use --cpp instead.\n";
-        if (!load_scene_context(options.scene_path, scene, assets, err)) return false;
-    } else {
-        err << "Either --cpp or --scene is required.\n";
+    auto loaded = load_scene_for_cli(load_opts, SceneLoadMode::Validate, out, err);
+    if (!loaded.success) {
+        print_diagnostics(loaded.diagnostics, err);
         return false;
     }
+
+    SceneSpec& scene = loaded.context->scene;
+    AssetResolutionTable& assets = loaded.context->assets;
 
     // Run the actual SceneValidator
     core::SceneValidator validator;

@@ -7,6 +7,7 @@
 #include "tachyon/renderer2d/resource/precomp_cache.h"
 #include "tachyon/renderer2d/resource/texture_resolver.h"
 #include "tachyon/output/frame_output_sink.h"
+#include "tachyon/output/output_utils.h"
 #include "tachyon/media/streaming/media_prefetcher.h"
 #include "tachyon/audio/audio_export.h"
 
@@ -53,11 +54,6 @@ void render_frames_parallel(
     std::vector<ExecutedFrame>& rendered_frames,
     std::vector<double>& frame_times) {
 
-    (void)original_scene;
-    (void)session_fps;
-    (void)scheduler;
-    (void)prefetcher;
-
     const std::size_t task_count = execution_plan.frame_tasks.size();
     rendered_frames.resize(task_count);
     frame_times.resize(task_count);
@@ -74,6 +70,8 @@ void render_frames_parallel(
             // Create a thread-local context
             ::tachyon::RenderContext local_context(context.renderer2d.precomp_cache);
             local_context.media = context.media;
+            local_context.prefetcher = &prefetcher;
+            local_context.scheduler = scheduler;
             local_context.ray_tracer = context.ray_tracer;
             local_context.policy = context.policy;
             local_context.surface_pool = context.surface_pool;
@@ -188,16 +186,19 @@ RenderSessionResult RenderSession::render(
         result.encode_ms = std::chrono::duration<double, std::milli>(encode_end - encode_start).count();
     }
 
-    // Audio Export
+    // Audio Export (Standalone WAV if sink doesn't handle muxing)
     if (!compiled_scene.compositions.empty() && !compiled_scene.compositions.front().audio_tracks.empty()) {
-        audio::AudioExporter exporter;
-        for (const auto& track : compiled_scene.compositions.front().audio_tracks) {
-            exporter.add_track(track);
+        const bool sink_handles_audio = output::output_requests_video_file(effective_plan.render_plan.output);
+        if (!sink_handles_audio) {
+            audio::AudioExporter exporter;
+            for (const auto& track : compiled_scene.compositions.front().audio_tracks) {
+                exporter.add_track(track);
+            }
+            
+            audio::AudioExportConfig audio_config;
+            std::filesystem::path audio_path = output_path.parent_path() / (output_path.stem().string() + ".wav");
+            exporter.export_to(audio_path, audio_config);
         }
-        
-        audio::AudioExportConfig audio_config;
-        std::filesystem::path audio_path = output_path.parent_path() / (output_path.stem().string() + ".wav");
-        exporter.export_to(audio_path, audio_config);
     }
 
     return result;

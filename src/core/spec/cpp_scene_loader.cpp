@@ -1,5 +1,6 @@
 #include "tachyon/core/spec/cpp_scene_loader.h"
 #include "tachyon/tachyon_build_config.h"
+#include "tachyon/core/platform/process.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -41,9 +42,19 @@ CppSceneLoader::Result CppSceneLoader::load_from_file(
     std::string cmd = get_compiler_command(cpp_path, dll_path);
     std::cout << "[CppSceneLoader] Compiling: " << cmd << std::endl;
     
-    int compile_status = std::system(cmd.c_str());
-    if (compile_status != 0) {
-        result.diagnostics = "Compilation failed with exit code " + std::to_string(compile_status);
+    using namespace tachyon::core::platform;
+    ProcessSpec spec;
+#ifdef _WIN32
+    spec.executable = "cmd.exe";
+    spec.args = {"/C", cmd};
+#else
+    spec.executable = "sh";
+    spec.args = {"-c", cmd};
+#endif
+
+    auto process_result = run_process(spec);
+    if (!process_result.success || process_result.exit_code != 0) {
+        result.diagnostics = "Compilation failed with exit code " + std::to_string(process_result.exit_code);
         return result;
     }
 

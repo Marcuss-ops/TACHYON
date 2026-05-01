@@ -1,6 +1,6 @@
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
-#include "tachyon/core/spec/cpp_scene_loader.h"
+#include "tachyon/core/cli_scene_loader.h"
 #include "tachyon/core/spec/compilation/scene_compiler.h"
 #include "tachyon/runtime/execution/session/render_session.h"
 #include "tachyon/runtime/execution/frames/frame_executor.h"
@@ -48,17 +48,12 @@ bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostrea
     RenderJob job = *job_parsed.value;
 
     auto load_watch_scene = [&](SceneSpec& sc) -> bool {
-        AssetResolutionTable dummy;
-        if (use_cpp) {
-            auto result = CppSceneLoader::load_from_file(options.cpp_path);
-            if (!result.success) {
-                err << "C++ Scene Loader failed:\n" << result.diagnostics << "\n";
-                return false;
-            }
-            sc = std::move(*result.scene);
-        } else {
-            return load_scene_context(options.scene_path, sc, dummy, err);
-        }
+        SceneLoadOptions opts;
+        opts.cpp_path = options.cpp_path;
+        opts.scene_path = options.scene_path;
+        auto r = load_scene_for_cli(opts, SceneLoadMode::Watch, out, err);
+        if (!r.success) return false;
+        sc = std::move(r.context->scene);
         return true;
     };
 

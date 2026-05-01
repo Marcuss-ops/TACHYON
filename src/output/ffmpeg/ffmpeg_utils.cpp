@@ -1,3 +1,4 @@
+#include "tachyon/renderer2d/color/color_transform_graph.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
 #include <vector>
 #include <algorithm>
@@ -15,6 +16,17 @@ std::vector<unsigned char> convert_and_pack_ffmpeg_frame(
     renderer2d::detail::TransferCurve output_curve,
     renderer2d::detail::ColorSpace output_space,
     renderer2d::detail::ColorRange output_range) {
+
+    renderer2d::ColorProfile src_profile;
+    src_profile.curve = source_curve;
+    src_profile.primaries = source_space;
+
+    renderer2d::ColorProfile dst_profile;
+    dst_profile.curve = output_curve;
+    dst_profile.primaries = output_space;
+
+    renderer2d::ColorTransformGraph graph;
+    graph.build_from_to(src_profile, dst_profile);
 
     const uint32_t src_w = frame.width();
     const uint32_t src_h = frame.height();
@@ -55,10 +67,7 @@ std::vector<unsigned char> convert_and_pack_ffmpeg_frame(
                 pixel = renderer2d::Color::lerp(top, bottom, ty);
             }
 
-            pixel = renderer2d::detail::convert_color(
-                pixel,
-                source_curve, source_space,
-                output_curve, output_space);
+            pixel = graph.process(pixel);
             pixel = renderer2d::detail::apply_range_mode(pixel, output_range);
             
             bytes.push_back(static_cast<unsigned char>(std::clamp(pixel.r * 255.0f, 0.0f, 255.0f)));

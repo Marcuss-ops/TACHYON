@@ -6,6 +6,8 @@
 #include <iostream>
 #include <filesystem>
 #include <string>
+#include <chrono>
+#include <thread>
 
 namespace {
 struct NoOpCommand : public tachyon::editor::Command {
@@ -87,8 +89,11 @@ bool run_autosave_manager_tests() {
     {
         SceneSpec scene;
         scene.project.id = "v1"; mgr.force_autosave(scene, test_serialize);
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
         scene.project.id = "v2"; mgr.force_autosave(scene, test_serialize);
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
         scene.project.id = "v3"; mgr.force_autosave(scene, test_serialize);
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
         scene.project.id = "v4"; mgr.force_autosave(scene, test_serialize);
 
         int file_count = 0;

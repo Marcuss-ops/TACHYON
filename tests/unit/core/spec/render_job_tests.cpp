@@ -1,5 +1,7 @@
 #include "tachyon/runtime/execution/jobs/render_job.h"
+#include <fstream>
 #include <iostream>
+#include <sstream>
 
 namespace {
 int g_failures = 0;
@@ -14,12 +16,11 @@ void check_true(bool condition, const std::string& message) {
 bool run_render_job_tests() {
     g_failures = 0;
     {
-        const std::string text = R"({
-            "job_id": "job_001",
-            "scene_ref": "scene.json",
-            "composition_target": "main",
-            "frame_range": { "start": 0, "end": 30 }
-        })";
+        std::ifstream input("tests/fixtures/jobs/canonical_render_job.json", std::ios::in | std::ios::binary);
+        check_true(input.is_open(), "canonical render job fixture opens");
+        std::stringstream buffer;
+        buffer << input.rdbuf();
+        const std::string text = buffer.str();
 
         const auto parsed = tachyon::parse_render_job_json(text);
         check_true(parsed.value.has_value(), "canonical render job should parse");

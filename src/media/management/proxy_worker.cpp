@@ -2,6 +2,8 @@
 #include <iostream>
 #include <filesystem>
 
+#include "tachyon/core/platform/process.h"
+
 namespace tachyon::media {
 
 ProxyWorker::ProxyWorker(ProxyManifest& manifest)
@@ -85,8 +87,18 @@ bool ProxyWorker::process_transcode(const std::string& original, const ProxyPoli
     command += " -c:a aac -b:a 128000";
     command += " \"" + output_path.string() + "\"";
 
-    int result = std::system(command.c_str());
-    return result == 0;
+    using namespace tachyon::core::platform;
+    ProcessSpec spec;
+#ifdef _WIN32
+    spec.executable = "cmd.exe";
+    spec.args = {"/C", command};
+#else
+    spec.executable = "sh";
+    spec.args = {"-c", command};
+#endif
+
+    auto proc_result = run_process(spec);
+    return proc_result.success && proc_result.exit_code == 0;
 }
 
 } // namespace tachyon::media

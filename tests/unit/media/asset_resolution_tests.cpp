@@ -35,8 +35,8 @@ bool run_asset_resolution_tests() {
         const auto root = std::filesystem::current_path();
         const auto result = resolve_assets(scene, root);
 
-        // It should fail because logo.png doesn't exist in current_path
-        check_true(!result.value.has_value(), "resolution should fail for missing files");
+        // The resolver still returns a table, but it must report the missing asset.
+        check_true(result.value.has_value(), "resolution should produce a table");
         check_true(!result.diagnostics.ok(), "missing files should produce diagnostic errors");
         bool found_error = false;
         for (const auto& d : result.diagnostics.diagnostics) {

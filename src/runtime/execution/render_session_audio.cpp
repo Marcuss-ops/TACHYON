@@ -3,6 +3,8 @@
 #include <cstdlib>
 #include <system_error>
 
+#include "tachyon/core/platform/process.h"
+
 namespace tachyon {
 
 bool mux_audio_video(const std::string& video_path, const std::string& audio_path, std::string& error) {
@@ -20,9 +22,19 @@ bool mux_audio_video(const std::string& video_path, const std::string& audio_pat
 
     std::string command = "ffmpeg -y -i \"" + video_path + "\" -i \"" + audio_path + "\" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 \"" + output_path.string() + "\"";
 
-    int result = std::system(command.c_str());
-    if (result != 0) {
-        error = "FFmpeg mux failed with code: " + std::to_string(result);
+    using namespace tachyon::core::platform;
+    ProcessSpec spec;
+#ifdef _WIN32
+    spec.executable = "cmd.exe";
+    spec.args = {"/C", command};
+#else
+    spec.executable = "sh";
+    spec.args = {"-c", command};
+#endif
+
+    auto proc_result = run_process(spec);
+    if (!proc_result.success || proc_result.exit_code != 0) {
+        error = "FFmpeg mux failed with code: " + std::to_string(proc_result.exit_code);
         return false;
     }
 

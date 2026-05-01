@@ -227,9 +227,9 @@ void Renderer2DMatteResolver::resolve(
         
         // Fallback: if no surface available, use layer opacity
         if (surface_it == rendered_surfaces.end() || !surface_it->second) {
-            // Create matte from layer opacity
-            const float opacity = std::clamp(static_cast<float>(layers[src_idx].opacity), 0.0f, 1.0f);
-            std::vector<float> source_a(pixel_count, opacity);
+            // Use a deterministic placeholder matte when the source was not rendered.
+            const float placeholder = (layers[src_idx].active && layers[src_idx].visible) ? 0.5f : 0.0f;
+            std::vector<float> source_a(pixel_count, placeholder);
             switch (dep.mode) {
                 case MatteMode::Alpha:
                 case MatteMode::AlphaInverted:
@@ -237,10 +237,9 @@ void Renderer2DMatteResolver::resolve(
                     break;
                 case MatteMode::Luma:
                 case MatteMode::LumaInverted: {
-                    // For luma fallback, treat opacity as luma value
-                    std::vector<float> source_r(pixel_count, opacity);
-                    std::vector<float> source_g(pixel_count, opacity);
-                    std::vector<float> source_b(pixel_count, opacity);
+                    std::vector<float> source_r(pixel_count, placeholder);
+                    std::vector<float> source_g(pixel_count, placeholder);
+                    std::vector<float> source_b(pixel_count, placeholder);
                     resolve_luma_matte(source_r, source_g, source_b, out_matte_buffers[tgt_idx], dep.mode == MatteMode::LumaInverted);
                     break;
                 }

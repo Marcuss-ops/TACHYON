@@ -22,6 +22,7 @@ enum class SceneLoadMode {
 struct SceneLoadOptions {
     std::filesystem::path cpp_path;
     std::filesystem::path scene_path;
+    std::optional<std::string> preset_id;
     bool allow_legacy_json{true};
 };
 

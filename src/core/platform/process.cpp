@@ -40,7 +40,20 @@ std::string quote_shell_arg(const std::string& arg) {
 std::string build_command_string(const ProcessSpec& spec) {
     std::stringstream ss;
     ss << quote_shell_arg(spec.executable.string());
-    for (const auto& arg : spec.args) {
+    for (std::size_t i = 0; i < spec.args.size(); ++i) {
+        const auto& arg = spec.args[i];
+#ifdef _WIN32
+        // cmd.exe /C must receive the command string verbatim. Wrapping the
+        // entire command in another layer of quotes breaks nested ffmpeg
+        // quoting for paths.
+        if (i == 1 &&
+            (spec.executable.filename() == "cmd.exe" || spec.executable.filename() == "cmd") &&
+            !spec.args.empty() &&
+            (spec.args[0] == "/C" || spec.args[0] == "/c")) {
+            ss << " " << arg;
+            continue;
+        }
+#endif
         ss << " " << quote_shell_arg(arg);
     }
     return ss.str();

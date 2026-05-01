@@ -13,6 +13,16 @@ set(TachyonSceneSources ${TACHYON_ALL_CPP})
 list(FILTER TachyonSceneSources INCLUDE REGEX "/(core/(scene|spec)|presets|timeline)/|/(background_generator|camera_cut_contract)\\.cpp$")
 list(FILTER TachyonSceneSources EXCLUDE REGEX "/core/spec/(serialization|parsing|shapes|schema/migration|template_registry|asset_resolver|pipeline/unified_scene_pipeline)\\.cpp$")
 
+if(TACHYON_ENABLE_LEGACY_JSON_SCENE)
+    target_sources(TachyonCore PRIVATE
+        core/spec/legacy/scene_spec_json.cpp
+        core/spec/legacy/layer_parse_json.cpp
+        core/spec/property_parse_json.cpp
+        core/spec/json_parse_helpers.cpp
+    )
+    target_compile_definitions(TachyonCore PUBLIC TACHYON_ENABLE_LEGACY_JSON_SCENE)
+endif()
+
 set(TachyonRuntimeSources ${TACHYON_ALL_CPP})
 list(FILTER TachyonRuntimeSources INCLUDE REGEX "/runtime/")
 
@@ -29,6 +39,8 @@ list(APPEND TachyonMediaSources
     "${CMAKE_CURRENT_SOURCE_DIR}/media/management/proxy_manifest.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/media/management/proxy_worker.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/media/processing/extruder.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/media/resolution/asset_path_utils.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/media/resolution/asset_resolution.cpp"
 )
 
 set(TachyonAudioSources ${TACHYON_ALL_CPP})

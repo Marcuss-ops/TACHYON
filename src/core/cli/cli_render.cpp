@@ -1,12 +1,10 @@
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/report.h"
-#include "tachyon/core/spec/cpp_scene_loader.h"
+#include "tachyon/core/cli_scene_loader.h"
 #include "tachyon/scene/builder.h"
 #include "tachyon/runtime/execution/native_render.h"
 #include "tachyon/runtime/execution/batch/batch_runner.h"
-#include "tachyon/presets/background/procedural.h"
-#include "tachyon/presets/text/text_builders.h"
 #include "cli_internal.h"
 #include <iomanip>
 #include <iostream>
@@ -90,42 +88,6 @@ void print_execution_plan(
     out << "  2d runtime backend: " << rasterized_first_frame.backend_name << '\n';
 }
 
-bool build_scene_from_preset(const std::string& pid, SceneSpec& scene, std::ostream& err) {
-    using namespace presets::background;
-    
-    LayerSpec bg;
-    if (pid == "midnight_silk") bg = procedural_bg::midnight_silk(1280, 720);
-    else if (pid == "golden_horizon") bg = procedural_bg::golden_horizon(1280, 720);
-    else if (pid == "cyber_matrix") bg = procedural_bg::cyber_matrix(1280, 720);
-    else if (pid == "frosted_glass") bg = procedural_bg::frosted_glass(1280, 720);
-    else if (pid == "cosmic_nebula") bg = procedural_bg::cosmic_nebula(1280, 720);
-    else if (pid == "brushed_metal") bg = procedural_bg::brushed_metal(1280, 720);
-    else if (pid == "oceanic_abyss") bg = procedural_bg::oceanic_abyss(1280, 720);
-    else if (pid == "royal_velvet") bg = procedural_bg::royal_velvet(1280, 720);
-    else if (pid == "prismatic_light") bg = procedural_bg::prismatic_light(1280, 720);
-    else if (pid == "technical_blueprint") bg = procedural_bg::technical_blueprint(1280, 720);
-    else if (pid == "brushed_metal_title") {
-        presets::TextParams tp;
-        tp.text = "TACHYON NATIVE";
-        tp.font_size = 120;
-        tp.reveal_duration = 0.8;
-        bg = presets::build_text_brushed_metal_title(tp);
-    }
-    else {
-        err << "Unknown preset: " << pid << "\n";
-        return false;
-    }
-
-    scene = ::tachyon::scene::Composition("preset_render")
-        .size(1280, 720)
-        .duration(2.0)
-        .fps(30)
-        .layer("bg", [&](::tachyon::scene::LayerBuilder& l) {
-            l = ::tachyon::scene::LayerBuilder(bg);
-        })
-        .build_scene();
-    return true;
-}
 }
 
 bool run_render_command(const CliOptions& options, std::ostream& out, std::ostream& err) {
@@ -138,26 +100,19 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
         return batch_result.ok();
     }
 
-    SceneSpec scene;
-    AssetResolutionTable assets;
-    
-    if (!options.cpp_path.empty()) {
-        if (!options.json_output) out << "[NativeLoader] Compiling scene from " << options.cpp_path.string() << "...\n";
-        const auto result = CppSceneLoader::load_from_file(options.cpp_path);
-        if (!result.success) {
-            err << "C++ Scene Loader failed:\n" << result.diagnostics << "\n";
-            return false;
-        }
-        scene = std::move(*result.scene);
-    } else if (options.preset_id.has_value()) {
-        if (!build_scene_from_preset(*options.preset_id, scene, err)) return false;
-    } else if (!options.scene_path.empty()) {
-        err << "WARNING: Rendering from JSON scene files is DEPRECATED. Use the new C++ Spec API (--cpp).\n";
-        if (!load_scene_context(options.scene_path, scene, assets, err)) return false;
-    } else {
-        err << "Either --cpp, --scene or --preset must be provided.\n";
+    SceneLoadOptions load_opts;
+    load_opts.cpp_path = options.cpp_path;
+    load_opts.scene_path = options.scene_path;
+    load_opts.preset_id = options.preset_id;
+
+    auto loaded = load_scene_for_cli(load_opts, SceneLoadMode::Render, out, err);
+    if (!loaded.success) {
+        print_diagnostics(loaded.diagnostics, err);
         return false;
     }
+
+    SceneSpec& scene = loaded.context->scene;
+    AssetResolutionTable& assets = loaded.context->assets;
 
     RenderJob job;
     if (!options.job_path.empty()) {
@@ -218,39 +173,7 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
 }
 
 bool run_preview_command(const CliOptions& options, std::ostream& out, std::ostream& err) {
-    SceneSpec scene;
-    AssetResolutionTable assets;
-
-    if (!options.cpp_path.empty()) {
-        const auto result = CppSceneLoader::load_from_file(options.cpp_path);
-        if (!result.success) {
-            err << "C++ Scene Loader failed:\n" << result.diagnostics << "\n";
-            return false;
-        }
-        scene = std::move(*result.scene);
-    } else if (options.preset_id.has_value()) {
-        if (!build_scene_from_preset(*options.preset_id, scene, err)) return false;
-    } else {
-        err << "WARNING: Previewing from JSON scene files is DEPRECATED. Use --cpp instead.\n";
-        if (!load_scene_context(options.scene_path, scene, assets, err)) return false;
-    }
-
-    std::string composition_id = scene.compositions.front().id;
-    std::int64_t frame = options.preview_frame_number.has_value() ? *options.preview_frame_number : 0;
-    std::filesystem::path output = !options.preview_output.empty() ? options.preview_output : "preview.png";
-
-    if (!options.json_output) {
-        out << "[NativePreview] Rendering frame " << frame << " of preset '" << (options.preset_id ? *options.preset_id : "custom") << "' to " << output.string() << "\n";
-    }
-
-    const bool success = NativeRenderer::render_still(scene, composition_id, frame, output);
-    if (!success) {
-        err << "Preview render failed.\n";
-    } else if (options.json_output) {
-        out << "{\"status\": \"ok\", \"output\": \"" << output.string() << "\"}\n";
-    }
-
-    return success;
+    return run_preview_internal(options, out, err, "NativePreview");
 }
 
 } // namespace tachyon

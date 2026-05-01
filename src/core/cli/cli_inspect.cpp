@@ -1,11 +1,12 @@
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/report.h"
-#include "tachyon/core/spec/cpp_scene_loader.h"
+#include "tachyon/core/cli_scene_loader.h"
 #include "cli_internal.h"
 #include "tachyon/text/fonts/font_manifest.h"
 #include "tachyon/text/fonts/font_coverage_reporter.h"
 #include <iostream>
+#include <nlohmann/json.hpp>
 
 namespace tachyon {
  
@@ -14,24 +15,19 @@ bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostr
         return run_inspect_fonts_command(options, out, err);
     }
  
-    SceneSpec scene;
-    AssetResolutionTable assets;
+    SceneLoadOptions load_opts;
+    load_opts.cpp_path = options.cpp_path;
+    load_opts.scene_path = options.scene_path;
+    load_opts.preset_id = options.preset_id;
 
-    if (!options.cpp_path.empty()) {
-        if (!options.json_output) out << "[inspect] Compiling scene from " << options.cpp_path.string() << "...\n";
-        const auto result = CppSceneLoader::load_from_file(options.cpp_path);
-        if (!result.success) {
-            err << "C++ Scene Loader failed:\n" << result.diagnostics << "\n";
-            return false;
-        }
-        scene = std::move(*result.scene);
-    } else if (!options.scene_path.empty()) {
-        err << "WARNING: Inspecting from JSON scene files is DEPRECATED. Use --cpp instead.\n";
-        if (!load_scene_context(options.scene_path, scene, assets, err)) return false;
-    } else {
-        err << "Either --cpp or --scene is required.\n";
+    auto loaded = load_scene_for_cli(load_opts, SceneLoadMode::Inspect, out, err);
+    if (!loaded.success) {
+        print_diagnostics(loaded.diagnostics, err);
         return false;
     }
+
+    SceneSpec& scene = loaded.context->scene;
+    AssetResolutionTable& assets = loaded.context->assets;
  
     std::optional<RenderPlan> render_plan;
     std::optional<RenderExecutionPlan> execution_plan;
@@ -82,24 +78,21 @@ bool run_inspect_fonts_command(const CliOptions& options, std::ostream& out, std
     auto summary = reporter.generate_report();
  
     if (options.json_output) {
-        out << "{\n  \"fonts\": [\n";
-        for (std::size_t i = 0; i < summary.font_reports.size(); ++i) {
-            const auto& report = summary.font_reports[i];
-            out << "    {\n";
-            out << "      \"family\": \"" << report.font_family << "\",\n";
-            out << "      \"path\": \"" << report.font_path.string() << "\",\n";
-            out << "      \"loaded\": " << (report.loaded ? "true" : "false") << ",\n";
-            out << "      \"total_glyphs\": " << report.total_glyphs << ",\n";
-            out << "      \"missing_codepoints\": " << report.missing_codepoints.size() << ",\n";
-            out << "      \"has_all_required\": " << (report.has_all_required ? "true" : "false") << "\n";
-            out << "    }";
-            if (i < summary.font_reports.size() - 1) out << ",";
-            out << "\n";
+        nlohmann::json j;
+        j["total_fonts"] = summary.total_fonts;
+        j["total_missing_glyphs"] = summary.total_missing_glyphs;
+        j["fonts"] = nlohmann::json::array();
+        for (const auto& r : summary.font_reports) {
+            j["fonts"].push_back({
+                {"family", r.font_family},
+                {"path", r.font_path.string()},
+                {"loaded", r.loaded},
+                {"total_glyphs", r.total_glyphs},
+                {"missing_codepoints", r.missing_codepoints.size()},
+                {"has_all_required", r.has_all_required}
+            });
         }
-        out << "  ],\n";
-        out << "  \"total_fonts\": " << summary.total_fonts << ",\n";
-        out << "  \"total_missing_glyphs\": " << summary.total_missing_glyphs << "\n";
-        out << "}\n";
+        out << j.dump(2) << '\n';
     } else {
         out << "Font Coverage Report\n";
         out << "==================\n\n";
