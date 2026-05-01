@@ -48,7 +48,7 @@ add_executable(TachyonTests
     unit/renderer2d/composition/evaluated_composition_renderer_tests.cpp
     unit/editor/undo_manager_tests.cpp
     unit/editor/autosave_manager_tests.cpp
-    # unit/renderer3d/motion_blur_tests.cpp  # Disabled - pre-existing build errors
+    unit/renderer3d/motion_blur_tests.cpp  # Re-enabled - was disabled for pre-existing build errors
     unit/core/rigging_maturation_tests.cpp
     unit/core/spec/parsing_tests.cpp
     unit/core/spec/validation_tests.cpp
@@ -56,9 +56,9 @@ add_executable(TachyonTests
     unit/core/spec/scene_contract_tests.cpp
     unit/core/spec/render_job_tests.cpp
     unit/text/glyph_cache_tests.cpp
-    # unit/text/text_tests.cpp  # Disabled - pre-existing build errors
+    unit/text/text_tests.cpp  # Re-enabled - was disabled for pre-existing build errors
     unit/text/editor_tests.cpp
-    # unit/audio/test_audio_pitch_correct.cpp  # Disabled - pre-existing build errors
+    unit/audio/test_audio_pitch_correct.cpp  # Re-enabled - was disabled for pre-existing build errors
     unit/runtime/core/render_contract_tests.cpp
     integration/render_session_tests.cpp
     integration/render_batch_tests.cpp

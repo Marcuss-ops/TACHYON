@@ -6,7 +6,7 @@
 
 namespace tachyon::detail {
 
-void build_compositions(const SceneSpec& scene, CompiledScene& compiled, CompilationRegistry& registry, DiagnosticBag& diagnostics) {
+void build_compositions(const SceneSpec& scene, CompiledScene& compiled, tachyon::CompilationRegistry& registry, DiagnosticBag& diagnostics) {
     (void)diagnostics; // Not used yet, but kept for API compatibility
     
     compiled.compositions.reserve(scene.compositions.size());

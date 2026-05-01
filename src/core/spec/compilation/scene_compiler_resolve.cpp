@@ -4,7 +4,7 @@
 
 namespace tachyon::detail {
 
-void resolve_dependencies(const SceneSpec& scene, CompiledScene& compiled, CompilationRegistry& registry) {
+void resolve_dependencies(const SceneSpec& scene, CompiledScene& compiled, tachyon::CompilationRegistry& registry) {
     for (std::uint32_t c_idx = 0; c_idx < compiled.compositions.size(); ++c_idx) {
         auto& comp = compiled.compositions[c_idx];
         const auto& comp_spec = scene.compositions[c_idx];

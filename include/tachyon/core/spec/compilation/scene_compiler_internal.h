@@ -2,12 +2,11 @@
 
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/runtime/core/data/compiled_scene.h"
+#include "tachyon/core/spec/compilation/compilation_context.h"
 #include <unordered_map>
 #include <cstdint>
 
 namespace tachyon {
-
-#include "tachyon/core/spec/compilation/compilation_context.h"
 
 template<typename T>
 CompiledPropertyTrack compile_property_track(

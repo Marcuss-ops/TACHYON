@@ -1,6 +1,7 @@
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include "tachyon/core/spec/scene_spec_audio.h"
 #include "tachyon/text/fonts/font_manifest.h"
+#include "tachyon/core/spec/json_scene_utils.h"
 #include <fstream>
 #include <sstream>
 
@@ -538,14 +539,7 @@ json serialize_scene_spec(const SceneSpec& scene) {
     json j;
     j["version"] = scene.version;
     j["spec_version"] = scene.spec_version;
-    j["project"] = {
-        {"id", scene.project.id},
-        {"name", scene.project.name},
-        {"authoring_tool", scene.project.authoring_tool}
-    };
-    if (scene.project.root_seed.has_value()) {
-        j["project"]["root_seed"] = *scene.project.root_seed;
-    }
+    j["project"] = spec::serialize_project(scene.project);
 
     j["compositions"] = json::array();
     for (const auto& comp : scene.compositions) {
