@@ -17,29 +17,36 @@
 
 namespace tachyon {
 
-CppSceneLoader::Result CppSceneLoader::load_from_file(
+namespace {
+
+using BuildSceneFunc = void(*)(SceneSpec&);
+
+struct CompileResult {
+    bool success{false};
+    std::string error;
+    std::filesystem::path output_path;
+};
+
+struct LoadedLib {
+    void* handle{nullptr};
+    BuildSceneFunc build_fn{nullptr};
+    std::string error;
+};
+
+CompileResult compile_scene_to_shared_lib(
     const std::filesystem::path& cpp_path,
     const std::filesystem::path& output_dir) {
     
-    Result result;
-    if (!std::filesystem::exists(cpp_path)) {
-        result.diagnostics = "C++ file does not exist: " + cpp_path.string();
-        return result;
-    }
-
-    if (!std::filesystem::exists(output_dir)) {
-        std::filesystem::create_directories(output_dir);
-    }
-
+    CompileResult result;
     std::filesystem::path dll_path = output_dir / cpp_path.filename();
 #ifdef _WIN32
     dll_path.replace_extension(".dll");
 #else
     dll_path.replace_extension(".so");
 #endif
+    std::filesystem::create_directories(output_dir);
 
-    // 1. Compile
-    std::string cmd = get_compiler_command(cpp_path, dll_path);
+    const std::string cmd = CppSceneLoader::get_compiler_command(cpp_path, dll_path);
     std::cout << "[CppSceneLoader] Compiling: " << cmd << std::endl;
     
     using namespace tachyon::core::platform;
@@ -51,56 +58,59 @@ CppSceneLoader::Result CppSceneLoader::load_from_file(
     spec.executable = "sh";
     spec.args = {"-c", cmd};
 #endif
-
-    auto process_result = run_process(spec);
-    if (!process_result.success || process_result.exit_code != 0) {
-        result.diagnostics = "Compilation failed with exit code " + std::to_string(process_result.exit_code);
+    const auto proc = run_process(spec);
+    if (!proc.success || proc.exit_code != 0) {
+        result.error = "Compilation failed (exit " + std::to_string(proc.exit_code) + "): " + proc.error;
         return result;
     }
+    result.success = true;
+    result.output_path = dll_path;
+    return result;
+}
 
-    // 2. Load
+LoadedLib load_scene_library(const std::filesystem::path& dll_path) {
+    LoadedLib lib;
 #ifdef _WIN32
-    HMODULE handle = LoadLibraryA(dll_path.string().c_str());
-    if (!handle) {
-        result.diagnostics = "Failed to load DLL: " + dll_path.string() + " (Error: " + std::to_string(GetLastError()) + ")";
-        return result;
-    }
-
-    auto build_scene_func = (BuildSceneFunc)GetProcAddress(handle, "build_scene");
-    if (!build_scene_func) {
-        result.diagnostics = "Symbol 'build_scene' not found in DLL";
-        FreeLibrary(handle);
-        return result;
-    }
+    HMODULE h = LoadLibraryA(dll_path.string().c_str());
+    if (!h) { lib.error = "LoadLibrary failed: " + std::to_string(GetLastError()); return lib; }
+    lib.build_fn = (BuildSceneFunc)GetProcAddress(h, "build_scene");
+    lib.handle = h;
 #else
-    void* handle = dlopen(dll_path.string().c_str(), RTLD_NOW);
-    if (!handle) {
-        result.diagnostics = "Failed to load SO: " + std::string(dlerror());
-        return result;
-    }
-
-    auto build_scene_func = (BuildSceneFunc)dlsym(handle, "build_scene");
-    if (!build_scene_func) {
-        result.diagnostics = "Symbol 'build_scene' not found in SO";
-        dlclose(handle);
-        return result;
-    }
+    void* h = dlopen(dll_path.string().c_str(), RTLD_NOW);
+    if (!h) { lib.error = std::string("dlopen: ") + dlerror(); return lib; }
+    lib.build_fn = (BuildSceneFunc)dlsym(h, "build_scene");
+    lib.handle = h;
 #endif
+    if (!lib.build_fn) lib.error = "Symbol 'build_scene' not found";
+    return lib;
+}
 
-    // 3. Execute
+} // namespace
+
+CppSceneLoader::Result CppSceneLoader::load_from_file(
+    const std::filesystem::path& cpp_path,
+    const std::filesystem::path& output_dir) {
+
+    Result result;
+    if (!std::filesystem::exists(cpp_path)) {
+        result.diagnostics = "C++ file does not exist: " + cpp_path.string();
+        return result;
+    }
+
+    const auto compiled = compile_scene_to_shared_lib(cpp_path, output_dir);
+    if (!compiled.success) { result.diagnostics = compiled.error; return result; }
+
+    const auto lib = load_scene_library(compiled.output_path);
+    if (!lib.build_fn) { result.diagnostics = lib.error; return result; }
+
     try {
         SceneSpec scene;
-        build_scene_func(scene);
-        result.scene = std::move(scene);
-        result.success = true;
+        lib.build_fn(scene);
+        result.scene    = std::move(scene);
+        result.success  = true;
     } catch (const std::exception& e) {
-        result.diagnostics = "Exception during build_scene(): " + std::string(e.what());
+        result.diagnostics = std::string("build_scene() threw: ") + e.what();
     }
-
-    // Note: We don't unload the library yet because the SceneSpec might point to 
-    // static data or types registered within the library. 
-    // In a production environment, we'd need a lifetime management strategy.
-
     return result;
 }
 

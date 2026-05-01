@@ -144,12 +144,13 @@ struct AnimatedVector3Spec {
 struct AnimatedColorSpec {
     std::optional<ColorSpec> value;
     std::vector<ColorKeyframeSpec> keyframes;
+    std::optional<std::string> expression;
 
     AnimatedColorSpec() = default;
     AnimatedColorSpec(const ColorSpec& v) : value(v) {}
 
     [[nodiscard]] bool empty() const noexcept {
-        return !value.has_value() && keyframes.empty();
+        return !value.has_value() && keyframes.empty() && !expression.has_value();
     }
 };
 

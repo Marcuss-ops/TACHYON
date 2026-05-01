@@ -7,3 +7,4 @@ std::unique_ptr<IColorManager> create_color_manager() {
 }
 
 } // namespace tachyon::renderer2d
+

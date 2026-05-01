@@ -58,8 +58,8 @@ bool ACESColorManager::has_ocio() const {
 }
 
 bool ACESColorManager::load_ocio_config(const std::string& config_path) {
-    // TODO(ocio): integrate OpenColorIO when TACHYON_OCIO target is available
     (void)config_path;
+    // TODO(ocio): integrate OpenColorIO when TACHYON_OCIO target is available
     impl_->ocio_available = false;
     return false;
 }

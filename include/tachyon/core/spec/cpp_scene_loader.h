@@ -31,11 +31,12 @@ public:
         const std::filesystem::path& output_dir = "build/cpp_scenes"
     );
 
-private:
     static std::string get_compiler_command(
         const std::filesystem::path& cpp_path,
         const std::filesystem::path& dll_path
     );
+
+private:
 };
 
 // Signature for the entry point in the C++ scene script
