@@ -121,17 +121,14 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
         job = *job_parsed.value;
     } else {
         // Default job if none provided
-        job.job_id = "native_render";
         if (scene.compositions.empty()) {
             err << "Scene has no compositions.\n";
             return false;
         }
-        job.composition_target = scene.compositions.front().id;
-        job.frame_range = {0, static_cast<std::int64_t>(scene.compositions.front().duration * scene.compositions.front().frame_rate.value())};
-        job.output.destination.path = !options.output_override.empty() ? options.output_override.string() : "output.mp4";
-        job.output.profile.container = "mp4";
-        job.output.profile.video.codec = "libx264";
-        job.output.profile.video.pixel_format = "yuv420p";
+        const auto& comp = scene.compositions.front();
+        FrameRange range = {0, static_cast<std::int64_t>(comp.duration * comp.frame_rate.value())};
+        std::string output = !options.output_override.empty() ? options.output_override.string() : "output.mp4";
+        job = RenderJobBuilder::video_export(comp.id, range, output);
     }
 
     if (!options.output_override.empty()) job.output.destination.path = options.output_override.string();

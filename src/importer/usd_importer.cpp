@@ -17,7 +17,7 @@ namespace tachyon::importer {
 
 #ifdef TACHYON_USD
 
-class UsdImporter : public SceneImporter {
+class UsdImporter : public SceneImporterBase {
 public:
     bool load(const std::string& path) override {
         try {
@@ -50,16 +50,8 @@ public:
         return spec;
     }
 
-    double start_time_seconds() const override { return m_start_time; }
-    double end_time_seconds()   const override { return m_end_time; }
-    bool   is_animated()        const override { return m_is_animated; }
-    std::string last_error()    const override { return m_error; }
-
 private:
     UsdStageRefPtr m_stage;
-    double m_start_time{0}, m_end_time{0};
-    bool   m_is_animated{false};
-    mutable std::string m_error;
 
     void extract_camera(const UsdPrim& prim, UsdTimeCode t, core::SceneSpec& spec) const {
         UsdGeomCamera cam(prim);

@@ -43,6 +43,24 @@ public:
     virtual std::string last_error() const = 0;
 };
 
+// ---------------------------------------------------------------------------
+// SceneImporterBase – convenience base class implementing common query methods.
+// Concrete importers can inherit from this to avoid duplicating field storage.
+// ---------------------------------------------------------------------------
+class SceneImporterBase : public SceneImporter {
+public:
+    double start_time_seconds() const override { return m_start_time; }
+    double end_time_seconds()   const override { return m_end_time; }
+    bool   is_animated()        const override { return m_is_animated; }
+    std::string last_error()    const override { return m_error; }
+
+protected:
+    double m_start_time{0.0};
+    double m_end_time{0.0};
+    bool   m_is_animated{false};
+    mutable std::string m_error;
+};
+
 // Factories – return nullptr if the respective format is not compiled in
 std::unique_ptr<SceneImporter> create_usd_importer();
 std::unique_ptr<SceneImporter> create_alembic_importer();

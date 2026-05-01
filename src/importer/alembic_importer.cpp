@@ -11,7 +11,7 @@ namespace tachyon::importer {
 
 #ifdef TACHYON_ALEMBIC
 
-class AlembicImporter : public SceneImporter {
+class AlembicImporter : public SceneImporterBase {
 public:
     bool load(const std::string& path) override {
         try {
@@ -37,16 +37,8 @@ public:
         return spec;
     }
 
-    double start_time_seconds() const override { return m_start_time; }
-    double end_time_seconds()   const override { return m_end_time; }
-    bool   is_animated()        const override { return m_is_animated; }
-    std::string last_error()    const override { return m_error; }
-
 private:
     IArchive m_archive;
-    double m_start_time{0}, m_end_time{0};
-    bool   m_is_animated{false};
-    mutable std::string m_error;
 
     void traverse_object(IObject obj, double t, core::SceneSpec& spec) const {
         for (size_t i = 0; i < obj.getNumChildren(); ++i) {

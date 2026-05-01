@@ -5,8 +5,8 @@ file(GLOB_RECURSE TACHYON_ALL_CPP CONFIGURE_DEPENDS
 )
 
 set(TachyonCoreSources ${TACHYON_ALL_CPP})
-list(FILTER TachyonCoreSources EXCLUDE REGEX "/(audio|media|output|renderer2d|renderer3d|runtime|text|tracker)/")
-list(FILTER TachyonCoreSources EXCLUDE REGEX "/core/(cli|scene|spec)/")
+list(FILTER TachyonCoreSources EXCLUDE REGEX "/(audio|media|output|renderer2d|renderer3d|runtime|text|tracker|presets|timeline)/")
+list(FILTER TachyonCoreSources EXCLUDE REGEX "/core/(cli|scene|spec)")
 list(FILTER TachyonCoreSources EXCLUDE REGEX "/(background_generator|camera_cut_contract|main)\\.cpp$")
 
 set(TachyonSceneSources ${TACHYON_ALL_CPP})
@@ -17,8 +17,8 @@ if(TACHYON_ENABLE_LEGACY_JSON_SCENE)
     target_sources(TachyonCore PRIVATE
         core/spec/legacy/scene_spec_json.cpp
         core/spec/legacy/layer_parse_json.cpp
+        core/spec/legacy/json_parse_helpers.cpp
         core/spec/property_parse_json.cpp
-        core/spec/json_parse_helpers.cpp
     )
     target_compile_definitions(TachyonCore PUBLIC TACHYON_ENABLE_LEGACY_JSON_SCENE)
 endif()
@@ -28,6 +28,7 @@ list(FILTER TachyonRuntimeSources INCLUDE REGEX "/runtime/")
 
 set(TachyonRenderer2DSources ${TACHYON_ALL_CPP})
 list(FILTER TachyonRenderer2DSources INCLUDE REGEX "/renderer2d/")
+list(FILTER TachyonRenderer2DSources EXCLUDE REGEX "/renderer2d/effects/glsl_transition_effect\\.cpp$")
 
 set(TachyonRenderer3DSources ${TACHYON_ALL_CPP})
 list(FILTER TachyonRenderer3DSources INCLUDE REGEX "/renderer3d/")
@@ -117,6 +118,12 @@ add_library(TachyonScene OBJECT ${TachyonSceneSources})
 tachyon_configure_target(TachyonScene)
 
 add_library(TachyonRuntime OBJECT ${TachyonRuntimeSources})
+list(FILTER TachyonRuntimeSources EXCLUDE REGEX "/runtime/execution/render_job/render_job_parse\\.cpp$")
+if(TACHYON_ENABLE_RENDER_JOB_JSON)
+    target_sources(TachyonRuntime PRIVATE runtime/execution/render_job/render_job_parse.cpp)
+    target_compile_definitions(TachyonRuntime PRIVATE TACHYON_ENABLE_RENDER_JOB_JSON)
+endif()
+target_sources(TachyonRuntime PRIVATE runtime/execution/render_job/render_job_builder.cpp)
 tachyon_configure_target(TachyonRuntime)
 
 add_library(TachyonRenderer2D OBJECT ${TachyonRenderer2DSources})

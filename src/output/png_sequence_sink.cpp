@@ -48,12 +48,13 @@ public:
         
         // Map RenderPlan working space string to ColorProfile
         // (Simplified mapping for now; in a full impl this would be more robust)
-        if (plan.working_space == "srgb") {
+        const std::string ws = ascii_lower(plan.working_space);
+        if (ws == "srgb") {
             m_cms.working_profile = renderer2d::ColorProfile::sRGB();
-        } else if (plan.working_space == "linear_rec709" || plan.working_space == "rec709") {
+        } else if (ws == "linear_rec709" || ws == "rec709") {
             m_cms.working_profile = renderer2d::ColorProfile::Rec709();
             m_cms.working_profile.curve = renderer2d::TransferCurve::Linear;
-        } else if (plan.working_space == "acescg") {
+        } else if (ws == "acescg") {
             m_cms.working_profile = renderer2d::ColorProfile::ACEScg();
         }
 
