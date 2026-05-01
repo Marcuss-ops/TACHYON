@@ -131,8 +131,8 @@ if ($Target) {
     Write-Host "Building $Target ($Config, $J jobs)..." -ForegroundColor Yellow
     Invoke-Native { cmake --build $BuildDir --config $Config --target $Target -j $J } "Build FAILED."
 } else {
-    Write-Host "Building default targets ($Config, $J jobs)..." -ForegroundColor Yellow
-    Invoke-Native { cmake --build $BuildDir --config $Config -j $J } "Build FAILED."
+    Write-Host "Building preset targets: $Preset ($Config, $J jobs)..." -ForegroundColor Yellow
+    Invoke-Native { cmake --build --preset $Preset --config $Config -j $J } "Build FAILED."
 }
 
 Write-Host "Build OK" -ForegroundColor Green

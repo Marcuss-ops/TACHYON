@@ -25,7 +25,7 @@ option(TACHYON_ENABLE_VULKAN "Enable Vulkan backend" OFF)
 option(TACHYON_ENABLE_OIDN "Enable OpenImageDenoise integration" OFF)
 option(TACHYON_BUILD_TESTS "Build Tachyon tests" ON)
 option(TACHYON_BUILD_EXAMPLES "Build Tachyon examples" OFF)
-option(TACHYON_ENABLE_TRACKER "Enable tracker module (disabled by default)" OFF)
+option(TACHYON_ENABLE_TRACKER "Enable tracker module" ON)
 option(TACHYON_ENABLE_AUDIO_MUX "Enable audio muxing to MP4 (disabled by default, MP4 is video-only)" OFF)
 
 if(MSVC)

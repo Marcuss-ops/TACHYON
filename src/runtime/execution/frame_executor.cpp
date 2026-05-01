@@ -65,10 +65,10 @@ std::shared_ptr<renderer2d::SurfaceRGBA> render_frame_at_time(
     // Build a robust cache key using frame_key, render time, composition, and plan params
     CacheKeyBuilder temp_builder;
     temp_builder.add_u64(frame_key);
-    temp_builder.add_double(render_time);
+    temp_builder.add_f64(render_time);
     temp_builder.add_u64(composition_key);
-    if (plan.fps.has_value()) {
-        temp_builder.add_u64(static_cast<std::uint64_t>(*plan.fps));
+    if (plan.composition.frame_rate.numerator > 0) {
+        temp_builder.add_u64(static_cast<std::uint64_t>(plan.composition.frame_rate.numerator));
     }
     if (task.subframe_index.has_value()) {
         temp_builder.add_u64(*task.subframe_index);

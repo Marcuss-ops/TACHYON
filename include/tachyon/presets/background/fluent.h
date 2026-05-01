@@ -178,3 +178,5 @@ inline LayerSpec video(std::string path, int width = 1920, int height = 1080, do
     bg.asset_id = std::move(path);
     return bg;
 }
+
+} // namespace tachyon::presets::background

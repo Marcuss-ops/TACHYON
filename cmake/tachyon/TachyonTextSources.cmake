@@ -1,0 +1,35 @@
+# TachyonText sources
+set(TachyonTextSources
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/text_measure.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/bidi/bidi_engine.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/bidi/script_detector.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/animation/text_animator_context.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/animation/text_animator_coverage.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/animation/text_animator_expression.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/animation/text_animator_paints.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/animation/text_animator_sampling.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/animation/text_animator_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/animation/text_presets.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/animation/text_preset_registry.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/animation/text_scene_presets.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/content/subtitle.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/content/word_timestamps.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/layout/layout.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/layout/layout_cache.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/layout/layout_engine_core.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/layout/layout_engine_helpers.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/rendering/outline_extractor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/rendering/text_raster_surface.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/fonts/core/embedded_fallback_font.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/fonts/core/font.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/fonts/core/font_face.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/fonts/core/font_instance.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/fonts/core/font_registry.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/fonts/management/font_downloader.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/fonts/management/font_manifest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/fonts/management/font_preloader.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/fonts/management/font_resolver.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/fonts/utils/font_coverage_reporter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/fonts/utils/glyph_atlas.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/editing/text_editor.cpp
+)

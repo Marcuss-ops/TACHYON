@@ -29,11 +29,16 @@ float sample_glyph_alpha(const tachyon::text::GlyphBitmap& glyph, float src_x, f
     const float fy = src_y - static_cast<float>(y0);
 
     auto alpha_at = [&](std::uint32_t x, std::uint32_t y) -> float {
-        const std::size_t index = static_cast<std::size_t>(y) * glyph.width + x;
-        if (index >= glyph.alpha_mask.size()) {
-            return 0.0f;
+        if (glyph.atlas_data) {
+            const std::size_t index = static_cast<std::size_t>(glyph.atlas_y + y) * glyph.atlas_stride + (glyph.atlas_x + x);
+            return static_cast<float>(glyph.atlas_data[index]) / 255.0f;
+        } else {
+            const std::size_t index = static_cast<std::size_t>(y) * glyph.width + x;
+            if (index >= glyph.alpha_mask.size()) {
+                return 0.0f;
+            }
+            return static_cast<float>(glyph.alpha_mask[index]) / 255.0f;
         }
-        return static_cast<float>(glyph.alpha_mask[index]) / 255.0f;
     };
 
     const float a00 = alpha_at(x0, y0);
@@ -49,7 +54,8 @@ float sample_glyph_alpha(const tachyon::text::GlyphBitmap& glyph, float src_x, f
 } // namespace
 
 void TextRasterSurface::render_glyph(const tachyon::text::GlyphBitmap& glyph, int tx, int ty, int tw, int th, tachyon::renderer2d::Color gc) {
-    if (tw <= 0 || th <= 0 || glyph.width == 0U || glyph.height == 0U || glyph.alpha_mask.empty()) return;
+    if (tw <= 0 || th <= 0 || glyph.width == 0U || glyph.height == 0U) return;
+    if (glyph.alpha_mask.empty() && !glyph.atlas_data) return;
     for (int y = 0; y < th; ++y) {
         const float src_y = ((static_cast<float>(y) + 0.5f) * static_cast<float>(glyph.height) / static_cast<float>(th)) - 0.5f;
         for (int x = 0; x < tw; ++x) {

@@ -54,11 +54,21 @@ Remove-SafeDir  (Join-Path $Root "out")            "out/"
 Remove-SafeGlob (Join-Path $Root "tests\output")  "*.png" "test PNG output"
 Remove-SafeGlob (Join-Path $Root "tests\output")  "*.mp4" "test MP4 output"
 
-# Keep the VS solution in build/ for IDE navigation, just clean object files
+# Keep the VS solution in build/ for IDE navigation, just clean object files and outputs
 $buildSrc = Join-Path $Root "build\src"
 if (Test-Path $buildSrc) {
     Remove-SafeGlob $buildSrc "*.obj" "build\src .obj files"
     Remove-SafeGlob $buildSrc "*.pdb" "build\src .pdb files"
+    Remove-SafeDir (Join-Path $buildSrc "RelWithDebInfo") "build\src RelWithDebInfo dir"
+    Remove-SafeDir (Join-Path $buildSrc "Debug") "build\src Debug dir"
+    Remove-SafeDir (Join-Path $buildSrc "Release") "build\src Release dir"
+}
+
+$buildTests = Join-Path $Root "build\tests"
+if (Test-Path $buildTests) {
+    Remove-SafeDir (Join-Path $buildTests "RelWithDebInfo") "build\tests RelWithDebInfo dir"
+    Remove-SafeDir (Join-Path $buildTests "Debug") "build\tests Debug dir"
+    Remove-SafeDir (Join-Path $buildTests "Release") "build\tests Release dir"
 }
 
 # ── VS env cache ───────────────────────────────────────────────────────────────
@@ -73,7 +83,7 @@ if ($VsEnvCache -or $All) {
 # ── fetchcontent cache (slow deps) ────────────────────────────────────────────
 if ($All) {
     Write-Host ""
-    Write-Host "  WARNING: wiping .cache\fetchcontent — next build re-downloads all deps." -ForegroundColor Red
+    Write-Host "  WARNING: wiping .cache/fetchcontent - next build re-downloads all deps." -ForegroundColor Red
     Remove-SafeDir (Join-Path $Root ".cache\fetchcontent") ".cache/fetchcontent"
 }
 
