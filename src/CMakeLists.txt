@@ -32,6 +32,9 @@ add_library(TachyonCore
     runtime/execution/compiled_frame_program.cpp
     runtime/cache/disk_cache.cpp
     core/cli.cpp
+    core/cli/cli_utils.cpp
+    core/cli/cli_validate.cpp
+    core/cli/cli_inspect.cpp
     core/cli/cli_render.cpp
     core/cli/cli_demo.cpp
     core/cli/cli_watch.cpp
@@ -75,6 +78,7 @@ add_library(TachyonCore
     core/spec/scene_spec_builder.cpp
     core/spec/validation/scene_validator.cpp
     core/spec/legacy/scene_spec_audio.cpp
+    core/spec/json_parse_helpers.cpp
     renderer2d/raster/draw_list_builder.cpp
     renderer2d/raster/draw_list_rasterizer.cpp
     renderer2d/raster/mesh_rasterizer.cpp

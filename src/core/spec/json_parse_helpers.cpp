@@ -179,8 +179,4 @@ std::optional<AudioBandType> parse_audio_band_type(const json& value) {
     return std::nullopt;
 }
 
-std::filesystem::path scene_asset_root(const std::filesystem::path& scene_path) {
-    return scene_path.parent_path();
-}
-
 } // namespace tachyon
