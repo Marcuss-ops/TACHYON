@@ -16,6 +16,11 @@ public:
         const scene::EvaluatedShapePath& path, 
         float depth, 
         float bevel_size);
+
+    static MeshAsset::SubMesh extrude_shape(
+        const std::vector<scene::EvaluatedShapePath>& paths, 
+        float depth, 
+        float bevel_size);
 };
 
 } // namespace tachyon::media

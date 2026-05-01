@@ -1,170 +1,87 @@
+<#
+.SYNOPSIS
+    Tachyon build entry point.
+.PARAMETER Config
+    Debug | RelWithDebInfo | Release  (default: RelWithDebInfo)
+.PARAMETER Target
+    CMake/ninja target (default: tachyon)
+.PARAMETER Check
+    Quick validation only, no build
+.PARAMETER Clean
+    Clean artefacts before building
+.PARAMETER Configure
+    Force CMake reconfiguration
+.PARAMETER Jobs
+    Parallel jobs (default: CPU count)
+.EXAMPLE
+    .\build.ps1
+    .\build.ps1 -Check
+    .\build.ps1 -Target TachyonTests
+    .\build.ps1 -Clean -Config Release
+#>
 param(
-    [ValidateSet('dev', 'dev-fast', 'asan')]
-    [string]$Preset = 'dev',
-    [switch]$RunTests,
-    [switch]$ListTests,
-    [string[]]$Target,
-    [string]$TestFilter,
-    [Nullable[UInt32]]$TestSeed,
-    [Nullable[int]]$TestRepeat
+    [ValidateSet("Debug","RelWithDebInfo","Release")]
+    [string]$Config   = "RelWithDebInfo",
+    [string]$Target   = "tachyon",
+    [switch]$Check,
+    [switch]$Clean,
+    [switch]$Configure,
+    [int]$Jobs        = 0
 )
 
-$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
+$global:LASTEXITCODE = 0
+$Root = $PSScriptRoot
 
-function Get-DefaultTestFilter {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$PresetName
-    )
-
-    switch ($PresetName) {
-        'dev-fast' {
-            return 'math,property,expression,frame_cache,frame_executor,tile_scheduler,render_contract,scene_evaluator,scene_spec,expression_vm'
-        }
-        default {
-            return ''
-        }
-    }
+if ($Check) {
+    $Target = "TachyonCore"
 }
 
-function Assert-LastExitCode {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$Step
-    )
+Write-Host "Tachyon Build" -ForegroundColor Cyan
+Write-Host "  Config : $Config"
+Write-Host "  Target : $Target"
 
-    if ($LASTEXITCODE -ne 0) {
-        throw "$Step failed with exit code $LASTEXITCODE"
-    }
+# Load tools into PATH
+& "$Root\scripts\Enable-DevTools.ps1"
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+# Load VS compiler environment (cached)
+& "$Root\scripts\enable-vs-env.ps1"
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+# Verify required tools exist
+$missing = @()
+foreach ($tool in @("cmake","cl")) {
+    if (-not (Get-Command "$tool.exe" -ErrorAction SilentlyContinue)) { $missing += $tool }
+}
+if ($missing.Count -gt 0) {
+    Write-Error "Missing tools: $($missing -join ', '). Run scripts\Enable-DevTools.ps1 to diagnose."
+    exit 1
 }
 
-function Invoke-TachyonTests {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$TestsExe,
-        [string]$ResolvedTestFilter,
-        [switch]$ListOnly,
-        [Nullable[UInt32]]$Seed,
-        [Nullable[int]]$Repeat
-    )
-
-    $hadTestFilter = Test-Path Env:TACHYON_TEST_FILTER
-    $previousTestFilter = $env:TACHYON_TEST_FILTER
-    $hadTestSeed = Test-Path Env:TACHYON_TEST_SEED
-    $previousTestSeed = $env:TACHYON_TEST_SEED
-    $hadTestRepeat = Test-Path Env:TACHYON_TEST_REPEAT
-    $previousTestRepeat = $env:TACHYON_TEST_REPEAT
-
-    if ($ResolvedTestFilter) {
-        $env:TACHYON_TEST_FILTER = $ResolvedTestFilter
-    }
-    if ($null -ne $Seed) {
-        $env:TACHYON_TEST_SEED = [string]$Seed
-    }
-    if ($null -ne $Repeat) {
-        $env:TACHYON_TEST_REPEAT = [string]$Repeat
-    }
-
-    try {
-        if ($ListOnly) {
-            & $TestsExe --list-tests
-        }
-        else {
-            & $TestsExe
-        }
-    }
-    finally {
-        if ($ResolvedTestFilter) {
-            if ($hadTestFilter) {
-                $env:TACHYON_TEST_FILTER = $previousTestFilter
-            }
-            else {
-                Remove-Item Env:TACHYON_TEST_FILTER -ErrorAction SilentlyContinue
-            }
-        }
-
-        if ($null -ne $Seed) {
-            if ($hadTestSeed) {
-                $env:TACHYON_TEST_SEED = $previousTestSeed
-            }
-            else {
-                Remove-Item Env:TACHYON_TEST_SEED -ErrorAction SilentlyContinue
-            }
-        }
-
-        if ($null -ne $Repeat) {
-            if ($hadTestRepeat) {
-                $env:TACHYON_TEST_REPEAT = $previousTestRepeat
-            }
-            else {
-                Remove-Item Env:TACHYON_TEST_REPEAT -ErrorAction SilentlyContinue
-            }
-        }
-    }
+if ($Clean) {
+    Write-Host "Cleaning..." -ForegroundColor Yellow
+    & "$Root\scripts\clean-all.ps1" -BuildOnly
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
-$repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$bootstrap = Join-Path $repoRoot 'scripts\Enable-DevTools.ps1'
+$BuildDir  = Join-Path $Root "build"
+$NeedConf  = $Configure -or (-not (Test-Path (Join-Path $BuildDir "Tachyon.sln")))
 
-if (-not (Test-Path $bootstrap)) {
-    throw "Missing bootstrap script: $bootstrap"
+if ($NeedConf) {
+    Write-Host "Configuring..." -ForegroundColor Yellow
+    cmake --preset dev -S "$Root" -B "$BuildDir"
+    if ($LASTEXITCODE -ne 0) { Write-Error "CMake configure failed."; exit 1 }
 }
 
-& $bootstrap | Out-Null
+$J = if ($Jobs -gt 0) { $Jobs } else { [Environment]::ProcessorCount }
+Write-Host "Building $Target ($Config, $J jobs)..." -ForegroundColor Yellow
 
-switch ($Preset) {
-    'asan' {
-        $buildDir = Join-Path $repoRoot 'build\asan'
-    }
-    default {
-        $buildDir = Join-Path $repoRoot 'build'
-    }
+cmake --build $BuildDir --config $Config --target $Target -j $J
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Build FAILED (exit $LASTEXITCODE)."
+    exit $LASTEXITCODE
 }
-
-$cacheFile = Join-Path $buildDir 'CMakeCache.txt'
-$buildSystemFile = Join-Path $buildDir 'TACHYON.slnx'
-
-if (-not (Test-Path $cacheFile) -or -not (Test-Path $buildSystemFile)) {
-    cmake --preset $Preset
-    Assert-LastExitCode -Step "cmake --preset $Preset"
-}
-
-$buildArgs = @('--build', '--preset', $Preset, '--parallel')
-if ($Target -and $Target.Count -gt 0) {
-    $buildArgs += '--target'
-    $buildArgs += $Target
-}
-
-cmake @buildArgs
-Assert-LastExitCode -Step "cmake --build --preset $Preset"
-
-if ($RunTests -and $ListTests) {
-    throw "Use either -RunTests or -ListTests, not both."
-}
-
-if ($ListTests) {
-    $testsExe = Join-Path $buildDir 'tests\RelWithDebInfo\TachyonTests.exe'
-    if (-not (Test-Path $testsExe)) {
-        throw "Test binary not found: $testsExe"
-    }
-
-    $resolvedTestFilter = $TestFilter
-    if (-not $resolvedTestFilter) {
-        $resolvedTestFilter = Get-DefaultTestFilter -PresetName $Preset
-    }
-
-    Invoke-TachyonTests -TestsExe $testsExe -ResolvedTestFilter $resolvedTestFilter -ListOnly -Seed $TestSeed -Repeat $TestRepeat
-}
-elseif ($RunTests) {
-    $testsExe = Join-Path $buildDir 'tests\RelWithDebInfo\TachyonTests.exe'
-    if (-not (Test-Path $testsExe)) {
-        throw "Test binary not found: $testsExe"
-    }
-
-    $resolvedTestFilter = $TestFilter
-    if (-not $resolvedTestFilter) {
-        $resolvedTestFilter = Get-DefaultTestFilter -PresetName $Preset
-    }
-
-    Invoke-TachyonTests -TestsExe $testsExe -ResolvedTestFilter $resolvedTestFilter -Seed $TestSeed -Repeat $TestRepeat
-}
+Write-Host "Build OK" -ForegroundColor Green

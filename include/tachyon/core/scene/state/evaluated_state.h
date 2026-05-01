@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/core/spec/schema/objects/procedural_spec.h"
 #include "tachyon/core/scene/constraints/constraints.h"
 #include "tachyon/core/math/matrix4x4.h"
 #include "tachyon/core/math/transform2.h"
@@ -16,6 +17,8 @@
 #include <string>
 #include <memory>
 #include <optional>
+
+namespace tachyon { namespace renderer2d { struct DeformMesh; } }
 
 namespace tachyon::scene {
 
@@ -163,6 +166,22 @@ struct EvaluatedLayerState {
     float trim_offset{0.0f};
 
     bool text_on_path_enabled{false};
+
+    // Mesh deformation (new pipeline)
+    bool mesh_deform_enabled{false};
+    std::shared_ptr<const renderer2d::DeformMesh> mesh_deform;
+
+    // Effects
+    std::vector<EffectSpec> animated_effects;
+
+    // Transitions
+    LayerTransitionSpec transition_in;
+    LayerTransitionSpec transition_out;
+    double in_time{0.0};
+    double out_time{10.0};
+
+    // Procedural generation
+    std::optional<ProceduralSpec> procedural;
 };
 
 struct EvaluatedCompositionState {
@@ -178,6 +197,8 @@ struct EvaluatedCompositionState {
     std::vector<EvaluatedLightState> lights;
     EvaluatedCameraState camera;
     
+    ColorSpec background_color{0, 0, 0, 0};
+
     // Resource pointers (skeletons)
     const void* environment_map{nullptr}; 
 };

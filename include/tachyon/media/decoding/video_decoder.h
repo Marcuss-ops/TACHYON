@@ -25,6 +25,7 @@ public:
     void close();
 
     std::optional<renderer2d::SurfaceRGBA> get_frame_at_time(double seconds);
+    bool get_frame_into(double seconds, renderer2d::SurfaceRGBA& target);
     std::future<std::optional<renderer2d::SurfaceRGBA>> request_frame_async(double seconds);
 
     [[nodiscard]] double duration() const noexcept { return m_duration_seconds; }
@@ -39,18 +40,17 @@ private:
     };
 
     std::optional<CachedVideoFrame> decode_frame_at_or_after(double seconds);
-    void cache_frame(CachedVideoFrame frame);
-    std::optional<CachedVideoFrame> find_cached_frame(double seconds) const;
-    std::optional<CachedVideoFrame> convert_current_frame(double pts_seconds, AVFrame* frame);
+    
+    // Convert to target surface directly to avoid extra copies
+    bool convert_to_surface(AVFrame* frame, renderer2d::SurfaceRGBA& target);
 
     std::filesystem::path m_path;
     double m_duration_seconds{0.0};
     double m_frame_rate{0.0};
     int m_width{0};
     int m_height{0};
-    std::deque<CachedVideoFrame> m_frame_cache;
+    
     mutable std::mutex m_mutex;
-    static constexpr int kMaxCachedFrames = 32;
     AVFormatContext* m_format_context{nullptr};
     AVCodecContext* m_codec_context{nullptr};
     AVFrame* m_frame{nullptr};

@@ -5,6 +5,7 @@
 #include "tachyon/core/animation/easing.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/core/spec/schema/common/common_spec.h"
+#include "tachyon/core/spec/schema/objects/template_spec.h"
 
 #include <vector>
 #include <optional>
@@ -54,13 +55,17 @@ struct ColorKeyframeSpec {
 struct AnimatedScalarSpec {
     std::optional<double> value;
     std::vector<ScalarKeyframeSpec> keyframes;
+    PropertyBinding binding;
     std::optional<AudioBandType> audio_band;
     double audio_min{0.0};
     double audio_max{1.0};
     std::optional<std::string> expression;
 
+    AnimatedScalarSpec() = default;
+    AnimatedScalarSpec(double v) : value(v) {}
+
     [[nodiscard]] bool empty() const noexcept {
-        return !value.has_value() && keyframes.empty() && !audio_band.has_value() && !expression.has_value();
+        return !value.has_value() && keyframes.empty() && !binding.active && !audio_band.has_value() && !expression.has_value();
     }
 };
 
@@ -68,6 +73,9 @@ struct AnimatedVector2Spec {
     std::optional<math::Vector2> value;
     std::vector<Vector2KeyframeSpec> keyframes;
     std::optional<std::string> expression;
+
+    AnimatedVector2Spec() = default;
+    explicit AnimatedVector2Spec(const math::Vector2& v) : value(v) {}
 
     [[nodiscard]] bool empty() const noexcept {
         return !value.has_value() && keyframes.empty() && !expression.has_value();
@@ -93,6 +101,9 @@ struct AnimatedVector3Spec {
     std::vector<Keyframe> keyframes;
     std::optional<std::string> expression;
 
+    AnimatedVector3Spec() = default;
+    AnimatedVector3Spec(const math::Vector3& v) : value(v) {}
+
     [[nodiscard]] bool empty() const noexcept {
         return !value.has_value() && keyframes.empty() && !expression.has_value();
     }
@@ -101,6 +112,9 @@ struct AnimatedVector3Spec {
 struct AnimatedColorSpec {
     std::optional<ColorSpec> value;
     std::vector<ColorKeyframeSpec> keyframes;
+
+    AnimatedColorSpec() = default;
+    AnimatedColorSpec(const ColorSpec& v) : value(v) {}
 
     [[nodiscard]] bool empty() const noexcept {
         return !value.has_value() && keyframes.empty();

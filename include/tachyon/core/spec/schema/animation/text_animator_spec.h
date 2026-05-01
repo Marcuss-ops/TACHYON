@@ -1,11 +1,14 @@
 #pragma once
 
 #include "tachyon/core/spec/schema/properties/property_spec.h"
+#include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
 #include <optional>
 
 namespace tachyon {
+
+using json = nlohmann::json;
 
 struct TextAnimatorSelectorSpec {
     std::string type{"range"}; // "range" | "index" | "expression" | "all" | "random" | "wiggly"
@@ -27,6 +30,10 @@ struct TextAnimatorSelectorSpec {
     std::optional<double> frequency;
     bool random_order{false};
 
+    // Staggering mode used by several presets and the coverage pipeline.
+    std::string stagger_mode{"character"};
+    double stagger_delay{0.0};
+
     // Selection mode (add, subtract, intersect)
     std::string mode{"add"};
     
@@ -37,6 +44,12 @@ struct TextAnimatorSelectorSpec {
     // - "lines": line-level selection (uses line_index)
     // - "clusters": grapheme cluster-level selection (preserves shaping)
     std::string based_on{"characters"};
+
+    // Selector shaping/easing used by coverage computations.
+    std::string shape{"square"};
+    double offset{0.0};
+    double ease_high{0.0};
+    double ease_low{0.0};
 };
 
 struct TextAnimatorPropertySpec {
@@ -75,9 +88,20 @@ struct TextAnimatorPropertySpec {
     std::vector<ScalarKeyframeSpec>  reveal_keyframes;
 };
 
+struct TextAnimatorCursorSpec {
+    bool enabled{false};
+    std::string cursor_char{"|"};
+    double blink_rate{0.0};
+    std::optional<ColorSpec> color_override;
+    bool follow_last_glyph{true};
+    double offset_x{0.0};
+};
+
 struct TextAnimatorSpec {
+    std::string               name;
     TextAnimatorSelectorSpec  selector;
     TextAnimatorPropertySpec  properties;
+    TextAnimatorCursorSpec    cursor;
 };
 
 struct TextHighlightSpec {
@@ -87,5 +111,20 @@ struct TextHighlightSpec {
     std::int32_t padding_x{3};
     std::int32_t padding_y{2};
 };
+
+void to_json(json& j, const TextAnimatorSelectorSpec& s);
+void from_json(const json& j, TextAnimatorSelectorSpec& s);
+
+void to_json(json& j, const TextAnimatorPropertySpec& p);
+void from_json(const json& j, TextAnimatorPropertySpec& p);
+
+void to_json(json& j, const TextAnimatorCursorSpec& c);
+void from_json(const json& j, TextAnimatorCursorSpec& c);
+
+void to_json(json& j, const TextAnimatorSpec& a);
+void from_json(const json& j, TextAnimatorSpec& a);
+
+void to_json(json& j, const TextHighlightSpec& h);
+void from_json(const json& j, TextHighlightSpec& h);
 
 } // namespace tachyon

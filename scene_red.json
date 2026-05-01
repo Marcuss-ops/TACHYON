@@ -1,0 +1,14 @@
+{
+  "project": { "id": "red_test", "name": "Red Test" },
+  "compositions": [
+    {
+      "id": "main",
+      "width": 1280,
+      "height": 720,
+      "duration": 1.0,
+      "fps": 30,
+      "background": "#FF0000",
+      "layers": []
+    }
+  ]
+}

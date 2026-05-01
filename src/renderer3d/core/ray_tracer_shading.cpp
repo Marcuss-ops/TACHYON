@@ -103,30 +103,14 @@ ShadingResult RayTracer::trace_ray(
     rtcInitIntersectArguments(&args);
     rtcIntersect1(scene_, &rh, &args);
 
-    // Miss - sample environment
     if (rh.hit.geomID == RTC_INVALID_GEOMETRY_ID) {
-        ShadingResult env_result;
-        if (current_env_map_) {
-            EnvironmentSample env_sample = environment_manager_.sample_environment(
-                direction, current_env_map_, environment_intensity_, environment_rotation_);
-            env_result.color = env_sample.color;
-            env_result.alpha = env_sample.alpha;
-            env_result.depth = env_sample.depth;
-            env_result.normal = env_sample.normal;
-            env_result.albedo = env_sample.albedo;
-        } else {
-            env_result.color = math::Vector3{0.2f, 0.2f, 0.2f};
-            env_result.alpha = 0.0f;
-            env_result.depth = 1e6f;
-            env_result.normal = math::Vector3{0.0f, 0.0f, 1.0f};
-            env_result.albedo = math::Vector3{0.0f, 0.0f, 0.0f};
-        }
-        env_result.motion_vector = math::Vector2{0.0f, 0.0f};
-        env_result.object_id = 0;
-        env_result.material_id = 0;
-        return env_result;
+        // Miss - sample environment
+        ShadingResult res;
+        res.color = {0.05f, 0.05f, 0.1f}; // Dark blue environment fallback
+        res.alpha = 0.0f;
+        res.depth = 1000000.0f;
+        return res;
     }
-
     // Hit - find instance
     const GeoInstance* hit_instance = nullptr;
     for (const auto& inst : instances_) {

@@ -10,7 +10,7 @@ void EvaluatedCamera2D::recalculate_matrices() {
     Matrix3x3 rotate = Matrix3x3::make_rotation(rotation);
     Matrix3x3 scale_mat = Matrix3x3::make_scale(scale.x * zoom, scale.y * zoom);
     Matrix3x3 anchor = Matrix3x3::make_translation(anchor_point);
-    Matrix3x3 anchor_inv = Matrix3x3::make_translation(-anchor_point);
+    Matrix3x3 anchor_inv = Matrix3x3::make_translation(math::Vector2{-anchor_point.x, -anchor_point.y});
     
     view_matrix = anchor_inv * scale_mat * rotate * translate * anchor;
     inverse_view_matrix = view_matrix.inverse();

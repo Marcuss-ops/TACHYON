@@ -22,10 +22,38 @@ It is a native engine designed to consume declarative scene specifications and p
 - Explicit execution, caching, memory, and parallelism models
 - Native media decode and encode integration
 
+## Programmatic Scene Authoring (C++)
+    
+TACHYON promotes a **type-safe, programmatic authoring workflow** using a native C++ Builder API. This ensures deterministic scene construction with compile-time validation, bypassing the ambiguity of manual JSON editing.
+
+```cpp
+#include "tachyon/scene/builder.h"
+
+auto scene = tachyon::scene::SceneBuilder()
+    .project("promo", "Product Promo")
+    .composition("main", [](auto& comp) {
+        comp.size(1920, 1080).fps(30).duration(5.0);
+        
+        comp.camera3d_layer("cam", [](auto& l) {
+            l.position3d(0, 0, -1500).camera_poi(0, 0, 0);
+        });
+        
+        comp.mesh_layer("product", [](auto& l) {
+            l.mesh("assets/models/product.glb")
+             .position3d(0, 0, 0)
+             .material().metallic(0.8).roughness(0.2).done();
+        });
+    })
+    .build();
+```
+
+See [3d_showcase.cpp](examples/authoring/3d_showcase.cpp) for a full demonstration.
+
 ## Current status
 
-This repository is intentionally starting from first principles.
-The current focus is on locking architecture, contracts, and subsystem boundaries before implementation depth grows.
+This repository is transitioning from a legacy JSON-first workflow to a **C++-first builder architecture**. 
+While JSON import is supported for backward compatibility and internal test fixtures, the C++ API is the canonical way to author new scenes.
+
 
 ## Local toolchain
 

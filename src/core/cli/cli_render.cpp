@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <iostream>
 #include <thread>
+#include <string_view>
 
 namespace tachyon {
 
@@ -34,11 +35,14 @@ void print_execution_plan(
     
     out << "\n  phase                      time        %\n";
     out << "  ─────────────────────────────────────────\n";
-    auto print_phase = [&](const char* name, double ms) {
+    constexpr std::size_t kPhaseColumnWidth = 27;
+    constexpr std::size_t kTimeColumnWidth = 8;
+
+    auto print_phase = [&](std::string_view name, double ms) {
         const double pct = total_phase_time > 0 ? (ms / total_phase_time) * 100.0 : 0.0;
-        const int pad = std::max(1, 27 - static_cast<int>(strlen(name)));
+        const std::size_t pad = name.size() < kPhaseColumnWidth ? (kPhaseColumnWidth - name.size()) : 1;
         out << "  " << name << std::string(pad, ' ')
-            << std::fixed << std::setprecision(1) << std::setw(8) << ms << "ms  "
+            << std::fixed << std::setprecision(1) << std::setw(kTimeColumnWidth) << ms << "ms  "
             << std::fixed << std::setprecision(0) << std::setw(3) << pct << "%\n";
     };
 
@@ -50,7 +54,7 @@ void print_execution_plan(
     std::string encode_phase = "encode";
     if (!execution_plan.render_plan.output.profile.video.codec.empty())
         encode_phase += " (" + execution_plan.render_plan.output.profile.video.codec + ")";
-    print_phase(encode_phase.c_str(), session_result.encode_ms);
+    print_phase(encode_phase, session_result.encode_ms);
 
     out << "  ─────────────────────────────────────────\n";
     print_phase("total", total_phase_time);
@@ -227,6 +231,7 @@ bool run_preview_command(const CliOptions& options, std::ostream& out, std::ostr
     } else if (options.preset_id.has_value()) {
         if (!build_scene_from_preset(*options.preset_id, scene, err)) return false;
     } else {
+        err << "WARNING: Previewing from JSON scene files is DEPRECATED. Use --cpp instead.\n";
         if (!load_scene_context(options.scene_path, scene, assets, err)) return false;
     }
 

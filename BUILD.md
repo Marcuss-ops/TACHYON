@@ -18,6 +18,12 @@ This builds only `TachyonCore` with RelWithDebInfo - fastest way to catch compil
 
 Equivalent to: `cmake --build --preset relwithdebinfo --target TachyonCore`
 
+If you are in `cmd.exe`, use:
+
+```bat
+build.cmd -Check
+```
+
 ### Core Only
 
 ```powershell
@@ -52,6 +58,12 @@ Builds everything: TachyonCore, tachyon executable, and TachyonTests.
 
 ```powershell
 .\build.ps1 -RelWithDebInfo -Test
+```
+
+If you are in `cmd.exe`, use:
+
+```bat
+run_tests.cmd
 ```
 
 ### Run Targeted Tests

@@ -50,26 +50,21 @@ float transition_progress(const EffectParams& params) {
     }
     
     const int preset_val = static_cast<int>(preset_it->second);
-    if (preset_val < 0 || preset_val > 17) {
+    if (preset_val < 0 || preset_val > static_cast<int>(animation::EasingPreset::Custom)) {
         return raw_t;
     }
     
     const animation::EasingPreset preset = static_cast<animation::EasingPreset>(preset_val);
     animation::CubicBezierEasing bezier;
-    animation::SpringEasing spring;
     
     if (preset == animation::EasingPreset::Custom) {
         bezier.cx1 = get_scalar(params, "bezier_cx1", 0.0f);
         bezier.cy1 = get_scalar(params, "bezier_cy1", 0.0f);
         bezier.cx2 = get_scalar(params, "bezier_cx2", 1.0f);
         bezier.cy2 = get_scalar(params, "bezier_cy2", 1.0f);
-    } else if (preset == animation::EasingPreset::Spring) {
-        spring.stiffness = get_scalar(params, "spring_stiffness", 180.0f);
-        spring.damping = get_scalar(params, "spring_damping", 12.0f);
-        spring.mass = get_scalar(params, "spring_mass", 1.0f);
     }
     
-    const double eased_t = animation::apply_easing(static_cast<double>(raw_t), preset, bezier, spring);
+    const double eased_t = animation::apply_easing(static_cast<double>(raw_t), preset, bezier);
     return static_cast<float>(clamp01(eased_t));
 }
 

@@ -1,152 +1,132 @@
 #pragma once
 
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
-#include "tachyon/core/spec/schema/objects/composition_spec.h"
-#include "tachyon/presets/text/layer.h"
-#include "tachyon/presets/background/procedural.h"
-#include "tachyon/core/types/colors.h"
+#include "tachyon/presets/background/background_builders.h"
+#include "tachyon/presets/image/image_builders.h"
+#include "tachyon/presets/scene/scene_params.h"
 
 namespace tachyon::presets::scene {
 
-// Scene preset factory functions
-// These create complete, ready-to-render scene specifications
-
-struct SceneOptions {
-    std::string project_id = "project_default";
-    std::string project_name = "Tachyon Project";
-    std::string scene_id = "scene_main";
-    std::string scene_name = "Main Scene";
-    int width = 1920;
-    int height = 1080;
-    double duration_seconds = 5.0;
-    double frame_rate = 30.0;
-    ColorSpec clear_background{0, 0, 0, 0};
-    bool use_procedural_background = true;
-};
-
-struct TextSceneOptions : SceneOptions {
-    std::string text = "Hello World";
-    std::string font_id;
-    double font_size = 72.0;
-    int text_width = 1920;
-    int text_height = 200;
-    int text_position_x = 960;
-    int text_position_y = 540;
-    ColorSpec text_fill_color{238, 242, 248, 245};
-    std::vector<TextAnimatorSpec> text_animators;
-
-    // Procedural background options
-    std::string procedural_kind = "aura";
-    ColorSpec procedural_color_a{5, 8, 20, 255};
-    ColorSpec procedural_color_b{25, 30, 50, 255};
-    ColorSpec procedural_color_c{0, 0, 0, 0};
-    double procedural_speed = 1.0;
-    double procedural_frequency = 3.0;
-    double procedural_amplitude = 1.0;
-    double procedural_scale = 1.0;
-    double procedural_grain = 0.15;
-    uint64_t procedural_seed = 19;
-};
-
-[[nodiscard]] inline SceneSpec enhance(const TextSceneOptions& opts = {}) {
+/**
+ * Creates a minimal SceneSpec with the given parameters.
+ */
+inline SceneSpec minimal(const SceneParams& params) {
     SceneSpec scene;
-    scene.spec_version = "1.0";
-    scene.project.id = opts.project_id;
-    scene.project.name = opts.project_name;
+    scene.project.name = params.name;
 
     CompositionSpec comp;
-    comp.id = opts.scene_id;
-    comp.name = opts.scene_name;
-    comp.width = opts.width;
-    comp.height = opts.height;
-    comp.duration = opts.duration_seconds;
-    comp.frame_rate.numerator = static_cast<std::int64_t>(opts.frame_rate);
-    comp.frame_rate.denominator = 1;
-    comp.background = BackgroundSpec::from_string("rgba(0,0,0,0)");
+    comp.id = "main";
+    comp.name = "Main Composition";
+    comp.width = params.width;
+    comp.height = params.height;
+    comp.duration = params.duration;
 
-    if (opts.use_procedural_background) {
-        auto bg = background::procedural::aura(
-            opts.width, opts.height,
-            {opts.procedural_color_a, opts.procedural_color_b,
-             opts.procedural_color_c, opts.procedural_speed, 1.0,
-             opts.procedural_grain, 0.0, opts.procedural_seed},
-            opts.duration_seconds);
-        comp.layers.push_back(bg);
-    }
-
-    text::TextLayerOptions text_opts;
-    text_opts.id = "headline";
-    text_opts.text = opts.text;
-    text_opts.font_id = opts.font_id;
-    text_opts.font_size = opts.font_size;
-    text_opts.width = opts.text_width;
-    text_opts.height = opts.text_height;
-    text_opts.position_x = opts.text_position_x;
-    text_opts.position_y = opts.text_position_y;
-    text_opts.alignment = "center";
-    text_opts.fill_color = opts.text_fill_color;
-    text_opts.start_time = 0.0;
-    text_opts.duration = opts.duration_seconds;
-    text_opts.animators = opts.text_animators;
-
-    comp.layers.push_back(text::enhance(text_opts));
     scene.compositions.push_back(std::move(comp));
     return scene;
 }
 
-[[nodiscard]] inline SceneSpec minimal(const TextSceneOptions& opts = {}) {
+/**
+ * Creates a minimal SceneSpec with an optional background layer.
+ */
+inline SceneSpec minimal(const EnhancedSceneParams& params) {
     SceneSpec scene;
-    scene.spec_version = "1.0";
-    scene.project.id = opts.project_id;
-    scene.project.name = opts.project_name;
+    scene.project.name = params.name;
 
     CompositionSpec comp;
-    comp.id = opts.scene_id;
-    comp.name = opts.scene_name;
-    comp.width = opts.width;
-    comp.height = opts.height;
-    comp.duration = opts.duration_seconds;
-    comp.frame_rate.numerator = static_cast<std::int64_t>(opts.frame_rate);
-    comp.frame_rate.denominator = 1;
-    comp.background = BackgroundSpec::from_string("rgba(0,0,0,0)");
+    comp.id = "main";
+    comp.name = "Main Composition";
+    comp.width = params.width;
+    comp.height = params.height;
+    comp.duration = params.duration;
 
-    if (opts.use_procedural_background) {
-        auto bg = background::procedural::aura(
-            opts.width, opts.height,
-            {opts.procedural_color_a, opts.procedural_color_b,
-             opts.procedural_color_c, opts.procedural_speed, 1.0,
-             opts.procedural_grain, 0.0, opts.procedural_seed},
-            opts.duration_seconds);
-        comp.layers.push_back(bg);
+    if (params.background.has_value()) {
+        comp.layers.push_back(tachyon::presets::build_background(*params.background));
     }
 
-    text::TextLayerOptions text_opts;
-    text_opts.id = "headline";
-    text_opts.text = opts.text;
-    text_opts.font_id = opts.font_id;
-    text_opts.font_size = opts.font_size;
-    text_opts.width = opts.text_width;
-    text_opts.height = opts.text_height;
-    text_opts.position_x = opts.text_position_x;
-    text_opts.position_y = opts.text_position_y;
-    text_opts.alignment = "center";
-    text_opts.fill_color = opts.text_fill_color;
-    text_opts.start_time = 0.0;
-    text_opts.duration = opts.duration_seconds;
-    text_opts.animators = opts.text_animators;
-
-    comp.layers.push_back(text::minimal(text_opts));
     scene.compositions.push_back(std::move(comp));
     return scene;
 }
 
-[[nodiscard]] inline SceneSpec text_with_background(
-    const std::string& preset_name,
-    const TextSceneOptions& opts = {}) {
-    if (preset_name == "minimal") {
-        return minimal(opts);
+/**
+ * Creates an enhanced SceneSpec with advanced options.
+ */
+inline SceneSpec enhance(const EnhancedSceneParams& params) {
+    SceneSpec scene;
+    scene.project.name = params.name;
+
+    // Register assets
+    for (const auto& asset : params.assets) {
+        scene.assets.push_back(asset);
     }
-    return enhance(opts);
+
+    CompositionSpec comp;
+    comp.id = "main";
+    comp.name = "Main Composition";
+    comp.width = params.width;
+    comp.height = params.height;
+    comp.duration = params.duration;
+
+    // Background
+    if (params.background.has_value()) {
+        comp.layers.push_back(tachyon::presets::build_background(*params.background));
+    }
+
+    // Main Content (e.g., Image)
+    if (params.main_asset_id.has_value()) {
+        LayerSpec layer;
+        layer.id = "main_content";
+        layer.type = "image";
+        layer.asset_id = *params.main_asset_id;
+        layer.width = params.width;
+        layer.height = params.height;
+        comp.layers.push_back(std::move(layer));
+    }
+
+    scene.compositions.push_back(std::move(comp));
+    return scene;
+}
+
+inline SceneSpec build_enhanced_text_scene() {
+    EnhancedSceneParams params;
+    params.name = "Enhanced Text Scene";
+    params.width = 1920;
+    params.height = 1080;
+    params.duration = 5.0;
+    params.main_text = "Hello Tachyon";
+    return enhance(params);
+}
+
+inline SceneSpec build_modern_grid_scene() {
+    EnhancedSceneParams params;
+    params.name = "Modern Grid Scene";
+    params.width = 1920;
+    params.height = 1080;
+    params.duration = 5.0;
+    params.background = BackgroundParams{};
+    params.background->kind = "color";
+    return minimal(params);
+}
+
+inline SceneSpec build_classico_premium_scene() {
+    EnhancedSceneParams params;
+    params.name = "Classico Premium";
+    params.width = 1920;
+    params.height = 1080;
+    params.duration = 5.0;
+    params.background = BackgroundParams{};
+    params.background->kind = "color";
+    return minimal(params);
+}
+
+inline SceneSpec build_minimal_text_scene() {
+    EnhancedSceneParams params;
+    params.name = "Minimal Text Scene";
+    params.width = 1920;
+    params.height = 1080;
+    params.duration = 5.0;
+    params.background = BackgroundParams{};
+    params.background->kind = "color";
+    return minimal(params);
 }
 
 } // namespace tachyon::presets::scene

@@ -1,5 +1,6 @@
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
+#include "tachyon/core/spec/cpp_scene_loader.h"
 #include "tachyon/core/spec/compilation/scene_compiler.h"
 #include "tachyon/output/frame_output_sink.h"
 #include "tachyon/renderer2d/effects/effect_host.h"
@@ -114,8 +115,18 @@ std::optional<renderer2d::SurfaceRGBA> render_scene_still(
     double& out_fps) {
     SceneSpec scene;
     AssetResolutionTable assets;
-    if (!load_scene_context(scene_path, scene, assets, err)) {
-        return std::nullopt;
+    if (scene_path.extension() == ".cpp") {
+        const auto cpp_result = CppSceneLoader::load_from_file(scene_path);
+        if (!cpp_result.success) {
+            err << "C++ Scene Loader failed for " << scene_path.string() << ":\n" << cpp_result.diagnostics << "\n";
+            return std::nullopt;
+        }
+        scene = std::move(*cpp_result.scene);
+    } else {
+        err << "WARNING: Loading JSON scene files is DEPRECATED. Use --cpp for C++ scenes.\n";
+        if (!load_scene_context(scene_path, scene, assets, err)) {
+            return std::nullopt;
+        }
     }
 
     if (scene.compositions.empty()) {

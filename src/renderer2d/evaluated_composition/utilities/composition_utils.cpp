@@ -96,17 +96,14 @@ void multiply_surface_alpha(renderer2d::SurfaceRGBA& surface, float factor) {
         return;
     }
 
-    for (std::uint32_t y = 0; y < surface.height(); ++y) {
-        for (std::uint32_t x = 0; x < surface.width(); ++x) {
-            renderer2d::Color px = surface.get_pixel(x, y);
-            if (px.a <= 0.0f) {
-                continue;
-            }
-            px.r *= clamped;
-            px.g *= clamped;
-            px.b *= clamped;
-            px.a *= clamped;
-            surface.set_pixel(x, y, px);
+    auto& pixels = surface.mutable_pixels();
+    const std::size_t count = pixels.size();
+    for (std::size_t i = 0; i < count; i += 4) {
+        if (pixels[i + 3] > 0.0f) {
+            pixels[i] *= clamped;
+            pixels[i + 1] *= clamped;
+            pixels[i + 2] *= clamped;
+            pixels[i + 3] *= clamped;
         }
     }
 }
@@ -157,47 +154,38 @@ void composite_surface(
     const renderer2d::SurfaceRGBA& src,
     int offset_x,
     int offset_y,
-    renderer2d::BlendMode blend_mode) {
+    renderer2d::BlendMode blend_mode,
+    float constant_src_depth) {
 
-    if (blend_mode == renderer2d::BlendMode::Normal) {
-        // Optimization: use blend_row for normal blending
-        std::vector<renderer2d::Color> row_buffer;
-        row_buffer.reserve(src.width());
+    const int start_x = std::max(0, -offset_x);
+    const int start_y = std::max(0, -offset_y);
+    const int end_x = std::min(static_cast<int>(src.width()), static_cast<int>(dst.width()) - offset_x);
+    const int end_y = std::min(static_cast<int>(src.height()), static_cast<int>(dst.height()) - offset_y);
 
-        const auto& src_pixels = src.pixels();
-        const std::uint32_t src_w = src.width();
+    if (start_x >= end_x || start_y >= end_y) return;
 
-        for (std::uint32_t y = 0; y < src.height(); ++y) {
-            const int dy = offset_y + static_cast<int>(y);
-            if (dy < 0 || dy >= static_cast<int>(dst.height())) continue;
-
-            row_buffer.clear();
-            const float* src_row = &src_pixels[y * src_w * 4];
-            for (std::uint32_t x = 0; x < src_w; ++x) {
-                const float* p = &src_row[x * 4];
-                row_buffer.push_back(renderer2d::Color{p[0], p[1], p[2], p[3]});
-            }
-            dst.blend_row(static_cast<uint32_t>(offset_x), static_cast<uint32_t>(dy), row_buffer.data(), row_buffer.size());
-        }
-    } else {
-        for (std::uint32_t y = 0; y < src.height(); ++y) {
-            for (std::uint32_t x = 0; x < src.width(); ++x) {
-                const int dx = offset_x + static_cast<int>(x);
-                const int dy = offset_y + static_cast<int>(y);
-                if (dx < 0 || dy < 0) continue;
-                
-                const std::uint32_t ux = static_cast<std::uint32_t>(dx);
-                const std::uint32_t uy = static_cast<std::uint32_t>(dy);
-                if (ux >= dst.width() || uy >= dst.height()) continue;
-
-                const renderer2d::Color pixel = src.get_pixel(x, y);
-                if (pixel.a == 0) continue;
-
-                const auto dest = dst.try_get_pixel(ux, uy);
-                if (dest) {
-                    const renderer2d::Color blended = renderer2d::blend_mode_color(pixel, *dest, blend_mode);
-                    dst.set_pixel(ux, uy, blended);
+    for (int y = start_y; y < end_y; ++y) {
+        const std::uint32_t dy = static_cast<std::uint32_t>(offset_y + y);
+        for (int x = start_x; x < end_x; ++x) {
+            const std::uint32_t dx = static_cast<std::uint32_t>(offset_x + x);
+            
+            float src_z = constant_src_depth >= 0.0f ? constant_src_depth : src.get_depth(static_cast<uint32_t>(x), static_cast<uint32_t>(y));
+            
+            // Depth test
+            if (src_z > 0.0f) {
+                if (!dst.test_and_write_depth(dx, dy, src_z)) {
+                    continue;
                 }
+            }
+
+            const renderer2d::Color src_color = src.get_pixel(static_cast<uint32_t>(x), static_cast<uint32_t>(y));
+            if (src_color.a <= 0.0f) continue;
+
+            if (blend_mode == renderer2d::BlendMode::Normal) {
+                dst.blend_pixel(dx, dy, src_color);
+            } else {
+                const renderer2d::Color dst_color = dst.get_pixel(dx, dy);
+                dst.set_pixel(dx, dy, renderer2d::blend_mode_color(src_color, dst_color, blend_mode));
             }
         }
     }

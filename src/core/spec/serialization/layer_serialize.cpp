@@ -1,6 +1,6 @@
 #include "tachyon/core/spec/scene_spec_serialize.h"
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
-#include "tachyon/core/spec/scene_spec_audio.h"
+#include "tachyon/core/spec/legacy/scene_spec_audio.h"
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
@@ -184,10 +184,29 @@ static json serialize_transform(const Transform2D& transform) {
     return j;
 }
 
-static json serialize_transition(const LayerTransitionSpec& trans) {
-    if (trans.type == "none" || trans.type.empty()) return json{};
+static json serialize_transform3d(const Transform3D& transform) {
     json j;
-    j["type"] = trans.type;
+    if (!transform.anchor_point_property.empty()) j["anchor_point"] = serialize_vector3_property(transform.anchor_point_property);
+    if (!transform.position_property.empty()) j["position"] = serialize_vector3_property(transform.position_property);
+    if (!transform.orientation_property.empty()) j["orientation"] = serialize_vector3_property(transform.orientation_property);
+    if (!transform.rotation_property.empty()) j["rotation"] = serialize_vector3_property(transform.rotation_property);
+    if (!transform.scale_property.empty()) j["scale"] = serialize_vector3_property(transform.scale_property);
+    return j;
+}
+
+static json serialize_transition(const LayerTransitionSpec& trans) {
+    if (trans.type.empty() && trans.kind == TransitionKind::None) return json{};
+    json j;
+    // Use string type for JSON schema
+    if (!trans.type.empty()) {
+        j["type"] = trans.type;
+    } else if (trans.kind != TransitionKind::None) {
+        j["type"] = to_string(trans.kind);
+    }
+    // Backward compatible: write transition_id if different from type
+    if (!trans.transition_id.empty() && trans.transition_id != trans.type) {
+        j["transition_id"] = trans.transition_id;
+    }
     if (!trans.direction.empty()) j["direction"] = trans.direction;
     j["duration"] = trans.duration;
     if (trans.delay != 0.0) j["delay"] = trans.delay;
@@ -201,7 +220,13 @@ json serialize_layer(const LayerSpec& layer) {
     json j;
     j["id"] = layer.id;
     j["name"] = layer.name;
-    j["type"] = layer.type;
+    // Write type from kind if string type is empty, otherwise use string type
+    if (!layer.type.empty()) {
+        j["type"] = layer.type;
+    } else if (layer.kind != LayerType::NullLayer && layer.kind != LayerType::Unknown) {
+        j["type"] = to_string(layer.kind);
+    }
+    if (!layer.asset_id.empty()) j["asset_id"] = layer.asset_id;
     j["blend_mode"] = layer.blend_mode;
     j["enabled"] = layer.enabled;
     j["visible"] = layer.visible;
@@ -218,6 +243,9 @@ json serialize_layer(const LayerSpec& layer) {
     {
         json t = serialize_transform(layer.transform);
         if (!t.empty()) j["transform"] = t;
+
+        json t3d = serialize_transform3d(layer.transform3d);
+        if (!t3d.empty()) j["transform3d"] = t3d;
     }
     
     {

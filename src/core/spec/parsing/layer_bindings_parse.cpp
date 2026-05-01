@@ -53,6 +53,11 @@ void parse_transition(const json& object, LayerTransitionSpec& out, const std::s
     (void)path; (void)diagnostics;
     if (!object.is_object()) return;
     read_string(object, "type", out.type);
+    // Convert string type to TransitionKind for internal use
+    if (!out.type.empty()) {
+        out.kind = transition_kind_from_string(out.type);
+        out.transition_id = out.type; // Backward compatible: populate transition_id
+    }
     read_string(object, "direction", out.direction);
     read_number(object, "duration", out.duration);
     read_number(object, "delay", out.delay);

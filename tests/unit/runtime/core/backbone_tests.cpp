@@ -56,8 +56,7 @@ bool run_runtime_backbone_tests() {
 
     // Test SceneCompiler
     auto scene = std::make_unique<SceneSpec>();
-    scene->version = "1.0";
-    scene->spec_version = "1.0";
+    scene->schema_version = SchemaVersion{1, 0, 0};
     scene->project.id = "project";
     scene->project.name = "project";
 

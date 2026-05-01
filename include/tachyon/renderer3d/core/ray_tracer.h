@@ -4,6 +4,7 @@
 #include "tachyon/renderer3d/core/aov_buffer.h"
 #include "tachyon/renderer3d/effects/motion_blur.h"
 #include "tachyon/renderer3d/effects/depth_of_field.h"
+#include "tachyon/core/math/algebra/vector2.h"
 #include "tachyon/renderer3d/lighting/environment_manager.h"
 #include "tachyon/media/management/media_manager.h"
 #include <embree4/rtcore.h>
@@ -104,7 +105,7 @@ private:
     
 #ifdef _WIN32
     mutable oidn::DeviceRef oidn_device_;
-    oidn::FilterRef oidn_filter_;
+    mutable oidn::FilterRef oidn_filter_;
 #endif
 
     int samples_per_pixel_{1};

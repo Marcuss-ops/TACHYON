@@ -3,6 +3,7 @@
 #include "tachyon/presets/text/text_params.h"
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/presets/text/fluent.h"
 #include <string>
 
 namespace tachyon::presets {

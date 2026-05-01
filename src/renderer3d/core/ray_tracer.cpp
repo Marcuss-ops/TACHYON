@@ -37,9 +37,11 @@ RayTracer::RayTracer(media::MediaManager* media_manager)
     device_ = rtcNewDevice(nullptr);
     rtcSetDeviceErrorFunction(device_, log_embree_error, this);
 #ifdef _WIN32
+    // Use the available oidn stub/library
     oidn_device_ = oidn::newDevice();
     if (oidn_device_) {
         oidn_device_.commit();
+        oidn_filter_ = oidn_device_.newFilter("RT");
     }
 #endif
 }
@@ -61,6 +63,8 @@ void RayTracer::render(
 
     const int width = static_cast<int>(out_buffer.width);
     const int height = static_cast<int>(out_buffer.height);
+    std::printf("[DIAG] RayTracer::render called. Width: %d, Height: %d, Instances: %zu\n", width, height, scene.instances.size());
+    std::fflush(stdout);
 
     if (width <= 0 || height <= 0) {
         return;
@@ -171,104 +175,111 @@ void RayTracer::denoise_aov_buffer(AOVBuffer& buffer) const {
     }
 
 #ifdef _WIN32
-    if (oidn_device_) {
-        auto filter = oidn_device_.newFilter("RT");
-        if (filter) {
-            const std::uint32_t w = buffer.width;
-            const std::uint32_t h = buffer.height;
-            std::vector<float> denoised_rgb(static_cast<std::size_t>(w) * static_cast<std::size_t>(h) * 3U, 0.0f);
+    if (oidn_device_ && oidn_filter_) {
+        const std::uint32_t w = buffer.width;
+        const std::uint32_t h = buffer.height;
 
-            filter.setImage("color", buffer.beauty_rgba.data(), oidn::Format::Float3, w, h, 0, 4U * sizeof(float), 4U * w * sizeof(float));
-            if (!buffer.albedo_rgb.empty()) {
-                filter.setImage("albedo", buffer.albedo_rgb.data(), oidn::Format::Float3, w, h, 0, 3U * sizeof(float), 3U * w * sizeof(float));
-            }
-            if (!buffer.normal_xyz.empty()) {
-                filter.setImage("normal", buffer.normal_xyz.data(), oidn::Format::Float3, w, h, 0, 3U * sizeof(float), 3U * w * sizeof(float));
-            }
-            filter.setImage("output", denoised_rgb.data(), oidn::Format::Float3, w, h, 0, 3U * sizeof(float), 3U * w * sizeof(float));
-            filter.set("hdr", true);
-            filter.set("cleanAux", true);
-            filter.commit();
-            filter.execute();
+        // We want to avoid copies. OIDN can read from beauty_rgba directly 
+        // if we use the correct strides.
+        
+        oidn_filter_.setImage("color", buffer.beauty_rgba.data(), oidn::Format::Float3, w, h, 0, 4U * sizeof(float), 4U * w * sizeof(float));
+        if (!buffer.albedo_rgb.empty()) {
+            oidn_filter_.setImage("albedo", buffer.albedo_rgb.data(), oidn::Format::Float3, w, h, 0, 3U * sizeof(float), 3U * w * sizeof(float));
+        }
+        if (!buffer.normal_xyz.empty()) {
+            oidn_filter_.setImage("normal", buffer.normal_xyz.data(), oidn::Format::Float3, w, h, 0, 3U * sizeof(float), 3U * w * sizeof(float));
+        }
+        
+        // Output can be written directly to beauty_rgba but OIDN needs 3 components 
+        // while our buffer is 4. So we need a temporary 3-component buffer or 
+        // write back.
+        // For "Bare Metal" we reuse a static buffer.
+        static thread_local std::vector<float> denoised_rgb;
+        denoised_rgb.resize(static_cast<std::size_t>(w) * h * 3U);
 
-            const char* error_message = nullptr;
-            const auto error_code = oidn_device_.getError(error_message);
-            if (error_code == oidn::Error::None) {
-                for (std::size_t i = 0; i < static_cast<std::size_t>(w) * static_cast<std::size_t>(h); ++i) {
-                    const std::size_t src_idx = i * 3U;
-                    const std::size_t dst_idx = i * 4U;
-                    buffer.beauty_rgba[dst_idx + 0] = denoised_rgb[src_idx + 0];
-                    buffer.beauty_rgba[dst_idx + 1] = denoised_rgb[src_idx + 1];
-                    buffer.beauty_rgba[dst_idx + 2] = denoised_rgb[src_idx + 2];
-                }
-                return;
+        oidn_filter_.setImage("output", denoised_rgb.data(), oidn::Format::Float3, w, h, 0, 3U * sizeof(float), 3U * w * sizeof(float));
+        oidn_filter_.set("hdr", true);
+        oidn_filter_.set("cleanAux", true);
+        oidn_filter_.commit();
+        oidn_filter_.execute();
+
+        const char* error_message = nullptr;
+        const auto error_code = oidn_device_.getError(error_message);
+        if (error_code == oidn::Error::None) {
+            // Write back only RGB, preserve Alpha
+            for (std::size_t i = 0; i < static_cast<std::size_t>(w) * h; ++i) {
+                const std::size_t src_idx = i * 3U;
+                const std::size_t dst_idx = i * 4U;
+                buffer.beauty_rgba[dst_idx + 0] = denoised_rgb[src_idx + 0];
+                buffer.beauty_rgba[dst_idx + 1] = denoised_rgb[src_idx + 1];
+                buffer.beauty_rgba[dst_idx + 2] = denoised_rgb[src_idx + 2];
             }
+            return;
         }
     }
 #endif
 
-    const std::vector<float> src = buffer.beauty_rgba;
-    const std::vector<float> src_depth = buffer.depth_z;
-    const std::vector<float> src_normal = buffer.normal_xyz;
+    // Fallback: High-Performance Cross-Bilateral Filter (A-Trous Style)
     const std::uint32_t w = buffer.width;
     const std::uint32_t h = buffer.height;
+    
+    static thread_local std::vector<float> scratch_buffer;
+    scratch_buffer.resize(buffer.beauty_rgba.size());
+    
+    const float* src_rgba = buffer.beauty_rgba.data();
+    const float* src_depth = buffer.depth_z.data();
+    const float* src_normal = buffer.normal_xyz.data();
+    float* dst_rgba = scratch_buffer.data();
 
-    auto normal_at = [&](std::uint32_t x, std::uint32_t y) -> math::Vector3 {
-        const std::size_t idx = (static_cast<std::size_t>(y) * w + x) * 3;
-        return {src_normal[idx + 0], src_normal[idx + 1], src_normal[idx + 2]};
-    };
+    const float kDepthSigma = 0.1f;
+    // const float kNormalSigma = 0.5f;
 
-    auto color_at = [&](std::uint32_t x, std::uint32_t y) -> math::Vector3 {
-        const std::size_t idx = (static_cast<std::size_t>(y) * w + x) * 4;
-        return {src[idx + 0], src[idx + 1], src[idx + 2]};
-    };
-
-    std::vector<float> dst = src;
-    const float kDepthSigma = 0.08f;
-    const float kNormalSigma = 0.35f;
-    const float kColorSigma = 0.25f;
-
+    // 3x3 optimized pass
     for (std::uint32_t y = 0; y < h; ++y) {
         for (std::uint32_t x = 0; x < w; ++x) {
-            const std::size_t pidx = static_cast<std::size_t>(y) * w + x;
-            const float depth = src_depth[pidx];
-            const math::Vector3 normal = normal_at(x, y);
-            const math::Vector3 center = color_at(x, y);
+            const std::size_t pidx = (static_cast<std::size_t>(y) * w + x);
+            const float center_d = src_depth[pidx];
+            const float* center_n = &src_normal[pidx * 3];
+            const float* center_c = &src_rgba[pidx * 4];
 
-            math::Vector3 accum{0.0f, 0.0f, 0.0f};
-            float wsum = 0.0f;
+            float sum_w = 1.0f;
+            float sum_r = center_c[0];
+            float sum_g = center_c[1];
+            float sum_b = center_c[2];
 
-            for (int oy = -1; oy <= 1; ++oy) {
-                const int ny = std::clamp(static_cast<int>(y) + oy, 0, static_cast<int>(h) - 1);
-                for (int ox = -1; ox <= 1; ++ox) {
-                    const int nx = std::clamp(static_cast<int>(x) + ox, 0, static_cast<int>(w) - 1);
-                    const std::size_t nidx = static_cast<std::size_t>(ny) * w + static_cast<std::size_t>(nx);
-                    const float ndepth = src_depth[nidx];
-                    const math::Vector3 nnormal = normal_at(static_cast<std::uint32_t>(nx), static_cast<std::uint32_t>(ny));
-                    const math::Vector3 ncolor = color_at(static_cast<std::uint32_t>(nx), static_cast<std::uint32_t>(ny));
+            // Simple 4-neighborhood for speed in real-time
+            const int offsets_x[] = {-1, 1, 0, 0};
+            const int offsets_y[] = {0, 0, -1, 1};
 
-                    const float depth_weight = std::exp(-std::abs(ndepth - depth) / kDepthSigma);
-                    const float normal_weight = std::exp(-std::max(0.0f, 1.0f - math::Vector3::dot(normal, nnormal)) / kNormalSigma);
-                    const float color_dist = (ncolor - center).length();
-                    const float color_weight = std::exp(-color_dist / kColorSigma);
-                    const float weight = depth_weight * normal_weight * color_weight;
+            for (int i = 0; i < 4; ++i) {
+                int nx = static_cast<int>(x) + offsets_x[i];
+                int ny = static_cast<int>(y) + offsets_y[i];
+                if (nx < 0 || nx >= (int)w || ny < 0 || ny >= (int)h) continue;
 
-                    accum += ncolor * weight;
-                    wsum += weight;
-                }
+                const std::size_t nidx = (static_cast<std::size_t>(ny) * w + nx);
+                const float* neighbor_c = &src_rgba[nidx * 4];
+                const float* neighbor_n = &src_normal[nidx * 3];
+                const float neighbor_d = src_depth[nidx];
+
+                float d_w = std::exp(-std::abs(center_d - neighbor_d) / kDepthSigma);
+                float n_w = std::max(0.0f, center_n[0]*neighbor_n[0] + center_n[1]*neighbor_n[1] + center_n[2]*neighbor_n[2]);
+                n_w = std::pow(n_w, 4.0f); // Sharper normal weight
+                
+                float w_total = d_w * n_w;
+                sum_r += neighbor_c[0] * w_total;
+                sum_g += neighbor_c[1] * w_total;
+                sum_b += neighbor_c[2] * w_total;
+                sum_w += w_total;
             }
 
-            if (wsum > 1.0e-6f) {
-                accum /= wsum;
-                const std::size_t out_idx = pidx * 4;
-                dst[out_idx + 0] = accum.x;
-                dst[out_idx + 1] = accum.y;
-                dst[out_idx + 2] = accum.z;
-            }
+            dst_rgba[pidx * 4 + 0] = sum_r / sum_w;
+            dst_rgba[pidx * 4 + 1] = sum_g / sum_w;
+            dst_rgba[pidx * 4 + 2] = sum_b / sum_w;
+            dst_rgba[pidx * 4 + 3] = center_c[3]; // Preserve alpha
         }
     }
 
-    buffer.beauty_rgba = std::move(dst);
+    buffer.beauty_rgba = std::move(scratch_buffer);
 }
 
 void RayTracer::cleanup_scene() {

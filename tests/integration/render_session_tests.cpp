@@ -41,7 +41,6 @@ tachyon::SceneSpec make_scene() {
     comp.layers.push_back(layer);
 
     tachyon::SceneSpec scene;
-    scene.spec_version = "1.0";
     scene.project.id = "proj";
     scene.project.name = "Runtime";
     scene.compositions.push_back(comp);
@@ -126,7 +125,6 @@ tachyon::SceneSpec make_precomp_scene() {
     main_comp.layers.push_back(precomp_layer);
 
     tachyon::SceneSpec scene;
-    scene.spec_version = "1.0";
     scene.project.id = "proj";
     scene.project.name = "Runtime";
     scene.compositions.push_back(main_comp);

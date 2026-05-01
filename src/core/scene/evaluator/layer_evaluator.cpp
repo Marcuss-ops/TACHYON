@@ -172,10 +172,10 @@ EvaluatedLayerState make_layer_state(
         if (layer.has_parallax && !context.composition.cameras_2d.empty()) {
             std::string camera_id = layer.camera2d_id.value_or(context.composition.active_camera2d_id.value_or(""));
             if (!camera_id.empty()) {
-                auto cam_it = std::find_if(context.composition.cameras_2d.begin(), context.composition.cameras_2d.end(),
-                    [&](const Camera2DSpec& c) { return c.id == camera_id; });
-                if (cam_it != context.composition.cameras_2d.end()) {
-                    EvaluatedCamera2D camera = evaluate_camera2d(*cam_it, local_t);
+                auto it = context.camera2d_indices.find(camera_id);
+                if (it != context.camera2d_indices.end()) {
+                    const Camera2DSpec& camera_spec = context.composition.cameras_2d[it->second];
+                    EvaluatedCamera2D camera = evaluate_camera2d(camera_spec, local_t);
                     math::Vector2 transformed_pos = apply_camera2d_transform(camera, layer, layer.parallax_factor, pos2);
                     evaluated.world_matrix = math::compose_trs(
                         {transformed_pos.x, transformed_pos.y, 0.0f},
@@ -210,6 +210,69 @@ EvaluatedLayerState make_layer_state(
     evaluated.stroke_width = static_cast<float>(sample_scalar(layer.stroke_width_property, layer.stroke_width, local_t, context.audio_analyzer));
 
     evaluated.effects = layer.effects;
+    
+    // NEW: Populate 3D mesh for primitives if is_3d is true
+    if (evaluated.is_3d) {
+        if (evaluated.type == LayerType::Solid || evaluated.type == LayerType::Image || evaluated.type == LayerType::Video) {
+            evaluated.mesh_asset = create_quad_mesh(static_cast<float>(evaluated.width), static_cast<float>(evaluated.height));
+        }
+        
+        // Populate material state
+        evaluated.material.metallic = static_cast<float>(sample_scalar(layer.metallic, 0.0, local_t, context.audio_analyzer));
+        evaluated.material.roughness = static_cast<float>(sample_scalar(layer.roughness, 0.5, local_t, context.audio_analyzer));
+        evaluated.material.transmission = static_cast<float>(sample_scalar(layer.transmission, 0.0, local_t, context.audio_analyzer));
+        evaluated.material.ior = static_cast<float>(sample_scalar(layer.ior, 1.45, local_t, context.audio_analyzer));
+        evaluated.material.emission = static_cast<float>(sample_scalar(layer.emission_strength, 0.0, local_t, context.audio_analyzer));
+    }
+
+    // Procedural specific
+    if (layer.procedural.has_value()) {
+        const ProceduralSpec& spec = *layer.procedural;
+        ProceduralSpec evaluated_proc = spec;
+        
+        const auto eval_scalar = [&](const AnimatedScalarSpec& prop, double fallback, const char* name) {
+            return sample_scalar(prop, fallback, local_t, context.audio_analyzer,
+                make_property_expression_seed(context.scene, context.composition, layer, name),
+                vars.numeric, vars.tables, static_cast<std::uint32_t>(layer_index));
+        };
+
+        const auto eval_color = [&](const AnimatedColorSpec& prop, ColorSpec fallback) {
+             return sample_color(prop, fallback, local_t);
+        };
+
+        evaluated_proc.frequency.value = eval_scalar(spec.frequency, 1.0, "procedural_frequency");
+        evaluated_proc.speed.value = eval_scalar(spec.speed, 1.0, "procedural_speed");
+        evaluated_proc.amplitude.value = eval_scalar(spec.amplitude, 1.0, "procedural_amplitude");
+        evaluated_proc.scale.value = eval_scalar(spec.scale, 1.0, "procedural_scale");
+        evaluated_proc.angle.value = eval_scalar(spec.angle, 0.0, "procedural_angle");
+        
+        evaluated_proc.color_a.value = eval_color(spec.color_a, {0,0,0,255});
+        evaluated_proc.color_b.value = eval_color(spec.color_b, {255,255,255,255});
+        evaluated_proc.color_c.value = eval_color(spec.color_c, {0,0,0,0});
+        
+        evaluated_proc.spacing.value = eval_scalar(spec.spacing, 50.0, "procedural_spacing");
+        evaluated_proc.border_width.value = eval_scalar(spec.border_width, 1.0, "procedural_border_width");
+        evaluated_proc.border_color.value = eval_color(spec.border_color, {255,255,255,255});
+        
+        evaluated_proc.warp_strength.value = eval_scalar(spec.warp_strength, 0.0, "procedural_warp_strength");
+        evaluated_proc.warp_frequency.value = eval_scalar(spec.warp_frequency, 5.0, "procedural_warp_frequency");
+        evaluated_proc.warp_speed.value = eval_scalar(spec.warp_speed, 2.0, "procedural_warp_speed");
+        
+        evaluated_proc.grain_amount.value = eval_scalar(spec.grain_amount, 0.0, "procedural_grain_amount");
+        evaluated_proc.grain_scale.value = eval_scalar(spec.grain_scale, 1.0, "procedural_grain_scale");
+        evaluated_proc.scanline_intensity.value = eval_scalar(spec.scanline_intensity, 0.0, "procedural_scanline_intensity");
+        evaluated_proc.scanline_frequency.value = eval_scalar(spec.scanline_frequency, 100.0, "procedural_scanline_frequency");
+        evaluated_proc.contrast.value = eval_scalar(spec.contrast, 1.0, "procedural_contrast");
+        evaluated_proc.gamma.value = eval_scalar(spec.gamma, 1.0, "procedural_gamma");
+        evaluated_proc.saturation.value = eval_scalar(spec.saturation, 1.0, "procedural_saturation");
+        evaluated_proc.softness.value = eval_scalar(spec.softness, 0.0, "procedural_softness");
+        
+        evaluated_proc.octave_decay.value = eval_scalar(spec.octave_decay, 0.5, "procedural_octave_decay");
+        evaluated_proc.band_height.value = eval_scalar(spec.band_height, 0.5, "procedural_band_height");
+        evaluated_proc.band_spread.value = eval_scalar(spec.band_spread, 1.0, "procedural_band_spread");
+        
+        evaluated.procedural = std::move(evaluated_proc);
+    }
 
     return evaluated;
 }

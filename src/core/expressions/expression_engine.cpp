@@ -110,7 +110,11 @@ private:
         std::string s = m_input.substr(start, m_pos - start);
         
         std::replace(s.begin(), s.end(), ',', '.');
-        return std::make_unique<NumberNode>(std::stod(s)); 
+        try {
+            return std::make_unique<NumberNode>(std::stod(s));
+        } catch (const std::exception&) {
+            throw std::runtime_error("Invalid number format: " + s);
+        }
     }
 
     std::unique_ptr<ASTNode> parse_identifier_or_function() {

@@ -10,11 +10,13 @@
 #include "tachyon/media/management/media_asset.h"
 #include "tachyon/media/management/proxy_manifest.h"
 #include "tachyon/media/management/proxy_worker.h"
+#include "tachyon/media/management/resource_cache.h"
 #include <filesystem>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <string>
+#include <functional>
 
 namespace tachyon::media {
 
@@ -43,6 +45,9 @@ public:
         const std::filesystem::path& path,
         double time,
         DiagnosticBag* diagnostics = nullptr);
+
+    void set_memory_budget(std::size_t bytes);
+    std::size_t current_memory_usage() const;
 
     const renderer2d::SurfaceRGBA* get_image(
         const std::filesystem::path& path, 
@@ -73,9 +78,9 @@ public:
 
     /**
      * Acquires a VideoDecoder for the given path from a pool.
-     * Must be returned via release_video_decoder.
      */
-    VideoDecoder* acquire_video_decoder(const std::filesystem::path& path);
+    using PooledVideoDecoder = std::unique_ptr<VideoDecoder, std::function<void(VideoDecoder*)>>;
+    PooledVideoDecoder acquire_video_decoder(const std::filesystem::path& path);
     void release_video_decoder(const std::filesystem::path& path, VideoDecoder* decoder);
 
     const MeshAsset* get_mesh(
@@ -110,7 +115,7 @@ private:
 
     ImageManager m_image_manager;
     std::map<std::string, std::shared_ptr<VideoPool>> m_video_pools;
-    std::map<std::string, std::unique_ptr<renderer2d::SurfaceRGBA>> m_video_frame_cache;
+    std::unique_ptr<ResourceCache<std::string, renderer2d::SurfaceRGBA>> m_frame_cache;
     std::map<std::string, std::unique_ptr<MeshAsset>> m_mesh_cache;
     std::unordered_map<std::string, std::shared_ptr<MediaAsset>> m_assets;
     

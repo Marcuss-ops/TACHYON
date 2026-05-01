@@ -29,6 +29,7 @@ void hash_effect(CacheKeyBuilder& builder, const EffectSpec& effect) {
 }
 
 void hash_text_animator(CacheKeyBuilder& builder, const TextAnimatorSpec& spec) {
+    builder.add_string(spec.name);
     // Hash selector
     builder.add_string(spec.selector.type);
     builder.add_f64(spec.selector.start);

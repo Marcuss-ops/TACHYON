@@ -4,6 +4,7 @@
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 #include "tachyon/core/math/matrix3x3.h"
 #include "tachyon/core/math/vector2.h"
+#include "tachyon/core/scene/evaluator/property_sampler.h"
 
 namespace tachyon {
 

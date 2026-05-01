@@ -1,4 +1,4 @@
-#include "tachyon/text/fonts/font_registry.h"
+#include "tachyon/text/fonts/core/font_registry.h"
 
 #include <algorithm>
 #include <utility>

@@ -1,5 +1,8 @@
 #pragma once
 
+#include "tachyon/core/spec/schema/objects/procedural_spec.h"
+#include "tachyon/core/spec/schema/animation/text_animator_spec.h"
+
 #include "tachyon/core/spec/schema/common/common_spec.h"
 #include "tachyon/core/spec/schema/properties/property_spec.h"
 #include "tachyon/core/spec/schema/transform/transform_spec.h"
@@ -7,16 +10,29 @@
 #include "tachyon/renderer2d/path/mask_path.h"
 #include "tachyon/core/shapes/shape_path.h"
 #include "tachyon/core/spec/schema/shapes/shape_spec.h"
+#include "tachyon/core/animation/easing.h"
 #include <string>
 #include <vector>
 #include <optional>
 
 namespace tachyon {
 
+struct LayerTransitionSpec {
+    std::string type; // JSON string field (e.g., "fade", "slide_left")
+    std::string transition_id; // Backward compatible: used by renderer
+    TransitionKind kind{TransitionKind::None}; // Internal typed field
+    std::string direction; // "up", "down", "left", "right"
+    double duration{0.4};
+    double delay{0.0};
+    animation::EasingPreset easing{animation::EasingPreset::EaseOut};
+};
+
 struct LayerSpec {
     std::string id;
     std::string name;
-    std::string type; // "solid", "shape", "image", "text", "precomp", etc.
+    std::string type;
+    std::string asset_id; // For image/video layers
+    LayerType kind{LayerType::NullLayer};
     std::string blend_mode{"normal"};
     
     bool enabled{true};
@@ -54,6 +70,12 @@ struct LayerSpec {
     AnimatedColorSpec stroke_color;
     double stroke_width{0.0};
     AnimatedScalarSpec stroke_width_property;
+    AnimatedScalarSpec metallic;
+    AnimatedScalarSpec roughness;
+    AnimatedScalarSpec ior;
+    AnimatedScalarSpec transmission;
+    AnimatedScalarSpec emission_strength;
+    AnimatedColorSpec emission_color;
 
     // Repeater (from evaluator_composition.cpp)
     AnimatedScalarSpec repeater_count;
@@ -114,8 +136,8 @@ struct LayerSpec {
     // Effects & Animators (Skeletons)
     std::vector<EffectSpec> effects;  // Backward compatible static effects
     std::vector<AnimatedEffectSpec> animated_effects;  // Keyframeable effects
-    std::vector<std::string> text_animators;
-    std::vector<std::string> text_highlights;
+    std::vector<TextAnimatorSpec> text_animators;
+    std::vector<TextHighlightSpec> text_highlights;
 
     // Mask paths (roto / vector masks)
     std::vector<renderer2d::MaskPath> mask_paths;
@@ -135,6 +157,10 @@ struct LayerSpec {
     float in_duration{0.4f};
     float out_duration{0.4f};
 
+    // Typed transitions
+    LayerTransitionSpec transition_in;
+    LayerTransitionSpec transition_out;
+
     // Playback behavior
     bool loop{false};
     bool hold_last_frame{false};
@@ -146,6 +172,9 @@ struct LayerSpec {
         std::string color{"#ffffff"};
     };
     std::vector<MarkerSpec> markers;
+
+    // Procedural generation
+    std::optional<ProceduralSpec> procedural;
 };
 
 } // namespace tachyon

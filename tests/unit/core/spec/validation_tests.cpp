@@ -16,7 +16,7 @@ bool run_scene_spec_validation_tests() {
     g_failures = 0;
     {
         const std::string text = R"({
-            "spec_version": "1.0",
+            "schema_version": "1.0",
             "project": { "id": "proj_001", "name": "Intro" },
             "compositions": [
                 {
@@ -39,7 +39,7 @@ bool run_scene_spec_validation_tests() {
 
     {
         const std::string text = R"({
-            "spec_version": "1.0",
+            "schema_version": "1.0",
             "project": { "id": "proj_refs", "name": "Reference Scene" },
             "compositions": [
                 {

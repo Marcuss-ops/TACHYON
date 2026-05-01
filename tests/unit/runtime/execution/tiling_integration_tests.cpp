@@ -55,7 +55,6 @@ tachyon::SceneSpec make_solid_scene(std::int64_t width, std::int64_t height) {
     comp.layers.push_back(red);
 
     tachyon::SceneSpec scene;
-    scene.spec_version = "1.0";
     scene.project.id = "proj";
     scene.project.name = "TilingTest";
     scene.compositions.push_back(comp);

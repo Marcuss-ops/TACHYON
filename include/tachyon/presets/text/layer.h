@@ -3,6 +3,7 @@
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 #include "tachyon/text/animation/text_presets.h"
 #include "tachyon/core/types/colors.h"
+#include "tachyon/presets/preset_base.h"
 
 namespace tachyon::presets::text {
 
@@ -19,7 +20,7 @@ using ::tachyon::text::make_phrase_intro_animator;
 // Text layer preset factory functions
 // These create reusable text layer specs that can be used in any scene
 
-struct TextLayerOptions {
+struct TextParams : LayerParams {
     std::string id = "headline";
     std::string text = "Hello World";
     std::string font_id;
@@ -35,8 +36,8 @@ struct TextLayerOptions {
     std::vector<TextAnimatorSpec> animators;
 };
 
-[[nodiscard]] inline LayerSpec minimal(
-    const TextLayerOptions& opts = {}) {
+[[nodiscard]] inline LayerSpec build_minimal(
+    const TextParams& opts = {}) {
     LayerSpec text;
     text.id = opts.id;
     text.name = "Minimal Text";
@@ -70,8 +71,8 @@ struct TextLayerOptions {
     return text;
 }
 
-[[nodiscard]] inline LayerSpec enhance(
-    const TextLayerOptions& opts = {}) {
+[[nodiscard]] inline LayerSpec build_enhanced(
+    const TextParams& opts = {}) {
     LayerSpec text;
     text.id = opts.id;
     text.name = "Enhanced Text";
@@ -105,8 +106,8 @@ struct TextLayerOptions {
     return text;
 }
 
-[[nodiscard]] inline LayerSpec typewriter(
-    const TextLayerOptions& opts = {}) {
+[[nodiscard]] inline LayerSpec build_typewriter(
+    const TextParams& opts = {}) {
     LayerSpec text;
     text.id = opts.id;
     text.name = "Typewriter Text";
@@ -129,8 +130,8 @@ struct TextLayerOptions {
     return text;
 }
 
-[[nodiscard]] inline LayerSpec kinetic(
-    const TextLayerOptions& opts = {}) {
+[[nodiscard]] inline LayerSpec build_kinetic(
+    const TextParams& opts = {}) {
     LayerSpec text;
     text.id = opts.id;
     text.name = "Kinetic Text";
@@ -155,8 +156,8 @@ struct TextLayerOptions {
     return text;
 }
 
-[[nodiscard]] inline LayerSpec phrase_intro(
-    const TextLayerOptions& opts = {}) {
+[[nodiscard]] inline LayerSpec build_phrase_intro(
+    const TextParams& opts = {}) {
     LayerSpec text;
     text.id = opts.id;
     text.name = "Phrase Intro Text";

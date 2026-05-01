@@ -9,6 +9,8 @@
 #include "tachyon/runtime/execution/presentation_clock.h"
 #include "tachyon/runtime/execution/framebuffer_playback_queue.h"
 
+#include "tachyon/runtime/execution/compiled_frame_program.h"
+
 #include <cstddef>
 #include <filesystem>
 #include <memory>
@@ -61,6 +63,8 @@ public:
         const RenderExecutionPlan& execution_plan,
         const std::filesystem::path& output_path,
         std::size_t worker_count);
+    // 100x performance: render using precompiled frame program
+    RenderSessionResult render(const CompiledFrameProgram& program, double time_sec, const std::filesystem::path& output_path = {});
 
     void set_memory_budget_bytes(std::size_t bytes) { m_memory_budget_bytes = bytes; }
 

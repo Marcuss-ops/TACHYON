@@ -19,8 +19,7 @@ void add_string(CacheKeyBuilder& builder, const std::string& value) {
 
 std::uint64_t hash_scene_spec(const SceneSpec& scene, const DeterminismContract& contract) {
     CacheKeyBuilder builder;
-    builder.add_string(scene.version);
-    builder.add_string(scene.spec_version);
+    builder.add_string(scene.schema_version.to_string());
     add_string(builder, scene.project.id);
     add_string(builder, scene.project.name);
     add_string(builder, scene.project.authoring_tool);
@@ -45,7 +44,15 @@ std::uint64_t hash_scene_spec(const SceneSpec& scene, const DeterminismContract&
         builder.add_u64(static_cast<std::uint64_t>(composition.frame_rate.denominator));
         builder.add_bool(composition.background.has_value());
         if (composition.background.has_value()) {
-            add_string(builder, *composition.background);
+            builder.add_u32(static_cast<std::uint32_t>(composition.background->type));
+            add_string(builder, composition.background->value);
+            if (composition.background->parsed_color.has_value()) {
+                const auto& c = *composition.background->parsed_color;
+                builder.add_u32(c.r);
+                builder.add_u32(c.g);
+                builder.add_u32(c.b);
+                builder.add_u32(c.a);
+            }
         }
 
         builder.add_u64(static_cast<std::uint64_t>(composition.camera_cuts.size()));
@@ -186,6 +193,16 @@ CompiledPropertyTrack compile_property_track(
         } else {
             track.constant_value = fallback_value;
         }
+
+    } else if constexpr (std::is_same_v<T, AnimatedVector3Spec>) {
+        if (property_spec.value.has_value()) {
+            if (id_suffix.find("_x") != std::string::npos) track.constant_value = property_spec.value->x;
+            else if (id_suffix.find("_y") != std::string::npos) track.constant_value = property_spec.value->y;
+            else if (id_suffix.find("_z") != std::string::npos) track.constant_value = property_spec.value->z;
+            else track.constant_value = fallback_value;
+        } else {
+            track.constant_value = fallback_value;
+        }
     } else {
         track.constant_value = property_spec.value.has_value() ? static_cast<double>(*property_spec.value) : fallback_value;
     }
@@ -199,6 +216,11 @@ CompiledPropertyTrack compile_property_track(
             if constexpr (std::is_same_v<T, AnimatedVector2Spec>) {
                 if (id_suffix.find("_x") != std::string::npos) val = keyframe.value.x;
                 else if (id_suffix.find("_y") != std::string::npos) val = keyframe.value.y;
+
+            } else if constexpr (std::is_same_v<T, AnimatedVector3Spec>) {
+                if (id_suffix.find("_x") != std::string::npos) val = keyframe.value.x;
+                else if (id_suffix.find("_y") != std::string::npos) val = keyframe.value.y;
+                else if (id_suffix.find("_z") != std::string::npos) val = keyframe.value.z;
             } else {
                 val = static_cast<double>(keyframe.value);
             }
@@ -219,6 +241,11 @@ CompiledPropertyTrack compile_property_track(
                 if constexpr (std::is_same_v<T, AnimatedVector2Spec>) {
                     if (id_suffix.find("_x") != std::string::npos) next_val = next_kf.value.x;
                     else if (id_suffix.find("_y") != std::string::npos) next_val = next_kf.value.y;
+
+                } else if constexpr (std::is_same_v<T, AnimatedVector3Spec>) {
+                    if (id_suffix.find("_x") != std::string::npos) next_val = next_kf.value.x;
+                    else if (id_suffix.find("_y") != std::string::npos) next_val = next_kf.value.y;
+                    else if (id_suffix.find("_z") != std::string::npos) next_val = next_kf.value.z;
                 } else {
                     next_val = static_cast<double>(next_kf.value);
                 }
@@ -368,6 +395,25 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
             add_track(".scale_y", layer.transform.scale_property, layer.transform.scale_y.value_or(1.0));
             add_track(".rotation", layer.transform.rotation_property, layer.transform.rotation.value_or(0.0));
             add_track(".mask_feather", layer.mask_feather, 0.0);
+
+            // 3D Transforms
+            add_track(".position_z", layer.transform3d.position_property, 0.0);
+            add_track(".rotation_x", layer.transform3d.rotation_property, 0.0);
+            add_track(".rotation_y", layer.transform3d.rotation_property, 0.0);
+            add_track(".rotation_z", layer.transform3d.rotation_property, 0.0);
+            add_track(".scale_z", layer.transform3d.scale_property, 1.0);
+            add_track(".anchor_x", layer.transform3d.anchor_point_property, static_cast<double>(layer.width) * 0.5);
+            add_track(".anchor_y", layer.transform3d.anchor_point_property, static_cast<double>(layer.height) * 0.5);
+            add_track(".anchor_z", layer.transform3d.anchor_point_property, 0.0);
+
+            // Material properties
+            add_track(".metallic", layer.metallic, 0.0);
+            add_track(".roughness", layer.roughness, 0.5);
+            add_track(".ior", layer.ior, 1.45);
+            add_track(".transmission", layer.transmission, 0.0);
+            add_track(".emission_strength", layer.emission_strength, 0.0);
+            
+            compiled_layer.emission_color = layer.emission_color.value.has_value() ? *layer.emission_color.value : ColorSpec{0, 0, 0, 255};
 
             // Populate Unified Fields
             compiled_layer.track_bindings = layer.track_bindings;

@@ -97,7 +97,6 @@ void VideoDecoder::close() {
     m_frame_rate = 0.0;
     m_width = 0;
     m_height = 0;
-    m_frame_cache.clear();
 }
 
 bool VideoDecoder::open(const std::filesystem::path& path) {
@@ -174,50 +173,13 @@ bool VideoDecoder::open(const std::filesystem::path& path) {
 #endif
 }
 
-void VideoDecoder::cache_frame(CachedVideoFrame frame) {
-    for (auto it = m_frame_cache.begin(); it != m_frame_cache.end(); ++it) {
-        if (std::abs(it->pts - frame.pts) < 1e-6) {
-            m_frame_cache.erase(it);
-            break;
-        }
-    }
-
-    m_frame_cache.push_front(std::move(frame));
-    while (m_frame_cache.size() > kMaxCachedFrames) {
-        m_frame_cache.pop_back();
-    }
-}
-
-std::optional<VideoDecoder::CachedVideoFrame> VideoDecoder::find_cached_frame(double seconds) const {
-    if (m_frame_cache.empty()) {
-        return std::nullopt;
-    }
-
-    const double tolerance = m_frame_rate > 0.0 ? (0.5 / m_frame_rate) : kDefaultSeekToleranceSeconds;
-    const CachedVideoFrame* best = nullptr;
-    double best_delta = std::numeric_limits<double>::max();
-    for (const auto& frame : m_frame_cache) {
-        const double delta = std::abs(frame.pts - seconds);
-        if (delta < best_delta) {
-            best_delta = delta;
-            best = &frame;
-        }
-    }
-
-    if (best && best_delta <= tolerance) {
-        return *best;
-    }
-    return std::nullopt;
-}
-
-std::optional<VideoDecoder::CachedVideoFrame> VideoDecoder::convert_current_frame(double pts_seconds, AVFrame* frame) {
+bool VideoDecoder::convert_to_surface(AVFrame* frame, renderer2d::SurfaceRGBA& target) {
 #if !defined(TACHYON_HAS_FFMPEG)
-    (void)pts_seconds;
-    (void)frame;
-    return std::nullopt;
+    (void)frame; (void)target;
+    return false;
 #else
     if (!frame || m_width <= 0 || m_height <= 0) {
-        return std::nullopt;
+        return false;
     }
 
     m_sws_context = sws_getCachedContext(
@@ -234,12 +196,19 @@ std::optional<VideoDecoder::CachedVideoFrame> VideoDecoder::convert_current_fram
         nullptr);
 
     if (!m_sws_context) {
-        return std::nullopt;
+        return false;
     }
 
-    std::vector<std::uint8_t> buffer(static_cast<std::size_t>(m_width) * static_cast<std::size_t>(m_height) * 4U, 0U);
-    std::uint8_t* dst_data[4] = {buffer.data(), nullptr, nullptr, nullptr};
+    // Reuse a static or thread-local buffer to avoid allocations
+    static thread_local std::vector<std::uint8_t> scratch_buffer;
+    const std::size_t required_size = static_cast<std::size_t>(m_width) * static_cast<std::size_t>(m_height) * 4U;
+    if (scratch_buffer.size() < required_size) {
+        scratch_buffer.resize(required_size);
+    }
+
+    std::uint8_t* dst_data[4] = {scratch_buffer.data(), nullptr, nullptr, nullptr};
     int dst_linesize[4] = {m_width * 4, 0, 0, 0};
+    
     const int scaled = sws_scale(
         m_sws_context,
         frame->data,
@@ -248,24 +217,46 @@ std::optional<VideoDecoder::CachedVideoFrame> VideoDecoder::convert_current_fram
         m_height,
         dst_data,
         dst_linesize);
+
     if (scaled <= 0) {
-        return std::nullopt;
+        return false;
     }
 
-    CachedVideoFrame output;
-    output.pts = pts_seconds;
-    output.surface = surface_from_rgba_buffer(buffer, m_width, m_height);
-    return output;
+    // Convert from RGBA8 to Float32 into target surface
+    if (target.width() != static_cast<uint32_t>(m_width) || target.height() != static_cast<uint32_t>(m_height)) {
+        target.reset(static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height));
+    }
+
+    float* dst_pixels = target.mutable_pixels().data();
+    const std::uint8_t* src_bytes = scratch_buffer.data();
+    const std::size_t pixel_count = static_cast<std::size_t>(m_width) * m_height;
+
+    // Fast conversion loop
+    for (std::size_t i = 0; i < pixel_count; ++i) {
+        const std::size_t src_idx = i * 4;
+        const std::size_t dst_idx = i * 4;
+        dst_pixels[dst_idx + 0] = static_cast<float>(src_bytes[src_idx + 0]) / 255.0f;
+        dst_pixels[dst_idx + 1] = static_cast<float>(src_bytes[src_idx + 1]) / 255.0f;
+        dst_pixels[dst_idx + 2] = static_cast<float>(src_bytes[src_idx + 2]) / 255.0f;
+        dst_pixels[dst_idx + 3] = static_cast<float>(src_bytes[src_idx + 3]) / 255.0f;
+    }
+
+    return true;
 #endif
 }
 
-std::optional<VideoDecoder::CachedVideoFrame> VideoDecoder::decode_frame_at_or_after(double seconds) {
-#if !defined(TACHYON_HAS_FFMPEG)
-    (void)seconds;
+std::optional<renderer2d::SurfaceRGBA> VideoDecoder::get_frame_at_time(double seconds) {
+    renderer2d::SurfaceRGBA surface(1, 1);
+    if (get_frame_into(seconds, surface)) {
+        return surface;
+    }
     return std::nullopt;
-#else
-    if (!m_format_context || !m_codec_context || !m_packet || !m_frame || m_stream_index < 0) {
-        return std::nullopt;
+}
+
+bool VideoDecoder::get_frame_into(double seconds, renderer2d::SurfaceRGBA& target) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (seconds < 0.0 || !m_format_context) {
+        return false;
     }
 
     // Optimization: avoid seeking if we are within a reasonable forward window
@@ -280,17 +271,12 @@ std::optional<VideoDecoder::CachedVideoFrame> VideoDecoder::decode_frame_at_or_a
             ? static_cast<int64_t>(seconds / m_stream_time_base)
             : 0;
         if (av_seek_frame(m_format_context, m_stream_index, seek_target, AVSEEK_FLAG_BACKWARD) < 0) {
-            return std::nullopt;
+            return false;
         }
         avcodec_flush_buffers(m_codec_context);
         m_last_pts = -1.0;
     }
 
-    std::optional<CachedVideoFrame> previous;
-    std::optional<CachedVideoFrame> best;
-    double best_delta = std::numeric_limits<double>::max();
-
-    int consecutive_failures = 0;
     while (av_read_frame(m_format_context, m_packet) >= 0) {
         if (m_packet->stream_index != m_stream_index) {
             av_packet_unref(m_packet);
@@ -302,67 +288,21 @@ std::optional<VideoDecoder::CachedVideoFrame> VideoDecoder::decode_frame_at_or_a
                 const double pts_seconds = frame_timestamp_seconds(m_frame, m_stream_time_base);
                 m_last_pts = pts_seconds;
                 
-                auto converted = convert_current_frame(pts_seconds, m_frame);
-                av_frame_unref(m_frame);
-                if (!converted.has_value()) {
-                    continue;
-                }
-
-                cache_frame(*converted);
-
-                const double delta = std::abs(converted->pts - seconds);
-                if (delta < best_delta) {
-                    best_delta = delta;
-                    best = converted;
-                }
-
-                if (previous.has_value() && converted->pts >= seconds) {
-                    const double previous_delta = std::abs(previous->pts - seconds);
-                    best = previous_delta <= delta ? previous : converted;
+                // We want the frame closest to 'seconds' but not before it if possible, 
+                // or just the first frame after seek.
+                if (pts_seconds >= seconds - 0.01) {
+                    bool success = convert_to_surface(m_frame, target);
+                    av_frame_unref(m_frame);
                     av_packet_unref(m_packet);
-                    return best;
+                    return success;
                 }
-
-                previous = converted;
-
-                if (converted->pts >= seconds && !best.has_value()) {
-                    best = converted;
-                }
+                av_frame_unref(m_frame);
             }
-            consecutive_failures = 0;
-        } else {
-            consecutive_failures++;
-            if (consecutive_failures > 10) break;
         }
-
         av_packet_unref(m_packet);
-        if (best.has_value() && best->pts >= seconds) {
-            break;
-        }
     }
 
-    if (!best.has_value()) {
-        return previous;
-    }
-    return best;
-#endif
-}
-
-std::optional<renderer2d::SurfaceRGBA> VideoDecoder::get_frame_at_time(double seconds) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    if (seconds < 0.0) {
-        return std::nullopt;
-    }
-
-    if (auto cached = find_cached_frame(seconds); cached.has_value()) {
-        return cached->surface;
-    }
-
-    if (auto decoded = decode_frame_at_or_after(seconds); decoded.has_value()) {
-        return decoded->surface;
-    }
-
-    return std::nullopt;
+    return false;
 }
 
 std::future<std::optional<renderer2d::SurfaceRGBA>> VideoDecoder::request_frame_async(double seconds) {

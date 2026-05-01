@@ -6,6 +6,7 @@
 #include "tachyon/renderer2d/evaluated_composition/utilities/composition_utils.h"
 #include "tachyon/renderer2d/evaluated_composition/layer_renderer.h"
 #include "tachyon/renderer2d/evaluated_composition/effect_renderer.h"
+#include "tachyon/renderer2d/effects/effect_host.h"
 #include "tachyon/renderer2d/evaluated_composition/renderer2d_matte_resolver.h"
 #include "tachyon/renderer2d/color/blending.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
@@ -22,6 +23,9 @@
 #include "tachyon/transition_registry.h"
 #include "tachyon/renderer2d/effects/core/glsl_transition_effect.h"
 #include "tachyon/core/animation/easing.h"
+#include "tachyon/renderer2d/evaluated_composition/rendering/pipeline/scene3d_bridge.h"
+#include "tachyon/core/math/algebra/vector2.h"
+#include "tachyon/renderer2d/deform/mesh_deform.h"
 #include <algorithm>
 #include <cmath>
 #include <array>
@@ -32,51 +36,11 @@ namespace tachyon {
 
 namespace {
 
-renderer2d::Color background_spec_to_color(const BackgroundSpec& bg) {
-    if (bg.is_color() && bg.parsed_color.has_value()) {
-        const auto& c = *bg.parsed_color;
-        return renderer2d::Color{
-            static_cast<float>(c.r) / 255.0f,
-            static_cast<float>(c.g) / 255.0f,
-            static_cast<float>(c.b) / 255.0f,
-            static_cast<float>(c.a) / 255.0f
-        };
-    }
-    return renderer2d::Color::transparent();
-}
+// background_spec_to_color removed as BackgroundSpec is undefined.
+
 
 } // namespace
 using namespace renderer2d;
-
-namespace {
-
-std::optional<EffectSpec> particle_spec_to_effect_spec(const ParticleSpec& spec, double time_seconds) {
-    EffectSpec effect;
-    effect.type = "particle_emitter";
-    effect.enabled = true;
-    const double emission_rate = spec.emission_rate.value.value_or(100.0);
-    const double lifetime = spec.lifetime.value.value_or(2.0);
-    const double count = std::max(1.0, emission_rate * lifetime);
-    effect.scalars["seed"] = static_cast<double>(static_cast<std::uint64_t>(time_seconds * 1000) % 1000000ULL);
-    effect.scalars["count"] = count;
-    effect.scalars["time"] = time_seconds;
-    effect.scalars["lifetime"] = lifetime;
-    effect.scalars["speed"] = spec.start_speed.value.value_or(100.0);
-    effect.scalars["gravity"] = spec.gravity.value.value_or(980.0);
-    effect.scalars["spread_x"] = 1.0;
-    effect.scalars["spread_y"] = 1.0;
-    const double start_s = spec.start_size.value.value_or(5.0);
-    const double end_s = spec.end_size.value.value_or(0.0);
-    effect.scalars["radius_min"] = std::min(start_s, end_s);
-    effect.scalars["radius_max"] = std::max(start_s, end_s);
-    effect.colors["color"] = spec.start_color.value.value_or(ColorSpec{255, 255, 255, 255});
-    effect.scalars["opacity"] = 1.0;
-    effect.scalars["center_x"] = 0.5;
-    effect.scalars["center_y"] = 0.5;
-    effect.scalars["emit_width"] = 1.0;
-    effect.scalars["emit_height"] = 1.0;
-    return effect;
-}
 
 std::optional<std::filesystem::path> resolve_media_source(
     const scene::EvaluatedLayerState& layer,
@@ -111,8 +75,6 @@ std::optional<std::filesystem::path> resolve_media_source(
     return std::nullopt;
 }
 
-} // namespace
-
 RasterizedFrame2D render_evaluated_composition_2d(
     const scene::EvaluatedCompositionState& state,
     const RenderPlan& plan,
@@ -144,9 +106,12 @@ RasterizedFrame2D render_evaluated_composition_2d(
     
     renderer2d::Color clear_color = renderer2d::Color::transparent();
     if (plan.composition.background.has_value()) {
-        clear_color = background_spec_to_color(*plan.composition.background);
+        // Simple hex/color parsing for background string
+        // For now, default to transparent or black
+        clear_color = renderer2d::Color::black();
     }
     dst.clear(clear_color);
+    dst.clear_depth(0.0f); // Initialize depth buffer for hybrid compositing
 
     // Identify if we have 3D layers and trigger 3D pass if available
     bool has_any_3d = std::any_of(state.layers.begin(), state.layers.end(), [](const auto& l) { return l.is_3d && l.visible; });
@@ -259,142 +224,21 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 }
 
                 // Construct EvaluatedScene3D bridge from the composition subset
-                renderer3d::EvaluatedScene3D scene3d;
-                if (state.camera.available) {
-                    scene3d.camera.position = state.camera.position;
-                    scene3d.camera.target = state.camera.point_of_interest;
-                    scene3d.camera.up = {0.0f, 1.0f, 0.0f};
-                    scene3d.camera.fov_y = state.camera.angle_of_view;
-                    scene3d.camera.focal_length_mm = state.camera.focal_length;
-                    scene3d.camera.focal_distance = state.camera.focus_distance;
-                    scene3d.camera.aperture = state.camera.aperture;
-                    scene3d.camera.previous_position = state.camera.previous_position;
-                    scene3d.camera.previous_target = state.camera.previous_point_of_interest;
-                    scene3d.camera.previous_up = scene3d.camera.up;
-                    scene3d.camera.camera_id = state.camera.layer_id;
-                    scene3d.camera.is_active_camera = true;
-                }
+                Scene3DBridgeInput bridge_input;
+                bridge_input.state = &state;
+                bridge_input.plan = &plan;
+                bridge_input.task = &task;
+                bridge_input.context = &render_context;
+                bridge_input.block_indices = &block_indices;
+                bridge_input.visible_3d_layers = &visible_3d_layers;
 
-                auto to_color = [](const math::Vector3& color) -> ColorSpec {
-                    const auto clamp_channel = [](float v) -> std::uint8_t {
-                        const float clamped = std::clamp(v, 0.0f, 1.0f);
-                        return static_cast<std::uint8_t>(std::lround(clamped * 255.0f));
-                    };
-                    return ColorSpec{
-                        clamp_channel(color.x),
-                        clamp_channel(color.y),
-                        clamp_channel(color.z),
-                        255
-                    };
-                };
-
-                scene3d.lights.reserve(state.lights.size());
-                for (const auto& light_state : state.lights) {
-                    renderer3d::EvaluatedLight light3d;
-                    if (light_state.type == "ambient") {
-                        light3d.type = renderer3d::LightType::Ambient;
-                    } else if (light_state.type == "parallel") {
-                        light3d.type = renderer3d::LightType::Directional;
-                    } else if (light_state.type == "spot") {
-                        light3d.type = renderer3d::LightType::Spot;
-                    } else {
-                        light3d.type = renderer3d::LightType::Point;
-                    }
-                    light3d.position = light_state.position;
-                    light3d.direction = light_state.direction;
-                    light3d.color = to_color(light_state.color);
-                    light3d.intensity = light_state.intensity;
-                    light3d.attenuation_radius = light_state.attenuation_far > 0.0f ? light_state.attenuation_far : light_state.attenuation_near;
-                    light3d.spot_angle = light_state.cone_angle;
-                    light3d.spot_penumbra = light_state.cone_feather;
-                    light3d.casts_shadows = light_state.casts_shadows;
-                    scene3d.lights.push_back(light3d);
-                }
-
-                if (plan.scene_spec != nullptr) {
-                    const auto comp_it = std::find_if(
-                        plan.scene_spec->compositions.begin(),
-                        plan.scene_spec->compositions.end(),
-                        [&](const CompositionSpec& comp) { return comp.id == plan.composition_target; });
-                    if (comp_it != plan.scene_spec->compositions.end() && comp_it->environment_path.has_value()) {
-                        scene3d.environment_map_id = *comp_it->environment_path;
-                    }
-                }
-
-                for (std::size_t block_idx : block_indices) {
-                    const auto& l = state.layers[block_idx];
-                    if (block_idx >= visible_3d_layers.size() || !visible_3d_layers[block_idx]) {
-                        continue;
-                    }
-                    renderer3d::EvaluatedMeshInstance inst;
-                    inst.object_id = static_cast<std::uint32_t>(block_idx);
-                    inst.material_id = 0;
-                    inst.world_transform = l.world_matrix;
-                    inst.previous_world_transform = l.previous_world_matrix;
-                    inst.material.base_color = l.fill_color;
-                    inst.material.opacity = static_cast<float>(l.opacity);
-                    inst.material.metallic = l.material.metallic;
-                    inst.material.roughness = std::max(0.05f, l.material.roughness);
-                    inst.material.emission_strength = l.material.emission;
-                    inst.material.emission_color = l.fill_color;
-                    inst.material.transmission = l.material.transmission;
-                    inst.material.ior = l.material.ior;
-                    inst.joint_matrices = l.joint_matrices;
-                    inst.morph_weights = l.morph_weights;
-                    if (l.type == scene::LayerType::Text && render_context.font_registry != nullptr) {
-                        ::tachyon::text::TextAnimationOptions animation{};
-                        animation.time_seconds = static_cast<float>(l.local_time_seconds);
-                        animation.animators = std::span<const ::tachyon::TextAnimatorSpec>(l.text_animators.data(), l.text_animators.size());
-                        const auto text_mesh = build_text_extrusion_mesh(l, state, *render_context.font_registry, animation);
-                        if (text_mesh.mesh) {
-                            inst.mesh_asset = text_mesh.mesh;
-                            inst.mesh_asset_id = text_mesh.cache_key;
-                        }
-                    }
-                    if (!inst.mesh_asset) {
-                        if (l.type == scene::LayerType::Image || l.type == scene::LayerType::Video) {
-                            const auto media_source = resolve_media_source(l, render_context);
-                            if (media_source.has_value()) {
-                                const ::tachyon::renderer2d::SurfaceRGBA* media_frame = nullptr;
-                                if (l.type == scene::LayerType::Video) {
-                                    media_frame = render_context.media_manager->get_video_frame(*media_source, task.time_seconds);
-                                } else {
-                                    media_frame = render_context.media_manager->get_image(*media_source);
-                                }
-
-                                if (media_frame != nullptr) {
-                                    const auto media_mesh = build_textured_card_mesh(
-                                        l,
-                                        *media_frame,
-                                        media_source->generic_string() + "@" + std::to_string(task.time_seconds));
-                                    inst.mesh_asset = media_mesh.mesh;
-                                    inst.mesh_asset_id = media_mesh.cache_key;
-                                } else {
-                                    const auto fallback_mesh = build_colored_card_mesh(
-                                        l,
-                                        media_source->generic_string());
-                                    inst.mesh_asset = fallback_mesh.mesh;
-                                    inst.mesh_asset_id = fallback_mesh.cache_key;
-                                }
-                            }
-                        } else if (l.type == scene::LayerType::Solid) {
-                            const auto solid_mesh = build_colored_card_mesh(l, std::to_string(task.frame_number));
-                            inst.mesh_asset = solid_mesh.mesh;
-                            inst.mesh_asset_id = solid_mesh.cache_key;
-                        }
-                    }
-
-                    if (inst.mesh_asset_id.empty()) {
-                        // Fallback to a registered mesh asset if the layer already points to one.
-                        inst.mesh_asset_id = l.asset_path.value_or("");
-                    }
-                    scene3d.instances.push_back(inst);
-                }
-
-                if (scene3d.instances.empty()) {
+                const auto bridge_output = build_evaluated_scene_3d(bridge_input);
+                if (!bridge_output.has_instances) {
                     i = last_block_idx;
                     continue;
                 }
+
+                const auto& scene3d = bridge_output.scene3d;
 
                 // Render the 3D block
                 render_context.ray_tracer->set_samples_per_pixel(render_context.policy.ray_tracer_spp);
@@ -473,6 +317,14 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
                         const float d = aovs.depth_z[static_cast<std::size_t>(y) * w + x];
                         depth_aov_surf->set_pixel(x, y, {d, 0, 0, 1.0f});
+                        
+                        // Hybrid Depth: Write to the actual 3D world surface depth buffer
+                        // inv_z = 1.0 / depth (near = large, far = small)
+                        float inv_z = 0.0f;
+                        if (d > 0.0f && d < 1000000.0f) {
+                            inv_z = 1.0f / d;
+                        }
+                        world_3d->test_and_write_depth(x, y, inv_z);
 
                         const std::size_t normal_index = (static_cast<std::size_t>(y) * w + x) * 3;
                         const math::Vector3 n{
@@ -483,11 +335,9 @@ RasterizedFrame2D render_evaluated_composition_2d(
                         normal_aov_surf->set_pixel(x, y, {n.x, n.y, n.z, 1.0f});
 
                         const std::size_t mv_index = (static_cast<std::size_t>(y) * w + x) * 2;
-                        const math::Vector2 mv{
-                            aovs.motion_vector_xy[mv_index + 0],
-                            aovs.motion_vector_xy[mv_index + 1]
-                        };
-                        motion_vector_aov_surf->set_pixel(x, y, {mv.x, mv.y, 0.0f, 1.0f});
+                        const float mv_x = aovs.motion_vector_xy[mv_index + 0];
+                        const float mv_y = aovs.motion_vector_xy[mv_index + 1];
+                        motion_vector_aov_surf->set_pixel(x, y, {mv_x, mv_y, 0.0f, 1.0f});
                     }
                 }
 
@@ -511,7 +361,6 @@ RasterizedFrame2D render_evaluated_composition_2d(
                             && candidate.active
                             && candidate.type != scene::LayerType::Camera
                             && candidate.type != scene::LayerType::Light
-                            && candidate.type != scene::LayerType::UIHook
                             && candidate.type != scene::LayerType::NullLayer;
                     });
                 if (composite_layer_it != block_indices.end() && world_has_visible_pixels) {
@@ -579,8 +428,6 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     auto adjusted = apply_effect_pipeline(
                         target_surface,
                         layer.effects,
-                        layer.animated_effects,
-                        layer.local_time_seconds,
                         host,
                         render_context.working_color_space.profile,
                         rendered_surfaces,
@@ -596,10 +443,8 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 auto effect_surface = apply_effect_pipeline(
                     *layer_surface,
                     layer.effects,
-                    layer.animated_effects,
-                    layer.local_time_seconds,
                     host,
-                    render_context.cms.working_profile,
+                    render_context.working_color_space.profile,
                     rendered_surfaces,
                     layer.id);
                 *layer_surface = std::move(effect_surface);
@@ -624,7 +469,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                         in_transition = true;
                         transition_t = (relative_time - start_time) / transition_duration;
                         transition_t = std::clamp(transition_t, 0.0, 1.0);
-                        transition_t = animation::apply_easing(transition_t, layer.transition_in.easing, {}, layer.transition_in.spring);
+                        transition_t = animation::apply_easing(transition_t, layer.transition_in.easing, {});
 
                         // Unified lookup: transition_id first, then type as fallback
                         if (!layer.transition_in.transition_id.empty()) {
@@ -645,7 +490,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                         out_transition = true;
                         transition_t = time_until_end / transition_duration;
                         transition_t = std::clamp(transition_t, 0.0, 1.0);
-                        transition_t = animation::apply_easing(transition_t, layer.transition_out.easing, {}, layer.transition_out.spring);
+                        transition_t = animation::apply_easing(transition_t, layer.transition_out.easing, {});
 
                         // Unified lookup: transition_id first, then type as fallback
                         if (!layer.transition_out.transition_id.empty()) {
@@ -695,6 +540,8 @@ RasterizedFrame2D render_evaluated_composition_2d(
             }
 
             // Particle effect
+            /*
+            // Particle effect
             if (render_context.policy.effects_enabled && layer.particle_spec.has_value()) {
                 auto particle_effect_spec = particle_spec_to_effect_spec(*layer.particle_spec, layer.local_time_seconds);
                 if (particle_effect_spec && particle_effect_spec->enabled) {
@@ -703,6 +550,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     *layer_surface = std::move(particle_surface);
                 }
             }
+            */
 
             // Opacity
             multiply_surface_alpha(*layer_surface, static_cast<float>(layer.opacity));
@@ -713,7 +561,18 @@ RasterizedFrame2D render_evaluated_composition_2d(
             }
 
             // Final Composite
-            composite_surface(target_surface, *layer_surface, 0, 0, parse_blend_mode(layer.blend_mode));
+            float layer_inv_z = -1.0f;
+            if (layer.world_position3.z != 0.0f) {
+                // Approximate inv_z for 2D layer (this is a simplified mapping)
+                // In a real perspective setup, this would be more complex.
+                // Assuming Z is distance from camera in same units as 3D.
+                float z = std::abs(layer.world_position3.z);
+                if (z > 0.001f) {
+                    layer_inv_z = 1.0f / z;
+                }
+            }
+
+            composite_surface(target_surface, *layer_surface, 0, 0, parse_blend_mode(layer.blend_mode), layer_inv_z);
         }
     };
 

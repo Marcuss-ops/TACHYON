@@ -78,9 +78,9 @@ LayerSpec make_bg_layer(const SceneParams& s) {
 LayerSpec build_text_fade_up(const TextParams& p) {
     auto l = make_text_layer_base(p);
     l.text_animators = {
-        text::make_minimal_fade_up_animator("characters_excluding_spaces", p.reveal_duration, 12.0),
-        text::make_blur_to_focus_animator("characters_excluding_spaces", p.reveal_duration, 8.0),
-        text::make_soft_scale_in_animator("characters_excluding_spaces", p.reveal_duration, 0.95),
+        ::tachyon::text::make_minimal_fade_up_animator("characters_excluding_spaces", p.reveal_duration, 12.0),
+        ::tachyon::text::make_blur_to_focus_animator("characters_excluding_spaces", p.reveal_duration, 8.0),
+        ::tachyon::text::make_soft_scale_in_animator("characters_excluding_spaces", p.reveal_duration, 0.95),
     };
     return l;
 }
@@ -88,7 +88,7 @@ LayerSpec build_text_fade_up(const TextParams& p) {
 LayerSpec build_text_blur_to_focus(const TextParams& p) {
     auto l = make_text_layer_base(p);
     l.text_animators = {
-        text::make_blur_to_focus_animator("characters_excluding_spaces", p.reveal_duration, 8.0),
+        ::tachyon::text::make_blur_to_focus_animator("characters_excluding_spaces", p.reveal_duration, 8.0),
     };
     return l;
 }
@@ -96,7 +96,7 @@ LayerSpec build_text_blur_to_focus(const TextParams& p) {
 LayerSpec build_text_typewriter(const TextParams& p) {
     auto l = make_text_layer_base(p);
     l.text_animators = {
-        text::make_typewriter_minimal_animator(20.0, false),
+        ::tachyon::text::make_typewriter_minimal_animator(20.0, false),
     };
     return l;
 }
@@ -104,7 +104,7 @@ LayerSpec build_text_typewriter(const TextParams& p) {
 LayerSpec build_text_slide_in(const TextParams& p) {
     auto l = make_text_layer_base(p);
     l.text_animators = {
-        text::make_slide_in_animator("characters_excluding_spaces", p.stagger_delay, 28.0, p.reveal_duration),
+        ::tachyon::text::make_slide_in_animator("characters_excluding_spaces", p.stagger_delay, 28.0, p.reveal_duration),
     };
     return l;
 }
@@ -112,7 +112,7 @@ LayerSpec build_text_slide_in(const TextParams& p) {
 LayerSpec build_text_tracking_reveal(const TextParams& p) {
     auto l = make_text_layer_base(p);
     l.text_animators = {
-        text::make_tracking_reveal_animator("characters_excluding_spaces", p.reveal_duration, 40.0),
+        ::tachyon::text::make_tracking_reveal_animator("characters_excluding_spaces", p.reveal_duration, 40.0),
     };
     return l;
 }
@@ -120,7 +120,7 @@ LayerSpec build_text_tracking_reveal(const TextParams& p) {
 LayerSpec build_text_outline_to_solid(const TextParams& p) {
     auto l = make_text_layer_base(p);
     l.text_animators = {
-        text::make_outline_to_solid_animator("characters_excluding_spaces", p.reveal_duration, 1.0),
+        ::tachyon::text::make_outline_to_solid_animator("characters_excluding_spaces", p.reveal_duration, 1.0),
     };
     return l;
 }
@@ -128,7 +128,7 @@ LayerSpec build_text_outline_to_solid(const TextParams& p) {
 LayerSpec build_text_number_flip(const TextParams& p) {
     auto l = make_text_layer_base(p);
     l.text_animators = {
-        text::make_number_flip_minimal_animator("characters", p.reveal_duration),
+        ::tachyon::text::make_number_flip_minimal_animator("characters", p.reveal_duration),
     };
     return l;
 }
@@ -136,7 +136,7 @@ LayerSpec build_text_number_flip(const TextParams& p) {
 LayerSpec build_text_word_by_word(const TextParams& p) {
     auto l = make_text_layer_base(p);
     l.text_animators = {
-        text::make_word_by_word_opacity_animator(p.stagger_delay, p.reveal_duration),
+        ::tachyon::text::make_word_by_word_opacity_animator(p.stagger_delay, p.reveal_duration),
     };
     return l;
 }
@@ -144,7 +144,7 @@ LayerSpec build_text_word_by_word(const TextParams& p) {
 LayerSpec build_text_split_line(const TextParams& p) {
     auto l = make_text_layer_base(p);
     l.text_animators = {
-        text::make_split_line_stagger_animator(p.stagger_delay, p.reveal_duration),
+        ::tachyon::text::make_split_line_stagger_animator(p.stagger_delay, p.reveal_duration),
     };
     return l;
 }
@@ -152,7 +152,7 @@ LayerSpec build_text_split_line(const TextParams& p) {
 LayerSpec build_text_soft_scale(const TextParams& p) {
     auto l = make_text_layer_base(p);
     l.text_animators = {
-        text::make_soft_scale_in_animator("characters_excluding_spaces", p.reveal_duration, 0.95),
+        ::tachyon::text::make_soft_scale_in_animator("characters_excluding_spaces", p.reveal_duration, 0.95),
     };
     return l;
 }
@@ -160,7 +160,7 @@ LayerSpec build_text_soft_scale(const TextParams& p) {
 LayerSpec build_text_curtain_box(const TextParams& p) {
     auto l = make_text_layer_base(p);
     l.text_animators = {
-        text::make_curtain_box_minimal_animator("characters_excluding_spaces", p.reveal_duration),
+        ::tachyon::text::make_curtain_box_minimal_animator("characters_excluding_spaces", p.reveal_duration),
     };
     return l;
 }
@@ -168,7 +168,7 @@ LayerSpec build_text_curtain_box(const TextParams& p) {
 LayerSpec build_text_fill_wipe(const TextParams& p) {
     auto l = make_text_layer_base(p);
     l.text_animators = {
-        text::make_fill_wipe_animator("characters_excluding_spaces", p.reveal_duration),
+        ::tachyon::text::make_fill_wipe_animator("characters_excluding_spaces", p.reveal_duration),
     };
     return l;
 }
@@ -176,7 +176,7 @@ LayerSpec build_text_fill_wipe(const TextParams& p) {
 LayerSpec build_text_slide_mask(const TextParams& p) {
     auto l = make_text_layer_base(p);
     l.text_animators = {
-        text::make_slide_mask_left_animator("characters_excluding_spaces", p.reveal_duration),
+        ::tachyon::text::make_slide_mask_left_animator("characters_excluding_spaces", p.reveal_duration),
     };
     return l;
 }
@@ -184,8 +184,8 @@ LayerSpec build_text_slide_mask(const TextParams& p) {
 LayerSpec build_text_kinetic(const TextParams& p) {
     auto l = make_text_layer_base(p);
     l.text_animators = {
-        text::make_kinetic_blur_animator(200.0, p.reveal_duration),
-        text::make_tracking_reveal_animator("characters_excluding_spaces", p.reveal_duration, 40.0),
+        ::tachyon::text::make_kinetic_blur_animator(200.0, p.reveal_duration),
+        ::tachyon::text::make_tracking_reveal_animator("characters_excluding_spaces", p.reveal_duration, 40.0),
     };
     return l;
 }
@@ -193,7 +193,7 @@ LayerSpec build_text_kinetic(const TextParams& p) {
 LayerSpec build_text_pop(const TextParams& p) {
     auto l = make_text_layer_base(p);
     l.text_animators = {
-        text::make_pop_in_animator("characters", p.stagger_delay, 18.0, p.reveal_duration),
+        ::tachyon::text::make_pop_in_animator("characters", p.stagger_delay, 18.0, p.reveal_duration),
     };
     return l;
 }
@@ -201,7 +201,7 @@ LayerSpec build_text_pop(const TextParams& p) {
 LayerSpec build_text_y_rotate(const TextParams& p) {
     auto l = make_text_layer_base(p);
     l.text_animators = {
-        text::make_subtle_y_rotate_animator("characters_excluding_spaces", p.reveal_duration, 5.0),
+        ::tachyon::text::make_subtle_y_rotate_animator("characters_excluding_spaces", p.reveal_duration, 5.0),
     };
     return l;
 }
@@ -209,7 +209,7 @@ LayerSpec build_text_y_rotate(const TextParams& p) {
 LayerSpec build_text_morphing(const TextParams& p) {
     auto l = make_text_layer_base(p);
     l.text_animators = {
-        text::make_morphing_words_animator(p.reveal_duration),
+        ::tachyon::text::make_morphing_words_animator(p.reveal_duration),
     };
     return l;
 }
@@ -217,7 +217,7 @@ LayerSpec build_text_morphing(const TextParams& p) {
 LayerSpec build_text_underline(const TextParams& p) {
     auto l = make_text_layer_base(p);
     l.text_animators = {
-        text::make_underline_draw_animator("words", p.reveal_duration, 2.0),
+        ::tachyon::text::make_underline_draw_animator("words", p.reveal_duration, 2.0),
     };
     return l;
 }
@@ -227,9 +227,9 @@ LayerSpec build_text_brushed_metal_title(const TextParams& p) {
     // Metallic look: Silver/Steel colors
     l.fill_color = AnimatedColorSpec(ColorSpec{192, 192, 200, 255});
     l.text_animators = {
-        text::make_tracking_reveal_animator("characters_excluding_spaces", p.reveal_duration, 40.0),
-        text::make_blur_to_focus_animator("characters_excluding_spaces", p.reveal_duration, 12.0),
-        text::make_minimal_fade_up_animator("characters_excluding_spaces", p.reveal_duration, 20.0),
+        ::tachyon::text::make_tracking_reveal_animator("characters_excluding_spaces", p.reveal_duration, 40.0),
+        ::tachyon::text::make_blur_to_focus_animator("characters_excluding_spaces", p.reveal_duration, 12.0),
+        ::tachyon::text::make_minimal_fade_up_animator("characters_excluding_spaces", p.reveal_duration, 20.0),
     };
     return l;
 }
@@ -239,6 +239,13 @@ LayerSpec build_text_brushed_metal_title(const TextParams& p) {
 // ---------------------------------------------------------------------------
 
 LayerSpec build_text(const TextParams& p) {
+    // If typed animators are provided via fluent API, use them directly
+    if (!p.animations.empty()) {
+        LayerSpec l = make_text_layer_base(p);
+        l.text_animators = p.animations;
+        return l;
+    }
+    
     if (p.animation == "blur_to_focus")    return build_text_blur_to_focus(p);
     if (p.animation == "typewriter")       return build_text_typewriter(p);
     if (p.animation == "slide_in")         return build_text_slide_in(p);
@@ -256,7 +263,7 @@ LayerSpec build_text(const TextParams& p) {
     if (p.animation == "y_rotate")         return build_text_y_rotate(p);
     if (p.animation == "morphing")         return build_text_morphing(p);
     if (p.animation == "underline")        return build_text_underline(p);
-    if (p.animation == "brushed_metal")    return build_text_brushed_metal_title(p);
+    if (p.animation == "brushedMetal")    return build_text_brushed_metal_title(p);
     return build_text_fade_up(p);
 }
 

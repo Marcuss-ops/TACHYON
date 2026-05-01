@@ -8,11 +8,13 @@
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include "tachyon/core/spec/schema/common/common_spec.h"
 #include "tachyon/core/spec/schema/assets/asset_spec.h"
+#include "tachyon/core/spec/schema/objects/background_spec.h"
 #include "tachyon/core/spec/schema/properties/property_spec.h"
 #include "tachyon/core/spec/schema/transform/transform_spec.h"
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 #include "tachyon/core/spec/schema/objects/composition_spec.h"
+#include "tachyon/core/spec/schema/assets/asset_spec.h"
 #include "tachyon/text/fonts/font_manifest.h"
 
 #include <filesystem>
@@ -64,9 +66,7 @@ struct SchemaVersion {
 };
 
 struct SceneSpec {
-    SchemaVersion schema_version{1, 0, 0};  ///< Schema version for migration support
-    std::string version{"1.0"};              ///< Legacy version field (deprecated)
-    std::string spec_version{"1.0.0"};       ///< Legacy spec version (deprecated)
+    SchemaVersion schema_version{1, 0, 0};
     ProjectSpec project;
     std::vector<CompositionSpec> compositions;
     std::vector<AssetSpec> assets;
@@ -91,7 +91,7 @@ public:
     SceneSpecBuilder& AddComposition(
         std::string id, std::string name, std::int64_t width,
         std::int64_t height, double duration, std::optional<std::int64_t> fps,
-        std::optional<std::string> background = std::nullopt);
+        std::optional<BackgroundSpec> background = std::nullopt);
 
     SceneSpec Build() &&;
 

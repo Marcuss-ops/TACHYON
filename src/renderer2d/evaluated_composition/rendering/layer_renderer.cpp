@@ -43,33 +43,35 @@ float sample_glyph_alpha(const ::tachyon::text::GlyphBitmap& glyph, float src_x,
 
     const float max_x = static_cast<float>(glyph.width - 1U);
     const float max_y = static_cast<float>(glyph.height - 1U);
-    src_x = std::clamp(src_x, 0.0f, max_x);
-    src_y = std::clamp(src_y, 0.0f, max_y);
+    
+    // Fast clamping
+    src_x = src_x < 0.0f ? 0.0f : (src_x > max_x ? max_x : src_x);
+    src_y = src_y < 0.0f ? 0.0f : (src_y > max_y ? max_y : src_y);
 
-    const std::uint32_t x0 = static_cast<std::uint32_t>(std::floor(src_x));
-    const std::uint32_t y0 = static_cast<std::uint32_t>(std::floor(src_y));
-    const std::uint32_t x1 = std::min(x0 + 1U, glyph.width - 1U);
-    const std::uint32_t y1 = std::min(y0 + 1U, glyph.height - 1U);
+    const std::uint32_t x0 = static_cast<std::uint32_t>(src_x);
+    const std::uint32_t y0 = static_cast<std::uint32_t>(src_y);
+    const std::uint32_t x1 = (x0 + 1U < glyph.width) ? x0 + 1U : x0;
+    const std::uint32_t y1 = (y0 + 1U < glyph.height) ? y0 + 1U : y0;
 
     const float fx = src_x - static_cast<float>(x0);
     const float fy = src_y - static_cast<float>(y0);
 
-    auto alpha_at = [&](std::uint32_t x, std::uint32_t y) -> float {
-        const std::size_t index = static_cast<std::size_t>(y) * glyph.width + x;
-        if (index >= glyph.alpha_mask.size()) {
-            return 0.0f;
-        }
-        return static_cast<float>(glyph.alpha_mask[index]) / 255.0f;
-    };
+    const std::uint8_t* mask = glyph.alpha_mask.data();
+    const std::size_t stride = glyph.width;
+    
+    const std::size_t idx00 = static_cast<std::size_t>(y0) * stride + x0;
+    const std::size_t idx10 = static_cast<std::size_t>(y0) * stride + x1;
+    const std::size_t idx01 = static_cast<std::size_t>(y1) * stride + x0;
+    const std::size_t idx11 = static_cast<std::size_t>(y1) * stride + x1;
 
-    const float a00 = alpha_at(x0, y0);
-    const float a10 = alpha_at(x1, y0);
-    const float a01 = alpha_at(x0, y1);
-    const float a11 = alpha_at(x1, y1);
+    const float a00 = static_cast<float>(mask[idx00]);
+    const float a10 = static_cast<float>(mask[idx10]);
+    const float a01 = static_cast<float>(mask[idx01]);
+    const float a11 = static_cast<float>(mask[idx11]);
 
     const float ax0 = a00 + (a10 - a00) * fx;
     const float ax1 = a01 + (a11 - a01) * fx;
-    return ax0 + (ax1 - ax0) * fy;
+    return (ax0 + (ax1 - ax0) * fy) * 0.00392156862f; // / 255.0f
 }
 
 std::optional<::tachyon::text::TextHighlightSpan> word_index_to_highlight_span(
@@ -184,8 +186,10 @@ PathGeometry build_shape_geometry(
             cmd.p1.y -= static_cast<float>(target_rect->y);
             cmd.p2.x -= static_cast<float>(target_rect->x);
             cmd.p2.y -= static_cast<float>(target_rect->y);
-}
+        }
     }
+
+    return geom;
 }
 
 std::shared_ptr<SurfaceRGBA> render_mask_layer_surface(
@@ -315,8 +319,8 @@ std::shared_ptr<SurfaceRGBA> render_text_layer_surface(
         
         int x = static_cast<int>(std::round(tl.x));
         int y = static_cast<int>(std::round(tl.y));
-        int w = static_cast<int>(std::round(br.x - tl.x));
-        int h = static_cast<int>(std::round(br.y - tl.y));
+        int box_w = static_cast<int>(std::round(br.x - tl.x));
+        int box_h = static_cast<int>(std::round(br.y - tl.y));
         
         if (target_rect) {
             x -= target_rect->x;
@@ -327,11 +331,11 @@ std::shared_ptr<SurfaceRGBA> render_text_layer_surface(
         Color bg_color = bg.fill_color;
         bg_color.a *= static_cast<float>(layer.opacity);
         
-        if (w > 0 && h > 0) {
+        if (box_w > 0 && box_h > 0) {
             PathGeometry bg_geom;
             // Add axis-aligned rectangle (simplified, no rounded corners for now)
             math::RectF rect(static_cast<float>(x), static_cast<float>(y), 
-                             static_cast<float>(w), static_cast<float>(h));
+                             static_cast<float>(box_w), static_cast<float>(box_h));
             bg_geom.commands.push_back({PathVerb::MoveTo, {rect.x, rect.y}, {}, {}});
             bg_geom.commands.push_back({PathVerb::LineTo, {rect.x + rect.width, rect.y}, {}, {}});
             bg_geom.commands.push_back({PathVerb::LineTo, {rect.x + rect.width, rect.y + rect.height}, {}, {}});

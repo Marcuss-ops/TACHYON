@@ -38,6 +38,7 @@ void composite_surface(
     const renderer2d::SurfaceRGBA& src,
     int offset_x,
     int offset_y,
-    renderer2d::BlendMode blend_mode);
+    renderer2d::BlendMode blend_mode,
+    float constant_src_depth = -1.0f); // if >= 0, uses this depth for all pixels
 
 } // namespace tachyon

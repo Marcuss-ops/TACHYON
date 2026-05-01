@@ -159,10 +159,13 @@ bool run_golden_visual_tests();
 // bool run_audio_pitch_correct_tests();  // Disabled - test_audio_pitch_correct.cpp commented out
 namespace tachyon { bool run_tiling_tests(); }
 bool run_optical_flow_tests();
+bool run_scene3d_bridge_tests();
+bool run_native_render_tests();
 
 
 int main(int argc, char** argv) {
     std::vector<TestCase> tests = {
+        {"native_render", run_native_render_tests},
         {"math", run_math_tests},
         {"property", run_property_tests},
         {"expression", run_expression_tests},

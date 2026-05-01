@@ -10,7 +10,7 @@ TEST(SceneBuilder, BasicComposition) {
         .size(1920, 1080)
         .fps(60)
         .duration(10.0)
-        .background("#ff0000")
+        .background(BackgroundSpec::from_string("#ff0000"))
         .layer("bg", [](LayerBuilder& l) {
             l.type("solid").color(ColorSpec(255, 0, 0, 255));
         })
@@ -24,6 +24,7 @@ TEST(SceneBuilder, BasicComposition) {
     EXPECT_EQ(comp.duration, 10.0);
     EXPECT_EQ(comp.frame_rate.numerator, 60);
     ASSERT_TRUE(comp.background.has_value());
+    EXPECT_EQ(comp.background->type, BackgroundType::Color);
     EXPECT_EQ(comp.background->value, "#ff0000");
 
     ASSERT_EQ(comp.layers.size(), 1);
@@ -96,6 +97,7 @@ TEST(SceneBuilder, RoundTrip) {
         .build_scene();
 
     std::string json_text = R"({
+        "schema_version": "1.0.0",
         "project": { "id": "", "name": "", "authoring_tool": "" },
         "compositions": [
             {

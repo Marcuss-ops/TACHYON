@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <span>
 
 namespace tachyon::renderer2d {
 namespace {
@@ -26,21 +27,33 @@ namespace {
 std::uint64_t hash_animators(std::span<const ::tachyon::TextAnimatorSpec> animators) {
     std::uint64_t seed = 0;
     for (const auto& anim : animators) {
-        // Hash name
+        // Hash identity and selector state so cache keys stay stable when text animation changes.
         seed = ::tachyon::scene::hash_combine(seed, ::tachyon::scene::stable_string_hash(anim.name));
         // Hash selector properties
         seed = ::tachyon::scene::hash_combine(seed, ::tachyon::scene::stable_string_hash(anim.selector.type));
         seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(anim.selector.start * 1000.0)));
         seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(anim.selector.end * 1000.0)));
         seed = ::tachyon::scene::hash_combine(seed, ::tachyon::scene::stable_string_hash(anim.selector.expression.value_or("")));
+        seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(anim.selector.start_index.value_or(0)));
+        seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(anim.selector.end_index.value_or(0)));
+        seed = ::tachyon::scene::hash_combine(seed, ::tachyon::scene::stable_string_hash(anim.selector.based_on));
+        seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(anim.selector.random_order ? 1 : 0));
+        seed = ::tachyon::scene::hash_combine(seed, ::tachyon::scene::stable_string_hash(anim.selector.stagger_mode));
+        seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(anim.selector.stagger_delay * 1000.0)));
         seed = ::tachyon::scene::hash_combine(seed, ::tachyon::scene::stable_string_hash(anim.selector.shape));
-        seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(anim.selector.stagger_mode == "none" ? 0 : 1));
+        seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(anim.selector.offset * 1000.0)));
+        seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(anim.selector.ease_high * 1000.0)));
+        seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(anim.selector.ease_low * 1000.0)));
         // Hash property keyframe count (captures animation changes)
         seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(anim.properties.opacity_keyframes.size()));
         seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(anim.properties.position_offset_keyframes.size()));
         seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(anim.properties.scale_keyframes.size()));
         seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(anim.properties.rotation_keyframes.size()));
         seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(anim.properties.fill_color_keyframes.size()));
+        seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(anim.properties.stroke_color_keyframes.size()));
+        seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(anim.properties.stroke_width_keyframes.size()));
+        seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(anim.properties.blur_radius_keyframes.size()));
+        seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(anim.properties.reveal_keyframes.size()));
     }
     return seed;
 }
@@ -102,16 +115,16 @@ TextMeshBuildResult build_text_extrusion_mesh(
     seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(layer.font_size * 1000.0f)));
     seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(layer.extrusion_depth * 1000.0f)));
     seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(layer.bevel_size * 1000.0f)));
-    seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(layer.hole_bevel_ratio * 1000.0f)));
     seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(layer.text_alignment));
     seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(box.width));
     seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(box.height));
     seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(animation.time_seconds * 1000.0f)));
-    seed = ::tachyon::scene::hash_combine(seed, hash_animators(animation.animators));
+    const std::uint64_t anim_hash = hash_animators(animation.animators);
+    seed = ::tachyon::scene::hash_combine(seed, anim_hash);
     result.cache_key = "text3d:" + layer.id + ":" + std::to_string(seed);
 
     ::tachyon::text::TextLayoutResult animated_layout = layout;
-    ::tachyon::text::apply_text_animators(animated_layout, animation.animators, animation);
+    ::tachyon::text::apply_text_animators(animated_layout, animation);
 
     for (const auto& glyph : animated_layout.glyphs) {
         const auto glyph_paths = ::tachyon::text::OutlineExtractor::extract_glyph_outline(
@@ -140,7 +153,8 @@ TextMeshBuildResult build_text_extrusion_mesh(
         };
         submesh.material.roughness_factor = 0.45f;
         submesh.material.metallic_factor = 0.0f;
-        const float opacity_factor = std::clamp(glyph.opacity * glyph.reveal_factor, 0.0f, 1.0f);
+        const float opacity_raw = static_cast<float>(glyph.opacity * glyph.reveal_factor);
+        const float opacity_factor = opacity_raw < 0.0f ? 0.0f : (opacity_raw > 1.0f ? 1.0f : opacity_raw);
         submesh.material.base_color_factor = {
             submesh.material.base_color_factor.x * opacity_factor,
             submesh.material.base_color_factor.y * opacity_factor,

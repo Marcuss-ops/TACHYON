@@ -2,6 +2,7 @@
 #include "tachyon/media/loading/mesh_asset.h"
 
 #include <cstring>
+#include <limits>
 
 namespace tachyon::renderer3d {
 
@@ -60,6 +61,9 @@ void SceneCache::update_composition(const scene::EvaluatedCompositionState& stat
 
     hash_state_.mesh_hash = 0;
     hash_state_.transform_hash = 0;
+
+    composition_bounds_min_ = { std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
+    composition_bounds_max_ = { -std::numeric_limits<float>::max(), -std::numeric_limits<float>::max(), -std::numeric_limits<float>::max() };
 
     for (std::size_t i = 0; i < state.layers.size(); ++i) {
         const auto& layer = state.layers[i];

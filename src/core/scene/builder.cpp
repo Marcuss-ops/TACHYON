@@ -7,7 +7,7 @@ namespace tachyon::scene {
 namespace anim {
 
 AnimatedScalarSpec scalar(double v) {
-    return AnimatedScalarSpec(v);
+    return AnimatedScalarSpec{v};
 }
 
 AnimatedScalarSpec lerp(double from, double to, double duration, animation::EasingPreset ease) {
@@ -85,7 +85,10 @@ LayerBuilder& TransitionBuilder::done() {
 // LayerBuilder implementation
 LayerBuilder::LayerBuilder(std::string id) {
     spec_.id = std::move(id);
+    spec_.name = spec_.id;
 }
+
+LayerBuilder::LayerBuilder(LayerSpec spec) : spec_(std::move(spec)) {}
 
 LayerBuilder& LayerBuilder::type(std::string t) {
     spec_.type = std::move(t);
@@ -103,7 +106,7 @@ LayerBuilder& LayerBuilder::font(std::string f) {
 }
 
 LayerBuilder& LayerBuilder::font_size(double sz) {
-    spec_.font_size = AnimatedScalarSpec(sz);
+    spec_.font_size = anim::scalar(sz);
     return *this;
 }
 
@@ -119,7 +122,7 @@ LayerBuilder& LayerBuilder::out(double t) {
 
 LayerBuilder& LayerBuilder::opacity(double v) {
     spec_.opacity = v;
-    spec_.opacity_property = AnimatedScalarSpec(v);
+    spec_.opacity_property = anim::scalar(v);
     return *this;
 }
 
@@ -129,24 +132,143 @@ LayerBuilder& LayerBuilder::opacity(AnimatedScalarSpec anim_spec) {
 }
 
 LayerBuilder& LayerBuilder::position(double x, double y) {
-    spec_.transform.position_property.value = math::Vector2{static_cast<float>(x), static_cast<float>(y)};
+    spec_.transform.position_property.value = math::Vector2(static_cast<float>(x), static_cast<float>(y));
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::size(double w, double h) {
+    spec_.width = static_cast<int>(w);
+    spec_.height = static_cast<int>(h);
     return *this;
 }
 
 LayerBuilder& LayerBuilder::color(const ColorSpec& c) {
-    spec_.fill_color = AnimatedColorSpec(c);
+    spec_.fill_color.value = c;
     return *this;
 }
 
-LayerBuilder& LayerBuilder::mesh(std::string path) {
+LayerBuilder& LayerBuilder::fill_color(const ColorSpec& c) {
+    spec_.fill_color.value = c;
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::stroke_color(const ColorSpec& c) {
+    spec_.stroke_color.value = c;
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::stroke_width(double w) {
+    spec_.stroke_width = w;
+    spec_.stroke_width_property = anim::scalar(w);
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::text_animator(const TextAnimatorSpec& anim) {
+    spec_.text_animators.push_back(anim);
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::text_animators(std::vector<TextAnimatorSpec> anims) {
+    spec_.text_animators.insert(spec_.text_animators.end(), anims.begin(), anims.end());
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::text_highlight(const TextHighlightSpec& hl) {
+    spec_.text_highlights.push_back(hl);
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::text_highlights(std::vector<TextHighlightSpec> hls) {
+    spec_.text_highlights.insert(spec_.text_highlights.end(), hls.begin(), hls.end());
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::subtitle_path(std::string path) {
+    spec_.subtitle_path = std::move(path);
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::position3d(double x, double y, double z) {
     spec_.is_3d = true;
-    spec_.type = "mesh";
-    this->prop("mesh_path", path);
+    spec_.transform3d.position_property.value = math::Vector3(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z));
     return *this;
 }
 
-LayerBuilder& LayerBuilder::prop(std::string key, nlohmann::json val) {
-    spec_.input_props[std::move(key)] = std::move(val);
+LayerBuilder& LayerBuilder::rotation3d(double x, double y, double z) {
+    spec_.is_3d = true;
+    spec_.transform3d.rotation_property.value = math::Vector3(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z));
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::scale3d(double x, double y, double z) {
+    spec_.is_3d = true;
+    spec_.transform3d.scale_property.value = math::Vector3(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z));
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::is_3d(bool v) {
+    spec_.is_3d = v;
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::camera_type(std::string t) {
+    spec_.kind = LayerType::Camera;
+    spec_.camera_type = std::move(t);
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::camera_poi(double x, double y, double z) {
+    spec_.kind = LayerType::Camera;
+    spec_.camera_poi.value = math::Vector3(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z));
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::camera_zoom(double z) {
+    spec_.kind = LayerType::Camera;
+    spec_.camera_zoom = anim::scalar(z);
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::light_type(std::string t) {
+    spec_.kind = LayerType::Light;
+    spec_.light_type = std::move(t);
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::light_color(const ColorSpec& c) {
+    spec_.kind = LayerType::Light;
+    spec_.light_color.value = c;
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::light_intensity(double i) {
+    spec_.kind = LayerType::Light;
+    spec_.light_intensity = anim::scalar(i);
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::casts_shadows(bool v) {
+    spec_.casts_shadows = v;
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::shadow_radius(double r) {
+    spec_.shadow_radius = anim::scalar(r);
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::transmission(double v) {
+    spec_.transmission = anim::scalar(v);
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::ior(double v) {
+    spec_.ior = anim::scalar(v);
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::emission_strength(double v) {
+    spec_.emission_strength = anim::scalar(v);
     return *this;
 }
 
@@ -172,17 +294,17 @@ LayerSpec LayerBuilder::build() const & {
 }
 
 MaterialBuilder& MaterialBuilder::base_color(const ColorSpec& c) {
-    parent_.spec_.fill_color = AnimatedColorSpec(c);
+    parent_.spec_.fill_color.value = c;
     return *this;
 }
 
 MaterialBuilder& MaterialBuilder::metallic(double v) {
-    parent_.spec_.metallic = AnimatedScalarSpec(v);
+    parent_.spec_.metallic = anim::scalar(v);
     return *this;
 }
 
 MaterialBuilder& MaterialBuilder::roughness(double v) {
-    parent_.spec_.roughness = AnimatedScalarSpec(v);
+    parent_.spec_.roughness = anim::scalar(v);
     return *this;
 }
 
@@ -193,6 +315,7 @@ LayerBuilder& MaterialBuilder::done() {
 // CompositionBuilder implementation
 CompositionBuilder::CompositionBuilder(std::string id) {
     spec_.id = std::move(id);
+    spec_.name = spec_.id;
 }
 
 CompositionBuilder& CompositionBuilder::size(int w, int h) {
@@ -213,13 +336,52 @@ CompositionBuilder& CompositionBuilder::duration(double d) {
     return *this;
 }
 
-CompositionBuilder& CompositionBuilder::background(std::string color_or_preset) {
-    spec_.background = BackgroundSpec::from_string(color_or_preset);
+CompositionBuilder& CompositionBuilder::background(BackgroundSpec spec) {
+    spec_.background = std::move(spec);
+    return *this;
+}
+
+CompositionBuilder& CompositionBuilder::clear(const ColorSpec& color) {
+    spec_.background = BackgroundSpec{};
+    spec_.background->type = BackgroundType::Color;
+    spec_.background->parsed_color = color;
+    spec_.background->value = "solid_color";
     return *this;
 }
 
 CompositionBuilder& CompositionBuilder::layer(std::string id, std::function<void(LayerBuilder&)> fn) {
     LayerBuilder lb(std::move(id));
+    fn(lb);
+    spec_.layers.push_back(std::move(lb).build());
+    return *this;
+}
+
+CompositionBuilder& CompositionBuilder::layer(const LayerSpec& layer) {
+    spec_.layers.push_back(layer);
+    return *this;
+}
+
+CompositionBuilder& CompositionBuilder::camera3d_layer(std::string id, std::function<void(LayerBuilder&)> fn) {
+    LayerBuilder lb(std::move(id));
+    lb.is_3d(true);
+    lb.camera_type("two_node");
+    fn(lb);
+    spec_.layers.push_back(std::move(lb).build());
+    return *this;
+}
+
+CompositionBuilder& CompositionBuilder::light_layer(std::string id, std::function<void(LayerBuilder&)> fn) {
+    LayerBuilder lb(std::move(id));
+    lb.is_3d(true);
+    lb.light_type("point");
+    fn(lb);
+    spec_.layers.push_back(std::move(lb).build());
+    return *this;
+}
+
+CompositionBuilder& CompositionBuilder::mesh_layer(std::string id, std::function<void(LayerBuilder&)> fn) {
+    LayerBuilder lb(std::move(id));
+    lb.is_3d(true);
     fn(lb);
     spec_.layers.push_back(std::move(lb).build());
     return *this;
@@ -231,6 +393,11 @@ CompositionBuilder& CompositionBuilder::audio(std::string path, double volume) {
     track.source_path = std::move(path);
     track.volume = static_cast<float>(volume);
     spec_.audio_tracks.push_back(std::move(track));
+    return *this;
+}
+
+CompositionBuilder& CompositionBuilder::audio(const AudioTrackSpec& track) {
+    spec_.audio_tracks.push_back(track);
     return *this;
 }
 
@@ -268,6 +435,10 @@ SceneSpec SceneBuilder::build() {
 
 CompositionBuilder Composition(std::string id) {
     return CompositionBuilder(std::move(id));
+}
+
+SceneBuilder Scene() {
+    return SceneBuilder{};
 }
 
 } // namespace tachyon::scene

@@ -54,6 +54,7 @@ float AudioExporter::evaluate_pan_at_time(const AudioTrackSpec& track, double ti
 }
 
 float AudioExporter::evaluate_fade_at_time(const AudioTrackSpec& track, double time, double chunk_duration) const {
+    (void)chunk_duration;
     float fade_factor = 1.0f;
     
     // Fade in
@@ -166,9 +167,10 @@ bool AudioExporter::export_to(const std::filesystem::path& output_path, const Au
 }
 
 void AudioExporter::apply_trim_and_speed(AudioDecoder* decoder, const AudioTrackSpec& spec, 
-                                         double chunk_start, double chunk_duration,
-                                         std::vector<float>& output_buffer) {
+                                          double chunk_start, double chunk_duration,
+                                          std::vector<float>& output_buffer) {
     if (!decoder) return;
+    (void)output_buffer;
     
     // Calcola posizione di lettura considerando trim e offset
     double read_start = spec.in_point_seconds + (chunk_start - spec.start_offset_seconds) * spec.playback_speed;

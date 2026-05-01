@@ -14,6 +14,7 @@
 #include "tachyon/renderer3d/effects/motion_blur.h"
 #include "tachyon/runtime/execution/scheduling/tile_scheduler.h"
 #include "tachyon/output/frame_aov.h"
+#include <iostream>
 #include <algorithm>
 #include <cmath>
 #include <unordered_map>
@@ -28,6 +29,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
     RenderContext2D& context) {
 
     RasterizedFrame2D frame;
+    std::cout << "[LOUD DIAG] render_evaluated_composition_2d started. Layers: " << state.layers.size() << std::endl;
     frame.frame_number = task.frame_number;
     frame.width = state.width;
     frame.height = state.height;
@@ -49,7 +51,15 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
     auto& dst = *frame.surface;
     dst.set_profile(context.cms.working_profile);
-    dst.clear(Color::transparent());
+    
+    // Convert ColorSpec to renderer2d::Color
+    Color clear_color(
+        static_cast<float>(state.background_color.r) / 255.0f,
+        static_cast<float>(state.background_color.g) / 255.0f,
+        static_cast<float>(state.background_color.b) / 255.0f,
+        static_cast<float>(state.background_color.a) / 255.0f
+    );
+    dst.clear(clear_color);
 
     // Identify if we have 3D layers and trigger 3D pass if available
     bool has_any_3d = std::any_of(state.layers.begin(), state.layers.end(), [](const auto& l) { return l.is_3d && l.visible; });
@@ -61,6 +71,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
     // Second pass: composite with resolved mattes
     std::unordered_map<std::string, std::shared_ptr<SurfaceRGBA>> rendered_surfaces;
     std::vector<MatteDependency> matte_dependencies;
+    matte_dependencies.reserve(state.layers.size());
 
     // Build matte dependency list from layers
     for (std::size_t i = 0; i < state.layers.size(); ++i) {
@@ -124,11 +135,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
             }
 
             if (layer.is_3d && layer.visible) {
-                if (tile_rect) {
-                    continue; // Skip 3D blocks in tiled mode.
-                }
-
-                // Found a 3D block. Collect contiguous 3D layers in stack order.
+                std::cout << "[DIAG] Processing 3D layer: " << layer.id << " at index " << i << std::endl;
                 std::vector<std::size_t> block_indices;
                 block_indices.push_back(i);
                 std::size_t last_block_idx = i;
@@ -141,6 +148,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                         break;
                     }
                 }
+                std::cout << "[DIAG] Block collected. Size: " << block_indices.size() << ", last_block_idx: " << last_block_idx << std::endl;
 
                 // Construct EvaluatedScene3D bridge from the composition subset
                 renderer3d::EvaluatedScene3D scene3d;
@@ -158,6 +166,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
                 for (std::size_t block_idx : block_indices) {
                     const auto& l = state.layers[block_idx];
+                    std::cout << "[DIAG] Adding to scene3d: " << l.id << ", mesh_asset: " << l.mesh_asset.get() << std::endl;
                     renderer3d::EvaluatedMeshInstance inst;
                     inst.object_id = static_cast<std::uint32_t>(block_idx);
                     inst.material_id = 0;
@@ -165,15 +174,43 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     inst.previous_world_transform = l.previous_world_matrix;
                     inst.material.base_color = l.fill_color;
                     inst.material.opacity = static_cast<float>(l.opacity);
-                    // Assuming empty string triggers the generic quad fallback in RayTracer for now
-                    inst.mesh_asset_id = l.asset_path.value_or("");
+                    inst.material.metallic = l.material.metallic;
+                    inst.material.roughness = l.material.roughness;
+                    inst.material.transmission = l.material.transmission;
+                    inst.material.ior = l.material.ior;
+                    inst.material.emission_strength = l.material.emission;
+                    
+                    inst.mesh_asset = l.mesh_asset;
+                    inst.mesh_asset_id = l.asset_path.value_or(l.id + "_mesh");
                     scene3d.instances.push_back(inst);
+                }
+
+                // Pass lights
+                for (const auto& light : state.lights) {
+                    renderer3d::EvaluatedLight l3d;
+                    if (light.type == "ambient") l3d.type = renderer3d::LightType::Ambient;
+                    else if (light.type == "directional") l3d.type = renderer3d::LightType::Directional;
+                    else if (light.type == "spot") l3d.type = renderer3d::LightType::Spot;
+                    else l3d.type = renderer3d::LightType::Point;
+                    
+                    l3d.position = light.position;
+                    l3d.direction = light.direction;
+                    l3d.color = {
+                        static_cast<std::uint8_t>(std::clamp(light.color.x * 255.0f, 0.0f, 255.0f)),
+                        static_cast<std::uint8_t>(std::clamp(light.color.y * 255.0f, 0.0f, 255.0f)),
+                        static_cast<std::uint8_t>(std::clamp(light.color.z * 255.0f, 0.0f, 255.0f)),
+                        255
+                    };
+                    l3d.intensity = light.intensity;
+                    l3d.casts_shadows = light.casts_shadows;
+                    scene3d.lights.push_back(l3d);
                 }
 
                 // Render the 3D block
                 render_context.ray_tracer->set_samples_per_pixel(render_context.policy.ray_tracer_spp);
                 render_context.ray_tracer->set_denoiser_enabled(render_context.policy.denoiser_enabled);
                 render_context.ray_tracer->build_scene(scene3d);
+                std::cout << "[DIAG] Scene3D built. Instances: " << scene3d.instances.size() << ", Lights: " << scene3d.lights.size() << std::endl;
 
                 const std::uint32_t w = static_cast<std::uint32_t>(state.width);
                 const std::uint32_t h = static_cast<std::uint32_t>(state.height);
@@ -319,6 +356,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
     };
 
     if (context.policy.tile_size > 0) {
+        std::cout << "[DIAG] Using TILED rendering. Tile size: " << context.policy.tile_size << std::endl;
         TileGrid grid = build_tile_grid({0, 0, static_cast<int>(working_width), static_cast<int>(working_height)}, working_width, working_height, context.policy.tile_size);
         
         for (int i = 0; i < static_cast<int>(grid.tiles.size()); ++i) {

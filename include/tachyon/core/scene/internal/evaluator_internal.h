@@ -19,6 +19,7 @@ struct EvaluationContext {
     std::int64_t frame_number{0};
     double composition_time_seconds{0.0};
     std::unordered_map<std::string, std::size_t> layer_indices;
+    std::unordered_map<std::string, std::size_t> camera2d_indices;
     std::vector<std::optional<EvaluatedLayerState>> cache;
     std::vector<bool> visiting;
     std::vector<std::string> composition_stack;

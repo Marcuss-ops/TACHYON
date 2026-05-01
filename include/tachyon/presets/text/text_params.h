@@ -1,9 +1,11 @@
 #pragma once
 
+#include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 #include "tachyon/presets/preset_base.h"
 #include "tachyon/core/types/colors.h"
 #include <cstdint>
 #include <string>
+#include <vector>
 
 namespace tachyon::presets {
 
@@ -22,6 +24,9 @@ struct TextParams : LayerParams {
     // Text box — separate from layer position/size in LayerParams
     float text_w{1440.0f};
     float text_h{220.0f};
+
+    // Typed animators (fluent API)
+    std::vector<tachyon::TextAnimatorSpec> animations;
 };
 
 } // namespace tachyon::presets
