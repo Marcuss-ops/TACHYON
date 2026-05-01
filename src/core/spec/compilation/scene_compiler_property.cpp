@@ -1,12 +1,8 @@
-#include "tachyon/core/spec/compilation/scene_compiler_internal.h"
-#include "tachyon/core/spec/compilation/scene_compiler.h"
-#include "tachyon/core/spec/compilation/compilation_context.h"
 #include "tachyon/core/spec/compilation/property_track_compiler.h"
-#include <cstdint>
+#include "tachyon/core/spec/compilation/scene_compiler_internal.h"
 
 namespace tachyon {
 
-// Explicit template instantiations
 template CompiledPropertyTrack compile_property_track<AnimatedScalarSpec>(
     CompilationRegistry&, const std::string&, const std::string&, const AnimatedScalarSpec&, double);
 

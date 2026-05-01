@@ -11,11 +11,12 @@ set(TachyonCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/options.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/report.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/transition_registry.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/studio/studio_library.cpp
 )
 
 set(TachyonSceneSources ${TACHYON_ALL_CPP})
-list(FILTER TachyonSceneSources INCLUDE REGEX "/(core/(scene|spec)|presets|timeline)/|/(background_generator|camera_cut_contract)\\.cpp$")
-list(FILTER TachyonSceneSources EXCLUDE REGEX "/core/spec/(serialization|parsing|shapes|schema/migration|template_registry|asset_resolver|pipeline/unified_scene_pipeline)/|legacy")
+list(FILTER TachyonSceneSources INCLUDE REGEX "/(core/(scene|spec|math|camera|expressions|model|platform|properties|shapes|timeline)|importer|presets|timeline)/|/(background_generator|camera_cut_contract)\\.cpp$")
+list(FILTER TachyonSceneSources EXCLUDE REGEX "/core/spec/(shapes|schema/migration|template_registry|asset_resolver|pipeline/unified_scene_pipeline)/")
 list(APPEND TachyonSceneSources ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_hash_builder.cpp)
 
 if(TACHYON_ENABLE_LEGACY_JSON_SCENE)
@@ -73,6 +74,7 @@ set(TachyonRuntimeSources
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/playback/playback_engine.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/playback/playback_queue.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/resource/render_context.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/batch_runner/batch_runner_parse.cpp
 )
 
 set(TachyonRenderer2DSources
@@ -99,12 +101,15 @@ set(TachyonRenderer2DSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/glitch.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/particle_effects.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/utility_effects.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/glsl_transition_effect.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/glitch.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/blur/blur_effects.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/color/chromatic_aberration.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/color/color_effects.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/effect_host.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/effect_utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/utility_effects.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/glsl_transition_effect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/distort/warp_stabilizer_effect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/generators/lens_flare_effect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/generators/particle_effects.cpp

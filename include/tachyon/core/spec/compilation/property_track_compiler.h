@@ -10,6 +10,7 @@
 #include <unordered_map>
 
 namespace tachyon {
+// Removed detail namespace for compile_property_track to allow it to be seen by SceneCompiler
 
 template <typename VecT>
 double component_from_suffix(const VecT& vec, std::string_view suffix, double fallback = 0.0) {
@@ -27,7 +28,7 @@ CompiledPropertyTrack compile_property_track(
     const std::string& id_suffix, 
     const std::string& layer_id, 
     const T& property_spec, 
-    double fallback_value = 0.0) {
+    double fallback_value) {
     
     CompiledPropertyTrack track;
     track.node = registry.create_node(CompiledNodeType::Property);

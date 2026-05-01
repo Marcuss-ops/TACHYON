@@ -1,4 +1,4 @@
-#include "src/core/spec/compilation/property_compiler.h"
+#include "tachyon/core/spec/compilation/property_compiler.h"
 #include "tachyon/core/expressions/expression_engine.h"
 #include <type_traits>
 

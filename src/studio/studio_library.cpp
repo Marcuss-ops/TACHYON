@@ -164,6 +164,7 @@ std::optional<StudioSceneEntry> StudioLibrary::find_scene(const std::string& id)
     return *it;
 }
 
+// Force recompile to check symbols
 std::optional<StudioTransitionEntry> StudioLibrary::find_transition(const std::string& id) const {
     const auto it = std::find_if(m_transitions.begin(), m_transitions.end(), [&](const StudioTransitionEntry& entry) {
         return entry.id == id;

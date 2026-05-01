@@ -46,6 +46,7 @@ public:
     [[nodiscard]] const std::vector<StudioTransitionEntry>& transitions() const noexcept { return m_transitions; }
 
     [[nodiscard]] std::optional<StudioSceneEntry> find_scene(const std::string& id) const;
+
     [[nodiscard]] std::optional<StudioTransitionEntry> find_transition(const std::string& id) const;
 
     [[nodiscard]] SceneSpec instantiate_scene(const std::string& id) const;

@@ -109,7 +109,7 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
             // Resolve Property Indices
             const auto add_track = [&](const std::string& suffix, const auto& spec, double fallback) {
                 compiled_layer.property_indices.push_back(static_cast<std::uint32_t>(compiled.property_tracks.size()));
-                auto track = detail::compile_property_track(registry, suffix, layer.id, spec, fallback);
+                auto track = compile_property_track(registry, suffix, layer.id, spec, fallback);
                 compiled.graph.add_node(track.node.node_id);
                 
                 compiled.graph.add_edge(track.node.node_id, compiled_layer.node.node_id, true);

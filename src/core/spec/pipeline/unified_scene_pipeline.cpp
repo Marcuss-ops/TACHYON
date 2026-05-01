@@ -2,7 +2,7 @@
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 #include "tachyon/runtime/core/data/compiled_scene.h"
 #include "tachyon/core/spec/compilation/compilation_context.h"
-#include "tachyon/core/spec/compilation/property_track_compiler.h"
+#include "tachyon/core/spec/compilation/property_compiler.h"
 #include "tachyon/core/spec/scene_spec_serialize.h"
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"

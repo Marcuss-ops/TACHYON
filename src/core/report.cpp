@@ -1,5 +1,10 @@
 #include "tachyon/core/report.h"
+#include "tachyon/core/spec/json_scene_utils.h"
 #include "tachyon/core/spec/json_report_utils.h"
+#include "tachyon/runtime/execution/planning/render_plan.h"
+#include "tachyon/runtime/execution/jobs/render_job.h"
+#include "tachyon/runtime/execution/session/render_session.h"
+#include "tachyon/runtime/core/data/property_graph.h"
 
 #include <cstddef>
 #include <utility>
@@ -17,17 +22,10 @@ json make_diagnostics_json(const DiagnosticBag& diagnostics) {
     return diagnostics_to_json(diagnostics);
 }
 
-json make_scene_json(const SceneSpec& scene) {
+nlohmann::json make_scene_json(const SceneSpec& scene) {
     json result;
     result["schema_version"] = scene.schema_version.to_string();
-    result["project"] = {
-        {"id", scene.project.id},
-        {"name", scene.project.name},
-        {"authoring_tool", scene.project.authoring_tool}
-    };
-    if (scene.project.root_seed.has_value()) {
-        result["project"]["root_seed"] = *scene.project.root_seed;
-    }
+    result["project"] = spec::serialize_project(scene.project);
     result["asset_count"] = scene.assets.size();
     result["composition_count"] = scene.compositions.size();
     return result;
