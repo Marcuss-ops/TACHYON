@@ -6,6 +6,7 @@ endif()
 project(TACHYON VERSION 0.1.0 LANGUAGES CXX)
 
 include(FetchContent)
+include(CTest)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -15,6 +16,8 @@ option(TACHYON_ENABLE_COMPILER_CACHE "Enable sccache/clcache when available" ON)
 find_package(OpenMP REQUIRED)
 option(TACHYON_ENABLE_PCH "Enable precompiled headers when supported" ON)
 option(TACHYON_ENABLE_ASAN "Enable AddressSanitizer on Tachyon targets" OFF)
+option(TACHYON_ENABLE_LEGACY_JSON_SCENE "Enable legacy JSON scene authoring (disabled by default)" OFF)
+option(TACHYON_TREAT_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 
 if(MSVC)
     set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>")
@@ -40,6 +43,14 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+if(TACHYON_TREAT_WARNINGS_AS_ERRORS)
+    if(MSVC)
+        add_compile_options(/WX)
+    else()
+        add_compile_options(-Werror)
+    endif()
+endif()
+
 if(TACHYON_ENABLE_COMPILER_CACHE)
     find_program(TACHYON_COMPILER_LAUNCHER NAMES sccache ccache clcache)
     if(TACHYON_COMPILER_LAUNCHER)
@@ -49,8 +60,9 @@ if(TACHYON_ENABLE_COMPILER_CACHE)
     endif()
 endif()
 
-# Include directories
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+# Include directories are now managed per-target via target_include_directories()
+# See src/CMakeLists.txt for TachyonCore includes
+# See tests/CMakeLists.txt for TachyonTests includes
 
 # Header-only JSON dependency for the first scene/job parser slice
 FetchContent_Declare(
@@ -115,7 +127,7 @@ FetchContent_Declare(
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 FetchContent_MakeAvailable(tinygltf)
-include_directories(${tinygltf_SOURCE_DIR})
+# tinygltf include directory is added to TachyonCore target in src/CMakeLists.txt
 
 # OpenImageDenoise (OIDN) — prebuilt binaries (avoids ISPC + TBB build requirements)
 # Only enabled on Windows; Linux uses the stub path
@@ -140,9 +152,7 @@ FetchContent_Declare(
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 FetchContent_MakeAvailable(earcut)
-# earcut just provides the 'earcut.hpp' header inside its include/mapbox folder.
-# We add its include directory globally
-include_directories(${earcut_SOURCE_DIR}/include)
+# earcut include directory is added to TachyonCore target in src/CMakeLists.txt
 
 # Clipper2 for boolean shape operations (Merge Paths)
 FetchContent_Declare(
@@ -155,7 +165,7 @@ set(CLIPPER2_UTILS OFF CACHE BOOL "Disable Clipper2 utils" FORCE)
 set(CLIPPER2_EXAMPLES OFF CACHE BOOL "Disable Clipper2 examples" FORCE)
 set(CLIPPER2_TESTS OFF CACHE BOOL "Disable Clipper2 tests" FORCE)
 FetchContent_MakeAvailable(clipper2)
-include_directories(${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/include)
+# clipper2 include directory is added to TachyonCore target in src/CMakeLists.txt
 
 FetchContent_MakeAvailable(embree)
 
@@ -171,7 +181,7 @@ configure_file(
     ${CMAKE_CURRENT_BINARY_DIR}/include/tachyon/tachyon_build_config.h
 )
 
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
+# Binary dir include directory is added to TachyonCore target in src/CMakeLists.txt
 
 # Subdirectories
 add_subdirectory(src)

@@ -1,321 +1,140 @@
-# Core Engine Library
-add_library(TachyonCore
-    hal/hal.cpp
-    runtime/execution/frame_hasher.cpp
-    runtime/execution/quality_policy.cpp
-    runtime/execution/tile_scheduler.cpp
-    runtime/execution/frame_executor.cpp
-    runtime/execution/render_plan.cpp
-    runtime/execution/frame_executor/frame_executor_utils.cpp
-    runtime/execution/frame_executor/frame_evaluator_node.cpp
-    runtime/execution/frame_executor/frame_evaluator_property.cpp
-    runtime/execution/frame_executor/frame_evaluator_layer.cpp
-    runtime/execution/frame_executor/frame_evaluator_composition.cpp
-    runtime/execution/render_job/render_job_parse.cpp
-    runtime/execution/render_job/render_job_validate.cpp
-    runtime/execution/render_job/render_job_utils.cpp
-    runtime/execution/batch_runner/batch_runner_execute.cpp
-    runtime/execution/batch_runner/batch_runner_parse.cpp
-    runtime/execution/batch_runner/batch_runner_utils.cpp
-    runtime/execution/batch_runner/batch_runner_validate.cpp
-    runtime/cache/cache_key_builder.cpp
-    runtime/cache/frame_cache.cpp
-    runtime/resource/render_context.cpp
-    runtime/playback/playback_queue.cpp
-    runtime/playback/playback_engine.cpp
-    runtime/playback/audio_preview_buffer.cpp
-    runtime/execution/render_session.cpp
-    core/c_api.cpp
-    runtime/core/graph/render_graph.cpp
-    runtime/core/data/property_graph.cpp
-    runtime/core/data/compiled_scene.cpp
-    runtime/execution/compiled_frame_program.cpp
-    runtime/cache/disk_cache.cpp
-    core/cli.cpp
-    core/cli/cli_utils.cpp
-    core/cli/cli_validate.cpp
-    core/cli/cli_inspect.cpp
-    core/cli/cli_render.cpp
-    core/cli/cli_demo.cpp
-    core/cli/cli_watch.cpp
-    core/cli/cli_fetch_fonts.cpp
-    core/cli/cli_preview_frame.cpp
-    core/cli/preview_window.cpp
-    core/options.cpp
-    core/report.cpp
-    core/camera/camera_state.cpp
-    core/camera/camera_shake.cpp
-    core/scene/state/evaluated_camera2d_state.cpp
-    core/expressions/expression_engine.cpp
-    core/expressions/expression_vm.cpp
-    core/math/matrix4x4.cpp
-    core/math/quaternion.cpp
-    core/math/transform3.cpp
-    core/properties/bezier_interpolator.cpp
-    core/model/tachyon.cpp
-    core/transition_registry.cpp
-    core/scene/evaluator.cpp
-    core/scene/evaluator_composition.cpp
-    core/scene/evaluator_math.cpp
-    core/scene/evaluator/hashing.cpp
-    core/scene/evaluator/templates.cpp
-    core/scene/evaluator/property_sampler.cpp
-    core/scene/evaluator/layer_utils.cpp
-    core/scene/evaluator/mesh_animator.cpp
-    core/scene/evaluator/light_evaluator.cpp
-    core/scene/evaluator/layer_evaluator.cpp
-    core/scene/rigging/rig_graph.cpp
-    core/scene/rigging/ik_solver.cpp
-    core/scene/rigging/constraint_solver.cpp
-    core/spec/cpp_scene_loader.cpp
-    core/spec/text_animator_spec_serialize.cpp
-    core/spec/compilation/scene_compiler.cpp
-    core/scene/builder.cpp
-    core/math/vector2_serialize.cpp
-    presets/transition/transition_builders.cpp
-    core/spec/schema/scene_spec.cpp
-    core/spec/schema/scene_spec_core.cpp
-    core/spec/schema/objects/background_spec.cpp
-    core/spec/scene_spec_builder.cpp
-    core/spec/validation/scene_validator.cpp
-    core/spec/legacy/scene_spec_audio.cpp
-    core/spec/json_parse_helpers.cpp
-    core/spec/property_parse_json.cpp
-    core/spec/legacy/layer_parse_json.cpp
-    core/spec/legacy/scene_spec_json.cpp
-    renderer2d/raster/draw_list_builder.cpp
-    renderer2d/raster/draw_list_rasterizer.cpp
-    renderer2d/raster/mesh_rasterizer.cpp
-    renderer2d/raster/mesh_deform_apply.cpp
-    renderer2d/color/blending.cpp
-    renderer2d/color/lut3d.cpp
-    renderer2d/color/color_management.cpp
-    renderer2d/color/color_management_system.cpp
-    renderer2d/effects/effect_host.cpp
-     renderer2d/effects/core/glsl_transition_effect.cpp
-     renderer2d/effects/effect_utils.cpp
-    renderer2d/effects/blur_effects.cpp
-    renderer2d/effects/color_effects.cpp
-    renderer2d/effects/particle_effects.cpp
-    renderer2d/effects/utility_effects.cpp
-    renderer2d/backend/cpu_backend.cpp
-    renderer2d/evaluated_composition/matte_resolver.cpp
-    renderer2d/evaluated_composition/rendering/pipeline/composition_renderer.cpp
-    renderer2d/evaluated_composition/rendering/pipeline/scene3d_bridge.cpp
-    renderer2d/evaluated_composition/rendering/primitives/text_mesh_builder.cpp
-    renderer2d/evaluated_composition/rendering/primitives/media_card_mesh_builder.cpp
-    renderer2d/evaluated_composition/utilities/composition_utils.cpp
-    renderer2d/evaluated_composition/rendering/layer_to_draw_command.cpp
-    renderer2d/evaluated_composition/rendering/mask_renderer.cpp
-    renderer2d/evaluated_composition/effects/effect_renderer.cpp
-    renderer2d/evaluated_composition/rendering/layer_renderer.cpp
-    renderer2d/evaluated_composition/utilities/render_graph.cpp
-    renderer2d/spec/project_card.cpp
-    renderer2d/raster/path/path_flattener.cpp
-    renderer2d/raster/path/fill_rasterizer.cpp
-    renderer2d/raster/path/stroke_rasterizer.cpp
-    renderer2d/raster/mask_rasterizer.cpp
-    renderer2d/raster/path/path_trimmer.cpp
-    renderer2d/raster/cpu_rasterizer.cpp
-    renderer2d/raster/perspective_rasterizer.cpp
-    renderer2d/resource/texture_resolver.cpp
-    renderer2d/core/framebuffer.cpp
-    renderer2d/core/surface_pool.cpp
-    renderer2d/resource/precomp_cache.cpp
-    renderer2d/resource/render_context.cpp
-    renderer2d/math/math_utils.cpp
-    renderer2d/audio/audio_sampling.cpp
-    renderer2d/text/utf8/utf8_decoder.cpp
-    renderer2d/text/glyph/glyph_loader.cpp
-    renderer2d/text/utils/font_utils.cpp
-    renderer2d/text/freetype/freetype_manager.cpp
-    renderer2d/text/shaping/font_shaping.cpp
-    renderer2d/text/shaping/shaping_cache.cpp
-    audio/audio_analyzer.cpp
-    audio/audio_decoder.cpp
-    audio/audio_mixer.cpp
-    audio/audio_graph.cpp
-    audio/audio_processor.cpp
-    audio/audio_encoder.cpp
-    audio/audio_export.cpp
-    tracker/optical_flow.cpp
-    tracker/camera_solver.cpp
-    media/image_manager.cpp
-    media/asset_manager.cpp
-    media/asset_resolution.cpp
-    media/management/media_manager.cpp
-    media/decoding/video_decoder.cpp
-    media/media_prefetcher.cpp
-    media/management/proxy_manifest.cpp
-    media/management/proxy_worker.cpp
-     media/mesh_loader.cpp
-     media/processing/extruder.cpp
-     output/ffmpeg/ffmpeg_pipe_sink.cpp
-    output/ffmpeg/ffmpeg_command_builder.cpp
-    output/ffmpeg/ffmpeg_utils.cpp
-    output/ffmpeg/ffmpeg_video_encoder.cpp
-    output/png_sequence_sink.cpp
-    timeline/frame_evaluator.cpp
-    timeline/time.cpp
-    timeline/time_resolver.cpp
-    timeline/time_remap.cpp
-    timeline/frame_blend.cpp
-    timeline/camera_cuts.cpp
-    text/bidi/bidi_engine.cpp
-    text/core/animation/text_animator_utils.cpp
-    text/core/fonts/font.cpp
-    text/core/fonts/font_registry.cpp
-    text/core/fonts/font_face.cpp
-    text/core/fonts/font_instance.cpp
-    text/core/fonts/management/font_manifest.cpp
-    text/core/fonts/management/font_resolver.cpp
-    text/core/fonts/management/font_preloader.cpp
-    text/core/fonts/management/font_downloader.cpp
-    text/core/fonts/font_coverage_reporter.cpp
-    text/core/layout/layout.cpp
-    text/core/layout/layout_engine.cpp
-    text/core/rendering/outline_extractor.cpp
-    text/core/animation/text_animator_paints.cpp
-    text/bidi/script_detector.cpp
-    text/core/content/subtitle.cpp
-    text/editing/text_editor.cpp
-    renderer3d/temporal/time_remap_curve.cpp
-    renderer3d/temporal/frame_blend_mode.cpp
-    renderer3d/temporal/rolling_shutter.cpp
-    text/core/rendering/text_raster_surface.cpp
-    studio/studio_library.cpp
-    tracker/feature_tracker.cpp
-    tracker/track.cpp
-    tracker/track_binding.cpp
-    renderer3d/core/ray_tracer.cpp
-    renderer3d/core/ray_tracer_shading.cpp
-    renderer3d/core/ray_tracer_scene.cpp
-    renderer3d/core/scene_cache.cpp
-    renderer3d/animation/motion_blur.cpp
-    renderer3d/animation/animation3d.cpp
-    renderer3d/effects/depth_of_field.cpp
-    renderer3d/materials/material.cpp
-    renderer3d/materials/material_evaluator.cpp
-    renderer3d/visibility/culling.cpp
-    renderer3d/utilities/debug_tools.cpp
-    renderer3d/materials/pbr_utils.cpp
-    renderer3d/utilities/environment_manager.cpp
-    importer/usd_importer.cpp
-    importer/alembic_importer.cpp
-    camera_cut_contract.cpp
-    editor/undo/undo_manager.cpp
-    editor/autosave/autosave_manager.cpp
-    core/spec/compilation/preset_compiler.cpp
-    audio/loudness_meter.cpp
-    text/core/content/word_timestamps.cpp
-    text/core/animation/text_presets.cpp
-    text/core/animation/text_scene_presets.cpp
-     presets/text/text_builders.cpp
-     core/scene/evaluator/camera2d_evaluator.cpp
-      presets/sfx/sfx_builders.cpp
-      presets/shape/shape_builders.cpp
-      audio/sound_effect_registry.cpp
-    runtime/execution/native_render.cpp
-    presets/background/background_builders.cpp
-    presets/image/image_builders.cpp
-)
-
-if(MSVC)
-    target_compile_options(TachyonCore PRIVATE /W4 /WX /permissive- /utf-8 /FS /arch:AVX2)
-    target_compile_definitions(TachyonCore PRIVATE TACHYON_AVX2)
-    target_compile_definitions(TachyonCore PRIVATE "TACHYON_SFX_ROOT=\"${CMAKE_CURRENT_SOURCE_DIR}/audio/SoundEffect\"")
-else()
-    target_compile_options(TachyonCore PRIVATE -Wall -Wextra -Wpedantic)
-    target_compile_definitions(TachyonCore PRIVATE "TACHYON_SFX_ROOT=\"${CMAKE_CURRENT_SOURCE_DIR}/audio/SoundEffect\"")
-endif()
-
-target_include_directories(TachyonCore
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/..
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../third_party>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../third_party/stb/include>
-        $<INSTALL_INTERFACE:include>
-)
-
-if(WIN32)
-    target_include_directories(TachyonCore PUBLIC $<BUILD_INTERFACE:${oidn_SOURCE_DIR}/include>)
-endif()
-
 find_package(OpenGL REQUIRED)
 
-target_link_libraries(TachyonCore
-    PUBLIC
-        nlohmann_json::nlohmann_json
-        freetype
-        harfbuzz
-        avcodec
-        avformat
-        avutil
-        swscale
-        swresample
-        embree
-        glfw
-        OpenGL::GL
-        OpenMP::OpenMP_CXX
+file(GLOB_RECURSE TACHYON_ALL_CPP CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
 )
 
-if(WIN32)
-    target_link_libraries(TachyonCore PUBLIC OpenImageDenoise)
-endif()
+set(TachyonCoreSources ${TACHYON_ALL_CPP})
+list(FILTER TachyonCoreSources EXCLUDE REGEX "/(audio|media|output|renderer2d|renderer3d|runtime|text|tracker)/")
+list(FILTER TachyonCoreSources EXCLUDE REGEX "/core/(cli|scene|spec)/")
+list(FILTER TachyonCoreSources EXCLUDE REGEX "/(background_generator|camera_cut_contract|main)\\.cpp$")
 
-# --- Optional dependencies ---
+set(TachyonSceneSources ${TACHYON_ALL_CPP})
+list(FILTER TachyonSceneSources INCLUDE REGEX "/(core/(scene|spec)|presets|timeline)/|/(background_generator|camera_cut_contract)\\.cpp$")
+list(FILTER TachyonSceneSources EXCLUDE REGEX "/core/spec/(serialization|parsing|shapes|schema/migration|template_registry|asset_resolver|pipeline/unified_scene_pipeline)\\.cpp$")
 
-find_package(Vulkan QUIET)
-if(Vulkan_FOUND)
-    message(STATUS "[Tachyon] Vulkan found – enabling GPU compute backend")
-    target_compile_definitions(TachyonCore PUBLIC TACHYON_VULKAN)
-    target_link_libraries(TachyonCore PUBLIC Vulkan::Vulkan)
-else()
-    message(STATUS "[Tachyon] Vulkan NOT found – CPU backend only")
-endif()
+set(TachyonRuntimeSources ${TACHYON_ALL_CPP})
+list(FILTER TachyonRuntimeSources INCLUDE REGEX "/runtime/")
 
-find_package(OpenColorIO QUIET)
-if(OpenColorIO_FOUND)
-    message(STATUS "[Tachyon] OpenColorIO found – enabling OCIO adapter")
-    target_compile_definitions(TachyonCore PUBLIC TACHYON_OCIO)
-    target_link_libraries(TachyonCore PUBLIC OpenColorIO::OpenColorIO)
-else()
-    message(STATUS "[Tachyon] OpenColorIO NOT found – using built-in colour pipeline")
-endif()
+set(TachyonRenderer2DSources ${TACHYON_ALL_CPP})
+list(FILTER TachyonRenderer2DSources INCLUDE REGEX "/renderer2d/")
 
-find_package(OpenEXR QUIET)
-if(OpenEXR_FOUND)
-    message(STATUS "[Tachyon] OpenEXR found – enabling EXR sequence sink")
-    target_compile_definitions(TachyonCore PUBLIC TACHYON_EXR)
-    target_link_libraries(TachyonCore PUBLIC OpenEXR::OpenEXR)
-    target_sources(TachyonCore PRIVATE output/exr_sequence_sink.cpp)
-else()
-    message(STATUS "[Tachyon] OpenEXR NOT found – EXR output disabled")
-endif()
+set(TachyonRenderer3DSources ${TACHYON_ALL_CPP})
+list(FILTER TachyonRenderer3DSources INCLUDE REGEX "/renderer3d/")
 
-find_package(pxr QUIET)
-if(pxr_FOUND)
-    message(STATUS "[Tachyon] OpenUSD found – enabling USD scene importer")
-    target_compile_definitions(TachyonCore PUBLIC TACHYON_USD)
-    target_link_libraries(TachyonCore PUBLIC usd_ms)
-else()
-    message(STATUS "[Tachyon] OpenUSD NOT found – USD import disabled")
-endif()
+set(TachyonMediaSources ${TACHYON_ALL_CPP})
+list(FILTER TachyonMediaSources INCLUDE REGEX "/media/[^/]+\\.cpp$|/media/ffmpeg/[^/]+\\.cpp$")
+list(FILTER TachyonMediaSources EXCLUDE REGEX "/media/(decoding/svg_decoder_impl|decoding/tinygltf_impl|management/asset_manager|management/image_manager|management/media_manager|loading/mesh_loader|streaming/media_prefetcher|resolution/asset_resolution|import/asset_import_pipeline)\\.cpp$")
 
-find_package(Alembic QUIET)
-if(Alembic_FOUND)
-    message(STATUS "[Tachyon] Alembic found – enabling Alembic scene importer")
-    target_compile_definitions(TachyonCore PUBLIC TACHYON_ALEMBIC)
-    target_link_libraries(TachyonCore PUBLIC Alembic::Alembic)
-else()
-    message(STATUS "[Tachyon] Alembic NOT found – Alembic import disabled")
-endif()
+set(TachyonAudioSources ${TACHYON_ALL_CPP})
+list(FILTER TachyonAudioSources INCLUDE REGEX "/audio/[^/]+\\.cpp$")
 
-if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
-    target_precompile_headers(TachyonCore PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")
-endif()
+set(TachyonOutputSources ${TACHYON_ALL_CPP})
+list(FILTER TachyonOutputSources INCLUDE REGEX "/output/[^/]+\\.cpp$|/output/ffmpeg/[^/]+\\.cpp$")
+list(FILTER TachyonOutputSources EXCLUDE REGEX "/output/(av_exporter|exr_sequence_sink)\\.cpp$")
+
+set(TachyonTextSources ${TACHYON_ALL_CPP})
+list(FILTER TachyonTextSources INCLUDE REGEX "/text/")
+
+set(TachyonTrackerSources ${TACHYON_ALL_CPP})
+list(FILTER TachyonTrackerSources INCLUDE REGEX "/tracker/[^/]+\\.cpp$")
+
+set(TachyonCLISources ${TACHYON_ALL_CPP})
+list(FILTER TachyonCLISources INCLUDE REGEX "/core/cli/|/core/cli\\.cpp$")
+
+function(tachyon_configure_target target)
+    target_include_directories(${target}
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/..
+        PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../third_party>
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../third_party/stb/include>
+            $<INSTALL_INTERFACE:include>
+    )
+
+    target_link_libraries(${target}
+        PUBLIC
+            nlohmann_json::nlohmann_json
+            freetype
+            harfbuzz
+            avcodec
+            avformat
+            avutil
+            swscale
+            swresample
+            embree
+            glfw
+            OpenGL::GL
+            OpenMP::OpenMP_CXX
+    )
+
+    if(MSVC)
+        target_compile_options(${target} PRIVATE /W4 /permissive- /utf-8 /FS /arch:AVX2)
+        if(TACHYON_TREAT_WARNINGS_AS_ERRORS)
+            target_compile_options(${target} PRIVATE /WX)
+        endif()
+        target_compile_definitions(${target} PRIVATE TACHYON_AVX2)
+    else()
+        target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
+        if(TACHYON_TREAT_WARNINGS_AS_ERRORS)
+            target_compile_options(${target} PRIVATE -Werror)
+        endif()
+    endif()
+
+    target_compile_definitions(${target} PRIVATE "TACHYON_SFX_ROOT=\"${CMAKE_CURRENT_SOURCE_DIR}/audio/SoundEffect\"")
+
+    if(WIN32)
+        target_include_directories(${target} PUBLIC $<BUILD_INTERFACE:${oidn_SOURCE_DIR}/include>)
+        target_link_libraries(${target} PUBLIC OpenImageDenoise)
+    endif()
+endfunction()
+
+add_library(TachyonScene OBJECT ${TachyonSceneSources})
+tachyon_configure_target(TachyonScene)
+
+add_library(TachyonRuntime OBJECT ${TachyonRuntimeSources})
+tachyon_configure_target(TachyonRuntime)
+
+add_library(TachyonRenderer2D OBJECT ${TachyonRenderer2DSources})
+tachyon_configure_target(TachyonRenderer2D)
+
+add_library(TachyonRenderer3D OBJECT ${TachyonRenderer3DSources})
+tachyon_configure_target(TachyonRenderer3D)
+
+add_library(TachyonMedia OBJECT ${TachyonMediaSources})
+tachyon_configure_target(TachyonMedia)
+
+add_library(TachyonAudio OBJECT ${TachyonAudioSources})
+tachyon_configure_target(TachyonAudio)
+
+add_library(TachyonOutput OBJECT ${TachyonOutputSources})
+tachyon_configure_target(TachyonOutput)
+
+add_library(TachyonText OBJECT ${TachyonTextSources})
+tachyon_configure_target(TachyonText)
+
+add_library(TachyonTracker OBJECT ${TachyonTrackerSources})
+tachyon_configure_target(TachyonTracker)
+
+add_library(TachyonCLI OBJECT ${TachyonCLISources})
+tachyon_configure_target(TachyonCLI)
+
+add_library(TachyonCore STATIC ${TachyonCoreSources})
+tachyon_configure_target(TachyonCore)
+
+target_sources(TachyonCore PRIVATE
+    $<TARGET_OBJECTS:TachyonScene>
+    $<TARGET_OBJECTS:TachyonRuntime>
+    $<TARGET_OBJECTS:TachyonRenderer2D>
+    $<TARGET_OBJECTS:TachyonRenderer3D>
+    $<TARGET_OBJECTS:TachyonMedia>
+    $<TARGET_OBJECTS:TachyonAudio>
+    $<TARGET_OBJECTS:TachyonOutput>
+    $<TARGET_OBJECTS:TachyonText>
+    $<TARGET_OBJECTS:TachyonTracker>
+    $<TARGET_OBJECTS:TachyonCLI>
+)
 
 add_executable(tachyon
     main.cpp
