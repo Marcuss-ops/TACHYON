@@ -1,10 +1,12 @@
 <#
 .SYNOPSIS
     Tachyon build entry point.
+.PARAMETER Preset
+    CMake preset: dev | dev-fast | asan  (default: dev)
 .PARAMETER Config
     Debug | RelWithDebInfo | Release  (default: RelWithDebInfo)
 .PARAMETER Target
-    CMake/ninja target (default: tachyon)
+    CMake/ninja target (default: from preset)
 .PARAMETER Check
     Quick validation only, no build
 .PARAMETER Clean
@@ -13,20 +15,31 @@
     Force CMake reconfiguration
 .PARAMETER Jobs
     Parallel jobs (default: CPU count)
+.PARAMETER RunTests
+    Run tests after building
+.PARAMETER TestFilter
+    Regex filter for test names (requires -RunTests)
 .EXAMPLE
     .\build.ps1
+    .\build.ps1 -Preset dev -RunTests
+    .\build.ps1 -Preset dev-fast -RunTests -TestFilter frame_executor
+    .\build.ps1 -Preset asan -RunTests -TestFilter math
     .\build.ps1 -Check
     .\build.ps1 -Target TachyonTests
     .\build.ps1 -Clean -Config Release
 #>
 param(
+    [ValidateSet("dev","dev-fast","asan")]
+    [string]$Preset   = "dev",
     [ValidateSet("Debug","RelWithDebInfo","Release")]
     [string]$Config   = "RelWithDebInfo",
-    [string]$Target   = "tachyon",
+    [string]$Target   = "",
     [switch]$Check,
     [switch]$Clean,
     [switch]$Configure,
-    [int]$Jobs        = 0
+    [int]$Jobs        = 0,
+    [switch]$RunTests,
+    [string]$TestFilter = ""
 )
 
 Set-StrictMode -Version Latest
@@ -59,9 +72,27 @@ if ($Check) {
     $Target = "TachyonCore"
 }
 
+# Determine build directory based on preset
+if ($Preset -eq "asan") {
+    $BuildDir = Join-Path $Root "build/asan"
+} else {
+    $BuildDir = Join-Path $Root "build"
+}
+
 Write-Host "Tachyon Build" -ForegroundColor Cyan
+Write-Host "  Preset : $Preset"
 Write-Host "  Config : $Config"
-Write-Host "  Target : $Target"
+if ($Target) {
+    Write-Host "  Target : $Target"
+} else {
+    Write-Host "  Target : (default from preset)"
+}
+if ($RunTests) {
+    Write-Host "  Tests  : enabled" -ForegroundColor Yellow
+}
+if ($TestFilter) {
+    Write-Host "  Filter : $TestFilter" -ForegroundColor Yellow
+}
 
 # Load tools into PATH
 & "$Root\scripts\Enable-DevTools.ps1"
@@ -87,17 +118,32 @@ if ($Clean) {
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
-$BuildDir  = Join-Path $Root "build"
 $NeedConf  = $Configure -or (-not (Test-Path (Join-Path $BuildDir "Tachyon.sln")))
 
 if ($NeedConf) {
-    Write-Host "Configuring..." -ForegroundColor Yellow
-    Invoke-Native { cmake --preset dev -S "$Root" -B "$BuildDir" } "CMake configure failed."
+    Write-Host "Configuring ($Preset)..." -ForegroundColor Yellow
+    Invoke-Native { cmake --preset $Preset -S "$Root" -B "$BuildDir" } "CMake configure failed."
 }
 
 $J = if ($Jobs -gt 0) { $Jobs } else { [Environment]::ProcessorCount }
-Write-Host "Building $Target ($Config, $J jobs)..." -ForegroundColor Yellow
 
-Invoke-Native { cmake --build $BuildDir --config $Config --target $Target -j $J } "Build FAILED."
+if ($Target) {
+    Write-Host "Building $Target ($Config, $J jobs)..." -ForegroundColor Yellow
+    Invoke-Native { cmake --build $BuildDir --config $Config --target $Target -j $J } "Build FAILED."
+} else {
+    Write-Host "Building default targets ($Config, $J jobs)..." -ForegroundColor Yellow
+    Invoke-Native { cmake --build $BuildDir --config $Config -j $J } "Build FAILED."
+}
 
 Write-Host "Build OK" -ForegroundColor Green
+
+if ($RunTests) {
+    Write-Host "Running tests..." -ForegroundColor Yellow
+    $ctestArgs = @("--output-on-failure", "-j", $J)
+    if ($TestFilter) {
+        $ctestArgs += "-R"
+        $ctestArgs += $TestFilter
+    }
+    Invoke-Native { & ctest --test-dir $BuildDir @ctestArgs } "Tests FAILED."
+    Write-Host "Tests OK" -ForegroundColor Green
+}

@@ -33,9 +33,9 @@ void test_time_remap_cache_identity() {
     assert(id.find("remap_mode:1") != std::string::npos);
 }
 
-int main() {
+bool run_time_remap_tests() {
     test_time_remap_hold_mode();
     test_time_remap_optical_flow_fallback();
     test_time_remap_cache_identity();
-    return 0;
+    return true;
 }

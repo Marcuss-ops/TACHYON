@@ -373,11 +373,21 @@ ExecutedFrame FrameExecutor::execute(
         }
     }
 
+    // Explicit fallback handling
     if (!result.frame || result.frame->width() == 0U || result.frame->height() == 0U) {
-        result.frame = std::make_shared<renderer2d::Framebuffer>(
-            static_cast<std::uint32_t>(std::max<std::int64_t>(1, plan.composition.width)),
-            static_cast<std::uint32_t>(std::max<std::int64_t>(1, plan.composition.height)));
+        if (compiled_scene.compositions.empty()) {
+            // Intentionally empty scene: generate explicit fallback frame
+            result.frame = std::make_shared<renderer2d::Framebuffer>(
+                static_cast<std::uint32_t>(std::max<std::int64_t>(1, plan.composition.width)),
+                static_cast<std::uint32_t>(std::max<std::int64_t>(1, plan.composition.height)));
+            result.error = "Empty scene: using fallback frame";
+        } else {
+            // Rendering failed: no valid frame produced
+            result.success = false;
+            result.error = "Frame rendering failed: no valid framebuffer generated";
+        }
     }
+
     context.diagnostic_tracker = nullptr;
     return result;
 }

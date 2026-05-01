@@ -19,6 +19,12 @@ option(TACHYON_ENABLE_ASAN "Enable AddressSanitizer on Tachyon targets" OFF)
 option(TACHYON_ENABLE_LEGACY_JSON_SCENE "Enable legacy JSON scene authoring (disabled by default)" OFF)
 option(TACHYON_ENABLE_RENDER_JOB_JSON "Enable JSON render job parsing (enabled by default)" ON)
 option(TACHYON_TREAT_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
+option(TACHYON_ENABLE_PREVIEW_WINDOW "Enable GLFW/OpenGL preview window" OFF)
+option(TACHYON_ENABLE_PRORES "Enable ProRes output sink" OFF)
+option(TACHYON_ENABLE_VULKAN "Enable Vulkan backend" OFF)
+option(TACHYON_ENABLE_OIDN "Enable OpenImageDenoise integration" OFF)
+option(TACHYON_BUILD_TESTS "Build Tachyon tests" ON)
+option(TACHYON_BUILD_EXAMPLES "Build Tachyon examples" OFF)
 
 if(MSVC)
     set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>")
@@ -131,8 +137,8 @@ FetchContent_MakeAvailable(tinygltf)
 # tinygltf include directory is added to TachyonCore target in src/CMakeLists.txt
 
 # OpenImageDenoise (OIDN) — prebuilt binaries (avoids ISPC + TBB build requirements)
-# Only enabled on Windows; Linux uses the stub path
-if(WIN32)
+# Only enabled when TACHYON_ENABLE_OIDN is ON; mainly for Windows
+if(TACHYON_ENABLE_OIDN AND WIN32)
     FetchContent_Declare(
         oidn
         URL https://github.com/RenderKit/oidn/releases/download/v2.3.0/oidn-2.3.0.x64.windows.zip
@@ -142,7 +148,7 @@ if(WIN32)
     set(OIDN_ROOT "${oidn_SOURCE_DIR}")
     find_package(OpenImageDenoise REQUIRED PATHS "${OIDN_ROOT}" NO_DEFAULT_PATH)
 else()
-    message(STATUS "[Tachyon] OIDN disabled on non-Windows platform")
+    message(STATUS "[Tachyon] OIDN disabled (not requested or not on Windows)")
 endif()
 
 # earcut.hpp for 3D polygon triangulation (Extrusion)
@@ -152,7 +158,13 @@ FetchContent_Declare(
     GIT_TAG        v2.2.4
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
-FetchContent_MakeAvailable(earcut)
+
+FetchContent_GetProperties(earcut)
+if(NOT earcut_POPULATED)
+    FetchContent_Populate(earcut)
+endif()
+
+set(TACHYON_EARCUT_INCLUDE_DIR "${earcut_SOURCE_DIR}/include")
 # earcut include directory is added to TachyonCore target in src/CMakeLists.txt
 
 # Clipper2 for boolean shape operations (Merge Paths)
@@ -195,5 +207,11 @@ configure_file(
 
 # Subdirectories
 add_subdirectory(src)
-add_subdirectory(tests)
-add_subdirectory(examples)
+
+if(TACHYON_BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
+
+if(TACHYON_BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()

@@ -16,7 +16,7 @@ namespace tachyon::audio {
 class AudioDecoder {
 public:
     AudioDecoder();
-    ~AudioDecoder();
+    virtual ~AudioDecoder();
 
     // Disable copy
     AudioDecoder(const AudioDecoder&) = delete;
@@ -27,12 +27,12 @@ public:
 
     // Decodes a range of samples. Returns interleaved stereo float PCM at 48kHz.
     // If start_sec is outside duration, returns empty.
-    std::vector<float> decode_range(double start_sec, double duration_sec);
+    virtual std::vector<float> decode_range(double start_sec, double duration_sec);
 
-    [[nodiscard]] double duration() const noexcept { return m_duration_seconds; }
+    [[nodiscard]] virtual double duration() const noexcept { return m_duration_seconds; }
     [[nodiscard]] bool is_open() const noexcept { return m_format_context != nullptr; }
-    [[nodiscard]] int channels() const noexcept { return m_channels; }
-    [[nodiscard]] int sample_rate() const noexcept { return m_sample_rate; }
+    [[nodiscard]] virtual int channels() const noexcept { return m_channels; }
+    [[nodiscard]] virtual int sample_rate() const noexcept { return m_sample_rate; }
 
 private:
     std::filesystem::path m_path;

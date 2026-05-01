@@ -30,6 +30,8 @@ struct ExecutedFrame {
     std::int64_t frame_number{0};
     std::uint64_t cache_key{0};
     bool cache_hit{false};
+    bool success{true};
+    std::string error;
     std::uint64_t scene_hash{0};
     std::size_t draw_command_count{0};
     std::shared_ptr<renderer2d::Framebuffer> frame;

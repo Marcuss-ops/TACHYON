@@ -1,7 +1,4 @@
 #include "tachyon/output/frame_output_sink.h"
-#include "tachyon/audio/audio_mixer.h"
-#include "tachyon/audio/audio_decoder.h"
-#include "tachyon/audio/audio_export.h"
 #include "ffmpeg_internal.h"
 
 #include <cstdio>
@@ -44,11 +41,7 @@ public:
             return false;
         }
 
-        m_needs_audio_mux = !plan.output.profile.audio.mode.empty() &&
-                                plan.output.profile.audio.mode != "none" &&
-                                false; // audio::has_any_audio(plan) - TODO: fix missing function
-        
-        bool needs_temp_video = m_needs_audio_mux || plan.output.profile.format == OutputFormat::Gif;
+        bool needs_temp_video = plan.output.profile.format == OutputFormat::Gif;
 
         const std::filesystem::path destination(plan.output.destination.path);
         if (!destination.parent_path().empty()) {
@@ -128,7 +121,6 @@ private:
     bool finalize_post_processing() {
         if (m_plan == nullptr) return true;
         if (m_plan->output.profile.format == OutputFormat::Gif) return finalize_gif();
-        if (m_needs_audio_mux) return finalize_audio_mux();
         return true;
     }
 
@@ -148,21 +140,7 @@ private:
         return true;
     }
 
-    bool finalize_audio_mux() {
-        const std::filesystem::path destination(m_plan->output.destination.path);
-        const std::filesystem::path master_audio_path = destination.parent_path() / (destination.stem().string() + ".tachyon.master_audio.wav");
 
-        if (false) { // audio::export_plan_audio(*m_plan, master_audio_path) - TODO: fix missing function
-            return false;
-        }
-
-        const std::string mux_command = build_ffmpeg_mux_command(*m_plan, m_temp_video_path, master_audio_path);
-        if (!run_shell_cmd(mux_command)) return false;
-
-        std::filesystem::remove(m_temp_video_path);
-        std::filesystem::remove(master_audio_path);
-        return true;
-    }
 
     const RenderPlan* m_plan{nullptr};
     FILE* m_pipe{nullptr};
@@ -172,7 +150,6 @@ private:
     renderer2d::detail::TransferCurve m_output_transfer{renderer2d::detail::TransferCurve::sRGB};
     renderer2d::detail::ColorSpace m_output_space{renderer2d::detail::ColorSpace::sRGB};
     renderer2d::detail::ColorRange m_output_range{renderer2d::detail::ColorRange::Full};
-    bool m_needs_audio_mux{false};
     std::string m_last_error;
 };
 

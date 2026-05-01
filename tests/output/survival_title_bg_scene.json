@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0",
+  "project": {
+    "id": "survival_title_bg",
+    "name": "Survival Title Background",
+    "authoring_tool": "Tachyon"
+  },
+  "font_manifest": "../../font_manifest.json",
+  "compositions": [
+    {
+      "id": "main",
+      "name": "Main",
+      "width": 1280,
+      "height": 720,
+      "duration": 1.0,
+      "frame_rate": 30,
+      "background": "#00000000",
+      "layers": [
+        {
+          "id": "background",
+          "name": "Background",
+          "type": "solid",
+          "enabled": true,
+          "visible": true,
+          "start_time": 0,
+          "in_point": 0,
+          "out_point": 1.0,
+          "width": 1280,
+          "height": 720,
+          "fill_color": [244, 244, 242, 255]
+        }
+      ]
+    }
+  ]
+}

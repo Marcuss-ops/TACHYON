@@ -32,9 +32,9 @@ void test_motion_blur_cache_identity() {
     assert(id.find("mb_samples:4") != std::string::npos);
 }
 
-int main() {
+bool run_motion_blur_tests() {
     test_motion_blur_sample_count_1();
     test_motion_blur_weight_curves();
     test_motion_blur_cache_identity();
-    return 0;
+    return true;
 }

@@ -29,9 +29,9 @@ void test_frame_blend_cache_identity() {
     assert(id.find("blend_mode:2") != std::string::npos);
 }
 
-int main() {
+bool run_frame_blend_tests() {
     test_frame_blend_hold();
     test_frame_blend_linear();
     test_frame_blend_cache_identity();
-    return 0;
+    return true;
 }

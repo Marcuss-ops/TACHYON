@@ -1,5 +1,5 @@
-#include "src/core/spec/compilation/layer_compiler.h"
-#include "src/core/spec/compilation/property_compiler.h"
+#include "layer_compiler.h"
+#include "tachyon/core/spec/compilation/property_compiler.h"
 #include <algorithm>
 
 namespace tachyon {

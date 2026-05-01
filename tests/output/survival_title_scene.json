@@ -1,0 +1,75 @@
+{
+  "schema_version": "1.0",
+  "project": {
+    "id": "survival_title_card",
+    "name": "Survival Title Card",
+    "authoring_tool": "Tachyon"
+  },
+  "compositions": [
+    {
+      "id": "main",
+      "name": "Main",
+      "width": 1280,
+      "height": 720,
+      "duration": 3.0,
+      "frame_rate": 30,
+      "layers": [
+        {
+          "id": "background",
+          "name": "Background",
+          "type": "solid",
+          "enabled": true,
+          "visible": true,
+          "start_time": 0,
+          "in_point": 0,
+          "out_point": 3.0,
+          "width": 1280,
+          "height": 720,
+          "fill_color": [244, 244, 242, 255]
+        },
+        {
+          "id": "title",
+          "name": "Title",
+          "type": "text",
+          "enabled": true,
+          "visible": true,
+          "start_time": 0,
+          "in_point": 0,
+          "out_point": 3.0,
+          "width": 1280,
+          "height": 110,
+          "alignment": "center",
+          "text_content": "10 MINUTES",
+          "font_id": "SFProDisplayBold",
+          "font_size": 92,
+          "fill_color": [12, 12, 14, 255],
+          "transform": {
+            "position_x": 0,
+            "position_y": 72
+          }
+        },
+        {
+          "id": "subtitle",
+          "name": "Subtitle",
+          "type": "text",
+          "enabled": true,
+          "visible": true,
+          "start_time": 0,
+          "in_point": 0,
+          "out_point": 3.0,
+          "width": 1280,
+          "height": 40,
+          "alignment": "center",
+          "text_content": "TIME OF SURVIVE",
+          "font_id": "SegoeUI",
+          "font_size": 18,
+          "fill_color": [58, 58, 64, 255],
+          "transform": {
+            "position_x": 0,
+            "position_y": 182
+          }
+        }
+      ]
+    }
+  ]
+}

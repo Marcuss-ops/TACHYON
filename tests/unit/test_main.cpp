@@ -160,6 +160,10 @@ bool run_scene3d_bridge_tests();
 namespace tachyon { bool run_native_render_tests(); }
 bool run_sfx_contract_tests();
 bool run_shape_contract_tests();
+bool run_time_remap_tests();
+bool run_frame_blend_tests();
+bool run_motion_blur_tests();
+bool run_rolling_shutter_tests();
 
 
 int main(int argc, char** argv) {
@@ -211,13 +215,16 @@ int main(int argc, char** argv) {
         {"golden", run_golden_visual_tests},
         {"tiling", tachyon::run_tiling_tests},
         {"scene_spec", run_scene_spec_tests},
-        // {"motion_blur", run_motion_blur_tests},  // Disabled - see tests/disabled/README.md
+        {"motion_blur", run_motion_blur_tests},
         // {"audio_pitch_correct", run_audio_pitch_correct_tests},  // Disabled - see tests/disabled/README.md
 
         {"render_job", run_render_job_tests},
         {"expression_vm", run_expression_vm_tests},
         {"sfx_contract", run_sfx_contract_tests},
         {"shape_contract", run_shape_contract_tests},
+        {"time_remap", run_time_remap_tests},
+        {"frame_blend", run_frame_blend_tests},
+        {"rolling_shutter", run_rolling_shutter_tests},
     };
 
     bool list_tests = false;

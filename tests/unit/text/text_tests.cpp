@@ -2,6 +2,9 @@
 #include "tachyon/text/fonts/font_registry.h"
 #include "tachyon/text/layout/layout.h"
 #include "tachyon/text/rendering/text_raster_surface.h"
+#include "tachyon/text/animation/text_animator_pipeline.h"
+#include "tachyon/text/animation/text_on_path.h"
+#include "tachyon/core/shapes/shape_path.h"
 
 #include <filesystem>
 #include <iostream>
@@ -351,7 +354,8 @@ bool run_text_tests() {
         ctx.total_clusters = 3.0f;
         ctx.time = 1.0f;
 
-        TextAnimatorPipeline::apply_animators(layout, {animator}, ctx);
+        std::vector<TextAnimatorSpec> animators_list = {animator};
+        TextAnimatorPipeline::apply_animators(layout, animators_list, ctx);
 
         // Verify that glyphs in same cluster are treated consistently
         // (cluster_index is preserved, not modified by animation)
@@ -404,7 +408,8 @@ bool run_text_tests() {
         ctx.total_clusters = 5.0f;
         ctx.time = 1.0f;
 
-        TextAnimatorPipeline::apply_animators(layout, {animator}, ctx);
+        std::vector<TextAnimatorSpec> animators_list = {animator};
+        TextAnimatorPipeline::apply_animators(layout, animators_list, ctx);
 
         // Word 0 should be unchanged
         check_true(layout.glyphs[0].opacity > 0.9f, "Word 0 opacity unchanged");
@@ -449,7 +454,8 @@ bool run_text_tests() {
         ctx.total_glyphs = 3.0f;
         ctx.time = 1.0f;
 
-        TextAnimatorPipeline::apply_animators(layout, {animator}, ctx);
+        std::vector<TextAnimatorSpec> animators_list = {animator};
+        TextAnimatorPipeline::apply_animators(layout, animators_list, ctx);
 
         // Non-space glyphs should be affected
         // Note: is_space flag needs to be set properly in context
@@ -516,7 +522,8 @@ bool run_text_tests() {
         ctx.total_glyphs = 2.0f;
         ctx.time = 1.0f;
 
-        TextAnimatorPipeline::apply_animators(layout, {animator}, ctx);
+        std::vector<TextAnimatorSpec> animators_list = {animator};
+        TextAnimatorPipeline::apply_animators(layout, animators_list, ctx);
 
         // Note: The expression "is_rtl" would need to be supported in evaluate_expression
         // For now, just verify the infrastructure is in place
@@ -549,7 +556,8 @@ bool run_text_tests() {
         ctx.total_glyphs = 2.0f;
         ctx.time = 1.0f;
 
-        TextAnimatorPipeline::apply_animators(layout, {animator}, ctx);
+        std::vector<TextAnimatorSpec> animators_list = {animator};
+        TextAnimatorPipeline::apply_animators(layout, animators_list, ctx);
 
         // Scale should be applied
         check_true(layout.glyphs[0].scale.x > 1.5f, "Scale applied to glyph 0");

@@ -30,8 +30,8 @@ public:
     MockAudioDecoder(float duration_sec, int sample_rate, bool silent = false)
         : m_duration(duration_sec), m_sample_rate(sample_rate), m_silent(silent) {}
 
-    float duration() const override { return m_duration; }
-    int sample_rate() const override { return m_sample_rate; }
+    double duration() const noexcept override { return static_cast<double>(m_duration); }
+    int sample_rate() const noexcept override { return m_sample_rate; }
 
     std::vector<float> decode_range(double start_sec, double dur_sec) override {
         const std::size_t samples = static_cast<std::size_t>(std::max(0.0, dur_sec) * m_sample_rate) * 2;
@@ -56,6 +56,7 @@ private:
 } // namespace
 
 bool run_audio_pitch_correct_tests() {
+    using namespace tachyon;
     using namespace tachyon::audio;
     using namespace tachyon::spec;
     using namespace tachyon::runtime;
@@ -238,25 +239,25 @@ bool run_audio_pitch_correct_tests() {
 
     // --- Test 10: TBF backward compatibility v3 -> v4 migration ---
     {
-        CompiledScene scene;
-        scene.header.magic = 0x54414348U;
-        scene.header.version = 3; // old version
-        scene.header.layout_checksum = CompiledScene::calculate_layout_checksum();
-        scene.scene_hash = 999;
+        CompiledScene scene_to_migrate;
+        scene_to_migrate.header.magic = 0x54414348U;
+        scene_to_migrate.header.version = 3; 
+        scene_to_migrate.header.layout_checksum = CompiledScene::calculate_layout_checksum();
+        scene_to_migrate.scene_hash = 999;
 
-        CompiledComposition comp;
-        comp.audio_tracks.push_back(AudioTrackSpec{});
-        comp.audio_tracks[0].id = "legacy";
-        comp.audio_tracks[0].playback_speed = 1.0f; // should keep default
-        comp.audio_tracks[0].pitch_shift = 1.0f;
-        comp.audio_tracks[0].pitch_correct = false;
-        scene.compositions.push_back(comp);
+        CompiledComposition comp_to_migrate;
+        comp_to_migrate.audio_tracks.push_back(AudioTrackSpec{});
+        comp_to_migrate.audio_tracks[0].id = "legacy";
+        comp_to_migrate.audio_tracks[0].playback_speed = 1.0f; 
+        comp_to_migrate.audio_tracks[0].pitch_shift = 1.0f;
+        comp_to_migrate.audio_tracks[0].pitch_correct = false;
+        scene_to_migrate.compositions.push_back(comp_to_migrate);
 
-        auto migrated = TBFCodec::migrate(scene, 3);
-        check_true(migrated.header.version == TBFCodec::current_version(), "migration updates version to current");
-        check_true(migrated.compositions[0].audio_tracks[0].playback_speed == 1.0f, "migration keeps default playback_speed");
-        check_true(migrated.compositions[0].audio_tracks[0].pitch_shift == 1.0f, "migration keeps default pitch_shift");
-        check_true(migrated.compositions[0].audio_tracks[0].pitch_correct == false, "migration keeps default pitch_correct");
+        auto migrated_scene = TBFCodec::migrate(scene_to_migrate, 3);
+        check_true(migrated_scene.header.version == TBFCodec::current_version(), "migration updates version to current");
+        check_true(migrated_scene.compositions[0].audio_tracks[0].playback_speed == 1.0f, "migration keeps default playback_speed");
+        check_true(migrated_scene.compositions[0].audio_tracks[0].pitch_shift == 1.0f, "migration keeps default pitch_shift");
+        check_true(migrated_scene.compositions[0].audio_tracks[0].pitch_correct == false, "migration keeps default pitch_correct");
     }
 
     // --- Test 11: Clipping/bounds - very high volume should not produce NaN/Inf ---

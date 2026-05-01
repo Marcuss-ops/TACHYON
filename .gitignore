@@ -12,6 +12,8 @@ tests/output/actual/
 # Logs
 logs/
 *.log
+build_log*.txt
+build_errors.txt
 log.txt
 build_output.txt
 build_err.txt

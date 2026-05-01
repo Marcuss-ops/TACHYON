@@ -1,4 +1,6 @@
-find_package(OpenGL REQUIRED)
+if(TACHYON_ENABLE_PREVIEW_WINDOW)
+    find_package(OpenGL REQUIRED)
+endif()
 
 file(GLOB_RECURSE TACHYON_ALL_CPP CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
@@ -86,7 +88,6 @@ set(TachyonRuntimeSources
 set(TachyonRenderer2DSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/audio/audio_sampling.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/backend/cpu_backend.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/backend/vulkan_backend.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/color/blending.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/color/blending_math.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/color/blending_parse.cpp
@@ -170,6 +171,13 @@ set(TachyonRenderer2DSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/text/utils/font_utils.cpp
 )
 
+if(TACHYON_ENABLE_VULKAN)
+    list(APPEND TachyonRenderer2DSources
+        ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/backend/vulkan_backend.cpp
+    )
+    target_compile_definitions(TachyonRenderer2D PUBLIC TACHYON_ENABLE_VULKAN)
+endif()
+
 set(TachyonRenderer3DSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/animation/animation3d.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/animation/motion_blur.cpp
@@ -207,12 +215,17 @@ list(FILTER TachyonAudioSources INCLUDE REGEX "/audio/[^/]+\\.cpp$")
 set(TachyonOutputSources
     ${CMAKE_CURRENT_SOURCE_DIR}/output/output_utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/output/png_sequence_sink.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/output/prores_sink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/output/ffmpeg/ffmpeg_command.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/output/ffmpeg/ffmpeg_command_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/output/ffmpeg/ffmpeg_pipe_sink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/output/ffmpeg/ffmpeg_utils.cpp
 )
+
+if(TACHYON_ENABLE_PRORES)
+    list(APPEND TachyonOutputSources
+        ${CMAKE_CURRENT_SOURCE_DIR}/output/prores_sink.cpp
+    )
+endif()
 
 set(TachyonTextSources
     ${CMAKE_CURRENT_SOURCE_DIR}/text/text_measure.cpp
@@ -301,9 +314,31 @@ set(TachyonCLISources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/cli_fetch_fonts.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/cli_demo.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/cli_transition.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/preview_window.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/cli.cpp
 )
+
+if(TACHYON_ENABLE_PREVIEW_WINDOW)
+    list(APPEND TachyonCLISources
+        ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/preview_window.cpp
+    )
+endif()
+
+function(tachyon_deduplicate_sources var_name)
+    set(_list "${${var_name}}")
+    list(REMOVE_DUPLICATES _list)
+    set(${var_name} "${_list}" PARENT_SCOPE)
+endfunction()
+
+tachyon_deduplicate_sources(TachyonSceneSources)
+tachyon_deduplicate_sources(TachyonRuntimeSources)
+tachyon_deduplicate_sources(TachyonRenderer2DSources)
+tachyon_deduplicate_sources(TachyonRenderer3DSources)
+tachyon_deduplicate_sources(TachyonMediaSources)
+tachyon_deduplicate_sources(TachyonAudioSources)
+tachyon_deduplicate_sources(TachyonOutputSources)
+tachyon_deduplicate_sources(TachyonTextSources)
+tachyon_deduplicate_sources(TachyonTrackerSources)
+tachyon_deduplicate_sources(TachyonCLISources)
 
 function(tachyon_configure_target target)
     target_include_directories(${target}
@@ -316,7 +351,7 @@ function(tachyon_configure_target target)
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../third_party/stb/include>
             $<BUILD_INTERFACE:${tinygltf_SOURCE_DIR}>
             $<BUILD_INTERFACE:${tinyexr_SOURCE_DIR}>
-            $<BUILD_INTERFACE:${earcut_SOURCE_DIR}/include>
+            $<BUILD_INTERFACE:${TACHYON_EARCUT_INCLUDE_DIR}>
             $<BUILD_INTERFACE:${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/include>
             $<INSTALL_INTERFACE:include>
     )
@@ -332,10 +367,13 @@ function(tachyon_configure_target target)
             swscale
             swresample
             embree
-            glfw
-            OpenGL::GL
             OpenMP::OpenMP_CXX
     )
+
+    if(TACHYON_ENABLE_PREVIEW_WINDOW)
+        target_link_libraries(${target} PUBLIC glfw OpenGL::GL)
+        target_compile_definitions(${target} PUBLIC TACHYON_ENABLE_PREVIEW_WINDOW)
+    endif()
 
     if(MSVC)
         target_compile_options(${target} PRIVATE /W4 /permissive- /utf-8 /FS /arch:AVX2)
@@ -352,7 +390,7 @@ function(tachyon_configure_target target)
 
     target_compile_definitions(${target} PRIVATE "TACHYON_SFX_ROOT=\"${CMAKE_CURRENT_SOURCE_DIR}/audio/SoundEffect\"")
 
-    if(WIN32)
+    if(TACHYON_ENABLE_OIDN AND WIN32)
         target_include_directories(${target} PUBLIC $<BUILD_INTERFACE:${oidn_SOURCE_DIR}/include>)
         target_link_libraries(${target} PUBLIC OpenImageDenoise)
     endif()
@@ -385,6 +423,9 @@ tachyon_configure_target(TachyonAudio)
 
 add_library(TachyonOutput OBJECT ${TachyonOutputSources})
 tachyon_configure_target(TachyonOutput)
+if(TACHYON_ENABLE_PRORES)
+    target_compile_definitions(TachyonOutput PUBLIC TACHYON_ENABLE_PRORES)
+endif()
 
 add_library(TachyonText OBJECT ${TachyonTextSources})
 tachyon_configure_target(TachyonText)

@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "project": {
+    "id": "survival_title_text",
+    "name": "Survival Title Text",
+    "authoring_tool": "Tachyon"
+  },
+  "font_manifest": "../../font_manifest.json",
+  "compositions": [
+    {
+      "id": "main",
+      "name": "Main",
+      "width": 1280,
+      "height": 180,
+      "duration": 1.0,
+      "frame_rate": 30,
+      "background": "#00000000",
+      "layers": [
+        {
+          "id": "title",
+          "name": "Title",
+          "type": "text",
+          "enabled": true,
+          "visible": true,
+          "start_time": 0,
+          "in_point": 0,
+          "out_point": 1.0,
+          "width": 1280,
+          "height": 140,
+          "alignment": "center",
+          "text_content": "10 MINUTES",
+          "font_id": "sf-pro-display-bold",
+          "font_size": 86,
+          "fill_color": [12, 12, 14, 255],
+          "transform": {
+            "position_x": 0,
+            "position_y": 12
+          }
+        }
+      ]
+    }
+  ]
+}

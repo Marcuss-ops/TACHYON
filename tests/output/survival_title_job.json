@@ -1,0 +1,39 @@
+{
+  "job_id": "survival_title_card_preview",
+  "scene_ref": "tests/output/survival_title_scene.json",
+  "composition_target": "main",
+  "seed_policy_mode": "deterministic",
+  "compatibility_mode": "locked_v1",
+  "frame_range": {
+    "start": 0,
+    "end": 0
+  },
+  "output": {
+    "destination": {
+        "path": "tests/output/survival_title_preview2.png",
+      "overwrite": true
+    },
+    "profile": {
+      "name": "preview_png",
+      "class": "delivery",
+      "container": "png",
+      "alpha_mode": "preserved",
+      "video": {
+        "codec": "png",
+        "pixel_format": "rgba8"
+      },
+      "audio": {
+        "mode": "none"
+      },
+      "buffering": {
+        "strategy": "pipe",
+        "max_frames_in_queue": 1
+      },
+      "color": {
+        "space": "bt709",
+        "transfer": "bt709",
+        "range": "tv"
+      }
+    }
+  }
+}

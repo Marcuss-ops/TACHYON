@@ -29,9 +29,9 @@ void test_rolling_shutter_cache_identity() {
     assert(id.find("rs_mode:3") != std::string::npos);
 }
 
-int main() {
+bool run_rolling_shutter_tests() {
     test_rolling_shutter_disabled();
     test_rolling_shutter_exposure_offset();
     test_rolling_shutter_cache_identity();
-    return 0;
+    return true;
 }
