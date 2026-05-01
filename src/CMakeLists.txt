@@ -38,6 +38,7 @@ add_library(TachyonCore
     core/cli/cli_render.cpp
     core/cli/cli_demo.cpp
     core/cli/cli_watch.cpp
+    core/cli/cli_fetch_fonts.cpp
     core/cli/cli_preview_frame.cpp
     core/cli/preview_window.cpp
     core/options.cpp
@@ -79,6 +80,9 @@ add_library(TachyonCore
     core/spec/validation/scene_validator.cpp
     core/spec/legacy/scene_spec_audio.cpp
     core/spec/json_parse_helpers.cpp
+    core/spec/property_parse_json.cpp
+    core/spec/legacy/layer_parse_json.cpp
+    core/spec/legacy/scene_spec_json.cpp
     renderer2d/raster/draw_list_builder.cpp
     renderer2d/raster/draw_list_rasterizer.cpp
     renderer2d/raster/mesh_rasterizer.cpp
