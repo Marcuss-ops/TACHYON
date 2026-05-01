@@ -1,0 +1,20 @@
+# TachyonRenderer3D sources
+set(TachyonRenderer3DSources
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/animation/animation3d.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/animation/motion_blur.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/core/ray_tracer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/core/ray_tracer_scene.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/core/ray_tracer_shading.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/core/scene_cache.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/effects/camera_cut_timeline.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/effects/depth_of_field.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/materials/material.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/materials/material_evaluator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/materials/pbr_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/temporal/frame_blend_mode.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/temporal/rolling_shutter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/temporal/time_remap_curve.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/utilities/debug_tools.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/utilities/environment_manager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/visibility/culling.cpp
+)

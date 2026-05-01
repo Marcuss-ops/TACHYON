@@ -39,11 +39,6 @@ add_executable(TachyonTests
     unit/core/spec/scene_spec_tests.cpp
     unit/core/camera/camera_shake_tests.cpp
     unit/core/properties/bezier_interpolator_tests.cpp
-    unit/tracker/track_tests.cpp
-    unit/tracker/track_binding_tests.cpp
-    unit/tracker/planar_track_tests.cpp
-    unit/tracker/camera_solver_tests.cpp
-    unit/tracker/optical_flow_tests.cpp
     unit/renderer2d/composition/matte_resolver_tests.cpp
     unit/renderer2d/composition/evaluated_composition_renderer_tests.cpp
     unit/editor/undo_manager_tests.cpp
@@ -73,6 +68,18 @@ add_executable(TachyonTests
     unit/runtime/native_render_tests.cpp
 )
 
+set(TachyonTrackerTestSources
+    unit/tracker/track_tests.cpp
+    unit/tracker/track_binding_tests.cpp
+    unit/tracker/planar_track_tests.cpp
+    unit/tracker/camera_solver_tests.cpp
+    unit/tracker/optical_flow_tests.cpp
+)
+
+if(TACHYON_ENABLE_TRACKER)
+    target_sources(TachyonTests PRIVATE ${TachyonTrackerTestSources})
+endif()
+
 set(TACHYON_TESTS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 string(REPLACE "\\" "/" TACHYON_TESTS_SOURCE_DIR "${TACHYON_TESTS_SOURCE_DIR}")
 
@@ -92,12 +99,14 @@ endif()
 
 if(MSVC)
     file(GLOB OIDN_RUNTIME_DLLS CONFIGURE_DEPENDS "${oidn_SOURCE_DIR}/bin/*.dll")
-    add_custom_command(TARGET TachyonTests POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${OIDN_RUNTIME_DLLS}
-                $<TARGET_FILE_DIR:TachyonTests>
-        COMMAND_EXPAND_LISTS
-    )
+    if(OIDN_RUNTIME_DLLS)
+        add_custom_command(TARGET TachyonTests POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    ${OIDN_RUNTIME_DLLS}
+                    $<TARGET_FILE_DIR:TachyonTests>
+            COMMAND_EXPAND_LISTS
+        )
+    endif()
 endif()
 
 if(MSVC)

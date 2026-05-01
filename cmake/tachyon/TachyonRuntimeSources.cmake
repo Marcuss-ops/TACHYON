@@ -1,0 +1,47 @@
+# TachyonRuntime sources
+set(TachyonRuntimeSources
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/cache/cache_key_builder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/cache/disk_cache.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/cache/frame_cache.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/core/data/compiled_scene.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/core/data/property_graph.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/core/graph/dependency_graph.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/core/graph/render_graph.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/core/serialization/tbf_codec.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/core/serialization/tbf_migration.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/core/serialization/tbf_read_helpers.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/core/serialization/tbf_write_helpers.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/compiled_frame_program.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_hasher.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/native_render.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/quality_policy.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_plan.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_plan_build.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_plan_hash.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_progress_sink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_session.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_session_audio.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_session_parallel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_session_serialization.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/tile_scheduler.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/batch_runner/batch_runner_execute.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/batch_runner/batch_runner_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/batch_runner/batch_runner_validate.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_evaluator_composition.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_evaluator_layer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_evaluator_node.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_evaluator_property.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_executor_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/planning/hash/animation_hash.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/planning/hash/effect_hash.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/planning/hash/scene_hash.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_job/render_job_builder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_job/render_job_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_job/render_job_validate.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/playback/audio_preview_buffer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/playback/playback_engine.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/playback/playback_queue.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/resource/render_context.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/batch_runner/batch_runner_parse.cpp
+)
