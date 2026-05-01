@@ -167,9 +167,10 @@ add_library(TachyonCore
     text/core/fonts/font_registry.cpp
     text/core/fonts/font_face.cpp
     text/core/fonts/font_instance.cpp
-    text/core/fonts/font_manifest.cpp
-    text/core/fonts/font_resolver.cpp
-    text/core/fonts/font_preloader.cpp
+    text/core/fonts/management/font_manifest.cpp
+    text/core/fonts/management/font_resolver.cpp
+    text/core/fonts/management/font_preloader.cpp
+    text/core/fonts/management/font_downloader.cpp
     text/core/fonts/font_coverage_reporter.cpp
     text/core/layout/layout.cpp
     text/core/layout/layout_engine.cpp
