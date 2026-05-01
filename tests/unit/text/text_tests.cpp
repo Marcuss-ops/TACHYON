@@ -1,5 +1,5 @@
-#include "tachyon/text/fonts/font.h"
-#include "tachyon/text/fonts/font_registry.h"
+#include "tachyon/text/fonts/core/font.h"
+#include "tachyon/text/fonts/core/font_registry.h"
 #include "tachyon/text/layout/layout.h"
 #include "tachyon/text/rendering/text_raster_surface.h"
 #include "tachyon/text/animation/text_animator_pipeline.h"
@@ -233,7 +233,10 @@ bool run_text_tests() {
         const auto ttf_path = first_existing_path({
             "C:/Windows/Fonts/segoeui.ttf",
             "C:/Windows/Fonts/arial.ttf",
-            "C:/Windows/Fonts/tahoma.ttf"
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/TTF/DejaVuSans.ttf",
+            "/System/Library/Fonts/Helvetica.ttc",
+            "tests/assets/fonts/Inter-Regular.ttf"
         });
 
         if (!ttf_path.empty()) {

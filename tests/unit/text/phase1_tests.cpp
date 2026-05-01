@@ -1,4 +1,4 @@
-#include "tachyon/text/fonts/font.h"
+#include "tachyon/text/fonts/core/font.h"
 #include "tachyon/text/layout/layout.h"
 #include "tachyon/text/layout/cluster_iterator.h"
 #include "tachyon/text/i18n/bidi_engine.h"

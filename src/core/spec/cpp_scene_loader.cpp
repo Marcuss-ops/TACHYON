@@ -126,7 +126,18 @@ std::string CppSceneLoader::get_compiler_command(
     ss << "/I\"" << TACHYON_JSON_INCLUDE_DIR << "\" ";
     ss << "\"" << cpp_path.string() << "\" ";
     ss << "/Fe:\"" << dll_path.string() << "\" ";
-    ss << "/link /LIBPATH:\"" << TACHYON_LIB_PATH << "\" ";
+    std::filesystem::path lib_path = TACHYON_LIB_PATH;
+    if (!std::filesystem::exists(lib_path / TACHYON_CORE_LIB)) {
+        if (std::filesystem::exists(lib_path / "RelWithDebInfo" / TACHYON_CORE_LIB)) {
+            lib_path /= "RelWithDebInfo";
+        } else if (std::filesystem::exists(lib_path / "Release" / TACHYON_CORE_LIB)) {
+            lib_path /= "Release";
+        } else if (std::filesystem::exists(lib_path / "Debug" / TACHYON_CORE_LIB)) {
+            lib_path /= "Debug";
+        }
+    }
+
+    ss << "/link /LIBPATH:\"" << lib_path.string() << "\" ";
     ss << TACHYON_CORE_LIB;
 #else
     // Clang/GCC command

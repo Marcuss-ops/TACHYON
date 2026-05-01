@@ -35,7 +35,7 @@ TEST_F(ProxyWorkerTest, QueuesAndGeneratesProxy) {
     policy.target_height = 360;
     policy.output_directory = m_temp_dir;
 
-    std::string original = "C:/media/video.mp4";
+    std::string original = "test_video_source.mp4";
     worker.generate_proxies({original}, policy);
 
     // Wait for the background worker (since we have a placeholder that "completes" immediately)
