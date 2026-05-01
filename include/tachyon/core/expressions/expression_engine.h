@@ -31,6 +31,7 @@ struct ExpressionContext {
     std::unordered_map<std::string, std::vector<std::vector<std::string>>> tables;
     std::uint64_t seed{0};
     std::uint32_t layer_index{0};
+    double time{0.0};
     double value{0.0};
 
     // Callback for valueAtTime(property_index, time)

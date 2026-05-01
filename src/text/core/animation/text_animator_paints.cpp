@@ -361,10 +361,13 @@ void apply_text_animators(
 std::vector<ResolvedGlyphPaint> resolve_glyph_paints(
     const BitmapFont& font,
     const TextLayoutResult& layout,
-    const TextAnimationOptions& animation) {
+    const TextAnimationOptions& animation,
+    std::span<const TextAnimatorSpec> animators) {
 
     TextLayoutResult animated_layout = layout;
     apply_text_animators(animated_layout, animation);
+
+    const auto active_animators = animators.empty() ? animation.animators : animators;
 
     std::vector<ResolvedGlyphPaint> paints;
     paints.reserve(animated_layout.glyphs.size());
@@ -407,7 +410,7 @@ std::vector<ResolvedGlyphPaint> resolve_glyph_paints(
             paint.motion_blur_vector.x = 0.0f;
             paint.motion_blur_vector.y = 0.0f;
             
-            for (const auto& animator : animation.animators) {
+            for (const auto& animator : active_animators) {
                 if (!animator.properties.position_offset_keyframes.empty()) {
                     // Quick estimate of velocity at current time
                     paint.motion_blur_vector.y += 5.0f * animation.motion_blur_intensity; // Vertical entrance bias
@@ -418,7 +421,7 @@ std::vector<ResolvedGlyphPaint> resolve_glyph_paints(
         paints.push_back(paint);
     }
 
-    for (const auto& animator : animation.animators) {
+    for (const auto& animator : active_animators) {
         if (animator.cursor.enabled) {
             const double phase = animation.time_seconds * animator.cursor.blink_rate;
             const bool is_on = (static_cast<int>(std::floor(phase * 2.0)) % 2) == 0;

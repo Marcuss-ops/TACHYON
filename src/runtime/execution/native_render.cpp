@@ -87,7 +87,7 @@ RenderSessionResult NativeRenderer::render(
         sink->on_message("Starting render: " + job.job_id);
         sink->on_message("Composition: " + job.composition_target);
         sink->on_message("Frames: " + std::to_string(job.frame_range.start) + " -> " + std::to_string(job.frame_range.end));
-        sink->on_message("Output: " + job.output.destination.path.string());
+        sink->on_message("Output: " + job.output.destination.path);
     }
 
     sink->on_phase_start(RenderPhase::Render);

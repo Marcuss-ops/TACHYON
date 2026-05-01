@@ -25,6 +25,11 @@ list(FILTER TachyonRenderer3DSources INCLUDE REGEX "/renderer3d/")
 set(TachyonMediaSources ${TACHYON_ALL_CPP})
 list(FILTER TachyonMediaSources INCLUDE REGEX "/media/[^/]+\\.cpp$|/media/ffmpeg/[^/]+\\.cpp$")
 list(FILTER TachyonMediaSources EXCLUDE REGEX "/media/(decoding/svg_decoder_impl|decoding/tinygltf_impl|management/asset_manager|management/image_manager|management/media_manager|loading/mesh_loader|streaming/media_prefetcher|resolution/asset_resolution|import/asset_import_pipeline)\\.cpp$")
+list(APPEND TachyonMediaSources
+    "${CMAKE_CURRENT_SOURCE_DIR}/media/management/proxy_manifest.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/media/management/proxy_worker.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/media/processing/extruder.cpp"
+)
 
 set(TachyonAudioSources ${TACHYON_ALL_CPP})
 list(FILTER TachyonAudioSources INCLUDE REGEX "/audio/[^/]+\\.cpp$")
@@ -35,6 +40,7 @@ list(FILTER TachyonOutputSources EXCLUDE REGEX "/output/(av_exporter|exr_sequenc
 
 set(TachyonTextSources ${TACHYON_ALL_CPP})
 list(FILTER TachyonTextSources INCLUDE REGEX "/text/")
+list(FILTER TachyonTextSources EXCLUDE REGEX "font_instance\\.cpp$")
 
 set(TachyonTrackerSources ${TACHYON_ALL_CPP})
 list(FILTER TachyonTrackerSources INCLUDE REGEX "/tracker/[^/]+\\.cpp$")
@@ -48,8 +54,13 @@ function(tachyon_configure_target target)
             ${CMAKE_CURRENT_SOURCE_DIR}/..
         PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+            $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../third_party>
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../third_party/stb/include>
+            $<BUILD_INTERFACE:${tinygltf_SOURCE_DIR}>
+            $<BUILD_INTERFACE:${tinyexr_SOURCE_DIR}>
+            $<BUILD_INTERFACE:${earcut_SOURCE_DIR}/include>
+            $<BUILD_INTERFACE:${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/include>
             $<INSTALL_INTERFACE:include>
     )
 

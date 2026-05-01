@@ -11,11 +11,30 @@
 #include "tachyon/core/shapes/shape_path.h"
 #include "tachyon/core/spec/schema/shapes/shape_spec.h"
 #include "tachyon/core/animation/easing.h"
+#include <map>
 #include <string>
 #include <vector>
 #include <optional>
 
 namespace tachyon {
+
+struct ParticleSpec {
+    std::string type;
+    bool enabled{true};
+
+    [[nodiscard]] bool empty() const noexcept {
+        return type.empty() || !enabled;
+    }
+};
+
+inline void to_json(nlohmann::json& j, const ParticleSpec& p) {
+    j = nlohmann::json{{"type", p.type}, {"enabled", p.enabled}};
+}
+
+inline void from_json(const nlohmann::json& j, ParticleSpec& p) {
+    if (j.contains("type") && j.at("type").is_string()) p.type = j.at("type").get<std::string>();
+    if (j.contains("enabled") && j.at("enabled").is_boolean()) p.enabled = j.at("enabled").get<bool>();
+}
 
 struct LayerTransitionSpec {
     std::string type; // JSON string field (e.g., "fade", "slide_left")
@@ -25,6 +44,12 @@ struct LayerTransitionSpec {
     double duration{0.4};
     double delay{0.0};
     animation::EasingPreset easing{animation::EasingPreset::EaseOut};
+    struct SpringSpec {
+        double stiffness{200.0};
+        double damping{20.0};
+        double mass{1.0};
+        double velocity{0.0};
+    } spring;
 };
 
 struct LayerSpec {
@@ -66,6 +91,7 @@ struct LayerSpec {
     std::string font_id;
     AnimatedScalarSpec font_size;
     std::string alignment{"left"};
+    std::map<std::string, AnimatedScalarSpec> font_axes;
     AnimatedColorSpec fill_color;
     AnimatedColorSpec stroke_color;
     double stroke_width{0.0};
@@ -87,6 +113,10 @@ struct LayerSpec {
     AnimatedScalarSpec repeater_offset_scale_y;
     AnimatedScalarSpec repeater_start_opacity;
     AnimatedScalarSpec repeater_end_opacity;
+    AnimatedScalarSpec repeater_grid_cols;
+    AnimatedScalarSpec repeater_radial_radius;
+    AnimatedScalarSpec repeater_radial_start_angle;
+    AnimatedScalarSpec repeater_radial_end_angle;
 
     // Subtitles
     std::string subtitle_path;
@@ -175,6 +205,12 @@ struct LayerSpec {
 
     // Procedural generation
     std::optional<ProceduralSpec> procedural;
+    std::optional<ParticleSpec> particle_spec;
+    
+    // 3D Geometry Shorthand
+    double extrusion_depth{0.0};
+    double bevel_size{0.0};
+    double hole_bevel_ratio{0.0};
 };
 
 } // namespace tachyon

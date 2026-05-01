@@ -19,6 +19,17 @@
 #include <vector>
 
 namespace tachyon {
+    
+/**
+ * @brief Progress callback for long-running render operations.
+ * First argument is the number of completed frames, second is total frames.
+ */
+using RenderProgressCallback = std::function<void(std::size_t, std::size_t)>;
+
+/**
+ * @brief Thread-safe flag used to request cancellation of a render session.
+ */
+using CancelFlag = std::atomic<bool>;
 
 struct RenderSessionResult {
     std::vector<ExecutedFrame> frames;

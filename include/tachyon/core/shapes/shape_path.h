@@ -26,9 +26,11 @@ struct ShapePathSpec {
     std::vector<PathVertex> points;
     bool closed{false};
     std::vector<ShapeSubpath> subpaths;
+    std::vector<PathVertex> morph_target_points;
+    double morph_progress{0.0};
 
     [[nodiscard]] bool empty() const noexcept {
-        return points.empty() && subpaths.empty();
+        return points.empty() && subpaths.empty() && morph_target_points.empty() && morph_progress == 0.0;
     }
 };
 

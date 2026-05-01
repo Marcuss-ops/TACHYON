@@ -34,6 +34,27 @@ $ErrorActionPreference = "Stop"
 $global:LASTEXITCODE = 0
 $Root = $PSScriptRoot
 
+function Invoke-Native {
+    param(
+        [scriptblock]$Command,
+        [string]$FailureMessage
+    )
+
+    $previousPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & $Command
+        $exitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousPreference
+    }
+
+    if ($exitCode -ne 0) {
+        Write-Error $FailureMessage
+        exit $exitCode
+    }
+}
+
 if ($Check) {
     $Target = "TachyonCore"
 }
@@ -71,17 +92,12 @@ $NeedConf  = $Configure -or (-not (Test-Path (Join-Path $BuildDir "Tachyon.sln")
 
 if ($NeedConf) {
     Write-Host "Configuring..." -ForegroundColor Yellow
-    cmake --preset dev -S "$Root" -B "$BuildDir"
-    if ($LASTEXITCODE -ne 0) { Write-Error "CMake configure failed."; exit 1 }
+    Invoke-Native { cmake --preset dev -S "$Root" -B "$BuildDir" } "CMake configure failed."
 }
 
 $J = if ($Jobs -gt 0) { $Jobs } else { [Environment]::ProcessorCount }
 Write-Host "Building $Target ($Config, $J jobs)..." -ForegroundColor Yellow
 
-cmake --build $BuildDir --config $Config --target $Target -j $J
+Invoke-Native { cmake --build $BuildDir --config $Config --target $Target -j $J } "Build FAILED."
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Build FAILED (exit $LASTEXITCODE)."
-    exit $LASTEXITCODE
-}
 Write-Host "Build OK" -ForegroundColor Green

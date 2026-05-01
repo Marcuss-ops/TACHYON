@@ -14,6 +14,13 @@ enum class InterpolationMode {
     Bezier,  ///< Cubic Bezier with per-keyframe control points.
 };
 
+struct SpringEasing {
+    double stiffness{200.0};
+    double damping{20.0};
+    double mass{1.0};
+    double velocity{0.0};
+};
+
 /**
  * A single keyframe binding a time position to a typed value.
  *
@@ -33,6 +40,7 @@ struct Keyframe {
     InterpolationMode out_mode{InterpolationMode::Linear};
     EasingPreset      easing{EasingPreset::None};
     CubicBezierEasing bezier{CubicBezierEasing::linear()};
+    SpringEasing      spring{};
 
     /**
      * Tangent handle for Bezier curves, expressed as a delta from this keyframe.

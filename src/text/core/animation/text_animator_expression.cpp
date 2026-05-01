@@ -37,9 +37,6 @@ float evaluate_expression_unified(const std::string& expr, const TextAnimatorCon
     context.variables["is_space"] = ctx.is_space ? 1.0 : 0.0;
     context.variables["t"] = context.time; // short alias for time
 
-    // Bind standard functions (sin, cos, noise, ease, loopOut, etc.)
-    bind_standard_expression_variables(context);
-
     EvaluationResult result = CoreExpressionEvaluator::evaluate(expr, context);
     
     if (!result.success) {

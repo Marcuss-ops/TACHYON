@@ -2,7 +2,7 @@
 #include "tachyon/presets/sfx/sfx_params.h"
 #include <cassert>
 
-int main() {
+bool run_sfx_contract_tests() {
     tachyon::presets::SfxParams p;
     p.category = tachyon::presets::SfxCategory::TypeWriting;
     p.variant = 2;
@@ -20,5 +20,5 @@ int main() {
     assert(shortcut_spec.in_point == 2.0);
     assert(shortcut_spec.volume == 0.5f);
 
-    return 0;
+    return true;
 }

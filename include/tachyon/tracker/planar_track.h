@@ -40,9 +40,15 @@ struct PlanarTrack {
     int width{0};   // source frame width (for normalisation)
     int height{0};  // source frame height
 
+    // Compatibility fields for some algorithms
+    std::vector<float> frame_times;
+    std::vector<std::vector<float>> homography_per_frame;
+
     // -----------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------
+
+    [[nodiscard]] std::optional<std::array<Point2f, 4>> corner_pin_at(float time) const;
 
     // Return the frame entry for a given frame number, or nullptr.
     const Frame* frame_at(int frame_number) const {

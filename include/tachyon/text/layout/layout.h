@@ -79,6 +79,7 @@ struct TextStyle {
 struct TextLayoutOptions {
     float tracking{0.0f};
     bool word_wrap{true};
+    bool use_sdf{false};
 };
 
 struct TextHighlightSpan {

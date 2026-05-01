@@ -1,11 +1,43 @@
 #include "tachyon/core/spec/scene_spec_serialize.h"
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
-#include "tachyon/core/spec/legacy/scene_spec_audio.h"
+#include "tachyon/core/spec/scene_spec_audio.h"
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 
 namespace tachyon {
+
+static std::string to_string(LayerType type) {
+    switch (type) {
+        case LayerType::Solid: return "solid";
+        case LayerType::Shape: return "shape";
+        case LayerType::Image: return "image";
+        case LayerType::Video: return "video";
+        case LayerType::Text: return "text";
+        case LayerType::Camera: return "camera";
+        case LayerType::Precomp: return "precomp";
+        case LayerType::Light: return "light";
+        case LayerType::Mask: return "mask";
+        case LayerType::NullLayer: return "null";
+        case LayerType::Procedural: return "procedural";
+        case LayerType::Unknown: return "unknown";
+    }
+    return "unknown";
+}
+
+static std::string to_string(TransitionKind kind) {
+    switch (kind) {
+        case TransitionKind::None: return "none";
+        case TransitionKind::Fade: return "fade";
+        case TransitionKind::Slide: return "slide";
+        case TransitionKind::Zoom: return "zoom";
+        case TransitionKind::Flip: return "flip";
+        case TransitionKind::Wipe: return "wipe";
+        case TransitionKind::Dissolve: return "dissolve";
+        case TransitionKind::Custom: return "custom";
+    }
+    return "none";
+}
 
 static std::string serialize_easing_preset(animation::EasingPreset preset) {
     switch (preset) {

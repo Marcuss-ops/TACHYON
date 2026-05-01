@@ -2,7 +2,7 @@
 #include "tachyon/presets/shape/shape_params.h"
 #include <cassert>
 
-int main() {
+bool run_shape_contract_tests() {
     tachyon::presets::ShapeParams p;
     p.type = "rect";
     p.fill_color = "#ff0000";
@@ -28,5 +28,5 @@ int main() {
     auto circle_spec = tachyon::presets::build_shape_circle(p);
     assert(circle_spec.shape.type == "circle");
 
-    return 0;
+    return true;
 }

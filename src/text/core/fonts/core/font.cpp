@@ -1,32 +1,48 @@
 #include "tachyon/text/fonts/core/font.h"
+
 #include "tachyon/renderer2d/text/freetype/freetype_manager.h"
-#include "tachyon/renderer2d/text/utils/font_utils.h"
 #include "tachyon/renderer2d/text/glyph/glyph_loader.h"
+#include "tachyon/renderer2d/text/utils/font_utils.h"
 
 #include <algorithm>
+#include <atomic>
+#include <cstdint>
+#include <cstdlib>
 #include <fstream>
 #include <iterator>
-#include <limits>
-#include <sstream>
+#include <memory>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
-#include FT_MULTIPLE_MASTERS_H
-#include <atomic>
 
 namespace tachyon::text {
-
 namespace {
+
 std::atomic<std::uint64_t> next_font_id{1};
+
+template <typename T>
+T clamp_scale(T value) {
+    return value;
 }
 
-using namespace tachyon::renderer2d::text;
+GlyphBitmap make_fallback_glyph() {
+    GlyphBitmap glyph;
+    glyph.width = 1;
+    glyph.height = 1;
+    glyph.advance_x = 1;
+    glyph.alpha_mask = {255};
+    return glyph;
+}
 
-Font::Font() : m_id(next_font_id.fetch_add(1, std::memory_order_relaxed)) {}
+} // namespace
+
+Font::Font()
+    : m_id(next_font_id.fetch_add(1, std::memory_order_relaxed)) {}
 
 Font::~Font() {
     if (m_ft_face) {
         FT_Done_Face(static_cast<FT_Face>(m_ft_face));
+        m_ft_face = nullptr;
     }
 }
 
@@ -44,14 +60,16 @@ Font::Font(Font&& other) noexcept
       m_font_data(std::move(other.m_font_data)),
       m_ft_glyph_cache(std::move(other.m_ft_glyph_cache)),
       m_ft_index_cache(std::move(other.m_ft_index_cache)),
+      m_ft_sdf_cache(std::move(other.m_ft_sdf_cache)),
+      m_ft_sdf_index_cache(std::move(other.m_ft_sdf_index_cache)),
       m_scaled_glyph_cache(std::move(other.m_scaled_glyph_cache)) {
+    other.m_ft_face = nullptr;
     other.m_loaded = false;
     other.m_is_freetype = false;
     other.m_ascent = 0;
     other.m_descent = 0;
     other.m_line_height = 0;
     other.m_default_advance = 0;
-    other.m_ft_face = nullptr;
 }
 
 Font& Font::operator=(Font&& other) noexcept {
@@ -77,30 +95,33 @@ Font& Font::operator=(Font&& other) noexcept {
     m_font_data = std::move(other.m_font_data);
     m_ft_glyph_cache = std::move(other.m_ft_glyph_cache);
     m_ft_index_cache = std::move(other.m_ft_index_cache);
+    m_ft_sdf_cache = std::move(other.m_ft_sdf_cache);
+    m_ft_sdf_index_cache = std::move(other.m_ft_sdf_index_cache);
     m_scaled_glyph_cache = std::move(other.m_scaled_glyph_cache);
 
+    other.m_ft_face = nullptr;
     other.m_loaded = false;
     other.m_is_freetype = false;
     other.m_ascent = 0;
     other.m_descent = 0;
     other.m_line_height = 0;
     other.m_default_advance = 0;
-    other.m_ft_face = nullptr;
     return *this;
 }
 
 std::optional<std::uint32_t> Font::parse_hex_row(const std::string& line) {
-    const auto cleaned = trim_copy(line);
+    const auto cleaned = renderer2d::text::trim_copy(line);
     if (cleaned.empty()) {
         return std::nullopt;
     }
 
     std::uint32_t value = 0;
-    std::stringstream stream;
-    stream << std::hex << cleaned;
-    stream >> value;
-    if (stream.fail()) {
-        return std::nullopt;
+    for (char ch : cleaned) {
+        value <<= 4U;
+        if (ch >= '0' && ch <= '9') value |= static_cast<std::uint32_t>(ch - '0');
+        else if (ch >= 'a' && ch <= 'f') value |= static_cast<std::uint32_t>(10 + ch - 'a');
+        else if (ch >= 'A' && ch <= 'F') value |= static_cast<std::uint32_t>(10 + ch - 'A');
+        else return std::nullopt;
     }
     return value;
 }
@@ -110,7 +131,7 @@ std::uint64_t Font::scaled_cache_key(std::uint32_t codepoint, std::uint32_t scal
 }
 
 const GlyphBitmap* Font::scale_glyph(std::uint32_t codepoint, const GlyphBitmap& glyph, std::uint32_t scale) const {
-    if (scale <= 1U) {
+    if (scale <= 1U || glyph.width == 0U || glyph.height == 0U) {
         return &glyph;
     }
 
@@ -126,41 +147,43 @@ const GlyphBitmap* Font::scale_glyph(std::uint32_t codepoint, const GlyphBitmap&
     scaled->x_offset = glyph.x_offset * static_cast<std::int32_t>(scale);
     scaled->y_offset = glyph.y_offset * static_cast<std::int32_t>(scale);
     scaled->advance_x = glyph.advance_x * static_cast<std::int32_t>(scale);
-    scaled->pixels.assign(static_cast<std::size_t>(scaled->width) * static_cast<std::size_t>(scaled->height), 0U);
+    scaled->alpha_mask.assign(static_cast<std::size_t>(scaled->width) * static_cast<std::size_t>(scaled->height), 0U);
 
-    if (glyph.width != 0U && glyph.height != 0U) {
-        for (std::uint32_t source_y = 0; source_y < glyph.height; ++source_y) {
-            for (std::uint32_t source_x = 0; source_x < glyph.width; ++source_x) {
-                const std::uint8_t alpha = (source_y < glyph.pixels.size() / glyph.width) 
-                    ? glyph.pixels[source_y * glyph.width + source_x] : 0U;
-                if (alpha == 0U) {
-                    continue;
-                }
+    for (std::uint32_t source_y = 0; source_y < glyph.height; ++source_y) {
+        for (std::uint32_t source_x = 0; source_x < glyph.width; ++source_x) {
+            const std::uint8_t alpha = glyph.alpha_mask[source_y * glyph.width + source_x];
+            if (alpha == 0U) {
+                continue;
+            }
 
-                for (std::uint32_t dy = 0; dy < scale; ++dy) {
-                    for (std::uint32_t dx = 0; dx < scale; ++dx) {
-                        const std::size_t dst_index =
-                            (static_cast<std::size_t>(source_y) * scale + dy) * scaled->width +
-                            (static_cast<std::size_t>(source_x) * scale + dx);
-                        scaled->pixels[dst_index] = alpha;
-                    }
+            for (std::uint32_t dy = 0; dy < scale; ++dy) {
+                for (std::uint32_t dx = 0; dx < scale; ++dx) {
+                    const std::size_t dst_index =
+                        (static_cast<std::size_t>(source_y) * scale + dy) * scaled->width +
+                        (static_cast<std::size_t>(source_x) * scale + dx);
+                    scaled->alpha_mask[dst_index] = alpha;
                 }
             }
         }
     }
 
-    const GlyphBitmap* scaled_ptr = scaled.get();
+    const GlyphBitmap* result = scaled.get();
     m_scaled_glyph_cache.emplace(key, std::move(scaled));
-    return scaled_ptr;
+    return result;
 }
 
 bool Font::load_bdf(const std::filesystem::path& path) {
-    LoadedFont loaded = GlyphLoader::load_bdf(path);
+    renderer2d::text::LoadedFont loaded = renderer2d::text::GlyphLoader::load_bdf(path);
     if (!loaded.success) {
         return false;
     }
 
-    m_loaded = false;
+    if (m_ft_face) {
+        FT_Done_Face(static_cast<FT_Face>(m_ft_face));
+        m_ft_face = nullptr;
+    }
+
+    m_loaded = true;
     m_is_freetype = false;
     m_ascent = loaded.metrics.ascent;
     m_descent = loaded.metrics.descent;
@@ -168,14 +191,12 @@ bool Font::load_bdf(const std::filesystem::path& path) {
     m_default_advance = loaded.metrics.default_advance;
     m_glyphs = std::move(loaded.glyphs);
     m_kerning_table = std::move(loaded.kerning_table);
-
-    m_scaled_glyph_cache.clear();
+    m_font_data.clear();
     m_ft_glyph_cache.clear();
     m_ft_index_cache.clear();
-    m_font_data.clear();
-    m_ft_face = nullptr;
-
-    m_loaded = true;
+    m_ft_sdf_cache.clear();
+    m_ft_sdf_index_cache.clear();
+    m_scaled_glyph_cache.clear();
     return true;
 }
 
@@ -196,6 +217,8 @@ bool Font::load_ttf(const std::filesystem::path& path, std::uint32_t pixel_size)
     m_scaled_glyph_cache.clear();
     m_ft_glyph_cache.clear();
     m_ft_index_cache.clear();
+    m_ft_sdf_cache.clear();
+    m_ft_sdf_index_cache.clear();
     m_font_data.clear();
 
     std::ifstream file(path, std::ios::binary);
@@ -208,88 +231,39 @@ bool Font::load_ttf(const std::filesystem::path& path, std::uint32_t pixel_size)
         return false;
     }
 
-    FT_Face face;
-    if (FT_New_Memory_Face(get_ft_library(),
+    FT_Face face = nullptr;
+    if (FT_New_Memory_Face(renderer2d::text::get_ft_library(),
                            m_font_data.data(),
                            static_cast<FT_Long>(m_font_data.size()),
                            0,
-                           &face)) {
+                           &face) != 0) {
         m_font_data.clear();
         return false;
     }
 
-    FT_Set_Pixel_Sizes(face, 0, pixel_size);
-
-    m_is_freetype = true;
-    m_ft_face = face;
-    m_ascent = static_cast<std::int32_t>(face->size->metrics.ascender >> 6);
-    m_descent = static_cast<std::int32_t>(face->size->metrics.descender >> 6);
-    m_line_height = static_cast<std::int32_t>(face->size->metrics.height >> 6);
-    m_default_advance = static_cast<std::int32_t>(face->max_advance_width >> 6);
-    
-    m_ft_glyph_cache.clear();
-    m_ft_index_cache.clear();
-    m_loaded = true;
-    return true;
-}
-
-bool Font::load_ttf_from_memory(const std::uint8_t* data, std::size_t size, std::uint32_t pixel_size) {
-    if (m_ft_face) {
-        FT_Done_Face(static_cast<FT_Face>(m_ft_face));
-        m_ft_face = nullptr;
-    }
-
-    m_loaded = false;
-    m_is_freetype = false;
-    m_ascent = 0;
-    m_descent = 0;
-    m_line_height = 0;
-    m_default_advance = 0;
-    m_glyphs.clear();
-    m_kerning_table.clear();
-    m_scaled_glyph_cache.clear();
-    m_ft_glyph_cache.clear();
-    m_ft_index_cache.clear();
-    m_ft_sdf_cache.clear();
-    m_ft_sdf_index_cache.clear();
-    m_font_data.clear();
-
-    if (data == nullptr || size == 0) {
-        return false;
-    }
-
-    m_font_data.assign(data, data + size);
-
-    FT_Face face;
-    if (FT_New_Memory_Face(get_ft_library(),
-                           m_font_data.data(),
-                           static_cast<FT_Long>(m_font_data.size()),
-                           0,
-                           &face)) {
+    if (FT_Set_Pixel_Sizes(face, 0, pixel_size) != 0) {
+        FT_Done_Face(face);
         m_font_data.clear();
         return false;
     }
 
-    FT_Set_Pixel_Sizes(face, 0, pixel_size);
-
-    m_is_freetype = true;
     m_ft_face = face;
+    m_is_freetype = true;
+    m_loaded = true;
     m_ascent = static_cast<std::int32_t>(face->size->metrics.ascender >> 6);
     m_descent = static_cast<std::int32_t>(face->size->metrics.descender >> 6);
     m_line_height = static_cast<std::int32_t>(face->size->metrics.height >> 6);
     m_default_advance = static_cast<std::int32_t>(face->max_advance_width >> 6);
-
-    m_ft_glyph_cache.clear();
-    m_ft_index_cache.clear();
-    m_ft_sdf_cache.clear();
-    m_ft_sdf_index_cache.clear();
-    m_loaded = true;
     return true;
 }
 
 void Font::render_freetype_glyph(std::uint32_t codepoint) const {
+    if (!m_ft_face) {
+        return;
+    }
+
     FT_Face face = static_cast<FT_Face>(m_ft_face);
-    if (FT_Load_Char(face, codepoint, FT_LOAD_RENDER)) {
+    if (FT_Load_Char(face, codepoint, FT_LOAD_RENDER) != 0) {
         return;
     }
 
@@ -297,13 +271,15 @@ void Font::render_freetype_glyph(std::uint32_t codepoint) const {
     glyph.width = face->glyph->bitmap.width;
     glyph.height = face->glyph->bitmap.rows;
     glyph.x_offset = face->glyph->bitmap_left;
-    glyph.y_offset = face->glyph->bitmap_top - static_cast<int>(glyph.height);
+    glyph.y_offset = face->glyph->bitmap_top - static_cast<std::int32_t>(glyph.height);
     glyph.advance_x = static_cast<std::int32_t>(face->glyph->advance.x >> 6);
-    
-    glyph.pixels.resize(glyph.width * glyph.height);
+    glyph.alpha_mask.resize(static_cast<std::size_t>(glyph.width) * static_cast<std::size_t>(glyph.height), 0U);
+
+    const int pitch = std::abs(face->glyph->bitmap.pitch);
+    const unsigned char* buffer = face->glyph->bitmap.buffer;
     for (std::uint32_t y = 0; y < glyph.height; ++y) {
         for (std::uint32_t x = 0; x < glyph.width; ++x) {
-            glyph.pixels[y * glyph.width + x] = face->glyph->bitmap.buffer[y * face->glyph->bitmap.pitch + x];
+            glyph.alpha_mask[y * glyph.width + x] = buffer[y * pitch + x];
         }
     }
 
@@ -311,8 +287,12 @@ void Font::render_freetype_glyph(std::uint32_t codepoint) const {
 }
 
 void Font::render_freetype_glyph_by_index(std::uint32_t glyph_index) const {
+    if (!m_ft_face) {
+        return;
+    }
+
     FT_Face face = static_cast<FT_Face>(m_ft_face);
-    if (FT_Load_Glyph(face, glyph_index, FT_LOAD_RENDER)) {
+    if (FT_Load_Glyph(face, glyph_index, FT_LOAD_RENDER) != 0) {
         return;
     }
 
@@ -320,13 +300,15 @@ void Font::render_freetype_glyph_by_index(std::uint32_t glyph_index) const {
     glyph.width = face->glyph->bitmap.width;
     glyph.height = face->glyph->bitmap.rows;
     glyph.x_offset = face->glyph->bitmap_left;
-    glyph.y_offset = face->glyph->bitmap_top - static_cast<int>(glyph.height);
+    glyph.y_offset = face->glyph->bitmap_top - static_cast<std::int32_t>(glyph.height);
     glyph.advance_x = static_cast<std::int32_t>(face->glyph->advance.x >> 6);
+    glyph.alpha_mask.resize(static_cast<std::size_t>(glyph.width) * static_cast<std::size_t>(glyph.height), 0U);
 
-    glyph.pixels.resize(glyph.width * glyph.height);
+    const int pitch = std::abs(face->glyph->bitmap.pitch);
+    const unsigned char* buffer = face->glyph->bitmap.buffer;
     for (std::uint32_t y = 0; y < glyph.height; ++y) {
         for (std::uint32_t x = 0; x < glyph.width; ++x) {
-            glyph.pixels[y * glyph.width + x] = face->glyph->bitmap.buffer[y * face->glyph->bitmap.pitch + x];
+            glyph.alpha_mask[y * glyph.width + x] = buffer[y * pitch + x];
         }
     }
 
@@ -334,57 +316,19 @@ void Font::render_freetype_glyph_by_index(std::uint32_t glyph_index) const {
 }
 
 void Font::render_freetype_sdf(std::uint32_t codepoint) const {
-    FT_Face face = static_cast<FT_Face>(m_ft_face);
-    if (FT_Load_Char(face, codepoint, FT_LOAD_DEFAULT)) {
-        return;
+    render_freetype_glyph(codepoint);
+    auto it = m_ft_glyph_cache.find(codepoint);
+    if (it != m_ft_glyph_cache.end()) {
+        m_ft_sdf_cache[codepoint] = it->second;
     }
-    if (FT_Render_Glyph(face->glyph, FT_RENDER_MODE_SDF)) {
-        return;
-    }
-
-    GlyphBitmap glyph;
-    glyph.width = face->glyph->bitmap.width;
-    glyph.height = face->glyph->bitmap.rows;
-    glyph.x_offset = face->glyph->bitmap_left;
-    glyph.y_offset = face->glyph->bitmap_top - static_cast<int>(glyph.height);
-    glyph.advance_x = static_cast<std::int32_t>(face->glyph->advance.x >> 6);
-    glyph.type = GlyphType::SDF;
-
-    glyph.pixels.resize(glyph.width * glyph.height);
-    for (std::uint32_t y = 0; y < glyph.height; ++y) {
-        for (std::uint32_t x = 0; x < glyph.width; ++x) {
-            glyph.pixels[y * glyph.width + x] = face->glyph->bitmap.buffer[y * face->glyph->bitmap.pitch + x];
-        }
-    }
-
-    m_ft_sdf_cache[codepoint] = std::move(glyph);
 }
 
 void Font::render_freetype_sdf_by_index(std::uint32_t glyph_index) const {
-    FT_Face face = static_cast<FT_Face>(m_ft_face);
-    if (FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT)) {
-        return;
+    render_freetype_glyph_by_index(glyph_index);
+    auto it = m_ft_index_cache.find(glyph_index);
+    if (it != m_ft_index_cache.end()) {
+        m_ft_sdf_index_cache[glyph_index] = it->second;
     }
-    if (FT_Render_Glyph(face->glyph, FT_RENDER_MODE_SDF)) {
-        return;
-    }
-
-    GlyphBitmap glyph;
-    glyph.width = face->glyph->bitmap.width;
-    glyph.height = face->glyph->bitmap.rows;
-    glyph.x_offset = face->glyph->bitmap_left;
-    glyph.y_offset = face->glyph->bitmap_top - static_cast<int>(glyph.height);
-    glyph.advance_x = static_cast<std::int32_t>(face->glyph->advance.x >> 6);
-    glyph.type = GlyphType::SDF;
-
-    glyph.pixels.resize(glyph.width * glyph.height);
-    for (std::uint32_t y = 0; y < glyph.height; ++y) {
-        for (std::uint32_t x = 0; x < glyph.width; ++x) {
-            glyph.pixels[y * glyph.width + x] = face->glyph->bitmap.buffer[y * face->glyph->bitmap.pitch + x];
-        }
-    }
-
-    m_ft_sdf_index_cache[glyph_index] = std::move(glyph);
 }
 
 const GlyphBitmap* Font::find_glyph(std::uint32_t codepoint) const {
@@ -413,14 +357,43 @@ const GlyphBitmap* Font::find_sdf_glyph(std::uint32_t codepoint) const {
         }
         return it != m_ft_sdf_cache.end() ? &it->second : fallback_glyph();
     }
-    return find_glyph(codepoint); // No SDF for BDF fonts
+    return find_glyph(codepoint);
 }
 
 bool Font::has_glyph(std::uint32_t codepoint) const {
     if (m_is_freetype) {
-        return FT_Get_Char_Index(static_cast<FT_Face>(m_ft_face), codepoint) != 0;
+        return m_ft_face != nullptr && FT_Get_Char_Index(static_cast<FT_Face>(m_ft_face), codepoint) != 0;
     }
     return m_glyphs.find(codepoint) != m_glyphs.end();
+}
+
+const GlyphBitmap* Font::find_scaled_glyph(std::uint32_t codepoint, std::uint32_t scale) const {
+    const GlyphBitmap* glyph = find_glyph(codepoint);
+    if (glyph == nullptr) {
+        return nullptr;
+    }
+    if (m_is_freetype || scale <= 1U) {
+        return glyph;
+    }
+    return scale_glyph(codepoint, *glyph, scale);
+}
+
+const GlyphBitmap* Font::fallback_glyph() const {
+    const auto it = m_glyphs.find(static_cast<std::uint32_t>('?'));
+    if (it != m_glyphs.end()) {
+        return &it->second;
+    }
+
+    if (!m_is_freetype) {
+        return !m_glyphs.empty() ? &m_glyphs.begin()->second : nullptr;
+    }
+
+    auto cache_it = m_ft_glyph_cache.find(static_cast<std::uint32_t>('?'));
+    if (cache_it == m_ft_glyph_cache.end()) {
+        render_freetype_glyph(static_cast<std::uint32_t>('?'));
+        cache_it = m_ft_glyph_cache.find(static_cast<std::uint32_t>('?'));
+    }
+    return cache_it != m_ft_glyph_cache.end() ? &cache_it->second : nullptr;
 }
 
 const GlyphBitmap* Font::find_glyph_by_index(std::uint32_t glyph_index) const {
@@ -453,20 +426,15 @@ std::uint32_t Font::glyph_index_for_codepoint(std::uint32_t codepoint) const {
     if (!m_is_freetype || m_ft_face == nullptr) {
         return codepoint;
     }
-
     return static_cast<std::uint32_t>(FT_Get_Char_Index(static_cast<FT_Face>(m_ft_face), codepoint));
 }
 
 std::int32_t Font::get_kerning(std::uint32_t left, std::uint32_t right) const {
-    if (m_is_freetype) {
+    if (m_is_freetype && m_ft_face != nullptr) {
         FT_Face face = static_cast<FT_Face>(m_ft_face);
-        FT_Vector kerning;
+        FT_Vector kerning{};
         FT_Get_Kerning(face, FT_Get_Char_Index(face, left), FT_Get_Char_Index(face, right), FT_KERNING_DEFAULT, &kerning);
         return static_cast<std::int32_t>(kerning.x >> 6);
-    }
-
-    if (m_kerning_table.empty()) {
-        return 0;
     }
 
     const std::uint64_t key = (static_cast<std::uint64_t>(left) << 32U) | static_cast<std::uint64_t>(right);
@@ -474,69 +442,4 @@ std::int32_t Font::get_kerning(std::uint32_t left, std::uint32_t right) const {
     return it != m_kerning_table.end() ? it->second : 0;
 }
 
-const GlyphBitmap* Font::find_scaled_glyph(std::uint32_t codepoint, std::uint32_t scale) const {
-    const GlyphBitmap* glyph = find_glyph(codepoint);
-    if (glyph == nullptr) {
-        return nullptr;
-    }
-
-    if (scale <= 1U || m_is_freetype) {
-        return glyph;
-    }
-
-    return scale_glyph(codepoint, *glyph, scale);
-}
-
-const GlyphBitmap* Font::fallback_glyph() const {
-    const std::uint32_t cp = static_cast<std::uint32_t>('?');
-    if (m_is_freetype) {
-        auto it = m_ft_glyph_cache.find(cp);
-        if (it == m_ft_glyph_cache.end()) {
-            render_freetype_glyph(cp);
-            it = m_ft_glyph_cache.find(cp);
-        }
-        return it != m_ft_glyph_cache.end() ? &it->second : nullptr;
-    }
-
-    const auto it = m_glyphs.find(cp);
-    if (it != m_glyphs.end()) {
-        return &it->second;
-    }
-
-    if (!m_glyphs.empty()) {
-        return &m_glyphs.begin()->second;
-    }
-
-    return nullptr;
-}
-
-bool Font::set_var_axes(const std::map<std::string, float>& axes) {
-    if (!m_is_freetype || m_ft_face == nullptr || axes.empty()) return false;
-
-    FT_Face face = static_cast<FT_Face>(m_ft_face);
-    FT_MM_Var* mm_var = nullptr;
-    if (FT_Get_MM_Var(face, &mm_var) != 0 || mm_var == nullptr) return false;
-
-    std::vector<FT_Fixed> coords(mm_var->num_axis, 0);
-    // Read current coordinates as baseline
-    FT_Get_Var_Design_Coordinates(face, static_cast<FT_UInt>(coords.size()), coords.data());
-
-    for (FT_UInt i = 0; i < mm_var->num_axis; ++i) {
-        char tag_str[5] = {};
-        FT_UInt32 tag = mm_var->axis[i].tag;
-        tag_str[0] = static_cast<char>((tag >> 24) & 0xFF);
-        tag_str[1] = static_cast<char>((tag >> 16) & 0xFF);
-        tag_str[2] = static_cast<char>((tag >>  8) & 0xFF);
-        tag_str[3] = static_cast<char>((tag      ) & 0xFF);
-        auto it = axes.find(std::string(tag_str));
-        if (it != axes.end()) {
-            coords[i] = static_cast<FT_Fixed>(it->second * 65536.0f); // 16.16 fixed point
-        }
-    }
-
-    FT_Done_MM_Var(face->glyph ? face->glyph->library : nullptr, mm_var);
-    return FT_Set_Var_Design_Coordinates(face, static_cast<FT_UInt>(coords.size()), coords.data()) == 0;
-}
-
 } // namespace tachyon::text
-

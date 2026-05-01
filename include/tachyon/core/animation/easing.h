@@ -14,6 +14,7 @@ enum class EasingPreset {
     EaseIn,     ///< Slow start, fast finish (cubic in).
     EaseOut,    ///< Fast start, slow finish (cubic out).
     EaseInOut,  ///< Slow start and finish (cubic symmetric).
+    Spring,     ///< Spring-style motion; handled by compatibility code.
     Custom,     ///< Fully user-defined Bezier control points.
 };
 
@@ -99,6 +100,7 @@ struct CubicBezierEasing {
         case EasingPreset::EaseIn:    return CubicBezierEasing::ease_in().evaluate(t);
         case EasingPreset::EaseOut:   return CubicBezierEasing::ease_out().evaluate(t);
         case EasingPreset::EaseInOut: return CubicBezierEasing::ease_in_out().evaluate(t);
+        case EasingPreset::Spring:    return t;
         case EasingPreset::Custom:    return custom.evaluate(t);
     }
     return t;

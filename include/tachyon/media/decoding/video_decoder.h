@@ -40,6 +40,9 @@ private:
     };
 
     std::optional<CachedVideoFrame> decode_frame_at_or_after(double seconds);
+    std::optional<CachedVideoFrame> find_cached_frame(double seconds) const;
+    void cache_frame(CachedVideoFrame frame);
+    std::optional<CachedVideoFrame> convert_current_frame(double pts_seconds, AVFrame* frame);
     
     // Convert to target surface directly to avoid extra copies
     bool convert_to_surface(AVFrame* frame, renderer2d::SurfaceRGBA& target);
@@ -59,6 +62,9 @@ private:
     int m_stream_index{-1};
     double m_stream_time_base{0.0};
     double m_last_pts{-1.0};
+
+    static constexpr std::size_t kMaxCachedFrames = 8;
+    std::deque<CachedVideoFrame> m_frame_cache;
 };
 
 } // namespace tachyon::media

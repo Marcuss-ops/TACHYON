@@ -2,6 +2,7 @@
 
 #include "tachyon/tracker/track.h"
 #include "tachyon/tracker/feature_tracker.h"
+#include "tachyon/tracker/track_binding.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include <vector>
 #include <optional>

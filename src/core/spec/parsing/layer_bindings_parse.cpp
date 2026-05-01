@@ -4,6 +4,28 @@ using json = nlohmann::json;
 
 namespace tachyon {
 
+namespace {
+
+TransitionKind transition_kind_from_string(const std::string& type) {
+    if (type == "fade" || type == "fade_to_black") return TransitionKind::Fade;
+    if (type == "zoom" || type == "zoom_in" || type == "zoom_out" || type == "zoom_blur") return TransitionKind::Zoom;
+    if (type == "slide_left" || type == "slide_right" || type == "slide_up" || type == "slide_down" || type == "push_left" || type == "slide_easing") return TransitionKind::Slide;
+    if (type == "flip" || type == "spin") return TransitionKind::Flip;
+    if (type == "wipe_linear" || type == "wipe_angular" || type == "directional_blur_wipe") return TransitionKind::Wipe;
+    if (type == "luma_dissolve" || type == "pixelate" || type == "glitch_slice" || type == "rgb_split") return TransitionKind::Dissolve;
+    return TransitionKind::Custom;
+}
+
+void parse_spring_params(const json& object, LayerTransitionSpec::SpringSpec& spring) {
+    if (!object.is_object()) return;
+    if (object.contains("stiffness") && object.at("stiffness").is_number()) spring.stiffness = object.at("stiffness").get<double>();
+    if (object.contains("damping") && object.at("damping").is_number()) spring.damping = object.at("damping").get<double>();
+    if (object.contains("mass") && object.at("mass").is_number()) spring.mass = object.at("mass").get<double>();
+    if (object.contains("velocity") && object.at("velocity").is_number()) spring.velocity = object.at("velocity").get<double>();
+}
+
+} // namespace
+
 void parse_track_bindings(const json& object, LayerSpec& layer, const std::string& path, DiagnosticBag& diagnostics) {
     (void)path; (void)diagnostics;
     if (!object.contains("track_bindings") || !object.at("track_bindings").is_array()) return;
@@ -65,7 +87,9 @@ void parse_transition(const json& object, LayerTransitionSpec& out, const std::s
     if (object.contains("easing")) {
         out.easing = parse_easing_preset(object.at("easing"));
         if (out.easing == animation::EasingPreset::Spring) {
-            parse_spring_params(object.at("spring"), out.spring);
+            if (object.contains("spring")) {
+                parse_spring_params(object.at("spring"), out.spring);
+            }
         }
     }
 }

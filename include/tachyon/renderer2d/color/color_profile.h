@@ -74,6 +74,21 @@ struct ColorProfile {
     bool operator!=(const ColorProfile& other) const {
         return !(*this == other);
     }
+
+    std::string to_string() const {
+        switch (primaries) {
+            case ColorPrimaries::sRGB: return "sRGB";
+            case ColorPrimaries::Rec709: return "Rec709";
+            case ColorPrimaries::Rec2020: return "Rec2020";
+            case ColorPrimaries::DisplayP3: return "DisplayP3";
+            case ColorPrimaries::P3D65: return "P3D65";
+            case ColorPrimaries::P3DCI: return "P3DCI";
+            case ColorPrimaries::ACES_AP0: return "ACES_AP0";
+            case ColorPrimaries::ACES_AP1: return "ACES_AP1";
+            case ColorPrimaries::Custom: break;
+        }
+        return "Custom";
+    }
 };
 
 struct WorkingColorSpace {

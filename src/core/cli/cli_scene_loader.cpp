@@ -39,7 +39,8 @@ LoadSceneResult load_scene_for_cli(
             result.success = true;
             return result;
         } else {
-            result.diagnostics.add_error("Failed to load C++ scene: " + load_result.diagnostics);
+            std::string error_msg = "Failed to load C++ scene: " + load_result.diagnostics;
+            result.diagnostics.add_error("cpp_load_failed", std::move(error_msg));
         }
     }
 
@@ -52,16 +53,16 @@ LoadSceneResult load_scene_for_cli(
         out << "Loading legacy JSON scene: " << options.scene_path << "\n";
         err << "ERROR: Legacy JSON scene loading is not yet implemented in this path.\n";
         err << "       Please use C++ scene scripts (--cpp) instead.\n";
-        result.diagnostics.add_error("Legacy JSON scene loading not implemented");
+        result.diagnostics.add_error("legacy_json_not_implemented", "Legacy JSON scene loading not implemented");
 #else
         err << "ERROR: Legacy JSON scene support is disabled. Rebuild with TACHYON_ENABLE_LEGACY_JSON_SCENE=ON to enable.\n";
         err << "       Or use C++ scene scripts (--cpp) instead.\n";
-        result.diagnostics.add_error("Legacy JSON scene support is disabled");
+        result.diagnostics.add_error("legacy_json_disabled", "Legacy JSON scene support is disabled");
 #endif
     }
 
     if (!tried_cpp && !tried_legacy_json) {
-        result.diagnostics.add_error("No scene path provided. Use --cpp for C++ scenes or --scene for JSON scenes.");
+        result.diagnostics.add_error("no_scene_path", "No scene path provided. Use --cpp for C++ scenes or --scene for JSON scenes.");
     }
 
     return result;
