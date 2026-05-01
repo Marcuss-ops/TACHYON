@@ -57,6 +57,11 @@ public:
     explicit FrameExecutor(FrameArena& arena, FrameCache& cache, runtime::RuntimeSurfacePool* pool = nullptr)
         : m_arena(arena), m_cache(cache), m_pool(pool) {}
 
+    void set_parallel_worker_count(size_t worker_count) {
+        m_parallel_worker_count = worker_count;
+        m_parallel_frames = (worker_count > 1);
+    }
+
     FrameCache& cache() { return m_cache; }
     const FrameCache& cache() const { return m_cache; }
 
@@ -80,6 +85,8 @@ private:
     FrameArena& m_arena;
     FrameCache& m_cache;
     runtime::RuntimeSurfacePool* m_pool{nullptr};
+    size_t m_parallel_worker_count{1};
+    bool m_parallel_frames{false};
 
     // Node lookup maps populated once per scene execution
     std::unordered_map<std::uint32_t, const CompiledNode*> m_node_lookup;

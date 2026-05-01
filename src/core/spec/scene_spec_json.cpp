@@ -1,6 +1,6 @@
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include "tachyon/core/spec/scene_spec_audio.h"
-#include "tachyon/text/fonts/font_manifest.h"
+#include "tachyon/text/fonts/management/font_manifest.h"
 #include "tachyon/core/spec/json_scene_utils.h"
 #include <fstream>
 #include <sstream>

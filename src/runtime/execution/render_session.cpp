@@ -65,7 +65,17 @@ RenderSessionResult RenderSession::render(
     std::uint32_t h = static_cast<std::uint32_t>(execution_plan.render_plan.composition.height);
     m_surface_pool = std::make_unique<runtime::RuntimeSurfacePool>(w, h, 10);
     context.surface_pool = m_surface_pool.get();
-    
+
+    // Create and initialize output sink early for streaming mode
+    std::unique_ptr<output::FrameOutputSink> sink = output::create_frame_output_sink(effective_plan.render_plan);
+    if (sink) {
+        if (!sink->begin(effective_plan.render_plan)) {
+            result.output_error = sink->last_error();
+            return result;
+        }
+        result.output_configured = true;
+    }
+
     media::MediaPrefetcher prefetcher;
     std::vector<ExecutedFrame> rendered_frames;
     std::vector<double> frame_times;
@@ -87,48 +97,21 @@ RenderSessionResult RenderSession::render(
         nullptr,
         nullptr,
         nullptr,
-        nullptr,
+        sink.get(),
         &result,
         &frame_times);
     const auto frame_exec_end = std::chrono::high_resolution_clock::now();
     result.frame_execution_ms = std::chrono::duration<double, std::milli>(frame_exec_end - frame_exec_start).count();
     result.frame_times_ms = std::move(frame_times);
 
-    result.frames = std::move(rendered_frames);
-    for (const auto& frame : result.frames) {
-        if (frame.cache_hit) {
-            ++result.cache_hits;
-        } else {
-            ++result.cache_misses;
-        }
-    }
+    // Streaming mode handles frame writing during render, no post-render loop needed
 
-    const auto encode_start = std::chrono::high_resolution_clock::now();
-    std::unique_ptr<output::FrameOutputSink> sink = output::create_frame_output_sink(effective_plan.render_plan);
+    // Finalize sink after all frames are rendered
     if (sink) {
-        if (!sink->begin(effective_plan.render_plan)) {
-            result.output_error = sink->last_error();
-            return result;
-        }
-
-        result.output_configured = true;
-        for (const auto& frame : result.frames) {
-            if (!frame.frame) {
-                continue;
-            }
-
-            output::OutputFramePacket packet = make_output_packet(frame);
-            if (!sink->write_frame(packet)) {
-                result.output_error = sink->last_error();
-                break;
-            }
-            ++result.frames_written;
-        }
-
+        const auto encode_start = std::chrono::high_resolution_clock::now();
         if (result.output_error.empty() && !sink->finish()) {
             result.output_error = sink->last_error();
         }
-
         const auto encode_end = std::chrono::high_resolution_clock::now();
         result.encode_ms = std::chrono::duration<double, std::milli>(encode_end - encode_start).count();
     }

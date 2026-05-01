@@ -119,6 +119,7 @@ void render_frames_parallel_internal(
         workers.push_back(std::future<void>(std::async(std::launch::async, [&, worker_index]() {
             FrameArena arena;
             FrameExecutor executor(arena, cache, nullptr);
+            executor.set_parallel_worker_count(thread_count);
 
              // Create a thread-local context
               ::tachyon::RenderContext local_context(context.renderer2d.precomp_cache);
@@ -217,7 +218,14 @@ void render_frames_parallel_internal(
                             packet.metadata.time_seconds = execution_plan.frame_tasks[frame_idx].time_seconds;
                             packet.metadata.scene_hash = std::to_string(compiled_scene.scene_hash);
                             packet.metadata.color_space = context.renderer2d.cms.output_profile.to_string();
-                            sink->write_frame(packet);
+                            if (!sink->write_frame(packet)) {
+                                if (result) {
+                                    result->output_error = sink->last_error();
+                                }
+                                if (cancel_flag) {
+                                    cancel_flag->store(true);
+                                }
+                            }
                         }
                     }, *result);
                 } else {

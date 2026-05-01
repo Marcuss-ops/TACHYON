@@ -2,6 +2,7 @@
 
 #include "tachyon/presets/preset_base.h"
 #include <string>
+#include <cstdint>
 
 namespace tachyon::presets {
 
