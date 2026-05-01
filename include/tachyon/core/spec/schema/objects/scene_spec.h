@@ -45,7 +45,7 @@ struct SchemaVersion {
     std::uint32_t patch{0};
     
     [[nodiscard]] std::string to_string() const {
-        return std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch);
+        return ::std::to_string(major) + "." + ::std::to_string(minor) + "." + ::std::to_string(patch);
     }
     
     [[nodiscard]] static SchemaVersion from_string(const std::string& str) {
@@ -59,13 +59,31 @@ struct SchemaVersion {
         if (minor != other.minor) return minor < other.minor;
         return patch < other.patch;
     }
-    
+
+    [[nodiscard]] bool operator==(const SchemaVersion& other) const {
+        return major == other.major && minor == other.minor && patch == other.patch;
+    }
+
+    [[nodiscard]] bool operator!=(const SchemaVersion& other) const {
+        return !(*this == other);
+    }
+
+    [[nodiscard]] bool operator<=(const SchemaVersion& other) const {
+        return *this < other || *this == other;
+    }
+
+    [[nodiscard]] bool operator>(const SchemaVersion& other) const {
+        return other < *this;
+    }
+
     [[nodiscard]] bool operator>=(const SchemaVersion& other) const {
         return !(*this < other);
     }
 };
 
 struct SceneSpec {
+    std::string version{"1.0.0"};
+    std::string spec_version{"1.0.0"};
     SchemaVersion schema_version{1, 0, 0};
     ProjectSpec project;
     std::vector<CompositionSpec> compositions;

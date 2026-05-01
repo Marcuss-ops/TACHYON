@@ -5,50 +5,29 @@ using json = nlohmann::json;
 
 namespace tachyon {
 
-void to_json(json& j, const ColorSpec& c) {
-    j = json{{"r", c.r}, {"g", c.g}, {"b", c.b}, {"a", c.a}};
-}
-
-void from_json(const json& j, ColorSpec& c) {
-    if (j.contains("r") && j.at("r").is_number()) c.r = j.at("r").get<std::uint8_t>();
-    if (j.contains("g") && j.at("g").is_number()) c.g = j.at("g").get<std::uint8_t>();
-    if (j.contains("b") && j.at("b").is_number()) c.b = j.at("b").get<std::uint8_t>();
-    if (j.contains("a") && j.at("a").is_number()) c.a = j.at("a").get<std::uint8_t>();
-}
-
 void to_json(json& j, const EffectSpec& e) {
     j["type"] = e.type;
     j["enabled"] = e.enabled;
     if (!e.scalars.empty()) {
-        nlohmann::json scalars_obj;
+        json scalars_obj;
         for (const auto& [key, val] : e.scalars) {
             scalars_obj[key] = val;
         }
         j["scalars"] = scalars_obj;
     }
     if (!e.colors.empty()) {
-        nlohmann::json colors_obj;
+        json colors_obj;
         for (const auto& [key, val] : e.colors) {
             colors_obj[key] = val;
         }
         j["colors"] = colors_obj;
     }
     if (!e.strings.empty()) {
-        nlohmann::json strings_obj;
+        json strings_obj;
         for (const auto& [key, val] : e.strings) {
             strings_obj[key] = val;
         }
         j["strings"] = strings_obj;
-    }
-    // Serialize easing
-    j["easing_preset"] = static_cast<int>(e.easing_preset);
-    if (e.easing_preset == animation::EasingPreset::Custom) {
-        j["custom_easing"] = json{
-            {"cx1", e.custom_easing.cx1},
-            {"cy1", e.custom_easing.cy1},
-            {"cx2", e.custom_easing.cx2},
-            {"cy2", e.custom_easing.cy2}
-        };
     }
 }
 
@@ -73,17 +52,6 @@ void from_json(const json& j, EffectSpec& e) {
         for (auto& [key, val] : j.at("strings").items()) {
             if (val.is_string()) e.strings[key] = val.get<std::string>();
         }
-    }
-    // Deserialize easing
-    if (j.contains("easing_preset") && j.at("easing_preset").is_number()) {
-        e.easing_preset = static_cast<animation::EasingPreset>(j.at("easing_preset").get<int>());
-    }
-    if (e.easing_preset == animation::EasingPreset::Custom && j.contains("custom_easing") && j.at("custom_easing").is_object()) {
-        const auto& bezier = j.at("custom_easing");
-        if (bezier.contains("cx1") && bezier.at("cx1").is_number()) e.custom_easing.cx1 = bezier.at("cx1").get<double>();
-        if (bezier.contains("cy1") && bezier.at("cy1").is_number()) e.custom_easing.cy1 = bezier.at("cy1").get<double>();
-        if (bezier.contains("cx2") && bezier.at("cx2").is_number()) e.custom_easing.cx2 = bezier.at("cx2").get<double>();
-        if (bezier.contains("cy2") && bezier.at("cy2").is_number()) e.custom_easing.cy2 = bezier.at("cy2").get<double>();
     }
 }
 

@@ -20,5 +20,6 @@ bool run_preview_frame_command(const CliOptions& options, std::ostream& out, std
 bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostream& err);
 bool run_studio_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err);
 bool run_fetch_fonts_command(const CliOptions& options, std::ostream& out, std::ostream& err);
+bool run_preview_internal(const CliOptions& options, std::ostream& out, std::ostream& err, const char* label);
 
 } // namespace tachyon

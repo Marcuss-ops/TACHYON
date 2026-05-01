@@ -14,7 +14,6 @@ static void write_animation_keyframe(BinaryWriter& writer, const animation::Keyf
     writer.write(kf.out_mode);
     writer.write(kf.easing);
     writer.write(kf.bezier);
-    writer.write(kf.spring);
     writer.write(kf.out_tangent_time);
     writer.write(kf.out_tangent_value);
     writer.write(kf.in_tangent_time);

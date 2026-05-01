@@ -10,6 +10,7 @@
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/output/frame_output_sink.h"
 #include "tachyon/media/streaming/media_prefetcher.h"
+#include "tachyon/runtime/execution/session/render_internal.h"
 
 #ifdef TACHYON_TRACY_ENABLED
 #include <tracy/Tracy.hpp>
@@ -76,7 +77,7 @@ struct FrameQueue {
     }
 };
 
-void render_frames_parallel(
+void render_frames_parallel_internal(
     const CompiledScene& compiled_scene,
     const RenderExecutionPlan& execution_plan,
     FrameCache& cache,
@@ -84,19 +85,13 @@ void render_frames_parallel(
     ::tachyon::RenderContext& context,
     media::MediaPrefetcher& prefetcher,
     media::PlaybackScheduler* scheduler,
-    const CompiledScene& original_scene,
-    double session_fps,
     std::vector<ExecutedFrame>& rendered_frames,
-    RenderProgressCallback progress_callback = nullptr,
-    CancelFlag* cancel_flag = nullptr,
-    runtime::DiskCacheStore* disk_cache = nullptr,
-    output::FrameOutputSink* sink = nullptr,
-    RenderSessionResult* result = nullptr) {
-
-    (void)original_scene;
-    (void)session_fps;
-    (void)scheduler;
-    (void)prefetcher;
+    RenderProgressCallback progress_callback,
+    CancelFlag* cancel_flag,
+    runtime::DiskCacheStore* disk_cache,
+    output::FrameOutputSink* sink,
+    RenderSessionResult* result,
+    std::vector<double>* frame_times_out) {
 
     const std::size_t task_count = execution_plan.frame_tasks.size();
 
@@ -128,6 +123,8 @@ void render_frames_parallel(
              // Create a thread-local context
               ::tachyon::RenderContext local_context(context.renderer2d.precomp_cache);
               local_context.media = context.media;
+              local_context.prefetcher = &prefetcher;
+              local_context.scheduler = scheduler;
               local_context.ray_tracer = context.ray_tracer;
               local_context.policy = context.policy;
               local_context.surface_pool = context.surface_pool;
@@ -178,7 +175,15 @@ void render_frames_parallel(
                 // Render if not loaded from cache
                 if (!framebuffer) {
                     DataSnapshot snapshot;
+                    const auto frame_start = std::chrono::high_resolution_clock::now();
+                    
                     auto executed_frame = executor.execute(compiled_scene, frame_plan, task, snapshot, local_context);
+                    cache_hit = cache_hit || executed_frame.cache_hit;
+
+                    const auto frame_end = std::chrono::high_resolution_clock::now();
+                    if (frame_times_out) {
+                        (*frame_times_out)[index] = std::chrono::duration<double, std::milli>(frame_end - frame_start).count();
+                    }
 
                     if (executed_frame.frame) {
                         framebuffer = std::move(executed_frame.frame);

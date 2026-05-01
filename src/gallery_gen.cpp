@@ -10,7 +10,8 @@ namespace tachyon {
     void to_json(nlohmann::json& j, const SceneSpec& s);
 }
 
-void save_scene(const tachyon::SceneSpec& scene, const std::string& path) {
+template <typename T>
+void save_scene(const T& scene, const std::string& path) {
     nlohmann::json j = scene;
     std::ofstream file(path);
     file << j.dump(2);
@@ -20,20 +21,20 @@ void save_scene(const tachyon::SceneSpec& scene, const std::string& path) {
 int main() {
     std::filesystem::create_directories("gallery");
 
-    // 1. Aura Modern
-    save_scene(tachyon::BackgroundGenerator::GenerateAuraBackground(), "gallery/aura.json");
+    // Generate ShapeGrid background examples
+    tachyon::ShapeGridParams params;
+    params.shape = "hexagon";
+    params.spacing = 80.0f;
+    params.border_width = 2.0f;
+    params.speed = 1.0f;
+    params.direction = "right";
+    params.seed = 42;
 
-    // 2. Liquid Deep
-    save_scene(tachyon::BackgroundGenerator::GenerateLiquidBackground(), "gallery/liquid.json");
+    save_scene(tachyon::GenerateShapeGridBackground(params), "gallery/grid_hex.json");
 
-    // 3. Grid (Hexagons)
-    save_scene(tachyon::BackgroundGenerator::GenerateGridBackground(1920, 1080, 5.0, 80.0, 2.0, "hexagon"), "gallery/grid_hex.json");
-
-    // 4. Stars
-    save_scene(tachyon::BackgroundGenerator::GenerateStarsBackground(1920, 1080, 5.0, 2.0, 0.2), "gallery/stars.json");
-
-    // 5. Stripes
-    save_scene(tachyon::BackgroundGenerator::GenerateStripesBackground(1920, 1080, 5.0, 45.0, 1.0), "gallery/stripes.json");
+    params.shape = "square";
+    params.spacing = 40.0f;
+    save_scene(tachyon::GenerateShapeGridBackground(params), "gallery/grid_square.json");
 
     return 0;
 }

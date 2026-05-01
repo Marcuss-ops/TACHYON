@@ -23,7 +23,12 @@ CompositionSpec parse_composition(const json& object, const std::string& path, D
         if (fr.is_number_integer()) { composition.frame_rate.numerator = fr.get<std::int64_t>(); composition.frame_rate.denominator = 1; }
         else if (fr.is_object()) { read_number(fr, "numerator", composition.frame_rate.numerator); read_number(fr, "denominator", composition.frame_rate.denominator); }
     }
-    if (object.contains("background") && object.at("background").is_string()) composition.background = object.at("background").get<std::string>();
+    if (!composition.fps.has_value() && composition.frame_rate.denominator != 0) {
+        composition.fps = static_cast<std::int64_t>(composition.frame_rate.value());
+    }
+    if (object.contains("background")) {
+        composition.background = object.at("background").get<BackgroundSpec>();
+    }
     if (object.contains("environment") && object.at("environment").is_string()) composition.environment_path = object.at("environment").get<std::string>();
     if (object.contains("layers") && object.at("layers").is_array()) {
         const auto& layers = object.at("layers");

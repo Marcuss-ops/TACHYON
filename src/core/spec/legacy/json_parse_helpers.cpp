@@ -1,4 +1,4 @@
-#include "tachyon/core/spec/schema/objects/scene_spec_core.h"
+#include "tachyon/core/spec/legacy/json_parse_helpers.h"
 #include <algorithm>
 
 namespace tachyon {

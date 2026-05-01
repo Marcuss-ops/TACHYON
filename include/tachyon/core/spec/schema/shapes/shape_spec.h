@@ -37,6 +37,7 @@ struct ShapeSpec {
     std::string line_join{"miter"};
     std::vector<float> dash_array;
     float dash_offset{0};
+    float sdf_threshold{0.5f};
 
     // Fill
     ColorSpec fill_color{255, 255, 255, 255};

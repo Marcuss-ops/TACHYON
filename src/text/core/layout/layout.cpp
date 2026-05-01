@@ -48,7 +48,7 @@ AnimatorSample sample_animator(
     }
 
     if (animator.properties.position_offset_value.has_value() || !animator.properties.position_offset_keyframes.empty()) {
-        const math::Vector2 offset = sample_vector2_kfs(animator.properties.position_offset_value, animator.properties.position_offset_keyframes, time_seconds);
+        const ::tachyon::math::Vector2 offset = sample_vector2_kfs(animator.properties.position_offset_value, animator.properties.position_offset_keyframes, time_seconds);
         sample.offset_x += offset.x * coverage;
         sample.offset_y += offset.y * coverage;
     }

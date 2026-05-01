@@ -110,6 +110,19 @@ struct RenderJob {
     std::unordered_map<std::string, LayerOverride> layer_overrides;
 };
 
+class RenderJobBuilder {
+public:
+    static RenderJob still_image(
+        const std::string& composition_id, 
+        std::int64_t frame, 
+        const std::string& output_path);
+
+    static RenderJob video_export(
+        const std::string& composition_id, 
+        FrameRange range, 
+        const std::string& output_path);
+};
+
 ParseResult<RenderJob> parse_render_job_json(const std::string& text);
 ParseResult<RenderJob> parse_render_job_file(const std::filesystem::path& path);
 ValidationResult validate_render_job(const RenderJob& job);

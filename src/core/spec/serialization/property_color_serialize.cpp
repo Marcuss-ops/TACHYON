@@ -10,7 +10,6 @@ void to_json(json& j, const ColorKeyframeSpec& k) {
     j["value"] = k.value;
     j["easing"] = static_cast<int>(k.easing);
     j["bezier"] = json{{"cx1", k.bezier.cx1}, {"cy1", k.bezier.cy1}, {"cx2", k.bezier.cx2}, {"cy2", k.bezier.cy2}};
-    j["spring"] = json{{"stiffness", k.spring.stiffness}, {"damping", k.spring.damping}, {"mass", k.spring.mass}, {"velocity", k.spring.velocity}};
     j["speed_in"] = k.speed_in;
     j["influence_in"] = k.influence_in;
     j["speed_out"] = k.speed_out;
@@ -27,13 +26,6 @@ void from_json(const json& j, ColorKeyframeSpec& k) {
         if (b.contains("cy1") && b.at("cy1").is_number()) k.bezier.cy1 = b.at("cy1").get<double>();
         if (b.contains("cx2") && b.at("cx2").is_number()) k.bezier.cx2 = b.at("cx2").get<double>();
         if (b.contains("cy2") && b.at("cy2").is_number()) k.bezier.cy2 = b.at("cy2").get<double>();
-    }
-    if (j.contains("spring") && j.at("spring").is_object()) {
-        auto& s = j.at("spring");
-        if (s.contains("stiffness") && s.at("stiffness").is_number()) k.spring.stiffness = s.at("stiffness").get<double>();
-        if (s.contains("damping") && s.at("damping").is_number()) k.spring.damping = s.at("damping").get<double>();
-        if (s.contains("mass") && s.at("mass").is_number()) k.spring.mass = s.at("mass").get<double>();
-        if (s.contains("velocity") && s.at("velocity").is_number()) k.spring.velocity = s.at("velocity").get<double>();
     }
     if (j.contains("speed_in") && j.at("speed_in").is_number()) k.speed_in = j.at("speed_in").get<double>();
     if (j.contains("influence_in") && j.at("influence_in").is_number()) k.influence_in = j.at("influence_in").get<double>();
@@ -152,73 +144,4 @@ void from_json(const json& j, AnimatedEffectSpec& e) {
         }
     }
 }
-
-// AnimatedEffectSpec::evaluate implementation
-EffectSpec AnimatedEffectSpec::evaluate(double time_seconds) const {
-    EffectSpec result;
-    result.enabled = enabled;
-    result.type = type;
-    
-    // Start with static values
-    result.scalars = static_scalars;
-    result.colors = static_colors;
-    result.strings = static_strings;
-    
-    // Override with animated values at the given time
-    for (const auto& [key, anim] : animated_scalars) {
-        if (!anim.keyframes.empty()) {
-            // Find the two keyframes surrounding the time
-            double value = anim.keyframes.front().value; // default to first
-            for (size_t i = 0; i < anim.keyframes.size() - 1; ++i) {
-                const auto& kf1 = anim.keyframes[i];
-                const auto& kf2 = anim.keyframes[i + 1];
-                if (time_seconds >= kf1.time && time_seconds <= kf2.time) {
-                    // Linear interpolation for now (could use easing)
-                    double t = (time_seconds - kf1.time) / (kf2.time - kf1.time);
-                    value = kf1.value + t * (kf2.value - kf1.value);
-                    break;
-                } else if (time_seconds < kf1.time) {
-                    value = kf1.value;
-                    break;
-                } else if (time_seconds > kf2.time && i == anim.keyframes.size() - 2) {
-                    value = kf2.value;
-                }
-            }
-            result.scalars[key] = value;
-        } else if (anim.value.has_value()) {
-            result.scalars[key] = anim.value.value();
-        }
-    }
-    
-    for (const auto& [key, anim] : animated_colors) {
-        if (!anim.keyframes.empty()) {
-            // Find the two keyframes surrounding the time
-            ColorSpec value = anim.keyframes.front().value; // default to first
-            for (size_t i = 0; i < anim.keyframes.size() - 1; ++i) {
-                const auto& kf1 = anim.keyframes[i];
-                const auto& kf2 = anim.keyframes[i + 1];
-                if (time_seconds >= kf1.time && time_seconds <= kf2.time) {
-                    // Linear interpolation for each channel
-                    double t = (time_seconds - kf1.time) / (kf2.time - kf1.time);
-                    value.r = static_cast<uint8_t>(kf1.value.r + t * (kf2.value.r - kf1.value.r));
-                    value.g = static_cast<uint8_t>(kf1.value.g + t * (kf2.value.g - kf1.value.g));
-                    value.b = static_cast<uint8_t>(kf1.value.b + t * (kf2.value.b - kf1.value.b));
-                    value.a = static_cast<uint8_t>(kf1.value.a + t * (kf2.value.a - kf1.value.a));
-                    break;
-                } else if (time_seconds < kf1.time) {
-                    value = kf1.value;
-                    break;
-                } else if (time_seconds > kf2.time && i == anim.keyframes.size() - 2) {
-                    value = kf2.value;
-                }
-            }
-            result.colors[key] = value;
-        } else if (anim.value.has_value()) {
-            result.colors[key] = anim.value.value();
-        }
-    }
-    
-    return result;
-}
-
 } // namespace tachyon

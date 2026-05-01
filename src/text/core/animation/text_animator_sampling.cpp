@@ -38,7 +38,6 @@ T sample_kfs_via_curve(const std::optional<T>& static_val, const std::vector<Spe
         akf.out_mode = kf.interpolation;
         akf.easing = kf.easing;
         akf.bezier = kf.bezier;
-        akf.spring = kf.spring;
         curve.add_keyframe(akf);
     }
     curve.sort();

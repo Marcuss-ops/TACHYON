@@ -73,9 +73,7 @@ ResolutionResult<AssetResolutionTable> resolve_assets(const SceneSpec& scene, co
         table[asset.id] = std::move(resolved);
     }
 
-    if (result.diagnostics.ok()) {
-        result.value = std::move(table);
-    }
+    result.value = std::move(table);
     return result;
 }
 

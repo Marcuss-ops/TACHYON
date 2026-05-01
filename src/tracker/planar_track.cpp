@@ -3,6 +3,7 @@
 #include <cmath>
 #include <random>
 #include <numeric>
+#include <array>
 
 namespace tachyon::tracker {
 

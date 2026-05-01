@@ -1,4 +1,5 @@
 #include "tachyon/core/scene/state/evaluated_state.h"
+#include "tachyon/core/math/rect.h"
 #include <algorithm>
 
 namespace tachyon::scene {
@@ -6,12 +7,12 @@ namespace tachyon::scene {
 /**
  * @brief Computes the Region of Interest (ROI) by comparing two composition states.
  */
-EvaluatedCompositionState::Rect compute_roi(
+math::RectF compute_roi(
     const EvaluatedCompositionState& prev,
     const EvaluatedCompositionState& curr) 
 {
     if (prev.layers.size() != curr.layers.size()) {
-        return {0.0f, 0.0f, 1.0f, 1.0f};
+        return math::RectF::unit();
     }
 
     float xmin = 1.0f, ymin = 1.0f, xmax = 0.0f, ymax = 0.0f;
@@ -26,7 +27,7 @@ EvaluatedCompositionState::Rect compute_roi(
                         l_prev.world_position3.y != l_curr.world_position3.y ||
                         l_prev.opacity != l_curr.opacity ||
                         l_prev.visible != l_curr.visible ||
-                        l_prev.local_transform.matrix[0] != l_curr.local_transform.matrix[0]); // etc
+                        l_prev.local_transform.position.x != l_curr.local_transform.position.x); // etc
 
         if (changed) {
             any_change = true;

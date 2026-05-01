@@ -3,6 +3,7 @@
 #include <string>
 #include <functional>
 #include <optional>
+#include <memory>
 
 namespace tachyon {
 

@@ -13,14 +13,14 @@
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include <memory>
 
-#ifdef _WIN32
-#include <OpenImageDenoise/oidn.hpp>
-#endif
-
 namespace tachyon {
+
+namespace media { class MediaPrefetcher; class PlaybackScheduler; }
 
 struct RenderContext {
     std::shared_ptr<media::MediaManager> media;
+    media::MediaPrefetcher* prefetcher{nullptr};
+    media::PlaybackScheduler* scheduler{nullptr};
     renderer2d::RenderContext2D renderer2d;
     QualityPolicy policy;
     std::shared_ptr<renderer3d::RayTracer> ray_tracer;

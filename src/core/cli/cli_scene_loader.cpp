@@ -1,5 +1,10 @@
 #include "tachyon/core/cli_scene_loader.h"
 #include "tachyon/core/spec/cpp_scene_loader.h"
+#include "tachyon/media/resolution/asset_resolution.h"
+#include "tachyon/media/resolution/asset_path_utils.h"
+#include "tachyon/presets/background/background_preset_registry.h"
+#include "tachyon/scene/builder.h"
+#include "cli_internal.h"
 
 #include <iostream>
 
@@ -23,7 +28,35 @@ LoadSceneResult load_scene_for_cli(
     result.success = false;
 
     bool tried_cpp = false;
+    bool tried_preset = false;
     bool tried_legacy_json = false;
+
+    if (options.preset_id.has_value()) {
+        tried_preset = true;
+        const auto& pid = *options.preset_id;
+        
+        auto bg = presets::build_background_preset(pid, 1280, 720);
+        if (!bg) {
+            result.diagnostics.add_error("preset_not_found", "Unknown preset: " + pid);
+            return result;
+        }
+
+        SceneSpec scene = ::tachyon::scene::Composition("preset_render")
+            .size(1280, 720)
+            .duration(2.0)
+            .fps(30)
+            .layer("bg", [&](::tachyon::scene::LayerBuilder& l) {
+                l = ::tachyon::scene::LayerBuilder(*bg);
+            })
+            .build_scene();
+
+        LoadedSceneContext context;
+        context.scene = std::move(scene);
+        context.from_preset = true;
+        result.context = std::move(context);
+        result.success = true;
+        return result;
+    }
 
     if (!options.cpp_path.empty()) {
         tried_cpp = true;
@@ -35,33 +68,43 @@ LoadSceneResult load_scene_for_cli(
             context.scene = std::move(load_result.scene.value());
             context.source_path = options.cpp_path;
             context.from_cpp = true;
+
+            const auto resolved = resolve_assets(context.scene, tachyon::media::scene_asset_root(options.cpp_path));
+            if (resolved.value.has_value()) {
+                context.assets = *resolved.value;
+            }
+
             result.context = std::move(context);
             result.success = true;
             return result;
         } else {
-            result.diagnostics.add_error("Failed to load C++ scene: " + load_result.diagnostics);
+            std::string error_msg = "Failed to load C++ scene: " + load_result.diagnostics;
+            result.diagnostics.add_error("cpp_load_failed", std::move(error_msg));
         }
     }
 
-    if (options.allow_legacy_json && !options.scene_path.empty()) {
+    if (!options.scene_path.empty()) {
         tried_legacy_json = true;
 
-#ifdef TACHYON_ENABLE_LEGACY_JSON_SCENE
-        warn_legacy_json_scene(mode, err);
+        SceneSpec scene;
+        AssetResolutionTable assets;
+        if (!load_scene_context(options.scene_path, scene, assets, err)) {
+            result.diagnostics.add_error("scene_load_failed", "Failed to load scene file: " + options.scene_path.string());
+            return result;
+        }
 
-        out << "Loading legacy JSON scene: " << options.scene_path << "\n";
-        err << "ERROR: Legacy JSON scene loading is not yet implemented in this path.\n";
-        err << "       Please use C++ scene scripts (--cpp) instead.\n";
-        result.diagnostics.add_error("Legacy JSON scene loading not implemented");
-#else
-        err << "ERROR: Legacy JSON scene support is disabled. Rebuild with TACHYON_ENABLE_LEGACY_JSON_SCENE=ON to enable.\n";
-        err << "       Or use C++ scene scripts (--cpp) instead.\n";
-        result.diagnostics.add_error("Legacy JSON scene support is disabled");
-#endif
+        LoadedSceneContext context;
+        context.scene = std::move(scene);
+        context.assets = std::move(assets);
+        context.source_path = options.scene_path;
+        context.from_legacy_json = options.allow_legacy_json;
+        result.context = std::move(context);
+        result.success = true;
+        return result;
     }
 
-    if (!tried_cpp && !tried_legacy_json) {
-        result.diagnostics.add_error("No scene path provided. Use --cpp for C++ scenes or --scene for JSON scenes.");
+    if (!tried_cpp && !tried_preset && !tried_legacy_json) {
+        result.diagnostics.add_error("no_scene_path", "No scene path provided. Use --cpp, --preset, or --scene.");
     }
 
     return result;

@@ -2,6 +2,7 @@
 #include "tachyon/core/spec/compilation/scene_compiler.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/execution/render_progress_sink.h"
+#include "tachyon/runtime/execution/jobs/render_job.h"
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -87,7 +88,7 @@ RenderSessionResult NativeRenderer::render(
         sink->on_message("Starting render: " + job.job_id);
         sink->on_message("Composition: " + job.composition_target);
         sink->on_message("Frames: " + std::to_string(job.frame_range.start) + " -> " + std::to_string(job.frame_range.end));
-        sink->on_message("Output: " + job.output.destination.path.string());
+        sink->on_message("Output: " + job.output.destination.path);
     }
 
     sink->on_phase_start(RenderPhase::Render);
@@ -115,18 +116,7 @@ bool NativeRenderer::render_still(
     std::int64_t frame_number,
     const std::filesystem::path& output_path) {
     
-    RenderJob job;
-    job.job_id = "still_render_" + composition_id;
-    job.composition_target = composition_id;
-    job.frame_range = {frame_number, frame_number};
-    job.output.destination.path = output_path.string();
-    job.output.destination.overwrite = true;
-    
-    // Default to high quality PNG sequence (one frame)
-    job.output.profile.name = "png-sequence";
-    job.output.profile.container = "png";
-    job.output.profile.video.codec = "png";
-    job.output.profile.video.pixel_format = "rgba8";
+    RenderJob job = RenderJobBuilder::still_image(composition_id, frame_number, output_path.string());
     
     const auto result = render(scene, job);
     return result.output_error.empty() && !result.frames.empty();

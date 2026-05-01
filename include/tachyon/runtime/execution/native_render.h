@@ -3,6 +3,7 @@
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/runtime/execution/jobs/render_job.h"
 #include "tachyon/runtime/execution/session/render_session.h"
+#include "tachyon/runtime/execution/render_progress_sink.h"
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 
 #include <filesystem>
@@ -22,6 +23,7 @@ public:
         std::size_t worker_count{0};
         std::optional<std::size_t> memory_budget_bytes;
         bool verbose{false};
+        RenderProgressSink* progress_sink{nullptr};
     };
 
     /**

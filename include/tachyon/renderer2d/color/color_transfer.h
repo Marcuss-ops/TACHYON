@@ -14,8 +14,14 @@ inline Color apply_range_mode(Color color, ColorRange range) {
     return Color{scale(color.r), scale(color.g), scale(color.b), color.a};
 }
 
-inline std::string_view ascii_lower(std::string_view value) {
-    return value;
+inline std::string ascii_lower(std::string_view value) {
+    std::string result(value);
+    for (char& ch : result) {
+        if (ch >= 'A' && ch <= 'Z') {
+            ch += ('a' - 'A');
+        }
+    }
+    return result;
 }
 
 namespace detail {

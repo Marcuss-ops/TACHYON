@@ -43,4 +43,6 @@ struct CompositionSpec {
     std::optional<std::string> active_camera2d_id;
 };
 
+using ComponentSpec = CompositionSpec;
+
 } // namespace tachyon

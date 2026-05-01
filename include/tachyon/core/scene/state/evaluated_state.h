@@ -142,6 +142,7 @@ struct EvaluatedLayerState {
     std::optional<std::string> precomp_id;
     
     std::shared_ptr<EvaluatedCompositionState> nested_composition;
+    std::vector<math::Vector2> corner_pin;
     
     // Camera properties (if type == Camera)
     std::string camera_type{"one_node"};

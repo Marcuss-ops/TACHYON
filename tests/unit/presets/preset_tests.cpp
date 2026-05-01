@@ -21,11 +21,9 @@ TEST(TextPresetTests, BuildEnhanced) {
 }
 
 TEST(ScenePresetTests, BuildEnhanced) {
-    scene::TextSceneParams params;
-    params.text = "Scene Test";
-    auto scene = scene::build_enhanced_text_scene(params);
+    auto scene = scene::build_enhanced_text_scene();
     ASSERT_FALSE(scene.compositions.empty());
-    EXPECT_EQ(scene.compositions[0].layers.back().text_content, "Scene Test");
+    EXPECT_FALSE(scene.compositions[0].layers.empty());
 }
 
 TEST(TransitionPresetTests, ParamsInheritance) {

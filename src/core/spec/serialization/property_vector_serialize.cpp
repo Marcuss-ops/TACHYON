@@ -1,4 +1,5 @@
 #include "tachyon/core/spec/property_spec_serialize_helpers.h"
+#include "tachyon/renderer2d/path/mask_path.h"
 
 using json = nlohmann::json;
 
@@ -12,7 +13,6 @@ void to_json(json& j, const Vector2KeyframeSpec& k) {
     j["tangent_out"] = json{{"x", k.tangent_out.x}, {"y", k.tangent_out.y}};
     j["easing"] = static_cast<int>(k.easing);
     j["bezier"] = json{{"cx1", k.bezier.cx1}, {"cy1", k.bezier.cy1}, {"cx2", k.bezier.cx2}, {"cy2", k.bezier.cy2}};
-    j["spring"] = json{{"stiffness", k.spring.stiffness}, {"damping", k.spring.damping}, {"mass", k.spring.mass}, {"velocity", k.spring.velocity}};
     j["speed_in"] = k.speed_in;
     j["influence_in"] = k.influence_in;
     j["speed_out"] = k.speed_out;
@@ -44,13 +44,6 @@ void from_json(const json& j, Vector2KeyframeSpec& k) {
         if (b.contains("cx2") && b.at("cx2").is_number()) k.bezier.cx2 = b.at("cx2").get<double>();
         if (b.contains("cy2") && b.at("cy2").is_number()) k.bezier.cy2 = b.at("cy2").get<double>();
     }
-    if (j.contains("spring") && j.at("spring").is_object()) {
-        auto& s = j.at("spring");
-        if (s.contains("stiffness") && s.at("stiffness").is_number()) k.spring.stiffness = s.at("stiffness").get<double>();
-        if (s.contains("damping") && s.at("damping").is_number()) k.spring.damping = s.at("damping").get<double>();
-        if (s.contains("mass") && s.at("mass").is_number()) k.spring.mass = s.at("mass").get<double>();
-        if (s.contains("velocity") && s.at("velocity").is_number()) k.spring.velocity = s.at("velocity").get<double>();
-    }
     if (j.contains("speed_in") && j.at("speed_in").is_number()) k.speed_in = j.at("speed_in").get<double>();
     if (j.contains("influence_in") && j.at("influence_in").is_number()) k.influence_in = j.at("influence_in").get<double>();
     if (j.contains("speed_out") && j.at("speed_out").is_number()) k.speed_out = j.at("speed_out").get<double>();
@@ -62,7 +55,6 @@ void to_json(json& j, const AnimatedVector2Spec& a) {
     if (a.value.has_value()) j["value"] = json{{"x", a.value.value().x}, {"y", a.value.value().y}};
     if (!a.keyframes.empty()) j["keyframes"] = a.keyframes;
     if (a.expression.has_value()) j["expression"] = a.expression.value();
-    if (a.wiggle.enabled) j["wiggle"] = a.wiggle;
 }
 
 void from_json(const json& j, AnimatedVector2Spec& a) {
@@ -77,7 +69,6 @@ void from_json(const json& j, AnimatedVector2Spec& a) {
         a.keyframes = j.at("keyframes").get<std::vector<Vector2KeyframeSpec>>();
     }
     if (j.contains("expression") && j.at("expression").is_string()) a.expression = j.at("expression").get<std::string>();
-    if (j.contains("wiggle") && j.at("wiggle").is_object()) a.wiggle = j.at("wiggle").get<WiggleSpec>();
 }
 
 // AnimatedVector3Spec::Keyframe serialization
@@ -122,13 +113,6 @@ void from_json(const json& j, AnimatedVector3Spec::Keyframe& k) {
         if (b.contains("cx2") && b.at("cx2").is_number()) k.bezier.cx2 = b.at("cx2").get<double>();
         if (b.contains("cy2") && b.at("cy2").is_number()) k.bezier.cy2 = b.at("cy2").get<double>();
     }
-    if (j.contains("spring") && j.at("spring").is_object()) {
-        auto& s = j.at("spring");
-        if (s.contains("stiffness") && s.at("stiffness").is_number()) k.spring.stiffness = s.at("stiffness").get<double>();
-        if (s.contains("damping") && s.at("damping").is_number()) k.spring.damping = s.at("damping").get<double>();
-        if (s.contains("mass") && s.at("mass").is_number()) k.spring.mass = s.at("mass").get<double>();
-        if (s.contains("velocity") && s.at("velocity").is_number()) k.spring.velocity = s.at("velocity").get<double>();
-    }
     if (j.contains("speed_in") && j.at("speed_in").is_number()) k.speed_in = j.at("speed_in").get<double>();
     if (j.contains("influence_in") && j.at("influence_in").is_number()) k.influence_in = j.at("influence_in").get<double>();
     if (j.contains("speed_out") && j.at("speed_out").is_number()) k.speed_out = j.at("speed_out").get<double>();
@@ -155,7 +139,6 @@ void from_json(const json& j, AnimatedVector3Spec& a) {
         a.keyframes = j.at("keyframes").get<std::vector<AnimatedVector3Spec::Keyframe>>();
     }
     if (j.contains("expression") && j.at("expression").is_string()) a.expression = j.at("expression").get<std::string>();
-    if (j.contains("wiggle") && j.at("wiggle").is_object()) a.wiggle = j.at("wiggle").get<WiggleSpec>();
 }
 
 // MaskPathKeyframeSpec serialization
@@ -171,10 +154,13 @@ void to_json(json& j, const MaskPathKeyframeSpec& k) {
         v_obj["feather_outer"] = v.feather_outer;
         vertices_array.push_back(v_obj);
     }
-    j["value"] = json{{"vertices", vertices_array}, {"is_closed", k.value.is_closed}, {"is_inverted", k.value.is_inverted}};
+    j["value"] = json{
+        {"vertices", vertices_array},
+        {"is_closed", k.value.is_closed},
+        {"is_inverted", k.value.is_inverted}
+    };
     j["easing"] = static_cast<int>(k.easing);
     j["bezier"] = json{{"cx1", k.bezier.cx1}, {"cy1", k.bezier.cy1}, {"cx2", k.bezier.cx2}, {"cy2", k.bezier.cy2}};
-    j["spring"] = json{{"stiffness", k.spring.stiffness}, {"damping", k.spring.damping}, {"mass", k.spring.mass}, {"velocity", k.spring.velocity}};
     j["speed_in"] = k.speed_in;
     j["influence_in"] = k.influence_in;
     j["speed_out"] = k.speed_out;
@@ -218,13 +204,6 @@ void from_json(const json& j, MaskPathKeyframeSpec& k) {
         if (b.contains("cy1") && b.at("cy1").is_number()) k.bezier.cy1 = b.at("cy1").get<double>();
         if (b.contains("cx2") && b.at("cx2").is_number()) k.bezier.cx2 = b.at("cx2").get<double>();
         if (b.contains("cy2") && b.at("cy2").is_number()) k.bezier.cy2 = b.at("cy2").get<double>();
-    }
-    if (j.contains("spring") && j.at("spring").is_object()) {
-        auto& s = j.at("spring");
-        if (s.contains("stiffness") && s.at("stiffness").is_number()) k.spring.stiffness = s.at("stiffness").get<double>();
-        if (s.contains("damping") && s.at("damping").is_number()) k.spring.damping = s.at("damping").get<double>();
-        if (s.contains("mass") && s.at("mass").is_number()) k.spring.mass = s.at("mass").get<double>();
-        if (s.contains("velocity") && s.at("velocity").is_number()) k.spring.velocity = s.at("velocity").get<double>();
     }
     if (j.contains("speed_in") && j.at("speed_in").is_number()) k.speed_in = j.at("speed_in").get<double>();
     if (j.contains("influence_in") && j.at("influence_in").is_number()) k.influence_in = j.at("influence_in").get<double>();

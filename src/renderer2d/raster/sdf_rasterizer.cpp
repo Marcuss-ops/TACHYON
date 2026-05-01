@@ -10,7 +10,7 @@ static float smoothstep(float edge0, float edge1, float x) {
     return t * t * (3.0f - 2.0f * t);
 }
 
-Framebuffer SDFShapeRasterizer::rasterize(const spec::ShapeSpec& shape_spec, int width, int height) {
+Framebuffer SDFShapeRasterizer::rasterize(const ShapeSpec& shape_spec, int width, int height) {
     Framebuffer fb(width, height);
     if (width <= 0 || height <= 0) return fb;
 
@@ -19,7 +19,7 @@ Framebuffer SDFShapeRasterizer::rasterize(const spec::ShapeSpec& shape_spec, int
         // Fallback: fill with solid color (no SDF)
         for (uint32_t y = 0; y < static_cast<uint32_t>(height); ++y) {
             for (uint32_t x = 0; x < static_cast<uint32_t>(width); ++x) {
-                fb.pixel(x, y) = Color{255, 255, 255, 255};
+                fb.set_pixel(x, y, Color::white());
             }
         }
         return fb;
@@ -58,9 +58,13 @@ Framebuffer SDFShapeRasterizer::rasterize(const spec::ShapeSpec& shape_spec, int
             float alpha = 1.0f - smoothstep(threshold - 0.5f, threshold + 0.5f, dist);
             alpha = std::clamp(alpha, 0.0f, 1.0f);
 
-            Color c = shape_spec.fill_color;
-            c.a = static_cast<uint8_t>(alpha * 255.0f);
-            fb.pixel(static_cast<uint32_t>(fx), static_cast<uint32_t>(fy)) = c;
+            Color c{
+                shape_spec.fill_color.r / 255.0f,
+                shape_spec.fill_color.g / 255.0f,
+                shape_spec.fill_color.b / 255.0f,
+                alpha
+            };
+            fb.set_pixel(static_cast<uint32_t>(fx), static_cast<uint32_t>(fy), c);
         }
     }
 

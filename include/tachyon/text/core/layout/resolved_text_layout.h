@@ -1,22 +1,12 @@
 #pragma once
 
+#include "tachyon/core/math/rect.h"
 #include "tachyon/core/math/vector2.h"
 #include "tachyon/core/spec/schema/common/common_spec.h"
 #include <string>
 #include <vector>
 #include <cstdint>
 #include <memory>
-
-namespace tachyon::math {
-
-struct RectF {
-    float x{0.0f};
-    float y{0.0f};
-    float width{0.0f};
-    float height{0.0f};
-};
-
-} // namespace tachyon::math
 
 namespace tachyon::text {
 
@@ -56,6 +46,12 @@ struct ResolvedGlyph {
 
     // The index in the original source string
     std::size_t source_index;
+    
+    // Layout context (used by selectors in the animator system)
+    std::size_t word_index{0};
+    std::size_t line_index{0};
+    bool is_space{false};
+    bool whitespace{false};
     
     // Styling attributes (these can be animated/overridden per glyph)
     float font_size;

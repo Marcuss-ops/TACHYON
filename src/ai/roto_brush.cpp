@@ -136,12 +136,15 @@ SegmentationMask RotoBrush::propagate(
     if (flow_result) {
         flow = *flow_result;
     } else {
+        // Convert GrayImage (float data view) to contiguous vector for OpticalFlowCalculator
+        std::vector<float> prev_frame_data(prev_frame.data, prev_frame.data + prev_frame.width * prev_frame.height);
+        std::vector<float> next_frame_data(next_frame.data, next_frame.data + next_frame.width * next_frame.height);
         flow = m_flow_calculator.compute(
-            prev_frame.pixels,
-            next_frame.pixels,
+            prev_frame_data,
+            next_frame_data,
             prev_frame.width,
             prev_frame.height,
-            prev_frame.channels);
+            1); // GrayImage is single-channel
     }
     
     // Check if we have enough confidence to propagate
@@ -206,14 +209,28 @@ renderer2d::MaskPath RotoBrush::matte_to_path(
             return {points[start]};
         }
         
-        // Find point with maximum distance from line
-        float max_dist = 0;
-        int max_idx = start;
-        math::Vector2 p1 = points[start];
-        math::Vector2 p2 = points[end];
-        
-        for (int i = start + 1; i < end; ++i) {
-            float dist = math::Vector2::distance_to_line(points[i], p1, p2);
+    // Find point with maximum distance from line
+    float max_dist = 0;
+    int max_idx = start;
+    math::Vector2 p1 = points[start];
+    math::Vector2 p2 = points[end];
+    auto distance_to_line = [](const math::Vector2& point, const math::Vector2& line_start, const math::Vector2& line_end) {
+        const float dx = line_end.x - line_start.x;
+        const float dy = line_end.y - line_start.y;
+        const float length = std::sqrt(dx * dx + dy * dy);
+        if (length <= 1e-6f) {
+            const float px = point.x - line_start.x;
+            const float py = point.y - line_start.y;
+            return std::sqrt(px * px + py * py);
+        }
+
+        const float px = point.x - line_start.x;
+        const float py = point.y - line_start.y;
+        return std::abs(dx * py - dy * px) / length;
+    };
+    
+    for (int i = start + 1; i < end; ++i) {
+            float dist = distance_to_line(points[i], p1, p2);
             if (dist > max_dist) {
                 max_dist = dist;
                 max_idx = i;

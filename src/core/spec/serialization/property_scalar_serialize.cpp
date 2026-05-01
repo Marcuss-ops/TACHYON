@@ -10,7 +10,6 @@ void to_json(json& j, const ScalarKeyframeSpec& k) {
     j["value"] = k.value;
     j["easing"] = static_cast<int>(k.easing);
     j["bezier"] = json{{"cx1", k.bezier.cx1}, {"cy1", k.bezier.cy1}, {"cx2", k.bezier.cx2}, {"cy2", k.bezier.cy2}};
-    j["spring"] = json{{"stiffness", k.spring.stiffness}, {"damping", k.spring.damping}, {"mass", k.spring.mass}, {"velocity", k.spring.velocity}};
     j["speed_in"] = k.speed_in;
     j["influence_in"] = k.influence_in;
     j["speed_out"] = k.speed_out;
@@ -27,13 +26,6 @@ void from_json(const json& j, ScalarKeyframeSpec& k) {
         if (b.contains("cy1") && b.at("cy1").is_number()) k.bezier.cy1 = b.at("cy1").get<double>();
         if (b.contains("cx2") && b.at("cx2").is_number()) k.bezier.cx2 = b.at("cx2").get<double>();
         if (b.contains("cy2") && b.at("cy2").is_number()) k.bezier.cy2 = b.at("cy2").get<double>();
-    }
-    if (j.contains("spring") && j.at("spring").is_object()) {
-        auto& s = j.at("spring");
-        if (s.contains("stiffness") && s.at("stiffness").is_number()) k.spring.stiffness = s.at("stiffness").get<double>();
-        if (s.contains("damping") && s.at("damping").is_number()) k.spring.damping = s.at("damping").get<double>();
-        if (s.contains("mass") && s.at("mass").is_number()) k.spring.mass = s.at("mass").get<double>();
-        if (s.contains("velocity") && s.at("velocity").is_number()) k.spring.velocity = s.at("velocity").get<double>();
     }
     if (j.contains("speed_in") && j.at("speed_in").is_number()) k.speed_in = j.at("speed_in").get<double>();
     if (j.contains("influence_in") && j.at("influence_in").is_number()) k.influence_in = j.at("influence_in").get<double>();

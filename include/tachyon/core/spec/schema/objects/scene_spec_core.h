@@ -12,6 +12,7 @@
 #include "tachyon/core/math/vector3.h"
 #include "tachyon/renderer2d/spec/gradient_spec.h"
 #include "tachyon/renderer2d/raster/path/path_types.h"
+#include "tachyon/core/spec/legacy/json_parse_helpers.h"
 
 namespace tachyon {
 
@@ -20,43 +21,6 @@ using json = nlohmann::json;
 // --- Utility Helpers ---
 std::string make_path(const std::string& parent, const std::string& child);
 std::filesystem::path scene_asset_root(const std::filesystem::path& scene_path);
-
-// --- Basic JSON Readers ---
-template <typename T>
-bool read_number(const json& object, const char* key, T& out) {
-    if (!object.contains(key) || object.at(key).is_null()) return false;
-    const auto& value = object.at(key);
-    if (!value.is_number()) return false;
-    out = value.get<T>();
-    return true;
-}
-
-template <typename T>
-bool read_number(const json& object, const char* key, std::optional<T>& out) {
-    if (!object.contains(key) || object.at(key).is_null()) {
-        out = std::nullopt;
-        return false;
-    }
-    const auto& value = object.at(key);
-    if (!value.is_number()) return false;
-    out = value.get<T>();
-    return true;
-}
-
-bool read_string(const json& object, const char* key, std::string& out);
-bool read_bool(const json& object, const char* key, bool& out);
-bool read_optional_int(const json& object, const char* key, std::optional<std::int64_t>& out);
-
-// --- Math & Type Parsers ---
-bool parse_vector2_value(const json& value, math::Vector2& out);
-bool parse_vector3_value(const json& value, math::Vector3& out);
-bool parse_color_value(const json& value, ColorSpec& out);
-bool parse_gradient_spec(const json& object, GradientSpec& out);
-animation::EasingPreset parse_easing_preset(const json& value);
-animation::CubicBezierEasing parse_bezier(const json& value);
-renderer2d::LineCap parse_line_cap(const json& value);
-renderer2d::LineJoin parse_line_join(const json& value);
-std::optional<AudioBandType> parse_audio_band_type(const json& value);
 
 // --- Keyframe Parsers ---
 bool parse_scalar_keyframe(const json& object, ScalarKeyframeSpec& keyframe, const std::string& path, DiagnosticBag& diagnostics);

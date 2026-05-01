@@ -1,6 +1,6 @@
 #include "tachyon/scene/builder.h"
 #include "tachyon/runtime/execution/native_render.h"
-#include "tachyon/presets/background/procedural.h"
+#include "tachyon/presets/background/background_preset_registry.h"
 #include <iostream>
 #include <vector>
 #include <string>
@@ -10,30 +10,15 @@ namespace tachyon {
 
 bool run_native_render_tests() {
     using namespace scene;
-    using namespace presets::background;
 
     std::cout << "[NativeRender] Starting Premium Background Batch Render...\n";
 
-    std::vector<std::string> presets = {
-        "midnight_silk", "golden_horizon", "cyber_matrix", "frosted_glass",
-        "cosmic_nebula", "brushed_metal", "oceanic_abyss", "royal_velvet",
-        "prismatic_light", "technical_blueprint"
-    };
-
-    for (const auto& pid : presets) {
+    for (const auto& pid : presets::list_background_presets()) {
         std::cout << "[NativeRender] Rendering: " << pid << "...\n";
         
-        LayerSpec bg;
-        if (pid == "midnight_silk") bg = procedural_bg::midnight_silk(1280, 720);
-        else if (pid == "golden_horizon") bg = procedural_bg::golden_horizon(1280, 720);
-        else if (pid == "cyber_matrix") bg = procedural_bg::cyber_matrix(1280, 720);
-        else if (pid == "frosted_glass") bg = procedural_bg::frosted_glass(1280, 720);
-        else if (pid == "cosmic_nebula") bg = procedural_bg::cosmic_nebula(1280, 720);
-        else if (pid == "brushed_metal") bg = procedural_bg::brushed_metal(1280, 720);
-        else if (pid == "oceanic_abyss") bg = procedural_bg::oceanic_abyss(1280, 720);
-        else if (pid == "royal_velvet") bg = procedural_bg::royal_velvet(1280, 720);
-        else if (pid == "prismatic_light") bg = procedural_bg::prismatic_light(1280, 720);
-        else if (pid == "technical_blueprint") bg = procedural_bg::technical_blueprint(1280, 720);
+        auto bg_opt = presets::build_background_preset(pid, 1280, 720);
+        if (!bg_opt) continue;
+        LayerSpec bg = *bg_opt;
 
         auto scene = Composition(pid)
             .size(1280, 720)
@@ -44,7 +29,8 @@ bool run_native_render_tests() {
             })
             .build_scene();
 
-        std::filesystem::path out_path = std::filesystem::path("c:/Users/pater/Pyt/Tachyon/output") / (pid + ".mp4");
+        std::filesystem::path out_path = std::filesystem::temp_directory_path() / "tachyon_tests" / (pid + ".mp4");
+        std::filesystem::create_directories(out_path.parent_path());
         
         RenderJob job;
         job.job_id = "test_" + pid;

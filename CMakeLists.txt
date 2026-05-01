@@ -17,6 +17,7 @@ find_package(OpenMP REQUIRED)
 option(TACHYON_ENABLE_PCH "Enable precompiled headers when supported" ON)
 option(TACHYON_ENABLE_ASAN "Enable AddressSanitizer on Tachyon targets" OFF)
 option(TACHYON_ENABLE_LEGACY_JSON_SCENE "Enable legacy JSON scene authoring (disabled by default)" OFF)
+option(TACHYON_ENABLE_RENDER_JOB_JSON "Enable JSON render job parsing (enabled by default)" ON)
 option(TACHYON_TREAT_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 
 if(MSVC)
@@ -187,3 +188,12 @@ configure_file(
 add_subdirectory(src)
 add_subdirectory(tests)
 add_subdirectory(examples)
+
+# tinyexr for EXR image output
+FetchContent_Declare(
+    tinyexr
+    GIT_REPOSITORY https://github.com/syoyo/tinyexr.git
+    GIT_TAG        v1.0.8
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+FetchContent_MakeAvailable(tinyexr)

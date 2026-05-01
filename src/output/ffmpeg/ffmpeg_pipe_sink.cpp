@@ -8,21 +8,19 @@
 #include <memory>
 #include <vector>
 
-#if defined(_WIN32)
-#define TACHYON_POPEN _popen
-#define TACHYON_PCLOSE _pclose
-#else
-#define TACHYON_POPEN popen
-#define TACHYON_PCLOSE pclose
-#endif
+#include "tachyon/core/platform/pipe_process.h"
+#include "tachyon/core/platform/process.h"
 
 namespace tachyon::output {
+
+using tachyon::core::platform::open_write_pipe;
+using tachyon::core::platform::close_pipe;
 
 class FfmpegPipeSink final : public FrameOutputSink {
 public:
     ~FfmpegPipeSink() override {
         if (m_pipe != nullptr) {
-            TACHYON_PCLOSE(m_pipe);
+            close_pipe(m_pipe);
             m_pipe = nullptr;
         }
         if (!m_temp_video_path.empty()) {
@@ -64,7 +62,7 @@ public:
             ? build_ffmpeg_video_command(plan, m_temp_video_path, false)
             : build_ffmpeg_video_command(plan, destination, true);
 
-        m_pipe = TACHYON_POPEN(command.c_str(), "wb");
+        m_pipe = open_write_pipe(command.c_str());
         if (m_pipe == nullptr) {
             m_last_error = "failed to open ffmpeg pipe";
             return false;
@@ -98,7 +96,7 @@ public:
     bool finish() override {
         m_last_error.clear();
         if (m_pipe != nullptr) {
-            const int status = TACHYON_PCLOSE(m_pipe);
+            const int status = close_pipe(m_pipe);
             m_pipe = nullptr;
             if (status != 0) {
                 m_last_error = "ffmpeg exited with a non-zero status";
@@ -110,6 +108,20 @@ public:
     }
 
     const std::string& last_error() const override { return m_last_error; }
+
+    static bool run_shell_cmd(const std::string& cmd) {
+        using namespace tachyon::core::platform;
+        ProcessSpec spec;
+#ifdef _WIN32
+        spec.executable = "cmd.exe";
+        spec.args = {"/C", cmd};
+#else
+        spec.executable = "sh";
+        spec.args = {"-c", cmd};
+#endif
+        auto r = run_process(spec);
+        return r.success && r.exit_code == 0;
+    }
 
 private:
     bool finalize_post_processing() {
@@ -125,10 +137,10 @@ private:
         
         // Simplified GIF finalization (could be further modularized)
         std::string p1_cmd = "ffmpeg -y -i \"" + m_temp_video_path.string() + "\" -vf \"palettegen\" \"" + palette_path.string() + "\"";
-        if (std::system(p1_cmd.c_str()) != 0) return false;
+        if (!run_shell_cmd(p1_cmd)) return false;
 
         std::string p2_cmd = "ffmpeg -y -i \"" + m_temp_video_path.string() + "\" -i \"" + palette_path.string() + "\" -lavfi \"paletteuse\" \"" + destination.string() + "\"";
-        if (std::system(p2_cmd.c_str()) != 0) return false;
+        if (!run_shell_cmd(p2_cmd)) return false;
 
         std::filesystem::remove(m_temp_video_path);
         std::filesystem::remove(palette_path);
@@ -149,7 +161,7 @@ private:
         }
 
         std::string audio_cmd = "ffmpeg -y -f f32le -ar 48000 -ac 2 -i - \"" + master_audio_path.string() + "\"";
-        FILE* audio_pipe = TACHYON_POPEN(audio_cmd.c_str(), "wb");
+        FILE* audio_pipe = open_write_pipe(audio_cmd.c_str());
         if (!audio_pipe) return false;
 
         const double duration = m_plan->composition.duration;
@@ -158,10 +170,10 @@ private:
             mixer.mix(t, std::min(1.0, duration - t), mix_buffer);
             std::fwrite(mix_buffer.data(), sizeof(float), mix_buffer.size(), audio_pipe);
         }
-        TACHYON_PCLOSE(audio_pipe);
+        close_pipe(audio_pipe);
 
         const std::string mux_command = build_ffmpeg_mux_command(*m_plan, m_temp_video_path, master_audio_path);
-        if (std::system(mux_command.c_str()) != 0) return false;
+        if (!run_shell_cmd(mux_command)) return false;
 
         std::filesystem::remove(m_temp_video_path);
         std::filesystem::remove(master_audio_path);

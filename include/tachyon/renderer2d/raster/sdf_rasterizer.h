@@ -12,7 +12,7 @@ namespace tachyon::renderer2d {
  */
 class SDFShapeRasterizer {
 public:
-    static Framebuffer rasterize(const spec::ShapeSpec& shape_spec, int width, int height);
+    static Framebuffer rasterize(const ShapeSpec& shape_spec, int width, int height);
 };
 
 } // namespace tachyon::renderer2d

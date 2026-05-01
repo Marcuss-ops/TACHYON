@@ -1,4 +1,5 @@
 #include "tachyon/output/frame_output_sink.h"
+#include "tachyon/output/output_utils.h"
 #include "tachyon/renderer2d/color/color_management_system.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
 
@@ -12,20 +13,7 @@
 namespace tachyon::output {
 namespace {
 
-std::string to_lower(std::string value) {
-    std::transform(value.begin(), value.end(), value.begin(), [](unsigned char ch) {
-        return static_cast<char>(std::tolower(ch));
-    });
-    return value;
-}
-
-std::string extension_lower(const std::filesystem::path& path) {
-    return to_lower(path.extension().string());
-}
-
-bool is_video_extension(const std::string& extension) {
-    return extension == ".mp4" || extension == ".mov" || extension == ".mkv" || extension == ".webm";
-}
+using renderer2d::detail::ascii_lower;
 
 std::filesystem::path resolve_frame_path(const std::filesystem::path& destination, std::size_t output_index) {
     std::filesystem::path directory = destination;
@@ -60,12 +48,13 @@ public:
         
         // Map RenderPlan working space string to ColorProfile
         // (Simplified mapping for now; in a full impl this would be more robust)
-        if (plan.working_space == "srgb") {
+        const std::string ws = ascii_lower(plan.working_space);
+        if (ws == "srgb") {
             m_cms.working_profile = renderer2d::ColorProfile::sRGB();
-        } else if (plan.working_space == "linear_rec709" || plan.working_space == "rec709") {
+        } else if (ws == "linear_rec709" || ws == "rec709") {
             m_cms.working_profile = renderer2d::ColorProfile::Rec709();
             m_cms.working_profile.curve = renderer2d::TransferCurve::Linear;
-        } else if (plan.working_space == "acescg") {
+        } else if (ws == "acescg") {
             m_cms.working_profile = renderer2d::ColorProfile::ACEScg();
         }
 
@@ -139,39 +128,6 @@ public:
 
 } // namespace
 
-bool output_requests_png_sequence(const OutputContract& contract) {
-    const std::string class_name = to_lower(contract.profile.class_name);
-    const std::string container = to_lower(contract.profile.container);
-    const std::string extension = extension_lower(std::filesystem::path(contract.destination.path));
-
-    if (class_name == "png_sequence" || class_name == "png-sequence" ||
-        class_name == "image_sequence" || class_name == "image-sequence") {
-        return true;
-    }
-
-    if (container == "png" || container == "image_sequence" || container == "image-sequence") {
-        return true;
-    }
-
-    return extension == ".png" || (!extension.empty() && !is_video_extension(extension));
-}
-
-bool output_requests_video_file(const OutputContract& contract) {
-    const std::string class_name = to_lower(contract.profile.class_name);
-    const std::string container = to_lower(contract.profile.container);
-    const std::string extension = extension_lower(std::filesystem::path(contract.destination.path));
-
-    if (class_name == "ffmpeg_pipe" || class_name == "ffmpeg-pipe" ||
-        class_name == "video" || class_name == "video_file" || class_name == "video-file") {
-        return true;
-    }
-
-    if (container == "mp4" || container == "mov" || container == "mkv" || container == "webm") {
-        return true;
-    }
-
-    return is_video_extension(extension);
-}
 
 std::unique_ptr<FrameOutputSink> create_png_sequence_sink() {
     return std::make_unique<PngSequenceSink>();

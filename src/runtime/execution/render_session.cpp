@@ -7,8 +7,10 @@
 #include "tachyon/renderer2d/resource/precomp_cache.h"
 #include "tachyon/renderer2d/resource/texture_resolver.h"
 #include "tachyon/output/frame_output_sink.h"
+#include "tachyon/output/output_utils.h"
 #include "tachyon/media/streaming/media_prefetcher.h"
 #include "tachyon/audio/audio_export.h"
+#include "tachyon/runtime/execution/session/render_internal.h"
 
 #include <iostream>
 #include <future>
@@ -40,67 +42,6 @@ std::string output_path_or_plan(const std::filesystem::path& output_path, const 
 
 } // namespace
 
-void render_frames_parallel(
-    const CompiledScene& compiled_scene,
-    const RenderExecutionPlan& execution_plan,
-    FrameCache& cache,
-    std::size_t worker_count,
-    ::tachyon::RenderContext& context,
-    media::MediaPrefetcher& prefetcher,
-    media::PlaybackScheduler* scheduler,
-    const CompiledScene& original_scene,
-    double session_fps,
-    std::vector<ExecutedFrame>& rendered_frames,
-    std::vector<double>& frame_times) {
-
-    (void)original_scene;
-    (void)session_fps;
-    (void)scheduler;
-    (void)prefetcher;
-
-    const std::size_t task_count = execution_plan.frame_tasks.size();
-    rendered_frames.resize(task_count);
-    frame_times.resize(task_count);
-    const std::size_t thread_count = std::max<std::size_t>(1, std::min(worker_count, task_count));
-    std::atomic<std::size_t> next_index{0};
-    std::vector<std::future<void>> workers;
-    workers.reserve(thread_count);
-
-    for (std::size_t worker_index = 0; worker_index < thread_count; ++worker_index) {
-        workers.push_back(std::async(std::launch::async, [&]() {
-            FrameArena arena;
-            FrameExecutor executor(arena, cache, nullptr);
-            
-            // Create a thread-local context
-            ::tachyon::RenderContext local_context(context.renderer2d.precomp_cache);
-            local_context.media = context.media;
-            local_context.ray_tracer = context.ray_tracer;
-            local_context.policy = context.policy;
-            local_context.surface_pool = context.surface_pool;
-            local_context.renderer2d.font_registry = context.renderer2d.font_registry;
-            
-            for (;;) {
-                const std::size_t index = next_index.fetch_add(1);
-                if (index >= task_count) {
-                    return;
-                }
-
-                const auto& task = execution_plan.frame_tasks[index];
-                RenderPlan frame_plan = execution_plan.render_plan;
-                
-                DataSnapshot snapshot;
-                const auto frame_start = std::chrono::high_resolution_clock::now();
-                rendered_frames[index] = executor.execute(compiled_scene, frame_plan, task, snapshot, local_context);
-                const auto frame_end = std::chrono::high_resolution_clock::now();
-                frame_times[index] = std::chrono::duration<double, std::milli>(frame_end - frame_start).count();
-            }
-        }));
-    }
-
-    for (auto& w : workers) {
-        w.wait();
-    }
-}
 
 RenderSessionResult RenderSession::render(
     const SceneSpec& scene,
@@ -133,7 +74,8 @@ RenderSessionResult RenderSession::render(
     if (fps <= 0.0) fps = 24.0;
 
     const auto frame_exec_start = std::chrono::high_resolution_clock::now();
-    render_frames_parallel(
+    frame_times.resize(execution_plan.frame_tasks.size());
+    render_frames_parallel_internal(
         compiled_scene,
         effective_plan,
         m_cache,
@@ -141,10 +83,13 @@ RenderSessionResult RenderSession::render(
         context,
         prefetcher,
         nullptr,
-        compiled_scene,
-        fps,
         rendered_frames,
-        frame_times);
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        &result,
+        &frame_times);
     const auto frame_exec_end = std::chrono::high_resolution_clock::now();
     result.frame_execution_ms = std::chrono::duration<double, std::milli>(frame_exec_end - frame_exec_start).count();
     result.frame_times_ms = std::move(frame_times);
@@ -188,16 +133,19 @@ RenderSessionResult RenderSession::render(
         result.encode_ms = std::chrono::duration<double, std::milli>(encode_end - encode_start).count();
     }
 
-    // Audio Export
+    // Audio Export (Standalone WAV if sink doesn't handle muxing)
     if (!compiled_scene.compositions.empty() && !compiled_scene.compositions.front().audio_tracks.empty()) {
-        audio::AudioExporter exporter;
-        for (const auto& track : compiled_scene.compositions.front().audio_tracks) {
-            exporter.add_track(track);
+        const bool sink_handles_audio = output::output_requests_video_file(effective_plan.render_plan.output);
+        if (!sink_handles_audio) {
+            audio::AudioExporter exporter;
+            for (const auto& track : compiled_scene.compositions.front().audio_tracks) {
+                exporter.add_track(track);
+            }
+            
+            audio::AudioExportConfig audio_config;
+            std::filesystem::path audio_path = output_path.parent_path() / (output_path.stem().string() + ".wav");
+            exporter.export_to(audio_path, audio_config);
         }
-        
-        audio::AudioExportConfig audio_config;
-        std::filesystem::path audio_path = output_path.parent_path() / (output_path.stem().string() + ".wav");
-        exporter.export_to(audio_path, audio_config);
     }
 
     return result;

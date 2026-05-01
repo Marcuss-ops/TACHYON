@@ -74,6 +74,9 @@ struct CompiledKeyframe {
     double cy1{0.0};
     double cx2{1.0};
     double cy2{1.0};
+    double spring_stiffness{0.0};
+    double spring_damping{0.0};
+    double spring_mass{1.0};
 };
 
 struct CompiledPropertyTrack {
@@ -119,6 +122,18 @@ struct CompiledLayer {
     AnimatedColorSpec subtitle_outline_color;
     float subtitle_outline_width{0.0f};
     std::optional<std::string> word_timestamp_path;
+    bool asset_offline{false};
+    float extrusion_depth{0.0f};
+    float bevel_size{0.0f};
+    float hole_bevel_ratio{0.0f};
+    std::string blend_mode{"normal"};
+    std::vector<AnimatedEffectSpec> animated_effects;
+    std::optional<ProceduralSpec> procedural;
+    double in_time{0.0};
+    double out_time{10.0};
+    double start_time{0.0};
+    LayerTransitionSpec transition_in;
+    LayerTransitionSpec transition_out;
     
     // Evaluation state indices
     std::optional<std::uint32_t> parent_index;

@@ -5,19 +5,30 @@ file(GLOB_RECURSE TACHYON_ALL_CPP CONFIGURE_DEPENDS
 )
 
 set(TachyonCoreSources ${TACHYON_ALL_CPP})
-list(FILTER TachyonCoreSources EXCLUDE REGEX "/(audio|media|output|renderer2d|renderer3d|runtime|text|tracker)/")
-list(FILTER TachyonCoreSources EXCLUDE REGEX "/core/(cli|scene|spec)/")
+list(FILTER TachyonCoreSources EXCLUDE REGEX "/(audio|media|output|renderer2d|renderer3d|runtime|text|tracker|presets|timeline)/")
+list(FILTER TachyonCoreSources EXCLUDE REGEX "/core/(cli|scene|spec)")
 list(FILTER TachyonCoreSources EXCLUDE REGEX "/(background_generator|camera_cut_contract|main)\\.cpp$")
 
 set(TachyonSceneSources ${TACHYON_ALL_CPP})
 list(FILTER TachyonSceneSources INCLUDE REGEX "/(core/(scene|spec)|presets|timeline)/|/(background_generator|camera_cut_contract)\\.cpp$")
 list(FILTER TachyonSceneSources EXCLUDE REGEX "/core/spec/(serialization|parsing|shapes|schema/migration|template_registry|asset_resolver|pipeline/unified_scene_pipeline)\\.cpp$")
 
+if(TACHYON_ENABLE_LEGACY_JSON_SCENE)
+    target_sources(TachyonCore PRIVATE
+        core/spec/legacy/scene_spec_json.cpp
+        core/spec/legacy/layer_parse_json.cpp
+        core/spec/legacy/json_parse_helpers.cpp
+        core/spec/property_parse_json.cpp
+    )
+    target_compile_definitions(TachyonCore PUBLIC TACHYON_ENABLE_LEGACY_JSON_SCENE)
+endif()
+
 set(TachyonRuntimeSources ${TACHYON_ALL_CPP})
 list(FILTER TachyonRuntimeSources INCLUDE REGEX "/runtime/")
 
 set(TachyonRenderer2DSources ${TACHYON_ALL_CPP})
 list(FILTER TachyonRenderer2DSources INCLUDE REGEX "/renderer2d/")
+list(FILTER TachyonRenderer2DSources EXCLUDE REGEX "/renderer2d/effects/glsl_transition_effect\\.cpp$")
 
 set(TachyonRenderer3DSources ${TACHYON_ALL_CPP})
 list(FILTER TachyonRenderer3DSources INCLUDE REGEX "/renderer3d/")
@@ -25,6 +36,13 @@ list(FILTER TachyonRenderer3DSources INCLUDE REGEX "/renderer3d/")
 set(TachyonMediaSources ${TACHYON_ALL_CPP})
 list(FILTER TachyonMediaSources INCLUDE REGEX "/media/[^/]+\\.cpp$|/media/ffmpeg/[^/]+\\.cpp$")
 list(FILTER TachyonMediaSources EXCLUDE REGEX "/media/(decoding/svg_decoder_impl|decoding/tinygltf_impl|management/asset_manager|management/image_manager|management/media_manager|loading/mesh_loader|streaming/media_prefetcher|resolution/asset_resolution|import/asset_import_pipeline)\\.cpp$")
+list(APPEND TachyonMediaSources
+    "${CMAKE_CURRENT_SOURCE_DIR}/media/management/proxy_manifest.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/media/management/proxy_worker.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/media/processing/extruder.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/media/resolution/asset_path_utils.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/media/resolution/asset_resolution.cpp"
+)
 
 set(TachyonAudioSources ${TACHYON_ALL_CPP})
 list(FILTER TachyonAudioSources INCLUDE REGEX "/audio/[^/]+\\.cpp$")
@@ -35,6 +53,7 @@ list(FILTER TachyonOutputSources EXCLUDE REGEX "/output/(av_exporter|exr_sequenc
 
 set(TachyonTextSources ${TACHYON_ALL_CPP})
 list(FILTER TachyonTextSources INCLUDE REGEX "/text/")
+list(FILTER TachyonTextSources EXCLUDE REGEX "font_instance\\.cpp$")
 
 set(TachyonTrackerSources ${TACHYON_ALL_CPP})
 list(FILTER TachyonTrackerSources INCLUDE REGEX "/tracker/[^/]+\\.cpp$")
@@ -48,8 +67,13 @@ function(tachyon_configure_target target)
             ${CMAKE_CURRENT_SOURCE_DIR}/..
         PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+            $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../third_party>
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../third_party/stb/include>
+            $<BUILD_INTERFACE:${tinygltf_SOURCE_DIR}>
+            $<BUILD_INTERFACE:${tinyexr_SOURCE_DIR}>
+            $<BUILD_INTERFACE:${earcut_SOURCE_DIR}/include>
+            $<BUILD_INTERFACE:${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/include>
             $<INSTALL_INTERFACE:include>
     )
 
@@ -94,6 +118,12 @@ add_library(TachyonScene OBJECT ${TachyonSceneSources})
 tachyon_configure_target(TachyonScene)
 
 add_library(TachyonRuntime OBJECT ${TachyonRuntimeSources})
+list(FILTER TachyonRuntimeSources EXCLUDE REGEX "/runtime/execution/render_job/render_job_parse\\.cpp$")
+if(TACHYON_ENABLE_RENDER_JOB_JSON)
+    target_sources(TachyonRuntime PRIVATE runtime/execution/render_job/render_job_parse.cpp)
+    target_compile_definitions(TachyonRuntime PRIVATE TACHYON_ENABLE_RENDER_JOB_JSON)
+endif()
+target_sources(TachyonRuntime PRIVATE runtime/execution/render_job/render_job_builder.cpp)
 tachyon_configure_target(TachyonRuntime)
 
 add_library(TachyonRenderer2D OBJECT ${TachyonRenderer2DSources})

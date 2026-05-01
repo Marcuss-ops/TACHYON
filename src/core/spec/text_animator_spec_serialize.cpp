@@ -1,5 +1,6 @@
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 #include <nlohmann/json.hpp>
+#include "tachyon/core/spec/property_spec_serialize_helpers.h"
 
 using json = nlohmann::json;
 

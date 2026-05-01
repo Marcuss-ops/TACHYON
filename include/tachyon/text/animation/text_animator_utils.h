@@ -39,8 +39,8 @@ double sample_scalar_kfs(
     const std::vector<ScalarKeyframeSpec>& keyframes,
     float t);
 
-math::Vector2 sample_vector2_kfs(
-    const std::optional<math::Vector2>& static_val,
+::tachyon::math::Vector2 sample_vector2_kfs(
+    const std::optional<::tachyon::math::Vector2>& static_val,
     const std::vector<Vector2KeyframeSpec>& keyframes,
     float t);
 
@@ -50,6 +50,7 @@ math::Vector2 sample_vector2_kfs(
     float t);
 
 float compute_coverage(const TextAnimatorSelectorSpec& selector, const TextAnimatorContext& ctx);
+float evaluate_expression_wrapper(const std::string& expr, const TextAnimatorContext& ctx);
 
 struct ResolvedGlyphPaint {
     const GlyphBitmap* glyph{nullptr};
@@ -58,7 +59,7 @@ struct ResolvedGlyphPaint {
     std::uint32_t target_width{0};
     std::uint32_t target_height{0};
     float opacity{1.0f};
-    math::Vector2 motion_blur_vector{0.0f, 0.0f};
+    ::tachyon::math::Vector2 motion_blur_vector{0.0f, 0.0f};
     
     // New animatable fields
     ::tachyon::ColorSpec fill_color{255, 255, 255, 255};
