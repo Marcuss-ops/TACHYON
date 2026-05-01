@@ -1,5 +1,5 @@
 #include "tachyon/media/resolution/asset_resolution.h"
-#include "tachyon/text/fonts/font_manifest.h"
+#include "tachyon/text/fonts/management/font_manifest.h"
 
 #include <algorithm>
 

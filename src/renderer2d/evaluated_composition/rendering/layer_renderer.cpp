@@ -11,7 +11,7 @@
 #include "tachyon/text/animation/text_animator_utils.h"
 #include "tachyon/text/animation/text_animator_pipeline.h"
 #include "tachyon/text/animation/text_on_path.h"
-#include "tachyon/text/fonts/font_registry.h"
+#include "tachyon/text/fonts/core/font_registry.h"
 #include "tachyon/core/shapes/shape_modifiers.h"
 #include <algorithm>
 #include <cmath>

@@ -12,8 +12,8 @@ using SurfacePool = tachyon::renderer2d::SurfacePool;
 #include "tachyon/core/shapes/shape_path.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
-#include "tachyon/text/fonts/font.h"
-#include "tachyon/text/fonts/font_registry.h"
+#include "tachyon/text/fonts/core/font.h"
+#include "tachyon/text/fonts/core/font_registry.h"
 #include "tachyon/text/content/subtitle.h"
 #include "tachyon/runtime/execution/planning/quality_policy.h"
 

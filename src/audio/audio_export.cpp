@@ -13,6 +13,11 @@
 
 namespace tachyon::audio {
 
+#ifndef TACHYON_ENABLE_AUDIO_MUX
+bool export_plan_audio(const RenderPlan& plan, const std::filesystem::path& output_path) { return false; }
+bool has_any_audio(const RenderPlan& plan) { return false; }
+#else
+
 static float evaluate_keyframe_value(const std::vector<animation::Keyframe<float>>& keyframes, double time) {
     if (keyframes.empty()) return 1.0f;
     if (keyframes.size() == 1) return keyframes[0].value;
@@ -262,5 +267,7 @@ bool has_any_audio(const RenderPlan& plan) {
     }
     return false;
 }
+
+#endif // TACHYON_ENABLE_AUDIO_MUX
 
 } // namespace tachyon::audio

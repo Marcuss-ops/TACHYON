@@ -12,6 +12,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <omp.h>
+#include <thread>
 
 namespace tachyon {
 
@@ -59,18 +60,27 @@ std::shared_ptr<renderer2d::SurfaceRGBA> render_frame_at_time(
     const DataSnapshot& snapshot,
     RenderContext& context,
     double render_time,
-    const std::uint64_t composition_key,
-    const std::uint64_t frame_key) {
-    (void)frame_key;
+     const std::uint64_t composition_key,
+     const std::uint64_t frame_key) {
+    // Build a robust cache key using frame_key, render time, composition, and plan params
+    CacheKeyBuilder temp_builder;
+    temp_builder.add_u64(frame_key);
+    temp_builder.add_double(render_time);
+    temp_builder.add_u64(composition_key);
+    if (plan.fps.has_value()) {
+        temp_builder.add_u64(static_cast<std::uint64_t>(*plan.fps));
+    }
+    if (task.subframe_index.has_value()) {
+        temp_builder.add_u64(*task.subframe_index);
+    }
+    if (task.motion_blur_sample_index.has_value()) {
+        temp_builder.add_u64(*task.motion_blur_sample_index);
+    }
+    const std::uint64_t temp_key = temp_builder.finish();
 
     // Create a modified task with the target time
     FrameRenderTask temp_task = task;
     temp_task.time_seconds = render_time;
-
-    // Build a new frame key for this time
-    CacheKeyBuilder temp_builder;
-    temp_builder.add_u64(static_cast<std::uint64_t>(render_time * 1000.0)); // Use time as key component
-    const std::uint64_t temp_key = temp_builder.finish();
 
     // Evaluate the scene at the specified time
     const auto& topo_order = compiled_scene.graph.topo_order();
@@ -237,29 +247,41 @@ ExecutedFrame FrameExecutor::execute(
             blend_result->source_time_b, composition_key, frame_key);
 
         if (frame_a_surface && frame_b_surface) {
-            // Convert to timeline FrameBuffer for blending
-            timeline::FrameBuffer fb_a = surface_to_framebuffer(*frame_a_surface);
-            timeline::FrameBuffer fb_b = surface_to_framebuffer(*frame_b_surface);
-
             // Apply blend based on mode
-            timeline::FrameBuffer blended;
             if (plan.frame_blend_mode == timeline::FrameBlendMode::PixelMotion ||
                 plan.frame_blend_mode == timeline::FrameBlendMode::OpticalFlow) {
+                // Optical flow path requires FrameBuffer conversions
+                timeline::FrameBuffer fb_a = surface_to_framebuffer(*frame_a_surface);
+                timeline::FrameBuffer fb_b = surface_to_framebuffer(*frame_b_surface);
                 
-                // Use optical flow provider abstraction
                 timeline::DefaultOpticalFlowProvider flow_provider;
-                
-                // Compute bi-directional optical flow
                 timeline::OpticalFlowField flow_ab = flow_provider.compute_optical_flow(fb_a, fb_b);
                 timeline::OpticalFlowField flow_ba = flow_provider.compute_optical_flow(fb_b, fb_a);
                 
-                blended = flow_provider.synthesize_frame_optical_flow(fb_a, fb_b, flow_ab, flow_ba, blend_result->blend_factor);
+                timeline::FrameBuffer blended = flow_provider.synthesize_frame_optical_flow(fb_a, fb_b, flow_ab, flow_ba, blend_result->blend_factor);
+                result.frame = framebuffer_to_framebuffer(blended);
             } else {
-                blended = timeline::blend_linear(fb_a, fb_b, blend_result->blend_factor);
+                // Linear blend directly on SurfaceRGBA to avoid uint8_t conversions
+                auto blended_surface = std::make_shared<renderer2d::SurfaceRGBA>(
+                    frame_a_surface->width(), frame_a_surface->height());
+                const float blend = blend_result->blend_factor;
+                const std::size_t width = static_cast<std::size_t>(blended_surface->width());
+                const std::size_t height = static_cast<std::size_t>(blended_surface->height());
+                for (std::size_t y = 0; y < height; ++y) {
+                    for (std::size_t x = 0; x < width; ++x) {
+                        auto a = frame_a_surface->get_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y));
+                        auto b = frame_b_surface->get_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y));
+                        renderer2d::Color c(
+                            a.r * (1.0f - blend) + b.r * blend,
+                            a.g * (1.0f - blend) + b.g * blend,
+                            a.b * (1.0f - blend) + b.b * blend,
+                            a.a * (1.0f - blend) + b.a * blend
+                        );
+                        blended_surface->set_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), c);
+                    }
+                }
+                result.frame = std::make_shared<renderer2d::Framebuffer>(*blended_surface);
             }
-
-            // Convert back to Framebuffer and return
-            result.frame = framebuffer_to_framebuffer(blended);
             context.diagnostic_tracker = nullptr;
             return result;
         }
@@ -293,12 +315,42 @@ ExecutedFrame FrameExecutor::execute(
 
             if (plan.motion_blur_enabled && plan.motion_blur_samples > 1) {
                 int samples = std::min<int>(static_cast<int>(plan.motion_blur_samples), plan.quality_policy.motion_blur_sample_cap);
-                const double shutter_duration = (plan.motion_blur_shutter_angle / 360.0) / fps;
-                const double shutter_start_offset = (plan.motion_blur_shutter_phase / 360.0) / fps;
+    const double shutter_duration = (plan.motion_blur_shutter_angle / 360.0) / fps;
+    const double shutter_start_offset = (plan.motion_blur_shutter_phase / 360.0) / fps;
 
-                std::vector<std::shared_ptr<renderer2d::SurfaceRGBA>> samples_surfaces(samples);
-                #pragma omp parallel for
-                for (int s = 0; s < samples; ++s) {
+    int omp_max_threads = 1;
+    if (m_parallel_frames) {
+        omp_max_threads = 1;
+    } else {
+        const char* omp_threads_env = std::getenv("TACHYON_OPENMP_THREADS_PER_FRAME");
+        if (omp_threads_env) {
+            char* endptr;
+            long val = std::strtol(omp_threads_env, &endptr, 10);
+            if (endptr != omp_threads_env && val > 0) {
+                omp_max_threads = static_cast<int>(val);
+            }
+        } else {
+            unsigned int hw = std::thread::hardware_concurrency();
+            if (hw == 0) hw = 1;
+            omp_max_threads = std::max(1u, hw / std::max(1u, static_cast<unsigned int>(m_parallel_worker_count)));
+        }
+
+        const char* max_total_env = std::getenv("TACHYON_MAX_TOTAL_THREADS");
+        if (max_total_env) {
+            char* endptr;
+            long max_total = std::strtol(max_total_env, &endptr, 10);
+            if (endptr != max_total_env && max_total > 0) {
+                const long total = static_cast<long>(m_parallel_worker_count) * omp_max_threads;
+                if (total > max_total) {
+                    omp_max_threads = std::max(1, static_cast<int>(max_total / m_parallel_worker_count));
+                }
+            }
+        }
+    }
+
+    std::vector<std::shared_ptr<renderer2d::SurfaceRGBA>> samples_surfaces(samples);
+    #pragma omp parallel for num_threads(omp_max_threads)
+    for (int s = 0; s < samples; ++s) {
                     const double t_offset = shutter_start_offset + (samples > 1 ? (static_cast<double>(s) / (samples - 1)) * shutter_duration : 0.0);
                     const double sub_frame_time = frame_time_seconds + t_offset;
                     CacheKeyBuilder sample_builder = comp_builder;

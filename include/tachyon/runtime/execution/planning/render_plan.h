@@ -152,6 +152,8 @@ struct FrameRenderTask {
     CacheKey cache_key;
     bool cacheable{true};
     std::vector<std::string> invalidates_when_changed;
+    std::optional<std::uint64_t> subframe_index;
+    std::optional<std::uint64_t> motion_blur_sample_index;
 };
 
 /**

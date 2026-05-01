@@ -1,7 +1,7 @@
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include "tachyon/core/spec/scene_spec_audio.h"
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
-#include "tachyon/text/fonts/font_manifest.h"
+#include "tachyon/text/fonts/management/font_manifest.h"
 #include <fstream>
 #include <sstream>
 
