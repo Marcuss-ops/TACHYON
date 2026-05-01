@@ -1,41 +1,14 @@
-#include "tachyon/core/spec/compilation/scene_compiler.h"
-#include "tachyon/core/spec/compilation/scene_hash_builder.h"
-#include "tachyon/core/spec/compilation/property_track_compiler.h"
-#include "tachyon/importer/scene_importer.h"
-#include "tachyon/core/string_utils.h"
-
+#include "tachyon/core/spec/compilation/scene_compiler_detail.h"
+#include "tachyon/core/spec/compilation/scene_compiler_internal.h"
+#include "tachyon/core/spec/compilation/scene_compiler_hashing.h"
 #include <algorithm>
 #include <cstdint>
-#include <string>
-#include <string_view>
-#include <utility>
-#include <type_traits>
-#include <unordered_map>
 
-namespace tachyon {
-namespace {
+namespace tachyon::detail {
 
-} // namespace
-
-SceneCompiler::SceneCompiler(SceneCompilerOptions options)
-    : m_options(std::move(options)) {}
-
-ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) const {
-    ResolutionResult<CompiledScene> result;
-    CompiledScene compiled;
-    CompilationRegistry registry;
-
-    compiled.header.version = 1;
-    compiled.header.flags = static_cast<std::uint16_t>(m_options.determinism.fp_mode == DeterminismContract::FloatingPointMode::Strict ? 1U : 0U);
-    compiled.header.layout_version = m_options.determinism.layout_version;
-    compiled.header.compiler_version = m_options.determinism.compiler_version;
-    compiled.header.layout_checksum = CompiledScene::calculate_layout_checksum();
-    compiled.determinism = m_options.determinism;
-    compiled.project_id = scene.project.id;
-    compiled.project_name = scene.project.name;
-    compiled.scene_hash = hash_scene_spec(scene, m_options.determinism);
-
-    // 1. Build Compositions and Layers
+void build_compositions(const SceneSpec& scene, CompiledScene& compiled, CompilationRegistry& registry, DiagnosticBag& diagnostics) {
+    (void)diagnostics; // Not used yet, but kept for API compatibility
+    
     compiled.compositions.reserve(scene.compositions.size());
     for (const auto& composition : scene.compositions) {
         CompiledComposition compiled_composition;
@@ -109,7 +82,7 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
             // Resolve Property Indices
             const auto add_track = [&](const std::string& suffix, const auto& spec, double fallback) {
                 compiled_layer.property_indices.push_back(static_cast<std::uint32_t>(compiled.property_tracks.size()));
-                auto track = detail::compile_property_track(registry, suffix, layer.id, spec, fallback);
+                auto track = compile_property_track(registry, suffix, layer.id, spec, fallback);
                 compiled.graph.add_node(track.node.node_id);
                 
                 compiled.graph.add_edge(track.node.node_id, compiled_layer.node.node_id, true);
@@ -156,109 +129,6 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
 
         compiled.compositions.push_back(std::move(compiled_composition));
     }
-
-
-    // 2. Resolve Multi-Node Dependencies (Parenting, Track Mattes, Precomps)
-    for (std::uint32_t c_idx = 0; c_idx < compiled.compositions.size(); ++c_idx) {
-        auto& comp = compiled.compositions[c_idx];
-        const auto& comp_spec = scene.compositions[c_idx];
-        
-        for (std::uint32_t l_idx = 0; l_idx < comp.layers.size(); ++l_idx) {
-            auto& layer = comp.layers[l_idx];
-            const auto& layer_spec = comp_spec.layers[l_idx];
-
-            if (layer_spec.parent.has_value()) {
-                auto it = registry.layer_id_map.find(*layer_spec.parent);
-                if (it != registry.layer_id_map.end()) {
-                    layer.parent_index = it->second;
-                    compiled.graph.add_edge(comp.layers[it->second].node.node_id, layer.node.node_id, true);
-                }
-            }
-
-            if (layer_spec.track_matte_layer_id.has_value()) {
-                auto it = registry.layer_id_map.find(*layer_spec.track_matte_layer_id);
-                if (it != registry.layer_id_map.end()) {
-                    layer.matte_layer_index = it->second;
-                    compiled.graph.add_edge(comp.layers[it->second].node.node_id, layer.node.node_id, true);
-                }
-            }
-
-            if (layer_spec.precomp_id.has_value()) {
-                auto it = registry.composition_id_map.find(*layer_spec.precomp_id);
-                if (it != registry.composition_id_map.end()) {
-                    layer.precomp_index = it->second;
-                    compiled.graph.add_edge(compiled.compositions[it->second].node.node_id, layer.node.node_id, true);
-                }
-            }
-        }
-    }
-
-    // 3. Compile Graph and Assign Topological Indices
-    compiled.graph.compile();
-    const auto& topo = compiled.graph.topo_order();
-    std::unordered_map<std::uint32_t, std::uint32_t> topo_map;
-    for (std::uint32_t i = 0; i < topo.size(); ++i) {
-        topo_map[topo[i]] = i;
-    }
-
-    // Update nodes with their topo_index
-    for (auto& comp : compiled.compositions) {
-        comp.node.topo_index = topo_map[comp.node.node_id];
-        for (auto& layer : comp.layers) {
-            layer.node.topo_index = topo_map[layer.node.node_id];
-        }
-    }
-    for (auto& track : compiled.property_tracks) {
-        track.node.topo_index = topo_map[track.node.node_id];
-    }
-
-    compiled.assets = scene.assets;
-    compiled.link_dependency_nodes();
-    result.value = std::move(compiled);
-    return result;
 }
 
-
-bool SceneCompiler::update_compiled_scene(CompiledScene& existing, const SceneSpec& new_spec) const {
-    // If the structural hash (topology) hasn't changed, we can do a fast property-only update.
-    std::uint64_t new_hash = hash_scene_spec(new_spec, existing.determinism);
-    if (new_hash == existing.scene_hash) {
-        return true; 
-    }
-
-    auto result = compile(new_spec);
-    if (result.ok()) {
-        existing = std::move(*result.value);
-        return true;
-    }
-
-    return false;
-}
-    
-ResolutionResult<SceneSpec> SceneCompiler::import_external_scene(const std::filesystem::path& path) {
-    ResolutionResult<SceneSpec> result;
-    std::string ext = path.extension().string();
-    ascii_lower_inplace(ext);
-
-    std::unique_ptr<importer::SceneImporter> imp;
-    if (ext == ".usd" || ext == ".usda" || ext == ".usdc") {
-        imp = importer::create_usd_importer();
-    } else if (ext == ".abc") {
-        imp = importer::create_alembic_importer();
-    }
-
-    if (!imp) {
-        result.diagnostics.add_error("IMPORT_ERR", "No importer available for format: " + ext);
-        return result;
-    }
-
-    if (!imp->load(path.string())) {
-        result.diagnostics.add_error("IMPORT_ERR", "Failed to load scene: " + imp->last_error());
-        return result;
-    }
-
-    result.value = imp->build_scene_spec();
-    return result;
-}
-
-} // namespace tachyon
+} // namespace tachyon::detail

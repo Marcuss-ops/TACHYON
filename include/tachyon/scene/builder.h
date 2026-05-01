@@ -148,6 +148,12 @@ public:
  */
 class CompositionBuilder {
     CompositionSpec spec_;
+
+    // Private helper for typed layer methods
+    CompositionBuilder& add_typed_layer(
+        std::string id,
+        std::function<void(LayerBuilder&)> defaults,
+        std::function<void(LayerBuilder&)> fn);
 public:
     explicit CompositionBuilder(std::string id);
 

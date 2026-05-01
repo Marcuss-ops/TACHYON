@@ -1,4 +1,5 @@
 #include "tachyon/hal/hal.h"
+#include "tachyon/core/string_utils.h"
 #include <thread>
 #include <algorithm>
 
@@ -7,8 +8,8 @@ namespace tachyon::hal {
 GPUVendor detect_gpu_vendor(const std::string& device_name, const std::string& vendor_string) {
     std::string name_lower = device_name;
     std::string vendor_lower = vendor_string;
-    for (auto& c : name_lower) c = static_cast<char>(::tolower(c));
-    for (auto& c : vendor_lower) c = static_cast<char>(::tolower(c));
+    ascii_lower_inplace(name_lower);
+    ascii_lower_inplace(vendor_lower);
 
     if (vendor_lower.find("nvidia") != std::string::npos) return GPUVendor::NVIDIA;
     if (vendor_lower.find("amd") != std::string::npos || vendor_lower.find("advanced micro") != std::string::npos) return GPUVendor::AMD;

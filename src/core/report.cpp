@@ -1,6 +1,5 @@
 #include "tachyon/core/report.h"
-
-#include "nlohmann/json.hpp"
+#include "tachyon/core/spec/json_report_utils.h"
 
 #include <cstddef>
 #include <utility>
@@ -9,18 +8,13 @@ namespace tachyon {
 namespace {
 
 using json = nlohmann::json;
+using spec::diagnostics_to_json;
+using spec::frame_range_to_json;
+using spec::output_destination_to_json;
+using spec::output_profile_to_json;
 
 json make_diagnostics_json(const DiagnosticBag& diagnostics) {
-    json result = json::array();
-    for (const auto& diagnostic : diagnostics.diagnostics) {
-        result.push_back({
-            {"severity", diagnostic_severity_string(diagnostic.severity)},
-            {"code", diagnostic.code},
-            {"message", diagnostic.message},
-            {"path", diagnostic.path}
-        });
-    }
-    return result;
+    return diagnostics_to_json(diagnostics);
 }
 
 json make_scene_json(const SceneSpec& scene) {
@@ -80,26 +74,10 @@ json make_render_plan_json(const RenderPlan& plan) {
         {"motion_blur_shutter_angle", plan.motion_blur_shutter_angle},
         {"seed_policy_mode", plan.seed_policy_mode},
         {"compatibility_mode", plan.compatibility_mode},
-        {"frame_range", {
-            {"start", plan.frame_range.start},
-            {"end", plan.frame_range.end}
-        }},
+        {"frame_range", frame_range_to_json(plan.frame_range)},
         {"output", {
-            {"destination", {
-                {"path", plan.output.destination.path},
-                {"overwrite", plan.output.destination.overwrite}
-            }},
-            {"profile", {
-                {"name", plan.output.profile.name},
-                {"class", plan.output.profile.class_name},
-                {"container", plan.output.profile.container},
-                {"alpha_mode", plan.output.profile.alpha_mode},
-                {"color", {
-                    {"space", plan.output.profile.color.space},
-                    {"transfer", plan.output.profile.color.transfer},
-                    {"range", plan.output.profile.color.range}
-                }}
-            }}
+            {"destination", output_destination_to_json(plan.output.destination)},
+            {"profile", output_profile_to_json(plan.output.profile)}
         }}
     };
 }
@@ -109,14 +87,8 @@ json make_render_job_json(const RenderJob& job) {
         {"job_id", job.job_id},
         {"scene_ref", job.scene_ref},
         {"composition_target", job.composition_target},
-        {"frame_range", {
-            {"start", job.frame_range.start},
-            {"end", job.frame_range.end}
-        }},
-        {"output", {
-            {"path", job.output.destination.path},
-            {"overwrite", job.output.destination.overwrite}
-        }}
+        {"frame_range", frame_range_to_json(job.frame_range)},
+        {"output", output_destination_to_json(job.output.destination)}
     };
 }
 

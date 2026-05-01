@@ -134,18 +134,10 @@ RenderSessionResult RenderSession::render(
     }
 
     // Audio Export (Standalone WAV if sink doesn't handle muxing)
-    if (!compiled_scene.compositions.empty() && !compiled_scene.compositions.front().audio_tracks.empty()) {
-        const bool sink_handles_audio = output::output_requests_video_file(effective_plan.render_plan.output);
-        if (!sink_handles_audio) {
-            audio::AudioExporter exporter;
-            for (const auto& track : compiled_scene.compositions.front().audio_tracks) {
-                exporter.add_track(track);
-            }
-            
-            audio::AudioExportConfig audio_config;
-            std::filesystem::path audio_path = output_path.parent_path() / (output_path.stem().string() + ".wav");
-            exporter.export_to(audio_path, audio_config);
-        }
+    const bool sink_handles_audio = output::output_requests_video_file(effective_plan.render_plan.output);
+    if (!sink_handles_audio && audio::has_any_audio(effective_plan.render_plan)) {
+        std::filesystem::path audio_path = output_path.parent_path() / (output_path.stem().string() + ".wav");
+        audio::export_plan_audio(effective_plan.render_plan, audio_path);
     }
 
     return result;

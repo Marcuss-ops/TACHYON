@@ -1,9 +1,9 @@
 #pragma once
 
-#include "tachyon/core/spec/compilation/scene_compiler.h"
-#include "tachyon/core/expressions/expression_engine.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/runtime/core/data/compiled_scene.h"
 #include <unordered_map>
+#include <cstdint>
 
 namespace tachyon {
 
@@ -29,17 +29,16 @@ CompiledPropertyTrack compile_property_track(
     const std::string& id_suffix,
     const std::string& layer_id,
     const T& property_spec,
-    double fallback_value,
-    std::vector<expressions::Bytecode>& expressions,
-    DiagnosticBag& diagnostics);
+    double fallback_value = 0.0);
 
 // Explicit instantiations
 extern template CompiledPropertyTrack compile_property_track<AnimatedScalarSpec>(
-    CompilationRegistry&, const std::string&, const std::string&, const AnimatedScalarSpec&,
-    double, std::vector<expressions::Bytecode>&, DiagnosticBag&);
+    CompilationRegistry&, const std::string&, const std::string&, const AnimatedScalarSpec&, double);
 
 extern template CompiledPropertyTrack compile_property_track<AnimatedVector2Spec>(
-    CompilationRegistry&, const std::string&, const std::string&, const AnimatedVector2Spec&,
-    double, std::vector<expressions::Bytecode>&, DiagnosticBag&);
+    CompilationRegistry&, const std::string&, const std::string&, const AnimatedVector2Spec&, double);
+
+extern template CompiledPropertyTrack compile_property_track<AnimatedVector3Spec>(
+    CompilationRegistry&, const std::string&, const std::string&, const AnimatedVector3Spec&, double);
 
 } // namespace tachyon

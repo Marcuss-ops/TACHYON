@@ -4,6 +4,7 @@
 #include "tachyon/renderer2d/color/transfer_functions.h"
 #include "tachyon/renderer2d/color/color_matrix.h"
 #include "tachyon/renderer2d/color/blending.h"
+#include "tachyon/core/string_utils.h"
 
 namespace tachyon::renderer2d {
 
@@ -15,13 +16,7 @@ inline Color apply_range_mode(Color color, ColorRange range) {
 }
 
 inline std::string ascii_lower(std::string_view value) {
-    std::string result(value);
-    for (char& ch : result) {
-        if (ch >= 'A' && ch <= 'Z') {
-            ch += ('a' - 'A');
-        }
-    }
-    return result;
+    return ::tachyon::ascii_lower(value);
 }
 
 namespace detail {

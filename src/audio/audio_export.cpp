@@ -3,6 +3,8 @@
 #include "tachyon/audio/audio_decoder.h"
 #include "tachyon/audio/audio_processor.h"
 #include "tachyon/core/animation/keyframe.h"
+#include "tachyon/runtime/execution/planning/render_plan.h"
+#include "tachyon/runtime/core/data/compiled_scene.h"
 
 #include <algorithm>
 #include <cmath>
@@ -200,6 +202,65 @@ void AudioExporter::apply_pan(float* interleaved_samples, std::size_t sample_cou
         interleaved_samples[i * 2] *= left_gain;      // Left
         interleaved_samples[i * 2 + 1] *= right_gain; // Right
     }
+}
+
+bool export_scene_audio(const CompiledScene& scene, const std::filesystem::path& output_path) {
+    if (scene.compositions.empty()) return false;
+    const auto& comp = scene.compositions.front();
+    if (comp.audio_tracks.empty()) return false;
+
+    AudioExporter exporter;
+    for (const auto& track : comp.audio_tracks) {
+        exporter.add_track(track);
+    }
+
+    AudioExportConfig config;
+    return exporter.export_to(output_path, config);
+}
+
+bool export_plan_audio(const RenderPlan& plan, const std::filesystem::path& output_path) {
+    AudioExporter exporter;
+    
+    // 1. Add tracks from Composition (via SceneSpec if available)
+    if (plan.scene_spec != nullptr) {
+        const auto& scene = *plan.scene_spec;
+        auto it = std::find_if(scene.compositions.begin(), scene.compositions.end(),
+            [&](const auto& c) { return c.id == plan.composition_target; });
+        
+        if (it != scene.compositions.end()) {
+            for (const auto& track : it->audio_tracks) {
+                exporter.add_track(track);
+            }
+        }
+    }
+
+    // 2. Add tracks from Output Profile (Overlay audio)
+    for (const auto& track : plan.output.profile.audio.tracks) {
+        if (track.source_path.empty()) continue;
+        AudioTrackSpec spec;
+        spec.id = "output_overlay_" + std::to_string(reinterpret_cast<std::uintptr_t>(&track));
+        spec.source_path = track.source_path;
+        spec.volume = static_cast<float>(track.volume);
+        spec.start_offset_seconds = track.start_offset_seconds;
+        exporter.add_track(spec);
+    }
+
+    AudioExportConfig config;
+    if (plan.output.profile.audio.sample_rate) config.sample_rate = static_cast<int>(*plan.output.profile.audio.sample_rate);
+    if (plan.output.profile.audio.channels) config.channels = static_cast<int>(*plan.output.profile.audio.channels);
+    
+    return exporter.export_to(output_path, config);
+}
+
+bool has_any_audio(const RenderPlan& plan) {
+    if (!plan.output.profile.audio.tracks.empty()) return true;
+    if (plan.scene_spec != nullptr) {
+        const auto& scene = *plan.scene_spec;
+        auto it = std::find_if(scene.compositions.begin(), scene.compositions.end(),
+            [&](const auto& c) { return c.id == plan.composition_target; });
+        if (it != scene.compositions.end() && !it->audio_tracks.empty()) return true;
+    }
+    return false;
 }
 
 } // namespace tachyon::audio

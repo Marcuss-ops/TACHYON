@@ -45,7 +45,7 @@ public:
 
         m_needs_audio_mux = !plan.output.profile.audio.mode.empty() &&
                             plan.output.profile.audio.mode != "none" &&
-                            !plan.output.profile.audio.tracks.empty();
+                            audio::has_any_audio(plan);
         
         bool needs_temp_video = m_needs_audio_mux || plan.output.profile.format == OutputFormat::Gif;
 
@@ -151,26 +151,9 @@ private:
         const std::filesystem::path destination(m_plan->output.destination.path);
         const std::filesystem::path master_audio_path = destination.parent_path() / (destination.stem().string() + ".tachyon.master_audio.wav");
 
-        audio::AudioMixer mixer;
-        for (const auto& track_spec : m_plan->output.profile.audio.tracks) {
-            if (track_spec.source_path.empty()) continue;
-            auto decoder = std::make_shared<audio::AudioDecoder>();
-            if (decoder->open(track_spec.source_path)) {
-                mixer.add_track(decoder, {track_spec.start_offset_seconds, static_cast<float>(track_spec.volume)});
-            }
+        if (!audio::export_plan_audio(*m_plan, master_audio_path)) {
+            return false;
         }
-
-        std::string audio_cmd = "ffmpeg -y -f f32le -ar 48000 -ac 2 -i - \"" + master_audio_path.string() + "\"";
-        FILE* audio_pipe = open_write_pipe(audio_cmd.c_str());
-        if (!audio_pipe) return false;
-
-        const double duration = m_plan->composition.duration;
-        std::vector<float> mix_buffer;
-        for (double t = 0.0; t < duration; t += 1.0) {
-            mixer.mix(t, std::min(1.0, duration - t), mix_buffer);
-            std::fwrite(mix_buffer.data(), sizeof(float), mix_buffer.size(), audio_pipe);
-        }
-        close_pipe(audio_pipe);
 
         const std::string mux_command = build_ffmpeg_mux_command(*m_plan, m_temp_video_path, master_audio_path);
         if (!run_shell_cmd(mux_command)) return false;
