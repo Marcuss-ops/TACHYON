@@ -2,7 +2,7 @@ build/
 build-ninja/
 build-linux/
 out/
-output/
+/output/
 tests/output/actual/
 *.vcxproj.user
 *.suo
