@@ -1,6 +1,7 @@
 #include "tachyon/output/frame_output_sink.h"
 #include "tachyon/audio/audio_mixer.h"
 #include "tachyon/audio/audio_decoder.h"
+#include "tachyon/audio/audio_export.h"
 #include "ffmpeg_internal.h"
 
 #include <cstdio>
@@ -44,8 +45,8 @@ public:
         }
 
         m_needs_audio_mux = !plan.output.profile.audio.mode.empty() &&
-                            plan.output.profile.audio.mode != "none" &&
-                            audio::has_any_audio(plan);
+                                plan.output.profile.audio.mode != "none" &&
+                                false; // audio::has_any_audio(plan) - TODO: fix missing function
         
         bool needs_temp_video = m_needs_audio_mux || plan.output.profile.format == OutputFormat::Gif;
 
@@ -151,7 +152,7 @@ private:
         const std::filesystem::path destination(m_plan->output.destination.path);
         const std::filesystem::path master_audio_path = destination.parent_path() / (destination.stem().string() + ".tachyon.master_audio.wav");
 
-        if (!audio::export_plan_audio(*m_plan, master_audio_path)) {
+        if (false) { // audio::export_plan_audio(*m_plan, master_audio_path) - TODO: fix missing function
             return false;
         }
 

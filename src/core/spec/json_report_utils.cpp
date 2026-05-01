@@ -34,17 +34,5 @@ std::string diagnostics_to_text(const DiagnosticBag& bag) {
     }
     return out;
 }
-    return arr;
-}
-
-std::string diagnostics_to_text(const DiagnosticBag& bag) {
-    std::string out;
-    for (const auto& d : bag.diagnostics) {
-        out += "[" + d.code + "] ";
-        if (!d.path.empty()) out += d.path + ": ";
-        out += d.message + "\n";
-    }
-    return out;
-}
 
 } // namespace tachyon::spec

@@ -7,21 +7,7 @@
 
 namespace tachyon {
 
-/**
- * @brief Context used during compilation to track node IDs and dependencies.
- */
-struct CompilationRegistry {
-    std::uint32_t next_id{1};
-    std::unordered_map<std::string, std::uint32_t> layer_id_map;
-    std::unordered_map<std::string, std::uint32_t> composition_id_map;
-    
-    CompiledNode create_node(CompiledNodeType type) {
-        CompiledNode node;
-        node.node_id = next_id++;
-        node.type = type;
-        return node;
-    }
-};
+#include "tachyon/core/spec/compilation/compilation_context.h"
 
 template<typename T>
 CompiledPropertyTrack compile_property_track(

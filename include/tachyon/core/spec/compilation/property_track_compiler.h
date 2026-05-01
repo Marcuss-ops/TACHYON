@@ -1,30 +1,15 @@
 #pragma once
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/core/spec/compilation/scene_compiler.h"
-#include "tachyon/math/vector2.h"
-#include "tachyon/math/vector3.h"
-#include "tachyon/core/animation/easing_presets.h"
-#include "tachyon/core/animation/cubic_bezier.h"
+#include "tachyon/core/math/vector2.h"
+#include "tachyon/core/math/vector3.h"
+#include "tachyon/core/animation/easing.h"
+#include "tachyon/core/spec/compilation/scene_compiler_internal.h"
 #include <type_traits>
 #include <string_view>
 #include <unordered_map>
 
 namespace tachyon {
-
-struct CompilationRegistry {
-    std::uint32_t next_id{1};
-    std::unordered_map<std::string, std::uint32_t> layer_id_map;
-    std::unordered_map<std::string, std::uint32_t> composition_id_map;
-    
-    CompiledNode create_node(CompiledNodeType type) {
-        CompiledNode node;
-        node.node_id = next_id++;
-        node.type = type;
-        return node;
-    }
-};
-
-namespace detail {
 
 template <typename VecT>
 double component_from_suffix(const VecT& vec, std::string_view suffix, double fallback = 0.0) {
@@ -139,5 +124,4 @@ CompiledPropertyTrack compile_property_track(
     return track;
 }
 
-} // namespace detail
 } // namespace tachyon
