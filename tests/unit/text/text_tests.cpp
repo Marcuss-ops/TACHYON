@@ -478,10 +478,10 @@ bool run_text_tests() {
 
         // Create a simple path (line from 0,50 to 100,50)
         shapes::ShapePath path;
-        shapes::Subpath subpath;
+        shapes::ShapeSubpath subpath;
         subpath.vertices = {
-            shapes::Vertex2D{{0.0f, 50.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}},
-            shapes::Vertex2D{{100.0f, 50.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}}
+            shapes::PathVertex{{0.0f, 50.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 50.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}},
+            shapes::PathVertex{{100.0f, 50.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}, {100.0f, 50.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}}
         };
         path.subpaths.push_back(subpath);
 

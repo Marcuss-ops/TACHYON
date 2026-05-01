@@ -309,6 +309,7 @@ set(TachyonCLISources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/cli_inspect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/cli_preview_frame.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/cli_watch.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/editor/autosave/autosave_manager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/cli_utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/cli_scene_loader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/cli_fetch_fonts.cpp
@@ -441,6 +442,9 @@ tachyon_configure_target(TachyonPlatform)
 
 add_library(TachyonCore STATIC ${TachyonCoreSources})
 tachyon_configure_target(TachyonCore)
+if(TACHYON_ENABLE_PREVIEW_WINDOW)
+    target_compile_definitions(TachyonCore PUBLIC TACHYON_ENABLE_PREVIEW_WINDOW)
+endif()
 
 target_sources(TachyonCore PRIVATE
     $<TARGET_OBJECTS:TachyonScene>

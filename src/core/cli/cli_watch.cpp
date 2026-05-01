@@ -82,18 +82,25 @@ bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostrea
     RenderContext context;
     context.media = std::make_shared<media::MediaManager>();
     
+#ifdef TACHYON_ENABLE_PREVIEW_WINDOW
     cli::PreviewWindow window(
         static_cast<int>(plan.composition.width), 
         static_cast<int>(plan.composition.height), 
         "Tachyon Live Preview - " + scene.project.name
     );
+#endif
 
     auto last_time = std::filesystem::last_write_time(watch_path);
     std::int64_t current_frame = plan.frame_range.start;
 
     out << "Preview ready. Watching for changes...\n";
 
+#ifdef TACHYON_ENABLE_PREVIEW_WINDOW
     while (window.poll_events()) {
+#else
+    out << "WARNING: Preview window is DISABLED in this build. Watch mode will only reload files but not show video.\n";
+    while (true) {
+#endif
         try {
             auto current_time = std::filesystem::last_write_time(watch_path);
             if (current_time > last_time) {
@@ -119,9 +126,11 @@ bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostrea
         task.time_seconds = static_cast<double>(current_frame) / plan.composition.frame_rate.value();
 
         auto executed_frame = execute_frame_task(scene, compiled, plan, task, session.cache(), context);
+#ifdef TACHYON_ENABLE_PREVIEW_WINDOW
         if (executed_frame.frame) {
             window.present(*executed_frame.frame);
         }
+#endif
 
         current_frame++;
         if (current_frame > plan.frame_range.end) {
@@ -131,7 +140,7 @@ bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostrea
         std::this_thread::sleep_for(std::chrono::milliseconds(16));
     }
     
-    out << "Preview window closed. Exiting watch mode.\n";
+    out << "Watch mode terminated.\n";
     return true;
 }
 
