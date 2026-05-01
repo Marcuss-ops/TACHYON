@@ -12,7 +12,17 @@
 
 namespace tachyon {
 namespace {
-
+ 
+template <typename VecT>
+double component_from_suffix(const VecT& vec, std::string_view suffix, double fallback = 0.0) {
+    if (suffix.find("_x") != std::string::npos) return static_cast<double>(vec.x);
+    if (suffix.find("_y") != std::string::npos) return static_cast<double>(vec.y);
+    if constexpr (std::is_same_v<VecT, math::Vector3>) {
+        if (suffix.find("_z") != std::string::npos) return static_cast<double>(vec.z);
+    }
+    return fallback;
+}
+ 
 void add_string(CacheKeyBuilder& builder, const std::string& value) {
     builder.add_string(std::string_view{value});
 }
@@ -187,19 +197,14 @@ CompiledPropertyTrack compile_property_track(
 
     if constexpr (std::is_same_v<T, AnimatedVector2Spec>) {
         if (property_spec.value.has_value()) {
-            if (id_suffix.find("_x") != std::string::npos) track.constant_value = property_spec.value->x;
-            else if (id_suffix.find("_y") != std::string::npos) track.constant_value = property_spec.value->y;
-            else track.constant_value = fallback_value;
+            track.constant_value = component_from_suffix(*property_spec.value, id_suffix, fallback_value);
         } else {
             track.constant_value = fallback_value;
         }
 
     } else if constexpr (std::is_same_v<T, AnimatedVector3Spec>) {
         if (property_spec.value.has_value()) {
-            if (id_suffix.find("_x") != std::string::npos) track.constant_value = property_spec.value->x;
-            else if (id_suffix.find("_y") != std::string::npos) track.constant_value = property_spec.value->y;
-            else if (id_suffix.find("_z") != std::string::npos) track.constant_value = property_spec.value->z;
-            else track.constant_value = fallback_value;
+            track.constant_value = component_from_suffix(*property_spec.value, id_suffix, fallback_value);
         } else {
             track.constant_value = fallback_value;
         }
