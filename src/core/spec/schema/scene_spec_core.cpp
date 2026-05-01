@@ -118,15 +118,19 @@ ValidationResult validate_scene_spec(const SceneSpec& scene) {
             }
 
             if (layer.type == "image" || layer.type == "video") {
-                bool asset_found = false;
-                for (const auto& asset : scene.assets) {
-                    if (asset.id == layer.id || asset.id == layer.name) {
-                        asset_found = true;
-                        break;
+                if (layer.asset_id.empty()) {
+                    result.diagnostics.add_error("scene.layer.asset_id_missing", "asset_id is required for image/video layers", lpath + ".asset_id");
+                } else {
+                    bool asset_found = false;
+                    for (const auto& asset : scene.assets) {
+                        if (asset.id == layer.asset_id) {
+                            asset_found = true;
+                            break;
+                        }
                     }
-                }
-                if (!asset_found && !looks_like_media_path(layer.name)) {
-                    result.diagnostics.add_error("scene.layer.asset_reference_invalid", "asset not found", lpath + ".asset_id");
+                    if (!asset_found && !looks_like_media_path(layer.asset_id)) {
+                        result.diagnostics.add_error("scene.layer.asset_reference_invalid", "asset id '" + layer.asset_id + "' not found in scene assets", lpath + ".asset_id");
+                    }
                 }
             }
         }

@@ -1,0 +1,14 @@
+{
+  "project": { "id": "bg_test", "name": "Background Test" },
+  "compositions": [
+    {
+      "id": "main",
+      "width": 1280,
+      "height": 720,
+      "duration": 2.0,
+      "fps": 30,
+      "background": "#0D1117",
+      "layers": []
+    }
+  ]
+}

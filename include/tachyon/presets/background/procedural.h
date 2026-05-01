@@ -2,8 +2,45 @@
 
 #include "tachyon/core/spec/schema/common/common_spec.h"
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
+#include "tachyon/core/spec/schema/objects/procedural_spec.h"
 #include "tachyon/core/types/colors.h"
 
+
+namespace tachyon::presets::background {
+
+struct ShapeGridParams {
+    std::string shape = "square";
+    float spacing = 40.0f;
+    float border_width = 1.0f;
+    ColorSpec border_color = {150, 150, 150, 255};
+    ColorSpec background_color = {0, 0, 0, 255};
+    ColorSpec grid_color = {150, 150, 150, 255};
+    float speed = 1.0f;
+    std::string direction = "right";
+    uint64_t seed = 0;
+};
+
+inline ProceduralSpec generate_shape_grid(const ShapeGridParams& params) {
+    ProceduralSpec spec;
+    spec.kind = "grid";
+    spec.shape = params.shape;
+    spec.spacing = params.spacing;
+    spec.border_width = params.border_width;
+    spec.border_color = params.border_color;
+    spec.color_a = params.background_color;
+    spec.color_b = params.grid_color;
+    spec.speed = params.speed;
+    spec.seed = params.seed;
+    if (params.direction == "right")       spec.angle = 0.0;
+    else if (params.direction == "left")  spec.angle = 180.0;
+    else if (params.direction == "up")    spec.angle = 90.0;
+    else if (params.direction == "down")  spec.angle = 270.0;
+    else if (params.direction == "diagonal") spec.angle = 45.0;
+    else spec.angle = 0.0;
+    return spec;
+}
+
+} // namespace tachyon::presets::background
 
 namespace tachyon::presets::background::procedural_bg {
 
@@ -18,6 +55,10 @@ struct ProceduralParams {
   double grain = 0.0;
   double softness = 0.0;
   uint64_t seed = 0;
+
+  ProceduralParams() = default;
+  ProceduralParams(ColorSpec a, ColorSpec b, ColorSpec c, double speed, double contrast, double grain, double softness, uint64_t seed)
+    : palette_a(a), palette_b(b), palette_c(c), motion_speed(speed), contrast(contrast), grain(grain), softness(softness), seed(seed) {}
 };
 
 // Standard palette presets (using 0-255 range for ColorSpec)

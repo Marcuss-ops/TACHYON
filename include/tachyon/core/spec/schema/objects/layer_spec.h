@@ -30,8 +30,9 @@ struct LayerTransitionSpec {
 struct LayerSpec {
     std::string id;
     std::string name;
-    std::string type; // Legacy: use kind field (LayerType enum)
-    LayerType kind{LayerType::NullLayer}; // Typed layer kind
+    std::string type;
+    std::string asset_id; // For image/video layers
+    LayerType kind{LayerType::NullLayer};
     std::string blend_mode{"normal"};
     
     bool enabled{true};

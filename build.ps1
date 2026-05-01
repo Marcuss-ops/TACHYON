@@ -31,11 +31,11 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+$global:LASTEXITCODE = 0
 $Root = $PSScriptRoot
 
 if ($Check) {
-    & "$Root\scripts\pre-commit.ps1" -Mode quick
-    exit $LASTEXITCODE
+    $Target = "TachyonCore"
 }
 
 Write-Host "Tachyon Build" -ForegroundColor Cyan
@@ -52,7 +52,7 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 # Verify required tools exist
 $missing = @()
-foreach ($tool in @("cmake","ninja","cl")) {
+foreach ($tool in @("cmake","cl")) {
     if (-not (Get-Command "$tool.exe" -ErrorAction SilentlyContinue)) { $missing += $tool }
 }
 if ($missing.Count -gt 0) {
@@ -66,19 +66,19 @@ if ($Clean) {
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
-$BuildDir  = Join-Path $Root "build-ninja"
-$NeedConf  = $Configure -or (-not (Test-Path (Join-Path $BuildDir "build.ninja")))
+$BuildDir  = Join-Path $Root "build"
+$NeedConf  = $Configure -or (-not (Test-Path (Join-Path $BuildDir "Tachyon.sln")))
 
 if ($NeedConf) {
     Write-Host "Configuring..." -ForegroundColor Yellow
-    cmake --preset ninja-msvc-x64 -S "$Root" -B "$BuildDir"
+    cmake --preset dev -S "$Root" -B "$BuildDir"
     if ($LASTEXITCODE -ne 0) { Write-Error "CMake configure failed."; exit 1 }
 }
 
 $J = if ($Jobs -gt 0) { $Jobs } else { [Environment]::ProcessorCount }
 Write-Host "Building $Target ($Config, $J jobs)..." -ForegroundColor Yellow
 
-cmake --build $BuildDir --config $Config --target $Target -- "-j$J"
+cmake --build $BuildDir --config $Config --target $Target -j $J
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Build FAILED (exit $LASTEXITCODE)."

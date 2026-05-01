@@ -147,6 +147,42 @@ LayerBuilder& LayerBuilder::color(const ColorSpec& c) {
     return *this;
 }
 
+LayerBuilder& LayerBuilder::fill_color(const ColorSpec& c) {
+    spec_.fill_color.value = c;
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::stroke_color(const ColorSpec& c) {
+    spec_.stroke_color.value = c;
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::stroke_width(double w) {
+    spec_.stroke_width = w;
+    spec_.stroke_width_property = anim::scalar(w);
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::text_animator(const TextAnimatorSpec& anim) {
+    spec_.text_animators.push_back(anim);
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::text_animators(std::vector<TextAnimatorSpec> anims) {
+    spec_.text_animators.insert(spec_.text_animators.end(), anims.begin(), anims.end());
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::text_highlight(const TextHighlightSpec& hl) {
+    spec_.text_highlights.push_back(hl);
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::text_highlights(std::vector<TextHighlightSpec> hls) {
+    spec_.text_highlights.insert(spec_.text_highlights.end(), hls.begin(), hls.end());
+    return *this;
+}
+
 LayerBuilder& LayerBuilder::subtitle_path(std::string path) {
     spec_.subtitle_path = std::move(path);
     return *this;
@@ -305,10 +341,23 @@ CompositionBuilder& CompositionBuilder::background(BackgroundSpec spec) {
     return *this;
 }
 
+CompositionBuilder& CompositionBuilder::clear(const ColorSpec& color) {
+    spec_.background = BackgroundSpec{};
+    spec_.background->type = BackgroundType::Color;
+    spec_.background->parsed_color = color;
+    spec_.background->value = "solid_color";
+    return *this;
+}
+
 CompositionBuilder& CompositionBuilder::layer(std::string id, std::function<void(LayerBuilder&)> fn) {
     LayerBuilder lb(std::move(id));
     fn(lb);
     spec_.layers.push_back(std::move(lb).build());
+    return *this;
+}
+
+CompositionBuilder& CompositionBuilder::layer(const LayerSpec& layer) {
+    spec_.layers.push_back(layer);
     return *this;
 }
 
@@ -347,6 +396,11 @@ CompositionBuilder& CompositionBuilder::audio(std::string path, double volume) {
     return *this;
 }
 
+CompositionBuilder& CompositionBuilder::audio(const AudioTrackSpec& track) {
+    spec_.audio_tracks.push_back(track);
+    return *this;
+}
+
 CompositionSpec CompositionBuilder::build() && {
     return std::move(spec_);
 }
@@ -381,6 +435,10 @@ SceneSpec SceneBuilder::build() {
 
 CompositionBuilder Composition(std::string id) {
     return CompositionBuilder(std::move(id));
+}
+
+SceneBuilder Scene() {
+    return SceneBuilder{};
 }
 
 } // namespace tachyon::scene

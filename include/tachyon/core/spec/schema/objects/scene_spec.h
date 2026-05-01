@@ -14,6 +14,7 @@
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 #include "tachyon/core/spec/schema/objects/composition_spec.h"
+#include "tachyon/core/spec/schema/assets/asset_spec.h"
 #include "tachyon/text/fonts/font_manifest.h"
 
 #include <filesystem>

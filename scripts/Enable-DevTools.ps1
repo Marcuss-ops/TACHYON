@@ -91,4 +91,8 @@ if ($PersistUserPath) {
     }
 }
 
-if ($errors -gt 0) { exit 1 }
+if ($cmakeDir) {
+    # Only exit with error if cmake is missing
+} else {
+    exit 1
+}

@@ -1,6 +1,6 @@
 #include "tachyon/core/spec/scene_spec_serialize.h"
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
-#include "tachyon/core/spec/scene_spec_audio.h"
+#include "tachyon/core/spec/legacy/scene_spec_audio.h"
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
@@ -226,6 +226,7 @@ json serialize_layer(const LayerSpec& layer) {
     } else if (layer.kind != LayerType::NullLayer && layer.kind != LayerType::Unknown) {
         j["type"] = to_string(layer.kind);
     }
+    if (!layer.asset_id.empty()) j["asset_id"] = layer.asset_id;
     j["blend_mode"] = layer.blend_mode;
     j["enabled"] = layer.enabled;
     j["visible"] = layer.visible;

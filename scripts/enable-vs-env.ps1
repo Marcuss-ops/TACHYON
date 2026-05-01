@@ -53,7 +53,7 @@ if (-not $NoCache -and (Test-Path $cacheFile)) {
                 foreach ($v in $criticalVars) {
                     if ($cache.vars.$v) { Set-Item -Path "env:$v" -Value $cache.vars.$v }
                 }
-                Write-Host "  VS env: cache hit ($([int]$cacheAge.TotalMinutes)m old) — $vcvars" -ForegroundColor DarkGray
+                Write-Host "  VS env: cache hit ($([int]$cacheAge.TotalMinutes)m old) - $vcvars" -ForegroundColor DarkGray
                 exit 0
             }
         } catch { <# corrupt cache, fall through #> }
@@ -90,4 +90,4 @@ foreach ($v in $criticalVars) {
 @{ vcvars_mtime = (Get-Item $vcvars).LastWriteTime.ToString("o"); vars = $cacheVars } |
     ConvertTo-Json -Depth 3 | Set-Content $cacheFile -Encoding UTF8
 
-Write-Host "  VS env: loaded and cached — cl.exe ready" -ForegroundColor Green
+Write-Host "  VS env: loaded and cached - cl.exe ready" -ForegroundColor Green

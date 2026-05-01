@@ -1,6 +1,7 @@
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/report.h"
+#include "tachyon/core/spec/cpp_scene_loader.h"
 #include "cli_internal.h"
 #include "tachyon/text/fonts/font_manifest.h"
 #include "tachyon/text/fonts/font_coverage_reporter.h"
@@ -15,7 +16,22 @@ bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostr
  
     SceneSpec scene;
     AssetResolutionTable assets;
-    if (!load_scene_context(options.scene_path, scene, assets, err)) return false;
+
+    if (!options.cpp_path.empty()) {
+        if (!options.json_output) out << "[inspect] Compiling scene from " << options.cpp_path.string() << "...\n";
+        const auto result = CppSceneLoader::load_from_file(options.cpp_path);
+        if (!result.success) {
+            err << "C++ Scene Loader failed:\n" << result.diagnostics << "\n";
+            return false;
+        }
+        scene = std::move(*result.scene);
+    } else if (!options.scene_path.empty()) {
+        err << "WARNING: Inspecting from JSON scene files is DEPRECATED. Use --cpp instead.\n";
+        if (!load_scene_context(options.scene_path, scene, assets, err)) return false;
+    } else {
+        err << "Either --cpp or --scene is required.\n";
+        return false;
+    }
  
     std::optional<RenderPlan> render_plan;
     std::optional<RenderExecutionPlan> execution_plan;

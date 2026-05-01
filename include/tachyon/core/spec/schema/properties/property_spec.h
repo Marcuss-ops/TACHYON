@@ -62,7 +62,7 @@ struct AnimatedScalarSpec {
     std::optional<std::string> expression;
 
     AnimatedScalarSpec() = default;
-    explicit AnimatedScalarSpec(double v) : value(v) {}
+    AnimatedScalarSpec(double v) : value(v) {}
 
     [[nodiscard]] bool empty() const noexcept {
         return !value.has_value() && keyframes.empty() && !binding.active && !audio_band.has_value() && !expression.has_value();
@@ -102,7 +102,7 @@ struct AnimatedVector3Spec {
     std::optional<std::string> expression;
 
     AnimatedVector3Spec() = default;
-    explicit AnimatedVector3Spec(const math::Vector3& v) : value(v) {}
+    AnimatedVector3Spec(const math::Vector3& v) : value(v) {}
 
     [[nodiscard]] bool empty() const noexcept {
         return !value.has_value() && keyframes.empty() && !expression.has_value();
@@ -114,7 +114,7 @@ struct AnimatedColorSpec {
     std::vector<ColorKeyframeSpec> keyframes;
 
     AnimatedColorSpec() = default;
-    explicit AnimatedColorSpec(const ColorSpec& v) : value(v) {}
+    AnimatedColorSpec(const ColorSpec& v) : value(v) {}
 
     [[nodiscard]] bool empty() const noexcept {
         return !value.has_value() && keyframes.empty();
@@ -318,7 +318,7 @@ inline void to_json(nlohmann::json& j, const AnimatedVector3Spec& a) {
 
 inline void from_json(const nlohmann::json& j, AnimatedVector3Spec& a) {
     if (j.contains("value") && j.at("value").is_object()) {
-        auto& v = j.at("object");
+        auto& v = j.at("value");
         math::Vector3 val;
         if (v.contains("x") && v.at("x").is_number()) val.x = v.at("x").get<float>();
         if (v.contains("y") && v.at("y").is_number()) val.y = v.at("y").get<float>();

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 
 namespace tachyon::presets {
@@ -26,6 +27,7 @@ struct SceneParams {
     int    height{1080};
     int    fps{30};
     double duration{5.0};
+    std::string name;
     std::string bg_color{"#0d1117"};
     bool   bg_procedural{true};
     std::string bg_kind{"aura"};

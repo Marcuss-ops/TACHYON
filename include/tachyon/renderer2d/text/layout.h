@@ -1,5 +1,3 @@
-#include "tachyon/renderer2d/text/layout.h"
-
 #include <vector>
 
 namespace tachyon::renderer2d {

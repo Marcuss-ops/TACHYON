@@ -4,7 +4,9 @@
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/core/spec/schema/objects/composition_spec.h"
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
+#include "tachyon/core/spec/schema/audio/audio_spec.h"
 #include "tachyon/core/spec/schema/properties/property_spec.h"
+#include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 #include "tachyon/core/types/colors.h"
 #include "tachyon/core/animation/easing.h"
 #include <initializer_list>
@@ -96,7 +98,16 @@ public:
     LayerBuilder& position(double x, double y);
     LayerBuilder& size(double w, double h);
     LayerBuilder& color(const ColorSpec& c);
+    LayerBuilder& fill_color(const ColorSpec& c);
+    LayerBuilder& stroke_color(const ColorSpec& c);
+    LayerBuilder& stroke_width(double w);
     LayerBuilder& subtitle_path(std::string path);
+
+    // Text animators and highlights
+    LayerBuilder& text_animator(const TextAnimatorSpec& anim);
+    LayerBuilder& text_animators(std::vector<TextAnimatorSpec> anims);
+    LayerBuilder& text_highlight(const TextHighlightSpec& hl);
+    LayerBuilder& text_highlights(std::vector<TextHighlightSpec> hls);
 
     // 3D Transform
     LayerBuilder& position3d(double x, double y, double z);
@@ -144,12 +155,15 @@ public:
     CompositionBuilder& fps(int f);
     CompositionBuilder& duration(double d);
     CompositionBuilder& background(BackgroundSpec spec);
+    CompositionBuilder& clear(const ColorSpec& color);
 
     CompositionBuilder& layer(std::string id, std::function<void(LayerBuilder&)> fn);
+    CompositionBuilder& layer(const LayerSpec& layer);  // Accept LayerSpec directly
     CompositionBuilder& camera3d_layer(std::string id, std::function<void(LayerBuilder&)> fn);
     CompositionBuilder& light_layer(std::string id, std::function<void(LayerBuilder&)> fn);
     CompositionBuilder& mesh_layer(std::string id, std::function<void(LayerBuilder&)> fn);
     CompositionBuilder& audio(std::string path, double volume = 1.0);
+    CompositionBuilder& audio(const AudioTrackSpec& track);  // Accept AudioTrackSpec directly
 
     [[nodiscard]] CompositionSpec build() &&;
     [[nodiscard]] CompositionSpec build() const &;
@@ -173,5 +187,10 @@ public:
  * @brief Main entry point for creating a composition.
  */
 CompositionBuilder Composition(std::string id);
+
+/**
+ * @brief Main entry point for creating a multi-composition scene.
+ */
+SceneBuilder Scene();
 
 } // namespace tachyon::scene

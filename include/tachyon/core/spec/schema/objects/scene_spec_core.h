@@ -19,6 +19,7 @@ using json = nlohmann::json;
 
 // --- Utility Helpers ---
 std::string make_path(const std::string& parent, const std::string& child);
+std::filesystem::path scene_asset_root(const std::filesystem::path& scene_path);
 
 // --- Basic JSON Readers ---
 template <typename T>

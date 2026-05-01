@@ -1,0 +1,124 @@
+// X-Macro definitions for Tachyon Scene Specification Schema
+// This file is the single source of truth for the spec structure.
+
+#ifndef TACHYON_STRUCT_START
+#define TACHYON_STRUCT_START(name)
+#endif
+
+#ifndef TACHYON_STRUCT_END
+#define TACHYON_STRUCT_END()
+#endif
+
+#ifndef TACHYON_FIELD
+#define TACHYON_FIELD(json_key, cpp_name, type, fallback)
+#endif
+
+#ifndef TACHYON_ANIM_PROP
+#define TACHYON_ANIM_PROP(json_key, cpp_name, type, fallback)
+#endif
+
+// ============================================================================
+// LAYER SPEC
+// ============================================================================
+TACHYON_STRUCT_START(LayerSpec)
+
+// Identity & Metadata
+TACHYON_FIELD(id, id, string, "")
+TACHYON_FIELD(name, name, string, "")
+TACHYON_FIELD(type, type, string, "null")
+TACHYON_FIELD(blend_mode, blend_mode, string, "normal")
+
+// Flags
+TACHYON_FIELD(enabled, enabled, bool, true)
+TACHYON_FIELD(visible, visible, bool, true)
+TACHYON_FIELD(is_3d, is_3d, bool, false)
+TACHYON_FIELD(is_adjustment_layer, is_adjustment_layer, bool, false)
+TACHYON_FIELD(motion_blur, motion_blur, bool, false)
+
+// Temporal
+TACHYON_FIELD(start_time, start_time, double, 0.0)
+TACHYON_FIELD(in_point, in_point, double, 0.0)
+TACHYON_FIELD(out_point, out_point, double, 10.0)
+
+// Dimensions
+TACHYON_FIELD(width, width, int, 1920)
+TACHYON_FIELD(height, height, int, 1080)
+
+// Core Animated Properties
+TACHYON_ANIM_PROP(opacity, opacity_property, scalar, 1.0)
+TACHYON_ANIM_PROP(mask_feather, mask_feather, scalar, 0.0)
+TACHYON_ANIM_PROP(time_remap, time_remap_property, scalar, 0.0)
+
+// Transform Properties (Nested in spec, but we'll map them here)
+// Note: We use a special naming convention for nested fields in the macro if needed, 
+// or just handle them in the implementation.
+TACHYON_ANIM_PROP(position, transform.position_property, vector2, math::Vector2(0, 0))
+TACHYON_ANIM_PROP(scale, transform.scale_property, vector2, math::Vector2(1, 1))
+TACHYON_ANIM_PROP(rotation, transform.rotation_property, scalar, 0.0)
+TACHYON_ANIM_PROP(anchor_point, transform.anchor_point, vector2, math::Vector2(0, 0))
+
+// Text Properties
+TACHYON_FIELD(text_content, text_content, string, "")
+TACHYON_FIELD(font_id, font_id, string, "")
+TACHYON_FIELD(alignment, alignment, string, "left")
+TACHYON_ANIM_PROP(font_size, font_size, scalar, 48.0)
+TACHYON_ANIM_PROP(fill_color, fill_color, color, ColorSpec{255, 255, 255, 255})
+TACHYON_ANIM_PROP(stroke_color, stroke_color, color, ColorSpec{255, 255, 255, 255})
+TACHYON_ANIM_PROP(stroke_width, stroke_width_property, scalar, 0.0)
+TACHYON_FIELD(extrusion_depth, extrusion_depth, double, 0.0)
+TACHYON_FIELD(bevel_size, bevel_size, double, 0.0)
+TACHYON_FIELD(hole_bevel_ratio, hole_bevel_ratio, double, 0.0)
+
+// Repeater Properties
+TACHYON_FIELD(repeater_type, repeater_type, string, "linear")
+TACHYON_ANIM_PROP(repeater_count, repeater_count, scalar, 0.0)
+TACHYON_ANIM_PROP(repeater_grid_cols, repeater_grid_cols, scalar, 1.0)
+TACHYON_ANIM_PROP(repeater_radial_radius, repeater_radial_radius, scalar, 0.0)
+TACHYON_ANIM_PROP(repeater_radial_start_angle, repeater_radial_start_angle, scalar, 0.0)
+TACHYON_ANIM_PROP(repeater_radial_end_angle, repeater_radial_end_angle, scalar, 360.0)
+TACHYON_ANIM_PROP(repeater_stagger_delay, repeater_stagger_delay, scalar, 0.0)
+TACHYON_ANIM_PROP(repeater_offset_position_x, repeater_offset_position_x, scalar, 0.0)
+TACHYON_ANIM_PROP(repeater_offset_position_y, repeater_offset_position_y, scalar, 0.0)
+TACHYON_ANIM_PROP(repeater_offset_rotation, repeater_offset_rotation, scalar, 0.0)
+TACHYON_ANIM_PROP(repeater_offset_scale_x, repeater_offset_scale_x, scalar, 1.0)
+TACHYON_ANIM_PROP(repeater_offset_scale_y, repeater_offset_scale_y, scalar, 1.0)
+TACHYON_ANIM_PROP(repeater_start_opacity, repeater_start_opacity, scalar, 1.0)
+TACHYON_ANIM_PROP(repeater_end_opacity, repeater_end_opacity, scalar, 0.0)
+
+// Camera Properties
+TACHYON_FIELD(camera_type, camera_type, string, "one_node")
+TACHYON_ANIM_PROP(camera_zoom, camera_zoom, scalar, 877.0)
+
+// PBR Material Properties
+TACHYON_ANIM_PROP(metallic, metallic, scalar, 0.0)
+TACHYON_ANIM_PROP(roughness, roughness, scalar, 0.5)
+TACHYON_ANIM_PROP(ior, ior, scalar, 1.45)
+TACHYON_ANIM_PROP(transmission, transmission, scalar, 0.0)
+TACHYON_ANIM_PROP(emission_strength, emission_strength, scalar, 0.0)
+TACHYON_ANIM_PROP(emission_color, emission_color, color, ColorSpec{0, 0, 0, 255})
+
+TACHYON_STRUCT_END()
+
+#ifdef TACHYON_LAYER_ONLY
+#pragma message("BUILD_DEBUG: TACHYON_LAYER_ONLY IS DEFINED")
+#else
+#pragma message("BUILD_DEBUG: TACHYON_LAYER_ONLY IS NOT DEFINED")
+#endif
+
+#ifndef TACHYON_LAYER_ONLY
+// ============================================================================
+// COMPOSITION SPEC
+// ============================================================================
+TACHYON_STRUCT_START(CompositionSpec)
+TACHYON_FIELD(id, id, string, "")
+TACHYON_FIELD(name, name, string, "")
+TACHYON_FIELD(width, width, int, 1920)
+TACHYON_FIELD(height, height, int, 1080)
+TACHYON_FIELD(duration, duration, double, 10.0)
+TACHYON_STRUCT_END()
+#endif
+
+#undef TACHYON_STRUCT_START
+#undef TACHYON_STRUCT_END
+#undef TACHYON_FIELD
+#undef TACHYON_ANIM_PROP

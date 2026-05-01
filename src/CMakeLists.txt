@@ -29,11 +29,9 @@ add_library(TachyonCore
     runtime/core/graph/render_graph.cpp
     runtime/core/data/property_graph.cpp
     runtime/core/data/compiled_scene.cpp
+    runtime/execution/compiled_frame_program.cpp
     runtime/cache/disk_cache.cpp
     core/cli.cpp
-    core/cli/cli_utils.cpp
-    core/cli/cli_validate.cpp
-    core/cli/cli_inspect.cpp
     core/cli/cli_render.cpp
     core/cli/cli_demo.cpp
     core/cli/cli_watch.cpp
@@ -65,9 +63,6 @@ add_library(TachyonCore
     core/scene/rigging/rig_graph.cpp
     core/scene/rigging/ik_solver.cpp
     core/scene/rigging/constraint_solver.cpp
-    core/spec/json_parse_helpers.cpp
-    core/spec/layer_parse_json.cpp
-    core/spec/property_parse_json.cpp
     core/spec/cpp_scene_loader.cpp
     core/spec/text_animator_spec_serialize.cpp
     core/spec/compilation/scene_compiler.cpp
@@ -77,10 +72,9 @@ add_library(TachyonCore
     core/spec/schema/scene_spec.cpp
     core/spec/schema/scene_spec_core.cpp
     core/spec/schema/objects/background_spec.cpp
-    core/spec/scene_spec_json.cpp
     core/spec/scene_spec_builder.cpp
     core/spec/validation/scene_validator.cpp
-    core/spec/scene_spec_audio.cpp
+    core/spec/legacy/scene_spec_audio.cpp
     renderer2d/raster/draw_list_builder.cpp
     renderer2d/raster/draw_list_rasterizer.cpp
     renderer2d/raster/mesh_rasterizer.cpp
@@ -211,8 +205,10 @@ add_library(TachyonCore
      core/scene/evaluator/camera2d_evaluator.cpp
       presets/sfx/sfx_builders.cpp
       presets/shape/shape_builders.cpp
-     audio/sound_effect_registry.cpp
+      audio/sound_effect_registry.cpp
     runtime/execution/native_render.cpp
+    presets/background/background_builders.cpp
+    presets/image/image_builders.cpp
 )
 
 if(MSVC)

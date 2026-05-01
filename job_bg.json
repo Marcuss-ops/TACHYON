@@ -1,0 +1,15 @@
+{
+  "job_id": "bg_render",
+  "composition_target": "main",
+  "frame_range": { "start": 0, "end": 60 },
+  "output": {
+    "destination": { "path": "output/background.mp4" },
+    "profile": {
+      "container": "mp4",
+      "video": {
+        "codec": "libx264",
+        "pixel_format": "yuv420p"
+      }
+    }
+  }
+}

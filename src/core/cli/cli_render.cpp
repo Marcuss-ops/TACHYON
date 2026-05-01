@@ -231,6 +231,7 @@ bool run_preview_command(const CliOptions& options, std::ostream& out, std::ostr
     } else if (options.preset_id.has_value()) {
         if (!build_scene_from_preset(*options.preset_id, scene, err)) return false;
     } else {
+        err << "WARNING: Previewing from JSON scene files is DEPRECATED. Use --cpp instead.\n";
         if (!load_scene_context(options.scene_path, scene, assets, err)) return false;
     }
 
