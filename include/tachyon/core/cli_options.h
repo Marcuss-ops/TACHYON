@@ -4,9 +4,11 @@
 
 #include "tachyon/runtime/execution/jobs/render_job.h"
 
+#include <cstdint>
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <vector>
 
 namespace tachyon {
 
@@ -29,6 +31,13 @@ struct CliOptions {
     std::optional<std::string> preset_id;
     std::filesystem::path cpp_path;           // Path to .cpp scene script
     std::string quality{"draft"};            // Rendering quality tier
+
+    // fetch-fonts command options
+    std::string font_family;
+    std::vector<std::uint32_t> font_weights;
+    std::vector<std::string> font_subsets;
+    std::filesystem::path font_dest{"assets/fonts"};
+    bool font_overwrite{false};
 };
 
 ParseResult<CliOptions> parse_cli_options(int argc, char** argv);

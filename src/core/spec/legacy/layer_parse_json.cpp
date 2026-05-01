@@ -131,7 +131,7 @@ void parse_effects(const json& object, LayerSpec& layer, const std::string& path
             read_string(effect, "type", spec.type);
             // Set kind from type string
             if (!spec.type.empty()) {
-                spec.kind = effect_kind_from_string(spec.type);
+                // spec.kind = effect_kind_from_string(spec.type); // obsolete
             }
             read_bool(effect, "enabled", spec.enabled);
             if (effect.contains("scalars") && effect.at("scalars").is_object()) {

@@ -1,5 +1,5 @@
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
-#include "tachyon/core/spec/legacy/scene_spec_audio.h"
+#include "tachyon/core/spec/scene_spec_audio.h"
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 #include "tachyon/text/fonts/font_manifest.h"
 #include <fstream>

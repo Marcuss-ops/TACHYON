@@ -20,6 +20,7 @@ struct FontManifestEntry {
     std::string format;
     std::optional<FontMetricsOverride> metrics_override;
     std::vector<std::string> unicode_ranges;
+    std::vector<std::string> subsets;
     bool is_fallback{false};
 };
 
