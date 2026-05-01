@@ -107,3 +107,17 @@ endif()
 add_executable(Phase1Tests unit/text/phase1_tests.cpp)
 target_link_libraries(Phase1Tests PRIVATE TachyonCore)
 target_compile_definitions(Phase1Tests PRIVATE TACHYON_TESTS_SOURCE_DIR="${TACHYON_TESTS_SOURCE_DIR}")
+
+add_test(
+    NAME TachyonTests
+    COMMAND TachyonTests
+)
+
+add_test(
+    NAME TachyonSmokeTests
+    COMMAND TachyonTests
+)
+
+set_tests_properties(TachyonSmokeTests PROPERTIES
+    ENVIRONMENT "TACHYON_TEST_FILTER=math,scene_spec,render_job,asset_resolution"
+)

@@ -80,22 +80,21 @@ bool ProxyWorker::process_transcode(const std::string& original, const ProxyPoli
         std::filesystem::create_directories(policy.output_directory);
     }
 
-    // Build FFmpeg command
-    std::string command = "ffmpeg -y -i \"" + original + "\"";
-    command += " -vf scale=" + std::to_string(policy.target_width) + ":" + std::to_string(policy.target_height);
-    command += " -c:v libx264 -b:v " + std::to_string(static_cast<int>(policy.bitrate_mbps * 1000000)) + " -preset fast";
-    command += " -c:a aac -b:a 128000";
-    command += " \"" + output_path.string() + "\"";
-
     using namespace tachyon::core::platform;
+
     ProcessSpec spec;
-#ifdef _WIN32
-    spec.executable = "cmd.exe";
-    spec.args = {"/C", command};
-#else
-    spec.executable = "sh";
-    spec.args = {"-c", command};
-#endif
+    spec.executable = "ffmpeg";
+    spec.args = {
+        "-y",
+        "-i", original,
+        "-vf", "scale=" + std::to_string(policy.target_width) + ":" + std::to_string(policy.target_height),
+        "-c:v", "libx264",
+        "-b:v", std::to_string(static_cast<int>(policy.bitrate_mbps * 1000000)),
+        "-preset", "fast",
+        "-c:a", "aac",
+        "-b:a", "128000",
+        output_path.string()
+    };
 
     auto proc_result = run_process(spec);
     return proc_result.success && proc_result.exit_code == 0;

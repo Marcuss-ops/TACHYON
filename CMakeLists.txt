@@ -170,6 +170,15 @@ FetchContent_MakeAvailable(clipper2)
 
 FetchContent_MakeAvailable(embree)
 
+# tinyexr for EXR image output
+FetchContent_Declare(
+    tinyexr
+    GIT_REPOSITORY https://github.com/syoyo/tinyexr.git
+    GIT_TAG        v1.0.8
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+FetchContent_MakeAvailable(tinyexr)
+
 # Version header generation
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/include/tachyon/core/version.h.in
@@ -188,12 +197,3 @@ configure_file(
 add_subdirectory(src)
 add_subdirectory(tests)
 add_subdirectory(examples)
-
-# tinyexr for EXR image output
-FetchContent_Declare(
-    tinyexr
-    GIT_REPOSITORY https://github.com/syoyo/tinyexr.git
-    GIT_TAG        v1.0.8
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-)
-FetchContent_MakeAvailable(tinyexr)

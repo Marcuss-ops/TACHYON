@@ -39,6 +39,46 @@
       "cacheVariables": {
         "TACHYON_ENABLE_ASAN": "ON"
       }
+    },
+    {
+      "name": "linux-ninja-debug",
+      "displayName": "Linux Ninja Debug",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/linux-ninja-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "TACHYON_ENABLE_PCH": "OFF",
+        "TACHYON_ENABLE_ASAN": "OFF",
+        "TACHYON_ENABLE_LEGACY_JSON_SCENE": "OFF"
+      }
+    },
+    {
+      "name": "linux-clang-asan",
+      "displayName": "Linux Clang ASAN",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/linux-clang-asan",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "TACHYON_ENABLE_PCH": "OFF",
+        "TACHYON_ENABLE_ASAN": "ON",
+        "TACHYON_ENABLE_LEGACY_JSON_SCENE": "OFF"
+      }
+    },
+    {
+      "name": "windows-msvc",
+      "displayName": "Windows MSVC",
+      "generator": "Visual Studio 18 2026",
+      "architecture": {
+        "value": "x64"
+      },
+      "binaryDir": "${sourceDir}/build/windows-msvc",
+      "cacheVariables": {
+        "TACHYON_ENABLE_COMPILER_CACHE": "ON",
+        "TACHYON_ENABLE_PCH": "ON",
+        "TACHYON_ENABLE_ASAN": "OFF",
+        "TACHYON_ENABLE_LEGACY_JSON_SCENE": "OFF"
+      }
     }
   ],
   "buildPresets": [

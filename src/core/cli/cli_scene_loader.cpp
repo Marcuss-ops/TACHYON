@@ -86,10 +86,33 @@ LoadSceneResult load_scene_for_cli(
     if (!options.scene_path.empty()) {
         tried_legacy_json = true;
 
+        if (!options.allow_legacy_json) {
+            result.diagnostics.add_error(
+                "legacy_json_not_allowed",
+                "Legacy JSON scene loading is not allowed in this command. Use --cpp instead.",
+                options.scene_path.string()
+            );
+            return result;
+        }
+
+#ifndef TACHYON_ENABLE_LEGACY_JSON_SCENE
+        result.diagnostics.add_error(
+            "legacy_json_disabled",
+            "Legacy JSON scene loading is disabled. Rebuild with TACHYON_ENABLE_LEGACY_JSON_SCENE=ON or use --cpp.",
+            options.scene_path.string()
+        );
+        return result;
+#else
+        warn_legacy_json_scene(mode, err);
+
         SceneSpec scene;
         AssetResolutionTable assets;
         if (!load_scene_context(options.scene_path, scene, assets, err)) {
-            result.diagnostics.add_error("scene_load_failed", "Failed to load scene file: " + options.scene_path.string());
+            result.diagnostics.add_error(
+                "scene_load_failed",
+                "Failed to load scene file: " + options.scene_path.string(),
+                options.scene_path.string()
+            );
             return result;
         }
 
@@ -97,10 +120,11 @@ LoadSceneResult load_scene_for_cli(
         context.scene = std::move(scene);
         context.assets = std::move(assets);
         context.source_path = options.scene_path;
-        context.from_legacy_json = options.allow_legacy_json;
+        context.from_legacy_json = true;
         result.context = std::move(context);
         result.success = true;
         return result;
+#endif
     }
 
     if (!tried_cpp && !tried_preset && !tried_legacy_json) {

@@ -14,21 +14,27 @@ set(TachyonCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/studio/studio_library.cpp
 )
 
+set(TachyonPlatformSources
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/platform/process.cpp
+)
+
 set(TachyonSceneSources ${TACHYON_ALL_CPP})
 list(FILTER TachyonSceneSources INCLUDE REGEX "/(core/(scene|spec|math|camera|expressions|model|platform|properties|shapes|timeline)|importer|presets|timeline)/|/(background_generator|camera_cut_contract)\\.cpp$")
 list(FILTER TachyonSceneSources EXCLUDE REGEX "/core/spec/(shapes|schema/migration|template_registry|asset_resolver|pipeline/unified_scene_pipeline)/")
 list(APPEND TachyonSceneSources ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_hash_builder.cpp)
 
+set(TachyonLegacyJsonSources)
 if(TACHYON_ENABLE_LEGACY_JSON_SCENE)
-    target_sources(TachyonCore PRIVATE
-        core/spec/legacy/scene_spec_json.cpp
-        core/spec/legacy/layer_parse_json.cpp
-        core/spec/legacy/json_parse_helpers.cpp
-        core/spec/property_parse_json.cpp
-        core/spec/json_report_utils.cpp
+    list(APPEND TachyonLegacyJsonSources
+        ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/legacy/scene_spec_json.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/legacy/layer_parse_json.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/legacy/json_parse_helpers.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/property_parse_json.cpp
     )
-    target_compile_definitions(TachyonCore PUBLIC TACHYON_ENABLE_LEGACY_JSON_SCENE)
 endif()
+
+list(APPEND TachyonSceneSources ${TachyonLegacyJsonSources})
+list(APPEND TachyonSceneSources ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/json_report_utils.cpp)
 
 set(TachyonRuntimeSources
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/cache/cache_key_builder.cpp
@@ -354,6 +360,9 @@ endfunction()
 
 add_library(TachyonScene OBJECT ${TachyonSceneSources})
 tachyon_configure_target(TachyonScene)
+if(TACHYON_ENABLE_LEGACY_JSON_SCENE)
+    target_compile_definitions(TachyonScene PUBLIC TACHYON_ENABLE_LEGACY_JSON_SCENE)
+endif()
 
 add_library(TachyonRuntime OBJECT ${TachyonRuntimeSources})
 if(TACHYON_ENABLE_RENDER_JOB_JSON)
@@ -386,6 +395,9 @@ tachyon_configure_target(TachyonTracker)
 add_library(TachyonCLI OBJECT ${TachyonCLISources})
 tachyon_configure_target(TachyonCLI)
 
+add_library(TachyonPlatform OBJECT ${TachyonPlatformSources})
+tachyon_configure_target(TachyonPlatform)
+
 add_library(TachyonCore STATIC ${TachyonCoreSources})
 tachyon_configure_target(TachyonCore)
 
@@ -400,6 +412,7 @@ target_sources(TachyonCore PRIVATE
     $<TARGET_OBJECTS:TachyonText>
     $<TARGET_OBJECTS:TachyonTracker>
     $<TARGET_OBJECTS:TachyonCLI>
+    $<TARGET_OBJECTS:TachyonPlatform>
 )
 
 add_executable(tachyon

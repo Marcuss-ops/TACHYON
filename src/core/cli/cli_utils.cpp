@@ -16,10 +16,6 @@ void print_diagnostics(const DiagnosticBag& diagnostics, std::ostream& out) {
     out << spec::diagnostics_to_text(diagnostics);
 }
 
-std::filesystem::path scene_asset_root(const std::filesystem::path& scene_path) {
-    return tachyon::media::scene_asset_root(scene_path);
-}
-
 bool load_scene_context(const std::filesystem::path& scene_path, SceneSpec& scene, AssetResolutionTable& assets, std::ostream& err) {
     const auto parsed = parse_scene_spec_file(scene_path);
     if (!parsed.value.has_value()) {
@@ -31,7 +27,7 @@ bool load_scene_context(const std::filesystem::path& scene_path, SceneSpec& scen
         print_diagnostics(validation.diagnostics, err);
         return false;
     }
-    const auto resolved = resolve_assets(*parsed.value, scene_asset_root(scene_path));
+    const auto resolved = resolve_assets(*parsed.value, tachyon::media::scene_asset_root(scene_path));
     if (!resolved.value.has_value()) {
         print_diagnostics(resolved.diagnostics, err);
         return false;
