@@ -104,6 +104,7 @@ struct LayerSpec {
     AnimatedColorSpec emission_color;
 
     // Repeater (from evaluator_composition.cpp)
+    std::string repeater_type{"linear"};
     AnimatedScalarSpec repeater_count;
     AnimatedScalarSpec repeater_stagger_delay;
     AnimatedScalarSpec repeater_offset_position_x;

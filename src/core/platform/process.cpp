@@ -1,4 +1,5 @@
 ﻿#include "tachyon/core/platform/process.h"
+#include "tachyon/core/platform/shell_escape.h"
 #include <sstream>
 
 #ifdef _WIN32
@@ -19,24 +20,7 @@
 namespace tachyon::core::platform {
 
 namespace {
-
-std::string quote_shell_arg(const std::string& arg) {
-    // Quote arguments containing spaces, escape internal quotes
-    if (arg.find(' ') != std::string::npos || arg.empty()) {
-        std::string quoted = "\"";
-        for (char c : arg) {
-            if (c == '\"') {
-                quoted += "\\\"";
-            } else {
-                quoted += c;
-            }
-        }
-        quoted += "\"";
-        return quoted;
-    }
-    return arg;
-}
-
+ 
 std::string build_command_string(const ProcessSpec& spec) {
     std::stringstream ss;
     ss << quote_shell_arg(spec.executable.string());

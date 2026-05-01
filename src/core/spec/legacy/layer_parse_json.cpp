@@ -6,22 +6,33 @@
 
 namespace tachyon {
 
-void parse_transform(const json& object, LayerSpec& layer, const std::string& path, DiagnosticBag& diagnostics) {
-    if (!object.contains("transform") || !object.at("transform").is_object()) return;
-    const auto& transform = object.at("transform");
-    const std::string t_path = make_path(path, "transform");
-    
+namespace {
+
+void apply_transform_modern(const json& transform, LayerSpec& layer,
+    const std::string& t_path, DiagnosticBag& diagnostics) {
     parse_optional_vector_property(transform, "anchor_point", layer.transform.anchor_point, t_path, diagnostics);
     parse_optional_vector_property(transform, "position", layer.transform.position_property, t_path, diagnostics);
     parse_optional_vector_property(transform, "scale", layer.transform.scale_property, t_path, diagnostics);
     parse_optional_scalar_property(transform, "rotation", layer.transform.rotation_property, t_path, diagnostics);
-    
-    // Legacy support
+}
+
+void apply_transform_legacy(const json& transform, LayerSpec& layer) {
     if (transform.contains("position_x")) read_number(transform, "position_x", layer.transform.position_x);
     if (transform.contains("position_y")) read_number(transform, "position_y", layer.transform.position_y);
     if (transform.contains("scale_x")) read_number(transform, "scale_x", layer.transform.scale_x);
     if (transform.contains("scale_y")) read_number(transform, "scale_y", layer.transform.scale_y);
     if (transform.contains("rotation")) read_number(transform, "rotation", layer.transform.rotation);
+}
+
+} // namespace
+
+void parse_transform(const json& object, LayerSpec& layer, const std::string& path, DiagnosticBag& diagnostics) {
+    if (!object.contains("transform") || !object.at("transform").is_object()) return;
+    const auto& transform = object.at("transform");
+    const std::string t_path = make_path(path, "transform");
+    
+    apply_transform_modern(transform, layer, t_path, diagnostics);
+    apply_transform_legacy(transform, layer);
 }
 
 void parse_transform3d(const json& object, LayerSpec& layer, const std::string& path, DiagnosticBag& diagnostics) {

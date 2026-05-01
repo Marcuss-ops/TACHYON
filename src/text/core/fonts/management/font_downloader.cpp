@@ -1,5 +1,6 @@
 #include "tachyon/text/fonts/management/font_downloader.h"
 #include "tachyon/text/fonts/management/font_manifest.h"
+#include "tachyon/core/string_utils.h"
 
 #include <algorithm>
 #include <cctype>
@@ -275,7 +276,7 @@ std::optional<std::vector<std::byte>> FontDownloader::download_file(const std::s
 std::string FontDownloader::generate_font_id(const std::string& family, std::uint32_t weight) {
     std::string id = sanitize_filename(family);
     id += "-" + std::to_string(weight);
-    std::transform(id.begin(), id.end(), id.begin(), ::tolower);
+    ascii_lower_inplace(id);
     return id;
 }
 

@@ -2,7 +2,7 @@
 
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/runtime/core/data/compiled_scene.h"
-#include "src/core/spec/compilation/compilation_context.h"
+#include "tachyon/core/spec/compilation/compilation_context.h"
 #include <string>
 #include <unordered_map>
 

@@ -349,6 +349,17 @@ CompositionBuilder& CompositionBuilder::clear(const ColorSpec& color) {
     return *this;
 }
 
+CompositionBuilder& CompositionBuilder::add_typed_layer(
+    std::string id,
+    std::function<void(LayerBuilder&)> defaults,
+    std::function<void(LayerBuilder&)> fn) {
+    LayerBuilder lb(std::move(id));
+    defaults(lb);
+    fn(lb);
+    spec_.layers.push_back(std::move(lb).build());
+    return *this;
+}
+
 CompositionBuilder& CompositionBuilder::layer(std::string id, std::function<void(LayerBuilder&)> fn) {
     LayerBuilder lb(std::move(id));
     fn(lb);
@@ -362,29 +373,18 @@ CompositionBuilder& CompositionBuilder::layer(const LayerSpec& layer) {
 }
 
 CompositionBuilder& CompositionBuilder::camera3d_layer(std::string id, std::function<void(LayerBuilder&)> fn) {
-    LayerBuilder lb(std::move(id));
-    lb.is_3d(true);
-    lb.camera_type("two_node");
-    fn(lb);
-    spec_.layers.push_back(std::move(lb).build());
-    return *this;
+    return add_typed_layer(std::move(id),
+        [](LayerBuilder& l) { l.is_3d(true); l.camera_type("two_node"); }, fn);
 }
 
 CompositionBuilder& CompositionBuilder::light_layer(std::string id, std::function<void(LayerBuilder&)> fn) {
-    LayerBuilder lb(std::move(id));
-    lb.is_3d(true);
-    lb.light_type("point");
-    fn(lb);
-    spec_.layers.push_back(std::move(lb).build());
-    return *this;
+    return add_typed_layer(std::move(id),
+        [](LayerBuilder& l) { l.is_3d(true); l.light_type("point"); }, fn);
 }
 
 CompositionBuilder& CompositionBuilder::mesh_layer(std::string id, std::function<void(LayerBuilder&)> fn) {
-    LayerBuilder lb(std::move(id));
-    lb.is_3d(true);
-    fn(lb);
-    spec_.layers.push_back(std::move(lb).build());
-    return *this;
+    return add_typed_layer(std::move(id),
+        [](LayerBuilder& l) { l.is_3d(true); }, fn);
 }
 
 CompositionBuilder& CompositionBuilder::audio(std::string path, double volume) {

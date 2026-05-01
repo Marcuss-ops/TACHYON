@@ -1,6 +1,7 @@
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/report.h"
+#include "tachyon/core/spec/json_report_utils.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/media/resolution/asset_resolution.h"
 #include "tachyon/media/resolution/asset_path_utils.h"
@@ -12,13 +13,7 @@
 namespace tachyon {
 
 void print_diagnostics(const DiagnosticBag& diagnostics, std::ostream& out) {
-    for (const auto& diagnostic : diagnostics.diagnostics) {
-        out << diagnostic.code << ": " << diagnostic.message;
-        if (!diagnostic.path.empty()) {
-            out << " (" << diagnostic.path << ")";
-        }
-        out << '\n';
-    }
+    out << spec::diagnostics_to_text(diagnostics);
 }
 
 std::filesystem::path scene_asset_root(const std::filesystem::path& scene_path) {

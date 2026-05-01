@@ -1,11 +1,13 @@
 #include "tachyon/core/spec/pipeline/unified_scene_pipeline.h"
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 #include "tachyon/runtime/core/data/compiled_scene.h"
-#include "src/core/spec/compilation/compilation_context.h"
-#include "src/core/spec/compilation/property_compiler.h"
+#include "tachyon/core/spec/compilation/compilation_context.h"
+#include "tachyon/core/spec/compilation/property_track_compiler.h"
 #include "tachyon/core/spec/scene_spec_serialize.h"
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
+#include "tachyon/core/spec/legacy/json_parse_helpers.h"
+#include "tachyon/core/spec/property_spec_serialize_helpers.h"
 #include <nlohmann/json.hpp>
 
 namespace nlohmann {
@@ -52,9 +54,7 @@ nlohmann::json UnifiedSceneSpecPipeline::SerializeLayer(const LayerSpec& layer) 
     nlohmann::json j = nlohmann::json::object();
     
     #define TACHYON_FIELD(jk, cn, type, fb) \
-        if constexpr (requires { layer.cn; }) { \
-            if (layer.cn != fb) j[#jk] = layer.cn; \
-        }
+        j[#jk] = layer.cn;
         
     #define TACHYON_ANIM_PROP(jk, cn, type, fb) \
         if (!layer.cn.empty()) j[#jk] = layer.cn;

@@ -1,7 +1,16 @@
-#include "tachyon/core/spec/compilation/scene_compiler_hashing.h"
+#include "tachyon/core/spec/compilation/scene_hash_builder.h"
 #include "tachyon/runtime/cache/cache_key_builder.h"
+#include <string>
+#include <string_view>
 
 namespace tachyon {
+namespace {
+
+void add_string(CacheKeyBuilder& builder, const std::string& value) {
+    builder.add_string(std::string_view{value});
+}
+
+} // namespace
 
 std::uint64_t hash_scene_spec(const SceneSpec& scene, const DeterminismContract& contract) {
     CacheKeyBuilder builder;
@@ -120,6 +129,7 @@ std::uint64_t hash_scene_spec(const SceneSpec& scene, const DeterminismContract&
                 add_string(builder, *layer.parent);
             }
 
+            // Unified Temporal & Tracking Hashing
             builder.add_u64(static_cast<std::uint64_t>(layer.track_bindings.size()));
             for (const auto& binding : layer.track_bindings) {
                 add_string(builder, binding.property_path);
@@ -139,28 +149,6 @@ std::uint64_t hash_scene_spec(const SceneSpec& scene, const DeterminismContract&
         }
     }
 
-    return builder.finish();
-}
-
-// Hashes only graph topology: composition/layer IDs, types, and structural relationships.
-// Changes here require full recompilation. Changes only to property values do not.
-std::uint64_t hash_scene_structure(const SceneSpec& scene) {
-    CacheKeyBuilder builder;
-    builder.add_u64(static_cast<std::uint64_t>(scene.compositions.size()));
-    for (const auto& composition : scene.compositions) {
-        add_string(builder, composition.id);
-        builder.add_u64(static_cast<std::uint64_t>(composition.layers.size()));
-        for (const auto& layer : composition.layers) {
-            add_string(builder, layer.id);
-            add_string(builder, layer.type);
-            builder.add_bool(layer.parent.has_value());
-            if (layer.parent.has_value()) add_string(builder, *layer.parent);
-            builder.add_bool(layer.precomp_id.has_value());
-            if (layer.precomp_id.has_value()) add_string(builder, *layer.precomp_id);
-            builder.add_bool(layer.track_matte_layer_id.has_value());
-            if (layer.track_matte_layer_id.has_value()) add_string(builder, *layer.track_matte_layer_id);
-        }
-    }
     return builder.finish();
 }
 

@@ -1,3 +1,4 @@
+#pragma once
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include "tachyon/runtime/core/contracts/determinism_contract.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"

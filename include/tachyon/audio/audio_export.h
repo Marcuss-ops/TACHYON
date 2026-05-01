@@ -9,9 +9,16 @@
 #include <string>
 
 namespace tachyon {
+struct CompiledScene;
+struct RenderPlan;
+
 namespace audio {
 
 class AudioDecoder;
+
+bool export_scene_audio(const CompiledScene& scene, const std::filesystem::path& output_path);
+bool export_plan_audio(const RenderPlan& plan, const std::filesystem::path& output_path);
+bool has_any_audio(const RenderPlan& plan);
 
 class AudioExporter {
 public:
