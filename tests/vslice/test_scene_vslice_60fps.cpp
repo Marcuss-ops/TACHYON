@@ -11,6 +11,6 @@ extern "C" void build_scene(tachyon::SceneSpec& out) {
              .background(BackgroundSpec::from_string("#000000"));
              
             c.layer(presets::text::headline("60 FPS STABILITY TEST")
-                .size(100).center().build());
+                .font_size(100).center().build());
         }).build();
 }

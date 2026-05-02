@@ -20,7 +20,7 @@ bool mux_audio_video(const std::string& video_path, const std::string& audio_pat
     std::filesystem::path video_p(video_path);
     std::filesystem::path output_path = video_p.parent_path() / ("muxed_" + video_p.filename().string());
 
-    std::string command = "ffmpeg -y -i \"" + video_path + "\" -i \"" + audio_path + "\" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 \"" + output_path.string() + "\"";
+    std::string command = "ffmpeg -hide_banner -loglevel error -y -i \"" + video_path + "\" -i \"" + audio_path + "\" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 \"" + output_path.string() + "\"";
 
     using namespace tachyon::core::platform;
     ProcessSpec spec;

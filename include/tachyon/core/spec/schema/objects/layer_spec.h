@@ -57,6 +57,7 @@ struct LayerSpec {
     std::string name;
     std::string type;
     std::string asset_id; // For image/video layers
+    std::string preset_id; // For procedural/preset layers
     LayerType kind{LayerType::NullLayer};
     std::string blend_mode{"normal"};
     

@@ -69,7 +69,7 @@ std::string build_ffmpeg_video_command(const RenderPlan& plan, const std::filesy
     const std::string color_range = ffmpeg_color_range(renderer2d::detail::parse_color_range(plan.output.profile.color.range));
 
     std::ostringstream command;
-    command << "ffmpeg "
+    command << "ffmpeg -hide_banner -loglevel error "
             << (overwrite ? "-y" : "-n")
             << " -f rawvideo"
             << " -pix_fmt rgba"
@@ -135,7 +135,7 @@ std::string build_ffmpeg_mux_command(const RenderPlan& plan, const std::filesyst
     const std::string color_range = ffmpeg_color_range(renderer2d::detail::parse_color_range(plan.output.profile.color.range));
 
     std::ostringstream command;
-    command << "ffmpeg "
+    command << "ffmpeg -hide_banner -loglevel error "
             << (overwrite ? "-y" : "-n")
             << " -i " << quote_path(video_path)
             << " -i " << quote_path(audio_path);

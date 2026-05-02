@@ -145,7 +145,7 @@ int run_cli(int argc, char** argv) {
 
     const CliOptions& options = *parsed.value;
 
-    if (options.command == "version") {
+    if (options.command == "version" || options.show_version) {
         std::cout << version_string() << '\n';
         return 0;
     }

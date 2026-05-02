@@ -3,12 +3,20 @@
 
 namespace tachyon::core::platform {
 
-inline FILE* open_write_pipe(const char* command) {
+inline FILE* open_pipe(const char* command, const char* mode) {
 #ifdef _WIN32
-    return _popen(command, "wb");
+    return _popen(command, mode);
 #else
-    return popen(command, "wb");
+    return popen(command, mode);
 #endif
+}
+
+inline FILE* open_write_pipe(const char* command) {
+    return open_pipe(command, "wb");
+}
+
+inline FILE* open_read_pipe(const char* command) {
+    return open_pipe(command, "r");
 }
 
 inline int close_pipe(FILE* f) {

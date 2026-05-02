@@ -25,7 +25,7 @@ extern "C" void build_scene(tachyon::SceneSpec& out) {
              
             // Title text
             c.layer(presets::text::headline("TACHYON FULL HD TEST")
-                .size(120)
+                .font_size(120)
                 .center()
                 .color({255, 255, 255, 255})
                 .build());

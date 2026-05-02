@@ -73,6 +73,9 @@ struct FrameQueue {
             ++next_to_write;
             ++written;
         }
+        if (written > 0) {
+            cv.notify_all();
+        }
         return written;
     }
 };

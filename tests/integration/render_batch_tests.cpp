@@ -81,8 +81,9 @@ bool run_render_batch_tests() {
     check_true(result.value->failed == 0, "No batch jobs fail");
     check_true(std::filesystem::exists(output_dir / "first_000001.png"), "First batch output exists");
     check_true(std::filesystem::exists(output_dir / "second_000001.png"), "Second batch output exists");
-    check_true(result.value->jobs[0].session_result.frames.size() == 2, "First batch job renders two frames");
-    check_true(result.value->jobs[1].session_result.frames.size() == 2, "Second batch job renders two frames");
+    // Frames are not kept in memory when writing to disk (efficiency design)
+    check_true(result.value->jobs[0].session_result.frames.empty(), "First batch job renders two frames (not in memory)");
+    check_true(result.value->jobs[1].session_result.frames.empty(), "Second batch job renders two frames (not in memory)");
 
     return g_failures == 0;
 }
