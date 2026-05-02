@@ -9,18 +9,47 @@
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 #include "tachyon/core/types/colors.h"
 #include "tachyon/core/animation/easing.h"
+#include "tachyon/core/math/algebra/vector3.h"
+#include "tachyon/core/math/algebra/matrix4x4.h"
+
 #include <initializer_list>
 #include <functional>
 #include <string>
 #include <vector>
 #include <memory>
 #include <utility>
+#include <optional>
 
 namespace tachyon::scene {
 
 class LayerBuilder;
 class CompositionBuilder;
 class SceneBuilder;
+
+namespace expr {
+
+/**
+ * @brief Simple wiggle expression.
+ * @param frequency Occurrences per second.
+ * @param amplitude Amount of variation.
+ * @param seed Random seed for deterministic output.
+ */
+AnimatedScalarSpec wiggle(double frequency, double amplitude, int seed = 0);
+
+/**
+ * @brief Sine wave expression.
+ * @param frequency Cycles per second.
+ * @param amplitude Peak value.
+ * @param offset Phase offset.
+ */
+AnimatedScalarSpec sin_wave(double frequency, double amplitude, double offset = 0.0);
+
+/**
+ * @brief Pulse expression (periodic on/off or scaling).
+ */
+AnimatedScalarSpec pulse(double frequency, double amplitude);
+
+} // namespace expr
 
 namespace anim {
     /**
@@ -73,6 +102,8 @@ public:
     MaterialBuilder& base_color(const ColorSpec& c);
     MaterialBuilder& metallic(double v);
     MaterialBuilder& roughness(double v);
+    MaterialBuilder& transmission(double v);
+    MaterialBuilder& ior(double v);
     
     LayerBuilder& done();
 };
@@ -99,7 +130,7 @@ public:
     LayerBuilder& in(double t);
     LayerBuilder& out(double t);
     LayerBuilder& opacity(double v);
-    LayerBuilder& opacity(AnimatedScalarSpec anim_spec);
+    LayerBuilder& opacity(const AnimatedScalarSpec& anim_spec);
     LayerBuilder& position(double x, double y);
     LayerBuilder& size(double w, double h);
     LayerBuilder& color(const ColorSpec& c);
@@ -107,6 +138,14 @@ public:
     LayerBuilder& stroke_color(const ColorSpec& c);
     LayerBuilder& stroke_width(double w);
     LayerBuilder& subtitle_path(std::string path);
+
+    // AE-like Ergonomics
+    LayerBuilder& null_layer();
+    LayerBuilder& precomp(std::string composition_id);
+    LayerBuilder& adjustment(bool enabled = true);
+    LayerBuilder& track_matte(std::string layer_id, TrackMatteType type);
+    LayerBuilder& parent(std::string parent_id);
+    LayerBuilder& motion_blur(bool enabled = true);
 
     // Text animators and highlights
     LayerBuilder& text_animator(const TextAnimatorSpec& anim);
@@ -133,8 +172,6 @@ public:
     LayerBuilder& shadow_radius(double r);
 
     // 3D Material extensions
-    LayerBuilder& transmission(double v);
-    LayerBuilder& ior(double v);
     LayerBuilder& emission_strength(double v);
 
     // Transitions
@@ -170,6 +207,11 @@ public:
 
     CompositionBuilder& layer(std::string id, std::function<void(LayerBuilder&)> fn);
     CompositionBuilder& layer(const LayerSpec& layer);  // Accept LayerSpec directly
+    
+    // AE-like ergonomic layers
+    CompositionBuilder& null_layer(std::string id, std::function<void(LayerBuilder&)> fn);
+    CompositionBuilder& precomp_layer(std::string id, std::string composition_id, std::function<void(LayerBuilder&)> fn);
+
     CompositionBuilder& camera3d_layer(std::string id, std::function<void(LayerBuilder&)> fn);
     CompositionBuilder& light_layer(std::string id, std::function<void(LayerBuilder&)> fn);
     CompositionBuilder& mesh_layer(std::string id, std::function<void(LayerBuilder&)> fn);

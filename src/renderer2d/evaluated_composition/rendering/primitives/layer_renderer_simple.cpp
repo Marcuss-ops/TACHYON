@@ -1,11 +1,13 @@
 #include "tachyon/renderer2d/evaluated_composition/layer_renderer.h"
 
 #include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"
+#include "tachyon/renderer2d/evaluated_composition/rendering/pipeline/pipeline_helpers.h"
 #include "tachyon/text/animation/text_animator_utils.h"
 #include "tachyon/text/layout/layout.h"
 #include "tachyon/text/rendering/text_raster_surface.h"
 #include "tachyon/renderer2d/evaluated_composition/rendering/primitives/layer_renderer_procedural.h"
 #include "tachyon/renderer2d/evaluated_composition/rendering/core/layer_renderer_interface.h"
+#include "tachyon/media/management/media_manager.h"
 
 
 #include <algorithm>
@@ -213,6 +215,68 @@ public:
     }
 };
 
+class ImageLayerRenderer : public ILayerRenderer {
+public:
+    bool render(
+        const scene::EvaluatedLayerState& layer,
+        const scene::EvaluatedCompositionState& state,
+        RenderContext2D& context,
+        const std::optional<RectI>& target_rect,
+        std::shared_ptr<SurfaceRGBA>& surface) const override {
+
+        (void)state;
+        (void)target_rect;
+
+        if (context.media_manager == nullptr) {
+            return false;
+        }
+
+        const auto media_source = resolve_media_source(layer, context);
+        if (!media_source.has_value()) {
+            return false;
+        }
+
+        const auto* image = context.media_manager->get_image(*media_source);
+        if (image == nullptr) {
+            return false;
+        }
+
+        surface = std::make_shared<SurfaceRGBA>(*image);
+        return true;
+    }
+};
+
+class VideoLayerRenderer : public ILayerRenderer {
+public:
+    bool render(
+        const scene::EvaluatedLayerState& layer,
+        const scene::EvaluatedCompositionState& state,
+        RenderContext2D& context,
+        const std::optional<RectI>& target_rect,
+        std::shared_ptr<SurfaceRGBA>& surface) const override {
+
+        (void)state;
+        (void)target_rect;
+
+        if (context.media_manager == nullptr) {
+            return false;
+        }
+
+        const auto media_source = resolve_media_source(layer, context);
+        if (!media_source.has_value()) {
+            return false;
+        }
+
+        const auto* frame = context.media_manager->get_video_frame(*media_source, layer.local_time_seconds);
+        if (frame == nullptr) {
+            return false;
+        }
+
+        surface = std::make_shared<SurfaceRGBA>(*frame);
+        return true;
+    }
+};
+
 class SolidLayerRenderer : public ILayerRenderer {
 public:
     bool render(
@@ -257,7 +321,9 @@ public:
 struct BuiltinRendererRegistrar {
     BuiltinRendererRegistrar() {
         auto& reg = LayerRendererRegistry::get();
+        reg.register_renderer(scene::LayerType::Image, std::make_unique<ImageLayerRenderer>());
         reg.register_renderer(scene::LayerType::Solid, std::make_unique<SolidLayerRenderer>());
+        reg.register_renderer(scene::LayerType::Video, std::make_unique<VideoLayerRenderer>());
         reg.register_renderer(scene::LayerType::Text, std::make_unique<TextLayerRenderer>());
         reg.register_renderer(scene::LayerType::Procedural, std::make_unique<ProceduralLayerRenderer>());
     }

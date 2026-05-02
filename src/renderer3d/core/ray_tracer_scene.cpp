@@ -53,66 +53,67 @@ void RayTracer::build_scene(const EvaluatedScene3D& scene) {
         } else {
             MeshCacheEntry entry;
             entry.scene = rtcNewScene(device_);
-            entry.asset = nullptr;
+            entry.asset = instance.mesh_asset.get();
 
-            if (media_manager_) {
+            if (!entry.asset && media_manager_) {
                 std::filesystem::path mesh_path = media_manager_->get_asset_path(instance.mesh_asset_id);
                 if (!mesh_path.empty()) {
                     entry.asset = media_manager_->get_mesh(mesh_path, nullptr);
-                    if (entry.asset && !entry.asset->empty()) {
-                        entry.submeshes.reserve(entry.asset->sub_meshes.size());
-                        for (const auto& sub_mesh : entry.asset->sub_meshes) {
-                            if (sub_mesh.vertices.empty() || sub_mesh.indices.empty() || (sub_mesh.indices.size() % 3) != 0) {
-                                continue;
-                            }
+                }
+            }
 
-                            MeshCacheEntry::SubMeshCache cached_submesh;
-                            cached_submesh.material = sub_mesh.material;
-                            cached_submesh.indices = sub_mesh.indices;
-                            cached_submesh.vertices.reserve(sub_mesh.vertices.size());
-
-                            for (const auto& vertex : sub_mesh.vertices) {
-                                MeshVertex transformed_vertex;
-                                transformed_vertex.position = sub_mesh.transform.transform_point(vertex.position);
-                                transformed_vertex.normal = transform_normal(sub_mesh.transform, vertex.normal);
-                                transformed_vertex.uv = vertex.uv;
-                                cached_submesh.vertices.push_back(transformed_vertex);
-                            }
-
-                            RTCGeometry geom = rtcNewGeometry(device_, RTC_GEOMETRY_TYPE_TRIANGLE);
-                            const std::size_t vertex_count = cached_submesh.vertices.size();
-                            float* v = static_cast<float*>(rtcSetNewGeometryBuffer(
-                                geom,
-                                RTC_BUFFER_TYPE_VERTEX,
-                                0,
-                                RTC_FORMAT_FLOAT3,
-                                3 * sizeof(float),
-                                vertex_count));
-                            for (std::size_t i = 0; i < cached_submesh.vertices.size(); ++i) {
-                                v[i * 3 + 0] = cached_submesh.vertices[i].position.x;
-                                v[i * 3 + 1] = cached_submesh.vertices[i].position.y;
-                                v[i * 3 + 2] = cached_submesh.vertices[i].position.z;
-                            }
-
-                            const std::size_t triangle_count = cached_submesh.indices.size() / 3;
-                            unsigned int* idx = static_cast<unsigned int*>(rtcSetNewGeometryBuffer(
-                                geom,
-                                RTC_BUFFER_TYPE_INDEX,
-                                0,
-                                RTC_FORMAT_UINT3,
-                                3 * sizeof(unsigned int),
-                                triangle_count));
-                            for (std::size_t i = 0; i < cached_submesh.indices.size(); ++i) {
-                                idx[i] = cached_submesh.indices[i];
-                            }
-
-                            rtcCommitGeometry(geom);
-                            const unsigned int sub_geom_id = rtcAttachGeometry(entry.scene, geom);
-                            entry.geom_id_to_submesh[sub_geom_id] = entry.submeshes.size();
-                            entry.submeshes.push_back(std::move(cached_submesh));
-                            rtcReleaseGeometry(geom);
-                        }
+            if (entry.asset && !entry.asset->empty()) {
+                entry.submeshes.reserve(entry.asset->sub_meshes.size());
+                for (const auto& sub_mesh : entry.asset->sub_meshes) {
+                    if (sub_mesh.vertices.empty() || sub_mesh.indices.empty() || (sub_mesh.indices.size() % 3) != 0) {
+                        continue;
                     }
+
+                    MeshCacheEntry::SubMeshCache cached_submesh;
+                    cached_submesh.material = sub_mesh.material;
+                    cached_submesh.indices = sub_mesh.indices;
+                    cached_submesh.vertices.reserve(sub_mesh.vertices.size());
+
+                    for (const auto& vertex : sub_mesh.vertices) {
+                        MeshVertex transformed_vertex;
+                        transformed_vertex.position = sub_mesh.transform.transform_point(vertex.position);
+                        transformed_vertex.normal = transform_normal(sub_mesh.transform, vertex.normal);
+                        transformed_vertex.uv = vertex.uv;
+                        cached_submesh.vertices.push_back(transformed_vertex);
+                    }
+
+                    RTCGeometry geom = rtcNewGeometry(device_, RTC_GEOMETRY_TYPE_TRIANGLE);
+                    const std::size_t vertex_count = cached_submesh.vertices.size();
+                    float* v = static_cast<float*>(rtcSetNewGeometryBuffer(
+                        geom,
+                        RTC_BUFFER_TYPE_VERTEX,
+                        0,
+                        RTC_FORMAT_FLOAT3,
+                        3 * sizeof(float),
+                        vertex_count));
+                    for (std::size_t i = 0; i < cached_submesh.vertices.size(); ++i) {
+                        v[i * 3 + 0] = cached_submesh.vertices[i].position.x;
+                        v[i * 3 + 1] = cached_submesh.vertices[i].position.y;
+                        v[i * 3 + 2] = cached_submesh.vertices[i].position.z;
+                    }
+
+                    const std::size_t triangle_count = cached_submesh.indices.size() / 3;
+                    unsigned int* idx = static_cast<unsigned int*>(rtcSetNewGeometryBuffer(
+                        geom,
+                        RTC_BUFFER_TYPE_INDEX,
+                        0,
+                        RTC_FORMAT_UINT3,
+                        3 * sizeof(unsigned int),
+                        triangle_count));
+                    for (std::size_t i = 0; i < cached_submesh.indices.size(); ++i) {
+                        idx[i] = cached_submesh.indices[i];
+                    }
+
+                    rtcCommitGeometry(geom);
+                    const unsigned int sub_geom_id = rtcAttachGeometry(entry.scene, geom);
+                    entry.geom_id_to_submesh[sub_geom_id] = entry.submeshes.size();
+                    entry.submeshes.push_back(std::move(cached_submesh));
+                    rtcReleaseGeometry(geom);
                 }
             }
 
@@ -145,6 +146,7 @@ void RayTracer::build_scene(const EvaluatedScene3D& scene) {
             instance.object_id,
             instance.material_id,
             instance.mesh_asset_id,
+            instance.mesh_asset,
             instance.material,
             instance.world_transform,
             instance.previous_world_transform

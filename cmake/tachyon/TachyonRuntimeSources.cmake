@@ -37,6 +37,7 @@ set(TachyonRuntimeSources
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/planning/hash/effect_hash.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/planning/hash/scene_hash.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_job/render_job_builder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_job/render_job_parse.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_job/render_job_utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_job/render_job_validate.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/playback/audio_preview_buffer.cpp
