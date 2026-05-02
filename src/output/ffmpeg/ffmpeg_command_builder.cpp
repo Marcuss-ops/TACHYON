@@ -1,5 +1,6 @@
 #include "tachyon/output/frame_output_sink.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
+#include "tachyon/core/platform/shell_escape.h"
 #include <sstream>
 #include <filesystem>
 #include <chrono>
@@ -7,20 +8,6 @@
 namespace tachyon::output {
 
 namespace {
-std::string quote_path(const std::filesystem::path& path) {
-    const std::string value = path.string();
-    std::string quoted;
-    quoted.reserve(value.size() + 2);
-    quoted.push_back('"');
-    for (char ch : value) {
-        if (ch == '"') {
-            quoted.push_back('\\');
-        }
-        quoted.push_back(ch);
-    }
-    quoted.push_back('"');
-    return quoted;
-}
 
 std::string ffmpeg_color_primaries(renderer2d::detail::ColorPrimaries primaries) {
     switch (primaries) {
@@ -123,7 +110,7 @@ std::string build_ffmpeg_video_command(const RenderPlan& plan, const std::filesy
         command << " -movflags +faststart";
     }
 
-    command << ' ' << quote_path(output_path);
+    command << ' ' << core::platform::quote_shell_arg(output_path);
     return command.str();
 }
 
@@ -137,8 +124,8 @@ std::string build_ffmpeg_mux_command(const RenderPlan& plan, const std::filesyst
     std::ostringstream command;
     command << "ffmpeg -hide_banner -loglevel error "
             << (overwrite ? "-y" : "-n")
-            << " -i " << quote_path(video_path)
-            << " -i " << quote_path(audio_path);
+            << " -i " << core::platform::quote_shell_arg(video_path)
+            << " -i " << core::platform::quote_shell_arg(audio_path);
 
     command << " -color_primaries " << color_primaries
             << " -color_trc " << color_trc
@@ -158,7 +145,7 @@ std::string build_ffmpeg_mux_command(const RenderPlan& plan, const std::filesyst
     }
 
     command << " -shortest";
-    command << ' ' << quote_path(std::filesystem::path(plan.output.destination.path));
+    command << ' ' << core::platform::quote_shell_arg(std::filesystem::path(plan.output.destination.path));
     return command.str();
 }
 
