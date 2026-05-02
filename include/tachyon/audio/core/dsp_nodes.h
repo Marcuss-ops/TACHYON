@@ -249,5 +249,105 @@ private:
     int m_sidechain_nframes = 0;
 };
 
+// ---------------------------------------------------------------------------
+// LowPassNode – 2nd order Butterworth low-pass filter
+// ---------------------------------------------------------------------------
+class LowPassNode : public AudioNode {
+public:
+    LowPassNode(float cutoff_hz = 1000.0f, float sample_rate = 48000.0f) {
+        set_cutoff(cutoff_hz, sample_rate);
+    }
+
+    void set_cutoff(float cutoff_hz, float sample_rate = 48000.0f) {
+        const float w0 = 2.0f * 3.14159265358979323846f * cutoff_hz / sample_rate;
+        const float cos_w0 = std::cos(w0);
+        const float alpha = std::sin(w0) / (2.0f * 0.7071067811865476f);
+
+        const float a0 = 1.0f + alpha;
+        m_b0 = (1.0f - cos_w0) / 2.0f / a0;
+        m_b1 = (1.0f - cos_w0) / a0;
+        m_b2 = (1.0f - cos_w0) / 2.0f / a0;
+        m_a1 = -2.0f * cos_w0 / a0;
+        m_a2 = (1.0f - alpha) / a0;
+
+        reset();
+    }
+
+    void process(float* io, int nframes) override {
+        for (int i = 0; i < nframes * 2; ++i) {
+            const float input = io[i];
+            const float output = m_b0 * input + m_b1 * m_x1 + m_b2 * m_x2 - m_a1 * m_y1 - m_a2 * m_y2;
+            m_x2 = m_x1;
+            m_x1 = input;
+            m_y2 = m_y1;
+            m_y1 = output;
+            io[i] = output;
+        }
+    }
+
+    void reset() override {
+        m_x1 = m_x2 = 0.0f;
+        m_y1 = m_y2 = 0.0f;
+    }
+
+    std::string name() const override { return "LowPass"; }
+
+private:
+    float m_b0 = 0.0f, m_b1 = 0.0f, m_b2 = 0.0f;
+    float m_a1 = 0.0f, m_a2 = 0.0f;
+    float m_x1 = 0.0f, m_x2 = 0.0f;
+    float m_y1 = 0.0f, m_y2 = 0.0f;
+};
+
+// ---------------------------------------------------------------------------
+// HighPassNode – 2nd order Butterworth high-pass filter
+// ---------------------------------------------------------------------------
+class HighPassNode : public AudioNode {
+public:
+    HighPassNode(float cutoff_hz = 1000.0f, float sample_rate = 48000.0f) {
+        set_cutoff(cutoff_hz, sample_rate);
+    }
+
+    void set_cutoff(float cutoff_hz, float sample_rate = 48000.0f) {
+        const float w0 = 2.0f * 3.14159265358979323846f * cutoff_hz / sample_rate;
+        const float cos_w0 = std::cos(w0);
+        const float alpha = std::sin(w0) / (2.0f * 0.7071067811865476f);
+
+        const float a0 = 1.0f + alpha;
+        m_b0 = (1.0f + cos_w0) / 2.0f / a0;
+        m_b1 = -(1.0f + cos_w0) / a0;
+        m_b2 = (1.0f + cos_w0) / 2.0f / a0;
+        m_a1 = -2.0f * cos_w0 / a0;
+        m_a2 = (1.0f - alpha) / a0;
+
+        reset();
+    }
+
+    void process(float* io, int nframes) override {
+        for (int i = 0; i < nframes * 2; ++i) {
+            const float input = io[i];
+            const float output = m_b0 * input + m_b1 * m_x1 + m_b2 * m_x2 - m_a1 * m_y1 - m_a2 * m_y2;
+            m_x2 = m_x1;
+            m_x1 = input;
+            m_y2 = m_y1;
+            m_y1 = output;
+            io[i] = output;
+        }
+    }
+
+    void reset() override {
+        m_x1 = m_x2 = 0.0f;
+        m_y1 = m_y2 = 0.0f;
+    }
+
+    std::string name() const override { return "HighPass"; }
+
+private:
+    float m_b0 = 0.0f, m_b1 = 0.0f, m_b2 = 0.0f;
+    float m_a1 = 0.0f, m_a2 = 0.0f;
+    float m_x1 = 0.0f, m_x2 = 0.0f;
+    float m_y1 = 0.0f, m_y2 = 0.0f;
+};
+
 } // namespace tachyon::audio
 

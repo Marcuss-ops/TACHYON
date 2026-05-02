@@ -1,4 +1,5 @@
 #include "tachyon/audio/processing/audio_processor.h"
+#include "tachyon/audio/core/dsp_nodes.h"
 #include <algorithm>
 #include <cmath>
 #include <numeric>

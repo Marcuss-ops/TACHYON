@@ -11,37 +11,25 @@ set(TachyonRenderer2DSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/core/framebuffer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/core/surface_pool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/deform/mesh_deform.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/blur_effects.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/color_effects.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_blur_utils.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_color_utils.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_host.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_lut_utils.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_misc_utils.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_sampling_utils.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/glitch.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/particle_effects.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/utility_effects.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/glsl_transition_effect.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/glitch.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/blur/blur_effects.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/color/chromatic_aberration.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/color/color_effects.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/effect_host.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/effect_utils.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/utility_effects.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/glsl_transition_effect.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/utility_effects.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/distort/warp_stabilizer_effect.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_blur_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_color_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_lut_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_misc_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_sampling_utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/generators/lens_flare_effect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/generators/particle_effects.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/glitch.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/utility/number_counter_effect.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/matte_resolver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/effects/effect_renderer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/composition_renderer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/feathered_mask_renderer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/layer_renderer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/layer_to_draw_command.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/mask_renderer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/matte_resolver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/pipeline/composition_renderer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/pipeline/layer_renderer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/pipeline/layer_to_draw_command.cpp
@@ -56,22 +44,22 @@ set(TachyonRenderer2DSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/utilities/raster.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/utilities/render_graph.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/math/math_utils.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/path/shape_factory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/path/contour/contour_processing.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/path/flattening/path_flattening.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/path/shape_factory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/cpu_rasterizer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/draw_list_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/draw_list_rasterizer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/mask_rasterizer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/mesh_deform_apply.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/mesh_rasterizer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/perspective_rasterizer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/sdf_rasterizer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/path/fill_rasterizer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/path/mask_rasterizer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/path/path_flattener.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/path/path_trimmer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/path/stroke_rasterizer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/perspective_rasterizer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/sdf_rasterizer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/resource/precomp_cache.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/resource/render_context.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/resource/texture_resolver.cpp

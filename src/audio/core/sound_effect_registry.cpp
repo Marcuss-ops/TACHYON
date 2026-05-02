@@ -1,4 +1,4 @@
-#include "tachyon/audio/sound_effect_registry.h"
+#include "tachyon/audio/core/sound_effect_registry.h"
 #include "tachyon/core/spec/schema/contracts/shared_contracts.h"
 #include <filesystem>
 #include <random>

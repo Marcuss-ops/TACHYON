@@ -1,23 +1,24 @@
 # TachyonScene sources
-# TODO: Technical debt - GLOB_RECURSE is risky for large engines, prefer explicit per-module source lists
-file(GLOB_RECURSE TACHYON_ALL_CPP CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
+set(TachyonSceneSources
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/builder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/data_loader.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/dependency_node.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator_composition.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator_math.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/camera2d_evaluator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/hashing.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/layer_evaluator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/layer_transform_3d.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/layer_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/light_evaluator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/mesh_animator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/property_sampler.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/roi_calculator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/templates.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/rigging/constraint_solver.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/rigging/ik_solver.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/rigging/rig_graph.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/state/evaluated_camera2d_state.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/scene_spec_json.cpp
 )
-
-set(TachyonSceneSources ${TACHYON_ALL_CPP})
-list(FILTER TachyonSceneSources INCLUDE REGEX "/(core/(scene|spec|math|camera|expressions|model|platform|properties|shapes|timeline)|importer|presets|timeline)/|/(background_generator|camera_cut_contract)\\.cpp$")
-list(FILTER TachyonSceneSources EXCLUDE REGEX "/core/spec/(shapes|schema/migration|template_registry|asset_resolver|pipeline/unified_scene_pipeline)/")
-list(APPEND TachyonSceneSources ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_hash_builder.cpp)
-
-set(TachyonLegacyJsonSources)
-if(TACHYON_ENABLE_LEGACY_JSON_SCENE)
-    list(APPEND TachyonLegacyJsonSources
-        ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/legacy/scene_spec_json.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/legacy/layer_parse_json.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/legacy/json_parse_helpers.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/property_parse_json.cpp
-    )
-endif()
-
-list(APPEND TachyonSceneSources ${TachyonLegacyJsonSources})
-list(APPEND TachyonSceneSources ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/json_report_utils.cpp)
