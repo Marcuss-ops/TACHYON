@@ -88,6 +88,9 @@ public:
     explicit LayerBuilder(LayerSpec spec);
 
     LayerBuilder& type(std::string t);
+    LayerBuilder& solid(std::string name);
+    LayerBuilder& image(std::string path);
+    LayerBuilder& preset(std::string name);
     LayerBuilder& text(std::string t);
     LayerBuilder& font(std::string f);
     LayerBuilder& font_size(double sz);

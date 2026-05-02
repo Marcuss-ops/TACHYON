@@ -362,7 +362,7 @@ bool test_import_png_image() {
         .size(1920, 1080)
         .duration(2.0)
         .fps(30)
-        .layer("image", [](LayerBuilder& l) {
+        .layer("image", [&](LayerBuilder& l) {
             l.image(test_png.string());
         })
         .build_scene();

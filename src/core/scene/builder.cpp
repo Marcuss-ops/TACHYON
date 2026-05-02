@@ -95,7 +95,26 @@ LayerBuilder& LayerBuilder::type(std::string t) {
     return *this;
 }
 
+LayerBuilder& LayerBuilder::solid(std::string name) {
+    spec_.type = "solid";
+    spec_.name = std::move(name);
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::image(std::string path) {
+    spec_.type = "image";
+    spec_.asset_id = std::move(path);
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::preset(std::string name) {
+    spec_.type = "procedural";
+    spec_.name = std::move(name);
+    return *this;
+}
+
 LayerBuilder& LayerBuilder::text(std::string t) {
+    spec_.type = "text";
     spec_.text_content = std::move(t);
     return *this;
 }
