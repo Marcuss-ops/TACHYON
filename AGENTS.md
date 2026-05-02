@@ -55,31 +55,37 @@ Fast check (syntax check):
 Core build (TachyonCore only):
 
 ```powershell
-.\build.ps1 -BuildType RelWithDebInfo -CoreOnly
+.\build.ps1 -Preset dev-fast
 ```
 
 Full build:
 
 ```powershell
-.\build.ps1 -BuildType RelWithDebInfo
+.\build.ps1 -Preset dev
 ```
 
 Tests:
 
 ```powershell
-.\build.ps1 -BuildType RelWithDebInfo -Test
+.\build.ps1 -Preset dev -RunTests
 ```
 
 Targeted tests:
 
 ```powershell
-.\build.ps1 -BuildType RelWithDebInfo -TestFilter Component
+.\build.ps1 -Preset dev-fast -RunTests -TestFilter Component
+```
+
+ASan build with tests:
+
+```powershell
+.\build.ps1 -Preset asan -RunTests -TestFilter frame_executor
 ```
 
 Clean and rebuild:
 
 ```powershell
-.\build.ps1 -BuildType RelWithDebInfo -Clean
+.\build.ps1 -Preset dev -Clean
 ```
 
 Quick error check:
@@ -91,7 +97,7 @@ Quick error check:
 Header smoke tests (catches header errors early):
 
 ```powershell
-cmake --build build-ninja --config RelWithDebInfo --target HeaderSmokeTests
+cmake --build build --preset dev --target HeaderSmokeTests
 ```
 
 Full validation script for agents:
@@ -106,7 +112,7 @@ Full validation script for agents:
 2. Make minimal changes.
 3. Run `.\build.ps1 -Check`.
 4. Fix compile errors.
-5. Run targeted tests.
+5. Run `.\build.ps1 -Preset dev-fast -RunTests -TestFilter "YourFeature"`.
 6. Run full build only after targeted checks pass.
 7. Summarize changed files and validation commands.
 
@@ -136,6 +142,6 @@ Rules:
 - Use nlohmann::json only in .cpp files.
 - Follow existing scene spec parse/serialize patterns.
 - Run .\build.ps1 -Check.
-- Run component-related tests.
+- Run .\build.ps1 -Preset dev-fast -RunTests -TestFilter Component.
 - Do not run CleanDeps unless dependency configuration changed.
 ```

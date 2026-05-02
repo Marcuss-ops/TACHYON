@@ -47,11 +47,11 @@ docs(readme): update AI Coding 2.0 workflow
 |---------|---------|
 | `.\build.ps1 -Check` | Quick core build (fastest) |
 | `.\build.ps1 -Check -ErrorsOnly` | Quick build, errors only |
-| `.\build.ps1 -RelWithDebInfo -CoreOnly` | Build TachyonCore |
-| `.\build.ps1 -RelWithDebInfo -TestFilter Component` | Run targeted tests |
-| `.\build.ps1 -RelWithDebInfo -Test` | Run all tests |
-| `.\build.ps1 -RelWithDebInfo` | Full build |
-| `cmake --build build-ninja --target HeaderSmokeTests` | Header smoke tests |
+| `.\build.ps1 -Preset dev-fast` | Build TachyonCore |
+| `.\build.ps1 -Preset dev-fast -RunTests -TestFilter Component` | Run targeted tests |
+| `.\build.ps1 -Preset dev -RunTests` | Run all tests |
+| `.\build.ps1 -Preset dev` | Full build |
+| `cmake --build build --preset dev --target HeaderSmokeTests` | Header smoke tests |
 
 ## AI Agent Guidelines
 
@@ -75,7 +75,7 @@ If you are an AI agent:
 
 # 4. Fix errors if any
 # 5. Run targeted tests
-.\build.ps1 -RelWithDebInfo -TestFilter YourFeature
+.\build.ps1 -Preset dev-fast -RunTests -TestFilter YourFeature
 
 # 6. Full validation
 .\scripts\agent-validate.ps1 -Scope "YourFeature"

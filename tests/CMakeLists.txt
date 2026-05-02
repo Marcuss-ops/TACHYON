@@ -28,6 +28,7 @@ add_executable(TachyonTests
     unit/runtime/core/quality_tier_tests.cpp
     unit/runtime/execution/tiling_integration_tests.cpp
     unit/runtime/execution/frame_executor_tests.cpp
+    unit/runtime/execution/frame_range_tests.cpp
     unit/runtime/execution/tile_scheduler_tests.cpp
     unit/runtime/visual/visual_golden_tests.cpp
     unit/runtime/visual/visual_golden_verifier.cpp
@@ -55,9 +56,10 @@ add_executable(TachyonTests
     unit/text/editor_tests.cpp
     unit/audio/test_audio_pitch_correct.cpp  # Re-enabled - was disabled for pre-existing build errors
     unit/runtime/core/render_contract_tests.cpp
-    integration/render_session_tests.cpp
-    integration/render_batch_tests.cpp
-    integration/parallax_cards_tests.cpp
+     integration/render_session_tests.cpp
+     integration/render_batch_tests.cpp
+     integration/parallax_cards_tests.cpp
+     integration/vertical_slice_tests.cpp
     unit/renderer3d/temporal/time_remap_tests.cpp
     unit/renderer3d/temporal/frame_blend_tests.cpp
     # unit/renderer3d/effects/motion_blur_tests.cpp  # Duplicate - use unit/renderer3d/motion_blur_tests.cpp

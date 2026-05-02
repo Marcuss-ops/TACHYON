@@ -6,6 +6,7 @@
 #include "tachyon/runtime/execution/native_render.h"
 #include "tachyon/runtime/execution/batch/batch_runner.h"
 #include "cli_internal.h"
+#include <nlohmann/json.hpp>
 #include <iomanip>
 #include <iostream>
 #include <thread>
@@ -148,7 +149,60 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
     print_diagnostics(session_result.diagnostics, err);
 
     if (options.json_output) {
-        out << "{\"status\": \"ok\", \"frames\": " << session_result.frames.size() << "}\n";
+        nlohmann::json j;
+        j["status"] = session_result.output_error.empty() ? "ok" : "error";
+        j["output_path"] = job.output.destination.path;
+        j["frames_expected"] = job.frame_range.end - job.frame_range.start;
+        j["frames_written"] = session_result.frames_written;
+
+        // Get render plan for dimensions and fps
+        const auto plan_result = build_render_plan(scene, job);
+        if (plan_result.value.has_value()) {
+            const auto& plan = *plan_result.value;
+            j["width"] = plan.composition.width;
+            j["height"] = plan.composition.height;
+            j["fps"] = plan.composition.frame_rate.value();
+            j["duration_seconds"] = plan.composition.duration;
+        }
+
+        const std::size_t workers = (options.worker_count > 0) ? options.worker_count : std::thread::hardware_concurrency();
+        j["worker_count"] = workers;
+        j["backend"] = "cpu-frame-executor";
+
+        // Timings
+        nlohmann::json timings;
+        timings["scene_compile"] = session_result.scene_compile_ms;
+        timings["plan_build"] = session_result.plan_build_ms;
+        timings["execution_plan_build"] = session_result.execution_plan_build_ms;
+        timings["frame_execution"] = session_result.frame_execution_ms;
+        timings["encode"] = session_result.encode_ms;
+        timings["total"] = session_result.wall_time_total_ms;
+        j["timings_ms"] = timings;
+
+        // Cache
+        nlohmann::json cache;
+        cache["hits"] = session_result.cache_hits;
+        cache["misses"] = session_result.cache_misses;
+        cache["hit_rate"] = session_result.cache_hit_rate();
+        j["cache"] = cache;
+
+        // Memory
+        nlohmann::json memory;
+        memory["peak_bytes"] = session_result.peak_memory_bytes;
+        j["memory"] = memory;
+
+        // Diagnostics
+        nlohmann::json diags = nlohmann::json::array();
+        for (const auto& d : session_result.diagnostics.diagnostics) {
+            nlohmann::json diag;
+            diag["code"] = d.code;
+            diag["message"] = d.message;
+            diag["path"] = d.path;
+            diags.push_back(diag);
+        }
+        j["diagnostics"] = diags;
+
+        out << j.dump(2) << '\n';
     } else {
         RasterizedFrame2D first_frame;
         if (!session_result.frames.empty()) {

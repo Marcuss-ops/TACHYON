@@ -129,6 +129,7 @@ bool run_frame_cache_budget_tests();
 bool run_tiling_integration_tests();
 bool run_runtime_backbone_tests();
 bool run_frame_executor_tests();
+bool run_frame_range_tests();
 bool run_frame_output_sink_tests();
 bool run_tile_scheduler_tests();
 bool run_render_contract_tests();
@@ -158,6 +159,7 @@ namespace tachyon { bool run_tiling_tests(); }
 bool run_optical_flow_tests();
 bool run_scene3d_bridge_tests();
 namespace tachyon { bool run_native_render_tests(); }
+namespace tachyon { bool run_vertical_slice_tests(); }
 bool run_sfx_contract_tests();
 bool run_shape_contract_tests();
 bool run_time_remap_tests();
@@ -189,6 +191,7 @@ int main(int argc, char** argv) {
         {"optical_flow", run_optical_flow_tests},
         //{"runtime_backbone", run_runtime_backbone_tests},  // Quarantined - see tests/disabled/README.md
         {"frame_executor", run_frame_executor_tests},
+        {"frame_range", run_frame_range_tests},
         {"frame_output_sink", run_frame_output_sink_tests},
         {"tile_scheduler", run_tile_scheduler_tests},
         {"render_contract", run_render_contract_tests},
@@ -198,6 +201,7 @@ int main(int argc, char** argv) {
         {"render_session", run_render_session_tests},
         {"render_batch", run_render_batch_tests},
         {"parallax_cards", run_parallax_cards_tests},
+        {"vertical_slice", tachyon::run_vertical_slice_tests},
         {"studio_library", run_studio_library_tests},
         {"timeline", run_timeline_tests},
         {"camera_cuts", run_camera_cuts_tests},
