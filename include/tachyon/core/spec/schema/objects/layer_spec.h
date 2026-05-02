@@ -78,6 +78,10 @@ struct LayerSpec {
     Transform2D transform;
     Transform3D transform3d;
     
+    // 3D mesh generation
+    std::optional<double> extrude; // Extrude depth for text layers
+    std::optional<double> bevel;   // Bevel size for text layers
+    
     AnimatedScalarSpec opacity_property;
     AnimatedScalarSpec mask_feather;
     AnimatedScalarSpec time_remap_property;

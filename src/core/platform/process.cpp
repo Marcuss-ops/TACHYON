@@ -1,4 +1,4 @@
-﻿#include "tachyon/core/platform/process.h"
+#include "tachyon/core/platform/process.h"
 #include "tachyon/core/platform/shell_escape.h"
 #include <sstream>
 
@@ -50,22 +50,104 @@ std::string build_command_string(const ProcessSpec& spec) {
 ProcessResult run_process(const ProcessSpec& spec) {
     ProcessResult result;
     std::string cmd = build_command_string(spec);
+    std::vector<char> cmd_buffer(cmd.begin(), cmd.end());
+    cmd_buffer.push_back('\0');
 
-    // Use _popen to execute and capture output
-    FILE* pipe = _popen(cmd.c_str(), "r");
-    if (!pipe) {
-        result.error = "Failed to execute process: " + cmd;
+    SECURITY_ATTRIBUTES saAttr;
+    saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+    saAttr.bInheritHandle = TRUE;
+    saAttr.lpSecurityDescriptor = NULL;
+
+    HANDLE hChildStd_OUT_Rd = NULL;
+    HANDLE hChildStd_OUT_Wr = NULL;
+    HANDLE hChildStd_ERR_Rd = NULL;
+    HANDLE hChildStd_ERR_Wr = NULL;
+
+    if (!CreatePipe(&hChildStd_OUT_Rd, &hChildStd_OUT_Wr, &saAttr, 0)) {
+        result.error = "Failed to create stdout pipe";
+        return result;
+    }
+    SetHandleInformation(hChildStd_OUT_Rd, HANDLE_FLAG_INHERIT, 0);
+
+    if (!CreatePipe(&hChildStd_ERR_Rd, &hChildStd_ERR_Wr, &saAttr, 0)) {
+        result.error = "Failed to create stderr pipe";
+        CloseHandle(hChildStd_OUT_Rd);
+        CloseHandle(hChildStd_OUT_Wr);
+        return result;
+    }
+    SetHandleInformation(hChildStd_ERR_Rd, HANDLE_FLAG_INHERIT, 0);
+
+    STARTUPINFOA si;
+    PROCESS_INFORMATION pi;
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
+    si.hStdError = hChildStd_ERR_Wr;
+    si.hStdOutput = hChildStd_OUT_Wr;
+    si.dwFlags |= STARTF_USESTDHANDLES;
+
+    ZeroMemory(&pi, sizeof(pi));
+
+    std::string current_dir = "";
+    if (spec.working_directory.has_value()) {
+        current_dir = spec.working_directory->string();
+    }
+
+    if (!CreateProcessA(
+            NULL,
+            cmd_buffer.data(),
+            NULL,
+            NULL,
+            TRUE,
+            0,
+            NULL,
+            current_dir.empty() ? NULL : current_dir.c_str(),
+            &si,
+            &pi)) {
+        result.error = "Failed to execute process: " + cmd + " (Error: " + std::to_string(GetLastError()) + ")";
+        CloseHandle(hChildStd_OUT_Rd);
+        CloseHandle(hChildStd_OUT_Wr);
+        CloseHandle(hChildStd_ERR_Rd);
+        CloseHandle(hChildStd_ERR_Wr);
         return result;
     }
 
-    char buffer[256];
-    while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
-        result.output += buffer;
+    // Close the write ends of the pipes in the parent process.
+    CloseHandle(hChildStd_OUT_Wr);
+    CloseHandle(hChildStd_ERR_Wr);
+
+    DWORD dwRead;
+    CHAR chBuf[4096];
+    BOOL bSuccess = FALSE;
+
+    // Read stdout
+    for (;;) {
+        bSuccess = ReadFile(hChildStd_OUT_Rd, chBuf, sizeof(chBuf) - 1, &dwRead, NULL);
+        if (!bSuccess || dwRead == 0) break;
+        chBuf[dwRead] = '\0';
+        result.output += chBuf;
     }
 
-    int exit_code = _pclose(pipe);
-    result.exit_code = exit_code;
-    result.success = (exit_code == 0);
+    // Read stderr
+    for (;;) {
+        bSuccess = ReadFile(hChildStd_ERR_Rd, chBuf, sizeof(chBuf) - 1, &dwRead, NULL);
+        if (!bSuccess || dwRead == 0) break;
+        chBuf[dwRead] = '\0';
+        result.error += chBuf;
+    }
+
+    CloseHandle(hChildStd_OUT_Rd);
+    CloseHandle(hChildStd_ERR_Rd);
+
+    WaitForSingleObject(pi.hProcess, INFINITE);
+
+    DWORD exit_code = 0;
+    GetExitCodeProcess(pi.hProcess, &exit_code);
+
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+
+    result.exit_code = static_cast<int>(exit_code);
+    result.success = (result.exit_code == 0);
 
     return result;
 }

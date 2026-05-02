@@ -2,6 +2,7 @@
 set(TachyonRenderer3DSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/animation/animation3d.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/animation/motion_blur.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/core/layer3d_mesh_resolver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/core/ray_tracer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/core/ray_tracer_scene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/core/ray_tracer_shading.cpp

@@ -9,7 +9,7 @@ on:
 jobs:
   # ─── Linux build + tests ───────────────────────────────────────────────────
   build-linux:
-    name: "Linux (GCC, RelWithDebInfo)"
+    name: "Linux (GCC Ninja, RelWithDebInfo)"
     runs-on: ubuntu-latest
 
     steps:
@@ -26,25 +26,17 @@ jobs:
             libomp-dev
 
       - name: Configure
-        run: |
-          cmake -G Ninja \
-            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-            -DTACHYON_TREAT_WARNINGS_AS_ERRORS=OFF \
-            -B build-ci -S .
+        run: cmake --preset linux-ninja-debug
 
-      - name: Build TachyonCore
-        run: cmake --build build-ci --target TachyonCore -j$(nproc)
+      - name: Build core and tests
+        run: cmake --build --preset linux-ninja-debug -j$(nproc)
 
-      - name: Build tests
-        run: cmake --build build-ci --target TachyonTests -j$(nproc)
+      - name: Run smoke tests
+        run: ctest --test-dir build/linux-ninja-debug --output-on-failure -R "TachyonSmokeTests"
 
-      - name: Run tests
-        working-directory: build-ci
-        run: ctest --output-on-failure -j$(nproc) -R ".*"
-
-  # ─── Windows build (no tests — just compile check) ─────────────────────────
+  # ─── Windows build + tests ─────────────────────────────────────────────────
   build-windows:
-    name: "Windows (MSVC, RelWithDebInfo)"
+    name: "Windows (MSVC Ninja, RelWithDebInfo)"
     runs-on: windows-latest
 
     steps:
@@ -59,11 +51,10 @@ jobs:
         uses: seanmiddleditch/gha-setup-ninja@v4
 
       - name: Configure
-        run: |
-          cmake -G Ninja `
-            -DCMAKE_BUILD_TYPE=RelWithDebInfo `
-            -DTACHYON_TREAT_WARNINGS_AS_ERRORS=OFF `
-            -B build-ci -S .
+        run: cmake --preset windows-ninja-msvc
 
-      - name: Build TachyonCore
-        run: cmake --build build-ci --target TachyonCore -j4
+      - name: Build core and tests
+        run: cmake --build --preset windows-ninja-msvc -j4
+
+      - name: Run smoke tests
+        run: ctest --test-dir build/windows-ninja-msvc --output-on-failure -R "TachyonSmokeTests"
