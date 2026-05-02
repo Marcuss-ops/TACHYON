@@ -151,5 +151,27 @@ bool run_effect_host_tests() {
     check_true(cache.lookup("b") == nullptr, "B is evicted as it was LRU");
     check_true(cache.lookup("c") != nullptr, "C is present");
 
+    // Test new transitions: light_leak, film_burn, flash
+    EffectParams leak_params;
+    leak_params.scalars["t"] = 0.5f;
+    leak_params.strings["transition_id"] = "light_leak";
+    leak_params.aux_surfaces["transition_to"] = &transition_to;
+    const SurfaceRGBA leaked = host.apply("glsl_transition", transition_from, leak_params);
+    check_true(leaked.get_pixel(4, 4).a > 0, "Light leak transition produces visible output");
+
+    EffectParams burn_params;
+    burn_params.scalars["t"] = 0.5f;
+    burn_params.strings["transition_id"] = "film_burn";
+    burn_params.aux_surfaces["transition_to"] = &transition_to;
+    const SurfaceRGBA burned = host.apply("glsl_transition", transition_from, burn_params);
+    check_true(burned.get_pixel(4, 4).a > 0, "Film burn transition produces visible output");
+
+    EffectParams flash_params;
+    flash_params.scalars["t"] = 0.5f;
+    flash_params.strings["transition_id"] = "flash";
+    flash_params.aux_surfaces["transition_to"] = &transition_to;
+    const SurfaceRGBA flashed = host.apply("glsl_transition", transition_from, flash_params);
+    check_true(flashed.get_pixel(4, 4).r > 0.5f && flashed.get_pixel(4, 4).g > 0.5f && flashed.get_pixel(4, 4).b > 0.5f, "Flash transition produces bright output at t=0.5");
+
     return g_failures == 0;
 }

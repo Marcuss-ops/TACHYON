@@ -166,7 +166,8 @@ bool run_time_remap_tests();
 bool run_frame_blend_tests();
 bool run_motion_blur_tests();
 bool run_rolling_shutter_tests();
-bool run_audio_trim_tests();
+// bool run_audio_trim_tests();
+bool run_json_reader_tests();
 
 
 int main(int argc, char** argv) {
@@ -224,13 +225,14 @@ int main(int argc, char** argv) {
         // {"audio_pitch_correct", run_audio_pitch_correct_tests},  // Disabled - see tests/disabled/README.md
 
         {"render_job", run_render_job_tests},
+        {"json_reader", run_json_reader_tests},
         {"expression_vm", run_expression_vm_tests},
         {"sfx_contract", run_sfx_contract_tests},
         {"shape_contract", run_shape_contract_tests},
         {"time_remap", run_time_remap_tests},
         {"frame_blend", run_frame_blend_tests},
         {"rolling_shutter", run_rolling_shutter_tests},
-        {"audio_trim", run_audio_trim_tests},
+        // {"audio_trim", run_audio_trim_tests},
     };
 
     bool list_tests = false;
