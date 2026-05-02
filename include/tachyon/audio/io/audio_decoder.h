@@ -16,7 +16,7 @@ namespace tachyon::audio {
 class AudioDecoder {
 public:
     AudioDecoder();
-    ~AudioDecoder();
+    virtual ~AudioDecoder();
 
     // Disable copy
     AudioDecoder(const AudioDecoder&) = delete;
