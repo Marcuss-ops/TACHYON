@@ -35,7 +35,7 @@ bool run_ffprobe(const std::filesystem::path& file, const std::string& expected_
     }
 
     std::string cmd = "ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,height,r_frame_rate,duration -of json \"" + file.string() + "\"";
-    FILE* pipe = popen(cmd.c_str(), "r");
+    FILE* pipe = _popen(cmd.c_str(), "r");
     if (!pipe) {
         std::cerr << "FAIL: Cannot run ffprobe\n";
         return false;
@@ -46,7 +46,7 @@ bool run_ffprobe(const std::filesystem::path& file, const std::string& expected_
     while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
         result += buffer;
     }
-    int status = pclose(pipe);
+    int status = _pclose(pipe);
 
     if (status != 0) {
         std::cerr << "FAIL: ffprobe failed for " << file << "\n";
@@ -324,7 +324,7 @@ bool test_animated_2d_text() {
         .duration(3.0)
         .fps(30)
         .layer("title", [](LayerBuilder& l) {
-            l.text("Tachyon Engine").font("Arial").size(100).position(960, 540);
+            l.text("Tachyon Engine").font("Arial").font_size(100).position(960, 540);
         })
         .build_scene();
 
@@ -473,14 +473,14 @@ bool test_export_mp4_with_audio() {
         std::cerr << "FAIL: MP4 with audio failed: " << result.output_error << "\n";
     } else {
         std::string cmd = "ffprobe -v error -show_entries stream=codec_type -of json \"" + out_path.string() + "\"";
-        FILE* pipe = popen(cmd.c_str(), "r");
+        FILE* pipe = _popen(cmd.c_str(), "r");
         if (pipe) {
             char buffer[1024];
             std::string probe_result;
             while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
                 probe_result += buffer;
             }
-            pclose(pipe);
+            _pclose(pipe);
             if (probe_result.find("audio") == std::string::npos) {
                 std::cerr << "FAIL: No audio stream found in output\n";
                 ok = false;
