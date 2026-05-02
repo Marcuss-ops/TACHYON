@@ -1,12 +1,13 @@
 #include "tachyon/output/frame_output_sink.h"
 #include "ffmpeg_internal.h"
+#include "ffmpeg_utils.h"
+#include <filesystem>
 
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
 #include <vector>
 
-#include "tachyon/core/platform/pipe_process.h"
 #include "tachyon/core/platform/process.h"
 
 namespace tachyon::output {

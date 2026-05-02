@@ -14,6 +14,10 @@ include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonOutputSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonTextSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonCLISources.cmake)
 
+if(TACHYON_ENABLE_AUDIO)
+    include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonAudioSources.cmake)
+endif()
+
 function(tachyon_deduplicate_sources var_name)
     set(_list "${${var_name}}")
     list(REMOVE_DUPLICATES _list)
@@ -138,8 +142,10 @@ tachyon_configure_common(TachyonMedia)
 tachyon_link_media_deps(TachyonMedia)
 target_link_libraries(TachyonMedia PUBLIC pugixml)
 
+if(TACHYON_ENABLE_AUDIO)
 add_library(TachyonAudio OBJECT ${TachyonAudioSources})
 tachyon_configure_common(TachyonAudio)
+endif()
 
 add_library(TachyonOutput OBJECT ${TachyonOutputSources})
 tachyon_configure_common(TachyonOutput)
@@ -157,6 +163,7 @@ endif()
 add_library(TachyonCLI OBJECT ${TachyonCLISources})
 tachyon_configure_common(TachyonCLI)
 tachyon_link_3d_deps(TachyonCLI)
+target_link_libraries(TachyonCLI PUBLIC TachyonCore)
 
 add_library(TachyonPlatform OBJECT ${TachyonPlatformSources})
 tachyon_configure_common(TachyonPlatform)
@@ -184,10 +191,9 @@ target_sources(TachyonCore PRIVATE
     $<TARGET_OBJECTS:TachyonRenderer2D>
     $<TARGET_OBJECTS:TachyonRenderer3D>
     $<TARGET_OBJECTS:TachyonMedia>
-    $<TARGET_OBJECTS:TachyonAudio>
+    $<$<BOOL:${TACHYON_ENABLE_AUDIO}>:$<TARGET_OBJECTS:TachyonAudio>>
     $<TARGET_OBJECTS:TachyonOutput>
     $<TARGET_OBJECTS:TachyonText>
-    $<TARGET_OBJECTS:TachyonCLI>
     $<TARGET_OBJECTS:TachyonPlatform>
 )
 
@@ -202,6 +208,7 @@ endif()
 target_link_libraries(tachyon
     PRIVATE
         TachyonCore
+        TachyonCLI
 )
 
 if(MSVC)

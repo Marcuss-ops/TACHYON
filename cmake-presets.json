@@ -1,0 +1,96 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 15,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build-ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "TACHYON_TREAT_WARNINGS_AS_ERRORS": "OFF"
+      }
+    },
+    {
+      "name": "minimal",
+      "inherits": "base",
+      "displayName": "Minimal build (core only)",
+      "description": "Builds only the core Tachyon library with optional modules disabled",
+      "cacheVariables": {
+        "TACHYON_ENABLE_TRACKER": "OFF",
+        "TACHYON_ENABLE_AUDIO": "OFF",
+        "TACHYON_ENABLE_PREVIEW_WINDOW": "OFF",
+        "TACHYON_ENABLE_PRORES": "OFF",
+        "TACHYON_ENABLE_VULKAN": "OFF",
+        "TACHYON_ENABLE_OIDN": "OFF",
+        "TACHYON_BUILD_EXAMPLES": "OFF",
+        "TACHYON_BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "dev-fast",
+      "inherits": "base",
+      "displayName": "Development build (fast)",
+      "description": "Builds TachyonCore with tests and minimal extras",
+      "cacheVariables": {
+        "TACHYON_BUILD_TESTS": "ON",
+        "TACHYON_BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "dev",
+      "inherits": "base",
+      "displayName": "Full development build",
+      "description": "Builds all Tachyon components with tests",
+      "cacheVariables": {
+        "TACHYON_BUILD_TESTS": "ON",
+        "TACHYON_BUILD_EXAMPLES": "ON"
+      }
+    },
+    {
+      "name": "asan",
+      "inherits": "base",
+      "displayName": "AddressSanitizer build",
+      "description": "Builds with ASan enabled for memory error detection",
+      "cacheVariables": {
+        "TACHYON_ENABLE_ASAN": "ON",
+        "TACHYON_BUILD_TESTS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "minimal",
+      "configurePreset": "minimal",
+      "targets": ["TachyonCore"]
+    },
+    {
+      "name": "dev-fast",
+      "configurePreset": "dev-fast"
+    },
+    {
+      "name": "dev",
+      "configurePreset": "dev"
+    },
+    {
+      "name": "asan",
+      "configurePreset": "asan"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "dev-fast",
+      "configurePreset": "dev-fast",
+      "filter": "TachyonTests"
+    },
+    {
+      "name": "dev",
+      "configurePreset": "dev"
+    }
+  ]
+}

@@ -42,7 +42,15 @@ jobs:
         working-directory: build-ci
         run: ctest --output-on-failure -j$(nproc) -R ".*"
 
-  # ─── Windows build (no tests — just compile check) ─────────────────────────
+      - name: Check for unregistered disabled tests
+        run: |
+          grep -r "DISABLED\|SKIP\|disabled" tests/ || true
+          if grep -r "DISABLED\|SKIP\|disabled" tests/ | grep -v "#ifdef\|#endif\|// DISABLED\|// SKIP"; then
+            echo "Found unregistered disabled tests. Update DISABLED_TESTS.md"
+            exit 1
+          fi
+
+  # ─── Windows build + smoke tests ───────────────────────────────────────
   build-windows:
     name: "Windows (MSVC, RelWithDebInfo)"
     runs-on: windows-latest
@@ -63,7 +71,15 @@ jobs:
           cmake -G Ninja `
             -DCMAKE_BUILD_TYPE=RelWithDebInfo `
             -DTACHYON_TREAT_WARNINGS_AS_ERRORS=OFF `
+            -DTACHYON_BUILD_TESTS=ON `
             -B build-ci -S .
 
       - name: Build TachyonCore
         run: cmake --build build-ci --target TachyonCore -j4
+
+      - name: Build tests
+        run: cmake --build build-ci --target TachyonTests -j4
+
+      - name: Run smoke tests
+        working-directory: build-ci
+        run: ctest --output-on-failure -R "TachyonSmokeTests"

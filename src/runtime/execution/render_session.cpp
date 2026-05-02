@@ -9,7 +9,9 @@
 #include "tachyon/output/frame_output_sink.h"
 #include "tachyon/output/output_utils.h"
 #include "tachyon/media/streaming/media_prefetcher.h"
-#include "tachyon/audio/audio_export.h"
+#ifdef TACHYON_ENABLE_AUDIO
+#include "tachyon/audio/io/audio_export.h"
+#endif
 #include "tachyon/runtime/execution/session/render_internal.h"
 
 #include <iostream>
@@ -129,12 +131,14 @@ RenderSessionResult RenderSession::render(
         result.encode_ms = std::chrono::duration<double, std::milli>(encode_end - encode_start).count();
     }
 
+#ifdef TACHYON_ENABLE_AUDIO
     // Audio Export (Standalone WAV if sink doesn't handle muxing)
     const bool sink_handles_audio = output::output_requests_video_file(effective_plan.render_plan.output);
     if (!sink_handles_audio && audio::has_any_audio(effective_plan.render_plan)) {
         std::filesystem::path audio_path = output_path.parent_path() / (output_path.stem().string() + ".wav");
         audio::export_plan_audio(effective_plan.render_plan, audio_path);
     }
+#endif
 
     return result;
 }
