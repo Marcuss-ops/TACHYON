@@ -22,7 +22,7 @@ namespace tachyon::presets::text {
  * @code
  * auto title = headline("Hello World")
  *     .font("Inter")
- *     .size(96)
+ *     .font_size(96)
  *     .color({255, 255, 255, 255})
  *     .center()
  *     .animate(fade_up().stagger(0.03).duration(0.6))
@@ -45,7 +45,7 @@ public:
         return *this;
     }
     
-    TextBuilder& size(double font_size) {
+    TextBuilder& font_size(double font_size) {
         params_.font_size = static_cast<uint32_t>(font_size);
         return *this;
     }
@@ -330,19 +330,19 @@ inline TextBuilder paragraph(std::string text) {
 
 inline TextBuilder caption(std::string text) {
     TextBuilder builder(std::move(text));
-    builder.size(32); // Smaller for captions
+    builder.font_size(32); // Smaller for captions
     return builder;
 }
 
 inline TextBuilder title(std::string text) {
     TextBuilder builder(std::move(text));
-    builder.size(96);
+    builder.font_size(96);
     return builder;
 }
 
 inline TextBuilder subtitle(std::string text) {
     TextBuilder builder(std::move(text));
-    builder.size(48);
+    builder.font_size(48);
     return builder;
 }
 

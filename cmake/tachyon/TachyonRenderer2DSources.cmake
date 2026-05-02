@@ -19,11 +19,6 @@ set(TachyonRenderer2DSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/glsl_transition_effect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/utility_effects.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/distort/warp_stabilizer_effect.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_blur_utils.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_color_utils.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_lut_utils.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_misc_utils.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_sampling_utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/generators/lens_flare_effect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/generators/particle_effects.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/glitch.cpp

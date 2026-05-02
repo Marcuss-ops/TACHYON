@@ -129,10 +129,10 @@ private:
         const std::filesystem::path palette_path = make_ffmpeg_temp_path(destination, "palette", ".png");
         
         // Simplified GIF finalization (could be further modularized)
-        std::string p1_cmd = "ffmpeg -y -i \"" + m_temp_video_path.string() + "\" -vf \"palettegen\" \"" + palette_path.string() + "\"";
+        std::string p1_cmd = "ffmpeg -hide_banner -loglevel error -y -i \"" + m_temp_video_path.string() + "\" -vf \"palettegen\" \"" + palette_path.string() + "\"";
         if (!run_shell_cmd(p1_cmd)) return false;
 
-        std::string p2_cmd = "ffmpeg -y -i \"" + m_temp_video_path.string() + "\" -i \"" + palette_path.string() + "\" -lavfi \"paletteuse\" \"" + destination.string() + "\"";
+        std::string p2_cmd = "ffmpeg -hide_banner -loglevel error -y -i \"" + m_temp_video_path.string() + "\" -i \"" + palette_path.string() + "\" -lavfi \"paletteuse\" \"" + destination.string() + "\"";
         if (!run_shell_cmd(p2_cmd)) return false;
 
         std::filesystem::remove(m_temp_video_path);

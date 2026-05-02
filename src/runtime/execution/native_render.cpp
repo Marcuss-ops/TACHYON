@@ -119,7 +119,7 @@ bool NativeRenderer::render_still(
     RenderJob job = RenderJobBuilder::still_image(composition_id, frame_number, output_path.string());
     
     const auto result = render(scene, job);
-    return result.output_error.empty() && !result.frames.empty();
+    return result.output_error.empty() && (!result.frames.empty() || result.frames_written > 0);
 }
 
 } // namespace tachyon

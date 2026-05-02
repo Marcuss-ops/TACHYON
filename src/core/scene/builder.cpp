@@ -95,7 +95,38 @@ LayerBuilder& LayerBuilder::type(std::string t) {
     return *this;
 }
 
+LayerBuilder& LayerBuilder::kind(LayerType t) {
+    spec_.kind = t;
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::solid(std::string name) {
+    spec_.type = "solid";
+    spec_.kind = LayerType::Solid;
+    if (!name.empty()) {
+        spec_.id = name;
+        spec_.name = std::move(name);
+    }
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::image(std::string path) {
+    spec_.type = "image";
+    spec_.kind = LayerType::Image;
+    spec_.asset_id = std::move(path);
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::preset(std::string name) {
+    spec_.type = "procedural";
+    spec_.kind = LayerType::Procedural;
+    spec_.preset_id = std::move(name);
+    return *this;
+}
+
 LayerBuilder& LayerBuilder::text(std::string t) {
+    spec_.type = "text";
+    spec_.kind = LayerType::Text;
     spec_.text_content = std::move(t);
     return *this;
 }
@@ -374,17 +405,17 @@ CompositionBuilder& CompositionBuilder::layer(const LayerSpec& layer) {
 
 CompositionBuilder& CompositionBuilder::camera3d_layer(std::string id, std::function<void(LayerBuilder&)> fn) {
     return add_typed_layer(std::move(id),
-        [](LayerBuilder& l) { l.is_3d(true); l.camera_type("two_node"); }, fn);
+        [](LayerBuilder& l) { l.is_3d(true); l.type("camera"); l.kind(LayerType::Camera); l.camera_type("two_node"); }, fn);
 }
 
 CompositionBuilder& CompositionBuilder::light_layer(std::string id, std::function<void(LayerBuilder&)> fn) {
     return add_typed_layer(std::move(id),
-        [](LayerBuilder& l) { l.is_3d(true); l.light_type("point"); }, fn);
+        [](LayerBuilder& l) { l.is_3d(true); l.type("light"); l.kind(LayerType::Light); l.light_type("point"); }, fn);
 }
 
 CompositionBuilder& CompositionBuilder::mesh_layer(std::string id, std::function<void(LayerBuilder&)> fn) {
     return add_typed_layer(std::move(id),
-        [](LayerBuilder& l) { l.is_3d(true); }, fn);
+        [](LayerBuilder& l) { l.is_3d(true); l.type("mesh"); l.kind(LayerType::Shape); }, fn);
 }
 
 CompositionBuilder& CompositionBuilder::audio(std::string path, double volume) {

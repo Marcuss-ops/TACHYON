@@ -77,7 +77,6 @@ RenderSessionResult RenderSession::render(
     }
 
     media::MediaPrefetcher prefetcher;
-    std::vector<ExecutedFrame> rendered_frames;
     std::vector<double> frame_times;
     
     double fps = execution_plan.render_plan.composition.frame_rate.value();
@@ -85,6 +84,10 @@ RenderSessionResult RenderSession::render(
 
     const auto frame_exec_start = std::chrono::high_resolution_clock::now();
     frame_times.resize(execution_plan.frame_tasks.size());
+    
+
+    std::vector<ExecutedFrame> rendered_frames;
+
     render_frames_parallel_internal(
         compiled_scene,
         effective_plan,
@@ -100,6 +103,16 @@ RenderSessionResult RenderSession::render(
         sink.get(),
         &result,
         &frame_times);
+
+    if (!sink) {
+        result.frames = std::move(rendered_frames);
+        result.cache_hits = 0;
+        result.cache_misses = 0;
+        for (const auto& frame : result.frames) {
+            if (frame.cache_hit) ++result.cache_hits;
+            else ++result.cache_misses;
+        }
+    }
     const auto frame_exec_end = std::chrono::high_resolution_clock::now();
     result.frame_execution_ms = std::chrono::duration<double, std::milli>(frame_exec_end - frame_exec_start).count();
     result.frame_times_ms = std::move(frame_times);

@@ -38,6 +38,7 @@ struct CliOptions {
     std::vector<std::string> font_subsets;
     std::filesystem::path font_dest{"assets/fonts"};
     bool font_overwrite{false};
+    bool show_version{false};
 };
 
 ParseResult<CliOptions> parse_cli_options(int argc, char** argv);

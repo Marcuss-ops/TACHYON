@@ -1,5 +1,6 @@
 #include "tachyon/output/av_exporter.h"
 #include "tachyon/output/ffmpeg/ffmpeg_utils.h"
+#include "tachyon/core/platform/pipe_process.h"
 #include <fstream>
 #include <sstream>
 #include <thread>
@@ -150,7 +151,7 @@ public:
 private:
     bool initialize_video_pipeline() {
         std::stringstream cmd;
-        cmd << "ffmpeg -y -f rawvideo -pix_fmt rgba -s " << config_.width << "x" << config_.height
+        cmd << "ffmpeg -hide_banner -loglevel error -y -f rawvideo -pix_fmt rgba -s " << config_.width << "x" << config_.height
             << " -r " << config_.fps << " -i -";
         
         if (config_.use_crf) {
@@ -169,7 +170,7 @@ private:
         
         cmd << " -an \"" << output_path << "\"";
         
-        video_pipe = _popen(cmd.str().c_str(), "w");
+        video_pipe = core::platform::open_pipe(cmd.str().c_str(), "w");
         if (!video_pipe) {
             m_last_error = "Failed to open video pipeline: ffmpeg command failed";
             return false;
@@ -179,7 +180,7 @@ private:
     
     bool initialize_audio_pipeline() {
         std::stringstream cmd;
-        cmd << "ffmpeg -y -f f32le -ar " << config_.sample_rate
+        cmd << "ffmpeg -hide_banner -loglevel error -y -f f32le -ar " << config_.sample_rate
             << " -ac " << config_.audio_channels
             << " -i -";
         
@@ -188,7 +189,7 @@ private:
         
         cmd << " -vn \"" << output_path << "\"";
         
-        audio_pipe = _popen(cmd.str().c_str(), "w");
+        audio_pipe = core::platform::open_pipe(cmd.str().c_str(), "w");
         if (!audio_pipe) {
             m_last_error = "Failed to open audio pipeline: ffmpeg command failed";
             return false;
@@ -221,7 +222,7 @@ private:
         
         cmd << " \"" << output_path << "\"";
         
-        av_pipe = _popen(cmd.str().c_str(), "w");
+        av_pipe = core::platform::open_pipe(cmd.str().c_str(), "w");
         if (!av_pipe) {
             m_last_error = "Failed to open AV pipeline: ffmpeg command failed";
             return false;
@@ -265,7 +266,7 @@ private:
     
     bool finalize_video_pipeline() {
         if (video_pipe) {
-            int result = _pclose(video_pipe);
+            int result = core::platform::close_pipe(video_pipe);
             video_pipe = nullptr;
             if (result != 0) {
                 m_last_error = "Video pipeline closed with error code: " + std::to_string(result);
@@ -278,7 +279,7 @@ private:
     
     bool finalize_audio_pipeline() {
         if (audio_pipe) {
-            int result = _pclose(audio_pipe);
+            int result = core::platform::close_pipe(audio_pipe);
             audio_pipe = nullptr;
             if (result != 0) {
                 m_last_error = "Audio pipeline closed with error code: " + std::to_string(result);
@@ -291,7 +292,7 @@ private:
     
     bool finalize_av_pipeline() {
         if (av_pipe) {
-            int result = _pclose(av_pipe);
+            int result = core::platform::close_pipe(av_pipe);
             av_pipe = nullptr;
             if (result != 0) {
                 m_last_error = "AV pipeline closed with error code: " + std::to_string(result);
@@ -350,19 +351,19 @@ std::vector<std::string> get_available_containers() {
 }
 
 bool check_ffmpeg_available() {
-    FILE* pipe = _popen("ffmpeg -version", "r");
+    FILE* pipe = core::platform::open_read_pipe("ffmpeg -version");
     if (!pipe) return false;
-    _pclose(pipe);
+    core::platform::close_pipe(pipe);
     return true;
 }
 
 std::string get_ffmpeg_version() {
-    FILE* pipe = _popen("ffmpeg -version 2>&1", "r");
+    FILE* pipe = core::platform::open_read_pipe("ffmpeg -version 2>&1");
     if (!pipe) return "Unknown";
     
     char buffer[256];
     std::string version = fgets(buffer, sizeof(buffer), pipe) ? buffer : "Unknown";
-    _pclose(pipe);
+    core::platform::close_pipe(pipe);
     return version;
 }
 

@@ -72,6 +72,12 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
     }
 
     CliOptions options;
+    if (args[0] == "--version" || args[0] == "-v") {
+        options.show_version = true;
+        options.command = "version";
+        result.value = std::move(options);
+        return result;
+    }
     options.command = args[0];
 
     for (std::size_t index = 1; index < args.size(); ++index) {
@@ -215,6 +221,10 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
                 return result;
             }
             options.quality = value;
+            continue;
+        }
+        if (arg == "--version" || arg == "-v") {
+            options.show_version = true;
             continue;
         }
 
