@@ -30,17 +30,38 @@ public:
         float normalize_to = 1.0f;     // normalize amplitude to this value
     };
     
+    // Static default settings instance
+    static const WaveformSettings& default_settings() {
+        static const WaveformSettings settings;
+        return settings;
+    }
+    
     static WaveformData generate_from_interleaved(const float* samples,
                                                 int num_samples,
                                                 int channels,
                                                 int sample_rate,
-                                                const WaveformSettings& settings = {});
+                                                const WaveformSettings& settings);
     
     static WaveformData generate_from_planar(const float** channel_data,
                                            int num_samples,
                                            int channels,
                                            int sample_rate,
-                                           const WaveformSettings& settings = {});
+                                           const WaveformSettings& settings);
+    
+    // Convenience overloads using default settings
+    static WaveformData generate_from_interleaved(const float* samples,
+                                                int num_samples,
+                                                int channels,
+                                                int sample_rate) {
+        return generate_from_interleaved(samples, num_samples, channels, sample_rate, default_settings());
+    }
+    
+    static WaveformData generate_from_planar(const float** channel_data,
+                                           int num_samples,
+                                           int channels,
+                                           int sample_rate) {
+        return generate_from_planar(channel_data, num_samples, channels, sample_rate, default_settings());
+    }
 };
 
 // Audio reactive animation system
