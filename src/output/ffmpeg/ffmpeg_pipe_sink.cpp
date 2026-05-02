@@ -13,6 +13,8 @@ namespace tachyon::output {
 
 using tachyon::core::platform::open_write_pipe;
 using tachyon::core::platform::close_pipe;
+using tachyon::core::platform::ProcessSpec;
+using tachyon::core::platform::run_process;
 
 class FfmpegPipeSink final : public FrameOutputSink {
 public:
@@ -103,20 +105,6 @@ public:
 
     const std::string& last_error() const override { return m_last_error; }
 
-    static bool run_shell_cmd(const std::string& cmd) {
-        using namespace tachyon::core::platform;
-        ProcessSpec spec;
-#ifdef _WIN32
-        spec.executable = "cmd.exe";
-        spec.args = {"/C", cmd};
-#else
-        spec.executable = "sh";
-        spec.args = {"-c", cmd};
-#endif
-        auto r = run_process(spec);
-        return r.success && r.exit_code == 0;
-    }
-
 private:
     bool finalize_post_processing() {
         if (m_plan == nullptr) return true;
@@ -127,13 +115,45 @@ private:
     bool finalize_gif() {
         const std::filesystem::path destination(m_plan->output.destination.path);
         const std::filesystem::path palette_path = make_ffmpeg_temp_path(destination, "palette", ".png");
-        
-        // Simplified GIF finalization (could be further modularized)
-        std::string p1_cmd = "ffmpeg -hide_banner -loglevel error -y -i \"" + m_temp_video_path.string() + "\" -vf \"palettegen\" \"" + palette_path.string() + "\"";
-        if (!run_shell_cmd(p1_cmd)) return false;
 
-        std::string p2_cmd = "ffmpeg -hide_banner -loglevel error -y -i \"" + m_temp_video_path.string() + "\" -i \"" + palette_path.string() + "\" -lavfi \"paletteuse\" \"" + destination.string() + "\"";
-        if (!run_shell_cmd(p2_cmd)) return false;
+        // Run palettegen
+        ProcessSpec spec1;
+        spec1.executable = "ffmpeg";
+        spec1.args = {
+            "-hide_banner",
+            "-loglevel", "error",
+            "-y",
+            "-i", m_temp_video_path.string(),
+            "-vf", "palettegen",
+            palette_path.string()
+        };
+        auto r1 = run_process(spec1);
+        if (!r1.success) {
+            m_last_error = "ffmpeg palettegen failed"
+                + std::string("\nstdout:\n") + r1.output
+                + std::string("\nstderr:\n") + r1.error;
+            return false;
+        }
+
+        // Run paletteuse
+        ProcessSpec spec2;
+        spec2.executable = "ffmpeg";
+        spec2.args = {
+            "-hide_banner",
+            "-loglevel", "error",
+            "-y",
+            "-i", m_temp_video_path.string(),
+            "-i", palette_path.string(),
+            "-lavfi", "paletteuse",
+            destination.string()
+        };
+        auto r2 = run_process(spec2);
+        if (!r2.success) {
+            m_last_error = "ffmpeg paletteuse failed"
+                + std::string("\nstdout:\n") + r2.output
+                + std::string("\nstderr:\n") + r2.error;
+            return false;
+        }
 
         std::filesystem::remove(m_temp_video_path);
         std::filesystem::remove(palette_path);
