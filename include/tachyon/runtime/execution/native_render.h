@@ -17,15 +17,15 @@ namespace tachyon {
  * This bypasses the legacy JSON-based CLI path and works directly with the 
  * C++ specification structures.
  */
+struct NativeRenderOptions {
+    std::size_t worker_count{0};
+    std::optional<std::size_t> memory_budget_bytes;
+    bool verbose{false};
+    RenderProgressSink* progress_sink{nullptr};
+};
+
 class NativeRenderer {
 public:
-    struct Options {
-        std::size_t worker_count{0};
-        std::optional<std::size_t> memory_budget_bytes;
-        bool verbose{false};
-        RenderProgressSink* progress_sink{nullptr};
-    };
-
     /**
      * @brief Renders a composition from the given scene.
      * 
@@ -37,7 +37,7 @@ public:
     static RenderSessionResult render(
         const SceneSpec& scene,
         const RenderJob& job,
-        const Options& options = {});
+        const NativeRenderOptions& options = NativeRenderOptions());
 
     /**
      * @brief Shortcut to render a single frame to a PNG.

@@ -45,6 +45,7 @@ function(tachyon_configure_common target)
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../third_party/stb/include>
             $<BUILD_INTERFACE:${tinygltf_SOURCE_DIR}>
             $<BUILD_INTERFACE:${tinyexr_SOURCE_DIR}>
+            $<BUILD_INTERFACE:${pugixml_SOURCE_DIR}/src>
             $<BUILD_INTERFACE:${TACHYON_EARCUT_INCLUDE_DIR}>
             $<BUILD_INTERFACE:${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/include>
             $<INSTALL_INTERFACE:include>
@@ -66,6 +67,7 @@ function(tachyon_configure_common target)
     endif()
 
     target_compile_definitions(${target} PRIVATE "TACHYON_SFX_ROOT=\"${CMAKE_CURRENT_SOURCE_DIR}/audio/SoundEffect\"")
+    set_target_properties(${target} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endfunction()
 
 function(tachyon_link_text_deps target)
@@ -134,6 +136,7 @@ tachyon_link_omp(TachyonRenderer3D)
 add_library(TachyonMedia OBJECT ${TachyonMediaSources})
 tachyon_configure_common(TachyonMedia)
 tachyon_link_media_deps(TachyonMedia)
+target_link_libraries(TachyonMedia PUBLIC pugixml)
 
 add_library(TachyonAudio OBJECT ${TachyonAudioSources})
 tachyon_configure_common(TachyonAudio)

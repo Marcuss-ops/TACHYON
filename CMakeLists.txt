@@ -138,6 +138,15 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(tinygltf)
 # tinygltf include directory is added to TachyonCore target in src/CMakeLists.txt
 
+# pugixml for SVG parsing
+FetchContent_Declare(
+    pugixml
+    GIT_REPOSITORY https://github.com/zeux/pugixml.git
+    GIT_TAG        v1.14
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+FetchContent_MakeAvailable(pugixml)
+
 # OpenImageDenoise (OIDN) — prebuilt binaries (avoids ISPC + TBB build requirements)
 # Only enabled when TACHYON_ENABLE_OIDN is ON; mainly for Windows
 if(TACHYON_ENABLE_OIDN AND WIN32)

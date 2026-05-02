@@ -3,6 +3,8 @@
 #include "tachyon/audio/io/audio_decoder.h"
 #include "tachyon/audio/processing/audio_processor.h"
 #include "tachyon/core/animation/keyframe.h"
+#include "tachyon/runtime/execution/planning/render_plan.h"
+#include "tachyon/core/spec/schema/objects/composition_spec.h"
 
 #include <algorithm>
 #include <cmath>
@@ -200,6 +202,44 @@ void AudioExporter::apply_pan(float* interleaved_samples, std::size_t sample_cou
         interleaved_samples[i * 2] *= left_gain;      // Left
         interleaved_samples[i * 2 + 1] *= right_gain; // Right
     }
+}
+
+bool has_any_audio(const RenderPlan& plan) {
+    if (!plan.scene_spec) return false;
+    
+    // Find the composition target
+    for (const auto& comp : plan.scene_spec->compositions) {
+        if (comp.id == plan.composition_target) {
+            return !comp.audio_tracks.empty();
+        }
+    }
+    return false;
+}
+
+bool export_plan_audio(const RenderPlan& plan, const std::filesystem::path& output_path) {
+    if (!plan.scene_spec) return false;
+
+    AudioExporter exporter;
+    bool found_comp = false;
+    
+    for (const auto& comp : plan.scene_spec->compositions) {
+        if (comp.id == plan.composition_target) {
+            for (const auto& track : comp.audio_tracks) {
+                exporter.add_track(track);
+            }
+            found_comp = true;
+            break;
+        }
+    }
+
+    if (!found_comp) return false;
+
+    AudioExportConfig config;
+    config.sample_rate = 48000;
+    config.channels = 2;
+    config.bitrate_kbps = 192;
+
+    return exporter.export_to(output_path, config);
 }
 
 } // namespace tachyon::audio

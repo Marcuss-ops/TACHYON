@@ -21,7 +21,7 @@ RenderProgressSink* get_sink(RenderProgressSink* sink) {
 RenderSessionResult NativeRenderer::render(
     const SceneSpec& scene,
     const RenderJob& job,
-    const Options& options) {
+    const NativeRenderOptions& options) {
     
     RenderProgressSink* sink = get_sink(options.progress_sink);
     RenderSessionResult result;

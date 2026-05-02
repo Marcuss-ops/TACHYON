@@ -6,5 +6,19 @@ set(TachyonCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/options.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/report.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/transition_registry.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/math/matrix4x4.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/math/quaternion.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/math/transform3.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/math/vector2_serialize.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/properties/bezier_interpolator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/properties/graph_editor_backend.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/properties/spatial_keyframe.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/shapes/shape_modifiers.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/camera/camera_shake.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/camera/camera_state.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/model/tachyon.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/output/output_presets.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/expressions/expression_engine.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/expressions/expression_vm.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/studio/studio_library.cpp
 )

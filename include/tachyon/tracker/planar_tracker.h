@@ -5,6 +5,13 @@
 
 namespace tachyon::tracker {
 
+struct PlanarTrackerConfig {
+    FeatureTracker::Config feature_cfg; // LK + Harris parameters
+    // Planar-specific tuning
+    float min_corner_confidence{0.3f}; // drop corner if track confidence below this
+    int   lost_recovery_frames{3};     // frames before declaring track lost
+};
+
 // -------------------------------------------------------------------
 // PlanarTracker: rigid planar surface tracker (Mocha-style).
 //
@@ -19,15 +26,9 @@ namespace tachyon::tracker {
 // -------------------------------------------------------------------
 class PlanarTracker {
 public:
+    using Config = PlanarTrackerConfig;
 
-    struct Config {
-        FeatureTracker::Config feature_cfg; // LK + Harris parameters
-        // Planar-specific tuning
-        float min_corner_confidence{0.3f}; // drop corner if track confidence below this
-        int   lost_recovery_frames{3};     // frames before declaring track lost
-    };
-
-    explicit PlanarTracker(Config cfg = {});
+    explicit PlanarTracker(Config cfg = Config());
     ~PlanarTracker() = default;
 
     // Initialise tracking from a reference frame and 4 corner points.
