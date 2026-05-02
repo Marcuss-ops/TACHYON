@@ -88,6 +88,23 @@ BackgroundSpec BackgroundSpec::from_string(const std::string& str) {
         return result;
     }
 
+    // Basic color names
+    static const std::unordered_map<std::string, ColorSpec> color_names = {
+        {"black", {0, 0, 0, 255}},
+        {"white", {255, 255, 255, 255}},
+        {"red", {255, 0, 0, 255}},
+        {"green", {0, 255, 0, 255}},
+        {"blue", {0, 0, 255, 255}},
+        {"transparent", {0, 0, 0, 0}}
+    };
+
+    auto it = color_names.find(str);
+    if (it != color_names.end()) {
+        result.type = BackgroundType::Color;
+        result.parsed_color = it->second;
+        return result;
+    }
+
     // Check if it looks like a component ID (starts with "component:" or common component prefixes)
     if (str.starts_with("component:")) {
         result.type = BackgroundType::Component;

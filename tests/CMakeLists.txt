@@ -1,6 +1,7 @@
 add_executable(TachyonTests
     unit/test_main.cpp
     unit/core/math_tests.cpp
+    unit/core/json/json_reader_tests.cpp
     unit/core/property_tests.cpp
     unit/core/expression_tests.cpp
     unit/media/asset_resolution_tests.cpp
@@ -68,6 +69,7 @@ add_executable(TachyonTests
     unit/presets/sfx_contract_tests.cpp
     unit/presets/shape_contract_tests.cpp
     unit/runtime/native_render_tests.cpp
+#     unit/audio/test_audio_trim.cpp
 )
 
 set(TachyonTrackerTestSources

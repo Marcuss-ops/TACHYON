@@ -12,7 +12,11 @@ inline FILE* open_pipe(const char* command, const char* mode) {
 }
 
 inline FILE* open_write_pipe(const char* command) {
+#ifdef _WIN32
     return open_pipe(command, "wb");
+#else
+    return open_pipe(command, "w");
+#endif
 }
 
 inline FILE* open_read_pipe(const char* command) {

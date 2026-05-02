@@ -96,6 +96,7 @@ bool AudioEncoder::open(const std::filesystem::path& output_path, const AudioExp
     if (config.codec == "aac") format_name = "adts";
     else if (config.codec == "mp3") format_name = "mp3";
     else if (config.codec == "flac") format_name = "flac";
+    else if (config.codec == "pcm_s16le") format_name = "wav";
 
     AVIOContext* io = nullptr;
     int ret = avio_open(&io, output_path.string().c_str(), AVIO_FLAG_WRITE);
@@ -127,6 +128,7 @@ bool AudioEncoder::open(const std::filesystem::path& output_path, const AudioExp
     m_codec_context->sample_fmt = AV_SAMPLE_FMT_FLTP;
     if (config.codec == "mp3") m_codec_context->sample_fmt = AV_SAMPLE_FMT_S16P;
     else if (config.codec == "flac") m_codec_context->sample_fmt = AV_SAMPLE_FMT_S32;
+    else if (config.codec == "pcm_s16le") m_codec_context->sample_fmt = AV_SAMPLE_FMT_S16;
 
     if (avcodec_open2(m_codec_context, codec, nullptr) < 0) {
         fprintf(stderr, "[AudioEncoder] Error: Could not open codec %s for %s\n", config.codec.c_str(), output_path.string().c_str());
@@ -149,7 +151,7 @@ bool AudioEncoder::open(const std::filesystem::path& output_path, const AudioExp
     if (!(m_codec_context->codec->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE)) {
         m_frame_size = m_codec_context->frame_size;
     }
-
+    
     if (avformat_write_header(m_format_context, nullptr) < 0) {
         fprintf(stderr, "[AudioEncoder] Error: Could not write header for %s\n", output_path.string().c_str());
         close();
@@ -177,56 +179,80 @@ bool AudioEncoder::open(const std::filesystem::path& output_path, const AudioExp
 }
 
 bool AudioEncoder::encode_interleaved_float(const std::vector<float>& interleaved_samples) {
-    (void)interleaved_samples;
 #if !defined(TACHYON_HAS_FFMPEG)
+    (void)interleaved_samples;
     return false;
 #else
     if (!m_opened || interleaved_samples.empty()) return false;
 
-    int samples_per_channel = static_cast<int>(interleaved_samples.size()) / m_channels;
-    if (samples_per_channel == 0) return false;
+    // Append to buffer
+    m_input_buffer.insert(m_input_buffer.end(), interleaved_samples.begin(), interleaved_samples.end());
 
-    m_frame->nb_samples = samples_per_channel;
-    if (av_frame_get_buffer(m_frame, 0) < 0) return false;
-
-    if (m_codec_context->sample_fmt == AV_SAMPLE_FMT_FLTP) {
-        for (int ch = 0; ch < m_channels; ++ch) {
-            float* dst = reinterpret_cast<float*>(m_frame->data[ch]);
-            for (int i = 0; i < samples_per_channel; ++i) {
-                dst[i] = interleaved_samples[i * m_channels + ch];
-            }
+    while (!m_input_buffer.empty()) {
+        const int required_samples = m_frame_size > 0 ? m_frame_size : static_cast<int>(m_input_buffer.size() / m_channels);
+        if (required_samples <= 0) break;
+        
+        if (m_frame_size > 0 && static_cast<int>(m_input_buffer.size()) < m_frame_size * m_channels) {
+            break;
         }
-    } else {
-        av_frame_make_writable(m_frame);
-        if (m_channels == 2) {
-            for (int i = 0; i < samples_per_channel; ++i) {
-                if (m_codec_context->sample_fmt == AV_SAMPLE_FMT_S16P) {
-                    reinterpret_cast<int16_t*>(m_frame->data[0])[i] = static_cast<int16_t>(interleaved_samples[i * 2] * 32767.0f);
-                    reinterpret_cast<int16_t*>(m_frame->data[1])[i] = static_cast<int16_t>(interleaved_samples[i * 2 + 1] * 32767.0f);
-                } else {
-                    reinterpret_cast<int32_t*>(m_frame->data[0])[i] = static_cast<int32_t>(interleaved_samples[i * 2] * 2147483647.0f);
-                    reinterpret_cast<int32_t*>(m_frame->data[1])[i] = static_cast<int32_t>(interleaved_samples[i * 2 + 1] * 2147483647.0f);
+
+        const int required_buffer_size = required_samples * m_channels;
+        m_frame->nb_samples = required_samples;
+        if (av_frame_get_buffer(m_frame, 0) < 0) return false;
+
+        if (m_codec_context->sample_fmt == AV_SAMPLE_FMT_FLTP) {
+            for (int ch = 0; ch < m_channels; ++ch) {
+                float* dst = reinterpret_cast<float*>(m_frame->data[ch]);
+                for (int i = 0; i < required_samples; ++i) {
+                    dst[i] = m_input_buffer[i * m_channels + ch];
+                }
+            }
+        } else if (m_codec_context->sample_fmt == AV_SAMPLE_FMT_S16) {
+            int16_t* dst = reinterpret_cast<int16_t*>(m_frame->data[0]);
+            for (int i = 0; i < required_samples * m_channels; ++i) {
+                dst[i] = static_cast<int16_t>(std::clamp(m_input_buffer[i], -1.0f, 1.0f) * 32767.0f);
+            }
+        } else if (m_codec_context->sample_fmt == AV_SAMPLE_FMT_S16P) {
+            for (int ch = 0; ch < m_channels; ++ch) {
+                int16_t* dst = reinterpret_cast<int16_t*>(m_frame->data[ch]);
+                for (int i = 0; i < required_samples; ++i) {
+                    dst[i] = static_cast<int16_t>(std::clamp(m_input_buffer[i * m_channels + ch], -1.0f, 1.0f) * 32767.0f);
+                }
+            }
+        } else if (m_codec_context->sample_fmt == AV_SAMPLE_FMT_S32) {
+            int32_t* dst = reinterpret_cast<int32_t*>(m_frame->data[0]);
+            for (int i = 0; i < required_samples * m_channels; ++i) {
+                dst[i] = static_cast<int32_t>(std::clamp(m_input_buffer[i], -1.0f, 1.0f) * 2147483647.0f);
+            }
+        } else if (m_codec_context->sample_fmt == AV_SAMPLE_FMT_S32P) {
+            for (int ch = 0; ch < m_channels; ++ch) {
+                int32_t* dst = reinterpret_cast<int32_t*>(m_frame->data[ch]);
+                for (int i = 0; i < required_samples; ++i) {
+                    dst[i] = static_cast<int32_t>(std::clamp(m_input_buffer[i * m_channels + ch], -1.0f, 1.0f) * 2147483647.0f);
                 }
             }
         }
-    }
 
-    m_frame->pts = m_pts;
-    m_pts += samples_per_channel;
+        m_frame->pts = m_pts;
+        m_pts += required_samples;
 
-    int ret = avcodec_send_frame(m_codec_context, m_frame);
-    av_frame_unref(m_frame);
-    if (ret < 0) return false;
-
-    while (ret >= 0) {
-        ret = avcodec_receive_packet(m_codec_context, m_packet);
-        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) break;
+        int ret = avcodec_send_frame(m_codec_context, m_frame);
+        av_frame_unref(m_frame);
         if (ret < 0) return false;
-        av_packet_rescale_ts(m_packet, m_codec_context->time_base, m_stream->time_base);
-        m_packet->stream_index = m_stream->index;
-        if (av_interleaved_write_frame(m_format_context, m_packet) < 0) return false;
-        av_packet_unref(m_packet);
+
+        while (ret >= 0) {
+            ret = avcodec_receive_packet(m_codec_context, m_packet);
+            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) break;
+            if (ret < 0) return false;
+            av_packet_rescale_ts(m_packet, m_codec_context->time_base, m_stream->time_base);
+            m_packet->stream_index = m_stream->index;
+            if (av_interleaved_write_frame(m_format_context, m_packet) < 0) return false;
+            av_packet_unref(m_packet);
+        }
+
+        m_input_buffer.erase(m_input_buffer.begin(), m_input_buffer.begin() + required_buffer_size);
     }
+
     return true;
 #endif
 }
@@ -236,6 +262,19 @@ bool AudioEncoder::flush() {
     return false;
 #else
     if (!m_opened) return false;
+
+    // Process remaining samples if any (padding with silence if needed for fixed frame size)
+    if (!m_input_buffer.empty() && m_frame_size > 0) {
+        int current_samples = static_cast<int>(m_input_buffer.size() / m_channels);
+        int padding_samples = m_frame_size - current_samples;
+        if (padding_samples > 0) {
+            m_input_buffer.resize(m_frame_size * m_channels, 0.0f);
+        }
+        
+        std::vector<float> remaining = std::move(m_input_buffer);
+        m_input_buffer.clear();
+        encode_interleaved_float(remaining);
+    }
 
     int ret = avcodec_send_frame(m_codec_context, nullptr);
     while (ret >= 0) {

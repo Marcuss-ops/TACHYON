@@ -55,6 +55,7 @@ private:
 
     int64_t m_pts{0};
     bool m_opened{false};
+    std::vector<float> m_input_buffer;
 
     static constexpr int kTargetSampleRate = 48000;
     static constexpr int kTargetChannels = 2;

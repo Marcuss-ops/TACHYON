@@ -1,4 +1,5 @@
 #include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"
+#include "tachyon/core/spec/schema/objects/background_spec.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable:4456)
@@ -35,9 +36,6 @@
 namespace tachyon {
 
 namespace {
-
-// background_spec_to_color removed as BackgroundSpec is undefined.
-
 
 } // namespace
 using namespace renderer2d;
@@ -101,14 +99,34 @@ RasterizedFrame2D render_evaluated_composition_2d(
         return frame;
     }
 
+    // Clear background
+    frame.surface->clear({
+        state.background_color.r / 255.0f,
+        state.background_color.g / 255.0f,
+        state.background_color.b / 255.0f,
+        state.background_color.a / 255.0f
+    });
+    frame.surface->clear_depth(0.0f);
+
     auto& dst = *frame.surface;
     dst.set_profile(context.cms.working_profile);
     
     renderer2d::Color clear_color = renderer2d::Color::transparent();
     if (plan.composition.background.has_value()) {
-        // Simple hex/color parsing for background string
-        // For now, default to transparent or black
-        clear_color = renderer2d::Color::black();
+        auto color_opt = plan.composition.background->get_color();
+        if (color_opt) {
+            clear_color = from_color_spec(*color_opt, context.cms.working_profile);
+        } else if (plan.composition.background->type == BackgroundType::Color) {
+            // Background was specified as a color but not yet parsed into ColorSpec
+            // This can happen if it was created directly from a string without going through the parser.
+            BackgroundSpec spec = BackgroundSpec::from_string(plan.composition.background->value);
+            auto c = spec.get_color();
+            if (c) {
+                clear_color = from_color_spec(*c, context.cms.working_profile);
+            } else {
+                clear_color = renderer2d::Color::black();
+            }
+        }
     }
     dst.clear(clear_color);
     dst.clear_depth(0.0f); // Initialize depth buffer for hybrid compositing
