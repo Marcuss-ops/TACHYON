@@ -148,5 +148,16 @@ private:
     std::vector<uint16_t> m_pixels; // RGBA interleaved
 };
 
+template <typename Fn>
+SurfaceRGBA transform_surface(const SurfaceRGBA& input, Fn&& fn) {
+    SurfaceRGBA output(input.width(), input.height());
+    for (std::uint32_t y = 0; y < input.height(); ++y) {
+        for (std::uint32_t x = 0; x < input.width(); ++x) {
+            output.set_pixel(x, y, fn(input.get_pixel(x, y)));
+        }
+    }
+    return output;
+}
+
 } // namespace renderer2d
 } // namespace tachyon

@@ -26,7 +26,7 @@ public:
     ~AudioExporter();
 
     void add_track(const AudioTrackSpec& track_spec);
-    bool export_to(const std::filesystem::path& output_path, const AudioExportConfig& config);
+    bool export_to(const std::filesystem::path& output_path, const AudioExportConfig& config, double start_time = 0.0, double duration = -1.0);
 
     void clear_tracks();
     

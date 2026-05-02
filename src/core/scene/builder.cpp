@@ -117,6 +117,14 @@ LayerBuilder& LayerBuilder::image(std::string path) {
     return *this;
 }
 
+LayerBuilder& LayerBuilder::mesh(std::string path) {
+    spec_.type = "mesh";
+    spec_.kind = LayerType::Shape;
+    spec_.is_3d = true;
+    spec_.asset_id = std::move(path);
+    return *this;
+}
+
 LayerBuilder& LayerBuilder::preset(std::string name) {
     spec_.type = "procedural";
     spec_.kind = LayerType::Procedural;

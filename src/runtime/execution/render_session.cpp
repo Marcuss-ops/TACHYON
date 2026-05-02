@@ -68,6 +68,26 @@ RenderSessionResult RenderSession::render(
 
     // Create and initialize output sink early for streaming mode
     std::unique_ptr<output::FrameOutputSink> sink = output::create_frame_output_sink(effective_plan.render_plan);
+    
+    // Determine audio export path early if needed
+    std::filesystem::path audio_export_path;
+    bool is_temp_audio = false;
+    if (sink && audio::has_any_audio(effective_plan.render_plan)) {
+        const bool is_video = output::output_requests_video_file(effective_plan.render_plan.output);
+        const std::string final_output = effective_plan.render_plan.output.destination.path;
+        std::filesystem::path final_p(final_output);
+
+        if (is_video) {
+#ifdef TACHYON_ENABLE_AUDIO_MUX
+            audio_export_path = final_p.parent_path() / (final_p.stem().string() + ".temp.wav");
+            is_temp_audio = true;
+            sink->set_audio_source(audio_export_path.string());
+#endif
+        } else {
+            audio_export_path = final_p.parent_path() / (final_p.stem().string() + ".wav");
+        }
+    }
+
     if (sink) {
         if (!sink->begin(effective_plan.render_plan)) {
             result.output_error = sink->last_error();
@@ -119,6 +139,11 @@ RenderSessionResult RenderSession::render(
 
     // Streaming mode handles frame writing during render, no post-render loop needed
 
+    // Audio Export
+    if (!audio_export_path.empty()) {
+        audio::export_plan_audio(effective_plan.render_plan, audio_export_path);
+    }
+
     // Finalize sink after all frames are rendered
     if (sink) {
         const auto encode_start = std::chrono::high_resolution_clock::now();
@@ -129,42 +154,10 @@ RenderSessionResult RenderSession::render(
         result.encode_ms = std::chrono::duration<double, std::milli>(encode_end - encode_start).count();
     }
 
-    // Audio Export
-    if (audio::has_any_audio(effective_plan.render_plan)) {
-        const bool is_video = output::output_requests_video_file(effective_plan.render_plan.output);
-        
-        std::filesystem::path audio_export_path;
-        bool is_temp_audio = false;
-
-        if (is_video) {
-#ifdef TACHYON_ENABLE_AUDIO_MUX
-            audio_export_path = output_path.parent_path() / (output_path.stem().string() + ".temp.wav");
-            is_temp_audio = true;
-#else
-            // If muxing is disabled, we don't export audio for video files by default
-            // unless the user specifically requested a separate audio file (not handled here yet)
-#endif
-        } else {
-            audio_export_path = output_path.parent_path() / (output_path.stem().string() + ".wav");
-        }
-
-        if (!audio_export_path.empty()) {
-            audio::export_plan_audio(effective_plan.render_plan, audio_export_path);
-
-#ifdef TACHYON_ENABLE_AUDIO_MUX
-            if (is_video && std::filesystem::exists(audio_export_path)) {
-                std::string mux_error;
-                if (!mux_audio_video(effective_plan.render_plan, resolved_output_path, audio_export_path.string(), mux_error)) {
-                    result.output_error = "Muxing failed: " + mux_error;
-                } else {
-                    if (is_temp_audio) {
-                        std::error_code ec;
-                        std::filesystem::remove(audio_export_path, ec);
-                    }
-                }
-            }
-#endif
-        }
+    // Cleanup temp audio
+    if (!audio_export_path.empty() && is_temp_audio) {
+        std::error_code ec;
+        std::filesystem::remove(audio_export_path, ec);
     }
 
     return result;

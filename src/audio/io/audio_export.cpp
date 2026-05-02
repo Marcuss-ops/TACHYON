@@ -116,7 +116,7 @@ void AudioExporter::add_track(const AudioTrackSpec& track_spec) {
 
 void AudioExporter::clear_tracks() { m_tracks.clear(); }
 
-bool AudioExporter::export_to(const std::filesystem::path& output_path, const AudioExportConfig& config) {
+bool AudioExporter::export_to(const std::filesystem::path& output_path, const AudioExportConfig& config, double start_time, double duration) {
     if (m_tracks.empty()) return false;
 
     // Reset loudness meter
@@ -126,9 +126,13 @@ bool AudioExporter::export_to(const std::filesystem::path& output_path, const Au
     if (!encoder.open(output_path, config)) return false;
 
     double max_duration = 0.0;
-    for (const auto& track : m_tracks) {
-        double track_duration = get_track_end_time(track.spec, track.decoder->duration());
-        max_duration = std::max(max_duration, track_duration);
+    if (duration > 0.0) {
+        max_duration = start_time + duration;
+    } else {
+        for (const auto& track : m_tracks) {
+            double track_duration = get_track_end_time(track.spec, track.decoder->duration());
+            max_duration = std::max(max_duration, track_duration);
+        }
     }
 
     AudioProcessor processor;
@@ -136,7 +140,7 @@ bool AudioExporter::export_to(const std::filesystem::path& output_path, const Au
     std::vector<float> mix_buffer;
     std::vector<float> track_buffer;
 
-    for (double t = 0.0; t < max_duration; t += chunk_duration) {
+    for (double t = start_time; t < max_duration; t += chunk_duration) {
         double current_chunk = std::min(chunk_duration, max_duration - t);
         
         processor.clear_tracks();
@@ -223,11 +227,22 @@ bool export_plan_audio(const RenderPlan& plan, const std::filesystem::path& outp
     config.channels = 2;
     config.bitrate_kbps = 192;
     
+    // Determine temporal range from frame_range
+    double fps = plan.composition.frame_rate.value();
+    if (fps <= 0.0) fps = 24.0;
+    
+    double start_time = static_cast<double>(plan.frame_range.start) / fps;
+    double end_time = static_cast<double>(plan.frame_range.end + 1) / fps;
+    
+    // We mix from 0 in the mix loop, but AudioProcessor::process takes start_time
+    // Wait, AudioExporter::export_to mixes from 0 to max_duration.
+    // I should probably pass start/end to export_to.
+    
     if (output_path.extension() == ".wav") {
         config.codec = "pcm_s16le";
     }
 
-    return exporter.export_to(output_path, config);
+    return exporter.export_to(output_path, config, start_time, end_time - start_time);
 }
 
 } // namespace tachyon::audio

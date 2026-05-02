@@ -68,6 +68,7 @@ set(TachyonSceneSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/parsing/layer_effects_parse.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/parsing/layer_shape_parse.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/parsing/layer_spec_parse.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/parsing/spec_value_parsers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/property_parse_json.cpp
     
     # Spec - Pipeline

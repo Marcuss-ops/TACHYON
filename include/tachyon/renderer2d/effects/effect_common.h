@@ -29,16 +29,7 @@ void rgb_to_hsl(float r, float g, float b, float& h, float& s, float& l);
 float hue_to_rgb(float p, float q, float t);
 Color hsl_to_rgb(float h, float s, float l, float alpha);
 
-template <typename Fn>
-SurfaceRGBA transform_surface(const SurfaceRGBA& input, Fn&& fn) {
-    SurfaceRGBA output(input.width(), input.height());
-    for (std::uint32_t y = 0; y < input.height(); ++y) {
-        for (std::uint32_t x = 0; x < input.width(); ++x) {
-            output.set_pixel(x, y, fn(input.get_pixel(x, y)));
-        }
-    }
-    return output;
-}
+// transform_surface is now in framebuffer.h
 
 PremultipliedPixel to_premultiplied(Color color);
 Color from_premultiplied(const PremultipliedPixel& px);

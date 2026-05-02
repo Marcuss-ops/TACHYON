@@ -186,9 +186,4 @@ bool run_scene3d_smoke_tests() {
     return g_failures == 0;
 }
 
-// Main entry point for standalone test
-#ifdef TACHYON_TESTS_SOURCE_DIR
-int main() {
-    return run_scene3d_smoke_tests() ? 0 : 1;
-}
-#endif
+// No main here, called from test_main.cpp
