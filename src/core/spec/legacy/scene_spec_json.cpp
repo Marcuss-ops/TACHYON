@@ -250,7 +250,7 @@ static json serialize_vector2_property(const AnimatedVector2Spec& prop) {
     return j;
 }
 
-json serialize_vector3_property(const AnimatedVector3Spec& prop) {
+static json serialize_vector3_property(const AnimatedVector3Spec& prop) {
     if (prop.empty()) return json{};
     if (prop.value.has_value() && prop.keyframes.empty() && !prop.expression.has_value()) {
         return json::array({prop.value->x, prop.value->y, prop.value->z});
@@ -286,7 +286,7 @@ json serialize_vector3_property(const AnimatedVector3Spec& prop) {
     return j;
 }
 
-json serialize_color_property(const AnimatedColorSpec& prop) {
+static json serialize_color_property(const AnimatedColorSpec& prop) {
     if (prop.empty()) return json{};
     if (prop.value.has_value() && prop.keyframes.empty()) {
         return json::array({prop.value->r, prop.value->g, prop.value->b, prop.value->a});
@@ -331,7 +331,7 @@ static json serialize_transform(const Transform2D& transform) {
     return j;
 }
 
-json serialize_layer(const LayerSpec& layer) {
+static json serialize_layer(const LayerSpec& layer) {
     json j;
     j["id"] = layer.id;
     j["name"] = layer.name;
@@ -502,7 +502,7 @@ json serialize_layer(const LayerSpec& layer) {
     return j;
 }
 
-json serialize_composition(const CompositionSpec& comp) {
+static json serialize_composition(const CompositionSpec& comp) {
     json j;
     j["id"] = comp.id;
     j["name"] = comp.name;
@@ -546,7 +546,7 @@ json serialize_composition(const CompositionSpec& comp) {
     return j;
 }
 
-json serialize_scene_spec(const SceneSpec& scene) {
+static json serialize_scene_spec(const SceneSpec& scene) {
     json j;
     j["schema_version"] = scene.schema_version.to_string();
     j["project"] = {

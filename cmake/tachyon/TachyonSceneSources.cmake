@@ -58,7 +58,6 @@ set(TachyonSceneSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/text_animator_spec_serialize.cpp
     
     # Spec - Validation
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/validation/scene_validator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/validation/scene_validator_composition.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/validation/scene_validator_layer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/validation/scene_validator_schema.cpp
@@ -105,6 +104,4 @@ set(TachyonSceneSources
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/text/text_builders.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/transition/transition_builders.cpp
 
-    # Studio
-    ${CMAKE_CURRENT_SOURCE_DIR}/studio/studio_library.cpp
 )
