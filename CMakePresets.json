@@ -79,6 +79,20 @@
         "TACHYON_ENABLE_ASAN": "OFF",
         "TACHYON_ENABLE_LEGACY_JSON_SCENE": "OFF"
       }
+    },
+    {
+      "name": "windows-ninja-msvc",
+      "displayName": "Windows Ninja MSVC",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/windows-ninja-msvc",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "TACHYON_ENABLE_COMPILER_CACHE": "ON",
+        "TACHYON_ENABLE_PCH": "OFF",
+        "TACHYON_ENABLE_ASAN": "OFF",
+        "TACHYON_ENABLE_LEGACY_JSON_SCENE": "OFF",
+        "TACHYON_TREAT_WARNINGS_AS_ERRORS": "OFF"
+      }
     }
   ],
   "buildPresets": [
@@ -105,6 +119,22 @@
       "name": "asan",
       "configurePreset": "asan",
       "configuration": "RelWithDebInfo",
+      "targets": [
+        "TachyonCore",
+        "TachyonTests"
+      ]
+    },
+    {
+      "name": "windows-ninja-msvc",
+      "configurePreset": "windows-ninja-msvc",
+      "targets": [
+        "TachyonCore",
+        "TachyonTests"
+      ]
+    },
+    {
+      "name": "linux-ninja-debug",
+      "configurePreset": "linux-ninja-debug",
       "targets": [
         "TachyonCore",
         "TachyonTests"
