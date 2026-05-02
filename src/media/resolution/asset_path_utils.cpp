@@ -13,4 +13,21 @@ std::filesystem::path scene_asset_root(const std::filesystem::path& scene_path) 
     return scene_dir;
 }
 
+std::filesystem::path resolve_relative_to_root(
+    const std::filesystem::path& value,
+    const std::filesystem::path& root
+) {
+    if (value.is_absolute()) {
+        return value;
+    }
+    return std::filesystem::absolute(root / value);
+}
+
+std::filesystem::path asset_source_or_path(const AssetSpec& asset) {
+    if (!asset.source.empty()) {
+        return std::filesystem::path(asset.source);
+    }
+    return std::filesystem::path(asset.path);
+}
+
 } // namespace tachyon::media
