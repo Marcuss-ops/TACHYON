@@ -3,81 +3,6 @@
 
 namespace tachyon {
 
-bool read_string(const json& object, const char* key, std::string& out) {
-    if (!object.contains(key) || object.at(key).is_null()) return false;
-    const auto& value = object.at(key);
-    if (!value.is_string()) return false;
-    out = value.get<std::string>();
-    return true;
-}
-
-bool read_bool(const json& object, const char* key, bool& out) {
-    if (!object.contains(key) || object.at(key).is_null()) return false;
-    const auto& value = object.at(key);
-    if (!value.is_boolean()) return false;
-    out = value.get<bool>();
-    return true;
-}
-
-bool read_optional_int(const json& object, const char* key, std::optional<std::int64_t>& out) {
-    if (!object.contains(key) || object.at(key).is_null()) return false;
-    const auto& value = object.at(key);
-    if (!value.is_number_integer()) return false;
-    out = value.get<std::int64_t>();
-    return true;
-}
-
-bool read_vector2_like(const json& value, math::Vector2& out) {
-    if (value.is_array()) {
-        if (value.size() < 2 || !value[0].is_number() || !value[1].is_number()) return false;
-        out = { static_cast<float>(value[0].get<double>()), static_cast<float>(value[1].get<double>()) };
-        return true;
-    }
-    if (value.is_number()) {
-        const float scalar = static_cast<float>(value.get<double>());
-        out = {scalar, scalar};
-        return true;
-    }
-    return false;
-}
-
-bool read_vector2_object(const json& value, math::Vector2& out) {
-    if (!value.is_object()) return false;
-    if (!value.contains("x") || !value.contains("y") || !value.at("x").is_number() || !value.at("y").is_number()) return false;
-    out = { static_cast<float>(value.at("x").get<double>()), static_cast<float>(value.at("y").get<double>()) };
-    return true;
-}
-
-bool parse_vector2_value(const json& value, math::Vector2& out) {
-    return read_vector2_like(value, out) || read_vector2_object(value, out);
-}
-
-bool read_vector3_like(const json& value, math::Vector3& out) {
-    if (value.is_array()) {
-        if (value.size() < 3 || !value[0].is_number() || !value[1].is_number() || !value[2].is_number()) return false;
-        out = { static_cast<float>(value[0].get<double>()), static_cast<float>(value[1].get<double>()), static_cast<float>(value[2].get<double>()) };
-        return true;
-    }
-    if (value.is_number()) {
-        const float s = static_cast<float>(value.get<double>());
-        out = {s, s, s};
-        return true;
-    }
-    return false;
-}
-
-bool read_vector3_object(const json& value, math::Vector3& out) {
-    if (!value.is_object()) return false;
-    if (!value.contains("x") || !value.contains("y") || !value.contains("z") ||
-        !value.at("x").is_number() || !value.at("y").is_number() || !value.at("z").is_number()) return false;
-    out = { static_cast<float>(value.at("x").get<double>()), static_cast<float>(value.at("y").get<double>()), static_cast<float>(value.at("z").get<double>()) };
-    return true;
-}
-
-bool parse_vector3_value(const json& value, math::Vector3& out) {
-    return read_vector3_like(value, out) || read_vector3_object(value, out);
-}
-
 bool parse_gradient_spec(const json& object, GradientSpec& out) {
     if (!object.is_object()) return false;
     
@@ -86,8 +11,8 @@ bool parse_gradient_spec(const json& object, GradientSpec& out) {
         out.type = (type_str == "radial") ? GradientType::Radial : GradientType::Linear;
     }
     
-    if (object.contains("start")) parse_vector2_value(object.at("start"), out.start);
-    if (object.contains("end")) parse_vector2_value(object.at("end"), out.end);
+    if (object.contains("start")) read_vector2(object.at("start"), out.start);
+    if (object.contains("end")) read_vector2(object.at("end"), out.end);
     
     if (object.contains("radial_radius") && object.at("radial_radius").is_number()) {
         out.radial_radius = static_cast<float>(object.at("radial_radius").get<double>());
@@ -102,34 +27,13 @@ bool parse_gradient_spec(const json& object, GradientSpec& out) {
                     stop.offset = static_cast<float>(stop_json.at("offset").get<double>());
                 }
                 if (stop_json.contains("color")) {
-                    parse_color_value(stop_json.at("color"), stop.color);
+                    read_color(stop_json.at("color"), stop.color);
                 }
                 out.stops.push_back(stop);
             }
         }
     }
     return true;
-}
-
-bool parse_color_value(const json& value, ColorSpec& out) {
-    if (value.is_array()) {
-        if (value.size() < 3) return false;
-        out.r = static_cast<std::uint8_t>(std::clamp(value[0].get<int>(), 0, 255));
-        out.g = static_cast<std::uint8_t>(std::clamp(value[1].get<int>(), 0, 255));
-        out.b = static_cast<std::uint8_t>(std::clamp(value[2].get<int>(), 0, 255));
-        out.a = (value.size() >= 4) ? static_cast<std::uint8_t>(std::clamp(value[3].get<int>(), 0, 255)) : 255;
-        return true;
-    }
-    if (value.is_object()) {
-        if (value.contains("r") && value.contains("g") && value.contains("b")) {
-            out.r = static_cast<std::uint8_t>(std::clamp(value.at("r").get<int>(), 0, 255));
-            out.g = static_cast<std::uint8_t>(std::clamp(value.at("g").get<int>(), 0, 255));
-            out.b = static_cast<std::uint8_t>(std::clamp(value.at("b").get<int>(), 0, 255));
-            out.a = (value.contains("a")) ? static_cast<std::uint8_t>(std::clamp(value.at("a").get<int>(), 0, 255)) : 255;
-            return true;
-        }
-    }
-    return false;
 }
 
 animation::EasingPreset parse_easing_preset(const json& value) {

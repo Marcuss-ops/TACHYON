@@ -20,5 +20,6 @@ set(TachyonCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/output/output_presets.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/expressions/expression_engine.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/expressions/expression_vm.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/json/json_reader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/studio/studio_library.cpp
 )
