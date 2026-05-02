@@ -1,4 +1,5 @@
 #include "render_job_internal.h"
+#include "tachyon/core/json/json_reader.h"
 
 namespace tachyon {
 
@@ -24,14 +25,6 @@ void flatten_variables(
         string_variables[prefix] = value.get<std::string>();
         return;
     }
-}
-
-bool read_double(const json& object, const char* key, double& out) {
-    if (!object.contains(key) || object.at(key).is_null()) return false;
-    const auto& value = object.at(key);
-    if (!value.is_number()) return false;
-    out = value.get<double>();
-    return true;
 }
 
 bool is_quality_tier_valid(const std::string& tier) {
