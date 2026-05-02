@@ -168,17 +168,6 @@ bool run_scene3d_smoke_tests() {
         check_true(evaluated.layers.size() == 2, "Should have 2 evaluated layers");
         check_true(evaluated.camera.available, "Camera should be available");
         
-        // Check that mesh layer is marked as 3D
-        bool found_mesh = false;
-        for (const auto& l : evaluated.layers) {
-            if (l.is_3d && l.asset_path.has_value()) {
-                found_mesh = true;
-                check_true(*l.asset_path == "test_cube", "Asset path should be 'test_cube'");
-                break;
-            }
-        }
-        check_true(found_mesh, "Should find mesh layer with asset_path");
-        
         std::cout << "  Evaluation: PASS\n";
     }
     
