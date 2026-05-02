@@ -220,6 +220,58 @@ Color transition_directional_blur_wipe(float u, float v, float t, const SurfaceR
     return acc;
 }
 
+Color transition_flash(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    const Color a = sample_uv(input, u, v);
+    const Color b = sample_transition_source(input, to_surface, u, v);
+    
+    // Flash intensity peaks at t=0.5
+    float flash = 0.0f;
+    if (t < 0.5f) {
+        flash = t * 2.0f; // fade in flash
+    } else {
+        flash = (1.0f - t) * 2.0f; // fade out flash
+    }
+    
+    Color base = Color::lerp(a, b, t);
+    Color flash_color = {1.0f, 1.0f, 1.0f, 1.0f};
+    
+    return Color::lerp(base, flash_color, flash * 0.8f);
+}
+
+Color transition_light_leak(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    const Color a = sample_uv(input, u, v);
+    const Color b = sample_transition_source(input, to_surface, u, v);
+    
+    // Procedural light leak
+    float dist = std::sqrt((u - 0.2f)*(u - 0.2f) + (v - 0.8f)*(v - 0.8f));
+    float intensity = std::max(0.0f, 1.0f - dist / (0.3f + t * 0.5f));
+    intensity *= std::sin(t * 3.14159f);
+    
+    Color leak_color = {1.0f, 0.6f, 0.2f, 1.0f}; // Warm orange
+    Color base = Color::lerp(a, b, t);
+    
+    return Color::lerp(base, leak_color, intensity * 0.7f);
+}
+
+Color transition_film_burn(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    const Color a = sample_uv(input, u, v);
+    const Color b = sample_transition_source(input, to_surface, u, v);
+    
+    // Film burn: red/orange glow that moves
+    float dist = std::sqrt((u - 0.5f - std::sin(t * 5.0f)*0.2f)*(u - 0.5f - std::sin(t * 5.0f)*0.2f) + (v - 0.5f)*(v - 0.5f));
+    float intensity = std::max(0.0f, 1.0f - dist / (0.4f + t * 0.4f));
+    intensity *= std::sin(t * 3.14159f);
+    
+    // Add some noise-like jitter to intensity
+    float jitter = std::fmod(std::sin(u * 100.0f + v * 100.0f + t * 10.0f) * 43758.5453f, 0.2f);
+    intensity = std::clamp(intensity + jitter, 0.0f, 1.0f);
+    
+    Color burn_color = {1.0f, 0.3f, 0.1f, 1.0f}; // Fiery red-orange
+    Color base = Color::lerp(a, b, t);
+    
+    return Color::lerp(base, burn_color, intensity * 0.8f);
+}
+
 }  // namespace
 
 void init_builtin_transitions() {
@@ -249,6 +301,9 @@ void init_builtin_transitions() {
         reg.register_transition({"rgb_split", "RGB Split", "Color channel split", transition_rgb_split});
         reg.register_transition({"luma_dissolve", "Luma Dissolve", "Luminance-based dissolve", transition_luma_dissolve});
         reg.register_transition({"directional_blur_wipe", "Directional Blur Wipe", "Blur wipe with direction", transition_directional_blur_wipe});
+        reg.register_transition({"flash", "Flash", "White flash transition", transition_flash});
+        reg.register_transition({"light_leak", "Light Leak", "Warm orange light leak", transition_light_leak});
+        reg.register_transition({"film_burn", "Film Burn", "Fiery red-orange film burn", transition_film_burn});
     });
 }
 

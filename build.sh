@@ -2,7 +2,7 @@
 set -euo pipefail
 
 BUILD_TYPE="Release"
-PRESET="linux-release"
+BASE_PRESET="release"
 RUN_TESTS=0
 CLEAN=0
 CHECK=0
@@ -18,11 +18,27 @@ usage() {
     exit 1
 }
 
+# Check for required tools
+if ! command -v cmake &> /dev/null; then
+    echo "[ERROR] cmake is not installed or not in PATH"
+    exit 1
+fi
+
+GENERATOR_TYPE="make"
+if command -v ninja &> /dev/null; then
+    GENERATOR_TYPE="ninja"
+elif command -v make &> /dev/null; then
+    GENERATOR_TYPE="make"
+else
+    echo "[ERROR] Neither ninja nor make found in PATH"
+    exit 1
+fi
+
 for arg in "$@"; do
     case $arg in
-        --debug)           PRESET="linux-debug"; BUILD_TYPE="Debug" ;;
-        --release)         PRESET="linux-release"; BUILD_TYPE="Release" ;;
-        --relwithdebinfo)  PRESET="linux-relwithdebinfo"; BUILD_TYPE="RelWithDebInfo" ;;
+        --debug)           BASE_PRESET="debug"; BUILD_TYPE="Debug" ;;
+        --release)         BASE_PRESET="release"; BUILD_TYPE="Release" ;;
+        --relwithdebinfo)  BASE_PRESET="relwithdebinfo"; BUILD_TYPE="RelWithDebInfo" ;;
         --test)            RUN_TESTS=1 ;;
         --clean)           CLEAN=1 ;;
         --check)           CHECK=1 ;;
@@ -31,14 +47,18 @@ for arg in "$@"; do
     esac
 done
 
-BUILD_DIR="build-ninja"
+# Select final preset based on generator
+PRESET="linux-$GENERATOR_TYPE-$BASE_PRESET"
+
+# Map preset to binary directory (should match CMakePresets.json)
+BUILD_DIR="build/$PRESET"
 
 if [[ $CLEAN -eq 1 && -d "$BUILD_DIR" ]]; then
-    echo "[INFO] Cleaning build directory..."
+    echo "[INFO] Cleaning build directory $BUILD_DIR..."
     rm -rf "$BUILD_DIR"
 fi
 
-echo "[INFO] Configuring with preset: $PRESET"
+echo "[INFO] Configuring with preset: $PRESET (Generator: $GENERATOR_TYPE)"
 cmake --preset "$PRESET"
 
 if [[ $CHECK -eq 1 ]]; then
@@ -58,5 +78,5 @@ if [[ $RUN_TESTS -eq 1 ]]; then
 fi
 
 echo "[INFO] Building (type: $BUILD_TYPE)..."
-cmake --build --preset "$PRESET" -- -j"$(nproc)"
+cmake --build "$BUILD_DIR" -- -j"$(nproc)"
 echo "[OK] Build completed successfully"

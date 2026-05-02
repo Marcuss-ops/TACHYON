@@ -66,7 +66,16 @@ float AudioExporter::evaluate_fade_at_time(const AudioTrackSpec& track, double t
     
     // Fade out (calculated relative to track end)
     if (track.fade_out_duration > 0.0) {
-        double track_end = get_track_end_time(track);
+        // Find the track instance to get its decoder duration
+        double decoder_duration = 0.0;
+        for (const auto& t : m_tracks) {
+            if (&t.spec == &track) {
+                decoder_duration = t.decoder->duration();
+                break;
+            }
+        }
+        
+        double track_end = get_track_end_time(track, decoder_duration);
         double time_to_end = track_end - time;
         if (time_to_end < track.fade_out_duration) {
             fade_factor *= static_cast<float>(time_to_end / track.fade_out_duration);
@@ -76,16 +85,17 @@ float AudioExporter::evaluate_fade_at_time(const AudioTrackSpec& track, double t
     return fade_factor;
 }
 
-double AudioExporter::get_track_end_time(const AudioTrackSpec& track) const {
+double AudioExporter::get_track_end_time(const AudioTrackSpec& track, double decoder_duration) const {
     // Calcolo durata considerando trim e playback speed
-    double duration = 0.0;
+    double duration = decoder_duration;
     
     // Applica trim
     if (track.out_point_seconds > 0.0 && track.out_point_seconds > track.in_point_seconds) {
-        duration = track.out_point_seconds - track.in_point_seconds;
-    } else if (track.in_point_seconds > 0.0) {
-        duration -= track.in_point_seconds;
+        duration = track.out_point_seconds;
     }
+    
+    duration -= track.in_point_seconds;
+    duration = std::max(0.0, duration);
     
     // Applica playback speed
     duration /= std::max(0.01f, track.playback_speed);
@@ -117,7 +127,7 @@ bool AudioExporter::export_to(const std::filesystem::path& output_path, const Au
 
     double max_duration = 0.0;
     for (const auto& track : m_tracks) {
-        double track_duration = get_track_end_time(track.spec);
+        double track_duration = get_track_end_time(track.spec, track.decoder->duration());
         max_duration = std::max(max_duration, track_duration);
     }
 
@@ -131,18 +141,14 @@ bool AudioExporter::export_to(const std::filesystem::path& output_path, const Au
         
         processor.clear_tracks();
         for (auto& track : m_tracks) {
-            // Applica trim e speed al decoder
-            apply_trim_and_speed(track.decoder.get(), track.spec, t, current_chunk, track_buffer);
-            
-            // Crea una istanza temporanea con volume/fade applicati
+            // Volume and fade are evaluated per chunk to support keyframes
             AudioTrackSpec instance_spec = track.spec;
             float volume = evaluate_volume_at_time(track.spec, t);
             float fade = evaluate_fade_at_time(track.spec, t, current_chunk);
             instance_spec.volume = volume * fade;
             instance_spec.pan = evaluate_pan_at_time(track.spec, t);
             
-            // Aggiungi al processore con il buffer già processato
-            // (in una implementazione reale, AudioProcessor dovrebbe accettare buffer pre-processati)
+            // Add to processor. Trim and speed are handled within AudioProcessor::mix_track
             processor.add_track(track.decoder, instance_spec);
         }
 
@@ -166,28 +172,6 @@ bool AudioExporter::export_to(const std::filesystem::path& output_path, const Au
               << " dB, True Peak: " << m_loudness_measurement.true_peak_dbfs << " dBFS\n";
 
     return encoder.flush();
-}
-
-void AudioExporter::apply_trim_and_speed(AudioDecoder* decoder, const AudioTrackSpec& spec, 
-                                          double chunk_start, double chunk_duration,
-                                          std::vector<float>& output_buffer) {
-    if (!decoder) return;
-    (void)output_buffer;
-    
-    // Calcola posizione di lettura considerando trim e offset
-    double read_start = spec.in_point_seconds + (chunk_start - spec.start_offset_seconds) * spec.playback_speed;
-    double read_duration = chunk_duration * spec.playback_speed;
-    
-    // Verifica bounds
-    if (read_start < 0) read_start = 0;
-    if (spec.out_point_seconds > 0 && read_start + read_duration > spec.out_point_seconds) {
-        read_duration = spec.out_point_seconds - read_start;
-    }
-    
-    // Decodifica chunk dalla posizione corretta
-    // (implementazione semplificata - in produzione servirebbe seek preciso)
-    // decoder->seek(read_start); // AudioDecoder has no seek method
-    // Il decoder ora leggerà dalla posizione corretta per i chunk successivi
 }
 
 void AudioExporter::apply_pan(float* interleaved_samples, std::size_t sample_count, float pan) {
@@ -238,6 +222,10 @@ bool export_plan_audio(const RenderPlan& plan, const std::filesystem::path& outp
     config.sample_rate = 48000;
     config.channels = 2;
     config.bitrate_kbps = 192;
+    
+    if (output_path.extension() == ".wav") {
+        config.codec = "pcm_s16le";
+    }
 
     return exporter.export_to(output_path, config);
 }

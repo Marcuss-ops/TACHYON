@@ -331,7 +331,7 @@ static json serialize_transform(const Transform2D& transform) {
     return j;
 }
 
-static json serialize_layer(const LayerSpec& layer) {
+json serialize_layer(const LayerSpec& layer) {
     json j;
     j["id"] = layer.id;
     j["name"] = layer.name;
@@ -502,7 +502,7 @@ static json serialize_layer(const LayerSpec& layer) {
     return j;
 }
 
-static json serialize_composition(const CompositionSpec& comp) {
+json serialize_composition(const CompositionSpec& comp) {
     json j;
     j["id"] = comp.id;
     j["name"] = comp.name;
@@ -546,7 +546,7 @@ static json serialize_composition(const CompositionSpec& comp) {
     return j;
 }
 
-static json serialize_scene_spec(const SceneSpec& scene) {
+json serialize_scene_spec(const SceneSpec& scene) {
     json j;
     j["schema_version"] = scene.schema_version.to_string();
     j["project"] = {

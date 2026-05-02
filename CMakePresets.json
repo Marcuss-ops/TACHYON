@@ -66,6 +66,92 @@
       }
     },
     {
+      "name": "linux-release",
+      "displayName": "Linux Release",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/linux-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "TACHYON_ENABLE_PCH": "ON",
+        "TACHYON_ENABLE_ASAN": "OFF",
+        "TACHYON_ENABLE_LEGACY_JSON_SCENE": "OFF"
+      }
+    },
+    {
+      "name": "linux-debug",
+      "displayName": "Linux Debug",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/linux-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "TACHYON_ENABLE_PCH": "ON",
+        "TACHYON_ENABLE_ASAN": "OFF",
+        "TACHYON_ENABLE_LEGACY_JSON_SCENE": "OFF"
+      }
+    },
+    {
+      "name": "linux-relwithdebinfo",
+      "displayName": "Linux RelWithDebInfo",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/linux-relwithdebinfo",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "TACHYON_ENABLE_PCH": "ON",
+        "TACHYON_ENABLE_ASAN": "OFF",
+        "TACHYON_ENABLE_LEGACY_JSON_SCENE": "OFF"
+      }
+    },
+    {
+      "name": "linux-make-release",
+      "displayName": "Linux Make Release",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/linux-make-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "TACHYON_ENABLE_PCH": "ON",
+        "TACHYON_ENABLE_ASAN": "OFF",
+        "TACHYON_ENABLE_LEGACY_JSON_SCENE": "OFF"
+      }
+    },
+    {
+      "name": "linux-make-debug",
+      "displayName": "Linux Make Debug",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/linux-make-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "TACHYON_ENABLE_PCH": "ON",
+        "TACHYON_ENABLE_ASAN": "OFF",
+        "TACHYON_ENABLE_LEGACY_JSON_SCENE": "OFF"
+      }
+    },
+    {
+      "name": "linux-make-relwithdebinfo",
+      "displayName": "Linux Make RelWithDebInfo",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/linux-make-relwithdebinfo",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "TACHYON_ENABLE_PCH": "ON",
+        "TACHYON_ENABLE_ASAN": "OFF",
+        "TACHYON_ENABLE_LEGACY_JSON_SCENE": "OFF"
+      }
+    },
+    {
+      "name": "windows-vs2022",
+      "displayName": "Windows VS 2022",
+      "generator": "Visual Studio 17 2022",
+      "architecture": {
+        "value": "x64"
+      },
+      "binaryDir": "${sourceDir}/build/windows-vs2022",
+      "cacheVariables": {
+        "TACHYON_ENABLE_COMPILER_CACHE": "ON",
+        "TACHYON_ENABLE_PCH": "ON",
+        "TACHYON_ENABLE_ASAN": "OFF"
+      }
+    },
+    {
       "name": "windows-msvc",
       "displayName": "Windows MSVC",
       "generator": "Visual Studio 18 2026",

@@ -2,6 +2,7 @@
 #include "tachyon/presets/text/fluent.h"
 #include "tachyon/presets/background/fluent.h"
 #include "tachyon/presets/background/procedural.h"
+#include "tachyon/presets/audio/fluent.h"
 
 extern "C" void build_scene(tachyon::SceneSpec& out) {
     using namespace tachyon;
@@ -12,22 +13,30 @@ extern "C" void build_scene(tachyon::SceneSpec& out) {
             c.size(1920, 1080)
              .fps(30)
              .duration(10.0)
-             .background(scene::BackgroundSpec::from_string("#0d1117"));
+             .background(BackgroundSpec::from_string("#0d1117"));
              
             // Animated background
             c.layer(presets::background::aura()
                 .width(1920)
                 .height(1080)
                 .duration(10.0)
-                .palette(procedural_bg::palettes::neon_night())
+                .palette(presets::background::procedural_bg::palettes::neon_night())
                 .grain(0.1)
                 .build());
              
             // Title text
             c.layer(presets::text::headline("TACHYON FULL HD TEST")
-                .size(120)
+                .font_size(120)
                 .center()
                 .color({255, 255, 255, 255})
+                .build());
+                
+            // Audio track
+            c.audio(presets::audio::track("background_music")
+                .source("test_audio.wav")
+                .volume(0.8f)
+                .fade_in(1.0)
+                .fade_out(1.0)
                 .build());
         })
         .build();
