@@ -133,7 +133,6 @@ bool run_frame_executor_tests();
 bool run_frame_range_tests();
 bool run_frame_output_sink_tests();
 bool run_tile_scheduler_tests();
-bool run_render_contract_tests();
 bool run_property_tests();
 bool run_expression_tests();
 namespace tachyon::editor { bool run_undo_manager_tests(); }
@@ -170,6 +169,7 @@ bool run_motion_blur_tests();
 bool run_rolling_shutter_tests();
 bool run_audio_trim_tests();
 bool run_scene3d_smoke_tests();
+bool run_3d_modifier_tests();
 
 
 int main(int argc, char** argv) {
@@ -199,7 +199,6 @@ int main(int argc, char** argv) {
         {"frame_range", run_frame_range_tests},
         {"frame_output_sink", run_frame_output_sink_tests},
         {"tile_scheduler", run_tile_scheduler_tests},
-        {"render_contract", run_render_contract_tests},
         {"undo_manager", tachyon::editor::run_undo_manager_tests},
         {"autosave_manager", tachyon::editor::run_autosave_manager_tests},
         {"scene_evaluator", run_scene_evaluator_tests},
@@ -229,6 +228,7 @@ int main(int argc, char** argv) {
         // {"audio_pitch_correct", run_audio_pitch_correct_tests},  // Disabled - see tests/disabled/README.md
 
         {"render_job", run_render_job_tests},
+        {"json_reader", run_json_reader_tests},
         {"expression_vm", run_expression_vm_tests},
         {"sfx_contract", run_sfx_contract_tests},
         {"shape_contract", run_shape_contract_tests},
@@ -237,6 +237,7 @@ int main(int argc, char** argv) {
         {"rolling_shutter", run_rolling_shutter_tests},
         {"audio_trim", run_audio_trim_tests},
         {"scene3d_smoke", run_scene3d_smoke_tests},
+        {"three_d_modifier", run_3d_modifier_tests},
     };
 
     bool list_tests = false;

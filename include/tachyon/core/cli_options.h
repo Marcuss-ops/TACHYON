@@ -16,7 +16,6 @@ struct CliOptions {
     std::string command;
     std::filesystem::path library_path;
     std::optional<std::string> transition_id;
-    std::filesystem::path scene_path;
     std::filesystem::path job_path;
     std::filesystem::path batch_path;
     std::filesystem::path output_override;

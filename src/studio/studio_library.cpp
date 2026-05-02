@@ -185,15 +185,7 @@ SceneSpec StudioLibrary::instantiate_scene(const std::string& id) const {
         if (id == "classico_premium") return presets::scene::build_classico_premium_scene();
         if (id == "minimal_white") return presets::scene::build_minimal_text_scene();
     } else {
-        // Fallback to JSON
-        std::ifstream input(entry->path, std::ios::in | std::ios::binary);
-        if (input.is_open()) {
-            std::stringstream buffer;
-            buffer << input.rdbuf();
-            // In Tachyon 3, there's parse_scene_spec_json, assuming it's available or we can just parse
-            // nlohmann::json j = nlohmann::json::parse(buffer.str());
-            // But studio_library doesn't seem to include scene_spec_json.h, so we might need to include it or just return {} if it's missing
-        }
+        // JSON scenes are no longer supported
     }
     return {};
 }

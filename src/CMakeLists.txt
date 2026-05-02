@@ -109,9 +109,6 @@ endfunction()
 
 add_library(TachyonScene OBJECT ${TachyonSceneSources})
 tachyon_configure_common(TachyonScene)
-if(TACHYON_ENABLE_LEGACY_JSON_SCENE)
-    target_compile_definitions(TachyonScene PUBLIC TACHYON_ENABLE_LEGACY_JSON_SCENE)
-endif()
 
 add_library(TachyonRuntime OBJECT ${TachyonRuntimeSources})
 target_compile_definitions(TachyonRuntime PRIVATE TACHYON_ENABLE_RENDER_JOB_JSON)

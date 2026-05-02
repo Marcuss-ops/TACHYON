@@ -4,6 +4,8 @@
 #include "tachyon/renderer2d/evaluated_composition/rendering/primitives/media_card_mesh_builder.h"
 #include "tachyon/renderer2d/resource/render_context.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
+#include "tachyon/renderer3d/modifiers/i3d_modifier.h"
+#include "tachyon/renderer3d/modifiers/three_d_modifier_registry.h"
 
 #include <algorithm>
 #include <cmath>
@@ -212,8 +214,44 @@ std::vector<renderer3d::EvaluatedMeshInstance> build_instances_3d(
 
         // Build mesh for layer
         const auto mesh_result = build_layer_mesh(l, input);
-        inst.mesh_asset = mesh_result.mesh_asset;
-        inst.mesh_asset_id = mesh_result.mesh_asset_id;
+        auto mesh_asset = mesh_result.mesh_asset;
+
+        // Apply 3D modifiers
+        if (l.three_d && l.three_d->enabled && mesh_asset) {
+            using namespace renderer3d;
+            auto& registry = ThreeDModifierRegistry::instance();
+            
+            // We need to work on a copy of the mesh if it's shared/cached, 
+            // but build_layer_mesh usually returns a new one for text/procedural.
+            // For now, we assume it's safe to modify or we make a copy.
+            auto modifiable_asset = std::make_shared<media::MeshAsset>(*mesh_asset);
+
+            for (const auto& mod_spec : l.three_d->modifiers) {
+                auto modifier = registry.create(mod_spec);
+                if (modifier) {
+                    for (auto& submesh : modifiable_asset->sub_meshes) {
+                        Mesh3D mesh;
+                        mesh.vertices.reserve(submesh.vertices.size());
+                        for (const auto& v : submesh.vertices) {
+                            mesh.vertices.push_back({v.position, v.uv, v.normal});
+                        }
+                        mesh.indices = submesh.indices;
+
+                        modifier->apply(mesh, l.local_time_seconds, *input.context);
+
+                        for (std::size_t i = 0; i < submesh.vertices.size(); ++i) {
+                            submesh.vertices[i].position = mesh.vertices[i].position;
+                            submesh.vertices[i].normal = mesh.vertices[i].normal;
+                        }
+                    }
+                }
+            }
+            inst.mesh_asset = modifiable_asset;
+            inst.mesh_asset_id = mesh_result.mesh_asset_id + "_modified";
+        } else {
+            inst.mesh_asset = mesh_asset;
+            inst.mesh_asset_id = mesh_result.mesh_asset_id;
+        }
 
         // Final fallback to layer's asset path
         if (inst.mesh_asset_id.empty()) {

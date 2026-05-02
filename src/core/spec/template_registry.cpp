@@ -3,26 +3,9 @@
 
 namespace tachyon {
 
-std::shared_ptr<SceneSpec> TemplateRegistry::get_template(const std::filesystem::path& path) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    
-    std::string absolute_path = std::filesystem::absolute(path).string();
-    
-    auto it = m_cache.find(absolute_path);
-    if (it != m_cache.end()) {
-        return it->second;
-    }
-
-    // Load and parse the template
-    auto result = parse_scene_spec_file(path);
-    if (!result.ok()) {
-        return nullptr;
-    }
-
-    auto template_ptr = std::make_shared<SceneSpec>(std::move(*result.value));
-    m_cache[absolute_path] = template_ptr;
-    
-    return template_ptr;
+std::shared_ptr<SceneSpec> TemplateRegistry::get_template(const std::filesystem::path& /*path*/) {
+    std::cerr << "TemplateRegistry::get_template is DISABLED. JSON scene loading is no longer supported.\n";
+    return nullptr;
 }
 
 void TemplateRegistry::clear_cache() {

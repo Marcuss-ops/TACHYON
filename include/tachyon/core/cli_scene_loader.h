@@ -21,9 +21,7 @@ enum class SceneLoadMode {
 
 struct SceneLoadOptions {
     std::filesystem::path cpp_path;
-    std::filesystem::path scene_path;
     std::optional<std::string> preset_id;
-    bool allow_legacy_json{true};
 };
 
 struct LoadedSceneContext {
@@ -31,7 +29,6 @@ struct LoadedSceneContext {
     AssetResolutionTable assets;
     std::filesystem::path source_path;
     bool from_cpp{false};
-    bool from_legacy_json{false};
     bool from_preset{false};
 };
 
@@ -41,7 +38,6 @@ struct LoadSceneResult {
     DiagnosticBag diagnostics;
 };
 
-void warn_legacy_json_scene(SceneLoadMode mode, std::ostream& err);
 
 LoadSceneResult load_scene_for_cli(
     const SceneLoadOptions& options,

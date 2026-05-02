@@ -22,7 +22,6 @@ add_executable(TachyonTests
     unit/runtime/core/frame_cache_tests.cpp
     unit/runtime/core/frame_cache_budget_tests.cpp
     unit/runtime/core/backbone_tests.cpp
-    # unit/runtime/core/render_contract_tests.cpp
     unit/runtime/core/expression_vm_tests.cpp
     unit/runtime/core/determinism_tests.cpp
     unit/runtime/io/frame_output_sink_tests.cpp
@@ -47,16 +46,12 @@ add_executable(TachyonTests
     unit/editor/autosave_manager_tests.cpp
     unit/renderer3d/motion_blur_tests.cpp  # Re-enabled - was disabled for pre-existing build errors
     unit/core/rigging_maturation_tests.cpp
-    unit/core/spec/parsing_tests.cpp
-    unit/core/spec/validation_tests.cpp
     unit/core/spec/cli_tests.cpp
-    unit/core/spec/scene_contract_tests.cpp
     unit/core/spec/render_job_tests.cpp
     unit/text/glyph_cache_tests.cpp
     unit/text/text_tests.cpp  # Re-enabled - was disabled for pre-existing build errors
     unit/text/editor_tests.cpp
     unit/audio/test_audio_pitch_correct.cpp  # Re-enabled - was disabled for pre-existing build errors
-    unit/runtime/core/render_contract_tests.cpp
      integration/render_session_tests.cpp
      integration/render_batch_tests.cpp
      integration/parallax_cards_tests.cpp
@@ -66,6 +61,7 @@ add_executable(TachyonTests
     unit/renderer3d/temporal/frame_blend_tests.cpp
     # unit/renderer3d/effects/motion_blur_tests.cpp  # Duplicate - use unit/renderer3d/motion_blur_tests.cpp
     unit/renderer3d/temporal/rolling_shutter_tests.cpp
+    unit/renderer3d/modifiers/modifier_tests.cpp
     unit/presets/preset_tests.cpp
     unit/presets/sfx_contract_tests.cpp
     unit/presets/shape_contract_tests.cpp

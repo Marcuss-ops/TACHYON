@@ -16,31 +16,10 @@ void print_diagnostics(const DiagnosticBag& diagnostics, std::ostream& out) {
     out << spec::diagnostics_to_text(diagnostics);
 }
 
-bool load_scene_context(const std::filesystem::path& scene_path, SceneSpec& scene, AssetResolutionTable& assets, std::ostream& err) {
-    const auto parsed = parse_scene_spec_file(scene_path);
-    if (!parsed.value.has_value()) {
-        print_diagnostics(parsed.diagnostics, err);
-        return false;
-    }
-    const auto validation = validate_scene_spec(*parsed.value);
-    if (!validation.ok()) {
-        print_diagnostics(validation.diagnostics, err);
-        return false;
-    }
-    const auto resolved = resolve_assets(*parsed.value, tachyon::media::scene_asset_root(scene_path));
-    if (!resolved.value.has_value()) {
-        print_diagnostics(resolved.diagnostics, err);
-        return false;
-    }
-    scene = *parsed.value;
-    assets = *resolved.value;
-    return true;
-}
 
 bool run_preview_internal(const ::tachyon::CliOptions& options, std::ostream& out, std::ostream& err, const char* label) {
     SceneLoadOptions load_opts;
     load_opts.cpp_path = options.cpp_path;
-    load_opts.scene_path = options.scene_path;
     load_opts.preset_id = options.preset_id;
 
     auto loaded = load_scene_for_cli(load_opts, SceneLoadMode::Preview, out, err);

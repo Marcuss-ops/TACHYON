@@ -48,8 +48,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "TACHYON_ENABLE_PCH": "OFF",
-        "TACHYON_ENABLE_ASAN": "OFF",
-        "TACHYON_ENABLE_LEGACY_JSON_SCENE": "OFF"
+        "TACHYON_ENABLE_ASAN": "OFF"
       }
     },
     {
@@ -61,8 +60,7 @@
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "CMAKE_CXX_COMPILER": "clang++",
         "TACHYON_ENABLE_PCH": "OFF",
-        "TACHYON_ENABLE_ASAN": "ON",
-        "TACHYON_ENABLE_LEGACY_JSON_SCENE": "OFF"
+        "TACHYON_ENABLE_ASAN": "ON"
       }
     },
     {
@@ -73,8 +71,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "TACHYON_ENABLE_PCH": "ON",
-        "TACHYON_ENABLE_ASAN": "OFF",
-        "TACHYON_ENABLE_LEGACY_JSON_SCENE": "OFF"
+        "TACHYON_ENABLE_ASAN": "OFF"
       }
     },
     {
@@ -85,8 +82,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "TACHYON_ENABLE_PCH": "ON",
-        "TACHYON_ENABLE_ASAN": "OFF",
-        "TACHYON_ENABLE_LEGACY_JSON_SCENE": "OFF"
+        "TACHYON_ENABLE_ASAN": "OFF"
       }
     },
     {
@@ -97,8 +93,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "TACHYON_ENABLE_PCH": "ON",
-        "TACHYON_ENABLE_ASAN": "OFF",
-        "TACHYON_ENABLE_LEGACY_JSON_SCENE": "OFF"
+        "TACHYON_ENABLE_ASAN": "OFF"
       }
     },
     {
@@ -109,8 +104,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "TACHYON_ENABLE_PCH": "ON",
-        "TACHYON_ENABLE_ASAN": "OFF",
-        "TACHYON_ENABLE_LEGACY_JSON_SCENE": "OFF"
+        "TACHYON_ENABLE_ASAN": "OFF"
       }
     },
     {
@@ -121,8 +115,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "TACHYON_ENABLE_PCH": "ON",
-        "TACHYON_ENABLE_ASAN": "OFF",
-        "TACHYON_ENABLE_LEGACY_JSON_SCENE": "OFF"
+        "TACHYON_ENABLE_ASAN": "OFF"
       }
     },
     {
@@ -133,8 +126,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "TACHYON_ENABLE_PCH": "ON",
-        "TACHYON_ENABLE_ASAN": "OFF",
-        "TACHYON_ENABLE_LEGACY_JSON_SCENE": "OFF"
+        "TACHYON_ENABLE_ASAN": "OFF"
       }
     },
     {
@@ -162,8 +154,7 @@
       "cacheVariables": {
         "TACHYON_ENABLE_COMPILER_CACHE": "ON",
         "TACHYON_ENABLE_PCH": "ON",
-        "TACHYON_ENABLE_ASAN": "OFF",
-        "TACHYON_ENABLE_LEGACY_JSON_SCENE": "OFF"
+        "TACHYON_ENABLE_ASAN": "OFF"
       }
     },
     {
@@ -176,7 +167,6 @@
         "TACHYON_ENABLE_COMPILER_CACHE": "ON",
         "TACHYON_ENABLE_PCH": "OFF",
         "TACHYON_ENABLE_ASAN": "OFF",
-        "TACHYON_ENABLE_LEGACY_JSON_SCENE": "OFF",
         "TACHYON_TREAT_WARNINGS_AS_ERRORS": "OFF"
       }
     }
