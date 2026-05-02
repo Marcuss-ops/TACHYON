@@ -138,4 +138,11 @@ struct AudioTrackSpec {
     std::vector<AudioEffectSpec> effects;
 };
 
+struct AudioExportConfig {
+    std::string codec{"aac"};
+    int sample_rate{48000};
+    int bitrate_kbps{192};
+    int channels{2};
+};
+
 } // namespace tachyon::spec

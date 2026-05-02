@@ -68,6 +68,7 @@ add_executable(TachyonTests
     unit/presets/sfx_contract_tests.cpp
     unit/presets/shape_contract_tests.cpp
     unit/runtime/native_render_tests.cpp
+    unit/audio/test_audio_trim.cpp
 )
 
 set(TachyonTrackerTestSources

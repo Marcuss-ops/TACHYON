@@ -56,15 +56,12 @@ RayTracer::~RayTracer() {
 void RayTracer::render(
     const EvaluatedScene3D& scene,
     AOVBuffer& out_buffer,
-    const MotionBlurRenderer* /*motion_blur*/,
+    const MotionBlurRenderer* motion_blur,
     double frame_time_seconds,
     double frame_duration_seconds) {
-    (void)frame_duration_seconds;
 
     const int width = static_cast<int>(out_buffer.width);
     const int height = static_cast<int>(out_buffer.height);
-    std::printf("[DIAG] RayTracer::render called. Width: %d, Height: %d, Instances: %zu\n", width, height, scene.instances.size());
-    std::fflush(stdout);
 
     if (width <= 0 || height <= 0) {
         return;
@@ -78,9 +75,9 @@ void RayTracer::render(
 
     const auto& cam = scene.camera;
 
-    std::random_device rd;
-    std::mt19937 rng(rd());
-
+    // Use a deterministic seed based on the frame time
+    // This ensures identical results when rendering the same frame twice.
+    std::uint32_t seed = static_cast<std::uint32_t>(std::hash<double>{}(frame_time_seconds));
     const float time = static_cast<float>(frame_time_seconds);
 
     // Compute camera vectors
@@ -91,8 +88,19 @@ void RayTracer::render(
     float half_height = std::tan(fov_rad * 0.5f);
     float aspect = static_cast<float>(width) / static_cast<float>(height);
 
+    #pragma omp parallel for collapse(2) schedule(dynamic, 8)
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
+            // Per-pixel deterministic RNG
+            // We mix the global seed with pixel coordinates to ensure unique but repeatable patterns
+            std::uint32_t pixel_seed = seed ^ (static_cast<std::uint32_t>(y) * 1973 + static_cast<std::uint32_t>(x) * 9277);
+            pixel_seed = (pixel_seed ^ 61) ^ (pixel_seed >> 16);
+            pixel_seed *= 9;
+            pixel_seed = pixel_seed ^ (pixel_seed >> 4);
+            pixel_seed *= 0x27d4eb2d;
+            pixel_seed = pixel_seed ^ (pixel_seed >> 15);
+            std::mt19937 pixel_rng(pixel_seed);
+
             math::Vector3 pixel_color = {0.0f, 0.0f, 0.0f};
             float pixel_alpha = 0.0f;
             float pixel_depth = 1e6f;
@@ -104,8 +112,8 @@ void RayTracer::render(
 
             for (int s = 0; s < samples_per_pixel_; ++s) {
                 // Generate camera ray with jitter for anti-aliasing
-                float jitter_x = (samples_per_pixel_ > 1) ? (static_cast<float>(rng() & 0xFFFF) / 65535.0f - 0.5f) : 0.0f;
-                float jitter_y = (samples_per_pixel_ > 1) ? (static_cast<float>(rng() & 0xFFFF) / 65535.0f - 0.5f) : 0.0f;
+                float jitter_x = (samples_per_pixel_ > 1) ? (static_cast<float>(pixel_rng() & 0xFFFF) / 65535.0f - 0.5f) : 0.0f;
+                float jitter_y = (samples_per_pixel_ > 1) ? (static_cast<float>(pixel_rng() & 0xFFFF) / 65535.0f - 0.5f) : 0.0f;
 
                 float px = (static_cast<float>(x) + 0.5f + jitter_x) / static_cast<float>(width);
                 float py = (static_cast<float>(y) + 0.5f + jitter_y) / static_cast<float>(height);
@@ -119,15 +127,26 @@ void RayTracer::render(
                 if (cam.aperture > 0.0f && cam.focal_distance > 0.0f) {
                     const float lens_radius = std::max(0.0f, cam.focal_length_mm / std::max(cam.aperture, 1.0f)) * 0.001f;
                     const math::Vector2 lens = sample_concentric_disk(
-                        static_cast<float>(rng()) / static_cast<float>(rng.max()),
-                        static_cast<float>(rng()) / static_cast<float>(rng.max()));
+                        static_cast<float>(pixel_rng()) / static_cast<float>(pixel_rng.max()),
+                        static_cast<float>(pixel_rng()) / static_cast<float>(pixel_rng.max()));
                     const math::Vector3 lens_offset = cam_right * (lens.x * lens_radius) + cam_up * (lens.y * lens_radius);
                     const math::Vector3 focus_point = cam.position + direction * cam.focal_distance;
                     origin = origin + lens_offset;
                     direction = (focus_point - origin).normalized();
                 }
 
-                ShadingResult sample = trace_ray(origin, direction, scene, rng, 0, time);
+                // Motion blur time jitter
+                float sample_time = time;
+                if (motion_blur && motion_blur->is_enabled()) {
+                    const auto& mb_config = motion_blur->get_config();
+                    const float shutter_duration = static_cast<float>(frame_duration_seconds * (mb_config.shutter_angle / 360.0));
+                    const float shutter_offset = static_cast<float>(frame_duration_seconds * (mb_config.shutter_phase / 360.0));
+                    
+                    const float jitter_t = (static_cast<float>(pixel_rng() & 0xFFFF) / 65535.0f);
+                    sample_time += shutter_offset + jitter_t * shutter_duration;
+                }
+
+                ShadingResult sample = trace_ray(origin, direction, scene, pixel_rng, 0, sample_time);
                 pixel_color = pixel_color + sample.color;
                 pixel_alpha = std::max(pixel_alpha, sample.alpha);
                 pixel_depth = std::min(pixel_depth, sample.depth);

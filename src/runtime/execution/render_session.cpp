@@ -129,11 +129,42 @@ RenderSessionResult RenderSession::render(
         result.encode_ms = std::chrono::duration<double, std::milli>(encode_end - encode_start).count();
     }
 
-    // Audio Export (Standalone WAV if sink doesn't handle muxing)
-    const bool sink_handles_audio = output::output_requests_video_file(effective_plan.render_plan.output);
-    if (!sink_handles_audio && audio::has_any_audio(effective_plan.render_plan)) {
-        std::filesystem::path audio_path = output_path.parent_path() / (output_path.stem().string() + ".wav");
-        audio::export_plan_audio(effective_plan.render_plan, audio_path);
+    // Audio Export
+    if (audio::has_any_audio(effective_plan.render_plan)) {
+        const bool is_video = output::output_requests_video_file(effective_plan.render_plan.output);
+        
+        std::filesystem::path audio_export_path;
+        bool is_temp_audio = false;
+
+        if (is_video) {
+#ifdef TACHYON_ENABLE_AUDIO_MUX
+            audio_export_path = output_path.parent_path() / (output_path.stem().string() + ".temp.wav");
+            is_temp_audio = true;
+#else
+            // If muxing is disabled, we don't export audio for video files by default
+            // unless the user specifically requested a separate audio file (not handled here yet)
+#endif
+        } else {
+            audio_export_path = output_path.parent_path() / (output_path.stem().string() + ".wav");
+        }
+
+        if (!audio_export_path.empty()) {
+            audio::export_plan_audio(effective_plan.render_plan, audio_export_path);
+
+#ifdef TACHYON_ENABLE_AUDIO_MUX
+            if (is_video && std::filesystem::exists(audio_export_path)) {
+                std::string mux_error;
+                if (!mux_audio_video(effective_plan.render_plan, resolved_output_path, audio_export_path.string(), mux_error)) {
+                    result.output_error = "Muxing failed: " + mux_error;
+                } else {
+                    if (is_temp_audio) {
+                        std::error_code ec;
+                        std::filesystem::remove(audio_export_path, ec);
+                    }
+                }
+            }
+#endif
+        }
     }
 
     return result;

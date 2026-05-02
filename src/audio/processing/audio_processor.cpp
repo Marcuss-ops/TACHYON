@@ -76,20 +76,6 @@ void AudioProcessor::reverse_audio(std::vector<float>& audio) {
 // ---------------------------------------------------------------------------
 // WSOLA time-stretch implementation
 // ---------------------------------------------------------------------------
-// WSOLA (Waveform Similarity Overlap-Add) preserves pitch while changing
-// playback speed.  It works by:
-//   1. cutting the input into overlapping frames
-//   2. searching for the best correlation-aligned segment in the vicinity
-//      of the expected position
-//   3. cross-fading (overlap-adding) the aligned frames
-//
-// Invariants enforced by this implementation:
-//   - speed > 0  (reverse is handled explicitly by the caller if needed)
-//   - silent input produces silent output
-//   - output length = ceil(input_length / speed)
-//   - no allocations in the inner loop (buffers pre-sized)
-// ---------------------------------------------------------------------------
-
 void AudioProcessor::apply_time_stretch(const std::vector<float>& input, float speed, std::vector<float>& output) {
     if (speed <= 0.0f) {
         output.clear();
@@ -114,11 +100,10 @@ void AudioProcessor::apply_time_stretch(const std::vector<float>& input, float s
     }
 
     // --- WSOLA parameters ---
-    // 30 ms frame, 75% overlap -> very smooth, good for preview
     constexpr int frame_ms = 30;
-    const int frame_size = (kInternalSampleRate * frame_ms) / 1000 * channels; // per-channel samples * channels
-    const int hop_out = frame_size / 4;           // output hop (fixed)
-    const int hop_in  = static_cast<int>(std::round(static_cast<float>(hop_out) * speed)); // input hop
+    const int frame_size = (kInternalSampleRate * frame_ms) / 1000 * channels;
+    const int hop_out = frame_size / 4;
+    const int hop_in  = static_cast<int>(std::round(static_cast<float>(hop_out) * speed));
 
     if (frame_size <= 0 || hop_in <= 0 || hop_out <= 0) {
         output.clear();
@@ -127,13 +112,11 @@ void AudioProcessor::apply_time_stretch(const std::vector<float>& input, float s
 
     output.assign(output_frames * channels, 0.0f);
 
-    // Hanning window for cross-fade
     std::vector<float> window(frame_size);
     for (int i = 0; i < frame_size; ++i) {
         window[i] = 0.5f - 0.5f * std::cos(2.0f * 3.14159265358979f * static_cast<float>(i) / static_cast<float>(frame_size - 1));
     }
 
-    // Search range for best correlation (+-15 ms)
     constexpr int search_ms = 15;
     const int search_range = (kInternalSampleRate * search_ms) / 1000 * channels;
 
@@ -141,7 +124,6 @@ void AudioProcessor::apply_time_stretch(const std::vector<float>& input, float s
     std::size_t out_pos = 0;
 
     while (out_pos + frame_size <= output.size() && in_pos < input.size()) {
-        // --- Find best correlation offset in the search window ---
         int best_offset = 0;
         if (in_pos >= static_cast<std::size_t>(frame_size + search_range)) {
             float best_corr = -1e30f;
@@ -163,7 +145,6 @@ void AudioProcessor::apply_time_stretch(const std::vector<float>& input, float s
         const std::size_t read_pos = static_cast<std::size_t>(static_cast<int>(in_pos) + best_offset);
         if (read_pos + frame_size > input.size()) break;
 
-        // Overlap-add with window
         for (int i = 0; i < frame_size; ++i) {
             output[out_pos + i] += input[read_pos + i] * window[i];
         }
@@ -172,7 +153,6 @@ void AudioProcessor::apply_time_stretch(const std::vector<float>& input, float s
         out_pos += hop_out;
     }
 
-    // Normalise by overlap count (each output sample is covered by ~frame_size/hop_out frames)
     const float norm = static_cast<float>(hop_out) / static_cast<float>(frame_size);
     for (float& s : output) {
         s *= norm;
@@ -186,21 +166,20 @@ void AudioProcessor::mix_track(const TrackInstance& track, double startTimeSecon
     // --- Validation ---
     if (!track.decoder) return;
     if (track.spec.volume <= 0.0f) return;
-    if (track.spec.playback_speed <= 0.0f) {
-        return; // Invalid speed; fail fast per manifesto
+    if (track.spec.playback_speed <= 0.0f) return;
+    if (track.spec.pitch_shift <= 0.0f) return;
+    if (durationSeconds < 0.0) return;
+    if (mix_buffer.empty()) return;
+    
+    // Check out_point for duration limit
+    double track_source_duration = track.decoder->duration();
+    if (track.spec.out_point_seconds > 0.0) {
+        track_source_duration = std::min(track_source_duration, track.spec.out_point_seconds);
     }
-    if (track.spec.pitch_shift <= 0.0f) {
-        return; // Invalid pitch shift; fail fast
-    }
-    if (durationSeconds < 0.0) {
-        return;
-    }
-    if (mix_buffer.empty()) {
-        return;
-    }
+    track_source_duration -= track.spec.in_point_seconds;
 
     const double track_start = track.spec.start_offset_seconds;
-    const double track_end = track_start + (track.decoder->duration() / std::max(0.01f, track.spec.playback_speed));
+    const double track_end = track_start + (track_source_duration / std::max(0.01f, track.spec.playback_speed));
     const double request_end = startTimeSeconds + durationSeconds;
 
     if (track_end <= startTimeSeconds || track_start >= request_end) {
@@ -212,8 +191,17 @@ void AudioProcessor::mix_track(const TrackInstance& track, double startTimeSecon
     const bool pitch_correct = track.spec.pitch_correct;
 
     // --- Determine source read range ---
-    const double source_start = std::max(0.0, startTimeSeconds - track_start) * speed;
-    const double source_duration = durationSeconds * speed;
+    const double time_within_track = std::max(0.0, startTimeSeconds - track_start);
+    const double source_start = track.spec.in_point_seconds + time_within_track * speed;
+    double source_duration = durationSeconds * speed;
+
+    // Check trim_out bound
+    if (track.spec.out_point_seconds > 0.0) {
+        if (source_start >= track.spec.out_point_seconds) return;
+        if (source_start + source_duration > track.spec.out_point_seconds) {
+            source_duration = track.spec.out_point_seconds - source_start;
+        }
+    }
 
     std::vector<float> decoded = track.decoder->decode_range(source_start, source_duration + 0.1);
     if (decoded.empty()) return;
@@ -233,15 +221,10 @@ void AudioProcessor::mix_track(const TrackInstance& track, double startTimeSecon
     std::vector<float> processed;
 
     if (pitch_correct && std::abs(speed - 1.0f) >= 0.01f) {
-        // --- Pitch-correct path: WSOLA time-stretch ---
-        // Decode extra material so WSOLA has enough lookahead
-        std::vector<float> stretch_input = track.decoder->decode_range(
-            source_start, source_duration / speed + 0.5);
+        std::vector<float> stretch_input = track.decoder->decode_range(source_start, source_duration / speed + 0.5);
         apply_time_stretch(stretch_input, speed, processed);
 
-        // After time-stretch, duration is stretched; apply pitch shift if needed
         if (std::abs(pitch - 1.0f) >= 0.01f) {
-            // Pitch shift by resampling the time-stretched audio
             std::vector<float> pitched;
             pitched.reserve(static_cast<std::size_t>(static_cast<float>(processed.size()) / pitch));
             for (std::size_t i = 0; i < pitched.capacity() / 2; ++i) {
@@ -259,12 +242,9 @@ void AudioProcessor::mix_track(const TrackInstance& track, double startTimeSecon
             processed = std::move(pitched);
         }
     } else {
-        // --- Standard path: resampling (pitch changes with speed) ---
         const float resampling_ratio = speed * pitch * (static_cast<float>(kInternalSampleRate) / sampleRate);
-        processed.resize(decoded.size());
-        std::copy(decoded.begin(), decoded.end(), processed.begin());
+        processed = std::move(decoded);
 
-        // Resample processed into a temporary buffer, then mix
         std::vector<float> resampled;
         resampled.reserve(target_samples * 2);
 
@@ -304,7 +284,6 @@ void AudioProcessor::mix_track(const TrackInstance& track, double startTimeSecon
         processed = std::move(resampled);
     }
 
-    // --- Mix into output buffer ---
     for (std::size_t i = 0; i < target_samples - out_offset_samples; ++i) {
         const std::size_t out_idx = (out_offset_samples + i) * 2;
         if (out_idx + 1 >= mix_buffer.size()) break;
@@ -315,7 +294,6 @@ void AudioProcessor::mix_track(const TrackInstance& track, double startTimeSecon
         mix_buffer[out_idx + 1] += processed[proc_idx + 1] * right_gain;
     }
 
-    // Apply per-track graph processing
     const std::size_t track_samples = std::min(
         static_cast<std::size_t>(target_samples - out_offset_samples),
         processed.size() / 2);
@@ -324,9 +302,6 @@ void AudioProcessor::mix_track(const TrackInstance& track, double startTimeSecon
     }
 }
 
-// ---------------------------------------------------------------------------
-// Setup DSP nodes from AudioEffectSpec
-// ---------------------------------------------------------------------------
 void AudioProcessor::setup_track_effects(const TrackInstance& track) {
     if (track.spec.effects.empty()) return;
     
@@ -364,11 +339,8 @@ void AudioProcessor::setup_track_effects(const TrackInstance& track) {
         } else if (effect.type == "high_pass") {
             float cutoff = effect.cutoff_freq_hz.value_or(1000.0f);
             bus.add_node(std::make_shared<tachyon::audio::HighPassNode>(cutoff, sample_rate));
-        } else if (effect.type == "normalize") {
-            // Normalize requires analyzing the entire track - handled separately in export path
         }
     }
 }
 
 } // namespace tachyon::audio
-

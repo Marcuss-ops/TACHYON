@@ -327,7 +327,7 @@ static json serialize_transform(const Transform2D& transform) {
     return j;
 }
 
-static json serialize_layer(const LayerSpec& layer) {
+json serialize_layer(const LayerSpec& layer) {
     json j;
     j["id"] = layer.id;
     j["name"] = layer.name;

@@ -166,6 +166,7 @@ bool run_time_remap_tests();
 bool run_frame_blend_tests();
 bool run_motion_blur_tests();
 bool run_rolling_shutter_tests();
+bool run_audio_trim_tests();
 
 
 int main(int argc, char** argv) {
@@ -229,6 +230,7 @@ int main(int argc, char** argv) {
         {"time_remap", run_time_remap_tests},
         {"frame_blend", run_frame_blend_tests},
         {"rolling_shutter", run_rolling_shutter_tests},
+        {"audio_trim", run_audio_trim_tests},
     };
 
     bool list_tests = false;
