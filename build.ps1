@@ -39,13 +39,19 @@ param(
     [switch]$Configure,
     [int]$Jobs        = 0,
     [switch]$RunTests,
-    [string]$TestFilter = ""
+    [string]$TestFilter = "",
+    [switch]$KillStaleTests
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 $global:LASTEXITCODE = 0
 $Root = $PSScriptRoot
+
+# Auto-enable KillStaleTests on Windows
+if (-not $KillStaleTests -and $env:OS -eq 'Windows_NT') {
+    $KillStaleTests = $true
+}
 
 function Invoke-Native {
     param(
@@ -112,6 +118,14 @@ if ($missing.Count -gt 0) {
     exit 1
 }
 
+if ($KillStaleTests) {
+    Write-Host "Killing stale Tachyon test processes..." -ForegroundColor Yellow
+    Get-Process TachyonTests -ErrorAction SilentlyContinue | Stop-Process -Force
+    Get-Process tachyon -ErrorAction SilentlyContinue | Stop-Process -Force
+    Get-Process ffmpeg -ErrorAction SilentlyContinue | Stop-Process -Force
+    Get-Process ffprobe -ErrorAction SilentlyContinue | Stop-Process -Force
+}
+
 if ($Clean) {
     Write-Host "Cleaning..." -ForegroundColor Yellow
     & "$Root\scripts\clean-all.ps1" -BuildOnly
@@ -139,11 +153,26 @@ Write-Host "Build OK" -ForegroundColor Green
 
 if ($RunTests) {
     Write-Host "Running tests..." -ForegroundColor Yellow
-    $ctestArgs = @("--output-on-failure", "-j", $J)
+
     if ($TestFilter) {
-        $ctestArgs += "-R"
-        $ctestArgs += $TestFilter
+        Write-Host "  Internal filter: $TestFilter" -ForegroundColor Yellow
+
+        $previousFilter = [Environment]::GetEnvironmentVariable("TACHYON_TEST_FILTER", "Process")
+        [Environment]::SetEnvironmentVariable("TACHYON_TEST_FILTER", $TestFilter, "Process")
+
+        try {
+            Invoke-Native {
+                & ctest --test-dir $BuildDir -C $Config --output-on-failure -R "^TachyonTests$"
+            } "Tests FAILED."
+        } finally {
+            [Environment]::SetEnvironmentVariable("TACHYON_TEST_FILTER", $previousFilter, "Process")
+        }
+    } else {
+        $ctestArgs = @("-C", $Config, "--output-on-failure", "-j", $J)
+        Invoke-Native {
+            & ctest --test-dir $BuildDir @ctestArgs
+        } "Tests FAILED."
     }
-    Invoke-Native { & ctest --test-dir $BuildDir @ctestArgs } "Tests FAILED."
+
     Write-Host "Tests OK" -ForegroundColor Green
 }

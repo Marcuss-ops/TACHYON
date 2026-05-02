@@ -3,7 +3,7 @@
 #include "tachyon/runtime/execution/jobs/render_job.h"
 #include "tachyon/core/cli.h"
 #include "tachyon/presets/background/background_preset_registry.h"
-#include "tachyon/core/platform/pipe_process.h"
+#include "tachyon/core/platform/process.h"
 
 #include <iostream>
 #include <filesystem>
@@ -30,53 +30,52 @@ void cleanup_test_dir(const std::filesystem::path& dir) {
 }
 
 bool run_ffprobe(const std::filesystem::path& file, const std::string& expected_codec,
-                 int expected_width, int expected_height, double expected_duration, double expected_fps) {
+                  int expected_width, int expected_height, double expected_duration, double expected_fps) {
+    using tachyon::core::platform::ProcessSpec;
+    using tachyon::core::platform::run_process;
+
     if (!std::filesystem::exists(file)) {
         std::cerr << "FAIL: Output file does not exist: " << file << "\n";
         return false;
     }
 
-    std::string cmd = "ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,height,r_frame_rate,duration -of json \"" + file.string() + "\"";
-    FILE* pipe = core::platform::open_read_pipe(cmd.c_str());
-    if (!pipe) {
-        std::cerr << "FAIL: Cannot run ffprobe\n";
+    ProcessSpec spec;
+    spec.executable = "ffprobe";
+    spec.args = {
+        "-v", "error",
+        "-select_streams", "v:0",
+        "-show_entries", "stream=codec_name,width,height,r_frame_rate,duration",
+        "-of", "json",
+        file.string()
+    };
+
+    auto result = run_process(spec);
+    if (!result.success) {
+        std::cerr << "FAIL: ffprobe failed for " << file
+                  << "\nstderr:\n" << result.error << "\n";
         return false;
     }
 
-    char buffer[1024];
-    std::string result;
-    while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
-        result += buffer;
-    }
-    int status = core::platform::close_pipe(pipe);
-
-    if (status != 0) {
-        std::cerr << "FAIL: ffprobe failed for " << file << "\n";
-        return false;
-    }
+    const std::string& output = result.output;
 
     bool ok = true;
-    if (!expected_codec.empty() && result.find(expected_codec) == std::string::npos) {
-        std::cerr << "FAIL: Expected codec " << expected_codec << " not found in: " << result << "\n";
+    if (!expected_codec.empty() && output.find(expected_codec) == std::string::npos) {
+        std::cerr << "FAIL: Expected codec " << expected_codec << " not found in: " << output << "\n";
         ok = false;
     }
-    if (expected_width > 0) {
-        std::string w = std::to_string(expected_width);
-        if (result.find(w) == std::string::npos) {
-            std::cerr << "FAIL: Expected width " << expected_width << " not found in: " << result << "\n";
-            ok = false;
-        }
+
+    if (expected_width > 0 && output.find(std::to_string(expected_width)) == std::string::npos) {
+        std::cerr << "FAIL: Expected width " << expected_width << " not found in: " << output << "\n";
+        ok = false;
     }
-    if (expected_height > 0) {
-        std::string h = std::to_string(expected_height);
-        if (result.find(h) == std::string::npos) {
-            std::cerr << "FAIL: Expected height " << expected_height << " not found in: " << result << "\n";
-            ok = false;
-        }
+
+    if (expected_height > 0 && output.find(std::to_string(expected_height)) == std::string::npos) {
+        std::cerr << "FAIL: Expected height " << expected_height << " not found in: " << output << "\n";
+        ok = false;
     }
 
     if (!ok) {
-        std::cerr << "ffprobe output: " << result << "\n";
+        std::cerr << "ffprobe output: " << output << "\n";
     }
     return ok;
 }
@@ -479,19 +478,22 @@ bool test_export_mp4_with_audio() {
     if (!ok) {
         std::cerr << "FAIL: MP4 with audio failed: " << result.output_error << "\n";
     } else {
-        std::string cmd = "ffprobe -v error -show_entries stream=codec_type -of json \"" + out_path.string() + "\"";
-        FILE* pipe = core::platform::open_read_pipe(cmd.c_str());
-        if (pipe) {
-            char buffer[1024];
-            std::string probe_result;
-            while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
-                probe_result += buffer;
-            }
-            core::platform::close_pipe(pipe);
-            if (probe_result.find("audio") == std::string::npos) {
-                std::cerr << "FAIL: No audio stream found in output\n";
-                ok = false;
-            }
+        using tachyon::core::platform::ProcessSpec;
+        using tachyon::core::platform::run_process;
+
+        ProcessSpec spec;
+        spec.executable = "ffprobe";
+        spec.args = {
+            "-v", "error",
+            "-show_entries", "stream=codec_type",
+            "-of", "json",
+            out_path.string()
+        };
+
+        auto probe_result = run_process(spec);
+        if (probe_result.success && probe_result.output.find("audio") == std::string::npos) {
+            std::cerr << "FAIL: No audio stream found in output\n";
+            ok = false;
         }
     }
     cleanup_test_dir(out_dir);
