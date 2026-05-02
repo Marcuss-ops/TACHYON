@@ -38,8 +38,4 @@ bool read_number(const json& object, const char* key, std::optional<T>& out) {
     return true;
 }
 
-bool read_vector2(const json& value, math::Vector2& out);
-bool read_vector3(const json& value, math::Vector3& out);
-bool read_color(const json& value, ColorSpec& out);
-
 } // namespace tachyon

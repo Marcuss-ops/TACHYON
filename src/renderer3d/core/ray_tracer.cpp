@@ -3,8 +3,10 @@
 #include "tachyon/core/math/vector3.h"
 #include "tachyon/core/math/matrix4x4.h"
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <random>
+#include <iostream>
 
 namespace tachyon::renderer3d {
 
@@ -28,6 +30,10 @@ math::Vector2 sample_concentric_disk(float u1, float u2) {
         theta = (3.1415926535f / 2.0f) - (3.1415926535f / 4.0f) * (sx / sy);
     }
     return {r * std::cos(theta), r * std::sin(theta)};
+}
+
+bool is_finite_vector3(const math::Vector3& v) {
+    return std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z);
 }
 
 } // namespace
@@ -81,9 +87,23 @@ void RayTracer::render(
     const float time = static_cast<float>(frame_time_seconds);
 
     // Compute camera vectors
-    math::Vector3 cam_forward = (cam.target - cam.position).normalized();
-    math::Vector3 cam_right = math::Vector3::cross(cam_forward, cam.up).normalized();
-    math::Vector3 cam_up = math::Vector3::cross(cam_right, cam_forward).normalized();
+    math::Vector3 cam_forward = cam.target - cam.position;
+    if (!is_finite_vector3(cam_forward) || cam_forward.length_squared() <= 1e-8f) {
+        cam_forward = {0.0f, 0.0f, 1.0f};
+    }
+    cam_forward = cam_forward.normalized();
+
+    math::Vector3 cam_right = math::Vector3::cross(cam_forward, cam.up);
+    if (!is_finite_vector3(cam_right) || cam_right.length_squared() <= 1e-8f) {
+        cam_right = {1.0f, 0.0f, 0.0f};
+    }
+    cam_right = cam_right.normalized();
+
+    math::Vector3 cam_up = math::Vector3::cross(cam_right, cam_forward);
+    if (!is_finite_vector3(cam_up) || cam_up.length_squared() <= 1e-8f) {
+        cam_up = {0.0f, 1.0f, 0.0f};
+    }
+    cam_up = cam_up.normalized();
     float fov_rad = cam.fov_y * 3.1415926535f / 180.0f;
     float half_height = std::tan(fov_rad * 0.5f);
     float aspect = static_cast<float>(width) / static_cast<float>(height);
@@ -133,6 +153,20 @@ void RayTracer::render(
                     const math::Vector3 focus_point = cam.position + direction * cam.focal_distance;
                     origin = origin + lens_offset;
                     direction = (focus_point - origin).normalized();
+                }
+
+                if (!is_finite_vector3(origin) || !is_finite_vector3(direction) || direction.length_squared() <= 1e-8f) {
+                    continue;
+                }
+
+                static std::atomic<bool> debug_primary_logged{false};
+                if (!debug_primary_logged.exchange(true)) {
+                    std::cerr << "[RayTracer] primary origin=("
+                              << origin.x << "," << origin.y << "," << origin.z
+                              << ") dir=(" << direction.x << "," << direction.y << "," << direction.z
+                              << ") cam_pos=(" << cam.position.x << "," << cam.position.y << "," << cam.position.z
+                              << ") cam_target=(" << cam.target.x << "," << cam.target.y << "," << cam.target.z
+                              << ")\n";
                 }
 
                 // Motion blur time jitter

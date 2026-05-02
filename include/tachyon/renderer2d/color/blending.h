@@ -87,6 +87,7 @@ inline Color composite_src_over_linear(Color src, Color dst) {
 
 Color blend_mode_color_with_curve(Color src, Color dest, BlendMode mode, TransferCurve curve = TransferCurve::Linear);
 Color blend_mode_color(Color src, Color dest, BlendMode mode);
+BlendMode parse_blend_mode(const std::string& name);
 
 inline Color convert_color(Color color, TransferCurve src_c, ColorSpace src_s, TransferCurve dst_c, ColorSpace dst_s) {
     if (src_c == dst_c && src_s == dst_s) return color;

@@ -132,12 +132,13 @@ std::string build_ffmpeg_mux_command(const RenderPlan& plan, const std::filesyst
             << " -colorspace " << colorspace
             << " -color_range " << color_range;
 
+    command << " -map 0:v:0 -map 1:a:0";
     command << " -c:v copy";
 
     if (!plan.output.profile.audio.codec.empty()) {
         command << " -c:a " << plan.output.profile.audio.codec;
     } else {
-        command << " -c:a aac";
+        command << " -c:a aac -b:a 192k";
     }
 
     if (plan.output.profile.container == "mp4") {

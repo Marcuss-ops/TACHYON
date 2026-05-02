@@ -1,18 +1,14 @@
 #include "tachyon/renderer2d/evaluated_composition/rendering/pipeline/scene3d_bridge.h"
+#include "tachyon/renderer2d/evaluated_composition/layer_renderer.h"
 #include "tachyon/renderer2d/evaluated_composition/rendering/pipeline/pipeline_helpers.h"
-#include "tachyon/renderer2d/evaluated_composition/rendering/primitives/text_mesh_builder.h"
 #include "tachyon/renderer2d/evaluated_composition/rendering/primitives/media_card_mesh_builder.h"
 #include "tachyon/renderer2d/resource/render_context.h"
-#include "tachyon/text/fonts/core/font_registry.h"
-#include "tachyon/text/fonts/core/font.h"
-#include "tachyon/media/management/media_manager.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/renderer3d/modifiers/i3d_modifier.h"
 #include "tachyon/renderer3d/modifiers/three_d_modifier_registry.h"
 
 #include <algorithm>
 #include <cmath>
-#include <array>
 #include <optional>
 
 namespace tachyon {
@@ -52,61 +48,72 @@ struct LayerMeshResult {
     std::string mesh_asset_id;
 };
 
+static LayerSurface build_layer_surface_impl(
+    const scene::EvaluatedLayerState& l,
+    const Scene3DBridgeInput& input) {
+    LayerSurface result;
+
+    if (input.context == nullptr || input.state == nullptr) {
+        return result;
+    }
+
+    std::shared_ptr<renderer2d::SurfaceRGBA> rendered;
+    if (input.plan != nullptr && input.task != nullptr) {
+        rendered = renderer2d::render_layer_surface(
+            l,
+            *input.state,
+            *input.plan,
+            *input.task,
+            const_cast<renderer2d::RenderContext2D&>(*input.context),
+            std::nullopt);
+    } else {
+        rendered = renderer2d::render_simple_layer_surface(
+            l,
+            *input.state,
+            const_cast<renderer2d::RenderContext2D&>(*input.context),
+            std::nullopt);
+    }
+    if (rendered != nullptr) {
+        result.surface = std::move(rendered);
+        result.cache_key = l.id + ":" + std::to_string(input.task != nullptr ? input.task->frame_number : 0);
+        result.source_kind = "surface";
+    }
+
+    return result;
+}
+
 static LayerMeshResult build_layer_mesh(
     const scene::EvaluatedLayerState& l,
     const Scene3DBridgeInput& input) {
     LayerMeshResult result;
 
-    // Text mesh
-    if (l.type == scene::LayerType::Text && input.context->font_registry != nullptr) {
-        ::tachyon::text::TextAnimationOptions animation{};
-        animation.time_seconds = static_cast<float>(l.local_time_seconds);
-        animation.animators = std::span<const ::tachyon::TextAnimatorSpec>(
-            l.text_animators.data(), l.text_animators.size());
-        const auto text_mesh = renderer2d::build_text_extrusion_mesh(l, *input.state, *input.context->font_registry, animation);
-        if (text_mesh.mesh) {
-            result.mesh_asset = text_mesh.mesh;
-            result.mesh_asset_id = text_mesh.cache_key;
-            return result;
-        }
+    const auto layer_surface = build_layer_surface_impl(l, input);
+
+    // Universal surface -> plane path.
+    if (layer_surface.valid()) {
+        const auto textured_mesh = renderer2d::build_textured_card_mesh(
+            l,
+            *layer_surface.surface,
+            layer_surface.cache_key.empty() ? l.id : layer_surface.cache_key);
+        result.mesh_asset = textured_mesh.mesh;
+        result.mesh_asset_id = textured_mesh.cache_key;
+        return result;
     }
 
-    // Media mesh
-    if (l.type == scene::LayerType::Image || l.type == scene::LayerType::Video) {
-        const auto media_source = resolve_media_source(l, *input.context);
-        if (media_source.has_value()) {
-            const ::tachyon::renderer2d::SurfaceRGBA* media_frame = nullptr;
-            if (l.type == scene::LayerType::Video) {
-                media_frame = input.context->media_manager->get_video_frame(*media_source, input.task->time_seconds);
-            } else {
-                media_frame = input.context->media_manager->get_image(*media_source);
-            }
-
-            if (media_frame != nullptr) {
-                const auto media_mesh = renderer2d::build_textured_card_mesh(
-                    l,
-                    *media_frame,
-                    media_source->generic_string() + "@" + std::to_string(input.task->time_seconds));
-                result.mesh_asset = media_mesh.mesh;
-                result.mesh_asset_id = media_mesh.cache_key;
-                return result;
-            } else {
-                const auto fallback_mesh = renderer2d::build_colored_card_mesh(
-                    l,
-                    media_source->generic_string());
-                result.mesh_asset = fallback_mesh.mesh;
-                result.mesh_asset_id = fallback_mesh.cache_key;
-                return result;
-            }
+    if (l.mesh_asset) {
+        result.mesh_asset = l.mesh_asset;
+        result.mesh_asset_id = l.mesh_asset->path;
+        if (result.mesh_asset_id.empty()) {
+            result.mesh_asset_id = l.asset_path.value_or("");
         }
+        return result;
     }
 
-    // Solid mesh
+    // Final fallback for layers that cannot produce a surface.
     if (l.width > 0 && l.height > 0) {
-        const auto solid_mesh = renderer2d::build_colored_card_mesh(l, std::to_string(input.task->frame_number));
+        const auto solid_mesh = renderer2d::build_colored_card_mesh(l, std::to_string(input.task != nullptr ? input.task->frame_number : 0));
         result.mesh_asset = solid_mesh.mesh;
         result.mesh_asset_id = solid_mesh.cache_key;
-        return result;
     }
 
     return result;
@@ -255,6 +262,12 @@ std::vector<renderer3d::EvaluatedMeshInstance> build_instances_3d(
     }
 
     return instances;
+}
+
+LayerSurface build_layer_surface(
+    const scene::EvaluatedLayerState& layer,
+    const Scene3DBridgeInput& input) {
+    return build_layer_surface_impl(layer, input);
 }
 
 Scene3DBridgeOutput build_evaluated_scene_3d(const Scene3DBridgeInput& input) {

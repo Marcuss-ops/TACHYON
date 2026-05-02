@@ -110,6 +110,7 @@ int get_repeat_count() {
 
 // External test declarations
 bool run_scene_spec_tests();
+bool run_json_reader_tests();
 bool run_render_job_tests();
 bool run_math_tests();
 bool run_asset_resolution_tests();
@@ -140,6 +141,7 @@ bool run_scene_evaluator_tests();
 bool run_render_session_tests();
 bool run_render_batch_tests();
 bool run_parallax_cards_tests();
+bool run_png_3d_validation_tests();
 bool run_studio_library_tests();
 bool run_timeline_tests();
 bool run_camera_cuts_tests();
@@ -165,14 +167,15 @@ bool run_time_remap_tests();
 bool run_frame_blend_tests();
 bool run_motion_blur_tests();
 bool run_rolling_shutter_tests();
-// bool run_audio_trim_tests();
-bool run_json_reader_tests();
+bool run_audio_trim_tests();
+bool run_scene3d_smoke_tests();
 bool run_3d_modifier_tests();
 
 
 int main(int argc, char** argv) {
     std::vector<TestCase> tests = {
         {"native_render", tachyon::run_native_render_tests},
+        {"json_reader", run_json_reader_tests},
         {"math", run_math_tests},
         {"property", run_property_tests},
         {"expression", run_expression_tests},
@@ -202,6 +205,7 @@ int main(int argc, char** argv) {
         {"render_session", run_render_session_tests},
         {"render_batch", run_render_batch_tests},
         {"parallax_cards", run_parallax_cards_tests},
+        {"png_3d_validation", run_png_3d_validation_tests},
         {"vertical_slice", tachyon::run_vertical_slice_tests},
         {"studio_library", run_studio_library_tests},
         {"timeline", run_timeline_tests},
@@ -231,8 +235,9 @@ int main(int argc, char** argv) {
         {"time_remap", run_time_remap_tests},
         {"frame_blend", run_frame_blend_tests},
         {"rolling_shutter", run_rolling_shutter_tests},
+        {"audio_trim", run_audio_trim_tests},
+        {"scene3d_smoke", run_scene3d_smoke_tests},
         {"three_d_modifier", run_3d_modifier_tests},
-        // {"audio_trim", run_audio_trim_tests},
     };
 
     bool list_tests = false;

@@ -56,6 +56,7 @@ add_executable(TachyonTests
      integration/render_batch_tests.cpp
      integration/parallax_cards_tests.cpp
      integration/vertical_slice_tests.cpp
+     integration/png_3d_validation_tests.cpp
     unit/renderer3d/temporal/time_remap_tests.cpp
     unit/renderer3d/temporal/frame_blend_tests.cpp
     # unit/renderer3d/effects/motion_blur_tests.cpp  # Duplicate - use unit/renderer3d/motion_blur_tests.cpp
@@ -65,7 +66,8 @@ add_executable(TachyonTests
     unit/presets/sfx_contract_tests.cpp
     unit/presets/shape_contract_tests.cpp
     unit/runtime/native_render_tests.cpp
-#     unit/audio/test_audio_trim.cpp
+    unit/audio/test_audio_trim.cpp
+    integration/scene3d_smoke_tests.cpp
 )
 
 set(TachyonTrackerTestSources

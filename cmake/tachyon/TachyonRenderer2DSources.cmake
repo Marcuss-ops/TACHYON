@@ -8,6 +8,7 @@ set(TachyonRenderer2DSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/color/color_management.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/color/color_management_system.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/color/lut3d.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/color/color_math.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/core/framebuffer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/core/surface_pool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/deform/mesh_deform.cpp
@@ -15,7 +16,12 @@ set(TachyonRenderer2DSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/color/chromatic_aberration.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/color/color_effects.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/effect_host.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/effect_param_access.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/effect_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/surface/surface_sampling.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/surface/surface_blur.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/surface/surface_composite.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/draw_primitives.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/glsl_transition_effect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/utility_effects.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/distort/warp_stabilizer_effect.cpp

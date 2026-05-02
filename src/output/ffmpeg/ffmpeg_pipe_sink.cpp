@@ -43,7 +43,7 @@ public:
             return false;
         }
 
-        bool needs_temp_video = plan.output.profile.format == OutputFormat::Gif;
+        bool needs_temp_video = plan.output.profile.format == OutputFormat::Gif || !m_audio_path.empty();
 
         const std::filesystem::path destination(plan.output.destination.path);
         if (!destination.parent_path().empty()) {
@@ -103,12 +103,41 @@ public:
         return finalize_post_processing();
     }
 
+    void set_audio_source(const std::string& audio_path) override {
+        m_audio_path = audio_path;
+    }
+
     const std::string& last_error() const override { return m_last_error; }
 
 private:
     bool finalize_post_processing() {
         if (m_plan == nullptr) return true;
         if (m_plan->output.profile.format == OutputFormat::Gif) return finalize_gif();
+        if (!m_audio_path.empty()) return finalize_audio();
+        return true;
+    }
+
+    bool finalize_audio() {
+        if (m_temp_video_path.empty()) return true;
+
+        std::string command = build_ffmpeg_mux_command(*m_plan, m_temp_video_path, m_audio_path);
+        
+        ProcessSpec spec;
+#ifdef _WIN32
+        spec.executable = "cmd.exe";
+        spec.args = {"/C", command};
+#else
+        spec.executable = "sh";
+        spec.args = {"-c", command};
+#endif
+        auto result = run_process(spec);
+        if (!result.success) {
+            m_last_error = "ffmpeg muxing failed: " + result.error;
+            return false;
+        }
+
+        std::error_code ec;
+        std::filesystem::remove(m_temp_video_path, ec);
         return true;
     }
 
@@ -165,6 +194,7 @@ private:
     const RenderPlan* m_plan{nullptr};
     FILE* m_pipe{nullptr};
     std::filesystem::path m_temp_video_path;
+    std::string m_audio_path;
     renderer2d::detail::TransferCurve m_source_transfer{renderer2d::detail::TransferCurve::sRGB};
     renderer2d::detail::ColorSpace m_source_space{renderer2d::detail::ColorSpace::sRGB};
     renderer2d::detail::TransferCurve m_output_transfer{renderer2d::detail::TransferCurve::sRGB};

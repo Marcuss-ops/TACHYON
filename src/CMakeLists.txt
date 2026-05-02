@@ -111,10 +111,7 @@ add_library(TachyonScene OBJECT ${TachyonSceneSources})
 tachyon_configure_common(TachyonScene)
 
 add_library(TachyonRuntime OBJECT ${TachyonRuntimeSources})
-if(TACHYON_ENABLE_RENDER_JOB_JSON)
-    target_sources(TachyonRuntime PRIVATE runtime/execution/render_job/render_job_parse.cpp)
-    target_compile_definitions(TachyonRuntime PRIVATE TACHYON_ENABLE_RENDER_JOB_JSON)
-endif()
+target_compile_definitions(TachyonRuntime PRIVATE TACHYON_ENABLE_RENDER_JOB_JSON)
 tachyon_configure_common(TachyonRuntime)
 if(TACHYON_ENABLE_AUDIO_MUX)
     target_compile_definitions(TachyonRuntime PRIVATE TACHYON_ENABLE_AUDIO_MUX)
@@ -161,7 +158,19 @@ tachyon_link_3d_deps(TachyonCLI)
 add_library(TachyonPlatform OBJECT ${TachyonPlatformSources})
 tachyon_configure_common(TachyonPlatform)
 
-add_library(TachyonCore STATIC ${TachyonCoreSources})
+add_library(TachyonCore STATIC 
+    ${TachyonCoreSources}
+    ${TachyonSceneSources}
+    ${TachyonRuntimeSources}
+    ${TachyonRenderer2DSources}
+    ${TachyonRenderer3DSources}
+    ${TachyonMediaSources}
+    ${TachyonAudioSources}
+    ${TachyonOutputSources}
+    ${TachyonTextSources}
+    ${TachyonCLISources}
+    ${TachyonPlatformSources}
+)
 tachyon_configure_common(TachyonCore)
 if(TACHYON_ENABLE_AUDIO_MUX)
     target_compile_definitions(TachyonCore PUBLIC TACHYON_ENABLE_AUDIO_MUX)
@@ -177,19 +186,6 @@ endif()
 if(TACHYON_ENABLE_PREVIEW_WINDOW)
     target_compile_definitions(TachyonCore PUBLIC TACHYON_ENABLE_PREVIEW_WINDOW)
 endif()
-
-target_sources(TachyonCore PRIVATE
-    $<TARGET_OBJECTS:TachyonScene>
-    $<TARGET_OBJECTS:TachyonRuntime>
-    $<TARGET_OBJECTS:TachyonRenderer2D>
-    $<TARGET_OBJECTS:TachyonRenderer3D>
-    $<TARGET_OBJECTS:TachyonMedia>
-    $<TARGET_OBJECTS:TachyonAudio>
-    $<TARGET_OBJECTS:TachyonOutput>
-    $<TARGET_OBJECTS:TachyonText>
-    $<TARGET_OBJECTS:TachyonCLI>
-    $<TARGET_OBJECTS:TachyonPlatform>
-)
 
 add_executable(tachyon
     main.cpp

@@ -84,3 +84,27 @@
 - [x] Modular roadmap documentation (tracking, roto, playback, etc.)
 - [x] Vectorized Mask Rasterizer (AVX2)
 - [x] Multi-Camera Timeline Cuts (Composition explicit cuts)
+
+## Phase 10: Severe Cleanup (Architectural Consolidation)
+- [x] Sincronizzazione branch `feat/layer3d-mesh-resolver` con `main`
+- [x] Integrazione test `scene3d_smoke_tests.cpp` in CMake
+- [x] Refactor JSON Parsing (PR #1: Primitive vs Domain)
+    - [x] Creazione `json_reader.h/cpp` per primitive
+    - [x] Creazione `spec_value_parsers.h/cpp` per dominio
+    - [x] Migrazione core math (Vector, Color)
+    - [x] Pulizia call sites in `json_parse_helpers.cpp`
+- [x] Refactor Animation Parsing (PR #2: Easing/Bezier)
+    - [x] Creazione `easing_parse.h/cpp`
+    - [x] Migrazione logica easing e bezier
+    - [x] Conversione `json_parse_helpers.cpp` in adapter legacy
+- [/] Refactor Effect Utilities (PR #3: Specialized Modules)
+    - [x] Split `effect_utils.cpp` in `color_math`, `surface_sampling`, etc.
+    - [x] Creazione nuovi header in `renderer2d/`
+    - [x] Registrazione nuovi file in CMake
+    - [/] Validazione build e test
+- [ ] Refactor Binary Serialization (PR #4: TBF Helpers)
+    - [ ] Audit `tbf_read_helpers.cpp`
+    - [ ] Creazione test di roundtrip
+- [ ] Enforcing Module Boundaries
+    - [ ] Audit degli header pubblici
+    - [ ] Rimozione inclusioni circolari residue

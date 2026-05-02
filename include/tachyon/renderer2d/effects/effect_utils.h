@@ -42,16 +42,7 @@ using ::tachyon::renderer2d::composite_with_offset;
 using ::tachyon::renderer2d::build_channel_lut;
 using ::tachyon::renderer2d::apply_channel_lut;
 
-template <typename Fn>
-SurfaceRGBA transform_surface(const SurfaceRGBA& input, Fn&& fn) {
-    SurfaceRGBA output(input.width(), input.height());
-    for (std::uint32_t y = 0; y < input.height(); ++y) {
-        for (std::uint32_t x = 0; x < input.width(); ++x) {
-            output.set_pixel(x, y, fn(input.get_pixel(x, y)));
-        }
-    }
-    return output;
-}
+// transform_surface is now in framebuffer.h
 
 } // namespace detail
 } // namespace tachyon::renderer2d

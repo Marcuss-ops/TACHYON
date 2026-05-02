@@ -33,6 +33,7 @@ class FrameOutputSink {
         virtual bool write_frame(const OutputFramePacket& packet) = 0;
         virtual bool finish() = 0;
         virtual bool finalize_post_processing() { return true; }
+        virtual void set_audio_source(const std::string& audio_path) { (void)audio_path; }
         [[nodiscard]] virtual const std::string& last_error() const = 0;
 };
 

@@ -2,8 +2,10 @@
 #include "tachyon/renderer3d/materials/pbr_utils.h"
 #include "tachyon/core/math/matrix4x4.h"
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <random>
+#include <iostream>
 
 namespace tachyon::renderer3d {
 
@@ -66,6 +68,10 @@ math::Vector3 safe_normalize(const math::Vector3& v, const math::Vector3& fallba
     return fallback;
 }
 
+bool is_finite_vector3(const math::Vector3& v) {
+    return std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z);
+}
+
 } // namespace
 
 ShadingResult RayTracer::trace_ray(
@@ -89,8 +95,32 @@ ShadingResult RayTracer::trace_ray(
         return result;
     }
 
+    static std::atomic<int> debug_trace_count{0};
+    const int trace_id = debug_trace_count.fetch_add(1);
+    if (trace_id < 20) {
+        std::cerr << "[RayTracer] trace #" << trace_id
+                  << " depth=" << depth
+                  << " origin=(" << origin.x << "," << origin.y << "," << origin.z << ")"
+                  << " dir=(" << direction.x << "," << direction.y << "," << direction.z << ")"
+                  << " finite=" << (is_finite_vector3(origin) && is_finite_vector3(direction) ? "yes" : "no")
+                  << "\n";
+    }
+
     // Embree ray hit structure
     RTCRayHit rh{};
+    if (!is_finite_vector3(origin) || !is_finite_vector3(direction) || direction.length_squared() <= kTextureEpsilon) {
+        ShadingResult result;
+        result.color = math::Vector3{0.0f, 0.0f, 0.0f};
+        result.alpha = 0.0f;
+        result.depth = 1e6f;
+        result.normal = math::Vector3{0.0f, 0.0f, 1.0f};
+        result.albedo = math::Vector3{0.0f, 0.0f, 0.0f};
+        result.motion_vector = math::Vector2{0.0f, 0.0f};
+        result.object_id = 0;
+        result.material_id = 0;
+        return result;
+    }
+
     rh.ray.org_x = origin.x; rh.ray.org_y = origin.y; rh.ray.org_z = origin.z;
     rh.ray.dir_x = direction.x; rh.ray.dir_y = direction.y; rh.ray.dir_z = direction.z;
     rh.ray.tnear = 0.001f;
@@ -264,6 +294,9 @@ ShadingResult RayTracer::trace_ray(
             math::Vector3 light_pos = light.position;
             math::Vector3 delta = light_pos - hit_pos;
             distance = delta.length();
+            if (!std::isfinite(distance) || distance <= kTextureEpsilon) {
+                continue;
+            }
             light_dir = delta / distance;
 
             // Attenuation (simple inverse square for now)
@@ -285,21 +318,35 @@ ShadingResult RayTracer::trace_ray(
 
         // Shadow ray
         bool in_shadow = false;
-        if (light.casts_shadows) {
-            RTCRay shadow_ray{};
-            shadow_ray.org_x = hit_pos.x + world_normal.x * 0.001f;
-            shadow_ray.org_y = hit_pos.y + world_normal.y * 0.001f;
-            shadow_ray.org_z = hit_pos.z + world_normal.z * 0.001f;
-            shadow_ray.dir_x = light_dir.x;
-            shadow_ray.dir_y = light_dir.y;
-            shadow_ray.dir_z = light_dir.z;
-            shadow_ray.tnear = 0.0f;
-            shadow_ray.tfar = distance - 0.002f;
-            shadow_ray.mask = static_cast<unsigned int>(-1);
-            shadow_ray.time = time;
+            if (light.casts_shadows) {
+                RTCRay shadow_ray{};
+                shadow_ray.org_x = hit_pos.x + world_normal.x * 0.001f;
+                shadow_ray.org_y = hit_pos.y + world_normal.y * 0.001f;
+                shadow_ray.org_z = hit_pos.z + world_normal.z * 0.001f;
+                shadow_ray.dir_x = light_dir.x;
+                shadow_ray.dir_y = light_dir.y;
+                shadow_ray.dir_z = light_dir.z;
+                shadow_ray.tnear = 0.0f;
+                shadow_ray.tfar = distance - 0.002f;
+                shadow_ray.mask = static_cast<unsigned int>(-1);
+                shadow_ray.time = time;
 
-            RTCOccludedArguments o_args;
-            rtcInitOccludedArguments(&o_args);
+                if (!is_finite_vector3({shadow_ray.org_x, shadow_ray.org_y, shadow_ray.org_z}) ||
+                    !is_finite_vector3({shadow_ray.dir_x, shadow_ray.dir_y, shadow_ray.dir_z}) ||
+                    shadow_ray.tfar <= 0.0f) {
+                    continue;
+                }
+
+                static std::atomic<bool> debug_shadow_logged{false};
+                if (!debug_shadow_logged.exchange(true)) {
+                    std::cerr << "[RayTracer] shadow org=("
+                              << shadow_ray.org_x << "," << shadow_ray.org_y << "," << shadow_ray.org_z
+                              << ") dir=(" << shadow_ray.dir_x << "," << shadow_ray.dir_y << "," << shadow_ray.dir_z
+                              << ") tfar=" << shadow_ray.tfar << "\n";
+                }
+
+                RTCOccludedArguments o_args;
+                rtcInitOccludedArguments(&o_args);
             rtcOccluded1(scene_, (RTCRay*)&shadow_ray, &o_args);
 
             if (shadow_ray.tfar < 0.0f) {
@@ -333,7 +380,8 @@ ShadingResult RayTracer::trace_ray(
             if (roughness > 0.05f) {
                 reflect_dir = importance_sample_ggx(dist(rng), dist(rng), world_normal, roughness);
             }
-            if (math::Vector3::dot(reflect_dir, world_normal) > 0.0f) {
+            if (is_finite_vector3(reflect_dir) && reflect_dir.length_squared() > kTextureEpsilon &&
+                math::Vector3::dot(reflect_dir, world_normal) > 0.0f) {
                 ShadingResult spec_result = trace_ray(hit_pos + world_normal * 0.001f, reflect_dir, scene, rng, depth + 1, time);
                 total_radiance += spec_result.color * fresnel_schlick(n_dot_v, f0) * specular_weight;
             }
@@ -360,7 +408,8 @@ ShadingResult RayTracer::trace_ray(
                                           world_normal * std::sqrt(1.0f - r2);
                 diffuse_dir = diffuse_dir.normalized();
 
-                if (math::Vector3::dot(diffuse_dir, world_normal) > 0.0f) {
+                if (is_finite_vector3(diffuse_dir) && diffuse_dir.length_squared() > kTextureEpsilon &&
+                    math::Vector3::dot(diffuse_dir, world_normal) > 0.0f) {
                     ShadingResult diff_result = trace_ray(hit_pos + world_normal * 0.001f, diffuse_dir, scene, rng, depth + 1, time);
                     total_radiance += diff_result.color * albedo * diffuse_weight / PI;
                 }
