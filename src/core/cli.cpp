@@ -29,11 +29,10 @@ struct CommandEntry {
 static const std::vector<CommandEntry> kCommands = {
     {
         "validate",
-        "tachyon validate --cpp <scene.cpp> [--job <file>] [--json]\n"
-        "        validate --scene <file.json> [--job <file>] [--json]  (deprecated)",
+        "tachyon validate --cpp <scene.cpp> [--job <file>] [--json]",
         [](const CliOptions& o, std::ostream& e) {
-            if (o.cpp_path.empty() && o.scene_path.empty()) {
-                e << "Either --cpp or --scene is required for validate\n";
+            if (o.cpp_path.empty() && !o.preset_id.has_value()) {
+                e << "Either --cpp or --preset is required for validate\n";
                 return false;
             }
             return true;
@@ -42,11 +41,10 @@ static const std::vector<CommandEntry> kCommands = {
     },
     {
         "inspect",
-        "tachyon inspect --cpp <scene.cpp> [--job <file>] [--json]\n"
-        "        inspect --scene <file.json> [--job <file>] [--json]  (deprecated)",
+        "tachyon inspect --cpp <scene.cpp> [--job <file>] [--json]",
         [](const CliOptions& o, std::ostream& e) {
-            if (o.cpp_path.empty() && o.scene_path.empty()) {
-                e << "Either --cpp or --scene is required for inspect\n";
+            if (o.cpp_path.empty() && !o.preset_id.has_value()) {
+                e << "Either --cpp or --preset is required for inspect\n";
                 return false;
             }
             return true;
@@ -57,13 +55,10 @@ static const std::vector<CommandEntry> kCommands = {
         "render",
         "tachyon render --cpp <scene.cpp> --out <file> [--frames <s-e>] [--quality draft|high|production] [--workers <n>]\n"
         "        render --preset <id> --out <file>\n"
-        "        render --batch <jobs.json> [--workers <n>]\n"
-        "        render --scene <file.json> --job <file> --out <file>  (deprecated)",
+        "        render --batch <jobs.json> [--workers <n>]",
         [](const CliOptions& o, std::ostream& e) {
-            if (o.batch_path.empty() && o.cpp_path.empty() &&
-                !o.preset_id.has_value() &&
-                (o.scene_path.empty() || o.job_path.empty())) {
-                e << "Either --cpp, --preset, --batch, or (--scene and --job) required for render\n";
+            if (o.batch_path.empty() && o.cpp_path.empty() && !o.preset_id.has_value()) {
+                e << "Either --cpp, --preset, or --batch required for render\n";
                 return false;
             }
             return true;
@@ -73,11 +68,10 @@ static const std::vector<CommandEntry> kCommands = {
     {
         "preview",
         "tachyon preview --cpp <scene.cpp> [--out <file.png>] [--frame <n>]\n"
-        "        preview --preset <id>  [--out <file.png>] [--frame <n>]\n"
-        "        preview --scene <file.json> [--out <file.png>] [--frame <n>]  (deprecated)",
+        "        preview --preset <id>  [--out <file.png>] [--frame <n>]",
         [](const CliOptions& o, std::ostream& e) {
-            if (o.cpp_path.empty() && !o.preset_id.has_value() && o.scene_path.empty()) {
-                e << "Either --cpp, --preset, or --scene is required for preview\n";
+            if (o.cpp_path.empty() && !o.preset_id.has_value()) {
+                e << "Either --cpp or --preset is required for preview\n";
                 return false;
             }
             return true;
@@ -86,15 +80,13 @@ static const std::vector<CommandEntry> kCommands = {
     },
     {
         "preview-frame",
-        "tachyon preview-frame --cpp <scene.cpp>  --job <file> --frame <n> --out <file.png>\n"
-        "        preview-frame --scene <file.json> --job <file> --frame <n> --out <file.png>  (deprecated)",
+        "tachyon preview-frame --cpp <scene.cpp>  --job <file> --frame <n> --out <file.png>",
         [](const CliOptions& o, std::ostream& e) {
-            if (o.scene_path.empty() && o.cpp_path.empty()) {
-                e << "Either --cpp or --scene is required for preview-frame\n";
+            if (o.cpp_path.empty()) {
+                e << "--cpp is required for preview-frame\n";
                 return false;
             }
-            if (o.job_path.empty() ||
-                !o.preview_frame_number.has_value() || o.preview_output.empty()) {
+            if (o.job_path.empty() || !o.preview_frame_number.has_value() || o.preview_output.empty()) {
                 e << "--job, --frame and --out are required for preview-frame\n";
                 return false;
             }
@@ -104,8 +96,7 @@ static const std::vector<CommandEntry> kCommands = {
     },
     {
         "watch",
-        "tachyon watch --scene <file.json> --job <file> [--workers <n>]  (deprecated)\n"
-        "        watch --cpp <scene.cpp> --job <file> [--workers <n>]",
+        "tachyon watch --cpp <scene.cpp> --job <file> [--workers <n>]",
         nullptr,
         run_watch_command
     },

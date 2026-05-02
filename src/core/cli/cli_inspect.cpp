@@ -17,7 +17,6 @@ bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostr
  
     SceneLoadOptions load_opts;
     load_opts.cpp_path = options.cpp_path;
-    load_opts.scene_path = options.scene_path;
     load_opts.preset_id = options.preset_id;
 
     auto loaded = load_scene_for_cli(load_opts, SceneLoadMode::Inspect, out, err);
@@ -64,8 +63,8 @@ bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostr
 
 bool run_inspect_fonts_command(const CliOptions& options, std::ostream& out, std::ostream& err) {
     std::filesystem::path manifest_path = options.font_manifest_path;
-    if (manifest_path.empty() && !options.scene_path.empty()) {
-        manifest_path = options.scene_path;
+    if (manifest_path.empty() && !options.cpp_path.empty()) {
+        manifest_path = options.cpp_path;
     }
  
     auto manifest = tachyon::text::FontManifestParser::parse_file(manifest_path);

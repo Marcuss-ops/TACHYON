@@ -18,4 +18,8 @@ set(TachyonRenderer3DSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/utilities/debug_tools.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/utilities/environment_manager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/visibility/culling.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/surface/textured_plane_builder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/modifiers/three_d_modifier_registry.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/modifiers/tilt_3d_modifier.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/modifiers/parallax_3d_modifier.cpp
 )

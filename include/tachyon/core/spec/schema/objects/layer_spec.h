@@ -4,6 +4,7 @@
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 
 #include "tachyon/core/spec/schema/common/common_spec.h"
+#include "tachyon/core/spec/schema/3d/three_d_spec.h"
 #include "tachyon/core/spec/schema/properties/property_spec.h"
 #include "tachyon/core/spec/schema/transform/transform_spec.h"
 #include "tachyon/core/spec/schema/contracts/shared_contracts.h"
@@ -217,6 +218,8 @@ struct LayerSpec {
     double extrusion_depth{0.0};
     double bevel_size{0.0};
     double hole_bevel_ratio{0.0};
+
+    std::optional<ThreeDSpec> three_d;
 };
 
 } // namespace tachyon

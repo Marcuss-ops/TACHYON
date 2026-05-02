@@ -103,7 +103,6 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
 
     SceneLoadOptions load_opts;
     load_opts.cpp_path = options.cpp_path;
-    load_opts.scene_path = options.scene_path;
     load_opts.preset_id = options.preset_id;
 
     auto loaded = load_scene_for_cli(load_opts, SceneLoadMode::Render, out, err);

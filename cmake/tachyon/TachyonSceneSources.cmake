@@ -55,6 +55,7 @@ set(TachyonSceneSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/serialization/property_color_serialize.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/serialization/property_scalar_serialize.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/serialization/property_vector_serialize.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/serialization/scene_serialize.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/text_animator_spec_serialize.cpp
     
     # Spec - Validation
@@ -63,25 +64,9 @@ set(TachyonSceneSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/validation/scene_validator_schema.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/validation/scene_validator_utils.cpp
     
-    # Spec - Parsing
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/parsing/layer_bindings_parse.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/parsing/layer_effects_parse.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/parsing/layer_shape_parse.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/parsing/layer_spec_parse.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/property_parse_json.cpp
-    
-    # Spec - Pipeline
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/pipeline/unified_scene_pipeline.cpp
-    
     # Spec - Shapes
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/shapes/shape_spec_builder.cpp
     
-    # Spec - Legacy
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/legacy/json_parse_helpers.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/legacy/layer_parse_json.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/legacy/scene_spec_audio.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/legacy/scene_spec_json.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/scene_spec_json.cpp
     
     # Timeline
     ${CMAKE_CURRENT_SOURCE_DIR}/timeline/camera_cuts.cpp

@@ -274,6 +274,8 @@ EvaluatedLayerState make_layer_state(
         evaluated.procedural = std::move(evaluated_proc);
     }
 
+    evaluated.three_d = layer.three_d;
+
     return evaluated;
 }
 

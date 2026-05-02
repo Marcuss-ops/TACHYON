@@ -13,15 +13,9 @@ namespace media {
     std::filesystem::path scene_asset_root(const std::filesystem::path& scene_path);
 }
 
-bool load_scene_context(const std::filesystem::path& scene_path, SceneSpec& scene, AssetResolutionTable& assets, DiagnosticBag& diagnostics) {
-    const auto parsed = parse_scene_spec_file(scene_path);
-    if (!parsed.value.has_value()) { diagnostics.append(parsed.diagnostics); return false; }
-    const auto validation = validate_scene_spec(*parsed.value);
-    if (!validation.ok()) { diagnostics.append(validation.diagnostics); return false; }
-    const auto resolved_assets = resolve_assets(*parsed.value, media::scene_asset_root(scene_path));
-    if (!resolved_assets.value.has_value()) { diagnostics.append(resolved_assets.diagnostics); return false; }
-    scene = *parsed.value; assets = *resolved_assets.value;
-    return true;
+bool load_scene_context(const std::filesystem::path& /*scene_path*/, SceneSpec& /*scene*/, AssetResolutionTable& /*assets*/, DiagnosticBag& diagnostics) {
+    diagnostics.add_error("batch.scene_loading_disabled", "JSON scene loading is no longer supported. Use C++ SceneSpec authoring.");
+    return false;
 }
 
 bool load_render_job(const std::filesystem::path& job_path, RenderJob& job, DiagnosticBag& diagnostics) {
