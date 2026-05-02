@@ -84,8 +84,8 @@ TEST(SceneBuilder, MaterialBuilder) {
     EXPECT_EQ(*layer.fill_color.value, ColorSpec(10, 20, 30, 255));
     ASSERT_TRUE(layer.metallic.value.has_value());
     ASSERT_TRUE(layer.roughness.value.has_value());
-    EXPECT_DOUBLE_EQ(*layer.metallic.value, 0.8);
-    EXPECT_DOUBLE_EQ(*layer.roughness.value, 0.25);
+    EXPECT_EQ(*layer.metallic.value, 0.8);
+    EXPECT_EQ(*layer.roughness.value, 0.25);
 }
 
 TEST(SceneBuilder, RoundTrip) {

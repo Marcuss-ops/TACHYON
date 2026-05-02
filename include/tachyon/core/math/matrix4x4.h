@@ -4,6 +4,7 @@
 
 #include <array>
 #include <ostream>
+#include <cmath>
 
 namespace tachyon {
 namespace math {
@@ -48,6 +49,26 @@ struct Matrix4x4 {
     [[nodiscard]] Vector3 transform_point(const Vector3& v) const;
     [[nodiscard]] Vector3 transform_vector(const Vector3& v) const;
     [[nodiscard]] struct Transform3 to_transform() const;
+
+    [[nodiscard]] bool is_identity() const {
+        static constexpr float eps = 1e-6f;
+        return std::abs(data[0] - 1.0f) < eps &&
+               std::abs(data[5] - 1.0f) < eps &&
+               std::abs(data[10] - 1.0f) < eps &&
+               std::abs(data[15] - 1.0f) < eps &&
+               std::abs(data[1]) < eps &&
+               std::abs(data[2]) < eps &&
+               std::abs(data[3]) < eps &&
+               std::abs(data[4]) < eps &&
+               std::abs(data[6]) < eps &&
+               std::abs(data[7]) < eps &&
+               std::abs(data[8]) < eps &&
+               std::abs(data[9]) < eps &&
+               std::abs(data[11]) < eps &&
+               std::abs(data[12]) < eps &&
+               std::abs(data[13]) < eps &&
+               std::abs(data[14]) < eps;
+    }
 };
 
 [[nodiscard]] Matrix4x4 compose_trs(const Vector3& translation, const Quaternion& rotation, const Vector3& scale);
