@@ -75,7 +75,15 @@ Use the root build script for the standard build flow:
 
 If you only want to compile, omit `-RunTests`.
 
-For a faster inner loop, use the fast preset and a focused filter:
+For a faster inner loop, use the incremental core check or the quick-fix wrapper:
+
+```powershell
+.\build.ps1 -Check
+.\scripts\quick-fix.ps1
+.\scripts\quick-fix.ps1 -SyntaxCheck src\core\scene\builder.cpp
+```
+
+If you want the full build flow with tests, use the fast preset and a focused filter:
 
 ```powershell
 .\build.ps1 -Preset dev-fast -RunTests
@@ -83,7 +91,7 @@ For a faster inner loop, use the fast preset and a focused filter:
 .\build.ps1 -Preset asan -RunTests -TestFilter math
 ```
 
-`dev` is the normal daily preset. `dev-fast` trims the default build set and applies a focused test filter when you do not pass one yourself. `asan` is for memory and lifetime bugs.
+`dev` is the normal daily preset. `dev-fast` trims the default build set and applies a focused test filter when you do not pass one yourself. `asan` is for memory and lifetime bugs. `.\build.ps1 -Check` is the fast incremental `TachyonCore` build and skips CMake reconfiguration when the Visual Studio build tree already exists.
 
 ## Documentation
 

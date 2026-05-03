@@ -4,7 +4,6 @@
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include <string>
 #include <optional>
-#include <nlohmann/json.hpp>
 
 namespace tachyon {
 
@@ -49,10 +48,5 @@ struct BackgroundSpec {
         return type == other.type && value == other.value && parsed_color == other.parsed_color;
     }
 };
-
-/// JSON serialization for BackgroundSpec.
-/// The serialized form is a JSON object with "type" and "value" fields.
-void to_json(nlohmann::json& j, const BackgroundSpec& spec);
-void from_json(const nlohmann::json& j, BackgroundSpec& spec);
 
 } // namespace tachyon

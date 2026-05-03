@@ -2,7 +2,7 @@
 .SYNOPSIS
     Safely clean Tachyon build artefacts.
 .PARAMETER BuildOnly
-    Remove only compiled output (build-ninja\, build\src, tests\output).
+    Remove only compiled output (build\, out\, tests\output).
     Does NOT touch .cache\fetchcontent (slow to re-download dependencies).
 .PARAMETER All
     Also wipe .cache\fetchcontent. Next build will re-download all deps (~5-10min).
@@ -49,7 +49,7 @@ function Remove-SafeGlob([string]$Dir, [string]$Pattern, [string]$Label) {
 Write-Host "Tachyon Clean" -ForegroundColor Cyan
 
 # ── Always: compiled output ────────────────────────────────────────────────────
-Remove-SafeDir  (Join-Path $Root "build-ninja")   "build-ninja/"
+Remove-SafeDir  (Join-Path $Root "build")   "build/"
 Remove-SafeDir  (Join-Path $Root "out")            "out/"
 Remove-SafeGlob (Join-Path $Root "tests\output")  "*.png" "test PNG output"
 Remove-SafeGlob (Join-Path $Root "tests\output")  "*.mp4" "test MP4 output"

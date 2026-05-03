@@ -28,28 +28,5 @@ void print_inspect_report_text(
     const std::optional<RenderExecutionPlan>& execution_plan,
     std::ostream& out);
 
-std::string make_inspect_report_json(
-    const SceneSpec& scene,
-    const AssetResolutionTable& assets,
-    const std::optional<RenderPlan>& render_plan,
-    const std::optional<RenderExecutionPlan>& execution_plan);
-
-std::string make_validate_report_json(
-    const SceneSpec& scene,
-    const AssetResolutionTable& assets,
-    bool scene_valid,
-    bool job_valid,
-    const std::optional<RenderJob>& job,
-    const core::ValidationResult& validation_result);
-
-std::string make_render_report_json(
-    const SceneSpec& scene,
-    const AssetResolutionTable& assets,
-    const RenderPlan& render_plan,
-    const RenderExecutionPlan& execution_plan,
-    const DiagnosticBag& diagnostics,
-    const RasterizedFrame2D& first_frame,
-    std::size_t cache_hits = 0,
-    std::size_t cache_misses = 0);
 
 } // namespace tachyon

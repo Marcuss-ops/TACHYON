@@ -70,7 +70,7 @@ if (Test-Path $includeDir) {
 }
 
 # ── quick: syntax-only check on staged C++ files ──────────────────────────
-$compileDb = Join-Path $PSScriptRoot "..\build-ninja\compile_commands.json"
+$compileDb = Join-Path $PSScriptRoot "..\build\compile_commands.json"
 $hasStagedCpp = ($stagedFiles | Where-Object { $_ -match '\.(cpp|h|hpp)$' }).Count -gt 0
 
 if ($Mode -in @('quick', 'normal', 'full') -and $hasStagedCpp) {

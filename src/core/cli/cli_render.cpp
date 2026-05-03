@@ -4,9 +4,7 @@
 #include "tachyon/core/cli_scene_loader.h"
 #include "tachyon/scene/builder.h"
 #include "tachyon/runtime/execution/native_render.h"
-#include "tachyon/runtime/execution/batch/batch_runner.h"
 #include "cli_internal.h"
-#include <nlohmann/json.hpp>
 #include <iomanip>
 #include <iostream>
 #include <thread>
@@ -92,15 +90,6 @@ void print_execution_plan(
 }
 
 bool run_render_command(const CliOptions& options, std::ostream& out, std::ostream& err) {
-    if (!options.batch_path.empty()) {
-        const auto parsed_batch = ::tachyon::parse_render_batch_file(options.batch_path);
-        if (!parsed_batch.ok()) { print_diagnostics(parsed_batch.diagnostics, err); return false; }
-        const auto batch_result = ::tachyon::run_render_batch(*parsed_batch.value, options.worker_count);
-        if (!batch_result.value.has_value()) { print_diagnostics(batch_result.diagnostics, err); return false; }
-        out << "Batch completed: " << batch_result.value->succeeded << " succeeded, " << batch_result.value->failed << " failed.\n";
-        return batch_result.ok();
-    }
-
     SceneLoadOptions load_opts;
     load_opts.cpp_path = options.cpp_path;
     load_opts.preset_id = options.preset_id;
@@ -115,12 +104,8 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
     AssetResolutionTable& assets = loaded.context->assets;
 
     RenderJob job;
-    if (!options.job_path.empty()) {
-        const auto job_parsed = parse_render_job_file(options.job_path);
-        if (!job_parsed.value.has_value()) { print_diagnostics(job_parsed.diagnostics, err); return false; }
-        job = *job_parsed.value;
-    } else {
-        // Default job if none provided
+    {
+        // Default job logic
         if (scene.compositions.empty()) {
             err << "Scene has no compositions.\n";
             return false;
@@ -137,7 +122,7 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
     NativeRenderOptions native_options;
     native_options.worker_count = options.worker_count;
     native_options.memory_budget_bytes = options.memory_budget_bytes;
-    native_options.verbose = !options.json_output;
+    native_options.verbose = true;
 
     const RenderSessionResult session_result = NativeRenderer::render(scene, job, native_options);
     
@@ -147,69 +132,13 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
 
     print_diagnostics(session_result.diagnostics, err);
 
-    if (options.json_output) {
-        nlohmann::json j;
-        j["status"] = session_result.output_error.empty() ? "ok" : "error";
-        j["output_path"] = job.output.destination.path;
-        j["frames_expected"] = job.frame_range.end - job.frame_range.start;
-        j["frames_written"] = session_result.frames_written;
-
-        // Get render plan for dimensions and fps
-        const auto plan_result = build_render_plan(scene, job);
-        if (plan_result.value.has_value()) {
-            const auto& plan = *plan_result.value;
-            j["width"] = plan.composition.width;
-            j["height"] = plan.composition.height;
-            j["fps"] = plan.composition.frame_rate.value();
-            j["duration_seconds"] = plan.composition.duration;
-        }
-
-        const std::size_t workers = (options.worker_count > 0) ? options.worker_count : std::thread::hardware_concurrency();
-        j["worker_count"] = workers;
-        j["backend"] = "cpu-frame-executor";
-
-        // Timings
-        nlohmann::json timings;
-        timings["scene_compile"] = session_result.scene_compile_ms;
-        timings["plan_build"] = session_result.plan_build_ms;
-        timings["execution_plan_build"] = session_result.execution_plan_build_ms;
-        timings["frame_execution"] = session_result.frame_execution_ms;
-        timings["encode"] = session_result.encode_ms;
-        timings["total"] = session_result.wall_time_total_ms;
-        j["timings_ms"] = timings;
-
-        // Cache
-        nlohmann::json cache;
-        cache["hits"] = session_result.cache_hits;
-        cache["misses"] = session_result.cache_misses;
-        cache["hit_rate"] = session_result.cache_hit_rate();
-        j["cache"] = cache;
-
-        // Memory
-        nlohmann::json memory;
-        memory["peak_bytes"] = session_result.peak_memory_bytes;
-        j["memory"] = memory;
-
-        // Diagnostics
-        nlohmann::json diags = nlohmann::json::array();
-        for (const auto& d : session_result.diagnostics.diagnostics) {
-            nlohmann::json diag;
-            diag["code"] = d.code;
-            diag["message"] = d.message;
-            diag["path"] = d.path;
-            diags.push_back(diag);
-        }
-        j["diagnostics"] = diags;
-
-        out << j.dump(2) << '\n';
-    } else {
+    {
         RasterizedFrame2D first_frame;
         if (!session_result.frames.empty()) {
             first_frame.backend_name = "cpu-frame-executor";
         }
         
         // We need a RenderExecutionPlan for the execution plan printout
-        // In a real refactor, NativeRenderer might return this or we build it here for the legacy printout
         const auto plan_result = build_render_plan(scene, job);
         if (plan_result.value.has_value()) {
             const auto execution_result = build_render_execution_plan(*plan_result.value, assets.size());

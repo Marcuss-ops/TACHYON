@@ -63,30 +63,6 @@ bool export_float_buffer_to_png(const std::string& path, const float* data, int 
     return true;
 }
 
-bool export_json(const std::string& path, const std::string& json_string) {
-    // Create directory if it doesn't exist
-    std::filesystem::path p(path);
-    if (p.has_parent_path()) {
-        std::filesystem::create_directories(p.parent_path());
-    }
-
-    std::ofstream file(path, std::ios::out | std::ios::binary);
-    if (!file.is_open()) {
-        std::cerr << "[DebugExport] Failed to open JSON file: " << path << '\n';
-        return false;
-    }
-
-    file << json_string;
-    file.close();
-
-    if (!file.good()) {
-        std::cerr << "[DebugExport] Failed to write JSON file: " << path << '\n';
-        return false;
-    }
-
-    std::cerr << "[DebugExport] Exported JSON to: " << path << '\n';
-    return true;
-}
 
 std::string ensure_snapshot_dir(const std::string& base_path) {
     std::filesystem::path dir(base_path);

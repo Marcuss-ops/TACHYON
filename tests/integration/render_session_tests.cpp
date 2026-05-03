@@ -50,7 +50,7 @@ tachyon::SceneSpec make_scene() {
 tachyon::RenderExecutionPlan make_execution_plan() {
     tachyon::RenderPlan plan;
     plan.job_id = "job_1";
-    plan.scene_ref = "scene.json";
+    plan.scene_ref = "scene_builder";
     plan.composition_target = "main";
     plan.composition.id = "main";
     plan.composition.name = "Main";
@@ -135,7 +135,7 @@ tachyon::SceneSpec make_precomp_scene() {
 tachyon::RenderExecutionPlan make_precomp_execution_plan() {
     tachyon::RenderPlan plan;
     plan.job_id = "job_precomp";
-    plan.scene_ref = "scene.json";
+    plan.scene_ref = "scene_builder";
     plan.composition_target = "main";
     plan.composition.id = "main";
     plan.composition.name = "Main";

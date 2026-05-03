@@ -18,7 +18,6 @@
 #include <map>
 #include <vector>
 #include <sstream>
-#include <nlohmann/json.hpp>
 
 namespace tachyon {
 namespace {
@@ -45,21 +44,6 @@ struct CachedSceneStill {
     double fps{30.0};
 };
 
-nlohmann::json read_json_file(const std::filesystem::path& path, DiagnosticBag& diagnostics) {
-    std::ifstream input(path, std::ios::in | std::ios::binary);
-    if (!input.is_open()) {
-        diagnostics.add_error("studio.demo.open_failed", "failed to open demo file", path.string());
-        return {};
-    }
-
-    try {
-        return nlohmann::json::parse(input);
-    } catch (const nlohmann::json::parse_error& error) {
-        diagnostics.add_error("studio.demo.parse_failed", error.what(), path.string());
-        return {};
-    }
-}
-
 std::filesystem::path resolve_library_root(const std::filesystem::path& requested_root) {
     if (!requested_root.empty()) {
         return std::filesystem::absolute(requested_root);
@@ -73,7 +57,7 @@ std::filesystem::path resolve_library_root(const std::filesystem::path& requeste
     };
 
     for (const auto& candidate : candidates) {
-        if (std::filesystem::exists(candidate / "system" / "manifest.json")) {
+        if (std::filesystem::exists(candidate / "system")) {
             return std::filesystem::absolute(candidate);
         }
     }
@@ -84,29 +68,9 @@ std::filesystem::path resolve_library_root(const std::filesystem::path& requeste
 std::optional<TransitionDemoConfig> load_transition_demo(
     const StudioTransitionEntry& entry,
     DiagnosticBag& diagnostics) {
-    const nlohmann::json demo = read_json_file(entry.demo_path, diagnostics);
-    if (!demo.is_object()) {
-        return std::nullopt;
-    }
-
-    TransitionDemoConfig config;
-    config.transition_id = entry.id;
-    config.name = demo.value("name", entry.name);
-
-    const std::filesystem::path demo_dir = entry.demo_path.parent_path();
-    config.source_scene = demo_dir / demo.value("source_scene", std::string{});
-    config.target_scene = demo_dir / demo.value("target_scene", std::string{});
-    config.output_dir = entry.output_dir;
-    config.file_prefix = demo.value("output", nlohmann::json{}).value("file_prefix", entry.id);
-    config.output_format = demo.value("output", nlohmann::json{}).value("format", std::string{"mp4"});
-    config.duration_seconds = demo.value("transition", nlohmann::json{}).value("duration_seconds", entry.duration_seconds);
-    const auto& progress = demo.value("transition", nlohmann::json{}).value("progress", nlohmann::json::object());
-    config.progress_start = progress.value("start", 0.0);
-    config.progress_end = progress.value("end", 1.0);
-    const auto preview = demo.value("preview", nlohmann::json::object());
-    config.preview_frame_count = std::max<std::size_t>(2, preview.value("frame_count", static_cast<std::size_t>(12)));
-    config.preview_resolution_scale = static_cast<float>(std::clamp(preview.value("resolution_scale", 1.0), 0.1, 1.0));
-    return config;
+    (void)entry;
+    diagnostics.add_error("studio.demo_disabled", "Transition demo parsing has been removed. Use C++ scene builders.");
+    return std::nullopt;
 }
 
 std::optional<renderer2d::SurfaceRGBA> render_scene_still(
@@ -114,7 +78,7 @@ std::optional<renderer2d::SurfaceRGBA> render_scene_still(
     std::ostream& err,
     double& out_fps) {
     if (scene_path.extension() != ".cpp") {
-        err << "Error: Only C++ scenes (.cpp) are supported. JSON scenes are no longer supported.\n";
+        err << "Error: Only C++ scenes (.cpp) are supported.\n";
         return std::nullopt;
     }
 
@@ -392,7 +356,7 @@ bool run_studio_demo_command(const CliOptions& options, std::ostream& out, std::
     }
 
     std::ostringstream silent_out;
-    std::ostream& demo_out = options.json_output ? static_cast<std::ostream&>(silent_out) : out;
+    std::ostream& demo_out = out;
     std::map<std::filesystem::path, CachedSceneStill> scene_still_cache;
 
     bool all_ok = true;
@@ -426,9 +390,6 @@ bool run_studio_demo_command(const CliOptions& options, std::ostream& out, std::
         }
     }
 
-    if (options.json_output) {
-        out << "{\"status\":\"" << (all_ok ? "ok" : "error") << "\",\"transitions\":" << transitions.size() << "}\n";
-    }
     return all_ok;
 }
 

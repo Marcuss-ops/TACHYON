@@ -9,7 +9,7 @@
 ```powershell
 # 1. Make small change (1-3 files max)
 # 2. Quick check (catches compile errors)
-.\build.ps1 -Check -ErrorsOnly
+.\build.ps1 -Check
 
 # 3. Fix errors if any
 # 4. Run targeted tests
@@ -22,11 +22,11 @@
 ## Build Commands (Cheat Sheet)
 | Command | Purpose | Time |
 |---------|---------|------|
-| `.\build.ps1 -Check` | Quick core build | ~30s |
-| `.\build.ps1 -Check -ErrorsOnly` | Same, errors only | ~30s |
+| `.\build.ps1 -Check` | Quick incremental core build | ~30s |
+| `.\scripts\quick-fix.ps1 -SyntaxCheck X.cpp` | Fast syntax-only check | ~5s |
 | `.\build.ps1 -CoreOnly` | Build TachyonCore | ~1min |
 | `.\build.ps1 -TestsOnly` | Build tests | ~30s |
-| `cmake --build build-ninja --target HeaderSmokeTests` | Header checks | ~10s |
+| `cmake --build build --preset dev --target HeaderSmokeTests` | Header checks | ~10s |
 | `.\build.ps1 -RelWithDebInfo -TestFilter X` | Targeted tests | ~1min |
 | `.\build.ps1 -RelWithDebInfo -Test` | All tests | ~2min |
 | `.\scripts\agent-validate.ps1 -Scope X` | Full validation | ~3min |
@@ -64,5 +64,6 @@ git checkout main && git branch -D <your-branch>
 1. **Small changes only** (1-3 files)
 2. **No inline JSON** in headers (use .cpp)
 3. **Run -Check after every change**
-4. **Fix errors immediately**
-5. **Don't break the build**
+4. **Use `quick-fix.ps1` for syntax-only iteration**
+5. **Fix errors immediately**
+6. **Don't break the build**

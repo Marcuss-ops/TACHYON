@@ -1,11 +1,11 @@
 #pragma once
 
 #include "tachyon/core/spec/schema/common/common_spec.h"
+#include "tachyon/core/math/vector2.h"
 #include <string>
 #include <variant>
 #include <vector>
 #include <unordered_map>
-#include <nlohmann/json.hpp>
 
 namespace tachyon {
 
@@ -21,12 +21,17 @@ enum class ParameterType {
 };
 
 /**
+ * @brief Value holder for parameter values.
+ */
+using ParameterValue = std::variant<std::string, double, ColorSpec, math::Vector2, bool>;
+
+/**
  * @brief Definition of a template parameter.
  */
 struct ParameterDefinition {
     std::string name;
     ParameterType type;
-    nlohmann::json default_value;
+    ParameterValue default_value;
 };
 
 /**

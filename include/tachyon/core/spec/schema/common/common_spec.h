@@ -4,13 +4,10 @@
 #include <string>
 #include <cstdint>
 #include <map>
-#include <nlohmann/json.hpp>
 
 #include "tachyon/core/types/color_spec.h"
 
 namespace tachyon {
-
-// ColorSpec moved to tachyon/core/types/color_spec.h
 
 enum class TrackMatteType {
     None,
@@ -63,11 +60,5 @@ struct EffectSpec {
 
     [[nodiscard]] EffectSpec evaluate(double time_seconds) const;
 };
-
-void to_json(nlohmann::json& j, const EffectSpec& e);
-void from_json(const nlohmann::json& j, EffectSpec& e);
-
-void to_json(nlohmann::json& j, const ColorSpec& c);
-void from_json(const nlohmann::json& j, ColorSpec& c);
 
 } // namespace tachyon

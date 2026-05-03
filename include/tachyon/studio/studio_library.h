@@ -8,7 +8,6 @@
 #include <optional>
 #include <string>
 #include <vector>
-#include <nlohmann/json.hpp>
 
 namespace tachyon {
 
@@ -59,8 +58,6 @@ public:
 
 private:
     void reset();
-    bool load_scenes(const nlohmann::json& manifest);
-    bool load_transitions(const nlohmann::json& manifest);
     void register_cpp_presets();
 
     std::filesystem::path m_root;

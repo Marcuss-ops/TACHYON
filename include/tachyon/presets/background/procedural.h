@@ -170,6 +170,17 @@ inline ProceduralParams neon_grid() {
           {0, 0, 0, 0},       1.0, 1.1, 0.05, 0.0, 6006};
 }
 
+inline ProceduralParams neon_ripple() {
+  return {{10, 5, 25, 255},   // Deep violet
+          {106, 59, 255, 255}, // Electric purple
+          {0, 242, 255, 255},  // Neon cyan accent
+          1.2,
+          1.2,
+          0.08,
+          0.0,
+          7007};
+}
+
 inline ProceduralParams midnight_silk() {
   return {{10, 12, 18, 255}, // Midnight navy
           {25, 28, 35, 255}, // Charcoal silk
@@ -787,6 +798,35 @@ cosmic_nebula(int width, int height,
   bg.procedural->grain_amount = AnimatedScalarSpec{params.grain};
   bg.procedural->contrast = AnimatedScalarSpec{params.contrast};
   bg.procedural->saturation = AnimatedScalarSpec{1.1};
+  return bg;
+}
+
+[[nodiscard]] inline LayerSpec
+ripple_grid(int width, int height,
+            const ProceduralParams &params = palettes::neon_ripple(),
+            double duration = 5.0) {
+  LayerSpec bg;
+  bg.id = "bg_ripple_grid";
+  bg.name = "Ripple Grid";
+  bg.type = "procedural";
+  bg.width = width;
+  bg.height = height;
+  bg.out_point = duration;
+  bg.procedural = ProceduralSpec{};
+  bg.procedural->kind = "grid";
+  bg.procedural->seed = params.seed;
+  bg.procedural->color_a = AnimatedColorSpec{params.palette_a};
+  bg.procedural->color_b = AnimatedColorSpec{params.palette_b};
+  bg.procedural->color_c = AnimatedColorSpec{params.palette_c};
+  bg.procedural->speed = AnimatedScalarSpec{params.motion_speed};
+  bg.procedural->spacing = AnimatedScalarSpec{40.0};
+  bg.procedural->border_width = AnimatedScalarSpec{1.5};
+  bg.procedural->ripple_intensity = AnimatedScalarSpec{0.08};
+  bg.procedural->mouse_influence = AnimatedScalarSpec{1.0};
+  bg.procedural->mouse_radius = AnimatedScalarSpec{0.8};
+  bg.procedural->glow_intensity = AnimatedScalarSpec{0.4};
+  bg.procedural->grain_amount = AnimatedScalarSpec{params.grain};
+  bg.procedural->contrast = AnimatedScalarSpec{params.contrast};
   return bg;
 }
 

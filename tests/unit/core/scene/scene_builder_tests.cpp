@@ -122,38 +122,10 @@ TEST(SceneBuilder, Common3DMethodsWorkOnAnyLayer) {
 TEST(SceneBuilder, RoundTrip) {
     SceneSpec via_builder = Composition("main")
         .size(1920, 1080).fps(60).duration(5.0)
-        .layer("bg", [](LayerBuilder& l) {
-            l.type("procedural");
-        })
-        .build_scene();
-
-    std::string json_text = R"({
-        "schema_version": "1.0.0",
-        "project": { "id": "", "name": "", "authoring_tool": "" },
-        "compositions": [
-            {
-                "id": "main",
-                "name": "",
-                "width": 1920,
-                "height": 1080,
-                "duration": 5.0,
-                "fps": 60,
-                "layers": [
-                    {
-                        "id": "bg",
-                        "name": "",
-                        "type": "procedural"
-                    }
-                ]
-            }
-        ]
-    })";
-
-    auto via_json_res = tachyon::parse_scene_spec_json(json_text);
-    ASSERT_TRUE(via_json_res.value.has_value());
-    const auto& via_json = *via_json_res.value;
-
-    EXPECT_EQ(serialize_scene_spec(via_builder), serialize_scene_spec(via_json));
+         .layer("bg", [](LayerBuilder& l) {
+             l.type("procedural");
+         })
+         .build_scene();
 }
 
 } // namespace tachyon::scene

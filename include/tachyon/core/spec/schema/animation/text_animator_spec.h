@@ -1,14 +1,11 @@
 #pragma once
 
 #include "tachyon/core/spec/schema/properties/property_spec.h"
-#include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
 #include <optional>
 
 namespace tachyon {
-
-using json = nlohmann::json;
 
 struct TextAnimatorSelectorSpec {
     std::string type{"range"}; // "range" | "index" | "expression" | "all" | "random" | "wiggly"
@@ -111,20 +108,5 @@ struct TextHighlightSpec {
     std::int32_t padding_x{3};
     std::int32_t padding_y{2};
 };
-
-void to_json(json& j, const TextAnimatorSelectorSpec& s);
-void from_json(const json& j, TextAnimatorSelectorSpec& s);
-
-void to_json(json& j, const TextAnimatorPropertySpec& p);
-void from_json(const json& j, TextAnimatorPropertySpec& p);
-
-void to_json(json& j, const TextAnimatorCursorSpec& c);
-void from_json(const json& j, TextAnimatorCursorSpec& c);
-
-void to_json(json& j, const TextAnimatorSpec& a);
-void from_json(const json& j, TextAnimatorSpec& a);
-
-void to_json(json& j, const TextHighlightSpec& h);
-void from_json(const json& j, TextHighlightSpec& h);
 
 } // namespace tachyon

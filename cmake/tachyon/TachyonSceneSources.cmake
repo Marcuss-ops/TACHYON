@@ -1,4 +1,5 @@
 # TachyonScene sources
+message(STATUS "DEBUG: Entering TachyonSceneSources.cmake")
 set(TachyonSceneSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/data_loader.cpp
@@ -26,15 +27,11 @@ set(TachyonSceneSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/scene_spec_utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/cpp_scene_loader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/asset_resolver.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/template_registry.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/json_report_utils.cpp
     
     # Spec - Schema
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/schema/scene_spec.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/schema/scene_spec_core.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/schema/common/common_spec_serialize.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/schema/migration/scene_migration.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/schema/objects/procedural_spec.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/schema/objects/background_spec.cpp
     
     # Spec - Compilation
@@ -50,14 +47,6 @@ set(TachyonSceneSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_compiler_resolve.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_hash_builder.cpp
     
-    # Spec - Serialization
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/serialization/layer_serialize.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/serialization/property_color_serialize.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/serialization/property_scalar_serialize.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/serialization/property_vector_serialize.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/serialization/scene_serialize.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/text_animator_spec_serialize.cpp
-    
     # Spec - Validation
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/validation/scene_validator_composition.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/validation/scene_validator_layer.cpp
@@ -66,7 +55,6 @@ set(TachyonSceneSources
 
     # Spec - Shapes
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/shapes/shape_spec_builder.cpp
-    
     
     # Timeline
     ${CMAKE_CURRENT_SOURCE_DIR}/timeline/camera_cuts.cpp
@@ -89,5 +77,5 @@ set(TachyonSceneSources
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/shape/shape_builders.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/text/text_builders.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/transition/transition_builders.cpp
-
 )
+message(STATUS "DEBUG: TachyonSceneSources has ${TachyonSceneSources}")

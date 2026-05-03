@@ -17,11 +17,6 @@
 namespace tachyon {
 
 bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostream& err) {
-    if (options.job_path.empty()) {
-        err << "--job is required for watch\n";
-        return false;
-    }
-
     if (options.cpp_path.empty()) {
         err << "--cpp is required for watch\n";
         return false;
@@ -29,13 +24,6 @@ bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostrea
 
     std::filesystem::path watch_path = options.cpp_path;
     out << "Starting Resident Render Session with Native Preview (C++ mode)...\n";
-
-    const auto job_parsed = parse_render_job_file(options.job_path);
-    if (!job_parsed.value.has_value()) {
-        err << "Failed to parse job file\n";
-        return false;
-    }
-    RenderJob job = *job_parsed.value;
 
     auto load_watch_scene = [&](SceneSpec& sc) -> bool {
         SceneLoadOptions opts;
@@ -48,6 +36,14 @@ bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostrea
 
     SceneSpec scene;
     if (!load_watch_scene(scene)) return false;
+
+    if (scene.compositions.empty()) {
+        err << "Scene has no compositions.\n";
+        return false;
+    }
+    const auto& comp = scene.compositions.front();
+    RenderJob job = RenderJobBuilder::video_export(comp.id, {0, static_cast<std::int64_t>(comp.duration * comp.frame_rate.value())}, "preview.mp4");
+
 
     auto plan_result = build_render_plan(scene, job);
     if (!plan_result.value.has_value()) {

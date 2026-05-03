@@ -20,7 +20,10 @@
 #include <utility>
 #include <optional>
 
+#include "tachyon/renderer2d/effects/generators/light_leak_types.h"
+
 namespace tachyon::scene {
+using renderer2d::LightLeakPreset;
 
 class LayerBuilder;
 class CompositionBuilder;
@@ -138,6 +141,9 @@ public:
     LayerBuilder& stroke_color(const ColorSpec& c);
     LayerBuilder& stroke_width(double w);
     LayerBuilder& subtitle_path(std::string path);
+
+    // Cinematic & Effects
+    LayerBuilder& light_leak(LightLeakPreset preset, float progress, float speed = 1.0f, int seed = 3);
 
     // AE-like Ergonomics
     LayerBuilder& null_layer();

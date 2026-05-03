@@ -2,7 +2,6 @@
 import subprocess
 import sys
 import os
-import json
 import time
 
 def run_command(cmd):
@@ -21,7 +20,7 @@ def main():
             "build/linux-make-release/src/tachyon",
             "build/src/RelWithDebInfo/tachyon.exe",
             "build/linux-ninja-debug/src/tachyon",
-            "build-ninja/src/tachyon"
+            "build/linux-relwithdebinfo/src/tachyon"
         ]
         for f in fallbacks:
             if os.path.exists(f):
@@ -46,8 +45,7 @@ def main():
     render_cmd = [
         tachyon_exe, "render",
         "--cpp", "test_scene_10s.cpp",
-        "--out", test_output,
-        "--json"
+        "--out", test_output
     ]
 
     start_time = time.time()
@@ -71,7 +69,7 @@ def main():
     probe_cmd = [
         "ffprobe", "-v", "error",
         "-show_entries", "format=duration:stream=codec_type",
-        "-of", "json", test_output
+        "-of", "default=noprint_wrappers=1:nokey=1", test_output
     ]
     probe_result = run_command(probe_cmd)
     
@@ -79,11 +77,10 @@ def main():
         print(f"[FAIL] ffprobe failed to analyze output")
         sys.exit(1)
 
-    data = json.loads(probe_result.stdout)
-    streams = data.get("streams", [])
-    
-    has_video = any(s["codec_type"] == "video" for s in streams)
-    has_audio = any(s["codec_type"] == "audio" for s in streams)
+    output = probe_result.stdout.lower()
+
+    has_video = "video" in output
+    has_audio = "audio" in output
 
     if has_video:
         print("[OK] Video stream found")

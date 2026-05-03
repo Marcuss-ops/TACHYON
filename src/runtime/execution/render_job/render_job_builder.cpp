@@ -20,6 +20,14 @@ RenderJob RenderJobBuilder::still_image(
     job.output.profile.format = OutputFormat::ImageSequence;
     job.output.profile.video.codec = "png";
     job.output.profile.video.pixel_format = "rgba8";
+    job.output.profile.video.rate_control_mode = "fixed";
+    job.output.profile.class_name = "image-sequence";
+    job.output.profile.buffering.strategy = "default";
+    job.output.profile.color.transfer = "srgb";
+    job.output.profile.color.range = "full";
+    job.output.profile.color.space = "bt709";
+    job.output.profile.alpha_mode = "preserved";
+    job.scene_ref = "builder";
     
     return job;
 }
@@ -44,6 +52,13 @@ RenderJob RenderJobBuilder::video_export(
     job.output.profile.video.pixel_format = "yuv420p";
     job.output.profile.video.rate_control_mode = "crf";
     job.output.profile.video.crf = 18.0;
+    job.output.profile.class_name = "video-export";
+    job.output.profile.buffering.strategy = "default";
+    job.output.profile.color.transfer = "bt709";
+    job.output.profile.color.range = "limited";
+    job.output.profile.color.space = "bt709";
+    job.output.profile.alpha_mode = "discarded";
+    job.scene_ref = "builder";
     
     return job;
 }

@@ -29,14 +29,6 @@ bool export_rgba_to_png(const std::string& path, const uint8_t* data, int width,
  */
 bool export_float_buffer_to_png(const std::string& path, const float* data, int width, int height, const std::string& channel_name = "");
 
-/**
- * @brief Exports pipeline state as JSON for debugging.
- * 
- * @param path Output file path (should end in .json)
- * @param json_string The JSON content to write
- * @return true if export succeeded
- */
-bool export_json(const std::string& path, const std::string& json_string);
 
 /**
  * @brief Creates a debug snapshot directory if it doesn't exist.

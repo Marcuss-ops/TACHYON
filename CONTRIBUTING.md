@@ -84,10 +84,9 @@ If you are an AI agent:
 ## Code Style
 
 - C++20 standard
-- Use `nlohmann::json` only in `.cpp` files, not headers
-- No inline `to_json`/`from_json` in header files
-- Prefer extending existing architecture over duplicating logic
+- No JSON serialization in headers
 - Keep headers lightweight
+- Prefer extending existing architecture over duplicating logic
 
 ## Pull Request Guidelines
 
@@ -100,7 +99,7 @@ If you are an AI agent:
 
 ## Do NOT Commit
 
-- `build-ninja/` directory
+- `build/` directory
 - `.cache/` directory
 - `output/` directory
 - `*.obj`, `*.pdb`, `*.exe`, `*.dll` files

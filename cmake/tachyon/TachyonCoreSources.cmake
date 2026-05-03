@@ -1,8 +1,6 @@
 # TachyonCore sources
 set(TachyonCoreSources
-    ${CMAKE_CURRENT_SOURCE_DIR}/gallery_gen.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/animation_primitives.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/animation/easing_parse.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/c_api.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/options.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/report.cpp
@@ -10,7 +8,6 @@ set(TachyonCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/math/matrix4x4.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/math/quaternion.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/math/transform3.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/math/vector2_serialize.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/math/deterministic_random.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/properties/bezier_interpolator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/properties/graph_editor_backend.cpp
@@ -22,7 +19,7 @@ set(TachyonCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/output/output_presets.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/expressions/expression_engine.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/expressions/expression_vm.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/json/json_reader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/io/path_resolution.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/telemetry_writer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/studio/studio_library.cpp
 )

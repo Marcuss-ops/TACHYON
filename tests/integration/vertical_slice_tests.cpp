@@ -45,7 +45,7 @@ bool run_ffprobe(const std::filesystem::path& file, const std::string& expected_
         "-v", "error",
         "-select_streams", "v:0",
         "-show_entries", "stream=codec_name,width,height,r_frame_rate,duration",
-        "-of", "json",
+        "-of", "default=noprint_wrappers=1:nokey=1",
         file.string()
     };
 
@@ -486,7 +486,7 @@ bool test_export_mp4_with_audio() {
         spec.args = {
             "-v", "error",
             "-show_entries", "stream=codec_type",
-            "-of", "json",
+            "-of", "default=noprint_wrappers=1:nokey=1",
             out_path.string()
         };
 

@@ -6,7 +6,7 @@
 .\build.ps1 -Check
 ```
 
-This builds only `TachyonCore` with RelWithDebInfo - fastest way to catch compile errors.
+This performs a fast incremental `TachyonCore` build with `RelWithDebInfo` and skips CMake reconfiguration when the Visual Studio build tree already exists.
 
 ## Build Presets
 
@@ -16,7 +16,7 @@ This builds only `TachyonCore` with RelWithDebInfo - fastest way to catch compil
 .\build.ps1 -Check
 ```
 
-Equivalent to: `cmake --build --preset relwithdebinfo --target TachyonCore`
+Equivalent to a direct `msbuild` build of `build\src\TachyonCore.vcxproj` with `Configuration=RelWithDebInfo`.
 
 If you are in `cmd.exe`, use:
 
@@ -92,15 +92,15 @@ run_tests.cmd
 .\build.ps1 -RelWithDebInfo -CleanDeps
 ```
 
-This removes `.cache/fetchcontent` and `build-ninja`. Only use when dependency configuration changes.
+This removes `.cache/fetchcontent` and `build/`. Only use when dependency configuration changes.
 
-## Error-Only Output
+## Quick Syntax Check
 
 ```powershell
-.\build.ps1 -Check -ErrorsOnly
+.\scripts\quick-fix.ps1 -SyntaxCheck src\core\scene\builder.cpp
 ```
 
-Shows only error lines (matching "error C", "fatal error", "FAILED", "Error:").
+For a fast compile-only loop, prefer `.\build.ps1 -Check` or `.\scripts\quick-fix.ps1`.
 
 ## Editor Integration
 
@@ -124,7 +124,7 @@ Configure `.clangd` is already set up with strict include diagnostics.
 ## Common Workflow
 
 1. Make changes
-2. `.\build.ps1 -Check` (fast core build)
+2. `.\build.ps1 -Check` (fast incremental core build)
 3. Fix errors
 4. `.\build.ps1 -RelWithDebInfo -TestFilter MyFeature`
 5. `.\build.ps1 -RelWithDebInfo` (full build)
@@ -132,6 +132,6 @@ Configure `.clangd` is already set up with strict include diagnostics.
 
 ## Build Directories
 
-- `build-ninja/` - CMake build directory (generated)
+- `build/` - CMake build directory (generated)
 - `.cache/fetchcontent/` - Downloaded dependencies (generated)
-- `build-ninja/compile_commands.json` - Generated for clangd
+- `build/compile_commands.json` - Generated for clangd

@@ -93,7 +93,6 @@ struct SceneSpec {
     std::optional<std::string> font_manifest_path;
 };
 
-ParseResult<SceneSpec> parse_scene_spec_file(const std::filesystem::path& path);
 ValidationResult validate_scene_spec(const SceneSpec& scene);
 
 class SceneSpecBuilder {

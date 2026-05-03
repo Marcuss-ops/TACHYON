@@ -1,19 +1,21 @@
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/report.h"
-#include "tachyon/core/spec/json_report_utils.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/media/resolution/asset_resolution.h"
 #include "tachyon/media/resolution/asset_path_utils.h"
 #include "tachyon/core/cli_scene_loader.h"
 #include "tachyon/runtime/execution/native_render.h"
+#include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include <iostream>
 #include <filesystem>
 
 namespace tachyon {
 
 void print_diagnostics(const DiagnosticBag& diagnostics, std::ostream& out) {
-    out << spec::diagnostics_to_text(diagnostics);
+    for (const auto& d : diagnostics.diagnostics) {
+        out << "[" << diagnostic_severity_string(d.severity) << "] " << d.path << ": " << d.message << "\n";
+    }
 }
 
 
@@ -38,15 +40,11 @@ bool run_preview_internal(const ::tachyon::CliOptions& options, std::ostream& ou
     std::int64_t frame = options.preview_frame_number.has_value() ? *options.preview_frame_number : 0;
     std::filesystem::path output = !options.preview_output.empty() ? options.preview_output : "preview.png";
 
-    if (!options.json_output) {
-        out << "[" << label << "] Rendering frame " << frame << " to " << output.string() << "\n";
-    }
+    out << "[" << label << "] Rendering frame " << frame << " to " << output.string() << "\n";
 
     const bool success = NativeRenderer::render_still(scene, composition_id, frame, output);
     if (!success) {
         err << "Preview render failed.\n";
-    } else if (options.json_output) {
-        out << "{\"status\": \"ok\", \"output\": \"" << output.string() << "\"}\n";
     } else {
         out << "[" << label << "] Wrote " << output.string() << "\n";
     }

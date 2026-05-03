@@ -303,6 +303,17 @@ LayerBuilder& LayerBuilder::subtitle_path(std::string path) {
     return *this;
 }
 
+LayerBuilder& LayerBuilder::light_leak(LightLeakPreset preset, float progress, float speed, int seed) {
+    EffectSpec leak;
+    leak.type = "light_leak";
+    leak.scalars["preset"] = static_cast<double>(static_cast<int>(preset));
+    leak.scalars["progress"] = static_cast<double>(progress);
+    leak.scalars["speed"] = static_cast<double>(speed);
+    leak.scalars["seed"] = static_cast<double>(seed);
+    spec_.effects.push_back(leak);
+    return *this;
+}
+
 LayerBuilder& LayerBuilder::position3d(double x, double y, double z) {
     spec_.is_3d = true;
     spec_.transform3d.position_property.value = math::Vector3(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z));

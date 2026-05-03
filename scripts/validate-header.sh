@@ -16,7 +16,7 @@ echo "#include <$HEADER>" > "$TEMP_CPP"
 echo "int main() { return 0; }" >> "$TEMP_CPP"
 
 # Build using cmake
-cmake --build build-ninja --preset relwithdebinfo --target TachyonCore 2>&1 | grep -E "error C|fatal error"
+cmake --build build --preset dev --target TachyonCore 2>&1 | grep -E "error C|fatal error"
 
 # Cleanup
 rm -f "$TEMP_CPP"

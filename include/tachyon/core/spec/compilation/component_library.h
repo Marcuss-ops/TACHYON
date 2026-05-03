@@ -16,11 +16,6 @@ public:
     ComponentLibrary() = default;
 
     /**
-     * @brief Loads components from a JSON file.
-     */
-    bool load_from_file(const std::filesystem::path& path);
-
-    /**
      * @brief Adds a component to the library.
      */
     void add_component(ComponentSpec component);

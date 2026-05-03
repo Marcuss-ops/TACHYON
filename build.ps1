@@ -8,7 +8,7 @@
 .PARAMETER Target
     CMake/ninja target (default: from preset)
 .PARAMETER Check
-    Quick validation only, no build
+    Quick incremental build of TachyonCore via MSBuild. Skips CMake.
 .PARAMETER Clean
     Clean artefacts before building
 .PARAMETER Configure
@@ -110,11 +110,11 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 # Verify required tools exist
 $missing = @()
-foreach ($tool in @("cmake","cl")) {
+foreach ($tool in @("cl","msbuild")) {
     if (-not (Get-Command "$tool.exe" -ErrorAction SilentlyContinue)) { $missing += $tool }
 }
 if ($missing.Count -gt 0) {
-    Write-Error "Missing tools: $($missing -join ', '). Run scripts\Enable-DevTools.ps1 to diagnose."
+    Write-Error "Missing tools: $($missing -join ', '). Run scripts\enable-vs-env.ps1 to diagnose."
     exit 1
 }
 
@@ -133,6 +133,21 @@ if ($Clean) {
 }
 
 $NeedConf  = $Configure -or (-not (Test-Path (Join-Path $BuildDir "Tachyon.sln")))
+
+if ($Check) {
+    $CoreProject = Join-Path $BuildDir "src\TachyonCore.vcxproj"
+    if (-not (Test-Path $CoreProject)) {
+        Write-Error "Quick check requires an existing Visual Studio build tree. Run: .\build.ps1 -Preset dev"
+        exit 1
+    }
+
+    Write-Host "Quick check (MSBuild, no CMake)..." -ForegroundColor Yellow
+    Invoke-Native {
+        & msbuild $CoreProject /m:1 /nologo "/p:Configuration=$Config" "/p:Platform=x64" "/t:Build"
+    } "Quick check FAILED."
+    Write-Host "Quick check OK" -ForegroundColor Green
+    return
+}
 
 if ($NeedConf) {
     Write-Host "Configuring ($Preset)..." -ForegroundColor Yellow

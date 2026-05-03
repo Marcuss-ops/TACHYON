@@ -136,6 +136,11 @@ public:
     SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
 };
 
+class LightLeakEffect : public Effect {
+public:
+    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
+};
+
 class WarpStabilizerEffect : public Effect {
 public:
     SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;

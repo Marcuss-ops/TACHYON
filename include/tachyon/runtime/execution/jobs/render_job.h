@@ -123,8 +123,6 @@ public:
         const std::string& output_path);
 };
 
-ParseResult<RenderJob> parse_render_job_json(const std::string& text);
-ParseResult<RenderJob> parse_render_job_file(const std::filesystem::path& path);
 ValidationResult validate_render_job(const RenderJob& job);
 
 } // namespace tachyon

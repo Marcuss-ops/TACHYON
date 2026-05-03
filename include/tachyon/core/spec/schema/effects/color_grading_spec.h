@@ -192,43 +192,4 @@ private:
     }
 };
 
-// JSON serialization for ColorGradingSpec
-inline void to_json(nlohmann::json& j, const ColorGradingSpec& c) {
-    if (!c.exposure.empty()) j["exposure"] = c.exposure;
-    if (!c.contrast.empty()) j["contrast"] = c.contrast;
-    if (!c.saturation.empty()) j["saturation"] = c.saturation;
-    if (!c.lift.empty()) j["lift"] = c.lift;
-    if (!c.gamma.empty()) j["gamma"] = c.gamma;
-    if (!c.gain.empty()) j["gain"] = c.gain;
-    if (c.has_secondary) j["has_secondary"] = c.has_secondary;
-    if (!c.secondary_curve_json.empty()) j["secondary_curve_json"] = c.secondary_curve_json;
-}
-
-inline void from_json(const nlohmann::json& j, ColorGradingSpec& c) {
-    if (j.contains("exposure") && j.at("exposure").is_object()) {
-        c.exposure = j.at("exposure").get<AnimatedScalarSpec>();
-    }
-    if (j.contains("contrast") && j.at("contrast").is_object()) {
-        c.contrast = j.at("contrast").get<AnimatedScalarSpec>();
-    }
-    if (j.contains("saturation") && j.at("saturation").is_object()) {
-        c.saturation = j.at("saturation").get<AnimatedScalarSpec>();
-    }
-    if (j.contains("lift") && j.at("lift").is_object()) {
-        c.lift = j.at("lift").get<AnimatedColorSpec>();
-    }
-    if (j.contains("gamma") && j.at("gamma").is_object()) {
-        c.gamma = j.at("gamma").get<AnimatedColorSpec>();
-    }
-    if (j.contains("gain") && j.at("gain").is_object()) {
-        c.gain = j.at("gain").get<AnimatedColorSpec>();
-    }
-    if (j.contains("has_secondary") && j.at("has_secondary").is_boolean()) {
-        c.has_secondary = j.at("has_secondary").get<bool>();
-    }
-    if (j.contains("secondary_curve_json") && j.at("secondary_curve_json").is_string()) {
-        c.secondary_curve_json = j.at("secondary_curve_json").get<std::string>();
-    }
-}
-
 } // namespace tachyon

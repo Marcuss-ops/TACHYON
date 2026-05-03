@@ -123,7 +123,6 @@ std::string CppSceneLoader::get_compiler_command(
     // MSVC cl.exe command
     ss << "cl.exe /nologo /O2 /MD /EHsc /LD /std:c++20 ";
     ss << "/I\"" << TACHYON_INCLUDE_DIR << "\" ";
-    ss << "/I\"" << TACHYON_JSON_INCLUDE_DIR << "\" ";
     ss << "\"" << cpp_path.string() << "\" ";
     ss << "/Fe:\"" << dll_path.string() << "\" ";
     std::filesystem::path lib_path = TACHYON_LIB_PATH;
@@ -143,7 +142,6 @@ std::string CppSceneLoader::get_compiler_command(
     // Clang/GCC command
     ss << "clang++ -O3 -shared -fPIC -std=c++20 ";
     ss << "-I\"" << TACHYON_INCLUDE_DIR << "\" ";
-    ss << "-I\"" << TACHYON_JSON_INCLUDE_DIR << "\" ";
     ss << "\"" << cpp_path.string() << "\" ";
     ss << "-o \"" << dll_path.string() << "\" ";
     ss << "-L\"" << TACHYON_LIB_PATH << "\" ";

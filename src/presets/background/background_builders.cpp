@@ -57,6 +57,7 @@ LayerSpec build_background(const BackgroundParams& p) {
     if (p.kind == "nebula")      return cosmic_nebula(w, h, palette, dur);
     if (p.kind == "metal")       return brushed_metal(w, h, palette, dur);
     if (p.kind == "ocean")       return oceanic_abyss(w, h, palette, dur);
+    if (p.kind == "ripple_grid") return ripple_grid(w, h, palette, dur);
     
     return classico_premium(w, h, palette, dur);
 }

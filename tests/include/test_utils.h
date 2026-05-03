@@ -6,7 +6,7 @@ namespace tachyon::test {
 
 /**
  * @brief Returns absolute path to a test fixture file.
- * @param relative_path Path relative to tests/ directory (e.g., "fixtures/scenes/my_scene.json")
+ * @param relative_path Path relative to tests/ directory (e.g., "fixtures/scenes/my_scene.cpp")
  * @return Absolute path to the fixture file
  */
 inline std::filesystem::path fixture_path(const std::string& relative_path) {

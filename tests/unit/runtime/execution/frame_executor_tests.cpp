@@ -49,7 +49,7 @@ tachyon::SceneSpec make_scene(double x_offset = 0.0) {
 tachyon::RenderPlan make_plan() {
     tachyon::RenderPlan plan;
     plan.job_id = "job_1";
-    plan.scene_ref = "scene.json";
+    plan.scene_ref = "scene_builder";
     plan.composition_target = "main";
     plan.composition.id = "main";
     plan.composition.name = "Main";
