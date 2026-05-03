@@ -1,7 +1,21 @@
-#include "render_job_internal.h"
+#include "tachyon/runtime/execution/jobs/render_job.h"
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 
 namespace tachyon {
+
+namespace {
+bool is_quality_tier_valid(const std::string& tier) {
+    return tier == "draft" || tier == "high" || tier == "cinematic";
+}
+
+bool is_alpha_mode_valid(const std::string& mode) {
+    return mode == "premultiplied" || mode == "straight" || mode == "opaque";
+}
+
+bool is_motion_blur_curve_valid(const std::string& curve) {
+    return curve == "box" || curve == "triangle" || curve == "gaussian";
+}
+}
 
 ValidationResult validate_render_job(const RenderJob& job) {
     ValidationResult result;

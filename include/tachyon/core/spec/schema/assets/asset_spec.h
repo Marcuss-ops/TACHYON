@@ -17,7 +17,7 @@ struct AssetSpec {
 struct DataSourceSpec {
     std::string id;
     std::string path;
-    std::string type; // "csv", "json"
+    std::string type; // "csv"
 };
 
 } // namespace tachyon

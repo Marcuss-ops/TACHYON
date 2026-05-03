@@ -3,7 +3,8 @@
 
 #include <cmath>
 #include <vector>
-#include <nlohmann/json.hpp>
+#include <sstream>
+#include <iostream>
 
 namespace tachyon::renderer2d {
 namespace {
@@ -14,24 +15,37 @@ struct LightSource {
     float intensity;    // Intensity multiplier
 };
 
-std::vector<LightSource> parse_lights(const std::string& json_str) {
+// Simple parser for light sources: "x,y,r,g,b,intensity;x,y,..."
+std::vector<LightSource> parse_lights(const std::string& config_str) {
     std::vector<LightSource> lights;
-    try {
-        auto j = nlohmann::json::parse(json_str);
-        if (j.is_array()) {
-            for (const auto& light : j) {
-                LightSource ls;
-                ls.x = light.value("x", 0.5f);
-                ls.y = light.value("y", 0.5f);
-                ls.r = light.value("r", 1.0f);
-                ls.g = light.value("g", 1.0f);
-                ls.b = light.value("b", 1.0f);
-                ls.intensity = light.value("intensity", 1.0f);
-                lights.push_back(ls);
+    if (config_str.empty()) return lights;
+
+    std::stringstream ss(config_str);
+    std::string segment;
+    while (std::getline(ss, segment, ';')) {
+        if (segment.empty()) continue;
+        
+        std::stringstream seg_ss(segment);
+        std::string val;
+        std::vector<float> vals;
+        while (std::getline(seg_ss, val, ',')) {
+            try {
+                vals.push_back(std::stof(val));
+            } catch (...) {
+                break;
             }
         }
-    } catch (...) {
-        // Invalid JSON, return empty
+        
+        if (vals.size() >= 6) {
+            LightSource ls;
+            ls.x = vals[0];
+            ls.y = vals[1];
+            ls.r = vals[2];
+            ls.g = vals[3];
+            ls.b = vals[4];
+            ls.intensity = vals[5];
+            lights.push_back(ls);
+        }
     }
     return lights;
 }
@@ -99,14 +113,14 @@ void add_flare_streak(SurfaceRGBA& out, float x1, float y1, float x2, float y2,
 SurfaceRGBA LensFlareEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
     SurfaceRGBA out = input;
     
-    // Get light sources from parameters
-    std::string lights_json;
+    // Get light sources from parameters (using a simple string format instead of JSON)
+    std::string lights_config;
     auto it = params.strings.find("lights");
     if (it != params.strings.end()) {
-        lights_json = it->second;
+        lights_config = it->second;
     }
     
-    auto lights = parse_lights(lights_json);
+    auto lights = parse_lights(lights_config);
     if (lights.empty()) {
         return out; // No lights, no flare
     }
@@ -176,4 +190,3 @@ SurfaceRGBA LensFlareEffect::apply(const SurfaceRGBA& input, const EffectParams&
 }
 
 } // namespace tachyon::renderer2d
-

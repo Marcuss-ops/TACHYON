@@ -2,7 +2,6 @@
 
 #include <cmath>
 #include <ostream>
-#include <nlohmann/json.hpp>
 
 namespace tachyon {
 namespace math {
@@ -48,10 +47,6 @@ inline Vector2 operator*(float scalar, const Vector2& v) { return v * scalar; }
 inline std::ostream& operator<<(std::ostream& out, const Vector2& v) {
     return out << "(" << v.x << ", " << v.y << ")";
 }
-
-// JSON serialization declarations (implementations in vector2_serialize.cpp)
-void to_json(nlohmann::json& j, const Vector2& v);
-void from_json(const nlohmann::json& j, Vector2& v);
 
 } // namespace math
 } // namespace tachyon

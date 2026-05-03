@@ -16,7 +16,6 @@ option(TACHYON_ENABLE_COMPILER_CACHE "Enable sccache/clcache when available" ON)
 find_package(OpenMP REQUIRED)
 option(TACHYON_ENABLE_PCH "Enable precompiled headers when supported" ON)
 option(TACHYON_ENABLE_ASAN "Enable AddressSanitizer on Tachyon targets" OFF)
-option(TACHYON_ENABLE_RENDER_JOB_JSON "Enable JSON render job parsing (enabled by default)" ON)
 option(TACHYON_TREAT_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 option(TACHYON_ENABLE_PREVIEW_WINDOW "Enable GLFW/OpenGL preview window" OFF)
 option(TACHYON_ENABLE_PRORES "Enable ProRes output sink" OFF)
@@ -26,7 +25,6 @@ option(TACHYON_BUILD_TESTS "Build Tachyon tests" ON)
 option(TACHYON_BUILD_EXAMPLES "Build Tachyon examples" OFF)
 option(TACHYON_ENABLE_TRACKER "Enable tracker module" ON)
 option(TACHYON_ENABLE_AUDIO_MUX "Enable audio muxing to MP4 (enabled by default, requires ffmpeg at runtime)" ON)
-
 if(MSVC)
     set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>")
     add_compile_options(/FS)
@@ -71,14 +69,6 @@ endif()
 # Include directories are now managed per-target via target_include_directories()
 # See src/CMakeLists.txt for TachyonCore includes
 # See tests/CMakeLists.txt for TachyonTests includes
-
-# Header-only JSON dependency for the first scene/job parser slice
-FetchContent_Declare(
-    nlohmann_json
-    URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-)
-FetchContent_MakeAvailable(nlohmann_json)
 
 # FreeType for scalable font rendering (Musk-YouTube Edition)
 FetchContent_Declare(

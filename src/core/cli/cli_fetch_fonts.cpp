@@ -58,31 +58,12 @@ bool run_fetch_fonts_command(const CliOptions& options, std::ostream& out, std::
     }
 
     if (!result.downloaded_fonts.empty()) {
-        std::filesystem::path manifest_path = request.dest / "font_manifest.json";
-        out << "\nTo use these fonts, add to your scene JSON:\n";
-        out << R"({
-  "font_manifest": {
-    "fonts": [
-)";
+        std::filesystem::path manifest_path = request.dest / "font_manifest.txt";
+        out << "\nTo use these fonts, register them in your C++ scene builder.\n";
+        out << "Downloaded font IDs:\n";
         for (const auto& font : result.downloaded_fonts) {
-            out << "      {\n";
-            out << "        \"id\": \"" << font.id << "\",\n";
-            out << "        \"family\": \"" << font.family << "\",\n";
-            out << "        \"src\": \"" << font.src << "\",\n";
-            out << "        \"weight\": " << font.weight << "\n";
-            if (!font.subsets.empty()) {
-                out << "        \"subsets\": [";
-                for (size_t i = 0; i < font.subsets.size(); ++i) {
-                    if (i > 0) out << ", ";
-                    out << "\"" << font.subsets[i] << "\"";
-                }
-                out << "]\n";
-            }
-            out << "      },\n";
+            out << "  - " << font.id << " -> " << font.src << '\n';
         }
-        out << "    ]\n";
-        out << "  }\n";
-        out << "}\n";
     }
 
     return true;

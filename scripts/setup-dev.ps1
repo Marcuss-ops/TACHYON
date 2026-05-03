@@ -11,7 +11,7 @@ Write-Host "=== Tachyon Development Setup ===" -ForegroundColor Cyan
 
 # Step 1: Generate compile_commands.json
 Write-Host "`n[1/4] Generating compile_commands.json..." -ForegroundColor Yellow
-& .\build.ps1 -Check -Reconfigure
+& .\build.ps1 -Preset dev
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Failed to generate compile_commands.json!" -ForegroundColor Red
     exit 1
@@ -25,7 +25,7 @@ if (Test-Path ".clangd") {
     Write-Host "  .clangd missing!" -ForegroundColor Red
 }
 
-if (Test-Path "build-ninja/compile_commands.json") {
+if (Test-Path "build/compile_commands.json") {
     Write-Host "  compile_commands.json found" -ForegroundColor Green
 } else {
     Write-Host "  compile_commands.json missing!" -ForegroundColor Red

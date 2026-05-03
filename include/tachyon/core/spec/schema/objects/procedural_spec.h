@@ -3,7 +3,6 @@
 #include "tachyon/core/spec/schema/properties/property_spec.h"
 #include <string>
 #include <optional>
-#include <nlohmann/json.hpp>
 
 namespace tachyon {
 
@@ -48,6 +47,14 @@ struct ProceduralSpec {
     AnimatedScalarSpec gamma;
     AnimatedScalarSpec saturation;
     AnimatedScalarSpec softness;
+    AnimatedScalarSpec glow_intensity;
+
+    // Ripple & Interaction
+    AnimatedScalarSpec ripple_intensity;
+    AnimatedScalarSpec mouse_influence;
+    AnimatedScalarSpec mouse_radius;
+    float mouse_x{0.5f};         ///< Normalized mouse X (0-1)
+    float mouse_y{0.5f};         ///< Normalized mouse Y (0-1)
 
     // Advanced / Noise Specific
     AnimatedScalarSpec octave_decay;
@@ -61,9 +68,5 @@ struct ProceduralSpec {
         return kind.empty();
     }
 };
-
-// JSON serialization declarations
-void to_json(nlohmann::json& j, const ProceduralSpec& spec);
-void from_json(const nlohmann::json& j, ProceduralSpec& spec);
 
 } // namespace tachyon

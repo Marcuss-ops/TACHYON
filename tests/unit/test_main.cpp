@@ -110,7 +110,6 @@ int get_repeat_count() {
 
 // External test declarations
 bool run_scene_spec_tests();
-bool run_json_reader_tests();
 bool run_render_job_tests();
 bool run_math_tests();
 bool run_asset_resolution_tests();
@@ -139,7 +138,6 @@ namespace tachyon::editor { bool run_undo_manager_tests(); }
 namespace tachyon::editor { bool run_autosave_manager_tests(); }
 bool run_scene_evaluator_tests();
 bool run_render_session_tests();
-bool run_render_batch_tests();
 bool run_parallax_cards_tests();
 bool run_png_3d_validation_tests();
 bool run_studio_library_tests();
@@ -155,7 +153,6 @@ bool run_matte_resolver_tests();
 bool run_glyph_cache_tests();
 bool run_effect_host_tests();
 bool run_precomp_mask_tests();
-bool run_golden_visual_tests();
 namespace tachyon { bool run_tiling_tests(); }
 bool run_optical_flow_tests();
 bool run_scene3d_bridge_tests();
@@ -178,7 +175,6 @@ bool run_default_camera_tests_adapter() { run_default_camera_tests(); return tru
 int main(int argc, char** argv) {
     std::vector<TestCase> tests = {
         {"native_render", tachyon::run_native_render_tests},
-        {"json_reader", run_json_reader_tests},
         {"math", run_math_tests},
         {"property", run_property_tests},
         {"expression", run_expression_tests},
@@ -206,7 +202,6 @@ int main(int argc, char** argv) {
         {"autosave_manager", tachyon::editor::run_autosave_manager_tests},
         {"scene_evaluator", run_scene_evaluator_tests},
         {"render_session", run_render_session_tests},
-        {"render_batch", run_render_batch_tests},
         {"parallax_cards", run_parallax_cards_tests},
         {"png_3d_validation", run_png_3d_validation_tests},
         {"vertical_slice", tachyon::run_vertical_slice_tests},
@@ -224,7 +219,6 @@ int main(int argc, char** argv) {
         // {"text", run_text_tests},  // Disabled - see tests/disabled/README.md
         {"effect_host", run_effect_host_tests},
         {"precomp_mask", run_precomp_mask_tests},
-        {"golden", run_golden_visual_tests},
         {"tiling", tachyon::run_tiling_tests},
         {"scene_spec", run_scene_spec_tests},
         {"motion_blur", run_motion_blur_tests},

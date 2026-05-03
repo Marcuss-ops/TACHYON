@@ -60,6 +60,13 @@ void render_procedural_pattern(
     const float spacing = static_cast<float>(spec.spacing.value.value_or(50.0));
     const float border = static_cast<float>(spec.border_width.value.value_or(1.0));
     const std::string& shape = spec.shape;
+
+    // Ripple & Interaction Params
+    const float ripple = static_cast<float>(spec.ripple_intensity.value.value_or(0.0));
+    const float mouse_infl = static_cast<float>(spec.mouse_influence.value.value_or(0.0));
+    const float mouse_rad = static_cast<float>(spec.mouse_radius.value.value_or(0.5));
+    const float mx = spec.mouse_x;
+    const float my = spec.mouse_y;
     
     // Pre-compute colors
     auto to_c = [](const AnimatedColorSpec& s) {
@@ -79,6 +86,7 @@ void render_procedural_pattern(
     const float gamma = static_cast<float>(spec.gamma.value.value_or(1.0));
     const float saturation = static_cast<float>(spec.saturation.value.value_or(1.0));
     const float softness = static_cast<float>(spec.softness.value.value_or(0.0));
+    const float glow = static_cast<float>(spec.glow_intensity.value.value_or(0.0));
     const float inv_gamma = 1.0f / gamma;
     
     // Pattern type detection
@@ -131,6 +139,39 @@ void render_procedural_pattern(
                 u += jitter_u;
                 v += jitter_v;
             }
+
+            // STAGE 1.6: RIPPLE & MOUSE (Radial distortion)
+            if (ripple > 0.0f || mouse_infl > 0.0f) {
+                const float aspect = inv_comp_h / inv_comp_w;
+                
+                // Central Ripple
+                if (ripple > 0.0f) {
+                    float du = u * 2.0f - 1.0f;
+                    float dv = v * 2.0f - 1.0f;
+                    du *= aspect;
+                    float dist = std::sqrt(du * du + dv * dv);
+                    float func = std::sin(3.14159f * (t - dist * 2.0f));
+                    u += du * func * ripple * 0.1f;
+                    v += dv * func * ripple * 0.1f;
+                }
+
+                // Mouse Interaction
+                if (mouse_infl > 0.0f) {
+                    float mu = mx * 2.0f - 1.0f;
+                    float mv = my * 2.0f - 1.0f;
+                    float du = (u * 2.0f - 1.0f) * aspect - mu * aspect;
+                    float dv = (v * 2.0f - 1.0f) - mv;
+                    float dist = std::sqrt(du * du + dv * dv);
+                    
+                    float infl = mouse_infl * std::exp(-dist * dist / (mouse_rad * mouse_rad));
+                    float wave = std::sin(3.14159f * (t * 2.0f - dist * 4.0f)) * infl;
+                    
+                    if (dist > 0.0001f) {
+                        u += (du / dist) * wave * 0.05f;
+                        v += (dv / dist) * wave * 0.05f;
+                    }
+                }
+            }
             
             // STAGE 2: BASE PATTERN
             float value = 0.0f;
@@ -151,6 +192,11 @@ void render_procedural_pattern(
                 float d_u = std::min(gu, 1.0f - gu) * spacing;
                 float d_v = std::min(gv, 1.0f - gv) * spacing;
                 value = (d_u < border || d_v < border) ? 1.0f : 0.0f;
+                if (glow > 0.0f) {
+                    float glow_u = std::exp(-d_u * 0.5f);
+                    float glow_v = std::exp(-d_v * 0.5f);
+                    value = std::max(value, (glow_u + glow_v) * glow);
+                }
                 value *= amp;
             } else if (is_stars) {
                 float n = noise.noise3d(u * freq * 100.0f, v * freq * 100.0f, 0.0f);

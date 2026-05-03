@@ -58,7 +58,6 @@ struct FontManifest {
 class FontManifestParser {
 public:
     static std::optional<FontManifest> parse_file(const std::filesystem::path& path);
-    static std::optional<FontManifest> parse_json(const std::string& json_content);
 
 private:
     static FontStyle parse_font_style(const std::string& style_str);

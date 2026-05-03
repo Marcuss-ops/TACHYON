@@ -48,7 +48,7 @@ bool run_studio_library_tests() {
         check_true(std::filesystem::exists(scene->path), "Scene path exists");
     }
 
-    check_true(std::filesystem::exists(root / "system" / "manifest.json"), "Studio manifest exists");
+    check_true(std::filesystem::exists(root / "system"), "Studio system directory exists");
 
     return g_failures == 0;
 }

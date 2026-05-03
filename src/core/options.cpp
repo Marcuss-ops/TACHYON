@@ -83,7 +83,7 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
     for (std::size_t index = 1; index < args.size(); ++index) {
         const std::string& arg = args[index];
         if (arg == "--scene") {
-            result.diagnostics.add_error("cli.scene_deprecated", "--scene JSON loading is no longer supported. Use --cpp for C++ scenes or --preset.");
+            result.diagnostics.add_error("cli.scene_deprecated", "--scene loading is no longer supported. Use --cpp for C++ scenes or --preset.");
             return result;
         }
         if (arg == "--library") {
@@ -102,24 +102,6 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
                 return result;
             }
             options.transition_id = value;
-            continue;
-        }
-        if (arg == "--job") {
-            const std::string value = require_argument(args, index);
-            if (value.empty()) {
-                result.diagnostics.add_error("cli.job_missing", "missing value for --job");
-                return result;
-            }
-            options.job_path = value;
-            continue;
-        }
-        if (arg == "--batch") {
-            const std::string value = require_argument(args, index);
-            if (value.empty()) {
-                result.diagnostics.add_error("cli.batch_missing", "missing value for --batch");
-                return result;
-            }
-            options.batch_path = value;
             continue;
         }
         if (arg == "--out") {
@@ -171,10 +153,6 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
                 return result;
             }
             options.output_dir = value;
-            continue;
-        }
-        if (arg == "--json") {
-            options.json_output = true;
             continue;
         }
         if (arg == "--frames") {

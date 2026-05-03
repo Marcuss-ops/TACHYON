@@ -29,7 +29,7 @@ struct CommandEntry {
 static const std::vector<CommandEntry> kCommands = {
     {
         "validate",
-        "tachyon validate --cpp <scene.cpp> [--job <file>] [--json]",
+        "tachyon validate --cpp <scene.cpp> [--job <file>]",
         [](const CliOptions& o, std::ostream& e) {
             if (o.cpp_path.empty() && !o.preset_id.has_value()) {
                 e << "Either --cpp or --preset is required for validate\n";
@@ -41,7 +41,7 @@ static const std::vector<CommandEntry> kCommands = {
     },
     {
         "inspect",
-        "tachyon inspect --cpp <scene.cpp> [--job <file>] [--json]",
+        "tachyon inspect --cpp <scene.cpp> [--job <file>]",
         [](const CliOptions& o, std::ostream& e) {
             if (o.cpp_path.empty() && !o.preset_id.has_value()) {
                 e << "Either --cpp or --preset is required for inspect\n";
@@ -54,11 +54,10 @@ static const std::vector<CommandEntry> kCommands = {
     {
         "render",
         "tachyon render --cpp <scene.cpp> --out <file> [--frames <s-e>] [--quality draft|high|production] [--workers <n>]\n"
-        "        render --preset <id> --out <file>\n"
-        "        render --batch <jobs.json> [--workers <n>]",
+        "        render --preset <id> --out <file>",
         [](const CliOptions& o, std::ostream& e) {
-            if (o.batch_path.empty() && o.cpp_path.empty() && !o.preset_id.has_value()) {
-                e << "Either --cpp, --preset, or --batch required for render\n";
+            if (o.cpp_path.empty() && !o.preset_id.has_value()) {
+                e << "Either --cpp or --preset required for render\n";
                 return false;
             }
             return true;
@@ -102,7 +101,7 @@ static const std::vector<CommandEntry> kCommands = {
     },
     {
         "studio-demo",
-        "tachyon studio-demo [--library <dir>] [--transition <id>] [--output-dir <dir>] [--json]",
+        "tachyon studio-demo [--library <dir>] [--transition <id>] [--output-dir <dir>]",
         nullptr,
         run_studio_demo_command
     },

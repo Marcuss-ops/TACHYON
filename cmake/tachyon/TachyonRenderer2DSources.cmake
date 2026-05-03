@@ -26,6 +26,8 @@ set(TachyonRenderer2DSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/utility_effects.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/distort/warp_stabilizer_effect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/generators/lens_flare_effect.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/generators/light_leak_effect.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/generators/light_leak_presets.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/generators/particle_effects.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/glitch.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/utility/number_counter_effect.cpp
@@ -64,7 +66,6 @@ set(TachyonRenderer2DSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/resource/precomp_cache.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/resource/render_context.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/resource/texture_resolver.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/spec/gradient_spec_serialize.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/spec/project_card.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/text/freetype/freetype_manager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/text/glyph/glyph_loader.cpp

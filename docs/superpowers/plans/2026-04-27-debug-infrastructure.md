@@ -154,7 +154,7 @@ TEST(Logging, MacroDoesNotCrash) {
 - [ ] **Step 2: Verificare che il test NON compili (logging.h non esiste ancora)**
 
 ```
-cmake --build build-ninja --target TachyonTests 2>&1 | grep "logging_tests"
+cmake --build build --target TachyonTests 2>&1 | grep "logging_tests"
 ```
 
 Output atteso: errore di compilazione su `logging_tests.cpp`.
@@ -213,8 +213,8 @@ Aggiungere sulla stessa riga o nella stessa lista: `logging_tests.cpp`.
 - [ ] **Step 5: Build e verificare che i test passino**
 
 ```
-cmake --build build-ninja --target TachyonTests
-build-ninja\tests\unit\TachyonTests.exe --gtest_filter="Logging*"
+cmake --build build --target TachyonTests
+build\tests\unit\TachyonTests.exe --gtest_filter="Logging*"
 ```
 
 Output atteso:
@@ -297,8 +297,8 @@ Come nel Task 2 Step 4: aggiungere `assert_tests.cpp` alla lista sorgenti di Tac
 - [ ] **Step 4: Build e verificare**
 
 ```
-cmake --build build-ninja --target TachyonTests
-build-ninja\tests\unit\TachyonTests.exe --gtest_filter="Assert*"
+cmake --build build --target TachyonTests
+build\tests\unit\TachyonTests.exe --gtest_filter="Assert*"
 ```
 
 Output atteso:
@@ -386,7 +386,7 @@ TLOG_ERROR("[AudioDecoder] Could not allocate FFmpeg primitives for {}", path.st
 - [ ] **Step 2: Build per verificare**
 
 ```
-cmake --build build-ninja --target TachyonCore 2>&1 | grep -E "error:|warning:" | grep "audio_decoder"
+cmake --build build --target TachyonCore 2>&1 | grep -E "error:|warning:" | grep "audio_decoder"
 ```
 
 Output atteso: nessuna riga di errore da `audio_decoder.cpp`.
@@ -451,7 +451,7 @@ TLOG_ERROR("[AudioEncoder] Could not write header for {}", output_path.string())
 - [ ] **Step 2: Build**
 
 ```
-cmake --build build-ninja --target TachyonCore 2>&1 | grep -E "error:" | grep "audio_encoder"
+cmake --build build --target TachyonCore 2>&1 | grep -E "error:" | grep "audio_encoder"
 ```
 
 Output atteso: nessun errore.
@@ -540,7 +540,7 @@ TLOG_INFO("[DebugExport] Created snapshot directory: {}", dir.string());
 - [ ] **Step 3: Build**
 
 ```
-cmake --build build-ninja --target TachyonCore 2>&1 | grep -E "error:" | grep -E "audio_export|debug_export"
+cmake --build build --target TachyonCore 2>&1 | grep -E "error:" | grep -E "audio_export|debug_export"
 ```
 
 Output atteso: nessun errore.
@@ -629,8 +629,8 @@ Se non esiste la directory, crearla e aggiungerla a `tests/unit/CMakeLists.txt`.
 - [ ] **Step 3: Verificare che il test MultiThread fallisca (race condition attiva)**
 
 ```
-cmake --build build-ninja --target TachyonTests
-build-ninja\tests\unit\TachyonTests.exe --gtest_filter="ProfilerData.MultiThread*"
+cmake --build build --target TachyonTests
+build\tests\unit\TachyonTests.exe --gtest_filter="ProfilerData.MultiThread*"
 ```
 
 Output atteso: il test `MultiThreadDoesNotCorruptCallCount` fallisce (call_count errato) O il processo crasha su data race. Se passa sempre, eseguire 5 volte con `--gtest_repeat=5`.
@@ -731,8 +731,8 @@ void RendererDebug::ProfilerData::reset() {
 - [ ] **Step 6: Build e verificare che tutti i test profiler passino**
 
 ```
-cmake --build build-ninja --target TachyonTests
-build-ninja\tests\unit\TachyonTests.exe --gtest_filter="ProfilerData*" --gtest_repeat=3
+cmake --build build --target TachyonTests
+build\tests\unit\TachyonTests.exe --gtest_filter="ProfilerData*" --gtest_repeat=3
 ```
 
 Output atteso: `[  PASSED  ] 3 tests.` su tutte le ripetizioni.
@@ -825,7 +825,7 @@ TACHYON_FRAME_MARK_N("frame");
 
 ```
 cmake --preset relwithdebinfo
-cmake --build build-ninja --target TachyonCore
+cmake --build build --target TachyonCore
 ```
 
 Output atteso: build OK, nessuna menzione di Tracy negli output.
@@ -834,7 +834,7 @@ Output atteso: build OK, nessuna menzione di Tracy negli output.
 
 ```
 cmake --preset relwithdebinfo -DTACHYON_ENABLE_TRACY=ON
-cmake --build build-ninja --target TachyonCore
+cmake --build build --target TachyonCore
 ```
 
 Output atteso: `[Tachyon] Tracy profiler enabled` durante configure, build OK.

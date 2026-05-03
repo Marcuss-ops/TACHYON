@@ -302,6 +302,8 @@ void init_builtin_transitions() {
         reg.register_transition({"luma_dissolve", "Luma Dissolve", "Luminance-based dissolve", transition_luma_dissolve});
         reg.register_transition({"directional_blur_wipe", "Directional Blur Wipe", "Blur wipe with direction", transition_directional_blur_wipe});
         reg.register_transition({"flash", "Flash", "White flash transition", transition_flash});
+
+        // Cinematic transitions
         reg.register_transition({"light_leak", "Light Leak", "Warm orange light leak", transition_light_leak});
         reg.register_transition({"film_burn", "Film Burn", "Fiery red-orange film burn", transition_film_burn});
     });

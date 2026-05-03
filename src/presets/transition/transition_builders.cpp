@@ -6,7 +6,6 @@ namespace {
 
 LayerTransitionSpec make_spec(const TransitionParams& p) {
     LayerTransitionSpec spec;
-    spec.transition_id = p.id;
     spec.duration      = p.duration;
     spec.easing        = p.easing;
     spec.delay         = p.delay;

@@ -26,23 +26,6 @@ bool run_validate_command(const CliOptions& options, std::ostream& out, std::ost
     core::SceneValidator validator;
     auto validation_result = validator.validate(scene);
 
-    std::optional<RenderJob> job;
-    bool job_valid = false;
-    if (!options.job_path.empty()) {
-        const auto parsed = parse_render_job_file(options.job_path);
-        if (!parsed.value.has_value()) {
-            print_diagnostics(parsed.diagnostics, err);
-            return false;
-        }
-        job = *parsed.value;
-        job_valid = true;
-    }
-
-    if (options.json_output) {
-        out << make_validate_report_json(scene, assets, validation_result.is_valid(), job_valid, job, validation_result) << '\n';
-        return validation_result.is_valid();
-    }
-
     // Print validation results
     if (!validation_result.is_valid()) {
         err << "Validation FAILED\n";
@@ -55,15 +38,14 @@ bool run_validate_command(const CliOptions& options, std::ostream& out, std::ost
             }
             err << "[" << severity_str << "] " << issue.path << ": " << issue.message << "\n";
         }
-        err << "Summary: " << validation_result.fatal_count << " fatal, " 
-            << validation_result.error_count << " errors, " 
+        err << "Summary: " << validation_result.fatal_count << " fatal, "
+            << validation_result.error_count << " errors, "
             << validation_result.warning_count << " warnings\n";
         return false;
     }
 
     out << "scene spec valid\n";
     out << "resolved assets: " << assets.size() << '\n';
-    if (job_valid) out << "render job valid\n";
     if (validation_result.warning_count > 0) {
         out << "warnings: " << validation_result.warning_count << "\n";
         for (const auto& issue : validation_result.issues) {

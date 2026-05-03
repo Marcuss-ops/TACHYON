@@ -352,8 +352,8 @@ FontFetchResult FontDownloader::fetch(const FontFetchRequest& request, ProgressC
         result.downloaded_fonts.push_back(entry);
     }
 
-    result.success = true;
-    result.manifest_path = request.dest.parent_path() / "font_manifest.json";
+result.success = true;
+        result.manifest_path = request.dest.parent_path() / "font_manifest.txt";
 
     if (callback) callback(request.family, 0, "Done!");
     return result;

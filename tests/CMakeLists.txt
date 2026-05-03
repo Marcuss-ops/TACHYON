@@ -1,7 +1,6 @@
 add_executable(TachyonTests
     unit/test_main.cpp
     unit/core/math_tests.cpp
-    unit/core/json/json_reader_tests.cpp
     unit/core/property_tests.cpp
     unit/core/expression_tests.cpp
     unit/media/asset_resolution_tests.cpp
@@ -30,9 +29,6 @@ add_executable(TachyonTests
     unit/runtime/execution/frame_executor_tests.cpp
     unit/runtime/execution/frame_range_tests.cpp
     unit/runtime/execution/tile_scheduler_tests.cpp
-    unit/runtime/visual/visual_golden_tests.cpp
-    unit/runtime/visual/visual_golden_verifier.cpp
-    unit/runtime/visual/golden_fixtures.cpp
     unit/core/scene/evaluator_tests.cpp
     unit/core/scene/precomp_mask_tests.cpp
     unit/timeline/time_tests.cpp
@@ -53,7 +49,6 @@ add_executable(TachyonTests
     unit/text/editor_tests.cpp
     unit/audio/test_audio_pitch_correct.cpp  # Re-enabled - was disabled for pre-existing build errors
      integration/render_session_tests.cpp
-     integration/render_batch_tests.cpp
      integration/parallax_cards_tests.cpp
      integration/vertical_slice_tests.cpp
      integration/png_3d_validation_tests.cpp

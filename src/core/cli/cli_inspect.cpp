@@ -6,7 +6,6 @@
 #include "tachyon/text/fonts/management/font_manifest.h"
 #include "tachyon/text/fonts/utils/font_coverage_reporter.h"
 #include <iostream>
-#include <nlohmann/json.hpp>
 
 namespace tachyon {
  
@@ -30,91 +29,14 @@ bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostr
  
     std::optional<RenderPlan> render_plan;
     std::optional<RenderExecutionPlan> execution_plan;
-    if (!options.job_path.empty()) {
-        const auto job_parsed = parse_render_job_file(options.job_path);
-        if (!job_parsed.value.has_value()) {
-            print_diagnostics(job_parsed.diagnostics, err);
-            return false;
-        }
- 
-        const auto plan_result = build_render_plan(scene, *job_parsed.value);
-        if (!plan_result.value.has_value()) {
-            print_diagnostics(plan_result.diagnostics, err);
-            return false;
-        }
-        render_plan = *plan_result.value;
- 
-        const auto execution_result = build_render_execution_plan(*render_plan, assets.size());
-        if (!execution_result.value.has_value()) {
-            print_diagnostics(execution_result.diagnostics, err);
-            return false;
-        }
-        execution_plan = *execution_result.value;
-    }
- 
-    if (options.json_output) {
-        out << make_inspect_report_json(scene, assets, render_plan, execution_plan) << '\n';
-        return true;
-    }
  
     print_inspect_report_text(scene, assets, render_plan, execution_plan, out);
     return true;
 }
 
-bool run_inspect_fonts_command(const CliOptions& options, std::ostream& out, std::ostream& err) {
-    std::filesystem::path manifest_path = options.font_manifest_path;
-    if (manifest_path.empty() && !options.cpp_path.empty()) {
-        manifest_path = options.cpp_path;
-    }
- 
-    auto manifest = tachyon::text::FontManifestParser::parse_file(manifest_path);
-    if (!manifest) {
-        err << "Failed to parse font manifest: " << manifest_path.string() << '\n';
-        return false;
-    }
- 
-    tachyon::text::FontCoverageReporter reporter(*manifest);
-    auto summary = reporter.generate_report();
- 
-    if (options.json_output) {
-        nlohmann::json j;
-        j["total_fonts"] = summary.total_fonts;
-        j["total_missing_glyphs"] = summary.total_missing_glyphs;
-        j["fonts"] = nlohmann::json::array();
-        for (const auto& r : summary.font_reports) {
-            j["fonts"].push_back({
-                {"family", r.font_family},
-                {"path", r.font_path.string()},
-                {"loaded", r.loaded},
-                {"total_glyphs", r.total_glyphs},
-                {"missing_codepoints", r.missing_codepoints.size()},
-                {"has_all_required", r.has_all_required}
-            });
-        }
-        out << j.dump(2) << '\n';
-    } else {
-        out << "Font Coverage Report\n";
-        out << "==================\n\n";
-        out << "Total fonts: " << summary.total_fonts << "\n";
-        out << "Total missing glyphs: " << summary.total_missing_glyphs << "\n\n";
- 
-        for (const auto& report : summary.font_reports) {
-            out << "Font: " << report.font_family << "\n";
-            out << "  Path: " << report.font_path.string() << "\n";
-            out << "  Loaded: " << (report.loaded ? "Yes" : "No") << "\n";
-            out << "  Total glyphs: " << report.total_glyphs << "\n";
-            out << "  Missing codepoints: " << report.missing_codepoints.size() << "\n";
-            if (!report.missing_codepoints.empty()) {
-                out << "  Missing: ";
-                for (auto cp : report.missing_codepoints) {
-                    out << "U+" << std::hex << cp << std::dec << " ";
-                }
-                out << "\n";
-            }
-            out << "\n";
-        }
-    }
-    return true;
+bool run_inspect_fonts_command(const CliOptions& /*options*/, std::ostream& /*out*/, std::ostream& err) {
+    err << "Font manifest inspection is no longer supported. Please use the C++ Font API.\n";
+    return false;
 }
 
 } // namespace tachyon

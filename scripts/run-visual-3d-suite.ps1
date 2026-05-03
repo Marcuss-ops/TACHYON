@@ -1,7 +1,7 @@
 param(
 [string]$SceneDir = "tests\legacy\visual\3d\scenes",
 [string]$OutputDir = "tests\visual\3d\actual",
-[string]$TachyonExe = ".\build-ninja\src\tachyon.exe",
+[string]$TachyonExe = ".\build\src\RelWithDebInfo\tachyon.exe",
 [switch]$Sharp
 )
 

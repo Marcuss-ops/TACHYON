@@ -90,7 +90,7 @@ target_include_directories(TachyonCore PUBLIC "${CMAKE_BINARY_DIR}/include")
 cmake --preset ninja-msvc-x64
 ```
 
-Expected: nessun errore, file generato in `build-ninja/include/tachyon/core/tachyon_build_config.h`.
+Expected: nessun errore, file generato in `build/include/tachyon/core/tachyon_build_config.h`.
 
 - [ ] **Step 4: Commit**
 
@@ -284,7 +284,7 @@ core/cpp_scene_loader.cpp
 - [ ] **Step 4: Build per verificare che compili**
 
 ```bash
-cmake --build build-ninja --target TachyonCore
+cmake --build build --target TachyonCore
 ```
 
 Expected: zero errori, zero warning nuovi.
@@ -330,7 +330,7 @@ In `src/core/options.cpp`, trova il loop che processa `argv` e aggiungi i tre ca
 - [ ] **Step 3: Build**
 
 ```bash
-cmake --build build-ninja --target TachyonCore
+cmake --build build --target TachyonCore
 ```
 
 Expected: compila senza errori.
@@ -544,7 +544,7 @@ bool run_preview_command(const CliOptions& options, std::ostream& out, std::ostr
 - [ ] **Step 2: Build**
 
 ```bash
-cmake --build build-ninja --target TachyonCore
+cmake --build build --target TachyonCore
 ```
 
 Expected: compila senza errori.
@@ -607,8 +607,8 @@ if (options.command == "validate" ||
 - [ ] **Step 2: Build e smoke test**
 
 ```bash
-cmake --build build-ninja --target tachyon
-./build-ninja/src/RelWithDebInfo/tachyon.exe render --help
+cmake --build build --target tachyon
+./build/src/RelWithDebInfo/tachyon.exe render --help
 ```
 
 Expected: stampa il nuovo help senza menzionare `--scene` o `--job`.
@@ -683,7 +683,7 @@ extern "C" TACHYON_API SceneSpec build_scene() {
 - [ ] **Step 2: Renderizza un singolo frame PNG**
 
 ```bash
-./build-ninja/src/RelWithDebInfo/tachyon.exe render \
+./build/src/RelWithDebInfo/tachyon.exe render \
   --cpp tests/smoke/ten_minutes_scene.cpp \
   --out out/ten_minutes_v2.png \
   --frame 45
@@ -701,7 +701,7 @@ written frames: 1
 - [ ] **Step 3: Renderizza il video completo**
 
 ```bash
-./build-ninja/src/RelWithDebInfo/tachyon.exe render \
+./build/src/RelWithDebInfo/tachyon.exe render \
   --cpp tests/smoke/ten_minutes_scene.cpp \
   --out out/ten_minutes_v2.mp4 \
   --quality high
@@ -809,7 +809,7 @@ git rm -rf tests/legacy/
 - [ ] **Step 5: Build completo**
 
 ```bash
-cmake --build build-ninja --target tachyon
+cmake --build build --target tachyon
 ```
 
 Expected: zero errori. Se ci sono riferimenti rimasti a `parse_scene_spec_json`, `parse_render_job_file`, o `load_scene_context` — cerca con grep e rimuovili.
@@ -867,7 +867,7 @@ comp.duration = 5.0; comp.frame_rate = {30, 1};
 - [ ] **Step 3: Build dei test**
 
 ```bash
-cmake --build build-ninja --target TachyonTests
+cmake --build build --target TachyonTests
 ```
 
 Expected: zero errori.
@@ -875,7 +875,7 @@ Expected: zero errori.
 - [ ] **Step 4: Esegui i test**
 
 ```bash
-./build-ninja/tests/RelWithDebInfo/TachyonTests.exe
+./build/tests/RelWithDebInfo/TachyonTests.exe
 ```
 
 Expected: tutti i test passano (o i test JSON-specifici vengono rimossi se non hanno più senso).

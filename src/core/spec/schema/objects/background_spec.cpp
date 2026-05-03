@@ -2,7 +2,9 @@
 #include <algorithm>
 #include <cstdlib>
 #include <string>
-#include <nlohmann/json.hpp>
+#include <sstream>
+#include <vector>
+#include <unordered_map>
 
 namespace tachyon {
 
@@ -121,51 +123,6 @@ BackgroundSpec BackgroundSpec::from_string(const std::string& str) {
     // Default: treat as component ID (most common use case for background)
     result.type = BackgroundType::Component;
     return result;
-}
-
-void to_json(nlohmann::json& j, const BackgroundSpec& spec) {
-    j = nlohmann::json{
-        {"type", spec.type == BackgroundType::Color ? "color" :
-                spec.type == BackgroundType::Component ? "component" :
-                spec.type == BackgroundType::Asset ? "asset" : "preset"},
-        {"value", spec.value}
-    };
-    if (spec.parsed_color.has_value()) {
-        const auto& c = *spec.parsed_color;
-        char buf[16];
-        std::snprintf(buf, sizeof(buf), "#%02X%02X%02X%02X", c.r, c.g, c.b, c.a);
-        j["parsed_color"] = buf;
-    }
-}
-
-void from_json(const nlohmann::json& j, BackgroundSpec& spec) {
-    if (j.is_string()) {
-        // Backward compatible: plain string
-        spec = BackgroundSpec::from_string(j.get<std::string>());
-        return;
-    }
-
-    if (j.is_object()) {
-        std::string type_str = j.value("type", "component");
-        if (type_str == "color") {
-            spec.type = BackgroundType::Color;
-        } else if (type_str == "asset") {
-            spec.type = BackgroundType::Asset;
-        } else if (type_str == "preset") {
-            spec.type = BackgroundType::Preset;
-        } else {
-            spec.type = BackgroundType::Component;
-        }
-        spec.value = j.value("value", "");
-
-        if (j.contains("parsed_color") && j["parsed_color"].is_string()) {
-            spec.parsed_color = BackgroundSpec::from_string(j["parsed_color"].get<std::string>()).parsed_color;
-        } else {
-            if (spec.type == BackgroundType::Color) {
-                spec.parsed_color = BackgroundSpec::from_string(spec.value).parsed_color;
-            }
-        }
-    }
 }
 
 } // namespace tachyon

@@ -2,65 +2,14 @@
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include <fstream>
 #include <sstream>
-#include <nlohmann/json.hpp>
-
-using json = nlohmann::json;
 
 namespace tachyon {
 
 bool PresetLibrary::load_from_directory(const std::filesystem::path& dir) {
-    if (!std::filesystem::exists(dir) || !std::filesystem::is_directory(dir)) {
-        return false;
-    }
-
-    for (const auto& entry : std::filesystem::directory_iterator(dir)) {
-        if (!entry.is_regular_file()) continue;
-        const auto& path = entry.path();
-        if (path.extension() != ".json") continue;
-
-        std::ifstream file(path);
-        if (!file) continue;
-
-        std::stringstream buffer;
-        buffer << file.rdbuf();
-        try {
-            const json parsed = json::parse(buffer.str());
-            if (!parsed.is_object()) continue;
-
-            AnimationPreset preset;
-            if (parsed.contains("name") && parsed.at("name").is_string()) {
-                preset.name = parsed.at("name").get<std::string>();
-            } else {
-                preset.name = path.stem().string();
-            }
-
-            if (parsed.contains("phase") && parsed.at("phase").is_string()) {
-                preset.phase = parsed.at("phase").get<std::string>();
-            }
-
-            if (parsed.contains("keyframes") && parsed.at("keyframes").is_array()) {
-                for (const auto& kf : parsed.at("keyframes")) {
-                    if (!kf.is_object()) continue;
-                    AnimationPreset::Keyframe keyframe;
-                    read_number(kf, "t", keyframe.t);
-                    if (kf.contains("scale_x") && kf.at("scale_x").is_number()) keyframe.scale_x = kf.at("scale_x").get<float>();
-                    if (kf.contains("scale_y") && kf.at("scale_y").is_number()) keyframe.scale_y = kf.at("scale_y").get<float>();
-                    if (kf.contains("position_x") && kf.at("position_x").is_number()) keyframe.position_x = kf.at("position_x").get<float>();
-                    if (kf.contains("position_y") && kf.at("position_y").is_number()) keyframe.position_y = kf.at("position_y").get<float>();
-                    if (kf.contains("opacity") && kf.at("opacity").is_number()) keyframe.opacity = kf.at("opacity").get<float>();
-                    if (kf.contains("rotation") && kf.at("rotation").is_number()) keyframe.rotation = kf.at("rotation").get<float>();
-                    if (kf.contains("blur_radius") && kf.at("blur_radius").is_number()) keyframe.blur_radius = kf.at("blur_radius").get<float>();
-                    preset.keyframes.push_back(std::move(keyframe));
-                }
-            }
-
-            m_presets[preset.name] = std::move(preset);
-        } catch (const std::exception&) {
-            continue;
-        }
-    }
-
-    return !m_presets.empty();
+    // JSON preset loading has been removed.
+    // Presets should be defined via C++ Builder API.
+    (void)dir;
+    return false;
 }
 
 const AnimationPreset* PresetLibrary::find(const std::string& name) const {

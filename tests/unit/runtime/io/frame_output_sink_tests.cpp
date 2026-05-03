@@ -23,7 +23,7 @@ void check_true(bool condition, const std::string& message) {
 tachyon::RenderPlan make_png_plan() {
     tachyon::RenderPlan plan;
     plan.job_id = "job_png";
-    plan.scene_ref = "scene.json";
+    plan.scene_ref = "scene_builder";
     plan.composition_target = "main";
     plan.composition.id = "main";
     plan.composition.name = "Main";

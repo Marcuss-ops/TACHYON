@@ -2,7 +2,6 @@
 
 #include "tachyon/core/math/vector3.h"
 #include <cstdint>
-#include <nlohmann/json.hpp>
 
 namespace tachyon {
 
@@ -21,16 +20,5 @@ struct ColorSpec {
         return {r / 255.0f, g / 255.0f, b / 255.0f};
     }
 };
-
-inline void to_json(nlohmann::json& j, const ColorSpec& c) {
-    j = nlohmann::json{{"r", c.r}, {"g", c.g}, {"b", c.b}, {"a", c.a}};
-}
-
-inline void from_json(const nlohmann::json& j, ColorSpec& c) {
-    if (j.contains("r") && j.at("r").is_number()) c.r = j.at("r").get<std::uint8_t>();
-    if (j.contains("g") && j.at("g").is_number()) c.g = j.at("g").get<std::uint8_t>();
-    if (j.contains("b") && j.at("b").is_number()) c.b = j.at("b").get<std::uint8_t>();
-    if (j.contains("a") && j.at("a").is_number()) c.a = j.at("a").get<std::uint8_t>();
-}
 
 } // namespace tachyon

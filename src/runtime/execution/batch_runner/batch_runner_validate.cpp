@@ -1,4 +1,4 @@
-#include "batch_runner_internal.h"
+#include "tachyon/runtime/execution/batch/batch_runner.h"
 
 namespace tachyon {
 

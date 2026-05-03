@@ -35,7 +35,7 @@ SceneSpec make_scene(std::int64_t width, std::int64_t height) {
 RenderExecutionPlan make_execution_plan(std::int64_t width, std::int64_t height) {
     RenderPlan plan;
     plan.job_id = "job_1";
-    plan.scene_ref = "scene.json";
+    plan.scene_ref = "scene_builder";
     plan.composition_target = "main";
     plan.composition.id = "main";
     plan.composition.name = "Main";

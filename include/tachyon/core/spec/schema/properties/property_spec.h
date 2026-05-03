@@ -179,8 +179,6 @@ struct AnimatedMaskPathSpec {
     }
 };
 
-// JSON serialization is handled in property_spec_serialize_helpers.h and .cpp files.
-
 /**
  * @brief Effect specification with support for animated parameters over time.
  * 
@@ -279,9 +277,6 @@ struct AnimatedEffectSpec {
         return !animated_scalars.empty() || !animated_colors.empty();
     }
 };
-
-void to_json(nlohmann::json& j, const AnimatedEffectSpec& e);
-void from_json(const nlohmann::json& j, AnimatedEffectSpec& e);
 
 // Backward compatibility: allow using EffectSpec where AnimatedEffectSpec is expected
 inline EffectSpec EffectSpec::evaluate(double /*time_seconds*/) const {

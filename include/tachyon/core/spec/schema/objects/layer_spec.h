@@ -28,20 +28,11 @@ struct ParticleSpec {
     }
 };
 
-inline void to_json(nlohmann::json& j, const ParticleSpec& p) {
-    j = nlohmann::json{{"type", p.type}, {"enabled", p.enabled}};
-}
-
-inline void from_json(const nlohmann::json& j, ParticleSpec& p) {
-    if (j.contains("type") && j.at("type").is_string()) p.type = j.at("type").get<std::string>();
-    if (j.contains("enabled") && j.at("enabled").is_boolean()) p.enabled = j.at("enabled").get<bool>();
-}
-
 struct LayerTransitionSpec {
-    std::string type; // JSON string field (e.g., "fade", "slide_left")
-    std::string transition_id; // Backward compatible: used by renderer
-    TransitionKind kind{TransitionKind::None}; // Internal typed field
-    std::string direction; // "up", "down", "left", "right"
+    std::string type{"none"};
+    std::string transition_id;
+    TransitionKind kind{TransitionKind::None}; 
+    std::string direction; 
     double duration{0.4};
     double delay{0.0};
     animation::EasingPreset easing{animation::EasingPreset::EaseOut};

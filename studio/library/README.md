@@ -9,12 +9,8 @@ Layout:
 - `scenes/` for ready-made compositions
 - `system/` for shared runtime metadata and stack helpers
 
-Public entrypoint:
-- `system/manifest.json`
-- `system/scene.schema.json`
-
 Rules:
 - do not duplicate content across folders
 - keep `src/` and `include/` as engine implementation only
 - add new public assets here, not in the engine folders
-- call `scripts/studio/generate_library.ps1` when regenerating the catalog
+- regenerate library catalogs through the C++ scene/build pipeline, not JSON manifests

@@ -9,7 +9,7 @@
 - Prefer extending existing architecture over duplicating logic.
 - Do not modify unrelated files.
 - Do not commit generated files.
-- Do not commit build-ninja, .cache, output, node_modules, *.obj, *.pdb, *.exe, *.dll.
+- Do not commit build, .cache, output, node_modules, *.obj, *.pdb, *.exe, *.dll.
 
 ## Available Scripts
 
@@ -28,20 +28,20 @@
 
 **Solution 1: Use build.ps1 (recommended)**
 ```powershell
-.\build.ps1 -Check          # Builds TachyonCore (auto-loads VS env)
-.\build.ps1 -Verify         # Syntax check only (uses cl.exe /Zs)
+.\build.ps1 -Check          # Fast incremental TachyonCore build
+.\scripts\quick-fix.ps1 -SyntaxCheck src\core\scene\builder.cpp
 ```
 
 **Solution 2: Load VS environment into session**
 ```powershell
 .\scripts\enable-vs-env.ps1   # Now ninja, cmake, cl.exe work directly
-ninja -C build-ninja TachyonCore  # Now works!
+cmake --build build --preset dev --target TachyonCore  # Now works!
 ```
 
 **Solution 3: Lightweight syntax check**
 ```powershell
-.\build.ps1 -Verify -TestFilter "Component"  # Check files matching pattern
-.\build.ps1 -Verify                           # Check modified files only
+.\scripts\quick-fix.ps1 -SyntaxCheck src\core\scene\builder.cpp
+.\build.ps1 -Check
 ```
 
 ## Build commands
@@ -91,7 +91,7 @@ Clean and rebuild:
 Quick error check:
 
 ```powershell
-.\build.ps1 -Check -ErrorsOnly
+.\build.ps1 -Check
 ```
 
 Header smoke tests (catches header errors early):
@@ -124,8 +124,7 @@ Full validation script for agents:
 - If a feature already exists in another layer, extend it instead of recreating it.
 - Keep headers lightweight.
 - Avoid inline heavy serialization logic in headers.
-- Use `nlohmann::json` only in `.cpp` files, not in headers.
-- Do not add inline `to_json`/`from_json` in header files.
+- Do not add inline serialization in header files.
 
 ## Example prompt for agents
 
@@ -138,8 +137,7 @@ Scope:
 - tests/unit/core/spec/component_spec_tests.cpp
 
 Rules:
-- Do not add inline JSON serialization in headers.
-- Use nlohmann::json only in .cpp files.
+- Do not add inline serialization in headers.
 - Follow existing scene spec parse/serialize patterns.
 - Run .\build.ps1 -Check.
 - Run .\build.ps1 -Preset dev-fast -RunTests -TestFilter Component.

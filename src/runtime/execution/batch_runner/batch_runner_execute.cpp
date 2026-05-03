@@ -1,4 +1,4 @@
-#include "batch_runner_internal.h"
+#include "tachyon/runtime/execution/batch/batch_runner.h"
 #include "tachyon/core/spec/compilation/scene_compiler.h"
 #include "tachyon/core/spec/compilation/preset_compiler.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
@@ -9,8 +9,18 @@
 #include <algorithm>
 
 namespace tachyon {
-namespace media {
-    std::filesystem::path scene_asset_root(const std::filesystem::path& scene_path);
+
+namespace {
+std::string summarize_diagnostics(const DiagnosticBag& diagnostics, const std::string& prefix) {
+    if (diagnostics.diagnostics.empty()) return prefix;
+    std::string result = prefix + ": ";
+    for (const auto& d : diagnostics.diagnostics) {
+        if (d.severity == DiagnosticSeverity::Error) {
+            result += d.message + " ";
+        }
+    }
+    return result;
+}
 }
 
 bool load_scene_context(const std::filesystem::path& /*scene_path*/, SceneSpec& /*scene*/, AssetResolutionTable& /*assets*/, DiagnosticBag& diagnostics) {
@@ -18,13 +28,9 @@ bool load_scene_context(const std::filesystem::path& /*scene_path*/, SceneSpec& 
     return false;
 }
 
-bool load_render_job(const std::filesystem::path& job_path, RenderJob& job, DiagnosticBag& diagnostics) {
-    const auto parsed = parse_render_job_file(job_path);
-    if (!parsed.value.has_value()) { diagnostics.append(parsed.diagnostics); return false; }
-    const auto validation = validate_render_job(*parsed.value);
-    if (!validation.ok()) { diagnostics.append(validation.diagnostics); return false; }
-    job = *parsed.value;
-    return true;
+bool load_render_job(const std::filesystem::path& /*job_path*/, RenderJob& /*job*/, DiagnosticBag& diagnostics) {
+    diagnostics.add_error("batch.job_loading_disabled", "JSON render job loading is no longer supported. Use C++ RenderJob builders.");
+    return false;
 }
 
 ResolutionResult<RenderBatchResult> run_render_batch(const RenderBatchSpec& spec, std::size_t worker_count) {

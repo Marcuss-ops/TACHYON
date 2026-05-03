@@ -1,5 +1,4 @@
 build/
-build-ninja/
 build-linux/
 out/
 /output/
@@ -28,12 +27,7 @@ test_output.txt
 # Render outputs in root/tests
 *.mp4
 *.png
-minimal_white_*.json
-ten_minutes_*.json
 ten_minutes_scene.cpp
-job_bg.json job_red.json
-scene_bg.json scene_red.json
-shapegrid_scene.json shapegrid_job.json
 task.md
 
 # Cache
@@ -44,19 +38,3 @@ debug/render_*/
 studio/library/animations/transitions/Output/
 studio/library/animations/transitions/*/output/*.mp4
 studio/library/animations/transitions/*/output/*.png
-
-# Scene JSON (output/debug/cache — non sorgenti, usare spec C++)
-debug_*.json
-font_manifest.json
-render_job.json
-scene.json
-shapegrid_*.json
-scenes/*.json
-gallery/*.json
-tests/scenes/*.json
-
-# Debug/temp render job files in root
-render_job_*.json
-render_scene_*.json
-scene_*_test.json
-test_*.json

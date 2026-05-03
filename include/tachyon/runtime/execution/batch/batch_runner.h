@@ -35,8 +35,6 @@ struct RenderBatchResult {
     std::size_t failed{0};
 };
 
-ParseResult<RenderBatchSpec> parse_render_batch_json(const std::string& text);
-ParseResult<RenderBatchSpec> parse_render_batch_file(const std::filesystem::path& path);
 ValidationResult validate_render_batch_spec(const RenderBatchSpec& spec);
 ResolutionResult<RenderBatchResult> run_render_batch(const RenderBatchSpec& spec, std::size_t worker_count = 1);
 
