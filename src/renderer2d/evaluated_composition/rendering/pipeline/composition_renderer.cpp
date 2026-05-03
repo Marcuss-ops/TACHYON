@@ -471,9 +471,14 @@ RasterizedFrame2D render_evaluated_composition_2d(
             // Effects
             if (render_context.policy.effects_enabled && (!layer.effects.empty() || !layer.animated_effects.empty())) {
                 const auto effects_start = std::chrono::high_resolution_clock::now();
+                std::vector<EffectSpec> resolved_effects = layer.effects;
+                resolved_effects.reserve(resolved_effects.size() + layer.animated_effects.size());
+                for (const auto& animated_effect : layer.animated_effects) {
+                    resolved_effects.push_back(animated_effect.evaluate(layer.local_time_seconds));
+                }
                 auto effect_surface = apply_effect_pipeline(
                     *layer_surface,
-                    layer.effects,
+                    resolved_effects,
                     host,
                     render_context.working_color_space.profile,
                     rendered_surfaces,

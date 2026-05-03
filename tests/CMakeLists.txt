@@ -48,6 +48,7 @@ add_executable(TachyonTests
     unit/text/text_tests.cpp  # Re-enabled - was disabled for pre-existing build errors
     unit/text/editor_tests.cpp
     unit/audio/test_audio_pitch_correct.cpp  # Re-enabled - was disabled for pre-existing build errors
+    unit/presets/background_preset_registry_tests.cpp
      integration/render_session_tests.cpp
      integration/parallax_cards_tests.cpp
      integration/vertical_slice_tests.cpp

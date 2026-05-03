@@ -142,7 +142,7 @@ SurfaceRGBA LightLeakEffect::apply(const SurfaceRGBA& input, const EffectParams&
             res.r = 1.0f - (1.0f - base.r) * (1.0f - add.r);
             res.g = 1.0f - (1.0f - base.g) * (1.0f - add.g);
             res.b = 1.0f - (1.0f - base.b) * (1.0f - add.b);
-            res.a = base.a;
+            res.a = 1.0f;
             
             out.set_pixel(x, y, res);
         }

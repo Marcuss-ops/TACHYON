@@ -214,6 +214,10 @@ EvaluatedLayerState make_layer_state(
     evaluated.stroke_width = static_cast<float>(sample_scalar(layer.stroke_width_property, layer.stroke_width, local_t, context.audio_analyzer));
 
     evaluated.effects = layer.effects;
+    evaluated.animated_effects.reserve(layer.animated_effects.size());
+    for (const auto& animated_effect : layer.animated_effects) {
+        evaluated.animated_effects.push_back(animated_effect.evaluate(local_t));
+    }
     
     // NEW: Populate 3D mesh for primitives if is_3d is true
     if (evaluated.is_3d) {

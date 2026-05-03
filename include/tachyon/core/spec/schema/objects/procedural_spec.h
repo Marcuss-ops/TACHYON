@@ -48,6 +48,8 @@ struct ProceduralSpec {
     AnimatedScalarSpec saturation;
     AnimatedScalarSpec softness;
     AnimatedScalarSpec glow_intensity;
+    AnimatedScalarSpec vignette_intensity;
+    AnimatedScalarSpec fisheye_strength;
 
     // Ripple & Interaction
     AnimatedScalarSpec ripple_intensity;

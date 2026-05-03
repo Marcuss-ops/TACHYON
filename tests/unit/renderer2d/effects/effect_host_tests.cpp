@@ -159,6 +159,14 @@ bool run_effect_host_tests() {
     const SurfaceRGBA leaked = host.apply("glsl_transition", transition_from, leak_params);
     check_true(leaked.get_pixel(4, 4).a > 0, "Light leak transition produces visible output");
 
+    EffectParams leak_overlay_params;
+    leak_overlay_params.scalars["t"] = 0.5f;
+    leak_overlay_params.strings["transition_id"] = "light_leak";
+    const SurfaceRGBA leak_overlay = host.apply("glsl_transition", SurfaceRGBA(8, 8), leak_overlay_params);
+    const Color leak_overlay_center = leak_overlay.get_pixel(4, 4);
+    check_true(leak_overlay_center.r > 0.1f || leak_overlay_center.g > 0.05f || leak_overlay_center.b > 0.01f,
+        "Light leak overlay mode produces visible amber output on black");
+
     EffectParams burn_params;
     burn_params.scalars["t"] = 0.5f;
     burn_params.strings["transition_id"] = "film_burn";
