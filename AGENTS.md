@@ -11,6 +11,8 @@
 - Do not commit generated files.
 - Do not commit build, .cache, output, node_modules, *.obj, *.pdb, *.exe, *.dll.
 
+
+
 ## Available Scripts
 
 | Script | Purpose |
@@ -105,6 +107,16 @@ Full validation script for agents:
 ```powershell
 .\scripts\agent-validate.ps1 -Scope "Component"
 ```
+
+## Rendering presets
+
+Use the documented render workflow instead of guessing paths or editing runtime code for a simple export task:
+
+1. Read [docs/60-runtime/rendering.md](docs/60-runtime/rendering.md).
+2. Build `tachyon` with `.\build.ps1 -Target tachyon`.
+3. Render from `.\build\src\RelWithDebInfo\tachyon.exe`.
+4. Start from `blank_canvas` or another explicitly added preset, and write MP4s into `output\`.
+5. Do not change compiler, runtime, or renderer files unless the render output is actually broken and you are fixing the bug.
 
 ## Expected workflow
 

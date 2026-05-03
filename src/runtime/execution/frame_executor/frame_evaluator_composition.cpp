@@ -1,5 +1,7 @@
 #include "frame_executor_internal.h"
 
+#include <chrono>
+
 namespace tachyon {
 
 void evaluate_composition(
@@ -25,8 +27,22 @@ void evaluate_composition(
     (void)main_frame_key;
     (void)main_frame_time;
 
+    const auto timing_start = std::chrono::high_resolution_clock::now();
+    auto record_timing = [&]() {
+        if (!context.diagnostic_tracker) {
+            return;
+        }
+        const auto timing_end = std::chrono::high_resolution_clock::now();
+        context.diagnostic_tracker->timings.push_back(TimingSample{
+            "composition",
+            std::to_string(comp.node.node_id),
+            std::chrono::duration<double, std::milli>(timing_end - timing_start).count()
+        });
+    };
+
     if (executor.m_cache.lookup_composition(node_key)) {
         if (context.diagnostic_tracker) context.diagnostic_tracker->composition_hits++;
+        record_timing();
         return;
     }
 
@@ -53,6 +69,7 @@ void evaluate_composition(
     }
 
     executor.m_cache.store_composition(node_key, std::move(state));
+    record_timing();
 }
 
 } // namespace tachyon

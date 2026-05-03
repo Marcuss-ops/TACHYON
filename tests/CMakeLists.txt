@@ -48,6 +48,7 @@ add_executable(TachyonTests
     unit/text/text_tests.cpp  # Re-enabled - was disabled for pre-existing build errors
     unit/text/editor_tests.cpp
     unit/audio/test_audio_pitch_correct.cpp  # Re-enabled - was disabled for pre-existing build errors
+    unit/presets/background_preset_registry_tests.cpp
      integration/render_session_tests.cpp
      integration/parallax_cards_tests.cpp
      integration/vertical_slice_tests.cpp
@@ -61,6 +62,7 @@ add_executable(TachyonTests
     unit/presets/sfx_contract_tests.cpp
     unit/presets/shape_contract_tests.cpp
     unit/runtime/native_render_tests.cpp
+    unit/runtime/profiling/render_profiler_tests.cpp
     unit/audio/test_audio_trim.cpp
     integration/scene3d_smoke_tests.cpp
     unit/core/camera/default_camera_tests.cpp

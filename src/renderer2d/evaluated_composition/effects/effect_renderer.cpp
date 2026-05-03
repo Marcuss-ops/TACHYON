@@ -2,6 +2,8 @@
 #include "tachyon/renderer2d/evaluated_composition/utilities/composition_utils.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
 
+#include <chrono>
+
 namespace tachyon::renderer2d {
 
 static EffectHost& builtin_effect_host() {
@@ -42,8 +44,10 @@ SurfaceRGBA apply_effect_pipeline(
     const SurfaceRGBA& input,
     const std::vector<EffectSpec>& effects,
     EffectHost& host,
-    const ColorProfile& working_profile) {
-    return apply_effect_pipeline(input, effects, host, working_profile, {}, "");
+    const ColorProfile& working_profile,
+    FrameDiagnostics* diagnostics,
+    const std::string& current_layer_id) {
+    return apply_effect_pipeline(input, effects, host, working_profile, {}, current_layer_id, diagnostics);
 }
 
 SurfaceRGBA apply_effect_pipeline(
@@ -52,7 +56,8 @@ SurfaceRGBA apply_effect_pipeline(
     EffectHost& host,
     const ColorProfile& working_profile,
     const std::unordered_map<std::string, std::shared_ptr<SurfaceRGBA>>& surfaces,
-    const std::string& current_layer_id) {
+    const std::string& current_layer_id,
+    FrameDiagnostics* diagnostics) {
 
     SurfaceRGBA current = input;
     for (const auto& effect : effects) {
@@ -69,7 +74,16 @@ SurfaceRGBA apply_effect_pipeline(
                 }
             }
         }
+        const auto start = std::chrono::high_resolution_clock::now();
         current = host.apply(effect.type, current, params);
+        if (diagnostics) {
+            const auto end = std::chrono::high_resolution_clock::now();
+            diagnostics->timings.push_back(TimingSample{
+                "effect",
+                current_layer_id.empty() ? effect.type : (current_layer_id + ":" + effect.type),
+                std::chrono::duration<double, std::milli>(end - start).count()
+            });
+        }
     }
     return current;
 }

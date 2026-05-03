@@ -6,10 +6,13 @@
 
 namespace tachyon::renderer2d {
 
+struct RenderContext2D;
+
 /**
  * @brief Runtime parameters for an effect.
  */
 struct EffectParams {
+    const RenderContext2D* context{nullptr};
     std::unordered_map<std::string, float> scalars;
     std::unordered_map<std::string, Color> colors;
     std::unordered_map<std::string, std::string> strings;

@@ -11,6 +11,7 @@
 #include "tachyon/media/streaming/media_prefetcher.h"
 #include "tachyon/audio/audio_export.h"
 #include "tachyon/runtime/execution/session/render_internal.h"
+#include "tachyon/runtime/profiling/render_profiler.h"
 
 #include <iostream>
 #include <future>
@@ -65,6 +66,8 @@ RenderSessionResult RenderSession::render(
     std::uint32_t h = static_cast<std::uint32_t>(execution_plan.render_plan.composition.height);
     m_surface_pool = std::make_unique<runtime::RuntimeSurfacePool>(w, h, 10);
     context.surface_pool = m_surface_pool.get();
+    context.profiler = m_profiler;
+    context.renderer2d.profiler = m_profiler;
 
     // Create and initialize output sink early for streaming mode
     std::unique_ptr<output::FrameOutputSink> sink = output::create_frame_output_sink(effective_plan.render_plan);
@@ -89,6 +92,8 @@ RenderSessionResult RenderSession::render(
     }
 
     if (sink) {
+        sink->set_profiler(m_profiler);
+        profiling::ProfileScope scope(m_profiler, profiling::ProfileEventType::Phase, "initialize_sink");
         if (!sink->begin(effective_plan.render_plan)) {
             result.output_error = sink->last_error();
             return result;
@@ -108,21 +113,24 @@ RenderSessionResult RenderSession::render(
 
     std::vector<ExecutedFrame> rendered_frames;
 
-    render_frames_parallel_internal(
-        compiled_scene,
-        effective_plan,
-        m_cache,
-        worker_count,
-        context,
-        prefetcher,
-        nullptr,
-        rendered_frames,
-        nullptr,
-        nullptr,
-        nullptr,
-        sink.get(),
-        &result,
-        &frame_times);
+    {
+        profiling::ProfileScope scope(m_profiler, profiling::ProfileEventType::Phase, "render_frames_loop");
+        render_frames_parallel_internal(
+            compiled_scene,
+            effective_plan,
+            m_cache,
+            worker_count,
+            context,
+            prefetcher,
+            nullptr,
+            rendered_frames,
+            nullptr,
+            nullptr,
+            nullptr,
+            sink.get(),
+            &result,
+            &frame_times);
+    }
 
     if (!sink) {
         result.frames = std::move(rendered_frames);
@@ -141,11 +149,13 @@ RenderSessionResult RenderSession::render(
 
     // Audio Export
     if (!audio_export_path.empty()) {
+        profiling::ProfileScope scope(m_profiler, profiling::ProfileEventType::AudioMux, "audio_export");
         audio::export_plan_audio(effective_plan.render_plan, audio_export_path);
     }
 
     // Finalize sink after all frames are rendered
     if (sink) {
+        profiling::ProfileScope scope(m_profiler, profiling::ProfileEventType::Phase, "finalize_sink");
         const auto encode_start = std::chrono::high_resolution_clock::now();
         if (result.output_error.empty() && !sink->finish()) {
             result.output_error = sink->last_error();

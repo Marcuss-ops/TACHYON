@@ -1,9 +1,15 @@
-# Quick incremental workflow for TachyonCore.
-# Skips CMake and uses the existing Visual Studio build tree directly.
+# Quick incremental workflow for Tachyon.
+# Delegates to the scope-aware planner so the smallest useful target is built.
 
 param(
     [string]$SyntaxCheck = "",
-    [switch]$ConfigOnly
+    [switch]$ConfigOnly,
+    [ValidateSet("auto","headers","core","tests","full")]
+    [string]$Area = "auto",
+    [string[]]$Paths = @(),
+    [switch]$RunTests,
+    [string]$TestFilter = "",
+    [switch]$Explain
 )
 
 $ErrorActionPreference = 'Stop'
@@ -34,5 +40,5 @@ if ($SyntaxCheck) {
     exit $LASTEXITCODE
 }
 
-& "$Root\build.ps1" -Check
+& "$Root\scripts\compile-area.ps1" -Area $Area -Paths $Paths -RunTests:$RunTests -TestFilter $TestFilter -Explain:$Explain
 exit $LASTEXITCODE

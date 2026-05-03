@@ -1,6 +1,7 @@
 #include "tachyon/renderer2d/effects/core/effect_host.h"
 #include "tachyon/renderer2d/effects/utility/number_counter_effect.h"
 #include "tachyon/renderer2d/resource/render_context.h"
+#include "tachyon/runtime/profiling/render_profiler.h"
 #include <stdexcept>
 #include <utility>
 
@@ -21,6 +22,8 @@ public:
     SurfaceRGBA apply(const std::string& name, const SurfaceRGBA& input, const EffectParams& params) const override {
         auto it = m_effects.find(name);
         if (it == m_effects.end()) return input;
+
+        profiling::ProfileScope scope(params.context ? params.context->profiler : nullptr, profiling::ProfileEventType::Effect, name, -1, std::string(), name);
         return it->second->apply(input, params);
     }
     
@@ -29,6 +32,7 @@ public:
         for (const auto& step : pipeline) {
             auto it = m_effects.find(step.first);
             if (it != m_effects.end()) {
+                profiling::ProfileScope scope(step.second.context ? step.second.context->profiler : nullptr, profiling::ProfileEventType::Effect, step.first, -1, std::string(), step.first);
                 current = it->second->apply(current, step.second);
             }
         }

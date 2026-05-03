@@ -6,6 +6,7 @@
 #include "tachyon/core/math/matrix4x4.h"
 #include "tachyon/core/math/quaternion.h"
 #include "tachyon/core/scene/evaluator/layer_utils.h"
+#include <chrono>
 #include <filesystem>
 #include <cmath>
 
@@ -20,6 +21,7 @@ scene::LayerType resolve_layer_type(std::uint32_t type_id) {
         case 3: return scene::LayerType::Image;
         case 4: return scene::LayerType::Text;
         case 5: return scene::LayerType::Precomp;
+        case 6: return scene::LayerType::Procedural;
         default: return scene::LayerType::NullLayer;
     }
 }
@@ -55,6 +57,19 @@ void evaluate_layer(
     (void)context;
     (void)snapshot;
 
+    const auto timing_start = std::chrono::high_resolution_clock::now();
+    auto record_timing = [&]() {
+        if (!context.diagnostic_tracker) {
+            return;
+        }
+        const auto timing_end = std::chrono::high_resolution_clock::now();
+        context.diagnostic_tracker->timings.push_back(TimingSample{
+            "layer",
+            std::to_string(layer.node.node_id),
+            std::chrono::duration<double, std::milli>(timing_end - timing_start).count()
+        });
+    };
+
     const bool is_sub_frame = main_frame_key.has_value();
     const bool layer_motion_blur = (layer.flags & 0x10) != 0;
 
@@ -62,6 +77,7 @@ void evaluate_layer(
         const std::uint64_t main_layer_key = build_node_key(*main_frame_key, layer.node);
         if (auto cached_main = executor.m_cache.lookup_layer(main_layer_key)) {
             executor.m_cache.store_layer(build_node_key(frame_key, layer.node), cached_main);
+            record_timing();
             return;
         }
     }
@@ -69,6 +85,7 @@ void evaluate_layer(
     const std::uint64_t node_key = build_node_key(frame_key, layer.node);
     if (executor.m_cache.lookup_layer(node_key)) {
         if (context.diagnostic_tracker) context.diagnostic_tracker->layer_hits++;
+        record_timing();
         return;
     }
 
@@ -118,6 +135,11 @@ void evaluate_layer(
     state->shape_path = to_shape_path_spec(layer.shape_path);
     state->shape_spec = layer.shape_spec;
     state->effects = layer.effects;
+    state->animated_effects.reserve(layer.animated_effects.size());
+    for (const auto& animated_effect : layer.animated_effects) {
+        state->animated_effects.push_back(animated_effect.evaluate(frame_time_seconds));
+    }
+    state->procedural = layer.procedural;
     state->precomp_id = layer.precomp_index.has_value() ? std::make_optional(std::to_string(*layer.precomp_index)) : std::nullopt;
     state->track_matte_type = layer.matte_type;
     state->track_matte_layer_index = layer.matte_layer_index.has_value()
@@ -232,6 +254,7 @@ void evaluate_layer(
     state->active = state->enabled && state->visible && state->opacity > 0.0;
 
     executor.m_cache.store_layer(node_key, std::move(state));
+    record_timing();
 }
 
 } // namespace tachyon

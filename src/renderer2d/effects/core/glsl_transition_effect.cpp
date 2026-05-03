@@ -74,6 +74,16 @@ Color lerp_surface_color(const SurfaceRGBA& a, const SurfaceRGBA* b, float u, fl
     return Color::lerp(ca, cb, clamp01(t));
 }
 
+Color screen_over(const Color& base, const Color& overlay, float intensity) {
+    const float alpha = clamp01(intensity);
+    return {
+        1.0f - (1.0f - base.r) * (1.0f - overlay.r * alpha),
+        1.0f - (1.0f - base.g) * (1.0f - overlay.g * alpha),
+        1.0f - (1.0f - base.b) * (1.0f - overlay.b * alpha),
+        1.0f
+    };
+}
+
 // Transition function implementations
 
 // Base transitions (pixel-level versions)
@@ -239,37 +249,52 @@ Color transition_flash(float u, float v, float t, const SurfaceRGBA& input, cons
 }
 
 Color transition_light_leak(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
-    const Color a = sample_uv(input, u, v);
-    const Color b = sample_transition_source(input, to_surface, u, v);
-    
-    // Procedural light leak
-    float dist = std::sqrt((u - 0.2f)*(u - 0.2f) + (v - 0.8f)*(v - 0.8f));
-    float intensity = std::max(0.0f, 1.0f - dist / (0.3f + t * 0.5f));
-    intensity *= std::sin(t * 3.14159f);
-    
-    Color leak_color = {1.0f, 0.6f, 0.2f, 1.0f}; // Warm orange
-    Color base = Color::lerp(a, b, t);
-    
-    return Color::lerp(base, leak_color, intensity * 0.7f);
+    const bool overlay_mode = (to_surface == nullptr);
+    const Color base = overlay_mode ? Color::black() : Color::lerp(sample_uv(input, u, v), sample_transition_source(input, to_surface, u, v), t);
+
+    // Diagonal amber sweep. This is intentionally a band, not a radial flash.
+    const float angle = -22.6f * 3.14159f / 180.0f;
+    const float ca = std::cos(angle);
+    const float sa = std::sin(angle);
+    float proj = u * ca + v * sa;
+    proj = (proj + 0.2f) / 1.4f;
+
+    float pos = -0.3f + t * 1.6f;
+    pos += 0.02f * std::sin(t * 6.28318f);
+
+    const float width = 0.14f;
+    const float d = std::abs(proj - pos);
+    const float mask = std::max(0.0f, 1.0f - (d / width));
+
+    const Color ca_col = {1.0f, 0.55f, 0.08f, 1.0f};
+    const Color cb_col = {1.0f, 0.765f, 0.275f, 1.0f};
+    const Color leak = Color::lerp(ca_col, cb_col, std::clamp(proj, 0.0f, 1.0f));
+    const float intensity = 1.35f * mask * mask;
+    return screen_over(base, leak, intensity);
 }
 
 Color transition_film_burn(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
-    const Color a = sample_uv(input, u, v);
-    const Color b = sample_transition_source(input, to_surface, u, v);
-    
-    // Film burn: red/orange glow that moves
-    float dist = std::sqrt((u - 0.5f - std::sin(t * 5.0f)*0.2f)*(u - 0.5f - std::sin(t * 5.0f)*0.2f) + (v - 0.5f)*(v - 0.5f));
-    float intensity = std::max(0.0f, 1.0f - dist / (0.4f + t * 0.4f));
-    intensity *= std::sin(t * 3.14159f);
-    
-    // Add some noise-like jitter to intensity
-    float jitter = std::fmod(std::sin(u * 100.0f + v * 100.0f + t * 10.0f) * 43758.5453f, 0.2f);
-    intensity = std::clamp(intensity + jitter, 0.0f, 1.0f);
-    
-    Color burn_color = {1.0f, 0.3f, 0.1f, 1.0f}; // Fiery red-orange
-    Color base = Color::lerp(a, b, t);
-    
-    return Color::lerp(base, burn_color, intensity * 0.8f);
+    const bool overlay_mode = (to_surface == nullptr);
+    const Color base = overlay_mode ? Color::black() : Color::lerp(sample_uv(input, u, v), sample_transition_source(input, to_surface, u, v), t);
+
+    // Fiery burn sweep, also linear and screen-blended.
+    const float angle = -22.6f * 3.14159f / 180.0f;
+    const float ca = std::cos(angle);
+    const float sa = std::sin(angle);
+    const float proj = (u * ca + v * sa + 0.2f) / 1.4f;
+
+    const float pos = -0.3f + t * 1.6f;
+    const float width = 0.12f;
+    const float d = std::abs(proj - pos);
+    float intensity = std::max(0.0f, 1.0f - (d / width));
+
+    const Color ca_col = {1.0f, 0.32f, 0.0f, 1.0f};
+    const Color cb_col = {1.0f, 0.667f, 0.137f, 1.0f};
+    const Color burn = Color::lerp(ca_col, cb_col, std::clamp(proj, 0.0f, 1.0f));
+
+    const float jitter = std::fmod(std::sin((u * 123.4f + v * 456.7f) * 12.9898f) * 43758.5453f, 0.15f);
+    intensity = std::clamp(1.15f * intensity * intensity + (jitter * intensity), 0.0f, 1.2f);
+    return screen_over(base, burn, intensity);
 }
 
 }  // namespace
@@ -362,4 +387,3 @@ SurfaceRGBA GlslTransitionEffect::apply(const SurfaceRGBA& input, const EffectPa
 #endif
 
 }  // namespace tachyon::renderer2d
-

@@ -31,12 +31,30 @@
 #include <algorithm>
 #include <cmath>
 #include <array>
+#include <chrono>
 #include <filesystem>
 #include <unordered_map>
 
 namespace tachyon {
 
 namespace {
+
+template <typename ClockPoint>
+void record_timing(
+    FrameDiagnostics* diagnostics,
+    const char* category,
+    const std::string& label,
+    const ClockPoint& start) {
+    if (!diagnostics) {
+        return;
+    }
+    const auto end = std::chrono::high_resolution_clock::now();
+    diagnostics->timings.push_back(TimingSample{
+        category,
+        label,
+        std::chrono::duration<double, std::milli>(end - start).count()
+    });
+}
 
 } // namespace
 using namespace renderer2d;
@@ -132,6 +150,8 @@ RasterizedFrame2D render_evaluated_composition_2d(
     dst.clear(clear_color);
     dst.clear_depth(0.0f); // Initialize depth buffer for hybrid compositing
 
+    FrameDiagnostics* diagnostics = context.diagnostics;
+
     // Identify if we have 3D layers and trigger 3D pass if available
     bool has_any_3d = std::any_of(state.layers.begin(), state.layers.end(), [](const auto& l) { return l.is_3d && l.visible; });
     if (has_any_3d && !context.ray_tracer) {
@@ -198,7 +218,9 @@ RasterizedFrame2D render_evaluated_composition_2d(
             continue;
         }
 
+        const auto layer_surface_start = std::chrono::high_resolution_clock::now();
         auto layer_surface = render_layer_surface(layer, state, plan, task, context, std::nullopt);
+        record_timing(diagnostics, "layer_surface", layer.id.empty() ? std::to_string(i) : layer.id, layer_surface_start);
         
         // Apply mesh deformation for matte resolution
         if (layer.mesh_deform_enabled && layer.mesh_deform && layer_surface) {
@@ -289,7 +311,9 @@ RasterizedFrame2D render_evaluated_composition_2d(
                         block_surface = rendered_surface_it->second;
                     }
                     if (!block_surface) {
+                        const auto block_surface_start = std::chrono::high_resolution_clock::now();
                         block_surface = render_layer_surface(block_layer, state, plan, task, render_context, tile_rect);
+                        record_timing(diagnostics, "layer_surface", block_layer.id.empty() ? std::to_string(block_idx) : block_layer.id, block_surface_start);
                     }
                     if (!block_surface) {
                         continue;
@@ -428,13 +452,16 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
             if (layer.is_adjustment_layer) {
                 if (render_context.policy.effects_enabled) {
+                    const auto adjustment_start = std::chrono::high_resolution_clock::now();
                     auto adjusted = apply_effect_pipeline(
                         target_surface,
                         layer.effects,
                         host,
                         render_context.working_color_space.profile,
                         rendered_surfaces,
-                        layer.id);
+                        layer.id,
+                        render_context.diagnostics);
+                    record_timing(render_context.diagnostics, "adjustment", layer.id, adjustment_start);
                     multiply_surface_alpha(adjusted, static_cast<float>(layer.opacity));
                     composite_surface(target_surface, adjusted, 0, 0, BlendMode::Normal);
                 }
@@ -443,14 +470,22 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
             // Effects
             if (render_context.policy.effects_enabled && (!layer.effects.empty() || !layer.animated_effects.empty())) {
+                const auto effects_start = std::chrono::high_resolution_clock::now();
+                std::vector<EffectSpec> resolved_effects = layer.effects;
+                resolved_effects.reserve(resolved_effects.size() + layer.animated_effects.size());
+                for (const auto& animated_effect : layer.animated_effects) {
+                    resolved_effects.push_back(animated_effect.evaluate(layer.local_time_seconds));
+                }
                 auto effect_surface = apply_effect_pipeline(
                     *layer_surface,
-                    layer.effects,
+                    resolved_effects,
                     host,
                     render_context.working_color_space.profile,
                     rendered_surfaces,
-                    layer.id);
+                    layer.id,
+                    render_context.diagnostics);
                 *layer_surface = std::move(effect_surface);
+                record_timing(render_context.diagnostics, "effect_pipeline", layer.id, effects_start);
             }
 
             // Layer Transitions - Unified transition pipeline
@@ -579,7 +614,16 @@ RasterizedFrame2D render_evaluated_composition_2d(
         }
     };
 
-    if (context.policy.tile_size > 0) {
+    const bool has_effectful_layers = std::any_of(
+        state.layers.begin(),
+        state.layers.end(),
+        [](const auto& layer) {
+            return layer.enabled
+                && layer.active
+                && (!layer.effects.empty() || !layer.animated_effects.empty());
+        });
+
+    if (context.policy.tile_size > 0 && !has_effectful_layers) {
         TileGrid grid = build_tile_grid({0, 0, static_cast<int>(working_width), static_cast<int>(working_height)}, working_width, working_height, context.policy.tile_size);
         
         for (int i = 0; i < static_cast<int>(grid.tiles.size()); ++i) {

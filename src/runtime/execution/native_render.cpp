@@ -3,6 +3,7 @@
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/execution/render_progress_sink.h"
 #include "tachyon/runtime/execution/jobs/render_job.h"
+#include "tachyon/runtime/profiling/render_profiler.h"
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -27,11 +28,17 @@ RenderSessionResult NativeRenderer::render(
     RenderSessionResult result;
     const auto total_start = std::chrono::high_resolution_clock::now();
 
+    profiling::ProfileScope total_scope(options.profiler, profiling::ProfileEventType::Phase, "native_render_total");
+
     // 1. Compile the scene
     sink->on_phase_start(RenderPhase::CompileScene);
     const auto phase1_start = std::chrono::high_resolution_clock::now();
     SceneCompiler compiler;
-    const auto compiled_result = compiler.compile(scene);
+    ResolutionResult<CompiledScene> compiled_result;
+    {
+        profiling::ProfileScope scope(options.profiler, profiling::ProfileEventType::Phase, "scene_compile");
+        compiled_result = compiler.compile(scene);
+    }
     const auto phase1_end = std::chrono::high_resolution_clock::now();
     double phase1_ms = std::chrono::duration<double, std::milli>(phase1_end - phase1_start).count();
     sink->on_phase_complete(RenderPhase::CompileScene, phase1_ms);
@@ -46,7 +53,11 @@ RenderSessionResult NativeRenderer::render(
     // 2. Build the render plan
     sink->on_phase_start(RenderPhase::BuildRenderPlan);
     const auto phase2_start = std::chrono::high_resolution_clock::now();
-    const auto plan_result = build_render_plan(scene, job);
+    ResolutionResult<RenderPlan> plan_result;
+    {
+        profiling::ProfileScope scope(options.profiler, profiling::ProfileEventType::Phase, "build_render_plan");
+        plan_result = build_render_plan(scene, job);
+    }
     const auto phase2_end = std::chrono::high_resolution_clock::now();
     double phase2_ms = std::chrono::duration<double, std::milli>(phase2_end - phase2_start).count();
     sink->on_phase_complete(RenderPhase::BuildRenderPlan, phase2_ms);
@@ -61,7 +72,11 @@ RenderSessionResult NativeRenderer::render(
     // 3. Build the execution plan
     sink->on_phase_start(RenderPhase::BuildExecutionPlan);
     const auto phase3_start = std::chrono::high_resolution_clock::now();
-    const auto execution_result = build_render_execution_plan(*plan_result.value, scene.assets.size());
+    ResolutionResult<RenderExecutionPlan> execution_result;
+    {
+        profiling::ProfileScope scope(options.profiler, profiling::ProfileEventType::Phase, "build_execution_plan");
+        execution_result = build_render_execution_plan(*plan_result.value, scene.assets.size());
+    }
     const auto phase3_end = std::chrono::high_resolution_clock::now();
     double phase3_ms = std::chrono::duration<double, std::milli>(phase3_end - phase3_start).count();
     sink->on_phase_complete(RenderPhase::BuildExecutionPlan, phase3_ms);
@@ -76,6 +91,9 @@ RenderSessionResult NativeRenderer::render(
     // 4. Initialize the session and render
     sink->on_phase_start(RenderPhase::InitializeSession);
     RenderSession session;
+    if (options.profiler) {
+        session.set_profiler(options.profiler);
+    }
     if (options.memory_budget_bytes.has_value()) {
         session.set_memory_budget_bytes(*options.memory_budget_bytes);
     }

@@ -11,6 +11,8 @@
 
 namespace tachyon {
 
+namespace profiling { class RenderProfiler; }
+
 /**
  * @brief High-level utility for rendering a SceneSpec directly.
  * 
@@ -22,6 +24,7 @@ struct NativeRenderOptions {
     std::optional<std::size_t> memory_budget_bytes;
     bool verbose{false};
     RenderProgressSink* progress_sink{nullptr};
+    profiling::RenderProfiler* profiler{nullptr};
 };
 
 class NativeRenderer {

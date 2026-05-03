@@ -18,6 +18,8 @@
 #include <string>
 #include <vector>
 
+namespace profiling { class RenderProfiler; }
+
 namespace tachyon {
     
 /**
@@ -78,6 +80,7 @@ public:
     RenderSessionResult render(const CompiledFrameProgram& program, double time_sec, const std::filesystem::path& output_path = {});
 
     void set_memory_budget_bytes(std::size_t bytes) { m_memory_budget_bytes = bytes; }
+    void set_profiler(profiling::RenderProfiler* profiler) { m_profiler = profiler; }
 
     FrameCache& cache() { return m_cache; }
     const FrameCache& cache() const { return m_cache; }
@@ -95,6 +98,7 @@ private:
     std::unique_ptr<runtime::FramebufferPlaybackQueue> m_playback_queue;
 
     std::optional<std::size_t> m_memory_budget_bytes;
+    profiling::RenderProfiler* m_profiler{nullptr};
 };
 
 } // namespace tachyon

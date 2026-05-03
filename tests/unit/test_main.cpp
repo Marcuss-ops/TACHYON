@@ -171,6 +171,7 @@ void run_default_camera_tests();
 void run_parallax_tests();
 void run_look_at_tests();
 bool run_default_camera_tests_adapter() { run_default_camera_tests(); return true; }
+namespace tachyon::profiling { bool run_profiler_tests(); }
 
 int main(int argc, char** argv) {
     std::vector<TestCase> tests = {
@@ -235,6 +236,7 @@ int main(int argc, char** argv) {
         {"scene3d_smoke", run_scene3d_smoke_tests},
         {"three_d_modifier", run_3d_modifier_tests},
         {"default_camera", run_default_camera_tests_adapter},
+        {"profiling", tachyon::profiling::run_profiler_tests},
         {"parallax", []() { run_parallax_tests(); return true; }},
         {"lookat", []() { run_look_at_tests(); return true; }},
     };
