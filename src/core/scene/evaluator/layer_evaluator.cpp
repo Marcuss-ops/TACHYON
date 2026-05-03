@@ -5,6 +5,7 @@
 #include "tachyon/core/scene/math/evaluator_math.h"
 #include "tachyon/core/scene/evaluator/hashing.h"
 #include "tachyon/core/scene/evaluator/camera2d_evaluator.h"
+#include "tachyon/core/camera/camera_types.h"
 
 #include <algorithm>
 #include <cmath>
@@ -189,7 +190,7 @@ EvaluatedLayerState make_layer_state(
 
     // Camera specific
     if (evaluated.type == LayerType::Camera) {
-        evaluated.camera_type = layer.camera_type;
+        evaluated.camera_type = camera::parse_camera_type(layer.camera_type);
         evaluated.zoom = static_cast<float>(sample_scalar(layer.camera_zoom, 877.0, local_t, context.audio_analyzer));
         evaluated.poi = sample_vector3(layer.camera_poi, {0,0,0}, local_t, context.audio_analyzer);
         
@@ -199,6 +200,10 @@ EvaluatedLayerState make_layer_state(
         evaluated.camera_shake_amplitude_rot = static_cast<float>(sample_scalar(layer.camera_shake_amplitude_rot, 0.0, local_t, context.audio_analyzer));
         evaluated.camera_shake_frequency = static_cast<float>(sample_scalar(layer.camera_shake_frequency, 1.0, local_t, context.audio_analyzer));
         evaluated.camera_shake_roughness = static_cast<float>(sample_scalar(layer.camera_shake_roughness, 0.5, local_t, context.audio_analyzer));
+
+        // NEW: Depth of Field
+        evaluated.camera_aperture = sample_scalar(layer.camera_aperture, 2.8, local_t, context.audio_analyzer);
+        evaluated.camera_focus_distance = sample_scalar(layer.camera_focus_distance, 10.0, local_t, context.audio_analyzer);
     }
 
     // Text specific

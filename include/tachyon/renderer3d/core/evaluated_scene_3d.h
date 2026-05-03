@@ -79,6 +79,10 @@ struct EvaluatedCamera3D {
     float shake_frequency{1.0f};   // Hz
     std::uint32_t shake_seed{0};   // Deterministic seed
     
+    // Depth of Field
+    float blur_level{100.0f};     // % intensity
+    bool dof_enabled{false};
+    
     // Multi-Camera Cuts (Phase 5)
     std::string camera_id{""};
     bool is_active_camera{true};
