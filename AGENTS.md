@@ -11,16 +11,7 @@
 - Do not commit generated files.
 - Do not commit build, .cache, output, node_modules, *.obj, *.pdb, *.exe, *.dll.
 
-## Publish flow
 
-When the user asks to "push" or "publish":
-
-1. Commit the intended local changes on the current feature branch.
-2. Push the current branch, not `main`.
-3. Use tracking push when possible: `git push -u origin $(git branch --show-current)`.
-4. If the branch is already tracked, a plain `git push` is fine.
-5. If the user explicitly asks for a PR, open it from the pushed branch into `main`.
-6. Never run `git push origin main` or any direct push to `main`.
 
 ## Available Scripts
 
