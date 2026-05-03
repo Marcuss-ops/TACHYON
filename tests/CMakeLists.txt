@@ -61,6 +61,7 @@ add_executable(TachyonTests
     unit/presets/sfx_contract_tests.cpp
     unit/presets/shape_contract_tests.cpp
     unit/runtime/native_render_tests.cpp
+    unit/runtime/profiling/render_profiler_tests.cpp
     unit/audio/test_audio_trim.cpp
     integration/scene3d_smoke_tests.cpp
     unit/core/camera/default_camera_tests.cpp

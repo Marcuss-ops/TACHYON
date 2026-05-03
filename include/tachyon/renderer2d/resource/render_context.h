@@ -16,12 +16,15 @@ using SurfacePool = tachyon::renderer2d::SurfacePool;
 #include "tachyon/text/fonts/core/font_registry.h"
 #include "tachyon/text/content/subtitle.h"
 #include "tachyon/runtime/execution/planning/quality_policy.h"
+#include "tachyon/runtime/core/diagnostics/diagnostics.h"
 
 #include <array>
 #include <vector>
 #include <optional>
 #include <string>
 #include <memory>
+
+namespace tachyon::profiling { class RenderProfiler; }
 
 namespace tachyon::media {
 class MediaManager;
@@ -98,6 +101,8 @@ struct RenderContext2D {
     WorkingColorSpace working_color_space;
     int width{0};
     int height{0};
+    FrameDiagnostics* diagnostics{nullptr};
+    ::tachyon::profiling::RenderProfiler* profiler{nullptr};
 
     // Text rendering state (formerly TextRenderConfig singleton)
     const ::tachyon::text::FontRegistry* font_registry = nullptr;

@@ -1,5 +1,6 @@
 #include "tachyon/output/frame_output_sink.h"
 #include "ffmpeg_internal.h"
+#include "tachyon/runtime/profiling/render_profiler.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -72,15 +73,25 @@ public:
         if (m_pipe == nullptr) return false;
         if (packet.frame == nullptr) return false;
 
-        const std::vector<unsigned char> bytes = convert_and_pack_ffmpeg_frame(
-            *packet.frame,
-            static_cast<uint32_t>(m_plan->composition.width),
-            static_cast<uint32_t>(m_plan->composition.height),
-            m_source_transfer, m_source_space,
-            m_output_transfer, m_output_space,
-            m_output_range);
+        profiling::ProfileScope total_scope(m_profiler, profiling::ProfileEventType::Encode, "ffmpeg_write_frame_total", packet.frame_number);
+        
+        std::vector<unsigned char> bytes;
+        {
+            profiling::ProfileScope scope(m_profiler, profiling::ProfileEventType::Encode, "color_convert_rgba_to_output", packet.frame_number);
+            bytes = convert_and_pack_ffmpeg_frame(
+                *packet.frame,
+                static_cast<uint32_t>(m_plan->composition.width),
+                static_cast<uint32_t>(m_plan->composition.height),
+                m_source_transfer, m_source_space,
+                m_output_transfer, m_output_space,
+                m_output_range);
+        }
 
-        const std::size_t written = std::fwrite(bytes.data(), 1, bytes.size(), m_pipe);
+        std::size_t written = 0;
+        {
+            profiling::ProfileScope scope(m_profiler, profiling::ProfileEventType::PipeWrite, "ffmpeg_pipe_write", packet.frame_number);
+            written = std::fwrite(bytes.data(), 1, bytes.size(), m_pipe);
+        }
         if (written != bytes.size()) {
             m_last_error = "failed to write frame bytes to ffmpeg";
             return false;
@@ -105,6 +116,10 @@ public:
 
     void set_audio_source(const std::string& audio_path) override {
         m_audio_path = audio_path;
+    }
+
+    void set_profiler(profiling::RenderProfiler* profiler) override {
+        m_profiler = profiler;
     }
 
     const std::string& last_error() const override { return m_last_error; }
@@ -201,6 +216,7 @@ private:
     renderer2d::detail::ColorSpace m_output_space{renderer2d::detail::ColorSpace::sRGB};
     renderer2d::detail::ColorRange m_output_range{renderer2d::detail::ColorRange::Full};
     std::string m_last_error;
+    profiling::RenderProfiler* m_profiler{nullptr};
 };
 
 std::unique_ptr<FrameOutputSink> create_ffmpeg_pipe_sink() {

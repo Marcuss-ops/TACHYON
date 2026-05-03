@@ -16,6 +16,7 @@
 namespace tachyon {
 
 namespace media { class MediaPrefetcher; class PlaybackScheduler; }
+namespace profiling { class RenderProfiler; }
 
 struct RenderContext {
     std::shared_ptr<media::MediaManager> media;
@@ -30,6 +31,7 @@ struct RenderContext {
 #endif
     runtime::RuntimeSurfacePool* surface_pool{nullptr};
     FrameDiagnostics* diagnostic_tracker{nullptr};
+    profiling::RenderProfiler* profiler{nullptr};
 
     explicit RenderContext(std::shared_ptr<renderer2d::PrecompCache> precomp_cache = nullptr);
 };

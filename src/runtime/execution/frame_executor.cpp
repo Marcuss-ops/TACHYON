@@ -7,6 +7,7 @@
 #include "tachyon/timeline/time_remap.h"
 #include "tachyon/timeline/frame_blend.h"
 #include "frame_executor/frame_executor_internal.h"
+#include "tachyon/runtime/profiling/render_profiler.h"
 
 #include <algorithm>
 #include <cmath>
@@ -190,6 +191,8 @@ ExecutedFrame FrameExecutor::execute(
     const DataSnapshot& snapshot,
     RenderContext& context) {
 
+    profiling::ProfileScope frame_scope(context.profiler, profiling::ProfileEventType::Frame, "frame_render", task.frame_number);
+
     if (m_node_lookup.empty()) build_lookup_table(compiled_scene);
 
     ExecutedFrame result;
@@ -198,7 +201,10 @@ ExecutedFrame FrameExecutor::execute(
 
     const char* diag_env = std::getenv("TACHYON_DIAGNOSTICS");
     const bool diagnostics_enabled = (diag_env && std::string_view(diag_env) == "1");
-    if (diagnostics_enabled) context.diagnostic_tracker = &result.diagnostics;
+    if (diagnostics_enabled) {
+        context.diagnostic_tracker = &result.diagnostics;
+        context.renderer2d.diagnostics = &result.diagnostics;
+    }
 
     context.policy = plan.quality_policy;
     context.renderer2d.policy = plan.quality_policy;
@@ -236,6 +242,7 @@ ExecutedFrame FrameExecutor::execute(
     // Frame Blend early out: if blending, render A and B and return early.
     // We don't evaluate the scene at `frame_time_seconds` if we are just going to blend.
     if (blend_result.has_value() && blend_result->blend_factor > 1e-6f && blend_result->blend_factor < 1.0f - 1e-6f) {
+        profiling::ProfileScope blend_scope(context.profiler, profiling::ProfileEventType::Phase, "frame_blend", task.frame_number);
         // Render frame A at source_time_a
         auto frame_a_surface = render_frame_at_time(
             *this, compiled_scene, plan, task, snapshot, context,
@@ -283,6 +290,7 @@ ExecutedFrame FrameExecutor::execute(
                 result.frame = std::make_shared<renderer2d::Framebuffer>(*blended_surface);
             }
             context.diagnostic_tracker = nullptr;
+            context.renderer2d.diagnostics = nullptr;
             return result;
         }
     }
@@ -296,6 +304,7 @@ ExecutedFrame FrameExecutor::execute(
     }
 
     if (!was_cached) {
+        profiling::ProfileScope eval_scope(context.profiler, profiling::ProfileEventType::Phase, "scene_evaluate", task.frame_number);
         const auto& topo_order = compiled_scene.graph.topo_order();
         for (std::uint32_t node_id : topo_order) {
             ::tachyon::evaluate_node(*this, node_id, compiled_scene, plan, snapshot, context, composition_key, frame_key, frame_time_seconds, task);
@@ -314,6 +323,7 @@ ExecutedFrame FrameExecutor::execute(
             result.cache_hit = was_cached;
 
             if (plan.motion_blur_enabled && plan.motion_blur_samples > 1) {
+                profiling::ProfileScope mb_scope(context.profiler, profiling::ProfileEventType::Phase, "motion_blur", task.frame_number);
                 int samples = std::min<int>(static_cast<int>(plan.motion_blur_samples), plan.quality_policy.motion_blur_sample_cap);
     const double shutter_duration = (plan.motion_blur_shutter_angle / 360.0) / fps;
     const double shutter_start_offset = (plan.motion_blur_shutter_phase / 360.0) / fps;
@@ -373,12 +383,8 @@ ExecutedFrame FrameExecutor::execute(
                     }
                     auto sub_comp = cache().lookup_composition(root_sample_key);
                     if (sub_comp) {
-                        std::printf("[DIAG] FrameExecutor calling render_evaluated_composition_2d. Layers: %zu\n", sub_comp->layers.size());
-                        std::fflush(stdout);
                         RasterizedFrame2D rasterized = render_evaluated_composition_2d(*sub_comp, plan, task, thread_context.renderer2d);
                         if (rasterized.surface) samples_surfaces[s] = rasterized.surface;
-                        // For motion blur samples, we might not want all AOVs per sample, 
-                        // but beauty is mandatory.
                     }
                 }
 
@@ -404,7 +410,11 @@ ExecutedFrame FrameExecutor::execute(
                 renderer2d::DrawListBuilder builder;
                 const renderer2d::DrawList2D draw_list = builder.build(*cached_comp);
                 result.draw_command_count = draw_list.commands.size();
-                RasterizedFrame2D rasterized = render_evaluated_composition_2d(*cached_comp, plan, task, context.renderer2d);
+                RasterizedFrame2D rasterized;
+                {
+                    profiling::ProfileScope raster_scope(context.profiler, profiling::ProfileEventType::Phase, "composition_raster", task.frame_number);
+                    rasterized = render_evaluated_composition_2d(*cached_comp, plan, task, context.renderer2d);
+                }
                 if (rasterized.surface) {
                     if (m_pool) {
                         auto pooled = m_pool->acquire();
@@ -441,6 +451,7 @@ ExecutedFrame FrameExecutor::execute(
     }
 
     context.diagnostic_tracker = nullptr;
+    context.renderer2d.diagnostics = nullptr;
     return result;
 }
 

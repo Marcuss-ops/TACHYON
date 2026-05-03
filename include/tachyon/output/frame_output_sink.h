@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+namespace tachyon { namespace profiling { class RenderProfiler; } }
+
 namespace tachyon::output {
 
 struct FrameMetadata {
@@ -34,6 +36,7 @@ class FrameOutputSink {
         virtual bool finish() = 0;
         virtual bool finalize_post_processing() { return true; }
         virtual void set_audio_source(const std::string& audio_path) { (void)audio_path; }
+        virtual void set_profiler(tachyon::profiling::RenderProfiler* profiler) { (void)profiler; }
         [[nodiscard]] virtual const std::string& last_error() const = 0;
 };
 

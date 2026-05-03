@@ -114,6 +114,12 @@ struct ValidationResult {
     }
 };
 
+struct TimingSample {
+    std::string category;
+    std::string label;
+    double milliseconds{0.0};
+};
+
 struct FrameDiagnostics {
     std::size_t property_hits{0};
     std::size_t property_misses{0};
@@ -126,6 +132,7 @@ struct FrameDiagnostics {
     std::size_t layers_evaluated{0};
     std::size_t compositions_evaluated{0};
 
+    std::vector<TimingSample> timings;
     DiagnosticBag diagnostics;
 
     // Cache key manifests for debugging

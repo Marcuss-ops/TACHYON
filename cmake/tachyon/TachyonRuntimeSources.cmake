@@ -42,4 +42,5 @@ set(TachyonRuntimeSources
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/playback/playback_queue.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/resource/render_context.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/property_sampling.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/profiling/render_profiler.cpp
 )

@@ -105,6 +105,9 @@ void render_frames_parallel_internal(
     if (!streaming_mode) {
         rendered_frames.resize(task_count);
     }
+    if (result) {
+        result->frame_diagnostics.resize(task_count);
+    }
 
     const std::size_t thread_count = std::max<std::size_t>(1, std::min(worker_count, task_count));
     std::atomic<std::size_t> next_index{0};
@@ -156,6 +159,7 @@ void render_frames_parallel_internal(
 
                 std::shared_ptr<renderer2d::Framebuffer> framebuffer;
                 bool cache_hit = false;
+                ExecutedFrame executed_frame;
 
                 // Try to load from disk cache (checkpoint/resume)
                 if (disk_cache) {
@@ -181,7 +185,7 @@ void render_frames_parallel_internal(
                     DataSnapshot snapshot;
                     const auto frame_start = std::chrono::high_resolution_clock::now();
                     
-                    auto executed_frame = executor.execute(compiled_scene, frame_plan, task, snapshot, local_context);
+                    executed_frame = executor.execute(compiled_scene, frame_plan, task, snapshot, local_context);
                     cache_hit = cache_hit || executed_frame.cache_hit;
 
                     const auto frame_end = std::chrono::high_resolution_clock::now();
@@ -211,6 +215,7 @@ void render_frames_parallel_internal(
                 if (streaming_mode && frame_queue && result) {
                     // Streaming mode: submit to queue for immediate writing
                     frame_queue->submit(index, framebuffer, cache_hit);
+                    result->frame_diagnostics[index] = executed_frame.diagnostics;
 
                     // Try to write ready frames in order
                     frame_queue->write_ready_frames([&](std::size_t frame_idx, const std::shared_ptr<renderer2d::Framebuffer>& fb) {
@@ -233,11 +238,13 @@ void render_frames_parallel_internal(
                     }, *result);
                 } else {
                     // Buffered mode: store in vector (original behavior)
-                    ExecutedFrame executed_frame;
                     executed_frame.frame_number = static_cast<std::int64_t>(task.frame_number);
                     executed_frame.frame = framebuffer;
                     executed_frame.cache_hit = cache_hit;
                     executed_frame.scene_hash = compiled_scene.scene_hash;
+                    if (result) {
+                        result->frame_diagnostics[index] = executed_frame.diagnostics;
+                    }
                     rendered_frames[index] = std::move(executed_frame);
                 }
 
