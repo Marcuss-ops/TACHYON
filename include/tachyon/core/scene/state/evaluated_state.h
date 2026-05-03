@@ -9,7 +9,6 @@
 #include "tachyon/core/math/vector3.h"
 #include "tachyon/core/shapes/shape_path.h"
 #include "tachyon/core/scene/state/evaluated_camera_state.h"
-#include "tachyon/core/camera/camera_types.h"
 #include "tachyon/media/loading/mesh_asset.h"
 #include "tachyon/renderer2d/spec/gradient_spec.h"
 #include "tachyon/renderer2d/path/mask_path.h"
@@ -148,7 +147,7 @@ struct EvaluatedLayerState {
     std::vector<math::Vector2> corner_pin;
     
     // Camera properties (if type == Camera)
-    camera::CameraType camera_type{camera::CameraType::one_node};
+    std::string camera_type{"one_node"};
     float zoom{877.0f};
     math::Vector3 poi{0.0f, 0.0f, 0.0f};
     

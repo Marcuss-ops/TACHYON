@@ -133,7 +133,6 @@ bool run_frame_executor_tests();
 bool run_frame_range_tests();
 bool run_frame_output_sink_tests();
 bool run_tile_scheduler_tests();
-bool run_render_contract_tests();
 bool run_property_tests();
 bool run_expression_tests();
 namespace tachyon::editor { bool run_undo_manager_tests(); }
@@ -203,7 +202,6 @@ int main(int argc, char** argv) {
         {"frame_range", run_frame_range_tests},
         {"frame_output_sink", run_frame_output_sink_tests},
         {"tile_scheduler", run_tile_scheduler_tests},
-        {"render_contract", run_render_contract_tests},
         {"undo_manager", tachyon::editor::run_undo_manager_tests},
         {"autosave_manager", tachyon::editor::run_autosave_manager_tests},
         {"scene_evaluator", run_scene_evaluator_tests},

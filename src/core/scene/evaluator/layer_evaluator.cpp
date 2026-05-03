@@ -5,7 +5,6 @@
 #include "tachyon/core/scene/math/evaluator_math.h"
 #include "tachyon/core/scene/evaluator/hashing.h"
 #include "tachyon/core/scene/evaluator/camera2d_evaluator.h"
-#include "tachyon/core/camera/camera_types.h"
 
 #include <algorithm>
 #include <cmath>
@@ -190,7 +189,7 @@ EvaluatedLayerState make_layer_state(
 
     // Camera specific
     if (evaluated.type == LayerType::Camera) {
-        evaluated.camera_type = camera::parse_camera_type(layer.camera_type);
+        evaluated.camera_type = layer.camera_type;
         evaluated.zoom = static_cast<float>(sample_scalar(layer.camera_zoom, 877.0, local_t, context.audio_analyzer));
         evaluated.poi = sample_vector3(layer.camera_poi, {0,0,0}, local_t, context.audio_analyzer);
         

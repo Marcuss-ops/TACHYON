@@ -5,7 +5,6 @@
 #include "tachyon/core/math/matrix4x4.h"
 #include "tachyon/core/math/vector3.h"
 #include "tachyon/core/camera/camera_shake.h"
-#include "tachyon/core/camera/camera_types.h"
 #include "tachyon/camera_cut_contract.h"
 
 #include <algorithm>
@@ -57,7 +56,7 @@ EvaluatedCameraState evaluate_camera_state(
     if (!camera_layer) {
         evaluated.available = false;
         evaluated.name = "Default Camera";
-        evaluated.camera_type = camera::CameraType::two_node;
+        evaluated.camera_type = "two_node";
         
         // AE Default: Positioned at center, looking at center, 
         // zoom is typically 877.77 for 1920x1080 (35mm lens)
@@ -81,7 +80,7 @@ EvaluatedCameraState evaluate_camera_state(
         evaluated.camera.target_position = evaluated.point_of_interest;
         evaluated.camera.fov_y_rad = evaluated.fov_y_rad;
         evaluated.camera.aspect = evaluated.aspect;
-        evaluated.camera.type = camera::CameraType::two_node;
+        // evaluated.camera.type = "two_node"; // CameraState does not have type field
 
         return evaluated;
     }
@@ -101,18 +100,17 @@ EvaluatedCameraState evaluate_camera_state(
     
     // Populate internal CameraState for view matrix computation
     evaluated.camera.transform = camera_layer->world_matrix.to_transform();
-    evaluated.camera.type = evaluated.camera_type;
-    evaluated.camera.use_target = (evaluated.camera_type == camera::CameraType::two_node);
+    evaluated.camera.use_target = (evaluated.camera_type == "two_node");
     evaluated.camera.target_position = evaluated.point_of_interest;
     evaluated.camera.up = evaluated.up;
-    evaluated.camera.roll = 0.0f; // TODO: read from layer properties
+    // evaluated.camera.roll = 0.0f; // TODO: read from layer properties
     evaluated.camera.fov_y_rad = evaluated.fov_y_rad;
-    evaluated.camera.zoom = evaluated.zoom;
+    // evaluated.camera.zoom = evaluated.zoom;
     evaluated.camera.aspect = aspect;
     evaluated.camera.near_z = evaluated.near_clip;
     evaluated.camera.far_z = evaluated.far_clip;
     
-    if (evaluated.camera_type == camera::CameraType::two_node) {
+    if (evaluated.camera_type == "two_node") {
         evaluated.view_matrix = evaluated.camera.get_view_matrix();
         // Previous world matrix for motion blur
         math::Vector3 prev_pos = camera_layer->previous_world_matrix.to_transform().position;
@@ -131,7 +129,7 @@ EvaluatedCameraState evaluate_camera_state(
     
     // Read focus distance from layer props, or compute from POI for two_node
     if (!camera_layer->camera_focus_distance.has_value()) {
-        evaluated.focus_distance = (evaluated.camera_type == camera::CameraType::two_node) 
+        evaluated.focus_distance = (evaluated.camera_type == "two_node") 
             ? (evaluated.point_of_interest - evaluated.position).length() 
             : evaluated.zoom;
     } else {

@@ -144,6 +144,8 @@ struct LayerSpec {
     std::string camera_type{"one_node"}; // "one_node" | "two_node"
     AnimatedScalarSpec camera_zoom;
     AnimatedVector3Spec camera_poi;
+    AnimatedScalarSpec camera_aperture;
+    AnimatedScalarSpec camera_focus_distance;
 
     // 2D Camera integration
     bool has_parallax{true};
