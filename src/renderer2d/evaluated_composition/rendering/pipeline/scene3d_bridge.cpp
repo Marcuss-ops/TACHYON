@@ -10,23 +10,16 @@
 #include <algorithm>
 #include <cmath>
 #include <optional>
+#include <vector>
 
 namespace tachyon {
 
 namespace {
 
-static ColorSpec to_color(const math::Vector3& color) {
-    const auto clamp_channel = [](float v) -> std::uint8_t {
-        const float clamped = std::clamp(v, 0.0f, 1.0f);
-        return static_cast<std::uint8_t>(std::lround(clamped * 255.0f));
-    };
-    return ColorSpec{
-        clamp_channel(color.x),
-        clamp_channel(color.y),
-        clamp_channel(color.z),
-        255
-    };
-}
+struct LayerMeshResult {
+    std::shared_ptr<const media::MeshAsset> mesh_asset;
+    std::string mesh_asset_id;
+};
 
 static bool is_bridge_renderable_layer(const scene::EvaluatedLayerState& layer) {
     if (!layer.is_3d || !layer.visible || !layer.enabled || !layer.active) {
@@ -43,16 +36,23 @@ static bool is_bridge_renderable_layer(const scene::EvaluatedLayerState& layer) 
     }
 }
 
-struct LayerMeshResult {
-    std::shared_ptr<const media::MeshAsset> mesh_asset;
-    std::string mesh_asset_id;
-};
-
 static LayerSurface build_layer_surface_impl(
     const scene::EvaluatedLayerState& l,
     const Scene3DBridgeInput& input) {
     LayerSurface result;
 
+    // Use pre-rendered surface from map if available
+    if (input.rendered_surfaces != nullptr) {
+        auto it = input.rendered_surfaces->find(l.id);
+        if (it != input.rendered_surfaces->end() && it->second != nullptr) {
+            result.surface = it->second;
+            result.cache_key = l.id + ":" + std::to_string(input.task != nullptr ? input.task->frame_number : 0);
+            result.source_kind = "surface";
+            return result;
+        }
+    }
+
+    // Fallback: render surface if not in map (should not happen in normal flow)
     if (input.context == nullptr || input.state == nullptr) {
         return result;
     }
@@ -119,6 +119,88 @@ static LayerMeshResult build_layer_mesh(
     return result;
 }
 
+static renderer3d::EvaluatedMeshInstance build_instance_for_layer(
+    const scene::EvaluatedLayerState& l,
+    const Scene3DBridgeInput& input) {
+    renderer3d::EvaluatedMeshInstance inst;
+    inst.object_id = 0; // Caller sets this
+    inst.material_id = 0;
+    inst.world_transform = l.world_matrix;
+    inst.previous_world_transform = l.previous_world_matrix;
+
+    // Material
+    inst.material.base_color = l.fill_color;
+    inst.material.opacity = static_cast<float>(l.opacity);
+    inst.material.metallic = l.material.metallic;
+    inst.material.roughness = std::max(0.05f, l.material.roughness);
+    inst.material.emission_strength = l.material.emission;
+    inst.material.emission_color = l.fill_color;
+    inst.material.transmission = l.material.transmission;
+    inst.material.ior = l.material.ior;
+
+    // Animation rigging
+    inst.joint_matrices = l.joint_matrices;
+    inst.morph_weights = l.morph_weights;
+
+    // Build mesh for layer
+    const auto mesh_result = build_layer_mesh(l, input);
+    auto mesh_asset = mesh_result.mesh_asset;
+
+    // Apply 3D modifiers
+    if (l.three_d && l.three_d->enabled && mesh_asset) {
+        using namespace renderer3d;
+        ThreeDModifierRegistry& registry = ThreeDModifierRegistry::instance();
+        
+        std::shared_ptr<media::MeshAsset> modifiable_asset = std::make_shared<media::MeshAsset>(*mesh_asset);
+
+        for (const auto& mod_spec : l.three_d->modifiers) {
+            std::shared_ptr<I3DModifier> modifier = registry.create(mod_spec);
+            if (modifier) {
+                for (media::MeshAsset::SubMesh& submesh : modifiable_asset->sub_meshes) {
+                    Mesh3D mod_mesh;
+                    mod_mesh.vertices.reserve(submesh.vertices.size());
+                    for (std::size_t i = 0; i < submesh.vertices.size(); ++i) {
+                        const media::MeshAsset::Vertex& vtx = submesh.vertices[i];
+                        mod_mesh.vertices.push_back({vtx.position, vtx.uv, vtx.normal});
+                    }
+                    mod_mesh.indices = submesh.indices;
+
+                    modifier->apply(mod_mesh, l.local_time_seconds, *input.context);
+
+                    for (std::size_t i = 0; i < submesh.vertices.size(); ++i) {
+                        submesh.vertices[i].position = mod_mesh.vertices[i].position;
+                        submesh.vertices[i].normal = mod_mesh.vertices[i].normal;
+                    }
+                }
+            }
+        }
+        inst.mesh_asset = modifiable_asset;
+        inst.mesh_asset_id = mesh_result.mesh_asset_id + "_modified";
+    } else {
+        inst.mesh_asset = mesh_asset;
+        inst.mesh_asset_id = mesh_result.mesh_asset_id;
+    }
+
+    if (inst.mesh_asset_id.empty()) {
+        inst.mesh_asset_id = l.asset_path.value_or("");
+    }
+
+    return inst;
+}
+
+static ColorSpec to_color(const math::Vector3& color) {
+    const auto clamp_channel = [](float v) -> std::uint8_t {
+        const float clamped = std::clamp(v, 0.0f, 1.0f);
+        return static_cast<std::uint8_t>(std::lround(clamped * 255.0f));
+    };
+    return ColorSpec{
+        clamp_channel(color.x),
+        clamp_channel(color.y),
+        clamp_channel(color.z),
+        255
+    };
+}
+
 } // anonymous namespace
 
 renderer3d::EvaluatedCamera3D build_camera_3d(
@@ -131,15 +213,21 @@ renderer3d::EvaluatedCamera3D build_camera_3d(
     cam.target = camera.point_of_interest;
     cam.up = camera.up;
     cam.fov_y = camera.fov_y_rad * 180.0f / 3.14159f; 
-    cam.focal_length_mm = 50.0f; 
+    cam.focal_length_mm = camera.camera.focal_length_mm;
     cam.focal_distance = camera.focus_distance;
     cam.aperture = camera.aperture;
     cam.camera_id = camera.layer_id;
-    cam.is_active_camera = true;
+    cam.is_active_camera = camera.available;
 
-    cam.previous_position = camera.position;
-    cam.previous_target = camera.point_of_interest;
+    // Extract previous position from previous_world_matrix
+    math::Transform3 prev_transform = camera.previous_world_matrix.to_transform();
+    cam.previous_position = prev_transform.position;
+    cam.previous_target = camera.point_of_interest; // TODO: compute previous POI
     cam.previous_up = camera.up;
+
+    // Depth of Field
+    cam.blur_level = camera.blur_level;
+    cam.dof_enabled = camera.dof_enabled;
 
     return cam;
 }
@@ -177,7 +265,7 @@ std::vector<renderer3d::EvaluatedLight> build_lights_3d(
 std::vector<renderer3d::EvaluatedMeshInstance> build_instances_3d(
     const Scene3DBridgeInput& input) {
     std::vector<renderer3d::EvaluatedMeshInstance> instances;
-    instances.reserve(input.block_indices->size());
+    std::size_t instance_counter = 0;
 
     for (std::size_t block_idx : *input.block_indices) {
         if (block_idx >= input.state->layers.size()) {
@@ -187,77 +275,33 @@ std::vector<renderer3d::EvaluatedMeshInstance> build_instances_3d(
         if (block_idx >= input.visible_3d_layers->size() || !(*input.visible_3d_layers)[block_idx]) {
             continue;
         }
+
+        // Handle collapsed precomp: expand nested layers
+        if (l.type == scene::LayerType::Precomp && l.collapse_transformations && l.nested_composition) {
+            for (const auto& nested_layer : l.nested_composition->layers) {
+                if (!is_bridge_renderable_layer(nested_layer)) {
+                    continue;
+                }
+                // Adjust transform by precomp layer's world matrix
+                scene::EvaluatedLayerState adjusted = nested_layer;
+                adjusted.world_matrix = l.world_matrix * nested_layer.world_matrix;
+                adjusted.previous_world_matrix = l.previous_world_matrix * nested_layer.previous_world_matrix;
+
+                auto inst = build_instance_for_layer(adjusted, input);
+                inst.object_id = static_cast<std::uint32_t>(instance_counter++);
+                instances.push_back(inst);
+            }
+            continue;
+        }
+
         if (!is_bridge_renderable_layer(l)) {
             continue;
         }
 
-        renderer3d::EvaluatedMeshInstance inst;
+        auto inst = build_instance_for_layer(l, input);
         inst.object_id = static_cast<std::uint32_t>(block_idx);
-        inst.material_id = 0;
-        inst.world_transform = l.world_matrix;
-        inst.previous_world_transform = l.previous_world_matrix;
-
-        // Material
-        inst.material.base_color = l.fill_color;
-        inst.material.opacity = static_cast<float>(l.opacity);
-        inst.material.metallic = l.material.metallic;
-        inst.material.roughness = std::max(0.05f, l.material.roughness);
-        inst.material.emission_strength = l.material.emission;
-        inst.material.emission_color = l.fill_color;
-        inst.material.transmission = l.material.transmission;
-        inst.material.ior = l.material.ior;
-
-        // Animation rigging
-        inst.joint_matrices = l.joint_matrices;
-        inst.morph_weights = l.morph_weights;
-
-        // Build mesh for layer
-        const auto mesh_result = build_layer_mesh(l, input);
-        auto mesh_asset = mesh_result.mesh_asset;
-
-        // Apply 3D modifiers
-        if (l.three_d && l.three_d->enabled && mesh_asset) {
-            using namespace renderer3d;
-            auto& registry = ThreeDModifierRegistry::instance();
-            
-            // We need to work on a copy of the mesh if it's shared/cached, 
-            // but build_layer_mesh usually returns a new one for text/procedural.
-            // For now, we assume it's safe to modify or we make a copy.
-            auto modifiable_asset = std::make_shared<media::MeshAsset>(*mesh_asset);
-
-            for (const auto& mod_spec : l.three_d->modifiers) {
-                auto modifier = registry.create(mod_spec);
-                if (modifier) {
-                    for (auto& submesh : modifiable_asset->sub_meshes) {
-                        Mesh3D mesh;
-                        mesh.vertices.reserve(submesh.vertices.size());
-                        for (const auto& v : submesh.vertices) {
-                            mesh.vertices.push_back({v.position, v.uv, v.normal});
-                        }
-                        mesh.indices = submesh.indices;
-
-                        modifier->apply(mesh, l.local_time_seconds, *input.context);
-
-                        for (std::size_t i = 0; i < submesh.vertices.size(); ++i) {
-                            submesh.vertices[i].position = mesh.vertices[i].position;
-                            submesh.vertices[i].normal = mesh.vertices[i].normal;
-                        }
-                    }
-                }
-            }
-            inst.mesh_asset = modifiable_asset;
-            inst.mesh_asset_id = mesh_result.mesh_asset_id + "_modified";
-        } else {
-            inst.mesh_asset = mesh_asset;
-            inst.mesh_asset_id = mesh_result.mesh_asset_id;
-        }
-
-        // Final fallback to layer's asset path
-        if (inst.mesh_asset_id.empty()) {
-            inst.mesh_asset_id = l.asset_path.value_or("");
-        }
-
         instances.push_back(inst);
+        instance_counter++;
     }
 
     return instances;

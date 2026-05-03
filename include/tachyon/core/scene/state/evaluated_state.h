@@ -9,6 +9,7 @@
 #include "tachyon/core/math/vector3.h"
 #include "tachyon/core/shapes/shape_path.h"
 #include "tachyon/core/scene/state/evaluated_camera_state.h"
+#include "tachyon/core/camera/camera_types.h"
 #include "tachyon/media/loading/mesh_asset.h"
 #include "tachyon/renderer2d/spec/gradient_spec.h"
 #include "tachyon/renderer2d/path/mask_path.h"
@@ -141,12 +142,13 @@ struct EvaluatedLayerState {
     std::optional<std::size_t> track_matte_layer_index;
     TrackMatteType track_matte_type{TrackMatteType::None};
     std::optional<std::string> precomp_id;
+    bool collapse_transformations{false}; // Merge precomp layers into parent comp when true
     
     std::shared_ptr<EvaluatedCompositionState> nested_composition;
     std::vector<math::Vector2> corner_pin;
     
     // Camera properties (if type == Camera)
-    std::string camera_type{"one_node"};
+    camera::CameraType camera_type{camera::CameraType::one_node};
     float zoom{877.0f};
     math::Vector3 poi{0.0f, 0.0f, 0.0f};
     
@@ -156,6 +158,10 @@ struct EvaluatedLayerState {
     float camera_shake_amplitude_rot{0.0f};
     float camera_shake_frequency{0.0f};
     float camera_shake_roughness{0.0f};
+
+    // Camera Depth of Field
+    std::optional<float> camera_aperture;
+    std::optional<float> camera_focus_distance;
 
     // Previous state for motion blur calculation
     math::Matrix4x4 previous_world_matrix{math::Matrix4x4::identity()};

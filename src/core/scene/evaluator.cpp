@@ -5,6 +5,7 @@
 #include "tachyon/core/math/matrix4x4.h"
 #include "tachyon/core/math/vector3.h"
 #include "tachyon/core/camera/camera_shake.h"
+#include "tachyon/core/camera/camera_types.h"
 #include "tachyon/camera_cut_contract.h"
 
 #include <algorithm>
@@ -56,7 +57,7 @@ EvaluatedCameraState evaluate_camera_state(
     if (!camera_layer) {
         evaluated.available = false;
         evaluated.name = "Default Camera";
-        evaluated.camera_type = "two_node";
+        evaluated.camera_type = camera::CameraType::two_node;
         
         // AE Default: Positioned at center, looking at center, 
         // zoom is typically 877.77 for 1920x1080 (35mm lens)
@@ -68,7 +69,7 @@ EvaluatedCameraState evaluate_camera_state(
 
         evaluated.position = { comp_w * 0.5f, comp_h * 0.5f, -evaluated.zoom };
         evaluated.point_of_interest = { comp_w * 0.5f, comp_h * 0.5f, 0.0f };
-        evaluated.up = { 0.0f, -1.0f, 0.0f };
+        evaluated.up = { 0.0f, 1.0f, 0.0f }; // +Y world up convention
         
         evaluated.view_matrix = math::Matrix4x4::look_at(evaluated.position, evaluated.point_of_interest, evaluated.up);
         evaluated.fov_y_rad = 2.0f * std::atan(comp_h / (2.0f * evaluated.zoom));
@@ -80,6 +81,7 @@ EvaluatedCameraState evaluate_camera_state(
         evaluated.camera.target_position = evaluated.point_of_interest;
         evaluated.camera.fov_y_rad = evaluated.fov_y_rad;
         evaluated.camera.aspect = evaluated.aspect;
+        evaluated.camera.type = camera::CameraType::two_node;
 
         return evaluated;
     }
@@ -92,13 +94,26 @@ EvaluatedCameraState evaluate_camera_state(
     evaluated.zoom = camera_layer->zoom;
     evaluated.point_of_interest = camera_layer->poi;
     evaluated.position = camera_layer->world_matrix.to_transform().position;
-    evaluated.up = { 0.0f, -1.0f, 0.0f }; // TODO: Support camera rotation/up properly
+    evaluated.up = { 0.0f, 1.0f, 0.0f }; // +Y world up convention (TODO: read from layer)
 
     // AE-style Optics: Zoom to FOV
     evaluated.fov_y_rad = 2.0f * std::atan(comp_h / (2.0f * evaluated.zoom));
     
-    if (evaluated.camera_type == "two_node") {
-        evaluated.view_matrix = math::Matrix4x4::look_at(evaluated.position, evaluated.point_of_interest, evaluated.up);
+    // Populate internal CameraState for view matrix computation
+    evaluated.camera.transform = camera_layer->world_matrix.to_transform();
+    evaluated.camera.type = evaluated.camera_type;
+    evaluated.camera.use_target = (evaluated.camera_type == camera::CameraType::two_node);
+    evaluated.camera.target_position = evaluated.point_of_interest;
+    evaluated.camera.up = evaluated.up;
+    evaluated.camera.roll = 0.0f; // TODO: read from layer properties
+    evaluated.camera.fov_y_rad = evaluated.fov_y_rad;
+    evaluated.camera.zoom = evaluated.zoom;
+    evaluated.camera.aspect = aspect;
+    evaluated.camera.near_z = evaluated.near_clip;
+    evaluated.camera.far_z = evaluated.far_clip;
+    
+    if (evaluated.camera_type == camera::CameraType::two_node) {
+        evaluated.view_matrix = evaluated.camera.get_view_matrix();
         // Previous world matrix for motion blur
         math::Vector3 prev_pos = camera_layer->previous_world_matrix.to_transform().position;
         evaluated.previous_world_matrix = math::Matrix4x4::look_at(prev_pos, evaluated.point_of_interest, evaluated.up).inverse_affine();
@@ -110,25 +125,24 @@ EvaluatedCameraState evaluate_camera_state(
     
     evaluated.projection_matrix = math::Matrix4x4::perspective(evaluated.fov_y_rad, aspect, evaluated.near_clip, evaluated.far_clip);
     
-    // Populate internal CameraState for backward compatibility
-    evaluated.camera.transform = camera_layer->world_matrix.to_transform();
-    evaluated.camera.use_target = (evaluated.camera_type == "two_node");
-    evaluated.camera.target_position = evaluated.point_of_interest;
-    evaluated.camera.up = evaluated.up;
-    evaluated.camera.fov_y_rad = evaluated.fov_y_rad;
-    evaluated.camera.aspect = aspect;
-    evaluated.camera.near_z = evaluated.near_clip;
-    evaluated.camera.far_z = evaluated.far_clip;
-
-    
     // Depth of Field (Sync with optics)
-    evaluated.focus_distance = (evaluated.camera_type == "two_node") 
-        ? (evaluated.point_of_interest - evaluated.position).length() 
-        : evaluated.zoom;
-    evaluated.aperture = 2.8f; // TODO: from layer props
-    evaluated.blur_level = 100.0f;
+    // Read aperture from layer props (animated)
+    evaluated.aperture = camera_layer->camera_aperture.value_or(2.8f);
+    
+    // Read focus distance from layer props, or compute from POI for two_node
+    if (!camera_layer->camera_focus_distance.has_value()) {
+        evaluated.focus_distance = (evaluated.camera_type == camera::CameraType::two_node) 
+            ? (evaluated.point_of_interest - evaluated.position).length() 
+            : evaluated.zoom;
+    } else {
+        evaluated.focus_distance = static_cast<float>(camera_layer->camera_focus_distance.value());
+    }
+    
+    // Compute blur level based on aperture (relative to f/2.8 as baseline)
+    // Higher aperture (lower f-number) = more blur
+    evaluated.blur_level = (2.8f / std::max(evaluated.aperture, 0.5f)) * 100.0f;
 
-    // Apply deterministic CameraShake
+    // Apply deterministic CameraShake (camera-local space)
     camera::CameraShake shake;
     shake.seed = static_cast<uint32_t>(camera_layer->camera_shake_seed);
     shake.amplitude_position = camera_layer->camera_shake_amplitude_pos;
@@ -141,16 +155,20 @@ EvaluatedCameraState evaluate_camera_state(
         math::Vector3 pos_off = shake.evaluate_position(t);
         math::Vector3 rot_off = shake.evaluate_rotation(t);
         
-        // Shake modifies the view matrix or the transform
-        // For simplicity, we apply it to the transform and recompute matrices
+        // Apply shake in camera-local space
+        // For view matrix: shake is applied as an additional transform
         math::Transform3 shake_t;
         shake_t.position = pos_off;
         shake_t.rotation = math::Quaternion::from_euler(rot_off);
         
         math::Matrix4x4 shake_mat = shake_t.to_matrix();
-        // Shift camera relative to its orientation
+        // Apply shake to view: camera shake happens in camera-local space
+        // This means we post-multiply for view space shake
         evaluated.view_matrix = evaluated.view_matrix * shake_mat.inverse_affine();
-        evaluated.position += pos_off; // Approximate for DoF center
+        
+        // Also update the CameraState to keep it in sync
+        evaluated.camera.transform.position += pos_off;
+        evaluated.camera.transform.rotation = shake_t.rotation * evaluated.camera.transform.rotation;
     }
     
     return evaluated;
