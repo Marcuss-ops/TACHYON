@@ -68,6 +68,7 @@ add_executable(TachyonTests
     unit/runtime/native_render_tests.cpp
     unit/audio/test_audio_trim.cpp
     integration/scene3d_smoke_tests.cpp
+    unit/core/camera/default_camera_tests.cpp
 )
 
 set(TachyonTrackerTestSources
@@ -114,6 +115,27 @@ endif()
 if(MSVC)
     target_compile_options(TachyonTests PRIVATE /FS)
 endif()
+
+# Header smoke tests - catch header errors early without full builds
+add_executable(HeaderSmokeCompositionSpec compile/header_smoke_composition_spec.cpp)
+target_link_libraries(HeaderSmokeCompositionSpec PRIVATE TachyonCore)
+
+add_executable(HeaderSmokeSceneSpec compile/header_smoke_scene_spec.cpp)
+target_link_libraries(HeaderSmokeSceneSpec PRIVATE TachyonCore)
+
+add_executable(HeaderSmokeLayerSpec compile/header_smoke_layer_spec.cpp)
+target_link_libraries(HeaderSmokeLayerSpec PRIVATE TachyonCore)
+
+add_executable(HeaderSmokeSceneBuilder compile/header_smoke_scene_builder.cpp)
+target_link_libraries(HeaderSmokeSceneBuilder PRIVATE TachyonCore)
+
+add_executable(HeaderSmokeRenderJobSpec compile/header_smoke_render_job_spec.cpp)
+target_link_libraries(HeaderSmokeRenderJobSpec PRIVATE TachyonCore)
+
+add_custom_target(HeaderSmokeTests
+    DEPENDS HeaderSmokeCompositionSpec HeaderSmokeSceneSpec HeaderSmokeLayerSpec HeaderSmokeSceneBuilder HeaderSmokeRenderJobSpec
+    COMMENT "Running header smoke tests to catch compilation errors early"
+)
 
 add_executable(Phase1Tests unit/text/phase1_tests.cpp)
 target_link_libraries(Phase1Tests PRIVATE TachyonCore)

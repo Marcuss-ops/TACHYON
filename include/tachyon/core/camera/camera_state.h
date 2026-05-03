@@ -16,6 +16,7 @@ struct CameraState {
     
     // Two-Node Camera
     math::Vector3 target_position{0.0f, 0.0f, 0.0f};
+    math::Vector3 up{0.0f, -1.0f, 0.0f};
     bool use_target{false};
 
     // Physical Camera Model
@@ -36,7 +37,7 @@ struct CameraState {
      */
     [[nodiscard]] math::Matrix4x4 get_view_matrix() const {
         if (use_target) {
-            return math::Matrix4x4::look_at(transform.position, target_position, math::Vector3{0.0f, 1.0f, 0.0f});
+            return math::Matrix4x4::look_at(transform.position, target_position, up);
         }
         return transform.to_inverse_matrix();
     }

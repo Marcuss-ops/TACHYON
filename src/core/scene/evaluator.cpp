@@ -21,7 +21,12 @@ EvaluatedCameraState evaluate_camera_state(
     (void)frame_number;
     EvaluatedCameraState evaluated;
     
-    // 1. Resolve Active Camera from Cuts
+    float comp_w = static_cast<float>(composition.width);
+    float comp_h = static_cast<float>(composition.height);
+    float aspect = comp_w / (comp_h > 0 ? comp_h : 1.0f);
+    evaluated.aspect = aspect;
+
+    // 1. Resolve Active Camera Layer from Cuts or first available
     std::optional<std::string> active_camera_id;
     for (const auto& cut : composition.camera_cuts) {
         if (composition_time_seconds >= cut.start_seconds && composition_time_seconds < cut.end_seconds) {
@@ -39,7 +44,6 @@ EvaluatedCameraState evaluate_camera_state(
             }
         }
     } else {
-        // Fallback to the first camera layer
         for (const auto& layer : layers) {
             if (layer.type == LayerType::Camera) {
                 camera_layer = &layer;
@@ -48,64 +52,80 @@ EvaluatedCameraState evaluate_camera_state(
         }
     }
     
-    // Default aspect ratio
-    float aspect = static_cast<float>(composition.width) / (composition.height > 0 ? static_cast<float>(composition.height) : 1.0f);
-    
+    // 2. Handle Default Camera (AE-like: preserves 2D on z=0)
     if (!camera_layer) {
         evaluated.available = false;
-        evaluated.camera.aspect = aspect;
-        evaluated.camera.transform.position = {0.0f, 0.0f, -1000.0f}; // AE default
-        evaluated.camera.fov_y_rad = 0.68f; // ~39 degrees
-        evaluated.previous_camera_matrix = math::Matrix4x4::identity();
+        evaluated.name = "Default Camera";
+        evaluated.camera_type = "two_node";
+        
+        // AE Default: Positioned at center, looking at center, 
+        // zoom is typically 877.77 for 1920x1080 (35mm lens)
+        evaluated.zoom = (comp_h / 2.0f) / std::tan(0.683f / 2.0f); // reverse-engineered or fixed
+        // Let's use a standard 35mm-equivalent for HD
+        if (std::abs(comp_h - 1080.0f) < 1.0f) evaluated.zoom = 877.7778f;
+        else if (std::abs(comp_h - 720.0f) < 1.0f) evaluated.zoom = 585.1852f;
+        else evaluated.zoom = comp_h * 0.8127f; // heuristic
+
+        evaluated.position = { comp_w * 0.5f, comp_h * 0.5f, -evaluated.zoom };
+        evaluated.point_of_interest = { comp_w * 0.5f, comp_h * 0.5f, 0.0f };
+        evaluated.up = { 0.0f, -1.0f, 0.0f };
+        
+        evaluated.view_matrix = math::Matrix4x4::look_at(evaluated.position, evaluated.point_of_interest, evaluated.up);
+        evaluated.fov_y_rad = 2.0f * std::atan(comp_h / (2.0f * evaluated.zoom));
+        evaluated.projection_matrix = math::Matrix4x4::perspective(evaluated.fov_y_rad, evaluated.aspect, evaluated.near_clip, evaluated.far_clip);
+        
+        evaluated.camera.transform.position = evaluated.position;
+        evaluated.camera.up = evaluated.up;
+        evaluated.camera.use_target = true;
+        evaluated.camera.target_position = evaluated.point_of_interest;
+        evaluated.camera.fov_y_rad = evaluated.fov_y_rad;
+        evaluated.camera.aspect = evaluated.aspect;
+
         return evaluated;
     }
     
+    // 3. Evaluate Explicit Camera Layer
     evaluated.available = true;
     evaluated.layer_id = camera_layer->id;
-    evaluated.position = camera_layer->world_matrix.to_transform().position;
+    evaluated.name = camera_layer->name;
     evaluated.camera_type = camera_layer->camera_type;
     evaluated.zoom = camera_layer->zoom;
     evaluated.point_of_interest = camera_layer->poi;
-    evaluated.previous_position = math::Vector3{
-        camera_layer->previous_world_matrix[12],
-        camera_layer->previous_world_matrix[13],
-        camera_layer->previous_world_matrix[14]
-    };
-    evaluated.previous_point_of_interest = camera_layer->poi;
-    
-    // AE-style Optics: Zoom to FOV
-    // Formula: FOV = 2 * atan(height / (2 * zoom))
-    evaluated.camera.fov_y_rad = 2.0f * std::atan(static_cast<float>(composition.height) / (2.0f * evaluated.zoom));
-    evaluated.camera.aspect = aspect;
+    evaluated.position = camera_layer->world_matrix.to_transform().position;
+    evaluated.up = { 0.0f, -1.0f, 0.0f }; // TODO: Support camera rotation/up properly
 
-    // Resolve Camera Matrix
+    // AE-style Optics: Zoom to FOV
+    evaluated.fov_y_rad = 2.0f * std::atan(comp_h / (2.0f * evaluated.zoom));
+    
     if (evaluated.camera_type == "two_node") {
-        // Point of Interest logic
-        // Matrix4x4::look_at creates a VIEW matrix (world-to-camera).
-        // AE Up vector is usually [0, 1, 0] but cameras look down -Z by default.
-        math::Matrix4x4 view_matrix = math::Matrix4x4::look_at(evaluated.position, evaluated.point_of_interest, {0.0f, 1.0f, 0.0f});
-        
-        // CameraState::transform is camera-to-world
-        evaluated.camera.transform = view_matrix.inverse_affine().to_transform();
+        evaluated.view_matrix = math::Matrix4x4::look_at(evaluated.position, evaluated.point_of_interest, evaluated.up);
+        // Previous world matrix for motion blur
+        math::Vector3 prev_pos = camera_layer->previous_world_matrix.to_transform().position;
+        evaluated.previous_world_matrix = math::Matrix4x4::look_at(prev_pos, evaluated.point_of_interest, evaluated.up).inverse_affine();
     } else {
-        // One-node camera uses the layer's world matrix
-        evaluated.camera.transform = camera_layer->world_matrix.to_transform();
+        // One-node uses world matrix directly (inverted for view)
+        evaluated.view_matrix = camera_layer->world_matrix.inverse_affine();
+        evaluated.previous_world_matrix = camera_layer->previous_world_matrix;
     }
     
-    // Temporal State (Previous Camera Matrix for Motion Blur)
-    evaluated.previous_camera_matrix = camera_layer->previous_world_matrix;
+    evaluated.projection_matrix = math::Matrix4x4::perspective(evaluated.fov_y_rad, aspect, evaluated.near_clip, evaluated.far_clip);
     
-    // AE-style Optics (Secondary stats)
-    evaluated.focal_length = 50.0f; // Simplified
-    evaluated.film_size = 36.0f;
-    evaluated.angle_of_view = evaluated.camera.fov_y_rad * 180.0f / 3.14159f;
+    // Populate internal CameraState for backward compatibility
+    evaluated.camera.transform = camera_layer->world_matrix.to_transform();
+    evaluated.camera.use_target = (evaluated.camera_type == "two_node");
+    evaluated.camera.target_position = evaluated.point_of_interest;
+    evaluated.camera.up = evaluated.up;
+    evaluated.camera.fov_y_rad = evaluated.fov_y_rad;
+    evaluated.camera.aspect = aspect;
+    evaluated.camera.near_z = evaluated.near_clip;
+    evaluated.camera.far_z = evaluated.far_clip;
+
     
-    // Depth of Field
-    evaluated.dof_enabled = false; 
+    // Depth of Field (Sync with optics)
     evaluated.focus_distance = (evaluated.camera_type == "two_node") 
         ? (evaluated.point_of_interest - evaluated.position).length() 
         : evaluated.zoom;
-    evaluated.aperture = 2.8f;
+    evaluated.aperture = 2.8f; // TODO: from layer props
     evaluated.blur_level = 100.0f;
 
     // Apply deterministic CameraShake
@@ -117,14 +137,20 @@ EvaluatedCameraState evaluate_camera_state(
     shake.roughness = camera_layer->camera_shake_roughness;
 
     if (shake.is_active()) {
-        // Position shake
-        math::Vector3 pos_off = shake.evaluate_position(static_cast<float>(composition_time_seconds));
-        evaluated.camera.transform.position += pos_off;
+        float t = static_cast<float>(composition_time_seconds);
+        math::Vector3 pos_off = shake.evaluate_position(t);
+        math::Vector3 rot_off = shake.evaluate_rotation(t);
         
-        // Rotation shake (Euler degrees to Quaternion)
-        math::Vector3 rot_off = shake.evaluate_rotation(static_cast<float>(composition_time_seconds));
-        math::Quaternion shake_rot = math::Quaternion::from_euler(rot_off);
-        evaluated.camera.transform.rotation = evaluated.camera.transform.rotation * shake_rot;
+        // Shake modifies the view matrix or the transform
+        // For simplicity, we apply it to the transform and recompute matrices
+        math::Transform3 shake_t;
+        shake_t.position = pos_off;
+        shake_t.rotation = math::Quaternion::from_euler(rot_off);
+        
+        math::Matrix4x4 shake_mat = shake_t.to_matrix();
+        // Shift camera relative to its orientation
+        evaluated.view_matrix = evaluated.view_matrix * shake_mat.inverse_affine();
+        evaluated.position += pos_off; // Approximate for DoF center
     }
     
     return evaluated;
@@ -233,10 +259,18 @@ EvaluatedLayerState evaluate_layer_state(
         .composition = composition,
         .frame_number = frame_number,
         .composition_time_seconds = composition_time_seconds,
+        .layer_indices = {},
+        .camera2d_indices = {},
         .cache = std::vector<std::optional<EvaluatedLayerState>>(composition.layers.size()),
         .visiting = std::vector<bool>(composition.layers.size(), false),
+        .composition_stack = {},
         .audio_analyzer = audio_analyzer,
-        .media = media
+        .vars = {},
+        .subtitle_cache = {},
+        .media = media,
+        .sampler = nullptr,
+        .main_frame_number = std::nullopt,
+        .main_frame_time_seconds = std::nullopt
     };
 
     return make_layer_state(context, context.composition.layers.front(), 0, 0.0, {});
