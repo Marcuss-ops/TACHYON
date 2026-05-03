@@ -10,6 +10,7 @@
 #include <optional>
 #include <memory>
 #include <string>
+#include <unordered_map>
 
 namespace tachyon {
 
@@ -25,6 +26,7 @@ struct Scene3DBridgeInput {
     const renderer2d::RenderContext2D* context{nullptr};
     const std::vector<std::size_t>* block_indices{nullptr};
     const std::vector<bool>* visible_3d_layers{nullptr};
+    const std::unordered_map<std::string, std::shared_ptr<renderer2d::SurfaceRGBA>>* rendered_surfaces{nullptr};
 };
 
 /**

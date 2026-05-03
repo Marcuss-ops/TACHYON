@@ -1,5 +1,4 @@
 #include "tachyon/scene/builder.h"
-#include "tachyon/core/camera/camera_types.h"
 #include <algorithm>
 #include <cmath>
 
