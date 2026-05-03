@@ -51,6 +51,7 @@ void build_compositions(const SceneSpec& scene, CompiledScene& compiled, tachyon
             
             compiled_layer.shape_path = layer.shape_path;
             compiled_layer.effects = layer.effects;
+            compiled_layer.animated_effects = layer.animated_effects;
             compiled_layer.procedural = layer.procedural;
             
             compiled_layer.mask_feather = static_cast<float>(layer.mask_feather.value.has_value() ? *layer.mask_feather.value : 0.0);

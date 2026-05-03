@@ -63,7 +63,7 @@ bool run_native_render_tests() {
         {"film_burn_demo", 1.0, "film_burn_demo.mp4"},
         {"flash_demo", 7.0, "flash_demo.mp4"},
     }};
-
+    
     const std::filesystem::path demo_dir = std::filesystem::current_path() / "tests" / "output" / "light_leaks";
     std::filesystem::create_directories(demo_dir);
 
@@ -83,8 +83,8 @@ bool run_native_render_tests() {
         layer.transform.position_y = 0.0;
         layer.transform.scale_x = 1.0;
         layer.transform.scale_y = 1.0;
-        // Keep the leak layer opaque so the effect has a visible plate to work on.
-        layer.fill_color.value = {18, 18, 18, 255};
+        // Keep the leak layer opaque and black so the FX stays separate from the background.
+        layer.fill_color.value = {0, 0, 0, 255};
 
         tachyon::AnimatedEffectSpec effect;
         effect.type = "light_leak";

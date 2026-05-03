@@ -262,16 +262,14 @@ Color transition_light_leak(float u, float v, float t, const SurfaceRGBA& input,
     float pos = -0.3f + t * 1.6f;
     pos += 0.02f * std::sin(t * 6.28318f);
 
-    const float width = 0.40f;
+    const float width = 0.22f;
     const float d = proj - pos;
     const float mask = std::exp(-(d * d) / (2.0f * width * width));
-    // Wide ambient layer keeps the glow visible even when band center is off-screen.
-    const float ambient = std::exp(-(d * d) / (2.0f * 0.70f * 0.70f)) * 0.30f;
 
     const Color ca_col = {1.0f, 0.55f, 0.08f, 1.0f};
     const Color cb_col = {1.0f, 0.765f, 0.275f, 1.0f};
     const Color leak = Color::lerp(ca_col, cb_col, std::clamp(proj, 0.0f, 1.0f));
-    const float intensity = 1.1f * (mask * 0.80f + ambient);
+    const float intensity = 1.2f * mask;
     return screen_over(base, leak, intensity);
 }
 
@@ -286,7 +284,7 @@ Color transition_film_burn(float u, float v, float t, const SurfaceRGBA& input, 
     const float proj = (u * ca + v * sa + 0.2f) / 1.4f;
 
     const float pos = -0.3f + t * 1.6f;
-    const float width = 0.32f;
+    const float width = 0.20f;
     const float d = proj - pos;
     float intensity = std::exp(-(d * d) / (2.0f * width * width));
 
@@ -295,7 +293,7 @@ Color transition_film_burn(float u, float v, float t, const SurfaceRGBA& input, 
     const Color burn = Color::lerp(ca_col, cb_col, std::clamp(proj, 0.0f, 1.0f));
 
     const float jitter = std::fmod(std::sin((u * 123.4f + v * 456.7f) * 12.9898f) * 43758.5453f, 0.15f);
-    intensity = std::clamp(1.05f * intensity + jitter, 0.0f, 1.2f);
+    intensity = std::clamp(1.05f * intensity + (jitter * intensity), 0.0f, 1.2f);
     return screen_over(base, burn, intensity);
 }
 

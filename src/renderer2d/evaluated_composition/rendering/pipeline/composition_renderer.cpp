@@ -614,7 +614,16 @@ RasterizedFrame2D render_evaluated_composition_2d(
         }
     };
 
-    if (context.policy.tile_size > 0) {
+    const bool has_effectful_layers = std::any_of(
+        state.layers.begin(),
+        state.layers.end(),
+        [](const auto& layer) {
+            return layer.enabled
+                && layer.active
+                && (!layer.effects.empty() || !layer.animated_effects.empty());
+        });
+
+    if (context.policy.tile_size > 0 && !has_effectful_layers) {
         TileGrid grid = build_tile_grid({0, 0, static_cast<int>(working_width), static_cast<int>(working_height)}, working_width, working_height, context.policy.tile_size);
         
         for (int i = 0; i < static_cast<int>(grid.tiles.size()); ++i) {
