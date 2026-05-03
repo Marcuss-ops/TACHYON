@@ -5,6 +5,18 @@
 
 namespace tachyon::scene {
 
+TEST(SceneBuilder, ProceduralLayersMapToProceduralType) {
+    auto comp = Composition("main")
+        .layer("bg", [](LayerBuilder& l) {
+            l.type("procedural");
+        })
+        .build();
+
+    ASSERT_EQ(comp.layers.size(), 1);
+    EXPECT_EQ(comp.layers[0].type, "procedural");
+    EXPECT_EQ(map_layer_type(comp.layers[0].type), LayerType::Procedural);
+}
+
 TEST(SceneBuilder, BasicComposition) {
     auto scene = Composition("main")
         .size(1920, 1080)

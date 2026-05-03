@@ -10,3 +10,5 @@ Documentation for runtime behavior and execution model.
 - Profiling
 - Low-end execution strategy
 - Parallelism model
+- [Rendering workflow](rendering.md)
+- Baseline preset only; the old procedural gallery has been removed.

@@ -9,6 +9,7 @@ LayerType map_layer_type(const std::string& type) {
     if (type == "image") return LayerType::Image;
     if (type == "video") return LayerType::Video;
     if (type == "text") return LayerType::Text;
+    if (type == "procedural") return LayerType::Procedural;
     if (type == "camera") return LayerType::Camera;
     if (type == "precomp") return LayerType::Precomp;
     if (type == "light") return LayerType::Light;

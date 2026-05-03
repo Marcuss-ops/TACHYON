@@ -46,6 +46,34 @@ tachyon::SceneSpec make_scene(double x_offset = 0.0) {
     return scene;
 }
 
+tachyon::SceneSpec make_procedural_scene() {
+    tachyon::LayerSpec layer;
+    layer.id = "bg";
+    layer.type = "procedural";
+    layer.name = "Procedural Background";
+    layer.start_time = 0.0;
+    layer.in_point = 0.0;
+    layer.out_point = 2.0;
+    layer.opacity = 1.0;
+    layer.procedural = tachyon::ProceduralSpec{};
+    layer.procedural->kind = "grid_lines";
+
+    tachyon::CompositionSpec comp;
+    comp.id = "main";
+    comp.name = "Main";
+    comp.width = 160;
+    comp.height = 90;
+    comp.duration = 2.0;
+    comp.frame_rate = {30, 1};
+    comp.layers.push_back(layer);
+
+    tachyon::SceneSpec scene;
+    scene.project.id = "proj";
+    scene.project.name = "Runtime";
+    scene.compositions.push_back(comp);
+    return scene;
+}
+
 tachyon::RenderPlan make_plan() {
     tachyon::RenderPlan plan;
     plan.job_id = "job_1";
@@ -101,6 +129,16 @@ bool run_frame_executor_tests() {
         std::cerr << "FAIL: Scene compilation failed\n";
         return false;
     }
+    const auto procedural_scene = make_procedural_scene();
+    const auto compiled_procedural = compiler.compile(procedural_scene);
+    if (!compiled_procedural.ok()) {
+        std::cerr << "FAIL: Procedural scene compilation failed\n";
+        return false;
+    }
+    check_true(compiled_procedural.value->compositions[0].layers[0].type_id == 6,
+               "Procedural layers compile to type_id 6");
+    check_true(compiled_procedural.value->compositions[0].layers[0].procedural.has_value(),
+               "Procedural layers preserve procedural payload");
 
     const ExecutedFrame first = execute_frame_task(scene, *compiled_result.value, plan, make_task(0), cache, render_context);
     const ExecutedFrame second = execute_frame_task(scene, *compiled_result.value, plan, make_task(0), cache, render_context);

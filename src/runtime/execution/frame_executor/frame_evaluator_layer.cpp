@@ -21,6 +21,7 @@ scene::LayerType resolve_layer_type(std::uint32_t type_id) {
         case 3: return scene::LayerType::Image;
         case 4: return scene::LayerType::Text;
         case 5: return scene::LayerType::Precomp;
+        case 6: return scene::LayerType::Procedural;
         default: return scene::LayerType::NullLayer;
     }
 }
@@ -134,6 +135,7 @@ void evaluate_layer(
     state->shape_path = to_shape_path_spec(layer.shape_path);
     state->shape_spec = layer.shape_spec;
     state->effects = layer.effects;
+    state->procedural = layer.procedural;
     state->precomp_id = layer.precomp_index.has_value() ? std::make_optional(std::to_string(*layer.precomp_index)) : std::nullopt;
     state->track_matte_type = layer.matte_type;
     state->track_matte_layer_index = layer.matte_layer_index.has_value()
