@@ -170,6 +170,10 @@ bool run_motion_blur_tests();
 bool run_rolling_shutter_tests();
 bool run_audio_trim_tests();
 bool run_scene3d_smoke_tests();
+void run_default_camera_tests();
+void run_parallax_tests();
+void run_look_at_tests();
+bool run_default_camera_tests_adapter() { run_default_camera_tests(); return true; }
 
 
 int main(int argc, char** argv) {
@@ -237,6 +241,9 @@ int main(int argc, char** argv) {
         {"rolling_shutter", run_rolling_shutter_tests},
         {"audio_trim", run_audio_trim_tests},
         {"scene3d_smoke", run_scene3d_smoke_tests},
+        {"default_camera", run_default_camera_tests_adapter},
+        {"parallax", []() { run_parallax_tests(); return true; }},
+        {"lookat", []() { run_look_at_tests(); return true; }},
     };
 
     bool list_tests = false;

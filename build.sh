@@ -72,7 +72,7 @@ if [[ $RUN_TESTS -eq 1 ]]; then
     echo "[INFO] Building tests..."
     cmake --build "$BUILD_DIR" --target TachyonTests
     echo "[INFO] Running tests..."
-    "$BUILD_DIR/tests/unit/TachyonTests"
+    "$BUILD_DIR/tests/TachyonTests"
     echo "[OK] All tests passed"
     exit 0
 fi

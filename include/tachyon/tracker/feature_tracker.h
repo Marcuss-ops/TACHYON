@@ -38,7 +38,8 @@ struct GrayImage {
     uint32_t      height{0};
 
     float at(int x, int y) const {
-        if (x < 0) x = 0; if (y < 0) y = 0;
+        if (x < 0) x = 0;
+        if (y < 0) y = 0;
         if (x >= (int)width)  x = (int)width  - 1;
         if (y >= (int)height) y = (int)height - 1;
         return data[y * width + x];

@@ -16,9 +16,6 @@ void check_true(bool condition, const std::string& message) {
     }
 }
 
-bool nearly_equal(float a, float b, float eps = 1e-4f) {
-    return std::abs(a - b) <= eps;
-}
 
 } // namespace
 

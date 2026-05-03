@@ -67,7 +67,7 @@ std::vector<MotionBlurRenderer::SubFrameState> MotionBlurRenderer::generate_subf
         total_weight += s.weight;
 
         s.camera_matrix = interpolate_world_matrix(
-            base_state.camera.previous_camera_matrix,
+            base_state.camera.previous_world_matrix,
             base_state.camera.camera.transform.to_matrix(),
             normalized_t);
 

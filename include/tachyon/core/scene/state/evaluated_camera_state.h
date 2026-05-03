@@ -16,31 +16,39 @@ namespace tachyon::scene {
 struct EvaluatedCameraState {
     bool available{false};
     std::string layer_id;
+    std::string name{"Default Camera"};
 
-    // Camera Type
+    // Camera Type & Rig
     std::string camera_type{"one_node"}; // "one_node" | "two_node"
-    math::Vector3 position{math::Vector3::zero()};
-    math::Vector3 point_of_interest{0.0f, 0.0f, 0.0f}; // only for two-node
-    std::optional<math::Vector3> previous_position;
-    std::optional<math::Vector3> previous_point_of_interest;
+    std::string parent_id;
 
-    // Optics
-    float zoom{877.0f};           // Lens-to-image plane distance (px at 100%)
-    float focal_length{50.0f};    // mm
-    float film_size{36.0f};       // mm, default 35mm full frame
-    float angle_of_view{39.6f};   // degrees, calculated from focal_length/film_size
+    // Resolved Transform
+    math::Vector3 position{math::Vector3::zero()};
+    math::Vector3 point_of_interest{0.0f, 0.0f, 0.0f};
+    math::Vector3 up{0.0f, 1.0f, 0.0f};
+
+    // Matrices (Fully Resolved)
+    math::Matrix4x4 view_matrix{math::Matrix4x4::identity()};
+    math::Matrix4x4 projection_matrix{math::Matrix4x4::identity()};
+
+    // Optics & AE Properties
+    float zoom{877.0f};           // AE-style zoom (px)
+    float fov_y_rad{0.68f};       // Computed FOV
+    float aspect{1.777778f};
+    float near_clip{0.1f};
+    float far_clip{100000.0f};
 
     // Depth of Field
     bool  dof_enabled{false};
     float focus_distance{1000.0f};
     float aperture{4.0f};         // f-stop
-    float blur_level{100.0f};     // % of bokeh intensity
+    float blur_level{100.0f};     // % intensity
 
-    // Core Camera State (View/Projection matrices)
+    // Legacy/Internal Bridge State
     camera::CameraState camera;
 
     // Temporal State (for Motion Blur)
-    math::Matrix4x4 previous_camera_matrix{math::Matrix4x4::identity()};
+    math::Matrix4x4 previous_world_matrix{math::Matrix4x4::identity()};
 };
 
 } // namespace tachyon::scene

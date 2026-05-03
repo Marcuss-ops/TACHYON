@@ -34,8 +34,8 @@ bool run_scene3d_bridge_tests() {
         camera.available = true;
         camera.position = {1.0f, 2.0f, 3.0f};
         camera.point_of_interest = {0.0f, 0.0f, 0.0f};
-        camera.angle_of_view = 45.0f;
-        camera.focal_length = 50.0f;
+        camera.fov_y_rad = 0.785f; // 45 degrees
+        camera.zoom = 1000.0f;
         camera.focus_distance = 100.0f;
         camera.aperture = 2.8f;
         camera.layer_id = "camera1";

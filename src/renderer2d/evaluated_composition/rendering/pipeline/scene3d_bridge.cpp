@@ -116,22 +116,21 @@ renderer3d::EvaluatedCamera3D build_camera_3d(
     const scene::EvaluatedCameraState& camera,
     const scene::EvaluatedCompositionState& /*state*/) {
     renderer3d::EvaluatedCamera3D cam;
-    if (!camera.available) {
-        return cam;
-    }
-
+    
+    // Default camera is now always validly populated in evaluator
     cam.position = camera.position;
     cam.target = camera.point_of_interest;
-    cam.up = {0.0f, 1.0f, 0.0f};
-    cam.fov_y = camera.angle_of_view;
-    cam.focal_length_mm = camera.focal_length;
+    cam.up = camera.up;
+    cam.fov_y = camera.fov_y_rad * 180.0f / 3.14159f; 
+    cam.focal_length_mm = 50.0f; 
     cam.focal_distance = camera.focus_distance;
     cam.aperture = camera.aperture;
-    cam.previous_position = camera.previous_position;
-    cam.previous_target = camera.previous_point_of_interest;
-    cam.previous_up = cam.up;
     cam.camera_id = camera.layer_id;
     cam.is_active_camera = true;
+
+    cam.previous_position = camera.position;
+    cam.previous_target = camera.point_of_interest;
+    cam.previous_up = camera.up;
 
     return cam;
 }
