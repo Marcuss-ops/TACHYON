@@ -195,6 +195,8 @@ void AudioExporter::apply_pan(float* interleaved_samples, std::size_t sample_cou
 bool has_any_audio(const RenderPlan& plan) {
     if (!plan.scene_spec) return false;
     
+    if (!plan.output.profile.audio.tracks.empty()) return true;
+    
     // Find the composition target
     for (const auto& comp : plan.scene_spec->compositions) {
         if (comp.id == plan.composition_target) {
@@ -218,6 +220,16 @@ bool export_plan_audio(const RenderPlan& plan, const std::filesystem::path& outp
             found_comp = true;
             break;
         }
+    }
+
+    // Also add tracks from job output profile
+    for (const auto& job_track : plan.output.profile.audio.tracks) {
+        AudioTrackSpec spec;
+        spec.source_path = job_track.source_path;
+        spec.volume = static_cast<float>(job_track.volume);
+        spec.start_offset_seconds = job_track.start_offset_seconds;
+        exporter.add_track(spec);
+        found_comp = true;
     }
 
     if (!found_comp) return false;

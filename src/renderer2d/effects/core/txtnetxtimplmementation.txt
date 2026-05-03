@@ -1,0 +1,172 @@
+Perfetto. Ecco il codice C++ pulito per i due effetti **costanti** (niente intermittenza), come nei video che ti ho appena fatto.
+
+Compila con OpenCV 4:
+```bash
+g++ effects.cpp -o effects `pkg-config --cflags --libs opencv4`
+```
+
+---
+
+### effects.cpp – completo
+
+```cpp
+#include <opencv2/opencv.hpp>
+using namespace cv;
+
+const int W = 1280, H = 720, FPS = 25;
+const double DUR = 5.0;
+
+// ---------- 1. LIGHT SCAN COSTANTE ----------
+Mat makeScanConstant(double t) {
+    static Mat base(H, W, CV_8UC3, Scalar(12,12,12));
+    static Mat scan = base.clone();
+    static bool init = false;
+
+    if(!init){
+        // scanlines fisse ogni 6 righe
+        for(int y=0; y<H; y+=6){
+            scan.row(y) += Scalar(10,10,10);
+        }
+        init = true;
+    }
+    // micro-flicker 2% per tenerlo vivo (mai spento)
+    double flick = 1.0 + 0.02 * sin(t*2.0);
+    Mat out;
+    scan.convertTo(out, -1, flick, 0);
+    return out;
+}
+
+// ---------- 2. LIGHT NOISE COSTANTE ----------
+Mat makeNoiseConstant(double t) {
+    Mat base(H, W, CV_8UC3, Scalar(10,10,10));
+
+    // rumore fisso (stesso seed = pattern stabile)
+    RNG rng(42);
+    Mat noise(H, W, CV_32FC3);
+    rng.fill(noise, RNG::NORMAL, 0, 3.5);
+
+    // piccola variazione temporale ma mai zero
+    Mat temporal(H, W, CV_32FC3);
+    RNG rng2((int)(t*1000));
+    rng2.fill(temporal, RNG::NORMAL, 0, 0.8);
+
+    Mat img32;
+    base.convertTo(img32, CV_32FC3);
+    img32 = img32 + noise + temporal;
+
+    Mat out;
+    img32.convertTo(out, CV_8UC3);
+    return out;
+}
+
+// ---------- MAIN ----------
+int main(int argc, char** argv){
+    string mode = (argc>1)? argv[1] : "scan"; // "scan" o "noise"
+
+    VideoWriter vw;
+    string filename = (mode=="noise")? "light_noise_constant.mp4" : "light_scan_constant.mp4";
+    vw.open(filename, VideoWriter::fourcc('a','v','c','1'), FPS, Size(W,H));
+
+    int frames = DUR * FPS;
+    for(int i=0; i<frames; i++){
+        double t = i / (double)FPS;
+        Mat frame = (mode=="noise")? makeNoiseConstant(t) : makeScanConstant(t);
+        vw.write(frame);
+    }
+    vw.release();
+    printf("Fatto: %s\n", filename.c_str());
+    return 0;
+}
+```
+
+---
+
+### Come usarlo
+
+```bash
+./effects scan # genera light_scan_constant.mp4
+./effects noise # genera light_noise_constant.mp4
+```
+
+**Parametri che puoi regolare:**
+- `scan`: cambia `y+=6` e `+10` per densità/luminosità linee
+- `noise`: cambia `3.5` (sigma rumore) e `0.8` (variazione temporale)
+- `Scalar(12,12,12)` = luminosità base
+
+Vuoi anche la versione con **alpha channel** (così esporti in ProRes 4444 e usi solo le linee in Screen senza sfondo nero)? Te la aggiungo in 5 righe.
+
+
+Hai ragione — quelle prima erano troppo in fila. Rifatto: ora le particelle sono **sparse, totalmente random**, non seguono nessuna griglia.
+
+### Dust Particles – RANDOM SPARSE (nuova versione)
+
+- 40 particelle per frame
+- posizioni completamente casuali
+- dimensioni 1-2px, luminosità variabile
+- niente pattern, sembra vera polvere in aria
+
+[▶️ oldfilm_02_dust_random.mp4](container:///mnt/data/oldfilm_02_dust_random.mp4)
+
+---
+
+### Codice C++ aggiornato
+
+```cpp
+Mat dustRandom(double t){
+    Mat img(h,w,CV_8UC3,Scalar(15,15,15));
+    RNG rng( (uint64)(t*1000) ); // seed diverso ogni frame
+
+    for(int i=0; i<40; i++){ // sparse
+        int x = rng.uniform(0, w);
+        int y = rng.uniform(0, h);
+        int size = rng.uniform(0,4) < 3 ? 1 : 2; // 75% piccole
+        int b = rng.uniform(160, 210);
+        circle(img, Point(x,y), size, Scalar(b,b,b), -1);
+    }
+    return img;
+}
+```
+
+Se vuoi ancora più sparse, cambia `i<40` in `i<25`. Se le vuoi più grandi, aumenta `size`.
+
+Vuoi che aggiorni anche il **combo** (n.10) con questa versione random, e te lo rigenero?
+
+
+Fatto — righe dritte, a caso, stile old film vero.
+
+### Scratches Random – straight lines
+
+- 4-7 graffi per frame
+- posizione X totalmente random
+- spessore 1-2px, leggero jitter
+- luminosità variabile 170-220
+- niente pattern, ogni frame è diverso
+
+[▶️ oldfilm_scratches_random.mp4](container:///mnt/data/oldfilm_scratches_random.mp4)
+
+---
+
+### Codice C++
+
+```cpp
+Mat scratchesRandom(double t){
+    Mat img(h,w,CV_8UC3,Scalar(18,18,18));
+    RNG rng( (uint64)(t*2000) );
+
+    int count = rng.uniform(4,8); // 4-7 righe
+    for(int i=0;i<count;i++){
+        int x = rng.uniform(0,w);
+        int x2 = x + rng.uniform(-2,3); // dritta ma non perfetta
+        int thick = rng.uniform(0,3) < 2 ? 1 : 2;
+        int b = rng.uniform(170,221);
+        line(img, Point(x,0), Point(x2,h), Scalar(b,b,b), thick);
+    }
+    return img;
+}
+```
+
+Vuoi che ti faccia una versione **combo definitiva** con:
+- grana costante
+- dust random sparse (quello di prima)
+- scratches random (questo)
+tutto insieme in un unico effetto old film 5s? 
