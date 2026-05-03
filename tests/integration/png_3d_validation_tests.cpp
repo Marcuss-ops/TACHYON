@@ -37,7 +37,7 @@ const std::filesystem::path& tests_root() {
 }
 
 std::filesystem::path validation_root() {
-    const std::filesystem::path root = std::filesystem::temp_directory_path() / "TachyonTests" / "png_3d_validation";
+    const std::filesystem::path root = tests_root() / ".." / "output" / "png_3d_validation";
     std::filesystem::create_directories(root);
     return root;
 }
@@ -483,6 +483,8 @@ bool run_png_3d_validation_tests() {
             });
         check_true(rendered.surface != nullptr, "3D image scene should render a surface");
         if (rendered.surface != nullptr) {
+            const std::filesystem::path output_path = validation_root() / "png_3d_smoke_0.png";
+            rendered.surface->save_png(output_path);
             check_true(rendered.surface->width() == 1280U, "3D render width should match scene");
             check_true(rendered.surface->height() == 720U, "3D render height should match scene");
             check_true(rendered.note.find("fallback") == std::string::npos, "3D image scene should use the ray-traced path");

@@ -11,7 +11,6 @@ namespace tachyon {
 bool run_validate_command(const CliOptions& options, std::ostream& out, std::ostream& err) {
     SceneLoadOptions load_opts;
     load_opts.cpp_path = options.cpp_path;
-    load_opts.scene_path = options.scene_path;
     load_opts.preset_id = options.preset_id;
 
     auto loaded = load_scene_for_cli(load_opts, SceneLoadMode::Validate, out, err);

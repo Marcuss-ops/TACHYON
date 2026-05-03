@@ -4,9 +4,12 @@
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/renderer2d/resource/render_context.h"
+#include "tachyon/renderer2d/core/framebuffer.h"
 
 #include <vector>
 #include <optional>
+#include <memory>
+#include <string>
 
 namespace tachyon {
 
@@ -33,6 +36,19 @@ struct Scene3DBridgeOutput {
 };
 
 /**
+ * @brief Common 2D surface representation used by the 3D bridge.
+ */
+struct LayerSurface {
+    std::shared_ptr<const renderer2d::SurfaceRGBA> surface;
+    std::string cache_key;
+    std::string source_kind;
+
+    [[nodiscard]] bool valid() const noexcept {
+        return surface != nullptr;
+    }
+};
+
+/**
  * @brief Builds a renderer3d::EvaluatedScene3D from 2D composition state.
  *
  * This is the single bridge function that translates:
@@ -45,6 +61,13 @@ struct Scene3DBridgeOutput {
  * This replaces the inline bridge code that was in composition_renderer.cpp.
  */
 Scene3DBridgeOutput build_evaluated_scene_3d(const Scene3DBridgeInput& input);
+
+/**
+ * @brief Build the shared 2D surface used by the 3D bridge for a layer.
+ */
+LayerSurface build_layer_surface(
+    const scene::EvaluatedLayerState& layer,
+    const Scene3DBridgeInput& input);
 
 /**
  * @brief Sub-step: Build camera for 3D scene.

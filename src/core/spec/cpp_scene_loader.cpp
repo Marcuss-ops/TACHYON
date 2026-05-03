@@ -60,7 +60,7 @@ CompileResult compile_scene_to_shared_lib(
 #endif
     const auto proc = run_process(spec);
     if (!proc.success || proc.exit_code != 0) {
-        result.error = "Compilation failed (exit " + std::to_string(proc.exit_code) + "): " + proc.error;
+        result.error = "Compilation failed (exit " + std::to_string(proc.exit_code) + "):\n" + proc.output + "\n" + proc.error;
         return result;
     }
     result.success = true;
@@ -121,7 +121,7 @@ std::string CppSceneLoader::get_compiler_command(
     std::stringstream ss;
 #ifdef _WIN32
     // MSVC cl.exe command
-    ss << "cl.exe /nologo /O2 /LD /std:c++20 ";
+    ss << "cl.exe /nologo /O2 /MD /EHsc /LD /std:c++20 ";
     ss << "/I\"" << TACHYON_INCLUDE_DIR << "\" ";
     ss << "/I\"" << TACHYON_JSON_INCLUDE_DIR << "\" ";
     ss << "\"" << cpp_path.string() << "\" ";

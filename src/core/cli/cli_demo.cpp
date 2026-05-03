@@ -113,21 +113,18 @@ std::optional<renderer2d::SurfaceRGBA> render_scene_still(
     const std::filesystem::path& scene_path,
     std::ostream& err,
     double& out_fps) {
-    SceneSpec scene;
-    AssetResolutionTable assets;
-    if (scene_path.extension() == ".cpp") {
-        const auto cpp_result = CppSceneLoader::load_from_file(scene_path);
-        if (!cpp_result.success) {
-            err << "C++ Scene Loader failed for " << scene_path.string() << ":\n" << cpp_result.diagnostics << "\n";
-            return std::nullopt;
-        }
-        scene = std::move(*cpp_result.scene);
-    } else {
-        err << "WARNING: Loading JSON scene files is DEPRECATED. Use --cpp for C++ scenes.\n";
-        if (!load_scene_context(scene_path, scene, assets, err)) {
-            return std::nullopt;
-        }
+    if (scene_path.extension() != ".cpp") {
+        err << "Error: Only C++ scenes (.cpp) are supported. JSON scenes are no longer supported.\n";
+        return std::nullopt;
     }
+
+    SceneSpec scene;
+    const auto cpp_result = CppSceneLoader::load_from_file(scene_path);
+    if (!cpp_result.success) {
+        err << "C++ Scene Loader failed for " << scene_path.string() << ":\n" << cpp_result.diagnostics << "\n";
+        return std::nullopt;
+    }
+    scene = std::move(*cpp_result.scene);
 
     if (scene.compositions.empty()) {
         err << "scene has no compositions: " << scene_path.string() << '\n';

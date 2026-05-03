@@ -22,23 +22,13 @@ bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostrea
         return false;
     }
 
-    bool use_cpp = !options.cpp_path.empty();
-    bool use_scene = !options.scene_path.empty();
-
-    if (!use_cpp && !use_scene) {
-        err << "Either --cpp or --scene is required for watch\n";
+    if (options.cpp_path.empty()) {
+        err << "--cpp is required for watch\n";
         return false;
     }
 
-    std::filesystem::path watch_path;
-    if (use_cpp) {
-        watch_path = options.cpp_path;
-        out << "Starting Resident Render Session with Native Preview (C++ mode)...\n";
-    } else {
-        watch_path = options.scene_path;
-        err << "WARNING: Watching JSON scene files is DEPRECATED. Use --cpp instead.\n";
-        out << "Starting Resident Render Session with Native Preview (legacy JSON mode)...\n";
-    }
+    std::filesystem::path watch_path = options.cpp_path;
+    out << "Starting Resident Render Session with Native Preview (C++ mode)...\n";
 
     const auto job_parsed = parse_render_job_file(options.job_path);
     if (!job_parsed.value.has_value()) {
@@ -50,7 +40,6 @@ bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostrea
     auto load_watch_scene = [&](SceneSpec& sc) -> bool {
         SceneLoadOptions opts;
         opts.cpp_path = options.cpp_path;
-        opts.scene_path = options.scene_path;
         auto r = load_scene_for_cli(opts, SceneLoadMode::Watch, out, err);
         if (!r.success) return false;
         sc = std::move(r.context->scene);

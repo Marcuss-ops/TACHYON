@@ -14,6 +14,7 @@
 #include "tachyon/renderer2d/evaluated_composition/rendering/primitives/text_mesh_builder.h"
 #include "tachyon/renderer2d/evaluated_composition/rendering/primitives/media_card_mesh_builder.h"
 #include "tachyon/renderer2d/raster/mesh_rasterizer.h"
+#include "tachyon/renderer2d/raster/perspective_rasterizer.h"
 #include "tachyon/renderer2d/raster/mesh_deform_apply.h"
 #include "tachyon/renderer3d/core/ray_tracer.h"
 #include "tachyon/renderer3d/effects/depth_of_field.h"
@@ -143,9 +144,17 @@ RasterizedFrame2D render_evaluated_composition_2d(
         culling.set_camera(state.camera.camera, state.camera.position);
         const auto culling_result = culling.cull_layers(state);
         visible_3d_layers.assign(state.layers.size(), false);
-        for (const auto index : culling_result.visibleIndices) {
-            if (index < visible_3d_layers.size()) {
-                visible_3d_layers[index] = true;
+        if (culling_result.visibleIndices.empty()) {
+            for (std::size_t i = 0; i < state.layers.size(); ++i) {
+                if (state.layers[i].is_3d && state.layers[i].visible) {
+                    visible_3d_layers[i] = true;
+                }
+            }
+        } else {
+            for (const auto index : culling_result.visibleIndices) {
+                if (index < visible_3d_layers.size()) {
+                    visible_3d_layers[index] = true;
+                }
             }
         }
     }
@@ -256,118 +265,94 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     continue;
                 }
 
-                const auto& scene3d = bridge_output.scene3d;
-
-                // Render the 3D block
-                render_context.ray_tracer->set_samples_per_pixel(render_context.policy.ray_tracer_spp);
-                render_context.ray_tracer->set_denoiser_enabled(render_context.policy.denoiser_enabled);
-                render_context.ray_tracer->build_scene(scene3d);
-
                 const std::uint32_t w = static_cast<std::uint32_t>(state.width);
                 const std::uint32_t h = static_cast<std::uint32_t>(state.height);
-
-                renderer3d::AOVBuffer aovs;
-                aovs.resize(w, h);
-                aovs.clear();
-
-                renderer3d::MotionBlurRenderer motion_blur;
-                renderer3d::MotionBlurRenderer::MotionBlurConfig blur_config;
-                blur_config.enabled = plan.motion_blur_enabled;
-                blur_config.samples = static_cast<int>(std::max<std::int64_t>(1, plan.motion_blur_samples));
-                blur_config.shutter_angle = plan.motion_blur_shutter_angle;
-                blur_config.shutter_phase = plan.motion_blur_shutter_phase;
-                // Convert string to MotionBlurWeightCurve enum
-                if (plan.motion_blur_curve == "triangle") {
-                    blur_config.weight_curve = renderer3d::MotionBlurRenderer::MotionBlurWeightCurve::kTriangle;
-                } else if (plan.motion_blur_curve == "gaussian") {
-                    blur_config.weight_curve = renderer3d::MotionBlurRenderer::MotionBlurWeightCurve::kGaussian;
-                } else {
-                    blur_config.weight_curve = renderer3d::MotionBlurRenderer::MotionBlurWeightCurve::kBox;
-                }
-                motion_blur.set_config(blur_config);
-
-                const double frame_rate_value = state.frame_rate.value() > 0.0 ? state.frame_rate.value() : 60.0;
-                const double frame_duration_seconds = 1.0 / frame_rate_value;
-
-                render_context.ray_tracer->render(
-                    scene3d,
-                    aovs,
-                    &motion_blur,
-                    task.time_seconds,
-                    frame_duration_seconds);
-
-                if (plan.dof.enabled || render_context.policy.dof_sample_count > 1) {
-                    renderer3d::DepthOfFieldConfig dof_config = renderer3d::DepthOfFieldConfig::from_quality_policy(
-                        render_context.policy,
-                        scene3d.camera.focal_distance,
-                        scene3d.camera.aperture,
-                        scene3d.camera.focal_length_mm,
-                        36.0f);
-                    dof_config.enabled = plan.dof.enabled || render_context.policy.dof_sample_count > 1;
-                    if (plan.dof.aperture > 0.0) {
-                        dof_config.aperture_fstop = static_cast<float>(plan.dof.aperture);
-                    }
-                    if (plan.dof.focus_distance > 0.0) {
-                        dof_config.focal_distance = static_cast<float>(plan.dof.focus_distance);
-                    }
-                    if (plan.dof.focal_length > 0.0) {
-                        dof_config.focal_length_mm = static_cast<float>(plan.dof.focal_length);
-                    }
-                    renderer3d::DepthOfFieldPostPass dof_pass(dof_config);
-                    const math::Vector3 camera_forward = (scene3d.camera.target - scene3d.camera.position).normalized();
-                    dof_pass.apply(aovs, scene3d.camera.position, camera_forward);
-                }
-
                 auto world_3d = std::make_shared<SurfaceRGBA>(w, h);
-                auto depth_aov_surf = std::make_shared<SurfaceRGBA>(w, h);
-                auto normal_aov_surf = std::make_shared<SurfaceRGBA>(w, h);
-                auto motion_vector_aov_surf = std::make_shared<SurfaceRGBA>(w, h);
+                world_3d->set_profile(render_context.cms.working_profile);
+                world_3d->clear(renderer2d::Color::transparent());
+                world_3d->clear_depth(0.0f);
 
-                for (std::uint32_t y = 0; y < h; ++y) {
-                    for (std::uint32_t x = 0; x < w; ++x) {
-                        const std::size_t pixel_index = (static_cast<std::size_t>(y) * w + x) * 4;
-                        world_3d->set_pixel(x, y, {
-                            aovs.beauty_rgba[pixel_index + 0],
-                            aovs.beauty_rgba[pixel_index + 1],
-                            aovs.beauty_rgba[pixel_index + 2],
-                            aovs.beauty_rgba[pixel_index + 3]
-                        });
-
-                        const float d = aovs.depth_z[static_cast<std::size_t>(y) * w + x];
-                        depth_aov_surf->set_pixel(x, y, {d, 0, 0, 1.0f});
-                        
-                        // Hybrid Depth: Write to the actual 3D world surface depth buffer
-                        // inv_z = 1.0 / depth (near = large, far = small)
-                        float inv_z = 0.0f;
-                        if (d > 0.0f && d < 1000000.0f) {
-                            inv_z = 1.0f / d;
-                        }
-                        world_3d->test_and_write_depth(x, y, inv_z);
-
-                        const std::size_t normal_index = (static_cast<std::size_t>(y) * w + x) * 3;
-                        const math::Vector3 n{
-                            aovs.normal_xyz[normal_index + 0],
-                            aovs.normal_xyz[normal_index + 1],
-                            aovs.normal_xyz[normal_index + 2]
-                        };
-                        normal_aov_surf->set_pixel(x, y, {n.x, n.y, n.z, 1.0f});
-
-                        const std::size_t mv_index = (static_cast<std::size_t>(y) * w + x) * 2;
-                        const float mv_x = aovs.motion_vector_xy[mv_index + 0];
-                        const float mv_y = aovs.motion_vector_xy[mv_index + 1];
-                        motion_vector_aov_surf->set_pixel(x, y, {mv_x, mv_y, 0.0f, 1.0f});
+                bool world_has_visible_pixels = false;
+                const auto view_matrix = state.camera.camera.get_view_matrix();
+                for (std::size_t block_idx : block_indices) {
+                    if (block_idx >= state.layers.size()) {
+                        continue;
                     }
+                    const auto& block_layer = state.layers[block_idx];
+                    if (!block_layer.visible || !block_layer.enabled || !block_layer.active || block_layer.width <= 0 || block_layer.height <= 0) {
+                        continue;
+                    }
+
+                    std::shared_ptr<SurfaceRGBA> block_surface;
+                    auto rendered_surface_it = rendered_surfaces.find(block_layer.id);
+                    if (rendered_surface_it != rendered_surfaces.end()) {
+                        block_surface = rendered_surface_it->second;
+                    }
+                    if (!block_surface) {
+                        block_surface = render_layer_surface(block_layer, state, plan, task, render_context, tile_rect);
+                    }
+                    if (!block_surface) {
+                        continue;
+                    }
+
+                    const float half_w = static_cast<float>(block_layer.width) * 0.5f;
+                    const float half_h = static_cast<float>(block_layer.height) * 0.5f;
+                    const math::Vector3 local_p0{-half_w, -half_h, 0.0f};
+                    const math::Vector3 local_p1{ half_w, -half_h, 0.0f};
+                    const math::Vector3 local_p2{ half_w,  half_h, 0.0f};
+                    const math::Vector3 local_p3{-half_w,  half_h, 0.0f};
+
+                    const math::Vector3 world_p0 = block_layer.world_matrix.transform_point(local_p0);
+                    const math::Vector3 world_p1 = block_layer.world_matrix.transform_point(local_p1);
+                    const math::Vector3 world_p2 = block_layer.world_matrix.transform_point(local_p2);
+                    const math::Vector3 world_p3 = block_layer.world_matrix.transform_point(local_p3);
+
+                    const math::Vector3 cam_p0 = view_matrix.transform_point(world_p0);
+                    const math::Vector3 cam_p1 = view_matrix.transform_point(world_p1);
+                    const math::Vector3 cam_p2 = view_matrix.transform_point(world_p2);
+                    const math::Vector3 cam_p3 = view_matrix.transform_point(world_p3);
+
+                    if (cam_p0.z > -state.camera.camera.near_z &&
+                        cam_p1.z > -state.camera.camera.near_z &&
+                        cam_p2.z > -state.camera.camera.near_z &&
+                        cam_p3.z > -state.camera.camera.near_z) {
+                        continue;
+                    }
+
+                    const math::Vector2 screen_p0 = state.camera.camera.project_point(world_p0, static_cast<float>(w), static_cast<float>(h));
+                    const math::Vector2 screen_p1 = state.camera.camera.project_point(world_p1, static_cast<float>(w), static_cast<float>(h));
+                    const math::Vector2 screen_p2 = state.camera.camera.project_point(world_p2, static_cast<float>(w), static_cast<float>(h));
+                    const math::Vector2 screen_p3 = state.camera.camera.project_point(world_p3, static_cast<float>(w), static_cast<float>(h));
+
+                    if ((screen_p0.x < 0.0f && screen_p0.y < 0.0f) &&
+                        (screen_p1.x < 0.0f && screen_p1.y < 0.0f) &&
+                        (screen_p2.x < 0.0f && screen_p2.y < 0.0f) &&
+                        (screen_p3.x < 0.0f && screen_p3.y < 0.0f)) {
+                        continue;
+                    }
+
+                    auto make_vertex = [&](const math::Vector3& cam_p, const math::Vector2& screen_p) {
+                        renderer2d::raster::Vertex3D v;
+                        v.position = {screen_p.x, screen_p.y, 0.0f};
+                        v.uv = {0.0f, 0.0f};
+                        v.one_over_w = cam_p.z != 0.0f ? 1.0f / std::max(0.001f, -cam_p.z) : 1.0f;
+                        return v;
+                    };
+
+                    renderer2d::raster::PerspectiveWarpQuad quad;
+                    quad.v0 = make_vertex(cam_p0, screen_p0);
+                    quad.v1 = make_vertex(cam_p1, screen_p1);
+                    quad.v2 = make_vertex(cam_p2, screen_p2);
+                    quad.v3 = make_vertex(cam_p3, screen_p3);
+                    quad.v0.uv = {0.0f, 1.0f};
+                    quad.v1.uv = {1.0f, 1.0f};
+                    quad.v2.uv = {1.0f, 0.0f};
+                    quad.v3.uv = {0.0f, 0.0f};
+                    quad.texture = block_surface.get();
+                    quad.opacity = static_cast<float>(block_layer.opacity);
+                    renderer2d::raster::PerspectiveRasterizer::draw_quad(*world_3d, quad);
+                    world_has_visible_pixels = true;
                 }
-
-                const bool world_has_visible_pixels = std::any_of(
-                    aovs.beauty_rgba.begin() + 3,
-                    aovs.beauty_rgba.end(),
-                    [](float alpha) { return alpha > 0.001f; });
-
-                // Add to AOVs
-                frame.aovs.push_back({"depth", depth_aov_surf});
-                frame.aovs.push_back({"normal", normal_aov_surf});
-                frame.aovs.push_back({"motion_vector", motion_vector_aov_surf});
 
                 const auto composite_layer_it = std::find_if(
                     block_indices.begin(),

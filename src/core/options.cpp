@@ -83,13 +83,8 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
     for (std::size_t index = 1; index < args.size(); ++index) {
         const std::string& arg = args[index];
         if (arg == "--scene") {
-            const std::string value = require_argument(args, index);
-            if (value.empty()) {
-                result.diagnostics.add_error("cli.scene_missing", "missing value for --scene");
-                return result;
-            }
-            options.scene_path = value;
-            continue;
+            result.diagnostics.add_error("cli.scene_deprecated", "--scene JSON loading is no longer supported. Use --cpp for C++ scenes or --preset.");
+            return result;
         }
         if (arg == "--library") {
             const std::string value = require_argument(args, index);

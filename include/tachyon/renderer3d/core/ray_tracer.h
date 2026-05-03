@@ -70,6 +70,7 @@ private:
         std::uint32_t object_id;
         std::uint32_t material_id;
         std::string mesh_asset_id;
+        std::shared_ptr<const media::MeshAsset> mesh_asset;
         EvaluatedMaterial material;
         ::tachyon::math::Matrix4x4 world_transform;
         std::optional<::tachyon::math::Matrix4x4> previous_world_transform;

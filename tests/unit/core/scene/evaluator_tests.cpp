@@ -29,53 +29,10 @@ const std::filesystem::path& tests_root() {
     return root;
 }
 
-std::string read_text_file(const std::filesystem::path& path) {
-    std::ifstream input(path, std::ios::in | std::ios::binary);
-    if (!input.is_open()) {
-        return {};
-    }
-
-    std::ostringstream buffer;
-    buffer << input.rdbuf();
-    return buffer.str();
-}
-
 } // namespace
 
 bool run_scene_evaluator_tests() {
     g_failures = 0;
-
-    {
-        const auto path = tests_root() / "fixtures" / "scenes" / "scene_graph_minimal.json";
-        const auto text = read_text_file(path);
-        check_true(!text.empty(), "scene graph fixture should be readable");
-
-        const auto parsed = tachyon::parse_scene_spec_json(text);
-        check_true(parsed.value.has_value(), "scene graph fixture should parse");
-        if (parsed.value.has_value()) {
-            const auto validation = tachyon::validate_scene_spec(*parsed.value);
-            check_true(validation.ok(), "scene graph fixture should validate");
-
-            const auto evaluated = tachyon::scene::evaluate_composition_state(parsed.value->compositions.front(), std::int64_t(30));
-            check_true(evaluated.layers.size() == 2, "scene graph should preserve layer order");
-            if (evaluated.layers.size() == 2) {
-                check_true(evaluated.layers[0].id == "parent", "parent should stay first in stack order");
-                check_true(evaluated.layers[1].id == "child", "child should stay second in stack order");
-                check_true(evaluated.layers[0].layer_index == 0, "parent layer index should be 0");
-                check_true(evaluated.layers[1].layer_index == 1, "child layer index should be 1");
-                
-                check_true(nearly_equal(evaluated.layers[0].opacity, 0.5), "parent capacity should match its opacity");
-                check_true(nearly_equal(evaluated.layers[1].opacity, 0.75), "child local opacity should match its opacity");
-                
-                const auto child_wp = evaluated.layers[1].world_position3;
-                check_true(nearly_equal(child_wp.x, 120.0), "child world x should include parent transform");
-                check_true(nearly_equal(child_wp.y, 60.0), "child world y should include parent transform");
-                
-                check_true(evaluated.layers[0].visible, "parent should be visible");
-                check_true(evaluated.layers[1].visible, "child should be visible");
-            }
-        }
-    }
 
     {
         tachyon::LayerSpec layer;
