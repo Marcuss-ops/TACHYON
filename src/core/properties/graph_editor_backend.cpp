@@ -207,7 +207,7 @@ void GraphEditorBackend::flatten_values(std::vector<ScalarKeyframe>& track,
 
 void GraphEditorBackend::randomize_values(std::vector<ScalarKeyframe>& track,
                                            const std::vector<size_t>& indices, 
-                                           float min_delta, float max_delta, uint32_t seed) {
+                                           float min_delta, float max_delta, std::uint32_t seed) {
     std::mt19937 rng(seed);
     std::uniform_real_distribution<float> dist(min_delta, max_delta);
     

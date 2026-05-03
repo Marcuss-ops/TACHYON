@@ -2,6 +2,7 @@
 
 #include "tachyon/core/properties/bezier_interpolator.h"
 #include "tachyon/core/math/vector2.h"
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <optional>
@@ -113,7 +114,7 @@ public:
      */
     static void randomize_values(std::vector<ScalarKeyframe>& track,
                                  const std::vector<size_t>& indices, 
-                                 float min_delta, float max_delta, uint32_t seed);
+                                 float min_delta, float max_delta, std::uint32_t seed);
     
     /**
      * @brief Smooth keyframe values using moving average.
