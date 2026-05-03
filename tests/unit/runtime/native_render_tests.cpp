@@ -77,7 +77,7 @@ bool run_native_render_tests() {
         layer.height = 720;
         layer.start_time = 0.0;
         layer.in_point = 0.0;
-        layer.out_point = 3.0;
+        layer.out_point = 3.5;
         layer.opacity = 1.0;
         layer.transform.position_x = 0.0;
         layer.transform.position_y = 0.0;
@@ -92,7 +92,9 @@ bool run_native_render_tests() {
         effect.static_scalars["speed"] = 1.0;
         effect.static_scalars["seed"] = 3.0;
         effect.animated_scalars["progress"].keyframes.push_back({0.0, 0.0});
-        effect.animated_scalars["progress"].keyframes.push_back({2.0, 1.0});
+        effect.animated_scalars["progress"].keyframes.push_back({0.5, 0.0});
+        effect.animated_scalars["progress"].keyframes.push_back({3.0, 1.0});
+        effect.animated_scalars["progress"].keyframes.push_back({3.5, 1.0});
         layer.animated_effects.push_back(std::move(effect));
 
         tachyon::CompositionSpec comp;
@@ -100,7 +102,7 @@ bool run_native_render_tests() {
         comp.name = "Main";
         comp.width = 1280;
         comp.height = 720;
-        comp.duration = 3.0;
+        comp.duration = 3.5;
         comp.frame_rate = {30, 1};
         comp.background = tachyon::BackgroundSpec::from_string("#000000");
         tachyon::LayerSpec background_layer;
@@ -117,15 +119,15 @@ bool run_native_render_tests() {
         comp.layers.push_back(layer);
 
         tachyon::SceneSpec scene;
-        scene.project.id = demo.scene_id;
-        scene.project.name = demo.scene_id;
+        scene.project.id = std::string(demo.scene_id) + "_v2";
+        scene.project.name = std::string(demo.scene_id) + "_v2";
         scene.compositions.push_back(comp);
 
         tachyon::RenderJob job;
-        job.job_id = demo.scene_id;
-        job.scene_ref = demo.scene_id;
+        job.job_id = std::string(demo.scene_id) + "_v2";
+        job.scene_ref = std::string(demo.scene_id) + "_v2";
         job.composition_target = "main";
-        job.frame_range = {0, 90};
+        job.frame_range = {0, 105};
         job.output.destination.path = (demo_dir / demo.file_name).string();
         job.output.destination.overwrite = true;
         job.output.profile.name = "h264-mp4";
@@ -140,6 +142,7 @@ bool run_native_render_tests() {
         job.output.profile.color.transfer = "srgb";
         job.output.profile.color.range = "full";
 
+        std::filesystem::remove(job.output.destination.path);
         const auto result = NativeRenderer::render(scene, job);
         if (!result.output_error.empty()) {
             std::cerr << "[NativeRender] FAIL: " << demo.scene_id << ": " << result.output_error << "\n";

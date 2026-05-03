@@ -26,6 +26,9 @@ SurfaceRGBA LightLeakEffect::apply(const SurfaceRGBA& input, const EffectParams&
     
     // Applica speed al progress
     progress *= speed;
+    if (progress <= 0.001f || progress >= 0.999f) {
+        return input;
+    }
 
     // Ottieni impostazioni dal preset
     LightLeakSettings s = make_light_leak_preset(preset_type);
