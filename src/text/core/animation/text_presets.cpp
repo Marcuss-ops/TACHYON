@@ -519,5 +519,92 @@ TextStyle make_minimal_text_style(
     return animator;
 }
 
+::tachyon::TextAnimatorSpec make_bounce_in_animator(
+    std::string based_on,
+    double stagger_delay_seconds,
+    double reveal_duration_seconds,
+    double y_offset_px) {
+
+    ::tachyon::TextAnimatorSpec animator;
+    animator.name = "BounceIn";
+    animator.selector.type = "all";
+    animator.selector.based_on = std::move(based_on);
+    animator.selector.stagger_mode = "character";
+    animator.selector.stagger_delay = stagger_delay_seconds;
+
+    add_scalar_ramp(
+        animator.properties.opacity_keyframes,
+        0.0,
+        0.0,
+        reveal_duration_seconds * 0.55,
+        1.0);
+
+    add_vector2_ramp(
+        animator.properties.position_offset_keyframes,
+        0.0,
+        math::Vector2{0.0f, static_cast<float>(y_offset_px)},
+        reveal_duration_seconds,
+        math::Vector2{0.0f, 0.0f});
+
+    add_scalar_ramp(
+        animator.properties.scale_keyframes,
+        0.0,
+        0.85,
+        reveal_duration_seconds * 0.65,
+        1.08);
+
+    add_scalar_ramp(
+        animator.properties.scale_keyframes,
+        reveal_duration_seconds * 0.65,
+        1.08,
+        reveal_duration_seconds,
+        1.0);
+
+    return animator;
+}
+
+::tachyon::TextAnimatorSpec make_word_punch_animator(
+    double word_stagger_delay_seconds,
+    double reveal_duration_seconds,
+    double punch_scale) {
+
+    ::tachyon::TextAnimatorSpec animator;
+    animator.name = "WordPunch";
+    animator.selector.type = "all";
+    animator.selector.based_on = "words";
+    animator.selector.stagger_mode = "word";
+    animator.selector.stagger_delay = word_stagger_delay_seconds;
+
+    add_scalar_ramp(
+        animator.properties.opacity_keyframes,
+        0.0,
+        0.0,
+        reveal_duration_seconds * 0.35,
+        1.0);
+
+    add_scalar_ramp(
+        animator.properties.scale_keyframes,
+        0.0,
+        0.92,
+        reveal_duration_seconds * 0.55,
+        punch_scale);
+
+    add_scalar_ramp(
+        animator.properties.scale_keyframes,
+        reveal_duration_seconds * 0.55,
+        punch_scale,
+        reveal_duration_seconds,
+        1.0);
+
+    add_scalar_ramp(
+        animator.properties.blur_radius_keyframes,
+        0.0,
+        3.0,
+        reveal_duration_seconds,
+        0.0);
+
+    return animator;
+}
+
 } // namespace tachyon::text
 

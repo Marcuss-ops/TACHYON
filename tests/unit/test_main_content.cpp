@@ -108,6 +108,8 @@ bool run_glyph_cache_tests();
 bool run_text_tests();
 bool run_audio_trim_tests();
 bool run_audio_pitch_correct_tests();
+bool run_transition_builder_tests();
+bool run_text_preset_tests();
 
 int main(int argc, char** argv) {
     std::vector<TestCase> tests = {
@@ -116,6 +118,8 @@ int main(int argc, char** argv) {
         {"text", run_text_tests},
         {"audio_trim", run_audio_trim_tests},
         {"audio_pitch_correct", run_audio_pitch_correct_tests},
+        {"transition_builder", run_transition_builder_tests},
+        {"text_preset", run_text_preset_tests},
     };
 
     bool list_tests = false;

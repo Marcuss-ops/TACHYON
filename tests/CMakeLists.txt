@@ -141,9 +141,11 @@ add_executable(TachyonContentTests
     unit/studio/studio_library_tests.cpp
     unit/text/glyph_cache_tests.cpp
     unit/text/text_tests.cpp
+    unit/text/text_preset_tests.cpp
     unit/audio/test_audio_pitch_correct.cpp
     unit/audio/test_audio_trim.cpp
     unit/presets/background_preset_registry_tests.cpp
+    unit/presets/transition_builder_tests.cpp
 )
 
 target_compile_definitions(TachyonContentTests

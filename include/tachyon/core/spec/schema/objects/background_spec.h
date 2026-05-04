@@ -1,7 +1,6 @@
 #pragma once
 
 #include "tachyon/core/types/colors.h"
-#include "tachyon/renderer2d/core/framebuffer.h"
 #include <string>
 #include <optional>
 

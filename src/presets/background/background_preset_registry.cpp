@@ -1,41 +1,21 @@
 #include "tachyon/presets/background/background_preset_registry.h"
 #include "tachyon/presets/background/procedural.h"
+#include <string_view>
+#include <vector>
 
 namespace tachyon::presets {
 
 namespace {
 
-template <typename Configure>
-LayerSpec make_procedural_background(std::string_view id, std::string_view name,
-                                     int width, int height, double duration,
-                                     Configure &&configure) {
-  LayerSpec bg;
-  bg.id = "bg_" + std::string(id);
-  bg.name = std::string(name);
-  bg.type = "procedural";
-  bg.preset_id = std::string(id);
-  bg.kind = LayerType::Procedural;
-  bg.enabled = true;
-  bg.visible = true;
-  bg.start_time = 0.0;
-  bg.in_point = 0.0;
-  bg.out_point = duration;
-  bg.width = width;
-  bg.height = height;
-  bg.opacity = 1.0;
-  bg.procedural = ProceduralSpec{};
-  configure(*bg.procedural);
-  return bg;
-}
+struct BackgroundPresetDef {
+    std::string_view id;
+    std::string_view name;
+    void (*configure)(ProceduralSpec&);
+};
 
-} // namespace
-
-std::optional<LayerSpec> build_background_preset(std::string_view id, int width,
-                                                 int height) {
-  if (id != "blank_canvas") {
-    if (id == "aurora_mesh") {
-      return make_procedural_background(
-          id, "Aurora Mesh", width, height, 8.0, [](ProceduralSpec &p) {
+const std::vector<BackgroundPresetDef>& get_preset_defs() {
+    static const std::vector<BackgroundPresetDef> defs = {
+        {"aurora_mesh", "Aurora Mesh", [](ProceduralSpec& p) {
             p.kind = "aura";
             p.seed = 42;
             p.color_a = AnimatedColorSpec(ColorSpec{5, 8, 20, 255});
@@ -49,12 +29,8 @@ std::optional<LayerSpec> build_background_preset(std::string_view id, int width,
             p.contrast = AnimatedScalarSpec(1.08);
             p.softness = AnimatedScalarSpec(0.55);
             p.saturation = AnimatedScalarSpec(1.0);
-          });
-    }
-
-    if (id == "liquid_glass_blobs") {
-      return make_procedural_background(
-          id, "Liquid Glass Blobs", width, height, 8.0, [](ProceduralSpec &p) {
+        }},
+        {"liquid_glass_blobs", "Liquid Glass Blobs", [](ProceduralSpec& p) {
             p.kind = "aura";
             p.seed = 1337;
             p.color_a = AnimatedColorSpec(ColorSpec{7, 10, 18, 255});
@@ -72,12 +48,8 @@ std::optional<LayerSpec> build_background_preset(std::string_view id, int width,
             p.softness = AnimatedScalarSpec(0.8);
             p.glow_intensity = AnimatedScalarSpec(0.45);
             p.saturation = AnimatedScalarSpec(1.05);
-          });
-    }
-
-    if (id == "dot_grid_fade") {
-      return make_procedural_background(
-          id, "Dot Grid Fade", width, height, 8.0, [](ProceduralSpec &p) {
+        }},
+        {"dot_grid_fade", "Dot Grid Fade", [](ProceduralSpec& p) {
             p.kind = "grid";
             p.seed = 2468;
             p.shape = "circle";
@@ -92,13 +64,8 @@ std::optional<LayerSpec> build_background_preset(std::string_view id, int width,
             p.contrast = AnimatedScalarSpec(1.05);
             p.softness = AnimatedScalarSpec(0.2);
             p.glow_intensity = AnimatedScalarSpec(0.25);
-          });
-    }
-
-    if (id == "noise_grain_vignette") {
-      return make_procedural_background(
-          id, "Noise Grain Vignette", width, height, 8.0,
-          [](ProceduralSpec &p) {
+        }},
+        {"noise_grain_vignette", "Noise Grain Vignette", [](ProceduralSpec& p) {
             p.kind = "noise";
             p.seed = 8080;
             p.color_a = AnimatedColorSpec(ColorSpec{8, 9, 14, 255});
@@ -112,12 +79,8 @@ std::optional<LayerSpec> build_background_preset(std::string_view id, int width,
             p.gamma = AnimatedScalarSpec(1.08);
             p.saturation = AnimatedScalarSpec(0.0);
             p.softness = AnimatedScalarSpec(0.65);
-          });
-    }
-
-    if (id == "mesh_gradient") {
-      return make_procedural_background(
-          id, "Mesh Gradient", width, height, 8.0, [](ProceduralSpec &p) {
+        }},
+        {"mesh_gradient", "Mesh Gradient", [](ProceduralSpec& p) {
             p.kind = "aura";
             p.seed = 2024;
             p.color_a = AnimatedColorSpec(ColorSpec{124, 58, 237, 255});
@@ -134,12 +97,8 @@ std::optional<LayerSpec> build_background_preset(std::string_view id, int width,
             p.contrast = AnimatedScalarSpec(1.0);
             p.softness = AnimatedScalarSpec(0.45);
             p.saturation = AnimatedScalarSpec(1.0);
-          });
-    }
-
-    if (id == "shape_grid_square") {
-      return make_procedural_background(
-          id, "Shape Grid Square", width, height, 8.0, [](ProceduralSpec &p) {
+        }},
+        {"shape_grid_square", "Shape Grid Square", [](ProceduralSpec& p) {
             p.kind = "grid";
             p.shape = "square";
             p.seed = 1010;
@@ -150,72 +109,48 @@ std::optional<LayerSpec> build_background_preset(std::string_view id, int width,
             p.border_width = AnimatedScalarSpec(1.0);
             p.mouse_influence = AnimatedScalarSpec(0.6);
             p.mouse_radius = AnimatedScalarSpec(1.0);
-          });
-    }
-
-    if (id == "dark_grain") {
-      return make_procedural_background(
-          id, "Dark Grain", width, height, 8.0, [](ProceduralSpec &p) {
+        }},
+        {"dark_grain", "Dark Grain", [](ProceduralSpec& p) {
             p.kind = "noise";
             p.color_a = AnimatedColorSpec(ColorSpec{10, 10, 10, 255});
             p.grain_amount = AnimatedScalarSpec(0.015);
             p.vignette_intensity = AnimatedScalarSpec(1.4);
             p.contrast = AnimatedScalarSpec(1.0);
-          });
-    }
-
-    if (id == "white_paper") {
-      return make_procedural_background(
-          id, "White Paper", width, height, 8.0, [](ProceduralSpec &p) {
+        }},
+        {"white_paper", "White Paper", [](ProceduralSpec& p) {
             p.kind = "noise";
             p.color_a = AnimatedColorSpec(ColorSpec{250, 250, 250, 255});
             p.grain_amount = AnimatedScalarSpec(0.008);
             p.vignette_intensity = AnimatedScalarSpec(0.1);
             p.contrast = AnimatedScalarSpec(1.0);
-          });
-    }
-
-    if (id == "grid_dark") {
-      return make_procedural_background(
-          id, "Grid Dark", width, height, 8.0, [](ProceduralSpec &p) {
+        }},
+        {"grid_dark", "Grid Dark", [](ProceduralSpec& p) {
             p.kind = "grid";
             p.color_a = AnimatedColorSpec(ColorSpec{5, 5, 5, 255});
-            p.color_b = AnimatedColorSpec(ColorSpec{255, 255, 255, 18}); // 7% white
+            p.color_b = AnimatedColorSpec(ColorSpec{255, 255, 255, 18});
             p.spacing = AnimatedScalarSpec(12.0);
             p.border_width = AnimatedScalarSpec(1.0);
             p.softness = AnimatedScalarSpec(0.0);
-          });
-    }
-
-    if (id == "grid_white") {
-      return make_procedural_background(
-          id, "Grid White", width, height, 8.0, [](ProceduralSpec &p) {
+        }},
+        {"grid_white", "Grid White", [](ProceduralSpec& p) {
             p.kind = "grid";
             p.color_a = AnimatedColorSpec(ColorSpec{252, 252, 252, 255});
-            p.color_b = AnimatedColorSpec(ColorSpec{0, 0, 0, 15}); // 6% black
+            p.color_b = AnimatedColorSpec(ColorSpec{0, 0, 0, 15});
             p.spacing = AnimatedScalarSpec(12.0);
             p.border_width = AnimatedScalarSpec(1.0);
             p.softness = AnimatedScalarSpec(0.0);
-          });
-    }
-
-    if (id == "soft_mesh") {
-      return make_procedural_background(
-          id, "Soft Mesh", width, height, 8.0, [](ProceduralSpec &p) {
+        }},
+        {"soft_mesh", "Soft Mesh", [](ProceduralSpec& p) {
             p.kind = "aura";
             p.color_a = AnimatedColorSpec(ColorSpec{14, 14, 14, 255});
             p.color_b = AnimatedColorSpec(ColorSpec{23, 23, 23, 255});
             p.softness = AnimatedScalarSpec(0.8);
             p.glow_intensity = AnimatedScalarSpec(0.4);
             p.frequency = AnimatedScalarSpec(0.5);
-          });
-    }
-
-    if (id == "ripple_grid") {
-      return make_procedural_background(
-          id, "Ripple Grid", width, height, 8.0, [](ProceduralSpec &p) {
+        }},
+        {"ripple_grid", "Ripple Grid", [](ProceduralSpec& p) {
             p.kind = "grid";
-            p.color_a = AnimatedColorSpec(ColorSpec{106, 59, 255, 255}); // #6a3bff
+            p.color_a = AnimatedColorSpec(ColorSpec{106, 59, 255, 255});
             p.ripple_intensity = AnimatedScalarSpec(0.06);
             p.spacing = AnimatedScalarSpec(10.0);
             p.border_width = AnimatedScalarSpec(22.0);
@@ -223,71 +158,89 @@ std::optional<LayerSpec> build_background_preset(std::string_view id, int width,
             p.mouse_influence = AnimatedScalarSpec(1.0);
             p.mouse_radius = AnimatedScalarSpec(1.0);
             p.vignette_intensity = AnimatedScalarSpec(2.8);
-          });
-    }
-
-    if (id == "apple_blobs") {
-      return make_procedural_background(
-          id, "Apple Blobs", width, height, 8.0, [](ProceduralSpec &p) {
+        }},
+        {"apple_blobs", "Apple Blobs", [](ProceduralSpec& p) {
             p.kind = "aura";
-            p.color_a = AnimatedColorSpec(ColorSpec{255, 126, 182, 180}); // pink
-            p.color_b = AnimatedColorSpec(ColorSpec{139, 123, 255, 180}); // purple
-            p.color_c = AnimatedColorSpec(ColorSpec{77, 184, 255, 180});  // blue
-            // Note: ProceduralSpec currently only has 3 colors, but we can animate them
+            p.color_a = AnimatedColorSpec(ColorSpec{255, 126, 182, 180});
+            p.color_b = AnimatedColorSpec(ColorSpec{139, 123, 255, 180});
+            p.color_c = AnimatedColorSpec(ColorSpec{77, 184, 255, 180});
             p.speed = AnimatedScalarSpec(0.4);
             p.scale = AnimatedScalarSpec(1.5);
             p.softness = AnimatedScalarSpec(0.9);
-          });
-    }
-
-    if (id == "grid_bg") {
-      return make_procedural_background(
-          id, "Grid BG", width, height, 8.0, [](ProceduralSpec &p) {
+        }},
+        {"grid_bg", "Grid BG", [](ProceduralSpec& p) {
             p.kind = "grid";
-            p.color_a = AnimatedColorSpec(ColorSpec{13, 13, 13, 255}); // #0d0d0d
-            p.color_b = AnimatedColorSpec(ColorSpec{30, 30, 30, 255}); // #1e1e1e
+            p.color_a = AnimatedColorSpec(ColorSpec{13, 13, 13, 255});
+            p.color_b = AnimatedColorSpec(ColorSpec{30, 30, 30, 255});
             p.spacing = AnimatedScalarSpec(100.0);
             p.border_width = AnimatedScalarSpec(1.0);
             p.softness = AnimatedScalarSpec(0.0);
-          });
+        }},
+    };
+    return defs;
+}
+
+LayerSpec make_procedural_background(std::string_view id, std::string_view name,
+                                     int width, int height, double duration,
+                                     void (*configure)(ProceduralSpec&)) {
+    LayerSpec bg;
+    bg.id = "bg_" + std::string(id);
+    bg.name = std::string(name);
+    bg.type = "procedural";
+    bg.preset_id = std::string(id);
+    bg.kind = LayerType::Procedural;
+    bg.enabled = true;
+    bg.visible = true;
+    bg.start_time = 0.0;
+    bg.in_point = 0.0;
+    bg.out_point = duration;
+    bg.width = width;
+    bg.height = height;
+    bg.opacity = 1.0;
+    bg.procedural = ProceduralSpec{};
+    configure(*bg.procedural);
+    return bg;
+}
+
+} // namespace
+
+std::optional<LayerSpec> build_background_preset(std::string_view id, int width,
+                                                 int height) {
+    if (id == "blank_canvas") {
+        LayerSpec bg;
+        bg.id = "bg_blank_canvas";
+        bg.name = "Blank Canvas";
+        bg.type = "solid";
+        bg.kind = LayerType::Solid;
+        bg.enabled = true;
+        bg.visible = true;
+        bg.start_time = 0.0;
+        bg.in_point = 0.0;
+        bg.out_point = 5.0;
+        bg.width = width;
+        bg.height = height;
+        bg.opacity = 1.0;
+        bg.fill_color.value = ColorSpec{16, 16, 16, 255};
+        return bg;
+    }
+
+    for (const auto& def : get_preset_defs()) {
+        if (def.id == id) {
+            return make_procedural_background(def.id, def.name, width, height, 8.0, def.configure);
+        }
     }
 
     return std::nullopt;
-  }
-
-  LayerSpec bg;
-  bg.id = "bg_blank_canvas";
-  bg.name = "Blank Canvas";
-  bg.type = "solid";
-  bg.kind = LayerType::Solid;
-  bg.enabled = true;
-  bg.visible = true;
-  bg.start_time = 0.0;
-  bg.in_point = 0.0;
-  bg.out_point = 5.0;
-  bg.width = width;
-  bg.height = height;
-  bg.opacity = 1.0;
-  bg.fill_color.value = ColorSpec{16, 16, 16, 255};
-  return bg;
 }
 
 std::vector<std::string> list_background_presets() {
-  return {"blank_canvas",
-          "aurora_mesh",
-          "liquid_glass_blobs",
-          "dot_grid_fade",
-          "noise_grain_vignette",
-          "mesh_gradient",
-          "dark_grain",
-          "white_paper",
-          "grid_dark",
-          "grid_white",
-          "soft_mesh",
-          "ripple_grid",
-          "apple_blobs",
-          "grid_bg",
-          "shape_grid_square"};
+    std::vector<std::string> ids;
+    ids.reserve(get_preset_defs().size() + 1);
+    ids.push_back("blank_canvas");
+    for (const auto& def : get_preset_defs()) {
+        ids.push_back(std::string(def.id));
+    }
+    return ids;
 }
 
 } // namespace tachyon::presets
