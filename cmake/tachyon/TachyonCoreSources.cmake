@@ -16,6 +16,7 @@ set(TachyonCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/camera/camera_shake.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/camera/camera_state.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/camera_cut_contract.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/background_generator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/model/tachyon.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/analysis/scene_inspector.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/expressions/context_builder.cpp

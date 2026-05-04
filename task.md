@@ -38,6 +38,12 @@
 
 ## Phase 4: Shading & Reflections
 - [x] Add single-bounce recursive reflections in `RayTracer`
+- [x] Hardening CMake linking (TachyonScene, TachyonRenderer2D, TachyonRuntimeEngine)
+- [x] Implement `#ifdef TACHYON_ENABLE_3D` in `scene3d_bridge.cpp` and `composition_renderer.cpp`
+- [x] Decouple `TachyonCore` headers (remove heavy runtime/text dependencies from `scene_spec.h`)
+- [/] Verify build with `TACHYON_ENABLE_3D=OFF` (In progress, stubs refined)
+- [ ] Investigate further modularization (Shapes/Clipper2)
+
 ## Phase 5: Verification (Golden Visual Tests)
 - [x] Implement Visual Golden Test framework (PNG/Hash comparison)
 - [x] Establish canonical scenes (Simple Transform, Nested Precomp, Expression Stagger)

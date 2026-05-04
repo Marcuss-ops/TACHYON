@@ -9,10 +9,6 @@ struct BackgroundPresetRegistry::Impl {
     std::mutex mutex;
 };
 
-BackgroundPresetRegistry& BackgroundPresetRegistry::instance() {
-    static BackgroundPresetRegistry registry;
-    return registry;
-}
 
 BackgroundPresetRegistry::BackgroundPresetRegistry() : m_impl(std::make_unique<Impl>()) {
     load_builtins();
@@ -34,16 +30,6 @@ const BackgroundPresetSpec* BackgroundPresetRegistry::find(std::string_view id) 
     return nullptr;
 }
 
-std::optional<LayerSpec> BackgroundPresetRegistry::create(std::string_view id, int width, int height, double duration) const {
-    if (const auto* spec = find(id)) {
-        auto layer = spec->factory(width, height, duration);
-        layer.id = "bg_" + std::string(id);
-        layer.name = spec->name;
-        layer.preset_id = std::string(id);
-        return layer;
-    }
-    return std::nullopt;
-}
 
 std::vector<std::string> BackgroundPresetRegistry::list_ids() const {
     std::lock_guard<std::mutex> lock(m_impl->mutex);

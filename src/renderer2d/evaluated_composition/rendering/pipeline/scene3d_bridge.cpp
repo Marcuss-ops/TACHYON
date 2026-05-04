@@ -4,8 +4,11 @@
 #include "tachyon/renderer2d/evaluated_composition/rendering/primitives/media_card_mesh_builder.h"
 #include "tachyon/renderer2d/resource/render_context.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
+
+#ifdef TACHYON_ENABLE_3D
 #include "tachyon/renderer3d/modifiers/i3d_modifier.h"
 #include "tachyon/renderer3d/modifiers/three_d_modifier_registry.h"
+#endif
 
 #include <algorithm>
 #include <cmath>
@@ -142,6 +145,7 @@ static renderer3d::EvaluatedMeshInstance build_instance_for_layer(
     inst.joint_matrices = l.joint_matrices;
     inst.morph_weights = l.morph_weights;
 
+#ifdef TACHYON_ENABLE_3D
     // Build mesh for layer
     const auto mesh_result = build_layer_mesh(l, input);
     auto mesh_asset = mesh_result.mesh_asset;
@@ -180,6 +184,7 @@ static renderer3d::EvaluatedMeshInstance build_instance_for_layer(
         inst.mesh_asset = mesh_asset;
         inst.mesh_asset_id = mesh_result.mesh_asset_id;
     }
+#endif
 
     if (inst.mesh_asset_id.empty()) {
         inst.mesh_asset_id = l.asset_path.value_or("");
@@ -208,6 +213,7 @@ renderer3d::EvaluatedCamera3D build_camera_3d(
     const scene::EvaluatedCompositionState& /*state*/) {
     renderer3d::EvaluatedCamera3D cam;
     
+#ifdef TACHYON_ENABLE_3D
     // Default camera is now always validly populated in evaluator
     cam.position = camera.position;
     cam.target = camera.point_of_interest;
@@ -228,6 +234,7 @@ renderer3d::EvaluatedCamera3D build_camera_3d(
     // Depth of Field
     cam.blur_level = camera.blur_level;
     cam.dof_enabled = camera.dof_enabled;
+#endif
 
     return cam;
 }
@@ -235,6 +242,7 @@ renderer3d::EvaluatedCamera3D build_camera_3d(
 std::vector<renderer3d::EvaluatedLight> build_lights_3d(
     const std::vector<scene::EvaluatedLightState>& lights) {
     std::vector<renderer3d::EvaluatedLight> lights3d;
+#ifdef TACHYON_ENABLE_3D
     lights3d.reserve(lights.size());
 
     for (const auto& light_state : lights) {
@@ -258,7 +266,7 @@ std::vector<renderer3d::EvaluatedLight> build_lights_3d(
         light3d.casts_shadows = light_state.casts_shadows;
         lights3d.push_back(light3d);
     }
-
+#endif
     return lights3d;
 }
 
@@ -316,6 +324,7 @@ LayerSurface build_layer_surface(
 Scene3DBridgeOutput build_evaluated_scene_3d(const Scene3DBridgeInput& input) {
     Scene3DBridgeOutput output;
 
+#ifdef TACHYON_ENABLE_3D
     // Build camera
     output.scene3d.camera = build_camera_3d(input.state->camera, *input.state);
 
@@ -336,6 +345,7 @@ Scene3DBridgeOutput build_evaluated_scene_3d(const Scene3DBridgeInput& input) {
     // Build mesh instances (culling happens here via visible_3d_layers)
     output.scene3d.instances = build_instances_3d(input);
     output.has_instances = !output.scene3d.instances.empty();
+#endif
 
     return output;
 }

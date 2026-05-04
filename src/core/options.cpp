@@ -111,7 +111,7 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
                 return result;
             }
             options.output_override = value;
-            if (options.command == "preview-frame") {
+            if (options.command == "preview" || options.command == "preview-frame") {
                 options.preview_output = value;
             }
             continue;

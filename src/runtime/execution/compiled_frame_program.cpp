@@ -23,7 +23,6 @@ ResolutionResult<CompiledFrameProgram> build_compiled_frame_program(
     
     ResolutionResult<CompiledFrameProgram> result;
     result.value = std::move(program);
-    result.diagnostics = DiagnosticBag{};
     return result;
 }
 

@@ -21,21 +21,43 @@ inline float smoothstep(float edge0, float edge1, float x) {
 }
 
 // --- Shape Generator (used by grid pattern) ---
-float generate_shape(float u, float v, const std::string& shape, float spacing, float border) {
-    float cell_u = std::fmod(u * 1920.0f / spacing, 1.0f);
-    float cell_v = std::fmod(v * 1080.0f / spacing, 1.0f);
-    float dx = cell_u - 0.5f;
-    float dy = cell_v - 0.5f;
-    float dist = 0.0f;
+float generate_shape(float u, float v, const std::string& shape, float spacing, float border, float comp_width, float comp_height) {
+    const float safe_width = comp_width > 0.0f ? comp_width : 1920.0f;
+    const float safe_height = comp_height > 0.0f ? comp_height : 1080.0f;
+    float cell_u = std::fmod(u * safe_width / spacing, 1.0f);
+    float cell_v = std::fmod(v * safe_height / spacing, 1.0f);
+    if (cell_u < 0.0f) cell_u += 1.0f;
+    if (cell_v < 0.0f) cell_v += 1.0f;
+    const float edge_u = std::min(cell_u, 1.0f - cell_u) * spacing;
+    const float edge_v = std::min(cell_v, 1.0f - cell_v) * spacing;
+    const float edge = std::min(edge_u, edge_v);
+    const float line_half = std::max(0.0f, border * 0.5f);
 
     if (shape == "circle") {
-        dist = std::sqrt(dx * dx + dy * dy) * 2.0f;
-    } else { // default square (hexagon/triangle removed per request)
-        dist = std::max(std::abs(dx), std::abs(dy)) * 2.0f;
+        const float dx = cell_u - 0.5f;
+        const float dy = cell_v - 0.5f;
+        const float radius = std::sqrt(dx * dx + dy * dy) * spacing;
+        const float circle_radius = spacing * 0.5f;
+        return 1.0f - smoothstep(circle_radius - line_half, circle_radius + line_half, radius);
+    } else if (shape == "hexagon") {
+        const float dx = cell_u - 0.5f;
+        const float dy = cell_v - 0.5f;
+        const float ax = std::abs(dx);
+        const float ay = std::abs(dy);
+        const float dist = std::max(ax * 0.8660254f + ay * 0.5f, ay) * spacing;
+        const float hex_radius = spacing * 0.5f;
+        return 1.0f - smoothstep(hex_radius - line_half, hex_radius + line_half, dist);
+    } else if (shape == "triangle") {
+        const float dx = cell_u - 0.5f;
+        const float dy = cell_v - 0.5f;
+        const float ax = std::abs(dx);
+        const float ay = std::abs(dy);
+        const float dist = std::max(ax * 1.1547005f + ay * 0.6666667f, ay) * spacing;
+        const float tri_radius = spacing * 0.5f;
+        return 1.0f - smoothstep(tri_radius - line_half, tri_radius + line_half, dist);
+    } else { // default square grid lines
+        return 1.0f - smoothstep(line_half, line_half + 1.0f, edge);
     }
-
-    float edge = border / spacing;
-    return 1.0f - smoothstep(0.0f, edge * 2.0f, dist);
 }
 
 // --- Galaxy Math Helpers ---
@@ -338,11 +360,11 @@ void render_procedural_pattern(
                     float rad = static_cast<float>(spec.angle.value.value_or(0.0) * 3.14159265358979323846 / 180.0);
                     float grid_u = u + t * std::cos(rad) * 0.5f;
                     float grid_v = v + t * std::sin(rad) * 0.5f;
-                    value = generate_shape(grid_u, grid_v, shape, spacing, border);
+                    value = generate_shape(grid_u, grid_v, shape, spacing, border, static_cast<float>(comp_width), static_cast<float>(comp_height));
                 } else if (is_grid_lines) {
-                    float gu_lines = std::fmod(u * 1920.0f / spacing, 1.0f);
+                    float gu_lines = std::fmod(u * static_cast<float>(comp_width) / spacing, 1.0f);
                     if (gu_lines < 0) gu_lines += 1.0f;
-                    float gv_lines = std::fmod(v * 1080.0f / spacing, 1.0f);
+                    float gv_lines = std::fmod(v * static_cast<float>(comp_height) / spacing, 1.0f);
                     if (gv_lines < 0) gv_lines += 1.0f;
                     float d_u = std::min(gu_lines, 1.0f - gu_lines) * spacing;
                     float d_v = std::min(gv_lines, 1.0f - gv_lines) * spacing;
@@ -436,4 +458,3 @@ void render_procedural_layer(
 }
 
 } // namespace tachyon::renderer2d
-
