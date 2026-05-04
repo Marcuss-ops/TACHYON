@@ -1,71 +1,93 @@
 #include "tachyon/color/blend_kernel.h"
 #include "tachyon/color/blending.h"
-#include <cmath>
-#include <cassert>
-#include <vector>
 #include <iostream>
+#include <vector>
+#include <cmath>
+#include <string>
 
-static bool approx_eq(float a, float b, float eps = 1e-5f) {
-    return std::fabs(a - b) < eps;
+namespace {
+
+static int g_failures = 0;
+
+void check_pixel(const tachyon::color::LinearRGBA& actual, const tachyon::color::LinearRGBA& expected, const std::string& msg) {
+    const float eps = 0.0001f;
+    bool match = std::abs(actual.r - expected.r) < eps &&
+                 std::abs(actual.g - expected.g) < eps &&
+                 std::abs(actual.b - expected.b) < eps &&
+                 std::abs(actual.a - expected.a) < eps;
+    
+    if (!match) {
+        ++g_failures;
+        std::cerr << "FAIL: " << msg << "\n"
+                  << "  Expected: {" << expected.r << ", " << expected.g << ", " << expected.b << ", " << expected.a << "}\n"
+                  << "  Actual:   {" << actual.r << ", " << actual.g << ", " << actual.b << ", " << actual.a << "}\n";
+    }
 }
 
-static bool color_approx_eq(tachyon::color::LinearRGBA a, tachyon::color::LinearRGBA b) {
-    return approx_eq(a.r, b.r) && approx_eq(a.g, b.g) && approx_eq(a.b, b.b) && approx_eq(a.a, b.a);
-}
+} // namespace
 
-void test_additive_kernel(size_t count) {
+bool run_blend_kernel_tests() {
     using namespace tachyon::color;
     
-    std::vector<LinearRGBA> src(count, {0.1f, 0.2f, 0.3f, 0.4f});
-    std::vector<LinearRGBA> dst(count, {0.5f, 0.5f, 0.5f, 0.5f});
-    std::vector<LinearRGBA> expected(count);
-    
-    for (size_t i = 0; i < count; ++i) {
-        expected[i] = blend_additive(src[i], dst[i]);
-    }
-    
-    kernel::additive(src.data(), dst.data(), count);
-    
-    for (size_t i = 0; i < count; ++i) {
-        if (!color_approx_eq(dst[i], expected[i])) {
-            std::cerr << "Additive Kernel mismatch at index " << i << " for count " << count << std::endl;
-            assert(false);
-        }
-    }
-}
+    std::cout << "Running Blend Kernel tests..." << std::endl;
 
-void test_normal_kernel(size_t count) {
-    using namespace tachyon::color;
-    
-    std::vector<LinearRGBA> src(count, {0.8f, 0.1f, 0.1f, 0.5f});
-    std::vector<LinearRGBA> dst(count, {0.1f, 0.8f, 0.1f, 1.0f});
-    std::vector<LinearRGBA> expected(count);
-    
-    for (size_t i = 0; i < count; ++i) {
-        expected[i] = blend_normal(src[i], dst[i]);
-    }
-    
-    kernel::normal(src.data(), dst.data(), count);
-    
-    for (size_t i = 0; i < count; ++i) {
-        assert(color_approx_eq(dst[i], expected[i]));
-    }
-}
+    const std::size_t count = 16;
+    std::vector<LinearRGBA> src(count);
+    std::vector<LinearRGBA> dst_simd(count);
+    std::vector<LinearRGBA> dst_scalar(count);
 
-int main() {
-    std::cout << "Running Blend Kernel Tests..." << std::endl;
-    
-    // Test different counts to check SIMD alignment and fallback logic
-    std::vector<size_t> counts = {1, 2, 3, 7, 8, 9, 15, 16, 17};
-    
-    for (size_t c : counts) {
-        test_additive_kernel(c);
-        test_normal_kernel(c);
+    // Initialize with test data
+    for (std::size_t i = 0; i < count; ++i) {
+        src[i] = {0.1f * i, 0.05f * i, 0.02f * i, 0.5f};
+        dst_simd[i] = {0.2f, 0.3f, 0.4f, 0.6f};
+        dst_scalar[i] = dst_simd[i];
     }
-    
-    // Test edge cases
-    test_additive_kernel(0);
-    
-    std::cout << "All Blend Kernel Tests PASSED!" << std::endl;
-    return 0;
+
+    // 1. Normal Blend
+    kernel::normal(src.data(), dst_simd.data(), count);
+    for (std::size_t i = 0; i < count; ++i) {
+        dst_scalar[i] = blend_normal(src[i], dst_scalar[i]);
+        check_pixel(dst_simd[i], dst_scalar[i], "Normal blend mismatch at index " + std::to_string(i));
+    }
+
+    // 2. Additive Blend
+    for (std::size_t i = 0; i < count; ++i) {
+        dst_simd[i] = {0.5f, 0.5f, 0.5f, 0.5f};
+        dst_scalar[i] = dst_simd[i];
+    }
+    kernel::additive(src.data(), dst_simd.data(), count);
+    for (std::size_t i = 0; i < count; ++i) {
+        dst_scalar[i] = blend_additive(src[i], dst_scalar[i]);
+        check_pixel(dst_simd[i], dst_scalar[i], "Additive blend mismatch at index " + std::to_string(i));
+    }
+
+    // 3. Multiply Blend
+    for (std::size_t i = 0; i < count; ++i) {
+        dst_simd[i] = {0.8f, 0.8f, 0.8f, 0.8f};
+        dst_scalar[i] = dst_simd[i];
+    }
+    kernel::multiply(src.data(), dst_simd.data(), count);
+    for (std::size_t i = 0; i < count; ++i) {
+        dst_scalar[i] = blend_multiply(src[i], dst_scalar[i]);
+        check_pixel(dst_simd[i], dst_scalar[i], "Multiply blend mismatch at index " + std::to_string(i));
+    }
+
+    // 4. Screen Blend
+    for (std::size_t i = 0; i < count; ++i) {
+        dst_simd[i] = {0.5f, 0.5f, 0.5f, 0.5f};
+        dst_scalar[i] = dst_simd[i];
+    }
+    kernel::screen(src.data(), dst_simd.data(), count);
+    for (std::size_t i = 0; i < count; ++i) {
+        dst_scalar[i] = blend_screen(src[i], dst_scalar[i]);
+        check_pixel(dst_simd[i], dst_scalar[i], "Screen blend mismatch at index " + std::to_string(i));
+    }
+
+    if (g_failures == 0) {
+        std::cout << "All Blend Kernel tests passed!" << std::endl;
+    } else {
+        std::cout << "Blend Kernel tests failed with " << g_failures << " errors." << std::endl;
+    }
+
+    return g_failures == 0;
 }

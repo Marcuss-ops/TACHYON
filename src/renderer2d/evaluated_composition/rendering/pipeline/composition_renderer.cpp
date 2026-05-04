@@ -453,7 +453,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
             if (layer.is_adjustment_layer) {
                 if (render_context.policy.effects_enabled) {
                     const auto adjustment_start = std::chrono::high_resolution_clock::now();
-                    auto adjusted = apply_effect_pipeline(
+                    auto res = apply_effect_pipeline(
                         target_surface,
                         layer.effects,
                         host,
@@ -462,8 +462,14 @@ RasterizedFrame2D render_evaluated_composition_2d(
                         layer.id,
                         render_context.diagnostics);
                     record_timing(render_context.diagnostics, "adjustment", layer.id, adjustment_start);
-                    multiply_surface_alpha(adjusted, static_cast<float>(layer.opacity));
-                    composite_surface(target_surface, adjusted, 0, 0, BlendMode::Normal);
+                    
+                    if (res.ok()) {
+                        auto& adjusted = *res.value;
+                        multiply_surface_alpha(adjusted, static_cast<float>(layer.opacity));
+                        composite_surface(target_surface, adjusted, 0, 0, BlendMode::Normal);
+                    } else {
+                        // Error already recorded in diagnostics
+                    }
                 }
                 continue;
             }
@@ -476,7 +482,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 for (const auto& animated_effect : layer.animated_effects) {
                     resolved_effects.push_back(animated_effect.evaluate(layer.local_time_seconds));
                 }
-                auto effect_surface = apply_effect_pipeline(
+                auto res = apply_effect_pipeline(
                     *layer_surface,
                     resolved_effects,
                     host,
@@ -484,8 +490,14 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     rendered_surfaces,
                     layer.id,
                     render_context.diagnostics);
-                *layer_surface = std::move(effect_surface);
                 record_timing(render_context.diagnostics, "effect_pipeline", layer.id, effects_start);
+                
+                if (res.ok()) {
+                    *layer_surface = std::move(*res.value);
+                } else {
+                    // Effect failed, clear surface to prevent rendering stale data
+                    layer_surface->clear(Color::transparent());
+                }
             }
 
             // Layer Transitions - Unified transition pipeline

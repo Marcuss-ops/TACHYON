@@ -28,11 +28,14 @@ std::string category_to_string(SfxCategory category) {
 
 } // anonymous namespace
 
-AudioTrackSpec build_sfx(const media::AssetResolver& resolver, const SfxParams& p) {
+AudioTrackSpec build_sfx(const media::AssetResolver& resolver, const SfxParams& p, DiagnosticBag* diagnostics) {
     AudioTrackSpec spec;
     
     std::string category_name = category_to_string(p.category);
     if (category_name.empty()) {
+        if (diagnostics) {
+            diagnostics->add_error("SFX_UNKNOWN_CATEGORY", "Unknown SFX category requested.");
+        }
         return spec;
     }
 
@@ -41,12 +44,21 @@ AudioTrackSpec build_sfx(const media::AssetResolver& resolver, const SfxParams& 
         auto track = audio::createRandomSoundTrack(resolver, category_name, p.seed, p.volume);
         if (track) {
             spec = *track;
+        } else if (diagnostics) {
+            diagnostics->add_error("SFX_RESOLVE_FAILED", "Failed to resolve a random SFX for category: " + category_name);
         }
     } else {
         // Direct variant selection
         auto sfx_root = resolver.config().sfx_root;
         if (!sfx_root.empty()) {
-            spec.source_path = (sfx_root / category_name / (std::to_string(p.variant) + ".m4a")).string();
+            auto path = sfx_root / category_name / (std::to_string(p.variant) + ".m4a");
+            if (std::filesystem::exists(path)) {
+                spec.source_path = path.string();
+            } else if (diagnostics) {
+                diagnostics->add_error("SFX_VARIANT_NOT_FOUND", "SFX variant " + std::to_string(p.variant) + " not found in category " + category_name);
+            }
+        } else if (diagnostics) {
+            diagnostics->add_error("SFX_ROOT_NOT_SET", "SFX root directory is not configured in AssetResolver.");
         }
     }
 
@@ -56,13 +68,13 @@ AudioTrackSpec build_sfx(const media::AssetResolver& resolver, const SfxParams& 
     return spec;
 }
 
-AudioTrackSpec build_sfx(const media::AssetResolver& resolver, SfxCategory cat, double trigger_time, float volume) {
+AudioTrackSpec build_sfx(const media::AssetResolver& resolver, SfxCategory cat, double trigger_time, float volume, DiagnosticBag* diagnostics) {
     SfxParams p;
     p.category = cat;
     p.in_point = trigger_time;
     p.volume = volume;
     p.seed = 0; // Default seed
-    return build_sfx(resolver, p);
+    return build_sfx(resolver, p, diagnostics);
 }
 
 } // namespace tachyon::presets
