@@ -21,4 +21,5 @@ set(TachyonSceneEvalSources
     ${CMAKE_CURRENT_SOURCE_DIR}/timeline/time.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/timeline/time_remap.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/timeline/time_resolver.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/camera_cut_contract.cpp
 )

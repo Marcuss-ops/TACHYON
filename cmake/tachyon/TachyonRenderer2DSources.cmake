@@ -19,6 +19,7 @@ set(TachyonRenderer2DSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/effect_host.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/effect_param_access.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/effect_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/transition_registry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/surface/surface_sampling.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/surface/surface_blur.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/surface/surface_composite.cpp

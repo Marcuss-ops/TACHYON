@@ -62,6 +62,7 @@ target_compile_definitions(TachyonSceneTests
 target_link_libraries(TachyonSceneTests
     PRIVATE
         TachyonRuntimeEngine
+        TachyonDiagnostics
 )
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
@@ -186,8 +187,8 @@ target_compile_definitions(TachyonNativeRenderTests
 
 target_link_libraries(TachyonNativeRenderTests
     PRIVATE
+        TachyonPresets
         TachyonRuntimeEngine
-        TachyonStudio
 )
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
@@ -305,8 +306,8 @@ target_compile_definitions(TachyonRenderTests
 
 target_link_libraries(TachyonRenderTests
     PRIVATE
+        TachyonPresets
         TachyonRuntimeEngine
-        TachyonStudio
 )
 
 if(TACHYON_ENABLE_TRACKER)
@@ -341,7 +342,6 @@ target_compile_definitions(TachyonRenderPipelineTests
 target_link_libraries(TachyonRenderPipelineTests
     PRIVATE
         TachyonRuntimeEngine
-        TachyonStudio
 )
 
 if(TACHYON_ENABLE_TRACKER)
@@ -381,7 +381,6 @@ target_compile_definitions(TachyonRenderProfilerTests
 target_link_libraries(TachyonRenderProfilerTests
     PRIVATE
         TachyonRuntimeEngine
-        TachyonStudio
 )
 
 if(TACHYON_ENABLE_TRACKER)
@@ -421,7 +420,6 @@ target_compile_definitions(TachyonScene3DSmokeTests
 target_link_libraries(TachyonScene3DSmokeTests
     PRIVATE
         TachyonRuntimeEngine
-        TachyonStudio
 )
 
 if(TACHYON_ENABLE_TRACKER)
