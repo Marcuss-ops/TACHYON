@@ -9,7 +9,6 @@ add_executable(TachyonTests
     unit/core/camera/camera_shake_tests.cpp
     unit/core/properties/bezier_interpolator_tests.cpp
     unit/timeline/camera_cuts_tests.cpp
-    unit/color/color_tests.cpp
 )
 
 target_compile_definitions(TachyonTests
@@ -29,6 +28,19 @@ endif()
 
 if(MSVC)
     target_compile_options(TachyonTests PRIVATE /FS)
+endif()
+
+add_executable(TachyonColorTests
+    unit/color/color_tests.cpp
+)
+
+target_link_libraries(TachyonColorTests
+    PRIVATE
+        TachyonColor
+)
+
+if(MSVC)
+    target_compile_options(TachyonColorTests PRIVATE /FS)
 endif()
 
 add_executable(TachyonSceneTests
@@ -307,6 +319,11 @@ target_compile_definitions(Phase1Tests PRIVATE TACHYON_TESTS_SOURCE_DIR="${TACHY
 add_test(
     NAME TachyonTests
     COMMAND TachyonTests
+)
+
+add_test(
+    NAME TachyonColorTests
+    COMMAND TachyonColorTests
 )
 
 add_test(
