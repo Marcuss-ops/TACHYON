@@ -66,6 +66,22 @@ bool run_sfx_contract_tests() {
         assert(shortcut_spec.volume == 0.5f);
     }
 
+    // 4. Test diagnostic reporting on failure
+    {
+        tachyon::DiagnosticBag diags;
+        SfxParams p;
+        p.category = SfxCategory::Photo;
+        p.variant = 999; // Non-existent variant
+        auto spec = build_sfx(resolver, p, &diags);
+        
+        assert(!diags.ok());
+        bool found_error = false;
+        for (const auto& d : diags.get_diagnostics()) {
+            if (d.code == "SFX_VARIANT_NOT_FOUND") found_error = true;
+        }
+        assert(found_error);
+    }
+
     std::cout << "SFX contract tests passed!" << std::endl;
     return true;
 }

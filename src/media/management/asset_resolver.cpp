@@ -73,7 +73,8 @@ ResolutionResult<std::filesystem::path> AssetResolver::resolve_path_strict(const
     if (path.has_value()) {
         result.value = path;
     } else {
-        std::string msg = "Failed to resolve asset: " + spec;
+        std::string type_name = (type == AssetType::AUDIO) ? "AUDIO" : (type == AssetType::IMAGE ? "IMAGE" : "FONT");
+        std::string msg = "Failed to resolve " + type_name + " asset: '" + spec + "'. Check roots and path existence.";
         if (mode == ResolveMode::Strict) {
             result.diagnostics.add_error("ASSET_NOT_FOUND", msg);
         } else if (mode == ResolveMode::PermissiveWithWarning) {

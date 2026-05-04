@@ -6,6 +6,7 @@
 #include "tachyon/renderer2d/raster/rasterizer.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 
+#include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include <array>
 #include <filesystem>
 #include <functional>
@@ -28,12 +29,26 @@ class EffectHost {
   EffectHost() = default;
   virtual ~EffectHost() = default;
 
+  /**
+   * @brief Registers a new effect.
+   * @deprecated Use EffectRegistry instead. This method will be removed in a future version.
+   */
   virtual void register_effect(std::string name, std::unique_ptr<Effect> effect) = 0;
+  
   virtual bool has_effect(const std::string& name) const = 0;
-  virtual SurfaceRGBA apply(const std::string& name,
-                            const SurfaceRGBA& input,
-                            const EffectParams& params) const = 0;
-  virtual SurfaceRGBA apply_pipeline(
+
+  /**
+   * @brief Applies an effect to the input surface.
+   * @return ResolutionResult containing the output surface if successful.
+   */
+  virtual ResolutionResult<SurfaceRGBA> apply(const std::string& name,
+                                            const SurfaceRGBA& input,
+                                            const EffectParams& params) const = 0;
+
+  /**
+   * @brief Applies a pipeline of effects.
+   */
+  virtual ResolutionResult<SurfaceRGBA> apply_pipeline(
       const SurfaceRGBA& input,
       const std::vector<std::pair<std::string, EffectParams>>& pipeline) const = 0;
 

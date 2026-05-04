@@ -17,7 +17,7 @@ EffectHost& effect_host_for(RenderContext2D& context);
 EffectParams effect_params_from_spec(const EffectSpec& spec, const ColorProfile& working_profile);
 EffectParams effect_params_from_spec(const EffectSpec& spec);
 
-SurfaceRGBA apply_effect_pipeline(
+ResolutionResult<SurfaceRGBA> apply_effect_pipeline(
     const SurfaceRGBA& input,
     const std::vector<EffectSpec>& effects,
     EffectHost& host,
@@ -25,7 +25,7 @@ SurfaceRGBA apply_effect_pipeline(
     FrameDiagnostics* diagnostics = nullptr,
     const std::string& current_layer_id = "");
 
-SurfaceRGBA apply_effect_pipeline(
+ResolutionResult<SurfaceRGBA> apply_effect_pipeline(
     const SurfaceRGBA& input,
     const std::vector<EffectSpec>& effects,
     EffectHost& host,

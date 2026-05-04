@@ -52,13 +52,17 @@ bool run_effect_host_tests() {
 
     EffectParams blur_params;
     blur_params.scalars["blur_radius"] = 1.5f;
-    const SurfaceRGBA blurred = host.apply("gaussian_blur", source, blur_params);
+    const auto blurred_res = host.apply("gaussian_blur", source, blur_params);
+    check_true(blurred_res.ok(), "Blur application successful");
+    const SurfaceRGBA& blurred = *blurred_res.value;
     check_true(blurred.get_pixel(8, 8).a > 0, "Blur keeps center visible");
     check_true(blurred.get_pixel(9, 8).a > 0, "Blur spreads to neighboring pixel");
 
     EffectParams hue_params;
     hue_params.scalars["hue"] = 180.0f;
-    const SurfaceRGBA hued = host.apply("hue_saturation", source, hue_params);
+    const auto hued_res = host.apply("hue_saturation", source, hue_params);
+    check_true(hued_res.ok(), "Hue application successful");
+    const SurfaceRGBA& hued = *hued_res.value;
     check_true(hued.get_pixel(8, 8).a == source.get_pixel(8, 8).a, "HueSaturation preserves alpha");
 
     EffectParams particle_params;
@@ -70,8 +74,11 @@ bool run_effect_host_tests() {
     particle_params.scalars["radius_min"] = 1.0f;
     particle_params.scalars["radius_max"] = 2.0f;
     particle_params.colors["color"] = Color{1.0f, 180.0f/255.0f, 64.0f/255.0f, 200.0f/255.0f};
-    const SurfaceRGBA particles_a = host.apply("particle_emitter", source, particle_params);
-    const SurfaceRGBA particles_b = host.apply("particle_emitter", source, particle_params);
+    const auto particles_a_res = host.apply("particle_emitter", source, particle_params);
+    const auto particles_b_res = host.apply("particle_emitter", source, particle_params);
+    check_true(particles_a_res.ok(), "Particle A successful");
+    const SurfaceRGBA& particles_a = *particles_a_res.value;
+    const SurfaceRGBA& particles_b = *particles_b_res.value;
     bool has_visible_particle = false;
     for (std::uint32_t y = 0; y < particles_a.height(); ++y) {
         for (std::uint32_t x = 0; x < particles_a.width(); ++x) {
@@ -98,7 +105,9 @@ bool run_effect_host_tests() {
 
     EffectParams fill_params;
     fill_params.colors["color"] = Color{200.0f/255.0f, 100.0f/255.0f, 50.0f/255.0f, 128.0f/255.0f};
-    const SurfaceRGBA filled = host.apply("fill", source, fill_params);
+    const auto filled_res = host.apply("fill", source, fill_params);
+    check_true(filled_res.ok(), "Fill successful");
+    const SurfaceRGBA& filled = *filled_res.value;
     check_true(filled.get_pixel(8, 8).a >= 0.5f, "Fill correctly applies alpha");
     const Color p = filled.get_pixel(8, 8);
     check_true(std::abs(p.r - 200.0f/255.0f) < 0.001f && std::abs(p.g - 100.0f/255.0f) < 0.001f && std::abs(p.b - 50.0f/255.0f) < 0.001f, "Fill preserves straight RGB");
@@ -113,7 +122,9 @@ bool run_effect_host_tests() {
     transition_params.strings["transition_id"] = "crossfade";
     transition_params.strings["shader_path"] = "studio/library/animations/transitions/crossfade/v1.glsl";
     transition_params.aux_surfaces["transition_to"] = &transition_to;
-    const SurfaceRGBA transitioned = host.apply("glsl_transition", transition_from, transition_params);
+    const auto transitioned_res = host.apply("glsl_transition", transition_from, transition_params);
+    check_true(transitioned_res.ok(), "Transition successful");
+    const SurfaceRGBA& transitioned = *transitioned_res.value;
     const Color transition_center = transitioned.get_pixel(4, 4);
     check_true(transition_center.b > 0.8f, "Glsl transition reaches the target surface");
     check_true(transition_center.r < 0.3f, "Glsl transition reduces the source surface when t=1");
@@ -152,33 +163,37 @@ bool run_effect_host_tests() {
     check_true(cache.lookup("c") != nullptr, "C is present");
 
     // Test new transitions: light_leak, film_burn, flash
-    EffectParams leak_params;
     leak_params.scalars["t"] = 0.5f;
     leak_params.strings["transition_id"] = "light_leak";
     leak_params.aux_surfaces["transition_to"] = &transition_to;
-    const SurfaceRGBA leaked = host.apply("glsl_transition", transition_from, leak_params);
+    const auto leaked_res = host.apply("glsl_transition", transition_from, leak_params);
+    check_true(leaked_res.ok(), "Leaked successful");
+    const SurfaceRGBA& leaked = *leaked_res.value;
     check_true(leaked.get_pixel(4, 4).a > 0, "Light leak transition produces visible output");
 
-    EffectParams leak_overlay_params;
     leak_overlay_params.scalars["t"] = 0.5f;
     leak_overlay_params.strings["transition_id"] = "light_leak";
-    const SurfaceRGBA leak_overlay = host.apply("glsl_transition", SurfaceRGBA(8, 8), leak_overlay_params);
+    const auto leak_overlay_res = host.apply("glsl_transition", SurfaceRGBA(8, 8), leak_overlay_params);
+    check_true(leak_overlay_res.ok(), "Leak overlay successful");
+    const SurfaceRGBA& leak_overlay = *leak_overlay_res.value;
     const Color leak_overlay_center = leak_overlay.get_pixel(4, 4);
     check_true(leak_overlay_center.r > 0.1f || leak_overlay_center.g > 0.05f || leak_overlay_center.b > 0.01f,
         "Light leak overlay mode produces visible amber output on black");
 
-    EffectParams burn_params;
     burn_params.scalars["t"] = 0.5f;
     burn_params.strings["transition_id"] = "film_burn";
     burn_params.aux_surfaces["transition_to"] = &transition_to;
-    const SurfaceRGBA burned = host.apply("glsl_transition", transition_from, burn_params);
+    const auto burned_res = host.apply("glsl_transition", transition_from, burn_params);
+    check_true(burned_res.ok(), "Burn successful");
+    const SurfaceRGBA& burned = *burned_res.value;
     check_true(burned.get_pixel(4, 4).a > 0, "Film burn transition produces visible output");
 
-    EffectParams flash_params;
     flash_params.scalars["t"] = 0.5f;
     flash_params.strings["transition_id"] = "flash";
     flash_params.aux_surfaces["transition_to"] = &transition_to;
-    const SurfaceRGBA flashed = host.apply("glsl_transition", transition_from, flash_params);
+    const auto flashed_res = host.apply("glsl_transition", transition_from, flash_params);
+    check_true(flashed_res.ok(), "Flash successful");
+    const SurfaceRGBA& flashed = *flashed_res.value;
     check_true(flashed.get_pixel(4, 4).r > 0.5f && flashed.get_pixel(4, 4).g > 0.5f && flashed.get_pixel(4, 4).b > 0.5f, "Flash transition produces bright output at t=0.5");
 
     return g_failures == 0;

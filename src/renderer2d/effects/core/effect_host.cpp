@@ -22,37 +22,67 @@ public:
         return EffectRegistry::instance().find(name) != nullptr;
     }
     
-    SurfaceRGBA apply(const std::string& name, const SurfaceRGBA& input, const EffectParams& params) const override {
-        // 1. Try old-style internal effects
+    ResolutionResult<SurfaceRGBA> apply(const std::string& name, const SurfaceRGBA& input, const EffectParams& params) const override {
+        ResolutionResult<SurfaceRGBA> result;
+        
+        // 1. Try old-style internal effects (legacy path)
         auto it = m_effects.find(name);
         if (it != m_effects.end()) {
             profiling::ProfileScope scope(params.context ? params.context->profiler : nullptr, profiling::ProfileEventType::Effect, name, -1, std::string(), name);
-            return it->second->apply(input, params);
+            result.value = it->second->apply(input, params);
+            return result;
         }
 
         // 2. Try new-style registry effects
         if (auto* desc = EffectRegistry::instance().find(name)) {
             profiling::ProfileScope scope(params.context ? params.context->profiler : nullptr, profiling::ProfileEventType::Effect, name, -1, std::string(), name);
-            SurfaceRGBA output;
-            // Note: In this transition phase, we pass empty aux surfaces if they aren't explicitly provided in EffectParams.
-            // A more complete integration would resolve aux surfaces from the context/composition.
+            
+            // Resolve auxiliary surfaces
             std::vector<const SurfaceRGBA*> aux_surfaces;
+            for (const auto& req : desc->aux_requirements) {
+                auto aux_it = params.aux_surfaces.find(req.param_name);
+                if (aux_it != params.aux_surfaces.end()) {
+                    aux_surfaces.push_back(aux_it->second);
+                } else if (req.is_required) {
+                    std::string msg = "Effect '" + name + "' requires auxiliary surface '" + req.param_name + "' (" + req.semantic + ") which was not provided.";
+                    result.diagnostics.add_error("EFFECT_AUX_MISSING", msg);
+                    return result; // Strict failure: missing required aux surface
+                } else {
+                    aux_surfaces.push_back(nullptr);
+                }
+            }
+
+            SurfaceRGBA output;
             desc->factory(EffectSpec{}, input, output, aux_surfaces, params);
-            return output;
+            result.value = std::move(output);
+            return result;
         }
 
-        // 3. Fallback: Strict reporting
-        std::cerr << "[Tachyon] Error: Unknown effect '" << name << "'. No fallback applied." << std::endl;
-        // In the future, we should return a ResolutionResult or add to context diagnostics.
-        return input;
+        // 3. Strict failure: Unknown effect
+        std::string msg = "Unknown effect '" + name + "'. No fallback allowed in strict mode.";
+        result.diagnostics.add_error("EFFECT_NOT_FOUND", msg);
+        
+        // If we are in permissive mode (which we don't have yet in EffectParams, 
+        // but let's assume if we had it, we'd check it here), we might return input.
+        // For now, we return nullopt to signal failure.
+        return result;
     }
     
-    SurfaceRGBA apply_pipeline(const SurfaceRGBA& input, const std::vector<std::pair<std::string, EffectParams>>& pipeline) const override {
-        SurfaceRGBA current = input;
+    ResolutionResult<SurfaceRGBA> apply_pipeline(const SurfaceRGBA& input, const std::vector<std::pair<std::string, EffectParams>>& pipeline) const override {
+        ResolutionResult<SurfaceRGBA> result;
+        result.value = input;
+        
         for (const auto& step : pipeline) {
-            current = apply(step.first, current, step.second);
+            auto step_res = apply(step.first, *result.value, step.second);
+            if (!step_res.ok()) {
+                result.diagnostics.append(step_res.diagnostics);
+                result.value = std::nullopt;
+                return result; // Stop the pipeline on first error
+            }
+            result.value = std::move(step_res.value);
         }
-        return current;
+        
+        return result;
     }
 };
 
@@ -61,8 +91,6 @@ std::unique_ptr<EffectHost> create_effect_host() {
 }
 
 void EffectHost::register_builtins(EffectHost& host) {
-    // Builtins are now handled by the EffectRegistry.
-    // This method is kept for backward compatibility but delegates to the registry.
     EffectRegistry::instance().register_builtins();
 }
 

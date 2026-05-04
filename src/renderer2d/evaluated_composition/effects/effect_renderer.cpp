@@ -40,7 +40,7 @@ EffectParams effect_params_from_spec(const EffectSpec& spec) {
     return effect_params_from_spec(spec, ColorProfile::Rec709());
 }
 
-SurfaceRGBA apply_effect_pipeline(
+ResolutionResult<SurfaceRGBA> apply_effect_pipeline(
     const SurfaceRGBA& input,
     const std::vector<EffectSpec>& effects,
     EffectHost& host,
@@ -50,7 +50,7 @@ SurfaceRGBA apply_effect_pipeline(
     return apply_effect_pipeline(input, effects, host, working_profile, {}, current_layer_id, diagnostics);
 }
 
-SurfaceRGBA apply_effect_pipeline(
+ResolutionResult<SurfaceRGBA> apply_effect_pipeline(
     const SurfaceRGBA& input,
     const std::vector<EffectSpec>& effects,
     EffectHost& host,
@@ -59,13 +59,19 @@ SurfaceRGBA apply_effect_pipeline(
     const std::string& current_layer_id,
     FrameDiagnostics* diagnostics) {
 
-    SurfaceRGBA current = input;
+    ResolutionResult<SurfaceRGBA> result;
+    result.value = input;
+    
     for (const auto& effect : effects) {
         if (!effect.enabled || effect.type.empty()) {
             continue;
         }
+        
         EffectParams params = effect_params_from_spec(effect, working_profile);
         params.strings.emplace("layer_id", current_layer_id);
+        
+        // Populate auxiliary surfaces based on effect-specific logic
+        // In the future, this should be guided by EffectDescriptor requirements.
         if (effect.type == "glsl_transition") {
             if (const auto it = effect.strings.find("transition_to_layer_id"); it != effect.strings.end()) {
                 const auto surface_it = surfaces.find(it->second);
@@ -73,9 +79,22 @@ SurfaceRGBA apply_effect_pipeline(
                     params.aux_surfaces.emplace("transition_to", surface_it->second.get());
                 }
             }
+        } else if (effect.type == "displacement_map" || effect.type == "light_wrap") {
+            // General aux surface resolution from strings mapping
+            for (const auto& [key, val] : effect.strings) {
+                if (key.find("aux_layer_") == 0) {
+                    std::string target_param = key.substr(10);
+                    const auto surface_it = surfaces.find(val);
+                    if (surface_it != surfaces.end() && surface_it->second) {
+                        params.aux_surfaces.emplace(target_param, surface_it->second.get());
+                    }
+                }
+            }
         }
+
         const auto start = std::chrono::high_resolution_clock::now();
-        current = host.apply(effect.type, current, params);
+        auto step_res = host.apply(effect.type, *result.value, params);
+        
         if (diagnostics) {
             const auto end = std::chrono::high_resolution_clock::now();
             diagnostics->timings.push_back(TimingSample{
@@ -83,9 +102,20 @@ SurfaceRGBA apply_effect_pipeline(
                 current_layer_id.empty() ? effect.type : (current_layer_id + ":" + effect.type),
                 std::chrono::duration<double, std::milli>(end - start).count()
             });
+            // Propagate diagnostics to the frame bag
+            diagnostics->diagnostics.append(step_res.diagnostics);
         }
+
+        if (!step_res.ok()) {
+            result.diagnostics.append(step_res.diagnostics);
+            result.value = std::nullopt;
+            return result; // Strict failure
+        }
+        
+        result.value = std::move(step_res.value);
     }
-    return current;
+    
+    return result;
 }
 
 } // namespace tachyon::renderer2d

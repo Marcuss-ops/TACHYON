@@ -234,7 +234,10 @@ RasterizedFrame2D render_draw_list_2d(
                 break;
             case renderer2d::DrawCommandKind::Adjustment:
                 if (command->adjustment.has_value()) {
-                    *frame.surface = effect_host->apply_pipeline(*frame.surface, command->adjustment->effects);
+                    auto res = effect_host->apply_pipeline(*frame.surface, command->adjustment->effects);
+                    if (res.ok()) {
+                        *frame.surface = std::move(*res.value);
+                    }
                 }
                 break;
         }
