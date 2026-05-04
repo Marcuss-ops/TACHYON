@@ -6,6 +6,10 @@
 #include "tachyon/core/scene/evaluator/layer_utils.h"
 #include "tachyon/core/scene/math/evaluator_math.h"
 #include "tachyon/timeline/time.h"
+#include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/core/spec/schema/objects/composition_spec.h"
+#include "tachyon/core/spec/schema/objects/layer_spec.h"
+#include "tachyon/core/math/quaternion.h"
 
 #include <algorithm>
 #include <cmath>
