@@ -1,5 +1,7 @@
 #include "tachyon/runtime/execution/jobs/render_job.h"
+#include "tachyon/core/spec/validation/scene_validator.h"
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
+#include "tachyon/output/output_presets.h"
 
 namespace tachyon {
 
@@ -14,6 +16,57 @@ bool is_alpha_mode_valid(const std::string& mode) {
 
 bool is_motion_blur_curve_valid(const std::string& curve) {
     return curve == "box" || curve == "triangle" || curve == "gaussian";
+}
+
+void apply_preset_to_profile(const output::OutputPreset& preset, const std::string& preset_name, OutputProfile& profile) {
+    profile.video.codec = preset.codec;
+    profile.video.pixel_format = preset.pixel_fmt;
+    profile.video.rate_control_mode = preset.rate_control_mode.empty() ? profile.video.rate_control_mode : preset.rate_control_mode;
+    if (preset.crf > 0) {
+        profile.video.crf = static_cast<double>(preset.crf);
+    }
+    if (!preset.container.empty()) {
+        profile.container = preset.container;
+    }
+    if (!preset.class_name.empty()) {
+        profile.class_name = preset.class_name;
+    }
+    if (!preset.alpha_mode.empty()) {
+        profile.alpha_mode = preset.alpha_mode;
+    }
+    profile.color.space = preset.color_space;
+    profile.color.range = preset.color_range;
+    if (!preset.width) {
+        profile.width.reset();
+    } else {
+        profile.width = preset.width;
+    }
+    if (!preset.height) {
+        profile.height.reset();
+    } else {
+        profile.height = preset.height;
+    }
+
+    if (preset_name == "png_sequence" || preset_name == "png-sequence" || preset_name == "png-seq") {
+        profile.format = OutputFormat::ImageSequence;
+        profile.alpha_mode = "preserved";
+        profile.buffering.strategy = "default";
+        profile.video.rate_control_mode = "fixed";
+        profile.video.crf.reset();
+    } else if (preset_name == "prores_4444") {
+        profile.format = OutputFormat::ProRes;
+        profile.buffering.strategy = "default";
+        profile.video.rate_control_mode = "fixed";
+        profile.video.crf.reset();
+    } else {
+        profile.format = OutputFormat::Video;
+        if (profile.container.empty()) {
+            profile.container = "mp4";
+        }
+        if (profile.class_name.empty()) {
+            profile.class_name = "video-export";
+        }
+    }
 }
 }
 
@@ -156,6 +209,35 @@ ValidationResult validate_render_job(const RenderJob& job) {
     }
 
     return result;
+}
+
+ValidationResult validate_render_preflight(const SceneSpec& scene, const RenderJob& job) {
+    ValidationResult result = validate_render_job(job);
+
+    core::SceneValidator scene_validator;
+    const auto scene_validation = scene_validator.validate(scene);
+    for (const auto& issue : scene_validation.issues) {
+        const auto severity = (issue.severity == core::ValidationIssue::Severity::Warning)
+            ? DiagnosticSeverity::Warning
+            : DiagnosticSeverity::Error;
+        result.diagnostics.add(
+            severity,
+            "scene.validation",
+            "scene.validation_issue",
+            issue.message,
+            issue.path);
+    }
+
+    return result;
+}
+
+void apply_output_preset(OutputProfile& profile) {
+    const auto* preset = output::find_preset(profile.name);
+    if (!preset) {
+        return;
+    }
+
+    apply_preset_to_profile(*preset, profile.name, profile);
 }
 
 } // namespace tachyon

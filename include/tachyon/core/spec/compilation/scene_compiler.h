@@ -12,7 +12,7 @@ struct SceneCompilerOptions {
     DeterminismContract determinism;
 };
 
-class TACHYON_API SceneCompiler {
+class SceneCompiler {
 public:
     explicit SceneCompiler(SceneCompilerOptions options = {});
 

@@ -148,7 +148,13 @@ target_link_libraries(TachyonScene
         TachyonCore
         TachyonColor
         TachyonPlatform
+        TachyonRenderer2D
+        TachyonAudio
+        TachyonMedia
 )
+if(TACHYON_ENABLE_TRACKER)
+    target_link_libraries(TachyonScene PRIVATE TachyonTracker)
+endif()
 tachyon_link_omp(TachyonScene)
 
 add_library(TachyonRuntime STATIC ${TachyonRuntimeSources})
@@ -239,7 +245,11 @@ endif()
 
 add_library(TachyonRuntimeEngine INTERFACE)
 target_link_libraries(TachyonRuntimeEngine INTERFACE
-    "$<LINK_GROUP:RESCAN,TachyonRuntime,TachyonScene,TachyonRenderer2D,TachyonText,TachyonMedia>"
+    TachyonRuntime
+    TachyonScene
+    TachyonRenderer2D
+    TachyonText
+    TachyonMedia
     $<$<BOOL:${TACHYON_ENABLE_3D}>:TachyonRenderer3D>
     TachyonCore
     TachyonAudio

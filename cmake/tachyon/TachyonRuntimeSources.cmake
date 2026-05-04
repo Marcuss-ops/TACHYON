@@ -41,10 +41,22 @@ set(TachyonRuntimeSources
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/playback/playback_engine.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/playback/playback_queue.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/resource/render_context.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/orchestration.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/property_sampling.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/profiling/render_profiler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/telemetry_writer.cpp
+
+    # Spec - Compilation (runtime-owned)
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/component_library.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/layer_compiler.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/preset_compiler.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/property_compiler.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_compiler.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_compiler_build.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_compiler_graph.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_compiler_hashing.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_compiler_property.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_compiler_resolve.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_hash_builder.cpp
     
     # Interpretation Path (Moved from Scene)
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator.cpp

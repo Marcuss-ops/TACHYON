@@ -27,10 +27,19 @@ RenderSessionResult NativeRenderer::render(
     RenderProgressSink* sink = get_sink(options.progress_sink);
     RenderSessionResult result;
     const auto total_start = std::chrono::high_resolution_clock::now();
+    RenderJob resolved_job = job;
+    apply_output_preset(resolved_job.output.profile);
 
     profiling::ProfileScope total_scope(options.profiler, profiling::ProfileEventType::Phase, "native_render_total");
 
     // 1. Compile the scene
+    const auto preflight_result = validate_render_preflight(scene, resolved_job);
+    result.diagnostics.append(preflight_result.diagnostics);
+    if (!preflight_result.ok()) {
+        sink->on_message("Preflight validation failed!");
+        return result;
+    }
+
     sink->on_phase_start(RenderPhase::CompileScene);
     const auto phase1_start = std::chrono::high_resolution_clock::now();
     SceneCompiler compiler;
@@ -56,7 +65,7 @@ RenderSessionResult NativeRenderer::render(
     ResolutionResult<RenderPlan> plan_result;
     {
         profiling::ProfileScope scope(options.profiler, profiling::ProfileEventType::Phase, "build_render_plan");
-        plan_result = build_render_plan(scene, job);
+        plan_result = build_render_plan(scene, resolved_job);
     }
     const auto phase2_end = std::chrono::high_resolution_clock::now();
     double phase2_ms = std::chrono::duration<double, std::milli>(phase2_end - phase2_start).count();
@@ -104,9 +113,9 @@ RenderSessionResult NativeRenderer::render(
 
     if (options.verbose) {
         sink->on_message("Starting render: " + job.job_id);
-        sink->on_message("Composition: " + job.composition_target);
-        sink->on_message("Frames: " + std::to_string(job.frame_range.start) + " -> " + std::to_string(job.frame_range.end));
-        sink->on_message("Output: " + job.output.destination.path);
+        sink->on_message("Composition: " + resolved_job.composition_target);
+        sink->on_message("Frames: " + std::to_string(resolved_job.frame_range.start) + " -> " + std::to_string(resolved_job.frame_range.end));
+        sink->on_message("Output: " + resolved_job.output.destination.path);
     }
 
     sink->on_phase_start(RenderPhase::Render);
@@ -114,7 +123,7 @@ RenderSessionResult NativeRenderer::render(
         scene, 
         *compiled_result.value, 
         *execution_result.value, 
-        job.output.destination.path, 
+        resolved_job.output.destination.path, 
         concurrency);
     sink->on_phase_complete(RenderPhase::Render);
 

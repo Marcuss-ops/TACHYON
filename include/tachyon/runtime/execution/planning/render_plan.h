@@ -71,6 +71,7 @@ struct RenderPlan {
     const SceneSpec* scene_spec{nullptr};
     
     std::uint64_t scene_hash{0};
+    std::uint64_t font_content_hash{0};
     int contract_version{1};
     bool proxy_enabled{false};
     

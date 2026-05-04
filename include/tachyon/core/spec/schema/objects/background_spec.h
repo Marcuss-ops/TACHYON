@@ -21,7 +21,7 @@ enum class BackgroundType {
 };
 
 /// A well-typed background specification that replaces the ambiguous std::optional<std::string>.
-struct TACHYON_API BackgroundSpec {
+struct BackgroundSpec {
     BackgroundType type{BackgroundType::Color};
     std::string value;  // Color string, component ID, asset name, or preset name
 
@@ -30,7 +30,7 @@ struct TACHYON_API BackgroundSpec {
 
     /// Try to parse a string as a background specification.
     /// @returns a BackgroundSpec with the appropriate type detected.
-    static BackgroundSpec from_string(const std::string& str);
+    TACHYON_API static BackgroundSpec from_string(const std::string& str);
 
     BackgroundSpec() = default;
     explicit BackgroundSpec(const std::string& str) : BackgroundSpec(from_string(str)) {}

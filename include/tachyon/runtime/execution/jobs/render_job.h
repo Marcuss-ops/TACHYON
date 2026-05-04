@@ -10,6 +10,8 @@
 
 namespace tachyon {
 
+struct SceneSpec;
+
 struct OutputDestination {
     std::string path;
     bool overwrite{false};
@@ -65,6 +67,8 @@ struct OutputProfile {
     OutputAudioProfile audio;
     OutputBufferingProfile buffering;
     OutputColorProfile color;
+    std::optional<std::int64_t> width;
+    std::optional<std::int64_t> height;
 };
 
 struct OutputContract {
@@ -124,5 +128,7 @@ public:
 };
 
 ValidationResult validate_render_job(const RenderJob& job);
+ValidationResult validate_render_preflight(const SceneSpec& scene, const RenderJob& job);
+void apply_output_preset(OutputProfile& profile);
 
 } // namespace tachyon

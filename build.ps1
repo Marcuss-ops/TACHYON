@@ -74,6 +74,65 @@ function Invoke-Native {
     }
 }
 
+function Prepend-ProcessPath {
+    param(
+        [string[]]$Paths
+    )
+
+    $current = [Environment]::GetEnvironmentVariable("PATH", "Process")
+    $existing = @()
+    foreach ($part in $current -split ';') {
+        if ($part -and -not $existing.Contains($part)) {
+            $existing += $part
+        }
+    }
+
+    $prefix = @()
+    foreach ($path in $Paths) {
+        if ($path -and (Test-Path $path) -and -not $prefix.Contains($path) -and -not $existing.Contains($path)) {
+            $prefix += $path
+        }
+    }
+
+    if ($prefix.Count -gt 0) {
+        $newPath = ($prefix + $existing) -join ';'
+        [Environment]::SetEnvironmentVariable("PATH", $newPath, "Process")
+    }
+}
+
+function Get-TestTargetForFilter {
+    param(
+        [string]$Filter
+    )
+
+    $normalized = ($Filter.ToLowerInvariant() -replace '[^a-z0-9]', '')
+    if ($normalized -match 'nativerender') {
+        return "TachyonNativeRenderTests"
+    }
+
+    if ($normalized -match 'rendersession|png3dvalidation|motionblur|frameblend|timeremap|rollingshutter|threedmodifier|parallaxcards') {
+        return "TachyonRenderPipelineTests"
+    }
+
+    if ($normalized -match 'renderprofiler') {
+        return "TachyonRenderProfilerTests"
+    }
+
+    if ($normalized -match 'scene3dsmoke') {
+        return "TachyonScene3DSmokeTests"
+    }
+
+    if ($normalized -match 'assetresolution|imagemanager|imagedecode|framebuffer|rasterizer|surface|drawlistbuilder|blendmodes|evaluatedcompositionrenderer|pathrasterizer|effecthost|matteresolver') {
+        return "TachyonRenderTests"
+    }
+
+    if ($normalized -match 'scene_|timeline|camera_|motion_map|default_camera') {
+        return "TachyonSceneTests"
+    }
+
+    return "TachyonTests"
+}
+
 if ($Check) {
     $Target = "TachyonCore"
 }
@@ -169,15 +228,30 @@ Write-Host "Build OK" -ForegroundColor Green
 if ($RunTests) {
     Write-Host "Running tests..." -ForegroundColor Yellow
 
+    Prepend-ProcessPath @(
+        (Join-Path $BuildDir "src\$Config"),
+        (Join-Path $BuildDir "tests\$Config")
+    )
+
+    $selectedTestTarget = if ($TestFilter) { Get-TestTargetForFilter $TestFilter } else { "" }
+    if ($selectedTestTarget -and -not ($selectedTestTarget -eq "TachyonTests")) {
+        Write-Host "  Building test target: $selectedTestTarget" -ForegroundColor Yellow
+        Invoke-Native {
+            & cmake --build $BuildDir --config $Config --target $selectedTestTarget -j $J
+        } "Selected test target build FAILED."
+    }
+
     if ($TestFilter) {
         Write-Host "  Internal filter: $TestFilter" -ForegroundColor Yellow
+        $testTarget = if ($selectedTestTarget) { $selectedTestTarget } else { Get-TestTargetForFilter $TestFilter }
+        Write-Host "  Test target: $testTarget" -ForegroundColor Yellow
 
         $previousFilter = [Environment]::GetEnvironmentVariable("TACHYON_TEST_FILTER", "Process")
         [Environment]::SetEnvironmentVariable("TACHYON_TEST_FILTER", $TestFilter, "Process")
 
         try {
             Invoke-Native {
-                & ctest --test-dir $BuildDir -C $Config --output-on-failure -R "^TachyonTests$"
+                & ctest --test-dir $BuildDir -C $Config --output-on-failure -R "^$testTarget$"
             } "Tests FAILED."
         } finally {
             [Environment]::SetEnvironmentVariable("TACHYON_TEST_FILTER", $previousFilter, "Process")

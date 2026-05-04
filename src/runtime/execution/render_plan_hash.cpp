@@ -34,6 +34,7 @@ FrameCacheKey build_frame_cache_key(const RenderPlan& plan, std::int64_t frame_n
 
     // New Canonical Fields
     builder.add_u64(plan.scene_hash);
+    builder.add_u64(plan.font_content_hash);
     builder.add_u32(static_cast<std::uint32_t>(plan.contract_version));
     builder.add_bool(plan.proxy_enabled);
     builder.add_string(plan.ocio.config_path);
@@ -95,6 +96,7 @@ FrameCacheKey build_frame_cache_key(const RenderPlan& plan, std::int64_t frame_n
         std::to_string(frame_number) + ":mb" +
         std::to_string(plan.motion_blur_enabled ? 1 : 0) + ":" +
         std::to_string(plan.motion_blur_samples) + ":" +
+        std::to_string(plan.font_content_hash) + ":fh:" +
         std::to_string(static_cast<std::int64_t>(plan.motion_blur_shutter_angle * 1000.0)) + ":" +
         std::to_string(static_cast<std::uint32_t>(plan.frame_blend_mode));
     return key;

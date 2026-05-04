@@ -174,6 +174,42 @@ if(MSVC)
     target_compile_options(TachyonRuntimeTests PRIVATE /FS)
 endif()
 
+add_executable(TachyonNativeRenderTests
+    unit/test_main_native_render.cpp
+    unit/runtime/native_render_tests.cpp
+)
+
+target_compile_definitions(TachyonNativeRenderTests
+    PRIVATE
+        TACHYON_TESTS_SOURCE_DIR="${TACHYON_TESTS_SOURCE_DIR}"
+)
+
+target_link_libraries(TachyonNativeRenderTests
+    PRIVATE
+        TachyonRuntimeEngine
+        TachyonStudio
+)
+
+if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
+    target_precompile_headers(TachyonNativeRenderTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")
+endif()
+
+if(MSVC)
+    file(GLOB OIDN_RUNTIME_DLLS CONFIGURE_DEPENDS "${oidn_SOURCE_DIR}/bin/*.dll")
+    if(OIDN_RUNTIME_DLLS)
+        add_custom_command(TARGET TachyonNativeRenderTests POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    ${OIDN_RUNTIME_DLLS}
+                    $<TARGET_FILE_DIR:TachyonNativeRenderTests>
+            COMMAND_EXPAND_LISTS
+        )
+    endif()
+endif()
+
+if(MSVC)
+    target_compile_options(TachyonNativeRenderTests PRIVATE /FS)
+endif()
+
 add_executable(TachyonContentTests
     unit/test_main_content.cpp
     unit/studio/studio_library_tests.cpp
@@ -233,17 +269,21 @@ add_executable(TachyonRenderTests
     unit/renderer2d/composition/matte_resolver_tests.cpp
     unit/renderer2d/composition/evaluated_composition_renderer_tests.cpp
     unit/renderer3d/motion_blur_tests.cpp
+    # unit/renderer3d/effects/motion_blur_tests.cpp  # Duplicate - use unit/renderer3d/motion_blur_tests.cpp
+    unit/renderer3d/modifiers/modifier_tests.cpp
+    unit/runtime/native_render_tests.cpp
+)
+
+add_executable(TachyonRenderPipelineTests
+    unit/test_main_render_pipeline.cpp
     integration/render_session_tests.cpp
     integration/parallax_cards_tests.cpp
     integration/png_3d_validation_tests.cpp
+    unit/renderer3d/motion_blur_tests.cpp
     unit/renderer3d/temporal/time_remap_tests.cpp
     unit/renderer3d/temporal/frame_blend_tests.cpp
-    # unit/renderer3d/effects/motion_blur_tests.cpp  # Duplicate - use unit/renderer3d/motion_blur_tests.cpp
     unit/renderer3d/temporal/rolling_shutter_tests.cpp
     unit/renderer3d/modifiers/modifier_tests.cpp
-    unit/runtime/native_render_tests.cpp
-    unit/runtime/profiling/render_profiler_tests.cpp
-    integration/scene3d_smoke_tests.cpp
 )
 
 set(TachyonTrackerTestSources
@@ -291,6 +331,121 @@ endif()
 
 if(MSVC)
     target_compile_options(TachyonRenderTests PRIVATE /FS)
+endif()
+
+target_compile_definitions(TachyonRenderPipelineTests
+    PRIVATE
+        TACHYON_TESTS_SOURCE_DIR="${TACHYON_TESTS_SOURCE_DIR}"
+)
+
+target_link_libraries(TachyonRenderPipelineTests
+    PRIVATE
+        TachyonRuntimeEngine
+        TachyonStudio
+)
+
+if(TACHYON_ENABLE_TRACKER)
+    target_link_libraries(TachyonRenderPipelineTests PRIVATE TachyonTracker)
+endif()
+
+if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
+    target_precompile_headers(TachyonRenderPipelineTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")
+endif()
+
+if(MSVC)
+    file(GLOB OIDN_RUNTIME_DLLS CONFIGURE_DEPENDS "${oidn_SOURCE_DIR}/bin/*.dll")
+    if(OIDN_RUNTIME_DLLS)
+        add_custom_command(TARGET TachyonRenderPipelineTests POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    ${OIDN_RUNTIME_DLLS}
+                    $<TARGET_FILE_DIR:TachyonRenderPipelineTests>
+            COMMAND_EXPAND_LISTS
+        )
+    endif()
+endif()
+
+if(MSVC)
+    target_compile_options(TachyonRenderPipelineTests PRIVATE /FS)
+endif()
+
+add_executable(TachyonRenderProfilerTests
+    unit/test_main_render_profiler.cpp
+    unit/runtime/profiling/render_profiler_tests.cpp
+)
+
+target_compile_definitions(TachyonRenderProfilerTests
+    PRIVATE
+        TACHYON_TESTS_SOURCE_DIR="${TACHYON_TESTS_SOURCE_DIR}"
+)
+
+target_link_libraries(TachyonRenderProfilerTests
+    PRIVATE
+        TachyonRuntimeEngine
+        TachyonStudio
+)
+
+if(TACHYON_ENABLE_TRACKER)
+    target_link_libraries(TachyonRenderProfilerTests PRIVATE TachyonTracker)
+endif()
+
+if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
+    target_precompile_headers(TachyonRenderProfilerTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")
+endif()
+
+if(MSVC)
+    file(GLOB OIDN_RUNTIME_DLLS CONFIGURE_DEPENDS "${oidn_SOURCE_DIR}/bin/*.dll")
+    if(OIDN_RUNTIME_DLLS)
+        add_custom_command(TARGET TachyonRenderProfilerTests POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    ${OIDN_RUNTIME_DLLS}
+                    $<TARGET_FILE_DIR:TachyonRenderProfilerTests>
+            COMMAND_EXPAND_LISTS
+        )
+    endif()
+endif()
+
+if(MSVC)
+    target_compile_options(TachyonRenderProfilerTests PRIVATE /FS)
+endif()
+
+add_executable(TachyonScene3DSmokeTests
+    unit/test_main_scene3d_smoke.cpp
+    integration/scene3d_smoke_tests.cpp
+)
+
+target_compile_definitions(TachyonScene3DSmokeTests
+    PRIVATE
+        TACHYON_TESTS_SOURCE_DIR="${TACHYON_TESTS_SOURCE_DIR}"
+)
+
+target_link_libraries(TachyonScene3DSmokeTests
+    PRIVATE
+        TachyonRuntimeEngine
+        TachyonStudio
+)
+
+if(TACHYON_ENABLE_TRACKER)
+    target_link_libraries(TachyonScene3DSmokeTests PRIVATE TachyonTracker)
+endif()
+
+if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
+    target_precompile_headers(TachyonScene3DSmokeTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")
+endif()
+
+if(MSVC)
+    file(GLOB OIDN_RUNTIME_DLLS CONFIGURE_DEPENDS "${oidn_SOURCE_DIR}/bin/*.dll")
+    if(OIDN_RUNTIME_DLLS)
+        add_custom_command(TARGET TachyonScene3DSmokeTests POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    ${OIDN_RUNTIME_DLLS}
+                    $<TARGET_FILE_DIR:TachyonScene3DSmokeTests>
+            COMMAND_EXPAND_LISTS
+        )
+    endif()
+endif()
+
+if(MSVC)
+    target_compile_options(TachyonScene3DSmokeTests PRIVATE /FS)
 endif()
 
 # Header smoke tests - catch header errors early without full builds
@@ -349,6 +504,11 @@ add_test(
 )
 
 add_test(
+    NAME TachyonNativeRenderTests
+    COMMAND TachyonNativeRenderTests
+)
+
+add_test(
     NAME TachyonContentTests
     COMMAND TachyonContentTests
 )
@@ -356,6 +516,21 @@ add_test(
 add_test(
     NAME TachyonRenderTests
     COMMAND TachyonRenderTests
+)
+
+add_test(
+    NAME TachyonRenderPipelineTests
+    COMMAND TachyonRenderPipelineTests
+)
+
+add_test(
+    NAME TachyonRenderProfilerTests
+    COMMAND TachyonRenderProfilerTests
+)
+
+add_test(
+    NAME TachyonScene3DSmokeTests
+    COMMAND TachyonScene3DSmokeTests
 )
 
 add_test(

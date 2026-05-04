@@ -26,26 +26,13 @@ set(TachyonSceneSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/scene_spec_utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/cpp_scene_loader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/asset_resolver.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/effect_compiler.cpp
     
     # Spec - Schema
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/schema/scene_spec.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/schema/scene_spec_core.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/schema/migration/scene_migration.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/schema/objects/background_spec.cpp
-    
-    # Spec - Compilation
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/component_library.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/effect_compiler.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/layer_compiler.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/preset_compiler.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/property_compiler.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_compiler.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_compiler_build.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_compiler_graph.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_compiler_hashing.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_compiler_property.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_compiler_resolve.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_hash_builder.cpp
     
     # Spec - Validation
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/validation/scene_validator_composition.cpp

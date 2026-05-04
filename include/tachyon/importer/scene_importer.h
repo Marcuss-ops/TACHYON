@@ -57,7 +57,7 @@ protected:
 };
 
 // Factories – return nullptr if the respective format is not compiled in
-std::unique_ptr<SceneImporter> create_usd_importer();
-std::unique_ptr<SceneImporter> create_alembic_importer();
+TACHYON_API std::unique_ptr<SceneImporter> create_usd_importer();
+TACHYON_API std::unique_ptr<SceneImporter> create_alembic_importer();
 
 } // namespace tachyon::importer
