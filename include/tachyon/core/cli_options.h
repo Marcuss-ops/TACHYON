@@ -29,6 +29,8 @@ struct CliOptions {
     std::optional<std::string> preset_id;
     std::filesystem::path cpp_path;           // Path to .cpp scene script
     std::string quality{"draft"};            // Rendering quality tier
+    bool json_output{false};
+    int inspect_samples{5};
 
     // fetch-fonts command options
     std::string font_family;

@@ -1,5 +1,4 @@
 # TachyonScene sources
-message(STATUS "DEBUG: Entering TachyonSceneSources.cmake")
 set(TachyonSceneSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/data_loader.cpp
@@ -78,4 +77,3 @@ set(TachyonSceneSources
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/text/text_builders.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/transition/transition_builders.cpp
 )
-message(STATUS "DEBUG: TachyonSceneSources has ${TachyonSceneSources}")

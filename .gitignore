@@ -38,3 +38,7 @@ debug/render_*/
 studio/library/animations/transitions/Output/
 studio/library/animations/transitions/*/output/*.mp4
 studio/library/animations/transitions/*/output/*.png
+
+# Local editor history
+.history/
+

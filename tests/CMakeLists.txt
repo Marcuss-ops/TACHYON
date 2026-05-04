@@ -34,6 +34,8 @@ add_executable(TachyonTests
     unit/timeline/time_tests.cpp
     unit/timeline/camera_cuts_tests.cpp
     unit/core/spec/scene_spec_tests.cpp
+    unit/core/analysis/scene_inspector_tests.cpp
+    unit/core/analysis/motion_map_tests.cpp
     unit/core/camera/camera_shake_tests.cpp
     unit/core/properties/bezier_interpolator_tests.cpp
     unit/renderer2d/composition/matte_resolver_tests.cpp
@@ -45,8 +47,9 @@ add_executable(TachyonTests
     unit/core/spec/cli_tests.cpp
     unit/core/spec/render_job_tests.cpp
     unit/text/glyph_cache_tests.cpp
-    unit/text/text_tests.cpp  # Re-enabled - was disabled for pre-existing build errors
-    unit/text/editor_tests.cpp
+     unit/text/text_tests.cpp  # Re-enabled - was disabled for pre-existing build errors
+     unit/text/text_preset_tests.cpp
+     unit/text/editor_tests.cpp
     unit/audio/test_audio_pitch_correct.cpp  # Re-enabled - was disabled for pre-existing build errors
     unit/presets/background_preset_registry_tests.cpp
      integration/render_session_tests.cpp
@@ -61,6 +64,7 @@ add_executable(TachyonTests
     unit/presets/preset_tests.cpp
     unit/presets/sfx_contract_tests.cpp
     unit/presets/shape_contract_tests.cpp
+    unit/presets/transition_builder_tests.cpp
     unit/runtime/native_render_tests.cpp
     unit/runtime/profiling/render_profiler_tests.cpp
     unit/audio/test_audio_trim.cpp
@@ -90,7 +94,7 @@ target_compile_definitions(TachyonTests
 
 target_link_libraries(TachyonTests
     PRIVATE
-        TachyonCore
+        TachyonEngine
 )
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
@@ -115,19 +119,19 @@ endif()
 
 # Header smoke tests - catch header errors early without full builds
 add_executable(HeaderSmokeCompositionSpec compile/header_smoke_composition_spec.cpp)
-target_link_libraries(HeaderSmokeCompositionSpec PRIVATE TachyonCore)
+target_link_libraries(HeaderSmokeCompositionSpec PRIVATE TachyonEngine)
 
 add_executable(HeaderSmokeSceneSpec compile/header_smoke_scene_spec.cpp)
-target_link_libraries(HeaderSmokeSceneSpec PRIVATE TachyonCore)
+target_link_libraries(HeaderSmokeSceneSpec PRIVATE TachyonEngine)
 
 add_executable(HeaderSmokeLayerSpec compile/header_smoke_layer_spec.cpp)
-target_link_libraries(HeaderSmokeLayerSpec PRIVATE TachyonCore)
+target_link_libraries(HeaderSmokeLayerSpec PRIVATE TachyonEngine)
 
 add_executable(HeaderSmokeSceneBuilder compile/header_smoke_scene_builder.cpp)
-target_link_libraries(HeaderSmokeSceneBuilder PRIVATE TachyonCore)
+target_link_libraries(HeaderSmokeSceneBuilder PRIVATE TachyonEngine)
 
 add_executable(HeaderSmokeRenderJobSpec compile/header_smoke_render_job_spec.cpp)
-target_link_libraries(HeaderSmokeRenderJobSpec PRIVATE TachyonCore)
+target_link_libraries(HeaderSmokeRenderJobSpec PRIVATE TachyonEngine)
 
 add_custom_target(HeaderSmokeTests
     DEPENDS HeaderSmokeCompositionSpec HeaderSmokeSceneSpec HeaderSmokeLayerSpec HeaderSmokeSceneBuilder HeaderSmokeRenderJobSpec
@@ -135,7 +139,7 @@ add_custom_target(HeaderSmokeTests
 )
 
 add_executable(Phase1Tests unit/text/phase1_tests.cpp)
-target_link_libraries(Phase1Tests PRIVATE TachyonCore)
+target_link_libraries(Phase1Tests PRIVATE TachyonEngine)
 target_compile_definitions(Phase1Tests PRIVATE TACHYON_TESTS_SOURCE_DIR="${TACHYON_TESTS_SOURCE_DIR}")
 
 add_test(

@@ -196,6 +196,28 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
             options.quality = value;
             continue;
         }
+        if (arg == "--json") {
+            options.json_output = true;
+            continue;
+        }
+        if (arg == "--samples") {
+            const std::string value = require_argument(args, index);
+            if (value.empty()) {
+                result.diagnostics.add_error("cli.samples_missing", "missing value for --samples");
+                return result;
+            }
+            try {
+                options.inspect_samples = std::stoi(value);
+                if (options.inspect_samples <= 0) {
+                    result.diagnostics.add_error("cli.samples_invalid", "--samples must be greater than zero");
+                    return result;
+                }
+            } catch (const std::exception&) {
+                result.diagnostics.add_error("cli.samples_invalid", "invalid value for --samples: " + value);
+                return result;
+            }
+            continue;
+        }
         if (arg == "--version" || arg == "-v") {
             options.show_version = true;
             continue;
