@@ -46,7 +46,6 @@ set(TachyonRenderer2DSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/primitives/text_mesh_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/utilities/composition_utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/utilities/raster.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/utilities/render_graph.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/math/math_utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/path/contour/contour_processing.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/path/flattening/path_flattening.cpp
