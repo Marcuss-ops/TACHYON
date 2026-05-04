@@ -1,9 +1,7 @@
 #include "tachyon/core/spec/schema/objects/background_spec.h"
-#include <algorithm>
 #include <cstdlib>
 #include <string>
 #include <sstream>
-#include <vector>
 #include <unordered_map>
 
 namespace tachyon {
@@ -124,19 +122,6 @@ BackgroundSpec BackgroundSpec::from_string(const std::string& str) {
     // Check if it looks like an asset reference (contains '/' or ends with common image extensions)
     if (str.find('/') != std::string::npos || str.ends_with(".png") || str.ends_with(".jpg") || str.ends_with(".jpeg")) {
         result.type = BackgroundType::Asset;
-        return result;
-    }
-
-    // List of known background presets to help with detection
-    static const std::vector<std::string> known_presets = {
-        "blank_canvas", "aurora_mesh", "liquid_glass_blobs", "dot_grid_fade",
-        "noise_grain_vignette", "mesh_gradient", "ripple_grid", "shape_grid_square",
-        "dark_grain", "white_paper", "grid_dark", "grid_white", "soft_mesh", "apple_blobs",
-        "grid_bg"
-    };
-
-    if (std::find(known_presets.begin(), known_presets.end(), str) != known_presets.end()) {
-        result.type = BackgroundType::Preset;
         return result;
     }
 

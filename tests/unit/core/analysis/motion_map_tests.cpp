@@ -43,6 +43,12 @@ bool run_motion_map_tests() {
     comp.layers.push_back(layer);
     scene.compositions.push_back(comp);
 
+    const auto static_report = build_motion_map(scene);
+    if (!static_report.compositions.empty() && !static_report.compositions.front().runtime_samples.empty()) {
+        std::cerr << "motion_map: runtime samples should be opt-in\n";
+        return false;
+    }
+
     MotionMapOptions options;
     options.runtime_samples = 3;
 

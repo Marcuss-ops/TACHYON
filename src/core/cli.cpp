@@ -41,7 +41,7 @@ static const std::vector<CommandEntry> kCommands = {
     },
     {
         "inspect",
-        "tachyon inspect --cpp <scene.cpp> [--job <file>] [--json] [--samples <n>]",
+        "tachyon inspect --cpp <scene.cpp> [--job <file>] [--json] [--info] [--samples <n>]",
         [](const CliOptions& o, std::ostream& e) {
             if (o.cpp_path.empty() && !o.preset_id.has_value()) {
                 e << "Either --cpp or --preset is required for inspect\n";

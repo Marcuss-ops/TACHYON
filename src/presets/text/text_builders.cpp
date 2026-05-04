@@ -224,12 +224,36 @@ LayerSpec build_text_underline(const TextParams& p) {
 
 LayerSpec build_text_brushed_metal_title(const TextParams& p) {
     auto l = make_text_layer_base(p);
-    // Metallic look: Silver/Steel colors
     l.fill_color = AnimatedColorSpec(ColorSpec{192, 192, 200, 255});
     l.text_animators = {
         ::tachyon::text::make_tracking_reveal_animator("characters_excluding_spaces", p.reveal_duration, 40.0),
         ::tachyon::text::make_blur_to_focus_animator("characters_excluding_spaces", p.reveal_duration, 12.0),
         ::tachyon::text::make_minimal_fade_up_animator("characters_excluding_spaces", p.reveal_duration, 20.0),
+    };
+    return l;
+}
+
+LayerSpec build_text_bounce_in(const TextParams& p) {
+    auto l = make_text_layer_base(p);
+    l.text_animators = {
+        ::tachyon::text::make_bounce_in_animator(
+            "characters_excluding_spaces",
+            p.stagger_delay,
+            p.reveal_duration,
+            34.0
+        ),
+    };
+    return l;
+}
+
+LayerSpec build_text_word_punch(const TextParams& p) {
+    auto l = make_text_layer_base(p);
+    l.text_animators = {
+        ::tachyon::text::make_word_punch_animator(
+            p.stagger_delay,
+            p.reveal_duration,
+            1.12
+        ),
     };
     return l;
 }
@@ -264,6 +288,8 @@ LayerSpec build_text(const TextParams& p) {
     if (p.animation == "morphing")         return build_text_morphing(p);
     if (p.animation == "underline")        return build_text_underline(p);
     if (p.animation == "brushedMetal")    return build_text_brushed_metal_title(p);
+    if (p.animation == "bounce_in")       return build_text_bounce_in(p);
+    if (p.animation == "word_punch")      return build_text_word_punch(p);
     return build_text_fade_up(p);
 }
 

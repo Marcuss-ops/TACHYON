@@ -91,9 +91,10 @@ bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostr
  
     std::optional<RenderPlan> render_plan;
     std::optional<RenderExecutionPlan> execution_plan;
- 
+
     analysis::InspectionOptions inspect_options;
     inspect_options.samples = options.inspect_samples;
+    inspect_options.include_info = options.inspect_include_info;
     const auto inspection = analysis::inspect_scene(scene, inspect_options);
 
     if (options.json_output) {

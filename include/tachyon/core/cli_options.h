@@ -31,6 +31,8 @@ struct CliOptions {
     std::string quality{"draft"};            // Rendering quality tier
     bool json_output{false};
     int inspect_samples{5};
+    bool inspect_include_info{false};
+    bool samples_explicitly_set{false};
 
     // fetch-fonts command options
     std::string font_family;

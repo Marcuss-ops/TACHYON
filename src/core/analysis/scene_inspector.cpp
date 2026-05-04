@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <sstream>
+#include <utility>
 
 namespace tachyon::analysis {
 namespace {
@@ -21,6 +22,20 @@ void add_issue(
         std::move(message),
         time,
     });
+}
+
+void add_info(
+    InspectionReport& report,
+    const InspectionOptions& options,
+    std::string code,
+    std::string path,
+    std::string message,
+    double time = 0.0) {
+    if (!options.include_info) {
+        return;
+    }
+
+    add_issue(report, InspectionSeverity::Info, std::move(code), std::move(path), std::move(message), time);
 }
 
 std::string severity_to_string(InspectionSeverity severity) {
@@ -142,9 +157,7 @@ InspectionReport inspect_scene(const SceneSpec& scene, const InspectionOptions& 
             }
 
             if (!layer.enabled || !layer.visible) {
-                if (options.include_info) {
-                    add_issue(report, InspectionSeverity::Info, "layer.disabled", layer_path, "Layer is disabled or invisible.");
-                }
+                add_info(report, options, "layer.disabled", layer_path, "Layer is disabled or invisible.");
             }
 
             if (end <= start) {
@@ -203,52 +216,52 @@ InspectionReport inspect_scene(const SceneSpec& scene, const InspectionOptions& 
             }
 
             if (has_motion(layer.opacity_property)) {
-                add_issue(report, InspectionSeverity::Info, "layer.opacity_animated", layer_path, "Opacity is animated.");
+                add_info(report, options, "layer.opacity_animated", layer_path, "Opacity is animated.");
             }
             if (has_motion(layer.time_remap_property)) {
-                add_issue(report, InspectionSeverity::Info, "layer.time_remap", layer_path, "Time remapping is enabled.");
+                add_info(report, options, "layer.time_remap", layer_path, "Time remapping is enabled.");
             }
             if (has_motion(layer.font_size)) {
-                add_issue(report, InspectionSeverity::Info, "text.font_size_animated", layer_path, "Font size is animated.");
+                add_info(report, options, "text.font_size_animated", layer_path, "Font size is animated.");
             }
             if (has_motion(layer.stroke_width_property)) {
-                add_issue(report, InspectionSeverity::Info, "text.stroke_width_animated", layer_path, "Stroke width is animated.");
+                add_info(report, options, "text.stroke_width_animated", layer_path, "Stroke width is animated.");
             }
             if (has_motion(layer.light_intensity)) {
-                add_issue(report, InspectionSeverity::Info, "light.intensity_animated", layer_path, "Light intensity is animated.");
+                add_info(report, options, "light.intensity_animated", layer_path, "Light intensity is animated.");
             }
             if (has_motion(layer.camera_zoom)) {
-                add_issue(report, InspectionSeverity::Info, "camera.zoom_animated", layer_path, "Camera zoom is animated.");
+                add_info(report, options, "camera.zoom_animated", layer_path, "Camera zoom is animated.");
             }
             if (has_motion(layer.camera_poi)) {
-                add_issue(report, InspectionSeverity::Info, "camera.poi_animated", layer_path, "Camera point of interest is animated.");
+                add_info(report, options, "camera.poi_animated", layer_path, "Camera point of interest is animated.");
             }
             if (has_motion(layer.camera_shake_amplitude_pos) || has_motion(layer.camera_shake_amplitude_rot)) {
-                add_issue(report, InspectionSeverity::Info, "camera.shake_animated", layer_path, "Camera shake is animated.");
+                add_info(report, options, "camera.shake_animated", layer_path, "Camera shake is animated.");
             }
             if (has_motion(layer.repeater_count) || has_motion(layer.repeater_stagger_delay) || has_motion(layer.repeater_offset_position_x)
                 || has_motion(layer.repeater_offset_position_y) || has_motion(layer.repeater_offset_rotation) || has_motion(layer.repeater_offset_scale_x)
                 || has_motion(layer.repeater_offset_scale_y) || has_motion(layer.repeater_start_opacity) || has_motion(layer.repeater_end_opacity)
                 || has_motion(layer.repeater_grid_cols) || has_motion(layer.repeater_radial_radius) || has_motion(layer.repeater_radial_start_angle)
                 || has_motion(layer.repeater_radial_end_angle)) {
-                add_issue(report, InspectionSeverity::Info, "layer.repeater_animated", layer_path, "Repeater settings are animated.");
+                add_info(report, options, "layer.repeater_animated", layer_path, "Repeater settings are animated.");
             }
 
             if (!layer.in_preset.empty()) {
-                add_issue(report, InspectionSeverity::Info, "layer.in_preset", layer_path, "Layer uses in preset: " + layer.in_preset);
+                add_info(report, options, "layer.in_preset", layer_path, "Layer uses in preset: " + layer.in_preset);
             }
             if (!layer.during_preset.empty()) {
-                add_issue(report, InspectionSeverity::Info, "layer.during_preset", layer_path, "Layer uses during preset: " + layer.during_preset);
+                add_info(report, options, "layer.during_preset", layer_path, "Layer uses during preset: " + layer.during_preset);
             }
             if (!layer.out_preset.empty()) {
-                add_issue(report, InspectionSeverity::Info, "layer.out_preset", layer_path, "Layer uses out preset: " + layer.out_preset);
+                add_info(report, options, "layer.out_preset", layer_path, "Layer uses out preset: " + layer.out_preset);
             }
 
             if (layer.transition_in.kind != TransitionKind::None) {
-                add_issue(report, InspectionSeverity::Info, "layer.transition_in", layer_path, "Layer has an entrance transition.");
+                add_info(report, options, "layer.transition_in", layer_path, "Layer has an entrance transition.");
             }
             if (layer.transition_out.kind != TransitionKind::None) {
-                add_issue(report, InspectionSeverity::Info, "layer.transition_out", layer_path, "Layer has an exit transition.");
+                add_info(report, options, "layer.transition_out", layer_path, "Layer has an exit transition.");
             }
 
             if (layer.loop) {
@@ -256,24 +269,24 @@ InspectionReport inspect_scene(const SceneSpec& scene, const InspectionOptions& 
             }
 
             if (!layer.text_animators.empty()) {
-                add_issue(report, InspectionSeverity::Info, "text.animators", layer_path, "Layer has " + std::to_string(layer.text_animators.size()) + " text animator(s).");
+                add_info(report, options, "text.animators", layer_path, "Layer has " + std::to_string(layer.text_animators.size()) + " text animator(s).");
                 for (const auto& animator : layer.text_animators) {
                     if (has_text_motion(animator)) {
-                        add_issue(report, InspectionSeverity::Info, "text.animator_motion", layer_path, "Text animator '" + animator.name + "' is animated.");
+                        add_info(report, options, "text.animator_motion", layer_path, "Text animator '" + animator.name + "' is animated.");
                     }
                 }
             }
 
             if (!layer.markers.empty()) {
-                add_issue(report, InspectionSeverity::Info, "layer.markers", layer_path, "Layer has markers.");
+                add_info(report, options, "layer.markers", layer_path, "Layer has markers.");
             }
 
             if (layer.procedural.has_value()) {
-                add_issue(report, InspectionSeverity::Info, "layer.procedural", layer_path, "Layer uses procedural generation.");
+                add_info(report, options, "layer.procedural", layer_path, "Layer uses procedural generation.");
             }
 
             if (layer.particle_spec.has_value()) {
-                add_issue(report, InspectionSeverity::Info, "layer.particles", layer_path, "Layer uses a particle spec.");
+                add_info(report, options, "layer.particles", layer_path, "Layer uses a particle spec.");
             }
         }
 

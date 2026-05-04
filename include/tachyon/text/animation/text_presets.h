@@ -124,4 +124,15 @@ namespace tachyon::text {
     std::string based_on = "characters",
     double reveal_duration_seconds = 0.35);
 
+[[nodiscard]] ::tachyon::TextAnimatorSpec make_bounce_in_animator(
+    std::string based_on = "characters_excluding_spaces",
+    double stagger_delay_seconds = 0.025,
+    double reveal_duration_seconds = 0.45,
+    double y_offset_px = 34.0);
+
+[[nodiscard]] ::tachyon::TextAnimatorSpec make_word_punch_animator(
+    double word_stagger_delay_seconds = 0.06,
+    double reveal_duration_seconds = 0.35,
+    double punch_scale = 1.12);
+
 } // namespace tachyon::text

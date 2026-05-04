@@ -200,6 +200,10 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
             options.json_output = true;
             continue;
         }
+        if (arg == "--info") {
+            options.inspect_include_info = true;
+            continue;
+        }
         if (arg == "--samples") {
             const std::string value = require_argument(args, index);
             if (value.empty()) {
@@ -212,6 +216,7 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
                     result.diagnostics.add_error("cli.samples_invalid", "--samples must be greater than zero");
                     return result;
                 }
+                options.samples_explicitly_set = true;
             } catch (const std::exception&) {
                 result.diagnostics.add_error("cli.samples_invalid", "invalid value for --samples: " + value);
                 return result;
