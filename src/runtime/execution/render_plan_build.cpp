@@ -1,7 +1,13 @@
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/execution/frames/frame_executor.h"
+#include "tachyon/runtime/cache/cache_key_builder.h"
+#include "tachyon/text/fonts/management/font_manifest.h"
 
 #include <algorithm>
+#include <array>
+#include <filesystem>
+#include <fstream>
+#include <span>
 #include <string_view>
 
 namespace tachyon {
@@ -34,6 +40,41 @@ std::size_t count_layers_with_track_matte(const CompositionSpec& composition) {
         [&](const LayerSpec& layer) { return layer.track_matte_type != TrackMatteType::None; }));
 }
 
+std::uint64_t hash_font_content(const SceneSpec& scene) {
+    if (!scene.font_manifest) {
+        return 0;
+    }
+
+    CacheKeyBuilder builder;
+    builder.add_u64(static_cast<std::uint64_t>(scene.font_manifest->fonts.size()));
+    for (const auto& entry : scene.font_manifest->fonts) {
+        builder.add_string(entry.id);
+        builder.add_string(entry.family);
+        builder.add_string(entry.src.string());
+        builder.add_u64(static_cast<std::uint64_t>(entry.weight));
+        builder.add_u32(static_cast<std::uint32_t>(entry.style));
+        builder.add_u32(static_cast<std::uint32_t>(entry.stretch));
+        builder.add_string(entry.format);
+        builder.add_bool(entry.is_fallback);
+
+        if (std::filesystem::exists(entry.src) && std::filesystem::is_regular_file(entry.src)) {
+            std::ifstream file(entry.src, std::ios::binary);
+            if (file) {
+                std::array<std::byte, 4096> buffer{};
+                while (file) {
+                    file.read(reinterpret_cast<char*>(buffer.data()), static_cast<std::streamsize>(buffer.size()));
+                    const std::streamsize read = file.gcount();
+                    if (read > 0) {
+                        builder.add_bytes(std::span<const std::byte>(buffer.data(), static_cast<std::size_t>(read)));
+                    }
+                }
+            }
+        }
+    }
+
+    return builder.finish();
+}
+
 CompositionSummary make_summary(const CompositionSpec& composition) {
     CompositionSummary summary;
     summary.id = composition.id;
@@ -58,8 +99,10 @@ CompositionSummary make_summary(const CompositionSpec& composition) {
 
 ResolutionResult<RenderPlan> build_render_plan(const SceneSpec& scene, const RenderJob& job) {
     ResolutionResult<RenderPlan> result;
+    RenderJob resolved_job = job;
+    apply_output_preset(resolved_job.output.profile);
 
-    const CompositionSpec* composition = find_composition(scene, job.composition_target);
+    const CompositionSpec* composition = find_composition(scene, resolved_job.composition_target);
     if (composition == nullptr) {
         result.diagnostics.add_error(
             "plan.composition_missing",
@@ -69,34 +112,35 @@ ResolutionResult<RenderPlan> build_render_plan(const SceneSpec& scene, const Ren
     }
 
     RenderPlan plan;
-    plan.job_id = job.job_id;
-    plan.scene_ref = job.scene_ref;
-    plan.composition_target = job.composition_target;
+    plan.job_id = resolved_job.job_id;
+    plan.scene_ref = resolved_job.scene_ref;
+    plan.composition_target = resolved_job.composition_target;
     plan.composition = make_summary(*composition);
-    plan.frame_range = job.frame_range;
-    plan.output = job.output;
-    plan.quality_tier = job.quality_tier;
+    plan.frame_range = resolved_job.frame_range;
+    plan.output = resolved_job.output;
+    plan.quality_tier = resolved_job.quality_tier;
     plan.quality_policy = make_quality_policy(plan.quality_tier);
-    plan.compositing_alpha_mode = job.compositing_alpha_mode;
-    plan.working_space = job.working_space;
-    plan.motion_blur_enabled = job.motion_blur_enabled;
-    plan.motion_blur_samples = job.motion_blur_samples;
+    plan.compositing_alpha_mode = resolved_job.compositing_alpha_mode;
+    plan.working_space = resolved_job.working_space;
+    plan.motion_blur_enabled = resolved_job.motion_blur_enabled;
+    plan.motion_blur_samples = resolved_job.motion_blur_samples;
     if (plan.motion_blur_enabled && plan.motion_blur_samples <= 0) {
         plan.motion_blur_samples = 8;
     }
-    plan.motion_blur_shutter_angle = job.motion_blur_shutter_angle;
-    plan.motion_blur_curve = job.motion_blur_curve;
-    plan.seed_policy_mode = job.seed_policy_mode;
-    plan.compatibility_mode = job.compatibility_mode;
+    plan.motion_blur_shutter_angle = resolved_job.motion_blur_shutter_angle;
+    plan.motion_blur_curve = resolved_job.motion_blur_curve;
+    plan.seed_policy_mode = resolved_job.seed_policy_mode;
+    plan.compatibility_mode = resolved_job.compatibility_mode;
     plan.scene_spec = &scene;
-    plan.variables = job.variables;
-    plan.string_variables = job.string_variables;
-    plan.layer_overrides = job.layer_overrides;
+    plan.variables = resolved_job.variables;
+    plan.string_variables = resolved_job.string_variables;
+    plan.layer_overrides = resolved_job.layer_overrides;
 
     // Canonical fields correctly populated
     plan.scene_hash = hash_scene_content(scene);
+    plan.font_content_hash = hash_font_content(scene);
     plan.contract_version = 1;
-    plan.proxy_enabled = job.proxy_enabled;
+    plan.proxy_enabled = resolved_job.proxy_enabled;
 
     result.value = std::move(plan);
     return result;

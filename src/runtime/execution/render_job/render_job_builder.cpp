@@ -15,7 +15,7 @@ RenderJob RenderJobBuilder::still_image(
     job.output.destination.overwrite = true;
     
     // Default to high quality PNG sequence (one frame)
-    job.output.profile.name = "png-sequence";
+    job.output.profile.name = "png_sequence";
     job.output.profile.container = "png";
     job.output.profile.format = OutputFormat::ImageSequence;
     job.output.profile.video.codec = "png";
@@ -45,7 +45,7 @@ RenderJob RenderJobBuilder::video_export(
     job.output.destination.overwrite = true;
     
     // Default to H.264 MP4
-    job.output.profile.name = "h264-mp4";
+    job.output.profile.name = "youtube_1080p_30";
     job.output.profile.container = "mp4";
     job.output.profile.format = OutputFormat::Video;
     job.output.profile.video.codec = "libx264";

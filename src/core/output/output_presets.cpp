@@ -6,23 +6,38 @@ namespace tachyon::output {
 namespace {
 std::unordered_map<std::string, OutputPreset> s_presets;
 
+void add_preset(std::string id, OutputPreset preset) {
+    s_presets.emplace(std::move(id), std::move(preset));
+}
+
 void init_default_presets() {
     if (!s_presets.empty()) return;
 
-    // youtube_1080p - h264, yuv420p, crf18, bt709, limited
-    s_presets["youtube_1080p"] = OutputPreset{
+    const OutputPreset youtube_1080p{
         .codec = "h264",
         .pixel_fmt = "yuv420p",
+        .container = "mp4",
+        .class_name = "video-export",
+        .alpha_mode = "discarded",
+        .rate_control_mode = "crf",
         .crf = 18,
         .color_space = "bt709",
         .color_range = "limited",
         .faststart = true
     };
 
-    // youtube_shorts - h264, yuv420p, crf18, bt709, limited, 1080x1920
-    s_presets["youtube_shorts"] = OutputPreset{
+    // youtube_1080p and aliases.
+    add_preset("youtube_1080p", youtube_1080p);
+    add_preset("youtube_1080p_30", youtube_1080p);
+    add_preset("h264-mp4", youtube_1080p);
+
+    const OutputPreset youtube_shorts{
         .codec = "h264",
         .pixel_fmt = "yuv420p",
+        .container = "mp4",
+        .class_name = "video-export",
+        .alpha_mode = "discarded",
+        .rate_control_mode = "crf",
         .crf = 18,
         .color_space = "bt709",
         .color_range = "limited",
@@ -31,57 +46,73 @@ void init_default_presets() {
         .height = 1920
     };
 
-    // youtube_4k - h265, yuv420p, crf20
-    s_presets["youtube_4k"] = OutputPreset{
+    // youtube_shorts and aliases.
+    add_preset("youtube_shorts", youtube_shorts);
+    add_preset("shorts", youtube_shorts);
+    add_preset("tiktok", youtube_shorts);
+
+    const OutputPreset youtube_4k{
         .codec = "h265",
         .pixel_fmt = "yuv420p",
+        .container = "mp4",
+        .class_name = "video-export",
+        .alpha_mode = "discarded",
+        .rate_control_mode = "crf",
         .crf = 20,
         .color_space = "bt709",
         .color_range = "limited",
         .faststart = true
     };
 
-    // tiktok - h264, yuv420p, crf18, 1080x1920
-    s_presets["tiktok"] = OutputPreset{
-        .codec = "h264",
-        .pixel_fmt = "yuv420p",
-        .crf = 18,
-        .color_space = "bt709",
-        .color_range = "limited",
-        .faststart = true,
-        .width = 1080,
-        .height = 1920
-    };
+    add_preset("youtube_4k", youtube_4k);
 
-    // preview - h264, yuv420p, crf28, fast encode
-    s_presets["preview"] = OutputPreset{
+    const OutputPreset preview{
         .codec = "h264",
         .pixel_fmt = "yuv420p",
-        .crf = 28,
+        .container = "mp4",
+        .class_name = "video-export",
+        .alpha_mode = "discarded",
+        .rate_control_mode = "crf",
+        .crf = 18,
         .color_space = "bt709",
         .color_range = "limited",
         .faststart = true
     };
 
-    // png_sequence - png frame-by-frame
-    s_presets["png_sequence"] = OutputPreset{
+    add_preset("preview", preview);
+
+    const OutputPreset png_sequence{
         .codec = "png",
         .pixel_fmt = "rgb24",
+        .container = "png",
+        .class_name = "image-sequence",
+        .alpha_mode = "preserved",
+        .rate_control_mode = "fixed",
         .crf = 0,
         .color_space = "srgb",
         .color_range = "full",
         .faststart = false
     };
 
-    // prores_4444 - prores, yuva444p10le, alpha
-    s_presets["prores_4444"] = OutputPreset{
+    add_preset("png_sequence", png_sequence);
+    add_preset("png-sequence", png_sequence);
+    add_preset("png-seq", png_sequence);
+
+    const OutputPreset prores_4444{
         .codec = "prores",
         .pixel_fmt = "yuva444p10le",
+        .container = "mov",
+        .class_name = "video-export",
+        .alpha_mode = "preserved",
+        .rate_control_mode = "fixed",
         .crf = 0,
         .color_space = "bt709",
         .color_range = "limited",
         .faststart = false
     };
+
+    add_preset("prores_4444", prores_4444);
+
 }
 } // namespace
 

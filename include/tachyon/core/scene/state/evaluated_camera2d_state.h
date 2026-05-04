@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/core/api.h"
 #include "tachyon/core/math/matrix3x3.h"
 #include "tachyon/core/math/vector2.h"
 
@@ -18,7 +19,7 @@ struct EvaluatedCamera2D {
     int viewport_width{1920};
     int viewport_height{1080};
     
-    void recalculate_matrices();
+    TACHYON_API void recalculate_matrices();
 };
 
 } // namespace tachyon

@@ -16,7 +16,7 @@ namespace tachyon {
  * @brief Utility for generating deterministic fingerprints of render outputs.
  * Uses a modified 64-bit mixer designed for high throughput.
  */
-class TACHYON_API FrameHasher {
+class FrameHasher {
 public:
     FrameHasher() noexcept = default;
 

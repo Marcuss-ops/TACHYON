@@ -12,6 +12,36 @@ namespace tachyon {
 bool run_native_render_tests() {
     using namespace scene;
 
+    {
+        SceneSpec scene;
+        scene.project.id = "preflight_scene";
+        scene.project.name = "Preflight Scene";
+
+        CompositionSpec comp;
+        comp.id = "main";
+        comp.width = 1280;
+        comp.height = 720;
+        comp.duration = 1.0;
+        comp.frame_rate = {30, 1};
+        scene.compositions.push_back(comp);
+
+        RenderJob job;
+        job.job_id = "preflight_invalid";
+        job.scene_ref = "preflight_scene";
+        job.composition_target = "main";
+        job.frame_range = {0, 0};
+
+        const auto result = NativeRenderer::render(scene, job);
+        if (result.diagnostics.ok()) {
+            std::cerr << "FAIL: preflight should reject an invalid render job\n";
+            return false;
+        }
+        if (result.scene_compile_ms != 0.0 || result.plan_build_ms != 0.0 || result.execution_plan_build_ms != 0.0) {
+            std::cerr << "FAIL: preflight should short-circuit before compilation\n";
+            return false;
+        }
+    }
+
     std::cout << "[NativeRender] Starting Premium Background Batch Render...\n";
 
     for (const auto& pid : presets::list_background_presets()) {

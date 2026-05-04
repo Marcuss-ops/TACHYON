@@ -191,7 +191,7 @@ struct AnimatedMaskPathSpec {
  * Allows effects to have keyframed scalar/color/string parameters instead of static values.
  * Example: Blur radius animating from 0 to 50 over 2 seconds.
  */
-struct TACHYON_API AnimatedEffectSpec {
+struct AnimatedEffectSpec {
     bool enabled{true};
     std::string type;
     
@@ -209,7 +209,7 @@ struct TACHYON_API AnimatedEffectSpec {
      * @param time_seconds Time in seconds to evaluate.
      * @return EffectSpec with evaluated values at the given time.
      */
-    [[nodiscard]] EffectSpec evaluate(double time_seconds) const;
+    [[nodiscard]] TACHYON_API EffectSpec evaluate(double time_seconds) const;
     
     /**
      * @brief Check if this effect has any animated parameters.
