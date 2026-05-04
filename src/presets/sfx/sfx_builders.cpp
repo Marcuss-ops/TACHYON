@@ -1,6 +1,6 @@
 #include "tachyon/presets/sfx/sfx_builders.h"
+#include "tachyon/presets/sfx/sfx_registry.h"
 #include "tachyon/audio/core/sound_effect_registry.h"
-#include <map>
 #include <vector>
 #include <algorithm>
 
@@ -9,35 +9,20 @@ namespace tachyon::presets {
 namespace spec = tachyon::spec;
 using spec::AudioTrackSpec;
 
-namespace {
-
-std::string category_to_string(SfxCategory category) {
-    static const std::map<SfxCategory, std::string> category_folders = {
-        {SfxCategory::TypeWriting, "TypeWriting"},
-        {SfxCategory::Mouse, "Mouse"},
-        {SfxCategory::Photo, "Photo"},
-        {SfxCategory::Soosh, "Soosh"},
-        {SfxCategory::MoneySound, "MoneySound"},
-    };
-    auto it = category_folders.find(category);
-    if (it == category_folders.end()) {
-        return "";
-    }
-    return it->second;
-}
-
-} // anonymous namespace
-
 AudioTrackSpec build_sfx(const media::AssetResolver& resolver, const SfxParams& p, DiagnosticBag* diagnostics) {
     AudioTrackSpec spec;
     
-    std::string category_name = category_to_string(p.category);
-    if (category_name.empty()) {
+    auto& registry = SfxRegistry::instance();
+    const auto* info = registry.get_info(p.category);
+    
+    if (!info) {
         if (diagnostics) {
             diagnostics->add_error("SFX_UNKNOWN_CATEGORY", "Unknown SFX category requested.");
         }
         return spec;
     }
+
+    std::string category_name = info->folder;
 
     if (p.variant == -1) {
         // Deterministic random selection via the official registry
@@ -51,7 +36,7 @@ AudioTrackSpec build_sfx(const media::AssetResolver& resolver, const SfxParams& 
         // Direct variant selection
         auto sfx_root = resolver.config().sfx_root;
         if (!sfx_root.empty()) {
-            auto path = sfx_root / category_name / (std::to_string(p.variant) + ".m4a");
+            auto path = sfx_root / category_name / (std::to_string(p.variant) + info->extension);
             if (std::filesystem::exists(path)) {
                 spec.source_path = path.string();
             } else if (diagnostics) {

@@ -12,28 +12,14 @@ namespace tachyon::renderer2d {
 // Concrete implementation of EffectHost
 class EffectHostImpl : public EffectHost {
 public:
-    void register_effect(std::string name, std::unique_ptr<Effect> effect) override {
-        if (!effect) throw std::invalid_argument("effect must not be null");
-        m_effects[std::move(name)] = std::move(effect);
-    }
-    
     bool has_effect(const std::string& name) const override {
-        if (m_effects.find(name) != m_effects.end()) return true;
         return EffectRegistry::instance().find(name) != nullptr;
     }
     
     ResolutionResult<SurfaceRGBA> apply(const std::string& name, const SurfaceRGBA& input, const EffectParams& params) const override {
         ResolutionResult<SurfaceRGBA> result;
         
-        // 1. Try old-style internal effects (legacy path)
-        auto it = m_effects.find(name);
-        if (it != m_effects.end()) {
-            profiling::ProfileScope scope(params.context ? params.context->profiler : nullptr, profiling::ProfileEventType::Effect, name, -1, std::string(), name);
-            result.value = it->second->apply(input, params);
-            return result;
-        }
-
-        // 2. Try new-style registry effects
+        // Use central registry exclusively
         if (auto* desc = EffectRegistry::instance().find(name)) {
             profiling::ProfileScope scope(params.context ? params.context->profiler : nullptr, profiling::ProfileEventType::Effect, name, -1, std::string(), name);
             
@@ -58,13 +44,9 @@ public:
             return result;
         }
 
-        // 3. Strict failure: Unknown effect
+        // Strict failure: Unknown effect
         std::string msg = "Unknown effect '" + name + "'. No fallback allowed in strict mode.";
         result.diagnostics.add_error("EFFECT_NOT_FOUND", msg);
-        
-        // If we are in permissive mode (which we don't have yet in EffectParams, 
-        // but let's assume if we had it, we'd check it here), we might return input.
-        // For now, we return nullopt to signal failure.
         return result;
     }
     
@@ -90,7 +72,7 @@ std::unique_ptr<EffectHost> create_effect_host() {
     return std::make_unique<EffectHostImpl>();
 }
 
-void EffectHost::register_builtins(EffectHost& host) {
+void EffectHost::register_builtins(EffectHost&) {
     EffectRegistry::instance().register_builtins();
 }
 

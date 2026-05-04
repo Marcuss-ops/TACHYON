@@ -29,12 +29,6 @@ class EffectHost {
   EffectHost() = default;
   virtual ~EffectHost() = default;
 
-  /**
-   * @brief Registers a new effect.
-   * @deprecated Use EffectRegistry instead. This method will be removed in a future version.
-   */
-  virtual void register_effect(std::string name, std::unique_ptr<Effect> effect) = 0;
-  
   virtual bool has_effect(const std::string& name) const = 0;
 
   /**
@@ -53,9 +47,6 @@ class EffectHost {
       const std::vector<std::pair<std::string, EffectParams>>& pipeline) const = 0;
 
   static void register_builtins(EffectHost& host);
-
- protected:
-  std::unordered_map<std::string, std::unique_ptr<Effect>> m_effects;
 };
 
 std::unique_ptr<EffectHost> create_effect_host();

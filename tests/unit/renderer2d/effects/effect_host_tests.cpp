@@ -163,6 +163,7 @@ bool run_effect_host_tests() {
     check_true(cache.lookup("c") != nullptr, "C is present");
 
     // Test new transitions: light_leak, film_burn, flash
+    EffectParams leak_params;
     leak_params.scalars["t"] = 0.5f;
     leak_params.strings["transition_id"] = "light_leak";
     leak_params.aux_surfaces["transition_to"] = &transition_to;
@@ -171,6 +172,7 @@ bool run_effect_host_tests() {
     const SurfaceRGBA& leaked = *leaked_res.value;
     check_true(leaked.get_pixel(4, 4).a > 0, "Light leak transition produces visible output");
 
+    EffectParams leak_overlay_params;
     leak_overlay_params.scalars["t"] = 0.5f;
     leak_overlay_params.strings["transition_id"] = "light_leak";
     const auto leak_overlay_res = host.apply("glsl_transition", SurfaceRGBA(8, 8), leak_overlay_params);
@@ -180,6 +182,7 @@ bool run_effect_host_tests() {
     check_true(leak_overlay_center.r > 0.1f || leak_overlay_center.g > 0.05f || leak_overlay_center.b > 0.01f,
         "Light leak overlay mode produces visible amber output on black");
 
+    EffectParams burn_params;
     burn_params.scalars["t"] = 0.5f;
     burn_params.strings["transition_id"] = "film_burn";
     burn_params.aux_surfaces["transition_to"] = &transition_to;
@@ -188,6 +191,7 @@ bool run_effect_host_tests() {
     const SurfaceRGBA& burned = *burned_res.value;
     check_true(burned.get_pixel(4, 4).a > 0, "Film burn transition produces visible output");
 
+    EffectParams flash_params;
     flash_params.scalars["t"] = 0.5f;
     flash_params.strings["transition_id"] = "flash";
     flash_params.aux_surfaces["transition_to"] = &transition_to;

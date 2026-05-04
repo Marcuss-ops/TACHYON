@@ -16,9 +16,11 @@ namespace tachyon::renderer2d {
  * @brief Requirements for auxiliary surfaces (e.g., masks, displacement maps).
  */
 struct AuxSurfaceRequirement {
-    std::string param_name;
+    std::string param_name;    ///< Internal name used by the effect implementation
+    std::string source_key;    ///< Key in EffectSpec::strings to look up the layer ID
     std::string semantic;      ///< e.g., "mask", "displacement", "aux"
     bool is_required{true};
+    std::string default_id;    ///< Optional default layer ID if source_key is missing
 };
 
 /**

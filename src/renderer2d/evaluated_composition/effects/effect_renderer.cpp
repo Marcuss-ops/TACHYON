@@ -1,6 +1,7 @@
 #include "tachyon/renderer2d/evaluated_composition/effect_renderer.h"
 #include "tachyon/renderer2d/evaluated_composition/utilities/composition_utils.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
+#include "tachyon/renderer2d/effects/effect_registry.h"
 
 #include <chrono>
 
@@ -62,6 +63,8 @@ ResolutionResult<SurfaceRGBA> apply_effect_pipeline(
     ResolutionResult<SurfaceRGBA> result;
     result.value = input;
     
+    auto& registry = EffectRegistry::instance();
+
     for (const auto& effect : effects) {
         if (!effect.enabled || effect.type.empty()) {
             continue;
@@ -70,23 +73,28 @@ ResolutionResult<SurfaceRGBA> apply_effect_pipeline(
         EffectParams params = effect_params_from_spec(effect, working_profile);
         params.strings.emplace("layer_id", current_layer_id);
         
-        // Populate auxiliary surfaces based on effect-specific logic
-        // In the future, this should be guided by EffectDescriptor requirements.
-        if (effect.type == "glsl_transition") {
-            if (const auto it = effect.strings.find("transition_to_layer_id"); it != effect.strings.end()) {
-                const auto surface_it = surfaces.find(it->second);
-                if (surface_it != surfaces.end() && surface_it->second) {
-                    params.aux_surfaces.emplace("transition_to", surface_it->second.get());
+        // Registry-driven auxiliary surface resolution
+        if (const auto* descriptor = registry.find(effect.type)) {
+            for (const auto& req : descriptor->aux_requirements) {
+                std::string target_layer_id;
+                
+                // 1. Try to get ID from defined source_key in spec
+                if (!req.source_key.empty()) {
+                    if (const auto it = effect.strings.find(req.source_key); it != effect.strings.end()) {
+                        target_layer_id = it->second;
+                    }
                 }
-            }
-        } else if (effect.type == "displacement_map" || effect.type == "light_wrap") {
-            // General aux surface resolution from strings mapping
-            for (const auto& [key, val] : effect.strings) {
-                if (key.find("aux_layer_") == 0) {
-                    std::string target_param = key.substr(10);
-                    const auto surface_it = surfaces.find(val);
+                
+                // 2. Fallback to default_id
+                if (target_layer_id.empty()) {
+                    target_layer_id = req.default_id;
+                }
+                
+                // 3. Resolve surface pointer
+                if (!target_layer_id.empty()) {
+                    const auto surface_it = surfaces.find(target_layer_id);
                     if (surface_it != surfaces.end() && surface_it->second) {
-                        params.aux_surfaces.emplace(target_param, surface_it->second.get());
+                        params.aux_surfaces.emplace(req.param_name, surface_it->second.get());
                     }
                 }
             }
@@ -102,7 +110,6 @@ ResolutionResult<SurfaceRGBA> apply_effect_pipeline(
                 current_layer_id.empty() ? effect.type : (current_layer_id + ":" + effect.type),
                 std::chrono::duration<double, std::milli>(end - start).count()
             });
-            // Propagate diagnostics to the frame bag
             diagnostics->diagnostics.append(step_res.diagnostics);
         }
 

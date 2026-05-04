@@ -2,6 +2,7 @@ if(TACHYON_ENABLE_PREVIEW_WINDOW)
     find_package(OpenGL REQUIRED)
 endif()
 
+include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonPresetsSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonCoreSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonPlatformSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonSceneSources.cmake)

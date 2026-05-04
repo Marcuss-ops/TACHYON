@@ -38,14 +38,15 @@ namespace {
  * @brief Helper to wrap a legacy Effect class into the new EffectDescriptor factory.
  */
 template <typename T>
-void register_legacy(EffectRegistry& registry, std::string id, std::string category = "general") {
+void register_legacy(EffectRegistry& registry, std::string id, std::string category = "general", std::vector<AuxSurfaceRequirement> aux = {}) {
     registry.register_effect({
         std::move(id),
         std::move(category),
         [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             T effect;
             output = effect.apply(input, params);
-        }
+        },
+        std::move(aux)
     });
 }
 
@@ -68,9 +69,19 @@ void EffectRegistry::register_builtins() {
     register_legacy<ChromaticAberrationEffect>(*this, "chromatic_aberration", "distort");
     register_legacy<VignetteEffect>(*this, "vignette", "stylize");
     register_legacy<ParticleEmitterEffect>(*this, "particle_emitter", "generate");
-    register_legacy<DisplacementMapEffect>(*this, "displacement_map", "distort");
+    
+    // Displacement Map with metadata
+    register_legacy<DisplacementMapEffect>(*this, "displacement_map", "distort", {
+        {"displacement_map", "aux_layer_displacement_map", "displacement", true}
+    });
+
     register_legacy<ChromaKeyEffect>(*this, "chroma_key", "keying");
-    register_legacy<LightWrapEffect>(*this, "light_wrap", "keying");
+    
+    // Light Wrap with metadata
+    register_legacy<LightWrapEffect>(*this, "light_wrap", "keying", {
+        {"background", "aux_layer_background", "aux", true}
+    });
+
     register_legacy<MatteRefinementEffect>(*this, "matte_refinement", "keying");
     register_legacy<VectorBlurEffect>(*this, "vector_blur", "blur");
     register_legacy<MotionBlur2DEffect>(*this, "motion_blur_2d", "blur");
@@ -80,7 +91,7 @@ void EffectRegistry::register_builtins() {
     EffectDescriptor glsl_desc;
     glsl_desc.id = "glsl_transition";
     glsl_desc.category = "transition";
-    glsl_desc.aux_requirements.push_back({"transition_to", "The target surface to transition into."});
+    glsl_desc.aux_requirements.push_back({"transition_to", "transition_to_layer_id", "transition", true});
     glsl_desc.factory = [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
         GlslTransitionEffect effect;
         output = effect.apply(input, params);
