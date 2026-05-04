@@ -41,7 +41,30 @@ set(TachyonRuntimeSources
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/playback/playback_engine.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/playback/playback_queue.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/resource/render_context.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/orchestration.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/property_sampling.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/profiling/render_profiler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/telemetry_writer.cpp
+    
+    # Interpretation Path (Moved from Scene)
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator_composition.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator_math.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/camera2d_evaluator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/hashing.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/layer_evaluator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/layer_transform_3d.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/layer_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/light_evaluator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/mesh_animator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/roi_calculator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/templates.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/rigging/constraint_solver.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/rigging/ik_solver.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/rigging/rig_graph.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/timeline/frame_blend.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/timeline/frame_evaluator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/timeline/time.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/timeline/time_remap.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/timeline/time_resolver.cpp
 )

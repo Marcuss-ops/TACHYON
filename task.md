@@ -21,7 +21,19 @@
 - [x] Implement `tachyon preview` command
 - [x] Decouple procedural backgrounds from JSON
 - [x] Implement premium text presets (brushed_metal_title)
-- [ ] Systematic removal of legacy JSON parser files
+- [x] Locate missing symbols and identify source files (`evaluate_composition_internal`, `make_layer_state`, `create_quad_mesh`)
+- [x] Restore implementation files from git index to `src/core/scene/evaluator/`
+- [x] Fix CMake configuration (`TachyonRuntimeSources.cmake`) to include restored files
+- [x] Fix compilation errors:
+    - [x] Correct include paths in `layer_evaluator.cpp`
+    - [x] Fix namespace aliases in `evaluator_forward.h`
+    - [x] Fix `PropertySampler` type mismatch in `property_sampler.h`
+- [x] Resolve linker errors in `TachyonRuntimeTests` and `TachyonTests`:
+    - [x] Reorder and consolidate libraries in `TachyonRuntimeEngine` RESCAN group
+    - [x] Restore `evaluator_math.cpp` for missing utility functions
+- [x] Verify build and execution:
+    - [x] `TachyonRuntimeTests` builds successfully
+    - [x] `TachyonTests` builds and passes all core tests
 - [x] Implement Stagger in `Repeater`
 - [x] Implement Motion Path Bezier sampling
 - [x] Integrate `OIDN` filter in `frame_executor.cpp`

@@ -9,24 +9,21 @@ namespace tachyon { namespace math {
     struct Transform2;
 } }
 
+namespace tachyon {
+    struct LayerSpec;
+    struct CompositionSpec;
+    struct SceneSpec;
+    struct Camera2DSpec;
+}
+
 namespace tachyon { namespace scene {
 
-class LayerSpec;
+using PropertySampler = std::function<double(int, double)>;
 
-namespace {
+using LayerSpec = ::tachyon::LayerSpec;
+using CompositionSpec = ::tachyon::CompositionSpec;
+using SceneSpec = ::tachyon::SceneSpec;
+using Camera2DSpec = ::tachyon::Camera2DSpec;
 
-double degrees_to_radians(double degrees);
-
-template <typename T>
-T lerp(const T& a, const T& b, float t);
-
-template <typename T>
-T sample_bezier_spatial(const T& p0, const T& p1, const T& p2, const T& p3, float t);
-
-math::Vector2 fallback_position(const LayerSpec& layer);
-double fallback_rotation(const LayerSpec& layer);
-math::Vector2 fallback_scale(const LayerSpec& layer);
-
-} // namespace
 } // namespace scene
 } // namespace tachyon
