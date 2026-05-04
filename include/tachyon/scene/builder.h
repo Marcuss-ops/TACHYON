@@ -141,6 +141,9 @@ public:
     LayerBuilder& stroke_color(const ColorSpec& c);
     LayerBuilder& stroke_width(double w);
     LayerBuilder& subtitle_path(std::string path);
+    LayerBuilder& text_animation_preset(const std::string& id);
+    LayerBuilder& transition_in_preset(const std::string& id, double duration = 0.4);
+    LayerBuilder& transition_out_preset(const std::string& id, double duration = 0.4);
 
     // Cinematic & Effects
     LayerBuilder& light_leak(LightLeakPreset preset, float progress, float speed = 1.0f, int seed = 3);
@@ -209,6 +212,7 @@ public:
     CompositionBuilder& fps(int f);
     CompositionBuilder& duration(double d);
     CompositionBuilder& background(BackgroundSpec spec);
+    CompositionBuilder& background_preset(const std::string& id, double duration = 8.0);
     CompositionBuilder& clear(const ColorSpec& color);
 
     CompositionBuilder& layer(std::string id, std::function<void(LayerBuilder&)> fn);

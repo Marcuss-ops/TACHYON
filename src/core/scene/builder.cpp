@@ -1,6 +1,10 @@
 #include "tachyon/scene/builder.h"
 #include <algorithm>
 #include <cmath>
+#include "tachyon/presets/background/background_preset_registry.h"
+#include "tachyon/presets/transition/transition_preset_registry.h"
+#include "tachyon/presets/text/text_builders.h"
+#include "tachyon/text/animation/text_preset_registry.h"
 
 namespace tachyon::scene {
 
@@ -303,6 +307,21 @@ LayerBuilder& LayerBuilder::subtitle_path(std::string path) {
     return *this;
 }
 
+LayerBuilder& LayerBuilder::text_animation_preset(const std::string& id) {
+    spec_.text_animators = text::TextPresetRegistry::instance().create(id);
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::transition_in_preset(const std::string& id, double duration) {
+    spec_.transition_in = presets::TransitionPresetRegistry::instance().create_enter({.id = id, .duration = duration});
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::transition_out_preset(const std::string& id, double duration) {
+    spec_.transition_out = presets::TransitionPresetRegistry::instance().create_exit({.id = id, .duration = duration});
+    return *this;
+}
+
 LayerBuilder& LayerBuilder::light_leak(LightLeakPreset preset, float progress, float speed, int seed) {
     EffectSpec leak;
     leak.type = "light_leak";
@@ -435,6 +454,13 @@ CompositionBuilder& CompositionBuilder::duration(double d) {
 
 CompositionBuilder& CompositionBuilder::background(BackgroundSpec background) {
     spec_.background = std::move(background);
+    return *this;
+}
+
+CompositionBuilder& CompositionBuilder::background_preset(const std::string& id, double duration) {
+    if (auto bg_layer = presets::BackgroundPresetRegistry::instance().create(id, spec_.width, spec_.height, duration)) {
+        spec_.layers.insert(spec_.layers.begin(), std::move(*bg_layer));
+    }
     return *this;
 }
 

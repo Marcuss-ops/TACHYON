@@ -77,4 +77,5 @@ set(TachyonSceneSources
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/shape/shape_builders.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/text/text_builders.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/transition/transition_builders.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/presets/transition/transition_preset_registry.cpp
 )

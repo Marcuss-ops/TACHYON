@@ -8,7 +8,7 @@
 #include "tachyon/core/spec/schema/properties/property_spec.h"
 #include "tachyon/core/spec/schema/transform/transform_spec.h"
 #include "tachyon/core/spec/schema/contracts/shared_contracts.h"
-#include "tachyon/renderer2d/path/mask_path.h"
+#include "tachyon/core/spec/schema/objects/mask_spec.h"
 #include "tachyon/core/shapes/shape_path.h"
 #include "tachyon/core/spec/schema/shapes/shape_spec.h"
 #include "tachyon/core/animation/easing.h"
@@ -170,7 +170,7 @@ struct LayerSpec {
     std::vector<TextHighlightSpec> text_highlights;
 
     // Mask paths (roto / vector masks)
-    std::vector<renderer2d::MaskPath> mask_paths;
+    std::vector<spec::MaskPath> mask_paths;
 
     // Temporal & Tracking (Unified)
     std::vector<spec::TrackBinding> track_bindings;
@@ -180,12 +180,20 @@ struct LayerSpec {
     // Timing shorthand
     std::optional<double> duration;
 
-    // Animation presets
+    // Animation presets (inject transform/opacity keyframes via PresetCompiler)
+    // Legacy fields - do not use in new code
     std::string in_preset;
     std::string during_preset;
     std::string out_preset;
     float in_duration{0.4f};
     float out_duration{0.4f};
+
+    // Modern animation preset names
+    std::string animation_in_preset;
+    std::string animation_during_preset;
+    std::string animation_out_preset;
+    float animation_in_duration{0.4f};
+    float animation_out_duration{0.4f};
 
     // Typed transitions
     LayerTransitionSpec transition_in;

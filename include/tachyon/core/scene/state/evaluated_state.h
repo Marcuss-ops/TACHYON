@@ -11,8 +11,8 @@
 #include "tachyon/core/scene/state/evaluated_camera_state.h"
 #include "tachyon/media/loading/mesh_asset.h"
 #include "tachyon/renderer2d/spec/gradient_spec.h"
-#include "tachyon/renderer2d/path/mask_path.h"
-#include "tachyon/renderer2d/raster/path/path_types.h"
+#include "tachyon/core/spec/schema/objects/mask_spec.h"
+#include "tachyon/core/spec/schema/objects/path_spec.h"
 #include "tachyon/text/content/word_timestamps.h"
 #include <vector>
 #include <string>
@@ -110,7 +110,7 @@ struct EvaluatedLayerState {
     float stroke_width{0.0f};
     std::optional<ShapePathSpec> shape_path;
     std::optional<ShapeSpec> shape_spec;
-    std::optional<renderer2d::MaskPath> mask_path;
+    std::optional<spec::MaskPath> mask_path;
     std::vector<EffectSpec> effects;
     std::vector<TextAnimatorSpec> text_animators;
     std::vector<TextHighlightSpec> text_highlights;
@@ -123,8 +123,8 @@ struct EvaluatedLayerState {
     std::optional<std::string> word_timestamp_path;
     std::optional<ColorSpec> subtitle_outline_color;
     float subtitle_outline_width{0.0f};
-    renderer2d::LineCap line_cap{renderer2d::LineCap::Butt};
-    renderer2d::LineJoin line_join{renderer2d::LineJoin::Miter};
+    spec::LineCap line_cap{spec::LineCap::Butt};
+    spec::LineJoin line_join{spec::LineJoin::Miter};
     float miter_limit{4.0f};
     int text_alignment{0};
     std::string text_content;
@@ -166,7 +166,7 @@ struct EvaluatedLayerState {
     math::Matrix4x4 previous_world_matrix{math::Matrix4x4::identity()};
 
     // Masks
-    std::vector<renderer2d::MaskPath> masks;
+    std::vector<spec::MaskPath> masks;
     // Trim Paths support
     float trim_start{0.0f};
     float trim_end{1.0f};

@@ -66,6 +66,7 @@ function(tachyon_configure_common target)
         endif()
     endif()
 
+    # Deprecated: Use AssetResolver instead of compile-time roots where possible.
     target_compile_definitions(${target} PRIVATE "TACHYON_SFX_ROOT=\"${CMAKE_CURRENT_SOURCE_DIR}/audio/SoundEffect\"")
     set_target_properties(${target} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endfunction()
@@ -117,6 +118,9 @@ target_link_libraries(TachyonColor PUBLIC TachyonCore)
 
 add_library(TachyonScene STATIC ${TachyonSceneSources})
 tachyon_configure_common(TachyonScene)
+if(TACHYON_ENABLE_TRACKER)
+    target_link_libraries(TachyonScene PUBLIC TachyonTracker)
+endif()
 
 add_library(TachyonRuntime STATIC ${TachyonRuntimeSources})
 tachyon_configure_common(TachyonRuntime)
