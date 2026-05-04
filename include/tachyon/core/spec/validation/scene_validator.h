@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/core/api.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/core/spec/schema/properties/property_spec.h"
 #include <string>
@@ -36,7 +37,7 @@ struct ValidationResult {
  * - Overlapping camera cuts
  * - Track binding validation
  */
-class SceneValidator {
+class TACHYON_API SceneValidator {
 public:
     SceneValidator() = default;
     ~SceneValidator() = default;

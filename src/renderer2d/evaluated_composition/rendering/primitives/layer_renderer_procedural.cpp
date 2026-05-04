@@ -38,6 +38,107 @@ float generate_shape(float u, float v, const std::string& shape, float spacing, 
     return 1.0f - smoothstep(0.0f, edge * 2.0f, dist);
 }
 
+// --- Galaxy Math Helpers ---
+inline float Hash21(float x, float y) {
+    float px = std::fmod(x * 123.34f, 1.0f); if (px < 0) px += 1.0f;
+    float py = std::fmod(y * 456.21f, 1.0f); if (py < 0) py += 1.0f;
+    float d = px * (px + 45.32f) + py * (py + 45.32f);
+    px += d; py += d;
+    float res = std::fmod(px * py, 1.0f); if (res < 0) res += 1.0f;
+    return res;
+}
+
+inline float tri(float x) { return std::abs(std::fmod(x, 1.0f) * 2.0f - 1.0f); }
+inline float tris(float x) { 
+    float t = std::fmod(x, 1.0f); if (t < 0) t += 1.0f;
+    return 1.0f - smoothstep(0.0f, 1.0f, std::abs(2.0f * t - 1.0f)); 
+}
+inline float trisn(float x) {
+    float t = std::fmod(x, 1.0f); if (t < 0) t += 1.0f;
+    return 2.0f * (1.0f - smoothstep(0.0f, 1.0f, std::abs(2.0f * t - 1.0f))) - 1.0f;
+}
+
+inline Color hsv2rgb(float h, float s, float v) {
+    float r = 0, g = 0, b = 0;
+    int i = static_cast<int>(h * 6.0f);
+    float f = h * 6.0f - static_cast<float>(i);
+    float p = v * (1.0f - s);
+    float q = v * (1.0f - f * s);
+    float t = v * (1.0f - (1.0f - f) * s);
+    switch (i % 6) {
+        case 0: r = v, g = t, b = p; break;
+        case 1: r = q, g = v, b = p; break;
+        case 2: r = p, g = v, b = t; break;
+        case 3: r = p, g = q, b = v; break;
+        case 4: r = t, g = p, b = v; break;
+        case 5: r = v, g = p, b = q; break;
+    }
+    return {r, g, b, 1.0f};
+}
+
+inline float Star(float uvx, float uvy, float glowIntensity, float flare) {
+    float d = std::sqrt(uvx * uvx + uvy * uvy);
+    float m = (0.05f * glowIntensity) / (d + 0.001f);
+    
+    // Cross rays
+    float rays1 = std::max(0.0f, 1.0f - std::abs(uvx * uvy * 1000.0f));
+    m += rays1 * flare * glowIntensity;
+    
+    // Rotate 45 deg
+    float ruvx = 0.7071f * uvx - 0.7071f * uvy;
+    float ruvy = 0.7071f * uvx + 0.7071f * uvy;
+    float rays2 = std::max(0.0f, 1.0f - std::abs(ruvx * ruvy * 1000.0f));
+    m += rays2 * 0.3f * flare * glowIntensity;
+    
+    m *= smoothstep(1.0f, 0.2f, d);
+    return m;
+}
+
+inline Color StarLayer(float uvx, float uvy, float t, float starSpeed, float density, float hueShift, float saturation, float glowIntensity, float twinkleIntensity) {
+    Color col = {0.0f, 0.0f, 0.0f, 0.0f};
+    float id_x = std::floor(uvx);
+    float id_y = std::floor(uvy);
+    float gv_x = uvx - id_x - 0.5f;
+    float gv_y = uvy - id_y - 0.5f;
+
+    for (int y = -1; y <= 1; y++) {
+        for (int x = -1; x <= 1; x++) {
+            float ox = static_cast<float>(x);
+            float oy = static_cast<float>(y);
+            float seed = Hash21(id_x + ox, id_y + oy);
+            float size = std::fmod(seed * 345.32f, 1.0f);
+            float gloss = tri(starSpeed / (3.0f * seed + 1.0f));
+            float flare = smoothstep(0.9f, 1.0f, size) * gloss;
+            
+            float r = smoothstep(0.2f, 1.0f, Hash21(id_x + ox + 1.0f, id_y + oy + 1.0f)) + 0.2f;
+            float b = smoothstep(0.2f, 1.0f, Hash21(id_x + ox + 3.0f, id_y + oy + 3.0f)) + 0.2f;
+            float g = std::min(r, b) * seed;
+            
+            float hue = std::atan2(g - r, b - r) / 6.2831853f + 0.5f;
+            hue = std::fmod(hue + hueShift / 360.0f, 1.0f); if (hue < 0) hue += 1.0f;
+            
+            float base_luma = r * 0.299f + g * 0.587f + b * 0.114f;
+            float sat = std::sqrt((r - base_luma) * (r - base_luma) + (g - base_luma) * (g - base_luma) + (b - base_luma) * (b - base_luma)) * saturation;
+            float val = std::max({r, g, b});
+            
+            Color base = hsv2rgb(hue, sat, val);
+            
+            float pad_x = tris(seed * 34.0f + t * 0.1f) - 0.5f;
+            float pad_y = tris(seed * 38.0f + t * 0.033f) - 0.5f;
+            
+            float star = Star(gv_x - ox - pad_x, gv_y - oy - pad_y, glowIntensity, flare);
+            float tw = trisn(t + seed * 6.2831f) * 0.5f + 1.0f;
+            tw = 1.0f * (1.0f - twinkleIntensity) + tw * twinkleIntensity;
+            star *= tw;
+            
+            col.r += star * size * base.r;
+            col.g += star * size * base.g;
+            col.b += star * size * base.b;
+        }
+    }
+    return col;
+}
+
 } // namespace
 
 void render_procedural_pattern(
@@ -96,6 +197,7 @@ void render_procedural_pattern(
     const bool is_stars = (spec.kind == "stars");
     const bool is_stripes = (spec.kind == "stripes");
     const bool is_waves = (spec.kind == "waves");
+    const bool is_galaxy = (spec.kind == "galaxy");
     const bool do_warp = (warp > 0.0f);
     
     const uint32_t width = fb.width();
@@ -173,70 +275,114 @@ void render_procedural_pattern(
                 }
             }
             
-            // STAGE 2: BASE PATTERN
-            float value = 0.0f;
-            if (is_aura) {
-                float n1 = noise.noise3d(u * freq, v * freq, t * 0.2f);
-                float n2 = noise.noise3d(u * freq * 2.0f + n1, v * freq * 2.0f, t * 0.5f) * octave_decay;
-                value = (n2 + 1.0f) * 0.5f * amp;
-            } else if (is_grid) {
-                float rad = static_cast<float>(spec.angle.value.value_or(0.0) * 3.14159265358979323846 / 180.0);
-                float grid_u = u + t * std::cos(rad) * 0.5f;
-                float grid_v = v + t * std::sin(rad) * 0.5f;
-                value = generate_shape(grid_u, grid_v, shape, spacing, border);
-            } else if (is_grid_lines) {
-                float gu = std::fmod(u * 1920.0f / spacing, 1.0f);
-                if (gu < 0) gu += 1.0f;
-                float gv = std::fmod(v * 1080.0f / spacing, 1.0f);
-                if (gv < 0) gv += 1.0f;
-                float d_u = std::min(gu, 1.0f - gu) * spacing;
-                float d_v = std::min(gv, 1.0f - gv) * spacing;
-                value = (d_u < border || d_v < border) ? 1.0f : 0.0f;
-                if (glow > 0.0f) {
-                    float glow_u = std::exp(-d_u * 0.5f);
-                    float glow_v = std::exp(-d_v * 0.5f);
-                    value = std::max(value, (glow_u + glow_v) * glow);
-                }
-                value *= amp;
-            } else if (is_stars) {
-                float n = noise.noise3d(u * freq * 100.0f, v * freq * 100.0f, 0.0f);
-                if (n > 0.8f) {
-                    float twinkle = std::sin(t * 3.0f + n * 10.0f) * 0.5f + 0.5f;
-                    value = ((n - 0.8f) / 0.2f) * twinkle * amp;
-                }
-            } else if (is_stripes) {
-                float rad = static_cast<float>(spec.angle.value.value_or(0.0) * 3.14159265358979323846 / 180.0);
-                float su = u * std::cos(rad) - v * std::sin(rad);
-                value = std::sin(su * freq * 10.0f + t) * 0.5f + 0.5f;
-                value = std::pow(value, 10.0f) * amp; // Sharper stripes
-            } else if (is_waves) {
-                float w1 = std::sin(u * freq * 10.0f + t) * 0.5f + 0.5f;
-                float w2 = std::sin(v * freq * 8.0f - t * 1.5f) * 0.5f + 0.5f;
-                value = (w1 * w2) * amp;
-            } else {
-                value = (noise.noise3d(u * freq * scale, v * freq * scale, t) + 1.0f) * 0.5f * amp;
-            }
-            
-            // STAGE 3: COLOR BLEND
+            // STAGE 2 & 3: PATTERN & COLOR BLEND
             Color final_color;
-            if (has_color_c) {
-                if (value < 0.5f) {
-                    float t_blend = value * 2.0f;
-                    final_color.r = col_a.r*(1-t_blend)+col_b.r*t_blend;
-                    final_color.g = col_a.g*(1-t_blend)+col_b.g*t_blend;
-                    final_color.b = col_a.b*(1-t_blend)+col_b.b*t_blend;
-                    final_color.a = 1.0f;
+            if (is_galaxy) {
+                const float star_speed_val = static_cast<float>(spec.star_speed.value.value_or(0.5));
+                const float density_val = static_cast<float>(spec.density.value.value_or(1.0));
+                const float hue_shift_val = static_cast<float>(spec.hue_shift.value.value_or(140.0));
+                const float twinkle_val = static_cast<float>(spec.twinkle_intensity.value.value_or(0.3));
+                const float rot_speed_val = static_cast<float>(spec.rotation_speed.value.value_or(0.1));
+                const float repulsion_val = static_cast<float>(spec.repulsion_strength.value.value_or(2.0));
+                const float auto_rep_val = static_cast<float>(spec.auto_center_repulsion.value.value_or(0.0));
+                
+                float gu = (u - spec.focal_x) * (static_cast<float>(comp_width) / static_cast<float>(comp_height));
+                float gv = (v - spec.focal_y);
+
+                if (auto_rep_val > 0.0f) {
+                    float d = std::sqrt(gu * gu + gv * gv);
+                    float r_val = auto_rep_val / (d + 0.1f);
+                    gu += (gu / (d + 0.001f)) * r_val * 0.05f;
+                    gv += (gv / (d + 0.001f)) * r_val * 0.05f;
+                } else if (mouse_infl > 0.0f) {
+                    float mu = (mx - spec.focal_x) * (static_cast<float>(comp_width) / static_cast<float>(comp_height));
+                    float mv = (my - spec.focal_y);
+                    float md = std::sqrt((gu - mu) * (gu - mu) + (gv - mv) * (gv - mv));
+                    float r_val = repulsion_val / (md + 0.1f);
+                    gu += ((gu - mu) / (md + 0.001f)) * r_val * 0.05f;
+                    gv += ((gv - mv) / (md + 0.001f)) * r_val * 0.05f;
+                }
+
+                float a_rot = t * rot_speed_val + static_cast<float>(spec.angle.value.value_or(0.0) * 3.14159 / 180.0);
+                float ca_rot = std::cos(a_rot);
+                float sa_rot = std::sin(a_rot);
+                float final_u = gu * ca_rot - gv * sa_rot;
+                float final_v = gu * sa_rot + gv * ca_rot;
+
+                Color galaxy_col = {0.0f, 0.0f, 0.0f, 0.0f};
+                for (float i = 0.0f; i < 1.0f; i += 0.25f) {
+                    float d_layer = std::fmod(i + star_speed_val * t * 0.1f, 1.0f);
+                    float l_scale = 20.0f * density_val * (1.0f - d_layer) + 0.5f * density_val * d_layer;
+                    float f_fade = d_layer * smoothstep(1.0f, 0.9f, d_layer);
+                    Color l_col = StarLayer(final_u * l_scale + i * 453.32f, final_v * l_scale + i * 453.32f, t, star_speed_val, density_val, hue_shift_val, saturation, glow, twinkle_val);
+                    galaxy_col.r += l_col.r * f_fade;
+                    galaxy_col.g += l_col.g * f_fade;
+                    galaxy_col.b += l_col.b * f_fade;
+                }
+                final_color.r = galaxy_col.r;
+                final_color.g = galaxy_col.g;
+                final_color.b = galaxy_col.b;
+                if (spec.transparent) {
+                    float luma_gal = galaxy_col.r * 0.299f + galaxy_col.g * 0.587f + galaxy_col.b * 0.114f;
+                    final_color.a = std::min(1.0f, luma_gal * 1.5f);
                 } else {
-                    float t_blend = (value - 0.5f) * 2.0f;
-                    final_color.r = col_b.r*(1-t_blend)+col_c.r*t_blend;
-                    final_color.g = col_b.g*(1-t_blend)+col_c.g*t_blend;
-                    final_color.b = col_b.b*(1-t_blend)+col_c.b*t_blend;
                     final_color.a = 1.0f;
                 }
             } else {
-                final_color.r = col_a.r*(1-value)+col_b.r*value;
-                final_color.g = col_a.g*(1-value)+col_b.g*value;
-                final_color.b = col_a.b*(1-value)+col_b.b*value;
+                float value = 0.0f;
+                if (is_aura) {
+                    float n1 = noise.noise3d(u * freq, v * freq, t * 0.2f);
+                    float n2 = noise.noise3d(u * freq * 2.0f + n1, v * freq * 2.0f, t * 0.5f) * octave_decay;
+                    value = (n2 + 1.0f) * 0.5f * amp;
+                } else if (is_grid) {
+                    float rad = static_cast<float>(spec.angle.value.value_or(0.0) * 3.14159265358979323846 / 180.0);
+                    float grid_u = u + t * std::cos(rad) * 0.5f;
+                    float grid_v = v + t * std::sin(rad) * 0.5f;
+                    value = generate_shape(grid_u, grid_v, shape, spacing, border);
+                } else if (is_grid_lines) {
+                    float gu_lines = std::fmod(u * 1920.0f / spacing, 1.0f);
+                    if (gu_lines < 0) gu_lines += 1.0f;
+                    float gv_lines = std::fmod(v * 1080.0f / spacing, 1.0f);
+                    if (gv_lines < 0) gv_lines += 1.0f;
+                    float d_u = std::min(gu_lines, 1.0f - gu_lines) * spacing;
+                    float d_v = std::min(gv_lines, 1.0f - gv_lines) * spacing;
+                    value = (d_u < border || d_v < border) ? 1.0f : 0.0f;
+                    if (glow > 0.0f) {
+                        float glow_u = std::exp(-d_u * 0.5f);
+                        float glow_v = std::exp(-d_v * 0.5f);
+                        value = std::max(value, (glow_u + glow_v) * glow);
+                    }
+                    value *= amp;
+                } else if (is_stars) {
+                    float n = noise.noise3d(u * freq * 100.0f, v * freq * 100.0f, 0.0f);
+                    if (n > 0.8f) {
+                        float twinkle_st = std::sin(t * 3.0f + n * 10.0f) * 0.5f + 0.5f;
+                        value = ((n - 0.8f) / 0.2f) * twinkle_st * amp;
+                    }
+                } else if (is_stripes) {
+                    float rad = static_cast<float>(spec.angle.value.value_or(0.0) * 3.14159265358979323846 / 180.0);
+                    float su = u * std::cos(rad) - v * std::sin(rad);
+                    value = std::sin(su * freq * 10.0f + t) * 0.5f + 0.5f;
+                    value = std::pow(value, 10.0f) * amp;
+                } else if (is_waves) {
+                    float w1 = std::sin(u * freq * 10.0f + t) * 0.5f + 0.5f;
+                    float w2 = std::sin(v * freq * 8.0f - t * 1.5f) * 0.5f + 0.5f;
+                    value = (w1 * w2) * amp;
+                } else {
+                    value = (noise.noise3d(u * freq * scale, v * freq * scale, t) + 1.0f) * 0.5f * amp;
+                }
+
+                if (has_color_c) {
+                    if (value < 0.5f) {
+                        float t_blend = value * 2.0f;
+                        final_color = Color::lerp(col_a, col_b, t_blend);
+                    } else {
+                        float t_blend = (value - 0.5f) * 2.0f;
+                        final_color = Color::lerp(col_b, col_c, t_blend);
+                    }
+                } else {
+                    final_color = Color::lerp(col_a, col_b, value);
+                }
                 final_color.a = 1.0f;
             }
             

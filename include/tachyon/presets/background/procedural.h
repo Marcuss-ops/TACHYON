@@ -422,17 +422,39 @@ inline ProceduralSpec make_oceanic_abyss_spec(const ProceduralParams &params = p
   return spec;
 }
 
-inline ProceduralSpec make_ripple_grid_spec(const ProceduralParams &params = palettes::neon_ripple()) {
+inline ProceduralSpec make_galaxy_spec(const ProceduralParams &params = palettes::cosmic_nebula()) {
   ProceduralSpec spec;
-  spec.kind = "grid_ripple";
+  spec.kind = "galaxy";
   spec.seed = params.seed;
   spec.color_a = AnimatedColorSpec{params.palette_a};
   spec.color_b = AnimatedColorSpec{params.palette_b};
   spec.color_c = AnimatedColorSpec{params.palette_c};
-  spec.speed = AnimatedScalarSpec{params.motion_speed};
+  spec.star_speed = AnimatedScalarSpec{0.5};
+  spec.density = AnimatedScalarSpec{1.0};
+  spec.hue_shift = AnimatedScalarSpec{140.0};
+  spec.twinkle_intensity = AnimatedScalarSpec{0.3};
+  spec.rotation_speed = AnimatedScalarSpec{0.1};
+  spec.glow_intensity = AnimatedScalarSpec{0.3};
+  spec.saturation = AnimatedScalarSpec{1.0};
+  spec.mouse_influence = AnimatedScalarSpec{2.0};
+  spec.mouse_radius = AnimatedScalarSpec{0.5};
+  spec.auto_center_repulsion = AnimatedScalarSpec{0.0};
+  spec.focal_x = 0.5f;
+  spec.focal_y = 0.5f;
+  return spec;
+}
+
+inline ProceduralSpec make_ripple_grid_spec(const ProceduralParams &params = palettes::neon_ripple()) {
+  ProceduralSpec spec;
+  spec.kind = "grid_lines";
+  spec.seed = params.seed;
+  spec.color_a = AnimatedColorSpec{params.palette_a};
+  spec.color_b = AnimatedColorSpec{params.palette_b};
+  spec.color_c = AnimatedColorSpec{params.palette_c};
   spec.spacing = AnimatedScalarSpec{50.0};
   spec.warp_strength = AnimatedScalarSpec{2.0};
-  spec.grain_amount = AnimatedScalarSpec{params.grain};
+  spec.warp_frequency = AnimatedScalarSpec{0.5};
+  spec.contrast = AnimatedScalarSpec{params.contrast};
   return spec;
 }
 

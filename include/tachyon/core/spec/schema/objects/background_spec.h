@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/core/api.h"
 #include "tachyon/core/types/colors.h"
 #include <string>
 #include <optional>
@@ -15,7 +16,7 @@ enum class BackgroundType {
 };
 
 /// A well-typed background specification that replaces the ambiguous std::optional<std::string>.
-struct BackgroundSpec {
+struct TACHYON_API BackgroundSpec {
     BackgroundType type{BackgroundType::Color};
     std::string value;  // Color string, component ID, asset name, or preset name
 

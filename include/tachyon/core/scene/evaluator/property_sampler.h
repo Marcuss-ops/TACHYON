@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/core/api.h"
 #include "tachyon/core/scene/evaluation/evaluator.h"
 #include "tachyon/audio/audio_analyzer.h"
 #include "tachyon/core/math/vector2.h"
@@ -11,7 +12,7 @@
 
 namespace tachyon::scene {
 
-double sample_scalar(
+TACHYON_API double sample_scalar(
     const AnimatedScalarSpec& property,
     double fallback,
     double local_time_seconds,
@@ -23,7 +24,7 @@ double sample_scalar(
     PropertySampler sampler = nullptr,
     bool skip_expression = false);
 
-math::Vector2 sample_vector2(
+TACHYON_API math::Vector2 sample_vector2(
     const AnimatedVector2Spec& property,
     const math::Vector2& fallback,
     double local_time_seconds,
@@ -32,7 +33,7 @@ math::Vector2 sample_vector2(
     const std::unordered_map<std::string, double>* job_variables = nullptr,
     const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables = nullptr);
 
-math::Vector3 sample_vector3(
+TACHYON_API math::Vector3 sample_vector3(
     const AnimatedVector3Spec& property,
     const math::Vector3& fallback,
     double local_time_seconds,
@@ -41,6 +42,6 @@ math::Vector3 sample_vector3(
     const std::unordered_map<std::string, double>* job_variables = nullptr,
     const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables = nullptr);
 
-ColorSpec sample_color(const AnimatedColorSpec& property, const ColorSpec& fallback, double local_time_seconds);
+TACHYON_API ColorSpec sample_color(const AnimatedColorSpec& property, const ColorSpec& fallback, double local_time_seconds);
 
 } // namespace tachyon::scene

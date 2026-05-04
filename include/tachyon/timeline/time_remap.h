@@ -1,4 +1,6 @@
 #pragma once
+
+#include "tachyon/core/api.h"
 #include "tachyon/core/spec/schema/contracts/shared_contracts.h"
 #include "tachyon/tracker/optical_flow.h"
 #include <vector>
@@ -26,12 +28,12 @@ struct FrameBlendParams {
 /**
  * @brief Evaluates the source time for a given destination time on the curve.
  */
-[[nodiscard]] float evaluate_source_time(const TimeRemapCurve& curve, float dest_time);
+[[nodiscard]] TACHYON_API float evaluate_source_time(const TimeRemapCurve& curve, float dest_time);
 
 /**
  * @brief Evaluates the frame blend parameters for a given destination time.
  */
-[[nodiscard]] FrameBlendResult evaluate_frame_blend(
+[[nodiscard]] TACHYON_API FrameBlendResult evaluate_frame_blend(
     const TimeRemapCurve& curve, 
     float dest_time, 
     float frame_duration);
@@ -39,7 +41,7 @@ struct FrameBlendParams {
 /**
  * @brief Evaluator for time remapping with optical flow support.
  */
-class TimeRemapEvaluator {
+class TACHYON_API TimeRemapEvaluator {
 public:
     struct Config {
         float optical_flow_confidence_threshold;

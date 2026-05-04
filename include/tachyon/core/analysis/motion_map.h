@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/core/api.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 
 #include <cstdint>
@@ -44,10 +45,10 @@ struct MotionMapOptions {
     int runtime_samples{0};
 };
 
-MotionMapReport build_motion_map(const SceneSpec& scene);
-MotionMapReport build_motion_map(const SceneSpec& scene, const MotionMapOptions& options);
+TACHYON_API MotionMapReport build_motion_map(const SceneSpec& scene);
+TACHYON_API MotionMapReport build_motion_map(const SceneSpec& scene, const MotionMapOptions& options);
 
-void print_motion_map_text(const MotionMapReport& report, std::ostream& out);
-void print_motion_map_json(const MotionMapReport& report, std::ostream& out);
+TACHYON_API void print_motion_map_text(const MotionMapReport& report, std::ostream& out);
+TACHYON_API void print_motion_map_json(const MotionMapReport& report, std::ostream& out);
 
 } // namespace tachyon::analysis

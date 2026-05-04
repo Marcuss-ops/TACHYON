@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/core/api.h"
 #include "tachyon/core/math/vector2.h"
 #include "tachyon/core/math/vector3.h"
 #include "tachyon/core/animation/easing.h"
@@ -185,7 +186,7 @@ struct AnimatedMaskPathSpec {
  * Allows effects to have keyframed scalar/color/string parameters instead of static values.
  * Example: Blur radius animating from 0 to 50 over 2 seconds.
  */
-struct AnimatedEffectSpec {
+struct TACHYON_API AnimatedEffectSpec {
     bool enabled{true};
     std::string type;
     

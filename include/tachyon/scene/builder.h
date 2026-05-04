@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/core/api.h"
 #include "tachyon/core/spec/schema/objects/background_spec.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/core/spec/schema/objects/composition_spec.h"
@@ -80,7 +81,7 @@ namespace anim {
 /**
  * @brief Builder for layer transitions (enter/exit).
  */
-class TransitionBuilder {
+class TACHYON_API TransitionBuilder {
     LayerTransitionSpec& spec_;
     LayerBuilder& parent_;
 public:
@@ -97,7 +98,7 @@ public:
 /**
  * @brief Helper for the 3D material-related fields exposed on LayerSpec.
  */
-class MaterialBuilder {
+class TACHYON_API MaterialBuilder {
     LayerBuilder& parent_;
 public:
     explicit MaterialBuilder(LayerBuilder& parent) : parent_(parent) {}
@@ -114,7 +115,7 @@ public:
 /**
  * @brief Ergonomic builder for LayerSpec.
  */
-class LayerBuilder {
+class TACHYON_API LayerBuilder {
     friend class MaterialBuilder;
     LayerSpec spec_;
 public:
@@ -197,7 +198,7 @@ public:
 /**
  * @brief Ergonomic builder for CompositionSpec.
  */
-class CompositionBuilder {
+class TACHYON_API CompositionBuilder {
     CompositionSpec spec_;
 
     // Private helper for typed layer methods
@@ -237,7 +238,7 @@ public:
 /**
  * @brief Ergonomic builder for multi-composition SceneSpec.
  */
-class SceneBuilder {
+class TACHYON_API SceneBuilder {
     SceneSpec spec_;
 public:
     SceneBuilder& project(std::string id, std::string name);
@@ -249,11 +250,11 @@ public:
 /**
  * @brief Main entry point for creating a composition.
  */
-CompositionBuilder Composition(std::string id);
+TACHYON_API CompositionBuilder Composition(std::string id);
 
 /**
  * @brief Main entry point for creating a multi-composition scene.
  */
-SceneBuilder Scene();
+TACHYON_API SceneBuilder Scene();
 
 } // namespace tachyon::scene

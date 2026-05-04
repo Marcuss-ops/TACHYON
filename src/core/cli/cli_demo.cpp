@@ -300,10 +300,10 @@ bool render_transition_demo(
         params.strings["shader_path"] = transition_shader_path.generic_string();
         params.aux_surfaces["transition_to"] = &preview_target;
 
-        const renderer2d::SurfaceRGBA blended = host->apply("glsl_transition", preview_source, params);
+        const auto blended_result = host->apply("glsl_transition", preview_source, params);
         const renderer2d::SurfaceRGBA output_frame = final_video
-            ? resize_surface(blended, static_cast<std::uint32_t>(source.width()), static_cast<std::uint32_t>(source.height()))
-            : blended;
+            ? resize_surface(blended_result.value.value_or(preview_source), static_cast<std::uint32_t>(source.width()), static_cast<std::uint32_t>(source.height()))
+            : blended_result.value.value_or(preview_source);
 
         output::OutputFramePacket packet;
         packet.frame_number = static_cast<std::int64_t>(index + 1);
