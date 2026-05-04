@@ -63,6 +63,18 @@ struct ProceduralSpec {
     AnimatedScalarSpec band_height;
     AnimatedScalarSpec band_spread;
 
+    // Galaxy Specific
+    AnimatedScalarSpec star_speed;
+    AnimatedScalarSpec density;
+    AnimatedScalarSpec hue_shift;
+    AnimatedScalarSpec twinkle_intensity;
+    AnimatedScalarSpec rotation_speed;
+    AnimatedScalarSpec repulsion_strength;
+    AnimatedScalarSpec auto_center_repulsion;
+    float focal_x{0.5f};
+    float focal_y{0.5f};
+    bool transparent{true};
+
     /**
      * @brief Check if the spec is effectively empty (no kind specified).
      */

@@ -1,4 +1,5 @@
 #pragma once
+#include "tachyon/core/api.h"
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include "tachyon/runtime/core/contracts/determinism_contract.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
@@ -11,7 +12,7 @@ struct SceneCompilerOptions {
     DeterminismContract determinism;
 };
 
-class SceneCompiler {
+class TACHYON_API SceneCompiler {
 public:
     explicit SceneCompiler(SceneCompilerOptions options = {});
 

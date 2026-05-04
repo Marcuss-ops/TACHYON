@@ -20,4 +20,6 @@ set(TachyonMediaSources
     ${CMAKE_CURRENT_SOURCE_DIR}/media/import/asset_import_pipeline.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/media/decoding/video_decoder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/media/decoding/svg_decoder_impl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/media/decoding/stb_image_impl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/media/decoding/tinygltf_impl.cpp
 )

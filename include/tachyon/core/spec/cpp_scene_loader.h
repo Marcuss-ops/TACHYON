@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/core/api.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include <filesystem>
 #include <string>
@@ -10,7 +11,7 @@ namespace tachyon {
 /**
  * @brief Logic for compiling and loading a C++ scene script dynamically.
  */
-class CppSceneLoader {
+class TACHYON_API CppSceneLoader {
 public:
     struct Result {
         std::optional<SceneSpec> scene;

@@ -4,6 +4,7 @@ set(TachyonPresetsSources
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/animation2d/animation2d_presets_table.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/background/background_preset_registry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/background/background_presets_table.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/presets/background/background_builders.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/image/image_builders.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/sfx/sfx_builders.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/sfx/sfx_registry.cpp
@@ -11,5 +12,6 @@ set(TachyonPresetsSources
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/text/text_preset_registry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/text/text_presets_table.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/transition/transition_preset_registry.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/presets/transition/transition_builders.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/transition/transition_presets_table.cpp
 )

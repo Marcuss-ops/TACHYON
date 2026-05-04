@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/core/api.h"
 #include "tachyon/timeline/time_remap.h"
 #include <vector>
 #include <cstdint>
@@ -29,7 +30,7 @@ struct OpticalFlowField {
 /**
  * @brief Abstract interface for optical flow and frame synthesis algorithms
  */
-class IOpticalFlowProvider {
+class TACHYON_API IOpticalFlowProvider {
 public:
     virtual ~IOpticalFlowProvider() = default;
 
@@ -57,7 +58,7 @@ public:
 /**
  * @brief Default optical flow provider using sparse tracking and IDW interpolation
  */
-class DefaultOpticalFlowProvider : public IOpticalFlowProvider {
+class TACHYON_API DefaultOpticalFlowProvider : public IOpticalFlowProvider {
 public:
     OpticalFlowField compute_optical_flow(const FrameBuffer& frame_a, const FrameBuffer& frame_b) const override;
     FrameBuffer warp_optical_flow(const FrameBuffer& frame, const OpticalFlowField& flow, float t) const override;
@@ -72,6 +73,6 @@ public:
 /**
  * @brief Blend two frames linearly based on blend factor
  */
-FrameBuffer blend_linear(const FrameBuffer& a, const FrameBuffer& b, float factor);
+TACHYON_API FrameBuffer blend_linear(const FrameBuffer& a, const FrameBuffer& b, float factor);
 
 } // namespace tachyon::timeline

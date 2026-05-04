@@ -18,6 +18,8 @@ BackgroundPresetRegistry::BackgroundPresetRegistry() : m_impl(std::make_unique<I
     load_builtins();
 }
 
+BackgroundPresetRegistry::~BackgroundPresetRegistry() = default;
+
 void BackgroundPresetRegistry::register_preset(BackgroundPresetSpec spec) {
     std::lock_guard<std::mutex> lock(m_impl->mutex);
     m_impl->presets[spec.id] = std::move(spec);

@@ -8,6 +8,9 @@
 // Absolute path to the directory containing TachyonCore library
 #define TACHYON_LIB_PATH "@CMAKE_BINARY_DIR@/src"
 
+// Absolute path to vcvars64.bat, if CMake could discover a Visual Studio install.
+#define TACHYON_VCVARS64_BAT "@TACHYON_VCVARS64_BAT@"
+
 // Platform-specific library name for linking
 #ifdef _WIN32
     #define TACHYON_CORE_LIB "TachyonCore.lib"

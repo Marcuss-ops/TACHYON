@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/core/api.h"
 #include "tachyon/core/scene/internal/evaluator_internal.h"
 #include "tachyon/core/scene/layers/evaluator_layer.h"
 #include "tachyon/core/scene/evaluation/evaluator.h"
@@ -11,7 +12,7 @@ const EvaluatedLayerState& resolve_layer_state(
     std::size_t layer_index,
     EvaluationContext& context);
 
-EvaluatedCompositionState evaluate_composition_internal(
+TACHYON_API EvaluatedCompositionState evaluate_composition_internal(
     const SceneSpec* scene,
     const CompositionSpec& composition,
     std::int64_t frame_number,
@@ -23,7 +24,7 @@ EvaluatedCompositionState evaluate_composition_internal(
     std::optional<std::int64_t> main_frame_number = std::nullopt,
     std::optional<double> main_frame_time_seconds = std::nullopt);
 
-void solve_constraints(std::vector<EvaluatedLayerState>& layers);
+TACHYON_API void solve_constraints(std::vector<EvaluatedLayerState>& layers);
 
 } // namespace scene
 } // namespace tachyon

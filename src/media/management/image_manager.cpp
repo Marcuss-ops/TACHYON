@@ -87,6 +87,11 @@ static std::unique_ptr<HDRTextureData> decode_hdr_image(const std::filesystem::p
 }
 
 const renderer2d::SurfaceRGBA* ImageManager::get_image(const std::filesystem::path& path, AlphaMode alpha_mode, DiagnosticBag* diagnostics) {
+    auto shared = get_image_shared(path, alpha_mode, diagnostics);
+    return shared.get();
+}
+
+std::shared_ptr<const renderer2d::SurfaceRGBA> ImageManager::get_image_shared(const std::filesystem::path& path, AlphaMode alpha_mode, DiagnosticBag* diagnostics) {
     std::string key = path.string();
     if (alpha_mode == AlphaMode::Premultiplied) key += ":premultiplied";
     else if (alpha_mode == AlphaMode::Ignore) key += ":ignore";
@@ -94,7 +99,7 @@ const renderer2d::SurfaceRGBA* ImageManager::get_image(const std::filesystem::pa
     { // lookup cached image
         std::lock_guard<std::mutex> lock(m_mutex);
         auto it = m_cache.find(key);
-        if (it != m_cache.end()) return it->second.get();
+        if (it != m_cache.end()) return it->second;
     }
 
     // decode outside the lock (expensive)
@@ -111,11 +116,11 @@ const renderer2d::SurfaceRGBA* ImageManager::get_image(const std::filesystem::pa
     std::lock_guard<std::mutex> lock(m_mutex);
     // double-check: another thread might have loaded it in the meantime
     auto it = m_cache.find(key);
-    if (it != m_cache.end()) return it->second.get();
+    if (it != m_cache.end()) return it->second;
 
-    const renderer2d::SurfaceRGBA* ptr = surface.get();
-    m_cache[key] = std::move(surface);
-    return ptr;
+    std::shared_ptr<renderer2d::SurfaceRGBA> shared = std::move(surface);
+    m_cache[key] = shared;
+    return shared;
 }
 
 const HDRTextureData* ImageManager::get_hdr_image(const std::filesystem::path& path, DiagnosticBag* diagnostics) {
@@ -153,7 +158,7 @@ DiagnosticBag ImageManager::consume_diagnostics() {
     return diagnostics;
 }
 
-void ImageManager::store_image(const std::string& key, std::unique_ptr<renderer2d::SurfaceRGBA> image) {
+void ImageManager::store_image(const std::string& key, std::shared_ptr<renderer2d::SurfaceRGBA> image) {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_cache[key] = std::move(image);
 }

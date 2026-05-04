@@ -18,6 +18,8 @@ include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonCLISources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonStudioSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonColorSources.cmake)
 
+add_compile_definitions(TACHYON_USE_DLL)
+
 
 function(tachyon_assert_no_duplicate_sources var_name)
     set(_list "${${var_name}}")
@@ -125,8 +127,27 @@ if(MSVC)
     target_compile_definitions(TachyonColor PRIVATE "TACHYON_AVX2")
 endif()
 
-add_library(TachyonScene STATIC ${TachyonSceneSources})
+add_library(TachyonScene SHARED ${TachyonSceneSources})
 tachyon_configure_common(TachyonScene)
+target_compile_definitions(TachyonScene PRIVATE TACHYON_BUILD_DLL)
+target_link_libraries(TachyonScene
+    PUBLIC
+        TachyonCore
+        TachyonColor
+        TachyonText
+        TachyonAudio
+        TachyonMedia
+        TachyonOutput
+        TachyonPlatform
+        TachyonRuntime
+        TachyonRenderer2D
+        TachyonRenderer3D
+)
+tachyon_link_3d_deps(TachyonScene)
+tachyon_link_text_deps(TachyonScene)
+tachyon_link_media_deps(TachyonScene)
+tachyon_link_output_deps(TachyonScene)
+tachyon_link_omp(TachyonScene)
 if(TACHYON_ENABLE_TRACKER)
     target_link_libraries(TachyonScene PUBLIC TachyonTracker)
 endif()

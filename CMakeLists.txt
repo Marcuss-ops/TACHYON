@@ -225,6 +225,29 @@ configure_file(
 )
 
 # Build config generation for C++ loader
+set(TACHYON_VCVARS64_BAT "")
+if(WIN32)
+    set(_tachyon_vs_roots
+        "$ENV{ProgramFiles}/Microsoft Visual Studio"
+        "C:/Program Files/Microsoft Visual Studio"
+        "C:/Program Files (x86)/Microsoft Visual Studio"
+    )
+
+    foreach(_tachyon_vs_root IN LISTS _tachyon_vs_roots)
+        if(EXISTS "${_tachyon_vs_root}")
+            file(GLOB_RECURSE _tachyon_vcvars_candidates
+                LIST_DIRECTORIES FALSE
+                "${_tachyon_vs_root}/vcvars64.bat"
+            )
+            if(_tachyon_vcvars_candidates)
+                list(GET _tachyon_vcvars_candidates 0 TACHYON_VCVARS64_BAT)
+                file(TO_CMAKE_PATH "${TACHYON_VCVARS64_BAT}" TACHYON_VCVARS64_BAT)
+                break()
+            endif()
+        endif()
+    endforeach()
+endif()
+
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/include/tachyon/tachyon_build_config.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/include/tachyon/tachyon_build_config.h
