@@ -110,6 +110,7 @@ bool run_audio_trim_tests();
 bool run_audio_pitch_correct_tests();
 bool run_transition_builder_tests();
 bool run_text_preset_tests();
+bool run_text_preset_registry_tests();
 
 int main(int argc, char** argv) {
     std::vector<TestCase> tests = {
@@ -120,6 +121,7 @@ int main(int argc, char** argv) {
         {"audio_pitch_correct", run_audio_pitch_correct_tests},
         {"transition_builder", run_transition_builder_tests},
         {"text_preset", run_text_preset_tests},
+        {"text_preset_registry", run_text_preset_registry_tests},
     };
 
     bool list_tests = false;

@@ -13,9 +13,9 @@ namespace tachyon::text {
  * Contains metadata and a factory function to create the preset.
  */
 struct TextPresetSpec {
-    using FactoryFn = std::function<TextAnimatorSpec(const std::string& based_on,
-                                                    double stagger_delay,
-                                                    double reveal_duration)>;
+    using FactoryFn = std::function<std::vector<TextAnimatorSpec>(const std::string& based_on,
+                                                                 double stagger_delay,
+                                                                 double reveal_duration)>;
 
     std::string id;
     std::string name;
@@ -40,10 +40,10 @@ public:
     const TextPresetSpec* get_by_index(std::size_t index) const;
 
     // Create a preset by ID with common parameters
-    TextAnimatorSpec create(const std::string& id,
-                           const std::string& based_on = "characters_excluding_spaces",
-                           double stagger_delay = 0.03,
-                           double reveal_duration = 0.5) const;
+    std::vector<TextAnimatorSpec> create(const std::string& id,
+                                         const std::string& based_on = "characters_excluding_spaces",
+                                         double stagger_delay = 0.03,
+                                         double reveal_duration = 0.5) const;
 
 private:
     TextPresetRegistry();

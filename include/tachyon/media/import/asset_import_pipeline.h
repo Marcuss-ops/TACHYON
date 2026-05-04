@@ -1,7 +1,7 @@
 #pragma once
 
+#include "tachyon/media/asset_manager.h"
 #include "tachyon/media/management/media_manager.h"
-#include "tachyon/media/management/asset_manager.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/media/loading/mesh_asset.h"
 #include <filesystem>

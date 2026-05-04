@@ -7,6 +7,15 @@
 namespace tachyon::media {
 
 /**
+ * @brief Profile for proxy selection.
+ */
+enum class ProxyProfile {
+    Playback,  // Optimized for playback (lower resolution/bitrate)
+    Export,    // High quality proxy for export
+    Analysis   // Proxy for analysis operations
+};
+
+/**
  * @brief Represents a specific proxy file variant for a piece of source media.
  */
 struct ProxyVariant {
@@ -24,6 +33,7 @@ struct ProxyVariant {
  * Rules:
  * - One source file can have multiple proxy variants (e.g. 540p H264, 1080p ProRes).
  * - The manifest should be persistent (serialized/deserialized with the project).
+ * - Only provides proxy lookup; path resolution decisions are made by PathResolver.
  */
 class ProxyManifest {
 public:
@@ -33,6 +43,13 @@ public:
      * @brief Register a new proxy variant for an original file.
      */
     void register_proxy(const ProxyVariant& variant);
+
+    /**
+     * @brief Find a proxy for the given original path and profile.
+     * @return Path to the proxy, or empty path if not found.
+     */
+    [[nodiscard]] std::string find_proxy(const std::string& original_path, 
+                                        ProxyProfile profile = ProxyProfile::Playback) const;
 
     /**
      * @brief Resolve the best proxy path for a given playback target.

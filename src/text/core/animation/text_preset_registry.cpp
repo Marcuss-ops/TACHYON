@@ -15,77 +15,123 @@ struct TextPresetRegistry::Impl {
 };
 
 TextPresetRegistry::TextPresetRegistry() : m_impl(std::make_unique<Impl>()) {
-    // Register built-in presets with lambda adapters for signature differences
+    // Register built-in presets
     register_preset({"fade_in", "Fade In", "Simple fade in animation",
                      [](const std::string& based_on, double stagger_delay, double reveal_duration) {
-                         return make_fade_in_animator(based_on, stagger_delay, reveal_duration);
+                         return std::vector<TextAnimatorSpec>{make_fade_in_animator(based_on, stagger_delay, reveal_duration)};
                      }});
 
     register_preset({"slide_in", "Slide In", "Slide in from offset",
                      [](const std::string& based_on, double stagger_delay, double reveal_duration) {
-                         return make_slide_in_animator(based_on, stagger_delay, 28.0, reveal_duration);
+                         return std::vector<TextAnimatorSpec>{make_slide_in_animator(based_on, stagger_delay, 28.0, reveal_duration)};
                      }});
 
     register_preset({"pop_in", "Pop In", "Pop in with scale and slide",
                      [](const std::string& based_on, double stagger_delay, double reveal_duration) {
-                         return make_pop_in_animator(based_on, stagger_delay, 18.0, reveal_duration);
+                         return std::vector<TextAnimatorSpec>{make_pop_in_animator(based_on, stagger_delay, 18.0, reveal_duration)};
                      }});
 
     register_preset({"typewriter", "Typewriter", "Character-by-character reveal",
                      [](const std::string& based_on, double stagger_delay, double reveal_duration) {
-                         // Typewriter uses characters_per_second = 1.0/stagger_delay
                          double cps = stagger_delay > 0 ? 1.0 / stagger_delay : 20.0;
-                         return make_typewriter_animator(cps, "|");
-                     }});
-
-    register_preset({"kinetic_blur", "Kinetic Blur", "Motion blur slide in",
-                     [](const std::string& based_on, double stagger_delay, double reveal_duration) {
-                         return make_kinetic_blur_animator(200.0, reveal_duration);
+                         return std::vector<TextAnimatorSpec>{make_typewriter_minimal_animator(cps, false)};
                      }});
 
     register_preset({"blur_to_focus", "Blur to Focus", "Blur radius fade out",
                      [](const std::string& based_on, double stagger_delay, double reveal_duration) {
-                         return make_blur_to_focus_animator(based_on, reveal_duration, 8.0);
+                         return std::vector<TextAnimatorSpec>{make_blur_to_focus_animator(based_on, reveal_duration, 8.0)};
                      }});
 
     register_preset({"minimal_fade_up", "Minimal Fade Up", "Fade up with Y offset",
                      [](const std::string& based_on, double stagger_delay, double reveal_duration) {
-                         return make_minimal_fade_up_animator(based_on, reveal_duration, 12.0);
+                         return std::vector<TextAnimatorSpec>{make_minimal_fade_up_animator(based_on, reveal_duration, 12.0)};
                      }});
 
     register_preset({"tracking_reveal", "Tracking Reveal", "Letter spacing reveal",
                      [](const std::string& based_on, double stagger_delay, double reveal_duration) {
-                         return make_tracking_reveal_animator(based_on, reveal_duration, 40.0);
+                         return std::vector<TextAnimatorSpec>{make_tracking_reveal_animator(based_on, reveal_duration, 40.0)};
                      }});
 
     register_preset({"soft_scale_in", "Soft Scale In", "Scale up from small",
                      [](const std::string& based_on, double stagger_delay, double reveal_duration) {
-                         return make_soft_scale_in_animator(based_on, reveal_duration, 0.95);
+                         return std::vector<TextAnimatorSpec>{make_soft_scale_in_animator(based_on, reveal_duration, 0.95)};
                      }});
 
     register_preset({"subtle_y_rotate", "Subtle Y Rotate", "Rotation on Y axis",
                      [](const std::string& based_on, double stagger_delay, double reveal_duration) {
-                         return make_subtle_y_rotate_animator(based_on, reveal_duration, 5.0);
+                         return std::vector<TextAnimatorSpec>{make_subtle_y_rotate_animator(based_on, reveal_duration, 5.0)};
                      }});
 
     register_preset({"fill_wipe", "Fill Wipe", "Color fill wipe",
                      [](const std::string& based_on, double stagger_delay, double reveal_duration) {
-                         return make_fill_wipe_animator(based_on, reveal_duration);
+                         return std::vector<TextAnimatorSpec>{make_fill_wipe_animator(based_on, reveal_duration)};
                      }});
 
     register_preset({"outline_to_solid", "Outline to Solid", "Outline width to zero",
                      [](const std::string& based_on, double stagger_delay, double reveal_duration) {
-                         return make_outline_to_solid_animator(based_on, reveal_duration, 1.0);
+                         return std::vector<TextAnimatorSpec>{make_outline_to_solid_animator(based_on, reveal_duration, 1.0)};
                      }});
 
-    register_preset({"phrase_intro", "Phrase Intro", "Slide in for phrases",
+    register_preset({"bounce_in", "Bounce In", "Bouncing slide in",
                      [](const std::string& based_on, double stagger_delay, double reveal_duration) {
-                         return make_phrase_intro_animator(based_on, stagger_delay, 28.0, reveal_duration);
+                         return std::vector<TextAnimatorSpec>{make_bounce_in_animator(based_on, stagger_delay, reveal_duration, 34.0)};
                      }});
 
-    register_preset({"numeric_intro", "Numeric Intro", "Pop in for numbers",
+    register_preset({"word_punch", "Word Punch", "Punchy scale for words",
                      [](const std::string& based_on, double stagger_delay, double reveal_duration) {
-                         return make_numeric_intro_animator(based_on, stagger_delay, 18.0, reveal_duration);
+                         return std::vector<TextAnimatorSpec>{make_word_punch_animator(stagger_delay, reveal_duration, 1.12)};
+                     }});
+
+    register_preset({"word_by_word", "Word by Word", "Reveal words one by one",
+                     [](const std::string& based_on, double stagger_delay, double reveal_duration) {
+                         return std::vector<TextAnimatorSpec>{make_word_by_word_opacity_animator(stagger_delay, reveal_duration)};
+                     }});
+
+    register_preset({"split_line", "Split Line", "Reveal lines one by one",
+                     [](const std::string& based_on, double stagger_delay, double reveal_duration) {
+                         return std::vector<TextAnimatorSpec>{make_split_line_stagger_animator(stagger_delay, reveal_duration)};
+                     }});
+
+    register_preset({"morphing", "Morphing", "Morphing words effect",
+                     [](const std::string& based_on, double stagger_delay, double reveal_duration) {
+                         return std::vector<TextAnimatorSpec>{make_morphing_words_animator(reveal_duration)};
+                     }});
+
+    register_preset({"underline", "Underline", "Drawing underline",
+                     [](const std::string& based_on, double stagger_delay, double reveal_duration) {
+                         return std::vector<TextAnimatorSpec>{make_underline_draw_animator("words", reveal_duration, 2.0)};
+                     }});
+
+    register_preset({"number_flip", "Number Flip", "Flipping numbers effect",
+                     [](const std::string& based_on, double stagger_delay, double reveal_duration) {
+                         return std::vector<TextAnimatorSpec>{make_number_flip_minimal_animator("characters", reveal_duration)};
+                     }});
+
+    // Composite Presets
+    register_preset({"fade_up", "Fade Up (Composite)", "Fade up with blur and scale",
+                     [](const std::string& based_on, double stagger_delay, double reveal_duration) {
+                         return std::vector<TextAnimatorSpec>{
+                             make_minimal_fade_up_animator(based_on, reveal_duration, 12.0),
+                             make_blur_to_focus_animator(based_on, reveal_duration, 8.0),
+                             make_soft_scale_in_animator(based_on, reveal_duration, 0.95)
+                         };
+                     }});
+
+    register_preset({"kinetic", "Kinetic", "Motion blur with tracking",
+                     [](const std::string& based_on, double stagger_delay, double reveal_duration) {
+                         return std::vector<TextAnimatorSpec>{
+                             make_kinetic_blur_animator(200.0, reveal_duration),
+                             make_tracking_reveal_animator(based_on, reveal_duration, 40.0)
+                         };
+                     }});
+
+    register_preset({"brushedMetal", "Brushed Metal Title", "Premium metallic effect",
+                     [](const std::string& based_on, double stagger_delay, double reveal_duration) {
+                         return std::vector<TextAnimatorSpec>{
+                             make_tracking_reveal_animator(based_on, reveal_duration, 40.0),
+                             make_blur_to_focus_animator(based_on, reveal_duration, 12.0),
+                             make_minimal_fade_up_animator(based_on, reveal_duration, 20.0)
+                         };
                      }});
 }
 
@@ -130,16 +176,16 @@ const TextPresetSpec* TextPresetRegistry::get_by_index(std::size_t index) const 
     return nullptr;
 }
 
-TextAnimatorSpec TextPresetRegistry::create(const std::string& id,
-                                            const std::string& based_on,
-                                            double stagger_delay,
-                                            double reveal_duration) const {
+std::vector<TextAnimatorSpec> TextPresetRegistry::create(const std::string& id,
+                                                        const std::string& based_on,
+                                                        double stagger_delay,
+                                                        double reveal_duration) const {
     const TextPresetSpec* spec = find(id);
     if (spec && spec->factory) {
         return spec->factory(based_on, stagger_delay, reveal_duration);
     }
     // Fallback to fade_in
-    return make_fade_in_animator(based_on, stagger_delay, reveal_duration);
+    return std::vector<TextAnimatorSpec>{make_fade_in_animator(based_on, stagger_delay, reveal_duration)};
 }
 
 } // namespace tachyon::text

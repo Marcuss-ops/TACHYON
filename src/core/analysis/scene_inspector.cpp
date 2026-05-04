@@ -187,7 +187,7 @@ InspectionReport inspect_scene(const SceneSpec& scene, const InspectionOptions& 
                     add_issue(report, InspectionSeverity::Warning, "text.empty", layer_path, "Text layer has empty content.");
                 }
                 if (layer.font_size.empty()) {
-                    add_issue(report, InspectionSeverity::Info, "text.font_size_default", layer_path, "Text layer uses the default font size.");
+                    add_info(report, options, "text.font_size_default", layer_path, "Text layer uses the default font size.");
                 } else if (layer.font_size.value.has_value() && *layer.font_size.value < options.min_text_px) {
                     add_issue(report, InspectionSeverity::Warning, "text.font_too_small", layer_path, "Text layer font size is very small.");
                 }

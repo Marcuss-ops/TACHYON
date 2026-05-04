@@ -9,7 +9,6 @@ add_executable(TachyonTests
     unit/core/camera/camera_shake_tests.cpp
     unit/core/properties/bezier_interpolator_tests.cpp
     unit/timeline/camera_cuts_tests.cpp
-    unit/runtime/frame_adapter_tests.cpp
 )
 
 target_compile_definitions(TachyonTests
@@ -20,6 +19,7 @@ target_compile_definitions(TachyonTests
 target_link_libraries(TachyonTests
     PRIVATE
         TachyonCore
+        TachyonColor
 )
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
@@ -28,6 +28,19 @@ endif()
 
 if(MSVC)
     target_compile_options(TachyonTests PRIVATE /FS)
+endif()
+
+add_executable(TachyonColorTests
+    unit/color/color_tests.cpp
+)
+
+target_link_libraries(TachyonColorTests
+    PRIVATE
+        TachyonColor
+)
+
+if(MSVC)
+    target_compile_options(TachyonColorTests PRIVATE /FS)
 endif()
 
 add_executable(TachyonSceneTests
@@ -66,6 +79,7 @@ add_executable(TachyonCliTests
     unit/test_main_cli.cpp
     unit/core/spec/cli_tests.cpp
     unit/core/spec/scene_spec_tests.cpp
+    integration/vertical_slice_tests.cpp
 )
 
 target_compile_definitions(TachyonCliTests
@@ -75,8 +89,12 @@ target_compile_definitions(TachyonCliTests
 
 target_link_libraries(TachyonCliTests
     PRIVATE
-        TachyonEngine
+        TachyonCLI
 )
+
+if(TACHYON_ENABLE_TRACKER)
+    target_link_libraries(TachyonCliTests PRIVATE TachyonTracker)
+endif()
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
     target_precompile_headers(TachyonCliTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")
@@ -84,6 +102,32 @@ endif()
 
 if(MSVC)
     target_compile_options(TachyonCliTests PRIVATE /FS)
+endif()
+
+add_executable(TachyonEditorTests
+    unit/test_main_editor.cpp
+    unit/editor/undo_manager_tests.cpp
+    unit/editor/autosave_manager_tests.cpp
+)
+
+target_compile_definitions(TachyonEditorTests
+    PRIVATE
+        TACHYON_TESTS_SOURCE_DIR="${TACHYON_TESTS_SOURCE_DIR}"
+)
+
+target_link_libraries(TachyonEditorTests
+    PRIVATE
+        TachyonEditor
+        TachyonCore
+        TachyonScene
+)
+
+if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
+    target_precompile_headers(TachyonEditorTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")
+endif()
+
+if(MSVC)
+    target_compile_options(TachyonEditorTests PRIVATE /FS)
 endif()
 
 add_executable(TachyonRuntimeTests
@@ -110,10 +154,7 @@ target_compile_definitions(TachyonRuntimeTests
 
 target_link_libraries(TachyonRuntimeTests
     PRIVATE
-        TachyonEngine
-        TachyonCore
-        TachyonScene
-        TachyonRuntime
+        TachyonRuntimeEngine
 )
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
@@ -142,6 +183,7 @@ add_executable(TachyonContentTests
     unit/text/glyph_cache_tests.cpp
     unit/text/text_tests.cpp
     unit/text/text_preset_tests.cpp
+    unit/text/text_preset_registry_tests.cpp
     unit/audio/test_audio_pitch_correct.cpp
     unit/audio/test_audio_trim.cpp
     unit/presets/background_preset_registry_tests.cpp
@@ -155,7 +197,11 @@ target_compile_definitions(TachyonContentTests
 
 target_link_libraries(TachyonContentTests
     PRIVATE
-        TachyonEngine
+        TachyonCore
+        TachyonScene
+        TachyonText
+        TachyonAudio
+        TachyonStudio
 )
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
@@ -182,15 +228,11 @@ add_executable(TachyonRenderTests
     unit/renderer2d/rasterization/path_rasterizer_aa_tests.cpp
     unit/renderer2d/utilities/tiling_tests.cpp
     unit/renderer2d/effects/effect_host_tests.cpp
-    unit/studio/studio_library_tests.cpp
     unit/renderer2d/composition/matte_resolver_tests.cpp
     unit/renderer2d/composition/evaluated_composition_renderer_tests.cpp
-    unit/editor/undo_manager_tests.cpp
-    unit/editor/autosave_manager_tests.cpp
     unit/renderer3d/motion_blur_tests.cpp
     integration/render_session_tests.cpp
     integration/parallax_cards_tests.cpp
-    integration/vertical_slice_tests.cpp
     integration/png_3d_validation_tests.cpp
     unit/renderer3d/temporal/time_remap_tests.cpp
     unit/renderer3d/temporal/frame_blend_tests.cpp
@@ -221,8 +263,13 @@ target_compile_definitions(TachyonRenderTests
 
 target_link_libraries(TachyonRenderTests
     PRIVATE
-        TachyonEngine
+        TachyonRuntimeEngine
+        TachyonStudio
 )
+
+if(TACHYON_ENABLE_TRACKER)
+    target_link_libraries(TachyonRenderTests PRIVATE TachyonTracker)
+endif()
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
     target_precompile_headers(TachyonRenderTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")
@@ -275,6 +322,11 @@ add_test(
 )
 
 add_test(
+    NAME TachyonColorTests
+    COMMAND TachyonColorTests
+)
+
+add_test(
     NAME TachyonSceneTests
     COMMAND TachyonSceneTests
 )
@@ -282,6 +334,11 @@ add_test(
 add_test(
     NAME TachyonCliTests
     COMMAND TachyonCliTests
+)
+
+add_test(
+    NAME TachyonEditorTests
+    COMMAND TachyonEditorTests
 )
 
 add_test(

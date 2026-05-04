@@ -12,8 +12,10 @@ include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonMediaSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonAudioSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonOutputSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonTextSources.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonEditorSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonCLISources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonStudioSources.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonColorSources.cmake)
 
 
 function(tachyon_deduplicate_sources var_name)
@@ -30,6 +32,7 @@ tachyon_deduplicate_sources(TachyonMediaSources)
 tachyon_deduplicate_sources(TachyonAudioSources)
 tachyon_deduplicate_sources(TachyonOutputSources)
 tachyon_deduplicate_sources(TachyonTextSources)
+tachyon_deduplicate_sources(TachyonEditorSources)
 tachyon_deduplicate_sources(TachyonCLISources)
 tachyon_deduplicate_sources(TachyonStudioSources)
 
@@ -47,11 +50,6 @@ function(tachyon_configure_common target)
             $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../third_party>
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../third_party/stb/include>
-            $<BUILD_INTERFACE:${tinygltf_SOURCE_DIR}>
-            $<BUILD_INTERFACE:${tinyexr_SOURCE_DIR}>
-            $<BUILD_INTERFACE:${pugixml_SOURCE_DIR}/src>
-            $<BUILD_INTERFACE:${TACHYON_EARCUT_INCLUDE_DIR}>
-            $<BUILD_INTERFACE:${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/include>
             $<INSTALL_INTERFACE:include>
     )
 
@@ -89,7 +87,9 @@ function(tachyon_link_3d_deps target)
 endfunction()
 
 function(tachyon_link_omp target)
-    target_link_libraries(${target} PUBLIC OpenMP::OpenMP_CXX)
+    if(TACHYON_HAS_OPENMP AND TARGET OpenMP::OpenMP_CXX)
+        target_link_libraries(${target} PUBLIC OpenMP::OpenMP_CXX)
+    endif()
 endfunction()
 
 function(tachyon_link_output_deps target)
@@ -106,6 +106,14 @@ endfunction()
 
 add_library(TachyonCore STATIC ${TachyonCoreSources})
 tachyon_configure_common(TachyonCore)
+target_include_directories(TachyonCore
+    PUBLIC
+        $<BUILD_INTERFACE:${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/include>
+)
+
+add_library(TachyonColor STATIC ${TachyonColorSources})
+tachyon_configure_common(TachyonColor)
+target_link_libraries(TachyonColor PUBLIC TachyonCore)
 
 add_library(TachyonScene STATIC ${TachyonSceneSources})
 tachyon_configure_common(TachyonScene)
@@ -123,14 +131,22 @@ tachyon_configure_common(TachyonRenderer2D)
 tachyon_link_text_deps(TachyonRenderer2D)
 tachyon_link_3d_deps(TachyonRenderer2D)
 tachyon_link_omp(TachyonRenderer2D)
+target_link_libraries(TachyonRenderer2D PUBLIC TachyonColor)
 
 add_library(TachyonRenderer3D STATIC ${TachyonRenderer3DSources})
 tachyon_configure_common(TachyonRenderer3D)
 tachyon_link_3d_deps(TachyonRenderer3D)
 tachyon_link_omp(TachyonRenderer3D)
+target_link_libraries(TachyonRenderer3D PUBLIC TachyonColor)
 
 add_library(TachyonMedia STATIC ${TachyonMediaSources})
 tachyon_configure_common(TachyonMedia)
+target_include_directories(TachyonMedia
+    PRIVATE
+        ${tinygltf_SOURCE_DIR}
+        ${pugixml_SOURCE_DIR}/src
+        ${TACHYON_EARCUT_INCLUDE_DIR}
+)
 tachyon_link_media_deps(TachyonMedia)
 target_link_libraries(TachyonMedia PUBLIC pugixml)
 
@@ -140,18 +156,20 @@ tachyon_link_media_deps(TachyonAudio)
 
 add_library(TachyonOutput STATIC ${TachyonOutputSources})
 tachyon_configure_common(TachyonOutput)
+target_include_directories(TachyonOutput
+    PRIVATE
+        ${tinyexr_SOURCE_DIR}
+)
 tachyon_link_media_deps(TachyonOutput)
 tachyon_link_output_deps(TachyonOutput)
+target_link_libraries(TachyonOutput PUBLIC TachyonColor)
 
 add_library(TachyonText STATIC ${TachyonTextSources})
 tachyon_configure_common(TachyonText)
 tachyon_link_text_deps(TachyonText)
 
-add_library(TachyonCLI STATIC ${TachyonCLISources})
-tachyon_configure_common(TachyonCLI)
-tachyon_link_3d_deps(TachyonCLI)
-tachyon_link_omp(TachyonCLI)
-tachyon_link_output_deps(TachyonCLI)
+add_library(TachyonEditor STATIC ${TachyonEditorSources})
+tachyon_configure_common(TachyonEditor)
 
 add_library(TachyonPlatform STATIC ${TachyonPlatformSources})
 tachyon_configure_common(TachyonPlatform)
@@ -164,8 +182,8 @@ if(TACHYON_ENABLE_TRACKER)
     tachyon_configure_common(TachyonTracker)
 endif()
 
-add_library(TachyonEngine INTERFACE)
-target_link_libraries(TachyonEngine INTERFACE
+add_library(TachyonRuntimeEngine INTERFACE)
+target_link_libraries(TachyonRuntimeEngine INTERFACE
     TachyonCore
     TachyonScene
     TachyonRuntime
@@ -175,13 +193,28 @@ target_link_libraries(TachyonEngine INTERFACE
     TachyonAudio
     TachyonOutput
     TachyonText
-    TachyonCLI
     TachyonPlatform
+)
+
+add_library(TachyonEngine INTERFACE)
+target_link_libraries(TachyonEngine INTERFACE TachyonRuntimeEngine)
+
+add_library(TachyonCLI STATIC ${TachyonCLISources})
+tachyon_configure_common(TachyonCLI)
+target_link_libraries(TachyonCLI PUBLIC TachyonRuntimeEngine TachyonStudio TachyonEditor)
+if(TACHYON_ENABLE_PREVIEW_WINDOW)
+    target_link_libraries(TachyonCLI PUBLIC glfw OpenGL::GL)
+    target_compile_definitions(TachyonCLI PUBLIC TACHYON_ENABLE_PREVIEW_WINDOW)
+endif()
+
+add_library(TachyonTools INTERFACE)
+target_link_libraries(TachyonTools INTERFACE
+    TachyonCLI
     TachyonStudio
 )
 
 if(TACHYON_ENABLE_TRACKER)
-    target_link_libraries(TachyonEngine INTERFACE TachyonTracker)
+    target_link_libraries(TachyonTools INTERFACE TachyonTracker)
 endif()
 
 add_executable(tachyon
@@ -195,7 +228,8 @@ endif()
 
 target_link_libraries(tachyon
     PRIVATE
-        TachyonEngine
+        TachyonRuntimeEngine
+        TachyonCLI
 )
 
 if(MSVC)

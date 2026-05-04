@@ -11,6 +11,8 @@
 #include "tachyon/media/management/proxy_manifest.h"
 #include "tachyon/media/management/proxy_worker.h"
 #include "tachyon/media/management/resource_cache.h"
+#include "tachyon/media/path_resolver.h"
+#include "tachyon/media/resolved_asset.h"
 #include <filesystem>
 #include <map>
 #include <memory>
@@ -77,6 +79,36 @@ public:
         ResolutionPurpose purpose = ResolutionPurpose::Playback) const;
 
     /**
+     * @brief Load image from resolved asset.
+     */
+    const renderer2d::SurfaceRGBA* get_image(
+        const ResolvedAsset& asset,
+        AlphaMode alpha_mode = AlphaMode::Straight,
+        DiagnosticBag* diagnostics = nullptr);
+
+    /**
+     * @brief Get video frame from resolved asset.
+     */
+    const renderer2d::SurfaceRGBA* get_video_frame(
+        const ResolvedAsset& asset,
+        double time,
+        DiagnosticBag* diagnostics = nullptr);
+
+    /**
+     * @brief Get HDR image from resolved asset.
+     */
+    const HDRTextureData* get_hdr_image(
+        const ResolvedAsset& asset,
+        DiagnosticBag* diagnostics = nullptr);
+
+    /**
+     * @brief Get mesh from resolved asset.
+     */
+    const MeshAsset* get_mesh(
+        const ResolvedAsset& asset,
+        DiagnosticBag* diagnostics = nullptr);
+
+    /**
      * Acquires a VideoDecoder for the given path from a pool.
      */
     using PooledVideoDecoder = std::unique_ptr<VideoDecoder, std::function<void(VideoDecoder*)>>;
@@ -128,6 +160,7 @@ private:
 
     ProxyManifest m_proxy_manifest;
     std::unique_ptr<ProxyWorker> m_proxy_worker;
+    PathResolver m_path_resolver;
 };
 
 } // namespace tachyon::media

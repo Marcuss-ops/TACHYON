@@ -10,6 +10,18 @@
 namespace tachyon {
 namespace media {
 
+/**
+ * AssetManager: owns asset identity and metadata only.
+ *
+ * WARNING: AssetManager must NOT:
+ * - Decode media (no load_image(), decode_video(), get_frame())
+ * - Own runtime frame/image/video caches
+ * - Resolve filesystem paths directly
+ *
+ * Use AssetResolver for path resolution.
+ * Use MediaManager for runtime loading.
+ */
+
 enum class AssetType {
     VIDEO,
     AUDIO,
