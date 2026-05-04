@@ -1,6 +1,7 @@
 #include "tachyon/presets/background/background_builders.h"
 #include "tachyon/presets/background/procedural.h"
 #include "tachyon/presets/builders_common.h"
+#include <optional>
 
 namespace tachyon::presets {
 
@@ -38,10 +39,7 @@ LayerSpec build_background(const BackgroundParams& p) {
     if (p.seed != 0) palette.seed = p.seed;
     palette.motion_speed *= static_cast<double>(p.speed);
     
-    double dur = p.out_point - p.in_point;
-    int w = static_cast<int>(p.w);
-    int h = static_cast<int>(p.h);
-
+    // LayerParams order: in_point, out_point, x, y, w, h, opacity
     LayerSpec layer = make_base_layer("bg_layer", "Background", "procedural", {
         p.in_point, p.out_point, p.x, p.y, p.w, p.h, p.opacity
     });
@@ -66,21 +64,21 @@ LayerSpec build_background(const BackgroundParams& p) {
     else                            spec = make_classico_premium_spec(palette);
 
     // Apply overrides
-    if (p.frequency.has_value())    spec.frequency = *p.frequency;
-    if (p.amplitude.has_value())    spec.amplitude = *p.amplitude;
-    if (p.scale.has_value())        spec.scale = *p.scale;
-    if (p.contrast.has_value())     spec.contrast = *p.contrast;
-    if (p.softness.has_value())     spec.softness = *p.softness;
-    if (p.grain_amount.has_value()) spec.grain_amount = *p.grain_amount;
-    if (p.shape.has_value())        spec.shape = *p.shape;
-    if (p.spacing.has_value())      spec.spacing = *p.spacing;
-    if (p.border_width.has_value()) spec.border_width = *p.border_width;
-    if (p.speed != 1.0f)            spec.speed = p.speed;
-    if (p.seed != 0)                spec.seed = p.seed;
+    if (p.frequency)    spec.frequency = *p.frequency;
+    if (p.amplitude)    spec.amplitude = *p.amplitude;
+    if (p.scale)        spec.scale = *p.scale;
+    if (p.contrast)     spec.contrast = *p.contrast;
+    if (p.softness)     spec.softness = *p.softness;
+    if (p.grain_amount) spec.grain_amount = *p.grain_amount;
+    if (p.shape)        spec.shape = *p.shape;
+    if (p.spacing)      spec.spacing = *p.spacing;
+    if (p.border_width) spec.border_width = *p.border_width;
+    if (p.speed != 1.0f) spec.speed = p.speed;
+    if (p.seed != 0)     spec.seed = p.seed;
     
-    if (p.color_a.has_value()) spec.color_a = AnimatedColorSpec{*p.color_a};
-    if (p.color_b.has_value()) spec.color_b = AnimatedColorSpec{*p.color_b};
-    if (p.color_c.has_value()) spec.color_c = AnimatedColorSpec{*p.color_c};
+    if (p.color_a) spec.color_a = AnimatedColorSpec{*p.color_a};
+    if (p.color_b) spec.color_b = AnimatedColorSpec{*p.color_b};
+    if (p.color_c) spec.color_c = AnimatedColorSpec{*p.color_c};
 
     layer.procedural = std::move(spec);
     return layer;

@@ -202,6 +202,9 @@ target_link_libraries(TachyonContentTests
         TachyonText
         TachyonAudio
         TachyonStudio
+        TachyonRenderer2D
+        TachyonPlatform
+        TachyonRuntime
 )
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
