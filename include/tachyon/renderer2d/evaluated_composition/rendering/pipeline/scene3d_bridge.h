@@ -1,6 +1,41 @@
 #pragma once
 
+#ifdef TACHYON_ENABLE_3D
 #include "tachyon/renderer3d/core/evaluated_scene_3d.h"
+#else
+namespace tachyon::renderer3d {
+    struct EvaluatedCamera3D {};
+    struct EvaluatedLight {};
+    struct EvaluatedMeshInstance {
+        std::uint32_t object_id;
+        std::uint32_t material_id;
+        ::tachyon::math::Matrix4x4 world_transform;
+        std::optional<::tachyon::math::Matrix4x4> previous_world_transform;
+        std::string mesh_asset_id;
+        std::shared_ptr<const void> mesh_asset; // Use void* for stub
+        
+        struct MaterialStub {
+            ::tachyon::ColorSpec base_color;
+            float opacity;
+            float metallic;
+            float roughness;
+            float emission_strength;
+            ::tachyon::ColorSpec emission_color;
+            float transmission;
+            float ior;
+        } material;
+
+        std::vector<math::Matrix4x4> joint_matrices;
+        std::vector<float> morph_weights;
+    };
+    struct EvaluatedScene3D {
+        EvaluatedCamera3D camera;
+        std::vector<EvaluatedLight> lights;
+        std::vector<EvaluatedMeshInstance> instances;
+        std::string environment_map_id;
+    };
+}
+#endif
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/renderer2d/resource/render_context.h"

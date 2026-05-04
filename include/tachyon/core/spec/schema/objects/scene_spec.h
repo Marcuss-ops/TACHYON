@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "tachyon/runtime/core/diagnostics/diagnostics.h"
+#include "tachyon/core/types/diagnostics.h"
 #include "tachyon/core/spec/schema/common/common_spec.h"
 #include "tachyon/core/spec/schema/assets/asset_spec.h"
 #include "tachyon/core/spec/schema/objects/background_spec.h"
@@ -14,8 +14,6 @@
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 #include "tachyon/core/spec/schema/objects/composition_spec.h"
-#include "tachyon/core/spec/schema/assets/asset_spec.h"
-#include "tachyon/text/fonts/management/font_manifest.h"
 
 #include <filesystem>
 #include <string>
@@ -24,6 +22,7 @@
 #include <memory>
 
 namespace tachyon {
+namespace text { struct FontManifest; }
 
 struct ProjectSpec {
     std::string id;
@@ -89,7 +88,7 @@ struct SceneSpec {
     std::vector<CompositionSpec> compositions;
     std::vector<AssetSpec> assets;
     std::vector<DataSourceSpec> data_sources;
-    std::optional<text::FontManifest> font_manifest;
+    std::shared_ptr<text::FontManifest> font_manifest;
     std::optional<std::string> font_manifest_path;
 };
 

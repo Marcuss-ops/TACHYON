@@ -513,7 +513,7 @@ void SceneValidator::validate_keyframes(const ::tachyon::LayerSpec& layer, const
 }
 
 void SceneValidator::validate_font_reference(const ::tachyon::LayerSpec& layer, const ::tachyon::SceneSpec& scene, const std::string& path, ValidationResult& out) const {
-    if (!layer.font_id.empty() && scene.font_manifest.has_value()) {
+    if (!layer.font_id.empty() && scene.font_manifest) {
         bool font_found = false;
         for (const auto& font : scene.font_manifest->fonts) {
             if (font.id == layer.font_id) {

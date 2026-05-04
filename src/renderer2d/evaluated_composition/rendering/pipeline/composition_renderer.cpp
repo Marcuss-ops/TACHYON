@@ -16,10 +16,12 @@
 #include "tachyon/renderer2d/raster/mesh_rasterizer.h"
 #include "tachyon/renderer2d/raster/perspective_rasterizer.h"
 #include "tachyon/renderer2d/raster/mesh_deform_apply.h"
+#ifdef TACHYON_ENABLE_3D
 #include "tachyon/renderer3d/core/ray_tracer.h"
 #include "tachyon/renderer3d/effects/depth_of_field.h"
 #include "tachyon/renderer3d/effects/motion_blur.h"
 #include "tachyon/renderer3d/visibility/culling.h"
+#endif
 #include "tachyon/runtime/execution/scheduling/tile_scheduler.h"
 #include "tachyon/output/frame_aov.h"
 #include "tachyon/transition_registry.h"
@@ -154,11 +156,14 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
     // Identify if we have 3D layers and trigger 3D pass if available
     bool has_any_3d = std::any_of(state.layers.begin(), state.layers.end(), [](const auto& l) { return l.is_3d && l.visible; });
+#ifdef TACHYON_ENABLE_3D
     if (has_any_3d && !context.ray_tracer) {
         context.ray_tracer = std::make_shared<renderer3d::RayTracer>(context.media_manager);
     }
+#endif
 
     std::vector<bool> visible_3d_layers(state.layers.size(), true);
+#ifdef TACHYON_ENABLE_3D
     if (has_any_3d && state.camera.available) {
         renderer3d::SceneCulling culling;
         culling.set_camera(state.camera.camera, state.camera.position);
@@ -178,6 +183,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
             }
         }
     }
+#endif
 
     // First pass: collect rendered surfaces for matte resolution
     // Second pass: composite with resolved mattes
@@ -258,6 +264,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
             }
 
             if (layer.is_3d && layer.visible) {
+#ifdef TACHYON_ENABLE_3D
                 // Found a 3D block. Collect contiguous 3D layers in stack order.
                 std::vector<std::size_t> block_indices;
                 block_indices.push_back(i);
@@ -436,6 +443,9 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     composite_surface(target_surface, *fallback_surface, 0, 0, BlendMode::Normal);
                 }
                 i = last_block_idx;
+#else
+                // 3D disabled: skip layer
+#endif
                 continue;
             }
 

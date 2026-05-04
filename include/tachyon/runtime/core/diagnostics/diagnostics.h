@@ -5,13 +5,9 @@
 #include <utility>
 #include <vector>
 
-namespace tachyon {
+#include "tachyon/core/types/diagnostics.h"
 
-enum class DiagnosticSeverity {
-    Info,
-    Warning,
-    Error
-};
+namespace tachyon {
 
 /**
  * @brief Controls how resolution failures are handled.
@@ -34,28 +30,9 @@ enum class ResolveMode {
     return "error";
 }
 
-struct Diagnostic {
-    DiagnosticSeverity severity{DiagnosticSeverity::Error};
-    std::string category; ///< Category for grouping (e.g., "authoring", "runtime", "parsing")
-    std::string code;     ///< Unique stable error code.
-    std::string message;  ///< Human readable message.
-    std::string path;     ///< Path to the offending element (if applicable).
-    std::string help_link; ///< URL for detailed troubleshooting.
-};
-
-class DiagnosticBag {
+// Extended DiagnosticBag for runtime convenience
+class RuntimeDiagnosticBag : public DiagnosticBag {
 public:
-    std::vector<Diagnostic> diagnostics;
-
-    [[nodiscard]] bool ok() const noexcept {
-        for (const auto& diagnostic : diagnostics) {
-            if (diagnostic.severity == DiagnosticSeverity::Error) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     [[nodiscard]] bool has_warnings() const noexcept {
         for (const auto& diagnostic : diagnostics) {
             if (diagnostic.severity == DiagnosticSeverity::Warning) {
@@ -74,22 +51,6 @@ public:
         return false;
     }
 
-    void add(DiagnosticSeverity severity, std::string category, std::string code, std::string message, std::string path = {}, std::string help_link = {}) {
-        diagnostics.push_back(Diagnostic{severity, std::move(category), std::move(code), std::move(message), std::move(path), std::move(help_link)});
-    }
-
-    void add_info(std::string code, std::string message, std::string path = {}) {
-        add(DiagnosticSeverity::Info, "general", std::move(code), std::move(message), std::move(path));
-    }
-
-    void add_warning(std::string code, std::string message, std::string path = {}) {
-        add(DiagnosticSeverity::Warning, "general", std::move(code), std::move(message), std::move(path));
-    }
-
-    void add_error(std::string code, std::string message, std::string path = {}) {
-        add(DiagnosticSeverity::Error, "general", std::move(code), std::move(message), std::move(path));
-    }
-
     void append(const DiagnosticBag& other) {
         diagnostics.insert(diagnostics.end(), other.diagnostics.begin(), other.diagnostics.end());
     }
@@ -98,7 +59,7 @@ public:
 template <typename T>
 struct ParseResult {
     std::optional<T> value;
-    DiagnosticBag diagnostics;
+    RuntimeDiagnosticBag diagnostics;
 
     [[nodiscard]] bool ok() const noexcept {
         return value.has_value() && diagnostics.ok();
@@ -108,18 +69,10 @@ struct ParseResult {
 template <typename T>
 struct ResolutionResult {
     std::optional<T> value;
-    DiagnosticBag diagnostics;
+    RuntimeDiagnosticBag diagnostics;
 
     [[nodiscard]] bool ok() const noexcept {
         return value.has_value() && diagnostics.ok();
-    }
-};
-
-struct ValidationResult {
-    DiagnosticBag diagnostics;
-
-    [[nodiscard]] bool ok() const noexcept {
-        return diagnostics.ok();
     }
 };
 

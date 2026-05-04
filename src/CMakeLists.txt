@@ -78,18 +78,28 @@ function(tachyon_configure_common target)
 endfunction()
 
 function(tachyon_link_text_deps target)
-    target_link_libraries(${target} PUBLIC freetype harfbuzz)
+    if(TACHYON_ENABLE_TEXT)
+        target_link_libraries(${target} PUBLIC freetype harfbuzz)
+        target_compile_definitions(${target} PUBLIC TACHYON_ENABLE_TEXT)
+    endif()
 endfunction()
 
 function(tachyon_link_media_deps target)
-    target_link_libraries(${target} PUBLIC avcodec avformat avutil swscale swresample)
+    if(TACHYON_ENABLE_MEDIA)
+        target_link_libraries(${target} PUBLIC avcodec avformat avutil swscale swresample)
+        target_compile_definitions(${target} PUBLIC TACHYON_ENABLE_MEDIA)
+    endif()
 endfunction()
 
 function(tachyon_link_3d_deps target)
-    target_link_libraries(${target} PUBLIC embree)
-    if(TACHYON_ENABLE_OIDN AND WIN32)
-        target_include_directories(${target} PUBLIC $<BUILD_INTERFACE:${oidn_SOURCE_DIR}/include>)
-        target_link_libraries(${target} PUBLIC OpenImageDenoise)
+    if(TACHYON_ENABLE_3D)
+        target_link_libraries(${target} PUBLIC embree)
+        target_compile_definitions(${target} PUBLIC TACHYON_ENABLE_3D)
+        if(TACHYON_ENABLE_OIDN AND WIN32)
+            target_include_directories(${target} PUBLIC $<BUILD_INTERFACE:${oidn_SOURCE_DIR}/include>)
+            target_link_libraries(${target} PUBLIC OpenImageDenoise)
+            target_compile_definitions(${target} PUBLIC TACHYON_ENABLE_OIDN)
+        endif()
     endif()
 endfunction()
 
@@ -100,14 +110,17 @@ function(tachyon_link_omp target)
 endfunction()
 
 function(tachyon_link_output_deps target)
-    if(TACHYON_ENABLE_PREVIEW_WINDOW)
-        target_link_libraries(${target} PUBLIC glfw OpenGL::GL)
-        target_compile_definitions(${target} PUBLIC TACHYON_ENABLE_PREVIEW_WINDOW)
-    endif()
+    if(TACHYON_ENABLE_OUTPUT)
+        target_compile_definitions(${target} PUBLIC TACHYON_ENABLE_OUTPUT)
+        if(TACHYON_ENABLE_PREVIEW_WINDOW)
+            target_link_libraries(${target} PUBLIC glfw OpenGL::GL)
+            target_compile_definitions(${target} PUBLIC TACHYON_ENABLE_PREVIEW_WINDOW)
+        endif()
 
-    if(TACHYON_ENABLE_OIDN AND WIN32)
-        target_include_directories(${target} PUBLIC $<BUILD_INTERFACE:${oidn_SOURCE_DIR}/include>)
-        target_link_libraries(${target} PUBLIC OpenImageDenoise)
+        if(TACHYON_ENABLE_OIDN AND WIN32 AND TACHYON_ENABLE_3D)
+            target_include_directories(${target} PUBLIC $<BUILD_INTERFACE:${oidn_SOURCE_DIR}/include>)
+            target_link_libraries(${target} PUBLIC OpenImageDenoise)
+        endif()
     endif()
 endfunction()
 
@@ -131,7 +144,7 @@ add_library(TachyonScene SHARED ${TachyonSceneSources})
 tachyon_configure_common(TachyonScene)
 target_compile_definitions(TachyonScene PRIVATE TACHYON_BUILD_DLL)
 target_link_libraries(TachyonScene
-    PUBLIC
+    PRIVATE
         TachyonCore
         TachyonColor
         TachyonText
@@ -149,7 +162,7 @@ tachyon_link_media_deps(TachyonScene)
 tachyon_link_output_deps(TachyonScene)
 tachyon_link_omp(TachyonScene)
 if(TACHYON_ENABLE_TRACKER)
-    target_link_libraries(TachyonScene PUBLIC TachyonTracker)
+    target_link_libraries(TachyonScene PRIVATE TachyonTracker)
 endif()
 
 add_library(TachyonRuntime STATIC ${TachyonRuntimeSources})
@@ -163,15 +176,19 @@ tachyon_link_omp(TachyonRuntime)
 add_library(TachyonRenderer2D STATIC ${TachyonRenderer2DSources})
 tachyon_configure_common(TachyonRenderer2D)
 tachyon_link_text_deps(TachyonRenderer2D)
-tachyon_link_3d_deps(TachyonRenderer2D)
+if(TACHYON_ENABLE_3D)
+    tachyon_link_3d_deps(TachyonRenderer2D)
+endif()
 tachyon_link_omp(TachyonRenderer2D)
 target_link_libraries(TachyonRenderer2D PUBLIC TachyonColor)
 
-add_library(TachyonRenderer3D STATIC ${TachyonRenderer3DSources})
-tachyon_configure_common(TachyonRenderer3D)
-tachyon_link_3d_deps(TachyonRenderer3D)
-tachyon_link_omp(TachyonRenderer3D)
-target_link_libraries(TachyonRenderer3D PUBLIC TachyonColor)
+if(TACHYON_ENABLE_3D)
+    add_library(TachyonRenderer3D STATIC ${TachyonRenderer3DSources})
+    tachyon_configure_common(TachyonRenderer3D)
+    tachyon_link_3d_deps(TachyonRenderer3D)
+    tachyon_link_omp(TachyonRenderer3D)
+    target_link_libraries(TachyonRenderer3D PUBLIC TachyonColor)
+endif()
 
 add_library(TachyonMedia STATIC ${TachyonMediaSources})
 tachyon_configure_common(TachyonMedia)
@@ -222,7 +239,7 @@ target_link_libraries(TachyonRuntimeEngine INTERFACE
     TachyonScene
     TachyonRuntime
     TachyonRenderer2D
-    TachyonRenderer3D
+    $<$<BOOL:${TACHYON_ENABLE_3D}>:TachyonRenderer3D>
     TachyonMedia
     TachyonAudio
     TachyonOutput

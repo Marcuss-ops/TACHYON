@@ -82,7 +82,7 @@ AssetReport build_asset_report(const SceneSpec& scene, const std::filesystem::pa
     }
 
     // Gap 2: check fonts from font_manifest
-    if (scene.font_manifest.has_value()) {
+    if (scene.font_manifest) {
         for (const auto& font : scene.font_manifest->fonts) {
             auto full_path = media::resolve_relative_to_root(font.src, root);
             add_entry(report, "font", full_path);
@@ -110,4 +110,3 @@ AssetReport build_asset_report(const SceneSpec& scene, const std::filesystem::pa
 }
 
 } // namespace tachyon
-

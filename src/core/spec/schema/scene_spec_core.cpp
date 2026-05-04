@@ -137,7 +137,7 @@ ValidationResult validate_scene_spec(const SceneSpec& scene) {
     }
 
     // Warning if font manifest missing but text layers present
-    if (!scene.font_manifest.has_value()) {
+    if (!scene.font_manifest) {
         bool has_text_layer = false;
         for (const auto& comp : scene.compositions) {
             for (const auto& layer : comp.layers) {

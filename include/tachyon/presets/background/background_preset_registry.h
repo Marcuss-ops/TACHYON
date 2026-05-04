@@ -30,7 +30,10 @@ struct BackgroundPresetSpec {
  */
 class TACHYON_API BackgroundPresetRegistry {
 public:
-    static BackgroundPresetRegistry& instance();
+    static BackgroundPresetRegistry& instance() {
+        static BackgroundPresetRegistry registry;
+        return registry;
+    }
 
     // Registers a new background preset.
     void register_preset(BackgroundPresetSpec spec);
@@ -39,7 +42,16 @@ public:
     const BackgroundPresetSpec* find(std::string_view id) const;
 
     // Creates a background layer using the specified ID.
-    std::optional<LayerSpec> create(std::string_view id, int width, int height, double duration = 8.0) const;
+    std::optional<LayerSpec> create(std::string_view id, int width, int height, double duration = 8.0) const {
+        if (const auto* spec = find(id)) {
+            auto layer = spec->factory(width, height, duration);
+            layer.id = "bg_" + std::string(id);
+            layer.name = spec->name;
+            layer.preset_id = std::string(id);
+            return layer;
+        }
+        return std::nullopt;
+    }
 
     // Lists all registered background IDs.
     std::vector<std::string> list_ids() const;
