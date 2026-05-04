@@ -12,6 +12,7 @@
 #include "tachyon/audio/audio_export.h"
 #include "tachyon/runtime/execution/session/render_internal.h"
 #include "tachyon/runtime/profiling/render_profiler.h"
+#include "tachyon/media/management/asset_resolver.h"
 
 #include <iostream>
 #include <future>
@@ -61,7 +62,20 @@ RenderSessionResult RenderSession::render(
     }
 
     ::tachyon::RenderContext context(m_precomp_cache);
+    
+    // Initialize Asset Resolver
+    media::AssetResolver::Config resolver_config;
+    // TODO: Populate resolver_config from environment or scene spec if needed
+    
     context.renderer2d.font_registry = ::tachyon::renderer2d::get_default_font_registry();
+    
+    auto resolver = std::make_shared<media::AssetResolver>(
+        resolver_config,
+        nullptr, // MediaManager is not an AssetManager
+        context.media ? &context.media->image_manager() : nullptr,
+        const_cast<text::FontRegistry*>(context.renderer2d.font_registry)
+    );
+    context.renderer2d.asset_resolver = resolver;
     std::uint32_t w = static_cast<std::uint32_t>(execution_plan.render_plan.composition.width);
     std::uint32_t h = static_cast<std::uint32_t>(execution_plan.render_plan.composition.height);
     m_surface_pool = std::make_unique<runtime::RuntimeSurfacePool>(w, h, 10);

@@ -8,6 +8,7 @@
 #include "tachyon/renderer2d/evaluated_composition/rendering/primitives/layer_renderer_procedural.h"
 #include "tachyon/renderer2d/evaluated_composition/rendering/core/layer_renderer_interface.h"
 #include "tachyon/media/management/media_manager.h"
+#include "tachyon/media/management/asset_resolver.h"
 
 
 #include <algorithm>
@@ -227,7 +228,7 @@ public:
         (void)state;
         (void)target_rect;
 
-        if (context.media_manager == nullptr) {
+        if (context.asset_resolver == nullptr) {
             return false;
         }
 
@@ -236,12 +237,17 @@ public:
             return false;
         }
 
-        const auto* image = context.media_manager->get_image(*media_source);
+        auto image = context.asset_resolver->resolve_image_shared(media_source->string());
         if (image == nullptr) {
             return false;
         }
 
-        surface = std::make_shared<SurfaceRGBA>(*image);
+        surface = std::const_pointer_cast<SurfaceRGBA>(std::static_pointer_cast<const SurfaceRGBA>(image));
+        // Note: we might need to copy if the renderer expects a mutable surface, 
+        // but often images are read-only sources.
+        if (surface) {
+            surface = std::make_shared<SurfaceRGBA>(*image);
+        }
         return true;
     }
 };

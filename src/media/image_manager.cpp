@@ -17,8 +17,8 @@ constexpr renderer2d::Color kFallbackCheckerDark{0.25f, 0.0f, 0.25f, 1.0f};
 constexpr const char* kDecodeFailedCode = "media.image.decode_failed";
 constexpr const char* kDecodeFailedMessage = "failed to decode image, using fallback surface";
 
-std::unique_ptr<renderer2d::SurfaceRGBA> make_fallback_surface() {
-    auto surface = std::make_unique<renderer2d::SurfaceRGBA>(kFallbackSurfaceWidth, kFallbackSurfaceHeight);
+std::shared_ptr<renderer2d::SurfaceRGBA> make_fallback_surface() {
+    auto surface = std::make_shared<renderer2d::SurfaceRGBA>(kFallbackSurfaceWidth, kFallbackSurfaceHeight);
     for (std::uint32_t y = 0; y < kFallbackSurfaceHeight; ++y) {
         for (std::uint32_t x = 0; x < kFallbackSurfaceWidth; ++x) {
             const bool checker = ((x / kFallbackCheckerSize) + (y / kFallbackCheckerSize)) % 2U == 0U;
@@ -35,14 +35,14 @@ void record_missing_image(DiagnosticBag& diagnostics, const std::string& key, co
 
 } // namespace
 
-static std::unique_ptr<renderer2d::SurfaceRGBA> decode_image(const std::filesystem::path& path, AlphaMode alpha_mode) {
+static std::shared_ptr<renderer2d::SurfaceRGBA> decode_image(const std::filesystem::path& path, AlphaMode alpha_mode) {
     int w, h, channels;
     unsigned char* data = stbi_load(path.string().c_str(), &w, &h, &channels, 4);
     if (!data) return nullptr;
 
     const uint32_t uw = static_cast<uint32_t>(w);
     const uint32_t uh = static_cast<uint32_t>(h);
-    auto surface = std::make_unique<renderer2d::SurfaceRGBA>(uw, uh);
+    auto surface = std::make_shared<renderer2d::SurfaceRGBA>(uw, uh);
     
     // Direct access to pixels if possible, but SurfaceRGBA doesn't expose a mutable ref to the whole vector
     // So we use a faster loop
@@ -72,13 +72,13 @@ static std::unique_ptr<renderer2d::SurfaceRGBA> decode_image(const std::filesyst
     return surface;
 }
 
-static std::unique_ptr<HDRTextureData> decode_hdr_image(const std::filesystem::path& path) {
+static std::shared_ptr<HDRTextureData> decode_hdr_image(const std::filesystem::path& path) {
     int w, h, channels;
     // Environment maps are usually RGB, using 3 channels to save memory
     float* data = stbi_loadf(path.string().c_str(), &w, &h, &channels, 3);
     if (!data) return nullptr;
 
-    auto hdr = std::make_unique<HDRTextureData>();
+    auto hdr = std::make_shared<HDRTextureData>();
     hdr->width = w;
     hdr->height = h;
     hdr->channels = 3;
@@ -89,6 +89,11 @@ static std::unique_ptr<HDRTextureData> decode_hdr_image(const std::filesystem::p
 }
 
 const renderer2d::SurfaceRGBA* ImageManager::get_image(const std::filesystem::path& path, AlphaMode alpha_mode, DiagnosticBag* diagnostics) {
+    auto shared = get_image_shared(path, alpha_mode, diagnostics);
+    return shared.get();
+}
+
+std::shared_ptr<const renderer2d::SurfaceRGBA> ImageManager::get_image_shared(const std::filesystem::path& path, AlphaMode alpha_mode, DiagnosticBag* diagnostics) {
     std::string key = path.string();
     if (alpha_mode == AlphaMode::Premultiplied) key += ":premultiplied";
     else if (alpha_mode == AlphaMode::Ignore) key += ":ignore";
@@ -96,7 +101,7 @@ const renderer2d::SurfaceRGBA* ImageManager::get_image(const std::filesystem::pa
     { // lookup cached image
         std::lock_guard<std::mutex> lock(m_mutex);
         auto it = m_cache.find(key);
-        if (it != m_cache.end()) return it->second.get();
+        if (it != m_cache.end()) return it->second;
     }
 
     // decode outside the lock (expensive)
@@ -113,11 +118,10 @@ const renderer2d::SurfaceRGBA* ImageManager::get_image(const std::filesystem::pa
     std::lock_guard<std::mutex> lock(m_mutex);
     // double-check: another thread might have loaded it in the meantime
     auto it = m_cache.find(key);
-    if (it != m_cache.end()) return it->second.get();
+    if (it != m_cache.end()) return it->second;
 
-    const renderer2d::SurfaceRGBA* ptr = surface.get();
-    m_cache[key] = std::move(surface);
-    return ptr;
+    m_cache[key] = surface;
+    return surface;
 }
 
 const HDRTextureData* ImageManager::get_hdr_image(const std::filesystem::path& path, DiagnosticBag* diagnostics) {
@@ -144,7 +148,7 @@ const HDRTextureData* ImageManager::get_hdr_image(const std::filesystem::path& p
     if (it != m_hdr_cache.end()) return it->second.get();
 
     const HDRTextureData* ptr = hdr.get();
-    m_hdr_cache[key] = std::move(hdr);
+    m_hdr_cache[key] = hdr;
     return ptr;
 }
 
@@ -155,7 +159,7 @@ DiagnosticBag ImageManager::consume_diagnostics() {
     return diagnostics;
 }
 
-void ImageManager::store_image(const std::string& key, std::unique_ptr<renderer2d::SurfaceRGBA> image) {
+void ImageManager::store_image(const std::string& key, std::shared_ptr<renderer2d::SurfaceRGBA> image) {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_cache[key] = std::move(image);
 }

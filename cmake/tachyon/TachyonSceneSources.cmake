@@ -35,6 +35,7 @@ set(TachyonSceneSources
     
     # Spec - Compilation
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/component_library.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/effect_compiler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/layer_compiler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/preset_compiler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/property_compiler.cpp

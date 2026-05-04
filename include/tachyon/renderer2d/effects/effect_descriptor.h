@@ -2,6 +2,10 @@
 
 #include "tachyon/core/spec/schema/common/common_spec.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
+
+namespace tachyon::renderer2d {
+    struct EffectParams;
+}
 #include <string>
 #include <functional>
 #include <vector>
@@ -25,11 +29,12 @@ struct EffectDescriptor {
         const EffectSpec& spec,
         const SurfaceRGBA& input,
         SurfaceRGBA& output,
-        const std::vector<const SurfaceRGBA*>& aux_surfaces)>;
+        const std::vector<const SurfaceRGBA*>& aux_surfaces,
+        const EffectParams& params)>;
 
     std::string id;
     std::string category;
-    Factory apply_fn;
+    Factory factory;
     
     std::vector<AuxSurfaceRequirement> aux_requirements;
     

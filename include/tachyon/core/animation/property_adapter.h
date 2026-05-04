@@ -59,17 +59,19 @@ inline AnimatedProperty<ColorSpec> to_generic(const AnimatedColorSpec& spec) {
 }
 
 /**
- * @brief Converts an AnimatedVector2Spec to the generic AnimatedProperty template.
+ * @brief Converts an AnimatedVector2Spec to the generic AnimatedSpatialProperty template.
  */
-inline AnimatedProperty<math::Vector2> to_generic(const AnimatedVector2Spec& spec) {
-    AnimatedProperty<math::Vector2> prop;
+inline AnimatedSpatialProperty<math::Vector2> to_spatial_generic(const AnimatedVector2Spec& spec) {
+    AnimatedSpatialProperty<math::Vector2> prop;
     prop.value = spec.value;
     prop.expression = spec.expression;
     prop.keyframes.reserve(spec.keyframes.size());
     for (const auto& k : spec.keyframes) {
-        KeyframeSpec<math::Vector2> gk;
+        SpatialKeyframeSpec<math::Vector2> gk;
         gk.time = k.time;
         gk.value = k.value;
+        gk.tangent_in = k.tangent_in;
+        gk.tangent_out = k.tangent_out;
         gk.timing.easing = k.easing;
         gk.timing.interpolation = k.interpolation;
         gk.timing.bezier = k.bezier;
@@ -87,17 +89,19 @@ inline AnimatedProperty<math::Vector2> to_generic(const AnimatedVector2Spec& spe
 }
 
 /**
- * @brief Converts an AnimatedVector3Spec to the generic AnimatedProperty template.
+ * @brief Converts an AnimatedVector3Spec to the generic AnimatedSpatialProperty template.
  */
-inline AnimatedProperty<math::Vector3> to_generic(const AnimatedVector3Spec& spec) {
-    AnimatedProperty<math::Vector3> prop;
+inline AnimatedSpatialProperty<math::Vector3> to_spatial_generic(const AnimatedVector3Spec& spec) {
+    AnimatedSpatialProperty<math::Vector3> prop;
     prop.value = spec.value;
     prop.expression = spec.expression;
     prop.keyframes.reserve(spec.keyframes.size());
     for (const auto& k : spec.keyframes) {
-        KeyframeSpec<math::Vector3> gk;
+        SpatialKeyframeSpec<math::Vector3> gk;
         gk.time = k.time;
         gk.value = k.value;
+        gk.tangent_in = k.tangent_in;
+        gk.tangent_out = k.tangent_out;
         gk.timing.easing = k.easing;
         gk.timing.interpolation = k.interpolation;
         gk.timing.bezier = k.bezier;

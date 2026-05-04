@@ -3,9 +3,11 @@
 #include "tachyon/media/asset_manager.h"
 #include "tachyon/media/management/image_manager.h"
 #include "tachyon/text/fonts/core/font_registry.h"
+#include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include <filesystem>
 #include <string>
 #include <memory>
+#include <optional>
 
 namespace tachyon::media {
 
@@ -35,17 +37,27 @@ public:
      * The spec can be an absolute path, a path relative to project_root/assets_root,
      * or a known asset ID in the AssetManager.
      */
-    std::filesystem::path resolve_path(const std::string& spec, AssetType type = AssetType::IMAGE) const;
+    std::optional<std::filesystem::path> resolve_path(const std::string& spec, AssetType type = AssetType::IMAGE) const;
+
+    /**
+     * @brief Resolves a path with detailed diagnostic reporting.
+     */
+    ResolutionResult<std::filesystem::path> resolve_path_strict(const std::string& spec, AssetType type, ResolveMode mode) const;
 
     /**
      * @brief Resolves and loads an image surface.
      */
-    const renderer2d::SurfaceRGBA* resolve_image(const std::string& spec, AlphaMode alpha_mode = AlphaMode::Straight);
+    const renderer2d::SurfaceRGBA* resolve_image(const std::string& spec, AlphaMode alpha_mode = AlphaMode::Straight, ResolveMode mode = ResolveMode::PermissiveWithWarning);
+
+    /**
+     * @brief Resolves and loads an image surface, returning a shared pointer for safe ownership.
+     */
+    std::shared_ptr<const renderer2d::SurfaceRGBA> resolve_image_shared(const std::string& spec, AlphaMode alpha_mode = AlphaMode::Straight, ResolveMode mode = ResolveMode::PermissiveWithWarning);
 
     /**
      * @brief Resolves and loads a font.
      */
-    const text::Font* resolve_font(const std::string& spec, std::uint32_t pixel_size = 48);
+    const text::Font* resolve_font(const std::string& spec, std::uint32_t pixel_size = 48, ResolveMode mode = ResolveMode::PermissiveWithWarning);
 
     /**
      * @brief Direct access to the underlying managers.

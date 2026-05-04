@@ -203,72 +203,7 @@ struct AnimatedEffectSpec {
      * @param time_seconds Time in seconds to evaluate.
      * @return EffectSpec with evaluated values at the given time.
      */
-    [[nodiscard]] EffectSpec evaluate(double time_seconds) const {
-        EffectSpec result;
-        result.enabled = enabled;
-        result.type = type;
-        
-        // Start with static values
-        result.scalars = static_scalars;
-        result.colors = static_colors;
-        result.strings = static_strings;
-        
-        // Override with animated values at the given time
-        for (const auto& [key, anim] : animated_scalars) {
-            if (!anim.keyframes.empty()) {
-                // Find the two keyframes surrounding the time
-                double value = anim.keyframes.front().value; // default to first
-                for (size_t i = 0; i < anim.keyframes.size() - 1; ++i) {
-                    const auto& kf1 = anim.keyframes[i];
-                    const auto& kf2 = anim.keyframes[i + 1];
-                    if (time_seconds >= kf1.time && time_seconds <= kf2.time) {
-                        // Linear interpolation for now (could use easing)
-                        double t = (time_seconds - kf1.time) / (kf2.time - kf1.time);
-                        value = kf1.value + t * (kf2.value - kf1.value);
-                        break;
-                    } else if (time_seconds < kf1.time) {
-                        value = kf1.value;
-                        break;
-                    } else if (time_seconds > kf2.time && i == anim.keyframes.size() - 2) {
-                        value = kf2.value;
-                    }
-                }
-                result.scalars[key] = value;
-            } else if (anim.value.has_value()) {
-                result.scalars[key] = anim.value.value();
-            }
-        }
-        
-        for (const auto& [key, anim] : animated_colors) {
-            if (!anim.keyframes.empty()) {
-                // Find the two keyframes surrounding the time
-                ColorSpec value = anim.keyframes.front().value; // default to first
-                for (size_t i = 0; i < anim.keyframes.size() - 1; ++i) {
-                    const auto& kf1 = anim.keyframes[i];
-                    const auto& kf2 = anim.keyframes[i + 1];
-                    if (time_seconds >= kf1.time && time_seconds <= kf2.time) {
-                        // Linear interpolation for each channel
-                        double t = (time_seconds - kf1.time) / (kf2.time - kf1.time);
-                        value.r = static_cast<uint8_t>(kf1.value.r + t * (kf2.value.r - kf1.value.r));
-                        value.g = static_cast<uint8_t>(kf1.value.g + t * (kf2.value.g - kf1.value.g));
-                        value.b = static_cast<uint8_t>(kf1.value.b + t * (kf2.value.b - kf1.value.b));
-                        value.a = static_cast<uint8_t>(kf1.value.a + t * (kf2.value.a - kf1.value.a));
-                        break;
-                    } else if (time_seconds < kf1.time) {
-                        value = kf1.value;
-                        break;
-                    } else if (time_seconds > kf2.time && i == anim.keyframes.size() - 2) {
-                        value = kf2.value;
-                    }
-                }
-                result.colors[key] = value;
-            } else if (anim.value.has_value()) {
-                result.colors[key] = anim.value.value();
-            }
-        }
-        
-        return result;
-    }
+    [[nodiscard]] EffectSpec evaluate(double time_seconds) const;
     
     /**
      * @brief Check if this effect has any animated parameters.

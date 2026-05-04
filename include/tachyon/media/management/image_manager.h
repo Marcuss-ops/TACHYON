@@ -32,6 +32,14 @@ public:
         DiagnosticBag* diagnostics = nullptr);
 
     /**
+     * @brief Get or load an image, returning a shared pointer for safe ownership.
+     */
+    std::shared_ptr<const renderer2d::SurfaceRGBA> get_image_shared(
+        const std::filesystem::path& path,
+        AlphaMode alpha_mode = AlphaMode::Straight,
+        DiagnosticBag* diagnostics = nullptr);
+
+    /**
      * Get or load an HDR image (environment map).
      */
     const HDRTextureData* get_hdr_image(
@@ -46,7 +54,7 @@ public:
     /**
      * Store an image manually in the cache.
      */
-    void store_image(const std::string& key, std::unique_ptr<renderer2d::SurfaceRGBA> image);
+    void store_image(const std::string& key, std::shared_ptr<renderer2d::SurfaceRGBA> image);
 
     /**
      * Clear the cache.
@@ -54,8 +62,8 @@ public:
     void clear_cache();
 
 private:
-    std::map<std::string, std::unique_ptr<renderer2d::SurfaceRGBA>> m_cache;
-    std::map<std::string, std::unique_ptr<HDRTextureData>> m_hdr_cache;
+    std::map<std::string, std::shared_ptr<renderer2d::SurfaceRGBA>> m_cache;
+    std::map<std::string, std::shared_ptr<HDRTextureData>> m_hdr_cache;
     DiagnosticBag m_diagnostics;
     mutable std::mutex m_mutex;
 };

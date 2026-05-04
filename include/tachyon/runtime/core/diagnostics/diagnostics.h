@@ -13,6 +13,15 @@ enum class DiagnosticSeverity {
     Error
 };
 
+/**
+ * @brief Controls how resolution failures are handled.
+ */
+enum class ResolveMode {
+    Strict,                 ///< Fail immediately on missing assets/features (Error)
+    PermissiveWithWarning,  ///< Use fallback if possible, but record a warning (Warning)
+    PermissiveSilent        ///< Use fallback silently (Info)
+};
+
 [[nodiscard]] constexpr const char* diagnostic_severity_string(DiagnosticSeverity severity) noexcept {
     switch (severity) {
         case DiagnosticSeverity::Info:
