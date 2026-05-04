@@ -121,7 +121,7 @@ target_link_libraries(TachyonColor PUBLIC TachyonCore)
 
 if(MSVC)
     set_source_files_properties(color/blend_kernel_avx2.cpp PROPERTIES COMPILE_FLAGS "/arch:AVX2")
-    set_source_files_properties(color/blend_kernel_avx2.cpp PROPERTIES COMPILE_DEFINITIONS "TACHYON_AVX2")
+    target_compile_definitions(TachyonColor PRIVATE "TACHYON_AVX2")
 endif()
 
 add_library(TachyonScene STATIC ${TachyonSceneSources})

@@ -10,6 +10,7 @@ add_executable(TachyonTests
     unit/core/properties/bezier_interpolator_tests.cpp
     unit/timeline/camera_cuts_tests.cpp
     unit/core/scene/builder_preset_tests.cpp
+    unit/color/blend_kernel_tests.cpp
 )
 
 target_compile_definitions(TachyonTests
