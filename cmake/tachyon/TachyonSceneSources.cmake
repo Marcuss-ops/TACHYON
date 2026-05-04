@@ -69,6 +69,7 @@ set(TachyonSceneSources
     ${CMAKE_CURRENT_SOURCE_DIR}/importer/usd_importer.cpp
 
     # Presets
+    ${CMAKE_CURRENT_SOURCE_DIR}/presets/builders_common.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/background/background_builders.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/background/background_preset_registry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/image/image_builders.cpp

@@ -1,5 +1,6 @@
 #include "tachyon/presets/background/background_builders.h"
 #include "tachyon/presets/background/procedural.h"
+#include "tachyon/presets/builders_common.h"
 
 namespace tachyon::presets {
 
@@ -41,25 +42,48 @@ LayerSpec build_background(const BackgroundParams& p) {
     int w = static_cast<int>(p.w);
     int h = static_cast<int>(p.h);
 
-    if (p.kind == "grid_modern") return modern_tech_grid(w, h, palette, 60.0, dur);
-    if (p.kind == "grid")        return clean_grid(w, h, palette, dur);
-    if (p.kind == "aura")        return aura(w, h, palette, dur);
-    if (p.kind == "stars")       return stars(w, h, palette, dur);
-    if (p.kind == "noise")       return noise(w, h, palette, dur);
-    if (p.kind == "minimal_white") return minimal_white(w, h, palette, dur);
-    if (p.kind == "texture")     return subtle_texture(w, h, palette, dur);
-    if (p.kind == "soft_gradient") return soft_gradient(w, h, palette, dur);
-    if (p.kind == "dots")        return elegant_dots(w, h, palette, dur);
-    if (p.kind == "silk")        return midnight_silk(w, h, palette, dur);
-    if (p.kind == "horizon")     return golden_horizon(w, h, palette, dur);
-    if (p.kind == "cyber")       return cyber_matrix(w, h, palette, dur);
-    if (p.kind == "glass")       return frosted_glass(w, h, palette, dur);
-    if (p.kind == "nebula")      return cosmic_nebula(w, h, palette, dur);
-    if (p.kind == "metal")       return brushed_metal(w, h, palette, dur);
-    if (p.kind == "ocean")       return oceanic_abyss(w, h, palette, dur);
-    if (p.kind == "ripple_grid") return ripple_grid(w, h, palette, dur);
+    LayerSpec layer = make_base_layer("bg_layer", "Background", "procedural", {
+        p.in_point, p.out_point, p.x, p.y, p.w, p.h, p.opacity
+    });
+
+    ProceduralSpec spec;
+    if (p.kind == "grid_modern")    spec = make_modern_tech_grid_spec(palette, 60.0);
+    else if (p.kind == "grid")      spec = make_clean_grid_spec(palette);
+    else if (p.kind == "aura")      spec = make_aura_spec(palette);
+    else if (p.kind == "stars")     spec = make_stars_spec(palette);
+    else if (p.kind == "noise")     spec = make_noise_spec(palette);
+    else if (p.kind == "texture")   spec = make_subtle_texture_spec(palette);
+    else if (p.kind == "soft_gradient") spec = make_soft_gradient_spec(palette);
+    else if (p.kind == "dots")      spec = make_elegant_dots_spec(palette);
+    else if (p.kind == "silk")      spec = make_midnight_silk_spec(palette);
+    else if (p.kind == "horizon")   spec = make_golden_horizon_spec(palette);
+    else if (p.kind == "cyber")     spec = make_cyber_matrix_spec(palette);
+    else if (p.kind == "glass")     spec = make_frosted_glass_spec(palette);
+    else if (p.kind == "nebula")    spec = make_cosmic_nebula_spec(palette);
+    else if (p.kind == "metal")     spec = make_brushed_metal_spec(palette);
+    else if (p.kind == "ocean")     spec = make_oceanic_abyss_spec(palette);
+    else if (p.kind == "ripple_grid") spec = make_ripple_grid_spec(palette);
+    else                            spec = make_classico_premium_spec(palette);
+
+    // Apply overrides
+    if (p.frequency.has_value())    spec.frequency = *p.frequency;
+    if (p.amplitude.has_value())    spec.amplitude = *p.amplitude;
+    if (p.scale.has_value())        spec.scale = *p.scale;
+    if (p.contrast.has_value())     spec.contrast = *p.contrast;
+    if (p.softness.has_value())     spec.softness = *p.softness;
+    if (p.grain_amount.has_value()) spec.grain_amount = *p.grain_amount;
+    if (p.shape.has_value())        spec.shape = *p.shape;
+    if (p.spacing.has_value())      spec.spacing = *p.spacing;
+    if (p.border_width.has_value()) spec.border_width = *p.border_width;
+    if (p.speed != 1.0f)            spec.speed = p.speed;
+    if (p.seed != 0)                spec.seed = p.seed;
     
-    return classico_premium(w, h, palette, dur);
+    if (p.color_a.has_value()) spec.color_a = AnimatedColorSpec{*p.color_a};
+    if (p.color_b.has_value()) spec.color_b = AnimatedColorSpec{*p.color_b};
+    if (p.color_c.has_value()) spec.color_c = AnimatedColorSpec{*p.color_c};
+
+    layer.procedural = std::move(spec);
+    return layer;
 }
 
 } // namespace tachyon::presets

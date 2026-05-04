@@ -57,6 +57,17 @@ public:
     std::size_t count() const;
     const TransitionSpec* get_by_index(std::size_t index) const;
 
+    struct TransitionInfo {
+        std::string id;
+        std::string name;
+        std::string description;
+        bool has_pixel_function;
+        bool has_state_type;
+    };
+
+    std::vector<std::string> list_builtin_transition_ids() const;
+    std::vector<TransitionInfo> list_builtin_transitions() const;
+
 private:
     TransitionRegistry();
     ~TransitionRegistry();

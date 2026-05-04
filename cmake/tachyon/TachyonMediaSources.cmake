@@ -14,6 +14,7 @@ set(TachyonMediaSources
     ${CMAKE_CURRENT_SOURCE_DIR}/media/streaming/media_prefetcher.cpp
     
     ${CMAKE_CURRENT_SOURCE_DIR}/media/loading/mesh_loader.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/media/path_resolver.cpp
     
     ${CMAKE_CURRENT_SOURCE_DIR}/media/import/asset_import_pipeline.cpp
     

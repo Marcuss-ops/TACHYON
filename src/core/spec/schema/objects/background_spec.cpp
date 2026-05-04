@@ -122,11 +122,13 @@ BackgroundSpec BackgroundSpec::from_string(const std::string& str) {
     // Check if it looks like an asset reference (contains '/' or ends with common image extensions)
     if (str.find('/') != std::string::npos || str.ends_with(".png") || str.ends_with(".jpg") || str.ends_with(".jpeg")) {
         result.type = BackgroundType::Asset;
+        result.value = str;
         return result;
     }
 
     // Default: treat as component ID (most common use case for background)
     result.type = BackgroundType::Component;
+    result.value = str;
     return result;
 }
 

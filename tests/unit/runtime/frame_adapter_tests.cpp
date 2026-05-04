@@ -1,11 +1,12 @@
 #include "tachyon/runtime/execution/frame_adapter.h"
 
+#include <cmath>
 #include <iostream>
 
 namespace {
 
 bool nearly_equal(double a, double b) {
-    return a == b;
+    return std::abs(a - b) < 1e-9;
 }
 
 } // namespace

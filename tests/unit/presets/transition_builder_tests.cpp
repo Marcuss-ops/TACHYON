@@ -87,5 +87,17 @@ bool run_transition_builder_tests() {
         check_true(layer.transition_out.transition_id.empty(), "Apply only enter leaves exit empty");
     }
 
+    {
+        TransitionParams p;
+        p.id = "custom";
+        p.parameters["intensity"] = 0.8;
+        p.parameters["size"] = 1.2;
+
+        const auto spec = build_transition_enter(p);
+        check_true(spec.transition_id == "custom", "Custom id is preserved");
+        // Note: parameters are not yet in LayerTransitionSpec, but we might want them there in the future.
+        // For now, we just ensure the basic mapping works.
+    }
+
     return g_failures == 0;
 }

@@ -7,38 +7,8 @@
 
 namespace tachyon::presets {
 
-// Valid transition IDs (registered in init_builtin_transitions):
-//
-// Base:
-//   "fade"                  crossfade
-//   "fade_to_black"         fade attraverso il nero
-//   "zoom"                  zoom in/out
-//   "zoom_in"               solo zoom in
-//   "zoom_out"              solo zoom out
-//   "zoom_blur"             zoom con motion blur
-//   "blur"                  blur wipe
-//
-// Slide:
-//   "slide_left"            scorre a sinistra
-//   "slide_right"           scorre a destra
-//   "slide_up"              scorre verso l'alto
-//   "slide_down"            scorre verso il basso
-//   "slide_easing"          slide con ease integrato
-//   "push_left"             push da sinistra
-//
-// Wipe:
-//   "wipe_linear"           wipe orizzontale
-//   "wipe_angular"          wipe angolare
-//   "directional_blur_wipe" wipe con blur direzionale
-//
-// Creative:
-//   "flip"                  ribaltamento orizzontale
-//   "spin"                  rotazione
-//   "circle_iris"           iris circolare
-//   "pixelate"              dissolve pixelato
-//   "glitch_slice"          fette glitch
-//   "rgb_split"             aberrazione cromatica
-//   "luma_dissolve"         dissolve noise-based
+// For a list of available transitions, use TransitionRegistry::instance().list_builtin_transition_ids().
+// Built-in transitions are registered in glsl_transition_effect.cpp.
 
 struct TransitionParams : LayerParams {
     std::string id;

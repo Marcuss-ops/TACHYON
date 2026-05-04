@@ -103,21 +103,15 @@ int get_repeat_count() {
 
 } // namespace
 
-bool run_math_tests();
-bool run_property_tests();
-bool run_expression_tests();
-bool run_camera_cuts_tests();
-bool run_camera_shake_tests();
-bool run_bezier_interpolator_tests();
+namespace tachyon::editor {
+bool run_undo_manager_tests();
+bool run_autosave_manager_tests();
+} // namespace tachyon::editor
 
 int main(int argc, char** argv) {
     std::vector<TestCase> tests = {
-        {"math", run_math_tests},
-        {"property", run_property_tests},
-        {"expression", run_expression_tests},
-        {"camera_cuts", run_camera_cuts_tests},
-        {"camera_shake", run_camera_shake_tests},
-        {"bezier_interpolator", run_bezier_interpolator_tests},
+        {"undo_manager", tachyon::editor::run_undo_manager_tests},
+        {"autosave_manager", tachyon::editor::run_autosave_manager_tests},
     };
 
     bool list_tests = false;

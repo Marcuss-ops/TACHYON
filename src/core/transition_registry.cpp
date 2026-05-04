@@ -61,4 +61,28 @@ const TransitionSpec* TransitionRegistry::get_by_index(std::size_t index) const 
     return &m_impl->transitions[index];
 }
 
+std::vector<std::string> TransitionRegistry::list_builtin_transition_ids() const {
+    std::vector<std::string> ids;
+    ids.reserve(m_impl->transitions.size());
+    for (const auto& spec : m_impl->transitions) {
+        ids.push_back(spec.id);
+    }
+    return ids;
+}
+
+std::vector<TransitionRegistry::TransitionInfo> TransitionRegistry::list_builtin_transitions() const {
+    std::vector<TransitionInfo> info;
+    info.reserve(m_impl->transitions.size());
+    for (const auto& spec : m_impl->transitions) {
+        info.push_back({
+            spec.id,
+            spec.name,
+            spec.description,
+            spec.function != nullptr,
+            spec.state_type != TransitionSpec::Type::None
+        });
+    }
+    return info;
+}
+
 }  // namespace tachyon

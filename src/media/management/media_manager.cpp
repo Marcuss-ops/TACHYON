@@ -4,7 +4,8 @@
 namespace tachyon::media {
 
 MediaManager::MediaManager()
-    : m_proxy_worker(std::make_unique<ProxyWorker>(m_proxy_manifest)) {
+    : m_proxy_worker(std::make_unique<ProxyWorker>(m_proxy_manifest)),
+      m_path_resolver(PathResolveContext{}) {
     
     // Default budget: 2GB
     m_frame_cache = std::make_unique<ResourceCache<std::string, renderer2d::SurfaceRGBA>>(
@@ -125,6 +126,17 @@ std::filesystem::path MediaManager::resolve_media_path(
     const std::filesystem::path& path,
     ResolutionPurpose purpose) const {
     
+    // Use PathResolver for centralized path resolution
+    PathResolveRequest request;
+    request.uri = path.string();
+    request.allow_missing = (purpose != ResolutionPurpose::Playback);
+    
+    auto result = m_path_resolver.resolve(request);
+    if (!result.runtime_path.empty()) {
+        return result.runtime_path;
+    }
+    
+    // Deprecated fallback logic - to be removed after transition
     const bool allow_proxy = (purpose == ResolutionPurpose::Playback) && m_use_proxies;
 
     if (allow_proxy) {
@@ -239,6 +251,32 @@ void MediaManager::clear_cache() {
 DiagnosticBag MediaManager::consume_diagnostics() {
     std::lock_guard<std::mutex> lock(m_mutex);
     return m_image_manager.consume_diagnostics();
+}
+
+const renderer2d::SurfaceRGBA* MediaManager::get_image(
+    const ResolvedAsset& asset,
+    AlphaMode alpha_mode,
+    DiagnosticBag* diagnostics) {
+    return get_image(asset.runtime_path, alpha_mode, diagnostics);
+}
+
+const renderer2d::SurfaceRGBA* MediaManager::get_video_frame(
+    const ResolvedAsset& asset,
+    double time,
+    DiagnosticBag* diagnostics) {
+    return get_video_frame(asset.runtime_path, time, diagnostics);
+}
+
+const HDRTextureData* MediaManager::get_hdr_image(
+    const ResolvedAsset& asset,
+    DiagnosticBag* diagnostics) {
+    return get_hdr_image(asset.runtime_path, diagnostics);
+}
+
+const MeshAsset* MediaManager::get_mesh(
+    const ResolvedAsset& asset,
+    DiagnosticBag* diagnostics) {
+    return get_mesh(asset.runtime_path, diagnostics);
 }
 
 } // namespace tachyon::media
