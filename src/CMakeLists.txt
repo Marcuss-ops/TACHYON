@@ -4,7 +4,6 @@ endif()
 
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonCoreSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonPlatformSources.cmake)
-message(STATUS "DEBUG: include path: ${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonSceneSources.cmake")
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonSceneSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonRuntimeSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonRenderer2DSources.cmake)
@@ -14,6 +13,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonAudioSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonOutputSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonTextSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonCLISources.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonStudioSources.cmake)
 
 
 function(tachyon_deduplicate_sources var_name)
@@ -22,19 +22,21 @@ function(tachyon_deduplicate_sources var_name)
     set(${var_name} "${_list}" PARENT_SCOPE)
 endfunction()
 
-# tachyon_deduplicate_sources(TachyonSceneSources)
-# tachyon_deduplicate_sources(TachyonRuntimeSources)
-# tachyon_deduplicate_sources(TachyonRenderer2DSources)
-# tachyon_deduplicate_sources(TachyonRenderer3DSources)
-# tachyon_deduplicate_sources(TachyonMediaSources)
-# tachyon_deduplicate_sources(TachyonAudioSources)
-# tachyon_deduplicate_sources(TachyonOutputSources)
-# tachyon_deduplicate_sources(TachyonTextSources)
+tachyon_deduplicate_sources(TachyonSceneSources)
+tachyon_deduplicate_sources(TachyonRuntimeSources)
+tachyon_deduplicate_sources(TachyonRenderer2DSources)
+tachyon_deduplicate_sources(TachyonRenderer3DSources)
+tachyon_deduplicate_sources(TachyonMediaSources)
+tachyon_deduplicate_sources(TachyonAudioSources)
+tachyon_deduplicate_sources(TachyonOutputSources)
+tachyon_deduplicate_sources(TachyonTextSources)
+tachyon_deduplicate_sources(TachyonCLISources)
+tachyon_deduplicate_sources(TachyonStudioSources)
+
 if(TACHYON_ENABLE_TRACKER)
     include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonTrackerSources.cmake)
     tachyon_deduplicate_sources(TachyonTrackerSources)
 endif()
-tachyon_deduplicate_sources(TachyonCLISources)
 
 function(tachyon_configure_common target)
     target_include_directories(${target}
@@ -52,7 +54,6 @@ function(tachyon_configure_common target)
             $<BUILD_INTERFACE:${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/include>
             $<INSTALL_INTERFACE:include>
     )
-
 
     if(MSVC)
         target_compile_options(${target} PRIVATE /W4 /permissive- /utf-8 /FS /arch:AVX2)
@@ -81,6 +82,10 @@ endfunction()
 
 function(tachyon_link_3d_deps target)
     target_link_libraries(${target} PUBLIC embree)
+    if(TACHYON_ENABLE_OIDN AND WIN32)
+        target_include_directories(${target} PUBLIC $<BUILD_INTERFACE:${oidn_SOURCE_DIR}/include>)
+        target_link_libraries(${target} PUBLIC OpenImageDenoise)
+    endif()
 endfunction()
 
 function(tachyon_link_omp target)
@@ -99,14 +104,8 @@ function(tachyon_link_output_deps target)
     endif()
 endfunction()
 
-function(tachyon_configure_target target)
-    tachyon_configure_common(${target})
-    tachyon_link_text_deps(${target})
-    tachyon_link_media_deps(${target})
-    tachyon_link_3d_deps(${target})
-    tachyon_link_omp(${target})
-    tachyon_link_output_deps(${target})
-endfunction()
+add_library(TachyonCore STATIC ${TachyonCoreSources})
+tachyon_configure_common(TachyonCore)
 
 add_library(TachyonScene OBJECT ${TachyonSceneSources})
 tachyon_configure_common(TachyonScene)
@@ -137,54 +136,52 @@ target_link_libraries(TachyonMedia PUBLIC pugixml)
 
 add_library(TachyonAudio OBJECT ${TachyonAudioSources})
 tachyon_configure_common(TachyonAudio)
+tachyon_link_media_deps(TachyonAudio)
 
 add_library(TachyonOutput OBJECT ${TachyonOutputSources})
 tachyon_configure_common(TachyonOutput)
+tachyon_link_media_deps(TachyonOutput)
 tachyon_link_output_deps(TachyonOutput)
 
 add_library(TachyonText OBJECT ${TachyonTextSources})
 tachyon_configure_common(TachyonText)
 tachyon_link_text_deps(TachyonText)
 
-if(TACHYON_ENABLE_TRACKER)
-add_library(TachyonTracker STATIC ${TachyonTrackerSources})
-tachyon_configure_common(TachyonTracker)
-endif()
-
 add_library(TachyonCLI OBJECT ${TachyonCLISources})
 tachyon_configure_common(TachyonCLI)
 tachyon_link_3d_deps(TachyonCLI)
+tachyon_link_omp(TachyonCLI)
+tachyon_link_output_deps(TachyonCLI)
 
 add_library(TachyonPlatform OBJECT ${TachyonPlatformSources})
 tachyon_configure_common(TachyonPlatform)
 
-add_library(TachyonCore STATIC 
-    ${TachyonCoreSources}
-    ${TachyonSceneSources}
-    ${TachyonRuntimeSources}
-    ${TachyonRenderer2DSources}
-    ${TachyonRenderer3DSources}
-    ${TachyonMediaSources}
-    ${TachyonAudioSources}
-    ${TachyonOutputSources}
-    ${TachyonTextSources}
-    ${TachyonCLISources}
-    ${TachyonPlatformSources}
-)
-tachyon_configure_common(TachyonCore)
-if(TACHYON_ENABLE_AUDIO_MUX)
-    target_compile_definitions(TachyonCore PUBLIC TACHYON_ENABLE_AUDIO_MUX)
-endif()
-tachyon_link_text_deps(TachyonCore)
-tachyon_link_media_deps(TachyonCore)
-tachyon_link_3d_deps(TachyonCore)
-tachyon_link_omp(TachyonCore)
-tachyon_link_output_deps(TachyonCore)
+add_library(TachyonStudio OBJECT ${TachyonStudioSources})
+tachyon_configure_common(TachyonStudio)
+
 if(TACHYON_ENABLE_TRACKER)
-    target_link_libraries(TachyonCore PUBLIC TachyonTracker)
+    add_library(TachyonTracker STATIC ${TachyonTrackerSources})
+    tachyon_configure_common(TachyonTracker)
 endif()
-if(TACHYON_ENABLE_PREVIEW_WINDOW)
-    target_compile_definitions(TachyonCore PUBLIC TACHYON_ENABLE_PREVIEW_WINDOW)
+
+add_library(TachyonEngine INTERFACE)
+target_link_libraries(TachyonEngine INTERFACE
+    TachyonCore
+    TachyonScene
+    TachyonRuntime
+    TachyonRenderer2D
+    TachyonRenderer3D
+    TachyonMedia
+    TachyonAudio
+    TachyonOutput
+    TachyonText
+    TachyonCLI
+    TachyonPlatform
+    TachyonStudio
+)
+
+if(TACHYON_ENABLE_TRACKER)
+    target_link_libraries(TachyonEngine INTERFACE TachyonTracker)
 endif()
 
 add_executable(tachyon
@@ -197,7 +194,7 @@ endif()
 
 target_link_libraries(tachyon
     PRIVATE
-        TachyonCore
+        TachyonEngine
 )
 
 if(MSVC)

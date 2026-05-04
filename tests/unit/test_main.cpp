@@ -110,6 +110,8 @@ int get_repeat_count() {
 
 // External test declarations
 bool run_scene_spec_tests();
+bool run_scene_inspector_tests();
+bool run_motion_map_tests();
 bool run_render_job_tests();
 bool run_math_tests();
 bool run_asset_resolution_tests();
@@ -222,6 +224,8 @@ int main(int argc, char** argv) {
         {"precomp_mask", run_precomp_mask_tests},
         {"tiling", tachyon::run_tiling_tests},
         {"scene_spec", run_scene_spec_tests},
+        {"scene_inspector", run_scene_inspector_tests},
+        {"motion_map", run_motion_map_tests},
         {"motion_blur", run_motion_blur_tests},
         // {"audio_pitch_correct", run_audio_pitch_correct_tests},  // Disabled - see tests/disabled/README.md
 

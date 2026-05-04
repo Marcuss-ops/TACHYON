@@ -11,6 +11,7 @@ void print_diagnostics(const DiagnosticBag& diagnostics, std::ostream& out);
 
 bool run_validate_command(const CliOptions& options, std::ostream& out, std::ostream& err);
 bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostream& err);
+bool run_motion_map_command(const CliOptions& options, std::ostream& out, std::ostream& err);
 bool run_inspect_fonts_command(const CliOptions& options, std::ostream& out, std::ostream& err);
 bool run_render_command(const CliOptions& options, std::ostream& out, std::ostream& err);
 bool run_preview_command(const CliOptions& options, std::ostream& out, std::ostream& err);
