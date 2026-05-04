@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/core/api.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/runtime/execution/jobs/render_job.h"
 
@@ -28,7 +29,7 @@ struct EvaluationVariables {
     const std::unordered_map<std::string, RenderJob::LayerOverride>* layer_overrides{nullptr};
 };
 
-[[nodiscard]] EvaluatedLayerState evaluate_layer_state(
+[[nodiscard]] TACHYON_API EvaluatedLayerState evaluate_layer_state(
     const LayerSpec& layer,
     std::int64_t frame_number,
     double composition_time_seconds,
@@ -36,14 +37,14 @@ struct EvaluationVariables {
     media::MediaManager* media = nullptr
 );
 
-[[nodiscard]] EvaluatedCameraState evaluate_camera_state(
+[[nodiscard]] TACHYON_API EvaluatedCameraState evaluate_camera_state(
     const CompositionSpec& composition,
     const std::vector<EvaluatedLayerState>& layers,
     std::int64_t frame_number,
     double composition_time_seconds
 );
 
-[[nodiscard]] EvaluatedCompositionState evaluate_composition_state(
+[[nodiscard]] TACHYON_API EvaluatedCompositionState evaluate_composition_state(
     const CompositionSpec& composition,
     std::int64_t frame_number,
     const audio::AudioAnalyzer* audio_analyzer = nullptr,
@@ -51,7 +52,7 @@ struct EvaluationVariables {
     media::MediaManager* media = nullptr
 );
 
-[[nodiscard]] EvaluatedCompositionState evaluate_composition_state(
+[[nodiscard]] TACHYON_API EvaluatedCompositionState evaluate_composition_state(
     const CompositionSpec& composition,
     double composition_time_seconds,
     const audio::AudioAnalyzer* audio_analyzer = nullptr,
@@ -59,7 +60,7 @@ struct EvaluationVariables {
     media::MediaManager* media = nullptr
 );
 
-[[nodiscard]] std::optional<EvaluatedCompositionState> evaluate_scene_composition_state(
+[[nodiscard]] TACHYON_API std::optional<EvaluatedCompositionState> evaluate_scene_composition_state(
     const SceneSpec& scene,
     const std::string& composition_id,
     std::int64_t frame_number,
@@ -68,7 +69,7 @@ struct EvaluationVariables {
     media::MediaManager* media = nullptr
 );
 
-[[nodiscard]] std::optional<EvaluatedCompositionState> evaluate_scene_composition_state(
+[[nodiscard]] TACHYON_API std::optional<EvaluatedCompositionState> evaluate_scene_composition_state(
     const SceneSpec& scene,
     const std::string& composition_id,
     double composition_time_seconds,

@@ -180,8 +180,7 @@ std::vector<std::string> scene_loader_link_libs() {
         "TachyonAudio",
         "TachyonMedia",
         "TachyonOutput",
-        "TachyonText",
-        "TachyonStudio"
+        "TachyonText"
     };
 }
 
