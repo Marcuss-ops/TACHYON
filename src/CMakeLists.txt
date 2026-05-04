@@ -5,6 +5,7 @@ endif()
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonPresetsSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonCoreSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonPlatformSources.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonSceneEvalSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonSceneSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonRuntimeSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonRenderer2DSources.cmake)
@@ -33,6 +34,7 @@ function(tachyon_assert_no_duplicate_sources var_name)
 endfunction()
 
 tachyon_assert_no_duplicate_sources(TachyonSceneSources)
+tachyon_assert_no_duplicate_sources(TachyonSceneEvalSources)
 tachyon_assert_no_duplicate_sources(TachyonRuntimeSources)
 tachyon_assert_no_duplicate_sources(TachyonRenderer2DSources)
 tachyon_assert_no_duplicate_sources(TachyonRenderer3DSources)
@@ -140,6 +142,24 @@ if(MSVC)
     target_compile_definitions(TachyonColor PRIVATE "TACHYON_AVX2")
 endif()
 
+add_library(TachyonSceneEval STATIC ${TachyonSceneEvalSources})
+tachyon_configure_common(TachyonSceneEval)
+target_compile_definitions(TachyonSceneEval PRIVATE TACHYON_BUILD_DLL)
+target_link_libraries(TachyonSceneEval
+    PRIVATE
+        TachyonCore
+        TachyonColor
+        TachyonText
+        TachyonAudio
+        TachyonMedia
+        TachyonRenderer2D
+        $<$<BOOL:${TACHYON_ENABLE_3D}>:TachyonRenderer3D>
+)
+tachyon_link_text_deps(TachyonSceneEval)
+tachyon_link_media_deps(TachyonSceneEval)
+tachyon_link_3d_deps(TachyonSceneEval)
+tachyon_link_omp(TachyonSceneEval)
+
 add_library(TachyonScene SHARED ${TachyonSceneSources})
 tachyon_configure_common(TachyonScene)
 target_compile_definitions(TachyonScene PRIVATE TACHYON_BUILD_DLL)
@@ -148,6 +168,7 @@ target_link_libraries(TachyonScene
         TachyonCore
         TachyonColor
         TachyonPlatform
+        TachyonSceneEval
         TachyonRenderer2D
         TachyonAudio
         TachyonMedia
@@ -163,9 +184,10 @@ if(TACHYON_ENABLE_AUDIO_MUX)
     target_compile_definitions(TachyonRuntime PRIVATE TACHYON_ENABLE_AUDIO_MUX)
 endif()
 target_link_libraries(TachyonRuntime
-    PRIVATE
+    PUBLIC
         TachyonCore
         TachyonColor
+        TachyonSceneEval
         TachyonText
         TachyonAudio
         TachyonMedia
@@ -247,6 +269,7 @@ add_library(TachyonRuntimeEngine INTERFACE)
 target_link_libraries(TachyonRuntimeEngine INTERFACE
     TachyonRuntime
     TachyonScene
+    TachyonSceneEval
     TachyonRenderer2D
     TachyonText
     TachyonMedia
