@@ -1,6 +1,7 @@
 # TachyonCore sources
 set(TachyonCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/animation_primitives.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/animation/property_interpolation.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/c_api.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/options.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/transition_registry.cpp
@@ -17,6 +18,7 @@ set(TachyonCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/camera_cut_contract.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/model/tachyon.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/analysis/scene_inspector.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/expressions/context_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/expressions/expression_engine.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/expressions/expression_vm.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/io/path_resolution.cpp

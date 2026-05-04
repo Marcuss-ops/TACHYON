@@ -15,6 +15,7 @@ enum class SfxCategory {
 struct SfxParams : LayerParams {
     SfxCategory category{SfxCategory::TypeWriting};
     int variant{-1};
+    uint64_t seed{0};
     float volume{1.0f};
 };
 

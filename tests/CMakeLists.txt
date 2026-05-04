@@ -9,6 +9,7 @@ add_executable(TachyonTests
     unit/core/camera/camera_shake_tests.cpp
     unit/core/properties/bezier_interpolator_tests.cpp
     unit/timeline/camera_cuts_tests.cpp
+    unit/core/scene/builder_preset_tests.cpp
 )
 
 target_compile_definitions(TachyonTests
@@ -20,6 +21,11 @@ target_link_libraries(TachyonTests
     PRIVATE
         TachyonCore
         TachyonColor
+        TachyonScene
+        TachyonText
+        TachyonRenderer2D
+        TachyonPlatform
+        TachyonRuntime
 )
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
@@ -188,6 +194,8 @@ add_executable(TachyonContentTests
     unit/audio/test_audio_trim.cpp
     unit/presets/background_preset_registry_tests.cpp
     unit/presets/transition_builder_tests.cpp
+    unit/presets/sfx_contract_tests.cpp
+    unit/presets/transition_preset_registry_tests.cpp
 )
 
 target_compile_definitions(TachyonContentTests

@@ -41,28 +41,33 @@ void PresetCompiler::expand_layer(LayerSpec& layer) const {
     const double in_point = layer.in_point;
     const double out_point = layer.out_point;
 
-    // Expand "in" preset
-    if (!layer.in_preset.empty()) {
-        const AnimationPreset* preset = m_library.find(layer.in_preset);
+    // Resolve Animation In
+    const std::string in_id = !layer.animation_in_preset.empty() ? layer.animation_in_preset : layer.in_preset;
+    if (!in_id.empty()) {
+        const AnimationPreset* preset = m_library.find(in_id);
         if (preset) {
-            const double phase_end = in_point + layer.in_duration;
+            const double duration = !layer.animation_in_preset.empty() ? layer.animation_in_duration : layer.in_duration;
+            const double phase_end = in_point + duration;
             inject_phase(layer, *preset, in_point, phase_end);
         }
     }
 
-    // Expand "during" preset
-    if (!layer.during_preset.empty()) {
-        const AnimationPreset* preset = m_library.find(layer.during_preset);
+    // Resolve Animation During
+    const std::string during_id = !layer.animation_during_preset.empty() ? layer.animation_during_preset : layer.during_preset;
+    if (!during_id.empty()) {
+        const AnimationPreset* preset = m_library.find(during_id);
         if (preset) {
             inject_phase(layer, *preset, in_point, out_point);
         }
     }
 
-    // Expand "out" preset
-    if (!layer.out_preset.empty()) {
-        const AnimationPreset* preset = m_library.find(layer.out_preset);
+    // Resolve Animation Out
+    const std::string out_id = !layer.animation_out_preset.empty() ? layer.animation_out_preset : layer.out_preset;
+    if (!out_id.empty()) {
+        const AnimationPreset* preset = m_library.find(out_id);
         if (preset) {
-            const double phase_start = out_point - layer.out_duration;
+            const double duration = !layer.animation_out_preset.empty() ? layer.animation_out_duration : layer.out_duration;
+            const double phase_start = out_point - duration;
             inject_phase(layer, *preset, phase_start, out_point);
         }
     }

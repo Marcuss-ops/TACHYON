@@ -1,6 +1,9 @@
 #include "tachyon/core/scene/evaluator/property_sampler.h"
-#include "tachyon/renderer2d/expressions/renderer2d_expression_evaluator.h"
-#include "tachyon/renderer2d/audio/audio_sampling.h"
+#include "tachyon/core/animation/property_sampler.h"
+#include "tachyon/core/animation/property_interpolation.h"
+#include "tachyon/core/animation/property_adapter.h"
+#include "tachyon/core/expressions/context_builder.h"
+#include "tachyon/audio/audio_analyzer.h"
 #include "tachyon/renderer2d/animation/easing.h"
 #include "tachyon/renderer2d/math/math_utils.h"
 #include <algorithm>
@@ -12,17 +15,6 @@ namespace tachyon::scene {
 namespace {
 
 constexpr float kTangentEpsilon = 1.0e-6f;
-constexpr double kDefaultTableValue = 0.0;
-
-double parse_table_value(const std::string& value) {
-    const char* begin = value.c_str();
-    char* end = nullptr;
-    const double parsed = std::strtod(begin, &end);
-    if (end == begin || *end != '\0') {
-        return kDefaultTableValue;
-    }
-    return parsed;
-}
 
 } // namespace
 
@@ -39,65 +31,23 @@ double sample_scalar(
     bool skip_expression) {
 
     if (!skip_expression && property.expression.has_value() && !property.expression->empty()) {
-        renderer2d::expressions::ExpressionContext expr_ctx;
-        expr_ctx.layer_index = layer_index;
-        expr_ctx.property_sampler = sampler;
-
-        std::vector<std::string> table_keys;
-        if (job_variables) {
-            for (const auto& [k, v] : *job_variables) {
-                expr_ctx.variables.try_emplace(k, v);
-            }
-        }
-        if (tables) {
-            expr_ctx.tables = *tables;
-            table_keys.reserve(tables->size());
-            for (const auto& [key, _] : *tables) {
-                table_keys.push_back(key);
-            }
-            std::sort(table_keys.begin(), table_keys.end());
-        }
-        expr_ctx.variables["t"] = local_time_seconds;
-        expr_ctx.variables["time"] = local_time_seconds;
-        expr_ctx.value = fallback;
-        expr_ctx.seed = expression_seed;
-        expr_ctx.variables["seed"] = static_cast<double>(expression_seed);
-        expr_ctx.table_lookup = [tables, table_keys](double table_idx, double row, double col) -> double {
-            if (!tables || tables->empty() || table_keys.empty()) {
-                return 0.0;
-            }
-            const auto idx = static_cast<std::size_t>(std::max(0.0, std::floor(table_idx)));
-            if (idx >= table_keys.size()) {
-                return 0.0;
-            }
-            const auto& table = tables->at(table_keys[idx]);
-            const std::size_t r = static_cast<std::size_t>(std::max(0.0, std::floor(row)));
-            const std::size_t c = static_cast<std::size_t>(std::max(0.0, std::floor(col)));
-            if (r >= table.size() || c >= table[r].size()) {
-                return 0.0;
-            }
-            return parse_table_value(table[r][c]);
-        };
+        expressions::ExpressionContextInput input;
+        input.time = local_time_seconds;
+        input.seed = expression_seed;
+        input.layer_index = layer_index;
+        input.fallback_value = fallback;
+        input.audio_analyzer = audio_analyzer;
+        input.job_variables = job_variables;
+        input.tables = tables;
+        input.property_sampler = sampler;
         
-        if (audio_analyzer) {
-            const ::tachyon::audio::AudioBands bands = audio_analyzer->analyze_frame(local_time_seconds);
-            expr_ctx.variables["music.bass"] = bands.bass;
-            expr_ctx.variables["music.mid"] = bands.mid;
-            expr_ctx.variables["music.high"] = bands.high;
-            expr_ctx.variables["music.presence"] = bands.presence;
-            expr_ctx.variables["music.rms"] = bands.rms;
-
-            // Also populate the structured audio_analysis field for newer expression access
-            expr_ctx.audio_analysis = ::tachyon::audio::AudioAnalyzer::to_analysis_data(bands);
-        }
-
         if (!property.keyframes.empty()) {
-            expr_ctx.variables["_prop_start"] = property.keyframes.front().time;
-            expr_ctx.variables["_prop_end"] = property.keyframes.back().time;
-            expr_ctx.variables["_prop_duration"] = property.keyframes.back().time - property.keyframes.front().time;
+            input.prop_start = property.keyframes.front().time;
+            input.prop_end = property.keyframes.back().time;
         }
-        
-        auto result = renderer2d::expressions::Renderer2DExpressionEvaluator::evaluate(*property.expression, expr_ctx);
+
+        auto expr_ctx = expressions::build_context(input);
+        auto result = expressions::CoreExpressionEvaluator::evaluate(*property.expression, expr_ctx);
         if (result.success) {
             return result.value;
         }
@@ -105,7 +55,17 @@ double sample_scalar(
 
     if (property.audio_band.has_value() && audio_analyzer) {
         const ::tachyon::audio::AudioBands bands = audio_analyzer->analyze_frame(local_time_seconds);
-        const double band_value = renderer2d::audio::sample_audio_band(bands, *property.audio_band);
+        // Note: sample_audio_band is still in renderer2d/audio, but AudioBands is core.
+        // We might want to move sample_audio_band too, but for now we keep it.
+        // Actually, I'll just use the bands data directly to avoid the dependency if possible.
+        double band_value = 0.0;
+        switch (*property.audio_band) {
+            case AudioBandType::Bass:     band_value = bands.bass; break;
+            case AudioBandType::Mid:      band_value = bands.mid; break;
+            case AudioBandType::High:     band_value = bands.high; break;
+            case AudioBandType::Presence: band_value = bands.presence; break;
+            case AudioBandType::Rms:      band_value = bands.rms; break;
+        }
         const double clamped = std::clamp(band_value, 0.0, 1.0);
         return std::clamp(property.audio_min + (property.audio_max - property.audio_min) * clamped,
                           std::min(property.audio_min, property.audio_max),
@@ -116,41 +76,8 @@ double sample_scalar(
         return property.value.value_or(fallback);
     }
 
-    const std::vector<ScalarKeyframeSpec>* keyframes = &property.keyframes;
-    std::vector<ScalarKeyframeSpec> sorted_keyframes;
-    if (!std::is_sorted(keyframes->begin(), keyframes->end(), [](const auto& a, const auto& b) {
-            return a.time < b.time;
-        })) {
-        sorted_keyframes = property.keyframes;
-        std::stable_sort(sorted_keyframes.begin(), sorted_keyframes.end(), [](const auto& a, const auto& b) {
-            return a.time < b.time;
-        });
-        keyframes = &sorted_keyframes;
-    }
-
-    if (local_time_seconds <= keyframes->front().time) {
-        return keyframes->front().value;
-    }
-    if (local_time_seconds >= keyframes->back().time) {
-        return keyframes->back().value;
-    }
-
-    for (std::size_t index = 1; index < keyframes->size(); ++index) {
-        const auto& previous = (*keyframes)[index - 1];
-        const auto& next = (*keyframes)[index];
-        if (local_time_seconds > next.time) {
-            continue;
-        }
-        const double duration = next.time - previous.time;
-        if (duration <= 0.0) {
-            return next.value;
-        }
-        const double alpha = (local_time_seconds - previous.time) / duration;
-        const double eased = renderer2d::animation::apply_easing(alpha, previous.easing, previous.bezier);
-        return previous.value + (next.value - previous.value) * eased;
-    }
-
-    return keyframes->back().value;
+    auto generic_prop = animation::to_generic(property);
+    return animation::sample_keyframes(generic_prop.keyframes, property.value.value_or(fallback), local_time_seconds, animation::lerp_scalar);
 }
 
 math::Vector2 sample_vector2(
@@ -162,55 +89,21 @@ math::Vector2 sample_vector2(
     const std::unordered_map<std::string, double>* job_variables,
     const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables) {
     if (property.expression.has_value() && !property.expression->empty()) {
-        renderer2d::expressions::ExpressionContext expr_ctx;
-        std::vector<std::string> table_keys;
-        if (job_variables) {
-            for (const auto& [k, v] : *job_variables) {
-                expr_ctx.variables.try_emplace(k, v);
-            }
-        }
-        if (tables) {
-            expr_ctx.tables = *tables;
-            table_keys.reserve(tables->size());
-            for (const auto& [key, _] : *tables) {
-                table_keys.push_back(key);
-            }
-            std::sort(table_keys.begin(), table_keys.end());
-        }
-        expr_ctx.variables["t"] = local_time_seconds;
-        expr_ctx.variables["time"] = local_time_seconds;
-        expr_ctx.seed = expression_seed;
-        expr_ctx.variables["seed"] = static_cast<double>(expression_seed);
-        expr_ctx.table_lookup = [tables, table_keys](double table_idx, double row, double col) -> double {
-            if (!tables || tables->empty() || table_keys.empty()) {
-                return 0.0;
-            }
-            const auto idx = static_cast<std::size_t>(std::max(0.0, std::floor(table_idx)));
-            if (idx >= table_keys.size()) {
-                return 0.0;
-            }
-            const auto& table = tables->at(table_keys[idx]);
-            const std::size_t r = static_cast<std::size_t>(std::max(0.0, std::floor(row)));
-            const std::size_t c = static_cast<std::size_t>(std::max(0.0, std::floor(col)));
-            if (r >= table.size() || c >= table[r].size()) {
-                return 0.0;
-            }
-            return parse_table_value(table[r][c]);
-        };
+        expressions::ExpressionContextInput input;
+        input.time = local_time_seconds;
+        input.seed = expression_seed;
+        input.fallback_value = 0.0; // Vector fallback logic is complex
+        input.audio_analyzer = audio_analyzer;
+        input.job_variables = job_variables;
+        input.tables = tables;
         
-        if (audio_analyzer) {
-            const ::tachyon::audio::AudioBands bands = audio_analyzer->analyze_frame(local_time_seconds);
-            expr_ctx.variables["music.bass"] = bands.bass;
-            expr_ctx.variables["music.mid"] = bands.mid;
-            expr_ctx.variables["music.high"] = bands.high;
-            expr_ctx.variables["music.presence"] = bands.presence;
-            expr_ctx.variables["music.rms"] = bands.rms;
+        if (!property.keyframes.empty()) {
+            input.prop_start = property.keyframes.front().time;
+            input.prop_end = property.keyframes.back().time;
+        }
 
-            // Also populate the structured audio_analysis field
-            expr_ctx.audio_analysis = ::tachyon::audio::AudioAnalyzer::to_analysis_data(bands);
-        }
-        
-        auto result = renderer2d::expressions::Renderer2DExpressionEvaluator::evaluate(*property.expression, expr_ctx);
+        auto expr_ctx = expressions::build_context(input);
+        auto result = expressions::CoreExpressionEvaluator::evaluate(*property.expression, expr_ctx);
         if (result.success) {
             return { static_cast<float>(result.value), static_cast<float>(result.value) };
         }
@@ -220,6 +113,31 @@ math::Vector2 sample_vector2(
         return property.value.value_or(fallback);
     }
 
+    auto generic_prop = animation::to_generic(property);
+    
+    // Check if any interval has spatial tangents
+    bool has_spatial = false;
+    for (const auto& k : property.keyframes) {
+        if (k.tangent_out.length_squared() > kTangentEpsilon) { has_spatial = true; break; }
+        // Note: we'd also need to check the next keyframe's tangent_in, but if any tangent is non-zero, we might need spatial.
+    }
+    // A better check: find the interval first.
+
+    // For now, if no tangents are used, use the generic sampler.
+    // If tangents are used, we still use the legacy logic until the generic sampler supports spatial tangents.
+    bool uses_tangents = false;
+    for (const auto& k : property.keyframes) {
+        if (k.tangent_in.length_squared() > kTangentEpsilon || k.tangent_out.length_squared() > kTangentEpsilon) {
+            uses_tangents = true;
+            break;
+        }
+    }
+
+    if (!uses_tangents) {
+        return animation::sample_keyframes(generic_prop.keyframes, property.value.value_or(fallback), local_time_seconds, animation::lerp_vector2);
+    }
+
+    // Fallback to legacy logic for spatial tangents
     const std::vector<Vector2KeyframeSpec>* keyframes = &property.keyframes;
     std::vector<Vector2KeyframeSpec> sorted_keyframes;
     if (!std::is_sorted(keyframes->begin(), keyframes->end(), [](const auto& a, const auto& b) {
@@ -278,51 +196,20 @@ math::Vector3 sample_vector3(
     const std::unordered_map<std::string, double>* job_variables,
     const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables) {
     if (property.expression.has_value() && !property.expression->empty()) {
-        renderer2d::expressions::ExpressionContext expr_ctx;
-        std::vector<std::string> table_keys;
-        if (job_variables) {
-            for (const auto& [k, v] : *job_variables) {
-                expr_ctx.variables.try_emplace(k, v);
-            }
-        }
-        if (tables) {
-            expr_ctx.tables = *tables;
-            table_keys.reserve(tables->size());
-            for (const auto& [key, _] : *tables) {
-                table_keys.push_back(key);
-            }
-            std::sort(table_keys.begin(), table_keys.end());
-        }
-        expr_ctx.variables["t"] = local_time_seconds;
-        expr_ctx.variables["time"] = local_time_seconds;
-        expr_ctx.seed = expression_seed;
-        expr_ctx.variables["seed"] = static_cast<double>(expression_seed);
-        expr_ctx.table_lookup = [tables, table_keys](double table_idx, double row, double col) -> double {
-            if (!tables || tables->empty() || table_keys.empty()) {
-                return 0.0;
-            }
-            const auto idx = static_cast<std::size_t>(std::max(0.0, std::floor(table_idx)));
-            if (idx >= table_keys.size()) {
-                return 0.0;
-            }
-            const auto& table = tables->at(table_keys[idx]);
-            const std::size_t r = static_cast<std::size_t>(std::max(0.0, std::floor(row)));
-            const std::size_t c = static_cast<std::size_t>(std::max(0.0, std::floor(col)));
-            if (r >= table.size() || c >= table[r].size()) {
-                return 0.0;
-            }
-            return parse_table_value(table[r][c]);
-        };
+        expressions::ExpressionContextInput input;
+        input.time = local_time_seconds;
+        input.seed = expression_seed;
+        input.audio_analyzer = audio_analyzer;
+        input.job_variables = job_variables;
+        input.tables = tables;
         
-        if (audio_analyzer) {
-            const ::tachyon::audio::AudioBands bands = audio_analyzer->analyze_frame(local_time_seconds);
-            expr_ctx.variables["music.bass"] = bands.bass;
-            expr_ctx.variables["music.mid"] = bands.mid;
-            expr_ctx.variables["music.high"] = bands.high;
-            expr_ctx.variables["music.rms"] = bands.rms;
+        if (!property.keyframes.empty()) {
+            input.prop_start = property.keyframes.front().time;
+            input.prop_end = property.keyframes.back().time;
         }
-        
-        auto result = renderer2d::expressions::Renderer2DExpressionEvaluator::evaluate(*property.expression, expr_ctx);
+
+        auto expr_ctx = expressions::build_context(input);
+        auto result = expressions::CoreExpressionEvaluator::evaluate(*property.expression, expr_ctx);
         if (result.success) {
             return { static_cast<float>(result.value), static_cast<float>(result.value), static_cast<float>(result.value) };
         }
@@ -332,6 +219,21 @@ math::Vector3 sample_vector3(
         return property.value.value_or(fallback);
     }
 
+    auto generic_prop = animation::to_generic(property);
+
+    bool uses_tangents = false;
+    for (const auto& k : property.keyframes) {
+        if (k.tangent_in.length_squared() > kTangentEpsilon || k.tangent_out.length_squared() > kTangentEpsilon) {
+            uses_tangents = true;
+            break;
+        }
+    }
+
+    if (!uses_tangents) {
+        return animation::sample_keyframes(generic_prop.keyframes, property.value.value_or(fallback), local_time_seconds, animation::lerp_vector3);
+    }
+
+    // Fallback to legacy logic for spatial tangents
     const std::vector<AnimatedVector3Spec::Keyframe>* keyframes = &property.keyframes;
     std::vector<AnimatedVector3Spec::Keyframe> sorted_keyframes;
     if (!std::is_sorted(keyframes->begin(), keyframes->end(), [](const auto& a, const auto& b) {
@@ -386,48 +288,8 @@ ColorSpec sample_color(const AnimatedColorSpec& property, const ColorSpec& fallb
         return property.value.value_or(fallback);
     }
 
-    const std::vector<ColorKeyframeSpec>* keyframes = &property.keyframes;
-    std::vector<ColorKeyframeSpec> sorted_keyframes;
-    if (!std::is_sorted(keyframes->begin(), keyframes->end(), [](const auto& a, const auto& b) {
-            return a.time < b.time;
-        })) {
-        sorted_keyframes = property.keyframes;
-        std::stable_sort(sorted_keyframes.begin(), sorted_keyframes.end(), [](const auto& a, const auto& b) {
-            return a.time < b.time;
-        });
-        keyframes = &sorted_keyframes;
-    }
-
-    if (local_time_seconds <= keyframes->front().time) {
-        return keyframes->front().value;
-    }
-    if (local_time_seconds >= keyframes->back().time) {
-        return keyframes->back().value;
-    }
-
-    for (std::size_t index = 1; index < keyframes->size(); ++index) {
-        const auto& previous = (*keyframes)[index - 1];
-        const auto& next = (*keyframes)[index];
-        if (local_time_seconds > next.time) {
-            continue;
-        }
-        const double duration = next.time - previous.time;
-        if (duration <= 0.0) {
-            return next.value;
-        }
-        const double alpha = (local_time_seconds - previous.time) / duration;
-        const double eased = renderer2d::animation::apply_easing(alpha, previous.easing, previous.bezier);
-        const float weight = static_cast<float>(eased);
-        
-        ColorSpec result;
-        result.r = static_cast<std::uint8_t>(std::clamp(previous.value.r * (1.0f - weight) + next.value.r * weight, 0.0f, 255.0f));
-        result.g = static_cast<std::uint8_t>(std::clamp(previous.value.g * (1.0f - weight) + next.value.g * weight, 0.0f, 255.0f));
-        result.b = static_cast<std::uint8_t>(std::clamp(previous.value.b * (1.0f - weight) + next.value.b * weight, 0.0f, 255.0f));
-        result.a = static_cast<std::uint8_t>(std::clamp(previous.value.a * (1.0f - weight) + next.value.a * weight, 0.0f, 255.0f));
-        return result;
-    }
-
-    return keyframes->back().value;
+    auto generic_prop = animation::to_generic(property);
+    return animation::sample_keyframes(generic_prop.keyframes, property.value.value_or(fallback), local_time_seconds, animation::lerp_color);
 }
 
 } // namespace tachyon::scene

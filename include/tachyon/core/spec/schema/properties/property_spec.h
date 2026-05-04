@@ -4,9 +4,8 @@
 #include "tachyon/core/math/vector3.h"
 #include "tachyon/core/animation/easing.h"
 #include "tachyon/core/animation/keyframe.h"
-#include "tachyon/renderer2d/raster/path/path_types.h"
-#include "tachyon/renderer2d/path/mask_path.h"
-#include "tachyon/renderer2d/core/framebuffer.h"
+#include "tachyon/core/spec/schema/objects/path_spec.h"
+#include "tachyon/core/spec/schema/objects/mask_spec.h"
 #include "tachyon/core/spec/schema/common/common_spec.h"
 #include "tachyon/core/spec/schema/objects/template_spec.h"
 
@@ -119,6 +118,7 @@ struct AnimatedVector3Spec {
         math::Vector3 tangent_out{math::Vector3::zero()};
 
         animation::EasingPreset easing{animation::EasingPreset::None};
+        animation::InterpolationMode interpolation{animation::InterpolationMode::Linear};
         animation::CubicBezierEasing bezier{animation::CubicBezierEasing::linear()};
 
         double speed_in{0.0};
@@ -156,7 +156,7 @@ struct AnimatedColorSpec {
 
 struct MaskPathKeyframeSpec {
     double time{0.0};
-    renderer2d::MaskPath value;
+    spec::MaskPath value;
     animation::EasingPreset easing{animation::EasingPreset::None};
     animation::CubicBezierEasing bezier;
     double speed_in{0.0};
@@ -166,13 +166,13 @@ struct MaskPathKeyframeSpec {
 };
 
 struct AnimatedMaskPathSpec {
-    std::optional<renderer2d::MaskPath> value;
+    std::optional<spec::MaskPath> value;
     std::vector<MaskPathKeyframeSpec> keyframes;
     std::optional<std::string> expression;
     WiggleSpec wiggle;
 
     AnimatedMaskPathSpec() = default;
-    AnimatedMaskPathSpec(const renderer2d::MaskPath& v) : value(v) {}
+    AnimatedMaskPathSpec(const spec::MaskPath& v) : value(v) {}
 
     [[nodiscard]] bool empty() const noexcept {
         return !value.has_value() && keyframes.empty();

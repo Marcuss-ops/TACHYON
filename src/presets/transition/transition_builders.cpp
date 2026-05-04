@@ -1,28 +1,14 @@
 #include "tachyon/presets/transition/transition_builders.h"
+#include "tachyon/presets/transition/transition_preset_registry.h"
 
 namespace tachyon::presets {
 
-namespace {
-
-LayerTransitionSpec make_spec(const TransitionParams& p) {
-    LayerTransitionSpec spec;
-    spec.transition_id = p.id;
-    spec.type          = p.id.empty() ? "none" : p.id;
-    spec.duration      = p.duration;
-    spec.easing        = p.easing;
-    spec.delay         = p.delay;
-    spec.direction     = p.direction;
-    return spec;
-}
-
-} // namespace
-
 LayerTransitionSpec build_transition_enter(const TransitionParams& p) {
-    return make_spec(p);
+    return TransitionPresetRegistry::instance().create_enter(p);
 }
 
 LayerTransitionSpec build_transition_exit(const TransitionParams& p) {
-    return make_spec(p);
+    return TransitionPresetRegistry::instance().create_exit(p);
 }
 
 void apply_transitions(LayerSpec& layer,

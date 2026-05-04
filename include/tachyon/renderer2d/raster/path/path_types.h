@@ -1,41 +1,24 @@
 #pragma once
 
-#include "tachyon/core/math/vector2.h"
+#include "tachyon/core/spec/schema/objects/path_spec.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/renderer2d/spec/gradient_spec.h"
-
-#include <cstdint>
+#include <algorithm>
 #include <vector>
 #include <optional>
 
 namespace tachyon::renderer2d {
 
-enum class PathVerb {
-    MoveTo,
-    LineTo,
-    CubicTo,
-    Close
-};
+using PathVerb = spec::PathVerb;
+using WindingRule = spec::WindingRule;
+using PathCommand = spec::PathCommand;
+using PathGeometry = spec::PathGeometry;
+using LineCap = spec::LineCap;
+using LineJoin = spec::LineJoin;
 
-enum class WindingRule {
-    NonZero,
-    EvenOdd
-};
-
-struct PathCommand {
-    PathVerb verb{PathVerb::MoveTo};
-    math::Vector2 p0{};
-    math::Vector2 p1{};
-    math::Vector2 p2{};
-    // Per-vertex feather values (for MoveTo/Close endpoints, or control points)
-    float feather_inner{0.0f};
-    float feather_outer{0.0f};
-};
-
-struct PathGeometry {
-    std::vector<PathCommand> commands;
-};
-
+/**
+ * @brief Style for filling a path.
+ */
 struct FillPathStyle {
     Color fill_color{Color::white()};
     std::optional<GradientSpec> gradient;
@@ -43,18 +26,9 @@ struct FillPathStyle {
     WindingRule winding{WindingRule::NonZero};
 };
 
-enum class LineCap {
-    Butt,
-    Round,
-    Square
-};
-
-enum class LineJoin {
-    Miter,
-    Round,
-    Bevel
-};
-
+/**
+ * @brief Style for stroking a path.
+ */
 struct StrokePathStyle {
     Color stroke_color{Color::white()};
     std::optional<GradientSpec> gradient;
@@ -65,6 +39,9 @@ struct StrokePathStyle {
     float miter_limit{4.0f};
 };
 
+/**
+ * @brief Helper for sampling gradients.
+ */
 struct GradientLUT {
     static constexpr int SAMPLES = 256;
     float r[SAMPLES];
