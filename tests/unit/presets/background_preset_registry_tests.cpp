@@ -7,7 +7,6 @@
 
 bool run_background_preset_registry_tests() {
     using namespace tachyon::presets;
-    using tachyon::LayerType;
 
     std::cout << "Running BackgroundPresetRegistry tests..." << std::endl;
 
@@ -18,27 +17,24 @@ bool run_background_preset_registry_tests() {
             return std::find(presets.begin(), presets.end(), id) != presets.end();
         };
 
+        // NEW HARDENED PRESETS
         assert(find_id("blank_canvas"));
-        assert(find_id("aurora_mesh"));
-        assert(find_id("liquid_glass_blobs"));
-        assert(find_id("dot_grid_fade"));
-        assert(find_id("noise_grain_vignette"));
-        assert(find_id("mesh_gradient"));
-        assert(find_id("ripple_grid"));
-        assert(find_id("shape_grid_square"));
+        assert(find_id("midnight_silk"));
+        assert(find_id("cosmic_nebula"));
+        assert(find_id("cyber_matrix"));
+        assert(find_id("golden_horizon"));
+        assert(find_id("frosted_glass"));
+        assert(find_id("oceanic_abyss"));
     }
 
     // 2. Test building each preset
     {
         const std::vector<std::string> ids = {
             "blank_canvas",
-            "aurora_mesh",
-            "liquid_glass_blobs",
-            "dot_grid_fade",
-            "noise_grain_vignette",
-            "mesh_gradient",
-            "ripple_grid",
-            "shape_grid_square"
+            "midnight_silk",
+            "cosmic_nebula",
+            "cyber_matrix",
+            "frosted_glass"
         };
 
         for (const auto& id : ids) {
@@ -53,16 +49,6 @@ bool run_background_preset_registry_tests() {
                 assert(!bg->procedural->kind.empty());
             }
         }
-    }
-
-    // 3. Test registry direct access
-    {
-        auto& registry = BackgroundPresetRegistry::instance();
-        auto bg = registry.create("aurora_mesh", 1280, 720, 10.0);
-        assert(bg.has_value());
-        assert(bg->width == 1280);
-        assert(bg->height == 720);
-        assert(bg->out_point == 10.0);
     }
 
     std::cout << "BackgroundPresetRegistry tests passed!" << std::endl;

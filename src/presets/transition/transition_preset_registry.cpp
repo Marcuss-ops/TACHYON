@@ -30,59 +30,7 @@ TransitionPresetRegistry& TransitionPresetRegistry::instance() {
 }
 
 TransitionPresetRegistry::TransitionPresetRegistry() : m_impl(std::make_unique<Impl>()) {
-    // Register default presets
-    
-    register_preset({
-        "none",
-        "None",
-        "No transition",
-        [](const TransitionParams& p) {
-            LayerTransitionSpec spec;
-            spec.type = "none";
-            return spec;
-        }
-    });
-
-    register_preset({
-        "fade",
-        "Fade",
-        "Simple opacity fade",
-        [](const TransitionParams& p) {
-            return make_basic_spec(p);
-        }
-    });
-
-    register_preset({
-        "slide",
-        "Slide",
-        "Directional slide transition",
-        [](const TransitionParams& p) {
-            return make_basic_spec(p);
-        }
-    });
-
-    register_preset({
-        "zoom",
-        "Zoom",
-        "Scale-based zoom transition",
-        [](const TransitionParams& p) {
-            return make_basic_spec(p);
-        }
-    });
-
-    // Example of a more complex preset with custom defaults
-    register_preset({
-        "elastic_slide",
-        "Elastic Slide",
-        "Slide with elastic spring easing",
-        [](const TransitionParams& p) {
-            auto spec = make_basic_spec(p);
-            spec.easing = animation::EasingPreset::EaseOut; // Custom default for this preset
-            spec.spring.stiffness = 400.0;
-            spec.spring.damping = 15.0;
-            return spec;
-        }
-    });
+    load_builtins();
 }
 
 void TransitionPresetRegistry::register_preset(TransitionPresetSpec spec) {
@@ -101,19 +49,22 @@ const TransitionPresetSpec* TransitionPresetRegistry::find(std::string_view id) 
 
 LayerTransitionSpec TransitionPresetRegistry::create_enter(const TransitionParams& params) const {
     if (params.id.empty()) {
-        return create_enter({.id = "none"});
+        LayerTransitionSpec spec;
+        spec.type = "none";
+        return spec;
     }
 
     if (const auto* spec = find(params.id)) {
         return spec->factory(params);
     }
     
-    // Fallback to basic spec if ID not found but provided
+    // Strict mode would fail here. For now, we return a basic spec with type set to the ID
+    // but the lack of registration will eventually trigger diagnostics in the renderer.
     return make_basic_spec(params);
 }
 
 LayerTransitionSpec TransitionPresetRegistry::create_exit(const TransitionParams& params) const {
-    return create_enter(params); // Exit transitions often use same logic as enter
+    return create_enter(params); 
 }
 
 std::vector<std::string> TransitionPresetRegistry::list_ids() const {

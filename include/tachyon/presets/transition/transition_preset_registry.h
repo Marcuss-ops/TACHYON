@@ -46,6 +46,9 @@ public:
     // Lists all registered transition IDs.
     std::vector<std::string> list_ids() const;
 
+    // Loads built-in presets from the table.
+    void load_builtins();
+
 private:
     TransitionPresetRegistry();
     ~TransitionPresetRegistry() = default;

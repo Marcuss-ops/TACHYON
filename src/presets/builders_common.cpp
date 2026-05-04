@@ -1,5 +1,5 @@
 #include "tachyon/presets/builders_common.h"
-#include "tachyon/presets/transition/transition_builders.h"
+#include "tachyon/presets/transition/transition_preset_registry.h"
 
 namespace tachyon::presets {
 
@@ -38,18 +38,20 @@ void apply_layer_transitions(
     const std::string& exit_id,
     double exit_duration) {
     
+    auto& registry = TransitionPresetRegistry::instance();
+
     if (!enter_id.empty()) {
         TransitionParams tp;
         tp.id = enter_id;
         tp.duration = enter_duration;
-        layer.transition_in = build_transition_enter(tp);
+        layer.transition_in = registry.create_enter(tp);
     }
     
     if (!exit_id.empty()) {
         TransitionParams tp;
         tp.id = exit_id;
         tp.duration = exit_duration;
-        layer.transition_out = build_transition_exit(tp);
+        layer.transition_out = registry.create_exit(tp);
     }
 }
 

@@ -43,6 +43,9 @@ public:
     // Lists all registered background IDs.
     std::vector<std::string> list_ids() const;
 
+    // Loads built-in presets from the table.
+    void load_builtins();
+
 private:
     BackgroundPresetRegistry();
     ~BackgroundPresetRegistry() = default;
