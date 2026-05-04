@@ -51,6 +51,24 @@ public:
         add(DiagnosticSeverity::Error, "general", std::move(code), std::move(message), std::move(path));
     }
 
+    [[nodiscard]] bool has_warnings() const noexcept {
+        for (const auto& diagnostic : diagnostics) {
+            if (diagnostic.severity == DiagnosticSeverity::Warning) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    [[nodiscard]] bool has_infos() const noexcept {
+        for (const auto& diagnostic : diagnostics) {
+            if (diagnostic.severity == DiagnosticSeverity::Info) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     void append(const DiagnosticBag& other) {
         diagnostics.insert(diagnostics.end(), other.diagnostics.begin(), other.diagnostics.end());
     }

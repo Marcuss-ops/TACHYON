@@ -45,23 +45,23 @@ static LayerSurface build_layer_surface_impl(
     LayerSurface result;
 
     // Use pre-rendered surface from map if available
-    if (input.rendered_surfaces != nullptr) {
+    if (input.rendered_surfaces) {
         auto it = input.rendered_surfaces->find(l.id);
-        if (it != input.rendered_surfaces->end() && it->second != nullptr) {
+        if (it != input.rendered_surfaces->end() && it->second) {
             result.surface = it->second;
-            result.cache_key = l.id + ":" + std::to_string(input.task != nullptr ? input.task->frame_number : 0);
+            result.cache_key = l.id + ":" + std::to_string(input.task ? input.task->frame_number : 0);
             result.source_kind = "surface";
             return result;
         }
     }
 
     // Fallback: render surface if not in map (should not happen in normal flow)
-    if (input.context == nullptr || input.state == nullptr) {
+    if (!input.context || !input.state) {
         return result;
     }
 
     std::shared_ptr<renderer2d::SurfaceRGBA> rendered;
-    if (input.plan != nullptr && input.task != nullptr) {
+    if (input.plan && input.task) {
         rendered = renderer2d::render_layer_surface(
             l,
             *input.state,
@@ -76,9 +76,9 @@ static LayerSurface build_layer_surface_impl(
             const_cast<renderer2d::RenderContext2D&>(*input.context),
             std::nullopt);
     }
-    if (rendered != nullptr) {
+    if (rendered) {
         result.surface = std::move(rendered);
-        result.cache_key = l.id + ":" + std::to_string(input.task != nullptr ? input.task->frame_number : 0);
+        result.cache_key = l.id + ":" + std::to_string(input.task ? input.task->frame_number : 0);
         result.source_kind = "surface";
     }
 
@@ -114,7 +114,7 @@ static LayerMeshResult build_layer_mesh(
 
     // Final fallback for layers that cannot produce a surface.
     if (l.width > 0 && l.height > 0) {
-        const auto solid_mesh = renderer2d::build_colored_card_mesh(l, std::to_string(input.task != nullptr ? input.task->frame_number : 0));
+        const auto solid_mesh = renderer2d::build_colored_card_mesh(l, std::to_string(input.task ? input.task->frame_number : 0));
         result.mesh_asset = solid_mesh.mesh;
         result.mesh_asset_id = solid_mesh.cache_key;
     }
@@ -332,7 +332,7 @@ Scene3DBridgeOutput build_evaluated_scene_3d(const Scene3DBridgeInput& input) {
     output.scene3d.lights = build_lights_3d(input.state->lights);
 
     // Build environment map
-    if (input.plan->scene_spec != nullptr) {
+    if (input.plan->scene_spec) {
         const auto comp_it = std::find_if(
             input.plan->scene_spec->compositions.begin(),
             input.plan->scene_spec->compositions.end(),

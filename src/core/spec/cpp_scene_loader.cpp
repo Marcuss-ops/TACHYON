@@ -38,9 +38,9 @@ struct LoadedLib {
 
 bool msvc_environment_is_ready() {
 #ifdef _WIN32
-    return std::getenv("VSCMD_VER") != nullptr ||
-           std::getenv("VCINSTALLDIR") != nullptr ||
-           std::getenv("VCToolsInstallDir") != nullptr;
+    return std::getenv("VSCMD_VER") ||
+           std::getenv("VCINSTALLDIR") ||
+           std::getenv("VCToolsInstallDir");
 #else
     return true;
 #endif
@@ -49,7 +49,7 @@ bool msvc_environment_is_ready() {
 std::optional<std::filesystem::path> find_vswhere_exe() {
 #ifdef _WIN32
     const char* program_files_x86 = std::getenv("ProgramFiles(x86)");
-    if (program_files_x86 != nullptr) {
+    if (program_files_x86) {
         const std::filesystem::path candidate =
             std::filesystem::path(program_files_x86) / "Microsoft Visual Studio" / "Installer" / "vswhere.exe";
         if (std::filesystem::exists(candidate)) {
@@ -58,7 +58,7 @@ std::optional<std::filesystem::path> find_vswhere_exe() {
     }
 
     const char* program_files = std::getenv("ProgramFiles");
-    if (program_files != nullptr) {
+    if (program_files) {
         const std::filesystem::path candidate =
             std::filesystem::path(program_files) / "Microsoft Visual Studio" / "Installer" / "vswhere.exe";
         if (std::filesystem::exists(candidate)) {
@@ -87,8 +87,8 @@ std::optional<std::filesystem::path> find_vcvars64_bat() {
 
     auto search_visual_studio_roots = []() -> std::optional<std::filesystem::path> {
         const std::vector<std::filesystem::path> roots = {
-            std::filesystem::path(std::getenv("ProgramFiles(x86)") != nullptr ? std::getenv("ProgramFiles(x86)") : ""),
-            std::filesystem::path(std::getenv("ProgramFiles") != nullptr ? std::getenv("ProgramFiles") : ""),
+            std::filesystem::path(std::getenv("ProgramFiles(x86)") ? std::getenv("ProgramFiles(x86)") : ""),
+            std::filesystem::path(std::getenv("ProgramFiles") ? std::getenv("ProgramFiles") : ""),
             std::filesystem::path("C:/Program Files (x86)"),
             std::filesystem::path("C:/Program Files")
         };
@@ -277,7 +277,7 @@ LoadedLib load_scene_library(const std::filesystem::path& dll_path) {
 }
 
 void unload_scene_library(LoadedLib& lib) {
-    if (lib.handle == nullptr) {
+    if (!lib.handle) {
         return;
     }
 #ifdef _WIN32

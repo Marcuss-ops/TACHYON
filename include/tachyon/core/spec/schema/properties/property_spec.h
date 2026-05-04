@@ -17,6 +17,11 @@
 
 namespace tachyon {
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4251)
+#endif
+
 struct ScalarKeyframeSpec {
     double time{0.0};
     double value{0.0};
@@ -220,3 +225,7 @@ inline EffectSpec EffectSpec::evaluate(double /*time_seconds*/) const {
 }
 
 } // namespace tachyon
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif

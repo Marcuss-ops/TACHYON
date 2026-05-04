@@ -30,36 +30,13 @@ enum class ResolveMode {
     return "error";
 }
 
-// Extended DiagnosticBag for runtime convenience
-class RuntimeDiagnosticBag : public DiagnosticBag {
-public:
-    [[nodiscard]] bool has_warnings() const noexcept {
-        for (const auto& diagnostic : diagnostics) {
-            if (diagnostic.severity == DiagnosticSeverity::Warning) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    [[nodiscard]] bool has_infos() const noexcept {
-        for (const auto& diagnostic : diagnostics) {
-            if (diagnostic.severity == DiagnosticSeverity::Info) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    void append(const DiagnosticBag& other) {
-        diagnostics.insert(diagnostics.end(), other.diagnostics.begin(), other.diagnostics.end());
-    }
-};
+// RuntimeDiagnosticBag is now just an alias for DiagnosticBag to ensure consistency
+using RuntimeDiagnosticBag = DiagnosticBag;
 
 template <typename T>
 struct ParseResult {
     std::optional<T> value;
-    RuntimeDiagnosticBag diagnostics;
+    DiagnosticBag diagnostics;
 
     [[nodiscard]] bool ok() const noexcept {
         return value.has_value() && diagnostics.ok();
@@ -69,7 +46,7 @@ struct ParseResult {
 template <typename T>
 struct ResolutionResult {
     std::optional<T> value;
-    RuntimeDiagnosticBag diagnostics;
+    DiagnosticBag diagnostics;
 
     [[nodiscard]] bool ok() const noexcept {
         return value.has_value() && diagnostics.ok();

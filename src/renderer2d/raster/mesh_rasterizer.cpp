@@ -1,6 +1,7 @@
 #include "tachyon/renderer2d/raster/mesh_rasterizer.h"
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 
 namespace tachyon::renderer2d {
 

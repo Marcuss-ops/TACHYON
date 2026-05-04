@@ -111,12 +111,14 @@ static const std::vector<CommandEntry> kCommands = {
         nullptr,
         run_watch_command
     },
+#ifdef TACHYON_ENABLE_STUDIO_COMMANDS
     {
         "studio-demo",
         "tachyon studio-demo [--library <dir>] [--transition <id>] [--output-dir <dir>]",
         nullptr,
         run_studio_demo_command
     },
+#endif
     {
         "fetch-fonts",
         "tachyon fetch-fonts --family <name> [--weights <w1,w2,...>] [--subsets <s1,...>] [--dest <dir>] [--overwrite]",

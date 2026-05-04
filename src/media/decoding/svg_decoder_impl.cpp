@@ -5,6 +5,7 @@
 #include <sstream>
 #include <vector>
 #include <cmath>
+#include <cstring>
 
 namespace tachyon {
 namespace media {
