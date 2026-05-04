@@ -46,6 +46,7 @@ namespace tachyon::renderer3d {
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <cstdint>
 
 namespace tachyon {
 

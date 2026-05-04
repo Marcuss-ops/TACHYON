@@ -1,6 +1,7 @@
 #include "tachyon/renderer2d/path/flattening/path_flattening.h"
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 
 namespace tachyon::renderer2d {
 
@@ -18,7 +19,7 @@ void PathFlattener::flatten_cubic(
     const float distance_1 = chord_length > 0.0f ? std::abs((p1.x - p0.x) * chord.y - (p1.y - p0.y) * chord.x) / chord_length : (p1 - p0).length();
     const float distance_2 = chord_length > 0.0f ? std::abs((p2.x - p0.x) * chord.y - (p2.y - p0.y) * chord.x) / chord_length : (p2 - p0).length();
 
-    if ((std::max(distance_1, distance_2) <= tolerance) || depth >= 12U) {
+    if (std::max(distance_1, distance_2) <= tolerance || depth >= 12U) {
         out.push_back(p3);
         return;
     }

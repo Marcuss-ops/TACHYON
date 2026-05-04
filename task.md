@@ -111,6 +111,12 @@
 - [ ] Refactor Binary Serialization (PR #4: TBF Helpers)
     - [ ] Audit `tbf_read_helpers.cpp`
     - [ ] Creazione test di roundtrip
-- [ ] Enforcing Module Boundaries
-    - [ ] Audit degli header pubblici
-    - [ ] Rimozione inclusioni circolari residue
+- [x] Enforcing Module Boundaries
+    - [x] Audit degli header pubblici
+    - [x] Rimozione inclusioni circolari residue
+    - [x] **Architectural Modularization & Stabilization**
+        - [x] Unified `DiagnosticBag` hierarchy
+        - [x] Decoupled `TachyonCLICore` from `TachyonStudioCLI`
+        - [x] Standardized nullability/optional checks (`if(ptr)` vs `has_value()`)
+        - [x] Mitigated MSVC ABI fragility (C4251)
+        - [x] Resolved build issues (missing `<cstdint>`, `<cstring>`)

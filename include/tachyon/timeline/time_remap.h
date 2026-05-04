@@ -10,6 +10,11 @@
 
 namespace tachyon::timeline {
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4251)
+#endif
+
 using TimeRemapMode = spec::TimeRemapMode;
 using FrameBlendMode = spec::FrameBlendMode;
 using TimeRemapCurve = spec::TimeRemapCurve;
@@ -80,3 +85,7 @@ private:
 };
 
 } // namespace tachyon::timeline
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif

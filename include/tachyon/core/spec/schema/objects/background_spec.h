@@ -7,6 +7,11 @@
 
 namespace tachyon {
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4251)
+#endif
+
 /// Represents the type of background specified
 enum class BackgroundType {
     Color,      // Background is a color (hex, rgb, etc.)
@@ -50,3 +55,7 @@ struct TACHYON_API BackgroundSpec {
 };
 
 } // namespace tachyon
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif

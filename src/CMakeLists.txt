@@ -250,27 +250,32 @@ target_link_libraries(TachyonRuntimeEngine INTERFACE
 add_library(TachyonEngine INTERFACE)
 target_link_libraries(TachyonEngine INTERFACE TachyonRuntimeEngine)
 
-add_library(TachyonCLI STATIC ${TachyonCLISources})
-tachyon_configure_common(TachyonCLI)
-target_link_libraries(TachyonCLI PUBLIC TachyonRuntimeEngine TachyonStudio TachyonEditor)
+add_library(TachyonCLICore STATIC ${TachyonCLICoreSources})
+tachyon_configure_common(TachyonCLICore)
+target_link_libraries(TachyonCLICore PUBLIC TachyonRuntimeEngine)
 if(TACHYON_ENABLE_PREVIEW_WINDOW)
-    target_link_libraries(TachyonCLI PUBLIC glfw OpenGL::GL)
-    target_compile_definitions(TachyonCLI PUBLIC TACHYON_ENABLE_PREVIEW_WINDOW)
+    target_link_libraries(TachyonCLICore PUBLIC glfw OpenGL::GL)
+    target_compile_definitions(TachyonCLICore PUBLIC TACHYON_ENABLE_PREVIEW_WINDOW)
 endif()
+
+add_library(TachyonStudioCLI STATIC ${TachyonCLIStudioSources})
+tachyon_configure_common(TachyonStudioCLI)
+target_link_libraries(TachyonStudioCLI PUBLIC TachyonCLICore TachyonStudio TachyonEditor)
+target_compile_definitions(TachyonStudioCLI PRIVATE TACHYON_ENABLE_STUDIO_COMMANDS)
 
 add_library(TachyonTools INTERFACE)
 target_link_libraries(TachyonTools INTERFACE
-    TachyonCLI
-    TachyonStudio
+    TachyonCLICore
+    TachyonStudioCLI
 )
 
 if(TACHYON_ENABLE_TRACKER)
     target_link_libraries(TachyonTools INTERFACE TachyonTracker)
 endif()
 
+# Minimal render-focused executable
 add_executable(tachyon
     main.cpp
-    core/cli.cpp
 )
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
@@ -280,7 +285,23 @@ endif()
 target_link_libraries(tachyon
     PRIVATE
         TachyonRuntimeEngine
-        TachyonCLI
+        TachyonCLICore
+)
+
+# Full tooling/studio executable
+add_executable(tachyon-studio
+    main.cpp
+)
+target_compile_definitions(tachyon-studio PRIVATE TACHYON_ENABLE_STUDIO_COMMANDS)
+
+if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
+    target_precompile_headers(tachyon-studio PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")
+endif()
+
+target_link_libraries(tachyon-studio
+    PRIVATE
+        TachyonRuntimeEngine
+        TachyonStudioCLI
 )
 
 if(MSVC)

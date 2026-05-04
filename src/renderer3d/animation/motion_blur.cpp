@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <random>
 #include <sstream>
+#include <cstdint>
 
 namespace tachyon::renderer3d {
 

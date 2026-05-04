@@ -2,6 +2,7 @@
 
 #include "tachyon/core/math/vector2.h"
 #include <vector>
+#include <cstdint>
 
 namespace tachyon::renderer2d {
 

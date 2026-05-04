@@ -23,6 +23,7 @@ using SurfacePool = tachyon::renderer2d::SurfacePool;
 #include <optional>
 #include <string>
 #include <memory>
+#include <cstdint>
 
 namespace tachyon::profiling { class RenderProfiler; }
 

@@ -9,6 +9,7 @@
 #include <string>
 #include <initializer_list>
 #include <vector>
+#include <cstdint>
 
 namespace tachyon::renderer2d {
 

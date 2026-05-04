@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tachyon/presets/preset_base.h"
+#include <cstdint>
 
 namespace tachyon::presets {
 

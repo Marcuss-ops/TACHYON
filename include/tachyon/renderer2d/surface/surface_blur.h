@@ -2,6 +2,7 @@
 
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include <vector>
+#include <cstdint>
 
 #include "tachyon/renderer2d/effects/color/color_types.h"
 

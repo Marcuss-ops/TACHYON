@@ -5,6 +5,7 @@
 #include "tachyon/core/math/matrix4x4.h"
 #include <vector>
 #include <string>
+#include <cstdint>
 
 namespace tachyon::media {
 

@@ -5,6 +5,7 @@
 #include <array>
 #include <cmath>
 #include <algorithm>
+#include <cstdint>
 
 namespace tachyon::renderer2d {
 

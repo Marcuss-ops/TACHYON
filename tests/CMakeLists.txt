@@ -20,13 +20,7 @@ target_compile_definitions(TachyonTests
 
 target_link_libraries(TachyonTests
     PRIVATE
-        TachyonCore
-        TachyonColor
-        TachyonScene
-        TachyonText
-        TachyonRenderer2D
-        TachyonPlatform
-        TachyonRuntime
+        TachyonRuntimeEngine
 )
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
@@ -67,12 +61,7 @@ target_compile_definitions(TachyonSceneTests
 
 target_link_libraries(TachyonSceneTests
     PRIVATE
-        TachyonCore
-        TachyonScene
-        TachyonMedia
-        TachyonAudio
-        TachyonRenderer2D
-        TachyonPlatform
+        TachyonRuntimeEngine
 )
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
@@ -97,7 +86,7 @@ target_compile_definitions(TachyonCliTests
 
 target_link_libraries(TachyonCliTests
     PRIVATE
-        TachyonCLI
+        TachyonTools
 )
 
 if(TACHYON_ENABLE_TRACKER)

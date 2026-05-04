@@ -9,6 +9,7 @@
 #include <optional>
 #include <iomanip>
 #include <cstring>
+#include <cstdint>
 
 // Global seed for random tests
 uint32_t g_test_seed = 0;
