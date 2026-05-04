@@ -28,6 +28,7 @@ namespace tachyon::profiling { class RenderProfiler; }
 
 namespace tachyon::media {
 class MediaManager;
+class AssetResolver;
 }
 
 namespace tachyon::renderer3d {
@@ -108,6 +109,7 @@ struct RenderContext2D {
     const ::tachyon::text::FontRegistry* font_registry = nullptr;
     const std::vector<::tachyon::text::SubtitleEntry>* subtitle_entries = nullptr;
     ::tachyon::media::MediaManager* media_manager = nullptr;
+    std::shared_ptr<::tachyon::media::AssetResolver> asset_resolver;
 
     // GPU/CPU compute backend. Null = use CPU implementations directly.
     // Set by QualityPolicy::build_render_context() or caller.

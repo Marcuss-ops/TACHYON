@@ -1,9 +1,11 @@
 #include "tachyon/renderer2d/effects/core/effect_host.h"
+#include "tachyon/renderer2d/effects/effect_registry.h"
 #include "tachyon/renderer2d/effects/utility/number_counter_effect.h"
 #include "tachyon/renderer2d/resource/render_context.h"
 #include "tachyon/runtime/profiling/render_profiler.h"
 #include <stdexcept>
 #include <utility>
+#include <iostream>
 
 namespace tachyon::renderer2d {
 
@@ -16,25 +18,39 @@ public:
     }
     
     bool has_effect(const std::string& name) const override {
-        return m_effects.find(name) != m_effects.end();
+        if (m_effects.find(name) != m_effects.end()) return true;
+        return EffectRegistry::instance().find(name) != nullptr;
     }
     
     SurfaceRGBA apply(const std::string& name, const SurfaceRGBA& input, const EffectParams& params) const override {
+        // 1. Try old-style internal effects
         auto it = m_effects.find(name);
-        if (it == m_effects.end()) return input;
+        if (it != m_effects.end()) {
+            profiling::ProfileScope scope(params.context ? params.context->profiler : nullptr, profiling::ProfileEventType::Effect, name, -1, std::string(), name);
+            return it->second->apply(input, params);
+        }
 
-        profiling::ProfileScope scope(params.context ? params.context->profiler : nullptr, profiling::ProfileEventType::Effect, name, -1, std::string(), name);
-        return it->second->apply(input, params);
+        // 2. Try new-style registry effects
+        if (auto* desc = EffectRegistry::instance().find(name)) {
+            profiling::ProfileScope scope(params.context ? params.context->profiler : nullptr, profiling::ProfileEventType::Effect, name, -1, std::string(), name);
+            SurfaceRGBA output;
+            // Note: In this transition phase, we pass empty aux surfaces if they aren't explicitly provided in EffectParams.
+            // A more complete integration would resolve aux surfaces from the context/composition.
+            std::vector<const SurfaceRGBA*> aux_surfaces;
+            desc->factory(EffectSpec{}, input, output, aux_surfaces, params);
+            return output;
+        }
+
+        // 3. Fallback: Strict reporting
+        std::cerr << "[Tachyon] Error: Unknown effect '" << name << "'. No fallback applied." << std::endl;
+        // In the future, we should return a ResolutionResult or add to context diagnostics.
+        return input;
     }
     
     SurfaceRGBA apply_pipeline(const SurfaceRGBA& input, const std::vector<std::pair<std::string, EffectParams>>& pipeline) const override {
         SurfaceRGBA current = input;
         for (const auto& step : pipeline) {
-            auto it = m_effects.find(step.first);
-            if (it != m_effects.end()) {
-                profiling::ProfileScope scope(step.second.context ? step.second.context->profiler : nullptr, profiling::ProfileEventType::Effect, step.first, -1, std::string(), step.first);
-                current = it->second->apply(current, step.second);
-            }
+            current = apply(step.first, current, step.second);
         }
         return current;
     }
@@ -45,32 +61,9 @@ std::unique_ptr<EffectHost> create_effect_host() {
 }
 
 void EffectHost::register_builtins(EffectHost& host) {
-    host.register_effect("gaussian_blur", std::make_unique<GaussianBlurEffect>());
-    host.register_effect("directional_blur", std::make_unique<DirectionalBlurEffect>());
-    host.register_effect("radial_blur", std::make_unique<RadialBlurEffect>());
-    host.register_effect("drop_shadow", std::make_unique<DropShadowEffect>());
-    host.register_effect("glow", std::make_unique<GlowEffect>());
-    host.register_effect("levels", std::make_unique<LevelsEffect>());
-    host.register_effect("curves", std::make_unique<CurvesEffect>());
-    host.register_effect("fill", std::make_unique<FillEffect>());
-    host.register_effect("tint", std::make_unique<TintEffect>());
-    host.register_effect("hue_saturation", std::make_unique<HueSaturationEffect>());
-    host.register_effect("color_balance", std::make_unique<ColorBalanceEffect>());
-    host.register_effect("lut", std::make_unique<LUTEffect>());
-    host.register_effect("lut3d_cube", std::make_unique<Lut3DCubeEffect>());
-    host.register_effect("chromatic_aberration", std::make_unique<ChromaticAberrationEffect>());
-    host.register_effect("vignette", std::make_unique<VignetteEffect>());
-    host.register_effect("particle_emitter", std::make_unique<ParticleEmitterEffect>());
-    host.register_effect("displacement_map", std::make_unique<DisplacementMapEffect>());
-    host.register_effect("light_leak", std::make_unique<LightLeakEffect>());
-    host.register_effect("glsl_transition", std::make_unique<GlslTransitionEffect>());
-    host.register_effect("chroma_key", std::make_unique<ChromaKeyEffect>());
-    host.register_effect("light_wrap", std::make_unique<LightWrapEffect>());
-    host.register_effect("matte_refinement", std::make_unique<MatteRefinementEffect>());
-    host.register_effect("vector_blur", std::make_unique<VectorBlurEffect>());
-    host.register_effect("motion_blur_2d", std::make_unique<MotionBlur2DEffect>());
-    host.register_effect("number_counter", std::make_unique<NumberCounterEffect>());
+    // Builtins are now handled by the EffectRegistry.
+    // This method is kept for backward compatibility but delegates to the registry.
+    EffectRegistry::instance().register_builtins();
 }
 
 } // namespace tachyon::renderer2d
-

@@ -38,6 +38,7 @@ endif()
 
 add_executable(TachyonColorTests
     unit/color/color_tests.cpp
+    unit/color/blend_kernel_tests.cpp
 )
 
 target_link_libraries(TachyonColorTests

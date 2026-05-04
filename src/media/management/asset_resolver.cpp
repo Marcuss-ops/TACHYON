@@ -13,20 +13,22 @@ AssetResolver::AssetResolver(Config config,
     , m_font_registry(font_registry) {
 }
 
-std::filesystem::path AssetResolver::resolve_path(const std::string& spec, AssetType type) const {
-    if (spec.empty()) return {};
+std::optional<std::filesystem::path> AssetResolver::resolve_path(const std::string& spec, AssetType type) const {
+    if (spec.empty()) return std::nullopt;
 
     std::filesystem::path p(spec);
     
     // 1. If absolute, use as is
     if (p.is_absolute()) {
-        return p;
+        if (std::filesystem::exists(p)) return p;
+        return std::nullopt;
     }
 
     // 2. Check AssetManager for registered IDs
     if (m_asset_manager) {
         if (auto asset = m_asset_manager->get_asset(spec)) {
-            return std::filesystem::path(asset->path);
+            std::filesystem::path ap(asset->path);
+            if (std::filesystem::exists(ap)) return ap;
         }
     }
 
@@ -61,17 +63,46 @@ std::filesystem::path AssetResolver::resolve_path(const std::string& spec, Asset
         if (std::filesystem::exists(resolved)) return resolved;
     }
 
-    return p; // Return original if not found
+    return std::nullopt;
 }
 
-const renderer2d::SurfaceRGBA* AssetResolver::resolve_image(const std::string& spec, AlphaMode alpha_mode) {
+ResolutionResult<std::filesystem::path> AssetResolver::resolve_path_strict(const std::string& spec, AssetType type, ResolveMode mode) const {
+    ResolutionResult<std::filesystem::path> result;
+    auto path = resolve_path(spec, type);
+    
+    if (path.has_value()) {
+        result.value = path;
+    } else {
+        std::string msg = "Failed to resolve asset: " + spec;
+        if (mode == ResolveMode::Strict) {
+            result.diagnostics.add_error("ASSET_NOT_FOUND", msg);
+        } else if (mode == ResolveMode::PermissiveWithWarning) {
+            result.diagnostics.add_warning("ASSET_NOT_FOUND", msg);
+        } else {
+            result.diagnostics.add_info("ASSET_NOT_FOUND", msg);
+        }
+    }
+    
+    return result;
+}
+
+const renderer2d::SurfaceRGBA* AssetResolver::resolve_image(const std::string& spec, AlphaMode alpha_mode, ResolveMode mode) {
+    auto shared = resolve_image_shared(spec, alpha_mode, mode);
+    return shared.get();
+}
+
+std::shared_ptr<const renderer2d::SurfaceRGBA> AssetResolver::resolve_image_shared(const std::string& spec, AlphaMode alpha_mode, ResolveMode mode) {
     if (!m_image_manager) return nullptr;
 
-    std::filesystem::path path = resolve_path(spec, AssetType::IMAGE);
-    return m_image_manager->get_image(path, alpha_mode);
+    auto res = resolve_path_strict(spec, AssetType::IMAGE, mode);
+    if (!res.value.has_value()) {
+        return nullptr;
+    }
+    
+    return m_image_manager->get_image_shared(*res.value, alpha_mode);
 }
 
-const text::Font* AssetResolver::resolve_font(const std::string& spec, std::uint32_t pixel_size) {
+const text::Font* AssetResolver::resolve_font(const std::string& spec, std::uint32_t pixel_size, ResolveMode mode) {
     if (!m_font_registry) return nullptr;
 
     // First try if it's already loaded in the registry by name
@@ -80,8 +111,9 @@ const text::Font* AssetResolver::resolve_font(const std::string& spec, std::uint
     }
 
     // If not, try to resolve path and load it
-    std::filesystem::path path = resolve_path(spec, AssetType::FONT);
-    if (std::filesystem::exists(path)) {
+    auto res = resolve_path_strict(spec, AssetType::FONT, mode);
+    if (res.value.has_value()) {
+        std::filesystem::path path = *res.value;
         std::string ext = path.extension().string();
         std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
         
@@ -96,6 +128,11 @@ const text::Font* AssetResolver::resolve_font(const std::string& spec, std::uint
         }
     }
 
+    // Fallback logic
+    if (mode == ResolveMode::Strict) {
+        return nullptr;
+    }
+    
     return m_font_registry->default_font();
 }
 

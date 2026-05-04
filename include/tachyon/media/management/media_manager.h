@@ -139,6 +139,9 @@ public:
         m_proxy_worker->generate_proxies(originals, policy);
     }
 
+    ImageManager& image_manager() { return m_image_manager; }
+    const ImageManager& image_manager() const { return m_image_manager; }
+
 private:
     struct VideoPool {
         std::vector<std::unique_ptr<VideoDecoder>> available;

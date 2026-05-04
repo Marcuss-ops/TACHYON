@@ -62,4 +62,59 @@ T sample_keyframes(
     return lerp(k1.value, k2.value, remapped_t);
 }
 
+/**
+ * @brief Generic function to sample a value from a collection of spatial keyframes (with tangents).
+ */
+template <typename T, typename LerpFn, typename BezierFn>
+T sample_spatial_keyframes(
+    const std::vector<SpatialKeyframeSpec<T>>& keyframes,
+    const T& fallback,
+    double time,
+    LerpFn lerp,
+    BezierFn bezier_sample
+) {
+    if (keyframes.empty()) {
+        return fallback;
+    }
+
+    if (time <= keyframes.front().time) {
+        return keyframes.front().value;
+    }
+    if (time >= keyframes.back().time) {
+        return keyframes.back().value;
+    }
+
+    auto it = std::lower_bound(keyframes.begin(), keyframes.end(), time,
+        [](const SpatialKeyframeSpec<T>& k, double t) {
+            return k.time < t;
+        });
+
+    const auto& k1 = *(it - 1);
+    const auto& k2 = *it;
+
+    if (k1.timing.interpolation == InterpolationMode::Hold) {
+        return k1.value;
+    }
+
+    double duration = k2.time - k1.time;
+    double t = (duration > 1e-8) ? (time - k1.time) / duration : 0.0;
+    double remapped_t = apply_easing(t, k1.timing.easing, k1.timing.bezier);
+    float weight = static_cast<float>(remapped_t);
+
+    // If spatial tangents are present, use Bezier sampling
+    // Note: We use a small epsilon to avoid unnecessary cubic sampling for zero-length tangents
+    constexpr float kTangentEpsilon = 1.0e-6f;
+    if (k1.tangent_out.length_squared() > kTangentEpsilon || k2.tangent_in.length_squared() > kTangentEpsilon) {
+        return bezier_sample(
+            k1.value,
+            k1.value + k1.tangent_out,
+            k2.value + k2.tangent_in,
+            k2.value,
+            weight
+        );
+    }
+
+    return lerp(k1.value, k2.value, weight);
+}
+
 } // namespace tachyon::animation

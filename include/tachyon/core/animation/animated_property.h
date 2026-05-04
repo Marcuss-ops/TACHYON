@@ -57,10 +57,10 @@ struct SpatialKeyframeSpec : KeyframeSpec<T> {
 /**
  * @brief A generic animated property that can have a static value, keyframes, or an expression.
  */
-template <typename T>
+template <typename T, typename K = KeyframeSpec<T>>
 struct AnimatedProperty {
     std::optional<T> value;
-    std::vector<KeyframeSpec<T>> keyframes;
+    std::vector<K> keyframes;
     std::optional<std::string> expression;
 
     AnimatedProperty() = default;
@@ -75,5 +75,11 @@ struct AnimatedProperty {
             && !expression.has_value();
     }
 };
+
+/**
+ * @brief Convenience alias for properties with spatial tangents.
+ */
+template <typename T>
+using AnimatedSpatialProperty = AnimatedProperty<T, SpatialKeyframeSpec<T>>;
 
 } // namespace tachyon::animation

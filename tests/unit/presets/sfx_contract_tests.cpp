@@ -8,6 +8,11 @@ bool run_sfx_contract_tests() {
     using namespace tachyon::presets;
 
     std::cout << "Running SFX contract tests..." << std::endl;
+    
+    // Setup a dummy resolver
+    tachyon::media::AssetResolver::Config config;
+    config.sfx_root = "dummy/sfx"; // Won't find files, but tests the path building
+    tachyon::media::AssetResolver resolver(config);
 
     // 1. Test explicit variant selection
     {
@@ -17,7 +22,7 @@ bool run_sfx_contract_tests() {
         p.in_point = 1.0;
         p.out_point = 4.0;
         p.volume = 0.8f;
-        auto spec = build_sfx(p);
+        auto spec = build_sfx(resolver, p);
         // We can't easily check the path without TACHYON_SFX_ROOT, but we can check if it contains the variant
         assert(spec.in_point_seconds == 1.0);
         assert(spec.out_point_seconds == 4.0);
@@ -30,13 +35,13 @@ bool run_sfx_contract_tests() {
         p1.category = SfxCategory::Mouse;
         p1.variant = -1;
         p1.seed = 12345;
-        auto spec1 = build_sfx(p1);
+        auto spec1 = build_sfx(resolver, p1);
 
         SfxParams p2;
         p2.category = SfxCategory::Mouse;
         p2.variant = -1;
         p2.seed = 12345;
-        auto spec2 = build_sfx(p2);
+        auto spec2 = build_sfx(resolver, p2);
 
         // Same seed must return same path
         if (!spec1.source_path.empty() && !spec2.source_path.empty()) {
@@ -47,7 +52,7 @@ bool run_sfx_contract_tests() {
         p3.category = SfxCategory::Mouse;
         p3.variant = -1;
         p3.seed = 54321;
-        auto spec3 = build_sfx(p3);
+        auto spec3 = build_sfx(resolver, p3);
 
         // Different seed might return different path (statistically likely if >1 file exists)
         // We don't assert inequality here because there might be only one file in the folder,
@@ -56,7 +61,7 @@ bool run_sfx_contract_tests() {
 
     // 3. Test shortcut API
     {
-        auto shortcut_spec = build_sfx(SfxCategory::MoneySound, 2.0, 0.5f);
+        auto shortcut_spec = build_sfx(resolver, SfxCategory::MoneySound, 2.0, 0.5f);
         assert(shortcut_spec.in_point_seconds == 2.0);
         assert(shortcut_spec.volume == 0.5f);
     }

@@ -4,8 +4,8 @@
 #include "tachyon/core/animation/property_adapter.h"
 #include "tachyon/core/expressions/context_builder.h"
 #include "tachyon/audio/audio_analyzer.h"
-#include "tachyon/renderer2d/animation/easing.h"
-#include "tachyon/renderer2d/math/math_utils.h"
+#include "tachyon/core/animation/easing.h"
+#include "tachyon/core/math/math_utils.h"
 #include <algorithm>
 #include <cstdlib>
 #include <cmath>
@@ -113,78 +113,16 @@ math::Vector2 sample_vector2(
         return property.value.value_or(fallback);
     }
 
-    auto generic_prop = animation::to_generic(property);
+    auto generic_prop = animation::to_spatial_generic(property);
     
-    // Check if any interval has spatial tangents
-    bool has_spatial = false;
-    for (const auto& k : property.keyframes) {
-        if (k.tangent_out.length_squared() > kTangentEpsilon) { has_spatial = true; break; }
-        // Note: we'd also need to check the next keyframe's tangent_in, but if any tangent is non-zero, we might need spatial.
-    }
-    // A better check: find the interval first.
-
-    // For now, if no tangents are used, use the generic sampler.
-    // If tangents are used, we still use the legacy logic until the generic sampler supports spatial tangents.
-    bool uses_tangents = false;
-    for (const auto& k : property.keyframes) {
-        if (k.tangent_in.length_squared() > kTangentEpsilon || k.tangent_out.length_squared() > kTangentEpsilon) {
-            uses_tangents = true;
-            break;
-        }
-    }
-
-    if (!uses_tangents) {
-        return animation::sample_keyframes(generic_prop.keyframes, property.value.value_or(fallback), local_time_seconds, animation::lerp_vector2);
-    }
-
-    // Fallback to legacy logic for spatial tangents
-    const std::vector<Vector2KeyframeSpec>* keyframes = &property.keyframes;
-    std::vector<Vector2KeyframeSpec> sorted_keyframes;
-    if (!std::is_sorted(keyframes->begin(), keyframes->end(), [](const auto& a, const auto& b) {
-            return a.time < b.time;
-        })) {
-        sorted_keyframes = property.keyframes;
-        std::stable_sort(sorted_keyframes.begin(), sorted_keyframes.end(), [](const auto& a, const auto& b) {
-            return a.time < b.time;
+    return animation::sample_spatial_keyframes(
+        generic_prop.keyframes, 
+        property.value.value_or(fallback), 
+        local_time_seconds, 
+        animation::lerp_vector2,
+        [](const math::Vector2& p0, const math::Vector2& p1, const math::Vector2& p2, const math::Vector2& p3, float t) {
+            return math::sample_bezier_spatial(p0, p1, p2, p3, t);
         });
-        keyframes = &sorted_keyframes;
-    }
-
-    if (local_time_seconds <= keyframes->front().time) {
-        return keyframes->front().value;
-    }
-    if (local_time_seconds >= keyframes->back().time) {
-        return keyframes->back().value;
-    }
-
-    for (std::size_t index = 1; index < keyframes->size(); ++index) {
-        const auto& previous = (*keyframes)[index - 1];
-        const auto& next = (*keyframes)[index];
-        if (local_time_seconds > next.time) {
-            continue;
-        }
-        const double duration = next.time - previous.time;
-        if (duration <= 0.0) {
-            return next.value;
-        }
-        const double alpha = (local_time_seconds - previous.time) / duration;
-        const double eased = renderer2d::animation::apply_easing(alpha, previous.easing, previous.bezier);
-        const float weight = static_cast<float>(eased);        
-        
-        if (previous.tangent_out.length_squared() > kTangentEpsilon || next.tangent_in.length_squared() > kTangentEpsilon) {
-            return renderer2d::math_utils::sample_bezier_spatial(
-                previous.value,
-                previous.value + previous.tangent_out,
-                next.value + next.tangent_in,
-                next.value,
-                weight
-            );
-        }
-
-        return previous.value * (1.0f - weight) + next.value * weight;
-    }
-
-    return keyframes->back().value;
 }
 
 math::Vector3 sample_vector3(
@@ -219,68 +157,16 @@ math::Vector3 sample_vector3(
         return property.value.value_or(fallback);
     }
 
-    auto generic_prop = animation::to_generic(property);
+    auto generic_prop = animation::to_spatial_generic(property);
 
-    bool uses_tangents = false;
-    for (const auto& k : property.keyframes) {
-        if (k.tangent_in.length_squared() > kTangentEpsilon || k.tangent_out.length_squared() > kTangentEpsilon) {
-            uses_tangents = true;
-            break;
-        }
-    }
-
-    if (!uses_tangents) {
-        return animation::sample_keyframes(generic_prop.keyframes, property.value.value_or(fallback), local_time_seconds, animation::lerp_vector3);
-    }
-
-    // Fallback to legacy logic for spatial tangents
-    const std::vector<AnimatedVector3Spec::Keyframe>* keyframes = &property.keyframes;
-    std::vector<AnimatedVector3Spec::Keyframe> sorted_keyframes;
-    if (!std::is_sorted(keyframes->begin(), keyframes->end(), [](const auto& a, const auto& b) {
-            return a.time < b.time;
-        })) {
-        sorted_keyframes = property.keyframes;
-        std::stable_sort(sorted_keyframes.begin(), sorted_keyframes.end(), [](const auto& a, const auto& b) {
-            return a.time < b.time;
+    return animation::sample_spatial_keyframes(
+        generic_prop.keyframes, 
+        property.value.value_or(fallback), 
+        local_time_seconds, 
+        animation::lerp_vector3,
+        [](const math::Vector3& p0, const math::Vector3& p1, const math::Vector3& p2, const math::Vector3& p3, float t) {
+            return math::sample_bezier_spatial(p0, p1, p2, p3, t);
         });
-        keyframes = &sorted_keyframes;
-    }
-
-    if (local_time_seconds <= keyframes->front().time) {
-        return keyframes->front().value;
-    }
-    if (local_time_seconds >= keyframes->back().time) {
-        return keyframes->back().value;
-    }
-
-    for (std::size_t index = 1; index < keyframes->size(); ++index) {
-        const auto& previous = (*keyframes)[index - 1];
-        const auto& next = (*keyframes)[index];
-        if (local_time_seconds > next.time) {
-            continue;
-        }
-        const double duration = next.time - previous.time;
-        if (duration <= 0.0) {
-            return next.value;
-        }
-        const double alpha = (local_time_seconds - previous.time) / duration;
-        const double eased = renderer2d::animation::apply_easing(alpha, previous.easing, previous.bezier);
-        const float weight = static_cast<float>(eased);
-
-        if (previous.tangent_out.length_squared() > kTangentEpsilon || next.tangent_in.length_squared() > kTangentEpsilon) {
-            return renderer2d::math_utils::sample_bezier_spatial(
-                previous.value,
-                previous.value + previous.tangent_out,
-                next.value + next.tangent_in,
-                next.value,
-                weight
-            );
-        }
-
-        return previous.value * (1.0f - weight) + next.value * weight;
-    }
-
-    return keyframes->back().value;
 }
 
 ColorSpec sample_color(const AnimatedColorSpec& property, const ColorSpec& fallback, double local_time_seconds) {
