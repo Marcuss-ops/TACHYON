@@ -12,6 +12,15 @@ bool has_issue(const tachyon::analysis::InspectionReport& report, std::string_vi
     });
 }
 
+bool has_issue_with_severity(
+    const tachyon::analysis::InspectionReport& report,
+    std::string_view code,
+    tachyon::analysis::InspectionSeverity severity) {
+    return std::any_of(report.issues.begin(), report.issues.end(), [&](const auto& issue) {
+        return issue.code == code && issue.severity == severity;
+    });
+}
+
 } // namespace
 
 bool run_scene_inspector_tests() {
@@ -58,6 +67,35 @@ bool run_scene_inspector_tests() {
             || !has_issue(report, "text.empty")
             || !has_issue(report, "media.missing_asset")) {
             std::cerr << "scene_inspector: expected composition/text/media issues\n";
+            ok = false;
+        }
+    }
+
+    {
+        SceneSpec scene;
+        CompositionSpec comp;
+        comp.id = "info";
+        comp.duration = 2.0;
+        comp.frame_rate = FrameRate{30, 1};
+        LayerSpec text_layer;
+        text_layer.id = "label";
+        text_layer.kind = LayerType::Text;
+        text_layer.text_content = "Hello";
+        text_layer.transition_in.kind = TransitionKind::Fade;
+        comp.layers.push_back(text_layer);
+        scene.compositions.push_back(comp);
+
+        const auto report = inspect_scene(scene);
+        if (has_issue_with_severity(report, "text.font_size_default", InspectionSeverity::Info)) {
+            std::cerr << "scene_inspector: info issues should be hidden by default\n";
+            ok = false;
+        }
+
+        InspectionOptions info_options;
+        info_options.include_info = true;
+        const auto info_report = inspect_scene(scene, info_options);
+        if (!has_issue_with_severity(info_report, "layer.transition_in", InspectionSeverity::Info)) {
+            std::cerr << "scene_inspector: expected info output when enabled\n";
             ok = false;
         }
     }

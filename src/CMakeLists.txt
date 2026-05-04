@@ -107,10 +107,10 @@ endfunction()
 add_library(TachyonCore STATIC ${TachyonCoreSources})
 tachyon_configure_common(TachyonCore)
 
-add_library(TachyonScene OBJECT ${TachyonSceneSources})
+add_library(TachyonScene STATIC ${TachyonSceneSources})
 tachyon_configure_common(TachyonScene)
 
-add_library(TachyonRuntime OBJECT ${TachyonRuntimeSources})
+add_library(TachyonRuntime STATIC ${TachyonRuntimeSources})
 tachyon_configure_common(TachyonRuntime)
 if(TACHYON_ENABLE_AUDIO_MUX)
     target_compile_definitions(TachyonRuntime PRIVATE TACHYON_ENABLE_AUDIO_MUX)
@@ -118,45 +118,45 @@ endif()
 tachyon_link_3d_deps(TachyonRuntime)
 tachyon_link_omp(TachyonRuntime)
 
-add_library(TachyonRenderer2D OBJECT ${TachyonRenderer2DSources})
+add_library(TachyonRenderer2D STATIC ${TachyonRenderer2DSources})
 tachyon_configure_common(TachyonRenderer2D)
 tachyon_link_text_deps(TachyonRenderer2D)
 tachyon_link_3d_deps(TachyonRenderer2D)
 tachyon_link_omp(TachyonRenderer2D)
 
-add_library(TachyonRenderer3D OBJECT ${TachyonRenderer3DSources})
+add_library(TachyonRenderer3D STATIC ${TachyonRenderer3DSources})
 tachyon_configure_common(TachyonRenderer3D)
 tachyon_link_3d_deps(TachyonRenderer3D)
 tachyon_link_omp(TachyonRenderer3D)
 
-add_library(TachyonMedia OBJECT ${TachyonMediaSources})
+add_library(TachyonMedia STATIC ${TachyonMediaSources})
 tachyon_configure_common(TachyonMedia)
 tachyon_link_media_deps(TachyonMedia)
 target_link_libraries(TachyonMedia PUBLIC pugixml)
 
-add_library(TachyonAudio OBJECT ${TachyonAudioSources})
+add_library(TachyonAudio STATIC ${TachyonAudioSources})
 tachyon_configure_common(TachyonAudio)
 tachyon_link_media_deps(TachyonAudio)
 
-add_library(TachyonOutput OBJECT ${TachyonOutputSources})
+add_library(TachyonOutput STATIC ${TachyonOutputSources})
 tachyon_configure_common(TachyonOutput)
 tachyon_link_media_deps(TachyonOutput)
 tachyon_link_output_deps(TachyonOutput)
 
-add_library(TachyonText OBJECT ${TachyonTextSources})
+add_library(TachyonText STATIC ${TachyonTextSources})
 tachyon_configure_common(TachyonText)
 tachyon_link_text_deps(TachyonText)
 
-add_library(TachyonCLI OBJECT ${TachyonCLISources})
+add_library(TachyonCLI STATIC ${TachyonCLISources})
 tachyon_configure_common(TachyonCLI)
 tachyon_link_3d_deps(TachyonCLI)
 tachyon_link_omp(TachyonCLI)
 tachyon_link_output_deps(TachyonCLI)
 
-add_library(TachyonPlatform OBJECT ${TachyonPlatformSources})
+add_library(TachyonPlatform STATIC ${TachyonPlatformSources})
 tachyon_configure_common(TachyonPlatform)
 
-add_library(TachyonStudio OBJECT ${TachyonStudioSources})
+add_library(TachyonStudio STATIC ${TachyonStudioSources})
 tachyon_configure_common(TachyonStudio)
 
 if(TACHYON_ENABLE_TRACKER)
@@ -186,6 +186,7 @@ endif()
 
 add_executable(tachyon
     main.cpp
+    core/cli.cpp
 )
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)

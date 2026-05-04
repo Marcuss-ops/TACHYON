@@ -20,7 +20,9 @@ bool run_motion_map_command(const CliOptions& options, std::ostream& out, std::o
     }
 
     analysis::MotionMapOptions motion_options;
-    motion_options.runtime_samples = std::max(0, options.inspect_samples);
+    motion_options.runtime_samples = options.samples_explicitly_set
+        ? std::max(0, options.inspect_samples)
+        : 0;
 
     const auto report = analysis::build_motion_map(loaded.context->scene, motion_options);
     if (options.json_output) {

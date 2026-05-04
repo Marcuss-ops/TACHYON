@@ -62,7 +62,7 @@ set(TachyonSceneSources
     ${CMAKE_CURRENT_SOURCE_DIR}/timeline/time.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/timeline/time_remap.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/timeline/time_resolver.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/camera_cut_contract.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/analysis/motion_map.cpp
 
     # Importers
     ${CMAKE_CURRENT_SOURCE_DIR}/importer/alembic_importer.cpp
