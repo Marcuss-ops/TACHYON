@@ -26,13 +26,13 @@ jobs:
             libomp-dev
 
       - name: Configure
-        run: cmake --preset linux-ninja-debug
+        run: cmake --preset linux-ci
 
       - name: Build core and tests
-        run: cmake --build --preset linux-ninja-debug -j$(nproc)
+        run: cmake --build --preset linux-ci -j$(nproc)
 
       - name: Run smoke tests
-        run: ctest --test-dir build/linux-ninja-debug --output-on-failure -R "TachyonSmokeTests"
+        run: ctest --test-dir build/linux-ci --output-on-failure -R "TachyonSmokeTests"
 
   # ─── Windows build + tests ─────────────────────────────────────────────────
   build-windows:
@@ -51,10 +51,10 @@ jobs:
         uses: seanmiddleditch/gha-setup-ninja@v4
 
       - name: Configure
-        run: cmake --preset windows-ninja-msvc
+        run: cmake --preset windows-ci
 
       - name: Build core and tests
-        run: cmake --build --preset windows-ninja-msvc -j4
+        run: cmake --build --preset windows-ci -j4
 
       - name: Run smoke tests
-        run: ctest --test-dir build/windows-ninja-msvc --output-on-failure -R "TachyonSmokeTests"
+        run: ctest --test-dir build/windows-ci --output-on-failure -R "TachyonSmokeTests"
