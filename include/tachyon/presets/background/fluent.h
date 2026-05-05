@@ -23,7 +23,7 @@ namespace tachyon::presets::background {
  *     .grain(0.12)
  *     .build();
  * @endcode
- */
+ */ 
 class BackgroundBuilder {
     procedural_bg::ProceduralParams params_;
     std::string kind_{};

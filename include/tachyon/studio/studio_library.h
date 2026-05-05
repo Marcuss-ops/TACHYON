@@ -59,6 +59,7 @@ public:
 private:
     void reset();
     void register_cpp_presets();
+    void register_transition_assets();
 
     std::filesystem::path m_root;
     bool m_ok{false};

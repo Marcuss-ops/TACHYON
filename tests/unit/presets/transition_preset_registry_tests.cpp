@@ -9,11 +9,13 @@ bool run_transition_preset_registry_tests() {
 
     auto& registry = TransitionPresetRegistry::instance();
 
-    // 1. The builtin catalog is intentionally empty.
     {
         auto ids = registry.list_ids();
-        assert(ids.empty());
-        assert(registry.find("tachyon.transition.crossfade") == nullptr);
+        // 17 GLSL presets + 'none'
+        assert(ids.size() == 18);
+        assert(registry.find("tachyon.transition.crossfade") != nullptr);
+        assert(registry.find("tachyon.transition.slide_up") != nullptr);
+        assert(registry.find("tachyon.transition.swipe_left") != nullptr);
     }
 
     // 2. Unknown ids still round-trip through the generic fallback.

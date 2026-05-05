@@ -241,6 +241,7 @@ add_executable(TachyonContentTests
     unit/presets/transition_builder_tests.cpp
     unit/presets/sfx_contract_tests.cpp
     unit/presets/transition_preset_registry_tests.cpp
+    unit/presets/preset_audit_tests.cpp
 )
 
 target_compile_definitions(TachyonContentTests

@@ -12,14 +12,9 @@ set(TachyonSceneEvalSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/mesh_animator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/roi_calculator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/templates.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/property_sampler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/rigging/constraint_solver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/rigging/ik_solver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/rigging/rig_graph.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/timeline/camera_cuts.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/timeline/frame_blend.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/timeline/frame_evaluator.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/timeline/time.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/timeline/time_remap.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/timeline/time_resolver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/camera_cut_contract.cpp
 )

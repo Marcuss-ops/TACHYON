@@ -3,8 +3,6 @@ set(TachyonSceneSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/data_loader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/dependency_node.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/property_sampler.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/rigging/constraint_solver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/state/evaluated_camera2d_state.cpp
     
     # Spec - Core
