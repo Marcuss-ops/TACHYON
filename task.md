@@ -132,3 +132,13 @@
         - [x] Standardized nullability/optional checks (`if(ptr)` vs `has_value()`)
         - [x] Mitigated MSVC ABI fragility (C4251)
         - [x] Resolved build issues (missing `<cstdint>`, `<cstring>`)
+
+## Phase 11: Industrial Observability & Resilience
+- [x] Implement granular resource tracking (Private vs Working Set)
+- [x] Implement machine-normalized CPU reporting (percent vs cores)
+- [x] Integrate CancelFlag in RenderContext and rendering loops
+- [x] Add cancellation checks to Audio Export and Rasterization
+- [x] Update BatchTelemetrySummary with cost estimation and detailed metrics
+- [x] Implement retryable logic for error codes (MissingAsset = non-retryable)
+- [x] Verify with unit tests (Telemetry Industrial Tests)
+- [x] Clean up duplicate legacy telemetry files

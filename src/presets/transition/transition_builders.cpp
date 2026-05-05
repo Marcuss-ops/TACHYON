@@ -5,6 +5,7 @@ namespace tachyon::presets {
 
 static registry::ParameterBag to_bag(const TransitionParams& p) {
     registry::ParameterBag bag;
+    bag.set("id", p.id);
     bag.set("duration", p.duration);
     bag.set("delay", p.delay);
     bag.set("easing", static_cast<int>(p.easing));

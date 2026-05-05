@@ -116,7 +116,7 @@ void AudioExporter::add_track(const AudioTrackSpec& track_spec) {
 
 void AudioExporter::clear_tracks() { m_tracks.clear(); }
 
-bool AudioExporter::export_to(const std::filesystem::path& output_path, const AudioExportConfig& config, double start_time, double duration) {
+bool AudioExporter::export_to(const std::filesystem::path& output_path, const AudioExportConfig& config, double start_time, double duration, std::atomic<bool>* cancel_flag) {
     if (m_tracks.empty()) return false;
 
     // Reset loudness meter
@@ -141,6 +141,7 @@ bool AudioExporter::export_to(const std::filesystem::path& output_path, const Au
     std::vector<float> track_buffer;
 
     for (double t = start_time; t < max_duration; t += chunk_duration) {
+        if (cancel_flag && cancel_flag->load()) return false;
         double current_chunk = std::min(chunk_duration, max_duration - t);
         
         processor.clear_tracks();
@@ -206,7 +207,7 @@ bool has_any_audio(const RenderPlan& plan) {
     return false;
 }
 
-bool export_plan_audio(const RenderPlan& plan, const std::filesystem::path& output_path) {
+bool export_plan_audio(const RenderPlan& plan, const std::filesystem::path& output_path, std::atomic<bool>* cancel_flag) {
     if (!plan.scene_spec) return false;
 
     AudioExporter exporter;
@@ -254,7 +255,7 @@ bool export_plan_audio(const RenderPlan& plan, const std::filesystem::path& outp
         config.codec = "pcm_s16le";
     }
 
-    return exporter.export_to(output_path, config, start_time, end_time - start_time);
+    return exporter.export_to(output_path, config, start_time, end_time - start_time, cancel_flag);
 }
 
 } // namespace tachyon::audio

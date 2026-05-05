@@ -49,13 +49,24 @@ struct RenderSessionResult {
     double execution_plan_build_ms{0.0};
     double frame_execution_ms{0.0};
     double encode_ms{0.0};
+    double io_read_ms{0.0};
+    double io_write_ms{0.0};
 
     // Aggregate timings
     double wall_time_total_ms{0.0};
     double wall_time_per_frame_ms{0.0};
 
     // Memory
-    std::size_t peak_memory_bytes{0};
+    std::size_t peak_working_set_bytes{0};
+    std::size_t avg_working_set_bytes{0};
+    std::size_t peak_private_bytes{0};
+    std::size_t avg_private_bytes{0};
+    double avg_cpu_percent_machine{0.0};
+    double avg_cpu_cores_used{0.0};
+
+    // I/O
+    std::size_t input_bytes{0};
+    std::size_t output_bytes{0};
 
     // Per-frame timings (for avg/peak calculation)
     std::vector<double> frame_times_ms;
@@ -75,7 +86,8 @@ public:
         const CompiledScene& compiled_scene,
         const RenderExecutionPlan& execution_plan,
         const std::filesystem::path& output_path,
-        std::size_t worker_count);
+        std::size_t worker_count,
+        CancelFlag* cancel_flag = nullptr);
     // 100x performance: render using precompiled frame program
     RenderSessionResult render(const CompiledFrameProgram& program, double time_sec, const std::filesystem::path& output_path = {});
 

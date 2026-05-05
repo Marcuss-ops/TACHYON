@@ -13,6 +13,7 @@
 #include "tachyon/runtime/execution/session/render_internal.h"
 #include "tachyon/runtime/profiling/render_profiler.h"
 #include "tachyon/media/management/asset_resolver.h"
+#include "tachyon/runtime/telemetry/process_resource_sampler.h"
 
 #include <iostream>
 #include <future>
@@ -50,9 +51,15 @@ RenderSessionResult RenderSession::render(
     const CompiledScene& compiled_scene,
     const RenderExecutionPlan& execution_plan,
     const std::filesystem::path& output_path,
-    std::size_t worker_count) {
+    std::size_t worker_count,
+    CancelFlag* cancel_flag) {
 
     (void)scene;
+    const auto session_start = std::chrono::steady_clock::now();
+    
+    ProcessResourceSampler sampler;
+    sampler.start();
+
     RenderSessionResult result;
 
     RenderExecutionPlan effective_plan = execution_plan;
@@ -110,6 +117,17 @@ RenderSessionResult RenderSession::render(
         profiling::ProfileScope scope(m_profiler, profiling::ProfileEventType::Phase, "initialize_sink");
         if (!sink->begin(effective_plan.render_plan)) {
             result.output_error = sink->last_error();
+            
+            sampler.stop();
+            const auto session_end = std::chrono::steady_clock::now();
+            result.wall_time_total_ms = std::chrono::duration<double, std::milli>(session_end - session_start).count();
+            
+            result.peak_working_set_bytes = sampler.peak_working_set_bytes();
+            result.avg_working_set_bytes = sampler.avg_working_set_bytes();
+            result.peak_private_bytes = sampler.peak_private_bytes();
+            result.avg_private_bytes = sampler.avg_private_bytes();
+            result.avg_cpu_percent_machine = sampler.avg_cpu_percent_machine();
+            result.avg_cpu_cores_used = sampler.avg_cpu_cores_used();
             return result;
         }
         result.output_configured = true;
@@ -139,7 +157,7 @@ RenderSessionResult RenderSession::render(
             nullptr,
             rendered_frames,
             nullptr,
-            nullptr,
+            cancel_flag,
             nullptr,
             sink.get(),
             &result,
@@ -164,7 +182,7 @@ RenderSessionResult RenderSession::render(
     // Audio Export
     if (!audio_export_path.empty()) {
         profiling::ProfileScope scope(m_profiler, profiling::ProfileEventType::AudioMux, "audio_export");
-        audio::export_plan_audio(effective_plan.render_plan, audio_export_path);
+        audio::export_plan_audio(effective_plan.render_plan, audio_export_path, cancel_flag);
     }
 
     // Finalize sink after all frames are rendered
@@ -182,6 +200,22 @@ RenderSessionResult RenderSession::render(
     if (!audio_export_path.empty() && is_temp_audio) {
         std::error_code ec;
         std::filesystem::remove(audio_export_path, ec);
+    }
+
+    sampler.stop();
+    const auto session_end = std::chrono::steady_clock::now();
+    result.wall_time_total_ms = std::chrono::duration<double, std::milli>(session_end - session_start).count();
+    
+    result.peak_working_set_bytes = sampler.peak_working_set_bytes();
+    result.avg_working_set_bytes = sampler.avg_working_set_bytes();
+    result.peak_private_bytes = sampler.peak_private_bytes();
+    result.avg_private_bytes = sampler.avg_private_bytes();
+    result.avg_cpu_percent_machine = sampler.avg_cpu_percent_machine();
+    result.avg_cpu_cores_used = sampler.avg_cpu_cores_used();
+
+    const std::size_t total_frames = result.frames_written > 0 ? result.frames_written : effective_plan.frame_tasks.size();
+    if (total_frames > 0) {
+        result.wall_time_per_frame_ms = result.wall_time_total_ms / static_cast<double>(total_frames);
     }
 
     return result;

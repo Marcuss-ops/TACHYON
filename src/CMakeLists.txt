@@ -110,8 +110,12 @@ endfunction()
 
 function(tachyon_link_text_deps target)
     if(TACHYON_ENABLE_TEXT)
-        target_link_libraries(${target} PUBLIC freetype harfbuzz)
+        target_link_libraries(${target} PUBLIC ${TACHYON_FREETYPE_TARGET} ${TACHYON_HARFBUZZ_TARGET})
         target_compile_definitions(${target} PUBLIC TACHYON_ENABLE_TEXT)
+        if(TACHYON_HAS_SKIA)
+            target_link_libraries(${target} PRIVATE ${TACHYON_SKIA_TARGET})
+            target_compile_definitions(${target} PRIVATE TACHYON_ENABLE_SKIA)
+        endif()
     endif()
 endfunction()
 

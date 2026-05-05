@@ -154,6 +154,7 @@ add_executable(TachyonRuntimeTests
     unit/runtime/execution/frame_range_tests.cpp
     unit/runtime/execution/tile_scheduler_tests.cpp
     unit/runtime/frame_adapter_tests.cpp
+    unit/runtime/telemetry_industrial_tests.cpp
 )
 
 target_compile_definitions(TachyonRuntimeTests

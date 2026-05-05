@@ -23,6 +23,7 @@ namespace tachyon::text {
 class TextRasterSurface {
 public:
     TextRasterSurface(std::uint32_t width, std::uint32_t height);
+    ~TextRasterSurface();
 
     std::uint32_t width() const { return m_width; }
     std::uint32_t height() const { return m_height; }
@@ -39,9 +40,12 @@ public:
 
     bool save_png(const std::filesystem::path& path) const;
 
-    const std::vector<std::uint8_t>& rgba_pixels() const { return m_pixels; }
+    const std::vector<std::uint8_t>& rgba_pixels() const;
 
 private:
+    void ensure_pixels_current();
+    void ensure_canvas_current();
+
     std::uint32_t m_width;
     std::uint32_t m_height;
     std::vector<std::uint8_t> m_pixels;

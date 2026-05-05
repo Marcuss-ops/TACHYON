@@ -86,6 +86,7 @@ AnimatedScalarSpec keyframes(std::initializer_list<std::pair<double, double>> ti
 // TransitionBuilder
 TransitionBuilder& TransitionBuilder::id(std::string transition_id) {
     spec_.transition_id = std::move(transition_id);
+    spec_.type = spec_.transition_id.empty() ? "none" : spec_.transition_id;
     return *this;
 }
 

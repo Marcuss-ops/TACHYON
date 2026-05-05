@@ -86,6 +86,7 @@ std::shared_ptr<renderer2d::SurfaceRGBA> render_frame_at_time(
     // Evaluate the scene at the specified time
     const auto& topo_order = compiled_scene.graph.topo_order();
     for (std::uint32_t node_id : topo_order) {
+        if (context.cancel_flag && context.cancel_flag->load()) break;
         ::tachyon::evaluate_node(executor, node_id, compiled_scene, plan, snapshot, context, composition_key, temp_key, render_time, temp_task);
     }
 
@@ -307,6 +308,7 @@ ExecutedFrame FrameExecutor::execute(
         profiling::ProfileScope eval_scope(context.profiler, profiling::ProfileEventType::Phase, "scene_evaluate", task.frame_number);
         const auto& topo_order = compiled_scene.graph.topo_order();
         for (std::uint32_t node_id : topo_order) {
+            if (context.cancel_flag && context.cancel_flag->load()) break;
             ::tachyon::evaluate_node(*this, node_id, compiled_scene, plan, snapshot, context, composition_key, frame_key, frame_time_seconds, task);
         }
         if (!compiled_scene.compositions.empty()) {
@@ -376,6 +378,7 @@ ExecutedFrame FrameExecutor::execute(
 
                     const auto& topo_order = compiled_scene.graph.topo_order();
                     for (std::uint32_t node_id : topo_order) {
+                        if (context.cancel_flag && context.cancel_flag->load()) break;
                         ::tachyon::evaluate_node(*this, node_id, compiled_scene, plan, snapshot, thread_context, composition_key, sample_key, sub_frame_time, task, frame_key, frame_time_seconds);
                     }
                     if (cache().lookup_composition(root_sample_key) == nullptr) {
