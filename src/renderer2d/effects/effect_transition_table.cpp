@@ -1,9 +1,11 @@
 #include "tachyon/renderer2d/effects/effect_registry.h"
+#include "tachyon/renderer2d/effects/core/glsl_transition_effect.h"
 #include "tachyon/renderer2d/effects/core/effect_host.h"
 
 namespace tachyon::renderer2d {
 
 void register_transition_effects(EffectRegistry& registry) {
+    init_builtin_transitions();
     EffectDescriptor glsl_desc;
     glsl_desc.id = "tachyon.effect.transition.glsl";
     glsl_desc.metadata = {

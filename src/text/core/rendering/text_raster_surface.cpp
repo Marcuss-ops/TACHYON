@@ -9,7 +9,7 @@
 #include <vector>
 #include <numeric>
 
-#if defined(TACHYON_ENABLE_SKIA)
+#if TACHYON_ENABLE_SKIA
 #include "include/core/SkBitmap.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkColor.h"
@@ -68,7 +68,7 @@ float sample_glyph_alpha(const tachyon::text::GlyphBitmap& glyph, float src_x, f
     return ax0 + (ax1 - ax0) * fy;
 }
 
-#if defined(TACHYON_ENABLE_SKIA)
+#if TACHYON_ENABLE_SKIA
 struct SkiaSurfaceState {
     sk_sp<SkSurface> surface;
     bool canvas_dirty{false};
@@ -125,13 +125,13 @@ std::vector<std::uint8_t> build_glyph_alpha_mask(const tachyon::text::GlyphBitma
 } // namespace
 
 TextRasterSurface::~TextRasterSurface() {
-#if defined(TACHYON_ENABLE_SKIA)
+#if TACHYON_ENABLE_SKIA
     g_skia_states.erase(this);
 #endif
 }
 
 void TextRasterSurface::ensure_pixels_current() {
-#if defined(TACHYON_ENABLE_SKIA)
+#if TACHYON_ENABLE_SKIA
     auto* state = get_skia_state(*this);
     if (state == nullptr || !state->surface || !state->canvas_dirty) {
         return;
@@ -157,7 +157,7 @@ void TextRasterSurface::ensure_pixels_current() {
 }
 
 void TextRasterSurface::ensure_canvas_current() {
-#if defined(TACHYON_ENABLE_SKIA)
+#if TACHYON_ENABLE_SKIA
     auto* state = get_skia_state(*this);
     if (state == nullptr || !state->surface || !state->pixels_dirty) {
         return;
@@ -177,7 +177,7 @@ void TextRasterSurface::ensure_canvas_current() {
 
 void TextRasterSurface::render_glyph(const tachyon::text::GlyphBitmap& glyph, int tx, int ty, int tw, int th, tachyon::renderer2d::Color gc) {
     if (tw <= 0 || th <= 0 || glyph.width == 0U || glyph.height == 0U) return;
-#if defined(TACHYON_ENABLE_SKIA)
+#if TACHYON_ENABLE_SKIA
     auto* state = get_skia_state(*this);
     if (state && state->surface) {
         ensure_canvas_current();
@@ -228,7 +228,7 @@ void TextRasterSurface::render_glyph(const tachyon::text::GlyphBitmap& glyph, in
 
 void TextRasterSurface::draw_rect(int x, int y, int w, int h, tachyon::renderer2d::Color color) {
     if (w <= 0 || h <= 0) return;
-#if defined(TACHYON_ENABLE_SKIA)
+#if TACHYON_ENABLE_SKIA
     auto* state = get_skia_state(*this);
     if (state && state->surface) {
         ensure_canvas_current();
@@ -272,7 +272,7 @@ void TextRasterSurface::draw_rect(int x, int y, int w, int h, tachyon::renderer2
 }
 
 void TextRasterSurface::draw_line(int x0, int y0, int x1, int y1, tachyon::renderer2d::Color color) {
-#if defined(TACHYON_ENABLE_SKIA)
+#if TACHYON_ENABLE_SKIA
     auto* state = get_skia_state(*this);
     if (state && state->surface) {
         ensure_canvas_current();
@@ -310,7 +310,7 @@ TextRasterSurface::TextRasterSurface(std::uint32_t width, std::uint32_t height)
     : m_width(width),
       m_height(height),
       m_pixels(width * height * 4U, 0U) {
-#if defined(TACHYON_ENABLE_SKIA)
+#if TACHYON_ENABLE_SKIA
     auto& state = ensure_skia_state(*this);
     const auto image_info = SkImageInfo::Make(
         static_cast<int>(m_width),
@@ -327,7 +327,7 @@ TextRasterSurface::TextRasterSurface(std::uint32_t width, std::uint32_t height)
 }
 
 tachyon::renderer2d::Color TextRasterSurface::get_pixel(std::uint32_t x, std::uint32_t y) const {
-#if defined(TACHYON_ENABLE_SKIA)
+#if TACHYON_ENABLE_SKIA
     const_cast<TextRasterSurface*>(this)->ensure_pixels_current();
 #endif
     if (x >= m_width || y >= m_height) {
@@ -344,7 +344,7 @@ tachyon::renderer2d::Color TextRasterSurface::get_pixel(std::uint32_t x, std::ui
 }
 
 void TextRasterSurface::blend_pixel(std::uint32_t x, std::uint32_t y, tachyon::renderer2d::Color color, std::uint8_t alpha) {
-#if defined(TACHYON_ENABLE_SKIA)
+#if TACHYON_ENABLE_SKIA
     ensure_pixels_current();
 #endif
     if (x >= m_width || y >= m_height || alpha == 0U) {
@@ -374,7 +374,7 @@ void TextRasterSurface::blend_pixel(std::uint32_t x, std::uint32_t y, tachyon::r
     blend_channel(color.b, 2U);
     m_pixels[index + 3U] = static_cast<std::uint8_t>(out_alpha);
 
-#if defined(TACHYON_ENABLE_SKIA)
+#if TACHYON_ENABLE_SKIA
     if (auto* state = get_skia_state(*this)) {
         state->pixels_dirty = true;
         state->canvas_dirty = false;
@@ -384,7 +384,7 @@ void TextRasterSurface::blend_pixel(std::uint32_t x, std::uint32_t y, tachyon::r
 
 void TextRasterSurface::apply_gaussian_blur(float radius) {
     if (radius <= 0.0f || m_width == 0U || m_height == 0U) return;
-#if defined(TACHYON_ENABLE_SKIA)
+#if TACHYON_ENABLE_SKIA
     ensure_pixels_current();
 #endif
 
@@ -458,7 +458,7 @@ void TextRasterSurface::apply_gaussian_blur(float radius) {
         }
     }
 
-#if defined(TACHYON_ENABLE_SKIA)
+#if TACHYON_ENABLE_SKIA
     if (auto* state = get_skia_state(*this)) {
         state->pixels_dirty = true;
         state->canvas_dirty = false;
@@ -468,7 +468,7 @@ void TextRasterSurface::apply_gaussian_blur(float radius) {
 
 void TextRasterSurface::apply_shadow(const TextShadowOptions& options) {
     if (!options.enabled) return;
-#if defined(TACHYON_ENABLE_SKIA)
+#if TACHYON_ENABLE_SKIA
     ensure_pixels_current();
 #endif
 
@@ -492,7 +492,7 @@ void TextRasterSurface::apply_shadow(const TextShadowOptions& options) {
         }
     }
 
-#if defined(TACHYON_ENABLE_SKIA)
+#if TACHYON_ENABLE_SKIA
     if (auto* state = get_skia_state(*this)) {
         state->pixels_dirty = true;
         state->canvas_dirty = false;
@@ -502,7 +502,7 @@ void TextRasterSurface::apply_shadow(const TextShadowOptions& options) {
 
 void TextRasterSurface::apply_glow(const TextGlowOptions& options) {
     if (!options.enabled) return;
-#if defined(TACHYON_ENABLE_SKIA)
+#if TACHYON_ENABLE_SKIA
     ensure_pixels_current();
 #endif
 
@@ -530,7 +530,7 @@ void TextRasterSurface::apply_glow(const TextGlowOptions& options) {
         }
     }
 
-#if defined(TACHYON_ENABLE_SKIA)
+#if TACHYON_ENABLE_SKIA
     if (auto* state = get_skia_state(*this)) {
         state->pixels_dirty = true;
         state->canvas_dirty = false;
@@ -543,7 +543,7 @@ bool TextRasterSurface::save_png(const std::filesystem::path& path) const {
         return false;
     }
 
-#if defined(TACHYON_ENABLE_SKIA)
+#if TACHYON_ENABLE_SKIA
     const_cast<TextRasterSurface*>(this)->ensure_pixels_current();
 #endif
 
@@ -560,7 +560,7 @@ bool TextRasterSurface::save_png(const std::filesystem::path& path) const {
 }
 
 const std::vector<std::uint8_t>& TextRasterSurface::rgba_pixels() const {
-#if defined(TACHYON_ENABLE_SKIA)
+#if TACHYON_ENABLE_SKIA
     const_cast<TextRasterSurface*>(this)->ensure_pixels_current();
 #endif
     return m_pixels;

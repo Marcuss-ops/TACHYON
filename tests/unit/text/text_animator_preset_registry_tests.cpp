@@ -1,4 +1,5 @@
 #include "tachyon/presets/text/text_animator_preset_registry.h"
+#include "tachyon/core/registry/parameter_bag.h"
 #include <algorithm>
 #include <cassert>
 #include <iostream>
@@ -34,7 +35,12 @@ bool test_common_presets_available() {
 
 bool test_create_preset_returns_valid_spec() {
     auto& registry = tachyon::presets::TextAnimatorPresetRegistry::instance();
-    auto specs = registry.create("tachyon.textanim.fade_in", "characters_excluding_spaces", 0.03, 0.7);
+    tachyon::registry::ParameterBag params;
+    params.set("selector_based_on", std::string("characters_excluding_spaces"));
+    params.set("char_delay", 0.03);
+    params.set("duration", 0.7);
+
+    auto specs = registry.create("tachyon.textanim.fade_in", params);
     if (specs.empty()) {
         std::cerr << "Error: Create tachyon.textanim.fade_in returned empty vector" << std::endl;
         return false;
@@ -52,7 +58,12 @@ bool test_create_preset_returns_valid_spec() {
 
 bool test_composite_preset_returns_multiple_specs() {
     auto& registry = tachyon::presets::TextAnimatorPresetRegistry::instance();
-    auto specs = registry.create("tachyon.textanim.fade_up", "characters_excluding_spaces", 0.03, 0.7);
+    tachyon::registry::ParameterBag params;
+    params.set("selector_based_on", std::string("characters_excluding_spaces"));
+    params.set("char_delay", 0.03);
+    params.set("duration", 0.7);
+
+    auto specs = registry.create("tachyon.textanim.fade_up", params);
     if (specs.size() != 3) {
         std::cerr << "Error: Composite tachyon.textanim.fade_up should return 3 specs, got " << specs.size() << std::endl;
         return false;
@@ -62,7 +73,8 @@ bool test_composite_preset_returns_multiple_specs() {
 
 bool test_unknown_preset_falls_back() {
     auto& registry = tachyon::presets::TextAnimatorPresetRegistry::instance();
-    auto specs = registry.create("tachyon.textanim.nonexistent_preset");
+    tachyon::registry::ParameterBag params;
+    auto specs = registry.create("tachyon.textanim.nonexistent_preset", params);
     if (specs.empty()) {
         std::cerr << "Error: Unknown preset fallback returned empty vector" << std::endl;
         return false;

@@ -72,6 +72,10 @@ void TransitionPresetRegistry::load_builtins() {
     register_glsl(*this, "tachyon.transition.directional_blur_wipe", "Directional Blur Wipe", "Blur wipe with direction", TransitionKind::Wipe, "tachyon.transition.directional_blur_wipe");
     register_glsl(*this, "tachyon.transition.kaleidoscope", "Kaleidoscope", "Dynamic kaleidoscope transition", TransitionKind::Custom, "tachyon.transition.kaleidoscope");
     register_glsl(*this, "tachyon.transition.ripple", "Ripple", "Water ripple transition", TransitionKind::Custom, "tachyon.transition.ripple");
+
+    // Cinematic Light Leaks and Film Effects
+    register_glsl(*this, "tachyon.transition.light_leak", "Light Leak", "High-quality evolving cinematic light leak", TransitionKind::Fade, "tachyon.transition.light_leak");
+    register_glsl(*this, "tachyon.transition.film_burn", "Film Burn", "Fiery red-orange film burn", TransitionKind::Fade, "tachyon.transition.film_burn");
 }
 
 } // namespace tachyon::presets

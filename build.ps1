@@ -37,10 +37,12 @@ param(
     [switch]$Check,
     [switch]$Clean,
     [switch]$Configure,
+    [alias("Parallel")]
     [int]$Jobs        = 0,
     [switch]$RunTests,
     [string]$TestFilter = "",
-    [switch]$KillStaleTests
+    [switch]$KillStaleTests,
+    [switch]$SkipBuild
 )
 
 Set-StrictMode -Version Latest
@@ -127,7 +129,7 @@ function Get-TestTargetForFilter {
         return "TachyonRenderTests"
     }
 
-    if ($normalized -match 'studio|glyphcache|text|audiopitch|audiotrim|backgroundpreset|transitionbuilder|sfxcontract|transitionpreset') {
+    if ($normalized -match 'studio|glyphcache|text|audiopitch|audiotrim|backgroundpreset|transition|sfxcontract') {
         return "TachyonContentTests"
     }
 
@@ -140,6 +142,10 @@ function Get-TestTargetForFilter {
 
 if ($Check) {
     $Target = "TachyonCore"
+}
+
+if ($RunTests -and $TestFilter -and -not $Target) {
+    $Target = Get-TestTargetForFilter $TestFilter
 }
 
 if (-not $Preset) {
@@ -178,6 +184,9 @@ if ($RunTests) {
 }
 if ($TestFilter) {
     Write-Host "  Filter : $TestFilter" -ForegroundColor Yellow
+}
+if ($SkipBuild) {
+    Write-Host "  Build  : SKIPPED" -ForegroundColor Yellow
 }
 
 if ($env:OS -eq 'Windows_NT') {
@@ -254,21 +263,23 @@ if ($NeedConf) {
     Invoke-Native { cmake --preset $Preset -S "$Root" -B "$BuildDir" } "CMake configure failed."
 }
 
-if ($env:OS -eq 'Windows_NT' -and (Test-IsWindowsPreset $Preset)) {
-    if ($Target) {
-        Write-Host "Building $Target ($Config, $J jobs)..." -ForegroundColor Yellow
-        Invoke-Native { cmake --build $BuildDir --config $Config --target $Target -j $J } "Build FAILED."
+if (-not $SkipBuild) {
+    if ($env:OS -eq 'Windows_NT' -and (Test-IsWindowsPreset $Preset)) {
+        if ($Target) {
+            Write-Host "Building $Target ($Config, $J jobs)..." -ForegroundColor Yellow
+            Invoke-Native { cmake --build $BuildDir --config $Config --target $Target -j $J } "Build FAILED."
+        } else {
+            Write-Host "Building preset targets: $Preset ($Config, $J jobs)..." -ForegroundColor Yellow
+            Invoke-Native { cmake --build --preset $Preset --config $Config -j $J } "Build FAILED."
+        }
     } else {
-        Write-Host "Building preset targets: $Preset ($Config, $J jobs)..." -ForegroundColor Yellow
-        Invoke-Native { cmake --build --preset $Preset --config $Config -j $J } "Build FAILED."
-    }
-} else {
-    if ($Target) {
-        Write-Host "Building $Target ($J jobs)..." -ForegroundColor Yellow
-        Invoke-Native { cmake --build --preset $Preset --target $Target -j $J } "Build FAILED."
-    } else {
-        Write-Host "Building preset targets: $Preset ($J jobs)..." -ForegroundColor Yellow
-        Invoke-Native { cmake --build --preset $Preset -j $J } "Build FAILED."
+        if ($Target) {
+            Write-Host "Building $Target ($J jobs)..." -ForegroundColor Yellow
+            Invoke-Native { cmake --build --preset $Preset --target $Target -j $J } "Build FAILED."
+        } else {
+            Write-Host "Building preset targets: $Preset ($J jobs)..." -ForegroundColor Yellow
+            Invoke-Native { cmake --build --preset $Preset -j $J } "Build FAILED."
+        }
     }
 }
 
@@ -291,18 +302,8 @@ if ($RunTests) {
     Prepend-ProcessPath $binDirs
 
     $selectedTestTarget = if ($TestFilter) { Get-TestTargetForFilter $TestFilter } else { "" }
-    if ($selectedTestTarget -and -not ($selectedTestTarget -eq "TachyonTests")) {
-        Write-Host "  Building test target: $selectedTestTarget" -ForegroundColor Yellow
-        if ($env:OS -eq 'Windows_NT' -and (Test-IsWindowsPreset $Preset)) {
-            Invoke-Native {
-                & cmake --build $BuildDir --config $Config --target $selectedTestTarget -j $J
-            } "Selected test target build FAILED."
-        } else {
-            Invoke-Native {
-                & cmake --build --preset $Preset --target $selectedTestTarget -j $J
-            } "Selected test target build FAILED."
-        }
-    }
+    # Build already handled by the main build block if -SkipBuild was not set
+    # and $Target was auto-assigned from filter.
 
     if ($TestFilter) {
         Write-Host "  Internal filter: $TestFilter" -ForegroundColor Yellow

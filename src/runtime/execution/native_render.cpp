@@ -4,6 +4,7 @@
 #include "tachyon/runtime/execution/render_progress_sink.h"
 #include "tachyon/runtime/execution/jobs/render_job.h"
 #include "tachyon/runtime/profiling/render_profiler.h"
+#include "tachyon/renderer2d/effects/effect_registry.h"
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -24,6 +25,9 @@ RenderSessionResult NativeRenderer::render(
     const RenderJob& job,
     const NativeRenderOptions& options) {
     
+    // Initialize registries early so they are available for compilation and planning
+    renderer2d::EffectRegistry::instance();
+
     RenderProgressSink* sink = get_sink(options.progress_sink);
     RenderSessionResult result;
     const auto total_start = std::chrono::high_resolution_clock::now();

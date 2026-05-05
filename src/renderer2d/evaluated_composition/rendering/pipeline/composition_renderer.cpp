@@ -29,6 +29,7 @@
 #include "tachyon/core/animation/easing.h"
 #include "tachyon/renderer2d/evaluated_composition/rendering/pipeline/scene3d_bridge.h"
 #include "tachyon/core/math/algebra/vector2.h"
+#include "tachyon/media/management/media_manager.h"
 #include "tachyon/renderer2d/deform/mesh_deform.h"
 #include <algorithm>
 #include <cmath>
@@ -274,6 +275,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
         for (std::size_t i = 0; i < state.layers.size(); ++i) {
             if (render_context.cancel_flag && render_context.cancel_flag->load()) break;
             const auto& layer = state.layers[i];
+            
             if (!layer.enabled || !layer.active) {
                 continue;
             }
@@ -527,7 +529,6 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
             // Layer Transitions - Unified transition pipeline
             if (render_context.policy.effects_enabled) {
-                init_builtin_transitions();
                 const double layer_time = task.time_seconds;
                 bool in_transition = false;
                 bool out_transition = false;
@@ -578,16 +579,20 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
                         // Apply transition pixel by pixel
                         SurfaceRGBA transition_result(layer_surface->width(), layer_surface->height());
-                        const float width = static_cast<float>(std::max<std::uint32_t>(1U, transition_input.width()));
-                        const float height = static_cast<float>(std::max<std::uint32_t>(1U, transition_input.height()));
+                        const float layer_w = static_cast<float>(layer.width);
+                        const float layer_h = static_cast<float>(layer.height);
+                        const float offset_x = tile_rect ? static_cast<float>(tile_rect->x) : 0.0f;
+                        const float offset_y = tile_rect ? static_cast<float>(tile_rect->y) : 0.0f;
 
-                        for (std::uint32_t y = 0; y < transition_result.height(); ++y) {
-                            if (render_context.cancel_flag && render_context.cancel_flag->load()) break;
+                        #pragma omp parallel for schedule(static)
+                        for (int y = 0; y < static_cast<int>(transition_result.height()); ++y) {
+                            if (render_context.cancel_flag && render_context.cancel_flag->load()) continue;
                             for (std::uint32_t x = 0; x < transition_result.width(); ++x) {
-                                const float u = (static_cast<float>(x) + 0.5f) / width;
-                                const float v = (static_cast<float>(y) + 0.5f) / height;
+                                // Use global UVs relative to the full layer, not the tile
+                                const float u = (static_cast<float>(x) + offset_x + 0.5f) / layer_w;
+                                const float v = (static_cast<float>(y) + offset_y + 0.5f) / layer_h;
                                 const Color out = transition_spec->function(u, v, static_cast<float>(transition_t), transition_input, &transition_to);
-                                transition_result.set_pixel(x, y, out);
+                                transition_result.set_pixel(x, static_cast<std::uint32_t>(y), out);
                             }
                         }
                         *layer_surface = std::move(transition_result);
@@ -638,9 +643,11 @@ RasterizedFrame2D render_evaluated_composition_2d(
         state.layers.begin(),
         state.layers.end(),
         [](const auto& layer) {
+            bool has_transition = (!layer.transition_in.transition_id.empty() && layer.transition_in.type != "none") ||
+                                  (!layer.transition_out.transition_id.empty() && layer.transition_out.type != "none");
             return layer.enabled
                 && layer.active
-                && (!layer.effects.empty() || !layer.animated_effects.empty());
+                && (!layer.effects.empty() || !layer.animated_effects.empty() || has_transition);
         });
 
     if (context.policy.tile_size > 0 && !has_effectful_layers) {

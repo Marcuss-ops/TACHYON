@@ -31,6 +31,9 @@ set(TachyonRenderer2DSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/surface/surface_composite.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/draw_primitives.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/glsl_transition_effect.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/transitions/basic_transitions.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/transitions/light_leak_transitions.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/transitions/artistic_transitions.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/utility_effects.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/glitch.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/effects/effect_renderer.cpp

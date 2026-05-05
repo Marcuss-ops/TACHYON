@@ -9,24 +9,24 @@ bool run_transition_preset_registry_tests() {
 
     std::cout << "Running TransitionPresetRegistry tests..." << std::endl;
 
-    auto& registry = TransitionPresetRegistry::instance();
+    auto& preset_registry = TransitionPresetRegistry::instance();
 
     {
-        auto ids = registry.list_ids();
+        auto ids = preset_registry.list_ids();
         // 19 GLSL presets + 'none'
         assert(ids.size() == 20);
-        assert(registry.find("tachyon.transition.crossfade") != nullptr);
-        assert(registry.find("tachyon.transition.slide_up") != nullptr);
-        assert(registry.find("tachyon.transition.swipe_left") != nullptr);
+        assert(preset_registry.find("tachyon.transition.crossfade") != nullptr);
+        assert(preset_registry.find("tachyon.transition.slide_up") != nullptr);
+        assert(preset_registry.find("tachyon.transition.swipe_left") != nullptr);
     }
 
     // 2. Known ids still resolve to the registered preset.
     {
-        registry::ParameterBag params;
+        tachyon::registry::ParameterBag params;
         params.set("id", std::string("tachyon.transition.crossfade"));
         params.set("duration", 0.5);
 
-        auto spec = registry.create("tachyon.transition.crossfade", params);
+        auto spec = preset_registry.create("tachyon.transition.crossfade", params);
         assert(spec.type == "tachyon.transition.crossfade");
         assert(spec.transition_id == "tachyon.transition.crossfade");
         assert(spec.duration == 0.5);
@@ -34,12 +34,12 @@ bool run_transition_preset_registry_tests() {
 
     // 3. Unknown ids are preserved as explicit no-op specs.
     {
-        registry::ParameterBag params;
+        tachyon::registry::ParameterBag params;
         params.set("id", std::string("tachyon.transition.missing_preset"));
         params.set("duration", 0.8);
         params.set("delay", 0.25);
 
-        auto spec = registry.create("tachyon.transition.missing_preset", params);
+        auto spec = preset_registry.create("tachyon.transition.missing_preset", params);
         assert(spec.type == "none");
         assert(spec.kind == TransitionKind::None);
         assert(spec.transition_id == "tachyon.transition.missing_preset");
