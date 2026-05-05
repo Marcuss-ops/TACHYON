@@ -14,6 +14,7 @@ void register_builtin(
     registry.register_spec({
         id,
         {id, name, "Professional blur effect.", "effect." + category, {"blur", category}},
+        {}, // ParameterSchema
         [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             T effect;
             output = effect.apply(input, params);

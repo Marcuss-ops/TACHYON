@@ -24,11 +24,27 @@ void add_keyframe_v2(std::vector<Vector2KeyframeSpec>& kfs, double time, double 
 } // namespace
 
 void Animation2DPresetRegistry::load_builtins() {
+    using namespace registry;
+
+    auto get_anim_params = [](const ParameterBag& p) {
+        struct {
+            double duration;
+            double delay;
+            float intensity;
+        } res;
+        res.duration  = p.get_or<double>("duration", 1.0);
+        res.delay     = p.get_or<double>("delay", 0.0);
+        res.intensity = static_cast<float>(p.get_or<double>("intensity", 1.0));
+        return res;
+    };
+
     // 1. Pop In: A bouncy scale-up entrance
     register_spec({
         "tachyon.anim2d.pop_in",
         {"tachyon.anim2d.pop_in", "Pop In", "Bouncy scale-up entrance animation.", "animation.2d", {"entrance", "pop", "bouncy"}},
-        [](LayerSpec& layer, const Animation2DParams& params) {
+        {},
+        [get_anim_params](LayerSpec& layer, const ParameterBag& p) {
+            auto params = get_anim_params(p);
             auto& scale = layer.transform.scale_property;
             scale.keyframes.clear();
             add_keyframe_v2(scale.keyframes, params.delay, 0.0, 0.0, animation::EasingPreset::EaseOut);
@@ -41,7 +57,9 @@ void Animation2DPresetRegistry::load_builtins() {
     register_spec({
         "tachyon.anim2d.soft_pulse",
         {"tachyon.anim2d.soft_pulse", "Soft Pulse", "Gentle breathing scale animation.", "animation.2d", {"loop", "pulse", "subtle"}},
-        [](LayerSpec& layer, const Animation2DParams& params) {
+        {},
+        [get_anim_params](LayerSpec& layer, const ParameterBag& p) {
+            auto params = get_anim_params(p);
             auto& scale = layer.transform.scale_property;
             scale.keyframes.clear();
             double t = params.delay;
@@ -56,7 +74,9 @@ void Animation2DPresetRegistry::load_builtins() {
     register_spec({
         "tachyon.anim2d.subtle_drift",
         {"tachyon.anim2d.subtle_drift", "Subtle Drift", "Slow floating vertical motion.", "animation.2d", {"loop", "drift", "subtle"}},
-        [](LayerSpec& layer, const Animation2DParams& params) {
+        {},
+        [get_anim_params](LayerSpec& layer, const ParameterBag& p) {
+            auto params = get_anim_params(p);
             auto& pos = layer.transform.position_property;
             pos.keyframes.clear();
             double offset = 20.0 * params.intensity;
@@ -70,7 +90,9 @@ void Animation2DPresetRegistry::load_builtins() {
     register_spec({
         "tachyon.anim2d.smooth_rotate",
         {"tachyon.anim2d.smooth_rotate", "Smooth Rotate", "Gentle pendulum-like rotation.", "animation.2d", {"loop", "rotate", "subtle"}},
-        [](LayerSpec& layer, const Animation2DParams& params) {
+        {},
+        [get_anim_params](LayerSpec& layer, const ParameterBag& p) {
+            auto params = get_anim_params(p);
             auto& rot = layer.transform.rotation_property;
             rot.keyframes.clear();
             double angle = 5.0 * params.intensity;

@@ -14,8 +14,8 @@ set(TachyonCLICoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/report.cpp
 )
 
-# TachyonCLI studio-specific sources
-set(TachyonCLIStudioSources
+# TachyonCLI catalog-specific sources
+set(TachyonCLICatalogSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/cli_demo.cpp
 )
 

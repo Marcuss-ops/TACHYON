@@ -11,8 +11,8 @@ bool run_transition_preset_registry_tests() {
 
     {
         auto ids = registry.list_ids();
-        // 17 GLSL presets + 'none'
-        assert(ids.size() == 18);
+        // 19 GLSL presets + 'none'
+        assert(ids.size() == 20);
         assert(registry.find("tachyon.transition.crossfade") != nullptr);
         assert(registry.find("tachyon.transition.slide_up") != nullptr);
         assert(registry.find("tachyon.transition.swipe_left") != nullptr);

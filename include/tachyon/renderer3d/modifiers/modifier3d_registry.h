@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/core/registry/parameter_schema.h"
 #include "tachyon/core/registry/registry_metadata.h"
 #include "tachyon/core/registry/typed_registry.h"
 #include "tachyon/renderer3d/modifiers/i3d_modifier.h"
@@ -19,6 +20,7 @@ namespace tachyon::renderer3d {
 struct Modifier3DDescriptor {
     std::string id;
     registry::RegistryMetadata metadata;
+    registry::ParameterSchema schema;
     using Factory = std::function<std::unique_ptr<I3DModifier>(const ThreeDModifierSpec&)>;
     Factory factory;
 };

@@ -288,6 +288,41 @@ Color transition_film_burn(float u, float v, float t, const SurfaceRGBA& input, 
     return screen_over(base, burn, intensity);
 }
 
+Color transition_kaleidoscope(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    const float dx = u - 0.5f;
+    const float dy = v - 0.5f;
+    const float radius = std::sqrt(dx * dx + dy * dy);
+    const float angle = std::atan2(dy, dx);
+    
+    const float sides = 6.0f;
+    const float segment = 6.28318530718f / sides;
+    float local_angle = std::fmod(angle, segment);
+    if (local_angle < 0.0f) local_angle += segment;
+    if (local_angle > segment * 0.5f) local_angle = segment - local_angle;
+    
+    const float zoom = 1.0f - t * 0.5f;
+    const float ru = 0.5f + std::cos(local_angle) * radius * zoom;
+    const float rv = 0.5f + std::sin(local_angle) * radius * zoom;
+    
+    const Color a = sample_uv(input, ru, rv);
+    const Color b = sample_transition_source(input, to_surface, u, v);
+    return Color::lerp(a, b, t);
+}
+
+Color transition_ripple(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    const float dx = u - 0.5f;
+    const float dy = v - 0.5f;
+    const float dist = std::sqrt(dx * dx + dy * dy);
+    
+    const float wave = std::sin(dist * 30.0f - t * 20.0f) * 0.03f * (1.0f - t);
+    const float ru = u + wave * (dx / dist);
+    const float rv = v + wave * (dy / dist);
+    
+    const Color a = sample_uv(input, ru, rv);
+    const Color b = sample_transition_source(input, to_surface, u, v);
+    return Color::lerp(a, b, t);
+}
+
 void register_builtin_transitions() {
     static std::once_flag flag;
     std::call_once(flag, []() {
@@ -323,6 +358,8 @@ void register_builtin_transitions() {
         register_builtin("tachyon.transition.flash", "Flash", "White flash transition", transition_flash);
         register_builtin("tachyon.transition.light_leak", "Light Leak", "Warm orange light leak", transition_light_leak);
         register_builtin("tachyon.transition.film_burn", "Film Burn", "Fiery red-orange film burn", transition_film_burn);
+        register_builtin("tachyon.transition.kaleidoscope", "Kaleidoscope", "Dynamic kaleidoscope transition", transition_kaleidoscope);
+        register_builtin("tachyon.transition.ripple", "Ripple", "Water ripple transition", transition_ripple);
     });
 }
 
@@ -340,7 +377,13 @@ SurfaceRGBA GlslTransitionEffect::apply(const SurfaceRGBA& input, const EffectPa
     const TransitionSpec* transition_spec = nullptr;
     const auto transition_it = params.strings.find("transition_id");
     if (transition_it != params.strings.end()) {
+        printf("GLSL Transition lookup: %s\n", transition_it->second.c_str());
         transition_spec = TransitionRegistry::instance().find(transition_it->second);
+        if (transition_spec) {
+            printf("  Found spec: %s\n", transition_spec->name.c_str());
+        } else {
+            printf("  Spec NOT found!\n");
+        }
     }
 
     const SurfaceRGBA* to_surface = nullptr;

@@ -23,10 +23,9 @@ const BackgroundKindSpec* BackgroundKindRegistry::find(std::string_view id) cons
 
 std::optional<ProceduralSpec> BackgroundKindRegistry::create(
     std::string_view id,
-    const background::procedural_bg::ProceduralParams& palette,
-    const BackgroundParams& params) const {
+    const registry::ParameterBag& params) const {
     if (const auto* spec = find(id)) {
-        return spec->factory(palette, params);
+        return spec->factory(params);
     }
     return std::nullopt;
 }

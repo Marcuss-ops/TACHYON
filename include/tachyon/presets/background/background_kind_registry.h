@@ -1,9 +1,11 @@
 #pragma once
 
+#include "tachyon/core/registry/parameter_bag.h"
 #include "tachyon/core/registry/registry_metadata.h"
 #include "tachyon/core/registry/typed_registry.h"
 #include "tachyon/core/spec/schema/objects/procedural_spec.h"
 #include "tachyon/presets/background/background_params.h"
+#include "tachyon/core/registry/parameter_schema.h"
 #include <functional>
 #include <memory>
 #include <optional>
@@ -20,7 +22,8 @@ struct ProceduralParams;
 struct BackgroundKindSpec {
     std::string id;
     registry::RegistryMetadata metadata;
-    std::function<ProceduralSpec(const background::procedural_bg::ProceduralParams&, const BackgroundParams&)> factory;
+    registry::ParameterSchema schema;
+    std::function<ProceduralSpec(const registry::ParameterBag&)> factory;
 };
 
 class BackgroundKindRegistry {
@@ -32,8 +35,7 @@ public:
 
     [[nodiscard]] std::optional<ProceduralSpec> create(
         std::string_view id,
-        const background::procedural_bg::ProceduralParams& palette,
-        const BackgroundParams& params
+        const registry::ParameterBag& params
     ) const;
 
     [[nodiscard]] std::vector<std::string> list_ids() const;

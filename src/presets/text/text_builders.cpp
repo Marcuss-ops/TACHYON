@@ -40,12 +40,13 @@ LayerSpec build_text(const TextParams& p) {
     
     // Otherwise, use the registry for the named animation
     std::string anim_id = p.animation.empty() ? "tachyon.textanim.fade_up" : p.animation;
-    l.text_animators = tachyon::presets::TextAnimatorPresetRegistry::instance().create(
-        anim_id,
-        "characters_excluding_spaces",
-        p.stagger_delay,
-        p.reveal_duration
-    );
+    
+    registry::ParameterBag bag;
+    bag.set("based_on", "characters_excluding_spaces");
+    bag.set("stagger_delay", static_cast<double>(p.stagger_delay));
+    bag.set("reveal_duration", static_cast<double>(p.reveal_duration));
+
+    l.text_animators = tachyon::presets::TextAnimatorPresetRegistry::instance().create(anim_id, bag);
 
     return l;
 }
