@@ -96,7 +96,7 @@ LayerSpec build_background(const BackgroundParams& p) {
         if (p.mouse_radius) bag.set("mouse_radius", *p.mouse_radius);
         bag.set("mouse_x", p.mouse_x);
         bag.set("mouse_y", p.mouse_y);
-        bag.set("shape", p.shape);
+        if (p.shape) bag.set("shape", *p.shape);
 
         spec = registry.create(normalized_kind, bag);
         if (!spec) {

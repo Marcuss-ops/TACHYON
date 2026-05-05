@@ -1,3 +1,4 @@
+#include "tachyon/presets/background/background_kind_registry.h"
 #include "tachyon/presets/background/procedural.h"
 
 namespace tachyon::presets {

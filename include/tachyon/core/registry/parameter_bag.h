@@ -31,6 +31,10 @@ public:
         return value.has_value() ? *value : fallback;
     }
 
+    [[nodiscard]] bool contains(std::string_view key) const {
+        return values_.find(std::string(key)) != values_.end();
+    }
+
     [[nodiscard]] bool empty() const noexcept { return values_.empty(); }
 
 private:
