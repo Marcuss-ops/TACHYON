@@ -42,6 +42,7 @@ tachyon_assert_no_duplicate_sources(TachyonDiagnosticsSources)
 tachyon_assert_no_duplicate_sources(TachyonPresetsSources)
 tachyon_assert_no_duplicate_sources(TachyonRuntimeSources)
 tachyon_assert_no_duplicate_sources(TachyonRenderer2DSources)
+tachyon_assert_no_duplicate_sources(TachyonRenderer2DExtrasSources)
 tachyon_assert_no_duplicate_sources(TachyonRenderer3DSources)
 tachyon_assert_no_duplicate_sources(TachyonMediaSources)
 tachyon_assert_no_duplicate_sources(TachyonAudioSources)
@@ -153,12 +154,10 @@ target_link_libraries(TachyonBindingsC PUBLIC TachyonCore)
 
 add_library(TachyonDiagnostics STATIC ${TachyonDiagnosticsSources})
 tachyon_configure_common(TachyonDiagnostics)
-target_compile_definitions(TachyonDiagnostics PRIVATE TACHYON_BUILD_DLL)
 target_link_libraries(TachyonDiagnostics PUBLIC TachyonCore)
 
 add_library(TachyonSceneEval STATIC ${TachyonSceneEvalSources})
 tachyon_configure_common(TachyonSceneEval)
-target_compile_definitions(TachyonSceneEval PRIVATE TACHYON_BUILD_DLL)
 target_link_libraries(TachyonSceneEval
     PRIVATE
         TachyonCore
@@ -176,7 +175,6 @@ tachyon_link_omp(TachyonSceneEval)
 
 add_library(TachyonPresets STATIC ${TachyonPresetsSources})
 tachyon_configure_common(TachyonPresets)
-target_compile_definitions(TachyonPresets PRIVATE TACHYON_BUILD_DLL)
 target_link_libraries(TachyonPresets
     PUBLIC
         TachyonCore
@@ -234,6 +232,9 @@ if(TACHYON_ENABLE_TRACKER)
     target_link_libraries(TachyonRuntime PRIVATE TachyonTracker)
 endif()
 
+add_library(TachyonRenderer2DExtras STATIC ${TachyonRenderer2DExtrasSources})
+tachyon_configure_common(TachyonRenderer2DExtras)
+
 add_library(TachyonRenderer2D STATIC ${TachyonRenderer2DSources})
 tachyon_configure_common(TachyonRenderer2D)
 tachyon_link_text_deps(TachyonRenderer2D)
@@ -242,6 +243,7 @@ if(TACHYON_ENABLE_3D)
 endif()
 tachyon_link_omp(TachyonRenderer2D)
 target_link_libraries(TachyonRenderer2D PUBLIC TachyonColor)
+target_link_libraries(TachyonRenderer2D PUBLIC TachyonRenderer2DExtras)
 
 if(TACHYON_ENABLE_3D)
     add_library(TachyonRenderer3D STATIC ${TachyonRenderer3DSources})

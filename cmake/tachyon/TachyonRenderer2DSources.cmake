@@ -1,4 +1,4 @@
-# TachyonRenderer2D sources
+# TachyonRenderer2D core sources
 set(TachyonRenderer2DSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/audio/audio_sampling.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/backend/cpu_backend.cpp
@@ -26,13 +26,7 @@ set(TachyonRenderer2DSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/draw_primitives.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/glsl_transition_effect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/utility_effects.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/distort/warp_stabilizer_effect.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/generators/lens_flare_effect.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/generators/light_leak_effect.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/generators/light_leak_presets.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/generators/particle_effects.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/glitch.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/utility/number_counter_effect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/effects/effect_renderer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/matte_resolver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/pipeline/composition_renderer.cpp
@@ -43,7 +37,6 @@ set(TachyonRenderer2DSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/primitives/layer_renderer_procedural.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/primitives/layer_renderer_simple.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/primitives/mask_renderer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/primitives/media_card_mesh_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/primitives/text_mesh_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/utilities/composition_utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/utilities/raster.cpp
@@ -67,13 +60,23 @@ set(TachyonRenderer2DSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/resource/precomp_cache.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/resource/render_context.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/resource/texture_resolver.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/spec/project_card.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/text/freetype/freetype_manager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/text/glyph/glyph_loader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/text/shaping/font_shaping.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/text/shaping/shaping_cache.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/text/utf8/utf8_decoder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/text/utils/font_utils.cpp
+)
+
+set(TachyonRenderer2DExtrasSources
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/distort/warp_stabilizer_effect.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/generators/lens_flare_effect.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/generators/light_leak_effect.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/generators/light_leak_presets.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/generators/particle_effects.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/utility/number_counter_effect.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/primitives/media_card_mesh_builder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/spec/project_card.cpp
 )
 
 if(TACHYON_ENABLE_VULKAN)

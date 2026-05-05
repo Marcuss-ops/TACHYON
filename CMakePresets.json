@@ -2,7 +2,7 @@
   "version": 6,
   "configurePresets": [
     {
-      "name": "base",
+      "name": "base-vs",
       "hidden": true,
       "generator": "Visual Studio 17 2022",
       "architecture": {
@@ -16,8 +16,18 @@
       }
     },
     {
+      "name": "base-ninja",
+      "hidden": true,
+      "generator": "Ninja",
+      "cacheVariables": {
+        "TACHYON_ENABLE_COMPILER_CACHE": "ON",
+        "TACHYON_ENABLE_PCH": "OFF",
+        "TACHYON_ENABLE_ASAN": "OFF"
+      }
+    },
+    {
       "name": "dev",
-      "inherits": "base",
+      "inherits": "base-vs",
       "description": "Daily iteration preset with RelWithDebInfo symbols and the core test loop",
       "cacheVariables": {
         "TACHYON_ENABLE_ASAN": "OFF"
@@ -25,7 +35,7 @@
     },
     {
       "name": "dev-fast",
-      "inherits": "base",
+      "inherits": "base-vs",
       "description": "Faster inner loop preset with the smallest useful default build set",
       "cacheVariables": {
         "TACHYON_ENABLE_ASAN": "OFF"
@@ -33,7 +43,7 @@
     },
     {
       "name": "asan",
-      "inherits": "base",
+      "inherits": "base-vs",
       "description": "AddressSanitizer preset for memory and lifetime bugs",
       "binaryDir": "${sourceDir}/build/asan",
       "cacheVariables": {
@@ -41,133 +51,36 @@
       }
     },
     {
-      "name": "linux-ninja-debug",
-      "displayName": "Linux Ninja Debug",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/linux-ninja-debug",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "TACHYON_ENABLE_PCH": "OFF",
-        "TACHYON_ENABLE_ASAN": "OFF"
-      }
-    },
-    {
-      "name": "linux-clang-asan",
-      "displayName": "Linux Clang ASAN",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/linux-clang-asan",
+      "name": "linux-ci",
+      "inherits": "base-ninja",
+      "description": "Headless Linux/server CI preset",
+      "binaryDir": "${sourceDir}/build/linux-ci",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "CMAKE_CXX_COMPILER": "clang++",
         "TACHYON_ENABLE_PCH": "OFF",
-        "TACHYON_ENABLE_ASAN": "ON"
+        "TACHYON_ENABLE_PREVIEW_WINDOW": "OFF"
       }
     },
     {
-      "name": "linux-release",
-      "displayName": "Linux Release",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/linux-release",
+      "name": "windows-ci",
+      "inherits": "base-ninja",
+      "description": "Headless Windows CI preset",
+      "binaryDir": "${sourceDir}/build/windows-ci",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "TACHYON_ENABLE_PCH": "OFF",
+        "TACHYON_ENABLE_PREVIEW_WINDOW": "OFF"
+      }
+    },
+    {
+      "name": "release",
+      "inherits": "base-ninja",
+      "description": "Release build preset",
+      "binaryDir": "${sourceDir}/build/release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "TACHYON_ENABLE_PCH": "ON",
         "TACHYON_ENABLE_ASAN": "OFF"
-      }
-    },
-    {
-      "name": "linux-debug",
-      "displayName": "Linux Debug",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/linux-debug",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "TACHYON_ENABLE_PCH": "ON",
-        "TACHYON_ENABLE_ASAN": "OFF"
-      }
-    },
-    {
-      "name": "linux-relwithdebinfo",
-      "displayName": "Linux RelWithDebInfo",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/linux-relwithdebinfo",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "TACHYON_ENABLE_PCH": "ON",
-        "TACHYON_ENABLE_ASAN": "OFF"
-      }
-    },
-    {
-      "name": "linux-make-release",
-      "displayName": "Linux Make Release",
-      "generator": "Unix Makefiles",
-      "binaryDir": "${sourceDir}/build/linux-make-release",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "TACHYON_ENABLE_PCH": "ON",
-        "TACHYON_ENABLE_ASAN": "OFF"
-      }
-    },
-    {
-      "name": "linux-make-debug",
-      "displayName": "Linux Make Debug",
-      "generator": "Unix Makefiles",
-      "binaryDir": "${sourceDir}/build/linux-make-debug",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "TACHYON_ENABLE_PCH": "ON",
-        "TACHYON_ENABLE_ASAN": "OFF"
-      }
-    },
-    {
-      "name": "linux-make-relwithdebinfo",
-      "displayName": "Linux Make RelWithDebInfo",
-      "generator": "Unix Makefiles",
-      "binaryDir": "${sourceDir}/build/linux-make-relwithdebinfo",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "TACHYON_ENABLE_PCH": "ON",
-        "TACHYON_ENABLE_ASAN": "OFF"
-      }
-    },
-    {
-      "name": "windows-vs2022",
-      "displayName": "Windows VS 2022",
-      "generator": "Visual Studio 17 2022",
-      "architecture": {
-        "value": "x64"
-      },
-      "binaryDir": "${sourceDir}/build/windows-vs2022",
-      "cacheVariables": {
-        "TACHYON_ENABLE_COMPILER_CACHE": "ON",
-        "TACHYON_ENABLE_PCH": "ON",
-        "TACHYON_ENABLE_ASAN": "OFF"
-      }
-    },
-    {
-      "name": "windows-msvc",
-      "displayName": "Windows MSVC",
-      "generator": "Visual Studio 17 2022",
-      "architecture": {
-        "value": "x64"
-      },
-      "binaryDir": "${sourceDir}/build/windows-msvc",
-      "cacheVariables": {
-        "TACHYON_ENABLE_COMPILER_CACHE": "ON",
-        "TACHYON_ENABLE_PCH": "ON",
-        "TACHYON_ENABLE_ASAN": "OFF"
-      }
-    },
-    {
-      "name": "windows-ninja-msvc",
-      "displayName": "Windows Ninja MSVC",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/windows-ninja-msvc",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "TACHYON_ENABLE_COMPILER_CACHE": "ON",
-        "TACHYON_ENABLE_PCH": "OFF",
-        "TACHYON_ENABLE_ASAN": "OFF",
-        "TACHYON_TREAT_WARNINGS_AS_ERRORS": "OFF"
       }
     }
   ],
@@ -201,19 +114,28 @@
       ]
     },
     {
-      "name": "windows-ninja-msvc",
-      "configurePreset": "windows-ninja-msvc",
+      "name": "linux-ci",
+      "configurePreset": "linux-ci",
       "targets": [
         "TachyonCore",
-        "TachyonTests"
+        "TachyonTests",
+        "tachyon"
       ]
     },
     {
-      "name": "linux-ninja-debug",
-      "configurePreset": "linux-ninja-debug",
+      "name": "windows-ci",
+      "configurePreset": "windows-ci",
       "targets": [
         "TachyonCore",
-        "TachyonTests"
+        "TachyonTests",
+        "tachyon"
+      ]
+    },
+    {
+      "name": "release",
+      "configurePreset": "release",
+      "targets": [
+        "tachyon"
       ]
     }
   ]

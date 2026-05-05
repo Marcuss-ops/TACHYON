@@ -1,6 +1,5 @@
 #pragma once
 
-#include "tachyon/core/api.h"
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 #include <string>
 #include <string_view>
@@ -28,7 +27,7 @@ struct BackgroundPresetSpec {
  * @brief Registry for background presets.
  * Centralizes all procedural background generation logic.
  */
-class TACHYON_API BackgroundPresetRegistry {
+class BackgroundPresetRegistry {
 public:
     static BackgroundPresetRegistry& instance() {
         static BackgroundPresetRegistry registry;
@@ -70,7 +69,7 @@ private:
 /**
  * Compatibility wrapper functions.
  */
-TACHYON_API std::optional<LayerSpec> build_background_preset(std::string_view id, int width, int height);
-TACHYON_API std::vector<std::string> list_background_presets();
+std::optional<LayerSpec> build_background_preset(std::string_view id, int width, int height);
+std::vector<std::string> list_background_presets();
 
 } // namespace tachyon::presets

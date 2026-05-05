@@ -15,12 +15,14 @@ def main():
     
     if not tachyon_exe or not os.path.exists(tachyon_exe):
         fallbacks = [
-            "build/dev/RelWithDebInfo/tachyon.exe",
-            "build/linux-relwithdebinfo/src/tachyon",
-            "build/linux-make-release/src/tachyon",
             "build/src/RelWithDebInfo/tachyon.exe",
-            "build/linux-ninja-debug/src/tachyon",
-            "build/linux-relwithdebinfo/src/tachyon"
+            "build/asan/src/RelWithDebInfo/tachyon.exe",
+            "build/asan/src/tachyon",
+            "build/windows-ci/src/tachyon.exe",
+            "build/windows-ci/src/tachyon",
+            "build/linux-ci/src/tachyon",
+            "build/release/src/tachyon.exe",
+            "build/release/src/tachyon"
         ]
         for f in fallbacks:
             if os.path.exists(f):
