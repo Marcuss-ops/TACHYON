@@ -308,23 +308,21 @@ LayerBuilder& LayerBuilder::subtitle_path(std::string path) {
 }
 
 LayerBuilder& LayerBuilder::text_animation_preset(const std::string& id) {
-    spec_.text_animators = presets::TextAnimatorPresetRegistry::instance().create(id);
+    spec_.text_animators = presets::TextAnimatorPresetRegistry::instance().create(id, registry::ParameterBag{});
     return *this;
 }
 
 LayerBuilder& LayerBuilder::transition_in_preset(const std::string& id, double duration) {
-    presets::TransitionParams params;
-    params.id = id;
-    params.duration = duration;
-    spec_.transition_in = presets::TransitionPresetRegistry::instance().create(id, params);
+    registry::ParameterBag bag;
+    bag.set("duration", duration);
+    spec_.transition_in = presets::TransitionPresetRegistry::instance().create(id, bag);
     return *this;
 }
 
 LayerBuilder& LayerBuilder::transition_out_preset(const std::string& id, double duration) {
-    presets::TransitionParams params;
-    params.id = id;
-    params.duration = duration;
-    spec_.transition_out = presets::TransitionPresetRegistry::instance().create(id, params);
+    registry::ParameterBag bag;
+    bag.set("duration", duration);
+    spec_.transition_out = presets::TransitionPresetRegistry::instance().create(id, bag);
     return *this;
 }
 
@@ -464,7 +462,11 @@ CompositionBuilder& CompositionBuilder::background(BackgroundSpec background) {
 }
 
 CompositionBuilder& CompositionBuilder::background_preset(const std::string& id, double duration) {
-    if (auto bg_layer = presets::BackgroundPresetRegistry::instance().create(id, spec_.width, spec_.height, duration)) {
+    registry::ParameterBag bag;
+    bag.set("width", static_cast<int>(spec_.width));
+    bag.set("height", static_cast<int>(spec_.height));
+    bag.set("duration", duration);
+    if (auto bg_layer = presets::BackgroundPresetRegistry::instance().create(id, bag)) {
         spec_.layers.insert(spec_.layers.begin(), std::move(*bg_layer));
     }
     return *this;

@@ -14,6 +14,7 @@ void register_builtin(
     registry.register_spec({
         id,
         {id, name, "Professional distortion effect.", "effect." + category, {"distort", category}},
+        {}, // ParameterSchema
         [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             T effect;
             output = effect.apply(input, params);
@@ -35,6 +36,7 @@ void register_glitch_effects(EffectRegistry& registry) {
     registry.register_spec({
         "tachyon.effect.distort.glitch",
         {"tachyon.effect.distort.glitch", "Digital Glitch", "Digital artifacting and displacement.", "effect.distort", {"glitch", "artifact"}},
+        {}, // ParameterSchema
         [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             (void)params;
             output = input;

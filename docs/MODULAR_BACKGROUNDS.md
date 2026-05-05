@@ -12,7 +12,7 @@ La logica è stata rifattorizzata in [layer_renderer_procedural.cpp](file:///c:/
 - `stripes`: Pattern a strisce procedurale.
 
 ## Utilizzo Modulare (The API)
-I background sono definiti come **Componenti** nella libreria [backgrounds.json](file:///c:/Users/pater/Pyt/Tachyon/studio/library/system/backgrounds.json).
+I background sono definiti come **Componenti** nella libreria [backgrounds.json](file:///c:/Users/pater/Pyt/Tachyon/assets/catalog/system/backgrounds.json).
 
 ### Come "chiamare" un background in una scena:
 Per usare un background "Aura Modern" in una nuova composizione, basta aggiungere un `component_instance` nel JSON della scena:

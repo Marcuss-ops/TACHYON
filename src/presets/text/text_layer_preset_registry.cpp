@@ -19,9 +19,9 @@ const TextLayerPresetSpec* TextLayerPresetRegistry::find(std::string_view id) co
     return registry_.find(id);
 }
 
-std::optional<LayerSpec> TextLayerPresetRegistry::create(std::string_view id, const std::string& content, const TextParams& p) const {
+std::optional<LayerSpec> TextLayerPresetRegistry::create(std::string_view id, const registry::ParameterBag& params) const {
     if (const auto* spec = find(id)) {
-        return spec->factory(content, p);
+        return spec->factory(params);
     }
     return std::nullopt;
 }

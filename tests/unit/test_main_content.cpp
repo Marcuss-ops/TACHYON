@@ -1,7 +1,7 @@
 #include "test_utils.h"
 #include <vector>
 
-bool run_studio_library_tests();
+bool run_catalog_tests();
 bool run_glyph_cache_tests();
 bool run_text_tests();
 bool run_audio_trim_tests();
@@ -18,7 +18,7 @@ namespace tachyon { bool run_preset_audit_tests(); }
 int main(int argc, char** argv) {
     using namespace tachyon::test;
     std::vector<TestCase> tests = {
-        {"studio_library", run_studio_library_tests},
+        {"catalog", run_catalog_tests},
         {"glyph_cache", run_glyph_cache_tests},
         {"text", run_text_tests},
         {"audio_trim", run_audio_trim_tests},

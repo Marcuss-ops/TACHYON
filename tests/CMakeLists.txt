@@ -229,7 +229,7 @@ endif()
 
 add_executable(TachyonContentTests
     unit/test_main_content.cpp
-    unit/studio/studio_library_tests.cpp
+    unit/core/catalog/catalog_tests.cpp
     unit/text/glyph_cache_tests.cpp
     unit/text/text_tests.cpp
     unit/text/text_preset_tests.cpp
@@ -256,7 +256,7 @@ target_link_libraries(TachyonContentTests
         TachyonScene
         TachyonText
         TachyonAudio
-        TachyonStudio
+        TachyonCatalog
         TachyonRenderer2D
         TachyonPlatform
         TachyonRuntime

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/core/registry/parameter_schema.h"
 #include "tachyon/core/registry/registry_metadata.h"
 #include "tachyon/core/spec/schema/common/common_spec.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
@@ -37,6 +38,7 @@ struct EffectDescriptor {
 
     std::string id;
     registry::RegistryMetadata metadata;
+    registry::ParameterSchema schema;
     Factory factory;
     
     std::vector<AuxSurfaceRequirement> aux_requirements;

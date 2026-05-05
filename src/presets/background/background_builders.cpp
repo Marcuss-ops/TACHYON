@@ -5,6 +5,10 @@
 #include <optional>
 #include <unordered_map>
 
+namespace tachyon::presets::background {
+    std::string normalize_background_kind(std::string_view legacy_id);
+}
+
 namespace tachyon::presets {
 
 namespace {
@@ -72,14 +76,33 @@ LayerSpec build_background(const BackgroundParams& p) {
     });
 
     const auto& registry = BackgroundKindRegistry::instance();
-    const std::string selected_kind = p.kind;
+    const std::string normalized_kind = background::normalize_background_kind(p.kind);
 
     std::optional<ProceduralSpec> spec;
-    if (!selected_kind.empty()) {
-        spec = registry.create(selected_kind, palette, p);
+    if (!normalized_kind.empty()) {
+        registry::ParameterBag bag;
+        bag.set("palette.a", palette.palette_a);
+        bag.set("palette.b", palette.palette_b);
+        bag.set("palette.c", palette.palette_c);
+        bag.set("motion_speed", palette.motion_speed);
+        bag.set("contrast", palette.contrast);
+        bag.set("grain", palette.grain);
+        bag.set("softness", palette.softness);
+        bag.set("seed", static_cast<int>(palette.seed));
+        
+        if (p.spacing) bag.set("spacing", *p.spacing);
+        if (p.border_width) bag.set("border_width", *p.border_width);
+        if (p.mouse_influence) bag.set("mouse_influence", *p.mouse_influence);
+        if (p.mouse_radius) bag.set("mouse_radius", *p.mouse_radius);
+        bag.set("mouse_x", p.mouse_x);
+        bag.set("mouse_y", p.mouse_y);
+        if (p.shape) bag.set("shape", *p.shape);
+
+        spec = registry.create(normalized_kind, bag);
         if (!spec) {
+            // Fallback to placeholder if not found in registry
             ProceduralSpec placeholder;
-            placeholder.kind = selected_kind;
+            placeholder.kind = normalized_kind;
             spec = std::move(placeholder);
         }
     }
@@ -93,7 +116,7 @@ LayerSpec build_background(const BackgroundParams& p) {
         layer.enabled = false;
     }
 
-    layer.preset_id = selected_kind;
+    layer.preset_id = normalized_kind;
     return layer;
 }
 

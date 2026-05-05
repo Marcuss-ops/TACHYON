@@ -23,41 +23,29 @@ enum class ProceduralFamily {
 };
 
 ProceduralFamily resolve_family(const ProceduralSpec& spec) {
-    const bool has_galaxy_fields =
-        spec.star_speed.value.has_value() ||
-        spec.density.value.has_value() ||
-        spec.hue_shift.value.has_value() ||
-        spec.twinkle_intensity.value.has_value() ||
-        spec.rotation_speed.value.has_value() ||
-        spec.repulsion_strength.value.has_value() ||
-        spec.auto_center_repulsion.value.has_value();
+    if (spec.kind == "tachyon.background.kind.aura") return ProceduralFamily::AuraLike;
+    if (spec.kind == "tachyon.background.kind.grid") return ProceduralFamily::Grid;
+    if (spec.kind == "tachyon.background.kind.grid_modern") return ProceduralFamily::GridLines;
+    if (spec.kind == "tachyon.background.kind.ripple_grid") return ProceduralFamily::GridLines;
+    if (spec.kind == "tachyon.background.kind.galaxy") return ProceduralFamily::Galaxy;
+    if (spec.kind == "tachyon.background.kind.stars") return ProceduralFamily::Stars;
+    
+    // Legacy support or fallback
+    if (spec.kind == "aura") return ProceduralFamily::AuraLike;
+    if (spec.kind == "grid") return ProceduralFamily::Grid;
+    if (spec.kind == "galaxy") return ProceduralFamily::Galaxy;
 
-    if (has_galaxy_fields) {
-        return ProceduralFamily::Galaxy;
-    }
+    // Fallback to field-based guessing only if kind is empty
+    if (spec.kind.empty()) {
+        const bool has_galaxy_fields =
+            spec.star_speed.value.has_value() ||
+            spec.density.value.has_value();
+        if (has_galaxy_fields) return ProceduralFamily::Galaxy;
 
-    const bool has_grid_fields =
-        spec.spacing.value.has_value() ||
-        spec.border_width.value.has_value() ||
-        spec.shape != "square";
-
-    const bool has_grid_line_fields =
-        has_grid_fields &&
-        (spec.glow_intensity.value.value_or(0.0) > 0.0 ||
-         spec.scanline_intensity.value.value_or(0.0) > 0.0);
-
-    if (has_grid_line_fields) {
-        return ProceduralFamily::GridLines;
-    }
-
-    if (has_grid_fields) {
-        return ProceduralFamily::Grid;
-    }
-
-    if (spec.frequency.value.value_or(0.0) > 20.0 &&
-        spec.star_speed.value.value_or(0.0) == 0.0 &&
-        spec.density.value.value_or(0.0) == 0.0) {
-        return ProceduralFamily::Stars;
+        const bool has_grid_fields =
+            spec.spacing.value.has_value() ||
+            spec.border_width.value.has_value();
+        if (has_grid_fields) return ProceduralFamily::Grid;
     }
 
     return ProceduralFamily::AuraLike;

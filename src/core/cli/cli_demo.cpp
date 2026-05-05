@@ -7,7 +7,7 @@
 #include "tachyon/renderer2d/effects/effect_utils.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/execution/session/render_session.h"
-#include "tachyon/studio/studio_library.h"
+#include "tachyon/core/catalog/catalog.h"
 #include "cli_internal.h"
 
 #include <cmath>
@@ -18,6 +18,7 @@
 #include <map>
 #include <vector>
 #include <sstream>
+#include <string_view>
 
 namespace tachyon {
 namespace {
@@ -51,41 +52,42 @@ std::filesystem::path resolve_library_root(const std::filesystem::path& requeste
 
     const std::filesystem::path current = std::filesystem::current_path();
     const std::vector<std::filesystem::path> candidates = {
-        current / "studio" / "library",
-        current.parent_path() / "studio" / "library",
-        current.parent_path().parent_path() / "studio" / "library"
+        current / "assets" / "catalog",
+        current.parent_path() / "assets" / "catalog",
+        current.parent_path().parent_path() / "assets" / "catalog"
     };
 
     for (const auto& candidate : candidates) {
-        if (std::filesystem::exists(candidate / "system")) {
+        if (std::filesystem::exists(candidate)) {
             return std::filesystem::absolute(candidate);
         }
     }
 
-    return std::filesystem::absolute(current / "studio" / "library");
+    return std::filesystem::absolute(current / "assets" / "catalog");
 }
 
 std::optional<TransitionDemoConfig> load_transition_demo(
-    const StudioTransitionEntry& entry,
+    const CatalogTransitionEntry& entry,
     DiagnosticBag& diagnostics) {
     TransitionDemoConfig config;
     config.transition_id = entry.id;
     config.name = entry.name;
-    config.source_scene_id = "tachyon.scene.enhanced_text";
-    config.target_scene_id = "tachyon.scene.modern_grid";
+    config.source_scene_id = "scene_a";
+    config.target_scene_id = "scene_b";
     config.output_dir = entry.output_dir;
-    config.file_prefix = entry.manifest_path.parent_path().filename().string();
+    constexpr std::string_view prefix = "tachyon.transition.";
+    config.file_prefix = entry.id.rfind(prefix, 0) == 0 ? entry.id.substr(prefix.size()) : entry.id;
     config.output_format = "mp4";
-    config.duration_seconds = entry.duration_seconds;
-    config.lead_in_seconds = 8.0;
-    config.lead_out_seconds = 4.0;
+    config.duration_seconds = 1.0;
+    config.lead_in_seconds = 1.0;
+    config.lead_out_seconds = 1.0;
     config.progress_start = 0.0;
     config.progress_end = 1.0;
     config.preview_frame_count = 12;
     config.preview_resolution_scale = 1.0f;
 
     if (config.file_prefix.empty()) {
-        diagnostics.add_error("studio.demo_invalid", "Transition asset path is missing a folder name.");
+        diagnostics.add_error("studio.demo_invalid", "Transition id is missing a file prefix.");
         return std::nullopt;
     }
 
@@ -234,7 +236,7 @@ std::optional<renderer2d::SurfaceRGBA> render_scene_still(
 
 std::optional<std::reference_wrapper<const CachedSceneStill>> render_scene_still_cached(
     const std::string& scene_id,
-    const StudioLibrary& library,
+    const TachyonCatalog& library,
     std::map<std::string, CachedSceneStill>& cache,
     std::ostream& err) {
     const auto cache_it = cache.find(scene_id);
@@ -243,7 +245,36 @@ std::optional<std::reference_wrapper<const CachedSceneStill>> render_scene_still
     }
 
     double fps = 30.0;
-    const auto scene = library.instantiate_scene(scene_id);
+    SceneSpec scene;
+    if (scene_id == "scene_a" || scene_id == "scene_b") {
+        const std::string filename = scene_id + ".png";
+        const std::filesystem::path asset_path = library.root() / "assets" / filename;
+        
+        AssetSpec asset;
+        asset.id = scene_id + "_asset";
+        asset.path = asset_path.generic_string();
+        asset.type = "image";
+        scene.assets.push_back(asset);
+        
+        CompositionSpec comp;
+        comp.id = "main";
+        comp.width = 1920;
+        comp.height = 1080;
+        comp.duration = 1.0;
+        comp.frame_rate = {30, 1};
+        
+        LayerSpec layer;
+        layer.id = "image";
+        layer.type = "image";
+        layer.asset_id = asset.id;
+        layer.width = 1920;
+        layer.height = 1080;
+        comp.layers.push_back(layer);
+        scene.compositions.push_back(comp);
+    } else {
+        scene = library.instantiate_scene(scene_id);
+    }
+
     if (scene.compositions.empty()) {
         err << "unknown or empty studio scene: " << scene_id << '\n';
         return std::nullopt;
@@ -291,7 +322,7 @@ renderer2d::SurfaceRGBA preview_surface(const renderer2d::SurfaceRGBA& src, floa
 RenderPlan make_output_plan(const std::filesystem::path& output_dir, const std::string& prefix) {
     RenderPlan plan;
     plan.job_id = "studio-demo";
-    plan.scene_ref = "studio/library";
+    plan.scene_ref = "assets/catalog";
     plan.composition_target = prefix;
     plan.composition.id = prefix;
     plan.composition.name = prefix;
@@ -422,13 +453,13 @@ bool render_transition_demo(
 
 bool run_studio_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err) {
     const std::filesystem::path library_root = resolve_library_root(options.library_path);
-    StudioLibrary library(library_root);
+    TachyonCatalog library(library_root);
     if (!library.ok()) {
         print_diagnostics(library.diagnostics(), err);
         return false;
     }
 
-    std::vector<StudioTransitionEntry> transitions;
+    std::vector<CatalogTransitionEntry> transitions;
     if (options.transition_id.has_value()) {
         const auto transition = library.find_transition(*options.transition_id);
         if (!transition.has_value()) {

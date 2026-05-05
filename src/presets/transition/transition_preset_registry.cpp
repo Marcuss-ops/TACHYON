@@ -4,14 +4,14 @@ namespace tachyon::presets {
 
 namespace {
 
-LayerTransitionSpec make_basic_spec(const TransitionParams& p) {
+LayerTransitionSpec make_basic_spec(const registry::ParameterBag& p) {
     LayerTransitionSpec spec;
-    spec.transition_id = p.id;
-    spec.type          = p.id.empty() ? "none" : p.id;
-    spec.duration      = p.duration;
-    spec.easing        = p.easing;
-    spec.delay         = p.delay;
-    spec.direction     = p.direction;
+    spec.transition_id = p.get_or<std::string>("id", "");
+    spec.type          = spec.transition_id.empty() ? "none" : spec.transition_id;
+    spec.duration      = p.get_or<double>("duration", 0.4);
+    spec.easing        = static_cast<animation::EasingPreset>(p.get_or<int>("easing", static_cast<int>(animation::EasingPreset::EaseOut)));
+    spec.delay         = p.get_or<double>("delay", 0.0);
+    spec.direction     = p.get_or<std::string>("direction", "none");
     return spec;
 }
 
@@ -34,7 +34,7 @@ const TransitionPresetSpec* TransitionPresetRegistry::find(std::string_view id) 
     return registry_.find(id);
 }
 
-LayerTransitionSpec TransitionPresetRegistry::create(std::string_view id, const TransitionParams& params) const {
+LayerTransitionSpec TransitionPresetRegistry::create(std::string_view id, const registry::ParameterBag& params) const {
     if (id.empty() || id == "none") {
         LayerTransitionSpec spec;
         spec.type = "none";

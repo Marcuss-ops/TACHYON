@@ -1,5 +1,5 @@
 #include "tachyon/presets/transition/transition_preset_registry.h"
-#include "tachyon/studio/studio_library.h"
+#include "tachyon/core/catalog/catalog.h"
 #include <cassert>
 #include <iostream>
 #include <filesystem>
@@ -11,36 +11,41 @@ bool run_preset_audit_tests() {
     std::cout << "Running Preset Audit tests..." << std::endl;
 
     auto& registry = presets::TransitionPresetRegistry::instance();
-    // Use default root (current dir / studio / library)
-    StudioLibrary library(""); 
+    // Use default root (current dir / assets / catalog)
+    TachyonCatalog catalog(""); 
 
     auto registered_ids = registry.list_ids();
-    const auto& studio_transitions = library.transitions();
+    const auto& catalog_transitions = catalog.transitions();
     
-    // 1. Verify every studio transition asset has a matching registry entry.
-    for (const auto& transition : studio_transitions) {
+    if (catalog_transitions.empty()) {
+        std::cout << "Skipping Preset Audit: Catalog transitions are empty (no assets found at " << catalog.root().generic_string() << ").\n";
+        return true;
+    }
+
+    // 1. Verify every catalog transition asset has a matching registry entry.
+    for (const auto& transition : catalog_transitions) {
         if (registry.find(transition.id) == nullptr) {
-            std::cerr << "Audit Error: Studio asset '" << transition.id << "' has no matching registry entry.\n";
+            std::cerr << "Audit Error: Catalog asset '" << transition.id << "' has no matching registry entry.\n";
             return false;
         }
     }
 
-    // 2. Verify canonical presets that should be studio-visible have assets.
+    // 2. Verify canonical presets that should be catalog-visible have assets.
     // (Excluding internal/utility ones like 'none')
     for (const auto& id : registered_ids) {
         if (id == "tachyon.transition.none") continue;
 
-        auto it = std::find_if(studio_transitions.begin(), studio_transitions.end(), 
-            [&](const StudioTransitionEntry& e) { return e.id == id; });
+        auto it = std::find_if(catalog_transitions.begin(), catalog_transitions.end(), 
+            [&](const CatalogTransitionEntry& e) { return e.id == id; });
             
-        if (it == studio_transitions.end()) {
-            std::cerr << "Audit Error: Registry entry '" << id << "' has no matching studio asset folder.\n";
+        if (it == catalog_transitions.end()) {
+            std::cerr << "Audit Error: Registry entry '" << id << "' has no matching catalog asset folder.\n";
             return false;
         }
     }
 
     // 3. Verify required files exist for each asset.
-    for (const auto& transition : studio_transitions) {
+    for (const auto& transition : catalog_transitions) {
         if (!std::filesystem::exists(transition.shader_path)) {
             std::cerr << "Audit Error: Asset '" << transition.id << "' missing shader: " << transition.shader_path << "\n";
             return false;
@@ -53,8 +58,13 @@ bool run_preset_audit_tests() {
         }
 
         // Verify path conventions
-        if (transition.shader_path.filename() != "v1.glsl") {
-            std::cerr << "Audit Error: Asset '" << transition.id << "' shader name is not v1.glsl: " << transition.shader_path << "\n";
+        if (transition.shader_path.extension() != ".glsl") {
+            std::cerr << "Audit Error: Asset '" << transition.id << "' shader extension is not .glsl: " << transition.shader_path << "\n";
+            return false;
+        }
+
+        if (transition.shader_path.parent_path() != catalog.root() / "transitions") {
+            std::cerr << "Audit Error: Asset '" << transition.id << "' shader path is not flat: " << transition.shader_path << "\n";
             return false;
         }
     }

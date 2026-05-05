@@ -120,7 +120,7 @@ bool run_effect_host_tests() {
     EffectParams transition_params;
     transition_params.scalars["t"] = 1.0f;
     transition_params.strings["transition_id"] = "tachyon.transition.crossfade";
-    transition_params.strings["shader_path"] = "studio/library/animations/transitions/crossfade/v1.glsl";
+    transition_params.strings["shader_path"] = "assets/catalog/transitions/crossfade.glsl";
     transition_params.aux_surfaces["transition_to"] = &transition_to;
     const auto transitioned_res = host.apply("tachyon.effect.transition.glsl", transition_from, transition_params);
     check_true(transitioned_res.ok(), "Transition successful");

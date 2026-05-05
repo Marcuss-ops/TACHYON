@@ -19,7 +19,7 @@ const Animation2DPresetSpec* Animation2DPresetRegistry::find(std::string_view id
     return registry_.find(id);
 }
 
-bool Animation2DPresetRegistry::apply(std::string_view id, LayerSpec& layer, const Animation2DParams& params) const {
+bool Animation2DPresetRegistry::apply(std::string_view id, LayerSpec& layer, const registry::ParameterBag& params) const {
     if (const auto* spec = find(id)) {
         spec->apply(layer, params);
         return true;

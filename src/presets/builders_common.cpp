@@ -41,17 +41,17 @@ void apply_layer_transitions(
     auto& registry = TransitionPresetRegistry::instance();
 
     if (!enter_id.empty()) {
-        TransitionParams tp;
-        tp.id = enter_id;
-        tp.duration = enter_duration;
-        layer.transition_in = registry.create(tp.id, tp);
+        registry::ParameterBag bag;
+        bag.set("id", enter_id);
+        bag.set("duration", enter_duration);
+        layer.transition_in = registry.create(enter_id, bag);
     }
     
     if (!exit_id.empty()) {
-        TransitionParams tp;
-        tp.id = exit_id;
-        tp.duration = exit_duration;
-        layer.transition_out = registry.create(tp.id, tp);
+        registry::ParameterBag bag;
+        bag.set("id", exit_id);
+        bag.set("duration", exit_duration);
+        layer.transition_out = registry.create(exit_id, bag);
     }
 }
 

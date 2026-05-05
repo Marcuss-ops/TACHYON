@@ -19,9 +19,9 @@ const BackgroundPresetSpec* BackgroundPresetRegistry::find(std::string_view id) 
     return registry_.find(id);
 }
 
-std::optional<LayerSpec> BackgroundPresetRegistry::create(std::string_view id, int width, int height, double duration) const {
+std::optional<LayerSpec> BackgroundPresetRegistry::create(std::string_view id, const registry::ParameterBag& params) const {
     if (const auto* spec = find(id)) {
-        auto layer = spec->factory(width, height, duration);
+        auto layer = spec->factory(params);
         layer.id = "bg_" + std::string(id);
         layer.name = spec->metadata.display_name;
         layer.preset_id = std::string(id);

@@ -20,15 +20,15 @@ const TextAnimatorPresetSpec* TextAnimatorPresetRegistry::find(std::string_view 
     return registry_.find(id);
 }
 
-std::vector<TextAnimatorSpec> TextAnimatorPresetRegistry::create(std::string_view id,
-                                                                 const std::string& based_on,
-                                                                 double stagger_delay,
-                                                                 double reveal_duration) const {
+std::vector<TextAnimatorSpec> TextAnimatorPresetRegistry::create(std::string_view id, const registry::ParameterBag& params) const {
     if (const auto* spec = find(id)) {
-        return spec->factory(based_on, stagger_delay, reveal_duration);
+        return spec->factory(params);
     }
     
     // Default fallback
+    std::string based_on = params.get_or<std::string>("based_on", "characters_excluding_spaces");
+    double stagger_delay = params.get_or<double>("stagger_delay", 0.03);
+    double reveal_duration = params.get_or<double>("reveal_duration", 0.5);
     return std::vector<TextAnimatorSpec>{tachyon::text::make_fade_in_animator(based_on, stagger_delay, reveal_duration)};
 }
 

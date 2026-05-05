@@ -27,6 +27,11 @@ struct BackgroundParams : LayerParams {
     std::optional<ColorSpec> color_a;
     std::optional<ColorSpec> color_b;
     std::optional<ColorSpec> color_c;
+
+    float mouse_x{0.5f};
+    float mouse_y{0.5f};
+    std::optional<float> mouse_influence;
+    std::optional<float> mouse_radius;
 };
 
 } // namespace tachyon::presets

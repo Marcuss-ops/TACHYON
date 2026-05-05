@@ -35,9 +35,10 @@ task.md
 
 # Rendered output (regenerable)
 debug/render_*/
-studio/library/animations/transitions/Output/
-studio/library/animations/transitions/*/output/*.mp4
-studio/library/animations/transitions/*/output/*.png
+studio/library/transitions/output/*.mp4
+studio/library/transitions/output/*.png
+!studio/library/transitions/*.png
+!studio/library/transitions/output/
 
 # Local editor history
 .history/

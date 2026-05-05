@@ -4,15 +4,15 @@ namespace tachyon::presets {
 
 namespace {
 
-LayerTransitionSpec make_transition_spec(const TransitionParams& p, TransitionKind kind, const std::string& transition_id) {
+LayerTransitionSpec make_transition_spec(const registry::ParameterBag& p, TransitionKind kind, const std::string& transition_id) {
     LayerTransitionSpec spec;
     spec.kind = kind;
     spec.type = transition_id;
     spec.transition_id = transition_id;
-    spec.duration = p.duration;
-    spec.easing = p.easing;
-    spec.delay = p.delay;
-    spec.direction = p.direction;
+    spec.duration = p.get_or<double>("duration", 0.4);
+    spec.easing = static_cast<animation::EasingPreset>(p.get_or<int>("easing", static_cast<int>(animation::EasingPreset::EaseOut)));
+    spec.delay = p.get_or<double>("delay", 0.0);
+    spec.direction = p.get_or<std::string>("direction", "none");
     return spec;
 }
 
@@ -25,7 +25,8 @@ void register_glsl(TransitionPresetRegistry& registry,
     registry.register_spec({
         id,
         {id, name, std::move(description), "transition", {"glsl", "cinematic"}},
-        [kind, transition_id = std::move(transition_id)](const TransitionParams& p) {
+        {},
+        [kind, transition_id = std::move(transition_id)](const registry::ParameterBag& p) {
             return make_transition_spec(p, kind, transition_id);
         }
     });
@@ -37,7 +38,8 @@ void TransitionPresetRegistry::load_builtins() {
     register_spec({
         "tachyon.transition.none",
         {"tachyon.transition.none", "None", "No transition effect", "transition", {"utility"}},
-        [](const TransitionParams&) {
+        {},
+        [](const registry::ParameterBag&) {
             LayerTransitionSpec spec;
             spec.type = "tachyon.transition.none";
             spec.transition_id = "tachyon.transition.none";
@@ -64,6 +66,8 @@ void TransitionPresetRegistry::load_builtins() {
     register_glsl(*this, "tachyon.transition.rgb_split", "RGB Split", "Color channel split", TransitionKind::Custom, "tachyon.transition.rgb_split");
     register_glsl(*this, "tachyon.transition.luma_dissolve", "Luma Dissolve", "Luminance-based dissolve", TransitionKind::Dissolve, "tachyon.transition.luma_dissolve");
     register_glsl(*this, "tachyon.transition.directional_blur_wipe", "Directional Blur Wipe", "Blur wipe with direction", TransitionKind::Wipe, "tachyon.transition.directional_blur_wipe");
+    register_glsl(*this, "tachyon.transition.kaleidoscope", "Kaleidoscope", "Dynamic kaleidoscope transition", TransitionKind::Custom, "tachyon.transition.kaleidoscope");
+    register_glsl(*this, "tachyon.transition.ripple", "Ripple", "Water ripple transition", TransitionKind::Custom, "tachyon.transition.ripple");
 }
 
 } // namespace tachyon::presets
