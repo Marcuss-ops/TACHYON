@@ -1,4 +1,5 @@
 #include "frame_executor_internal.h"
+#include "tachyon/runtime/execution/property_sampling.h"
 
 namespace tachyon {
 
@@ -42,7 +43,7 @@ void evaluate_property(
             value = it->second.value;
         }
     } else if (track.kind == CompiledPropertyTrack::Kind::Keyframed) {
-        value = sample_keyframed_value(track, value, frame_time_seconds);
+        value = static_cast<double>(runtime::sample_compiled_property_track(track, static_cast<float>(frame_time_seconds)));
     }
 
     (void)scene;

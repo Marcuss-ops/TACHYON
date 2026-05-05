@@ -60,6 +60,5 @@ void evaluate_composition(
 
 // Helpers
 std::uint64_t build_node_key(std::uint64_t global_key, const CompiledNode& node);
-double sample_keyframed_value(const CompiledPropertyTrack& track, double fallback, double t);
 
 } // namespace tachyon

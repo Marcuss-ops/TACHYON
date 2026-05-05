@@ -1,6 +1,12 @@
 set(TACHYON_TESTS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 string(REPLACE "\\" "/" TACHYON_TESTS_SOURCE_DIR "${TACHYON_TESTS_SOURCE_DIR}")
 
+add_library(TachyonTestUtils STATIC
+    unit/test_utils.cpp
+)
+target_include_directories(TachyonTestUtils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/unit)
+target_link_libraries(TachyonTestUtils PUBLIC TachyonCore)
+
 add_executable(TachyonTests
     unit/test_main_core.cpp
     unit/core/math_tests.cpp
@@ -20,6 +26,7 @@ target_compile_definitions(TachyonTests
 
 target_link_libraries(TachyonTests
     PRIVATE
+        TachyonTestUtils
         TachyonRuntimeEngine
 )
 
@@ -38,6 +45,7 @@ add_executable(TachyonColorTests
 
 target_link_libraries(TachyonColorTests
     PRIVATE
+        TachyonTestUtils
         TachyonColor
 )
 
@@ -61,7 +69,9 @@ target_compile_definitions(TachyonSceneTests
 
 target_link_libraries(TachyonSceneTests
     PRIVATE
+        TachyonTestUtils
         TachyonRuntimeEngine
+        TachyonDiagnostics
 )
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
@@ -86,6 +96,7 @@ target_compile_definitions(TachyonCliTests
 
 target_link_libraries(TachyonCliTests
     PRIVATE
+        TachyonTestUtils
         TachyonTools
 )
 
@@ -114,6 +125,7 @@ target_compile_definitions(TachyonEditorTests
 
 target_link_libraries(TachyonEditorTests
     PRIVATE
+        TachyonTestUtils
         TachyonEditor
         TachyonCore
         TachyonScene
@@ -151,7 +163,11 @@ target_compile_definitions(TachyonRuntimeTests
 
 target_link_libraries(TachyonRuntimeTests
     PRIVATE
-        TachyonRuntimeEngine
+        TachyonTestUtils
+        TachyonRuntime
+        TachyonCore
+        TachyonPlatform
+        TachyonSceneEval
 )
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
@@ -186,8 +202,9 @@ target_compile_definitions(TachyonNativeRenderTests
 
 target_link_libraries(TachyonNativeRenderTests
     PRIVATE
-        TachyonRuntimeEngine
-        TachyonStudio
+        TachyonTestUtils
+        TachyonPresets
+        TachyonRuntime
 )
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
@@ -232,6 +249,7 @@ target_compile_definitions(TachyonContentTests
 
 target_link_libraries(TachyonContentTests
     PRIVATE
+        TachyonTestUtils
         TachyonCore
         TachyonScene
         TachyonText
@@ -305,8 +323,11 @@ target_compile_definitions(TachyonRenderTests
 
 target_link_libraries(TachyonRenderTests
     PRIVATE
-        TachyonRuntimeEngine
-        TachyonStudio
+        TachyonTestUtils
+        TachyonPresets
+        TachyonRenderer2D
+        TachyonRenderer3D
+        TachyonRuntime
 )
 
 if(TACHYON_ENABLE_TRACKER)
@@ -340,8 +361,10 @@ target_compile_definitions(TachyonRenderPipelineTests
 
 target_link_libraries(TachyonRenderPipelineTests
     PRIVATE
-        TachyonRuntimeEngine
-        TachyonStudio
+        TachyonTestUtils
+        TachyonRuntime
+        TachyonRenderer2D
+        TachyonRenderer3D
 )
 
 if(TACHYON_ENABLE_TRACKER)
@@ -380,8 +403,8 @@ target_compile_definitions(TachyonRenderProfilerTests
 
 target_link_libraries(TachyonRenderProfilerTests
     PRIVATE
-        TachyonRuntimeEngine
-        TachyonStudio
+        TachyonTestUtils
+        TachyonRuntime
 )
 
 if(TACHYON_ENABLE_TRACKER)
@@ -420,8 +443,9 @@ target_compile_definitions(TachyonScene3DSmokeTests
 
 target_link_libraries(TachyonScene3DSmokeTests
     PRIVATE
-        TachyonRuntimeEngine
-        TachyonStudio
+        TachyonTestUtils
+        TachyonRuntime
+        TachyonRenderer3D
 )
 
 if(TACHYON_ENABLE_TRACKER)

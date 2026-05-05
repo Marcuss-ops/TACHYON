@@ -4,7 +4,10 @@ endif()
 
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonPresetsSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonCoreSources.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonBindingsCSources.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonDiagnosticsSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonPlatformSources.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonSceneEvalSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonSceneSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonRuntimeSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonRenderer2DSources.cmake)
@@ -33,8 +36,13 @@ function(tachyon_assert_no_duplicate_sources var_name)
 endfunction()
 
 tachyon_assert_no_duplicate_sources(TachyonSceneSources)
+tachyon_assert_no_duplicate_sources(TachyonSceneEvalSources)
+tachyon_assert_no_duplicate_sources(TachyonBindingsCSources)
+tachyon_assert_no_duplicate_sources(TachyonDiagnosticsSources)
+tachyon_assert_no_duplicate_sources(TachyonPresetsSources)
 tachyon_assert_no_duplicate_sources(TachyonRuntimeSources)
 tachyon_assert_no_duplicate_sources(TachyonRenderer2DSources)
+tachyon_assert_no_duplicate_sources(TachyonRenderer2DExtrasSources)
 tachyon_assert_no_duplicate_sources(TachyonRenderer3DSources)
 tachyon_assert_no_duplicate_sources(TachyonMediaSources)
 tachyon_assert_no_duplicate_sources(TachyonAudioSources)
@@ -140,6 +148,44 @@ if(MSVC)
     target_compile_definitions(TachyonColor PRIVATE "TACHYON_AVX2")
 endif()
 
+add_library(TachyonBindingsC STATIC ${TachyonBindingsCSources})
+tachyon_configure_common(TachyonBindingsC)
+target_link_libraries(TachyonBindingsC PUBLIC TachyonCore)
+
+add_library(TachyonDiagnostics STATIC ${TachyonDiagnosticsSources})
+tachyon_configure_common(TachyonDiagnostics)
+target_link_libraries(TachyonDiagnostics PUBLIC TachyonCore)
+
+add_library(TachyonSceneEval STATIC ${TachyonSceneEvalSources})
+tachyon_configure_common(TachyonSceneEval)
+target_link_libraries(TachyonSceneEval
+    PRIVATE
+        TachyonCore
+        TachyonColor
+        TachyonText
+        TachyonAudio
+        TachyonMedia
+        TachyonRenderer2D
+        $<$<BOOL:${TACHYON_ENABLE_3D}>:TachyonRenderer3D>
+)
+tachyon_link_text_deps(TachyonSceneEval)
+tachyon_link_media_deps(TachyonSceneEval)
+tachyon_link_3d_deps(TachyonSceneEval)
+tachyon_link_omp(TachyonSceneEval)
+
+add_library(TachyonPresets STATIC ${TachyonPresetsSources})
+tachyon_configure_common(TachyonPresets)
+target_link_libraries(TachyonPresets
+    PUBLIC
+        TachyonCore
+        TachyonText
+        TachyonAudio
+        TachyonMedia
+)
+tachyon_link_text_deps(TachyonPresets)
+tachyon_link_media_deps(TachyonPresets)
+tachyon_link_omp(TachyonPresets)
+
 add_library(TachyonScene SHARED ${TachyonSceneSources})
 tachyon_configure_common(TachyonScene)
 target_compile_definitions(TachyonScene PRIVATE TACHYON_BUILD_DLL)
@@ -148,6 +194,8 @@ target_link_libraries(TachyonScene
         TachyonCore
         TachyonColor
         TachyonPlatform
+        TachyonPresets
+        TachyonSceneEval
         TachyonRenderer2D
         TachyonAudio
         TachyonMedia
@@ -163,9 +211,10 @@ if(TACHYON_ENABLE_AUDIO_MUX)
     target_compile_definitions(TachyonRuntime PRIVATE TACHYON_ENABLE_AUDIO_MUX)
 endif()
 target_link_libraries(TachyonRuntime
-    PRIVATE
+    PUBLIC
         TachyonCore
         TachyonColor
+        TachyonSceneEval
         TachyonText
         TachyonAudio
         TachyonMedia
@@ -183,6 +232,9 @@ if(TACHYON_ENABLE_TRACKER)
     target_link_libraries(TachyonRuntime PRIVATE TachyonTracker)
 endif()
 
+add_library(TachyonRenderer2DExtras STATIC ${TachyonRenderer2DExtrasSources})
+tachyon_configure_common(TachyonRenderer2DExtras)
+
 add_library(TachyonRenderer2D STATIC ${TachyonRenderer2DSources})
 tachyon_configure_common(TachyonRenderer2D)
 tachyon_link_text_deps(TachyonRenderer2D)
@@ -191,6 +243,7 @@ if(TACHYON_ENABLE_3D)
 endif()
 tachyon_link_omp(TachyonRenderer2D)
 target_link_libraries(TachyonRenderer2D PUBLIC TachyonColor)
+target_link_libraries(TachyonRenderer2D PUBLIC TachyonRenderer2DExtras)
 
 if(TACHYON_ENABLE_3D)
     add_library(TachyonRenderer3D STATIC ${TachyonRenderer3DSources})
@@ -231,12 +284,14 @@ tachyon_link_text_deps(TachyonText)
 
 add_library(TachyonEditor STATIC ${TachyonEditorSources})
 tachyon_configure_common(TachyonEditor)
+target_link_libraries(TachyonEditor PUBLIC TachyonCore)
 
 add_library(TachyonPlatform STATIC ${TachyonPlatformSources})
 tachyon_configure_common(TachyonPlatform)
 
 add_library(TachyonStudio STATIC ${TachyonStudioSources})
 tachyon_configure_common(TachyonStudio)
+target_link_libraries(TachyonStudio PUBLIC TachyonPresets)
 
 if(TACHYON_ENABLE_TRACKER)
     add_library(TachyonTracker STATIC ${TachyonTrackerSources})
@@ -247,6 +302,7 @@ add_library(TachyonRuntimeEngine INTERFACE)
 target_link_libraries(TachyonRuntimeEngine INTERFACE
     TachyonRuntime
     TachyonScene
+    TachyonSceneEval
     TachyonRenderer2D
     TachyonText
     TachyonMedia
@@ -262,7 +318,7 @@ target_link_libraries(TachyonEngine INTERFACE TachyonRuntimeEngine)
 
 add_library(TachyonCLICore STATIC ${TachyonCLICoreSources})
 tachyon_configure_common(TachyonCLICore)
-target_link_libraries(TachyonCLICore PUBLIC TachyonRuntimeEngine)
+target_link_libraries(TachyonCLICore PUBLIC TachyonRuntimeEngine TachyonPresets TachyonDiagnostics)
 if(TACHYON_ENABLE_PREVIEW_WINDOW)
     target_link_libraries(TachyonCLICore PUBLIC glfw OpenGL::GL)
     target_compile_definitions(TachyonCLICore PUBLIC TACHYON_ENABLE_PREVIEW_WINDOW)

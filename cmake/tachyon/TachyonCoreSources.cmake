@@ -2,23 +2,17 @@
 set(TachyonCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/animation_primitives.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/animation/property_interpolation.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/c_api.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/options.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/transition_registry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/math/matrix4x4.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/math/quaternion.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/math/transform3.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/math/deterministic_random.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/properties/bezier_interpolator.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/properties/graph_editor_backend.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/properties/spatial_keyframe.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/shapes/shape_modifiers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/camera/camera_shake.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/camera/camera_state.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/camera_cut_contract.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/background_generator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/model/tachyon.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/analysis/scene_inspector.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/expressions/context_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/expressions/expression_engine.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/expressions/expression_vm.cpp

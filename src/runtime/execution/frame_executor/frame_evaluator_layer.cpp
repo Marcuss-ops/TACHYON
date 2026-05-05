@@ -3,6 +3,7 @@
 #include "tachyon/renderer2d/color/color_transfer.h"
 #include "tachyon/text/content/word_timestamps.h"
 #include "tachyon/runtime/core/data/compiled_scene.h"
+#include "tachyon/runtime/execution/property_sampling.h"
 #include "tachyon/core/math/matrix4x4.h"
 #include "tachyon/core/math/quaternion.h"
 #include "tachyon/core/scene/evaluator/layer_utils.h"
@@ -210,7 +211,9 @@ void evaluate_layer(
         const double prev_t = frame_time_seconds - frame_duration;
         auto sample_prev = [&](std::size_t index, double fallback) -> double {
             if (index >= layer.property_indices.size()) return fallback;
-            return sample_keyframed_value(scene.property_tracks[layer.property_indices[index]], fallback, prev_t);
+            return static_cast<double>(runtime::sample_compiled_property_track(
+                scene.property_tracks[layer.property_indices[index]],
+                static_cast<float>(prev_t)));
         };
 
         const math::Vector3 prev_pos3{

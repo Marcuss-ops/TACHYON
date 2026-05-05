@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/core/api.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/runtime/execution/jobs/render_job.h"
 

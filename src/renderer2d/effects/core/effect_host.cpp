@@ -1,6 +1,5 @@
 #include "tachyon/renderer2d/effects/core/effect_host.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
-#include "tachyon/renderer2d/effects/utility/number_counter_effect.h"
 #include "tachyon/renderer2d/resource/render_context.h"
 #include "tachyon/runtime/profiling/render_profiler.h"
 #include <stdexcept>

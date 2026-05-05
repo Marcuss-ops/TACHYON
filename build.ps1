@@ -2,7 +2,7 @@
 .SYNOPSIS
     Tachyon build entry point.
 .PARAMETER Preset
-    CMake preset: dev | dev-fast | asan  (default: dev)
+    CMake preset: dev | dev-fast | asan | linux-ci | windows-ci | release  (default: dev on Windows, linux-ci on Linux)
 .PARAMETER Config
     Debug | RelWithDebInfo | Release  (default: RelWithDebInfo)
 .PARAMETER Target
@@ -29,8 +29,8 @@
     .\build.ps1 -Clean -Config Release
 #>
 param(
-    [ValidateSet("dev","dev-fast","asan")]
-    [string]$Preset   = "dev",
+    [ValidateSet("dev","dev-fast","asan","linux-ci","windows-ci","release")]
+    [string]$Preset   = "",
     [ValidateSet("Debug","RelWithDebInfo","Release")]
     [string]$Config   = "RelWithDebInfo",
     [string]$Target   = "",
@@ -80,8 +80,9 @@ function Prepend-ProcessPath {
     )
 
     $current = [Environment]::GetEnvironmentVariable("PATH", "Process")
+    $separator = [IO.Path]::PathSeparator
     $existing = @()
-    foreach ($part in $current -split ';') {
+    foreach ($part in $current -split [Regex]::Escape($separator)) {
         if ($part -and -not $existing.Contains($part)) {
             $existing += $part
         }
@@ -95,7 +96,7 @@ function Prepend-ProcessPath {
     }
 
     if ($prefix.Count -gt 0) {
-        $newPath = ($prefix + $existing) -join ';'
+        $newPath = ($prefix + $existing) -join $separator
         [Environment]::SetEnvironmentVariable("PATH", $newPath, "Process")
     }
 }
@@ -126,6 +127,10 @@ function Get-TestTargetForFilter {
         return "TachyonRenderTests"
     }
 
+    if ($normalized -match 'studio|glyphcache|text|audiopitch|audiotrim|backgroundpreset|transitionbuilder|sfxcontract|transitionpreset') {
+        return "TachyonContentTests"
+    }
+
     if ($normalized -match 'scene_|timeline|camera_|motion_map|default_camera') {
         return "TachyonSceneTests"
     }
@@ -137,12 +142,28 @@ if ($Check) {
     $Target = "TachyonCore"
 }
 
-# Determine build directory based on preset
-if ($Preset -eq "asan") {
-    $BuildDir = Join-Path $Root "build/asan"
-} else {
-    $BuildDir = Join-Path $Root "build"
+if (-not $Preset) {
+    if ($env:OS -eq 'Windows_NT') {
+        $Preset = "dev"
+    } else {
+        $Preset = "linux-ci"
+    }
 }
+
+function Test-IsWindowsPreset {
+    param([string]$Name)
+    return $Name -in @("dev", "dev-fast", "asan")
+}
+
+# Determine build directory based on preset
+$BuildDir = switch ($Preset) {
+    "asan" { Join-Path $Root "build/asan" }
+    "linux-ci" { Join-Path $Root "build/linux-ci" }
+    "windows-ci" { Join-Path $Root "build/windows-ci" }
+    "release" { Join-Path $Root "build/release" }
+    default { Join-Path $Root "build" }
+}
+$J = if ($Jobs -gt 0) { $Jobs } else { [Environment]::ProcessorCount }
 
 Write-Host "Tachyon Build" -ForegroundColor Cyan
 Write-Host "  Preset : $Preset"
@@ -159,22 +180,33 @@ if ($TestFilter) {
     Write-Host "  Filter : $TestFilter" -ForegroundColor Yellow
 }
 
-# Load tools into PATH
-& "$Root\scripts\Enable-DevTools.ps1"
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+if ($env:OS -eq 'Windows_NT') {
+    # Load tools into PATH
+    & "$Root\scripts\Enable-DevTools.ps1"
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-# Load VS compiler environment (cached)
-& "$Root\scripts\enable-vs-env.ps1"
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    # Load VS compiler environment (cached)
+    & "$Root\scripts\enable-vs-env.ps1"
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-# Verify required tools exist
-$missing = @()
-foreach ($tool in @("cl","msbuild")) {
-    if (-not (Get-Command "$tool.exe" -ErrorAction SilentlyContinue)) { $missing += $tool }
-}
-if ($missing.Count -gt 0) {
-    Write-Error "Missing tools: $($missing -join ', '). Run scripts\enable-vs-env.ps1 to diagnose."
-    exit 1
+    # Verify required tools exist
+    $missing = @()
+    foreach ($tool in @("cl","msbuild")) {
+        if (-not (Get-Command "$tool.exe" -ErrorAction SilentlyContinue)) { $missing += $tool }
+    }
+    if ($missing.Count -gt 0) {
+        Write-Error "Missing tools: $($missing -join ', '). Run scripts\enable-vs-env.ps1 to diagnose."
+        exit 1
+    }
+} else {
+    $missing = @()
+    foreach ($tool in @("cmake","ctest")) {
+        if (-not (Get-Command $tool -ErrorAction SilentlyContinue)) { $missing += $tool }
+    }
+    if ($missing.Count -gt 0) {
+        Write-Error "Missing tools: $($missing -join ', '). Install cmake and ctest."
+        exit 1
+    }
 }
 
 if ($KillStaleTests) {
@@ -194,15 +226,24 @@ if ($Clean) {
 $NeedConf  = $Configure -or (-not (Test-Path (Join-Path $BuildDir "Tachyon.sln")))
 
 if ($Check) {
-    $CoreProject = Join-Path $BuildDir "src\TachyonCore.vcxproj"
-    if (-not (Test-Path $CoreProject)) {
-        Write-Error "Quick check requires an existing Visual Studio build tree. Run: .\build.ps1 -Preset dev"
-        exit 1
+    if ($env:OS -eq 'Windows_NT' -and (Test-IsWindowsPreset $Preset)) {
+        $CoreProject = Join-Path $BuildDir "src\TachyonCore.vcxproj"
+        if (-not (Test-Path $CoreProject)) {
+            Write-Error "Quick check requires an existing Visual Studio build tree. Run: .\build.ps1 -Preset dev"
+            exit 1
+        }
+
+        Write-Host "Quick check (MSBuild, no CMake)..." -ForegroundColor Yellow
+        Invoke-Native {
+            & msbuild $CoreProject /m:1 /nologo "/p:Configuration=$Config" "/p:Platform=x64" "/t:Build"
+        } "Quick check FAILED."
+        Write-Host "Quick check OK" -ForegroundColor Green
+        return
     }
 
-    Write-Host "Quick check (MSBuild, no CMake)..." -ForegroundColor Yellow
+    Write-Host "Quick check (build preset, no reconfigure)..." -ForegroundColor Yellow
     Invoke-Native {
-        & msbuild $CoreProject /m:1 /nologo "/p:Configuration=$Config" "/p:Platform=x64" "/t:Build"
+        & cmake --build --preset $Preset --target $Target -j $J
     } "Quick check FAILED."
     Write-Host "Quick check OK" -ForegroundColor Green
     return
@@ -213,14 +254,22 @@ if ($NeedConf) {
     Invoke-Native { cmake --preset $Preset -S "$Root" -B "$BuildDir" } "CMake configure failed."
 }
 
-$J = if ($Jobs -gt 0) { $Jobs } else { [Environment]::ProcessorCount }
-
-if ($Target) {
-    Write-Host "Building $Target ($Config, $J jobs)..." -ForegroundColor Yellow
-    Invoke-Native { cmake --build $BuildDir --config $Config --target $Target -j $J } "Build FAILED."
+if ($env:OS -eq 'Windows_NT' -and (Test-IsWindowsPreset $Preset)) {
+    if ($Target) {
+        Write-Host "Building $Target ($Config, $J jobs)..." -ForegroundColor Yellow
+        Invoke-Native { cmake --build $BuildDir --config $Config --target $Target -j $J } "Build FAILED."
+    } else {
+        Write-Host "Building preset targets: $Preset ($Config, $J jobs)..." -ForegroundColor Yellow
+        Invoke-Native { cmake --build --preset $Preset --config $Config -j $J } "Build FAILED."
+    }
 } else {
-    Write-Host "Building preset targets: $Preset ($Config, $J jobs)..." -ForegroundColor Yellow
-    Invoke-Native { cmake --build --preset $Preset --config $Config -j $J } "Build FAILED."
+    if ($Target) {
+        Write-Host "Building $Target ($J jobs)..." -ForegroundColor Yellow
+        Invoke-Native { cmake --build --preset $Preset --target $Target -j $J } "Build FAILED."
+    } else {
+        Write-Host "Building preset targets: $Preset ($J jobs)..." -ForegroundColor Yellow
+        Invoke-Native { cmake --build --preset $Preset -j $J } "Build FAILED."
+    }
 }
 
 Write-Host "Build OK" -ForegroundColor Green
@@ -228,17 +277,31 @@ Write-Host "Build OK" -ForegroundColor Green
 if ($RunTests) {
     Write-Host "Running tests..." -ForegroundColor Yellow
 
-    Prepend-ProcessPath @(
-        (Join-Path $BuildDir "src\$Config"),
-        (Join-Path $BuildDir "tests\$Config")
-    )
+    $binDirs = if ($env:OS -eq 'Windows_NT' -and (Test-IsWindowsPreset $Preset)) {
+        @(
+            (Join-Path $BuildDir "src\$Config"),
+            (Join-Path $BuildDir "tests\$Config")
+        )
+    } else {
+        @(
+            (Join-Path $BuildDir "src"),
+            (Join-Path $BuildDir "tests")
+        )
+    }
+    Prepend-ProcessPath $binDirs
 
     $selectedTestTarget = if ($TestFilter) { Get-TestTargetForFilter $TestFilter } else { "" }
     if ($selectedTestTarget -and -not ($selectedTestTarget -eq "TachyonTests")) {
         Write-Host "  Building test target: $selectedTestTarget" -ForegroundColor Yellow
-        Invoke-Native {
-            & cmake --build $BuildDir --config $Config --target $selectedTestTarget -j $J
-        } "Selected test target build FAILED."
+        if ($env:OS -eq 'Windows_NT' -and (Test-IsWindowsPreset $Preset)) {
+            Invoke-Native {
+                & cmake --build $BuildDir --config $Config --target $selectedTestTarget -j $J
+            } "Selected test target build FAILED."
+        } else {
+            Invoke-Native {
+                & cmake --build --preset $Preset --target $selectedTestTarget -j $J
+            } "Selected test target build FAILED."
+        }
     }
 
     if ($TestFilter) {
@@ -251,13 +314,21 @@ if ($RunTests) {
 
         try {
             Invoke-Native {
-                & ctest --test-dir $BuildDir -C $Config --output-on-failure -R "^$testTarget$"
+                if ($env:OS -eq 'Windows_NT' -and (Test-IsWindowsPreset $Preset)) {
+                    & ctest --test-dir $BuildDir -C $Config --output-on-failure -R "^$testTarget$"
+                } else {
+                    & ctest --test-dir $BuildDir --output-on-failure -R "^$testTarget$"
+                }
             } "Tests FAILED."
         } finally {
             [Environment]::SetEnvironmentVariable("TACHYON_TEST_FILTER", $previousFilter, "Process")
         }
     } else {
-        $ctestArgs = @("-C", $Config, "--output-on-failure", "-j", $J)
+        $ctestArgs = if ($env:OS -eq 'Windows_NT' -and (Test-IsWindowsPreset $Preset)) {
+            @("-C", $Config, "--output-on-failure", "-j", $J)
+        } else {
+            @("--output-on-failure", "-j", $J)
+        }
         Invoke-Native {
             & ctest --test-dir $BuildDir @ctestArgs
         } "Tests FAILED."

@@ -1,7 +1,7 @@
 # scripts/check-cross-platform.ps1
 
 param(
-    [ValidateSet("windows-ninja-msvc", "linux-ninja-debug")]
+    [ValidateSet("windows-ci", "linux-ci", "release")]
     [string]$Preset = "",
     [switch]$Clean,
     [switch]$SmokeOnly
@@ -14,15 +14,16 @@ $Root = Split-Path $PSScriptRoot
 
 if (-not $Preset) {
     if ($IsWindows -or $env:OS -eq "Windows_NT") {
-        $Preset = "windows-ninja-msvc"
+        $Preset = "windows-ci"
     } else {
-        $Preset = "linux-ninja-debug"
+        $Preset = "linux-ci"
     }
 }
 
 $BuildDir = switch ($Preset) {
-    "windows-ninja-msvc" { Join-Path $Root "build/windows-ninja-msvc" }
-    "linux-ninja-debug" { Join-Path $Root "build/linux-ninja-debug" }
+    "windows-ci" { Join-Path $Root "build/windows-ci" }
+    "linux-ci" { Join-Path $Root "build/linux-ci" }
+    "release" { Join-Path $Root "build/release" }
 }
 
 Write-Host "TACHYON cross-platform check" -ForegroundColor Cyan
