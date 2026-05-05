@@ -4,8 +4,10 @@
 #include "tachyon/presets/background/background_builders.h"
 #include "tachyon/presets/image/image_builders.h"
 #include "tachyon/presets/scene/scene_params.h"
+#include "tachyon/scene/builder.h"
 
 namespace tachyon::presets::scene {
+using namespace tachyon::scene;
 
 /**
  * Creates a minimal SceneSpec with the given parameters.
@@ -127,6 +129,30 @@ inline SceneSpec build_minimal_text_scene() {
     params.background = BackgroundParams{};
     params.background->kind = "color";
     return minimal(params);
+}
+
+inline SceneSpec build_scene_a() {
+    return Composition("main")
+        .size(1920, 1080)
+        .duration(5.0)
+        .fps(30)
+        .clear(ColorSpec{25, 25, 204, 255}) // Blue
+        .layer("text", [](LayerBuilder& l) {
+            l.text("Scene A").font_size(120).color(ColorSpec{255, 255, 255, 255}).position(960, 540).in(0).out(5);
+        })
+        .build_scene();
+}
+
+inline SceneSpec build_scene_b() {
+    return Composition("main")
+        .size(1920, 1080)
+        .duration(5.0)
+        .fps(30)
+        .clear(ColorSpec{204, 25, 25, 255}) // Red
+        .layer("text", [](LayerBuilder& l) {
+            l.text("Scene B").font_size(120).color(ColorSpec{255, 255, 255, 255}).position(960, 540).in(0).out(5);
+        })
+        .build_scene();
 }
 
 } // namespace tachyon::presets::scene

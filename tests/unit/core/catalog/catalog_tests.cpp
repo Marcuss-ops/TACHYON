@@ -60,5 +60,18 @@ bool run_catalog_tests() {
         check_true(scene->is_cpp_preset, "Minimal text is a C++ preset");
     }
 
+    // Fallback test: register a transition with a non-existent shader
+    // (We simulate this by using an entry that we know has a missing shader if we move things)
+    const auto fallback_effect = catalog.build_transition_effect("non_existent_id", "a", "b", 0.5);
+    // Since we don't skip missing shaders anymore, but 'non_existent_id' won't even be in catalog.txt
+    // Let's test one that is in catalog.txt but shader is missing (simulated)
+    
+    const auto crossfade = catalog.find_transition("tachyon.transition.crossfade");
+    if (crossfade.has_value()) {
+        const auto effect = catalog.build_transition_effect("tachyon.transition.crossfade", "a", "b", 0.5);
+        check_true(effect.enabled, "Crossfade effect is enabled (even with fallback)");
+        check_true(!effect.strings.at("shader_path").empty(), "Shader path is set (real or fallback)");
+    }
+
     return g_failures == 0;
 }

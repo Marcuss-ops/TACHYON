@@ -3,6 +3,7 @@
 #include "tachyon/media/resolution/asset_resolution.h"
 #include "tachyon/media/resolution/asset_path_utils.h"
 #include "tachyon/presets/background/background_preset_registry.h"
+#include "tachyon/presets/scene/scene_preset_registry.h"
 #include "tachyon/scene/builder.h"
 #include "cli_internal.h"
 
@@ -25,26 +26,37 @@ LoadSceneResult load_scene_for_cli(
     if (options.preset_id.has_value()) {
         const auto& pid = *options.preset_id;
 
-        auto bg = presets::BackgroundPresetRegistry::instance().create(pid, 1280, 720);
-        if (!bg) {
-            result.diagnostics.add_error("preset_not_found", "Unknown preset: " + pid);
+        // 1. Try Scene Preset Registry (Modern)
+        if (auto scene = presets::ScenePresetRegistry::instance().create(pid, {})) {
+            LoadedSceneContext context;
+            context.scene = std::move(*scene);
+            context.from_preset = true;
+            result.context = std::move(context);
+            result.success = true;
             return result;
         }
 
-        SceneSpec scene = ::tachyon::scene::Composition("preset_render")
-            .size(1280, 720)
-            .duration(2.0)
-            .fps(30)
-            .layer("bg", [&](::tachyon::scene::LayerBuilder& l) {
-                l = ::tachyon::scene::LayerBuilder(*bg);
-            })
-            .build_scene();
+        // 2. Fallback to Background Preset Registry (Legacy/Single Layer)
+        auto bg = presets::BackgroundPresetRegistry::instance().create(pid, {});
+        if (bg) {
+            SceneSpec scene = ::tachyon::scene::Composition("preset_render")
+                .size(1280, 720)
+                .duration(2.0)
+                .fps(30)
+                .layer("bg", [&](::tachyon::scene::LayerBuilder& l) {
+                    l = ::tachyon::scene::LayerBuilder(*bg);
+                })
+                .build_scene();
 
-        LoadedSceneContext context;
-        context.scene = std::move(scene);
-        context.from_preset = true;
-        result.context = std::move(context);
-        result.success = true;
+            LoadedSceneContext context;
+            context.scene = std::move(scene);
+            context.from_preset = true;
+            result.context = std::move(context);
+            result.success = true;
+            return result;
+        }
+
+        result.diagnostics.add_error("preset_not_found", "Unknown preset: " + pid);
         return result;
     }
 

@@ -131,9 +131,6 @@ void TachyonCatalog::register_transition_assets() {
 
         const auto shader_path = resolve_catalog_path(root, row.shader_file);
         const auto thumb_path = resolve_catalog_path(root, row.thumb_file);
-        if (!std::filesystem::exists(shader_path)) {
-            continue;
-        }
 
         CatalogTransitionEntry transition;
         transition.id = row.id;
@@ -207,7 +204,21 @@ EffectSpec TachyonCatalog::build_transition_effect(
     effect.strings["transition_id"] = transition->id;
     effect.strings["from_layer_id"] = from_layer_id;
     effect.strings["transition_to_layer_id"] = to_layer_id;
-    effect.strings["shader_path"] = transition->shader_path.generic_string();
+
+    // Fallback logic for missing shaders
+    if (std::filesystem::exists(transition->shader_path)) {
+        effect.strings["shader_path"] = transition->shader_path.generic_string();
+    } else {
+        // Log warning or diagnostic
+        // Use default crossfade shader as fallback if available
+        const auto fallback_shader = m_root / "transitions" / "shaders" / "crossfade.glsl";
+        if (std::filesystem::exists(fallback_shader)) {
+            effect.strings["shader_path"] = fallback_shader.generic_string();
+        } else {
+            effect.enabled = false; // Disable if even fallback is missing
+        }
+    }
+
     effect.strings["manifest_path"] = transition->manifest_path.generic_string();
     effect.strings["pack_id"] = transition->pack_id;
     return effect;

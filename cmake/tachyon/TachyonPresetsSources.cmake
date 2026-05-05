@@ -7,6 +7,7 @@ set(TachyonPresetsSources
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/background/background_builders.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/background/background_kind_registry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/background/background_kind_table.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/presets/background/background_legacy_aliases.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/background_generator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/builders_common.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/image/image_builders.cpp

@@ -67,6 +67,35 @@ public:
         return ids;
     }
 
+    [[nodiscard]] std::vector<std::string> list_by_category(std::string_view category) const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        std::vector<std::string> ids;
+        for (const auto& [id, spec] : specs_) {
+            if constexpr (requires(TSpec s) { s.metadata; }) {
+                if (spec.metadata.category == category) {
+                    ids.push_back(id);
+                }
+            }
+        }
+        return ids;
+    }
+
+    [[nodiscard]] std::vector<std::string> list_by_tag(std::string_view tag) const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        std::vector<std::string> ids;
+        for (const auto& [id, spec] : specs_) {
+            if constexpr (requires(TSpec s) { s.metadata; }) {
+                for (const auto& t : spec.metadata.tags) {
+                    if (t == tag) {
+                        ids.push_back(id);
+                        break;
+                    }
+                }
+            }
+        }
+        return ids;
+    }
+
     [[nodiscard]] std::size_t size() const {
         std::lock_guard<std::mutex> lock(mutex_);
         return specs_.size();

@@ -59,6 +59,20 @@ void ScenePresetRegistry::load_builtins() {
         {},
         [](const registry::ParameterBag&) { return scene::build_minimal_text_scene(); }
     });
+
+    register_spec({
+        "tachyon.scene.a",
+        {"tachyon.scene.a", "Scene A", "Blue background with centered text.", "scene.built-in", {"blue", "test"}},
+        {},
+        [](const registry::ParameterBag&) { return scene::build_scene_a(); }
+    });
+
+    register_spec({
+        "tachyon.scene.b",
+        {"tachyon.scene.b", "Scene B", "Red background with centered text.", "scene.built-in", {"red", "test"}},
+        {},
+        [](const registry::ParameterBag&) { return scene::build_scene_b(); }
+    });
 }
 
 } // namespace tachyon::presets

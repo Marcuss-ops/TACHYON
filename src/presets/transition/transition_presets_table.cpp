@@ -24,7 +24,11 @@ void register_glsl(TransitionPresetRegistry& registry,
                    std::string transition_id) {
     registry.register_spec({
         id,
-        {id, name, std::move(description), "transition", {"glsl", "cinematic"}},
+        {
+            id, name, std::move(description), "transition", {"glsl", "cinematic"},
+            1, registry::Stability::Stable,
+            {{"image", "video", "solid"}, {"gpu"}}
+        },
         {},
         [kind, transition_id = std::move(transition_id)](const registry::ParameterBag& p) {
             return make_transition_spec(p, kind, transition_id);
@@ -37,7 +41,7 @@ void register_glsl(TransitionPresetRegistry& registry,
 void TransitionPresetRegistry::load_builtins() {
     register_spec({
         "tachyon.transition.none",
-        {"tachyon.transition.none", "None", "No transition effect", "transition", {"utility"}},
+        {"tachyon.transition.none", "None", "No transition effect", "transition", {"utility"}, 1, registry::Stability::Stable, {{"all"}, {}}},
         {},
         [](const registry::ParameterBag&) {
             LayerTransitionSpec spec;

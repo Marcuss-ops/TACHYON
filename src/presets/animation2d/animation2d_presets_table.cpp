@@ -41,7 +41,7 @@ void Animation2DPresetRegistry::load_builtins() {
     // 1. Pop In: A bouncy scale-up entrance
     register_spec({
         "tachyon.anim2d.pop_in",
-        {"tachyon.anim2d.pop_in", "Pop In", "Bouncy scale-up entrance animation.", "animation.2d", {"entrance", "pop", "bouncy"}},
+        {"tachyon.anim2d.pop_in", "Pop In", "Bouncy scale-up entrance animation.", "animation.2d", {"entrance", "pop", "bouncy"}, 1, registry::Stability::Stable, {{"text", "image", "solid"}, {"cpu"}}},
         {},
         [get_anim_params](LayerSpec& layer, const ParameterBag& p) {
             auto params = get_anim_params(p);
@@ -56,7 +56,7 @@ void Animation2DPresetRegistry::load_builtins() {
     // 2. Soft Pulse: Gentle looping scale oscillation
     register_spec({
         "tachyon.anim2d.soft_pulse",
-        {"tachyon.anim2d.soft_pulse", "Soft Pulse", "Gentle breathing scale animation.", "animation.2d", {"loop", "pulse", "subtle"}},
+        {"tachyon.anim2d.soft_pulse", "Soft Pulse", "Gentle breathing scale animation.", "animation.2d", {"loop", "pulse", "subtle"}, 1, registry::Stability::Stable, {{"all"}, {"cpu"}}},
         {},
         [get_anim_params](LayerSpec& layer, const ParameterBag& p) {
             auto params = get_anim_params(p);
@@ -73,7 +73,7 @@ void Animation2DPresetRegistry::load_builtins() {
     // 3. Subtle Drift: Slow floating motion in Y axis
     register_spec({
         "tachyon.anim2d.subtle_drift",
-        {"tachyon.anim2d.subtle_drift", "Subtle Drift", "Slow floating vertical motion.", "animation.2d", {"loop", "drift", "subtle"}},
+        {"tachyon.anim2d.subtle_drift", "Subtle Drift", "Slow floating vertical motion.", "animation.2d", {"loop", "drift", "subtle"}, 1, registry::Stability::Stable, {{"all"}, {"cpu"}}},
         {},
         [get_anim_params](LayerSpec& layer, const ParameterBag& p) {
             auto params = get_anim_params(p);
@@ -89,7 +89,7 @@ void Animation2DPresetRegistry::load_builtins() {
     // 4. Smooth Rotation: Gentle back and forth rotation
     register_spec({
         "tachyon.anim2d.smooth_rotate",
-        {"tachyon.anim2d.smooth_rotate", "Smooth Rotate", "Gentle pendulum-like rotation.", "animation.2d", {"loop", "rotate", "subtle"}},
+        {"tachyon.anim2d.smooth_rotate", "Smooth Rotate", "Gentle pendulum-like rotation.", "animation.2d", {"loop", "rotate", "subtle"}, 1, registry::Stability::Stable, {{"all"}, {"cpu"}}},
         {},
         [get_anim_params](LayerSpec& layer, const ParameterBag& p) {
             auto params = get_anim_params(p);

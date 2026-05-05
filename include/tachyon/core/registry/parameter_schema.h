@@ -20,6 +20,8 @@ enum class ParameterType {
     Vector2,
     Vector3,
     Enum,
+    AssetPath,
+    Easing,
 };
 
 using ParameterValue = std::variant<
