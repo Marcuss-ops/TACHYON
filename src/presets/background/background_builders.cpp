@@ -72,23 +72,28 @@ LayerSpec build_background(const BackgroundParams& p) {
     });
 
     const auto& registry = BackgroundKindRegistry::instance();
-    const std::string default_kind = "tachyon.background.kind.classico_premium";
+    const std::string selected_kind = p.kind;
 
-    std::string selected_kind = p.kind.empty() ? default_kind : p.kind;
-
-    auto spec = registry.create(selected_kind, palette, p);
-    if (!spec) {
-        selected_kind = default_kind;
+    std::optional<ProceduralSpec> spec;
+    if (!selected_kind.empty()) {
         spec = registry.create(selected_kind, palette, p);
-    }
-    if (!spec) {
-        spec = make_classico_premium_spec(palette);
+        if (!spec) {
+            ProceduralSpec placeholder;
+            placeholder.kind = selected_kind;
+            spec = std::move(placeholder);
+        }
     }
 
-    apply_background_overrides(*spec, p);
+    if (spec) {
+        apply_background_overrides(*spec, p);
+        layer.procedural = std::move(spec);
+        layer.type = "procedural";
+    } else {
+        layer.type = "none";
+        layer.enabled = false;
+    }
 
     layer.preset_id = selected_kind;
-    layer.procedural = std::move(spec);
     return layer;
 }
 

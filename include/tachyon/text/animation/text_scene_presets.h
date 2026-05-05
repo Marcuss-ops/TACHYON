@@ -30,10 +30,10 @@ struct TextScenePresetOptions {
     std::int64_t text_position_y{430};
 
     std::optional<BackgroundSpec> clear_background{BackgroundSpec::from_string("#0d1117")};
-    bool use_procedural_background{true};
+    bool use_procedural_background{false};
 
-    // Procedural background kind: canonical ids like tachyon.background.kind.aura or tachyon.background.kind.grid
-    std::string procedural_kind{"tachyon.background.kind.aura"};
+    // Procedural background kind. Leave empty unless the caller explicitly wants a procedural layer.
+    std::string procedural_kind{};
 
     // Common procedural parameters
     ColorSpec procedural_color_a{14, 20, 32, 255};

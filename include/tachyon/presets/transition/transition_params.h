@@ -7,7 +7,7 @@
 
 namespace tachyon::presets {
 
-// Built-in transitions use canonical ids like tachyon.transition.crossfade.
+// Transition ids are caller-defined; the preset registry is intentionally empty by default.
 
 struct TransitionParams : LayerParams {
     std::string id;
