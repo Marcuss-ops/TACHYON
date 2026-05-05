@@ -120,7 +120,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
         return frame;
     }
 
-    // Clear background
+    // Clear background from the evaluated scene state first.
     frame.surface->clear({
         state.background_color.r / 255.0f,
         state.background_color.g / 255.0f,
@@ -131,25 +131,21 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
     auto& dst = *frame.surface;
     dst.set_profile(context.cms.working_profile);
-    
-    renderer2d::Color clear_color = renderer2d::Color::transparent();
-    if (plan.composition.background.has_value()) {
+    // If the evaluated scene did not provide a usable background, fall back to the plan.
+    if (state.background_color.a <= 0 && plan.composition.background.has_value()) {
         auto color_opt = plan.composition.background->get_color();
         if (color_opt) {
-            clear_color = from_color_spec(*color_opt, context.cms.working_profile);
+            dst.clear(from_color_spec(*color_opt, context.cms.working_profile));
         } else if (plan.composition.background->type == BackgroundType::Color) {
-            // Background was specified as a color but not yet parsed into ColorSpec
-            // This can happen if it was created directly from a string without going through the parser.
             BackgroundSpec spec = BackgroundSpec::from_string(plan.composition.background->value);
             auto c = spec.get_color();
             if (c) {
-                clear_color = from_color_spec(*c, context.cms.working_profile);
+                dst.clear(from_color_spec(*c, context.cms.working_profile));
             } else {
-                clear_color = renderer2d::Color::black();
+                dst.clear(renderer2d::Color::black());
             }
         }
     }
-    dst.clear(clear_color);
     dst.clear_depth(0.0f); // Initialize depth buffer for hybrid compositing
 
     FrameDiagnostics* diagnostics = context.diagnostics;
@@ -655,7 +651,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
             
             RenderContext2D thread_context = context;
             render_pass(tile_surface, thread_context, tile);
-            dst.blit(tile_surface, tile.x, tile.y);
+            composite_surface(dst, tile_surface, tile.x, tile.y, BlendMode::Normal);
         }
     } else {
         render_pass(dst, context);
