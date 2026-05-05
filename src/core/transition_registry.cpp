@@ -1,15 +1,13 @@
 #include "tachyon/transition_registry.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 
-#include <unordered_map>
 #include <memory>
-#include <algorithm>
+#include <utility>
 
 namespace tachyon {
 
 struct TransitionRegistry::Impl {
-    std::vector<TransitionSpec> transitions;
-    std::unordered_map<std::string, std::size_t> id_to_index;
+    registry::TypedRegistry<TransitionSpec> transitions;
 };
 
 TransitionRegistry& TransitionRegistry::instance() {
@@ -21,68 +19,55 @@ TransitionRegistry::TransitionRegistry() : m_impl(std::make_unique<Impl>()) {}
 TransitionRegistry::~TransitionRegistry() = default;
 
 void TransitionRegistry::register_transition(const TransitionSpec& spec) {
-    auto it = m_impl->id_to_index.find(spec.id);
-    if (it != m_impl->id_to_index.end()) {
-        m_impl->transitions[it->second] = spec;
-    } else {
-        m_impl->id_to_index[spec.id] = m_impl->transitions.size();
-        m_impl->transitions.push_back(spec);
+    if (spec.id.empty()) {
+        return;
     }
+
+    m_impl->transitions.register_spec(spec);
 }
 
 void TransitionRegistry::unregister_transition(const std::string& id) {
-    auto it = m_impl->id_to_index.find(id);
-    if (it != m_impl->id_to_index.end()) {
-        const std::size_t index = it->second;
-        m_impl->transitions.erase(m_impl->transitions.begin() + index);
-        m_impl->id_to_index.erase(it);
-        // Rebuild indices
-        m_impl->id_to_index.clear();
-        for (std::size_t i = 0; i < m_impl->transitions.size(); ++i) {
-            m_impl->id_to_index[m_impl->transitions[i].id] = i;
-        }
-    }
+    (void)m_impl->transitions.erase(id);
 }
 
 const TransitionSpec* TransitionRegistry::find(const std::string& id) const {
-    auto it = m_impl->id_to_index.find(id);
-    if (it != m_impl->id_to_index.end()) {
-        return &m_impl->transitions[it->second];
-    }
-    return nullptr;
+    return m_impl->transitions.find(id);
 }
 
 std::size_t TransitionRegistry::count() const {
-    return m_impl->transitions.size();
+    return m_impl->transitions.list_ids().size();
 }
 
 const TransitionSpec* TransitionRegistry::get_by_index(std::size_t index) const {
-    if (index >= m_impl->transitions.size()) return nullptr;
-    return &m_impl->transitions[index];
+    const auto ids = m_impl->transitions.list_ids();
+    if (index >= ids.size()) {
+        return nullptr;
+    }
+    return m_impl->transitions.find(ids[index]);
 }
 
 std::vector<std::string> TransitionRegistry::list_builtin_transition_ids() const {
-    std::vector<std::string> ids;
-    ids.reserve(m_impl->transitions.size());
-    for (const auto& spec : m_impl->transitions) {
-        ids.push_back(spec.id);
-    }
-    return ids;
+    return m_impl->transitions.list_ids();
 }
 
 std::vector<TransitionRegistry::TransitionInfo> TransitionRegistry::list_builtin_transitions() const {
-    std::vector<TransitionInfo> info;
-    info.reserve(m_impl->transitions.size());
-    for (const auto& spec : m_impl->transitions) {
-        info.push_back({
-            spec.id,
-            spec.name,
-            spec.description,
-            spec.function != nullptr,
-            spec.state_type != TransitionSpec::Type::None
+    std::vector<TransitionInfo> infos;
+    const auto ids = m_impl->transitions.list_ids();
+    infos.reserve(ids.size());
+    for (const auto& id : ids) {
+        const auto* spec = m_impl->transitions.find(id);
+        if (spec == nullptr) {
+            continue;
+        }
+        infos.push_back({
+            id,
+            spec->name,
+            spec->description,
+            spec->function != nullptr,
+            spec->state_type != TransitionSpec::Type::None
         });
     }
-    return info;
+    return infos;
 }
 
 }  // namespace tachyon

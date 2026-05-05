@@ -4,11 +4,11 @@
 namespace tachyon::presets {
 
 LayerTransitionSpec build_transition_enter(const TransitionParams& p) {
-    return TransitionPresetRegistry::instance().create_enter(p);
+    return TransitionPresetRegistry::instance().create(p.id, p);
 }
 
 LayerTransitionSpec build_transition_exit(const TransitionParams& p) {
-    return TransitionPresetRegistry::instance().create_exit(p);
+    return TransitionPresetRegistry::instance().create(p.id, p);
 }
 
 void apply_transitions(LayerSpec& layer,

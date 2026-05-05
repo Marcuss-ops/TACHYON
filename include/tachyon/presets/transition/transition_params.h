@@ -7,8 +7,7 @@
 
 namespace tachyon::presets {
 
-// For a list of available transitions, use TransitionRegistry::instance().list_builtin_transition_ids().
-// Built-in transitions are registered in glsl_transition_effect.cpp.
+// Built-in transitions use canonical ids like tachyon.transition.crossfade.
 
 struct TransitionParams : LayerParams {
     std::string id;

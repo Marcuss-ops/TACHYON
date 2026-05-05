@@ -46,7 +46,7 @@ bool run_text_preset_tests() {
     {
         TextParams params;
         params.text = "Hello world";
-        params.animation = "bounce_in";
+        params.animation = "tachyon.textanim.bounce_in";
         params.stagger_delay = 0.025;
         params.reveal_duration = 0.45;
 
@@ -58,7 +58,7 @@ bool run_text_preset_tests() {
     {
         TextParams params;
         params.text = "Hello world";
-        params.animation = "word_punch";
+        params.animation = "tachyon.textanim.word_punch";
         params.stagger_delay = 0.06;
         params.reveal_duration = 0.35;
 

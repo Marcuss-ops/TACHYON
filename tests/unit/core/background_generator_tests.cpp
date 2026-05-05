@@ -7,7 +7,7 @@ TEST(BackgroundGeneratorTest, DefaultParams) {
     ShapeGridParams params;
     ProceduralSpec spec = GenerateShapeGridBackground(params);
 
-    EXPECT_EQ(spec.kind, "grid");
+    EXPECT_EQ(spec.kind, "tachyon.background.kind.grid");
     EXPECT_EQ(spec.shape, "square");
     EXPECT_FLOAT_EQ(*spec.angle.value, 0.0f); // "right" → 0°
 }

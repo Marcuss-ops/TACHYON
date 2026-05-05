@@ -26,7 +26,12 @@ namespace tachyon {
  *              .fps(30)
  *              .duration(8.0)
  *              .clear({13, 17, 23, 255})
- *              .layer(background::aura({...}))
+ *              .layer(background::kind_aura()
+ *                  .width(1920)
+ *                  .height(1080)
+ *                  .duration(8.0)
+ *                  .seed(42)
+ *                  .build())
  *              .audio(audio::track("voice")...)
  *              .layer(text::headline("TACHYON NATIVE")...);
  *         })
@@ -46,13 +51,12 @@ inline SceneSpec build_sample_scene() {
              .duration(8.0)
              .clear({13, 17, 23, 255})
              
-             .layer(background::aura({
-                 .id = "bg",
-                 .width = 1920,
-                 .height = 1080,
-                 .duration = 8.0,
-                 .seed = 42
-             }))
+             .layer(background::kind_aura()
+                 .width(1920)
+                 .height(1080)
+                 .duration(8.0)
+                 .seed(42)
+                 .build())
              
              .audio(audio::track("voice")
                  .source("voiceover.wav")

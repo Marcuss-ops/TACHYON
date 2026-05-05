@@ -32,13 +32,7 @@ Color sample_transition_source(const SurfaceRGBA& input, const SurfaceRGBA* aux,
     if (const auto transition_it = params.strings.find("transition_id"); transition_it != params.strings.end()) {
         return transition_it->second;
     }
-    if (const auto shader_it = params.strings.find("shader_path"); shader_it != params.strings.end()) {
-        return std::filesystem::path(shader_it->second).stem().string();
-    }
-    if (const auto shader_name_it = params.strings.find("shader"); shader_name_it != params.strings.end()) {
-        return std::filesystem::path(shader_name_it->second).stem().string();
-    }
-    return "crossfade";
+    return "tachyon.transition.crossfade";
 }
 
 float transition_progress(const EffectParams& params) {
@@ -303,34 +297,40 @@ void init_builtin_transitions() {
     static std::once_flag flag;
     std::call_once(flag, []() {
         auto& reg = TransitionRegistry::instance();
+        const auto register_builtin = [&reg](const char* canonical_id,
+                                             const char* name,
+                                             const char* description,
+                                             TransitionSpec::TransitionFn fn) {
+            reg.register_transition({canonical_id, name, description, fn});
+        };
 
         // Base transitions (pixel-level versions)
-        reg.register_transition({"fade", "Fade", "Simple crossfade transition", transition_fade});
-        reg.register_transition({"slide", "Slide", "Slide transition", transition_slide});
-        reg.register_transition({"zoom", "Zoom", "Zoom transition", transition_zoom});
-        reg.register_transition({"flip", "Flip", "Flip transition", transition_flip});
-        reg.register_transition({"blur", "Blur", "Blur transition", transition_blur});
+        register_builtin("tachyon.transition.crossfade", "Crossfade", "Simple crossfade transition", transition_fade);
+        register_builtin("tachyon.transition.slide", "Slide", "Slide transition", transition_slide);
+        register_builtin("tachyon.transition.zoom", "Zoom", "Zoom transition", transition_zoom);
+        register_builtin("tachyon.transition.flip", "Flip", "Flip transition", transition_flip);
+        register_builtin("tachyon.transition.blur", "Blur", "Blur transition", transition_blur);
 
         // Advanced transitions
-        reg.register_transition({"fade_to_black", "Fade to Black", "Crossfade through black", transition_fade_to_black});
-        reg.register_transition({"wipe_linear", "Linear Wipe", "Simple left-to-right wipe", transition_wipe_linear});
-        reg.register_transition({"wipe_angular", "Angular Wipe", "Angular wipe around center", transition_wipe_angular});
-        reg.register_transition({"push_left", "Push Left", "Push image to the left", transition_push_left});
-        reg.register_transition({"slide_easing", "Slide Easing", "Slide with easing", transition_slide_easing});
-        reg.register_transition({"zoom_in", "Zoom In", "Zoom into target", transition_zoom_in});
-        reg.register_transition({"zoom_blur", "Zoom Blur", "Zoom with motion blur", transition_zoom_blur});
-        reg.register_transition({"spin", "Spin", "Spin rotation", transition_spin});
-        reg.register_transition({"circle_iris", "Circle Iris", "Circular iris opener", transition_circle_iris});
-        reg.register_transition({"pixelate", "Pixelate", "Pixelation transition", transition_pixelate});
-        reg.register_transition({"glitch_slice", "Glitch Slice", "Glitchy slice effect", transition_glitch_slice});
-        reg.register_transition({"rgb_split", "RGB Split", "Color channel split", transition_rgb_split});
-        reg.register_transition({"luma_dissolve", "Luma Dissolve", "Luminance-based dissolve", transition_luma_dissolve});
-        reg.register_transition({"directional_blur_wipe", "Directional Blur Wipe", "Blur wipe with direction", transition_directional_blur_wipe});
-        reg.register_transition({"flash", "Flash", "White flash transition", transition_flash});
+        register_builtin("tachyon.transition.fade_to_black", "Fade to Black", "Crossfade through black", transition_fade_to_black);
+        register_builtin("tachyon.transition.wipe_linear", "Linear Wipe", "Simple left-to-right wipe", transition_wipe_linear);
+        register_builtin("tachyon.transition.wipe_angular", "Angular Wipe", "Angular wipe around center", transition_wipe_angular);
+        register_builtin("tachyon.transition.push_left", "Push Left", "Push image to the left", transition_push_left);
+        register_builtin("tachyon.transition.slide_easing", "Slide Easing", "Slide with easing", transition_slide_easing);
+        register_builtin("tachyon.transition.zoom_in", "Zoom In", "Zoom into target", transition_zoom_in);
+        register_builtin("tachyon.transition.zoom_blur", "Zoom Blur", "Zoom with motion blur", transition_zoom_blur);
+        register_builtin("tachyon.transition.spin", "Spin", "Spin rotation", transition_spin);
+        register_builtin("tachyon.transition.circle_iris", "Circle Iris", "Circular iris opener", transition_circle_iris);
+        register_builtin("tachyon.transition.pixelate", "Pixelate", "Pixelation transition", transition_pixelate);
+        register_builtin("tachyon.transition.glitch_slice", "Glitch Slice", "Glitchy slice effect", transition_glitch_slice);
+        register_builtin("tachyon.transition.rgb_split", "RGB Split", "Color channel split", transition_rgb_split);
+        register_builtin("tachyon.transition.luma_dissolve", "Luma Dissolve", "Luminance-based dissolve", transition_luma_dissolve);
+        register_builtin("tachyon.transition.directional_blur_wipe", "Directional Blur Wipe", "Blur wipe with direction", transition_directional_blur_wipe);
+        register_builtin("tachyon.transition.flash", "Flash", "White flash transition", transition_flash);
 
         // Cinematic transitions
-        reg.register_transition({"light_leak", "Light Leak", "Warm orange light leak", transition_light_leak});
-        reg.register_transition({"film_burn", "Film Burn", "Fiery red-orange film burn", transition_film_burn});
+        register_builtin("tachyon.transition.light_leak", "Light Leak", "Warm orange light leak", transition_light_leak);
+        register_builtin("tachyon.transition.film_burn", "Film Burn", "Fiery red-orange film burn", transition_film_burn);
     });
 }
 

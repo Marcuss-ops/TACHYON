@@ -44,14 +44,14 @@ void apply_layer_transitions(
         TransitionParams tp;
         tp.id = enter_id;
         tp.duration = enter_duration;
-        layer.transition_in = registry.create_enter(tp);
+        layer.transition_in = registry.create(tp.id, tp);
     }
     
     if (!exit_id.empty()) {
         TransitionParams tp;
         tp.id = exit_id;
         tp.duration = exit_duration;
-        layer.transition_out = registry.create_exit(tp);
+        layer.transition_out = registry.create(tp.id, tp);
     }
 }
 

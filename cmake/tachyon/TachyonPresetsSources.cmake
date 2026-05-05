@@ -5,14 +5,20 @@ set(TachyonPresetsSources
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/background/background_preset_registry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/background/background_presets_table.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/background/background_builders.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/presets/background/background_kind_registry.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/presets/background/background_kind_table.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/background_generator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/builders_common.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/image/image_builders.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/sfx/sfx_builders.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/sfx/sfx_registry.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/presets/sfx/sfx_registry_table.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/shape/shape_builders.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/presets/text/text_preset_registry.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/presets/text/text_presets_table.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/presets/text/text_layer_preset_registry.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/presets/text/text_layer_presets_table.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/presets/text/text_animator_preset_registry.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/presets/text/text_animator_presets_table.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/presets/text/text_builders.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/transition/transition_preset_registry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/transition/transition_builders.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/transition/transition_presets_table.cpp

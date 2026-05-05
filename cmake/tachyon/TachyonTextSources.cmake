@@ -10,7 +10,6 @@ set(TachyonTextSources
     ${CMAKE_CURRENT_SOURCE_DIR}/text/core/animation/text_animator_sampling.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/text/core/animation/text_animator_utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/text/core/animation/text_presets.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/animation/text_preset_registry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/text/core/animation/text_scene_presets.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/text/core/content/subtitle.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/text/core/content/word_timestamps.cpp

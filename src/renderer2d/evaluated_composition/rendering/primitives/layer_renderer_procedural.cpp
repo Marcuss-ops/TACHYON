@@ -14,6 +14,55 @@ namespace tachyon::renderer2d {
 
 namespace {
 
+enum class ProceduralFamily {
+    AuraLike,
+    Grid,
+    GridLines,
+    Galaxy,
+    Stars,
+};
+
+ProceduralFamily resolve_family(const ProceduralSpec& spec) {
+    const bool has_galaxy_fields =
+        spec.star_speed.value.has_value() ||
+        spec.density.value.has_value() ||
+        spec.hue_shift.value.has_value() ||
+        spec.twinkle_intensity.value.has_value() ||
+        spec.rotation_speed.value.has_value() ||
+        spec.repulsion_strength.value.has_value() ||
+        spec.auto_center_repulsion.value.has_value();
+
+    if (has_galaxy_fields) {
+        return ProceduralFamily::Galaxy;
+    }
+
+    const bool has_grid_fields =
+        spec.spacing.value.has_value() ||
+        spec.border_width.value.has_value() ||
+        spec.shape != "square";
+
+    const bool has_grid_line_fields =
+        has_grid_fields &&
+        (spec.glow_intensity.value.value_or(0.0) > 0.0 ||
+         spec.scanline_intensity.value.value_or(0.0) > 0.0);
+
+    if (has_grid_line_fields) {
+        return ProceduralFamily::GridLines;
+    }
+
+    if (has_grid_fields) {
+        return ProceduralFamily::Grid;
+    }
+
+    if (spec.frequency.value.value_or(0.0) > 20.0 &&
+        spec.star_speed.value.value_or(0.0) == 0.0 &&
+        spec.density.value.value_or(0.0) == 0.0) {
+        return ProceduralFamily::Stars;
+    }
+
+    return ProceduralFamily::AuraLike;
+}
+
 // --- Math Helpers ---
 inline float smoothstep(float edge0, float edge1, float x) {
     float t = std::clamp((x - edge0) / (edge1 - edge0), 0.0f, 1.0f);
@@ -212,14 +261,7 @@ void render_procedural_pattern(
     const float glow = static_cast<float>(spec.glow_intensity.value.value_or(0.0));
     const float inv_gamma = 1.0f / gamma;
     
-    // Pattern type detection
-    const bool is_aura = (spec.kind == "aura" || spec.kind == "nebula");
-    const bool is_grid = (spec.kind == "grid");
-    const bool is_grid_lines = (spec.kind == "grid_lines");
-    const bool is_stars = (spec.kind == "stars");
-    const bool is_stripes = (spec.kind == "stripes");
-    const bool is_waves = (spec.kind == "waves");
-    const bool is_galaxy = (spec.kind == "galaxy");
+    const ProceduralFamily family = resolve_family(spec);
     const bool do_warp = (warp > 0.0f);
     
     const uint32_t width = fb.width();
@@ -299,7 +341,7 @@ void render_procedural_pattern(
             
             // STAGE 2 & 3: PATTERN & COLOR BLEND
             Color final_color;
-            if (is_galaxy) {
+            if (family == ProceduralFamily::Galaxy) {
                 const float star_speed_val = static_cast<float>(spec.star_speed.value.value_or(0.5));
                 const float density_val = static_cast<float>(spec.density.value.value_or(1.0));
                 const float hue_shift_val = static_cast<float>(spec.hue_shift.value.value_or(140.0));
@@ -352,16 +394,16 @@ void render_procedural_pattern(
                 }
             } else {
                 float value = 0.0f;
-                if (is_aura) {
+                if (family == ProceduralFamily::AuraLike) {
                     float n1 = noise.noise3d(u * freq, v * freq, t * 0.2f);
                     float n2 = noise.noise3d(u * freq * 2.0f + n1, v * freq * 2.0f, t * 0.5f) * octave_decay;
                     value = (n2 + 1.0f) * 0.5f * amp;
-                } else if (is_grid) {
+                } else if (family == ProceduralFamily::Grid) {
                     float rad = static_cast<float>(spec.angle.value.value_or(0.0) * 3.14159265358979323846 / 180.0);
                     float grid_u = u + t * std::cos(rad) * 0.5f;
                     float grid_v = v + t * std::sin(rad) * 0.5f;
                     value = generate_shape(grid_u, grid_v, shape, spacing, border, static_cast<float>(comp_width), static_cast<float>(comp_height));
-                } else if (is_grid_lines) {
+                } else if (family == ProceduralFamily::GridLines) {
                     float gu_lines = std::fmod(u * static_cast<float>(comp_width) / spacing, 1.0f);
                     if (gu_lines < 0) gu_lines += 1.0f;
                     float gv_lines = std::fmod(v * static_cast<float>(comp_height) / spacing, 1.0f);
@@ -375,21 +417,12 @@ void render_procedural_pattern(
                         value = std::max(value, (glow_u + glow_v) * glow);
                     }
                     value *= amp;
-                } else if (is_stars) {
+                } else if (family == ProceduralFamily::Stars) {
                     float n = noise.noise3d(u * freq * 100.0f, v * freq * 100.0f, 0.0f);
                     if (n > 0.8f) {
                         float twinkle_st = std::sin(t * 3.0f + n * 10.0f) * 0.5f + 0.5f;
                         value = ((n - 0.8f) / 0.2f) * twinkle_st * amp;
                     }
-                } else if (is_stripes) {
-                    float rad = static_cast<float>(spec.angle.value.value_or(0.0) * 3.14159265358979323846 / 180.0);
-                    float su = u * std::cos(rad) - v * std::sin(rad);
-                    value = std::sin(su * freq * 10.0f + t) * 0.5f + 0.5f;
-                    value = std::pow(value, 10.0f) * amp;
-                } else if (is_waves) {
-                    float w1 = std::sin(u * freq * 10.0f + t) * 0.5f + 0.5f;
-                    float w2 = std::sin(v * freq * 8.0f - t * 1.5f) * 0.5f + 0.5f;
-                    value = (w1 * w2) * amp;
                 } else {
                     value = (noise.noise3d(u * freq * scale, v * freq * scale, t) + 1.0f) * 0.5f * amp;
                 }

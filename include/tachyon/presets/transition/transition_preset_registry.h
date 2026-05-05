@@ -1,5 +1,7 @@
 #pragma once
 
+#include "tachyon/core/registry/registry_metadata.h"
+#include "tachyon/core/registry/typed_registry.h"
 #include "tachyon/presets/transition/transition_params.h"
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 #include <string>
@@ -16,8 +18,7 @@ namespace tachyon::presets {
  */
 struct TransitionPresetSpec {
     std::string id;
-    std::string name;
-    std::string description;
+    registry::RegistryMetadata metadata;
     
     // Factory function to create the transition spec based on parameters.
     std::function<LayerTransitionSpec(const TransitionParams&)> factory;
@@ -25,36 +26,25 @@ struct TransitionPresetSpec {
 
 /**
  * @brief Registry for transition presets.
- * Maps transition IDs to factory functions that create LayerTransitionSpec.
  */
 class TransitionPresetRegistry {
 public:
     static TransitionPresetRegistry& instance();
 
-    // Registers a new transition preset.
-    void register_preset(TransitionPresetSpec spec);
-
-    // Finds a preset by ID.
+    void register_spec(TransitionPresetSpec spec);
     const TransitionPresetSpec* find(std::string_view id) const;
 
-    // Creates an enter transition using the specified ID and parameters.
-    LayerTransitionSpec create_enter(const TransitionParams& params) const;
+    LayerTransitionSpec create(std::string_view id, const TransitionParams& params) const;
 
-    // Creates an exit transition using the specified ID and parameters.
-    LayerTransitionSpec create_exit(const TransitionParams& params) const;
-
-    // Lists all registered transition IDs.
     std::vector<std::string> list_ids() const;
 
-    // Loads built-in presets from the table.
     void load_builtins();
 
 private:
     TransitionPresetRegistry();
     ~TransitionPresetRegistry() = default;
 
-    struct Impl;
-    std::unique_ptr<Impl> m_impl;
+    registry::TypedRegistry<TransitionPresetSpec> registry_;
 };
 
 } // namespace tachyon::presets

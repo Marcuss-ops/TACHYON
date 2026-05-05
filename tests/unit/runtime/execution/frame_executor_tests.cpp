@@ -56,7 +56,7 @@ tachyon::SceneSpec make_procedural_scene() {
     layer.out_point = 2.0;
     layer.opacity = 1.0;
     layer.procedural = tachyon::ProceduralSpec{};
-    layer.procedural->kind = "grid_lines";
+    layer.procedural->kind = "tachyon.background.kind.grid_modern";
 
     tachyon::CompositionSpec comp;
     comp.id = "main";

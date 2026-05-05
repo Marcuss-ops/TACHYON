@@ -44,10 +44,11 @@ bool run_native_render_tests() {
 
     std::cout << "[NativeRender] Starting Premium Background Batch Render...\n";
 
-    for (const auto& pid : presets::list_background_presets()) {
+    const auto& background_registry = presets::BackgroundPresetRegistry::instance();
+    for (const auto& pid : background_registry.list_ids()) {
         std::cout << "[NativeRender] Rendering: " << pid << "...\n";
-        
-        auto bg_opt = presets::build_background_preset(pid, 1280, 720);
+
+        auto bg_opt = background_registry.create(pid, 1280, 720);
         if (!bg_opt) continue;
         LayerSpec bg = *bg_opt;
 

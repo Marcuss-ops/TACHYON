@@ -4,7 +4,7 @@
 #include "tachyon/presets/background/background_preset_registry.h"
 #include "tachyon/presets/transition/transition_preset_registry.h"
 #include "tachyon/presets/text/text_builders.h"
-#include "tachyon/text/animation/text_preset_registry.h"
+#include "tachyon/presets/text/text_animator_preset_registry.h"
 
 namespace tachyon::scene {
 
@@ -308,17 +308,23 @@ LayerBuilder& LayerBuilder::subtitle_path(std::string path) {
 }
 
 LayerBuilder& LayerBuilder::text_animation_preset(const std::string& id) {
-    spec_.text_animators = text::TextPresetRegistry::instance().create(id);
+    spec_.text_animators = presets::TextAnimatorPresetRegistry::instance().create(id);
     return *this;
 }
 
 LayerBuilder& LayerBuilder::transition_in_preset(const std::string& id, double duration) {
-    spec_.transition_in = presets::TransitionPresetRegistry::instance().create_enter({.id = id, .duration = duration});
+    presets::TransitionParams params;
+    params.id = id;
+    params.duration = duration;
+    spec_.transition_in = presets::TransitionPresetRegistry::instance().create(id, params);
     return *this;
 }
 
 LayerBuilder& LayerBuilder::transition_out_preset(const std::string& id, double duration) {
-    spec_.transition_out = presets::TransitionPresetRegistry::instance().create_exit({.id = id, .duration = duration});
+    presets::TransitionParams params;
+    params.id = id;
+    params.duration = duration;
+    spec_.transition_out = presets::TransitionPresetRegistry::instance().create(id, params);
     return *this;
 }
 

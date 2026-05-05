@@ -25,8 +25,9 @@ void add_keyframe_v2(std::vector<Vector2KeyframeSpec>& kfs, double time, double 
 
 void Animation2DPresetRegistry::load_builtins() {
     // 1. Pop In: A bouncy scale-up entrance
-    register_preset({
-        "pop_in", "Pop In", "Bouncy scale-up entrance animation.",
+    register_spec({
+        "tachyon.anim2d.pop_in",
+        {"tachyon.anim2d.pop_in", "Pop In", "Bouncy scale-up entrance animation.", "animation.2d", {"entrance", "pop", "bouncy"}},
         [](LayerSpec& layer, const Animation2DParams& params) {
             auto& scale = layer.transform.scale_property;
             scale.keyframes.clear();
@@ -37,8 +38,9 @@ void Animation2DPresetRegistry::load_builtins() {
     });
 
     // 2. Soft Pulse: Gentle looping scale oscillation
-    register_preset({
-        "soft_pulse", "Soft Pulse", "Gentle breathing scale animation.",
+    register_spec({
+        "tachyon.anim2d.soft_pulse",
+        {"tachyon.anim2d.soft_pulse", "Soft Pulse", "Gentle breathing scale animation.", "animation.2d", {"loop", "pulse", "subtle"}},
         [](LayerSpec& layer, const Animation2DParams& params) {
             auto& scale = layer.transform.scale_property;
             scale.keyframes.clear();
@@ -51,8 +53,9 @@ void Animation2DPresetRegistry::load_builtins() {
     });
 
     // 3. Subtle Drift: Slow floating motion in Y axis
-    register_preset({
-        "subtle_drift", "Subtle Drift", "Slow floating vertical motion.",
+    register_spec({
+        "tachyon.anim2d.subtle_drift",
+        {"tachyon.anim2d.subtle_drift", "Subtle Drift", "Slow floating vertical motion.", "animation.2d", {"loop", "drift", "subtle"}},
         [](LayerSpec& layer, const Animation2DParams& params) {
             auto& pos = layer.transform.position_property;
             pos.keyframes.clear();
@@ -64,8 +67,9 @@ void Animation2DPresetRegistry::load_builtins() {
     });
 
     // 4. Smooth Rotation: Gentle back and forth rotation
-    register_preset({
-        "smooth_rotate", "Smooth Rotate", "Gentle pendulum-like rotation.",
+    register_spec({
+        "tachyon.anim2d.smooth_rotate",
+        {"tachyon.anim2d.smooth_rotate", "Smooth Rotate", "Gentle pendulum-like rotation.", "animation.2d", {"loop", "rotate", "subtle"}},
         [](LayerSpec& layer, const Animation2DParams& params) {
             auto& rot = layer.transform.rotation_property;
             rot.keyframes.clear();

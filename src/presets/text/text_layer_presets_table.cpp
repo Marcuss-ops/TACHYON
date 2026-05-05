@@ -1,12 +1,13 @@
-#include "tachyon/presets/text/text_preset_registry.h"
+#include "tachyon/presets/text/text_layer_preset_registry.h"
 #include "tachyon/presets/builders_common.h"
 
 namespace tachyon::presets {
 
-void TextPresetRegistry::load_builtins() {
+void TextLayerPresetRegistry::load_builtins() {
     // 1. Classic Title
-    register_preset({
-        "classic_title", "Classic Title", "Large centered title with Inter Bold.",
+    register_spec({
+        "tachyon.text.layer.classic_title",
+        {"tachyon.text.layer.classic_title", "Classic Title", "Large centered title with Inter Bold.", "text.layer", {"title", "classic"}},
         [](const std::string& content, const TextParams& p) {
             LayerSpec l = make_base_layer("text_title", "Title", "text", p);
             l.text_content = content;
@@ -21,8 +22,9 @@ void TextPresetRegistry::load_builtins() {
     });
 
     // 2. Minimal Subtitle
-    register_preset({
-        "minimal_subtitle", "Minimal Subtitle", "Small clean subtitle at the bottom.",
+    register_spec({
+        "tachyon.text.layer.minimal_subtitle",
+        {"tachyon.text.layer.minimal_subtitle", "Minimal Subtitle", "Small clean subtitle at the bottom.", "text.layer", {"subtitle", "minimal"}},
         [](const std::string& content, const TextParams& p) {
             LayerSpec l = make_base_layer("text_subtitle", "Subtitle", "text", p);
             l.text_content = content;
@@ -37,8 +39,9 @@ void TextPresetRegistry::load_builtins() {
     });
 
     // 3. Tech Label
-    register_preset({
-        "tech_label", "Tech Label", "Monospace tech-style label.",
+    register_spec({
+        "tachyon.text.layer.tech_label",
+        {"tachyon.text.layer.tech_label", "Tech Label", "Monospace tech-style label.", "text.layer", {"label", "tech", "mono"}},
         [](const std::string& content, const TextParams& p) {
             LayerSpec l = make_base_layer("text_tech", "Label", "text", p);
             l.text_content = content;

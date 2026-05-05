@@ -1,9 +1,46 @@
 #include "tachyon/text/animation/text_scene_presets.h"
-#include "tachyon/background_generator.h"
+#include "tachyon/presets/background/background_builders.h"
 
 namespace tachyon::text {
 
 namespace {
+
+::tachyon::presets::BackgroundParams make_background_params(const TextScenePresetOptions& options) {
+    ::tachyon::presets::BackgroundParams params;
+    params.kind = options.procedural_kind;
+    params.in_point = 0.0;
+    params.out_point = options.duration_seconds;
+    params.x = 0.0f;
+    params.y = 0.0f;
+    params.w = static_cast<float>(options.width);
+    params.h = static_cast<float>(options.height);
+    params.opacity = 1.0f;
+    params.seed = 19;
+    params.speed = static_cast<float>(options.procedural_speed);
+    params.color_a = options.procedural_color_a;
+    params.color_b = options.procedural_color_b;
+    params.color_c = options.procedural_color_c;
+    params.frequency = static_cast<float>(options.procedural_frequency);
+    params.amplitude = static_cast<float>(options.procedural_amplitude);
+    params.scale = static_cast<float>(options.procedural_scale);
+    params.grain_amount = static_cast<float>(options.procedural_grain);
+    params.contrast = 1.0f;
+    params.softness = 0.0f;
+
+    if (options.procedural_kind == "tachyon.background.kind.grid") {
+        params.kind = "tachyon.background.kind.grid";
+        params.color_a = options.shape_grid_params.background_color;
+        params.color_b = options.shape_grid_params.grid_color;
+        params.color_c = std::nullopt;
+        params.seed = options.shape_grid_params.seed;
+        params.speed = options.shape_grid_params.speed;
+        params.shape = options.shape_grid_params.shape;
+        params.spacing = options.shape_grid_params.spacing;
+        params.border_width = options.shape_grid_params.border_width;
+    }
+
+    return params;
+}
 
 TextAnimatorSpec make_default_fade_up() {
     return make_minimal_fade_up_animator("characters_excluding_spaces", 0.60, 18.0);
@@ -20,43 +57,7 @@ TextAnimatorSpec make_default_soft_scale() {
 } // namespace
 
 LayerSpec make_enhance_text_background_layer(const TextScenePresetOptions& options) {
-    LayerSpec bg;
-    bg.id = "bg_procedural";
-    bg.name = "Background";
-    bg.type = "procedural";
-    bg.enabled = true;
-    bg.visible = true;
-    bg.start_time = 0.0;
-    bg.in_point = 0.0;
-    bg.out_point = options.duration_seconds;
-    bg.width = options.width;
-    bg.height = options.height;
-    bg.opacity = 1.0;
-    bg.procedural = ProceduralSpec{};
-
-    if (options.procedural_kind == "grid") {
-        // Use ShapeGrid procedural background
-        ShapeGridParams params = options.shape_grid_params;
-        params.background_color = options.procedural_color_a;
-        params.grid_color = options.procedural_color_b;
-        *bg.procedural = GenerateShapeGridBackground(params);
-    } else {
-        // Default: aura procedural background
-        bg.procedural->kind = "aura";
-        bg.procedural->seed = 19;
-        bg.procedural->color_a = AnimatedColorSpec(options.procedural_color_a);
-        bg.procedural->color_b = AnimatedColorSpec(options.procedural_color_b);
-        bg.procedural->color_c = AnimatedColorSpec(options.procedural_color_c);
-        bg.procedural->speed = AnimatedScalarSpec(options.procedural_speed);
-        bg.procedural->frequency = AnimatedScalarSpec(options.procedural_frequency);
-        bg.procedural->amplitude = AnimatedScalarSpec(options.procedural_amplitude);
-        bg.procedural->scale = AnimatedScalarSpec(options.procedural_scale);
-        bg.procedural->grain_amount = AnimatedScalarSpec(options.procedural_grain);
-        bg.procedural->contrast = AnimatedScalarSpec(1.0);
-        bg.procedural->gamma = AnimatedScalarSpec(1.0);
-        bg.procedural->saturation = AnimatedScalarSpec(1.0);
-    }
-    return bg;
+    return ::tachyon::presets::build_background(make_background_params(options));
 }
 
 LayerSpec make_enhance_text_layer(const TextScenePresetOptions& options) {

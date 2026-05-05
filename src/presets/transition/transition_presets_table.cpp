@@ -4,15 +4,14 @@ namespace tachyon::presets {
 
 namespace {
 
-void register_glsl(TransitionPresetRegistry& registry, std::string id, std::string name, std::string shader_id) {
-    registry.register_preset({
-        std::move(id),
-        std::move(name),
-        "Professional GLSL-based transition effect.",
-        [shader_id](const TransitionParams& p) {
+void register_glsl(TransitionPresetRegistry& registry, std::string id, std::string name, std::string transition_id) {
+    registry.register_spec({
+        id,
+        {id, name, "Professional GLSL-based transition effect.", "transition", {"glsl", "cinematic"}},
+        [transition_id](const TransitionParams& p) {
             LayerTransitionSpec spec;
-            // Use transition_id to tell the renderer which shader/function to use
-            spec.transition_id = shader_id;
+            spec.type = transition_id;
+            spec.transition_id = transition_id;
             spec.duration = p.duration;
             spec.easing = p.easing;
             spec.delay = p.delay;
@@ -25,51 +24,53 @@ void register_glsl(TransitionPresetRegistry& registry, std::string id, std::stri
 } // namespace
 
 void TransitionPresetRegistry::load_builtins() {
-    register_preset({
-        "none", "None", "No transition effect",
-        [](const TransitionParams& p) {
+    register_spec({
+        "tachyon.transition.none",
+        {"tachyon.transition.none", "None", "No transition effect", "transition", {"utility"}},
+        [](const TransitionParams&) {
             LayerTransitionSpec spec;
-            spec.type = "none";
+            spec.type = "tachyon.transition.none";
+            spec.transition_id = "tachyon.transition.none";
             return spec;
         }
     });
 
     // 1. Classic Crossfade
-    register_glsl(*this, "crossfade", "Crossfade", "fade");
+    register_glsl(*this, "tachyon.transition.crossfade", "Crossfade", "tachyon.transition.crossfade");
 
     // 2. Circle Iris
-    register_glsl(*this, "circle_iris", "Circle Iris", "circle_iris");
+    register_glsl(*this, "tachyon.transition.circle_iris", "Circle Iris", "tachyon.transition.circle_iris");
 
     // 3. Pixelate
-    register_glsl(*this, "pixelate", "Pixelate", "pixelate");
+    register_glsl(*this, "tachyon.transition.pixelate", "Pixelate", "tachyon.transition.pixelate");
 
     // 4. Zoom Blur
-    register_glsl(*this, "zoom_blur", "Zoom Blur", "zoom_blur");
+    register_glsl(*this, "tachyon.transition.zoom_blur", "Zoom Blur", "tachyon.transition.zoom_blur");
 
     // 5. Luma Dissolve
-    register_glsl(*this, "luma_dissolve", "Luma Dissolve", "luma_dissolve");
+    register_glsl(*this, "tachyon.transition.luma_dissolve", "Luma Dissolve", "tachyon.transition.luma_dissolve");
 
     // 6. Directional Blur Wipe
-    register_glsl(*this, "directional_blur_wipe", "Directional Blur Wipe", "directional_blur_wipe");
+    register_glsl(*this, "tachyon.transition.directional_blur_wipe", "Directional Blur Wipe", "tachyon.transition.directional_blur_wipe");
 
     // 7. RGB Split
-    register_glsl(*this, "rgb_split", "RGB Split", "rgb_split");
+    register_glsl(*this, "tachyon.transition.rgb_split", "RGB Split", "tachyon.transition.rgb_split");
 
     // 8. Push Left (Geometric)
-    register_glsl(*this, "push_left", "Push Left", "push_left");
+    register_glsl(*this, "tachyon.transition.push_left", "Push Left", "tachyon.transition.push_left");
 
     // 9. Wipe Linear
-    register_glsl(*this, "wipe_linear", "Wipe Linear", "wipe_linear");
+    register_glsl(*this, "tachyon.transition.wipe_linear", "Wipe Linear", "tachyon.transition.wipe_linear");
 
     // 10. Spin
-    register_glsl(*this, "spin", "Spin", "spin");
+    register_glsl(*this, "tachyon.transition.spin", "Spin", "tachyon.transition.spin");
 
     // Extra: Glitch Slice
-    register_glsl(*this, "glitch_slice", "Glitch Slice", "glitch_slice");
+    register_glsl(*this, "tachyon.transition.glitch_slice", "Glitch Slice", "tachyon.transition.glitch_slice");
     
     // Cinematic
-    register_glsl(*this, "film_burn", "Film Burn", "film_burn");
-    register_glsl(*this, "light_leak", "Light Leak", "light_leak");
+    register_glsl(*this, "tachyon.transition.film_burn", "Film Burn", "tachyon.transition.film_burn");
+    register_glsl(*this, "tachyon.transition.light_leak", "Light Leak", "tachyon.transition.light_leak");
 }
 
 } // namespace tachyon::presets

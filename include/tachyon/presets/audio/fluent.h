@@ -105,7 +105,7 @@ public:
 
     AudioTrackBuilder& effect_fade_in(double duration) {
         AudioEffectSpec fx;
-        fx.type = "fade_in";
+        fx.type = "tachyon.audio.effect.fade_in";
         fx.duration = duration;
         spec_.effects.push_back(std::move(fx));
         return *this;

@@ -1,6 +1,6 @@
 #include "tachyon/presets/text/text_builders.h"
 #include "tachyon/presets/builders_common.h"
-#include "tachyon/text/animation/text_preset_registry.h"
+#include "tachyon/presets/text/text_animator_preset_registry.h"
 #include "tachyon/text/animation/text_presets.h"
 
 namespace tachyon::presets {
@@ -39,8 +39,8 @@ LayerSpec build_text(const TextParams& p) {
     }
     
     // Otherwise, use the registry for the named animation
-    std::string anim_id = p.animation.empty() ? "fade_up" : p.animation;
-    l.text_animators = tachyon::text::TextPresetRegistry::instance().create(
+    std::string anim_id = p.animation.empty() ? "tachyon.textanim.fade_up" : p.animation;
+    l.text_animators = tachyon::presets::TextAnimatorPresetRegistry::instance().create(
         anim_id,
         "characters_excluding_spaces",
         p.stagger_delay,

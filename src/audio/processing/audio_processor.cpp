@@ -309,7 +309,7 @@ void AudioProcessor::setup_track_effects(const TrackInstance& track) {
     const float sample_rate = static_cast<float>(kInternalSampleRate);
     
     for (const auto& effect : track.spec.effects) {
-        if (effect.type == "fade_in") {
+        if (effect.type == "tachyon.audio.effect.fade_in") {
             auto node = std::make_shared<tachyon::audio::FadeNode>();
             double duration = effect.duration.value_or(1.0);
             float duration_samples = static_cast<float>(duration * sample_rate);

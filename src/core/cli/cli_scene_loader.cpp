@@ -24,8 +24,8 @@ LoadSceneResult load_scene_for_cli(
 
     if (options.preset_id.has_value()) {
         const auto& pid = *options.preset_id;
-        
-        auto bg = presets::build_background_preset(pid, 1280, 720);
+
+        auto bg = presets::BackgroundPresetRegistry::instance().create(pid, 1280, 720);
         if (!bg) {
             result.diagnostics.add_error("preset_not_found", "Unknown preset: " + pid);
             return result;

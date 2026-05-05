@@ -1,57 +1,37 @@
 #include "tachyon/presets/background/background_preset_registry.h"
-#include <map>
-#include <mutex>
 
 namespace tachyon::presets {
 
-struct BackgroundPresetRegistry::Impl {
-    std::map<std::string, BackgroundPresetSpec, std::less<>> presets;
-    std::mutex mutex;
-};
+BackgroundPresetRegistry& BackgroundPresetRegistry::instance() {
+    static BackgroundPresetRegistry registry;
+    return registry;
+}
 
-
-BackgroundPresetRegistry::BackgroundPresetRegistry() : m_impl(std::make_unique<Impl>()) {
+BackgroundPresetRegistry::BackgroundPresetRegistry() {
     load_builtins();
 }
 
-BackgroundPresetRegistry::~BackgroundPresetRegistry() = default;
-
-void BackgroundPresetRegistry::register_preset(BackgroundPresetSpec spec) {
-    std::lock_guard<std::mutex> lock(m_impl->mutex);
-    m_impl->presets[spec.id] = std::move(spec);
+void BackgroundPresetRegistry::register_spec(BackgroundPresetSpec spec) {
+    registry_.register_spec(std::move(spec));
 }
 
 const BackgroundPresetSpec* BackgroundPresetRegistry::find(std::string_view id) const {
-    std::lock_guard<std::mutex> lock(m_impl->mutex);
-    auto it = m_impl->presets.find(id);
-    if (it != m_impl->presets.end()) {
-        return &it->second;
-    }
-    return nullptr;
+    return registry_.find(id);
 }
 
+std::optional<LayerSpec> BackgroundPresetRegistry::create(std::string_view id, int width, int height, double duration) const {
+    if (const auto* spec = find(id)) {
+        auto layer = spec->factory(width, height, duration);
+        layer.id = "bg_" + std::string(id);
+        layer.name = spec->metadata.display_name;
+        layer.preset_id = std::string(id);
+        return layer;
+    }
+    return std::nullopt;
+}
 
 std::vector<std::string> BackgroundPresetRegistry::list_ids() const {
-    std::lock_guard<std::mutex> lock(m_impl->mutex);
-    std::vector<std::string> ids;
-    ids.reserve(m_impl->presets.size());
-    for (const auto& [id, _] : m_impl->presets) {
-        ids.push_back(id);
-    }
-    return ids;
-}
-
-// Loads built-in presets from the table.
-// Implementation is in background_presets_table.cpp
-// void BackgroundPresetRegistry::load_builtins() { ... }
-
-// Compatibility wrappers
-std::optional<LayerSpec> build_background_preset(std::string_view id, int width, int height) {
-    return BackgroundPresetRegistry::instance().create(id, width, height);
-}
-
-std::vector<std::string> list_background_presets() {
-    return BackgroundPresetRegistry::instance().list_ids();
+    return registry_.list_ids();
 }
 
 } // namespace tachyon::presets
