@@ -87,7 +87,7 @@ std::optional<TransitionDemoConfig> load_transition_demo(
     config.preview_resolution_scale = 1.0f;
 
     if (config.file_prefix.empty()) {
-        diagnostics.add_error("studio.demo_invalid", "Transition id is missing a file prefix.");
+        diagnostics.add_error("catalog.demo_invalid", "Transition id is missing a file prefix.");
         return std::nullopt;
     }
 
@@ -276,7 +276,7 @@ std::optional<std::reference_wrapper<const CachedSceneStill>> render_scene_still
     }
 
     if (scene.compositions.empty()) {
-        err << "unknown or empty studio scene: " << scene_id << '\n';
+        err << "unknown or empty catalog scene: " << scene_id << '\n';
         return std::nullopt;
     }
 
@@ -321,7 +321,7 @@ renderer2d::SurfaceRGBA preview_surface(const renderer2d::SurfaceRGBA& src, floa
 
 RenderPlan make_output_plan(const std::filesystem::path& output_dir, const std::string& prefix) {
     RenderPlan plan;
-    plan.job_id = "studio-demo";
+    plan.job_id = "catalog-demo";
     plan.scene_ref = "assets/catalog";
     plan.composition_target = prefix;
     plan.composition.id = prefix;
@@ -451,7 +451,7 @@ bool render_transition_demo(
 
 }  // namespace
 
-bool run_studio_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err) {
+bool run_catalog_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err) {
     const std::filesystem::path library_root = resolve_library_root(options.library_path);
     TachyonCatalog library(library_root);
     if (!library.ok()) {

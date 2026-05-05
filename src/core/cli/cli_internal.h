@@ -17,8 +17,8 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
 bool run_preview_command(const CliOptions& options, std::ostream& out, std::ostream& err);
 bool run_preview_frame_command(const CliOptions& options, std::ostream& out, std::ostream& err);
 bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostream& err);
-#ifdef TACHYON_ENABLE_STUDIO_COMMANDS
-bool run_studio_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err);
+#ifdef TACHYON_ENABLE_CATALOG_COMMANDS
+bool run_catalog_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err);
 #endif
 bool run_fetch_fonts_command(const CliOptions& options, std::ostream& out, std::ostream& err);
 bool run_preview_internal(const CliOptions& options, std::ostream& out, std::ostream& err, const char* label);

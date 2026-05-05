@@ -111,12 +111,12 @@ static const std::vector<CommandEntry> kCommands = {
         nullptr,
         run_watch_command
     },
-#ifdef TACHYON_ENABLE_STUDIO_COMMANDS
+#ifdef TACHYON_ENABLE_CATALOG_COMMANDS
     {
-        "studio-demo",
-        "tachyon studio-demo [--library <dir>] [--transition <id>] [--output-dir <dir>]",
+        "catalog-demo",
+        "tachyon catalog-demo [--library <dir>] [--transition <id>] [--output-dir <dir>]",
         nullptr,
-        run_studio_demo_command
+        run_catalog_demo_command
     },
 #endif
     {

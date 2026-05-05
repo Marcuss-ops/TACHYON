@@ -2,6 +2,7 @@
 #include "tachyon/presets/scene/common.h"
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include "tachyon/presets/transition/transition_preset_registry.h"
+#include "tachyon/presets/scene/scene_preset_registry.h"
 
 #include <algorithm>
 #include <fstream>
@@ -95,10 +96,17 @@ bool TachyonCatalog::reload() {
 }
 
 void TachyonCatalog::register_cpp_presets() {
-    m_scenes.push_back({"tachyon.scene.enhanced_text", "Modern Aura (C++)", "", true});
-    m_scenes.push_back({"tachyon.scene.modern_grid", "Modern Tech Grid (C++)", "", true});
-    m_scenes.push_back({"tachyon.scene.classico_premium", "Classico Premium (C++)", "", true});
-    m_scenes.push_back({"tachyon.scene.minimal_text", "Minimal White (C++)", "", true});
+    const auto& registry = presets::ScenePresetRegistry::instance();
+    for (const auto& id : registry.list_ids()) {
+        if (const auto* spec = registry.find(id)) {
+            m_scenes.push_back({
+                spec->id,
+                spec->metadata.display_name,
+                spec->metadata.description,
+                true // is_cpp_preset
+            });
+        }
+    }
 }
 
 void TachyonCatalog::register_transition_assets() {
@@ -173,10 +181,9 @@ SceneSpec TachyonCatalog::instantiate_scene(const std::string& id) const {
     if (!entry) return {};
 
     if (entry->is_cpp_preset) {
-        if (id == "tachyon.scene.enhanced_text") return presets::scene::build_enhanced_text_scene();
-        if (id == "tachyon.scene.modern_grid") return presets::scene::build_modern_grid_scene();
-        if (id == "tachyon.scene.classico_premium") return presets::scene::build_classico_premium_scene();
-        if (id == "tachyon.scene.minimal_text") return presets::scene::build_minimal_text_scene();
+        if (auto scene = presets::ScenePresetRegistry::instance().create(id, {})) {
+            return std::move(*scene);
+        }
     }
     return {};
 }

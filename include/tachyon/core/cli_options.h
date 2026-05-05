@@ -19,7 +19,7 @@ struct CliOptions {
     std::filesystem::path job_path;
     std::filesystem::path batch_path;
     std::filesystem::path output_override;
-    std::filesystem::path output_dir;  // Common output directory for studio-demo
+    std::filesystem::path output_dir;  // Common output directory for catalog-demo
     std::filesystem::path font_manifest_path;  // For inspect-fonts command
     std::size_t worker_count{1};
     std::optional<std::size_t> memory_budget_bytes;

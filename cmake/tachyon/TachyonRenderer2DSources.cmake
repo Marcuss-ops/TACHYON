@@ -20,6 +20,8 @@ set(TachyonRenderer2DSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_color_table.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_transition_table.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_distortion_table.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_generator_table.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_stylize_table.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/effect_host.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/effect_param_access.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/effect_utils.cpp
