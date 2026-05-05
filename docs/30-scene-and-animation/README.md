@@ -1,6 +1,6 @@
 # Scene and Animation
 
-Documentation for scene specification, layers, properties, animation, templates, expressions, and timing.
+Documentation for scene specification, layers, properties, animation, templates, expressions, timing, backgrounds, and transitions.
 
 ## Topics
 
@@ -11,3 +11,10 @@ Documentation for scene specification, layers, properties, animation, templates,
 - Expressions and bindings
 - Templates
 - Timing and duration
+- Background authoring
+- Transition authoring
+
+## Local Guides
+
+- [Backgrounds](backgrounds.md)
+- [Transitions](transitions.md)

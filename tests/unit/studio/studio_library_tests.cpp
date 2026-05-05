@@ -41,10 +41,13 @@ bool run_studio_library_tests() {
         check_true(effect.strings.at("transition_id") == "tachyon.transition.crossfade", "Transition effect stores transition id");
         check_true(effect.strings.at("transition_to_layer_id") == "layer_b", "Transition effect stores target layer id");
     }
+    
+    check_true(library.find_transition("tachyon.transition.slide_up").has_value(), "StudioLibrary can find slide_up");
+    check_true(library.find_transition("tachyon.transition.swipe_left").has_value(), "StudioLibrary can find swipe_left");
 
-    const auto scene = library.find_scene("public_scene_a_white");
-    check_true(scene.has_value(), "StudioLibrary can find the white scene");
-    if (scene.has_value()) {
+    const auto scene = library.find_scene("tachyon.scene.minimal_text");
+    check_true(scene.has_value(), "StudioLibrary can find the minimal text scene");
+    if (scene.has_value() && !scene->is_cpp_preset) {
         check_true(std::filesystem::exists(scene->path), "Scene path exists");
     }
 

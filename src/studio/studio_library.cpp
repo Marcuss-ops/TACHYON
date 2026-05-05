@@ -1,6 +1,7 @@
 #include "tachyon/studio/studio_library.h"
 #include "tachyon/presets/scene/common.h"
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
+#include "tachyon/presets/transition/transition_preset_registry.h"
 
 #include <algorithm>
 #include <fstream>
@@ -32,6 +33,7 @@ bool StudioLibrary::reload() {
 
     // 1. Register Built-in C++ Presets (Modern approach)
     register_cpp_presets();
+    register_transition_assets();
 
     m_ok = m_diagnostics.ok();
     return m_ok;
@@ -42,6 +44,41 @@ void StudioLibrary::register_cpp_presets() {
     m_scenes.push_back({"tachyon.scene.modern_grid", "Modern Tech Grid (C++)", "", true});
     m_scenes.push_back({"tachyon.scene.classico_premium", "Classico Premium (C++)", "", true});
     m_scenes.push_back({"tachyon.scene.minimal_text", "Minimal White (C++)", "", true});
+}
+
+void StudioLibrary::register_transition_assets() {
+    const auto root = m_root / "animations" / "transitions";
+    if (!std::filesystem::exists(root)) return;
+
+    for (const auto& entry : std::filesystem::directory_iterator(root)) {
+        if (!entry.is_directory()) continue;
+
+        const auto id = entry.path().filename().string();
+        const auto dir = entry.path();
+        
+        // Basic validation: shader must exist.
+        if (!std::filesystem::exists(dir / "v1.glsl")) continue;
+
+        StudioTransitionEntry transition;
+        transition.id = "tachyon.transition." + id;
+        transition.name = id; // Default name
+        transition.pack_id = "public.transitions";
+        transition.description = "";
+        transition.manifest_path = dir / "v1.glsl";
+        transition.demo_path = dir / "output" / (id + ".mp4");
+        transition.output_dir = dir / "output";
+        transition.shader_path = dir / "v1.glsl";
+        transition.thumb_path = dir / "thumb.png";
+        transition.duration_seconds = 0.8;
+
+        // Enrich with registry metadata if available (canonical source of truth)
+        if (const auto* reg_spec = presets::TransitionPresetRegistry::instance().find(transition.id)) {
+            transition.name = reg_spec->metadata.display_name;
+            transition.description = reg_spec->metadata.description;
+        }
+
+        m_transitions.push_back(std::move(transition));
+    }
 }
 
 std::optional<StudioSceneEntry> StudioLibrary::find_scene(const std::string& id) const {

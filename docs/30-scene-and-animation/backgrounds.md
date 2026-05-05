@@ -1,44 +1,47 @@
-# Backgrounds in TACHYON
+# Backgrounds
 
-This document describes the architecture of the background system and the rules for extending it.
+This document describes how backgrounds work today and where to extend the system without changing the rendering logic.
 
-## Architecture
+## Current State
 
-The background system is divided into three layers:
+- `BackgroundPresetRegistry` is intentionally empty by default.
+- `BackgroundKindRegistry` is intentionally empty by default.
+- `build_background()` is still the single entry point for turning `BackgroundParams` into a `LayerSpec`.
+- There is no implicit fallback visual. If the caller does not request a background, the builder returns a disabled layer.
 
-1.  **BackgroundSpec (Schema)**: A thin wrapper around a string that detects whether it's a color, a component reference, an asset, or a preset. It does NOT contain a list of valid presets.
-2.  **BackgroundPresetRegistry (Catalog)**: The single source of truth for all background presets. It contains a catalog of `BackgroundParams` mapped to preset IDs.
-3.  **BackgroundBuilders (Factory)**: A parametric factory that takes `BackgroundParams` and produces a `LayerSpec` using procedural generation.
+## Data Flow
 
-## How to add a new Background Preset
+1. A caller fills `BackgroundParams`.
+2. `build_background()` decides whether the request is explicit or empty.
+3. If `kind` is set, the builder preserves that id in the layer.
+4. If a matching kind factory exists, it fills `procedural`.
+5. If no matching factory exists, the requested kind is still preserved as the authoring intent.
 
-To add a new preset, follow these steps:
+## Extension Points
 
-1.  Define the `BackgroundParams` for your preset.
-2.  Add an entry to the `get_preset_defs()` list in `src/presets/background/background_preset_registry.cpp`.
+- `include/tachyon/presets/background/background_params.h`
+- `src/presets/background/background_builders.cpp`
+- `src/presets/background/background_kind_table.cpp`
+- `src/presets/background/background_presets_table.cpp`
+- `include/tachyon/presets/background/procedural.h`
 
-```cpp
-{"my_new_preset", "My New Preset", {
-    .kind = "aura", 
-    .palette = "neon_night",
-    .speed = 0.5f,
-    .frequency = 2.0f
-}}
-```
+## How to Add a Background
 
-3.  The preset will automatically be available via `list_background_presets()` and `build_background_preset()`.
+1. Define or reuse a procedural helper in `include/tachyon/presets/background/procedural.h`.
+2. Register the kind in `src/presets/background/background_kind_table.cpp` if you want a renderable procedural variant.
+3. Register a preset in `src/presets/background/background_presets_table.cpp` if you want a named authoring shortcut.
+4. Pass the explicit `BackgroundParams.kind` from the caller.
+5. Keep `build_background()` as the only builder path.
 
 ## Rules
 
-- **Do NOT** add hardcoded preset lists to `BackgroundSpec`.
-- **Do NOT** duplicate building logic in the registry. Always use `build_background(params)`.
-- **Prefer** using existing palettes when possible.
-- **Always** provide a human-readable name for the preset.
+- Do not add hidden default backgrounds.
+- Do not add duplicate factory logic in the registry.
+- Do not make `BackgroundSpec` own the preset catalog.
+- Do not change the rendering path just to add a new background name.
 
-## Background Specification Syntax
+## Practical Result
 
-- `#RRGGBB` / `rgb(...)` -> Color
-- `preset:xxx` -> Preset reference
-- `component:xxx` -> Component reference
-- `path/to/image.png` -> Asset reference
-- `xxx` (fallback) -> Component reference (most common case)
+- Empty `kind` means no procedural background request.
+- A named `kind` means the scene author asked for that background explicitly.
+- The registry remains the source of optional mappings, not the source of implicit behavior.

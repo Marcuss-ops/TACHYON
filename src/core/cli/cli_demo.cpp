@@ -25,8 +25,8 @@ namespace {
 struct TransitionDemoConfig {
     std::string transition_id;
     std::string name;
-    std::filesystem::path source_scene;
-    std::filesystem::path target_scene;
+    std::string source_scene_id;
+    std::string target_scene_id;
     std::filesystem::path output_dir;
     std::string file_prefix;
     std::string output_format{"mp4"};
@@ -68,9 +68,28 @@ std::filesystem::path resolve_library_root(const std::filesystem::path& requeste
 std::optional<TransitionDemoConfig> load_transition_demo(
     const StudioTransitionEntry& entry,
     DiagnosticBag& diagnostics) {
-    (void)entry;
-    diagnostics.add_error("studio.demo_disabled", "Transition demo parsing has been removed. Use C++ scene builders.");
-    return std::nullopt;
+    TransitionDemoConfig config;
+    config.transition_id = entry.id;
+    config.name = entry.name;
+    config.source_scene_id = "tachyon.scene.enhanced_text";
+    config.target_scene_id = "tachyon.scene.modern_grid";
+    config.output_dir = entry.output_dir;
+    config.file_prefix = entry.manifest_path.parent_path().filename().string();
+    config.output_format = "mp4";
+    config.duration_seconds = entry.duration_seconds;
+    config.lead_in_seconds = 8.0;
+    config.lead_out_seconds = 4.0;
+    config.progress_start = 0.0;
+    config.progress_end = 1.0;
+    config.preview_frame_count = 12;
+    config.preview_resolution_scale = 1.0f;
+
+    if (config.file_prefix.empty()) {
+        diagnostics.add_error("studio.demo_invalid", "Transition asset path is missing a folder name.");
+        return std::nullopt;
+    }
+
+    return config;
 }
 
 std::optional<renderer2d::SurfaceRGBA> render_scene_still(
@@ -149,22 +168,93 @@ std::optional<renderer2d::SurfaceRGBA> render_scene_still(
     return *session_result.frames.front().frame;
 }
 
+std::optional<renderer2d::SurfaceRGBA> render_scene_still(
+    const SceneSpec& scene,
+    const std::string& label,
+    std::ostream& err,
+    double& out_fps) {
+    if (scene.compositions.empty()) {
+        err << "scene has no compositions: " << label << '\n';
+        return std::nullopt;
+    }
+
+    const CompositionSpec& composition = scene.compositions.front();
+    out_fps = composition.frame_rate.denominator > 0
+        ? static_cast<double>(composition.frame_rate.numerator) / static_cast<double>(composition.frame_rate.denominator)
+        : 30.0;
+    if (out_fps <= 0.0) {
+        out_fps = 30.0;
+    }
+
+    RenderJob job;
+    job.job_id = scene.project.id.empty() ? label + "_demo" : scene.project.id + "_demo";
+    job.scene_ref = label;
+    job.composition_target = composition.id;
+    job.frame_range = {0, 0};
+    job.output.destination.path.clear();
+    job.output.destination.overwrite = true;
+    job.output.profile.name = "png-sequence";
+    job.output.profile.class_name = "png-sequence";
+    job.output.profile.container = "png";
+    job.output.profile.alpha_mode = "preserved";
+    job.output.profile.video.codec = "png";
+    job.output.profile.video.pixel_format = "rgba8";
+    job.output.profile.video.rate_control_mode = "fixed";
+    job.output.profile.color.space = "bt709";
+    job.output.profile.color.transfer = "srgb";
+    job.output.profile.color.range = "full";
+
+    SceneCompiler compiler;
+    const auto compiled_result = compiler.compile(scene);
+    if (!compiled_result.ok() || !compiled_result.value.has_value()) {
+        print_diagnostics(compiled_result.diagnostics, err);
+        return std::nullopt;
+    }
+
+    const auto plan_result = build_render_plan(scene, job);
+    if (!plan_result.value.has_value()) {
+        print_diagnostics(plan_result.diagnostics, err);
+        return std::nullopt;
+    }
+    const auto exec_result = build_render_execution_plan(*plan_result.value, 0);
+    if (!exec_result.value.has_value()) {
+        print_diagnostics(exec_result.diagnostics, err);
+        return std::nullopt;
+    }
+
+    RenderSession session;
+    const RenderSessionResult session_result = session.render(scene, *compiled_result.value, *exec_result.value, {});
+    if (session_result.frames.empty() || !session_result.frames.front().frame) {
+        err << "scene rendered no frames: " << label << '\n';
+        return std::nullopt;
+    }
+
+    return *session_result.frames.front().frame;
+}
+
 std::optional<std::reference_wrapper<const CachedSceneStill>> render_scene_still_cached(
-    const std::filesystem::path& scene_path,
-    std::map<std::filesystem::path, CachedSceneStill>& cache,
+    const std::string& scene_id,
+    const StudioLibrary& library,
+    std::map<std::string, CachedSceneStill>& cache,
     std::ostream& err) {
-    const auto cache_it = cache.find(scene_path);
+    const auto cache_it = cache.find(scene_id);
     if (cache_it != cache.end()) {
         return std::cref(cache_it->second);
     }
 
     double fps = 30.0;
-    const auto frame = render_scene_still(scene_path, err, fps);
+    const auto scene = library.instantiate_scene(scene_id);
+    if (scene.compositions.empty()) {
+        err << "unknown or empty studio scene: " << scene_id << '\n';
+        return std::nullopt;
+    }
+
+    const auto frame = render_scene_still(scene, scene_id, err, fps);
     if (!frame.has_value()) {
         return std::nullopt;
     }
 
-    auto [insert_it, inserted] = cache.emplace(scene_path, CachedSceneStill{*frame, fps});
+    auto [insert_it, inserted] = cache.emplace(scene_id, CachedSceneStill{*frame, fps});
     (void)inserted;
     return std::cref(insert_it->second);
 }
@@ -355,9 +445,8 @@ bool run_studio_demo_command(const CliOptions& options, std::ostream& out, std::
         return false;
     }
 
-    std::ostringstream silent_out;
     std::ostream& demo_out = out;
-    std::map<std::filesystem::path, CachedSceneStill> scene_still_cache;
+    std::map<std::string, CachedSceneStill> scene_still_cache;
 
     bool all_ok = true;
     for (const auto& transition : transitions) {
@@ -369,12 +458,12 @@ bool run_studio_demo_command(const CliOptions& options, std::ostream& out, std::
             continue;
         }
 
-        const auto source_still = render_scene_still_cached(demo->source_scene, scene_still_cache, err);
+        const auto source_still = render_scene_still_cached(demo->source_scene_id, library, scene_still_cache, err);
         if (!source_still.has_value()) {
             all_ok = false;
             continue;
         }
-        const auto target_still = render_scene_still_cached(demo->target_scene, scene_still_cache, err);
+        const auto target_still = render_scene_still_cached(demo->target_scene_id, library, scene_still_cache, err);
         if (!target_still.has_value()) {
             all_ok = false;
             continue;

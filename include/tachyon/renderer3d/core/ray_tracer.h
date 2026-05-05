@@ -7,7 +7,12 @@
 #include "tachyon/core/math/algebra/vector2.h"
 #include "tachyon/renderer3d/lighting/environment_manager.h"
 #include "tachyon/media/management/media_manager.h"
+#if defined(TACHYON_ENABLE_3D) && __has_include(<embree4/rtcore.h>)
 #include <embree4/rtcore.h>
+#else
+#include "tachyon/third_party/embree_stub.h"
+#endif
+
 #ifdef _WIN32
 #include <OpenImageDenoise/oidn.hpp>
 #endif

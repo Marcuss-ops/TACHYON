@@ -8,6 +8,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonBindingsCSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonDiagnosticsSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonPlatformSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonSceneEvalSources.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonTimelineSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonSceneSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonRuntimeSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonRenderer2DSources.cmake)
@@ -21,7 +22,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonCLISources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonStudioSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonColorSources.cmake)
 
-add_compile_definitions(TACHYON_USE_DLL)
+# Global compile definitions removed. Per-target definitions used instead.
 
 
 function(tachyon_assert_no_duplicate_sources var_name)
@@ -37,6 +38,7 @@ endfunction()
 
 tachyon_assert_no_duplicate_sources(TachyonSceneSources)
 tachyon_assert_no_duplicate_sources(TachyonSceneEvalSources)
+tachyon_assert_no_duplicate_sources(TachyonTimelineSources)
 tachyon_assert_no_duplicate_sources(TachyonBindingsCSources)
 tachyon_assert_no_duplicate_sources(TachyonDiagnosticsSources)
 tachyon_assert_no_duplicate_sources(TachyonPresetsSources)
@@ -57,6 +59,25 @@ if(TACHYON_ENABLE_TRACKER)
     include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonTrackerSources.cmake)
     tachyon_assert_no_duplicate_sources(TachyonTrackerSources)
 endif()
+
+# Global check for cross-target source duplication
+set(GlobalTachyonSources
+    ${TachyonCoreSources}
+    ${TachyonTimelineSources}
+    ${TachyonSceneEvalSources}
+    ${TachyonSceneSources}
+    ${TachyonRuntimeSources}
+    ${TachyonRenderer2DSources}
+    ${TachyonMediaSources}
+    ${TachyonAudioSources}
+    ${TachyonOutputSources}
+    ${TachyonTextSources}
+    ${TachyonDiagnosticsSources}
+    ${TachyonPresetsSources}
+    ${TachyonPlatformSources}
+    ${TachyonColorSources}
+)
+tachyon_assert_no_duplicate_sources(GlobalTachyonSources)
 
 function(tachyon_configure_common target)
     target_include_directories(${target}
@@ -84,6 +105,7 @@ function(tachyon_configure_common target)
 
     # Use AssetResolver instead of compile-time roots.
     set_target_properties(${target} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    target_compile_definitions(${target} PRIVATE TACHYON_BUILD_DLL)
 endfunction()
 
 function(tachyon_link_text_deps target)
@@ -157,9 +179,15 @@ add_library(TachyonDiagnostics STATIC ${TachyonDiagnosticsSources})
 tachyon_configure_common(TachyonDiagnostics)
 target_link_libraries(TachyonDiagnostics PUBLIC TachyonCore)
 
+add_library(TachyonTimeline STATIC ${TachyonTimelineSources})
+tachyon_configure_common(TachyonTimeline)
+target_link_libraries(TachyonTimeline PUBLIC TachyonCore)
+
 add_library(TachyonSceneEval STATIC ${TachyonSceneEvalSources})
 tachyon_configure_common(TachyonSceneEval)
 target_link_libraries(TachyonSceneEval
+    PUBLIC
+        TachyonTimeline
     PRIVATE
         TachyonCore
         TachyonColor
@@ -189,14 +217,19 @@ tachyon_link_omp(TachyonPresets)
 
 add_library(TachyonScene SHARED ${TachyonSceneSources})
 tachyon_configure_common(TachyonScene)
-target_compile_definitions(TachyonScene PRIVATE TACHYON_BUILD_DLL)
+target_compile_definitions(TachyonScene 
+    PRIVATE TACHYON_BUILD_DLL
+    INTERFACE TACHYON_USE_DLL
+)
 target_link_libraries(TachyonScene
+    PUBLIC
+        TachyonSceneEval
+        TachyonTimeline
     PRIVATE
         TachyonCore
         TachyonColor
         TachyonPlatform
         TachyonPresets
-        TachyonSceneEval
         TachyonRenderer2D
         TachyonAudio
         TachyonMedia
@@ -213,9 +246,9 @@ if(TACHYON_ENABLE_AUDIO_MUX)
 endif()
 target_link_libraries(TachyonRuntime
     PUBLIC
+        TachyonScene
         TachyonCore
         TachyonColor
-        TachyonSceneEval
         TachyonText
         TachyonAudio
         TachyonMedia
@@ -303,7 +336,6 @@ add_library(TachyonRuntimeEngine INTERFACE)
 target_link_libraries(TachyonRuntimeEngine INTERFACE
     TachyonRuntime
     TachyonScene
-    TachyonSceneEval
     TachyonRenderer2D
     TachyonText
     TachyonMedia
@@ -317,23 +349,13 @@ target_link_libraries(TachyonRuntimeEngine INTERFACE
 add_library(TachyonEngine INTERFACE)
 target_link_libraries(TachyonEngine INTERFACE TachyonRuntimeEngine)
 
-add_library(TachyonCLICore STATIC ${TachyonCLICoreSources})
-tachyon_configure_common(TachyonCLICore)
-target_link_libraries(TachyonCLICore PUBLIC TachyonRuntimeEngine TachyonPresets TachyonDiagnostics)
-if(TACHYON_ENABLE_PREVIEW_WINDOW)
-    target_link_libraries(TachyonCLICore PUBLIC glfw OpenGL::GL)
-    target_compile_definitions(TachyonCLICore PUBLIC TACHYON_ENABLE_PREVIEW_WINDOW)
-endif()
-
-add_library(TachyonStudioCLI STATIC ${TachyonCLIStudioSources})
-tachyon_configure_common(TachyonStudioCLI)
-target_link_libraries(TachyonStudioCLI PUBLIC TachyonCLICore TachyonStudio TachyonEditor)
-target_compile_definitions(TachyonStudioCLI PRIVATE TACHYON_ENABLE_STUDIO_COMMANDS)
+# CLI libraries removed. Sources are added directly to executables to allow different compile-time configurations.
 
 add_library(TachyonTools INTERFACE)
 target_link_libraries(TachyonTools INTERFACE
-    TachyonCLICore
-    TachyonStudioCLI
+    TachyonRuntimeEngine
+    TachyonPresets
+    TachyonDiagnostics
 )
 
 if(TACHYON_ENABLE_TRACKER)
@@ -343,7 +365,9 @@ endif()
 # Minimal render-focused executable
 add_executable(tachyon
     main.cpp
+    ${TachyonCLICoreSources}
 )
+tachyon_configure_common(tachyon)
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
     target_precompile_headers(tachyon PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")
@@ -352,13 +376,17 @@ endif()
 target_link_libraries(tachyon
     PRIVATE
         TachyonRuntimeEngine
-        TachyonCLICore
+        TachyonPresets
+        TachyonDiagnostics
 )
 
 # Full tooling/studio executable
 add_executable(tachyon-studio
     main.cpp
+    ${TachyonCLICoreSources}
+    ${TachyonCLIStudioSources}
 )
+tachyon_configure_common(tachyon-studio)
 target_compile_definitions(tachyon-studio PRIVATE TACHYON_ENABLE_STUDIO_COMMANDS)
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
@@ -368,7 +396,10 @@ endif()
 target_link_libraries(tachyon-studio
     PRIVATE
         TachyonRuntimeEngine
-        TachyonStudioCLI
+        TachyonStudio
+        TachyonEditor
+        TachyonPresets
+        TachyonDiagnostics
 )
 
 if(MSVC)

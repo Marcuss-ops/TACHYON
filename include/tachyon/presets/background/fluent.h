@@ -23,17 +23,17 @@ namespace tachyon::presets::background {
  *     .grain(0.12)
  *     .build();
  * @endcode
- */
+ */ 
 class BackgroundBuilder {
     procedural_bg::ProceduralParams params_;
-    std::string kind_{"tachyon.background.kind.aura"};
+    std::string kind_{};
     int width_{1920};
     int height_{1080};
     double duration_{5.0};
     std::string id_{"bg_procedural"};
     
 public:
-    explicit BackgroundBuilder(std::string kind = "tachyon.background.kind.aura") : kind_(std::move(kind)) {}
+    explicit BackgroundBuilder(std::string kind = {}) : kind_(std::move(kind)) {}
     
     BackgroundBuilder& width(int w) { width_ = w; return *this; }
     BackgroundBuilder& height(int h) { height_ = h; return *this; }

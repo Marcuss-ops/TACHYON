@@ -15,7 +15,7 @@ namespace tachyon::renderer2d {
 #pragma warning(disable : 4244)
 #endif
 
-namespace {  // Local helpers
+namespace {
 
 Color sample_uv(const SurfaceRGBA& surface, float u, float v) {
     return sample_texture_bilinear(surface, std::clamp(u, 0.0f, 1.0f), std::clamp(v, 0.0f, 1.0f), Color::white());
@@ -37,27 +37,27 @@ Color sample_transition_source(const SurfaceRGBA& input, const SurfaceRGBA* aux,
 
 float transition_progress(const EffectParams& params) {
     float raw_t = clamp01(get_scalar(params, "t", get_scalar(params, "progress", 0.0f)));
-    
+
     const auto preset_it = params.scalars.find("easing_preset");
     if (preset_it == params.scalars.end()) {
         return raw_t;
     }
-    
+
     const int preset_val = static_cast<int>(preset_it->second);
     if (preset_val < 0 || preset_val > static_cast<int>(animation::EasingPreset::Custom)) {
         return raw_t;
     }
-    
+
     const animation::EasingPreset preset = static_cast<animation::EasingPreset>(preset_val);
     animation::CubicBezierEasing bezier;
-    
+
     if (preset == animation::EasingPreset::Custom) {
         bezier.cx1 = get_scalar(params, "bezier_cx1", 0.0f);
         bezier.cy1 = get_scalar(params, "bezier_cy1", 0.0f);
         bezier.cx2 = get_scalar(params, "bezier_cx2", 1.0f);
         bezier.cy2 = get_scalar(params, "bezier_cy2", 1.0f);
     }
-    
+
     const double eased_t = animation::apply_easing(static_cast<double>(raw_t), preset, bezier);
     return static_cast<float>(clamp01(eased_t));
 }
@@ -78,9 +78,6 @@ Color screen_over(const Color& base, const Color& overlay, float intensity) {
     };
 }
 
-// Transition function implementations
-
-// Base transitions (pixel-level versions)
 Color transition_fade(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
     const Color a = sample_uv(input, u, v);
     const Color b = sample_transition_source(input, to_surface, u, v);
@@ -88,25 +85,30 @@ Color transition_fade(float u, float v, float t, const SurfaceRGBA& input, const
 }
 
 Color transition_slide(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
-    // Slide from input (right) to to_surface (left)
     return sample_transition_source(input, to_surface, u - t, v);
 }
 
+Color transition_slide_up(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    return sample_transition_source(input, to_surface, u, v + t);
+}
+
+Color transition_swipe_left(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    return sample_transition_source(input, to_surface, u + t, v);
+}
+
 Color transition_zoom(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
-    const float zoom = 1.0f + t;  // Zoom from 1.0 to 2.0
+    const float zoom = 1.0f + t;
     const float su = 0.5f + (u - 0.5f) / zoom;
     const float sv = 0.5f + (v - 0.5f) / zoom;
     return Color::lerp(sample_uv(input, u, v), sample_transition_source(input, to_surface, su, sv), t);
 }
 
 Color transition_flip(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
-    // Simple horizontal flip effect
     const float fu = (u < 0.5f) ? u * 2.0f : (1.0f - u) * 2.0f;
     return Color::lerp(sample_uv(input, fu, v), sample_transition_source(input, to_surface, u, v), t);
 }
 
 Color transition_blur(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
-    // Simple blur transition (box blur approximation)
     const float radius = t * 0.1f;
     Color acc = Color::transparent();
     constexpr int samples = 5;
@@ -121,10 +123,9 @@ Color transition_fade_to_black(float u, float v, float t, const SurfaceRGBA& inp
     const Color black = Color::black();
     if (t < 0.5f) {
         return Color::lerp(sample_uv(input, u, v), black, t * 2.0f);
-    } else {
-        const float tt = (t - 0.5f) * 2.0f;
-        return Color::lerp(black, sample_transition_source(input, to_surface, u, v), tt);
     }
+    const float tt = (t - 0.5f) * 2.0f;
+    return Color::lerp(black, sample_transition_source(input, to_surface, u, v), tt);
 }
 
 Color transition_wipe_linear(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
@@ -227,18 +228,16 @@ Color transition_directional_blur_wipe(float u, float v, float t, const SurfaceR
 Color transition_flash(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
     const Color a = sample_uv(input, u, v);
     const Color b = sample_transition_source(input, to_surface, u, v);
-    
-    // Flash intensity peaks at t=0.5
+
     float flash = 0.0f;
     if (t < 0.5f) {
-        flash = t * 2.0f; // fade in flash
+        flash = t * 2.0f;
     } else {
-        flash = (1.0f - t) * 2.0f; // fade out flash
+        flash = (1.0f - t) * 2.0f;
     }
-    
-    Color base = Color::lerp(a, b, t);
-    Color flash_color = {1.0f, 1.0f, 1.0f, 1.0f};
-    
+
+    const Color base = Color::lerp(a, b, t);
+    const Color flash_color = {1.0f, 1.0f, 1.0f, 1.0f};
     return Color::lerp(base, flash_color, flash * 0.8f);
 }
 
@@ -246,7 +245,6 @@ Color transition_light_leak(float u, float v, float t, const SurfaceRGBA& input,
     const bool overlay_mode = (to_surface == nullptr);
     const Color base = overlay_mode ? Color::black() : Color::lerp(sample_uv(input, u, v), sample_transition_source(input, to_surface, u, v), t);
 
-    // Diagonal amber sweep. This is intentionally a band, not a radial flash.
     const float angle = -22.6f * 3.14159f / 180.0f;
     const float ca = std::cos(angle);
     const float sa = std::sin(angle);
@@ -271,7 +269,6 @@ Color transition_film_burn(float u, float v, float t, const SurfaceRGBA& input, 
     const bool overlay_mode = (to_surface == nullptr);
     const Color base = overlay_mode ? Color::black() : Color::lerp(sample_uv(input, u, v), sample_transition_source(input, to_surface, u, v), t);
 
-    // Fiery burn sweep, also linear and screen-blended.
     const float angle = -22.6f * 3.14159f / 180.0f;
     const float ca = std::cos(angle);
     const float sa = std::sin(angle);
@@ -291,9 +288,7 @@ Color transition_film_burn(float u, float v, float t, const SurfaceRGBA& input, 
     return screen_over(base, burn, intensity);
 }
 
-}  // namespace
-
-void init_builtin_transitions() {
+void register_builtin_transitions() {
     static std::once_flag flag;
     std::call_once(flag, []() {
         auto& reg = TransitionRegistry::instance();
@@ -304,14 +299,13 @@ void init_builtin_transitions() {
             reg.register_transition({canonical_id, name, description, fn});
         };
 
-        // Base transitions (pixel-level versions)
         register_builtin("tachyon.transition.crossfade", "Crossfade", "Simple crossfade transition", transition_fade);
-        register_builtin("tachyon.transition.slide", "Slide", "Slide transition", transition_slide);
+        register_builtin("tachyon.transition.slide", "Slide", "Horizontal slide transition", transition_slide);
+        register_builtin("tachyon.transition.slide_up", "Slide Up", "Vertical slide transition", transition_slide_up);
+        register_builtin("tachyon.transition.swipe_left", "Swipe Left", "Swipe the source left to reveal the target", transition_swipe_left);
         register_builtin("tachyon.transition.zoom", "Zoom", "Zoom transition", transition_zoom);
         register_builtin("tachyon.transition.flip", "Flip", "Flip transition", transition_flip);
         register_builtin("tachyon.transition.blur", "Blur", "Blur transition", transition_blur);
-
-        // Advanced transitions
         register_builtin("tachyon.transition.fade_to_black", "Fade to Black", "Crossfade through black", transition_fade_to_black);
         register_builtin("tachyon.transition.wipe_linear", "Linear Wipe", "Simple left-to-right wipe", transition_wipe_linear);
         register_builtin("tachyon.transition.wipe_angular", "Angular Wipe", "Angular wipe around center", transition_wipe_angular);
@@ -327,24 +321,28 @@ void init_builtin_transitions() {
         register_builtin("tachyon.transition.luma_dissolve", "Luma Dissolve", "Luminance-based dissolve", transition_luma_dissolve);
         register_builtin("tachyon.transition.directional_blur_wipe", "Directional Blur Wipe", "Blur wipe with direction", transition_directional_blur_wipe);
         register_builtin("tachyon.transition.flash", "Flash", "White flash transition", transition_flash);
-
-        // Cinematic transitions
         register_builtin("tachyon.transition.light_leak", "Light Leak", "Warm orange light leak", transition_light_leak);
         register_builtin("tachyon.transition.film_burn", "Film Burn", "Fiery red-orange film burn", transition_film_burn);
     });
 }
 
+}  // namespace
+
+void init_builtin_transitions() {
+    register_builtin_transitions();
+}
+
 SurfaceRGBA GlslTransitionEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
     init_builtin_transitions();
-    
+
     const float t = transition_progress(params);
-    
+
     const TransitionSpec* transition_spec = nullptr;
     const auto transition_it = params.strings.find("transition_id");
     if (transition_it != params.strings.end()) {
         transition_spec = TransitionRegistry::instance().find(transition_it->second);
     }
-    
+
     const SurfaceRGBA* to_surface = nullptr;
     if (const auto to_it = params.aux_surfaces.find("transition_to"); to_it != params.aux_surfaces.end()) {
         to_surface = to_it->second;
@@ -353,32 +351,32 @@ SurfaceRGBA GlslTransitionEffect::apply(const SurfaceRGBA& input, const EffectPa
     } else if (const auto bg_it = params.aux_surfaces.find("background"); bg_it != params.aux_surfaces.end()) {
         to_surface = bg_it->second;
     }
-    
+
     SurfaceRGBA output(input.width(), input.height());
     output.set_profile(input.profile());
     if (input.width() == 0U || input.height() == 0U) {
         return output;
     }
-    
+
     const float width = static_cast<float>(std::max<std::uint32_t>(1U, input.width()));
     const float height = static_cast<float>(std::max<std::uint32_t>(1U, input.height()));
-    
+
     for (std::uint32_t y = 0; y < input.height(); ++y) {
         for (std::uint32_t x = 0; x < input.width(); ++x) {
             const float u = (static_cast<float>(x) + 0.5f) / width;
             const float v = (static_cast<float>(y) + 0.5f) / height;
-            
+
             Color out;
             if (transition_spec != nullptr && transition_spec->function != nullptr) {
                 out = transition_spec->function(u, v, t, input, to_surface);
             } else {
                 out = lerp_surface_color(input, to_surface, u, v, t);
             }
-            
+
             output.set_pixel(x, y, out);
         }
     }
-    
+
     return output;
 }
 

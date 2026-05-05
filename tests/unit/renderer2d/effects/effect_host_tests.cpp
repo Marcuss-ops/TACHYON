@@ -129,6 +129,24 @@ bool run_effect_host_tests() {
     check_true(transition_center.b > 0.8f, "Glsl transition reaches the target surface");
     check_true(transition_center.r < 0.3f, "Glsl transition reduces the source surface when t=1");
 
+    EffectParams slide_up_params;
+    slide_up_params.scalars["t"] = 1.0f;
+    slide_up_params.strings["transition_id"] = "tachyon.transition.slide_up";
+    slide_up_params.aux_surfaces["transition_to"] = &transition_to;
+    const auto slide_up_res = host.apply("tachyon.effect.transition.glsl", transition_from, slide_up_params);
+    check_true(slide_up_res.ok(), "Slide up transition successful");
+    const SurfaceRGBA& slide_up = *slide_up_res.value;
+    check_true(slide_up.get_pixel(4, 4).b > 0.8f, "Slide up transition reaches the target surface");
+
+    EffectParams swipe_left_params;
+    swipe_left_params.scalars["t"] = 1.0f;
+    swipe_left_params.strings["transition_id"] = "tachyon.transition.swipe_left";
+    swipe_left_params.aux_surfaces["transition_to"] = &transition_to;
+    const auto swipe_left_res = host.apply("tachyon.effect.transition.glsl", transition_from, swipe_left_params);
+    check_true(swipe_left_res.ok(), "Swipe left transition successful");
+    const SurfaceRGBA& swipe_left = *swipe_left_res.value;
+    check_true(swipe_left.get_pixel(4, 4).b > 0.8f, "Swipe left transition reaches the target surface");
+
     PrecompCache cache;
     cache.set_max_bytes(16);
 

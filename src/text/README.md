@@ -2,6 +2,15 @@
 
 Complete text rendering subsystem with Unicode support, shaping, layout, and animation.
 
+## Current Model
+
+The text stack is split into authoring, runtime animation, and rendering:
+
+- authoring code builds text layers and text scene presets
+- preset registries provide reusable text layer and animator names
+- runtime text code handles shaping, layout, and rasterization
+- renderer2d consumes the evaluated text layer
+
 ## Directory Structure
 
 ```
@@ -9,37 +18,41 @@ src/text/
 ├── bidi/              # Bi-directional text support (RTL/LTR)
 ├── core/              # Core text functionality
 │   ├── animation/     # Text animation utilities
-│   ├── fonts/        # Font loading, caching, and management
-│   ├── layout/       # Text layout engine
-│   ├── rendering/    # Text rasterization
-│   └── content/      # Subtitles and text content
+│   ├── fonts/         # Font loading, caching, and management
+│   ├── layout/        # Text layout engine
+│   ├── rendering/     # Text rasterization
+│   └── content/       # Subtitles and text content
 ├── editing/           # Text editor components
 └── i18n/             # Internationalization support
 ```
 
-## Key Components
+## Key Extension Points
 
-### Font System (`core/fonts/`)
-- `font.cpp`: Main font class with FreeType integration
-- `font_registry.cpp`: Global font registry
-- `font_face.cpp`: Font face management
-- `font_instance.cpp`: Instantiated font at specific sizes
-- `glyph_loader.cpp`: Glyph loading and caching
+- `include/tachyon/text/animation/text_scene_presets.h`
+- `src/text/core/animation/text_scene_presets.cpp`
+- `include/tachyon/presets/text/text_builders.h`
+- `src/presets/text/text_builders.cpp`
+- `include/tachyon/presets/text/text_animator_preset_registry.h`
+- `src/presets/text/text_animator_preset_registry.cpp`
+- `src/text/core/animation/text_presets.cpp`
 
-### Layout Engine (`core/layout/`)
-- `layout.cpp`: Main layout interface
-- `layout_engine.cpp`: Line breaking, alignment, justification
-- `layout_cache.cpp`: Cached layout results
+## How to Add a Text Feature
 
-### Animation (`core/animation/`)
-- `text_animator_utils.cpp`: Per-glyph animation (typewriter, wave, etc.)
-- `text_animator_pipeline.h`: Animation pipeline (header-only)
+1. Add the new authoring shape in the existing text builder layer.
+2. Add a preset registry entry only if the feature should be reusable by name.
+3. Add runtime animation or layout support in the text core path.
+4. Keep renderer changes minimal and local to the existing text rendering path.
+5. Add focused tests close to the feature.
 
-### Rendering (`core/rendering/`)
-- `text_raster_surface.cpp`: Surface-based text rendering
-- `outline_extractor.cpp`: Vector outline extraction
+## Rules
+
+- Do not create a second text pipeline.
+- Do not move layout logic into renderer code.
+- Do not add hardcoded animation catalogs in unrelated files.
+- Do not change the scene contract just to add a new text preset name.
 
 ## Dependencies
-- FreeType: Font rasterization
-- HarfBuzz: Text shaping
-- ICU/Unicode: Character properties
+
+- FreeType: font rasterization
+- HarfBuzz: text shaping
+- Unicode data: character properties

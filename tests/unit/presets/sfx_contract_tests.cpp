@@ -76,7 +76,7 @@ bool run_sfx_contract_tests() {
         
         assert(!diags.ok());
         bool found_error = false;
-        for (const auto& d : diags.get_diagnostics()) {
+        for (const auto& d : diags.diagnostics) {
             if (d.code == "SFX_VARIANT_NOT_FOUND") found_error = true;
         }
         assert(found_error);

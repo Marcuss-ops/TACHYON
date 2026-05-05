@@ -8,6 +8,11 @@ Welcome to the Tachyon engine documentation.
 - [Non-Goals](00-project/non-goals.md) - What we explicitly don't do
 - [MVP v1](00-project/mvp-v1.md) - First milestone scope
 - [Architecture](10-architecture/headless-core.md) - Core architecture overview
+- [Backgrounds](30-scene-and-animation/backgrounds.md) - Background authoring and registries
+- [Transitions](30-scene-and-animation/transitions.md) - Transition authoring and registries
+- [Text Module](../src/text/README.md) - Text subsystem overview
+- [2D Compositing](40-2d-compositing/README.md) - Layer compositing pipeline
+- [3D Rendering](50-3d/README.md) - 3D subsystem overview
 - [Golden Tests](90-testing/golden-tests.md) - Visual regression testing
 
 ## Documentation Structure
