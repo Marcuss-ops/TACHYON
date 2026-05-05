@@ -3,6 +3,7 @@
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 #include "tachyon/core/spec/schema/properties/property_spec.h"
 #include "tachyon/core/types/colors.h"
+#include "tachyon/presets/background/background_builders.h"
 #include "tachyon/presets/background/procedural.h"
 #include <string>
 #include <functional>
@@ -14,7 +15,7 @@ namespace tachyon::presets::background {
  * 
  * Usage:
  * @code
- * auto bg = aura()
+ * auto bg = kind_aura()
  *     .width(1920).height(1080)
  *     .duration(8.0)
  *     .seed(42)
@@ -25,14 +26,14 @@ namespace tachyon::presets::background {
  */
 class BackgroundBuilder {
     procedural_bg::ProceduralParams params_;
-    std::string kind_{"aura"};
+    std::string kind_{"tachyon.background.kind.aura"};
     int width_{1920};
     int height_{1080};
     double duration_{5.0};
     std::string id_{"bg_procedural"};
     
 public:
-    explicit BackgroundBuilder(std::string kind = "aura") : kind_(std::move(kind)) {}
+    explicit BackgroundBuilder(std::string kind = "tachyon.background.kind.aura") : kind_(std::move(kind)) {}
     
     BackgroundBuilder& width(int w) { width_ = w; return *this; }
     BackgroundBuilder& height(int h) { height_ = h; return *this; }
@@ -59,21 +60,20 @@ public:
     BackgroundBuilder& id(std::string id) { id_ = std::move(id); return *this; }
     
     [[nodiscard]] LayerSpec build() const {
-        if (kind_ == "aura") {
-            return procedural_bg::aura(width_, height_, params_, duration_);
-        } else if (kind_ == "shapegrid" || kind_ == "grid") {
-            return procedural_bg::shapegrid(width_, height_, params_, duration_);
-        } else if (kind_ == "stars") {
-            return procedural_bg::stars(width_, height_, params_, duration_);
-        } else if (kind_ == "noise") {
-            return procedural_bg::noise(width_, height_, params_, duration_);
-        } else if (kind_ == "grid_lines") {
-            return procedural_bg::modern_tech_grid(width_, height_, params_, 60.0, duration_);
-        } else if (kind_ == "classico") {
-            return procedural_bg::classico_premium(width_, height_, params_, duration_);
-        }
-        // Default to aura
-        return procedural_bg::aura(width_, height_, params_, duration_);
+        BackgroundParams p;
+        p.kind = kind_;
+        p.w = static_cast<float>(width_);
+        p.h = static_cast<float>(height_);
+        p.out_point = duration_;
+        p.seed = params_.seed;
+        p.speed = static_cast<float>(params_.motion_speed);
+        p.color_a = params_.palette_a;
+        p.color_b = params_.palette_b;
+        p.color_c = params_.palette_c;
+        p.contrast = static_cast<float>(params_.contrast);
+        p.grain_amount = static_cast<float>(params_.grain);
+        p.softness = static_cast<float>(params_.softness);
+        return build_background(p);
     }
     
     [[nodiscard]] operator LayerSpec() const { return build(); }
@@ -83,38 +83,38 @@ public:
 // Factory functions for Remotion-style background creation
 // ---------------------------------------------------------------------------
 
-inline BackgroundBuilder aura(const procedural_bg::ProceduralParams& params = procedural_bg::palettes::neon_night()) {
-    BackgroundBuilder b("aura");
+inline BackgroundBuilder kind_aura(const procedural_bg::ProceduralParams& params = procedural_bg::palettes::neon_night()) {
+    BackgroundBuilder b("tachyon.background.kind.aura");
     b.palette(params);
     return b;
 }
 
-inline BackgroundBuilder grid(const procedural_bg::ProceduralParams& params = procedural_bg::palettes::dark_tech()) {
-    BackgroundBuilder b("grid");
+inline BackgroundBuilder kind_grid(const procedural_bg::ProceduralParams& params = procedural_bg::palettes::dark_tech()) {
+    BackgroundBuilder b("tachyon.background.kind.grid");
     b.palette(params);
     return b;
 }
 
-inline BackgroundBuilder shapegrid(const procedural_bg::ProceduralParams& params = procedural_bg::palettes::dark_tech()) {
-    BackgroundBuilder b("shapegrid");
+inline BackgroundBuilder kind_shapegrid(const procedural_bg::ProceduralParams& params = procedural_bg::palettes::dark_tech()) {
+    BackgroundBuilder b("tachyon.background.kind.grid");
     b.palette(params);
     return b;
 }
 
-inline BackgroundBuilder stars(const procedural_bg::ProceduralParams& params = procedural_bg::palettes::cool_mint()) {
-    BackgroundBuilder b("stars");
+inline BackgroundBuilder kind_stars(const procedural_bg::ProceduralParams& params = procedural_bg::palettes::cool_mint()) {
+    BackgroundBuilder b("tachyon.background.kind.stars");
     b.palette(params);
     return b;
 }
 
-inline BackgroundBuilder noise(const procedural_bg::ProceduralParams& params = procedural_bg::palettes::dark_tech()) {
-    BackgroundBuilder b("noise");
+inline BackgroundBuilder kind_noise(const procedural_bg::ProceduralParams& params = procedural_bg::palettes::dark_tech()) {
+    BackgroundBuilder b("tachyon.background.kind.noise");
     b.palette(params);
     return b;
 }
 
-inline BackgroundBuilder grid_lines(const procedural_bg::ProceduralParams& params = procedural_bg::palettes::neon_grid()) {
-    BackgroundBuilder b("grid_lines");
+inline BackgroundBuilder kind_grid_modern(const procedural_bg::ProceduralParams& params = procedural_bg::palettes::neon_grid()) {
+    BackgroundBuilder b("tachyon.background.kind.grid_modern");
     b.palette(params);
     return b;
 }

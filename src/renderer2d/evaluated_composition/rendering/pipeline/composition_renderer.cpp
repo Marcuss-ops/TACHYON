@@ -606,7 +606,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 auto particle_effect_spec = particle_spec_to_effect_spec(*layer.particle_spec, layer.local_time_seconds);
                 if (particle_effect_spec && particle_effect_spec->enabled) {
                     EffectParams params = effect_params_from_spec(*particle_effect_spec, render_context.cms.working_profile);
-                    auto particle_surface = host.apply("particle_emitter", *layer_surface, params);
+                    auto particle_surface = host.apply("tachyon.effect.generators.particle_emitter", *layer_surface, params);
                     *layer_surface = std::move(particle_surface);
                 }
             }

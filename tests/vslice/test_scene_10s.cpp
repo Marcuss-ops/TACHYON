@@ -15,7 +15,7 @@ extern "C" void build_scene(tachyon::SceneSpec& out) {
              .background(BackgroundSpec::from_string("#0d1117"));
              
             // Animated background
-            c.layer(presets::background::aura()
+            c.layer(presets::background::kind_aura()
                 .width(1920)
                 .height(1080)
                 .duration(10.0)

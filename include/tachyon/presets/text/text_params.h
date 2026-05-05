@@ -17,7 +17,7 @@ struct TextParams : LayerParams {
     ColorSpec   color{238, 242, 248, 245};
 
     // Animation
-    std::string animation{"fade_up"};
+    std::string animation{"tachyon.textanim.fade_up"};
     double      reveal_duration{0.45};
     double      stagger_delay{0.03};
 

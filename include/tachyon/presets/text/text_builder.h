@@ -21,7 +21,7 @@ namespace tachyon::presets::text {
  *     .size(96)
  *     .color({255, 255, 255, 255})
  *     .center()
- *     .animate(text::fade_up().stagger(0.03).duration(0.6));
+ *     .animate(text::kind_fade_up().stagger(0.03).duration(0.6));
  * @endcode
  */
 class TextBuilder {

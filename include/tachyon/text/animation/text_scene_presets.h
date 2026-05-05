@@ -32,8 +32,8 @@ struct TextScenePresetOptions {
     std::optional<BackgroundSpec> clear_background{BackgroundSpec::from_string("#0d1117")};
     bool use_procedural_background{true};
 
-    // Procedural background kind: "aura" (default) or "grid" (ShapeGrid)
-    std::string procedural_kind{"aura"};
+    // Procedural background kind: canonical ids like tachyon.background.kind.aura or tachyon.background.kind.grid
+    std::string procedural_kind{"tachyon.background.kind.aura"};
 
     // Common procedural parameters
     ColorSpec procedural_color_a{14, 20, 32, 255};
@@ -45,7 +45,7 @@ struct TextScenePresetOptions {
     double procedural_scale{1.10};
     double procedural_grain{0.02};
 
-    // ShapeGrid-specific parameters (used when procedural_kind == "grid")
+    // ShapeGrid-specific parameters (used when procedural_kind == tachyon.background.kind.grid)
     ShapeGridParams shape_grid_params{};
 
     std::vector<TextAnimatorSpec> text_animators;

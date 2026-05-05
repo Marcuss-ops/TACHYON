@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/core/registry/registry_metadata.h"
 #include "tachyon/core/spec/schema/common/common_spec.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 
@@ -13,14 +14,14 @@ namespace tachyon::renderer2d {
 namespace tachyon::renderer2d {
 
 /**
- * @brief Requirements for auxiliary surfaces (e.g., masks, displacement maps).
+ * @brief Requirements for auxiliary surfaces.
  */
 struct AuxSurfaceRequirement {
-    std::string param_name;    ///< Internal name used by the effect implementation
-    std::string source_key;    ///< Key in EffectSpec::strings to look up the layer ID
-    std::string semantic;      ///< e.g., "mask", "displacement", "aux"
+    std::string param_name;
+    std::string source_key;
+    std::string semantic;
     bool is_required{true};
-    std::string default_id;    ///< Optional default layer ID if source_key is missing
+    std::string default_id;
 };
 
 /**
@@ -35,7 +36,7 @@ struct EffectDescriptor {
         const EffectParams& params)>;
 
     std::string id;
-    std::string category;
+    registry::RegistryMetadata metadata;
     Factory factory;
     
     std::vector<AuxSurfaceRequirement> aux_requirements;

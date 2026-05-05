@@ -1,7 +1,9 @@
 #include "tachyon/presets/background/background_builders.h"
+#include "tachyon/presets/background/background_kind_registry.h"
 #include "tachyon/presets/background/procedural.h"
 #include "tachyon/presets/builders_common.h"
 #include <optional>
+#include <unordered_map>
 
 namespace tachyon::presets {
 
@@ -10,26 +12,51 @@ namespace {
 using namespace background::procedural_bg;
 
 ProceduralParams get_palette(const std::string& name) {
-    if (name == "dark_tech")      return palettes::dark_tech();
-    if (name == "warm_amber")    return palettes::warm_amber();
-    if (name == "cool_mint")      return palettes::cool_mint();
-    if (name == "neon_night")     return palettes::neon_night();
-    if (name == "pure_white")     return palettes::pure_white();
-    if (name == "clean_white")    return palettes::clean_white();
-    if (name == "warm_white")     return palettes::warm_white();
-    if (name == "soft_white")     return palettes::soft_white();
-    if (name == "premium_dark")   return palettes::premium_dark();
-    if (name == "neon_grid")      return palettes::neon_grid();
-    if (name == "midnight_silk")  return palettes::midnight_silk();
-    if (name == "golden_horizon") return palettes::golden_horizon();
-    if (name == "cyber_matrix")   return palettes::cyber_matrix();
-    if (name == "frosted_glass")  return palettes::frosted_glass();
-    if (name == "cosmic_nebula")  return palettes::cosmic_nebula();
-    if (name == "brushed_metal")  return palettes::brushed_metal();
-    if (name == "oceanic_abyss")  return palettes::oceanic_abyss();
-    if (name == "royal_velvet")   return palettes::royal_velvet();
-    if (name == "prismatic_light") return palettes::prismatic_light();
+    static const std::unordered_map<std::string, ProceduralParams (*)()> palette_map = {
+        {"dark_tech", palettes::dark_tech},
+        {"warm_amber", palettes::warm_amber},
+        {"cool_mint", palettes::cool_mint},
+        {"neon_night", palettes::neon_night},
+        {"pure_white", palettes::pure_white},
+        {"clean_white", palettes::clean_white},
+        {"warm_white", palettes::warm_white},
+        {"soft_white", palettes::soft_white},
+        {"premium_dark", palettes::premium_dark},
+        {"neon_grid", palettes::neon_grid},
+        {"midnight_silk", palettes::midnight_silk},
+        {"golden_horizon", palettes::golden_horizon},
+        {"cyber_matrix", palettes::cyber_matrix},
+        {"frosted_glass", palettes::frosted_glass},
+        {"cosmic_nebula", palettes::cosmic_nebula},
+        {"brushed_metal", palettes::brushed_metal},
+        {"oceanic_abyss", palettes::oceanic_abyss},
+        {"royal_velvet", palettes::royal_velvet},
+        {"prismatic_light", palettes::prismatic_light}
+    };
+
+    auto it = palette_map.find(name);
+    if (it != palette_map.end()) {
+        return it->second();
+    }
     return palettes::premium_dark();
+}
+
+void apply_background_overrides(ProceduralSpec& spec, const BackgroundParams& p) {
+    if (p.frequency)    spec.frequency = *p.frequency;
+    if (p.amplitude)    spec.amplitude = *p.amplitude;
+    if (p.scale)        spec.scale = *p.scale;
+    if (p.contrast)     spec.contrast = *p.contrast;
+    if (p.softness)     spec.softness = *p.softness;
+    if (p.grain_amount) spec.grain_amount = *p.grain_amount;
+    if (p.shape)        spec.shape = *p.shape;
+    if (p.spacing)      spec.spacing = *p.spacing;
+    if (p.border_width) spec.border_width = *p.border_width;
+    if (p.speed != 1.0f) spec.speed = p.speed;
+    if (p.seed != 0)     spec.seed = p.seed;
+
+    if (p.color_a) spec.color_a = AnimatedColorSpec{*p.color_a};
+    if (p.color_b) spec.color_b = AnimatedColorSpec{*p.color_b};
+    if (p.color_c) spec.color_c = AnimatedColorSpec{*p.color_c};
 }
 
 } // namespace
@@ -44,42 +71,23 @@ LayerSpec build_background(const BackgroundParams& p) {
         p.in_point, p.out_point, p.x, p.y, p.w, p.h, p.opacity
     });
 
-    ProceduralSpec spec;
-    if (p.kind == "grid_modern")    spec = make_modern_tech_grid_spec(palette, 60.0);
-    else if (p.kind == "grid")      spec = make_clean_grid_spec(palette);
-    else if (p.kind == "aura")      spec = make_aura_spec(palette);
-    else if (p.kind == "stars")     spec = make_stars_spec(palette);
-    else if (p.kind == "noise")     spec = make_noise_spec(palette);
-    else if (p.kind == "texture")   spec = make_subtle_texture_spec(palette);
-    else if (p.kind == "soft_gradient") spec = make_soft_gradient_spec(palette);
-    else if (p.kind == "dots")      spec = make_elegant_dots_spec(palette);
-    else if (p.kind == "silk")      spec = make_midnight_silk_spec(palette);
-    else if (p.kind == "horizon")   spec = make_golden_horizon_spec(palette);
-    else if (p.kind == "cyber")     spec = make_cyber_matrix_spec(palette);
-    else if (p.kind == "glass")     spec = make_frosted_glass_spec(palette);
-    else if (p.kind == "nebula")    spec = make_cosmic_nebula_spec(palette);
-    else if (p.kind == "metal")     spec = make_brushed_metal_spec(palette);
-    else if (p.kind == "ocean")     spec = make_oceanic_abyss_spec(palette);
-    else if (p.kind == "ripple_grid") spec = make_ripple_grid_spec(palette);
-    else                            spec = make_classico_premium_spec(palette);
+    const auto& registry = BackgroundKindRegistry::instance();
+    const std::string default_kind = "tachyon.background.kind.classico_premium";
 
-    // Apply overrides
-    if (p.frequency)    spec.frequency = *p.frequency;
-    if (p.amplitude)    spec.amplitude = *p.amplitude;
-    if (p.scale)        spec.scale = *p.scale;
-    if (p.contrast)     spec.contrast = *p.contrast;
-    if (p.softness)     spec.softness = *p.softness;
-    if (p.grain_amount) spec.grain_amount = *p.grain_amount;
-    if (p.shape)        spec.shape = *p.shape;
-    if (p.spacing)      spec.spacing = *p.spacing;
-    if (p.border_width) spec.border_width = *p.border_width;
-    if (p.speed != 1.0f) spec.speed = p.speed;
-    if (p.seed != 0)     spec.seed = p.seed;
-    
-    if (p.color_a) spec.color_a = AnimatedColorSpec{*p.color_a};
-    if (p.color_b) spec.color_b = AnimatedColorSpec{*p.color_b};
-    if (p.color_c) spec.color_c = AnimatedColorSpec{*p.color_c};
+    std::string selected_kind = p.kind.empty() ? default_kind : p.kind;
 
+    auto spec = registry.create(selected_kind, palette, p);
+    if (!spec) {
+        selected_kind = default_kind;
+        spec = registry.create(selected_kind, palette, p);
+    }
+    if (!spec) {
+        spec = make_classico_premium_spec(palette);
+    }
+
+    apply_background_overrides(*spec, p);
+
+    layer.preset_id = selected_kind;
     layer.procedural = std::move(spec);
     return layer;
 }

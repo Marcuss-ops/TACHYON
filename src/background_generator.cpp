@@ -5,7 +5,7 @@ namespace tachyon {
 
 ProceduralSpec GenerateShapeGridBackground(const ShapeGridParams& params) {
     ProceduralSpec spec;
-    spec.kind = "grid";
+    spec.kind = "tachyon.background.kind.grid";
     spec.shape = params.shape;
     spec.spacing = AnimatedScalarSpec(params.spacing);
     spec.border_width = AnimatedScalarSpec(params.border_width);

@@ -25,7 +25,7 @@ namespace tachyon::presets::text {
  *     .font_size(96)
  *     .color({255, 255, 255, 255})
  *     .center()
- *     .animate(fade_up().stagger(0.03).duration(0.6))
+ *     .animate(kind_fade_up().stagger(0.03).duration(0.6))
  *     .build();
  * @endcode
  */
@@ -282,35 +282,35 @@ public:
 // Preset animation factories (return TextAnimatorSpec for use with .animate())
 // ---------------------------------------------------------------------------
 
-inline TextAnimatorSpec fade_up(double y_offset = 12.0, double duration = 0.45, double /*stagger*/ = 0.03) {
+inline TextAnimatorSpec kind_fade_up(double y_offset = 12.0, double duration = 0.45, double /*stagger*/ = 0.03) {
     return ::tachyon::text::make_minimal_fade_up_animator("characters_excluding_spaces", duration, y_offset);
 }
 
-inline TextAnimatorSpec slide_in(double distance = 28.0, double stagger = 0.03, double duration = 0.7) {
+inline TextAnimatorSpec kind_slide_in(double distance = 28.0, double stagger = 0.03, double duration = 0.7) {
     return ::tachyon::text::make_slide_in_animator("characters_excluding_spaces", stagger, distance, duration);
 }
 
-inline TextAnimatorSpec blur_to_focus(double blur_radius = 8.0, double duration = 0.45) {
+inline TextAnimatorSpec kind_blur_to_focus(double blur_radius = 8.0, double duration = 0.45) {
     return ::tachyon::text::make_blur_to_focus_animator("characters_excluding_spaces", duration, blur_radius);
 }
 
-inline TextAnimatorSpec typewriter(double cps = 20.0, std::string cursor = "|") {
+inline TextAnimatorSpec kind_typewriter(double cps = 20.0, std::string cursor = "|") {
     return ::tachyon::text::make_typewriter_animator(cps, cursor);
 }
 
-inline TextAnimatorSpec kinetic_blur(double distance = 200.0, double duration = 0.5) {
+inline TextAnimatorSpec kind_kinetic_blur(double distance = 200.0, double duration = 0.5) {
     return ::tachyon::text::make_kinetic_blur_animator(distance, duration);
 }
 
-inline TextAnimatorSpec tracking_reveal(double initial_tracking = 40.0, double duration = 0.45) {
+inline TextAnimatorSpec kind_tracking_reveal(double initial_tracking = 40.0, double duration = 0.45) {
     return ::tachyon::text::make_tracking_reveal_animator("characters_excluding_spaces", duration, initial_tracking);
 }
 
-inline TextAnimatorSpec soft_scale(double duration = 0.55, double scale = 0.96) {
+inline TextAnimatorSpec kind_soft_scale(double duration = 0.55, double scale = 0.96) {
     return ::tachyon::text::make_soft_scale_in_animator("characters_excluding_spaces", duration, scale);
 }
 
-inline TextAnimatorSpec pop_in(double distance = 18.0, double stagger = 0.02, double duration = 0.55) {
+inline TextAnimatorSpec kind_pop_in(double distance = 18.0, double stagger = 0.02, double duration = 0.55) {
     return ::tachyon::text::make_pop_in_animator("characters", stagger, distance, duration);
 }
 

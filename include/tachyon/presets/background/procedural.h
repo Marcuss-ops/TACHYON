@@ -21,7 +21,7 @@ struct ShapeGridParams {
 
 inline ProceduralSpec generate_shape_grid_spec(const ShapeGridParams& params) {
     ProceduralSpec spec;
-    spec.kind = "grid";
+    spec.kind = "tachyon.background.kind.grid";
     spec.shape = params.shape;
     spec.spacing = params.spacing;
     spec.border_width = params.border_width;
@@ -146,7 +146,7 @@ inline ProceduralParams prismatic_light() {
 
 inline ProceduralSpec make_modern_tech_grid_spec(const ProceduralParams &params = palettes::neon_grid(), double spacing = 60.0) {
   ProceduralSpec spec;
-  spec.kind = "grid_lines";
+  spec.kind = "tachyon.background.kind.grid_modern";
   spec.seed = params.seed;
   spec.color_a = AnimatedColorSpec{params.palette_a};
   spec.color_b = AnimatedColorSpec{params.palette_b};
@@ -160,7 +160,7 @@ inline ProceduralSpec make_modern_tech_grid_spec(const ProceduralParams &params 
 
 inline ProceduralSpec make_aura_spec(const ProceduralParams &params = palettes::neon_night()) {
   ProceduralSpec spec;
-  spec.kind = "aura";
+  spec.kind = "tachyon.background.kind.aura";
   spec.seed = params.seed;
   spec.color_a = AnimatedColorSpec{params.palette_a};
   spec.color_b = AnimatedColorSpec{params.palette_b};
@@ -182,7 +182,7 @@ inline ProceduralSpec make_aura_spec(const ProceduralParams &params = palettes::
 
 inline ProceduralSpec make_stars_spec(const ProceduralParams &params = palettes::cool_mint()) {
   ProceduralSpec spec;
-  spec.kind = "stars";
+  spec.kind = "tachyon.background.kind.stars";
   spec.seed = params.seed;
   spec.color_a = AnimatedColorSpec{params.palette_a};
   spec.color_b = AnimatedColorSpec{params.palette_b};
@@ -201,7 +201,7 @@ inline ProceduralSpec make_stars_spec(const ProceduralParams &params = palettes:
 
 inline ProceduralSpec make_noise_spec(const ProceduralParams &params = palettes::dark_tech()) {
   ProceduralSpec spec;
-  spec.kind = "noise";
+  spec.kind = "tachyon.background.kind.noise";
   spec.seed = params.seed;
   spec.color_a = AnimatedColorSpec{params.palette_a};
   spec.color_b = AnimatedColorSpec{params.palette_b};
@@ -220,7 +220,7 @@ inline ProceduralSpec make_noise_spec(const ProceduralParams &params = palettes:
 
 inline ProceduralSpec make_classico_premium_spec(const ProceduralParams &params = palettes::premium_dark()) {
   ProceduralSpec spec;
-  spec.kind = "aura";
+  spec.kind = "tachyon.background.kind.classico_premium";
   spec.seed = params.seed;
   spec.color_a = AnimatedColorSpec{params.palette_a};
   spec.color_b = AnimatedColorSpec{params.palette_b};
@@ -234,7 +234,7 @@ inline ProceduralSpec make_classico_premium_spec(const ProceduralParams &params 
 
 inline ProceduralSpec make_clean_grid_spec(const ProceduralParams &params = palettes::clean_white()) {
   ProceduralSpec spec;
-  spec.kind = "grid";
+  spec.kind = "tachyon.background.kind.grid";
   spec.seed = params.seed;
   spec.color_a = AnimatedColorSpec{params.palette_a};
   spec.color_b = AnimatedColorSpec{{220, 220, 225, 255}};
@@ -254,7 +254,7 @@ inline ProceduralSpec make_clean_grid_spec(const ProceduralParams &params = pale
 
 inline ProceduralSpec make_subtle_texture_spec(const ProceduralParams &params = palettes::soft_white()) {
   ProceduralSpec spec;
-  spec.kind = "noise";
+  spec.kind = "tachyon.background.kind.texture";
   spec.seed = params.seed;
   spec.color_a = AnimatedColorSpec{params.palette_a};
   spec.color_b = AnimatedColorSpec{params.palette_b};
@@ -273,7 +273,7 @@ inline ProceduralSpec make_subtle_texture_spec(const ProceduralParams &params = 
 
 inline ProceduralSpec make_soft_gradient_spec(const ProceduralParams &params = palettes::warm_white()) {
   ProceduralSpec spec;
-  spec.kind = "aura";
+  spec.kind = "tachyon.background.kind.soft_gradient";
   spec.seed = params.seed;
   spec.color_a = AnimatedColorSpec{params.palette_a};
   spec.color_b = AnimatedColorSpec{params.palette_b};
@@ -294,7 +294,7 @@ inline ProceduralSpec make_soft_gradient_spec(const ProceduralParams &params = p
 
 inline ProceduralSpec make_elegant_dots_spec(const ProceduralParams &params = palettes::clean_white()) {
   ProceduralSpec spec;
-  spec.kind = "grid";
+  spec.kind = "tachyon.background.kind.dots";
   spec.seed = params.seed;
   spec.color_a = AnimatedColorSpec{params.palette_a};
   spec.color_b = AnimatedColorSpec{{230, 230, 235, 255}};
@@ -314,7 +314,7 @@ inline ProceduralSpec make_elegant_dots_spec(const ProceduralParams &params = pa
 
 inline ProceduralSpec make_midnight_silk_spec(const ProceduralParams &params = palettes::midnight_silk()) {
   ProceduralSpec spec;
-  spec.kind = "aura";
+  spec.kind = "tachyon.background.kind.silk";
   spec.seed = params.seed;
   spec.color_a = AnimatedColorSpec{params.palette_a};
   spec.color_b = AnimatedColorSpec{params.palette_b};
@@ -330,7 +330,7 @@ inline ProceduralSpec make_midnight_silk_spec(const ProceduralParams &params = p
 
 inline ProceduralSpec make_golden_horizon_spec(const ProceduralParams &params = palettes::golden_horizon()) {
   ProceduralSpec spec;
-  spec.kind = "aura";
+  spec.kind = "tachyon.background.kind.horizon";
   spec.seed = params.seed;
   spec.color_a = AnimatedColorSpec{params.palette_a};
   spec.color_b = AnimatedColorSpec{params.palette_b};
@@ -346,7 +346,7 @@ inline ProceduralSpec make_golden_horizon_spec(const ProceduralParams &params = 
 
 inline ProceduralSpec make_cyber_matrix_spec(const ProceduralParams &params = palettes::cyber_matrix()) {
   ProceduralSpec spec;
-  spec.kind = "grid_lines";
+  spec.kind = "tachyon.background.kind.cyber";
   spec.seed = params.seed;
   spec.color_a = AnimatedColorSpec{params.palette_a};
   spec.color_b = AnimatedColorSpec{params.palette_b};
@@ -362,7 +362,7 @@ inline ProceduralSpec make_cyber_matrix_spec(const ProceduralParams &params = pa
 
 inline ProceduralSpec make_frosted_glass_spec(const ProceduralParams &params = palettes::frosted_glass()) {
   ProceduralSpec spec;
-  spec.kind = "noise";
+  spec.kind = "tachyon.background.kind.glass";
   spec.seed = params.seed;
   spec.color_a = AnimatedColorSpec{params.palette_a};
   spec.color_b = AnimatedColorSpec{params.palette_b};
@@ -377,7 +377,7 @@ inline ProceduralSpec make_frosted_glass_spec(const ProceduralParams &params = p
 
 inline ProceduralSpec make_cosmic_nebula_spec(const ProceduralParams &params = palettes::cosmic_nebula()) {
   ProceduralSpec spec;
-  spec.kind = "aura";
+  spec.kind = "tachyon.background.kind.nebula";
   spec.seed = params.seed;
   spec.color_a = AnimatedColorSpec{params.palette_a};
   spec.color_b = AnimatedColorSpec{params.palette_b};
@@ -394,7 +394,7 @@ inline ProceduralSpec make_cosmic_nebula_spec(const ProceduralParams &params = p
 
 inline ProceduralSpec make_brushed_metal_spec(const ProceduralParams &params = palettes::brushed_metal()) {
   ProceduralSpec spec;
-  spec.kind = "noise";
+  spec.kind = "tachyon.background.kind.metal";
   spec.seed = params.seed;
   spec.color_a = AnimatedColorSpec{params.palette_a};
   spec.color_b = AnimatedColorSpec{params.palette_b};
@@ -408,7 +408,7 @@ inline ProceduralSpec make_brushed_metal_spec(const ProceduralParams &params = p
 
 inline ProceduralSpec make_oceanic_abyss_spec(const ProceduralParams &params = palettes::oceanic_abyss()) {
   ProceduralSpec spec;
-  spec.kind = "aura";
+  spec.kind = "tachyon.background.kind.ocean";
   spec.seed = params.seed;
   spec.color_a = AnimatedColorSpec{params.palette_a};
   spec.color_b = AnimatedColorSpec{params.palette_b};
@@ -424,7 +424,7 @@ inline ProceduralSpec make_oceanic_abyss_spec(const ProceduralParams &params = p
 
 inline ProceduralSpec make_galaxy_spec(const ProceduralParams &params = palettes::cosmic_nebula()) {
   ProceduralSpec spec;
-  spec.kind = "galaxy";
+  spec.kind = "tachyon.background.kind.galaxy";
   spec.seed = params.seed;
   spec.color_a = AnimatedColorSpec{params.palette_a};
   spec.color_b = AnimatedColorSpec{params.palette_b};
@@ -446,7 +446,7 @@ inline ProceduralSpec make_galaxy_spec(const ProceduralParams &params = palettes
 
 inline ProceduralSpec make_ripple_grid_spec(const ProceduralParams &params = palettes::neon_ripple()) {
   ProceduralSpec spec;
-  spec.kind = "grid_lines";
+  spec.kind = "tachyon.background.kind.ripple_grid";
   spec.seed = params.seed;
   spec.color_a = AnimatedColorSpec{params.palette_a};
   spec.color_b = AnimatedColorSpec{params.palette_b};

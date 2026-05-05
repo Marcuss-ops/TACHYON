@@ -1,9 +1,12 @@
 #pragma once
 
-#include <string>
-#include <functional>
-#include <optional>
 #include <memory>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+#include "tachyon/core/registry/typed_registry.h"
 
 namespace tachyon {
 

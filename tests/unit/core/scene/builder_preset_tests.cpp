@@ -25,18 +25,18 @@ bool run_scene_builder_preset_tests() {
             .size(1920, 1080)
             .layer("title", [](LayerBuilder& l) {
                 l.text("Hello World")
-                 .text_animation_preset("fade_up")
-                 .transition_in_preset("fade", 0.5)
-                 .transition_out_preset("zoom", 0.3);
+                 .text_animation_preset("tachyon.textanim.fade_up")
+                 .transition_in_preset("tachyon.transition.crossfade", 0.5)
+                 .transition_out_preset("tachyon.transition.zoom", 0.3);
             })
             .build();
         
         assert(!comp.layers.empty());
         const auto& layer = comp.layers[0];
         assert(!layer.text_animators.empty());
-        assert(layer.transition_in.type == "fade");
+        assert(layer.transition_in.type == "tachyon.transition.crossfade");
         assert(layer.transition_in.duration == 0.5);
-        assert(layer.transition_out.type == "zoom");
+        assert(layer.transition_out.type == "tachyon.transition.zoom");
         assert(layer.transition_out.duration == 0.3);
     }
 

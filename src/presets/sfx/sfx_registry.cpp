@@ -1,31 +1,40 @@
 #include "tachyon/presets/sfx/sfx_registry.h"
 
+#include <utility>
+
 namespace tachyon::presets {
+
+struct SfxRegistry::Impl {
+    registry::TypedRegistry<SfxCategoryInfo> categories;
+    std::unordered_map<SfxCategory, std::string> category_ids;
+};
 
 SfxRegistry& SfxRegistry::instance() {
     static SfxRegistry instance;
     return instance;
 }
 
-SfxRegistry::SfxRegistry() {
-    // Register default categories
-    register_category({SfxCategory::TypeWriting, "typewriting", "TypeWriting", ".m4a", true});
-    register_category({SfxCategory::Mouse, "mouse", "Mouse", ".m4a", true});
-    register_category({SfxCategory::Photo, "photo", "Photo", ".m4a", true});
-    register_category({SfxCategory::Soosh, "soosh", "Soosh", ".m4a", true});
-    register_category({SfxCategory::MoneySound, "money", "MoneySound", ".m4a", true});
+SfxRegistry::SfxRegistry() : m_impl(std::make_unique<Impl>()) {
+    load_builtins();
 }
 
+SfxRegistry::~SfxRegistry() = default;
+
 void SfxRegistry::register_category(SfxCategoryInfo info) {
-    m_categories[info.category] = std::move(info);
+    if (info.id.empty()) {
+        return;
+    }
+
+    m_impl->category_ids[info.category] = info.id;
+    m_impl->categories.register_spec(std::move(info));
 }
 
 const SfxCategoryInfo* SfxRegistry::get_info(SfxCategory category) const {
-    auto it = m_categories.find(category);
-    if (it != m_categories.end()) {
-        return &it->second;
+    const auto it = m_impl->category_ids.find(category);
+    if (it == m_impl->category_ids.end()) {
+        return nullptr;
     }
-    return nullptr;
+    return m_impl->categories.find(it->second);
 }
 
 std::string SfxRegistry::get_folder(SfxCategory category) const {
@@ -33,6 +42,10 @@ std::string SfxRegistry::get_folder(SfxCategory category) const {
         return info->folder;
     }
     return "";
+}
+
+std::vector<std::string> SfxRegistry::list_ids() const {
+    return m_impl->categories.list_ids();
 }
 
 } // namespace tachyon::presets

@@ -1,4 +1,4 @@
-#include "tachyon/renderer3d/modifiers/three_d_modifier_registry.h"
+#include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
 #include "tachyon/renderer3d/modifiers/tilt_3d_modifier.h"
 #include "tachyon/renderer3d/surface/textured_plane_builder.h"
 #include "tachyon/renderer3d/core/mesh_types.h"
@@ -28,7 +28,7 @@ bool run_3d_modifier_tests() {
     using namespace tachyon::renderer3d;
 
     // 1. Registry test
-    auto& registry = ThreeDModifierRegistry::instance();
+    auto& registry = Modifier3DRegistry::instance();
     
     ThreeDModifierSpec tilt_spec;
     tilt_spec.type = "tilt";

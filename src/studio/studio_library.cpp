@@ -38,10 +38,10 @@ bool StudioLibrary::reload() {
 }
 
 void StudioLibrary::register_cpp_presets() {
-    m_scenes.push_back({"aura_modern", "Modern Aura (C++)", "", true});
-    m_scenes.push_back({"grid_modern", "Modern Tech Grid (C++)", "", true});
-    m_scenes.push_back({"classico_premium", "Classico Premium (C++)", "", true});
-    m_scenes.push_back({"minimal_white", "Minimal White (C++)", "", true});
+    m_scenes.push_back({"tachyon.scene.enhanced_text", "Modern Aura (C++)", "", true});
+    m_scenes.push_back({"tachyon.scene.modern_grid", "Modern Tech Grid (C++)", "", true});
+    m_scenes.push_back({"tachyon.scene.classico_premium", "Classico Premium (C++)", "", true});
+    m_scenes.push_back({"tachyon.scene.minimal_text", "Minimal White (C++)", "", true});
 }
 
 std::optional<StudioSceneEntry> StudioLibrary::find_scene(const std::string& id) const {
@@ -69,10 +69,10 @@ SceneSpec StudioLibrary::instantiate_scene(const std::string& id) const {
     if (!entry) return {};
 
     if (entry->is_cpp_preset) {
-        if (id == "aura_modern") return presets::scene::build_enhanced_text_scene();
-        if (id == "grid_modern") return presets::scene::build_modern_grid_scene();
-        if (id == "classico_premium") return presets::scene::build_classico_premium_scene();
-        if (id == "minimal_white") return presets::scene::build_minimal_text_scene();
+        if (id == "tachyon.scene.enhanced_text") return presets::scene::build_enhanced_text_scene();
+        if (id == "tachyon.scene.modern_grid") return presets::scene::build_modern_grid_scene();
+        if (id == "tachyon.scene.classico_premium") return presets::scene::build_classico_premium_scene();
+        if (id == "tachyon.scene.minimal_text") return presets::scene::build_minimal_text_scene();
     }
     return {};
 }
@@ -90,7 +90,7 @@ EffectSpec StudioLibrary::build_transition_effect(
     }
 
     effect.enabled = true;
-    effect.type = "glsl_transition";
+    effect.type = "tachyon.effect.transition.glsl";
     effect.scalars["t"] = progress;
     effect.scalars["duration_seconds"] = transition->duration_seconds;
     effect.strings["transition_id"] = transition->id;

@@ -7,7 +7,7 @@
 
 #ifdef TACHYON_ENABLE_3D
 #include "tachyon/renderer3d/modifiers/i3d_modifier.h"
-#include "tachyon/renderer3d/modifiers/three_d_modifier_registry.h"
+#include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
 #endif
 
 #include <algorithm>
@@ -153,7 +153,7 @@ static renderer3d::EvaluatedMeshInstance build_instance_for_layer(
     // Apply 3D modifiers
     if (l.three_d && l.three_d->enabled && mesh_asset) {
         using namespace renderer3d;
-        ThreeDModifierRegistry& registry = ThreeDModifierRegistry::instance();
+        Modifier3DRegistry& registry = Modifier3DRegistry::instance();
         
         std::shared_ptr<media::MeshAsset> modifiable_asset = std::make_shared<media::MeshAsset>(*mesh_asset);
 

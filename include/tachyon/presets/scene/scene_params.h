@@ -17,7 +17,7 @@ struct SceneLayerEntry {
 struct EnhancedSceneParams : SceneParams {
     std::vector<SceneLayerEntry> layers;
     std::string main_text;
-    std::string background_style{"aura"};
+    std::string background_style{"tachyon.background.kind.aura"};
     std::string background_palette{"neon_night"};
     std::vector<AssetSpec> assets;
     std::optional<std::string> main_asset_id;

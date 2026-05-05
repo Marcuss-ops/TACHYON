@@ -36,7 +36,7 @@ namespace tachyon::presets {
 LayerSpec build_text_layer(const std::string& text,
                            const std::string& font_id = "",
                            double font_size = 72.0,
-                           const std::string& animation_style = "fade_up",
+                           const std::string& animation_style = "tachyon.textanim.fade_up",
                            double duration = 10.0);
 
 } // namespace tachyon::presets

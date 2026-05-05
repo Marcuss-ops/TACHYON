@@ -1,5 +1,7 @@
 #pragma once
 
+#include "tachyon/core/registry/registry_metadata.h"
+#include "tachyon/core/registry/typed_registry.h"
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 #include <string>
 #include <string_view>
@@ -25,21 +27,20 @@ struct Animation2DParams {
  */
 struct Animation2DPresetSpec {
     std::string id;
-    std::string name;
-    std::string description;
+    registry::RegistryMetadata metadata;
     
     // Function to apply the animation to a layer.
     std::function<void(LayerSpec&, const Animation2DParams&)> apply;
 };
 
 /**
- * @brief Registry for 2D animation presets (e.g., pop, drift, pulse).
+ * @brief Registry for 2D animation presets.
  */
 class Animation2DPresetRegistry {
 public:
     static Animation2DPresetRegistry& instance();
 
-    void register_preset(Animation2DPresetSpec spec);
+    void register_spec(Animation2DPresetSpec spec);
     const Animation2DPresetSpec* find(std::string_view id) const;
     
     bool apply(std::string_view id, LayerSpec& layer, const Animation2DParams& params) const;
@@ -51,8 +52,7 @@ private:
     Animation2DPresetRegistry();
     ~Animation2DPresetRegistry() = default;
 
-    struct Impl;
-    std::unique_ptr<Impl> m_impl;
+    registry::TypedRegistry<Animation2DPresetSpec> registry_;
 };
 
 } // namespace tachyon::presets

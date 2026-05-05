@@ -12,7 +12,7 @@ namespace tachyon {
  * Defines parameters for noise-based and geometric patterns rendered in real-time.
  */
 struct ProceduralSpec {
-    std::string kind;           ///< Pattern type: "aura", "grid", "grid_lines", "stars", "stripes", "waves", "noise"
+    std::string kind;           ///< Pattern type: canonical ids like tachyon.background.kind.aura or tachyon.background.kind.grid
     uint64_t seed{0};           ///< Random seed for pattern generation
 
     // Core Parameters

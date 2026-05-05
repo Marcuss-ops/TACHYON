@@ -103,7 +103,7 @@ struct TimeRemapCurve {
 };
 
 struct AudioEffectSpec {
-    std::string type; // "fade_in", "fade_out", "gain", "low_pass", "high_pass", "normalize"
+    std::string type; // canonical ids like tachyon.audio.effect.fade_in
     std::optional<double> start_time;
     std::optional<double> duration;
     std::optional<float> gain_db;

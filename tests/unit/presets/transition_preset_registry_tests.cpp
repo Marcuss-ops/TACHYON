@@ -12,22 +12,22 @@ bool run_transition_preset_registry_tests() {
     // 1. Test crossfade (GLSL based)
     {
         TransitionParams p;
-        p.id = "crossfade";
+        p.id = "tachyon.transition.crossfade";
         p.duration = 0.5;
-        auto spec = registry.create_enter(p);
-        assert(spec.type == "glsl_transition");
-        assert(spec.transition_id == "fade");
+        auto spec = registry.create(p.id, p);
+        assert(spec.type == "tachyon.transition.crossfade");
+        assert(spec.transition_id == "tachyon.transition.crossfade");
         assert(spec.duration == 0.5);
     }
 
     // 2. Test circle_iris
     {
         TransitionParams p;
-        p.id = "circle_iris";
+        p.id = "tachyon.transition.circle_iris";
         p.duration = 0.8;
-        auto spec = registry.create_enter(p);
-        assert(spec.type == "glsl_transition");
-        assert(spec.transition_id == "circle_iris");
+        auto spec = registry.create(p.id, p);
+        assert(spec.type == "tachyon.transition.circle_iris");
+        assert(spec.transition_id == "tachyon.transition.circle_iris");
     }
 
     // 3. Test listing IDs
@@ -36,7 +36,7 @@ bool run_transition_preset_registry_tests() {
         assert(ids.size() >= 10);
         bool found = false;
         for (const auto& id : ids) {
-            if (id == "zoom_blur") found = true;
+            if (id == "tachyon.transition.zoom_blur") found = true;
         }
         assert(found);
     }

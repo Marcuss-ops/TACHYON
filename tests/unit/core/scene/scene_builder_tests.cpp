@@ -65,16 +65,16 @@ TEST(SceneBuilder, AnimatedProperties) {
 TEST(SceneBuilder, Transitions) {
     auto comp = Composition("main")
         .layer("text", [](LayerBuilder& l) {
-            l.enter().id("fade").duration(0.5).done()
-             .exit().id("slide").delay(1.0).done();
+            l.enter().id("tachyon.transition.crossfade").duration(0.5).done()
+             .exit().id("tachyon.transition.slide").delay(1.0).done();
         })
         .build();
 
     ASSERT_EQ(comp.layers.size(), 1);
     const auto& layer = comp.layers[0];
-    EXPECT_EQ(layer.transition_in.transition_id, "fade");
+    EXPECT_EQ(layer.transition_in.transition_id, "tachyon.transition.crossfade");
     EXPECT_EQ(layer.transition_in.duration, 0.5);
-    EXPECT_EQ(layer.transition_out.transition_id, "slide");
+    EXPECT_EQ(layer.transition_out.transition_id, "tachyon.transition.slide");
     EXPECT_EQ(layer.transition_out.delay, 1.0);
 }
 

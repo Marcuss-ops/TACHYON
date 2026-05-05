@@ -30,7 +30,7 @@ struct SceneParams {
     std::string name;
     std::string bg_color{"#0d1117"};
     bool   bg_procedural{true};
-    std::string bg_kind{"aura"};
+    std::string bg_kind{"tachyon.background.kind.aura"};
 };
 
 } // namespace tachyon::presets

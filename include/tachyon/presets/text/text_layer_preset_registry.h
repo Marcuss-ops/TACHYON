@@ -1,5 +1,7 @@
 #pragma once
 
+#include "tachyon/core/registry/registry_metadata.h"
+#include "tachyon/core/registry/typed_registry.h"
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 #include "tachyon/presets/text/text_params.h"
 #include <string>
@@ -12,26 +14,25 @@
 namespace tachyon::presets {
 
 /**
- * @brief Specification for a text preset (style + layout).
+ * @brief Specification for a text layer style preset.
  */
-struct TextPresetSpec {
+struct TextLayerPresetSpec {
     std::string id;
-    std::string name;
-    std::string description;
+    registry::RegistryMetadata metadata;
     
     // Factory function to create a text layer.
     std::function<LayerSpec(const std::string& content, const TextParams& p)> factory;
 };
 
 /**
- * @brief Registry for text presets.
+ * @brief Registry for text layer style presets.
  */
-class TextPresetRegistry {
+class TextLayerPresetRegistry {
 public:
-    static TextPresetRegistry& instance();
+    static TextLayerPresetRegistry& instance();
 
-    void register_preset(TextPresetSpec spec);
-    const TextPresetSpec* find(std::string_view id) const;
+    void register_spec(TextLayerPresetSpec spec);
+    const TextLayerPresetSpec* find(std::string_view id) const;
     
     std::optional<LayerSpec> create(std::string_view id, const std::string& content, const TextParams& p) const;
 
@@ -39,11 +40,10 @@ public:
     void load_builtins();
 
 private:
-    TextPresetRegistry();
-    ~TextPresetRegistry() = default;
+    TextLayerPresetRegistry();
+    ~TextLayerPresetRegistry() = default;
 
-    struct Impl;
-    std::unique_ptr<Impl> m_impl;
+    registry::TypedRegistry<TextLayerPresetSpec> registry_;
 };
 
 } // namespace tachyon::presets
