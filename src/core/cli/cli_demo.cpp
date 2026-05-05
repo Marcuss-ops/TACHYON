@@ -72,15 +72,15 @@ std::optional<TransitionDemoConfig> load_transition_demo(
     TransitionDemoConfig config;
     config.transition_id = entry.id;
     config.name = entry.name;
-    config.source_scene_id = "scene_a";
-    config.target_scene_id = "scene_b";
+    config.source_scene_id = "tachyon.scene.a";
+    config.target_scene_id = "tachyon.scene.b";
     config.output_dir = entry.output_dir;
     constexpr std::string_view prefix = "tachyon.transition.";
     config.file_prefix = entry.id.rfind(prefix, 0) == 0 ? entry.id.substr(prefix.size()) : entry.id;
     config.output_format = "mp4";
-    config.duration_seconds = 1.0;
-    config.lead_in_seconds = 1.0;
-    config.lead_out_seconds = 1.0;
+    config.duration_seconds = 0.5;
+    config.lead_in_seconds = 1.25;
+    config.lead_out_seconds = 1.25;
     config.progress_start = 0.0;
     config.progress_end = 1.0;
     config.preview_frame_count = 12;
@@ -245,34 +245,36 @@ std::optional<std::reference_wrapper<const CachedSceneStill>> render_scene_still
     }
 
     double fps = 30.0;
-    SceneSpec scene;
-    if (scene_id == "scene_a" || scene_id == "scene_b") {
+    SceneSpec scene = catalog.instantiate_scene(scene_id);
+
+    // Keep the legacy image-based demo path only when the asset actually exists.
+    // Legacy support for older demo asset names.
+    if (scene.compositions.empty() && (scene_id == "scene_a" || scene_id == "scene_b")) {
         const std::string filename = scene_id + ".png";
         const std::filesystem::path asset_path = catalog.root() / "assets" / filename;
-        
-        AssetSpec asset;
-        asset.id = scene_id + "_asset";
-        asset.path = asset_path.generic_string();
-        asset.type = "image";
-        scene.assets.push_back(asset);
-        
-        CompositionSpec comp;
-        comp.id = "main";
-        comp.width = 1920;
-        comp.height = 1080;
-        comp.duration = 1.0;
-        comp.frame_rate = {30, 1};
-        
-        LayerSpec layer;
-        layer.id = "image";
-        layer.type = "image";
-        layer.asset_id = asset.id;
-        layer.width = 1920;
-        layer.height = 1080;
-        comp.layers.push_back(layer);
-        scene.compositions.push_back(comp);
-    } else {
-        scene = catalog.instantiate_scene(scene_id);
+        if (std::filesystem::exists(asset_path)) {
+            AssetSpec asset;
+            asset.id = scene_id + "_asset";
+            asset.path = asset_path.generic_string();
+            asset.type = "image";
+            scene.assets.push_back(asset);
+
+            CompositionSpec comp;
+            comp.id = "main";
+            comp.width = 1920;
+            comp.height = 1080;
+            comp.duration = 1.0;
+            comp.frame_rate = {30, 1};
+
+            LayerSpec layer;
+            layer.id = "image";
+            layer.type = "image";
+            layer.asset_id = asset.id;
+            layer.width = 1920;
+            layer.height = 1080;
+            comp.layers.push_back(layer);
+            scene.compositions.push_back(comp);
+        }
     }
 
     if (scene.compositions.empty()) {
@@ -354,10 +356,10 @@ bool render_transition_demo(
     std::ostream& out,
     std::ostream& err) {
     const bool final_video = demo.output_format == "mp4" || demo.output_format == "mov" || demo.output_format == "mkv" || demo.output_format == "webm";
-    const float render_scale = final_video ? 0.5f : demo.preview_resolution_scale;
+    const float render_scale = final_video ? 1.0f : demo.preview_resolution_scale;
     const renderer2d::SurfaceRGBA preview_source = preview_surface(source, render_scale);
     const renderer2d::SurfaceRGBA preview_target = preview_surface(target, render_scale);
-    const double fps = final_video ? 15.0 : 30.0;
+    const double fps = final_video ? 20.0 : 30.0;
     const double total_duration_seconds = demo.lead_in_seconds + demo.duration_seconds + demo.lead_out_seconds;
 
     auto host = renderer2d::create_effect_host();
@@ -375,7 +377,7 @@ bool render_transition_demo(
         output_plan.output.profile.video.pixel_format = "yuv420p";
         output_plan.output.profile.video.rate_control_mode = "fixed";
         output_plan.output.profile.alpha_mode = "opaque";
-        output_plan.composition.frame_rate = {15, 1};
+        output_plan.composition.frame_rate = {20, 1};
         output_plan.composition.duration = total_duration_seconds;
     }
     auto sink = output::create_frame_output_sink(output_plan);
@@ -421,7 +423,7 @@ bool render_transition_demo(
         params.strings["shader_path"] = transition_shader_path.generic_string();
         params.aux_surfaces["transition_to"] = &preview_target;
 
-        const auto blended_result = host->apply("glsl_transition", preview_source, params);
+        const auto blended_result = host->apply("tachyon.effect.transition.glsl", preview_source, params);
         const renderer2d::SurfaceRGBA output_frame = final_video
             ? resize_surface(blended_result.value.value_or(preview_source), static_cast<std::uint32_t>(source.width()), static_cast<std::uint32_t>(source.height()))
             : blended_result.value.value_or(preview_source);

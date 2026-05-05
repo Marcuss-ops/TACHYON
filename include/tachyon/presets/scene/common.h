@@ -3,6 +3,7 @@
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/presets/background/background_builders.h"
 #include "tachyon/presets/image/image_builders.h"
+#include "tachyon/presets/text/fluent.h"
 #include "tachyon/presets/scene/scene_params.h"
 #include "tachyon/scene/builder.h"
 
@@ -137,9 +138,16 @@ inline SceneSpec build_scene_a() {
         .duration(5.0)
         .fps(30)
         .clear(ColorSpec{25, 25, 204, 255}) // Blue
-        .layer("text", [](LayerBuilder& l) {
-            l.text("Scene A").font_size(120).color(ColorSpec{255, 255, 255, 255}).position(960, 540).in(0).out(5);
-        })
+        .layer(tachyon::presets::text::headline("TESTO SCENA A")
+            .font("Default")
+            .font_size(120)
+            .color(ColorSpec{255, 255, 255, 255})
+            .stroke_color(ColorSpec{0, 0, 0, 255})
+            .stroke_width(6.0)
+            .center()
+            .text_box(1920, 1080)
+            .position(960, 540)
+            .duration(5.0))
         .build_scene();
 }
 
@@ -149,9 +157,16 @@ inline SceneSpec build_scene_b() {
         .duration(5.0)
         .fps(30)
         .clear(ColorSpec{204, 25, 25, 255}) // Red
-        .layer("text", [](LayerBuilder& l) {
-            l.text("Scene B").font_size(120).color(ColorSpec{255, 255, 255, 255}).position(960, 540).in(0).out(5);
-        })
+        .layer(tachyon::presets::text::headline("TESTO SCENA B")
+            .font("Default")
+            .font_size(120)
+            .color(ColorSpec{255, 255, 255, 255})
+            .stroke_color(ColorSpec{0, 0, 0, 255})
+            .stroke_width(6.0)
+            .center()
+            .text_box(1920, 1080)
+            .position(960, 540)
+            .duration(5.0))
         .build_scene();
 }
 
