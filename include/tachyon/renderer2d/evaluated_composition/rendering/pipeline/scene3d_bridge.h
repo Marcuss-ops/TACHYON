@@ -1,4 +1,13 @@
 #pragma once
+#include <vector>
+#include <optional>
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <cstdint>
+
+#include "tachyon/core/math/matrix4x4.h"
+#include "tachyon/core/types/color_spec.h"
 
 #ifdef TACHYON_ENABLE_3D
 #include "tachyon/renderer3d/core/evaluated_scene_3d.h"
@@ -25,7 +34,7 @@ namespace tachyon::renderer3d {
             float ior;
         } material;
 
-        std::vector<math::Matrix4x4> joint_matrices;
+        std::vector<::tachyon::math::Matrix4x4> joint_matrices;
         std::vector<float> morph_weights;
     };
     struct EvaluatedScene3D {
@@ -40,13 +49,6 @@ namespace tachyon::renderer3d {
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/renderer2d/resource/render_context.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
-
-#include <vector>
-#include <optional>
-#include <memory>
-#include <string>
-#include <unordered_map>
-#include <cstdint>
 
 namespace tachyon {
 
