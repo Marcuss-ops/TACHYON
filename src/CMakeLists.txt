@@ -60,6 +60,25 @@ if(TACHYON_ENABLE_TRACKER)
     tachyon_assert_no_duplicate_sources(TachyonTrackerSources)
 endif()
 
+# Global check for cross-target source duplication
+set(GlobalTachyonSources
+    ${TachyonCoreSources}
+    ${TachyonTimelineSources}
+    ${TachyonSceneEvalSources}
+    ${TachyonSceneSources}
+    ${TachyonRuntimeSources}
+    ${TachyonRenderer2DSources}
+    ${TachyonMediaSources}
+    ${TachyonAudioSources}
+    ${TachyonOutputSources}
+    ${TachyonTextSources}
+    ${TachyonDiagnosticsSources}
+    ${TachyonPresetsSources}
+    ${TachyonPlatformSources}
+    ${TachyonColorSources}
+)
+tachyon_assert_no_duplicate_sources(GlobalTachyonSources)
+
 function(tachyon_configure_common target)
     target_include_directories(${target}
         PRIVATE
