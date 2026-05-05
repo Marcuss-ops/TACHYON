@@ -14,7 +14,7 @@ namespace tachyon {
 
 struct CliOptions {
     std::string command;
-    std::filesystem::path library_path;
+    std::filesystem::path catalog_path;
     std::optional<std::string> transition_id;
     std::filesystem::path job_path;
     std::filesystem::path batch_path;

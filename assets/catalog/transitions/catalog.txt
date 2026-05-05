@@ -1,0 +1,20 @@
+# Tachyon Transition Catalog
+# format: id | name | description | shader_file | thumb_file
+
+tachyon.transition.crossfade | Crossfade | Simple crossfade transition | shaders/crossfade.glsl | thumbs/crossfade.png
+tachyon.transition.slide_up | Slide Up | Vertical slide transition | shaders/slide_up.glsl | thumbs/slide_up.png
+tachyon.transition.swipe_left | Swipe Left | Swipe left reveal transition | shaders/swipe_left.glsl | thumbs/swipe_left.png
+tachyon.transition.fade_to_black | Fade to Black | Crossfade through black | shaders/fade_to_black.glsl | thumbs/fade_to_black.png
+tachyon.transition.wipe_linear | Wipe Linear | Simple left-to-right wipe | shaders/wipe_linear.glsl | thumbs/wipe_linear.png
+tachyon.transition.wipe_angular | Wipe Angular | Angular wipe around center | shaders/wipe_angular.glsl | thumbs/wipe_angular.png
+tachyon.transition.push_left | Push Left | Push image to the left | shaders/push_left.glsl | thumbs/push_left.png
+tachyon.transition.slide_easing | Slide Easing | Slide with easing | shaders/slide_easing.glsl | thumbs/slide_easing.png
+tachyon.transition.zoom_in | Zoom In | Zoom into target | shaders/zoom_in.glsl | thumbs/zoom_in.png
+tachyon.transition.zoom_blur | Zoom Blur | Zoom with motion blur | shaders/zoom_blur.glsl | thumbs/zoom_blur.png
+tachyon.transition.spin | Spin | Spin rotation | shaders/spin.glsl | thumbs/spin.png
+tachyon.transition.circle_iris | Circle Iris | Circular iris opener | shaders/circle_iris.glsl | thumbs/circle_iris.png
+tachyon.transition.pixelate | Pixelate | Pixelation transition | shaders/pixelate.glsl | thumbs/pixelate.png
+tachyon.transition.glitch_slice | Glitch Slice | Glitchy slice effect | shaders/glitch_slice.glsl | thumbs/glitch_slice.png
+tachyon.transition.rgb_split | RGB Split | Color channel split | shaders/rgb_split.glsl | thumbs/rgb_split.png
+tachyon.transition.luma_dissolve | Luma Dissolve | Luminance-based dissolve | shaders/luma_dissolve.glsl | thumbs/luma_dissolve.png
+tachyon.transition.directional_blur_wipe | Directional Blur Wipe | Blur wipe with direction | shaders/directional_blur_wipe.glsl | thumbs/directional_blur_wipe.png

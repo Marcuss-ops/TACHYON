@@ -45,7 +45,7 @@ struct CachedSceneStill {
     double fps{30.0};
 };
 
-std::filesystem::path resolve_library_root(const std::filesystem::path& requested_root) {
+std::filesystem::path resolve_catalog_root(const std::filesystem::path& requested_root) {
     if (!requested_root.empty()) {
         return std::filesystem::absolute(requested_root);
     }
@@ -236,7 +236,7 @@ std::optional<renderer2d::SurfaceRGBA> render_scene_still(
 
 std::optional<std::reference_wrapper<const CachedSceneStill>> render_scene_still_cached(
     const std::string& scene_id,
-    const TachyonCatalog& library,
+    const TachyonCatalog& catalog,
     std::map<std::string, CachedSceneStill>& cache,
     std::ostream& err) {
     const auto cache_it = cache.find(scene_id);
@@ -248,7 +248,7 @@ std::optional<std::reference_wrapper<const CachedSceneStill>> render_scene_still
     SceneSpec scene;
     if (scene_id == "scene_a" || scene_id == "scene_b") {
         const std::string filename = scene_id + ".png";
-        const std::filesystem::path asset_path = library.root() / "assets" / filename;
+        const std::filesystem::path asset_path = catalog.root() / "assets" / filename;
         
         AssetSpec asset;
         asset.id = scene_id + "_asset";
@@ -272,7 +272,7 @@ std::optional<std::reference_wrapper<const CachedSceneStill>> render_scene_still
         comp.layers.push_back(layer);
         scene.compositions.push_back(comp);
     } else {
-        scene = library.instantiate_scene(scene_id);
+        scene = catalog.instantiate_scene(scene_id);
     }
 
     if (scene.compositions.empty()) {
@@ -452,27 +452,27 @@ bool render_transition_demo(
 }  // namespace
 
 bool run_catalog_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err) {
-    const std::filesystem::path library_root = resolve_library_root(options.library_path);
-    TachyonCatalog library(library_root);
-    if (!library.ok()) {
-        print_diagnostics(library.diagnostics(), err);
+    const std::filesystem::path catalog_root = resolve_catalog_root(options.catalog_path);
+    TachyonCatalog catalog(catalog_root);
+    if (!catalog.ok()) {
+        print_diagnostics(catalog.diagnostics(), err);
         return false;
     }
 
     std::vector<CatalogTransitionEntry> transitions;
     if (options.transition_id.has_value()) {
-        const auto transition = library.find_transition(*options.transition_id);
+        const auto transition = catalog.find_transition(*options.transition_id);
         if (!transition.has_value()) {
             err << "transition not found: " << *options.transition_id << '\n';
             return false;
         }
         transitions.push_back(*transition);
     } else {
-        transitions = library.transitions();
+        transitions = catalog.transitions();
     }
 
     if (transitions.empty()) {
-        err << "no transitions available in " << library_root.generic_string() << '\n';
+        err << "no transitions available in " << catalog_root.generic_string() << '\n';
         return false;
     }
 
@@ -489,12 +489,12 @@ bool run_catalog_demo_command(const CliOptions& options, std::ostream& out, std:
             continue;
         }
 
-        const auto source_still = render_scene_still_cached(demo->source_scene_id, library, scene_still_cache, err);
+        const auto source_still = render_scene_still_cached(demo->source_scene_id, catalog, scene_still_cache, err);
         if (!source_still.has_value()) {
             all_ok = false;
             continue;
         }
-        const auto target_still = render_scene_still_cached(demo->target_scene_id, library, scene_still_cache, err);
+        const auto target_still = render_scene_still_cached(demo->target_scene_id, catalog, scene_still_cache, err);
         if (!target_still.has_value()) {
             all_ok = false;
             continue;

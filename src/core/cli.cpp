@@ -114,7 +114,7 @@ static const std::vector<CommandEntry> kCommands = {
 #ifdef TACHYON_ENABLE_CATALOG_COMMANDS
     {
         "catalog-demo",
-        "tachyon catalog-demo [--library <dir>] [--transition <id>] [--output-dir <dir>]",
+        "tachyon catalog-demo [--catalog <dir>] [--transition <id>] [--output-dir <dir>]",
         nullptr,
         run_catalog_demo_command
     },
