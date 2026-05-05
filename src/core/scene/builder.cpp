@@ -185,6 +185,7 @@ LayerBuilder& LayerBuilder::preset(std::string name) {
 
 LayerBuilder& LayerBuilder::text(std::string t) {
     spec_.kind = LayerType::Text;
+    spec_.type = "text";
     spec_.text_content = std::move(t);
     return *this;
 }

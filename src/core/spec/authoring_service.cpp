@@ -154,11 +154,13 @@ bool AuthoringService::is_compiler_available() {
 }
 
 std::vector<std::string> AuthoringService::get_link_libs() {
-    return {
+    std::vector<std::string> libs = {
         "TachyonCore",
         "TachyonScene",
         "TachyonRenderer2D",
+#ifdef TACHYON_ENABLE_3D
         "TachyonRenderer3D",
+#endif
         "TachyonColor",
         "TachyonPlatform",
         "TachyonAudio",
@@ -166,6 +168,7 @@ std::vector<std::string> AuthoringService::get_link_libs() {
         "TachyonOutput",
         "TachyonText"
     };
+    return libs;
 }
 
 std::string AuthoringService::get_compiler_command(

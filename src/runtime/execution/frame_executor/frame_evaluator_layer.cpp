@@ -147,6 +147,11 @@ void evaluate_layer(
         ? std::make_optional(static_cast<std::size_t>(*layer.matte_layer_index))
         : std::nullopt;
 
+    state->in_time = layer.in_time;
+    state->out_time = layer.out_time;
+    state->transition_in = layer.transition_in;
+    state->transition_out = layer.transition_out;
+
     if (layer.precomp_index.has_value() && *layer.precomp_index < scene.compositions.size()) {
         const auto& nested_comp = scene.compositions[*layer.precomp_index];
         const std::uint64_t nested_key = build_node_key(frame_key, nested_comp.node);
@@ -254,7 +259,23 @@ void evaluate_layer(
         state->previous_world_matrix = state->world_matrix;
     }
 
-    state->active = state->enabled && state->visible && state->opacity > 0.0;
+    float transition_opacity = 1.0f;
+    if (layer.transition_in.duration > 0.0) {
+        double t = frame_time_seconds - layer.in_time;
+        if (t >= 0.0 && t < layer.transition_in.duration) {
+            transition_opacity = static_cast<float>(std::clamp(t / layer.transition_in.duration, 0.0, 1.0));
+        }
+    }
+    if (layer.transition_out.duration > 0.0) {
+        double t = layer.out_time - frame_time_seconds;
+        if (t >= 0.0 && t < layer.transition_out.duration) {
+            transition_opacity *= static_cast<float>(std::clamp(t / layer.transition_out.duration, 0.0, 1.0));
+        }
+    }
+    state->opacity *= transition_opacity;
+
+    state->active = state->enabled && state->visible && state->opacity > 0.0 && 
+                    frame_time_seconds >= layer.in_time && frame_time_seconds < layer.out_time;
 
     executor.m_cache.store_layer(node_key, std::move(state));
     record_timing();
