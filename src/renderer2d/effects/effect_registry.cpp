@@ -9,6 +9,8 @@ void register_color_effects(EffectRegistry& registry);
 void register_transition_effects(EffectRegistry& registry);
 void register_distortion_effects(EffectRegistry& registry);
 void register_glitch_effects(EffectRegistry& registry);
+void register_generator_effects(EffectRegistry& registry);
+void register_stylize_effects(EffectRegistry& registry);
 
 EffectRegistry& EffectRegistry::instance() {
     static EffectRegistry instance;
@@ -40,6 +42,8 @@ void EffectRegistry::register_builtins() {
     register_transition_effects(*this);
     register_distortion_effects(*this);
     register_glitch_effects(*this);
+    register_generator_effects(*this);
+    register_stylize_effects(*this);
 }
 
 } // namespace tachyon::renderer2d

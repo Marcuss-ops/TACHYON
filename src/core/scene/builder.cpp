@@ -5,6 +5,9 @@
 #include "tachyon/presets/transition/transition_preset_registry.h"
 #include "tachyon/presets/text/text_builders.h"
 #include "tachyon/presets/text/text_animator_preset_registry.h"
+#include "tachyon/presets/animation2d/animation2d_preset_registry.h"
+#include "tachyon/presets/animation3d/animation3d_preset_registry.h"
+#include "tachyon/core/registry/parameter_bag.h"
 
 namespace tachyon::scene {
 
@@ -323,6 +326,50 @@ LayerBuilder& LayerBuilder::transition_out_preset(const std::string& id, double 
     registry::ParameterBag bag;
     bag.set("duration", duration);
     spec_.transition_out = presets::TransitionPresetRegistry::instance().create(id, bag);
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::animation2d_preset(const std::string& id, double duration, double delay) {
+    registry::ParameterBag bag;
+    bag.set("duration", duration);
+    bag.set("delay", delay);
+    presets::Animation2DPresetRegistry::instance().apply(id, spec_, bag);
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::animation3d_preset(const std::string& id, double duration, double delay) {
+    registry::ParameterBag bag;
+    bag.set("duration", duration);
+    bag.set("delay", delay);
+    presets::Animation3DPresetRegistry::instance().apply(id, spec_, bag);
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::modifier3d(const std::string& id, const std::map<std::string, double>& scalars) {
+    if (!spec_.three_d.has_value()) {
+        spec_.three_d = ThreeDSpec{};
+        spec_.three_d->enabled = true;
+    }
+    ThreeDModifierSpec mod;
+    mod.type = id;
+    for (const auto& [k, v] : scalars) {
+        mod.scalar_params[k] = anim::scalar(v);
+    }
+    spec_.three_d->modifiers.push_back(std::move(mod));
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::effect(const std::string& id, const std::map<std::string, double>& scalars, const std::map<std::string, std::string>& strings) {
+    EffectSpec e;
+    e.type = id;
+    e.enabled = true;
+    for (const auto& [k, v] : scalars) {
+        e.scalars[k] = v;
+    }
+    for (const auto& [k, v] : strings) {
+        e.strings[k] = v;
+    }
+    spec_.effects.push_back(std::move(e));
     return *this;
 }
 

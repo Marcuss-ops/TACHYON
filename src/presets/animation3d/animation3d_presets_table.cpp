@@ -13,6 +13,14 @@ void add_scalar_kf(std::vector<ScalarKeyframeSpec>& kfs, double time, double val
     kfs.push_back(kf);
 }
 
+void add_vector3_kf(std::vector<AnimatedVector3Spec::Keyframe>& kfs, double time, float x, float y, float z, animation::EasingPreset easing = animation::EasingPreset::None) {
+    AnimatedVector3Spec::Keyframe kf;
+    kf.time = time;
+    kf.value = math::Vector3(x, y, z);
+    kf.easing = easing;
+    kfs.push_back(kf);
+}
+
 } // namespace
 
 void Animation3DPresetRegistry::load_builtins() {
@@ -37,11 +45,10 @@ void Animation3DPresetRegistry::load_builtins() {
         {},
         [get_anim_params](LayerSpec& layer, const ParameterBag& p) {
             auto params = get_anim_params(p);
-            auto& rot_y = layer.transform.three_d.rotation_y_property;
-            rot_y.keyframes.clear();
-            add_scalar_kf(rot_y.keyframes, params.delay, 0.0);
-            add_scalar_kf(rot_y.keyframes, params.delay + params.duration, 360.0 * params.intensity);
-            rot_y.post_infinity = "cycle";
+            auto& rot = layer.transform3d.rotation_property;
+            rot.keyframes.clear();
+            add_vector3_kf(rot.keyframes, params.delay, 0.0f, 0.0f, 0.0f);
+            add_vector3_kf(rot.keyframes, params.delay + params.duration, 0.0f, 360.0f * params.intensity, 0.0f);
         }
     });
 
@@ -52,13 +59,12 @@ void Animation3DPresetRegistry::load_builtins() {
         {},
         [get_anim_params](LayerSpec& layer, const ParameterBag& p) {
             auto params = get_anim_params(p);
-            auto& pos_z = layer.transform.three_d.position_z_property;
-            pos_z.keyframes.clear();
-            double offset = 50.0 * params.intensity;
-            add_scalar_kf(pos_z.keyframes, params.delay, 0.0, animation::EasingPreset::EaseInOut);
-            add_scalar_kf(pos_z.keyframes, params.delay + params.duration * 0.5, offset, animation::EasingPreset::EaseInOut);
-            add_scalar_kf(pos_z.keyframes, params.delay + params.duration, 0.0, animation::EasingPreset::EaseInOut);
-            pos_z.post_infinity = "cycle";
+            auto& pos = layer.transform3d.position_property;
+            pos.keyframes.clear();
+            float offset = 50.0f * params.intensity;
+            add_vector3_kf(pos.keyframes, params.delay, 0.0f, 0.0f, 0.0f, animation::EasingPreset::EaseInOut);
+            add_vector3_kf(pos.keyframes, params.delay + params.duration * 0.5, 0.0f, 0.0f, offset, animation::EasingPreset::EaseInOut);
+            add_vector3_kf(pos.keyframes, params.delay + params.duration, 0.0f, 0.0f, 0.0f, animation::EasingPreset::EaseInOut);
         }
     });
 
@@ -69,11 +75,10 @@ void Animation3DPresetRegistry::load_builtins() {
         {},
         [get_anim_params](LayerSpec& layer, const ParameterBag& p) {
             auto params = get_anim_params(p);
-            auto& rot_y = layer.transform.three_d.rotation_y_property;
-            rot_y.keyframes.clear();
-            add_scalar_kf(rot_y.keyframes, params.delay, 0.0);
-            add_scalar_kf(rot_y.keyframes, params.delay + params.duration, 360.0 * params.intensity);
-            rot_y.post_infinity = "cycle";
+            auto& rot = layer.transform3d.rotation_property;
+            rot.keyframes.clear();
+            add_vector3_kf(rot.keyframes, params.delay, 0.0f, 0.0f, 0.0f);
+            add_vector3_kf(rot.keyframes, params.delay + params.duration, 0.0f, 360.0f * params.intensity, 0.0f);
         }
     });
 
@@ -84,10 +89,10 @@ void Animation3DPresetRegistry::load_builtins() {
         {},
         [get_anim_params](LayerSpec& layer, const ParameterBag& p) {
             auto params = get_anim_params(p);
-            auto& pos_z = layer.transform.three_d.position_z_property;
-            pos_z.keyframes.clear();
-            add_scalar_kf(pos_z.keyframes, params.delay, -200.0 * params.intensity, animation::EasingPreset::EaseOut);
-            add_scalar_kf(pos_z.keyframes, params.delay + params.duration, 0.0, animation::EasingPreset::EaseOut);
+            auto& pos = layer.transform3d.position_property;
+            pos.keyframes.clear();
+            add_vector3_kf(pos.keyframes, params.delay, 0.0f, 0.0f, -200.0f * params.intensity, animation::EasingPreset::EaseOut);
+            add_vector3_kf(pos.keyframes, params.delay + params.duration, 0.0f, 0.0f, 0.0f, animation::EasingPreset::EaseOut);
         }
     });
 }

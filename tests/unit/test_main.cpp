@@ -36,7 +36,7 @@ bool run_scene_evaluator_tests();
 bool run_render_session_tests();
 bool run_parallax_cards_tests();
 bool run_png_3d_validation_tests();
-bool run_studio_library_tests();
+bool run_catalog_tests();
 bool run_timeline_tests();
 bool run_camera_cuts_tests();
 bool run_camera_shake_tests();
@@ -128,6 +128,7 @@ int main(int argc, char** argv) {
         {"three_d_modifier", run_3d_modifier_tests},
         {"default_camera", run_default_camera_tests_adapter},
         {"profiling", tachyon::profiling::run_profiler_tests},
+        {"catalog", run_catalog_tests},
         {"parallax", []() { run_parallax_tests(); return true; }},
         {"lookat", []() { run_look_at_tests(); return true; }},
     };
