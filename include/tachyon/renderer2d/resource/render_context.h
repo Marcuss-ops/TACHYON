@@ -24,6 +24,7 @@ using SurfacePool = tachyon::renderer2d::SurfacePool;
 #include <string>
 #include <memory>
 #include <cstdint>
+#include <atomic>
 
 namespace tachyon::profiling { class RenderProfiler; }
 
@@ -37,6 +38,7 @@ class RayTracer;
 }
 
 namespace tachyon::renderer2d {
+class EffectHost;
 
 struct EvaluatorContext {
   std::vector<float> scalars;
@@ -116,6 +118,8 @@ struct RenderContext2D {
     // Set by QualityPolicy::build_render_context() or caller.
     // Non-owning if borrowed from a session-level backend; owning if created per-context.
     std::shared_ptr<ComputeBackend> compute_backend;
+
+    std::atomic<bool>* cancel_flag{nullptr};
 };
 
 using RenderContext = RenderContext2D;

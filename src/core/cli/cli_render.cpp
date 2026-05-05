@@ -212,8 +212,14 @@ void print_execution_plan(
         << static_cast<int>(session_result.cache_hit_rate()) << "%)\n";
 
     // Memory and workers
-    if (session_result.peak_memory_bytes > 0) {
-        out << "  memory: peak " << (session_result.peak_memory_bytes / (1024 * 1024)) << "MB\n";
+    const std::size_t peak_memory_bytes = std::max(session_result.peak_working_set_bytes, session_result.peak_private_bytes);
+    if (peak_memory_bytes > 0) {
+        out << "  memory: peak " << (peak_memory_bytes / (1024 * 1024)) << "MB";
+        if (session_result.peak_working_set_bytes > 0 && session_result.peak_private_bytes > 0) {
+            out << " (working set " << (session_result.peak_working_set_bytes / (1024 * 1024))
+                << "MB, private " << (session_result.peak_private_bytes / (1024 * 1024)) << "MB)";
+        }
+        out << '\n';
     }
     out << "  workers: " << worker_count << " threads\n";
     out << "  2d runtime backend: " << rasterized_first_frame.backend_name << '\n';

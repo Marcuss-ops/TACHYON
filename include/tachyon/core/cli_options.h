@@ -40,6 +40,12 @@ struct CliOptions {
     std::vector<std::string> font_subsets;
     std::filesystem::path font_dest{"assets/fonts"};
     bool font_overwrite{false};
+    // metrics command options
+    std::string metrics_command;
+    std::filesystem::path metrics_input;
+    int metrics_top{20};
+    double machine_cost_per_hour{0.0};
+
     bool show_version{false};
 };
 

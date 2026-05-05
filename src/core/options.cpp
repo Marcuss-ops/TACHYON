@@ -223,8 +223,55 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
             }
             continue;
         }
+        if (arg == "--input") {
+            const std::string value = require_argument(args, index);
+            if (value.empty()) {
+                result.diagnostics.add_error("cli.input_missing", "missing value for --input");
+                return result;
+            }
+            options.metrics_input = value;
+            continue;
+        }
+        if (arg == "--top") {
+            const std::string value = require_argument(args, index);
+            if (value.empty()) {
+                result.diagnostics.add_error("cli.top_missing", "missing value for --top");
+                return result;
+            }
+            try {
+                options.metrics_top = std::stoi(value);
+            } catch (const std::exception&) {
+                result.diagnostics.add_error("cli.top_invalid", "invalid value for --top: " + value);
+                return result;
+            }
+            continue;
+        }
+
+        // Subcommands (for metrics)
+        if (index == 1 && options.command == "metrics") {
+            if (arg == "summary" || arg == "failures" || arg == "slowest") {
+                options.metrics_command = arg;
+                continue;
+            }
+        }
+
         if (arg == "--version" || arg == "-v") {
             options.show_version = true;
+            continue;
+        }
+
+        if (arg == "--cost-per-hour") {
+            const std::string value = require_argument(args, index);
+            if (value.empty()) {
+                result.diagnostics.add_error("cli.cost_missing", "missing value for --cost-per-hour");
+                return result;
+            }
+            try {
+                options.machine_cost_per_hour = std::stod(value);
+            } catch (const std::exception&) {
+                result.diagnostics.add_error("cli.cost_invalid", "invalid value for --cost-per-hour: " + value);
+                return result;
+            }
             continue;
         }
 

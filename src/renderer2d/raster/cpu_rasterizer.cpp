@@ -162,7 +162,8 @@ void CPURasterizer::draw_textured_quad(Framebuffer& fb, const TexturedQuadPrimit
 RasterizedFrame2D render_frame_2d(
     const RenderPlan& plan,
     const FrameRenderTask& task,
-    std::span<const renderer2d::DrawCommand2D> commands) {
+    std::span<const renderer2d::DrawCommand2D> commands,
+    renderer2d::RenderContext2D& context) {
 
     RasterizedFrame2D frame;
     frame.frame_number = task.frame_number;
@@ -187,6 +188,7 @@ RasterizedFrame2D render_frame_2d(
     frame.surface->set_clip_rect(active_clip);
 
     for (const auto& cmd : commands) {
+        if (context.cancel_flag && context.cancel_flag->load()) break;
         if (cmd.clip.has_value()) {
             frame.surface->set_clip_rect(*cmd.clip);
         } else {
@@ -245,7 +247,8 @@ RasterizedFrame2D render_frame_2d(
 }
 
 RasterizedFrame2D render_frame_2d_stub(const RenderPlan& plan, const FrameRenderTask& task) {
-    auto frame = render_frame_2d(plan, task, {});
+    renderer2d::RenderContext2D context;
+    auto frame = render_frame_2d(plan, task, {}, context);
     frame.estimated_draw_ops = plan.composition.layer_count * 5;
     return frame;
 }

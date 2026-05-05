@@ -12,6 +12,7 @@
 
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include <memory>
+#include <atomic>
 
 namespace tachyon {
 
@@ -32,6 +33,7 @@ struct RenderContext {
     runtime::RuntimeSurfacePool* surface_pool{nullptr};
     FrameDiagnostics* diagnostic_tracker{nullptr};
     profiling::RenderProfiler* profiler{nullptr};
+    std::atomic<bool>* cancel_flag{nullptr};
 
     explicit RenderContext(std::shared_ptr<renderer2d::PrecompCache> precomp_cache = nullptr);
 };

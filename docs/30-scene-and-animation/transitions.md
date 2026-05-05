@@ -8,13 +8,13 @@ This document describes how transitions work today and how to add new ones witho
 - The transition builder functions are thin pass-through helpers.
 - `build_transition_enter()` and `build_transition_exit()` only map the caller request into a `LayerTransitionSpec`.
 - Empty or `none` ids mean no transition.
-- Unknown ids are preserved as explicit authoring input instead of being silently rewritten.
+- Unknown ids are preserved as explicit authoring input, but they now resolve to a no-op transition instead of a silent visual fallback.
 
 ## Data Flow
 
 1. A caller fills `TransitionParams`.
 2. The builder forwards the requested `id` to the registry.
-3. The registry returns either a matching spec or a generic pass-through spec.
+3. The registry returns either a matching spec or a no-op spec for unknown ids.
 4. The layer stores the resulting `LayerTransitionSpec`.
 5. The runtime consumes the transition exactly as authored.
 

@@ -58,6 +58,23 @@ void record_timing(
     });
 }
 
+const TransitionSpec* resolve_transition_spec(const LayerTransitionSpec& transition) {
+    if (!transition.transition_id.empty()) {
+        return TransitionRegistry::instance().find(transition.transition_id);
+    }
+    if (transition.type != "none") {
+        return TransitionRegistry::instance().find(transition.type);
+    }
+    return nullptr;
+}
+
+std::optional<double> compute_transition_progress(double elapsed_seconds, double duration_seconds) {
+    if (duration_seconds <= 0.0 || elapsed_seconds < 0.0 || elapsed_seconds >= duration_seconds) {
+        return std::nullopt;
+    }
+    return std::clamp(elapsed_seconds / duration_seconds, 0.0, 1.0);
+}
+
 } // namespace
 using namespace renderer2d;
 
@@ -210,6 +227,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
     // Render all layers and collect surfaces
     for (std::size_t i = 0; i < state.layers.size(); ++i) {
+        if (context.cancel_flag && context.cancel_flag->load()) break;
         const auto& layer = state.layers[i];
         if (!layer.enabled || !layer.active || layer.id.empty()) {
             continue;
@@ -254,6 +272,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
         EffectHost& host = effect_host_for(render_context);
         // Render layers in stack order so higher layers can affect the composite below them.
         for (std::size_t i = 0; i < state.layers.size(); ++i) {
+            if (render_context.cancel_flag && render_context.cancel_flag->load()) break;
             const auto& layer = state.layers[i];
             if (!layer.enabled || !layer.active) {
                 continue;
@@ -520,20 +539,11 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     const double relative_time = layer_time - layer.in_time;
                     const double transition_duration = layer.transition_in.duration;
                     const double start_time = layer.transition_in.delay;
-
-                    if (relative_time >= start_time && relative_time < start_time + transition_duration) {
+                    const auto progress = compute_transition_progress(relative_time - start_time, transition_duration);
+                    if (progress.has_value()) {
                         in_transition = true;
-                        transition_t = (relative_time - start_time) / transition_duration;
-                        transition_t = std::clamp(transition_t, 0.0, 1.0);
-                        transition_t = animation::apply_easing(transition_t, layer.transition_in.easing, {});
-
-                        // Unified lookup: transition_id first, then type as fallback
-                        if (!layer.transition_in.transition_id.empty()) {
-                            transition_spec = TransitionRegistry::instance().find(layer.transition_in.transition_id);
-                        } else if (layer.transition_in.type != "none") {
-                            // Look up type in registry (base transitions are now registered)
-                            transition_spec = TransitionRegistry::instance().find(layer.transition_in.type);
-                        }
+                        transition_t = animation::apply_easing(*progress, layer.transition_in.easing, {});
+                        transition_spec = resolve_transition_spec(layer.transition_in);
                     }
                 }
 
@@ -541,20 +551,11 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 if (!in_transition && (!layer.transition_out.transition_id.empty() || layer.transition_out.type != "none")) {
                     const double time_until_end = layer.out_time - layer_time;
                     const double transition_duration = layer.transition_out.duration;
-
-                    if (time_until_end >= 0.0 && time_until_end < transition_duration) {
+                    const auto progress = compute_transition_progress(time_until_end, transition_duration);
+                    if (progress.has_value()) {
                         out_transition = true;
-                        transition_t = time_until_end / transition_duration;
-                        transition_t = std::clamp(transition_t, 0.0, 1.0);
-                        transition_t = animation::apply_easing(transition_t, layer.transition_out.easing, {});
-
-                        // Unified lookup: transition_id first, then type as fallback
-                        if (!layer.transition_out.transition_id.empty()) {
-                            transition_spec = TransitionRegistry::instance().find(layer.transition_out.transition_id);
-                        } else if (layer.transition_out.type != "none") {
-                            // Look up type in registry (base transitions are now registered)
-                            transition_spec = TransitionRegistry::instance().find(layer.transition_out.type);
-                        }
+                        transition_t = animation::apply_easing(*progress, layer.transition_out.easing, {});
+                        transition_spec = resolve_transition_spec(layer.transition_out);
                     }
                 }
 
@@ -581,6 +582,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                         const float height = static_cast<float>(std::max<std::uint32_t>(1U, transition_input.height()));
 
                         for (std::uint32_t y = 0; y < transition_result.height(); ++y) {
+                            if (render_context.cancel_flag && render_context.cancel_flag->load()) break;
                             for (std::uint32_t x = 0; x < transition_result.width(); ++x) {
                                 const float u = (static_cast<float>(x) + 0.5f) / width;
                                 const float v = (static_cast<float>(y) + 0.5f) / height;

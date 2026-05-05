@@ -1,6 +1,7 @@
 # TachyonCLI core sources (minimal)
 set(TachyonCLICoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/cli_render.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/cli_metrics.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/cli_validate.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/cli_inspect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/cli_preview_frame.cpp

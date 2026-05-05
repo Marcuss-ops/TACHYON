@@ -138,6 +138,8 @@ void render_frames_parallel_internal(
               local_context.renderer2d.font_registry = context.renderer2d.font_registry;
               local_context.renderer2d.media_manager = context.renderer2d.media_manager;
               local_context.renderer2d.cms = context.renderer2d.cms;
+              local_context.cancel_flag = cancel_flag;
+              local_context.renderer2d.cancel_flag = cancel_flag;
 
             for (;;) {
                 // Check for cancellation

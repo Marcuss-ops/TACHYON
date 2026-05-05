@@ -7,6 +7,7 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include <atomic>
 
 namespace tachyon {
 namespace audio {
@@ -19,7 +20,7 @@ public:
     ~AudioExporter();
 
     void add_track(const AudioTrackSpec& track_spec);
-    bool export_to(const std::filesystem::path& output_path, const AudioExportConfig& config, double start_time = 0.0, double duration = -1.0);
+    bool export_to(const std::filesystem::path& output_path, const AudioExportConfig& config, double start_time = 0.0, double duration = -1.0, std::atomic<bool>* cancel_flag = nullptr);
 
     void clear_tracks();
     

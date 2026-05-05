@@ -43,7 +43,10 @@ set(TachyonRuntimeSources
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/resource/render_context.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/property_sampling.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/profiling/render_profiler.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/telemetry_writer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/telemetry/render_telemetry_record.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/telemetry/process_resource_sampler.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/telemetry/telemetry_writer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/telemetry/batch_telemetry_aggregator.cpp
 
     # Spec - Compilation (runtime-owned)
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/component_library.cpp

@@ -359,7 +359,7 @@ bool render_transition_demo(
     const float render_scale = final_video ? 1.0f : demo.preview_resolution_scale;
     const renderer2d::SurfaceRGBA preview_source = preview_surface(source, render_scale);
     const renderer2d::SurfaceRGBA preview_target = preview_surface(target, render_scale);
-    const double fps = final_video ? 20.0 : 30.0;
+    const double fps = final_video ? 24.0 : 30.0;
     const double total_duration_seconds = demo.lead_in_seconds + demo.duration_seconds + demo.lead_out_seconds;
 
     auto host = renderer2d::create_effect_host();
@@ -377,7 +377,7 @@ bool render_transition_demo(
         output_plan.output.profile.video.pixel_format = "yuv420p";
         output_plan.output.profile.video.rate_control_mode = "fixed";
         output_plan.output.profile.alpha_mode = "opaque";
-        output_plan.composition.frame_rate = {20, 1};
+        output_plan.composition.frame_rate = {24, 1};
         output_plan.composition.duration = total_duration_seconds;
     }
     auto sink = output::create_frame_output_sink(output_plan);

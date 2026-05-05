@@ -5,6 +5,7 @@
 #include "tachyon/runtime/core/graph/runtime_render_graph.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/output/frame_aov.h"
+#include "tachyon/renderer2d/resource/render_context.h"
 
 #include <cstdint>
 #include <optional>
@@ -40,7 +41,8 @@ public:
 RasterizedFrame2D render_frame_2d(
     const RenderPlan& plan,
     const FrameRenderTask& task,
-    std::span<const renderer2d::DrawCommand2D> commands);
+    std::span<const renderer2d::DrawCommand2D> commands,
+    renderer2d::RenderContext2D& context);
 
 RasterizedFrame2D render_frame_2d_stub(const RenderPlan& plan, const FrameRenderTask& task);
 

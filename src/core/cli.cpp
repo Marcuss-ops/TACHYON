@@ -125,6 +125,20 @@ static const std::vector<CommandEntry> kCommands = {
         nullptr,
         run_fetch_fonts_command
     },
+    {
+        "metrics",
+        "tachyon metrics summary --input <file.jsonl> [--json]\n"
+        "        metrics failures --input <file.jsonl>\n"
+        "        metrics slowest --input <file.jsonl> [--top <n>]",
+        [](const CliOptions& o, std::ostream& e) {
+            if (o.metrics_input.empty()) {
+                e << "--input is required for metrics command\n";
+                return false;
+            }
+            return true;
+        },
+        run_metrics_command
+    },
 };
 
 void print_help(std::ostream& out) {
