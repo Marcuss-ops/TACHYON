@@ -54,17 +54,20 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
             compiled_layer.node = registry.create_node(CompiledNodeType::Layer);
             compiled.graph.add_node(compiled_layer.node.node_id);
             
-            // Resolve Type
-            auto type_map = [](const std::string& t) -> std::uint32_t {
-                if (t == "solid") return 1;
-                if (t == "shape") return 2;
-                if (t == "image") return 3;
-                if (t == "text") return 4;
-                if (t == "precomp") return 5;
-                if (t == "procedural") return 6;
-                return 0;
+            // Resolve Type using robust LayerType enum
+            auto type_map = [](LayerType k) -> std::uint32_t {
+                switch (k) {
+                    case LayerType::Solid:      return 1;
+                    case LayerType::Shape:      return 2;
+                    case LayerType::Image:      return 3;
+                    case LayerType::Text:       return 4;
+                    case LayerType::Precomp:    return 5;
+                    case LayerType::Procedural: return 6;
+                    case LayerType::Video:      return 3; // Video maps to Image for now
+                    default: return 0;
+                }
             };
-            compiled_layer.type_id = type_map(layer.type);
+            compiled_layer.type_id = type_map(layer.kind);
             
             compiled_layer.width = static_cast<std::uint32_t>(layer.width);
             compiled_layer.height = static_cast<std::uint32_t>(layer.height);
@@ -96,6 +99,12 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
             else compiled_layer.line_join = renderer2d::LineJoin::Miter;
 
             compiled_layer.miter_limit = static_cast<float>(layer.miter_limit);
+            
+            compiled_layer.in_time = layer.in_point;
+            compiled_layer.out_time = layer.out_point;
+            compiled_layer.start_time = layer.start_time;
+            compiled_layer.transition_in = layer.transition_in;
+            compiled_layer.transition_out = layer.transition_out;
             
             // Build flags bitmask
             compiled_layer.flags = 0;
