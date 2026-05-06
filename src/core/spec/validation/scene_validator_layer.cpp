@@ -21,6 +21,30 @@ bool looks_like_media_reference(const std::string& value) {
     return value.find('/') != std::string::npos || value.find('\\') != std::string::npos;
 }
 
+void warn_legacy_animation_preset(
+    const std::string& legacy_value,
+    const std::string& canonical_value,
+    const std::string& path,
+    const std::string& field_name,
+    const std::string& replacement_name,
+    ValidationResult& out) {
+    if (legacy_value.empty()) {
+        return;
+    }
+
+    const bool canonical_present = !canonical_value.empty();
+    const std::string message = canonical_present
+        ? field_name + " is legacy authoring data and is ignored because " + replacement_name + " is set."
+        : field_name + " is legacy authoring data; use " + replacement_name + " instead.";
+
+    out.issues.push_back(ValidationIssue{
+        ValidationIssue::Severity::Warning,
+        path + "." + field_name,
+        message
+    });
+    out.warning_count++;
+}
+
 } // namespace
 
 void SceneValidator::validate_layer(const ::tachyon::LayerSpec& layer, const ::tachyon::CompositionSpec& comp, const ::tachyon::SceneSpec& scene, const std::string& path, ValidationResult& out) const {
@@ -48,6 +72,10 @@ void SceneValidator::validate_layer(const ::tachyon::LayerSpec& layer, const ::t
         });
         out.error_count++;
     }
+
+    warn_legacy_animation_preset(layer.in_preset, layer.animation_in_preset, path, "in_preset", "animation_in_preset", out);
+    warn_legacy_animation_preset(layer.during_preset, layer.animation_during_preset, path, "during_preset", "animation_during_preset", out);
+    warn_legacy_animation_preset(layer.out_preset, layer.animation_out_preset, path, "out_preset", "animation_out_preset", out);
 
     // Validate layer duration
     auto layer_duration = layer.duration.has_value() ? layer.duration.value() : (layer.out_point - layer.in_point);

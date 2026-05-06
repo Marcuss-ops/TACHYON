@@ -161,6 +161,40 @@ bool run_cli_tests() {
     {
         tachyon::SceneSpec scene;
         scene.schema_version = tachyon::SchemaVersion{1, 0, 0};
+
+        tachyon::CompositionSpec comp;
+        comp.id = "main";
+        comp.width = 1920;
+        comp.height = 1080;
+        comp.duration = 2.0;
+        comp.fps = 30;
+
+        tachyon::LayerSpec legacy_animation;
+        legacy_animation.id = "anim";
+        legacy_animation.type = tachyon::LayerType::Text;
+        legacy_animation.text_content = "Hello";
+        legacy_animation.in_preset = "tachyon.textanim.fade_in";
+        legacy_animation.animation_out_preset = "tachyon.textanim.fade_out";
+        legacy_animation.start_time = 0.0;
+        legacy_animation.out_point = 1.0;
+        comp.layers.push_back(legacy_animation);
+
+        scene.compositions.push_back(comp);
+
+        tachyon::core::SceneValidator validator;
+        const auto result = validator.validate(scene);
+        check_true(result.is_valid(), "SceneValidator should accept legacy animation presets with warnings");
+        check_true(std::any_of(result.issues.begin(), result.issues.end(), [](const auto& issue) {
+            return issue.path == "composition.main.layers[0].in_preset" && issue.severity == tachyon::core::ValidationIssue::Severity::Warning;
+        }), "SceneValidator should warn on legacy in_preset usage");
+        check_true(std::any_of(result.issues.begin(), result.issues.end(), [](const auto& issue) {
+            return issue.path == "composition.main.layers[0].out_preset" && issue.severity == tachyon::core::ValidationIssue::Severity::Warning;
+        }), "SceneValidator should warn on legacy out_preset usage");
+    }
+
+    {
+        tachyon::SceneSpec scene;
+        scene.schema_version = tachyon::SchemaVersion{1, 0, 0};
         scene.assets.push_back(tachyon::AssetSpec{"hero-image", "image", "hero.png", "", std::nullopt});
 
         tachyon::CompositionSpec comp;
