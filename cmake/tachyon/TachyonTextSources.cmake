@@ -1,6 +1,7 @@
 # TachyonText sources
 set(TachyonTextSources
     ${CMAKE_CURRENT_SOURCE_DIR}/text/text_measure.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/core/TextLayerSpec.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/text/bidi/bidi_engine.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/text/bidi/script_detector.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/text/core/animation/text_animator_context.cpp
