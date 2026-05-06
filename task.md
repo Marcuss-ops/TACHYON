@@ -12,11 +12,18 @@
 
 ## Phase 2: Animation & Expressions
 - [x] Implement `valueAtTime(t)` logic
-    - [x] Update `expression_engine.cpp` to call back to the host for property sampling
-- [x] **PropertyGraph Refactoring**
-    - [x] Remove 64-node limit in `property_graph.cpp`
-    - [x] Update `PropertyNode` for dynamic dependency tracking
-    - [x] Implement NativeRenderer utility
+    - [x] Migrate LayerType to canonical enum
+- [x] Update schema and hashing for LayerType
+- [x] Fix GTest shim (EXPECT_NEAR/ASSERT_NEAR)
+- [x] Decouple RayTracer via IRayTracer interface
+    - [x] Move AOVBuffer and EvaluatedScene3D to core
+    - [x] Define IRayTracer interface in core
+    - [x] Update RenderContext to use IRayTracer
+    - [x] Make renderer3d::RayTracer implement IRayTracer
+- [/] Integrate IRayTracer into 2D pipeline
+    - [/] Implement RayTracer call in composition_renderer.cpp
+- [ ] Verify build and tests
+- [ ] Establish verified "No 3D" build configuration
 - [x] Refactor CLI to support --preset flag
 - [x] Implement `tachyon preview` command
 - [x] Decouple procedural backgrounds from JSON

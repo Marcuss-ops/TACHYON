@@ -33,8 +33,8 @@ class MediaManager;
 class AssetResolver;
 }
 
-namespace tachyon::renderer3d {
-class RayTracer;
+namespace tachyon {
+class IRayTracer;
 }
 
 namespace tachyon::renderer2d {
@@ -100,7 +100,7 @@ struct RenderContext2D {
     std::shared_ptr<EffectHost> effects;
     AccumulationBuffers accumulation_buffer;
     QualityPolicy policy;
-    std::shared_ptr<class ::tachyon::renderer3d::RayTracer> ray_tracer;
+    std::shared_ptr<IRayTracer> ray_tracer;
     ColorManagementSystem cms;
     WorkingColorSpace working_color_space;
     int width{0};

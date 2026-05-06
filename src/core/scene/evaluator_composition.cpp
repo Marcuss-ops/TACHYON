@@ -124,8 +124,12 @@ EvaluatedCompositionState evaluate_composition_internal(
     evaluated.frame_number = frame_number;
     evaluated.composition_time_seconds = composition_time_seconds;
     
-    // Evaluate background
-    if (composition.background.has_value()) {
+    // Resolve Background into a standard layer at index 0 (Converged Domain)
+    // We only do this if it hasn't been already "baked" into the layers list (e.g. by a compiler pass).
+    bool has_baked_background = std::any_of(composition.layers.begin(), composition.layers.end(), 
+        [](const auto& l) { return l.id == "__background__" || l.name == "Background"; });
+
+    if (composition.background.has_value() && !has_baked_background) {
         if (composition.background->is_color()) {
             auto color = composition.background->get_color();
             if (color.has_value()) {

@@ -57,12 +57,12 @@ void SceneValidator::validate_layer(const ::tachyon::LayerSpec& layer, const ::t
     validate_safe_area(layer, comp, path, out);
 
     // Validate font references for text layers
-    if (layer.kind == LayerType::Text) {
+    if (layer.type == LayerType::Text) {
         validate_font_reference(layer, scene, path, out);
     }
 
     // Validate file references for image/video layers
-    if (layer.kind == LayerType::Image || layer.kind == LayerType::Video) {
+    if (layer.type == LayerType::Image || layer.type == LayerType::Video) {
         validate_file_reference(layer, path, out);
     }
 
@@ -90,7 +90,7 @@ void SceneValidator::validate_layer(const ::tachyon::LayerSpec& layer, const ::t
         }
     }
 
-    if (layer.kind == LayerType::Precomp) {
+    if (layer.type == LayerType::Precomp) {
         if (!layer.precomp_id.has_value() || layer.precomp_id->empty()) {
             out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".precomp_id", "Precomp layer requires a composition reference."});
             out.error_count++;
@@ -115,7 +115,7 @@ void SceneValidator::validate_safe_area(const ::tachyon::LayerSpec& layer, const
     // Se layer ha testo E posizione fuori dall'area sicura → Warning
     
     // Applica solo a layer di tipo text
-    if (layer.kind != LayerType::Text) {
+    if (layer.type != LayerType::Text) {
         return;
     }
     
@@ -256,10 +256,10 @@ void SceneValidator::validate_font_reference(const ::tachyon::LayerSpec& layer, 
 
 void SceneValidator::validate_file_reference(const ::tachyon::LayerSpec& layer, const std::string& path, ValidationResult& out) const {
     std::string file_path;
-    if (layer.kind == LayerType::Image) {
+    if (layer.type == LayerType::Image) {
         // Image source path not available in current LayerSpec
         return;
-    } else if (layer.kind == LayerType::Video) {
+    } else if (layer.type == LayerType::Video) {
         // Video source path not available in current LayerSpec
         return;
     }

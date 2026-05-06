@@ -117,7 +117,7 @@ ValidationResult validate_scene_spec(const SceneSpec& scene) {
                 result.diagnostics.add_error("scene.layer.precomp_id_invalid", "precomp_id invalid", lpath + ".precomp_id");
             }
 
-            if (layer.kind == LayerType::Image || layer.kind == LayerType::Video) {
+            if (layer.type == LayerType::Image || layer.type == LayerType::Video) {
                 if (layer.asset_id.empty()) {
                     result.diagnostics.add_error("scene.layer.asset_id_missing", "asset_id is required for image/video layers", lpath + ".asset_id");
                 } else {
@@ -141,7 +141,7 @@ ValidationResult validate_scene_spec(const SceneSpec& scene) {
         bool has_text_layer = false;
         for (const auto& comp : scene.compositions) {
             for (const auto& layer : comp.layers) {
-                if (layer.kind == LayerType::Text) {
+                if (layer.type == LayerType::Text) {
                     has_text_layer = true;
                     break;
                 }

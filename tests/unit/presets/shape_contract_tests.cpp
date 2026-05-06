@@ -17,7 +17,7 @@ bool run_shape_contract_tests() {
     p.h = 150.0f;
 
     auto spec = tachyon::presets::build_shape(p);
-    assert(spec.type == "shape");
+    assert(spec.type == LayerType::Shape);
     assert(spec.shape.type == "rect");
     assert(spec.shape.fill_color == "#ff0000");
     assert(spec.in_point == 0.0);

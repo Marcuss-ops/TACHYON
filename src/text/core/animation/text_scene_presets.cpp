@@ -64,7 +64,8 @@ LayerSpec make_enhance_text_layer(const TextScenePresetOptions& options) {
     LayerSpec text;
     text.id = "headline";
     text.name = "Headline";
-    text.type = "text";
+    text.type = LayerType::Text;
+    text.type_string = "text";
     text.enabled = true;
     text.visible = true;
     text.start_time = 0.0;

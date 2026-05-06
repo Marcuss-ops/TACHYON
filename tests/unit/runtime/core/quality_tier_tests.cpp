@@ -12,7 +12,7 @@ namespace {
 SceneSpec make_scene(std::int64_t width, std::int64_t height) {
     LayerSpec layer;
     layer.id = "bg";
-    layer.type = "solid";
+    layer.type = LayerType::Solid;
     layer.name = "Background";
     layer.opacity = 1.0;
 

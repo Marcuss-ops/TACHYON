@@ -10,8 +10,8 @@ LayerSpec make_image_layer_base(const ImageParams& p) {
     LayerSpec l;
     l.id          = "image_layer";
     l.name        = "Image";
-    l.type        = "image";
-    l.kind        = LayerType::Image;
+    l.type_string = "image";
+    l.type        = LayerType::Image;
     l.enabled     = true;
     l.visible     = true;
     l.start_time  = p.in_point;

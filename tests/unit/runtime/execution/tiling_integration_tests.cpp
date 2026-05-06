@@ -22,7 +22,7 @@ void check(bool condition, const std::string& message) {
 tachyon::SceneSpec make_solid_scene(std::int64_t width, std::int64_t height) {
     tachyon::LayerSpec bg;
     bg.id = "bg";
-    bg.type = "solid";
+    bg.type = tachyon::LayerType::Solid;
     bg.name = "BG";
     bg.start_time = 0.0;
     bg.in_point = 0.0;
@@ -34,7 +34,7 @@ tachyon::SceneSpec make_solid_scene(std::int64_t width, std::int64_t height) {
 
     tachyon::LayerSpec red;
     red.id = "red";
-    red.type = "solid";
+    red.type = tachyon::LayerType::Solid;
     red.name = "Red";
     red.start_time = 0.0;
     red.in_point = 0.0;

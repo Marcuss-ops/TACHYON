@@ -268,7 +268,8 @@ std::optional<std::reference_wrapper<const CachedSceneStill>> render_scene_still
 
             LayerSpec layer;
             layer.id = "image";
-            layer.type = "image";
+            layer.type = LayerType::Image;
+            layer.type_string = "image";
             layer.asset_id = asset.id;
             layer.width = 1920;
             layer.height = 1080;

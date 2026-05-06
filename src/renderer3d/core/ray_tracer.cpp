@@ -62,6 +62,14 @@ RayTracer::~RayTracer() {
 void RayTracer::render(
     const EvaluatedScene3D& scene,
     AOVBuffer& out_buffer,
+    double frame_time_seconds,
+    double frame_duration_seconds) {
+    render_with_motion_blur(scene, out_buffer, nullptr, frame_time_seconds, frame_duration_seconds);
+}
+
+void RayTracer::render_with_motion_blur(
+    const EvaluatedScene3D& scene,
+    AOVBuffer& out_buffer,
     const MotionBlurRenderer* motion_blur,
     double frame_time_seconds,
     double frame_duration_seconds) {

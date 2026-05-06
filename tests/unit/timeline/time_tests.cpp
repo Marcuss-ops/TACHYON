@@ -52,14 +52,14 @@ bool run_timeline_tests() {
 
         LayerSpec bg;
         bg.id = "bg";
-        bg.type = "solid";
+        bg.type = LayerType::Solid;
         bg.in_point = 0.0;
         bg.out_point = 10.0;
         bg.opacity = 1.0;
 
         LayerSpec title;
         title.id = "title";
-        title.type = "text";
+        title.type = LayerType::Text;
         title.name = "Hello";
         title.start_time = 1.0;
         title.in_point = 1.0;
@@ -69,7 +69,7 @@ bool run_timeline_tests() {
 
         LayerSpec cam;
         cam.id = "cam1";
-        cam.type = "camera";
+        cam.type = LayerType::Camera;
         cam.enabled = true;
         cam.is_3d = true;
         cam.in_point = 0.0;

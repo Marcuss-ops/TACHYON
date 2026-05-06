@@ -1,7 +1,8 @@
 #pragma once
 
-#include "tachyon/renderer3d/core/evaluated_scene_3d.h"
-#include "tachyon/renderer3d/core/aov_buffer.h"
+#include "tachyon/core/render/iray_tracer.h"
+
+// These are now handled by IRayTracer inclusion of core/render headers
 #include "tachyon/renderer3d/effects/motion_blur.h"
 #include "tachyon/renderer3d/effects/depth_of_field.h"
 #include "tachyon/core/math/algebra/vector2.h"
@@ -36,7 +37,7 @@ struct ShadingResult {
     std::uint32_t material_id;
 };
 
-class RayTracer {
+class RayTracer : public ::tachyon::IRayTracer {
 public:
     explicit RayTracer(media::MediaManager* media_manager = nullptr);
     ~RayTracer();
@@ -47,7 +48,7 @@ public:
     /**
      * @brief Parses an EvaluatedScene3D and builds the Embree BVH structure.
      */
-    void build_scene(const EvaluatedScene3D& scene);
+    void build_scene(const EvaluatedScene3D& scene) override;
 
     /**
      * @brief Performs path tracing to generate multi-pass AOVs.
@@ -56,12 +57,19 @@ public:
     void render(
         const EvaluatedScene3D& scene,
         AOVBuffer& out_buffer,
-        const MotionBlurRenderer* motion_blur = nullptr,
         double frame_time_seconds = 0.0,
-        double frame_duration_seconds = 0.0);
+        double frame_duration_seconds = 0.0) override;
     
-    void set_samples_per_pixel(int spp) { samples_per_pixel_ = spp; }
-    void set_denoiser_enabled(bool enabled) { denoiser_enabled_ = enabled; }
+    // Internal 3D-specific render call with motion blur helper
+    void render_with_motion_blur(
+        const EvaluatedScene3D& scene,
+        AOVBuffer& out_buffer,
+        const MotionBlurRenderer* motion_blur,
+        double frame_time_seconds,
+        double frame_duration_seconds);
+    
+    void set_samples_per_pixel(int spp) override { samples_per_pixel_ = spp; }
+    void set_denoiser_enabled(bool enabled) override { denoiser_enabled_ = enabled; }
 
 private:
     RTCDevice device_{nullptr};
@@ -76,7 +84,7 @@ private:
         std::uint32_t material_id;
         std::string mesh_asset_id;
         std::shared_ptr<const media::MeshAsset> mesh_asset;
-        EvaluatedMaterial material;
+        EvaluatedMaterial3D material;
         ::tachyon::math::Matrix4x4 world_transform;
         std::optional<::tachyon::math::Matrix4x4> previous_world_transform;
     };
@@ -128,7 +136,7 @@ private:
     static constexpr int kMaxBounces = 3;
     static constexpr float kMaxBounceThreshold = 0.001f;
 
-    const std::string& last_error() const { return m_last_error; }
+    const std::string& last_error() const override { return m_last_error; }
 
 private:
     std::string m_last_error;

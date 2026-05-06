@@ -20,7 +20,7 @@ void check_true(bool condition, const std::string& message) {
 tachyon::SceneSpec make_scene() {
     tachyon::LayerSpec layer;
     layer.id = "solid_1";
-    layer.type = "solid";
+    layer.type = tachyon::LayerType::Solid;
     layer.name = "Solid One";
     layer.start_time = 0.0;
     layer.in_point = 0.0;
@@ -89,7 +89,7 @@ tachyon::RenderExecutionPlan make_execution_plan() {
 tachyon::SceneSpec make_precomp_scene() {
     tachyon::LayerSpec nested_layer;
     nested_layer.id = "nested_solid";
-    nested_layer.type = "solid";
+    nested_layer.type = tachyon::LayerType::Solid;
     nested_layer.name = "Nested Solid";
     nested_layer.start_time = 0.0;
     nested_layer.in_point = 0.0;
@@ -107,7 +107,7 @@ tachyon::SceneSpec make_precomp_scene() {
 
     tachyon::LayerSpec precomp_layer;
     precomp_layer.id = "precomp_1";
-    precomp_layer.type = "precomp";
+    precomp_layer.type = tachyon::LayerType::Precomp;
     precomp_layer.name = "Precomp One";
     precomp_layer.start_time = 0.0;
     precomp_layer.in_point = 0.0;

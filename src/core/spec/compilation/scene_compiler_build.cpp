@@ -27,17 +27,7 @@ void build_compositions(const SceneSpec& scene, CompiledScene& compiled, tachyon
             compiled_layer.node = registry.create_node(CompiledNodeType::Layer);
             compiled.graph.add_node(compiled_layer.node.node_id);
             
-            // Resolve Type
-            auto type_map = [](const std::string& t) -> std::uint32_t {
-                if (t == "solid") return 1;
-                if (t == "shape") return 2;
-                if (t == "image") return 3;
-                if (t == "text") return 4;
-                if (t == "precomp") return 5;
-                if (t == "procedural") return 6;
-                return 0;
-            };
-            compiled_layer.type_id = type_map(layer.type);
+            compiled_layer.type_id = compiled_type_id_from_layer_type(layer.type);
             
             compiled_layer.width = static_cast<std::uint32_t>(layer.width);
             compiled_layer.height = static_cast<std::uint32_t>(layer.height);

@@ -17,7 +17,8 @@
 #include "tachyon/renderer2d/raster/perspective_rasterizer.h"
 #include "tachyon/renderer2d/raster/mesh_deform_apply.h"
 #ifdef TACHYON_ENABLE_3D
-#include "tachyon/renderer3d/core/ray_tracer.h"
+#include "tachyon/core/render/iray_tracer.h"
+#include "tachyon/core/render/aov_buffer.h"
 #include "tachyon/renderer3d/effects/depth_of_field.h"
 #include "tachyon/renderer3d/effects/motion_blur.h"
 #include "tachyon/renderer3d/visibility/culling.h"
@@ -139,15 +140,10 @@ RasterizedFrame2D render_evaluated_composition_2d(
         return frame;
     }
 
-    // Clear background from the evaluated scene state.
-    // Convergence: Background is now primarily a Layer at index 0.
-    // We still clear here to ensure a clean slate for the compositing.
-    frame.surface->clear({
-        state.background_color.r / 255.0f,
-        state.background_color.g / 255.0f,
-        state.background_color.b / 255.0f,
-        state.background_color.a / 255.0f
-    });
+    // Clear background to transparent.
+    // Convergence: Background is now a standard Layer at index 0, 
+    // responsible for filling the surface if present.
+    frame.surface->clear(Color::transparent());
     
     auto& dst = *frame.surface;
     dst.set_profile(context.cms.working_profile);
@@ -157,9 +153,6 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
 #ifdef TACHYON_ENABLE_3D
     bool has_any_3d = std::any_of(state.layers.begin(), state.layers.end(), [](const auto& l) { return l.is_3d && l.visible; });
-    if (has_any_3d && !context.ray_tracer) {
-        context.ray_tracer = std::make_shared<renderer3d::RayTracer>(context.media_manager);
-    }
 #endif
 
     std::vector<bool> visible_3d_layers(state.layers.size(), true);
@@ -306,7 +299,50 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 world_3d->clear_depth(0.0f);
 
                 bool world_has_visible_pixels = false;
-                const auto view_matrix = state.camera.camera.get_view_matrix();
+
+                // Convergence: Prefer high-quality ray tracing if IRayTracer is provided.
+                if (render_context.ray_tracer) {
+                    const auto ray_start = std::chrono::high_resolution_clock::now();
+                    
+                    AOVBuffer aovs;
+                    aovs.resize(w, h);
+                    
+                    render_context.ray_tracer->build_scene(bridge_output.scene3d);
+                    
+                    double dt = 1.0 / 60.0;
+                    if (plan.quality_policy.motion_blur_samples > 0) {
+                        // FPS is used for temporal sample spacing
+                    }
+
+                    render_context.ray_tracer->render(bridge_output.scene3d, aovs, task.time_seconds, dt);
+                    
+                    // Transfer AOVs to SurfaceRGBA
+                    #pragma omp parallel for schedule(static)
+                    for (int y = 0; y < static_cast<int>(h); ++y) {
+                        for (std::uint32_t x = 0; x < w; ++x) {
+                            const std::size_t idx = (static_cast<std::size_t>(y) * w + x) * 4;
+                            const std::size_t z_idx = static_cast<std::size_t>(y) * w + x;
+                            
+                            Color c;
+                            c.r = aovs.beauty_rgba[idx];
+                            c.g = aovs.beauty_rgba[idx+1];
+                            c.b = aovs.beauty_rgba[idx+2];
+                            c.a = aovs.beauty_rgba[idx+3];
+                            
+                            if (c.a > 0.0f) {
+                                world_3d->set_pixel(x, static_cast<std::uint32_t>(y), c);
+                                if (aovs.depth_z[z_idx] > 0.0f) {
+                                    world_3d->test_and_write_depth(x, static_cast<std::uint32_t>(y), 1.0f / aovs.depth_z[z_idx]);
+                                }
+                                world_has_visible_pixels = true;
+                            }
+                        }
+                    }
+                    record_timing(diagnostics, "ray_tracing_block", std::to_string(i), ray_start);
+                }
+
+                if (!world_has_visible_pixels) {
+                    const auto view_matrix = state.camera.camera.get_view_matrix();
                 for (std::size_t block_idx : block_indices) {
                     if (block_idx >= state.layers.size()) {
                         continue;
@@ -388,6 +424,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     renderer2d::raster::PerspectiveRasterizer::draw_quad(*world_3d, quad);
                     world_has_visible_pixels = true;
                 }
+                } // end if (!world_has_visible_pixels)
 
                 const auto composite_layer_it = std::find_if(
                     block_indices.begin(),
