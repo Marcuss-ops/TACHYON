@@ -149,6 +149,7 @@ struct EvaluatedLayerState {
     // Camera properties (if type == Camera)
     std::string camera_type{"one_node"};
     float zoom{877.0f};
+    float camera_roll{0.0f};
     math::Vector3 poi{0.0f, 0.0f, 0.0f};
     
     // Camera Shake state

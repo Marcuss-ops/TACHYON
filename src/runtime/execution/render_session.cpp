@@ -58,7 +58,10 @@ RenderSessionResult RenderSession::render(
     const auto session_start = std::chrono::steady_clock::now();
     
     ProcessResourceSampler sampler;
-    sampler.start();
+    const bool telemetry_enabled = execution_plan.render_plan.telemetry_policy != TelemetryPolicy::Off;
+    if (telemetry_enabled) {
+        sampler.start();
+    }
 
     RenderSessionResult result;
 
@@ -86,7 +89,13 @@ RenderSessionResult RenderSession::render(
     context.renderer2d.asset_resolver = resolver;
     std::uint32_t w = static_cast<std::uint32_t>(execution_plan.render_plan.composition.width);
     std::uint32_t h = static_cast<std::uint32_t>(execution_plan.render_plan.composition.height);
-    m_surface_pool = std::make_unique<runtime::RuntimeSurfacePool>(w, h, 10);
+    
+    // Surface Pool sizing: workers + precomp depth + output buffer
+    std::size_t pool_size = worker_count + 2; 
+    if (context.policy.oversampling > 1) pool_size += 1;
+    pool_size = std::max<std::size_t>(3, pool_size);
+    
+    m_surface_pool = std::make_unique<runtime::RuntimeSurfacePool>(w, h, pool_size);
     context.surface_pool = m_surface_pool.get();
     context.profiler = m_profiler;
     context.renderer2d.profiler = m_profiler;
@@ -119,16 +128,17 @@ RenderSessionResult RenderSession::render(
         if (!sink->begin(effective_plan.render_plan)) {
             result.output_error = sink->last_error();
             
-            sampler.stop();
+            if (telemetry_enabled) {
+                sampler.stop();
+                result.peak_working_set_bytes = sampler.peak_working_set_bytes();
+                result.avg_working_set_bytes = sampler.avg_working_set_bytes();
+                result.peak_private_bytes = sampler.peak_private_bytes();
+                result.avg_private_bytes = sampler.avg_private_bytes();
+                result.avg_cpu_percent_machine = sampler.avg_cpu_percent_machine();
+                result.avg_cpu_cores_used = sampler.avg_cpu_cores_used();
+            }
             const auto session_end = std::chrono::steady_clock::now();
             result.wall_time_total_ms = std::chrono::duration<double, std::milli>(session_end - session_start).count();
-            
-            result.peak_working_set_bytes = sampler.peak_working_set_bytes();
-            result.avg_working_set_bytes = sampler.avg_working_set_bytes();
-            result.peak_private_bytes = sampler.peak_private_bytes();
-            result.avg_private_bytes = sampler.avg_private_bytes();
-            result.avg_cpu_percent_machine = sampler.avg_cpu_percent_machine();
-            result.avg_cpu_cores_used = sampler.avg_cpu_cores_used();
             return result;
         }
         result.output_configured = true;
@@ -203,16 +213,15 @@ RenderSessionResult RenderSession::render(
         std::filesystem::remove(audio_export_path, ec);
     }
 
-    sampler.stop();
-    const auto session_end = std::chrono::steady_clock::now();
-    result.wall_time_total_ms = std::chrono::duration<double, std::milli>(session_end - session_start).count();
-    
-    result.peak_working_set_bytes = sampler.peak_working_set_bytes();
-    result.avg_working_set_bytes = sampler.avg_working_set_bytes();
-    result.peak_private_bytes = sampler.peak_private_bytes();
-    result.avg_private_bytes = sampler.avg_private_bytes();
-    result.avg_cpu_percent_machine = sampler.avg_cpu_percent_machine();
-    result.avg_cpu_cores_used = sampler.avg_cpu_cores_used();
+    if (telemetry_enabled) {
+        sampler.stop();
+        result.peak_working_set_bytes = sampler.peak_working_set_bytes();
+        result.avg_working_set_bytes = sampler.avg_working_set_bytes();
+        result.peak_private_bytes = sampler.peak_private_bytes();
+        result.avg_private_bytes = sampler.avg_private_bytes();
+        result.avg_cpu_percent_machine = sampler.avg_cpu_percent_machine();
+        result.avg_cpu_cores_used = sampler.avg_cpu_cores_used();
+    }
 
     const std::size_t total_frames = result.frames_written > 0 ? result.frames_written : effective_plan.frame_tasks.size();
     if (total_frames > 0) {
@@ -228,7 +237,17 @@ RenderSessionResult RenderSession::render(
     const RenderExecutionPlan& execution_plan,
     const std::filesystem::path& output_path) {
     
-    return render(scene, compiled_scene, execution_plan, output_path, std::thread::hardware_concurrency());
+    const auto& policy = execution_plan.render_plan.worker_policy;
+    
+    std::size_t hw = std::thread::hardware_concurrency();
+    std::size_t conservative = std::max<std::size_t>(1, hw > 2 ? hw - 1 : 1);
+    
+    std::size_t concurrency = policy.max_workers > 0 ? policy.max_workers : conservative;
+    if (policy.min_workers > 0) {
+        concurrency = std::max(concurrency, static_cast<std::size_t>(policy.min_workers));
+    }
+    
+    return render(scene, compiled_scene, execution_plan, output_path, std::max<std::size_t>(1, concurrency));
 }
 
 } // namespace tachyon

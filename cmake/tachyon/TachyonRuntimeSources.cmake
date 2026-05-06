@@ -25,7 +25,6 @@ set(TachyonRuntimeSources
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_session_audio.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_session_parallel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_session_serialization.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/tile_scheduler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/batch_runner/batch_runner_execute.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/batch_runner/batch_runner_validate.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_evaluator_composition.cpp

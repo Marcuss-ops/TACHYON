@@ -1,3 +1,9 @@
+---
+Status: Canonical
+Last reviewed: 2026-05-06
+Owner: Core Team
+---
+
 # TACHYON ENGINEERING MANIFESTO
 
 The best part is no part. The best process is no process.

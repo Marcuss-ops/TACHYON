@@ -111,9 +111,19 @@ RenderSessionResult NativeRenderer::render(
         session.set_memory_budget_bytes(*options.memory_budget_bytes);
     }
 
-    const std::size_t concurrency = (options.worker_count > 0) 
-        ? options.worker_count 
-        : std::thread::hardware_concurrency();
+    std::size_t concurrency = options.worker_count;
+    if (concurrency == 0) {
+        const std::size_t hw_threads = std::thread::hardware_concurrency();
+        // Conservative default: leave one thread free if we have > 2
+        const std::size_t conservative = std::max<std::size_t>(1, hw_threads > 2 ? hw_threads - 1 : 1);
+        
+        if (execution_result.value->render_plan.worker_policy.max_workers > 0) {
+            concurrency = execution_result.value->render_plan.worker_policy.max_workers;
+        } else {
+            concurrency = conservative;
+        }
+        concurrency = std::max<std::size_t>(execution_result.value->render_plan.worker_policy.min_workers, concurrency);
+    }
 
     if (options.verbose) {
         sink->on_message("Starting render: " + job.job_id);

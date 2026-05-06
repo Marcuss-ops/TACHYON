@@ -1,3 +1,10 @@
+---
+Status: Canonical
+Last reviewed: 2026-05-06
+Owner: Core Team
+Supersedes: N/A
+---
+
 # Behavior Model
 
 Tachyon should be reasoned about with one repeated pattern across domains:

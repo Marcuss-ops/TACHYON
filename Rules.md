@@ -1,3 +1,10 @@
+---
+Status: Draft
+Last reviewed: 2026-05-06
+Owner: Core Team
+Supersedes: N/A
+---
+
  2. Definisci la fonte di verità  - Un tipo, una struttura, una
   semantica devono vivere in un solo posto.  - Se hai alias legacy, dillo chiaramente: usa  shared_contracts.h come source of truth.  - Molti bug nascono da
   duplicati tra include/ e src/, o tra namespace diversi.  3. Non fidarti del summary senza build    Un agente può dire “fatto” anche quando il codice compila solo

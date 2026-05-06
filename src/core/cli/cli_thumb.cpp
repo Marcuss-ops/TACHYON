@@ -40,17 +40,21 @@ bool run_thumb_command(const CliOptions& options, std::ostream& out, std::ostrea
 
     if (options.preview_output.empty()) {
         output_path = make_default_thumb_path(
-            options.cpp_path.empty() ? *options.preset_id : options.cpp_path);
+            options.cpp_path.empty() ? *options.preset_id : options.cpp_path.string());
     } else {
-        output_path = options.preview_output;
+        output_path = options.preview_output.string();
     }
 
     out << "Generating thumbnail from frame " << frame_number << "...\n";
     out << "Output: " << output_path << "\n";
 
     // Build a minimal scene spec for thumbnail
-    CliSceneLoadResult load_result;
-    if (!load_scene_for_preview(options, load_result, err)) {
+    SceneLoadOptions load_opts;
+    load_opts.cpp_path = options.cpp_path;
+    load_opts.preset_id = options.preset_id;
+
+    auto load_result = load_scene_for_cli(load_opts, SceneLoadMode::Preview, out, err);
+    if (!load_result.success) {
         return false;
     }
 

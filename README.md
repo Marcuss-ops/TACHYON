@@ -1,4 +1,17 @@
+---
+Status: Canonical
+Last reviewed: 2026-05-06
+Owner: Core Team
+Supersedes: N/A
+---
+
 # TACHYON
+
+**High-performance, deterministic, headless motion graphics and 3D rendering engine.**
+
+`cpp`, `rendering-engine`, `motion-graphics`, `headless`, `video`, `compositing`, `cpu-renderer`
+
+---
 
 TACHYON is a deterministic, headless motion graphics, compositing, and 3D rendering engine for automated and personal video production.
 

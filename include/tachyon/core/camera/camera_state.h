@@ -17,6 +17,7 @@ struct CameraState {
     // Two-Node Camera
     math::Vector3 target_position{0.0f, 0.0f, 0.0f};
     math::Vector3 up{0.0f, -1.0f, 0.0f};
+    float roll_deg{0.0f};
     bool use_target{false};
 
     // Physical Camera Model
@@ -37,7 +38,15 @@ struct CameraState {
      */
     [[nodiscard]] math::Matrix4x4 get_view_matrix() const {
         if (use_target) {
-            return math::Matrix4x4::look_at(transform.position, target_position, up);
+            math::Matrix4x4 view = math::Matrix4x4::look_at(transform.position, target_position, up);
+            if (std::abs(roll_deg) > 1e-6f) {
+                // Roll is rotation around view-space Z axis (forward)
+                // Note: look_at produces a matrix that maps world to camera space.
+                // In camera space, Z is forward (or -forward).
+                // Our look_at puts forward at -Z.
+                view = math::Matrix4x4::rotation_z(roll_deg * (3.14159265f / 180.0f)) * view;
+            }
+            return view;
         }
         return transform.to_inverse_matrix();
     }
