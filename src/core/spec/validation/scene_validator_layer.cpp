@@ -1,113 +1,177 @@
 #include "tachyon/core/spec/validation/scene_validator.h"
+#include "tachyon/core/spec/validation/layer_spec_normalizer.h"
 #include "tachyon/text/fonts/management/font_manifest.h"
+#include <filesystem>
 #include <fstream>
 
 namespace tachyon::core {
 
-void SceneValidator::validate_layer(const ::tachyon::LayerSpec& layer, const ::tachyon::CompositionSpec& comp, const ::tachyon::SceneSpec& scene, const std::string& path, ValidationResult& out) const {
-    if (layer.id.empty()) {
+namespace {
+
+bool looks_like_media_reference(const std::string& value) {
+    if (value.empty()) {
+        return false;
+    }
+
+    const std::filesystem::path path(value);
+    if (path.has_extension()) {
+        return true;
+    }
+
+    return value.find('/') != std::string::npos || value.find('\\') != std::string::npos;
+}
+
+void warn_legacy_animation_preset(
+    const std::string& legacy_value,
+    const std::string& canonical_value,
+    const std::string& path,
+    const std::string& field_name,
+    const std::string& replacement_name,
+    ValidationResult& out) {
+    if (legacy_value.empty()) {
+        return;
+    }
+
+    const bool canonical_present = !canonical_value.empty();
+    const std::string message = canonical_present
+        ? field_name + " is legacy authoring data and is ignored because " + replacement_name + " is set."
+        : field_name + " is legacy authoring data; use " + replacement_name + " instead.";
+
+    out.issues.push_back(ValidationIssue{
+        ValidationIssue::Severity::Warning,
+        path + "." + field_name,
+        message
+    });
+    out.warning_count++;
+}
+
+} // namespace
+
+void SceneValidator::validate_layer(const NormalizedLayerView& normalized, const ::tachyon::CompositionSpec& comp, const ::tachyon::SceneSpec& scene, const std::string& path, ValidationResult& out) const {
+    const auto* layer = normalized.source;
+    if (layer == nullptr) {
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Fatal, path, "Normalized layer view is missing source data."});
+        out.fatal_count++;
+        return;
+    }
+
+    if (layer->id.empty()) {
         out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".id", "Layer ID cannot be empty."});
         out.error_count++;
     }
 
-    // Validate layer duration
-    auto layer_duration = layer.duration.has_value() ? layer.duration.value() : (layer.out_point - layer.in_point);
+    if (normalized.legacy_type_string_used) {
+        out.issues.push_back(ValidationIssue{
+            ValidationIssue::Severity::Warning,
+            path + ".type_string",
+            "type_string is legacy authoring data; use layer.type instead."
+        });
+        out.warning_count++;
+    }
+
+    if (normalized.type == LayerType::Unknown) {
+        out.issues.push_back(ValidationIssue{
+            ValidationIssue::Severity::Error,
+            path + ".type",
+            "Layer type is missing or unsupported."
+        });
+        out.error_count++;
+    }
+
+    warn_legacy_animation_preset(layer->in_preset, layer->animation_in_preset, path, "in_preset", "animation_in_preset", out);
+    warn_legacy_animation_preset(layer->during_preset, layer->animation_during_preset, path, "during_preset", "animation_during_preset", out);
+    warn_legacy_animation_preset(layer->out_preset, layer->animation_out_preset, path, "out_preset", "animation_out_preset", out);
+
+    auto layer_duration = layer->duration.has_value() ? layer->duration.value() : (layer->out_point - layer->in_point);
     if (layer_duration <= 0.0) {
         out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".duration", "Layer duration must be greater than 0."});
         out.error_count++;
     }
 
-    // Validate layer start time
-    if (layer.start_time < 0.0f) {
+    if (layer->start_time < 0.0f) {
         out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".start_time", "Layer start time cannot be negative."});
         out.error_count++;
     }
 
-    // Check if layer extends beyond composition duration
-    float layer_end = static_cast<float>(layer.start_time);
-    if (layer.duration.has_value()) {
-        layer_end += static_cast<float>(layer.duration.value());
+    float layer_end = static_cast<float>(layer->start_time);
+    if (layer->duration.has_value()) {
+        layer_end += static_cast<float>(layer->duration.value());
     } else {
-        layer_end += static_cast<float>(layer.out_point - layer.in_point);
+        layer_end += static_cast<float>(layer->out_point - layer->in_point);
     }
-    if (layer_end > comp.duration + 0.001f) { // small epsilon for floating point comparison
-        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning, path + ".duration", 
-            "Layer extends beyond composition duration (layer ends at " + std::to_string(layer_end) + 
+    if (layer_end > comp.duration + 0.001f) {
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning, path + ".duration",
+            "Layer extends beyond composition duration (layer ends at " + std::to_string(layer_end) +
             "s, composition is " + std::to_string(comp.duration) + "s)."});
         out.warning_count++;
     }
 
-    if (layer.opacity < 0.0 || layer.opacity > 1.0) {
+    if (layer->opacity < 0.0 || layer->opacity > 1.0) {
         out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".opacity", "Layer opacity must be between 0 and 1."});
         out.error_count++;
     }
 
-    if (layer.width < 0 || layer.height < 0) {
+    if (layer->width < 0 || layer->height < 0) {
         out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".dimensions", "Layer dimensions cannot be negative."});
         out.error_count++;
     }
 
-    // Validate keyframes are within layer time range
-    validate_keyframes(layer, path, out);
+    validate_keyframes(*layer, path, out);
+    validate_track_bindings(*layer, path, out);
+    validate_safe_area(*layer, comp, path, out);
 
-    // Validate track bindings
-    validate_track_bindings(layer, path, out);
-    
-    // Validate safe area for text layers
-    validate_safe_area(layer, comp, path, out);
-
-    // Validate font references for text layers
-    if (layer.type == LayerType::Text) {
-        validate_font_reference(layer, scene, path, out);
+    if (normalized.type == LayerType::Text) {
+        validate_font_reference(*layer, scene, path, out);
     }
 
-    // Validate file references for image/video layers
-    if (layer.type == LayerType::Image || layer.type == LayerType::Video) {
-        validate_file_reference(layer, path, out);
+    if (normalized.type == LayerType::Image || normalized.type == LayerType::Video) {
+        validate_file_reference(*layer, scene, path, out);
     }
 
-    // Track matte validation: if a matte layer is specified, it must exist and must not be self
-    if (layer.track_matte_layer_id.has_value() && !layer.track_matte_layer_id->empty()) {
-        if (*layer.track_matte_layer_id == layer.id) {
+    if (layer->track_matte_layer_id.has_value() && !layer->track_matte_layer_id->empty()) {
+        if (*layer->track_matte_layer_id == layer->id) {
             out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".track_matte_layer_id", "Track matte layer cannot reference itself."});
             out.error_count++;
         } else {
             bool found = false;
             for (const auto& l : comp.layers) {
-                if (l.id == *layer.track_matte_layer_id) {
+                if (l.id == *layer->track_matte_layer_id) {
                     found = true;
                     break;
                 }
             }
             if (!found) {
-                out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".track_matte_layer_id", "References non-existent layer: " + *layer.track_matte_layer_id});
+                out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".track_matte_layer_id", "References non-existent layer: " + *layer->track_matte_layer_id});
                 out.error_count++;
             }
         }
-        // Validate that track_matte_type is not None when a matte layer is specified
-        if (layer.track_matte_type == TrackMatteType::None) {
+        if (layer->track_matte_type == TrackMatteType::None) {
             out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning, path + ".track_matte_type", "track_matte_layer_id is set but track_matte_type is None."});
         }
     }
 
-    if (layer.type == LayerType::Precomp) {
-        if (!layer.precomp_id.has_value() || layer.precomp_id->empty()) {
+    if (normalized.type == LayerType::Precomp) {
+        if (!layer->precomp_id.has_value() || layer->precomp_id->empty()) {
             out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".precomp_id", "Precomp layer requires a composition reference."});
             out.error_count++;
         } else {
             bool found = false;
             for (const auto& c : scene.compositions) {
-                if (c.id == *layer.precomp_id) {
+                if (c.id == *layer->precomp_id) {
                     found = true;
                     break;
                 }
             }
             if (!found) {
-                out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".precomp_id", "References non-existent composition: " + *layer.precomp_id});
+                out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".precomp_id", "References non-existent composition: " + *layer->precomp_id});
                 out.error_count++;
             }
         }
     }
+}
+
+void SceneValidator::validate_layer(const ::tachyon::LayerSpec& layer, const ::tachyon::CompositionSpec& comp, const ::tachyon::SceneSpec& scene, const std::string& path, ValidationResult& out) const {
+    validate_layer(normalize_layer_view(layer), comp, scene, path, out);
 }
 
 void SceneValidator::validate_safe_area(const ::tachyon::LayerSpec& layer, const ::tachyon::CompositionSpec& comp, const std::string& path, ValidationResult& out) const {
@@ -115,7 +179,7 @@ void SceneValidator::validate_safe_area(const ::tachyon::LayerSpec& layer, const
     // Se layer ha testo E posizione fuori dall'area sicura → Warning
     
     // Applica solo a layer di tipo text
-    if (layer.type != LayerType::Text) {
+    if (canonical_layer_type(layer) != LayerType::Text) {
         return;
     }
     
@@ -254,25 +318,37 @@ void SceneValidator::validate_font_reference(const ::tachyon::LayerSpec& layer, 
     }
 }
 
-void SceneValidator::validate_file_reference(const ::tachyon::LayerSpec& layer, const std::string& path, ValidationResult& out) const {
-    std::string file_path;
-    if (layer.type == LayerType::Image) {
-        // Image source path not available in current LayerSpec
-        return;
-    } else if (layer.type == LayerType::Video) {
-        // Video source path not available in current LayerSpec
+void SceneValidator::validate_file_reference(const ::tachyon::LayerSpec& layer, const ::tachyon::SceneSpec& scene, const std::string& path, ValidationResult& out) const {
+    const NormalizedLayerView normalized = normalize_layer_view(layer);
+    if (normalized.type != LayerType::Image && normalized.type != LayerType::Video) {
         return;
     }
-    
-    if (!file_path.empty()) {
-        // Check if file exists (simple check, doesn't validate absolute vs relative paths perfectly)
-        std::ifstream file(file_path);
-        if (!file.good()) {
-            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, 
-                path + ".source.path",
-                "File not found: " + file_path});
-            out.error_count++;
+
+    if (normalized.asset_reference.empty()) {
+        out.issues.push_back(ValidationIssue{
+            ValidationIssue::Severity::Error,
+            path + ".asset_id",
+            "asset_id is required for image/video layers."
+        });
+        out.error_count++;
+        return;
+    }
+
+    bool asset_found = false;
+    for (const auto& asset : scene.assets) {
+        if (asset.id == normalized.asset_reference) {
+            asset_found = true;
+            break;
         }
+    }
+
+    if (!asset_found && !looks_like_media_reference(std::string(normalized.asset_reference))) {
+        out.issues.push_back(ValidationIssue{
+            ValidationIssue::Severity::Error,
+            path + ".asset_id",
+            "asset id '" + std::string(normalized.asset_reference) + "' not found in scene assets."
+        });
+        out.error_count++;
     }
 }
 

@@ -100,5 +100,28 @@ bool run_scene_inspector_tests() {
         }
     }
 
+    {
+        SceneSpec scene;
+        CompositionSpec comp;
+        comp.id = "legacy";
+        comp.duration = 2.0;
+        comp.frame_rate = FrameRate{30, 1};
+        LayerSpec text_layer;
+        text_layer.id = "title";
+        text_layer.type = LayerType::Text;
+        text_layer.text_content = "Hello";
+        text_layer.in_preset = "tachyon.textanim.fade_in";
+        text_layer.out_preset = "tachyon.textanim.fade_out";
+        comp.layers.push_back(text_layer);
+        scene.compositions.push_back(comp);
+
+        const auto report = inspect_scene(scene);
+        if (!has_issue_with_severity(report, "layer.in_preset", InspectionSeverity::Warning)
+            || !has_issue_with_severity(report, "layer.out_preset", InspectionSeverity::Warning)) {
+            std::cerr << "scene_inspector: expected warnings for legacy animation presets\n";
+            ok = false;
+        }
+    }
+
     return ok;
 }

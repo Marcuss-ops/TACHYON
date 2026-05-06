@@ -8,39 +8,50 @@ namespace tachyon::core {
 
 ValidationResult SceneValidator::validate(const ::tachyon::SceneSpec& scene) const {
     ValidationResult result;
+    const NormalizedSceneView normalized_scene = normalize_scene_view(scene);
 
     // Validate schema version first
     validate_schema_version(scene, result);
 
-    if (scene.compositions.empty()) {
+    if (normalized_scene.compositions.empty()) {
         result.issues.push_back({ValidationIssue::Severity::Error, "scene", "Scene has no compositions."});
         result.error_count++;
     }
 
-    for (std::size_t i = 0; i < scene.compositions.size(); ++i) {
-        validate_composition(scene.compositions[i], scene, result);
+    for (const auto& comp : normalized_scene.compositions) {
+        validate_composition(comp, scene, result);
     }
 
-    check_cycles(scene, result);
+    check_cycles(normalized_scene, result);
 
     return result;
 }
 
 void SceneValidator::check_cycles(const ::tachyon::SceneSpec& scene, ValidationResult& out) const {
+    check_cycles(normalize_scene_view(scene), out);
+}
+
+void SceneValidator::check_cycles(const NormalizedSceneView& scene, ValidationResult& out) const {
     // Check matte dependency cycles within each composition
     for (const auto& comp : scene.compositions) {
+        const auto* source_comp = comp.source;
+        if (source_comp == nullptr) {
+            continue;
+        }
+
         // Build matte adjacency graph: source -> [targets]
         std::unordered_map<std::string, std::vector<std::string>> matte_adj;
         std::unordered_map<std::string, int> matte_in_degree;
         std::unordered_set<std::string> layer_ids;
         for (const auto& l : comp.layers) {
-            if (!l.id.empty()) layer_ids.insert(l.id);
+            if (l.source != nullptr && !l.source->id.empty()) layer_ids.insert(l.source->id);
         }
 
         for (const auto& layer : comp.layers) {
-            if (layer.track_matte_layer_id.has_value() && !layer.track_matte_layer_id->empty()) {
-                const std::string& src = *layer.track_matte_layer_id;
-                const std::string& tgt = layer.id;
+            const auto* source_layer = layer.source;
+            if (source_layer != nullptr && source_layer->track_matte_layer_id.has_value() && !source_layer->track_matte_layer_id->empty()) {
+                const std::string& src = *source_layer->track_matte_layer_id;
+                const std::string& tgt = source_layer->id;
                 if (layer_ids.count(src) && layer_ids.count(tgt)) {
                     matte_adj[src].push_back(tgt);
                     matte_in_degree[tgt]++;
@@ -70,7 +81,7 @@ void SceneValidator::check_cycles(const ::tachyon::SceneSpec& scene, ValidationR
             }
         }
         if (processed != matte_in_degree.size()) {
-            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, "composition." + comp.id + ".matte", "Cycle detected in track matte dependencies."});
+            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, "composition." + source_comp->id + ".matte", "Cycle detected in track matte dependencies."});
             out.error_count++;
         }
     }
@@ -80,14 +91,19 @@ void SceneValidator::check_cycles(const ::tachyon::SceneSpec& scene, ValidationR
     std::unordered_map<std::string, int> precomp_in_degree;
     std::unordered_set<std::string> comp_ids;
     for (const auto& c : scene.compositions) {
-        if (!c.id.empty()) comp_ids.insert(c.id);
+        if (c.source != nullptr && !c.source->id.empty()) comp_ids.insert(c.source->id);
     }
 
     for (const auto& comp : scene.compositions) {
+        const auto* source_comp = comp.source;
+        if (source_comp == nullptr) {
+            continue;
+        }
         for (const auto& layer : comp.layers) {
-            if (layer.type == LayerType::Precomp && layer.precomp_id.has_value() && !layer.precomp_id->empty()) {
-                const std::string& src = comp.id;
-                const std::string& tgt = *layer.precomp_id;
+            const auto* source_layer = layer.source;
+            if (source_layer != nullptr && layer.type == LayerType::Precomp && source_layer->precomp_id.has_value() && !source_layer->precomp_id->empty()) {
+                const std::string& src = source_comp->id;
+                const std::string& tgt = *source_layer->precomp_id;
                 if (comp_ids.count(src) && comp_ids.count(tgt)) {
                     precomp_adj[src].push_back(tgt);
                     precomp_in_degree[tgt]++;

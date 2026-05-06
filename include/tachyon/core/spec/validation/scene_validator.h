@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tachyon/core/api.h"
+#include "tachyon/core/spec/validation/layer_spec_normalizer.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/core/spec/schema/properties/property_spec.h"
 #include <string>
@@ -49,7 +50,9 @@ public:
 
 private:
     void validate_schema_version(const ::tachyon::SceneSpec& scene, ValidationResult& out) const;
+    void validate_composition(const ::tachyon::core::NormalizedCompositionView& comp, const ::tachyon::SceneSpec& scene, ValidationResult& out) const;
     void validate_composition(const ::tachyon::CompositionSpec& comp, const ::tachyon::SceneSpec& scene, ValidationResult& out) const;
+    void validate_layer(const ::tachyon::core::NormalizedLayerView& layer, const ::tachyon::CompositionSpec& comp, const ::tachyon::SceneSpec& scene, const std::string& path, ValidationResult& out) const;
     void validate_layer(const ::tachyon::LayerSpec& layer, const ::tachyon::CompositionSpec& comp, const ::tachyon::SceneSpec& scene, const std::string& path, ValidationResult& out) const;
     void validate_safe_area(const ::tachyon::LayerSpec& layer, const ::tachyon::CompositionSpec& comp, const std::string& path, ValidationResult& out) const;
     void validate_duplicate_ids(const ::tachyon::CompositionSpec& comp, ValidationResult& out) const;
@@ -57,10 +60,11 @@ private:
     void validate_track_bindings(const ::tachyon::LayerSpec& layer, const std::string& path, ValidationResult& out) const;
     void validate_keyframes(const ::tachyon::LayerSpec& layer, const std::string& path, ValidationResult& out) const;
     void validate_font_reference(const ::tachyon::LayerSpec& layer, const ::tachyon::SceneSpec& scene, const std::string& path, ValidationResult& out) const;
-    void validate_file_reference(const ::tachyon::LayerSpec& layer, const std::string& path, ValidationResult& out) const;
+    void validate_file_reference(const ::tachyon::LayerSpec& layer, const ::tachyon::SceneSpec& scene, const std::string& path, ValidationResult& out) const;
     // Property validation hook removed: PropertySpec type no longer exists
     
     // Checks for circular precomp references
+    void check_cycles(const ::tachyon::core::NormalizedSceneView& scene, ValidationResult& out) const;
     void check_cycles(const ::tachyon::SceneSpec& scene, ValidationResult& out) const;
 
     // Validate audio file references exist

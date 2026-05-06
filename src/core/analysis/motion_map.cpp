@@ -187,14 +187,14 @@ MotionMapReport build_motion_map(const SceneSpec& scene, const MotionMapOptions&
             if (has_motion(layer.time_remap_property)) {
                 append_unique(layer_summary.animations, "time_remap");
             }
-            if (!layer.in_preset.empty()) {
-                append_unique(layer_summary.animations, "in_preset:" + layer.in_preset);
+            if (!layer.animation_in_preset.empty()) {
+                append_unique(layer_summary.animations, "animation_in_preset:" + layer.animation_in_preset);
             }
-            if (!layer.during_preset.empty()) {
-                append_unique(layer_summary.animations, "during_preset:" + layer.during_preset);
+            if (!layer.animation_during_preset.empty()) {
+                append_unique(layer_summary.animations, "animation_during_preset:" + layer.animation_during_preset);
             }
-            if (!layer.out_preset.empty()) {
-                append_unique(layer_summary.animations, "out_preset:" + layer.out_preset);
+            if (!layer.animation_out_preset.empty()) {
+                append_unique(layer_summary.animations, "animation_out_preset:" + layer.animation_out_preset);
             }
             if (layer.transition_in.kind != TransitionKind::None) {
                 append_unique(layer_summary.animations, "transition_in:" + transition_kind_to_string(layer.transition_in.kind));

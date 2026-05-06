@@ -239,9 +239,11 @@ add_executable(TachyonContentTests
     unit/audio/test_audio_trim.cpp
     unit/presets/background_kind_registry_tests.cpp
     unit/presets/background_preset_registry_tests.cpp
+    unit/presets/background_resolver_tests.cpp
     unit/presets/transition_builder_tests.cpp
     unit/presets/sfx_contract_tests.cpp
     unit/presets/transition_preset_registry_tests.cpp
+    unit/presets/transition_runtime_tests.cpp
     unit/presets/preset_audit_tests.cpp
 )
 

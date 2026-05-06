@@ -13,6 +13,8 @@ bool run_sfx_contract_tests();
 bool run_transition_preset_registry_tests();
 bool run_background_kind_registry_tests();
 bool run_background_preset_registry_tests();
+bool run_background_resolver_tests();
+bool run_transition_runtime_tests();
 namespace tachyon { bool run_preset_audit_tests(); }
 
 int main(int argc, char** argv) {
@@ -30,6 +32,8 @@ int main(int argc, char** argv) {
         {"transition_preset_registry", run_transition_preset_registry_tests},
         {"background_kind_registry", run_background_kind_registry_tests},
         {"background_preset_registry", run_background_preset_registry_tests},
+        {"background_resolver", run_background_resolver_tests},
+        {"transition_runtime", run_transition_runtime_tests},
         {"audit", tachyon::run_preset_audit_tests},
     };
 

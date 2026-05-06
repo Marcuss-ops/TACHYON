@@ -2,6 +2,7 @@
 #include "tachyon/presets/builders_common.h"
 #include "tachyon/presets/text/text_animator_preset_registry.h"
 #include "tachyon/text/animation/text_presets.h"
+#include "tachyon/text/core/TextLayerSpec.h"
 
 namespace tachyon::presets {
 
@@ -13,46 +14,19 @@ LayerSpec build_text_with_animation(const TextParams& p, std::string animation_i
     return build_text(copy);
 }
 
-std::vector<TextAnimatorSpec> resolve_text_animators(const TextParams& p) {
-    if (!p.animations.empty()) {
-        return p.animations;
-    }
-
-    const std::string animation_id = p.animation.empty() ? "tachyon.textanim.fade_up" : p.animation;
-
-    registry::ParameterBag bag;
-    bag.set("based_on", "characters_excluding_spaces");
-    bag.set("stagger_delay", static_cast<double>(p.stagger_delay));
-    bag.set("reveal_duration", static_cast<double>(p.reveal_duration));
-
-    return tachyon::presets::TextAnimatorPresetRegistry::instance().create(animation_id, bag);
-}
-
-LayerSpec build_text_base(const TextParams& p) {
-    LayerSpec l = make_base_layer("text_layer", "Text", "text", {
-        p.in_point, p.out_point, p.x, p.y, p.text_w, p.text_h, p.opacity
-    });
-    
-    l.alignment   = p.alignment;
-    l.text_content = p.text;
-    l.font_id     = p.font_id;
-    l.font_size.value = static_cast<double>(p.font_size);
-    l.fill_color  = AnimatedColorSpec(p.color);
-
-    apply_layer_transitions(l, p.enter_preset, p.enter_duration, p.exit_preset, p.exit_duration);
-
-    return l;
-}
-
 } // namespace
 
 // ---------------------------------------------------------------------------
-// Dispatcher
+// Dispatcher - New pattern: TextLayerSpec -> LayerSpec
 // ---------------------------------------------------------------------------
 
 LayerSpec build_text(const TextParams& p) {
-    LayerSpec l = build_text_base(p);
-    l.text_animators = resolve_text_animators(p);
+    ::tachyon::TextLayerSpec spec = ::tachyon::build_text_spec(p);
+    LayerSpec l = ::tachyon::make_layer_from_text_spec(spec);
+
+    // Apply transitions (presets domain responsibility)
+    apply_layer_transitions(l, p.enter_preset, p.enter_duration, p.exit_preset, p.exit_duration);
+
     return l;
 }
 
@@ -171,7 +145,7 @@ SceneSpec build_text_scene(const TextParams& text, const SceneParams& scene) {
     bg_layer.id = "bg_solid";
     bg_layer.name = "Background";
     bg_layer.type = LayerType::Solid;
-    bg_layer.type_string = "solid";
+    bg_layer.type_string.clear();
     bg_layer.enabled = true;
     bg_layer.visible = true;
     bg_layer.in_point = 0.0;

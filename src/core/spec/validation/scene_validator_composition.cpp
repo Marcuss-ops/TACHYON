@@ -3,38 +3,44 @@
 
 namespace tachyon::core {
 
-void SceneValidator::validate_composition(const ::tachyon::CompositionSpec& comp, const ::tachyon::SceneSpec& scene, ValidationResult& out) const {
-    if (comp.id.empty()) {
+void SceneValidator::validate_composition(const NormalizedCompositionView& comp, const ::tachyon::SceneSpec& scene, ValidationResult& out) const {
+    const auto* source = comp.source;
+    if (source == nullptr) {
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Fatal, "composition", "Normalized composition view is missing source data."});
+        out.fatal_count++;
+        return;
+    }
+
+    if (source->id.empty()) {
         out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, "composition", "Composition ID cannot be empty."});
         out.error_count++;
     }
     
-    if (comp.width <= 0 || comp.height <= 0) {
-        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, "composition." + comp.id + ".dimensions", "Invalid dimensions."});
+    if (source->width <= 0 || source->height <= 0) {
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, "composition." + source->id + ".dimensions", "Invalid dimensions."});
         out.error_count++;
     }
 
-    // Validate FPS
-    if (comp.fps <= 0.0f) {
-        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, "composition." + comp.id + ".fps", "FPS must be greater than 0."});
+    if (source->fps <= 0.0f) {
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, "composition." + source->id + ".fps", "FPS must be greater than 0."});
         out.error_count++;
     }
 
-    // Validate duration
-    if (comp.duration <= 0.0f) {
-        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, "composition." + comp.id + ".duration", "Duration must be greater than 0."});
+    if (source->duration <= 0.0f) {
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, "composition." + source->id + ".duration", "Duration must be greater than 0."});
         out.error_count++;
     }
 
-    // Validate duplicate IDs within composition
-    validate_duplicate_ids(comp, out);
-    
-    // Validate camera cuts
-    validate_camera_cuts(comp, out);
+    validate_duplicate_ids(*source, out);
+    validate_camera_cuts(*source, out);
 
     for (std::size_t i = 0; i < comp.layers.size(); ++i) {
-        validate_layer(comp.layers[i], comp, scene, "composition." + comp.id + ".layers[" + std::to_string(i) + "]", out);
+        validate_layer(comp.layers[i], *source, scene, "composition." + source->id + ".layers[" + std::to_string(i) + "]", out);
     }
+}
+
+void SceneValidator::validate_composition(const ::tachyon::CompositionSpec& comp, const ::tachyon::SceneSpec& scene, ValidationResult& out) const {
+    validate_composition(normalize_composition_view(comp), scene, out);
 }
 
 void SceneValidator::validate_duplicate_ids(const ::tachyon::CompositionSpec& comp, ValidationResult& out) const {
