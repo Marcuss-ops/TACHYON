@@ -13,12 +13,14 @@ bool run_transition_preset_registry_tests() {
 
     {
         auto ids = preset_registry.list_ids();
-        // 19 GLSL presets + 'none'
-        assert(ids.size() == 20);
+        // 19 original GLSL presets + 'none' + 5 new premium light leaks = 25
+        assert(ids.size() == 25);
         assert(preset_registry.find("tachyon.transition.crossfade") != nullptr);
         assert(preset_registry.find("tachyon.transition.slide_up") != nullptr);
         assert(preset_registry.find("tachyon.transition.swipe_left") != nullptr);
+        assert(preset_registry.find("tachyon.transition.lightleak.soft_warm_edge") != nullptr);
     }
+
 
     // 2. Known ids still resolve to the registered preset.
     {

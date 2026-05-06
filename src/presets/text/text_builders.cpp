@@ -7,6 +7,27 @@ namespace tachyon::presets {
 
 namespace {
 
+LayerSpec build_text_with_animation(const TextParams& p, std::string animation_id) {
+    TextParams copy = p;
+    copy.animation = std::move(animation_id);
+    return build_text(copy);
+}
+
+std::vector<TextAnimatorSpec> resolve_text_animators(const TextParams& p) {
+    if (!p.animations.empty()) {
+        return p.animations;
+    }
+
+    const std::string animation_id = p.animation.empty() ? "tachyon.textanim.fade_up" : p.animation;
+
+    registry::ParameterBag bag;
+    bag.set("based_on", "characters_excluding_spaces");
+    bag.set("stagger_delay", static_cast<double>(p.stagger_delay));
+    bag.set("reveal_duration", static_cast<double>(p.reveal_duration));
+
+    return tachyon::presets::TextAnimatorPresetRegistry::instance().create(animation_id, bag);
+}
+
 LayerSpec build_text_base(const TextParams& p) {
     LayerSpec l = make_base_layer("text_layer", "Text", "text", {
         p.in_point, p.out_point, p.x, p.y, p.text_w, p.text_h, p.opacity
@@ -31,24 +52,84 @@ LayerSpec build_text_base(const TextParams& p) {
 
 LayerSpec build_text(const TextParams& p) {
     LayerSpec l = build_text_base(p);
-
-    // If typed animators are provided via fluent API, use them directly
-    if (!p.animations.empty()) {
-        l.text_animators = p.animations;
-        return l;
-    }
-    
-    // Otherwise, use the registry for the named animation
-    std::string anim_id = p.animation.empty() ? "tachyon.textanim.fade_up" : p.animation;
-    
-    registry::ParameterBag bag;
-    bag.set("based_on", "characters_excluding_spaces");
-    bag.set("stagger_delay", static_cast<double>(p.stagger_delay));
-    bag.set("reveal_duration", static_cast<double>(p.reveal_duration));
-
-    l.text_animators = tachyon::presets::TextAnimatorPresetRegistry::instance().create(anim_id, bag);
-
+    l.text_animators = resolve_text_animators(p);
     return l;
+}
+
+LayerSpec build_text_fade_up(const TextParams& p) {
+    return build_text_with_animation(p, "tachyon.textanim.fade_up");
+}
+
+LayerSpec build_text_blur_to_focus(const TextParams& p) {
+    return build_text_with_animation(p, "tachyon.textanim.blur_to_focus");
+}
+
+LayerSpec build_text_typewriter(const TextParams& p) {
+    return build_text_with_animation(p, "tachyon.textanim.typewriter.classic");
+}
+
+LayerSpec build_text_slide_in(const TextParams& p) {
+    return build_text_with_animation(p, "tachyon.textanim.slide_in");
+}
+
+LayerSpec build_text_tracking_reveal(const TextParams& p) {
+    return build_text_with_animation(p, "tachyon.textanim.tracking_reveal");
+}
+
+LayerSpec build_text_outline_to_solid(const TextParams& p) {
+    return build_text_with_animation(p, "tachyon.textanim.outline_to_solid");
+}
+
+LayerSpec build_text_number_flip(const TextParams& p) {
+    return build_text_with_animation(p, "tachyon.textanim.number_flip");
+}
+
+LayerSpec build_text_word_by_word(const TextParams& p) {
+    return build_text_with_animation(p, "tachyon.textanim.typewriter.word");
+}
+
+LayerSpec build_text_split_line(const TextParams& p) {
+    return build_text_with_animation(p, "tachyon.textanim.typewriter.line");
+}
+
+LayerSpec build_text_soft_scale(const TextParams& p) {
+    return build_text_with_animation(p, "tachyon.textanim.soft_scale_in");
+}
+
+LayerSpec build_text_curtain_box(const TextParams& p) {
+    return build_text_with_animation(p, "tachyon.textanim.curtain_box");
+}
+
+LayerSpec build_text_fill_wipe(const TextParams& p) {
+    return build_text_with_animation(p, "tachyon.textanim.fill_wipe");
+}
+
+LayerSpec build_text_slide_mask(const TextParams& p) {
+    return build_text_with_animation(p, "tachyon.textanim.slide_mask");
+}
+
+LayerSpec build_text_kinetic(const TextParams& p) {
+    return build_text_with_animation(p, "tachyon.textanim.kinetic");
+}
+
+LayerSpec build_text_pop(const TextParams& p) {
+    return build_text_with_animation(p, "tachyon.textanim.pop_in");
+}
+
+LayerSpec build_text_y_rotate(const TextParams& p) {
+    return build_text_with_animation(p, "tachyon.textanim.subtle_y_rotate");
+}
+
+LayerSpec build_text_morphing(const TextParams& p) {
+    return build_text_with_animation(p, "tachyon.textanim.morphing");
+}
+
+LayerSpec build_text_underline(const TextParams& p) {
+    return build_text_with_animation(p, "tachyon.textanim.underline");
+}
+
+LayerSpec build_text_brushed_metal_title(const TextParams& p) {
+    return build_text_with_animation(p, "tachyon.textanim.brushed_metal");
 }
 
 // ---------------------------------------------------------------------------

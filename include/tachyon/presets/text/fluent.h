@@ -4,10 +4,12 @@
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 #include "tachyon/text/animation/text_presets.h"
 #include "tachyon/core/types/colors.h"
+#include "tachyon/presets/text/text_anchor.h"
 #include "tachyon/presets/text/text_params.h"
 #include <string>
 #include <vector>
 #include <functional>
+#include <optional>
 
 namespace tachyon::presets {
 LayerSpec build_text(const struct TextParams& p);
@@ -34,6 +36,13 @@ class TextBuilder {
     std::vector<TextAnimatorSpec> animators_;
     ColorSpec stroke_color_{0, 0, 0, 0};
     double stroke_width_{0.0};
+    std::optional<TextAnchor> anchor_;
+
+    void apply_anchor() {
+        if (anchor_.has_value()) {
+            apply_text_anchor(params_, *anchor_);
+        }
+    }
     
 public:
     explicit TextBuilder(std::string text) {
@@ -68,6 +77,7 @@ public:
     TextBuilder& text_box(double w, double h) {
         params_.text_w = static_cast<float>(w);
         params_.text_h = static_cast<float>(h);
+        apply_anchor();
         return *this;
     }
     
@@ -78,33 +88,45 @@ public:
     
     TextBuilder& alignment(std::string align) {
         params_.alignment = std::move(align);
+        anchor_.reset();
         return *this;
     }
     
     TextBuilder& left() {
         params_.alignment = "left";
+        anchor_.reset();
         return *this;
     }
     
     TextBuilder& center() {
-        params_.alignment = "center";
+        anchor_ = TextAnchor::MiddleCenter;
+        apply_anchor();
         return *this;
     }
     
     TextBuilder& right() {
         params_.alignment = "right";
+        anchor_.reset();
+        return *this;
+    }
+
+    TextBuilder& anchor(TextAnchor anchor) {
+        anchor_ = anchor;
+        apply_anchor();
         return *this;
     }
     
     TextBuilder& position(double x, double y) {
         params_.x = static_cast<float>(x);
         params_.y = static_cast<float>(y);
+        anchor_.reset();
         return *this;
     }
     
     TextBuilder& size(double w, double h) {
         params_.text_w = static_cast<float>(w);
         params_.text_h = static_cast<float>(h);
+        apply_anchor();
         return *this;
     }
     

@@ -14,7 +14,6 @@ set(TachyonSceneSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/effect_compiler.cpp
     
     # Spec - Schema
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/schema/common/common_spec.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/schema/scene_spec.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/schema/scene_spec_core.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/schema/migration/scene_migration.cpp

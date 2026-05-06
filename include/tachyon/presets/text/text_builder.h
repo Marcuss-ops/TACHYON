@@ -4,6 +4,7 @@
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 #include "tachyon/core/types/colors.h"
 #include "tachyon/text/animation/text_presets.h"
+#include "tachyon/presets/text/text_anchor.h"
 #include <string>
 #include <vector>
 #include <optional>
@@ -26,6 +27,13 @@ namespace tachyon::presets::text {
  */
 class TextBuilder {
     LayerSpec spec_;
+    std::optional<TextAnchor> anchor_;
+
+    void apply_anchor() {
+        if (anchor_.has_value()) {
+            apply_text_anchor(spec_, *anchor_);
+        }
+    }
 public:
     explicit TextBuilder(std::string id, std::string content) {
         spec_.id = std::move(id);
@@ -50,6 +58,7 @@ public:
 
     TextBuilder& size(double s) {
         spec_.font_size = AnimatedScalarSpec{s};
+        apply_anchor();
         return *this;
     }
 
@@ -61,33 +70,43 @@ public:
     TextBuilder& position(double x, double y) {
         spec_.transform.position_x = x;
         spec_.transform.position_y = y;
+        anchor_.reset();
         return *this;
     }
 
     TextBuilder& center() {
-        spec_.alignment = "center";
-        spec_.transform.position_x = spec_.width / 2.0;
-        spec_.transform.position_y = spec_.height / 2.0;
+        anchor_ = TextAnchor::MiddleCenter;
+        apply_anchor();
         return *this;
     }
 
     TextBuilder& left() {
         spec_.alignment = "left";
+        anchor_.reset();
         return *this;
     }
 
     TextBuilder& right() {
         spec_.alignment = "right";
+        anchor_.reset();
+        return *this;
+    }
+
+    TextBuilder& anchor(TextAnchor anchor) {
+        anchor_ = anchor;
+        apply_anchor();
         return *this;
     }
 
     TextBuilder& width(int w) {
         spec_.width = w;
+        apply_anchor();
         return *this;
     }
 
     TextBuilder& height(int h) {
         spec_.height = h;
+        apply_anchor();
         return *this;
     }
 

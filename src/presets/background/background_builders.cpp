@@ -63,6 +63,12 @@ void apply_background_overrides(ProceduralSpec& spec, const BackgroundParams& p)
     if (p.color_c) spec.color_c = AnimatedColorSpec{*p.color_c};
 }
 
+ProceduralSpec make_unresolved_background_spec(std::string_view kind) {
+    ProceduralSpec spec;
+    spec.kind = std::string(kind);
+    return spec;
+}
+
 } // namespace
 
 LayerSpec build_background(const BackgroundParams& p) {
@@ -100,10 +106,8 @@ LayerSpec build_background(const BackgroundParams& p) {
 
         spec = registry.create(normalized_kind, bag);
         if (!spec) {
-            // Fallback to placeholder if not found in registry
-            ProceduralSpec placeholder;
-            placeholder.kind = normalized_kind;
-            spec = std::move(placeholder);
+            // Preserve the requested kind even when no procedural factory exists.
+            spec = make_unresolved_background_spec(normalized_kind);
         }
     }
 

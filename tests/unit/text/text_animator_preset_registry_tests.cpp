@@ -22,6 +22,11 @@ bool test_common_presets_available() {
         "tachyon.textanim.slide_in",
         "tachyon.textanim.pop_in",
         "tachyon.textanim.typewriter",
+        "tachyon.textanim.typewriter.classic",
+        "tachyon.textanim.typewriter.archive",
+        "tachyon.textanim.typewriter.terminal",
+        "tachyon.textanim.typewriter.word",
+        "tachyon.textanim.typewriter.line",
         "tachyon.textanim.blur_to_focus"
     };
     for (const auto& id : ids) {
@@ -51,6 +56,10 @@ bool test_create_preset_returns_valid_spec() {
     }
     if (specs[0].properties.opacity_keyframes.empty()) {
         std::cerr << "Error: Created spec has no opacity keyframes" << std::endl;
+        return false;
+    }
+    if (!specs[0].cursor.enabled) {
+        std::cerr << "Error: Typewriter preset should enable cursor" << std::endl;
         return false;
     }
     return true;
