@@ -7,6 +7,20 @@
 
 namespace tachyon {
 
+struct FrameCacheState {
+    CacheKeyBuilder composition_builder;
+    CacheKeyBuilder frame_builder;
+    std::uint64_t composition_key{0};
+    std::uint64_t frame_key{0};
+    bool diagnostics_enabled{false};
+};
+
+struct FrameTimingState {
+    double fps{60.0};
+    double frame_time_seconds{0.0};
+    std::optional<timeline::FrameBlendResult> blend_result;
+};
+
 // Internal evaluation functions
 void evaluate_node(
     FrameExecutor& executor,
@@ -78,5 +92,26 @@ std::shared_ptr<renderer2d::SurfaceRGBA> render_frame_at_time(
 timeline::FrameBuffer surface_to_framebuffer(const renderer2d::SurfaceRGBA& src);
 
 std::shared_ptr<renderer2d::Framebuffer> framebuffer_to_framebuffer(const timeline::FrameBuffer& src);
+
+FrameCacheState build_frame_cache_state(
+    const CompiledScene& compiled_scene,
+    const RenderPlan& plan,
+    const FrameRenderTask& task,
+    bool diagnostics_enabled);
+
+FrameTimingState resolve_frame_timing(
+    const CompiledScene& compiled_scene,
+    const RenderPlan& plan,
+    const FrameRenderTask& task);
+
+ExecutedFrame run_frame_execution_pipeline(
+    FrameExecutor& executor,
+    const CompiledScene& compiled_scene,
+    const RenderPlan& plan,
+    const FrameRenderTask& task,
+    const DataSnapshot& snapshot,
+    RenderContext& context,
+    const FrameCacheState& cache_state,
+    const FrameTimingState& timing_state);
 
 } // namespace tachyon

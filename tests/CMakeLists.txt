@@ -535,13 +535,13 @@ add_test(
     NAME TachyonSceneTests
     COMMAND TachyonSceneTests
 )
-tachyon_set_test_labels(TachyonSceneTests core)
+tachyon_set_test_labels(TachyonSceneTests core scene)
 
 add_test(
     NAME TachyonCliTests
     COMMAND TachyonCliTests
 )
-tachyon_set_test_labels(TachyonCliTests core)
+tachyon_set_test_labels(TachyonCliTests core scene)
 
 add_test(
     NAME TachyonEditorTests
@@ -553,53 +553,53 @@ add_test(
     NAME TachyonRuntimeTests
     COMMAND TachyonRuntimeTests
 )
-tachyon_set_test_labels(TachyonRuntimeTests core deterministic)
+tachyon_set_test_labels(TachyonRuntimeTests runtime deterministic)
 
 add_test(
     NAME TachyonNativeRenderTests
     COMMAND TachyonNativeRenderTests
 )
-tachyon_set_test_labels(TachyonNativeRenderTests render)
+tachyon_set_test_labels(TachyonNativeRenderTests runtime render)
 
 add_test(
     NAME TachyonContentTests
     COMMAND TachyonContentTests
 )
-tachyon_set_test_labels(TachyonContentTests core)
+tachyon_set_test_labels(TachyonContentTests content core)
 
 if(TACHYON_ENABLE_3D)
     add_test(
         NAME TachyonRenderTests
         COMMAND TachyonRenderTests
     )
-    tachyon_set_test_labels(TachyonRenderTests render)
+    tachyon_set_test_labels(TachyonRenderTests render renderer2d)
 
     add_test(
         NAME TachyonRenderPipelineTests
         COMMAND TachyonRenderPipelineTests
     )
-    tachyon_set_test_labels(TachyonRenderPipelineTests render deterministic)
+    tachyon_set_test_labels(TachyonRenderPipelineTests render deterministic renderer2d)
 endif()
 
 add_test(
     NAME TachyonRenderProfilerTests
     COMMAND TachyonRenderProfilerTests
 )
-tachyon_set_test_labels(TachyonRenderProfilerTests core deterministic)
+tachyon_set_test_labels(TachyonRenderProfilerTests runtime deterministic)
 
 if(TACHYON_ENABLE_3D)
     add_test(
         NAME TachyonScene3DSmokeTests
         COMMAND TachyonScene3DSmokeTests
     )
-    tachyon_set_test_labels(TachyonScene3DSmokeTests render)
+    tachyon_set_test_labels(TachyonScene3DSmokeTests render scene)
 endif()
 
 add_test(
     NAME TachyonSmokeTests
     COMMAND TachyonTests
 )
-tachyon_set_test_labels(TachyonSmokeTests smoke)
+tachyon_set_test_labels(TachyonSmokeTests smoke core)
 
 set_tests_properties(TachyonSmokeTests PROPERTIES
     ENVIRONMENT "TACHYON_TEST_FILTER=math,property,expression,camera_cuts"

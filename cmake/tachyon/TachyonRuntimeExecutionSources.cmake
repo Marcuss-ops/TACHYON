@@ -20,6 +20,9 @@ set(TachyonRuntimeExecutionSources
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_evaluator_node.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_evaluator_property.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_blend.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_cache_policy.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_time_resolver.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_evaluation_pipeline.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/motion_blur_sampler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_fallback_policy.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/rasterization_step.cpp

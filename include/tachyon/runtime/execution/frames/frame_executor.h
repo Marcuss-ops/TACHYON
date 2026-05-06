@@ -67,6 +67,7 @@ public:
 
     FrameCache& cache() { return m_cache; }
     const FrameCache& cache() const { return m_cache; }
+    runtime::RuntimeSurfacePool* surface_pool() const { return m_pool; }
 
     /**
      * @brief Executes evaluation for a specific frame.
