@@ -1,8 +1,10 @@
 #include "tachyon/transition_catalog.h"
 #include "tachyon/transition_registry.h"
+#include "tachyon/presets/transition/transition_preset_registry.h"
 
 #include <algorithm>
 #include <utility>
+#include <set>
 
 namespace tachyon {
 
@@ -228,8 +230,78 @@ bool TransitionCatalog::validate_runtime_transition(std::string_view runtime_id,
 TransitionCatalog::AuditResult TransitionCatalog::audit() const {
     AuditResult result;
 
-    // For now, return empty audit result
-    // This would be expanded to check against actual registry usage
+    auto& preset_registry = presets::TransitionPresetRegistry::instance();
+    auto& transition_registry = TransitionRegistry::instance();
+
+    // Check 1: Every catalog.runtime_id must exist in TransitionRegistry
+    for (const auto& entry : m_impl->entries) {
+        if (!entry.runtime_id.empty()) {
+            const auto* runtime = transition_registry.find(entry.runtime_id);
+            if (!runtime) {
+                result.orphaned_runtime.push_back("Catalog entry '" + entry.id +
+                    "' has runtime_id '" + entry.runtime_id + "' not found in TransitionRegistry");
+            }
+        }
+    }
+
+    // Check 2: Every public preset must exist in catalog
+    auto preset_ids = preset_registry.list_ids();
+    for (const auto& preset_id : preset_ids) {
+        if (!find(preset_id)) {
+            result.orphaned_presets.push_back("Preset '" + preset_id + "' not found in catalog");
+        }
+    }
+
+    // Check 3: Every public runtime transition must be cataloged
+    auto runtime_ids = transition_registry.list_builtin_transition_ids();
+    for (const auto& runtime_id : runtime_ids) {
+        const auto* catalog_entry = find_by_runtime_id(runtime_id);
+        if (!catalog_entry) {
+            result.orphaned_runtime.push_back("Runtime transition '" + runtime_id + "' not cataloged");
+        }
+    }
+
+    // Check 4: Duplicate aliases
+    std::map<std::string, std::string> alias_to_id_check;
+    for (const auto& entry : m_impl->entries) {
+        for (const auto& alias : entry.authoring_aliases) {
+            auto it = alias_to_id_check.find(alias);
+            if (it != alias_to_id_check.end()) {
+                result.alias_conflicts.push_back("Alias '" + alias + "' points to both '" +
+                    it->second + "' and '" + entry.id + "'");
+            } else {
+                alias_to_id_check[alias] = entry.id;
+            }
+        }
+    }
+
+    // Check 5: Duplicate catalog IDs (should not happen due to registration logic, but verify)
+    std::set<std::string> seen_ids;
+    for (const auto& entry : m_impl->entries) {
+        if (seen_ids.count(entry.id)) {
+            result.alias_conflicts.push_back("Duplicate catalog ID: '" + entry.id + "'");
+        }
+        seen_ids.insert(entry.id);
+    }
+
+    // Check 6: amber_sweep must be registered everywhere (if it exists)
+    const std::string amber_sweep_id = "tachyon.transition.lightleak.amber_sweep";
+    const auto* amber_catalog = find(amber_sweep_id);
+    const auto* amber_preset = preset_registry.find(amber_sweep_id);
+    const auto* amber_runtime = transition_registry.find(amber_sweep_id);
+
+    if (amber_catalog || amber_preset || amber_runtime) {
+        // If registered in any, should be in all
+        if (!amber_catalog) {
+            result.orphaned_presets.push_back(amber_sweep_id + " found in registry/preset but not in catalog");
+        }
+        if (!amber_preset) {
+            result.orphaned_presets.push_back(amber_sweep_id + " found in catalog/registry but not in preset registry");
+        }
+        if (!amber_runtime) {
+            result.orphaned_runtime.push_back(amber_sweep_id + " found in catalog/preset but not in runtime registry");
+        }
+    }
 
     return result;
 }

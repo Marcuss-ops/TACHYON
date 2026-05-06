@@ -17,6 +17,14 @@ bool run_background_resolver_tests();
 bool run_transition_runtime_tests();
 namespace tachyon { bool run_preset_audit_tests(); }
 
+// New tests for schema migration and catalog audit
+bool run_transition_catalog_audit_tests();
+bool run_layerspec_schema_tests();
+bool run_background_catalog_alignment_tests();
+bool run_missing_transition_fallback_tests();
+bool run_scene_validator_normalization_tests();
+bool run_preview_dev_workflow_tests();
+
 int main(int argc, char** argv) {
     using namespace tachyon::test;
     std::vector<TestCase> tests = {
@@ -35,6 +43,13 @@ int main(int argc, char** argv) {
         {"background_resolver", run_background_resolver_tests},
         {"transition_runtime", run_transition_runtime_tests},
         {"audit", tachyon::run_preset_audit_tests},
+        // New tests for schema migration and catalog audit
+        {"transition_catalog_audit", run_transition_catalog_audit_tests},
+        {"layerspec_schema", run_layerspec_schema_tests},
+        {"background_catalog_alignment", run_background_catalog_alignment_tests},
+        {"missing_transition_fallback", run_missing_transition_fallback_tests},
+        {"scene_validator_normalization", run_scene_validator_normalization_tests},
+        {"preview_dev_workflow", run_preview_dev_workflow_tests},
     };
 
     return run_test_suite(argc, argv, tests);
