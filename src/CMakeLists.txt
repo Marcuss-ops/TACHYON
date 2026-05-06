@@ -302,7 +302,7 @@ target_include_directories(TachyonMedia
         ${TACHYON_EARCUT_INCLUDE_DIR}
 )
 tachyon_link_media_deps(TachyonMedia)
-target_link_libraries(TachyonMedia PUBLIC pugixml TachyonText)
+target_link_libraries(TachyonMedia PUBLIC pugixml TachyonText TachyonRenderer2D)
 
 add_library(TachyonAudio STATIC ${TachyonAudioSources})
 tachyon_configure_common(TachyonAudio)

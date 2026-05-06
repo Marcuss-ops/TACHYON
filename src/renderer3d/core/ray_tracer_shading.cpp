@@ -237,7 +237,7 @@ ShadingResult RayTracer::trace_ray(
         transform_normal(hit_instance->world_transform, interpolated_normal),
         geometric_normal);
 
-    const EvaluatedMaterial& mat = hit_instance->material;
+    const EvaluatedMaterial3D& mat = hit_instance->material;
     math::Vector3 albedo = {
         mat.base_color.r / 255.0f,
         mat.base_color.g / 255.0f,
@@ -285,10 +285,10 @@ ShadingResult RayTracer::trace_ray(
         float distance = INFINITY;
         float attenuation = 1.0f;
 
-        if (light.type == LightType::Ambient) {
+        if (light.type == LightType3D::Ambient) {
             total_radiance += albedo * light.intensity * 0.1f;
             continue;
-        } else if (light.type == LightType::Directional) {
+        } else if (light.type == LightType3D::Directional) {
             light_dir = (-light.direction).normalized();
         } else {
             math::Vector3 light_pos = light.position;
@@ -305,7 +305,7 @@ ShadingResult RayTracer::trace_ray(
             }
 
             // Spotlight
-            if (light.type == LightType::Spot) {
+            if (light.type == LightType3D::Spot) {
                 float cos_angle = math::Vector3::dot(light_dir, (-light.direction).normalized());
                 float cos_outer = std::cos(light.spot_angle * 0.5f * PI / 180.0f);
                 float cos_inner = std::cos(std::max(0.0f, light.spot_angle * 0.5f - light.spot_penumbra) * PI / 180.0f);

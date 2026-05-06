@@ -62,9 +62,18 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
                 bg_layer.fill_color = composition.background->get_color().value_or(ColorSpec{0,0,0,255});
             } else if (composition.background->type == BackgroundType::Asset) {
                 bg_layer.type_id = compiled_type_id_from_layer_type(LayerType::Image);
-                // Note: Image name is used for asset resolution in CompiledLayer/Renderer
                 bg_layer.name = composition.background->value;
                 bg_layer.asset_id = composition.background->value;
+            } else if (composition.background->type == BackgroundType::Preset) {
+                bg_layer.type_id = compiled_type_id_from_layer_type(LayerType::Procedural);
+                bg_layer.name = composition.background->value;
+                bg_layer.procedural.emplace();
+                bg_layer.procedural->kind = composition.background->value;
+            } else if (composition.background->type == BackgroundType::Component) {
+                bg_layer.type_id = compiled_type_id_from_layer_type(LayerType::Precomp);
+                bg_layer.name = composition.background->value;
+                // Precomp ID is stored in asset_id or a dedicated field in CompiledLayer
+                // For now we use name as reference
             } else {
                 bg_layer.type_id = compiled_type_id_from_layer_type(LayerType::Solid);
                 bg_layer.fill_color = ColorSpec{0,0,0,255};
@@ -86,10 +95,11 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
             compiled_layer.asset_id = layer.asset_id;
             compiled.graph.add_node(compiled_layer.node.node_id);
             
-            // Resolve Type using robust LayerType enum
-            LayerType actual_kind = layer.kind;
-            if (actual_kind == LayerType::NullLayer || actual_kind == LayerType::Unknown) {
-                actual_kind = layer_type_from_string(layer.type);
+            // Resolve Type using robust LayerType enum (Canonical Source of Truth)
+            // Convergence: type_string is purely for serialization/authoring.
+            LayerType actual_kind = layer.type;
+            if (actual_kind == LayerType::Unknown) {
+                actual_kind = layer_type_from_string(layer.type_string);
             }
             compiled_layer.type_id = compiled_type_id_from_layer_type(actual_kind);
             

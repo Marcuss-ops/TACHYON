@@ -80,7 +80,7 @@ std::uint64_t hash_scene_spec(const SceneSpec& scene, const DeterminismContract&
         for (const auto& layer : composition.layers) {
             add_string(builder, layer.id);
             add_string(builder, layer.name);
-            add_string(builder, layer.type);
+            add_string(builder, std::string(to_canonical_layer_type_string(layer.type)));
             add_string(builder, layer.blend_mode);
             builder.add_bool(layer.enabled);
             builder.add_bool(layer.visible);
@@ -152,7 +152,7 @@ std::uint64_t hash_scene_structure(const SceneSpec& scene) {
         builder.add_u64(static_cast<std::uint64_t>(composition.layers.size()));
         for (const auto& layer : composition.layers) {
             add_string(builder, layer.id);
-            add_string(builder, layer.type);
+            add_string(builder, std::string(to_canonical_layer_type_string(layer.type)));
             builder.add_bool(layer.parent.has_value());
             if (layer.parent.has_value()) add_string(builder, *layer.parent);
             builder.add_bool(layer.precomp_id.has_value());

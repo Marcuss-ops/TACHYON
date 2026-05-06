@@ -17,19 +17,10 @@ CompiledLayer LayerCompiler::compile_layer(
     compiled.graph.add_node(compiled_layer.node.node_id);
 
     // Resolve Type
-    auto type_map = [](const std::string& t) -> std::uint32_t {
-        if (t == "solid") return 1;
-        if (t == "shape") return 2;
-        if (t == "image") return 3;
-        if (t == "text") return 4;
-        if (t == "precomp") return 5;
-        if (t == "procedural") return 6;
-        return 0;
-    };
-    compiled_layer.type_id = type_map(layer.type);
-    if (compiled_layer.type_id == 0 && !layer.type.empty()) {
+    compiled_layer.type_id = compiled_type_id_from_layer_type(layer.type);
+    if (compiled_layer.type_id == 0 && layer.type != LayerType::Unknown) {
         diagnostics.add_warning("COMPILER_W001",
-            "Layer '" + layer.id + "' has unknown type '" + layer.type + "', will render as null layer.",
+            "Layer '" + layer.id + "' has unknown type '" + std::string(to_canonical_layer_type_string(layer.type)) + "', will render as null layer.",
             layer_path);
     }
 

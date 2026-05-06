@@ -47,7 +47,7 @@ std::string severity_to_string(InspectionSeverity severity) {
     return "info";
 }
 
-std::string layer_kind_to_string(LayerType kind) {
+std::string layer.type_to_string(LayerType kind) {
     switch (kind) {
         case LayerType::Solid: return "solid";
         case LayerType::Shape: return "shape";
@@ -182,7 +182,7 @@ InspectionReport inspect_scene(const SceneSpec& scene, const InspectionOptions& 
                 }
             }
 
-            if (layer.kind == LayerType::Text) {
+            if (layer.type == LayerType::Text) {
                 if (layer.text_content.empty()) {
                     add_issue(report, InspectionSeverity::Warning, "text.empty", layer_path, "Text layer has empty content.");
                 }
@@ -193,17 +193,17 @@ InspectionReport inspect_scene(const SceneSpec& scene, const InspectionOptions& 
                 }
             }
 
-            if (layer.kind == LayerType::Image || layer.kind == LayerType::Video) {
+            if (layer.type == LayerType::Image || layer.type == LayerType::Video) {
                 if (layer.asset_id.empty()) {
                     add_issue(report, InspectionSeverity::Error, "media.missing_asset", layer_path, "Media layer has no asset_id.");
                 }
             }
 
-            if (layer.kind == LayerType::Precomp && (!layer.precomp_id.has_value() || layer.precomp_id->empty())) {
+            if (layer.type == LayerType::Precomp && (!layer.precomp_id.has_value() || layer.precomp_id->empty())) {
                 add_issue(report, InspectionSeverity::Warning, "precomp.missing_id", layer_path, "Precomp layer has no precomp_id.");
             }
 
-            if (layer.kind == LayerType::Camera && layer.camera_type.empty()) {
+            if (layer.type == LayerType::Camera && layer.camera_type.empty()) {
                 add_issue(report, InspectionSeverity::Warning, "camera.missing_type", layer_path, "Camera layer has no camera type.");
             }
 

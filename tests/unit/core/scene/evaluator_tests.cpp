@@ -37,7 +37,7 @@ bool run_scene_evaluator_tests() {
     {
         tachyon::LayerSpec layer;
         layer.id = "title";
-        layer.type = "text";
+        layer.type = tachyon::LayerType::Text;
         layer.name = "Title";
         layer.start_time = 1.0;
         layer.in_point = 0.0;
@@ -81,7 +81,7 @@ bool run_scene_evaluator_tests() {
     {
         tachyon::LayerSpec layer;
         layer.id = "solid_01";
-        layer.type = "solid";
+        layer.type = tachyon::LayerType::Solid;
         layer.name = "Solid";
         layer.start_time = 0.0;
         layer.in_point = 0.0;
@@ -104,7 +104,7 @@ bool run_scene_evaluator_tests() {
     {
         tachyon::LayerSpec camera_layer;
         camera_layer.id = "camera_01";
-        camera_layer.type = "camera";
+        camera_layer.type = tachyon::LayerType::Camera;
         camera_layer.name = "Camera";
         camera_layer.enabled = true;
         camera_layer.is_3d = true;
@@ -143,7 +143,7 @@ bool run_scene_evaluator_tests() {
     {
         tachyon::LayerSpec precomp_layer;
         precomp_layer.id = "precomp_01";
-        precomp_layer.type = "precomp";
+        precomp_layer.type = tachyon::LayerType::Precomp;
         precomp_layer.name = "Precomp";
         precomp_layer.enabled = true;
         precomp_layer.start_time = 0.0;
@@ -154,7 +154,7 @@ bool run_scene_evaluator_tests() {
 
         tachyon::LayerSpec child_solid;
         child_solid.id = "child_solid";
-        child_solid.type = "solid";
+        child_solid.type = tachyon::LayerType::Solid;
         child_solid.name = "Child Solid";
         child_solid.enabled = true;
         child_solid.start_time = 0.0;
@@ -200,7 +200,7 @@ bool run_scene_evaluator_tests() {
     {
         tachyon::LayerSpec text_layer;
         text_layer.id = "caption";
-        text_layer.type = "text";
+        text_layer.type = tachyon::LayerType::Text;
         text_layer.name = "Caption";
         text_layer.text_content = "Hello {{shot.name}} / {{music.bass}}";
 

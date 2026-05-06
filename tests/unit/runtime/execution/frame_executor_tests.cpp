@@ -19,7 +19,7 @@ void check_true(bool condition, const std::string& message) {
 tachyon::SceneSpec make_scene(double x_offset = 0.0) {
     tachyon::LayerSpec layer;
     layer.id = "solid_1";
-    layer.type = "solid";
+    layer.type = tachyon::LayerType::Solid;
     layer.name = "Solid One";
     layer.start_time = 0.0;
     layer.in_point = 0.0;
@@ -49,7 +49,7 @@ tachyon::SceneSpec make_scene(double x_offset = 0.0) {
 tachyon::SceneSpec make_procedural_scene() {
     tachyon::LayerSpec layer;
     layer.id = "bg";
-    layer.type = "procedural";
+    layer.type = tachyon::LayerType::Procedural;
     layer.name = "Procedural Background";
     layer.start_time = 0.0;
     layer.in_point = 0.0;

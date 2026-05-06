@@ -72,7 +72,7 @@ bool run_runtime_backbone_tests() {
     LayerSpec layer;
     layer.id = "layer-1";
     layer.name = "Layer 1";
-    layer.type = "solid";
+    layer.type = LayerType::Solid;
     layer.opacity = 0.8;
     composition.layers.push_back(layer);
     scene->compositions.push_back(composition);

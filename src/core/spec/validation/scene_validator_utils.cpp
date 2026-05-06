@@ -85,7 +85,7 @@ void SceneValidator::check_cycles(const ::tachyon::SceneSpec& scene, ValidationR
 
     for (const auto& comp : scene.compositions) {
         for (const auto& layer : comp.layers) {
-            if (layer.type == "precomp" && layer.precomp_id.has_value() && !layer.precomp_id->empty()) {
+            if (layer.type == LayerType::Precomp && layer.precomp_id.has_value() && !layer.precomp_id->empty()) {
                 const std::string& src = comp.id;
                 const std::string& tgt = *layer.precomp_id;
                 if (comp_ids.count(src) && comp_ids.count(tgt)) {

@@ -147,14 +147,14 @@ LayerBuilder::LayerBuilder(std::string id) {
 LayerBuilder::LayerBuilder(LayerSpec spec) : spec_(std::move(spec)) {}
 
 LayerBuilder& LayerBuilder::type(std::string t) {
-    spec_.type = std::move(t);
-    spec_.kind = layer_type_from_string(spec_.type);
+    spec_.type_string = std::move(t);
+    spec_.type = layer_type_from_string(spec_.type_string);
     return *this;
 }
 
 LayerBuilder& LayerBuilder::kind(LayerType t) {
-    spec_.kind = t;
-    spec_.type = std::string(to_canonical_layer_type_string(t));
+    spec_.type = t;
+    spec_.type_string = std::string(to_canonical_layer_type_string(t));
     return *this;
 }
 
@@ -172,7 +172,6 @@ LayerBuilder& LayerBuilder::mesh(std::string path) {
 
 LayerBuilder& LayerBuilder::preset(std::string name) {
     kind(LayerType::Procedural);
-    spec_.type = "preset"; // Specific alias
     spec_.preset_id = std::move(name);
     return *this;
 }
@@ -557,17 +556,17 @@ CompositionBuilder& CompositionBuilder::precomp_layer(std::string id, std::strin
 
 CompositionBuilder& CompositionBuilder::camera3d_layer(std::string id, std::function<void(LayerBuilder&)> fn) {
     return add_typed_layer(std::move(id),
-        [](LayerBuilder& l) { l.is_3d(true); l.type("camera"); l.kind(LayerType::Camera); l.camera_type("two_node"); }, fn);
+        [](LayerBuilder& l) { l.is_3d(true); l.kind(LayerType::Camera); l.camera_type("two_node"); }, fn);
 }
 
 CompositionBuilder& CompositionBuilder::light_layer(std::string id, std::function<void(LayerBuilder&)> fn) {
     return add_typed_layer(std::move(id),
-        [](LayerBuilder& l) { l.is_3d(true); l.type("light"); l.kind(LayerType::Light); l.light_type("point"); }, fn);
+        [](LayerBuilder& l) { l.is_3d(true); l.kind(LayerType::Light); l.light_type("point"); }, fn);
 }
 
 CompositionBuilder& CompositionBuilder::mesh_layer(std::string id, std::function<void(LayerBuilder&)> fn) {
     return add_typed_layer(std::move(id),
-        [](LayerBuilder& l) { l.is_3d(true); l.type("mesh"); l.kind(LayerType::Shape); }, fn);
+        [](LayerBuilder& l) { l.is_3d(true); l.kind(LayerType::Shape); }, fn);
 }
 
 CompositionBuilder& CompositionBuilder::audio(std::string path, double volume) {

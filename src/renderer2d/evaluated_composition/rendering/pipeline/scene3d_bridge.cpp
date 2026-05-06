@@ -122,10 +122,10 @@ static LayerMeshResult build_layer_mesh(
     return result;
 }
 
-static renderer3d::EvaluatedMeshInstance build_instance_for_layer(
+static EvaluatedMeshInstance3D build_instance_for_layer(
     const scene::EvaluatedLayerState& l,
     const Scene3DBridgeInput& input) {
-    renderer3d::EvaluatedMeshInstance inst;
+    EvaluatedMeshInstance3D inst;
     inst.object_id = 0; // Caller sets this
     inst.material_id = 0;
     inst.world_transform = l.world_matrix;
@@ -208,10 +208,10 @@ static ColorSpec to_color(const math::Vector3& color) {
 
 } // anonymous namespace
 
-renderer3d::EvaluatedCamera3D build_camera_3d(
+EvaluatedCamera3D build_camera_3d(
     const scene::EvaluatedCameraState& camera,
     const scene::EvaluatedCompositionState& /*state*/) {
-    renderer3d::EvaluatedCamera3D cam;
+    EvaluatedCamera3D cam;
     
 #ifdef TACHYON_ENABLE_3D
     // Default camera is now always validly populated in evaluator
@@ -239,22 +239,22 @@ renderer3d::EvaluatedCamera3D build_camera_3d(
     return cam;
 }
 
-std::vector<renderer3d::EvaluatedLight> build_lights_3d(
+std::vector<EvaluatedLight3D> build_lights_3d(
     const std::vector<scene::EvaluatedLightState>& lights) {
-    std::vector<renderer3d::EvaluatedLight> lights3d;
+    std::vector<EvaluatedLight3D> lights3d;
 #ifdef TACHYON_ENABLE_3D
     lights3d.reserve(lights.size());
 
     for (const auto& light_state : lights) {
-        renderer3d::EvaluatedLight light3d;
+        EvaluatedLight3D light3d;
         if (light_state.type == "ambient") {
-            light3d.type = renderer3d::LightType::Ambient;
+            light3d.type = LightType3D::Ambient;
         } else if (light_state.type == "parallel") {
-            light3d.type = renderer3d::LightType::Directional;
+            light3d.type = LightType3D::Directional;
         } else if (light_state.type == "spot") {
-            light3d.type = renderer3d::LightType::Spot;
+            light3d.type = LightType3D::Spot;
         } else {
-            light3d.type = renderer3d::LightType::Point;
+            light3d.type = LightType3D::Point;
         }
         light3d.position = light_state.position;
         light3d.direction = light_state.direction;
@@ -270,9 +270,9 @@ std::vector<renderer3d::EvaluatedLight> build_lights_3d(
     return lights3d;
 }
 
-std::vector<renderer3d::EvaluatedMeshInstance> build_instances_3d(
+std::vector<EvaluatedMeshInstance3D> build_instances_3d(
     const Scene3DBridgeInput& input) {
-    std::vector<renderer3d::EvaluatedMeshInstance> instances;
+    std::vector<EvaluatedMeshInstance3D> instances;
     std::size_t instance_counter = 0;
 
     for (std::size_t block_idx : *input.block_indices) {

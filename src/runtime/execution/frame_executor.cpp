@@ -8,6 +8,9 @@
 #include "tachyon/timeline/frame_blend.h"
 #include "frame_executor/frame_executor_internal.h"
 #include "tachyon/runtime/profiling/render_profiler.h"
+#ifdef TACHYON_ENABLE_3D
+#include "tachyon/renderer3d/core/ray_tracer.h"
+#endif
 
 #include <algorithm>
 #include <cmath>
@@ -374,6 +377,7 @@ ExecutedFrame FrameExecutor::execute(
                     RenderContext thread_context = context;
                     thread_context.renderer2d.accumulation_buffer.resize(0);
 #ifdef TACHYON_ENABLE_3D
+                    // Dynamic injection of 3D renderer implementation
                     thread_context.ray_tracer = std::make_shared<renderer3d::RayTracer>(thread_context.renderer2d.media_manager);
                     thread_context.renderer2d.ray_tracer = thread_context.ray_tracer;
 #endif
@@ -415,6 +419,12 @@ ExecutedFrame FrameExecutor::execute(
                 renderer2d::DrawListBuilder builder;
                 const renderer2d::DrawList2D draw_list = builder.build(*cached_comp);
                 result.draw_command_count = draw_list.commands.size();
+#ifdef TACHYON_ENABLE_3D
+                // Inject ray tracer if scene has 3D layers and none has been injected yet
+                if (!context.renderer2d.ray_tracer) {
+                    context.renderer2d.ray_tracer = std::make_shared<renderer3d::RayTracer>(context.renderer2d.media_manager);
+                }
+#endif
                 RasterizedFrame2D rasterized;
                 {
                     profiling::ProfileScope raster_scope(context.profiler, profiling::ProfileEventType::Phase, "composition_raster", task.frame_number);
