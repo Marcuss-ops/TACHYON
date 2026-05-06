@@ -4,6 +4,7 @@
 #include <sstream>
 #include <filesystem>
 #include <chrono>
+#include <optional>
 
 namespace tachyon::output {
 
@@ -39,6 +40,15 @@ std::string ffmpeg_colorspace(renderer2d::detail::ColorPrimaries primaries) {
 
 std::string ffmpeg_color_range(renderer2d::detail::ColorRange range) {
     return range == renderer2d::detail::ColorRange::Limited ? "tv" : "pc";
+}
+
+std::optional<std::string> ffmpeg_output_format(const std::string& container) {
+    if (container == "mp4") return std::string("mp4");
+    if (container == "mov") return std::string("mov");
+    if (container == "mkv") return std::string("matroska");
+    if (container == "webm") return std::string("webm");
+    if (container == "gif") return std::string("gif");
+    return std::nullopt;
 }
 
 bool is_alpha_requested(const OutputProfile& profile) {
@@ -105,6 +115,10 @@ std::string build_ffmpeg_video_command(const RenderPlan& plan, const std::filesy
             << " -color_trc " << color_trc
             << " -colorspace " << colorspace
             << " -color_range " << color_range;
+
+    if (const auto format = ffmpeg_output_format(plan.output.profile.container)) {
+        command << " -f " << *format;
+    }
 
     if (include_faststart && plan.output.profile.container == "mp4") {
         command << " -movflags +faststart";

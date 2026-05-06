@@ -1,5 +1,6 @@
 #include "tachyon/runtime/execution/native_render.h"
 #include "tachyon/presets/scene/scene_preset_registry.h"
+#include "tachyon/core/transition/transition_descriptor.h"
 #include "tachyon/runtime/compiler/scene_compiler.h"
 #include "tachyon/output/frame_output_sink.h"
 #include "tachyon/renderer2d/effects/core/glsl_transition_effect.h"
@@ -172,6 +173,8 @@ bool render_transition_demo_mp4(
 } // namespace
 
 bool run_native_render_tests() {
+    tachyon::register_builtin_transitions();
+
     {
         SceneSpec scene;
         scene.project.id = "preflight_scene";

@@ -2,6 +2,7 @@
 #include "tachyon/runtime/compiler/scene_compiler.h"
 #include "tachyon/runtime/execution/native_render.h"
 #include "tachyon/runtime/execution/frames/frame_executor.h"
+#include "tachyon/runtime/execution/jobs/render_job.h"
 #include "tachyon/core/spec/validation/scene_validator.h"
 #include "tachyon/core/cli_scene_loader.h"
 #include "tachyon/background_catalog.h"
@@ -25,7 +26,7 @@ ResolutionResult<CompiledScene> RuntimeFacade::compile_scene(const SceneSpec& sp
 }
 
 ResolutionResult<ExecutedFrame> RuntimeFacade::render_frame(const CompiledScene& scene, int frame) {
-    RenderSession session;
+    static thread_local RenderSession session;
     return render_frame(scene, frame, session);
 }
 
@@ -46,12 +47,18 @@ ResolutionResult<ExecutedFrame> RuntimeFacade::render_frame(const CompiledScene&
     
     const auto& comp = scene.compositions.front();
     RenderPlan plan;
-    plan.composition_target = comp.node.node_id;
-    // plan.scene_spec = ... (SceneCompiler should ideally embed or we pass it)
-    
+    plan.composition_target = std::to_string(comp.node.node_id);
+    plan.composition.id = plan.composition_target;
+    plan.composition.name = plan.composition_target;
+    plan.composition.width = comp.width;
+    plan.composition.height = comp.height;
+    plan.composition.duration = comp.duration;
+    plan.composition.frame_rate.numerator = comp.fps > 0 ? comp.fps : 60U;
+    plan.composition.frame_rate.denominator = 1;
+
     FrameRenderTask task;
     task.frame_number = frame;
-    task.time_seconds = static_cast<double>(frame) / static_cast<double>(comp.fps);
+    task.time_seconds = static_cast<double>(frame) / static_cast<double>(comp.fps > 0 ? comp.fps : 60U);
     
     FrameExecutor executor(arena, session.cache());
     result.value = executor.execute(scene, plan, task, context);
@@ -63,14 +70,33 @@ ResolutionResult<ExecutedFrame> RuntimeFacade::render_frame(const CompiledScene&
     return result;
 }
 
-ResolutionResult<std::monostate> RuntimeFacade::export_video(const CompiledScene& /*scene*/, const ExportOptions& options) {
+ResolutionResult<std::monostate> RuntimeFacade::export_video(const CompiledScene& scene, const ExportOptions& options) {
     ResolutionResult<std::monostate> result;
-    
-    // Legacy bridge to NativeRenderer which currently expects SceneSpec.
-    // TODO: refactor NativeRenderer to accept CompiledScene.
-    // For now, we return "Not implemented for CompiledScene yet" or similar.
-    result.diagnostics.add_error("FACADE", "export_video for CompiledScene not implemented. Use SceneSpec pipeline.");
-    
+
+    if (scene.compositions.empty()) {
+        result.diagnostics.add_error("FACADE", "Compiled scene has no compositions.");
+        return result;
+    }
+
+    RenderJob job = RenderJobBuilder::video_export(options.composition_id, {options.start_frame, options.end_frame}, options.output_path);
+    if (options.width > 0) {
+        job.output.profile.width = options.width;
+    }
+    if (options.height > 0) {
+        job.output.profile.height = options.height;
+    }
+
+    NativeRenderOptions native_options;
+    native_options.worker_count = options.worker_count > 0 ? static_cast<std::size_t>(options.worker_count) : 0U;
+
+    const auto render_result = NativeRenderer::render(scene, job, native_options);
+    result.diagnostics.append(render_result.diagnostics);
+    if (!render_result.output_error.empty()) {
+        result.diagnostics.add_error("FACADE", render_result.output_error);
+    } else {
+        result.value = std::monostate{};
+    }
+
     return result;
 }
 

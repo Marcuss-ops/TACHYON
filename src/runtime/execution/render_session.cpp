@@ -73,17 +73,19 @@ struct RenderSessionWorkspace {
     std::unique_ptr<output::FrameOutputSink> sink;
     std::filesystem::path audio_export_path;
     bool is_temp_audio{false};
-    media::MediaPrefetcher prefetcher;
+    media::MediaPrefetcher& prefetcher;
     std::vector<double> frame_times;
     std::vector<ExecutedFrame> rendered_frames;
 
     RenderSessionWorkspace(
         std::shared_ptr<renderer2d::PrecompCache> precomp_cache,
         const RenderExecutionPlan& execution_plan,
-        const std::filesystem::path& output_path)
+        const std::filesystem::path& output_path,
+        media::MediaPrefetcher& prefetcher_ref)
         : effective_plan(execution_plan),
           resolved_output_path(output_path_or_plan(output_path, execution_plan.render_plan)),
-          context(std::move(precomp_cache)) {}
+          context(std::move(precomp_cache)),
+          prefetcher(prefetcher_ref) {}
 };
 
 void configure_render_context(
@@ -257,7 +259,7 @@ RenderSessionResult RenderSession::render(
     sampler.start();
 
     RenderSessionResult result;
-    RenderSessionWorkspace workspace(m_precomp_cache, execution_plan, output_path);
+    RenderSessionWorkspace workspace(m_precomp_cache, execution_plan, output_path, m_prefetcher);
     if (!workspace.resolved_output_path.empty()) {
         workspace.effective_plan.render_plan.output.destination.path = workspace.resolved_output_path;
     }

@@ -1,12 +1,13 @@
 #include "tachyon/transition_catalog.h"
+#include "tachyon/core/ids/builtin_ids.h"
 
 namespace tachyon {
 
 std::vector<CatalogTransitionDescriptor> get_builtin_transition_descriptors() {
     return {
         {
-            "tachyon.transition.fade",
-            "tachyon.transition.fade",
+            std::string(ids::transition::fade),
+            std::string(ids::transition::fade),
             "Fade",
             "Crossfade between layers",
             TransitionKind::Fade,
@@ -14,8 +15,8 @@ std::vector<CatalogTransitionDescriptor> get_builtin_transition_descriptors() {
             {"fade", "crossfade", "dissolve"}
         },
         {
-            "tachyon.transition.slide_left",
-            "tachyon.transition.slide_left",
+            std::string(ids::transition::slide_left),
+            std::string(ids::transition::slide_left),
             "Slide Left",
             "Slide layer from left",
             TransitionKind::Slide,
@@ -23,8 +24,8 @@ std::vector<CatalogTransitionDescriptor> get_builtin_transition_descriptors() {
             {"slide_left", "slide left", "slide"}
         },
         {
-            "tachyon.transition.slide_right",
-            "tachyon.transition.slide_right",
+            std::string(ids::transition::slide_right),
+            std::string(ids::transition::slide_right),
             "Slide Right",
             "Slide layer from right",
             TransitionKind::Slide,
@@ -32,8 +33,8 @@ std::vector<CatalogTransitionDescriptor> get_builtin_transition_descriptors() {
             {"slide_right", "slide right"}
         },
         {
-            "tachyon.transition.zoom",
-            "tachyon.transition.zoom",
+            std::string(ids::transition::zoom),
+            std::string(ids::transition::zoom),
             "Zoom",
             "Zoom in/out transition",
             TransitionKind::Zoom,
@@ -41,8 +42,8 @@ std::vector<CatalogTransitionDescriptor> get_builtin_transition_descriptors() {
             {"zoom", "scale", "zoom_in"}
         },
         {
-            "tachyon.transition.flip",
-            "tachyon.transition.flip",
+            std::string(ids::transition::flip),
+            std::string(ids::transition::flip),
             "Flip",
             "Flip transition",
             TransitionKind::Flip,
@@ -50,8 +51,8 @@ std::vector<CatalogTransitionDescriptor> get_builtin_transition_descriptors() {
             {"flip", "flip horizontal", "flip_h"}
         },
         {
-            "tachyon.transition.blur",
-            "tachyon.transition.blur",
+            std::string(ids::transition::blur),
+            std::string(ids::transition::blur),
             "Blur",
             "Blur transition effect",
             TransitionKind::Custom, // Assuming Custom for complex shaders
@@ -59,8 +60,8 @@ std::vector<CatalogTransitionDescriptor> get_builtin_transition_descriptors() {
             {"blur", "blur transition", "blur_in"}
         },
         {
-            "tachyon.transition.lightleak.amber_sweep",
-            "tachyon.transition.lightleak.amber_sweep",
+            std::string(ids::transition::lightleak_amber_sweep),
+            std::string(ids::transition::lightleak_amber_sweep),
             "Amber Sweep",
             "Cinematic light leak sweep",
             TransitionKind::Custom,
