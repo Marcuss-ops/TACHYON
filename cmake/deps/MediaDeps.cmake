@@ -5,7 +5,7 @@ if(TACHYON_ENABLE_MEDIA)
         FetchContent_Declare(
             tinygltf
             GIT_REPOSITORY https://github.com/syoyo/tinygltf.git
-            GIT_TAG        v2.9.3
+            GIT_TAG        ${TACHYON_TINYGLTF_GIT_TAG}
             DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         )
         FetchContent_MakeAvailable(tinygltf)
@@ -13,7 +13,7 @@ if(TACHYON_ENABLE_MEDIA)
         FetchContent_Declare(
             pugixml
             GIT_REPOSITORY https://github.com/zeux/pugixml.git
-            GIT_TAG        v1.14
+            GIT_TAG        ${TACHYON_PUGIXML_GIT_TAG}
             DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         )
         FetchContent_MakeAvailable(pugixml)
@@ -29,7 +29,7 @@ if(TACHYON_ENABLE_MEDIA)
         FetchContent_Declare(
             earcut
             GIT_REPOSITORY https://github.com/mapbox/earcut.hpp.git
-            GIT_TAG        v2.2.4
+            GIT_TAG        ${TACHYON_EARCUT_GIT_TAG}
             DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         )
 

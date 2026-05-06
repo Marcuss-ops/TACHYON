@@ -72,7 +72,7 @@ if(TACHYON_ENABLE_TEXT)
         FetchContent_Declare(
             freetype
             GIT_REPOSITORY https://github.com/freetype/freetype.git
-            GIT_TAG        VER-2-13-3
+            GIT_TAG        ${TACHYON_FREETYPE_GIT_TAG}
             DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         )
         set(SKIP_INSTALL_ALL ON CACHE BOOL "Skip FreeType install" FORCE)
@@ -87,7 +87,7 @@ if(TACHYON_ENABLE_TEXT)
         FetchContent_Declare(
             harfbuzz
             GIT_REPOSITORY https://github.com/harfbuzz/harfbuzz.git
-            GIT_TAG        14.1.0
+            GIT_TAG        ${TACHYON_HARFBUZZ_GIT_TAG}
             DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         )
         set(HB_BUILD_UTILS OFF CACHE BOOL "Disable HarfBuzz command line utilities" FORCE)

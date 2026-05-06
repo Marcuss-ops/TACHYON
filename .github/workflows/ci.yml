@@ -15,6 +15,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Verify disabled-test documentation
+        run: pwsh -NoLogo -File scripts/check-disabled-tests.ps1
+
       - name: Install system dependencies
         run: |
           sudo apt-get update -q
@@ -50,6 +53,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Verify disabled-test documentation
+        run: pwsh -NoLogo -File scripts/check-disabled-tests.ps1
 
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1

@@ -8,6 +8,7 @@ project(TACHYON VERSION 0.1.0 LANGUAGES C CXX)
 include(FetchContent)
 include(CTest)
 include(${CMAKE_SOURCE_DIR}/cmake/options/TachyonOptions.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/deps/DependencyVersions.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/platform/Windows.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/platform/Linux.cmake)
 

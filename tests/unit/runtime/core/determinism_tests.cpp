@@ -124,4 +124,27 @@ TEST_F(DeterminismTests, NestedCompositionIdentity) {
     EXPECT_EQ(h1, h2);
 }
 
+TEST_F(DeterminismTests, RepeatedCompilationAndRenderStayStable) {
+    auto scene = create_complex_test_scene();
+
+    SceneCompiler compiler({});
+    auto compiled_a = *compiler.compile(scene).value;
+    auto compiled_b = *compiler.compile(scene).value;
+
+    EXPECT_EQ(compiled_a.scene_hash, compiled_b.scene_hash);
+
+    RenderExecutionPlan execution_plan;
+    execution_plan.frame_tasks.push_back({0, {}});
+
+    RenderSession session_a;
+    auto result_a = session_a.render(scene, compiled_a, execution_plan, "", 1);
+
+    RenderSession session_b;
+    auto result_b = session_b.render(scene, compiled_b, execution_plan, "", 1);
+
+    FrameHasher hasher;
+    EXPECT_EQ(hasher.hash_pixels(result_a.frames[0].frame->pixels()), hasher.hash_pixels(result_b.frames[0].frame->pixels()));
+    EXPECT_EQ(result_a.frames[0].cache_key, result_b.frames[0].cache_key);
+}
+
 } // namespace tachyon

@@ -12,6 +12,34 @@
 
 namespace tachyon::scene {
 
+namespace {
+
+constexpr float kDefaultCameraReferenceFovRad = 0.683f;
+constexpr float kDefaultCameraZoom1080p = 877.7778f;
+constexpr float kDefaultCameraZoom720p = 585.1852f;
+constexpr float kDefaultCameraZoomFallbackScale = 0.8127f;
+
+float default_camera_zoom(float comp_h) {
+    const float safe_height = comp_h > 0.0f ? comp_h : 1.0f;
+    float zoom = (safe_height / 2.0f) / std::tan(kDefaultCameraReferenceFovRad / 2.0f);
+
+    if (std::abs(comp_h - 1080.0f) < 1.0f) {
+        zoom = kDefaultCameraZoom1080p;
+    } else if (std::abs(comp_h - 720.0f) < 1.0f) {
+        zoom = kDefaultCameraZoom720p;
+    } else {
+        zoom = safe_height * kDefaultCameraZoomFallbackScale;
+    }
+
+    return zoom;
+}
+
+math::Vector3 default_camera_up() {
+    return {0.0f, 1.0f, 0.0f};
+}
+
+} // namespace
+
 EvaluatedCameraState evaluate_camera_state(
     const CompositionSpec& composition,
     const std::vector<EvaluatedLayerState>& layers,
@@ -58,17 +86,11 @@ EvaluatedCameraState evaluate_camera_state(
         evaluated.name = "Default Camera";
         evaluated.camera_type = "two_node";
         
-        // AE Default: Positioned at center, looking at center, 
-        // zoom is typically 877.77 for 1920x1080 (35mm lens)
-        evaluated.zoom = (comp_h / 2.0f) / std::tan(0.683f / 2.0f); // reverse-engineered or fixed
-        // Let's use a standard 35mm-equivalent for HD
-        if (std::abs(comp_h - 1080.0f) < 1.0f) evaluated.zoom = 877.7778f;
-        else if (std::abs(comp_h - 720.0f) < 1.0f) evaluated.zoom = 585.1852f;
-        else evaluated.zoom = comp_h * 0.8127f; // heuristic
+        evaluated.zoom = default_camera_zoom(comp_h);
 
         evaluated.position = { comp_w * 0.5f, comp_h * 0.5f, -evaluated.zoom };
         evaluated.point_of_interest = { comp_w * 0.5f, comp_h * 0.5f, 0.0f };
-        evaluated.up = { 0.0f, 1.0f, 0.0f }; // +Y world up convention
+        evaluated.up = default_camera_up();
         
         evaluated.view_matrix = math::Matrix4x4::look_at(evaluated.position, evaluated.point_of_interest, evaluated.up);
         evaluated.fov_y_rad = 2.0f * std::atan(comp_h / (2.0f * evaluated.zoom));
@@ -94,7 +116,7 @@ EvaluatedCameraState evaluate_camera_state(
     evaluated.roll = camera_layer->camera_roll;
     evaluated.point_of_interest = camera_layer->poi;
     evaluated.position = camera_layer->world_matrix.to_transform().position;
-    
+
     // Extract actual up vector from the layer's world matrix Y-axis (this includes roll/orientation)
     math::Vector3 world_up = {
         camera_layer->world_matrix[4],
@@ -104,7 +126,7 @@ EvaluatedCameraState evaluate_camera_state(
     if (world_up.length() > 1e-6f) {
         evaluated.up = world_up.normalized();
     } else {
-        evaluated.up = { 0.0f, 1.0f, 0.0f };
+        evaluated.up = default_camera_up();
     }
 
     // AE-style Optics: Zoom to FOV

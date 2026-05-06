@@ -10,6 +10,7 @@
 #include "tachyon/output/output_utils.h"
 #include "tachyon/media/streaming/media_prefetcher.h"
 #include "tachyon/audio/audio_export.h"
+#include "tachyon/media/resolution/asset_path_utils.h"
 #include "tachyon/runtime/execution/session/render_internal.h"
 #include "tachyon/runtime/profiling/render_profiler.h"
 #include "tachyon/media/management/asset_resolver.h"
@@ -44,6 +45,27 @@ std::string output_path_or_plan(const std::filesystem::path& output_path, const 
     return plan.output.destination.path;
 }
 
+media::AssetResolver::Config build_asset_resolver_config(const RenderExecutionPlan& plan) {
+    media::AssetResolver::Config config;
+    const std::filesystem::path scene_ref_path(plan.render_plan.scene_ref);
+
+    if (!plan.render_plan.scene_ref.empty()) {
+        config.project_root = scene_ref_path.parent_path();
+        config.assets_root = media::scene_asset_root(scene_ref_path);
+    }
+
+    if (config.project_root.empty()) {
+        config.project_root = std::filesystem::current_path();
+    }
+    if (config.assets_root.empty()) {
+        config.assets_root = config.project_root;
+    }
+
+    config.fonts_root = config.assets_root / "fonts";
+    config.sfx_root = config.assets_root / "audio";
+    return config;
+}
+
 struct RenderSessionWorkspace {
     RenderExecutionPlan effective_plan;
     std::string resolved_output_path;
@@ -71,7 +93,7 @@ void configure_render_context(
     workspace.context.policy = workspace.effective_plan.render_plan.quality_policy;
     workspace.context.renderer2d.font_registry = ::tachyon::renderer2d::get_default_font_registry();
 
-    media::AssetResolver::Config resolver_config;
+    const auto resolver_config = build_asset_resolver_config(workspace.effective_plan);
     workspace.context.renderer2d.asset_resolver = std::make_shared<media::AssetResolver>(
         resolver_config,
         nullptr,

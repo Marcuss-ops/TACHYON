@@ -5,7 +5,7 @@ if(TACHYON_ENABLE_3D)
         FetchContent_Declare(
             embree
             GIT_REPOSITORY https://github.com/embree/embree.git
-            GIT_TAG        v3.13.5
+            GIT_TAG        ${TACHYON_EMBREE_GIT_TAG}
             DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         )
         set(EMBREE_ISPC_SUPPORT OFF CACHE BOOL "Disable ISPC for Embree" FORCE)
