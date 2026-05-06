@@ -13,6 +13,10 @@ add_library(TachyonTestUtils STATIC
 target_include_directories(TachyonTestUtils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/unit)
 target_link_libraries(TachyonTestUtils PUBLIC TachyonCore)
 
+# ---------------------------------------------------------
+# 1. CORE DOMAIN: TachyonTests
+# core/* (math, spec, logic)
+# ---------------------------------------------------------
 add_executable(TachyonTests
     unit/test_main_core.cpp
     unit/core/math_tests.cpp
@@ -59,6 +63,10 @@ if(MSVC)
     target_compile_options(TachyonColorTests PRIVATE /FS)
 endif()
 
+# ---------------------------------------------------------
+# 2. SCENE DOMAIN: TachyonSceneTests
+# scene/* (eval, inspector)
+# ---------------------------------------------------------
 add_executable(TachyonSceneTests
     unit/test_main_scene.cpp
     unit/core/scene/evaluator_tests.cpp
@@ -88,6 +96,10 @@ if(MSVC)
     target_compile_options(TachyonSceneTests PRIVATE /FS)
 endif()
 
+# ---------------------------------------------------------
+# 4. TOOLS/CLI DOMAIN: TachyonCliTests
+# integration/*, spec/cli
+# ---------------------------------------------------------
 add_executable(TachyonCliTests
     unit/test_main_cli.cpp
     unit/core/spec/cli_tests.cpp
@@ -145,6 +157,10 @@ if(MSVC)
     target_compile_options(TachyonEditorTests PRIVATE /FS)
 endif()
 
+# ---------------------------------------------------------
+# 3. RUNTIME DOMAIN: TachyonRuntimeTests
+# runtime/execution/*
+# ---------------------------------------------------------
 add_executable(TachyonRuntimeTests
     unit/test_main_runtime.cpp
     unit/core/spec/render_job_tests.cpp
@@ -234,6 +250,10 @@ if(MSVC)
     target_compile_options(TachyonNativeRenderTests PRIVATE /FS)
 endif()
 
+# ---------------------------------------------------------
+# 5. CONTENT DOMAIN: TachyonContentTests
+# content/presets/*, catalog, text presets
+# ---------------------------------------------------------
 add_executable(TachyonContentTests
     unit/test_main_content.cpp
     unit/core/catalog/catalog_tests.cpp
@@ -294,6 +314,10 @@ set(TachyonTrackerTestSources
     unit/tracker/optical_flow_tests.cpp
 )
 
+# ---------------------------------------------------------
+# 6. RENDER DOMAIN: TachyonRenderTests
+# renderer2d/*, renderer3d/*, asset resolution
+# ---------------------------------------------------------
 if(TACHYON_ENABLE_3D)
     add_executable(TachyonRenderTests
         unit/test_main_render.cpp

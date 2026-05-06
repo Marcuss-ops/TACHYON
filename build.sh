@@ -39,6 +39,8 @@ for arg in "$@"; do
         --debug)           BASE_PRESET="debug"; BUILD_TYPE="Debug" ;;
         --release)         BASE_PRESET="release"; BUILD_TYPE="Release" ;;
         --relwithdebinfo)  BASE_PRESET="relwithdebinfo"; BUILD_TYPE="RelWithDebInfo" ;;
+        --dev)             BASE_PRESET="dev"; BUILD_TYPE="RelWithDebInfo" ;;
+        --dev-fast)        BASE_PRESET="dev-fast"; BUILD_TYPE="RelWithDebInfo" ;;
         --test)            RUN_TESTS=1 ;;
         --clean)           CLEAN=1 ;;
         --check)           CHECK=1 ;;
@@ -47,8 +49,14 @@ for arg in "$@"; do
     esac
 done
 
-# Select final preset based on generator
-PRESET="linux-$GENERATOR_TYPE-$BASE_PRESET"
+# Select final preset
+if [[ "$BASE_PRESET" == "dev" ]]; then
+    PRESET="dev-linux"
+elif [[ "$BASE_PRESET" == "dev-fast" ]]; then
+    PRESET="dev-linux-fast"
+else
+    PRESET="linux-$GENERATOR_TYPE-$BASE_PRESET"
+fi
 
 # Map preset to binary directory (should match CMakePresets.json)
 BUILD_DIR="build/$PRESET"

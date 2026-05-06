@@ -61,6 +61,26 @@
       }
     },
     {
+      "name": "dev-linux",
+      "inherits": "base-ninja",
+      "description": "Daily Linux iteration preset with RelWithDebInfo symbols",
+      "binaryDir": "${sourceDir}/build/dev-linux",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "TACHYON_ENABLE_ASAN": "OFF"
+      }
+    },
+    {
+      "name": "dev-linux-fast",
+      "inherits": "base-ninja",
+      "description": "Fast Linux iteration preset with core targets",
+      "binaryDir": "${sourceDir}/build/dev-linux-fast",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "TACHYON_ENABLE_ASAN": "OFF"
+      }
+    },
+    {
       "name": "windows-ci",
       "inherits": "base-ninja",
       "description": "Headless Windows CI preset",
@@ -118,6 +138,23 @@
         "TachyonCore",
         "TachyonTests",
         "tachyon"
+      ]
+    },
+    {
+      "name": "dev-linux",
+      "configurePreset": "dev-linux",
+      "targets": [
+        "TachyonCore",
+        "TachyonTests",
+        "tachyon"
+      ]
+    },
+    {
+      "name": "dev-linux-fast",
+      "configurePreset": "dev-linux-fast",
+      "targets": [
+        "TachyonCore",
+        "TachyonTests"
       ]
     },
     {
