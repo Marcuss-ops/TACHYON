@@ -83,6 +83,7 @@ void TransitionPresetRegistry::load_builtins() {
     register_glsl(*this, "tachyon.transition.lightleak.creamy_white", "Creamy White Leak", "Soft warm white memory leak", TransitionKind::Fade, "tachyon.transition.lightleak.creamy_white");
     register_glsl(*this, "tachyon.transition.lightleak.dusty_archive", "Dusty Archive Leak", "Warm archival light leak with subtle grain", TransitionKind::Fade, "tachyon.transition.lightleak.dusty_archive");
     register_glsl(*this, "tachyon.transition.lightleak.lens_flare_pass", "Subtle Lens Flare Pass", "Thin premium lens flare sweep", TransitionKind::Fade, "tachyon.transition.lightleak.lens_flare_pass");
+    register_glsl(*this, "tachyon.transition.lightleak.amber_sweep", "Amber Sweep", "Warm multi-blob amber light leak sweeping left to right", TransitionKind::Fade, "tachyon.transition.lightleak.amber_sweep");
 }
 
 } // namespace tachyon::presets
