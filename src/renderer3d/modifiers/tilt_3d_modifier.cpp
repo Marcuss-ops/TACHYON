@@ -2,6 +2,7 @@
 #include "tachyon/core/scene/evaluator/property_sampler.h"
 #include "tachyon/core/math/matrix4x4.h"
 #include <cmath>
+#include <numbers>
 
 namespace tachyon {
 namespace renderer3d {
@@ -24,7 +25,7 @@ void Tilt3DModifier::apply(
     float tilt_x = get_scalar("tilt_x", 0.0f);
     float tilt_y = get_scalar("tilt_y", 0.0f);
 
-    constexpr float kDegToRad = static_cast<float>(M_PI / 180.0);
+    constexpr float kDegToRad = std::numbers::pi_v<float> / 180.0f;
     float rad_x = tilt_x * kDegToRad;
     float rad_y = tilt_y * kDegToRad;
 
