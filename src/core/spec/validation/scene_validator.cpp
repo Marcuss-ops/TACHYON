@@ -1,4 +1,5 @@
 #include "tachyon/core/spec/validation/scene_validator.h"
+#include "tachyon/core/spec/validation/layer_spec_normalizer.h"
 #include <unordered_map>
 #include <unordered_set>
 #include <queue>
@@ -426,7 +427,7 @@ void SceneValidator::check_cycles(const ::tachyon::SceneSpec& scene, ValidationR
 
     for (const auto& comp : scene.compositions) {
         for (const auto& layer : comp.layers) {
-            if (layer.type == LayerType::Precomp && layer.precomp_id.has_value() && !layer.precomp_id->empty()) {
+            if (canonical_layer_type(layer) == LayerType::Precomp && layer.precomp_id.has_value() && !layer.precomp_id->empty()) {
                 const std::string& src = comp.id;
                 const std::string& tgt = *layer.precomp_id;
                 if (comp_ids.count(src) && comp_ids.count(tgt)) {

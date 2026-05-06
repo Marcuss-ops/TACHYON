@@ -1,8 +1,10 @@
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/core/spec/validation/scene_validator.h"
 #include "tachyon/scene/builder.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <iostream>
 #include <sstream>
@@ -120,6 +122,95 @@ bool run_cli_tests() {
         check_true(exit_code == 0, "CLI output-presets info should succeed");
         check_true(out.str().find("youtube_4k") != std::string::npos, "CLI output-presets info should print preset name");
         check_true(out.str().find("h265") != std::string::npos, "CLI output-presets info should print preset codec");
+    }
+
+    {
+        tachyon::SceneSpec scene;
+        scene.schema_version = tachyon::SchemaVersion{1, 0, 0};
+
+        tachyon::CompositionSpec comp;
+        comp.id = "main";
+        comp.width = 1920;
+        comp.height = 1080;
+        comp.duration = 2.0;
+        comp.fps = 30;
+
+        tachyon::LayerSpec legacy_text;
+        legacy_text.id = "title";
+        legacy_text.type = tachyon::LayerType::Unknown;
+        legacy_text.type_string = "text";
+        legacy_text.text_content = "Hello";
+        legacy_text.start_time = 0.0;
+        legacy_text.out_point = 1.0;
+        legacy_text.width = 100;
+        legacy_text.height = 50;
+        legacy_text.transform.position_x = 300.0;
+        legacy_text.transform.position_y = 200.0;
+        comp.layers.push_back(legacy_text);
+
+        scene.compositions.push_back(comp);
+
+        tachyon::core::SceneValidator validator;
+        const auto result = validator.validate(scene);
+        check_true(result.is_valid(), "SceneValidator should accept legacy type_string after normalization");
+        check_true(std::any_of(result.issues.begin(), result.issues.end(), [](const auto& issue) {
+            return issue.path == "composition.main.layers[0].type_string" && issue.severity == tachyon::core::ValidationIssue::Severity::Warning;
+        }), "SceneValidator should warn on legacy type_string usage");
+    }
+
+    {
+        tachyon::SceneSpec scene;
+        scene.schema_version = tachyon::SchemaVersion{1, 0, 0};
+        scene.assets.push_back(tachyon::AssetSpec{"hero-image", "image", "hero.png", "", std::nullopt});
+
+        tachyon::CompositionSpec comp;
+        comp.id = "main";
+        comp.width = 1920;
+        comp.height = 1080;
+        comp.duration = 2.0;
+        comp.fps = 30;
+
+        tachyon::LayerSpec image_layer;
+        image_layer.id = "hero";
+        image_layer.type = tachyon::LayerType::Image;
+        image_layer.asset_id = "hero-image";
+        image_layer.start_time = 0.0;
+        image_layer.out_point = 1.0;
+        comp.layers.push_back(image_layer);
+
+        scene.compositions.push_back(comp);
+
+        tachyon::core::SceneValidator validator;
+        const auto result = validator.validate(scene);
+        check_true(result.is_valid(), "SceneValidator should accept image layers with scene asset references");
+    }
+
+    {
+        tachyon::SceneSpec scene;
+        scene.schema_version = tachyon::SchemaVersion{1, 0, 0};
+
+        tachyon::CompositionSpec comp;
+        comp.id = "main";
+        comp.width = 1920;
+        comp.height = 1080;
+        comp.duration = 2.0;
+        comp.fps = 30;
+
+        tachyon::LayerSpec missing_image;
+        missing_image.id = "missing";
+        missing_image.type = tachyon::LayerType::Image;
+        missing_image.start_time = 0.0;
+        missing_image.out_point = 1.0;
+        comp.layers.push_back(missing_image);
+
+        scene.compositions.push_back(comp);
+
+        tachyon::core::SceneValidator validator;
+        const auto result = validator.validate(scene);
+        check_true(!result.is_valid(), "SceneValidator should reject image layers without asset_id");
+        check_true(std::any_of(result.issues.begin(), result.issues.end(), [](const auto& issue) {
+            return issue.path == "composition.main.layers[0].asset_id" && issue.severity == tachyon::core::ValidationIssue::Severity::Error;
+        }), "SceneValidator should report a missing asset_id for image layers");
     }
 
     return g_failures == 0;
