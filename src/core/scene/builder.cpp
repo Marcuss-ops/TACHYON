@@ -333,15 +333,18 @@ LayerBuilder& LayerBuilder::animation2d_preset(const std::string& id, double dur
     return *this;
 }
 
-LayerBuilder& LayerBuilder::animation3d_preset(const std::string& id, double duration, double delay) {
+LayerBuilder& LayerBuilder::animation3d_preset(const std::string& id, double duration, double delay, double intensity) {
+    spec_.is_3d = true;
     registry::ParameterBag bag;
     bag.set("duration", duration);
     bag.set("delay", delay);
+    bag.set("intensity", intensity);
     presets::Animation3DPresetRegistry::instance().apply(id, spec_, bag);
     return *this;
 }
 
 LayerBuilder& LayerBuilder::modifier3d(const std::string& id, const std::map<std::string, double>& scalars) {
+    spec_.is_3d = true;
     if (!spec_.three_d.has_value()) {
         spec_.three_d = ThreeDSpec{};
         spec_.three_d->enabled = true;
