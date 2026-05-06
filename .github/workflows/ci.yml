@@ -28,11 +28,20 @@ jobs:
       - name: Configure
         run: cmake --preset linux-ci
 
-      - name: Build core and tests
-        run: cmake --build --preset linux-ci -j$(nproc)
+      - name: Build smoke and core tests
+        run: cmake --build --preset linux-ci --target TachyonCore TachyonTests TachyonSceneTests TachyonCliTests TachyonEditorTests TachyonRuntimeTests TachyonContentTests TachyonRenderProfilerTests -j$(nproc)
 
       - name: Run smoke tests
-        run: ctest --test-dir build/linux-ci --output-on-failure -R "TachyonSmokeTests"
+        run: ctest --test-dir build/linux-ci --output-on-failure -L smoke
+
+      - name: Run core tests
+        run: ctest --test-dir build/linux-ci --output-on-failure -L core
+
+      - name: Build render tests
+        run: cmake --build --preset linux-ci --target TachyonNativeRenderTests TachyonRenderTests TachyonRenderPipelineTests TachyonScene3DSmokeTests -j$(nproc)
+
+      - name: Run render tests
+        run: ctest --test-dir build/linux-ci --output-on-failure -L render
 
   # ─── Windows build + tests ─────────────────────────────────────────────────
   build-windows:
@@ -53,8 +62,17 @@ jobs:
       - name: Configure
         run: cmake --preset windows-ci
 
-      - name: Build core and tests
-        run: cmake --build --preset windows-ci -j4
+      - name: Build smoke and core tests
+        run: cmake --build --preset windows-ci --target TachyonCore TachyonTests TachyonSceneTests TachyonCliTests TachyonEditorTests TachyonRuntimeTests TachyonContentTests TachyonRenderProfilerTests -j4
 
       - name: Run smoke tests
-        run: ctest --test-dir build/windows-ci --output-on-failure -R "TachyonSmokeTests"
+        run: ctest --test-dir build/windows-ci --output-on-failure -L smoke
+
+      - name: Run core tests
+        run: ctest --test-dir build/windows-ci --output-on-failure -L core
+
+      - name: Build render tests
+        run: cmake --build --preset windows-ci --target TachyonNativeRenderTests TachyonRenderTests TachyonRenderPipelineTests TachyonScene3DSmokeTests -j4
+
+      - name: Run render tests
+        run: ctest --test-dir build/windows-ci --output-on-failure -L render

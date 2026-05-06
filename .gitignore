@@ -40,6 +40,21 @@ assets/catalog/transitions/output/*.png
 !assets/catalog/transitions/*.png
 !assets/catalog/transitions/output/
 
+# Agent and scratch artifacts
+scratch/
+.claude/
+.gemini/
+debug_scene_*.json
+render_job*.json
+scene.json
+agent*_report.txt
+task.md
+fix.ps1
+benchmarks/output/
+*.wav
+*.mov
+*.exr
+
 # Local editor history
 .history/
 

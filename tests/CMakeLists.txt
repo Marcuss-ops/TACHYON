@@ -1,6 +1,12 @@
 set(TACHYON_TESTS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 string(REPLACE "\\" "/" TACHYON_TESTS_SOURCE_DIR "${TACHYON_TESTS_SOURCE_DIR}")
 
+function(tachyon_set_test_labels test_name)
+    if(ARGN)
+        set_tests_properties(${test_name} PROPERTIES LABELS "${ARGN}")
+    endif()
+endfunction()
+
 add_library(TachyonTestUtils STATIC
     unit/test_utils.cpp
 )
@@ -510,70 +516,83 @@ add_test(
     NAME TachyonTests
     COMMAND TachyonTests
 )
+tachyon_set_test_labels(TachyonTests core)
 
 add_test(
     NAME TachyonColorTests
     COMMAND TachyonColorTests
 )
+tachyon_set_test_labels(TachyonColorTests core)
 
 add_test(
     NAME TachyonSceneTests
     COMMAND TachyonSceneTests
 )
+tachyon_set_test_labels(TachyonSceneTests core)
 
 add_test(
     NAME TachyonCliTests
     COMMAND TachyonCliTests
 )
+tachyon_set_test_labels(TachyonCliTests core)
 
 add_test(
     NAME TachyonEditorTests
     COMMAND TachyonEditorTests
 )
+tachyon_set_test_labels(TachyonEditorTests core)
 
 add_test(
     NAME TachyonRuntimeTests
     COMMAND TachyonRuntimeTests
 )
+tachyon_set_test_labels(TachyonRuntimeTests core deterministic)
 
 add_test(
     NAME TachyonNativeRenderTests
     COMMAND TachyonNativeRenderTests
 )
+tachyon_set_test_labels(TachyonNativeRenderTests render)
 
 add_test(
     NAME TachyonContentTests
     COMMAND TachyonContentTests
 )
+tachyon_set_test_labels(TachyonContentTests core)
 
 if(TACHYON_ENABLE_3D)
     add_test(
         NAME TachyonRenderTests
         COMMAND TachyonRenderTests
     )
+    tachyon_set_test_labels(TachyonRenderTests render)
 
     add_test(
         NAME TachyonRenderPipelineTests
         COMMAND TachyonRenderPipelineTests
     )
+    tachyon_set_test_labels(TachyonRenderPipelineTests render deterministic)
 endif()
 
 add_test(
     NAME TachyonRenderProfilerTests
     COMMAND TachyonRenderProfilerTests
 )
+tachyon_set_test_labels(TachyonRenderProfilerTests core deterministic)
 
 if(TACHYON_ENABLE_3D)
     add_test(
         NAME TachyonScene3DSmokeTests
         COMMAND TachyonScene3DSmokeTests
     )
+    tachyon_set_test_labels(TachyonScene3DSmokeTests render)
 endif()
 
 add_test(
     NAME TachyonSmokeTests
     COMMAND TachyonTests
 )
+tachyon_set_test_labels(TachyonSmokeTests smoke)
 
 set_tests_properties(TachyonSmokeTests PROPERTIES
     ENVIRONMENT "TACHYON_TEST_FILTER=math,property,expression,camera_cuts"

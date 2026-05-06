@@ -18,28 +18,28 @@ Tests are disabled for various reasons:
 - **Status**: Commented out in `tests/unit/test_main.cpp` line 186
 - **Last disabled**: Unknown
 - **Action needed**: Investigate failure, fix, and re-enable
-- **GitHub Issue**: TODO - create issue
+- **GitHub Issue**: #62
 
 ### text_tests
 - **File**: `tests/unit/text/text_tests.cpp` (not in CMakeLists.txt)
 - **Reason**: Disabled - text_tests.cpp commented out of build
 - **Status**: Commented out in `tests/unit/test_main.cpp` line 208
 - **Action needed**: Add proper text test file and enable
-- **GitHub Issue**: TODO - create issue
+- **GitHub Issue**: #63
 
 ### motion_blur_tests
 - **File**: `tests/unit/renderer3d/temporal/motion_blur_tests.cpp` (not in CMakeLists.txt)
 - **Reason**: Disabled - motion_blur_tests.cpp commented out of build
 - **Status**: Commented out in `tests/unit/test_main.cpp` line 214
 - **Action needed**: Fix build issues and re-enable
-- **GitHub Issue**: TODO - create issue
+- **GitHub Issue**: #64
 
 ### audio_pitch_correct_tests
 - **File**: `tests/unit/audio/test_audio_pitch_correct.cpp` (not in CMakeLists.txt)
 - **Reason**: Disabled - test_audio_pitch_correct.cpp commented out of build
 - **Status**: Commented out in `tests/unit/test_main.cpp` line 215
 - **Action needed**: Fix build issues and re-enable
-- **GitHub Issue**: TODO - create issue
+- **GitHub Issue**: #65
 
 ## Policy
 
@@ -49,6 +49,6 @@ Tests are disabled for various reasons:
 
 ## TODO
 
-- [ ] Create GitHub issues for each disabled test
+- [x] Create GitHub issues for each disabled test
 - [ ] Set up CI check to fail if new disabled tests are added without documentation
 - [ ] Review quarterly and either fix or permanently quarantine disabled tests
