@@ -95,6 +95,15 @@ float window_bands_mask(float u, float v, float t, const LightLeakStyle& s) {
     return std::clamp(m1 + m2 * 0.7f + m3 * 0.5f, 0.0f, 1.0f);
 }
 
+// Blob gaussiano morbido in coordinate normalizzate
+float gaussian_blob(float u, float v, float cx, float cy, float radius) {
+    const float dx = u - cx;
+    const float dy = v - cy;
+    const float rr = std::max(radius * radius, 0.000001f);
+    const float d2 = dx * dx + dy * dy;
+    return std::exp(-0.5f * d2 / rr);
+}
+
 float evaluate_light_leak_mask(float u, float v, float t, const LightLeakStyle& style) {
     switch (style.shape) {
         case LightLeakStyle::Shape::Edge: return edge_mask(u, v, t, style);
@@ -257,6 +266,60 @@ Color transition_lightleak_lens_flare_pass(float u, float v, float t, const Surf
     return apply_light_leak_style(u, v, t, input, to_surface, kLensFlarePass);
 }
 
+// Versione Tachyon della tua idea "light leak amber".
+// 4 blob caldi che attraversano lo schermo da sinistra a destra.
+Color transition_lightleak_amber_sweep(float u, float v, float t,
+                                       const SurfaceRGBA& input,
+                                       const SurfaceRGBA* to_surface) {
+    // Smooth traversal
+    const float eased = 0.5f - 0.5f * std::cos(std::clamp(t, 0.0f, 1.0f) * 3.14159265f);
+
+    // Base crossfade A/B
+    const bool overlay_mode = (to_surface == nullptr);
+    Color base = overlay_mode 
+        ? sample_uv(input, u, v) 
+        : Color::lerp(sample_uv(input, u, v), sample_transition_target(input, to_surface, u, v), eased);
+
+    float acc = 0.0f;
+    constexpr int kBlobCount = 4;
+    constexpr int kSeed = 3;
+
+    for (int i = 0; i < kBlobCount; ++i) {
+        const int s0 = kSeed + i * 17;
+
+        // Attraversamento sinistra -> destra in coordinate normalizzate [0..1]
+        const float start_x = -0.25f + 0.10f * cheap_noise(static_cast<float>(s0), 0.0f, 0.0f);
+        const float end_x   =  1.25f - 0.10f * cheap_noise(static_cast<float>(s0 + 3), 0.0f, 0.0f);
+
+        float cx = start_x + (end_x - start_x) * eased;
+        cx += std::sin(t * 6.0f + static_cast<float>(i)) * 0.020f;
+
+        float cy = 0.20f + 0.60f * cheap_noise(static_cast<float>(s0 + 1), 0.0f, 0.0f);
+        cy += std::cos(t * 5.0f + static_cast<float>(i) * 1.3f) * 0.030f;
+
+        const float radius = 0.30f;
+
+        // Blob principale
+        float blob = gaussian_blob(u, v, cx, cy, radius);
+        blob *= (0.80f + 0.20f * eased);
+        blob *= (0.50f + static_cast<float>(i) * 0.10f);
+
+        acc += blob;
+    }
+
+    const float leak_mask = std::clamp(acc * 0.22f, 0.0f, 1.0f);
+
+    // Palette amber/gold/cream
+    const Color amber = {1.0f, 0.48f, 0.12f, 1.0f};
+    const Color gold  = {1.0f, 0.78f, 0.30f, 1.0f};
+    const Color cream = {1.0f, 0.96f, 0.88f, 1.0f};
+
+    Color leak_color = Color::lerp(amber, gold, std::clamp(leak_mask * 1.4f, 0.0f, 1.0f));
+    leak_color = Color::lerp(leak_color, cream, std::pow(leak_mask, 3.0f));
+
+    return screen_over(base, leak_color, leak_mask);
+}
+
 
 Color transition_light_leak(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
     const bool overlay_mode = (to_surface == nullptr);
@@ -393,6 +456,11 @@ void register_light_leak_transitions() {
     register_builtin("tachyon.transition.lightleak.creamy_white", "Creamy White Leak", "Soft warm white memory leak", transition_lightleak_creamy_white);
     register_builtin("tachyon.transition.lightleak.dusty_archive", "Dusty Archive Leak", "Warm archival light leak with subtle grain", transition_lightleak_dusty_archive);
     register_builtin("tachyon.transition.lightleak.lens_flare_pass", "Subtle Lens Flare Pass", "Thin premium lens flare sweep", transition_lightleak_lens_flare_pass);
+
+    register_builtin("tachyon.transition.lightleak.amber_sweep",
+                     "Amber Sweep",
+                     "Warm multi-blob amber light leak sweeping left to right",
+                     transition_lightleak_amber_sweep);
 }
 
 } // namespace tachyon::renderer2d
