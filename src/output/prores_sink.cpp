@@ -21,35 +21,24 @@ ProResSink::ProResSink(const ProResSinkConfig& config)
 ProResSink::~ProResSink() = default;
 
 bool ProResSink::begin(const RenderPlan& plan) {
-    if (plan.output.destination.path.empty()) {
-        impl_->last_error = "Output path not specified";
-        return false;
-    }
-    impl_->output_path = plan.output.destination.path;
-    // TODO: Initialize FFmpeg for ProRes encoding
-    impl_->initialized = true;
-    return true;
+    (void)plan;  // ProRes is not implemented, ignore input
+    impl_->last_error = "ProRes output is not implemented yet";
+    return false;
 }
 
 bool ProResSink::write_frame(const OutputFramePacket& /*packet*/) {
-    if (!impl_->initialized) {
-        impl_->last_error = "Sink not initialized";
-        return false;
-    }
-    // TODO: Write frame to ProRes encoder
-    return true;
+    impl_->last_error = "ProRes output is not implemented yet";
+    return false;
 }
 
 bool ProResSink::finish() {
-    if (!impl_->initialized) {
-        return false;
-    }
-    // TODO: Finalize encoding
-    return true;
+    impl_->last_error = "ProRes output is not implemented yet";
+    return false;
 }
 
 bool ProResSink::finalize_post_processing() {
-    return true;
+    impl_->last_error = "ProRes output is not implemented yet";
+    return false;
 }
 
 const std::string& ProResSink::last_error() const {

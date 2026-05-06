@@ -62,6 +62,9 @@ public:
         m_parallel_frames = (worker_count > 1);
     }
 
+    size_t parallel_worker_count() const { return m_parallel_worker_count; }
+    bool parallel_frames() const { return m_parallel_frames; }
+
     FrameCache& cache() { return m_cache; }
     const FrameCache& cache() const { return m_cache; }
 

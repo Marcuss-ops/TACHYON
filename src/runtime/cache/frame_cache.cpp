@@ -29,12 +29,6 @@ std::size_t estimate_frame_size(const renderer2d::Framebuffer& frame) {
     return sizeof(renderer2d::Framebuffer) + (frame.pixels().capacity() * sizeof(float));
 }
 
-void erase_from_order(std::vector<std::uint64_t>& order, std::uint64_t key) {
-    const auto it = std::find(order.begin(), order.end(), key);
-    if (it != order.end()) {
-        order.erase(it);
-    }
-}
 } // namespace
 
 bool FrameCache::lookup_property(std::uint64_t key, double& out_value) const {
@@ -60,7 +54,8 @@ void FrameCache::store_property(std::uint64_t key, double value) {
     m_properties[key] = value;
     m_current_usage_bytes += size;
     m_entries[key] = EntryInfo{EntryType::Property, size};
-    m_lru_order.push_back(key);
+    m_lru_list.push_back(key);
+    m_lru_iterators[key] = std::prev(m_lru_list.end());
     evict_if_needed();
 }
 
@@ -87,7 +82,8 @@ void FrameCache::store_layer(std::uint64_t key, std::shared_ptr<const scene::Eva
     m_layers.insert_or_assign(key, state);
     m_current_usage_bytes += size;
     m_entries[key] = EntryInfo{EntryType::Layer, size};
-    m_lru_order.push_back(key);
+    m_lru_list.push_back(key);
+    m_lru_iterators[key] = std::prev(m_lru_list.end());
     evict_if_needed();
 }
 
@@ -114,7 +110,8 @@ void FrameCache::store_composition(std::uint64_t key, std::shared_ptr<const scen
     m_compositions.insert_or_assign(key, state);
     m_current_usage_bytes += size;
     m_entries[key] = EntryInfo{EntryType::Composition, size};
-    m_lru_order.push_back(key);
+    m_lru_list.push_back(key);
+    m_lru_iterators[key] = std::prev(m_lru_list.end());
     evict_if_needed();
 }
 
@@ -141,7 +138,8 @@ void FrameCache::store_frame(const FrameCacheKey& key, std::shared_ptr<const ren
     m_frames.insert_or_assign(key.hash, FrameEntry{key.value, frame});
     m_current_usage_bytes += size;
     m_entries[key.hash] = EntryInfo{EntryType::Frame, size};
-    m_lru_order.push_back(key.hash);
+    m_lru_list.push_back(key.hash);
+    m_lru_iterators[key.hash] = std::prev(m_lru_list.end());
     evict_if_needed();
 }
 
@@ -165,15 +163,17 @@ void FrameCache::store_frame(std::uint64_t key, std::shared_ptr<const renderer2d
     m_frames.insert_or_assign(key, FrameEntry{"", frame});
     m_current_usage_bytes += size;
     m_entries[key] = EntryInfo{EntryType::Frame, size};
-    m_lru_order.push_back(key);
+    m_lru_list.push_back(key);
+    m_lru_iterators[key] = std::prev(m_lru_list.end());
     evict_if_needed();
 }
 
 void FrameCache::touch(std::uint64_t key) {
-    const auto it = std::find(m_lru_order.begin(), m_lru_order.end(), key);
-    if (it != m_lru_order.end()) {
-        m_lru_order.erase(it);
-        m_lru_order.push_back(key);
+    auto it = m_lru_iterators.find(key);
+    if (it != m_lru_iterators.end()) {
+        m_lru_list.erase(it->second);
+        m_lru_list.push_back(key);
+        m_lru_iterators[key] = std::prev(m_lru_list.end());
     }
 }
 
@@ -188,8 +188,8 @@ void FrameCache::evict_if_needed() {
         return;
     }
 
-    while (m_current_usage_bytes > m_max_budget_bytes && !m_lru_order.empty()) {
-        const std::uint64_t oldest = m_lru_order.front();
+    while (m_current_usage_bytes > m_max_budget_bytes && !m_lru_list.empty()) {
+        const std::uint64_t oldest = m_lru_list.front();
         remove_entry(oldest);
     }
 }
@@ -209,7 +209,12 @@ void FrameCache::remove_entry(std::uint64_t key) {
 
     m_current_usage_bytes -= entry_it->second.size;
     m_entries.erase(entry_it);
-    erase_from_order(m_lru_order, key);
+
+    auto lru_it = m_lru_iterators.find(key);
+    if (lru_it != m_lru_iterators.end()) {
+        m_lru_list.erase(lru_it->second);
+        m_lru_iterators.erase(lru_it);
+    }
 }
 
 std::size_t FrameCache::current_usage_bytes() const {
@@ -264,7 +269,8 @@ void FrameCache::clear() {
     m_frames.clear();
     m_legacy_frames.clear();
     m_entries.clear();
-    m_lru_order.clear();
+    m_lru_list.clear();
+    m_lru_iterators.clear();
     m_current_usage_bytes = 0;
     m_hit_count = 0;
     m_miss_count = 0;

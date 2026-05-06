@@ -1,13 +1,8 @@
-#include "tachyon/runtime/execution/frames/frame_executor.h"
-#include "tachyon/core/scene/evaluation/evaluator.h"
-#include "tachyon/core/scene/composition/evaluator_composition.h"
-#include "tachyon/renderer2d/core/framebuffer.h"
-#include "tachyon/renderer2d/raster/draw_list_builder.h"
-#include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"
-#include "tachyon/timeline/time_remap.h"
-#include "tachyon/timeline/frame_blend.h"
+#include "tachyon/runtime/execution/frame_blend_renderer.h"
+#include "tachyon/runtime/execution/motion_blur_sampler.h"
+#include "tachyon/runtime/execution/frame_fallback_policy.h"
+#include "tachyon/runtime/execution/rasterization_step.h"
 #include "frame_executor/frame_executor_internal.h"
-#include "tachyon/runtime/profiling/render_profiler.h"
 #ifdef TACHYON_ENABLE_3D
 #include "tachyon/renderer3d/core/ray_tracer.h"
 #endif
@@ -156,7 +151,7 @@ std::shared_ptr<renderer2d::Framebuffer> framebuffer_to_framebuffer(const timeli
     return dst;
 }
 
-} // anonymous namespace
+} // namespace tachyon
 
 void FrameExecutor::build_lookup_table(const CompiledScene& scene) {
     m_node_lookup.clear();
@@ -243,227 +238,55 @@ ExecutedFrame FrameExecutor::execute(
         blend_result = timeline::evaluate_frame_blend(*plan.time_remap_curve, dest_time, frame_duration);
     }
 
-    // Frame Blend early out: if blending, render A and B and return early.
-    // We don't evaluate the scene at `frame_time_seconds` if we are just going to blend.
-    if (blend_result.has_value() && blend_result->blend_factor > 1e-6f && blend_result->blend_factor < 1.0f - 1e-6f) {
-        profiling::ProfileScope blend_scope(context.profiler, profiling::ProfileEventType::Phase, "frame_blend", task.frame_number);
-        // Render frame A at source_time_a
-        auto frame_a_surface = render_frame_at_time(
-            *this, compiled_scene, plan, task, snapshot, context,
-            blend_result->source_time_a, composition_key, frame_key);
-
-        // Render frame B at source_time_b
-        auto frame_b_surface = render_frame_at_time(
-            *this, compiled_scene, plan, task, snapshot, context,
-            blend_result->source_time_b, composition_key, frame_key);
-
-        if (frame_a_surface && frame_b_surface) {
-            // Apply blend based on mode
-            if (plan.frame_blend_mode == timeline::FrameBlendMode::PixelMotion ||
-                plan.frame_blend_mode == timeline::FrameBlendMode::OpticalFlow) {
-                // Optical flow path requires FrameBuffer conversions
-                timeline::FrameBuffer fb_a = surface_to_framebuffer(*frame_a_surface);
-                timeline::FrameBuffer fb_b = surface_to_framebuffer(*frame_b_surface);
-                
-                timeline::DefaultOpticalFlowProvider flow_provider;
-                timeline::OpticalFlowField flow_ab = flow_provider.compute_optical_flow(fb_a, fb_b);
-                timeline::OpticalFlowField flow_ba = flow_provider.compute_optical_flow(fb_b, fb_a);
-                
-                timeline::FrameBuffer blended = flow_provider.synthesize_frame_optical_flow(fb_a, fb_b, flow_ab, flow_ba, blend_result->blend_factor);
-                result.frame = framebuffer_to_framebuffer(blended);
-            } else {
-                // Linear blend directly on SurfaceRGBA to avoid uint8_t conversions
-                auto blended_surface = std::make_shared<renderer2d::SurfaceRGBA>(
-                    frame_a_surface->width(), frame_a_surface->height());
-                const float blend = blend_result->blend_factor;
-                const std::size_t width = static_cast<std::size_t>(blended_surface->width());
-                const std::size_t height = static_cast<std::size_t>(blended_surface->height());
-                for (std::size_t y = 0; y < height; ++y) {
-                    for (std::size_t x = 0; x < width; ++x) {
-                        auto a = frame_a_surface->get_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y));
-                        auto b = frame_b_surface->get_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y));
-                        renderer2d::Color c(
-                            a.r * (1.0f - blend) + b.r * blend,
-                            a.g * (1.0f - blend) + b.g * blend,
-                            a.b * (1.0f - blend) + b.b * blend,
-                            a.a * (1.0f - blend) + b.a * blend
-                        );
-                        blended_surface->set_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), c);
-                    }
-                }
-                result.frame = std::make_shared<renderer2d::Framebuffer>(*blended_surface);
-            }
-            context.diagnostic_tracker = nullptr;
-            context.renderer2d.diagnostics = nullptr;
-            return result;
-        }
+    // 1. Try Frame Blending
+    auto blended_frame = FrameBlendRenderer::try_render_blend(
+        *this, compiled_scene, plan, task, snapshot, context,
+        blend_result, frame_time_seconds, composition_key, frame_key);
+    if (blended_frame.has_value()) {
+        result.frame = *blended_frame;
+        result.cache_hit = false;
+        context.diagnostic_tracker = nullptr;
+        context.renderer2d.diagnostics = nullptr;
+        return result;
     }
 
-    std::uint64_t root_key = 0;
-    bool was_cached = false;
+    // 2. Try Motion Blur Sampling
+    auto mb_frame = MotionBlurSampler::sample(
+        *this, compiled_scene, plan, task, snapshot, context,
+        frame_time_seconds, composition_key, frame_key, static_cast<int>(fps), comp_builder);
+    if (mb_frame.has_value()) {
+        result.frame = *mb_frame;
+        result.cache_hit = false;
+        context.diagnostic_tracker = nullptr;
+        context.renderer2d.diagnostics = nullptr;
+        return result;
+    }
+
+    // 3. Normal Path: Evaluate Scene
+    const auto& topo_order = compiled_scene.graph.topo_order();
+    for (std::uint32_t node_id : topo_order) {
+        if (context.cancel_flag && context.cancel_flag->load()) break;
+        ::tachyon::evaluate_node(*this, node_id, compiled_scene, plan, snapshot, context, composition_key, frame_key, frame_time_seconds, task);
+    }
+
     if (!compiled_scene.compositions.empty()) {
         const CompiledComposition& root_comp = compiled_scene.compositions.front();
-        root_key = build_node_key(frame_key, root_comp.node);
-        was_cached = (cache().lookup_composition(root_key) != nullptr);
-    }
+        const std::uint64_t root_key = build_node_key(frame_key, root_comp.node);
+        ::tachyon::evaluate_composition(*this, compiled_scene, root_comp, plan, snapshot, context, composition_key, root_key, frame_key, frame_time_seconds, task);
 
-    if (!was_cached) {
-        profiling::ProfileScope eval_scope(context.profiler, profiling::ProfileEventType::Phase, "scene_evaluate", task.frame_number);
-        const auto& topo_order = compiled_scene.graph.topo_order();
-        for (std::uint32_t node_id : topo_order) {
-            if (context.cancel_flag && context.cancel_flag->load()) break;
-            ::tachyon::evaluate_node(*this, node_id, compiled_scene, plan, snapshot, context, composition_key, frame_key, frame_time_seconds, task);
-        }
-        if (!compiled_scene.compositions.empty()) {
-            if (cache().lookup_composition(root_key) == nullptr) {
-                const CompiledComposition& root_comp = compiled_scene.compositions.front();
-                ::tachyon::evaluate_composition(*this, compiled_scene, root_comp, plan, snapshot, context, composition_key, root_key, frame_key, frame_time_seconds, task);
-            }
-        }
-    }
-
-    if (!compiled_scene.compositions.empty()) {
-        auto cached_comp = cache().lookup_composition(root_key);
+        auto cached_comp = m_cache.lookup_composition(root_key);
         if (cached_comp) {
-            result.cache_hit = was_cached;
-
-            if (plan.motion_blur_enabled && plan.motion_blur_samples > 1) {
-                profiling::ProfileScope mb_scope(context.profiler, profiling::ProfileEventType::Phase, "motion_blur", task.frame_number);
-                int samples = std::min<int>(static_cast<int>(plan.motion_blur_samples), plan.quality_policy.motion_blur_sample_cap);
-    const double shutter_duration = (plan.motion_blur_shutter_angle / 360.0) / fps;
-    const double shutter_start_offset = (plan.motion_blur_shutter_phase / 360.0) / fps;
-
-    int omp_max_threads = 1;
-    if (m_parallel_frames) {
-        omp_max_threads = 1;
-    } else {
-        const char* omp_threads_env = std::getenv("TACHYON_OPENMP_THREADS_PER_FRAME");
-        if (omp_threads_env) {
-            char* endptr;
-            long val = std::strtol(omp_threads_env, &endptr, 10);
-            if (endptr != omp_threads_env && val > 0) {
-                omp_max_threads = static_cast<int>(val);
-            }
-        } else {
-            unsigned int hw = std::thread::hardware_concurrency();
-            if (hw == 0) hw = 1;
-            omp_max_threads = std::max(1u, hw / std::max(1u, static_cast<unsigned int>(m_parallel_worker_count)));
-        }
-
-        const char* max_total_env = std::getenv("TACHYON_MAX_TOTAL_THREADS");
-        if (max_total_env) {
-            char* endptr;
-            long max_total = std::strtol(max_total_env, &endptr, 10);
-            if (endptr != max_total_env && max_total > 0) {
-                const long total = static_cast<long>(m_parallel_worker_count) * omp_max_threads;
-                if (total > max_total) {
-                    omp_max_threads = std::max(1, static_cast<int>(max_total / m_parallel_worker_count));
-                }
-            }
+            // 4. Rasterization Step
+            auto raster_result = RasterizationStep::execute(
+                *cached_comp, plan, task, context, m_pool, context.profiler, task.frame_number);
+            result.frame = raster_result.frame;
+            result.aovs = std::move(raster_result.aovs);
+            result.draw_command_count = raster_result.draw_command_count;
         }
     }
 
-    std::vector<std::shared_ptr<renderer2d::SurfaceRGBA>> samples_surfaces(samples);
-    #pragma omp parallel for num_threads(omp_max_threads)
-    for (int s = 0; s < samples; ++s) {
-                    const double t_offset = shutter_start_offset + (samples > 1 ? (static_cast<double>(s) / (samples - 1)) * shutter_duration : 0.0);
-                    const double sub_frame_time = frame_time_seconds + t_offset;
-                    CacheKeyBuilder sample_builder = comp_builder;
-                    sample_builder.add_u64(static_cast<std::uint64_t>(task.frame_number));
-                    sample_builder.add_f64(sub_frame_time);
-                    const std::uint64_t sample_key = sample_builder.finish();
-                    const std::uint64_t root_sample_key = build_node_key(sample_key, compiled_scene.compositions.front().node);
-
-                    RenderContext thread_context = context;
-                    thread_context.renderer2d.accumulation_buffer.resize(0);
-#ifdef TACHYON_ENABLE_3D
-                    // Dynamic injection of 3D renderer implementation
-                    thread_context.ray_tracer = std::make_shared<renderer3d::RayTracer>(thread_context.renderer2d.media_manager);
-                    thread_context.renderer2d.ray_tracer = thread_context.ray_tracer;
-#endif
-
-                    const auto& topo_order = compiled_scene.graph.topo_order();
-                    for (std::uint32_t node_id : topo_order) {
-                        if (context.cancel_flag && context.cancel_flag->load()) break;
-                        ::tachyon::evaluate_node(*this, node_id, compiled_scene, plan, snapshot, thread_context, composition_key, sample_key, sub_frame_time, task, frame_key, frame_time_seconds);
-                    }
-                    if (cache().lookup_composition(root_sample_key) == nullptr) {
-                         ::tachyon::evaluate_composition(*this, compiled_scene, compiled_scene.compositions.front(), plan, snapshot, thread_context, composition_key, root_sample_key, sample_key, sub_frame_time, task);
-                    }
-                    auto sub_comp = cache().lookup_composition(root_sample_key);
-                    if (sub_comp) {
-                        RasterizedFrame2D rasterized = render_evaluated_composition_2d(*sub_comp, plan, task, thread_context.renderer2d);
-                        if (rasterized.surface) samples_surfaces[s] = rasterized.surface;
-                    }
-                }
-
-                std::unique_ptr<renderer2d::Framebuffer> accumulated;
-                for (int s = 0; s < samples; ++s) {
-                    if (samples_surfaces[s]) {
-                        if (!accumulated) accumulated = std::make_unique<renderer2d::Framebuffer>(std::move(*samples_surfaces[s]));
-                        else {
-                            auto& acc_pixels = accumulated->mutable_pixels();
-                            const auto& sub_pixels = samples_surfaces[s]->pixels();
-                            const std::size_t count = std::min(acc_pixels.size(), sub_pixels.size());
-                            for (std::size_t i = 0; i < count; ++i) acc_pixels[i] += sub_pixels[i];
-                        }
-                    }
-                }
-                if (accumulated) {
-                    auto& acc_pixels = accumulated->mutable_pixels();
-                    const float inv_samples = 1.0f / static_cast<float>(samples);
-                    for (float& p : acc_pixels) p *= inv_samples;
-                    result.frame = std::shared_ptr<renderer2d::Framebuffer>(std::move(accumulated));
-                }
-            } else {
-                renderer2d::DrawListBuilder builder;
-                const renderer2d::DrawList2D draw_list = builder.build(*cached_comp);
-                result.draw_command_count = draw_list.commands.size();
-#ifdef TACHYON_ENABLE_3D
-                // Inject ray tracer if scene has 3D layers and none has been injected yet
-                if (!context.renderer2d.ray_tracer) {
-                    context.renderer2d.ray_tracer = std::make_shared<renderer3d::RayTracer>(context.renderer2d.media_manager);
-                }
-#endif
-                RasterizedFrame2D rasterized;
-                {
-                    profiling::ProfileScope raster_scope(context.profiler, profiling::ProfileEventType::Phase, "composition_raster", task.frame_number);
-                    rasterized = render_evaluated_composition_2d(*cached_comp, plan, task, context.renderer2d);
-                }
-                if (rasterized.surface) {
-                    if (m_pool) {
-                        auto pooled = m_pool->acquire();
-                        if (pooled) {
-                            pooled->blit(*rasterized.surface, 0, 0);
-                            result.frame = std::shared_ptr<renderer2d::SurfaceRGBA>(pooled.release(), [pool = m_pool](renderer2d::SurfaceRGBA* s) {
-                                pool->release(std::unique_ptr<renderer2d::SurfaceRGBA>(s));
-                            });
-                        } else {
-                            result.frame = std::make_shared<renderer2d::Framebuffer>(std::move(*rasterized.surface));
-                        }
-                    } else {
-                        result.frame = std::make_shared<renderer2d::Framebuffer>(std::move(*rasterized.surface));
-                    }
-                }
-                result.aovs = std::move(rasterized.aovs);
-            }
-        }
-    }
-
-    // Explicit fallback handling
-    if (!result.frame || result.frame->width() == 0U || result.frame->height() == 0U) {
-        if (compiled_scene.compositions.empty()) {
-            // Intentionally empty scene: generate explicit fallback frame
-            result.frame = std::make_shared<renderer2d::Framebuffer>(
-                static_cast<std::uint32_t>(std::max<std::int64_t>(1, plan.composition.width)),
-                static_cast<std::uint32_t>(std::max<std::int64_t>(1, plan.composition.height)));
-            result.error = "Empty scene: using fallback frame";
-        } else {
-            // Rendering failed: no valid frame produced
-            result.success = false;
-            result.error = "Frame rendering failed: no valid framebuffer generated";
-        }
-    }
+    // 5. Apply Fallback Policy
+    FrameFallbackPolicy::apply(result, compiled_scene, plan);
 
     context.diagnostic_tracker = nullptr;
     context.renderer2d.diagnostics = nullptr;
