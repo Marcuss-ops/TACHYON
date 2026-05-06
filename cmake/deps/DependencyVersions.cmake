@@ -10,3 +10,7 @@ set(TACHYON_PUGIXML_GIT_TAG "v1.14")
 set(TACHYON_EARCUT_GIT_TAG "v2.2.4")
 set(TACHYON_OIDN_WINDOWS_VERSION "2.3.0")
 set(TACHYON_TINYEXR_GIT_TAG "v1.0.8")
+set(TACHYON_CLIPPER2_GIT_TAG "Clipper2_1.3.0")
+set(TACHYON_GTEST_URL "https://github.com/google/googletest/archive/refs/tags/v1.15.2.tar.gz")
+
+

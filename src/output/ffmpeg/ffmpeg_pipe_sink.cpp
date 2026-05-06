@@ -1,6 +1,8 @@
 #include "tachyon/output/frame_output_sink.h"
 #include "ffmpeg_internal.h"
 #include "tachyon/runtime/profiling/render_profiler.h"
+#include "tachyon/output/output_planner.h"
+#include "tachyon/output/output_utils.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -19,23 +21,12 @@ using tachyon::core::platform::run_process;
 
 class FfmpegPipeSink final : public FrameOutputSink {
 public:
+    FfmpegPipeSink() : m_atomic_output(std::filesystem::path{}) {}
+    
     ~FfmpegPipeSink() override {
         if (m_pipe != nullptr) {
             close_pipe(m_pipe);
             m_pipe = nullptr;
-        }
-        
-        // Clean up all tracked temporary files
-        std::error_code ec;
-        for (const auto& path : m_temp_files) {
-            if (!path.empty()) {
-                std::filesystem::remove(path, ec);
-            }
-        }
-        
-        // Clean up atomic output if it wasn't committed
-        if (!m_atomic_output_path.empty()) {
-            std::filesystem::remove(m_atomic_output_path, ec);
         }
     }
 
@@ -53,27 +44,18 @@ public:
             return false;
         }
 
-        m_final_destination = m_plan.output.destination.path;
-        m_atomic_output_path = m_final_destination.string() + ".tmp";
+        m_atomic_output = AtomicOutputGuard(m_plan.output.destination.path);
         
-        // Override plan destination for all internal ffmpeg commands
-        m_plan.output.destination.path = m_atomic_output_path.string();
-
         bool needs_temp_video = m_plan.output.profile.format == OutputFormat::Gif || !m_audio_path.empty();
 
-        const std::filesystem::path destination(m_final_destination);
-        if (!destination.parent_path().empty()) {
-            std::filesystem::create_directories(destination.parent_path());
-        }
-
         if (needs_temp_video) {
-            m_temp_video_path = make_ffmpeg_temp_path(destination, "video", ".mkv");
-            m_temp_files.push_back(m_temp_video_path);
+            m_temp_video_path = make_ffmpeg_temp_path(m_atomic_output.final_path(), "video", ".mkv");
+            m_temp_tracker.track(m_temp_video_path);
         }
 
         const std::string command = needs_temp_video
             ? build_ffmpeg_video_command(m_plan, m_temp_video_path, false)
-            : build_ffmpeg_video_command(m_plan, m_atomic_output_path, true);
+            : build_ffmpeg_video_command(m_plan, m_atomic_output.temp_path(), true);
 
         m_pipe = open_write_pipe(command.c_str());
         if (m_pipe == nullptr) {
@@ -131,23 +113,7 @@ public:
             return false;
         }
         
-        // Atomic commit: clear m_atomic_output_path before rename to prevent destructor from deleting it
-        std::filesystem::path final_atomic = std::move(m_atomic_output_path);
-        m_atomic_output_path.clear();
-
-        std::error_code ec;
-        std::filesystem::rename(final_atomic, m_final_destination, ec);
-        if (ec) {
-            // fallback for cross-device or permission issues if rename fails
-            std::filesystem::copy(final_atomic, m_final_destination, std::filesystem::copy_options::overwrite_existing, ec);
-            if (!ec) {
-                std::filesystem::remove(final_atomic);
-            } else {
-                m_last_error = "failed to commit atomic output: " + ec.message();
-                return false;
-            }
-        }
-        return true;
+        return m_atomic_output.commit(m_last_error);
     }
 
     void set_audio_source(const std::string& audio_path) override {
@@ -170,7 +136,11 @@ private:
     bool finalize_audio() {
         if (m_temp_video_path.empty()) return true;
 
-        std::string command = build_ffmpeg_mux_command(m_plan, m_temp_video_path, m_audio_path);
+        // Ensure the mux command writes to the atomic temp path
+        RenderPlan mux_plan = m_plan;
+        mux_plan.output.destination.path = m_atomic_output.temp_path().string();
+
+        std::string command = build_ffmpeg_mux_command(mux_plan, m_temp_video_path, m_audio_path);
         
         ProcessSpec spec;
 #ifdef _WIN32
@@ -186,32 +156,29 @@ private:
             return false;
         }
 
-        std::error_code ec;
-        std::filesystem::remove(m_temp_video_path, ec);
+        // Output was generated directly to m_atomic_output.temp_path() by build_ffmpeg_mux_command if correctly configured
+        // Wait, build_ffmpeg_mux_command uses plan.output.destination.path.
+        // We need to ensure it uses m_atomic_output.temp_path().
+        
         return true;
     }
 
     bool finalize_gif() {
-        const std::filesystem::path destination(m_plan.output.destination.path);
-        const std::filesystem::path palette_path = make_ffmpeg_temp_path(m_final_destination, "palette", ".png");
-        m_temp_files.push_back(palette_path);
+        const std::filesystem::path palette_path = make_ffmpeg_temp_path(m_atomic_output.final_path(), "palette", ".png");
+        m_temp_tracker.track(palette_path);
 
         // Run palettegen
         ProcessSpec spec1;
         spec1.executable = "ffmpeg";
         spec1.args = {
-            "-hide_banner",
-            "-loglevel", "error",
-            "-y",
+            "-hide_banner", "-loglevel", "error", "-y",
             "-i", m_temp_video_path.string(),
             "-vf", "palettegen",
             palette_path.string()
         };
         auto r1 = run_process(spec1);
         if (!r1.success) {
-            m_last_error = "ffmpeg palettegen failed"
-                + std::string("\nstdout:\n") + r1.output
-                + std::string("\nstderr:\n") + r1.error;
+            m_last_error = "ffmpeg palettegen failed: " + r1.error;
             return false;
         }
 
@@ -219,35 +186,26 @@ private:
         ProcessSpec spec2;
         spec2.executable = "ffmpeg";
         spec2.args = {
-            "-hide_banner",
-            "-loglevel", "error",
-            "-y",
+            "-hide_banner", "-loglevel", "error", "-y",
             "-i", m_temp_video_path.string(),
             "-i", palette_path.string(),
             "-lavfi", "paletteuse",
-            destination.string()
+            m_atomic_output.temp_path().string()
         };
         auto r2 = run_process(spec2);
         if (!r2.success) {
-            m_last_error = "ffmpeg paletteuse failed"
-                + std::string("\nstdout:\n") + r2.output
-                + std::string("\nstderr:\n") + r2.error;
+            m_last_error = "ffmpeg paletteuse failed: " + r2.error;
             return false;
         }
 
-        std::filesystem::remove(m_temp_video_path);
-        std::filesystem::remove(palette_path);
         return true;
     }
-
-
 
     RenderPlan m_plan;
     FILE* m_pipe{nullptr};
     std::filesystem::path m_temp_video_path;
-    std::vector<std::filesystem::path> m_temp_files;
-    std::filesystem::path m_atomic_output_path;
-    std::filesystem::path m_final_destination;
+    TempFileTracker m_temp_tracker;
+    AtomicOutputGuard m_atomic_output;
     std::string m_audio_path;
     renderer2d::detail::TransferCurve m_source_transfer{renderer2d::detail::TransferCurve::sRGB};
     renderer2d::detail::ColorSpace m_source_space{renderer2d::detail::ColorSpace::sRGB};

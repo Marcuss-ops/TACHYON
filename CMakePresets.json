@@ -16,9 +16,8 @@
       }
     },
     {
-      "name": "base-ninja",
+      "name": "base-unix",
       "hidden": true,
-      "generator": "Ninja",
       "cacheVariables": {
         "TACHYON_ENABLE_COMPILER_CACHE": "ON",
         "TACHYON_ENABLE_PCH": "OFF",
@@ -52,7 +51,7 @@
     },
     {
       "name": "linux-ci",
-      "inherits": "base-ninja",
+      "inherits": "base-unix",
       "description": "Headless Linux/server CI preset",
       "binaryDir": "${sourceDir}/build/linux-ci",
       "cacheVariables": {
@@ -62,7 +61,7 @@
     },
     {
       "name": "dev-linux",
-      "inherits": "base-ninja",
+      "inherits": "base-unix",
       "description": "Daily Linux iteration preset with RelWithDebInfo symbols",
       "binaryDir": "${sourceDir}/build/dev-linux",
       "cacheVariables": {
@@ -72,7 +71,7 @@
     },
     {
       "name": "dev-linux-fast",
-      "inherits": "base-ninja",
+      "inherits": "base-unix",
       "description": "Fast Linux iteration preset with core targets",
       "binaryDir": "${sourceDir}/build/dev-linux-fast",
       "cacheVariables": {
@@ -82,7 +81,7 @@
     },
     {
       "name": "windows-ci",
-      "inherits": "base-ninja",
+      "inherits": "base-unix",
       "description": "Headless Windows CI preset",
       "binaryDir": "${sourceDir}/build/windows-ci",
       "cacheVariables": {
@@ -92,7 +91,7 @@
     },
     {
       "name": "release",
-      "inherits": "base-ninja",
+      "inherits": "base-unix",
       "description": "Release build preset",
       "binaryDir": "${sourceDir}/build/release",
       "cacheVariables": {

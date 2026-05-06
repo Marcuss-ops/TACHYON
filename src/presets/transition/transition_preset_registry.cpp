@@ -23,18 +23,6 @@ TransitionPresetRegistry& TransitionPresetRegistry::instance() {
     return registry;
 }
 
-TransitionPresetRegistry::TransitionPresetRegistry() {
-    load_builtins();
-}
-
-void TransitionPresetRegistry::register_spec(TransitionPresetSpec spec) {
-    registry_.register_spec(std::move(spec));
-}
-
-const TransitionPresetSpec* TransitionPresetRegistry::find(std::string_view id) const {
-    return registry_.find(id);
-}
-
 LayerTransitionSpec TransitionPresetRegistry::create(std::string_view id, const registry::ParameterBag& params) const {
     if (id.empty() || id == "none") {
         LayerTransitionSpec spec;
@@ -48,10 +36,6 @@ LayerTransitionSpec TransitionPresetRegistry::create(std::string_view id, const 
     }
 
     return make_noop_transition_from_params(params);
-}
-
-std::vector<std::string> TransitionPresetRegistry::list_ids() const {
-    return registry_.list_ids();
 }
 
 } // namespace tachyon::presets

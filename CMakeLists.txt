@@ -47,6 +47,7 @@ endif()
 # See tests/CMakeLists.txt for TachyonTests includes
 
 # Dependency groups
+include(${CMAKE_SOURCE_DIR}/cmake/deps/CoreDeps.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/deps/TextDeps.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/deps/Renderer3DDeps.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/deps/MediaDeps.cmake)

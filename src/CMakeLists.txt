@@ -154,6 +154,11 @@ target_include_directories(TachyonCore
     PUBLIC
         $<BUILD_INTERFACE:${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/include>
 )
+target_sources(TachyonCore PRIVATE
+    ${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/src/clipper.engine.cpp
+    ${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/src/clipper.offset.cpp
+    ${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/src/clipper.rectclip.cpp
+)
 
 add_library(TachyonColor STATIC ${TachyonColorSources})
 tachyon_configure_common(TachyonColor)

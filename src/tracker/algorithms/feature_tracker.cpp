@@ -10,22 +10,17 @@
 #include <numeric>
 #include <cassert>
 
+#include "tachyon/math/sampling.h"
+
 namespace tachyon::tracker {
 
 // ---------------------------------------------------------------------------
 // GrayImage bilinear sampling
 // ---------------------------------------------------------------------------
 float GrayImage::at_bilinear(float fx, float fy) const {
-    fx = std::clamp(fx, 0.0f, (float)(width  - 1));
-    fy = std::clamp(fy, 0.0f, (float)(height - 1));
-    int x0 = (int)fx, y0 = (int)fy;
-    int x1 = std::min(x0 + 1, (int)width  - 1);
-    int y1 = std::min(y0 + 1, (int)height - 1);
-    float tx = fx - x0, ty = fy - y0;
-    float v00 = data[y0 * width + x0], v10 = data[y0 * width + x1];
-    float v01 = data[y1 * width + x0], v11 = data[y1 * width + x1];
-    return (v00 * (1 - tx) + v10 * tx) * (1 - ty) +
-           (v01 * (1 - tx) + v11 * tx) * ty;
+    return math::sample_bilinear(fx, fy, [&](int x, int y) {
+        return at(x, y);
+    });
 }
 
 // ---------------------------------------------------------------------------

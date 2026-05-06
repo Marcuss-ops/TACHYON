@@ -8,6 +8,7 @@
 #include "tachyon/renderer2d/resource/texture_resolver.h"
 #include "tachyon/output/frame_output_sink.h"
 #include "tachyon/output/output_utils.h"
+#include "tachyon/output/output_planner.h"
 #include "tachyon/media/streaming/media_prefetcher.h"
 #include "tachyon/audio/audio_export.h"
 #include "tachyon/media/resolution/asset_path_utils.h"
@@ -15,6 +16,9 @@
 #include "tachyon/runtime/profiling/render_profiler.h"
 #include "tachyon/media/management/asset_resolver.h"
 #include "tachyon/runtime/telemetry/process_resource_sampler.h"
+#include "tachyon/runtime/policy/worker_policy.h"
+#include "tachyon/runtime/policy/surface_pool_policy.h"
+#include "tachyon/runtime/policy/telemetry_policy.h"
 
 #include <iostream>
 #include <future>
@@ -45,25 +49,37 @@ std::string output_path_or_plan(const std::filesystem::path& output_path, const 
     return plan.output.destination.path;
 }
 
+class ScopedProcessSampler {
+public:
+    explicit ScopedProcessSampler(bool enabled) : enabled_(enabled) {
+        if (enabled_) {
+            sampler_.start();
+        }
+    }
+
+    void stop() {
+        if (enabled_) {
+            sampler_.stop();
+        }
+    }
+
+    bool enabled() const { return enabled_; }
+    ProcessResourceSampler& sampler() { return sampler_; }
+
+    std::size_t peak_working_set_bytes() const { return enabled_ ? sampler_.peak_working_set_bytes() : 0; }
+    std::size_t avg_working_set_bytes() const { return enabled_ ? sampler_.avg_working_set_bytes() : 0; }
+    std::size_t peak_private_bytes() const { return enabled_ ? sampler_.peak_private_bytes() : 0; }
+    std::size_t avg_private_bytes() const { return enabled_ ? sampler_.avg_private_bytes() : 0; }
+    double avg_cpu_percent_machine() const { return enabled_ ? sampler_.avg_cpu_percent_machine() : 0.0; }
+    double avg_cpu_cores_used() const { return enabled_ ? sampler_.avg_cpu_cores_used() : 0.0; }
+
+private:
+    bool enabled_{false};
+    ProcessResourceSampler sampler_;
+};
+
 media::AssetResolver::Config build_asset_resolver_config(const RenderExecutionPlan& plan) {
-    media::AssetResolver::Config config;
-    const std::filesystem::path scene_ref_path(plan.render_plan.scene_ref);
-
-    if (!plan.render_plan.scene_ref.empty()) {
-        config.project_root = scene_ref_path.parent_path();
-        config.assets_root = media::scene_asset_root(scene_ref_path);
-    }
-
-    if (config.project_root.empty()) {
-        config.project_root = std::filesystem::current_path();
-    }
-    if (config.assets_root.empty()) {
-        config.assets_root = config.project_root;
-    }
-
-    config.fonts_root = config.assets_root / "fonts";
-    config.sfx_root = config.assets_root / "audio";
-    return config;
+    return media::AssetResolver::Config(media::ProjectResolutionContext::from_scene(plan.render_plan.scene_ref));
 }
 
 struct RenderSessionWorkspace {
@@ -71,8 +87,7 @@ struct RenderSessionWorkspace {
     std::string resolved_output_path;
     ::tachyon::RenderContext context;
     std::unique_ptr<output::FrameOutputSink> sink;
-    std::filesystem::path audio_export_path;
-    bool is_temp_audio{false};
+    output::AudioExportPlan audio_plan;
     media::MediaPrefetcher& prefetcher;
     std::vector<double> frame_times;
     std::vector<ExecutedFrame> rendered_frames;
@@ -107,37 +122,11 @@ void configure_render_context(
     workspace.context.renderer2d.profiler = profiler;
 }
 
-std::filesystem::path resolve_audio_export_path(
-    const RenderExecutionPlan& plan,
-    output::FrameOutputSink* sink,
-    bool& is_temp_audio) {
-    std::filesystem::path audio_export_path;
-    is_temp_audio = false;
-
-    if (sink && audio::has_any_audio(plan.render_plan)) {
-        const bool is_video = output::output_requests_video_file(plan.render_plan.output);
-        const std::string final_output = plan.render_plan.output.destination.path;
-        const std::filesystem::path final_p(final_output);
-
-        if (is_video) {
-#ifdef TACHYON_ENABLE_AUDIO_MUX
-            audio_export_path = final_p.parent_path() / (final_p.stem().string() + ".temp.wav");
-            is_temp_audio = true;
-            sink->set_audio_source(audio_export_path.string());
-#endif
-        } else {
-            audio_export_path = final_p.parent_path() / (final_p.stem().string() + ".wav");
-        }
-    }
-
-    return audio_export_path;
-}
-
 bool begin_output_sink(
     RenderSessionWorkspace& workspace,
     RenderSessionResult& result,
     profiling::RenderProfiler* profiler,
-    ProcessResourceSampler& sampler,
+    ScopedProcessSampler& sampler,
     const std::chrono::steady_clock::time_point& session_start) {
     if (!workspace.sink) {
         return true;
@@ -195,12 +184,12 @@ void finalize_render_output(
     RenderSessionWorkspace& workspace,
     RenderSessionResult& result,
     CancelFlag* cancel_flag) {
-    if (!workspace.audio_export_path.empty()) {
+    if (!workspace.audio_plan.path.empty()) {
         profiling::ProfileScope scope(
             workspace.context.profiler,
             profiling::ProfileEventType::AudioMux,
             "audio_export");
-        audio::export_plan_audio(workspace.effective_plan.render_plan, workspace.audio_export_path, cancel_flag);
+        audio::export_plan_audio(workspace.effective_plan.render_plan, workspace.audio_plan.path, cancel_flag);
     }
 
     if (workspace.sink) {
@@ -216,15 +205,15 @@ void finalize_render_output(
         result.encode_ms = std::chrono::duration<double, std::milli>(encode_end - encode_start).count();
     }
 
-    if (!workspace.audio_export_path.empty() && workspace.is_temp_audio) {
+    if (!workspace.audio_plan.path.empty() && workspace.audio_plan.is_temporary) {
         std::error_code ec;
-        std::filesystem::remove(workspace.audio_export_path, ec);
+        std::filesystem::remove(workspace.audio_plan.path, ec);
     }
 }
 
 void finalize_session_metrics(
     RenderSessionResult& result,
-    ProcessResourceSampler& sampler,
+    ScopedProcessSampler& sampler,
     const std::chrono::steady_clock::time_point& session_start,
     const std::chrono::steady_clock::time_point& session_end) {
     sampler.stop();
@@ -255,8 +244,9 @@ RenderSessionResult RenderSession::render(
 
     (void)scene;
     const auto session_start = std::chrono::steady_clock::now();
-    ProcessResourceSampler sampler;
-    sampler.start();
+    
+    runtime::TelemetryPolicy telemetry_policy;
+    ScopedProcessSampler sampler(telemetry_policy.should_sample_process());
 
     RenderSessionResult result;
     RenderSessionWorkspace workspace(m_precomp_cache, execution_plan, output_path, m_prefetcher);
@@ -266,14 +256,21 @@ RenderSessionResult RenderSession::render(
 
     std::uint32_t w = static_cast<std::uint32_t>(workspace.effective_plan.render_plan.composition.width);
     std::uint32_t h = static_cast<std::uint32_t>(workspace.effective_plan.render_plan.composition.height);
-    m_surface_pool = std::make_unique<runtime::RuntimeSurfacePool>(w, h, 10);
+    
+    runtime::SurfacePoolPolicy surface_policy;
+    const auto surface_count = surface_policy.resolve(w, h, worker_count);
+    m_surface_pool = std::make_unique<runtime::RuntimeSurfacePool>(w, h, surface_count);
+    
     configure_render_context(workspace, m_profiler, m_surface_pool.get());
 
     workspace.sink = output::create_frame_output_sink(workspace.effective_plan.render_plan);
-    workspace.audio_export_path = resolve_audio_export_path(
-        workspace.effective_plan,
-        workspace.sink.get(),
-        workspace.is_temp_audio);
+    
+    const bool is_video = output::output_requests_video_file(workspace.effective_plan.render_plan.output);
+    workspace.audio_plan = output::plan_audio_export(workspace.effective_plan.render_plan, is_video);
+    
+    if (workspace.sink && !workspace.audio_plan.path.empty() && workspace.audio_plan.is_temporary) {
+        workspace.sink->set_audio_source(workspace.audio_plan.path.string());
+    }
 
     if (!begin_output_sink(workspace, result, m_profiler, sampler, session_start)) {
         return result;
@@ -313,7 +310,9 @@ RenderSessionResult RenderSession::render(
     const RenderExecutionPlan& execution_plan,
     const std::filesystem::path& output_path) {
     
-    return render(scene, compiled_scene, execution_plan, output_path, std::thread::hardware_concurrency());
+    runtime::WorkerPolicy policy;
+    return render(scene, compiled_scene, execution_plan, output_path, 
+                  policy.resolve(std::thread::hardware_concurrency()));
 }
 
 } // namespace tachyon

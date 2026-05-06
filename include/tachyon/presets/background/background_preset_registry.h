@@ -7,7 +7,6 @@
 #include <string>
 #include <string_view>
 #include <functional>
-#include <memory>
 #include <vector>
 #include <optional>
 
@@ -27,25 +26,25 @@ struct BackgroundPresetSpec {
 
 /**
  * @brief Registry for background presets.
+ * Consolidated using TypedRegistry to reduce boilerplate.
  */
-class BackgroundPresetRegistry {
+class BackgroundPresetRegistry : public registry::TypedRegistry<BackgroundPresetSpec> {
 public:
     static BackgroundPresetRegistry& instance();
 
-    void register_spec(BackgroundPresetSpec spec);
-    const BackgroundPresetSpec* find(std::string_view id) const;
-
+    /**
+     * @brief Creates a background layer instance from the specified preset.
+     */
     std::optional<LayerSpec> create(std::string_view id, const registry::ParameterBag& params) const;
 
-    std::vector<std::string> list_ids() const;
-
+    /**
+     * @brief Loads all built-in background presets.
+     */
     void load_builtins();
 
 private:
-    BackgroundPresetRegistry();
+    BackgroundPresetRegistry() = default;
     ~BackgroundPresetRegistry() = default;
-
-    registry::TypedRegistry<BackgroundPresetSpec> registry_;
 };
 
 } // namespace tachyon::presets

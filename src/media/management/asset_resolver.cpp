@@ -63,6 +63,19 @@ std::optional<std::filesystem::path> AssetResolver::resolve_path(const std::stri
         if (std::filesystem::exists(resolved)) return resolved;
     }
 
+    // 5. Try with common extensions if no extension
+    if (p.extension().empty()) {
+        std::vector<std::string> extensions;
+        if (type == AssetType::IMAGE) extensions = {".png", ".jpg", ".jpeg", ".webp"};
+        else if (type == AssetType::AUDIO) extensions = {".mp3", ".wav", ".aac", ".m4a"};
+        else if (type == AssetType::FONT) extensions = {".ttf", ".otf"};
+
+        for (const auto& ext : extensions) {
+            auto path_with_ext = resolve_path(spec + ext, type);
+            if (path_with_ext) return path_with_ext;
+        }
+    }
+
     return std::nullopt;
 }
 
@@ -101,6 +114,27 @@ std::shared_ptr<const renderer2d::SurfaceRGBA> AssetResolver::resolve_image_shar
     }
     
     return m_image_manager->get_image_shared(*res.value, alpha_mode);
+}
+
+AssetResolutionTable AssetResolver::resolve_all(const SceneSpec& scene) const {
+    AssetResolutionTable table;
+    for (const auto& asset : scene.assets) {
+        ResolvedAsset resolved;
+        resolved.asset_id = asset.id;
+        resolved.type = asset.type;
+
+        AssetType media_type = AssetType::IMAGE;
+        if (asset.type == "audio") media_type = AssetType::AUDIO;
+        else if (asset.type == "font") media_type = AssetType::FONT;
+
+        auto path = resolve_path(asset.path, media_type);
+        if (path) {
+            resolved.absolute_path = *path;
+            resolved.exists = true;
+        }
+        table[asset.id] = resolved;
+    }
+    return table;
 }
 
 const text::Font* AssetResolver::resolve_font(const std::string& spec, std::uint32_t pixel_size, ResolveMode mode) {

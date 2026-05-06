@@ -2,6 +2,7 @@
 #include "tachyon/color/premultiplied_alpha.h"
 #include "tachyon/color/aces.h"
 #include "tachyon/color/blending.h"
+#include "tachyon/color/color_math.h"
 #include <cmath>
 #include <cassert>
 
@@ -64,6 +65,30 @@ int main() {
         LinearRGBA blend = blend_normal(src, dst);
         float expected_a = 0.5f + 1.0f * (1.0f - 0.5f); // 1.0f
         assert(approx_eq(blend.a, expected_a));
+    }
+
+    // Test HSL Roundtrip
+    {
+        float h, s, l;
+        rgb_to_hsl(1.0f, 0.0f, 0.0f, h, s, l); // Red
+        assert(approx_eq(h, 0.0f) || approx_eq(h, 1.0f));
+        assert(approx_eq(s, 1.0f));
+        assert(approx_eq(l, 0.5f));
+
+        auto rgb = hsl_to_rgb(h, s, l);
+        assert(approx_eq(rgb.r, 1.0f));
+        assert(approx_eq(rgb.g, 0.0f));
+        assert(approx_eq(rgb.b, 0.0f));
+    }
+
+    // Test Luminance weights
+    {
+        // Rec.709 linear luminance: 0.2126R + 0.7152G + 0.0722B
+        float lum = luminance_rec709(1.0f, 1.0f, 1.0f);
+        assert(approx_eq(lum, 1.0f));
+        
+        float lum_red = luminance_rec709(1.0f, 0.0f, 0.0f);
+        assert(approx_eq(lum_red, 0.2126f));
     }
 
     return 0;

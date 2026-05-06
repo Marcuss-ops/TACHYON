@@ -6,6 +6,7 @@ set(TachyonOutputSources
     ${CMAKE_CURRENT_SOURCE_DIR}/output/ffmpeg/ffmpeg_command.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/output/ffmpeg/ffmpeg_command_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/output/ffmpeg/ffmpeg_pipe_sink.cpp
+    ${CMAKE_SOURCE_DIR}/src/output/output_planner.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/output/ffmpeg/ffmpeg_utils.cpp
 )
 

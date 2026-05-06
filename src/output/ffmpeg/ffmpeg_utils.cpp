@@ -1,5 +1,6 @@
 #include "tachyon/renderer2d/color/color_transform_graph.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
+#include "tachyon/math/sampling.h"
 #include <vector>
 #include <algorithm>
 #include <cmath>
@@ -45,26 +46,13 @@ std::vector<unsigned char> convert_and_pack_ffmpeg_frame(
             } else {
                 const float gx = (static_cast<float>(x) + 0.5f) * scale_x - 0.5f;
                 const float gy = (static_cast<float>(y) + 0.5f) * scale_y - 0.5f;
-                const int gxi = static_cast<int>(std::floor(gx));
-                const int gyi = static_cast<int>(std::floor(gy));
-                const float tx = gx - static_cast<float>(gxi);
-                const float ty = gy - static_cast<float>(gyi);
 
-                auto sample = [&](int sx, int sy) {
+                pixel = math::sample_bilinear(gx, gy, [&](int sx, int sy) {
                     return frame.get_pixel(
-                        static_cast<uint32_t>(std::clamp(sx, 0, static_cast<int>(src_w) - 1)),
-                        static_cast<uint32_t>(std::clamp(sy, 0, static_cast<int>(src_h) - 1))
+                        static_cast<uint32_t>(math::clamp_coord(sx, static_cast<int>(src_w))),
+                        static_cast<uint32_t>(math::clamp_coord(sy, static_cast<int>(src_h)))
                     );
-                };
-
-                const auto c00 = sample(gxi, gyi);
-                const auto c10 = sample(gxi + 1, gyi);
-                const auto c01 = sample(gxi, gyi + 1);
-                const auto c11 = sample(gxi + 1, gyi + 1);
-
-                const auto top = renderer2d::Color::lerp(c00, c10, tx);
-                const auto bottom = renderer2d::Color::lerp(c01, c11, tx);
-                pixel = renderer2d::Color::lerp(top, bottom, ty);
+                });
             }
 
             pixel = graph.process(pixel);

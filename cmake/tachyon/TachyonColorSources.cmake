@@ -1,6 +1,7 @@
 # TachyonColor source files
 set(TachyonColorSources
     ${CMAKE_SOURCE_DIR}/src/color/color_space.cpp
+    ${CMAKE_SOURCE_DIR}/src/color/color_math.cpp
     ${CMAKE_SOURCE_DIR}/src/color/transfer_functions.cpp
     ${CMAKE_SOURCE_DIR}/src/color/aces.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/color/blending.cpp

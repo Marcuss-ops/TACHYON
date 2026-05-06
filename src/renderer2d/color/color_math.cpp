@@ -1,5 +1,6 @@
 #include "tachyon/renderer2d/color/color_math.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
+#include "tachyon/color/color_math.h"
 #include <array>
 #include <cmath>
 #include <functional>
@@ -41,62 +42,25 @@ Color from_linear(const LinearColor& color, float alpha) {
     };
 }
 
-float luminance(const Color& color) {
+float luminance_rec709_linear(const Color& color) {
     const LinearColor linear = to_linear(color);
-    return clamp01(0.2126f * linear.r + 0.7152f * linear.g + 0.0722f * linear.b);
+    return color::luminance_rec709(linear.r, linear.g, linear.b);
+}
+
+float luma_rec601(const Color& color) {
+    return color::luma_rec601(color.r, color.g, color.b);
 }
 
 void rgb_to_hsl(float r, float g, float b, float& h, float& s, float& l) {
-    const float max_v = std::max({r, g, b});
-    const float min_v = std::min({r, g, b});
-    l = (max_v + min_v) * 0.5f;
-
-    if (max_v == min_v) {
-        h = 0.0f;
-        s = 0.0f;
-        return;
-    }
-
-    const float d = max_v - min_v;
-    s = l > 0.5f ? d / (2.0f - max_v - min_v) : d / (max_v + min_v);
-
-    if (max_v == r) {
-        h = (g - b) / d + (g < b ? 6.0f : 0.0f);
-    } else if (max_v == g) {
-        h = (b - r) / d + 2.0f;
-    } else {
-        h = (r - g) / d + 4.0f;
-    }
-
-    h /= 6.0f;
-}
-
-static float hue_to_rgb(float p, float q, float t) {
-    if (t < 0.0f) t += 1.0f;
-    if (t > 1.0f) t -= 1.0f;
-    if (t < 1.0f / 6.0f) return p + (q - p) * 6.0f * t;
-    if (t < 1.0f / 2.0f) return q;
-    if (t < 2.0f / 3.0f) return p + (q - p) * (2.0f / 3.0f - t) * 6.0f;
-    return p;
+    color::rgb_to_hsl(r, g, b, h, s, l);
 }
 
 Color hsl_to_rgb(float h, float s, float l, float alpha) {
-    h = std::fmod(h, 1.0f);
-    if (h < 0.0f) h += 1.0f;
-    s = clamp01(s);
-    l = clamp01(l);
-
-    if (s <= 0.0f) return Color{l, l, l, alpha};
-
-    const float q = l < 0.5f ? l * (1.0f + s) : l + s - l * s;
-    const float p = 2.0f * l - q;
-    const float r = hue_to_rgb(p, q, h + 1.0f / 3.0f);
-    const float g = hue_to_rgb(p, q, h);
-    const float b = hue_to_rgb(p, q, h - 1.0f / 3.0f);
+    auto rgb = color::hsl_to_rgb(h, s, l, alpha);
     return Color{
-        static_cast<float>(detail::linear_to_srgb_component(r)) / 255.0f,
-        static_cast<float>(detail::linear_to_srgb_component(g)) / 255.0f,
-        static_cast<float>(detail::linear_to_srgb_component(b)) / 255.0f,
+        static_cast<float>(detail::linear_to_srgb_component(rgb.r)) / 255.0f,
+        static_cast<float>(detail::linear_to_srgb_component(rgb.g)) / 255.0f,
+        static_cast<float>(detail::linear_to_srgb_component(rgb.b)) / 255.0f,
         alpha
     };
 }

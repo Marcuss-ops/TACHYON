@@ -8,7 +8,6 @@
 #include <string>
 #include <string_view>
 #include <functional>
-#include <memory>
 #include <vector>
 #include <optional>
 
@@ -29,24 +28,23 @@ struct TransitionPresetSpec {
 /**
  * @brief Registry for transition presets.
  */
-class TransitionPresetRegistry {
+class TransitionPresetRegistry : public registry::TypedRegistry<TransitionPresetSpec> {
 public:
     static TransitionPresetRegistry& instance();
 
-    void register_spec(TransitionPresetSpec spec);
-    const TransitionPresetSpec* find(std::string_view id) const;
-
+    /**
+     * @brief Creates a transition spec instance from the specified preset.
+     */
     LayerTransitionSpec create(std::string_view id, const registry::ParameterBag& params) const;
 
-    std::vector<std::string> list_ids() const;
-
+    /**
+     * @brief Loads all built-in transition presets.
+     */
     void load_builtins();
 
 private:
-    TransitionPresetRegistry();
+    TransitionPresetRegistry() = default;
     ~TransitionPresetRegistry() = default;
-
-    registry::TypedRegistry<TransitionPresetSpec> registry_;
 };
 
 } // namespace tachyon::presets

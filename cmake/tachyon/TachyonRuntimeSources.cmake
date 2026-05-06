@@ -16,4 +16,9 @@ set(TachyonRuntimeSources
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/cache/disk_cache.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/cache/frame_cache.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/resource/render_context.cpp
+    
+    # Policies
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/policy/worker_policy.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/policy/surface_pool_policy.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/policy/telemetry_policy.cpp
 )
