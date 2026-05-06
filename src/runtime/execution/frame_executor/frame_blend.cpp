@@ -1,9 +1,8 @@
 #include "tachyon/runtime/execution/frame_blend_renderer.h"
-#include "frame_executor/frame_executor_internal.h"
+#include "frame_executor_internal.h"
 #include "tachyon/timeline/time_remap.h"
 #include "tachyon/timeline/frame_blend.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
-#include "tachyon/renderer2d/SurfaceRGBA.h"
 #include "tachyon/runtime/profiling/render_profiler.h"
 
 #include <optional>

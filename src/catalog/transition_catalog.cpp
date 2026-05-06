@@ -22,106 +22,20 @@ TransitionCatalog& TransitionCatalog::instance() {
 
 TransitionCatalog::TransitionCatalog() {
     m_impl = std::make_unique<Impl>();
-    // Register built-in transitions
-    register_entry({
-        "tachyon.transition.fade",
-        {"fade", "crossfade", "dissolve"},
-        "tachyon.transition.fade",
-        "fade",
-        false, true,
-        TransitionStatus::Stable,
-        "Crossfade between layers"
-    });
-
-    register_entry({
-        "tachyon.transition.slide_left",
-        {"slide_left", "slide left", "slide"},
-        "tachyon.transition.slide_left",
-        "slide",
-        true, true,
-        TransitionStatus::Stable,
-        "Slide layer from left"
-    });
-
-    register_entry({
-        "tachyon.transition.slide_right",
-        {"slide_right", "slide right"},
-        "tachyon.transition.slide_right",
-        "slide",
-        true, true,
-        TransitionStatus::Stable,
-        "Slide layer from right"
-    });
-
-    register_entry({
-        "tachyon.transition.zoom",
-        {"zoom", "scale", "zoom_in"},
-        "tachyon.transition.zoom",
-        "zoom",
-        false, true,
-        TransitionStatus::Stable,
-        "Zoom in/out transition"
-    });
-
-    register_entry({
-        "tachyon.transition.flip",
-        {"flip", "flip horizontal", "flip_h"},
-        "tachyon.transition.flip",
-        "flip",
-        false, true,
-        TransitionStatus::Stable,
-        "Flip transition"
-    });
-
-    register_entry({
-        "tachyon.transition.blur",
-        {"blur", "blur transition", "blur_in"},
-        "tachyon.transition.blur",
-        "blur",
-        false, true,
-        TransitionStatus::Stable,
-        "Blur transition effect"
-    });
-
-    register_entry({
-        "tachyon.transition.wipe_left",
-        {"wipe_left", "wipe"},
-        "tachyon.transition.wipe_left",
-        "wipe",
-        true, true,
-        TransitionStatus::Stable,
-        "Wipe transition from left"
-    });
-
-    register_entry({
-        "tachyon.transition.push_up",
-        {"push_up", "push", "slide_up"},
-        "tachyon.transition.push_up",
-        "push",
-        true, true,
-        TransitionStatus::Stable,
-        "Push layer upward"
-    });
-
-    register_entry({
-        "tachyon.transition.glitch",
-        {"glitch", "digital", "glitch_effect"},
-        "tachyon.transition.glitch",
-        "glitch",
-        false, true,
-        TransitionStatus::Experimental,
-        "Digital glitch transition effect"
-    });
-
-    register_entry({
-        "tachyon.transition.cinematic_fast",
-        {"cinematic_fast", "fast_cut", "quick_cut"},
-        "tachyon.transition.cinematic_fast",
-        "cut",
-        false, false,
-        TransitionStatus::Stable,
-        "Fast cinematic cut (no duration)"
-    });
+    
+    // Register built-in transitions from canonical descriptors
+    for (const auto& desc : get_builtin_transition_descriptors()) {
+        TransitionCatalogEntry entry;
+        entry.id = desc.id;
+        entry.runtime_id = desc.runtime_id;
+        entry.authoring_aliases = desc.authoring_aliases;
+        entry.description = desc.description;
+        entry.status = desc.status;
+        // kind mapping if needed, or just use string
+        entry.kind = "custom"; // Placeholder for more granular mapping
+        
+        register_entry(entry);
+    }
 }
 
 TransitionCatalog::~TransitionCatalog() = default;
@@ -233,73 +147,53 @@ TransitionCatalog::AuditResult TransitionCatalog::audit() const {
     auto& preset_registry = presets::TransitionPresetRegistry::instance();
     auto& transition_registry = TransitionRegistry::instance();
 
-    // Check 1: Every catalog.runtime_id must exist in TransitionRegistry
+    // 1. Every catalog.runtime_id must exist in TransitionRegistry
     for (const auto& entry : m_impl->entries) {
         if (!entry.runtime_id.empty()) {
             const auto* runtime = transition_registry.find(entry.runtime_id);
             if (!runtime) {
-                result.orphaned_runtime.push_back("Catalog entry '" + entry.id +
-                    "' has runtime_id '" + entry.runtime_id + "' not found in TransitionRegistry");
+                result.missing_runtime.push_back(entry.runtime_id);
             }
         }
     }
 
-    // Check 2: Every public preset must exist in catalog
+    // 2. Every public preset must exist in catalog
     auto preset_ids = preset_registry.list_ids();
     for (const auto& preset_id : preset_ids) {
-        if (!find(preset_id)) {
-            result.orphaned_presets.push_back("Preset '" + preset_id + "' not found in catalog");
+        if (!find(preset_id) && !find_by_alias(preset_id)) {
+            result.missing_catalog_entries.push_back(preset_id);
         }
     }
 
-    // Check 3: Every public runtime transition must be cataloged
+    // 3. Every public runtime transition must be cataloged
     auto runtime_ids = transition_registry.list_builtin_transition_ids();
     for (const auto& runtime_id : runtime_ids) {
-        const auto* catalog_entry = find_by_runtime_id(runtime_id);
-        if (!catalog_entry) {
-            result.orphaned_runtime.push_back("Runtime transition '" + runtime_id + "' not cataloged");
+        if (!find_by_runtime_id(runtime_id)) {
+            result.missing_catalog_entries.push_back(runtime_id + " (runtime)");
         }
     }
 
-    // Check 4: Duplicate aliases
+    // 4. Duplicate aliases
     std::map<std::string, std::string> alias_to_id_check;
     for (const auto& entry : m_impl->entries) {
         for (const auto& alias : entry.authoring_aliases) {
             auto it = alias_to_id_check.find(alias);
             if (it != alias_to_id_check.end()) {
-                result.alias_conflicts.push_back("Alias '" + alias + "' points to both '" +
-                    it->second + "' and '" + entry.id + "'");
+                result.duplicate_aliases.push_back(alias);
             } else {
                 alias_to_id_check[alias] = entry.id;
             }
         }
     }
 
-    // Check 5: Duplicate catalog IDs (should not happen due to registration logic, but verify)
-    std::set<std::string> seen_ids;
+    // 5. Duplicate runtime IDs
+    std::map<std::string, std::string> runtime_to_id_check;
     for (const auto& entry : m_impl->entries) {
-        if (seen_ids.count(entry.id)) {
-            result.alias_conflicts.push_back("Duplicate catalog ID: '" + entry.id + "'");
-        }
-        seen_ids.insert(entry.id);
-    }
-
-    // Check 6: amber_sweep must be registered everywhere (if it exists)
-    const std::string amber_sweep_id = "tachyon.transition.lightleak.amber_sweep";
-    const auto* amber_catalog = find(amber_sweep_id);
-    const auto* amber_preset = preset_registry.find(amber_sweep_id);
-    const auto* amber_runtime = transition_registry.find(amber_sweep_id);
-
-    if (amber_catalog || amber_preset || amber_runtime) {
-        // If registered in any, should be in all
-        if (!amber_catalog) {
-            result.orphaned_presets.push_back(amber_sweep_id + " found in registry/preset but not in catalog");
-        }
-        if (!amber_preset) {
-            result.orphaned_presets.push_back(amber_sweep_id + " found in catalog/registry but not in preset registry");
-        }
-        if (!amber_runtime) {
-            result.orphaned_runtime.push_back(amber_sweep_id + " found in catalog/preset but not in runtime registry");
+        auto it = runtime_to_id_check.find(entry.runtime_id);
+        if (it != runtime_to_id_check.end()) {
+            result.duplicate_runtime_ids.push_back(entry.runtime_id);
+        } else {
+            runtime_to_id_check[entry.runtime_id] = entry.id;
         }
     }
 

@@ -11,7 +11,6 @@ set(TachyonSceneSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/cpp_scene_loader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/authoring_service.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/asset_resolver.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/effect_compiler.cpp
     
     # Spec - Schema
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/schema/scene_spec.cpp

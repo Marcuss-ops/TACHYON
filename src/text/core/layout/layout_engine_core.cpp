@@ -1,6 +1,6 @@
 #include "layout_engine_helpers.h"
 #include "tachyon/text/i18n/bidi_engine.h"
-#include "tachyon/renderer2d/text/utf8/utf8_decoder.h"
+#include "tachyon/text/core/low_level/utf8/utf8_decoder.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdint>

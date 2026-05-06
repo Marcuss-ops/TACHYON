@@ -60,15 +60,6 @@ void SceneValidator::validate_layer(const NormalizedLayerView& normalized, const
         out.error_count++;
     }
 
-    if (normalized.legacy_type_string_used) {
-        out.issues.push_back(ValidationIssue{
-            ValidationIssue::Severity::Warning,
-            path + ".type_string",
-            "type_string is legacy authoring data; use layer.type instead."
-        });
-        out.warning_count++;
-    }
-
     if (normalized.type == LayerType::Unknown) {
         out.issues.push_back(ValidationIssue{
             ValidationIssue::Severity::Error,

@@ -15,4 +15,11 @@ namespace tachyon::presets {
     double duration = 5.0
 );
 
+[[nodiscard]] std::vector<LayerSpec> resolve_background_to_layers_checked(
+    const BackgroundSpec& bg,
+    int width,
+    int height,
+    double duration = 5.0
+);
+
 } // namespace tachyon::presets

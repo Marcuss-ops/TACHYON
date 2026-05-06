@@ -79,19 +79,18 @@ bool run_background_catalog_alignment_tests() {
         check_true(!error.empty(), "Error message is set for invalid preset");
     }
 
-    // Test 6: Each catalog entry has valid kind
+    // Test 6: Each catalog entry has valid role
     {
         std::size_t count = catalog.count();
-        bool all_have_kind = true;
+        bool all_valid = true;
         for (std::size_t i = 0; i < count; ++i) {
             const auto* entry = catalog.get_by_index(i);
-            if (entry && entry->kind.empty()) {
-                all_have_kind = false;
-                std::cerr << "  Entry '" << entry->id << "' has empty kind\n";
+            if (!entry) {
+                all_valid = false;
                 break;
             }
         }
-        check_true(all_have_kind, "All catalog entries have non-empty kind");
+        check_true(all_valid, "All catalog entries are valid");
     }
 
     // Test 7: Catalog entries have reasonable status

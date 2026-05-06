@@ -5,23 +5,42 @@
 namespace tachyon::core {
 
 LayerType canonical_layer_type(const ::tachyon::LayerSpec& layer) {
-    if (layer.type != LayerType::Unknown) {
+    if (layer.type != LayerType::Unknown && layer.type != LayerType::NullLayer) {
         return layer.type;
     }
-    if (layer.type_string.empty()) {
-        return LayerType::Unknown;
+    
+    if (!layer.type_string.empty()) {
+        // Simple string to enum mapping (could be more robust in a dedicated parser)
+        if (layer.type_string == "text") return LayerType::Text;
+        if (layer.type_string == "image") return LayerType::Image;
+        if (layer.type_string == "video") return LayerType::Video;
+        if (layer.type_string == "solid") return LayerType::Solid;
+        if (layer.type_string == "precomp") return LayerType::Precomp;
+        if (layer.type_string == "camera") return LayerType::Camera;
+        if (layer.type_string == "light") return LayerType::Light;
     }
-    return layer_type_from_string(layer.type_string);
+
+    return LayerType::Unknown;
 }
 
 NormalizedLayerView normalize_layer_view(const ::tachyon::LayerSpec& layer) {
     NormalizedLayerView view;
     view.source = &layer;
-    view.type = canonical_layer_type(layer);
+    view.type = layer.type;
     view.asset_reference = layer.asset_id;
     view.preset_reference = layer.preset_id;
     view.precomp_reference = layer.precomp_id.has_value() ? std::string_view(*layer.precomp_id) : std::string_view{};
-    view.legacy_type_string_used = layer.type == LayerType::Unknown && !layer.type_string.empty();
+    
+    if (view.type == LayerType::Unknown || view.type == LayerType::NullLayer) {
+        LayerType fallback = canonical_layer_type(layer);
+        if (fallback != LayerType::Unknown) {
+            view.type = fallback;
+            view.legacy_type_string_used = true;
+        }
+    } else {
+        view.legacy_type_string_used = false;
+    }
+    
     return view;
 }
 

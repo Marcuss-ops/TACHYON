@@ -1,6 +1,7 @@
 #include "tachyon/renderer3d/core/ray_tracer.h"
 #include "tachyon/core/math/matrix4x4.h"
 #include "tachyon/media/management/media_manager.h"
+#include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
 #include <filesystem>
 
 namespace tachyon::renderer3d {
@@ -64,11 +65,9 @@ void RayTracer::build_scene(const EvaluatedScene3D& scene) {
 
             if (entry.asset && !entry.asset->empty()) {
                 entry.submeshes.reserve(entry.asset->sub_meshes.size());
+                
+                // 1. Prepare initial submeshes
                 for (const auto& sub_mesh : entry.asset->sub_meshes) {
-                    if (sub_mesh.vertices.empty() || sub_mesh.indices.empty() || (sub_mesh.indices.size() % 3) != 0) {
-                        continue;
-                    }
-
                     MeshCacheEntry::SubMeshCache cached_submesh;
                     cached_submesh.material = sub_mesh.material;
                     cached_submesh.indices = sub_mesh.indices;
@@ -81,38 +80,56 @@ void RayTracer::build_scene(const EvaluatedScene3D& scene) {
                         transformed_vertex.uv = vertex.uv;
                         cached_submesh.vertices.push_back(transformed_vertex);
                     }
+                    entry.submeshes.push_back(std::move(cached_submesh));
+                }
+
+                // 2. Apply modifiers to all submeshes
+                if (!instance.modifiers.empty()) {
+                    Modifier3DRegistry& registry = Modifier3DRegistry::instance();
+                    for (const auto& mod_resolved : instance.modifiers) {
+                        auto modifier = registry.create(mod_resolved.type);
+                        if (modifier) {
+                            for (auto& submesh : entry.submeshes) {
+                                Mesh3D mesh;
+                                mesh.vertices.reserve(submesh.vertices.size());
+                                for (const auto& v : submesh.vertices) {
+                                    mesh.vertices.push_back({v.position, v.uv, v.normal});
+                                }
+                                mesh.indices = submesh.indices;
+
+                                modifier->apply(mesh, mod_resolved, renderer2d::RenderContext{});
+
+                                for (std::size_t i = 0; i < submesh.vertices.size(); ++i) {
+                                    submesh.vertices[i].position = mesh.vertices[i].position;
+                                    submesh.vertices[i].normal = mesh.vertices[i].normal;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 3. Build Embree geometry from final submeshes
+                for (std::size_t i = 0; i < entry.submeshes.size(); ++i) {
+                    auto& cached_submesh = entry.submeshes[i];
+                    if (cached_submesh.vertices.empty() || cached_submesh.indices.empty()) continue;
 
                     RTCGeometry geom = rtcNewGeometry(device_, RTC_GEOMETRY_TYPE_TRIANGLE);
-                    const std::size_t vertex_count = cached_submesh.vertices.size();
-                    float* v = static_cast<float*>(rtcSetNewGeometryBuffer(
-                        geom,
-                        RTC_BUFFER_TYPE_VERTEX,
-                        0,
-                        RTC_FORMAT_FLOAT3,
-                        3 * sizeof(float),
-                        vertex_count));
-                    for (std::size_t i = 0; i < cached_submesh.vertices.size(); ++i) {
-                        v[i * 3 + 0] = cached_submesh.vertices[i].position.x;
-                        v[i * 3 + 1] = cached_submesh.vertices[i].position.y;
-                        v[i * 3 + 2] = cached_submesh.vertices[i].position.z;
+                    
+                    float* v = static_cast<float*>(rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, 3 * sizeof(float), cached_submesh.vertices.size()));
+                    for (std::size_t j = 0; j < cached_submesh.vertices.size(); ++j) {
+                        v[j * 3 + 0] = cached_submesh.vertices[j].position.x;
+                        v[j * 3 + 1] = cached_submesh.vertices[j].position.y;
+                        v[j * 3 + 2] = cached_submesh.vertices[j].position.z;
                     }
 
-                    const std::size_t triangle_count = cached_submesh.indices.size() / 3;
-                    unsigned int* idx = static_cast<unsigned int*>(rtcSetNewGeometryBuffer(
-                        geom,
-                        RTC_BUFFER_TYPE_INDEX,
-                        0,
-                        RTC_FORMAT_UINT3,
-                        3 * sizeof(unsigned int),
-                        triangle_count));
-                    for (std::size_t i = 0; i < cached_submesh.indices.size(); ++i) {
-                        idx[i] = cached_submesh.indices[i];
+                    unsigned int* idx = static_cast<unsigned int*>(rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, 3 * sizeof(unsigned int), cached_submesh.indices.size() / 3));
+                    for (std::size_t j = 0; j < cached_submesh.indices.size(); ++j) {
+                        idx[j] = cached_submesh.indices[j];
                     }
 
                     rtcCommitGeometry(geom);
                     const unsigned int sub_geom_id = rtcAttachGeometry(entry.scene, geom);
-                    entry.geom_id_to_submesh[sub_geom_id] = entry.submeshes.size();
-                    entry.submeshes.push_back(std::move(cached_submesh));
+                    entry.geom_id_to_submesh[sub_geom_id] = i;
                     rtcReleaseGeometry(geom);
                 }
             }

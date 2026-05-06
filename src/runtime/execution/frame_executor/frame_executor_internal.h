@@ -2,8 +2,7 @@
 #include "tachyon/runtime/execution/frames/frame_executor.h"
 #include "tachyon/core/scene/evaluation/evaluator.h"
 #include "tachyon/runtime/cache/cache_key_builder.h"
-#include "tachyon/timeline/frame_buffer.h"
-#include "tachyon/renderer2d/SurfaceRGBA.h"
+#include "tachyon/timeline/frame_blend.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 
 namespace tachyon {

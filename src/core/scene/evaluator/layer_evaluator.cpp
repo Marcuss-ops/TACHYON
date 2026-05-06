@@ -25,9 +25,6 @@ EvaluatedLayerState make_layer_state(
     evaluated.name = layer.name;
     evaluated.layer_index = layer_index;
     evaluated.type = layer.type;
-    if (evaluated.type == LayerType::Unknown && !layer.type_string.empty()) {
-        evaluated.type = layer_type_from_string(layer.type_string);
-    }
     evaluated.enabled = layer.enabled;
     evaluated.visible = layer.visible;
     evaluated.is_3d = layer.is_3d;

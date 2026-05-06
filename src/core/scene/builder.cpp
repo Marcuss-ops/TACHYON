@@ -146,38 +146,31 @@ LayerBuilder::LayerBuilder(std::string id) {
 
 LayerBuilder::LayerBuilder(LayerSpec spec) : spec_(std::move(spec)) {}
 
-LayerBuilder& LayerBuilder::type(std::string t) {
-    spec_.type = layer_type_from_string(t);
-    spec_.type_string.clear();
-    return *this;
-}
-
-LayerBuilder& LayerBuilder::kind(LayerType t) {
+LayerBuilder& LayerBuilder::type(LayerType t) {
     spec_.type = t;
-    spec_.type_string.clear();
     return *this;
 }
 
 LayerBuilder& LayerBuilder::solid(std::string name) {
-    return kind(LayerType::Solid).asset_id(std::move(name));
+    return type(LayerType::Solid).asset_id(std::move(name));
 }
 
 LayerBuilder& LayerBuilder::image(std::string path) {
-    return kind(LayerType::Image).asset_id(std::move(path));
+    return type(LayerType::Image).asset_id(std::move(path));
 }
 
 LayerBuilder& LayerBuilder::mesh(std::string path) {
-    return kind(LayerType::Mesh).asset_id(std::move(path));
+    return type(LayerType::Mesh).asset_id(std::move(path));
 }
 
 LayerBuilder& LayerBuilder::preset(std::string name) {
-    kind(LayerType::Procedural);
+    type(LayerType::Procedural);
     spec_.preset_id = std::move(name);
     return *this;
 }
 
 LayerBuilder& LayerBuilder::text(std::string t) {
-    kind(LayerType::Text);
+    type(LayerType::Text);
     spec_.text_content = std::move(t);
     return *this;
 }
@@ -251,11 +244,11 @@ LayerBuilder& LayerBuilder::stroke_width(double w) {
 }
 
 LayerBuilder& LayerBuilder::null_layer() {
-    return kind(LayerType::NullLayer);
+    return type(LayerType::NullLayer);
 }
 
 LayerBuilder& LayerBuilder::precomp(std::string composition_id) {
-    kind(LayerType::Precomp);
+    type(LayerType::Precomp);
     spec_.precomp_id = std::move(composition_id);
     return *this;
 }
@@ -407,37 +400,37 @@ LayerBuilder& LayerBuilder::is_3d(bool v) {
 }
 
 LayerBuilder& LayerBuilder::camera_type(std::string t) {
-    kind(LayerType::Camera);
+    type(LayerType::Camera);
     spec_.camera_type = std::move(t);
     return *this;
 }
 
 LayerBuilder& LayerBuilder::camera_poi(double x, double y, double z) {
-    kind(LayerType::Camera);
+    type(LayerType::Camera);
     spec_.camera_poi.value = math::Vector3(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z));
     return *this;
 }
 
 LayerBuilder& LayerBuilder::camera_zoom(double z) {
-    kind(LayerType::Camera);
+    type(LayerType::Camera);
     spec_.camera_zoom = anim::scalar(z);
     return *this;
 }
 
 LayerBuilder& LayerBuilder::light_type(std::string t) {
-    kind(LayerType::Light);
+    type(LayerType::Light);
     spec_.light_type = std::move(t);
     return *this;
 }
 
 LayerBuilder& LayerBuilder::light_color(const ColorSpec& c) {
-    kind(LayerType::Light);
+    type(LayerType::Light);
     spec_.light_color.value = c;
     return *this;
 }
 
 LayerBuilder& LayerBuilder::light_intensity(double i) {
-    kind(LayerType::Light);
+    type(LayerType::Light);
     spec_.light_intensity = anim::scalar(i);
     return *this;
 }
@@ -559,17 +552,17 @@ CompositionBuilder& CompositionBuilder::precomp_layer(std::string id, std::strin
 
 CompositionBuilder& CompositionBuilder::camera3d_layer(std::string id, std::function<void(LayerBuilder&)> fn) {
     return add_typed_layer(std::move(id),
-        [](LayerBuilder& l) { l.is_3d(true); l.kind(LayerType::Camera); l.camera_type("two_node"); }, fn);
+        [](LayerBuilder& l) { l.is_3d(true); l.type(LayerType::Camera); l.camera_type("two_node"); }, fn);
 }
 
 CompositionBuilder& CompositionBuilder::light_layer(std::string id, std::function<void(LayerBuilder&)> fn) {
     return add_typed_layer(std::move(id),
-        [](LayerBuilder& l) { l.is_3d(true); l.kind(LayerType::Light); l.light_type("point"); }, fn);
+        [](LayerBuilder& l) { l.is_3d(true); l.type(LayerType::Light); l.light_type("point"); }, fn);
 }
 
 CompositionBuilder& CompositionBuilder::mesh_layer(std::string id, std::function<void(LayerBuilder&)> fn) {
     return add_typed_layer(std::move(id),
-        [](LayerBuilder& l) { l.is_3d(true); l.kind(LayerType::Shape); }, fn);
+        [](LayerBuilder& l) { l.is_3d(true); l.type(LayerType::Shape); }, fn);
 }
 
 CompositionBuilder& CompositionBuilder::audio(std::string path, double volume) {

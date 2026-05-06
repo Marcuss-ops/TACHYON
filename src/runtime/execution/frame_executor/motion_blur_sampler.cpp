@@ -1,5 +1,5 @@
 #include "tachyon/runtime/execution/motion_blur_sampler.h"
-#include "frame_executor/frame_executor_internal.h"
+#include "frame_executor_internal.h"
 #include "tachyon/runtime/profiling/render_profiler.h"
 #include "tachyon/renderer2d/raster/draw_list_builder.h"
 #include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"

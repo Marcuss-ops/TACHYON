@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/core/spec/schema/common/common_spec.h"
-#include "tachyon/renderer2d/spec/gradient_spec.h"
+#include "tachyon/core/spec/schema/common/gradient_spec.h"
 #include <string>
 #include <vector>
 #include <optional>

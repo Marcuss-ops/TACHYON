@@ -1,5 +1,5 @@
 #include "tachyon/runtime/execution/frames/frame_executor.h"
-#include "tachyon/core/spec/compilation/scene_compiler.h"
+#include "tachyon/runtime/compiler/scene_compiler.h"
 #include "tachyon/runtime/core/data/compiled_scene.h"
 
 #include <iostream>

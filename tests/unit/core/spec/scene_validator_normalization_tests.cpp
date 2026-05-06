@@ -1,6 +1,7 @@
 #include "tachyon/core/spec/validation/scene_validator.h"
 #include "tachyon/core/spec/validation/layer_spec_normalizer.h"
-#include "tachyon/core/spec/schema/scene_spec.h"
+#include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/core/spec/schema/objects/composition_spec.h"
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 
 #include <iostream>
@@ -28,7 +29,7 @@ bool run_scene_validator_normalization_tests() {
     // Test 1: Validator accepts canonical LayerType
     {
         SceneSpec scene;
-        scene.id = "test_scene";
+        scene.project.id = "test_scene";
 
         CompositionSpec comp;
         comp.id = "comp1";
@@ -43,10 +44,10 @@ bool run_scene_validator_normalization_tests() {
         comp.layers.push_back(layer);
         scene.compositions.push_back(comp);
 
-        SceneValidator validator;
+        core::SceneValidator validator;
         auto result = validator.validate(scene);
 
-        check_true(!result.has_errors(), "Scene with canonical LayerType::Text passes validation");
+        check_true(result.is_valid(), "Scene with canonical LayerType::Text passes validation");
     }
 
     std::cout << "Scene validator normalization tests: " << (g_failures == 0 ? "PASSED" : "FAILED")

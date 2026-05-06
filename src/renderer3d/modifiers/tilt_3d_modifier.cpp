@@ -6,24 +6,23 @@
 namespace tachyon {
 namespace renderer3d {
 
-Tilt3DModifier::Tilt3DModifier(const ThreeDModifierSpec& spec)
-    : spec_(spec) {}
+Tilt3DModifier::Tilt3DModifier() {}
 
 void Tilt3DModifier::apply(
     Mesh3D& mesh,
-    double time,
+    const ResolvedModifier3D& resolved,
     const renderer2d::RenderContext& /*ctx*/
 ) {
-    auto get_scalar = [&](const std::string& name, double fallback) {
-        auto it = spec_.scalar_params.find(name);
-        if (it != spec_.scalar_params.end()) {
-            return scene::sample_scalar(it->second, fallback, time);
+    auto get_scalar = [&](const std::string& name, float fallback) {
+        auto it = resolved.scalar_params.find(name);
+        if (it != resolved.scalar_params.end()) {
+            return it->second;
         }
         return fallback;
     };
 
-    float tilt_x = static_cast<float>(get_scalar("tilt_x", 0.0));
-    float tilt_y = static_cast<float>(get_scalar("tilt_y", 0.0));
+    float tilt_x = get_scalar("tilt_x", 0.0f);
+    float tilt_y = get_scalar("tilt_y", 0.0f);
 
     constexpr float kDegToRad = static_cast<float>(M_PI / 180.0);
     float rad_x = tilt_x * kDegToRad;

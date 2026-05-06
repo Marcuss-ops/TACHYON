@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/core/render/motion_blur_settings.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/core/math/vector3.h"
 #include "tachyon/core/math/matrix4x4.h"
@@ -10,6 +11,12 @@
 #include <functional>
 
 namespace tachyon::renderer3d {
+
+/**
+ * @brief Types moved to core render contract
+ */
+using MotionBlurWeightCurve = ::tachyon::MotionBlurWeightCurve;
+using MotionBlurConfig = ::tachyon::MotionBlurConfig;
 
 class MotionBlurRenderer {
 public:
@@ -31,18 +38,6 @@ public:
         };
         std::vector<ObjectState> object_states;
     };
-
-enum class MotionBlurWeightCurve { kBox, kTriangle, kGaussian };
-
-     struct MotionBlurConfig {
-         bool enabled{false};
-         int samples{8};
-         double shutter_angle{180.0};
-         double shutter_phase{-90.0};
-         MotionBlurWeightCurve weight_curve{MotionBlurWeightCurve::kBox};
-         bool enable_camera_blur{true};
-         bool enable_object_blur{true};
-     };
 
     MotionBlurRenderer();
     explicit MotionBlurRenderer(const MotionBlurConfig& config);

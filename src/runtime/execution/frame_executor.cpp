@@ -2,7 +2,11 @@
 #include "tachyon/runtime/execution/motion_blur_sampler.h"
 #include "tachyon/runtime/execution/frame_fallback_policy.h"
 #include "tachyon/runtime/execution/rasterization_step.h"
+#include "tachyon/core/scene/composition/evaluator_composition.h"
 #include "frame_executor/frame_executor_internal.h"
+#include "tachyon/runtime/profiling/render_profiler.h"
+#include "tachyon/runtime/cache/cache_key_builder.h"
+#include "tachyon/renderer2d/raster/draw_list_builder.h"
 #ifdef TACHYON_ENABLE_3D
 #include "tachyon/renderer3d/core/ray_tracer.h"
 #endif
@@ -48,110 +52,7 @@ std::optional<scene::EvaluatedCompositionState> evaluate_target_composition_stat
     return std::nullopt;
 }
 
-/**
- * @brief Render a single frame at the given time and return the surface
- */
-std::shared_ptr<renderer2d::SurfaceRGBA> render_frame_at_time(
-    FrameExecutor& executor,
-    const CompiledScene& compiled_scene,
-    const RenderPlan& plan,
-    const FrameRenderTask& task,
-    const DataSnapshot& snapshot,
-    RenderContext& context,
-    double render_time,
-     const std::uint64_t composition_key,
-     const std::uint64_t frame_key) {
-    // Build a robust cache key using frame_key, render time, composition, and plan params
-    CacheKeyBuilder temp_builder;
-    temp_builder.add_u64(frame_key);
-    temp_builder.add_f64(render_time);
-    temp_builder.add_u64(composition_key);
-    if (plan.composition.frame_rate.numerator > 0) {
-        temp_builder.add_u64(static_cast<std::uint64_t>(plan.composition.frame_rate.numerator));
-    }
-    if (task.subframe_index.has_value()) {
-        temp_builder.add_u64(*task.subframe_index);
-    }
-    if (task.motion_blur_sample_index.has_value()) {
-        temp_builder.add_u64(*task.motion_blur_sample_index);
-    }
-    const std::uint64_t temp_key = temp_builder.finish();
-
-    // Create a modified task with the target time
-    FrameRenderTask temp_task = task;
-    temp_task.time_seconds = render_time;
-
-    // Evaluate the scene at the specified time
-    const auto& topo_order = compiled_scene.graph.topo_order();
-    for (std::uint32_t node_id : topo_order) {
-        if (context.cancel_flag && context.cancel_flag->load()) break;
-        ::tachyon::evaluate_node(executor, node_id, compiled_scene, plan, snapshot, context, composition_key, temp_key, render_time, temp_task);
-    }
-
-    if (!compiled_scene.compositions.empty()) {
-        const CompiledComposition& root_comp = compiled_scene.compositions.front();
-        const std::uint64_t root_key = build_node_key(temp_key, root_comp.node);
-        ::tachyon::evaluate_composition(executor, compiled_scene, root_comp, plan, snapshot, context, composition_key, root_key, temp_key, render_time, temp_task);
-    }
-
-    // Render the evaluated composition
-    auto cached_comp = executor.cache().lookup_composition(build_node_key(temp_key, compiled_scene.compositions.front().node));
-    if (cached_comp) {
-        RasterizedFrame2D rasterized = render_evaluated_composition_2d(*cached_comp, plan, temp_task, context.renderer2d);
-        return rasterized.surface;
-    }
-    return nullptr;
-}
-
-/**
- * @brief Convert renderer2d::SurfaceRGBA to timeline::FrameBuffer
- */
-timeline::FrameBuffer surface_to_framebuffer(const renderer2d::SurfaceRGBA& src) {
-    timeline::FrameBuffer dst;
-    dst.width = src.width();
-    dst.height = src.height();
-    dst.channels = 4; // RGBA
-    dst.data.resize(static_cast<size_t>(dst.width) * dst.height * dst.channels);
-
-    const std::size_t dst_width = static_cast<std::size_t>(dst.width);
-    const std::size_t dst_height = static_cast<std::size_t>(dst.height);
-    const std::size_t dst_channels = static_cast<std::size_t>(dst.channels);
-    for (std::size_t y = 0; y < dst_height; ++y) {
-        for (std::size_t x = 0; x < dst_width; ++x) {
-            const auto pixel = src.get_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y));
-            const size_t idx = (y * dst_width + x) * dst_channels;
-            dst.data[idx + 0] = static_cast<uint8_t>(pixel.r * 255.0f);
-            dst.data[idx + 1] = static_cast<uint8_t>(pixel.g * 255.0f);
-            dst.data[idx + 2] = static_cast<uint8_t>(pixel.b * 255.0f);
-            dst.data[idx + 3] = static_cast<uint8_t>(pixel.a * 255.0f);
-        }
-    }
-    return dst;
-}
-
-/**
- * @brief Convert timeline::FrameBuffer to renderer2d::Framebuffer
- */
-std::shared_ptr<renderer2d::Framebuffer> framebuffer_to_framebuffer(const timeline::FrameBuffer& src) {
-    auto dst = std::make_shared<renderer2d::Framebuffer>(src.width, src.height);
-    const std::size_t src_width = static_cast<std::size_t>(src.width);
-    const std::size_t src_height = static_cast<std::size_t>(src.height);
-    const std::size_t src_channels = static_cast<std::size_t>(src.channels);
-    for (std::size_t y = 0; y < src_height; ++y) {
-        for (std::size_t x = 0; x < src_width; ++x) {
-            const size_t idx = (y * src_width + x) * src_channels;
-            renderer2d::Color c(
-                src.data[idx + 0] / 255.0f,
-                src.data[idx + 1] / 255.0f,
-                src.data[idx + 2] / 255.0f,
-                src.data[idx + 3] / 255.0f);
-            dst->set_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), c);
-        }
-    }
-    return dst;
-}
-
-} // namespace tachyon
+} // namespace
 
 void FrameExecutor::build_lookup_table(const CompiledScene& scene) {
     m_node_lookup.clear();
@@ -223,6 +124,16 @@ ExecutedFrame FrameExecutor::execute(
     const std::uint64_t frame_key = frame_builder.finish();
     result.cache_key = frame_key;
     if (diagnostics_enabled) result.diagnostics.frame_key_manifest = frame_builder.manifest();
+    
+    // 0. Global Cache Check
+    if (task.cacheable) {
+        auto cached = m_cache.lookup_frame(frame_key);
+        if (cached) {
+            result.frame = cached;
+            result.cache_hit = true;
+            return result;
+        }
+    }
 
     const double fps = compiled_scene.compositions.empty() ? 60.0 : std::max(1u, compiled_scene.compositions.front().fps);
     double frame_time_seconds = static_cast<double>(task.frame_number) / fps;
@@ -288,6 +199,11 @@ ExecutedFrame FrameExecutor::execute(
     // 5. Apply Fallback Policy
     FrameFallbackPolicy::apply(result, compiled_scene, plan);
 
+    // 6. Cache rendered frame
+    if (task.cacheable && result.frame) {
+        m_cache.store_frame(frame_key, result.frame);
+    }
+
     context.diagnostic_tracker = nullptr;
     context.renderer2d.diagnostics = nullptr;
     return result;
@@ -327,8 +243,7 @@ EvaluatedFrameState evaluate_frame_state(const SceneSpec& scene, const CompiledS
 }
 
 renderer2d::DrawList2D build_draw_list(const EvaluatedFrameState& state) {
-    renderer2d::DrawListBuilder builder;
-    return builder.build(state.composition_state);
+    return renderer2d::DrawListBuilder::build(state.composition_state);
 }
 
 } // namespace tachyon

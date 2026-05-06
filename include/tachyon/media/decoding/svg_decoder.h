@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/core/shapes/shape_path.h"
-#include "tachyon/renderer2d/spec/gradient_spec.h"
+#include "tachyon/core/spec/schema/common/gradient_spec.h"
 #include "tachyon/renderer2d/path/mask_path.h"
 #include "tachyon/renderer2d/raster/path/path_types.h"
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"

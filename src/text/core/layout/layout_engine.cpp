@@ -1,130 +1,22 @@
-#include "tachyon/text/layout/layout.h"
-#include "tachyon/text/i18n/bidi_engine.h"
-#include "tachyon/text/fonts/core/font_registry.h"
-#include "tachyon/text/i18n/script_detector.h"
-#include "tachyon/renderer2d/text/utf8/utf8_decoder.h"
-#include "tachyon/renderer2d/text/shaping/font_shaping.h"
-#include "tachyon/renderer2d/text/shaping/shaping_cache.h"
-#include "tachyon/text/layout/cluster_iterator.h"
+#include <iostream>
+#include "layout_engine_helpers.h"
+#include "tachyon/text/core/low_level/utf8/utf8_decoder.h"
 #include "tachyon/text/layout/line_breaker.h"
-#include <algorithm>
-#include <cmath>
-#include <cstdint>
-#include <limits>
-#include <string_view>
-#include <vector>
+#include "tachyon/text/rendering/text_raster_surface.h"
 
 namespace tachyon::text {
 
 using namespace tachyon::renderer2d::text::shaping;
 
 namespace {
+} // namespace
 
-::tachyon::ColorSpec to_color_spec(const renderer2d::Color& color) {
-    auto to_channel = [](float value) -> std::uint8_t {
-        const float clamped = std::clamp(value, 0.0f, 1.0f);
-        return static_cast<std::uint8_t>(std::lround(clamped * 255.0f));
-    };
-    return {to_channel(color.r), to_channel(color.g), to_channel(color.b), to_channel(color.a)};
-}
-
-math::RectF make_rect(float x, float y, float width, float height) {
-    return {x, y, width, height};
-}
-
-math::RectF union_rects(const math::RectF& a, const math::RectF& b) {
-    if (a.width <= 0.0f || a.height <= 0.0f) {
-        return b;
-    }
-    if (b.width <= 0.0f || b.height <= 0.0f) {
-        return a;
-    }
-
-    const float left = std::min(a.x, b.x);
-    const float top = std::min(a.y, b.y);
-    const float right = std::max(a.x + a.width, b.x + b.width);
-    const float bottom = std::max(a.y + a.height, b.y + b.height);
-    return {left, top, right - left, bottom - top};
-}
-
-bool rect_is_empty(const math::RectF& rect) {
-    return rect.width <= 0.0f || rect.height <= 0.0f;
-}
-
-std::uint32_t choose_scale(const BitmapFont& font, const TextStyle& style) {
-    const std::uint32_t requested = style.pixel_size == 0 ? static_cast<std::uint32_t>(font.line_height()) : style.pixel_size;
-    const std::uint32_t base = static_cast<std::uint32_t>(std::max(1, font.line_height()));
-    return std::max<std::uint32_t>(1, requested / base);
-}
-
-bool is_breakable_space(std::uint32_t codepoint) {
-    return codepoint == static_cast<std::uint32_t>(' ') || 
-           codepoint == static_cast<std::uint32_t>('\t') ||
-           codepoint == 0x00A0; // non-breaking space
-}
-
-std::int32_t aligned_x_offset(TextAlignment alignment, std::uint32_t box_width, std::int32_t line_width) {
-    if (box_width == 0U) return 0;
-    const std::int32_t available = static_cast<std::int32_t>(box_width) - line_width;
-    if (available <= 0) return 0;
-    switch (alignment) {
-        case TextAlignment::Center: return available / 2;
-        case TextAlignment::Right:  return available;
-        case TextAlignment::Left:
-        case TextAlignment::Justify:
-        default:                    return 0;
-    }
-}
-
-void finalize_line(TextLayoutResult& result, std::size_t start_index, std::size_t glyph_count, std::int32_t line_width, std::int32_t line_y, TextAlignment alignment, std::uint32_t box_width, bool last_line) {
-    if (glyph_count == 0U) return;
-    
-    std::int32_t offset_x = aligned_x_offset(alignment, box_width, line_width);
-    
-    // Justification
-    if (alignment == TextAlignment::Justify && !last_line && box_width > 0U) {
-        const std::int32_t available = static_cast<std::int32_t>(box_width) - line_width;
-        if (available > 0) {
-            std::size_t spaces_count = 0;
-            for (std::size_t index = start_index; index < start_index + glyph_count; ++index) {
-                if (result.glyphs[index].whitespace) spaces_count++;
-            }
-            if (spaces_count > 0) {
-                const std::int32_t extra_per_space = available / static_cast<std::int32_t>(spaces_count);
-                std::int32_t current_extra = 0;
-                for (std::size_t index = start_index; index < start_index + glyph_count; ++index) {
-                    result.glyphs[index].x += current_extra;
-                    if (result.glyphs[index].whitespace) {
-                        current_extra += extra_per_space;
-                    }
-                }
-                line_width = static_cast<std::int32_t>(box_width);
-            }
-        }
-    } else {
-        for (std::size_t index = start_index; index < start_index + glyph_count; ++index) {
-            result.glyphs[index].x += offset_x;
-        }
-    }
-
-    result.lines.push_back(TextLine{ start_index, glyph_count, line_width, line_y });
-    const std::uint32_t used_width = box_width == 0U ? static_cast<std::uint32_t>(std::max(0, line_width)) : std::min(box_width, static_cast<std::uint32_t>(std::max(0, line_width + offset_x)));
-    result.width = std::max(result.width, used_width);
-}
-
-struct SubRun {
-    const Font* font;
-    std::vector<std::uint32_t> codepoints;
-    CharacterDirection direction;
-    std::size_t start_index; // index in original codepoint sequence
-};
-
-std::int32_t place_shaped_run(
+void place_shaped_glyph(
     TextLayoutResult& result,
-    std::int32_t pen_x,
+    std::int32_t& cursor,
     std::int32_t pen_y,
     const SubRun& sub,
-    const ShapedGlyphRun& shaped,
+    const ShapedGlyphRun::Glyph& gr,
     std::uint32_t scale,
     std::int32_t tracking_advance,
     std::size_t& current_word_index,
@@ -132,274 +24,66 @@ std::int32_t place_shaped_run(
     const std::vector<GraphemeCluster>& clusters) {
 
     const bool rtl = sub.direction == CharacterDirection::RTL;
-    std::int32_t cursor = rtl ? pen_x + shaped.width : pen_x;
-    std::int32_t consumed = 0;
-
-    for (const auto& gr : shaped.glyphs) {
-        const bool ws = is_breakable_space(gr.codepoint);
-        if (!ws && last_was_space && !result.glyphs.empty()) {
-            ++current_word_index;
-        }
-
-        const auto* g = sub.font->find_glyph_by_index(gr.font_glyph_index);
-        if (!g) {
-            continue;
-        }
-
-        const std::int32_t glyph_advance = std::abs(gr.advance_x) + tracking_advance;
-        if (rtl) {
-            cursor -= glyph_advance;
-        }
-
-        std::size_t global_cp_index = sub.start_index + gr.cluster;
-        std::size_t cluster_idx = 0;
-        std::size_t cp_count = 1;
-        std::size_t cp_start = global_cp_index;
-        
-        for (std::size_t c = 0; c < clusters.size(); ++c) {
-            if (global_cp_index >= clusters[c].start_index && global_cp_index < clusters[c].start_index + clusters[c].length) {
-                cluster_idx = c;
-                cp_start = clusters[c].start_index;
-                cp_count = clusters[c].length;
-                break;
-            }
-        }
-
-        result.glyphs.push_back(PositionedGlyph{
-            gr.codepoint,
-            gr.font_glyph_index,
-            sub.font->id(),
-            cursor + g->x_offset * static_cast<std::int32_t>(scale) + gr.offset_x,
-            pen_y + (sub.font->ascent() - static_cast<std::int32_t>(g->height) - g->y_offset) * static_cast<std::int32_t>(scale) + gr.offset_y,
-            static_cast<std::int32_t>(g->width) * static_cast<std::int32_t>(scale),
-            static_cast<std::int32_t>(g->height) * static_cast<std::int32_t>(scale),
-            gr.advance_x,
-            result.glyphs.size(),
-            current_word_index,
-            cluster_idx,
-            cp_start,
-            cp_count,
-            ws,
-            rtl,
-            sub.font
-        });
-
-        if (!rtl) {
-            cursor += glyph_advance;
-        }
-        consumed += glyph_advance;
-        last_was_space = ws;
-    }
-
-    return rtl ? pen_x + std::max<std::int32_t>(consumed, std::abs(shaped.width)) : std::max(pen_x, cursor);
-}
-
-void sync_resolved_layout(
-    TextLayoutResult& result,
-    const BitmapFont& font,
-    const TextStyle& style) {
-
-    result.ResolvedTextLayout::glyphs.clear();
-    result.ResolvedTextLayout::runs.clear();
-    result.ResolvedTextLayout::lines.clear();
-    result.ResolvedTextLayout::clusters.clear();
-    result.ResolvedTextLayout::total_bounds = {};
-    result.ResolvedTextLayout::is_on_path = false;
-
-    const float font_size = style.pixel_size == 0U ? static_cast<float>(std::max(1, font.line_height())) : static_cast<float>(style.pixel_size);
-
-    // Build cluster map from PositionedGlyph data
-    std::map<std::size_t, std::vector<std::size_t>> cluster_to_glyphs;
-    for (std::size_t i = 0; i < result.glyphs.size(); ++i) {
-        const auto& g = result.glyphs[i];
-        cluster_to_glyphs[g.cluster_index].push_back(i);
-    }
-
-    // Populate clusters vector
-    for (const auto& [cluster_idx, glyph_indices] : cluster_to_glyphs) {
-        if (glyph_indices.empty()) continue;
-        const auto& first_glyph = result.glyphs[glyph_indices.front()];
-        GlyphCluster cluster;
-        cluster.source_text_start = first_glyph.cluster_codepoint_start;
-        cluster.source_text_length = first_glyph.cluster_codepoint_count;
-        cluster.glyph_start = glyph_indices.front();
-        cluster.glyph_count = glyph_indices.size();
-        result.ResolvedTextLayout::clusters.push_back(cluster);
-    }
-
-    result.ResolvedTextLayout::glyphs.reserve(result.glyphs.size());
-    for (const auto& g : result.glyphs) {
-        ResolvedGlyph resolved;
-        resolved.codepoint = g.codepoint;
-        resolved.font_glyph_index = g.font_glyph_index;
-        resolved.font_id = g.font_id;
-        resolved.position = {static_cast<float>(g.x), static_cast<float>(g.y)};
-        resolved.advance_x = static_cast<float>(g.advance_x);
-        resolved.advance_y = 0.0f;
-        resolved.font = g.resolved_font;
-        resolved.source_index = g.cluster_codepoint_start;
-        resolved.cluster_index = g.cluster_index;
-        resolved.is_rtl = g.is_rtl;
-        resolved.font_size = font_size;
-        resolved.fill_color = to_color_spec(style.fill_color);
-        resolved.stroke_color = {0, 0, 0, 0};
-        resolved.stroke_width = 0.0f;
-        resolved.opacity = 1.0f;
-        resolved.scale = {1.0f, 1.0f};
-        resolved.rotation = 0.0f;
-        resolved.blur_radius = 0.0f;
-        resolved.reveal_factor = 1.0f;
-        resolved.bounds = make_rect(static_cast<float>(g.x), static_cast<float>(g.y), static_cast<float>(g.width), static_cast<float>(g.height));
-        result.ResolvedTextLayout::glyphs.push_back(resolved);
-        result.ResolvedTextLayout::total_bounds = rect_is_empty(result.ResolvedTextLayout::total_bounds) ? resolved.bounds : union_rects(result.ResolvedTextLayout::total_bounds, resolved.bounds);
-    }
-
-    if (!result.ResolvedTextLayout::glyphs.empty()) {
-        std::size_t run_start = 0;
-        const Font* run_font = result.ResolvedTextLayout::glyphs.front().font;
-        math::RectF run_bounds = result.ResolvedTextLayout::glyphs.front().bounds;
-        for (std::size_t i = 1; i <= result.ResolvedTextLayout::glyphs.size(); ++i) {
-            const bool run_break = i == result.ResolvedTextLayout::glyphs.size() || result.ResolvedTextLayout::glyphs[i].font != run_font;
-            if (i < result.ResolvedTextLayout::glyphs.size()) {
-                run_bounds = union_rects(run_bounds, result.ResolvedTextLayout::glyphs[i].bounds);
-            }
-            if (run_break) {
-                result.ResolvedTextLayout::runs.push_back(ResolvedTextRun{run_start, i - run_start, run_font, font_size, run_bounds});
-                if (i < result.ResolvedTextLayout::glyphs.size()) {
-                    run_start = i;
-                    run_font = result.ResolvedTextLayout::glyphs[i].font;
-                    run_bounds = result.ResolvedTextLayout::glyphs[i].bounds;
-                }
-            }
-        }
-    }
-
-    result.ResolvedTextLayout::lines.reserve(result.lines.size());
-    for (const auto& line : result.lines) {
-        math::RectF line_bounds{};
-        bool have_bounds = false;
-        const std::size_t line_end = std::min(result.glyphs.size(), line.glyph_start_index + line.glyph_count);
-        for (std::size_t i = line.glyph_start_index; i < line_end; ++i) {
-            const auto& g = result.glyphs[i];
-            const math::RectF glyph_bounds = make_rect(static_cast<float>(g.x), static_cast<float>(g.y), static_cast<float>(g.width), static_cast<float>(g.height));
-            line_bounds = have_bounds ? union_rects(line_bounds, glyph_bounds) : glyph_bounds;
-            have_bounds = true;
-        }
-        result.ResolvedTextLayout::lines.push_back(ResolvedTextLine{
-            line.glyph_start_index,
-            line.glyph_count,
-            static_cast<float>(line.y),
-            static_cast<float>(font.ascent()),
-            static_cast<float>(font.descent()),
-            have_bounds ? line_bounds : make_rect(0.0f, static_cast<float>(line.y), static_cast<float>(line.width), static_cast<float>(result.line_height))
-        });
-    }
-}
-
-} // namespace
-
-TextHitTestResult TextLayoutResult::hit_test(std::int32_t x, std::int32_t y) const {
-    TextHitTestResult result;
-    if (glyphs.empty()) return result;
-
-    // 1. Find the line closest to Y.
-    const TextLine* best_line = nullptr;
-    std::int32_t min_y_dist = 1000000;
+    const bool ws = is_breakable_space(gr.codepoint);
     
-    for (const auto& line : lines) {
-        std::int32_t dist = 0;
-        if (y < line.y) dist = line.y - y;
-        else if (y > line.y + line_height) dist = y - (line.y + line_height);
-        
-        if (dist < min_y_dist) {
-            min_y_dist = dist;
-            best_line = &line;
-        }
+    if (!ws && last_was_space && !result.glyphs.empty()) {
+        ++current_word_index;
     }
 
-    if (!best_line) return result;
-
-    // 2. Find the glyph in that line closest to X.
-    std::size_t closest_glyph_idx = best_line->glyph_start_index;
-    std::int32_t min_x_dist = 1000000;
-
-    for (std::size_t i = 0; i < best_line->glyph_count; ++i) {
-        const auto& g = glyphs[best_line->glyph_start_index + i];
-        std::int32_t centerX = g.x + g.width / 2;
-        std::int32_t dist = std::abs(x - centerX);
-        
-        if (dist < min_x_dist) {
-            min_x_dist = dist;
-            closest_glyph_idx = best_line->glyph_start_index + i;
-        }
+    const auto* g = sub.font->find_glyph_by_index(gr.font_glyph_index);
+    if (!g) {
+        // Skip missing glyphs
+        return;
     }
 
-    const auto& g = glyphs[closest_glyph_idx];
-    result.inside_text = true;
-    result.cluster_index = g.cluster_index;
-    result.codepoint_index = g.cluster_codepoint_start;
+    const std::int32_t glyph_advance = std::abs(gr.advance_x) + tracking_advance;
+    if (rtl) {
+        cursor -= glyph_advance;
+    }
+
+    std::size_t global_cp_index = sub.start_index + gr.cluster;
+    std::size_t cluster_idx = 0;
+    std::size_t cp_count = 1;
+    std::size_t cp_start = global_cp_index;
     
-    // Determine whether the hit lands on the leading or trailing edge of the cluster.
-    // We approximate this by comparing the distance to the cluster bounds.
-    std::int32_t cluster_min_x = g.x;
-    std::int32_t cluster_max_x = g.x + g.width;
-    for (const auto& cg : glyphs) {
-        if (cg.cluster_index == g.cluster_index) {
-            cluster_min_x = std::min(cluster_min_x, cg.x);
-            cluster_max_x = std::max(cluster_max_x, cg.x + cg.width);
-        }
-    }
-
-    if (std::abs(x - cluster_min_x) < std::abs(x - cluster_max_x)) {
-        result.is_leading_edge = true;
-    } else {
-        result.is_leading_edge = false;
-        // If it's the trailing edge, the logical insertion point is the next cluster.
-        result.codepoint_index = g.cluster_codepoint_start + g.cluster_codepoint_count;
-        result.cluster_index = g.cluster_index + 1;
-    }
-
-    return result;
-}
-
-renderer2d::RectI TextLayoutResult::get_caret_rect(std::size_t codepoint_index) const {
-    if (glyphs.empty()) return {0, 0, 2, line_height};
-
-    // Find the glyph that starts or contains this codepoint
-    const PositionedGlyph* target_glyph = nullptr;
-    for (const auto& g : glyphs) {
-        if (codepoint_index >= g.cluster_codepoint_start && codepoint_index < g.cluster_codepoint_start + g.cluster_codepoint_count) {
-            target_glyph = &g;
+    for (std::size_t c = 0; c < clusters.size(); ++c) {
+        if (global_cp_index >= clusters[c].start_index && global_cp_index < clusters[c].start_index + clusters[c].length) {
+            cluster_idx = c;
+            cp_start = clusters[c].start_index;
+            cp_count = clusters[c].length;
             break;
         }
     }
 
-    if (target_glyph) {
-        return {target_glyph->x, target_glyph->y, 2, target_glyph->height};
-    }
+    result.glyphs.push_back(PositionedGlyph{
+        gr.codepoint,
+        gr.font_glyph_index,
+        sub.font->id(),
+        cursor + g->x_offset * static_cast<std::int32_t>(scale) + gr.offset_x,
+        pen_y + (sub.font->ascent() - static_cast<std::int32_t>(g->height) - g->y_offset) * static_cast<std::int32_t>(scale) + gr.offset_y,
+        static_cast<std::int32_t>(g->width) * static_cast<std::int32_t>(scale),
+        static_cast<std::int32_t>(g->height) * static_cast<std::int32_t>(scale),
+        gr.advance_x,
+        result.glyphs.size(),
+        current_word_index,
+        cluster_idx,
+        cp_start,
+        cp_count,
+        ws,
+        rtl,
+        sub.font
+    });
 
-    // If not found (e.g. at the very end), use the end of the last glyph
-    const auto& last = glyphs.back();
-    return {last.x + last.width, last.y, 2, last.height};
+    if (!rtl) {
+        cursor += glyph_advance;
+    }
+    last_was_space = ws;
 }
 
-math::RectF ResolvedTextLayout::get_range_bounds(std::size_t start_char_index, std::size_t end_char_index) const {
-    if (start_char_index >= end_char_index || glyphs.empty()) {
-        return {};
-    }
 
-    math::RectF bounds{};
-    bool have_bounds = false;
-    for (const auto& glyph : glyphs) {
-        if (glyph.source_index < start_char_index || glyph.source_index >= end_char_index) {
-            continue;
-        }
-        bounds = have_bounds ? union_rects(bounds, glyph.bounds) : glyph.bounds;
-        have_bounds = true;
-    }
 
-    return have_bounds ? bounds : math::RectF{};
-}
+
+
 
 class InternalLayoutEngine {
 public:
@@ -434,6 +118,7 @@ public:
         auto& cache = ShapingCache::get_instance();
 
         const auto clusters = ClusterIterator::segment(codepoints);
+        std::cerr << "DEBUG: codepoints=" << codepoints.size() << ", bidi_runs=" << bidi_runs.size() << ", clusters=" << clusters.size() << "\n";
 
         for (const auto& run : bidi_runs) {
             std::vector<SubRun> subruns;
@@ -472,7 +157,7 @@ public:
 
                 // Group clusters with same font into subruns
                 if (subruns.empty() || subruns.back().font != selected_font) {
-                    subruns.push_back({selected_font, {}, run.direction, current_cluster->start_index});
+                    subruns.push_back(SubRun{selected_font, {}, run.direction, current_cluster->start_index});
                 }
                 
                 // Add all codepoints of the cluster to the subrun
@@ -490,6 +175,8 @@ public:
                     i++;
                 }
             }
+            
+            std::cerr << "DEBUG: subruns count=" << subruns.size() << "\n";
 
             for (const auto& sub : subruns) {
                 const int dir = (sub.direction == CharacterDirection::RTL) ? 1 : 0;
@@ -506,32 +193,65 @@ public:
 
                 ShapedGlyphRun shaped;
                 if (!cache.get(cache_key, shaped)) {
-                    shaped = shape_run_with_harfbuzz(*sub.font, sub.codepoints, scale, script_info.script, script_info.language, dir, style.features);
+                    if (sub.font->has_freetype_face()) {
+                        shaped = shape_run_with_harfbuzz(*sub.font, sub.codepoints, scale, script_info.script, script_info.language, dir, style.features);
+                    } else {
+                        shaped = shape_run_simple(*sub.font, sub.codepoints, scale);
+                    }
                     cache.put(cache_key, shaped);
                 }
+                
+                std::cerr << "DEBUG: shaped glyphs count=" << shaped.glyphs.size() << " (width=" << shaped.width << ")\n";
 
-                // Check for line break opportunities in this subrun.
-                bool contains_break = false;
-                for (std::uint32_t cp : sub.codepoints) {
-                    if (is_breakable_space(cp) || cp == '-' || (cp >= 0x4E00 && cp <= 0x9FFF)) {
-                        contains_break = true;
-                        break;
+                // Group glyphs into words for wrapping
+                struct Word {
+                    std::vector<std::size_t> glyph_indices;
+                    std::int32_t width = 0;
+                    bool ends_with_break = false;
+                };
+
+                std::vector<Word> words;
+                Word current_word;
+                for (std::size_t i = 0; i < shaped.glyphs.size(); ++i) {
+                    const auto& gr = shaped.glyphs[i];
+                    current_word.glyph_indices.push_back(i);
+                    current_word.width += std::abs(gr.advance_x) + tracking_advance;
+                    if (is_breakable_space(gr.codepoint) || gr.codepoint == '-') {
+                        current_word.ends_with_break = true;
+                        words.push_back(std::move(current_word));
+                        current_word = {};
                     }
                 }
+                if (!current_word.glyph_indices.empty()) words.push_back(std::move(current_word));
 
-                if (wrap_width > 0 && text_box.multiline && options.word_wrap && pen_x > 0 && std::abs(shaped.width) > 0 && (pen_x + std::abs(shaped.width)) > wrap_width) {
-                    // Only wrap if we had a previous break opportunity or if this subrun contains one
-                    // Keep simple wrapping here; backtracking is a future improvement.
-                    finalize_line(result, line_start, result.glyphs.size() - line_start, current_line_width, pen_y, alignment, text_box.width, false);
-                    pen_x = 0;
-                    current_line_width = 0;
-                    pen_y += scaled_line_height;
-                    line_start = result.glyphs.size();
-                    last_was_space = true;
+                const bool rtl = sub.direction == CharacterDirection::RTL;
+
+                for (const auto& word : words) {
+                    bool wrap_needed = (wrap_width > 0 && text_box.multiline && options.word_wrap && pen_x > 0 && (pen_x + word.width) > (std::int32_t)wrap_width);
+                    
+                    if (wrap_needed) {
+                        finalize_line(result, line_start, result.glyphs.size() - line_start, current_line_width, pen_y, alignment, text_box.width, false);
+                        pen_x = 0;
+                        current_line_width = 0;
+                        pen_y += scaled_line_height;
+                        line_start = result.glyphs.size();
+                        last_was_space = true;
+                    }
+
+                    bool is_start_of_line = (pen_x == 0);
+                    for (std::size_t idx : word.glyph_indices) {
+                        const auto& gr = shaped.glyphs[idx];
+                        if (is_start_of_line && is_breakable_space(gr.codepoint)) continue;
+                        
+                        std::int32_t glyph_width = std::abs(gr.advance_x) + tracking_advance;
+                        std::int32_t cursor = rtl ? pen_x + glyph_width : pen_x;
+                        place_shaped_glyph(result, cursor, pen_y, sub, gr, scale, tracking_advance, current_word_index, last_was_space, clusters);
+                        pen_x += glyph_width;
+                        is_start_of_line = false;
+                    }
+                    current_line_width = std::max(current_line_width, pen_x);
                 }
-
-                pen_x = place_shaped_run(result, pen_x, pen_y, sub, shaped, scale, tracking_advance, current_word_index, last_was_space, clusters);
-                current_line_width = std::max(current_line_width, pen_x);
+                std::cerr << "DEBUG: result.glyphs.size()=" << result.glyphs.size() << "\n";
             }
         }
 
@@ -541,6 +261,7 @@ public:
         if (text_box.height > 0U) result.height = std::min(result.height, text_box.height);
         if (result.width == 0U) result.width = text_box.width > 0U ? text_box.width : 0U;
         sync_resolved_layout(result, primary_font, style);
+        std::cerr << "DEBUG: InternalLayoutEngine::layout returning result with glyphs=" << result.glyphs.size() << ", lines=" << result.lines.size() << "\n";
         return result;
     }
 };

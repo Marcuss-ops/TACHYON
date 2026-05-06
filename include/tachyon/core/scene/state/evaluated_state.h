@@ -10,7 +10,7 @@
 #include "tachyon/core/shapes/shape_path.h"
 #include "tachyon/core/scene/state/evaluated_camera_state.h"
 #include "tachyon/media/loading/mesh_asset.h"
-#include "tachyon/renderer2d/spec/gradient_spec.h"
+#include "tachyon/core/spec/schema/common/gradient_spec.h"
 #include "tachyon/core/spec/schema/objects/mask_spec.h"
 #include "tachyon/core/spec/schema/objects/path_spec.h"
 #include "tachyon/text/content/word_timestamps.h"

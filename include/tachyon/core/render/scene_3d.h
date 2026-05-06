@@ -32,6 +32,13 @@ struct EvaluatedLight3D {
     bool casts_shadows{true};
 };
 
+struct ResolvedModifier3D {
+    std::string type;
+    std::map<std::string, float> scalar_params;
+    std::map<std::string, math::Vector3> vector3_params;
+    std::map<std::string, std::string> string_params;
+};
+
 struct EvaluatedMaterial3D {
     ::tachyon::ColorSpec base_color{255, 255, 255, 255};
     float opacity{1.0f};
@@ -57,6 +64,9 @@ struct EvaluatedMeshInstance3D {
     // Animation state
     std::vector<math::Matrix4x4> joint_matrices;
     std::vector<float> morph_weights;
+    
+    // Modifiers to be applied by the 3D renderer
+    std::vector<ResolvedModifier3D> modifiers;
 };
 
 struct EvaluatedCamera3D {

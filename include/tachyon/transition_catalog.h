@@ -5,6 +5,7 @@
 #include <string_view>
 #include <memory>
 #include <map>
+#include "tachyon/core/spec/schema/common/common_spec.h"
 
 namespace tachyon {
 
@@ -12,6 +13,18 @@ enum class TransitionStatus {
     Stable,
     Experimental,
     Deprecated
+};
+
+struct CatalogTransitionDescriptor {
+    std::string id;
+    std::string runtime_id;
+    std::string name;
+    std::string description;
+    TransitionKind kind{TransitionKind::None};
+    TransitionStatus status{TransitionStatus::Stable};
+    std::vector<std::string> authoring_aliases;
+    bool visible_in_catalog{true};
+    bool requires_runtime_function{true};
 };
 
 struct TransitionCatalogEntry {
@@ -24,6 +37,8 @@ struct TransitionCatalogEntry {
     TransitionStatus status{TransitionStatus::Stable};
     std::string description;
 };
+
+std::vector<CatalogTransitionDescriptor> get_builtin_transition_descriptors();
 
 class TransitionCatalog {
 public:
@@ -48,10 +63,16 @@ public:
 
     // Audit
     struct AuditResult {
-        std::vector<std::string> orphaned_presets;     // Presets without runtime
-        std::vector<std::string> orphaned_runtime;     // Runtime without catalog entry
-        std::vector<std::string> deprecated_in_use;     // Deprecated but still referenced
-        std::vector<std::string> alias_conflicts;       // Aliases pointing to non-existent IDs
+        std::vector<std::string> missing_runtime;
+        std::vector<std::string> missing_catalog_entries;
+        std::vector<std::string> duplicate_aliases;
+        std::vector<std::string> duplicate_runtime_ids;
+        [[nodiscard]] bool ok() const {
+            return missing_runtime.empty() && 
+                   missing_catalog_entries.empty() && 
+                   duplicate_aliases.empty() && 
+                   duplicate_runtime_ids.empty();
+        }
     };
     AuditResult audit() const;
 

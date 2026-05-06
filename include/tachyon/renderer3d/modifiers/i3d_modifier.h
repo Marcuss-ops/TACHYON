@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/renderer3d/core/mesh_types.h"
-#include "tachyon/core/spec/schema/objects/layer_spec.h"
+#include "tachyon/core/render/scene_3d.h"
 #include "tachyon/renderer2d/resource/render_context.h"
 
 namespace tachyon {
@@ -13,7 +13,7 @@ public:
 
     virtual void apply(
         Mesh3D& mesh,
-        double time,
+        const ResolvedModifier3D& resolved,
         const renderer2d::RenderContext& ctx
     ) = 0;
 };

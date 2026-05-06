@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <iostream>
 #include <limits>
 #include <string_view>
 #include <vector>
@@ -60,12 +61,21 @@ std::int32_t aligned_x_offset(TextAlignment alignment, std::uint32_t box_width, 
 
 void finalize_line(TextLayoutResult& result, std::size_t start_index, std::size_t glyph_count, std::int32_t line_width, std::int32_t line_y, TextAlignment alignment, std::uint32_t box_width, bool last_line) {
     if (glyph_count == 0U) return;
-    std::int32_t offset_x = aligned_x_offset(alignment, box_width, line_width);
+    // Calculate width excluding trailing whitespace
+    std::int32_t effective_width = line_width;
+    std::size_t actual_count = glyph_count;
+    while (actual_count > 0 && result.glyphs[start_index + actual_count - 1].whitespace) {
+        effective_width -= result.glyphs[start_index + actual_count - 1].advance_x;
+        actual_count--;
+    }
+    std::cerr << "DEBUG: finalize_line start=" << start_index << " count=" << glyph_count << " actual=" << actual_count << " line_width=" << line_width << " effective=" << effective_width << "\n";
+
+    std::int32_t offset_x = aligned_x_offset(alignment, box_width, effective_width);
     if (alignment == TextAlignment::Justify && !last_line && box_width > 0U) {
-        const std::int32_t available = static_cast<std::int32_t>(box_width) - line_width;
+        const std::int32_t available = static_cast<std::int32_t>(box_width) - effective_width;
         if (available > 0) {
             std::size_t spaces_count = 0;
-            for (std::size_t index = start_index; index < start_index + glyph_count; ++index) {
+            for (std::size_t index = start_index; index < start_index + actual_count; ++index) {
                 if (result.glyphs[index].whitespace) spaces_count++;
             }
             if (spaces_count > 0) {
@@ -73,7 +83,7 @@ void finalize_line(TextLayoutResult& result, std::size_t start_index, std::size_
                 std::int32_t current_extra = 0;
                 for (std::size_t index = start_index; index < start_index + glyph_count; ++index) {
                     result.glyphs[index].x += current_extra;
-                    if (result.glyphs[index].whitespace) current_extra += extra_per_space;
+                    if (index < start_index + actual_count && result.glyphs[index].whitespace) current_extra += extra_per_space;
                 }
                 line_width = static_cast<std::int32_t>(box_width);
             }
@@ -83,8 +93,8 @@ void finalize_line(TextLayoutResult& result, std::size_t start_index, std::size_
             result.glyphs[index].x += offset_x;
         }
     }
-    result.lines.push_back(TextLine{ start_index, glyph_count, line_width, line_y });
-    const std::uint32_t used_width = box_width == 0U ? static_cast<std::uint32_t>(std::max(0, line_width)) : std::min(box_width, static_cast<std::uint32_t>(std::max(0, line_width + offset_x)));
+    result.lines.push_back(TextLine{ start_index, actual_count, effective_width, line_y });
+    const std::uint32_t used_width = box_width == 0U ? static_cast<std::uint32_t>(std::max(0, effective_width)) : std::min(box_width, static_cast<std::uint32_t>(std::max(0, effective_width + offset_x)));
     result.width = std::max(result.width, used_width);
 }
 

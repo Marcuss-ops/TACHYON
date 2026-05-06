@@ -4,6 +4,7 @@
 #include "tachyon/runtime/core/data/compiled_scene.h"
 #include "tachyon/runtime/execution/frames/frame_executor.h"
 #include "tachyon/runtime/cache/frame_cache.h"
+#include "tachyon/runtime/cache/cache_key_builder.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 
 #include <optional>

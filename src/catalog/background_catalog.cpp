@@ -1,6 +1,10 @@
 #include "tachyon/background_catalog.h"
+#include "tachyon/presets/background/background_preset_registry.h"
 
 #include <utility>
+#include <algorithm>
+#include <string>
+#include <set>
 
 namespace tachyon {
 
@@ -19,7 +23,7 @@ BackgroundCatalog::BackgroundCatalog() {
     // Register built-in backgrounds
     register_entry({
         "tachyon.background.solid",
-        "solid",
+        BackgroundCatalogRole::Solid,
         R"({"color": "#000000"})",
         "",
         BackgroundStatus::Stable,
@@ -28,7 +32,7 @@ BackgroundCatalog::BackgroundCatalog() {
 
     register_entry({
         "tachyon.background.gradient",
-        "gradient",
+        BackgroundCatalogRole::Gradient,
         R"({"color_start": "#000000", "color_end": "#ffffff", "angle": 0})",
         "",
         BackgroundStatus::Stable,
@@ -37,7 +41,7 @@ BackgroundCatalog::BackgroundCatalog() {
 
     register_entry({
         "tachyon.background.image",
-        "image",
+        BackgroundCatalogRole::Image,
         R"({"path": ""})",
         "",
         BackgroundStatus::Stable,
@@ -46,7 +50,7 @@ BackgroundCatalog::BackgroundCatalog() {
 
     register_entry({
         "tachyon.background.cinematic_dark",
-        "gradient",
+        BackgroundCatalogRole::Gradient,
         R"({"color_start": "#0a0a0a", "color_end": "#1a1a2e", "angle": 135})",
         "",
         BackgroundStatus::Stable,
@@ -55,7 +59,7 @@ BackgroundCatalog::BackgroundCatalog() {
 
     register_entry({
         "tachyon.background.youtube_news_blue",
-        "gradient",
+        BackgroundCatalogRole::Gradient,
         R"({"color_start": "#0d47a1", "color_end": "#1976d2", "angle": 180})",
         "",
         BackgroundStatus::Stable,
@@ -64,7 +68,7 @@ BackgroundCatalog::BackgroundCatalog() {
 
     register_entry({
         "tachyon.background.soft_gradient",
-        "gradient",
+        BackgroundCatalogRole::Gradient,
         R"({"color_start": "#f5f5f5", "color_end": "#e0e0e0", "angle": 45})",
         "",
         BackgroundStatus::Stable,
@@ -73,7 +77,7 @@ BackgroundCatalog::BackgroundCatalog() {
 
     register_entry({
         "tachyon.background.product_glow",
-        "gradient",
+        BackgroundCatalogRole::Gradient,
         R"({"color_start": "#1a1a1a", "color_end": "#2d2d2d", "angle": 160})",
         "",
         BackgroundStatus::Stable,
@@ -82,7 +86,7 @@ BackgroundCatalog::BackgroundCatalog() {
 
     register_entry({
         "tachyon.background.warm_brown",
-        "solid",
+        BackgroundCatalogRole::Solid,
         R"({"color": "#3e2723"})",
         "",
         BackgroundStatus::Stable,
@@ -150,6 +154,39 @@ bool BackgroundCatalog::validate_preset(std::string_view preset_id, std::string&
 
     error = "Background preset ID '" + std::string(preset_id) + "' not found in catalog";
     return false;
+}
+
+BackgroundCatalog::AuditResult BackgroundCatalog::audit() const {
+    AuditResult result;
+    auto& registry = presets::BackgroundPresetRegistry::instance();
+    auto preset_ids = registry.list_ids();
+
+    // 1. Every preset in registry must exist in catalog
+    for (const auto& id : preset_ids) {
+        if (!find(id)) {
+            result.missing_catalog_entries.push_back(id);
+        }
+    }
+
+    // 2. Every catalog entry of role "Procedural" must have a preset in registry
+    for (const auto& entry : m_impl->entries) {
+        if (entry.role == BackgroundCatalogRole::Procedural) {
+             if (!registry.find(entry.id)) {
+                 result.missing_factories.push_back(entry.id);
+             }
+        }
+    }
+
+    // 3. Duplicate IDs (registration already prevents this, but for completeness)
+    std::set<std::string> seen_ids;
+    for (const auto& entry : m_impl->entries) {
+        if (seen_ids.count(entry.id)) {
+            result.duplicate_ids.push_back(entry.id);
+        }
+        seen_ids.insert(entry.id);
+    }
+
+    return result;
 }
 
 } // namespace tachyon

@@ -1,5 +1,5 @@
 #include "tachyon/runtime/execution/native_render.h"
-#include "tachyon/core/spec/compilation/scene_compiler.h"
+#include "tachyon/runtime/compiler/scene_compiler.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/execution/render_progress_sink.h"
 #include "tachyon/runtime/execution/jobs/render_job.h"

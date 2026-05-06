@@ -1,0 +1,110 @@
+# Tachyon Text Dependencies (FreeType, HarfBuzz, Skia)
+
+# Skia configuration
+add_library(TachyonSkiaBackend INTERFACE)
+
+if(TACHYON_ENABLE_SKIA)
+    set(CMAKE_MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release)
+    set(CMAKE_MAP_IMPORTED_CONFIG_MINSIZEREL Release)
+    
+    # Try to find Skia via vcpkg
+    set(TACHYON_SKIA_VCPKG_PREFIX "${CMAKE_SOURCE_DIR}/vcpkg_installed/x64-windows-static")
+    if(EXISTS "${TACHYON_SKIA_VCPKG_PREFIX}/share/unofficial-skia/unofficial-skia-config.cmake")
+        list(PREPEND CMAKE_PREFIX_PATH "${TACHYON_SKIA_VCPKG_PREFIX}")
+    endif()
+
+    find_package(unofficial-skia CONFIG QUIET)
+    
+    if(TARGET unofficial::skia::skia)
+        target_link_libraries(TachyonSkiaBackend INTERFACE unofficial::skia::skia)
+        target_compile_definitions(TachyonSkiaBackend INTERFACE TACHYON_ENABLE_SKIA=1)
+        message(STATUS "[Tachyon] Skia enabled for text rasterization")
+        set(TACHYON_HAS_SKIA ON)
+    else()
+        target_compile_definitions(TachyonSkiaBackend INTERFACE TACHYON_ENABLE_SKIA=0)
+        message(STATUS "[Tachyon] Skia not found; using software text rasterization")
+        set(TACHYON_HAS_SKIA OFF)
+    endif()
+else()
+    target_compile_definitions(TachyonSkiaBackend INTERFACE TACHYON_ENABLE_SKIA=0)
+    set(TACHYON_HAS_SKIA OFF)
+endif()
+
+# FreeType/HarfBuzz for scalable font rendering and shaping.
+set(TACHYON_FREETYPE_TARGET freetype)
+set(TACHYON_HARFBUZZ_TARGET harfbuzz)
+if(TACHYON_ENABLE_TEXT)
+    # Use vcpkg provided dependencies if Skia is enabled (as they are already there)
+    if(TACHYON_HAS_SKIA AND EXISTS "${TACHYON_SKIA_VCPKG_PREFIX}/share/freetype/freetype-config.cmake" AND EXISTS "${TACHYON_SKIA_VCPKG_PREFIX}/share/harfbuzz/harfbuzzConfig.cmake")
+        list(PREPEND CMAKE_PREFIX_PATH "${TACHYON_SKIA_VCPKG_PREFIX}")
+        find_package(ZLIB REQUIRED)
+        find_package(freetype CONFIG REQUIRED)
+        find_package(harfbuzz CONFIG REQUIRED)
+        add_library(TachyonFreeType UNKNOWN IMPORTED)
+        get_target_property(_tachyon_freetype_release freetype IMPORTED_LOCATION_RELEASE)
+        get_target_property(_tachyon_freetype_debug freetype IMPORTED_LOCATION_DEBUG)
+        get_target_property(_tachyon_freetype_include freetype INTERFACE_INCLUDE_DIRECTORIES)
+        if(_tachyon_freetype_release)
+            set_target_properties(TachyonFreeType PROPERTIES IMPORTED_LOCATION_RELEASE "${_tachyon_freetype_release}")
+        endif()
+        if(_tachyon_freetype_debug)
+            set_target_properties(TachyonFreeType PROPERTIES IMPORTED_LOCATION_DEBUG "${_tachyon_freetype_debug}")
+        endif()
+        if(_tachyon_freetype_include)
+            set_target_properties(TachyonFreeType PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${_tachyon_freetype_include}")
+        endif()
+        set_target_properties(TachyonFreeType PROPERTIES IMPORTED_LINK_INTERFACE_LANGUAGES "C")
+
+        add_library(TachyonHarfbuzz UNKNOWN IMPORTED)
+        get_target_property(_tachyon_harfbuzz_release harfbuzz IMPORTED_LOCATION_RELEASE)
+        get_target_property(_tachyon_harfbuzz_debug harfbuzz IMPORTED_LOCATION_DEBUG)
+        get_target_property(_tachyon_harfbuzz_include harfbuzz INTERFACE_INCLUDE_DIRECTORIES)
+        if(_tachyon_harfbuzz_release)
+            set_target_properties(TachyonHarfbuzz PROPERTIES IMPORTED_LOCATION_RELEASE "${_tachyon_harfbuzz_release}")
+        endif()
+        if(_tachyon_harfbuzz_debug)
+            set_target_properties(TachyonHarfbuzz PROPERTIES IMPORTED_LOCATION_DEBUG "${_tachyon_harfbuzz_debug}")
+        endif()
+        if(_tachyon_harfbuzz_include)
+            set_target_properties(TachyonHarfbuzz PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${_tachyon_harfbuzz_include}")
+        endif()
+        set_target_properties(TachyonHarfbuzz PROPERTIES IMPORTED_LINK_INTERFACE_LANGUAGES "CXX")
+
+        set(TACHYON_FREETYPE_TARGET TachyonFreeType)
+        set(TACHYON_HARFBUZZ_TARGET TachyonHarfbuzz)
+    elseif(TACHYON_FETCH_DEPS)
+        FetchContent_Declare(
+            freetype
+            GIT_REPOSITORY https://github.com/freetype/freetype.git
+            GIT_TAG        VER-2-13-3
+            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        )
+        set(SKIP_INSTALL_ALL ON CACHE BOOL "Skip FreeType install" FORCE)
+        set(FT_WITH_ZLIB OFF CACHE BOOL "Disable ZLib for FreeType" FORCE)
+        set(FT_WITH_BZIP2 OFF CACHE BOOL "Disable BZip2 for FreeType" FORCE)
+        set(FT_WITH_PNG OFF CACHE BOOL "Disable PNG for FreeType" FORCE)
+        set(FT_WITH_HARFBUZZ OFF CACHE BOOL "Disable HarfBuzz for FreeType" FORCE)
+        set(FT_WITH_BROTLI OFF CACHE BOOL "Disable Brotli for FreeType" FORCE)
+        # CMake 4.0 dropped backward compat with cmake_minimum_required < 3.5.
+        # Override policy so FreeType's old CMakeLists.txt does not abort configure.
+        set(CMAKE_POLICY_DEFAULT_CMP0048 NEW)
+        FetchContent_MakeAvailable(freetype)
+
+        FetchContent_Declare(
+            harfbuzz
+            GIT_REPOSITORY https://github.com/harfbuzz/harfbuzz.git
+            GIT_TAG        14.1.0
+            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        )
+        set(HB_BUILD_UTILS OFF CACHE BOOL "Disable HarfBuzz command line utilities" FORCE)
+        set(HB_BUILD_TESTS OFF CACHE BOOL "Disable HarfBuzz tests" FORCE)
+        set(HB_BUILD_DOCS OFF CACHE BOOL "Disable HarfBuzz docs" FORCE)
+        set(HB_BUILD_SUBSET OFF CACHE BOOL "Disable HarfBuzz subset library" FORCE)
+        set(HB_HAVE_FREETYPE ON CACHE BOOL "Enable HarfBuzz FreeType integration" FORCE)
+        FetchContent_MakeAvailable(harfbuzz)
+    else()
+        find_package(FreeType REQUIRED)
+    endif()
+else()
+    message(STATUS "[Tachyon] Text feature disabled; skipping FreeType and HarfBuzz fetches")
+endif()

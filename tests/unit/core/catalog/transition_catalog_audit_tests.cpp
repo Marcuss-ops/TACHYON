@@ -39,14 +39,14 @@ bool run_transition_catalog_audit_tests() {
     // Test 2: Every catalog.runtime_id exists in TransitionRegistry
     {
         auto result = catalog.audit();
-        check_true(result.orphaned_runtime.empty(),
+        check_true(result.missing_runtime.empty(),
             "All catalog runtime_ids exist in TransitionRegistry");
     }
 
     // Test 3: No duplicate aliases
     {
         auto result = catalog.audit();
-        check_true(result.alias_conflicts.empty(),
+        check_true(result.duplicate_aliases.empty(),
             "No alias conflicts in catalog");
     }
 

@@ -123,8 +123,7 @@ public:
     explicit LayerBuilder(std::string id);
     explicit LayerBuilder(LayerSpec spec);
 
-    LayerBuilder& type(std::string t);
-    LayerBuilder& kind(LayerType t);
+    LayerBuilder& type(LayerType t);
     LayerBuilder& solid(std::string name);
     LayerBuilder& image(std::string path);
     LayerBuilder& mesh(std::string path);

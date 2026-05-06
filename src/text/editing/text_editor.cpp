@@ -1,5 +1,5 @@
 #include "tachyon/text/animation/text_editor.h"
-#include "tachyon/renderer2d/text/utf8/utf8_decoder.h"
+#include "tachyon/text/core/low_level/utf8/utf8_decoder.h"
 #include "tachyon/text/layout/cluster_iterator.h"
 #include <cctype>
 #include <algorithm>

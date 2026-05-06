@@ -8,16 +8,13 @@ namespace renderer3d {
 
 class Tilt3DModifier : public I3DModifier {
 public:
-    explicit Tilt3DModifier(const ThreeDModifierSpec& spec);
+    Tilt3DModifier();
 
     void apply(
         Mesh3D& mesh,
-        double time,
+        const ResolvedModifier3D& resolved,
         const renderer2d::RenderContext& ctx
     ) override;
-
-private:
-    ThreeDModifierSpec spec_;
 };
 
 } // namespace renderer3d

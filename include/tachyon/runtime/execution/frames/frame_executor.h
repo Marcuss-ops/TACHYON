@@ -34,7 +34,7 @@ struct ExecutedFrame {
     std::string error;
     std::uint64_t scene_hash{0};
     std::size_t draw_command_count{0};
-    std::shared_ptr<renderer2d::Framebuffer> frame;
+    std::shared_ptr<const renderer2d::Framebuffer> frame;
     std::vector<output::FrameAOV> aovs;
     FrameDiagnostics diagnostics;
 };
