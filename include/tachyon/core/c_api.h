@@ -6,7 +6,7 @@
 extern "C" {
 #endif
 
-// No current C API exports. JSON scene loading has been removed.
+// No current C API exports.
 
 #ifdef __cplusplus
 }
