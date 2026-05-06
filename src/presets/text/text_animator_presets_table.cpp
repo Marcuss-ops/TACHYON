@@ -62,6 +62,24 @@ void TextAnimatorPresetRegistry::load_builtins() {
                          return std::vector<TextAnimatorSpec>{make_typewriter_minimal_animator(cps, true)};
                      }});
 
+    register_spec({"tachyon.textanim.typewriter.cursor",
+                     {"tachyon.textanim.typewriter.cursor", "Typewriter Cursor", "Cursor-forward typewriter with stronger blink", "text.anim", {"typewriter", "cursor"}},
+                     {},
+                     [get_text_params](const ParameterBag& p) {
+                         auto params = get_text_params(p);
+                         double cps = params.stagger > 0 ? 1.0 / params.stagger : 19.0;
+                         return std::vector<TextAnimatorSpec>{make_typewriter_cursor_animator(cps)};
+                     }});
+
+    register_spec({"tachyon.textanim.typewriter.soft",
+                     {"tachyon.textanim.typewriter.soft", "Typewriter Soft", "Soft fade typewriter with blur settle", "text.anim", {"typewriter", "soft"}},
+                     {},
+                     [get_text_params](const ParameterBag& p) {
+                         auto params = get_text_params(p);
+                         double cps = params.stagger > 0 ? 1.0 / params.stagger : 16.0;
+                         return std::vector<TextAnimatorSpec>{make_typewriter_soft_animator(cps)};
+                     }});
+
     register_spec({"tachyon.textanim.typewriter.archive",
                      {"tachyon.textanim.typewriter.archive", "Typewriter Archive", "Muted archive-style typewriter", "text.anim", {"typewriter", "archive"}},
                      {},
@@ -89,6 +107,15 @@ void TextAnimatorPresetRegistry::load_builtins() {
                          return std::vector<TextAnimatorSpec>{make_typewriter_word_animator(wps, false)};
                      }});
 
+    register_spec({"tachyon.textanim.typewriter.word_cursor",
+                     {"tachyon.textanim.typewriter.word_cursor", "Typewriter Word Cursor", "Word-by-word reveal with cursor", "text.anim", {"typewriter", "word", "cursor"}},
+                     {},
+                     [get_text_params](const ParameterBag& p) {
+                         auto params = get_text_params(p);
+                         double wps = params.stagger > 0 ? 1.0 / params.stagger : 4.0;
+                         return std::vector<TextAnimatorSpec>{make_typewriter_word_cursor_animator(wps)};
+                     }});
+
     register_spec({"tachyon.textanim.typewriter.line",
                      {"tachyon.textanim.typewriter.line", "Typewriter Line", "Line-by-line reveal with typewriter cadence", "text.anim", {"typewriter", "line"}},
                      {},
@@ -96,6 +123,15 @@ void TextAnimatorPresetRegistry::load_builtins() {
                          auto params = get_text_params(p);
                          double lps = params.stagger > 0 ? 1.0 / params.stagger : 2.0;
                          return std::vector<TextAnimatorSpec>{make_typewriter_line_animator(lps, false)};
+                     }});
+
+    register_spec({"tachyon.textanim.typewriter.sentence",
+                     {"tachyon.textanim.typewriter.sentence", "Typewriter Sentence", "Sentence-style reveal with soft timing", "text.anim", {"typewriter", "sentence"}},
+                     {},
+                     [get_text_params](const ParameterBag& p) {
+                         auto params = get_text_params(p);
+                         double wps = params.stagger > 0 ? 1.0 / params.stagger : 2.5;
+                         return std::vector<TextAnimatorSpec>{make_typewriter_sentence_animator(wps)};
                      }});
 
     register_spec({"tachyon.textanim.blur_to_focus",

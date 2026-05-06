@@ -3,6 +3,7 @@
 #include "tachyon/transition_registry.h"
 #include <cmath>
 #include <algorithm>
+#include <iostream>
 
 namespace tachyon::renderer2d {
 
@@ -149,18 +150,18 @@ static constexpr LightLeakStyle kSoftWarmEdge{
     "tachyon.transition.lightleak.soft_warm_edge",
     "Soft Warm Edge Leak",
     "Premium warm edge light leak",
-    {1.0f, 0.45f, 0.12f, 1.0f},
-    {1.0f, 0.74f, 0.38f, 1.0f},
-    {1.0f, 0.95f, 0.82f, 1.0f},
-    -18.0f, // angle
-    0.36f,  // width
-    2.8f,   // softness
-    0.22f,  // intensity
+    {1.0f, 0.25f, 0.05f, 1.0f}, // Deeper orange
+    {1.0f, 0.54f, 0.18f, 1.0f},
+    {1.0f, 0.95f, 0.72f, 1.0f},
+    -10.0f, // angle
+    0.50f,  // width
+    1.8f,   // softness
+    0.95f,  // intensity (very high)
     1.15f,  // speed
     0.35f,  // offset
     -1.0f,  // direction (left)
     0.02f,  // grain
-    0.03f,  // flicker
+    0.05f,  // flicker
     0.0f,   // pulse
     LightLeakStyle::Shape::Edge
 };
@@ -169,15 +170,15 @@ static constexpr LightLeakStyle kGoldenSweep{
     "tachyon.transition.lightleak.golden_sweep",
     "Golden Sweep",
     "Soft golden cinematic sweep",
-    {1.0f, 0.55f, 0.12f, 1.0f},
-    {1.0f, 0.84f, 0.28f, 1.0f},
-    {1.0f, 0.98f, 0.88f, 1.0f},
-    -12.0f, // angle
-    0.18f,  // width
-    3.2f,   // softness
-    0.20f,  // intensity
-    1.8f,   // speed
-    0.45f,  // offset
+    {1.0f, 0.85f, 0.12f, 1.0f}, // Very gold
+    {1.0f, 1.0f, 0.60f, 1.0f},
+    {1.0f, 1.0f, 1.0f, 1.0f},
+    90.0f,  // angle (Vertical!)
+    0.40f,  // width
+    2.0f,   // softness
+    1.20f,  // intensity
+    1.5f,   // speed
+    0.50f,  // offset
     1.0f,   // direction
     0.01f,  // grain
     0.02f,  // flicker
@@ -189,20 +190,20 @@ static constexpr LightLeakStyle kCreamyWhite{
     "tachyon.transition.lightleak.creamy_white",
     "Creamy White Leak",
     "Soft warm white memory leak",
-    {1.0f, 0.88f, 0.68f, 1.0f},
-    {1.0f, 0.96f, 0.86f, 1.0f},
-    {1.0f, 1.0f, 0.96f, 1.0f},
+    {1.0f, 1.0f, 1.0f, 1.0f}, // Pure White
+    {1.0f, 0.95f, 0.90f, 1.0f},
+    {1.0f, 1.0f, 1.0f, 1.0f},
     0.0f,   // angle
-    0.55f,  // width
-    2.5f,   // softness
-    0.18f,  // intensity
+    0.25f,  // width
+    1.5f,   // softness
+    1.50f,  // intensity
     1.0f,   // speed
     0.0f,   // offset
-    -1.0f,  // direction (top-left)
+    1.0f,   // direction
     0.00f,  // grain
     0.01f,  // flicker
-    0.15f,  // pulse
-    LightLeakStyle::Shape::RadialCorner
+    0.0f,   // pulse
+    LightLeakStyle::Shape::HorizontalBand // Different Shape!
 };
 
 static constexpr LightLeakStyle kDustyArchive{
@@ -212,35 +213,35 @@ static constexpr LightLeakStyle kDustyArchive{
     {0.82f, 0.38f, 0.12f, 1.0f},
     {1.0f, 0.62f, 0.22f, 1.0f},
     {1.0f, 0.90f, 0.68f, 1.0f},
-    -22.0f, // angle
-    0.42f,  // width
-    3.5f,   // softness
-    0.18f,  // intensity
+    -45.0f, // angle (different angle)
+    0.15f,  // width (thinner bands)
+    2.5f,   // softness
+    0.90f,  // intensity (increased)
     1.1f,   // speed
     0.25f,  // offset
     1.0f,   // direction
-    0.06f,  // grain
-    0.04f,  // flicker
+    0.12f,  // grain (increased)
+    0.08f,  // flicker
     0.0f,   // pulse
-    LightLeakStyle::Shape::Sweep
+    LightLeakStyle::Shape::WindowBands // Changed shape for variety
 };
 
 static constexpr LightLeakStyle kLensFlarePass{
     "tachyon.transition.lightleak.lens_flare_pass",
     "Subtle Lens Flare Pass",
     "Thin premium lens flare sweep",
-    {0.72f, 0.84f, 1.0f, 1.0f},
-    {1.0f, 0.92f, 0.72f, 1.0f},
+    {0.42f, 0.74f, 1.0f, 1.0f}, // Bluer
+    {0.82f, 0.92f, 1.0f, 1.0f},
     {1.0f, 1.0f, 1.0f, 1.0f},
-    0.0f,    // angle
-    0.055f,  // width
-    2.0f,    // softness
-    0.16f,   // intensity
-    2.2f,    // speed
-    0.35f,   // offset
+    15.0f,   // angle
+    0.035f,  // width (very thin)
+    1.5f,    // softness
+    1.40f,   // intensity (bright flare)
+    3.5f,    // speed (fast)
+    1.55f,   // offset
     1.0f,    // direction
     0.00f,   // grain
-    0.01f,   // flicker
+    0.05f,   // flicker
     0.0f,    // pulse
     LightLeakStyle::Shape::Sweep
 };
@@ -369,44 +370,53 @@ Color transition_light_leak(float u, float v, float t, const SurfaceRGBA& input,
 Color transition_light_leak_solar(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
     const bool overlay_mode = (to_surface == nullptr);
     const Color base = overlay_mode ? Color::black() : Color::lerp(sample_uv(input, u, v), sample_transition_target(input, to_surface, u, v), t);
-    const float angle = -10.0f * 3.14159f / 180.0f;
-    const float proj = (u * std::cos(angle) + v * std::sin(angle) + 0.1f) / 1.2f;
-    const float pos = -0.3f + t * 1.6f;
-    const float mask = std::pow(std::max(0.0f, 1.0f - (std::abs(proj - pos) / 0.15f)), 3.0f);
-    const Color solar = {1.0f, 0.98f, 0.8f, 1.0f};
-    return screen_over(base, solar, 2.0f * mask * (0.9f + 0.1f * std::sin(t * 100.0f)));
+    
+    // Different projection for solar
+    const float proj = (u + v) * 0.5f;
+    const float pos = -0.5f + t * 2.0f;
+    const float mask = std::pow(std::max(0.0f, 1.0f - (std::abs(proj - pos) / 0.35f)), 2.0f);
+    
+    const Color solar = {1.0f, 1.0f, 0.4f, 1.0f}; // Very yellow/white
+    return screen_over(base, solar, 3.5f * mask); // Very bright
 }
 
 Color transition_light_leak_nebula(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
     const bool overlay_mode = (to_surface == nullptr);
     const Color base = overlay_mode ? Color::black() : Color::lerp(sample_uv(input, u, v), sample_transition_target(input, to_surface, u, v), t);
-    const float proj = (u * 0.707f + v * 0.707f + 0.4f) / 1.8f;
-    const float pos = -0.5f + t * 2.0f;
-    const float mask = std::max(0.0f, 1.0f - (std::abs(proj - pos) / 0.5f));
-    Color nebula = Color::lerp({0.2f, 0.0f, 1.0f, 1.0f}, {0.6f, 0.0f, 0.8f, 1.0f}, u);
-    return screen_over(base, nebula, 1.2f * mask * mask);
+    
+    // Radial nebula
+    const float dx = u - 0.5f;
+    const float dy = v - 0.5f;
+    const float d = std::sqrt(dx*dx + dy*dy);
+    const float radius = 0.2f + t * 0.8f;
+    const float mask = std::max(0.0f, 1.0f - std::abs(d - radius) / 0.3f);
+    
+    Color nebula = Color::lerp({0.0f, 0.4f, 1.0f, 1.0f}, {0.8f, 0.2f, 1.0f, 1.0f}, t);
+    return screen_over(base, nebula, 2.0f * mask * mask);
 }
 
 Color transition_light_leak_sunset(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
     const bool overlay_mode = (to_surface == nullptr);
     const Color base = overlay_mode ? Color::black() : Color::lerp(sample_uv(input, u, v), sample_transition_target(input, to_surface, u, v), t);
-    const float proj1 = (u * 0.96f - v * 0.25f + 0.2f) / 1.4f;
-    const float proj2 = (u * 0.96f + v * 0.25f + 0.1f) / 1.4f;
-    const float pos = -0.3f + t * 1.6f;
-    const float m1 = std::max(0.0f, 1.0f - (std::abs(proj1 - pos) / 0.2f));
-    const float m2 = std::max(0.0f, 1.0f - (std::abs(proj2 - pos) / 0.2f));
+    
+    const float proj1 = (u * 0.96f - v * 0.25f);
+    const float proj2 = (u * 0.96f + v * 0.25f);
+    const float pos = -0.5f + t * 2.0f;
+    
+    const float m1 = std::max(0.0f, 1.0f - (std::abs(proj1 - pos) / 0.45f));
+    const float m2 = std::max(0.0f, 1.0f - (std::abs(proj2 - pos) / 0.45f));
     const Color sunset = Color::lerp({1.0f, 0.1f, 0.0f, 1.0f}, {1.0f, 0.6f, 0.0f, 1.0f}, t);
-    return screen_over(base, sunset, 1.5f * (m1*m1 + m2*m2));
+    return screen_over(base, sunset, 4.0f * (m1*m1 + m2*m2)); // Extremely bright
 }
 
 Color transition_light_leak_ghost(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
     const bool overlay_mode = (to_surface == nullptr);
     const Color base = overlay_mode ? Color::black() : Color::lerp(sample_uv(input, u, v), sample_transition_target(input, to_surface, u, v), t);
-    const float proj = (u + v * 0.1f) / 1.1f;
-    const float pos = -0.2f + t * 1.4f;
-    const float mask = std::pow(std::max(0.0f, 1.0f - (std::abs(proj - pos) / 0.4f)), 4.0f);
-    const Color ghost = {0.8f, 0.9f, 1.0f, 0.5f};
-    return screen_over(base, ghost, mask * 0.7f);
+    const float proj = (u + v * 0.1f);
+    const float pos = -0.4f + t * 1.8f;
+    const float mask = std::pow(std::max(0.0f, 1.0f - (std::abs(proj - pos) / 0.6f)), 4.0f);
+    const Color ghost = {0.8f, 0.9f, 1.0f, 1.0f}; // Increased opacity
+    return screen_over(base, ghost, mask * 1.5f); // Increased intensity
 }
 
 Color transition_film_burn(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
@@ -435,6 +445,7 @@ Color transition_film_burn(float u, float v, float t, const SurfaceRGBA& input, 
 } // namespace
 
 void register_light_leak_transitions() {
+    std::cout << "DEBUG: Registering light leak transitions..." << std::endl;
     auto& reg = TransitionRegistry::instance();
     const auto register_builtin = [&reg](const char* canonical_id,
                                          const char* name,

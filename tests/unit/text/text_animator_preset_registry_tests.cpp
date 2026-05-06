@@ -23,10 +23,14 @@ bool test_common_presets_available() {
         "tachyon.textanim.pop_in",
         "tachyon.textanim.typewriter",
         "tachyon.textanim.typewriter.classic",
+        "tachyon.textanim.typewriter.cursor",
+        "tachyon.textanim.typewriter.soft",
         "tachyon.textanim.typewriter.archive",
         "tachyon.textanim.typewriter.terminal",
         "tachyon.textanim.typewriter.word",
+        "tachyon.textanim.typewriter.word_cursor",
         "tachyon.textanim.typewriter.line",
+        "tachyon.textanim.typewriter.sentence",
         "tachyon.textanim.blur_to_focus"
     };
     for (const auto& id : ids) {
@@ -58,10 +62,31 @@ bool test_create_preset_returns_valid_spec() {
         std::cerr << "Error: Created spec has no opacity keyframes" << std::endl;
         return false;
     }
-    if (!specs[0].cursor.enabled) {
-        std::cerr << "Error: Typewriter preset should enable cursor" << std::endl;
+    if (specs[0].cursor.enabled) {
+        std::cerr << "Error: Fade in preset should not enable cursor" << std::endl;
         return false;
     }
+    return true;
+}
+
+bool test_typewriter_family_extended() {
+    auto& registry = tachyon::presets::TextAnimatorPresetRegistry::instance();
+    std::vector<std::string> ids = {
+        "tachyon.textanim.typewriter.cursor",
+        "tachyon.textanim.typewriter.soft",
+        "tachyon.textanim.typewriter.word_cursor",
+        "tachyon.textanim.typewriter.sentence"
+    };
+
+    for (const auto& id : ids) {
+        tachyon::registry::ParameterBag params;
+        auto specs = registry.create(id, params);
+        if (specs.empty()) {
+            std::cerr << "Error: Typewriter family preset " << id << " returned empty vector" << std::endl;
+            return false;
+        }
+    }
+
     return true;
 }
 
@@ -103,6 +128,7 @@ bool run_text_animator_preset_registry_tests() {
     if (!test_registry_is_not_empty()) success = false;
     if (!test_common_presets_available()) success = false;
     if (!test_create_preset_returns_valid_spec()) success = false;
+    if (!test_typewriter_family_extended()) success = false;
     if (!test_composite_preset_returns_multiple_specs()) success = false;
     if (!test_unknown_preset_falls_back()) success = false;
 
