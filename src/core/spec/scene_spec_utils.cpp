@@ -10,7 +10,4 @@
 
 namespace tachyon {
 
-// Note: parse_optional_vector3_property is now in property_parse_json.cpp
-// to avoid duplication and use the unified template-based parsing.
-
 }  // namespace tachyon

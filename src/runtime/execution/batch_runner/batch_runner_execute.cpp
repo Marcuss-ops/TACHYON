@@ -32,6 +32,16 @@ std::string get_machine_id() {
     return "local-dev";
 }
 
+bool load_scene_context(const std::filesystem::path& /*scene_path*/, SceneSpec& /*scene*/, AssetResolutionTable& /*assets*/, DiagnosticBag& diagnostics) {
+    diagnostics.add_error("batch.scene_loading_disabled", "JSON scene loading is no longer supported. Use C++ SceneSpec authoring.");
+    return false;
+}
+
+bool load_render_job(const std::filesystem::path& /*job_path*/, RenderJob& /*job*/, DiagnosticBag& diagnostics) {
+    diagnostics.add_error("batch.job_loading_disabled", "JSON render job loading is no longer supported. Use C++ RenderJob builders.");
+    return false;
+}
+
 struct TimeoutGuard {
     CancelFlag& flag;
     std::thread thread;
@@ -59,16 +69,6 @@ struct TimeoutGuard {
     }
 };
 
-}
-
-bool load_scene_context(const std::filesystem::path& /*scene_path*/, SceneSpec& /*scene*/, AssetResolutionTable& /*assets*/, DiagnosticBag& diagnostics) {
-    diagnostics.add_error("batch.scene_loading_disabled", "JSON scene loading is no longer supported. Use C++ SceneSpec authoring.");
-    return false;
-}
-
-bool load_render_job(const std::filesystem::path& /*job_path*/, RenderJob& /*job*/, DiagnosticBag& diagnostics) {
-    diagnostics.add_error("batch.job_loading_disabled", "JSON render job loading is no longer supported. Use C++ RenderJob builders.");
-    return false;
 }
 
 ResolutionResult<RenderBatchResult> run_render_batch(const RenderBatchSpec& spec, std::size_t worker_count) {

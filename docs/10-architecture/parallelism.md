@@ -36,10 +36,10 @@ Supersedes: N/A
 {
   "worker_count": 4,
   "jobs": [
-    {"scene_path": "scene_a.json", "job_path": "job_a.json"},
-    {"scene_path": "scene_b.json", "job_path": "job_b.json"},
-    {"scene_path": "scene_c.json", "job_path": "job_c.json"},
-    {"scene_path": "scene_d.json", "job_path": "job_d.json"}
+    {"scene_path": "scene_a.cpp", "job_path": "job_a.cpp"},
+    {"scene_path": "scene_b.cpp", "job_path": "job_b.cpp"},
+    {"scene_path": "scene_c.cpp", "job_path": "job_c.cpp"},
+    {"scene_path": "scene_d.cpp", "job_path": "job_d.cpp"}
   ]
 }
 ```
