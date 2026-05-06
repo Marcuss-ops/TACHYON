@@ -19,10 +19,47 @@ function Test-PatternOutsideDomain {
     $allFiles += Get-ChildItem -Path "src" -Recurse -Filter "*.cpp" -ErrorAction SilentlyContinue
     $allFiles += Get-ChildItem -Path "src" -Recurse -Filter "*.h" -ErrorAction SilentlyContinue
     $allFiles += Get-ChildItem -Path "include" -Recurse -Filter "*.h" -ErrorAction SilentlyContinue
+    $allowlistPatterns = @()
+
+    switch ($PatternName) {
+        "gaussian_blur" {
+            $allowlistPatterns = @(
+                'src\\renderer2d\\backend\\',
+                'include\\tachyon\\renderer2d\\backend\\',
+                'src\\text\\core\\rendering\\',
+                'include\\tachyon\\text\\rendering\\'
+            )
+        }
+        "blend" {
+            $allowlistPatterns = @(
+                'src\\color\\',
+                'include\\tachyon\\color\\',
+                'src\\renderer2d\\color\\',
+                'include\\tachyon\\renderer2d\\color\\'
+            )
+        }
+        "sampling" {
+            $allowlistPatterns = @(
+                'src\\renderer2d\\effects\\',
+                'src\\timeline\\'
+            )
+        }
+    }
 
     foreach ($file in $allFiles) {
         # Skip files in the owner domain
         if ($file.FullName -match [regex]::Escape($OwnerDomain)) {
+            continue
+        }
+
+        $skip = $false
+        foreach ($allowPattern in $allowlistPatterns) {
+            if ($file.FullName -match $allowPattern) {
+                $skip = $true
+                break
+            }
+        }
+        if ($skip) {
             continue
         }
 

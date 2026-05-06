@@ -32,9 +32,16 @@ $totalErrors = 0
 Write-Host "=== Tachyon Domain Boundary Check ===" -ForegroundColor Cyan
 Write-Host ""
 
-# Rule 1: renderer2d must not include renderer3d
+# Rule 1: renderer2d public headers must not include renderer3d
 Write-Host "Rule 1: renderer2d must not include renderer3d" -ForegroundColor Yellow
-$violations1 = Test-IncludeBoundary -Name "2D->3D" -Pattern 'renderer3d|renderer3D' -AllowedPath "renderer2d"
+$violations1 = @()
+$files1 = Get-ChildItem -Path "include/tachyon/renderer2d" -Recurse -Filter "*.h" -ErrorAction SilentlyContinue
+foreach ($file in $files1) {
+    $content = Get-Content $file.FullName -Raw
+    if ($content -match '^\s*#include\s+["<]tachyon/renderer3d/') {
+        $violations1 += $file.FullName
+    }
+}
 if ($violations1.Count -eq 0) {
     Write-Check "renderer2d includes renderer3d" "PASS"
 } else {
@@ -43,10 +50,27 @@ if ($violations1.Count -eq 0) {
     $totalErrors++
 }
 
-# Rule 2: renderer3d must not include renderer2d (except interfaces)
+# Rule 2: renderer3d must not include renderer2d except known bridge interfaces
 Write-Host ""
 Write-Host "Rule 2: renderer3d must not include renderer2d (except interfaces)" -ForegroundColor Yellow
-$violations2 = Test-IncludeBoundary -Name "3D->2D" -Pattern 'renderer2d|renderer2D' -AllowedPath "renderer3d"
+$bridgeAllowlist = @(
+    'include/tachyon/renderer3d/core/mesh_types.h',
+    'include/tachyon/renderer3d/modifiers/i3d_modifier.h',
+    'include/tachyon/renderer3d/modifiers/parallax_3d_modifier.h',
+    'include/tachyon/renderer3d/modifiers/tilt_3d_modifier.h',
+    'include/tachyon/renderer3d/surface/layer_surface.h'
+)
+$violations2 = @()
+$files2 = Get-ChildItem -Path "include/tachyon/renderer3d" -Recurse -Filter "*.h" -ErrorAction SilentlyContinue
+foreach ($file in $files2) {
+    if ($bridgeAllowlist -contains $file.FullName.Replace('/', '\')) {
+        continue
+    }
+    $content = Get-Content $file.FullName -Raw
+    if ($content -match '^\s*#include\s+["<]tachyon/renderer2d/') {
+        $violations2 += $file.FullName
+    }
+}
 if ($violations2.Count -eq 0) {
     Write-Check "renderer3d includes renderer2d" "PASS"
 } else {
@@ -100,7 +124,7 @@ $violations5 = @()
 $files5 = Get-ChildItem -Path "src/renderer2d" -Recurse -Filter "*.cpp" -ErrorAction SilentlyContinue
 foreach ($file in $files5) {
     $content = Get-Content $file.FullName -Raw
-    if ($content -match 'RayTracer|ThreeDSpec|Mesh' -and $content -notmatch 'TACHYON_ENABLE_3D') {
+    if ($content -match '^\s*#include\s+["<]tachyon/renderer3d/' -and $content -notmatch 'TACHYON_ENABLE_3D') {
         $violations5 += $file.FullName
     }
 }

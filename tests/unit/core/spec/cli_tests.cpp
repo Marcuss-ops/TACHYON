@@ -1,6 +1,7 @@
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/core/spec/validation/layer_spec_normalizer.h"
 #include "tachyon/core/spec/validation/scene_validator.h"
 #include "tachyon/scene/builder.h"
 
@@ -245,6 +246,34 @@ bool run_cli_tests() {
         check_true(std::any_of(result.issues.begin(), result.issues.end(), [](const auto& issue) {
             return issue.path == "composition.main.layers[0].asset_id" && issue.severity == tachyon::core::ValidationIssue::Severity::Error;
         }), "SceneValidator should report a missing asset_id for image layers");
+    }
+
+    {
+        tachyon::SceneSpec scene;
+        scene.schema_version = tachyon::SchemaVersion{1, 0, 0};
+
+        tachyon::CompositionSpec comp;
+        comp.id = "main";
+        comp.width = 1920;
+        comp.height = 1080;
+        comp.duration = 2.0;
+        comp.fps = 30;
+
+        tachyon::LayerSpec text_layer;
+        text_layer.id = "title";
+        text_layer.type = tachyon::LayerType::Text;
+        text_layer.text_content = "Hello";
+        text_layer.start_time = 0.0;
+        text_layer.out_point = 1.0;
+        comp.layers.push_back(text_layer);
+
+        scene.compositions.push_back(comp);
+
+        const auto normalized_scene = tachyon::core::normalize_scene_view(scene);
+        check_true(normalized_scene.compositions.size() == 1, "NormalizedSceneView preserves compositions");
+        check_true(normalized_scene.compositions[0].layers.size() == 1, "NormalizedSceneView preserves layers");
+        check_true(normalized_scene.compositions[0].layers[0].type == tachyon::LayerType::Text, "NormalizedSceneView canonicalizes text layer type");
+        check_true(normalized_scene.compositions[0].layers[0].source != nullptr, "NormalizedSceneView retains source pointers");
     }
 
     return g_failures == 0;
