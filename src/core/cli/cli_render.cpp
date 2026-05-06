@@ -257,6 +257,7 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
     }
 
     if (!options.output_override.empty()) job.output.destination.path = options.output_override.string();
+    if (options.output_preset_id.has_value()) job.output.profile.name = *options.output_preset_id;
     if (options.frame_range_override.has_value()) job.frame_range = *options.frame_range_override;
 
     NativeRenderOptions native_options;

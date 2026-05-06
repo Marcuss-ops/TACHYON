@@ -2,6 +2,7 @@
 
 #include <string>
 #include <string_view>
+#include <vector>
 #include <unordered_map>
 
 namespace tachyon::output {
@@ -22,6 +23,7 @@ struct OutputPreset {
 };
 
 const OutputPreset* find_preset(std::string_view id);
+std::vector<std::string> list_presets();
 
 // Initialize presets - call at startup
 void register_default_presets();

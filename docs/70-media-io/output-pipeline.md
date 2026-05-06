@@ -14,7 +14,7 @@
 | `OutputBufferingProfile` (strategy, max_frames_in_queue) | `render_job.h` | ✓ |
 
 ### Gap principali
-- **Nessun preset named** (YouTube 1080p, Shorts, 4K, etc.) — i parametri vanno tutti specificati a mano
+- **Preset named presenti ma poco esposti**: YouTube 1080p, Shorts, 4K, PNG sequence e ProRes sono registrati nel core, ma serve un comando ufficiale per listarli e selezionarli in modo ergonomico
 - **PNG sequence** è nell'enum ma l'implementazione è da verificare
 - **Thumbnail export** non esiste
 - **H.265 / HEVC** non è esplicitamente supportato come opzione semplice
@@ -285,14 +285,14 @@ if (!job.metadata.empty()) {
 ## CLI
 
 ```bash
-# Con preset named
-tachyon render scene.json job.json --preset youtube_1080p_30
+# Con preset named di output
+tachyon render --cpp scene.cpp --out output.mp4 --output-preset youtube_1080p_30
 
-# Lista preset disponibili
-tachyon presets list
+# Lista preset di output disponibili
+tachyon output-presets list
 
 # Info su preset
-tachyon presets info youtube_4k
+tachyon output-presets info youtube_4k
 
 # Export solo thumbnail
 tachyon thumbnail scene.json --frame 90 --out thumb.jpg --width 1280 --height 720

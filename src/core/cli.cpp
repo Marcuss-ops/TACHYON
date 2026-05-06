@@ -67,7 +67,7 @@ static const std::vector<CommandEntry> kCommands = {
     {
         "render",
         "tachyon render --cpp <scene.cpp> --out <file> [--frames <s-e>] [--quality draft|high|production] [--workers <n>]\n"
-        "        render --preset <id> --out <file>",
+        "        tachyon render --preset <id> --out <file> [--output-preset <name>]",
         [](const CliOptions& o, std::ostream& e) {
             if (o.cpp_path.empty() && !o.preset_id.has_value()) {
                 e << "Either --cpp or --preset required for render\n";
@@ -76,6 +76,23 @@ static const std::vector<CommandEntry> kCommands = {
             return true;
         },
         run_render_command
+    },
+    {
+        "output-presets",
+        "tachyon output-presets list\n"
+        "        tachyon output-presets info <name>",
+        [](const CliOptions& o, std::ostream& e) {
+            if (o.output_presets_command.empty()) {
+                e << "Use output-presets list or output-presets info <name>\n";
+                return false;
+            }
+            if (o.output_presets_command == "info" && o.output_preset_name.empty()) {
+                e << "output-presets info requires a preset name\n";
+                return false;
+            }
+            return true;
+        },
+        run_output_presets_command
     },
     {
         "preview",
