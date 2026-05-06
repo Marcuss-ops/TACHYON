@@ -26,7 +26,7 @@ const CompositionSpec* find_composition(const SceneSpec& scene, const std::strin
     return &(*it);
 }
 
-std::size_t count_layers_with_type(const CompositionSpec& composition, const std::string& type) {
+std::size_t count_layers_with_type(const CompositionSpec& composition, LayerType type) {
     return static_cast<std::size_t>(std::count_if(
         composition.layers.begin(),
         composition.layers.end(),
@@ -85,12 +85,12 @@ CompositionSummary make_summary(const CompositionSpec& composition) {
     summary.frame_rate = composition.frame_rate;
     summary.background = composition.background; // Copy optional<BackgroundSpec>
     summary.layer_count = composition.layers.size();
-    summary.solid_layer_count = count_layers_with_type(composition, "solid");
-    summary.shape_layer_count = count_layers_with_type(composition, "shape");
-    summary.mask_layer_count = count_layers_with_type(composition, "mask");
-    summary.image_layer_count = count_layers_with_type(composition, "image");
-    summary.text_layer_count = count_layers_with_type(composition, "text");
-    summary.precomp_layer_count = count_layers_with_type(composition, "precomp");
+    summary.solid_layer_count = count_layers_with_type(composition, LayerType::Solid);
+    summary.shape_layer_count = count_layers_with_type(composition, LayerType::Shape);
+    summary.mask_layer_count = count_layers_with_type(composition, LayerType::Mask);
+    summary.image_layer_count = count_layers_with_type(composition, LayerType::Image);
+    summary.text_layer_count = count_layers_with_type(composition, LayerType::Text);
+    summary.precomp_layer_count = count_layers_with_type(composition, LayerType::Precomp);
     summary.track_matte_layer_count = count_layers_with_track_matte(composition);
     return summary;
 }

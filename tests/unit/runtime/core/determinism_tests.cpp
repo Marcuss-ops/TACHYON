@@ -22,7 +22,7 @@ protected:
             comp.layers.push_back({});
             auto& layer = comp.layers.back();
             layer.id = "L" + std::to_string(i);
-            layer.type = "solid";
+            layer.type = LayerType::Solid;
             layer.transform.position_x = 100.0 * i;
             layer.transform.position_y = 50.0 * i;
             layer.opacity = 0.5 + (0.05 * i);
@@ -41,7 +41,7 @@ protected:
         child.height = 360;
         child.layers.push_back({});
         child.layers.back().id = "C1";
-        child.layers.back().type = "solid";
+        child.layers.back().type = LayerType::Solid;
         child.layers.back().transform.position_x = 320;
         child.layers.back().transform.position_y = 180;
 
@@ -54,7 +54,7 @@ protected:
         parent.layers.push_back({});
         auto& l1 = parent.layers.back();
         l1.id = "L1";
-        l1.type = "precomp";
+        l1.type = LayerType::Precomp;
         l1.precomp_id = "child";
         l1.transform.position_x = 100;
         l1.transform.position_y = 100;

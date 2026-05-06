@@ -12,7 +12,8 @@ LayerSpec make_base_layer(
     LayerSpec l;
     l.id          = id;
     l.name        = name;
-    l.type        = type;
+    l.type_string = type;
+    l.type        = layer_type_from_string(type);
     l.enabled     = true;
     l.visible     = true;
     l.start_time  = p.in_point;

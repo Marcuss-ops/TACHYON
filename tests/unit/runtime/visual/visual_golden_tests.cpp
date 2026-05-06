@@ -72,7 +72,7 @@ bool run_golden_visual_tests() {
         auto& child = scene.compositions.back();
         child.id = "child"; child.width = 400; child.height = 400;
         child.layers.push_back({});
-        child.layers.back().id = "C1"; child.layers.back().type = "solid";
+        child.layers.back().id = "C1"; child.layers.back().type = LayerType::Solid;
         child.layers.back().opacity = 0.5;
 
         // Parent
@@ -81,7 +81,7 @@ bool run_golden_visual_tests() {
         root.id = "root"; root.width = 1280; root.height = 720;
         root.layers.push_back({});
         auto& p1 = root.layers.back();
-        p1.id = "P1"; p1.type = "precomp"; p1.precomp_id = "child";
+        p1.id = "P1"; p1.type = LayerType::Precomp; p1.precomp_id = "child";
         p1.transform.position_x = 300; p1.transform.position_y = 300;
         p1.opacity = 0.8;
 
@@ -99,7 +99,7 @@ bool run_golden_visual_tests() {
             comp.layers.push_back({});
             auto& l = comp.layers.back();
             l.id = "L" + std::to_string(i);
-            l.type = "solid";
+            l.type = LayerType::Solid;
             l.transform.position_property.expression = "index * 100 + 100";
             l.transform.position_y = 360.0;
         }
@@ -118,13 +118,13 @@ bool run_golden_visual_tests() {
         // Expected Linear: ~0.21
         comp.layers.push_back({});
         auto& bg = comp.layers.back();
-        bg.id = "BG"; bg.type = "solid";
+        bg.id = "BG"; bg.type = LayerType::Solid;
         bg.fill_color.value = ColorSpec{128, 128, 128, 255};
 
         // Overlapping red: 0.5 opacity
         comp.layers.push_back({});
         auto& l1 = comp.layers.back();
-        l1.id = "L1"; l1.type = "solid";
+        l1.id = "L1"; l1.type = LayerType::Solid;
         l1.fill_color.value = ColorSpec{255, 0, 0, 255};
         l1.opacity = 0.5;
         l1.transform.position_x = 100; l1.transform.position_y = 100;

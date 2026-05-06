@@ -32,7 +32,7 @@ bool run_precomp_mask_tests() {
         
         LayerSpec sub_layer;
         sub_layer.id = "sub_layer";
-        sub_layer.type = "solid";
+        sub_layer.type = LayerType::Solid;
         sub_layer.enabled = true;
         sub_layer.in_point = 0.0;
         sub_layer.out_point = 10.0;
@@ -48,7 +48,7 @@ bool run_precomp_mask_tests() {
         
         LayerSpec precomp_layer;
         precomp_layer.id = "precomp";
-        precomp_layer.type = "precomp";
+        precomp_layer.type = LayerType::Precomp;
         precomp_layer.precomp_id = "sub";
         precomp_layer.enabled = true;
         precomp_layer.in_point = 0.0;
@@ -78,12 +78,12 @@ bool run_precomp_mask_tests() {
         
         LayerSpec matte_layer;
         matte_layer.id = "matte";
-        matte_layer.type = "solid";
+        matte_layer.type = LayerType::Solid;
         comp.layers.push_back(matte_layer);
         
         LayerSpec masked_layer;
         masked_layer.id = "masked";
-        masked_layer.type = "solid";
+        masked_layer.type = LayerType::Solid;
         masked_layer.track_matte_type = TrackMatteType::Alpha;
         masked_layer.track_matte_layer_id = "matte";
         comp.layers.push_back(masked_layer);

@@ -170,7 +170,8 @@ SceneSpec build_text_scene(const TextParams& text, const SceneParams& scene) {
     LayerSpec bg_layer;
     bg_layer.id = "bg_solid";
     bg_layer.name = "Background";
-    bg_layer.type = "solid";
+    bg_layer.type = LayerType::Solid;
+    bg_layer.type_string = "solid";
     bg_layer.enabled = true;
     bg_layer.visible = true;
     bg_layer.in_point = 0.0;

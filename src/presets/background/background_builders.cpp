@@ -114,9 +114,11 @@ LayerSpec build_background(const BackgroundParams& p) {
     if (spec) {
         apply_background_overrides(*spec, p);
         layer.procedural = std::move(spec);
-        layer.type = "procedural";
+        layer.type = LayerType::Procedural;
+        layer.type_string = "procedural";
     } else {
-        layer.type = "none";
+        layer.type = LayerType::NullLayer;
+        layer.type_string = "none";
         layer.enabled = false;
     }
 

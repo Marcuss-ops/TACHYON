@@ -44,7 +44,7 @@ std::uint64_t hash_scene_content(const SceneSpec& scene) {
         for (const auto& layer : comp.layers) {
             builder.add_string(layer.id);
             builder.add_string(layer.name);
-            builder.add_string(layer.type);
+            builder.add_string(to_canonical_layer_type_string(layer.type));
             builder.add_string(layer.blend_mode);
             builder.add_bool(layer.enabled);
             builder.add_bool(layer.visible);

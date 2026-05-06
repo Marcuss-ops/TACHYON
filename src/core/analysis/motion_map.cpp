@@ -11,23 +11,6 @@
 namespace tachyon::analysis {
 namespace {
 
-std::string layer_kind_to_string(LayerType kind) {
-    switch (kind) {
-        case LayerType::Solid: return "solid";
-        case LayerType::Shape: return "shape";
-        case LayerType::Image: return "image";
-        case LayerType::Video: return "video";
-        case LayerType::Text: return "text";
-        case LayerType::Camera: return "camera";
-        case LayerType::Precomp: return "precomp";
-        case LayerType::Light: return "light";
-        case LayerType::Mask: return "mask";
-        case LayerType::NullLayer: return "null";
-        case LayerType::Procedural: return "procedural";
-        case LayerType::Unknown: return "unknown";
-    }
-    return "unknown";
-}
 
 std::string transition_kind_to_string(TransitionKind kind) {
     switch (kind) {
@@ -194,7 +177,7 @@ MotionMapReport build_motion_map(const SceneSpec& scene, const MotionMapOptions&
         for (const auto& layer : comp.layers) {
             MotionLayerSummary layer_summary;
             layer_summary.id = layer.id;
-            layer_summary.type = layer_kind_to_string(layer.kind);
+            layer_summary.type = std::string(to_canonical_layer_type_string(layer.type));
             layer_summary.start = layer_start_time(layer);
             layer_summary.end = layer_end_time(layer);
 
@@ -228,7 +211,7 @@ MotionMapReport build_motion_map(const SceneSpec& scene, const MotionMapOptions&
             if (layer.is_3d) {
                 append_unique(layer_summary.animations, "3d_transform");
             }
-            if (layer.kind == LayerType::Text && !layer.text_content.empty()) {
+            if (layer.type == LayerType::Text && !layer.text_content.empty()) {
                 append_unique(layer_summary.animations, "text_content");
             }
             if (!layer.text_animators.empty()) {
@@ -275,10 +258,10 @@ MotionMapReport build_motion_map(const SceneSpec& scene, const MotionMapOptions&
             if (!layer.enabled || !layer.visible) {
                 layer_summary.warnings.push_back("disabled_or_invisible");
             }
-            if (layer.kind == LayerType::Text && layer.text_content.empty()) {
+            if (layer.type == LayerType::Text && layer.text_content.empty()) {
                 layer_summary.warnings.push_back("empty_text");
             }
-            if ((layer.kind == LayerType::Image || layer.kind == LayerType::Video) && layer.asset_id.empty()) {
+            if ((layer.type == LayerType::Image || layer.type == LayerType::Video) && layer.asset_id.empty()) {
                 layer_summary.warnings.push_back("missing_asset_id");
             }
 

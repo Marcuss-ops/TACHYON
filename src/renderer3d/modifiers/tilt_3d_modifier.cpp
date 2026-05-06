@@ -1,7 +1,7 @@
 #include "tachyon/renderer3d/modifiers/tilt_3d_modifier.h"
 #include "tachyon/core/scene/evaluator/property_sampler.h"
 #include "tachyon/core/math/matrix4x4.h"
-#include "tachyon/renderer2d/math/math_utils.h"
+#include <cmath>
 
 namespace tachyon {
 namespace renderer3d {
@@ -25,8 +25,9 @@ void Tilt3DModifier::apply(
     float tilt_x = static_cast<float>(get_scalar("tilt_x", 0.0));
     float tilt_y = static_cast<float>(get_scalar("tilt_y", 0.0));
 
-    float rad_x = static_cast<float>(renderer2d::math_utils::degrees_to_radians(tilt_x));
-    float rad_y = static_cast<float>(renderer2d::math_utils::degrees_to_radians(tilt_y));
+    constexpr float kDegToRad = static_cast<float>(M_PI / 180.0);
+    float rad_x = tilt_x * kDegToRad;
+    float rad_y = tilt_y * kDegToRad;
 
     math::Matrix4x4 rotation = math::Matrix4x4::rotation_x(rad_x) * math::Matrix4x4::rotation_y(rad_y);
 

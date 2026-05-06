@@ -56,3 +56,6 @@ void test_fixture##_##test_name##_Test::TestBody()
 #define ASSERT_LE(val1, val2) ::testing::MakeAssertion((val1) <= (val2))
 #define EXPECT_LT(val1, val2) ::testing::MakeAssertion((val1) < (val2))
 #define ASSERT_LT(val1, val2) ::testing::MakeAssertion((val1) < (val2))
+
+#define EXPECT_NEAR(val1, val2, abs_error) ::testing::MakeAssertion(std::abs((val1) - (val2)) <= (abs_error))
+#define ASSERT_NEAR(val1, val2, abs_error) ::testing::MakeAssertion(std::abs((val1) - (val2)) <= (abs_error))
