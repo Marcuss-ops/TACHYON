@@ -2,6 +2,7 @@
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/core.h"
 #include "cli/cli_internal.h"
+#include "tachyon/core/transition/transition_descriptor.h"
 #include <functional>
 #include <iostream>
 #include <string>
@@ -139,6 +140,12 @@ static const std::vector<CommandEntry> kCommands = {
         },
         run_metrics_command
     },
+    {
+        "doctor",
+        "tachyon doctor",
+        nullptr,
+        run_doctor_command
+    },
 };
 
 void print_help(std::ostream& out) {
@@ -167,6 +174,10 @@ int run_cli(int argc, char** argv) {
         std::cout << version_string() << '\n';
         return 0;
     }
+
+    // Initialize all built-in systems (Transitions, Presets, etc.)
+    // Note: We do this here instead of in each DLL to avoid circular link dependencies.
+    ::tachyon::register_builtin_transitions();
 
     // Dispatch through registry
     for (const auto& cmd : kCommands) {

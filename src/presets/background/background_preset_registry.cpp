@@ -25,6 +25,10 @@ std::optional<LayerSpec> BackgroundPresetRegistry::create(std::string_view id, c
         layer.id = "bg_" + std::string(id);
         layer.name = spec->metadata.display_name;
         layer.preset_id = std::string(id);
+        // Background presets must resolve to normal composited layers, not disabled/null placeholders.
+        if (layer.type == LayerType::NullLayer || !layer.enabled) {
+            return std::nullopt;
+        }
         return layer;
     }
     return std::nullopt;

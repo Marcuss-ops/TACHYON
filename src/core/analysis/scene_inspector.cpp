@@ -1,4 +1,5 @@
 #include "tachyon/core/analysis/scene_inspector.h"
+#include "tachyon/transition_registry.h"
 
 #include <algorithm>
 #include <iomanip>
@@ -47,8 +48,8 @@ std::string severity_to_string(InspectionSeverity severity) {
     return "info";
 }
 
-std::string layer.type_to_string(LayerType kind) {
-    switch (kind) {
+std::string type_to_string(LayerType type) {
+    switch (type) {
         case LayerType::Solid: return "solid";
         case LayerType::Shape: return "shape";
         case LayerType::Image: return "image";
@@ -247,21 +248,36 @@ InspectionReport inspect_scene(const SceneSpec& scene, const InspectionOptions& 
                 add_info(report, options, "layer.repeater_animated", layer_path, "Repeater settings are animated.");
             }
 
-            if (!layer.in_preset.empty()) {
-                add_info(report, options, "layer.in_preset", layer_path, "Layer uses in preset: " + layer.in_preset);
+            if (!layer.animation_in_preset.empty() || !layer.in_preset.empty()) {
+                const std::string& name = layer.animation_in_preset.empty() ? layer.in_preset : layer.animation_in_preset;
+                add_info(report, options, "layer.in_preset", layer_path, "Layer uses in preset: " + name);
             }
-            if (!layer.during_preset.empty()) {
-                add_info(report, options, "layer.during_preset", layer_path, "Layer uses during preset: " + layer.during_preset);
+            if (!layer.animation_during_preset.empty() || !layer.during_preset.empty()) {
+                const std::string& name = layer.animation_during_preset.empty() ? layer.during_preset : layer.animation_during_preset;
+                add_info(report, options, "layer.during_preset", layer_path, "Layer uses during preset: " + name);
             }
-            if (!layer.out_preset.empty()) {
-                add_info(report, options, "layer.out_preset", layer_path, "Layer uses out preset: " + layer.out_preset);
+            if (!layer.animation_out_preset.empty() || !layer.out_preset.empty()) {
+                const std::string& name = layer.animation_out_preset.empty() ? layer.out_preset : layer.animation_out_preset;
+                add_info(report, options, "layer.out_preset", layer_path, "Layer uses out preset: " + name);
             }
 
-            if (layer.transition_in.kind != TransitionKind::None) {
+            if (layer.transition_in.kind != TransitionKind::None || !layer.transition_in.transition_id.empty()) {
                 add_info(report, options, "layer.transition_in", layer_path, "Layer has an entrance transition.");
+                if (!layer.transition_in.transition_id.empty()) {
+                    if (TransitionRegistry::instance().find(layer.transition_in.transition_id) == nullptr) {
+                        add_issue(report, InspectionSeverity::Error, "layer.transition_in.missing_id", layer_path,
+                            "Transition ID '" + layer.transition_in.transition_id + "' not found in registry.");
+                    }
+                }
             }
-            if (layer.transition_out.kind != TransitionKind::None) {
+            if (layer.transition_out.kind != TransitionKind::None || !layer.transition_out.transition_id.empty()) {
                 add_info(report, options, "layer.transition_out", layer_path, "Layer has an exit transition.");
+                if (!layer.transition_out.transition_id.empty()) {
+                    if (TransitionRegistry::instance().find(layer.transition_out.transition_id) == nullptr) {
+                        add_issue(report, InspectionSeverity::Error, "layer.transition_out.missing_id", layer_path,
+                            "Transition ID '" + layer.transition_out.transition_id + "' not found in registry.");
+                    }
+                }
             }
 
             if (layer.loop) {
@@ -299,7 +315,7 @@ InspectionReport inspect_scene(const SceneSpec& scene, const InspectionOptions& 
                 }
 
                 if (ranges_overlap(layer_start_time(a), layer_end_time(a), layer_start_time(b), layer_end_time(b))) {
-                    if (a.kind == b.kind || a.kind == LayerType::Text || b.kind == LayerType::Text) {
+                    if (a.type == b.type || a.type == LayerType::Text || b.type == LayerType::Text) {
                         const std::string a_id = a.id.empty() ? "<unnamed>" : a.id;
                         const std::string b_id = b.id.empty() ? "<unnamed>" : b.id;
                         add_issue(report, InspectionSeverity::Warning, "layer.overlap_time", comp_path,

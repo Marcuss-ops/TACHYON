@@ -2,6 +2,7 @@
 
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/presets/background/background_builders.h"
+#include "tachyon/presets/animation3d/fluent.h"
 #include "tachyon/presets/image/image_builders.h"
 #include "tachyon/presets/text/fluent.h"
 #include "tachyon/presets/scene/scene_params.h"
@@ -168,6 +169,54 @@ inline SceneSpec build_scene_b() {
             .text_box(1920, 1080)
             .position(960, 540)
             .duration(5.0))
+        .build_scene();
+}
+
+inline SceneSpec build_text_3d_helpers_scene() {
+    return Composition("main")
+        .size(1280, 720)
+        .duration(5.0)
+        .fps(30)
+        .clear(ColorSpec{16, 18, 28, 255})
+        .camera3d_layer("cam", [](LayerBuilder& l) {
+            l.position3d(0.0, 0.0, -520.0)
+             .camera_poi(0.0, 0.0, 0.0)
+             .camera_zoom(40.0);
+        })
+        .light_layer("ambient", [](LayerBuilder& l) {
+            l.light_type("ambient")
+             .light_color({255, 255, 255, 255})
+             .light_intensity(0.9);
+        })
+        .light_layer("key", [](LayerBuilder& l) {
+            l.light_type("point")
+             .position3d(-160.0, 180.0, -220.0)
+             .light_color({255, 244, 226, 255})
+             .light_intensity(2.6);
+        })
+        .layer("title", [](LayerBuilder& l) {
+            l = LayerBuilder(tachyon::presets::text::headline("TEXT + 3D HELPERS")
+                .font("Default")
+                .font_size(92)
+                .color(ColorSpec{248, 248, 252, 255})
+                .stroke_color(ColorSpec{0, 0, 0, 255})
+                .stroke_width(6.0)
+                .center()
+                .text_box(1280, 720)
+                .position(640, 310)
+                .build());
+            tachyon::presets::animation3d::tilt(l, 14.0, 8.0, 0.75);
+            tachyon::presets::animation3d::parallax(l, 28.0);
+            tachyon::presets::animation3d::orbit_y(l, 4.0, 0.0, 0.12);
+        })
+        .layer("card", [](LayerBuilder& l) {
+            l.solid("card")
+             .size(860, 360)
+             .position3d(0.0, 90.0, 160.0)
+             .fill_color(ColorSpec{242, 158, 66, 255});
+            tachyon::presets::animation3d::tilt(l, 18.0, 10.0, 0.8);
+            tachyon::presets::animation3d::parallax(l, 48.0);
+        })
         .build_scene();
 }
 

@@ -7,6 +7,8 @@ This document describes how backgrounds work today and where to extend the syste
 - `BackgroundPresetRegistry` is intentionally empty by default.
 - `BackgroundKindRegistry` is intentionally empty by default.
 - `build_background()` is still the single entry point for turning `BackgroundParams` into a `LayerSpec`.
+- Background presets are authoring shortcuts only; they resolve to normal `LayerSpec` instances and do not render pixels directly.
+- Background kind ids are canonical only; there is no short-id alias bridge.
 - There is no implicit fallback visual. If the caller does not request a background, the builder returns a disabled layer.
 
 ## Data Flow
@@ -38,6 +40,7 @@ This document describes how backgrounds work today and where to extend the syste
 - Do not add hidden default backgrounds.
 - Do not add duplicate factory logic in the registry.
 - Do not make `BackgroundSpec` own the preset catalog.
+- Do not add new legacy alias bridges for old kind names.
 - Do not change the rendering path just to add a new background name.
 
 ## Practical Result

@@ -8,7 +8,7 @@ namespace tachyon::renderer2d {
 
 namespace {
 
-Color transition_fade(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+Color transition_crossfade(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
     const Color a = sample_uv(input, u, v);
     const Color b = sample_transition_target(input, to_surface, u, v);
     return Color::lerp(a, b, t);
@@ -98,26 +98,22 @@ Color transition_circle_iris(float u, float v, float t, const SurfaceRGBA& input
 
 void register_basic_transitions() {
     auto& reg = TransitionRegistry::instance();
-    const auto register_builtin = [&reg](const char* canonical_id,
-                                         const char* name,
-                                         const char* description,
-                                         TransitionSpec::TransitionFn fn) {
-        reg.register_transition({canonical_id, name, description, fn});
-    };
-
-    register_builtin("tachyon.transition.crossfade", "Crossfade", "Simple crossfade transition", transition_fade);
-    register_builtin("tachyon.transition.slide", "Slide", "Horizontal slide transition", transition_slide);
-    register_builtin("tachyon.transition.slide_up", "Slide Up", "Vertical slide transition", transition_slide_up);
-    register_builtin("tachyon.transition.swipe_left", "Swipe Left", "Swipe the source left to reveal the target", transition_swipe_left);
-    register_builtin("tachyon.transition.zoom", "Zoom", "Zoom transition", transition_zoom);
-    register_builtin("tachyon.transition.flip", "Flip", "Flip transition", transition_flip);
-    register_builtin("tachyon.transition.blur", "Blur", "Blur transition", transition_blur);
-    register_builtin("tachyon.transition.fade_to_black", "Fade to Black", "Crossfade through black", transition_fade_to_black);
-    register_builtin("tachyon.transition.wipe_linear", "Linear Wipe", "Simple left-to-right wipe", transition_wipe_linear);
-    register_builtin("tachyon.transition.wipe_angular", "Angular Wipe", "Angular wipe around center", transition_wipe_angular);
-    register_builtin("tachyon.transition.push_left", "Push Left", "Push image to the left", transition_push_left);
-    register_builtin("tachyon.transition.slide_easing", "Slide Easing", "Slide with easing", transition_slide_easing);
-    register_builtin("tachyon.transition.circle_iris", "Circle Iris", "Circular iris opener", transition_circle_iris);
+    
+    #define REGISTER_BASIC(name) reg.register_cpu_implementation("transition_" #name, transition_##name)
+    
+    REGISTER_BASIC(crossfade);
+    REGISTER_BASIC(slide);
+    REGISTER_BASIC(slide_up);
+    REGISTER_BASIC(swipe_left);
+    REGISTER_BASIC(zoom);
+    REGISTER_BASIC(flip);
+    REGISTER_BASIC(blur);
+    REGISTER_BASIC(fade_to_black);
+    REGISTER_BASIC(wipe_linear);
+    REGISTER_BASIC(wipe_angular);
+    REGISTER_BASIC(push_left);
+    REGISTER_BASIC(slide_easing);
+    REGISTER_BASIC(circle_iris);
 }
 
 } // namespace tachyon::renderer2d

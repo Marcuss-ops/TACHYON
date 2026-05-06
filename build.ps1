@@ -129,7 +129,7 @@ function Get-TestTargetForFilter {
         return "TachyonRenderTests"
     }
 
-    if ($normalized -match 'studio|glyphcache|text|audiopitch|audiotrim|backgroundpreset|transition|sfxcontract') {
+    if ($normalized -match 'studio|glyphcache|text|audiopitch|audiotrim|backgroundpreset|transition|sfxcontract|audit') {
         return "TachyonContentTests"
     }
 
