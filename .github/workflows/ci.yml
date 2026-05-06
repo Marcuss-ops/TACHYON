@@ -34,6 +34,12 @@ jobs:
       - name: Run smoke tests
         run: ctest --test-dir build/linux-ci --output-on-failure -R "TachyonSmokeTests"
 
+      - name: Run core tests
+        run: ctest --test-dir build/linux-ci --output-on-failure -R "TachyonRuntimeTests|TachyonSceneTests|TachyonCliTests|TachyonEditorTests|TachyonColorTests|Phase1Tests"
+
+      - name: Run render tests
+        run: ctest --test-dir build/linux-ci --output-on-failure -R "TachyonContentTests|TachyonNativeRenderTests|TachyonRenderTests|TachyonRenderPipelineTests"
+
   # ─── Windows build + tests ─────────────────────────────────────────────────
   build-windows:
     name: "Windows (MSVC Ninja, RelWithDebInfo)"
@@ -58,3 +64,9 @@ jobs:
 
       - name: Run smoke tests
         run: ctest --test-dir build/windows-ci --output-on-failure -R "TachyonSmokeTests"
+
+      - name: Run core tests
+        run: ctest --test-dir build/windows-ci --output-on-failure -R "TachyonRuntimeTests|TachyonSceneTests|TachyonCliTests|TachyonEditorTests|TachyonColorTests|Phase1Tests"
+
+      - name: Run render tests
+        run: ctest --test-dir build/windows-ci --output-on-failure -R "TachyonContentTests|TachyonNativeRenderTests|TachyonRenderTests|TachyonRenderPipelineTests"

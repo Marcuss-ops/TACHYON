@@ -43,12 +43,18 @@ Tests are disabled for various reasons:
 
 ## Policy
 
-1. **When disabling a test**: Add an entry here with the reason and action needed
-2. **When re-enabling**: Remove the entry from this file
-3. **Quarantined tests**: Tests that are permanently disabled should be moved to `tests/disabled/` directory with a comment explaining why
+1. **When disabling a test**: Add an entry here with the reason and action needed. Then, run `scripts/create_disabled_test_issues.sh` to create an issue on GitHub, and update the entry with the issue number.
+2. **When re-enabling**: Close the GitHub issue, and remove the entry from this file.
+3. **Quarantine lifecycle**:
+   - **Fix in short term**: High-priority issues to be fixed before the next major release.
+   - **Permanent Quarantine**: Low-priority issues deferred to a future phase.
+   - **Obsolete/Delete**: Tests that are no longer relevant to the current architecture.
+   - **Replace**: Tests that should be rewritten using a new architecture.
 
-## TODO
+## Automated Issue Creation
 
-- [ ] Create GitHub issues for each disabled test
-- [ ] Set up CI check to fail if new disabled tests are added without documentation
-- [ ] Review quarterly and either fix or permanently quarantine disabled tests
+To automatically create GitHub issues for all tracked tests in this folder, use the provided script:
+```bash
+./scripts/create_disabled_test_issues.sh
+```
+Make sure you have the GitHub CLI (`gh`) installed and authenticated (`gh auth login`).
