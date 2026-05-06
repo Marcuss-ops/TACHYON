@@ -1,4 +1,6 @@
 #include "tachyon/presets/transition/transition_preset_registry.h"
+#include "tachyon/transition_registry.h"
+#include "tachyon/renderer2d/effects/core/glsl_transition_effect.h"
 #include "tachyon/core/catalog/catalog.h"
 #include <cassert>
 #include <iostream>
@@ -65,6 +67,36 @@ bool run_preset_audit_tests() {
 
         if (transition.shader_path.parent_path() != catalog.root() / "transitions") {
             std::cerr << "Audit Error: Asset '" << transition.id << "' shader path is not flat: " << transition.shader_path << "\n";
+            return false;
+        }
+    }
+
+    // 4. Runtime Registry Alignment Audit
+    renderer2d::init_builtin_transitions(); // Ensure built-ins are loaded
+    auto& runtime_reg = TransitionRegistry::instance();
+
+    for (const auto& id : registered_ids) {
+        if (id == "tachyon.transition.none") continue;
+
+        // 4a. Check if it creates a valid spec
+        registry::ParameterBag empty_bag;
+        LayerTransitionSpec spec = registry.create(id, empty_bag);
+
+        if (spec.transition_id.empty()) {
+            std::cerr << "Audit Error: Preset '" << id << "' created a spec with empty transition_id.\n";
+            return false;
+        }
+
+        // 4b. Check if transition_id exists in runtime registry
+        const TransitionSpec* runtime_spec = runtime_reg.find(spec.transition_id);
+        if (runtime_spec == nullptr) {
+            std::cerr << "Audit Error: Preset '" << id << "' maps to runtime ID '" << spec.transition_id << "' which is MISSING from TransitionRegistry.\n";
+            return false;
+        }
+
+        // 4c. Check if it has a pixel function OR a valid state type
+        if (runtime_spec->function == nullptr && runtime_spec->state_type == TransitionSpec::Type::None) {
+            std::cerr << "Audit Error: Runtime transition '" << spec.transition_id << "' has neither a pixel function nor a state type.\n";
             return false;
         }
     }

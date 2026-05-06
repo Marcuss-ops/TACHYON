@@ -31,6 +31,12 @@ Render the baseline preset to an MP4 file:
 .\build\src\RelWithDebInfo\tachyon.exe render --preset blank_canvas --out output\blank_canvas.mp4
 ```
 
+If you want to force a named output profile, add `--output-preset`:
+
+```powershell
+.\build\src\RelWithDebInfo\tachyon.exe render --preset blank_canvas --out output\blank_canvas.mp4 --output-preset youtube_1080p_30
+```
+
 ## Verify the render
 
 If a video looks black or gray, extract a frame and inspect it:

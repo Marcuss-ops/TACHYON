@@ -145,24 +145,20 @@ Color transition_ripple(float u, float v, float t, const SurfaceRGBA& input, con
 
 void register_artistic_transitions() {
     auto& reg = TransitionRegistry::instance();
-    const auto register_builtin = [&reg](const char* canonical_id,
-                                         const char* name,
-                                         const char* description,
-                                         TransitionSpec::TransitionFn fn) {
-        reg.register_transition({canonical_id, name, description, fn});
-    };
-
-    register_builtin("tachyon.transition.zoom_in", "Zoom In", "Zoom into target", transition_zoom_in);
-    register_builtin("tachyon.transition.zoom_blur", "Zoom Blur", "Zoom with motion blur", transition_zoom_blur);
-    register_builtin("tachyon.transition.spin", "Spin", "Spin rotation", transition_spin);
-    register_builtin("tachyon.transition.pixelate", "Pixelate", "Pixelation transition", transition_pixelate);
-    register_builtin("tachyon.transition.glitch_slice", "Glitch Slice", "Glitchy slice effect", transition_glitch_slice);
-    register_builtin("tachyon.transition.rgb_split", "RGB Split", "Color channel split", transition_rgb_split);
-    register_builtin("tachyon.transition.luma_dissolve", "Luma Dissolve", "Luminance-based dissolve", transition_luma_dissolve);
-    register_builtin("tachyon.transition.directional_blur_wipe", "Directional Blur Wipe", "Blur wipe with direction", transition_directional_blur_wipe);
-    register_builtin("tachyon.transition.flash", "Flash", "White flash transition", transition_flash);
-    register_builtin("tachyon.transition.kaleidoscope", "Kaleidoscope", "Dynamic kaleidoscope transition", transition_kaleidoscope);
-    register_builtin("tachyon.transition.ripple", "Ripple", "Water ripple transition", transition_ripple);
+    
+    #define REGISTER_ARTISTIC(name) reg.register_cpu_implementation("transition_" #name, transition_##name)
+    
+    REGISTER_ARTISTIC(zoom_in);
+    REGISTER_ARTISTIC(zoom_blur);
+    REGISTER_ARTISTIC(spin);
+    REGISTER_ARTISTIC(pixelate);
+    REGISTER_ARTISTIC(glitch_slice);
+    REGISTER_ARTISTIC(rgb_split);
+    REGISTER_ARTISTIC(luma_dissolve);
+    REGISTER_ARTISTIC(directional_blur_wipe);
+    REGISTER_ARTISTIC(flash);
+    REGISTER_ARTISTIC(kaleidoscope);
+    REGISTER_ARTISTIC(ripple);
 }
 
 } // namespace tachyon::renderer2d

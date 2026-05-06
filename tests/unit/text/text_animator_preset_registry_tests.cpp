@@ -105,16 +105,12 @@ bool test_composite_preset_returns_multiple_specs() {
     return true;
 }
 
-bool test_unknown_preset_falls_back() {
+bool test_unknown_preset_returns_empty() {
     auto& registry = tachyon::presets::TextAnimatorPresetRegistry::instance();
     tachyon::registry::ParameterBag params;
     auto specs = registry.create("tachyon.textanim.nonexistent_preset", params);
-    if (specs.empty()) {
-        std::cerr << "Error: Unknown preset fallback returned empty vector" << std::endl;
-        return false;
-    }
-    if (specs.size() != 1) {
-        std::cerr << "Error: Unknown preset should fallback to single fade_in spec, got " << specs.size() << std::endl;
+    if (!specs.empty()) {
+        std::cerr << "Error: Unknown preset should return no specs, got " << specs.size() << std::endl;
         return false;
     }
     return true;
@@ -130,7 +126,7 @@ bool run_text_animator_preset_registry_tests() {
     if (!test_create_preset_returns_valid_spec()) success = false;
     if (!test_typewriter_family_extended()) success = false;
     if (!test_composite_preset_returns_multiple_specs()) success = false;
-    if (!test_unknown_preset_falls_back()) success = false;
+    if (!test_unknown_preset_returns_empty()) success = false;
 
     if (success) {
         std::cout << "TextAnimatorPresetRegistry tests passed!" << std::endl;

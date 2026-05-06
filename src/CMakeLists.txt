@@ -382,6 +382,7 @@ endif()
 target_link_libraries(tachyon
     PRIVATE
         TachyonRuntimeEngine
+        TachyonCatalog
         TachyonPresets
         TachyonDiagnostics
 )

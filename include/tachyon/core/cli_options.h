@@ -19,6 +19,7 @@ struct CliOptions {
     std::filesystem::path job_path;
     std::filesystem::path batch_path;
     std::filesystem::path output_override;
+    std::optional<std::string> output_preset_id;
     std::filesystem::path output_dir;  // Common output directory for catalog-demo
     std::filesystem::path font_manifest_path;  // For inspect-fonts command
     std::size_t worker_count{1};
@@ -29,6 +30,8 @@ struct CliOptions {
     std::optional<std::string> preset_id;
     std::filesystem::path cpp_path;           // Path to .cpp scene script
     std::string quality{"draft"};            // Rendering quality tier
+    std::string output_presets_command;       // list/info for output presets
+    std::string output_preset_name;           // preset argument for info
     bool json_output{false};
     int inspect_samples{5};
     bool inspect_include_info{false};

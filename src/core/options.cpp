@@ -116,6 +116,15 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
             }
             continue;
         }
+        if (arg == "--output-preset") {
+            const std::string value = require_argument(args, index);
+            if (value.empty()) {
+                result.diagnostics.add_error("cli.output_preset_missing", "missing value for --output-preset");
+                return result;
+            }
+            options.output_preset_id = value;
+            continue;
+        }
         if (arg == "--preset") {
             const std::string value = require_argument(args, index);
             if (value.empty()) {
@@ -253,6 +262,20 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
                 options.metrics_command = arg;
                 continue;
             }
+        }
+        if (index == 1 && options.command == "output-presets") {
+            if (arg == "list" || arg == "info") {
+                options.output_presets_command = arg;
+                continue;
+            }
+            if (!arg.empty() && arg.front() != '-') {
+                result.diagnostics.add_error("cli.output_presets_subcommand_invalid", "unknown output-presets subcommand: " + arg);
+                return result;
+            }
+        }
+        if (options.command == "output-presets" && options.output_presets_command == "info" && index == 2 && options.output_preset_name.empty()) {
+            options.output_preset_name = arg;
+            continue;
         }
 
         if (arg == "--version" || arg == "-v") {

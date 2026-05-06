@@ -5,10 +5,6 @@
 #include <optional>
 #include <unordered_map>
 
-namespace tachyon::presets::background {
-    std::string normalize_background_kind(std::string_view legacy_id);
-}
-
 namespace tachyon::presets {
 
 namespace {
@@ -82,10 +78,9 @@ LayerSpec build_background(const BackgroundParams& p) {
     });
 
     const auto& registry = BackgroundKindRegistry::instance();
-    const std::string normalized_kind = background::normalize_background_kind(p.kind);
 
     std::optional<ProceduralSpec> spec;
-    if (!normalized_kind.empty()) {
+    if (!p.kind.empty()) {
         registry::ParameterBag bag;
         bag.set("palette.a", palette.palette_a);
         bag.set("palette.b", palette.palette_b);
@@ -104,10 +99,10 @@ LayerSpec build_background(const BackgroundParams& p) {
         bag.set("mouse_y", p.mouse_y);
         if (p.shape) bag.set("shape", *p.shape);
 
-        spec = registry.create(normalized_kind, bag);
+        spec = registry.create(p.kind, bag);
         if (!spec) {
             // Preserve the requested kind even when no procedural factory exists.
-            spec = make_unresolved_background_spec(normalized_kind);
+            spec = make_unresolved_background_spec(p.kind);
         }
     }
 
@@ -122,7 +117,7 @@ LayerSpec build_background(const BackgroundParams& p) {
         layer.enabled = false;
     }
 
-    layer.preset_id = normalized_kind;
+    layer.preset_id = p.kind;
     return layer;
 }
 

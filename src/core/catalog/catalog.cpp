@@ -151,6 +151,30 @@ void TachyonCatalog::register_transition_assets() {
 
         m_transitions.push_back(std::move(transition));
     }
+
+    // 2. Add from Registry (Modern Manifest Source of Truth)
+    for (const auto& id : presets::TransitionPresetRegistry::instance().list_ids()) {
+        // Skip if already added from catalog.txt (legacy assets take precedence for paths)
+        if (std::find_if(m_transitions.begin(), m_transitions.end(), [&](const auto& e) { return e.id == id; }) != m_transitions.end()) {
+            continue;
+        }
+
+        if (const auto* spec = presets::TransitionPresetRegistry::instance().find(id)) {
+            CatalogTransitionEntry transition;
+            transition.id = spec->id;
+            transition.name = spec->metadata.display_name;
+            transition.description = spec->metadata.description;
+            transition.pack_id = "builtin.transitions";
+            transition.manifest_path = "TransitionManifest"; // Virtual manifest
+            transition.duration_seconds = 0.6; // Default from manifest logic
+            
+            // Built-in transitions use C++ runtime, but we still need a virtual path
+            transition.shader_path = ""; 
+            transition.thumb_path = spec->metadata.tags.empty() ? "" : spec->metadata.tags[0]; // Heuristic for now
+
+            m_transitions.push_back(std::move(transition));
+        }
+    }
 }
 
 std::optional<CatalogSceneEntry> TachyonCatalog::find_scene(const std::string& id) const {

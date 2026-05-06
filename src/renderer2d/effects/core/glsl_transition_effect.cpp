@@ -5,10 +5,12 @@
 #include "tachyon/renderer2d/effects/core/transitions/light_leak_transitions.h"
 #include "tachyon/renderer2d/effects/core/transitions/artistic_transitions.h"
 #include "tachyon/transition_registry.h"
+#include "tachyon/core/transition/transition_descriptor.h"
 #include "tachyon/core/animation/easing.h"
 
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 #include <mutex>
 
 namespace tachyon::renderer2d {
@@ -47,19 +49,12 @@ float transition_progress(const EffectParams& params) {
     return static_cast<float>(clamp01(eased_t));
 }
 
-void register_builtin_transitions() {
-    static std::once_flag flag;
-    std::call_once(flag, []() {
-        register_basic_transitions();
-        register_light_leak_transitions();
-        register_artistic_transitions();
-    });
-}
-
 }  // namespace
 
 void init_builtin_transitions() {
-    register_builtin_transitions();
+    register_light_leak_implementations();
+    register_basic_transitions();
+    register_artistic_transitions();
 }
 
 SurfaceRGBA GlslTransitionEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
@@ -68,7 +63,22 @@ SurfaceRGBA GlslTransitionEffect::apply(const SurfaceRGBA& input, const EffectPa
     const TransitionSpec* transition_spec = nullptr;
     const auto transition_it = params.strings.find("transition_id");
     if (transition_it != params.strings.end()) {
-        transition_spec = TransitionRegistry::instance().find(transition_it->second);
+        const std::string& tid = transition_it->second;
+        transition_spec = TransitionRegistry::instance().find(tid);
+
+        if (transition_spec == nullptr) {
+            std::cerr << "WARNING: Transition ID '" << tid << "' not found in registry. Falling back to crossfade.\n";
+            
+            const auto strict_it = params.scalars.find("strict_transition_resolution");
+            const bool strict = (strict_it != params.scalars.end() && strict_it->second > 0.5f);
+            
+            if (strict) {
+                SurfaceRGBA error_out(input.width(), input.height());
+                error_out.set_profile(input.profile());
+                error_out.clear(Color{1.0f, 0.0f, 1.0f, 1.0f}); // Diagnostic Magenta
+                return error_out;
+            }
+        }
     }
 
     const SurfaceRGBA* to_surface = nullptr;

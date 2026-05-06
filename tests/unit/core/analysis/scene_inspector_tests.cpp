@@ -47,7 +47,7 @@ bool run_scene_inspector_tests() {
         comp.audio_tracks.clear();
         LayerSpec text_layer;
         text_layer.id = "title";
-        text_layer.kind = LayerType::Text;
+        text_layer.type = LayerType::Text;
         text_layer.text_content.clear();
         text_layer.start_time = 0.0;
         text_layer.out_point = 1.0;
@@ -55,7 +55,7 @@ bool run_scene_inspector_tests() {
 
         LayerSpec media_layer;
         media_layer.id = "image";
-        media_layer.kind = LayerType::Image;
+        media_layer.type = LayerType::Image;
         media_layer.start_time = 0.0;
         media_layer.out_point = 1.0;
         comp.layers.push_back(media_layer);
@@ -79,7 +79,7 @@ bool run_scene_inspector_tests() {
         comp.frame_rate = FrameRate{30, 1};
         LayerSpec text_layer;
         text_layer.id = "label";
-        text_layer.kind = LayerType::Text;
+        text_layer.type = LayerType::Text;
         text_layer.text_content = "Hello";
         text_layer.transition_in.kind = TransitionKind::Fade;
         comp.layers.push_back(text_layer);

@@ -61,6 +61,13 @@ void ScenePresetRegistry::load_builtins() {
     });
 
     register_spec({
+        "tachyon.scene.text_3d_helpers",
+        {"tachyon.scene.text_3d_helpers", "Text 3D Helpers", "Text layer driven by generic 3D helpers.", "scene.built-in", {"text", "3d", "helpers"}},
+        {},
+        [](const registry::ParameterBag&) { return scene::build_text_3d_helpers_scene(); }
+    });
+
+    register_spec({
         "tachyon.scene.a",
         {"tachyon.scene.a", "Scene A", "Blue background with centered text.", "scene.built-in", {"blue", "test"}},
         {},

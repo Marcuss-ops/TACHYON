@@ -1,4 +1,5 @@
 #include "tachyon/presets/transition/transition_preset_registry.h"
+#include "tachyon/core/transition/transition_descriptor.h"
 
 namespace tachyon::presets {
 
@@ -54,6 +55,7 @@ void TransitionPresetRegistry::load_builtins() {
 
     // Canonical presets backed by verified library assets
     register_glsl(*this, "tachyon.transition.crossfade", "Crossfade", "Simple crossfade transition", TransitionKind::Fade, "tachyon.transition.crossfade");
+    // ... (other basic ones remain for now) ...
     register_glsl(*this, "tachyon.transition.slide_up", "Slide Up", "Vertical slide transition", TransitionKind::Slide, "tachyon.transition.slide_up");
     register_glsl(*this, "tachyon.transition.swipe_left", "Swipe Left", "Swipe left reveal transition", TransitionKind::Wipe, "tachyon.transition.swipe_left");
     register_glsl(*this, "tachyon.transition.fade_to_black", "Fade to Black", "Crossfade through black", TransitionKind::Fade, "tachyon.transition.fade_to_black");
@@ -73,17 +75,6 @@ void TransitionPresetRegistry::load_builtins() {
     register_glsl(*this, "tachyon.transition.kaleidoscope", "Kaleidoscope", "Dynamic kaleidoscope transition", TransitionKind::Custom, "tachyon.transition.kaleidoscope");
     register_glsl(*this, "tachyon.transition.ripple", "Ripple", "Water ripple transition", TransitionKind::Custom, "tachyon.transition.ripple");
 
-    // Cinematic Light Leaks and Film Effects
-    register_glsl(*this, "tachyon.transition.light_leak", "Light Leak", "High-quality evolving cinematic light leak", TransitionKind::Fade, "tachyon.transition.light_leak");
-    register_glsl(*this, "tachyon.transition.film_burn", "Film Burn", "Fiery red-orange film burn", TransitionKind::Fade, "tachyon.transition.film_burn");
-
-    // Premium Light Leaks
-    register_glsl(*this, "tachyon.transition.lightleak.soft_warm_edge", "Soft Warm Edge Leak", "Premium warm edge light leak", TransitionKind::Fade, "tachyon.transition.lightleak.soft_warm_edge");
-    register_glsl(*this, "tachyon.transition.lightleak.golden_sweep", "Golden Sweep", "Soft golden cinematic sweep", TransitionKind::Fade, "tachyon.transition.lightleak.golden_sweep");
-    register_glsl(*this, "tachyon.transition.lightleak.creamy_white", "Creamy White Leak", "Soft warm white memory leak", TransitionKind::Fade, "tachyon.transition.lightleak.creamy_white");
-    register_glsl(*this, "tachyon.transition.lightleak.dusty_archive", "Dusty Archive Leak", "Warm archival light leak with subtle grain", TransitionKind::Fade, "tachyon.transition.lightleak.dusty_archive");
-    register_glsl(*this, "tachyon.transition.lightleak.lens_flare_pass", "Subtle Lens Flare Pass", "Thin premium lens flare sweep", TransitionKind::Fade, "tachyon.transition.lightleak.lens_flare_pass");
-    register_glsl(*this, "tachyon.transition.lightleak.amber_sweep", "Amber Sweep", "Warm multi-blob amber light leak sweeping left to right", TransitionKind::Fade, "tachyon.transition.lightleak.amber_sweep");
 }
 
 } // namespace tachyon::presets

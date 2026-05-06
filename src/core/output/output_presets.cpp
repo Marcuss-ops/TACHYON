@@ -1,5 +1,6 @@
 #include "tachyon/output/output_presets.h"
 #include <algorithm>
+#include <vector>
 
 namespace tachyon::output {
 
@@ -127,6 +128,17 @@ const OutputPreset* find_preset(std::string_view id) {
 
 void register_default_presets() {
     init_default_presets();
+}
+
+std::vector<std::string> list_presets() {
+    init_default_presets();
+    std::vector<std::string> ids;
+    ids.reserve(s_presets.size());
+    for (const auto& [id, _] : s_presets) {
+        ids.push_back(id);
+    }
+    std::sort(ids.begin(), ids.end());
+    return ids;
 }
 
 } // namespace tachyon::output

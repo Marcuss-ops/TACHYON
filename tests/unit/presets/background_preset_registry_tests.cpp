@@ -15,6 +15,16 @@ bool run_background_preset_registry_tests() {
     tachyon::registry::ParameterBag params;
     params.set("width", 1920.0f);
     params.set("height", 1080.0f);
+    params.set("duration", 2.0);
+
+    for (const auto& id : ids) {
+        auto bg = BackgroundPresetRegistry::instance().create(id, params);
+        assert(bg.has_value());
+        assert(!bg->id.empty());
+        assert(bg->preset_id == id);
+        assert(bg->enabled);
+        assert(bg->type != tachyon::LayerType::NullLayer);
+    }
 
     auto bg = BackgroundPresetRegistry::instance().create("tachyon.backgroundpreset.galaxy_premium", params);
     assert(bg.has_value());

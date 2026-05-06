@@ -38,7 +38,8 @@ public:
     explicit TextBuilder(std::string id, std::string content) {
         spec_.id = std::move(id);
         spec_.name = "Text Layer";
-        spec_.type = "text";
+        spec_.type = ::tachyon::LayerType::Text;
+        spec_.type_string = "text";
         spec_.enabled = true;
         spec_.visible = true;
         spec_.text_content = std::move(content);
@@ -141,7 +142,7 @@ public:
         return *this;
     }
 
-    [[nodiscard]] LayerSpec build() const {
+    [[nodiscard]] LayerSpec build() const & {
         return spec_;
     }
 

@@ -2,6 +2,7 @@
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/core.h"
 #include "cli/cli_internal.h"
+#include "tachyon/core/transition/transition_descriptor.h"
 #include <functional>
 #include <iostream>
 #include <string>
@@ -66,7 +67,7 @@ static const std::vector<CommandEntry> kCommands = {
     {
         "render",
         "tachyon render --cpp <scene.cpp> --out <file> [--frames <s-e>] [--quality draft|high|production] [--workers <n>]\n"
-        "        render --preset <id> --out <file>",
+        "        tachyon render --preset <id> --out <file> [--output-preset <name>]",
         [](const CliOptions& o, std::ostream& e) {
             if (o.cpp_path.empty() && !o.preset_id.has_value()) {
                 e << "Either --cpp or --preset required for render\n";
@@ -75,6 +76,23 @@ static const std::vector<CommandEntry> kCommands = {
             return true;
         },
         run_render_command
+    },
+    {
+        "output-presets",
+        "tachyon output-presets list\n"
+        "        tachyon output-presets info <name>",
+        [](const CliOptions& o, std::ostream& e) {
+            if (o.output_presets_command.empty()) {
+                e << "Use output-presets list or output-presets info <name>\n";
+                return false;
+            }
+            if (o.output_presets_command == "info" && o.output_preset_name.empty()) {
+                e << "output-presets info requires a preset name\n";
+                return false;
+            }
+            return true;
+        },
+        run_output_presets_command
     },
     {
         "preview",
@@ -139,6 +157,12 @@ static const std::vector<CommandEntry> kCommands = {
         },
         run_metrics_command
     },
+    {
+        "doctor",
+        "tachyon doctor",
+        nullptr,
+        run_doctor_command
+    },
 };
 
 void print_help(std::ostream& out) {
@@ -167,6 +191,10 @@ int run_cli(int argc, char** argv) {
         std::cout << version_string() << '\n';
         return 0;
     }
+
+    // Initialize all built-in systems (Transitions, Presets, etc.)
+    // Note: We do this here instead of in each DLL to avoid circular link dependencies.
+    ::tachyon::register_builtin_transitions();
 
     // Dispatch through registry
     for (const auto& cmd : kCommands) {

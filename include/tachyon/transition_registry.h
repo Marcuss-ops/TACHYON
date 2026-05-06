@@ -42,7 +42,17 @@ struct TransitionSpec {
         Blur    // Modify effects
     };
     Type state_type{Type::None};
+    // Backend declaration
+    enum class Backend {
+        CpuPixel,
+        Glsl,
+        StateOnly,
+        CompositePlan
+    };
+    Backend backend{Backend::CpuPixel};
+
     std::string direction; // For slide: "up", "down", "left", "right"
+    std::string cpu_fn_name; // For lazy binding
 };
 
 /**
@@ -70,6 +80,10 @@ public:
 
     std::vector<std::string> list_builtin_transition_ids() const;
     std::vector<TransitionInfo> list_builtin_transitions() const;
+
+    // Named CPU implementation support (for lazy manifest binding)
+    void register_cpu_implementation(const std::string& name, TransitionSpec::TransitionFn fn);
+    TransitionSpec::TransitionFn find_cpu_implementation(const std::string& name) const;
 
 private:
     TransitionRegistry();

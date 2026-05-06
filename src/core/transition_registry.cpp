@@ -2,12 +2,14 @@
 #include "tachyon/renderer2d/core/framebuffer.h"
 
 #include <memory>
+#include <unordered_map>
 #include <utility>
 
 namespace tachyon {
 
 struct TransitionRegistry::Impl {
     registry::TypedRegistry<TransitionSpec> transitions;
+    std::unordered_map<std::string, TransitionSpec::TransitionFn> cpu_implementations;
 };
 
 TransitionRegistry& TransitionRegistry::instance() {
@@ -68,6 +70,27 @@ std::vector<TransitionRegistry::TransitionInfo> TransitionRegistry::list_builtin
         });
     }
     return infos;
+}
+
+void TransitionRegistry::register_cpu_implementation(const std::string& name, TransitionSpec::TransitionFn fn) {
+    m_impl->cpu_implementations[name] = fn;
+    
+    // Auto-update any already registered specs that were waiting for this implementation
+    const auto ids = m_impl->transitions.list_ids();
+    for (const auto& id : ids) {
+        auto* spec = const_cast<TransitionSpec*>(m_impl->transitions.find(id));
+        if (spec && spec->function == nullptr && spec->cpu_fn_name == name) {
+            spec->function = fn;
+        }
+    }
+}
+
+TransitionSpec::TransitionFn TransitionRegistry::find_cpu_implementation(const std::string& name) const {
+    const auto it = m_impl->cpu_implementations.find(name);
+    if (it != m_impl->cpu_implementations.end()) {
+        return it->second;
+    }
+    return nullptr;
 }
 
 }  // namespace tachyon
