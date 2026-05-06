@@ -17,8 +17,8 @@ void Modifier3DRegistry::load_builtins() {
             {"amount_y", "Amount Y", "Tilt amount around Y axis", 0.0},
             {"smoothness", "Smoothness", "Animation smoothness", 0.5, 0.0, 1.0}
         }),
-        [](const ThreeDModifierSpec& spec) {
-            return std::make_unique<Tilt3DModifier>(spec);
+        []() {
+            return std::make_unique<Tilt3DModifier>();
         }
     });
 
@@ -29,8 +29,8 @@ void Modifier3DRegistry::load_builtins() {
             {"factor", "Factor", "Parallax intensity", 1.0, 0.0, 10.0},
             {"auto_depth", "Auto Depth", "Automatically calculate depth", true}
         }),
-        [](const ThreeDModifierSpec& spec) {
-            return std::make_unique<Parallax3DModifier>(spec);
+        []() {
+            return std::make_unique<Parallax3DModifier>();
         }
     });
 }

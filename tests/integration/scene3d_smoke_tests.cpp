@@ -125,20 +125,20 @@ bool run_scene3d_smoke_tests() {
         
         // Check camera layer
         const auto& camera_layer = comp.layers[0];
-        check_true(camera_layer.kind == tachyon::scene::LayerType::Camera, "First layer should be camera");
+        check_true(camera_layer.type == tachyon::LayerType::Camera, "First layer should be camera");
         check_true(camera_layer.is_3d, "Camera should be 3D");
         
         // Check light layer  
         const auto& light_layer = comp.layers[1];
-        check_true(light_layer.kind == tachyon::scene::LayerType::Light, "Second layer should be light");
+        check_true(light_layer.type == tachyon::LayerType::Light, "Second layer should be light");
         check_true(light_layer.is_3d, "Light should be 3D");
         
         // Check mesh layer
         const auto& mesh_layer = comp.layers[2];
-        check_true(mesh_layer.kind == tachyon::scene::LayerType::Shape, "Third layer should be Shape");
+        check_true(mesh_layer.type == tachyon::LayerType::Shape, "Third layer should be Shape");
         check_true(mesh_layer.is_3d, "Mesh should be 3D");
         check_true(mesh_layer.asset_id == "test_cube", "Mesh asset_id should be 'test_cube'");
-        check_true(mesh_layer.type == "mesh", "Mesh type should be 'mesh'");
+        check_true(mesh_layer.type_string == "mesh", "Mesh type should be 'mesh'");
         
         std::cout << "  Scene building: PASS\n";
     }

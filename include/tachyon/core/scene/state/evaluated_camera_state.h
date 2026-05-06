@@ -26,6 +26,7 @@ struct EvaluatedCameraState {
     math::Vector3 position{math::Vector3::zero()};
     math::Vector3 point_of_interest{0.0f, 0.0f, 0.0f};
     math::Vector3 up{0.0f, 1.0f, 0.0f};
+    float roll{0.0f};
 
     // Matrices (Fully Resolved)
     math::Matrix4x4 view_matrix{math::Matrix4x4::identity()};

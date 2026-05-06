@@ -4,7 +4,7 @@
 #include "tachyon/core/math/vector2.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/renderer2d/color/blending.h"
-#include "tachyon/renderer2d/spec/gradient_spec.h"
+#include "tachyon/core/spec/schema/common/gradient_spec.h"
 #include "tachyon/renderer2d/raster/path_rasterizer.h"
 #include "tachyon/renderer2d/core/texture_handle.h"
 #include "tachyon/renderer2d/effects/effect_params.h"

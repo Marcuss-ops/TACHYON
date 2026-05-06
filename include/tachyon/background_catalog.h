@@ -14,9 +14,16 @@ enum class BackgroundStatus {
     Deprecated
 };
 
+enum class BackgroundCatalogRole {
+    Solid,
+    Gradient,
+    Procedural,
+    Image
+};
+
 struct BackgroundCatalogEntry {
     std::string id;
-    std::string kind; // "solid", "gradient", "image", "procedural"
+    BackgroundCatalogRole role{BackgroundCatalogRole::Solid};
     std::string preset_params; // JSON schema for expected params
     std::string procedural_factory_id;
     BackgroundStatus status{BackgroundStatus::Stable};
@@ -40,6 +47,19 @@ public:
 
     // Validation
     bool validate_preset(std::string_view preset_id, std::string& error) const;
+
+    // Audit
+    struct AuditResult {
+        std::vector<std::string> missing_catalog_entries;
+        std::vector<std::string> missing_factories;
+        std::vector<std::string> duplicate_ids;
+        [[nodiscard]] bool ok() const {
+            return missing_catalog_entries.empty() && 
+                   missing_factories.empty() && 
+                   duplicate_ids.empty();
+        }
+    };
+    AuditResult audit() const;
 
 private:
     BackgroundCatalog();

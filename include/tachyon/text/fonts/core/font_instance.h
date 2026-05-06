@@ -2,7 +2,7 @@
 
 #include "tachyon/text/fonts/core/font_face.h"
 #include "tachyon/text/fonts/utils/glyph_atlas.h"
-#include "tachyon/renderer2d/text/glyph/glyph_bitmap.h"
+#include "tachyon/text/core/low_level/glyph/glyph_bitmap.h"
 
 #include <cstdint>
 #include <memory>

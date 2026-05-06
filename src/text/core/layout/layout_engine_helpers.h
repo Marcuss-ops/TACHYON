@@ -2,9 +2,9 @@
 #define TACHYON_TEXT_CORE_LAYOUT_LAYOUT_ENGINE_HELPERS_H
 
 #include "tachyon/text/layout/layout.h"
-#include "tachyon/renderer2d/text/shaping/font_shaping.h"
+#include "tachyon/text/core/low_level/shaping/font_shaping.h"
 #include "tachyon/text/layout/layout_cache.h"
-#include "tachyon/renderer2d/text/shaping/shaping_cache.h"
+#include "tachyon/text/core/low_level/shaping/shaping_cache.h"
 #include "tachyon/text/layout/cluster_iterator.h"
 #include "tachyon/text/i18n/bidi_engine.h"
 #include "tachyon/text/i18n/script_detector.h"

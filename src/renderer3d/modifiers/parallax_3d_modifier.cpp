@@ -5,23 +5,22 @@
 namespace tachyon {
 namespace renderer3d {
 
-Parallax3DModifier::Parallax3DModifier(const ThreeDModifierSpec& spec)
-    : spec_(spec) {}
+Parallax3DModifier::Parallax3DModifier() {}
 
 void Parallax3DModifier::apply(
     Mesh3D& mesh,
-    double time,
+    const ResolvedModifier3D& resolved,
     const renderer2d::RenderContext& /*ctx*/
 ) {
-    auto get_scalar = [&](const std::string& name, double fallback) {
-        auto it = spec_.scalar_params.find(name);
-        if (it != spec_.scalar_params.end()) {
-            return scene::sample_scalar(it->second, fallback, time);
+    auto get_scalar = [&](const std::string& name, float fallback) {
+        auto it = resolved.scalar_params.find(name);
+        if (it != resolved.scalar_params.end()) {
+            return it->second;
         }
         return fallback;
     };
 
-    float depth = static_cast<float>(get_scalar("depth", 0.0));
+    float depth = get_scalar("depth", 0.0f);
     // float camera_influence = static_cast<float>(get_scalar("camera_influence", 1.0));
 
     // Simple 3D parallax: shift vertices in Z

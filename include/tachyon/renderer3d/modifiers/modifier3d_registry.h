@@ -21,7 +21,7 @@ struct Modifier3DDescriptor {
     std::string id;
     registry::RegistryMetadata metadata;
     registry::ParameterSchema schema;
-    using Factory = std::function<std::unique_ptr<I3DModifier>(const ThreeDModifierSpec&)>;
+    using Factory = std::function<std::unique_ptr<I3DModifier>()>;
     Factory factory;
 };
 
@@ -34,7 +34,7 @@ public:
 
     void register_spec(Modifier3DDescriptor descriptor);
     const Modifier3DDescriptor* find(std::string_view id) const;
-    std::unique_ptr<I3DModifier> create(const ThreeDModifierSpec& spec) const;
+    std::unique_ptr<I3DModifier> create(const std::string& id) const;
     [[nodiscard]] std::vector<std::string> list_ids() const;
 
     void load_builtins();

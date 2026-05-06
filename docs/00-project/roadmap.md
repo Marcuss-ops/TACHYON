@@ -15,12 +15,16 @@
 - Recursive Reflections in RayTracer
 - Masking & Matte improvements
 
-## Phase 4: Production Observability (Current)
+## Phase 4: Production Observability (Current - Finalizing v1)
 - Industrial Telemetry (RAM/CPU/Cost)
 - Cancellation Guarantees
 - Batch Runner stability
+- **[MILESTONE] v1 Production Ready Release**
 
-## Phase 5: High-End Features (Next)
+---
+
+## Phase 5: High-End Features (Post-Scaling / v2+)
+*Features beyond this point are explicitly out of scope for v1.*
 - Motion Blur (Sub-sampling)
 - AI-assisted RotoBrush
 - Physically-based physical camera

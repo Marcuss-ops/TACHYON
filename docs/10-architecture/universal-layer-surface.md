@@ -1,3 +1,10 @@
+---
+Status: Canonical
+Last reviewed: 2026-05-06
+Owner: Core Team
+Supersedes: N/A
+---
+
 # Universal LayerSurface Rule
 
 Tachyon's reusable 2.5D/3D pipeline is split into two stages.

@@ -35,7 +35,7 @@ std::shared_ptr<renderer2d::Framebuffer> deserialize_framebuffer(const std::vect
 
 // Frame queue for streaming output - holds frames until they can be written in order
 struct FrameQueue {
-    std::vector<std::shared_ptr<renderer2d::Framebuffer>> frames;
+    std::vector<std::shared_ptr<const renderer2d::Framebuffer>> frames;
     std::vector<bool> ready;
     std::vector<bool> cache_hits;
     std::size_t next_to_write{0};
@@ -46,7 +46,7 @@ struct FrameQueue {
 
     explicit FrameQueue(std::size_t size) : frames(size), ready(size, false), cache_hits(size, false), total_frames(size) {}
 
-    void submit(std::size_t index, std::shared_ptr<renderer2d::Framebuffer> fb, bool cache_hit) {
+    void submit(std::size_t index, std::shared_ptr<const renderer2d::Framebuffer> fb, bool cache_hit) {
         std::lock_guard<std::mutex> lock(mutex);
         frames[index] = std::move(fb);
         cache_hits[index] = cache_hit;
@@ -161,7 +161,7 @@ void render_frames_parallel_internal(
                 const auto& task = execution_plan.frame_tasks[index];
                 RenderPlan frame_plan = execution_plan.render_plan;
 
-                std::shared_ptr<renderer2d::Framebuffer> framebuffer;
+                std::shared_ptr<const renderer2d::Framebuffer> framebuffer;
                 bool cache_hit = false;
                 ExecutedFrame executed_frame;
 
@@ -222,7 +222,7 @@ void render_frames_parallel_internal(
                     result->frame_diagnostics[index] = executed_frame.diagnostics;
 
                     // Try to write ready frames in order
-                    frame_queue->write_ready_frames([&](std::size_t frame_idx, const std::shared_ptr<renderer2d::Framebuffer>& fb) {
+                    frame_queue->write_ready_frames([&](std::size_t frame_idx, const std::shared_ptr<const renderer2d::Framebuffer>& fb) {
                         if (fb) {
                             output::OutputFramePacket packet;
                             packet.frame_number = static_cast<std::int64_t>(execution_plan.frame_tasks[frame_idx].frame_number);

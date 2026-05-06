@@ -1,8 +1,8 @@
 #include "tachyon/text/fonts/core/font.h"
 
-#include "tachyon/renderer2d/text/freetype/freetype_manager.h"
-#include "tachyon/renderer2d/text/glyph/glyph_loader.h"
-#include "tachyon/renderer2d/text/utils/font_utils.h"
+#include "tachyon/text/core/low_level/freetype/freetype_manager.h"
+#include "tachyon/text/core/low_level/glyph/glyph_loader.h"
+#include "tachyon/text/core/low_level/utils/font_utils.h"
 
 #include <algorithm>
 #include <atomic>
@@ -398,7 +398,7 @@ const GlyphBitmap* Font::fallback_glyph() const {
 
 const GlyphBitmap* Font::find_glyph_by_index(std::uint32_t glyph_index) const {
     if (!m_is_freetype) {
-        return nullptr;
+        return find_glyph(glyph_index);
     }
 
     auto it = m_ft_index_cache.find(glyph_index);
@@ -411,7 +411,7 @@ const GlyphBitmap* Font::find_glyph_by_index(std::uint32_t glyph_index) const {
 
 const GlyphBitmap* Font::find_sdf_glyph_by_index(std::uint32_t glyph_index) const {
     if (!m_is_freetype) {
-        return nullptr;
+        return find_sdf_glyph(glyph_index);
     }
 
     auto it = m_ft_sdf_index_cache.find(glyph_index);

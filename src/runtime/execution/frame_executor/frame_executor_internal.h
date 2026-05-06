@@ -2,6 +2,8 @@
 #include "tachyon/runtime/execution/frames/frame_executor.h"
 #include "tachyon/core/scene/evaluation/evaluator.h"
 #include "tachyon/runtime/cache/cache_key_builder.h"
+#include "tachyon/timeline/frame_blend.h"
+#include "tachyon/renderer2d/core/framebuffer.h"
 
 namespace tachyon {
 
@@ -60,5 +62,21 @@ void evaluate_composition(
 
 // Helpers
 std::uint64_t build_node_key(std::uint64_t global_key, const CompiledNode& node);
+
+// Common render helpers
+std::shared_ptr<renderer2d::SurfaceRGBA> render_frame_at_time(
+    FrameExecutor& executor,
+    const CompiledScene& compiled_scene,
+    const RenderPlan& plan,
+    const FrameRenderTask& task,
+    const DataSnapshot& snapshot,
+    RenderContext& context,
+    double render_time,
+    std::uint64_t composition_key,
+    std::uint64_t frame_key);
+
+timeline::FrameBuffer surface_to_framebuffer(const renderer2d::SurfaceRGBA& src);
+
+std::shared_ptr<renderer2d::Framebuffer> framebuffer_to_framebuffer(const timeline::FrameBuffer& src);
 
 } // namespace tachyon

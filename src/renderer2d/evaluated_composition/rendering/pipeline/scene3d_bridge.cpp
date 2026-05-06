@@ -5,15 +5,15 @@
 #include "tachyon/renderer2d/resource/render_context.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 
-#ifdef TACHYON_ENABLE_3D
-#include "tachyon/renderer3d/modifiers/i3d_modifier.h"
-#include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
-#endif
-
+#include "tachyon/core/animation/property_sampler.h"
+#include "tachyon/core/animation/property_adapter.h"
+#include "tachyon/core/animation/property_interpolation.h"
+#include <map>
 #include <algorithm>
 #include <cmath>
 #include <optional>
 #include <vector>
+#include <iostream>
 
 namespace tachyon {
 
@@ -30,9 +30,9 @@ static bool is_bridge_renderable_layer(const scene::EvaluatedLayerState& layer) 
     }
 
     switch (layer.type) {
-        case scene::LayerType::Camera:
-        case scene::LayerType::Light:
-        case scene::LayerType::NullLayer:
+        case LayerType::Camera:
+        case LayerType::Light:
+        case LayerType::NullLayer:
             return false;
         default:
             return true;
@@ -44,7 +44,6 @@ static LayerSurface build_layer_surface_impl(
     const Scene3DBridgeInput& input) {
     LayerSurface result;
 
-    // Use pre-rendered surface from map if available
     if (input.rendered_surfaces) {
         auto it = input.rendered_surfaces->find(l.id);
         if (it != input.rendered_surfaces->end() && it->second) {
@@ -55,7 +54,6 @@ static LayerSurface build_layer_surface_impl(
         }
     }
 
-    // Fallback: render surface if not in map (should not happen in normal flow)
     if (!input.context || !input.state) {
         return result;
     }
@@ -92,7 +90,6 @@ static LayerMeshResult build_layer_mesh(
 
     const auto layer_surface = build_layer_surface_impl(l, input);
 
-    // Universal surface -> plane path.
     if (layer_surface.valid()) {
         const auto textured_mesh = renderer2d::build_textured_card_mesh(
             l,
@@ -112,7 +109,6 @@ static LayerMeshResult build_layer_mesh(
         return result;
     }
 
-    // Final fallback for layers that cannot produce a surface.
     if (l.width > 0 && l.height > 0) {
         const auto solid_mesh = renderer2d::build_colored_card_mesh(l, std::to_string(input.task ? input.task->frame_number : 0));
         result.mesh_asset = solid_mesh.mesh;
@@ -126,12 +122,11 @@ static EvaluatedMeshInstance3D build_instance_for_layer(
     const scene::EvaluatedLayerState& l,
     const Scene3DBridgeInput& input) {
     EvaluatedMeshInstance3D inst;
-    inst.object_id = 0; // Caller sets this
+    inst.object_id = 0; 
     inst.material_id = 0;
     inst.world_transform = l.world_matrix;
     inst.previous_world_transform = l.previous_world_matrix;
 
-    // Material
     inst.material.base_color = l.fill_color;
     inst.material.opacity = static_cast<float>(l.opacity);
     inst.material.metallic = l.material.metallic;
@@ -141,48 +136,46 @@ static EvaluatedMeshInstance3D build_instance_for_layer(
     inst.material.transmission = l.material.transmission;
     inst.material.ior = l.material.ior;
 
-    // Animation rigging
     inst.joint_matrices = l.joint_matrices;
     inst.morph_weights = l.morph_weights;
 
 #ifdef TACHYON_ENABLE_3D
-    // Build mesh for layer
     const auto mesh_result = build_layer_mesh(l, input);
-    auto mesh_asset = mesh_result.mesh_asset;
+    inst.mesh_asset = mesh_result.mesh_asset;
+    inst.mesh_asset_id = mesh_result.mesh_asset_id;
 
-    // Apply 3D modifiers
-    if (l.three_d && l.three_d->enabled && mesh_asset) {
-        using namespace renderer3d;
-        Modifier3DRegistry& registry = Modifier3DRegistry::instance();
-        
-        std::shared_ptr<media::MeshAsset> modifiable_asset = std::make_shared<media::MeshAsset>(*mesh_asset);
-
+    if (l.three_d && l.three_d->enabled) {
         for (const auto& mod_spec : l.three_d->modifiers) {
-            std::shared_ptr<I3DModifier> modifier = registry.create(mod_spec);
-            if (modifier) {
-                for (media::MeshAsset::SubMesh& submesh : modifiable_asset->sub_meshes) {
-                    Mesh3D mod_mesh;
-                    mod_mesh.vertices.reserve(submesh.vertices.size());
-                    for (std::size_t i = 0; i < submesh.vertices.size(); ++i) {
-                        const media::MeshAsset::Vertex& vtx = submesh.vertices[i];
-                        mod_mesh.vertices.push_back({vtx.position, vtx.uv, vtx.normal});
-                    }
-                    mod_mesh.indices = submesh.indices;
-
-                    modifier->apply(mod_mesh, l.local_time_seconds, *input.context);
-
-                    for (std::size_t i = 0; i < submesh.vertices.size(); ++i) {
-                        submesh.vertices[i].position = mod_mesh.vertices[i].position;
-                        submesh.vertices[i].normal = mod_mesh.vertices[i].normal;
-                    }
+            ResolvedModifier3D resolved;
+            resolved.type = mod_spec.type;
+            
+            for (const auto& [name, anim] : mod_spec.scalar_params) {
+                if (!anim.keyframes.empty()) {
+                    auto generic_prop = animation::to_generic(anim);
+                    resolved.scalar_params[name] = animation::sample_keyframes(
+                        generic_prop.keyframes,
+                        anim.value.value_or(0.0),
+                        l.local_time_seconds,
+                        animation::lerp_scalar
+                    );
+                } else if (anim.value.has_value()) {
+                    resolved.scalar_params[name] = static_cast<float>(anim.value.value());
                 }
             }
+            
+            for (const auto& [name, anim] : mod_spec.vector3_params) {
+                if (anim.value.has_value()) {
+                    resolved.vector3_params[name] = anim.value.value();
+                }
+            }
+            
+            resolved.string_params = mod_spec.string_params;
+            inst.modifiers.push_back(std::move(resolved));
         }
-        inst.mesh_asset = modifiable_asset;
-        inst.mesh_asset_id = mesh_result.mesh_asset_id + "_modified";
-    } else {
-        inst.mesh_asset = mesh_asset;
-        inst.mesh_asset_id = mesh_result.mesh_asset_id;
+    }
+    
+    if (!inst.modifiers.empty()) {
+        inst.mesh_asset_id += "_mod_" + std::to_string(inst.modifiers.size());
     }
 #endif
 
@@ -214,7 +207,6 @@ EvaluatedCamera3D build_camera_3d(
     EvaluatedCamera3D cam;
     
 #ifdef TACHYON_ENABLE_3D
-    // Default camera is now always validly populated in evaluator
     cam.position = camera.position;
     cam.target = camera.point_of_interest;
     cam.up = camera.up;
@@ -225,13 +217,11 @@ EvaluatedCamera3D build_camera_3d(
     cam.camera_id = camera.layer_id;
     cam.is_active_camera = camera.available;
 
-    // Extract previous position from previous_world_matrix
     math::Transform3 prev_transform = camera.previous_world_matrix.to_transform();
     cam.previous_position = prev_transform.position;
-    cam.previous_target = camera.point_of_interest; // TODO: compute previous POI
+    cam.previous_target = camera.point_of_interest; 
     cam.previous_up = camera.up;
 
-    // Depth of Field
     cam.blur_level = camera.blur_level;
     cam.dof_enabled = camera.dof_enabled;
 #endif
@@ -273,6 +263,7 @@ std::vector<EvaluatedLight3D> build_lights_3d(
 std::vector<EvaluatedMeshInstance3D> build_instances_3d(
     const Scene3DBridgeInput& input) {
     std::vector<EvaluatedMeshInstance3D> instances;
+#ifdef TACHYON_ENABLE_3D
     std::size_t instance_counter = 0;
 
     for (std::size_t block_idx : *input.block_indices) {
@@ -284,13 +275,11 @@ std::vector<EvaluatedMeshInstance3D> build_instances_3d(
             continue;
         }
 
-        // Handle collapsed precomp: expand nested layers
-        if (l.type == scene::LayerType::Precomp && l.collapse_transformations && l.nested_composition) {
+        if (l.type == LayerType::Precomp && l.collapse_transformations && l.nested_composition) {
             for (const auto& nested_layer : l.nested_composition->layers) {
                 if (!is_bridge_renderable_layer(nested_layer)) {
                     continue;
                 }
-                // Adjust transform by precomp layer's world matrix
                 scene::EvaluatedLayerState adjusted = nested_layer;
                 adjusted.world_matrix = l.world_matrix * nested_layer.world_matrix;
                 adjusted.previous_world_matrix = l.previous_world_matrix * nested_layer.previous_world_matrix;
@@ -311,7 +300,7 @@ std::vector<EvaluatedMeshInstance3D> build_instances_3d(
         instances.push_back(inst);
         instance_counter++;
     }
-
+#endif
     return instances;
 }
 
@@ -325,14 +314,10 @@ Scene3DBridgeOutput build_evaluated_scene_3d(const Scene3DBridgeInput& input) {
     Scene3DBridgeOutput output;
 
 #ifdef TACHYON_ENABLE_3D
-    // Build camera
     output.scene3d.camera = build_camera_3d(input.state->camera, *input.state);
-
-    // Build lights
     output.scene3d.lights = build_lights_3d(input.state->lights);
 
-    // Build environment map
-    if (input.plan->scene_spec) {
+    if (input.plan && input.plan->scene_spec) {
         const auto comp_it = std::find_if(
             input.plan->scene_spec->compositions.begin(),
             input.plan->scene_spec->compositions.end(),
@@ -342,7 +327,6 @@ Scene3DBridgeOutput build_evaluated_scene_3d(const Scene3DBridgeInput& input) {
         }
     }
 
-    // Build mesh instances (culling happens here via visible_3d_layers)
     output.scene3d.instances = build_instances_3d(input);
     output.has_instances = !output.scene3d.instances.empty();
 #endif

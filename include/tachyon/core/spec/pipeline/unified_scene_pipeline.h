@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
-#include "tachyon/runtime/core/diagnostics/diagnostics.h"
+#include "tachyon/core/types/diagnostics.h"
 #include <string>
 
 namespace tachyon::pipeline {

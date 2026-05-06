@@ -47,10 +47,10 @@ struct LayerTransitionSpec {
 struct LayerSpec {
     std::string id;
     std::string name;
-    std::string type_string; // Serialization/Authoring string
     std::string asset_id; // For image/video layers
     std::string preset_id; // For procedural/preset layers
     LayerType type{LayerType::NullLayer}; // Canonical Source of Truth
+    std::string type_string; // Legacy / Authoring fallback
     std::string blend_mode{"normal"};
     
     bool enabled{true};

@@ -24,40 +24,56 @@ public:
             close_pipe(m_pipe);
             m_pipe = nullptr;
         }
-        if (!m_temp_video_path.empty()) {
-            std::error_code ec;
-            std::filesystem::remove(m_temp_video_path, ec);
+        
+        // Clean up all tracked temporary files
+        std::error_code ec;
+        for (const auto& path : m_temp_files) {
+            if (!path.empty()) {
+                std::filesystem::remove(path, ec);
+            }
+        }
+        
+        // Clean up atomic output if it wasn't committed
+        if (!m_atomic_output_path.empty()) {
+            std::filesystem::remove(m_atomic_output_path, ec);
         }
     }
 
     bool begin(const RenderPlan& plan) override {
         m_last_error.clear();
-        m_plan = &plan;
+        m_plan = plan;
         m_source_transfer = renderer2d::detail::parse_transfer_curve(plan.working_space);
         m_source_space = renderer2d::detail::parse_color_space(plan.working_space);
         m_output_transfer = renderer2d::detail::parse_transfer_curve(plan.output.profile.color.transfer);
         m_output_space = renderer2d::detail::parse_color_space(plan.output.profile.color.space);
         m_output_range = renderer2d::detail::parse_color_range(plan.output.profile.color.range);
 
-        if (plan.output.destination.path.empty()) {
+        if (m_plan.output.destination.path.empty()) {
             m_last_error = "ffmpeg output requires a destination path";
             return false;
         }
 
-        bool needs_temp_video = plan.output.profile.format == OutputFormat::Gif || !m_audio_path.empty();
+        m_final_destination = m_plan.output.destination.path;
+        m_atomic_output_path = m_final_destination.string() + ".tmp";
+        
+        // Override plan destination for all internal ffmpeg commands
+        m_plan.output.destination.path = m_atomic_output_path.string();
 
-        const std::filesystem::path destination(plan.output.destination.path);
+        bool needs_temp_video = m_plan.output.profile.format == OutputFormat::Gif || !m_audio_path.empty();
+
+        const std::filesystem::path destination(m_final_destination);
         if (!destination.parent_path().empty()) {
             std::filesystem::create_directories(destination.parent_path());
         }
 
         if (needs_temp_video) {
             m_temp_video_path = make_ffmpeg_temp_path(destination, "video", ".mkv");
+            m_temp_files.push_back(m_temp_video_path);
         }
 
         const std::string command = needs_temp_video
-            ? build_ffmpeg_video_command(plan, m_temp_video_path, false)
-            : build_ffmpeg_video_command(plan, destination, true);
+            ? build_ffmpeg_video_command(m_plan, m_temp_video_path, false)
+            : build_ffmpeg_video_command(m_plan, m_atomic_output_path, true);
 
         m_pipe = open_write_pipe(command.c_str());
         if (m_pipe == nullptr) {
@@ -80,8 +96,8 @@ public:
             profiling::ProfileScope scope(m_profiler, profiling::ProfileEventType::Encode, "color_convert_rgba_to_output", packet.frame_number);
             bytes = convert_and_pack_ffmpeg_frame(
                 *packet.frame,
-                static_cast<uint32_t>(m_plan->composition.width),
-                static_cast<uint32_t>(m_plan->composition.height),
+                static_cast<uint32_t>(m_plan.composition.width),
+                static_cast<uint32_t>(m_plan.composition.height),
                 m_source_transfer, m_source_space,
                 m_output_transfer, m_output_space,
                 m_output_range);
@@ -111,7 +127,27 @@ public:
             }
         }
 
-        return finalize_post_processing();
+        if (!finalize_post_processing()) {
+            return false;
+        }
+        
+        // Atomic commit: clear m_atomic_output_path before rename to prevent destructor from deleting it
+        std::filesystem::path final_atomic = std::move(m_atomic_output_path);
+        m_atomic_output_path.clear();
+
+        std::error_code ec;
+        std::filesystem::rename(final_atomic, m_final_destination, ec);
+        if (ec) {
+            // fallback for cross-device or permission issues if rename fails
+            std::filesystem::copy(final_atomic, m_final_destination, std::filesystem::copy_options::overwrite_existing, ec);
+            if (!ec) {
+                std::filesystem::remove(final_atomic);
+            } else {
+                m_last_error = "failed to commit atomic output: " + ec.message();
+                return false;
+            }
+        }
+        return true;
     }
 
     void set_audio_source(const std::string& audio_path) override {
@@ -126,8 +162,7 @@ public:
 
 private:
     bool finalize_post_processing() {
-        if (m_plan == nullptr) return true;
-        if (m_plan->output.profile.format == OutputFormat::Gif) return finalize_gif();
+        if (m_plan.output.profile.format == OutputFormat::Gif) return finalize_gif();
         if (!m_audio_path.empty()) return finalize_audio();
         return true;
     }
@@ -135,7 +170,7 @@ private:
     bool finalize_audio() {
         if (m_temp_video_path.empty()) return true;
 
-        std::string command = build_ffmpeg_mux_command(*m_plan, m_temp_video_path, m_audio_path);
+        std::string command = build_ffmpeg_mux_command(m_plan, m_temp_video_path, m_audio_path);
         
         ProcessSpec spec;
 #ifdef _WIN32
@@ -157,8 +192,9 @@ private:
     }
 
     bool finalize_gif() {
-        const std::filesystem::path destination(m_plan->output.destination.path);
-        const std::filesystem::path palette_path = make_ffmpeg_temp_path(destination, "palette", ".png");
+        const std::filesystem::path destination(m_plan.output.destination.path);
+        const std::filesystem::path palette_path = make_ffmpeg_temp_path(m_final_destination, "palette", ".png");
+        m_temp_files.push_back(palette_path);
 
         // Run palettegen
         ProcessSpec spec1;
@@ -206,9 +242,12 @@ private:
 
 
 
-    const RenderPlan* m_plan{nullptr};
+    RenderPlan m_plan;
     FILE* m_pipe{nullptr};
     std::filesystem::path m_temp_video_path;
+    std::vector<std::filesystem::path> m_temp_files;
+    std::filesystem::path m_atomic_output_path;
+    std::filesystem::path m_final_destination;
     std::string m_audio_path;
     renderer2d::detail::TransferCurve m_source_transfer{renderer2d::detail::TransferCurve::sRGB};
     renderer2d::detail::ColorSpace m_source_space{renderer2d::detail::ColorSpace::sRGB};

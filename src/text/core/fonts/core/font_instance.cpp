@@ -1,5 +1,5 @@
 #include "tachyon/text/fonts/core/font_instance.h"
-#include "tachyon/renderer2d/text/freetype/freetype_manager.h"
+#include "tachyon/text/core/low_level/freetype/freetype_manager.h"
 
 #include <ft2build.h>
 #include FT_FREETYPE_H

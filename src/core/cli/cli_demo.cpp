@@ -1,7 +1,7 @@
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/spec/cpp_scene_loader.h"
-#include "tachyon/core/spec/compilation/scene_compiler.h"
+#include "tachyon/runtime/compiler/scene_compiler.h"
 #include "tachyon/output/frame_output_sink.h"
 #include "tachyon/renderer2d/effects/effect_host.h"
 #include "tachyon/renderer2d/effects/effect_utils.h"

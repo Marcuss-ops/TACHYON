@@ -22,9 +22,9 @@ const Modifier3DDescriptor* Modifier3DRegistry::find(std::string_view id) const 
     return registry_.find(id);
 }
 
-std::unique_ptr<I3DModifier> Modifier3DRegistry::create(const ThreeDModifierSpec& spec) const {
-    if (const auto* descriptor = find(spec.type)) {
-        return descriptor->factory(spec);
+std::unique_ptr<I3DModifier> Modifier3DRegistry::create(const std::string& id) const {
+    if (const auto* descriptor = find(id)) {
+        return descriptor->factory();
     }
     return nullptr;
 }

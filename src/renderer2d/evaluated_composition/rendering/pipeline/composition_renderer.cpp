@@ -16,13 +16,11 @@
 #include "tachyon/renderer2d/raster/mesh_rasterizer.h"
 #include "tachyon/renderer2d/raster/perspective_rasterizer.h"
 #include "tachyon/renderer2d/raster/mesh_deform_apply.h"
-#ifdef TACHYON_ENABLE_3D
 #include "tachyon/core/render/iray_tracer.h"
 #include "tachyon/core/render/aov_buffer.h"
-#include "tachyon/renderer3d/effects/depth_of_field.h"
-#include "tachyon/renderer3d/effects/motion_blur.h"
-#include "tachyon/renderer3d/visibility/culling.h"
-#endif
+#include "tachyon/core/render/dof_settings.h"
+#include "tachyon/core/render/motion_blur_settings.h"
+#include "tachyon/core/render/visibility.h"
 #include "tachyon/runtime/execution/scheduling/tile_scheduler.h"
 #include "tachyon/output/frame_aov.h"
 #include "tachyon/transition_registry.h"

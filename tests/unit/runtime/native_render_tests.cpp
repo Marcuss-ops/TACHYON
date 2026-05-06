@@ -1,6 +1,6 @@
 #include "tachyon/runtime/execution/native_render.h"
 #include "tachyon/presets/scene/scene_preset_registry.h"
-#include "tachyon/core/spec/compilation/scene_compiler.h"
+#include "tachyon/runtime/compiler/scene_compiler.h"
 #include "tachyon/output/frame_output_sink.h"
 #include "tachyon/renderer2d/effects/core/glsl_transition_effect.h"
 #include "tachyon/renderer2d/effects/effect_host.h"

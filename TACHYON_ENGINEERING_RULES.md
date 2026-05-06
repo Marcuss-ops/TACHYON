@@ -1,3 +1,9 @@
+---
+Status: Canonical
+Last reviewed: 2026-05-06
+Owner: Core Team
+---
+
 # TACHYON ENGINEERING RULES
 
 Questo file contiene le regole che ogni ingegnere deve leggere e rispettare prima di scrivere o modificare codice in Tachyon.

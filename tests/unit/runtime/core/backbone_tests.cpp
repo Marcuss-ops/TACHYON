@@ -1,4 +1,4 @@
-#include "tachyon/core/spec/compilation/scene_compiler.h"
+#include "tachyon/runtime/compiler/scene_compiler.h"
 #include "tachyon/runtime/cache/cache_key_builder.h"
 #include "tachyon/runtime/memory/frame_arena.h"
 #include "tachyon/runtime/core/data/property_graph.h"

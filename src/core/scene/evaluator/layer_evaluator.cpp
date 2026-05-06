@@ -25,9 +25,6 @@ EvaluatedLayerState make_layer_state(
     evaluated.name = layer.name;
     evaluated.layer_index = layer_index;
     evaluated.type = layer.type;
-    if (evaluated.type == LayerType::Unknown && !layer.type_string.empty()) {
-        evaluated.type = layer_type_from_string(layer.type_string);
-    }
     evaluated.enabled = layer.enabled;
     evaluated.visible = layer.visible;
     evaluated.is_3d = layer.is_3d;
@@ -194,6 +191,7 @@ EvaluatedLayerState make_layer_state(
     if (evaluated.type == LayerType::Camera) {
         evaluated.camera_type = layer.camera_type;
         evaluated.zoom = static_cast<float>(sample_scalar(layer.camera_zoom, 877.0, local_t, context.audio_analyzer));
+        evaluated.camera_roll = static_cast<float>(sample_scalar(layer.transform3d.rotation_property.z_property, 0.0, local_t, context.audio_analyzer));
         evaluated.poi = sample_vector3(layer.camera_poi, {0,0,0}, local_t, context.audio_analyzer);
         
         // NEW: Camera Shake

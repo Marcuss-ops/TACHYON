@@ -91,9 +91,21 @@ EvaluatedCameraState evaluate_camera_state(
     evaluated.name = camera_layer->name;
     evaluated.camera_type = camera_layer->camera_type;
     evaluated.zoom = camera_layer->zoom;
+    evaluated.roll = camera_layer->camera_roll;
     evaluated.point_of_interest = camera_layer->poi;
     evaluated.position = camera_layer->world_matrix.to_transform().position;
-    evaluated.up = { 0.0f, 1.0f, 0.0f }; // +Y world up convention (TODO: read from layer)
+    
+    // Extract actual up vector from the layer's world matrix Y-axis (this includes roll/orientation)
+    math::Vector3 world_up = {
+        camera_layer->world_matrix[4],
+        camera_layer->world_matrix[5],
+        camera_layer->world_matrix[6]
+    };
+    if (world_up.length() > 1e-6f) {
+        evaluated.up = world_up.normalized();
+    } else {
+        evaluated.up = { 0.0f, 1.0f, 0.0f };
+    }
 
     // AE-style Optics: Zoom to FOV
     evaluated.fov_y_rad = 2.0f * std::atan(comp_h / (2.0f * evaluated.zoom));
@@ -103,9 +115,8 @@ EvaluatedCameraState evaluate_camera_state(
     evaluated.camera.use_target = (evaluated.camera_type == "two_node");
     evaluated.camera.target_position = evaluated.point_of_interest;
     evaluated.camera.up = evaluated.up;
-    // evaluated.camera.roll = 0.0f; // TODO: read from layer properties
+    evaluated.camera.roll_deg = evaluated.roll;
     evaluated.camera.fov_y_rad = evaluated.fov_y_rad;
-    // evaluated.camera.zoom = evaluated.zoom;
     evaluated.camera.aspect = aspect;
     evaluated.camera.near_z = evaluated.near_clip;
     evaluated.camera.far_z = evaluated.far_clip;

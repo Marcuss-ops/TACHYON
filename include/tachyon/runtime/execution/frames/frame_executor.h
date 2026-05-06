@@ -34,7 +34,7 @@ struct ExecutedFrame {
     std::string error;
     std::uint64_t scene_hash{0};
     std::size_t draw_command_count{0};
-    std::shared_ptr<renderer2d::Framebuffer> frame;
+    std::shared_ptr<const renderer2d::Framebuffer> frame;
     std::vector<output::FrameAOV> aovs;
     FrameDiagnostics diagnostics;
 };
@@ -61,6 +61,9 @@ public:
         m_parallel_worker_count = worker_count;
         m_parallel_frames = (worker_count > 1);
     }
+
+    size_t parallel_worker_count() const { return m_parallel_worker_count; }
+    bool parallel_frames() const { return m_parallel_frames; }
 
     FrameCache& cache() { return m_cache; }
     const FrameCache& cache() const { return m_cache; }

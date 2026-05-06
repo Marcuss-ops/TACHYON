@@ -1,3 +1,10 @@
+---
+Status: Canonical
+Last reviewed: 2026-05-06
+Owner: Core Team
+Supersedes: N/A
+---
+
 # Execution Model
 
 Tachyon uses a deterministic, frame-based execution model.

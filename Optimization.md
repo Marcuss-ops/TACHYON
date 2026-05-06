@@ -1,3 +1,9 @@
+---
+Status: Canonical
+Last reviewed: 2026-05-06
+Owner: Core Team
+---
+
 Sì. Però parto brutale:
 
 **100x non lo fai con una singola ottimizzazione.**

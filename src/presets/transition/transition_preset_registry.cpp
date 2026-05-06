@@ -8,7 +8,7 @@ LayerTransitionSpec make_noop_transition_from_params(const registry::ParameterBa
     LayerTransitionSpec spec;
     spec.transition_id = p.get_or<std::string>("id", "");
     spec.type          = "none";
-    spec.kind          = TransitionKind::None;
+    spec.kind      = TransitionKind::None;
     spec.duration      = p.get_or<double>("duration", 0.4);
     spec.easing        = static_cast<animation::EasingPreset>(p.get_or<int>("easing", static_cast<int>(animation::EasingPreset::EaseOut)));
     spec.delay         = p.get_or<double>("delay", 0.0);

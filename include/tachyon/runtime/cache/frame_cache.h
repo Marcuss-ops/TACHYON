@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <list>
 #include <mutex>
 #include <string>
 #include <unordered_map>
@@ -79,7 +80,8 @@ private:
         std::size_t size;
     };
     std::unordered_map<std::uint64_t, EntryInfo> m_entries;
-    std::vector<std::uint64_t> m_lru_order; // front = oldest
+    std::list<std::uint64_t> m_lru_list;
+    std::unordered_map<std::uint64_t, std::list<std::uint64_t>::iterator> m_lru_iterators;
 
     std::size_t m_max_budget_bytes{1024ULL * 1024 * 1024}; // 1GB default
     std::size_t m_current_usage_bytes{0};

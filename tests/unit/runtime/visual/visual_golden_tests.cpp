@@ -1,5 +1,5 @@
 #include "visual_golden_verifier.h"
-#include "tachyon/core/spec/compilation/scene_compiler.h"
+#include "tachyon/runtime/compiler/scene_compiler.h"
 #include "tachyon/runtime/execution/frames/frame_executor.h"
 #include <iostream>
 

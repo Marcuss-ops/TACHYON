@@ -32,11 +32,13 @@ public:
 
         // Pre-compute total counts for selectors
         float total_clusters = 0.0f;
-        float total_lines = 0.0f;
+        float total_words = 0.0f;
+        float total_lines = static_cast<float>(layout.lines.size());
+        
         for (const auto& glyph : layout.glyphs) {
             total_clusters = std::max(total_clusters, static_cast<float>(glyph.cluster_index + 1));
+            total_words = std::max(total_words, static_cast<float>(glyph.word_index + 1));
         }
-        total_lines = static_cast<float>(layout.lines.size());
 
         for (const auto& animator : animators) {
             
@@ -61,13 +63,23 @@ public:
                 TextAnimatorContext ctx;
                 ctx.glyph_index = i;
                 ctx.cluster_index = glyph.cluster_index;
-                ctx.word_index = 0;  // Would need to be computed by caller
-                ctx.line_index = 0;  // Would need to be computed by caller
+                ctx.word_index = static_cast<float>(glyph.word_index);
+                
+                // Find line index for this glyph
+                ctx.line_index = 0;
+                for (std::size_t l = 0; l < layout.lines.size(); ++l) {
+                    if (i >= layout.lines[l].start_glyph_index && i < layout.lines[l].start_glyph_index + layout.lines[l].length) {
+                        ctx.line_index = static_cast<float>(l);
+                        break;
+                    }
+                }
+
                 ctx.total_glyphs = static_cast<float>(num_glyphs);
                 ctx.total_clusters = total_clusters;
+                ctx.total_words = total_words;
                 ctx.total_lines = total_lines;
                 ctx.time = t;
-                ctx.is_space = (glyph.fill_color.a == 0 && glyph.bounds.width <= 0.0f); // Heuristic for space
+                ctx.is_space = glyph.whitespace;
                 ctx.is_rtl = glyph.is_rtl;
 
                 float coverage = compute_coverage(animator.selector, ctx);

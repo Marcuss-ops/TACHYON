@@ -1,8 +1,10 @@
 #include "tachyon/transition_catalog.h"
 #include "tachyon/transition_registry.h"
+#include "tachyon/presets/transition/transition_preset_registry.h"
 
 #include <algorithm>
 #include <utility>
+#include <set>
 
 namespace tachyon {
 
@@ -20,106 +22,20 @@ TransitionCatalog& TransitionCatalog::instance() {
 
 TransitionCatalog::TransitionCatalog() {
     m_impl = std::make_unique<Impl>();
-    // Register built-in transitions
-    register_entry({
-        "tachyon.transition.fade",
-        {"fade", "crossfade", "dissolve"},
-        "tachyon.transition.fade",
-        "fade",
-        false, true,
-        TransitionStatus::Stable,
-        "Crossfade between layers"
-    });
-
-    register_entry({
-        "tachyon.transition.slide_left",
-        {"slide_left", "slide left", "slide"},
-        "tachyon.transition.slide_left",
-        "slide",
-        true, true,
-        TransitionStatus::Stable,
-        "Slide layer from left"
-    });
-
-    register_entry({
-        "tachyon.transition.slide_right",
-        {"slide_right", "slide right"},
-        "tachyon.transition.slide_right",
-        "slide",
-        true, true,
-        TransitionStatus::Stable,
-        "Slide layer from right"
-    });
-
-    register_entry({
-        "tachyon.transition.zoom",
-        {"zoom", "scale", "zoom_in"},
-        "tachyon.transition.zoom",
-        "zoom",
-        false, true,
-        TransitionStatus::Stable,
-        "Zoom in/out transition"
-    });
-
-    register_entry({
-        "tachyon.transition.flip",
-        {"flip", "flip horizontal", "flip_h"},
-        "tachyon.transition.flip",
-        "flip",
-        false, true,
-        TransitionStatus::Stable,
-        "Flip transition"
-    });
-
-    register_entry({
-        "tachyon.transition.blur",
-        {"blur", "blur transition", "blur_in"},
-        "tachyon.transition.blur",
-        "blur",
-        false, true,
-        TransitionStatus::Stable,
-        "Blur transition effect"
-    });
-
-    register_entry({
-        "tachyon.transition.wipe_left",
-        {"wipe_left", "wipe"},
-        "tachyon.transition.wipe_left",
-        "wipe",
-        true, true,
-        TransitionStatus::Stable,
-        "Wipe transition from left"
-    });
-
-    register_entry({
-        "tachyon.transition.push_up",
-        {"push_up", "push", "slide_up"},
-        "tachyon.transition.push_up",
-        "push",
-        true, true,
-        TransitionStatus::Stable,
-        "Push layer upward"
-    });
-
-    register_entry({
-        "tachyon.transition.glitch",
-        {"glitch", "digital", "glitch_effect"},
-        "tachyon.transition.glitch",
-        "glitch",
-        false, true,
-        TransitionStatus::Experimental,
-        "Digital glitch transition effect"
-    });
-
-    register_entry({
-        "tachyon.transition.cinematic_fast",
-        {"cinematic_fast", "fast_cut", "quick_cut"},
-        "tachyon.transition.cinematic_fast",
-        "cut",
-        false, false,
-        TransitionStatus::Stable,
-        "Fast cinematic cut (no duration)"
-    });
+    
+    // Register built-in transitions from canonical descriptors
+    for (const auto& desc : get_builtin_transition_descriptors()) {
+        TransitionCatalogEntry entry;
+        entry.id = desc.id;
+        entry.runtime_id = desc.runtime_id;
+        entry.authoring_aliases = desc.authoring_aliases;
+        entry.description = desc.description;
+        entry.status = desc.status;
+        // kind mapping if needed, or just use string
+        entry.kind = "custom"; // Placeholder for more granular mapping
+        
+        register_entry(entry);
+    }
 }
 
 TransitionCatalog::~TransitionCatalog() = default;
@@ -228,8 +144,58 @@ bool TransitionCatalog::validate_runtime_transition(std::string_view runtime_id,
 TransitionCatalog::AuditResult TransitionCatalog::audit() const {
     AuditResult result;
 
-    // For now, return empty audit result
-    // This would be expanded to check against actual registry usage
+    auto& preset_registry = presets::TransitionPresetRegistry::instance();
+    auto& transition_registry = TransitionRegistry::instance();
+
+    // 1. Every catalog.runtime_id must exist in TransitionRegistry
+    for (const auto& entry : m_impl->entries) {
+        if (!entry.runtime_id.empty()) {
+            const auto* runtime = transition_registry.find(entry.runtime_id);
+            if (!runtime) {
+                result.missing_runtime.push_back(entry.runtime_id);
+            }
+        }
+    }
+
+    // 2. Every public preset must exist in catalog
+    auto preset_ids = preset_registry.list_ids();
+    for (const auto& preset_id : preset_ids) {
+        if (!find(preset_id) && !find_by_alias(preset_id)) {
+            result.missing_catalog_entries.push_back(preset_id);
+        }
+    }
+
+    // 3. Every public runtime transition must be cataloged
+    auto runtime_ids = transition_registry.list_builtin_transition_ids();
+    for (const auto& runtime_id : runtime_ids) {
+        if (!find_by_runtime_id(runtime_id)) {
+            result.missing_catalog_entries.push_back(runtime_id + " (runtime)");
+        }
+    }
+
+    // 4. Duplicate aliases
+    std::map<std::string, std::string> alias_to_id_check;
+    for (const auto& entry : m_impl->entries) {
+        for (const auto& alias : entry.authoring_aliases) {
+            auto it = alias_to_id_check.find(alias);
+            if (it != alias_to_id_check.end()) {
+                result.duplicate_aliases.push_back(alias);
+            } else {
+                alias_to_id_check[alias] = entry.id;
+            }
+        }
+    }
+
+    // 5. Duplicate runtime IDs
+    std::map<std::string, std::string> runtime_to_id_check;
+    for (const auto& entry : m_impl->entries) {
+        auto it = runtime_to_id_check.find(entry.runtime_id);
+        if (it != runtime_to_id_check.end()) {
+            result.duplicate_runtime_ids.push_back(entry.runtime_id);
+        } else {
+            runtime_to_id_check[entry.runtime_id] = entry.id;
+        }
+    }
 
     return result;
 }

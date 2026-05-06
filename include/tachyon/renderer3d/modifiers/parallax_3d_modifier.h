@@ -8,16 +8,13 @@ namespace renderer3d {
 
 class Parallax3DModifier : public I3DModifier {
 public:
-    explicit Parallax3DModifier(const ThreeDModifierSpec& spec);
+    Parallax3DModifier();
 
     void apply(
         Mesh3D& mesh,
-        double time,
+        const ResolvedModifier3D& resolved,
         const renderer2d::RenderContext& ctx
     ) override;
-
-private:
-    ThreeDModifierSpec spec_;
 };
 
 } // namespace renderer3d

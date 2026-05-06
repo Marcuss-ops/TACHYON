@@ -1,6 +1,8 @@
 #include "tachyon/transition_registry.h"
+#include "tachyon/core/transition/transition_descriptor.h"
 #include "tachyon/renderer2d/effects/core/glsl_transition_effect.h"
 #include "tachyon/presets/transition/transition_preset_registry.h"
+#include "tachyon/core/ids/builtin_ids.h"
 #include <cassert>
 #include <iostream>
 #include <set>
@@ -11,6 +13,7 @@ bool run_transition_runtime_tests() {
     std::cout << "Running Transition Runtime tests..." << std::endl;
 
     // Ensure all built-in implementations are loaded.
+    tachyon::register_builtin_transitions();
     renderer2d::init_builtin_transitions();
     auto& runtime = TransitionRegistry::instance();
 
@@ -75,14 +78,14 @@ bool run_transition_runtime_tests() {
     }
 
     // 5. Specific key transitions must always be present.
-    static constexpr const char* kRequired[] = {
-        "tachyon.transition.fade",
-        "tachyon.transition.dissolve",
-        "tachyon.transition.slide_left",
-        "tachyon.transition.slide_right",
+    static constexpr std::string_view kRequired[] = {
+        tachyon::ids::transition::crossfade,
+        tachyon::ids::transition::luma_dissolve,
+        tachyon::ids::transition::slide_up,
+        tachyon::ids::transition::swipe_left,
     };
-    for (const char* required_id : kRequired) {
-        if (runtime.find(required_id) == nullptr) {
+    for (const auto required_id : kRequired) {
+        if (runtime.find(std::string(required_id)) == nullptr) {
             std::cerr << "TransitionRuntime: required transition '" << required_id << "' is missing.\n";
             return false;
         }

@@ -2,7 +2,7 @@
 
 #include "tachyon/core/spec/schema/objects/path_spec.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
-#include "tachyon/renderer2d/spec/gradient_spec.h"
+#include "tachyon/core/spec/schema/common/gradient_spec.h"
 #include <algorithm>
 #include <vector>
 #include <optional>

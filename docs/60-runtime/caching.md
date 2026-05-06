@@ -11,7 +11,7 @@
 | `FrameHasher` | `include/tachyon/runtime/execution/frames/frame_hasher.h` | ✓ |
 | `DiskCache` | `include/tachyon/runtime/cache/disk_cache.h` | ✓ |
 | Glyph cache in `FontInstance` | `include/tachyon/text/fonts/font_instance.h` | ✓ per size |
-| Shaping cache | `include/tachyon/renderer2d/text/shaping/shaping_cache.h` | ✓ |
+| Shaping cache | `include/tachyon/text/core/low_level/shaping/shaping_cache.h` | ✓ |
 | Asset cache LRU | `CacheManager` in `asset_manager.h` | ✓ fino a 10GB |
 
 ### Gap principali

@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include "tachyon/runtime/execution/session/render_session.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
-#include "tachyon/core/spec/compilation/scene_compiler.h"
+#include "tachyon/runtime/compiler/scene_compiler.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include <filesystem>
 #include <fstream>

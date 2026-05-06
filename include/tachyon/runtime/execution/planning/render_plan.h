@@ -42,6 +42,18 @@ enum class MotionBlurMode {
     SceneTemporal
 };
 
+enum class TelemetryPolicy {
+    Off,
+    Summary,
+    Detailed,
+    DebugTrace
+};
+
+struct WorkerPolicy {
+    std::int64_t min_workers{1};
+    std::int64_t max_workers{0}; // 0 indicates automatic/default conservative
+};
+
 struct RenderPlan {
     std::string job_id;
     std::string scene_ref;
@@ -53,6 +65,9 @@ struct RenderPlan {
     QualityPolicy quality_policy;
     std::string compositing_alpha_mode{"premultiplied"};
     std::string working_space{"linear_rec709"};
+    
+    TelemetryPolicy telemetry_policy{TelemetryPolicy::Summary};
+    WorkerPolicy worker_policy;
     
     // Motion Blur
     bool motion_blur_enabled{false};

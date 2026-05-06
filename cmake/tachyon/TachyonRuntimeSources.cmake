@@ -1,5 +1,6 @@
 # TachyonRuntime sources
 set(TachyonRuntimeSources
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/runtime_facade.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/cache/cache_key_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/cache/disk_cache.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/cache/frame_cache.cpp
@@ -24,13 +25,16 @@ set(TachyonRuntimeSources
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_session_audio.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_session_parallel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_session_serialization.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/tile_scheduler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/batch_runner/batch_runner_execute.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/batch_runner/batch_runner_validate.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_evaluator_composition.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_evaluator_layer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_evaluator_node.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_evaluator_property.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_blend.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/motion_blur_sampler.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_fallback_policy.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/rasterization_step.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_executor_utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/planning/hash/animation_hash.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/planning/hash/effect_hash.cpp
@@ -48,17 +52,17 @@ set(TachyonRuntimeSources
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/telemetry/telemetry_writer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/telemetry/batch_telemetry_aggregator.cpp
 
-    # Spec - Compilation (runtime-owned)
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/component_library.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/layer_compiler.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/preset_compiler.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/property_compiler.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_compiler.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_compiler_build.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_compiler_graph.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_compiler_hashing.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_compiler_property.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_compiler_resolve.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/compilation/scene_hash_builder.cpp
+    # Compiler (runtime-owned)
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/compiler/component_library.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/compiler/layer_compiler.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/compiler/preset_compiler.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/compiler/property_compiler.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/compiler/scene_compiler.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/compiler/scene_compiler_build.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/compiler/scene_compiler_graph.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/compiler/scene_compiler_hashing.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/compiler/scene_compiler_property.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/compiler/scene_compiler_resolve.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/compiler/scene_hash_builder.cpp
     
 )

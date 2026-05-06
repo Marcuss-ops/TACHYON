@@ -39,12 +39,12 @@ bool run_transition_builder_tests() {
 
     {
         TransitionParams p;
-        p.id = "tachyon.transition.slide";
+        p.id = "tachyon.transition.slide_up";
         p.duration = 0.3;
 
         const auto spec = build_transition_exit(p);
-        check_true(spec.transition_id == "tachyon.transition.slide", "Exit copies transition id");
-        check_true(spec.type == "tachyon.transition.slide", "Exit copies type");
+        check_true(spec.transition_id == "tachyon.transition.slide_up", "Exit copies transition id");
+        check_true(spec.type == "tachyon.transition.slide_up", "Exit copies type");
         check_true(std::abs(spec.duration - 0.3) < 1e-9, "Exit copies duration");
     }
 
@@ -64,7 +64,7 @@ bool run_transition_builder_tests() {
         enter.duration = 0.5;
 
         TransitionParams exit;
-        exit.id = "tachyon.transition.zoom";
+        exit.id = "tachyon.transition.zoom_in";
         exit.duration = 0.3;
 
         tachyon::LayerSpec layer;
@@ -72,18 +72,18 @@ bool run_transition_builder_tests() {
 
         check_true(layer.transition_in.transition_id == "tachyon.transition.crossfade", "Apply transitions copies enter id");
         check_true(layer.transition_in.type == "tachyon.transition.crossfade", "Apply transitions copies enter type");
-        check_true(layer.transition_out.transition_id == "tachyon.transition.zoom", "Apply transitions copies exit id");
-        check_true(layer.transition_out.type == "tachyon.transition.zoom", "Apply transitions copies exit type");
+        check_true(layer.transition_out.transition_id == "tachyon.transition.zoom_in", "Apply transitions copies exit id");
+        check_true(layer.transition_out.type == "tachyon.transition.zoom_in", "Apply transitions copies exit type");
     }
 
     {
         TransitionParams enter;
-        enter.id = "tachyon.transition.slide";
+        enter.id = "tachyon.transition.slide_up";
 
         tachyon::LayerSpec layer;
         apply_transitions(layer, enter);
 
-        check_true(layer.transition_in.transition_id == "tachyon.transition.slide", "Apply only enter copies id");
+        check_true(layer.transition_in.transition_id == "tachyon.transition.slide_up", "Apply only enter copies id");
         check_true(layer.transition_out.transition_id.empty(), "Apply only enter leaves exit empty");
     }
 

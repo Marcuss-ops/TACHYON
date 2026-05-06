@@ -1,6 +1,6 @@
 #include "tachyon/runtime/execution/batch/batch_runner.h"
-#include "tachyon/core/spec/compilation/scene_compiler.h"
-#include "tachyon/core/spec/compilation/preset_compiler.h"
+#include "tachyon/runtime/compiler/scene_compiler.h"
+#include "tachyon/runtime/compiler/preset_compiler.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/execution/session/render_session.h"
 #include "tachyon/runtime/telemetry/render_telemetry_record.h"
