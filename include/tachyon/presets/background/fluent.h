@@ -127,7 +127,7 @@ inline LayerSpec solid(const ColorSpec& color, int width = 1920, int height = 10
     LayerSpec bg;
     bg.id = "bg_solid";
     bg.name = "Solid Background";
-    bg.type = "solid";
+    bg.type = LayerType::Solid;
     bg.enabled = true;
     bg.visible = true;
     bg.in_point = 0.0;
@@ -147,7 +147,7 @@ inline LayerSpec image(std::string path, int width = 1920, int height = 1080, do
     LayerSpec bg;
     bg.id = "bg_image";
     bg.name = "Image Background";
-    bg.type = "image";
+    bg.type = LayerType::Image;
     bg.enabled = true;
     bg.visible = true;
     bg.in_point = 0.0;
@@ -167,7 +167,7 @@ inline LayerSpec video(std::string path, int width = 1920, int height = 1080, do
     LayerSpec bg;
     bg.id = "bg_video";
     bg.name = "Video Background";
-    bg.type = "video";
+    bg.type = LayerType::Video;
     bg.enabled = true;
     bg.visible = true;
     bg.in_point = 0.0;

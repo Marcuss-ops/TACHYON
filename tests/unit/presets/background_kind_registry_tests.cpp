@@ -11,7 +11,7 @@ bool run_background_kind_registry_tests() {
 
     {
         const auto ids = BackgroundKindRegistry::instance().list_ids();
-        assert(ids.empty());
+        assert(!ids.empty()); // builtins registered in constructor
     }
 
     {
