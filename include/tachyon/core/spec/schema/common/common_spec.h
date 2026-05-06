@@ -4,7 +4,9 @@
 #include <string>
 #include <cstdint>
 #include <map>
+#include <string_view>
 
+#include "tachyon/core/api.h"
 #include "tachyon/core/types/color_spec.h"
 
 namespace tachyon {
@@ -57,17 +59,17 @@ enum class AudioBandType {
  * @brief Get the canonical string representation of a LayerType.
  * Used for serialization and authoring.
  */
-std::string_view to_canonical_layer_type_string(LayerType type);
+TACHYON_API std::string_view to_canonical_layer_type_string(LayerType type);
 
 /**
  * @brief Parse a canonical string into a LayerType enum.
  */
-LayerType layer_type_from_string(std::string_view type_string);
+TACHYON_API LayerType layer_type_from_string(std::string_view type_string);
 
 /**
  * @brief Map a LayerType to the internal compiled type ID.
  */
-std::uint32_t compiled_type_id_from_layer_type(LayerType type);
+TACHYON_API std::uint32_t compiled_type_id_from_layer_type(LayerType type);
 
 struct EffectSpec {
     bool enabled{true};

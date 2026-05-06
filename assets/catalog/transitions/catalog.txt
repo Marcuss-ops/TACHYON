@@ -20,3 +20,11 @@ tachyon.transition.luma_dissolve | Luma Dissolve | Luminance-based dissolve | sh
 tachyon.transition.directional_blur_wipe | Directional Blur Wipe | Blur wipe with direction | shaders/directional_blur_wipe.glsl | thumbs/directional_blur_wipe.png
 tachyon.transition.light_leak | Light Leak | High-quality evolving cinematic light leak | shaders/crossfade.glsl | thumbs/crossfade.png
 tachyon.transition.film_burn | Film Burn | Fiery red-orange film burn | shaders/crossfade.glsl | thumbs/crossfade.png
+
+# Premium Light Leaks
+tachyon.transition.lightleak.soft_warm_edge | Soft Warm Edge Leak | Premium warm edge light leak | shaders/crossfade.glsl | thumbs/crossfade.png
+tachyon.transition.lightleak.golden_sweep | Golden Sweep | Soft golden cinematic sweep | shaders/crossfade.glsl | thumbs/crossfade.png
+tachyon.transition.lightleak.creamy_white | Creamy White Leak | Soft warm white memory leak | shaders/crossfade.glsl | thumbs/crossfade.png
+tachyon.transition.lightleak.dusty_archive | Dusty Archive Leak | Warm archival light leak with subtle grain | shaders/crossfade.glsl | thumbs/crossfade.png
+tachyon.transition.lightleak.lens_flare_pass | Subtle Lens Flare Pass | Thin premium lens flare sweep | shaders/crossfade.glsl | thumbs/crossfade.png
+

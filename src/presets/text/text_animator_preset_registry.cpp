@@ -3,6 +3,17 @@
 
 namespace tachyon::presets {
 
+namespace {
+
+std::vector<TextAnimatorSpec> make_legacy_fallback_text_animator(const registry::ParameterBag& params) {
+    std::string based_on = params.get_or<std::string>("based_on", "characters_excluding_spaces");
+    double stagger_delay = params.get_or<double>("stagger_delay", 0.03);
+    double reveal_duration = params.get_or<double>("reveal_duration", 0.5);
+    return std::vector<TextAnimatorSpec>{tachyon::text::make_fade_in_animator(based_on, stagger_delay, reveal_duration)};
+}
+
+} // namespace
+
 TextAnimatorPresetRegistry& TextAnimatorPresetRegistry::instance() {
     static TextAnimatorPresetRegistry registry;
     return registry;
@@ -24,12 +35,9 @@ std::vector<TextAnimatorSpec> TextAnimatorPresetRegistry::create(std::string_vie
     if (const auto* spec = find(id)) {
         return spec->factory(params);
     }
-    
-    // Default fallback
-    std::string based_on = params.get_or<std::string>("based_on", "characters_excluding_spaces");
-    double stagger_delay = params.get_or<double>("stagger_delay", 0.03);
-    double reveal_duration = params.get_or<double>("reveal_duration", 0.5);
-    return std::vector<TextAnimatorSpec>{tachyon::text::make_fade_in_animator(based_on, stagger_delay, reveal_duration)};
+
+    // Legacy fallback: keep a simple intro animation when the preset name is unknown.
+    return make_legacy_fallback_text_animator(params);
 }
 
 std::vector<std::string> TextAnimatorPresetRegistry::list_ids() const {

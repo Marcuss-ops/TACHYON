@@ -1,12 +1,10 @@
 #include "tachyon/presets/transition/transition_preset_registry.h"
 
-#include <iostream>
-
 namespace tachyon::presets {
 
 namespace {
 
-LayerTransitionSpec make_basic_spec(const registry::ParameterBag& p) {
+LayerTransitionSpec make_noop_transition_from_params(const registry::ParameterBag& p) {
     LayerTransitionSpec spec;
     spec.transition_id = p.get_or<std::string>("id", "");
     spec.type          = "none";
@@ -49,8 +47,7 @@ LayerTransitionSpec TransitionPresetRegistry::create(std::string_view id, const 
         return spec->factory(params);
     }
 
-    std::cerr << "Unknown transition preset: " << id << '\n';
-    return make_basic_spec(params);
+    return make_noop_transition_from_params(params);
 }
 
 std::vector<std::string> TransitionPresetRegistry::list_ids() const {

@@ -8,6 +8,256 @@ namespace tachyon::renderer2d {
 
 namespace {
 
+struct LightLeakStyle {
+    const char* id;
+    const char* name;
+    const char* description;
+
+    Color color_a;
+    Color color_b;
+    Color highlight;
+
+    float angle_degrees;
+    float width;
+    float softness;
+    float intensity;
+    float speed;
+    float offset;
+    float direction; // -1 for left/top, 1 for right/bottom
+
+    float grain_amount;
+    float flicker_amount;
+    float pulse_amount;
+
+    enum class Shape {
+        Edge,
+        Sweep,
+        RadialCorner,
+        HorizontalBand,
+        WindowBands,
+        ProjectorCone,
+        Prism
+    } shape;
+};
+
+float smoothstep01(float x) {
+    x = std::clamp(x, 0.0f, 1.0f);
+    return x * x * (3.0f - 2.0f * x);
+}
+
+float radians(float degrees) {
+    return degrees * 3.1415926535f / 180.0f;
+}
+
+float cheap_noise(float u, float v, float t) {
+    const float n = std::sin((u * 12.9898f + v * 78.233f + t * 37.719f) * 43758.5453f);
+    return n - std::floor(n);
+}
+
+float soft_band(float value, float center, float width, float softness) {
+    const float d = std::abs(value - center);
+    float x = 1.0f - std::clamp(d / std::max(width, 0.0001f), 0.0f, 1.0f);
+    x = smoothstep01(x);
+    return std::pow(x, std::max(softness, 0.1f));
+}
+
+float edge_mask(float u, float v, float t, const LightLeakStyle& s) {
+    float side = s.direction < 0 ? u : 1.0f - u;
+    float drift = 0.08f * std::sin(t * 3.0f + v * 2.0f);
+    return std::pow(1.0f - std::clamp((side + drift) / s.width, 0.0f, 1.0f), s.softness);
+}
+
+float sweep_mask(float u, float v, float t, const LightLeakStyle& s) {
+    float a = radians(s.angle_degrees);
+    float proj = u * std::cos(a) + v * std::sin(a);
+    float center = -s.offset + t * s.speed;
+    return soft_band(proj, center, s.width, s.softness);
+}
+
+float radial_corner_mask(float u, float v, float t, const LightLeakStyle& s) {
+    float dx = (s.direction < 0) ? u : 1.0f - u;
+    float dy = (s.direction < 0) ? v : 1.0f - v;
+    float d = std::sqrt(dx * dx + dy * dy);
+    float pulse = 1.0f + s.pulse_amount * std::sin(t * 3.14159f);
+    return std::pow(1.0f - std::clamp(d / (s.width * pulse), 0.0f, 1.0f), s.softness);
+}
+
+float horizontal_band_mask(float u, float v, float t, const LightLeakStyle& s) {
+    float center = 0.60f - 0.15f * smoothstep01(t);
+    return soft_band(v, center, s.width, s.softness);
+}
+
+float window_bands_mask(float u, float v, float t, const LightLeakStyle& s) {
+    float drift = 0.03f * std::sin(t * 2.0f);
+    float m1 = soft_band(u, 0.20f + drift, s.width, s.softness);
+    float m2 = soft_band(u, 0.48f + drift, s.width, s.softness);
+    float m3 = soft_band(u, 0.76f + drift, s.width, s.softness);
+    return std::clamp(m1 + m2 * 0.7f + m3 * 0.5f, 0.0f, 1.0f);
+}
+
+float evaluate_light_leak_mask(float u, float v, float t, const LightLeakStyle& style) {
+    switch (style.shape) {
+        case LightLeakStyle::Shape::Edge: return edge_mask(u, v, t, style);
+        case LightLeakStyle::Shape::Sweep: return sweep_mask(u, v, t, style);
+        case LightLeakStyle::Shape::RadialCorner: return radial_corner_mask(u, v, t, style);
+        case LightLeakStyle::Shape::HorizontalBand: return horizontal_band_mask(u, v, t, style);
+        case LightLeakStyle::Shape::WindowBands: return window_bands_mask(u, v, t, style);
+        default: return 0.0f;
+    }
+}
+
+Color apply_light_leak_style(
+    float u,
+    float v,
+    float t,
+    const SurfaceRGBA& input,
+    const SurfaceRGBA* to_surface,
+    const LightLeakStyle& style
+) {
+    const bool overlay_mode = (to_surface == nullptr);
+
+    Color base = overlay_mode
+        ? Color::black()
+        : Color::lerp(
+            sample_uv(input, u, v),
+            sample_transition_target(input, to_surface, u, v),
+            smoothstep01(t)
+        );
+
+    float mask = evaluate_light_leak_mask(u, v, t, style);
+
+    float flicker = 1.0f + style.flicker_amount * cheap_noise(u, v, t);
+    float intensity = style.intensity * mask * flicker;
+
+    Color leak = Color::lerp(style.color_a, style.color_b, mask);
+    leak = Color::lerp(leak, style.highlight, std::pow(mask, 4.0f));
+
+    return screen_over(base, leak, intensity);
+}
+
+// Premium Styles Definitions
+static constexpr LightLeakStyle kSoftWarmEdge{
+    "tachyon.transition.lightleak.soft_warm_edge",
+    "Soft Warm Edge Leak",
+    "Premium warm edge light leak",
+    {1.0f, 0.45f, 0.12f, 1.0f},
+    {1.0f, 0.74f, 0.38f, 1.0f},
+    {1.0f, 0.95f, 0.82f, 1.0f},
+    -18.0f, // angle
+    0.36f,  // width
+    2.8f,   // softness
+    0.22f,  // intensity
+    1.15f,  // speed
+    0.35f,  // offset
+    -1.0f,  // direction (left)
+    0.02f,  // grain
+    0.03f,  // flicker
+    0.0f,   // pulse
+    LightLeakStyle::Shape::Edge
+};
+
+static constexpr LightLeakStyle kGoldenSweep{
+    "tachyon.transition.lightleak.golden_sweep",
+    "Golden Sweep",
+    "Soft golden cinematic sweep",
+    {1.0f, 0.55f, 0.12f, 1.0f},
+    {1.0f, 0.84f, 0.28f, 1.0f},
+    {1.0f, 0.98f, 0.88f, 1.0f},
+    -12.0f, // angle
+    0.18f,  // width
+    3.2f,   // softness
+    0.20f,  // intensity
+    1.8f,   // speed
+    0.45f,  // offset
+    1.0f,   // direction
+    0.01f,  // grain
+    0.02f,  // flicker
+    0.0f,   // pulse
+    LightLeakStyle::Shape::Sweep
+};
+
+static constexpr LightLeakStyle kCreamyWhite{
+    "tachyon.transition.lightleak.creamy_white",
+    "Creamy White Leak",
+    "Soft warm white memory leak",
+    {1.0f, 0.88f, 0.68f, 1.0f},
+    {1.0f, 0.96f, 0.86f, 1.0f},
+    {1.0f, 1.0f, 0.96f, 1.0f},
+    0.0f,   // angle
+    0.55f,  // width
+    2.5f,   // softness
+    0.18f,  // intensity
+    1.0f,   // speed
+    0.0f,   // offset
+    -1.0f,  // direction (top-left)
+    0.00f,  // grain
+    0.01f,  // flicker
+    0.15f,  // pulse
+    LightLeakStyle::Shape::RadialCorner
+};
+
+static constexpr LightLeakStyle kDustyArchive{
+    "tachyon.transition.lightleak.dusty_archive",
+    "Dusty Archive Leak",
+    "Warm archival light leak with subtle grain",
+    {0.82f, 0.38f, 0.12f, 1.0f},
+    {1.0f, 0.62f, 0.22f, 1.0f},
+    {1.0f, 0.90f, 0.68f, 1.0f},
+    -22.0f, // angle
+    0.42f,  // width
+    3.5f,   // softness
+    0.18f,  // intensity
+    1.1f,   // speed
+    0.25f,  // offset
+    1.0f,   // direction
+    0.06f,  // grain
+    0.04f,  // flicker
+    0.0f,   // pulse
+    LightLeakStyle::Shape::Sweep
+};
+
+static constexpr LightLeakStyle kLensFlarePass{
+    "tachyon.transition.lightleak.lens_flare_pass",
+    "Subtle Lens Flare Pass",
+    "Thin premium lens flare sweep",
+    {0.72f, 0.84f, 1.0f, 1.0f},
+    {1.0f, 0.92f, 0.72f, 1.0f},
+    {1.0f, 1.0f, 1.0f, 1.0f},
+    0.0f,    // angle
+    0.055f,  // width
+    2.0f,    // softness
+    0.16f,   // intensity
+    2.2f,    // speed
+    0.35f,   // offset
+    1.0f,    // direction
+    0.00f,   // grain
+    0.01f,   // flicker
+    0.0f,    // pulse
+    LightLeakStyle::Shape::Sweep
+};
+
+// Wrapper functions
+Color transition_lightleak_soft_warm_edge(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    return apply_light_leak_style(u, v, t, input, to_surface, kSoftWarmEdge);
+}
+
+Color transition_lightleak_golden_sweep(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    return apply_light_leak_style(u, v, t, input, to_surface, kGoldenSweep);
+}
+
+Color transition_lightleak_creamy_white(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    return apply_light_leak_style(u, v, t, input, to_surface, kCreamyWhite);
+}
+
+Color transition_lightleak_dusty_archive(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    return apply_light_leak_style(u, v, t, input, to_surface, kDustyArchive);
+}
+
+Color transition_lightleak_lens_flare_pass(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
+    return apply_light_leak_style(u, v, t, input, to_surface, kLensFlarePass);
+}
+
+
 Color transition_light_leak(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
     const bool overlay_mode = (to_surface == nullptr);
     const Color base = overlay_mode ? Color::black() : Color::lerp(sample_uv(input, u, v), sample_transition_target(input, to_surface, u, v), t);
@@ -136,6 +386,13 @@ void register_light_leak_transitions() {
     register_builtin("tachyon.transition.light_leak_sunset", "Light Leak Sunset", "Warm dual-beam sunset leak", transition_light_leak_sunset);
     register_builtin("tachyon.transition.light_leak_ghost", "Light Leak Ghost", "Pale ethereal ghost leak", transition_light_leak_ghost);
     register_builtin("tachyon.transition.film_burn", "Film Burn", "Fiery red-orange film burn", transition_film_burn);
+
+    // Premium Light Leaks
+    register_builtin("tachyon.transition.lightleak.soft_warm_edge", "Soft Warm Edge Leak", "Premium warm edge light leak", transition_lightleak_soft_warm_edge);
+    register_builtin("tachyon.transition.lightleak.golden_sweep", "Golden Sweep", "Soft golden cinematic sweep", transition_lightleak_golden_sweep);
+    register_builtin("tachyon.transition.lightleak.creamy_white", "Creamy White Leak", "Soft warm white memory leak", transition_lightleak_creamy_white);
+    register_builtin("tachyon.transition.lightleak.dusty_archive", "Dusty Archive Leak", "Warm archival light leak with subtle grain", transition_lightleak_dusty_archive);
+    register_builtin("tachyon.transition.lightleak.lens_flare_pass", "Subtle Lens Flare Pass", "Thin premium lens flare sweep", transition_lightleak_lens_flare_pass);
 }
 
 } // namespace tachyon::renderer2d

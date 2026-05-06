@@ -226,6 +226,55 @@ TextStyle make_minimal_text_style(
     return animator;
 }
 
+::tachyon::TextAnimatorSpec make_typewriter_word_animator(
+    double words_per_second,
+    bool cursor_enabled,
+    std::string cursor_char) {
+
+    const double word_stagger_delay = words_per_second > 0.0 ? 1.0 / words_per_second : 0.25;
+    ::tachyon::TextAnimatorSpec animator = make_word_by_word_opacity_animator(word_stagger_delay, 0.45);
+    animator.name = "TypewriterWord";
+    animator.cursor.enabled = cursor_enabled;
+    animator.cursor.cursor_char = std::move(cursor_char);
+    animator.cursor.blink_rate = cursor_enabled ? 3.0 : 0.0;
+    return animator;
+}
+
+::tachyon::TextAnimatorSpec make_typewriter_line_animator(
+    double lines_per_second,
+    bool cursor_enabled,
+    std::string cursor_char) {
+
+    const double line_stagger_delay = lines_per_second > 0.0 ? 1.0 / lines_per_second : 0.5;
+    ::tachyon::TextAnimatorSpec animator = make_split_line_stagger_animator(line_stagger_delay, 0.45);
+    animator.name = "TypewriterLine";
+    animator.cursor.enabled = cursor_enabled;
+    animator.cursor.cursor_char = std::move(cursor_char);
+    animator.cursor.blink_rate = cursor_enabled ? 3.0 : 0.0;
+    return animator;
+}
+
+::tachyon::TextAnimatorSpec make_typewriter_terminal_animator(
+    double characters_per_second,
+    std::string cursor_char) {
+
+    ::tachyon::TextAnimatorSpec animator = make_typewriter_minimal_animator(characters_per_second, true, std::move(cursor_char));
+    animator.name = "TypewriterTerminal";
+    animator.properties.fill_color_value = ColorSpec{0, 255, 128, 255};
+    animator.properties.stroke_width_value = 0.0;
+    return animator;
+}
+
+::tachyon::TextAnimatorSpec make_typewriter_archive_animator(
+    double characters_per_second,
+    std::string cursor_char) {
+
+    ::tachyon::TextAnimatorSpec animator = make_typewriter_minimal_animator(characters_per_second, false, std::move(cursor_char));
+    animator.name = "TypewriterArchive";
+    animator.properties.fill_color_value = ColorSpec{220, 224, 232, 255};
+    return animator;
+}
+
 ::tachyon::TextAnimatorSpec make_kinetic_blur_animator(
     double slide_distance_px,
     double duration_seconds) {
@@ -607,4 +656,3 @@ TextStyle make_minimal_text_style(
 }
 
 } // namespace tachyon::text
-

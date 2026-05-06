@@ -2,6 +2,10 @@
 
 Documentation for the 2D layer stack, compositing pipeline, masks, effects, text rendering, motion blur, and color management.
 
+Use the shared behavior model for the domain split:
+
+- [Behavior Model](../10-architecture/behavior-model.md)
+
 ## Topics
 
 - Shape layers

@@ -9,6 +9,7 @@ Welcome to the Tachyon engine documentation.
 - [Non-Goals](00-project/non-goals.md) - What we explicitly don't do
 - [MVP v1](00-project/mvp-v1.md) - First milestone scope
 - [Architecture](10-architecture/architecture.md) - Core architecture overview
+- [Behavior Model](10-architecture/behavior-model.md) - Shared model for backgrounds, text, transitions, and effects
 - [Execution Model](10-architecture/execution-model.md) - How the engine runs
 - [Parallelism](10-architecture/parallelism.md) - Multi-threading and frame execution
 - [Scene Model](30-scene-and-animation/scene-model.md) - How scenes are structured

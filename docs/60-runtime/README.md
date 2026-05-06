@@ -2,6 +2,10 @@
 
 Documentation for runtime behavior and execution model.
 
+Use the shared behavior model to map authoring concepts to runtime consumers:
+
+- [Behavior Model](../10-architecture/behavior-model.md)
+
 ## Topics
 
 - Caching strategy

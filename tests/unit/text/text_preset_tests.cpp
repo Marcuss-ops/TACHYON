@@ -1,4 +1,5 @@
 #include "tachyon/text/animation/text_presets.h"
+#include "tachyon/presets/text/text_builder.h"
 #include "tachyon/presets/text/text_builders.h"
 #include "tachyon/presets/text/text_params.h"
 
@@ -65,6 +66,17 @@ bool run_text_preset_tests() {
         const auto layer = build_text(params);
         check_true(layer.text_animators.size() == 1, "build_text word_punch animator count");
         check_true(layer.text_animators[0].name == "WordPunch", "build_text word_punch animator name");
+    }
+
+    {
+        const auto layer = tachyon::presets::text::headline("Anchor Test")
+            .width(800)
+            .height(400)
+            .anchor(tachyon::presets::text::TextAnchor::MiddleCenter)
+            .build();
+        check_true(layer.alignment == "center", "anchor middle center alignment");
+        check_true(layer.transform.position_x == 400.0, "anchor middle center x");
+        check_true(layer.transform.position_y == 200.0, "anchor middle center y");
     }
 
     return g_failures == 0;

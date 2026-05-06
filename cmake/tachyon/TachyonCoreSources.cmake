@@ -17,4 +17,5 @@ set(TachyonCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/expressions/expression_engine.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/expressions/expression_vm.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/io/path_resolution.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/schema/common/common_spec.cpp
 )

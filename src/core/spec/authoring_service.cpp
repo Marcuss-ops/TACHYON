@@ -182,7 +182,7 @@ std::string AuthoringService::get_compiler_command(
     }
 
     // MSVC cl.exe command
-    ss << "cl.exe /nologo /O2 /MT /EHsc /LD /std:c++20 /DTACHYON_USE_DLL ";
+    ss << "cl.exe /nologo /O2 /MD /EHsc /LD /std:c++20 /DTACHYON_USE_DLL ";
     ss << "/I\"" << TACHYON_INCLUDE_DIR << "\" ";
     ss << "\"" << cpp_path.string() << "\" ";
     ss << "/Fe:\"" << dll_path.string() << "\" ";

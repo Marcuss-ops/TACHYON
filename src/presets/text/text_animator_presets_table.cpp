@@ -45,12 +45,57 @@ void TextAnimatorPresetRegistry::load_builtins() {
                      }});
 
     register_spec({"tachyon.textanim.typewriter",
-                     {"tachyon.textanim.typewriter", "Typewriter", "Character-by-character reveal", "text.anim", {"typewriter", "classic"}},
+                     {"tachyon.textanim.typewriter", "Typewriter", "Character-by-character reveal with cursor", "text.anim", {"typewriter", "classic"}},
                      {},
                      [get_text_params](const ParameterBag& p) {
                          auto params = get_text_params(p);
                          double cps = params.stagger > 0 ? 1.0 / params.stagger : 20.0;
-                         return std::vector<TextAnimatorSpec>{make_typewriter_minimal_animator(cps, false)};
+                         return std::vector<TextAnimatorSpec>{make_typewriter_minimal_animator(cps, true)};
+                     }});
+
+    register_spec({"tachyon.textanim.typewriter.classic",
+                     {"tachyon.textanim.typewriter.classic", "Typewriter Classic", "Classic cursor-driven typewriter", "text.anim", {"typewriter", "classic"}},
+                     {},
+                     [get_text_params](const ParameterBag& p) {
+                         auto params = get_text_params(p);
+                         double cps = params.stagger > 0 ? 1.0 / params.stagger : 20.0;
+                         return std::vector<TextAnimatorSpec>{make_typewriter_minimal_animator(cps, true)};
+                     }});
+
+    register_spec({"tachyon.textanim.typewriter.archive",
+                     {"tachyon.textanim.typewriter.archive", "Typewriter Archive", "Muted archive-style typewriter", "text.anim", {"typewriter", "archive"}},
+                     {},
+                     [get_text_params](const ParameterBag& p) {
+                         auto params = get_text_params(p);
+                         double cps = params.stagger > 0 ? 1.0 / params.stagger : 16.0;
+                         return std::vector<TextAnimatorSpec>{make_typewriter_archive_animator(cps)};
+                     }});
+
+    register_spec({"tachyon.textanim.typewriter.terminal",
+                     {"tachyon.textanim.typewriter.terminal", "Typewriter Terminal", "Terminal-style console reveal", "text.anim", {"typewriter", "terminal"}},
+                     {},
+                     [get_text_params](const ParameterBag& p) {
+                         auto params = get_text_params(p);
+                         double cps = params.stagger > 0 ? 1.0 / params.stagger : 18.0;
+                         return std::vector<TextAnimatorSpec>{make_typewriter_terminal_animator(cps)};
+                     }});
+
+    register_spec({"tachyon.textanim.typewriter.word",
+                     {"tachyon.textanim.typewriter.word", "Typewriter Word", "Word-by-word reveal with typewriter cadence", "text.anim", {"typewriter", "word"}},
+                     {},
+                     [get_text_params](const ParameterBag& p) {
+                         auto params = get_text_params(p);
+                         double wps = params.stagger > 0 ? 1.0 / params.stagger : 4.0;
+                         return std::vector<TextAnimatorSpec>{make_typewriter_word_animator(wps, false)};
+                     }});
+
+    register_spec({"tachyon.textanim.typewriter.line",
+                     {"tachyon.textanim.typewriter.line", "Typewriter Line", "Line-by-line reveal with typewriter cadence", "text.anim", {"typewriter", "line"}},
+                     {},
+                     [get_text_params](const ParameterBag& p) {
+                         auto params = get_text_params(p);
+                         double lps = params.stagger > 0 ? 1.0 / params.stagger : 2.0;
+                         return std::vector<TextAnimatorSpec>{make_typewriter_line_animator(lps, false)};
                      }});
 
     register_spec({"tachyon.textanim.blur_to_focus",
@@ -109,6 +154,30 @@ void TextAnimatorPresetRegistry::load_builtins() {
                          return std::vector<TextAnimatorSpec>{make_outline_to_solid_animator(params.based_on, params.reveal, 1.0)};
                      }});
 
+    register_spec({"tachyon.textanim.slide_mask",
+                     {"tachyon.textanim.slide_mask", "Slide Mask", "Sliding mask reveal", "text.anim", {"mask", "slide"}},
+                     {},
+                     [get_text_params](const ParameterBag& p) {
+                         auto params = get_text_params(p);
+                         return std::vector<TextAnimatorSpec>{make_slide_mask_left_animator(params.based_on, params.reveal)};
+                     }});
+
+    register_spec({"tachyon.textanim.curtain_box",
+                     {"tachyon.textanim.curtain_box", "Curtain Box", "Box-style curtain reveal", "text.anim", {"mask", "curtain"}},
+                     {},
+                     [get_text_params](const ParameterBag& p) {
+                         auto params = get_text_params(p);
+                         return std::vector<TextAnimatorSpec>{make_curtain_box_minimal_animator(params.based_on, params.reveal)};
+                     }});
+
+    register_spec({"tachyon.textanim.morphing",
+                     {"tachyon.textanim.morphing", "Morphing", "Morphing words effect", "text.anim", {"morphing", "experimental"}},
+                     {},
+                     [get_text_params](const ParameterBag& p) {
+                         auto params = get_text_params(p);
+                         return std::vector<TextAnimatorSpec>{make_morphing_words_animator(params.reveal)};
+                     }});
+
     register_spec({"tachyon.textanim.bounce_in",
                      {"tachyon.textanim.bounce_in", "Bounce In", "Bouncing slide in", "text.anim", {"bounce", "dynamic"}},
                      {},
@@ -139,14 +208,6 @@ void TextAnimatorPresetRegistry::load_builtins() {
                      [get_text_params](const ParameterBag& p) {
                          auto params = get_text_params(p);
                          return std::vector<TextAnimatorSpec>{make_split_line_stagger_animator(params.stagger, params.reveal)};
-                     }});
-
-    register_spec({"tachyon.textanim.morphing",
-                     {"tachyon.textanim.morphing", "Morphing", "Morphing words effect", "text.anim", {"morphing", "experimental"}},
-                     {},
-                     [get_text_params](const ParameterBag& p) {
-                         auto params = get_text_params(p);
-                         return std::vector<TextAnimatorSpec>{make_morphing_words_animator(params.reveal)};
                      }});
 
     register_spec({"tachyon.textanim.underline",
