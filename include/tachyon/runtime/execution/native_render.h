@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/runtime/core/data/compiled_scene.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/runtime/execution/jobs/render_job.h"
 #include "tachyon/runtime/execution/session/render_session.h"
@@ -39,6 +40,11 @@ public:
      */
     static RenderSessionResult render(
         const SceneSpec& scene,
+        const RenderJob& job,
+        const NativeRenderOptions& options = NativeRenderOptions());
+
+    static RenderSessionResult render(
+        const CompiledScene& scene,
         const RenderJob& job,
         const NativeRenderOptions& options = NativeRenderOptions());
 
