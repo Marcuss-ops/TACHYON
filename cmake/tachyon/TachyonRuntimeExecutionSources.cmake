@@ -1,0 +1,37 @@
+# TachyonRuntime execution sources
+set(TachyonRuntimeExecutionSources
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/compiled_frame_program.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_hasher.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/native_render.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/quality_policy.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_plan.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_plan_build.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_plan_hash.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_progress_sink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_session.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_session_audio.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_session_parallel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_session_serialization.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/batch_runner/batch_runner_execute.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/batch_runner/batch_runner_validate.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_evaluator_composition.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_evaluator_layer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_evaluator_node.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_evaluator_property.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_blend.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_cache_policy.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_time_resolver.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_evaluation_pipeline.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/motion_blur_sampler.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_fallback_policy.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/rasterization_step.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_executor_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/planning/hash/animation_hash.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/planning/hash/effect_hash.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/planning/hash/scene_hash.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_job/render_job_builder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_job/render_job_validate.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/property_sampling.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/tile_scheduler.cpp
+)

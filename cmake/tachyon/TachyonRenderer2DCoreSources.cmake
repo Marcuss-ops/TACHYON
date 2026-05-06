@@ -1,0 +1,25 @@
+# TachyonRenderer2D core sources
+set(TachyonRenderer2DCoreSources
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/audio/audio_sampling.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/backend/cpu_backend.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/color/blending.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/color/blending_math.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/color/blending_parse.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/color/color_management.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/color/color_management_system.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/color/lut3d.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/color/color_math.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/core/framebuffer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/core/surface_pool.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/deform/mesh_deform.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/math/math_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/path/contour/contour_processing.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/path/flattening/path_flattening.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/path/shape_factory.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/resource/precomp_cache.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/resource/render_context.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/resource/texture_resolver.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/surface/surface_sampling.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/surface/surface_blur.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/surface/surface_composite.cpp
+)

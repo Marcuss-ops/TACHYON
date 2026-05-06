@@ -1,21 +1,10 @@
-#include "tachyon/runtime/execution/frame_blend_renderer.h"
-#include "tachyon/runtime/execution/motion_blur_sampler.h"
-#include "tachyon/runtime/execution/frame_fallback_policy.h"
-#include "tachyon/runtime/execution/rasterization_step.h"
-#include "tachyon/core/scene/composition/evaluator_composition.h"
 #include "frame_executor/frame_executor_internal.h"
+#include "tachyon/core/scene/composition/evaluator_composition.h"
 #include "tachyon/runtime/profiling/render_profiler.h"
-#include "tachyon/runtime/cache/cache_key_builder.h"
 #include "tachyon/renderer2d/raster/draw_list_builder.h"
-#ifdef TACHYON_ENABLE_3D
-#include "tachyon/renderer3d/core/ray_tracer.h"
-#endif
 
-#include <algorithm>
-#include <cmath>
 #include <cstdlib>
-#include <omp.h>
-#include <thread>
+#include <string_view>
 
 namespace tachyon {
 
@@ -90,44 +79,35 @@ ExecutedFrame FrameExecutor::execute(
     const FrameRenderTask& task,
     const DataSnapshot& snapshot,
     RenderContext& context) {
-
     profiling::ProfileScope frame_scope(context.profiler, profiling::ProfileEventType::Frame, "frame_render", task.frame_number);
 
-    if (m_node_lookup.empty()) build_lookup_table(compiled_scene);
+    const char* diag_env = std::getenv("TACHYON_DIAGNOSTICS");
+    const bool diagnostics_enabled = (diag_env && std::string_view(diag_env) == "1");
+    context.diagnostic_tracker = nullptr;
+    context.renderer2d.diagnostics = nullptr;
+    context.policy = plan.quality_policy;
+    context.renderer2d.policy = plan.quality_policy;
+
+    if (m_node_lookup.empty()) {
+        build_lookup_table(compiled_scene);
+    }
+
+    const FrameCacheState cache_state = build_frame_cache_state(compiled_scene, plan, task, diagnostics_enabled);
+    const FrameTimingState timing_state = resolve_frame_timing(compiled_scene, plan, task);
 
     ExecutedFrame result;
     result.frame_number = task.frame_number;
     result.scene_hash = compiled_scene.scene_hash;
-
-    const char* diag_env = std::getenv("TACHYON_DIAGNOSTICS");
-    const bool diagnostics_enabled = (diag_env && std::string_view(diag_env) == "1");
+    result.cache_key = cache_state.frame_key;
     if (diagnostics_enabled) {
+        result.diagnostics.composition_key_manifest = cache_state.composition_builder.manifest();
+        result.diagnostics.frame_key_manifest = cache_state.frame_builder.manifest();
         context.diagnostic_tracker = &result.diagnostics;
         context.renderer2d.diagnostics = &result.diagnostics;
     }
 
-    context.policy = plan.quality_policy;
-    context.renderer2d.policy = plan.quality_policy;
-
-    CacheKeyBuilder comp_builder;
-    comp_builder.enable_manifest(diagnostics_enabled);
-    comp_builder.add_u64(compiled_scene.scene_hash);
-    comp_builder.add_u32(compiled_scene.header.layout_version);
-    comp_builder.add_u32(compiled_scene.header.compiler_version);
-    comp_builder.add_string(plan.quality_tier);
-    comp_builder.add_string(plan.compositing_alpha_mode);
-    const std::uint64_t composition_key = comp_builder.finish();
-    if (diagnostics_enabled) result.diagnostics.composition_key_manifest = comp_builder.manifest();
-
-    CacheKeyBuilder frame_builder = comp_builder;
-    frame_builder.add_u64(static_cast<std::uint64_t>(task.frame_number));
-    const std::uint64_t frame_key = frame_builder.finish();
-    result.cache_key = frame_key;
-    if (diagnostics_enabled) result.diagnostics.frame_key_manifest = frame_builder.manifest();
-    
-    // 0. Global Cache Check
     if (task.cacheable) {
-        auto cached = m_cache.lookup_frame(frame_key);
+        auto cached = m_cache.lookup_frame(cache_state.frame_key);
         if (cached) {
             result.frame = cached;
             result.cache_hit = true;
@@ -135,78 +115,7 @@ ExecutedFrame FrameExecutor::execute(
         }
     }
 
-    const double fps = compiled_scene.compositions.empty() ? 60.0 : std::max(1u, compiled_scene.compositions.front().fps);
-    double frame_time_seconds = static_cast<double>(task.frame_number) / fps;
-
-    // Time Remap & Frame Blend setup
-    std::optional<timeline::FrameBlendResult> blend_result;
-    if (plan.time_remap_curve.has_value()) {
-        const float dest_time = static_cast<float>(frame_time_seconds);
-        frame_time_seconds = static_cast<double>(timeline::evaluate_source_time(*plan.time_remap_curve, dest_time));
-
-        // Calculate blend parameters for frame blending
-        const float frame_duration = static_cast<float>(1.0 / fps);
-        blend_result = timeline::evaluate_frame_blend(*plan.time_remap_curve, dest_time, frame_duration);
-    }
-
-    // 1. Try Frame Blending
-    auto blended_frame = FrameBlendRenderer::try_render_blend(
-        *this, compiled_scene, plan, task, snapshot, context,
-        blend_result, frame_time_seconds, composition_key, frame_key);
-    if (blended_frame.has_value()) {
-        result.frame = *blended_frame;
-        result.cache_hit = false;
-        context.diagnostic_tracker = nullptr;
-        context.renderer2d.diagnostics = nullptr;
-        return result;
-    }
-
-    // 2. Try Motion Blur Sampling
-    auto mb_frame = MotionBlurSampler::sample(
-        *this, compiled_scene, plan, task, snapshot, context,
-        frame_time_seconds, composition_key, frame_key, static_cast<int>(fps), comp_builder);
-    if (mb_frame.has_value()) {
-        result.frame = *mb_frame;
-        result.cache_hit = false;
-        context.diagnostic_tracker = nullptr;
-        context.renderer2d.diagnostics = nullptr;
-        return result;
-    }
-
-    // 3. Normal Path: Evaluate Scene
-    const auto& topo_order = compiled_scene.graph.topo_order();
-    for (std::uint32_t node_id : topo_order) {
-        if (context.cancel_flag && context.cancel_flag->load()) break;
-        ::tachyon::evaluate_node(*this, node_id, compiled_scene, plan, snapshot, context, composition_key, frame_key, frame_time_seconds, task);
-    }
-
-    if (!compiled_scene.compositions.empty()) {
-        const CompiledComposition& root_comp = compiled_scene.compositions.front();
-        const std::uint64_t root_key = build_node_key(frame_key, root_comp.node);
-        ::tachyon::evaluate_composition(*this, compiled_scene, root_comp, plan, snapshot, context, composition_key, root_key, frame_key, frame_time_seconds, task);
-
-        auto cached_comp = m_cache.lookup_composition(root_key);
-        if (cached_comp) {
-            // 4. Rasterization Step
-            auto raster_result = RasterizationStep::execute(
-                *cached_comp, plan, task, context, m_pool, context.profiler, task.frame_number);
-            result.frame = raster_result.frame;
-            result.aovs = std::move(raster_result.aovs);
-            result.draw_command_count = raster_result.draw_command_count;
-        }
-    }
-
-    // 5. Apply Fallback Policy
-    FrameFallbackPolicy::apply(result, compiled_scene, plan);
-
-    // 6. Cache rendered frame
-    if (task.cacheable && result.frame) {
-        m_cache.store_frame(frame_key, result.frame);
-    }
-
-    context.diagnostic_tracker = nullptr;
-    context.renderer2d.diagnostics = nullptr;
-    return result;
+    return run_frame_execution_pipeline(*this, compiled_scene, plan, task, snapshot, context, cache_state, timing_state);
 }
 
 // Delegate methods for backward compatibility

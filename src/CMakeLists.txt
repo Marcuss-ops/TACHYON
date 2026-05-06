@@ -179,114 +179,10 @@ if(TACHYON_ENABLE_TRACKER)
     target_link_libraries(TachyonTimeline PUBLIC TachyonTracker)
 endif()
 
-add_library(TachyonSceneEval STATIC ${TachyonSceneEvalSources})
-tachyon_configure_common(TachyonSceneEval)
-target_link_libraries(TachyonSceneEval
-    PUBLIC
-        TachyonTimeline
-    PRIVATE
-        TachyonCore
-        TachyonColor
-        TachyonText
-        TachyonAudio
-        TachyonMedia
-        TachyonRenderer2D
-        $<$<BOOL:${TACHYON_ENABLE_3D}>:TachyonRenderer3D>
-        $<$<BOOL:${TACHYON_ENABLE_3D}>:TachyonScene3DBridge>
-)
-tachyon_link_text_deps(TachyonSceneEval)
-tachyon_link_media_deps(TachyonSceneEval)
-tachyon_link_3d_deps(TachyonSceneEval)
-tachyon_link_omp(TachyonSceneEval)
+include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonSceneTargets.cmake)
 
-add_library(TachyonPresets STATIC ${TachyonPresetsSources})
-tachyon_configure_common(TachyonPresets)
-target_link_libraries(TachyonPresets
-    PUBLIC
-        TachyonCore
-        TachyonText
-        TachyonAudio
-        TachyonMedia
-)
-tachyon_link_text_deps(TachyonPresets)
-tachyon_link_media_deps(TachyonPresets)
-tachyon_link_omp(TachyonPresets)
-
-add_library(TachyonScene SHARED ${TachyonSceneSources})
-tachyon_configure_common(TachyonScene)
-target_compile_definitions(TachyonScene 
-    PRIVATE TACHYON_BUILD_DLL
-    INTERFACE TACHYON_USE_DLL
-)
-target_link_libraries(TachyonScene
-    PUBLIC
-        TachyonSceneEval
-        TachyonTimeline
-    PRIVATE
-        TachyonCore
-        TachyonColor
-        TachyonPlatform
-        TachyonPresets
-        TachyonRenderer2D
-        TachyonAudio
-        TachyonMedia
-)
-if(TACHYON_ENABLE_TRACKER)
-    target_link_libraries(TachyonScene PRIVATE TachyonTracker)
-endif()
-tachyon_link_omp(TachyonScene)
-
-add_library(TachyonRuntime STATIC ${TachyonRuntimeSources})
-tachyon_configure_common(TachyonRuntime)
-if(TACHYON_ENABLE_AUDIO_MUX)
-    target_compile_definitions(TachyonRuntime PRIVATE TACHYON_ENABLE_AUDIO_MUX)
-endif()
-target_link_libraries(TachyonRuntime
-    PUBLIC
-        TachyonScene
-        TachyonCore
-        TachyonColor
-        TachyonText
-        TachyonAudio
-        TachyonMedia
-        TachyonOutput
-        TachyonPlatform
-        TachyonRenderer2D
-        $<$<BOOL:${TACHYON_ENABLE_3D}>:TachyonRenderer3D>
-        $<$<BOOL:${TACHYON_ENABLE_3D}>:TachyonScene3DBridge>
-)
-tachyon_link_3d_deps(TachyonRuntime)
-tachyon_link_text_deps(TachyonRuntime)
-tachyon_link_media_deps(TachyonRuntime)
-tachyon_link_output_deps(TachyonRuntime)
-tachyon_link_omp(TachyonRuntime)
-if(TACHYON_ENABLE_TRACKER)
-    target_link_libraries(TachyonRuntime PRIVATE TachyonTracker)
-endif()
-
-add_library(TachyonRenderer2DExtras STATIC ${TachyonRenderer2DExtrasSources})
-tachyon_configure_common(TachyonRenderer2DExtras)
-target_link_libraries(TachyonRenderer2DExtras PUBLIC TachyonCore)
-
-add_library(TachyonRenderer2D STATIC ${TachyonRenderer2DSources})
-tachyon_configure_common(TachyonRenderer2D)
-tachyon_link_text_deps(TachyonRenderer2D)
-tachyon_link_omp(TachyonRenderer2D)
-target_link_libraries(TachyonRenderer2D PUBLIC TachyonColor)
-target_link_libraries(TachyonRenderer2D PUBLIC TachyonRenderer2DExtras)
-target_link_libraries(TachyonRenderer2D PUBLIC TachyonText)
-
-if(TACHYON_ENABLE_3D)
-    add_library(TachyonRenderer3D STATIC ${TachyonRenderer3DSources})
-    tachyon_configure_common(TachyonRenderer3D)
-    tachyon_link_3d_deps(TachyonRenderer3D)
-    tachyon_link_omp(TachyonRenderer3D)
-    target_link_libraries(TachyonRenderer3D PUBLIC TachyonColor)
-
-    add_library(TachyonScene3DBridge STATIC ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/pipeline/scene3d_bridge.cpp)
-    tachyon_configure_common(TachyonScene3DBridge)
-    target_link_libraries(TachyonScene3DBridge PUBLIC TachyonCore TachyonRenderer2D TachyonRenderer3D)
-endif()
+include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonRuntimeTargets.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonRenderer2DTargets.cmake)
 
 add_library(TachyonMedia STATIC ${TachyonMediaSources})
 tachyon_configure_common(TachyonMedia)
@@ -332,20 +228,6 @@ if(TACHYON_ENABLE_TRACKER)
     add_library(TachyonTracker STATIC ${TachyonTrackerSources})
     tachyon_configure_common(TachyonTracker)
 endif()
-
-add_library(TachyonRuntimeEngine INTERFACE)
-target_link_libraries(TachyonRuntimeEngine INTERFACE
-    TachyonRuntime
-    TachyonScene
-    TachyonRenderer2D
-    TachyonText
-    TachyonMedia
-    $<$<BOOL:${TACHYON_ENABLE_3D}>:TachyonRenderer3D>
-    TachyonCore
-    TachyonAudio
-    TachyonOutput
-    TachyonPlatform
-)
 
 # CLI libraries removed. Sources are added directly to executables to allow different compile-time configurations.
 
