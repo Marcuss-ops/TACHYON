@@ -26,7 +26,7 @@ bool run_motion_map_tests() {
 
     LayerSpec layer;
     layer.id = "title";
-    layer.kind = LayerType::Text;
+    layer.type = LayerType::Text;
     layer.text_content = "Hello";
     layer.start_time = 0.0;
     layer.duration = 3.0;
