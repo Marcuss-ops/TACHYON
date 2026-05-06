@@ -20,6 +20,7 @@ FrameBlendResult TimeRemapEvaluator::evaluate_with_flow(
     FrameBlendResult result = evaluate_frame_blend(curve, dest_time, frame_duration);
     
     // If optical flow is enabled and we have flow data, adjust blend based on confidence
+#ifdef TACHYON_ENABLE_TRACKER
     if (config_.enable_optical_flow_warping && flow_result && flow_result->valid_count() > 0) {
         const float avg_confidence = flow_result->average_confidence();
         
@@ -29,6 +30,9 @@ FrameBlendResult TimeRemapEvaluator::evaluate_with_flow(
             result.blend_factor *= avg_confidence / config_.optical_flow_confidence_threshold;
         }
     }
+#else
+    (void)flow_result;
+#endif
     
     return result;
 }
@@ -39,6 +43,7 @@ std::vector<float> TimeRemapEvaluator::warp_frame(
     const tracker::OpticalFlowResult& flow,
     float warp_factor) const {
     
+#ifdef TACHYON_ENABLE_TRACKER
     if (!config_.enable_optical_flow_warping || frame.empty()) {
         return frame;
     }
@@ -95,6 +100,10 @@ std::vector<float> TimeRemapEvaluator::warp_frame(
     }
     
     return warped;
+#else
+    (void)width; (void)height; (void)channels; (void)flow; (void)warp_factor;
+    return frame;
+#endif
 }
 
 float evaluate_source_time(const TimeRemapCurve& curve, float dest_time) {

@@ -13,7 +13,7 @@ Layer3DMeshResolver::Layer3DMeshResolver(media::MediaManager& media_manager)
     : media_manager_(media_manager) {}
 
 std::unique_ptr<media::MeshAsset> Layer3DMeshResolver::resolve(const LayerSpec& layer) const {
-    if (layer.type == "mesh") {
+    if (layer.kind == LayerType::Mesh) {
         // Load mesh from asset path
         if (layer.asset_id.empty()) {
             std::cerr << "Mesh layer missing asset_id\n";
@@ -27,7 +27,7 @@ std::unique_ptr<media::MeshAsset> Layer3DMeshResolver::resolve(const LayerSpec& 
         return std::make_unique<media::MeshAsset>(*mesh);
     }
 
-    if (layer.type == "text") {
+    if (layer.kind == LayerType::Text) {
         // Extrude text to mesh
         if (layer.text_content.empty()) {
             std::cerr << "Text layer missing text content\n";
@@ -43,7 +43,7 @@ std::unique_ptr<media::MeshAsset> Layer3DMeshResolver::resolve(const LayerSpec& 
         return nullptr;
     }
 
-    if (layer.type == "image") {
+    if (layer.kind == LayerType::Image) {
         // Create plane mesh with image texture
         if (layer.asset_id.empty()) {
             std::cerr << "Image layer missing asset_id\n";
@@ -54,7 +54,7 @@ std::unique_ptr<media::MeshAsset> Layer3DMeshResolver::resolve(const LayerSpec& 
         return nullptr;
     }
 
-    if (layer.type == "solid") {
+    if (layer.kind == LayerType::Solid) {
         // Create box mesh
         // TODO: Implement solid box mesh creation
         std::cerr << "Solid mesh creation not yet implemented\n";

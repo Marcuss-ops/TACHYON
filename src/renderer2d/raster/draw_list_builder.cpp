@@ -178,6 +178,8 @@ DrawList2D DrawListBuilder::build(const scene::EvaluatedCompositionState& compos
             if (command.textured_quad.has_value()) {
                 draw_list.commands.push_back(std::move(command));
             }
+        } else if (layer.type == LayerType::Procedural) {
+            draw_list.commands.push_back(solid_command(layer, composition_state, static_cast<int>(index)));
         }
     }
 

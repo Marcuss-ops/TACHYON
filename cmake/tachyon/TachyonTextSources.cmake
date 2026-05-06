@@ -31,4 +31,10 @@ set(TachyonTextSources
     ${CMAKE_CURRENT_SOURCE_DIR}/text/core/fonts/utils/font_coverage_reporter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/text/core/fonts/utils/glyph_atlas.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/text/editing/text_editor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/text/freetype/freetype_manager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/text/glyph/glyph_loader.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/text/utils/font_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/text/shaping/font_shaping.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/text/shaping/shaping_cache.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/text/utf8/utf8_decoder.cpp
 )

@@ -69,12 +69,6 @@ set(TachyonRenderer2DSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/resource/precomp_cache.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/resource/render_context.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/resource/texture_resolver.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/text/freetype/freetype_manager.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/text/glyph/glyph_loader.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/text/shaping/font_shaping.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/text/shaping/shaping_cache.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/text/utf8/utf8_decoder.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/text/utils/font_utils.cpp
 )
 
 set(TachyonRenderer2DExtrasSources

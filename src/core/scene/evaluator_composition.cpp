@@ -130,7 +130,38 @@ EvaluatedCompositionState evaluate_composition_internal(
             auto color = composition.background->get_color();
             if (color.has_value()) {
                 evaluated.background_color = *color;
+                
+                // Converged domain: Background as a Layer
+                EvaluatedLayerState bg_layer;
+                bg_layer.id = "__background__";
+                bg_layer.name = "Background";
+                bg_layer.type = LayerType::Solid;
+                bg_layer.width = composition.width;
+                bg_layer.height = composition.height;
+                bg_layer.fill_color = *color;
+                bg_layer.visible = true;
+                bg_layer.enabled = true;
+                bg_layer.active = true;
+                bg_layer.opacity = 1.0f;
+                bg_layer.in_time = 0.0;
+                bg_layer.out_time = composition.duration;
+                evaluated.layers.push_back(std::move(bg_layer));
             }
+        } else if (composition.background->type == BackgroundType::Asset) {
+            EvaluatedLayerState bg_layer;
+            bg_layer.id = "__background__";
+            bg_layer.name = "Background";
+            bg_layer.type = LayerType::Image;
+            bg_layer.width = composition.width;
+            bg_layer.height = composition.height;
+            bg_layer.asset_path = composition.background->value;
+            bg_layer.visible = true;
+            bg_layer.enabled = true;
+            bg_layer.active = true;
+            bg_layer.opacity = 1.0f;
+            bg_layer.in_time = 0.0;
+            bg_layer.out_time = composition.duration;
+            evaluated.layers.push_back(std::move(bg_layer));
         }
     }
     

@@ -157,10 +157,15 @@ bool run_tiling_integration_tests() {
                 const auto& frame = *result.frames[0].frame;
                 // Tile boundary pixel (where 4 tiles meet at x=64, y=64)
                 const auto p = frame.get_pixel(64, 64);
+                if (p.a <= 0.0f) {
+                    std::cerr << "DIAG: Pixel at (64,64) is transparent: (" << p.r << "," << p.g << "," << p.b << "," << p.a << ")\n";
+                }
                 check(p.a > 0.0f, "Tile boundary pixel is not transparent (alpha > 0)");
 
-                // Corner pixel (bottom-right, last tile covers 64..99 x 64..99)
                 const auto corner = frame.get_pixel(99, 99);
+                if (corner.a <= 0.0f) {
+                    std::cerr << "DIAG: Corner pixel at (99,99) is transparent: (" << corner.r << "," << corner.g << "," << corner.b << "," << corner.a << ")\n";
+                }
                 check(corner.a > 0.0f, "Corner pixel is not transparent");
             }
         }

@@ -148,45 +148,43 @@ LayerBuilder::LayerBuilder(LayerSpec spec) : spec_(std::move(spec)) {}
 
 LayerBuilder& LayerBuilder::type(std::string t) {
     spec_.type = std::move(t);
+    spec_.kind = layer_type_from_string(spec_.type);
     return *this;
 }
 
 LayerBuilder& LayerBuilder::kind(LayerType t) {
     spec_.kind = t;
+    spec_.type = std::string(to_canonical_layer_type_string(t));
     return *this;
 }
 
 LayerBuilder& LayerBuilder::solid(std::string name) {
-    spec_.kind = LayerType::Solid;
-    spec_.type = "solid";
-    spec_.asset_id = std::move(name);
-    return *this;
+    return kind(LayerType::Solid).asset_id(std::move(name));
 }
 
 LayerBuilder& LayerBuilder::image(std::string path) {
-    spec_.kind = LayerType::Image;
-    spec_.type = "image";
-    spec_.asset_id = std::move(path);
-    return *this;
+    return kind(LayerType::Image).asset_id(std::move(path));
 }
 
 LayerBuilder& LayerBuilder::mesh(std::string path) {
-    spec_.kind = LayerType::Shape;
-    spec_.type = "mesh";
-    spec_.asset_id = std::move(path);
-    return *this;
+    return kind(LayerType::Mesh).asset_id(std::move(path));
 }
 
 LayerBuilder& LayerBuilder::preset(std::string name) {
-    spec_.type = "preset";
+    kind(LayerType::Procedural);
+    spec_.type = "preset"; // Specific alias
     spec_.preset_id = std::move(name);
     return *this;
 }
 
 LayerBuilder& LayerBuilder::text(std::string t) {
-    spec_.kind = LayerType::Text;
-    spec_.type = "text";
+    kind(LayerType::Text);
     spec_.text_content = std::move(t);
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::asset_id(std::string id) {
+    spec_.asset_id = std::move(id);
     return *this;
 }
 
@@ -254,14 +252,11 @@ LayerBuilder& LayerBuilder::stroke_width(double w) {
 }
 
 LayerBuilder& LayerBuilder::null_layer() {
-    spec_.kind = LayerType::NullLayer;
-    spec_.type = "null";
-    return *this;
+    return kind(LayerType::NullLayer);
 }
 
 LayerBuilder& LayerBuilder::precomp(std::string composition_id) {
-    spec_.kind = LayerType::Precomp;
-    spec_.type = "precomp";
+    kind(LayerType::Precomp);
     spec_.precomp_id = std::move(composition_id);
     return *this;
 }
@@ -410,37 +405,37 @@ LayerBuilder& LayerBuilder::is_3d(bool v) {
 }
 
 LayerBuilder& LayerBuilder::camera_type(std::string t) {
-    spec_.kind = LayerType::Camera;
+    kind(LayerType::Camera);
     spec_.camera_type = std::move(t);
     return *this;
 }
 
 LayerBuilder& LayerBuilder::camera_poi(double x, double y, double z) {
-    spec_.kind = LayerType::Camera;
+    kind(LayerType::Camera);
     spec_.camera_poi.value = math::Vector3(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z));
     return *this;
 }
 
 LayerBuilder& LayerBuilder::camera_zoom(double z) {
-    spec_.kind = LayerType::Camera;
+    kind(LayerType::Camera);
     spec_.camera_zoom = anim::scalar(z);
     return *this;
 }
 
 LayerBuilder& LayerBuilder::light_type(std::string t) {
-    spec_.kind = LayerType::Light;
+    kind(LayerType::Light);
     spec_.light_type = std::move(t);
     return *this;
 }
 
 LayerBuilder& LayerBuilder::light_color(const ColorSpec& c) {
-    spec_.kind = LayerType::Light;
+    kind(LayerType::Light);
     spec_.light_color.value = c;
     return *this;
 }
 
 LayerBuilder& LayerBuilder::light_intensity(double i) {
-    spec_.kind = LayerType::Light;
+    kind(LayerType::Light);
     spec_.light_intensity = anim::scalar(i);
     return *this;
 }

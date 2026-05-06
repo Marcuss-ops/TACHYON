@@ -142,3 +142,17 @@
 - [x] Implement retryable logic for error codes (MissingAsset = non-retryable)
 - [x] Verify with unit tests (Telemetry Industrial Tests)
 - [x] Clean up duplicate legacy telemetry files
+
+## Phase 12: Technical Debt Elimination & Convergence
+- [x] **Centralized LayerType Ownership**
+    - [x] Implement canonical LayerType enum in common_spec.h
+    - [x] Replace string-based checks with LayerType enum across compiler/builder/resolver/validator
+    - [x] Implement compiled_type_id_from_layer_type helper
+- [x] **Background Domain Convergence**
+    - [x] Resolve BackgroundSpec into standard layers during compilation
+    - [x] Update EvaluatorComposition to inject background layer at index 0
+    - [x] Remove redundant background resolution in CompositionRenderer
+- [/] **Optional 3D Domain Formalization**
+    - [x] Ensure TACHYON_ENABLE_3D is respected in core pipelines
+    - [x] Verify build stability with 3D disabled
+    - [ ] Refactor Scene3DBridge for better modularity

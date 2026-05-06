@@ -18,18 +18,19 @@ enum class TrackMatteType {
 };
 
 enum class LayerType {
-    Solid,
-    Shape,
-    Image,
-    Video,
-    Text,
-    Camera,
-    Precomp,
-    Light,
-    Mask,
-    NullLayer,
-    Procedural,
-    Unknown
+    Unknown = 0,
+    Solid = 1,
+    Shape = 2,
+    Image = 3,
+    Text = 4,
+    Precomp = 5,
+    Procedural = 6,
+    Mesh = 7,
+    Video = 8,
+    Camera = 9,
+    Light = 10,
+    Mask = 11,
+    NullLayer = 12
 };
 
 enum class TransitionKind {
@@ -50,6 +51,23 @@ enum class AudioBandType {
     Presence,
     Rms
 };
+
+// --- Layer Type Helpers ---
+/**
+ * @brief Get the canonical string representation of a LayerType.
+ * Used for serialization and authoring.
+ */
+std::string_view to_canonical_layer_type_string(LayerType type);
+
+/**
+ * @brief Parse a canonical string into a LayerType enum.
+ */
+LayerType layer_type_from_string(std::string_view type_string);
+
+/**
+ * @brief Map a LayerType to the internal compiled type ID.
+ */
+std::uint32_t compiled_type_id_from_layer_type(LayerType type);
 
 struct EffectSpec {
     bool enabled{true};

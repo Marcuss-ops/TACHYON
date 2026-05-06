@@ -260,13 +260,13 @@ void evaluate_layer(
     }
 
     float transition_opacity = 1.0f;
-    if (layer.transition_in.duration > 0.0) {
+    if (layer.transition_in.duration > 0.0 && layer.transition_in.type != "none") {
         double t = frame_time_seconds - layer.in_time;
         if (t >= 0.0 && t < layer.transition_in.duration) {
             transition_opacity = static_cast<float>(std::clamp(t / layer.transition_in.duration, 0.0, 1.0));
         }
     }
-    if (layer.transition_out.duration > 0.0) {
+    if (layer.transition_out.duration > 0.0 && layer.transition_out.type != "none") {
         double t = layer.out_time - frame_time_seconds;
         if (t >= 0.0 && t < layer.transition_out.duration) {
             transition_opacity *= static_cast<float>(std::clamp(t / layer.transition_out.duration, 0.0, 1.0));

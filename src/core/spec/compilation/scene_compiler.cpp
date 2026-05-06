@@ -48,26 +48,50 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
 
         registry.composition_id_map[composition.id] = static_cast<std::uint32_t>(compiled.compositions.size());
 
-        compiled_composition.layers.reserve(composition.layers.size());
+        compiled_composition.layers.reserve(composition.layers.size() + (composition.background.has_value() ? 1 : 0));
+        
+        // Resolve Background into a standard layer (converged domain)
+        if (composition.background.has_value()) {
+            CompiledLayer bg_layer;
+            bg_layer.node = registry.create_node(CompiledNodeType::Layer);
+            bg_layer.name = "Background";
+            compiled.graph.add_node(bg_layer.node.node_id);
+            
+            if (composition.background->type == BackgroundType::Color) {
+                bg_layer.type_id = compiled_type_id_from_layer_type(LayerType::Solid);
+                bg_layer.fill_color = composition.background->get_color().value_or(ColorSpec{0,0,0,255});
+            } else if (composition.background->type == BackgroundType::Asset) {
+                bg_layer.type_id = compiled_type_id_from_layer_type(LayerType::Image);
+                // Note: Image name is used for asset resolution in CompiledLayer/Renderer
+                bg_layer.name = composition.background->value;
+                bg_layer.asset_id = composition.background->value;
+            } else {
+                bg_layer.type_id = compiled_type_id_from_layer_type(LayerType::Solid);
+                bg_layer.fill_color = ColorSpec{0,0,0,255};
+            }
+            
+            bg_layer.width = compiled_composition.width;
+            bg_layer.height = compiled_composition.height;
+            bg_layer.in_time = 0.0;
+            bg_layer.out_time = compiled_composition.duration;
+            bg_layer.flags = 0x01 | 0x02; // enabled | visible
+            
+            compiled_composition.layers.push_back(std::move(bg_layer));
+        }
+
         for (const auto& layer : composition.layers) {
             CompiledLayer compiled_layer;
             compiled_layer.node = registry.create_node(CompiledNodeType::Layer);
+            compiled_layer.name = layer.name;
+            compiled_layer.asset_id = layer.asset_id;
             compiled.graph.add_node(compiled_layer.node.node_id);
             
             // Resolve Type using robust LayerType enum
-            auto type_map = [](LayerType k) -> std::uint32_t {
-                switch (k) {
-                    case LayerType::Solid:      return 1;
-                    case LayerType::Shape:      return 2;
-                    case LayerType::Image:      return 3;
-                    case LayerType::Text:       return 4;
-                    case LayerType::Precomp:    return 5;
-                    case LayerType::Procedural: return 6;
-                    case LayerType::Video:      return 3; // Video maps to Image for now
-                    default: return 0;
-                }
-            };
-            compiled_layer.type_id = type_map(layer.kind);
+            LayerType actual_kind = layer.kind;
+            if (actual_kind == LayerType::NullLayer || actual_kind == LayerType::Unknown) {
+                actual_kind = layer_type_from_string(layer.type);
+            }
+            compiled_layer.type_id = compiled_type_id_from_layer_type(actual_kind);
             
             compiled_layer.width = static_cast<std::uint32_t>(layer.width);
             compiled_layer.height = static_cast<std::uint32_t>(layer.height);
@@ -128,25 +152,34 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
                 compiled.property_tracks.push_back(std::move(track));
             };
 
+            // Properties (must match CompiledLayer::PropertyIndex order exactly)
+            // 0: Opacity
             add_track(".opacity", layer.opacity_property, layer.opacity);
+            // 1-2: Position 2D
             add_track(".position_x", layer.transform.position_property, layer.transform.position_x.value_or(0.0));
             add_track(".position_y", layer.transform.position_property, layer.transform.position_y.value_or(0.0));
+            // 3-4: Scale 2D
             add_track(".scale_x", layer.transform.scale_property, layer.transform.scale_x.value_or(1.0));
             add_track(".scale_y", layer.transform.scale_property, layer.transform.scale_y.value_or(1.0));
+            // 5: Rotation
             add_track(".rotation", layer.transform.rotation_property, layer.transform.rotation.value_or(0.0));
+            // 6: Mask Feather
             add_track(".mask_feather", layer.mask_feather, 0.0);
 
-            // 3D Transforms
+            // 7: Position Z
             add_track(".position_z", layer.transform3d.position_property, 0.0);
+            // 8-10: Rotation 3D
             add_track(".rotation_x", layer.transform3d.rotation_property, 0.0);
             add_track(".rotation_y", layer.transform3d.rotation_property, 0.0);
             add_track(".rotation_z", layer.transform3d.rotation_property, 0.0);
+            // 11: Scale Z
             add_track(".scale_z", layer.transform3d.scale_property, 1.0);
+            // 12-14: Anchor 3D
             add_track(".anchor_x", layer.transform3d.anchor_point_property, static_cast<double>(layer.width) * 0.5);
             add_track(".anchor_y", layer.transform3d.anchor_point_property, static_cast<double>(layer.height) * 0.5);
             add_track(".anchor_z", layer.transform3d.anchor_point_property, 0.0);
 
-            // Material properties
+            // Material properties (15-19)
             add_track(".metallic", layer.metallic, 0.0);
             add_track(".roughness", layer.roughness, 0.5);
             add_track(".ior", layer.ior, 1.45);

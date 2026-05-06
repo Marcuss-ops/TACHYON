@@ -130,6 +130,7 @@ public:
     LayerBuilder& mesh(std::string path);
     LayerBuilder& preset(std::string name);
     LayerBuilder& text(std::string t);
+    LayerBuilder& asset_id(std::string id);
     LayerBuilder& font(std::string f);
     LayerBuilder& font_size(double sz);
     LayerBuilder& in(double t);

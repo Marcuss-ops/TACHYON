@@ -69,6 +69,7 @@ RenderSessionResult RenderSession::render(
     }
 
     ::tachyon::RenderContext context(m_precomp_cache);
+    context.policy = effective_plan.render_plan.quality_policy;
     
     // Initialize Asset Resolver
     media::AssetResolver::Config resolver_config;

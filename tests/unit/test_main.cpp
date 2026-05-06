@@ -68,6 +68,7 @@ void run_parallax_tests();
 void run_look_at_tests();
 bool run_default_camera_tests_adapter() { run_default_camera_tests(); return true; }
 namespace tachyon::profiling { bool run_profiler_tests(); }
+bool run_telemetry_industrial_tests();
 
 int main(int argc, char** argv) {
     using namespace tachyon::test;
@@ -131,6 +132,7 @@ int main(int argc, char** argv) {
         {"catalog", run_catalog_tests},
         {"parallax", []() { run_parallax_tests(); return true; }},
         {"lookat", []() { run_look_at_tests(); return true; }},
+        {"telemetry_industrial", run_telemetry_industrial_tests},
     };
 
     return run_test_suite(argc, argv, tests);

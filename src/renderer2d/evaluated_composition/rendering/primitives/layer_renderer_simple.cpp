@@ -12,6 +12,7 @@
 
 
 #include <algorithm>
+#include <iostream>
 #include <cmath>
 #include <limits>
 #include <span>
@@ -381,8 +382,6 @@ std::shared_ptr<SurfaceRGBA> render_simple_layer_surface(
     auto* renderer = LayerRendererRegistry::get().get_renderer(layer.type);
     if (renderer) {
         renderer->render(layer, state, context, target_rect, surface);
-    } else {
-        // Fallback / Log unsupported type if needed
     }
 
     return surface;

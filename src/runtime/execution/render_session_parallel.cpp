@@ -134,10 +134,12 @@ void render_frames_parallel_internal(
               local_context.scheduler = scheduler;
               local_context.ray_tracer = context.ray_tracer;
               local_context.policy = context.policy;
+              local_context.renderer2d.policy = context.policy;
               local_context.surface_pool = context.surface_pool;
               local_context.renderer2d.font_registry = context.renderer2d.font_registry;
               local_context.renderer2d.media_manager = context.renderer2d.media_manager;
               local_context.renderer2d.cms = context.renderer2d.cms;
+              local_context.renderer2d.diagnostics = context.renderer2d.diagnostics;
               local_context.cancel_flag = cancel_flag;
               local_context.renderer2d.cancel_flag = cancel_flag;
 

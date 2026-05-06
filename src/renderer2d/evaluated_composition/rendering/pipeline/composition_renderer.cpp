@@ -33,6 +33,7 @@
 #include "tachyon/renderer2d/deform/mesh_deform.h"
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 #include <array>
 #include <chrono>
 #include <filesystem>
@@ -138,39 +139,24 @@ RasterizedFrame2D render_evaluated_composition_2d(
         return frame;
     }
 
-    // Clear background from the evaluated scene state first.
+    // Clear background from the evaluated scene state.
+    // Convergence: Background is now primarily a Layer at index 0.
+    // We still clear here to ensure a clean slate for the compositing.
     frame.surface->clear({
         state.background_color.r / 255.0f,
         state.background_color.g / 255.0f,
         state.background_color.b / 255.0f,
         state.background_color.a / 255.0f
     });
-    frame.surface->clear_depth(0.0f);
-
+    
     auto& dst = *frame.surface;
     dst.set_profile(context.cms.working_profile);
-    // If the evaluated scene did not provide a usable background, fall back to the plan.
-    if (state.background_color.a <= 0 && plan.composition.background.has_value()) {
-        auto color_opt = plan.composition.background->get_color();
-        if (color_opt) {
-            dst.clear(from_color_spec(*color_opt, context.cms.working_profile));
-        } else if (plan.composition.background->type == BackgroundType::Color) {
-            BackgroundSpec spec = BackgroundSpec::from_string(plan.composition.background->value);
-            auto c = spec.get_color();
-            if (c) {
-                dst.clear(from_color_spec(*c, context.cms.working_profile));
-            } else {
-                dst.clear(renderer2d::Color::black());
-            }
-        }
-    }
     dst.clear_depth(0.0f); // Initialize depth buffer for hybrid compositing
 
     FrameDiagnostics* diagnostics = context.diagnostics;
 
-    // Identify if we have 3D layers and trigger 3D pass if available
-    bool has_any_3d = std::any_of(state.layers.begin(), state.layers.end(), [](const auto& l) { return l.is_3d && l.visible; });
 #ifdef TACHYON_ENABLE_3D
+    bool has_any_3d = std::any_of(state.layers.begin(), state.layers.end(), [](const auto& l) { return l.is_3d && l.visible; });
     if (has_any_3d && !context.ray_tracer) {
         context.ray_tracer = std::make_shared<renderer3d::RayTracer>(context.media_manager);
     }
@@ -270,13 +256,14 @@ RasterizedFrame2D render_evaluated_composition_2d(
     }
 
     auto render_pass = [&](SurfaceRGBA& target_surface, RenderContext2D& render_context, const std::optional<RectI>& tile_rect = std::nullopt) {
+        target_surface.clear(Color::transparent());
         EffectHost& host = effect_host_for(render_context);
         // Render layers in stack order so higher layers can affect the composite below them.
         for (std::size_t i = 0; i < state.layers.size(); ++i) {
             if (render_context.cancel_flag && render_context.cancel_flag->load()) break;
             const auto& layer = state.layers[i];
             
-            if (!layer.enabled || !layer.active) {
+            if (!layer.enabled || !layer.active || layer.id.empty()) {
                 continue;
             }
 
@@ -652,9 +639,14 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
     if (context.policy.tile_size > 0 && !has_effectful_layers) {
         TileGrid grid = build_tile_grid({0, 0, static_cast<int>(working_width), static_cast<int>(working_height)}, working_width, working_height, context.policy.tile_size);
-        
+        if (std::getenv("TACHYON_DIAGNOSTICS")) {
+            std::cerr << "DIAG: Tiling " << working_width << "x" << working_height << " into " << grid.tiles.size() << " tiles (size " << context.policy.tile_size << ")\n";
+        }
         for (int i = 0; i < static_cast<int>(grid.tiles.size()); ++i) {
             const auto& tile = grid.tiles[i];
+            if (std::getenv("TACHYON_DIAGNOSTICS")) {
+                std::cerr << "DIAG:   Tile " << i << ": {" << tile.x << "," << tile.y << "," << tile.width << "," << tile.height << "}\n";
+            }
             SurfaceRGBA tile_surface(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height));
             tile_surface.clear(Color::transparent());
             

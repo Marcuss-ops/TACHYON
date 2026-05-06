@@ -2,6 +2,7 @@
 
 #include <string_view>
 #include <vector>
+#include <cstdint>
 #include <iostream>
 
 namespace tachyon::test {

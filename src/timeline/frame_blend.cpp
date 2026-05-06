@@ -120,6 +120,7 @@ OpticalFlowField DefaultOpticalFlowProvider::compute_optical_flow(const FrameBuf
     result.flow_x.assign(static_cast<size_t>(result.width) * result.height, 0.0f);
     result.flow_y.assign(static_cast<size_t>(result.width) * result.height, 0.0f);
 
+#ifdef TACHYON_ENABLE_TRACKER
     std::vector<float> pixels_a(static_cast<size_t>(result.width) * result.height);
     std::vector<float> pixels_b(static_cast<size_t>(result.width) * result.height);
 
@@ -190,6 +191,7 @@ OpticalFlowField DefaultOpticalFlowProvider::compute_optical_flow(const FrameBuf
             }
         }
     }
+#endif
 
     return result;
 }
