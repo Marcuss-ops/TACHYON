@@ -47,10 +47,15 @@ void warn_legacy_animation_preset(
 
 } // namespace
 
-void SceneValidator::validate_layer(const ::tachyon::LayerSpec& layer, const ::tachyon::CompositionSpec& comp, const ::tachyon::SceneSpec& scene, const std::string& path, ValidationResult& out) const {
-    const NormalizedLayerView normalized = normalize_layer_view(layer);
+void SceneValidator::validate_layer(const NormalizedLayerView& normalized, const ::tachyon::CompositionSpec& comp, const ::tachyon::SceneSpec& scene, const std::string& path, ValidationResult& out) const {
+    const auto* layer = normalized.source;
+    if (layer == nullptr) {
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Fatal, path, "Normalized layer view is missing source data."});
+        out.fatal_count++;
+        return;
+    }
 
-    if (layer.id.empty()) {
+    if (layer->id.empty()) {
         out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".id", "Layer ID cannot be empty."});
         out.error_count++;
     }
@@ -73,108 +78,100 @@ void SceneValidator::validate_layer(const ::tachyon::LayerSpec& layer, const ::t
         out.error_count++;
     }
 
-    warn_legacy_animation_preset(layer.in_preset, layer.animation_in_preset, path, "in_preset", "animation_in_preset", out);
-    warn_legacy_animation_preset(layer.during_preset, layer.animation_during_preset, path, "during_preset", "animation_during_preset", out);
-    warn_legacy_animation_preset(layer.out_preset, layer.animation_out_preset, path, "out_preset", "animation_out_preset", out);
+    warn_legacy_animation_preset(layer->in_preset, layer->animation_in_preset, path, "in_preset", "animation_in_preset", out);
+    warn_legacy_animation_preset(layer->during_preset, layer->animation_during_preset, path, "during_preset", "animation_during_preset", out);
+    warn_legacy_animation_preset(layer->out_preset, layer->animation_out_preset, path, "out_preset", "animation_out_preset", out);
 
-    // Validate layer duration
-    auto layer_duration = layer.duration.has_value() ? layer.duration.value() : (layer.out_point - layer.in_point);
+    auto layer_duration = layer->duration.has_value() ? layer->duration.value() : (layer->out_point - layer->in_point);
     if (layer_duration <= 0.0) {
         out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".duration", "Layer duration must be greater than 0."});
         out.error_count++;
     }
 
-    // Validate layer start time
-    if (layer.start_time < 0.0f) {
+    if (layer->start_time < 0.0f) {
         out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".start_time", "Layer start time cannot be negative."});
         out.error_count++;
     }
 
-    // Check if layer extends beyond composition duration
-    float layer_end = static_cast<float>(layer.start_time);
-    if (layer.duration.has_value()) {
-        layer_end += static_cast<float>(layer.duration.value());
+    float layer_end = static_cast<float>(layer->start_time);
+    if (layer->duration.has_value()) {
+        layer_end += static_cast<float>(layer->duration.value());
     } else {
-        layer_end += static_cast<float>(layer.out_point - layer.in_point);
+        layer_end += static_cast<float>(layer->out_point - layer->in_point);
     }
-    if (layer_end > comp.duration + 0.001f) { // small epsilon for floating point comparison
-        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning, path + ".duration", 
-            "Layer extends beyond composition duration (layer ends at " + std::to_string(layer_end) + 
+    if (layer_end > comp.duration + 0.001f) {
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning, path + ".duration",
+            "Layer extends beyond composition duration (layer ends at " + std::to_string(layer_end) +
             "s, composition is " + std::to_string(comp.duration) + "s)."});
         out.warning_count++;
     }
 
-    if (layer.opacity < 0.0 || layer.opacity > 1.0) {
+    if (layer->opacity < 0.0 || layer->opacity > 1.0) {
         out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".opacity", "Layer opacity must be between 0 and 1."});
         out.error_count++;
     }
 
-    if (layer.width < 0 || layer.height < 0) {
+    if (layer->width < 0 || layer->height < 0) {
         out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".dimensions", "Layer dimensions cannot be negative."});
         out.error_count++;
     }
 
-    // Validate keyframes are within layer time range
-    validate_keyframes(layer, path, out);
+    validate_keyframes(*layer, path, out);
+    validate_track_bindings(*layer, path, out);
+    validate_safe_area(*layer, comp, path, out);
 
-    // Validate track bindings
-    validate_track_bindings(layer, path, out);
-    
-    // Validate safe area for text layers
-    validate_safe_area(layer, comp, path, out);
-
-    // Validate font references for text layers
     if (normalized.type == LayerType::Text) {
-        validate_font_reference(layer, scene, path, out);
+        validate_font_reference(*layer, scene, path, out);
     }
 
-    // Validate file references for image/video layers
     if (normalized.type == LayerType::Image || normalized.type == LayerType::Video) {
-        validate_file_reference(layer, scene, path, out);
+        validate_file_reference(*layer, scene, path, out);
     }
 
-    // Track matte validation: if a matte layer is specified, it must exist and must not be self
-    if (layer.track_matte_layer_id.has_value() && !layer.track_matte_layer_id->empty()) {
-        if (*layer.track_matte_layer_id == layer.id) {
+    if (layer->track_matte_layer_id.has_value() && !layer->track_matte_layer_id->empty()) {
+        if (*layer->track_matte_layer_id == layer->id) {
             out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".track_matte_layer_id", "Track matte layer cannot reference itself."});
             out.error_count++;
         } else {
             bool found = false;
             for (const auto& l : comp.layers) {
-                if (l.id == *layer.track_matte_layer_id) {
+                if (l.id == *layer->track_matte_layer_id) {
                     found = true;
                     break;
                 }
             }
             if (!found) {
-                out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".track_matte_layer_id", "References non-existent layer: " + *layer.track_matte_layer_id});
+                out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".track_matte_layer_id", "References non-existent layer: " + *layer->track_matte_layer_id});
                 out.error_count++;
             }
         }
-        // Validate that track_matte_type is not None when a matte layer is specified
-        if (layer.track_matte_type == TrackMatteType::None) {
+        if (layer->track_matte_type == TrackMatteType::None) {
             out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning, path + ".track_matte_type", "track_matte_layer_id is set but track_matte_type is None."});
         }
     }
 
     if (normalized.type == LayerType::Precomp) {
-        if (!layer.precomp_id.has_value() || layer.precomp_id->empty()) {
+        if (!layer->precomp_id.has_value() || layer->precomp_id->empty()) {
             out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".precomp_id", "Precomp layer requires a composition reference."});
             out.error_count++;
         } else {
             bool found = false;
             for (const auto& c : scene.compositions) {
-                if (c.id == *layer.precomp_id) {
+                if (c.id == *layer->precomp_id) {
                     found = true;
                     break;
                 }
             }
             if (!found) {
-                out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".precomp_id", "References non-existent composition: " + *layer.precomp_id});
+                out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".precomp_id", "References non-existent composition: " + *layer->precomp_id});
                 out.error_count++;
             }
         }
     }
+}
+
+void SceneValidator::validate_layer(const ::tachyon::LayerSpec& layer, const ::tachyon::CompositionSpec& comp, const ::tachyon::SceneSpec& scene, const std::string& path, ValidationResult& out) const {
+    validate_layer(normalize_layer_view(layer), comp, scene, path, out);
 }
 
 void SceneValidator::validate_safe_area(const ::tachyon::LayerSpec& layer, const ::tachyon::CompositionSpec& comp, const std::string& path, ValidationResult& out) const {
