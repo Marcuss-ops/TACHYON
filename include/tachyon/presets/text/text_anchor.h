@@ -41,8 +41,62 @@ enum class TextAnchor {
     return "";
 }
 
-template <typename T>
-inline void apply_text_anchor_common(T& spec, TextAnchor anchor, float text_w, float text_h) {
+inline void apply_text_anchor(TextParams& params, TextAnchor anchor) {
+    if (anchor == TextAnchor::None) {
+        return;
+    }
+
+    const auto alignment = alignment_for(anchor);
+    if (!alignment.empty()) {
+        params.alignment = std::string(alignment);
+    }
+
+    const auto half_w = params.text_w * 0.5f;
+    const auto half_h = params.text_h * 0.5f;
+
+    switch (anchor) {
+        case TextAnchor::TopLeft:
+            params.x = 0.0f;
+            params.y = 0.0f;
+            break;
+        case TextAnchor::TopCenter:
+            params.x = half_w;
+            params.y = 0.0f;
+            break;
+        case TextAnchor::TopRight:
+            params.x = params.text_w;
+            params.y = 0.0f;
+            break;
+        case TextAnchor::MiddleLeft:
+            params.x = 0.0f;
+            params.y = half_h;
+            break;
+        case TextAnchor::MiddleCenter:
+            params.x = half_w;
+            params.y = half_h;
+            break;
+        case TextAnchor::MiddleRight:
+            params.x = params.text_w;
+            params.y = half_h;
+            break;
+        case TextAnchor::BottomLeft:
+            params.x = 0.0f;
+            params.y = params.text_h;
+            break;
+        case TextAnchor::BottomCenter:
+            params.x = half_w;
+            params.y = params.text_h;
+            break;
+        case TextAnchor::BottomRight:
+            params.x = params.text_w;
+            params.y = params.text_h;
+            break;
+        case TextAnchor::None:
+            break;
+    }
+}
+
+inline void apply_text_anchor(LayerSpec& spec, TextAnchor anchor) {
     if (anchor == TextAnchor::None) {
         return;
     }
@@ -52,57 +106,49 @@ inline void apply_text_anchor_common(T& spec, TextAnchor anchor, float text_w, f
         spec.alignment = std::string(alignment);
     }
 
-    const auto half_w = text_w * 0.5f;
-    const auto half_h = text_h * 0.5f;
+    const auto half_w = static_cast<float>(spec.width) * 0.5f;
+    const auto half_h = static_cast<float>(spec.height) * 0.5f;
 
     switch (anchor) {
         case TextAnchor::TopLeft:
-            spec.x = 0.0f;
-            spec.y = 0.0f;
+            spec.transform.position_x = 0.0f;
+            spec.transform.position_y = 0.0f;
             break;
         case TextAnchor::TopCenter:
-            spec.x = half_w;
-            spec.y = 0.0f;
+            spec.transform.position_x = half_w;
+            spec.transform.position_y = 0.0f;
             break;
         case TextAnchor::TopRight:
-            spec.x = text_w;
-            spec.y = 0.0f;
+            spec.transform.position_x = static_cast<float>(spec.width);
+            spec.transform.position_y = 0.0f;
             break;
         case TextAnchor::MiddleLeft:
-            spec.x = 0.0f;
-            spec.y = half_h;
+            spec.transform.position_x = 0.0f;
+            spec.transform.position_y = half_h;
             break;
         case TextAnchor::MiddleCenter:
-            spec.x = half_w;
-            spec.y = half_h;
+            spec.transform.position_x = half_w;
+            spec.transform.position_y = half_h;
             break;
         case TextAnchor::MiddleRight:
-            spec.x = text_w;
-            spec.y = half_h;
+            spec.transform.position_x = static_cast<float>(spec.width);
+            spec.transform.position_y = half_h;
             break;
         case TextAnchor::BottomLeft:
-            spec.x = 0.0f;
-            spec.y = text_h;
+            spec.transform.position_x = 0.0f;
+            spec.transform.position_y = static_cast<float>(spec.height);
             break;
         case TextAnchor::BottomCenter:
-            spec.x = half_w;
-            spec.y = text_h;
+            spec.transform.position_x = half_w;
+            spec.transform.position_y = static_cast<float>(spec.height);
             break;
         case TextAnchor::BottomRight:
-            spec.x = text_w;
-            spec.y = text_h;
+            spec.transform.position_x = static_cast<float>(spec.width);
+            spec.transform.position_y = static_cast<float>(spec.height);
             break;
         case TextAnchor::None:
             break;
     }
-}
-
-inline void apply_text_anchor(TextParams& params, TextAnchor anchor) {
-    apply_text_anchor_common(params, anchor, params.text_w, params.text_h);
-}
-
-inline void apply_text_anchor(LayerSpec& spec, TextAnchor anchor) {
-    apply_text_anchor_common(spec, anchor, static_cast<float>(spec.width), static_cast<float>(spec.height));
 }
 
 } // namespace tachyon::presets::text
