@@ -70,6 +70,14 @@ void run_default_camera_tests() {
     check_true(nearly_equal(bottom_right_proj.x, 1920.0f) && nearly_equal(bottom_right_proj.y, 1080.0f), 
         "World (1920,1080,0) should project to Screen (1920,1080) with Default Camera");
 
+    comp.height = 720;
+    camera = evaluate_camera_state(comp, layers, 0, 0.0);
+    check_true(nearly_equal(camera.zoom, 585.1852f, 1e-2f), "Default camera zoom should match the 720p compatibility contract");
+
+    comp.height = 2160;
+    camera = evaluate_camera_state(comp, layers, 0, 0.0);
+    check_true(nearly_equal(camera.zoom, 1755.576f, 1e-2f), "Default camera zoom should scale deterministically for non-HD heights");
+
     if (g_failures > 0) {
         std::cerr << "Default Camera Tests failed with " << g_failures << " errors.\n";
         exit(1);

@@ -49,6 +49,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 $global:LASTEXITCODE = 0
 $Root = $PSScriptRoot
+. "$Root\scripts\test-router.ps1"
 
 # Auto-enable KillStaleTests on Windows
 if (-not $KillStaleTests -and $env:OS -eq 'Windows_NT') {
@@ -101,43 +102,6 @@ function Prepend-ProcessPath {
         $newPath = ($prefix + $existing) -join $separator
         [Environment]::SetEnvironmentVariable("PATH", $newPath, "Process")
     }
-}
-
-function Get-TestTargetForFilter {
-    param(
-        [string]$Filter
-    )
-
-    $normalized = ($Filter.ToLowerInvariant() -replace '[^a-z0-9]', '')
-    if ($normalized -match 'nativerender') {
-        return "TachyonNativeRenderTests"
-    }
-
-    if ($normalized -match 'rendersession|png3dvalidation|motionblur|frameblend|timeremap|rollingshutter|threedmodifier|parallaxcards') {
-        return "TachyonRenderPipelineTests"
-    }
-
-    if ($normalized -match 'renderprofiler') {
-        return "TachyonRenderProfilerTests"
-    }
-
-    if ($normalized -match 'scene3dsmoke') {
-        return "TachyonScene3DSmokeTests"
-    }
-
-    if ($normalized -match 'assetresolution|imagemanager|imagedecode|framebuffer|rasterizer|surface|drawlistbuilder|blendmodes|evaluatedcompositionrenderer|pathrasterizer|effecthost|matteresolver') {
-        return "TachyonRenderTests"
-    }
-
-    if ($normalized -match 'studio|glyphcache|text|audiopitch|audiotrim|backgroundpreset|transition|sfxcontract|audit') {
-        return "TachyonContentTests"
-    }
-
-    if ($normalized -match 'scene_|timeline|camera_|motion_map|default_camera') {
-        return "TachyonSceneTests"
-    }
-
-    return "TachyonTests"
 }
 
 if ($Check) {

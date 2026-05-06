@@ -1,4 +1,4 @@
-# Tachyon Engine Options
+include_guard(GLOBAL)
 
 option(TACHYON_FETCH_DEPS "Fetch dependencies via FetchContent" ON)
 option(TACHYON_USE_SYSTEM_DEPS "Use system packages instead of FetchContent" OFF)
@@ -15,21 +15,16 @@ option(TACHYON_ENABLE_OPENMP "Enable OpenMP parallelism when available" ON)
 option(TACHYON_ENABLE_PCH "Enable precompiled headers when supported" ON)
 option(TACHYON_ENABLE_ASAN "Enable AddressSanitizer on Tachyon targets" OFF)
 option(TACHYON_TREAT_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
-
-# Feature toggles
 option(TACHYON_ENABLE_TEXT "Enable text shaping and font rendering" ON)
 option(TACHYON_ENABLE_SKIA "Enable Skia-backed text rasterization" OFF)
 option(TACHYON_ENABLE_3D "Enable 3D rendering and Embree integration" ON)
 option(TACHYON_ENABLE_MEDIA "Enable media import and decoding" ON)
-option(TACHYON_ENABLE_AUDIO "Enable audio processing and export" ON)
-option(TACHYON_ENABLE_AUDIO_MUX "Enable FFmpeg-based audio muxing" ON)
 option(TACHYON_ENABLE_OUTPUT "Enable output encoders and sinks" ON)
 option(TACHYON_ENABLE_PRORES "Enable ProRes output sink" OFF)
 option(TACHYON_ENABLE_VULKAN "Enable Vulkan backend" OFF)
-option(TACHYON_ENABLE_OIDN "Enable OpenImageDenoise" ON)
-option(TACHYON_ENABLE_TRACKER "Enable motion tracking and solving" ON)
-
-# Build targets
-option(TACHYON_BUILD_TESTS "Build Tachyon unit and integration tests" ON)
-option(TACHYON_BUILD_EXAMPLES "Build Tachyon examples" ON)
-option(TACHYON_BUILD_CATALOG_TOOLS "Build Tachyon catalog tools" ON)
+option(TACHYON_ENABLE_OIDN "Enable OpenImageDenoise on supported Windows builds" OFF)
+option(TACHYON_ENABLE_AUDIO_MUX "Enable audio muxing in the runtime pipeline" OFF)
+option(TACHYON_ENABLE_TRACKER "Enable tracker-based temporal features" OFF)
+option(TACHYON_BUILD_TESTS "Build the Tachyon test suite" ON)
+option(TACHYON_BUILD_EXAMPLES "Build example targets" OFF)
+option(TACHYON_BUILD_CATALOG_TOOLS "Build catalog/editor tooling targets" OFF)

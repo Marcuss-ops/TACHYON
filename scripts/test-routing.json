@@ -1,0 +1,87 @@
+[
+  {
+    "target": "TachyonNativeRenderTests",
+    "patterns": [
+      "nativerender"
+    ]
+  },
+  {
+    "target": "TachyonRenderPipelineTests",
+    "patterns": [
+      "rendersession",
+      "png3dvalidation",
+      "motionblur",
+      "frameblend",
+      "timeremap",
+      "rollingshutter",
+      "threedmodifier",
+      "parallaxcards"
+    ]
+  },
+  {
+    "target": "TachyonRenderProfilerTests",
+    "patterns": [
+      "renderprofiler"
+    ]
+  },
+  {
+    "target": "TachyonScene3DSmokeTests",
+    "patterns": [
+      "scene3dsmoke"
+    ]
+  },
+  {
+    "target": "TachyonRenderTests",
+    "patterns": [
+      "assetresolution",
+      "imagemanager",
+      "imagedecode",
+      "framebuffer",
+      "rasterizer",
+      "surface",
+      "drawlistbuilder",
+      "blendmodes",
+      "evaluatedcompositionrenderer",
+      "pathrasterizer",
+      "effecthost",
+      "materesolver"
+    ]
+  },
+  {
+    "target": "TachyonContentTests",
+    "patterns": [
+      "studio",
+      "glyphcache",
+      "text",
+      "audiopitch",
+      "audiotrim",
+      "backgroundpreset",
+      "transition",
+      "sfxcontract",
+      "audit"
+    ]
+  },
+  {
+    "target": "TachyonSceneTests",
+    "patterns": [
+      "scene_",
+      "timeline",
+      "camera_",
+      "motion_map",
+      "default_camera"
+    ]
+  },
+  {
+    "target": "TachyonRuntimeTests",
+    "patterns": [
+      "runtimebackbone",
+      "determinism",
+      "framecache",
+      "cachekey"
+    ]
+  },
+  {
+    "target": "TachyonTests",
+    "patterns": []
+  }
+]

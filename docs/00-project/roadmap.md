@@ -14,18 +14,16 @@
 - Adjustment Layers
 - Recursive Reflections in RayTracer
 - Masking & Matte improvements
+- Motion blur baseline hardening for the v1 contract
 
 ## Phase 4: Production Observability (Current - Finalizing v1)
 - Industrial Telemetry (RAM/CPU/Cost)
 - Cancellation Guarantees
 - Batch Runner stability
-- **[MILESTONE] v1 Production Ready Release**
-
----
+- [MILESTONE] v1 Production Ready Release
 
 ## Phase 5: High-End Features (Post-Scaling / v2+)
-*Features beyond this point are explicitly out of scope for v1.*
-- Motion Blur (Sub-sampling)
+- Motion Blur (advanced sub-sampling and quality polish)
 - AI-assisted RotoBrush
 - Physically-based physical camera
 - Multi-channel Audio Mixer

@@ -1,18 +1,19 @@
-# Tachyon Output Dependencies (Clipper2, tinyexr)
+include_guard(GLOBAL)
 
-if(TACHYON_FETCH_DEPS)
-    FetchContent_Declare(
-        clipper2
-        GIT_REPOSITORY https://github.com/AngusJohnson/Clipper2.git
-        GIT_TAG        Clipper2_1.3.0
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-    )
-    set(CLIPPER2_UTILS OFF CACHE BOOL "Disable Clipper2 utils" FORCE)
-    set(CLIPPER2_EXAMPLES OFF CACHE BOOL "Disable Clipper2 examples" FORCE)
-    set(CLIPPER2_TESTS OFF CACHE BOOL "Disable Clipper2 tests" FORCE)
-    FetchContent_MakeAvailable(clipper2)
+if(TACHYON_ENABLE_OIDN AND WIN32)
+    if(TACHYON_FETCH_DEPS)
+        FetchContent_Declare(
+            oidn
+            URL https://github.com/RenderKit/oidn/releases/download/v${TACHYON_OIDN_WINDOWS_VERSION}/oidn-${TACHYON_OIDN_WINDOWS_VERSION}.x64.windows.zip
+            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        )
+        FetchContent_MakeAvailable(oidn)
+        find_package(OpenImageDenoise REQUIRED PATHS "${oidn_SOURCE_DIR}" NO_DEFAULT_PATH)
+    else()
+        find_package(OpenImageDenoise REQUIRED)
+    endif()
 else()
-    find_package(Clipper2 REQUIRED)
+    message(STATUS "[Tachyon] OIDN disabled (not requested or not on Windows)")
 endif()
 
 if(TACHYON_ENABLE_OUTPUT)
@@ -20,7 +21,7 @@ if(TACHYON_ENABLE_OUTPUT)
         FetchContent_Declare(
             tinyexr
             GIT_REPOSITORY https://github.com/syoyo/tinyexr.git
-            GIT_TAG        v1.0.8
+            GIT_TAG        ${TACHYON_TINYEXR_GIT_TAG}
             DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         )
         FetchContent_MakeAvailable(tinyexr)

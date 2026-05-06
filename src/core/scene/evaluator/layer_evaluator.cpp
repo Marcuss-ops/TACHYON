@@ -191,7 +191,12 @@ EvaluatedLayerState make_layer_state(
     if (evaluated.type == LayerType::Camera) {
         evaluated.camera_type = layer.camera_type;
         evaluated.zoom = static_cast<float>(sample_scalar(layer.camera_zoom, 877.0, local_t, context.audio_analyzer));
-        evaluated.camera_roll = static_cast<float>(sample_scalar(layer.transform3d.rotation_property.z_property, 0.0, local_t, context.audio_analyzer));
+        evaluated.camera_roll = static_cast<float>(
+            sample_vector3(
+                layer.transform3d.rotation_property,
+                math::Vector3{0.0f, 0.0f, 0.0f},
+                local_t,
+                context.audio_analyzer).z);
         evaluated.poi = sample_vector3(layer.camera_poi, {0,0,0}, local_t, context.audio_analyzer);
         
         // NEW: Camera Shake
