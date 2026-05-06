@@ -192,6 +192,7 @@ target_link_libraries(TachyonSceneEval
         TachyonMedia
         TachyonRenderer2D
         $<$<BOOL:${TACHYON_ENABLE_3D}>:TachyonRenderer3D>
+        $<$<BOOL:${TACHYON_ENABLE_3D}>:TachyonScene3DBridge>
 )
 tachyon_link_text_deps(TachyonSceneEval)
 tachyon_link_media_deps(TachyonSceneEval)
@@ -252,6 +253,7 @@ target_link_libraries(TachyonRuntime
         TachyonPlatform
         TachyonRenderer2D
         $<$<BOOL:${TACHYON_ENABLE_3D}>:TachyonRenderer3D>
+        $<$<BOOL:${TACHYON_ENABLE_3D}>:TachyonScene3DBridge>
 )
 tachyon_link_3d_deps(TachyonRuntime)
 tachyon_link_text_deps(TachyonRuntime)
@@ -280,6 +282,10 @@ if(TACHYON_ENABLE_3D)
     tachyon_link_3d_deps(TachyonRenderer3D)
     tachyon_link_omp(TachyonRenderer3D)
     target_link_libraries(TachyonRenderer3D PUBLIC TachyonColor)
+
+    add_library(TachyonScene3DBridge STATIC ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/pipeline/scene3d_bridge.cpp)
+    tachyon_configure_common(TachyonScene3DBridge)
+    target_link_libraries(TachyonScene3DBridge PUBLIC TachyonCore TachyonRenderer2D TachyonRenderer3D)
 endif()
 
 add_library(TachyonMedia STATIC ${TachyonMediaSources})

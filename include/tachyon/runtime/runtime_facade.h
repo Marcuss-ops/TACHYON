@@ -26,6 +26,8 @@ struct ExportOptions {
     int worker_count{0}; // 0 = auto
 };
 
+class RenderSession;
+
 /**
  * @brief Unified runtime facade for Tachyon engine.
  * 
@@ -42,9 +44,15 @@ public:
     [[nodiscard]] ResolutionResult<CompiledScene> compile_scene(const SceneSpec& spec);
 
     /**
-     * @brief Renders a single frame from a compiled scene.
+     * @brief Renders a single frame from a compiled scene using a transient cache.
+     * Note: For interactive use cases, use the overload that accepts a RenderSession.
      */
     [[nodiscard]] ResolutionResult<ExecutedFrame> render_frame(const CompiledScene& scene, int frame);
+
+    /**
+     * @brief Renders a single frame using a persistent RenderSession (for caching across frames).
+     */
+    [[nodiscard]] ResolutionResult<ExecutedFrame> render_frame(const CompiledScene& scene, int frame, RenderSession& session);
 
     /**
      * @brief Exports a video range to disk.

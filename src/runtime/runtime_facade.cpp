@@ -8,6 +8,7 @@
 #include "tachyon/transition_catalog.h"
 #include "tachyon/runtime/frame_arena.h"
 #include "tachyon/runtime/cache/frame_cache.h"
+#include "tachyon/runtime/execution/session/render_session.h"
 #include <iostream>
 #include <sstream>
 
@@ -24,11 +25,15 @@ ResolutionResult<CompiledScene> RuntimeFacade::compile_scene(const SceneSpec& sp
 }
 
 ResolutionResult<ExecutedFrame> RuntimeFacade::render_frame(const CompiledScene& scene, int frame) {
+    RenderSession session;
+    return render_frame(scene, frame, session);
+}
+
+ResolutionResult<ExecutedFrame> RuntimeFacade::render_frame(const CompiledScene& scene, int frame, RenderSession& session) {
     ResolutionResult<ExecutedFrame> result;
     
     // Setup minimal execution context for a single frame
     FrameArena arena;
-    FrameCache cache; // Transient cache for one-off render; production should use persistent
     RenderContext context;
     
     // We need a RenderPlan and FrameRenderTask
@@ -48,7 +53,7 @@ ResolutionResult<ExecutedFrame> RuntimeFacade::render_frame(const CompiledScene&
     task.frame_number = frame;
     task.time_seconds = static_cast<double>(frame) / static_cast<double>(comp.fps);
     
-    FrameExecutor executor(arena, cache);
+    FrameExecutor executor(arena, session.cache());
     result.value = executor.execute(scene, plan, task, context);
     
     if (!result.value->success) {
