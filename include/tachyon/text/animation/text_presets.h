@@ -63,6 +63,22 @@ namespace tachyon::text {
     bool cursor_enabled = false,
     std::string cursor_char = "|");
 
+[[nodiscard]] ::tachyon::TextAnimatorSpec make_typewriter_cursor_animator(
+    double characters_per_second = 19.0,
+    std::string cursor_char = "|");
+
+[[nodiscard]] ::tachyon::TextAnimatorSpec make_typewriter_soft_animator(
+    double characters_per_second = 16.0,
+    std::string cursor_char = "|");
+
+[[nodiscard]] ::tachyon::TextAnimatorSpec make_typewriter_word_cursor_animator(
+    double words_per_second = 4.0,
+    std::string cursor_char = "|");
+
+[[nodiscard]] ::tachyon::TextAnimatorSpec make_typewriter_sentence_animator(
+    double words_per_second = 2.5,
+    std::string cursor_char = "|");
+
 [[nodiscard]] ::tachyon::TextAnimatorSpec make_typewriter_terminal_animator(
     double characters_per_second = 18.0,
     std::string cursor_char = "|");

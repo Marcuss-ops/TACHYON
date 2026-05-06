@@ -1,4 +1,5 @@
 #include "tachyon/scene/builder.h"
+#include "tachyon/presets/animation3d/fluent.h"
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include "tachyon/core/spec/scene_spec_serialize.h"
 #include <gtest/gtest.h>
@@ -129,6 +130,28 @@ TEST(SceneBuilder, Common3DMethodsWorkOnAnyLayer) {
     EXPECT_EQ(layer.transform3d.anchor_point_property.value->z, 7.0f);
     EXPECT_EQ(layer.extrusion_depth, 0.25);
     EXPECT_EQ(layer.bevel_size, 0.03);
+}
+
+TEST(SceneBuilder, Animation3DHelpersMarkLayer3DAndAttachModifiers) {
+    auto comp = Composition("main")
+        .layer("title", [](LayerBuilder& l) {
+            l.type("text")
+             .text("Hello 3D");
+            tachyon::presets::animation3d::tilt(l, 12.0, 4.0);
+            tachyon::presets::animation3d::parallax(l, 28.0);
+            tachyon::presets::animation3d::camera_push_in(l, 0.75, 0.1, 1.2);
+        })
+        .build();
+
+    ASSERT_EQ(comp.layers.size(), 1);
+    const auto& layer = comp.layers[0];
+    EXPECT_TRUE(layer.is_3d);
+    ASSERT_TRUE(layer.three_d.has_value());
+    EXPECT_TRUE(layer.three_d->enabled);
+    ASSERT_EQ(layer.three_d->modifiers.size(), 2U);
+    EXPECT_EQ(layer.three_d->modifiers[0].type, "tachyon.modifier3d.tilt");
+    EXPECT_EQ(layer.three_d->modifiers[1].type, "tachyon.modifier3d.parallax");
+    EXPECT_FALSE(layer.transform3d.position_property.keyframes.empty());
 }
 
 TEST(SceneBuilder, RoundTrip) {

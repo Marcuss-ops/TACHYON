@@ -148,7 +148,7 @@ public:
     LayerBuilder& transition_in_preset(const std::string& id, double duration = 0.4);
     LayerBuilder& transition_out_preset(const std::string& id, double duration = 0.4);
     LayerBuilder& animation2d_preset(const std::string& id, double duration = 1.0, double delay = 0.0);
-    LayerBuilder& animation3d_preset(const std::string& id, double duration = 1.0, double delay = 0.0);
+    LayerBuilder& animation3d_preset(const std::string& id, double duration = 1.0, double delay = 0.0, double intensity = 1.0);
     LayerBuilder& modifier3d(const std::string& id, const std::map<std::string, double>& scalars = {});
     LayerBuilder& effect(const std::string& id, const std::map<std::string, double>& scalars = {}, const std::map<std::string, std::string>& strings = {});
 

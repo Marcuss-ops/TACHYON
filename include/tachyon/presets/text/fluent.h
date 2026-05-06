@@ -320,6 +320,22 @@ inline TextAnimatorSpec kind_typewriter(double cps = 20.0, std::string cursor = 
     return ::tachyon::text::make_typewriter_animator(cps, cursor);
 }
 
+inline TextAnimatorSpec kind_typewriter_cursor(double cps = 19.0, std::string cursor = "|") {
+    return ::tachyon::text::make_typewriter_cursor_animator(cps, cursor);
+}
+
+inline TextAnimatorSpec kind_typewriter_soft(double cps = 16.0, std::string cursor = "|") {
+    return ::tachyon::text::make_typewriter_soft_animator(cps, cursor);
+}
+
+inline TextAnimatorSpec kind_typewriter_word_cursor(double wps = 4.0, std::string cursor = "|") {
+    return ::tachyon::text::make_typewriter_word_cursor_animator(wps, cursor);
+}
+
+inline TextAnimatorSpec kind_typewriter_sentence(double wps = 2.5, std::string cursor = "|") {
+    return ::tachyon::text::make_typewriter_sentence_animator(wps, cursor);
+}
+
 inline TextAnimatorSpec kind_kinetic_blur(double distance = 200.0, double duration = 0.5) {
     return ::tachyon::text::make_kinetic_blur_animator(distance, duration);
 }

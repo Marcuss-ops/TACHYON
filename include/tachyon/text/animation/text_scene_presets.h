@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/background_generator.h"
+#include "tachyon/presets/background/procedural.h"
 #include "tachyon/core/spec/schema/objects/background_spec.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/text/animation/text_presets.h"
@@ -46,7 +46,7 @@ struct TextScenePresetOptions {
     double procedural_grain{0.02};
 
     // ShapeGrid-specific parameters (used when procedural_kind == tachyon.background.kind.grid)
-    ShapeGridParams shape_grid_params{};
+    tachyon::presets::background::ShapeGridParams shape_grid_params{};
 
     std::vector<TextAnimatorSpec> text_animators;
 };

@@ -9,6 +9,7 @@
 #include "tachyon/presets/transition/transition_params.h"
 #include "tachyon/presets/transition/transition_builders.h"
 #include "tachyon/presets/background/fluent.h"
+#include "tachyon/presets/background/background_resolver.h"
 #include "tachyon/presets/audio/track.h"
 #include "tachyon/presets/sfx/sfx_params.h"
 #include "tachyon/presets/sfx/sfx_builders.h"

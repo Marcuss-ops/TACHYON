@@ -68,6 +68,14 @@ LayerSpec build_text_typewriter(const TextParams& p) {
     return build_text_with_animation(p, "tachyon.textanim.typewriter.classic");
 }
 
+LayerSpec build_text_typewriter_cursor(const TextParams& p) {
+    return build_text_with_animation(p, "tachyon.textanim.typewriter.cursor");
+}
+
+LayerSpec build_text_typewriter_soft(const TextParams& p) {
+    return build_text_with_animation(p, "tachyon.textanim.typewriter.soft");
+}
+
 LayerSpec build_text_slide_in(const TextParams& p) {
     return build_text_with_animation(p, "tachyon.textanim.slide_in");
 }
@@ -88,8 +96,16 @@ LayerSpec build_text_word_by_word(const TextParams& p) {
     return build_text_with_animation(p, "tachyon.textanim.typewriter.word");
 }
 
+LayerSpec build_text_word_cursor(const TextParams& p) {
+    return build_text_with_animation(p, "tachyon.textanim.typewriter.word_cursor");
+}
+
 LayerSpec build_text_split_line(const TextParams& p) {
     return build_text_with_animation(p, "tachyon.textanim.typewriter.line");
+}
+
+LayerSpec build_text_sentence(const TextParams& p) {
+    return build_text_with_animation(p, "tachyon.textanim.typewriter.sentence");
 }
 
 LayerSpec build_text_soft_scale(const TextParams& p) {

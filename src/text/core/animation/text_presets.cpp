@@ -254,6 +254,58 @@ TextStyle make_minimal_text_style(
     return animator;
 }
 
+::tachyon::TextAnimatorSpec make_typewriter_cursor_animator(
+    double characters_per_second,
+    std::string cursor_char) {
+
+    ::tachyon::TextAnimatorSpec animator = make_typewriter_minimal_animator(characters_per_second, true, std::move(cursor_char));
+    animator.name = "TypewriterCursor";
+    animator.cursor.blink_rate = 5.0;
+    animator.properties.tracking_amount_value = 1.5;
+    return animator;
+}
+
+::tachyon::TextAnimatorSpec make_typewriter_soft_animator(
+    double characters_per_second,
+    std::string cursor_char) {
+
+    ::tachyon::TextAnimatorSpec animator = make_typewriter_animator(characters_per_second, std::move(cursor_char));
+    animator.name = "TypewriterSoft";
+    animator.cursor.enabled = false;
+    animator.properties.opacity_keyframes.clear();
+    add_scalar_ramp(animator.properties.opacity_keyframes, 0.0, 0.0, 0.12, 1.0);
+    add_scalar_ramp(animator.properties.blur_radius_keyframes, 0.0, 3.0, 0.75, 0.0);
+    add_scalar_ramp(animator.properties.scale_keyframes, 0.0, 0.98, 0.75, 1.0);
+    add_scalar_ramp(animator.properties.tracking_amount_keyframes, 0.0, 10.0, 0.75, 0.0);
+    return animator;
+}
+
+::tachyon::TextAnimatorSpec make_typewriter_word_cursor_animator(
+    double words_per_second,
+    std::string cursor_char) {
+
+    ::tachyon::TextAnimatorSpec animator = make_typewriter_word_animator(words_per_second, true, std::move(cursor_char));
+    animator.name = "TypewriterWordCursor";
+    animator.cursor.blink_rate = 4.0;
+    animator.properties.tracking_amount_value = 2.0;
+    return animator;
+}
+
+::tachyon::TextAnimatorSpec make_typewriter_sentence_animator(
+    double words_per_second,
+    std::string cursor_char) {
+
+    const double sentence_words_per_second = words_per_second > 0.0 ? words_per_second : 2.5;
+    ::tachyon::TextAnimatorSpec animator = make_word_by_word_opacity_animator(1.0 / sentence_words_per_second, 0.55);
+    animator.name = "TypewriterSentence";
+    animator.cursor.enabled = true;
+    animator.cursor.cursor_char = std::move(cursor_char);
+    animator.cursor.blink_rate = 2.5;
+    animator.properties.position_offset_value = math::Vector2{0.0f, 6.0f};
+    animator.properties.scale_value = 0.995;
+    return animator;
+}
+
 ::tachyon::TextAnimatorSpec make_typewriter_terminal_animator(
     double characters_per_second,
     std::string cursor_char) {
