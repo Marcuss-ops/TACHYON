@@ -57,8 +57,7 @@
       "binaryDir": "${sourceDir}/build/linux-ci",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "TACHYON_ENABLE_PCH": "OFF",
-        "TACHYON_ENABLE_PREVIEW_WINDOW": "OFF"
+        "TACHYON_ENABLE_PCH": "OFF"
       }
     },
     {
@@ -68,8 +67,7 @@
       "binaryDir": "${sourceDir}/build/windows-ci",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "TACHYON_ENABLE_PCH": "OFF",
-        "TACHYON_ENABLE_PREVIEW_WINDOW": "OFF"
+        "TACHYON_ENABLE_PCH": "OFF"
       }
     },
     {

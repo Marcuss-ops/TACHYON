@@ -129,14 +129,6 @@ static const std::vector<CommandEntry> kCommands = {
         nullptr,
         run_watch_command
     },
-#ifdef TACHYON_ENABLE_CATALOG_COMMANDS
-    {
-        "catalog-demo",
-        "tachyon catalog-demo [--catalog <dir>] [--transition <id>] [--output-dir <dir>]",
-        nullptr,
-        run_catalog_demo_command
-    },
-#endif
     {
         "fetch-fonts",
         "tachyon fetch-fonts --family <name> [--weights <w1,w2,...>] [--subsets <s1,...>] [--dest <dir>] [--overwrite]",
@@ -156,6 +148,19 @@ static const std::vector<CommandEntry> kCommands = {
             return true;
         },
         run_metrics_command
+    },
+    {
+        "thumb",
+        "tachyon thumb --cpp <scene.cpp> [--out <file.jpg>] [--frame <n>]\n"
+        "        tachyon thumb --preset <id> [--out <file.jpg>] [--frame <n>]",
+        [](const CliOptions& o, std::ostream& e) {
+            if (o.cpp_path.empty() && !o.preset_id.has_value()) {
+                e << "Either --cpp or --preset is required for thumb\n";
+                return false;
+            }
+            return true;
+        },
+        run_thumb_command
     },
     {
         "doctor",

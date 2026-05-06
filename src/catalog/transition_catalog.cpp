@@ -23,7 +23,7 @@ TransitionCatalog::TransitionCatalog() {
     // Register built-in transitions
     register_entry({
         "tachyon.transition.fade",
-        {"fade", "crossfade"},
+        {"fade", "crossfade", "dissolve"},
         "tachyon.transition.fade",
         "fade",
         false, true,
@@ -33,7 +33,7 @@ TransitionCatalog::TransitionCatalog() {
 
     register_entry({
         "tachyon.transition.slide_left",
-        {"slide_left", "slide left"},
+        {"slide_left", "slide left", "slide"},
         "tachyon.transition.slide_left",
         "slide",
         true, true,
@@ -53,7 +53,7 @@ TransitionCatalog::TransitionCatalog() {
 
     register_entry({
         "tachyon.transition.zoom",
-        {"zoom", "scale"},
+        {"zoom", "scale", "zoom_in"},
         "tachyon.transition.zoom",
         "zoom",
         false, true,
@@ -63,7 +63,7 @@ TransitionCatalog::TransitionCatalog() {
 
     register_entry({
         "tachyon.transition.flip",
-        {"flip", "flip horizontal"},
+        {"flip", "flip horizontal", "flip_h"},
         "tachyon.transition.flip",
         "flip",
         false, true,
@@ -73,12 +73,52 @@ TransitionCatalog::TransitionCatalog() {
 
     register_entry({
         "tachyon.transition.blur",
-        {"blur", "blur transition"},
+        {"blur", "blur transition", "blur_in"},
         "tachyon.transition.blur",
         "blur",
         false, true,
         TransitionStatus::Stable,
         "Blur transition effect"
+    });
+
+    register_entry({
+        "tachyon.transition.wipe_left",
+        {"wipe_left", "wipe"},
+        "tachyon.transition.wipe_left",
+        "wipe",
+        true, true,
+        TransitionStatus::Stable,
+        "Wipe transition from left"
+    });
+
+    register_entry({
+        "tachyon.transition.push_up",
+        {"push_up", "push", "slide_up"},
+        "tachyon.transition.push_up",
+        "push",
+        true, true,
+        TransitionStatus::Stable,
+        "Push layer upward"
+    });
+
+    register_entry({
+        "tachyon.transition.glitch",
+        {"glitch", "digital", "glitch_effect"},
+        "tachyon.transition.glitch",
+        "glitch",
+        false, true,
+        TransitionStatus::Experimental,
+        "Digital glitch transition effect"
+    });
+
+    register_entry({
+        "tachyon.transition.cinematic_fast",
+        {"cinematic_fast", "fast_cut", "quick_cut"},
+        "tachyon.transition.cinematic_fast",
+        "cut",
+        false, false,
+        TransitionStatus::Stable,
+        "Fast cinematic cut (no duration)"
     });
 }
 

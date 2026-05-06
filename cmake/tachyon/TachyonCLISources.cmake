@@ -21,9 +21,3 @@ set(TachyonCLICoreSources
 set(TachyonCLICatalogSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/cli_demo.cpp
 )
-
-if(TACHYON_ENABLE_PREVIEW_WINDOW)
-    list(APPEND TachyonCLICoreSources
-        ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/preview_window.cpp
-    )
-endif()

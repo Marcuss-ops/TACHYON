@@ -1,7 +1,3 @@
-if(TACHYON_ENABLE_PREVIEW_WINDOW)
-    find_package(OpenGL REQUIRED)
-endif()
-
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonPresetsSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonCoreSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonBindingsCSources.cmake)
@@ -144,10 +140,6 @@ endfunction()
 function(tachyon_link_output_deps target)
     if(TACHYON_ENABLE_OUTPUT)
         target_compile_definitions(${target} PUBLIC TACHYON_ENABLE_OUTPUT)
-        if(TACHYON_ENABLE_PREVIEW_WINDOW)
-            target_link_libraries(${target} PUBLIC glfw OpenGL::GL)
-            target_compile_definitions(${target} PUBLIC TACHYON_ENABLE_PREVIEW_WINDOW)
-        endif()
 
         if(TACHYON_ENABLE_OIDN AND WIN32 AND TACHYON_ENABLE_3D)
             target_include_directories(${target} PUBLIC $<BUILD_INTERFACE:${oidn_SOURCE_DIR}/include>)
@@ -352,9 +344,6 @@ target_link_libraries(TachyonRuntimeEngine INTERFACE
     TachyonPlatform
 )
 
-add_library(TachyonEngine INTERFACE)
-target_link_libraries(TachyonEngine INTERFACE TachyonRuntimeEngine)
-
 # CLI libraries removed. Sources are added directly to executables to allow different compile-time configurations.
 
 add_library(TachyonTools INTERFACE)
@@ -387,27 +376,28 @@ target_link_libraries(tachyon
         TachyonDiagnostics
 )
 
-# Full tooling/catalog executable
-add_executable(tachyon-catalog
-    main.cpp
-    ${TachyonCLICoreSources}
-    ${TachyonCLICatalogSources}
-)
-tachyon_configure_common(tachyon-catalog)
-target_compile_definitions(tachyon-catalog PRIVATE TACHYON_ENABLE_CATALOG_COMMANDS)
+# Full tooling/catalog executable (optional)
+if(TACHYON_BUILD_CATALOG_TOOLS)
+    add_executable(tachyon-catalog
+        main.cpp
+        ${TachyonCLICoreSources}
+        ${TachyonCLICatalogSources}
+    )
+    tachyon_configure_common(tachyon-catalog)
+    
+    if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
+        target_precompile_headers(tachyon-catalog PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")
+    endif()
 
-if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
-    target_precompile_headers(tachyon-catalog PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")
+    target_link_libraries(tachyon-catalog
+        PRIVATE
+            TachyonRuntimeEngine
+            TachyonCatalog
+            TachyonEditor
+            TachyonPresets
+            TachyonDiagnostics
+    )
 endif()
-
-target_link_libraries(tachyon-catalog
-    PRIVATE
-        TachyonRuntimeEngine
-        TachyonCatalog
-        TachyonEditor
-        TachyonPresets
-        TachyonDiagnostics
-)
 
 if(MSVC)
     file(GLOB OIDN_RUNTIME_DLLS CONFIGURE_DEPENDS "${oidn_SOURCE_DIR}/bin/*.dll")

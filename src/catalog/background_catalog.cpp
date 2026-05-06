@@ -43,6 +43,51 @@ BackgroundCatalog::BackgroundCatalog() {
         BackgroundStatus::Stable,
         "Image background"
     });
+
+    register_entry({
+        "tachyon.background.cinematic_dark",
+        "gradient",
+        R"({"color_start": "#0a0a0a", "color_end": "#1a1a2e", "angle": 135})",
+        "",
+        BackgroundStatus::Stable,
+        "Dark cinematic gradient background"
+    });
+
+    register_entry({
+        "tachyon.background.youtube_news_blue",
+        "gradient",
+        R"({"color_start": "#0d47a1", "color_end": "#1976d2", "angle": 180})",
+        "",
+        BackgroundStatus::Stable,
+        "YouTube news style blue gradient"
+    });
+
+    register_entry({
+        "tachyon.background.soft_gradient",
+        "gradient",
+        R"({"color_start": "#f5f5f5", "color_end": "#e0e0e0", "angle": 45})",
+        "",
+        BackgroundStatus::Stable,
+        "Soft light gray gradient"
+    });
+
+    register_entry({
+        "tachyon.background.product_glow",
+        "gradient",
+        R"({"color_start": "#1a1a1a", "color_end": "#2d2d2d", "angle": 160})",
+        "",
+        BackgroundStatus::Stable,
+        "Product showcase dark background with subtle glow effect"
+    });
+
+    register_entry({
+        "tachyon.background.warm_brown",
+        "solid",
+        R"({"color": "#3e2723"})",
+        "",
+        BackgroundStatus::Stable,
+        "Warm brown solid background for cozy content"
+    });
 }
 
 BackgroundCatalog::~BackgroundCatalog() = default;
