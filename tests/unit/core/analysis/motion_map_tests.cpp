@@ -32,8 +32,8 @@ bool run_motion_map_tests() {
     layer.duration = 3.0;
     layer.transition_in.kind = TransitionKind::Fade;
     layer.transition_out.kind = TransitionKind::Dissolve;
-    layer.in_preset = "tachyon.textanim.fade_in";
-    layer.out_preset = "tachyon.textanim.fade_out";
+    layer.animation_in_preset = "tachyon.textanim.fade_in";
+    layer.animation_out_preset = "tachyon.textanim.fade_out";
     TextAnimatorSpec animator;
     animator.name = "text_pop";
     animator.properties.opacity_value = 1.0;
@@ -82,6 +82,8 @@ bool run_motion_map_tests() {
     const auto& layer_summary = summary.layers.front();
     if (!contains(layer_summary.animations, "transition_in:fade")
         || !contains(layer_summary.animations, "transition_out:dissolve")
+        || !contains(layer_summary.animations, "animation_in_preset:tachyon.textanim.fade_in")
+        || !contains(layer_summary.animations, "animation_out_preset:tachyon.textanim.fade_out")
         || !contains(layer_summary.animations, "text_animators:1")
         || !contains(layer_summary.animations, "motion_blur")
         || !contains(layer_summary.animations, "loop")) {

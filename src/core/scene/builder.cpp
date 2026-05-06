@@ -147,14 +147,14 @@ LayerBuilder::LayerBuilder(std::string id) {
 LayerBuilder::LayerBuilder(LayerSpec spec) : spec_(std::move(spec)) {}
 
 LayerBuilder& LayerBuilder::type(std::string t) {
-    spec_.type_string = std::move(t);
-    spec_.type = layer_type_from_string(spec_.type_string);
+    spec_.type = layer_type_from_string(t);
+    spec_.type_string.clear();
     return *this;
 }
 
 LayerBuilder& LayerBuilder::kind(LayerType t) {
     spec_.type = t;
-    spec_.type_string = std::string(to_canonical_layer_type_string(t));
+    spec_.type_string.clear();
     return *this;
 }
 
