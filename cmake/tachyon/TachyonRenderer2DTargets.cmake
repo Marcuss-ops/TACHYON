@@ -1,0 +1,23 @@
+add_library(TachyonRenderer2DExtras STATIC ${TachyonRenderer2DExtrasSources})
+tachyon_configure_common(TachyonRenderer2DExtras)
+target_link_libraries(TachyonRenderer2DExtras PUBLIC TachyonCore)
+
+add_library(TachyonRenderer2D STATIC ${TachyonRenderer2DSources})
+tachyon_configure_common(TachyonRenderer2D)
+tachyon_link_text_deps(TachyonRenderer2D)
+tachyon_link_omp(TachyonRenderer2D)
+target_link_libraries(TachyonRenderer2D PUBLIC TachyonColor)
+target_link_libraries(TachyonRenderer2D PUBLIC TachyonRenderer2DExtras)
+target_link_libraries(TachyonRenderer2D PUBLIC TachyonText)
+
+if(TACHYON_ENABLE_3D)
+    add_library(TachyonRenderer3D STATIC ${TachyonRenderer3DSources})
+    tachyon_configure_common(TachyonRenderer3D)
+    tachyon_link_3d_deps(TachyonRenderer3D)
+    tachyon_link_omp(TachyonRenderer3D)
+    target_link_libraries(TachyonRenderer3D PUBLIC TachyonColor)
+
+    add_library(TachyonScene3DBridge STATIC ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/pipeline/scene3d_bridge.cpp)
+    tachyon_configure_common(TachyonScene3DBridge)
+    target_link_libraries(TachyonScene3DBridge PUBLIC TachyonCore TachyonRenderer2D TachyonRenderer3D)
+endif()
