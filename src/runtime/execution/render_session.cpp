@@ -272,8 +272,9 @@ RenderSessionResult RenderSession::render(
     runtime::SurfacePoolPolicy surface_policy;
     const auto surface_count = surface_policy.resolve(w, h, worker_count);
     m_surface_pool = std::make_unique<runtime::RuntimeSurfacePool>(w, h, surface_count);
-    
-    configure_render_context(workspace, m_profiler, m_surface_pool.get(), m_effect_registry, m_modifier_registry, m_transition_registry);
+
+    const TransitionRegistry& transition_registry = m_transition_registry_override ? *m_transition_registry_override : m_transition_registry;
+    configure_render_context(workspace, m_profiler, m_surface_pool.get(), m_effect_registry, m_modifier_registry, transition_registry);
 
     workspace.sink = output::create_frame_output_sink(workspace.effective_plan.render_plan);
     
