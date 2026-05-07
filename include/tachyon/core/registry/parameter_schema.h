@@ -66,6 +66,9 @@ struct ParameterDef {
         else if (std::holds_alternative<math::Vector3>(default_value)) type = ParameterType::Vector3;
     }
 
+    ParameterDef(std::string id, std::string label, std::string description, ParameterType type, ParameterValue def, std::optional<double> min = std::nullopt, std::optional<double> max = std::nullopt)
+        : id(std::move(id)), label(std::move(label)), description(std::move(description)), type(type), default_value(std::move(def)), min_value(min), max_value(max) {}
+
     ParameterDef() = default;
 };
 

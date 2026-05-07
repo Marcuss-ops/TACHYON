@@ -76,7 +76,8 @@ public:
      */
     std::filesystem::path resolve_media_path(
         const std::filesystem::path& path,
-        ResolutionPurpose purpose = ResolutionPurpose::Playback) const;
+        ResolutionPurpose purpose = ResolutionPurpose::Playback,
+        uint32_t target_width = 0) const;
 
     /**
      * @brief Load image from resolved asset.
@@ -132,6 +133,12 @@ public:
     void set_use_proxies(bool use) { m_use_proxies = use; }
     bool use_proxies() const { return m_use_proxies; }
 
+    void set_placeholder_size(uint32_t width, uint32_t height) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_placeholder_width = width;
+        m_placeholder_height = height;
+    }
+
     /**
      * @brief Queue proxy generation for a list of files.
      */
@@ -156,6 +163,8 @@ private:
     
     MediaFallbackPolicy m_fallback_policy{MediaFallbackPolicy::UseProxy};
     std::shared_ptr<renderer2d::SurfaceRGBA> m_offline_placeholder;
+    uint32_t m_placeholder_width{1920};
+    uint32_t m_placeholder_height{1080};
 
     mutable std::mutex m_mutex;
     bool m_use_proxies{true};

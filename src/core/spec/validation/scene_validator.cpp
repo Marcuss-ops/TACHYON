@@ -36,12 +36,13 @@ void SceneValidator::validate_schema_version(const ::tachyon::SceneSpec& scene, 
         out.warning_count++;
     }
     
-    // Future: Add version compatibility checks here
-    // For now, we just warn about very old versions
-    static const SchemaVersion min_supported{0, 9, 0};
-    if (scene.schema_version < min_supported) {
+    // Minimum supported version is now configurable or comes from a central place
+    // For now, we'll keep it as a constant but move it to a more visible place if needed
+    static const SchemaVersion kMinSupportedSchemaVersion{1, 0, 0};
+    
+    if (scene.schema_version < kMinSupportedSchemaVersion) {
         out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, "scene.schema_version",
-            "Schema version " + scene.schema_version.to_string() + " is not supported. Minimum required: " + min_supported.to_string()});
+            "Schema version " + scene.schema_version.to_string() + " is not supported. Minimum required: " + kMinSupportedSchemaVersion.to_string()});
         out.error_count++;
     }
 }
@@ -311,6 +312,27 @@ void SceneValidator::validate_layer(const ::tachyon::LayerSpec& layer, const ::t
                 out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".precomp_id", "References non-existent composition: " + *layer.precomp_id});
                 out.error_count++;
             }
+        }
+    }
+
+    // Validate effects
+    validate_effects(layer, path, out);
+}
+
+void SceneValidator::validate_effects(const ::tachyon::LayerSpec& layer, const std::string& path, ValidationResult& out) const {
+    for (std::size_t i = 0; i < layer.effects.size(); ++i) {
+        const auto& effect = layer.effects[i];
+        if (effect.type.empty()) {
+            out.issues.push_back({ValidationIssue::Severity::Error, path + ".effects[" + std::to_string(i) + "].type", "Effect type cannot be empty."});
+            out.error_count++;
+        }
+    }
+    
+    for (std::size_t i = 0; i < layer.animated_effects.size(); ++i) {
+        const auto& effect = layer.animated_effects[i];
+        if (effect.type.empty()) {
+            out.issues.push_back({ValidationIssue::Severity::Error, path + ".animated_effects[" + std::to_string(i) + "].type", "Animated effect type cannot be empty."});
+            out.error_count++;
         }
     }
 }

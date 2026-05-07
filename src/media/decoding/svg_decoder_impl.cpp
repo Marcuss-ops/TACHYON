@@ -91,6 +91,61 @@ shapes::ShapePathSpec path_geometry_to_shape(const renderer2d::PathGeometry& geo
     return spec;
 }
 
+// Helper to parse hex or rgb color strings
+renderer2d::Color parse_color_string(const std::string& str) {
+    if (str.empty() || str == "none") return renderer2d::Color::transparent();
+    if (str[0] == '#') {
+        std::string hex = str.substr(1);
+        if (hex.length() == 3) {
+            float r = std::stoi(hex.substr(0, 1), nullptr, 16) / 15.0f;
+            float g = std::stoi(hex.substr(1, 1), nullptr, 16) / 15.0f;
+            float b = std::stoi(hex.substr(2, 1), nullptr, 16) / 15.0f;
+            return {r, g, b, 1.0f};
+        } else if (hex.length() == 6) {
+            float r = std::stoi(hex.substr(0, 2), nullptr, 16) / 255.0f;
+            float g = std::stoi(hex.substr(2, 2), nullptr, 16) / 255.0f;
+            float b = std::stoi(hex.substr(4, 2), nullptr, 16) / 255.0f;
+            return {r, g, b, 1.0f};
+        }
+    } else if (str.find("rgb") == 0) {
+        // Simple rgb(r,g,b) parser
+        size_t start = str.find('(') + 1;
+        size_t end = str.find(')');
+        std::string vals = str.substr(start, end - start);
+        std::stringstream ss(vals);
+        float r, g, b;
+        char comma;
+        if (ss >> r >> comma >> g >> comma >> b) {
+            return {r / 255.0f, g / 255.0f, b / 255.0f, 1.0f};
+        }
+    }
+    return renderer2d::Color::black();
+}
+
+void parse_gradient_stops(pugi::xml_node node, GradientSpec& gs) {
+    for (pugi::xml_node stop : node.children("stop")) {
+        GradientStop spec_stop;
+        const char* offset = stop.attribute("offset").value();
+        if (offset) {
+            std::string s(offset);
+            if (!s.empty() && s.back() == '%') {
+                spec_stop.offset = std::stof(s.substr(0, s.size() - 1)) / 100.0f;
+            } else {
+                spec_stop.offset = std::stof(s);
+            }
+        }
+        const char* stop_color = stop.attribute("stop-color").value();
+        if (stop_color) {
+            spec_stop.color = parse_color_string(stop_color);
+        }
+        const char* stop_opacity = stop.attribute("stop-opacity").value();
+        if (stop_opacity) {
+            spec_stop.color.a = std::stof(stop_opacity);
+        }
+        gs.stops.push_back(spec_stop);
+    }
+}
+
 } // anonymous namespace
 
 bool parse_svg_string(const std::string& svg_content, ParsedSvg& out_result, DiagnosticBag& diagnostics) {
@@ -113,13 +168,22 @@ bool parse_svg_string(const std::string& svg_content, ParsedSvg& out_result, Dia
         for (pugi::xml_node grad : defs.children()) {
             if (strcmp(grad.name(), "linearGradient") == 0) {
                 GradientSpec gs;
+                gs.id = grad.attribute("id").value();
                 gs.type = GradientType::Linear;
-                // TODO: parse gradient stops and coordinates
+                gs.x1 = grad.attribute("x1").as_float(0.0f);
+                gs.y1 = grad.attribute("y1").as_float(0.0f);
+                gs.x2 = grad.attribute("x2").as_float(100.0f);
+                gs.y2 = grad.attribute("y2").as_float(0.0f);
+                parse_gradient_stops(grad, gs);
                 out_result.gradients.push_back(gs);
             } else if (strcmp(grad.name(), "radialGradient") == 0) {
                 GradientSpec gs;
+                gs.id = grad.attribute("id").value();
                 gs.type = GradientType::Radial;
-                // TODO: parse gradient stops and radius
+                gs.cx = grad.attribute("cx").as_float(50.0f);
+                gs.cy = grad.attribute("cy").as_float(50.0f);
+                gs.r = grad.attribute("r").as_float(50.0f);
+                parse_gradient_stops(grad, gs);
                 out_result.gradients.push_back(gs);
             }
         }
@@ -143,7 +207,11 @@ bool parse_svg_string(const std::string& svg_content, ParsedSvg& out_result, Dia
             renderer2d::FillPathStyle fill;
             const char* fill_attr = child.attribute("fill").value();
             if (fill_attr && strcmp(fill_attr, "none") != 0) {
-                // TODO: parse color string to Color
+                if (fill_attr[0] == 'u' && strstr(fill_attr, "url(#")) {
+                    // TODO: handle gradient URLs
+                } else {
+                    fill.color = parse_color_string(fill_attr);
+                }
             }
             out_result.fill_styles.push_back(fill);
 
@@ -151,11 +219,27 @@ bool parse_svg_string(const std::string& svg_content, ParsedSvg& out_result, Dia
             renderer2d::StrokePathStyle stroke;
             const char* stroke_attr = child.attribute("stroke").value();
             if (stroke_attr && strcmp(stroke_attr, "none") != 0) {
-                // TODO: parse stroke properties
+                stroke.color = parse_color_string(stroke_attr);
             }
             const char* stroke_width = child.attribute("stroke-width").value();
             if (stroke_width) {
                 stroke.stroke_width = std::stof(stroke_width);
+            }
+            const char* linecap = child.attribute("stroke-linecap").value();
+            if (linecap) {
+                if (strcmp(linecap, "round") == 0) stroke.line_cap = renderer2d::LineCap::Round;
+                else if (strcmp(linecap, "square") == 0) stroke.line_cap = renderer2d::LineCap::Square;
+                else stroke.line_cap = renderer2d::LineCap::Butt;
+            }
+            const char* linejoin = child.attribute("stroke-linejoin").value();
+            if (linejoin) {
+                if (strcmp(linejoin, "round") == 0) stroke.line_join = renderer2d::LineJoin::Round;
+                else if (strcmp(linejoin, "bevel") == 0) stroke.line_join = renderer2d::LineJoin::Bevel;
+                else stroke.line_join = renderer2d::LineJoin::Miter;
+            }
+            const char* miterlimit = child.attribute("stroke-miterlimit").value();
+            if (miterlimit) {
+                stroke.miter_limit = std::stof(miterlimit);
             }
             out_result.stroke_styles.push_back(stroke);
         }

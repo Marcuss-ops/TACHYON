@@ -36,10 +36,8 @@ void AudioMixer::add_track(std::shared_ptr<AudioDecoder> decoder,
         // No additional setup needed here, the compressor on music tracks will use it
     } else if (params.duck_config.threshold_db != -20.0f || params.duck_config.ratio != 4.0f) {
         // This track should be ducked - add a compressor node to its bus
-        // The compressor will be configured when mix() is called
-        // TODO: fix AudioGraph bus API
-        // auto compressor = std::make_shared<CompressorNode>(params.duck_config);
-        // m_processor.graph().bus(bus_id).add_node(compressor);
+        auto compressor = std::make_shared<CompressorNode>(params.duck_config);
+        m_processor.graph().get_or_create_bus(bus_id).add_node(compressor);
     }
 }
 

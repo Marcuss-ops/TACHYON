@@ -38,8 +38,10 @@ const renderer2d::SurfaceRGBA* MediaManager::get_video_frame(const std::filesyst
 
     if (m_fallback_policy == MediaFallbackPolicy::ReturnOffline && resolved.empty()) {
         std::lock_guard<std::mutex> lock(m_mutex);
-        if (!m_offline_placeholder) {
-            m_offline_placeholder = std::make_shared<renderer2d::SurfaceRGBA>(1920, 1080);
+        if (!m_offline_placeholder || 
+            m_offline_placeholder->width() != m_placeholder_width || 
+            m_offline_placeholder->height() != m_placeholder_height) {
+            m_offline_placeholder = std::make_shared<renderer2d::SurfaceRGBA>(m_placeholder_width, m_placeholder_height);
             m_offline_placeholder->clear({0.1f, 0.1f, 0.1f, 1.0f});
         }
         return m_offline_placeholder.get();
@@ -82,13 +84,33 @@ std::filesystem::path MediaManager::get_asset_path(const std::string& asset_id) 
 
 std::filesystem::path MediaManager::resolve_media_path(
     const std::filesystem::path& path,
-    ResolutionPurpose purpose) const {
+    ResolutionPurpose purpose,
+    uint32_t target_width) const {
     
     const bool allow_proxy = (purpose == ResolutionPurpose::Playback) && m_use_proxies;
 
     if (allow_proxy) {
+        // Default proxy resolution if target_width is 0
+        uint32_t resolve_width = target_width > 0 ? target_width : 1280;
+        
         // Try global manifest resolution
-        std::string resolved = m_proxy_manifest.resolve_for_playback(path.string(), 1280);
+        std::string resolved = m_proxy_manifest.resolve_for_playback(path.string(), resolve_width);
+        
+        // 8K Proxy Fallback Logic:
+        // If we are looking for a proxy and the original is very high res (e.g. 8K),
+        // but the requested proxy isn't available, try intermediate resolutions.
+        if (resolved == path.string()) {
+            // If target was low-res (e.g. 1280), try 2K and 4K as fallbacks
+            if (resolve_width <= 1280) {
+                resolved = m_proxy_manifest.resolve_for_playback(path.string(), 1920); // Try 2K
+                if (resolved == path.string()) {
+                    resolved = m_proxy_manifest.resolve_for_playback(path.string(), 3840); // Try 4K
+                }
+            } else if (resolve_width <= 1920) {
+                resolved = m_proxy_manifest.resolve_for_playback(path.string(), 3840); // Try 4K
+            }
+        }
+
         if (resolved != path.string()) {
             return resolved;
         }

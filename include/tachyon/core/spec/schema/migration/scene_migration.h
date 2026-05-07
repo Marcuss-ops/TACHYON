@@ -24,12 +24,20 @@ public:
     ~SceneMigrationManager();
 
     /**
-     * @brief Migrate a scene spec to the target schema version.
+     * @brief Migrate a scene spec to the target schema version (in-place).
      * @param scene The scene spec to migrate (modified in-place).
      * @param target_version The target schema version (defaults to current).
      * @return true if migration succeeded, false otherwise.
      */
-    bool migrate(SceneSpec& scene, const SchemaVersion& target_version = SchemaVersion{1, 0, 0});
+    bool migrate_in_place(SceneSpec& scene, const SchemaVersion& target_version = SchemaVersion{1, 0, 0});
+
+    /**
+     * @brief Migrate a scene spec to the target schema version (non-destructive).
+     * @param scene The scene spec to migrate.
+     * @param target_version The target schema version (defaults to current).
+     * @return A new SceneSpec if migration succeeded, nullopt otherwise.
+     */
+    std::optional<SceneSpec> migrate(const SceneSpec& scene, const SchemaVersion& target_version = SchemaVersion{1, 0, 0});
 
     /**
      * @brief Register a migration function for a specific version transition.

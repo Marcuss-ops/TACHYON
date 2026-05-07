@@ -35,6 +35,12 @@ public:
         return values_.find(std::string(key)) != values_.end();
     }
 
+    [[nodiscard]] const ParameterValue* get_raw(std::string_view key) const {
+        auto it = values_.find(std::string(key));
+        if (it != values_.end()) return &it->second;
+        return nullptr;
+    }
+
     [[nodiscard]] bool empty() const noexcept { return values_.empty(); }
 
 private:

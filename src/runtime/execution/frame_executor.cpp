@@ -5,6 +5,7 @@
 
 #include <cstdlib>
 #include <string_view>
+#include <iostream>
 
 namespace tachyon {
 
@@ -21,7 +22,12 @@ std::optional<scene::EvaluatedCompositionState> evaluate_target_composition_stat
 
         double fps = comp.frame_rate.value();
         if (fps <= 0.0) {
-            fps = 24.0;
+            fps = 24.0; // Default fallback
+            const char* diag_env = std::getenv("TACHYON_DIAGNOSTICS");
+            if (diag_env && std::string_view(diag_env) == "1") {
+                std::cerr << "[WARNING] Composition '" << comp.id << "' has invalid frame rate: " 
+                          << comp.frame_rate.value() << ". Falling back to 24.0 FPS.\n";
+            }
         }
 
         const double time = static_cast<double>(task.frame_number) / fps;
