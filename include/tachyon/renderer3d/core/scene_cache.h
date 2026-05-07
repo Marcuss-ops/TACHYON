@@ -2,6 +2,7 @@
 
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/core/camera/camera_state.h"
+#include "tachyon/render/render_intent.h"
 #include "tachyon/core/math/transform3.h"
 #include "tachyon/core/math/vector3.h"
 #include "tachyon/core/math/matrix4x4.h"
@@ -67,7 +68,9 @@ public:
     SceneCache();
 
     void set_frame(std::int64_t frame_number, double time_seconds);
-    void update_composition(const scene::EvaluatedCompositionState& state);
+    void update_composition(
+        const scene::EvaluatedCompositionState& state,
+        const render::RenderIntent* intent = nullptr);
 
     bool needs_rebuild() const { return dirty_ != DirtyFlag::Clean; }
     DirtyFlag get_dirty_state() const { return dirty_; }
@@ -81,12 +84,17 @@ public:
     void mark_clean();
 
 private:
-    std::uint64_t compute_layer_hash(const scene::EvaluatedLayerState& layer, std::size_t index);
+    std::uint64_t compute_layer_hash(
+        const scene::EvaluatedLayerState& layer,
+        std::size_t index,
+        const render::RenderIntent* intent = nullptr);
     std::uint64_t compute_light_hash(const scene::EvaluatedLightState& light, std::size_t index);
     std::uint64_t compute_camera_hash(const scene::EvaluatedCameraState& camera);
     std::uint64_t combine_hash(std::uint64_t a, std::uint64_t b) const;
 
-    DirtyFlag check_dirty_flags(const scene::EvaluatedCompositionState& state);
+    DirtyFlag check_dirty_flags(
+        const scene::EvaluatedCompositionState& state,
+        const render::RenderIntent* intent = nullptr);
 
     DirtyFlag dirty_;
     HashState hash_state_;

@@ -29,7 +29,7 @@ struct ImportResult {
     Status status{Success};
     const renderer2d::SurfaceRGBA* surface{nullptr};
     const HDRTextureData* hdr_surface{nullptr};
-    const MeshAsset* mesh{nullptr};
+    std::shared_ptr<const MeshAsset> mesh{nullptr};
     std::filesystem::path resolved_path;
     std::string error_message;
 };

@@ -4,7 +4,7 @@
 namespace tachyon {
 namespace spec {
 
-renderer2d::PathGeometry build_geometry(const ShapeSpec& spec) {
+PathGeometry build_geometry(const ShapeSpec& spec) {
     if (spec.type == "rectangle")
         return ShapeFactory::create_rectangle(spec.x, spec.y, spec.width, spec.height);
 

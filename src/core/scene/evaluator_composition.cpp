@@ -268,7 +268,7 @@ EvaluatedCompositionState evaluate_composition_internal(
 
     // Resolve environment map
     if (composition.environment_path.has_value() && !composition.environment_path->empty() && media) {
-        evaluated.environment_map = media->get_hdr_image(*composition.environment_path);
+        evaluated.environment_map_id = composition.environment_path;
     }
 
     return evaluated;

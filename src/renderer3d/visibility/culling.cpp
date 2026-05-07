@@ -26,7 +26,7 @@ void SceneCulling::update_frustum() {
     frustum_ = Frustum::from_camera(camera_, camera_position_);
 }
 
-SceneCulling::CullingResult SceneCulling::cull_layers(const scene::EvaluatedCompositionState& state) {
+SceneCulling::CullingResult SceneCulling::cull_layers(const scene::EvaluatedCompositionState& state, const render::RenderIntent* intent) {
     CullingResult result;
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -51,10 +51,9 @@ SceneCulling::CullingResult SceneCulling::cull_layers(const scene::EvaluatedComp
         const auto& layer = state.layers[i];
         if (!layer.is_3d || !layer.visible) {
             result.culledIndices.push_back(i);
-            continue;
         }
 
-        layer_bounds_[i] = compute_layer_bounds(layer);
+        layer_bounds_[i] = compute_layer_bounds(layer, intent);
         float dist = (layer.world_position3 - camera_position_).length();
 
         if (dist > culling_distance_ || frustum_.test_bounds(layer_bounds_[i]) == CullTest::Outside) {
@@ -75,7 +74,7 @@ SceneCulling::CullingResult SceneCulling::cull_layers(const scene::EvaluatedComp
     return result;
 }
 
-SceneCulling::CullingResult SceneCulling::cull_layers_frustum(const scene::EvaluatedCompositionState& state, const Frustum& frustum) {
+SceneCulling::CullingResult SceneCulling::cull_layers_frustum(const scene::EvaluatedCompositionState& state, const Frustum& frustum, const render::RenderIntent* intent) {
     CullingResult result;
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -90,7 +89,7 @@ SceneCulling::CullingResult SceneCulling::cull_layers_frustum(const scene::Evalu
             continue;
         }
 
-        layer_bounds_[i] = compute_layer_bounds(layer);
+        layer_bounds_[i] = compute_layer_bounds(layer, intent);
 
         if (frustum.test_bounds(layer_bounds_[i]) == CullTest::Outside) {
             result.culledIndices.push_back(i);
@@ -184,9 +183,17 @@ void SceneCulling::set_quality_tier(const std::string& tier) {
     }
 }
 
-SceneCulling::BoundingBox SceneCulling::compute_layer_bounds(const scene::EvaluatedLayerState& layer) {
-    if (layer.mesh_asset && !layer.mesh_asset->sub_meshes.empty()) {
-        const auto& sub = layer.mesh_asset->sub_meshes[0];
+SceneCulling::BoundingBox SceneCulling::compute_layer_bounds(const scene::EvaluatedLayerState& layer, const render::RenderIntent* intent) {
+    const media::MeshAsset* mesh = nullptr;
+    if (intent) {
+        auto it = intent->layer_resources.find(layer.id);
+        if (it != intent->layer_resources.end()) {
+            mesh = it->second.mesh_asset.get();
+        }
+    }
+
+    if (mesh && !mesh->sub_meshes.empty()) {
+        const auto& sub = mesh->sub_meshes[0];
         if (!sub.vertices.empty()) {
             math::Vector3 min = sub.vertices[0].position;
             math::Vector3 max = sub.vertices[0].position;

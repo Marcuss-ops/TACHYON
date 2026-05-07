@@ -218,21 +218,21 @@ void MediaManager::release_video_decoder(const std::filesystem::path& path, Vide
     pool->available.emplace_back(std::unique_ptr<VideoDecoder>(decoder));
 }
 
-const MeshAsset* MediaManager::get_mesh(const std::filesystem::path& path, DiagnosticBag* diagnostics) {
+std::shared_ptr<const MeshAsset> MediaManager::get_mesh(const std::filesystem::path& path, DiagnosticBag* diagnostics) {
     const std::string key = path.string();
     std::lock_guard<std::mutex> lock(m_mutex);
     
     auto it = m_mesh_cache.find(key);
     if (it != m_mesh_cache.end()) {
-        return it->second.get();
+        return it->second;
     }
 
     auto mesh = MeshLoader::load_from_gltf(path, diagnostics);
     if (!mesh) return nullptr;
 
-    const MeshAsset* ptr = mesh.get();
-    m_mesh_cache[key] = std::move(mesh);
-    return ptr;
+    std::shared_ptr<MeshAsset> shared_mesh = std::move(mesh);
+    m_mesh_cache[key] = shared_mesh;
+    return shared_mesh;
 }
 
 void MediaManager::store_video_frame(const std::string& path, double time, std::unique_ptr<renderer2d::SurfaceRGBA> frame) {
@@ -273,7 +273,7 @@ const HDRTextureData* MediaManager::get_hdr_image(
     return get_hdr_image(asset.runtime_path, diagnostics);
 }
 
-const MeshAsset* MediaManager::get_mesh(
+std::shared_ptr<const MeshAsset> MediaManager::get_mesh(
     const ResolvedAsset& asset,
     DiagnosticBag* diagnostics) {
     return get_mesh(asset.runtime_path, diagnostics);

@@ -11,7 +11,7 @@
 #include "tachyon/core/render/scene_3d.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
-#include "tachyon/renderer2d/evaluated_composition/render_intent.h"
+#include "tachyon/render/render_intent.h"
 #include "tachyon/renderer2d/resource/render_context.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 
@@ -24,7 +24,7 @@ using renderer2d::RenderContext2D;
  */
 struct Scene3DBridgeInput {
     const scene::EvaluatedCompositionState* state{nullptr};
-    const renderer2d::RenderIntent* intent{nullptr};
+    const render::RenderIntent* intent{nullptr};
     const RenderPlan* plan{nullptr};
     const FrameRenderTask* task{nullptr};
     const renderer2d::RenderContext2D* context{nullptr};

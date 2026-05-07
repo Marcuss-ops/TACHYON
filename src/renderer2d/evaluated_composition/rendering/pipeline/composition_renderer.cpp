@@ -110,7 +110,7 @@ std::optional<std::filesystem::path> resolve_media_source(
 
 RasterizedFrame2D render_evaluated_composition_2d(
     const scene::EvaluatedCompositionState& state,
-    const renderer2d::RenderIntent& intent,
+    const render::RenderIntent& intent,
     const RenderPlan& plan,
     const FrameRenderTask& task,
     RenderContext2D& context) {
@@ -156,7 +156,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
     if (has_any_3d && state.camera.available) {
         renderer3d::SceneCulling culling;
         culling.set_camera(state.camera.camera, state.camera.position);
-        const auto culling_result = culling.cull_layers(state);
+        const auto culling_result = culling.cull_layers(state, &intent);
         visible_3d_layers.assign(state.layers.size(), false);
         if (culling_result.visibleIndices.empty()) {
             for (std::size_t i = 0; i < state.layers.size(); ++i) {
@@ -222,11 +222,13 @@ RasterizedFrame2D render_evaluated_composition_2d(
         if (layer.mesh_deform_enabled && layer_surface) {
             auto it = intent.layer_resources.find(layer.id);
             if (it != intent.layer_resources.end() && it->second.mesh_deform) {
-                layer_surface = apply_mesh_deform(
-                    layer_surface,
-                    *it->second.mesh_deform,
-                    layer.width,
-                    layer.height);
+                if (auto* mesh_ptr = dynamic_cast<const renderer2d::DeformMesh*>(it->second.mesh_deform.get())) {
+                    layer_surface = apply_mesh_deform(
+                        layer_surface,
+                        *mesh_ptr,
+                        layer.width,
+                        layer.height);
+                }
             }
         }
         
@@ -496,11 +498,13 @@ RasterizedFrame2D render_evaluated_composition_2d(
             if (layer.mesh_deform_enabled && layer_surface) {
                 auto it = intent.layer_resources.find(layer.id);
                 if (it != intent.layer_resources.end() && it->second.mesh_deform) {
-                    layer_surface = apply_mesh_deform(
-                        layer_surface,
-                        *it->second.mesh_deform,
-                        layer.width,
-                        layer.height);
+                    if (auto* mesh_ptr = dynamic_cast<const renderer2d::DeformMesh*>(it->second.mesh_deform.get())) {
+                        layer_surface = apply_mesh_deform(
+                            layer_surface,
+                            *mesh_ptr,
+                            layer.width,
+                            layer.height);
+                    }
                 }
             }
 

@@ -208,8 +208,8 @@ struct EvaluatedCompositionState {
     
     ColorSpec background_color{0, 0, 0, 0};
 
-    // Resource pointers (skeletons)
-    const void* environment_map{nullptr}; 
+    // Neutral environment reference resolved later by renderers.
+    std::optional<std::string> environment_map_id;
 };
 
 } // namespace tachyon::scene

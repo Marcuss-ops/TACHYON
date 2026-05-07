@@ -6,7 +6,7 @@
 
 namespace tachyon::scene {
 
-void evaluate_mesh_animations(EvaluatedLayerState& evaluated, const media::MeshAsset* asset_ptr, double time) {
+void evaluate_mesh_animations(EvaluatedLayerState& evaluated, const tachyon::media::MeshAsset* asset_ptr, double time) {
     if (!asset_ptr) return;
     const auto& asset = *asset_ptr;
     
@@ -37,7 +37,7 @@ void evaluate_mesh_animations(EvaluatedLayerState& evaluated, const media::MeshA
             float t = (static_cast<float>(time) - chan.times[idx]) / (chan.times[idx+1] - chan.times[idx]);
             t = std::clamp(t, 0.0f, 1.0f);
             
-            if (chan.path == media::MeshAsset::AnimationChannel::Path::Weights) {
+            if (chan.path == tachyon::media::MeshAsset::AnimationChannel::Path::Weights) {
                 size_t num_morphs = chan.values.size() / chan.times.size();
                 evaluated.morph_weights.resize(num_morphs, 0.0f);
                 for (size_t m = 0; m < num_morphs; ++m) {
@@ -54,17 +54,17 @@ void evaluate_mesh_animations(EvaluatedLayerState& evaluated, const media::MeshA
                 
                 if (joint_idx >= 0) {
                     TRS& trs = joint_trs[joint_idx];
-                    if (chan.path == media::MeshAsset::AnimationChannel::Path::Translation) {
+                    if (chan.path == tachyon::media::MeshAsset::AnimationChannel::Path::Translation) {
                         math::Vector3 v0{chan.values[idx*3+0], chan.values[idx*3+1], chan.values[idx*3+2]};
                         math::Vector3 v1{chan.values[(idx+1)*3+0], chan.values[(idx+1)*3+1], chan.values[(idx+1)*3+2]};
                         trs.translation = v0 * (1.0f - t) + v1 * t;
                         trs.has_t = true;
-                    } else if (chan.path == media::MeshAsset::AnimationChannel::Path::Scale) {
+                    } else if (chan.path == tachyon::media::MeshAsset::AnimationChannel::Path::Scale) {
                         math::Vector3 v0{chan.values[idx*3+0], chan.values[idx*3+1], chan.values[idx*3+2]};
                         math::Vector3 v1{chan.values[(idx+1)*3+0], chan.values[(idx+1)*3+1], chan.values[(idx+1)*3+2]};
                         trs.scale = v0 * (1.0f - t) + v1 * t;
                         trs.has_s = true;
-                    } else if (chan.path == media::MeshAsset::AnimationChannel::Path::Rotation) {
+                    } else if (chan.path == tachyon::media::MeshAsset::AnimationChannel::Path::Rotation) {
                         math::Quaternion q0{chan.values[idx*4+0], chan.values[idx*4+1], chan.values[idx*4+2], chan.values[idx*4+3]};
                         math::Quaternion q1{chan.values[(idx+1)*4+0], chan.values[(idx+1)*4+1], chan.values[(idx+1)*4+2], chan.values[(idx+1)*4+3]};
                         if (math::Quaternion::dot(q0, q1) < 0) q1 = q1 * -1.0f;
