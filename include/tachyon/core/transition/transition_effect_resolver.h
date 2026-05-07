@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tachyon/core/transition/transition_descriptor.h"
+#include "tachyon/transition_registry.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include <string>
 #include <functional>
@@ -66,8 +67,8 @@ struct ResolvedTransitionEffect {
  */
 class TransitionEffectResolver {
 public:
-    explicit TransitionEffectResolver(const TransitionRegistry& registry) : registry_(registry) {}
-    
+    explicit TransitionEffectResolver(const TransitionRegistry& registry) : m_registry(registry) {}
+
     /**
      * @brief Resolves a transition effect request into a ready-to-use effect.
      * 
@@ -75,9 +76,9 @@ public:
      * @return ResolvedTransitionEffect with descriptor, kernel, and diagnostics.
      */
     ResolvedTransitionEffect resolve(const TransitionEffectRequest& request) const;
-    
+
 private:
-    const TransitionRegistry& registry_;
+    const TransitionRegistry& m_registry;
 };
 
 } // namespace tachyon

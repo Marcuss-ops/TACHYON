@@ -6,7 +6,7 @@
 // For backward compatibility
 using SurfacePool = tachyon::renderer2d::SurfacePool;
 #include "tachyon/renderer2d/resource/precomp_cache.h"
-#include "tachyon/renderer2d/effects/core/effect_host.h"
+#include "tachyon/renderer2d/effects/effect_host.h"
 #include "tachyon/renderer2d/backend/compute_backend.h"
 #include "tachyon/renderer2d/color/color_management_system.h"
 #include "tachyon/core/shapes/shape_path.h"
@@ -28,15 +28,21 @@ using SurfacePool = tachyon::renderer2d::SurfacePool;
 
 namespace tachyon::profiling { class RenderProfiler; }
 
+namespace tachyon {
+class TransitionRegistry;
+class IRayTracer;
+}
+
+namespace tachyon::renderer3d {
+class Modifier3DRegistry;
+}
+
 namespace tachyon::media {
 class MediaManager;
 class AssetResolver;
 }
 
-namespace tachyon {
-class IRayTracer;
-class TransitionRegistry;
-}
+
 
 namespace tachyon::renderer2d {
 class EffectHost;
@@ -112,7 +118,6 @@ struct RenderContext2D {
     // Text rendering state (formerly TextRenderConfig singleton)
     const ::tachyon::text::FontRegistry* font_registry = nullptr;
     const std::vector<::tachyon::text::SubtitleEntry>* subtitle_entries = nullptr;
-    const ::tachyon::TransitionRegistry* transition_registry = nullptr;
     ::tachyon::media::MediaManager* media_manager = nullptr;
     std::shared_ptr<::tachyon::media::AssetResolver> asset_resolver;
 
@@ -120,6 +125,8 @@ struct RenderContext2D {
     // Set by QualityPolicy::build_render_context() or caller.
     // Non-owning if borrowed from a session-level backend; owning if created per-context.
     std::shared_ptr<ComputeBackend> compute_backend;
+    const renderer3d::Modifier3DRegistry* modifier_registry{nullptr};
+    const TransitionRegistry* transition_registry{nullptr};
 
     std::atomic<bool>* cancel_flag{nullptr};
 };

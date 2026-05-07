@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/transition_registry.h"
 
 #include <ostream>
 #include <string>
@@ -44,11 +45,9 @@ struct InspectionReport {
     }
 };
 
-class TransitionRegistry;
-
 InspectionReport inspect_scene(
     const SceneSpec& scene,
-    const TransitionRegistry& transition_registry,
+    const TransitionRegistry& registry,
     const InspectionOptions& options = {}
 );
 

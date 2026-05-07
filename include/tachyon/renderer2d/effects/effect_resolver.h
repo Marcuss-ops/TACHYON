@@ -6,6 +6,8 @@
 
 namespace tachyon::renderer2d {
 
+class EffectRegistry;
+
 /**
  * @brief Resolved effect information for renderers.
  * 

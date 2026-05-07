@@ -84,10 +84,9 @@ void RayTracer::build_scene(const EvaluatedScene3D& scene) {
                 }
 
                 // 2. Apply modifiers to all submeshes
-                if (!instance.modifiers.empty()) {
-                    Modifier3DRegistry& registry = Modifier3DRegistry::instance();
+                if (!instance.modifiers.empty() && modifier_registry_) {
                     for (const auto& mod_resolved : instance.modifiers) {
-                        auto modifier = registry.create(mod_resolved.type);
+                        auto modifier = modifier_registry_->create(mod_resolved.type);
                         if (modifier) {
                             for (auto& submesh : entry.submeshes) {
                                 Mesh3D mesh;

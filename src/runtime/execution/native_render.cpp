@@ -5,6 +5,7 @@
 #include "tachyon/runtime/execution/jobs/render_job.h"
 #include "tachyon/runtime/profiling/render_profiler.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
+#include "tachyon/transition_registry.h"
 #include "tachyon/core/transition/transition_descriptor.h"
 #include <iostream>
 #include <thread>
@@ -21,7 +22,11 @@ RenderProgressSink* get_sink(RenderProgressSink* sink) {
 }
 
 void ensure_native_render_registries() {
-    // Registries are now passed explicitly; no static initialization needed.
+    static std::once_flag once;
+    std::call_once(once, []() {
+        // Effects and Modifiers are now handled per RenderSession.
+        // TransitionRegistry is also handled per RenderSession.
+    });
 }
 
 const CompiledComposition* find_compiled_composition(const CompiledScene& scene, const std::string& composition_id) {
@@ -158,6 +163,24 @@ RenderSessionResult render_with_session(
 RenderSessionResult NativeRenderer::render(
     const SceneSpec& scene,
     const RenderJob& job,
+    const NativeRenderOptions& options) {
+    TransitionRegistry transition_registry;
+    register_builtin_transitions(transition_registry);
+    return render(scene, job, transition_registry, options);
+}
+
+RenderSessionResult NativeRenderer::render(
+    const CompiledScene& scene,
+    const RenderJob& job,
+    const NativeRenderOptions& options) {
+    TransitionRegistry transition_registry;
+    register_builtin_transitions(transition_registry);
+    return render(scene, job, transition_registry, options);
+}
+
+RenderSessionResult NativeRenderer::render(
+    const SceneSpec& scene,
+    const RenderJob& job,
     TransitionRegistry& transition_registry,
     const NativeRenderOptions& options) {
     ensure_native_render_registries();
@@ -180,7 +203,6 @@ RenderSessionResult NativeRenderer::render(
     }
 
     RenderSession session;
-    session.set_transition_registry(&transition_registry);
     return render_with_session(*compiled_result.value, resolved_job, options, session);
 }
 
@@ -191,7 +213,6 @@ RenderSessionResult NativeRenderer::render(
     const NativeRenderOptions& options) {
     ensure_native_render_registries();
     RenderSession session;
-    session.set_transition_registry(&transition_registry);
     return render_with_session(scene, job, options, session);
 }
 

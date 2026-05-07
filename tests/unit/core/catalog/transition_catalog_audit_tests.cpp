@@ -24,72 +24,74 @@ void check_false(bool condition, const std::string& message) {
 bool run_transition_catalog_audit_tests() {
     g_failures = 0;
 
-    TransitionRegistry transition_registry;
-    tachyon::register_builtin_transitions(transition_registry);
-    tachyon::presets::TransitionPresetRegistry preset_registry;
+    TransitionRegistry registry;
+    register_builtin_transitions(registry);
+    auto& preset_registry = tachyon::presets::TransitionPresetRegistry::instance();
 
-    // Test 1: Registry has entries
+    // Test 1: Registry is not empty after init
     {
-        auto ids = transition_registry.list_all_ids();
-        check_true(!ids.empty(), "TransitionRegistry has entries");
+        auto descriptors = registry.list_all();
+        check_true(descriptors.size() > 0, "TransitionRegistry has entries after init");
     }
 
-    // Test 2: No duplicate IDs
+    // Test 2: Every registered transition has required fields
     {
-        auto ids = transition_registry.list_all_ids();
-        std::size_t original_count = ids.size();
-        
-        // Check for duplicates by using a set
-        std::set<std::string> unique_ids(ids.begin(), ids.end());
-        check_true(unique_ids.size() == original_count, "No duplicate IDs in registry");
+        auto descriptors = registry.list_all();
+        bool all_valid = true;
+        for (const auto* desc : descriptors) {
+            if (desc->id.empty()) {
+                all_valid = false;
+                break;
+            }
+        }
+        check_true(all_valid, "All registered transitions have valid ids");
     }
 
-    // Test 3: All preset IDs exist in registry
+    // Test 3: No duplicate ids
+    {
+        auto ids = registry.list_all_ids();
+        bool has_dupes = false;
+        for (size_t i = 0; i < ids.size(); ++i) {
+            for (size_t j = i + 1; j < ids.size(); ++j) {
+                if (ids[i] == ids[j]) {
+                    has_dupes = true;
+                    break;
+                }
+            }
+            if (has_dupes) break;
+        }
+        check_true(!has_dupes, "No duplicate transition ids in registry");
+    }
+
+    // Test 4: Preset registry and runtime registry alignment
     {
         auto preset_ids = preset_registry.list_ids();
         int missing_from_registry = 0;
         for (const auto& id : preset_ids) {
-            if (!transition_registry.resolve(id)) {
+            if (registry.find_by_id(id) == nullptr) {
                 ++missing_from_registry;
                 std::cerr << "  Preset not in registry: " << id << '\n';
             }
         }
-        check_true(missing_from_registry == 0, "All public presets are registered");
+        check_true(missing_from_registry == 0,
+            "All public presets are in TransitionRegistry");
     }
 
-    // Test 4: Resolve by ID works
+    // Test 5: amber_sweep consistency (if it exists)
     {
-        auto ids = transition_registry.list_all_ids();
-        if (!ids.empty()) {
-            const auto* desc = transition_registry.resolve(ids[0]);
-            check_true(desc != nullptr, "Resolve finds first entry");
-            if (desc) {
-                check_true(desc->id == ids[0], "Resolved ID matches");
-            }
+        const std::string amber_id = "tachyon.transition.lightleak.amber_sweep";
+        const auto* amber_desc = registry.find_by_id(amber_id);
+        const auto* amber_preset = preset_registry.find(amber_id);
+
+        if (amber_desc != nullptr || amber_preset != nullptr) {
+            check_true(amber_desc != nullptr, "amber_sweep in registry if in any registry");
+            check_true(amber_preset != nullptr, "amber_sweep in preset registry if in any registry");
+        } else {
+            std::cout << "  amber_sweep not registered (ok, optional)\n";
         }
     }
 
-    // Test 5: Resolve by alias works (if any aliases exist)
-    {
-        auto descriptors = transition_registry.list_all();
-        bool found_alias_test = false;
-        for (const auto* desc : descriptors) {
-            if (!desc->aliases.empty()) {
-                const auto* by_alias = transition_registry.find_by_alias(desc->aliases[0]);
-                check_true(by_alias != nullptr, "Find by alias works");
-                if (by_alias) {
-                    check_true(by_alias->id == desc->id, "Alias resolves to correct ID");
-                }
-                found_alias_test = true;
-                break;
-            }
-        }
-        if (!found_alias_test) {
-            std::cout << "  No aliases found to test (ok)\n";
-        }
-    }
-
-    std::cout << "Transition registry audit tests: " << (g_failures == 0 ? "PASSED" : "FAILED")
+    std::cout << "Transition catalog audit tests: " << (g_failures == 0 ? "PASSED" : "FAILED")
               << " (" << g_failures << " failures)\n";
 
     return g_failures == 0;

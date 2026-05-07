@@ -17,7 +17,7 @@ ResolvedEffect resolve_effect(const EffectSpec& spec, const EffectRegistry& regi
     
     result.id = spec.type;
     
-    // Look up in EffectRegistry (canonical source of truth)
+    // Look up in registry (canonical source of truth)
     const auto* descriptor = registry.find(spec.type);
     
     if (!descriptor) {

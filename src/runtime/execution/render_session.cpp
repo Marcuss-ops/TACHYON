@@ -107,7 +107,9 @@ void configure_render_context(
     RenderSessionWorkspace& workspace,
     profiling::RenderProfiler* profiler,
     runtime::RuntimeSurfacePool* surface_pool,
-    const TransitionRegistry* transition_registry) {
+    const renderer2d::EffectRegistry& effect_registry,
+    const renderer3d::Modifier3DRegistry& modifier_registry,
+    const TransitionRegistry& transition_registry) {
     workspace.context.policy = workspace.effective_plan.render_plan.quality_policy;
     workspace.context.renderer2d.font_registry = ::tachyon::renderer2d::get_default_font_registry();
 
@@ -121,7 +123,9 @@ void configure_render_context(
     workspace.context.surface_pool = surface_pool;
     workspace.context.profiler = profiler;
     workspace.context.renderer2d.profiler = profiler;
-    workspace.context.renderer2d.transition_registry = transition_registry;
+    workspace.context.renderer2d.effects = renderer2d::create_effect_host(effect_registry);
+    workspace.context.renderer2d.modifier_registry = &modifier_registry;
+    workspace.context.renderer2d.transition_registry = &transition_registry;
 }
 
 bool begin_output_sink(
@@ -236,6 +240,12 @@ void finalize_session_metrics(
 } // namespace
 
 
+RenderSession::RenderSession() {
+    renderer2d::register_builtin_effects(m_effect_registry, m_transition_registry);
+    renderer3d::register_builtin_modifiers(m_modifier_registry);
+    register_builtin_transitions(m_transition_registry);
+}
+
 RenderSessionResult RenderSession::render(
     const SceneSpec& scene,
     const CompiledScene& compiled_scene,
@@ -262,8 +272,9 @@ RenderSessionResult RenderSession::render(
     runtime::SurfacePoolPolicy surface_policy;
     const auto surface_count = surface_policy.resolve(w, h, worker_count);
     m_surface_pool = std::make_unique<runtime::RuntimeSurfacePool>(w, h, surface_count);
-    
-    configure_render_context(workspace, m_profiler, m_surface_pool.get(), m_transition_registry);
+
+    const TransitionRegistry& transition_registry = m_transition_registry_override ? *m_transition_registry_override : m_transition_registry;
+    configure_render_context(workspace, m_profiler, m_surface_pool.get(), m_effect_registry, m_modifier_registry, transition_registry);
 
     workspace.sink = output::create_frame_output_sink(workspace.effective_plan.render_plan);
     

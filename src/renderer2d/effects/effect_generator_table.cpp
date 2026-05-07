@@ -1,20 +1,15 @@
-#include "tachyon/renderer2d/effects/effect_descriptor.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
 #include "tachyon/renderer2d/effects/core/effect_host.h"
 
-#include <array>
-
 namespace tachyon::renderer2d {
 
-namespace {
+std::vector<EffectDescriptor> get_generator_effect_descriptors() {
+    std::vector<EffectDescriptor> descriptors;
 
-static const std::array<EffectBuiltinSpec, 3> kGeneratorEffects = {{
-    {
+    // Light Leak
+    descriptors.push_back({
         "tachyon.effect.generator.light_leak",
-        "Light Leak",
-        "generator",
-        "Procedural light leak and film burn effect.",
-        {"light", "film", "vintage"},
+        {"tachyon.effect.generator.light_leak", "Light Leak", "Procedural light leak and film burn effect.", "effect.generator", {"light", "film", "vintage"}},
         registry::ParameterSchema({
             {"progress", "Progress", "Animation progress (0-1)", 0.0, 0.0, 1.0},
             {"speed", "Speed", "Animation speed multiplier", 1.0, 0.1, 10.0},
@@ -25,14 +20,16 @@ static const std::array<EffectBuiltinSpec, 3> kGeneratorEffects = {{
             {"color_a", "Color A", "Start color", ColorSpec{255, 204, 153, 255}},
             {"color_b", "Color B", "End color", ColorSpec{255, 102, 51, 255}}
         }),
-        make_effect_factory<LightLeakEffect>()
-    },
-    {
+        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+            LightLeakEffect effect;
+            output = effect.apply(input, params);
+        }
+    });
+
+    // Particle Emitter
+    descriptors.push_back({
         "tachyon.effect.generator.particle_emitter",
-        "Particle Emitter",
-        "generator",
-        "Simple procedural particle system.",
-        {"particle", "emitter", "physics"},
+        {"tachyon.effect.generator.particle_emitter", "Particle Emitter", "Simple procedural particle system.", "effect.generator", {"particle", "emitter", "physics"}},
         registry::ParameterSchema({
             {"time", "Time", "Current time in seconds", 0.0},
             {"seed", "Seed", "Random seed", 1.0},
@@ -51,27 +48,26 @@ static const std::array<EffectBuiltinSpec, 3> kGeneratorEffects = {{
             {"emit_width", "Emit Width", "Width of the emission area", 1920.0},
             {"emit_height", "Emit Height", "Height of the emission area", 1080.0}
         }),
-        make_effect_factory<ParticleEmitterEffect>()
-    },
-    {
+        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+            ParticleEmitterEffect effect;
+            output = effect.apply(input, params);
+        }
+    });
+
+    // Lens Flare
+    descriptors.push_back({
         "tachyon.effect.generator.lens_flare",
-        "Lens Flare",
-        "generator",
-        "Simulated optical lens flare.",
-        {"lens", "flare", "optical"},
+        {"tachyon.effect.generator.lens_flare", "Lens Flare", "Simulated optical lens flare.", "effect.generator", {"lens", "flare", "optical"}},
         registry::ParameterSchema({
             {"lights", "Lights", "Encoded light configuration string", ""}
         }),
-        make_effect_factory<LensFlareEffect>()
-    }
-}};
+        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+            LensFlareEffect effect;
+            output = effect.apply(input, params);
+        }
+    });
 
-} // namespace
-
-void register_generator_effects(EffectRegistry& registry) {
-    for (const auto& spec : kGeneratorEffects) {
-        register_effect_from_spec(registry, spec);
-    }
+    return descriptors;
 }
 
 } // namespace tachyon::renderer2d

@@ -5,6 +5,7 @@
 
 #ifdef TACHYON_ENABLE_3D
 #include "tachyon/renderer3d/core/ray_tracer.h"
+#include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
 #endif
 
 namespace tachyon {
@@ -28,7 +29,22 @@ RasterizationResult RasterizationStep::execute(
 #ifdef TACHYON_ENABLE_3D
     // Inject ray tracer if scene has 3D layers and none has been injected yet
     if (!context.renderer2d.ray_tracer) {
-        context.renderer2d.ray_tracer = std::make_shared<renderer3d::RayTracer>(context.renderer2d.media_manager);
+        if (context.renderer2d.modifier_registry) {
+            context.renderer2d.ray_tracer = std::make_shared<renderer3d::RayTracer>(
+                context.renderer2d.media_manager,
+                context.renderer2d.modifier_registry);
+        } else {
+            // Fallback for safety, though RenderSession should have initialized this
+            static renderer3d::Modifier3DRegistry global_fallback;
+            static bool initialized = false;
+            if (!initialized) {
+                ::tachyon::renderer3d::register_builtin_modifiers(global_fallback);
+                initialized = true;
+            }
+            context.renderer2d.ray_tracer = std::make_shared<renderer3d::RayTracer>(
+                context.renderer2d.media_manager,
+                &global_fallback);
+        }
     }
 #endif
 

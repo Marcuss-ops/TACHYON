@@ -5,11 +5,15 @@
 
 namespace tachyon::renderer2d {
 
-/**
- * Initialize built-in transitions in the global TransitionRegistry.
- * Should be called once at startup.
- */
-void init_builtin_transitions(TransitionRegistry& registry);
+class GlslTransitionEffect : public Effect {
+public:
+    explicit GlslTransitionEffect(const tachyon::TransitionRegistry& registry) : m_registry(registry) {}
+    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
+
+private:
+    const tachyon::TransitionRegistry& m_registry;
+};
 
 }  // namespace tachyon::renderer2d
+
 

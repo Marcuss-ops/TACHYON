@@ -122,16 +122,16 @@ renderer2d::Color parse_color_string(const std::string& str) {
     return renderer2d::Color::black();
 }
 
-ColorSpec to_color_spec(const renderer2d::Color& c) {
-    return {
-        static_cast<std::uint8_t>(std::clamp(c.r * 255.0f, 0.0f, 255.0f)),
-        static_cast<std::uint8_t>(std::clamp(c.g * 255.0f, 0.0f, 255.0f)),
-        static_cast<std::uint8_t>(std::clamp(c.b * 255.0f, 0.0f, 255.0f)),
-        static_cast<std::uint8_t>(std::clamp(c.a * 255.0f, 0.0f, 255.0f))
-    };
-}
-
 void parse_gradient_stops(pugi::xml_node node, GradientSpec& gs) {
+    auto to_color_spec = [](const renderer2d::Color& c) -> ColorSpec {
+        return {
+            static_cast<uint8_t>(std::clamp(c.r * 255.0f, 0.0f, 255.0f)),
+            static_cast<uint8_t>(std::clamp(c.g * 255.0f, 0.0f, 255.0f)),
+            static_cast<uint8_t>(std::clamp(c.b * 255.0f, 0.0f, 255.0f)),
+            static_cast<uint8_t>(std::clamp(c.a * 255.0f, 0.0f, 255.0f))
+        };
+    };
+
     for (pugi::xml_node stop : node.children("stop")) {
         GradientStop spec_stop;
         const char* offset = stop.attribute("offset").value();
@@ -149,7 +149,7 @@ void parse_gradient_stops(pugi::xml_node node, GradientSpec& gs) {
         }
         const char* stop_opacity = stop.attribute("stop-opacity").value();
         if (stop_opacity) {
-            spec_stop.color.a = static_cast<std::uint8_t>(std::clamp(std::stof(stop_opacity) * 255.0f, 0.0f, 255.0f));
+            spec_stop.color.a = static_cast<uint8_t>(std::clamp(std::stof(stop_opacity) * 255.0f, 0.0f, 255.0f));
         }
         gs.stops.push_back(spec_stop);
     }
@@ -214,7 +214,11 @@ bool parse_svg_string(const std::string& svg_content, ParsedSvg& out_result, Dia
             renderer2d::FillPathStyle fill;
             const char* fill_attr = child.attribute("fill").value();
             if (fill_attr && strcmp(fill_attr, "none") != 0) {
-                fill.fill_color = parse_color_string(fill_attr);
+                if (fill_attr[0] == 'u' && strstr(fill_attr, "url(#")) {
+                    // TODO: handle gradient URLs
+                } else {
+                    fill.fill_color = parse_color_string(fill_attr);
+                }
             }
             out_result.fill_styles.push_back(fill);
 

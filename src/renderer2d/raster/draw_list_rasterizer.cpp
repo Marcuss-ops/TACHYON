@@ -2,7 +2,9 @@
 
 #include "tachyon/renderer2d/raster/rasterizer_ops.h"
 #include "tachyon/renderer2d/raster/perspective_rasterizer.h"
-#include "tachyon/renderer2d/effects/core/effect_host.h"
+#include "tachyon/renderer2d/effects/effect_host.h"
+#include "tachyon/renderer2d/effects/effect_registry.h"
+#include "tachyon/transition_registry.h"
 
 #include <algorithm>
 #include <vector>
@@ -135,8 +137,11 @@ RasterizedFrame2D render_draw_list_2d(
         });
     }
 
-    auto effect_host = renderer2d::create_effect_host();
-    renderer2d::EffectHost::register_builtins(*effect_host);
+    renderer2d::EffectRegistry effect_registry;
+    TransitionRegistry transition_registry;
+    register_builtin_transitions(transition_registry);
+    renderer2d::register_builtin_effects(effect_registry, transition_registry);
+    auto effect_host = renderer2d::create_effect_host(effect_registry);
 
     for (const auto* command : ordered_commands) {
     if (command->kind == renderer2d::DrawCommandKind::MaskRect && command->mask_rect.has_value()) {

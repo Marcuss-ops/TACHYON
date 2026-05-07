@@ -3,12 +3,16 @@
 #include "tachyon/core/core.h"
 #include "cli/cli_internal.h"
 #include "tachyon/core/transition/transition_descriptor.h"
+#include "tachyon/transition_registry.h"
 #include <functional>
 #include <iostream>
 #include <string>
 #include <vector>
 
 namespace tachyon {
+
+// Canonical transition registry for CLI operations
+static TransitionRegistry g_cli_transition_registry;
 
 namespace {
 
@@ -24,7 +28,7 @@ struct CommandEntry {
     const char* usage;
     // Returns false (+ prints to err) when required args are missing.
     std::function<bool(const CliOptions&, std::ostream&)> validate;
-    std::function<bool(const CliOptions&, std::ostream&, std::ostream&, TransitionRegistry&)> handler;
+    std::function<bool(const CliOptions&, std::ostream&, std::ostream&)> handler;
 };
 
 static const std::vector<CommandEntry> kCommands = {
@@ -197,14 +201,15 @@ int run_cli(int argc, char** argv) {
         return 0;
     }
 
-    TransitionRegistry transition_registry;
-    register_builtin_transitions(transition_registry);
+    // Initialize all built-in systems (Transitions, Presets, etc.)
+    // Note: We do this here instead of in each DLL to avoid circular link dependencies.
+    ::tachyon::register_builtin_transitions(g_cli_transition_registry);
 
     // Dispatch through registry
     for (const auto& cmd : kCommands) {
         if (options.command != cmd.name) continue;
         if (cmd.validate && !cmd.validate(options, std::cerr)) return 1;
-        return cmd.handler(options, std::cout, std::cerr, transition_registry) ? 0 : 2;
+        return cmd.handler(options, std::cout, std::cerr) ? 0 : 2;
     }
 
     print_help(std::cerr);

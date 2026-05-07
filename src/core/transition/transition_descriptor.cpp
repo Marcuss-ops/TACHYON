@@ -4,7 +4,7 @@
 
 namespace tachyon {
 
-TransitionResolutionResult resolve_transition(const std::string& id, TransitionRegistry& registry) {
+TransitionResolutionResult resolve_transition(const std::string& id, const TransitionRegistry& registry) {
     TransitionResolutionResult result;
     
     const auto* desc = registry.resolve(id);
@@ -24,31 +24,6 @@ TransitionResolutionResult resolve_transition(const std::string& id, TransitionR
     }
 
     return result;
-}
-
-void register_transition_descriptor(const TransitionDescriptor& desc, TransitionRegistry& registry) {
-    registry.register_descriptor(desc);
-}
-
-TransitionDescriptor make_descriptor(const TransitionBuiltinSpec& spec) {
-    TransitionDescriptor desc;
-    desc.id = std::string(spec.id);
-    desc.display_name = std::string(spec.display_name);
-    desc.description = std::string(spec.description);
-    desc.category = spec.category;
-    desc.runtime_kind = spec.runtime_kind;
-    desc.capabilities.supports_cpu = spec.supports_cpu;
-    desc.capabilities.supports_gpu = spec.supports_gpu;
-    desc.cpu_fn = spec.cpu_fn;
-    desc.glsl_fn = spec.glsl_fn;
-    desc.params = spec.params;
-    
-    desc.aliases.reserve(spec.aliases.size());
-    for (const auto& alias : spec.aliases) {
-        desc.aliases.push_back(std::string(alias));
-    }
-    
-    return desc;
 }
 
 } // namespace tachyon

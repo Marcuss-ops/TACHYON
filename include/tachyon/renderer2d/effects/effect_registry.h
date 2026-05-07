@@ -21,11 +21,15 @@ public:
     const EffectDescriptor* find(std::string_view id) const;
 
     std::vector<std::string> list_ids() const;
-
-    void register_builtins();
-
 private:
     registry::TypedRegistry<EffectDescriptor> registry_;
 };
+
+} // namespace tachyon::renderer2d
+
+namespace tachyon { class TransitionRegistry; }
+
+namespace tachyon::renderer2d {
+void register_builtin_effects(EffectRegistry& registry, const tachyon::TransitionRegistry& transition_registry);
 
 } // namespace tachyon::renderer2d

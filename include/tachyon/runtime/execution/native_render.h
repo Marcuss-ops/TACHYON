@@ -35,6 +35,16 @@ public:
     static RenderSessionResult render(
         const SceneSpec& scene,
         const RenderJob& job,
+        const NativeRenderOptions& options = NativeRenderOptions());
+
+    static RenderSessionResult render(
+        const CompiledScene& scene,
+        const RenderJob& job,
+        const NativeRenderOptions& options = NativeRenderOptions());
+
+    static RenderSessionResult render(
+        const SceneSpec& scene,
+        const RenderJob& job,
         TransitionRegistry& transition_registry,
         const NativeRenderOptions& options = NativeRenderOptions());
 

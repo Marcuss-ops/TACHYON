@@ -1,0 +1,66 @@
+#pragma once
+
+#include "tachyon/background_registry.h"
+#include <string>
+#include <vector>
+#include <string_view>
+
+namespace tachyon {
+
+enum class BackgroundCatalogRole {
+    Solid,
+    Gradient,
+    Procedural,
+    Image
+};
+
+struct BackgroundCatalogEntry {
+    std::string id;
+    BackgroundCatalogRole role{BackgroundCatalogRole::Solid};
+    std::string preset_params; // JSON schema for expected params
+    std::string procedural_factory_id;
+    BackgroundStatus status{BackgroundStatus::Stable};
+    std::string description;
+};
+
+/**
+ * @brief Thin compatibility wrapper over BackgroundRegistry.
+ * @deprecated Use BackgroundRegistry directly for new code.
+ */
+class BackgroundCatalog {
+public:
+    explicit BackgroundCatalog(BackgroundRegistry& registry);
+
+    // Delegates to BackgroundRegistry
+    void register_entry(const BackgroundCatalogEntry& entry);
+    void unregister_entry(std::string_view id);
+
+    const BackgroundCatalogEntry* find(std::string_view id) const;
+
+    std::size_t count() const;
+    const BackgroundCatalogEntry* get_by_index(std::size_t index) const;
+
+    std::vector<std::string> list_all_ids() const;
+    std::vector<BackgroundCatalogEntry> list_all() const;
+
+    // Validation
+    bool validate_preset(std::string_view preset_id, std::string& error) const;
+
+    // Audit
+    struct AuditResult {
+        std::vector<std::string> missing_catalog_entries;
+        std::vector<std::string> missing_factories;
+        std::vector<std::string> duplicate_ids;
+        [[nodiscard]] bool ok() const {
+            return missing_catalog_entries.empty() &&
+                   missing_factories.empty() &&
+                   duplicate_ids.empty();
+        }
+    };
+    AuditResult audit() const;
+
+private:
+    BackgroundRegistry& registry_;
+};
+
+} // namespace tachyon

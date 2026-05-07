@@ -1,4 +1,5 @@
 #include "tachyon/backgrounds.hpp"
+#include "tachyon/background_registry.h"
 
 namespace tachyon {
 

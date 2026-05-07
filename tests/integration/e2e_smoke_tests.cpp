@@ -1,6 +1,11 @@
 #include "tachyon/core/spec/schema/scene_spec.h"
 #include "tachyon/presets/background/background_preset_registry.h"
 #include "tachyon/presets/text/text_layer_preset_registry.h"
+#include "tachyon/transition_registry.h"
+#include "tachyon/presets/transition/transition_preset_registry.h"
+#include "tachyon/background_registry.h"
+#include "tachyon/backgrounds.hpp"
+#include "tachyon/core/transition/transition_descriptor.h"
 
 #include <iostream>
 #include <string>
@@ -34,8 +39,7 @@ bool run_e2e_smoke_tests() {
         params.set("height", 1080.0f);
         params.set("duration", 5.0f);
 
-        presets::BackgroundPresetRegistry registry;
-        auto layer_opt = registry.create("tachyon.background.solid", params);
+        auto layer_opt = BackgroundPresetRegistry::instance().create("tachyon.background.solid", params);
         check_true(layer_opt.has_value(), "Background solid preset creates valid layer");
         if (layer_opt) {
             check_true(layer_opt->type == LayerType::Solid, "Background produces Solid layer");
@@ -62,19 +66,24 @@ bool run_e2e_smoke_tests() {
 
     // Test 3: Transition registry has expected entries
     {
-        tachyon::TransitionRegistry registry;
-        tachyon::register_builtin_transitions(registry);
-        auto ids = registry.list_all_ids();
-        check_true(!ids.empty(), "Transition registry has entries");
-        check_true(registry.resolve("tachyon.transition.fade") != nullptr, "Fade transition exists");
+        TransitionRegistry transition_registry;
+        register_builtin_transitions(transition_registry);
+        auto descriptors = transition_registry.list_all();
+        check_true(descriptors.size() > 0, "Transition registry has entries");
+        
+        auto* fade_desc = transition_registry.resolve("tachyon.transition.fade");
+        check_true(fade_desc != nullptr, "Fade transition exists");
     }
 
     // Test 4: Background registry has expected entries
     {
-        tachyon::BackgroundRegistry registry;
-        auto ids = registry.list_all_ids();
-        check_true(!ids.empty(), "Background registry has entries");
-        check_true(registry.resolve("tachyon.background.solid") != nullptr, "Solid background exists");
+        BackgroundRegistry background_registry;
+        register_builtin_background_descriptors(background_registry);
+        auto entries = background_registry.catalog_entries();
+        check_true(entries.size() > 0, "Background registry has entries");
+        
+        auto* solid_desc = background_registry.resolve("tachyon.background.solid");
+        check_true(solid_desc != nullptr, "Solid background exists");
     }
 
     // Test 5: Output directory exists (for smoke renders)

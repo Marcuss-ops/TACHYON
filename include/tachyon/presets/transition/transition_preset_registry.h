@@ -11,6 +11,8 @@
 #include <vector>
 #include <optional>
 
+namespace tachyon { class TransitionRegistry; }
+
 namespace tachyon::presets {
 
 /**

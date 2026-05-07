@@ -3,16 +3,15 @@
 
 namespace tachyon::renderer2d {
 
-// Forward declarations for table registration functions
-void register_blur_effects(EffectRegistry& registry);
-void register_color_effects(EffectRegistry& registry);
-void register_transition_effects(EffectRegistry& registry);
-void register_distortion_effects(EffectRegistry& registry);
-void register_generator_effects(EffectRegistry& registry);
-void register_stylize_effects(EffectRegistry& registry);
+// Forward declarations for table descriptor functions
+std::vector<EffectDescriptor> get_blur_effect_descriptors();
+std::vector<EffectDescriptor> get_color_effect_descriptors();
+std::vector<EffectDescriptor> get_transition_effect_descriptors(const tachyon::TransitionRegistry& transition_registry);
+std::vector<EffectDescriptor> get_distortion_effect_descriptors();
+std::vector<EffectDescriptor> get_generator_effect_descriptors();
+std::vector<EffectDescriptor> get_stylize_effect_descriptors();
 
 EffectRegistry::EffectRegistry() {
-    register_builtins();
 }
 
 void EffectRegistry::register_spec(EffectDescriptor descriptor) {
@@ -30,40 +29,19 @@ std::vector<std::string> EffectRegistry::list_ids() const {
     return registry_.list_ids();
 }
 
-void EffectRegistry::register_builtins() {
-    register_blur_effects(*this);
-    register_color_effects(*this);
-    register_transition_effects(*this);
-    register_distortion_effects(*this);
-    register_generator_effects(*this);
-    register_stylize_effects(*this);
-}
-
-void register_effect_from_spec(EffectRegistry& registry, const EffectBuiltinSpec& spec) {
-    std::string description = std::string(spec.description);
-    if (description.empty()) {
-        description = "Professional " + std::string(spec.category) + " effect.";
-    }
-    
-    std::vector<std::string> tags;
-    if (spec.tags.empty()) {
-        tags = {std::string(spec.category), std::string(spec.category)};
-    } else {
-        tags.reserve(spec.tags.size());
-        for (auto t : spec.tags) {
-            tags.push_back(std::string(t));
+void register_builtin_effects(EffectRegistry& registry, const tachyon::TransitionRegistry& transition_registry) {
+    auto register_all = [&](std::vector<EffectDescriptor> descriptors) {
+        for (auto& desc : descriptors) {
+            registry.register_spec(std::move(desc));
         }
-    }
-    
-    registry.register_spec({
-        std::string(spec.id),
-        {std::string(spec.id), std::string(spec.display_name), std::move(description), "effect." + std::string(spec.category), std::move(tags)},
-        spec.schema,
-        spec.factory,
-        spec.aux_requirements,
-        spec.is_deterministic,
-        spec.supports_gpu_acceleration
-    });
+    };
+
+    register_all(get_blur_effect_descriptors());
+    register_all(get_color_effect_descriptors());
+    register_all(get_transition_effect_descriptors(transition_registry));
+    register_all(get_distortion_effect_descriptors());
+    register_all(get_generator_effect_descriptors());
+    register_all(get_stylize_effect_descriptors());
 }
 
 } // namespace tachyon::renderer2d

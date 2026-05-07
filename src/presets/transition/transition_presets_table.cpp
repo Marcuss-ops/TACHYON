@@ -3,7 +3,7 @@
 namespace tachyon::presets {
 
 namespace {
-
+ 
 void register_builtin(
     TransitionPresetRegistry& registry,
     const std::string& id,
@@ -32,7 +32,7 @@ void register_builtin(
     };
     registry.register_spec(std::move(spec));
 }
-
+ 
 } // namespace
 
 void TransitionPresetRegistry::load_builtins() {

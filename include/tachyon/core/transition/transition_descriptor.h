@@ -3,13 +3,14 @@
 #include "tachyon/core/registry/parameter_schema.h"
 #include "tachyon/core/spec/schema/common/common_spec.h"
 #include <string>
-#include <string_view>
 #include <vector>
 #include <optional>
 #include <functional>
 #include <unordered_map>
 
 namespace tachyon {
+
+class TransitionRegistry;
 
 namespace renderer2d {
 struct Color;
@@ -92,29 +93,6 @@ struct TransitionDescriptor {
 };
 
 /**
- * @brief Declarative specification for a built-in transition.
- * Optimized for static table definition and human readability.
- */
-struct TransitionBuiltinSpec {
-    std::string_view id;
-    std::string_view display_name;
-    std::string_view description;
-    TransitionCategory category;
-    TransitionRuntimeKind runtime_kind;
-    CpuTransitionFn cpu_fn{nullptr};
-    GlslTransitionFn glsl_fn{nullptr};
-    bool supports_cpu{false};
-    bool supports_gpu{false};
-    registry::ParameterSchema params{};
-    std::vector<std::string_view> aliases{};
-};
-
-/**
- * @brief Factory helper to convert a declarative spec to a full TransitionDescriptor.
- */
-TACHYON_API TransitionDescriptor make_descriptor(const TransitionBuiltinSpec& spec);
-
-/**
  * @brief Catalog entry derived from TransitionDescriptor (read-only view for UI/catalog)
  */
 struct TransitionCatalogEntry {
@@ -127,17 +105,10 @@ struct TransitionCatalogEntry {
     bool supports_gpu;
 };
 
-class TransitionRegistry;
-
 /**
  * @brief Resolves a transition ID into a detailed result, respecting engine policy.
  */
-TACHYON_API TransitionResolutionResult resolve_transition(const std::string& id, TransitionRegistry& registry);
-
-/**
- * @brief Registers a transition across all internal registries.
- */
-TACHYON_API void register_transition_descriptor(const TransitionDescriptor& desc, TransitionRegistry& registry);
+TACHYON_API TransitionResolutionResult resolve_transition(const std::string& id, const TransitionRegistry& registry);
 
 /**
  * @brief Registers all built-in transitions.

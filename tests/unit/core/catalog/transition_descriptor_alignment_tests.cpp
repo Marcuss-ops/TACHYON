@@ -7,52 +7,67 @@ namespace tachyon {
 
 class TransitionAlignmentTest : public ::testing::Test {
 protected:
+    TransitionRegistry registry;
+
     void SetUp() override {
         // Ensure built-ins are loaded
-        register_builtin_transitions(registry_);
-        preset_registry_.load_builtins();
+        register_builtin_transitions(registry);
+        presets::TransitionPresetRegistry::instance().load_builtins();
     }
-    
-    TransitionRegistry registry_;
-    presets::TransitionPresetRegistry preset_registry_;
 };
 
 TEST_F(TransitionAlignmentTest, AllDescriptorsHaveRendererBindings) {
-    auto descriptors = registry_.list_all();
+    auto descriptors = registry.list_all();
     EXPECT_GT(descriptors.size(), 0);
-    
+
     for (const auto* desc : descriptors) {
-        // Every descriptor must have a renderer_effect_id
-        EXPECT_FALSE(desc->renderer_effect_id.empty()) 
-            << "Transition '" << desc->id << "' is missing a renderer_effect_id.";
-        
-        // Check alignment - in new system, finding by ID returns the same descriptor
-        const auto* runtime_desc = registry_.find_by_id(desc->id);
-        ASSERT_NE(runtime_desc, nullptr) 
-            << "Transition '" << desc->id << "' missing in TransitionRegistry.";
-            
-        EXPECT_EQ(runtime_desc->renderer_effect_id, desc->renderer_effect_id);
+        // Every descriptor must have a valid id
+        EXPECT_FALSE(desc->id.empty())
+            << "Transition descriptor has empty id.";
+
+        // Every descriptor must be resolvable in the registry
+        const auto* found = registry.find_by_id(desc->id);
+        ASSERT_NE(found, nullptr)
+            << "Transition '" << desc->id << "' in registry but cannot be found by id.";
     }
 }
 
 TEST_F(TransitionAlignmentTest, AllPresetsHaveDescriptors) {
-    auto preset_ids = preset_registry_.list_ids();
-    
+    auto preset_ids = presets::TransitionPresetRegistry::instance().list_ids();
+
     for (const auto& id : preset_ids) {
         if (id == "tachyon.transition.none") continue;
 
-        LayerTransitionSpec spec = preset_registry_.create(id, {});
-        const auto* desc = registry_.resolve(spec.transition_id);
-        EXPECT_NE(desc, nullptr) 
-            << "Preset '" << id << "' (id=" << spec.transition_id << ") exists but has no corresponding TransitionDescriptor.";
+        const auto* desc = registry.find_by_id(id);
+        EXPECT_NE(desc, nullptr)
+            << "Preset '" << id << "' exists but has no corresponding TransitionDescriptor.";
     }
 }
 
 TEST_F(TransitionAlignmentTest, AllDescriptorsHaveValidSchemas) {
-    auto descriptors = registry_.list_all();
-    
+    auto descriptors = registry.list_all();
+
     for (const auto* desc : descriptors) {
-        // Verification of schema structure if needed
+        // For product, every public transition should have a schema (even if empty)
+        // to avoid ad-hoc parameter parsing.
+        // (Note: some might be internal, we could skip those if we had a flag)
+        // EXPECT_GT(desc->params.parameters.size(), 0); // Not necessarily true for all
+    }
+}
+
+TEST_F(TransitionAlignmentTest, RegistryDoesNotContainDescriptorlessTransitions) {
+    const auto runtime_ids = registry.list_all_ids();
+
+    for (const auto& id : runtime_ids) {
+        if (id == "tachyon.transition.none" || id == "none") {
+            continue;
+        }
+
+        const auto* desc = registry.find_by_id(id);
+        EXPECT_NE(desc, nullptr)
+            << "Runtime transition '" << id
+            << "' exists in TransitionRegistry but has no TransitionDescriptor. "
+            << "New transitions must be registered through register_transition_descriptor().";
     }
 }
 

@@ -12,13 +12,13 @@ namespace tachyon {
 bool run_preset_audit_tests() {
     std::cout << "Running Preset Audit tests..." << std::endl;
 
-    presets::TransitionPresetRegistry registry;
+    auto& registry = presets::TransitionPresetRegistry::instance();
     // Use default root (current dir / assets / catalog)
-    TachyonCatalog catalog(""); 
+    TachyonCatalog catalog("");
 
     auto registered_ids = registry.list_ids();
     const auto& catalog_transitions = catalog.transitions();
-    
+
     if (catalog_transitions.empty()) {
         std::cout << "Skipping Preset Audit: Catalog transitions are empty (no assets found at " << catalog.root().generic_string() << ").\n";
         return true;
@@ -37,9 +37,9 @@ bool run_preset_audit_tests() {
     for (const auto& id : registered_ids) {
         if (id == "tachyon.transition.none") continue;
 
-        auto it = std::find_if(catalog_transitions.begin(), catalog_transitions.end(), 
+        auto it = std::find_if(catalog_transitions.begin(), catalog_transitions.end(),
             [&](const CatalogTransitionEntry& e) { return e.id == id; });
-            
+
         if (it == catalog_transitions.end()) {
             std::cerr << "Audit Error: Registry entry '" << id << "' has no matching catalog asset folder.\n";
             return false;
@@ -52,11 +52,11 @@ bool run_preset_audit_tests() {
             std::cerr << "Audit Error: Asset '" << transition.id << "' missing shader: " << transition.shader_path << "\n";
             return false;
         }
-        
+
         // According to USER_REQUEST, thumb.png is required.
         if (!std::filesystem::exists(transition.thumb_path)) {
              std::cerr << "Audit Error: Asset '" << transition.id << "' missing thumb: " << transition.thumb_path << "\n";
-             return false; 
+             return false;
         }
 
         // Verify path conventions
@@ -74,7 +74,6 @@ bool run_preset_audit_tests() {
     // 4. Runtime Registry Alignment Audit
     TransitionRegistry runtime_reg;
     register_builtin_transitions(runtime_reg);
-    renderer2d::init_builtin_transitions(runtime_reg); // Ensure built-ins are loaded
 
     for (const auto& id : registered_ids) {
         if (id == "tachyon.transition.none") continue;
@@ -89,15 +88,15 @@ bool run_preset_audit_tests() {
         }
 
         // 4b. Check if transition_id exists in runtime registry
-        const TransitionSpec* runtime_spec = runtime_reg.find(spec.transition_id);
-        if (runtime_spec == nullptr) {
+        const auto* desc = runtime_reg.find_by_id(spec.transition_id);
+        if (desc == nullptr) {
             std::cerr << "Audit Error: Preset '" << id << "' maps to runtime ID '" << spec.transition_id << "' which is MISSING from TransitionRegistry.\n";
             return false;
         }
 
-        // 4c. Check if it has a pixel function OR a valid state type
-        if (runtime_spec->function == nullptr && runtime_spec->state_type == TransitionSpec::Type::None) {
-            std::cerr << "Audit Error: Runtime transition '" << spec.transition_id << "' has neither a pixel function nor a state type.\n";
+        // 4c. Check if it has a cpu function OR a glsl function
+        if (desc->cpu_fn == nullptr && desc->glsl_fn == nullptr) {
+            std::cerr << "Audit Error: Runtime transition '" << spec.transition_id << "' has neither a cpu_fn nor a glsl_fn.\n";
             return false;
         }
     }

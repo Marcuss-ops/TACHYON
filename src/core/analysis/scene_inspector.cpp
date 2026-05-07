@@ -113,7 +113,7 @@ bool has_text_motion(const TextAnimatorSpec& animator) {
 
 } // namespace
 
-InspectionReport inspect_scene(const SceneSpec& scene, const TransitionRegistry& transition_registry, const InspectionOptions& options) {
+InspectionReport inspect_scene(const SceneSpec& scene, const TransitionRegistry& registry, const InspectionOptions& options) {
     InspectionReport report;
     (void)options.samples;
 
@@ -261,7 +261,7 @@ InspectionReport inspect_scene(const SceneSpec& scene, const TransitionRegistry&
             if (layer.transition_in.kind != TransitionKind::None || !layer.transition_in.transition_id.empty()) {
                 add_info(report, options, "layer.transition_in", layer_path, "Layer has an entrance transition.");
                 if (!layer.transition_in.transition_id.empty()) {
-                    if (transition_registry.resolve(layer.transition_in.transition_id) == nullptr) {
+                    if (registry.find(layer.transition_in.transition_id) == nullptr) {
                         add_issue(report, InspectionSeverity::Error, "layer.transition_in.missing_id", layer_path,
                             "Transition ID '" + layer.transition_in.transition_id + "' not found in registry.");
                     }
@@ -270,7 +270,7 @@ InspectionReport inspect_scene(const SceneSpec& scene, const TransitionRegistry&
             if (layer.transition_out.kind != TransitionKind::None || !layer.transition_out.transition_id.empty()) {
                 add_info(report, options, "layer.transition_out", layer_path, "Layer has an exit transition.");
                 if (!layer.transition_out.transition_id.empty()) {
-                    if (transition_registry.resolve(layer.transition_out.transition_id) == nullptr) {
+                    if (registry.find(layer.transition_out.transition_id) == nullptr) {
                         add_issue(report, InspectionSeverity::Error, "layer.transition_out.missing_id", layer_path,
                             "Transition ID '" + layer.transition_out.transition_id + "' not found in registry.");
                     }

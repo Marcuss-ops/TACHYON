@@ -29,12 +29,12 @@ public:
 
 /**
  * Single unified registry for all transitions.
- * Use local instances or dependency injection instead of singleton.
+ * Replaces TransitionDescriptorRegistry, old TransitionRegistry, and TransitionCatalog.
  */
 class TransitionRegistry {
 public:
-    TransitionRegistry();
-    ~TransitionRegistry();
+    /// Set the duplicate handling policy
+    void set_duplicate_policy(RegistryDuplicatePolicy policy) { m_duplicate_policy = policy; }
     RegistryDuplicatePolicy duplicate_policy() const { return m_duplicate_policy; }
 
     /// Register a transition descriptor (single source of truth)
@@ -60,6 +60,9 @@ public:
 
     /// Remove a registered transition by ID
     void unregister_transition(std::string_view id);
+
+    TransitionRegistry();
+    ~TransitionRegistry();
 
 private:
     RegistryDuplicatePolicy m_duplicate_policy{RegistryDuplicatePolicy::Warn}; ///< Default: warn on duplicates

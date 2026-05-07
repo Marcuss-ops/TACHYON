@@ -3,10 +3,12 @@
 #include "tachyon/core/spec/cpp_scene_loader.h"
 #include "tachyon/runtime/compiler/scene_compiler.h"
 #include "tachyon/output/frame_output_sink.h"
-#include "tachyon/renderer2d/effects/core/effect_host.h"
+#include "tachyon/renderer2d/effects/effect_host.h"
+#include "tachyon/renderer2d/effects/effect_registry.h"
 #include "tachyon/renderer2d/effects/effect_utils.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/execution/session/render_session.h"
+#include "tachyon/transition_registry.h"
 #include "tachyon/core/catalog/catalog.h"
 #include "cli_internal.h"
 
@@ -269,6 +271,7 @@ std::optional<std::reference_wrapper<const CachedSceneStill>> render_scene_still
             LayerSpec layer;
             layer.id = "image";
             layer.type = LayerType::Image;
+            layer.type_string.clear();
             layer.asset_id = asset.id;
             layer.width = 1920;
             layer.height = 1080;
@@ -362,8 +365,11 @@ bool render_transition_demo(
     const double fps = final_video ? 24.0 : 30.0;
     const double total_duration_seconds = demo.lead_in_seconds + demo.duration_seconds + demo.lead_out_seconds;
 
-    auto host = renderer2d::create_effect_host();
-    renderer2d::EffectHost::register_builtins(*host);
+    renderer2d::EffectRegistry registry;
+    TransitionRegistry transition_registry;
+    register_builtin_transitions(transition_registry);
+    renderer2d::register_builtin_effects(registry, transition_registry);
+    auto host = renderer2d::create_effect_host(registry);
 
     const std::filesystem::path final_output_dir = output_dir_override.empty() ? demo.output_dir : output_dir_override;
     RenderPlan output_plan = make_output_plan(final_output_dir, demo.file_prefix);
@@ -453,7 +459,7 @@ bool render_transition_demo(
 
 }  // namespace
 
-bool run_catalog_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*/) {
+bool run_catalog_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err) {
     const std::filesystem::path catalog_root = resolve_catalog_root(options.catalog_path);
     TachyonCatalog catalog(catalog_root);
     if (!catalog.ok()) {
