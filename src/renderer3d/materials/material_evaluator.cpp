@@ -5,7 +5,7 @@
 namespace tachyon::renderer3d {
 
 MaterialSample MaterialEvaluator::evaluate(
-    const scene::EvaluatedLayerState& layer,
+    const EvaluatedMeshInstance3D& instance,
     const math::Vector3& hit_position,
     const math::Vector3& hit_normal,
     const math::Vector2& uv) {
@@ -14,38 +14,38 @@ MaterialSample MaterialEvaluator::evaluate(
 
     MaterialSample sample;
     
-    // Base Color (from solid/image)
+    // Base Color
     sample.base_color = math::Vector3(
-        layer.fill_color.r / 255.0f,
-        layer.fill_color.g / 255.0f,
-        layer.fill_color.b / 255.0f
+        instance.material.base_color.r / 255.0f,
+        instance.material.base_color.g / 255.0f,
+        instance.material.base_color.b / 255.0f
     );
 
-    // Sample the layer texture when present.
-    if (layer.texture_rgba && layer.width > 0 && layer.height > 0) {
-        int tx = std::clamp(static_cast<int>(uv.x * layer.width), 0, static_cast<int>(layer.width - 1));
-        int ty = std::clamp(static_cast<int>(uv.y * layer.height), 0, static_cast<int>(layer.height - 1));
-        std::size_t idx = (ty * layer.width + tx) * 4;
-        sample.base_color.x = layer.texture_rgba[idx + 0] / 255.0f;
-        sample.base_color.y = layer.texture_rgba[idx + 1] / 255.0f;
-        sample.base_color.z = layer.texture_rgba[idx + 2] / 255.0f;
+    // Sample the layer texture when present (e.g. video, image)
+    if (instance.layer_texture && instance.layer_width > 0 && instance.layer_height > 0) {
+        int tx = std::clamp(static_cast<int>(uv.x * instance.layer_width), 0, instance.layer_width - 1);
+        int ty = std::clamp(static_cast<int>(uv.y * instance.layer_height), 0, instance.layer_height - 1);
+        std::size_t idx = (ty * instance.layer_width + tx) * 4;
+        sample.base_color.x = instance.layer_texture[idx + 0] / 255.0f;
+        sample.base_color.y = instance.layer_texture[idx + 1] / 255.0f;
+        sample.base_color.z = instance.layer_texture[idx + 2] / 255.0f;
     }
 
     // Material properties
-    sample.roughness = layer.material.roughness;
-    sample.metallic = layer.material.metallic;
-    sample.ior = layer.material.ior;
+    sample.roughness = instance.material.roughness;
+    sample.metallic = instance.material.metallic;
+    sample.ior = instance.material.ior;
 
     // Disney PBR specific lobes
-    sample.subsurface = layer.material.subsurface;
-    sample.specular = layer.material.specular;
-    sample.specular_tint = layer.material.specular_tint;
-    sample.anisotropic = layer.material.anisotropic;
-    sample.sheen = layer.material.sheen;
-    sample.sheen_tint = layer.material.sheen_tint;
-    sample.clearcoat = layer.material.clearcoat;
-    sample.clearcoat_roughness = layer.material.clearcoat_roughness;
-    sample.transmission = layer.material.transmission;
+    sample.subsurface = instance.material.subsurface;
+    sample.specular = instance.material.specular;
+    sample.specular_tint = instance.material.specular_tint;
+    sample.anisotropic = instance.material.anisotropic;
+    sample.sheen = instance.material.sheen;
+    sample.sheen_tint = instance.material.sheen_tint;
+    sample.clearcoat = instance.material.clearcoat;
+    sample.clearcoat_roughness = instance.material.clearcoat_roughness;
+    sample.transmission = instance.material.transmission;
 
     // Energy Conservation & Shading Contract
     // 1. Diffuse color is black for metals
@@ -59,8 +59,8 @@ MaterialSample MaterialEvaluator::evaluate(
     sample.normal = hit_normal;
 
     // Emissive
-    if (layer.material.emission > 0.0f) {
-        sample.emissive = sample.base_color * layer.material.emission;
+    if (instance.material.emission_strength > 0.0f) {
+        sample.emissive = sample.base_color * instance.material.emission_strength;
     } else {
         sample.emissive = math::Vector3::zero();
     }

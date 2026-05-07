@@ -8,7 +8,7 @@ std::string MaterialSystem::quality_tier_ = "high";
 MaterialSystem::ProfileStats MaterialSystem::stats_;
 
 MaterialSystem::MaterialInputs MaterialSystem::evaluate(
-    const scene::EvaluatedLayerState& layer,
+    const EvaluatedMeshInstance3D& instance,
     const media::MeshAsset* asset,
     const math::Vector2& uv) 
 {
@@ -17,28 +17,27 @@ MaterialSystem::MaterialInputs MaterialSystem::evaluate(
     MaterialInputs inputs;
 
     inputs.base_color = {
-        layer.fill_color.r / 255.0f,
-        layer.fill_color.g / 255.0f,
-        layer.fill_color.b / 255.0f
+        instance.material.base_color.r / 255.0f,
+        instance.material.base_color.g / 255.0f,
+        instance.material.base_color.b / 255.0f
     };
-
-    inputs.metallic = layer.material.metallic;
-    inputs.roughness = std::max(layer.material.roughness, 0.05f);
-    inputs.opacity = static_cast<float>(layer.opacity);
-    inputs.ior = layer.material.ior;
-    inputs.emissive = inputs.base_color * layer.material.emission;
-    inputs.emissive_intensity = layer.material.emission;
+    inputs.opacity = instance.material.opacity;
+    inputs.metallic = instance.material.metallic;
+    inputs.roughness = instance.material.roughness;
+    inputs.emissive_intensity = instance.material.emission_strength;
+    inputs.ior = instance.material.ior;
+    inputs.emissive = inputs.base_color * instance.material.emission_strength;
 
     return inputs;
 }
 
 MaterialSystem::MaterialInputs MaterialSystem::evaluate_with_textures(
-    const scene::EvaluatedLayerState& layer,
+    const EvaluatedMeshInstance3D& instance,
     const media::MeshAsset* asset,
     const media::MeshAsset::SubMesh* sub_mesh,
     const math::Vector2& uv) 
 {
-    MaterialInputs inputs = evaluate(layer, asset, uv);
+    MaterialInputs inputs = evaluate(instance, asset, uv);
 
     if (!sub_mesh || !asset) {
         return inputs;

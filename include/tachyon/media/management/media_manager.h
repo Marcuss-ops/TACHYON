@@ -104,7 +104,7 @@ public:
     /**
      * @brief Get mesh from resolved asset.
      */
-    const MeshAsset* get_mesh(
+    std::shared_ptr<const MeshAsset> get_mesh(
         const ResolvedAsset& asset,
         DiagnosticBag* diagnostics = nullptr);
 
@@ -115,7 +115,7 @@ public:
     PooledVideoDecoder acquire_video_decoder(const std::filesystem::path& path);
     void release_video_decoder(const std::filesystem::path& path, VideoDecoder* decoder);
 
-    const MeshAsset* get_mesh(
+    std::shared_ptr<const MeshAsset> get_mesh(
         const std::filesystem::path& path,
         DiagnosticBag* diagnostics = nullptr);
 
@@ -151,7 +151,7 @@ private:
     ImageManager m_image_manager;
     std::map<std::string, std::shared_ptr<VideoPool>> m_video_pools;
     std::unique_ptr<ResourceCache<std::string, renderer2d::SurfaceRGBA>> m_frame_cache;
-    std::map<std::string, std::unique_ptr<MeshAsset>> m_mesh_cache;
+    std::map<std::string, std::shared_ptr<MeshAsset>> m_mesh_cache;
     std::unordered_map<std::string, std::shared_ptr<MediaAsset>> m_assets;
     
     MediaFallbackPolicy m_fallback_policy{MediaFallbackPolicy::UseProxy};

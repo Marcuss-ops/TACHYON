@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <optional>
 
+#include "tachyon/render/render_intent.h"
+
 namespace tachyon::renderer2d {
 
 /**

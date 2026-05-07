@@ -272,6 +272,20 @@ ShadingResult RayTracer::trace_ray(
             }
         }
     }
+    
+    // Sample the layer texture (e.g. video, image) if present
+    if (hit_instance->layer_texture && hit_instance->layer_width > 0 && hit_instance->layer_height > 0) {
+        int tx = std::clamp(static_cast<int>(hit_uv.x * hit_instance->layer_width), 0, hit_instance->layer_width - 1);
+        int ty = std::clamp(static_cast<int>(hit_uv.y * hit_instance->layer_height), 0, hit_instance->layer_height - 1);
+        std::size_t idx = (static_cast<std::size_t>(ty) * hit_instance->layer_width + tx) * 4;
+        
+        math::Vector3 layer_color = {
+            hit_instance->layer_texture[idx + 0] / 255.0f,
+            hit_instance->layer_texture[idx + 1] / 255.0f,
+            hit_instance->layer_texture[idx + 2] / 255.0f
+        };
+        albedo = albedo * layer_color;
+    }
 
     math::Vector3 view_dir = (-direction).normalized();
     float n_dot_v = std::clamp(math::Vector3::dot(world_normal, view_dir), 0.0f, 1.0f);

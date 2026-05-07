@@ -19,7 +19,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "tachyon/renderer2d/evaluated_composition/render_intent.h"
+#include "tachyon/render/render_intent.h"
 
 namespace tachyon {
 
@@ -44,7 +44,7 @@ struct ExecutedFrame {
 struct EvaluatedFrameState {
     FrameRenderTask task;
     scene::EvaluatedCompositionState composition_state;
-    renderer2d::RenderIntent render_intent;
+    render::RenderIntent render_intent;
     std::uint64_t scene_hash{0};
 };
 

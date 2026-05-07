@@ -4,7 +4,8 @@
 #include "tachyon/runtime/execution/motion_blur_sampler.h"
 #include "tachyon/runtime/execution/frame_fallback_policy.h"
 #include "tachyon/runtime/execution/rasterization_step.h"
-#include "tachyon/renderer2d/evaluated_composition/intent_builder.h"
+#include "tachyon/render/intent_builder.h"
+#include "tachyon/renderer2d/resource/resource_provider.h"
 
 namespace tachyon {
 
@@ -135,10 +136,28 @@ void evaluate_and_rasterize_root_composition_step(
 
         auto cached_comp = executor.cache().lookup_composition(root_key);
         if (cached_comp) {
-            const auto intent = renderer2d::build_render_intent(*cached_comp, context.renderer2d);
+            renderer2d::RendererResourceProvider provider(context.renderer2d);
+            const auto intent_result = render::build_render_intent(*cached_comp, &provider);
+
+            if (context.renderer2d.diagnostics) {
+                for (const auto& diag : intent_result.diagnostics.diagnostics) {
+                    if (diag.severity == DiagnosticSeverity::Error) {
+                        context.renderer2d.diagnostics->diagnostics.add_error(
+                            "render.intent.build_error",
+                            diag.message,
+                            diag.path);
+                    } else if (diag.severity == DiagnosticSeverity::Warning) {
+                        context.renderer2d.diagnostics->diagnostics.add_warning(
+                            "render.intent.build_warning",
+                            diag.message,
+                            diag.path);
+                    }
+                }
+            }
+
             RasterizationResult raster_result = RasterizationStep::execute(
                 *cached_comp,
-                intent,
+                intent_result.intent,
                 plan,
                 task,
                 context,

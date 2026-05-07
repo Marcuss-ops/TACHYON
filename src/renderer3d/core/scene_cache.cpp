@@ -45,9 +45,9 @@ void SceneCache::set_frame(std::int64_t frame_number, double time_seconds) {
     }
 }
 
-void SceneCache::update_composition(const scene::EvaluatedCompositionState& state) {
+void SceneCache::update_composition(const scene::EvaluatedCompositionState& state, const render::RenderIntent* intent) {
     const DirtyFlag prev_dirty = dirty_;
-    dirty_ = check_dirty_flags(state);
+    dirty_ = check_dirty_flags(state, intent);
 
     hash_state_.content_hash = mix_hash(hash_state_.content_hash, static_cast<std::uint64_t>(state.frame_number));
     hash_state_.content_hash = mix_hash(hash_state_.content_hash, static_cast<std::uint64_t>(state.composition_time_seconds * 1000.0));
@@ -69,7 +69,7 @@ void SceneCache::update_composition(const scene::EvaluatedCompositionState& stat
         const auto& layer = state.layers[i];
         auto& cache = layer_cache_[i];
 
-        std::uint64_t new_geo_hash = compute_layer_hash(layer, i);
+        std::uint64_t new_geo_hash = compute_layer_hash(layer, i, intent);
         std::uint64_t new_trans_hash = hash_matrix4x4(layer.world_matrix);
 
         if (cache.geometry_hash != new_geo_hash) {
@@ -134,13 +134,20 @@ void SceneCache::update_composition(const scene::EvaluatedCompositionState& stat
     }
 }
 
-std::uint64_t SceneCache::compute_layer_hash(const scene::EvaluatedLayerState& layer, std::size_t index) {
+std::uint64_t SceneCache::compute_layer_hash(const scene::EvaluatedLayerState& layer, std::size_t index, const render::RenderIntent* intent) {
     std::uint64_t h = static_cast<std::uint64_t>(index);
     h = mix_hash(h, static_cast<std::uint64_t>(layer.type));
     h = mix_hash(h, static_cast<std::uint64_t>(layer.layer_index));
 
-    if (layer.mesh_asset) {
-        const auto& mesh = layer.mesh_asset;
+    const media::MeshAsset* mesh = nullptr;
+    if (intent) {
+        auto it = intent->layer_resources.find(layer.id);
+        if (it != intent->layer_resources.end()) {
+            mesh = it->second.mesh_asset.get();
+        }
+    }
+
+    if (mesh) {
         h = mix_hash(h, static_cast<std::uint64_t>(mesh->sub_meshes.size()));
         if (!mesh->sub_meshes.empty()) {
             h = mix_hash(h, static_cast<std::uint64_t>(mesh->sub_meshes.front().vertices.size()));
@@ -199,7 +206,7 @@ std::uint64_t SceneCache::combine_hash(std::uint64_t a, std::uint64_t b) const {
     return mix_hash(a, b);
 }
 
-SceneCache::DirtyFlag SceneCache::check_dirty_flags(const scene::EvaluatedCompositionState& state) {
+SceneCache::DirtyFlag SceneCache::check_dirty_flags(const scene::EvaluatedCompositionState& state, const render::RenderIntent* intent) {
     if (layer_cache_.empty() || last_frame_ != state.frame_number) {
         return DirtyFlag::All;
     }
@@ -213,7 +220,7 @@ SceneCache::DirtyFlag SceneCache::check_dirty_flags(const scene::EvaluatedCompos
         const auto& layer = state.layers[i];
         const auto& cache = layer_cache_[i];
 
-        if (cache.geometry_hash != compute_layer_hash(layer, i)) {
+        if (cache.geometry_hash != compute_layer_hash(layer, i, intent)) {
             geometry_changed = true;
         }
         if (cache.transform_hash != hash_matrix4x4(layer.world_matrix)) {

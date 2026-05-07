@@ -8,6 +8,7 @@
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/runtime/resource/runtime_surface_pool.h"
 
+#include "tachyon/render/render_intent.h"
 #include <memory>
 #include <vector>
 
@@ -27,7 +28,7 @@ public:
      */
     static RasterizationResult execute(
         const scene::EvaluatedCompositionState& cached_comp,
-        const renderer2d::RenderIntent& intent,
+        const render::RenderIntent& intent,
         const RenderPlan& plan,
         const FrameRenderTask& task,
         RenderContext& context,

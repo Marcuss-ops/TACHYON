@@ -87,7 +87,7 @@ ImportResult AssetImportPipeline::import_mesh(const ImportRequest& request,
     result.resolved_path = resolved;
 
     DiagnosticBag diagnostics;
-    const MeshAsset* mesh = m_media_manager.get_mesh(resolved, &diagnostics);
+    auto mesh = m_media_manager.get_mesh(resolved, &diagnostics);
 
     if (!mesh) {
         result.status = ImportResult::DecodeError;

@@ -9,9 +9,6 @@ target_link_libraries(TachyonSceneEval
         TachyonText
         TachyonAudio
         TachyonMedia
-        TachyonRenderer2D
-        $<$<BOOL:${TACHYON_ENABLE_3D}>:TachyonRenderer3D>
-        $<$<BOOL:${TACHYON_ENABLE_3D}>:TachyonScene3DBridge>
 )
 tachyon_link_text_deps(TachyonSceneEval)
 tachyon_link_media_deps(TachyonSceneEval)

@@ -19,7 +19,7 @@ std::unique_ptr<media::MeshAsset> Layer3DMeshResolver::resolve(const LayerSpec& 
             std::cerr << "Mesh layer missing asset_id\n";
             return nullptr;
         }
-        const auto* mesh = media_manager_.get_mesh(layer.asset_id);
+        auto mesh = media_manager_.get_mesh(layer.asset_id);
         if (!mesh) {
             std::cerr << "Failed to load mesh: " << layer.asset_id << '\n';
             return nullptr;

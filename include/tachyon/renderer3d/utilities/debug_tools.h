@@ -74,7 +74,9 @@ public:
     void set_config(const VisualizerConfig& config);
     const VisualizerConfig& get_config() const { return config_; }
 
-    DebugOverlay generate_overlay(const scene::EvaluatedCompositionState& state);
+    DebugOverlay generate_overlay(
+        const scene::EvaluatedCompositionState& state,
+        const render::RenderIntent* intent = nullptr);
 
     void set_selected_layer(const std::string& layer_id);
     std::string get_selected_layer() const { return selected_layer_; }
@@ -203,7 +205,9 @@ public:
     static std::vector<LayerInfo> inspect_layers(const scene::EvaluatedCompositionState& state);
     static std::vector<LightInfo> inspect_lights(const scene::EvaluatedCompositionState& state);
     static CameraInfo inspect_camera(const scene::EvaluatedCameraState& state);
-    static MemoryInfo estimate_memory(const scene::EvaluatedCompositionState& state);
+    static MemoryInfo estimate_memory(
+        const scene::EvaluatedCompositionState& state,
+        const render::RenderIntent* intent = nullptr);
 
     static std::string layer_report(const std::vector<LayerInfo>& layers);
     static std::string light_report(const std::vector<LightInfo>& lights);

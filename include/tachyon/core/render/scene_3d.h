@@ -48,6 +48,16 @@ struct EvaluatedMaterial3D {
     ::tachyon::ColorSpec emission_color{0, 0, 0, 255};
     float transmission{0.0f}; // Glass/refraction
     float ior{1.45f};         // Index of refraction
+    
+    // Disney BSDF Extensions
+    float subsurface{0.0f};
+    float specular{0.5f};
+    float specular_tint{0.0f};
+    float anisotropic{0.0f};
+    float sheen{0.0f};
+    float sheen_tint{0.0f};
+    float clearcoat{0.0f};
+    float clearcoat_roughness{0.03f};
 };
 
 struct EvaluatedMeshInstance3D {
@@ -60,6 +70,11 @@ struct EvaluatedMeshInstance3D {
     // Geometry reference (would point to an asset/VBO)
     std::string mesh_asset_id;
     std::shared_ptr<const media::MeshAsset> mesh_asset;
+    
+    // Rasterized layer content (for 2D layers in 3D space)
+    std::shared_ptr<std::uint8_t[]> layer_texture;
+    int layer_width{0};
+    int layer_height{0};
 
     // Animation state
     std::vector<math::Matrix4x4> joint_matrices;
