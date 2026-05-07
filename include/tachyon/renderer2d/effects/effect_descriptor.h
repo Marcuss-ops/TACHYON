@@ -51,11 +51,11 @@ struct EffectDescriptor {
  * @brief Mini-spec for declarative builtin effect registration.
  */
 struct EffectBuiltinSpec {
-    std::string id;
-    std::string display_name;
-    std::string category; // Metadata category becomes "effect." + category
-    std::string description; // Falls back to "Professional " + category + " effect."
-    std::vector<std::string> tags; // Falls back to {category, category}
+    std::string_view id;
+    std::string_view display_name;
+    std::string_view category; // Metadata category becomes "effect." + category
+    std::string_view description; // Optional
+    std::vector<std::string_view> tags; // Optional
     registry::ParameterSchema schema;
     EffectDescriptor::Factory factory; // Required: use make_effect_factory<T>() for common case
     std::vector<AuxSurfaceRequirement> aux_requirements;
@@ -76,24 +76,14 @@ EffectDescriptor::Factory make_effect_factory() {
 }
 
 /**
- * @brief Register a builtin effect from a declarative spec.
+ * @brief Forward declaration of EffectRegistry to avoid circular include.
  */
-inline void register_effect_from_spec(EffectRegistry& registry, EffectBuiltinSpec spec) {
-    if (spec.description.empty()) {
-        spec.description = "Professional " + spec.category + " effect.";
-    }
-    if (spec.tags.empty()) {
-        spec.tags = {spec.category, spec.category};
-    }
-    registry.register_spec({
-        spec.id,
-        {spec.id, spec.display_name, spec.description, "effect." + spec.category, std::move(spec.tags)},
-        std::move(spec.schema),
-        std::move(spec.factory),
-        std::move(spec.aux_requirements),
-        spec.is_deterministic,
-        spec.supports_gpu_acceleration
-    });
-}
+class EffectRegistry;
+
+/**
+ * @brief Register a builtin effect from a declarative spec.
+ * Implementation moved to avoid circular dependencies.
+ */
+TACHYON_API void register_effect_from_spec(EffectRegistry& registry, const EffectBuiltinSpec& spec);
 
 } // namespace tachyon::renderer2d

@@ -9,8 +9,6 @@
 
 namespace tachyon {
 
-struct BackgroundCatalogEntry; // Forward declaration
-
 /**
  * @brief Unified registry for all backgrounds.
  * Single source of truth for background descriptors.

@@ -1,6 +1,6 @@
 #include "tachyon/renderer2d/effects/effect_descriptor.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
-#include "tachyon/renderer2d/effects/blur/blur_effects.h"
+#include "tachyon/renderer2d/effects/core/effect_host.h"
 
 #include <array>
 

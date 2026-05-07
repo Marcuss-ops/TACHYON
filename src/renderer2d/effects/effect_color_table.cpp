@@ -2,11 +2,13 @@
 #include "tachyon/renderer2d/effects/core/effect_host.h"
 #include "tachyon/renderer2d/effects/effect_descriptor.h"
 
+#include <array>
+
 namespace tachyon::renderer2d {
 
 namespace {
 
-constexpr std::array<EffectBuiltinSpec, 9> kColorEffects = {{
+static const std::array<EffectBuiltinSpec, 8> kColorEffects = {{
     {
         "tachyon.effect.color.levels",
         "Levels",

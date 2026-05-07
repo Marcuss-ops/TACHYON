@@ -7,7 +7,7 @@ namespace tachyon::renderer2d {
 
 namespace {
 
-constexpr std::array<EffectBuiltinSpec, 4> kStylizeEffects = {{
+static const std::array<EffectBuiltinSpec, 4> kStylizeEffects = {{
     {
         "tachyon.effect.stylize.drop_shadow",
         "Drop Shadow",
