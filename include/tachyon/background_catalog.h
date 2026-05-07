@@ -1,17 +1,12 @@
 #pragma once
 
 #include "tachyon/background_registry.h"
+#include "tachyon/background_descriptor.h"
 #include <string>
 #include <vector>
 #include <string_view>
 
 namespace tachyon {
-
-enum class BackgroundStatus {
-    Stable,
-    Experimental,
-    Deprecated
-};
 
 enum class BackgroundCatalogRole {
     Solid,

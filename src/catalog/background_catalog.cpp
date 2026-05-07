@@ -14,12 +14,7 @@ BackgroundCatalog& BackgroundCatalog::instance() {
 }
 
 BackgroundCatalog::BackgroundCatalog() {
-    // Register built-in backgrounds on first use
-    static bool initialized = false;
-    if (!initialized) {
-        register_builtin_background_descriptors();
-        initialized = true;
-    }
+    // Built-in backgrounds are now registered in BackgroundRegistry constructor
 }
 
 BackgroundCatalog::~BackgroundCatalog() = default;

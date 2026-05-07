@@ -7,7 +7,7 @@
 namespace tachyon::text {
 
 namespace {
-
+ 
 void add_scalar_ramp(
     std::vector<ScalarKeyframeSpec>& keyframes,
     double start_time,
@@ -82,6 +82,81 @@ void add_color_ramp(
         std::move(based_on),
         0.0,
         reveal_duration_seconds);
+}
+
+::tachyon::TextAnimatorSpec make_slide_base_animator(
+    std::string based_on,
+    double stagger_delay_seconds,
+    double slide_distance_px,
+    double reveal_duration_seconds,
+    const char* name = nullptr) {
+
+    ::tachyon::TextAnimatorSpec animator = make_common_intro_animator(
+        std::move(based_on),
+        stagger_delay_seconds,
+        reveal_duration_seconds);
+
+    add_vector2_ramp(
+        animator.properties.position_offset_keyframes,
+        0.0,
+        math::Vector2{0.0f, static_cast<float>(slide_distance_px)},
+        reveal_duration_seconds,
+        math::Vector2{0.0f, 0.0f});
+    
+    if (name) animator.name = name;
+    return animator;
+}
+
+::tachyon::TextAnimatorSpec make_pop_animator(
+    std::string based_on,
+    double stagger_delay_seconds,
+    double slide_distance_px,
+    double reveal_duration_seconds) {
+
+    ::tachyon::TextAnimatorSpec animator = make_slide_base_animator(
+        std::move(based_on),
+        stagger_delay_seconds,
+        slide_distance_px,
+        reveal_duration_seconds);
+
+    add_scalar_ramp(
+        animator.properties.scale_keyframes,
+        0.0,
+        0.96,
+        reveal_duration_seconds,
+        1.0);
+
+    add_scalar_ramp(
+        animator.properties.tracking_amount_keyframes,
+        0.0,
+        18.0,
+        reveal_duration_seconds,
+        0.0);
+
+    return animator;
+}
+
+::tachyon::TextAnimatorSpec make_typewriter_base_animator(
+    const char* name,
+    double rate,
+    bool cursor_enabled,
+    std::string cursor_char,
+    const char* based_on = "characters") {
+
+    ::tachyon::TextAnimatorSpec animator;
+    animator.name = name;
+    animator.selector.type = "range";
+    animator.selector.based_on = based_on;
+    animator.selector.stagger_mode = "character";
+    animator.selector.stagger_delay = 1.0 / rate;
+    
+    add_scalar_ramp(animator.properties.opacity_keyframes, 0.0, 0.0, 0.01, 1.0);
+    
+    animator.cursor.enabled = cursor_enabled;
+    animator.cursor.cursor_char = std::move(cursor_char);
+    animator.cursor.blink_rate = cursor_enabled ? 4.0 : 0.0;
+    
+    return animator;
 }
 
 } // namespace

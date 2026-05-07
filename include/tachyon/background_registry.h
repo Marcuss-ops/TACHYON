@@ -31,9 +31,6 @@ public:
     /// Resolve by ID or alias (tries ID first, then alias)
     const BackgroundDescriptor* resolve(std::string_view id_or_alias) const;
 
-    /// Get catalog entry IDs derived from registered descriptors
-    std::vector<std::string> catalog_entries() const;
-
     /// List all registered descriptor IDs
     std::vector<std::string> list_all_ids() const;
 
