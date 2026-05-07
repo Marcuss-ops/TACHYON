@@ -4,6 +4,7 @@
 #include "tachyon/core/math/vector3.h"
 #include "tachyon/core/math/matrix4x4.h"
 #include "tachyon/core/camera/camera_state.h"
+#include "tachyon/render/render_intent.h"
 
 #include <cstdint>
 #include <cstddef>
@@ -75,8 +76,13 @@ public:
     void set_camera(const camera::CameraState& camera, const math::Vector3& position);
     void update_frustum();
 
-    CullingResult cull_layers(const scene::EvaluatedCompositionState& state);
-    CullingResult cull_layers_frustum(const scene::EvaluatedCompositionState& state, const Frustum& frustum);
+    CullingResult cull_layers(
+        const scene::EvaluatedCompositionState& state,
+        const render::RenderIntent* intent = nullptr);
+    CullingResult cull_layers_frustum(
+        const scene::EvaluatedCompositionState& state,
+        const Frustum& frustum,
+        const render::RenderIntent* intent = nullptr);
 
     std::vector<LODResult> compute_lod(const scene::EvaluatedCompositionState& state, const math::Vector3& camera_position);
 
@@ -107,7 +113,9 @@ public:
     std::string get_quality_tier() const { return quality_tier_; }
 
 private:
-    BoundingBox compute_layer_bounds(const scene::EvaluatedLayerState& layer);
+    BoundingBox compute_layer_bounds(
+        const scene::EvaluatedLayerState& layer,
+        const render::RenderIntent* intent = nullptr);
     LODLevel compute_lod_level(float distance) const;
 
     bool frustum_culling_enabled_;

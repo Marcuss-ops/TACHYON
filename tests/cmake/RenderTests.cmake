@@ -13,6 +13,7 @@ set(TachyonTrackerTestSources
 if(TACHYON_ENABLE_3D)
     add_executable(TachyonRenderTests
         unit/test_main_render.cpp
+        unit/render/render_intent_tests.cpp
         unit/media/asset_resolution_tests.cpp
         unit/media/image_manager_tests.cpp
         unit/media/image_decode_tests.cpp

@@ -21,7 +21,7 @@ void RendererDebug::set_config(const VisualizerConfig& config) {
     config_ = config;
 }
 
-RendererDebug::DebugOverlay RendererDebug::generate_overlay(const scene::EvaluatedCompositionState& state) {
+RendererDebug::DebugOverlay RendererDebug::generate_overlay(const scene::EvaluatedCompositionState& state, const render::RenderIntent* intent) {
     DebugOverlay overlay;
 
     if (config_.show_bounding_boxes) {
@@ -48,9 +48,19 @@ RendererDebug::DebugOverlay RendererDebug::generate_overlay(const scene::Evaluat
 
     if (config_.show_normals) {
         for (const auto& layer : state.layers) {
-            if (!layer.is_3d || !layer.mesh_asset) continue;
+            if (!layer.is_3d) continue;
 
-            for (const auto& sub : layer.mesh_asset->sub_meshes) {
+            const media::MeshAsset* mesh = nullptr;
+            if (intent) {
+                auto it = intent->layer_resources.find(layer.id);
+                if (it != intent->layer_resources.end()) {
+                    mesh = it->second.mesh_asset.get();
+                }
+            }
+
+            if (!mesh) continue;
+
+            for (const auto& sub : mesh->sub_meshes) {
                 if (sub.vertices.empty()) continue;
 
                 DebugOverlay::NormalDebug nd;
@@ -270,19 +280,27 @@ SceneInspector::CameraInfo SceneInspector::inspect_camera(const scene::Evaluated
     return info;
 }
 
-SceneInspector::MemoryInfo SceneInspector::estimate_memory(const scene::EvaluatedCompositionState& state) {
+SceneInspector::MemoryInfo SceneInspector::estimate_memory(const scene::EvaluatedCompositionState& state, const render::RenderIntent* intent) {
     MemoryInfo info;
 
     for (const auto& layer : state.layers) {
-        if (layer.mesh_asset) {
-            for (const auto& sub : layer.mesh_asset->sub_meshes) {
+        const render::RenderIntent::LayerResources* res = nullptr;
+        if (intent) {
+            auto it = intent->layer_resources.find(layer.id);
+            if (it != intent->layer_resources.end()) {
+                res = &it->second;
+            }
+        }
+
+        if (res && res->mesh_asset) {
+            for (const auto& sub : res->mesh_asset->sub_meshes) {
                 info.geometry_bytes += sub.vertices.size() * sizeof(media::MeshAsset::Vertex);
                 info.geometry_bytes += sub.indices.size() * sizeof(unsigned int);
             }
         }
 
-        if (layer.texture_rgba && layer.width > 0 && layer.height > 0) {
-            info.texture_bytes += layer.width * layer.height * 4;
+        if (res && res->texture_rgba && layer.width > 0 && layer.height > 0) {
+            info.texture_bytes += static_cast<std::size_t>(layer.width) * layer.height * 4;
         }
     }
 

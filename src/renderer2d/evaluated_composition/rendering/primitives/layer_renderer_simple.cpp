@@ -9,6 +9,8 @@
 #include "tachyon/renderer2d/evaluated_composition/rendering/core/layer_renderer_interface.h"
 #include "tachyon/media/management/media_manager.h"
 #include "tachyon/media/management/asset_resolver.h"
+#include "tachyon/render/intent_builder.h"
+#include "tachyon/renderer2d/resource/resource_provider.h"
 
 
 #include <algorithm>
@@ -133,7 +135,7 @@ public:
     bool render(
         const scene::EvaluatedLayerState& layer,
         const scene::EvaluatedCompositionState& state,
-        const RenderIntent& intent,
+        const render::RenderIntent& intent,
         RenderContext2D& context,
         const std::optional<RectI>& target_rect,
         std::shared_ptr<SurfaceRGBA>& surface) const override {
@@ -224,7 +226,7 @@ public:
     bool render(
         const scene::EvaluatedLayerState& layer,
         const scene::EvaluatedCompositionState& state,
-        const RenderIntent& intent,
+        const render::RenderIntent& intent,
         RenderContext2D& context,
         const std::optional<RectI>& target_rect,
         std::shared_ptr<SurfaceRGBA>& surface) const override {
@@ -262,7 +264,7 @@ public:
     bool render(
         const scene::EvaluatedLayerState& layer,
         const scene::EvaluatedCompositionState& state,
-        const RenderIntent& intent,
+        const render::RenderIntent& intent,
         RenderContext2D& context,
         const std::optional<RectI>& target_rect,
         std::shared_ptr<SurfaceRGBA>& surface) const override {
@@ -295,7 +297,7 @@ public:
     bool render(
         const scene::EvaluatedLayerState& layer,
         const scene::EvaluatedCompositionState& state,
-        const RenderIntent& intent,
+        const render::RenderIntent& intent,
         RenderContext2D& context,
         const std::optional<RectI>& target_rect,
         std::shared_ptr<SurfaceRGBA>& surface) const override {
@@ -322,7 +324,7 @@ public:
     bool render(
         const scene::EvaluatedLayerState& layer,
         const scene::EvaluatedCompositionState& state,
-        const RenderIntent& intent,
+        const render::RenderIntent& intent,
         RenderContext2D& context,
         const std::optional<RectI>& target_rect,
         std::shared_ptr<SurfaceRGBA>& surface) const override {
@@ -352,7 +354,7 @@ static BuiltinRendererRegistrar s_builtin_registrar;
 std::shared_ptr<SurfaceRGBA> render_precomp_surface(
     const scene::EvaluatedLayerState& layer,
     const scene::EvaluatedCompositionState& state,
-    const renderer2d::RenderIntent& intent,
+    const render::RenderIntent& intent,
     const RenderPlan& plan,
     const FrameRenderTask& task,
     RenderContext2D& context) {
@@ -364,8 +366,9 @@ std::shared_ptr<SurfaceRGBA> render_precomp_surface(
             return std::const_pointer_cast<SurfaceRGBA>(cached);
         }
 
-        auto nested_intent = build_render_intent(*layer.nested_composition, context);
-        auto nested = render_evaluated_composition_2d(*layer.nested_composition, nested_intent, plan, task, context);
+        RendererResourceProvider provider(context);
+        auto intent_result = render::build_render_intent(*layer.nested_composition, &provider);
+        auto nested = render_evaluated_composition_2d(*layer.nested_composition, intent_result.intent, plan, task, context);
         if (nested.surface) {
             auto surface_copy = std::make_shared<SurfaceRGBA>(*nested.surface);
             context.precomp_cache->put(cache_key, surface_copy);
@@ -375,8 +378,9 @@ std::shared_ptr<SurfaceRGBA> render_precomp_surface(
     }
 
     if (!state.layers.empty() && layer.nested_composition) {
-        auto nested_intent = build_render_intent(*layer.nested_composition, context);
-        auto nested = render_evaluated_composition_2d(*layer.nested_composition, nested_intent, plan, task, context);
+        RendererResourceProvider provider(context);
+        auto intent_result = render::build_render_intent(*layer.nested_composition, &provider);
+        auto nested = render_evaluated_composition_2d(*layer.nested_composition, intent_result.intent, plan, task, context);
         return nested.surface;
     }
     return make_canvas(state, std::nullopt, context);
@@ -385,7 +389,7 @@ std::shared_ptr<SurfaceRGBA> render_precomp_surface(
 std::shared_ptr<SurfaceRGBA> render_simple_layer_surface(
     const scene::EvaluatedLayerState& layer,
     const scene::EvaluatedCompositionState& state,
-    const renderer2d::RenderIntent& intent,
+    const render::RenderIntent& intent,
     RenderContext2D& context,
     const std::optional<RectI>& target_rect) {
 

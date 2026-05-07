@@ -2,6 +2,7 @@
 #include <vector>
 
 bool run_asset_resolution_tests();
+bool run_render_intent_tests();
 bool run_image_manager_tests();
 bool run_image_decode_tests();
 bool run_framebuffer_tests();
@@ -28,6 +29,7 @@ int main(int argc, char** argv) {
     using namespace tachyon::test;
     std::vector<TestCase> tests = {
         {"asset_resolution", run_asset_resolution_tests},
+        {"render_intent", run_render_intent_tests},
         {"image_manager", run_image_manager_tests},
         {"image_decode", run_image_decode_tests},
         {"framebuffer", run_framebuffer_tests},

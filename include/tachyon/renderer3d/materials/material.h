@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tachyon/core/scene/state/evaluated_state.h"
+#include "tachyon/core/render/scene_3d.h"
 #include "tachyon/core/math/vector3.h"
 #include "tachyon/core/math/vector2.h"
 #include "tachyon/media/loading/mesh_asset.h"
@@ -57,12 +58,12 @@ public:
     };
 
     static MaterialInputs evaluate(
-        const scene::EvaluatedLayerState& layer,
+        const EvaluatedMeshInstance3D& instance,
         const media::MeshAsset* asset,
         const math::Vector2& uv);
 
     static MaterialInputs evaluate_with_textures(
-        const scene::EvaluatedLayerState& layer,
+        const EvaluatedMeshInstance3D& instance,
         const media::MeshAsset* asset,
         const media::MeshAsset::SubMesh* sub_mesh,
         const math::Vector2& uv);

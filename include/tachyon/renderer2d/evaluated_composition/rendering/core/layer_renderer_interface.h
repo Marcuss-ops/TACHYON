@@ -3,7 +3,7 @@
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/renderer2d/resource/render_context.h"
-#include "tachyon/renderer2d/evaluated_composition/render_intent.h"
+#include "tachyon/render/render_intent.h"
 
 #include <memory>
 #include <string>
@@ -33,7 +33,7 @@ public:
     virtual bool render(
         const scene::EvaluatedLayerState& layer,
         const scene::EvaluatedCompositionState& state,
-        const RenderIntent& intent,
+        const render::RenderIntent& intent,
         RenderContext2D& context,
         const std::optional<RectI>& target_rect,
         std::shared_ptr<SurfaceRGBA>& surface) const = 0;

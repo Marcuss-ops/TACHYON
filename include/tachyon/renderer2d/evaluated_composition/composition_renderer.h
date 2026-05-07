@@ -10,11 +10,11 @@ namespace tachyon {
 std::vector<renderer2d::DrawCommand2D> build_draw_commands_from_evaluated_state(
     const scene::EvaluatedCompositionState& state);
 
-namespace renderer2d { struct RenderIntent; }
+namespace render { struct RenderIntent; }
 
 RasterizedFrame2D render_evaluated_composition_2d(
     const scene::EvaluatedCompositionState& state,
-    const renderer2d::RenderIntent& intent,
+    const render::RenderIntent& intent,
     const RenderPlan& plan,
     const FrameRenderTask& task,
     renderer2d::RenderContext2D& context);

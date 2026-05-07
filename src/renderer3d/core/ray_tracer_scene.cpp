@@ -54,7 +54,7 @@ void RayTracer::build_scene(const EvaluatedScene3D& scene) {
         } else {
             MeshCacheEntry entry;
             entry.scene = rtcNewScene(device_);
-            entry.asset = instance.mesh_asset.get();
+            entry.asset = instance.mesh_asset;
 
             if (!entry.asset && media_manager_) {
                 std::filesystem::path mesh_path = media_manager_->get_asset_path(instance.mesh_asset_id);
@@ -166,7 +166,10 @@ void RayTracer::build_scene(const EvaluatedScene3D& scene) {
             instance.mesh_asset,
             instance.material,
             instance.world_transform,
-            instance.previous_world_transform
+            instance.previous_world_transform,
+            instance.layer_texture,
+            instance.layer_width,
+            instance.layer_height
         });
         
         rtcReleaseGeometry(inst);

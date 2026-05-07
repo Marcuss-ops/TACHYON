@@ -12,7 +12,7 @@ namespace tachyon::renderer2d {
 std::shared_ptr<SurfaceRGBA> render_layer_surface(
     const scene::EvaluatedLayerState& layer,
     const scene::EvaluatedCompositionState& state,
-    const renderer2d::RenderIntent& intent,
+    const render::RenderIntent& intent,
     const RenderPlan& plan,
     const FrameRenderTask& task,
     RenderContext2D& context,

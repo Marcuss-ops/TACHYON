@@ -87,6 +87,9 @@ private:
         EvaluatedMaterial3D material;
         ::tachyon::math::Matrix4x4 world_transform;
         std::optional<::tachyon::math::Matrix4x4> previous_world_transform;
+        std::shared_ptr<std::uint8_t[]> layer_texture;
+        int layer_width{0};
+        int layer_height{0};
     };
     
     std::vector<GeoInstance> instances_;
@@ -99,7 +102,7 @@ private:
 
     struct MeshCacheEntry {
         RTCScene scene{nullptr};
-        const media::MeshAsset* asset{nullptr};
+        std::shared_ptr<const media::MeshAsset> asset;
         struct SubMeshCache {
             std::vector<MeshVertex> vertices;
             std::vector<unsigned int> indices;

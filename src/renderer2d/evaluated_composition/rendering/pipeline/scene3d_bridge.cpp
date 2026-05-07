@@ -59,18 +59,20 @@ static LayerSurface build_layer_surface_impl(
     }
 
     std::shared_ptr<renderer2d::SurfaceRGBA> rendered;
-    if (input.plan && input.task) {
+    if (input.plan && input.task && input.intent) {
         rendered = renderer2d::render_layer_surface(
             l,
             *input.state,
+            *input.intent,
             *input.plan,
             *input.task,
             const_cast<renderer2d::RenderContext2D&>(*input.context),
             std::nullopt);
-    } else {
+    } else if (input.intent) {
         rendered = renderer2d::render_simple_layer_surface(
             l,
             *input.state,
+            *input.intent,
             const_cast<renderer2d::RenderContext2D&>(*input.context),
             std::nullopt);
     }
@@ -138,6 +140,23 @@ static EvaluatedMeshInstance3D build_instance_for_layer(
     inst.material.emission_color = l.fill_color;
     inst.material.transmission = l.material.transmission;
     inst.material.ior = l.material.ior;
+    inst.material.subsurface = l.material.subsurface;
+    inst.material.specular = l.material.specular;
+    inst.material.specular_tint = l.material.specular_tint;
+    inst.material.anisotropic = l.material.anisotropic;
+    inst.material.sheen = l.material.sheen;
+    inst.material.sheen_tint = l.material.sheen_tint;
+    inst.material.clearcoat = l.material.clearcoat;
+    inst.material.clearcoat_roughness = l.material.clearcoat_roughness;
+    
+    if (input.intent) {
+        auto it = input.intent->layer_resources.find(l.id);
+        if (it != input.intent->layer_resources.end()) {
+            inst.layer_texture = it->second.texture_rgba;
+            inst.layer_width = l.width;
+            inst.layer_height = l.height;
+        }
+    }
 
     inst.joint_matrices = l.joint_matrices;
     inst.morph_weights = l.morph_weights;

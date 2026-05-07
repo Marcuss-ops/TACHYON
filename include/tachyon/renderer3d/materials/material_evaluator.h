@@ -2,6 +2,7 @@
 
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/core/math/vector3.h"
+#include "tachyon/core/render/scene_3d.h"
 
 namespace tachyon::renderer3d {
 
@@ -32,7 +33,7 @@ struct MaterialSample {
 class MaterialEvaluator {
 public:
     static MaterialSample evaluate(
-        const scene::EvaluatedLayerState& layer,
+        const EvaluatedMeshInstance3D& instance,
         const math::Vector3& hit_position,
         const math::Vector3& hit_normal,
         const math::Vector2& uv);

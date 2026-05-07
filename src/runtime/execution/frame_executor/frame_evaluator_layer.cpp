@@ -238,9 +238,9 @@ void evaluate_layer(
         };
         state->previous_world_matrix = math::compose_trs(prev_pos3, math::Quaternion::from_euler(prev_rot3), prev_scale3);
 
-        // Populate mesh for primitives
+        // Populate mesh identifiers for primitives; the concrete mesh is resolved later.
         if (state->type == scene::LayerType::Solid || state->type == scene::LayerType::Image || state->type == scene::LayerType::Video) {
-            state->mesh_asset = scene::create_quad_mesh(static_cast<float>(state->width), static_cast<float>(state->height));
+            state->mesh_asset_id = "quad";
         }
 
         // Material properties
