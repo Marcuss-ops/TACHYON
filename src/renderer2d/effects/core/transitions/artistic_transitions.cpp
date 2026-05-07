@@ -144,7 +144,7 @@ Color transition_ripple(float u, float v, float t, const SurfaceRGBA& input, con
 
 } // namespace
 
-void register_artistic_transitions() {
+void register_artistic_transitions(TransitionRegistry& registry) {
     using namespace tachyon;
 
     {
@@ -157,7 +157,7 @@ void register_artistic_transitions() {
         d.cpu_fn = transition_zoom_in;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -169,7 +169,7 @@ void register_artistic_transitions() {
         d.cpu_fn = transition_zoom_blur;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -181,7 +181,7 @@ void register_artistic_transitions() {
         d.cpu_fn = transition_spin;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -193,7 +193,7 @@ void register_artistic_transitions() {
         d.cpu_fn = transition_pixelate;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -205,7 +205,7 @@ void register_artistic_transitions() {
         d.cpu_fn = transition_glitch_slice;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -217,7 +217,7 @@ void register_artistic_transitions() {
         d.cpu_fn = transition_rgb_split;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -229,7 +229,7 @@ void register_artistic_transitions() {
         d.cpu_fn = transition_luma_dissolve;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -241,7 +241,7 @@ void register_artistic_transitions() {
         d.cpu_fn = transition_directional_blur_wipe;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -253,7 +253,7 @@ void register_artistic_transitions() {
         d.cpu_fn = transition_flash;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -265,7 +265,7 @@ void register_artistic_transitions() {
         d.cpu_fn = transition_kaleidoscope;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -277,7 +277,7 @@ void register_artistic_transitions() {
         d.cpu_fn = transition_ripple;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
 }
 

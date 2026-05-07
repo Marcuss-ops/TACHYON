@@ -74,7 +74,7 @@ ResolvedTransitionEffect TransitionEffectResolver::resolve(const TransitionEffec
     }
 
     // Look up in TransitionRegistry (canonical source of truth)
-    const auto* desc = TransitionRegistry::instance().resolve(request.transition_id);
+    const auto* desc = registry_.resolve(request.transition_id);
 
     if (!desc) {
         // Transition not found - this is an error

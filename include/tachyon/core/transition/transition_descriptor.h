@@ -3,6 +3,7 @@
 #include "tachyon/core/registry/parameter_schema.h"
 #include "tachyon/core/spec/schema/common/common_spec.h"
 #include <string>
+#include <string_view>
 #include <vector>
 #include <optional>
 #include <functional>
@@ -126,19 +127,21 @@ struct TransitionCatalogEntry {
     bool supports_gpu;
 };
 
+class TransitionRegistry;
+
 /**
  * @brief Resolves a transition ID into a detailed result, respecting engine policy.
  */
-TACHYON_API TransitionResolutionResult resolve_transition(const std::string& id);
+TACHYON_API TransitionResolutionResult resolve_transition(const std::string& id, TransitionRegistry& registry);
 
 /**
  * @brief Registers a transition across all internal registries.
  */
-TACHYON_API void register_transition_descriptor(const TransitionDescriptor& desc);
+TACHYON_API void register_transition_descriptor(const TransitionDescriptor& desc, TransitionRegistry& registry);
 
 /**
  * @brief Registers all built-in transitions.
  */
-TACHYON_API void register_builtin_transitions();
+TACHYON_API void register_builtin_transitions(TransitionRegistry& registry);
 
 } // namespace tachyon

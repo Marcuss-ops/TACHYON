@@ -1,8 +1,9 @@
-#include "tachyon/background_catalog.h"
+#include "tachyon/background_registry.h"
 #include "tachyon/presets/background/background_preset_registry.h"
 
 #include <iostream>
 #include <string>
+#include <set>
 
 namespace {
 
@@ -20,109 +21,91 @@ void check_true(bool condition, const std::string& message) {
 bool run_background_catalog_alignment_tests() {
     g_failures = 0;
 
-    auto& catalog = tachyon::BackgroundCatalog::instance();
+    auto& registry = tachyon::BackgroundRegistry::instance();
     auto& preset_registry = tachyon::presets::BackgroundPresetRegistry::instance();
 
-    // Test 1: Every catalog id exists and is valid
+    // Test 1: Registry has entries with valid IDs
     {
-        std::size_t count = catalog.count();
+        auto ids = registry.list_all_ids();
         bool all_valid = true;
-        for (std::size_t i = 0; i < count; ++i) {
-            const auto* entry = catalog.get_by_index(i);
-            if (!entry || entry->id.empty()) {
+        for (const auto& id : ids) {
+            if (id.empty()) {
                 all_valid = false;
                 break;
             }
         }
-        check_true(all_valid, "All catalog entries have valid non-empty IDs");
+        check_true(all_valid, "All registry entries have valid non-empty IDs");
+        check_true(!ids.empty(), "Background registry has entries");
     }
 
-    // Test 2: Every public preset has catalog entry
+    // Test 2: Every public preset has registry entry
     {
         auto preset_ids = preset_registry.list_ids();
-        int missing_from_catalog = 0;
+        int missing_from_registry = 0;
         for (const auto& id : preset_ids) {
-            if (!catalog.find(id)) {
-                ++missing_from_catalog;
-                std::cerr << "  Preset not in catalog: " << id << '\n';
+            if (!registry.resolve(id)) {
+                ++missing_from_registry;
+                std::cerr << "  Preset not in registry: " << id << '\n';
             }
         }
-        check_true(missing_from_catalog == 0,
-            "All public background presets have catalog entries");
+        check_true(missing_from_registry == 0,
+            "All public background presets have registry entries");
     }
 
-    // Test 3: Catalog entries can be found by id
+    // Test 3: Registry entries can be found by ID
     {
-        auto ids = catalog.list_all_ids();
+        auto ids = registry.list_all_ids();
         bool all_findable = true;
         for (const auto& id : ids) {
-            if (!catalog.find(id)) {
+            if (!registry.find_by_id(id)) {
                 all_findable = false;
                 break;
             }
         }
-        check_true(all_findable, "All catalog IDs are findable");
+        check_true(all_findable, "All registry IDs are findable");
     }
 
-    // Test 4: Validate preset function works
+    // Test 4: Valid preset resolves successfully
     {
-        std::string error;
-        bool valid = catalog.validate_preset("tachyon.background.solid", error);
-        check_true(valid, "Valid preset ID passes validation");
+        auto* desc = registry.resolve("tachyon.background.solid");
+        check_true(desc != nullptr, "Valid preset 'solid' resolves");
     }
 
-    // Test 5: Invalid preset fails validation
+    // Test 5: Invalid preset returns null
     {
-        std::string error;
-        bool valid = catalog.validate_preset("tachyon.background.nonexistent", error);
-        check_true(!valid, "Invalid preset ID fails validation");
-        check_true(!error.empty(), "Error message is set for invalid preset");
+        auto* desc = registry.resolve("tachyon.background.nonexistent");
+        check_true(desc == nullptr, "Invalid preset ID returns null");
     }
 
-    // Test 6: Each catalog entry has valid role
+    // Test 6: No duplicate IDs
     {
-        std::size_t count = catalog.count();
-        bool all_valid = true;
-        for (std::size_t i = 0; i < count; ++i) {
-            const auto* entry = catalog.get_by_index(i);
-            if (!entry) {
-                all_valid = false;
+        auto ids = registry.list_all_ids();
+        std::size_t original_count = ids.size();
+        std::set<std::string> unique_ids(ids.begin(), ids.end());
+        check_true(unique_ids.size() == original_count, "No duplicate IDs in registry");
+    }
+
+    // Test 7: Resolve by alias works (if any aliases exist)
+    {
+        auto descriptors = registry.list_all();
+        bool found_alias_test = false;
+        for (const auto* desc : descriptors) {
+            if (!desc->aliases.empty()) {
+                auto* by_alias = registry.find_by_alias(desc->aliases[0]);
+                check_true(by_alias != nullptr, "Find by alias works");
+                if (by_alias) {
+                    check_true(by_alias->id == desc->id, "Alias resolves to correct ID");
+                }
+                found_alias_test = true;
                 break;
             }
         }
-        check_true(all_valid, "All catalog entries are valid");
-    }
-
-    // Test 7: Catalog entries have reasonable status
-    {
-        std::size_t count = catalog.count();
-        for (std::size_t i = 0; i < count; ++i) {
-            const auto* entry = catalog.get_by_index(i);
-            if (entry) {
-                // Status should be one of the valid enum values
-                bool valid_status = (entry->status == tachyon::BackgroundStatus::Stable ||
-                                     entry->status == tachyon::BackgroundStatus::Experimental ||
-                                     entry->status == tachyon::BackgroundStatus::Deprecated);
-                check_true(valid_status,
-                    "Entry '" + entry->id + "' has valid status");
-            }
+        if (!found_alias_test) {
+            std::cout << "  No aliases found to test (ok)\n";
         }
     }
 
-    // Test 8: Preset registry can create from catalog ids
-    {
-        tachyon::registry::ParameterBag empty_params;
-        auto ids = catalog.list_all_ids();
-        int create_failures = 0;
-        for (const auto& id : ids) {
-            auto result = preset_registry.create(id, empty_params);
-            // Some might fail due to required params, but should not crash
-            static_cast<void>(result); // We just want to ensure it doesn't crash
-        }
-        check_true(true, "PresetRegistry::create doesn't crash for catalog IDs");
-    }
-
-    std::cout << "Background catalog alignment tests: " << (g_failures == 0 ? "PASSED" : "FAILED")
+    std::cout << "Background registry alignment tests: " << (g_failures == 0 ? "PASSED" : "FAILED")
               << " (" << g_failures << " failures)\n";
 
     return g_failures == 0;

@@ -20,7 +20,8 @@ namespace {
 std::optional<renderer2d::SurfaceRGBA> render_scene_still_surface(
     const SceneSpec& scene,
     const std::string& label,
-    double& out_fps) {
+    double& out_fps,
+    TransitionRegistry& registry) {
     if (scene.compositions.empty()) {
         return std::nullopt;
     }
@@ -69,6 +70,7 @@ std::optional<renderer2d::SurfaceRGBA> render_scene_still_surface(
     }
 
     RenderSession session;
+    session.set_transition_registry(&registry);
     const RenderSessionResult session_result = session.render(scene, *compiled_result.value, *exec_result.value, {});
     if (session_result.frames.empty() || !session_result.frames.front().frame) {
         return std::nullopt;
@@ -173,7 +175,8 @@ bool render_transition_demo_mp4(
 } // namespace
 
 bool run_native_render_tests() {
-    tachyon::register_builtin_transitions();
+    TransitionRegistry transition_registry;
+    tachyon::register_builtin_transitions(transition_registry);
 
     {
         SceneSpec scene;
@@ -194,7 +197,7 @@ bool run_native_render_tests() {
         job.composition_target = "main";
         job.frame_range = {0, 0};
 
-        const auto result = NativeRenderer::render(scene, job);
+        const auto result = NativeRenderer::render(scene, job, transition_registry);
         if (result.diagnostics.ok()) {
             std::cerr << "FAIL: preflight should reject an invalid render job\n";
             return false;
@@ -229,8 +232,8 @@ bool run_native_render_tests() {
         return false;
     }
 
-    auto source_still = render_scene_still_surface(*source_scene, "tachyon.scene.a", source_fps);
-    auto target_still = render_scene_still_surface(*target_scene, "tachyon.scene.b", target_fps);
+    auto source_still = render_scene_still_surface(*source_scene, "tachyon.scene.a", source_fps, transition_registry);
+    auto target_still = render_scene_still_surface(*target_scene, "tachyon.scene.b", target_fps, transition_registry);
     if (!source_still.has_value() || !target_still.has_value()) {
         std::cerr << "[NativeRender] FAIL: still render failed\n";
         return false;

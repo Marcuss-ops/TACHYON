@@ -28,34 +28,28 @@ struct NativeRenderOptions {
     profiling::RenderProfiler* profiler{nullptr};
 };
 
+class TransitionRegistry;
+
 class NativeRenderer {
 public:
-    /**
-     * @brief Renders a composition from the given scene.
-     * 
-     * @param scene The scene specification to render.
-     * @param job The render job defining output settings and frame range.
-     * @param options Execution options (workers, memory, etc).
-     * @return RenderSessionResult containing status and frame info.
-     */
     static RenderSessionResult render(
         const SceneSpec& scene,
         const RenderJob& job,
+        TransitionRegistry& transition_registry,
         const NativeRenderOptions& options = NativeRenderOptions());
 
     static RenderSessionResult render(
         const CompiledScene& scene,
         const RenderJob& job,
+        TransitionRegistry& transition_registry,
         const NativeRenderOptions& options = NativeRenderOptions());
 
-    /**
-     * @brief Shortcut to render a single frame to a PNG.
-     */
     static bool render_still(
         const SceneSpec& scene,
         const std::string& composition_id,
         std::int64_t frame_number,
-        const std::filesystem::path& output_path);
+        const std::filesystem::path& output_path,
+        TransitionRegistry& transition_registry);
 };
 
 } // namespace tachyon

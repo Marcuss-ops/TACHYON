@@ -137,6 +137,7 @@ void render_frames_parallel_internal(
               local_context.renderer2d.policy = context.policy;
               local_context.surface_pool = context.surface_pool;
               local_context.renderer2d.font_registry = context.renderer2d.font_registry;
+              local_context.renderer2d.transition_registry = context.renderer2d.transition_registry;
               local_context.renderer2d.media_manager = context.renderer2d.media_manager;
               local_context.renderer2d.cms = context.renderer2d.cms;
               local_context.renderer2d.diagnostics = context.renderer2d.diagnostics;

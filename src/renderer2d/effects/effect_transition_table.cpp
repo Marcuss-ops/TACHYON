@@ -29,7 +29,6 @@ static const std::array<EffectBuiltinSpec, 1> kTransitionEffects = {{
 } // namespace
 
 void register_transition_effects(EffectRegistry& registry) {
-    init_builtin_transitions();
     for (const auto& spec : kTransitionEffects) {
         register_effect_from_spec(registry, spec);
     }

@@ -9,7 +9,7 @@ namespace tachyon::renderer2d {
  * Initialize built-in transitions in the global TransitionRegistry.
  * Should be called once at startup.
  */
-void init_builtin_transitions();
+void init_builtin_transitions(TransitionRegistry& registry);
 
 }  // namespace tachyon::renderer2d
 

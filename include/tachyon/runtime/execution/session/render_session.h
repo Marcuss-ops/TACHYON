@@ -93,6 +93,7 @@ public:
 
     void set_memory_budget_bytes(std::size_t bytes) { m_memory_budget_bytes = bytes; }
     void set_profiler(profiling::RenderProfiler* profiler) { m_profiler = profiler; }
+    void set_transition_registry(const TransitionRegistry* registry) { m_transition_registry = registry; }
 
     FrameCache& cache() { return m_cache; }
     const FrameCache& cache() const { return m_cache; }
@@ -111,6 +112,7 @@ private:
 
     std::optional<std::size_t> m_memory_budget_bytes;
     profiling::RenderProfiler* m_profiler{nullptr};
+    const TransitionRegistry* m_transition_registry{nullptr};
 };
 
 } // namespace tachyon

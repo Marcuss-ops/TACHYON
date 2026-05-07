@@ -229,7 +229,7 @@ void print_execution_plan(
 
 }
 
-bool run_render_command(const CliOptions& options, std::ostream& out, std::ostream& err) {
+bool run_render_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& transition_registry) {
     SceneLoadOptions load_opts;
     load_opts.cpp_path = options.cpp_path;
     load_opts.preset_id = options.preset_id;
@@ -265,7 +265,7 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
     native_options.memory_budget_bytes = options.memory_budget_bytes;
     native_options.verbose = true;
 
-    const RenderSessionResult session_result = NativeRenderer::render(scene, job, native_options);
+    const RenderSessionResult session_result = NativeRenderer::render(scene, job, transition_registry, native_options);
     
     if (!session_result.output_error.empty()) {
         err << "Render error: " << session_result.output_error << "\n";
@@ -292,8 +292,8 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
     return session_result.output_error.empty();
 }
 
-bool run_preview_command(const CliOptions& options, std::ostream& out, std::ostream& err) {
-    return run_preview_internal(options, out, err, "NativePreview");
+bool run_preview_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry) {
+    return run_preview_internal(options, out, err, "NativePreview", registry);
 }
 
 } // namespace tachyon

@@ -52,10 +52,10 @@ float transition_progress(const EffectParams& params) {
 
 }  // namespace
 
-void init_builtin_transitions() {
-    register_light_leak_implementations();
-    register_basic_transitions();
-    register_artistic_transitions();
+void init_builtin_transitions(TransitionRegistry& registry) {
+    register_light_leak_implementations(registry);
+    register_basic_transitions(registry);
+    register_artistic_transitions(registry);
 }
 
 SurfaceRGBA GlslTransitionEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
@@ -69,7 +69,15 @@ SurfaceRGBA GlslTransitionEffect::apply(const SurfaceRGBA& input, const EffectPa
     }
 
     // Use resolver to resolve the transition effect
-    TransitionEffectResolver resolver;
+    const TransitionRegistry* transition_registry = nullptr;
+    if (params.context) {
+        transition_registry = params.context->transition_registry;
+    }
+    if (!transition_registry) {
+        return SurfaceRGBA(input.width(), input.height());
+    }
+
+    TransitionEffectResolver resolver(*transition_registry);
     TransitionEffectRequest request;
     request.transition_id = transition_id;
     request.preferred_backend = TransitionRuntimeKind::CpuPixel;

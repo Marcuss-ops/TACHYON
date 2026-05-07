@@ -72,8 +72,9 @@ bool run_preset_audit_tests() {
     }
 
     // 4. Runtime Registry Alignment Audit
-    renderer2d::init_builtin_transitions(); // Ensure built-ins are loaded
-    auto& runtime_reg = TransitionRegistry::instance();
+    TransitionRegistry runtime_reg;
+    register_builtin_transitions(runtime_reg);
+    renderer2d::init_builtin_transitions(runtime_reg); // Ensure built-ins are loaded
 
     for (const auto& id : registered_ids) {
         if (id == "tachyon.transition.none") continue;

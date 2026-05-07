@@ -454,7 +454,7 @@ bool render_transition_demo(
 
 }  // namespace
 
-bool run_catalog_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err) {
+bool run_catalog_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*/) {
     const std::filesystem::path catalog_root = resolve_catalog_root(options.catalog_path);
     TachyonCatalog catalog(catalog_root);
     if (!catalog.ok()) {

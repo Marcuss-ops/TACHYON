@@ -106,7 +106,8 @@ struct RenderSessionWorkspace {
 void configure_render_context(
     RenderSessionWorkspace& workspace,
     profiling::RenderProfiler* profiler,
-    runtime::RuntimeSurfacePool* surface_pool) {
+    runtime::RuntimeSurfacePool* surface_pool,
+    const TransitionRegistry* transition_registry) {
     workspace.context.policy = workspace.effective_plan.render_plan.quality_policy;
     workspace.context.renderer2d.font_registry = ::tachyon::renderer2d::get_default_font_registry();
 
@@ -120,6 +121,7 @@ void configure_render_context(
     workspace.context.surface_pool = surface_pool;
     workspace.context.profiler = profiler;
     workspace.context.renderer2d.profiler = profiler;
+    workspace.context.renderer2d.transition_registry = transition_registry;
 }
 
 bool begin_output_sink(
@@ -261,7 +263,7 @@ RenderSessionResult RenderSession::render(
     const auto surface_count = surface_policy.resolve(w, h, worker_count);
     m_surface_pool = std::make_unique<runtime::RuntimeSurfacePool>(w, h, surface_count);
     
-    configure_render_context(workspace, m_profiler, m_surface_pool.get());
+    configure_render_context(workspace, m_profiler, m_surface_pool.get(), m_transition_registry);
 
     workspace.sink = output::create_frame_output_sink(workspace.effective_plan.render_plan);
     

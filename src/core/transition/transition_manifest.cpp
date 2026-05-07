@@ -60,9 +60,9 @@ static const TransitionBuiltinSpec kLightLeakTransitions[] = {
  * @brief Helper to register a table of built-in specs.
  */
 template<typename T, size_t N>
-void register_table(const T(&table)[N]) {
+void register_table(const T(&table)[N], TransitionRegistry& registry) {
     for (const auto& spec : table) {
-        register_transition_descriptor(make_descriptor(spec));
+        register_transition_descriptor(make_descriptor(spec), registry);
     }
 }
 
@@ -88,10 +88,10 @@ const std::vector<TransitionDescriptor>& get_transition_manifest() {
     return manifest;
 }
 
-void register_builtin_transitions() {
-    register_table(kBasicTransitions);
-    register_table(kArtisticTransitions);
-    register_table(kLightLeakTransitions);
+void register_builtin_transitions(TransitionRegistry& registry) {
+    register_table(kBasicTransitions, registry);
+    register_table(kArtisticTransitions, registry);
+    register_table(kLightLeakTransitions, registry);
 }
 
 } // namespace tachyon

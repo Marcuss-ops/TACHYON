@@ -294,7 +294,7 @@ DEFINE_LEAK_WRAPPER(lightleak_neon_pulse, kNeonPulse)
 DEFINE_LEAK_WRAPPER(lightleak_prism_shatter, kPrismShatter)
 DEFINE_LEAK_WRAPPER(lightleak_vintage_sepia, kVintageSepia)
 
-void register_light_leak_implementations() {
+void register_light_leak_implementations(TransitionRegistry& registry) {
     using namespace tachyon;
 
     {
@@ -307,7 +307,7 @@ void register_light_leak_implementations() {
         d.cpu_fn = transition_light_leak;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -319,7 +319,7 @@ void register_light_leak_implementations() {
         d.cpu_fn = transition_light_leak_solar;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -331,7 +331,7 @@ void register_light_leak_implementations() {
         d.cpu_fn = transition_light_leak_nebula;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -343,7 +343,7 @@ void register_light_leak_implementations() {
         d.cpu_fn = transition_light_leak_sunset;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -355,7 +355,7 @@ void register_light_leak_implementations() {
         d.cpu_fn = transition_light_leak_ghost;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -367,7 +367,7 @@ void register_light_leak_implementations() {
         d.cpu_fn = transition_film_burn;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -379,7 +379,7 @@ void register_light_leak_implementations() {
         d.cpu_fn = transition_lightleak_soft_warm_edge;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -391,7 +391,7 @@ void register_light_leak_implementations() {
         d.cpu_fn = transition_lightleak_golden_sweep;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -403,7 +403,7 @@ void register_light_leak_implementations() {
         d.cpu_fn = transition_lightleak_creamy_white;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -415,7 +415,7 @@ void register_light_leak_implementations() {
         d.cpu_fn = transition_lightleak_dusty_archive;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -427,7 +427,7 @@ void register_light_leak_implementations() {
         d.cpu_fn = transition_lightleak_lens_flare_pass;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -439,7 +439,7 @@ void register_light_leak_implementations() {
         d.cpu_fn = transition_lightleak_amber_sweep;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -451,7 +451,7 @@ void register_light_leak_implementations() {
         d.cpu_fn = transition_lightleak_neon_pulse;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -463,7 +463,7 @@ void register_light_leak_implementations() {
         d.cpu_fn = transition_lightleak_prism_shatter;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -475,7 +475,7 @@ void register_light_leak_implementations() {
         d.cpu_fn = transition_lightleak_vintage_sepia;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
 }
 

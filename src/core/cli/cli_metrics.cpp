@@ -69,7 +69,7 @@ static RenderTelemetryRecord parse_json_line(const std::string& line) {
     return r;
 }
 
-bool run_metrics_command(const CliOptions& options, std::ostream& out, std::ostream& err) {
+bool run_metrics_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry) {
     std::ifstream ifs(options.metrics_input);
     if (!ifs) {
         err << "Failed to open input file: " << options.metrics_input << "\n";
