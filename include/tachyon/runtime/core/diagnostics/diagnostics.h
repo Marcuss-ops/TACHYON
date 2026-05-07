@@ -77,6 +77,17 @@ struct FrameDiagnostics {
     // Cache key manifests for debugging
     std::string frame_key_manifest;
     std::string composition_key_manifest;
+
+    // Ergonomic proxies for internal diagnostics bag
+    void add_info(std::string code, std::string message, std::string path = {}) {
+        diagnostics.add_info(std::move(code), std::move(message), std::move(path));
+    }
+    void add_warning(std::string code, std::string message, std::string path = {}) {
+        diagnostics.add_warning(std::move(code), std::move(message), std::move(path));
+    }
+    void add_error(std::string code, std::string message, std::string path = {}) {
+        diagnostics.add_error(std::move(code), std::move(message), std::move(path));
+    }
 };
 
 } // namespace tachyon
