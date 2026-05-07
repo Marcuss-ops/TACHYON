@@ -32,6 +32,34 @@ void PresetCompiler::expand(SceneSpec& scene) const {
     }
 }
 
+PresetCompiler::ResolvedLayerAnimationPresets
+PresetCompiler::resolve_layer_animation_presets(const LayerSpec& layer) const {
+    ResolvedLayerAnimationPresets resolved;
+
+    // Canonical modern fields win.
+    resolved.in_id = !layer.animation_in_preset.empty()
+        ? layer.animation_in_preset
+        : layer.in_preset;
+
+    resolved.during_id = !layer.animation_during_preset.empty()
+        ? layer.animation_during_preset
+        : layer.during_preset;
+
+    resolved.out_id = !layer.animation_out_preset.empty()
+        ? layer.animation_out_preset
+        : layer.out_preset;
+
+    resolved.in_duration = !layer.animation_in_preset.empty()
+        ? static_cast<double>(layer.animation_in_duration)
+        : static_cast<double>(layer.in_duration);
+
+    resolved.out_duration = !layer.animation_out_preset.empty()
+        ? static_cast<double>(layer.animation_out_duration)
+        : static_cast<double>(layer.out_duration);
+
+    return resolved;
+}
+
 void PresetCompiler::expand_layer(LayerSpec& layer) const {
     // Handle duration -> out_point
     if (layer.duration.has_value()) {
@@ -41,19 +69,21 @@ void PresetCompiler::expand_layer(LayerSpec& layer) const {
     const double in_point = layer.in_point;
     const double out_point = layer.out_point;
 
+    const auto presets = resolve_layer_animation_presets(layer);
+
     // Resolve Animation In
-    const std::string in_id = layer.animation_in_preset;
+    const std::string in_id = presets.in_id;
     if (!in_id.empty()) {
         const AnimationPreset* preset = m_library.find(in_id);
         if (preset) {
-            const double duration = layer.animation_in_duration;
+            const double duration = presets.in_duration;
             const double phase_end = in_point + duration;
             inject_phase(layer, *preset, in_point, phase_end);
         }
     }
 
     // Resolve Animation During
-    const std::string during_id = layer.animation_during_preset;
+    const std::string during_id = presets.during_id;
     if (!during_id.empty()) {
         const AnimationPreset* preset = m_library.find(during_id);
         if (preset) {
@@ -62,11 +92,11 @@ void PresetCompiler::expand_layer(LayerSpec& layer) const {
     }
 
     // Resolve Animation Out
-    const std::string out_id = layer.animation_out_preset;
+    const std::string out_id = presets.out_id;
     if (!out_id.empty()) {
         const AnimationPreset* preset = m_library.find(out_id);
         if (preset) {
-            const double duration = layer.animation_out_duration;
+            const double duration = presets.out_duration;
             const double phase_start = out_point - duration;
             inject_phase(layer, *preset, phase_start, out_point);
         }

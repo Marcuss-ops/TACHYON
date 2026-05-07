@@ -64,7 +64,15 @@ class TransitionRegistry {
 public:
     static TransitionRegistry& instance();
 
-    void register_transition(const TransitionSpec& spec);
+    // Legacy direct registration path.
+    // Do not use for new transitions. New transitions must go through
+    // register_transition_descriptor().
+    void register_transition_legacy(const TransitionSpec& spec);
+
+    // Runtime compatibility path used only by TransitionDescriptor registration.
+    // This keeps TransitionDescriptorRegistry as the canonical source of truth.
+    void register_transition_from_descriptor(const TransitionSpec& spec);
+
     void unregister_transition(const std::string& id);
 
     const TransitionSpec* find(const std::string& id) const;

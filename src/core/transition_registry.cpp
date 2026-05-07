@@ -1,5 +1,4 @@
 #include "tachyon/transition_registry.h"
-#include "tachyon/renderer2d/core/framebuffer.h"
 
 #include <memory>
 #include <unordered_map>
@@ -20,12 +19,25 @@ TransitionRegistry& TransitionRegistry::instance() {
 TransitionRegistry::TransitionRegistry() : m_impl(std::make_unique<Impl>()) {}
 TransitionRegistry::~TransitionRegistry() = default;
 
-void TransitionRegistry::register_transition(const TransitionSpec& spec) {
+namespace {
+
+void register_transition_impl(registry::TypedRegistry<TransitionSpec>& registry,
+                              const TransitionSpec& spec) {
     if (spec.id.empty()) {
         return;
     }
 
-    m_impl->transitions.register_spec(spec);
+    registry.register_spec(spec);
+}
+
+} // namespace
+
+void TransitionRegistry::register_transition_legacy(const TransitionSpec& spec) {
+    register_transition_impl(m_impl->transitions, spec);
+}
+
+void TransitionRegistry::register_transition_from_descriptor(const TransitionSpec& spec) {
+    register_transition_impl(m_impl->transitions, spec);
 }
 
 void TransitionRegistry::unregister_transition(const std::string& id) {

@@ -106,7 +106,7 @@ void register_transition_descriptor(const TransitionDescriptor& desc) {
         case TransitionBackend::CompositePlan: runtime_spec.backend = TransitionSpec::Backend::CompositePlan; break;
     }
     
-    TransitionRegistry::instance().register_transition(runtime_spec);
+    TransitionRegistry::instance().register_transition_from_descriptor(runtime_spec);
     
     // 2. Register in TransitionPresetRegistry
     presets::TransitionPresetSpec preset_spec;

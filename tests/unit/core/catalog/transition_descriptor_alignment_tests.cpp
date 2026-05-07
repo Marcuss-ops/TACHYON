@@ -57,4 +57,20 @@ TEST_F(TransitionAlignmentTest, AllDescriptorsHaveValidSchemas) {
     }
 }
 
+TEST_F(TransitionAlignmentTest, RuntimeRegistryDoesNotContainDescriptorlessTransitions) {
+    const auto runtime_ids = TransitionRegistry::instance().list_builtin_transition_ids();
+
+    for (const auto& id : runtime_ids) {
+        if (id == "tachyon.transition.none" || id == "none") {
+            continue;
+        }
+
+        const auto* desc = TransitionDescriptorRegistry::instance().find(id);
+        EXPECT_NE(desc, nullptr)
+            << "Runtime transition '" << id
+            << "' exists in TransitionRegistry but has no TransitionDescriptor. "
+            << "New transitions must be registered through register_transition_descriptor().";
+    }
+}
+
 } // namespace tachyon
