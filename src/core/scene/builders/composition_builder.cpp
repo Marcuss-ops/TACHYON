@@ -85,17 +85,17 @@ CompositionBuilder& CompositionBuilder::precomp_layer(std::string id, std::strin
 
 CompositionBuilder& CompositionBuilder::camera3d_layer(std::string id, std::function<void(LayerBuilder&)> fn) {
     return add_typed_layer(std::move(id),
-        [](LayerBuilder& l) { l.is_3d(true); l.type(LayerType::Camera); l.camera_type("two_node"); }, fn);
+        [](LayerBuilder& l) { l.transform3d().is_3d(true).done(); l.camera().type("two_node").done(); }, fn);
 }
 
 CompositionBuilder& CompositionBuilder::light_layer(std::string id, std::function<void(LayerBuilder&)> fn) {
     return add_typed_layer(std::move(id),
-        [](LayerBuilder& l) { l.is_3d(true); l.type(LayerType::Light); l.light_type("point"); }, fn);
+        [](LayerBuilder& l) { l.transform3d().is_3d(true).done(); l.light().type("point").done(); }, fn);
 }
 
 CompositionBuilder& CompositionBuilder::mesh_layer(std::string id, std::function<void(LayerBuilder&)> fn) {
     return add_typed_layer(std::move(id),
-        [](LayerBuilder& l) { l.is_3d(true); l.type(LayerType::Shape); }, fn);
+        [](LayerBuilder& l) { l.transform3d().is_3d(true).done(); l.type(LayerType::Shape); }, fn);
 }
 
 CompositionBuilder& CompositionBuilder::audio(std::string path, double volume) {
