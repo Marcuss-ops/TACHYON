@@ -1,0 +1,67 @@
+Tachyon Build
+  Preset : dev
+  Config : RelWithDebInfo
+  Target : TachyonCore
+  cmake : C:\Users\pater\AppData\Local\Android\Sdk\cmake\4.1.2\bin
+  ninja : C:\Users\pater\AppData\Local\Android\Sdk\cmake\4.1.2\bin
+  VS env: cache hit (264m old) - C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat
+Killing stale Tachyon test processes...
+Quick check (MSBuild, no CMake)...
+Build started 5/7/2026 1:11:29 PM.
+
+Project "C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj" on node 1 (Build target(s)).
+Project "C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj" (1) is building "C:\Users\pater\Pyt\Tachyon\build\ZERO_CHECK.vcxproj" (2) on node 1 (default targets).
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Creating "x64\RelWithDebInfo\ZERO_CHECK\ZERO_CHECK.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "x64\RelWithDebInfo\ZERO_CHECK\ZERO_CHECK.tlog\unsuccessfulbuild".
+PreBuildEvent:
+  Checking File Globs
+  setlocal
+  C:\Users\pater\AppData\Local\Android\Sdk\cmake\4.1.2\bin\cmake.exe -P C:/Users/pater/Pyt/Tachyon/build/CMakeFiles/VerifyGlobs.cmake
+  if %errorlevel% neq 0 goto :cmEnd
+  :cmEnd
+  endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+  :cmErrorLevel
+  exit /b %1
+  :cmDone
+  if %errorlevel% neq 0 goto :VCEnd
+  :VCEnd
+CustomBuild:
+  All outputs are up-to-date.
+  1>Checking Build System
+FinalizeBuildStatus:
+  Deleting file "x64\RelWithDebInfo\ZERO_CHECK\ZERO_CHECK.tlog\unsuccessfulbuild".
+  Touching "x64\RelWithDebInfo\ZERO_CHECK\ZERO_CHECK.tlog\ZERO_CHECK.lastbuildstate".
+Done Building Project "C:\Users\pater\Pyt\Tachyon\build\ZERO_CHECK.vcxproj" (default targets).
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Creating "TachyonCore.dir\RelWithDebInfo\TachyonCore.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "TachyonCore.dir\RelWithDebInfo\TachyonCore.tlog\unsuccessfulbuild".
+CustomBuild:
+  All outputs are up-to-date.
+VcpkgTripletSelection:
+  Using triplet "x64-windows" from "C:\vcpkg\installed\x64-windows\"
+  Using normalized configuration "Release"
+VcpkgCheckManifestRoot:
+  The vcpkg manifest was disabled, but we found a manifest file in C:\Users\pater\Pyt\Tachyon\. You may want to enable vcpkg manifests in your properties page or pass /p:VcpkgEnableManifest=true to the msbuild invocation.
+ClCompile:
+  All outputs are up-to-date.
+Lib:
+  All outputs are up-to-date.
+  TachyonCore.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\src\RelWithDebInfo\TachyonCore.lib
+FinalizeBuildStatus:
+  Deleting file "TachyonCore.dir\RelWithDebInfo\TachyonCore.tlog\unsuccessfulbuild".
+  Touching "TachyonCore.dir\RelWithDebInfo\TachyonCore.tlog\TachyonCore.lastbuildstate".
+Done Building Project "C:\Users\pater\Pyt\Tachyon\build\src\TachyonCore.vcxproj" (Build target(s)).
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:00.52
+OK: RenderIntent boundary respected.
+OK: graphics architecture boundaries respected.
+Quick check OK

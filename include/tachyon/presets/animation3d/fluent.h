@@ -10,13 +10,13 @@ inline scene::LayerBuilder& tilt(
     double tilt_y = 0.0,
     double smoothness = 0.5) {
 
-    layer.modifier3d(
+    layer.transform3d().modifier(
         "tachyon.modifier3d.tilt",
         {
             {"tilt_x", tilt_x},
             {"tilt_y", tilt_y},
             {"smoothness", smoothness},
-        });
+        }).done();
     return layer;
 }
 
@@ -24,11 +24,11 @@ inline scene::LayerBuilder& parallax(
     scene::LayerBuilder& layer,
     double depth = 0.0) {
 
-    layer.modifier3d(
+    layer.transform3d().modifier(
         "tachyon.modifier3d.parallax",
         {
             {"depth", depth},
-        });
+        }).done();
     return layer;
 }
 
@@ -38,7 +38,7 @@ inline scene::LayerBuilder& orbit_y(
     double delay = 0.0,
     double intensity = 1.0) {
 
-    layer.animation3d_preset("tachyon.anim3d.orbit_y", duration, delay, intensity);
+    layer.transform3d().animation_preset("tachyon.anim3d.orbit_y", duration, delay, intensity).done();
     return layer;
 }
 
@@ -48,7 +48,7 @@ inline scene::LayerBuilder& camera_push_in(
     double delay = 0.0,
     double intensity = 1.0) {
 
-    layer.animation3d_preset("tachyon.anim3d.camera_push_in", duration, delay, intensity);
+    layer.transform3d().animation_preset("tachyon.anim3d.camera_push_in", duration, delay, intensity).done();
     return layer;
 }
 
@@ -58,7 +58,7 @@ inline scene::LayerBuilder& turntable(
     double delay = 0.0,
     double intensity = 1.0) {
 
-    layer.animation3d_preset("tachyon.anim3d.turntable", duration, delay, intensity);
+    layer.transform3d().animation_preset("tachyon.anim3d.turntable", duration, delay, intensity).done();
     return layer;
 }
 
@@ -68,7 +68,7 @@ inline scene::LayerBuilder& float_z(
     double delay = 0.0,
     double intensity = 1.0) {
 
-    layer.animation3d_preset("tachyon.anim3d.float_z", duration, delay, intensity);
+    layer.transform3d().animation_preset("tachyon.anim3d.float_z", duration, delay, intensity).done();
     return layer;
 }
 

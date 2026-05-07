@@ -1,0 +1,357 @@
+Tachyon Build
+  Preset : dev-fast
+  Config : RelWithDebInfo
+  Target : TachyonContentTests
+  Tests  : enabled
+  Filter : Transition
+  cmake : C:\Users\pater\AppData\Local\Android\Sdk\cmake\4.1.2\bin
+  ninja : C:\Users\pater\AppData\Local\Android\Sdk\cmake\4.1.2\bin
+  VS env: cache hit (274m old) - C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat
+Killing stale Tachyon test processes...
+Building TachyonContentTests (RelWithDebInfo, 16 jobs)...
+MSBuild version 17.14.40+3e7442088 for .NET Framework
+
+  Checking File Globs
+  1>Checking Build System
+  The vcpkg manifest was disabled, but we found a manifest file in C:\Users\pater\Pyt\Tachyon\. You may want to enable vcpkg manifests in your properties page or pass /p:VcpkgEnableManifest=true to the msbuild invocation.
+  sound_effect_registry.cpp
+  The vcpkg manifest was disabled, but we found a manifest file in C:\Users\pater\Pyt\Tachyon\. You may want to enable vcpkg manifests in your properties page or pass /p:VcpkgEnableManifest=true to the msbuild invocation.
+  The vcpkg manifest was disabled, but we found a manifest file in C:\Users\pater\Pyt\Tachyon\. You may want to enable vcpkg manifests in your properties page or pass /p:VcpkgEnableManifest=true to the msbuild invocation.
+  TachyonPlatform.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\src\RelWithDebInfo\TachyonPlatform.lib
+  The vcpkg manifest was disabled, but we found a manifest file in C:\Users\pater\Pyt\Tachyon\. You may want to enable vcpkg manifests in your properties page or pass /p:VcpkgEnableManifest=true to the msbuild invocation.
+  The vcpkg manifest was disabled, but we found a manifest file in C:\Users\pater\Pyt\Tachyon\. You may want to enable vcpkg manifests in your properties page or pass /p:VcpkgEnableManifest=true to the msbuild invocation.
+  The vcpkg manifest was disabled, but we found a manifest file in C:\Users\pater\Pyt\Tachyon\. You may want to enable vcpkg manifests in your properties page or pass /p:VcpkgEnableManifest=true to the msbuild invocation.
+  TachyonCore.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\src\RelWithDebInfo\TachyonCore.lib
+  Building Custom Rule C:/Users/pater/Pyt/Tachyon/build/_deps/embree-src/common/sys/CMakeLists.txt
+  math.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\embree-build\RelWithDebInfo\math.lib
+  Building Custom Rule C:/Users/pater/Pyt/Tachyon/build/_deps/freetype-src/CMakeLists.txt
+  simd.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\embree-build\RelWithDebInfo\simd.lib
+  Building Custom Rule C:/Users/pater/Pyt/Tachyon/build/_deps/pugixml-src/CMakeLists.txt
+  tasking.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\embree-build\RelWithDebInfo\tasking.lib
+  The vcpkg manifest was disabled, but we found a manifest file in C:\Users\pater\Pyt\Tachyon\. You may want to enable vcpkg manifests in your properties page or pass /p:VcpkgEnableManifest=true to the msbuild invocation.
+  sys.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\embree-build\RelWithDebInfo\sys.lib
+  The vcpkg manifest was disabled, but we found a manifest file in C:\Users\pater\Pyt\Tachyon\. You may want to enable vcpkg manifests in your properties page or pass /p:VcpkgEnableManifest=true to the msbuild invocation.
+  The vcpkg manifest was disabled, but we found a manifest file in C:\Users\pater\Pyt\Tachyon\. You may want to enable vcpkg manifests in your properties page or pass /p:VcpkgEnableManifest=true to the msbuild invocation.
+  The vcpkg manifest was disabled, but we found a manifest file in C:\Users\pater\Pyt\Tachyon\. You may want to enable vcpkg manifests in your properties page or pass /p:VcpkgEnableManifest=true to the msbuild invocation.
+  The vcpkg manifest was disabled, but we found a manifest file in C:\Users\pater\Pyt\Tachyon\. You may want to enable vcpkg manifests in your properties page or pass /p:VcpkgEnableManifest=true to the msbuild invocation.
+  The vcpkg manifest was disabled, but we found a manifest file in C:\Users\pater\Pyt\Tachyon\. You may want to enable vcpkg manifests in your properties page or pass /p:VcpkgEnableManifest=true to the msbuild invocation.
+  The vcpkg manifest was disabled, but we found a manifest file in C:\Users\pater\Pyt\Tachyon\. You may want to enable vcpkg manifests in your properties page or pass /p:VcpkgEnableManifest=true to the msbuild invocation.
+  embree_sse42.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\embree-build\RelWithDebInfo\embree_sse42.lib
+  The vcpkg manifest was disabled, but we found a manifest file in C:\Users\pater\Pyt\Tachyon\. You may want to enable vcpkg manifests in your properties page or pass /p:VcpkgEnableManifest=true to the msbuild invocation.
+  lexers.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\embree-build\RelWithDebInfo\lexers.lib
+  pugixml-static.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\pugixml-build\RelWithDebInfo\pugixml.lib
+  frame_evaluator.cpp
+  freetype.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\freetype-build\RelWithDebInfo\freetype.lib
+  TachyonColor.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\src\RelWithDebInfo\TachyonColor.lib
+  lens_flare_effect.cpp
+  Building Custom Rule C:/Users/pater/Pyt/Tachyon/build/_deps/harfbuzz-src/CMakeLists.txt
+  The vcpkg manifest was disabled, but we found a manifest file in C:\Users\pater\Pyt\Tachyon\. You may want to enable vcpkg manifests in your properties page or pass /p:VcpkgEnableManifest=true to the msbuild invocation.
+  The vcpkg manifest was disabled, but we found a manifest file in C:\Users\pater\Pyt\Tachyon\. You may want to enable vcpkg manifests in your properties page or pass /p:VcpkgEnableManifest=true to the msbuild invocation.
+  The vcpkg manifest was disabled, but we found a manifest file in C:\Users\pater\Pyt\Tachyon\. You may want to enable vcpkg manifests in your properties page or pass /p:VcpkgEnableManifest=true to the msbuild invocation.
+  Building Custom Rule C:/Users/pater/Pyt/Tachyon/tests/CMakeLists.txt
+  The vcpkg manifest was disabled, but we found a manifest file in C:\Users\pater\Pyt\Tachyon\. You may want to enable vcpkg manifests in your properties page or pass /p:VcpkgEnableManifest=true to the msbuild invocation.
+  harfbuzz.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\harfbuzz-build\RelWithDebInfo\harfbuzz.lib
+  TachyonRenderer2DColor.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\src\RelWithDebInfo\TachyonRenderer2DColor.lib
+  output_utils.cpp
+  The vcpkg manifest was disabled, but we found a manifest file in C:\Users\pater\Pyt\Tachyon\. You may want to enable vcpkg manifests in your properties page or pass /p:VcpkgEnableManifest=true to the msbuild invocation.
+  The vcpkg manifest was disabled, but we found a manifest file in C:\Users\pater\Pyt\Tachyon\. You may want to enable vcpkg manifests in your properties page or pass /p:VcpkgEnableManifest=true to the msbuild invocation.
+  TachyonTestUtils.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\tests\RelWithDebInfo\TachyonTestUtils.lib
+  The vcpkg manifest was disabled, but we found a manifest file in C:\Users\pater\Pyt\Tachyon\. You may want to enable vcpkg manifests in your properties page or pass /p:VcpkgEnableManifest=true to the msbuild invocation.
+  embree.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\_deps\embree-build\RelWithDebInfo\embree3.lib
+  runtime_facade.cpp
+  TextLayerSpec.cpp
+  The vcpkg manifest was disabled, but we found a manifest file in C:\Users\pater\Pyt\Tachyon\. You may want to enable vcpkg manifests in your properties page or pass /p:VcpkgEnableManifest=true to the msbuild invocation.
+  animation3d.cpp
+C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\include\algorithm(3800,24): warning C4244: '=': conversione da 'int' a 'char'. Possibile perdita di dati. [C:\Users\pater\Pyt\Tachyon\build\src\TachyonAudio.vcxproj]
+  (compiling source file '../../../src/audio/core/sound_effect_registry.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\include\algorithm(3800,24):
+      il contesto di creazione dell'istanza del modello (prima il meno recente) Š
+          C:\Users\pater\Pyt\Tachyon\src\audio\core\sound_effect_registry.cpp(33,18):
+          vedere il riferimento all'istanza '_OutIt std::transform<std::_String_iterator<std::_String_val<std::_Simple_types<_Elem>>>,std::_String_iterator<std::_String_val<std::_Simple_types<_Elem>>>,int(__cdecl *)(int)>(const _InIt,const _InIt,_OutIt,_Fn)' della funzione modello di cui Š in corso la compilazione
+          with
+          [
+              _OutIt=std::_String_iterator<std::_String_val<std::_Simple_types<char>>>,
+              _Elem=char,
+              _InIt=std::_String_iterator<std::_String_val<std::_Simple_types<char>>>,
+              _Fn=int (__cdecl *)(int)
+          ]
+  
+  audio_analyzer.cpp
+  time.cpp
+  png_sequence_sink.cpp
+  light_leak_effect.cpp
+  motion_blur.cpp
+C:\Users\pater\Pyt\Tachyon\include\tachyon\background_descriptor.h(35,67): error C2039: 'ParameterBag': non Š un membro di 'tachyon::registry' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRuntimeCore.vcxproj]
+  (compiling source file '../../src/runtime/runtime_facade.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\registry\parameter_schema.h(11,11):
+      vedere la dichiarazione di 'tachyon::registry'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\background_descriptor.h(35,51): error C4430: identificatore di tipo mancante, verr… utilizzato int. Nota: default-int non Š pi— supportato in C++ [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRuntimeCore.vcxproj]
+  (compiling source file '../../src/runtime/runtime_facade.cpp')
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\background_descriptor.h(35,79): error C2143: errore di sintassi: ',' mancante prima di '&' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRuntimeCore.vcxproj]
+  (compiling source file '../../src/runtime/runtime_facade.cpp')
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\background_descriptor.h(35,81): error C2143: errore di sintassi: ')' mancante prima di '>' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRuntimeCore.vcxproj]
+  (compiling source file '../../src/runtime/runtime_facade.cpp')
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\background_registry.h(34,17): error C2065: 'BackgroundCatalogEntry': identificatore non dichiarato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRuntimeCore.vcxproj]
+  (compiling source file '../../src/runtime/runtime_facade.cpp')
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\background_registry.h(34,10): error C2923: 'std::vector': 'BackgroundCatalogEntry' non Š un argomento di tipo modello valido per il parametro '_Ty' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRuntimeCore.vcxproj]
+  (compiling source file '../../src/runtime/runtime_facade.cpp')
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\background_registry.h(34,17):
+      vedere la dichiarazione di 'BackgroundCatalogEntry'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\background_registry.h(34,10): error C2976: 'std::vector': argomenti modello insufficienti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRuntimeCore.vcxproj]
+  (compiling source file '../../src/runtime/runtime_facade.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\include\vector(442,7):
+      vedere la dichiarazione di 'std::vector'
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\background_registry.h(34,41): error C2955: 'std::vector': l'utilizzo di classe modello richiede un elenco di argomenti di modello [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRuntimeCore.vcxproj]
+  (compiling source file '../../src/runtime/runtime_facade.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\include\vector(442,7):
+      vedere la dichiarazione di 'std::vector'
+  
+  compiled_scene.cpp
+  text_animator_paints.cpp
+  audio_export.cpp
+  time_resolver.cpp
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\animation\text_anim_property_registry.h(266,119): warning C4100: 'coverage': parametro senza riferimenti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonText.vcxproj]
+  (compiling source file '../../src/text/core/animation/text_animator_paints.cpp')
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\animation\text_anim_property_registry.h(266,100): warning C4100: 'staggered_t': parametro senza riferimenti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonText.vcxproj]
+  (compiling source file '../../src/text/core/animation/text_animator_paints.cpp')
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\animation\text_anim_property_registry.h(266,88): warning C4100: 'spec': parametro senza riferimenti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonText.vcxproj]
+  (compiling source file '../../src/text/core/animation/text_animator_paints.cpp')
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\animation\text_anim_property_registry.h(266,49): warning C4100: 'glyph': parametro senza riferimenti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonText.vcxproj]
+  (compiling source file '../../src/text/core/animation/text_animator_paints.cpp')
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\animation\text_anim_property_registry.h(348,159): warning C4100: 'coverages': parametro senza riferimenti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonText.vcxproj]
+  (compiling source file '../../src/text/core/animation/text_animator_paints.cpp')
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\animation\text_anim_property_registry.h(348,128): warning C4100: 'staggered_ts': parametro senza riferimenti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonText.vcxproj]
+  (compiling source file '../../src/text/core/animation/text_animator_paints.cpp')
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\animation\text_anim_property_registry.h(348,105): warning C4100: 'spec': parametro senza riferimenti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonText.vcxproj]
+  (compiling source file '../../src/text/core/animation/text_animator_paints.cpp')
+  
+C:\Users\pater\Pyt\Tachyon\include\tachyon\text\animation\text_anim_property_registry.h(348,65): warning C4100: 'glyphs': parametro senza riferimenti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonText.vcxproj]
+  (compiling source file '../../src/text/core/animation/text_animator_paints.cpp')
+  
+  ffmpeg_command_builder.cpp
+  layer3d_mesh_resolver.cpp
+  tbf_codec.cpp
+  text_scene_presets.cpp
+  particle_effects.cpp
+  Generazione del codice in corso...
+  Generazione del codice in corso...
+  ffmpeg_pipe_sink.cpp
+  TachyonTimeline.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\src\RelWithDebInfo\TachyonTimeline.lib
+  TachyonAudio.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\src\RelWithDebInfo\TachyonAudio.lib
+  tbf_migration.cpp
+  outline_extractor.cpp
+  ray_tracer.cpp
+  number_counter_effect.cpp
+  output_planner.cpp
+C:\Users\pater\Pyt\Tachyon\src\renderer3d\core\ray_tracer.cpp(119,17): warning C4849: La clausola 'collapse' OpenMP Š stata ignorata nella direttiva 'parallel for' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer3D.vcxproj]
+  Generazione del codice in corso...
+  tbf_read_helpers.cpp
+  media_card_mesh_builder.cpp
+  ray_tracer_scene.cpp
+  Generazione del codice in corso...
+  TachyonText.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\src\RelWithDebInfo\TachyonText.lib
+  tbf_write_helpers.cpp
+  Generazione del codice in corso...
+  TachyonOutput.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\src\RelWithDebInfo\TachyonOutput.lib
+  TachyonRenderer2DExtras.vcxproj -> C:\Users\pater\Pyt\Tachyon\build\src\RelWithDebInfo\TachyonRenderer2DExtras.lib
+  The vcpkg manifest was disabled, but we found a manifest file in C:\Users\pater\Pyt\Tachyon\. You may want to enable vcpkg manifests in your properties page or pass /p:VcpkgEnableManifest=true to the msbuild invocation.
+  transition_registry.cpp
+  ray_tracer_shading.cpp
+  disk_cache.cpp
+  audio_sampling.cpp
+  blur_effects.cpp
+  scene_cache.cpp
+  frame_cache.cpp
+  material.cpp
+  render_context.cpp
+  color_effects.cpp
+  material_evaluator.cpp
+  effect_host.cpp
+  report.cpp
+  pbr_utils.cpp
+  glsl_transition_effect.cpp
+  debug_tools.cpp
+  Generazione del codice in corso...
+C:\Users\pater\Pyt\Tachyon\include\tachyon\renderer2d\effects\diagnostics\diagnostic_surface.h(3,10): error C1083: Non Š possibile aprire il file inclusione: 'tachyon/renderer2d/raster/surface.h': No such file or directory [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+  artistic_transitions.cpp
+  (compiling source file '../../src/renderer2d/effects/core/glsl_transition_effect.cpp')
+  
+  culling.cpp
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\artistic_transitions.cpp(164,5): error C2039: 'Zoom': non Š un membro di 'tachyon::TransitionDescriptor' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\transition\transition_descriptor.h(76,8):
+      vedere la dichiarazione di 'tachyon::TransitionDescriptor'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\artistic_transitions.cpp(165,5): error C2039: 'Zoom': non Š un membro di 'tachyon::TransitionDescriptor' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\transition\transition_descriptor.h(76,8):
+      vedere la dichiarazione di 'tachyon::TransitionDescriptor'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\artistic_transitions.cpp(166,5): error C2039: 'Custom': non Š un membro di 'tachyon::TransitionDescriptor' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\transition\transition_descriptor.h(76,8):
+      vedere la dichiarazione di 'tachyon::TransitionDescriptor'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\artistic_transitions.cpp(167,5): error C2039: 'Custom': non Š un membro di 'tachyon::TransitionDescriptor' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\transition\transition_descriptor.h(76,8):
+      vedere la dichiarazione di 'tachyon::TransitionDescriptor'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\artistic_transitions.cpp(168,5): error C2039: 'Custom': non Š un membro di 'tachyon::TransitionDescriptor' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\transition\transition_descriptor.h(76,8):
+      vedere la dichiarazione di 'tachyon::TransitionDescriptor'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\artistic_transitions.cpp(169,5): error C2039: 'Custom': non Š un membro di 'tachyon::TransitionDescriptor' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\transition\transition_descriptor.h(76,8):
+      vedere la dichiarazione di 'tachyon::TransitionDescriptor'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\artistic_transitions.cpp(170,5): error C2039: 'Dissolve': non Š un membro di 'tachyon::TransitionDescriptor' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\transition\transition_descriptor.h(76,8):
+      vedere la dichiarazione di 'tachyon::TransitionDescriptor'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\artistic_transitions.cpp(171,5): error C2039: 'Wipe': non Š un membro di 'tachyon::TransitionDescriptor' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\transition\transition_descriptor.h(76,8):
+      vedere la dichiarazione di 'tachyon::TransitionDescriptor'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\artistic_transitions.cpp(172,5): error C2039: 'flash': non Š un membro di 'tachyon::ids::transition' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\ids\builtin_ids.h(7,11):
+      vedere la dichiarazione di 'tachyon::ids::transition'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\artistic_transitions.cpp(172,5): error C2065: 'flash': identificatore non dichiarato [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\artistic_transitions.cpp(172,5): error C2039: 'Custom': non Š un membro di 'tachyon::TransitionDescriptor' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\transition\transition_descriptor.h(76,8):
+      vedere la dichiarazione di 'tachyon::TransitionDescriptor'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\artistic_transitions.cpp(173,5): error C2039: 'Custom': non Š un membro di 'tachyon::TransitionDescriptor' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\transition\transition_descriptor.h(76,8):
+      vedere la dichiarazione di 'tachyon::TransitionDescriptor'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\artistic_transitions.cpp(174,5): error C2039: 'Custom': non Š un membro di 'tachyon::TransitionDescriptor' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\transition\transition_descriptor.h(76,8):
+      vedere la dichiarazione di 'tachyon::TransitionDescriptor'
+  
+  basic_transitions.cpp
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\basic_transitions.cpp(117,5): error C2039: 'Fade': non Š un membro di 'tachyon::TransitionDescriptor' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\transition\transition_descriptor.h(76,8):
+      vedere la dichiarazione di 'tachyon::TransitionDescriptor'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\basic_transitions.cpp(118,5): error C2039: 'Slide': non Š un membro di 'tachyon::TransitionDescriptor' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\transition\transition_descriptor.h(76,8):
+      vedere la dichiarazione di 'tachyon::TransitionDescriptor'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\basic_transitions.cpp(119,5): error C2039: 'Slide': non Š un membro di 'tachyon::TransitionDescriptor' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\transition\transition_descriptor.h(76,8):
+      vedere la dichiarazione di 'tachyon::TransitionDescriptor'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\basic_transitions.cpp(120,5): error C2039: 'Slide': non Š un membro di 'tachyon::TransitionDescriptor' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\transition\transition_descriptor.h(76,8):
+      vedere la dichiarazione di 'tachyon::TransitionDescriptor'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\basic_transitions.cpp(121,5): error C2039: 'Zoom': non Š un membro di 'tachyon::TransitionDescriptor' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\transition\transition_descriptor.h(76,8):
+      vedere la dichiarazione di 'tachyon::TransitionDescriptor'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\basic_transitions.cpp(122,5): error C2039: 'Flip': non Š un membro di 'tachyon::TransitionDescriptor' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\transition\transition_descriptor.h(76,8):
+      vedere la dichiarazione di 'tachyon::TransitionDescriptor'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\basic_transitions.cpp(123,5): error C2039: 'Fade': non Š un membro di 'tachyon::TransitionDescriptor' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\transition\transition_descriptor.h(76,8):
+      vedere la dichiarazione di 'tachyon::TransitionDescriptor'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\basic_transitions.cpp(124,5): error C2039: 'Fade': non Š un membro di 'tachyon::TransitionDescriptor' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\transition\transition_descriptor.h(76,8):
+      vedere la dichiarazione di 'tachyon::TransitionDescriptor'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\basic_transitions.cpp(125,5): error C2039: 'Wipe': non Š un membro di 'tachyon::TransitionDescriptor' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\transition\transition_descriptor.h(76,8):
+      vedere la dichiarazione di 'tachyon::TransitionDescriptor'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\basic_transitions.cpp(126,5): error C2039: 'Wipe': non Š un membro di 'tachyon::TransitionDescriptor' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\transition\transition_descriptor.h(76,8):
+      vedere la dichiarazione di 'tachyon::TransitionDescriptor'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\basic_transitions.cpp(127,5): error C2039: 'Slide': non Š un membro di 'tachyon::TransitionDescriptor' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\transition\transition_descriptor.h(76,8):
+      vedere la dichiarazione di 'tachyon::TransitionDescriptor'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\basic_transitions.cpp(128,5): error C2039: 'Slide': non Š un membro di 'tachyon::TransitionDescriptor' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\transition\transition_descriptor.h(76,8):
+      vedere la dichiarazione di 'tachyon::TransitionDescriptor'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\basic_transitions.cpp(129,5): error C2039: 'Wipe': non Š un membro di 'tachyon::TransitionDescriptor' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\transition\transition_descriptor.h(76,8):
+      vedere la dichiarazione di 'tachyon::TransitionDescriptor'
+  
+  light_leak_transitions.cpp
+  modifier3d_registry.cpp
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\light_leak_transitions.cpp(85,34): warning C4100: 'u': parametro senza riferimenti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\effects\core\transitions\light_leak_transitions.cpp(90,40): warning C4100: 'v': parametro senza riferimenti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+  utility_effects.cpp
+  modifier3d_presets_table.cpp
+  warp_stabilizer_effect.cpp
+  tilt_3d_modifier.cpp
+  effect_blur_table.cpp
+  parallax_3d_modifier.cpp
+  effect_color_table.cpp
+  Generazione del codice in corso...
+C:\Users\pater\Pyt\Tachyon\src\renderer3d\modifiers\modifier3d_presets_table.cpp(1,1): error C1083: Non Š possibile aprire il file generato dal compilatore: 'C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer3D.dir\RelWithDebInfo\modifier3d_presets_table.obj': Permission denied [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer3D.vcxproj]
+  effect_distortion_table.cpp
+  effect_generator_table.cpp
+  effect_stylize_table.cpp
+  effect_transition_table.cpp
+  effect_renderer.cpp
+  matte_resolver.cpp
+  composition_renderer.cpp
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\pipeline\composition_renderer.cpp(596,56): error C2039: 'function': non Š un membro di 'tachyon::ResolvedTransition' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\transition\transition_resolver.h(9,8):
+      vedere la dichiarazione di 'tachyon::ResolvedTransition'
+  
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\pipeline\composition_renderer.cpp(625,62): error C2039: 'function': non Š un membro di 'tachyon::ResolvedTransition' [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+      C:\Users\pater\Pyt\Tachyon\include\tachyon\core\transition\transition_resolver.h(9,8):
+      vedere la dichiarazione di 'tachyon::ResolvedTransition'
+  
+  Generazione del codice in corso...
+  Compilazione in corso...
+  layer_renderer.cpp
+  layer_to_draw_command.cpp
+  scene3d_bridge.cpp
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\pipeline\scene3d_bridge.cpp(227,40): warning C4100: 'camera': parametro senza riferimenti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\pipeline\scene3d_bridge.cpp(255,52): warning C4100: 'lights': parametro senza riferimenti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\pipeline\scene3d_bridge.cpp(286,31): warning C4100: 'input': parametro senza riferimenti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\pipeline\scene3d_bridge.cpp(335,72): warning C4100: 'input': parametro senza riferimenti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\pipeline\scene3d_bridge.cpp(27,13): warning C4505: 'tachyon::`anonymous-namespace'::is_bridge_renderable_layer': la funzione senza riferimento con collegamento interno Š stata rimossa [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\pipeline\scene3d_bridge.cpp(88,24): warning C4505: 'tachyon::`anonymous-namespace'::build_layer_mesh': la funzione senza riferimento con collegamento interno Š stata rimossa [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\pipeline\scene3d_bridge.cpp(126,32): warning C4505: 'tachyon::`anonymous-namespace'::build_instance_for_layer': la funzione senza riferimento con collegamento interno Š stata rimossa [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\pipeline\scene3d_bridge.cpp(211,18): warning C4505: 'tachyon::`anonymous-namespace'::to_color': la funzione senza riferimento con collegamento interno Š stata rimossa [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+  layer_renderer_procedural.cpp
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\evaluated_composition\rendering\primitives\layer_renderer_procedural.cpp(156,78): warning C4100: 'density': parametro senza riferimenti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+  layer_renderer_simple.cpp
+  mask_renderer.cpp
+  text_mesh_builder.cpp
+  composition_utils.cpp
+  cpu_rasterizer.cpp
+  draw_list_builder.cpp
+  draw_list_rasterizer.cpp
+  tile_grid.cpp
+  render_context.cpp
+  resource_provider.cpp
+C:\Users\pater\Pyt\Tachyon\src\renderer2d\resource\resource_provider.cpp(42,100): warning C4100: 'id': parametro senza riferimenti [C:\Users\pater\Pyt\Tachyon\build\src\TachyonRenderer2D.vcxproj]
+  texture_resolver.cpp
+  Generazione del codice in corso...
+Invoke-Native : Build FAILED.
+At C:\Users\pater\Pyt\Tachyon\build.ps1:246 char:13
++             Invoke-Native { cmake --build $BuildDir --config $Config  ...
++             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,Invoke-Native
+ 

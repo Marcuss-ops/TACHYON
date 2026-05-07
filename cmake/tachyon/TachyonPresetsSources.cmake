@@ -22,7 +22,6 @@ set(TachyonPresetsSources
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/transition/transition_preset_registry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/transition/transition_builders.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/transition/transition_presets_table.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/presets/transition/transition_descriptors.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/scene/scene_preset_registry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/animation3d/animation3d_preset_registry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/animation3d/animation3d_presets_table.cpp
