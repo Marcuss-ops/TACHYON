@@ -101,10 +101,7 @@ TextAnimatorContext build_context_resolved(
         lines,
         [](const ResolvedGlyph& glyph) { return glyph.is_space || glyph.whitespace; },
         [](const std::vector<ResolvedTextLine>&, std::size_t) { return std::size_t{0}; },
-        [](TextAnimatorContext& ctx, const ResolvedGlyph& glyph) {
-            ctx.cluster_codepoint_start = glyph.cluster_codepoint_start;
-            ctx.cluster_codepoint_count = glyph.cluster_codepoint_count;
-        });
+        [](TextAnimatorContext&, const ResolvedGlyph&) {});
 }
 
 std::size_t find_line_index_tl(
