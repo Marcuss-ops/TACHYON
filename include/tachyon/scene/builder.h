@@ -130,6 +130,8 @@ public:
     LayerBuilder& preset(std::string name);
     LayerBuilder& text(std::string t);
     LayerBuilder& asset_id(std::string id);
+    LayerBuilder& mesh_deform_id(std::optional<std::string> id);
+    LayerBuilder& clear_mesh_deform_id();
     LayerBuilder& font(std::string f);
     LayerBuilder& font_size(double sz);
     LayerBuilder& in(double t);

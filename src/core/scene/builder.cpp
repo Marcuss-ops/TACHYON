@@ -1,5 +1,6 @@
 #include "tachyon/scene/builder.h"
 #include <algorithm>
+#include <limits>
 #include <cmath>
 #include "tachyon/presets/background/background_preset_registry.h"
 #include "tachyon/presets/transition/transition_preset_registry.h"
@@ -180,6 +181,16 @@ LayerBuilder& LayerBuilder::asset_id(std::string id) {
     return *this;
 }
 
+LayerBuilder& LayerBuilder::mesh_deform_id(std::optional<std::string> id) {
+    spec_.mesh_deform_id = std::move(id);
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::clear_mesh_deform_id() {
+    spec_.mesh_deform_id.reset();
+    return *this;
+}
+
 LayerBuilder& LayerBuilder::font(std::string f) {
     spec_.font_id = std::move(f);
     return *this;
@@ -217,8 +228,16 @@ LayerBuilder& LayerBuilder::position(double x, double y) {
 }
 
 LayerBuilder& LayerBuilder::size(double w, double h) {
-    spec_.width = static_cast<std::int64_t>(w);
-    spec_.height = static_cast<std::int64_t>(h);
+    const auto clamp_to_int = [](double value) -> int {
+        const double bounded = std::clamp(
+            value,
+            static_cast<double>(std::numeric_limits<int>::min()),
+            static_cast<double>(std::numeric_limits<int>::max()));
+        return static_cast<int>(bounded);
+    };
+
+    spec_.width = clamp_to_int(w);
+    spec_.height = clamp_to_int(h);
     return *this;
 }
 

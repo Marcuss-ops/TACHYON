@@ -77,6 +77,39 @@ bool run_render_intent_tests() {
     check_true(result.status == render::IntentBuildStatus::AssetResolutionError,
                "strict asset failures should escalate to AssetResolutionError");
 
+    {
+        scene::EvaluatedCompositionState deform_state = state;
+        scene::EvaluatedLayerState deform_layer = layer;
+        deform_layer.id = "layer_2";
+        deform_layer.mesh_asset_id.reset();
+        deform_layer.mesh_deform_id = std::string("deform/layer_2");
+        deform_state.layers = {deform_layer};
+
+        provider.last_deform_id.clear();
+        const auto deform_result = render::build_render_intent(deform_state, &provider);
+        check_true(provider.last_deform_id == "deform/layer_2", "explicit mesh_deform_id should be used by the provider");
+        check_true(deform_result.diagnostics.ok() == false, "missing deform asset should emit diagnostics");
+        check_true(!deform_result.diagnostics.diagnostics.empty(), "explicit deform lookup should record diagnostics");
+        if (!deform_result.diagnostics.diagnostics.empty()) {
+            check_true(deform_result.diagnostics.diagnostics.front().code == "render.intent.deform_missing",
+                       "missing deform asset should use a structured diagnostic code");
+        }
+    }
+
+    {
+        scene::EvaluatedCompositionState fallback_state = state;
+        scene::EvaluatedLayerState fallback_layer = layer;
+        fallback_layer.id = "layer_3";
+        fallback_layer.mesh_asset_id.reset();
+        fallback_layer.mesh_deform_id.reset();
+        fallback_state.layers = {fallback_layer};
+
+        provider.last_deform_id.clear();
+        const auto fallback_result = render::build_render_intent(fallback_state, &provider);
+        check_true(provider.last_deform_id.empty(), "missing mesh_deform_id should not trigger deform resolution");
+        check_true(fallback_result.diagnostics.ok(), "missing mesh_deform_id should not emit diagnostics");
+    }
+
     EngineValidationPolicy::instance() = saved_policy;
     return g_failures == 0;
 }

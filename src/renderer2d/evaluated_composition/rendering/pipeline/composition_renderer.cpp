@@ -219,7 +219,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
         record_timing(diagnostics, "layer_surface", layer.id.empty() ? std::to_string(i) : layer.id, layer_surface_start);
         
         // Apply mesh deformation for matte resolution
-        if (layer.mesh_deform_enabled && layer_surface) {
+        if (layer.mesh_deform_id.has_value() && layer_surface) {
             auto it = intent.layer_resources.find(layer.id);
             if (it != intent.layer_resources.end() && it->second.mesh_deform) {
                 if (auto* mesh_ptr = dynamic_cast<const renderer2d::DeformMesh*>(it->second.mesh_deform.get())) {
@@ -495,7 +495,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
             auto layer_surface = render_layer_surface(layer, state, intent, plan, task, render_context, tile_rect);
 
             // Apply mesh deformation (AE Puppet tool style) before effects
-            if (layer.mesh_deform_enabled && layer_surface) {
+            if (layer.mesh_deform_id.has_value() && layer_surface) {
                 auto it = intent.layer_resources.find(layer.id);
                 if (it != intent.layer_resources.end() && it->second.mesh_deform) {
                     if (auto* mesh_ptr = dynamic_cast<const renderer2d::DeformMesh*>(it->second.mesh_deform.get())) {

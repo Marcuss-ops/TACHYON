@@ -83,8 +83,24 @@ RenderIntentBuildResult build_render_intent(
         }
         
         // 3. Resolve Deformations (3D / Morphing)
-        if (layer.mesh_deform_enabled) {
-            resources.mesh_deform = resource_provider->get_deform(layer.id);
+        if (layer.mesh_deform_id.has_value()) {
+            const std::string& deform_id = *layer.mesh_deform_id;
+            resources.mesh_deform = resource_provider->get_deform(deform_id);
+
+            if (!resources.mesh_deform) {
+                if (EngineValidationPolicy::instance().strict_assets) {
+                    layer_ok = false;
+                    result.diagnostics.add_error(
+                        "render.intent.deform_missing",
+                        "Strict Mode: Failed to resolve mesh deform: " + deform_id,
+                        layer.id);
+                } else {
+                    result.diagnostics.add_warning(
+                        "render.intent.deform_missing",
+                        "Missing mesh deform: " + deform_id,
+                        layer.id);
+                }
+            }
         }
 
         // Add to intent if we found something useful

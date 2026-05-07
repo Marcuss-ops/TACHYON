@@ -27,6 +27,7 @@ TACHYON_FIELD(id, id, string, "")
 TACHYON_FIELD(name, name, string, "")
 TACHYON_FIELD(type, type, string, "null")
 TACHYON_FIELD(blend_mode, blend_mode, string, "normal")
+TACHYON_FIELD(mesh_deform_id, mesh_deform_id, string, "")
 
 // Flags
 TACHYON_FIELD(enabled, enabled, bool, true)

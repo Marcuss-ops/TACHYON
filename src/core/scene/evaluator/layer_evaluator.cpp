@@ -224,6 +224,10 @@ EvaluatedLayerState make_layer_state(
     for (const auto& animated_effect : layer.animated_effects) {
         evaluated.animated_effects.push_back(animated_effect.evaluate(local_t));
     }
+
+    if (layer.mesh_deform_id.has_value()) {
+        evaluated.mesh_deform_id = layer.mesh_deform_id;
+    }
     
     // NEW: Populate 3D mesh for primitives if is_3d is true
     if (evaluated.is_3d) {
