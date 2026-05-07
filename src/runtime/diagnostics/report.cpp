@@ -1,4 +1,4 @@
-#include "tachyon/core/report.h"
+#include "tachyon/runtime/diagnostics/report.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/execution/jobs/render_job.h"
 #include "tachyon/runtime/execution/session/render_session.h"
@@ -11,8 +11,6 @@
 #include <vector>
 
 namespace tachyon {
-
-
 
 void print_inspect_report_text(
     const SceneSpec& scene,

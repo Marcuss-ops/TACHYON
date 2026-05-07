@@ -1,9 +1,9 @@
-#include "tachyon/renderer3d/utilities/ik_solver.h"
-#include "tachyon/renderer2d/math/math_utils.h"
+#include "tachyon/core/scene/rigging/ik_solver.h"
+#include "tachyon/core/math/math_utils.h"
 #include <algorithm>
 #include <cmath>
 
-namespace tachyon::renderer3d {
+namespace tachyon::scene {
 
 namespace {
 
@@ -79,9 +79,8 @@ IKResult IKSolver::solve_2_bone(
     math::Vector3 up = math::Vector3::cross(side, forward).normalized();
 
     // Rotations
-    // We assume bones are along X or Z. Let's assume Z for look_at.
     result.root_rotation = math::Quaternion::from_axis_angle(side, angle_a) * math::Quaternion::look_at({0,0,0}, forward, up);
-    result.joint_rotation = math::Quaternion::from_axis_angle(side, -(3.14159265f - angle_c));
+    result.joint_rotation = math::Quaternion::from_axis_angle(side, -(static_cast<float>(math::kPi) - angle_c));
 
     return result;
 }
@@ -111,4 +110,4 @@ void IKSolver::solve_and_blend_chain(
     }
 }
 
-} // namespace tachyon::renderer3d
+} // namespace tachyon::scene

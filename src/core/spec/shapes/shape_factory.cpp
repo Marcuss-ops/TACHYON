@@ -1,11 +1,11 @@
-#include "tachyon/renderer2d/path/shape_factory.h"
+#include "tachyon/core/spec/shapes/shape_factory.h"
+#include "tachyon/core/math/math_utils.h"
 #include <cmath>
 #include <algorithm>
 
-namespace tachyon::renderer2d {
+namespace tachyon::spec {
 
 namespace {
-constexpr float PI = 3.14159265358979323846f;
 constexpr float KAPPA = 0.5522847498f; // (4/3)*(sqrt(2)-1) for circle approximation
 }
 
@@ -81,7 +81,11 @@ PathGeometry ShapeFactory::create_arrow(float x0, float y0, float x1, float y1, 
     PathGeometry path;
     math::Vector2 start{x0, y0};
     math::Vector2 end{x1, y1};
-    math::Vector2 dir = (end - start).normalized();
+    math::Vector2 diff = end - start;
+    float len = diff.length();
+    if (len < 1e-6f) return path;
+
+    math::Vector2 dir = diff / len;
     math::Vector2 perp{-dir.y, dir.x};
     
     path.commands.push_back({PathVerb::MoveTo, start});
@@ -102,8 +106,9 @@ PathGeometry ShapeFactory::create_polygon(float cx, float cy, int sides, float r
     PathGeometry path;
     if (sides < 3) return path;
     
+    const float pi_f = static_cast<float>(math::kPi);
     for (int i = 0; i < sides; ++i) {
-        float angle = static_cast<float>(i) * 2.0f * PI / static_cast<float>(sides) - PI * 0.5f;
+        float angle = static_cast<float>(i) * 2.0f * pi_f / static_cast<float>(sides) - pi_f * 0.5f;
         math::Vector2 p{cx + radius * std::cos(angle), cy + radius * std::sin(angle)};
         if (i == 0) {
             path.commands.push_back({PathVerb::MoveTo, p});
@@ -119,10 +124,11 @@ PathGeometry ShapeFactory::create_star(float cx, float cy, int points, float inn
     PathGeometry path;
     if (points < 2) return path;
     
+    const float pi_f = static_cast<float>(math::kPi);
     int num_vertices = points * 2;
     for (int i = 0; i < num_vertices; ++i) {
         float r = (i % 2 == 0) ? outer_radius : inner_radius;
-        float angle = static_cast<float>(i) * PI / static_cast<float>(points) - PI * 0.5f;
+        float angle = static_cast<float>(i) * pi_f / static_cast<float>(points) - pi_f * 0.5f;
         math::Vector2 p{cx + r * std::cos(angle), cy + r * std::sin(angle)};
         if (i == 0) {
             path.commands.push_back({PathVerb::MoveTo, p});
@@ -137,19 +143,17 @@ PathGeometry ShapeFactory::create_star(float cx, float cy, int points, float inn
 PathGeometry ShapeFactory::create_speech_bubble(float x, float y, float w, float h, float radius, float tail_x, float tail_y) {
     PathGeometry path = create_rounded_rectangle(x, y, w, h, radius);
     
-    // Remove the Close and add tail
     if (!path.commands.empty() && path.commands.back().verb == PathVerb::Close) {
         path.commands.pop_back();
     }
     
-    // Find closest point on rectangle for tail base
-    // For simplicity, we just add the tail as a separate subpath or inject it.
-    // Let's inject it into the bottom edge if tail is below.
-    
-    // Simplification: Just add a triangle for the tail
     math::Vector2 center{x + w * 0.5f, y + h * 0.5f};
     math::Vector2 tail_target{tail_x, tail_y};
-    math::Vector2 to_tail = (tail_target - center).normalized();
+    math::Vector2 to_tail_full = tail_target - center;
+    float to_tail_len = to_tail_full.length();
+    if (to_tail_len < 1e-6f) return path;
+
+    math::Vector2 to_tail = to_tail_full / to_tail_len;
     math::Vector2 perp{-to_tail.y, to_tail.x};
     
     float tail_width = 20.0f;
@@ -174,14 +178,6 @@ PathGeometry ShapeFactory::create_badge(float cx, float cy, float radius, int po
 
 PathGeometry ShapeFactory::dash_path(const PathGeometry& path, const std::vector<float>& dash_array, float dash_offset) {
     if (dash_array.empty()) return path;
-    
-    // This is a complex one. We need to iterate over the path, compute lengths, 
-    // and split segments according to dash_array.
-    // For now, I'll return a simplified version or the original if not implemented yet,
-    // but the user expects implementation.
-    
-    // I will use a simplified implementation that only works for LineTo for now, 
-    // or I'll implement a proper one using a length accumulator.
     
     PathGeometry result;
     if (path.commands.empty()) return result;
@@ -210,17 +206,21 @@ PathGeometry ShapeFactory::dash_path(const PathGeometry& path, const std::vector
             math::Vector2 target = (cmd.verb == PathVerb::LineTo) ? cmd.p0 : move_to_p;
             math::Vector2 diff = target - current_p;
             float seg_len = diff.length();
-            math::Vector2 dir = diff.normalized();
+            if (seg_len < 1e-6f) {
+                current_p = target;
+                continue;
+            }
+
+            math::Vector2 dir = diff / seg_len;
             
             float remaining = seg_len;
             while (remaining > 0.0f) {
-                // Find where we are in the dash pattern
                 float acc = 0.0f;
                 int dash_idx = 0;
                 bool is_on = true;
                 for (size_t i = 0; i < dash_array.size(); ++i) {
                     if (distance_acc < acc + dash_array[i]) {
-                        dash_idx = i;
+                        dash_idx = (int)i;
                         is_on = (i % 2 == 0);
                         break;
                     }
@@ -241,11 +241,9 @@ PathGeometry ShapeFactory::dash_path(const PathGeometry& path, const std::vector
             }
             current_p = target;
         }
-        // Note: CubicTo dashing is much more involved, requiring flattening or adaptive splitting.
-        // For a first pass, we skip or treat as LineTo if simple.
     }
     
     return result;
 }
 
-} // namespace tachyon::renderer2d
+} // namespace tachyon::spec

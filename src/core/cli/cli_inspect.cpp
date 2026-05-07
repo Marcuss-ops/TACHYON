@@ -1,6 +1,6 @@
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
-#include "tachyon/core/report.h"
+#include "tachyon/runtime/diagnostics/report.h"
 #include "tachyon/core/cli_scene_loader.h"
 #include "tachyon/core/analysis/scene_inspector.h"
 #include "cli_internal.h"

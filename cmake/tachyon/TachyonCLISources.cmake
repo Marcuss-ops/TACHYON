@@ -15,7 +15,6 @@ set(TachyonCLICoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/cli_output_presets.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/cli_motion_map.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/cli.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/report.cpp
 )
 
 # TachyonCLI catalog-specific sources

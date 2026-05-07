@@ -10,6 +10,7 @@ namespace tachyon {
 
 RasterizationResult RasterizationStep::execute(
     const scene::EvaluatedCompositionState& cached_comp,
+    const renderer2d::RenderIntent& intent,
     const RenderPlan& plan,
     const FrameRenderTask& task,
     RenderContext& context,
@@ -33,7 +34,7 @@ RasterizationResult RasterizationStep::execute(
     RasterizedFrame2D rasterized;
     {
         profiling::ProfileScope raster_scope(profiler, profiling::ProfileEventType::Phase, "composition_raster", frame_number);
-        rasterized = render_evaluated_composition_2d(cached_comp, plan, task, context.renderer2d);
+        rasterized = render_evaluated_composition_2d(cached_comp, intent, plan, task, context.renderer2d);
     }
 
     if (rasterized.surface) {

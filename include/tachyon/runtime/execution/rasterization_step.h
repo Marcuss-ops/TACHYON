@@ -27,6 +27,7 @@ public:
      */
     static RasterizationResult execute(
         const scene::EvaluatedCompositionState& cached_comp,
+        const renderer2d::RenderIntent& intent,
         const RenderPlan& plan,
         const FrameRenderTask& task,
         RenderContext& context,

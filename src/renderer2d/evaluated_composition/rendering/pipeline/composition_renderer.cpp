@@ -114,9 +114,11 @@ std::optional<std::filesystem::path> resolve_media_source(
 
 RasterizedFrame2D render_evaluated_composition_2d(
     const scene::EvaluatedCompositionState& state,
+    const renderer2d::RenderIntent& intent,
     const RenderPlan& plan,
     const FrameRenderTask& task,
     RenderContext2D& context) {
+    (void)intent;
 
     RasterizedFrame2D frame;
     frame.frame_number = task.frame_number;
@@ -217,16 +219,19 @@ RasterizedFrame2D render_evaluated_composition_2d(
         }
 
         const auto layer_surface_start = std::chrono::high_resolution_clock::now();
-        auto layer_surface = render_layer_surface(layer, state, plan, task, context, std::nullopt);
+        auto layer_surface = render_layer_surface(layer, state, intent, plan, task, context, std::nullopt);
         record_timing(diagnostics, "layer_surface", layer.id.empty() ? std::to_string(i) : layer.id, layer_surface_start);
         
         // Apply mesh deformation for matte resolution
-        if (layer.mesh_deform_enabled && layer.mesh_deform && layer_surface) {
-            layer_surface = apply_mesh_deform(
-                layer_surface,
-                *layer.mesh_deform,
-                layer.width,
-                layer.height);
+        if (layer.mesh_deform_enabled && layer_surface) {
+            auto it = intent.layer_resources.find(layer.id);
+            if (it != intent.layer_resources.end() && it->second.mesh_deform) {
+                layer_surface = apply_mesh_deform(
+                    layer_surface,
+                    *it->second.mesh_deform,
+                    layer.width,
+                    layer.height);
+            }
         }
         
         if (layer_surface) {
@@ -277,6 +282,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 // Construct EvaluatedScene3D bridge from the composition subset
                 Scene3DBridgeInput bridge_input;
                 bridge_input.state = &state;
+                bridge_input.intent = &intent;
                 bridge_input.plan = &plan;
                 bridge_input.task = &task;
                 bridge_input.context = &render_context;
@@ -357,7 +363,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     }
                     if (!block_surface) {
                         const auto block_surface_start = std::chrono::high_resolution_clock::now();
-                        block_surface = render_layer_surface(block_layer, state, plan, task, render_context, tile_rect);
+                        block_surface = render_layer_surface(block_layer, state, intent, plan, task, render_context, tile_rect);
                         record_timing(diagnostics, "layer_surface", block_layer.id.empty() ? std::to_string(block_idx) : block_layer.id, block_surface_start);
                     }
                     if (!block_surface) {
@@ -488,15 +494,18 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 continue;
             }
 
-            auto layer_surface = render_layer_surface(layer, state, plan, task, render_context, tile_rect);
+            auto layer_surface = render_layer_surface(layer, state, intent, plan, task, render_context, tile_rect);
 
             // Apply mesh deformation (AE Puppet tool style) before effects
-            if (layer.mesh_deform_enabled && layer.mesh_deform && layer_surface) {
-                layer_surface = apply_mesh_deform(
-                    layer_surface,
-                    *layer.mesh_deform,
-                    layer.width,
-                    layer.height);
+            if (layer.mesh_deform_enabled && layer_surface) {
+                auto it = intent.layer_resources.find(layer.id);
+                if (it != intent.layer_resources.end() && it->second.mesh_deform) {
+                    layer_surface = apply_mesh_deform(
+                        layer_surface,
+                        *it->second.mesh_deform,
+                        layer.width,
+                        layer.height);
+                }
             }
 
             if (layer.is_adjustment_layer) {

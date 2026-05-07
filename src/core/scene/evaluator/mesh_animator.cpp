@@ -6,9 +6,9 @@
 
 namespace tachyon::scene {
 
-void evaluate_mesh_animations(EvaluatedLayerState& evaluated, double time) {
-    if (!evaluated.mesh_asset) return;
-    auto& asset = *evaluated.mesh_asset;
+void evaluate_mesh_animations(EvaluatedLayerState& evaluated, const media::MeshAsset* asset_ptr, double time) {
+    if (!asset_ptr) return;
+    const auto& asset = *asset_ptr;
     
     struct TRS {
         math::Vector3 translation{0,0,0};

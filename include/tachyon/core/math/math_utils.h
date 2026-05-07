@@ -6,6 +6,18 @@
 
 namespace tachyon::math {
 
+constexpr double kPi = 3.14159265358979323846;
+constexpr float kPiF = 3.14159265359f;
+
+inline double degrees_to_radians(double degrees) {
+    return degrees * (kPi / 180.0);
+}
+
+inline float degrees_to_radians(float degrees) {
+    return degrees * (kPiF / 180.0f);
+}
+
+
 /**
  * @brief Performs cubic bezier sampling for spatial paths.
  */

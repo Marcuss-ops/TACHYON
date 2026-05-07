@@ -7,7 +7,6 @@ include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonRenderer2DResourceSources.cmake
 
 set(TachyonRenderer2DCoreSources
     ${TachyonRenderer2DBackendSources}
-    ${TachyonRenderer2DColorSources}
     ${TachyonRenderer2DSurfaceSources}
     ${TachyonRenderer2DPathSources}
     ${TachyonRenderer2DResourceSources}

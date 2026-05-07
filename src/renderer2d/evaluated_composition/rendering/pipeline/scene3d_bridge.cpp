@@ -100,13 +100,16 @@ static LayerMeshResult build_layer_mesh(
         return result;
     }
 
-    if (l.mesh_asset) {
-        result.mesh_asset = l.mesh_asset;
-        result.mesh_asset_id = l.mesh_asset->path;
-        if (result.mesh_asset_id.empty()) {
-            result.mesh_asset_id = l.asset_path.value_or("");
+    if (input.intent) {
+        auto it = input.intent->layer_resources.find(l.id);
+        if (it != input.intent->layer_resources.end() && it->second.mesh_asset) {
+            result.mesh_asset = it->second.mesh_asset;
+            result.mesh_asset_id = result.mesh_asset->path;
+            if (result.mesh_asset_id.empty()) {
+                result.mesh_asset_id = l.asset_path.value_or("");
+            }
+            return result;
         }
-        return result;
     }
 
     if (l.width > 0 && l.height > 0) {

@@ -1,3 +1,7 @@
+add_library(TachyonRenderer2DColor STATIC ${TachyonRenderer2DColorSources})
+tachyon_configure_common(TachyonRenderer2DColor)
+target_link_libraries(TachyonRenderer2DColor PUBLIC TachyonColor)
+
 add_library(TachyonRenderer2DExtras STATIC ${TachyonRenderer2DExtrasSources})
 tachyon_configure_common(TachyonRenderer2DExtras)
 target_link_libraries(TachyonRenderer2DExtras PUBLIC TachyonCore)
@@ -6,7 +10,7 @@ add_library(TachyonRenderer2D STATIC ${TachyonRenderer2DSources})
 tachyon_configure_common(TachyonRenderer2D)
 tachyon_link_text_deps(TachyonRenderer2D)
 tachyon_link_omp(TachyonRenderer2D)
-target_link_libraries(TachyonRenderer2D PUBLIC TachyonColor)
+target_link_libraries(TachyonRenderer2D PUBLIC TachyonColor TachyonRenderer2DColor)
 target_link_libraries(TachyonRenderer2D PUBLIC TachyonRenderer2DExtras)
 target_link_libraries(TachyonRenderer2D PUBLIC TachyonText)
 

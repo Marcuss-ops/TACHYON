@@ -4,6 +4,7 @@
 #include "tachyon/runtime/execution/motion_blur_sampler.h"
 #include "tachyon/runtime/execution/frame_fallback_policy.h"
 #include "tachyon/runtime/execution/rasterization_step.h"
+#include "tachyon/renderer2d/evaluated_composition/intent_builder.h"
 
 namespace tachyon {
 
@@ -134,8 +135,10 @@ void evaluate_and_rasterize_root_composition_step(
 
         auto cached_comp = executor.cache().lookup_composition(root_key);
         if (cached_comp) {
+            const auto intent = renderer2d::build_render_intent(*cached_comp, context.renderer2d);
             RasterizationResult raster_result = RasterizationStep::execute(
                 *cached_comp,
+                intent,
                 plan,
                 task,
                 context,

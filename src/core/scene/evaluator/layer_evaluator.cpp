@@ -228,7 +228,7 @@ EvaluatedLayerState make_layer_state(
     // NEW: Populate 3D mesh for primitives if is_3d is true
     if (evaluated.is_3d) {
         if (evaluated.type == LayerType::Solid || evaluated.type == LayerType::Image || evaluated.type == LayerType::Video) {
-            evaluated.mesh_asset = create_quad_mesh(static_cast<float>(evaluated.width), static_cast<float>(evaluated.height));
+            evaluated.mesh_asset_id = "quad";
         }
         
         // Populate material state

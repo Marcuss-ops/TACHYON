@@ -9,7 +9,6 @@
 #include "tachyon/core/math/vector3.h"
 #include "tachyon/core/shapes/shape_path.h"
 #include "tachyon/core/scene/state/evaluated_camera_state.h"
-#include "tachyon/media/loading/mesh_asset.h"
 #include "tachyon/core/spec/schema/common/gradient_spec.h"
 #include "tachyon/core/spec/schema/objects/mask_spec.h"
 #include "tachyon/core/spec/schema/objects/path_spec.h"
@@ -19,7 +18,6 @@
 #include <memory>
 #include <optional>
 
-namespace tachyon { namespace renderer2d { struct DeformMesh; } }
 
 namespace tachyon::scene {
 
@@ -130,8 +128,9 @@ struct EvaluatedLayerState {
     std::string text_content;
     std::string font_id;
     float font_size{0.0f};
-    std::shared_ptr<::tachyon::media::MeshAsset> mesh_asset;
-    std::shared_ptr<std::uint8_t[]> texture_rgba;
+    // Renderer-specific resource references (ID-based instead of pointers)
+    std::optional<std::string> mesh_asset_id;
+    std::optional<std::string> texture_asset_id;
     EvaluatedMaterialState material;
     
     // Animation/Rigging state
@@ -177,7 +176,6 @@ struct EvaluatedLayerState {
 
     // Mesh deformation (new pipeline)
     bool mesh_deform_enabled{false};
-    std::shared_ptr<const renderer2d::DeformMesh> mesh_deform;
 
     // Effects
     std::vector<EffectSpec> animated_effects;
