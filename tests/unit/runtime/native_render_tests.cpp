@@ -4,7 +4,7 @@
 #include "tachyon/runtime/compiler/scene_compiler.h"
 #include "tachyon/output/frame_output_sink.h"
 #include "tachyon/renderer2d/effects/core/glsl_transition_effect.h"
-#include "tachyon/renderer2d/effects/effect_host.h"
+#include "tachyon/renderer2d/effects/core/effect_host.h"
 #include "tachyon/renderer2d/effects/effect_utils.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/execution/session/render_session.h"

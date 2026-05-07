@@ -51,10 +51,12 @@ public:
     std::vector<std::string> list_ids() const;
     void load_builtins();
 
-private:
-    Animation2DPresetRegistry();
+    Animation2DPresetRegistry() {
+        load_builtins();
+    }
     ~Animation2DPresetRegistry() = default;
 
+private:
     registry::TypedRegistry<Animation2DPresetSpec> registry_;
 };
 

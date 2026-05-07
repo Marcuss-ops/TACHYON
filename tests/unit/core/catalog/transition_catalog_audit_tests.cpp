@@ -26,7 +26,7 @@ bool run_transition_catalog_audit_tests() {
 
     TransitionRegistry transition_registry;
     tachyon::register_builtin_transitions(transition_registry);
-    auto& preset_registry = tachyon::presets::TransitionPresetRegistry::instance();
+    tachyon::presets::TransitionPresetRegistry preset_registry;
 
     // Test 1: Registry has entries
     {

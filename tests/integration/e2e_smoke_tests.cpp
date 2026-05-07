@@ -34,7 +34,8 @@ bool run_e2e_smoke_tests() {
         params.set("height", 1080.0f);
         params.set("duration", 5.0f);
 
-        auto layer_opt = BackgroundPresetRegistry::instance().create("tachyon.background.solid", params);
+        presets::BackgroundPresetRegistry registry;
+        auto layer_opt = registry.create("tachyon.background.solid", params);
         check_true(layer_opt.has_value(), "Background solid preset creates valid layer");
         if (layer_opt) {
             check_true(layer_opt->type == LayerType::Solid, "Background produces Solid layer");
@@ -70,7 +71,7 @@ bool run_e2e_smoke_tests() {
 
     // Test 4: Background registry has expected entries
     {
-        auto& registry = tachyon::BackgroundRegistry::instance();
+        tachyon::BackgroundRegistry registry;
         auto ids = registry.list_all_ids();
         check_true(!ids.empty(), "Background registry has entries");
         check_true(registry.resolve("tachyon.background.solid") != nullptr, "Solid background exists");

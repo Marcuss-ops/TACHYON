@@ -181,13 +181,12 @@ struct LayerSpec {
     // Timing shorthand
     std::optional<double> duration;
 
+    // Animation preset durations (inject transform/opacity keyframes via PresetCompiler)
     // Animation presets (inject transform/opacity keyframes via PresetCompiler)
     // Modern animation preset names
     std::string animation_in_preset;
     std::string animation_during_preset;
     std::string animation_out_preset;
-    float animation_in_duration{0.4f};
-    float animation_out_duration{0.4f};
 
     // Typed transitions
     LayerTransitionSpec transition_in;

@@ -80,7 +80,6 @@ inline SceneSpec enhance(const EnhancedSceneParams& params) {
         LayerSpec layer;
         layer.id = "main_content";
         layer.type = LayerType::Image;
-        layer.type_string.clear();
         layer.asset_id = *params.main_asset_id;
         layer.width = params.width;
         layer.height = params.height;

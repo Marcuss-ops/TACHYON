@@ -41,46 +41,25 @@ bool run_layerspec_schema_tests() {
             "canonical_layer_type returns enum value when type is set");
     }
 
-    // Test 3: canonical_layer_type falls back to type_string
+    // Test 3: canonical_layer_type returns Unknown when type is Unknown
     {
         LayerSpec layer;
         layer.type = LayerType::Unknown;
-        layer.type_string = "text";
-        LayerType canonical = canonical_layer_type(layer);
-        check_true(canonical == LayerType::Text,
-            "canonical_layer_type falls back to type_string");
-    }
-
-    // Test 4: canonical_layer_type returns Unknown when both empty
-    {
-        LayerSpec layer;
-        layer.type = LayerType::Unknown;
-        layer.type_string.clear();
         LayerType canonical = canonical_layer_type(layer);
         check_true(canonical == LayerType::Unknown,
-            "canonical_layer_type returns Unknown when both type and type_string are empty");
+            "canonical_layer_type returns Unknown when type is Unknown");
     }
 
-    // Test 5: normalize_layer_view sets legacy_type_string_used correctly
+    // Test 4: normalize_layer_view works with enum type
     {
         LayerSpec layer;
         layer.type = LayerType::Solid;
         auto normalized = normalize_layer_view(layer);
-        check_true(!normalized.legacy_type_string_used,
-            "legacy_type_string_used is false when using enum type");
+        check_true(normalized.type == LayerType::Solid,
+            "normalize_layer_view preserves enum type");
     }
 
-    // Test 6: normalize_layer_view detects legacy usage
-    {
-        LayerSpec layer;
-        layer.type = LayerType::Unknown;
-        layer.type_string = "image";
-        auto normalized = normalize_layer_view(layer);
-        check_true(normalized.legacy_type_string_used,
-            "legacy_type_string_used is true when falling back to type_string");
-    }
-
-    // Test 7: NormalizedLayerView has correct type
+    // Test 5: NormalizedLayerView has correct type
     {
         LayerSpec layer;
         layer.type = LayerType::Camera;
@@ -89,32 +68,28 @@ bool run_layerspec_schema_tests() {
             "NormalizedLayerView.type matches LayerSpec::type");
     }
 
-    // Test 8: to_canonical_layer_type_string works
+    // Test 6: to_canonical_layer_type_string works
     {
         std::string_view str = to_canonical_layer_type_string(LayerType::Text);
         check_true(!str.empty(),
             "to_canonical_layer_type_string returns non-empty string for valid type");
     }
 
-    // Test 9: LayerSpec does not have kind field (compile-time check)
+    // Test 7: LayerSpec uses type (enum) as canonical
     {
         LayerSpec layer;
-        // If LayerSpec had a 'kind' field, this would compile differently
-        // We verify type is the enum and type_string is the string
         layer.type = LayerType::Precomp;
-        layer.type_string = "precomp";
         check_true(layer.type == LayerType::Precomp,
-            "LayerSpec uses type (enum) as canonical, not kind");
+            "LayerSpec uses type (enum) as canonical");
     }
 
-    // Test 10: Unknown type with empty type_string
+    // Test 8: Unknown type normalizes to Unknown
     {
         LayerSpec layer;
         layer.type = LayerType::Unknown;
-        layer.type_string = "";
         auto normalized = normalize_layer_view(layer);
         check_true(normalized.type == LayerType::Unknown,
-            "Layer with Unknown type and empty type_string normalizes to Unknown");
+            "Layer with Unknown type normalizes to Unknown");
     }
 
     std::cout << "LayerSpec schema tests: " << (g_failures == 0 ? "PASSED" : "FAILED")

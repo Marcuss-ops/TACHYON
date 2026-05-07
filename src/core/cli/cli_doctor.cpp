@@ -18,7 +18,7 @@ bool run_doctor_command(const CliOptions&, std::ostream& out, std::ostream& err,
     
     // 1. Audit Transition Registries
     out << "[1/2] Auditing Transition Registry alignment...\n";
-    const auto& preset_reg = presets::TransitionPresetRegistry::instance();
+    presets::TransitionPresetRegistry preset_reg;
     renderer2d::init_builtin_transitions(registry);
     
     const auto& runtime_reg = registry;

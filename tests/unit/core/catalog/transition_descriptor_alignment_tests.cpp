@@ -10,10 +10,11 @@ protected:
     void SetUp() override {
         // Ensure built-ins are loaded
         register_builtin_transitions(registry_);
-        presets::TransitionPresetRegistry::instance().load_builtins();
+        preset_registry_.load_builtins();
     }
     
     TransitionRegistry registry_;
+    presets::TransitionPresetRegistry preset_registry_;
 };
 
 TEST_F(TransitionAlignmentTest, AllDescriptorsHaveRendererBindings) {
@@ -35,12 +36,12 @@ TEST_F(TransitionAlignmentTest, AllDescriptorsHaveRendererBindings) {
 }
 
 TEST_F(TransitionAlignmentTest, AllPresetsHaveDescriptors) {
-    auto preset_ids = presets::TransitionPresetRegistry::instance().list_ids();
+    auto preset_ids = preset_registry_.list_ids();
     
     for (const auto& id : preset_ids) {
         if (id == "tachyon.transition.none") continue;
 
-        LayerTransitionSpec spec = presets::TransitionPresetRegistry::instance().create(id, {});
+        LayerTransitionSpec spec = preset_registry_.create(id, {});
         const auto* desc = registry_.resolve(spec.transition_id);
         EXPECT_NE(desc, nullptr) 
             << "Preset '" << id << "' (id=" << spec.transition_id << ") exists but has no corresponding TransitionDescriptor.";

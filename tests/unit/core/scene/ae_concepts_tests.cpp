@@ -36,7 +36,6 @@ bool run_ae_builder_tests() {
             const auto& layer = comp.layers[0];
             ae_check_true(layer.id == "controller", "Null layer: ID should be controller");
             ae_check_true(layer.type == tachyon::LayerType::NullLayer, "Null layer: kind should be NullLayer");
-            ae_check_true(layer.type_string == "null", "Null layer: type should be null");
         }
     }
 
@@ -53,7 +52,6 @@ bool run_ae_builder_tests() {
             const auto& layer = comp.layers[0];
             ae_check_true(layer.id == "title_precomp", "Precomp layer: ID should be title_precomp");
             ae_check_true(layer.type == tachyon::LayerType::Precomp, "Precomp layer: kind should be Precomp");
-            ae_check_true(layer.type_string == "precomp", "Precomp layer: type should be precomp");
             ae_check_true(layer.precomp_id.has_value() && *layer.precomp_id == "actual_comp_id", "Precomp layer: precomp_id should match");
         }
     }

@@ -2,11 +2,6 @@
 
 namespace tachyon::presets {
 
-BackgroundPresetRegistry& BackgroundPresetRegistry::instance() {
-    static BackgroundPresetRegistry registry;
-    return registry;
-}
-
 std::optional<LayerSpec> BackgroundPresetRegistry::create(std::string_view id, const registry::ParameterBag& params) const {
     if (const auto* spec = find(id)) {
         auto layer = spec->factory(params);

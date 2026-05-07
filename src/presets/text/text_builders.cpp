@@ -25,7 +25,8 @@ LayerSpec build_text(const TextParams& p) {
     LayerSpec l = ::tachyon::make_layer_from_text_spec(spec);
 
     // Apply transitions (presets domain responsibility)
-    apply_layer_transitions(l, p.enter_preset, p.enter_duration, p.exit_preset, p.exit_duration);
+    TransitionPresetRegistry registry;
+    apply_layer_transitions(l, p.enter_preset, p.enter_duration, p.exit_preset, p.exit_duration, registry);
 
     return l;
 }
@@ -145,7 +146,6 @@ SceneSpec build_text_scene(const TextParams& text, const SceneParams& scene) {
     bg_layer.id = "bg_solid";
     bg_layer.name = "Background";
     bg_layer.type = LayerType::Solid;
-    bg_layer.type_string.clear();
     bg_layer.enabled = true;
     bg_layer.visible = true;
     bg_layer.in_point = 0.0;

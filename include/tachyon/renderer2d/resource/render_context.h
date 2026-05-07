@@ -6,7 +6,7 @@
 // For backward compatibility
 using SurfacePool = tachyon::renderer2d::SurfacePool;
 #include "tachyon/renderer2d/resource/precomp_cache.h"
-#include "tachyon/renderer2d/effects/effect_host.h"
+#include "tachyon/renderer2d/effects/core/effect_host.h"
 #include "tachyon/renderer2d/backend/compute_backend.h"
 #include "tachyon/renderer2d/color/color_management_system.h"
 #include "tachyon/core/shapes/shape_path.h"

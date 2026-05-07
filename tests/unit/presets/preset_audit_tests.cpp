@@ -12,7 +12,7 @@ namespace tachyon {
 bool run_preset_audit_tests() {
     std::cout << "Running Preset Audit tests..." << std::endl;
 
-    auto& registry = presets::TransitionPresetRegistry::instance();
+    presets::TransitionPresetRegistry registry;
     // Use default root (current dir / assets / catalog)
     TachyonCatalog catalog(""); 
 

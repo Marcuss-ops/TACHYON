@@ -7,7 +7,7 @@
 #include "tachyon/renderer2d/evaluated_composition/utilities/composition_utils.h"
 #include "tachyon/renderer2d/evaluated_composition/layer_renderer.h"
 #include "tachyon/renderer2d/evaluated_composition/effect_renderer.h"
-#include "tachyon/renderer2d/effects/effect_host.h"
+#include "tachyon/renderer2d/effects/core/effect_host.h"
 #include "tachyon/renderer2d/evaluated_composition/renderer2d_matte_resolver.h"
 #include "tachyon/renderer2d/color/blending.h"
 #include "tachyon/renderer2d/color/color_transfer.h"

@@ -15,15 +15,15 @@ Eliminate all residual singleton registries and ensure that all domain extension
 ## Checklist
 
 ### 1. Legacy API Removal
-- [ ] Remove `TransitionRegistry::instance()` and replace with local dispatch in `build_transition()`.
+- [x] Remove `TransitionRegistry::instance()` and replace with local dispatch in `build_transition()`.
 - [x] Remove `TransitionCatalog` singleton.
 - [x] Remove `BackgroundCatalog` singleton.
-- [ ] Clean up `include/tachyon/transition_registry.h`.
+- [x] Clean up `include/tachyon/transition_registry.h`.
 
 ### 2. Alias & Legacy Cleanup
-- [ ] Remove `TransitionSpec::cpu_fn_name` if `TransitionFn` is now directly assigned.
+- [x] Remove `TransitionSpec::cpu_fn_name` if `TransitionFn` is now directly assigned.
 - [ ] Remove legacy string-based type fields in `LayerSpec` that were kept for compatibility.
-- [ ] Remove `TachyonTransitionHandle` if the C API has been migrated to `LayerSpec` based transitions.
+- [x] Remove `TachyonTransitionHandle` if the C API has been migrated to `LayerSpec` based transitions.
 
 ### 3. Registry Contract Tests
 - [ ] Ensure `tests/unit/presets/contract_tests.cpp` covers all approved domains.
