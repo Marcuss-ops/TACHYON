@@ -24,7 +24,6 @@ ResolutionResult<SurfaceRGBA> apply_effect_pipeline(
     const std::vector<EffectSpec>& effects,
     EffectHost& host,
     const ColorProfile& working_profile,
-    const EffectRegistry& registry,
     FrameDiagnostics* diagnostics = nullptr,
     const std::string& current_layer_id = "");
 
@@ -33,7 +32,6 @@ ResolutionResult<SurfaceRGBA> apply_effect_pipeline(
     const std::vector<EffectSpec>& effects,
     EffectHost& host,
     const ColorProfile& working_profile,
-    const EffectRegistry& registry,
     const std::unordered_map<std::string, std::shared_ptr<SurfaceRGBA>>& surfaces,
     const std::string& current_layer_id,
     FrameDiagnostics* diagnostics = nullptr);

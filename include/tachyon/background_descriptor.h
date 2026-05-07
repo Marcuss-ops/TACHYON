@@ -8,12 +8,6 @@
 
 namespace tachyon {
 
-enum class BackgroundStatus {
-    Stable,
-    Experimental,
-    Deprecated
-};
-
 /**
  * @brief Status of a background (stable, experimental, deprecated).
  */
@@ -65,7 +59,6 @@ struct BackgroundDescriptor {
 
     std::string display_name;
     std::string description;
-    BackgroundStatus status{BackgroundStatus::Stable};
 };
 
 } // namespace tachyon

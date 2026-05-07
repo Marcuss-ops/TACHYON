@@ -164,6 +164,25 @@ RenderSessionResult NativeRenderer::render(
     const SceneSpec& scene,
     const RenderJob& job,
     const NativeRenderOptions& options) {
+    TransitionRegistry transition_registry;
+    register_builtin_transitions(transition_registry);
+    return render(scene, job, transition_registry, options);
+}
+
+RenderSessionResult NativeRenderer::render(
+    const CompiledScene& scene,
+    const RenderJob& job,
+    const NativeRenderOptions& options) {
+    TransitionRegistry transition_registry;
+    register_builtin_transitions(transition_registry);
+    return render(scene, job, transition_registry, options);
+}
+
+RenderSessionResult NativeRenderer::render(
+    const SceneSpec& scene,
+    const RenderJob& job,
+    TransitionRegistry& transition_registry,
+    const NativeRenderOptions& options) {
     ensure_native_render_registries();
     RenderJob resolved_job = job;
     apply_output_preset(resolved_job.output.profile);
@@ -190,6 +209,7 @@ RenderSessionResult NativeRenderer::render(
 RenderSessionResult NativeRenderer::render(
     const CompiledScene& scene,
     const RenderJob& job,
+    TransitionRegistry& transition_registry,
     const NativeRenderOptions& options) {
     ensure_native_render_registries();
     RenderSession session;
@@ -200,11 +220,12 @@ bool NativeRenderer::render_still(
     const SceneSpec& scene,
     const std::string& composition_id,
     std::int64_t frame_number,
-    const std::filesystem::path& output_path) {
+    const std::filesystem::path& output_path,
+    TransitionRegistry& transition_registry) {
     
     RenderJob job = RenderJobBuilder::still_image(composition_id, frame_number, output_path.string());
     
-    const auto result = render(scene, job);
+    const auto result = render(scene, job, transition_registry);
     return result.output_error.empty() && (!result.frames.empty() || result.frames_written > 0);
 }
 
