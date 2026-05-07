@@ -7,12 +7,6 @@
 
 namespace tachyon {
 
-enum class BackgroundStatus {
-    Stable,
-    Experimental,
-    Deprecated
-};
-
 enum class BackgroundCatalogRole {
     Solid,
     Gradient,
@@ -35,9 +29,9 @@ struct BackgroundCatalogEntry {
  */
 class BackgroundCatalog {
 public:
-    static BackgroundCatalog& instance();
+    explicit BackgroundCatalog(BackgroundRegistry& registry);
 
-    // Delegates to BackgroundRegistry::register_descriptor()
+    // Delegates to BackgroundRegistry
     void register_entry(const BackgroundCatalogEntry& entry);
     void unregister_entry(std::string_view id);
 
@@ -66,8 +60,7 @@ public:
     AuditResult audit() const;
 
 private:
-    BackgroundCatalog();
-    ~BackgroundCatalog();
+    BackgroundRegistry& registry_;
 };
 
 } // namespace tachyon

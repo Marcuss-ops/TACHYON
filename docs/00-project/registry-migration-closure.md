@@ -15,10 +15,11 @@ Eliminate all residual singleton registries and ensure that all domain extension
 ## Checklist
 
 ### 1. Legacy API Removal
-- [ ] Remove `TransitionRegistry::instance()` and replace with local dispatch in `build_transition()`.
-- [ ] Remove `BackgroundCatalog` singleton if it still exists.
-- [ ] Remove `TransitionCatalog` singleton.
-- [ ] Clean up `include/tachyon/transition_registry.h`.
+- [x] Remove `TransitionRegistry::instance()` and replace with local dispatch in `build_transition()`.
+- [x] Remove `BackgroundCatalog` singleton - migrated tests to use `BackgroundRegistry` directly.
+- [x] Remove `TransitionCatalog` singleton.
+- [x] Clean up `include/tachyon/transition_registry.h`.
+- [x] Remove `BackgroundRegistry::instance()` singleton.
 
 ### 2. Alias & Legacy Cleanup
 - [ ] Remove `TransitionSpec::cpu_fn_name` if `TransitionFn` is now directly assigned.
@@ -26,14 +27,14 @@ Eliminate all residual singleton registries and ensure that all domain extension
 - [ ] Remove `TachyonTransitionHandle` if the C API has been migrated to `LayerSpec` based transitions.
 
 ### 3. Registry Contract Tests
-- [ ] Ensure `tests/unit/presets/contract_tests.cpp` covers all approved domains.
+- [x] Ensure `tests/unit/presets/contract_tests.cpp` covers all approved domains.
 - [ ] Verify that no new domain introduces a `register_*` pattern.
 
 ### 4. Dispatcher Architecture
-- [ ] Verify "No double dispatcher": there should be only one entry point per domain (e.g., `build_text_layer`).
-- [ ] Internal registries used for implementation details (e.g., within `src/`) must not be exposed in `include/`.
+- [x] Verify "No double dispatcher": there should be only one entry point per domain (e.g., `build_text_layer`).
+- [x] Internal registries used for implementation details (e.g., within `src/`) must not be exposed in `include/`.
 
 ## Status
 - **Phase 1 (Enum Migration)**: ✅ Completed.
-- **Phase 2 (Singleton Removal)**: 🏗️ In Progress.
-- **Phase 3 (Final Cleanup)**: ⏳ Scheduled.
+- **Phase 2 (Singleton Removal)**: ✅ Completed - All registry singletons removed.
+- **Phase 3 (Final Cleanup)**: ⏳ In Progress.

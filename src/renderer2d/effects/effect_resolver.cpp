@@ -4,7 +4,7 @@
 
 namespace tachyon::renderer2d {
 
-ResolvedEffect resolve_effect(const EffectSpec& spec) {
+ResolvedEffect resolve_effect(const EffectSpec& spec, const EffectRegistry& registry) {
     ResolvedEffect result;
     result.spec = spec;
     
@@ -17,8 +17,8 @@ ResolvedEffect resolve_effect(const EffectSpec& spec) {
     
     result.id = spec.type;
     
-    // Look up in EffectRegistry (canonical source of truth)
-    const auto* descriptor = EffectRegistry::instance().find(spec.type);
+    // Look up in registry (canonical source of truth)
+    const auto* descriptor = registry.find(spec.type);
     
     if (!descriptor) {
         result.valid = false;
@@ -31,11 +31,11 @@ ResolvedEffect resolve_effect(const EffectSpec& spec) {
     return result;
 }
 
-ResolvedEffect resolve_effect_by_id(const std::string& id) {
+ResolvedEffect resolve_effect_by_id(const std::string& id, const EffectRegistry& registry) {
     EffectSpec spec;
     spec.enabled = true;
     spec.type = id;
-    return resolve_effect(spec);
+    return resolve_effect(spec, registry);
 }
 
 } // namespace tachyon::renderer2d

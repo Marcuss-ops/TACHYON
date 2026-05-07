@@ -61,9 +61,9 @@ void record_timing(
     });
 }
 
-ResolvedTransition resolve_layer_transition(const LayerTransitionSpec& transition) {
-    return resolve_transition_spec(transition);
-}
+    ResolvedTransition resolve_layer_transition(const LayerTransitionSpec& transition, const TransitionRegistry& registry) {
+        return resolve_transition_spec(transition, registry);
+    }
 
 std::optional<double> compute_transition_progress(double elapsed_seconds, double duration_seconds) {
     if (duration_seconds <= 0.0 || elapsed_seconds < 0.0 || elapsed_seconds >= duration_seconds) {
@@ -99,7 +99,7 @@ std::optional<std::filesystem::path> resolve_media_source(
         std::filesystem::path resolved = context.media_manager->get_asset_path(reference);
         if (!resolved.empty()) {
             if (ref_idx > 0 && context.diagnostics) {
-                context.diagnostics->add_warning("asset_fallback", 
+                context.diagnostics->diagnostics.add_warning("asset_fallback", 
                     "Media source resolved via fallback reference '" + reference + "' (original asset_path was missing or invalid).", 
                     layer.id);
             }
@@ -109,7 +109,7 @@ std::optional<std::filesystem::path> resolve_media_source(
         std::filesystem::path candidate(reference);
         if (candidate.has_extension()) {
             if (ref_idx > 0 && context.diagnostics) {
-                context.diagnostics->add_warning("asset_fallback", 
+                context.diagnostics->diagnostics.add_warning("asset_fallback", 
                     "Media source resolved via direct path fallback '" + reference + "'.", 
                     layer.id);
             }
@@ -119,7 +119,7 @@ std::optional<std::filesystem::path> resolve_media_source(
     }
 
     if (context.diagnostics) {
-        context.diagnostics->add_error("asset_missing", 
+        context.diagnostics->diagnostics.add_error("asset_missing", 
             "Failed to resolve media source for layer '" + layer.name + "' using asset_path, ID, or name.", 
             layer.id);
     }
@@ -261,7 +261,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
     if (!matte_dependencies.empty() && !resolver.validate(state.layers, matte_dependencies, validation_error)) {
         frame.note += " [matte validation warning: " + validation_error + "]";
         if (context.diagnostics) {
-            context.diagnostics->add_warning("matte_validation", validation_error);
+            context.diagnostics->diagnostics.add_warning("matte_validation", validation_error);
         }
     }
 
@@ -596,7 +596,9 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     if (progress.has_value()) {
                         in_transition = true;
                         transition_t = animation::apply_easing(*progress, layer.transition_in.easing, {});
-                        resolution = resolve_layer_transition(layer.transition_in);
+                        static TransitionRegistry s_dummy;
+                        const TransitionRegistry& registry = render_context.transition_registry ? *render_context.transition_registry : s_dummy;
+                        resolution = resolve_layer_transition(layer.transition_in, registry);
                     }
                 }
 
@@ -608,7 +610,9 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     if (progress.has_value()) {
                         out_transition = true;
                         transition_t = animation::apply_easing(*progress, layer.transition_out.easing, {});
-                        resolution = resolve_layer_transition(layer.transition_out);
+                        static TransitionRegistry s_dummy;
+                        const TransitionRegistry& registry = render_context.transition_registry ? *render_context.transition_registry : s_dummy;
+                        resolution = resolve_layer_transition(layer.transition_out, registry);
                     }
                 }
 

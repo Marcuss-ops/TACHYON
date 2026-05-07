@@ -10,6 +10,8 @@
 
 namespace tachyon {
 
+class TransitionRegistry;
+
 namespace renderer2d {
 struct Color;
 class SurfaceRGBA;
@@ -106,16 +108,11 @@ struct TransitionCatalogEntry {
 /**
  * @brief Resolves a transition ID into a detailed result, respecting engine policy.
  */
-TACHYON_API TransitionResolutionResult resolve_transition(const std::string& id);
-
-/**
- * @brief Registers a transition across all internal registries.
- */
-TACHYON_API void register_transition_descriptor(const TransitionDescriptor& desc);
+TACHYON_API TransitionResolutionResult resolve_transition(const std::string& id, const TransitionRegistry& registry);
 
 /**
  * @brief Registers all built-in transitions.
  */
-TACHYON_API void register_builtin_transitions();
+TACHYON_API void register_builtin_transitions(TransitionRegistry& registry);
 
 } // namespace tachyon

@@ -4,10 +4,10 @@
 
 namespace tachyon {
 
-TransitionResolutionResult resolve_transition(const std::string& id) {
+TransitionResolutionResult resolve_transition(const std::string& id, const TransitionRegistry& registry) {
     TransitionResolutionResult result;
-
-    const auto* desc = TransitionRegistry::instance().resolve(id);
+    
+    const auto* desc = registry.resolve(id);
     if (!desc) {
         result.status = TransitionResolutionResult::Status::UnknownTransition;
         result.error_message = "Transition '" + id + "' is not registered in the registry.";
@@ -24,10 +24,6 @@ TransitionResolutionResult resolve_transition(const std::string& id) {
     }
 
     return result;
-}
-
-void register_transition_descriptor(const TransitionDescriptor& desc) {
-    TransitionRegistry::instance().register_descriptor(desc);
 }
 
 } // namespace tachyon

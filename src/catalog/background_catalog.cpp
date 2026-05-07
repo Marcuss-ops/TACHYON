@@ -8,18 +8,7 @@
 
 namespace tachyon {
 
-BackgroundCatalog& BackgroundCatalog::instance() {
-    static BackgroundCatalog instance;
-    return instance;
-}
-
-BackgroundCatalog::BackgroundCatalog() {
-    // Register built-in backgrounds on first use
-    static bool initialized = false;
-    if (!initialized) {
-        register_builtin_background_descriptors();
-        initialized = true;
-    }
+BackgroundCatalog::BackgroundCatalog(BackgroundRegistry& registry) : registry_(registry) {
 }
 
 BackgroundCatalog::~BackgroundCatalog() = default;
@@ -27,7 +16,7 @@ BackgroundCatalog::~BackgroundCatalog() = default;
 void BackgroundCatalog::register_entry(const BackgroundCatalogEntry& entry) {
     // BackgroundCatalog is deprecated. Use BackgroundRegistry::register_descriptor() directly.
     // This method performs a lossy conversion for legacy compatibility only.
-    auto* existing = BackgroundRegistry::instance().resolve(entry.id);
+    auto* existing = registry_.resolve(entry.id);
     if (existing) return; // Already registered
 
     // Convert to BackgroundDescriptor (lossy - BackgroundCatalogEntry has fields
@@ -44,15 +33,15 @@ void BackgroundCatalog::register_entry(const BackgroundCatalogEntry& entry) {
         case BackgroundCatalogRole::Procedural: desc.kind = BackgroundKind::Procedural; break;
     }
 
-    BackgroundRegistry::instance().register_descriptor(desc);
+    registry_.register_descriptor(desc);
 }
 
 void BackgroundCatalog::unregister_entry(std::string_view id) {
-    BackgroundRegistry::instance().unregister_background(id);
+    registry_.unregister_background(id);
 }
 
 const BackgroundCatalogEntry* BackgroundCatalog::find(std::string_view id) const {
-    auto* desc = BackgroundRegistry::instance().resolve(id);
+    auto* desc = registry_.resolve(id);
     if (!desc) return nullptr;
 
     // Return a static copy (thin wrapper limitation)
@@ -78,11 +67,11 @@ const BackgroundCatalogEntry* BackgroundCatalog::find(std::string_view id) const
 }
 
 std::size_t BackgroundCatalog::count() const {
-    return BackgroundRegistry::instance().list_all_ids().size();
+    return registry_.list_all_ids().size();
 }
 
 const BackgroundCatalogEntry* BackgroundCatalog::get_by_index(std::size_t index) const {
-    auto entries = BackgroundRegistry::instance().catalog_entries();
+    auto entries = registry_.catalog_entries();
     if (index >= entries.size()) return nullptr;
     // Return address of vector element (valid until next call)
     static std::vector<BackgroundCatalogEntry> cache;
@@ -91,15 +80,15 @@ const BackgroundCatalogEntry* BackgroundCatalog::get_by_index(std::size_t index)
 }
 
 std::vector<std::string> BackgroundCatalog::list_all_ids() const {
-    return BackgroundRegistry::instance().list_all_ids();
+    return registry_.list_all_ids();
 }
 
 std::vector<BackgroundCatalogEntry> BackgroundCatalog::list_all() const {
-    return BackgroundRegistry::instance().catalog_entries();
+    return registry_.catalog_entries();
 }
 
 bool BackgroundCatalog::validate_preset(std::string_view preset_id, std::string& error) const {
-    if (BackgroundRegistry::instance().resolve(preset_id)) return true;
+    if (registry_.resolve(preset_id)) return true;
 
     error = "Background preset ID '" + std::string(preset_id) + "' not found in registry";
     return false;
@@ -107,7 +96,7 @@ bool BackgroundCatalog::validate_preset(std::string_view preset_id, std::string&
 
 BackgroundCatalog::AuditResult BackgroundCatalog::audit() const {
     AuditResult result;
-    auto descriptors = BackgroundRegistry::instance().list_all();
+    auto descriptors = registry_.list_all();
 
     // Check for duplicates
     std::set<std::string> seen_ids;

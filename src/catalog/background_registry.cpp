@@ -1,4 +1,5 @@
 #include "tachyon/background_registry.h"
+#include "tachyon/background_catalog.h"
 #include <algorithm>
 
 namespace tachyon {
@@ -7,11 +8,6 @@ struct BackgroundRegistry::Impl {
     std::unordered_map<std::string, BackgroundDescriptor> descriptors;
     std::unordered_map<std::string, std::string> alias_to_id;
 };
-
-BackgroundRegistry& BackgroundRegistry::instance() {
-    static BackgroundRegistry registry;
-    return registry;
-}
 
 BackgroundRegistry::BackgroundRegistry() : m_impl(std::make_unique<Impl>()) {}
 

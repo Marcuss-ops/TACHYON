@@ -5,6 +5,7 @@
 #include "tachyon/runtime/execution/jobs/render_job.h"
 #include "tachyon/runtime/profiling/render_profiler.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
+#include "tachyon/transition_registry.h"
 #include "tachyon/core/transition/transition_descriptor.h"
 #include <iostream>
 #include <thread>
@@ -23,8 +24,8 @@ RenderProgressSink* get_sink(RenderProgressSink* sink) {
 void ensure_native_render_registries() {
     static std::once_flag once;
     std::call_once(once, []() {
-        renderer2d::EffectRegistry::instance();
-        register_builtin_transitions();
+        // Effects and Modifiers are now handled per RenderSession.
+        // TransitionRegistry is also handled per RenderSession.
     });
 }
 

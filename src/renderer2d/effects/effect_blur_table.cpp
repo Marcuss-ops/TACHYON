@@ -3,50 +3,67 @@
 
 namespace tachyon::renderer2d {
 
-namespace {
- 
-template <typename T>
-void register_builtin(
-    EffectRegistry& registry,
-    std::string id,
-    std::string name,
-    std::string category,
-    registry::ParameterSchema schema) {
-    registry.register_spec({
-        id,
-        {id, name, "Professional blur effect.", "effect." + category, {"blur", category}},
-        std::move(schema),
+std::vector<EffectDescriptor> get_blur_effect_descriptors() {
+    std::vector<EffectDescriptor> descriptors;
+
+    // Gaussian Blur
+    descriptors.push_back({
+        "tachyon.effect.blur.gaussian",
+        {"tachyon.effect.blur.gaussian", "Gaussian Blur", "Professional blur effect.", "effect.blur", {"blur"}},
+        registry::ParameterSchema({
+            {"radius", "Radius", "Blur radius in pixels", 4.0, 0.0, 100.0}
+        }),
         [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
-            T effect;
+            GaussianBlurEffect effect;
             output = effect.apply(input, params);
         }
     });
-}
- 
-} // namespace
- 
-void register_blur_effects(EffectRegistry& registry) {
-    register_builtin<GaussianBlurEffect>(registry, "tachyon.effect.blur.gaussian", "Gaussian Blur", "blur",
-        registry::ParameterSchema({
-            {"radius", "Radius", "Blur radius in pixels", 4.0, 0.0, 100.0}
-        }));
-    register_builtin<DirectionalBlurEffect>(registry, "tachyon.effect.blur.directional", "Directional Blur", "blur",
+
+    // Directional Blur
+    descriptors.push_back({
+        "tachyon.effect.blur.directional",
+        {"tachyon.effect.blur.directional", "Directional Blur", "Professional blur effect.", "effect.blur", {"blur"}},
         registry::ParameterSchema({
             {"angle", "Angle", "Blur direction in degrees", 0.0, 0.0, 360.0},
             {"distance", "Distance", "Blur length in pixels", 10.0, 0.0, 500.0}
-        }));
-    register_builtin<RadialBlurEffect>(registry, "tachyon.effect.blur.radial", "Radial Blur", "blur",
+        }),
+        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+            DirectionalBlurEffect effect;
+            output = effect.apply(input, params);
+        }
+    });
+
+    // Radial Blur
+    descriptors.push_back({
+        "tachyon.effect.blur.radial",
+        {"tachyon.effect.blur.radial", "Radial Blur", "Professional blur effect.", "effect.blur", {"blur"}},
         registry::ParameterSchema({
             {"center_x", "Center X", "Radial center X (normalized)", 0.5, 0.0, 1.0},
             {"center_y", "Center Y", "Radial center Y (normalized)", 0.5, 0.0, 1.0},
             {"strength", "Strength", "Blur strength", 10.0, 0.0, 100.0}
-        }));
-    register_builtin<VectorBlurEffect>(registry, "tachyon.effect.blur.vector", "Vector Blur", "blur",
+        }),
+        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+            RadialBlurEffect effect;
+            output = effect.apply(input, params);
+        }
+    });
+
+    // Vector Blur
+    descriptors.push_back({
+        "tachyon.effect.blur.vector",
+        {"tachyon.effect.blur.vector", "Vector Blur", "Professional blur effect.", "effect.blur", {"blur"}},
         registry::ParameterSchema({
             {"angle", "Angle", "Blur angle in degrees", 0.0, 0.0, 360.0},
             {"distance", "Distance", "Blur distance in pixels", 10.0, 0.0, 500.0},
             {"samples", "Samples", "Number of samples", 8.0, 1.0, 64.0}
-        }));
+        }),
+        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+            VectorBlurEffect effect;
+            output = effect.apply(input, params);
+        }
+    });
+
+    return descriptors;
 }
 
 } // namespace tachyon::renderer2d

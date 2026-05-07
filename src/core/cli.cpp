@@ -3,12 +3,16 @@
 #include "tachyon/core/core.h"
 #include "cli/cli_internal.h"
 #include "tachyon/core/transition/transition_descriptor.h"
+#include "tachyon/transition_registry.h"
 #include <functional>
 #include <iostream>
 #include <string>
 #include <vector>
 
 namespace tachyon {
+
+// Canonical transition registry for CLI operations
+static TransitionRegistry g_cli_transition_registry;
 
 namespace {
 
@@ -199,7 +203,7 @@ int run_cli(int argc, char** argv) {
 
     // Initialize all built-in systems (Transitions, Presets, etc.)
     // Note: We do this here instead of in each DLL to avoid circular link dependencies.
-    ::tachyon::register_builtin_transitions();
+    ::tachyon::register_builtin_transitions(g_cli_transition_registry);
 
     // Dispatch through registry
     for (const auto& cmd : kCommands) {

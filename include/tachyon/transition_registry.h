@@ -33,8 +33,6 @@ public:
  */
 class TransitionRegistry {
 public:
-    static TransitionRegistry& instance();
-
     /// Set the duplicate handling policy
     void set_duplicate_policy(RegistryDuplicatePolicy policy) { m_duplicate_policy = policy; }
     RegistryDuplicatePolicy duplicate_policy() const { return m_duplicate_policy; }
@@ -63,10 +61,10 @@ public:
     /// Remove a registered transition by ID
     void unregister_transition(std::string_view id);
 
-private:
     TransitionRegistry();
     ~TransitionRegistry();
 
+private:
     RegistryDuplicatePolicy m_duplicate_policy{RegistryDuplicatePolicy::Warn}; ///< Default: warn on duplicates
     struct Impl;
     std::unique_ptr<Impl> m_impl;

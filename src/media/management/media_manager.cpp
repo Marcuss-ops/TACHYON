@@ -124,7 +124,9 @@ std::filesystem::path MediaManager::get_asset_path(const std::string& asset_id) 
 
 std::filesystem::path MediaManager::resolve_media_path(
     const std::filesystem::path& path,
-    ResolutionPurpose purpose) const {
+    ResolutionPurpose purpose,
+    uint32_t target_width) const {
+    (void)target_width; // unused for now
     
     // Use PathResolver for centralized path resolution
     PathResolveRequest request;

@@ -1,6 +1,11 @@
 #include "tachyon/core/spec/schema/scene_spec.h"
 #include "tachyon/presets/background/background_preset_registry.h"
 #include "tachyon/presets/text/text_layer_preset_registry.h"
+#include "tachyon/transition_registry.h"
+#include "tachyon/presets/transition/transition_preset_registry.h"
+#include "tachyon/background_registry.h"
+#include "tachyon/backgrounds.hpp"
+#include "tachyon/core/transition/transition_descriptor.h"
 
 #include <iostream>
 #include <string>
@@ -59,18 +64,26 @@ bool run_e2e_smoke_tests() {
         }
     }
 
-    // Test 3: Transition catalog has expected entries
+    // Test 3: Transition registry has expected entries
     {
-        auto& catalog = TransitionCatalog::instance();
-        check_true(catalog.count() > 0, "Transition catalog has entries");
-        check_true(catalog.find("tachyon.transition.fade") != nullptr, "Fade transition exists");
+        TransitionRegistry transition_registry;
+        register_builtin_transitions(transition_registry);
+        auto descriptors = transition_registry.list_all();
+        check_true(descriptors.size() > 0, "Transition registry has entries");
+        
+        auto* fade_desc = transition_registry.resolve("tachyon.transition.fade");
+        check_true(fade_desc != nullptr, "Fade transition exists");
     }
 
-    // Test 4: Background catalog has expected entries
+    // Test 4: Background registry has expected entries
     {
-        auto& catalog = BackgroundCatalog::instance();
-        check_true(catalog.count() > 0, "Background catalog has entries");
-        check_true(catalog.find("tachyon.background.solid") != nullptr, "Solid background exists");
+        BackgroundRegistry background_registry;
+        register_builtin_background_descriptors(background_registry);
+        auto entries = background_registry.catalog_entries();
+        check_true(entries.size() > 0, "Background registry has entries");
+        
+        auto* solid_desc = background_registry.resolve("tachyon.background.solid");
+        check_true(solid_desc != nullptr, "Solid background exists");
     }
 
     // Test 5: Output directory exists (for smoke renders)

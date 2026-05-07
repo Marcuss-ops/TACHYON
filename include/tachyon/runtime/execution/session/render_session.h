@@ -8,6 +8,9 @@
 #include "tachyon/runtime/resource/runtime_surface_pool.h"
 #include "tachyon/runtime/execution/presentation_clock.h"
 #include "tachyon/runtime/execution/framebuffer_playback_queue.h"
+#include "tachyon/renderer2d/effects/effect_registry.h"
+#include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
+#include "tachyon/transition_registry.h"
 
 #include "tachyon/runtime/execution/compiled_frame_program.h"
 
@@ -80,6 +83,7 @@ struct RenderSessionResult {
 
 class RenderSession {
 public:
+    RenderSession();
     RenderSessionResult render(const SceneSpec& scene, const CompiledScene& compiled_scene, const RenderExecutionPlan& execution_plan, const std::filesystem::path& output_path = {});
     RenderSessionResult render(
         const SceneSpec& scene,
@@ -108,6 +112,10 @@ private:
     std::unique_ptr<runtime::RuntimeSurfacePool> m_surface_pool;
     std::unique_ptr<runtime::PresentationClock> m_clock;
     std::unique_ptr<runtime::FramebufferPlaybackQueue> m_playback_queue;
+
+    renderer2d::EffectRegistry m_effect_registry;
+    renderer3d::Modifier3DRegistry m_modifier_registry;
+    TransitionRegistry m_transition_registry;
 
     std::optional<std::size_t> m_memory_budget_bytes;
     profiling::RenderProfiler* m_profiler{nullptr};

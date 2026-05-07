@@ -1,4 +1,3 @@
-#include "tachyon/transition_catalog.h"
 #include "tachyon/transition_registry.h"
 #include "tachyon/presets/transition/transition_preset_registry.h"
 
@@ -25,87 +24,68 @@ void check_false(bool condition, const std::string& message) {
 bool run_transition_catalog_audit_tests() {
     g_failures = 0;
 
-    auto& catalog = tachyon::TransitionCatalog::instance();
+    TransitionRegistry registry;
+    register_builtin_transitions(registry);
     auto& preset_registry = tachyon::presets::TransitionPresetRegistry::instance();
-    auto& transition_registry = tachyon::TransitionRegistry::instance();
 
-    // Test 1: Audit returns results structure
+    // Test 1: Registry is not empty after init
     {
-        auto result = catalog.audit();
-        // Just check it runs without crashing
-        check_true(true, "TransitionCatalog::audit() executes without crash");
+        auto descriptors = registry.list_all();
+        check_true(descriptors.size() > 0, "TransitionRegistry has entries after init");
     }
 
-    // Test 2: Every catalog.runtime_id exists in TransitionRegistry
+    // Test 2: Every registered transition has required fields
     {
-        auto result = catalog.audit();
-        check_true(result.missing_runtime.empty(),
-            "All catalog runtime_ids exist in TransitionRegistry");
-    }
-
-    // Test 3: No duplicate aliases
-    {
-        auto result = catalog.audit();
-        check_true(result.duplicate_aliases.empty(),
-            "No alias conflicts in catalog");
-    }
-
-    // Test 4: Catalog entries have valid runtime_id
-    {
-        std::size_t count = catalog.count();
-        bool all_have_runtime = true;
-        for (std::size_t i = 0; i < count; ++i) {
-            const auto* entry = catalog.get_by_index(i);
-            if (entry && entry->runtime_id.empty()) {
-                all_have_runtime = false;
+        auto descriptors = registry.list_all();
+        bool all_valid = true;
+        for (const auto* desc : descriptors) {
+            if (desc->id.empty()) {
+                all_valid = false;
                 break;
             }
         }
-        check_true(all_have_runtime,
-            "All catalog entries have non-empty runtime_id");
+        check_true(all_valid, "All registered transitions have valid ids");
     }
 
-    // Test 5: Preset registry and catalog alignment
+    // Test 3: No duplicate ids
+    {
+        auto ids = registry.list_all_ids();
+        bool has_dupes = false;
+        for (size_t i = 0; i < ids.size(); ++i) {
+            for (size_t j = i + 1; j < ids.size(); ++j) {
+                if (ids[i] == ids[j]) {
+                    has_dupes = true;
+                    break;
+                }
+            }
+            if (has_dupes) break;
+        }
+        check_true(!has_dupes, "No duplicate transition ids in registry");
+    }
+
+    // Test 4: Preset registry and runtime registry alignment
     {
         auto preset_ids = preset_registry.list_ids();
-        int missing_from_catalog = 0;
+        int missing_from_registry = 0;
         for (const auto& id : preset_ids) {
-            if (!catalog.find(id)) {
-                ++missing_from_catalog;
-                std::cerr << "  Preset not in catalog: " << id << '\n';
+            if (registry.find_by_id(id) == nullptr) {
+                ++missing_from_registry;
+                std::cerr << "  Preset not in registry: " << id << '\n';
             }
         }
-        check_true(missing_from_catalog == 0,
-            "All public presets are cataloged");
+        check_true(missing_from_registry == 0,
+            "All public presets are in TransitionRegistry");
     }
 
-    // Test 6: Runtime registry and catalog alignment
-    {
-        auto runtime_ids = transition_registry.list_builtin_transition_ids();
-        int missing_from_catalog = 0;
-        for (const auto& id : runtime_ids) {
-            const auto* catalog_entry = catalog.find_by_runtime_id(id);
-            if (!catalog_entry) {
-                ++missing_from_catalog;
-                std::cerr << "  Runtime transition not cataloged: " << id << '\n';
-            }
-        }
-        check_true(missing_from_catalog == 0,
-            "All public runtime transitions are cataloged");
-    }
-
-    // Test 7: amber_sweep consistency (if it exists)
+    // Test 5: amber_sweep consistency (if it exists)
     {
         const std::string amber_id = "tachyon.transition.lightleak.amber_sweep";
-        const auto* amber_catalog = catalog.find(amber_id);
+        const auto* amber_desc = registry.find_by_id(amber_id);
         const auto* amber_preset = preset_registry.find(amber_id);
-        const auto* amber_runtime = transition_registry.find(amber_id);
 
-        bool in_any = (amber_catalog != nullptr) || (amber_preset != nullptr) || (amber_runtime != nullptr);
-        if (in_any) {
-            check_true(amber_catalog != nullptr, "amber_sweep in catalog if in any registry");
+        if (amber_desc != nullptr || amber_preset != nullptr) {
+            check_true(amber_desc != nullptr, "amber_sweep in registry if in any registry");
             check_true(amber_preset != nullptr, "amber_sweep in preset registry if in any registry");
-            check_true(amber_runtime != nullptr, "amber_sweep in runtime registry if in any registry");
         } else {
             std::cout << "  amber_sweep not registered (ok, optional)\n";
         }

@@ -10,6 +10,10 @@ using LinearColor = tachyon::renderer2d::LinearColor;
 using PremultipliedPixel = tachyon::renderer2d::PremultipliedPixel;
 
 // Import functions from the main namespace for use in detail implementations
+// Removed redundant using ::tachyon::renderer2d::... as we are already in that namespace.
+// We only need to import things that are NOT in tachyon::renderer2d if any.
+// Actually, I'll just remove the redundant ones that MSVC complained about.
+
 using ::tachyon::renderer2d::clamp01;
 using ::tachyon::renderer2d::lerp;
 using ::tachyon::renderer2d::lerp_color;
@@ -19,9 +23,10 @@ using ::tachyon::renderer2d::has_color;
 using ::tachyon::renderer2d::get_scalar;
 using ::tachyon::renderer2d::get_color;
 
-using ::tachyon::renderer2d::to_linear;
-using ::tachyon::renderer2d::from_linear;
-using ::tachyon::renderer2d::luminance;
+// Removed to_linear/from_linear/luminance as they are already visible or causing issues.
+// using ::tachyon::renderer2d::to_linear;
+// using ::tachyon::renderer2d::from_linear;
+// using ::tachyon::renderer2d::luminance;
 
 using ::tachyon::renderer2d::rgb_to_hsl;
 using ::tachyon::renderer2d::hsl_to_rgb;

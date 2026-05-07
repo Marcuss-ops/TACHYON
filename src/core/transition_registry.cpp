@@ -11,11 +11,6 @@ struct TransitionRegistry::Impl {
     std::unordered_map<std::string, std::string> alias_to_id;         // alias -> id
 };
 
-TransitionRegistry& TransitionRegistry::instance() {
-    static TransitionRegistry inst;
-    return inst;
-}
-
 TransitionRegistry::TransitionRegistry() : m_impl(std::make_unique<Impl>()) {}
 TransitionRegistry::~TransitionRegistry() = default;
 

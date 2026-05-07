@@ -2,13 +2,9 @@
 
 namespace tachyon::renderer3d {
 
-Modifier3DRegistry& Modifier3DRegistry::instance() {
-    static Modifier3DRegistry instance;
-    return instance;
-}
+std::vector<Modifier3DDescriptor> get_builtin_modifier3d_descriptors();
 
 Modifier3DRegistry::Modifier3DRegistry() {
-    load_builtins();
 }
 
 void Modifier3DRegistry::register_spec(Modifier3DDescriptor descriptor) {
@@ -31,6 +27,13 @@ std::unique_ptr<I3DModifier> Modifier3DRegistry::create(const std::string& id) c
 
 std::vector<std::string> Modifier3DRegistry::list_ids() const {
     return registry_.list_ids();
+}
+
+void register_builtin_modifiers(Modifier3DRegistry& registry) {
+    auto descriptors = get_builtin_modifier3d_descriptors();
+    for (auto& desc : descriptors) {
+        registry.register_spec(std::move(desc));
+    }
 }
 
 } // namespace tachyon::renderer3d

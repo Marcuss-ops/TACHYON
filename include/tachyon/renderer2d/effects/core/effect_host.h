@@ -17,6 +17,7 @@
 #include <vector>
 
 namespace tachyon::renderer2d {
+class EffectRegistry;
 
 class Effect {
 public:
@@ -46,10 +47,10 @@ class EffectHost {
       const SurfaceRGBA& input,
       const std::vector<std::pair<std::string, EffectParams>>& pipeline) const = 0;
 
-  static void register_builtins(EffectHost& host);
+  virtual const EffectRegistry& registry() const = 0;
 };
 
-std::unique_ptr<EffectHost> create_effect_host();
+std::unique_ptr<EffectHost> create_effect_host(const EffectRegistry& registry);
 
 // Built-in Effect declarations
 class GaussianBlurEffect : public Effect {
@@ -132,10 +133,7 @@ public:
     SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
 };
 
-class GlslTransitionEffect : public Effect {
-public:
-    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
-};
+
 
 class LensFlareEffect : public Effect {
 public:

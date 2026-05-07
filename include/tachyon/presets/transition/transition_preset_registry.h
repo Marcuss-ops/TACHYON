@@ -11,6 +11,8 @@
 #include <vector>
 #include <optional>
 
+namespace tachyon { class TransitionRegistry; }
+
 namespace tachyon::presets {
 
 /**
@@ -40,7 +42,7 @@ public:
     /**
      * @brief Loads all built-in transition presets.
      */
-    void load_builtins();
+    void load_builtins(tachyon::TransitionRegistry& registry);
 
     /**
      * @brief Helper to build a transition spec from parameters with standard defaults.

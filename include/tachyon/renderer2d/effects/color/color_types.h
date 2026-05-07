@@ -1,6 +1,7 @@
 #pragma once
 
-namespace tachyon::renderer2d {
+namespace tachyon {
+namespace renderer2d {
 
 /// Linear color space RGB value (non-premultiplied alpha).
 struct LinearColor {
@@ -18,3 +19,4 @@ struct PremultipliedPixel {
 };
 
 } // namespace tachyon::renderer2d
+} // namespace tachyon

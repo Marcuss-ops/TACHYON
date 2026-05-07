@@ -16,12 +16,14 @@ bool run_doctor_command(const CliOptions&, std::ostream& out, std::ostream& err)
     out << "TACHYON Doctor - System Diagnostic\n";
     out << "==================================\n\n";
 
-    // 1. Audit Transition Registries
+    // Audit Transition Registries
     out << "[1/2] Auditing Transition Registry alignment...\n";
     const auto& preset_reg = presets::TransitionPresetRegistry::instance();
-    renderer2d::init_builtin_transitions();
-    const auto& runtime_reg = TransitionRegistry::instance();
-    
+
+    // Create local registry and load built-ins
+    TransitionRegistry runtime_reg;
+    register_builtin_transitions(runtime_reg);
+
     auto preset_ids = preset_reg.list_ids();
     int preset_errors = 0;
     for (const auto& id : preset_ids) {

@@ -28,14 +28,15 @@ bool run_3d_modifier_tests() {
     using namespace tachyon::renderer3d;
 
     // 1. Registry test
-    auto& registry = Modifier3DRegistry::instance();
+    Modifier3DRegistry registry;
+    register_builtin_modifiers(registry);
     
     ThreeDModifierSpec tilt_spec;
-    tilt_spec.type = "tilt";
+    tilt_spec.type = "tachyon.modifier3d.tilt";
     tilt_spec.scalar_params["tilt_x"] = AnimatedScalarSpec(45.0);
     tilt_spec.scalar_params["tilt_y"] = AnimatedScalarSpec(0.0);
 
-    auto modifier = registry.create(tilt_spec);
+    auto modifier = registry.create(tilt_spec.type);
     check_true(modifier != nullptr, "Modifier 'tilt' created from registry");
 
     // 2. Mesh generation test
@@ -69,10 +70,10 @@ bool run_3d_modifier_tests() {
 
     // 4. Parallax modifier test
     ThreeDModifierSpec parallax_spec;
-    parallax_spec.type = "parallax";
+    parallax_spec.type = "tachyon.modifier3d.parallax";
     parallax_spec.scalar_params["depth"] = AnimatedScalarSpec(100.0);
     
-    auto parallax_mod = registry.create(parallax_spec);
+    auto parallax_mod = registry.create(parallax_spec.type);
     check_true(parallax_mod != nullptr, "Modifier 'parallax' created from registry");
     
     parallax_mod->apply(mesh, 0.0, ctx);

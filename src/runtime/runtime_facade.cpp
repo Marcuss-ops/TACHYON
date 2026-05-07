@@ -6,7 +6,6 @@
 #include "tachyon/core/spec/validation/scene_validator.h"
 #include "tachyon/core/cli_scene_loader.h"
 #include "tachyon/background_catalog.h"
-#include "tachyon/transition_catalog.h"
 #include "tachyon/runtime/frame_arena.h"
 #include "tachyon/runtime/cache/frame_cache.h"
 #include "tachyon/runtime/execution/session/render_session.h"

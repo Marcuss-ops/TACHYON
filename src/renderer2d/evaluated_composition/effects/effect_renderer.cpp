@@ -3,25 +3,28 @@
 #include "tachyon/renderer2d/color/color_transfer.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
 #include "tachyon/renderer2d/effects/effect_resolver.h"
+#include "tachyon/transition_registry.h"
 
 #include <chrono>
 
 namespace tachyon::renderer2d {
 
-static EffectHost& builtin_effect_host() {
-    static std::unique_ptr<EffectHost> host = [] {
-        auto created = create_effect_host();
-        EffectHost::register_builtins(*created);
-        return created;
-    }();
-    return *host;
-}
-
 EffectHost& effect_host_for(RenderContext2D& context) {
     if (context.effects) {
         return *context.effects;
     }
-    return builtin_effect_host();
+    
+    // Fallback path for code that doesn't use the session manager.
+    // In production, context.effects should always be set by RenderSession.
+    static std::unique_ptr<EffectHost> s_fallback_host = [] {
+        static EffectRegistry registry;
+        static TransitionRegistry transition_registry;
+        register_builtin_transitions(transition_registry);
+        register_builtin_effects(registry, transition_registry);
+        return create_effect_host(registry);
+    }();
+    
+    return *s_fallback_host;
 }
 
 EffectParams effect_params_from_spec(const EffectSpec& spec, const ColorProfile& working_profile) {
@@ -72,8 +75,8 @@ ResolutionResult<SurfaceRGBA> apply_effect_pipeline(
         EffectParams params = effect_params_from_spec(effect, working_profile);
         params.strings.emplace("layer_id", current_layer_id);
         
-        // Use centralized effect resolver
-        auto resolved = resolve_effect(effect);
+        // Use centralized effect resolver with injected registry
+        auto resolved = resolve_effect(effect, host.registry());
         
         if (!resolved.valid) {
             result.diagnostics.add_error("EFFECT_RESOLUTION_FAILED", resolved.error_message);

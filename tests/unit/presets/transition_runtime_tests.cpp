@@ -12,31 +12,30 @@ bool run_transition_runtime_tests() {
 
     std::cout << "Running Transition Runtime tests..." << std::endl;
 
-    // Ensure all built-in implementations are loaded.
-    tachyon::register_builtin_transitions();
-    renderer2d::init_builtin_transitions();
-    auto& runtime = TransitionRegistry::instance();
+    // Create registry and load built-in transitions
+    // Runtime Registry Alignment Audit
+    TransitionRegistry registry;
+    register_builtin_transitions(registry);
 
     // 1. Registry must not be empty after init.
-    assert(runtime.count() > 0);
+    const auto runtime_ids = registry.list_all_ids();
+    assert(runtime_ids.size() > 0);
 
-    // 2. Every registered runtime transition must have either a pixel function
-    //    or a valid state type — no orphan entries.
-    const auto runtime_ids = runtime.list_builtin_transition_ids();
+    // 2. Every registered runtime transition must have either a cpu function
+    //    or glsl function - no orphan entries.
     for (const auto& id : runtime_ids) {
-        const TransitionSpec* spec = runtime.find(id);
-        if (spec == nullptr) {
+        const auto* desc = registry.find_by_id(id);
+        if (desc == nullptr) {
             std::cerr << "TransitionRuntime: id '" << id << "' listed but not findable.\n";
             return false;
         }
 
         const bool has_impl =
-            spec->function != nullptr ||
-            spec->state_type != TransitionSpec::Type::None ||
-            !spec->cpu_fn_name.empty();
+            desc->cpu_fn != nullptr ||
+            desc->glsl_fn != nullptr;
 
         if (!has_impl) {
-            std::cerr << "TransitionRuntime: '" << id << "' has no pixel function, state type, or cpu_fn_name.\n";
+            std::cerr << "TransitionRuntime: '" << id << "' has no cpu_fn or glsl_fn.\n";
             return false;
         }
     }
@@ -58,8 +57,8 @@ bool run_transition_runtime_tests() {
             return false;
         }
 
-        const TransitionSpec* runtime_spec = runtime.find(spec.transition_id);
-        if (runtime_spec == nullptr) {
+        const auto* desc = registry.resolve(spec.transition_id);
+        if (desc == nullptr) {
             std::cerr << "TransitionRuntime: preset '" << pid << "' → runtime id '"
                       << spec.transition_id << "' NOT FOUND. Registry drift detected.\n";
             return false;
@@ -85,7 +84,7 @@ bool run_transition_runtime_tests() {
         tachyon::ids::transition::swipe_left,
     };
     for (const auto required_id : kRequired) {
-        if (runtime.find(std::string(required_id)) == nullptr) {
+        if (registry.find_by_id(std::string(required_id)) == nullptr) {
             std::cerr << "TransitionRuntime: required transition '" << required_id << "' is missing.\n";
             return false;
         }

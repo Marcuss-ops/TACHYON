@@ -37,9 +37,11 @@ struct ShadingResult {
     std::uint32_t material_id;
 };
 
+class Modifier3DRegistry;
+
 class RayTracer : public ::tachyon::IRayTracer {
 public:
-    explicit RayTracer(media::MediaManager* media_manager = nullptr);
+    explicit RayTracer(media::MediaManager* media_manager = nullptr, const Modifier3DRegistry* modifier_registry = nullptr);
     ~RayTracer();
 
     RayTracer(const RayTracer&) = delete;
@@ -143,6 +145,7 @@ private:
 
 private:
     std::string m_last_error;
+    const Modifier3DRegistry* modifier_registry_{nullptr};
 
     void cleanup_scene();
     void denoise_aov_buffer(AOVBuffer& buffer) const;

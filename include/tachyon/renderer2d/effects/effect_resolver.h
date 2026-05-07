@@ -6,6 +6,8 @@
 
 namespace tachyon::renderer2d {
 
+class EffectRegistry;
+
 /**
  * @brief Resolved effect information for renderers.
  * 
@@ -29,13 +31,13 @@ struct ResolvedEffect {
  * @param spec The effect specification from the layer.
  * @return ResolvedEffect with all needed information.
  */
-ResolvedEffect resolve_effect(const EffectSpec& spec);
+ResolvedEffect resolve_effect(const EffectSpec& spec, const EffectRegistry& registry);
 
 /**
  * @brief Resolves an effect by id string (convenience overload).
  * 
  * Prefer resolve_effect(const EffectSpec&) when you have the full spec.
  */
-ResolvedEffect resolve_effect_by_id(const std::string& id);
+ResolvedEffect resolve_effect_by_id(const std::string& id, const EffectRegistry& registry);
 
 } // namespace tachyon::renderer2d

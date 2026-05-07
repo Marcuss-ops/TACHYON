@@ -17,7 +17,8 @@ struct BackgroundCatalogEntry; // Forward declaration
  */
 class BackgroundRegistry {
 public:
-    static BackgroundRegistry& instance();
+    BackgroundRegistry();
+    ~BackgroundRegistry();
 
     /// Register a background descriptor
     void register_descriptor(const BackgroundDescriptor& descriptor);
@@ -31,8 +32,8 @@ public:
     /// Resolve by ID or alias (tries ID first, then alias)
     const BackgroundDescriptor* resolve(std::string_view id_or_alias) const;
 
-    /// Get catalog entry IDs derived from registered descriptors
-    std::vector<std::string> catalog_entries() const;
+    /// Get catalog entries derived from registered descriptors
+    std::vector<BackgroundCatalogEntry> catalog_entries() const;
 
     /// List all registered descriptor IDs
     std::vector<std::string> list_all_ids() const;
@@ -44,8 +45,8 @@ public:
     void unregister_background(std::string_view id);
 
 private:
-    BackgroundRegistry();
-    ~BackgroundRegistry();
+    BackgroundRegistry(const BackgroundRegistry&) = delete;
+    BackgroundRegistry& operator=(const BackgroundRegistry&) = delete;
 
     struct Impl;
     std::unique_ptr<Impl> m_impl;

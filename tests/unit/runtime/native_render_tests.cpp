@@ -88,8 +88,12 @@ bool render_transition_demo_mp4(
     const renderer2d::SurfaceRGBA& target,
     const std::filesystem::path& output_path) {
 
-    auto host = renderer2d::create_effect_host();
-    renderer2d::EffectHost::register_builtins(*host);
+    renderer2d::EffectRegistry effect_registry;
+    TransitionRegistry transition_registry;
+    register_builtin_transitions(transition_registry);
+    renderer2d::register_builtin_effects(effect_registry, transition_registry);
+
+    auto host = renderer2d::create_effect_host(effect_registry);
 
     tachyon::RenderPlan plan;
     plan.job_id = "native-render-light-leak";
@@ -173,7 +177,6 @@ bool render_transition_demo_mp4(
 } // namespace
 
 bool run_native_render_tests() {
-    tachyon::register_builtin_transitions();
 
     {
         SceneSpec scene;

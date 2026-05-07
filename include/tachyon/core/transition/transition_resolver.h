@@ -6,6 +6,8 @@
 
 namespace tachyon {
 
+class TransitionRegistry;
+
 struct ResolvedTransition {
     std::string id;
     TransitionRuntimeKind backend{TransitionRuntimeKind::StateOnly};
@@ -17,7 +19,7 @@ struct ResolvedTransition {
     std::string error_message;
 };
 
-ResolvedTransition resolve_transition_spec(const LayerTransitionSpec& spec);
-ResolvedTransition resolve_transition_by_id(const std::string& id);
+ResolvedTransition resolve_transition_spec(const LayerTransitionSpec& spec, const TransitionRegistry& registry);
+ResolvedTransition resolve_transition_by_id(const std::string& id, const TransitionRegistry& registry);
 
 } // namespace tachyon
