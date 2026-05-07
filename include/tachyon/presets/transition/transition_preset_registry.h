@@ -45,7 +45,7 @@ public:
     /**
      * @brief Loads all built-in transition presets.
      */
-    void load_builtins(tachyon::TransitionRegistry& registry);
+    void load_builtins();
 
     /**
      * @brief Helper to build a transition spec from parameters with standard defaults.
