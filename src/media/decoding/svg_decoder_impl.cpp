@@ -122,6 +122,15 @@ renderer2d::Color parse_color_string(const std::string& str) {
     return renderer2d::Color::black();
 }
 
+ColorSpec to_color_spec(const renderer2d::Color& c) {
+    return {
+        static_cast<std::uint8_t>(std::clamp(c.r * 255.0f, 0.0f, 255.0f)),
+        static_cast<std::uint8_t>(std::clamp(c.g * 255.0f, 0.0f, 255.0f)),
+        static_cast<std::uint8_t>(std::clamp(c.b * 255.0f, 0.0f, 255.0f)),
+        static_cast<std::uint8_t>(std::clamp(c.a * 255.0f, 0.0f, 255.0f))
+    };
+}
+
 void parse_gradient_stops(pugi::xml_node node, GradientSpec& gs) {
     for (pugi::xml_node stop : node.children("stop")) {
         GradientStop spec_stop;
@@ -136,11 +145,11 @@ void parse_gradient_stops(pugi::xml_node node, GradientSpec& gs) {
         }
         const char* stop_color = stop.attribute("stop-color").value();
         if (stop_color) {
-            spec_stop.color = parse_color_string(stop_color);
+            spec_stop.color = to_color_spec(parse_color_string(stop_color));
         }
         const char* stop_opacity = stop.attribute("stop-opacity").value();
         if (stop_opacity) {
-            spec_stop.color.a = std::stof(stop_opacity);
+            spec_stop.color.a = static_cast<std::uint8_t>(std::clamp(std::stof(stop_opacity) * 255.0f, 0.0f, 255.0f));
         }
         gs.stops.push_back(spec_stop);
     }
@@ -168,21 +177,19 @@ bool parse_svg_string(const std::string& svg_content, ParsedSvg& out_result, Dia
         for (pugi::xml_node grad : defs.children()) {
             if (strcmp(grad.name(), "linearGradient") == 0) {
                 GradientSpec gs;
-                gs.id = grad.attribute("id").value();
                 gs.type = GradientType::Linear;
-                gs.x1 = grad.attribute("x1").as_float(0.0f);
-                gs.y1 = grad.attribute("y1").as_float(0.0f);
-                gs.x2 = grad.attribute("x2").as_float(100.0f);
-                gs.y2 = grad.attribute("y2").as_float(0.0f);
+                gs.start.x = grad.attribute("x1").as_float(0.0f);
+                gs.start.y = grad.attribute("y1").as_float(0.0f);
+                gs.end.x = grad.attribute("x2").as_float(100.0f);
+                gs.end.y = grad.attribute("y2").as_float(0.0f);
                 parse_gradient_stops(grad, gs);
                 out_result.gradients.push_back(gs);
             } else if (strcmp(grad.name(), "radialGradient") == 0) {
                 GradientSpec gs;
-                gs.id = grad.attribute("id").value();
                 gs.type = GradientType::Radial;
-                gs.cx = grad.attribute("cx").as_float(50.0f);
-                gs.cy = grad.attribute("cy").as_float(50.0f);
-                gs.r = grad.attribute("r").as_float(50.0f);
+                gs.start.x = grad.attribute("cx").as_float(50.0f);
+                gs.start.y = grad.attribute("cy").as_float(50.0f);
+                gs.radial_radius = grad.attribute("r").as_float(50.0f);
                 parse_gradient_stops(grad, gs);
                 out_result.gradients.push_back(gs);
             }
@@ -207,11 +214,7 @@ bool parse_svg_string(const std::string& svg_content, ParsedSvg& out_result, Dia
             renderer2d::FillPathStyle fill;
             const char* fill_attr = child.attribute("fill").value();
             if (fill_attr && strcmp(fill_attr, "none") != 0) {
-                if (fill_attr[0] == 'u' && strstr(fill_attr, "url(#")) {
-                    // TODO: handle gradient URLs
-                } else {
-                    fill.color = parse_color_string(fill_attr);
-                }
+                fill.fill_color = parse_color_string(fill_attr);
             }
             out_result.fill_styles.push_back(fill);
 
@@ -219,7 +222,7 @@ bool parse_svg_string(const std::string& svg_content, ParsedSvg& out_result, Dia
             renderer2d::StrokePathStyle stroke;
             const char* stroke_attr = child.attribute("stroke").value();
             if (stroke_attr && strcmp(stroke_attr, "none") != 0) {
-                stroke.color = parse_color_string(stroke_attr);
+                stroke.stroke_color = parse_color_string(stroke_attr);
             }
             const char* stroke_width = child.attribute("stroke-width").value();
             if (stroke_width) {
@@ -227,15 +230,15 @@ bool parse_svg_string(const std::string& svg_content, ParsedSvg& out_result, Dia
             }
             const char* linecap = child.attribute("stroke-linecap").value();
             if (linecap) {
-                if (strcmp(linecap, "round") == 0) stroke.line_cap = renderer2d::LineCap::Round;
-                else if (strcmp(linecap, "square") == 0) stroke.line_cap = renderer2d::LineCap::Square;
-                else stroke.line_cap = renderer2d::LineCap::Butt;
+                if (strcmp(linecap, "round") == 0) stroke.cap = renderer2d::LineCap::Round;
+                else if (strcmp(linecap, "square") == 0) stroke.cap = renderer2d::LineCap::Square;
+                else stroke.cap = renderer2d::LineCap::Butt;
             }
             const char* linejoin = child.attribute("stroke-linejoin").value();
             if (linejoin) {
-                if (strcmp(linejoin, "round") == 0) stroke.line_join = renderer2d::LineJoin::Round;
-                else if (strcmp(linejoin, "bevel") == 0) stroke.line_join = renderer2d::LineJoin::Bevel;
-                else stroke.line_join = renderer2d::LineJoin::Miter;
+                if (strcmp(linejoin, "round") == 0) stroke.join = renderer2d::LineJoin::Round;
+                else if (strcmp(linejoin, "bevel") == 0) stroke.join = renderer2d::LineJoin::Bevel;
+                else stroke.join = renderer2d::LineJoin::Miter;
             }
             const char* miterlimit = child.attribute("stroke-miterlimit").value();
             if (miterlimit) {

@@ -124,7 +124,8 @@ std::filesystem::path MediaManager::get_asset_path(const std::string& asset_id) 
 
 std::filesystem::path MediaManager::resolve_media_path(
     const std::filesystem::path& path,
-    ResolutionPurpose purpose) const {
+    ResolutionPurpose purpose,
+    uint32_t target_width) const {
     
     // Use PathResolver for centralized path resolution
     PathResolveRequest request;
@@ -137,7 +138,7 @@ std::filesystem::path MediaManager::resolve_media_path(
     }
     
     // Deprecated fallback logic - to be removed after transition
-    const bool allow_proxy = (purpose == ResolutionPurpose::Playback) && m_use_proxies;
+    const bool allow_proxy = (purpose == ResolutionPurpose::Playback) && use_proxies();
 
     if (allow_proxy) {
         std::string resolved = m_proxy_manifest.resolve_for_playback(path.string(), 1280);
