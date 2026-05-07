@@ -11,11 +11,6 @@ void register_distortion_effects(EffectRegistry& registry);
 void register_generator_effects(EffectRegistry& registry);
 void register_stylize_effects(EffectRegistry& registry);
 
-EffectRegistry& EffectRegistry::instance() {
-    static EffectRegistry instance;
-    return instance;
-}
-
 EffectRegistry::EffectRegistry() {
     register_builtins();
 }

@@ -427,7 +427,9 @@ tachyon::RasterizedFrame2D render_scene(
         : 30.0;
     task.time_seconds = static_cast<double>(frame_number) / fps;
 
-    return tachyon::render_evaluated_composition_2d(*state, plan, task, context);
+    renderer2d::EffectRegistry effect_reg;
+    RenderIntent intent_placeholder; // Since we are using an already evaluated state, intent is mostly used for resources if needed.
+    return tachyon::render_evaluated_composition_2d(*state, intent_placeholder, plan, task, context, effect_reg);
 }
 
 bool check_png_decode(const std::filesystem::path& path, tachyon::media::ImageManager& image_manager) {
