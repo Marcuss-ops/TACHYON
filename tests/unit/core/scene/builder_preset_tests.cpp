@@ -24,10 +24,10 @@ bool run_scene_builder_preset_tests() {
         auto comp = Composition("text_comp")
             .size(1920, 1080)
             .layer("title", [](LayerBuilder& l) {
-                l.text("Hello World")
-                 .text_animation_preset("tachyon.textanim.fade_up")
-                 .transition_in_preset("tachyon.transition.crossfade", 0.5)
-                 .transition_out_preset("tachyon.transition.zoom", 0.3);
+                l.text().content("Hello World")
+                 .animation_preset("tachyon.textanim.fade_up").done()
+                 .enter().id("tachyon.transition.crossfade").duration(0.5).done()
+                 .exit().id("tachyon.transition.zoom").duration(0.3).done();
             })
             .build();
         

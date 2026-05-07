@@ -157,8 +157,10 @@ std::uint64_t SceneCache::compute_layer_hash(const scene::EvaluatedLayerState& l
 
     h = mix_hash(h, static_cast<std::uint64_t>(layer.width));
     h = mix_hash(h, static_cast<std::uint64_t>(layer.height));
-    h = mix_hash(h, static_cast<std::uint64_t>(layer.extrusion_depth > 0.0f ? 1 : 0));
-    h = mix_hash(h, static_cast<std::uint64_t>(layer.bevel_size > 0.0f ? 1 : 0));
+    if (layer.three_d.has_value()) {
+        h = mix_hash(h, static_cast<std::uint64_t>(layer.three_d->extrusion_depth > 0.0f ? 1 : 0));
+        h = mix_hash(h, static_cast<std::uint64_t>(layer.three_d->bevel_size > 0.0f ? 1 : 0));
+    }
 
     h = mix_hash(h, hash_float(layer.material.metallic));
     h = mix_hash(h, hash_float(layer.material.roughness));

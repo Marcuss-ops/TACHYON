@@ -1,8 +1,12 @@
 #pragma once
 
 #include "tachyon/core/animation/animated_property.h"
+#include "tachyon/core/spec/schema/properties/property_spec.h"
+#include "tachyon/core/types/color_spec.h"
+#include "tachyon/core/math/vector2.h"
 #include <algorithm>
 #include <functional>
+#include <optional>
 
 namespace tachyon::animation {
 
@@ -116,5 +120,26 @@ T sample_spatial_keyframes(
 
     return lerp(k1.value, k2.value, weight);
 }
+
+double sample_scalar(
+    const std::optional<double>& static_value,
+    const std::vector<ScalarKeyframeSpec>& keyframes,
+    double time,
+    double fallback = 0.0
+);
+
+math::Vector2 sample_vector2(
+    const std::optional<math::Vector2>& static_value,
+    const std::vector<Vector2KeyframeSpec>& keyframes,
+    double time,
+    math::Vector2 fallback = math::Vector2{0.0f, 0.0f}
+);
+
+ColorSpec sample_color(
+    const std::optional<ColorSpec>& static_value,
+    const std::vector<ColorKeyframeSpec>& keyframes,
+    double time,
+    ColorSpec fallback = ColorSpec{255, 255, 255, 255}
+);
 
 } // namespace tachyon::animation

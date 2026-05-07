@@ -1,14 +1,14 @@
 #include "tachyon/transition_registry.h"
 
-#include <memory>
-#include <unordered_map>
+#include <algorithm>
 #include <utility>
+#include <iostream>
 
 namespace tachyon {
 
 struct TransitionRegistry::Impl {
-    registry::TypedRegistry<TransitionSpec> transitions;
-    std::unordered_map<std::string, TransitionSpec::TransitionFn> cpu_implementations;
+    std::unordered_map<std::string, TransitionDescriptor> descriptors; // id -> descriptor
+    std::unordered_map<std::string, std::string> alias_to_id;         // alias -> id
 };
 
 TransitionRegistry& TransitionRegistry::instance() {
@@ -19,90 +19,106 @@ TransitionRegistry& TransitionRegistry::instance() {
 TransitionRegistry::TransitionRegistry() : m_impl(std::make_unique<Impl>()) {}
 TransitionRegistry::~TransitionRegistry() = default;
 
-namespace {
-
-void register_transition_impl(registry::TypedRegistry<TransitionSpec>& registry,
-                              const TransitionSpec& spec) {
-    if (spec.id.empty()) {
+void TransitionRegistry::register_descriptor(const TransitionDescriptor& descriptor) {
+    if (descriptor.id.empty()) {
         return;
     }
-
-    registry.register_spec(spec);
-}
-
-} // namespace
-
-void TransitionRegistry::register_transition_legacy(const TransitionSpec& spec) {
-    register_transition_impl(m_impl->transitions, spec);
-}
-
-void TransitionRegistry::register_transition_from_descriptor(const TransitionSpec& spec) {
-    register_transition_impl(m_impl->transitions, spec);
-}
-
-void TransitionRegistry::unregister_transition(const std::string& id) {
-    (void)m_impl->transitions.erase(id);
-}
-
-const TransitionSpec* TransitionRegistry::find(const std::string& id) const {
-    return m_impl->transitions.find(id);
-}
-
-std::size_t TransitionRegistry::count() const {
-    return m_impl->transitions.list_ids().size();
-}
-
-const TransitionSpec* TransitionRegistry::get_by_index(std::size_t index) const {
-    const auto ids = m_impl->transitions.list_ids();
-    if (index >= ids.size()) {
-        return nullptr;
-    }
-    return m_impl->transitions.find(ids[index]);
-}
-
-std::vector<std::string> TransitionRegistry::list_builtin_transition_ids() const {
-    return m_impl->transitions.list_ids();
-}
-
-std::vector<TransitionRegistry::TransitionInfo> TransitionRegistry::list_builtin_transitions() const {
-    std::vector<TransitionInfo> infos;
-    const auto ids = m_impl->transitions.list_ids();
-    infos.reserve(ids.size());
-    for (const auto& id : ids) {
-        const auto* spec = m_impl->transitions.find(id);
-        if (spec == nullptr) {
-            continue;
-        }
-        infos.push_back({
-            id,
-            spec->name,
-            spec->description,
-            spec->function != nullptr,
-            spec->state_type != TransitionSpec::Type::None
-        });
-    }
-    return infos;
-}
-
-void TransitionRegistry::register_cpu_implementation(const std::string& name, TransitionSpec::TransitionFn fn) {
-    m_impl->cpu_implementations[name] = fn;
     
-    // Auto-update any already registered specs that were waiting for this implementation
-    const auto ids = m_impl->transitions.list_ids();
-    for (const auto& id : ids) {
-        auto* spec = const_cast<TransitionSpec*>(m_impl->transitions.find(id));
-        if (spec && spec->function == nullptr && spec->cpu_fn_name == name) {
-            spec->function = fn;
+    // Check for duplicates
+    auto it = m_impl->descriptors.find(descriptor.id);
+    if (it != m_impl->descriptors.end()) {
+        // Duplicate found - apply policy
+        std::string error_msg = "Duplicate descriptor id: " + descriptor.id;
+        std::cerr << "ERROR: " << error_msg << "\n";
+        
+        switch (m_duplicate_policy) {
+            case RegistryDuplicatePolicy::Reject:
+                throw RegistryError(error_msg);
+                
+            case RegistryDuplicatePolicy::Warn:
+                // Keep the first registration, warn and return
+                std::cerr << "WARNING: Duplicate transition '" << descriptor.id << "' ignored (policy: Warn)\n";
+                return;
+                
+            case RegistryDuplicatePolicy::Replace:
+                // Replace the existing entry - fall through to registration
+                std::cerr << "INFO: Replacing duplicate transition '" << descriptor.id << "' (policy: Replace)\n";
+                break;
+        }
+    }
+    
+    // Register main descriptor
+    m_impl->descriptors[descriptor.id] = descriptor;
+    // Register aliases
+    for (const auto& alias : descriptor.aliases) {
+        if (!alias.empty()) {
+            m_impl->alias_to_id[alias] = descriptor.id;
         }
     }
 }
 
-TransitionSpec::TransitionFn TransitionRegistry::find_cpu_implementation(const std::string& name) const {
-    const auto it = m_impl->cpu_implementations.find(name);
-    if (it != m_impl->cpu_implementations.end()) {
-        return it->second;
+const TransitionDescriptor* TransitionRegistry::find_by_id(std::string_view id) const {
+    auto it = m_impl->descriptors.find(std::string(id));
+    return it != m_impl->descriptors.end() ? &it->second : nullptr;
+}
+
+const TransitionDescriptor* TransitionRegistry::find_by_alias(std::string_view alias) const {
+    auto alias_it = m_impl->alias_to_id.find(std::string(alias));
+    if (alias_it != m_impl->alias_to_id.end()) {
+        return find_by_id(alias_it->second);
     }
     return nullptr;
+}
+
+const TransitionDescriptor* TransitionRegistry::resolve(std::string_view id_or_alias) const {
+    auto* by_id = find_by_id(id_or_alias);
+    return by_id ? by_id : find_by_alias(id_or_alias);
+}
+
+std::vector<TransitionCatalogEntry> TransitionRegistry::catalog_entries() const {
+    std::vector<TransitionCatalogEntry> entries;
+    entries.reserve(m_impl->descriptors.size());
+    for (const auto& [id, desc] : m_impl->descriptors) {
+        entries.push_back({
+            desc.id,
+            desc.display_name,
+            desc.description,
+            desc.category,
+            desc.aliases,
+            desc.capabilities.supports_cpu,
+            desc.capabilities.supports_gpu
+        });
+    }
+    return entries;
+}
+
+std::vector<std::string> TransitionRegistry::list_all_ids() const {
+    std::vector<std::string> ids;
+    ids.reserve(m_impl->descriptors.size());
+    for (const auto& [id, _] : m_impl->descriptors) {
+        ids.push_back(id);
+    }
+    return ids;
+}
+
+std::vector<const TransitionDescriptor*> TransitionRegistry::list_all() const {
+    std::vector<const TransitionDescriptor*> descs;
+    descs.reserve(m_impl->descriptors.size());
+    for (const auto& [id, desc] : m_impl->descriptors) {
+        descs.push_back(&desc);
+    }
+    return descs;
+}
+
+void TransitionRegistry::unregister_transition(std::string_view id) {
+    auto it = m_impl->descriptors.find(std::string(id));
+    if (it != m_impl->descriptors.end()) {
+        // Remove associated aliases
+        for (const auto& alias : it->second.aliases) {
+            m_impl->alias_to_id.erase(alias);
+        }
+        m_impl->descriptors.erase(it);
+    }
 }
 
 }  // namespace tachyon

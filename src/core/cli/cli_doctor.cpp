@@ -34,17 +34,18 @@ bool run_doctor_command(const CliOptions&, std::ostream& out, std::ostream& err)
             continue;
         }
         
-        const auto* runtime_spec = runtime_reg.find(spec.transition_id);
-        if (runtime_spec == nullptr) {
+        const auto* desc = runtime_reg.resolve(spec.transition_id);
+        if (desc == nullptr) {
             err << "      [ERROR] Preset '" << id << "' resolves to unknown runtime ID: " << spec.transition_id << "\n";
             preset_errors++;
             continue;
         }
 
-        if (runtime_spec->function == nullptr
-            && runtime_spec->state_type == TransitionSpec::Type::None) {
+        if (desc->cpu_fn == nullptr 
+            && desc->glsl_fn == nullptr 
+            && desc->runtime_kind == TransitionRuntimeKind::StateOnly) {
             err << "      [ERROR] Runtime transition '" << spec.transition_id
-                << "' has neither a pixel function nor a state type\n";
+                << "' has neither CPU nor GLSL function and is not a state-only transition\n";
             preset_errors++;
         }
     }

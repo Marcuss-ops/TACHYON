@@ -20,6 +20,8 @@ Tachyon should be reasoned about with one repeated pattern across domains:
 5. **Runtime consumer**
    - the appropriate subsystem performs the actual work
 
+For the implementation rule that applies when adding new graphics behavior, see [Graphics Extension Contract](graphics-extension-contract.md).
+
 This is the shared model for backgrounds, transitions, text animation, and 2D effects.
 
 ## Domain Map
@@ -56,6 +58,7 @@ If the answer is not clear, the design is probably too broad.
 - Do not add a second pipeline when the current one can be extended.
 - Prefer one canonical path per domain, not one path per feature request.
 - If two names mean almost the same thing, merge them before adding more presets.
+- If a new graphics feature needs renderer-specific knowledge during authoring, the design is not yet neutral enough.
 
 ## Checklist For New Work
 

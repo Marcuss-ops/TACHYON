@@ -9,6 +9,7 @@ bool run_camera_shake_tests();
 bool run_bezier_interpolator_tests();
 bool run_scene_builder_preset_tests();
 bool run_blend_kernel_tests();
+bool run_property_sampler_tests();
 
 int main(int argc, char** argv) {
     using namespace tachyon::test;
@@ -21,6 +22,7 @@ int main(int argc, char** argv) {
         {"bezier_interpolator", run_bezier_interpolator_tests},
         {"builder_preset", run_scene_builder_preset_tests},
         {"blend_kernel", run_blend_kernel_tests},
+        {"property_sampler", run_property_sampler_tests},
     };
 
     return run_test_suite(argc, argv, tests);

@@ -5,6 +5,7 @@
 #include "tachyon/core/math/vector3.h"
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <variant>
 #include <vector>
 

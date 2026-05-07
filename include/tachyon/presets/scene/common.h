@@ -179,20 +179,19 @@ inline SceneSpec build_text_3d_helpers_scene() {
         .fps(30)
         .clear(ColorSpec{16, 18, 28, 255})
         .camera3d_layer("cam", [](LayerBuilder& l) {
-            l.position3d(0.0, 0.0, -520.0)
-             .camera_poi(0.0, 0.0, 0.0)
-             .camera_zoom(40.0);
+            l.transform3d().position(0.0, 0.0, -520.0).done()
+             .camera().poi(0.0, 0.0, 0.0).zoom(40.0).done();
         })
         .light_layer("ambient", [](LayerBuilder& l) {
-            l.light_type("ambient")
-             .light_color({255, 255, 255, 255})
-             .light_intensity(0.9);
+            l.light().type("ambient")
+             .color({255, 255, 255, 255})
+             .intensity(0.9).done();
         })
         .light_layer("key", [](LayerBuilder& l) {
-            l.light_type("point")
-             .position3d(-160.0, 180.0, -220.0)
-             .light_color({255, 244, 226, 255})
-             .light_intensity(2.6);
+            l.light().type("point").done()
+             .transform3d().position(-160.0, 180.0, -220.0).done()
+             .light().color({255, 244, 226, 255})
+             .intensity(2.6).done();
         })
         .layer("title", [](LayerBuilder& l) {
             l = LayerBuilder(tachyon::presets::text::headline("TEXT + 3D HELPERS")
@@ -212,7 +211,7 @@ inline SceneSpec build_text_3d_helpers_scene() {
         .layer("card", [](LayerBuilder& l) {
             l.solid("card")
              .size(860, 360)
-             .position3d(0.0, 90.0, 160.0)
+             .transform3d().position(0.0, 90.0, 160.0).done()
              .fill_color(ColorSpec{242, 158, 66, 255});
             tachyon::presets::animation3d::tilt(l, 18.0, 10.0, 0.8);
             tachyon::presets::animation3d::parallax(l, 48.0);

@@ -4,14 +4,14 @@
 #include "tachyon/renderer2d/effects/core/transitions/basic_transitions.h"
 #include "tachyon/renderer2d/effects/core/transitions/light_leak_transitions.h"
 #include "tachyon/renderer2d/effects/core/transitions/artistic_transitions.h"
-#include "tachyon/transition_registry.h"
+#include "tachyon/renderer2d/effects/diagnostics/diagnostic_surface.h"
+#include "tachyon/core/transition/transition_effect_resolver.h"
 #include "tachyon/core/transition/transition_descriptor.h"
-#include "tachyon/core/animation/easing.h"
 #include "tachyon/core/policy/engine_policy.h"
+#include "tachyon/core/animation/easing.h"
 
 #include <algorithm>
 #include <cmath>
-#include <iostream>
 #include <mutex>
 
 namespace tachyon::renderer2d {
@@ -61,21 +61,41 @@ void init_builtin_transitions() {
 SurfaceRGBA GlslTransitionEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
     const float t = transition_progress(params);
 
-    TransitionResolutionResult resolution;
+    // Get transition ID from params
+    std::string transition_id;
     const auto transition_it = params.strings.find("transition_id");
     if (transition_it != params.strings.end()) {
-        const std::string& tid = transition_it->second;
-        resolution = resolve_transition(tid);
+        transition_id = transition_it->second;
+    }
 
-        if (resolution.status != TransitionResolutionResult::Status::Ok) {
-            std::cerr << "WARNING: Transition resolution failed for '" << tid << "': " << resolution.error_message << "\n";
-            
-            if (EngineValidationPolicy::instance().strict_transitions) {
-                SurfaceRGBA error_out(input.width(), input.height());
-                error_out.set_profile(input.profile());
-                error_out.clear(Color{1.0f, 0.0f, 1.0f, 1.0f}); // Diagnostic Magenta
-                return error_out;
-            }
+    // Use resolver to resolve the transition effect
+    TransitionEffectResolver resolver;
+    TransitionEffectRequest request;
+    request.transition_id = transition_id;
+    request.preferred_backend = TransitionRuntimeKind::CpuPixel;
+    
+    // Set fallback policy based on engine policy
+    if (EngineValidationPolicy::instance().strict_transitions) {
+        request.fallback_policy = TransitionFallbackPolicy::Strict;
+    } else {
+        request.fallback_policy = TransitionFallbackPolicy::Magenta;
+    }
+    
+    auto resolved = resolver.resolve(request);
+    
+    // Handle invalid resolution based on fallback policy
+    if (!resolved.valid) {
+        switch (request.fallback_policy) {
+            case TransitionFallbackPolicy::Strict:
+                // In strict mode, return empty surface (caller should check)
+                return SurfaceRGBA(input.width(), input.height());
+                
+            case TransitionFallbackPolicy::Magenta:
+                return DiagnosticSurface::render(resolved, input.width(), input.height(), input.profile());
+                
+            case TransitionFallbackPolicy::NoOp:
+                // Return input unchanged
+                return input;
         }
     }
 
@@ -94,24 +114,12 @@ SurfaceRGBA GlslTransitionEffect::apply(const SurfaceRGBA& input, const EffectPa
         return output;
     }
 
-    const float width = static_cast<float>(std::max<std::uint32_t>(1U, input.width()));
-    const float height = static_cast<float>(std::max<std::uint32_t>(1U, input.height()));
-
-    #pragma omp parallel for schedule(static)
-    for (int y = 0; y < static_cast<int>(input.height()); ++y) {
-        for (std::uint32_t x = 0; x < input.width(); ++x) {
-            const float u = (static_cast<float>(x) + 0.5f) / width;
-            const float v = (static_cast<float>(y) + 0.5f) / height;
-
-            Color out;
-            if (resolution.status == TransitionResolutionResult::Status::Ok && resolution.function != nullptr) {
-                out = resolution.function(u, v, t, input, to_surface);
-            } else {
-                out = lerp_surface_color(input, to_surface, u, v, t);
-            }
-
-            output.set_pixel(x, static_cast<std::uint32_t>(y), out);
-        }
+    if (resolved.kernel.valid && resolved.kernel.apply) {
+        // Use resolved kernel (surface-level)
+        output = resolved.kernel.apply(input, to_surface, t);
+    } else {
+        // Fallback: return input unchanged
+        output = input;
     }
 
     return output;

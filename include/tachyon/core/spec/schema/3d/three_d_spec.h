@@ -16,6 +16,9 @@ struct ThreeDModifierSpec {
 
 struct ThreeDSpec {
     bool enabled{false};
+    double extrusion_depth{0.0};
+    double bevel_size{0.0};
+    double hole_bevel_ratio{0.0};
     std::vector<ThreeDModifierSpec> modifiers;
 };
 

@@ -36,26 +36,13 @@ PresetCompiler::ResolvedLayerAnimationPresets
 PresetCompiler::resolve_layer_animation_presets(const LayerSpec& layer) const {
     ResolvedLayerAnimationPresets resolved;
 
-    // Canonical modern fields win.
-    resolved.in_id = !layer.animation_in_preset.empty()
-        ? layer.animation_in_preset
-        : layer.in_preset;
+    // Modern fields only
+    resolved.in_id = layer.animation_in_preset;
+    resolved.during_id = layer.animation_during_preset;
+    resolved.out_id = layer.animation_out_preset;
 
-    resolved.during_id = !layer.animation_during_preset.empty()
-        ? layer.animation_during_preset
-        : layer.during_preset;
-
-    resolved.out_id = !layer.animation_out_preset.empty()
-        ? layer.animation_out_preset
-        : layer.out_preset;
-
-    resolved.in_duration = !layer.animation_in_preset.empty()
-        ? static_cast<double>(layer.animation_in_duration)
-        : static_cast<double>(layer.in_duration);
-
-    resolved.out_duration = !layer.animation_out_preset.empty()
-        ? static_cast<double>(layer.animation_out_duration)
-        : static_cast<double>(layer.out_duration);
+    resolved.in_duration = static_cast<double>(layer.animation_in_duration);
+    resolved.out_duration = static_cast<double>(layer.animation_out_duration);
 
     return resolved;
 }
