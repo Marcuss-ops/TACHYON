@@ -48,9 +48,29 @@ public:
                     return false;
                 }
                 
-                // Optional: add type/range checks here
-                if (bag.contains(def.id)) {
-                    // Type checking could be added here if needed
+                if (const auto* val_ptr = bag.get_raw(def.id)) {
+                    const auto& val = *val_ptr;
+                    
+                    // Type checking: ensure the variant index matches the default value's index
+                    // This enforces that the type in the bag matches the expected type in the schema
+                    if (val.index() != def.default_value.index()) {
+                        return false;
+                    }
+
+                    // Range checking for numeric types
+                    if (def.min_value.has_value() || def.max_value.has_value()) {
+                        double numeric_val = 0.0;
+                        bool is_numeric = false;
+                        
+                        if (const auto* f = std::get_if<float>(&val)) { numeric_val = *f; is_numeric = true; }
+                        else if (const auto* d = std::get_if<double>(&val)) { numeric_val = *d; is_numeric = true; }
+                        else if (const auto* i = std::get_if<int>(&val)) { numeric_val = *i; is_numeric = true; }
+                        
+                        if (is_numeric) {
+                            if (def.min_value && numeric_val < *def.min_value) return false;
+                            if (def.max_value && numeric_val > *def.max_value) return false;
+                        }
+                    }
                 }
             }
         }

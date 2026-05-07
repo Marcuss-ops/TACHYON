@@ -54,7 +54,9 @@ bool mux_audio_video(const RenderPlan& plan, const std::string& video_path, cons
             if (std::filesystem::exists(temp_video_p)) {
                 std::filesystem::rename(temp_video_p, video_p);
             }
-        } catch (...) {}
+        } catch (const std::exception& e) {
+            error += " (also failed to restore original video: " + std::string(e.what()) + ")";
+        }
         return false;
     }
 

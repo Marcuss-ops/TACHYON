@@ -2,8 +2,19 @@
 #include "tachyon/runtime/cache/disk_cache.h"
 #include <vector>
 #include <cstdint>
+#include <cstring>
 
 namespace tachyon::runtime {
+
+struct FrameHeader {
+    uint32_t magic = 0x54414348; // 'TACH'
+    uint16_t version = 1;
+    uint32_t width;
+    uint32_t height;
+    renderer2d::ColorProfile profile;
+    uint64_t pixels_size;
+    uint64_t depth_size;
+};
 
 DiskFrameCacheAdapter::DiskFrameCacheAdapter(DiskCacheStore& disk_store)
     : m_disk_store(disk_store) {}
@@ -15,11 +26,29 @@ std::optional<std::shared_ptr<renderer2d::Framebuffer>> DiskFrameCacheAdapter::l
 ) {
     auto disk_key = to_disk_key(scene, plan, task);
     auto data = m_disk_store.load(disk_key);
-    if (!data.has_value()) {
+    if (!data.has_value() || data->size() < sizeof(FrameHeader)) {
         return std::nullopt;
     }
-    // TODO: Implement framebuffer deserialization from vector<uint8_t>
-    return std::nullopt;
+
+    FrameHeader header;
+    std::memcpy(&header, data->data(), sizeof(FrameHeader));
+
+    if (header.magic != 0x54414348 || header.version != 1) {
+        return std::nullopt;
+    }
+
+    auto frame = std::make_shared<renderer2d::Framebuffer>(header.width, header.height);
+    frame->set_profile(header.profile);
+
+    const uint8_t* payload = data->data() + sizeof(FrameHeader);
+    
+    if (header.pixels_size > 0) {
+        frame->mutable_pixels().resize(header.pixels_size / sizeof(float));
+        std::memcpy(frame->mutable_pixels().data(), payload, header.pixels_size);
+        payload += header.pixels_size;
+    }
+
+    return frame;
 }
 
 void DiskFrameCacheAdapter::store(
@@ -29,8 +58,18 @@ void DiskFrameCacheAdapter::store(
     const renderer2d::Framebuffer& frame
 ) {
     auto disk_key = to_disk_key(scene, plan, task);
-    // TODO: Implement framebuffer serialization to vector<uint8_t>
-    std::vector<uint8_t> frame_data;
+    
+    FrameHeader header;
+    header.width = frame.width();
+    header.height = frame.height();
+    header.profile = frame.profile();
+    header.pixels_size = frame.pixels().size() * sizeof(float);
+    header.depth_size = 0; 
+
+    std::vector<uint8_t> frame_data(sizeof(FrameHeader) + header.pixels_size);
+    std::memcpy(frame_data.data(), &header, sizeof(FrameHeader));
+    std::memcpy(frame_data.data() + sizeof(FrameHeader), frame.pixels().data(), header.pixels_size);
+
     m_disk_store.store(disk_key, frame_data);
 }
 

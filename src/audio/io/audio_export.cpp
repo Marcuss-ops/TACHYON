@@ -42,6 +42,7 @@ static float evaluate_keyframe_value(const std::vector<animation::Keyframe<float
         return static_cast<float>(kf0.value + (kf1.value - kf0.value) * eased);
     }
 
+    std::cerr << "[WARNING] Unknown interpolation mode in audio keyframe evaluation. Falling back to linear.\n";
     return static_cast<float>(kf0.value + (kf1.value - kf0.value) * t);
 }
 

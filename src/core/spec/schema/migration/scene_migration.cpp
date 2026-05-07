@@ -35,7 +35,7 @@ void SceneMigrationManager::register_migration(
     m_migrations[key] = std::move(migration_fn);
 }
 
-bool SceneMigrationManager::migrate(SceneSpec& scene, const SchemaVersion& target_version) {
+bool SceneMigrationManager::migrate_in_place(SceneSpec& scene, const SchemaVersion& target_version) {
     SchemaVersion current = scene.schema_version;
     
     // Already at or beyond target version
@@ -72,10 +72,18 @@ bool SceneMigrationManager::migrate(SceneSpec& scene, const SchemaVersion& targe
     return scene.schema_version >= target_version;
 }
 
+std::optional<SceneSpec> SceneMigrationManager::migrate(const SceneSpec& scene, const SchemaVersion& target_version) {
+    SceneSpec result = scene;
+    if (migrate_in_place(result, target_version)) {
+        return result;
+    }
+    return std::nullopt;
+}
+
 // Convenience function for migrating scenes
 bool migrate_scene(SceneSpec& scene, const SchemaVersion& target_version) {
     static SceneMigrationManager manager;
-    return manager.migrate(scene, target_version);
+    return manager.migrate_in_place(scene, target_version);
 }
 
 } // namespace tachyon::core

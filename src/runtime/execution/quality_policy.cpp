@@ -2,6 +2,22 @@
 
 namespace tachyon {
 
+namespace {
+    // Tile size constants
+    constexpr uint32_t kTileSizeSmall  = 256;
+    constexpr uint32_t kTileSizeLarge  = 512;
+
+    // Cache budget constants (MB)
+    constexpr uint64_t kMB = 1024ULL * 1024;
+    constexpr uint64_t kCacheBudgetDraft      = 64 * kMB;
+    constexpr uint64_t kCacheBudgetPreview    = 256 * kMB;
+    constexpr uint64_t kCacheBudgetProduction = 1024 * kMB;
+    constexpr uint64_t kCacheBudgetCinematic  = 2048 * kMB;
+
+    // Motion blur constants
+    constexpr float kDefaultShutterAngle = 180.0f;
+}
+
 QualityPolicy make_quality_policy(QualityTier tier) {
     QualityPolicy policy;
 
@@ -19,10 +35,10 @@ QualityPolicy make_quality_policy(QualityTier tier) {
             policy.shadow_map_resolution    = 256;
             policy.soft_shadows             = false;
             policy.effects_enabled          = false;
-            policy.precomp_cache_budget     = 64ULL * 1024 * 1024;
-            policy.tile_size                = 256;
+            policy.precomp_cache_budget     = kCacheBudgetDraft;
+            policy.tile_size                = kTileSizeSmall;
             policy.max_workers              = 2;
-            policy.shutter_angle_deg        = 180.0f;
+            policy.shutter_angle_deg        = kDefaultShutterAngle;
             break;
 
         case QualityTier::Preview:
@@ -38,10 +54,10 @@ QualityPolicy make_quality_policy(QualityTier tier) {
             policy.shadow_map_resolution    = 512;
             policy.soft_shadows             = false;
             policy.effects_enabled          = true;
-            policy.precomp_cache_budget     = 256ULL * 1024 * 1024;
-            policy.tile_size                = 512;
+            policy.precomp_cache_budget     = kCacheBudgetPreview;
+            policy.tile_size                = kTileSizeLarge;
             policy.max_workers              = 0; // all cores
-            policy.shutter_angle_deg        = 180.0f;
+            policy.shutter_angle_deg        = kDefaultShutterAngle;
             break;
 
         case QualityTier::Production:
@@ -57,10 +73,10 @@ QualityPolicy make_quality_policy(QualityTier tier) {
             policy.shadow_map_resolution    = 1024;
             policy.soft_shadows             = true;
             policy.effects_enabled          = true;
-            policy.precomp_cache_budget     = 1024ULL * 1024 * 1024;
-            policy.tile_size                = 512;
+            policy.precomp_cache_budget     = kCacheBudgetProduction;
+            policy.tile_size                = kTileSizeLarge;
             policy.max_workers              = 0;
-            policy.shutter_angle_deg        = 180.0f;
+            policy.shutter_angle_deg        = kDefaultShutterAngle;
             break;
 
         case QualityTier::Cinematic:
@@ -76,10 +92,10 @@ QualityPolicy make_quality_policy(QualityTier tier) {
             policy.shadow_map_resolution    = 2048;
             policy.soft_shadows             = true;
             policy.effects_enabled          = true;
-            policy.precomp_cache_budget     = 2048ULL * 1024 * 1024;
-            policy.tile_size                = 256; // smaller tiles for better cache locality at high SPP
+            policy.precomp_cache_budget     = kCacheBudgetCinematic;
+            policy.tile_size                = kTileSizeSmall; // smaller tiles for better cache locality at high SPP
             policy.max_workers              = 0;
-            policy.shutter_angle_deg        = 180.0f;
+            policy.shutter_angle_deg        = kDefaultShutterAngle;
             break;
     }
 

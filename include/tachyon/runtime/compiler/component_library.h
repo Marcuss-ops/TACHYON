@@ -6,6 +6,8 @@
 #include <map>
 #include <filesystem>
 
+#include <mutex>
+
 namespace tachyon {
 
 /**
@@ -28,7 +30,10 @@ public:
     /**
      * @brief Gets all components.
      */
-    const std::vector<ComponentSpec>& components() const { return m_components; }
+    const std::vector<ComponentSpec>& components() const { 
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_components; 
+    }
 
     /**
      * @brief Merges another library into this one.
@@ -42,6 +47,7 @@ public:
 
 private:
     std::vector<ComponentSpec> m_components;
+    mutable std::mutex m_mutex;
 };
 
 } // namespace tachyon

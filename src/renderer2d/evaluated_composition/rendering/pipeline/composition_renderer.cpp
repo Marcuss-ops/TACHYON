@@ -93,22 +93,40 @@ std::optional<std::filesystem::path> resolve_media_source(
         layer.name
     };
 
+    int ref_idx = 0;
     for (const auto& reference : references) {
         if (reference.empty()) {
+            ref_idx++;
             continue;
         }
 
         std::filesystem::path resolved = context.media_manager->get_asset_path(reference);
         if (!resolved.empty()) {
+            if (ref_idx > 0 && context.diagnostics) {
+                context.diagnostics->add_warning("asset_fallback", 
+                    "Media source resolved via fallback reference '" + reference + "' (original asset_path was missing or invalid).", 
+                    layer.id);
+            }
             return resolved;
         }
 
         std::filesystem::path candidate(reference);
         if (candidate.has_extension()) {
+            if (ref_idx > 0 && context.diagnostics) {
+                context.diagnostics->add_warning("asset_fallback", 
+                    "Media source resolved via direct path fallback '" + reference + "'.", 
+                    layer.id);
+            }
             return candidate;
         }
+        ref_idx++;
     }
 
+    if (context.diagnostics) {
+        context.diagnostics->add_error("asset_missing", 
+            "Failed to resolve media source for layer '" + layer.name + "' using asset_path, ID, or name.", 
+            layer.id);
+    }
     return std::nullopt;
 }
 
@@ -244,6 +262,9 @@ RasterizedFrame2D render_evaluated_composition_2d(
     std::string validation_error;
     if (!matte_dependencies.empty() && !resolver.validate(state.layers, matte_dependencies, validation_error)) {
         frame.note += " [matte validation warning: " + validation_error + "]";
+        if (context.diagnostics) {
+            context.diagnostics->add_warning("matte_validation", validation_error);
+        }
     }
 
     std::vector<std::vector<float>> matte_buffers;
