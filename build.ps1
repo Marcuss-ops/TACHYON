@@ -210,6 +210,9 @@ if ($Check) {
         Invoke-Native {
             & msbuild $CoreProject /m:1 /nologo "/p:Configuration=$Config" "/p:Platform=x64" "/t:Build"
         } "Quick check FAILED."
+        Invoke-Native {
+            & python (Join-Path $Root "tools\check_render_intent_boundaries.py")
+        } "RenderIntent boundary check FAILED."
         Write-Host "Quick check OK" -ForegroundColor Green
         return
     }
@@ -218,6 +221,9 @@ if ($Check) {
     Invoke-Native {
         & cmake --build --preset $Preset --target $Target -j $J
     } "Quick check FAILED."
+    Invoke-Native {
+        & python (Join-Path $Root "tools\check_render_intent_boundaries.py")
+    } "RenderIntent boundary check FAILED."
     Write-Host "Quick check OK" -ForegroundColor Green
     return
 }
