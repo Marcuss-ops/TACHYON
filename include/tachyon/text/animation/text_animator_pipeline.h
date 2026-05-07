@@ -93,57 +93,121 @@ public:
                 // 2. Apply animated properties scaled by coverage
                 
                 // Position Offset
-                glyph.position.x += pos_offset.x * coverage;
-                glyph.position.y += pos_offset.y * coverage;
+                apply_position_offset(glyph, pos_offset, coverage);
 
                 // Scale (preserve aspect ratio if only one component modified)
                 float target_scale = static_cast<float>(scale);
-                if (target_scale != 1.0f || animator.properties.scale_value.has_value() || !animator.properties.scale_keyframes.empty()) {
-                    glyph.scale.x = glyph.scale.x * (1.0f - coverage) + (glyph.scale.x * target_scale) * coverage;
-                    glyph.scale.y = glyph.scale.y * (1.0f - coverage) + (glyph.scale.y * target_scale) * coverage;
+                if (target_scale != 1.0f ||
+                    has_scalar_property(animator.properties.scale_value, animator.properties.scale_keyframes)) {
+                    apply_scale(glyph, target_scale, coverage);
                 }
 
                 // Rotation (in degrees, applied incrementally)
-                glyph.rotation += static_cast<float>(rotation) * coverage;
+                apply_rotation(glyph, static_cast<float>(rotation), coverage);
 
                 // Opacity
-                if (animator.properties.opacity_value.has_value() || !animator.properties.opacity_keyframes.empty()) {
-                    float target_op = static_cast<float>(opacity);
-                    glyph.opacity = glyph.opacity * (1.0f - coverage) + target_op * coverage;
-                    glyph.opacity = std::clamp(glyph.opacity, 0.0f, 1.0f);
+                if (has_scalar_property(animator.properties.opacity_value, animator.properties.opacity_keyframes)) {
+                    apply_opacity(glyph, static_cast<float>(opacity), coverage);
                 }
 
                 // Fill Color
-                if (animator.properties.fill_color_value.has_value() || !animator.properties.fill_color_keyframes.empty()) {
-                    glyph.fill_color = blend_color(glyph.fill_color, fill, coverage);
+                if (has_color_property(animator.properties.fill_color_value, animator.properties.fill_color_keyframes)) {
+                    apply_fill_color(glyph, fill, coverage);
                 }
 
                 // Stroke Color
-                if (animator.properties.stroke_color_value.has_value() || !animator.properties.stroke_color_keyframes.empty()) {
-                    glyph.stroke_color = blend_color(glyph.stroke_color, stroke, coverage);
+                if (has_color_property(animator.properties.stroke_color_value, animator.properties.stroke_color_keyframes)) {
+                    apply_stroke_color(glyph, stroke, coverage);
                 }
 
                  // Stroke Width
-                if (animator.properties.stroke_width_value.has_value() || !animator.properties.stroke_width_keyframes.empty()) {
-                    glyph.stroke_width = glyph.stroke_width * (1.0f - coverage) + static_cast<float>(stroke_width) * coverage;
+                if (has_scalar_property(animator.properties.stroke_width_value, animator.properties.stroke_width_keyframes)) {
+                    apply_stroke_width(glyph, static_cast<float>(stroke_width), coverage);
                 }
 
                 // Blur Radius
-                if (animator.properties.blur_radius_value.has_value() || !animator.properties.blur_radius_keyframes.empty()) {
-                    glyph.blur_radius = glyph.blur_radius * (1.0f - coverage) + static_cast<float>(blur_radius) * coverage;
-                    glyph.blur_radius = std::max(0.0f, glyph.blur_radius);
+                if (has_scalar_property(animator.properties.blur_radius_value, animator.properties.blur_radius_keyframes)) {
+                    apply_blur_radius(glyph, static_cast<float>(blur_radius), coverage);
                 }
 
                 // Reveal Factor (0.0 = hidden, 1.0 = fully revealed)
-                if (animator.properties.reveal_value.has_value() || !animator.properties.reveal_keyframes.empty()) {
-                    glyph.reveal_factor = glyph.reveal_factor * (1.0f - coverage) + static_cast<float>(reveal) * coverage;
-                    glyph.reveal_factor = std::clamp(glyph.reveal_factor, 0.0f, 1.0f);
+                if (has_scalar_property(animator.properties.reveal_value, animator.properties.reveal_keyframes)) {
+                    apply_reveal_factor(glyph, static_cast<float>(reveal), coverage);
                 }
             }
         }
     }
 
 private:
+    static bool has_scalar_property(const std::optional<double>& value,
+                                    const std::vector<::tachyon::ScalarKeyframeSpec>& keyframes) {
+        return value.has_value() || !keyframes.empty();
+    }
+
+    static bool has_color_property(const std::optional<::tachyon::ColorSpec>& value,
+                                   const std::vector<::tachyon::ColorKeyframeSpec>& keyframes) {
+        return value.has_value() || !keyframes.empty();
+    }
+
+    static void apply_position_offset(ResolvedGlyph& glyph,
+                                      const math::Vector2& offset,
+                                      float coverage) {
+        glyph.position.x += offset.x * coverage;
+        glyph.position.y += offset.y * coverage;
+    }
+
+    static void apply_scale(ResolvedGlyph& glyph,
+                            float target_scale,
+                            float coverage) {
+        glyph.scale.x = glyph.scale.x * (1.0f - coverage) + (glyph.scale.x * target_scale) * coverage;
+        glyph.scale.y = glyph.scale.y * (1.0f - coverage) + (glyph.scale.y * target_scale) * coverage;
+    }
+
+    static void apply_rotation(ResolvedGlyph& glyph,
+                               float rotation,
+                               float coverage) {
+        glyph.rotation += rotation * coverage;
+    }
+
+    static void apply_opacity(ResolvedGlyph& glyph,
+                              float opacity,
+                              float coverage) {
+        glyph.opacity = glyph.opacity * (1.0f - coverage) + opacity * coverage;
+        glyph.opacity = std::clamp(glyph.opacity, 0.0f, 1.0f);
+    }
+
+    static void apply_fill_color(ResolvedGlyph& glyph,
+                                 const ::tachyon::ColorSpec& color,
+                                 float coverage) {
+        glyph.fill_color = blend_color(glyph.fill_color, color, coverage);
+    }
+
+    static void apply_stroke_color(ResolvedGlyph& glyph,
+                                   const ::tachyon::ColorSpec& color,
+                                   float coverage) {
+        glyph.stroke_color = blend_color(glyph.stroke_color, color, coverage);
+    }
+
+    static void apply_stroke_width(ResolvedGlyph& glyph,
+                                   float stroke_width,
+                                   float coverage) {
+        glyph.stroke_width = glyph.stroke_width * (1.0f - coverage) + stroke_width * coverage;
+    }
+
+    static void apply_blur_radius(ResolvedGlyph& glyph,
+                                  float blur_radius,
+                                  float coverage) {
+        glyph.blur_radius = glyph.blur_radius * (1.0f - coverage) + blur_radius * coverage;
+        glyph.blur_radius = std::max(0.0f, glyph.blur_radius);
+    }
+
+    static void apply_reveal_factor(ResolvedGlyph& glyph,
+                                    float reveal,
+                                    float coverage) {
+        glyph.reveal_factor = glyph.reveal_factor * (1.0f - coverage) + reveal * coverage;
+        glyph.reveal_factor = std::clamp(glyph.reveal_factor, 0.0f, 1.0f);
+    }
+
     static ::tachyon::ColorSpec blend_color(const ::tachyon::ColorSpec& a, const ::tachyon::ColorSpec& b, float t) {
         float clamped = std::clamp(t, 0.0f, 1.0f);
         auto lerp = [clamped](std::uint8_t x, std::uint8_t y) {

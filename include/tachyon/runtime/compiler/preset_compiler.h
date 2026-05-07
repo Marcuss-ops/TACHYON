@@ -41,6 +41,16 @@ public:
     void expand(SceneSpec& scene) const;
 
 private:
+    struct ResolvedLayerAnimationPresets {
+        std::string in_id;
+        std::string during_id;
+        std::string out_id;
+        double in_duration{0.4};
+        double out_duration{0.4};
+    };
+
+    ResolvedLayerAnimationPresets resolve_layer_animation_presets(const LayerSpec& layer) const;
+
     void expand_layer(LayerSpec& layer) const;
     void inject_phase(LayerSpec& layer,
                       const AnimationPreset& preset,

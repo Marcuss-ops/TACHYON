@@ -36,6 +36,36 @@ struct PrecompGlyphCtx {
     float non_space_index;
 };
 
+TextAnimatorContext make_context_from_precomp(
+    std::size_t glyph_index,
+    float time,
+    float total_glyphs,
+    float total_clusters,
+    float total_words,
+    float total_lines,
+    float total_non_space_glyphs,
+    const PrecompGlyphCtx& precomp,
+    const PositionedGlyph& glyph) {
+
+    TextAnimatorContext ctx;
+    ctx.glyph_index = glyph_index;
+    ctx.time = time;
+    ctx.total_glyphs = total_glyphs;
+    ctx.total_clusters = total_clusters;
+    ctx.total_words = total_words;
+    ctx.total_lines = total_lines;
+    ctx.total_non_space_glyphs = total_non_space_glyphs;
+    ctx.cluster_index = precomp.cluster_index;
+    ctx.word_index = precomp.word_index;
+    ctx.line_index = precomp.line_index;
+    ctx.non_space_glyph_index = precomp.non_space_index;
+    ctx.is_space = precomp.is_space || glyph.whitespace;
+    ctx.is_rtl = precomp.is_rtl;
+    ctx.cluster_codepoint_start = precomp.cluster_codepoint_start;
+    ctx.cluster_codepoint_count = precomp.cluster_codepoint_count;
+    return ctx;
+}
+
 template <typename T>
 T lerp_channel(T a, T b, float t) {
     return static_cast<T>(a + (b - a) * t);
@@ -199,25 +229,9 @@ void apply_text_animators(
             for (std::size_t i = 0; i < total_glyphs; ++i) {
                 auto& glyph = layout.glyphs[i];
                 const float staggered_t = std::max(0.0f, t - (animator.selector.stagger_mode == "character" ? static_cast<float>(i) : static_cast<float>(precomp[i].word_index)) * static_cast<float>(animator.selector.stagger_delay));
-                
-                // Build context from precomputed data
-                TextAnimatorContext ctx;
-                ctx.glyph_index = i;
-                ctx.time = staggered_t;
-                ctx.total_glyphs = f_total_glyphs;
-                ctx.total_clusters = f_total_clusters;
-                ctx.total_words = f_total_words;
-                ctx.total_lines = f_total_lines;
-                ctx.total_non_space_glyphs = f_total_non_space;
-                ctx.cluster_index = precomp[i].cluster_index;
-                ctx.word_index = precomp[i].word_index;
-                ctx.line_index = precomp[i].line_index;
-                ctx.non_space_glyph_index = precomp[i].non_space_index;
-                ctx.is_space = precomp[i].is_space;
-                ctx.is_rtl = precomp[i].is_rtl;
-                ctx.cluster_codepoint_start = precomp[i].cluster_codepoint_start;
-                ctx.cluster_codepoint_count = precomp[i].cluster_codepoint_count;
-
+                const TextAnimatorContext ctx = make_context_from_precomp(
+                    i, staggered_t, f_total_glyphs, f_total_clusters, f_total_words,
+                    f_total_lines, f_total_non_space, precomp[i], glyph);
                 const float coverage = compute_coverage(animator.selector, ctx);
                 if (coverage > 0.0f) {
                     const double tracking_value = sample_scalar_kfs(animator.properties.tracking_amount_value, animator.properties.tracking_amount_keyframes, staggered_t);
@@ -241,24 +255,9 @@ void apply_text_animators(
             for (std::size_t i = remainder_start; i < layout.glyphs.size(); ++i) {
                 auto& glyph = layout.glyphs[i];
                 const float staggered_t = std::max(0.0f, t - (animator.selector.stagger_mode == "character" ? static_cast<float>(i) : static_cast<float>(precomp[i].word_index)) * static_cast<float>(animator.selector.stagger_delay));
-                
-                TextAnimatorContext ctx;
-                ctx.glyph_index = i;
-                ctx.time = staggered_t;
-                ctx.total_glyphs = f_total_glyphs;
-                ctx.total_clusters = f_total_clusters;
-                ctx.total_words = f_total_words;
-                ctx.total_lines = f_total_lines;
-                ctx.total_non_space_glyphs = f_total_non_space;
-                ctx.cluster_index = precomp[i].cluster_index;
-                ctx.word_index = precomp[i].word_index;
-                ctx.line_index = precomp[i].line_index;
-                ctx.non_space_glyph_index = precomp[i].non_space_index;
-                ctx.is_space = precomp[i].is_space;
-                ctx.is_rtl = precomp[i].is_rtl;
-                ctx.cluster_codepoint_start = precomp[i].cluster_codepoint_start;
-                ctx.cluster_codepoint_count = precomp[i].cluster_codepoint_count;
-
+                const TextAnimatorContext ctx = make_context_from_precomp(
+                    i, staggered_t, f_total_glyphs, f_total_clusters, f_total_words,
+                    f_total_lines, f_total_non_space, precomp[i], glyph);
                 const float coverage = compute_coverage(animator.selector, ctx);
                 if (coverage > 0.0f) {
                     const double op_val = sample_scalar_kfs(animator.properties.opacity_value, animator.properties.opacity_keyframes, staggered_t);
@@ -275,24 +274,9 @@ void apply_text_animators(
         for (int i = 0; i < static_cast<int>(total_glyphs); ++i) {
             auto& glyph = layout.glyphs[i];
             const float staggered_t = std::max(0.0f, t - (animator.selector.stagger_mode == "character" ? static_cast<float>(i) : static_cast<float>(precomp[i].word_index)) * static_cast<float>(animator.selector.stagger_delay));
-            
-            TextAnimatorContext ctx;
-            ctx.glyph_index = static_cast<std::size_t>(i);
-            ctx.time = staggered_t;
-            ctx.total_glyphs = f_total_glyphs;
-            ctx.total_clusters = f_total_clusters;
-            ctx.total_words = f_total_words;
-            ctx.total_lines = f_total_lines;
-            ctx.total_non_space_glyphs = f_total_non_space;
-            ctx.cluster_index = precomp[i].cluster_index;
-            ctx.word_index = precomp[i].word_index;
-            ctx.line_index = precomp[i].line_index;
-            ctx.non_space_glyph_index = precomp[i].non_space_index;
-            ctx.is_space = precomp[i].is_space || glyph.whitespace;
-            ctx.is_rtl = precomp[i].is_rtl;
-            ctx.cluster_codepoint_start = precomp[i].cluster_codepoint_start;
-            ctx.cluster_codepoint_count = precomp[i].cluster_codepoint_count;
-
+            const TextAnimatorContext ctx = make_context_from_precomp(
+                static_cast<std::size_t>(i), staggered_t, f_total_glyphs, f_total_clusters,
+                f_total_words, f_total_lines, f_total_non_space, precomp[i], glyph);
             const float coverage = compute_coverage(animator.selector, ctx);
             if (coverage <= 0.0f) continue;
 
