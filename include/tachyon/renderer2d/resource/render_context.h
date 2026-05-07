@@ -35,6 +35,7 @@ class AssetResolver;
 
 namespace tachyon {
 class IRayTracer;
+class TransitionRegistry;
 }
 
 namespace tachyon::renderer2d {
@@ -111,6 +112,7 @@ struct RenderContext2D {
     // Text rendering state (formerly TextRenderConfig singleton)
     const ::tachyon::text::FontRegistry* font_registry = nullptr;
     const std::vector<::tachyon::text::SubtitleEntry>* subtitle_entries = nullptr;
+    const ::tachyon::TransitionRegistry* transition_registry = nullptr;
     ::tachyon::media::MediaManager* media_manager = nullptr;
     std::shared_ptr<::tachyon::media::AssetResolver> asset_resolver;
 

@@ -61,8 +61,9 @@ void record_timing(
     });
 }
 
-ResolvedTransition resolve_layer_transition(const LayerTransitionSpec& transition) {
-    return resolve_transition_spec(transition);
+ResolvedTransition resolve_layer_transition(const LayerTransitionSpec& transition, const TransitionRegistry* registry) {
+    if (!registry) return {};
+    return resolve_transition_spec(transition, *registry);
 }
 
 std::optional<double> compute_transition_progress(double elapsed_seconds, double duration_seconds) {
@@ -596,7 +597,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     if (progress.has_value()) {
                         in_transition = true;
                         transition_t = animation::apply_easing(*progress, layer.transition_in.easing, {});
-                        resolution = resolve_layer_transition(layer.transition_in);
+                        resolution = resolve_layer_transition(layer.transition_in, render_context.transition_registry);
                     }
                 }
 
@@ -608,7 +609,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     if (progress.has_value()) {
                         out_transition = true;
                         transition_t = animation::apply_easing(*progress, layer.transition_out.easing, {});
-                        resolution = resolve_layer_transition(layer.transition_out);
+                        resolution = resolve_layer_transition(layer.transition_out, render_context.transition_registry);
                     }
                 }
 

@@ -24,7 +24,6 @@ void ensure_native_render_registries() {
     static std::once_flag once;
     std::call_once(once, []() {
         renderer2d::EffectRegistry::instance();
-        register_builtin_transitions();
     });
 }
 
@@ -162,6 +161,7 @@ RenderSessionResult render_with_session(
 RenderSessionResult NativeRenderer::render(
     const SceneSpec& scene,
     const RenderJob& job,
+    TransitionRegistry& transition_registry,
     const NativeRenderOptions& options) {
     ensure_native_render_registries();
     RenderJob resolved_job = job;
@@ -183,15 +183,18 @@ RenderSessionResult NativeRenderer::render(
     }
 
     RenderSession session;
+    session.set_transition_registry(&transition_registry);
     return render_with_session(*compiled_result.value, resolved_job, options, session);
 }
 
 RenderSessionResult NativeRenderer::render(
     const CompiledScene& scene,
     const RenderJob& job,
+    TransitionRegistry& transition_registry,
     const NativeRenderOptions& options) {
     ensure_native_render_registries();
     RenderSession session;
+    session.set_transition_registry(&transition_registry);
     return render_with_session(scene, job, options, session);
 }
 
@@ -199,11 +202,12 @@ bool NativeRenderer::render_still(
     const SceneSpec& scene,
     const std::string& composition_id,
     std::int64_t frame_number,
-    const std::filesystem::path& output_path) {
+    const std::filesystem::path& output_path,
+    TransitionRegistry& transition_registry) {
     
     RenderJob job = RenderJobBuilder::still_image(composition_id, frame_number, output_path.string());
     
-    const auto result = render(scene, job);
+    const auto result = render(scene, job, transition_registry);
     return result.output_error.empty() && (!result.frames.empty() || result.frames_written > 0);
 }
 

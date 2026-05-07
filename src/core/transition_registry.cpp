@@ -11,11 +11,6 @@ struct TransitionRegistry::Impl {
     std::unordered_map<std::string, std::string> alias_to_id;         // alias -> id
 };
 
-TransitionRegistry& TransitionRegistry::instance() {
-    static TransitionRegistry inst;
-    return inst;
-}
-
 TransitionRegistry::TransitionRegistry() : m_impl(std::make_unique<Impl>()) {}
 TransitionRegistry::~TransitionRegistry() = default;
 
@@ -24,27 +19,11 @@ void TransitionRegistry::register_descriptor(const TransitionDescriptor& descrip
         return;
     }
     
-    // Check for duplicates
+    // Check for duplicates - always warn and keep first registration
     auto it = m_impl->descriptors.find(descriptor.id);
     if (it != m_impl->descriptors.end()) {
-        // Duplicate found - apply policy
-        std::string error_msg = "Duplicate descriptor id: " + descriptor.id;
-        std::cerr << "ERROR: " << error_msg << "\n";
-        
-        switch (m_duplicate_policy) {
-            case RegistryDuplicatePolicy::Reject:
-                throw RegistryError(error_msg);
-                
-            case RegistryDuplicatePolicy::Warn:
-                // Keep the first registration, warn and return
-                std::cerr << "WARNING: Duplicate transition '" << descriptor.id << "' ignored (policy: Warn)\n";
-                return;
-                
-            case RegistryDuplicatePolicy::Replace:
-                // Replace the existing entry - fall through to registration
-                std::cerr << "INFO: Replacing duplicate transition '" << descriptor.id << "' (policy: Replace)\n";
-                break;
-        }
+        std::cerr << "WARNING: Duplicate transition '" << descriptor.id << "' ignored\n";
+        return;
     }
     
     // Register main descriptor

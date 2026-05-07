@@ -24,7 +24,7 @@ struct CommandEntry {
     const char* usage;
     // Returns false (+ prints to err) when required args are missing.
     std::function<bool(const CliOptions&, std::ostream&)> validate;
-    std::function<bool(const CliOptions&, std::ostream&, std::ostream&)> handler;
+    std::function<bool(const CliOptions&, std::ostream&, std::ostream&, TransitionRegistry&)> handler;
 };
 
 static const std::vector<CommandEntry> kCommands = {
@@ -197,15 +197,14 @@ int run_cli(int argc, char** argv) {
         return 0;
     }
 
-    // Initialize all built-in systems (Transitions, Presets, etc.)
-    // Note: We do this here instead of in each DLL to avoid circular link dependencies.
-    ::tachyon::register_builtin_transitions();
+    TransitionRegistry transition_registry;
+    register_builtin_transitions(transition_registry);
 
     // Dispatch through registry
     for (const auto& cmd : kCommands) {
         if (options.command != cmd.name) continue;
         if (cmd.validate && !cmd.validate(options, std::cerr)) return 1;
-        return cmd.handler(options, std::cout, std::cerr) ? 0 : 2;
+        return cmd.handler(options, std::cout, std::cerr, transition_registry) ? 0 : 2;
     }
 
     print_help(std::cerr);

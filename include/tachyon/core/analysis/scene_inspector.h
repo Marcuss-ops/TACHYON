@@ -44,8 +44,11 @@ struct InspectionReport {
     }
 };
 
+class TransitionRegistry;
+
 InspectionReport inspect_scene(
     const SceneSpec& scene,
+    const TransitionRegistry& transition_registry,
     const InspectionOptions& options = {}
 );
 

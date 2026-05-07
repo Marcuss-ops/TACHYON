@@ -97,7 +97,7 @@ Color transition_circle_iris(float u, float v, float t, const SurfaceRGBA& input
 
 } // namespace
 
-void register_basic_transitions() {
+void register_basic_transitions(TransitionRegistry& registry) {
     using namespace tachyon;
 
     {
@@ -110,7 +110,7 @@ void register_basic_transitions() {
         d.cpu_fn = transition_crossfade;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -122,7 +122,7 @@ void register_basic_transitions() {
         d.cpu_fn = transition_slide;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -134,7 +134,7 @@ void register_basic_transitions() {
         d.cpu_fn = transition_slide_up;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -146,7 +146,7 @@ void register_basic_transitions() {
         d.cpu_fn = transition_swipe_left;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -158,7 +158,7 @@ void register_basic_transitions() {
         d.cpu_fn = transition_zoom;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -170,7 +170,7 @@ void register_basic_transitions() {
         d.cpu_fn = transition_flip;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -182,7 +182,7 @@ void register_basic_transitions() {
         d.cpu_fn = transition_blur;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -194,7 +194,7 @@ void register_basic_transitions() {
         d.cpu_fn = transition_fade_to_black;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -206,7 +206,7 @@ void register_basic_transitions() {
         d.cpu_fn = transition_wipe_linear;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -218,7 +218,7 @@ void register_basic_transitions() {
         d.cpu_fn = transition_wipe_angular;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -230,7 +230,7 @@ void register_basic_transitions() {
         d.cpu_fn = transition_push_left;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -242,7 +242,7 @@ void register_basic_transitions() {
         d.cpu_fn = transition_slide_easing;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
     {
         TransitionDescriptor d;
@@ -254,7 +254,7 @@ void register_basic_transitions() {
         d.cpu_fn = transition_circle_iris;
         d.capabilities = {.supports_cpu = true};
         d.params = registry::ParameterSchema({});
-        register_transition_descriptor(d);
+        register_transition_descriptor(d, registry);
     }
 }
 

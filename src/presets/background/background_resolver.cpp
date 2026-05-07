@@ -2,7 +2,6 @@
 #include "tachyon/presets/background/background_preset_registry.h"
 #include "tachyon/presets/background/fluent.h"
 #include "tachyon/core/registry/parameter_bag.h"
-#include "tachyon/background_catalog.h"
 #include "tachyon/core/policy/engine_policy.h"
 #include <iostream>
 

@@ -16,8 +16,8 @@ Eliminate all residual singleton registries and ensure that all domain extension
 
 ### 1. Legacy API Removal
 - [ ] Remove `TransitionRegistry::instance()` and replace with local dispatch in `build_transition()`.
-- [ ] Remove `BackgroundCatalog` singleton if it still exists.
-- [ ] Remove `TransitionCatalog` singleton.
+- [x] Remove `TransitionCatalog` singleton.
+- [x] Remove `BackgroundCatalog` singleton.
 - [ ] Clean up `include/tachyon/transition_registry.h`.
 
 ### 2. Alias & Legacy Cleanup

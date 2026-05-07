@@ -59,18 +59,21 @@ bool run_e2e_smoke_tests() {
         }
     }
 
-    // Test 3: Transition catalog has expected entries
+    // Test 3: Transition registry has expected entries
     {
-        auto& catalog = TransitionCatalog::instance();
-        check_true(catalog.count() > 0, "Transition catalog has entries");
-        check_true(catalog.find("tachyon.transition.fade") != nullptr, "Fade transition exists");
+        tachyon::TransitionRegistry registry;
+        tachyon::register_builtin_transitions(registry);
+        auto ids = registry.list_all_ids();
+        check_true(!ids.empty(), "Transition registry has entries");
+        check_true(registry.resolve("tachyon.transition.fade") != nullptr, "Fade transition exists");
     }
 
-    // Test 4: Background catalog has expected entries
+    // Test 4: Background registry has expected entries
     {
-        auto& catalog = BackgroundCatalog::instance();
-        check_true(catalog.count() > 0, "Background catalog has entries");
-        check_true(catalog.find("tachyon.background.solid") != nullptr, "Solid background exists");
+        auto& registry = tachyon::BackgroundRegistry::instance();
+        auto ids = registry.list_all_ids();
+        check_true(!ids.empty(), "Background registry has entries");
+        check_true(registry.resolve("tachyon.background.solid") != nullptr, "Solid background exists");
     }
 
     // Test 5: Output directory exists (for smoke renders)

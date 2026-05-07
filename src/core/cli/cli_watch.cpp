@@ -15,7 +15,7 @@
 
 namespace tachyon {
 
-bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostream& err) {
+bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*/) {
     if (options.cpp_path.empty()) {
         err << "--cpp is required for watch\n";
         return false;

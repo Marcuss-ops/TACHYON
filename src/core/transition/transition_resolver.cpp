@@ -5,7 +5,7 @@
 
 namespace tachyon {
 
-ResolvedTransition resolve_transition_spec(const LayerTransitionSpec& spec) {
+ResolvedTransition resolve_transition_spec(const LayerTransitionSpec& spec, const TransitionRegistry& registry) {
     ResolvedTransition result;
     result.layer_spec = spec;
     
@@ -19,7 +19,7 @@ ResolvedTransition resolve_transition_spec(const LayerTransitionSpec& spec) {
     result.id = id;
     
     // Look up in TransitionRegistry (canonical source of truth)
-    const auto* desc = TransitionRegistry::instance().resolve(id);
+    const auto* desc = registry.resolve(id);
     
     if (!desc) {
         result.valid = false;
@@ -41,11 +41,11 @@ ResolvedTransition resolve_transition_spec(const LayerTransitionSpec& spec) {
     return result;
 }
 
-ResolvedTransition resolve_transition_by_id(const std::string& id) {
+ResolvedTransition resolve_transition_by_id(const std::string& id, const TransitionRegistry& registry) {
     LayerTransitionSpec spec;
     spec.transition_id = id;
     spec.type = id;
-    return resolve_transition_spec(spec);
+    return resolve_transition_spec(spec, registry);
 }
 
 } // namespace tachyon

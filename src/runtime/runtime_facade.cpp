@@ -5,8 +5,8 @@
 #include "tachyon/runtime/execution/jobs/render_job.h"
 #include "tachyon/core/spec/validation/scene_validator.h"
 #include "tachyon/core/cli_scene_loader.h"
-#include "tachyon/background_catalog.h"
-#include "tachyon/transition_catalog.h"
+#include "tachyon/transition_registry.h"
+#include "tachyon/core/transition/transition_descriptor.h"
 #include "tachyon/runtime/frame_arena.h"
 #include "tachyon/runtime/cache/frame_cache.h"
 #include "tachyon/runtime/execution/session/render_session.h"
@@ -89,7 +89,10 @@ ResolutionResult<std::monostate> RuntimeFacade::export_video(const CompiledScene
     NativeRenderOptions native_options;
     native_options.worker_count = options.worker_count > 0 ? static_cast<std::size_t>(options.worker_count) : 0U;
 
-    const auto render_result = NativeRenderer::render(scene, job, native_options);
+    TransitionRegistry transition_registry;
+    register_builtin_transitions(transition_registry);
+
+    const auto render_result = NativeRenderer::render(scene, job, transition_registry, native_options);
     result.diagnostics.append(render_result.diagnostics);
     if (!render_result.output_error.empty()) {
         result.diagnostics.add_error("FACADE", render_result.output_error);
@@ -147,7 +150,10 @@ RuntimeFacade::RenderResult RuntimeFacade::render_legacy(const RenderRequest& re
     native_options.worker_count = 0; 
     native_options.verbose = false;
 
-    const RenderSessionResult session_result = NativeRenderer::render(scene, job, native_options);
+    TransitionRegistry transition_registry;
+    register_builtin_transitions(transition_registry);
+
+    const RenderSessionResult session_result = NativeRenderer::render(scene, job, transition_registry, native_options);
 
     result.success = session_result.output_error.empty();
     result.error_message = session_result.output_error;

@@ -3,6 +3,10 @@
 #include "tachyon/core/api.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 
+namespace tachyon {
+class TransitionRegistry;
+}
+
 // TachyonRenderer2D is a STATIC library. 
 // On Windows, we should NOT use __declspec(dllimport/dllexport) for static libraries
 // unless we are specifically building them into a DLL and want to export them.
@@ -31,6 +35,6 @@ TACHYON_RENDERER2D_API Color transition_lightleak_neon_pulse(float u, float v, f
 TACHYON_RENDERER2D_API Color transition_lightleak_prism_shatter(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface);
 TACHYON_RENDERER2D_API Color transition_lightleak_vintage_sepia(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface);
 
-TACHYON_RENDERER2D_API void register_light_leak_implementations();
+TACHYON_RENDERER2D_API void register_light_leak_implementations(TransitionRegistry& registry);
 
 } // namespace tachyon::renderer2d

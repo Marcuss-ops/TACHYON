@@ -12,15 +12,16 @@
 
 namespace tachyon {
 
-bool run_doctor_command(const CliOptions&, std::ostream& out, std::ostream& err) {
+bool run_doctor_command(const CliOptions&, std::ostream& out, std::ostream& err, TransitionRegistry& registry) {
     out << "TACHYON Doctor - System Diagnostic\n";
     out << "==================================\n\n";
-
+    
     // 1. Audit Transition Registries
     out << "[1/2] Auditing Transition Registry alignment...\n";
     const auto& preset_reg = presets::TransitionPresetRegistry::instance();
-    renderer2d::init_builtin_transitions();
-    const auto& runtime_reg = TransitionRegistry::instance();
+    renderer2d::init_builtin_transitions(registry);
+    
+    const auto& runtime_reg = registry;
     
     auto preset_ids = preset_reg.list_ids();
     int preset_errors = 0;

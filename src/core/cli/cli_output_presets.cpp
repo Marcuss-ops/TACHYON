@@ -29,7 +29,7 @@ void print_preset_info(const tachyon::output::OutputPreset& preset, const std::s
 
 } // namespace
 
-bool run_output_presets_command(const CliOptions& options, std::ostream& out, std::ostream& err) {
+bool run_output_presets_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*/) {
     const auto command = options.output_presets_command;
     if (command.empty()) {
         err << "Use `tachyon output-presets list` or `tachyon output-presets info <id>`\n";

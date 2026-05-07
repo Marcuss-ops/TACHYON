@@ -1,4 +1,5 @@
 #include "tachyon/background_registry.h"
+#include "tachyon/backgrounds.hpp"
 #include <algorithm>
 
 namespace tachyon {
@@ -13,7 +14,10 @@ BackgroundRegistry& BackgroundRegistry::instance() {
     return registry;
 }
 
-BackgroundRegistry::BackgroundRegistry() : m_impl(std::make_unique<Impl>()) {}
+BackgroundRegistry::BackgroundRegistry() : m_impl(std::make_unique<Impl>()) {
+    // Register built-in backgrounds on first initialization
+    register_builtin_background_descriptors();
+}
 
 BackgroundRegistry::~BackgroundRegistry() = default;
 
@@ -50,37 +54,6 @@ const BackgroundDescriptor* BackgroundRegistry::resolve(std::string_view id_or_a
 
     // Try alias
     return find_by_alias(id_or_alias);
-}
-
-std::vector<BackgroundCatalogEntry> BackgroundRegistry::catalog_entries() const {
-    std::vector<BackgroundCatalogEntry> entries;
-
-    // Map BackgroundKind to BackgroundCatalogRole
-    auto kind_to_role = [](BackgroundKind kind) -> BackgroundCatalogRole {
-        switch (kind) {
-            case BackgroundKind::Solid: return BackgroundCatalogRole::Solid;
-            case BackgroundKind::LinearGradient:
-            case BackgroundKind::RadialGradient: return BackgroundCatalogRole::Gradient;
-            case BackgroundKind::Image: return BackgroundCatalogRole::Image;
-            case BackgroundKind::Video:
-            case BackgroundKind::Procedural: return BackgroundCatalogRole::Procedural;
-            default: return BackgroundCatalogRole::Solid;
-        }
-    };
-
-    for (const auto& [id, desc] : m_impl->descriptors) {
-        BackgroundCatalogEntry entry;
-        entry.id = desc.id;
-        entry.role = kind_to_role(desc.kind);
-        // TODO: serialize desc.params to JSON string
-        entry.preset_params = "{}";
-        entry.procedural_factory_id = (desc.kind == BackgroundKind::Procedural) ? desc.id : "";
-        entry.status = desc.status;  // Use status from descriptor
-        entry.description = desc.description;
-        entries.push_back(entry);
-    }
-
-    return entries;
 }
 
 std::vector<std::string> BackgroundRegistry::list_all_ids() const {

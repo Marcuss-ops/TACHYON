@@ -1,4 +1,3 @@
-#include "tachyon/transition_catalog.h"
 #include "tachyon/transition_registry.h"
 #include "tachyon/presets/transition/transition_preset_registry.h"
 
@@ -25,93 +24,72 @@ void check_false(bool condition, const std::string& message) {
 bool run_transition_catalog_audit_tests() {
     g_failures = 0;
 
-    auto& catalog = tachyon::TransitionCatalog::instance();
+    TransitionRegistry transition_registry;
+    tachyon::register_builtin_transitions(transition_registry);
     auto& preset_registry = tachyon::presets::TransitionPresetRegistry::instance();
-    auto& transition_registry = tachyon::TransitionRegistry::instance();
 
-    // Test 1: Audit returns results structure
+    // Test 1: Registry has entries
     {
-        auto result = catalog.audit();
-        // Just check it runs without crashing
-        check_true(true, "TransitionCatalog::audit() executes without crash");
+        auto ids = transition_registry.list_all_ids();
+        check_true(!ids.empty(), "TransitionRegistry has entries");
     }
 
-    // Test 2: Every catalog.runtime_id exists in TransitionRegistry
+    // Test 2: No duplicate IDs
     {
-        auto result = catalog.audit();
-        check_true(result.missing_runtime.empty(),
-            "All catalog runtime_ids exist in TransitionRegistry");
+        auto ids = transition_registry.list_all_ids();
+        std::size_t original_count = ids.size();
+        
+        // Check for duplicates by using a set
+        std::set<std::string> unique_ids(ids.begin(), ids.end());
+        check_true(unique_ids.size() == original_count, "No duplicate IDs in registry");
     }
 
-    // Test 3: No duplicate aliases
+    // Test 3: All preset IDs exist in registry
     {
-        auto result = catalog.audit();
-        check_true(result.duplicate_aliases.empty(),
-            "No alias conflicts in catalog");
+        auto preset_ids = preset_registry.list_ids();
+        int missing_from_registry = 0;
+        for (const auto& id : preset_ids) {
+            if (!transition_registry.resolve(id)) {
+                ++missing_from_registry;
+                std::cerr << "  Preset not in registry: " << id << '\n';
+            }
+        }
+        check_true(missing_from_registry == 0, "All public presets are registered");
     }
 
-    // Test 4: Catalog entries have valid runtime_id
+    // Test 4: Resolve by ID works
     {
-        std::size_t count = catalog.count();
-        bool all_have_runtime = true;
-        for (std::size_t i = 0; i < count; ++i) {
-            const auto* entry = catalog.get_by_index(i);
-            if (entry && entry->runtime_id.empty()) {
-                all_have_runtime = false;
+        auto ids = transition_registry.list_all_ids();
+        if (!ids.empty()) {
+            const auto* desc = transition_registry.resolve(ids[0]);
+            check_true(desc != nullptr, "Resolve finds first entry");
+            if (desc) {
+                check_true(desc->id == ids[0], "Resolved ID matches");
+            }
+        }
+    }
+
+    // Test 5: Resolve by alias works (if any aliases exist)
+    {
+        auto descriptors = transition_registry.list_all();
+        bool found_alias_test = false;
+        for (const auto* desc : descriptors) {
+            if (!desc->aliases.empty()) {
+                const auto* by_alias = transition_registry.find_by_alias(desc->aliases[0]);
+                check_true(by_alias != nullptr, "Find by alias works");
+                if (by_alias) {
+                    check_true(by_alias->id == desc->id, "Alias resolves to correct ID");
+                }
+                found_alias_test = true;
                 break;
             }
         }
-        check_true(all_have_runtime,
-            "All catalog entries have non-empty runtime_id");
-    }
-
-    // Test 5: Preset registry and catalog alignment
-    {
-        auto preset_ids = preset_registry.list_ids();
-        int missing_from_catalog = 0;
-        for (const auto& id : preset_ids) {
-            if (!catalog.find(id)) {
-                ++missing_from_catalog;
-                std::cerr << "  Preset not in catalog: " << id << '\n';
-            }
-        }
-        check_true(missing_from_catalog == 0,
-            "All public presets are cataloged");
-    }
-
-    // Test 6: Runtime registry and catalog alignment
-    {
-        auto runtime_ids = transition_registry.list_builtin_transition_ids();
-        int missing_from_catalog = 0;
-        for (const auto& id : runtime_ids) {
-            const auto* catalog_entry = catalog.find_by_runtime_id(id);
-            if (!catalog_entry) {
-                ++missing_from_catalog;
-                std::cerr << "  Runtime transition not cataloged: " << id << '\n';
-            }
-        }
-        check_true(missing_from_catalog == 0,
-            "All public runtime transitions are cataloged");
-    }
-
-    // Test 7: amber_sweep consistency (if it exists)
-    {
-        const std::string amber_id = "tachyon.transition.lightleak.amber_sweep";
-        const auto* amber_catalog = catalog.find(amber_id);
-        const auto* amber_preset = preset_registry.find(amber_id);
-        const auto* amber_runtime = transition_registry.find(amber_id);
-
-        bool in_any = (amber_catalog != nullptr) || (amber_preset != nullptr) || (amber_runtime != nullptr);
-        if (in_any) {
-            check_true(amber_catalog != nullptr, "amber_sweep in catalog if in any registry");
-            check_true(amber_preset != nullptr, "amber_sweep in preset registry if in any registry");
-            check_true(amber_runtime != nullptr, "amber_sweep in runtime registry if in any registry");
-        } else {
-            std::cout << "  amber_sweep not registered (ok, optional)\n";
+        if (!found_alias_test) {
+            std::cout << "  No aliases found to test (ok)\n";
         }
     }
 
-    std::cout << "Transition catalog audit tests: " << (g_failures == 0 ? "PASSED" : "FAILED")
+    std::cout << "Transition registry audit tests: " << (g_failures == 0 ? "PASSED" : "FAILED")
               << " (" << g_failures << " failures)\n";
 
     return g_failures == 0;

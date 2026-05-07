@@ -66,6 +66,8 @@ struct ResolvedTransitionEffect {
  */
 class TransitionEffectResolver {
 public:
+    explicit TransitionEffectResolver(const TransitionRegistry& registry) : registry_(registry) {}
+    
     /**
      * @brief Resolves a transition effect request into a ready-to-use effect.
      * 
@@ -73,6 +75,9 @@ public:
      * @return ResolvedTransitionEffect with descriptor, kernel, and diagnostics.
      */
     ResolvedTransitionEffect resolve(const TransitionEffectRequest& request) const;
+    
+private:
+    const TransitionRegistry& registry_;
 };
 
 } // namespace tachyon
