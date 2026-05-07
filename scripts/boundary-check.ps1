@@ -136,6 +136,28 @@ if ($violations5.Count -eq 0) {
     $totalErrors++
 }
 
+# Rule 6: Core scene/spec must not depend on render intent headers
+Write-Host ""
+Write-Host "Rule 6: core scene/spec must not include tachyon/render headers" -ForegroundColor Yellow
+$violations6 = @()
+$files6 = @()
+$files6 += Get-ChildItem -Path "include/tachyon/core/scene" -Recurse -Filter "*.h" -ErrorAction SilentlyContinue
+$files6 += Get-ChildItem -Path "include/tachyon/core/spec" -Recurse -Filter "*.h" -ErrorAction SilentlyContinue
+$files6 += Get-ChildItem -Path "src/core/scene" -Recurse -Filter "*.cpp" -ErrorAction SilentlyContinue
+foreach ($file in $files6) {
+    $content = Get-Content $file.FullName -Raw
+    if ($content -match '^\s*#include\s+["<]tachyon/render/') {
+        $violations6 += $file.FullName
+    }
+}
+if ($violations6.Count -eq 0) {
+    Write-Check "core scene/spec includes tachyon/render" "PASS"
+} else {
+    Write-Check "core scene/spec includes tachyon/render" "FAIL" "$($violations6.Count) files violate"
+    $violations6 | ForEach-Object { Write-Host "    $_" -ForegroundColor Red }
+    $totalErrors++
+}
+
 Write-Host ""
 Write-Host "======================================" -ForegroundColor Cyan
 

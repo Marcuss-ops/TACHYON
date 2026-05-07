@@ -174,8 +174,8 @@ struct EvaluatedLayerState {
 
     bool text_on_path_enabled{false};
 
-    // Mesh deformation (new pipeline)
-    bool mesh_deform_enabled{false};
+    // Mesh deformation resource reference; empty means no deform is applied.
+    std::optional<std::string> mesh_deform_id;
 
     // Effects
     std::vector<EffectSpec> animated_effects;

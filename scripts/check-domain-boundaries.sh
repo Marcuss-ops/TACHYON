@@ -44,6 +44,15 @@ if [ ! -z "$VIOLATIONS" ]; then
     EXIT_CODE=1
 fi
 
+# 5. Core Scene must not depend on render intent headers
+echo "Checking Core Scene -> Render boundaries..."
+VIOLATIONS=$(grep -r "tachyon/render/" include/tachyon/core/scene src/core/scene | grep -E "^\s*#include")
+if [ ! -z "$VIOLATIONS" ]; then
+    echo "CRITICAL: Core Scene depends on render intent headers!"
+    echo "$VIOLATIONS"
+    EXIT_CODE=1
+fi
+
 if [ $EXIT_CODE -eq 0 ]; then
     echo "SUCCESS: Domain boundaries are intact."
 else
