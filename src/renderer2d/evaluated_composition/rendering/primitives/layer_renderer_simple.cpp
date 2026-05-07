@@ -11,6 +11,7 @@
 #include "tachyon/media/management/asset_resolver.h"
 #include "tachyon/render/intent_builder.h"
 #include "tachyon/renderer2d/resource/resource_provider.h"
+#include "tachyon/renderer2d/effects/effect_registry.h"
 
 
 #include <algorithm>
@@ -368,7 +369,8 @@ std::shared_ptr<SurfaceRGBA> render_precomp_surface(
 
         RendererResourceProvider provider(context);
         auto intent_result = render::build_render_intent(*layer.nested_composition, &provider);
-        auto nested = render_evaluated_composition_2d(*layer.nested_composition, intent_result.intent, plan, task, context);
+        renderer2d::EffectRegistry effect_reg;
+        auto nested = render_evaluated_composition_2d(*layer.nested_composition, intent_result.intent, plan, task, context, effect_reg);
         if (nested.surface) {
             auto surface_copy = std::make_shared<SurfaceRGBA>(*nested.surface);
             context.precomp_cache->put(cache_key, surface_copy);
@@ -380,7 +382,8 @@ std::shared_ptr<SurfaceRGBA> render_precomp_surface(
     if (!state.layers.empty() && layer.nested_composition) {
         RendererResourceProvider provider(context);
         auto intent_result = render::build_render_intent(*layer.nested_composition, &provider);
-        auto nested = render_evaluated_composition_2d(*layer.nested_composition, intent_result.intent, plan, task, context);
+        renderer2d::EffectRegistry effect_reg;
+        auto nested = render_evaluated_composition_2d(*layer.nested_composition, intent_result.intent, plan, task, context, effect_reg);
         return nested.surface;
     }
     return make_canvas(state, std::nullopt, context);

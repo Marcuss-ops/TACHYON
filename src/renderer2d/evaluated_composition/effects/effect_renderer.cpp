@@ -47,9 +47,10 @@ ResolutionResult<SurfaceRGBA> apply_effect_pipeline(
     const std::vector<EffectSpec>& effects,
     EffectHost& host,
     const ColorProfile& working_profile,
+    const EffectRegistry& registry,
     FrameDiagnostics* diagnostics,
     const std::string& current_layer_id) {
-    return apply_effect_pipeline(input, effects, host, working_profile, {}, current_layer_id, diagnostics);
+    return apply_effect_pipeline(input, effects, host, working_profile, registry, {}, current_layer_id, diagnostics);
 }
 
 ResolutionResult<SurfaceRGBA> apply_effect_pipeline(
@@ -57,6 +58,7 @@ ResolutionResult<SurfaceRGBA> apply_effect_pipeline(
     const std::vector<EffectSpec>& effects,
     EffectHost& host,
     const ColorProfile& working_profile,
+    const EffectRegistry& registry,
     const std::unordered_map<std::string, std::shared_ptr<SurfaceRGBA>>& surfaces,
     const std::string& current_layer_id,
     FrameDiagnostics* diagnostics) {
@@ -73,7 +75,7 @@ ResolutionResult<SurfaceRGBA> apply_effect_pipeline(
         params.strings.emplace("layer_id", current_layer_id);
         
         // Use centralized effect resolver
-        auto resolved = resolve_effect(effect);
+        auto resolved = resolve_effect(effect, registry);
         
         if (!resolved.valid) {
             result.diagnostics.add_error("EFFECT_RESOLUTION_FAILED", resolved.error_message);

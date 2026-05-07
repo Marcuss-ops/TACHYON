@@ -12,15 +12,17 @@ namespace tachyon::renderer2d {
 // Concrete implementation of EffectHost
 class EffectHostImpl : public EffectHost {
 public:
+    EffectHostImpl() : registry_(std::make_unique<EffectRegistry>()) {}
+
     bool has_effect(const std::string& name) const override {
-        return resolve_effect_by_id(name).valid;
+        return resolve_effect_by_id(name, *registry_).valid;
     }
     
     ResolutionResult<SurfaceRGBA> apply(const std::string& name, const SurfaceRGBA& input, const EffectParams& params) const override {
         ResolutionResult<SurfaceRGBA> result;
         
         // Use centralized effect resolver
-        auto resolved = resolve_effect_by_id(name);
+        auto resolved = resolve_effect_by_id(name, *registry_);
         
         if (!resolved.valid || !resolved.descriptor) {
             std::string msg = "Unknown effect '" + name + "' or resolution failed.";
@@ -70,6 +72,9 @@ public:
         
         return result;
     }
+
+private:
+    std::unique_ptr<EffectRegistry> registry_;
 };
 
 std::unique_ptr<EffectHost> create_effect_host() {
@@ -77,7 +82,7 @@ std::unique_ptr<EffectHost> create_effect_host() {
 }
 
 void EffectHost::register_builtins(EffectHost&) {
-    EffectRegistry::instance().register_builtins();
+    // Builtins are registered in EffectRegistry constructor
 }
 
 } // namespace tachyon::renderer2d

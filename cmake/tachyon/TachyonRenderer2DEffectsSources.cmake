@@ -13,7 +13,6 @@ set(TachyonRenderer2DEffectsSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_stylize_table.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/effect_host.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/effect_param_access.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/effect_utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/glsl_transition_effect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/transitions/basic_transitions.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/transitions/light_leak_transitions.cpp

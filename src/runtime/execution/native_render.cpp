@@ -21,10 +21,7 @@ RenderProgressSink* get_sink(RenderProgressSink* sink) {
 }
 
 void ensure_native_render_registries() {
-    static std::once_flag once;
-    std::call_once(once, []() {
-        renderer2d::EffectRegistry::instance();
-    });
+    // Registries are now passed explicitly; no static initialization needed.
 }
 
 const CompiledComposition* find_compiled_composition(const CompiledScene& scene, const std::string& composition_id) {

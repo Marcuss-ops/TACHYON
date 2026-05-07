@@ -2,7 +2,7 @@
 
 #include "tachyon/renderer2d/raster/rasterizer_ops.h"
 #include "tachyon/renderer2d/raster/perspective_rasterizer.h"
-#include "tachyon/renderer2d/effects/effect_host.h"
+#include "tachyon/renderer2d/effects/core/effect_host.h"
 
 #include <algorithm>
 #include <vector>

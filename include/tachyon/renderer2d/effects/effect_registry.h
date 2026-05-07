@@ -14,7 +14,8 @@ namespace tachyon::renderer2d {
  */
 class EffectRegistry {
 public:
-    static EffectRegistry& instance();
+    EffectRegistry();
+    ~EffectRegistry() = default;
 
     void register_spec(EffectDescriptor descriptor);
     const EffectDescriptor* find(std::string_view id) const;
@@ -24,9 +25,6 @@ public:
     void register_builtins();
 
 private:
-    EffectRegistry();
-    ~EffectRegistry() = default;
-
     registry::TypedRegistry<EffectDescriptor> registry_;
 };
 
