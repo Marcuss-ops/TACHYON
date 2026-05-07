@@ -109,7 +109,6 @@ bool run_render_intent_tests() {
         check_true(provider.last_deform_id.empty(), "missing mesh_deform_id should not trigger deform resolution");
         check_true(fallback_result.diagnostics.ok(), "missing mesh_deform_id should not emit diagnostics");
     }
-
     EngineValidationPolicy::instance() = saved_policy;
     return g_failures == 0;
 }
