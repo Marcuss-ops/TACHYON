@@ -15,6 +15,7 @@ set(TachyonRuntimeExecutionSources
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_session_serialization.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/batch_runner/batch_runner_execute.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/batch_runner/batch_runner_validate.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/batch_runner/batch_registry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_evaluator_composition.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_evaluator_layer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_evaluator_node.cpp
@@ -23,6 +24,7 @@ set(TachyonRuntimeExecutionSources
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_cache_policy.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_time_resolver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_evaluation_pipeline.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_pipeline_steps.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/motion_blur_sampler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/frame_fallback_policy.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor/rasterization_step.cpp

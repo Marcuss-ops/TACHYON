@@ -21,7 +21,12 @@ struct Color {
     static Color white()       { return {1.0f, 1.0f, 1.0f, 1.0f}; }
     static Color red()         { return {1.0f, 0.0f, 0.0f, 1.0f}; }
     static Color green()       { return {0.0f, 1.0f, 0.0f, 1.0f}; }
-    static Color blue() { return {0.0f, 0.0f, 1.0f, 1.0f}; } static Color lerp(const Color& a, const Color& b, float t) { return { a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t, a.a + (b.a - a.a) * t }; }
+    Color operator*(float t) const { return {r * t, g * t, b * t, a * t}; }
+    Color operator+(const Color& other) const { return {r + other.r, g + other.g, b + other.b, a + other.a}; }
+
+    static Color lerp(const Color& a, const Color& b, float t) { 
+        return { a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t, a.a + (b.a - a.a) * t }; 
+    }
 };
 
 struct RectI {

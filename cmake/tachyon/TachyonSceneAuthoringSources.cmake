@@ -10,7 +10,6 @@ set(TachyonSceneAuthoringSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/scene_spec_utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/cpp_scene_loader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/authoring_service.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/asset_resolver.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/core/analysis/motion_map.cpp
 )

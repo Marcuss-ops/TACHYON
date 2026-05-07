@@ -42,6 +42,14 @@ public:
      */
     void load_builtins();
 
+    /**
+     * @brief Helper to build a transition spec from parameters with standard defaults.
+     */
+    static LayerTransitionSpec build_spec_from_params(
+        const registry::ParameterBag& p, 
+        TransitionKind kind, 
+        const std::string& transition_id);
+
 private:
     TransitionPresetRegistry() = default;
     ~TransitionPresetRegistry() = default;

@@ -9,4 +9,11 @@ set(TachyonRuntimeCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/core/serialization/tbf_migration.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/core/serialization/tbf_read_helpers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/core/serialization/tbf_write_helpers.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/cache/cache_key_builder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/cache/disk_cache.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/cache/frame_cache.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/resource/render_context.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/policy/worker_policy.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/policy/surface_pool_policy.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/policy/telemetry_policy.cpp
 )

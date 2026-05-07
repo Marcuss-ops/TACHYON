@@ -2,6 +2,7 @@
 
 #include "tachyon/renderer2d/effects/core/effect_params.h"
 #include "tachyon/renderer2d/effects/color/color_types.h"
+#include "tachyon/renderer2d/color/color_math.h"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -13,23 +14,11 @@
 
 namespace tachyon::renderer2d {
 
-float clamp01(float value);
-float lerp(float a, float b, float t);
-Color lerp_color(Color a, Color b, float t);
-
 bool has_scalar(const EffectParams& params, const std::initializer_list<const char*> keys);
 bool has_color(const EffectParams& params, const std::initializer_list<const char*> keys);
 float get_scalar(const EffectParams& params, const std::string& key, float fallback);
 Color get_color(const EffectParams& params, const std::string& key, Color fallback);
 std::string get_string(const EffectParams& params, const std::string& key, const std::string& fallback);
-
-LinearColor to_linear(Color color);
-Color from_linear(const LinearColor& color, float alpha);
-float luminance(const Color& color);
-
-void rgb_to_hsl(float r, float g, float b, float& h, float& s, float& l);
-float hue_to_rgb(float p, float q, float t);
-Color hsl_to_rgb(float h, float s, float l, float alpha);
 
 // transform_surface is now in framebuffer.h
 

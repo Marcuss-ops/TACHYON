@@ -3,6 +3,7 @@
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include "tachyon/presets/transition/transition_preset_registry.h"
 #include "tachyon/presets/scene/scene_preset_registry.h"
+#include "tachyon/presets/preset_scene_resolver.h"
 
 #include <algorithm>
 #include <fstream>
@@ -134,19 +135,26 @@ void TachyonCatalog::register_transition_assets() {
 
         CatalogTransitionEntry transition;
         transition.id = row.id;
-        transition.name = row.name.empty() ? transition_slug_from_id(row.id) : row.name;
         transition.pack_id = "public.transitions";
-        transition.description = row.description;
         transition.manifest_path = catalog_path;
         transition.demo_path = output_dir / (transition_slug_from_id(row.id) + ".mp4");
         transition.output_dir = output_dir;
         transition.shader_path = shader_path;
         transition.thumb_path = thumb_path;
-        transition.duration_seconds = 0.8;
 
+        // Default metadata
+        transition.name = row.name.empty() ? transition_slug_from_id(row.id) : row.name;
+        transition.description = row.description;
+        transition.duration_seconds = 0.8; // Fallback default
+
+        // Override from Registry if available (The Source of Truth)
         if (const auto* reg_spec = presets::TransitionPresetRegistry::instance().find(transition.id)) {
             transition.name = reg_spec->metadata.display_name;
             transition.description = reg_spec->metadata.description;
+            
+            // Get default duration from the registry factory
+            auto default_spec = reg_spec->factory({});
+            transition.duration_seconds = default_spec.duration;
         }
 
         m_transitions.push_back(std::move(transition));
@@ -154,23 +162,24 @@ void TachyonCatalog::register_transition_assets() {
 
     // 2. Add from Registry (Modern Manifest Source of Truth)
     for (const auto& id : presets::TransitionPresetRegistry::instance().list_ids()) {
-        // Skip if already added from catalog.txt (legacy assets take precedence for paths)
+        // Skip if already added from catalog.txt
         if (std::find_if(m_transitions.begin(), m_transitions.end(), [&](const auto& e) { return e.id == id; }) != m_transitions.end()) {
             continue;
         }
 
         if (const auto* spec = presets::TransitionPresetRegistry::instance().find(id)) {
+            auto default_spec = spec->factory({});
+
             CatalogTransitionEntry transition;
             transition.id = spec->id;
             transition.name = spec->metadata.display_name;
             transition.description = spec->metadata.description;
             transition.pack_id = "builtin.transitions";
-            transition.manifest_path = "TransitionManifest"; // Virtual manifest
-            transition.duration_seconds = 0.6; // Default from manifest logic
+            transition.manifest_path = "TransitionManifest";
+            transition.duration_seconds = default_spec.duration;
             
-            // Built-in transitions use C++ runtime, but we still need a virtual path
             transition.shader_path = ""; 
-            transition.thumb_path = spec->metadata.tags.empty() ? "" : spec->metadata.tags[0]; // Heuristic for now
+            transition.thumb_path = spec->metadata.tags.empty() ? "" : spec->metadata.tags[0];
 
             m_transitions.push_back(std::move(transition));
         }
@@ -201,10 +210,8 @@ SceneSpec TachyonCatalog::instantiate_scene(const std::string& id) const {
     auto entry = find_scene(id);
     if (!entry) return {};
 
-    if (entry->is_cpp_preset) {
-        if (auto scene = presets::ScenePresetRegistry::instance().create(id, {})) {
-            return std::move(*scene);
-        }
+    if (auto scene = presets::PresetSceneResolver::instantiate(id)) {
+        return std::move(*scene);
     }
     return {};
 }

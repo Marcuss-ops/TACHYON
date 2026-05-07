@@ -6,15 +6,7 @@ namespace tachyon::presets {
 namespace {
 
 LayerTransitionSpec make_transition_spec(const registry::ParameterBag& p, TransitionKind kind, const std::string& transition_id) {
-    LayerTransitionSpec spec;
-    spec.kind = kind;
-    spec.type = transition_id;
-    spec.transition_id = transition_id;
-    spec.duration = p.get_or<double>("duration", 0.4);
-    spec.easing = static_cast<animation::EasingPreset>(p.get_or<int>("easing", static_cast<int>(animation::EasingPreset::EaseOut)));
-    spec.delay = p.get_or<double>("delay", 0.0);
-    spec.direction = p.get_or<std::string>("direction", "none");
-    return spec;
+    return TransitionPresetRegistry::build_spec_from_params(p, kind, transition_id);
 }
 
 void register_glsl(TransitionPresetRegistry& registry,

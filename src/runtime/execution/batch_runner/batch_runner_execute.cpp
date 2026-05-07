@@ -14,6 +14,8 @@
 
 #include <condition_variable>
 
+#include "tachyon/runtime/execution/batch_runner/batch_registry.h"
+
 namespace tachyon {
 
 namespace {
@@ -32,13 +34,32 @@ std::string get_machine_id() {
     return "local-dev";
 }
 
-bool load_scene_context(const std::filesystem::path& /*scene_path*/, SceneSpec& /*scene*/, AssetResolutionTable& /*assets*/, DiagnosticBag& diagnostics) {
-    diagnostics.add_error("batch.scene_loading_disabled", "JSON scene loading is no longer supported. Use C++ SceneSpec authoring.");
+bool load_scene_context(const std::filesystem::path& scene_path, SceneSpec& scene, AssetResolutionTable& assets, DiagnosticBag& diagnostics) {
+    const std::string id = scene_path.string();
+    if (auto spec = runtime::BatchRegistry::instance().create_scene(id)) {
+        scene = std::move(*spec);
+        
+        // Resolve assets relative to current directory for registry scenes
+        // or a project root if we had one. For now, use current path.
+        auto res = resolve_assets(scene, std::filesystem::current_path());
+        if (res.value.has_value()) {
+            assets = std::move(*res.value);
+        }
+        return true;
+    }
+
+    diagnostics.add_error("batch.scene_not_found", "Scene ID '" + id + "' not found in BatchRegistry. JSON loading is disabled.");
     return false;
 }
 
-bool load_render_job(const std::filesystem::path& /*job_path*/, RenderJob& /*job*/, DiagnosticBag& diagnostics) {
-    diagnostics.add_error("batch.job_loading_disabled", "JSON render job loading is no longer supported. Use C++ RenderJob builders.");
+bool load_render_job(const std::filesystem::path& job_path, RenderJob& job, DiagnosticBag& diagnostics) {
+    const std::string id = job_path.string();
+    if (auto spec = runtime::BatchRegistry::instance().create_job(id)) {
+        job = std::move(*spec);
+        return true;
+    }
+
+    diagnostics.add_error("batch.job_not_found", "RenderJob ID '" + id + "' not found in BatchRegistry. JSON loading is disabled.");
     return false;
 }
 

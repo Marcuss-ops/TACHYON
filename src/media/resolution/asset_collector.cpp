@@ -1,5 +1,6 @@
 #include "tachyon/media/resolution/asset_collector.h"
 #include "tachyon/media/resolution/asset_path_utils.h"
+#include "tachyon/text/fonts/management/font_manifest.h"
 
 namespace tachyon::media {
 

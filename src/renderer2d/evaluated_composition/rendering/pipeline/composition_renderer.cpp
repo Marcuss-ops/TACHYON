@@ -21,7 +21,7 @@
 #include "tachyon/core/render/dof_settings.h"
 #include "tachyon/core/render/motion_blur_settings.h"
 #include "tachyon/core/render/visibility.h"
-#include "tachyon/runtime/execution/scheduling/tile_scheduler.h"
+#include "tachyon/renderer2d/raster/tile_grid.h"
 #include "tachyon/output/frame_aov.h"
 #include "tachyon/transition_registry.h"
 #include "tachyon/renderer2d/effects/core/glsl_transition_effect.h"

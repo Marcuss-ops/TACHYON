@@ -10,8 +10,9 @@ namespace tachyon::math {
  * @tparam T Data type of the grid elements.
  * @tparam Sampler A callable with signature T(int x, int y) providing boundary-aware access.
  */
-template <typename T, typename Sampler>
-inline T sample_bilinear(float x, float y, Sampler&& sampler) {
+template <typename Sampler>
+inline auto sample_bilinear(float x, float y, Sampler&& sampler) -> decltype(sampler(0, 0)) {
+    using T = decltype(sampler(0, 0));
     const int x0 = static_cast<int>(std::floor(x));
     const int y0 = static_cast<int>(std::floor(y));
     const float tx = x - static_cast<float>(x0);

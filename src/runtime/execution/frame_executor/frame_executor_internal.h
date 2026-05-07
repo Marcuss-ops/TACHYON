@@ -4,22 +4,9 @@
 #include "tachyon/runtime/cache/cache_key_builder.h"
 #include "tachyon/timeline/frame_blend.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
+#include "tachyon/runtime/execution/frame_executor/frame_pipeline_steps.h"
 
 namespace tachyon {
-
-struct FrameCacheState {
-    CacheKeyBuilder composition_builder;
-    CacheKeyBuilder frame_builder;
-    std::uint64_t composition_key{0};
-    std::uint64_t frame_key{0};
-    bool diagnostics_enabled{false};
-};
-
-struct FrameTimingState {
-    double fps{60.0};
-    double frame_time_seconds{0.0};
-    std::optional<timeline::FrameBlendResult> blend_result;
-};
 
 // Internal evaluation functions
 void evaluate_node(

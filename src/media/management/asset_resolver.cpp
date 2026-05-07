@@ -1,4 +1,5 @@
 #include "tachyon/media/management/asset_resolver.h"
+#include "tachyon/media/resolution/asset_collector.h"
 #include <iostream>
 
 namespace tachyon::media {
@@ -118,21 +119,32 @@ std::shared_ptr<const renderer2d::SurfaceRGBA> AssetResolver::resolve_image_shar
 
 AssetResolutionTable AssetResolver::resolve_all(const SceneSpec& scene) const {
     AssetResolutionTable table;
-    for (const auto& asset : scene.assets) {
+    auto refs = collect_asset_references(scene);
+    
+    for (const auto& ref : refs) {
+        // Only interested in assets with IDs for the table
+        if (ref.id.empty()) continue;
+
         ResolvedAsset resolved;
-        resolved.asset_id = asset.id;
-        resolved.type = asset.type;
+        resolved.asset_id = ref.id;
+        const std::string tag = (ref.kind == media::AssetKind::Audio) ? "audio" : 
+                        (ref.kind == media::AssetKind::Video) ? "video" : "image";
+        resolved.type = tag;
 
-        AssetType media_type = AssetType::IMAGE;
-        if (asset.type == "audio") media_type = AssetType::AUDIO;
-        else if (asset.type == "font") media_type = AssetType::FONT;
+        media::AssetType media_type = media::AssetType::IMAGE;
+        if (ref.kind == media::AssetKind::Audio) media_type = media::AssetType::AUDIO;
+        else if (ref.kind == media::AssetKind::Font) media_type = media::AssetType::FONT;
+        else if (ref.kind == media::AssetKind::Video) media_type = media::AssetType::VIDEO;
 
-        auto path = resolve_path(asset.path, media_type);
+        auto path = resolve_path(ref.source, media_type);
         if (path) {
             resolved.absolute_path = *path;
             resolved.exists = true;
+        } else {
+            resolved.absolute_path = ref.source;
+            resolved.exists = false;
         }
-        table[asset.id] = resolved;
+        table[ref.id] = std::move(resolved);
     }
     return table;
 }
