@@ -24,12 +24,23 @@
 
 #include "tachyon/renderer2d/effects/generators/light_leak_types.h"
 
+#include "tachyon/scene/camera_builder.h"
+#include "tachyon/scene/light_builder.h"
+#include "tachyon/scene/text_builder.h"
+#include "tachyon/scene/effect_builder.h"
+#include "tachyon/scene/transform3d_builder.h"
+
 namespace tachyon::scene {
 using renderer2d::LightLeakPreset;
 
 class LayerBuilder;
 class CompositionBuilder;
 class SceneBuilder;
+class CameraBuilder;
+class LightBuilder;
+class TextBuilder;
+class EffectBuilder;
+class Transform3DBuilder;
 
 namespace expr {
 
@@ -118,24 +129,29 @@ public:
  */
 class TACHYON_API LayerBuilder {
     friend class MaterialBuilder;
+    friend class CameraBuilder;
+    friend class LightBuilder;
+    friend class TextBuilder;
+    friend class EffectBuilder;
+    friend class Transform3DBuilder;
     LayerSpec spec_;
 public:
     explicit LayerBuilder(std::string id);
     explicit LayerBuilder(LayerSpec spec);
 
+    // Basic properties
     LayerBuilder& type(LayerType t);
     LayerBuilder& solid(std::string name);
     LayerBuilder& image(std::string path);
     LayerBuilder& mesh(std::string path);
     LayerBuilder& preset(std::string name);
-    LayerBuilder& text(std::string t);
     LayerBuilder& asset_id(std::string id);
     LayerBuilder& mesh_deform_id(std::optional<std::string> id);
     LayerBuilder& clear_mesh_deform_id();
-    LayerBuilder& font(std::string f);
-    LayerBuilder& font_size(double sz);
     LayerBuilder& in(double t);
     LayerBuilder& out(double t);
+
+    // 2D Transform
     LayerBuilder& opacity(double v);
     LayerBuilder& opacity(const AnimatedScalarSpec& anim_spec);
     LayerBuilder& position(double x, double y);
@@ -144,17 +160,6 @@ public:
     LayerBuilder& fill_color(const ColorSpec& c);
     LayerBuilder& stroke_color(const ColorSpec& c);
     LayerBuilder& stroke_width(double w);
-    LayerBuilder& subtitle_path(std::string path);
-    LayerBuilder& text_animation_preset(const std::string& id);
-    LayerBuilder& transition_in_preset(const std::string& id, double duration = 0.4);
-    LayerBuilder& transition_out_preset(const std::string& id, double duration = 0.4);
-    LayerBuilder& animation2d_preset(const std::string& id, double duration = 1.0, double delay = 0.0);
-    LayerBuilder& animation3d_preset(const std::string& id, double duration = 1.0, double delay = 0.0, double intensity = 1.0);
-    LayerBuilder& modifier3d(const std::string& id, const std::map<std::string, double>& scalars = {});
-    LayerBuilder& effect(const std::string& id, const std::map<std::string, double>& scalars = {}, const std::map<std::string, std::string>& strings = {});
-
-    // Cinematic & Effects
-    LayerBuilder& light_leak(LightLeakPreset preset, float progress, float speed = 1.0f, int seed = 3);
 
     // AE-like Ergonomics
     LayerBuilder& null_layer();
@@ -164,39 +169,22 @@ public:
     LayerBuilder& parent(std::string parent_id);
     LayerBuilder& motion_blur(bool enabled = true);
 
-    // Text animators and highlights
-    LayerBuilder& text_animator(const TextAnimatorSpec& anim);
-    LayerBuilder& text_animators(std::vector<TextAnimatorSpec> anims);
-    LayerBuilder& text_highlight(const TextHighlightSpec& hl);
-    LayerBuilder& text_highlights(std::vector<TextHighlightSpec> hls);
-
-    // 3D Transform
-    LayerBuilder& position3d(double x, double y, double z);
-    LayerBuilder& rotation3d(double x, double y, double z);
-    LayerBuilder& scale3d(double x, double y, double z);
-    LayerBuilder& is_3d(bool v);
-
-    // Camera specific
-    LayerBuilder& camera_type(std::string t);
-    LayerBuilder& camera_poi(double x, double y, double z);
-    LayerBuilder& camera_zoom(double z);
-
-    // Light specific
-    LayerBuilder& light_type(std::string t);
-    LayerBuilder& light_color(const ColorSpec& c);
-    LayerBuilder& light_intensity(double i);
-    LayerBuilder& casts_shadows(bool v);
-    LayerBuilder& shadow_radius(double r);
-
-    // 3D Material extensions
-    LayerBuilder& emission_strength(double v);
-
     // Transitions
     TransitionBuilder enter();
     TransitionBuilder exit();
 
     // Material (for 3D)
     MaterialBuilder material();
+
+    // Domain-specific builders
+    CameraBuilder camera();
+    LightBuilder light();
+    TextBuilder text();
+    EffectBuilder effects();
+    Transform3DBuilder transform3d();
+
+    // 2D Animation preset
+    LayerBuilder& animation2d_preset(const std::string& id, double duration = 1.0, double delay = 0.0);
 
     [[nodiscard]] LayerSpec build() &&;
     [[nodiscard]] LayerSpec build() const &;

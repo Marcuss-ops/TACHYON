@@ -1,10 +1,9 @@
 #pragma once
 
+#include "tachyon/background_registry.h"
 #include <string>
 #include <vector>
 #include <string_view>
-#include <memory>
-#include <map>
 
 namespace tachyon {
 
@@ -30,10 +29,15 @@ struct BackgroundCatalogEntry {
     std::string description;
 };
 
+/**
+ * @brief Thin compatibility wrapper over BackgroundRegistry.
+ * @deprecated Use BackgroundRegistry directly for new code.
+ */
 class BackgroundCatalog {
 public:
     static BackgroundCatalog& instance();
 
+    // Delegates to BackgroundRegistry::register_descriptor()
     void register_entry(const BackgroundCatalogEntry& entry);
     void unregister_entry(std::string_view id);
 
@@ -54,8 +58,8 @@ public:
         std::vector<std::string> missing_factories;
         std::vector<std::string> duplicate_ids;
         [[nodiscard]] bool ok() const {
-            return missing_catalog_entries.empty() && 
-                   missing_factories.empty() && 
+            return missing_catalog_entries.empty() &&
+                   missing_factories.empty() &&
                    duplicate_ids.empty();
         }
     };
@@ -64,8 +68,6 @@ public:
 private:
     BackgroundCatalog();
     ~BackgroundCatalog();
-    struct Impl;
-    std::unique_ptr<Impl> m_impl;
 };
 
 } // namespace tachyon

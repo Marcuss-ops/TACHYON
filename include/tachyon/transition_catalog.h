@@ -1,86 +1,43 @@
 #pragma once
 
-#include <string>
+#include "tachyon/core/transition/transition_descriptor.h"
+#include "tachyon/transition_registry.h"
 #include <vector>
+#include <string>
 #include <string_view>
-#include <memory>
-#include <map>
-#include "tachyon/core/spec/schema/common/common_spec.h"
 
 namespace tachyon {
 
-enum class TransitionStatus {
-    Stable,
-    Experimental,
-    Deprecated
-};
-
-struct CatalogTransitionDescriptor {
-    std::string id;
-    std::string runtime_id;
-    std::string name;
-    std::string description;
-    TransitionKind kind{TransitionKind::None};
-    TransitionStatus status{TransitionStatus::Stable};
-    std::vector<std::string> authoring_aliases;
-    bool visible_in_catalog{true};
-    bool requires_runtime_function{true};
-};
-
-struct TransitionCatalogEntry {
-    std::string id;
-    std::vector<std::string> authoring_aliases;
-    std::string runtime_id;
-    std::string kind; // "fade", "slide", "zoom", "flip", "blur", etc.
-    bool supports_direction{false};
-    bool supports_duration{true};
-    TransitionStatus status{TransitionStatus::Stable};
-    std::string description;
-};
-
-std::vector<CatalogTransitionDescriptor> get_builtin_transition_descriptors();
-
 class TransitionCatalog {
 public:
-    static TransitionCatalog& instance();
+    // Returns catalog entries derived from the canonical TransitionRegistry.
+    // The catalog no longer stores its own entries; it reflects the registry state.
+    static std::vector<TransitionCatalogEntry> entries() {
+        return TransitionRegistry::instance().catalog_entries();
+    }
 
-    void register_entry(const TransitionCatalogEntry& entry);
-    void unregister_entry(std::string_view id);
+    // Backward-compatible helpers
+    static std::vector<std::string> list_all_ids() {
+        return TransitionRegistry::instance().list_all_ids();
+    }
 
-    const TransitionCatalogEntry* find(std::string_view id) const;
-    const TransitionCatalogEntry* find_by_alias(std::string_view alias) const;
-    const TransitionCatalogEntry* find_by_runtime_id(std::string_view runtime_id) const;
+    static const TransitionDescriptor* find(std::string_view id) {
+        return TransitionRegistry::instance().resolve(id);
+    }
 
-    std::size_t count() const;
-    const TransitionCatalogEntry* get_by_index(std::size_t index) const;
-
-    std::vector<std::string> list_all_ids() const;
-    std::vector<TransitionCatalogEntry> list_all() const;
-
-    // Validation
-    bool validate_preset_transition(std::string_view preset_id, std::string& error) const;
-    bool validate_runtime_transition(std::string_view runtime_id, std::string& error) const;
-
-    // Audit
-    struct AuditResult {
-        std::vector<std::string> missing_runtime;
-        std::vector<std::string> missing_catalog_entries;
-        std::vector<std::string> duplicate_aliases;
-        std::vector<std::string> duplicate_runtime_ids;
-        [[nodiscard]] bool ok() const {
-            return missing_runtime.empty() && 
-                   missing_catalog_entries.empty() && 
-                   duplicate_aliases.empty() && 
-                   duplicate_runtime_ids.empty();
+    // Validation: check if a preset/runtime transition exists in the registry
+    static bool validate_preset_transition(std::string_view preset_id, std::string& error) {
+        const auto* desc = TransitionRegistry::instance().resolve(preset_id);
+        if (!desc) {
+            error = "Preset transition '" + std::string(preset_id) + "' not found in registry.";
+            return false;
         }
-    };
-    AuditResult audit() const;
+        return true;
+    }
 
-private:
-    TransitionCatalog();
-    ~TransitionCatalog();
-    struct Impl;
-    std::unique_ptr<Impl> m_impl;
+    static bool validate_runtime_transition(std::string_view runtime_id, std::string& error) {
+        return validate_preset_transition(runtime_id, error);
+    }
 };
 
 } // namespace tachyon

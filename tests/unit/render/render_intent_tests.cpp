@@ -1,9 +1,5 @@
+#include "render_intent_test_utils.h"
 #include "tachyon/core/policy/engine_policy.h"
-#include "tachyon/render/intent_builder.h"
-
-#include <iostream>
-#include <memory>
-#include <string>
 
 namespace {
 
@@ -16,30 +12,6 @@ void check_true(bool condition, const std::string& message) {
     }
 }
 
-struct NullResourceProvider final : tachyon::render::IResourceProvider {
-    std::string last_mesh_id;
-    std::string last_texture_id;
-    std::string last_deform_id;
-
-    std::shared_ptr<::tachyon::media::MeshAsset> get_mesh(const std::string& id) override {
-        (void)id;
-        last_mesh_id = id;
-        return nullptr;
-    }
-
-    std::shared_ptr<std::uint8_t[]> get_texture_rgba(const std::string& id) override {
-        (void)id;
-        last_texture_id = id;
-        return nullptr;
-    }
-
-    std::shared_ptr<const tachyon::render::IDeformMesh> get_deform(const std::string& id) override {
-        (void)id;
-        last_deform_id = id;
-        return nullptr;
-    }
-};
-
 } // namespace
 
 bool run_render_intent_tests() {
@@ -50,18 +22,14 @@ bool run_render_intent_tests() {
     const auto saved_policy = EngineValidationPolicy::instance();
     EngineValidationPolicy::instance().set_all_strict(true);
 
-    scene::EvaluatedCompositionState state;
-    state.composition_id = "comp";
+    auto state = test::make_test_composition("comp");
     state.environment_map_id = std::string("env/sky.hdr");
 
-    scene::EvaluatedLayerState layer;
-    layer.id = "layer_1";
-    layer.active = true;
-    layer.visible = true;
+    auto layer = test::make_test_layer("layer_1");
     layer.mesh_asset_id = std::string("quad");
     state.layers.push_back(layer);
 
-    NullResourceProvider provider;
+    test::FakeResourceProvider provider;
     const auto result = render::build_render_intent(state, &provider);
 
     check_true(provider.last_mesh_id == "primitive:quad", "primitive quad should normalize to primitive:quad");
@@ -79,9 +47,7 @@ bool run_render_intent_tests() {
 
     {
         scene::EvaluatedCompositionState deform_state = state;
-        scene::EvaluatedLayerState deform_layer = layer;
-        deform_layer.id = "layer_2";
-        deform_layer.mesh_asset_id.reset();
+        auto deform_layer = test::make_test_layer("layer_2");
         deform_layer.mesh_deform_id = std::string("deform/layer_2");
         deform_state.layers = {deform_layer};
 
@@ -98,10 +64,7 @@ bool run_render_intent_tests() {
 
     {
         scene::EvaluatedCompositionState fallback_state = state;
-        scene::EvaluatedLayerState fallback_layer = layer;
-        fallback_layer.id = "layer_3";
-        fallback_layer.mesh_asset_id.reset();
-        fallback_layer.mesh_deform_id.reset();
+        auto fallback_layer = test::make_test_layer("layer_3");
         fallback_state.layers = {fallback_layer};
 
         provider.last_deform_id.clear();

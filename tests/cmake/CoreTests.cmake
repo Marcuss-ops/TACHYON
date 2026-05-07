@@ -7,6 +7,7 @@ add_executable(TachyonTests
     unit/core/math_tests.cpp
     unit/core/property_tests.cpp
     unit/core/expression_tests.cpp
+    unit/core/animation/property_sampler_tests.cpp
     unit/core/camera/camera_shake_tests.cpp
     unit/core/properties/bezier_interpolator_tests.cpp
     unit/timeline/camera_cuts_tests.cpp

@@ -4,6 +4,7 @@ set(TachyonRenderer2DEffectsSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/color/chromatic_aberration.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/color/color_effects.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_registry.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_resolver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_blur_table.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_color_table.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_transition_table.cpp

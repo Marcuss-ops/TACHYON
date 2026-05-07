@@ -1,102 +1,73 @@
 #pragma once
 
+#include "tachyon/core/transition/transition_descriptor.h"
 #include <memory>
-#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
-
-#include "tachyon/core/registry/typed_registry.h"
+#include <unordered_map>
+#include <stdexcept>
 
 namespace tachyon {
 
-namespace renderer2d {
-struct Color;
-class SurfaceRGBA;
-} // namespace renderer2d
-
 /**
- * TransitionSpec: pure specification for a transition.
- * Supports both state-level and pixel-level transitions.
+ * @brief Policy for handling duplicate registrations in the registry.
  */
-struct TransitionSpec {
-    // Pixel-level transition function (for surface blending)
-    using TransitionFn = renderer2d::Color(*)(float u, float v, float t,
-                                              const renderer2d::SurfaceRGBA& input,
-                                              const renderer2d::SurfaceRGBA* to_surface);
-
-    std::string id;
-    std::string name;
-    std::string description;
-
-    // Pixel-level transition (blends surfaces)
-    TransitionFn function{nullptr};
-
-    // State-level transition info (modifies layer properties)
-    enum class Type {
-        None,
-        Fade,   // Modify opacity
-        Slide,  // Modify position
-        Zoom,   // Modify scale
-        Flip,   // Modify rotation/scale
-        Blur    // Modify effects
-    };
-    Type state_type{Type::None};
-    // Backend declaration
-    enum class Backend {
-        CpuPixel,
-        Glsl,
-        StateOnly,
-        CompositePlan
-    };
-    Backend backend{Backend::CpuPixel};
-
-    std::string direction; // For slide: "up", "down", "left", "right"
-    std::string cpu_fn_name; // For lazy binding
-    std::string renderer_effect_id; // For GPU/Shader binding
+enum class RegistryDuplicatePolicy {
+    Reject,  ///< Throw an error on duplicate (debug/test)
+    Warn,    ///< Log a warning and keep the first registration (permissive production)
+    Replace  ///< Replace the existing entry with the new one
 };
 
 /**
- * Runtime registry for transitions.
- * Supports both state-level and pixel-level transitions.
+ * @brief Exception thrown when a duplicate is rejected.
+ */
+class RegistryError : public std::runtime_error {
+public:
+    explicit RegistryError(const std::string& msg) : std::runtime_error(msg) {}
+};
+
+/**
+ * Single unified registry for all transitions.
+ * Replaces TransitionDescriptorRegistry, old TransitionRegistry, and TransitionCatalog.
  */
 class TransitionRegistry {
 public:
     static TransitionRegistry& instance();
 
-    // Legacy direct registration path.
-    // Do not use for new transitions. New transitions must go through
-    // register_transition_descriptor().
-    void register_transition_legacy(const TransitionSpec& spec);
+    /// Set the duplicate handling policy
+    void set_duplicate_policy(RegistryDuplicatePolicy policy) { m_duplicate_policy = policy; }
+    RegistryDuplicatePolicy duplicate_policy() const { return m_duplicate_policy; }
 
-    // Runtime compatibility path used only by TransitionDescriptor registration.
-    // This keeps TransitionDescriptorRegistry as the canonical source of truth.
-    void register_transition_from_descriptor(const TransitionSpec& spec);
+    /// Register a transition descriptor (single source of truth)
+    void register_descriptor(const TransitionDescriptor& descriptor);
 
-    void unregister_transition(const std::string& id);
+    /// Find by canonical ID
+    const TransitionDescriptor* find_by_id(std::string_view id) const;
 
-    const TransitionSpec* find(const std::string& id) const;
-    std::size_t count() const;
-    const TransitionSpec* get_by_index(std::size_t index) const;
+    /// Find by alias (alternative ID)
+    const TransitionDescriptor* find_by_alias(std::string_view alias) const;
 
-    struct TransitionInfo {
-        std::string id;
-        std::string name;
-        std::string description;
-        bool has_pixel_function;
-        bool has_state_type;
-    };
+    /// Resolve by ID or alias (tries ID first, then alias)
+    const TransitionDescriptor* resolve(std::string_view id_or_alias) const;
 
-    std::vector<std::string> list_builtin_transition_ids() const;
-    std::vector<TransitionInfo> list_builtin_transitions() const;
+    /// Get catalog entries derived from registered descriptors
+    std::vector<TransitionCatalogEntry> catalog_entries() const;
 
-    // Named CPU implementation support (for lazy manifest binding)
-    void register_cpu_implementation(const std::string& name, TransitionSpec::TransitionFn fn);
-    TransitionSpec::TransitionFn find_cpu_implementation(const std::string& name) const;
+    /// List all registered descriptor IDs
+    std::vector<std::string> list_all_ids() const;
+
+    /// List all registered descriptors
+    std::vector<const TransitionDescriptor*> list_all() const;
+
+    /// Remove a registered transition by ID
+    void unregister_transition(std::string_view id);
 
 private:
     TransitionRegistry();
     ~TransitionRegistry();
+
+    RegistryDuplicatePolicy m_duplicate_policy{RegistryDuplicatePolicy::Warn}; ///< Default: warn on duplicates
     struct Impl;
     std::unique_ptr<Impl> m_impl;
 };

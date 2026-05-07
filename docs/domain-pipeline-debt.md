@@ -20,8 +20,7 @@ This document identifies architectural debt that prevents Tachyon's domains (Bac
 **Status**: ✅ SOLVED — Formalized in `docs/2d-3d-bridge.md`. 3D blocks are treated as producer surfaces for the 2D consumer. `IRayTracer` interface enforces the contract.
 
 ### 6. Duplicate Registry/Resolver Logic
-**Status**: 🔴 OPEN — Hardcoded `switch` statements still exist for some effects and transitions. Requires consolidation into `CompilationRegistry` and `EffectRegistry`.
-
+**Status**: 🔶 IN PROGRESS — `TransitionResolver` and `EffectResolver` created at `src/core/transition/transition_resolver.cpp` and `src/renderer2d/effects/effect_resolver.cpp`. Hardcoded `switch` statements being migrated to use centralized resolvers. `docs/00-project/feature-extension-rules.md` enforces strict guardrails on new visual features.
 ### 7. Direct `renderer3d` Header Leakage in 2D Pipeline
 **Status**: ✅ SOLVED (2026-05-06) — `composition_renderer.cpp` no longer includes `renderer3d/core/ray_tracer.h`. The fallback instantiation has been moved to `frame_executor.cpp` where it belongs.
 

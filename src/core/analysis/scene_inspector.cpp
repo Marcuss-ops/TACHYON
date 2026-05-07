@@ -111,34 +111,6 @@ bool has_text_motion(const TextAnimatorSpec& animator) {
         || p.reveal_value.has_value() || !p.reveal_keyframes.empty();
 }
 
-void add_legacy_preset_issue(
-    InspectionReport& report,
-    const InspectionOptions& options,
-    const std::string& code,
-    const std::string& path,
-    const std::string& field_name,
-    const std::string& replacement_name,
-    const std::string& legacy_value,
-    const std::string& canonical_value) {
-    if (legacy_value.empty()) {
-        return;
-    }
-
-    const bool canonical_present = !canonical_value.empty();
-    add_issue(
-        report,
-        InspectionSeverity::Warning,
-        code,
-        path + "." + field_name,
-        canonical_present
-            ? field_name + " is legacy authoring data and is ignored because " + replacement_name + " is set."
-            : field_name + " is legacy authoring data; use " + replacement_name + " instead.");
-
-    if (!canonical_present) {
-        add_info(report, options, code, path, "Layer uses " + field_name + ": " + legacy_value);
-    }
-}
-
 } // namespace
 
 InspectionReport inspect_scene(const SceneSpec& scene, const InspectionOptions& options) {
@@ -285,34 +257,6 @@ InspectionReport inspect_scene(const SceneSpec& scene, const InspectionOptions& 
             if (!layer.animation_out_preset.empty()) {
                 add_info(report, options, "layer.animation_out_preset", layer_path, "Layer uses out preset: " + layer.animation_out_preset);
             }
-
-            add_legacy_preset_issue(
-                report,
-                options,
-                "layer.in_preset",
-                layer_path,
-                "in_preset",
-                "animation_in_preset",
-                layer.in_preset,
-                layer.animation_in_preset);
-            add_legacy_preset_issue(
-                report,
-                options,
-                "layer.during_preset",
-                layer_path,
-                "during_preset",
-                "animation_during_preset",
-                layer.during_preset,
-                layer.animation_during_preset);
-            add_legacy_preset_issue(
-                report,
-                options,
-                "layer.out_preset",
-                layer_path,
-                "out_preset",
-                "animation_out_preset",
-                layer.out_preset,
-                layer.animation_out_preset);
 
             if (layer.transition_in.kind != TransitionKind::None || !layer.transition_in.transition_id.empty()) {
                 add_info(report, options, "layer.transition_in", layer_path, "Layer has an entrance transition.");

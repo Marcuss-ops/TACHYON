@@ -2,7 +2,6 @@
 
 #include "tachyon/core/registry/parameter_schema.h"
 #include "tachyon/core/spec/schema/common/common_spec.h"
-#include "tachyon/transition_registry.h"
 #include <string>
 #include <vector>
 #include <optional>
@@ -11,14 +10,43 @@
 
 namespace tachyon {
 
+namespace renderer2d {
+struct Color;
+class SurfaceRGBA;
+} // namespace renderer2d
+
+// Alias TransitionCategory to existing TransitionKind for logical categorization
+using TransitionCategory = TransitionKind;
+
 /**
- * @brief Canonical backend types for transitions.
+ * @brief Canonical runtime kind (backend type) for transitions.
+ * Matches former TransitionBackend.
  */
-enum class TransitionBackend {
+enum class TransitionRuntimeKind {
     StateOnly,    ///< Affects only layer properties (opacity, transform)
     CpuPixel,     ///< Pixel-level manipulation on CPU (SurfaceRGBA)
     Glsl,         ///< GPU-accelerated shader transition
     CompositePlan ///< Multi-layer complex orchestration
+};
+
+/**
+ * @brief CPU transition function signature (matches legacy TransitionSpec::TransitionFn)
+ */
+using CpuTransitionFn = renderer2d::Color(*)(float u, float v, float t,
+                                              const renderer2d::SurfaceRGBA& input,
+                                              const renderer2d::SurfaceRGBA* to_surface);
+
+/**
+ * @brief GLSL transition function, returns shader source string
+ */
+using GlslTransitionFn = std::string(*)(const std::unordered_map<std::string, registry::ParameterValue>& params);
+
+/**
+ * @brief Capabilities of a transition (which backends are supported)
+ */
+struct TransitionCapabilities {
+    bool supports_cpu{false};
+    bool supports_gpu{false};
 };
 
 /**
@@ -36,59 +64,43 @@ struct TransitionResolutionResult {
     Status status{Status::Ok};
     std::string error_message;
     
-    // The resolved implementation (if status == Ok)
-    TransitionSpec::TransitionFn function{nullptr};
-    std::string renderer_effect_id;
-    TransitionBackend backend{TransitionBackend::StateOnly};
+    // Resolved implementation
+    CpuTransitionFn cpu_function{nullptr};   ///< For CPU transitions
+    GlslTransitionFn glsl_function{nullptr}; ///< For GLSL transitions
+    TransitionRuntimeKind backend{TransitionRuntimeKind::StateOnly};
 };
 
 /**
- * @brief Unified descriptor for a Tachyon transition.
- * 
- * This is the SINGLE SOURCE OF TRUTH for a transition.
- * It links the preset (catalog), the implementation (backend), and the renderer.
+ * @brief Unified descriptor for a Tachyon transition (SINGLE SOURCE OF TRUTH)
  */
 struct TransitionDescriptor {
     std::string id;                  ///< Canonical ID (e.g. "tachyon.transition.crossfade")
-    std::string display_name;        ///< UI name
-    std::string description;
-    
-    TransitionKind kind;             ///< Logical kind (Fade, Slide, etc.)
-    TransitionBackend backend;       ///< Preferred backend
-    
-    std::string renderer_effect_id;  ///< ID used by the renderer (e.g. "crossfade")
-    registry::ParameterSchema schema; ///< Parameter validation schema
-    
-    bool supports_gpu{false};
-    bool supports_cpu{false};
-    
-    // Legacy implementation hooks (to be migrated)
-    std::string cpu_fn_name;
-    TransitionSpec::TransitionFn runtime_fn{nullptr};
-    
-    // Metadata
-    std::vector<std::string> tags;
-    std::string category;
-    double default_duration{1.0};
-    
-    std::string preview_thumb_path;
-    bool visible_in_catalog{true};
+    std::vector<std::string> aliases; ///< Alternative IDs/aliases for this transition
+
+    TransitionRuntimeKind runtime_kind; ///< Backend type
+    TransitionCategory category;       ///< Logical category (Fade, Slide, etc.)
+
+    registry::ParameterSchema params;   ///< Parameter validation schema (ParamSchema)
+    TransitionCapabilities capabilities; ///< Supported backends
+
+    CpuTransitionFn cpu_fn{nullptr};   ///< CPU implementation function
+    GlslTransitionFn glsl_fn{nullptr}; ///< GLSL shader function
+
+    std::string display_name;          ///< UI display name
+    std::string description;           ///< Human-readable description
 };
 
 /**
- * @brief Registry for TransitionDescriptors.
+ * @brief Catalog entry derived from TransitionDescriptor (read-only view for UI/catalog)
  */
-class TransitionDescriptorRegistry {
-public:
-    static TransitionDescriptorRegistry& instance();
-
-    void register_descriptor(const TransitionDescriptor& desc);
-    const TransitionDescriptor* find(const std::string& id) const;
-    std::vector<const TransitionDescriptor*> list_all() const;
-
-private:
-    TransitionDescriptorRegistry() = default;
-    std::unordered_map<std::string, TransitionDescriptor> m_descriptors;
+struct TransitionCatalogEntry {
+    std::string id;
+    std::string display_name;
+    std::string description;
+    TransitionCategory category;
+    std::vector<std::string> aliases;
+    bool supports_cpu;
+    bool supports_gpu;
 };
 
 /**
@@ -101,7 +113,7 @@ TACHYON_API TransitionResolutionResult resolve_transition(const std::string& id)
  */
 TACHYON_API void register_transition_descriptor(const TransitionDescriptor& desc);
 
-    /**
+/**
  * @brief Registers all built-in transitions.
  */
 TACHYON_API void register_builtin_transitions();

@@ -5,6 +5,7 @@ Documentation for the 2D layer stack, compositing pipeline, masks, effects, text
 Use the shared behavior model for the domain split:
 
 - [Behavior Model](../10-architecture/behavior-model.md)
+- [Graphics Extension Contract](../10-architecture/graphics-extension-contract.md)
 
 ## Topics
 

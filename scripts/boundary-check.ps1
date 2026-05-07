@@ -158,6 +158,41 @@ if ($violations6.Count -eq 0) {
     $totalErrors++
 }
 
+# Rule 7: Core scene/spec must not depend on renderer2d headers
+Write-Host ""
+Write-Host "Rule 7: core scene/spec must not include tachyon/renderer2d headers" -ForegroundColor Yellow
+$violations7 = @()
+$files7 = @()
+$files7 += Get-ChildItem -Path "include/tachyon/core/scene" -Recurse -Filter "*.h" -ErrorAction SilentlyContinue
+$files7 += Get-ChildItem -Path "include/tachyon/core/spec" -Recurse -Filter "*.h" -ErrorAction SilentlyContinue
+$files7 += Get-ChildItem -Path "src/core/scene" -Recurse -Filter "*.cpp" -ErrorAction SilentlyContinue
+$files7 += Get-ChildItem -Path "src/core/spec" -Recurse -Filter "*.cpp" -ErrorAction SilentlyContinue
+foreach ($file in $files7) {
+    $content = Get-Content $file.FullName -Raw
+    if ($content -match '^\s*#include\s+["<]tachyon/renderer2d/') {
+        $violations7 += $file.FullName
+    }
+}
+if ($violations7.Count -eq 0) {
+    Write-Check "core scene/spec includes tachyon/renderer2d" "PASS"
+} else {
+    Write-Check "core scene/spec includes tachyon/renderer2d" "FAIL" "$($violations7.Count) files violate"
+    $violations7 | ForEach-Object { Write-Host "    $_" -ForegroundColor Red }
+    $totalErrors++
+}
+
+# Rule 8: TachyonScene library must not link to TachyonRenderer2D
+Write-Host ""
+Write-Host "Rule 8: TachyonScene must not link to TachyonRenderer2D" -ForegroundColor Yellow
+$cmakeFile = "cmake/tachyon/TachyonSceneTargets.cmake"
+$cmakeContent = Get-Content $cmakeFile -Raw
+if ($cmakeContent -match 'TachyonRenderer2D') {
+    Write-Check "TachyonScene links to TachyonRenderer2D" "FAIL" "Found TachyonRenderer2D in $cmakeFile"
+    $totalErrors++
+} else {
+    Write-Check "TachyonScene links to TachyonRenderer2D" "PASS"
+}
+
 Write-Host ""
 Write-Host "======================================" -ForegroundColor Cyan
 

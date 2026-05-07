@@ -107,14 +107,14 @@ TextMeshBuildResult build_text_extrusion_mesh(
     auto mesh = std::make_shared<::tachyon::media::MeshAsset>();
     mesh->path = "inline:text3d:" + layer.id;
 
-    const float depth = std::max(0.01f, layer.extrusion_depth);
-    const float bevel = std::max(0.0f, layer.bevel_size);
+    const float depth = std::max(0.01f, layer.three_d.has_value() ? static_cast<float>(layer.three_d->extrusion_depth) : 0.0f);
+    const float bevel = std::max(0.0f, layer.three_d.has_value() ? static_cast<float>(layer.three_d->bevel_size) : 0.0f);
     std::uint64_t seed = ::tachyon::scene::stable_string_hash(layer.id);
     seed = ::tachyon::scene::hash_combine(seed, ::tachyon::scene::stable_string_hash(layer.text_content));
     seed = ::tachyon::scene::hash_combine(seed, ::tachyon::scene::stable_string_hash(layer.font_id.empty() ? std::string("default") : layer.font_id));
     seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(layer.font_size * 1000.0f)));
-    seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(layer.extrusion_depth * 1000.0f)));
-    seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(layer.bevel_size * 1000.0f)));
+    seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(depth * 1000.0f)));
+    seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(bevel * 1000.0f)));
     seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(layer.text_alignment));
     seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(box.width));
     seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(box.height));

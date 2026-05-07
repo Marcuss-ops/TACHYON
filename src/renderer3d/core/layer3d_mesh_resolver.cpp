@@ -33,8 +33,10 @@ std::unique_ptr<media::MeshAsset> Layer3DMeshResolver::resolve(const LayerSpec& 
             std::cerr << "Text layer missing text content\n";
             return nullptr;
         }
-        // Use text mesh builder with extrusion depth from layer.extrude or default
-        float depth = layer.extrude.has_value() ? static_cast<float>(layer.extrude.value()) : 10.0f;
+        // Use text mesh builder with extrusion depth from layer.three_d or default
+        float depth = (layer.three_d.has_value() && layer.three_d->extrusion_depth > 0.0) 
+            ? static_cast<float>(layer.three_d->extrusion_depth) 
+            : 10.0f;
         if (depth <= 0.0f) {
             depth = 10.0f; // Default extrude depth
         }

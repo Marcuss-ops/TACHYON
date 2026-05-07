@@ -68,6 +68,9 @@ Explicit caching layer to avoid redundant rendering. Configurable memory budgets
 ### Output Pipeline
 Direct encoding to video formats (via FFmpeg) without intermediate frame dumps.
 
+### Graphics Extension Contract
+New graphics features must flow through a neutral contract instead of teaching the renderer to understand authoring data directly. See [Graphics Extension Contract](graphics-extension-contract.md).
+
 ## Deterministic Guarantees
 
 1. **Scene parsing** — Same JSON/C++ produces same internal scene graph

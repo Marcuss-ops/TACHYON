@@ -2,6 +2,7 @@
 set(TachyonCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/animation_primitives.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/animation/property_interpolation.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/animation/property_sampler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/options.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/math/matrix4x4.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/math/quaternion.cpp
@@ -19,5 +20,6 @@ set(TachyonCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/io/path_resolution.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/schema/common/common_spec.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/transition/transition_descriptor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/transition/transition_resolver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/transition/transition_manifest.cpp
 )

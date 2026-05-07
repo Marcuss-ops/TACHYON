@@ -2,6 +2,7 @@
 #include "tachyon/renderer2d/evaluated_composition/utilities/composition_utils.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
+#include "tachyon/renderer2d/effects/effect_resolver.h"
 
 #include <chrono>
 
@@ -63,8 +64,6 @@ ResolutionResult<SurfaceRGBA> apply_effect_pipeline(
     ResolutionResult<SurfaceRGBA> result;
     result.value = input;
     
-    auto& registry = EffectRegistry::instance();
-
     for (const auto& effect : effects) {
         if (!effect.enabled || effect.type.empty()) {
             continue;
@@ -73,9 +72,18 @@ ResolutionResult<SurfaceRGBA> apply_effect_pipeline(
         EffectParams params = effect_params_from_spec(effect, working_profile);
         params.strings.emplace("layer_id", current_layer_id);
         
-        // Registry-driven auxiliary surface resolution
-        if (const auto* descriptor = registry.find(effect.type)) {
-            for (const auto& req : descriptor->aux_requirements) {
+        // Use centralized effect resolver
+        auto resolved = resolve_effect(effect);
+        
+        if (!resolved.valid) {
+            result.diagnostics.add_error("EFFECT_RESOLUTION_FAILED", resolved.error_message);
+            result.value = std::nullopt;
+            return result;
+        }
+        
+        // Resolve auxiliary surfaces from descriptor requirements
+        if (resolved.descriptor) {
+            for (const auto& req : resolved.descriptor->aux_requirements) {
                 std::string target_layer_id;
                 
                 // 1. Try to get ID from defined source_key in spec

@@ -5,6 +5,7 @@ Documentation for scene specification, layers, properties, animation, templates,
 Use the shared behavior model for the common mental frame:
 
 - [Behavior Model](../10-architecture/behavior-model.md)
+- [Graphics Extension Contract](../10-architecture/graphics-extension-contract.md)
 
 ## Topics
 

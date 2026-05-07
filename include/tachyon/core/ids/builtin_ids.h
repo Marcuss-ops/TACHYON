@@ -32,6 +32,7 @@ inline constexpr std::string_view zoom_blur = "tachyon.transition.zoom_blur";
 inline constexpr std::string_view zoom_in = "tachyon.transition.zoom_in";
 inline constexpr std::string_view directional_blur_wipe = "tachyon.transition.directional_blur_wipe";
 inline constexpr std::string_view light_leak = "tachyon.transition.light_leak";
+inline constexpr std::string_view flash = "tachyon.transition.flash";
 inline constexpr std::string_view light_leak_solar = "tachyon.transition.light_leak_solar";
 inline constexpr std::string_view light_leak_nebula = "tachyon.transition.light_leak_nebula";
 inline constexpr std::string_view light_leak_sunset = "tachyon.transition.light_leak_sunset";

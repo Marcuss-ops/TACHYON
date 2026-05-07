@@ -182,13 +182,6 @@ struct LayerSpec {
     std::optional<double> duration;
 
     // Animation presets (inject transform/opacity keyframes via PresetCompiler)
-    // Legacy fields - do not use in new code
-    std::string in_preset;
-    std::string during_preset;
-    std::string out_preset;
-    float in_duration{0.4f};
-    float out_duration{0.4f};
-
     // Modern animation preset names
     std::string animation_in_preset;
     std::string animation_during_preset;
@@ -216,11 +209,6 @@ struct LayerSpec {
     std::optional<ProceduralSpec> procedural;
     std::optional<ParticleSpec> particle_spec;
     
-    // 3D Geometry Shorthand
-    double extrusion_depth{0.0};
-    double bevel_size{0.0};
-    double hole_bevel_ratio{0.0};
-
     std::optional<ThreeDSpec> three_d;
 };
 
