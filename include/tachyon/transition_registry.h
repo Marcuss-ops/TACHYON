@@ -53,6 +53,7 @@ struct TransitionSpec {
 
     std::string direction; // For slide: "up", "down", "left", "right"
     std::string cpu_fn_name; // For lazy binding
+    std::string renderer_effect_id; // For GPU/Shader binding
 };
 
 /**

@@ -14,6 +14,7 @@ namespace tachyon {
 
 /// Represents the type of background specified
 enum class BackgroundType {
+    None,       // No background
     Color,      // Background is a color (hex, rgb, etc.)
     Component,  // Background references a component by ID
     Asset,      // Background references an asset by name/path
