@@ -3,7 +3,7 @@
 #include "tachyon/core/spec/cpp_scene_loader.h"
 #include "tachyon/runtime/compiler/scene_compiler.h"
 #include "tachyon/output/frame_output_sink.h"
-#include "tachyon/renderer2d/effects/effect_host.h"
+#include "tachyon/renderer2d/effects/core/effect_host.h"
 #include "tachyon/renderer2d/effects/effect_utils.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/execution/session/render_session.h"
@@ -269,7 +269,6 @@ std::optional<std::reference_wrapper<const CachedSceneStill>> render_scene_still
             LayerSpec layer;
             layer.id = "image";
             layer.type = LayerType::Image;
-            layer.type_string.clear();
             layer.asset_id = asset.id;
             layer.width = 1920;
             layer.height = 1080;

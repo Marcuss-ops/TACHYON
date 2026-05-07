@@ -13,7 +13,6 @@ LayerSpec make_base_layer(
     l.id          = id;
     l.name        = name;
     l.type        = layer_type_from_string(type);
-    l.type_string.clear();
     l.enabled     = true;
     l.visible     = true;
     l.start_time  = p.in_point;
@@ -37,10 +36,9 @@ void apply_layer_transitions(
     const std::string& enter_id,
     double enter_duration,
     const std::string& exit_id,
-    double exit_duration) {
+    double exit_duration,
+    const TransitionPresetRegistry& registry) {
     
-    auto& registry = TransitionPresetRegistry::instance();
-
     if (!enter_id.empty()) {
         registry::ParameterBag bag;
         bag.set("id", enter_id);

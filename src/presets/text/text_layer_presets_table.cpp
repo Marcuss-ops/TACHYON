@@ -31,7 +31,6 @@ void TextLayerPresetRegistry::load_builtins() {
             l.id = "text_title";
             l.name = "Title";
             l.type = LayerType::Text;
-            l.type_string.clear();
             l.enabled = true;
             l.visible = true;
             l.in_point = p.in;
@@ -60,7 +59,6 @@ void TextLayerPresetRegistry::load_builtins() {
             l.id = "text_subtitle";
             l.name = "Subtitle";
             l.type = LayerType::Text;
-            l.type_string.clear();
             l.enabled = true;
             l.visible = true;
             l.in_point = p.in;
@@ -89,7 +87,6 @@ void TextLayerPresetRegistry::load_builtins() {
             l.id = "text_tech";
             l.name = "Label";
             l.type = LayerType::Text;
-            l.type_string.clear();
             l.enabled = true;
             l.visible = true;
             l.in_point = p.in;

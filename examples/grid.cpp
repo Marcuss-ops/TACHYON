@@ -13,7 +13,6 @@ tachyon::LayerSpec make_solid_layer(
     tachyon::LayerSpec layer;
     layer.id = id;
     layer.name = id;
-    layer.type_string = "solid";
     layer.type = tachyon::LayerType::Solid;
     layer.enabled = true;
     layer.visible = true;
@@ -29,7 +28,6 @@ tachyon::LayerSpec make_grid_layer(int width, int height) {
     tachyon::LayerSpec layer;
     layer.id = "grid_bg";
     layer.name = "Grid Background";
-    layer.type_string = "procedural";
     layer.type = tachyon::LayerType::Procedural;
     layer.enabled = true;
     layer.visible = true;
@@ -58,7 +56,6 @@ tachyon::LayerSpec make_vignette_layer(int width, int height) {
     tachyon::LayerSpec layer;
     layer.id = "vignette";
     layer.name = "Vignette";
-    layer.type_string = "procedural";
     layer.type = tachyon::LayerType::Procedural;
     layer.enabled = true;
     layer.visible = true;
@@ -97,7 +94,6 @@ tachyon::LayerSpec make_text_layer(
     tachyon::LayerSpec layer;
     layer.id = id;
     layer.name = id;
-    layer.type_string = "text";
     layer.type = tachyon::LayerType::Text;
     layer.enabled = true;
     layer.visible = true;

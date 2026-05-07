@@ -12,7 +12,8 @@ std::optional<SceneSpec> PresetSceneResolver::instantiate(const std::string& pre
     }
 
     // 2. Fallback to Background Preset Registry (Legacy/Single Layer)
-    auto bg = BackgroundPresetRegistry::instance().create(preset_id, {});
+    presets::BackgroundPresetRegistry bg_registry;
+    auto bg = bg_registry.create(preset_id, {});
     if (bg) {
         return ::tachyon::scene::Composition("preset_render")
             .size(1280, 720)
@@ -29,7 +30,8 @@ std::optional<SceneSpec> PresetSceneResolver::instantiate(const std::string& pre
 
 bool PresetSceneResolver::exists(const std::string& preset_id) {
     if (ScenePresetRegistry::instance().find(preset_id)) return true;
-    if (BackgroundPresetRegistry::instance().find(preset_id)) return true;
+    presets::BackgroundPresetRegistry bg_registry;
+    if (bg_registry.find(preset_id)) return true;
     return false;
 }
 

@@ -2,6 +2,7 @@
 
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 #include "tachyon/presets/preset_base.h"
+#include "tachyon/presets/transition/transition_preset_registry.h"
 
 namespace tachyon::presets {
 
@@ -24,7 +25,8 @@ void apply_layer_transitions(
     const std::string& enter_id,
     double enter_duration,
     const std::string& exit_id,
-    double exit_duration
+    double exit_duration,
+    const TransitionPresetRegistry& registry
 );
 
 } // namespace tachyon::presets

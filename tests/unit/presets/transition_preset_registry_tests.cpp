@@ -9,7 +9,7 @@ bool run_transition_preset_registry_tests() {
 
     std::cout << "Running TransitionPresetRegistry tests..." << std::endl;
 
-    auto& preset_registry = TransitionPresetRegistry::instance();
+    TransitionPresetRegistry preset_registry;
 
     {
         auto ids = preset_registry.list_ids();

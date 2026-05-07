@@ -9,7 +9,8 @@ bool run_background_preset_registry_tests() {
 
     std::cout << "Running BackgroundPresetRegistry tests..." << std::endl;
 
-    const auto ids = BackgroundPresetRegistry::instance().list_ids();
+    BackgroundPresetRegistry registry;
+    const auto ids = registry.list_ids();
     assert(ids.size() >= 3); // galaxy_premium, dark_tech_grid, cinematic_aura
 
     tachyon::registry::ParameterBag params;
@@ -18,7 +19,7 @@ bool run_background_preset_registry_tests() {
     params.set("duration", 2.0);
 
     for (const auto& id : ids) {
-        auto bg = BackgroundPresetRegistry::instance().create(id, params);
+        auto bg = registry.create(id, params);
         assert(bg.has_value());
         assert(!bg->id.empty());
         assert(bg->preset_id == id);
@@ -26,11 +27,11 @@ bool run_background_preset_registry_tests() {
         assert(bg->type != tachyon::LayerType::NullLayer);
     }
 
-    auto bg = BackgroundPresetRegistry::instance().create("tachyon.backgroundpreset.galaxy_premium", params);
+    auto bg = registry.create("tachyon.backgroundpreset.galaxy_premium", params);
     assert(bg.has_value());
     assert(!bg->id.empty());
 
-    auto missing = BackgroundPresetRegistry::instance().create("tachyon.backgroundpreset.nonexistent", params);
+    auto missing = registry.create("tachyon.backgroundpreset.nonexistent", params);
     assert(!missing.has_value());
 
     std::cout << "BackgroundPresetRegistry tests passed!" << std::endl;

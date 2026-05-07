@@ -21,8 +21,8 @@ void check_true(bool condition, const std::string& message) {
 bool run_background_catalog_alignment_tests() {
     g_failures = 0;
 
-    auto& registry = tachyon::BackgroundRegistry::instance();
-    auto& preset_registry = tachyon::presets::BackgroundPresetRegistry::instance();
+    tachyon::BackgroundRegistry registry;
+    tachyon::presets::BackgroundPresetRegistry preset_registry;
 
     // Test 1: Registry has entries with valid IDs
     {

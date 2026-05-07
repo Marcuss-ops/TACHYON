@@ -9,14 +9,9 @@ struct BackgroundRegistry::Impl {
     std::unordered_map<std::string, std::string> alias_to_id;
 };
 
-BackgroundRegistry& BackgroundRegistry::instance() {
-    static BackgroundRegistry registry;
-    return registry;
-}
-
 BackgroundRegistry::BackgroundRegistry() : m_impl(std::make_unique<Impl>()) {
     // Register built-in backgrounds on first initialization
-    register_builtin_background_descriptors();
+    register_builtin_background_descriptors(*this);
 }
 
 BackgroundRegistry::~BackgroundRegistry() = default;

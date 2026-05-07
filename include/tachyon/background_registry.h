@@ -15,7 +15,8 @@ namespace tachyon {
  */
 class BackgroundRegistry {
 public:
-    static BackgroundRegistry& instance();
+    BackgroundRegistry();
+    ~BackgroundRegistry();
 
     /// Register a background descriptor
     void register_descriptor(const BackgroundDescriptor& descriptor);
@@ -39,9 +40,6 @@ public:
     void unregister_background(std::string_view id);
 
 private:
-    BackgroundRegistry();
-    ~BackgroundRegistry();
-
     struct Impl;
     std::unique_ptr<Impl> m_impl;
 };

@@ -146,10 +146,11 @@ LayerBuilder& LayerBuilder::motion_blur(bool enabled) {
 }
 
 LayerBuilder& LayerBuilder::animation2d_preset(const std::string& id, double duration, double delay) {
+    presets::Animation2DPresetRegistry registry;
     registry::ParameterBag bag;
     bag.set("duration", duration);
     bag.set("delay", delay);
-    presets::Animation2DPresetRegistry::instance().apply(id, spec_, bag);
+    registry.apply(id, spec_, bag);
     return *this;
 }
 

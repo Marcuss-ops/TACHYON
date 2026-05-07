@@ -12,7 +12,7 @@ bool run_background_resolver_tests() {
     std::cout << "Running BackgroundResolver tests..." << std::endl;
 
     // Warm up the preset registry so Preset-type tests work.
-    BackgroundPresetRegistry::instance();
+    presets::BackgroundPresetRegistry registry;
 
     // 1. Color → single Solid layer
     {

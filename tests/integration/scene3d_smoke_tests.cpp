@@ -138,7 +138,6 @@ bool run_scene3d_smoke_tests() {
         check_true(mesh_layer.type == tachyon::LayerType::Shape, "Third layer should be Shape");
         check_true(mesh_layer.is_3d, "Mesh should be 3D");
         check_true(mesh_layer.asset_id == "test_cube", "Mesh asset_id should be 'test_cube'");
-        check_true(mesh_layer.type_string == "mesh", "Mesh type should be 'mesh'");
         
         std::cout << "  Scene building: PASS\n";
     }

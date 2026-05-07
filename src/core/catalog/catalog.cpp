@@ -148,7 +148,8 @@ void TachyonCatalog::register_transition_assets() {
         transition.duration_seconds = 0.8; // Fallback default
 
         // Override from Registry if available (The Source of Truth)
-        if (const auto* reg_spec = presets::TransitionPresetRegistry::instance().find(transition.id)) {
+        presets::TransitionPresetRegistry preset_reg;
+        if (const auto* reg_spec = preset_reg.find(transition.id)) {
             transition.name = reg_spec->metadata.display_name;
             transition.description = reg_spec->metadata.description;
             
@@ -161,13 +162,14 @@ void TachyonCatalog::register_transition_assets() {
     }
 
     // 2. Add from Registry (Modern Manifest Source of Truth)
-    for (const auto& id : presets::TransitionPresetRegistry::instance().list_ids()) {
+    presets::TransitionPresetRegistry preset_reg;
+    for (const auto& id : preset_reg.list_ids()) {
         // Skip if already added from catalog.txt
         if (std::find_if(m_transitions.begin(), m_transitions.end(), [&](const auto& e) { return e.id == id; }) != m_transitions.end()) {
             continue;
         }
 
-        if (const auto* spec = presets::TransitionPresetRegistry::instance().find(id)) {
+        if (const auto* spec = preset_reg.find(id)) {
             auto default_spec = spec->factory({});
 
             CatalogTransitionEntry transition;

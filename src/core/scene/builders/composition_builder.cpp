@@ -38,7 +38,8 @@ CompositionBuilder& CompositionBuilder::background_preset(const std::string& id,
     bag.set("width", static_cast<int>(spec_.width));
     bag.set("height", static_cast<int>(spec_.height));
     bag.set("duration", duration);
-    if (auto bg_layer = presets::BackgroundPresetRegistry::instance().create(id, bag)) {
+    presets::BackgroundPresetRegistry registry;
+    if (auto bg_layer = registry.create(id, bag)) {
         spec_.layers.insert(spec_.layers.begin(), std::move(*bg_layer));
     }
     return *this;

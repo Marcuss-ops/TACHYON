@@ -17,11 +17,13 @@ static registry::ParameterBag to_bag(const TransitionParams& p) {
 }
 
 LayerTransitionSpec build_transition_enter(const TransitionParams& p) {
-    return TransitionPresetRegistry::instance().create(p.id, to_bag(p));
+    TransitionPresetRegistry registry;
+    return registry.create(p.id, to_bag(p));
 }
 
 LayerTransitionSpec build_transition_exit(const TransitionParams& p) {
-    return TransitionPresetRegistry::instance().create(p.id, to_bag(p));
+    TransitionPresetRegistry registry;
+    return registry.create(p.id, to_bag(p));
 }
 
 void apply_transitions(LayerSpec& layer,

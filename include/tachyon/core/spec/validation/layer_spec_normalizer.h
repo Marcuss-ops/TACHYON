@@ -19,7 +19,6 @@ struct NormalizedLayerView {
     std::string_view asset_reference;
     std::string_view preset_reference;
     std::string_view precomp_reference;
-    bool legacy_type_string_used{false};
 };
 
 struct NormalizedCompositionView {

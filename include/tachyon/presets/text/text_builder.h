@@ -39,7 +39,6 @@ public:
         spec_.id = std::move(id);
         spec_.name = "Text Layer";
         spec_.type = ::tachyon::LayerType::Text;
-        spec_.type_string.clear();
         spec_.enabled = true;
         spec_.visible = true;
         spec_.text_content = std::move(content);

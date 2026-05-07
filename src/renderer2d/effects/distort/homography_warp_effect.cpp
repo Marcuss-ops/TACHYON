@@ -92,15 +92,8 @@ void HomographyWarpEffect::render(
     // Read homography matrix (3x3 = 9 values)
     std::array<float, 9> H;
     for (int i = 0; i < 9; ++i) {
-        // Support both old "h0" and new "h" keys for compatibility
-        std::string key_new = "h" + std::to_string(i);
-        std::string key_old = "h0" + std::to_string(i);
-        
-        if (params.scalars.count(key_new)) {
-             H[i] = params.scalars.at(key_new);
-        } else {
-             H[i] = get_scalar(params, key_old.c_str(), (i % 4 == 0) ? 1.0f : 0.0f);
-        }
+        std::string key = "h" + std::to_string(i);
+        H[i] = get_scalar(params, key.c_str(), (i % 4 == 0) ? 1.0f : 0.0f);
     }
     
     // Invert the homography for inverse warp
