@@ -5,68 +5,55 @@ namespace tachyon::presets {
 
 namespace {
 
-LayerTransitionSpec make_transition_spec(const registry::ParameterBag& p, TransitionKind kind, const std::string& transition_id) {
-    return TransitionPresetRegistry::build_spec_from_params(p, kind, transition_id);
-}
-
-void register_glsl(TransitionPresetRegistry& registry,
-                   std::string id,
-                   std::string name,
-                   std::string description,
-                   TransitionKind kind,
-                   std::string transition_id) {
-    registry.register_spec({
-        id,
-        {
-            id, name, std::move(description), "transition", {"glsl", "cinematic"},
-            1, registry::Stability::Stable,
-            {{"image", "video", "solid"}, {"gpu"}}
-        },
-        {},
-        [kind, transition_id = std::move(transition_id)](const registry::ParameterBag& p) {
-            return make_transition_spec(p, kind, transition_id);
-        }
-    });
+void register_builtin(
+    const std::string& id,
+    const std::string& name,
+    TransitionKind kind,
+    TransitionBackend backend,
+    const std::string& renderer_effect_id,
+    const std::vector<std::string>& tags = {"cinematic"}) 
+{
+    TransitionDescriptor desc;
+    desc.id = id;
+    desc.display_name = name;
+    desc.description = name + " transition effect";
+    desc.kind = kind;
+    desc.backend = backend;
+    desc.renderer_effect_id = renderer_effect_id;
+    desc.tags = tags;
+    desc.category = "transition";
+    desc.supports_gpu = (backend == TransitionBackend::Glsl);
+    desc.supports_cpu = (backend == TransitionBackend::CpuPixel || backend == TransitionBackend::StateOnly);
+    
+    register_transition_descriptor(desc);
 }
 
 } // namespace
 
 void TransitionPresetRegistry::load_builtins() {
-    register_spec({
-        "tachyon.transition.none",
-        {"tachyon.transition.none", "None", "No transition effect", "transition", {"utility"}, 1, registry::Stability::Stable, {{"all"}, {}}},
-        {},
-        [](const registry::ParameterBag&) {
-            LayerTransitionSpec spec;
-            spec.type = "tachyon.transition.none";
-            spec.transition_id = "tachyon.transition.none";
-            spec.kind = TransitionKind::None;
-            return spec;
-        }
-    });
+    // Utility
+    register_builtin("tachyon.transition.none", "None", TransitionKind::None, TransitionBackend::StateOnly, "none", {"utility"});
 
     // Canonical presets backed by verified library assets
-    register_glsl(*this, "tachyon.transition.crossfade", "Crossfade", "Simple crossfade transition", TransitionKind::Fade, "tachyon.transition.crossfade");
-    // ... (other basic ones remain for now) ...
-    register_glsl(*this, "tachyon.transition.slide_up", "Slide Up", "Vertical slide transition", TransitionKind::Slide, "tachyon.transition.slide_up");
-    register_glsl(*this, "tachyon.transition.swipe_left", "Swipe Left", "Swipe left reveal transition", TransitionKind::Wipe, "tachyon.transition.swipe_left");
-    register_glsl(*this, "tachyon.transition.fade_to_black", "Fade to Black", "Crossfade through black", TransitionKind::Fade, "tachyon.transition.fade_to_black");
-    register_glsl(*this, "tachyon.transition.wipe_linear", "Wipe Linear", "Simple left-to-right wipe", TransitionKind::Wipe, "tachyon.transition.wipe_linear");
-    register_glsl(*this, "tachyon.transition.wipe_angular", "Wipe Angular", "Angular wipe around center", TransitionKind::Wipe, "tachyon.transition.wipe_angular");
-    register_glsl(*this, "tachyon.transition.push_left", "Push Left", "Push image to the left", TransitionKind::Slide, "tachyon.transition.push_left");
-    register_glsl(*this, "tachyon.transition.slide_easing", "Slide Easing", "Slide with easing", TransitionKind::Slide, "tachyon.transition.slide_easing");
-    register_glsl(*this, "tachyon.transition.zoom_in", "Zoom In", "Zoom into target", TransitionKind::Zoom, "tachyon.transition.zoom_in");
-    register_glsl(*this, "tachyon.transition.zoom_blur", "Zoom Blur", "Zoom with motion blur", TransitionKind::Zoom, "tachyon.transition.zoom_blur");
-    register_glsl(*this, "tachyon.transition.spin", "Spin", "Spin rotation", TransitionKind::Flip, "tachyon.transition.spin");
-    register_glsl(*this, "tachyon.transition.circle_iris", "Circle Iris", "Circular iris opener", TransitionKind::Wipe, "tachyon.transition.circle_iris");
-    register_glsl(*this, "tachyon.transition.pixelate", "Pixelate", "Pixelation transition", TransitionKind::Custom, "tachyon.transition.pixelate");
-    register_glsl(*this, "tachyon.transition.glitch_slice", "Glitch Slice", "Glitchy slice effect", TransitionKind::Custom, "tachyon.transition.glitch_slice");
-    register_glsl(*this, "tachyon.transition.rgb_split", "RGB Split", "Color channel split", TransitionKind::Custom, "tachyon.transition.rgb_split");
-    register_glsl(*this, "tachyon.transition.luma_dissolve", "Luma Dissolve", "Luminance-based dissolve", TransitionKind::Dissolve, "tachyon.transition.luma_dissolve");
-    register_glsl(*this, "tachyon.transition.directional_blur_wipe", "Directional Blur Wipe", "Blur wipe with direction", TransitionKind::Wipe, "tachyon.transition.directional_blur_wipe");
-    register_glsl(*this, "tachyon.transition.kaleidoscope", "Kaleidoscope", "Dynamic kaleidoscope transition", TransitionKind::Custom, "tachyon.transition.kaleidoscope");
-    register_glsl(*this, "tachyon.transition.ripple", "Ripple", "Water ripple transition", TransitionKind::Custom, "tachyon.transition.ripple");
-
+    register_builtin("tachyon.transition.crossfade", "Crossfade", TransitionKind::Fade, TransitionBackend::Glsl, "crossfade");
+    register_builtin("tachyon.transition.slide_up", "Slide Up", TransitionKind::Slide, TransitionBackend::Glsl, "slide_up");
+    register_builtin("tachyon.transition.swipe_left", "Swipe Left", TransitionKind::Wipe, TransitionBackend::Glsl, "swipe_left");
+    register_builtin("tachyon.transition.fade_to_black", "Fade to Black", TransitionKind::Fade, TransitionBackend::Glsl, "fade_to_black");
+    register_builtin("tachyon.transition.wipe_linear", "Wipe Linear", TransitionKind::Wipe, TransitionBackend::Glsl, "wipe_linear");
+    register_builtin("tachyon.transition.wipe_angular", "Wipe Angular", TransitionKind::Wipe, TransitionBackend::Glsl, "wipe_angular");
+    register_builtin("tachyon.transition.push_left", "Push Left", TransitionKind::Slide, TransitionBackend::Glsl, "push_left");
+    register_builtin("tachyon.transition.slide_easing", "Slide Easing", TransitionKind::Slide, TransitionBackend::Glsl, "slide_easing");
+    register_builtin("tachyon.transition.zoom_in", "Zoom In", TransitionKind::Zoom, TransitionBackend::Glsl, "zoom_in");
+    register_builtin("tachyon.transition.zoom_blur", "Zoom Blur", TransitionKind::Zoom, TransitionBackend::Glsl, "zoom_blur");
+    register_builtin("tachyon.transition.spin", "Spin", TransitionKind::Flip, TransitionBackend::Glsl, "spin");
+    register_builtin("tachyon.transition.circle_iris", "Circle Iris", TransitionKind::Wipe, TransitionBackend::Glsl, "circle_iris");
+    register_builtin("tachyon.transition.pixelate", "Pixelate", TransitionKind::Custom, TransitionBackend::Glsl, "pixelate");
+    register_builtin("tachyon.transition.glitch_slice", "Glitch Slice", TransitionKind::Custom, TransitionBackend::Glsl, "glitch_slice");
+    register_builtin("tachyon.transition.rgb_split", "RGB Split", TransitionKind::Custom, TransitionBackend::Glsl, "rgb_split");
+    register_builtin("tachyon.transition.luma_dissolve", "Luma Dissolve", TransitionKind::Dissolve, TransitionBackend::Glsl, "luma_dissolve");
+    register_builtin("tachyon.transition.directional_blur_wipe", "Directional Blur Wipe", TransitionKind::Wipe, TransitionBackend::Glsl, "directional_blur_wipe");
+    register_builtin("tachyon.transition.kaleidoscope", "Kaleidoscope", TransitionKind::Custom, TransitionBackend::Glsl, "kaleidoscope");
+    register_builtin("tachyon.transition.ripple", "Ripple", TransitionKind::Custom, TransitionBackend::Glsl, "ripple");
 }
 
 } // namespace tachyon::presets

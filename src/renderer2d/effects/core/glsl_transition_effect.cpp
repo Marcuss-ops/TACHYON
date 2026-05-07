@@ -7,6 +7,7 @@
 #include "tachyon/transition_registry.h"
 #include "tachyon/core/transition/transition_descriptor.h"
 #include "tachyon/core/animation/easing.h"
+#include "tachyon/core/policy/engine_policy.h"
 
 #include <algorithm>
 #include <cmath>
@@ -60,19 +61,16 @@ void init_builtin_transitions() {
 SurfaceRGBA GlslTransitionEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
     const float t = transition_progress(params);
 
-    const TransitionSpec* transition_spec = nullptr;
+    TransitionResolutionResult resolution;
     const auto transition_it = params.strings.find("transition_id");
     if (transition_it != params.strings.end()) {
         const std::string& tid = transition_it->second;
-        transition_spec = TransitionRegistry::instance().find(tid);
+        resolution = resolve_transition(tid);
 
-        if (transition_spec == nullptr) {
-            std::cerr << "WARNING: Transition ID '" << tid << "' not found in registry. Falling back to crossfade.\n";
+        if (resolution.status != TransitionResolutionResult::Status::Ok) {
+            std::cerr << "WARNING: Transition resolution failed for '" << tid << "': " << resolution.error_message << "\n";
             
-            const auto strict_it = params.scalars.find("strict_transition_resolution");
-            const bool strict = (strict_it != params.scalars.end() && strict_it->second > 0.5f);
-            
-            if (strict) {
+            if (EngineValidationPolicy::instance().strict_transitions) {
                 SurfaceRGBA error_out(input.width(), input.height());
                 error_out.set_profile(input.profile());
                 error_out.clear(Color{1.0f, 0.0f, 1.0f, 1.0f}); // Diagnostic Magenta
@@ -106,8 +104,8 @@ SurfaceRGBA GlslTransitionEffect::apply(const SurfaceRGBA& input, const EffectPa
             const float v = (static_cast<float>(y) + 0.5f) / height;
 
             Color out;
-            if (transition_spec != nullptr && transition_spec->function != nullptr) {
-                out = transition_spec->function(u, v, t, input, to_surface);
+            if (resolution.status == TransitionResolutionResult::Status::Ok && resolution.function != nullptr) {
+                out = resolution.function(u, v, t, input, to_surface);
             } else {
                 out = lerp_surface_color(input, to_surface, u, v, t);
             }

@@ -24,6 +24,7 @@
 #include "tachyon/renderer2d/raster/tile_grid.h"
 #include "tachyon/output/frame_aov.h"
 #include "tachyon/transition_registry.h"
+#include "tachyon/core/transition/transition_descriptor.h"
 #include "tachyon/renderer2d/effects/core/glsl_transition_effect.h"
 #include "tachyon/core/animation/easing.h"
 #include "tachyon/renderer2d/evaluated_composition/rendering/pipeline/scene3d_bridge.h"
@@ -59,14 +60,9 @@ void record_timing(
     });
 }
 
-const TransitionSpec* resolve_transition_spec(const LayerTransitionSpec& transition) {
-    if (!transition.transition_id.empty()) {
-        return TransitionRegistry::instance().find(transition.transition_id);
-    }
-    if (transition.type != "none") {
-        return TransitionRegistry::instance().find(transition.type);
-    }
-    return nullptr;
+TransitionResolutionResult resolve_layer_transition(const LayerTransitionSpec& transition) {
+    const std::string& id = !transition.transition_id.empty() ? transition.transition_id : transition.type;
+    return resolve_transition(id);
 }
 
 std::optional<double> compute_transition_progress(double elapsed_seconds, double duration_seconds) {
@@ -555,7 +551,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 bool in_transition = false;
                 bool out_transition = false;
                 double transition_t = 0.0;
-                const TransitionSpec* transition_spec = nullptr;
+                TransitionResolutionResult resolution;
 
                 // Check transition_in
                 if (!layer.transition_in.transition_id.empty() || layer.transition_in.type != "none") {
@@ -566,7 +562,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     if (progress.has_value()) {
                         in_transition = true;
                         transition_t = animation::apply_easing(*progress, layer.transition_in.easing, {});
-                        transition_spec = resolve_transition_spec(layer.transition_in);
+                        resolution = resolve_layer_transition(layer.transition_in);
                     }
                 }
 
@@ -578,13 +574,13 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     if (progress.has_value()) {
                         out_transition = true;
                         transition_t = animation::apply_easing(*progress, layer.transition_out.easing, {});
-                        transition_spec = resolve_transition_spec(layer.transition_out);
+                        resolution = resolve_layer_transition(layer.transition_out);
                     }
                 }
 
                 // Apply transition if active
                 if ((in_transition || out_transition) && transition_t > 0.0) {
-                    if (transition_spec != nullptr && transition_spec->function != nullptr) {
+                    if (resolution.status == TransitionResolutionResult::Status::Ok && resolution.function != nullptr) {
                         // Use registry transition (pixel-level)
                         SurfaceRGBA transition_input(layer_surface->width(), layer_surface->height());
                         SurfaceRGBA transition_to(layer_surface->width(), layer_surface->height());
@@ -613,7 +609,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                                 // Use global UVs relative to the full layer, not the tile
                                 const float u = (static_cast<float>(x) + offset_x + 0.5f) / layer_w;
                                 const float v = (static_cast<float>(y) + offset_y + 0.5f) / layer_h;
-                                const Color out = transition_spec->function(u, v, static_cast<float>(transition_t), transition_input, &transition_to);
+                                const Color out = resolution.function(u, v, static_cast<float>(transition_t), transition_input, &transition_to);
                                 transition_result.set_pixel(x, static_cast<std::uint32_t>(y), out);
                             }
                         }
