@@ -32,7 +32,10 @@ struct TransitionPresetSpec {
  */
 class TransitionPresetRegistry : public registry::TypedRegistry<TransitionPresetSpec> {
 public:
-    static TransitionPresetRegistry& instance();
+    TransitionPresetRegistry() {
+        load_builtins();
+    }
+    ~TransitionPresetRegistry() = default;
 
     /**
      * @brief Creates a transition spec instance from the specified preset.
@@ -51,10 +54,6 @@ public:
         const registry::ParameterBag& p, 
         TransitionKind kind, 
         const std::string& transition_id);
-
-private:
-    TransitionPresetRegistry() = default;
-    ~TransitionPresetRegistry() = default;
 };
 
 } // namespace tachyon::presets

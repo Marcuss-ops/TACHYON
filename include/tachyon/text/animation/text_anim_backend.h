@@ -46,10 +46,19 @@ public:
     
     virtual std::string name() const = 0;
     
+    virtual bool supports_property(const TextAnimPropertyDescriptor* desc) const {
+        (void)desc;
+        return true;
+    }
+    
     static std::unique_ptr<TextAnimExecutionBackend> create_scalar();
     static std::unique_ptr<TextAnimExecutionBackend> create_avx2();
     static std::unique_ptr<TextAnimExecutionBackend> create_openmp();
     static std::unique_ptr<TextAnimExecutionBackend> create_best();
+    
+    static bool is_avx2_available();
+    static bool is_openmp_available();
+    static void verify_backend_support(const ResolvedTextAnimPlan& plan);
 };
 
 class ScalarTextAnimBackend : public TextAnimExecutionBackend {
@@ -96,6 +105,10 @@ public:
         const std::string& stagger_mode) override;
     
     std::string name() const override { return "avx2"; }
+    
+    bool supports_property(const TextAnimPropertyDescriptor* desc) const override {
+        return desc && desc->supports_simd;
+    }
 };
 #endif
 

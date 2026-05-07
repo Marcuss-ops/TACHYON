@@ -41,9 +41,6 @@ PresetCompiler::resolve_layer_animation_presets(const LayerSpec& layer) const {
     resolved.during_id = layer.animation_during_preset;
     resolved.out_id = layer.animation_out_preset;
 
-    resolved.in_duration = static_cast<double>(layer.animation_in_duration);
-    resolved.out_duration = static_cast<double>(layer.animation_out_duration);
-
     return resolved;
 }
 

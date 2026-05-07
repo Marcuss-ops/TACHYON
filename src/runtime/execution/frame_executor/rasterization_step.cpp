@@ -1,5 +1,6 @@
 #include "tachyon/runtime/execution/rasterization_step.h"
 #include "tachyon/renderer2d/raster/draw_list_builder.h"
+#include "tachyon/renderer2d/effects/effect_registry.h"
 #include "tachyon/runtime/profiling/render_profiler.h"
 
 #ifdef TACHYON_ENABLE_3D
@@ -50,7 +51,8 @@ RasterizationResult RasterizationStep::execute(
     RasterizedFrame2D rasterized;
     {
         profiling::ProfileScope raster_scope(profiler, profiling::ProfileEventType::Phase, "composition_raster", frame_number);
-        rasterized = render_evaluated_composition_2d(cached_comp, intent, plan, task, context.renderer2d);
+        renderer2d::EffectRegistry effect_reg;
+        rasterized = render_evaluated_composition_2d(cached_comp, intent, plan, task, context.renderer2d, effect_reg);
     }
 
     if (rasterized.surface) {

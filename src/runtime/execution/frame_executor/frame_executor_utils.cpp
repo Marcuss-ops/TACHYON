@@ -1,6 +1,7 @@
 #include "frame_executor_internal.h"
 #include "tachyon/runtime/execution/property_sampling.h"
 #include "tachyon/runtime/execution/rasterization_step.h"
+#include "tachyon/renderer2d/effects/effect_registry.h"
 #include "tachyon/render/intent_builder.h"
 #include "tachyon/renderer2d/resource/resource_provider.h"
 #include <algorithm>
@@ -65,7 +66,8 @@ std::shared_ptr<renderer2d::SurfaceRGBA> render_frame_at_time(
     if (cached_comp) {
         renderer2d::RendererResourceProvider provider(context.renderer2d);
         const auto intent_result = render::build_render_intent(*cached_comp, &provider);
-        RasterizedFrame2D rasterized = render_evaluated_composition_2d(*cached_comp, intent_result.intent, plan, temp_task, context.renderer2d);
+        renderer2d::EffectRegistry effect_reg;
+        RasterizedFrame2D rasterized = render_evaluated_composition_2d(*cached_comp, intent_result.intent, plan, temp_task, context.renderer2d, effect_reg);
         return rasterized.surface;
     }
     return nullptr;

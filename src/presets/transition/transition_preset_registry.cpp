@@ -22,11 +22,6 @@ LayerTransitionSpec make_noop_transition_from_params(const registry::ParameterBa
 
 } // namespace
 
-TransitionPresetRegistry& TransitionPresetRegistry::instance() {
-    static TransitionPresetRegistry registry;
-    return registry;
-}
-
 LayerTransitionSpec TransitionPresetRegistry::create(std::string_view id, const registry::ParameterBag& params) const {
     if (id.empty() || id == "none") {
         LayerTransitionSpec spec;

@@ -37,11 +37,9 @@ struct TextAnimPropertyDescriptor {
     bool supports_simd;
     bool supports_parallel;
     
-    using SampleFn = TextAnimPropertyValue(*)(const TextAnimatorPropertySpec&, float t);
     using ApplyToGlyphFn = void(*)(PositionedGlyph& glyph, const TextAnimatorPropertySpec& spec, float staggered_t, float coverage);
     using ApplyBatchFn = void(*)(std::span<PositionedGlyph> glyphs, const TextAnimatorPropertySpec& spec, std::span<float> staggered_ts, std::span<float> coverages);
     
-    SampleFn sample;
     ApplyToGlyphFn apply_to_glyph;
     ApplyBatchFn apply_batch;
 };
@@ -92,97 +90,6 @@ public:
     }
     
 private:
-    TextAnimPropertyRegistry() {
-        register_property({
-            TextAnimPropertyId::Position,
-            "position_offset",
-            true, true, true,
-            nullptr,
-            &apply_position,
-            &apply_batch_position
-        });
-        
-        register_property({
-            TextAnimPropertyId::Scale,
-            "scale",
-            true, true, true,
-            nullptr,
-            &apply_scale,
-            &apply_batch_scale
-        });
-        
-        register_property({
-            TextAnimPropertyId::Rotation,
-            "rotation",
-            true, false, true,
-            nullptr,
-            &apply_rotation,
-            &apply_batch_rotation
-        });
-        
-        register_property({
-            TextAnimPropertyId::Opacity,
-            "opacity",
-            true, true, true,
-            nullptr,
-            &apply_opacity,
-            &apply_batch_opacity
-        });
-        
-        register_property({
-            TextAnimPropertyId::Fill,
-            "fill_color",
-            true, false, true,
-            nullptr,
-            &apply_fill,
-            &apply_batch_fill
-        });
-        
-        register_property({
-            TextAnimPropertyId::Stroke,
-            "stroke_color",
-            true, false, true,
-            nullptr,
-            &apply_stroke,
-            &apply_batch_stroke
-        });
-        
-        register_property({
-            TextAnimPropertyId::StrokeWidth,
-            "stroke_width",
-            true, false, true,
-            nullptr,
-            &apply_stroke_width,
-            &apply_batch_stroke_width
-        });
-        
-        register_property({
-            TextAnimPropertyId::Blur,
-            "blur_radius",
-            true, false, true,
-            nullptr,
-            &apply_blur,
-            &apply_batch_blur
-        });
-        
-        register_property({
-            TextAnimPropertyId::Reveal,
-            "reveal",
-            true, false, true,
-            nullptr,
-            &apply_reveal,
-            &apply_batch_reveal
-        });
-        
-        register_property({
-            TextAnimPropertyId::Tracking,
-            "tracking_amount",
-            true, false, true,
-            nullptr,
-            &apply_tracking,
-            &apply_batch_tracking
-        });
-    }
     
     bool is_property_active(TextAnimPropertyId id, const TextAnimatorPropertySpec& spec) const {
         switch (id) {
@@ -358,6 +265,43 @@ private:
         return {lerp(a.r, b.r), lerp(a.g, b.g), lerp(a.b, b.b), lerp(a.a, b.a)};
     }
     
+    struct StaticPropertyEntry {
+        TextAnimPropertyId id;
+        const char* name;
+        bool supports_scalar;
+        bool supports_simd;
+        bool supports_parallel;
+        TextAnimPropertyDescriptor::ApplyToGlyphFn apply_to_glyph;
+        TextAnimPropertyDescriptor::ApplyBatchFn apply_batch;
+    };
+    
+    static constexpr StaticPropertyEntry kPropertyTable[] = {
+        {TextAnimPropertyId::Position, "position_offset", true, true, true, &apply_position, &apply_batch_position},
+        {TextAnimPropertyId::Scale, "scale", true, true, true, &apply_scale, &apply_batch_scale},
+        {TextAnimPropertyId::Rotation, "rotation", true, false, true, &apply_rotation, &apply_batch_rotation},
+        {TextAnimPropertyId::Opacity, "opacity", true, true, true, &apply_opacity, &apply_batch_opacity},
+        {TextAnimPropertyId::Fill, "fill_color", true, false, true, &apply_fill, &apply_batch_fill},
+        {TextAnimPropertyId::Stroke, "stroke_color", true, false, true, &apply_stroke, &apply_batch_stroke},
+        {TextAnimPropertyId::StrokeWidth, "stroke_width", true, false, true, &apply_stroke_width, &apply_batch_stroke_width},
+        {TextAnimPropertyId::Blur, "blur_radius", true, false, true, &apply_blur, &apply_batch_blur},
+        {TextAnimPropertyId::Reveal, "reveal", true, false, true, &apply_reveal, &apply_batch_reveal},
+        {TextAnimPropertyId::Tracking, "tracking_amount", true, false, true, &apply_tracking, &apply_batch_tracking},
+    };
+    
+    TextAnimPropertyRegistry() {
+        for (const auto& entry : kPropertyTable) {
+            register_property({
+                entry.id,
+                entry.name,
+                entry.supports_scalar,
+                entry.supports_simd,
+                entry.supports_parallel,
+                entry.apply_to_glyph,
+                entry.apply_batch
+            });
+        }
+    }
+
     std::vector<TextAnimPropertyDescriptor> properties_;
 };
 

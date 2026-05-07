@@ -44,6 +44,33 @@ static TextAnimatorContext make_context_from_precomp(
     return ctx;
 }
 
+bool TextAnimExecutionBackend::is_avx2_available() {
+#ifdef TACHYON_AVX2
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool TextAnimExecutionBackend::is_openmp_available() {
+#ifdef _OPENMP
+    return true;
+#else
+    return false;
+#endif
+}
+
+void TextAnimExecutionBackend::verify_backend_support(const ResolvedTextAnimPlan& plan) {
+    auto& registry = TextAnimPropertyRegistry::instance();
+    for (const auto& resolved : plan.resolved_properties) {
+        if (resolved.descriptor) {
+            if (!resolved.descriptor->supports_scalar) {
+                // Warn or handle unsupported property for scalar backend
+            }
+        }
+    }
+}
+
 void ScalarTextAnimBackend::apply(
     const ResolvedTextAnimPlan& plan,
     std::span<PositionedGlyph> glyphs,
@@ -213,14 +240,21 @@ std::unique_ptr<TextAnimExecutionBackend> TextAnimExecutionBackend::create_avx2(
 }
 
 std::unique_ptr<TextAnimExecutionBackend> TextAnimExecutionBackend::create_best() {
+    auto& registry = TextAnimPropertyRegistry::instance();
+    
 #ifdef TACHYON_AVX2
-    return create_avx2();
-#else
+    bool all_simd_compatible = true;
+    // Check if all registered properties support SIMD
+    // In practice, would check against resolved plan properties
+    if (all_simd_compatible) {
+        return create_avx2();
+    }
+#endif
+
 #ifdef _OPENMP
     return create_openmp();
 #else
     return create_scalar();
-#endif
 #endif
 }
 

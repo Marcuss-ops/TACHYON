@@ -2,15 +2,6 @@
 
 namespace tachyon::presets {
 
-Animation2DPresetRegistry& Animation2DPresetRegistry::instance() {
-    static Animation2DPresetRegistry registry;
-    return registry;
-}
-
-Animation2DPresetRegistry::Animation2DPresetRegistry() {
-    load_builtins();
-}
-
 void Animation2DPresetRegistry::register_spec(Animation2DPresetSpec spec) {
     registry_.register_spec(std::move(spec));
 }

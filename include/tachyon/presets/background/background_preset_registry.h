@@ -30,7 +30,10 @@ struct BackgroundPresetSpec {
  */
 class BackgroundPresetRegistry : public registry::TypedRegistry<BackgroundPresetSpec> {
 public:
-    static BackgroundPresetRegistry& instance();
+    BackgroundPresetRegistry() {
+        load_builtins();
+    }
+    ~BackgroundPresetRegistry() = default;
 
     /**
      * @brief Creates a background layer instance from the specified preset.
@@ -41,10 +44,6 @@ public:
      * @brief Loads all built-in background presets.
      */
     void load_builtins();
-
-private:
-    BackgroundPresetRegistry() = default;
-    ~BackgroundPresetRegistry() = default;
 };
 
 } // namespace tachyon::presets

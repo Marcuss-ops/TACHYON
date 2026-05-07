@@ -3,6 +3,7 @@
 #include "tachyon/runtime/profiling/render_profiler.h"
 #include "tachyon/renderer2d/raster/draw_list_builder.h"
 #include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"
+#include "tachyon/renderer2d/effects/effect_registry.h"
 #include "tachyon/render/intent_builder.h"
 #include "tachyon/renderer2d/resource/resource_provider.h"
 
@@ -102,7 +103,8 @@ std::optional<std::shared_ptr<renderer2d::Framebuffer>> MotionBlurSampler::sampl
         if (sub_comp) {
             renderer2d::RendererResourceProvider provider(thread_context.renderer2d);
             const auto intent_result = render::build_render_intent(*sub_comp, &provider);
-            RasterizedFrame2D rasterized = render_evaluated_composition_2d(*sub_comp, intent_result.intent, plan, task, thread_context.renderer2d);
+            renderer2d::EffectRegistry effect_reg;
+            RasterizedFrame2D rasterized = render_evaluated_composition_2d(*sub_comp, intent_result.intent, plan, task, thread_context.renderer2d, effect_reg);
             if (rasterized.surface) samples_surfaces[s] = rasterized.surface;
         }
     }

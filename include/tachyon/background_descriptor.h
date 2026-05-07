@@ -15,6 +15,15 @@ enum class BackgroundStatus {
 };
 
 /**
+ * @brief Status of a background (stable, experimental, deprecated).
+ */
+enum class BackgroundStatus {
+    Stable,
+    Experimental,
+    Deprecated
+};
+
+/**
  * @brief Logical kind of background.
  */
 enum class BackgroundKind {
@@ -50,6 +59,7 @@ struct BackgroundDescriptor {
     BackgroundKind kind;
     registry::ParameterSchema params;
     BackgroundCapabilities capabilities;
+    BackgroundStatus status{BackgroundStatus::Stable};
 
     BackgroundBuildFn build;
 

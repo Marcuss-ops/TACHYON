@@ -6,7 +6,7 @@
 
 namespace tachyon {
 
-bool run_fetch_fonts_command(const CliOptions& options, std::ostream& out, std::ostream& err) {
+bool run_fetch_fonts_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*/) {
     if (options.font_family.empty()) {
         err << "Error: --family is required for fetch-fonts command\n";
         return false;

@@ -25,7 +25,6 @@ LayerSpec make_shape_layer_base(const ShapeParams& p) {
     l.id          = "shape_layer";
     l.name        = "Shape";
     l.type        = LayerType::Shape;
-    l.type_string.clear();
     l.enabled     = true;
     l.visible     = true;
     l.start_time  = p.in_point;
