@@ -164,14 +164,20 @@ bool run_text_tests() {
 
         TextLayoutOptions layout_options;
         layout_options.tracking = 1.0f;
-        const TextLayoutResult layout = layout_text(font, "TA", style, box, TextAlignment::Left, layout_options);
-        const TextRasterSurface base_surface = rasterize_text_rgba(font, "TA", style, box, TextAlignment::Left, layout_options);
+        const TextLayoutResult layout = tachyon::text::layout_text(font, "TA", style, box, tachyon::text::TextAlignment::Left, layout_options);
+        const TextRasterSurface base_surface = tachyon::text::rasterize_text_rgba(font, "TA", style, box, tachyon::text::TextAlignment::Left, layout_options);
 
-        TextAnimationOptions animation;
+        tachyon::text::TextAnimationOptions animation;
         animation.enabled = true;
-        animation.per_glyph_opacity_drop = 1.0f;
-
-        const TextRasterSurface animated_surface = rasterize_text_rgba(font, "TA", style, box, TextAlignment::Left, layout_options, animation);
+        
+        tachyon::TextAnimatorSpec opacity_anim;
+        opacity_anim.selector.type = "all";
+        opacity_anim.properties.opacity_value = 0.0; // Hide everything
+        
+        std::vector<tachyon::TextAnimatorSpec> local_animators = {opacity_anim};
+        animation.animators = local_animators;
+ 
+        const TextRasterSurface animated_surface = tachyon::text::rasterize_text_rgba(font, "TA", style, box, tachyon::text::TextAlignment::Left, layout_options, animation);
 
         std::size_t base_opaque = 0;
         std::size_t animated_opaque = 0;

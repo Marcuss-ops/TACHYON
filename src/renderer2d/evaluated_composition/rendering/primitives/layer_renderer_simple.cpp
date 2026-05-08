@@ -179,7 +179,7 @@ public:
             const float time_seconds = static_cast<float>(layer.local_time_seconds);
             ::tachyon::text::TextAnimationOptions animation{};
             animation.time_seconds = time_seconds;
-            animation.animators = std::span<const ::tachyon::TextAnimatorSpec>(layer.text_animators.data(), layer.text_animators.size());
+            animation.animators = layer.text_animators;
             const auto paints = ::tachyon::text::resolve_glyph_paints(*font, layout, animation);
 
             ::tachyon::text::TextRasterSurface text_surface(surface->width(), surface->height());

@@ -37,12 +37,12 @@ bool run_motion_blur_tests() {
     }
 
     {
-        MotionBlurRenderer::MotionBlurConfig config;
+        MotionBlurConfig config;
         config.enabled = true;
         config.samples = 4;
         config.shutter_angle = 180.0;
         config.shutter_phase = 0.0;
-        config.weight_curve = MotionBlurRenderer::MotionBlurWeightCurve::kBox;
+        config.weight_curve = MotionBlurWeightCurve::kBox;
 
         MotionBlurRenderer renderer(config);
         check_true(renderer.is_enabled(), "motion blur enabled with samples > 1");
@@ -55,7 +55,7 @@ bool run_motion_blur_tests() {
     }
 
     {
-        MotionBlurRenderer::MotionBlurConfig config;
+        MotionBlurConfig config;
         config.enabled = true;
         config.samples = 1;
         MotionBlurRenderer renderer(config);
@@ -67,10 +67,10 @@ bool run_motion_blur_tests() {
     }
 
     {
-        MotionBlurRenderer::MotionBlurConfig config;
+        MotionBlurConfig config;
         config.enabled = true;
         config.samples = 8;
-        config.weight_curve = MotionBlurRenderer::MotionBlurWeightCurve::kBox;
+        config.weight_curve = MotionBlurWeightCurve::kBox;
         MotionBlurRenderer renderer(config);
 
         float w0 = renderer.evaluate_weight(0, 8);
@@ -82,10 +82,10 @@ bool run_motion_blur_tests() {
     }
 
     {
-        MotionBlurRenderer::MotionBlurConfig config;
+        MotionBlurConfig config;
         config.enabled = true;
         config.samples = 5;
-        config.weight_curve = MotionBlurRenderer::MotionBlurWeightCurve::kTriangle;
+        config.weight_curve = MotionBlurWeightCurve::kTriangle;
         MotionBlurRenderer renderer(config);
 
         float w0 = renderer.evaluate_weight(0, 5);
@@ -97,10 +97,10 @@ bool run_motion_blur_tests() {
     }
 
     {
-        MotionBlurRenderer::MotionBlurConfig config;
+        MotionBlurConfig config;
         config.enabled = true;
         config.samples = 5;
-        config.weight_curve = MotionBlurRenderer::MotionBlurWeightCurve::kGaussian;
+        config.weight_curve = MotionBlurWeightCurve::kGaussian;
         MotionBlurRenderer renderer(config);
 
         float w0 = renderer.evaluate_weight(0, 5);
@@ -151,7 +151,7 @@ bool run_motion_blur_tests() {
     }
 
     {
-        MotionBlurRenderer::MotionBlurConfig config;
+        MotionBlurConfig config;
         config.enabled = true;
         config.samples = 4;
         config.shutter_angle = 180.0;

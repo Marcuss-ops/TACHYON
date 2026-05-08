@@ -4,6 +4,7 @@
 #include "tachyon/core/registry/typed_registry.h"
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 #include "tachyon/core/registry/parameter_schema.h"
+#include "tachyon/presets/background/background_manifest.h"
 #include <string>
 #include <string_view>
 #include <functional>
@@ -26,12 +27,16 @@ struct BackgroundPresetSpec {
 
 /**
  * @brief Registry for background presets.
- * Consolidated using TypedRegistry to reduce boilerplate.
+ * Uses BackgroundManifest as the single canonical source.
  */
 class BackgroundPresetRegistry : public registry::TypedRegistry<BackgroundPresetSpec> {
 public:
-    BackgroundPresetRegistry() {
-        load_builtins();
+    /**
+     * @brief Construct with BackgroundManifest to load presets from the canonical source.
+     * @param manifest Reference to the BackgroundManifest that generates preset specs.
+     */
+    explicit BackgroundPresetRegistry(const BackgroundManifest& manifest) {
+        load_from_manifest(manifest);
     }
     ~BackgroundPresetRegistry() = default;
 
@@ -40,10 +45,8 @@ public:
      */
     std::optional<LayerSpec> create(std::string_view id, const registry::ParameterBag& params) const;
 
-    /**
-     * @brief Loads all built-in background presets.
-     */
-    void load_builtins();
+private:
+    void load_from_manifest(const BackgroundManifest& manifest);
 };
 
 } // namespace tachyon::presets

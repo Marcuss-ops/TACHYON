@@ -29,15 +29,9 @@ void ensure_native_render_registries() {
     });
 }
 
-const CompiledComposition* find_compiled_composition(const CompiledScene& scene, const std::string& composition_id) {
+const CompiledComposition* find_compiled_composition(const CompiledScene& scene, [[maybe_unused]] const std::string& composition_id) {
     if (scene.compositions.empty()) {
         return nullptr;
-    }
-
-    if (!composition_id.empty()) {
-        // Compiled scenes do not preserve authoring composition IDs.
-        // Keep the canonical behavior simple and use the first compiled composition.
-        (void)composition_id;
     }
 
     return &scene.compositions.front();
@@ -181,7 +175,7 @@ RenderSessionResult NativeRenderer::render(
 RenderSessionResult NativeRenderer::render(
     const SceneSpec& scene,
     const RenderJob& job,
-    TransitionRegistry& transition_registry,
+    [[maybe_unused]] TransitionRegistry& transition_registry,
     const NativeRenderOptions& options) {
     ensure_native_render_registries();
     RenderJob resolved_job = job;
@@ -209,7 +203,7 @@ RenderSessionResult NativeRenderer::render(
 RenderSessionResult NativeRenderer::render(
     const CompiledScene& scene,
     const RenderJob& job,
-    TransitionRegistry& transition_registry,
+    [[maybe_unused]] TransitionRegistry& transition_registry,
     const NativeRenderOptions& options) {
     ensure_native_render_registries();
     RenderSession session;

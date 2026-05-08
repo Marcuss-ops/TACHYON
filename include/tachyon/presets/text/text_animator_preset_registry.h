@@ -5,6 +5,7 @@
 #include "tachyon/core/registry/registry_metadata.h"
 #include "tachyon/core/registry/typed_registry.h"
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
+#include "tachyon/presets/text/text_manifest.h"
 #include <string>
 #include <string_view>
 #include <functional>
@@ -19,7 +20,7 @@ namespace tachyon::presets {
  */
 struct TextAnimatorPresetSpec {
     using FactoryFn = std::function<std::vector<TextAnimatorSpec>(const registry::ParameterBag&)>;
-
+    
     std::string id;
     registry::RegistryMetadata metadata;
     registry::ParameterSchema schema;
@@ -28,24 +29,26 @@ struct TextAnimatorPresetSpec {
 
 /**
  * @brief Registry for text animator presets.
+ * Uses TextManifest as the single canonical source.
  */
-class TextAnimatorPresetRegistry {
+class TextAnimatorPresetRegistry : public registry::TypedRegistry<TextAnimatorPresetSpec> {
 public:
-    static TextAnimatorPresetRegistry& instance();
-
-    void register_spec(TextAnimatorPresetSpec spec);
-    const TextAnimatorPresetSpec* find(std::string_view id) const;
-
-    std::vector<TextAnimatorSpec> create(std::string_view id, const registry::ParameterBag& params) const;
-
-    std::vector<std::string> list_ids() const;
-    void load_builtins();
-
-private:
-    TextAnimatorPresetRegistry();
+    /**
+     * @brief Construct with TextManifest to load presets from the canonical source.
+     * @param manifest Reference to the TextManifest that generates preset specs.
+     */
+    explicit TextAnimatorPresetRegistry(const TextManifest& manifest) {
+        load_from_manifest(manifest);
+    }
     ~TextAnimatorPresetRegistry() = default;
 
-    registry::TypedRegistry<TextAnimatorPresetSpec> registry_;
+    /**
+     * @brief Creates text animator specs from the specified preset.
+     */
+    std::vector<TextAnimatorSpec> create(std::string_view id, const registry::ParameterBag& params) const;
+
+private:
+    void load_from_manifest(const TextManifest& manifest);
 };
 
 } // namespace tachyon::presets

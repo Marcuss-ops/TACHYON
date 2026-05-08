@@ -9,7 +9,10 @@
 // For now, we'll keep it simple: no API macro for static renderer functions.
 #define TACHYON_RENDERER2D_API
 
-namespace tachyon { class TransitionRegistry; }
+namespace tachyon {
+class TransitionRegistry;
+struct TransitionDescriptor;
+}
 
 namespace tachyon::renderer2d {
 
@@ -33,6 +36,9 @@ TACHYON_RENDERER2D_API Color transition_lightleak_neon_pulse(float u, float v, f
 TACHYON_RENDERER2D_API Color transition_lightleak_prism_shatter(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface);
 TACHYON_RENDERER2D_API Color transition_lightleak_vintage_sepia(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface);
 
-TACHYON_RENDERER2D_API void register_light_leak_implementations(tachyon::TransitionRegistry& reg);
+/**
+ * Attaches CPU implementation functions to light leak transition descriptors.
+ */
+TACHYON_RENDERER2D_API void resolve_light_leak_implementations(tachyon::TransitionDescriptor& descriptor);
 
 } // namespace tachyon::renderer2d

@@ -98,165 +98,22 @@ Color transition_circle_iris(float u, float v, float t, const SurfaceRGBA& input
 
 } // namespace
 
-void register_basic_transitions(tachyon::TransitionRegistry& reg) {
+void resolve_basic_transition_implementations(tachyon::TransitionDescriptor& d) {
     using namespace tachyon;
 
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::crossfade);
-        d.display_name = "Crossfade";
-        d.description = "Linear blend between two layers.";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Fade;
-        d.cpu_fn = transition_crossfade;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::slide);
-        d.display_name = "Slide";
-        d.description = "Horizontal slide transition.";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Slide;
-        d.cpu_fn = transition_slide;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::slide_up);
-        d.display_name = "Slide Up";
-        d.description = "Vertical slide transition.";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Slide;
-        d.cpu_fn = transition_slide_up;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::swipe_left);
-        d.display_name = "Swipe Left";
-        d.description = "Swipe source left to reveal target.";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Slide;
-        d.cpu_fn = transition_swipe_left;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::zoom);
-        d.display_name = "Zoom";
-        d.description = "Zoom transition.";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Zoom;
-        d.cpu_fn = transition_zoom;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::flip);
-        d.display_name = "Flip";
-        d.description = "Flip transition.";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Flip;
-        d.cpu_fn = transition_flip;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::blur);
-        d.display_name = "Blur";
-        d.description = "Blur transition.";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Fade;
-        d.cpu_fn = transition_blur;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::fade_to_black);
-        d.display_name = "Fade to Black";
-        d.description = "Crossfade through black.";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Fade;
-        d.cpu_fn = transition_fade_to_black;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::wipe_linear);
-        d.display_name = "Linear Wipe";
-        d.description = "Simple left-to-right wipe.";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Wipe;
-        d.cpu_fn = transition_wipe_linear;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::wipe_angular);
-        d.display_name = "Angular Wipe";
-        d.description = "Angular wipe around center.";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Wipe;
-        d.cpu_fn = transition_wipe_angular;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::push_left);
-        d.display_name = "Push Left";
-        d.description = "Push image to the left.";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Slide;
-        d.cpu_fn = transition_push_left;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::slide_easing);
-        d.display_name = "Slide Easing";
-        d.description = "Slide with easing.";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Slide;
-        d.cpu_fn = transition_slide_easing;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::circle_iris);
-        d.display_name = "Circle Iris";
-        d.description = "Circular iris opener.";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Wipe;
-        d.cpu_fn = transition_circle_iris;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
+    if (d.id == ids::transition::crossfade) d.cpu_fn = transition_crossfade;
+    else if (d.id == ids::transition::slide) d.cpu_fn = transition_slide;
+    else if (d.id == ids::transition::slide_up) d.cpu_fn = transition_slide_up;
+    else if (d.id == ids::transition::swipe_left) d.cpu_fn = transition_swipe_left;
+    else if (d.id == ids::transition::zoom) d.cpu_fn = transition_zoom;
+    else if (d.id == ids::transition::flip) d.cpu_fn = transition_flip;
+    else if (d.id == ids::transition::blur) d.cpu_fn = transition_blur;
+    else if (d.id == ids::transition::fade_to_black) d.cpu_fn = transition_fade_to_black;
+    else if (d.id == ids::transition::wipe_linear) d.cpu_fn = transition_wipe_linear;
+    else if (d.id == ids::transition::wipe_angular) d.cpu_fn = transition_wipe_angular;
+    else if (d.id == ids::transition::push_left) d.cpu_fn = transition_push_left;
+    else if (d.id == ids::transition::slide_easing) d.cpu_fn = transition_slide_easing;
+    else if (d.id == ids::transition::circle_iris) d.cpu_fn = transition_circle_iris;
 }
 
 } // namespace tachyon::renderer2d

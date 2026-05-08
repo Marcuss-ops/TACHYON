@@ -12,7 +12,8 @@ bool run_background_resolver_tests() {
     std::cout << "Running BackgroundResolver tests..." << std::endl;
 
     // Warm up the preset registry so Preset-type tests work.
-    presets::BackgroundPresetRegistry registry;
+    presets::BackgroundManifest bg_manifest;
+    presets::BackgroundPresetRegistry registry(bg_manifest);
 
     // 1. Color → single Solid layer
     {
@@ -105,7 +106,7 @@ bool run_background_resolver_tests() {
 
     // 7. Every registered preset must produce a valid layer through the resolver
     {
-        const auto ids = BackgroundPresetRegistry::instance().list_ids();
+        const auto ids = registry.list_ids();
         assert(!ids.empty());
 
         registry::ParameterBag bag;

@@ -21,6 +21,7 @@ struct Color {
     static Color white()       { return {1.0f, 1.0f, 1.0f, 1.0f}; }
     static Color red()         { return {1.0f, 0.0f, 0.0f, 1.0f}; }
     static Color green()       { return {0.0f, 1.0f, 0.0f, 1.0f}; }
+    static Color blue()        { return {0.0f, 0.0f, 1.0f, 1.0f}; }
     Color operator*(float t) const { return {r * t, g * t, b * t, a * t}; }
     Color operator+(const Color& other) const { return {r + other.r, g + other.g, b + other.b, a + other.a}; }
 

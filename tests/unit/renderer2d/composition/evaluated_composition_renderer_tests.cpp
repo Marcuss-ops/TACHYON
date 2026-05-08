@@ -1,4 +1,5 @@
 #include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"
+#include "tachyon/render/render_intent.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
@@ -28,6 +29,7 @@ static void check_true(bool condition, const std::string& message) {
 
 bool run_evaluated_composition_renderer_tests() {
     using namespace tachyon;
+    using namespace tachyon::render;
 
     scene::EvaluatedCompositionState state;
     state.composition_id = "main";
@@ -287,15 +289,16 @@ bool run_evaluated_composition_renderer_tests() {
     precomp_layer.local_transform.position = {32.0f, 32.0f};
     precomp_layer.layer_index = 0;
     parent_state.layers.push_back(precomp_layer);
-
-    RenderIntent intent_parent;
-    const RasterizedFrame2D precomp_first = tachyon::render_evaluated_composition_2d(parent_state, intent_parent, plan, task, precomp_context, effect_reg);
-    const std::size_t cache_entries_after_first = precomp_context.precomp_cache->entry_count();
-    const RasterizedFrame2D precomp_second = tachyon::render_evaluated_composition_2d(parent_state, intent_parent, plan, task, precomp_context, effect_reg);
-    check_true(precomp_first.surface != nullptr, "precomp renderer should produce a surface");
-    check_true(precomp_second.surface != nullptr, "precomp renderer should render a second frame");
-    check_true(cache_entries_after_first > 0, "precomp cache should store the nested render after first frame");
-    check_true(precomp_context.precomp_cache->entry_count() == cache_entries_after_first, "second frame should reuse the existing precomp cache entry");
+    {
+        RenderIntent p_intent;
+        const RasterizedFrame2D precomp_first = tachyon::render_evaluated_composition_2d(parent_state, p_intent, plan, task, precomp_context, effect_reg);
+        const std::size_t cache_entries_after_first = precomp_context.precomp_cache->entry_count();
+        const RasterizedFrame2D precomp_second = tachyon::render_evaluated_composition_2d(parent_state, p_intent, plan, task, precomp_context, effect_reg);
+        check_true(precomp_first.surface != nullptr, "precomp renderer should produce a surface");
+        check_true(precomp_second.surface != nullptr, "precomp renderer should render a second frame");
+        check_true(cache_entries_after_first > 0, "precomp cache should store the nested render after first frame");
+        check_true(precomp_context.precomp_cache->entry_count() == cache_entries_after_first, "second frame should reuse the existing precomp cache entry");
+    }
 
     return g_failures == 0;
 }

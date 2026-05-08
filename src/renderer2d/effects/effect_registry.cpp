@@ -1,15 +1,8 @@
 #include "tachyon/renderer2d/effects/effect_registry.h"
+#include "tachyon/renderer2d/effects/effect_manifest.h"
 #include <utility>
 
 namespace tachyon::renderer2d {
-
-// Forward declarations for table descriptor functions
-std::vector<EffectDescriptor> get_blur_effect_descriptors();
-std::vector<EffectDescriptor> get_color_effect_descriptors();
-std::vector<EffectDescriptor> get_transition_effect_descriptors(const tachyon::TransitionRegistry& transition_registry);
-std::vector<EffectDescriptor> get_distortion_effect_descriptors();
-std::vector<EffectDescriptor> get_generator_effect_descriptors();
-std::vector<EffectDescriptor> get_stylize_effect_descriptors();
 
 EffectRegistry::EffectRegistry() {
 }
@@ -29,19 +22,12 @@ std::vector<std::string> EffectRegistry::list_ids() const {
     return registry_.list_ids();
 }
 
-void register_builtin_effects(EffectRegistry& registry, const tachyon::TransitionRegistry& transition_registry) {
-    auto register_all = [&](std::vector<EffectDescriptor> descriptors) {
-        for (auto& desc : descriptors) {
-            registry.register_spec(std::move(desc));
-        }
-    };
-
-    register_all(get_blur_effect_descriptors());
-    register_all(get_color_effect_descriptors());
-    register_all(get_transition_effect_descriptors(transition_registry));
-    register_all(get_distortion_effect_descriptors());
-    register_all(get_generator_effect_descriptors());
-    register_all(get_stylize_effect_descriptors());
+void register_builtin_effects(EffectRegistry& registry, const TransitionRegistry& transition_registry) {
+    EffectManifest manifest(transition_registry);
+    auto descriptors = manifest.generate_descriptors();
+    for (auto& desc : descriptors) {
+        registry.register_spec(std::move(desc));
+    }
 }
 
 } // namespace tachyon::renderer2d

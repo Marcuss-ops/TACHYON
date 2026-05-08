@@ -1,12 +1,15 @@
 #pragma once
 
-namespace tachyon { class TransitionRegistry; }
+namespace tachyon {
+class TransitionRegistry;
+struct TransitionDescriptor;
+}
 
 namespace tachyon::renderer2d {
 
 /**
- * Register artistic and creative built-in transitions (Kaleidoscope, Ripple, Glitch, etc.)
+ * Attaches CPU implementation functions to artistic transition descriptors.
  */
-void register_artistic_transitions(tachyon::TransitionRegistry& reg);
+void resolve_artistic_transition_implementations(tachyon::TransitionDescriptor& descriptor);
 
 } // namespace tachyon::renderer2d

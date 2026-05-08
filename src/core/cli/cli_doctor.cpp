@@ -12,17 +12,16 @@
 
 namespace tachyon {
 
-bool run_doctor_command(const CliOptions&, std::ostream& out, std::ostream& err) {
+bool run_doctor_command(const CliOptions&, std::ostream& out, std::ostream& err, TransitionRegistry& registry) {
     out << "TACHYON Doctor - System Diagnostic\n";
     out << "==================================\n\n";
 
     // Audit Transition Registries
     out << "[1/2] Auditing Transition Registry alignment...\n";
-    const auto& preset_reg = presets::TransitionPresetRegistry::instance();
+    presets::TransitionPresetRegistry preset_reg;
 
-    // Create local registry and load built-ins
-    TransitionRegistry runtime_reg;
-    register_builtin_transitions(runtime_reg);
+    // Use the caller-provided registry so diagnostics match the live CLI setup.
+    register_builtin_transitions(registry);
 
     auto preset_ids = preset_reg.list_ids();
     int preset_errors = 0;
@@ -36,7 +35,7 @@ bool run_doctor_command(const CliOptions&, std::ostream& out, std::ostream& err)
             continue;
         }
         
-        const auto* desc = runtime_reg.resolve(spec.transition_id);
+        const auto* desc = registry.resolve(spec.transition_id);
         if (desc == nullptr) {
             err << "      [ERROR] Preset '" << id << "' resolves to unknown runtime ID: " << spec.transition_id << "\n";
             preset_errors++;

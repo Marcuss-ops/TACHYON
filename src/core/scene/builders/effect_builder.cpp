@@ -1,6 +1,5 @@
 #include "tachyon/scene/effect_builder.h"
 #include "tachyon/scene/builder.h"
-#include "tachyon/presets/effects/effect_preset_registry.h"
 
 namespace tachyon::scene {
 
@@ -15,8 +14,7 @@ EffectBuilder& EffectBuilder::light_leak(LightLeakPreset preset, float progress,
 }
 
 EffectBuilder& EffectBuilder::preset(std::string_view id, const registry::ParameterBag& params) {
-    presets::EffectPresetRegistry registry;
-    parent_.spec_.effects.push_back(registry.create(id, params));
+    parent_.spec_.effects.push_back(preset_registry_.create(id, params));
     return *this;
 }
 

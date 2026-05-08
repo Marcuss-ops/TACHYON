@@ -1,5 +1,7 @@
 #include "tachyon/background_registry.h"
-#include "tachyon/background_catalog.h"
+#include "tachyon/backgrounds.hpp"
+#include "tachyon/presets/background/procedural.h"
+#include "tachyon/presets/background/background_params.h"
 #include <algorithm>
 
 namespace tachyon {
@@ -9,9 +11,16 @@ struct BackgroundRegistry::Impl {
     std::unordered_map<std::string, std::string> alias_to_id;
 };
 
-BackgroundRegistry::BackgroundRegistry() : m_impl(std::make_unique<Impl>()) {}
+BackgroundRegistry::BackgroundRegistry() : m_impl(std::make_unique<Impl>()) {
+    register_all_builtins();
+}
 
 BackgroundRegistry::~BackgroundRegistry() = default;
+
+BackgroundRegistry& BackgroundRegistry::instance() {
+    static BackgroundRegistry instance;
+    return instance;
+}
 
 void BackgroundRegistry::register_descriptor(const BackgroundDescriptor& descriptor) {
     // Register aliases
@@ -46,37 +55,6 @@ const BackgroundDescriptor* BackgroundRegistry::resolve(std::string_view id_or_a
 
     // Try alias
     return find_by_alias(id_or_alias);
-}
-
-std::vector<BackgroundCatalogEntry> BackgroundRegistry::catalog_entries() const {
-    std::vector<BackgroundCatalogEntry> entries;
-
-    // Map BackgroundKind to BackgroundCatalogRole
-    auto kind_to_role = [](BackgroundKind kind) -> BackgroundCatalogRole {
-        switch (kind) {
-            case BackgroundKind::Solid: return BackgroundCatalogRole::Solid;
-            case BackgroundKind::LinearGradient:
-            case BackgroundKind::RadialGradient: return BackgroundCatalogRole::Gradient;
-            case BackgroundKind::Image: return BackgroundCatalogRole::Image;
-            case BackgroundKind::Video:
-            case BackgroundKind::Procedural: return BackgroundCatalogRole::Procedural;
-            default: return BackgroundCatalogRole::Solid;
-        }
-    };
-
-    for (const auto& [id, desc] : m_impl->descriptors) {
-        BackgroundCatalogEntry entry;
-        entry.id = desc.id;
-        entry.role = kind_to_role(desc.kind);
-        // TODO: serialize desc.params to JSON string
-        entry.preset_params = "{}";
-        entry.procedural_factory_id = (desc.kind == BackgroundKind::Procedural) ? desc.id : "";
-        entry.status = desc.status;  // Use status from descriptor
-        entry.description = desc.description;
-        entries.push_back(entry);
-    }
-
-    return entries;
 }
 
 std::vector<std::string> BackgroundRegistry::list_all_ids() const {

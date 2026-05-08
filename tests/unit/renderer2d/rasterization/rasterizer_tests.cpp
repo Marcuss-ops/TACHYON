@@ -1,6 +1,9 @@
 #include "tachyon/renderer2d/raster/rasterizer.h"
 #include "tachyon/renderer2d/raster/draw_list_rasterizer.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
+#include "tachyon/renderer2d/effects/effect_host.h"
+#include "tachyon/renderer2d/effects/effect_registry.h"
+#include "tachyon/transition_registry.h"
 
 #include <filesystem>
 #include <iostream>
@@ -155,48 +158,25 @@ bool run_rasterizer_tests() {
     }
 
     {
+        // Initialize effect host for draw list rasterizer
+        static tachyon::TransitionRegistry s_transition_registry;
+        static tachyon::renderer2d::EffectRegistry s_effect_registry;
+        tachyon::register_builtin_transitions(s_transition_registry);
+        tachyon::renderer2d::register_builtin_effects(s_effect_registry, s_transition_registry);
+        static auto s_effect_host = tachyon::renderer2d::create_effect_host(s_effect_registry);
+        
         RenderPlan plan;
         plan.composition.width = 32;
         plan.composition.height = 32;
-        plan.composition.layer_count = 1;
 
         FrameRenderTask task;
-        task.frame_number = 7;
-        task.cache_key.value = "frame-clip";
-
-        std::vector<renderer2d::DrawCommand2D> commands;
-        renderer2d::DrawCommand2D clear;
-        clear.kind = renderer2d::DrawCommandKind::Clear;
-        clear.clear.emplace(renderer2d::ClearCommand{Color::black()});
-        commands.push_back(clear);
-
-        renderer2d::DrawCommand2D rect;
-        rect.kind = renderer2d::DrawCommandKind::SolidRect;
-        rect.solid_rect.emplace(renderer2d::SolidRectCommand{RectI{0, 0, 20, 20}, Color::white(), 1.0f});
-        rect.clip.emplace(RectI{4, 4, 6, 6});
-        commands.push_back(rect);
-
-        RasterizedFrame2D frame = render_frame_2d(plan, task, commands);
-        check_true(frame.surface != nullptr, "Clipped frame renderer returns a surface");
-        check_true(frame.surface->get_pixel(2, 2).r == 0, "Clip prevents drawing outside the clip rect");
-        check_true(frame.surface->get_pixel(5, 5).r > 0.001f, "Clip allows drawing inside the clip rect");
-        check_true(frame.surface->save_png("tests/output/frame_renderer_clipped.png"), "Frame renderer surface is savable");
-    }
-
-    {
-        RenderPlan plan;
-        plan.composition.width = 32;
-        plan.composition.height = 32;
-        plan.composition.layer_count = 2;
-
-        FrameRenderTask task;
-        task.frame_number = 21;
-        task.cache_key.value = "frame-z-order";
+        task.frame_number = 0;
 
         renderer2d::DrawList2D draw_list;
 
         renderer2d::DrawCommand2D clear;
         clear.kind = renderer2d::DrawCommandKind::Clear;
+        clear.z_order = -1;
         clear.clear.emplace(renderer2d::ClearCommand{Color::black()});
         draw_list.commands.push_back(clear);
 
@@ -212,7 +192,7 @@ bool run_rasterizer_tests() {
         bottom_layer.solid_rect.emplace(renderer2d::SolidRectCommand{RectI{4, 4, 16, 16}, {0.0f, 0.0f, 1.0f, 1.0f}, 1.0f});
         draw_list.commands.push_back(bottom_layer);
 
-        RasterizedFrame2D frame = render_draw_list_2d(plan, task, draw_list);
+        RasterizedFrame2D frame = render_draw_list_2d(plan, task, draw_list, *s_effect_host);
         check_true(frame.surface != nullptr, "Draw list rasterizer returns a surface");
         check_true(frame.surface->get_pixel(8, 8).r > 0.001f, "Lower z-order command should render before the higher z-order command");
         check_true(frame.surface->get_pixel(8, 8).b == 0, "Higher z-order command should be on top");

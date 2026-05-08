@@ -1,11 +1,13 @@
 #include "tachyon/scene/builder.h"
+#include "tachyon/presets/background/background_manifest.h"
 #include "tachyon/presets/background/background_preset_registry.h"
 #include "tachyon/core/registry/parameter_bag.h"
 
 namespace tachyon::scene {
 
 // CompositionBuilder implementation
-CompositionBuilder::CompositionBuilder(std::string id) {
+CompositionBuilder::CompositionBuilder(std::string id, const presets::EffectPresetRegistry& preset_registry)
+    : preset_registry_(preset_registry) {
     spec_.id = std::move(id);
     spec_.name = spec_.id;
 }
@@ -38,7 +40,8 @@ CompositionBuilder& CompositionBuilder::background_preset(const std::string& id,
     bag.set("width", static_cast<int>(spec_.width));
     bag.set("height", static_cast<int>(spec_.height));
     bag.set("duration", duration);
-    presets::BackgroundPresetRegistry registry;
+    presets::BackgroundManifest bg_manifest;
+    presets::BackgroundPresetRegistry registry(bg_manifest);
     if (auto bg_layer = registry.create(id, bag)) {
         spec_.layers.insert(spec_.layers.begin(), std::move(*bg_layer));
     }
@@ -57,7 +60,7 @@ CompositionBuilder& CompositionBuilder::add_typed_layer(
     std::string id,
     std::function<void(LayerBuilder&)> defaults,
     std::function<void(LayerBuilder&)> fn) {
-    LayerBuilder lb(std::move(id));
+    LayerBuilder lb(std::move(id), preset_registry_);
     defaults(lb);
     fn(lb);
     spec_.layers.push_back(std::move(lb).build());
@@ -65,7 +68,7 @@ CompositionBuilder& CompositionBuilder::add_typed_layer(
 }
 
 CompositionBuilder& CompositionBuilder::layer(std::string id, std::function<void(LayerBuilder&)> fn) {
-    LayerBuilder lb(std::move(id));
+    LayerBuilder lb(std::move(id), preset_registry_);
     fn(lb);
     spec_.layers.push_back(std::move(lb).build());
     return *this;

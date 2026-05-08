@@ -84,9 +84,16 @@ const std::vector<TransitionDescriptor>& get_transition_manifest() {
 }
 
 void register_builtin_transitions(TransitionRegistry& reg) {
-    renderer2d::register_basic_transitions(reg);
-    renderer2d::register_artistic_transitions(reg);
-    renderer2d::register_light_leak_implementations(reg);
+    for (const auto& const_desc : get_transition_manifest()) {
+        TransitionDescriptor desc = const_desc; // Copy to attach implementations
+        
+        // Attach CPU/GLSL implementations
+        renderer2d::resolve_basic_transition_implementations(desc);
+        renderer2d::resolve_artistic_transition_implementations(desc);
+        renderer2d::resolve_light_leak_implementations(desc);
+
+        reg.register_descriptor(desc);
+    }
 }
 
 } // namespace tachyon

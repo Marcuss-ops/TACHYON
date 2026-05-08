@@ -1,6 +1,5 @@
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
-#include "tachyon/core/report.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/media/resolution/asset_resolution.h"
 #include "tachyon/media/resolution/asset_path_utils.h"

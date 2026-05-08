@@ -9,11 +9,13 @@
 namespace tachyon::scene {
 
 // LayerBuilder implementation
-LayerBuilder::LayerBuilder(std::string id) {
+LayerBuilder::LayerBuilder(std::string id, const presets::EffectPresetRegistry& preset_registry) 
+    : spec_(), preset_registry_(preset_registry) {
     spec_.id = std::move(id);
 }
 
-LayerBuilder::LayerBuilder(LayerSpec spec) : spec_(std::move(spec)) {}
+LayerBuilder::LayerBuilder(LayerSpec spec, const presets::EffectPresetRegistry& preset_registry) 
+    : spec_(std::move(spec)), preset_registry_(preset_registry) {}
 
 LayerBuilder& LayerBuilder::type(LayerType t) {
     spec_.type = t;
@@ -145,12 +147,8 @@ LayerBuilder& LayerBuilder::motion_blur(bool enabled) {
     return *this;
 }
 
-LayerBuilder& LayerBuilder::animation2d_preset(const std::string& id, double duration, double delay) {
-    presets::Animation2DPresetRegistry registry;
-    registry::ParameterBag bag;
-    bag.set("duration", duration);
-    bag.set("delay", delay);
-    registry.apply(id, spec_, bag);
+LayerBuilder& LayerBuilder::animation2d_preset(const std::string& id, const registry::ParameterBag& params) {
+    presets::Animation2DPresetRegistry::instance().apply(id, spec_, params);
     return *this;
 }
 
@@ -171,7 +169,7 @@ TextBuilder LayerBuilder::text() {
 }
 
 EffectBuilder LayerBuilder::effects() {
-    return EffectBuilder(*this);
+    return EffectBuilder(*this, preset_registry_);
 }
 
 Transform3DBuilder LayerBuilder::transform3d() {

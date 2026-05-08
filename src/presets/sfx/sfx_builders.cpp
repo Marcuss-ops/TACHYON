@@ -1,6 +1,5 @@
 #include "tachyon/presets/sfx/sfx_builders.h"
 #include "tachyon/presets/sfx/sfx_registry.h"
-#include "tachyon/audio/core/sound_effect_registry.h"
 #include <vector>
 #include <algorithm>
 
@@ -22,25 +21,23 @@ AudioTrackSpec build_sfx(const media::AssetResolver& resolver, const SfxParams& 
         return spec;
     }
 
-    std::string category_name = info->folder;
-
     if (p.variant == -1) {
         // Deterministic random selection via the official registry
-        auto track = audio::createRandomSoundTrack(resolver, category_name, p.seed, p.volume);
+        auto track = registry.create_random_sound_track(resolver, p.category, p.seed, p.volume);
         if (track) {
             spec = *track;
         } else if (diagnostics) {
-            diagnostics->add_error("SFX_RESOLVE_FAILED", "Failed to resolve a random SFX for category: " + category_name);
+            diagnostics->add_error("SFX_RESOLVE_FAILED", "Failed to resolve a random SFX for category: " + info->folder);
         }
     } else {
         // Direct variant selection
         auto sfx_root = resolver.config().sfx_root;
         if (!sfx_root.empty()) {
-            auto path = sfx_root / category_name / (std::to_string(p.variant) + info->extension);
+            auto path = sfx_root / info->folder / (std::to_string(p.variant) + info->extension);
             if (std::filesystem::exists(path)) {
                 spec.source_path = path.string();
             } else if (diagnostics) {
-                diagnostics->add_error("SFX_VARIANT_NOT_FOUND", "SFX variant " + std::to_string(p.variant) + " not found in category " + category_name);
+                diagnostics->add_error("SFX_VARIANT_NOT_FOUND", "SFX variant " + std::to_string(p.variant) + " not found in category " + info->folder);
             }
         } else if (diagnostics) {
             diagnostics->add_error("SFX_ROOT_NOT_SET", "SFX root directory is not configured in AssetResolver.");

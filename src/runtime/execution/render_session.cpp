@@ -242,7 +242,6 @@ void finalize_session_metrics(
 
 RenderSession::RenderSession() {
     renderer2d::register_builtin_effects(m_effect_registry, m_transition_registry);
-    renderer3d::register_builtin_modifiers(m_modifier_registry);
     register_builtin_transitions(m_transition_registry);
 }
 

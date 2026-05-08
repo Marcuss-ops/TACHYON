@@ -2,6 +2,7 @@
 #include "tachyon/renderer2d/effects/core/effect_host.h"
 #include "tachyon/renderer2d/effects/glitch.h"
 #include "tachyon/renderer2d/effects/core/effect_common.h"
+#include "tachyon/presets/effects/effect_preset_registry.h"
 
 namespace tachyon::renderer2d {
 
@@ -88,6 +89,46 @@ std::vector<EffectDescriptor> get_distortion_effect_descriptors() {
     descriptors.push_back(std::move(glitch));
 
     return descriptors;
+}
+
+std::vector<presets::EffectPresetSpec> get_distortion_effect_preset_specs() {
+    std::vector<presets::EffectPresetSpec> specs;
+
+    // Chromatic Aberration Preset
+    specs.push_back({
+        "tachyon.effect.distort.chromatic_aberration",
+        {"tachyon.effect.distort.chromatic_aberration", "Chromatic Aberration", "Professional distortion effect.", "effect.distort", {"distort"}},
+        registry::ParameterSchema({
+            {"strength", "Strength", "RGB channel offset", 2.0, 0.0, 20.0}
+        }),
+        [](const registry::ParameterBag& p) {
+            EffectSpec effect;
+            effect.type = "tachyon.effect.distort.chromatic_aberration";
+            effect.scalars["strength"] = p.get_or<double>("strength", 2.0);
+            return effect;
+        }
+    });
+
+    // Vignette Preset
+    specs.push_back({
+        "tachyon.effect.distort.vignette",
+        {"tachyon.effect.distort.vignette", "Vignette", "Professional distortion effect.", "effect.distort", {"distort"}},
+        registry::ParameterSchema({
+            {"radius", "Radius", "Vignette size", 0.5, 0.0, 1.0},
+            {"softness", "Softness", "Edge feathering", 0.5, 0.0, 1.0},
+            {"strength", "Strength", "Darkening amount", 1.0, 0.0, 1.0}
+        }),
+        [](const registry::ParameterBag& p) {
+            EffectSpec effect;
+            effect.type = "tachyon.effect.distort.vignette";
+            effect.scalars["radius"] = p.get_or<double>("radius", 0.5);
+            effect.scalars["softness"] = p.get_or<double>("softness", 0.5);
+            effect.scalars["strength"] = p.get_or<double>("strength", 1.0);
+            return effect;
+        }
+    });
+
+    return specs;
 }
 
 } // namespace tachyon::renderer2d

@@ -21,7 +21,9 @@ std::vector<TextAnimatorSpec> resolve_text_animators(const presets::TextParams& 
     bag.set("stagger_delay", static_cast<double>(p.stagger_delay));
     bag.set("reveal_duration", static_cast<double>(p.reveal_duration));
 
-    return presets::TextAnimatorPresetRegistry::instance().create(animation_id, bag);
+    presets::TextManifest text_manifest;
+    presets::TextAnimatorPresetRegistry registry(text_manifest);
+    return registry.create(animation_id, bag);
 }
 
 } // namespace

@@ -1,8 +1,8 @@
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
-#include "tachyon/core/report.h"
 #include "tachyon/core/cli_scene_loader.h"
 #include "tachyon/scene/builder.h"
+#include "tachyon/runtime/execution/session/render_session.h"
 #include "tachyon/runtime/execution/native_render.h"
 #include "cli_internal.h"
 #include <iomanip>

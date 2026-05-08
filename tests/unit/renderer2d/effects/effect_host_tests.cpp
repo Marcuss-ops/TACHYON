@@ -1,4 +1,6 @@
 #include "tachyon/renderer2d/effects/effect_host.h"
+#include "tachyon/renderer2d/effects/effect_registry.h"
+#include "tachyon/transition_registry.h"
 #include "tachyon/renderer2d/resource/render_context.h"
 #include "tachyon/renderer2d/raster/rasterizer.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
@@ -29,9 +31,12 @@ bool run_effect_host_tests() {
     source.clear(Color::transparent());
     source.set_pixel(8, 8, Color::white());
 
-    auto host_ptr = create_effect_host();
+    EffectRegistry registry;
+    TransitionRegistry transition_registry;
+    register_builtin_effects(registry, transition_registry);
+    
+    auto host_ptr = create_effect_host(registry);
     EffectHost& host = *host_ptr;
-    EffectHost::register_builtins(host);
 
     check_true(host.has_effect("tachyon.effect.blur.gaussian"), "Registered gaussian_blur effect");
     check_true(host.has_effect("tachyon.effect.shadow.drop"), "Registered drop_shadow effect");
@@ -44,8 +49,7 @@ bool run_effect_host_tests() {
     check_true(host.has_effect("tachyon.effect.generators.particle_emitter"), "Registered particle_emitter effect");
 
     RenderContext context;
-    context.effects = create_effect_host();
-    EffectHost::register_builtins(*context.effects);
+    context.effects = create_effect_host(registry);
     
     check_true(context.effects->has_effect("tachyon.effect.blur.gaussian"), "RenderContext auto-registers gaussian_blur");
     check_true(context.effects->has_effect("tachyon.effect.color.hue_saturation"), "RenderContext auto-registers hue_saturation");

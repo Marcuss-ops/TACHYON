@@ -88,15 +88,14 @@ TextRasterSurface rasterize_text_rgba(
         if (!glyph || glyph->width == 0U || glyph->height == 0U) continue;
 
         float ox = 0.0f, oy = 0.0f, sc = 1.0f, op = 1.0f;
-        if (animation.enabled) {
-            const float phase_seconds = animation.time_seconds - static_cast<float>(positioned.glyph_index) * 0.1f;
-            const float wave_period = std::max(0.001f, animation.wave_period_seconds);
-            const float wave_phase = (phase_seconds / wave_period) * TWO_PI;
-
-            ox = animation.per_glyph_offset_x * static_cast<float>(positioned.glyph_index) + std::sin(wave_phase) * animation.wave_amplitude_x;
-            oy = animation.per_glyph_offset_y * static_cast<float>(positioned.glyph_index) + std::cos(wave_phase) * animation.wave_amplitude_y;
-            sc = std::max(0.05f, 1.0f + animation.per_glyph_scale_delta * static_cast<float>(positioned.glyph_index));
-            op = std::clamp(1.0f - animation.per_glyph_opacity_drop * static_cast<float>(positioned.glyph_index), 0.0f, 1.0f);
+        if (animation.enabled && !animation.animators.empty()) {
+            for (const auto& animator : animation.animators) {
+                const AnimatorSample sample = sample_animator(animator, layout, positioned, animation.time_seconds);
+                ox += sample.offset_x;
+                oy += sample.offset_y;
+                sc *= sample.scale;
+                op *= sample.opacity;
+            }
         }
 
         renderer2d::Color color = style.fill_color;
@@ -244,15 +243,14 @@ TextRasterSurface rasterize_text_rgba(
         if (!glyph || glyph->width == 0U || glyph->height == 0U) continue;
 
         float ox = 0.0f, oy = 0.0f, sc = 1.0f, op = 1.0f;
-        if (animation.enabled) {
-            const float phase_seconds = animation.time_seconds - static_cast<float>(positioned.glyph_index) * 0.1f;
-            const float wave_period = std::max(0.001f, animation.wave_period_seconds);
-            const float wave_phase = (phase_seconds / wave_period) * TWO_PI;
-
-            ox = animation.per_glyph_offset_x * static_cast<float>(positioned.glyph_index) + std::sin(wave_phase) * animation.wave_amplitude_x;
-            oy = animation.per_glyph_offset_y * static_cast<float>(positioned.glyph_index) + std::cos(wave_phase) * animation.wave_amplitude_y;
-            sc = std::max(0.05f, 1.0f + animation.per_glyph_scale_delta * static_cast<float>(positioned.glyph_index));
-            op = std::clamp(1.0f - animation.per_glyph_opacity_drop * static_cast<float>(positioned.glyph_index), 0.0f, 1.0f);
+        if (animation.enabled && !animation.animators.empty()) {
+            for (const auto& animator : animation.animators) {
+                const AnimatorSample sample = sample_animator(animator, layout, positioned, animation.time_seconds);
+                ox += sample.offset_x;
+                oy += sample.offset_y;
+                sc *= sample.scale;
+                op *= sample.opacity;
+            }
         }
 
         renderer2d::Color color = style.fill_color;
@@ -321,7 +319,7 @@ TextRasterSurface rasterize_text_rgba(
                         color.g = grad.stops[i].color.g + (grad.stops[i + 1].color.g - grad.stops[i].color.g) * local_t;
                         color.b = grad.stops[i].color.b + (grad.stops[i + 1].color.b - grad.stops[i].color.b) * local_t;
                         break;
- }
+                    }
                 }
             } else if (!grad.stops.empty()) {
                 color = grad.stops[0].color;

@@ -99,7 +99,8 @@ void draw_line_with_blend(SurfaceRGBA& fb, const LinePrimitive& line, BlendMode 
 RasterizedFrame2D render_draw_list_2d(
     const RenderPlan& plan,
     const FrameRenderTask& task,
-    const renderer2d::DrawList2D& draw_list) {
+    const renderer2d::DrawList2D& draw_list,
+    renderer2d::EffectHost& effect_host) {
 
     RasterizedFrame2D frame;
     frame.frame_number = task.frame_number;
@@ -136,12 +137,6 @@ RasterizedFrame2D render_draw_list_2d(
             return left->z_order < right->z_order;
         });
     }
-
-    renderer2d::EffectRegistry effect_registry;
-    TransitionRegistry transition_registry;
-    register_builtin_transitions(transition_registry);
-    renderer2d::register_builtin_effects(effect_registry, transition_registry);
-    auto effect_host = renderer2d::create_effect_host(effect_registry);
 
     for (const auto* command : ordered_commands) {
     if (command->kind == renderer2d::DrawCommandKind::MaskRect && command->mask_rect.has_value()) {
@@ -239,7 +234,7 @@ RasterizedFrame2D render_draw_list_2d(
                 break;
             case renderer2d::DrawCommandKind::Adjustment:
                 if (command->adjustment.has_value()) {
-                    auto res = effect_host->apply_pipeline(*frame.surface, command->adjustment->effects);
+                    auto res = effect_host.apply_pipeline(*frame.surface, command->adjustment->effects);
                     if (res.ok()) {
                         *frame.surface = std::move(*res.value);
                     }

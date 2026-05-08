@@ -1,5 +1,6 @@
 #include "tachyon/renderer2d/effects/effect_registry.h"
 #include "tachyon/renderer2d/effects/core/effect_host.h"
+#include "tachyon/presets/effects/effect_preset_registry.h"
 
 namespace tachyon::renderer2d {
 
@@ -68,6 +69,41 @@ std::vector<EffectDescriptor> get_generator_effect_descriptors() {
     });
 
     return descriptors;
+}
+
+std::vector<presets::EffectPresetSpec> get_generator_effect_preset_specs() {
+    std::vector<presets::EffectPresetSpec> specs;
+
+    // Light Leak Preset
+    specs.push_back({
+        "tachyon.effect.generator.light_leak",
+        {"tachyon.effect.generator.light_leak", "Light Leak", "Procedural light leak and film burn effect.", "effect.generator", {"light", "film", "vintage"}},
+        registry::ParameterSchema({
+            {"progress", "Progress", "Animation progress (0-1)", 0.0, 0.0, 1.0},
+            {"speed", "Speed", "Animation speed multiplier", 1.0, 0.1, 10.0},
+            {"seed", "Seed", "Random seed", 3.0},
+            {"preset", "Preset", "Preset type (0-N)", 0.0},
+            {"intensity", "Intensity", "Light intensity", 1.0, 0.0, 5.0},
+            {"width", "Width", "Leak width", 0.5, 0.0, 2.0},
+            {"color_a", "Color A", "Start color", ColorSpec{255, 204, 153, 255}},
+            {"color_b", "Color B", "End color", ColorSpec{255, 102, 51, 255}}
+        }),
+        [](const registry::ParameterBag& p) {
+            EffectSpec effect;
+            effect.type = "tachyon.effect.generator.light_leak";
+            effect.scalars["progress"] = p.get_or<double>("progress", 0.0);
+            effect.scalars["speed"] = p.get_or<double>("speed", 1.0);
+            effect.scalars["seed"] = p.get_or<double>("seed", 3.0);
+            effect.scalars["preset"] = p.get_or<double>("preset", 0.0);
+            effect.scalars["intensity"] = p.get_or<double>("intensity", 1.0);
+            effect.scalars["width"] = p.get_or<double>("width", 0.5);
+            effect.colors["color_a"] = p.get_or<ColorSpec>("color_a", ColorSpec{255, 204, 153, 255});
+            effect.colors["color_b"] = p.get_or<ColorSpec>("color_b", ColorSpec{255, 102, 51, 255});
+            return effect;
+        }
+    });
+
+    return specs;
 }
 
 } // namespace tachyon::renderer2d

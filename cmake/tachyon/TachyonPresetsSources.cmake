@@ -3,10 +3,8 @@ set(TachyonPresetsSources
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/animation2d/animation2d_preset_registry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/animation2d/animation2d_presets_table.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/background/background_preset_registry.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/presets/background/background_presets_table.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/presets/background/background_manifest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/background/background_builders.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/presets/background/background_kind_registry.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/presets/background/background_kind_table.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/background/background_resolver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/builders_common.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/image/image_builders.cpp
@@ -23,7 +21,6 @@ set(TachyonPresetsSources
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/transition/transition_builders.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/transition/transition_presets_table.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/effects/effect_preset_registry.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/presets/effects/effect_presets_table.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/scene/scene_preset_registry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/animation3d/animation3d_preset_registry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/animation3d/animation3d_presets_table.cpp

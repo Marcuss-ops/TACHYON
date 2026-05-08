@@ -1,12 +1,14 @@
 #include "tachyon/core/transition/transition_effect_resolver.h"
 #include "tachyon/transition_registry.h"
 #include "tachyon/core/policy/engine_policy.h"
-#include "tachyon/renderer2d/raster/surface.h"
-#include "tachyon/renderer2d/color/color.h"
+#include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/renderer2d/effects/core/transitions/transition_utils.h"
 #include <iostream>
 
 namespace tachyon {
+
+using renderer2d::Color;
+using renderer2d::SurfaceRGBA;
 
 namespace {
 // Helper to create a "none" kernel that performs simple lerp

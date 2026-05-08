@@ -1,17 +1,23 @@
-#include "tachyon/presets/background/background_kind_registry.h"
+#include "tachyon/background_registry.h"
 #include "tachyon/presets/background/background_builders.h"
 #include <algorithm>
 #include <cassert>
 #include <iostream>
 
-bool run_background_kind_registry_tests() {
+bool run_background_registry_tests() {
+    using namespace tachyon;
     using namespace tachyon::presets;
 
-    std::cout << "Running BackgroundKindRegistry tests..." << std::endl;
+    std::cout << "Running BackgroundRegistry tests..." << std::endl;
+
+    auto& registry = BackgroundRegistry::instance();
+
+    // Register all builtins
+    registry.register_all_builtins();
 
     {
-        const auto ids = BackgroundKindRegistry::instance().list_ids();
-        assert(!ids.empty()); // builtins registered in constructor
+        const auto ids = registry.list_all_ids();
+        assert(!ids.empty()); // builtins registered
     }
 
     {
@@ -32,6 +38,6 @@ bool run_background_kind_registry_tests() {
         assert(layer.procedural->kind == "tachyon.background.kind.unknown_kind");
     }
 
-    std::cout << "BackgroundKindRegistry tests passed!" << std::endl;
+    std::cout << "BackgroundRegistry tests passed!" << std::endl;
     return true;
 }

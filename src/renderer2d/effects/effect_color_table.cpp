@@ -1,5 +1,6 @@
 #include "tachyon/renderer2d/effects/effect_registry.h"
 #include "tachyon/renderer2d/effects/core/effect_host.h"
+#include "tachyon/presets/effects/effect_preset_registry.h"
 
 namespace tachyon::renderer2d {
 
@@ -128,7 +129,97 @@ std::vector<EffectDescriptor> get_color_effect_descriptors() {
         }
     });
 
+    // Chroma Key
+    descriptors.push_back({
+        "tachyon.effect.color.chroma_key",
+        {"tachyon.effect.color.chroma_key", "Chroma Key", "Professional keying effect.", "effect.color", {"keying"}},
+        registry::ParameterSchema({
+            {"key_color", "Key Color", "Color to remove", ColorSpec{0, 255, 0, 255}},
+            {"similarity", "Similarity", "Color similarity threshold", 0.1, 0.0, 1.0},
+            {"smoothness", "Smoothness", "Edge smoothness", 0.1, 0.0, 1.0}
+        }),
+        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+            ChromaKeyEffect effect;
+            output = effect.apply(input, params);
+        }
+    });
+
+    // Light Wrap
+    descriptors.push_back({
+        "tachyon.effect.color.light_wrap",
+        {"tachyon.effect.color.light_wrap", "Light Wrap", "Professional keying effect.", "effect.color", {"keying"}},
+        registry::ParameterSchema({
+            {"width", "Width", "Wrap width", 10.0, 0.0, 100.0},
+            {"intensity", "Intensity", "Wrap intensity", 1.0, 0.0, 1.0}
+        }),
+        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+            LightWrapEffect effect;
+            output = effect.apply(input, params);
+        },
+        {{"background", "background_layer", "background", true}}
+    });
+
+    // Matte Refinement
+    descriptors.push_back({
+        "tachyon.effect.color.matte_refinement",
+        {"tachyon.effect.color.matte_refinement", "Matte Refinement", "Professional keying effect.", "effect.color", {"keying"}},
+        registry::ParameterSchema({
+            {"choke", "Choke/Spread", "Choke (negative) or spread (positive)", 0.0, -100.0, 100.0},
+            {"feather", "Feather", "Edge feathering", 0.0, 0.0, 100.0}
+        }),
+        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+            MatteRefinementEffect effect;
+            output = effect.apply(input, params);
+        }
+    });
+
     return descriptors;
+}
+
+std::vector<presets::EffectPresetSpec> get_color_effect_preset_specs() {
+    std::vector<presets::EffectPresetSpec> specs;
+
+    // Levels Preset
+    specs.push_back({
+        "tachyon.effect.color.levels",
+        {"tachyon.effect.color.levels", "Levels", "Professional color effect.", "effect.color", {"color"}},
+        registry::ParameterSchema({
+            {"input_black", "Input Black", "Input black point", 0.0, 0.0, 255.0},
+            {"input_white", "Input White", "Input white point", 255.0, 0.0, 255.0},
+            {"gamma", "Gamma", "Midtone adjustment", 1.0, 0.1, 10.0},
+            {"output_black", "Output Black", "Output black point", 0.0, 0.0, 255.0},
+            {"output_white", "Output White", "Output white point", 255.0, 0.0, 255.0}
+        }),
+        [](const registry::ParameterBag& p) {
+            EffectSpec effect;
+            effect.type = "tachyon.effect.color.levels";
+            effect.scalars["input_black"] = p.get_or<double>("input_black", 0.0);
+            effect.scalars["input_white"] = p.get_or<double>("input_white", 255.0);
+            effect.scalars["gamma"] = p.get_or<double>("gamma", 1.0);
+            effect.scalars["output_black"] = p.get_or<double>("output_black", 0.0);
+            effect.scalars["output_white"] = p.get_or<double>("output_white", 255.0);
+            return effect;
+        }
+    });
+
+    // Tint Preset
+    specs.push_back({
+        "tachyon.effect.color.tint",
+        {"tachyon.effect.color.tint", "Tint", "Professional color effect.", "effect.color", {"color"}},
+        registry::ParameterSchema({
+            {"amount", "Amount", "Tint intensity", 1.0, 0.0, 1.0},
+            {"color", "Color", "Tint color", ColorSpec{255, 128, 0, 255}}
+        }),
+        [](const registry::ParameterBag& p) {
+            EffectSpec effect;
+            effect.type = "tachyon.effect.color.tint";
+            effect.scalars["amount"] = p.get_or<double>("amount", 1.0);
+            effect.colors["color"] = p.get_or<ColorSpec>("color", ColorSpec{255, 128, 0, 255});
+            return effect;
+        }
+    });
+
+    return specs;
 }
 
 } // namespace tachyon::renderer2d

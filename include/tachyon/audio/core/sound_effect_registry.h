@@ -11,22 +11,30 @@ namespace tachyon::audio {
 
 /**
  * @brief Returns the list of available sound effect categories (folder names).
+ * @deprecated Use SfxRegistry::list_ids() or SfxRegistry::get_info() instead.
  */
+[[deprecated("Use SfxRegistry instead")]]
 std::vector<std::string> getAvailableSoundCategories(const media::AssetResolver& resolver);
 
 /**
  * @brief Gets a deterministic random sound file path from the given category.
+ * @deprecated Use SfxRegistry::create_random_sound_track() instead.
  */
+[[deprecated("Use SfxRegistry instead")]]
 std::optional<std::string> getRandomSoundEffect(const media::AssetResolver& resolver, const std::string& category, std::uint64_t seed);
 
 /**
  * @brief Gets all sound file paths from the given category.
+ * @deprecated Use SfxRegistry::list_sound_effects() instead.
  */
+[[deprecated("Use SfxRegistry instead")]]
 std::vector<std::string> getSoundEffectsInCategory(const media::AssetResolver& resolver, const std::string& category);
 
 /**
  * @brief Creates an AudioTrackSpec with a random sound from the given category.
+ * @deprecated Use SfxRegistry::create_random_sound_track() instead.
  */
+[[deprecated("Use SfxRegistry instead")]]
 std::optional<spec::AudioTrackSpec> createRandomSoundTrack(
     const media::AssetResolver& resolver, const std::string& category, std::uint64_t seed, float volume = 1.0f);
 

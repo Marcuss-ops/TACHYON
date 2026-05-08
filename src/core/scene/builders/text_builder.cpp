@@ -47,7 +47,9 @@ TextBuilder& TextBuilder::highlights(std::vector<TextHighlightSpec> hls) {
 }
 
 TextBuilder& TextBuilder::animation_preset(const std::string& id) {
-    parent_.spec_.text_animators = presets::TextAnimatorPresetRegistry::instance().create(id, registry::ParameterBag{});
+    presets::TextManifest text_manifest;
+    presets::TextAnimatorPresetRegistry registry(text_manifest);
+    parent_.spec_.text_animators = registry.create(id, registry::ParameterBag{});
     return *this;
 }
 

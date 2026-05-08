@@ -295,189 +295,24 @@ DEFINE_LEAK_WRAPPER(lightleak_neon_pulse, kNeonPulse)
 DEFINE_LEAK_WRAPPER(lightleak_prism_shatter, kPrismShatter)
 DEFINE_LEAK_WRAPPER(lightleak_vintage_sepia, kVintageSepia)
 
-void register_light_leak_implementations(tachyon::TransitionRegistry& reg) {
+void resolve_light_leak_implementations(tachyon::TransitionDescriptor& d) {
     using namespace tachyon;
 
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::light_leak);
-        d.display_name = "Classic Leak";
-        d.description = "Wide amber cinematic leak";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Fade;
-        d.cpu_fn = transition_light_leak;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::light_leak_solar);
-        d.display_name = "Solar Flare";
-        d.description = "Bright golden solar flare";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Fade;
-        d.cpu_fn = transition_light_leak_solar;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::light_leak_nebula);
-        d.display_name = "Blue Nebula";
-        d.description = "Cosmic blue and purple leak";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Fade;
-        d.cpu_fn = transition_light_leak_nebula;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::light_leak_sunset);
-        d.display_name = "Sunset Dual";
-        d.description = "Warm dual-beam sunset leak";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Fade;
-        d.cpu_fn = transition_light_leak_sunset;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::light_leak_ghost);
-        d.display_name = "Pale Ghost";
-        d.description = "Ethereal pale white leak";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Fade;
-        d.cpu_fn = transition_light_leak_ghost;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::film_burn);
-        d.display_name = "Film Burn";
-        d.description = "Classic fiery film burn";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Fade;
-        d.cpu_fn = transition_film_burn;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::lightleak_soft_warm_edge);
-        d.display_name = "Soft Warm Edge";
-        d.description = "Gentle warm edge leak";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Fade;
-        d.cpu_fn = transition_lightleak_soft_warm_edge;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::lightleak_golden_sweep);
-        d.display_name = "Golden Sweep";
-        d.description = "Premium golden sweep";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Fade;
-        d.cpu_fn = transition_lightleak_golden_sweep;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::lightleak_creamy_white);
-        d.display_name = "Creamy White";
-        d.description = "Soft creamy white leak";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Fade;
-        d.cpu_fn = transition_lightleak_creamy_white;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::lightleak_dusty_archive);
-        d.display_name = "Dusty Archive";
-        d.description = "Textured vintage leak";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Fade;
-        d.cpu_fn = transition_lightleak_dusty_archive;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::lightleak_lens_flare_pass);
-        d.display_name = "Lens Flare Pass";
-        d.description = "Fast blue flare sweep";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Fade;
-        d.cpu_fn = transition_lightleak_lens_flare_pass;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::lightleak_amber_sweep);
-        d.display_name = "Amber Sweep";
-        d.description = "Dynamic amber sweep";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Fade;
-        d.cpu_fn = transition_lightleak_amber_sweep;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::lightleak_neon_pulse);
-        d.display_name = "Neon Pulse";
-        d.description = "Futuristic neon pink leak";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Fade;
-        d.cpu_fn = transition_lightleak_neon_pulse;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::lightleak_prism_shatter);
-        d.display_name = "Prism Shatter";
-        d.description = "Rainbow refractive prism";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Fade;
-        d.cpu_fn = transition_lightleak_prism_shatter;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::lightleak_vintage_sepia);
-        d.display_name = "Vintage Sepia";
-        d.description = "Warm sepia memory leak";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Fade;
-        d.cpu_fn = transition_lightleak_vintage_sepia;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
+    if (d.id == ids::transition::light_leak) d.cpu_fn = transition_light_leak;
+    else if (d.id == ids::transition::light_leak_solar) d.cpu_fn = transition_light_leak_solar;
+    else if (d.id == ids::transition::light_leak_nebula) d.cpu_fn = transition_light_leak_nebula;
+    else if (d.id == ids::transition::light_leak_sunset) d.cpu_fn = transition_light_leak_sunset;
+    else if (d.id == ids::transition::light_leak_ghost) d.cpu_fn = transition_light_leak_ghost;
+    else if (d.id == ids::transition::film_burn) d.cpu_fn = transition_film_burn;
+    else if (d.id == ids::transition::lightleak_soft_warm_edge) d.cpu_fn = transition_lightleak_soft_warm_edge;
+    else if (d.id == ids::transition::lightleak_golden_sweep) d.cpu_fn = transition_lightleak_golden_sweep;
+    else if (d.id == ids::transition::lightleak_creamy_white) d.cpu_fn = transition_lightleak_creamy_white;
+    else if (d.id == ids::transition::lightleak_dusty_archive) d.cpu_fn = transition_lightleak_dusty_archive;
+    else if (d.id == ids::transition::lightleak_lens_flare_pass) d.cpu_fn = transition_lightleak_lens_flare_pass;
+    else if (d.id == ids::transition::lightleak_amber_sweep) d.cpu_fn = transition_lightleak_amber_sweep;
+    else if (d.id == ids::transition::lightleak_neon_pulse) d.cpu_fn = transition_lightleak_neon_pulse;
+    else if (d.id == ids::transition::lightleak_prism_shatter) d.cpu_fn = transition_lightleak_prism_shatter;
+    else if (d.id == ids::transition::lightleak_vintage_sepia) d.cpu_fn = transition_lightleak_vintage_sepia;
 }
 
 } // namespace tachyon::renderer2d

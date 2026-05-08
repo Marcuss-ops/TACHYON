@@ -50,7 +50,7 @@ namespace expr {
  * @param amplitude Amount of variation.
  * @param seed Random seed for deterministic output.
  */
-AnimatedScalarSpec wiggle(double frequency, double amplitude, int seed = 0);
+AnimatedScalarSpec wiggle(double frequency, double amplitude, int seed =0);
 
 /**
  * @brief Sine wave expression.
@@ -58,7 +58,7 @@ AnimatedScalarSpec wiggle(double frequency, double amplitude, int seed = 0);
  * @param amplitude Peak value.
  * @param offset Phase offset.
  */
-AnimatedScalarSpec sin_wave(double frequency, double amplitude, double offset = 0.0);
+AnimatedScalarSpec sin_wave(double frequency, double amplitude, double offset =0.0);
 
 /**
  * @brief Pulse expression (periodic on/off or scaling).
@@ -135,9 +135,10 @@ class TACHYON_API LayerBuilder {
     friend class EffectBuilder;
     friend class Transform3DBuilder;
     LayerSpec spec_;
+    const presets::EffectPresetRegistry& preset_registry_;
 public:
-    explicit LayerBuilder(std::string id);
-    explicit LayerBuilder(LayerSpec spec);
+    explicit LayerBuilder(std::string id, const presets::EffectPresetRegistry& preset_registry);
+    explicit LayerBuilder(LayerSpec spec, const presets::EffectPresetRegistry& preset_registry);
 
     // Basic properties
     LayerBuilder& type(LayerType t);
@@ -184,7 +185,7 @@ public:
     Transform3DBuilder transform3d();
 
     // 2D Animation preset
-    LayerBuilder& animation2d_preset(const std::string& id, double duration = 1.0, double delay = 0.0);
+    LayerBuilder& animation2d_preset(const std::string& id, const registry::ParameterBag& params = {});
 
     [[nodiscard]] LayerSpec build() &&;
     [[nodiscard]] LayerSpec build() const &;
@@ -195,6 +196,7 @@ public:
  */
 class TACHYON_API CompositionBuilder {
     CompositionSpec spec_;
+    const presets::EffectPresetRegistry& preset_registry_;
 
     // Private helper for typed layer methods
     CompositionBuilder& add_typed_layer(
@@ -202,7 +204,7 @@ class TACHYON_API CompositionBuilder {
         std::function<void(LayerBuilder&)> defaults,
         std::function<void(LayerBuilder&)> fn);
 public:
-    explicit CompositionBuilder(std::string id);
+    explicit CompositionBuilder(std::string id, const presets::EffectPresetRegistry& preset_registry);
 
     CompositionBuilder& size(int w, int h);
     CompositionBuilder& fps(int f);
@@ -235,7 +237,10 @@ public:
  */
 class TACHYON_API SceneBuilder {
     SceneSpec spec_;
+    const presets::EffectPresetRegistry& preset_registry_;
 public:
+    SceneBuilder(std::string id, std::string name, const presets::EffectPresetRegistry& preset_registry);
+
     SceneBuilder& project(std::string id, std::string name);
     SceneBuilder& composition(std::string id, std::function<void(CompositionBuilder&)> fn);
     
@@ -245,11 +250,11 @@ public:
 /**
  * @brief Main entry point for creating a composition.
  */
-TACHYON_API CompositionBuilder Composition(std::string id);
+TACHYON_API CompositionBuilder Composition(std::string id, const presets::EffectPresetRegistry& preset_registry);
 
 /**
  * @brief Main entry point for creating a multi-composition scene.
  */
-TACHYON_API SceneBuilder Scene();
+TACHYON_API SceneBuilder Scene(const presets::EffectPresetRegistry& preset_registry);
 
 } // namespace tachyon::scene

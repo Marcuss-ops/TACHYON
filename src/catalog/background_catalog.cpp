@@ -8,10 +8,51 @@
 
 namespace tachyon {
 
-BackgroundCatalog::BackgroundCatalog(BackgroundRegistry& registry) : registry_(registry) {
+namespace {
+
+BackgroundCatalogEntry to_catalog_entry(const BackgroundDescriptor& desc) {
+    BackgroundCatalogEntry entry;
+    entry.id = desc.id;
+
+    switch (desc.kind) {
+        case BackgroundKind::Solid:
+            entry.role = BackgroundCatalogRole::Solid;
+            break;
+        case BackgroundKind::LinearGradient:
+        case BackgroundKind::RadialGradient:
+            entry.role = BackgroundCatalogRole::Gradient;
+            break;
+        case BackgroundKind::Image:
+            entry.role = BackgroundCatalogRole::Image;
+            break;
+        case BackgroundKind::Video:
+        case BackgroundKind::Procedural:
+            entry.role = BackgroundCatalogRole::Procedural;
+            break;
+    }
+
+    entry.preset_params = "{}";
+    entry.procedural_factory_id = (desc.kind == BackgroundKind::Procedural) ? desc.id : "";
+    entry.status = desc.status;
+    entry.description = desc.description;
+    return entry;
 }
 
-BackgroundCatalog::~BackgroundCatalog() = default;
+std::vector<BackgroundCatalogEntry> to_catalog_entries(const std::vector<const BackgroundDescriptor*>& descriptors) {
+    std::vector<BackgroundCatalogEntry> entries;
+    entries.reserve(descriptors.size());
+    for (const auto* desc : descriptors) {
+        if (desc) {
+            entries.push_back(to_catalog_entry(*desc));
+        }
+    }
+    return entries;
+}
+
+} // namespace
+
+BackgroundCatalog::BackgroundCatalog(BackgroundRegistry& registry) : registry_(registry) {
+}
 
 void BackgroundCatalog::register_entry(const BackgroundCatalogEntry& entry) {
     // BackgroundCatalog is deprecated. Use BackgroundRegistry::register_descriptor() directly.
@@ -44,25 +85,8 @@ const BackgroundCatalogEntry* BackgroundCatalog::find(std::string_view id) const
     auto* desc = registry_.resolve(id);
     if (!desc) return nullptr;
 
-    // Return a static copy (thin wrapper limitation)
     static BackgroundCatalogEntry temp;
-    temp.id = desc->id;
-
-    // Map kind to role
-    switch (desc->kind) {
-        case BackgroundKind::Solid: temp.role = BackgroundCatalogRole::Solid; break;
-        case BackgroundKind::LinearGradient:
-        case BackgroundKind::RadialGradient: temp.role = BackgroundCatalogRole::Gradient; break;
-        case BackgroundKind::Image: temp.role = BackgroundCatalogRole::Image; break;
-        case BackgroundKind::Video:
-        case BackgroundKind::Procedural: temp.role = BackgroundCatalogRole::Procedural; break;
-    }
-
-    temp.preset_params = "{}"; // TODO: serialize desc.params
-    temp.procedural_factory_id = (desc->kind == BackgroundKind::Procedural) ? desc->id : "";
-    temp.status = BackgroundStatus::Stable; // BackgroundDescriptor doesn't carry status
-    temp.description = desc->description;
-
+    temp = to_catalog_entry(*desc);
     return &temp;
 }
 
@@ -71,11 +95,9 @@ std::size_t BackgroundCatalog::count() const {
 }
 
 const BackgroundCatalogEntry* BackgroundCatalog::get_by_index(std::size_t index) const {
-    auto entries = registry_.catalog_entries();
-    if (index >= entries.size()) return nullptr;
-    // Return address of vector element (valid until next call)
     static std::vector<BackgroundCatalogEntry> cache;
-    cache = std::move(entries);
+    cache = to_catalog_entries(registry_.list_all());
+    if (index >= cache.size()) return nullptr;
     return &cache[index];
 }
 
@@ -84,7 +106,7 @@ std::vector<std::string> BackgroundCatalog::list_all_ids() const {
 }
 
 std::vector<BackgroundCatalogEntry> BackgroundCatalog::list_all() const {
-    return registry_.catalog_entries();
+    return to_catalog_entries(registry_.list_all());
 }
 
 bool BackgroundCatalog::validate_preset(std::string_view preset_id, std::string& error) const {

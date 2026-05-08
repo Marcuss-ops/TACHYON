@@ -1,12 +1,15 @@
 #pragma once
 
-namespace tachyon { class TransitionRegistry; }
+namespace tachyon {
+class TransitionRegistry;
+struct TransitionDescriptor;
+}
 
 namespace tachyon::renderer2d {
 
 /**
- * Register basic built-in transitions (Fade, Slide, Zoom, etc.)
+ * Attaches CPU implementation functions to basic transition descriptors.
  */
-void register_basic_transitions(tachyon::TransitionRegistry& reg);
+void resolve_basic_transition_implementations(tachyon::TransitionDescriptor& descriptor);
 
 } // namespace tachyon::renderer2d

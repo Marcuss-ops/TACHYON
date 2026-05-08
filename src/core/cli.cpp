@@ -28,7 +28,7 @@ struct CommandEntry {
     const char* usage;
     // Returns false (+ prints to err) when required args are missing.
     std::function<bool(const CliOptions&, std::ostream&)> validate;
-    std::function<bool(const CliOptions&, std::ostream&, std::ostream&)> handler;
+    std::function<bool(const CliOptions&, std::ostream&, std::ostream&, TransitionRegistry&)> handler;
 };
 
 static const std::vector<CommandEntry> kCommands = {
@@ -209,7 +209,7 @@ int run_cli(int argc, char** argv) {
     for (const auto& cmd : kCommands) {
         if (options.command != cmd.name) continue;
         if (cmd.validate && !cmd.validate(options, std::cerr)) return 1;
-        return cmd.handler(options, std::cout, std::cerr) ? 0 : 2;
+        return cmd.handler(options, std::cout, std::cerr, g_cli_transition_registry) ? 0 : 2;
     }
 
     print_help(std::cerr);
