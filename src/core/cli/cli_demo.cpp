@@ -2,6 +2,7 @@
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/spec/cpp_scene_loader.h"
 #include "tachyon/runtime/compiler/scene_compiler.h"
+#include "tachyon/runtime/execution/native_render.h"
 #include "tachyon/output/frame_output_sink.h"
 #include "tachyon/renderer2d/effects/effect_host.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
@@ -50,6 +51,25 @@ struct CachedSceneStill {
     renderer2d::SurfaceRGBA frame;
     double fps{30.0};
 };
+
+void scale_scene_preview(SceneSpec& scene, float scale) {
+    if (scale <= 0.0f || scale >= 1.0f) {
+        return;
+    }
+
+    for (auto& composition : scene.compositions) {
+        composition.width = std::max<std::int64_t>(
+            1,
+            static_cast<std::int64_t>(std::lround(static_cast<double>(composition.width) * scale)));
+        composition.height = std::max<std::int64_t>(
+            1,
+            static_cast<std::int64_t>(std::lround(static_cast<double>(composition.height) * scale)));
+        for (auto& layer : composition.layers) {
+            layer.width = std::max(1, static_cast<int>(std::lround(static_cast<double>(layer.width) * scale)));
+            layer.height = std::max(1, static_cast<int>(std::lround(static_cast<double>(layer.height) * scale)));
+        }
+    }
+}
 
 std::filesystem::path make_temp_still_path(const std::string& label) {
     std::filesystem::path temp_dir = std::filesystem::temp_directory_path() / "tachyon";
@@ -113,14 +133,15 @@ std::optional<TransitionDemoConfig> load_transition_demo(
     config.output_dir = entry.output_dir;
     constexpr std::string_view prefix = "tachyon.transition.";
     config.file_prefix = entry.id.rfind(prefix, 0) == 0 ? entry.id.substr(prefix.size()) : entry.id;
-    config.output_format = "mp4";
-    config.duration_seconds = 0.5;
-    config.lead_in_seconds = 1.25;
-    config.lead_out_seconds = 1.25;
+    // Default to a short preview sequence so transition demos complete quickly.
+    config.output_format = "png";
+    config.duration_seconds = 0.1;
+    config.lead_in_seconds = 0.1;
+    config.lead_out_seconds = 0.1;
     config.progress_start = 0.0;
     config.progress_end = 1.0;
-    config.preview_frame_count = 12;
-    config.preview_resolution_scale = 1.0f;
+    config.preview_frame_count = 1;
+    config.preview_resolution_scale = 0.1f;
 
     if (config.file_prefix.empty()) {
         diagnostics.add_error("library.demo_invalid", "Transition id is missing a file prefix.");
@@ -134,18 +155,21 @@ std::optional<renderer2d::SurfaceRGBA> render_scene_still(
     const std::filesystem::path& scene_path,
     std::ostream& err,
     double& out_fps) {
+    err << "[library-demo] still start: " << scene_path.string() << std::endl;
     if (scene_path.extension() != ".cpp") {
         err << "Error: Only C++ scenes (.cpp) are supported.\n";
         return std::nullopt;
     }
 
     SceneSpec scene;
+    err << "[library-demo] load cpp: " << scene_path.string() << std::endl;
     const auto cpp_result = CppSceneLoader::load_from_file(scene_path);
     if (!cpp_result.success) {
         err << "C++ Scene Loader failed for " << scene_path.string() << ":\n" << cpp_result.diagnostics << "\n";
         return std::nullopt;
     }
     scene = std::move(*cpp_result.scene);
+    err << "[library-demo] cpp loaded: " << scene_path.string() << std::endl;
 
     if (scene.compositions.empty()) {
         err << "scene has no compositions: " << scene_path.string() << '\n';
@@ -178,29 +202,14 @@ std::optional<renderer2d::SurfaceRGBA> render_scene_still(
     job.output.profile.color.transfer = "srgb";
     job.output.profile.color.range = "full";
 
-    SceneCompiler compiler;
-    const auto compiled_result = compiler.compile(scene);
-    if (!compiled_result.ok() || !compiled_result.value.has_value()) {
-        print_diagnostics(compiled_result.diagnostics, err);
-        return std::nullopt;
-    }
-
-    const auto plan_result = build_render_plan(scene, job);
-    if (!plan_result.value.has_value()) {
-        print_diagnostics(plan_result.diagnostics, err);
-        return std::nullopt;
-    }
-    const auto exec_result = build_render_execution_plan(*plan_result.value, 0);
-    if (!exec_result.value.has_value()) {
-        print_diagnostics(exec_result.diagnostics, err);
-        return std::nullopt;
-    }
-
     const std::filesystem::path temp_output = make_temp_still_path(scene_path.stem().string());
-    RenderSession session;
-    const RenderSessionResult session_result = session.render(scene, *compiled_result.value, *exec_result.value, temp_output);
-    if (!session_result.output_error.empty()) {
-        err << session_result.output_error << '\n';
+    TransitionRegistry transition_registry;
+    register_builtin_transitions(transition_registry);
+    renderer3d::Modifier3DRegistry modifier_registry;
+    presets::TextManifest text_manifest;
+    presets::TextRegistry text_registry(text_manifest);
+    if (!NativeRenderer::render_still(scene, composition.id, 0, temp_output, transition_registry, modifier_registry, text_registry)) {
+        err << "scene rendered no frames: " << scene_path.string() << '\n';
         return std::nullopt;
     }
     const std::filesystem::path frame_path = temp_output.parent_path() / (temp_output.stem().string() + "_000001.png");
@@ -246,29 +255,14 @@ std::optional<renderer2d::SurfaceRGBA> render_scene_still(
     job.output.profile.color.transfer = "srgb";
     job.output.profile.color.range = "full";
 
-    SceneCompiler compiler;
-    const auto compiled_result = compiler.compile(scene);
-    if (!compiled_result.ok() || !compiled_result.value.has_value()) {
-        print_diagnostics(compiled_result.diagnostics, err);
-        return std::nullopt;
-    }
-
-    const auto plan_result = build_render_plan(scene, job);
-    if (!plan_result.value.has_value()) {
-        print_diagnostics(plan_result.diagnostics, err);
-        return std::nullopt;
-    }
-    const auto exec_result = build_render_execution_plan(*plan_result.value, 0);
-    if (!exec_result.value.has_value()) {
-        print_diagnostics(exec_result.diagnostics, err);
-        return std::nullopt;
-    }
-
     const std::filesystem::path temp_output = make_temp_still_path(label);
-    RenderSession session;
-    const RenderSessionResult session_result = session.render(scene, *compiled_result.value, *exec_result.value, temp_output);
-    if (!session_result.output_error.empty()) {
-        err << session_result.output_error << '\n';
+    TransitionRegistry transition_registry;
+    register_builtin_transitions(transition_registry);
+    renderer3d::Modifier3DRegistry modifier_registry;
+    presets::TextManifest text_manifest;
+    presets::TextRegistry text_registry(text_manifest);
+    if (!NativeRenderer::render_still(scene, composition.id, 0, temp_output, transition_registry, modifier_registry, text_registry)) {
+        err << "scene rendered no frames: " << label << '\n';
         return std::nullopt;
     }
     const std::filesystem::path frame_path = temp_output.parent_path() / (temp_output.stem().string() + "_000001.png");
@@ -289,7 +283,10 @@ std::optional<std::reference_wrapper<const CachedSceneStill>> render_scene_still
     }
 
     double fps = 30.0;
+    err << "[library-demo] instantiate scene: " << scene_id << std::endl;
     SceneSpec scene = library.instantiate_scene(scene_id);
+    err << "[library-demo] instantiated scene: " << scene_id << std::endl;
+    scale_scene_preview(scene, 0.35f);
 
     // Keep the legacy image-based demo path only when the asset actually exists.
     // Legacy support for older demo asset names.
@@ -327,7 +324,9 @@ std::optional<std::reference_wrapper<const CachedSceneStill>> render_scene_still
         return std::nullopt;
     }
 
+    err << "[library-demo] render still cached: " << scene_id << std::endl;
     const auto frame = render_scene_still(scene, scene_id, err, fps);
+    err << "[library-demo] render still cached done: " << scene_id << std::endl;
     if (!frame.has_value()) {
         return std::nullopt;
     }
@@ -415,6 +414,7 @@ bool render_transition_demo(
     auto host = renderer2d::create_effect_host(registry);
 
     const std::filesystem::path final_output_dir = output_dir_override.empty() ? demo.output_dir : output_dir_override;
+    err << "[library-demo] render transition begin: " << demo.transition_id << std::endl;
     RenderPlan output_plan = make_output_plan(final_output_dir, demo.file_prefix);
     output_plan.composition.width = static_cast<std::int64_t>(final_video ? source.width() : preview_source.width());
     output_plan.composition.height = static_cast<std::int64_t>(final_video ? source.height() : preview_source.height());
@@ -496,6 +496,7 @@ bool render_transition_demo(
         return false;
     }
 
+    err << "[library-demo] render transition end: " << demo.transition_id << std::endl;
     out << demo.transition_id << ": wrote " << written << " frame(s) to " << final_output_dir.generic_string() << '\n';
     return true;
 }
@@ -503,15 +504,20 @@ bool render_transition_demo(
 }  // namespace
 
 bool run_library_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*/, renderer3d::Modifier3DRegistry& /*modifier_registry*/) {
+    err << "[library-demo] command start" << std::endl;
     const std::filesystem::path library_root = resolve_library_root(options.library_path);
+    err << "[library-demo] library root: " << library_root.string() << std::endl;
     TachyonLibrary library(library_root);
+    err << "[library-demo] library constructed" << std::endl;
     if (!library.ok()) {
         print_diagnostics(library.diagnostics(), err);
         return false;
     }
+    err << "[library-demo] library ok" << std::endl;
 
     std::vector<LibraryTransitionEntry> transitions;
     if (options.transition_id.has_value()) {
+        err << "[library-demo] selecting transition: " << *options.transition_id << std::endl;
         const auto transition = library.find_transition(*options.transition_id);
         if (!transition.has_value()) {
             err << "transition not found: " << *options.transition_id << '\n';
@@ -519,6 +525,7 @@ bool run_library_demo_command(const CliOptions& options, std::ostream& out, std:
         }
         transitions.push_back(*transition);
     } else {
+        err << "[library-demo] collecting all transitions" << std::endl;
         transitions = library.transitions();
     }
 

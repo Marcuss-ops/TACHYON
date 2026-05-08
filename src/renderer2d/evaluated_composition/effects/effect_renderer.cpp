@@ -10,6 +10,8 @@
 namespace tachyon::renderer2d {
 
 EffectHost& effect_host_for(RenderContext2D& context) {
+    // Note: we can't easily include render_internal.h here without circularity or we need to check.
+    // For now, I'll use a local check or just std::cerr.
     if (!context.effects) {
         throw std::runtime_error("RenderContext2D::effects is not initialized. "
                                "Ensure RenderSession is used to properly initialize the context.");

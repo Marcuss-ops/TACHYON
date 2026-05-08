@@ -8,6 +8,7 @@
 #include <memory>
 #include <vector>
 #include <numeric>
+#include <cstdlib>
 
 #if TACHYON_ENABLE_SKIA
 #include "include/core/SkBitmap.h"
@@ -26,7 +27,6 @@
 namespace tachyon::text {
 
 namespace {
-
 float sample_glyph_alpha(const tachyon::text::GlyphBitmap& glyph, float src_x, float src_y) {
     if (glyph.width == 0U || glyph.height == 0U || glyph.alpha_mask.empty()) {
         return 0.0f;

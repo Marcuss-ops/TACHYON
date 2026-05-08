@@ -26,8 +26,42 @@
 #include <sstream>
 #include <cstring>
 #include <cstdlib>
+#include <fstream>
+#include <mutex>
 
 namespace tachyon {
+
+bool render_trace_enabled() {
+    static const bool enabled = []() {
+        const char* value = std::getenv("TACHYON_RENDER_TRACE");
+        return value != nullptr && value[0] != '\0' && value[0] != '0';
+    }();
+    return enabled;
+}
+
+void render_trace(const std::string& message) {
+    if (render_trace_enabled()) {
+        static std::ofstream s_trace_file = []() {
+            const char* temp_dir = std::getenv("TEMP");
+            if (!temp_dir) temp_dir = std::getenv("TMP");
+            
+            std::filesystem::path path;
+            if (temp_dir) {
+                path = std::filesystem::path(temp_dir) / "tachyon_render_run.log";
+            } else {
+                path = std::filesystem::current_path() / "tachyon_render_run.log";
+            }
+            
+            std::ofstream f(path, std::ios::out | std::ios::trunc);
+            return f;
+        }();
+
+        if (s_trace_file.is_open()) {
+            s_trace_file << "[RenderTrace] " << message << std::endl;
+        }
+        std::cerr << "[RenderTrace] " << message << std::endl;
+    }
+}
 
 // Forward declarations for serialization helpers
 std::vector<uint8_t> serialize_framebuffer(const renderer2d::Framebuffer& fb);
@@ -161,6 +195,10 @@ void render_frames_parallel_internal(
 
                 const auto& task = execution_plan.frame_tasks[index];
                 RenderPlan frame_plan = execution_plan.render_plan;
+                render_trace(
+                    "frame start index=" + std::to_string(index) +
+                    " frame=" + std::to_string(task.frame_number) +
+                    " t=" + std::to_string(task.time_seconds));
 
                 std::shared_ptr<const renderer2d::Framebuffer> framebuffer;
                 bool cache_hit = false;
@@ -192,6 +230,10 @@ void render_frames_parallel_internal(
                     
                     executed_frame = executor.execute(compiled_scene, frame_plan, task, snapshot, local_context);
                     cache_hit = cache_hit || executed_frame.cache_hit;
+                    render_trace(
+                        "frame end index=" + std::to_string(index) +
+                        " frame=" + std::to_string(task.frame_number) +
+                        " cached=" + std::string(cache_hit ? "1" : "0"));
 
                     const auto frame_end = std::chrono::high_resolution_clock::now();
                     if (frame_times_out) {
@@ -267,8 +309,25 @@ void render_frames_parallel_internal(
         })));
     }
 
+    const auto session_start = std::chrono::high_resolution_clock::now();
+    const auto timeout_duration = std::chrono::seconds(15);
+
     for (auto& w : workers) {
-        w.wait();
+        if (w.valid()) {
+            const auto now = std::chrono::high_resolution_clock::now();
+            const auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(now - session_start);
+            if (elapsed >= timeout_duration) {
+                if (cancel_flag) cancel_flag->store(true);
+                render_trace("Hard timeout of 102s reached! Aborting session.");
+                break;
+            }
+
+            if (w.wait_for(timeout_duration - elapsed) == std::future_status::timeout) {
+                if (cancel_flag) cancel_flag->store(true);
+                render_trace("Hard timeout of 102s reached! Aborting session.");
+                break;
+            }
+        }
     }
 
     // In streaming mode, wait for any remaining frames to be written

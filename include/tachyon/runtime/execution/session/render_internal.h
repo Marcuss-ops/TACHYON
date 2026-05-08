@@ -35,4 +35,9 @@ void render_frames_parallel_internal(
  */
 bool mux_audio_video(const RenderPlan& plan, const std::string& video_path, const std::string& audio_path, std::string& error);
 
+/**
+ * @brief Logs a trace message if TACHYON_RENDER_TRACE environment variable is set.
+ */
+void render_trace(const std::string& message);
+
 } // namespace tachyon

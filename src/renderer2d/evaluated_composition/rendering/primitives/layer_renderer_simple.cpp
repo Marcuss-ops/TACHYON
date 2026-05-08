@@ -12,17 +12,20 @@
 #include "tachyon/render/intent_builder.h"
 #include "tachyon/renderer2d/resource/resource_provider.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
+#include "tachyon/runtime/execution/session/render_internal.h"
 
 
 #include <algorithm>
 #include <iostream>
 #include <cmath>
 #include <limits>
+#include <cstdlib>
 #include <span>
 #include <string>
 
 namespace tachyon::renderer2d {
 namespace {
+
 
 renderer2d::Color to_color(const ::tachyon::ColorSpec& spec) {
     return {
@@ -174,15 +177,80 @@ public:
 
         ::tachyon::text::TextLayoutOptions layout_options;
         const auto layout = ::tachyon::text::layout_text(*font, layer.text_content, style, box, alignment, layout_options);
+        render_trace(
+            "text layer=" + layer.id +
+            " t=" + std::to_string(layer.local_time_seconds) +
+            " glyphs=" + std::to_string(layout.glyphs.size()) +
+            " size=" + std::to_string(box.width) + "x" + std::to_string(box.height));
 
         if (!layout.glyphs.empty()) {
             const float time_seconds = static_cast<float>(layer.local_time_seconds);
             ::tachyon::text::TextAnimationOptions animation{};
             animation.time_seconds = time_seconds;
             animation.animators = layer.text_animators;
+            render_trace("text layer=" + layer.id + " resolve_glyph_paints begin");
             const auto paints = ::tachyon::text::resolve_glyph_paints(*font, layout, animation);
+            render_trace("text layer=" + layer.id + " resolve_glyph_paints end count=" + std::to_string(paints.size()));
 
-            ::tachyon::text::TextRasterSurface text_surface(surface->width(), surface->height());
+            int min_x = std::numeric_limits<int>::max();
+            int min_y = std::numeric_limits<int>::max();
+            int max_x = std::numeric_limits<int>::min();
+            int max_y = std::numeric_limits<int>::min();
+
+            for (const auto& paint : paints) {
+                if (paint.glyph == nullptr) continue;
+                const int dx = base_x + static_cast<int>(std::lround(static_cast<float>(paint.base_x) * scale_x));
+                const int dy = base_y + static_cast<int>(std::lround(static_cast<float>(paint.base_y) * scale_y));
+                const int dw = std::max(1, static_cast<int>(std::lround(static_cast<float>(paint.target_width) * scale_x)));
+                const int dh = std::max(1, static_cast<int>(std::lround(static_cast<float>(paint.target_height) * scale_y)));
+                min_x = std::min(min_x, dx);
+                min_y = std::min(min_y, dy);
+                max_x = std::max(max_x, dx + dw);
+                max_y = std::max(max_y, dy + dh);
+            }
+
+            for (const auto& highlight : layer.text_highlights) {
+                if (highlight.end_glyph <= highlight.start_glyph || highlight.start_glyph >= layout.glyphs.size()) continue;
+                const std::size_t end = std::min(highlight.end_glyph, layout.glyphs.size());
+                int local_min_x = std::numeric_limits<int>::max();
+                int local_min_y = std::numeric_limits<int>::max();
+                int local_max_x = std::numeric_limits<int>::min();
+                int local_max_y = std::numeric_limits<int>::min();
+                for (std::size_t i = highlight.start_glyph; i < end; ++i) {
+                    const auto& g = layout.glyphs[i];
+                    local_min_x = std::min(local_min_x, g.x);
+                    local_min_y = std::min(local_min_y, g.y);
+                    local_max_x = std::max(local_max_x, g.x + g.width);
+                    local_max_y = std::max(local_max_y, g.y + g.height);
+                }
+                if (local_min_x < local_max_x && local_min_y < local_max_y) {
+                    const int hx0 = base_x + static_cast<int>(std::lround(local_min_x * scale_x)) - highlight.padding_x;
+                    const int hy0 = base_y + static_cast<int>(std::lround(local_min_y * scale_y)) - highlight.padding_y;
+                    const int hx1 = base_x + static_cast<int>(std::lround(local_max_x * scale_x)) + highlight.padding_x;
+                    const int hy1 = base_y + static_cast<int>(std::lround(local_max_y * scale_y)) + highlight.padding_y;
+                    min_x = std::min(min_x, hx0);
+                    min_y = std::min(min_y, hy0);
+                    max_x = std::max(max_x, hx1);
+                    max_y = std::max(max_y, hy1);
+                }
+            }
+
+            if (min_x == std::numeric_limits<int>::max() || min_y == std::numeric_limits<int>::max()) {
+                return true;
+            }
+
+            const int pad = 4;
+            min_x -= pad;
+            min_y -= pad;
+            max_x += pad;
+            max_y += pad;
+
+            const int raster_width = std::max(1, max_x - min_x);
+            const int raster_height = std::max(1, max_y - min_y);
+            ::tachyon::text::TextRasterSurface text_surface(
+                static_cast<std::uint32_t>(raster_width),
+                static_cast<std::uint32_t>(raster_height));
+            render_trace("text layer=" + layer.id + " raster surface created " + std::to_string(raster_width) + "x" + std::to_string(raster_height));
 
             for (const auto& highlight : layer.text_highlights) {
                 if (highlight.end_glyph <= highlight.start_glyph || highlight.start_glyph >= layout.glyphs.size()) continue;
@@ -197,27 +265,34 @@ public:
                 }
                 if (min_x < max_x && min_y < max_y) {
                     fill_rect(text_surface,
-                        base_x + static_cast<int>(std::lround(min_x * scale_x)) - highlight.padding_x,
-                        base_y + static_cast<int>(std::lround(min_y * scale_y)) - highlight.padding_y,
+                        (base_x + static_cast<int>(std::lround(min_x * scale_x)) - highlight.padding_x) - min_x,
+                        (base_y + static_cast<int>(std::lround(min_y * scale_y)) - highlight.padding_y) - min_y,
                         static_cast<int>(std::lround((max_x - min_x) * scale_x)) + highlight.padding_x * 2,
                         static_cast<int>(std::lround((max_y - min_y) * scale_y)) + highlight.padding_y * 2,
                         to_color(highlight.color));
                 }
             }
 
+            render_trace("text layer=" + layer.id + " rendering glyphs begin");
             for (const auto& paint : paints) {
                 if (paint.glyph == nullptr) continue;
-                const int dx = base_x + static_cast<int>(std::lround(static_cast<float>(paint.base_x) * scale_x));
-                const int dy = base_y + static_cast<int>(std::lround(static_cast<float>(paint.base_y) * scale_y));
+                const int dx = base_x + static_cast<int>(std::lround(static_cast<float>(paint.base_x) * scale_x)) - min_x;
+                const int dy = base_y + static_cast<int>(std::lround(static_cast<float>(paint.base_y) * scale_y)) - min_y;
                 const int dw = std::max(1, static_cast<int>(std::lround(static_cast<float>(paint.target_width) * scale_x)));
                 const int dh = std::max(1, static_cast<int>(std::lround(static_cast<float>(paint.target_height) * scale_y)));
                 renderer2d::Color final_color = to_color(paint.fill_color);
                 final_color.a *= paint.opacity;
                 text_surface.render_glyph(*paint.glyph, dx, dy, dw, dh, final_color);
             }
+            render_trace("text layer=" + layer.id + " rendering glyphs end");
 
-            blit_text_surface(*surface, text_surface, 0, 0);
+            render_trace("text layer=" + layer.id + " blit begin");
+            blit_text_surface(*surface, text_surface, min_x, min_y);
+            render_trace("text layer=" + layer.id + " blit end");
         }
+        render_trace(
+            "text layer=" + layer.id +
+            " done");
         return true;
     }
 };
@@ -403,10 +478,17 @@ std::shared_ptr<SurfaceRGBA> render_simple_layer_surface(
 
     auto* renderer = LayerRendererRegistry::get().get_renderer(layer.type);
     if (renderer) {
+        render_trace(
+            "layer dispatch begin id=" + layer.id +
+            " type=" + std::to_string(static_cast<int>(layer.type)));
         renderer->render(layer, state, intent, context, target_rect, surface);
+        render_trace(
+            "layer dispatch end id=" + layer.id +
+            " type=" + std::to_string(static_cast<int>(layer.type)));
     }
 
     return surface;
 }
 
 } // namespace tachyon::renderer2d
+

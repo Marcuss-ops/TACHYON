@@ -1,6 +1,7 @@
 #include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"
 #include "tachyon/renderer2d/effects/core/transitions/transition_utils.h"
 #include "tachyon/core/spec/schema/objects/background_spec.h"
+#include "tachyon/runtime/execution/session/render_internal.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable:4456)
@@ -39,11 +40,14 @@
 #include <array>
 #include <chrono>
 #include <filesystem>
+#include <cstdlib>
 #include <unordered_map>
 
 namespace tachyon {
 
 namespace {
+
+
 
 template <typename ClockPoint>
 void record_timing(
@@ -165,6 +169,11 @@ RasterizedFrame2D render_evaluated_composition_2d(
     dst.clear_depth(0.0f); // Initialize depth buffer for hybrid compositing
 
     FrameDiagnostics* diagnostics = context.diagnostics;
+    render_trace(
+        "frame " + std::to_string(task.frame_number) +
+        " t=" + std::to_string(task.time_seconds) +
+        " composition=" + state.composition_id +
+        " layers=" + std::to_string(state.layers.size()));
 
 #ifdef TACHYON_ENABLE_3D
     bool has_any_3d = std::any_of(state.layers.begin(), state.layers.end(), [](const auto& l) { return l.is_3d && l.visible; });
@@ -228,14 +237,29 @@ RasterizedFrame2D render_evaluated_composition_2d(
             continue;
         }
 
+        render_trace(
+            "frame " + std::to_string(task.frame_number) +
+            " layer=" + layer.id +
+            " type=" + std::to_string(static_cast<int>(layer.type)) +
+            " t=" + std::to_string(layer.local_time_seconds) +
+            " begin");
+
         // Skip 3D layers for now (they're handled separately)
         if (layer.is_3d && layer.visible) {
             continue;
         }
 
         const auto layer_surface_start = std::chrono::high_resolution_clock::now();
+        render_trace(
+            "frame " + std::to_string(task.frame_number) +
+            " layer=" + layer.id +
+            " render_layer_surface=begin");
         auto layer_surface = render_layer_surface(layer, state, intent, plan, task, context, std::nullopt);
         record_timing(diagnostics, "layer_surface", layer.id.empty() ? std::to_string(i) : layer.id, layer_surface_start);
+        render_trace(
+            "frame " + std::to_string(task.frame_number) +
+            " layer=" + layer.id +
+            " render_layer_surface=" + (layer_surface ? "ok" : "null"));
         
         // Apply mesh deformation for matte resolution
         if (layer.mesh_deform_id.has_value() && layer_surface) {
@@ -253,27 +277,48 @@ RasterizedFrame2D render_evaluated_composition_2d(
         
         if (layer_surface) {
             rendered_surfaces[layer.id] = layer_surface;
+            render_trace(
+                "frame " + std::to_string(task.frame_number) +
+                " layer=" + layer.id +
+                " rendered_surfaces=stored");
         }
     }
 
     // Resolve matte dependencies using MatteResolver
     Renderer2DMatteResolver resolver;
     std::string validation_error;
+    render_trace(
+        "frame " + std::to_string(task.frame_number) +
+        " matte=validate begin deps=" + std::to_string(matte_dependencies.size()));
     if (!matte_dependencies.empty() && !resolver.validate(state.layers, matte_dependencies, validation_error)) {
         frame.note += " [matte validation warning: " + validation_error + "]";
         if (context.diagnostics) {
             context.diagnostics->diagnostics.add_warning("matte_validation", validation_error);
         }
     }
+    render_trace(
+        "frame " + std::to_string(task.frame_number) +
+        " matte=validate end");
 
     std::vector<std::vector<float>> matte_buffers;
     if (!matte_dependencies.empty()) {
+        render_trace(
+            "frame " + std::to_string(task.frame_number) +
+            " matte=resolve begin");
         resolver.resolve(state.layers, matte_dependencies, rendered_surfaces, matte_buffers, state.width, state.height);
+        render_trace(
+            "frame " + std::to_string(task.frame_number) +
+            " matte=resolve end");
     }
 
     auto render_pass = [&](SurfaceRGBA& target_surface, RenderContext2D& render_context, const std::optional<RectI>& tile_rect = std::nullopt) {
-        target_surface.clear(Color::transparent());
+        render_trace("render_pass entry");
+        render_trace("render_pass clear ok");
         EffectHost& host = effect_host_for(render_context);
+        render_trace("render_pass host ok");
+        render_trace(
+            "frame " + std::to_string(task.frame_number) +
+            " render_pass begin tile=" + (tile_rect ? std::to_string(tile_rect->x) + "," + std::to_string(tile_rect->y) : std::string("none")));
         // Render layers in stack order so higher layers can affect the composite below them.
         for (std::size_t i = 0; i < state.layers.size(); ++i) {
             if (render_context.cancel_flag && render_context.cancel_flag->load()) break;
@@ -515,6 +560,17 @@ RasterizedFrame2D render_evaluated_composition_2d(
             }
 
             auto layer_surface = render_layer_surface(layer, state, intent, plan, task, render_context, tile_rect);
+            if (!layer_surface) {
+                render_trace(
+                    "frame " + std::to_string(task.frame_number) +
+                    " layer=" + layer.id +
+                    " render_layer_surface=null");
+                continue;
+            }
+            render_trace(
+                "frame " + std::to_string(task.frame_number) +
+                " layer=" + layer.id +
+                " render_layer_surface=ok");
 
             // Apply mesh deformation (AE Puppet tool style) before effects
             if (layer.mesh_deform_id.has_value() && layer_surface) {
@@ -526,6 +582,10 @@ RasterizedFrame2D render_evaluated_composition_2d(
                             *mesh_ptr,
                             layer.width,
                             layer.height);
+                        render_trace(
+                            "frame " + std::to_string(task.frame_number) +
+                            " layer=" + layer.id +
+                            " mesh_deform=applied");
                     }
                 }
             }
@@ -533,6 +593,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
             if (layer.is_adjustment_layer) {
                 if (render_context.policy.effects_enabled) {
                     const auto adjustment_start = std::chrono::high_resolution_clock::now();
+                    render_trace("adjustment layer=" + layer.id + " begin");
                     auto res = apply_effect_pipeline(
                         target_surface,
                         layer.effects,
@@ -541,6 +602,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                         rendered_surfaces,
                         layer.id,
                         render_context.diagnostics);
+                    render_trace("adjustment layer=" + layer.id + " end");
                     record_timing(render_context.diagnostics, "adjustment", layer.id, adjustment_start);
                     
                     if (res.ok()) {
@@ -562,6 +624,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 for (const auto& animated_effect : layer.animated_effects) {
                     resolved_effects.push_back(animated_effect.evaluate(layer.local_time_seconds));
                 }
+                render_trace("effects layer=" + layer.id + " begin count=" + std::to_string(resolved_effects.size()));
                 auto res = apply_effect_pipeline(
                     *layer_surface,
                     resolved_effects,
@@ -570,14 +633,23 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     rendered_surfaces,
                     layer.id,
                     render_context.diagnostics);
+                render_trace("effects layer=" + layer.id + " end");
                 record_timing(render_context.diagnostics, "effect_pipeline", layer.id, effects_start);
                 
                 if (res.ok()) {
                     *layer_surface = std::move(*res.value);
+                    render_trace(
+                        "frame " + std::to_string(task.frame_number) +
+                        " layer=" + layer.id +
+                        " effects=applied");
                 } else {
                     // Effect failed, clear surface to prevent rendering stale data
                     layer_surface->clear(Color::transparent());
                 }
+                render_trace(
+                    "frame " + std::to_string(task.frame_number) +
+                    " layer=" + layer.id +
+                    " effects-end");
             }
 
             // Layer Transitions - Unified transition pipeline
@@ -654,11 +726,21 @@ RasterizedFrame2D render_evaluated_composition_2d(
                             render_context.cancel_flag);
 
                         *layer_surface = std::move(transition_result);
+                        render_trace(
+                            "frame " + std::to_string(task.frame_number) +
+                            " layer=" + layer.id +
+                            " transition=" + (resolution.descriptor ? resolution.descriptor->id : std::string("unknown")) +
+                            " progress=" + std::to_string(transition_t) +
+                            (in_transition ? " in" : " out"));
                     }
                     // Note: Basic transitions (fade, slide, zoom) are now handled via the registry
                     // as pixel-level transitions, unifying the pipeline
                 }
             }
+            render_trace(
+                "frame " + std::to_string(task.frame_number) +
+                " layer=" + layer.id +
+                " transition-end");
 
             // Particle effect
             /*
@@ -675,10 +757,18 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
             // Opacity
             multiply_surface_alpha(*layer_surface, static_cast<float>(layer.opacity));
+            render_trace(
+                "frame " + std::to_string(task.frame_number) +
+                " layer=" + layer.id +
+                " opacity-applied");
 
             // Apply resolved matte if available
             if (i < matte_buffers.size() && !matte_buffers[i].empty()) {
                 ::tachyon::renderer2d::apply_matte_buffer(*layer_surface, matte_buffers[i], state.width, state.height);
+                render_trace(
+                    "frame " + std::to_string(task.frame_number) +
+                    " layer=" + layer.id +
+                    " matte-applied");
             }
 
             // Final Composite
@@ -693,8 +783,17 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 }
             }
 
+            render_trace("composite layer=" + layer.id + " begin mode=" + layer.blend_mode);
             composite_surface(target_surface, *layer_surface, 0, 0, parse_blend_mode(layer.blend_mode), layer_inv_z);
+            render_trace("composite layer=" + layer.id + " end");
+            render_trace(
+                "frame " + std::to_string(task.frame_number) +
+                " layer=" + layer.id +
+                " composite=ok");
         }
+        render_trace(
+            "frame " + std::to_string(task.frame_number) +
+            " render_pass end tile=" + (tile_rect ? std::to_string(tile_rect->x) + "," + std::to_string(tile_rect->y) : std::string("none")));
     };
 
     const bool has_effectful_layers = std::any_of(
@@ -722,10 +821,17 @@ RasterizedFrame2D render_evaluated_composition_2d(
             tile_surface.clear(Color::transparent());
             
             RenderContext2D thread_context = context;
+            render_trace(
+                "frame " + std::to_string(task.frame_number) +
+                " render_pass tile invoke=" + std::to_string(tile.x) + "," + std::to_string(tile.y) +
+                " size=" + std::to_string(tile.width) + "x" + std::to_string(tile.height));
             render_pass(tile_surface, thread_context, tile);
             composite_surface(dst, tile_surface, tile.x, tile.y, BlendMode::Normal);
         }
     } else {
+        render_trace(
+            "frame " + std::to_string(task.frame_number) +
+            " render_pass invoke full");
         render_pass(dst, context);
     }
 

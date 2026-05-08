@@ -6,6 +6,7 @@
 #include "tachyon/runtime/execution/rasterization_step.h"
 #include "tachyon/render/intent_builder.h"
 #include "tachyon/renderer2d/resource/resource_provider.h"
+#include "tachyon/runtime/execution/session/render_internal.h"
 
 namespace tachyon {
 
@@ -88,6 +89,7 @@ void evaluate_frame_graph_step(
     const FrameCacheState& cache_state,
     const FrameTimingState& timing_state) {
 
+    render_trace("evaluate graph frame=" + std::to_string(task.frame_number) + " begin");
     const auto& topo_order = compiled_scene.graph.topo_order();
     for (std::uint32_t node_id : topo_order) {
         if (context.cancel_flag && context.cancel_flag->load()) {
@@ -105,6 +107,7 @@ void evaluate_frame_graph_step(
             timing_state.frame_time_seconds,
             task);
     }
+    render_trace("evaluate graph frame=" + std::to_string(task.frame_number) + " end");
 }
 
 void evaluate_and_rasterize_root_composition_step(
@@ -121,6 +124,7 @@ void evaluate_and_rasterize_root_composition_step(
     if (!compiled_scene.compositions.empty()) {
         const CompiledComposition& root_comp = compiled_scene.compositions.front();
         const std::uint64_t root_key = build_node_key(cache_state.frame_key, root_comp.node);
+        render_trace("evaluate composition frame=" + std::to_string(task.frame_number) + " begin");
         ::tachyon::evaluate_composition(
             executor,
             compiled_scene,
@@ -133,6 +137,7 @@ void evaluate_and_rasterize_root_composition_step(
             cache_state.frame_key,
             timing_state.frame_time_seconds,
             task);
+        render_trace("evaluate composition frame=" + std::to_string(task.frame_number) + " end");
 
         auto cached_comp = executor.cache().lookup_composition(root_key);
         if (cached_comp) {
@@ -155,6 +160,7 @@ void evaluate_and_rasterize_root_composition_step(
                 }
             }
 
+            render_trace("rasterize root frame=" + std::to_string(task.frame_number) + " begin");
             RasterizationResult raster_result = RasterizationStep::execute(
                 *cached_comp,
                 intent_result.intent,
@@ -167,6 +173,7 @@ void evaluate_and_rasterize_root_composition_step(
             result.frame = raster_result.frame;
             result.aovs = std::move(raster_result.aovs);
             result.draw_command_count = raster_result.draw_command_count;
+            render_trace("rasterize root frame=" + std::to_string(task.frame_number) + " end");
         }
     }
 }
