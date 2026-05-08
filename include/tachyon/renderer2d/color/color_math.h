@@ -10,8 +10,13 @@
 namespace tachyon {
 namespace renderer2d {
 
-float clamp01(float value);
-float lerp(float a, float b, float t);
+inline float clamp01(float value) {
+    return std::clamp(value, 0.0f, 1.0f);
+}
+
+inline float lerp(float a, float b, float t) {
+    return a + (b - a) * t;
+}
 
 Color lerp_color(Color a, Color b, float t);
 

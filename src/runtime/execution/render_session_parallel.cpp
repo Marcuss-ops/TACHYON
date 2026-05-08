@@ -175,6 +175,15 @@ void render_frames_parallel_internal(
               local_context.renderer2d.media_manager = context.renderer2d.media_manager;
               local_context.renderer2d.cms = context.renderer2d.cms;
               local_context.renderer2d.diagnostics = context.renderer2d.diagnostics;
+              local_context.renderer2d.effects = context.renderer2d.effects;
+              local_context.renderer2d.asset_resolver = context.renderer2d.asset_resolver;
+              local_context.renderer2d.working_color_space = context.renderer2d.working_color_space;
+              local_context.renderer2d.modifier_registry = context.renderer2d.modifier_registry;
+              local_context.renderer2d.text_registry = context.renderer2d.text_registry;
+              local_context.renderer2d.profiler = context.renderer2d.profiler;
+              local_context.renderer2d.compute_backend = context.renderer2d.compute_backend;
+              local_context.renderer2d.surface_pool = context.renderer2d.surface_pool;
+              local_context.renderer2d.subtitle_entries = context.renderer2d.subtitle_entries;
               local_context.cancel_flag = cancel_flag;
               local_context.renderer2d.cancel_flag = cancel_flag;
 
@@ -318,13 +327,13 @@ void render_frames_parallel_internal(
             const auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(now - session_start);
             if (elapsed >= timeout_duration) {
                 if (cancel_flag) cancel_flag->store(true);
-                render_trace("Hard timeout of 102s reached! Aborting session.");
+                render_trace("Hard timeout of 15s reached! Aborting session.");
                 break;
             }
 
             if (w.wait_for(timeout_duration - elapsed) == std::future_status::timeout) {
                 if (cancel_flag) cancel_flag->store(true);
-                render_trace("Hard timeout of 102s reached! Aborting session.");
+                render_trace("Hard timeout of 15s reached! Aborting session.");
                 break;
             }
         }
@@ -332,9 +341,11 @@ void render_frames_parallel_internal(
 
     // In streaming mode, wait for any remaining frames to be written
     if (streaming_mode && frame_queue && sink && result) {
-        // Wait for all frames to be written
+        // Wait for all frames to be written, but respect cancellation
         std::unique_lock<std::mutex> lock(frame_queue->mutex);
-        frame_queue->cv.wait(lock, [&]() { return frame_queue->next_to_write >= task_count; });
+        frame_queue->cv.wait(lock, [&]() { 
+            return (frame_queue->next_to_write >= task_count) || (cancel_flag && cancel_flag->load()); 
+        });
     }
 }
 

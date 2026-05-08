@@ -7,13 +7,6 @@
 
 namespace tachyon::renderer2d {
 
-inline float clamp01(float value) {
-    return std::clamp(value, 0.0f, 1.0f);
-}
-
-inline float lerp(float a, float b, float t) {
-    return a + (b - a) * t;
-}
 
 Color lerp_color(Color a, Color b, float t) {
     const float clamped_t = clamp01(t);

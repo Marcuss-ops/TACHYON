@@ -92,11 +92,13 @@ std::unique_ptr<media::MeshAsset> Layer3DMeshResolver::resolve(const LayerSpec& 
         // Indices for front and back
         sub.indices = { 0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7 };
         
-        sub.material.base_color_factor = {
-            layer.fill_color.r / 255.0f,
-            layer.fill_color.g / 255.0f,
-            layer.fill_color.b / 255.0f
-        };
+        if (layer.fill_color.value.has_value()) {
+            sub.material.base_color_factor = layer.fill_color.value->to_vector3();
+        } else if (!layer.fill_color.keyframes.empty()) {
+            sub.material.base_color_factor = layer.fill_color.keyframes.front().value.to_vector3();
+        } else {
+            sub.material.base_color_factor = math::Vector3::one();
+        }
         
         mesh->sub_meshes.push_back(std::move(sub));
         return mesh;
