@@ -52,7 +52,6 @@ TextAnimatorContext make_context_from_precomp(
     return ctx;
 }
 
-
 std::vector<PrecompGlyphCtx> precompute_glyph_contexts(const TextLayoutResult& layout) {
     std::vector<PrecompGlyphCtx> precomp;
     precomp.reserve(layout.glyphs.size());
@@ -107,7 +106,6 @@ void apply_text_animators(
     if (!animation.enabled || layout.glyphs.empty()) {
         return;
     }
-
 
     if (animators_span.empty()) {
         return;

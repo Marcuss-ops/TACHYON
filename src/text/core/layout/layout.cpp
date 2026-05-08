@@ -79,10 +79,7 @@ TextRasterSurface rasterize_text_rgba(
     const TextLayoutOptions& layout_options,
     const TextAnimationOptions& animation) {
 
-    TextLayoutResult layout = layout_text(font, utf8_text, style, text_box, alignment, layout_options);
-    if (animation.enabled) {
-        apply_text_animators(layout, animation);
-    }
+    const TextLayoutResult layout = layout_text(font, utf8_text, style, text_box, alignment, layout_options);
     TextRasterSurface surface(layout.width, layout.height);
     if (!font.is_loaded() || layout.width == 0U || layout.height == 0U) return surface;
 
@@ -90,6 +87,16 @@ TextRasterSurface rasterize_text_rgba(
         const GlyphBitmap* glyph = font.has_freetype_face() ? font.find_glyph_by_index(positioned.font_glyph_index) : font.find_scaled_glyph(positioned.codepoint, layout.scale);
         if (!glyph || glyph->width == 0U || glyph->height == 0U) continue;
 
+        float ox = 0.0f, oy = 0.0f, sc = 1.0f, op = 1.0f;
+        if (animation.enabled && !animation.animators.empty()) {
+            for (const auto& animator : animation.animators) {
+                const AnimatorSample sample = sample_animator(animator, layout, positioned, animation.time_seconds);
+                ox += sample.offset_x;
+                oy += sample.offset_y;
+                sc *= sample.scale;
+                op *= sample.opacity;
+            }
+        }
 
         renderer2d::Color color = style.fill_color;
         // Apply gradient if specified
@@ -113,8 +120,9 @@ TextRasterSurface rasterize_text_rgba(
                 color = grad.stops[0].color;
             }
         }
-        color.a = static_cast<std::uint8_t>(static_cast<float>(color.a) * positioned.opacity * positioned.reveal_factor);
-        surface.render_glyph(*glyph, positioned.x, positioned.y, (int)std::lround((float)glyph->width * layout.scale * positioned.scale.x), (int)std::lround((float)glyph->height * layout.scale * positioned.scale.y), color);
+        color.a *= op;
+        const int dx = positioned.x + (int)std::lround(ox), dy = positioned.y + (int)std::lround(oy);
+        surface.render_glyph(*glyph, dx, dy, (int)std::lround((float)glyph->width * layout.scale * sc), (int)std::lround((float)glyph->height * layout.scale * sc), color);
     }
 
     // Apply shadow and glow effects
@@ -138,15 +146,7 @@ TextRasterSurface rasterize_text_rgba(
     std::span<const TextAnimatorSpec> animators,
     const TextLayoutOptions& layout_options) {
 
-    TextLayoutResult layout = layout_text(font, utf8_text, style, text_box, alignment, layout_options);
-    
-    // Evaluate provided animators at time_seconds
-    TextAnimationOptions anim_opts;
-    anim_opts.enabled = true;
-    anim_opts.time_seconds = time_seconds;
-    anim_opts.animators = animators;
-    apply_text_animators(layout, anim_opts);
-
+    const TextLayoutResult layout = layout_text(font, utf8_text, style, text_box, alignment, layout_options);
     TextRasterSurface surface(layout.width, layout.height);
     if (!font.is_loaded() || layout.width == 0U || layout.height == 0U) {
         return surface;
@@ -223,10 +223,7 @@ TextRasterSurface rasterize_text_rgba(
     const TextLayoutOptions& layout_options,
     const TextAnimationOptions& animation) {
 
-    TextLayoutResult layout = layout_text(font, utf8_text, style, text_box, alignment, layout_options);
-    if (animation.enabled) {
-        apply_text_animators(layout, animation);
-    }
+    const TextLayoutResult layout = layout_text(font, utf8_text, style, text_box, alignment, layout_options);
     TextRasterSurface surface(layout.width, layout.height);
     if (!font.is_loaded() || layout.width == 0U || layout.height == 0U) return surface;
 
@@ -245,6 +242,16 @@ TextRasterSurface rasterize_text_rgba(
         const GlyphBitmap* glyph = font.has_freetype_face() ? font.find_glyph_by_index(positioned.font_glyph_index) : font.find_scaled_glyph(positioned.codepoint, layout.scale);
         if (!glyph || glyph->width == 0U || glyph->height == 0U) continue;
 
+        float ox = 0.0f, oy = 0.0f, sc = 1.0f, op = 1.0f;
+        if (animation.enabled && !animation.animators.empty()) {
+            for (const auto& animator : animation.animators) {
+                const AnimatorSample sample = sample_animator(animator, layout, positioned, animation.time_seconds);
+                ox += sample.offset_x;
+                oy += sample.offset_y;
+                sc *= sample.scale;
+                op *= sample.opacity;
+            }
+        }
 
         renderer2d::Color color = style.fill_color;
         // Apply gradient if specified
@@ -266,8 +273,8 @@ TextRasterSurface rasterize_text_rgba(
                 color = grad.stops[0].color;
             }
         }
-        color.a = static_cast<std::uint8_t>(static_cast<float>(color.a) * positioned.opacity * positioned.reveal_factor);
-        surface.render_glyph(*glyph, positioned.x, positioned.y, (int)std::lround((float)glyph->width * layout.scale * positioned.scale.x), (int)std::lround((float)glyph->height * layout.scale * positioned.scale.y), color);
+        color.a *= op;
+        surface.render_glyph(*glyph, positioned.x + (int)std::lround(ox), positioned.y + (int)std::lround(oy), (int)std::lround((float)glyph->width * layout.scale * sc), (int)std::lround((float)glyph->height * layout.scale * sc), color);
     }
 
     // Apply shadow and glow effects
@@ -312,7 +319,7 @@ TextRasterSurface rasterize_text_rgba(
                         color.g = grad.stops[i].color.g + (grad.stops[i + 1].color.g - grad.stops[i].color.g) * local_t;
                         color.b = grad.stops[i].color.b + (grad.stops[i + 1].color.b - grad.stops[i].color.b) * local_t;
                         break;
- }
+                    }
                 }
             } else if (!grad.stops.empty()) {
                 color = grad.stops[0].color;

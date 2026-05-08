@@ -10,21 +10,11 @@
 namespace tachyon::renderer2d {
 
 EffectHost& effect_host_for(RenderContext2D& context) {
-    if (context.effects) {
-        return *context.effects;
+    if (!context.effects) {
+        throw std::runtime_error("RenderContext2D::effects is not initialized. "
+                               "Ensure RenderSession is used to properly initialize the context.");
     }
-    
-    // Fallback path for code that doesn't use the session manager.
-    // In production, context.effects should always be set by RenderSession.
-    static std::unique_ptr<EffectHost> s_fallback_host = [] {
-        static EffectRegistry registry;
-        static TransitionRegistry transition_registry;
-        register_builtin_transitions(transition_registry);
-        register_builtin_effects(registry, transition_registry);
-        return create_effect_host(registry);
-    }();
-    
-    return *s_fallback_host;
+    return *context.effects;
 }
 
 EffectParams effect_params_from_spec(const EffectSpec& spec, const ColorProfile& working_profile) {

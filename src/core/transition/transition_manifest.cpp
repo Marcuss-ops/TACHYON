@@ -1,6 +1,9 @@
 #include "tachyon/core/transition/transition_descriptor.h"
 #include "tachyon/core/ids/builtin_ids.h"
 #include "tachyon/transition_registry.h"
+#include "tachyon/renderer2d/effects/core/transitions/basic_transitions.h"
+#include "tachyon/renderer2d/effects/core/transitions/artistic_transitions.h"
+#include "tachyon/renderer2d/effects/core/transitions/light_leak_transitions.h"
 #include <vector>
 
 namespace tachyon {
@@ -78,6 +81,19 @@ const std::vector<TransitionDescriptor>& get_transition_manifest() {
         make_desc(std::string(ids::transition::lightleak_vintage_sepia), "Vintage Sepia", "Warm sepia memory leak", TransitionKind::Fade, TransitionRuntimeKind::CpuPixel, true, false)
     };
     return manifest;
+}
+
+void register_builtin_transitions(TransitionRegistry& reg) {
+    for (const auto& const_desc : get_transition_manifest()) {
+        TransitionDescriptor desc = const_desc; // Copy to attach implementations
+        
+        // Attach CPU/GLSL implementations
+        renderer2d::resolve_basic_transition_implementations(desc);
+        renderer2d::resolve_artistic_transition_implementations(desc);
+        renderer2d::resolve_light_leak_implementations(desc);
+
+        reg.register_descriptor(desc);
+    }
 }
 
 } // namespace tachyon

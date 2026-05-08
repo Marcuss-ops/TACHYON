@@ -13,7 +13,7 @@ struct TextAnimationOptions {
 
     // Runtime state shared across renderers: a local clock plus the animator set to evaluate.
     float time_seconds{0.0f};
-    std::span<const ::tachyon::TextAnimatorSpec> animators{};
+    std::vector<::tachyon::TextAnimatorSpec> animators;
 
     // Motion blur intensity (0.0 = disabled, 1.0 = standard, >1.0 = exaggerated)
     float motion_blur_intensity{1.0f};

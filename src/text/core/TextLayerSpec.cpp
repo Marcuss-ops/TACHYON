@@ -9,7 +9,7 @@ namespace tachyon {
 
 namespace {
 
-std::vector<TextAnimatorSpec> resolve_text_animators(const presets::TextParams& p, const presets::TextAnimatorPresetRegistry* registry) {
+std::vector<TextAnimatorSpec> resolve_text_animators(const presets::TextParams& p) {
     if (!p.animations.empty()) {
         return p.animations;
     }
@@ -21,13 +21,14 @@ std::vector<TextAnimatorSpec> resolve_text_animators(const presets::TextParams& 
     bag.set("stagger_delay", static_cast<double>(p.stagger_delay));
     bag.set("reveal_duration", static_cast<double>(p.reveal_duration));
 
-    if (!registry) return {};
-    return registry->create(animation_id, bag);
+    presets::TextManifest text_manifest;
+    presets::TextAnimatorPresetRegistry registry(text_manifest);
+    return registry.create(animation_id, bag);
 }
 
 } // namespace
 
-TextLayerSpec build_text_spec(const presets::TextParams& p, const presets::TextAnimatorPresetRegistry* registry) {
+TextLayerSpec build_text_spec(const presets::TextParams& p) {
     TextLayerSpec spec;
     spec.in_point = p.in_point;
     spec.out_point = p.out_point;
@@ -43,7 +44,7 @@ TextLayerSpec build_text_spec(const presets::TextParams& p, const presets::TextA
     spec.font_size = static_cast<double>(p.font_size);
     spec.fill_color = AnimatedColorSpec(p.color);
 
-    spec.text_animators = resolve_text_animators(p, registry);
+    spec.text_animators = resolve_text_animators(p);
 
     return spec;
 }

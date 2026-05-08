@@ -4,12 +4,12 @@
 #include "tachyon/renderer3d/core/mesh_types.h"
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 #include "tachyon/renderer2d/resource/render_context.h"
-#include "tachyon/core/render/scene_3d.h"
 
 #include <iostream>
 #include <memory>
 #include <vector>
 #include <cmath>
+#include <map>
 
 namespace {
 
@@ -28,9 +28,8 @@ bool run_3d_modifier_tests() {
     using namespace tachyon;
     using namespace tachyon::renderer3d;
 
-    // 1. Registry test
+    // Registry auto-registers builtins on construction
     Modifier3DRegistry registry;
-    register_builtin_modifier_descriptors(registry);
     
     ThreeDModifierSpec tilt_spec;
     tilt_spec.type = "tachyon.modifier3d.tilt";
@@ -61,11 +60,12 @@ bool run_3d_modifier_tests() {
     LayerSpec layer;
     renderer2d::RenderContext ctx;
     
-    ResolvedModifier3D resolved;
-    resolved.type = tilt_spec.type;
-    resolved.scalar_params["tilt_x"] = 45.0f;
-    resolved.scalar_params["tilt_y"] = 0.0f;
-    modifier->apply(mesh, resolved, ctx);
+    ResolvedModifier3D tilt_resolved;
+    tilt_resolved.type = tilt_spec.type;
+    tilt_resolved.scalar_params["tilt_x"] = 45.0f;
+    tilt_resolved.scalar_params["tilt_y"] = 0.0f;
+
+    modifier->apply(mesh, tilt_resolved, ctx);
     
     // After 45 degree tilt on X axis, vertex 0 Y should change
     // rotation_x(45deg): y' = y*cos(45) - z*sin(45) = -50*cos(45) - 0 = -50 * 0.707 = -35.35
@@ -81,9 +81,11 @@ bool run_3d_modifier_tests() {
     auto parallax_mod = registry.create(parallax_spec.type);
     check_true(parallax_mod != nullptr, "Modifier 'parallax' created from registry");
     
-    resolved.type = parallax_spec.type;
-    resolved.scalar_params["depth"] = 100.0f;
-    parallax_mod->apply(mesh, resolved, ctx);
+    ResolvedModifier3D parallax_resolved;
+    parallax_resolved.type = parallax_spec.type;
+    parallax_resolved.scalar_params["depth"] = 100.0f;
+
+    parallax_mod->apply(mesh, parallax_resolved, ctx);
     // After 100 depth shift, vertex 0 Z should be -35.35 + 100 = 64.65
     check_true(std::abs(mesh.vertices[0].position.z - 64.6446f) < 0.1f, "Vertex 0 Z shifted by parallax");
 

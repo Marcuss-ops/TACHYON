@@ -38,11 +38,18 @@ void Animation2DPresetRegistry::load_builtins() {
         return res;
     };
 
+    // Common schema for animation 2D presets
+    ParameterSchema anim2d_schema({
+        {"duration", "Duration", "Animation duration in seconds", 1.0, 0.0, 10.0},
+        {"delay", "Delay", "Animation delay in seconds", 0.0, 0.0, 10.0},
+        {"intensity", "Intensity", "Animation intensity multiplier", 1.0f, 0.0, 10.0}
+    });
+
     // 1. Pop In: A bouncy scale-up entrance
     register_spec({
         "tachyon.anim2d.pop_in",
         {"tachyon.anim2d.pop_in", "Pop In", "Bouncy scale-up entrance animation.", "animation.2d", {"entrance", "pop", "bouncy"}, 1, registry::Stability::Stable, {{"text", "image", "solid"}, {"cpu"}}},
-        {},
+        anim2d_schema,
         [get_anim_params](LayerSpec& layer, const ParameterBag& p) {
             auto params = get_anim_params(p);
             auto& scale = layer.transform.scale_property;
@@ -57,7 +64,7 @@ void Animation2DPresetRegistry::load_builtins() {
     register_spec({
         "tachyon.anim2d.soft_pulse",
         {"tachyon.anim2d.soft_pulse", "Soft Pulse", "Gentle breathing scale animation.", "animation.2d", {"loop", "pulse", "subtle"}, 1, registry::Stability::Stable, {{"all"}, {"cpu"}}},
-        {},
+        anim2d_schema,
         [get_anim_params](LayerSpec& layer, const ParameterBag& p) {
             auto params = get_anim_params(p);
             auto& scale = layer.transform.scale_property;
@@ -74,7 +81,7 @@ void Animation2DPresetRegistry::load_builtins() {
     register_spec({
         "tachyon.anim2d.subtle_drift",
         {"tachyon.anim2d.subtle_drift", "Subtle Drift", "Slow floating vertical motion.", "animation.2d", {"loop", "drift", "subtle"}, 1, registry::Stability::Stable, {{"all"}, {"cpu"}}},
-        {},
+        anim2d_schema,
         [get_anim_params](LayerSpec& layer, const ParameterBag& p) {
             auto params = get_anim_params(p);
             auto& pos = layer.transform.position_property;
@@ -90,7 +97,7 @@ void Animation2DPresetRegistry::load_builtins() {
     register_spec({
         "tachyon.anim2d.smooth_rotate",
         {"tachyon.anim2d.smooth_rotate", "Smooth Rotate", "Gentle pendulum-like rotation.", "animation.2d", {"loop", "rotate", "subtle"}, 1, registry::Stability::Stable, {{"all"}, {"cpu"}}},
-        {},
+        anim2d_schema,
         [get_anim_params](LayerSpec& layer, const ParameterBag& p) {
             auto params = get_anim_params(p);
             auto& rot = layer.transform.rotation_property;

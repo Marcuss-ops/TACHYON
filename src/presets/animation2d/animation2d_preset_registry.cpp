@@ -2,12 +2,9 @@
 
 namespace tachyon::presets {
 
-void Animation2DPresetRegistry::register_spec(Animation2DPresetSpec spec) {
-    registry_.register_spec(std::move(spec));
-}
-
-const Animation2DPresetSpec* Animation2DPresetRegistry::find(std::string_view id) const {
-    return registry_.find(id);
+Animation2DPresetRegistry& Animation2DPresetRegistry::instance() {
+    static Animation2DPresetRegistry instance;
+    return instance;
 }
 
 bool Animation2DPresetRegistry::apply(std::string_view id, LayerSpec& layer, const registry::ParameterBag& params) const {
@@ -16,10 +13,6 @@ bool Animation2DPresetRegistry::apply(std::string_view id, LayerSpec& layer, con
         return true;
     }
     return false;
-}
-
-std::vector<std::string> Animation2DPresetRegistry::list_ids() const {
-    return registry_.list_ids();
 }
 
 } // namespace tachyon::presets

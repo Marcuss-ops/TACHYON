@@ -8,6 +8,9 @@
 namespace tachyon {
 using namespace renderer2d;
 
+using renderer2d::Color;
+using renderer2d::SurfaceRGBA;
+
 namespace {
 // Helper to create a "none" kernel that performs simple lerp
 TransitionKernel create_none_kernel() {

@@ -1,13 +1,29 @@
 #pragma once
-
+#include "tachyon/core/transition/transition_descriptor.h"
 #include "tachyon/renderer2d/effects/core/effect_common.h"
 #include <algorithm>
+#include <atomic>
 
 namespace tachyon::renderer2d {
 
 /**
  * Common utilities for pixel-level transitions.
  */
+
+/**
+ * @brief Applies a pixel-level transition function to a surface.
+ */
+void apply_pixel_transition(
+    SurfaceRGBA& result,
+    const SurfaceRGBA& from,
+    const SurfaceRGBA* to,
+    CpuTransitionFn transition_fn,
+    float progress,
+    float layer_w,
+    float layer_h,
+    float offset_x,
+    float offset_y,
+    const std::atomic<bool>* cancel_flag = nullptr);
 
 inline Color sample_uv(const SurfaceRGBA& surface, float u, float v) {
     return sample_texture_bilinear(surface, std::clamp(u, 0.0f, 1.0f), std::clamp(v, 0.0f, 1.0f), Color::white());

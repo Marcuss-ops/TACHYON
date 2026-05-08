@@ -8,11 +8,24 @@ set(TachyonRenderer2DEffectsSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/effect_host.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/effect_param_access.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/glsl_transition_effect.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/diagnostics/diagnostic_surface.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/transitions/basic_transitions.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/transitions/light_leak_transitions.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/transitions/artistic_transitions.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/transitions/transition_utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/utility_effects.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/glitch.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/distort/warp_stabilizer_effect.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/diagnostics/diagnostic_surface.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_blur_table.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_color_table.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_distortion_table.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_generator_table.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_blur_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_color_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_lut_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_misc_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_sampling_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_stylize_table.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_transition_table.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_manifest.cpp
 )

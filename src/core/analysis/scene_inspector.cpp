@@ -1,6 +1,5 @@
 #include "tachyon/core/analysis/scene_inspector.h"
 #include "tachyon/transition_registry.h"
-#include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
 
 #include <algorithm>
 #include <iomanip>
@@ -114,7 +113,7 @@ bool has_text_motion(const TextAnimatorSpec& animator) {
 
 } // namespace
 
-InspectionReport inspect_scene(const SceneSpec& scene, const TransitionRegistry& transition_registry, const renderer3d::Modifier3DRegistry& modifier_registry, const InspectionOptions& options) {
+InspectionReport inspect_scene(const SceneSpec& scene, const TransitionRegistry& registry, const InspectionOptions& options) {
     InspectionReport report;
     (void)options.samples;
 
@@ -262,7 +261,7 @@ InspectionReport inspect_scene(const SceneSpec& scene, const TransitionRegistry&
             if (layer.transition_in.kind != TransitionKind::None || !layer.transition_in.transition_id.empty()) {
                 add_info(report, options, "layer.transition_in", layer_path, "Layer has an entrance transition.");
                 if (!layer.transition_in.transition_id.empty()) {
-                    if (transition_registry.find(layer.transition_in.transition_id) == nullptr) {
+                    if (registry.resolve(layer.transition_in.transition_id) == nullptr) {
                         add_issue(report, InspectionSeverity::Error, "layer.transition_in.missing_id", layer_path,
                             "Transition ID '" + layer.transition_in.transition_id + "' not found in registry.");
                     }
@@ -271,7 +270,7 @@ InspectionReport inspect_scene(const SceneSpec& scene, const TransitionRegistry&
             if (layer.transition_out.kind != TransitionKind::None || !layer.transition_out.transition_id.empty()) {
                 add_info(report, options, "layer.transition_out", layer_path, "Layer has an exit transition.");
                 if (!layer.transition_out.transition_id.empty()) {
-                    if (transition_registry.find(layer.transition_out.transition_id) == nullptr) {
+                    if (registry.resolve(layer.transition_out.transition_id) == nullptr) {
                         add_issue(report, InspectionSeverity::Error, "layer.transition_out.missing_id", layer_path,
                             "Transition ID '" + layer.transition_out.transition_id + "' not found in registry.");
                     }
@@ -301,16 +300,6 @@ InspectionReport inspect_scene(const SceneSpec& scene, const TransitionRegistry&
 
             if (layer.particle_spec.has_value()) {
                 add_info(report, options, "layer.particles", layer_path, "Layer uses a particle spec.");
-            }
-
-            if (layer.three_d.has_value() && layer.three_d->enabled) {
-                add_info(report, options, "layer.3d", layer_path, "Layer has 3D features enabled.");
-                for (const auto& modifier : layer.three_d->modifiers) {
-                    if (modifier_registry.resolve(modifier.type) == nullptr) {
-                        add_issue(report, InspectionSeverity::Error, "layer.3d.modifier_missing", layer_path,
-                            "3D Modifier '" + modifier.type + "' not found in registry.");
-                    }
-                }
             }
         }
 

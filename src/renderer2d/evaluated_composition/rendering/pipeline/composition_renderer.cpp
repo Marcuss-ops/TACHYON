@@ -1,4 +1,5 @@
 #include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"
+#include "tachyon/renderer2d/effects/core/transitions/transition_utils.h"
 #include "tachyon/core/spec/schema/objects/background_spec.h"
 
 #ifdef _MSC_VER
@@ -128,20 +129,11 @@ std::optional<std::filesystem::path> resolve_media_source(
 
 RasterizedFrame2D render_evaluated_composition_2d(
     const scene::EvaluatedCompositionState& state,
-    const render::RenderIntent& intent,
+    [[maybe_unused]] const render::RenderIntent& intent,
     const RenderPlan& plan,
     const FrameRenderTask& task,
     RenderContext2D& context,
-    const renderer2d::EffectRegistry& effect_registry) {
-    (void)intent;
- 
-    std::unique_ptr<renderer2d::EffectHost> local_host;
-    renderer2d::EffectHost* active_host = context.effects.get();
-    if (!active_host) {
-        local_host = renderer2d::create_effect_host(effect_registry);
-        active_host = local_host.get();
-    }
-    renderer2d::EffectHost& host = *active_host;
+    [[maybe_unused]] const renderer2d::EffectRegistry& effect_registry) {
 
     RasterizedFrame2D frame;
     frame.frame_number = task.frame_number;
@@ -281,6 +273,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
     auto render_pass = [&](SurfaceRGBA& target_surface, RenderContext2D& render_context, const std::optional<RectI>& tile_rect = std::nullopt) {
         target_surface.clear(Color::transparent());
+        EffectHost& host = effect_host_for(render_context);
         // Render layers in stack order so higher layers can affect the composite below them.
         for (std::size_t i = 0; i < state.layers.size(); ++i) {
             if (render_context.cancel_flag && render_context.cancel_flag->load()) break;
@@ -641,24 +634,25 @@ RasterizedFrame2D render_evaluated_composition_2d(
                             transition_to.clear(Color::transparent());
                         }
 
-                        // Apply transition pixel by pixel
+                        // Apply transition using the unified helper
                         SurfaceRGBA transition_result(layer_surface->width(), layer_surface->height());
                         const float layer_w = static_cast<float>(layer.width);
                         const float layer_h = static_cast<float>(layer.height);
                         const float offset_x = tile_rect ? static_cast<float>(tile_rect->x) : 0.0f;
                         const float offset_y = tile_rect ? static_cast<float>(tile_rect->y) : 0.0f;
 
-                        #pragma omp parallel for schedule(static)
-                        for (int y = 0; y < static_cast<int>(transition_result.height()); ++y) {
-                            if (render_context.cancel_flag && render_context.cancel_flag->load()) continue;
-                            for (std::uint32_t x = 0; x < transition_result.width(); ++x) {
-                                // Use global UVs relative to the full layer, not the tile
-                                const float u = (static_cast<float>(x) + offset_x + 0.5f) / layer_w;
-                                const float v = (static_cast<float>(y) + offset_y + 0.5f) / layer_h;
-                                const Color out = resolution.cpu_function(u, v, static_cast<float>(transition_t), transition_input, &transition_to);
-                                transition_result.set_pixel(x, static_cast<std::uint32_t>(y), out);
-                            }
-                        }
+                        apply_pixel_transition(
+                            transition_result,
+                            transition_input,
+                            &transition_to,
+                            resolution.cpu_function,
+                            static_cast<float>(transition_t),
+                            layer_w,
+                            layer_h,
+                            offset_x,
+                            offset_y,
+                            render_context.cancel_flag);
+
                         *layer_surface = std::move(transition_result);
                     }
                     // Note: Basic transitions (fade, slide, zoom) are now handled via the registry

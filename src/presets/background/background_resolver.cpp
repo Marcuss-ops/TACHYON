@@ -1,6 +1,7 @@
 #include "tachyon/presets/background/background_resolver.h"
 #include "tachyon/presets/background/background_preset_registry.h"
 #include "tachyon/presets/background/fluent.h"
+#include "tachyon/background_registry.h"
 #include "tachyon/core/registry/parameter_bag.h"
 #include "tachyon/core/policy/engine_policy.h"
 #include <iostream>
@@ -14,7 +15,7 @@ BackgroundResolutionResult resolve_background(
     double duration
 ) {
     BackgroundResolutionResult result;
-    
+
     switch (bg.type) {
         case BackgroundType::None:
             result.status = BackgroundResolutionResult::Status::EmptyByDesign;
@@ -22,7 +23,22 @@ BackgroundResolutionResult resolve_background(
 
         case BackgroundType::Color:
             if (bg.parsed_color) {
-                result.layers = { background::solid(*bg.parsed_color, width, height, duration) };
+                // Resolve via BackgroundRegistry - find solid background descriptor
+                auto* desc = BackgroundRegistry::instance().find_by_id("tachyon.background.solid");
+                if (desc && desc->build) {
+                    registry::ParameterBag bag;
+                    bag.set("color", *bg.parsed_color);
+                    bag.set("width", static_cast<float>(width));
+                    bag.set("height", static_cast<float>(height));
+                    bag.set("duration", duration);
+                    auto layer = desc->build(bag);
+                    if (layer.type != LayerType::NullLayer) {
+                        result.layers = { layer };
+                        return result;
+                    }
+                }
+                result.status = BackgroundResolutionResult::Status::InvalidColor;
+                result.error_message = "Solid background descriptor not found or build failed.";
                 return result;
             }
             result.status = BackgroundResolutionResult::Status::InvalidColor;
@@ -30,23 +46,41 @@ BackgroundResolutionResult resolve_background(
             return result;
 
         case BackgroundType::Asset:
-            // TODO: check if asset exists in strict mode
-            result.layers = { background::image(bg.value, width, height, duration) };
-            return result;
+            // Resolve via BackgroundRegistry - find image background descriptor
+            {
+                auto* desc = BackgroundRegistry::instance().find_by_id("tachyon.background.image");
+                if (desc && desc->build) {
+                    registry::ParameterBag bag;
+                    bag.set("asset_path", bg.value);
+                    bag.set("width", static_cast<float>(width));
+                    bag.set("height", static_cast<float>(height));
+                    bag.set("duration", duration);
+                    auto layer = desc->build(bag);
+                    if (layer.type != LayerType::NullLayer) {
+                        result.layers = { layer };
+                        return result;
+                    }
+                }
+                // BackgroundRegistry lookup failed or returned NullLayer
+                result.status = BackgroundResolutionResult::Status::AssetMissing;
+                result.error_message = "Image background descriptor not found or build failed for: " + bg.value;
+                return result;
+            }
 
         case BackgroundType::Preset: {
-            presets::BackgroundPresetRegistry registry;
+            presets::BackgroundManifest bg_manifest;
+            presets::BackgroundPresetRegistry registry(bg_manifest);
             registry::ParameterBag bag;
             bag.set("width", static_cast<float>(width));
             bag.set("height", static_cast<float>(height));
             bag.set("duration", duration);
-            
+
             auto layer = registry.create(bg.value, bag);
             if (layer) {
                 result.layers = { *layer };
                 return result;
             }
-            
+
             result.status = BackgroundResolutionResult::Status::UnknownPreset;
             result.error_message = "Background preset '" + bg.value + "' not found in registry.";
             return result;
@@ -80,18 +114,16 @@ std::vector<LayerSpec> resolve_background_to_layers_checked(
     double duration
 ) {
     auto res = resolve_background(bg, width, height, duration);
-    
-    if (res.status != BackgroundResolutionResult::Status::Ok && 
+
+    if (res.status != BackgroundResolutionResult::Status::Ok &&
         res.status != BackgroundResolutionResult::Status::EmptyByDesign) {
-        
+
         if (EngineValidationPolicy::instance().strict_backgrounds) {
             std::cerr << "[Tachyon] STRICT ERROR: Background resolution failed: " << res.error_message << std::endl;
-            // In strict mode, we might want to return an error layer or throw, 
-            // but for now we follow the user's advice to avoid silent black frames.
-            return {}; 
+            return {};
         }
     }
-    
+
     return res.layers;
 }
 

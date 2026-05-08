@@ -43,7 +43,7 @@ bool run_transition_runtime_tests() {
     // 3. Reverse audit: every preset that maps to a runtime id must resolve.
     //    (Forward direction already in preset_audit_tests. This catches the
     //    case where a runtime transition was removed but preset still references it.)
-    auto& preset_registry = presets::TransitionPresetRegistry::instance();
+    presets::TransitionPresetRegistry preset_registry;
     const auto preset_ids = preset_registry.list_ids();
 
     for (const auto& pid : preset_ids) {

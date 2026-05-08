@@ -18,6 +18,11 @@ Every new visual feature must enter through one of:
 - Direct feature logic inside builders
 - If-else chains for feature types in renderers
 - Creating new resolution paths instead of using existing resolvers
+- Reintroducing singleton-exposed preset/registry APIs once a domain is canonical
+- Reading legacy fields from runtime paths after the canonical spec is established
+- Adding compatibility fallbacks inside rendering paths instead of at the edge
+- Creating duplicate pipelines for the same visual feature
+- Translating old fields with new migrators when the canonical model already exists
 
 ## Registry Contract
 

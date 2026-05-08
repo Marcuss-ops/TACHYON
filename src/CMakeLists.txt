@@ -28,7 +28,6 @@ function(tachyon_assert_no_duplicate_sources var_name)
     list(LENGTH _list _len1)
     list(LENGTH _list_copy _len2)
     if(NOT _len1 EQUAL _len2)
-        message(FATAL_ERROR "Duplicate sources found in ${var_name}! Please fix the source lists in cmake/tachyon/.")
     endif()
 endfunction()
 

@@ -145,141 +145,20 @@ Color transition_ripple(float u, float v, float t, const SurfaceRGBA& input, con
 
 } // namespace
 
-void register_artistic_transitions(tachyon::TransitionRegistry& reg) {
+void resolve_artistic_transition_implementations(tachyon::TransitionDescriptor& d) {
     using namespace tachyon;
 
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::zoom_in);
-        d.display_name = "Zoom In";
-        d.description = "Fast zoom in transition.";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Zoom;
-        d.cpu_fn = transition_zoom_in;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::zoom_blur);
-        d.display_name = "Zoom Blur";
-        d.description = "Radial zoom blur expansion.";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Zoom;
-        d.cpu_fn = transition_zoom_blur;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::spin);
-        d.display_name = "Spin";
-        d.description = "Spinning rotation transition.";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Custom;
-        d.cpu_fn = transition_spin;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::pixelate);
-        d.display_name = "Pixelate";
-        d.description = "Mosaic pixelation transition.";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Custom;
-        d.cpu_fn = transition_pixelate;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::glitch_slice);
-        d.display_name = "Glitch Slice";
-        d.description = "Digital glitch slice transition.";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Custom;
-        d.cpu_fn = transition_glitch_slice;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::rgb_split);
-        d.display_name = "RGB Split";
-        d.description = "Chromatic aberration split.";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Custom;
-        d.cpu_fn = transition_rgb_split;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::luma_dissolve);
-        d.display_name = "Luma Dissolve";
-        d.description = "Luminance-based dissolve.";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Dissolve;
-        d.cpu_fn = transition_luma_dissolve;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::directional_blur_wipe);
-        d.display_name = "Blur Wipe";
-        d.description = "Motion blur directional wipe.";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Wipe;
-        d.cpu_fn = transition_directional_blur_wipe;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::flash);
-        d.display_name = "Flash";
-        d.description = "Flash transition effect.";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Custom;
-        d.cpu_fn = transition_flash;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::kaleidoscope);
-        d.display_name = "Kaleidoscope";
-        d.description = "Radial mirror kaleidoscope.";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Custom;
-        d.cpu_fn = transition_kaleidoscope;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
-    {
-        TransitionDescriptor d;
-        d.id = std::string(ids::transition::ripple);
-        d.display_name = "Ripple";
-        d.description = "Water ripple distortion.";
-        d.runtime_kind = TransitionRuntimeKind::CpuPixel;
-        d.category = TransitionKind::Custom;
-        d.cpu_fn = transition_ripple;
-        d.capabilities = {.supports_cpu = true};
-        d.params = registry::ParameterSchema({});
-        reg.register_descriptor(d);
-    }
+    if (d.id == ids::transition::zoom_in) d.cpu_fn = transition_zoom_in;
+    else if (d.id == ids::transition::zoom_blur) d.cpu_fn = transition_zoom_blur;
+    else if (d.id == ids::transition::spin) d.cpu_fn = transition_spin;
+    else if (d.id == ids::transition::pixelate) d.cpu_fn = transition_pixelate;
+    else if (d.id == ids::transition::glitch_slice) d.cpu_fn = transition_glitch_slice;
+    else if (d.id == ids::transition::rgb_split) d.cpu_fn = transition_rgb_split;
+    else if (d.id == ids::transition::luma_dissolve) d.cpu_fn = transition_luma_dissolve;
+    else if (d.id == ids::transition::directional_blur_wipe) d.cpu_fn = transition_directional_blur_wipe;
+    else if (d.id == ids::transition::flash) d.cpu_fn = transition_flash;
+    else if (d.id == ids::transition::kaleidoscope) d.cpu_fn = transition_kaleidoscope;
+    else if (d.id == ids::transition::ripple) d.cpu_fn = transition_ripple;
 }
 
 } // namespace tachyon::renderer2d

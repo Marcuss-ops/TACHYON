@@ -1,27 +1,47 @@
-#include "tachyon/presets/background/background_preset_registry.h"
+#include "tachyon/presets/background/background_manifest.h"
 #include "tachyon/presets/background/background_builders.h"
 #include "tachyon/presets/background/procedural.h"
+#include "tachyon/background_registry.h"
+#include <vector>
 
 namespace tachyon::presets {
 
-void BackgroundPresetRegistry::load_builtins() {
+namespace {
+
+// Helper to get base background params
+BackgroundParams get_base_params(const registry::ParameterBag& bag) {
+    BackgroundParams p;
+    p.w = bag.get_or<float>("width", 1920.0f);
+    p.h = bag.get_or<float>("height", 1080.0f);
+    p.out_point = bag.get_or<double>("duration", 8.0);
+    return p;
+}
+
+} // namespace
+
+std::vector<BackgroundDescriptor> BackgroundManifest::generate_descriptors() const {
+    std::vector<BackgroundDescriptor> descriptors;
+
+    for (const auto* desc : BackgroundRegistry::instance().list_all()) {
+        if (desc) {
+            descriptors.push_back(*desc);
+        }
+    }
+
+    return descriptors;
+}
+
+std::vector<BackgroundPresetSpec> BackgroundManifest::generate_preset_specs() const {
+    std::vector<BackgroundPresetSpec> specs;
+    
     using namespace background::procedural_bg;
-    using namespace registry;
-
-    auto get_base_params = [](const ParameterBag& bag) {
-        BackgroundParams p;
-        p.w = bag.get_or<float>("width", 1920.0f);
-        p.h = bag.get_or<float>("height", 1080.0f);
-        p.out_point = bag.get_or<double>("duration", 8.0);
-        return p;
-    };
-
-    // 1. Galaxy Premium
-    register_spec({
+    
+    // Galaxy Premium
+    specs.push_back({
         "tachyon.backgroundpreset.galaxy_premium",
         {"tachyon.backgroundpreset.galaxy_premium", "Galaxy Premium", "High-end cinematic galaxy background", "Premium", {"space", "premium"}},
         {},
-        [get_base_params](const ParameterBag& bag) {
+        [get_base_params](const registry::ParameterBag& bag) {
             BackgroundParams p = get_base_params(bag);
             p.kind = "tachyon.background.kind.galaxy";
             p.palette = "cosmic_nebula";
@@ -29,13 +49,13 @@ void BackgroundPresetRegistry::load_builtins() {
             return build_background(p);
         }
     });
-
-    // 2. Dark Tech Grid
-    register_spec({
+    
+    // Dark Tech Grid
+    specs.push_back({
         "tachyon.backgroundpreset.dark_tech_grid",
         {"tachyon.backgroundpreset.dark_tech_grid", "Dark Tech Grid", "Modern dark tech grid for presentations", "Tech", {"grid", "dark"}},
         {},
-        [get_base_params](const ParameterBag& bag) {
+        [get_base_params](const registry::ParameterBag& bag) {
             BackgroundParams p = get_base_params(bag);
             p.kind = "tachyon.background.kind.grid_modern";
             p.palette = "dark_tech";
@@ -43,13 +63,13 @@ void BackgroundPresetRegistry::load_builtins() {
             return build_background(p);
         }
     });
-
-    // 3. Cinematic Aura
-    register_spec({
+    
+    // Cinematic Aura
+    specs.push_back({
         "tachyon.backgroundpreset.cinematic_aura",
         {"tachyon.backgroundpreset.cinematic_aura", "Cinematic Aura", "Soft cinematic aura background", "Cinematic", {"aura", "soft"}},
         {},
-        [get_base_params](const ParameterBag& bag) {
+        [get_base_params](const registry::ParameterBag& bag) {
             BackgroundParams p = get_base_params(bag);
             p.kind = "tachyon.background.kind.aura";
             p.palette = "neon_night";
@@ -57,6 +77,8 @@ void BackgroundPresetRegistry::load_builtins() {
             return build_background(p);
         }
     });
+    
+    return specs;
 }
 
 } // namespace tachyon::presets

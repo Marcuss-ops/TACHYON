@@ -3,7 +3,6 @@
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include "tachyon/presets/transition/transition_preset_registry.h"
 #include "tachyon/presets/scene/scene_preset_registry.h"
-#include "tachyon/presets/preset_scene_resolver.h"
 
 #include <algorithm>
 #include <fstream>
@@ -212,7 +211,7 @@ SceneSpec TachyonCatalog::instantiate_scene(const std::string& id) const {
     auto entry = find_scene(id);
     if (!entry) return {};
 
-    if (auto scene = presets::PresetSceneResolver::instantiate(id)) {
+    if (auto scene = presets::ScenePresetRegistry::instance().create(id, {})) {
         return std::move(*scene);
     }
     return {};

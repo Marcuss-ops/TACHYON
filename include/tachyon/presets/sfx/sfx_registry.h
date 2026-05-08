@@ -2,11 +2,15 @@
 
 #include "tachyon/core/registry/typed_registry.h"
 #include "tachyon/presets/sfx/sfx_params.h"
+#include "tachyon/core/spec/schema/contracts/shared_contracts.h"
+#include "tachyon/media/management/asset_resolver.h"
 #include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
 #include <unordered_map>
+#include <optional>
+#include <filesystem>
 
 namespace tachyon::presets {
 
@@ -33,6 +37,16 @@ public:
     void register_category(SfxCategoryInfo info);
     [[nodiscard]] std::vector<std::string> list_ids() const;
     void load_builtins();
+
+    std::optional<spec::AudioTrackSpec> create_random_sound_track(
+        const media::AssetResolver& resolver,
+        SfxCategory category,
+        std::uint64_t seed,
+        float volume = 1.0f) const;
+
+    std::vector<std::string> list_sound_effects(
+        const media::AssetResolver& resolver,
+        SfxCategory category) const;
 
 private:
     SfxRegistry();

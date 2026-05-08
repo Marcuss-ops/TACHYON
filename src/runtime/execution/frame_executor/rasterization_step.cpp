@@ -34,13 +34,8 @@ RasterizationResult RasterizationStep::execute(
                 context.renderer2d.media_manager,
                 context.renderer2d.modifier_registry);
         } else {
-            // Fallback for safety, though RenderSession should have initialized this
+            // Fallback: Modifier3DRegistry auto-registers builtins on construction
             static renderer3d::Modifier3DRegistry global_fallback;
-            static bool initialized = false;
-            if (!initialized) {
-                ::tachyon::renderer3d::register_builtin_modifier_descriptors(global_fallback);
-                initialized = true;
-            }
             context.renderer2d.ray_tracer = std::make_shared<renderer3d::RayTracer>(
                 context.renderer2d.media_manager,
                 &global_fallback);

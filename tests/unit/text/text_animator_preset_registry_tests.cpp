@@ -6,8 +6,10 @@
 #include <string>
 #include <vector>
 
+namespace {
 bool test_registry_is_not_empty() {
-    auto& registry = tachyon::presets::TextAnimatorPresetRegistry::instance();
+    tachyon::presets::TextManifest text_manifest;
+    tachyon::presets::TextAnimatorPresetRegistry registry(text_manifest);
     if (registry.list_ids().empty()) {
         std::cerr << "Error: Registry is empty" << std::endl;
         return false;
@@ -16,7 +18,17 @@ bool test_registry_is_not_empty() {
 }
 
 bool test_common_presets_available() {
-    auto& registry = tachyon::presets::TextAnimatorPresetRegistry::instance();
+    tachyon::presets::TextManifest text_manifest;
+    tachyon::presets::TextAnimatorPresetRegistry registry(text_manifest);
+    if (registry.list_ids().empty()) {
+        std::cerr << "Error: Registry is empty" << std::endl;
+        return false;
+    }
+    return true;
+}
+
+bool test_common_presets_available() {
+    tachyon::presets::TextAnimatorPresetRegistry registry;
     std::vector<std::string> ids = {
         "tachyon.textanim.fade_in",
         "tachyon.textanim.slide_in",
@@ -43,7 +55,8 @@ bool test_common_presets_available() {
 }
 
 bool test_create_preset_returns_valid_spec() {
-    auto& registry = tachyon::presets::TextAnimatorPresetRegistry::instance();
+    tachyon::presets::TextManifest text_manifest;
+    tachyon::presets::TextAnimatorPresetRegistry registry(text_manifest);
     tachyon::registry::ParameterBag params;
     params.set("selector_based_on", std::string("characters_excluding_spaces"));
     params.set("char_delay", 0.03);
@@ -70,7 +83,8 @@ bool test_create_preset_returns_valid_spec() {
 }
 
 bool test_typewriter_family_extended() {
-    auto& registry = tachyon::presets::TextAnimatorPresetRegistry::instance();
+    tachyon::presets::TextManifest text_manifest;
+    tachyon::presets::TextAnimatorPresetRegistry registry(text_manifest);
     std::vector<std::string> ids = {
         "tachyon.textanim.typewriter.cursor",
         "tachyon.textanim.typewriter.soft",
@@ -91,7 +105,8 @@ bool test_typewriter_family_extended() {
 }
 
 bool test_composite_preset_returns_multiple_specs() {
-    auto& registry = tachyon::presets::TextAnimatorPresetRegistry::instance();
+    tachyon::presets::TextManifest text_manifest;
+    tachyon::presets::TextAnimatorPresetRegistry registry(text_manifest);
     tachyon::registry::ParameterBag params;
     params.set("selector_based_on", std::string("characters_excluding_spaces"));
     params.set("char_delay", 0.03);
@@ -106,7 +121,8 @@ bool test_composite_preset_returns_multiple_specs() {
 }
 
 bool test_unknown_preset_returns_empty() {
-    auto& registry = tachyon::presets::TextAnimatorPresetRegistry::instance();
+    tachyon::presets::TextManifest text_manifest;
+    tachyon::presets::TextAnimatorPresetRegistry registry(text_manifest);
     tachyon::registry::ParameterBag params;
     auto specs = registry.create("tachyon.textanim.nonexistent_preset", params);
     if (!specs.empty()) {
@@ -115,6 +131,8 @@ bool test_unknown_preset_returns_empty() {
     }
     return true;
 }
+
+} // namespace
 
 bool run_text_animator_preset_registry_tests() {
     bool success = true;

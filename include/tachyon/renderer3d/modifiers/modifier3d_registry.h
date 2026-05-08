@@ -27,6 +27,9 @@ struct Modifier3DDescriptor {
 
 /**
  * @brief Registry for 3D modifiers (e.g., bend, tilt, parallax).
+ * 
+ * This is the canonical runtime registry for 3D modifiers.
+ * Builtin modifiers are auto-registered on construction.
  */
 class Modifier3DRegistry {
 public:
@@ -41,10 +44,5 @@ public:
 private:
     registry::TypedRegistry<Modifier3DDescriptor> registry_;
 };
-
-/**
- * @brief Register all built-in 3D modifiers to the provided registry.
- */
-void register_builtin_modifier_descriptors(Modifier3DRegistry& registry);
 
 } // namespace tachyon::renderer3d

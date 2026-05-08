@@ -29,7 +29,7 @@ bool run_thumb_command(const CliOptions& options, std::ostream& out, std::ostrea
         return false;
     }
 
-    std::string cpp_path = options.cpp_path;
+    std::string cpp_path = options.cpp_path.string();
     if (options.preset_id.has_value()) {
         cpp_path = "preset:" + *options.preset_id;
     }
@@ -39,9 +39,12 @@ bool run_thumb_command(const CliOptions& options, std::ostream& out, std::ostrea
                            ? *options.preview_frame_number
                            : 90; // Default to frame 90 (about 3 seconds at 30fps)
 
+    const std::string source_name = options.cpp_path.empty()
+                                        ? *options.preset_id
+                                        : options.cpp_path.string();
+
     if (options.preview_output.empty()) {
-        output_path = make_default_thumb_path(
-            options.cpp_path.empty() ? *options.preset_id : options.cpp_path.string());
+        output_path = make_default_thumb_path(source_name);
     } else {
         output_path = options.preview_output.string();
     }

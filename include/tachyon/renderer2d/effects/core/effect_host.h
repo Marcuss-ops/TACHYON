@@ -177,16 +177,6 @@ public:
 class MatteRefinementEffect : public Effect {
 public:
     SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
-
-    // Feed previous frame's alpha for temporal smoothing.
-    // Key: layer_id from params.strings["layer_id"].
-    static void set_previous_frame(const std::string& layer_id, std::vector<float> alpha);
-    static const std::vector<float>* get_previous_frame(const std::string& layer_id);
-
-private:
-    // Per-layer alpha cache for temporal smoothing (lock-free read after write per frame)
-    static std::unordered_map<std::string, std::vector<float>> s_prev_alpha;
-    static std::mutex s_cache_mutex;
 };
 
 /// Vector Blur: per-pixel motion-vector driven directional blur.

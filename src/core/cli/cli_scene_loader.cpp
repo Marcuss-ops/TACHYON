@@ -27,7 +27,7 @@ LoadSceneResult load_scene_for_cli(
     if (options.preset_id.has_value()) {
         const auto& pid = *options.preset_id;
 
-        if (auto scene = presets::PresetSceneResolver::instantiate(pid)) {
+        if (auto scene = presets::PresetSceneResolver::instantiate_scene_or_background(pid)) {
             LoadedSceneContext context;
             context.scene = std::move(*scene);
             context.from_preset = true;

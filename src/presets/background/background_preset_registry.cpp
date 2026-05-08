@@ -17,4 +17,11 @@ std::optional<LayerSpec> BackgroundPresetRegistry::create(std::string_view id, c
     return std::nullopt;
 }
 
+void BackgroundPresetRegistry::load_from_manifest(const BackgroundManifest& manifest) {
+    auto specs = manifest.generate_preset_specs();
+    for (auto& spec : specs) {
+        register_spec(std::move(spec));
+    }
+}
+
 } // namespace tachyon::presets
