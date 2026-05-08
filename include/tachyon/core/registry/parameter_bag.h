@@ -43,6 +43,13 @@ public:
 
     [[nodiscard]] bool empty() const noexcept { return values_.empty(); }
 
+    /// Merge values from another ParameterBag, overriding existing values with those from other.
+    void merge_from(const ParameterBag& other) {
+        for (const auto& [key, value] : other.values_) {
+            values_[key] = value;
+        }
+    }
+
 private:
     std::unordered_map<std::string, ParameterValue> values_;
 };
