@@ -5,6 +5,7 @@
 #include "tachyon/runtime/execution/session/render_session.h"
 #include "tachyon/runtime/execution/native_render.h"
 #include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
+#include "tachyon/presets/text/text_registry.h"
 #include "cli_internal.h"
 #include <iomanip>
 #include <iostream>
@@ -266,7 +267,15 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
     native_options.memory_budget_bytes = options.memory_budget_bytes;
     native_options.verbose = true;
 
-    const RenderSessionResult session_result = NativeRenderer::render(scene, job, transition_registry, modifier_registry, native_options);
+    presets::TextManifest text_manifest;
+    presets::TextRegistry text_registry(text_manifest);
+    const RenderSessionResult session_result = NativeRenderer::render(
+        scene,
+        job,
+        transition_registry,
+        modifier_registry,
+        text_registry,
+        native_options);
     
     if (!session_result.output_error.empty()) {
         err << "Render error: " << session_result.output_error << "\n";

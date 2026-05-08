@@ -19,7 +19,7 @@ inline float luminance_rec709(const LinearRGBA& c) {
 
 /**
  * @brief Rec.601 luma weights.
- * Typically used for non-linear (gamma-encoded) components or legacy effects.
+ * Typically used for non-linear (gamma-encoded) components.
  */
 inline float luma_rec601(float r, float g, float b) {
     return 0.299f * r + 0.587f * g + 0.114f * b;

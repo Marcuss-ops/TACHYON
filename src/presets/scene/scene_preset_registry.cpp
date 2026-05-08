@@ -5,6 +5,11 @@ namespace tachyon::presets {
 
 ScenePresetRegistry& ScenePresetRegistry::instance() {
     static ScenePresetRegistry instance;
+    static const bool initialized = []() {
+        instance.load_builtins();
+        return true;
+    }();
+    (void)initialized;
     return instance;
 }
 

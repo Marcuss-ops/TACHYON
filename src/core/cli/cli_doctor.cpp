@@ -12,7 +12,7 @@
 
 namespace tachyon {
 
-bool run_doctor_command(const CliOptions&, std::ostream& out, std::ostream& err, TransitionRegistry& registry) {
+bool run_doctor_command(const CliOptions&, std::ostream& out, std::ostream& err, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& /*modifier_registry*/) {
     out << "TACHYON Doctor - System Diagnostic\n";
     out << "==================================\n\n";
 

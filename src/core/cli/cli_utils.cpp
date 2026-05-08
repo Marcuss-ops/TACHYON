@@ -7,6 +7,7 @@
 #include "tachyon/runtime/execution/native_render.h"
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
+#include "tachyon/presets/text/text_registry.h"
 #include <iostream>
 #include <filesystem>
 
@@ -42,7 +43,9 @@ bool run_preview_internal(const ::tachyon::CliOptions& options, std::ostream& ou
 
     out << "[" << label << "] Rendering frame " << frame << " to " << output.string() << "\n";
 
-    const bool success = NativeRenderer::render_still(scene, composition_id, frame, output, transition_registry, modifier_registry);
+    presets::TextManifest text_manifest;
+    presets::TextRegistry text_registry(text_manifest);
+    const bool success = NativeRenderer::render_still(scene, composition_id, frame, output, transition_registry, modifier_registry, text_registry);
     if (!success) {
         err << "Preview render failed.\n";
     } else {

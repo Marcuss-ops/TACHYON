@@ -10,7 +10,7 @@ namespace {
 bool test_registry_is_not_empty() {
     tachyon::presets::TextManifest text_manifest;
     tachyon::presets::TextRegistry registry(text_manifest);
-    if (registry.list_ids().empty()) {
+    if (registry.animators().list_ids().empty()) {
         std::cerr << "Error: Registry is empty" << std::endl;
         return false;
     }
@@ -37,7 +37,7 @@ bool test_common_presets_available() {
         "tachyon.textanim.blur_to_focus"
     };
     for (const auto& id : ids) {
-        if (registry.find(id) == nullptr) {
+        if (registry.animators().find(id) == nullptr) {
             std::cerr << "Error: Preset " << id << " not found" << std::endl;
             return false;
         }

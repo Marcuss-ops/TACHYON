@@ -1,63 +1,116 @@
-#include "tachyon/audio/core/sound_effect_registry.h"
+#include "tachyon/audio/sound_effect_registry.h"
+
+#include <algorithm>
 #include <filesystem>
 #include <random>
-#include <algorithm>
 
 namespace tachyon::audio {
 
-std::vector<std::string> getAvailableSoundCategories(const media::AssetResolver& resolver) {
+namespace {
+
+std::filesystem::path default_sound_effect_root() {
+    return std::filesystem::current_path() / "assets" / "audio";
+}
+
+std::vector<std::string> collect_audio_files(const std::filesystem::path& root) {
+    std::vector<std::string> files;
+    if (root.empty() || !std::filesystem::exists(root)) {
+        return files;
+    }
+
+    for (const auto& entry : std::filesystem::directory_iterator(root)) {
+        if (!entry.is_regular_file()) {
+            continue;
+        }
+
+        std::string ext = entry.path().extension().string();
+        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+        if (ext == ".m4a" || ext == ".mp3" || ext == ".wav") {
+            files.push_back(entry.path().string());
+        }
+    }
+
+    std::sort(files.begin(), files.end());
+    return files;
+}
+
+template <typename T>
+std::optional<T> pick_random_entry(const std::vector<T>& values) {
+    if (values.empty()) {
+        return std::nullopt;
+    }
+
+    static thread_local std::mt19937 rng{std::random_device{}()};
+    std::uniform_int_distribution<std::size_t> dist(0, values.size() - 1);
+    return values[dist(rng)];
+}
+
+SoundEffectRegistry& global_registry() {
+    static SoundEffectRegistry instance(default_sound_effect_root());
+    return instance;
+}
+
+} // namespace
+
+SoundEffectRegistry::SoundEffectRegistry(std::filesystem::path root)
+    : m_root(root.empty() ? default_sound_effect_root() : std::move(root)) {}
+
+void SoundEffectRegistry::set_root(std::filesystem::path root) {
+    m_root = std::move(root);
+}
+
+std::vector<std::string> SoundEffectRegistry::getAvailableCategories() const {
     std::vector<std::string> categories;
-    auto sfx_root = resolver.config().sfx_root;
-    if (sfx_root.empty() || !std::filesystem::exists(sfx_root)) return categories;
-    
-    for (const auto& entry : std::filesystem::directory_iterator(sfx_root)) {
+    if (m_root.empty() || !std::filesystem::exists(m_root)) {
+        return categories;
+    }
+
+    for (const auto& entry : std::filesystem::directory_iterator(m_root)) {
         if (entry.is_directory()) {
             categories.push_back(entry.path().filename().string());
         }
     }
+
+    std::sort(categories.begin(), categories.end());
     return categories;
 }
 
-std::vector<std::string> getSoundEffectsInCategory(const media::AssetResolver& resolver, const std::string& category) {
-    std::vector<std::string> files;
-    auto sfx_root = resolver.config().sfx_root;
-    if (sfx_root.empty()) return files;
-    
-    auto dir = sfx_root / category;
-    if (!std::filesystem::exists(dir)) return files;
-    
-    for (const auto& entry : std::filesystem::directory_iterator(dir)) {
-        // We look for common audio extensions
-        if (entry.is_regular_file()) {
-            std::string ext = entry.path().extension().string();
-            std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-            if (ext == ".m4a" || ext == ".mp3" || ext == ".wav") {
-                files.push_back(entry.path().string());
-            }
-        }
+std::vector<std::string> SoundEffectRegistry::getSoundsInCategory(const std::string& category) const {
+    return collect_audio_files(m_root / category);
+}
+
+std::optional<std::string> SoundEffectRegistry::getRandomSound(const std::string& category) const {
+    return pick_random_entry(getSoundsInCategory(category));
+}
+
+std::optional<spec::AudioTrackSpec> SoundEffectRegistry::createRandomTrack(const std::string& category, float volume) const {
+    const auto path = getRandomSound(category);
+    if (!path.has_value()) {
+        return std::nullopt;
     }
-    std::sort(files.begin(), files.end()); // Ensure deterministic order for indexing
-    return files;
-}
 
-std::optional<std::string> getRandomSoundEffect(const media::AssetResolver& resolver, const std::string& category, std::uint64_t seed) {
-    auto files = getSoundEffectsInCategory(resolver, category);
-    if (files.empty()) return std::nullopt;
-    
-    std::mt19937_64 rng(seed);
-    std::uniform_int_distribution<size_t> dist(0, files.size() - 1);
-    return files[dist(rng)];
-}
-
-std::optional<spec::AudioTrackSpec> createRandomSoundTrack(
-    const media::AssetResolver& resolver, const std::string& category, std::uint64_t seed, float volume) {
-    auto path = getRandomSoundEffect(resolver, category, seed);
-    if (!path) return std::nullopt;
-    
     spec::AudioTrackSpec spec;
     spec.source_path = *path;
     spec.volume = volume;
     return spec;
+}
+
+// --- Backward Compatibility Shim ---
+
+std::vector<std::string> getAvailableSoundCategories() {
+    return global_registry().getAvailableCategories();
+}
+
+std::vector<std::string> getSoundEffectsInCategory(const std::string& category) {
+    return global_registry().getSoundsInCategory(category);
+}
+
+std::optional<std::string> getRandomSoundEffect(const std::string& category) {
+    return global_registry().getRandomSound(category);
+}
+
+std::optional<spec::AudioTrackSpec> createRandomSoundTrack(const std::string& category, float volume) {
+    return global_registry().createRandomTrack(category, volume);
 }
 
 } // namespace tachyon::audio

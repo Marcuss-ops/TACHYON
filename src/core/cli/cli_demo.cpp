@@ -6,10 +6,12 @@
 #include "tachyon/renderer2d/effects/effect_host.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
 #include "tachyon/renderer2d/effects/effect_utils.h"
+#include "tachyon/presets/effects/effect_manifest.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/execution/session/render_session.h"
 #include "tachyon/transition_registry.h"
 #include "tachyon/core/library/library.h"
+#include "tachyon/media/management/media_manager.h"
 #include "cli_internal.h"
 #include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
 
@@ -22,6 +24,7 @@
 #include <vector>
 #include <sstream>
 #include <string_view>
+#include <system_error>
 
 namespace tachyon {
 namespace {
@@ -47,6 +50,36 @@ struct CachedSceneStill {
     renderer2d::SurfaceRGBA frame;
     double fps{30.0};
 };
+
+std::filesystem::path make_temp_still_path(const std::string& label) {
+    std::filesystem::path temp_dir = std::filesystem::temp_directory_path() / "tachyon";
+    std::error_code ec;
+    std::filesystem::create_directories(temp_dir, ec);
+
+    std::string stem = label;
+    for (char& ch : stem) {
+        if (ch == ':' || ch == '\\' || ch == '/' || ch == ' ' || ch == '\t') {
+            ch = '_';
+        }
+    }
+    if (stem.empty()) {
+        stem = "scene";
+    }
+
+    return temp_dir / (stem + ".png");
+}
+
+std::optional<renderer2d::SurfaceRGBA> load_rendered_still(
+    const std::filesystem::path& frame_path,
+    std::ostream& err) {
+    media::MediaManager media_manager;
+    const auto* loaded = media_manager.get_image(frame_path, media::AlphaMode::Straight, nullptr);
+    if (!loaded) {
+        err << "failed to load rendered still: " << frame_path.string() << '\n';
+        return std::nullopt;
+    }
+    return *loaded;
+}
 
 std::filesystem::path resolve_library_root(const std::filesystem::path& requested_root) {
     if (!requested_root.empty()) {
@@ -163,14 +196,18 @@ std::optional<renderer2d::SurfaceRGBA> render_scene_still(
         return std::nullopt;
     }
 
+    const std::filesystem::path temp_output = make_temp_still_path(scene_path.stem().string());
     RenderSession session;
-    const RenderSessionResult session_result = session.render(scene, *compiled_result.value, *exec_result.value, {});
-    if (session_result.frames.empty() || !session_result.frames.front().frame) {
-        err << "scene rendered no frames: " << scene_path.string() << '\n';
+    const RenderSessionResult session_result = session.render(scene, *compiled_result.value, *exec_result.value, temp_output);
+    if (!session_result.output_error.empty()) {
+        err << session_result.output_error << '\n';
         return std::nullopt;
     }
-
-    return *session_result.frames.front().frame;
+    const std::filesystem::path frame_path = temp_output.parent_path() / (temp_output.stem().string() + "_000001.png");
+    const auto loaded = load_rendered_still(frame_path, err);
+    std::error_code ec;
+    std::filesystem::remove(frame_path, ec);
+    return loaded;
 }
 
 std::optional<renderer2d::SurfaceRGBA> render_scene_still(
@@ -227,14 +264,18 @@ std::optional<renderer2d::SurfaceRGBA> render_scene_still(
         return std::nullopt;
     }
 
+    const std::filesystem::path temp_output = make_temp_still_path(label);
     RenderSession session;
-    const RenderSessionResult session_result = session.render(scene, *compiled_result.value, *exec_result.value, {});
-    if (session_result.frames.empty() || !session_result.frames.front().frame) {
-        err << "scene rendered no frames: " << label << '\n';
+    const RenderSessionResult session_result = session.render(scene, *compiled_result.value, *exec_result.value, temp_output);
+    if (!session_result.output_error.empty()) {
+        err << session_result.output_error << '\n';
         return std::nullopt;
     }
-
-    return *session_result.frames.front().frame;
+    const std::filesystem::path frame_path = temp_output.parent_path() / (temp_output.stem().string() + "_000001.png");
+    const auto loaded = load_rendered_still(frame_path, err);
+    std::error_code ec;
+    std::filesystem::remove(frame_path, ec);
+    return loaded;
 }
 
 std::optional<std::reference_wrapper<const CachedSceneStill>> render_scene_still_cached(
@@ -369,7 +410,8 @@ bool render_transition_demo(
     renderer2d::EffectRegistry registry;
     TransitionRegistry transition_registry;
     register_builtin_transitions(transition_registry);
-    renderer2d::register_builtin_effects(registry, transition_registry);
+    presets::EffectManifest effect_manifest;
+    renderer2d::register_builtin_effects(registry, effect_manifest, transition_registry);
     auto host = renderer2d::create_effect_host(registry);
 
     const std::filesystem::path final_output_dir = output_dir_override.empty() ? demo.output_dir : output_dir_override;

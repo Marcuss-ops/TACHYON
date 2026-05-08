@@ -7,6 +7,7 @@
 
 namespace tachyon {
 
+class TransitionRegistry;
 namespace renderer3d { class Modifier3DRegistry; }
 
 void print_diagnostics(const DiagnosticBag& diagnostics, std::ostream& out);

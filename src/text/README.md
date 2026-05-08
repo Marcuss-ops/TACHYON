@@ -48,7 +48,7 @@ src/text/
 
 - Do not create a second text pipeline.
 - Do not move layout logic into renderer code.
-- Do not add hardcoded animation catalogs in unrelated files.
+- Do not add hardcoded animation libraries in unrelated files.
 - Do not change the scene contract just to add a new text preset name.
 
 ## Dependencies

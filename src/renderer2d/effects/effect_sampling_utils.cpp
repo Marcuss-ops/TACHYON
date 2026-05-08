@@ -34,16 +34,4 @@ Color sample_texture_bilinear(const SurfaceRGBA& texture, float u, float v, Colo
     return Color{ res.r * tint.r, res.g * tint.g, res.b * tint.b, res.a * tint.a };
 }
 
-void composite_with_offset(SurfaceRGBA& dst, const SurfaceRGBA& src, int ox, int oy) {
-    for (std::uint32_t y = 0; y < src.height(); ++y) {
-        const int ty = static_cast<int>(y) + oy;
-        if (ty < 0 || static_cast<std::uint32_t>(ty) >= dst.height()) continue;
-        for (std::uint32_t x = 0; x < src.width(); ++x) {
-            const int tx = static_cast<int>(x) + ox;
-            if (tx < 0 || static_cast<std::uint32_t>(tx) >= dst.width()) continue;
-            dst.blend_pixel(static_cast<std::uint32_t>(tx), static_cast<std::uint32_t>(ty), src.get_pixel(x, y));
-        }
-    }
-}
-
 } // namespace tachyon::renderer2d

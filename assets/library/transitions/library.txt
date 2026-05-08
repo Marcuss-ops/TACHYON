@@ -1,4 +1,4 @@
-# Tachyon Transition Catalog
+# Tachyon Transition Library
 # format: id | name | description | shader_file | thumb_file
 
 tachyon.transition.crossfade | Crossfade | Simple crossfade transition | shaders/crossfade.glsl | thumbs/crossfade.png

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/core/api.h"
 #include "tachyon/core/spec/schema/common/common_spec.h"
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 
@@ -31,9 +32,9 @@ struct NormalizedSceneView {
     std::vector<NormalizedCompositionView> compositions;
 };
 
-[[nodiscard]] NormalizedLayerView normalize_layer_view(const ::tachyon::LayerSpec& layer);
-[[nodiscard]] ::tachyon::LayerType canonical_layer_type(const ::tachyon::LayerSpec& layer);
-[[nodiscard]] NormalizedCompositionView normalize_composition_view(const ::tachyon::CompositionSpec& comp);
-[[nodiscard]] NormalizedSceneView normalize_scene_view(const ::tachyon::SceneSpec& scene);
+TACHYON_API NormalizedLayerView normalize_layer_view(const ::tachyon::LayerSpec& layer);
+TACHYON_API ::tachyon::LayerType canonical_layer_type(const ::tachyon::LayerSpec& layer);
+TACHYON_API NormalizedCompositionView normalize_composition_view(const ::tachyon::CompositionSpec& comp);
+TACHYON_API NormalizedSceneView normalize_scene_view(const ::tachyon::SceneSpec& scene);
 
 } // namespace tachyon::core

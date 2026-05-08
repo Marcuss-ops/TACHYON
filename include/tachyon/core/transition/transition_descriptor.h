@@ -22,7 +22,6 @@ using TransitionCategory = TransitionKind;
 
 /**
  * @brief Canonical runtime kind (backend type) for transitions.
- * Matches former TransitionBackend.
  */
 enum class TransitionRuntimeKind {
     StateOnly,    ///< Affects only layer properties (opacity, transform)
@@ -32,7 +31,7 @@ enum class TransitionRuntimeKind {
 };
 
 /**
- * @brief CPU transition function signature (matches legacy TransitionSpec::TransitionFn)
+ * @brief CPU transition function signature.
  */
 using CpuTransitionFn = renderer2d::Color(*)(float u, float v, float t,
                                               const renderer2d::SurfaceRGBA& input,
@@ -108,11 +107,11 @@ struct TransitionLibraryEntry {
 /**
  * @brief Resolves a transition ID into a detailed result, respecting engine policy.
  */
-TACHYON_API TransitionResolutionResult resolve_transition(const std::string& id, const TransitionRegistry& registry);
+TransitionResolutionResult resolve_transition(const std::string& id, const TransitionRegistry& registry);
 
 /**
  * @brief Registers all built-in transitions.
  */
-TACHYON_API void register_builtin_transitions(TransitionRegistry& registry);
+void register_builtin_transitions(TransitionRegistry& registry);
 
 } // namespace tachyon

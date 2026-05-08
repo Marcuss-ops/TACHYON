@@ -46,10 +46,23 @@ void TrackBinding::apply(float time, scene::EvaluatedLayerState& layer) const {
             // Use homography to drive corner pin
             if (auto hom = m_track->homography_at(time)) {
                 const auto& h = *hom; // 3x3 row-major homography
-                (void)h;
-                // Apply homography to layer's corner pin transform
-                // TODO: integrate with layer's corner pin properties
-                // For now, store in layer's user data or transform
+                // Corner pin expects 4 points: TL, TR, BR, BL
+                // We map [0,0], [1,0], [1,1], [0,1] through homography
+                layer.corner_pin.resize(4);
+                
+                auto transform_pt = [&](float x, float y) -> math::Vector2 {
+                    float w = h[6] * x + h[7] * y + h[8];
+                    if (std::abs(w) < 1e-6f) w = 1.0f;
+                    return {
+                        (h[0] * x + h[1] * y + h[2]) / w,
+                        (h[3] * x + h[4] * y + h[5]) / w
+                    };
+                };
+
+                layer.corner_pin[0] = transform_pt(0.0f, 0.0f);
+                layer.corner_pin[1] = transform_pt(1.0f, 0.0f);
+                layer.corner_pin[2] = transform_pt(1.0f, 1.0f);
+                layer.corner_pin[3] = transform_pt(0.0f, 1.0f);
             }
             break;
     }

@@ -25,12 +25,12 @@ bool run_text_domain_boundary_tests() {
 
     // Test 1: Text layer preset returns valid LayerSpec
     {
-        presets::TextManifest text_manifest;
-        presets::TextRegistry registry(text_manifest);
+        TextManifest text_manifest;
+        TextRegistry registry(text_manifest);
         registry::ParameterBag params;
         params.set("content", std::string("Hello World"));
 
-        auto layer_opt = registry.create("tachyon.text.layer.classic_title", params);
+        auto layer_opt = registry.create_layer("tachyon.text.layer.classic_title", params);
         check_true(layer_opt.has_value(), "Text preset returns valid LayerSpec");
         if (layer_opt) {
             check_true(layer_opt->type == LayerType::Text, "Text preset produces LayerType::Text");
@@ -39,12 +39,12 @@ bool run_text_domain_boundary_tests() {
 
     // Test 2: Text layer does not directly add ThreeDSpec
     {
-        presets::TextManifest text_manifest;
-        presets::TextRegistry registry(text_manifest);
+        TextManifest text_manifest;
+        TextRegistry registry(text_manifest);
         registry::ParameterBag params;
         params.set("content", std::string("Test"));
 
-        auto layer_opt = registry.create("tachyon.text.layer.classic_title", params);
+        auto layer_opt = registry.create_layer("tachyon.text.layer.classic_title", params);
         if (layer_opt) {
             check_true(!layer_opt->three_d.has_value(), "Text preset does not directly add ThreeDSpec");
         }

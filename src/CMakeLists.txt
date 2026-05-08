@@ -20,12 +20,24 @@ include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonColorSources.cmake)
 
 function(tachyon_assert_no_duplicate_sources var_name)
     set(_list "${${var_name}}")
-    set(_list_copy "${_list}")
-    list(REMOVE_DUPLICATES _list_copy)
-    list(LENGTH _list _len1)
-    list(LENGTH _list_copy _len2)
-    if(NOT _len1 EQUAL _len2)
-        message(FATAL_ERROR "Duplicate sources found in ${var_name}")
+    set(_seen)
+    set(_duplicates)
+    foreach(_source IN LISTS _list)
+        list(FIND _seen "${_source}" _seen_index)
+        if(_seen_index EQUAL -1)
+            list(APPEND _seen "${_source}")
+        else()
+            list(FIND _duplicates "${_source}" _duplicate_index)
+            if(_duplicate_index EQUAL -1)
+                list(APPEND _duplicates "${_source}")
+            endif()
+        endif()
+    endforeach()
+
+    list(LENGTH _duplicates _duplicate_count)
+    if(_duplicate_count GREATER 0)
+        string(REPLACE ";" "\n  " _duplicate_lines "${_duplicates}")
+        message(FATAL_ERROR "Duplicate sources found in ${var_name}:\n  ${_duplicate_lines}")
     endif()
 endfunction()
 
@@ -253,6 +265,7 @@ endif()
 add_executable(tachyon
     main.cpp
     ${TachyonCLICoreSources}
+    ${TachyonCLILibrarySources}
 )
 tachyon_configure_common(tachyon)
 
@@ -267,8 +280,11 @@ target_link_libraries(tachyon
         TachyonPresets
         TachyonDiagnostics
 )
+if(TARGET TachyonRenderer3D)
+    target_link_libraries(tachyon PRIVATE TachyonRenderer3D)
+endif()
 
-# Full tooling/catalog executable (optional)
+# Full tooling/library executable (optional)
 if(TACHYON_BUILD_LIBRARY_TOOLS)
     add_executable(tachyon-library
         main.cpp
@@ -289,6 +305,9 @@ if(TACHYON_BUILD_LIBRARY_TOOLS)
             TachyonPresets
             TachyonDiagnostics
     )
+    if(TARGET TachyonRenderer3D)
+        target_link_libraries(tachyon-library PRIVATE TachyonRenderer3D)
+    endif()
 endif()
 
 if(MSVC)

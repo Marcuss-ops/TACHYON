@@ -18,8 +18,7 @@ namespace profiling { class RenderProfiler; }
 /**
  * @brief High-level utility for rendering a SceneSpec directly.
  * 
- * This bypasses the legacy JSON-based CLI path and works directly with the 
- * C++ specification structures.
+ * This works directly with the C++ specification structures.
  */
 struct NativeRenderOptions {
     std::size_t worker_count{0};

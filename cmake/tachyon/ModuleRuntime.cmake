@@ -35,6 +35,12 @@ set(TachyonRuntimeCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/diagnostics/report.cpp
 )
 
+if(NOT TACHYON_ENABLE_3D)
+    list(APPEND TachyonRuntimeCoreSources
+        ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/modifiers/modifier3d_registry_stub.cpp
+    )
+endif()
+
 set(TachyonRuntimeExecutionSources
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/compiled_frame_program.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/frame_executor.cpp

@@ -9,8 +9,8 @@ bool run_background_preset_registry_tests() {
 
     std::cout << "Running BackgroundPresetRegistry tests..." << std::endl;
 
-    presets::BackgroundManifest bg_manifest;
-    presets::BackgroundPresetRegistry registry(bg_manifest);
+    BackgroundManifest bg_manifest;
+    BackgroundPresetRegistry registry(bg_manifest);
     const auto ids = registry.list_ids();
     assert(ids.size() >= 3); // galaxy_premium, dark_tech_grid, cinematic_aura
 
