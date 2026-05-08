@@ -9,7 +9,7 @@ std::vector<EffectKindSpec> get_blur_effect_kind_specs() {
     // Gaussian Blur
     specs.push_back({
         "tachyon.effect.blur.gaussian",
-        {"tachyon.effect.blur.gaussian", "Gaussian Blur", "Professional blur effect.", "effect.blur", {"blur"}},
+        {"tachyon.effect.blur.gaussian", "Gaussian Blur", "Professional blur effect.", "effect.blur", {"blur"}, 1, registry::Stability::Stable, {}},
         registry::ParameterSchema({
             {"radius", "Radius", "Blur radius in pixels", 4.0, 0.0, 100.0}
         })
@@ -18,7 +18,7 @@ std::vector<EffectKindSpec> get_blur_effect_kind_specs() {
     // Directional Blur
     specs.push_back({
         "tachyon.effect.blur.directional",
-        {"tachyon.effect.blur.directional", "Directional Blur", "Professional blur effect.", "effect.blur", {"blur"}},
+        {"tachyon.effect.blur.directional", "Directional Blur", "Professional blur effect.", "effect.blur", {"blur"}, 1, registry::Stability::Stable, {}},
         registry::ParameterSchema({
             {"angle", "Angle", "Blur direction in degrees", 0.0, 0.0, 360.0},
             {"distance", "Distance", "Blur length in pixels", 10.0, 0.0, 500.0}
@@ -28,7 +28,7 @@ std::vector<EffectKindSpec> get_blur_effect_kind_specs() {
     // Radial Blur
     specs.push_back({
         "tachyon.effect.blur.radial",
-        {"tachyon.effect.blur.radial", "Radial Blur", "Professional blur effect.", "effect.blur", {"blur"}},
+        {"tachyon.effect.blur.radial", "Radial Blur", "Professional blur effect.", "effect.blur", {"blur"}, 1, registry::Stability::Stable, {}},
         registry::ParameterSchema({
             {"center_x", "Center X", "Radial center X (normalized)", 0.5, 0.0, 1.0},
             {"center_y", "Center Y", "Radial center Y (normalized)", 0.5, 0.0, 1.0},
@@ -68,7 +68,7 @@ std::vector<EffectPresetSpec> get_blur_effect_preset_specs() {
     // Gaussian Blur Preset
     specs.push_back({
         "tachyon.effect.blur.gaussian",
-        {"tachyon.effect.blur.gaussian", "Gaussian Blur", "Professional blur effect.", "effect.blur", {"blur"}},
+        {"tachyon.effect.blur.gaussian", "Gaussian Blur", "Professional blur effect.", "effect.blur", {"blur"}, 1, registry::Stability::Stable, {}},
         registry::ParameterSchema({
             {"radius", "Radius", "Blur radius in pixels", 4.0, 0.0, 100.0}
         }),

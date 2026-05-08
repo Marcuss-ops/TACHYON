@@ -747,55 +747,6 @@ TextStyle make_minimal_text_style(
     return animator;
 }
 
-::tachyon::TextAnimatorSpec make_legacy_wave_animator(
-    double amplitude_x,
-    double amplitude_y,
-    double frequency) {
 
-    ::tachyon::TextAnimatorSpec animator;
-    animator.name = "LegacyWave";
-    animator.selector.type = "wave";
-    animator.selector.frequency = frequency;
-    animator.selector.amount = 100.0; // 100% coverage oscillation
-    
-    animator.properties.position_offset_value = math::Vector2{
-        static_cast<float>(amplitude_x),
-        static_cast<float>(amplitude_y)
-    };
-    
-    return animator;
-}
-
-::tachyon::TextAnimatorSpec make_legacy_per_glyph_animator(
-    double offset_x,
-    double offset_y,
-    double scale_delta,
-    double opacity_drop) {
-
-    ::tachyon::TextAnimatorSpec animator;
-    animator.name = "LegacyPerGlyph";
-    animator.selector.type = "expression";
-    animator.selector.expression = "index"; // Simple expression that returns the glyph index as coverage
-    
-    animator.properties.position_offset_value = math::Vector2{
-        static_cast<float>(offset_x),
-        static_cast<float>(offset_y)
-    };
-    
-    if (scale_delta != 0.0) {
-        // scale = 1.0 + scale_delta * index.
-        // property * coverage = final_delta.
-        // scale = 1.0 + final_delta.
-        animator.properties.scale_value = scale_delta;
-    }
-    
-    if (opacity_drop != 0.0) {
-        // opacity = 1.0 - opacity_drop * index.
-        // opacity = 1.0 + (-opacity_drop) * coverage.
-        animator.properties.opacity_value = -opacity_drop;
-    }
-    
-    return animator;
-}
 
 } // namespace tachyon::text

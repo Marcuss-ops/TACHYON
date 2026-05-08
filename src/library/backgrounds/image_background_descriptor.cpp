@@ -20,7 +20,11 @@ BackgroundDescriptor make_image_background_descriptor() {
     // Build function
     desc.build = [](const registry::ParameterBag& params) -> LayerSpec {
         LayerSpec spec;
-        // TODO: Implement image background layer creation
+        spec.type = LayerType::Image;
+        spec.name = "Image Background";
+        
+        spec.asset_id = params.get_or<std::string>("path", "");
+        
         return spec;
     };
 

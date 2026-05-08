@@ -114,43 +114,4 @@ RuntimeFacade::FacadeValidationResult RuntimeFacade::validate_scene(const SceneS
     return facade_res;
 }
 
-RuntimeFacade::RenderResult RuntimeFacade::render_legacy(const RenderRequest& request) {
-    RenderResult result;
-    SceneLoadOptions load_opts;
-    load_opts.cpp_path = request.scene_path;
-    load_opts.preset_id = request.preset.empty() ? std::nullopt : std::optional<std::string>(request.preset);
-
-    std::stringstream out_ss, err_ss;
-    auto loaded = load_scene_for_cli(load_opts, SceneLoadMode::Render, out_ss, err_ss);
-    
-    if (!loaded.success) {
-        result.success = false;
-        result.error_message = "Scene load failed: " + err_ss.str();
-        return result;
-    }
-
-    const auto& scene = loaded.context->scene;
-    if (scene.compositions.empty()) {
-        result.success = false;
-        result.error_message = "Scene has no compositions.";
-        return result;
-    }
-
-    const auto& comp = scene.compositions.front();
-    FrameRange range = {request.start_frame, request.end_frame};
-    
-    RenderJob job = RenderJobBuilder::video_export(comp.id, range, request.output_path);
-
-    NativeRenderOptions native_options;
-    native_options.worker_count = 0; 
-    native_options.verbose = false;
-
-    const RenderSessionResult session_result = NativeRenderer::render(scene, job, native_options);
-
-    result.success = session_result.output_error.empty();
-    result.error_message = session_result.output_error;
-    
-    return result;
-}
-
 } // namespace tachyon

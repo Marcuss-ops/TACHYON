@@ -225,44 +225,6 @@ std::size_t FrameCache::current_usage_bytes() const {
     return m_current_usage_bytes;
 }
 
-void FrameCache::store(const CachedFrame& frame) {
-    std::scoped_lock lock(m_mutex);
-    m_legacy_frames.push_back(frame);
-}
-
-CachedFrame* FrameCache::lookup(const FrameCacheKey& key, std::uint64_t scene_hash) {
-    std::scoped_lock lock(m_mutex);
-    for (auto& frame : m_legacy_frames) {
-        if (frame.scene_hash == scene_hash && frame_cache_entry_matches(frame.entry, key)) {
-            ++m_hit_count;
-            return &frame;
-        }
-    }
-    ++m_miss_count;
-    return nullptr;
-}
-
-const CachedFrame* FrameCache::lookup(const FrameCacheKey& key, std::uint64_t scene_hash) const {
-    std::scoped_lock lock(m_mutex);
-    for (const auto& frame : m_legacy_frames) {
-        if (frame.scene_hash == scene_hash && frame_cache_entry_matches(frame.entry, key)) {
-            ++m_hit_count;
-            return &frame;
-        }
-    }
-    ++m_miss_count;
-    return nullptr;
-}
-
-void FrameCache::invalidate(const std::string& dependency) {
-    std::scoped_lock lock(m_mutex);
-    m_legacy_frames.erase(
-        std::remove_if(m_legacy_frames.begin(), m_legacy_frames.end(), [&](const CachedFrame& frame) {
-            return std::find(frame.invalidates_when_changed.begin(), frame.invalidates_when_changed.end(), dependency) != frame.invalidates_when_changed.end();
-        }),
-        m_legacy_frames.end());
-}
-
 
 void FrameCache::clear() {
     std::scoped_lock lock(m_mutex);
@@ -270,7 +232,6 @@ void FrameCache::clear() {
     m_layers.clear();
     m_compositions.clear();
     m_frames.clear();
-    m_legacy_frames.clear();
     m_entries.clear();
     m_lru_list.clear();
     m_lru_iterators.clear();

@@ -48,23 +48,6 @@ std::string severity_to_string(InspectionSeverity severity) {
     return "info";
 }
 
-std::string type_to_string(LayerType type) {
-    switch (type) {
-        case LayerType::Solid: return "solid";
-        case LayerType::Shape: return "shape";
-        case LayerType::Image: return "image";
-        case LayerType::Video: return "video";
-        case LayerType::Text: return "text";
-        case LayerType::Camera: return "camera";
-        case LayerType::Precomp: return "precomp";
-        case LayerType::Light: return "light";
-        case LayerType::Mask: return "mask";
-        case LayerType::NullLayer: return "null";
-        case LayerType::Procedural: return "procedural";
-        case LayerType::Unknown: return "unknown";
-    }
-    return "unknown";
-}
 
 bool ranges_overlap(double a0, double a1, double b0, double b1) {
     return a0 < b1 && b0 < a1;
@@ -85,13 +68,6 @@ bool has_motion(const AnimatedScalarSpec& spec) {
     return !spec.empty();
 }
 
-bool has_motion(const AnimatedColorSpec& spec) {
-    return !spec.empty();
-}
-
-bool has_motion(const AnimatedVector2Spec& spec) {
-    return !spec.empty();
-}
 
 bool has_motion(const AnimatedVector3Spec& spec) {
     return !spec.empty();

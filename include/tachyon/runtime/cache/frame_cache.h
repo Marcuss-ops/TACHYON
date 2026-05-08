@@ -53,11 +53,6 @@ public:
     void evict_if_needed();
     [[nodiscard]] std::size_t current_usage_bytes() const;
 
-    // Legacy compatibility surface for older tests.
-    void store(const CachedFrame& frame);
-    CachedFrame* lookup(const FrameCacheKey& key, std::uint64_t scene_hash);
-    const CachedFrame* lookup(const FrameCacheKey& key, std::uint64_t scene_hash) const;
-    void invalidate(const std::string& dependency);
 
 private:
     mutable std::mutex m_mutex;
@@ -72,7 +67,6 @@ private:
         std::shared_ptr<const renderer2d::Framebuffer> framebuffer;
     };
     std::unordered_map<std::uint64_t, FrameEntry> m_frames;
-    std::vector<CachedFrame> m_legacy_frames;
 
     enum class EntryType { Property, Layer, Composition, Frame };
     struct EntryInfo {

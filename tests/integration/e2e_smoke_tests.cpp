@@ -1,6 +1,6 @@
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 #include "tachyon/presets/background/background_preset_registry.h"
-#include "tachyon/presets/text/text_layer_preset_registry.h"
+#include "tachyon/presets/text/text_registry.h"
 #include "tachyon/transition_registry.h"
 #include "tachyon/presets/transition/transition_preset_registry.h"
 #include "tachyon/background_registry.h"
@@ -48,7 +48,7 @@ bool run_e2e_smoke_tests() {
     // Test 2: Text layer with preset
     {
         presets::TextManifest text_manifest;
-        presets::TextLayerPresetRegistry registry(text_manifest);
+        presets::TextRegistry registry(text_manifest);
         registry::ParameterBag params;
         params.set("id", std::string("tachyon.text.headline"));
         params.set("text", std::string("Hello World"));

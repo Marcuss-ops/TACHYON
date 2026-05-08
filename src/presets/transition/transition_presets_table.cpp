@@ -19,7 +19,10 @@ void register_builtin(
         name,
         name + " transition preset",
         "transition",
-        tags
+        tags,
+        1,
+        registry::Stability::Stable,
+        {}
     };
     spec.schema = registry::ParameterSchema({
         {"duration", "Duration", "Transition duration", 0.4, 0.0, 10.0},

@@ -39,7 +39,7 @@ std::string severity_to_string(analysis::InspectionSeverity severity) {
     return "info";
 }
 
-void print_inspect_json(
+[[maybe_unused]] void print_inspect_json(
     const SceneSpec& scene,
     const AssetResolutionTable& assets,
     const analysis::InspectionReport& inspection,

@@ -15,7 +15,7 @@ namespace {
 TextLayerPresetSpec create_basic_text_preset() {
     TextLayerPresetSpec spec;
     spec.id = "tachyon.textlayer.basic";
-    spec.metadata = {"tachyon.textlayer.basic", "Basic Text", "Simple text layer", "text", {"basic"}};
+    spec.metadata = {"tachyon.textlayer.basic", "Basic Text", "Simple text layer", "text", {"basic"}, 1, registry::Stability::Stable, {}};
     spec.schema = registry::ParameterSchema({
         {"text", "Text", "Text content", "Hello World"},
         {"font_id", "Font ID", "ID of the font to use", "default"},
@@ -40,7 +40,7 @@ TextLayerPresetSpec create_basic_text_preset() {
 TextAnimatorPresetSpec create_fade_in_animator_preset() {
     TextAnimatorPresetSpec spec;
     spec.id = "tachyon.textanim.fade_in";
-    spec.metadata = {"tachyon.textanim.fade_in", "Fade In", "Simple character fade in", "text.animator", {"fade"}};
+    spec.metadata = {"tachyon.textanim.fade_in", "Fade In", "Simple character fade in", "text.animator", {"fade"}, 1, registry::Stability::Stable, {}};
     spec.schema = registry::ParameterSchema({
         {"stagger", "Stagger", "Delay between characters", 0.03, 0.0, 1.0},
         {"duration", "Duration", "Total reveal duration", 0.7, 0.1, 5.0}
@@ -60,7 +60,7 @@ TextAnimatorPresetSpec create_fade_in_animator_preset() {
 TextAnimatorPresetSpec create_typewriter_animator_preset() {
     TextAnimatorPresetSpec spec;
     spec.id = "tachyon.textanim.typewriter";
-    spec.metadata = {"tachyon.textanim.typewriter", "Typewriter", "Classic typewriter effect", "text.animator", {"typewriter"}};
+    spec.metadata = {"tachyon.textanim.typewriter", "Typewriter", "Classic typewriter effect", "text.animator", {"typewriter"}, 1, registry::Stability::Stable, {}};
     spec.schema = registry::ParameterSchema({
         {"cps", "Chars/Sec", "Characters per second", 20.0, 1.0, 100.0},
         {"cursor", "Cursor", "Cursor character", "|"}

@@ -20,7 +20,12 @@ BackgroundDescriptor make_solid_background_descriptor() {
     // Build function
     desc.build = [](const registry::ParameterBag& params) -> LayerSpec {
         LayerSpec spec;
-        // TODO: Implement solid background layer creation
+        spec.type = LayerType::Solid;
+        spec.name = "Solid Background";
+        
+        auto color = params.get_or<ColorSpec>("color", ColorSpec(0, 0, 0));
+        spec.fill_color.keyframes = {{0.0, color}};
+        
         return spec;
     };
 

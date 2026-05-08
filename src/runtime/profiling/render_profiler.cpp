@@ -102,7 +102,6 @@ void RenderProfiler::end_event(std::uint64_t event_id) {
 
 void RenderProfiler::record_cache_hit(std::string scope, std::uint64_t key) {
     (void)scope; (void)key;
-    // TODO: implement specific cache stats recording if needed beyond summary
 }
 
 void RenderProfiler::record_cache_miss(std::string scope, std::uint64_t key) {

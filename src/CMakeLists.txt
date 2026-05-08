@@ -5,9 +5,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonDiagnosticsSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonPlatformSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonSceneEvalSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonTimelineSources.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonSceneSources.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonRuntimeSources.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonRenderer2DSources.cmake)
+
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonRenderer3DSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonMediaSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonAudioSources.cmake)
@@ -18,8 +16,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonCLISources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonLibrarySources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonColorSources.cmake)
 
-# Global compile definitions removed. Per-target definitions used instead.
-
+# --- Functions ---
 
 function(tachyon_assert_no_duplicate_sources var_name)
     set(_list "${${var_name}}")
@@ -28,51 +25,9 @@ function(tachyon_assert_no_duplicate_sources var_name)
     list(LENGTH _list _len1)
     list(LENGTH _list_copy _len2)
     if(NOT _len1 EQUAL _len2)
+        message(FATAL_ERROR "Duplicate sources found in ${var_name}")
     endif()
 endfunction()
-
-tachyon_assert_no_duplicate_sources(TachyonSceneSources)
-tachyon_assert_no_duplicate_sources(TachyonSceneEvalSources)
-tachyon_assert_no_duplicate_sources(TachyonTimelineSources)
-tachyon_assert_no_duplicate_sources(TachyonBindingsCSources)
-tachyon_assert_no_duplicate_sources(TachyonDiagnosticsSources)
-tachyon_assert_no_duplicate_sources(TachyonPresetsSources)
-tachyon_assert_no_duplicate_sources(TachyonRuntimeSources)
-tachyon_assert_no_duplicate_sources(TachyonRenderer2DSources)
-tachyon_assert_no_duplicate_sources(TachyonRenderer2DExtrasSources)
-tachyon_assert_no_duplicate_sources(TachyonRenderer3DSources)
-tachyon_assert_no_duplicate_sources(TachyonMediaSources)
-tachyon_assert_no_duplicate_sources(TachyonAudioSources)
-tachyon_assert_no_duplicate_sources(TachyonOutputSources)
-tachyon_assert_no_duplicate_sources(TachyonTextSources)
-tachyon_assert_no_duplicate_sources(TachyonEditorSources)
-tachyon_assert_no_duplicate_sources(TachyonCLICoreSources)
-tachyon_assert_no_duplicate_sources(TachyonCLILibrarySources)
-tachyon_assert_no_duplicate_sources(TachyonLibrarySources)
-
-if(TACHYON_ENABLE_TRACKER)
-    include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonTrackerSources.cmake)
-    tachyon_assert_no_duplicate_sources(TachyonTrackerSources)
-endif()
-
-# Global check for cross-target source duplication
-set(GlobalTachyonSources
-    ${TachyonCoreSources}
-    ${TachyonTimelineSources}
-    ${TachyonSceneEvalSources}
-    ${TachyonSceneSources}
-    ${TachyonRuntimeSources}
-    ${TachyonRenderer2DSources}
-    ${TachyonMediaSources}
-    ${TachyonAudioSources}
-    ${TachyonOutputSources}
-    ${TachyonTextSources}
-    ${TachyonDiagnosticsSources}
-    ${TachyonPresetsSources}
-    ${TachyonPlatformSources}
-    ${TachyonColorSources}
-)
-tachyon_assert_no_duplicate_sources(GlobalTachyonSources)
 
 function(tachyon_configure_common target)
     target_include_directories(${target}
@@ -98,7 +53,6 @@ function(tachyon_configure_common target)
         endif()
     endif()
 
-    # Use AssetResolver instead of compile-time roots.
     set_target_properties(${target} PROPERTIES POSITION_INDEPENDENT_CODE ON)
     target_compile_definitions(${target} PRIVATE TACHYON_BUILD_DLL)
 endfunction()
@@ -147,6 +101,8 @@ function(tachyon_link_output_deps target)
     endif()
 endfunction()
 
+# --- Base Targets ---
+
 add_library(TachyonCore STATIC ${TachyonCoreSources})
 tachyon_configure_common(TachyonCore)
 target_include_directories(TachyonCore
@@ -183,10 +139,10 @@ if(TACHYON_ENABLE_TRACKER)
     target_link_libraries(TachyonTimeline PUBLIC TachyonTracker)
 endif()
 
-include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonSceneTargets.cmake)
+# --- Module Includes (Collected sources and module targets) ---
 
-include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonRuntimeTargets.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonRenderer2DTargets.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/tachyon/ModuleScene.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/tachyon/ModuleRenderer2D.cmake)
 
 add_library(TachyonMedia STATIC ${TachyonMediaSources})
 tachyon_configure_common(TachyonMedia)
@@ -212,6 +168,53 @@ target_include_directories(TachyonOutput
 tachyon_link_media_deps(TachyonOutput)
 tachyon_link_output_deps(TachyonOutput)
 target_link_libraries(TachyonOutput PUBLIC TachyonColor)
+
+include(${CMAKE_SOURCE_DIR}/cmake/tachyon/ModuleRuntime.cmake)
+
+# --- Post-Module Configuration & Asserts ---
+
+tachyon_assert_no_duplicate_sources(TachyonSceneSources)
+tachyon_assert_no_duplicate_sources(TachyonSceneEvalSources)
+tachyon_assert_no_duplicate_sources(TachyonTimelineSources)
+tachyon_assert_no_duplicate_sources(TachyonBindingsCSources)
+tachyon_assert_no_duplicate_sources(TachyonDiagnosticsSources)
+tachyon_assert_no_duplicate_sources(TachyonPresetsSources)
+tachyon_assert_no_duplicate_sources(TachyonRuntimeSources)
+tachyon_assert_no_duplicate_sources(TachyonRenderer2DSources)
+tachyon_assert_no_duplicate_sources(TachyonRenderer2DExtrasSources)
+tachyon_assert_no_duplicate_sources(TachyonRenderer3DSources)
+tachyon_assert_no_duplicate_sources(TachyonMediaSources)
+tachyon_assert_no_duplicate_sources(TachyonAudioSources)
+tachyon_assert_no_duplicate_sources(TachyonOutputSources)
+tachyon_assert_no_duplicate_sources(TachyonTextSources)
+tachyon_assert_no_duplicate_sources(TachyonEditorSources)
+tachyon_assert_no_duplicate_sources(TachyonCLICoreSources)
+tachyon_assert_no_duplicate_sources(TachyonCLILibrarySources)
+tachyon_assert_no_duplicate_sources(TachyonLibrarySources)
+
+if(TACHYON_ENABLE_TRACKER)
+    include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonTrackerSources.cmake)
+    tachyon_assert_no_duplicate_sources(TachyonTrackerSources)
+endif()
+
+# Global check for cross-target source duplication
+set(GlobalTachyonSources
+    ${TachyonCoreSources}
+    ${TachyonTimelineSources}
+    ${TachyonSceneEvalSources}
+    ${TachyonSceneSources}
+    ${TachyonRuntimeSources}
+    ${TachyonRenderer2DSources}
+    ${TachyonMediaSources}
+    ${TachyonAudioSources}
+    ${TachyonOutputSources}
+    ${TachyonTextSources}
+    ${TachyonDiagnosticsSources}
+    ${TachyonPresetsSources}
+    ${TachyonPlatformSources}
+    ${TachyonColorSources}
+)
+tachyon_assert_no_duplicate_sources(GlobalTachyonSources)
 
 add_library(TachyonText STATIC ${TachyonTextSources})
 tachyon_configure_common(TachyonText)

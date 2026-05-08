@@ -183,12 +183,6 @@ ValidationResult validate_render_job(const RenderJob& job) {
         result.diagnostics.add_error("job.seed_policy_mode_invalid", "seed_policy_mode must be stable, deterministic, or random", "seed_policy_mode");
     }
 
-    if (!job.compatibility_mode.empty() &&
-        job.compatibility_mode != "locked_v1" &&
-        job.compatibility_mode != "legacy" &&
-        job.compatibility_mode != "current") {
-        result.diagnostics.add_warning("job.compatibility_mode_unrecognized", "compatibility_mode should be one of locked_v1, legacy, or current", "compatibility_mode");
-    }
 
     if (!job.output.profile.audio.mode.empty()) {
         const auto& mode = job.output.profile.audio.mode;

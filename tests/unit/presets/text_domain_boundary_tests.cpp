@@ -1,4 +1,4 @@
-#include "tachyon/presets/text/text_layer_preset_registry.h"
+#include "tachyon/presets/text/text_registry.h"
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 
 #include <iostream>
@@ -26,7 +26,7 @@ bool run_text_domain_boundary_tests() {
     // Test 1: Text layer preset returns valid LayerSpec
     {
         presets::TextManifest text_manifest;
-        presets::TextLayerPresetRegistry registry(text_manifest);
+        presets::TextRegistry registry(text_manifest);
         registry::ParameterBag params;
         params.set("content", std::string("Hello World"));
 
@@ -40,7 +40,7 @@ bool run_text_domain_boundary_tests() {
     // Test 2: Text layer does not directly add ThreeDSpec
     {
         presets::TextManifest text_manifest;
-        presets::TextLayerPresetRegistry registry(text_manifest);
+        presets::TextRegistry registry(text_manifest);
         registry::ParameterBag params;
         params.set("content", std::string("Test"));
 

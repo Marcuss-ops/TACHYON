@@ -1,6 +1,6 @@
 # ---------------------------------------------------------
 # 5. CONTENT DOMAIN: TachyonContentTests
-# content/presets/*, catalog, text presets
+# content/presets/*, library, text presets
 # ---------------------------------------------------------
 add_executable(TachyonContentTests
     unit/test_main_content.cpp

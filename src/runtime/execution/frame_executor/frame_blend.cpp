@@ -19,7 +19,7 @@ std::optional<std::shared_ptr<renderer2d::Framebuffer>> FrameBlendRenderer::try_
     const DataSnapshot& snapshot,
     RenderContext& context,
     const std::optional<timeline::FrameBlendResult>& blend_result,
-    double frame_time_seconds,
+    [[maybe_unused]] double frame_time_seconds,
     std::uint64_t composition_key,
     std::uint64_t frame_key
 ) {

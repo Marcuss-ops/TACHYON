@@ -39,7 +39,7 @@ std::vector<BackgroundPresetSpec> BackgroundManifest::generate_preset_specs() co
     // Galaxy Premium
     specs.push_back({
         "tachyon.backgroundpreset.galaxy_premium",
-        {"tachyon.backgroundpreset.galaxy_premium", "Galaxy Premium", "High-end cinematic galaxy background", "Premium", {"space", "premium"}},
+        {"tachyon.backgroundpreset.galaxy_premium", "Galaxy Premium", "High-end cinematic galaxy background", "Premium", {"space", "premium"}, 1, registry::Stability::Stable, {}},
         {},
         [](const registry::ParameterBag& bag) {
             BackgroundParams p = get_base_params(bag);
@@ -53,7 +53,7 @@ std::vector<BackgroundPresetSpec> BackgroundManifest::generate_preset_specs() co
     // Dark Tech Grid
     specs.push_back({
         "tachyon.backgroundpreset.dark_tech_grid",
-        {"tachyon.backgroundpreset.dark_tech_grid", "Dark Tech Grid", "Modern dark tech grid for presentations", "Tech", {"grid", "dark"}},
+        {"tachyon.backgroundpreset.dark_tech_grid", "Dark Tech Grid", "Modern dark tech grid for presentations", "Tech", {"grid", "dark"}, 1, registry::Stability::Stable, {}},
         {},
         [](const registry::ParameterBag& bag) {
             BackgroundParams p = get_base_params(bag);
@@ -67,7 +67,7 @@ std::vector<BackgroundPresetSpec> BackgroundManifest::generate_preset_specs() co
     // Cinematic Aura
     specs.push_back({
         "tachyon.backgroundpreset.cinematic_aura",
-        {"tachyon.backgroundpreset.cinematic_aura", "Cinematic Aura", "Soft cinematic aura background", "Cinematic", {"aura", "soft"}},
+        {"tachyon.backgroundpreset.cinematic_aura", "Cinematic Aura", "Soft cinematic aura background", "Cinematic", {"aura", "soft"}, 1, registry::Stability::Stable, {}},
         {},
         [](const registry::ParameterBag& bag) {
             BackgroundParams p = get_base_params(bag);
@@ -103,7 +103,7 @@ std::vector<BackgroundKindSpec> BackgroundManifest::generate_kind_specs() const 
     // Galaxy Kind
     specs.push_back({
         "tachyon.background.kind.galaxy",
-        {"tachyon.background.kind.galaxy", "Galaxy", "Cinematic galaxy background type", "Core", {}},
+        {"tachyon.background.kind.galaxy", "Galaxy", "Cinematic galaxy background type", "Core", {}, 1, registry::Stability::Stable, {}},
         {},
         [get_procedural_params](const registry::ParameterBag& bag) {
             auto p = get_procedural_params(bag);
@@ -117,7 +117,7 @@ std::vector<BackgroundKindSpec> BackgroundManifest::generate_kind_specs() const 
     // Grid Modern Kind
     specs.push_back({
         "tachyon.background.kind.grid_modern",
-        {"tachyon.background.kind.grid_modern", "Modern Grid", "Tech grid background type", "Core", {}},
+        {"tachyon.background.kind.grid_modern", "Modern Grid", "Tech grid background type", "Core", {}, 1, registry::Stability::Stable, {}},
         {},
         [get_procedural_params](const registry::ParameterBag& bag) {
             auto p = get_procedural_params(bag);
@@ -129,7 +129,7 @@ std::vector<BackgroundKindSpec> BackgroundManifest::generate_kind_specs() const 
     // Aura Kind
     specs.push_back({
         "tachyon.background.kind.aura",
-        {"tachyon.background.kind.aura", "Aura", "Soft aura background type", "Core", {}},
+        {"tachyon.background.kind.aura", "Aura", "Soft aura background type", "Core", {}, 1, registry::Stability::Stable, {}},
         {},
         [get_procedural_params](const registry::ParameterBag& bag) {
             auto p = get_procedural_params(bag);

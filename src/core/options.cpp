@@ -86,7 +86,7 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
             result.diagnostics.add_error("cli.scene_deprecated", "--scene loading is no longer supported. Use --cpp for C++ scenes or --preset.");
             return result;
         }
-        if (arg == "--catalog" || arg == "--library") {
+        if (arg == "--library") {
             const std::string value = require_argument(args, index);
             if (value.empty()) {
                 result.diagnostics.add_error("cli.library_missing", "missing value for " + arg);

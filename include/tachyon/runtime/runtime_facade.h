@@ -73,23 +73,6 @@ public:
      */
     [[nodiscard]] FacadeValidationResult validate_scene(const SceneSpec& spec);
 
-    // Legacy / CLI support structures (refactored to use new pipeline internally)
-    struct RenderRequest {
-        std::string scene_path;
-        std::string output_path;
-        int width{1920};
-        int height{1080};
-        int start_frame{0};
-        int end_frame{100};
-        std::string preset;
-    };
-
-    struct RenderResult {
-        bool success{false};
-        std::string error_message;
-    };
-
-    RenderResult render_legacy(const RenderRequest& request);
 };
 
 } // namespace tachyon

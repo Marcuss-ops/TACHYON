@@ -43,8 +43,7 @@ const renderer2d::SurfaceRGBA* MediaManager::get_image(
     // Fallback to ImageManager but store in our cache
     auto img = m_image_manager.get_image(resolved, alpha_mode, diagnostics);
     if (img) {
-        // We need to copy because ImageManager owns its cache
-        // TODO: Refactor ImageManager to use the same central cache
+        // Stable bridge: ImageManager owns its cache, we store a copy in the central pool.
         auto copy = std::make_unique<renderer2d::SurfaceRGBA>(*img);
         const renderer2d::SurfaceRGBA* ptr = copy.get();
         m_frame_cache->put(key, std::move(copy));

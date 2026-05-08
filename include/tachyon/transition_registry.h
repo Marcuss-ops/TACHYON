@@ -49,7 +49,7 @@ public:
     /// Resolve by ID or alias (tries ID first, then alias)
     const TransitionDescriptor* resolve(std::string_view id_or_alias) const;
 
-    /// Get catalog entries derived from registered descriptors
+    /// Get library entries derived from registered descriptors
     std::vector<TransitionLibraryEntry> library_entries() const;
 
     /// List all registered descriptor IDs

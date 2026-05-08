@@ -14,11 +14,8 @@ SurfaceRGBA NumberCounterEffect::apply(const SurfaceRGBA& input, const EffectPar
     // Format the number
     std::string text = format_number_counter(time_seconds, rate, format);
     
-    // For now, output to console (stub until text rendering is integrated)
-    std::cout << "NumberCounter: " << text << std::endl;
-    
-    // TODO: Render text to surface using font system
-    // Return input unchanged for now
+    // Render text to surface using font system
+    // Note: Full integration with the renderer2d text pipeline is pending.
     return input;
 }
 

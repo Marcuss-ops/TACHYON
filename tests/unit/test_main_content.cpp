@@ -17,7 +17,7 @@ bool run_background_resolver_tests();
 bool run_transition_runtime_tests();
 namespace tachyon { bool run_preset_audit_tests(); }
 
-// New tests for schema migration and catalog audit
+// New tests for schema migration and library audit
 bool run_transition_manifest_audit_tests();
 bool run_layerspec_schema_tests();
 bool run_missing_transition_fallback_tests();
@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
         {"background_resolver", run_background_resolver_tests},
         {"transition_runtime", run_transition_runtime_tests},
         {"audit", tachyon::run_preset_audit_tests},
-        // New tests for schema migration and catalog audit
+        // New tests for schema migration and library audit
         {"transition_manifest_audit", run_transition_manifest_audit_tests},
         {"layerspec_schema", run_layerspec_schema_tests},
         {"missing_transition_fallback", run_missing_transition_fallback_tests},

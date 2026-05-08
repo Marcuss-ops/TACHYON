@@ -33,15 +33,6 @@ namespace tachyon {
 
 namespace {
 
-output::OutputFramePacket make_output_packet(const ExecutedFrame& frame) {
-    output::OutputFramePacket packet;
-    packet.frame_number = frame.frame_number;
-    packet.frame = frame.frame.get();
-    packet.metadata.time_seconds = static_cast<double>(frame.frame_number);
-    packet.metadata.scene_hash = std::to_string(frame.scene_hash);
-    packet.metadata.color_space = "linear_rec709";
-    return packet;
-}
 
 std::string output_path_or_plan(const std::filesystem::path& output_path, const RenderPlan& plan) {
     if (!output_path.empty()) {

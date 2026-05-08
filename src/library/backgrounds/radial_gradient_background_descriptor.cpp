@@ -23,7 +23,17 @@ BackgroundDescriptor make_radial_gradient_background_descriptor() {
     // Build function
     desc.build = [](const registry::ParameterBag& params) -> LayerSpec {
         LayerSpec spec;
-        // TODO: Implement radial gradient background layer creation
+        spec.type = LayerType::Procedural;
+        spec.name = "Radial Gradient Background";
+        
+        ProceduralSpec proc;
+        proc.kind = "tachyon.background.kind.radial_gradient";
+        proc.color_a.keyframes = {{0.0, params.get_or<ColorSpec>("color_start", ColorSpec(0, 0, 0))}};
+        proc.color_b.keyframes = {{0.0, params.get_or<ColorSpec>("color_end", ColorSpec(255, 255, 255))}};
+        proc.focal_x = params.get_or<double>("center_x", 0.5);
+        proc.focal_y = params.get_or<double>("center_y", 0.5);
+        spec.procedural = proc;
+        
         return spec;
     };
 
