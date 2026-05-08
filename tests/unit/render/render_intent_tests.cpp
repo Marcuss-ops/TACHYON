@@ -1,5 +1,6 @@
 #include "render_intent_test_utils.h"
 #include "tachyon/core/policy/engine_policy.h"
+#include <iostream>
 
 namespace {
 

@@ -11,6 +11,7 @@
 #include "tachyon/transition_registry.h"
 #include "tachyon/core/catalog/catalog.h"
 #include "cli_internal.h"
+#include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
 
 #include <cmath>
 #include <functional>
@@ -459,7 +460,7 @@ bool render_transition_demo(
 
 }  // namespace
 
-bool run_catalog_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err) {
+bool run_catalog_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*/, renderer3d::Modifier3DRegistry& /*modifier_registry*/) {
     const std::filesystem::path catalog_root = resolve_catalog_root(options.catalog_path);
     TachyonCatalog catalog(catalog_root);
     if (!catalog.ok()) {

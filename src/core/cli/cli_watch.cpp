@@ -8,6 +8,7 @@
 #include "tachyon/runtime/execution/jobs/render_job.h"
 #include "tachyon/runtime/resource/render_context.h"
 #include "cli_internal.h"
+#include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
 #include <iostream>
 #include <filesystem>
 #include <thread>
@@ -15,7 +16,7 @@
 
 namespace tachyon {
 
-bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*/) {
+bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*/, renderer3d::Modifier3DRegistry& /*modifier_registry*/) {
     if (options.cpp_path.empty()) {
         err << "--cpp is required for watch\n";
         return false;

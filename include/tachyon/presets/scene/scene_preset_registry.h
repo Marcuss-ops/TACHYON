@@ -28,17 +28,23 @@ struct ScenePresetSpec {
 /**
  * @brief Registry for built-in scenes.
  */
-class ScenePresetRegistry : public registry::TypedRegistry<ScenePresetSpec> {
+class ScenePresetRegistry {
 public:
     static ScenePresetRegistry& instance();
+
+    ScenePresetRegistry() = default;
+    ~ScenePresetRegistry() = default;
     
+    void register_spec(ScenePresetSpec spec);
+    const ScenePresetSpec* find(std::string_view id) const;
+    [[nodiscard]] std::vector<std::string> list_ids() const;
+
     std::optional<SceneSpec> create(std::string_view id, const registry::ParameterBag& params) const;
 
     void load_builtins();
 
 private:
-    ScenePresetRegistry() = default;
-    ~ScenePresetRegistry() = default;
+    registry::TypedRegistry<ScenePresetSpec> registry_;
 };
 
 } // namespace tachyon::presets

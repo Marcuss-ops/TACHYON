@@ -1,0 +1,13 @@
+ls: cannot access '${CMAKE_SOURCE_DIR}/src/color/aces.cpp': No such file or directory
+ls: cannot access '${CMAKE_SOURCE_DIR}/src/color/color_math.cpp': No such file or directory
+ls: cannot access '${CMAKE_SOURCE_DIR}/src/color/color_space.cpp': No such file or directory
+ls: cannot access '${CMAKE_SOURCE_DIR}/src/color/premultiplied_alpha.cpp': No such file or directory
+ls: cannot access '${CMAKE_SOURCE_DIR}/src/color/tone_mapping.cpp': No such file or directory
+ls: cannot access '${CMAKE_SOURCE_DIR}/src/color/transfer_functions.cpp': No such file or directory
+ls: cannot access '${CMAKE_SOURCE_DIR}/src/output/output_planner.cpp': No such file or directory
+ls: cannot access 'add_library(TachyonScene3DBridge': No such file or directory
+ls: cannot access 'STATIC': No such file or directory
+ls: cannot access 'src/renderer2d/evaluated_composition/rendering/pipeline/scene3d_bridge.cpp)': No such file or directory
+ls: cannot access 'src/catalog/background_catalog.cpp': No such file or directory
+ls: cannot access 'src/catalog/transition_catalog.cpp': No such file or directory
+ls: cannot access 'src/renderer2d/effects/core/effect_utils.cpp': No such file or directory

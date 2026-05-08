@@ -7,6 +7,9 @@
 #include "tachyon/renderer2d/raster/rasterizer_ops.h"
 #include "tachyon/renderer2d/resource/render_context.h"
 #include "tachyon/renderer2d/raster/draw_command.h"
+#include "tachyon/render/render_intent.h"
+#include "tachyon/transition_registry.h"
+#include "tachyon/renderer2d/effects/effect_resolver.h"
 
 #include <cmath>
 #include <iostream>
@@ -60,7 +63,11 @@ bool run_evaluated_composition_renderer_tests() {
 
     renderer2d::RenderContext2D render_context;
     renderer2d::EffectRegistry effect_reg;
-    RenderIntent intent;
+    TransitionRegistry transition_reg;
+    register_builtin_transitions(transition_reg);
+    register_builtin_effects(effect_reg, transition_reg);
+
+    render::RenderIntent intent;
     const RasterizedFrame2D frame = tachyon::render_evaluated_composition_2d(state, intent, plan, task, render_context, effect_reg);
     check_true(frame.surface != nullptr, "evaluated renderer should produce a surface");
     if (!frame.surface) return false;
@@ -95,7 +102,7 @@ bool run_evaluated_composition_renderer_tests() {
     blend_state.layers.push_back(red_layer);
     blend_state.layers.push_back(green_layer);
 
-    RenderIntent intent_blend;
+    render::RenderIntent intent_blend;
     const RasterizedFrame2D blend_frame = tachyon::render_evaluated_composition_2d(blend_state, intent_blend, plan, task, render_context, effect_reg);
     check_true(blend_frame.surface != nullptr, "blend renderer should produce a surface");
     if (blend_frame.surface) {
@@ -135,7 +142,7 @@ bool run_evaluated_composition_renderer_tests() {
     adjustment_layer.layer_index = 1;
     adjustment_layer.effects.clear();
     EffectSpec fill_effect;
-    fill_effect.type = "fill";
+    fill_effect.type = "tachyon.effect.color.fill";
     fill_effect.enabled = true;
     fill_effect.colors["color"] = ColorSpec{255, 0, 0, 255};
     adjustment_layer.effects.push_back(fill_effect);
@@ -143,7 +150,7 @@ bool run_evaluated_composition_renderer_tests() {
     adjustment_state.layers.push_back(base_layer);
     adjustment_state.layers.push_back(adjustment_layer);
 
-    RenderIntent intent_adj;
+    render::RenderIntent intent_adj;
     const RasterizedFrame2D adjustment_frame = tachyon::render_evaluated_composition_2d(adjustment_state, intent_adj, plan, task, render_context, effect_reg);
     check_true(adjustment_frame.surface != nullptr, "adjustment renderer should produce a surface");
     if (adjustment_frame.surface) {
@@ -170,7 +177,7 @@ bool run_evaluated_composition_renderer_tests() {
     timeline_layer.local_transform.scale = {1.0f, 1.0f};
     timeline_state.layers.push_back(timeline_layer);
 
-    RenderIntent intent_timeline;
+    render::RenderIntent intent_timeline;
     const RasterizedFrame2D timeline_frame = tachyon::render_evaluated_composition_2d(timeline_state, intent_timeline, plan, task, render_context, effect_reg);
     check_true(timeline_frame.surface != nullptr, "timeline renderer should produce a surface");
     if (timeline_frame.surface) {
@@ -207,7 +214,7 @@ bool run_evaluated_composition_renderer_tests() {
     matte_state.layers.push_back(matte_layer);
     matte_state.layers.push_back(matte_target);
 
-    RenderIntent intent_matte;
+    render::RenderIntent intent_matte;
     const RasterizedFrame2D matte_frame = tachyon::render_evaluated_composition_2d(matte_state, intent_matte, plan, task, render_context, effect_reg);
     check_true(matte_frame.surface != nullptr, "track matte renderer should produce a surface");
     if (matte_frame.surface) {
@@ -246,7 +253,7 @@ bool run_evaluated_composition_renderer_tests() {
     mask_state.layers.push_back(vector_mask);
     mask_state.layers.push_back(masked_layer);
 
-    RenderIntent intent_mask;
+    render::RenderIntent intent_mask;
     const RasterizedFrame2D mask_frame = tachyon::render_evaluated_composition_2d(mask_state, intent_mask, plan, task, render_context, effect_reg);
     check_true(mask_frame.surface != nullptr, "mask renderer should produce a surface");
     if (mask_frame.surface) {
@@ -288,7 +295,7 @@ bool run_evaluated_composition_renderer_tests() {
     precomp_layer.layer_index = 0;
     parent_state.layers.push_back(precomp_layer);
 
-    RenderIntent intent_parent;
+    render::RenderIntent intent_parent;
     const RasterizedFrame2D precomp_first = tachyon::render_evaluated_composition_2d(parent_state, intent_parent, plan, task, precomp_context, effect_reg);
     const std::size_t cache_entries_after_first = precomp_context.precomp_cache->entry_count();
     const RasterizedFrame2D precomp_second = tachyon::render_evaluated_composition_2d(parent_state, intent_parent, plan, task, precomp_context, effect_reg);

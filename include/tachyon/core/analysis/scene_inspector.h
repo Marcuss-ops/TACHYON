@@ -45,9 +45,13 @@ struct InspectionReport {
     }
 };
 
+class TransitionRegistry;
+namespace renderer3d { class Modifier3DRegistry; }
+
 InspectionReport inspect_scene(
     const SceneSpec& scene,
-    const TransitionRegistry& registry,
+    const TransitionRegistry& transition_registry,
+    const renderer3d::Modifier3DRegistry& modifier_registry,
     const InspectionOptions& options = {}
 );
 

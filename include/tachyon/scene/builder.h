@@ -120,6 +120,8 @@ public:
     MaterialBuilder& roughness(double v);
     MaterialBuilder& transmission(double v);
     MaterialBuilder& ior(double v);
+    MaterialBuilder& emission_strength(double v);
+    MaterialBuilder& emission_color(const ColorSpec& c);
     
     LayerBuilder& done();
 };

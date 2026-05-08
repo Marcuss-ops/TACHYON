@@ -4,11 +4,12 @@
 #include "tachyon/runtime/runtime_facade.h"
 #include "tachyon/core/cli_scene_loader.h"
 #include "cli_internal.h"
+#include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
 #include <iostream>
 
 namespace tachyon {
 
-bool run_validate_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*/) {
+bool run_validate_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*/, renderer3d::Modifier3DRegistry& /*modifier_registry*/) {
     SceneLoadOptions load_opts;
     load_opts.cpp_path = options.cpp_path;
     load_opts.preset_id = options.preset_id;

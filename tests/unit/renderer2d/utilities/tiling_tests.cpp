@@ -2,6 +2,8 @@
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/renderer2d/resource/render_context.h"
+#include "tachyon/render/intent_builder.h"
+#include "tachyon/renderer2d/effects/effect_registry.h"
 #include <iostream>
 #include <cmath>
 #include <string>
@@ -49,14 +51,16 @@ bool run_tiling_tests() {
     task.cache_key.value = "tiling-test";
     
     renderer2d::RenderContext2D context;
+    render::RenderIntent intent;
+    renderer2d::EffectRegistry effect_registry;
     
     // 1. Render without tiling
     context.policy.tile_size = 0;
-    const auto frame_no_tile = render_evaluated_composition_2d(state, plan, task, context);
+    const auto frame_no_tile = render_evaluated_composition_2d(state, intent, plan, task, context, effect_registry);
     
     // 2. Render with tiling
     context.policy.tile_size = 256;
-    const auto frame_with_tile = render_evaluated_composition_2d(state, plan, task, context);
+    const auto frame_with_tile = render_evaluated_composition_2d(state, intent, plan, task, context, effect_registry);
     
     check_true(frame_no_tile.surface != nullptr, "Full frame render failed");
     check_true(frame_with_tile.surface != nullptr, "Tiled render failed");

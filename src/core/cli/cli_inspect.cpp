@@ -3,6 +3,7 @@
 #include "tachyon/runtime/diagnostics/report.h"
 #include "tachyon/core/cli_scene_loader.h"
 #include "tachyon/core/analysis/scene_inspector.h"
+#include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
 #include "cli_internal.h"
 #include "tachyon/text/fonts/management/font_manifest.h"
 #include "tachyon/text/fonts/utils/font_coverage_reporter.h"
@@ -71,9 +72,9 @@ void print_inspect_json(
 
 } // namespace
  
-bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& transition_registry) {
+bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& transition_registry, renderer3d::Modifier3DRegistry& modifier_registry) {
     if (options.command == "inspect-fonts") {
-        return run_inspect_fonts_command(options, out, err);
+        return run_inspect_fonts_command(options, out, err, transition_registry, modifier_registry);
     }
  
     SceneLoadOptions load_opts;
@@ -96,7 +97,7 @@ bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostr
     analysis::InspectionOptions inspect_options;
     inspect_options.samples = options.inspect_samples;
     inspect_options.include_info = options.inspect_include_info;
-    const auto inspection = analysis::inspect_scene(scene, transition_registry, inspect_options);
+    const auto inspection = analysis::inspect_scene(scene, transition_registry, modifier_registry, inspect_options);
 
     if (options.json_output) {
         print_inspect_json(scene, assets, inspection, out);
@@ -108,7 +109,7 @@ bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostr
     return inspection.ok();
 }
 
-bool run_inspect_fonts_command(const CliOptions& /*options*/, std::ostream& /*out*/, std::ostream& err) {
+bool run_inspect_fonts_command(const CliOptions& /*options*/, std::ostream& /*out*/, std::ostream& err, TransitionRegistry& /*registry*/, renderer3d::Modifier3DRegistry& /*modifier_registry*/) {
     err << "Font manifest inspection is no longer supported. Please use the C++ Font API.\n";
     return false;
 }

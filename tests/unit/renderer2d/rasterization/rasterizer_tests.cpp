@@ -1,6 +1,7 @@
 #include "tachyon/renderer2d/raster/rasterizer.h"
 #include "tachyon/renderer2d/raster/draw_list_rasterizer.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
+#include "tachyon/renderer2d/resource/render_context.h"
 
 #include <filesystem>
 #include <iostream>
@@ -144,7 +145,8 @@ bool run_rasterizer_tests() {
         });
         commands.push_back(textured);
 
-        RasterizedFrame2D frame = render_frame_2d(plan, task, commands);
+        renderer2d::RenderContext2D context;
+        RasterizedFrame2D frame = render_frame_2d(plan, task, commands, context);
         check_true(frame.surface != nullptr, "Frame renderer returns a surface");
         check_true(frame.estimated_draw_ops == commands.size(), "Frame renderer reports executed command count");
         check_true(frame.surface->width() == 64, "Frame surface width matches render plan");
@@ -176,7 +178,8 @@ bool run_rasterizer_tests() {
         rect.clip.emplace(RectI{4, 4, 6, 6});
         commands.push_back(rect);
 
-        RasterizedFrame2D frame = render_frame_2d(plan, task, commands);
+        renderer2d::RenderContext2D context;
+        RasterizedFrame2D frame = render_frame_2d(plan, task, commands, context);
         check_true(frame.surface != nullptr, "Clipped frame renderer returns a surface");
         check_true(frame.surface->get_pixel(2, 2).r == 0, "Clip prevents drawing outside the clip rect");
         check_true(frame.surface->get_pixel(5, 5).r > 0.001f, "Clip allows drawing inside the clip rect");

@@ -8,6 +8,9 @@
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include "tachyon/media/management/image_manager.h"
 #include "tachyon/text/fonts/core/font_registry.h"
+#include "tachyon/renderer2d/effects/effect_registry.h"
+#include "tachyon/render/render_intent.h"
+#include "tachyon/transition_registry.h"
 
 #include <algorithm>
 #include <cmath>
@@ -266,28 +269,28 @@ tachyon::SceneSpec make_scene_with_image(const std::filesystem::path& image_path
         .duration(1.0)
         .clear({20, 22, 28, 255})
         .camera3d_layer("cam", [camera_x](LayerBuilder& l) {
-            l.position3d(camera_x, 0.0, -560.0)
-             .camera_poi(0.0, 0.0, 0.0)
-             .camera_zoom(40.0);
+            l.transform3d().position(camera_x, 0.0, -560.0).done()
+             .camera().poi(0.0, 0.0, 0.0).zoom(40.0).done();
         })
         .light_layer("ambient", [](LayerBuilder& l) {
-            l.light_type("ambient")
-             .light_color({255, 255, 255, 255})
-             .light_intensity(0.65);
+            l.light().type("ambient")
+             .color({255, 255, 255, 255})
+             .intensity(0.65).done();
         })
         .light_layer("key", [](LayerBuilder& l) {
-            l.light_type("point")
-             .position3d(-220.0, 180.0, -250.0)
-             .light_color({255, 248, 234, 255})
-             .light_intensity(2.8);
+            l.light().type("point").done()
+             .transform3d().position(-220.0, 180.0, -250.0).done()
+             .light().color({255, 248, 234, 255})
+             .intensity(2.8).done();
         })
         .layer("logo", [&image_path](LayerBuilder& l) {
             l.image(image_path.string())
              .size(260, 260)
-             .position3d(0.0, 0.0, 240.0)
-             .rotation3d(0.0, 25.0, 0.0)
-             .scale3d(1.0, 1.0, 1.0)
-             .emission_strength(3.5);
+             .transform3d()
+                .position(0.0, 0.0, 240.0)
+                .rotation(0.0, 25.0, 0.0)
+                .scale(1.0, 1.0, 1.0).done()
+             .material().emission_strength(3.5).done();
         })
         .build_scene();
 }
@@ -301,40 +304,41 @@ tachyon::SceneSpec make_reusable_3d_scene(const std::filesystem::path& image_pat
         .duration(1.0)
         .clear({18, 20, 24, 255})
         .camera3d_layer("cam", [](LayerBuilder& l) {
-            l.position3d(0.0, 0.0, -580.0)
-             .camera_poi(0.0, 0.0, 0.0)
-             .camera_zoom(42.0);
+            l.transform3d().position(0.0, 0.0, -580.0).done()
+             .camera().poi(0.0, 0.0, 0.0).zoom(42.0).done();
         })
         .light_layer("ambient", [](LayerBuilder& l) {
-            l.light_type("ambient")
-             .light_color({255, 255, 255, 255})
-             .light_intensity(0.75);
+            l.light().type("ambient")
+             .color({255, 255, 255, 255})
+             .intensity(0.75).done();
         })
         .layer("image", [&image_path](LayerBuilder& l) {
             l.image(image_path.string())
              .size(220, 220)
-             .position3d(-280.0, 0.0, 260.0)
-             .rotation3d(0.0, 18.0, 0.0)
-             .emission_strength(2.0);
+             .transform3d()
+                .position(-280.0, 0.0, 260.0)
+                .rotation(0.0, 18.0, 0.0).done()
+             .material().emission_strength(2.0).done();
         })
         .layer("text", [](LayerBuilder& l) {
-            l.text("TACHYON")
+            l.text().content("TACHYON")
              .font("default")
-             .font_size(54.0)
+             .font_size(54.0).done()
              .fill_color({245, 245, 248, 255})
              .size(360, 120)
-             .position3d(0.0, 20.0, 340.0)
-             .rotation3d(0.0, -12.0, 0.0)
-             .emission_strength(1.5);
+             .transform3d()
+                .position(0.0, 20.0, 340.0)
+                .rotation(0.0, -12.0, 0.0).done()
+             .material().emission_strength(1.5).done();
         })
         .layer("shape", [](LayerBuilder& l) {
-            l.type("shape")
-             .kind(tachyon::LayerType::Shape)
+            l.type(tachyon::LayerType::Shape)
              .fill_color({235, 142, 64, 255})
              .size(230, 230)
-             .position3d(300.0, 0.0, 460.0)
-             .rotation3d(0.0, -20.0, 0.0)
-             .emission_strength(1.0);
+             .transform3d()
+                .position(300.0, 0.0, 460.0)
+                .rotation(0.0, -20.0, 0.0).done()
+             .material().emission_strength(1.0).done();
         })
         .build_scene();
 }
@@ -348,20 +352,19 @@ tachyon::SceneSpec make_parallax_layer_scene(const std::filesystem::path& image_
         .duration(1.0)
         .clear({14, 16, 20, 255})
         .camera3d_layer("cam", [camera_x](LayerBuilder& l) {
-            l.position3d(camera_x, 0.0, -520.0)
-             .camera_poi(camera_x, 0.0, 0.0)
-             .camera_zoom(40.0);
+            l.transform3d().position(camera_x, 0.0, -520.0).done()
+             .camera().poi(camera_x, 0.0, 0.0).zoom(40.0).done();
         })
         .light_layer("ambient", [](LayerBuilder& l) {
-            l.light_type("ambient")
-             .light_color({255, 255, 255, 255})
-             .light_intensity(0.8);
+            l.light().type("ambient")
+             .color({255, 255, 255, 255})
+             .intensity(0.8).done();
         })
         .layer("card", [&image_path, z](LayerBuilder& l) {
             l.image(image_path.string())
              .size(160, 160)
-             .position3d(0.0, 0.0, z)
-             .emission_strength(4.0);
+             .transform3d().position(0.0, 0.0, z).done()
+             .material().emission_strength(4.0).done();
         })
         .build_scene();
 }
@@ -427,8 +430,10 @@ tachyon::RasterizedFrame2D render_scene(
         : 30.0;
     task.time_seconds = static_cast<double>(frame_number) / fps;
 
-    renderer2d::EffectRegistry effect_reg;
-    RenderIntent intent_placeholder; // Since we are using an already evaluated state, intent is mostly used for resources if needed.
+    tachyon::renderer2d::EffectRegistry effect_reg;
+    tachyon::TransitionRegistry transition_reg; // In tests we use a fresh registry
+    tachyon::renderer2d::register_builtin_effects(effect_reg, transition_reg);
+    tachyon::render::RenderIntent intent_placeholder; 
     return tachyon::render_evaluated_composition_2d(*state, intent_placeholder, plan, task, context, effect_reg);
 }
 

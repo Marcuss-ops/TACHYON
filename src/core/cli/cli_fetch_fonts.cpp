@@ -1,12 +1,13 @@
 #include "tachyon/core/cli_options.h"
 #include "tachyon/text/fonts/management/font_downloader.h"
 #include "cli_internal.h"
+#include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
 #include <iostream>
 #include <sstream>
 
 namespace tachyon {
 
-bool run_fetch_fonts_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*/) {
+bool run_fetch_fonts_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*/, renderer3d::Modifier3DRegistry& /*modifier_registry*/) {
     if (options.font_family.empty()) {
         err << "Error: --family is required for fetch-fonts command\n";
         return false;

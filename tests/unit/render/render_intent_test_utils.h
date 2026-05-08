@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/render/intent_builder.h"
-#include "tachyon/core/scene/state/evaluated_composition_state.h"
+#include "tachyon/core/scene/state/evaluated_state.h"
 #include <memory>
 #include <string>
 
@@ -35,7 +35,7 @@ struct FakeResourceProvider final : public render::IResourceProvider {
 /**
  * @brief Helper to build a RenderIntent for tests.
  */
-inline render::IntentBuildResult build_test_render_intent(
+inline render::RenderIntentBuildResult build_test_render_intent(
     const scene::EvaluatedCompositionState& state,
     render::IResourceProvider* provider = nullptr) 
 {

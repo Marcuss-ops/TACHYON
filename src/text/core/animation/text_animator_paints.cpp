@@ -1,6 +1,5 @@
 #include "tachyon/text/animation/text_animator_utils.h"
 #include "tachyon/text/animation/text_anim_backend.h"
-#include "tachyon/text/animation/text_anim_migration.h"
 #include "tachyon/text/fonts/core/font.h"
 #include <algorithm>
 #include <cmath>
@@ -53,17 +52,6 @@ TextAnimatorContext make_context_from_precomp(
     return ctx;
 }
 
-void apply_legacy_opacity_drop(TextLayoutResult& layout, float per_glyph_opacity_drop) {
-    if (per_glyph_opacity_drop <= 0.0f) {
-        return;
-    }
-
-    for (std::size_t i = 0; i < layout.glyphs.size(); ++i) {
-        auto& glyph = layout.glyphs[i];
-        const float dropped = glyph.opacity - per_glyph_opacity_drop * static_cast<float>(i);
-        glyph.opacity = std::clamp(dropped, kZero, kOne);
-    }
-}
 
 std::vector<PrecompGlyphCtx> precompute_glyph_contexts(const TextLayoutResult& layout) {
     std::vector<PrecompGlyphCtx> precomp;
@@ -120,10 +108,6 @@ void apply_text_animators(
         return;
     }
 
-    // Apply legacy opacity drop as pre-processing (index-based, can't be expressed as animator spec)
-    if (animation.per_glyph_opacity_drop > 0.0f) {
-        apply_legacy_opacity_drop(layout, animation.per_glyph_opacity_drop);
-    }
 
     if (animators_span.empty()) {
         return;

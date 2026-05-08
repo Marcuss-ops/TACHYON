@@ -44,7 +44,7 @@ float evaluate_expression_unified(const std::string& expr, const TextAnimatorCon
         return kOne;
     }
 
-    return std::clamp(static_cast<float>(result.value), kZero, kOne);
+    return static_cast<float>(result.value);
 }
 
 // Export for use in text_animator_coverage.cpp

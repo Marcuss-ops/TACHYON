@@ -7,25 +7,25 @@
 
 namespace tachyon {
 
-class TransitionRegistry;
+namespace renderer3d { class Modifier3DRegistry; }
 
 void print_diagnostics(const DiagnosticBag& diagnostics, std::ostream& out);
 
-bool run_validate_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry);
-bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry);
-bool run_motion_map_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry);
-bool run_inspect_fonts_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry);
-bool run_render_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry);
-bool run_preview_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry);
-bool run_preview_frame_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry);
-bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry);
-bool run_fetch_fonts_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry);
-bool run_metrics_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry);
-bool run_doctor_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry);
-bool run_output_presets_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry);
-bool run_thumb_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry);
-bool run_preview_internal(const CliOptions& options, std::ostream& out, std::ostream& err, const char* label, TransitionRegistry& registry);
-bool run_catalog_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry);
-bool run_transition_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry);
+bool run_validate_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry);
+bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry);
+bool run_motion_map_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry);
+bool run_inspect_fonts_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry);
+bool run_render_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry);
+bool run_preview_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry);
+bool run_preview_frame_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry);
+bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry);
+bool run_fetch_fonts_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry);
+bool run_metrics_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry);
+bool run_doctor_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry);
+bool run_output_presets_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry);
+bool run_thumb_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry);
+bool run_preview_internal(const CliOptions& options, std::ostream& out, std::ostream& err, const char* label, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry);
+bool run_catalog_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry);
+bool run_transition_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry);
 
 } // namespace tachyon

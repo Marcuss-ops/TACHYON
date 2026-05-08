@@ -8,7 +8,7 @@
 namespace tachyon {
 
 struct TextAnimatorSelectorSpec {
-    std::string type{"range"}; // "range" | "index" | "expression" | "all" | "random" | "wiggly"
+    std::string type{"range"}; // "range" | "index" | "expression" | "all" | "random" | "wiggly" | "wave"
     
     // For "range" (percentage 0.0-1.0)
     double start{0.0};

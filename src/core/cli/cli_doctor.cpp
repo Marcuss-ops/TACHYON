@@ -6,13 +6,14 @@
 #include "tachyon/transition_registry.h"
 #include "tachyon/core/transition/transition_descriptor.h"
 #include "cli_internal.h"
+#include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
 
 namespace tachyon {
 
-bool run_doctor_command(const CliOptions&, std::ostream& out, std::ostream& err) {
+bool run_doctor_command(const CliOptions&, std::ostream& out, std::ostream& err, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry) {
     out << "TACHYON Doctor - System Diagnostic\n";
     out << "==================================\n\n";
 

@@ -7,6 +7,7 @@
 #include "tachyon/renderer2d/effects/effect_registry.h"
 #include "tachyon/transition_registry.h"
 #include "tachyon/core/transition/transition_descriptor.h"
+#include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -166,7 +167,9 @@ RenderSessionResult NativeRenderer::render(
     const NativeRenderOptions& options) {
     TransitionRegistry transition_registry;
     register_builtin_transitions(transition_registry);
-    return render(scene, job, transition_registry, options);
+    renderer3d::Modifier3DRegistry modifier_registry;
+    renderer3d::register_builtin_modifier_descriptors(modifier_registry);
+    return render(scene, job, transition_registry, modifier_registry, options);
 }
 
 RenderSessionResult NativeRenderer::render(
@@ -175,13 +178,16 @@ RenderSessionResult NativeRenderer::render(
     const NativeRenderOptions& options) {
     TransitionRegistry transition_registry;
     register_builtin_transitions(transition_registry);
-    return render(scene, job, transition_registry, options);
+    renderer3d::Modifier3DRegistry modifier_registry;
+    renderer3d::register_builtin_modifier_descriptors(modifier_registry);
+    return render(scene, job, transition_registry, modifier_registry, options);
 }
 
 RenderSessionResult NativeRenderer::render(
     const SceneSpec& scene,
     const RenderJob& job,
     TransitionRegistry& transition_registry,
+    renderer3d::Modifier3DRegistry& modifier_registry,
     const NativeRenderOptions& options) {
     ensure_native_render_registries();
     RenderJob resolved_job = job;
@@ -203,6 +209,8 @@ RenderSessionResult NativeRenderer::render(
     }
 
     RenderSession session;
+    session.set_transition_registry(&transition_registry);
+    session.set_modifier_3d_registry(&modifier_registry);
     return render_with_session(*compiled_result.value, resolved_job, options, session);
 }
 
@@ -210,9 +218,12 @@ RenderSessionResult NativeRenderer::render(
     const CompiledScene& scene,
     const RenderJob& job,
     TransitionRegistry& transition_registry,
+    renderer3d::Modifier3DRegistry& modifier_registry,
     const NativeRenderOptions& options) {
     ensure_native_render_registries();
     RenderSession session;
+    session.set_transition_registry(&transition_registry);
+    session.set_modifier_3d_registry(&modifier_registry);
     return render_with_session(scene, job, options, session);
 }
 
@@ -221,11 +232,12 @@ bool NativeRenderer::render_still(
     const std::string& composition_id,
     std::int64_t frame_number,
     const std::filesystem::path& output_path,
-    TransitionRegistry& transition_registry) {
+    TransitionRegistry& transition_registry,
+    renderer3d::Modifier3DRegistry& modifier_registry) {
     
     RenderJob job = RenderJobBuilder::still_image(composition_id, frame_number, output_path.string());
     
-    const auto result = render(scene, job, transition_registry);
+    const auto result = render(scene, job, transition_registry, modifier_registry);
     return result.output_error.empty() && (!result.frames.empty() || result.frames_written > 0);
 }
 

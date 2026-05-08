@@ -4,6 +4,7 @@
 #include "cli/cli_internal.h"
 #include "tachyon/core/transition/transition_descriptor.h"
 #include "tachyon/transition_registry.h"
+#include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
 #include <functional>
 #include <iostream>
 #include <string>
@@ -28,7 +29,7 @@ struct CommandEntry {
     const char* usage;
     // Returns false (+ prints to err) when required args are missing.
     std::function<bool(const CliOptions&, std::ostream&)> validate;
-    std::function<bool(const CliOptions&, std::ostream&, std::ostream&)> handler;
+    std::function<bool(const CliOptions&, std::ostream&, std::ostream&, TransitionRegistry&, renderer3d::Modifier3DRegistry&)> handler;
 };
 
 static const std::vector<CommandEntry> kCommands = {
@@ -205,11 +206,14 @@ int run_cli(int argc, char** argv) {
     // Note: We do this here instead of in each DLL to avoid circular link dependencies.
     ::tachyon::register_builtin_transitions(g_cli_transition_registry);
 
+    renderer3d::Modifier3DRegistry modifier_registry;
+    renderer3d::register_builtin_modifier_descriptors(modifier_registry);
+
     // Dispatch through registry
     for (const auto& cmd : kCommands) {
         if (options.command != cmd.name) continue;
         if (cmd.validate && !cmd.validate(options, std::cerr)) return 1;
-        return cmd.handler(options, std::cout, std::cerr) ? 0 : 2;
+        return cmd.handler(options, std::cout, std::cerr, g_cli_transition_registry, modifier_registry) ? 0 : 2;
     }
 
     print_help(std::cerr);

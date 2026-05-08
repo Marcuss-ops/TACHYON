@@ -1,7 +1,8 @@
 #include "tachyon/renderer2d/effects/effect_host.h"
 #include "tachyon/renderer2d/resource/render_context.h"
-#include "tachyon/renderer2d/raster/rasterizer.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
+#include "tachyon/renderer2d/effects/effect_registry.h"
+#include "tachyon/transition_registry.h"
 
 #include <iostream>
 #include <memory>
@@ -29,23 +30,26 @@ bool run_effect_host_tests() {
     source.clear(Color::transparent());
     source.set_pixel(8, 8, Color::white());
 
-    auto host_ptr = create_effect_host();
+    EffectRegistry registry;
+    TransitionRegistry transition_registry;
+    register_builtin_transitions(transition_registry);
+    register_builtin_effects(registry, transition_registry);
+
+    auto host_ptr = create_effect_host(registry);
     EffectHost& host = *host_ptr;
-    EffectHost::register_builtins(host);
 
     check_true(host.has_effect("tachyon.effect.blur.gaussian"), "Registered gaussian_blur effect");
-    check_true(host.has_effect("tachyon.effect.shadow.drop"), "Registered drop_shadow effect");
-    check_true(host.has_effect("tachyon.effect.glow"), "Registered glow effect");
+    check_true(host.has_effect("tachyon.effect.stylize.drop_shadow"), "Registered drop_shadow effect");
+    check_true(host.has_effect("tachyon.effect.stylize.glow"), "Registered glow effect");
     check_true(host.has_effect("tachyon.effect.color.levels"), "Registered levels effect");
     check_true(host.has_effect("tachyon.effect.color.curves"), "Registered curves effect");
     check_true(host.has_effect("tachyon.effect.color.fill"), "Registered fill effect");
     check_true(host.has_effect("tachyon.effect.color.tint"), "Registered tint effect");
     check_true(host.has_effect("tachyon.effect.color.hue_saturation"), "Registered hue_saturation effect");
-    check_true(host.has_effect("tachyon.effect.generators.particle_emitter"), "Registered particle_emitter effect");
+    check_true(host.has_effect("tachyon.effect.generator.particle_emitter"), "Registered particle_emitter effect");
 
     RenderContext context;
-    context.effects = create_effect_host();
-    EffectHost::register_builtins(*context.effects);
+    context.effects = create_effect_host(registry);
     
     check_true(context.effects->has_effect("tachyon.effect.blur.gaussian"), "RenderContext auto-registers gaussian_blur");
     check_true(context.effects->has_effect("tachyon.effect.color.hue_saturation"), "RenderContext auto-registers hue_saturation");
@@ -59,7 +63,7 @@ bool run_effect_host_tests() {
     check_true(blurred.get_pixel(9, 8).a > 0, "Blur spreads to neighboring pixel");
 
     EffectParams hue_params;
-    hue_params.scalars["hue"] = 180.0f;
+    hue_params.scalars["hue_shift"] = 180.0f;
     const auto hued_res = host.apply("tachyon.effect.color.hue_saturation", source, hue_params);
     check_true(hued_res.ok(), "Hue application successful");
     const SurfaceRGBA& hued = *hued_res.value;
@@ -74,8 +78,8 @@ bool run_effect_host_tests() {
     particle_params.scalars["radius_min"] = 1.0f;
     particle_params.scalars["radius_max"] = 2.0f;
     particle_params.colors["color"] = Color{1.0f, 180.0f/255.0f, 64.0f/255.0f, 200.0f/255.0f};
-    const auto particles_a_res = host.apply("tachyon.effect.generators.particle_emitter", source, particle_params);
-    const auto particles_b_res = host.apply("tachyon.effect.generators.particle_emitter", source, particle_params);
+    const auto particles_a_res = host.apply("tachyon.effect.generator.particle_emitter", source, particle_params);
+    const auto particles_b_res = host.apply("tachyon.effect.generator.particle_emitter", source, particle_params);
     check_true(particles_a_res.ok(), "Particle A successful");
     const SurfaceRGBA& particles_a = *particles_a_res.value;
     const SurfaceRGBA& particles_b = *particles_b_res.value;

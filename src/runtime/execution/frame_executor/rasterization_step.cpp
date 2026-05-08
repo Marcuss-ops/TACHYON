@@ -38,7 +38,7 @@ RasterizationResult RasterizationStep::execute(
             static renderer3d::Modifier3DRegistry global_fallback;
             static bool initialized = false;
             if (!initialized) {
-                ::tachyon::renderer3d::register_builtin_modifiers(global_fallback);
+                ::tachyon::renderer3d::register_builtin_modifier_descriptors(global_fallback);
                 initialized = true;
             }
             context.renderer2d.ray_tracer = std::make_shared<renderer3d::RayTracer>(

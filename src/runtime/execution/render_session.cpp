@@ -108,8 +108,9 @@ void configure_render_context(
     profiling::RenderProfiler* profiler,
     runtime::RuntimeSurfacePool* surface_pool,
     const renderer2d::EffectRegistry& effect_registry,
-    const renderer3d::Modifier3DRegistry& modifier_registry,
-    const TransitionRegistry& transition_registry) {
+    const TransitionRegistry* transition_registry,
+    const renderer3d::Modifier3DRegistry* modifier_registry,
+    const presets::TextAnimatorPresetRegistry* text_registry) {
     workspace.context.policy = workspace.effective_plan.render_plan.quality_policy;
     workspace.context.renderer2d.font_registry = ::tachyon::renderer2d::get_default_font_registry();
 
@@ -124,8 +125,9 @@ void configure_render_context(
     workspace.context.profiler = profiler;
     workspace.context.renderer2d.profiler = profiler;
     workspace.context.renderer2d.effects = renderer2d::create_effect_host(effect_registry);
-    workspace.context.renderer2d.modifier_registry = &modifier_registry;
-    workspace.context.renderer2d.transition_registry = &transition_registry;
+    workspace.context.renderer2d.transition_registry = transition_registry;
+    workspace.context.renderer2d.modifier_registry = modifier_registry;
+    workspace.context.renderer2d.text_animator_registry = text_registry;
 }
 
 bool begin_output_sink(
@@ -242,7 +244,7 @@ void finalize_session_metrics(
 
 RenderSession::RenderSession() {
     renderer2d::register_builtin_effects(m_effect_registry, m_transition_registry);
-    renderer3d::register_builtin_modifiers(m_modifier_registry);
+    renderer3d::register_builtin_modifier_descriptors(m_modifier_registry);
     register_builtin_transitions(m_transition_registry);
 }
 
@@ -272,9 +274,11 @@ RenderSessionResult RenderSession::render(
     runtime::SurfacePoolPolicy surface_policy;
     const auto surface_count = surface_policy.resolve(w, h, worker_count);
     m_surface_pool = std::make_unique<runtime::RuntimeSurfacePool>(w, h, surface_count);
+    const TransitionRegistry* transition_registry = m_transition_registry_ptr ? m_transition_registry_ptr : &m_transition_registry;
+    const renderer3d::Modifier3DRegistry* modifier_registry = m_modifier_registry_ptr ? m_modifier_registry_ptr : &m_modifier_registry;
+    const presets::TextAnimatorPresetRegistry* text_registry = m_text_animator_registry_ptr ? m_text_animator_registry_ptr : &presets::TextAnimatorPresetRegistry::instance();
 
-    const TransitionRegistry& transition_registry = m_transition_registry_override ? *m_transition_registry_override : m_transition_registry;
-    configure_render_context(workspace, m_profiler, m_surface_pool.get(), m_effect_registry, m_modifier_registry, transition_registry);
+    configure_render_context(workspace, m_profiler, m_surface_pool.get(), m_effect_registry, transition_registry, modifier_registry, text_registry);
 
     workspace.sink = output::create_frame_output_sink(workspace.effective_plan.render_plan);
     

@@ -23,5 +23,6 @@ if(TACHYON_ENABLE_3D)
 
     add_library(TachyonScene3DBridge STATIC ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/pipeline/scene3d_bridge.cpp)
     tachyon_configure_common(TachyonScene3DBridge)
+    tachyon_link_3d_deps(TachyonScene3DBridge)
     target_link_libraries(TachyonScene3DBridge PUBLIC TachyonCore TachyonRenderer2D TachyonRenderer3D)
 endif()

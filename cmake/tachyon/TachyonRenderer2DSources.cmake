@@ -10,6 +10,8 @@ set(TachyonRenderer2DSources
     ${TachyonRenderer2DEvaluatedCompositionSources}
     ${TachyonRenderer2DRasterSources}
     ${CMAKE_CURRENT_SOURCE_DIR}/core/transition_registry.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/resource/transition_bootstrap.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/transition/transition_effect_resolver.cpp
 )
 
 if(TACHYON_ENABLE_VULKAN)

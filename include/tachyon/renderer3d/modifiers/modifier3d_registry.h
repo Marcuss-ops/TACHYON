@@ -42,6 +42,9 @@ private:
     registry::TypedRegistry<Modifier3DDescriptor> registry_;
 };
 
-void register_builtin_modifiers(Modifier3DRegistry& registry);
+/**
+ * @brief Register all built-in 3D modifiers to the provided registry.
+ */
+void register_builtin_modifier_descriptors(Modifier3DRegistry& registry);
 
 } // namespace tachyon::renderer3d

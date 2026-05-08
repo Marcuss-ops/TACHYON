@@ -72,21 +72,26 @@ float compute_coverage(const TextAnimatorSelectorSpec& selector, const TextAnima
         const float freq = static_cast<float>(selector.frequency.value_or(2.0));
         const float amp = static_cast<float>(selector.amount.value_or(kPercent)) / kPercent;
         
-        // Use the newly added noise() logic via the expression engine or directly
-        // For efficiency in the hot loop, we use a similar seed-based noise here
         const double t_noise = static_cast<double>(ctx.time) * freq;
         const double glyph_offset = static_cast<double>(ctx.glyph_index) * kPhaseOffsetPerGlyph;
-        
-        // Composite noise for a more organic "wiggle"
-        auto hash = [](int n) {
-            n = (n << 13) ^ n;
-            return (1.0 - ((n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff) / 1073741824.0);
-        };
         
         double n1 = std::sin(t_noise + glyph_offset);
         double n2 = std::sin(t_noise * 2.1 + glyph_offset * 1.3);
         float n = static_cast<float>((n1 + n2 * 0.5) / 1.5 * kHalf + kHalf);
         
+        return std::clamp(n * amp, kZero, kOne);
+    }
+
+    // Wave selector (periodic oscillation)
+    if (selector.type == "wave") {
+        const float freq = static_cast<float>(selector.frequency.value_or(1.0));
+        const float amp = static_cast<float>(selector.amount.value_or(kPercent)) / kPercent;
+        
+        const float wave_period = std::max(kMinWavePeriod, 1.0f / std::max(0.001f, freq));
+        const float phase_seconds = ctx.time - static_cast<float>(ctx.glyph_index) * kPhaseOffsetPerGlyph;
+        const float wave_phase = (phase_seconds / wave_period) * (2.0f * 3.1415926535f);
+        
+        float n = std::sin(wave_phase) * kHalf + kHalf;
         return std::clamp(n * amp, kZero, kOne);
     }
 

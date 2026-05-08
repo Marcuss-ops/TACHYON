@@ -131,8 +131,17 @@ RasterizedFrame2D render_evaluated_composition_2d(
     const render::RenderIntent& intent,
     const RenderPlan& plan,
     const FrameRenderTask& task,
-    RenderContext2D& context) {
+    RenderContext2D& context,
+    const renderer2d::EffectRegistry& effect_registry) {
     (void)intent;
+ 
+    std::unique_ptr<renderer2d::EffectHost> local_host;
+    renderer2d::EffectHost* active_host = context.effects.get();
+    if (!active_host) {
+        local_host = renderer2d::create_effect_host(effect_registry);
+        active_host = local_host.get();
+    }
+    renderer2d::EffectHost& host = *active_host;
 
     RasterizedFrame2D frame;
     frame.frame_number = task.frame_number;
@@ -272,7 +281,6 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
     auto render_pass = [&](SurfaceRGBA& target_surface, RenderContext2D& render_context, const std::optional<RectI>& tile_rect = std::nullopt) {
         target_surface.clear(Color::transparent());
-        EffectHost& host = effect_host_for(render_context);
         // Render layers in stack order so higher layers can affect the composite below them.
         for (std::size_t i = 0; i < state.layers.size(); ++i) {
             if (render_context.cancel_flag && render_context.cancel_flag->load()) break;

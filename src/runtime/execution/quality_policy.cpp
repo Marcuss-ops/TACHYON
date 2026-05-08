@@ -1,4 +1,5 @@
 #include "tachyon/runtime/execution/planning/quality_policy.h"
+#include <cstdint>
 
 namespace tachyon {
 
