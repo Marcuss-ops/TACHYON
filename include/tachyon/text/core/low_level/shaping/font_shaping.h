@@ -17,14 +17,14 @@ struct ShapedGlyphRun {
     struct Glyph {
         std::uint32_t codepoint{0};
         std::uint32_t font_glyph_index{0};
-        std::int32_t advance_x{0};
-        std::int32_t offset_x{0};
-        std::int32_t offset_y{0};
+        float advance_x{0.0f};
+        float offset_x{0.0f};
+        float offset_y{0.0f};
         std::uint32_t cluster{0};
     };
 
     std::vector<Glyph> glyphs;
-    std::int32_t width{0};
+    float width{0.0f};
 };
 
 using BitmapFont = tachyon::text::Font; // Use the text module's Font class

@@ -154,7 +154,8 @@ struct TextLine {
     float baseline_y{0.0f};
     float ascent{0.0f};
     float descent{0.0f};
-    math::RectF bounds;
+    math::RectF logical_bounds;
+    math::RectF ink_bounds;
 };
 
 struct TextRun {
@@ -198,7 +199,8 @@ struct TextLayoutResult {
     std::vector<TextRun> runs;
     std::vector<TextParagraph> paragraphs;
     
-    math::RectF total_bounds;
+    math::RectF logical_bounds;
+    math::RectF ink_bounds;
     bool is_on_path{false};
 
     // Backward compatibility

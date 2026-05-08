@@ -46,32 +46,39 @@ bool is_breakable_space(std::uint32_t codepoint) {
            codepoint == static_cast<std::uint32_t>('\t') || codepoint == 0x00A0;
 }
 
-std::int32_t aligned_x_offset(HorizontalAlign alignment, std::uint32_t box_width, float line_width) {
-    if (box_width == 0U) return 0;
-    const float available = static_cast<float>(box_width) - line_width;
-    if (available <= 0.0f) return 0;
+float aligned_x_offset(HorizontalAlign alignment, float box_width, float line_width) {
+    if (box_width <= 0.0f) return 0.0f;
+    const float available = box_width - line_width;
+    if (available <= 0.0f) return 0.0f;
     switch (alignment) {
-        case HorizontalAlign::Center: return static_cast<std::int32_t>(std::lround(available * 0.5f));
-        case HorizontalAlign::Right:  return static_cast<std::int32_t>(std::lround(available));
+        case HorizontalAlign::Center: return available * 0.5f;
+        case HorizontalAlign::Right:  return available;
         case HorizontalAlign::Left:
         case HorizontalAlign::Justify:
-        default: return 0;
+        default: return 0.0f;
     }
 }
 
-void finalize_line(TextLayoutResult& result, std::size_t start_index, std::size_t glyph_count, float line_width, float line_y, HorizontalAlign alignment, std::uint32_t box_width, bool last_line) {
+void finalize_line(TextLayoutResult& result, std::size_t start_index, std::size_t glyph_count, float line_width, float line_y, HorizontalAlign alignment, float box_width, bool last_line, float tracking_advance) {
     if (glyph_count == 0U) return;
-    // Calculate width excluding trailing whitespace
-    float effective_width = line_width;
+    
+    // Calculate width excluding trailing whitespace and its tracking
     std::size_t actual_count = glyph_count;
     while (actual_count > 0 && result.glyphs[start_index + actual_count - 1].whitespace) {
-        effective_width -= result.glyphs[start_index + actual_count - 1].advance_x;
         actual_count--;
     }
 
-    std::int32_t offset_x = aligned_x_offset(alignment, box_width, effective_width);
-    if (alignment == HorizontalAlign::Justify && !last_line && box_width > 0U) {
-        const float available = static_cast<float>(box_width) - effective_width;
+    float effective_width = 0.0f;
+    for (size_t i = 0; i < actual_count; ++i) {
+        effective_width += result.glyphs[start_index + i].advance_x;
+        if (i + 1 < actual_count) {
+            effective_width += tracking_advance;
+        }
+    }
+
+
+    if (alignment == HorizontalAlign::Justify && !last_line && box_width > 0.0f) {
+        const float available = box_width - effective_width;
         if (available > 0.0f) {
             std::size_t spaces_count = 0;
             for (std::size_t index = start_index; index < start_index + actual_count; ++index) {
@@ -86,14 +93,8 @@ void finalize_line(TextLayoutResult& result, std::size_t start_index, std::size_
                     }
                     result.glyphs[i].position.x += current_add;
                 }
-                effective_width = static_cast<float>(box_width);
+                effective_width = box_width;
             }
-        }
-    }
-
-    if (offset_x != 0) {
-        for (std::size_t i = start_index; i < result.glyphs.size(); ++i) {
-            result.glyphs[i].position.x += static_cast<float>(offset_x);
         }
     }
 
@@ -102,6 +103,46 @@ void finalize_line(TextLayoutResult& result, std::size_t start_index, std::size_
     line.glyph_count = actual_count;
     line.width = effective_width;
     line.y = line_y;
+    
+    // Calculate ink bounds for the line
+    math::RectF ink_rect{};
+    bool first_glyph = true;
+    for (size_t i = 0; i < actual_count; ++i) {
+        const auto& g = result.glyphs[start_index + i];
+        if (g.whitespace) continue;
+        if (first_glyph) {
+            ink_rect = g.bounds;
+            first_glyph = false;
+        } else {
+            ink_rect = union_rects(ink_rect, g.bounds);
+        }
+    }
+    line.ink_bounds = ink_rect;
+    line.logical_bounds = {0.0f, line_y, effective_width, static_cast<float>(result.line_height)};
+
+    float offset_x = aligned_x_offset(alignment, box_width, effective_width);
+
+    // Optical horizontal centering
+    if (alignment == HorizontalAlign::Center && !rect_is_empty(line.ink_bounds)) {
+        float ink_center_x = line.ink_bounds.x + line.ink_bounds.width * 0.5f;
+        float desired_center_x = box_width * 0.5f;
+        float shift_x = desired_center_x - ink_center_x;
+        
+        for (std::size_t i = start_index; i < result.glyphs.size(); ++i) {
+            result.glyphs[i].position.x += shift_x;
+            result.glyphs[i].bounds.x += shift_x;
+        }
+        line.ink_bounds.x += shift_x;
+        line.logical_bounds.x += shift_x;
+    } else if (std::abs(offset_x) > 0.0001f) {
+        for (std::size_t i = start_index; i < result.glyphs.size(); ++i) {
+            result.glyphs[i].position.x += offset_x;
+            result.glyphs[i].bounds.x += offset_x;
+        }
+        line.ink_bounds.x += offset_x;
+        line.logical_bounds.x += offset_x;
+    }
+
     result.lines.push_back(line);
     result.content_width = std::max(result.content_width, effective_width);
 }
@@ -118,14 +159,14 @@ float compute_vertical_offset(float box_height, float content_height, VerticalAl
     return 0.0f;
 }
 
-std::int32_t place_shaped_run(
+float place_shaped_run(
     TextLayoutResult& result,
     float pen_x,
     float pen_y,
     const SubRun& sub,
     const ShapedGlyphRun& shaped,
     std::uint32_t scale,
-    std::int32_t tracking_advance,
+    float tracking_advance,
     std::size_t& current_word_index,
     bool& last_was_space,
     const std::vector<GraphemeCluster>& clusters) {
@@ -172,7 +213,7 @@ std::int32_t place_shaped_run(
         consumed += glyph_advance;
         last_was_space = ws;
     }
-    return static_cast<std::int32_t>(std::lround(rtl ? pen_x + std::max<float>(consumed, static_cast<float>(std::abs(shaped.width))) : std::max(pen_x, cursor)));
+    return rtl ? pen_x + std::max<float>(consumed, std::abs(shaped.width)) : std::max(pen_x, cursor);
 }
 
 TextHitTestResult TextLayoutResult::hit_test(std::int32_t x, std::int32_t y) const {

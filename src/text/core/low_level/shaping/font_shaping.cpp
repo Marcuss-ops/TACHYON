@@ -57,19 +57,21 @@ ShapedGlyphRun shape_run_with_harfbuzz(
     run.glyphs.reserve(glyph_count);
     for (unsigned int i = 0; i < glyph_count; ++i) {
         const std::uint32_t glyph_index = infos[i].codepoint;
-        const std::int32_t advance_x = static_cast<std::int32_t>(std::round(static_cast<float>(positions[i].x_advance) / 64.0f));
-        const std::int32_t offset_x = static_cast<std::int32_t>(std::round(static_cast<float>(positions[i].x_offset) / 64.0f));
-        const std::int32_t offset_y = static_cast<std::int32_t>(std::round(static_cast<float>(-positions[i].y_offset) / 64.0f));
+        const float adv_x = static_cast<float>(positions[i].x_advance) / 64.0f;
+        const float off_x = static_cast<float>(positions[i].x_offset) / 64.0f;
+        const float off_y = static_cast<float>(-positions[i].y_offset) / 64.0f;
         const std::uint32_t source_index = static_cast<std::uint32_t>(std::min<std::size_t>(infos[i].cluster, codepoints.size() - 1U));
+        
+        const float s = static_cast<float>(scale);
         run.glyphs.push_back(ShapedGlyphRun::Glyph{
             codepoints[source_index],
             glyph_index,
-            advance_x * static_cast<std::int32_t>(scale),
-            offset_x * static_cast<std::int32_t>(scale),
-            offset_y * static_cast<std::int32_t>(scale),
+            adv_x * s,
+            off_x * s,
+            off_y * s,
             infos[i].cluster
         });
-        run.width += advance_x * static_cast<std::int32_t>(scale);
+        run.width += adv_x * s;
     }
 
     hb_buffer_destroy(buffer);
@@ -84,6 +86,7 @@ ShapedGlyphRun shape_run_simple(
     
     ShapedGlyphRun run;
     run.glyphs.reserve(codepoints.size());
+    const float s = static_cast<float>(scale);
     for (std::size_t i = 0; i < codepoints.size(); ++i) {
         std::uint32_t cp = codepoints[i];
         if (cp == '\n' || cp == '\r' || cp == '\t') continue;
@@ -94,12 +97,12 @@ ShapedGlyphRun shape_run_simple(
         run.glyphs.push_back({
             cp,
             font.glyph_index_for_codepoint(cp),
-            g->advance_x * static_cast<std::int32_t>(scale),
-            0,
-            0,
+            static_cast<float>(g->advance_x) * s,
+            0.0f,
+            0.0f,
             static_cast<std::uint32_t>(i)
         });
-        run.width += g->advance_x * static_cast<std::int32_t>(scale);
+        run.width += static_cast<float>(g->advance_x) * s;
     }
     return run;
 }

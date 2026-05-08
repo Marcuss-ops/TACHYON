@@ -31,6 +31,7 @@ extern "C" __declspec(dllexport) void build_scene(tachyon::SceneSpec& scene) {
              .box(1920, 1080, TextBoxMode::Fixed)
              .align(HorizontalAlign::Center)
              .valign(VerticalAlign::Middle)
+             .tracking(1.5f)
              .animator(v2_anim)
              .done()
              .color({255, 255, 255, 255})

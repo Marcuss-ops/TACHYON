@@ -31,17 +31,17 @@ math::RectF union_rects(const math::RectF& a, const math::RectF& b);
 bool rect_is_empty(const math::RectF& rect);
 std::uint32_t choose_scale(const BitmapFont& font, const TextStyle& style);
 bool is_breakable_space(std::uint32_t codepoint);
-std::int32_t aligned_x_offset(HorizontalAlign alignment, std::uint32_t box_width, float line_width);
-void finalize_line(TextLayoutResult& result, std::size_t start_index, std::size_t glyph_count, float line_width, float line_y, HorizontalAlign alignment, std::uint32_t box_width, bool last_line);
+float aligned_x_offset(HorizontalAlign alignment, float box_width, float line_width);
+void finalize_line(TextLayoutResult& result, std::size_t start_index, std::size_t glyph_count, float line_width, float line_y, HorizontalAlign alignment, float box_width, bool last_line, float tracking_advance);
 float compute_vertical_offset(float box_height, float content_height, VerticalAlign align);
-std::int32_t place_shaped_run(
+float place_shaped_run(
     TextLayoutResult& result,
     float pen_x,
     float pen_y,
     const SubRun& sub,
     const ShapedGlyphRun& shaped,
     std::uint32_t scale,
-    std::int32_t tracking_advance,
+    float tracking_advance,
     std::size_t& current_word_index,
     bool& last_was_space,
     const std::vector<GraphemeCluster>& clusters);

@@ -91,7 +91,6 @@ public:
         const TextStyle& style,
         const TextBoxSpec& text_box,
         const TextLayoutOptions& options) {
-
         TextLayoutResult result;
         if (fallback_chain.empty()) return result;
 
@@ -212,7 +211,7 @@ public:
                     bool wrap_needed = (wrap_width > 0.0f && text_box.mode == TextBoxMode::Fixed && options.word_wrap && pen_x > 0.0f && (pen_x + word.width) > wrap_width);
                     
                     if (wrap_needed) {
-                        finalize_line(result, line_start, result.glyphs.size() - line_start, current_line_width, pen_y, text_box.horizontal_align, static_cast<std::uint32_t>(std::max(0.0f, text_box.width)), false);
+                        finalize_line(result, line_start, result.glyphs.size() - line_start, current_line_width, pen_y, text_box.horizontal_align, text_box.width, false, tracking_advance);
                         pen_x = 0.0f;
                         current_line_width = 0.0f;
                         pen_y += scaled_line_height;
@@ -225,8 +224,9 @@ public:
                         const auto& gr = shaped.glyphs[idx];
                         if (is_start_of_line && is_breakable_space(gr.codepoint)) continue;
                         
-                        float glyph_width = static_cast<float>(std::abs(gr.advance_x)) + tracking_advance;
+                        float glyph_width = gr.advance_x + tracking_advance;
                         float cursor = rtl ? pen_x + glyph_width : pen_x;
+                        
                         place_shaped_glyph(result, cursor, pen_y, sub, gr, scale, tracking_advance, current_word_index, last_was_space, clusters);
                         pen_x += glyph_width;
                         is_start_of_line = false;
@@ -236,7 +236,7 @@ public:
             }
         }
 
-        finalize_line(result, line_start, result.glyphs.size() - line_start, current_line_width, pen_y, text_box.horizontal_align, static_cast<std::uint32_t>(std::max(0.0f, text_box.width)), true);
+        finalize_line(result, line_start, result.glyphs.size() - line_start, current_line_width, pen_y, text_box.horizontal_align, text_box.width, true, tracking_advance);
         
         if (!result.lines.empty()) {
             result.content_height = result.lines.back().y + scaled_line_height;
@@ -252,7 +252,35 @@ public:
             result.box_height = text_box.height;
         }
 
-        result.offset_y = compute_vertical_offset(result.box_height, result.content_height, text_box.vertical_align);
+        // Calculate global bounds
+        result.logical_bounds = {};
+        result.ink_bounds = {};
+        bool first_ink = true;
+
+        for (std::size_t i = 0; i < result.lines.size(); ++i) {
+            auto& line = result.lines[i];
+            if (i == 0) result.logical_bounds = line.logical_bounds;
+            else result.logical_bounds = union_rects(result.logical_bounds, line.logical_bounds);
+            
+            if (!rect_is_empty(line.ink_bounds)) {
+                if (first_ink) {
+                    result.ink_bounds = line.ink_bounds;
+                    first_ink = false;
+                } else {
+                    result.ink_bounds = union_rects(result.ink_bounds, line.ink_bounds);
+                }
+            }
+        }
+
+        // Apply optical vertical centering if Middle
+        if (text_box.vertical_align == VerticalAlign::Middle && !rect_is_empty(result.ink_bounds)) {
+            float ink_center_y = result.ink_bounds.y + result.ink_bounds.height * 0.5f;
+            float desired_center_y = result.box_height * 0.5f;
+            result.offset_y = desired_center_y - ink_center_y;
+        } else {
+            result.offset_y = compute_vertical_offset(result.box_height, result.content_height, text_box.vertical_align);
+        }
+
         if (result.offset_y != 0.0f) {
             for (auto& g : result.glyphs) {
                 g.position.y += result.offset_y;
@@ -260,38 +288,25 @@ public:
             }
             for (auto& line : result.lines) {
                 line.y += result.offset_y;
+                line.logical_bounds.y += result.offset_y;
+                line.ink_bounds.y += result.offset_y;
             }
+            result.logical_bounds.y += result.offset_y;
+            result.ink_bounds.y += result.offset_y;
         }
 
         result.width = static_cast<uint32_t>(std::lround(result.box_width));
         result.height = static_cast<uint32_t>(std::lround(result.box_height));
 
         // Populate unified fields
-        result.total_bounds = {};
         for (std::size_t i = 0; i < result.lines.size(); ++i) {
             auto& line = result.lines[i];
             const std::size_t end = std::min(result.glyphs.size(), line.glyph_start_index + line.glyph_count);
             
-            math::RectF line_bounds{};
-            bool have_bounds = false;
-            
             for (std::size_t g_idx = line.glyph_start_index; g_idx < end; ++g_idx) {
                 auto& g = result.glyphs[g_idx];
                 g.line_index = i;
-                if (!have_bounds) {
-                    line_bounds = g.bounds;
-                    have_bounds = true;
-                } else {
-                    line_bounds = union_rects(line_bounds, g.bounds);
-                }
-                
-                if (rect_is_empty(result.total_bounds)) {
-                    result.total_bounds = g.bounds;
-                } else {
-                    result.total_bounds = union_rects(result.total_bounds, g.bounds);
-                }
             }
-            line.bounds = line_bounds;
             line.ascent = static_cast<float>(primary_font.ascent());
             line.descent = static_cast<float>(primary_font.descent());
         }
