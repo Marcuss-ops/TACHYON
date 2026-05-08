@@ -169,4 +169,15 @@ namespace tachyon::text {
     double reveal_duration_seconds = 0.35,
     double punch_scale = 1.12);
 
+[[nodiscard]] ::tachyon::TextAnimatorSpec make_legacy_wave_animator(
+    double amplitude_x = 0.0,
+    double amplitude_y = 0.0,
+    double frequency = 1.0);
+
+[[nodiscard]] ::tachyon::TextAnimatorSpec make_legacy_per_glyph_animator(
+    double offset_x = 0.0,
+    double offset_y = 0.0,
+    double scale_delta = 0.0,
+    double opacity_drop = 0.0);
+
 } // namespace tachyon::text

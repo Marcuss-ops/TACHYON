@@ -29,6 +29,7 @@ struct NativeRenderOptions {
 };
 
 class TransitionRegistry;
+namespace renderer3d { class Modifier3DRegistry; }
 
 class NativeRenderer {
 public:
@@ -46,12 +47,14 @@ public:
         const SceneSpec& scene,
         const RenderJob& job,
         TransitionRegistry& transition_registry,
+        renderer3d::Modifier3DRegistry& modifier_registry,
         const NativeRenderOptions& options = NativeRenderOptions());
 
     static RenderSessionResult render(
         const CompiledScene& scene,
         const RenderJob& job,
         TransitionRegistry& transition_registry,
+        renderer3d::Modifier3DRegistry& modifier_registry,
         const NativeRenderOptions& options = NativeRenderOptions());
 
     static bool render_still(
@@ -59,7 +62,8 @@ public:
         const std::string& composition_id,
         std::int64_t frame_number,
         const std::filesystem::path& output_path,
-        TransitionRegistry& transition_registry);
+        TransitionRegistry& transition_registry,
+        renderer3d::Modifier3DRegistry& modifier_registry);
 };
 
 } // namespace tachyon

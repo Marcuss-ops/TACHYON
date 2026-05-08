@@ -21,7 +21,7 @@ LayerSpec build_text_with_animation(const TextParams& p, std::string animation_i
 // ---------------------------------------------------------------------------
 
 LayerSpec build_text(const TextParams& p) {
-    ::tachyon::TextLayerSpec spec = ::tachyon::build_text_spec(p);
+    ::tachyon::TextLayerSpec spec = ::tachyon::build_text_spec(p, &TextAnimatorPresetRegistry::instance());
     LayerSpec l = ::tachyon::make_layer_from_text_spec(spec);
 
     // Apply transitions (presets domain responsibility)

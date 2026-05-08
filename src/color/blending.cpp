@@ -18,15 +18,30 @@ LinearRGBA blend_normal(LinearRGBA src, LinearRGBA dst) {
 }
 
 LinearRGBA blend_multiply(LinearRGBA src, LinearRGBA dst) {
-    return LinearRGBA{ src.r * dst.r, src.g * dst.g, src.b * dst.b, src.a * dst.a };
+    float out_a = src.a + dst.a * (1.0f - src.a);
+    if (out_a <= 0.0f) return {0,0,0,0};
+    
+    auto multiply = [](float s, float d) { return s * d; };
+    
+    return LinearRGBA{
+        ((1.0f - src.a) * dst.r + (1.0f - dst.a) * src.r + src.a * dst.a * multiply(src.r, dst.r)) / out_a,
+        ((1.0f - src.a) * dst.g + (1.0f - dst.a) * src.g + src.a * dst.a * multiply(src.g, dst.g)) / out_a,
+        ((1.0f - src.a) * dst.b + (1.0f - dst.a) * src.b + src.a * dst.a * multiply(src.b, dst.b)) / out_a,
+        out_a
+    };
 }
 
 LinearRGBA blend_screen(LinearRGBA src, LinearRGBA dst) {
+    float out_a = src.a + dst.a * (1.0f - src.a);
+    if (out_a <= 0.0f) return {0,0,0,0};
+
+    auto screen = [](float s, float d) { return s + d - s * d; };
+
     return LinearRGBA{
-        src.r + dst.r - src.r * dst.r,
-        src.g + dst.g - src.g * dst.g,
-        src.b + dst.b - src.b * dst.b,
-        src.a + dst.a - src.a * dst.a
+        ((1.0f - src.a) * dst.r + (1.0f - dst.a) * src.r + src.a * dst.a * screen(src.r, dst.r)) / out_a,
+        ((1.0f - src.a) * dst.g + (1.0f - dst.a) * src.g + src.a * dst.a * screen(src.g, dst.g)) / out_a,
+        ((1.0f - src.a) * dst.b + (1.0f - dst.a) * src.b + src.a * dst.a * screen(src.b, dst.b)) / out_a,
+        out_a
     };
 }
 

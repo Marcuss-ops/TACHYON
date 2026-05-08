@@ -13,6 +13,11 @@
 #include <optional>
 #include <map>
 
+namespace tachyon::presets {
+struct TextParams;
+class TextAnimatorPresetRegistry;
+}
+
 namespace tachyon {
 
 struct TextLayerSpec {
@@ -63,6 +68,6 @@ struct TextLayerSpec {
 LayerSpec make_layer_from_text_spec(const TextLayerSpec& spec);
 
 // Build TextLayerSpec from TextParams
-TextLayerSpec build_text_spec(const presets::TextParams& p);
+TextLayerSpec build_text_spec(const presets::TextParams& p, const presets::TextAnimatorPresetRegistry* registry = nullptr);
 
 } // namespace tachyon

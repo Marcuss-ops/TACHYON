@@ -8,8 +8,8 @@
 
 namespace tachyon {
 
-bool run_preview_frame_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry) {
-    return run_preview_internal(options, out, err, "PreviewFrame", registry);
+bool run_preview_frame_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry) {
+    return run_preview_internal(options, out, err, "PreviewFrame", registry, modifier_registry);
 }
 
 } // namespace tachyon

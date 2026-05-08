@@ -1,4 +1,5 @@
 #include "cli_internal.h"
+#include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
 #include "tachyon/runtime/telemetry/render_telemetry_record.h"
 #include "tachyon/runtime/telemetry/batch_telemetry_aggregator.h"
 #include <fstream>
@@ -69,7 +70,7 @@ static RenderTelemetryRecord parse_json_line(const std::string& line) {
     return r;
 }
 
-bool run_metrics_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry) {
+bool run_metrics_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry) {
     std::ifstream ifs(options.metrics_input);
     if (!ifs) {
         err << "Failed to open input file: " << options.metrics_input << "\n";

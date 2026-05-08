@@ -8,6 +8,21 @@ ScenePresetRegistry& ScenePresetRegistry::instance() {
     return instance;
 }
 
+void ScenePresetRegistry::register_spec(ScenePresetSpec spec) {
+    if (spec.id.empty()) {
+        return;
+    }
+    registry_.register_spec(std::move(spec));
+}
+
+const ScenePresetSpec* ScenePresetRegistry::find(std::string_view id) const {
+    return registry_.find(id);
+}
+
+std::vector<std::string> ScenePresetRegistry::list_ids() const {
+    return registry_.list_ids();
+}
+
 std::optional<SceneSpec> ScenePresetRegistry::create(std::string_view id, const registry::ParameterBag& params) const {
     if (const auto* spec = find(id)) {
         return spec->create_fn(params);

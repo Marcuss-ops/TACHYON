@@ -1,5 +1,5 @@
 #include "tachyon/presets/effects/effect_preset_registry.h"
-#include "tachyon/renderer2d/effects/effect_manifest.h"
+#include "tachyon/core/bridges/effect_manifest_bridge.h"
 
 namespace tachyon::presets {
 

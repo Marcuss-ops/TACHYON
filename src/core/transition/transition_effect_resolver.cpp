@@ -6,6 +6,7 @@
 #include <iostream>
 
 namespace tachyon {
+using namespace renderer2d;
 
 using renderer2d::Color;
 using renderer2d::SurfaceRGBA;

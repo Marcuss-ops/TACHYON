@@ -4,7 +4,7 @@
 #include "tachyon/presets/background/background_manifest.h"
 #include "tachyon/scene/builder.h"
 #include "tachyon/transition_registry.h"
-#include "tachyon/renderer2d/effects/effect_manifest.h"
+#include "tachyon/core/bridges/effect_manifest_bridge.h"
 #include "tachyon/presets/effects/effect_preset_registry.h"
 
 namespace tachyon::presets {

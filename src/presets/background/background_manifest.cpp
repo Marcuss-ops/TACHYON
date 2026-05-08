@@ -1,5 +1,4 @@
 #include "tachyon/presets/background/background_manifest.h"
-#include "tachyon/presets/background/background_kind_registry.h"
 #include "tachyon/presets/background/background_builders.h"
 #include "tachyon/presets/background/procedural.h"
 #include "tachyon/background_registry.h"
@@ -22,18 +21,13 @@ BackgroundParams get_base_params(const registry::ParameterBag& bag) {
 
 std::vector<BackgroundDescriptor> BackgroundManifest::generate_descriptors() const {
     std::vector<BackgroundDescriptor> descriptors;
-    
-    // Generate descriptors from BackgroundKindRegistry
-    auto kind_ids = BackgroundKindRegistry::instance().list_ids();
-    for (const auto& id : kind_ids) {
-        if (const auto* kind_spec = BackgroundKindRegistry::instance().find(id)) {
-            BackgroundDescriptor desc;
-            desc.id = kind_spec->id;
-            desc.metadata = kind_spec->metadata;
-            descriptors.push_back(std::move(desc));
+
+    for (const auto* desc : BackgroundRegistry::instance().list_all()) {
+        if (desc) {
+            descriptors.push_back(*desc);
         }
     }
-    
+
     return descriptors;
 }
 

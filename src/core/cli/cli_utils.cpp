@@ -6,6 +6,7 @@
 #include "tachyon/core/cli_scene_loader.h"
 #include "tachyon/runtime/execution/native_render.h"
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
+#include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
 #include <iostream>
 #include <filesystem>
 
@@ -18,7 +19,7 @@ void print_diagnostics(const DiagnosticBag& diagnostics, std::ostream& out) {
 }
 
 
-bool run_preview_internal(const ::tachyon::CliOptions& options, std::ostream& out, std::ostream& err, const char* label, TransitionRegistry& transition_registry) {
+bool run_preview_internal(const ::tachyon::CliOptions& options, std::ostream& out, std::ostream& err, const char* label, TransitionRegistry& transition_registry, renderer3d::Modifier3DRegistry& modifier_registry) {
     SceneLoadOptions load_opts;
     load_opts.cpp_path = options.cpp_path;
     load_opts.preset_id = options.preset_id;
@@ -41,7 +42,7 @@ bool run_preview_internal(const ::tachyon::CliOptions& options, std::ostream& ou
 
     out << "[" << label << "] Rendering frame " << frame << " to " << output.string() << "\n";
 
-    const bool success = NativeRenderer::render_still(scene, composition_id, frame, output, transition_registry);
+    const bool success = NativeRenderer::render_still(scene, composition_id, frame, output, transition_registry, modifier_registry);
     if (!success) {
         err << "Preview render failed.\n";
     } else {

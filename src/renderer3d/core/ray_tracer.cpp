@@ -39,7 +39,7 @@ bool is_finite_vector3(const math::Vector3& v) {
 } // namespace
 
 RayTracer::RayTracer(media::MediaManager* media_manager, const Modifier3DRegistry* modifier_registry) 
-    : media_manager_(media_manager), m_last_error(""), modifier_registry_(modifier_registry) {
+    : media_manager_(media_manager), modifier_registry_(modifier_registry), m_last_error("") {
     device_ = rtcNewDevice(nullptr);
     rtcSetDeviceErrorFunction(device_, log_embree_error, this);
 #ifdef _WIN32

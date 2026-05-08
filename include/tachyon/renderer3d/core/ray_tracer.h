@@ -25,6 +25,7 @@
 #include <string>
 
 namespace tachyon::renderer3d {
+class Modifier3DRegistry;
 
 struct ShadingResult {
     ::tachyon::math::Vector3 color;
@@ -41,7 +42,9 @@ class Modifier3DRegistry;
 
 class RayTracer : public ::tachyon::IRayTracer {
 public:
-    explicit RayTracer(media::MediaManager* media_manager = nullptr, const Modifier3DRegistry* modifier_registry = nullptr);
+    explicit RayTracer(
+        media::MediaManager* media_manager = nullptr,
+        const Modifier3DRegistry* modifier_registry = nullptr);
     ~RayTracer();
 
     RayTracer(const RayTracer&) = delete;
@@ -129,6 +132,7 @@ private:
 
     int samples_per_pixel_{1};
     bool denoiser_enabled_{false};
+    const Modifier3DRegistry* modifier_registry_{nullptr};
 
     ShadingResult trace_ray(
         const math::Vector3& origin,
@@ -145,7 +149,6 @@ private:
 
 private:
     std::string m_last_error;
-    const Modifier3DRegistry* modifier_registry_{nullptr};
 
     void cleanup_scene();
     void denoise_aov_buffer(AOVBuffer& buffer) const;
