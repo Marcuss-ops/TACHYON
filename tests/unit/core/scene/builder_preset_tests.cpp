@@ -1,27 +1,31 @@
 #include "tachyon/scene/builder.h"
+#include "tachyon/presets/effects/effect_preset_registry.h"
 #include <cassert>
 #include <iostream>
 
 bool run_scene_builder_preset_tests() {
+    using namespace tachyon;
     using namespace tachyon::scene;
 
     std::cout << "Running SceneBuilder preset extension tests..." << std::endl;
 
+    tachyon::presets::EffectPresetRegistry effects;
+
     // 1. Test background_preset
     {
-        auto comp = Composition("test_comp")
+        auto comp = Composition("test_comp", effects)
             .size(1920, 1080)
             .background_preset("aurora_mesh")
             .build();
         
         assert(!comp.layers.empty());
         assert(comp.layers[0].id == "bg_aurora_mesh");
-        assert(comp.layers[0].type == "procedural");
+        assert(comp.layers[0].type == LayerType::Procedural);
     }
 
     // 2. Test text_animation_preset and transitions
     {
-        auto comp = Composition("text_comp")
+        auto comp = Composition("text_comp", effects)
             .size(1920, 1080)
             .layer("title", [](LayerBuilder& l) {
                 l.text().content("Hello World")

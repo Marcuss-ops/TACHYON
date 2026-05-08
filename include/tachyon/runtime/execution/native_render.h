@@ -12,6 +12,7 @@
 
 namespace tachyon {
 
+namespace presets { class TextRegistry; }
 namespace profiling { class RenderProfiler; }
 
 /**
@@ -48,6 +49,7 @@ public:
         const RenderJob& job,
         TransitionRegistry& transition_registry,
         renderer3d::Modifier3DRegistry& modifier_registry,
+        presets::TextRegistry& text_registry,
         const NativeRenderOptions& options = NativeRenderOptions());
 
     static RenderSessionResult render(
@@ -55,6 +57,7 @@ public:
         const RenderJob& job,
         TransitionRegistry& transition_registry,
         renderer3d::Modifier3DRegistry& modifier_registry,
+        presets::TextRegistry& text_registry,
         const NativeRenderOptions& options = NativeRenderOptions());
 
     static bool render_still(
@@ -63,7 +66,8 @@ public:
         std::int64_t frame_number,
         const std::filesystem::path& output_path,
         TransitionRegistry& transition_registry,
-        renderer3d::Modifier3DRegistry& modifier_registry);
+        renderer3d::Modifier3DRegistry& modifier_registry,
+        presets::TextRegistry& text_registry);
 };
 
 } // namespace tachyon
