@@ -48,19 +48,11 @@ struct EffectDescriptor {
 };
 
 /**
- * @brief Mini-spec for declarative builtin effect registration.
+ * @brief Runtime implementation of an effect.
  */
-struct EffectBuiltinSpec {
-    std::string_view id;
-    std::string_view display_name;
-    std::string_view category; // Metadata category becomes "effect." + category
-    std::string_view description; // Optional
-    std::vector<std::string_view> tags; // Optional
-    registry::ParameterSchema schema;
-    EffectDescriptor::Factory factory; // Required: use make_effect_factory<T>() for common case
-    std::vector<AuxSurfaceRequirement> aux_requirements;
-    bool is_deterministic{true};
-    bool supports_gpu_acceleration{false};
+struct EffectImplementation {
+    std::string id;
+    EffectDescriptor::Factory factory;
 };
 
 /**

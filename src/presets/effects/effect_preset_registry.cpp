@@ -1,9 +1,9 @@
 #include "tachyon/presets/effects/effect_preset_registry.h"
-#include "tachyon/core/bridges/effect_manifest_bridge.h"
+#include "tachyon/presets/effects/effect_manifest.h"
 
 namespace tachyon::presets {
 
-EffectPresetRegistry::EffectPresetRegistry(const renderer2d::EffectManifest& manifest) {
+EffectPresetRegistry::EffectPresetRegistry(const presets::EffectManifest& manifest) {
     load_from_manifest(manifest);
 }
 
@@ -19,7 +19,7 @@ EffectSpec EffectPresetRegistry::create(std::string_view id, const registry::Par
     return effect;
 }
 
-void EffectPresetRegistry::load_from_manifest(const renderer2d::EffectManifest& manifest) {
+void EffectPresetRegistry::load_from_manifest(const presets::EffectManifest& manifest) {
     auto specs = manifest.generate_preset_specs();
     for (auto& spec : specs) {
         register_spec(std::move(spec));

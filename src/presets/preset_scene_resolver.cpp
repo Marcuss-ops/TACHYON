@@ -3,8 +3,6 @@
 #include "tachyon/presets/background/background_preset_registry.h"
 #include "tachyon/presets/background/background_manifest.h"
 #include "tachyon/scene/builder.h"
-#include "tachyon/transition_registry.h"
-#include "tachyon/core/bridges/effect_manifest_bridge.h"
 #include "tachyon/presets/effects/effect_preset_registry.h"
 
 namespace tachyon::presets {
@@ -12,10 +10,7 @@ namespace tachyon::presets {
 namespace {
 
 std::optional<SceneSpec> wrap_background_as_scene(const LayerSpec& background_layer) {
-    TransitionRegistry transitions;
-    renderer2d::EffectManifest effect_manifest(transitions);
-    presets::EffectPresetRegistry effects(effect_manifest);
-    presets::BackgroundManifest bg_manifest;
+    presets::EffectPresetRegistry effects;
 
     return ::tachyon::scene::Composition("preset_render", effects)
         .size(1280, 720)

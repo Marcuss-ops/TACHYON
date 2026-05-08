@@ -24,5 +24,4 @@ set(TachyonCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/transition/transition_effect_resolver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/transition/transition_manifest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/catalog/background_registry.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/catalog/background_catalog.cpp
 )

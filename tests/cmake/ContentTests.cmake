@@ -5,9 +5,8 @@
 add_executable(TachyonContentTests
     unit/test_main_content.cpp
     unit/core/catalog/catalog_tests.cpp
-    unit/core/catalog/transition_catalog_audit_tests.cpp
+    unit/core/catalog/transition_manifest_audit_tests.cpp
     unit/core/catalog/transition_descriptor_alignment_tests.cpp
-    unit/core/catalog/background_catalog_alignment_tests.cpp
     unit/core/catalog/missing_transition_fallback_tests.cpp
     unit/core/catalog/preview_dev_workflow_tests.cpp
     unit/core/spec/layerspec_schema_tests.cpp

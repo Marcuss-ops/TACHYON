@@ -1,97 +1,69 @@
 #include "tachyon/renderer2d/effects/effect_manifest.h"
+#include <unordered_map>
 #include <iterator>
-#include <vector>
 
 namespace tachyon::renderer2d {
 
-// Forward declarations for table descriptor functions
-std::vector<EffectDescriptor> get_blur_effect_descriptors();
-std::vector<EffectDescriptor> get_color_effect_descriptors();
-std::vector<EffectDescriptor> get_transition_effect_descriptors(const tachyon::TransitionRegistry& transition_registry);
-std::vector<EffectDescriptor> get_distortion_effect_descriptors();
-std::vector<EffectDescriptor> get_generator_effect_descriptors();
-std::vector<EffectDescriptor> get_stylize_effect_descriptors();
-
-// Forward declarations for preset spec functions
-std::vector<presets::EffectPresetSpec> get_blur_effect_preset_specs();
-std::vector<presets::EffectPresetSpec> get_color_effect_preset_specs();
-std::vector<presets::EffectPresetSpec> get_transition_effect_preset_specs();
-std::vector<presets::EffectPresetSpec> get_distortion_effect_preset_specs();
-std::vector<presets::EffectPresetSpec> get_generator_effect_preset_specs();
-std::vector<presets::EffectPresetSpec> get_stylize_effect_preset_specs();
+// External implementation tables
+std::vector<EffectImplementation> get_blur_effect_implementations();
+std::vector<EffectImplementation> get_color_effect_implementations();
+std::vector<EffectImplementation> get_transition_effect_implementations(const tachyon::TransitionRegistry& transition_registry);
+std::vector<EffectImplementation> get_distortion_effect_implementations();
+std::vector<EffectImplementation> get_generator_effect_implementations();
+std::vector<EffectImplementation> get_stylize_effect_implementations();
 
 EffectManifest::EffectManifest(const TransitionRegistry& transition_registry)
     : transition_registry_(transition_registry) {
 }
 
 std::vector<EffectDescriptor> EffectManifest::generate_descriptors() const {
-    std::vector<EffectDescriptor> all_descriptors;
+    // 1. Collect all implementations
+    std::vector<EffectImplementation> all_impls;
     
-    // Collect descriptors from all categories
-    auto blur_descriptors = get_blur_effect_descriptors();
-    auto color_descriptors = get_color_effect_descriptors();
-    auto transition_descriptors = get_transition_effect_descriptors(transition_registry_);
-    auto distortion_descriptors = get_distortion_effect_descriptors();
-    auto generator_descriptors = get_generator_effect_descriptors();
-    auto stylize_descriptors = get_stylize_effect_descriptors();
+    auto blur = get_blur_effect_implementations();
+    auto color = get_color_effect_implementations();
+    auto transition = get_transition_effect_implementations(transition_registry_);
+    auto distortion = get_distortion_effect_implementations();
+    auto generator = get_generator_effect_implementations();
+    auto stylize = get_stylize_effect_implementations();
     
-    // Reserve total capacity to avoid reallocations
-    all_descriptors.reserve(
-        blur_descriptors.size() +
-        color_descriptors.size() +
-        transition_descriptors.size() +
-        distortion_descriptors.size() +
-        generator_descriptors.size() +
-        stylize_descriptors.size());
-    
-    // Move all descriptors into the result vector
-    auto move_descriptors = [](std::vector<EffectDescriptor>& from, std::vector<EffectDescriptor>& to) {
+    auto move_impls = [](std::vector<EffectImplementation>& from, std::vector<EffectImplementation>& to) {
         std::move(from.begin(), from.end(), std::back_inserter(to));
     };
     
-    move_descriptors(blur_descriptors, all_descriptors);
-    move_descriptors(color_descriptors, all_descriptors);
-    move_descriptors(transition_descriptors, all_descriptors);
-    move_descriptors(distortion_descriptors, all_descriptors);
-    move_descriptors(generator_descriptors, all_descriptors);
-    move_descriptors(stylize_descriptors, all_descriptors);
+    move_impls(blur, all_impls);
+    move_impls(color, all_impls);
+    move_impls(transition, all_impls);
+    move_impls(distortion, all_impls);
+    move_impls(generator, all_impls);
+    move_impls(stylize, all_impls);
     
-    return all_descriptors;
-}
-
-std::vector<presets::EffectPresetSpec> EffectManifest::generate_preset_specs() const {
-    std::vector<presets::EffectPresetSpec> all_specs;
+    // Map implementations by ID for fast lookup
+    std::unordered_map<std::string_view, EffectDescriptor::Factory> impl_map;
+    for (const auto& impl : all_impls) {
+        impl_map[impl.id] = impl.factory;
+    }
     
-    // Collect preset specs from all categories
-    auto blur_specs = get_blur_effect_preset_specs();
-    auto color_specs = get_color_effect_preset_specs();
-    auto transition_specs = get_transition_effect_preset_specs();
-    auto distortion_specs = get_distortion_effect_preset_specs();
-    auto generator_specs = get_generator_effect_preset_specs();
-    auto stylize_specs = get_stylize_effect_preset_specs();
+    // 2. Get all kind specs from presets (Source of Truth)
+    auto kind_specs = presets_manifest_.generate_kind_specs();
     
-    // Reserve total capacity
-    all_specs.reserve(
-        blur_specs.size() +
-        color_specs.size() +
-        transition_specs.size() +
-        distortion_specs.size() +
-        generator_specs.size() +
-        stylize_specs.size());
+    // 3. Join them into descriptors
+    std::vector<EffectDescriptor> descriptors;
+    descriptors.reserve(kind_specs.size());
     
-    // Move all specs into the result vector
-    auto move_specs = [](std::vector<presets::EffectPresetSpec>& from, std::vector<presets::EffectPresetSpec>& to) {
-        std::move(from.begin(), from.end(), std::back_inserter(to));
-    };
+    for (auto& kind : kind_specs) {
+        auto it = impl_map.find(kind.id);
+        if (it != impl_map.end()) {
+            descriptors.push_back({
+                std::move(kind.id),
+                std::move(kind.metadata),
+                std::move(kind.schema),
+                it->second
+            });
+        }
+    }
     
-    move_specs(blur_specs, all_specs);
-    move_specs(color_specs, all_specs);
-    move_specs(transition_specs, all_specs);
-    move_specs(distortion_specs, all_specs);
-    move_specs(generator_specs, all_specs);
-    move_specs(stylize_specs, all_specs);
-    
-    return all_specs;
+    return descriptors;
 }
 
 } // namespace tachyon::renderer2d

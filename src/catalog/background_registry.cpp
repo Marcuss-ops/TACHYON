@@ -17,6 +17,21 @@ BackgroundRegistry::BackgroundRegistry() : m_impl(std::make_unique<Impl>()) {
 
 BackgroundRegistry::~BackgroundRegistry() = default;
 
+void BackgroundRegistry::register_all_builtins() {
+    // Basic built-in backgrounds
+    BackgroundDescriptor solid;
+    solid.id = "tachyon.background.solid";
+    solid.display_name = "Solid Color";
+    solid.kind = BackgroundKind::Solid;
+    register_descriptor(solid);
+
+    BackgroundDescriptor image;
+    image.id = "tachyon.background.image";
+    image.display_name = "Image";
+    image.kind = BackgroundKind::Image;
+    register_descriptor(image);
+}
+
 BackgroundRegistry& BackgroundRegistry::instance() {
     static BackgroundRegistry instance;
     return instance;

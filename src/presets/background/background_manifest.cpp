@@ -41,7 +41,7 @@ std::vector<BackgroundPresetSpec> BackgroundManifest::generate_preset_specs() co
         "tachyon.backgroundpreset.galaxy_premium",
         {"tachyon.backgroundpreset.galaxy_premium", "Galaxy Premium", "High-end cinematic galaxy background", "Premium", {"space", "premium"}},
         {},
-        [get_base_params](const registry::ParameterBag& bag) {
+        [](const registry::ParameterBag& bag) {
             BackgroundParams p = get_base_params(bag);
             p.kind = "tachyon.background.kind.galaxy";
             p.palette = "cosmic_nebula";
@@ -55,7 +55,7 @@ std::vector<BackgroundPresetSpec> BackgroundManifest::generate_preset_specs() co
         "tachyon.backgroundpreset.dark_tech_grid",
         {"tachyon.backgroundpreset.dark_tech_grid", "Dark Tech Grid", "Modern dark tech grid for presentations", "Tech", {"grid", "dark"}},
         {},
-        [get_base_params](const registry::ParameterBag& bag) {
+        [](const registry::ParameterBag& bag) {
             BackgroundParams p = get_base_params(bag);
             p.kind = "tachyon.background.kind.grid_modern";
             p.palette = "dark_tech";
@@ -69,7 +69,7 @@ std::vector<BackgroundPresetSpec> BackgroundManifest::generate_preset_specs() co
         "tachyon.backgroundpreset.cinematic_aura",
         {"tachyon.backgroundpreset.cinematic_aura", "Cinematic Aura", "Soft cinematic aura background", "Cinematic", {"aura", "soft"}},
         {},
-        [get_base_params](const registry::ParameterBag& bag) {
+        [](const registry::ParameterBag& bag) {
             BackgroundParams p = get_base_params(bag);
             p.kind = "tachyon.background.kind.aura";
             p.palette = "neon_night";
@@ -78,6 +78,65 @@ std::vector<BackgroundPresetSpec> BackgroundManifest::generate_preset_specs() co
         }
     });
     
+    return specs;
+}
+
+std::vector<BackgroundKindSpec> BackgroundManifest::generate_kind_specs() const {
+    std::vector<BackgroundKindSpec> specs;
+
+    using namespace background::procedural_bg;
+
+    // Helper to extract common procedural params from bag
+    auto get_procedural_params = [](const registry::ParameterBag& bag) {
+        ProceduralParams p;
+        if (auto pa = bag.get<ColorSpec>("palette.a")) p.palette_a = *pa;
+        if (auto pb = bag.get<ColorSpec>("palette.b")) p.palette_b = *pb;
+        if (auto pc = bag.get<ColorSpec>("palette.c")) p.palette_c = *pc;
+        p.motion_speed = bag.get_or<double>("motion_speed", 1.0);
+        p.contrast = bag.get_or<double>("contrast", 1.0);
+        p.grain = bag.get_or<double>("grain", 0.0);
+        p.softness = bag.get_or<double>("softness", 0.0);
+        p.seed = static_cast<uint64_t>(bag.get_or<int>("seed", 0));
+        return p;
+    };
+
+    // Galaxy Kind
+    specs.push_back({
+        "tachyon.background.kind.galaxy",
+        {"tachyon.background.kind.galaxy", "Galaxy", "Cinematic galaxy background type", "Core", {}},
+        {},
+        [get_procedural_params](const registry::ParameterBag& bag) {
+            auto p = get_procedural_params(bag);
+            auto spec = make_galaxy_spec(p);
+            if (auto val = bag.get<float>("star_speed")) spec.star_speed = *val;
+            if (auto val = bag.get<float>("density")) spec.density = *val;
+            return spec;
+        }
+    });
+
+    // Grid Modern Kind
+    specs.push_back({
+        "tachyon.background.kind.grid_modern",
+        {"tachyon.background.kind.grid_modern", "Modern Grid", "Tech grid background type", "Core", {}},
+        {},
+        [get_procedural_params](const registry::ParameterBag& bag) {
+            auto p = get_procedural_params(bag);
+            float spacing = bag.get_or<float>("spacing", 60.0f);
+            return make_modern_tech_grid_spec(p, spacing);
+        }
+    });
+
+    // Aura Kind
+    specs.push_back({
+        "tachyon.background.kind.aura",
+        {"tachyon.background.kind.aura", "Aura", "Soft aura background type", "Core", {}},
+        {},
+        [get_procedural_params](const registry::ParameterBag& bag) {
+            auto p = get_procedural_params(bag);
+            return make_aura_spec(p);
+        }
+    });
+
     return specs;
 }
 

@@ -7,11 +7,11 @@
 
 namespace tachyon::renderer2d {
 
-float clamp01(float value) {
+inline float clamp01(float value) {
     return std::clamp(value, 0.0f, 1.0f);
 }
 
-float lerp(float a, float b, float t) {
+inline float lerp(float a, float b, float t) {
     return a + (b - a) * t;
 }
 
