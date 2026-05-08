@@ -6,12 +6,12 @@
 #include "tachyon/transition_registry.h"
 
 #include <chrono>
+#include <iostream>
 
 namespace tachyon::renderer2d {
 
 EffectHost& effect_host_for(RenderContext2D& context) {
-    // Note: we can't easily include render_internal.h here without circularity or we need to check.
-    // For now, I'll use a local check or just std::cerr.
+    std::cerr << "[DEBUG] effect_host_for entry\n";
     if (!context.effects) {
         throw std::runtime_error("RenderContext2D::effects is not initialized. "
                                "Ensure RenderSession is used to properly initialize the context.");
