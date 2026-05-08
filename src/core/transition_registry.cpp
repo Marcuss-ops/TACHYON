@@ -54,8 +54,8 @@ const TransitionDescriptor* TransitionRegistry::resolve(std::string_view id_or_a
     return by_id ? by_id : find_by_alias(id_or_alias);
 }
 
-std::vector<TransitionCatalogEntry> TransitionRegistry::catalog_entries() const {
-    std::vector<TransitionCatalogEntry> entries;
+std::vector<TransitionLibraryEntry> TransitionRegistry::library_entries() const {
+    std::vector<TransitionLibraryEntry> entries;
     entries.reserve(m_impl->descriptors.size());
     for (const auto& [id, desc] : m_impl->descriptors) {
         entries.push_back({

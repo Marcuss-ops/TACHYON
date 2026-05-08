@@ -1,6 +1,6 @@
 #include "tachyon/scene/text_builder.h"
 #include "tachyon/scene/builder.h"
-#include "tachyon/presets/text/text_animator_preset_registry.h"
+#include "tachyon/presets/text/text_registry.h"
 #include "tachyon/core/registry/parameter_bag.h"
 
 namespace tachyon::scene {
@@ -46,10 +46,14 @@ TextBuilder& TextBuilder::highlights(std::vector<TextHighlightSpec> hls) {
     return *this;
 }
 
-TextBuilder& TextBuilder::animation_preset(const std::string& id) {
-    presets::TextManifest text_manifest;
-    presets::TextAnimatorPresetRegistry registry(text_manifest);
-    parent_.spec_.text_animators = registry.create(id, registry::ParameterBag{});
+TextBuilder& TextBuilder::animation_preset(const std::string& id, const presets::TextRegistry* registry) {
+    if (registry) {
+        parent_.spec_.text_animators = registry->create_animators(id, registry::ParameterBag{});
+    } else {
+        presets::TextManifest text_manifest;
+        presets::TextRegistry local_registry(text_manifest);
+        parent_.spec_.text_animators = local_registry.create_animators(id, registry::ParameterBag{});
+    }
     return *this;
 }
 

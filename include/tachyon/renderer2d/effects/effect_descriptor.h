@@ -48,19 +48,11 @@ struct EffectDescriptor {
 };
 
 /**
- * @brief Mini-spec for declarative builtin effect registration.
+ * @brief Runtime implementation of an effect.
  */
-struct EffectBuiltinSpec {
-    std::string_view id;
-    std::string_view display_name;
-    std::string_view category; // Metadata category becomes "effect." + category
-    std::string_view description; // Optional
-    std::vector<std::string_view> tags; // Optional
-    registry::ParameterSchema schema;
-    EffectDescriptor::Factory factory; // Required: use make_effect_factory<T>() for common case
-    std::vector<AuxSurfaceRequirement> aux_requirements;
-    bool is_deterministic{true};
-    bool supports_gpu_acceleration{false};
+struct EffectImplementation {
+    std::string id;
+    EffectDescriptor::Factory factory;
 };
 
 /**
@@ -75,15 +67,6 @@ EffectDescriptor::Factory make_effect_factory() {
     };
 }
 
-/**
- * @brief Forward declaration of EffectRegistry to avoid circular include.
- */
-class EffectRegistry;
-
-/**
- * @brief Register a builtin effect from a declarative spec.
- * Implementation moved to avoid circular dependencies.
- */
-TACHYON_API void register_effect_from_spec(EffectRegistry& registry, const EffectBuiltinSpec& spec);
+// register_effect_from_spec removed - use register_builtin_effects bridge instead.
 
 } // namespace tachyon::renderer2d

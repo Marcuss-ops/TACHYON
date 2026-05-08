@@ -152,6 +152,11 @@ LayerBuilder& LayerBuilder::animation2d_preset(const std::string& id, const regi
     return *this;
 }
 
+LayerBuilder& LayerBuilder::from_spec(const LayerSpec& spec) {
+    spec_ = spec;
+    return *this;
+}
+
 // Domain builder accessors
 CameraBuilder LayerBuilder::camera() {
     spec_.type = LayerType::Camera;

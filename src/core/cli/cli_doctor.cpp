@@ -1,6 +1,6 @@
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
-#include "tachyon/core/catalog/catalog.h"
+#include "tachyon/core/library/library.h"
 #include "tachyon/renderer2d/effects/core/glsl_transition_effect.h"
 #include "tachyon/presets/transition/transition_preset_registry.h"
 #include "tachyon/transition_registry.h"
@@ -58,28 +58,28 @@ bool run_doctor_command(const CliOptions&, std::ostream& out, std::ostream& err,
     }
     out << "\n";
 
-    // 2. Audit Catalog Discovery
-    out << "[2/2] Auditing Catalog Discovery...\n";
-    // We provide a default root if needed, but the catalog constructor handles it.
-    TachyonCatalog catalog(""); 
-    int catalog_errors = 0;
+    // 2. Audit Library Discovery
+    out << "[2/2] Auditing Library Discovery...\n";
+    // We provide a default root if needed, but the library constructor handles it.
+    TachyonLibrary library(""); 
+    int library_errors = 0;
     
     for (const auto& id : preset_ids) {
         if (id == "none" || id == "tachyon.transition.none") continue;
-        if (!catalog.find_transition(id).has_value()) {
-            err << "      [ERROR] Transition '" << id << "' not found in catalog listing.\n";
-            catalog_errors++;
+        if (!library.find_transition(id).has_value()) {
+            err << "      [ERROR] Transition '" << id << "' not found in library listing.\n";
+            library_errors++;
         }
     }
     
-    if (catalog_errors == 0) {
-        out << "      Success: All registered transitions are discoverable in the catalog.\n";
+    if (library_errors == 0) {
+        out << "      Success: All registered transitions are discoverable in the library.\n";
     } else {
-        out << "      Failed: " << catalog_errors << " transitions missing from catalog.\n";
+        out << "      Failed: " << library_errors << " transitions missing from library.\n";
     }
     out << "\n";
 
-    bool ok = (preset_errors == 0 && catalog_errors == 0);
+    bool ok = (preset_errors == 0 && library_errors == 0);
     if (ok) {
         out << "Overall Status: HEALTHY\n";
     } else {

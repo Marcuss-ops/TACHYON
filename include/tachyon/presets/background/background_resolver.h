@@ -18,7 +18,7 @@ struct BackgroundResolutionResult {
         UnknownPreset,         ///< Preset ID not found in registry
         UnsupportedComponent,  ///< Component-type background not yet implemented
         AssetMissing,          ///< Referenced image/video not found
-        CatalogMismatch        ///< Registry and Catalog are out of sync
+        LibraryMismatch        ///< Registry and Library are out of sync
     };
 
     Status status{Status::Ok};

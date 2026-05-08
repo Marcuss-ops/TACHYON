@@ -4,20 +4,12 @@
 
 namespace tachyon::renderer2d {
 
-std::vector<EffectDescriptor> get_color_effect_descriptors() {
-    std::vector<EffectDescriptor> descriptors;
+std::vector<EffectImplementation> get_color_effect_implementations() {
+    std::vector<EffectImplementation> implementations;
 
     // Levels
-    descriptors.push_back({
+    implementations.push_back({
         "tachyon.effect.color.levels",
-        {"tachyon.effect.color.levels", "Levels", "Professional color effect.", "effect.color", {"color"}},
-        registry::ParameterSchema({
-            {"input_black", "Input Black", "Input black point", 0.0, 0.0, 255.0},
-            {"input_white", "Input White", "Input white point", 255.0, 0.0, 255.0},
-            {"gamma", "Gamma", "Midtone adjustment", 1.0, 0.1, 10.0},
-            {"output_black", "Output Black", "Output black point", 0.0, 0.0, 255.0},
-            {"output_white", "Output White", "Output white point", 255.0, 0.0, 255.0}
-        }),
         [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             LevelsEffect effect;
             output = effect.apply(input, params);
@@ -25,12 +17,8 @@ std::vector<EffectDescriptor> get_color_effect_descriptors() {
     });
 
     // Curves
-    descriptors.push_back({
+    implementations.push_back({
         "tachyon.effect.color.curves",
-        {"tachyon.effect.color.curves", "Curves", "Professional color effect.", "effect.color", {"color"}},
-        registry::ParameterSchema({
-            {"curve_points", "Curve Points", "JSON array of curve control points", "[]"}
-        }),
         [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             CurvesEffect effect;
             output = effect.apply(input, params);
@@ -38,13 +26,8 @@ std::vector<EffectDescriptor> get_color_effect_descriptors() {
     });
 
     // Fill
-    descriptors.push_back({
+    implementations.push_back({
         "tachyon.effect.color.fill",
-        {"tachyon.effect.color.fill", "Fill", "Professional color effect.", "effect.color", {"color"}},
-        registry::ParameterSchema({
-            {"color", "Color", "Fill color", ColorSpec{255, 255, 255, 255}},
-            {"blend_mode", "Blend Mode", "How to blend fill", "normal"}
-        }),
         [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             FillEffect effect;
             output = effect.apply(input, params);
@@ -52,13 +35,8 @@ std::vector<EffectDescriptor> get_color_effect_descriptors() {
     });
 
     // Tint
-    descriptors.push_back({
+    implementations.push_back({
         "tachyon.effect.color.tint",
-        {"tachyon.effect.color.tint", "Tint", "Professional color effect.", "effect.color", {"color"}},
-        registry::ParameterSchema({
-            {"amount", "Amount", "Tint intensity", 1.0, 0.0, 1.0},
-            {"color", "Color", "Tint color", ColorSpec{255, 128, 0, 255}}
-        }),
         [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             TintEffect effect;
             output = effect.apply(input, params);
@@ -66,14 +44,8 @@ std::vector<EffectDescriptor> get_color_effect_descriptors() {
     });
 
     // Hue/Saturation
-    descriptors.push_back({
+    implementations.push_back({
         "tachyon.effect.color.hue_saturation",
-        {"tachyon.effect.color.hue_saturation", "Hue/Saturation", "Professional color effect.", "effect.color", {"color"}},
-        registry::ParameterSchema({
-            {"hue_shift", "Hue Shift", "Hue rotation in degrees", 0.0, -180.0, 180.0},
-            {"saturation", "Saturation", "Saturation adjustment", 0.0, -100.0, 100.0},
-            {"lightness", "Lightness", "Lightness adjustment", 0.0, -100.0, 100.0}
-        }),
         [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             HueSaturationEffect effect;
             output = effect.apply(input, params);
@@ -81,20 +53,8 @@ std::vector<EffectDescriptor> get_color_effect_descriptors() {
     });
 
     // Color Balance
-    descriptors.push_back({
+    implementations.push_back({
         "tachyon.effect.color.balance",
-        {"tachyon.effect.color.balance", "Color Balance", "Professional color effect.", "effect.color", {"color"}},
-        registry::ParameterSchema({
-            {"shadows_r", "Shadows R", "Red in shadows", 0.0, -100.0, 100.0},
-            {"shadows_g", "Shadows G", "Green in shadows", 0.0, -100.0, 100.0},
-            {"shadows_b", "Shadows B", "Blue in shadows", 0.0, -100.0, 100.0},
-            {"midtones_r", "Midtones R", "Red in midtones", 0.0, -100.0, 100.0},
-            {"midtones_g", "Midtones G", "Green in midtones", 0.0, -100.0, 100.0},
-            {"midtones_b", "Midtones B", "Blue in midtones", 0.0, -100.0, 100.0},
-            {"highlights_r", "Highlights R", "Red in highlights", 0.0, -100.0, 100.0},
-            {"highlights_g", "Highlights G", "Green in highlights", 0.0, -100.0, 100.0},
-            {"highlights_b", "Highlights B", "Blue in highlights", 0.0, -100.0, 100.0}
-        }),
         [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             ColorBalanceEffect effect;
             output = effect.apply(input, params);
@@ -102,13 +62,8 @@ std::vector<EffectDescriptor> get_color_effect_descriptors() {
     });
 
     // LUT
-    descriptors.push_back({
+    implementations.push_back({
         "tachyon.effect.color.lut",
-        {"tachyon.effect.color.lut", "LUT", "Professional color effect.", "effect.color", {"color"}},
-        registry::ParameterSchema({
-            {"lut_file", "LUT File", "Path to LUT file", ""},
-            {"intensity", "Intensity", "LUT blend amount", 1.0, 0.0, 1.0}
-        }),
         [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             LUTEffect effect;
             output = effect.apply(input, params);
@@ -116,13 +71,8 @@ std::vector<EffectDescriptor> get_color_effect_descriptors() {
     });
 
     // 3D LUT (.cube)
-    descriptors.push_back({
+    implementations.push_back({
         "tachyon.effect.color.lut3d",
-        {"tachyon.effect.color.lut3d", "3D LUT (.cube)", "Professional color effect.", "effect.color", {"color"}},
-        registry::ParameterSchema({
-            {"lut_file", "LUT File", "Path to .cube file", ""},
-            {"intensity", "Intensity", "LUT blend amount", 1.0, 0.0, 1.0}
-        }),
         [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             Lut3DCubeEffect effect;
             output = effect.apply(input, params);
@@ -130,14 +80,8 @@ std::vector<EffectDescriptor> get_color_effect_descriptors() {
     });
 
     // Chroma Key
-    descriptors.push_back({
+    implementations.push_back({
         "tachyon.effect.color.chroma_key",
-        {"tachyon.effect.color.chroma_key", "Chroma Key", "Professional keying effect.", "effect.color", {"keying"}},
-        registry::ParameterSchema({
-            {"key_color", "Key Color", "Color to remove", ColorSpec{0, 255, 0, 255}},
-            {"similarity", "Similarity", "Color similarity threshold", 0.1, 0.0, 1.0},
-            {"smoothness", "Smoothness", "Edge smoothness", 0.1, 0.0, 1.0}
-        }),
         [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             ChromaKeyEffect effect;
             output = effect.apply(input, params);
@@ -145,81 +89,24 @@ std::vector<EffectDescriptor> get_color_effect_descriptors() {
     });
 
     // Light Wrap
-    descriptors.push_back({
+    implementations.push_back({
         "tachyon.effect.color.light_wrap",
-        {"tachyon.effect.color.light_wrap", "Light Wrap", "Professional keying effect.", "effect.color", {"keying"}},
-        registry::ParameterSchema({
-            {"width", "Width", "Wrap width", 10.0, 0.0, 100.0},
-            {"intensity", "Intensity", "Wrap intensity", 1.0, 0.0, 1.0}
-        }),
         [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             LightWrapEffect effect;
             output = effect.apply(input, params);
-        },
-        {{"background", "background_layer", "background", true}}
+        }
     });
 
     // Matte Refinement
-    descriptors.push_back({
+    implementations.push_back({
         "tachyon.effect.color.matte_refinement",
-        {"tachyon.effect.color.matte_refinement", "Matte Refinement", "Professional keying effect.", "effect.color", {"keying"}},
-        registry::ParameterSchema({
-            {"choke", "Choke/Spread", "Choke (negative) or spread (positive)", 0.0, -100.0, 100.0},
-            {"feather", "Feather", "Edge feathering", 0.0, 0.0, 100.0}
-        }),
         [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             MatteRefinementEffect effect;
             output = effect.apply(input, params);
         }
     });
 
-    return descriptors;
-}
-
-std::vector<presets::EffectPresetSpec> get_color_effect_preset_specs() {
-    std::vector<presets::EffectPresetSpec> specs;
-
-    // Levels Preset
-    specs.push_back({
-        "tachyon.effect.color.levels",
-        {"tachyon.effect.color.levels", "Levels", "Professional color effect.", "effect.color", {"color"}},
-        registry::ParameterSchema({
-            {"input_black", "Input Black", "Input black point", 0.0, 0.0, 255.0},
-            {"input_white", "Input White", "Input white point", 255.0, 0.0, 255.0},
-            {"gamma", "Gamma", "Midtone adjustment", 1.0, 0.1, 10.0},
-            {"output_black", "Output Black", "Output black point", 0.0, 0.0, 255.0},
-            {"output_white", "Output White", "Output white point", 255.0, 0.0, 255.0}
-        }),
-        [](const registry::ParameterBag& p) {
-            EffectSpec effect;
-            effect.type = "tachyon.effect.color.levels";
-            effect.scalars["input_black"] = p.get_or<double>("input_black", 0.0);
-            effect.scalars["input_white"] = p.get_or<double>("input_white", 255.0);
-            effect.scalars["gamma"] = p.get_or<double>("gamma", 1.0);
-            effect.scalars["output_black"] = p.get_or<double>("output_black", 0.0);
-            effect.scalars["output_white"] = p.get_or<double>("output_white", 255.0);
-            return effect;
-        }
-    });
-
-    // Tint Preset
-    specs.push_back({
-        "tachyon.effect.color.tint",
-        {"tachyon.effect.color.tint", "Tint", "Professional color effect.", "effect.color", {"color"}},
-        registry::ParameterSchema({
-            {"amount", "Amount", "Tint intensity", 1.0, 0.0, 1.0},
-            {"color", "Color", "Tint color", ColorSpec{255, 128, 0, 255}}
-        }),
-        [](const registry::ParameterBag& p) {
-            EffectSpec effect;
-            effect.type = "tachyon.effect.color.tint";
-            effect.scalars["amount"] = p.get_or<double>("amount", 1.0);
-            effect.colors["color"] = p.get_or<ColorSpec>("color", ColorSpec{255, 128, 0, 255});
-            return effect;
-        }
-    });
-
-    return specs;
+    return implementations;
 }
 
 } // namespace tachyon::renderer2d

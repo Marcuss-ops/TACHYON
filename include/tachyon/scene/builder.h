@@ -189,6 +189,9 @@ public:
     // 2D Animation preset
     LayerBuilder& animation2d_preset(const std::string& id, const registry::ParameterBag& params = {});
 
+    // Update from existing spec
+    LayerBuilder& from_spec(const LayerSpec& spec);
+
     [[nodiscard]] LayerSpec build() &&;
     [[nodiscard]] LayerSpec build() const &;
 };

@@ -15,7 +15,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonOutputSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonTextSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonEditorSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonCLISources.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonCatalogSources.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonLibrarySources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonColorSources.cmake)
 
 # Global compile definitions removed. Per-target definitions used instead.
@@ -47,8 +47,8 @@ tachyon_assert_no_duplicate_sources(TachyonOutputSources)
 tachyon_assert_no_duplicate_sources(TachyonTextSources)
 tachyon_assert_no_duplicate_sources(TachyonEditorSources)
 tachyon_assert_no_duplicate_sources(TachyonCLICoreSources)
-tachyon_assert_no_duplicate_sources(TachyonCLICatalogSources)
-tachyon_assert_no_duplicate_sources(TachyonCatalogSources)
+tachyon_assert_no_duplicate_sources(TachyonCLILibrarySources)
+tachyon_assert_no_duplicate_sources(TachyonLibrarySources)
 
 if(TACHYON_ENABLE_TRACKER)
     include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonTrackerSources.cmake)
@@ -224,9 +224,9 @@ target_link_libraries(TachyonEditor PUBLIC TachyonCore)
 add_library(TachyonPlatform STATIC ${TachyonPlatformSources})
 tachyon_configure_common(TachyonPlatform)
 
-add_library(TachyonCatalog STATIC ${TachyonCatalogSources})
-tachyon_configure_common(TachyonCatalog)
-target_link_libraries(TachyonCatalog PUBLIC TachyonPresets)
+add_library(TachyonLibrary STATIC ${TachyonLibrarySources})
+tachyon_configure_common(TachyonLibrary)
+target_link_libraries(TachyonLibrary PUBLIC TachyonPresets)
 
 if(TACHYON_ENABLE_TRACKER)
     add_library(TachyonTracker STATIC ${TachyonTrackerSources})
@@ -260,28 +260,28 @@ endif()
 target_link_libraries(tachyon
     PRIVATE
         TachyonRuntimeEngine
-        TachyonCatalog
+        TachyonLibrary
         TachyonPresets
         TachyonDiagnostics
 )
 
 # Full tooling/catalog executable (optional)
-if(TACHYON_BUILD_CATALOG_TOOLS)
-    add_executable(tachyon-catalog
+if(TACHYON_BUILD_LIBRARY_TOOLS)
+    add_executable(tachyon-library
         main.cpp
         ${TachyonCLICoreSources}
-        ${TachyonCLICatalogSources}
+        ${TachyonCLILibrarySources}
     )
-    tachyon_configure_common(tachyon-catalog)
+    tachyon_configure_common(tachyon-library)
     
     if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
-        target_precompile_headers(tachyon-catalog PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")
+        target_precompile_headers(tachyon-library PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")
     endif()
 
-    target_link_libraries(tachyon-catalog
+    target_link_libraries(tachyon-library
         PRIVATE
             TachyonRuntimeEngine
-            TachyonCatalog
+            TachyonLibrary
             TachyonEditor
             TachyonPresets
             TachyonDiagnostics

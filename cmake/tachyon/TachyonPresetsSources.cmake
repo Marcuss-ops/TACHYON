@@ -12,16 +12,23 @@ set(TachyonPresetsSources
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/sfx/sfx_registry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/sfx/sfx_registry_table.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/shape/shape_builders.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/presets/text/text_layer_preset_registry.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/presets/text/text_animator_preset_registry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/text/text_manifest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/text/text_builders.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/presets/text/text_registry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/transition/transition_preset_registry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/transition/transition_builders.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/transition/transition_presets_table.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/effects/effect_preset_registry.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/presets/effects/blur_effects.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/presets/effects/color_effects.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/presets/effects/distortion_effects.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/presets/effects/generator_effects.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/presets/effects/stylize_effects.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/presets/effects/transition_effects.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/presets/effects/effect_manifest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/scene/scene_preset_registry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/animation3d/animation3d_preset_registry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/animation3d/animation3d_presets_table.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/preset_scene_resolver.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/presets/common_scenes.cpp
 )

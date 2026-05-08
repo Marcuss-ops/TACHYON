@@ -172,6 +172,12 @@ static const std::vector<CommandEntry> kCommands = {
         nullptr,
         run_doctor_command
     },
+    {
+        "library-demo",
+        "tachyon library-demo [--transition <id>] [--library <path>] [--out <dir>]",
+        nullptr,
+        run_library_demo_command
+    },
 };
 
 void print_help(std::ostream& out) {

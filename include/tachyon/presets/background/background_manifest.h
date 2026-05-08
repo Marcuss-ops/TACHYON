@@ -1,7 +1,7 @@
 #pragma once
 
+#include "tachyon/presets/background/background_specs.h"
 #include "tachyon/background_descriptor.h"
-#include "tachyon/presets/background/background_preset_registry.h"
 #include <vector>
 
 namespace tachyon::presets {
@@ -25,6 +25,12 @@ public:
      * @return Vector of all background preset specs.
      */
     std::vector<BackgroundPresetSpec> generate_preset_specs() const;
+
+    /**
+     * @brief Generate all background kind specs (low-level procedural types).
+     * @return Vector of all background kind specs.
+     */
+    std::vector<BackgroundKindSpec> generate_kind_specs() const;
 };
 
 } // namespace tachyon::presets

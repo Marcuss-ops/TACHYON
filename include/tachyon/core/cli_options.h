@@ -14,13 +14,13 @@ namespace tachyon {
 
 struct CliOptions {
     std::string command;
-    std::filesystem::path catalog_path;
+    std::filesystem::path library_path;
     std::optional<std::string> transition_id;
     std::filesystem::path job_path;
     std::filesystem::path batch_path;
     std::filesystem::path output_override;
     std::optional<std::string> output_preset_id;
-    std::filesystem::path output_dir;  // Common output directory for catalog-demo
+    std::filesystem::path output_dir;  // Common output directory for library-demo
     std::filesystem::path font_manifest_path;  // For inspect-fonts command
     std::size_t worker_count{1};
     std::optional<std::size_t> memory_budget_bytes;

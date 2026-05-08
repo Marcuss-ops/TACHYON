@@ -93,9 +93,9 @@ struct TransitionDescriptor {
 };
 
 /**
- * @brief Catalog entry derived from TransitionDescriptor (read-only view for UI/catalog)
+ * @brief Library entry derived from TransitionDescriptor (read-only view for UI/library)
  */
-struct TransitionCatalogEntry {
+struct TransitionLibraryEntry {
     std::string id;
     std::string display_name;
     std::string description;

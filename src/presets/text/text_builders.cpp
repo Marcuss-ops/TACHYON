@@ -1,10 +1,12 @@
 #include "tachyon/presets/text/text_builders.h"
+#include "tachyon/presets/text/text_registry.h"
 #include "tachyon/presets/builders_common.h"
-#include "tachyon/presets/text/text_animator_preset_registry.h"
 #include "tachyon/text/animation/text_presets.h"
 #include "tachyon/text/core/TextLayerSpec.h"
 
 namespace tachyon::presets {
+
+using namespace tachyon;
 
 namespace {
 
@@ -21,12 +23,14 @@ LayerSpec build_text_with_animation(const TextParams& p, std::string animation_i
 // ---------------------------------------------------------------------------
 
 LayerSpec build_text(const TextParams& p) {
-    ::tachyon::TextLayerSpec spec = ::tachyon::build_text_spec(p, &TextAnimatorPresetRegistry::instance());
+    presets::TextManifest manifest;
+    presets::TextRegistry text_registry(manifest);
+    ::tachyon::TextLayerSpec spec = ::tachyon::build_text_spec(p, &text_registry);
     LayerSpec l = ::tachyon::make_layer_from_text_spec(spec);
 
     // Apply transitions (presets domain responsibility)
-    TransitionPresetRegistry registry;
-    apply_layer_transitions(l, p.enter_preset, p.enter_duration, p.exit_preset, p.exit_duration, registry);
+    TransitionPresetRegistry transition_registry;
+    apply_layer_transitions(l, p.enter_preset, p.enter_duration, p.exit_preset, p.exit_duration, transition_registry);
 
     return l;
 }

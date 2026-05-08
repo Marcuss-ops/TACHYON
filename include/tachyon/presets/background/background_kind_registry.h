@@ -11,42 +11,25 @@
 #include <optional>
 #include <string>
 #include <string_view>
-#include <vector>
+#include "tachyon/presets/background/background_specs.h"
+#include "tachyon/presets/background/background_manifest.h"
 
 namespace tachyon::presets {
 
-namespace background::procedural_bg {
-struct ProceduralParams;
-}
-
-struct BackgroundKindSpec {
-    std::string id;
-    registry::RegistryMetadata metadata;
-    registry::ParameterSchema schema;
-    std::function<ProceduralSpec(const registry::ParameterBag&)> factory;
-};
-
-class BackgroundKindRegistry {
+class BackgroundKindRegistry : public registry::TypedRegistry<BackgroundKindSpec> {
 public:
-    static BackgroundKindRegistry& instance();
-
-    void register_spec(BackgroundKindSpec spec);
-    const BackgroundKindSpec* find(std::string_view id) const;
+    explicit BackgroundKindRegistry(const BackgroundManifest& manifest) {
+        load_from_manifest(manifest);
+    }
+    ~BackgroundKindRegistry() = default;
 
     [[nodiscard]] std::optional<ProceduralSpec> create(
         std::string_view id,
         const registry::ParameterBag& params
     ) const;
 
-    [[nodiscard]] std::vector<std::string> list_ids() const;
-
-    void load_builtins();
-
 private:
-    BackgroundKindRegistry();
-    ~BackgroundKindRegistry() = default;
-
-    registry::TypedRegistry<BackgroundKindSpec> registry_;
+    void load_from_manifest(const BackgroundManifest& manifest);
 };
 
 } // namespace tachyon::presets
