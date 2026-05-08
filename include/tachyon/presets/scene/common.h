@@ -24,6 +24,8 @@ inline SceneSpec minimal(const SceneParams& params) {
     comp.width = params.width;
     comp.height = params.height;
     comp.duration = params.duration;
+    comp.frame_rate = FrameRate{static_cast<std::int64_t>(params.fps), 1};
+    comp.fps = params.fps;
 
     scene.compositions.push_back(std::move(comp));
     return scene;
@@ -42,6 +44,8 @@ inline SceneSpec minimal(const EnhancedSceneParams& params) {
     comp.width = params.width;
     comp.height = params.height;
     comp.duration = params.duration;
+    comp.frame_rate = FrameRate{static_cast<std::int64_t>(params.fps), 1};
+    comp.fps = params.fps;
 
     if (params.background.has_value()) {
         comp.layers.push_back(tachyon::presets::build_background(*params.background));
@@ -69,6 +73,8 @@ inline SceneSpec enhance(const EnhancedSceneParams& params) {
     comp.width = params.width;
     comp.height = params.height;
     comp.duration = params.duration;
+    comp.frame_rate = FrameRate{static_cast<std::int64_t>(params.fps), 1};
+    comp.fps = params.fps;
 
     // Background
     if (params.background.has_value()) {
@@ -84,6 +90,18 @@ inline SceneSpec enhance(const EnhancedSceneParams& params) {
         layer.width = params.width;
         layer.height = params.height;
         comp.layers.push_back(std::move(layer));
+    }
+
+    // Main Text
+    if (!params.main_text.empty()) {
+        comp.layers.push_back(tachyon::presets::text::headline(params.main_text)
+            .font("Inter")
+            .font_size(96)
+            .center()
+            .text_box(params.width, params.height)
+            .position(params.width / 2.0, params.height / 2.0)
+            .duration(params.duration)
+            .build());
     }
 
     scene.compositions.push_back(std::move(comp));

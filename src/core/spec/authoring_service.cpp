@@ -166,7 +166,9 @@ std::vector<std::string> AuthoringService::get_link_libs() {
         "TachyonAudio",
         "TachyonMedia",
         "TachyonOutput",
-        "TachyonText"
+        "TachyonText",
+        "TachyonPresets",
+        "TachyonLibrary"
     };
     return libs;
 }
@@ -186,6 +188,7 @@ std::string AuthoringService::get_compiler_command(
     ss << "/I\"" << TACHYON_INCLUDE_DIR << "\" ";
     ss << "\"" << cpp_path.string() << "\" ";
     ss << "/Fe:\"" << dll_path.string() << "\" ";
+    ss << "/Fo:\"" << (dll_path.parent_path() / cpp_path.filename()).replace_extension(".obj").string() << "\" ";
 
     std::filesystem::path lib_path = TACHYON_LIB_PATH;
     if (!std::filesystem::exists(lib_path / (get_link_libs()[0] + ".lib"))) {

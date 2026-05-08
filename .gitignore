@@ -2,6 +2,8 @@ build/
 build-linux/
 out/
 /output/
+!/output/.gitignore
+!/output/.gitkeep
 tests/output/actual/
 *.vcxproj.user
 *.suo
