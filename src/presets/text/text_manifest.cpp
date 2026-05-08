@@ -1,4 +1,6 @@
 #include "tachyon/presets/text/text_manifest.h"
+#include "tachyon/presets/text/text_layer_preset_registry.h"
+#include "tachyon/presets/text/text_animator_preset_registry.h"
 #include "tachyon/presets/text/text_params.h"
 #include <vector>
 
