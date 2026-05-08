@@ -139,5 +139,3 @@ SceneSpec build_scene_b();
 SceneSpec build_text_3d_helpers_scene();
 
 } // namespace tachyon::presets::scene
-
-} // namespace tachyon::presets::scene

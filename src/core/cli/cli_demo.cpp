@@ -9,7 +9,7 @@
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/execution/session/render_session.h"
 #include "tachyon/transition_registry.h"
-#include "tachyon/core/catalog/catalog.h"
+#include "tachyon/core/library/library.h"
 #include "cli_internal.h"
 #include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
 
@@ -48,16 +48,16 @@ struct CachedSceneStill {
     double fps{30.0};
 };
 
-std::filesystem::path resolve_catalog_root(const std::filesystem::path& requested_root) {
+std::filesystem::path resolve_library_root(const std::filesystem::path& requested_root) {
     if (!requested_root.empty()) {
         return std::filesystem::absolute(requested_root);
     }
 
     const std::filesystem::path current = std::filesystem::current_path();
     const std::vector<std::filesystem::path> candidates = {
-        current / "assets" / "catalog",
-        current.parent_path() / "assets" / "catalog",
-        current.parent_path().parent_path() / "assets" / "catalog"
+        current / "assets" / "library",
+        current.parent_path() / "assets" / "library",
+        current.parent_path().parent_path() / "assets" / "library"
     };
 
     for (const auto& candidate : candidates) {
@@ -66,11 +66,11 @@ std::filesystem::path resolve_catalog_root(const std::filesystem::path& requeste
         }
     }
 
-    return std::filesystem::absolute(current / "assets" / "catalog");
+    return std::filesystem::absolute(current / "assets" / "library");
 }
 
 std::optional<TransitionDemoConfig> load_transition_demo(
-    const CatalogTransitionEntry& entry,
+    const LibraryTransitionEntry& entry,
     DiagnosticBag& diagnostics) {
     TransitionDemoConfig config;
     config.transition_id = entry.id;
@@ -90,7 +90,7 @@ std::optional<TransitionDemoConfig> load_transition_demo(
     config.preview_resolution_scale = 1.0f;
 
     if (config.file_prefix.empty()) {
-        diagnostics.add_error("catalog.demo_invalid", "Transition id is missing a file prefix.");
+        diagnostics.add_error("library.demo_invalid", "Transition id is missing a file prefix.");
         return std::nullopt;
     }
 
@@ -239,7 +239,7 @@ std::optional<renderer2d::SurfaceRGBA> render_scene_still(
 
 std::optional<std::reference_wrapper<const CachedSceneStill>> render_scene_still_cached(
     const std::string& scene_id,
-    const TachyonCatalog& catalog,
+    const TachyonLibrary& library,
     std::map<std::string, CachedSceneStill>& cache,
     std::ostream& err) {
     const auto cache_it = cache.find(scene_id);
@@ -248,13 +248,13 @@ std::optional<std::reference_wrapper<const CachedSceneStill>> render_scene_still
     }
 
     double fps = 30.0;
-    SceneSpec scene = catalog.instantiate_scene(scene_id);
+    SceneSpec scene = library.instantiate_scene(scene_id);
 
     // Keep the legacy image-based demo path only when the asset actually exists.
     // Legacy support for older demo asset names.
     if (scene.compositions.empty() && (scene_id == "scene_a" || scene_id == "scene_b")) {
         const std::string filename = scene_id + ".png";
-        const std::filesystem::path asset_path = catalog.root() / "assets" / filename;
+        const std::filesystem::path asset_path = library.root() / "assets" / filename;
         if (std::filesystem::exists(asset_path)) {
             AssetSpec asset;
             asset.id = scene_id + "_asset";
@@ -282,7 +282,7 @@ std::optional<std::reference_wrapper<const CachedSceneStill>> render_scene_still
     }
 
     if (scene.compositions.empty()) {
-        err << "unknown or empty catalog scene: " << scene_id << '\n';
+        err << "unknown or empty library scene: " << scene_id << '\n';
         return std::nullopt;
     }
 
@@ -327,8 +327,8 @@ renderer2d::SurfaceRGBA preview_surface(const renderer2d::SurfaceRGBA& src, floa
 
 RenderPlan make_output_plan(const std::filesystem::path& output_dir, const std::string& prefix) {
     RenderPlan plan;
-    plan.job_id = "catalog-demo";
-    plan.scene_ref = "assets/catalog";
+    plan.job_id = "library-demo";
+    plan.scene_ref = "assets/library";
     plan.composition_target = prefix;
     plan.composition.id = prefix;
     plan.composition.name = prefix;
@@ -460,28 +460,28 @@ bool render_transition_demo(
 
 }  // namespace
 
-bool run_catalog_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*/, renderer3d::Modifier3DRegistry& /*modifier_registry*/) {
-    const std::filesystem::path catalog_root = resolve_catalog_root(options.catalog_path);
-    TachyonCatalog catalog(catalog_root);
-    if (!catalog.ok()) {
-        print_diagnostics(catalog.diagnostics(), err);
+bool run_library_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*/, renderer3d::Modifier3DRegistry& /*modifier_registry*/) {
+    const std::filesystem::path library_root = resolve_library_root(options.library_path);
+    TachyonLibrary library(library_root);
+    if (!library.ok()) {
+        print_diagnostics(library.diagnostics(), err);
         return false;
     }
 
-    std::vector<CatalogTransitionEntry> transitions;
+    std::vector<LibraryTransitionEntry> transitions;
     if (options.transition_id.has_value()) {
-        const auto transition = catalog.find_transition(*options.transition_id);
+        const auto transition = library.find_transition(*options.transition_id);
         if (!transition.has_value()) {
             err << "transition not found: " << *options.transition_id << '\n';
             return false;
         }
         transitions.push_back(*transition);
     } else {
-        transitions = catalog.transitions();
+        transitions = library.transitions();
     }
 
     if (transitions.empty()) {
-        err << "no transitions available in " << catalog_root.generic_string() << '\n';
+        err << "no transitions available in " << library_root.generic_string() << '\n';
         return false;
     }
 
@@ -498,12 +498,12 @@ bool run_catalog_demo_command(const CliOptions& options, std::ostream& out, std:
             continue;
         }
 
-        const auto source_still = render_scene_still_cached(demo->source_scene_id, catalog, scene_still_cache, err);
+        const auto source_still = render_scene_still_cached(demo->source_scene_id, library, scene_still_cache, err);
         if (!source_still.has_value()) {
             all_ok = false;
             continue;
         }
-        const auto target_still = render_scene_still_cached(demo->target_scene_id, catalog, scene_still_cache, err);
+        const auto target_still = render_scene_still_cached(demo->target_scene_id, library, scene_still_cache, err);
         if (!target_still.has_value()) {
             all_ok = false;
             continue;

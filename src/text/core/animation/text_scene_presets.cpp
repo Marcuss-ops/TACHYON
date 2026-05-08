@@ -1,5 +1,5 @@
 #include "tachyon/text/animation/text_scene_presets.h"
-#include "tachyon/presets/text/text_animator_preset_registry.h"
+#include "tachyon/presets/text/text_registry.h"
 #include "tachyon/core/registry/parameter_bag.h"
 #include "tachyon/presets/background/background_builders.h"
 
@@ -46,34 +46,34 @@ namespace {
 
 TextAnimatorSpec make_default_fade_up() {
     ::tachyon::presets::TextManifest text_manifest;
-    ::tachyon::presets::TextAnimatorPresetRegistry registry(text_manifest);
+    ::tachyon::presets::TextRegistry registry(text_manifest);
     ::tachyon::registry::ParameterBag bag;
     bag.set("based_on", "characters_excluding_spaces");
     bag.set("stagger_delay", 0.03);
     bag.set("reveal_duration", 0.60);
-    auto animators = registry.create("tachyon.textanim.minimal_fade_up", bag);
+    auto animators = registry.create_animators("tachyon.textanim.minimal_fade_up", bag);
     return animators.empty() ? TextAnimatorSpec{} : animators[0];
 }
 
 TextAnimatorSpec make_default_blur_focus() {
     ::tachyon::presets::TextManifest text_manifest;
-    ::tachyon::presets::TextAnimatorPresetRegistry registry(text_manifest);
+    ::tachyon::presets::TextRegistry registry(text_manifest);
     ::tachyon::registry::ParameterBag bag;
     bag.set("based_on", "characters_excluding_spaces");
     bag.set("stagger_delay", 0.03);
     bag.set("reveal_duration", 0.55);
-    auto animators = registry.create("tachyon.textanim.blur_to_focus", bag);
+    auto animators = registry.create_animators("tachyon.textanim.blur_to_focus", bag);
     return animators.empty() ? TextAnimatorSpec{} : animators[0];
 }
 
 TextAnimatorSpec make_default_soft_scale() {
     ::tachyon::presets::TextManifest text_manifest;
-    ::tachyon::presets::TextAnimatorPresetRegistry registry(text_manifest);
+    ::tachyon::presets::TextRegistry registry(text_manifest);
     ::tachyon::registry::ParameterBag bag;
     bag.set("based_on", "characters_excluding_spaces");
     bag.set("stagger_delay", 0.03);
     bag.set("reveal_duration", 0.60);
-    auto animators = registry.create("tachyon.textanim.soft_scale_in", bag);
+    auto animators = registry.create_animators("tachyon.textanim.soft_scale_in", bag);
     return animators.empty() ? TextAnimatorSpec{} : animators[0];
 }
 

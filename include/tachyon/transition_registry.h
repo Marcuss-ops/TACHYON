@@ -29,7 +29,7 @@ public:
 
 /**
  * Single unified registry for all transitions.
- * Replaces TransitionDescriptorRegistry, old TransitionRegistry, and TransitionCatalog.
+ * Replaces TransitionDescriptorRegistry, old TransitionRegistry, and TachyonLibrary.
  */
 class TransitionRegistry {
 public:
@@ -50,7 +50,7 @@ public:
     const TransitionDescriptor* resolve(std::string_view id_or_alias) const;
 
     /// Get catalog entries derived from registered descriptors
-    std::vector<TransitionCatalogEntry> catalog_entries() const;
+    std::vector<TransitionLibraryEntry> library_entries() const;
 
     /// List all registered descriptor IDs
     std::vector<std::string> list_all_ids() const;

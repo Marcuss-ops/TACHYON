@@ -1,4 +1,4 @@
-#include "tachyon/core/catalog/catalog.h"
+#include "tachyon/core/library/library.h"
 #include "tachyon/presets/scene/common.h"
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include "tachyon/presets/transition/transition_preset_registry.h"
@@ -12,9 +12,8 @@
 namespace tachyon {
 namespace {
 
-std::filesystem::path default_catalog_root() {
-    // Moved from "studio/library" to "assets/catalog"
-    return std::filesystem::current_path() / "assets" / "catalog";
+std::filesystem::path default_library_root() {
+    return std::filesystem::current_path() / "assets" / "library";
 }
 
 std::string trim_copy(std::string value) {
@@ -26,7 +25,7 @@ std::string trim_copy(std::string value) {
     return value.substr(begin, end - begin + 1);
 }
 
-struct TransitionCatalogEntry {
+struct TransitionLibraryEntry {
     std::string id;
     std::string name;
     std::string description;
@@ -34,7 +33,7 @@ struct TransitionCatalogEntry {
     std::string thumb_file;
 };
 
-bool parse_transition_catalog_line(const std::string& line, TransitionCatalogEntry& entry) {
+bool parse_transition_library_line(const std::string& line, TransitionLibraryEntry& entry) {
     const std::string trimmed = trim_copy(line);
     if (trimmed.empty() || trimmed.front() == '#') {
         return false;
@@ -57,7 +56,7 @@ bool parse_transition_catalog_line(const std::string& line, TransitionCatalogEnt
     return !entry.id.empty() && !entry.shader_file.empty() && !entry.thumb_file.empty();
 }
 
-std::filesystem::path resolve_catalog_path(const std::filesystem::path& root, const std::string& value) {
+std::filesystem::path resolve_library_path(const std::filesystem::path& root, const std::string& value) {
     const std::filesystem::path path = value;
     return path.is_absolute() ? path : root / path;
 }
@@ -72,22 +71,21 @@ std::string transition_slug_from_id(const std::string& id) {
 
 }  // namespace
 
-TachyonCatalog::TachyonCatalog(std::filesystem::path root)
-    : m_root(root.empty() ? default_catalog_root() : std::move(root)) {
+TachyonLibrary::TachyonLibrary(std::filesystem::path root)
+    : m_root(root.empty() ? default_library_root() : std::move(root)) {
     reload();
 }
 
-void TachyonCatalog::reset() {
+void TachyonLibrary::reset() {
     m_ok = false;
     m_diagnostics = {};
     m_scenes.clear();
     m_transitions.clear();
 }
 
-bool TachyonCatalog::reload() {
+bool TachyonLibrary::reload() {
     reset();
 
-    // 1. Register Built-in C++ Presets (Modern approach)
     register_cpp_presets();
     register_transition_assets();
 
@@ -95,7 +93,7 @@ bool TachyonCatalog::reload() {
     return m_ok;
 }
 
-void TachyonCatalog::register_cpp_presets() {
+void TachyonLibrary::register_cpp_presets() {
     const auto& registry = presets::ScenePresetRegistry::instance();
     for (const auto& id : registry.list_ids()) {
         if (const auto* spec = registry.find(id)) {
@@ -109,50 +107,47 @@ void TachyonCatalog::register_cpp_presets() {
     }
 }
 
-void TachyonCatalog::register_transition_assets() {
+void TachyonLibrary::register_transition_assets() {
     const auto root = m_root / "transitions";
-    const auto catalog_path = root / "catalog.txt";
-    if (!std::filesystem::exists(catalog_path)) {
+    const auto library_path = root / "library.txt";
+    if (!std::filesystem::exists(library_path)) {
         return;
     }
 
-    std::ifstream catalog(catalog_path);
-    if (!catalog) {
+    std::ifstream library_file(library_path);
+    if (!library_file) {
+        m_diagnostics.add_error("io", "Failed to open library listing at " + library_path.string());
         return;
     }
 
     const auto output_dir = root / "output";
     std::string line;
-    while (std::getline(catalog, line)) {
-        TransitionCatalogEntry row;
-        if (!parse_transition_catalog_line(line, row)) {
+    while (std::getline(library_file, line)) {
+        TransitionLibraryEntry row;
+        if (!parse_transition_library_line(line, row)) {
             continue;
         }
 
-        const auto shader_path = resolve_catalog_path(root, row.shader_file);
-        const auto thumb_path = resolve_catalog_path(root, row.thumb_file);
+        const auto shader_path = resolve_library_path(root, row.shader_file);
+        const auto thumb_path = resolve_library_path(root, row.thumb_file);
 
-        CatalogTransitionEntry transition;
+        LibraryTransitionEntry transition;
         transition.id = row.id;
         transition.pack_id = "public.transitions";
-        transition.manifest_path = catalog_path;
+        transition.manifest_path = library_path;
         transition.demo_path = output_dir / (transition_slug_from_id(row.id) + ".mp4");
         transition.output_dir = output_dir;
         transition.shader_path = shader_path;
         transition.thumb_path = thumb_path;
 
-        // Default metadata
         transition.name = row.name.empty() ? transition_slug_from_id(row.id) : row.name;
         transition.description = row.description;
-        transition.duration_seconds = 0.8; // Fallback default
+        transition.duration_seconds = 0.8;
 
-        // Override from Registry if available (The Source of Truth)
         presets::TransitionPresetRegistry preset_reg;
         if (const auto* reg_spec = preset_reg.find(transition.id)) {
             transition.name = reg_spec->metadata.display_name;
             transition.description = reg_spec->metadata.description;
-            
-            // Get default duration from the registry factory
             auto default_spec = reg_spec->factory({});
             transition.duration_seconds = default_spec.duration;
         }
@@ -160,10 +155,8 @@ void TachyonCatalog::register_transition_assets() {
         m_transitions.push_back(std::move(transition));
     }
 
-    // 2. Add from Registry (Modern Manifest Source of Truth)
     presets::TransitionPresetRegistry preset_reg;
     for (const auto& id : preset_reg.list_ids()) {
-        // Skip if already added from catalog.txt
         if (std::find_if(m_transitions.begin(), m_transitions.end(), [&](const auto& e) { return e.id == id; }) != m_transitions.end()) {
             continue;
         }
@@ -171,7 +164,7 @@ void TachyonCatalog::register_transition_assets() {
         if (const auto* spec = preset_reg.find(id)) {
             auto default_spec = spec->factory({});
 
-            CatalogTransitionEntry transition;
+            LibraryTransitionEntry transition;
             transition.id = spec->id;
             transition.name = spec->metadata.display_name;
             transition.description = spec->metadata.description;
@@ -187,8 +180,8 @@ void TachyonCatalog::register_transition_assets() {
     }
 }
 
-std::optional<CatalogSceneEntry> TachyonCatalog::find_scene(const std::string& id) const {
-    const auto it = std::find_if(m_scenes.begin(), m_scenes.end(), [&](const CatalogSceneEntry& entry) {
+std::optional<LibrarySceneEntry> TachyonLibrary::find_scene(const std::string& id) const {
+    const auto it = std::find_if(m_scenes.begin(), m_scenes.end(), [&](const LibrarySceneEntry& entry) {
         return entry.id == id;
     });
     if (it == m_scenes.end()) {
@@ -197,8 +190,8 @@ std::optional<CatalogSceneEntry> TachyonCatalog::find_scene(const std::string& i
     return *it;
 }
 
-std::optional<CatalogTransitionEntry> TachyonCatalog::find_transition(const std::string& id) const {
-    const auto it = std::find_if(m_transitions.begin(), m_transitions.end(), [&](const CatalogTransitionEntry& entry) {
+std::optional<LibraryTransitionEntry> TachyonLibrary::find_transition(const std::string& id) const {
+    const auto it = std::find_if(m_transitions.begin(), m_transitions.end(), [&](const LibraryTransitionEntry& entry) {
         return entry.id == id;
     });
     if (it == m_transitions.end()) {
@@ -207,7 +200,7 @@ std::optional<CatalogTransitionEntry> TachyonCatalog::find_transition(const std:
     return *it;
 }
 
-SceneSpec TachyonCatalog::instantiate_scene(const std::string& id) const {
+SceneSpec TachyonLibrary::instantiate_scene(const std::string& id) const {
     auto entry = find_scene(id);
     if (!entry) return {};
 
@@ -217,7 +210,7 @@ SceneSpec TachyonCatalog::instantiate_scene(const std::string& id) const {
     return {};
 }
 
-EffectSpec TachyonCatalog::build_transition_effect(
+EffectSpec TachyonLibrary::build_transition_effect(
     const std::string& transition_id,
     const std::string& from_layer_id,
     const std::string& to_layer_id,
@@ -237,17 +230,14 @@ EffectSpec TachyonCatalog::build_transition_effect(
     effect.strings["from_layer_id"] = from_layer_id;
     effect.strings["transition_to_layer_id"] = to_layer_id;
 
-    // Fallback logic for missing shaders
     if (std::filesystem::exists(transition->shader_path)) {
         effect.strings["shader_path"] = transition->shader_path.generic_string();
     } else {
-        // Log warning or diagnostic
-        // Use default crossfade shader as fallback if available
         const auto fallback_shader = m_root / "transitions" / "shaders" / "crossfade.glsl";
         if (std::filesystem::exists(fallback_shader)) {
             effect.strings["shader_path"] = fallback_shader.generic_string();
         } else {
-            effect.enabled = false; // Disable if even fallback is missing
+            effect.enabled = false;
         }
     }
 

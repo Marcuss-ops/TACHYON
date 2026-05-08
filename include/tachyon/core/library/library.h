@@ -11,14 +11,14 @@
 
 namespace tachyon {
 
-struct CatalogSceneEntry {
+struct LibrarySceneEntry {
     std::string id;
     std::string name;
     std::filesystem::path path;
     bool is_cpp_preset{false};
 };
 
-struct CatalogTransitionEntry {
+struct LibraryTransitionEntry {
     std::string id;
     std::string name;
     std::string pack_id;
@@ -33,11 +33,10 @@ struct CatalogTransitionEntry {
 
 /**
  * @brief Manages the library of assets, scenes, and transitions available to the engine.
- * Formerly known as StudioLibrary.
  */
-class TachyonCatalog {
+class TachyonLibrary {
 public:
-    explicit TachyonCatalog(std::filesystem::path root = {});
+    explicit TachyonLibrary(std::filesystem::path root = {});
 
     bool reload();
 
@@ -45,12 +44,12 @@ public:
     [[nodiscard]] const DiagnosticBag& diagnostics() const noexcept { return m_diagnostics; }
     [[nodiscard]] const std::filesystem::path& root() const noexcept { return m_root; }
 
-    [[nodiscard]] const std::vector<CatalogSceneEntry>& scenes() const noexcept { return m_scenes; }
-    [[nodiscard]] const std::vector<CatalogTransitionEntry>& transitions() const noexcept { return m_transitions; }
+    [[nodiscard]] const std::vector<LibrarySceneEntry>& scenes() const noexcept { return m_scenes; }
+    [[nodiscard]] const std::vector<LibraryTransitionEntry>& transitions() const noexcept { return m_transitions; }
 
-    [[nodiscard]] std::optional<CatalogSceneEntry> find_scene(const std::string& id) const;
+    [[nodiscard]] std::optional<LibrarySceneEntry> find_scene(const std::string& id) const;
 
-    [[nodiscard]] std::optional<CatalogTransitionEntry> find_transition(const std::string& id) const;
+    [[nodiscard]] std::optional<LibraryTransitionEntry> find_transition(const std::string& id) const;
 
     [[nodiscard]] SceneSpec instantiate_scene(const std::string& id) const;
 
@@ -68,8 +67,8 @@ private:
     std::filesystem::path m_root;
     bool m_ok{false};
     DiagnosticBag m_diagnostics;
-    std::vector<CatalogSceneEntry> m_scenes;
-    std::vector<CatalogTransitionEntry> m_transitions;
+    std::vector<LibrarySceneEntry> m_scenes;
+    std::vector<LibraryTransitionEntry> m_transitions;
 };
 
 }  // namespace tachyon

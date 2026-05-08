@@ -3,14 +3,15 @@
 
 namespace tachyon::presets {
 
-EffectKindRegistry::EffectKindRegistry(const renderer2d::EffectManifest& manifest) {
-    // This will be refactored to use presets::EffectManifest later
+EffectKindRegistry::EffectKindRegistry(const EffectManifest& manifest) {
     load_from_manifest(manifest);
 }
 
-// Dummy implementation until we fully refactor renderer2d::EffectManifest
-void EffectKindRegistry::load_from_manifest(const renderer2d::EffectManifest& manifest) {
-    // TODO: Bridge with renderer2d::EffectManifest
+void EffectKindRegistry::load_from_manifest(const EffectManifest& manifest) {
+    auto specs = manifest.generate_kind_specs();
+    for (auto& spec : specs) {
+        register_spec(std::move(spec));
+    }
 }
 
 } // namespace tachyon::presets

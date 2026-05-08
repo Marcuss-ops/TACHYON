@@ -1,4 +1,5 @@
 #include "tachyon/runtime/execution/session/render_session.h"
+#include "tachyon/presets/effects/effect_manifest.h"
 #include "tachyon/runtime/execution/frames/frame_executor.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/cache/frame_cache.h"
@@ -109,7 +110,8 @@ void configure_render_context(
     runtime::RuntimeSurfacePool* surface_pool,
     const renderer2d::EffectRegistry& effect_registry,
     const renderer3d::Modifier3DRegistry& modifier_registry,
-    const TransitionRegistry& transition_registry) {
+    const TransitionRegistry& transition_registry,
+    const presets::TextRegistry* text_registry) {
     workspace.context.policy = workspace.effective_plan.render_plan.quality_policy;
     workspace.context.renderer2d.font_registry = ::tachyon::renderer2d::get_default_font_registry();
 
@@ -126,6 +128,7 @@ void configure_render_context(
     workspace.context.renderer2d.effects = renderer2d::create_effect_host(effect_registry);
     workspace.context.renderer2d.modifier_registry = &modifier_registry;
     workspace.context.renderer2d.transition_registry = &transition_registry;
+    workspace.context.renderer2d.text_registry = text_registry;
 }
 
 bool begin_output_sink(
@@ -241,7 +244,8 @@ void finalize_session_metrics(
 
 
 RenderSession::RenderSession() {
-    renderer2d::register_builtin_effects(m_effect_registry, m_transition_registry);
+    presets::EffectManifest effect_manifest;
+    renderer2d::register_builtin_effects(m_effect_registry, effect_manifest, m_transition_registry);
     register_builtin_transitions(m_transition_registry);
 }
 
@@ -272,8 +276,8 @@ RenderSessionResult RenderSession::render(
     const auto surface_count = surface_policy.resolve(w, h, worker_count);
     m_surface_pool = std::make_unique<runtime::RuntimeSurfacePool>(w, h, surface_count);
 
-    const TransitionRegistry& transition_registry = m_transition_registry_override ? *m_transition_registry_override : m_transition_registry;
-    configure_render_context(workspace, m_profiler, m_surface_pool.get(), m_effect_registry, m_modifier_registry, transition_registry);
+    const TransitionRegistry& transition_registry = m_transition_registry_ptr ? *m_transition_registry_ptr : m_transition_registry;
+    configure_render_context(workspace, m_profiler, m_surface_pool.get(), m_effect_registry, m_modifier_registry, transition_registry, m_text_registry_ptr);
 
     workspace.sink = output::create_frame_output_sink(workspace.effective_plan.render_plan);
     

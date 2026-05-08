@@ -25,7 +25,7 @@ bool run_doctor_command(const CliOptions& options, std::ostream& out, std::ostre
 bool run_output_presets_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry);
 bool run_thumb_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry);
 bool run_preview_internal(const CliOptions& options, std::ostream& out, std::ostream& err, const char* label, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry);
-bool run_catalog_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry);
+bool run_library_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry);
 bool run_transition_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry);
 
 } // namespace tachyon

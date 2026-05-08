@@ -89,10 +89,10 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
         if (arg == "--catalog" || arg == "--library") {
             const std::string value = require_argument(args, index);
             if (value.empty()) {
-                result.diagnostics.add_error("cli.catalog_missing", "missing value for " + arg);
+                result.diagnostics.add_error("cli.library_missing", "missing value for " + arg);
                 return result;
             }
-            options.catalog_path = value;
+            options.library_path = value;
             continue;
         }
         if (arg == "--transition") {

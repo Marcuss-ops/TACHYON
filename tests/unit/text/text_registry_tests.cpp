@@ -1,4 +1,4 @@
-#include "tachyon/presets/text/text_animator_preset_registry.h"
+#include "tachyon/presets/text/text_registry.h"
 #include "tachyon/core/registry/parameter_bag.h"
 #include <algorithm>
 #include <cassert>
@@ -9,7 +9,7 @@
 namespace {
 bool test_registry_is_not_empty() {
     tachyon::presets::TextManifest text_manifest;
-    tachyon::presets::TextAnimatorPresetRegistry registry(text_manifest);
+    tachyon::presets::TextRegistry registry(text_manifest);
     if (registry.list_ids().empty()) {
         std::cerr << "Error: Registry is empty" << std::endl;
         return false;
@@ -19,16 +19,7 @@ bool test_registry_is_not_empty() {
 
 bool test_common_presets_available() {
     tachyon::presets::TextManifest text_manifest;
-    tachyon::presets::TextAnimatorPresetRegistry registry(text_manifest);
-    if (registry.list_ids().empty()) {
-        std::cerr << "Error: Registry is empty" << std::endl;
-        return false;
-    }
-    return true;
-}
-
-bool test_common_presets_available() {
-    tachyon::presets::TextAnimatorPresetRegistry registry;
+    tachyon::presets::TextRegistry registry(text_manifest);
     std::vector<std::string> ids = {
         "tachyon.textanim.fade_in",
         "tachyon.textanim.slide_in",
@@ -56,13 +47,13 @@ bool test_common_presets_available() {
 
 bool test_create_preset_returns_valid_spec() {
     tachyon::presets::TextManifest text_manifest;
-    tachyon::presets::TextAnimatorPresetRegistry registry(text_manifest);
+    tachyon::presets::TextRegistry registry(text_manifest);
     tachyon::registry::ParameterBag params;
     params.set("selector_based_on", std::string("characters_excluding_spaces"));
     params.set("char_delay", 0.03);
     params.set("duration", 0.7);
 
-    auto specs = registry.create("tachyon.textanim.fade_in", params);
+    auto specs = registry.create_animators("tachyon.textanim.fade_in", params);
     if (specs.empty()) {
         std::cerr << "Error: Create tachyon.textanim.fade_in returned empty vector" << std::endl;
         return false;
@@ -84,7 +75,7 @@ bool test_create_preset_returns_valid_spec() {
 
 bool test_typewriter_family_extended() {
     tachyon::presets::TextManifest text_manifest;
-    tachyon::presets::TextAnimatorPresetRegistry registry(text_manifest);
+    tachyon::presets::TextRegistry registry(text_manifest);
     std::vector<std::string> ids = {
         "tachyon.textanim.typewriter.cursor",
         "tachyon.textanim.typewriter.soft",
@@ -94,7 +85,7 @@ bool test_typewriter_family_extended() {
 
     for (const auto& id : ids) {
         tachyon::registry::ParameterBag params;
-        auto specs = registry.create(id, params);
+        auto specs = registry.create_animators(id, params);
         if (specs.empty()) {
             std::cerr << "Error: Typewriter family preset " << id << " returned empty vector" << std::endl;
             return false;
@@ -106,13 +97,13 @@ bool test_typewriter_family_extended() {
 
 bool test_composite_preset_returns_multiple_specs() {
     tachyon::presets::TextManifest text_manifest;
-    tachyon::presets::TextAnimatorPresetRegistry registry(text_manifest);
+    tachyon::presets::TextRegistry registry(text_manifest);
     tachyon::registry::ParameterBag params;
     params.set("selector_based_on", std::string("characters_excluding_spaces"));
     params.set("char_delay", 0.03);
     params.set("duration", 0.7);
 
-    auto specs = registry.create("tachyon.textanim.fade_up", params);
+    auto specs = registry.create_animators("tachyon.textanim.fade_up", params);
     if (specs.size() != 3) {
         std::cerr << "Error: Composite tachyon.textanim.fade_up should return 3 specs, got " << specs.size() << std::endl;
         return false;
@@ -122,9 +113,9 @@ bool test_composite_preset_returns_multiple_specs() {
 
 bool test_unknown_preset_returns_empty() {
     tachyon::presets::TextManifest text_manifest;
-    tachyon::presets::TextAnimatorPresetRegistry registry(text_manifest);
+    tachyon::presets::TextRegistry registry(text_manifest);
     tachyon::registry::ParameterBag params;
-    auto specs = registry.create("tachyon.textanim.nonexistent_preset", params);
+    auto specs = registry.create_animators("tachyon.textanim.nonexistent_preset", params);
     if (!specs.empty()) {
         std::cerr << "Error: Unknown preset should return no specs, got " << specs.size() << std::endl;
         return false;
@@ -134,10 +125,10 @@ bool test_unknown_preset_returns_empty() {
 
 } // namespace
 
-bool run_text_animator_preset_registry_tests() {
+bool run_text_registry_tests() {
     bool success = true;
 
-    std::cout << "Running TextAnimatorPresetRegistry tests..." << std::endl;
+    std::cout << "Running TextRegistry tests..." << std::endl;
 
     if (!test_registry_is_not_empty()) success = false;
     if (!test_common_presets_available()) success = false;
@@ -147,9 +138,9 @@ bool run_text_animator_preset_registry_tests() {
     if (!test_unknown_preset_returns_empty()) success = false;
 
     if (success) {
-        std::cout << "TextAnimatorPresetRegistry tests passed!" << std::endl;
+        std::cout << "TextRegistry tests passed!" << std::endl;
     } else {
-        std::cout << "TextAnimatorPresetRegistry tests FAILED!" << std::endl;
+        std::cout << "TextRegistry tests FAILED!" << std::endl;
     }
 
     return success;

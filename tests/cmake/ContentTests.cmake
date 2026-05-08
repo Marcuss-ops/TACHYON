@@ -4,17 +4,17 @@
 # ---------------------------------------------------------
 add_executable(TachyonContentTests
     unit/test_main_content.cpp
-    unit/core/catalog/catalog_tests.cpp
-    unit/core/catalog/transition_manifest_audit_tests.cpp
-    unit/core/catalog/transition_descriptor_alignment_tests.cpp
-    unit/core/catalog/missing_transition_fallback_tests.cpp
-    unit/core/catalog/preview_dev_workflow_tests.cpp
+    unit/core/library/library_tests.cpp
+    unit/core/library/transition_manifest_audit_tests.cpp
+    unit/core/library/transition_descriptor_alignment_tests.cpp
+    unit/core/library/missing_transition_fallback_tests.cpp
+    unit/core/library/preview_dev_workflow_tests.cpp
     unit/core/spec/layerspec_schema_tests.cpp
     unit/core/spec/scene_validator_normalization_tests.cpp
     unit/text/glyph_cache_tests.cpp
     unit/text/text_tests.cpp
     unit/text/text_preset_tests.cpp
-    unit/text/text_animator_preset_registry_tests.cpp
+    unit/text/text_registry_tests.cpp
     unit/presets/text_domain_boundary_tests.cpp
     unit/audio/test_audio_pitch_correct.cpp
     unit/audio/test_audio_trim.cpp
@@ -40,7 +40,7 @@ target_link_libraries(TachyonContentTests
         TachyonScene
         TachyonText
         TachyonAudio
-        TachyonCatalog
+        TachyonLibrary
         TachyonRenderer2D
         TachyonPlatform
         TachyonRuntime

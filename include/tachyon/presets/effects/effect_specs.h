@@ -37,7 +37,7 @@ struct EffectPresetSpec {
      * @brief Factory function to create an EffectSpec from parameters.
      * The resulting EffectSpec points to an effect kind and provides parameters.
      */
-    std::function<tachyon::EffectSpec(const registry::ParameterBag&)> factory;
+    std::function<::tachyon::EffectSpec(const registry::ParameterBag&)> factory;
 };
 
 } // namespace tachyon::presets

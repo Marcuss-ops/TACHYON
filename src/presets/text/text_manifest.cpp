@@ -1,11 +1,12 @@
 #include "tachyon/presets/text/text_manifest.h"
-#include "tachyon/presets/text/text_layer_preset_registry.h"
-#include "tachyon/presets/text/text_animator_preset_registry.h"
+#include "tachyon/presets/text/text_registry.h"
 #include "tachyon/text/animation/text_presets.h"
 #include "tachyon/text/core/TextLayerSpec.h"
 #include <vector>
 
 namespace tachyon::presets {
+
+using namespace tachyon;
 
 namespace {
 

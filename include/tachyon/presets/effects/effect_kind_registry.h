@@ -6,9 +6,9 @@
 #include <string_view>
 #include <vector>
 
-namespace tachyon::renderer2d { class EffectManifest; }
-
 namespace tachyon::presets {
+
+class EffectManifest;
 
 /**
  * @brief Registry for effect kinds (low-level rendering types).
@@ -21,13 +21,13 @@ public:
     /**
      * @brief Construct with EffectManifest to load kinds from the canonical source.
      */
-    explicit EffectKindRegistry(const renderer2d::EffectManifest& manifest);
+    explicit EffectKindRegistry(const EffectManifest& manifest);
     ~EffectKindRegistry() = default;
 
     /**
      * @brief Load kinds from the specified manifest.
      */
-    void load_from_manifest(const renderer2d::EffectManifest& manifest);
+    void load_from_manifest(const EffectManifest& manifest);
 };
 
 } // namespace tachyon::presets

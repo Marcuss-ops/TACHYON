@@ -37,7 +37,7 @@ namespace media {
     class MediaManager;
 }
 namespace renderer3d { class Modifier3DRegistry; }
-namespace presets { class TextAnimatorPresetRegistry; }
+namespace presets { class TextRegistry; }
 }
 
 namespace tachyon::renderer2d {
@@ -116,7 +116,7 @@ struct RenderContext2D {
     const std::vector<::tachyon::text::SubtitleEntry>* subtitle_entries = nullptr;
     const ::tachyon::TransitionRegistry* transition_registry = nullptr;
     const ::tachyon::renderer3d::Modifier3DRegistry* modifier_registry = nullptr;
-    const ::tachyon::presets::TextAnimatorPresetRegistry* text_animator_registry = nullptr;
+    const ::tachyon::presets::TextRegistry* text_registry = nullptr;
     ::tachyon::media::MediaManager* media_manager = nullptr;
     std::shared_ptr<::tachyon::media::AssetResolver> asset_resolver;
 

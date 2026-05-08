@@ -67,15 +67,6 @@ EffectDescriptor::Factory make_effect_factory() {
     };
 }
 
-/**
- * @brief Forward declaration of EffectRegistry to avoid circular include.
- */
-class EffectRegistry;
-
-/**
- * @brief Register a builtin effect from a declarative spec.
- * Implementation moved to avoid circular dependencies.
- */
-TACHYON_API void register_effect_from_spec(EffectRegistry& registry, const EffectBuiltinSpec& spec);
+// register_effect_from_spec removed - use register_builtin_effects bridge instead.
 
 } // namespace tachyon::renderer2d

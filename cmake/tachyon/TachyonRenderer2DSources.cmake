@@ -72,7 +72,6 @@ set(TachyonRenderer2DEffectsSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_sampling_utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_stylize_table.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_transition_table.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/effect_manifest.cpp
 )
 
 set(TachyonRenderer2DEvaluatedCompositionSources

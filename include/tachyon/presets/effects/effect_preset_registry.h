@@ -6,6 +6,8 @@
 #include <string_view>
 #include <vector>
 
+namespace tachyon::presets {
+
 class EffectManifest;
 
 /**
@@ -33,7 +35,7 @@ public:
     /**
      * @brief Creates an EffectSpec instance from the specified preset.
      */
-    tachyon::EffectSpec create(std::string_view id, const registry::ParameterBag& params) const;
+    ::tachyon::EffectSpec create(std::string_view id, const registry::ParameterBag& params) const;
 };
 
 } // namespace tachyon::presets

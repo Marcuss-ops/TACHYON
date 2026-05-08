@@ -10,7 +10,7 @@
 #include <functional>
 
 namespace tachyon::presets {
-class TextAnimatorPresetRegistry;
+class TextRegistry;
 }
 
 namespace tachyon::scene {
@@ -33,7 +33,7 @@ public:
     TextBuilder& animators(std::vector<TextAnimatorSpec> anims);
     TextBuilder& highlight(const TextHighlightSpec& hl);
     TextBuilder& highlights(std::vector<TextHighlightSpec> hls);
-    TextBuilder& animation_preset(const std::string& id, const presets::TextAnimatorPresetRegistry* registry = nullptr);
+    TextBuilder& animation_preset(const std::string& id, const presets::TextRegistry* registry = nullptr);
 
     LayerBuilder& done();
 };

@@ -5,6 +5,9 @@
 
 namespace tachyon::presets::scene {
 
+using namespace tachyon;
+using namespace tachyon::scene;
+
 SceneSpec build_scene_a() {
     presets::EffectPresetRegistry effects;
 
