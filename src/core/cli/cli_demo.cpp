@@ -11,6 +11,9 @@
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/execution/session/render_session.h"
 #include "tachyon/transition_registry.h"
+#include "tachyon/renderer2d/effects/core/transitions/basic_transitions.h"
+#include "tachyon/renderer2d/effects/core/transitions/artistic_transitions.h"
+#include "tachyon/renderer2d/effects/core/transitions/light_leak_transitions.h"
 #include "tachyon/core/library/library.h"
 #include "tachyon/media/management/media_manager.h"
 #include "cli_internal.h"
@@ -123,6 +126,7 @@ std::filesystem::path resolve_library_root(const std::filesystem::path& requeste
 }
 
 std::optional<TransitionDemoConfig> load_transition_demo(
+    const CliOptions& options,
     const LibraryTransitionEntry& entry,
     DiagnosticBag& diagnostics) {
     TransitionDemoConfig config;
@@ -134,14 +138,14 @@ std::optional<TransitionDemoConfig> load_transition_demo(
     constexpr std::string_view prefix = "tachyon.transition.";
     config.file_prefix = entry.id.rfind(prefix, 0) == 0 ? entry.id.substr(prefix.size()) : entry.id;
     // Default to a short preview sequence so transition demos complete quickly.
-    config.output_format = "png";
-    config.duration_seconds = 0.1;
-    config.lead_in_seconds = 0.1;
-    config.lead_out_seconds = 0.1;
+    config.output_format = options.output_format.empty() ? "png" : options.output_format;
+    config.duration_seconds = 0.5;
+    config.lead_in_seconds = 0.5;
+    config.lead_out_seconds = 0.5;
     config.progress_start = 0.0;
     config.progress_end = 1.0;
-    config.preview_frame_count = 1;
-    config.preview_resolution_scale = 0.1f;
+    config.preview_frame_count = 30;
+    config.preview_resolution_scale = 1.0f;
 
     if (config.file_prefix.empty()) {
         diagnostics.add_error("library.demo_invalid", "Transition id is missing a file prefix.");
@@ -205,6 +209,13 @@ std::optional<renderer2d::SurfaceRGBA> render_scene_still(
     const std::filesystem::path temp_output = make_temp_still_path(scene_path.stem().string());
     TransitionRegistry transition_registry;
     register_builtin_transitions(transition_registry);
+    for (auto* desc : transition_registry.list_all()) {
+        if (!desc) continue;
+        err << "[library-demo] resolving implementations for: " << desc->id << std::endl;
+        renderer2d::resolve_basic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
+        renderer2d::resolve_artistic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
+        renderer2d::resolve_light_leak_implementations(const_cast<TransitionDescriptor&>(*desc));
+    }
     renderer3d::Modifier3DRegistry modifier_registry;
     presets::TextManifest text_manifest;
     presets::TextRegistry text_registry(text_manifest);
@@ -258,13 +269,20 @@ std::optional<renderer2d::SurfaceRGBA> render_scene_still(
     const std::filesystem::path temp_output = make_temp_still_path(label);
     TransitionRegistry transition_registry;
     register_builtin_transitions(transition_registry);
+    for (auto* desc : transition_registry.list_all()) {
+        renderer2d::resolve_basic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
+        renderer2d::resolve_artistic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
+        renderer2d::resolve_light_leak_implementations(const_cast<TransitionDescriptor&>(*desc));
+    }
     renderer3d::Modifier3DRegistry modifier_registry;
     presets::TextManifest text_manifest;
     presets::TextRegistry text_registry(text_manifest);
+    err << "[library-demo] render_still start: " << label << " to " << temp_output.string() << std::endl;
     if (!NativeRenderer::render_still(scene, composition.id, 0, temp_output, transition_registry, modifier_registry, text_registry)) {
         err << "scene rendered no frames: " << label << '\n';
         return std::nullopt;
     }
+    err << "[library-demo] render_still done: " << label << std::endl;
     const std::filesystem::path frame_path = temp_output.parent_path() / (temp_output.stem().string() + "_000001.png");
     const auto loaded = load_rendered_still(frame_path, err);
     std::error_code ec;
@@ -409,6 +427,13 @@ bool render_transition_demo(
     renderer2d::EffectRegistry registry;
     TransitionRegistry transition_registry;
     register_builtin_transitions(transition_registry);
+    for (auto* desc : transition_registry.list_all()) {
+        if (!desc) continue;
+        err << "[library-demo] resolving implementations for: " << desc->id << std::endl;
+        renderer2d::resolve_basic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
+        renderer2d::resolve_artistic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
+        renderer2d::resolve_light_leak_implementations(const_cast<TransitionDescriptor&>(*desc));
+    }
     presets::EffectManifest effect_manifest;
     renderer2d::register_builtin_effects(registry, effect_manifest, transition_registry);
     auto host = renderer2d::create_effect_host(registry);
@@ -540,7 +565,7 @@ bool run_library_demo_command(const CliOptions& options, std::ostream& out, std:
     bool all_ok = true;
     for (const auto& transition : transitions) {
         DiagnosticBag demo_diagnostics;
-        const auto demo = load_transition_demo(transition, demo_diagnostics);
+        const auto demo = load_transition_demo(options, transition, demo_diagnostics);
         if (!demo.has_value()) {
             print_diagnostics(demo_diagnostics, err);
             all_ok = false;

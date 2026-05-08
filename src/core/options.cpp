@@ -205,6 +205,15 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
             options.quality = value;
             continue;
         }
+        if (arg == "--format") {
+            const std::string value = require_argument(args, index);
+            if (value.empty()) {
+                result.diagnostics.add_error("cli.format_missing", "missing value for --format");
+                return result;
+            }
+            options.output_format = value;
+            continue;
+        }
         if (arg == "--json") {
             options.json_output = true;
             continue;

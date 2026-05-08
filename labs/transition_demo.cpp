@@ -19,14 +19,20 @@ extern "C" __declspec(dllexport) void build_scene(tachyon::SceneSpec& scene) {
         .fps(30)
         // Scena A (Red)
         .layer("scena_a_bg", [](LayerBuilder& l) {
+            const char* env_id = std::getenv("TACHYON_TRANSITION_ID");
+            std::string trans_id = env_id ? env_id : "slide";
+
             l.solid("red_bg")
              .color({204, 25, 25, 255})
              .in(0).out(3.0);
-            l.exit().id("slide").duration(1.0).done();
+            l.exit().id(trans_id).duration(1.0).done();
         })
         .layer("scena_a_text", [](LayerBuilder& l) {
+            const char* env_id = std::getenv("TACHYON_TRANSITION_ID");
+            std::string trans_id = env_id ? env_id : "slide";
+
             auto spec = tachyon::presets::text::headline("SCENA A")
-                .font("Default")
+                .font("SFPro")
                 .font_size(120)
                 .color({255, 255, 255, 255})
                 .center()
@@ -36,18 +42,24 @@ extern "C" __declspec(dllexport) void build_scene(tachyon::SceneSpec& scene) {
             spec.id = "scena_a_text";
             l.from_spec(spec);
             l.in(0).out(3.0);
-            l.exit().id("slide").duration(1.0).done();
+            l.exit().id(trans_id).duration(1.0).done();
         })
         // Scena B (Blue)
         .layer("scena_b_bg", [](LayerBuilder& l) {
+            const char* env_id = std::getenv("TACHYON_TRANSITION_ID");
+            std::string trans_id = env_id ? env_id : "slide";
+
             l.solid("blue_bg")
              .color({25, 25, 204, 255})
              .in(2.0).out(5.0);
-            l.enter().id("slide").duration(1.0).done();
+            l.enter().id(trans_id).duration(1.0).done();
         })
         .layer("scena_b_text", [](LayerBuilder& l) {
+            const char* env_id = std::getenv("TACHYON_TRANSITION_ID");
+            std::string trans_id = env_id ? env_id : "slide";
+
             auto spec = tachyon::presets::text::headline("SCENA B")
-                .font("Default")
+                .font("SFPro")
                 .font_size(120)
                 .color({255, 255, 255, 255})
                 .center()
@@ -57,7 +69,7 @@ extern "C" __declspec(dllexport) void build_scene(tachyon::SceneSpec& scene) {
             spec.id = "scena_b_text";
             l.from_spec(spec);
             l.in(2.0).out(5.0);
-            l.enter().id("slide").duration(1.0).done();
+            l.enter().id(trans_id).duration(1.0).done();
         })
         .build();
 

@@ -3,6 +3,14 @@
 #include "tachyon/output/output_utils.h"
 #include <system_error>
 
+#ifdef _WIN32
+#include <process.h>
+#define GETPID _getpid
+#else
+#include <unistd.h>
+#define GETPID getpid
+#endif
+
 namespace tachyon::output {
 
 // ---------------------------------------------------------------------------
@@ -12,7 +20,18 @@ namespace tachyon::output {
 AtomicOutputGuard::AtomicOutputGuard(std::filesystem::path final_destination)
     : m_final_path(std::move(final_destination)) {
     if (!m_final_path.empty()) {
-        m_temp_path = m_final_path.string() + ".tmp";
+        std::error_code ec;
+        auto temp_root = std::filesystem::temp_directory_path(ec);
+        if (ec) {
+            temp_root = m_final_path.parent_path();
+        } else {
+            temp_root /= "tachyon";
+            std::filesystem::create_directories(temp_root, ec);
+        }
+
+        std::string filename = m_final_path.filename().string();
+        filename += "." + std::to_string(GETPID()) + ".tmp";
+        m_temp_path = temp_root / filename;
     }
 }
 
@@ -121,8 +140,18 @@ AudioExportPlan plan_audio_export(const RenderPlan& plan, bool is_video_output) 
     const std::filesystem::path final_p(final_dest);
 
     if (is_video_output) {
-        // Temp audio for muxing
-        result.path = final_p.parent_path() / (final_p.stem().string() + ".temp.wav");
+        // Temp audio for muxing in system temp directory
+        std::error_code ec;
+        auto temp_root = std::filesystem::temp_directory_path(ec);
+        if (ec) {
+            temp_root = final_p.parent_path();
+        } else {
+            temp_root /= "tachyon";
+            std::filesystem::create_directories(temp_root, ec);
+        }
+
+        std::string filename = final_p.stem().string() + "." + std::to_string(GETPID()) + ".temp.wav";
+        result.path = temp_root / filename;
         result.is_temporary = true;
     } else {
         // Sidecar audio for image sequence

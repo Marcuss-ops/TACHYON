@@ -10,6 +10,9 @@
 #include "tachyon/presets/text/text_manifest.h"
 #include "tachyon/transition_registry.h"
 #include "tachyon/core/transition/transition_descriptor.h"
+#include "tachyon/renderer2d/effects/core/transitions/basic_transitions.h"
+#include "tachyon/renderer2d/effects/core/transitions/artistic_transitions.h"
+#include "tachyon/renderer2d/effects/core/transitions/light_leak_transitions.h"
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -162,6 +165,11 @@ RenderSessionResult NativeRenderer::render(
     const NativeRenderOptions& options) {
     TransitionRegistry transition_registry;
     register_builtin_transitions(transition_registry);
+    for (auto* desc : transition_registry.list_all()) {
+        renderer2d::resolve_basic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
+        renderer2d::resolve_artistic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
+        renderer2d::resolve_light_leak_implementations(const_cast<TransitionDescriptor&>(*desc));
+    }
     renderer3d::Modifier3DRegistry modifier_registry;
     presets::TextManifest text_manifest;
     presets::TextRegistry text_registry(text_manifest);
@@ -174,6 +182,11 @@ RenderSessionResult NativeRenderer::render(
     const NativeRenderOptions& options) {
     TransitionRegistry transition_registry;
     register_builtin_transitions(transition_registry);
+    for (auto* desc : transition_registry.list_all()) {
+        renderer2d::resolve_basic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
+        renderer2d::resolve_artistic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
+        renderer2d::resolve_light_leak_implementations(const_cast<TransitionDescriptor&>(*desc));
+    }
     renderer3d::Modifier3DRegistry modifier_registry;
     presets::TextManifest text_manifest;
     presets::TextRegistry text_registry(text_manifest);

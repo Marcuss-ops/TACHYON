@@ -13,27 +13,53 @@ const ::tachyon::text::FontRegistry* get_default_font_registry() {
     std::call_once(once, []() {
         default_registry = new ::tachyon::text::FontRegistry();
         
-        const std::vector<std::filesystem::path> candidates = {
-            // Windows paths
-            std::filesystem::path(R"(C:\Windows\Fonts\arial.ttf)"),
-            std::filesystem::path(R"(C:\Windows\Fonts\Arial.ttf)"),
-            std::filesystem::path(R"(C:\Windows\Fonts\arialuni.ttf)"),
-            std::filesystem::path(R"(C:\Windows\Fonts\LiberationSans-Regular.ttf)"),
-            std::filesystem::path(R"(C:\Windows\Fonts\DejaVuSans.ttf)"),
-            // Linux paths
-            std::filesystem::path("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"),
-            std::filesystem::path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
-            std::filesystem::path("/usr/share/fonts/truetype/freefont/FreeSans.ttf"),
-            std::filesystem::path("/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf"),
-            std::filesystem::path("/usr/share/fonts/TTF/DejaVuSans.ttf"),
-            std::filesystem::path("/usr/share/fonts/TTF/LiberationSans-Regular.ttf")
+        struct FontCandidate {
+            std::string name;
+            std::filesystem::path path;
+        };
+
+        const std::vector<FontCandidate> candidates = {
+            // High-quality bundled fonts
+            {"SFPro", "assets/fonts/SFPRODISPLAYBOLD.OTF"},
+            {"SFPro", "../assets/fonts/SFPRODISPLAYBOLD.OTF"},
+            {"SFPro", "../../assets/fonts/SFPRODISPLAYBOLD.OTF"},
+            {"SegoeUI", "assets/fonts/SegoeUI.ttf"},
+            {"SegoeUI", "../assets/fonts/SegoeUI.ttf"},
+            
+            // Modern Windows system fonts
+            {"Bahnschrift", R"(C:\Windows\Fonts\bahnschrift.ttf)"},
+            {"Calibri", R"(C:\Windows\Fonts\calibri.ttf)"},
+            {"Consolas", R"(C:\Windows\Fonts\consola.ttf)"},
+            {"Cambria", R"(C:\Windows\Fonts\cambria.ttc)"},
+            
+            // Windows system fonts
+            {"Arial", R"(C:\Windows\Fonts\arial.ttf)"},
+            {"Arial", R"(C:\Windows\Fonts\Arial.ttf)"},
+            {"Arial", R"(C:\Windows\Fonts\arialuni.ttf)"},
+            {"LiberationSans", R"(C:\Windows\Fonts\LiberationSans-Regular.ttf)"},
+            {"DejaVuSans", R"(C:\Windows\Fonts\DejaVuSans.ttf)"},
+            
+            // Linux system fonts
+            {"LiberationSans", "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"},
+            {"DejaVuSans", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"},
+            {"FreeSans", "/usr/share/fonts/truetype/freefont/FreeSans.ttf"},
+            {"Ubuntu", "/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf"}
         };
         
+        bool default_set = false;
         for (const auto& candidate : candidates) {
-            if (std::filesystem::exists(candidate)) {
-                if (default_registry->load_ttf("Default", candidate, 48U)) {
-                    default_registry->set_default("Default");
-                    break;
+            if (std::filesystem::exists(candidate.path)) {
+                // Register with its specific name if not already registered
+                if (!default_registry->find(candidate.name)) {
+                    default_registry->load_ttf(candidate.name, candidate.path, 48U);
+                }
+
+                // Use the first successful high-quality font as "Default"
+                if (!default_set) {
+                    if (default_registry->load_ttf("Default", candidate.path, 48U)) {
+                        default_registry->set_default("Default");
+                        default_set = true;
+                    }
                 }
             }
         }

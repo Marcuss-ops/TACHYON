@@ -100,6 +100,7 @@ Color transition_circle_iris(float u, float v, float t, const SurfaceRGBA& input
 
 void resolve_basic_transition_implementations(tachyon::TransitionDescriptor& d) {
     using namespace tachyon;
+    // std::cout << "[debug] resolving basic transition: " << d.id << std::endl;
 
     if (d.id == ids::transition::crossfade) d.cpu_fn = transition_crossfade;
     else if (d.id == ids::transition::slide) d.cpu_fn = transition_slide;

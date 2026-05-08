@@ -21,6 +21,7 @@ struct CliOptions {
     std::filesystem::path output_override;
     std::optional<std::string> output_preset_id;
     std::filesystem::path output_dir;  // Common output directory for library-demo
+    std::string output_format;         // Output format override (mp4, png, etc.)
     std::filesystem::path font_manifest_path;  // For inspect-fonts command
     std::size_t worker_count{1};
     std::optional<std::size_t> memory_budget_bytes;
