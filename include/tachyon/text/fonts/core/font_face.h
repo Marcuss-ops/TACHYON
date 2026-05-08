@@ -69,7 +69,7 @@ public:
     void* freetype_face() const { return m_ft_face; }
     const std::vector<std::uint8_t>& font_data() const { return m_font_data; }
 
-    std::uint64_t id() const { return m_id; }
+    std::uint64_t face_id() const { return m_id; }
     std::uint64_t content_hash() const { return m_content_hash; }
 
     bool has_glyph(std::uint32_t codepoint) const;

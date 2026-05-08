@@ -1,8 +1,9 @@
 #pragma once
 
-#include "tachyon/text/core/layout/resolved_text_layout.h"
+#include "tachyon/text/layout/layout.h"
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 #include <cmath>
+#include <algorithm>
 
 namespace tachyon::text {
 
@@ -24,7 +25,7 @@ public:
      * @param options Configuration for the typewriter effect
      * @param time Current time in seconds
      */
-    static void apply(ResolvedTextLayout& layout,
+    static void apply(TextLayoutResult& layout,
                       const TypewriterOptions& options,
                       float time) {
         if (layout.glyphs.empty()) return;
@@ -71,8 +72,6 @@ public:
                 float cursor_alpha = options.cursor_opacity * (0.5f + 0.5f * blink);
                 
                 auto& glyph = layout.glyphs[cursor_index];
-                // Cursor is implied by modifying the glyph after the revealed one
-                // In practice, the renderer would draw a cursor shape
                 glyph.cursor_visible = true;
                 glyph.cursor_opacity = cursor_alpha;
             }
@@ -82,7 +81,7 @@ public:
     /**
      * @brief Applies typewriter effect from animator spec.
      */
-    static void apply_from_spec(ResolvedTextLayout& layout,
+    static void apply_from_spec(TextLayoutResult& layout,
                                 const TextAnimatorSpec& spec,
                                 float time) {
         TypewriterOptions options;

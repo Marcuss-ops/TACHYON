@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
+#include "tachyon/core/spec/schema/objects/text_box_spec.h"
 #include "tachyon/presets/preset_base.h"
 #include "tachyon/core/types/colors.h"
 #include <cstdint>
@@ -13,7 +14,8 @@ struct TextParams : LayerParams {
     std::string text{"Hello World"};
     std::string font_id;
     uint32_t    font_size{72};
-    std::string alignment{"center"};
+    HorizontalAlign horizontal_align{HorizontalAlign::Center};
+    VerticalAlign   vertical_align{VerticalAlign::Top};
     ColorSpec   color{238, 242, 248, 245};
 
     // Animation

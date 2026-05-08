@@ -15,6 +15,7 @@ add_executable(TachyonContentTests
     unit/text/text_tests.cpp
     unit/text/text_preset_tests.cpp
     unit/text/text_registry_tests.cpp
+    unit/text/text_animation_sampler_tests.cpp
     unit/presets/text_domain_boundary_tests.cpp
     unit/audio/test_audio_pitch_correct.cpp
     unit/audio/test_audio_trim.cpp

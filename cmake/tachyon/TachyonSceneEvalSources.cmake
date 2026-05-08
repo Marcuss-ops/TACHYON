@@ -17,6 +17,7 @@ set(TachyonSceneEvalSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/rigging/constraint_solver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/rigging/ik_solver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/rigging/rig_graph.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/transform_resolver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/camera_cut_contract.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/render/intent_builder.cpp
 )

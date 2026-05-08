@@ -40,7 +40,7 @@ struct TextLayerSpec {
     std::string text_content;
     std::string font_id;
     double font_size{72.0};
-    std::string alignment{"left"};
+    text::TextBoxSpec text_box;
     std::map<std::string, AnimatedScalarSpec> font_axes;
 
     // Colors

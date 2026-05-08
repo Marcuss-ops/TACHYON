@@ -4,7 +4,9 @@
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 #include "tachyon/text/animation/text_animation_options.h"
 #include "tachyon/text/rendering/text_raster_surface.h"
-#include "tachyon/text/core/layout/resolved_text_layout.h"
+#include "tachyon/core/spec/schema/objects/text_box_spec.h"
+#include "tachyon/core/math/vector2.h"
+#include "tachyon/core/math/rect.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -13,17 +15,18 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <optional>
 
 namespace tachyon::text {
 
 class FontRegistry;
 
-enum class TextAlignment {
-    Left,
-    Center,
-    Right,
-    Justify
-};
+using tachyon::HorizontalAlign;
+using tachyon::VerticalAlign;
+using tachyon::TextBoxMode;
+using tachyon::TextBoxSpec;
+
+using TextAlignment = HorizontalAlign; // Alias for backward compatibility
 
 struct TextFeature {
     std::string tag;
@@ -90,31 +93,42 @@ struct TextHighlightSpan {
     std::int32_t padding_y{2};
 };
 
-struct TextBox {
-    std::uint32_t width{0};
-    std::uint32_t height{0};
-    bool multiline{true};
+using TextBox = ::tachyon::TextBoxSpec;
+
+/**
+ * @brief Represents a logical cluster of characters (e.g. a base character + combining marks, or a ligature).
+ */
+struct GlyphCluster {
+    std::size_t source_text_start;
+    std::size_t source_text_length;
+    std::size_t glyph_start;
+    std::size_t glyph_count;
 };
 
 struct PositionedGlyph {
     std::uint32_t codepoint{0};
     std::uint32_t font_glyph_index{0};
     std::uint64_t font_id{0};
-    std::int32_t x{0};
-    std::int32_t y{0};
-    std::int32_t width{0};
-    std::int32_t height{0};
-    std::int32_t advance_x{0};
+    
+    // Position relative to the layout origin
+    math::Vector2 position;
+    float width{0.0f};
+    float height{0.0f};
+    float advance_x{0.0f};
+    float advance_y{0.0f};
+
     std::size_t glyph_index{0};
     std::size_t word_index{0};
+    std::size_t line_index{0};
     std::size_t cluster_index{0};
     std::size_t cluster_codepoint_start{0};
     std::size_t cluster_codepoint_count{1};
+    
     bool whitespace{false};
     bool is_rtl{false};
     const Font* resolved_font{nullptr};
 
-    // Animatable properties added to support TextAnimatorPipeline
+    // Animatable properties
     math::Vector2 scale{1.0f, 1.0f};
     float rotation{0.0f};
     float opacity{1.0f};
@@ -123,13 +137,38 @@ struct PositionedGlyph {
     ColorSpec fill_color{255, 255, 255, 255};
     ColorSpec stroke_color{0, 0, 0, 0};
     float stroke_width{0.0f};
+    
+    // Cursor support
+    bool cursor_visible{false};
+    float cursor_opacity{1.0f};
+
+    // Cached bounds
+    math::RectF bounds;
 };
 
 struct TextLine {
     std::size_t glyph_start_index{0};
     std::size_t glyph_count{0};
-    std::int32_t width{0};
-    std::int32_t y{0};
+    float width{0.0f};
+    float y{0.0f};
+    float baseline_y{0.0f};
+    float ascent{0.0f};
+    float descent{0.0f};
+    math::RectF bounds;
+};
+
+struct TextRun {
+    std::size_t start_glyph_index;
+    std::size_t length;
+    const Font* font{nullptr};
+    float font_size;
+    math::RectF bounds;
+};
+
+struct TextParagraph {
+    std::size_t start_line_index;
+    std::size_t line_count;
+    math::RectF bounds;
 };
 
 struct TextHitTestResult {
@@ -139,17 +178,52 @@ struct TextHitTestResult {
     bool inside_text{false};
 };
 
-struct TextLayoutResult : public ResolvedTextLayout {
-    std::uint32_t width{0};
-    std::uint32_t height{0};
-    std::uint32_t scale{1};
-    std::int32_t line_height{0};
+struct TextLayoutResult {
+    // Layout metrics
+    float content_width{0.0f};
+    float content_height{0.0f};
+
+    float box_width{0.0f};
+    float box_height{0.0f};
+
+    float offset_x{0.0f};
+    float offset_y{0.0f};
+
+    uint32_t scale{1};
+    int32_t line_height{0};
+    
     std::vector<TextLine> lines;
     std::vector<PositionedGlyph> glyphs;
+    std::vector<GlyphCluster> clusters;
+    std::vector<TextRun> runs;
+    std::vector<TextParagraph> paragraphs;
+    
+    math::RectF total_bounds;
+    bool is_on_path{false};
+
+    // Backward compatibility
+    uint32_t width{0}; 
+    uint32_t height{0};
 
     TextHitTestResult hit_test(std::int32_t x, std::int32_t y) const;
     renderer2d::RectI get_caret_rect(std::size_t codepoint_index) const;
+    math::RectF get_range_bounds(std::size_t start_char_index, std::size_t end_char_index) const;
 };
+
+TextLayoutResult layout_text(
+    const BitmapFont& font,
+    std::string_view utf8_text,
+    const TextStyle& style,
+    const TextBoxSpec& text_box,
+    const TextLayoutOptions& options = {});
+
+TextLayoutResult layout_text(
+    const FontRegistry& registry,
+    const std::string& font_name,
+    std::string_view utf8_text,
+    const TextStyle& style,
+    const TextBoxSpec& text_box,
+    const TextLayoutOptions& options = {});
 
 TextLayoutResult layout_text(
     const BitmapFont& font,
@@ -172,20 +246,15 @@ TextRasterSurface rasterize_text_rgba(
     const BitmapFont& font,
     std::string_view utf8_text,
     const TextStyle& style,
-    const TextBox& text_box,
-    TextAlignment alignment,
+    const TextBoxSpec& text_box,
     const TextLayoutOptions& layout_options = {},
     const TextAnimationOptions& animation = {});
 
-/// Overload with per-character Text Animator support.
-/// Each animator in @p animators is evaluated at @p time_seconds.
-/// The selector coverage is blended per glyph before rasterization.
 TextRasterSurface rasterize_text_rgba(
     const BitmapFont& font,
     std::string_view utf8_text,
     const TextStyle& style,
-    const TextBox& text_box,
-    TextAlignment alignment,
+    const TextBoxSpec& text_box,
     float time_seconds,
     std::span<const TextAnimatorSpec> animators,
     const TextLayoutOptions& layout_options = {});
@@ -194,8 +263,7 @@ TextRasterSurface rasterize_text_rgba(
     const BitmapFont& font,
     std::string_view utf8_text,
     const TextStyle& style,
-    const TextBox& text_box,
-    TextAlignment alignment,
+    const TextBoxSpec& text_box,
     std::span<const TextHighlightSpan> highlights,
     const TextLayoutOptions& layout_options = {},
     const TextAnimationOptions& animation = {});
@@ -205,13 +273,11 @@ struct TextOutlineOptions {
     renderer2d::Color color{renderer2d::Color::black()};
 };
 
-/// Overload with outline support for subtitle burn-in
 TextRasterSurface rasterize_text_rgba(
     const BitmapFont& font,
     std::string_view utf8_text,
     const TextStyle& style,
-    const TextBox& text_box,
-    TextAlignment alignment,
+    const TextBoxSpec& text_box,
     const TextOutlineOptions& outline);
 
 TextRasterSurface rasterize_layout_debug(

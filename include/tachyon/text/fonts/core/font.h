@@ -65,7 +65,7 @@ public:
     const GlyphBitmap* find_sdf_glyph_by_index(std::uint32_t glyph_index) const;
     std::uint32_t glyph_index_for_codepoint(std::uint32_t codepoint) const;
 
-    std::uint64_t id() const { return m_id; }
+    std::uint64_t font_id() const { return m_id; }
 
 private:
     static std::optional<std::uint32_t> parse_hex_row(const std::string& line);

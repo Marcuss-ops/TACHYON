@@ -60,7 +60,7 @@ Font* FontRegistry::find(const std::string& name) {
 
 const Font* FontRegistry::find_by_id(std::uint64_t id) const {
     for (const auto& [name, font] : m_fonts) {
-        if (font.id() == id) {
+        if (font.font_id() == id) {
             return &font;
         }
     }

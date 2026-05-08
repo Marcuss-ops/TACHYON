@@ -1,9 +1,11 @@
 #include "tachyon/text/animation/text_animator_utils.h"
+#include "tachyon/text/animation/text_animator.h"
 #include "tachyon/text/animation/text_anim_backend.h"
 #include "tachyon/text/fonts/core/font.h"
 #include <algorithm>
 #include <cmath>
 #include <vector>
+#include <map>
 
 namespace tachyon::text {
 
@@ -11,16 +13,6 @@ namespace {
 
 constexpr float kZero = 0.0f;
 constexpr float kOne = 1.0f;
-
-std::size_t find_line_index_tl(const std::vector<TextLine>& lines, std::size_t glyph_index) {
-    for (std::size_t line_idx = 0; line_idx < lines.size(); ++line_idx) {
-        const auto& line = lines[line_idx];
-        if (glyph_index >= line.glyph_start_index && glyph_index < line.glyph_start_index + line.glyph_count) {
-            return line_idx;
-        }
-    }
-    return 0;
-}
 
 TextAnimatorContext make_context_from_precomp(
     std::size_t glyph_index,
@@ -61,8 +53,8 @@ std::vector<PrecompGlyphCtx> precompute_glyph_contexts(const TextLayoutResult& l
         const auto& glyph = layout.glyphs[i];
         PrecompGlyphCtx ctx;
         ctx.cluster_index = glyph.cluster_index;
-        ctx.word_index = glyph.word_index;
-        ctx.line_index = find_line_index_tl(layout.lines, i);
+        ctx.word_index = static_cast<float>(glyph.word_index);
+        ctx.line_index = static_cast<float>(glyph.line_index);
         ctx.is_space = glyph.whitespace;
         ctx.is_rtl = glyph.is_rtl;
         ctx.cluster_codepoint_start = glyph.cluster_codepoint_start;
@@ -144,7 +136,7 @@ void apply_text_animators(
                         staggered_t);
                     accumulated_tracking += static_cast<float>(tracking_value) * coverage;
                 }
-                glyph.x += static_cast<std::int32_t>(std::lround(accumulated_tracking));
+                glyph.position.x += accumulated_tracking;
             }
         }
 
@@ -161,6 +153,8 @@ void apply_text_animators(
             animator.selector.stagger_mode
         );
     }
+
+    TextAnimationSampler::sample(layout, std::vector<TextAnimatorSpec>(animators_span.begin(), animators_span.end()), t);
 }
 
 std::vector<ResolvedGlyphPaint> resolve_glyph_paints(
@@ -177,8 +171,8 @@ std::vector<ResolvedGlyphPaint> resolve_glyph_paints(
     std::vector<ResolvedGlyphPaint> paints;
     paints.reserve(animated_layout.glyphs.size());
 
-    std::int32_t last_active_x = 0;
-    std::int32_t last_active_y = 0;
+    float last_active_x = 0.0f;
+    float last_active_y = 0.0f;
 
     for (std::size_t idx = 0; idx < animated_layout.glyphs.size(); ++idx) {
         const PositionedGlyph& positioned = animated_layout.glyphs[idx];
@@ -191,28 +185,22 @@ std::vector<ResolvedGlyphPaint> resolve_glyph_paints(
         }
 
         if (positioned.opacity > 0.01f && positioned.reveal_factor > 0.01f) {
-            last_active_x = positioned.x + static_cast<std::int32_t>(static_cast<float>(glyph->width) * positioned.scale.x);
-            last_active_y = positioned.y;
+            last_active_x = positioned.position.x + static_cast<float>(glyph->width) * positioned.scale.x;
+            last_active_y = positioned.position.y;
         }
 
         ResolvedGlyphPaint paint;
         paint.glyph = glyph;
-        paint.base_x = positioned.x;
-        paint.base_y = positioned.y;
-        
-        float width_f = static_cast<float>(glyph->width) * positioned.scale.x;
-        std::int32_t width_i = static_cast<std::int32_t>(std::lround(width_f));
-        paint.target_width = static_cast<std::uint32_t>(std::max(static_cast<std::int32_t>(1), width_i));
-        
-        float height_f = static_cast<float>(glyph->height) * positioned.scale.y;
-        std::int32_t height_i = static_cast<std::int32_t>(std::lround(height_f));
-        paint.target_height = static_cast<std::uint32_t>(std::max(static_cast<std::int32_t>(1), height_i));
+        paint.base_x = positioned.position.x;
+        paint.base_y = positioned.position.y;
+        paint.target_width = static_cast<float>(glyph->width) * positioned.scale.x;
+        paint.target_height = static_cast<float>(glyph->height) * positioned.scale.y;
         
         paint.opacity = std::clamp(positioned.opacity * positioned.reveal_factor, kZero, kOne);
         paint.fill_color = positioned.fill_color;
         paint.stroke_color = positioned.stroke_color;
         paint.stroke_width = positioned.stroke_width;
-        paint.tracking_offset = static_cast<float>(positioned.x - layout.glyphs[idx].x);
+        paint.tracking_offset = positioned.position.x - layout.glyphs[idx].position.x;
         paint.glyph_index = positioned.glyph_index;
 
         if (animation.motion_blur_intensity > 0.0f) {
@@ -240,10 +228,10 @@ std::vector<ResolvedGlyphPaint> resolve_glyph_paints(
                 if (c_glyph && c_glyph->width > 0) {
                     ResolvedGlyphPaint c_paint;
                     c_paint.glyph = c_glyph;
-                    c_paint.base_x = last_active_x + static_cast<std::int32_t>(animator.cursor.offset_x);
+                    c_paint.base_x = last_active_x + static_cast<float>(animator.cursor.offset_x);
                     c_paint.base_y = last_active_y;
-                    c_paint.target_width = static_cast<std::uint32_t>(static_cast<float>(c_glyph->width) * layout.scale);
-                    c_paint.target_height = static_cast<std::uint32_t>(static_cast<float>(c_glyph->height) * layout.scale);
+                    c_paint.target_width = static_cast<float>(c_glyph->width) * static_cast<float>(layout.scale);
+                    c_paint.target_height = static_cast<float>(c_glyph->height) * static_cast<float>(layout.scale);
                     c_paint.opacity = 1.0f;
                     c_paint.fill_color = animator.cursor.color_override.value_or(
                         !paints.empty() ? paints.back().fill_color : ::tachyon::ColorSpec{255, 255, 255, 255});

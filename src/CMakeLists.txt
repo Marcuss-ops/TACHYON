@@ -16,6 +16,8 @@ include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonCLISources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonLibrarySources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonColorSources.cmake)
 
+include(${CMAKE_SOURCE_DIR}/cmake/tachyon/SourceRegistrationCheck.cmake)
+
 # --- Functions ---
 
 function(tachyon_assert_no_duplicate_sources var_name)
@@ -203,6 +205,8 @@ tachyon_assert_no_duplicate_sources(TachyonEditorSources)
 tachyon_assert_no_duplicate_sources(TachyonCLICoreSources)
 tachyon_assert_no_duplicate_sources(TachyonCLILibrarySources)
 tachyon_assert_no_duplicate_sources(TachyonLibrarySources)
+
+tachyon_check_source_registration(${CMAKE_CURRENT_SOURCE_DIR}/text TachyonTextSources)
 
 if(TACHYON_ENABLE_TRACKER)
     include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonTrackerSources.cmake)

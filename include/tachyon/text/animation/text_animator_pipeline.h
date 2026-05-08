@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/text/core/layout/resolved_text_layout.h"
+#include "tachyon/text/layout/layout.h"
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 #include "tachyon/text/animation/text_animator_utils.h"
 #include <span>
@@ -12,7 +12,7 @@ namespace tachyon::text {
 class TextAnimatorPipeline {
 public:
     /**
-     * @brief Applies a sequence of animators to a resolved layout mathematically.
+     * @brief Applies a sequence of animators to a layout mathematically.
      * Modifies the glyphs' position, scale, rotation, and styling in-place.
      * Preserves cluster boundaries for shape-preserving animation.
      * 
@@ -21,7 +21,7 @@ public:
      * @param context The evaluation context containing the current time.
      */
     static void apply_animators(
-        ResolvedTextLayout& layout,
+        TextLayoutResult& layout,
         std::span<const TextAnimatorSpec> animators,
         const TextAnimatorContext& context) {
         
@@ -66,13 +66,7 @@ public:
                 ctx.word_index = static_cast<float>(glyph.word_index);
                 
                 // Find line index for this glyph
-                ctx.line_index = 0;
-                for (std::size_t l = 0; l < layout.lines.size(); ++l) {
-                    if (i >= layout.lines[l].start_glyph_index && i < layout.lines[l].start_glyph_index + layout.lines[l].length) {
-                        ctx.line_index = static_cast<float>(l);
-                        break;
-                    }
-                }
+                ctx.line_index = static_cast<float>(glyph.line_index);
 
                 ctx.total_glyphs = static_cast<float>(num_glyphs);
                 ctx.total_clusters = total_clusters;
@@ -149,59 +143,59 @@ private:
         return value.has_value() || !keyframes.empty();
     }
 
-    static void apply_position_offset(ResolvedGlyph& glyph,
+    static void apply_position_offset(PositionedGlyph& glyph,
                                       const math::Vector2& offset,
                                       float coverage) {
         glyph.position.x += offset.x * coverage;
         glyph.position.y += offset.y * coverage;
     }
 
-    static void apply_scale(ResolvedGlyph& glyph,
+    static void apply_scale(PositionedGlyph& glyph,
                             float target_scale,
                             float coverage) {
         glyph.scale.x = glyph.scale.x * (1.0f - coverage) + (glyph.scale.x * target_scale) * coverage;
         glyph.scale.y = glyph.scale.y * (1.0f - coverage) + (glyph.scale.y * target_scale) * coverage;
     }
 
-    static void apply_rotation(ResolvedGlyph& glyph,
+    static void apply_rotation(PositionedGlyph& glyph,
                                float rotation,
                                float coverage) {
         glyph.rotation += rotation * coverage;
     }
 
-    static void apply_opacity(ResolvedGlyph& glyph,
+    static void apply_opacity(PositionedGlyph& glyph,
                               float opacity,
                               float coverage) {
         glyph.opacity = glyph.opacity * (1.0f - coverage) + opacity * coverage;
         glyph.opacity = std::clamp(glyph.opacity, 0.0f, 1.0f);
     }
 
-    static void apply_fill_color(ResolvedGlyph& glyph,
+    static void apply_fill_color(PositionedGlyph& glyph,
                                  const ::tachyon::ColorSpec& color,
                                  float coverage) {
         glyph.fill_color = blend_color(glyph.fill_color, color, coverage);
     }
 
-    static void apply_stroke_color(ResolvedGlyph& glyph,
+    static void apply_stroke_color(PositionedGlyph& glyph,
                                    const ::tachyon::ColorSpec& color,
                                    float coverage) {
         glyph.stroke_color = blend_color(glyph.stroke_color, color, coverage);
     }
 
-    static void apply_stroke_width(ResolvedGlyph& glyph,
+    static void apply_stroke_width(PositionedGlyph& glyph,
                                    float stroke_width,
                                    float coverage) {
         glyph.stroke_width = glyph.stroke_width * (1.0f - coverage) + stroke_width * coverage;
     }
 
-    static void apply_blur_radius(ResolvedGlyph& glyph,
+    static void apply_blur_radius(PositionedGlyph& glyph,
                                   float blur_radius,
                                   float coverage) {
         glyph.blur_radius = glyph.blur_radius * (1.0f - coverage) + blur_radius * coverage;
         glyph.blur_radius = std::max(0.0f, glyph.blur_radius);
     }
 
-    static void apply_reveal_factor(ResolvedGlyph& glyph,
+    static void apply_reveal_factor(PositionedGlyph& glyph,
                                     float reveal,
                                     float coverage) {
         glyph.reveal_factor = glyph.reveal_factor * (1.0f - coverage) + reveal * coverage;

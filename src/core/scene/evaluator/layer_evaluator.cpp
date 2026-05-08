@@ -147,6 +147,7 @@ EvaluatedLayerState make_layer_state(
         evaluated.local_transform.position = pos2;
         evaluated.local_transform.rotation_rad = static_cast<float>(degrees_to_radians(rot_deg));
         evaluated.local_transform.scale = scale2;
+        evaluated.local_transform.anchor_point = anchor2;
         evaluated.world_position3 = {pos2.x, pos2.y, 0.0f};
         evaluated.scale_3d = {scale2.x, scale2.y, 1.0f};
         evaluated.world_matrix = math::compose_trs(

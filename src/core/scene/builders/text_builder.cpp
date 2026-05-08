@@ -21,6 +21,44 @@ TextBuilder& TextBuilder::font_size(double sz) {
     return *this;
 }
 
+TextBuilder& TextBuilder::box(float w, float h, TextBoxMode mode) {
+    parent_.spec_.text_box.width = w;
+    parent_.spec_.text_box.height = h;
+    parent_.spec_.text_box.mode = mode;
+    return *this;
+}
+
+TextBuilder& TextBuilder::align(HorizontalAlign h) {
+    parent_.spec_.text_box.horizontal_align = h;
+    return *this;
+}
+
+TextBuilder& TextBuilder::valign(VerticalAlign v) {
+    parent_.spec_.text_box.vertical_align = v;
+    return *this;
+}
+
+TextBuilder& TextBuilder::line_height(float factor) {
+    parent_.spec_.text_box.line_height_factor = factor;
+    return *this;
+}
+
+TextBuilder& TextBuilder::tracking(float amount) {
+    parent_.spec_.text_box.tracking_amount = amount;
+    return *this;
+}
+
+TextBuilder& TextBuilder::fill(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+    parent_.spec_.fill_color.value = {r, g, b, a};
+    return *this;
+}
+
+TextBuilder& TextBuilder::stroke(uint8_t r, uint8_t g, uint8_t b, uint8_t a, float width) {
+    parent_.spec_.stroke_color.value = {r, g, b, a};
+    parent_.spec_.stroke_width = width;
+    return *this;
+}
+
 TextBuilder& TextBuilder::subtitle_path(std::string path) {
     parent_.spec_.subtitle_path = std::move(path);
     return *this;

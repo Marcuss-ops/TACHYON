@@ -81,6 +81,11 @@ LayerBuilder& LayerBuilder::position(double x, double y) {
     return *this;
 }
 
+LayerBuilder& LayerBuilder::anchor(double x, double y) {
+    spec_.transform.anchor_point.value = math::Vector2{static_cast<float>(x), static_cast<float>(y)};
+    return *this;
+}
+
 LayerBuilder& LayerBuilder::size(double w, double h) {
     const auto clamp_to_int = [](double value) -> int {
         const double bounded = std::clamp(

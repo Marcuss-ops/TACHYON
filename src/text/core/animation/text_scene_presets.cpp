@@ -93,9 +93,11 @@ LayerSpec make_enhance_text_layer(const TextScenePresetOptions& options) {
     text.start_time = 0.0;
     text.in_point = 0.0;
     text.out_point = options.duration_seconds;
-    text.width = static_cast<int>(options.text_width);
-    text.height = static_cast<int>(options.text_height);
-    text.alignment = "center";
+    text.text_box.width = static_cast<float>(options.text_width);
+    text.text_box.height = static_cast<float>(options.text_height);
+    text.text_box.mode = TextBoxMode::Fixed;
+    text.text_box.horizontal_align = HorizontalAlign::Center;
+    text.text_box.vertical_align = VerticalAlign::Middle;
     text.text_content = options.text;
     text.font_id = options.font_id;
     text.font_size.value = static_cast<double>(options.font_size);

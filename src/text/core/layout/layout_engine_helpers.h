@@ -31,12 +31,13 @@ math::RectF union_rects(const math::RectF& a, const math::RectF& b);
 bool rect_is_empty(const math::RectF& rect);
 std::uint32_t choose_scale(const BitmapFont& font, const TextStyle& style);
 bool is_breakable_space(std::uint32_t codepoint);
-std::int32_t aligned_x_offset(TextAlignment alignment, std::uint32_t box_width, std::int32_t line_width);
-void finalize_line(TextLayoutResult& result, std::size_t start_index, std::size_t glyph_count, std::int32_t line_width, std::int32_t line_y, TextAlignment alignment, std::uint32_t box_width, bool last_line);
+std::int32_t aligned_x_offset(HorizontalAlign alignment, std::uint32_t box_width, float line_width);
+void finalize_line(TextLayoutResult& result, std::size_t start_index, std::size_t glyph_count, float line_width, float line_y, HorizontalAlign alignment, std::uint32_t box_width, bool last_line);
+float compute_vertical_offset(float box_height, float content_height, VerticalAlign align);
 std::int32_t place_shaped_run(
     TextLayoutResult& result,
-    std::int32_t pen_x,
-    std::int32_t pen_y,
+    float pen_x,
+    float pen_y,
     const SubRun& sub,
     const ShapedGlyphRun& shaped,
     std::uint32_t scale,

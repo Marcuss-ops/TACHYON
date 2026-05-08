@@ -86,14 +86,20 @@ public:
         return *this;
     }
     
-    TextBuilder& alignment(std::string align) {
-        params_.alignment = std::move(align);
+    TextBuilder& horizontal_align(HorizontalAlign align) {
+        params_.horizontal_align = align;
+        anchor_.reset();
+        return *this;
+    }
+
+    TextBuilder& vertical_align(VerticalAlign align) {
+        params_.vertical_align = align;
         anchor_.reset();
         return *this;
     }
     
     TextBuilder& left() {
-        params_.alignment = "left";
+        params_.horizontal_align = HorizontalAlign::Left;
         anchor_.reset();
         return *this;
     }
@@ -105,7 +111,7 @@ public:
     }
     
     TextBuilder& right() {
-        params_.alignment = "right";
+        params_.horizontal_align = HorizontalAlign::Right;
         anchor_.reset();
         return *this;
     }

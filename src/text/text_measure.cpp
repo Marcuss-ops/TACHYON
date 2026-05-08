@@ -23,7 +23,7 @@ inline TextMeasureResult measure_text(FontRegistry& registry, std::string_view t
     
     // Setup text box (unbounded)
     TextBox text_box;
-    text_box.multiline = false;
+    text_box.mode = TextBoxMode::Auto;
     
     // Layout options
     TextLayoutOptions layout_options;

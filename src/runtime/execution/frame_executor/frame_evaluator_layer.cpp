@@ -121,7 +121,7 @@ void evaluate_layer(
     state->text_content = layer.text_content;
     state->font_id = layer.font_id;
     state->font_size = layer.font_size;
-    state->text_alignment = layer.text_alignment;
+    state->text_box = layer.text_box;
     state->text_animators = layer.text_animators;
     state->text_highlights = layer.text_highlights;
     state->subtitle_path = layer.subtitle_path;
@@ -183,6 +183,8 @@ void evaluate_layer(
     state->local_transform.scale.x = static_cast<float>(sample_property(CompiledLayer::ScaleX, 1.0));
     state->local_transform.scale.y = static_cast<float>(sample_property(CompiledLayer::ScaleY, 1.0));
     state->local_transform.rotation_rad = static_cast<float>(sample_property(CompiledLayer::Rotation, 0.0) * (kPi / 180.0f));
+    state->local_transform.anchor_point.x = static_cast<float>(sample_property(CompiledLayer::AnchorX, 0.0));
+    state->local_transform.anchor_point.y = static_cast<float>(sample_property(CompiledLayer::AnchorY, 0.0));
     state->mask_feather = static_cast<float>(sample_property(CompiledLayer::MaskFeather, 0.0));
 
     if (state->is_3d) {

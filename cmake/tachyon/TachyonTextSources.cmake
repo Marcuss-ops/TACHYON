@@ -39,4 +39,5 @@ set(TachyonTextSources
     ${CMAKE_CURRENT_SOURCE_DIR}/text/core/low_level/shaping/font_shaping.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/text/core/low_level/shaping/shaping_cache.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/text/core/low_level/utf8/utf8_decoder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/text/animation/text_animation_sampler.cpp
 )

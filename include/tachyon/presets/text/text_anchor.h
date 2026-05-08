@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
+#include "tachyon/core/spec/schema/objects/text_box_spec.h"
 #include "tachyon/presets/text/text_params.h"
 
 #include <string>
@@ -21,24 +22,42 @@ enum class TextAnchor {
     BottomRight,
 };
 
-[[nodiscard]] inline std::string_view alignment_for(TextAnchor anchor) {
+[[nodiscard]] inline HorizontalAlign horizontal_align_for(TextAnchor anchor) {
     switch (anchor) {
         case TextAnchor::TopLeft:
         case TextAnchor::MiddleLeft:
         case TextAnchor::BottomLeft:
-            return "left";
+            return HorizontalAlign::Left;
         case TextAnchor::TopRight:
         case TextAnchor::MiddleRight:
         case TextAnchor::BottomRight:
-            return "right";
+            return HorizontalAlign::Right;
         case TextAnchor::TopCenter:
         case TextAnchor::MiddleCenter:
         case TextAnchor::BottomCenter:
-            return "center";
-        case TextAnchor::None:
-            return "";
+            return HorizontalAlign::Center;
+        default:
+            return HorizontalAlign::Left;
     }
-    return "";
+}
+
+[[nodiscard]] inline VerticalAlign vertical_align_for(TextAnchor anchor) {
+    switch (anchor) {
+        case TextAnchor::TopLeft:
+        case TextAnchor::TopCenter:
+        case TextAnchor::TopRight:
+            return VerticalAlign::Top;
+        case TextAnchor::MiddleLeft:
+        case TextAnchor::MiddleCenter:
+        case TextAnchor::MiddleRight:
+            return VerticalAlign::Middle;
+        case TextAnchor::BottomLeft:
+        case TextAnchor::BottomCenter:
+        case TextAnchor::BottomRight:
+            return VerticalAlign::Bottom;
+        default:
+            return VerticalAlign::Top;
+    }
 }
 
 inline void apply_text_anchor(TextParams& params, TextAnchor anchor) {
@@ -46,10 +65,8 @@ inline void apply_text_anchor(TextParams& params, TextAnchor anchor) {
         return;
     }
 
-    const auto alignment = alignment_for(anchor);
-    if (!alignment.empty()) {
-        params.alignment = std::string(alignment);
-    }
+    params.horizontal_align = horizontal_align_for(anchor);
+    params.vertical_align = vertical_align_for(anchor);
 
     const auto half_w = params.text_w * 0.5f;
     const auto half_h = params.text_h * 0.5f;
@@ -101,10 +118,8 @@ inline void apply_text_anchor(LayerSpec& spec, TextAnchor anchor) {
         return;
     }
 
-    const auto alignment = alignment_for(anchor);
-    if (!alignment.empty()) {
-        spec.alignment = std::string(alignment);
-    }
+    spec.text_box.horizontal_align = horizontal_align_for(anchor);
+    spec.text_box.vertical_align = vertical_align_for(anchor);
 
     const auto half_w = static_cast<float>(spec.width) * 0.5f;
     const auto half_h = static_cast<float>(spec.height) * 0.5f;

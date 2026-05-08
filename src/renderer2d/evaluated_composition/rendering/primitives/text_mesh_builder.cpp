@@ -86,20 +86,14 @@ TextMeshBuildResult build_text_extrusion_mesh(
     style.pixel_size = static_cast<std::uint32_t>(std::max(1.0f, layer.font_size));
     style.fill_color = to_color(layer.fill_color);
 
-    ::tachyon::text::TextBox box;
-    box.width = static_cast<std::uint32_t>(std::max(1, layer.width > 0 ? layer.width : composition.width));
-    box.height = static_cast<std::uint32_t>(std::max(1, layer.height > 0 ? layer.height : composition.height));
-    box.multiline = true;
+    ::tachyon::text::TextBox box = layer.text_box;
+    if (box.width <= 0) box.width = static_cast<float>(composition.width);
+    if (box.height <= 0) box.height = static_cast<float>(composition.height);
 
     ::tachyon::text::TextLayoutOptions layout_options;
     layout_options.word_wrap = true;
 
-    const ::tachyon::text::TextAlignment alignment =
-        layer.text_alignment == 1 ? ::tachyon::text::TextAlignment::Center :
-        layer.text_alignment == 2 ? ::tachyon::text::TextAlignment::Right :
-        ::tachyon::text::TextAlignment::Left;
-
-    const auto layout = ::tachyon::text::layout_text(*font, layer.text_content, style, box, alignment, layout_options);
+    const auto layout = ::tachyon::text::layout_text(*font, layer.text_content, style, box, layout_options);
     if (layout.glyphs.empty()) {
         return result;
     }
@@ -115,9 +109,10 @@ TextMeshBuildResult build_text_extrusion_mesh(
     seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(layer.font_size * 1000.0f)));
     seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(depth * 1000.0f)));
     seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(bevel * 1000.0f)));
-    seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(layer.text_alignment));
-    seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(box.width));
-    seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(box.height));
+    seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(layer.text_box.horizontal_align));
+    seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(layer.text_box.vertical_align));
+    seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(box.width * 100.0f)));
+    seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(box.height * 100.0f)));
     seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(animation.time_seconds * 1000.0f)));
     const std::uint64_t anim_hash = hash_animators(animation.animators);
     seed = ::tachyon::scene::hash_combine(seed, anim_hash);
@@ -143,7 +138,7 @@ TextMeshBuildResult build_text_extrusion_mesh(
 
         const math::Quaternion rotation = math::Quaternion::from_axis_angle({0.0f, 0.0f, 1.0f}, glyph.rotation * 3.1415926535f / 180.0f);
         submesh.transform = math::compose_trs(
-            {static_cast<float>(glyph.x), static_cast<float>(glyph.y), 0.0f},
+            {static_cast<float>(glyph.position.x), static_cast<float>(glyph.position.y), 0.0f},
             rotation,
             {glyph.scale.x, glyph.scale.y, 1.0f});
         submesh.material.base_color_factor = {

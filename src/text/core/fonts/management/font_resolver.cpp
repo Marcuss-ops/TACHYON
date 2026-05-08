@@ -98,7 +98,7 @@ const FontInstance* FontResolver::get_or_create_instance(const FontFace& face,
                                                         HintingMode hinting,
                                                         RenderMode render_mode) {
     FontInstanceKey key{
-        face.id(),
+        face.face_id(),
         pixel_size,
         hinting,
         render_mode

@@ -54,10 +54,10 @@ float evaluate_expression_wrapper(const std::string& expr, const TextAnimatorCon
 
 struct ResolvedGlyphPaint {
     const GlyphBitmap* glyph{nullptr};
-    std::int32_t base_x{0};
-    std::int32_t base_y{0};
-    std::uint32_t target_width{0};
-    std::uint32_t target_height{0};
+    float base_x{0.0f};
+    float base_y{0.0f};
+    float target_width{0.0f};
+    float target_height{0.0f};
     float opacity{1.0f};
     ::tachyon::math::Vector2 motion_blur_vector{0.0f, 0.0f};
     

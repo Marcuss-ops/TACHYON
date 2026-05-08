@@ -282,7 +282,8 @@ std::uint64_t hash_scene_content(const SceneSpec& scene) {
             if (layer.precomp_id.has_value()) builder.add_string(*layer.precomp_id);
             builder.add_string(layer.text_content);
             builder.add_string(layer.font_id);
-            builder.add_string(layer.alignment);
+            builder.add_u32(static_cast<std::uint32_t>(layer.text_box.horizontal_align));
+            builder.add_u32(static_cast<std::uint32_t>(layer.text_box.vertical_align));
             builder.add_u64(static_cast<std::uint64_t>(layer.stroke_width * 1000000.0));
             builder.add_string(layer.subtitle_path);
             builder.add_string(layer.line_cap);

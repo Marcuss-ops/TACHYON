@@ -2,6 +2,7 @@
 
 #include "tachyon/core/spec/schema/objects/procedural_spec.h"
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
+#include "tachyon/core/spec/schema/objects/text_box_spec.h"
 
 #include "tachyon/core/spec/schema/common/common_spec.h"
 #include "tachyon/core/spec/schema/3d/three_d_spec.h"
@@ -88,7 +89,7 @@ struct LayerSpec {
     std::string text_content;
     std::string font_id;
     AnimatedScalarSpec font_size;
-    std::string alignment{"left"};
+    TextBoxSpec text_box;
     std::map<std::string, AnimatedScalarSpec> font_axes;
     AnimatedColorSpec fill_color;
     AnimatedColorSpec stroke_color;

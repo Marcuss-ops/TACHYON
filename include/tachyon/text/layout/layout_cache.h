@@ -10,28 +10,26 @@ namespace tachyon::text {
 
 struct LayoutCacheKey {
     std::string text;
-    std::uint64_t font_id; // For simplicity, we'll use the primary font ID or a hash of the chain
-    std::uint32_t pixel_size;
+    std::uint64_t font_id{0}; 
+    std::uint32_t pixel_size{0};
     std::vector<TextFeature> features;
-    std::uint32_t box_width;
-    std::uint32_t box_height;
-    bool multiline;
-    TextAlignment alignment;
-    float tracking;
-    bool word_wrap;
-    bool use_sdf;
+    TextBoxSpec box;
+    TextLayoutOptions options;
+
+    LayoutCacheKey() = default;
 
     bool operator==(const LayoutCacheKey& other) const {
         return text == other.text &&
                font_id == other.font_id &&
                pixel_size == other.pixel_size &&
-               box_width == other.box_width &&
-               box_height == other.box_height &&
-               multiline == other.multiline &&
-               alignment == other.alignment &&
-               tracking == other.tracking &&
-               word_wrap == other.word_wrap &&
-               use_sdf == other.use_sdf &&
+               box.width == other.box.width &&
+               box.height == other.box.height &&
+               box.mode == other.box.mode &&
+               box.horizontal_align == other.box.horizontal_align &&
+               box.vertical_align == other.box.vertical_align &&
+               options.tracking == other.options.tracking &&
+               options.word_wrap == other.options.word_wrap &&
+               options.use_sdf == other.options.use_sdf &&
                features.size() == other.features.size() &&
                std::equal(features.begin(), features.end(), other.features.begin(),
                     [](const auto& a, const auto& b) { return a.tag == b.tag && a.value == b.value; });

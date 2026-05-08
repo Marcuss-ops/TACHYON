@@ -1,20 +1,21 @@
 #pragma once
 
-#include "tachyon/text/core/layout/resolved_text_layout.h"
+#include "tachyon/text/layout/layout.h"
 #include "tachyon/core/shapes/shape_path.h"
 #include <cmath>
 #include <vector>
+#include <algorithm>
 
 namespace tachyon::text {
 
 class TextOnPathModifier {
 public:
     /**
-     * @brief Maps the glyphs in a ResolvedTextLayout onto a ShapePath.
+     * @brief Maps the glyphs in a TextLayoutResult onto a ShapePath.
      * Modifies the glyph positions and rotations in-place based on true arc-length parameterization.
      */
     static void apply(
-        ResolvedTextLayout& layout,
+        TextLayoutResult& layout,
         const shapes::ShapePath& path,
         double path_offset,
         bool align_perpendicular = true) {
@@ -32,7 +33,6 @@ public:
         for (const auto& subpath : path.subpaths) {
             if (subpath.vertices.empty()) continue;
             
-            (void)points_lut.size();
             points_lut.push_back(subpath.vertices[0].point);
             if (arc_lengths.empty()) arc_lengths.push_back(0.0);
             else arc_lengths.push_back(total_length);

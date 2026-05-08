@@ -271,7 +271,7 @@ std::int32_t FontInstance::get_kerning(std::uint32_t left, std::uint32_t right) 
 
 FontInstanceKey FontInstance::key() const {
     return {
-        m_face ? m_face->id() : 0,
+        m_face ? m_face->face_id() : 0,
         m_pixel_size,
         m_hinting,
         m_render_mode

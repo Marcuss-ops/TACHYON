@@ -12,6 +12,7 @@
 #include "tachyon/core/spec/schema/common/gradient_spec.h"
 #include "tachyon/core/spec/schema/objects/mask_spec.h"
 #include "tachyon/core/spec/schema/objects/path_spec.h"
+#include "tachyon/core/spec/schema/objects/text_box_spec.h"
 #include "tachyon/text/content/word_timestamps.h"
 #include <vector>
 #include <string>
@@ -124,7 +125,8 @@ struct EvaluatedLayerState {
     spec::LineCap line_cap{spec::LineCap::Butt};
     spec::LineJoin line_join{spec::LineJoin::Miter};
     float miter_limit{4.0f};
-    int text_alignment{0};
+    TextBoxSpec text_box;
+    math::Vector2 resolved_box_size{0.0f, 0.0f};
     std::string text_content;
     std::string font_id;
     float font_size{0.0f};

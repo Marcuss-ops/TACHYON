@@ -126,6 +126,12 @@ struct AnimatedVector3Spec {
         animation::EasingPreset easing{animation::EasingPreset::None};
         animation::InterpolationMode interpolation{animation::InterpolationMode::Linear};
         animation::CubicBezierEasing bezier{animation::CubicBezierEasing::linear()};
+        struct SpringSpec {
+            double stiffness{200.0};
+            double damping{20.0};
+            double mass{1.0};
+            double velocity{0.0};
+        } spring;
 
         double speed_in{0.0};
         double influence_in{33.333333333};

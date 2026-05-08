@@ -12,6 +12,7 @@
 #include "tachyon/runtime/core/contracts/determinism_contract.h"
 #include "tachyon/runtime/core/data/data_binding.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/core/spec/schema/objects/text_box_spec.h"
 #include "tachyon/core/shapes/shape_path.h"
 #include "tachyon/core/expressions/expression_vm.h"
 #include "tachyon/runtime/core/graph/runtime_render_graph.h"
@@ -110,7 +111,7 @@ struct CompiledLayer {
     std::string text_content;
     std::string font_id;
     float font_size{48.0f};
-    int text_alignment{0};
+    TextBoxSpec text_box;
     ColorSpec fill_color{255, 255, 255, 255};
     ColorSpec stroke_color{255, 255, 255, 255};
     float stroke_width{0.0f};

@@ -42,7 +42,11 @@ TextLayerSpec build_text_spec(const presets::TextParams& p, const presets::TextR
     spec.height = p.text_h;
     spec.opacity = p.opacity;
 
-    spec.alignment = p.alignment;
+    spec.text_box.mode = (p.text_w > 0 || p.text_h > 0) ? TextBoxMode::Fixed : TextBoxMode::Auto;
+    spec.text_box.width = static_cast<float>(p.text_w);
+    spec.text_box.height = static_cast<float>(p.text_h);
+    spec.text_box.horizontal_align = p.horizontal_align;
+    spec.text_box.vertical_align = p.vertical_align;
     spec.text_content = p.text;
     spec.font_id = p.font_id;
     spec.font_size = static_cast<double>(p.font_size);
@@ -65,7 +69,7 @@ LayerSpec make_layer_from_text_spec(const TextLayerSpec& spec) {
 
     LayerSpec l = presets::make_base_layer(spec.id, spec.name, "text", p);
 
-    l.alignment = spec.alignment;
+    l.text_box = spec.text_box;
     l.text_content = spec.text_content;
     l.font_id = spec.font_id;
     l.font_size.value = spec.font_size;

@@ -16,13 +16,14 @@ std::size_t LayoutCacheKeyHash::operator()(const LayoutCacheKey& key) const {
     hash_combine(seed, key.text);
     hash_combine(seed, key.font_id);
     hash_combine(seed, key.pixel_size);
-    hash_combine(seed, key.box_width);
-    hash_combine(seed, key.box_height);
-    hash_combine(seed, key.multiline);
-    hash_combine(seed, (int)key.alignment);
-    hash_combine(seed, key.tracking);
-    hash_combine(seed, key.word_wrap);
-    hash_combine(seed, key.use_sdf);
+    hash_combine(seed, key.box.width);
+    hash_combine(seed, key.box.height);
+    hash_combine(seed, (int)key.box.mode);
+    hash_combine(seed, (int)key.box.horizontal_align);
+    hash_combine(seed, (int)key.box.vertical_align);
+    hash_combine(seed, key.options.tracking);
+    hash_combine(seed, key.options.word_wrap);
+    hash_combine(seed, key.options.use_sdf);
     for (const auto& f : key.features) {
         hash_combine(seed, f.tag);
         hash_combine(seed, f.value);
@@ -30,7 +31,7 @@ std::size_t LayoutCacheKeyHash::operator()(const LayoutCacheKey& key) const {
     return seed;
 }
 
-LayoutCache::LayoutCache() = default;
+LayoutCache::LayoutCache() {}
 LayoutCache::~LayoutCache() = default;
 
 LayoutCache& LayoutCache::get_instance() {

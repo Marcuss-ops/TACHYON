@@ -1,13 +1,14 @@
 #pragma once
 
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
-#include "tachyon/text/core/layout/resolved_text_layout.h"
+#include "tachyon/text/layout/layout.h"
 #include "tachyon/core/math/vector2.h"
 #include "tachyon/text/animation/text_animator_utils.h"
 #include <string>
 #include <vector>
 #include <functional>
 #include <variant>
+#include <algorithm>
 
 namespace tachyon::text {
 
@@ -120,8 +121,8 @@ private:
     
     static void apply_position(PositionedGlyph& glyph, const TextAnimatorPropertySpec& spec, float staggered_t, float coverage) {
         math::Vector2 offset = sample_vector2_kfs(spec.position_offset_value, spec.position_offset_keyframes, staggered_t);
-        glyph.x += static_cast<std::int32_t>(std::lround(offset.x * coverage));
-        glyph.y += static_cast<std::int32_t>(std::lround(offset.y * coverage));
+        glyph.position.x += offset.x * coverage;
+        glyph.position.y += offset.y * coverage;
     }
     
     static void apply_scale(PositionedGlyph& glyph, const TextAnimatorPropertySpec& spec, float staggered_t, float coverage) {
@@ -178,8 +179,8 @@ private:
         for (size_t i = 0; i < glyphs.size() && i < staggered_ts.size() && i < coverages.size(); ++i) {
             if (coverages[i] <= 0.0f) continue;
             math::Vector2 offset = sample_vector2_kfs(spec.position_offset_value, spec.position_offset_keyframes, staggered_ts[i]);
-            glyphs[i].x += static_cast<std::int32_t>(std::lround(offset.x * coverages[i]));
-            glyphs[i].y += static_cast<std::int32_t>(std::lround(offset.y * coverages[i]));
+            glyphs[i].position.x += offset.x * coverages[i];
+            glyphs[i].position.y += offset.y * coverages[i];
         }
     }
     

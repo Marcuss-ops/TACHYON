@@ -158,6 +158,7 @@ public:
     LayerBuilder& opacity(double v);
     LayerBuilder& opacity(const AnimatedScalarSpec& anim_spec);
     LayerBuilder& position(double x, double y);
+    LayerBuilder& anchor(double x, double y);
     LayerBuilder& size(double w, double h);
     LayerBuilder& color(const ColorSpec& c);
     LayerBuilder& fill_color(const ColorSpec& c);
