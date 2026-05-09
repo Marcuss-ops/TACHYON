@@ -139,10 +139,10 @@ std::unique_ptr<FrameOutputSink> create_frame_output_sink(const RenderPlan& plan
     }
 
     if (output_requests_video_file(plan.output)) {
-        return create_ffmpeg_pipe_sink();
+        return create_async_output_sink(create_ffmpeg_pipe_sink());
     }
 
-    return create_png_sequence_sink();
+    return create_async_output_sink(create_png_sequence_sink());
 }
 
 } // namespace tachyon::output

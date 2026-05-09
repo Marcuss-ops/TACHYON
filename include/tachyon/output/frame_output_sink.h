@@ -44,6 +44,7 @@ std::unique_ptr<FrameOutputSink> create_png_sequence_sink();
 std::unique_ptr<FrameOutputSink> create_ffmpeg_pipe_sink();
 std::unique_ptr<FrameOutputSink> create_exr_sequence_sink();  // requires TACHYON_EXR
 std::unique_ptr<FrameOutputSink> create_frame_output_sink(const RenderPlan& plan);
+std::unique_ptr<FrameOutputSink> create_async_output_sink(std::unique_ptr<FrameOutputSink> inner);
 
 bool output_requests_png_sequence(const OutputContract& contract);
 bool output_requests_video_file(const OutputContract& contract);

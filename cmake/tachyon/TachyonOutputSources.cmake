@@ -8,6 +8,7 @@ set(TachyonOutputSources
     ${CMAKE_CURRENT_SOURCE_DIR}/output/ffmpeg/ffmpeg_pipe_sink.cpp
     ${CMAKE_SOURCE_DIR}/src/output/output_planner.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/output/ffmpeg/ffmpeg_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/output/async_output_sink.cpp
 )
 
 if(TACHYON_ENABLE_PRORES)
