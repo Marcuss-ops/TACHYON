@@ -3,11 +3,20 @@
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/runtime/compiler/scene_compiler.h"
 
+#include "tachyon/runtime/policy/worker_budget.h"
 #include <gtest/gtest.h>
 
 namespace tachyon {
 
 namespace {
+
+runtime::RenderWorkerBudget make_test_budget() {
+    runtime::RenderWorkerBudget budget;
+    budget.frame_concurrency = 1;
+    budget.pixel_concurrency = 1;
+    budget.total_threads = 1;
+    return budget;
+}
 
 SceneSpec make_scene(std::int64_t width, std::int64_t height) {
     LayerSpec layer;
@@ -80,7 +89,7 @@ TEST(QualityTierTests, TiersProduceDifferentFramebufferSizes) {
     auto run_tier = [&](const std::string& tier) {
         RenderExecutionPlan tier_plan = exec_plan;
         tier_plan.render_plan.quality_tier = tier;
-        const RenderSessionResult result = session.render(scene, *compiled.value, tier_plan, "");
+        const RenderSessionResult result = session.render(scene, *compiled.value, tier_plan, "", make_test_budget());
         ASSERT_FALSE(result.frames.empty());
         ASSERT_TRUE(result.frames[0].frame);
         return result.frames[0].frame;

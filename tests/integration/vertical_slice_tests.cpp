@@ -330,7 +330,7 @@ bool test_animated_2d_text() {
         .duration(3.0)
         .fps(30)
         .layer("title", [](LayerBuilder& l) {
-            l.text("Tachyon Engine").font("Arial").font_size(100).position(960, 540);
+            l.text().content("Tachyon Engine").font("Arial").font_size(100).done().position(960, 540);
         })
         .build_scene();
 

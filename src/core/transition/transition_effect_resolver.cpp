@@ -3,6 +3,7 @@
 #include "tachyon/core/policy/engine_policy.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/renderer2d/effects/core/transitions/transition_utils.h"
+#include "tachyon/core/transition/transition_simd_kernels.h"
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
@@ -19,65 +20,55 @@ using renderer2d::Color;
 using renderer2d::SurfaceRGBA;
 
 namespace {
-int resolve_openmp_threads() {
-#ifdef _OPENMP
-    int omp_threads = 1;
-    const char* omp_threads_env = std::getenv("TACHYON_OPENMP_THREADS_PER_FRAME");
-    if (omp_threads_env) {
-        char* endptr = nullptr;
-        long val = std::strtol(omp_threads_env, &endptr, 10);
-        if (endptr != omp_threads_env && val > 0) {
-            omp_threads = static_cast<int>(val);
-        }
-    } else {
-        unsigned int hw = std::thread::hardware_concurrency();
-        if (hw == 0) {
-            hw = 1;
-        }
-        omp_threads = static_cast<int>(hw);
-    }
-
-    const char* max_total_env = std::getenv("TACHYON_MAX_TOTAL_THREADS");
-    if (max_total_env) {
-        char* endptr = nullptr;
-        long max_total = std::strtol(max_total_env, &endptr, 10);
-        if (endptr != max_total_env && max_total > 0) {
-            omp_threads = std::max(1, static_cast<int>(std::min<long>(max_total, omp_threads)));
-        }
-    }
-
-    return std::max(1, omp_threads);
-#else
-    return 1;
-#endif
-}
 
 // Helper to create a "none" kernel that performs simple lerp
 TransitionKernel create_none_kernel() {
     TransitionKernel kernel;
-    kernel.apply = [](const SurfaceRGBA& input_a, const SurfaceRGBA* input_b, float progress) {
+    kernel.apply = [](const SurfaceRGBA& input_a, const SurfaceRGBA* input_b, float progress, int thread_count) {
+        const std::uint32_t width_u32 = input_a.width();
+        const std::uint32_t height_u32 = input_a.height();
         SurfaceRGBA output;
-        output.reset(input_a.width(), input_a.height());
+        output.reset(width_u32, height_u32);
         output.set_profile(input_a.profile());
         auto& pixels = output.mutable_pixels();
 
-        const float width = static_cast<float>(std::max<std::uint32_t>(1U, input_a.width()));
-        const float height = static_cast<float>(std::max<std::uint32_t>(1U, input_a.height()));
+        const int omp_threads = thread_count > 0 ? thread_count : 1;
 
-        const std::size_t width_u = static_cast<std::size_t>(input_a.width());
-        const int height_i = static_cast<int>(input_a.height());
-        const int width_i = static_cast<int>(input_a.width());
-        [[maybe_unused]] const int omp_threads = resolve_openmp_threads();
+        // Fast path: dimensions match exactly
+        if (input_b && input_b->width() == width_u32 && input_b->height() == height_u32) {
+            const float t = std::clamp(progress, 0.0f, 1.0f);
+            
+#ifdef _OPENMP
+            #pragma omp parallel for schedule(static) num_threads(omp_threads)
+#endif
+            for (int y = 0; y < static_cast<int>(height_u32); ++y) {
+                const std::size_t offset = static_cast<std::size_t>(y) * width_u32 * 4;
+                tachyon::runtime::simd::lerp_pixels_avx2(
+                    pixels.data() + offset, 
+                    input_a.pixels().data() + offset, 
+                    input_b->pixels().data() + offset, 
+                    static_cast<std::size_t>(width_u32) * 4, 
+                    t);
+            }
+            return output;
+        }
+
+        // Fallback for mismatched sizes
+        const float width_f = static_cast<float>(std::max<std::uint32_t>(1U, width_u32));
+        const float height_f = static_cast<float>(std::max<std::uint32_t>(1U, height_u32));
+        const std::size_t stride = static_cast<std::size_t>(width_u32) * 4;
 
 #ifdef _OPENMP
         #pragma omp parallel for schedule(static) num_threads(omp_threads)
 #endif
-        for (int y = 0; y < height_i; ++y) {
-            for (int x = 0; x < width_i; ++x) {
-                const float u = (static_cast<float>(x) + 0.5f) / width;
-                const float v = (static_cast<float>(y) + 0.5f) / height;
+        for (int y = 0; y < static_cast<int>(height_u32); ++y) {
+            const std::size_t row_start = static_cast<std::size_t>(y) * stride;
+            for (int x = 0; x < static_cast<int>(width_u32); ++x) {
+                const float u = (static_cast<float>(x) + 0.5f) / width_f;
+                const float v = (static_cast<float>(y) + 0.5f) / height_f;
                 Color out = lerp_surface_color(input_a, input_b, u, v, progress);
-                const std::size_t index = (static_cast<std::size_t>(y) * width_u + static_cast<std::size_t>(x)) * 4U;
+                
+                const std::size_t index = row_start + (static_cast<std::size_t>(x) * 4);
                 pixels[index] = out.r;
                 pixels[index + 1] = out.g;
                 pixels[index + 2] = out.b;
@@ -97,29 +88,30 @@ TransitionKernel create_cpu_kernel(CpuTransitionFn cpu_fn) {
     }
 
     TransitionKernel kernel;
-    kernel.apply = [cpu_fn](const SurfaceRGBA& input_a, const SurfaceRGBA* input_b, float progress) {
+    kernel.apply = [cpu_fn](const SurfaceRGBA& input_a, const SurfaceRGBA* input_b, float progress, int thread_count) {
+        const std::uint32_t width_u32 = input_a.width();
+        const std::uint32_t height_u32 = input_a.height();
         SurfaceRGBA output;
-        output.reset(input_a.width(), input_a.height());
+        output.reset(width_u32, height_u32);
         output.set_profile(input_a.profile());
         auto& pixels = output.mutable_pixels();
 
-        const float width = static_cast<float>(std::max<std::uint32_t>(1U, input_a.width()));
-        const float height = static_cast<float>(std::max<std::uint32_t>(1U, input_a.height()));
-
-        const std::size_t width_u = static_cast<std::size_t>(input_a.width());
-        const int height_i = static_cast<int>(input_a.height());
-        const int width_i = static_cast<int>(input_a.width());
-        [[maybe_unused]] const int omp_threads = resolve_openmp_threads();
+        const float width_f = static_cast<float>(std::max<std::uint32_t>(1U, width_u32));
+        const float height_f = static_cast<float>(std::max<std::uint32_t>(1U, height_u32));
+        const std::size_t stride = static_cast<std::size_t>(width_u32) * 4;
+        const int omp_threads = thread_count > 0 ? thread_count : 1;
 
 #ifdef _OPENMP
         #pragma omp parallel for schedule(static) num_threads(omp_threads)
 #endif
-        for (int y = 0; y < height_i; ++y) {
-            for (int x = 0; x < width_i; ++x) {
-                const float u = (static_cast<float>(x) + 0.5f) / width;
-                const float v = (static_cast<float>(y) + 0.5f) / height;
+        for (int y = 0; y < static_cast<int>(height_u32); ++y) {
+            const std::size_t row_start = static_cast<std::size_t>(y) * stride;
+            for (int x = 0; x < static_cast<int>(width_u32); ++x) {
+                const float u = (static_cast<float>(x) + 0.5f) / width_f;
+                const float v = (static_cast<float>(y) + 0.5f) / height_f;
                 Color out = cpu_fn(u, v, progress, input_a, input_b);
-                const std::size_t index = (static_cast<std::size_t>(y) * width_u + static_cast<std::size_t>(x)) * 4U;
+                
+                const std::size_t index = row_start + (static_cast<std::size_t>(x) * 4);
                 pixels[index] = out.r;
                 pixels[index + 1] = out.g;
                 pixels[index + 2] = out.b;

@@ -8,22 +8,22 @@
 namespace tachyon::runtime {
 
 bool test_worker_policy() {
-    WorkerPolicy policy;
+    RenderWorkerPolicy policy;
     
     // Default resolution
-    assert(policy.resolve(8) == 8);
+    assert(policy.resolve(8).total_threads == 8);
     
     // Overrides
     policy.requested_workers = 4;
-    assert(policy.resolve(8) == 4);
+    assert(policy.resolve(8).total_threads == 4);
     
     // Min/Max constraints
     policy.requested_workers = 0;
     policy.min_workers = 2;
-    assert(policy.resolve(8) == 2);
+    assert(policy.resolve(8).total_threads == 2);
     
     policy.max_workers = 6;
-    assert(policy.resolve(12) == 6);
+    assert(policy.resolve(12).total_threads == 6);
     
     return true;
 }

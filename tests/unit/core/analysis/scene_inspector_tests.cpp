@@ -29,9 +29,11 @@ bool run_scene_inspector_tests() {
 
     bool ok = true;
 
+    TransitionRegistry registry;
+
     {
         SceneSpec scene;
-        const auto report = inspect_scene(scene);
+        const auto report = inspect_scene(scene, registry);
         if (report.ok() || !has_issue(report, "scene.no_compositions")) {
             std::cerr << "scene_inspector: expected missing composition error\n";
             ok = false;
@@ -62,7 +64,7 @@ bool run_scene_inspector_tests() {
 
         scene.compositions.push_back(comp);
 
-        const auto report = inspect_scene(scene);
+        const auto report = inspect_scene(scene, registry);
         if (!has_issue(report, "composition.invalid_duration")
             || !has_issue(report, "text.empty")
             || !has_issue(report, "media.missing_asset")) {
@@ -85,7 +87,7 @@ bool run_scene_inspector_tests() {
         comp.layers.push_back(text_layer);
         scene.compositions.push_back(comp);
 
-        const auto report = inspect_scene(scene);
+        const auto report = inspect_scene(scene, registry);
         if (has_issue_with_severity(report, "text.font_size_default", InspectionSeverity::Info)) {
             std::cerr << "scene_inspector: info issues should be hidden by default\n";
             ok = false;
@@ -93,7 +95,7 @@ bool run_scene_inspector_tests() {
 
         InspectionOptions info_options;
         info_options.include_info = true;
-        const auto info_report = inspect_scene(scene, info_options);
+        const auto info_report = inspect_scene(scene, registry, info_options);
         if (!has_issue_with_severity(info_report, "layer.transition_in", InspectionSeverity::Info)) {
             std::cerr << "scene_inspector: expected info output when enabled\n";
             ok = false;
@@ -110,12 +112,12 @@ bool run_scene_inspector_tests() {
         text_layer.id = "title";
         text_layer.type = LayerType::Text;
         text_layer.text_content = "Hello";
-        text_layer.in_preset = "tachyon.textanim.fade_in";
-        text_layer.out_preset = "tachyon.textanim.fade_out";
+        text_layer.animation_in_preset = "tachyon.textanim.fade_in";
+        text_layer.animation_out_preset = "tachyon.textanim.fade_out";
         comp.layers.push_back(text_layer);
         scene.compositions.push_back(comp);
 
-        const auto report = inspect_scene(scene);
+        const auto report = inspect_scene(scene, registry);
         if (!has_issue_with_severity(report, "layer.in_preset", InspectionSeverity::Warning)
             || !has_issue_with_severity(report, "layer.out_preset", InspectionSeverity::Warning)) {
             std::cerr << "scene_inspector: expected warnings for legacy animation presets\n";

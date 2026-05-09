@@ -50,7 +50,10 @@ std::shared_ptr<SurfaceRGBA> make_canvas(
         ? static_cast<std::uint32_t>(std::max(1, target_rect->height))
         : static_cast<std::uint32_t>(std::max(1, state.height));
 
-    auto surface = std::make_shared<SurfaceRGBA>(width, height);
+    auto surface = context.surface_pool 
+        ? context.surface_pool->acquire(width, height)
+        : std::make_shared<SurfaceRGBA>(width, height);
+
     if (surface) {
         surface->set_profile(context.cms.working_profile);
         surface->clear(Color::transparent());

@@ -4,6 +4,7 @@
 #include "tachyon/runtime/execution/render_progress_sink.h"
 #include "tachyon/runtime/execution/jobs/render_job.h"
 #include "tachyon/runtime/profiling/render_profiler.h"
+#include "tachyon/runtime/policy/worker_policy.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
 #include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
 #include "tachyon/presets/text/text_registry.h"
@@ -127,17 +128,18 @@ RenderSessionResult render_with_session(
         session.set_memory_budget_bytes(*options.memory_budget_bytes);
     }
 
-    std::size_t concurrency = options.worker_count;
-    if (concurrency == 0) {
-        const std::size_t hw_threads = std::thread::hardware_concurrency();
-        concurrency = std::max<std::size_t>(1, hw_threads > 2 ? hw_threads - 1 : 1);
-    }
+    ::tachyon::runtime::RenderWorkerPolicy policy;
+    policy.requested_workers = options.worker_count;
+    
+    const auto budget = policy.resolve(std::thread::hardware_concurrency());
 
     if (options.verbose) {
         sink->on_message("Starting render: " + resolved_job.job_id);
         sink->on_message("Composition: " + resolved_job.composition_target);
         sink->on_message("Frames: " + std::to_string(resolved_job.frame_range.start) + " -> " + std::to_string(resolved_job.frame_range.end));
         sink->on_message("Output: " + resolved_job.output.destination.path);
+        sink->on_message("Budget resolved: frames=" + std::to_string(budget.frame_concurrency) + 
+                         ", pixels/frame=" + std::to_string(budget.pixel_concurrency));
     }
 
     sink->on_phase_start(RenderPhase::Render);
@@ -146,7 +148,7 @@ RenderSessionResult render_with_session(
         compiled_scene,
         *execution_result.value,
         resolved_job.output.destination.path,
-        concurrency);
+        budget);
     sink->on_phase_complete(RenderPhase::Render);
 
     const auto total_end = std::chrono::high_resolution_clock::now();

@@ -13,6 +13,7 @@
 #include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
 #include "tachyon/presets/text/text_registry.h"
 #include "tachyon/runtime/execution/compiled_frame_program.h"
+#include "tachyon/runtime/policy/worker_budget.h"
 
 #include <cstddef>
 #include <filesystem>
@@ -92,7 +93,7 @@ public:
         const CompiledScene& compiled_scene,
         const RenderExecutionPlan& execution_plan,
         const std::filesystem::path& output_path,
-        std::size_t worker_count,
+        const ::tachyon::runtime::RenderWorkerBudget& budget = ::tachyon::runtime::RenderWorkerBudget{},
         CancelFlag* cancel_flag = nullptr);
     // 100x performance: render using precompiled frame program
     RenderSessionResult render(const CompiledFrameProgram& program, double time_sec, const std::filesystem::path& output_path = {});
@@ -115,6 +116,7 @@ private:
     std::unique_ptr<media::PlaybackScheduler> m_scheduler;
     
     std::unique_ptr<runtime::RuntimeSurfacePool> m_surface_pool;
+    std::shared_ptr<renderer2d::SurfacePool> m_renderer2d_surface_pool{std::make_shared<renderer2d::SurfacePool>()};
     std::unique_ptr<runtime::PresentationClock> m_clock;
     std::unique_ptr<runtime::FramebufferPlaybackQueue> m_playback_queue;
 

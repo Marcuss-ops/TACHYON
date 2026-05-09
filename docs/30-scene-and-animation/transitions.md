@@ -47,3 +47,26 @@ This document describes how transitions work today and how to add new ones witho
 - `none` stays `none`.
 - An explicit transition id stays explicit.
 - Runtime effects and authoring aliases stay separate concerns.
+
+## Performance Optimizations (Changelog 2026-05-09)
+
+### Done Today
+- **Direct-Buffer Kernels**: Removed `set_pixel()` overhead from the hot path. Transition kernels now write directly to raw pixel buffers with pointer arithmetic.
+- **OpenMP Parallelization**: Transitions are now parallelized at the pixel-row level using OpenMP, respecting the hardware thread budget.
+- **Bilinear Fast-Path**: Optimized texture sampling with a fast-path for integer-aligned coordinates, avoiding interpolation math when unnecessary.
+- **Same-Size Fast-Path**: Added a specialized kernel for transitions where source and destination surfaces have identical dimensions, skipping UV transformations.
+- **Zero-Allocation Rendering**: Integrated `renderer2d::SurfacePool` into the composition pipeline. Temporary transition buffers are now recycled from a pool instead of being allocated/deallocated per frame.
+
+### Benchmark Results
+*Benchmark: `soft_zoom_blur` @ 1080p, 96 frames, 8-core CPU*
+
+| Metric | Baseline (PR 1) | **Optimized (PR 2/3)** | Speedup |
+|--------|----------------|-----------------------|---------|
+| Total wall time (ms) | 42,439.0 | **24,305.0** | **1.75x** |
+| Compute-only (ms) | 30,189.0 | **12,276.0** | **2.46x** |
+| Memory Overhead | Raw Allocations | **Pooled Reuse** | **Near-Zero** |
+
+### Next Goals
+- [ ] **SIMD Kernels**: Implement AVX2/SSE4.2 vectorized kernels for standard blend modes and transitions.
+- [ ] **Pre-multiplied Alpha**: Shift the entire 2D pipeline to pre-multiplied alpha to avoid redundant alpha divisions in the hot path.
+- [ ] **Cache Locality**: Optimize tile rendering order to improve CPU L3 cache hit rates during heavy composition.

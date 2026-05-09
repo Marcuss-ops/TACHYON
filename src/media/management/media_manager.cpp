@@ -1,6 +1,7 @@
 #include "tachyon/media/management/media_manager.h"
 #include "tachyon/media/loading/mesh_loader.h"
 #include <cmath>
+#include <chrono>
 #include <iostream>
 #include <iostream>
 
@@ -108,7 +109,15 @@ const renderer2d::SurfaceRGBA* MediaManager::get_video_frame(const std::filesyst
     }
 
     auto frame = std::make_unique<renderer2d::SurfaceRGBA>(1, 1);
-    if (decoder->get_frame_into(time, *frame)) {
+    const auto decode_start = std::chrono::high_resolution_clock::now();
+    bool decode_ok = decoder->get_frame_into(time, *frame);
+    const auto decode_end = std::chrono::high_resolution_clock::now();
+    
+    if (decode_ok) {
+        if (diagnostics) {
+            const double decode_ms = std::chrono::duration<double, std::milli>(decode_end - decode_start).count();
+            diagnostics->add_timing("decode", "video_frame_decode", decode_ms);
+        }
         const renderer2d::SurfaceRGBA* ptr = frame.get();
         m_frame_cache->put(key, std::move(frame));
         return ptr;

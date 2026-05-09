@@ -39,8 +39,8 @@ inline TextMeasureResult measure_text(FontRegistry& registry, std::string_view t
         layout_options
     );
     
-    result.width = layout_result.total_bounds.width;
-    result.height = layout_result.total_bounds.height;
+    result.width = layout_result.logical_bounds.width;
+    result.height = layout_result.logical_bounds.height;
     
     return result;
 }

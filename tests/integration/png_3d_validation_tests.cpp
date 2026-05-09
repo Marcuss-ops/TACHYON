@@ -11,6 +11,7 @@
 #include "tachyon/renderer2d/effects/effect_registry.h"
 #include "tachyon/render/render_intent.h"
 #include "tachyon/transition_registry.h"
+#include "tachyon/presets/effects/effect_manifest.h"
 
 #include <algorithm>
 #include <cmath>
@@ -432,7 +433,8 @@ tachyon::RasterizedFrame2D render_scene(
 
     tachyon::renderer2d::EffectRegistry effect_reg;
     tachyon::TransitionRegistry transition_reg; // In tests we use a fresh registry
-    tachyon::renderer2d::register_builtin_effects(effect_reg, transition_reg);
+    tachyon::presets::EffectManifest manifest;
+    tachyon::renderer2d::register_builtin_effects(effect_reg, manifest, transition_reg);
     tachyon::render::RenderIntent intent_placeholder; 
     return tachyon::render_evaluated_composition_2d(*state, intent_placeholder, plan, task, context, effect_reg);
 }

@@ -13,6 +13,12 @@ enum class DiagnosticSeverity {
     Error
 };
 
+struct TimingSample {
+    std::string category;
+    std::string label;
+    double milliseconds{0.0};
+};
+
 struct Diagnostic {
     DiagnosticSeverity severity{DiagnosticSeverity::Error};
     std::string category;
@@ -25,6 +31,7 @@ struct Diagnostic {
 class DiagnosticBag {
 public:
     std::vector<Diagnostic> diagnostics;
+    std::vector<TimingSample> timings;
 
     [[nodiscard]] bool ok() const noexcept {
         for (const auto& diagnostic : diagnostics) {
@@ -49,6 +56,10 @@ public:
 
     void add_error(std::string code, std::string message, std::string path = {}) {
         add(DiagnosticSeverity::Error, "general", std::move(code), std::move(message), std::move(path));
+    }
+
+    void add_timing(std::string category, std::string label, double milliseconds) {
+        timings.push_back({std::move(category), std::move(label), milliseconds});
     }
 
     [[nodiscard]] bool has_warnings() const noexcept {
