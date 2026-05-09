@@ -43,7 +43,7 @@ TransitionKernel create_none_kernel() {
 #endif
             for (int y = 0; y < static_cast<int>(height_u32); ++y) {
                 const std::size_t offset = static_cast<std::size_t>(y) * width_u32 * 4;
-                tachyon::runtime::simd::lerp_pixels_avx2(
+                tachyon::runtime::simd::lerp_pixels_best(
                     pixels.data() + offset, 
                     input_a.pixels().data() + offset, 
                     input_b->pixels().data() + offset, 

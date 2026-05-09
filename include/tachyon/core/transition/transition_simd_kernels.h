@@ -1,41 +1,31 @@
 #pragma once
+
 #include <cstddef>
-#include <immintrin.h>
 
 namespace tachyon::runtime::simd {
 
 /**
- * @brief Performs a linear blend (lerp) between two buffers using AVX2.
- * pixels_out = pixels_a * (1 - t) + pixels_b * t
- * @param pixels_out Destination buffer (must be large enough)
- * @param pixels_a Source buffer A
- * @param pixels_b Source buffer B
- * @param count Number of float values to process
- * @param t Blend factor [0, 1]
+ * @brief Scalar linear blend: out = a * (1 - t) + b * t
  */
-inline void lerp_pixels_avx2(float* pixels_out, const float* pixels_a, const float* pixels_b, std::size_t count, float t) {
-    const __m256 vt = _mm256_set1_ps(t);
-    const __m256 v_inv_t = _mm256_set1_ps(1.0f - t);
+void lerp_pixels_scalar(float* out, const float* a, const float* b, std::size_t count, float t);
 
-    std::size_t i = 0;
-    // Process 8 floats at a time
-    for (; i + 7 < count; i += 8) {
-        __m256 va = _mm256_loadu_ps(pixels_a + i);
-        __m256 vb = _mm256_loadu_ps(pixels_b + i);
-        
-        __m256 res = _mm256_add_ps(
-            _mm256_mul_ps(va, v_inv_t),
-            _mm256_mul_ps(vb, vt)
-        );
-        
-        _mm256_storeu_ps(pixels_out + i, res);
-    }
+/**
+ * @brief Check if AVX2 is available on the current CPU.
+ */
+bool avx2_available();
 
-    // Scalar fallback for remaining elements
-    const float inv_t = 1.0f - t;
-    for (; i < count; ++i) {
-        pixels_out[i] = pixels_a[i] * inv_t + pixels_b[i] * t;
-    }
-}
+/**
+ * @brief AVX2 linear blend: out = a * (1 - t) + b * t
+ *
+ * Requires AVX2 support. Call avx2_available() first.
+ */
+void lerp_pixels_avx2(float* out, const float* a, const float* b, std::size_t count, float t);
+
+/**
+ * @brief Best-available linear blend dispatch.
+ *
+ * Uses AVX2 if available at runtime, otherwise falls back to scalar.
+ */
+void lerp_pixels_best(float* out, const float* a, const float* b, std::size_t count, float t);
 
 } // namespace tachyon::runtime::simd

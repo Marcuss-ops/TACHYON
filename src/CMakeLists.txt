@@ -130,10 +130,13 @@ target_sources(TachyonCore PRIVATE
     ${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/src/clipper.rectclip.cpp
 )
 
+target_sources(TachyonCore PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/transition/transition_simd_kernels_avx2.cpp
+)
 if(MSVC)
-    set_source_files_properties(core/transition/transition_effect_resolver.cpp PROPERTIES COMPILE_FLAGS "/arch:AVX2")
+    set_source_files_properties(core/transition/transition_simd_kernels_avx2.cpp PROPERTIES COMPILE_FLAGS "/arch:AVX2")
 else()
-    set_source_files_properties(core/transition/transition_effect_resolver.cpp PROPERTIES COMPILE_FLAGS "-mavx2")
+    set_source_files_properties(core/transition/transition_simd_kernels_avx2.cpp PROPERTIES COMPILE_FLAGS "-mavx2")
 endif()
 target_compile_definitions(TachyonCore PRIVATE "TACHYON_AVX2")
 
