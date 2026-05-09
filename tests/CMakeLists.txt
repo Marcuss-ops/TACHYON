@@ -30,7 +30,7 @@ include(cmake/RenderTests.cmake)
 include(cmake/SmokeTests.cmake)
 
 # Labs
-add_executable(transition_perf_lab labs/transition_perf_lab.cpp)
+add_executable(transition_perf_lab perf/transition_perf_lab.cpp)
 target_link_libraries(transition_perf_lab PRIVATE 
     TachyonCore 
     TachyonMedia 

@@ -96,7 +96,70 @@ void apply_wipe_linear_direct(
     }
 }
 
+void apply_pixelate_direct(
+    float* out,
+    const float* from,
+    const float* to,
+    uint32_t width,
+    uint32_t height,
+    float t,
+    int thread_count) {
+    
+    const float grid = std::max(2.0f, 20.0f - 19.0f * t);
+    const float inv_grid = 1.0f / grid;
+    const float inv_t = 1.0f - t;
+    
+    const int omp_threads = thread_count > 0 ? thread_count : 1;
+    const int grid_count = static_cast<int>(std::ceil(grid));
+
+#ifdef _OPENMP
+    #pragma omp parallel for schedule(dynamic) num_threads(omp_threads)
+#endif
+    for (int gy = 0; gy < grid_count; ++gy) {
+        const float v_start = static_cast<float>(gy) * inv_grid;
+        const float v_end = static_cast<float>(gy + 1) * inv_grid;
+        
+        const uint32_t sy = std::min(height - 1, static_cast<uint32_t>((v_start + 0.001f) * static_cast<float>(height)));
+        const uint32_t y_start = static_cast<uint32_t>(v_start * static_cast<float>(height));
+        const uint32_t y_end = std::min(height, static_cast<uint32_t>(v_end * static_cast<float>(height)));
+        
+        if (y_start >= y_end) continue;
+
+        for (int gx = 0; gx < grid_count; ++gx) {
+            const float u_start = static_cast<float>(gx) * inv_grid;
+            const float u_end = static_cast<float>(gx + 1) * inv_grid;
+            
+            const uint32_t sx = std::min(width - 1, static_cast<uint32_t>((u_start + 0.001f) * static_cast<float>(width)));
+            const uint32_t x_start = static_cast<uint32_t>(u_start * static_cast<float>(width));
+            const uint32_t x_end = std::min(width, static_cast<uint32_t>(u_end * static_cast<float>(width)));
+            
+            if (x_start >= x_end) continue;
+
+            const size_t sample_offset = (static_cast<size_t>(sy) * width + sx) * 4;
+            const float* p_from = from + sample_offset;
+            const float* p_to = to ? (to + sample_offset) : p_from;
+            
+            const float r = p_from[0] * inv_t + p_to[0] * t;
+            const float g = p_from[1] * inv_t + p_to[1] * t;
+            const float b = p_from[2] * inv_t + p_to[2] * t;
+            const float a = p_from[3] * inv_t + p_to[3] * t;
+
+            for (uint32_t y = y_start; y < y_end; ++y) {
+                float* row = out + (static_cast<size_t>(y) * width * 4);
+                for (uint32_t x = x_start; x < x_end; ++x) {
+                    float* p = row + (x * 4);
+                    p[0] = r;
+                    p[1] = g;
+                    p[2] = b;
+                    p[3] = a;
+                }
+            }
+        }
+    }
+}
+
 } // namespace
+
 
 bool apply_transition_fast_path(
     const std::string& transition_id,
@@ -141,6 +204,16 @@ bool apply_transition_fast_path(
             from.pixels().data(), 
             to ? to->pixels().data() : nullptr, 
             w, h, t, 
+            thread_count);
+        return true;
+    }
+
+    if (transition_id == ids::transition::pixelate) {
+        apply_pixelate_direct(
+            output.mutable_pixels().data(),
+            from.pixels().data(),
+            to ? to->pixels().data() : nullptr,
+            w, h, t,
             thread_count);
         return true;
     }

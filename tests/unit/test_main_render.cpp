@@ -25,6 +25,7 @@ bool run_time_remap_tests();
 bool run_frame_blend_tests();
 bool run_rolling_shutter_tests();
 bool run_3d_modifier_tests();
+bool run_transition_fast_paths_tests();
 
 int main(int argc, char** argv) {
     using namespace tachyon::test;
@@ -39,12 +40,14 @@ int main(int argc, char** argv) {
         {"surface", run_surface_tests},
         {"draw_list_builder", run_draw_list_builder_tests},
         {"blend_modes", run_blend_modes_tests},
+        {"transition_fast_paths", run_transition_fast_paths_tests},
         {"evaluated_composition_renderer", run_evaluated_composition_renderer_tests},
         {"path_rasterizer", run_path_rasterizer_tests},
         {"path_rasterizer_aa", run_path_rasterizer_aa_tests},
         {"tiling", tachyon::run_tiling_tests},
         {"effect_host", run_effect_host_tests},
         {"matte_resolver", run_matte_resolver_tests},
+#ifdef TACHYON_ENABLE_3D
         {"render_session", run_render_session_tests},
         {"parallax_cards", run_parallax_cards_tests},
         {"png_3d_validation", run_png_3d_validation_tests},
@@ -53,6 +56,7 @@ int main(int argc, char** argv) {
         {"frame_blend", run_frame_blend_tests},
         {"rolling_shutter", run_rolling_shutter_tests},
         {"three_d_modifier", run_3d_modifier_tests},
+#endif
     };
 
     return run_test_suite(argc, argv, tests);

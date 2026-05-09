@@ -22,6 +22,7 @@ add_executable(TachyonRenderTests
     unit/renderer2d/utilities/surface_tests.cpp
     unit/renderer2d/composition/draw_list_builder_tests.cpp
     unit/renderer2d/effects/blend_modes_tests.cpp
+    unit/renderer2d/effects/transition_fast_paths_tests.cpp
     unit/renderer2d/rasterization/path_rasterizer_tests.cpp
     unit/renderer2d/rasterization/path_rasterizer_aa_tests.cpp
     unit/renderer2d/utilities/tiling_tests.cpp
@@ -34,6 +35,7 @@ add_executable(TachyonRenderTests
 target_compile_definitions(TachyonRenderTests
     PRIVATE
         TACHYON_TESTS_SOURCE_DIR="${TACHYON_TESTS_SOURCE_DIR}"
+        $<$<BOOL:${TACHYON_ENABLE_3D}>:TACHYON_ENABLE_3D>
 )
 
 target_link_libraries(TachyonRenderTests
@@ -42,6 +44,8 @@ target_link_libraries(TachyonRenderTests
         TachyonPresets
         TachyonRenderer2D
         TachyonRuntime
+        TachyonPlatform
+        TachyonTimeline
 )
 
 if(TACHYON_ENABLE_3D)
@@ -73,6 +77,7 @@ if(TACHYON_ENABLE_3D)
     target_compile_definitions(TachyonRenderPipelineTests
         PRIVATE
             TACHYON_TESTS_SOURCE_DIR="${TACHYON_TESTS_SOURCE_DIR}"
+            TACHYON_ENABLE_3D
     )
 
     target_link_libraries(TachyonRenderPipelineTests
