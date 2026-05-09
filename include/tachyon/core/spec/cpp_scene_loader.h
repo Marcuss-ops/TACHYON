@@ -40,7 +40,8 @@ public:
 private:
 };
 
-// Signature for the entry point in the C++ scene script
-typedef void (*BuildSceneFunc)(SceneSpec&);
+// Signature for the entry point in the C++ scene script.
+// The scene is returned by value so the DLL keeps construction and ownership local.
+typedef SceneSpec (*BuildSceneFunc)();
 
 } // namespace tachyon

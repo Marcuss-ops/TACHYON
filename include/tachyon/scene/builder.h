@@ -245,6 +245,7 @@ class TACHYON_API SceneBuilder {
     SceneSpec spec_;
     const presets::EffectPresetRegistry& preset_registry_;
 public:
+    SceneBuilder();
     SceneBuilder(std::string id, std::string name, const presets::EffectPresetRegistry& preset_registry);
 
     SceneBuilder& project(std::string id, std::string name);
@@ -257,10 +258,12 @@ public:
  * @brief Main entry point for creating a composition.
  */
 TACHYON_API CompositionBuilder Composition(std::string id, const presets::EffectPresetRegistry& preset_registry);
+TACHYON_API CompositionBuilder Composition(std::string id);
 
 /**
  * @brief Main entry point for creating a multi-composition scene.
  */
 TACHYON_API SceneBuilder Scene(const presets::EffectPresetRegistry& preset_registry);
+TACHYON_API SceneBuilder Scene();
 
 } // namespace tachyon::scene

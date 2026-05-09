@@ -3,10 +3,10 @@
 #include "tachyon/presets/background/fluent.h"
 #include "tachyon/presets/background/procedural.h"
 
-extern "C" void build_scene(tachyon::SceneSpec& out) {
+extern "C" tachyon::SceneSpec build_scene() {
     using namespace tachyon;
-    
-    out = scene::SceneBuilder()
+
+    return scene::Scene()
         .project("test_vslice", "Vertical Slice Test")
         .composition("main", [](scene::CompositionBuilder& c) {
             c.size(1920, 1080)

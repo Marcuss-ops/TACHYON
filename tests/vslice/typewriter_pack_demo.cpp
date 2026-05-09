@@ -1,10 +1,9 @@
 #include "tachyon/scene/builder.h"
 #include "tachyon/text/animation/text_presets.h"
 
-extern "C" void build_scene(tachyon::SceneSpec& out) {
+extern "C" tachyon::SceneSpec build_scene() {
     using namespace tachyon;
-
-    out = scene::Composition("main")
+    return scene::Composition("main")
         .size(1920, 1080)
         .fps(24)
         .duration(6.0)

@@ -1,9 +1,20 @@
 #include "tachyon/media/management/media_manager.h"
 #include "tachyon/media/loading/mesh_loader.h"
+#include <cmath>
 #include <iostream>
 #include <iostream>
 
 namespace tachyon::media {
+
+namespace {
+
+std::string make_video_frame_cache_key(const std::filesystem::path& resolved_path, double time) {
+    const auto normalized = resolved_path.lexically_normal();
+    const auto frame_index = static_cast<long long>(std::llround(time * 1000000.0));
+    return normalized.string() + "@us:" + std::to_string(frame_index);
+}
+
+} // namespace
 
 MediaManager::MediaManager()
     : m_proxy_worker(std::make_unique<ProxyWorker>(m_proxy_manifest)),
@@ -65,7 +76,7 @@ const HDRTextureData* MediaManager::get_hdr_image(
 
 const renderer2d::SurfaceRGBA* MediaManager::get_video_frame(const std::filesystem::path& path, double time, DiagnosticBag* diagnostics) {
     std::filesystem::path resolved = resolve_media_path(path, ResolutionPurpose::Playback);
-    const std::string key = resolved.string() + "@" + std::to_string(time);
+    const std::string key = make_video_frame_cache_key(resolved, time);
 
     if (auto cached = m_frame_cache->get(key)) {
         return cached;
@@ -241,8 +252,9 @@ std::shared_ptr<const MeshAsset> MediaManager::get_mesh(const std::filesystem::p
     return shared_mesh;
 }
 
-void MediaManager::store_video_frame(const std::string& path, double time, std::unique_ptr<renderer2d::SurfaceRGBA> frame) {
-    std::string key = path + "@" + std::to_string(time);
+void MediaManager::store_video_frame(const std::filesystem::path& path, double time, std::unique_ptr<renderer2d::SurfaceRGBA> frame) {
+    const std::filesystem::path resolved = resolve_media_path(path, ResolutionPurpose::Playback);
+    const std::string key = make_video_frame_cache_key(resolved, time);
     m_frame_cache->put(key, std::move(frame));
 }
 

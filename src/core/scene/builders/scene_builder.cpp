@@ -2,7 +2,22 @@
 
 namespace tachyon::scene {
 
+namespace {
+
+const presets::EffectPresetRegistry& default_effect_registry() {
+    static const presets::EffectPresetRegistry registry;
+    return registry;
+}
+
+} // namespace
+
 // SceneBuilder implementation
+SceneBuilder::SceneBuilder()
+    : preset_registry_(default_effect_registry()) {
+    spec_.project.id = "new_project";
+    spec_.project.name = "New Project";
+}
+
 SceneBuilder::SceneBuilder(std::string id, std::string name, const presets::EffectPresetRegistry& preset_registry)
     : preset_registry_(preset_registry) {
     spec_.project.id = std::move(id);
@@ -30,8 +45,16 @@ CompositionBuilder Composition(std::string id, const presets::EffectPresetRegist
     return CompositionBuilder(std::move(id), preset_registry);
 }
 
+CompositionBuilder Composition(std::string id) {
+    return CompositionBuilder(std::move(id), default_effect_registry());
+}
+
 SceneBuilder Scene(const presets::EffectPresetRegistry& preset_registry) {
     return SceneBuilder("new_project", "New Project", preset_registry);
+}
+
+SceneBuilder Scene() {
+    return SceneBuilder();
 }
 
 } // namespace tachyon::scene
