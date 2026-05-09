@@ -145,7 +145,9 @@ void add_color_ramp(
 
     ::tachyon::TextAnimatorSpec animator;
     animator.name = name;
-    animator.selector.type = "range";
+    // Typewriter reveal is time-driven, so every glyph must be eligible;
+    // staggering decides *when* each glyph animates in.
+    animator.selector.type = "all";
     animator.selector.based_on = based_on;
     animator.selector.stagger_mode = "character";
     animator.selector.stagger_delay = 1.0 / rate;
