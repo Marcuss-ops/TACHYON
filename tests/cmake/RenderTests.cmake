@@ -16,6 +16,7 @@ add_executable(TachyonRenderTests
     unit/media/asset_resolution_tests.cpp
     unit/media/image_manager_tests.cpp
     unit/media/image_decode_tests.cpp
+    unit/media/media_manager_cache_tests.cpp
     unit/renderer2d/composition/framebuffer_tests.cpp
     unit/renderer2d/rasterization/rasterizer_tests.cpp
     unit/renderer2d/utilities/surface_tests.cpp

@@ -1,16 +1,17 @@
 #include "tachyon/runtime/execution/native_render.h"
-#include "tachyon/presets/scene/scene_preset_registry.h"
-#include "tachyon/presets/effects/effect_manifest.h"
 #include "tachyon/core/transition/transition_descriptor.h"
-#include "tachyon/runtime/compiler/scene_compiler.h"
+#include "tachyon/core/transition/transition_effect_resolver.h"
+#include "tachyon/media/management/media_manager.h"
+#include "tachyon/renderer2d/effects/core/transitions/basic_transitions.h"
+#include "tachyon/renderer2d/effects/core/transitions/artistic_transitions.h"
+#include "tachyon/renderer2d/effects/core/transitions/light_leak_transitions.h"
+#include "tachyon/renderer2d/surface/surface_sampling.h"
 #include "tachyon/output/frame_output_sink.h"
-#include "tachyon/renderer2d/effects/core/glsl_transition_effect.h"
-#include "tachyon/renderer2d/effects/effect_host.h"
-#include "tachyon/renderer2d/effects/effect_utils.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
-#include "tachyon/runtime/execution/session/render_session.h"
 #include <iostream>
 #include <array>
+#include <algorithm>
+#include <chrono>
 #include <string>
 #include <filesystem>
 
@@ -18,64 +19,18 @@ namespace tachyon {
 
 namespace {
 
-std::optional<renderer2d::SurfaceRGBA> render_scene_still_surface(
-    const SceneSpec& scene,
-    const std::string& label,
-    double& out_fps) {
-    if (scene.compositions.empty()) {
+std::optional<renderer2d::SurfaceRGBA> load_video_frame_surface(
+    media::MediaManager& media_manager,
+    const std::filesystem::path& video_path,
+    double time,
+    std::ostream& err) {
+    DiagnosticBag diagnostics;
+    const auto* frame = media_manager.get_video_frame(video_path, time, &diagnostics);
+    if (!frame) {
+        err << "[NativeRender] FAIL: could not load video frame from " << video_path.string() << '\n';
         return std::nullopt;
     }
-
-    const CompositionSpec& composition = scene.compositions.front();
-    out_fps = composition.frame_rate.denominator > 0
-        ? static_cast<double>(composition.frame_rate.numerator) / static_cast<double>(composition.frame_rate.denominator)
-        : 30.0;
-    if (out_fps <= 0.0) {
-        out_fps = 30.0;
-    }
-
-    RenderJob job;
-    job.job_id = scene.project.id.empty() ? label + "_still" : scene.project.id + "_still";
-    job.scene_ref = label;
-    job.composition_target = composition.id;
-    job.frame_range = {0, 0};
-    job.output.destination.path.clear();
-    job.output.destination.overwrite = true;
-    job.output.profile.name = "png_sequence";
-    job.output.profile.class_name = "image-sequence";
-    job.output.profile.container = "png";
-    job.output.profile.format = OutputFormat::ImageSequence;
-    job.output.profile.alpha_mode = "preserved";
-    job.output.profile.video.codec = "png";
-    job.output.profile.video.pixel_format = "rgba8";
-    job.output.profile.video.rate_control_mode = "fixed";
-    job.output.profile.buffering.strategy = "default";
-    job.output.profile.color.space = "bt709";
-    job.output.profile.color.transfer = "srgb";
-    job.output.profile.color.range = "full";
-
-    SceneCompiler compiler;
-    const auto compiled_result = compiler.compile(scene);
-    if (!compiled_result.ok() || !compiled_result.value.has_value()) {
-        return std::nullopt;
-    }
-
-    const auto plan_result = build_render_plan(scene, job);
-    if (!plan_result.value.has_value()) {
-        return std::nullopt;
-    }
-    const auto exec_result = build_render_execution_plan(*plan_result.value, 0);
-    if (!exec_result.value.has_value()) {
-        return std::nullopt;
-    }
-
-    RenderSession session;
-    const RenderSessionResult session_result = session.render(scene, *compiled_result.value, *exec_result.value, {});
-    if (session_result.frames.empty() || !session_result.frames.front().frame) {
-        return std::nullopt;
-    }
-
-    return *session_result.frames.front().frame;
+    return *frame;
 }
 
 std::filesystem::path repo_root_path() {
@@ -83,19 +38,79 @@ std::filesystem::path repo_root_path() {
     return root.parent_path();
 }
 
+renderer2d::SurfaceRGBA resize_surface(const renderer2d::SurfaceRGBA& src, std::uint32_t width, std::uint32_t height) {
+    renderer2d::SurfaceRGBA out(width, height);
+    out.set_profile(src.profile());
+
+    if (width == 0U || height == 0U) {
+        return out;
+    }
+
+    for (std::uint32_t y = 0; y < height; ++y) {
+        for (std::uint32_t x = 0; x < width; ++x) {
+            const float u = (static_cast<float>(x) + 0.5f) / static_cast<float>(width);
+            const float v = (static_cast<float>(y) + 0.5f) / static_cast<float>(height);
+            out.set_pixel(x, y, renderer2d::sample_texture_bilinear(src, u, v, renderer2d::Color::white()));
+        }
+    }
+
+    return out;
+}
+
+std::array<double, 3> sample_average_rgb(const renderer2d::SurfaceRGBA& surface) {
+    double sum_r = 0.0;
+    double sum_g = 0.0;
+    double sum_b = 0.0;
+    std::size_t samples = 0;
+
+    const std::uint32_t step_x = std::max<std::uint32_t>(1U, surface.width() / 16U);
+    const std::uint32_t step_y = std::max<std::uint32_t>(1U, surface.height() / 16U);
+    for (std::uint32_t y = 0; y < surface.height(); y += step_y) {
+        for (std::uint32_t x = 0; x < surface.width(); x += step_x) {
+            const auto c = surface.get_pixel(x, y);
+            sum_r += c.r;
+            sum_g += c.g;
+            sum_b += c.b;
+            ++samples;
+        }
+    }
+
+    if (samples == 0) {
+        return {0.0, 0.0, 0.0};
+    }
+
+    return {
+        sum_r / static_cast<double>(samples),
+        sum_g / static_cast<double>(samples),
+        sum_b / static_cast<double>(samples)
+    };
+}
+
 bool render_transition_demo_mp4(
     const std::string& transition_id,
     const renderer2d::SurfaceRGBA& source,
     const renderer2d::SurfaceRGBA& target,
     const std::filesystem::path& output_path) {
+    const auto render_started = std::chrono::steady_clock::now();
 
-    renderer2d::EffectRegistry effect_registry;
     TransitionRegistry transition_registry;
     register_builtin_transitions(transition_registry);
-    presets::EffectManifest effect_manifest;
-    renderer2d::register_builtin_effects(effect_registry, effect_manifest, transition_registry);
-
-    auto host = renderer2d::create_effect_host(effect_registry);
+    for (auto* desc : transition_registry.list_all()) {
+        if (!desc) continue;
+        renderer2d::resolve_basic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
+        renderer2d::resolve_artistic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
+        renderer2d::resolve_light_leak_implementations(const_cast<TransitionDescriptor&>(*desc));
+    }
+    TransitionEffectResolver resolver{transition_registry};
+    TransitionEffectRequest request;
+    request.transition_id = transition_id;
+    request.preferred_backend = TransitionRuntimeKind::CpuPixel;
+    request.fallback_policy = TransitionFallbackPolicy::Strict;
+    const auto resolved = resolver.resolve(request);
+    if (!resolved.valid || !resolved.kernel.valid || !resolved.kernel.apply) {
+        std::cerr << "[NativeRender] FAIL: transition kernel resolve failed for " << transition_id << '\n';
+        return false;
+    }
 
     tachyon::RenderPlan plan;
     plan.job_id = "native-render-light-leak";
@@ -105,7 +120,7 @@ bool render_transition_demo_mp4(
     plan.composition.name = "main";
     plan.composition.width = static_cast<std::int64_t>(source.width());
     plan.composition.height = static_cast<std::int64_t>(source.height());
-    plan.composition.duration = 3.5;
+    plan.composition.duration = 4.0;
     plan.composition.frame_rate = {24, 1};
     plan.output.destination.path = output_path.string();
     plan.output.destination.overwrite = true;
@@ -131,12 +146,12 @@ bool render_transition_demo_mp4(
     }
 
     const double fps = 24.0;
-    const std::size_t frame_count = 48;
-    const std::size_t lead_in_frames = 4;
-    const std::size_t lead_out_frames = 4;
+    const std::size_t frame_count = 96;
+    const std::size_t lead_in_frames = 24;
+    const std::size_t lead_out_frames = 24;
     const std::size_t transition_frames = frame_count - lead_in_frames - lead_out_frames;
-    const renderer2d::SurfaceRGBA preview_source = source;
-    const renderer2d::SurfaceRGBA preview_target = target;
+    const renderer2d::SurfaceRGBA& preview_source = source;
+    const renderer2d::SurfaceRGBA& preview_target = target;
 
     for (std::size_t index = 0; index < frame_count; ++index) {
         float t = 0.0f;
@@ -152,20 +167,18 @@ bool render_transition_demo_mp4(
             t = 1.0f;
         }
 
-        renderer2d::EffectParams params;
-        params.scalars["t"] = t;
-        params.scalars["duration_seconds"] = 0.5f;
-        params.strings["transition_id"] = transition_id;
-        params.aux_surfaces["transition_to"] = &preview_target;
-
-        const auto blended_result = host->apply("tachyon.effect.transition.glsl", preview_source, params);
-        if (!blended_result.ok() || !blended_result.value.has_value()) {
-            return false;
+        const renderer2d::SurfaceRGBA blended_result = resolved.kernel.apply(preview_source, &preview_target, t);
+        if (index == 0 || index == lead_in_frames || index + 1 == frame_count) {
+            const auto avg = sample_average_rgb(blended_result);
+            std::cout << "[NativeRender] " << transition_id
+                      << " frame=" << (index + 1)
+                      << " t=" << t
+                      << " avg_rgb=(" << avg[0] << "," << avg[1] << "," << avg[2] << ")\n";
         }
 
         output::OutputFramePacket packet;
         packet.frame_number = static_cast<std::int64_t>(index + 1);
-        packet.frame = &blended_result.value.value();
+        packet.frame = &blended_result;
         packet.metadata.time_seconds = static_cast<double>(index) / fps;
         packet.metadata.scene_hash = transition_id;
         if (!sink->write_frame(packet)) {
@@ -173,7 +186,19 @@ bool render_transition_demo_mp4(
         }
     }
 
-    return sink->finish();
+    if (!sink->finish()) {
+        return false;
+    }
+
+    const auto render_finished = std::chrono::steady_clock::now();
+    const auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(render_finished - render_started).count();
+    std::cout << "[NativeRender] " << transition_id
+              << " total_ms=" << elapsed_ms
+              << " frames=" << frame_count
+              << " resolution=" << preview_source.width() << "x" << preview_source.height()
+              << '\n';
+
+    return true;
 }
 
 } // namespace
@@ -210,38 +235,40 @@ bool run_native_render_tests() {
         }
     }
 
-    std::cout << "[NativeRender] Rendering light leak transition demos...\n";
+    std::cout << "[NativeRender] Rendering transition demos from clip_a/clip_b...\n";
     struct DemoConfig {
         const char* transition_id;
         const char* file_name;
     };
 
-    const std::array<DemoConfig, 3> light_leak_demos{{
-        {"tachyon.transition.light_leak", "light_leak_demo.mp4"},
-        {"tachyon.transition.film_burn", "film_burn_demo.mp4"},
-        {"tachyon.transition.flash", "flash_demo.mp4"},
+    const std::array<DemoConfig, 11> transition_demos{{
+        {"tachyon.transition.crossfade", "crossfade_demo.mp4"},
+        {"tachyon.transition.slide_up", "slide_up_demo.mp4"},
+        {"tachyon.transition.swipe_left", "swipe_left_demo.mp4"},
+        {"tachyon.transition.wipe_linear", "wipe_linear_demo.mp4"},
+        {"tachyon.transition.luma_dissolve", "luma_dissolve_demo.mp4"},
+        {"tachyon.transition.smooth_wipe", "smooth_wipe_demo.mp4"},
+        {"tachyon.transition.soft_zoom_blur", "soft_zoom_blur_demo.mp4"},
+        {"tachyon.transition.flash_cut", "flash_cut_demo.mp4"},
+        {"tachyon.transition.lightleak.soft_warm_edge", "lightleak_soft_warm_edge_demo.mp4"},
+        {"tachyon.transition.lightleak.golden_sweep", "lightleak_golden_sweep_demo.mp4"},
+        {"tachyon.transition.lightleak.neon_pulse", "lightleak_neon_pulse_demo.mp4"},
     }};
 
-    const std::filesystem::path demo_dir = repo_root_path() / "output" / "light_leaks";
+    const std::filesystem::path demo_dir = repo_root_path() / "output" / "transitions" / "clip_pair_demos";
     std::filesystem::create_directories(demo_dir);
 
-    double source_fps = 30.0;
-    double target_fps = 30.0;
-    auto source_scene = presets::ScenePresetRegistry::instance().create("tachyon.scene.a", {});
-    auto target_scene = presets::ScenePresetRegistry::instance().create("tachyon.scene.b", {});
-    if (!source_scene.has_value() || !target_scene.has_value()) {
-        std::cerr << "[NativeRender] FAIL: scene preset lookup failed\n";
-        return false;
-    }
-
-    auto source_still = render_scene_still_surface(*source_scene, "tachyon.scene.a", source_fps);
-    auto target_still = render_scene_still_surface(*target_scene, "tachyon.scene.b", target_fps);
+    media::MediaManager media_manager;
+    const std::filesystem::path source_video = repo_root_path() / "output" / "transitions" / "clip_a.mp4";
+    const std::filesystem::path target_video = repo_root_path() / "output" / "transitions" / "clip_b.mp4";
+    auto source_still = load_video_frame_surface(media_manager, source_video, 0.0, std::cerr);
+    auto target_still = load_video_frame_surface(media_manager, target_video, 0.0, std::cerr);
     if (!source_still.has_value() || !target_still.has_value()) {
-        std::cerr << "[NativeRender] FAIL: still render failed\n";
+        std::cerr << "[NativeRender] FAIL: video still load failed\n";
         return false;
     }
 
-    for (const auto& demo : light_leak_demos) {
+    for (const auto& demo : transition_demos) {
         const std::filesystem::path mp4_path = demo_dir / demo.file_name;
 
         std::filesystem::remove(mp4_path);

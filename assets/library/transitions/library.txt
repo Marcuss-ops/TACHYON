@@ -21,6 +21,11 @@ tachyon.transition.directional_blur_wipe | Directional Blur Wipe | Blur wipe wit
 tachyon.transition.light_leak | Light Leak | High-quality evolving cinematic light leak | shaders/crossfade.glsl | thumbs/crossfade.png
 tachyon.transition.film_burn | Film Burn | Fiery red-orange film burn | shaders/crossfade.glsl | thumbs/crossfade.png
 
+# Modern V2
+tachyon.transition.smooth_wipe | Smooth Wipe | Soft feathered wipe transition | shaders/wipe_linear.glsl | thumbs/wipe_linear.png
+tachyon.transition.soft_zoom_blur | Soft Zoom Blur | Smooth zoom blur transition | shaders/zoom_blur.glsl | thumbs/zoom_blur.png
+tachyon.transition.flash_cut | Flash Cut | Fast bright flash transition | shaders/fade_to_black.glsl | thumbs/fade_to_black.png
+
 # Premium Light Leaks
 tachyon.transition.lightleak.soft_warm_edge | Soft Warm Edge Leak | Premium warm edge light leak | shaders/crossfade.glsl | thumbs/crossfade.png
 tachyon.transition.lightleak.golden_sweep | Golden Sweep | Soft golden cinematic sweep | shaders/crossfade.glsl | thumbs/crossfade.png

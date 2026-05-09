@@ -121,7 +121,7 @@ public:
         DiagnosticBag* diagnostics = nullptr);
 
     DiagnosticBag consume_diagnostics();
-    void store_video_frame(const std::string& path, double time, std::unique_ptr<renderer2d::SurfaceRGBA> frame);
+    void store_video_frame(const std::filesystem::path& path, double time, std::unique_ptr<renderer2d::SurfaceRGBA> frame);
     void clear_cache();
 
     std::shared_ptr<audio::AudioMixer> audio_mixer() { return m_audio_mixer; }

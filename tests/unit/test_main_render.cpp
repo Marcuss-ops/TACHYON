@@ -5,6 +5,7 @@ bool run_asset_resolution_tests();
 bool run_render_intent_tests();
 bool run_image_manager_tests();
 bool run_image_decode_tests();
+bool run_media_manager_cache_tests();
 bool run_framebuffer_tests();
 bool run_rasterizer_tests();
 bool run_surface_tests();
@@ -32,6 +33,7 @@ int main(int argc, char** argv) {
         {"render_intent", run_render_intent_tests},
         {"image_manager", run_image_manager_tests},
         {"image_decode", run_image_decode_tests},
+        {"media_manager_cache", run_media_manager_cache_tests},
         {"framebuffer", run_framebuffer_tests},
         {"rasterizer", run_rasterizer_tests},
         {"surface", run_surface_tests},

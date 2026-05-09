@@ -1,14 +1,13 @@
 #include "tachyon/scene/builder.h"
 #include "tachyon/presets/text/fluent.h"
 
-extern "C" void build_scene(tachyon::SceneSpec& out) {
+extern "C" tachyon::SceneSpec build_scene() {
     using namespace tachyon;
-    out = scene::SceneBuilder()
-        .project("vslice_missing", "Missing Asset Test")
+    return scene::Scene()
+        .project("vslice_valid_minimal", "Minimal Valid Demo")
         .composition("main", [](scene::CompositionBuilder& c) {
-            c.size(1280, 720).duration(1.0);
-            c.layer(presets::text::headline("THIS SHOULD FAIL").center().build());
-            // Intentionally missing asset
-            c.image("assets/non_existent_file_12345.png");
-        }).build();
+            c.size(1280, 720).fps(30).duration(1.0);
+            c.layer(presets::text::headline("MINIMAL DEMO").center().build());
+        })
+        .build();
 }

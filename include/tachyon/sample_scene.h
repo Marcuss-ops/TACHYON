@@ -18,8 +18,8 @@ namespace tachyon {
  * 
  * This is equivalent to the user's target API:
  * @code
- * extern "C" void build_scene(tachyon::SceneSpec& out) {
- *     out = scene::Scene()
+ * extern "C" tachyon::SceneSpec build_scene() {
+ *     return scene::Scene()
  *         .project("video_001", "My Video")
  *         .composition("main", [](auto& c) {
  *             c.size(1920, 1080)

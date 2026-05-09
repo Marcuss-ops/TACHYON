@@ -22,7 +22,7 @@ namespace tachyon {
 
 namespace {
 
-using BuildSceneFunc = void(*)(SceneSpec&);
+using BuildSceneFunc = SceneSpec(*)();
 
 struct LoadedLib {
     void* handle{nullptr};
@@ -79,9 +79,7 @@ CppSceneLoader::Result CppSceneLoader::load_from_file(
     if (!lib.build_fn) { result.diagnostics = lib.error; return result; }
 
     try {
-        SceneSpec scene;
-        lib.build_fn(scene);
-        result.scene    = std::move(scene);
+        result.scene    = lib.build_fn();
         result.success  = true;
     } catch (const std::exception& e) {
         result.diagnostics = std::string("build_scene() threw: ") + e.what();

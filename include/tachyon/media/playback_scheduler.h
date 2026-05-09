@@ -97,7 +97,7 @@ private:
                     auto frame = decoder->get_frame_at_time(task.time);
                     if (frame) {
                         m_manager.store_video_frame(
-                            task.asset_id,
+                            resolved_path,
                             task.time,
                             std::make_unique<renderer2d::SurfaceRGBA>(*frame));
                     }
