@@ -77,7 +77,7 @@ std::vector<BackgroundPresetSpec> BackgroundManifest::generate_preset_specs() co
             return build_background(p);
         }
     });
-    
+
     return specs;
 }
 

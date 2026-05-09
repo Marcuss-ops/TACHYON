@@ -1,7 +1,6 @@
 #include "layer_compiler.h"
 #include "tachyon/runtime/compiler/property_compiler.h"
 #include <algorithm>
-
 namespace tachyon {
 
 CompiledLayer LayerCompiler::compile_layer(
@@ -60,7 +59,7 @@ CompiledLayer LayerCompiler::compile_layer(
     compiled_layer.animated_effects = layer.animated_effects;
     compiled_layer.text_animators = layer.text_animators;
     compiled_layer.text_highlights = layer.text_highlights;
-    
+
     compiled_layer.mask_feather = static_cast<float>(layer.mask_feather.value.has_value() ? *layer.mask_feather.value : 0.0);
     compiled_layer.subtitle_path = layer.subtitle_path;
     compiled_layer.subtitle_outline_color = layer.subtitle_outline_color;

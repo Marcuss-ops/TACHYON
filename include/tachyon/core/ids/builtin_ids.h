@@ -47,6 +47,9 @@ inline constexpr std::string_view lightleak_amber_sweep = "tachyon.transition.li
 inline constexpr std::string_view lightleak_neon_pulse = "tachyon.transition.lightleak.neon_pulse";
 inline constexpr std::string_view lightleak_prism_shatter = "tachyon.transition.lightleak.prism_shatter";
 inline constexpr std::string_view lightleak_vintage_sepia = "tachyon.transition.lightleak.vintage_sepia";
+inline constexpr std::string_view flash_cut = "tachyon.transition.flash_cut";
+inline constexpr std::string_view smooth_wipe = "tachyon.transition.smooth_wipe";
+inline constexpr std::string_view soft_zoom_blur = "tachyon.transition.soft_zoom_blur";
 }
 
 namespace background {

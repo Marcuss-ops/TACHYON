@@ -4,6 +4,7 @@
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 #include "tachyon/core/types/colors.h"
 #include "tachyon/text/animation/text_presets.h"
+#include "tachyon/text/animation/text_animator_utils.h"
 #include "tachyon/presets/text/text_anchor.h"
 #include <string>
 #include <vector>
@@ -110,6 +111,11 @@ public:
         return *this;
     }
 
+    TextBuilder& fixed_pitch(bool enabled = true) {
+        spec_.text_box.fixed_pitch = enabled;
+        return *this;
+    }
+
     TextBuilder& start_time(double t) {
         spec_.start_time = t;
         spec_.in_point = t;
@@ -128,10 +134,16 @@ public:
 
     TextBuilder& animate(const TextAnimatorSpec& animator) {
         spec_.text_animators.push_back(animator);
+        if (::tachyon::text::uses_character_stagger_layout(animator)) {
+            spec_.text_box.fixed_pitch = true;
+        }
         return *this;
     }
 
     TextBuilder& animate(TextAnimatorSpec&& animator) {
+        if (::tachyon::text::uses_character_stagger_layout(animator)) {
+            spec_.text_box.fixed_pitch = true;
+        }
         spec_.text_animators.push_back(std::move(animator));
         return *this;
     }
@@ -182,6 +194,7 @@ inline TextBuilder caption(std::string text) {
  */
 inline TextBuilder typewriter(std::string text) {
     TextBuilder builder("typewriter", std::move(text));
+    builder.fixed_pitch();
     builder.animate(::tachyon::text::make_typewriter_animator(20.0, "|"));
     return builder;
 }

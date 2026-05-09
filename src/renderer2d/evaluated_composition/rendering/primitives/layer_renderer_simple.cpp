@@ -6,6 +6,7 @@
 #include "tachyon/text/layout/layout.h"
 #include "tachyon/text/rendering/text_raster_surface.h"
 #include "tachyon/renderer2d/evaluated_composition/rendering/primitives/layer_renderer_procedural.h"
+#include <iostream>
 #include "tachyon/renderer2d/evaluated_composition/rendering/core/layer_renderer_interface.h"
 #include "tachyon/media/management/media_manager.h"
 #include "tachyon/media/management/asset_resolver.h"
@@ -162,6 +163,7 @@ public:
         style.fill_color = to_color(layer.fill_color);
 
         ::tachyon::text::TextLayoutOptions layout_options;
+        layout_options.fixed_pitch = ::tachyon::text::prefers_fixed_pitch_layout(layer.text_animators);
         
         const auto layout = ::tachyon::text::layout_text(*font, layer.text_content, style, layer.text_box, layout_options);
         
@@ -269,7 +271,6 @@ public:
             }
 
             for (const auto& paint : paints) {
-                if (paint.glyph == nullptr) continue;
                 math::Vector2 wp = resolved.apply({paint.base_x, paint.base_y});
                 const int dx = static_cast<int>(std::lround(wp.x)) - origin_x - min_x;
                 const int dy = static_cast<int>(std::lround(wp.y)) - origin_y - min_y;
@@ -277,7 +278,12 @@ public:
                 const int dh = std::max(1, static_cast<int>(std::lround(paint.target_height * resolved.scale.y)));
                 renderer2d::Color final_color = to_color(paint.fill_color);
                 final_color.a *= paint.opacity;
-                text_surface.render_glyph(*paint.glyph, dx, dy, dw, dh, final_color);
+                if (paint.is_cursor) {
+                    fill_rect(text_surface, dx, dy, dw, dh, final_color);
+                } else {
+                    if (paint.glyph == nullptr) continue;
+                    text_surface.render_glyph(*paint.glyph, dx, dy, dw, dh, final_color);
+                }
             }
 
             blit_text_surface(*surface, text_surface, min_x, min_y);
@@ -333,6 +339,7 @@ public:
         RenderContext2D& context,
         const std::optional<RectI>& target_rect,
         std::shared_ptr<SurfaceRGBA>& surface) const override {
+        std::cerr << "[DEBUG] VideoLayerRenderer::render ENTRY for " << layer.name << std::endl;
         (void)intent;
 
         (void)state;
@@ -347,12 +354,18 @@ public:
             return false;
         }
 
+        std::cerr << "!!! VideoLayerRenderer::render for " << layer.name << " at time " << layer.local_time_seconds << " !!!" << std::endl;
         const auto* frame = context.media_manager->get_video_frame(*media_source, layer.local_time_seconds);
         if (frame == nullptr) {
-            return false;
+            std::cerr << "  -> get_video_frame FAILED" << std::endl;
+            surface->clear({0, 0, 1, 1}); // BLUE
+            return true;
         }
 
-        surface = std::make_shared<SurfaceRGBA>(*frame);
+        if (frame) {
+            std::cerr << "  -> get_video_frame SUCCESS, size: " << frame->width() << "x" << frame->height() << std::endl;
+            *surface = *frame;
+        }
         return true;
     }
 };
@@ -401,20 +414,16 @@ public:
     }
 };
 
-// Auto-register built-in layer renderers
-struct BuiltinRendererRegistrar {
-    BuiltinRendererRegistrar() {
-        auto& reg = LayerRendererRegistry::get();
-        reg.register_renderer(scene::LayerType::Image, std::make_unique<ImageLayerRenderer>());
-        reg.register_renderer(scene::LayerType::Solid, std::make_unique<SolidLayerRenderer>());
-        reg.register_renderer(scene::LayerType::Video, std::make_unique<VideoLayerRenderer>());
-        reg.register_renderer(scene::LayerType::Text, std::make_unique<TextLayerRenderer>());
-        reg.register_renderer(scene::LayerType::Procedural, std::make_unique<ProceduralLayerRenderer>());
-    }
-};
-static BuiltinRendererRegistrar s_builtin_registrar;
-
 } // namespace
+
+void LayerRendererRegistry::register_builtin_renderers() {
+    std::cerr << "!!! REGISTERING LAYER RENDERERS !!!" << std::endl;
+    register_renderer(scene::LayerType::Image, std::make_unique<ImageLayerRenderer>());
+    register_renderer(scene::LayerType::Solid, std::make_unique<SolidLayerRenderer>());
+    register_renderer(scene::LayerType::Video, std::make_unique<VideoLayerRenderer>());
+    register_renderer(scene::LayerType::Text, std::make_unique<TextLayerRenderer>());
+    register_renderer(scene::LayerType::Procedural, std::make_unique<ProceduralLayerRenderer>());
+}
 
 std::shared_ptr<SurfaceRGBA> render_precomp_surface(
     const scene::EvaluatedLayerState& layer,
@@ -466,6 +475,7 @@ std::shared_ptr<SurfaceRGBA> render_simple_layer_surface(
     }
 
     auto* renderer = LayerRendererRegistry::get().get_renderer(layer.type);
+    std::cerr << "!!! render_simple_layer_surface: layer=" << layer.id << " type=" << static_cast<int>(layer.type) << " renderer=" << (renderer ? "FOUND" : "NULL") << " !!!" << std::endl;
     if (renderer) {
         render_trace(
             "layer dispatch begin id=" + layer.id +

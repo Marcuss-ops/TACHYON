@@ -34,6 +34,7 @@ public:
     TextBuilder& valign(VerticalAlign v);
     TextBuilder& line_height(float factor);
     TextBuilder& tracking(float amount);
+    TextBuilder& fixed_pitch(bool enabled = true);
     TextBuilder& fill(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255);
     TextBuilder& stroke(uint8_t r, uint8_t g, uint8_t b, uint8_t a, float width);
     TextBuilder& subtitle_path(std::string path);

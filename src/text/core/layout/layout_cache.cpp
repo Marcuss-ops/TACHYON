@@ -21,9 +21,12 @@ std::size_t LayoutCacheKeyHash::operator()(const LayoutCacheKey& key) const {
     hash_combine(seed, (int)key.box.mode);
     hash_combine(seed, (int)key.box.horizontal_align);
     hash_combine(seed, (int)key.box.vertical_align);
+    hash_combine(seed, key.box.tracking_amount);
+    hash_combine(seed, key.box.fixed_pitch);
     hash_combine(seed, key.options.tracking);
     hash_combine(seed, key.options.word_wrap);
     hash_combine(seed, key.options.use_sdf);
+    hash_combine(seed, key.options.fixed_pitch);
     for (const auto& f : key.features) {
         hash_combine(seed, f.tag);
         hash_combine(seed, f.value);

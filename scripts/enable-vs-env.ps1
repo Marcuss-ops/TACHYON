@@ -19,14 +19,14 @@ if (-not (Test-Path $vswhere)) {
     $vswhere = "$env:PROGRAMFILES\Microsoft Visual Studio\Installer\vswhere.exe"
 }
 if (Test-Path $vswhere) {
-    $vsPath = & $vswhere -latest -property installationPath 2>$null
+    $vsPath = & $vswhere -version "[17,18)" -products * -property installationPath 2>$null
     if ($vsPath) {
         $vcvarsCandidates += "$vsPath\VC\Auxiliary\Build\vcvars64.bat"
     }
 }
 
-# Fallback: scan known year-based paths (18 = VS2026, 17 = VS2022, 16 = VS2019)
-foreach ($year in @(18, 17, 16)) {
+# Fallback: scan known year-based paths (17 = VS2022, 16 = VS2019, 18 = VS2025)
+foreach ($year in @(17, 16, 18)) {
     foreach ($ed in @("Community","Professional","Enterprise","BuildTools")) {
         $vcvarsCandidates += "C:\Program Files\Microsoft Visual Studio\$year\$ed\VC\Auxiliary\Build\vcvars64.bat"
     }

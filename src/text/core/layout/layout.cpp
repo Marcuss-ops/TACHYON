@@ -78,7 +78,9 @@ TextRasterSurface rasterize_text_rgba(
     const TextLayoutOptions& layout_options,
     const TextAnimationOptions& animation) {
 
-    const TextLayoutResult layout = layout_text(font, utf8_text, style, text_box, layout_options);
+    TextLayoutOptions resolved_options = layout_options;
+    resolved_options.fixed_pitch = resolved_options.fixed_pitch || prefers_fixed_pitch_layout(animation.animators);
+    const TextLayoutResult layout = layout_text(font, utf8_text, style, text_box, resolved_options);
     TextRasterSurface surface(layout.width, layout.height);
     if (!font.is_loaded() || layout.width == 0U || layout.height == 0U) return surface;
 
@@ -147,7 +149,9 @@ TextRasterSurface rasterize_text_rgba(
     std::span<const TextAnimatorSpec> animators,
     const TextLayoutOptions& layout_options) {
 
-    const TextLayoutResult layout = layout_text(font, utf8_text, style, text_box, layout_options);
+    TextLayoutOptions resolved_options = layout_options;
+    resolved_options.fixed_pitch = resolved_options.fixed_pitch || prefers_fixed_pitch_layout(animators);
+    const TextLayoutResult layout = layout_text(font, utf8_text, style, text_box, resolved_options);
     TextRasterSurface surface(layout.width, layout.height);
     if (!font.is_loaded() || layout.width == 0U || layout.height == 0U) {
         return surface;

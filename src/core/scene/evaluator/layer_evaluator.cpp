@@ -23,6 +23,7 @@ EvaluatedLayerState make_layer_state(
     evaluated.layer_id = layer.id;
     evaluated.id = layer.id;
     evaluated.name = layer.name;
+    evaluated.asset_path = layer.asset_id;
     evaluated.layer_index = layer_index;
     evaluated.type = layer.type;
     evaluated.enabled = layer.enabled;
@@ -219,6 +220,8 @@ EvaluatedLayerState make_layer_state(
     evaluated.fill_color = sample_color(layer.fill_color, {255,255,255,255}, local_t);
     evaluated.stroke_color = sample_color(layer.stroke_color, {0,0,0,255}, local_t);
     evaluated.stroke_width = static_cast<float>(sample_scalar(layer.stroke_width_property, layer.stroke_width, local_t, context.audio_analyzer));
+    evaluated.text_animators = layer.text_animators;
+    evaluated.text_highlights = layer.text_highlights;
 
     evaluated.effects = layer.effects;
     evaluated.animated_effects.reserve(layer.animated_effects.size());

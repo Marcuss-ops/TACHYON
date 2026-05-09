@@ -99,4 +99,30 @@ SceneSpec build_text_3d_helpers_scene() {
         .build_scene();
 }
 
+SceneSpec build_video_transition_scene() {
+    presets::EffectPresetRegistry effects;
+
+    return Composition("video_transition", effects)
+        .size(1920, 1080)
+        .duration(3.0)
+        .fps(30)
+        .layer("clip_a", [](LayerBuilder& l) {
+            l.type(static_cast<LayerType>(8))
+             .asset_id("C:/Users/pater/Pyt/Tachyon/output/transitions/clip_a.mp4")
+             .in(0).out(1.5);
+        })
+        .layer("clip_b", [](LayerBuilder& l) {
+            l.type(static_cast<LayerType>(8))
+             .asset_id("C:/Users/pater/Pyt/Tachyon/output/transitions/clip_b.mp4")
+             .in(1.5).out(3.0);
+        })
+        .layer("label", [](LayerBuilder& l) {
+            l.from_spec(tachyon::presets::text::headline("VIDEO TRANSITION")
+                .font("Default").font_size(120)
+                .color({255, 255, 255, 255}).center()
+                .position(960, 540).build());
+        })
+        .build_scene();
+}
+
 } // namespace tachyon::presets::scene

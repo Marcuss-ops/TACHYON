@@ -84,6 +84,13 @@ void ScenePresetRegistry::load_builtins() {
         {},
         [](const registry::ParameterBag&) { return scene::build_scene_b(); }
     });
+
+    register_spec({
+        "video_transition",
+        {"video_transition", "Video Transition", "Transition between two video clips.", "scene.built-in", {"video", "transition"}, 1, registry::Stability::Stable, {}},
+        {},
+        [](const registry::ParameterBag&) { return scene::build_video_transition_scene(); }
+    });
 }
 
 } // namespace tachyon::presets

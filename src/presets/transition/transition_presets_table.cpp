@@ -63,6 +63,11 @@ void TransitionPresetRegistry::load_builtins() {
     register_builtin(*this, "tachyon.transition.directional_blur_wipe", "Directional Blur Wipe", std::string(directional_blur_wipe));
     register_builtin(*this, "tachyon.transition.kaleidoscope", "Kaleidoscope", std::string(kaleidoscope));
     register_builtin(*this, "tachyon.transition.ripple", "Ripple", std::string(ripple));
+
+    // Modern V2
+    register_builtin(*this, "tachyon.transition.smooth_wipe", "Smooth Wipe", std::string(smooth_wipe), {"wipe", "modern", "smooth"});
+    register_builtin(*this, "tachyon.transition.soft_zoom_blur", "Soft Zoom Blur", std::string(soft_zoom_blur), {"zoom", "modern", "blur"});
+    register_builtin(*this, "tachyon.transition.flash_cut", "Flash Cut", std::string(flash_cut), {"flash", "cinematic", "fast"});
 }
 
 } // namespace tachyon::presets

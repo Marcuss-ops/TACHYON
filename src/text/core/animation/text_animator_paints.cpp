@@ -53,8 +53,8 @@ std::vector<PrecompGlyphCtx> precompute_glyph_contexts(const TextLayoutResult& l
         const auto& glyph = layout.glyphs[i];
         PrecompGlyphCtx ctx;
         ctx.cluster_index = glyph.cluster_index;
-        ctx.word_index = static_cast<float>(glyph.word_index);
-        ctx.line_index = static_cast<float>(glyph.line_index);
+        ctx.word_index = glyph.word_index;
+        ctx.line_index = glyph.line_index;
         ctx.is_space = glyph.whitespace;
         ctx.is_rtl = glyph.is_rtl;
         ctx.cluster_codepoint_start = glyph.cluster_codepoint_start;
@@ -154,7 +154,6 @@ void apply_text_animators(
         );
     }
 
-    TextAnimationSampler::sample(layout, std::vector<TextAnimatorSpec>(animators_span.begin(), animators_span.end()), t);
 }
 
 std::vector<ResolvedGlyphPaint> resolve_glyph_paints(
@@ -173,6 +172,8 @@ std::vector<ResolvedGlyphPaint> resolve_glyph_paints(
 
     float last_active_x = 0.0f;
     float last_active_y = 0.0f;
+    std::size_t last_active_line_index = 0;
+    bool have_active_glyph = false;
 
     for (std::size_t idx = 0; idx < animated_layout.glyphs.size(); ++idx) {
         const PositionedGlyph& positioned = animated_layout.glyphs[idx];
@@ -187,6 +188,8 @@ std::vector<ResolvedGlyphPaint> resolve_glyph_paints(
         if (positioned.opacity > 0.01f && positioned.reveal_factor > 0.01f) {
             last_active_x = positioned.position.x + static_cast<float>(glyph->width) * positioned.scale.x;
             last_active_y = positioned.position.y;
+            last_active_line_index = positioned.line_index;
+            have_active_glyph = true;
         }
 
         ResolvedGlyphPaint paint;
@@ -223,15 +226,21 @@ std::vector<ResolvedGlyphPaint> resolve_glyph_paints(
             const bool is_on = (static_cast<int>(std::floor(phase * 2.0)) % 2) == 0;
             
             if (is_on) {
-                std::uint32_t cursor_cp = animator.cursor.cursor_char.empty() ? '|' : static_cast<std::uint32_t>(animator.cursor.cursor_char[0]);
-                const GlyphBitmap* c_glyph = font.find_scaled_glyph(cursor_cp, layout.scale);
-                if (c_glyph && c_glyph->width > 0) {
+                const TextLine* cursor_line = nullptr;
+                if (have_active_glyph && last_active_line_index < layout.lines.size()) {
+                    cursor_line = &layout.lines[last_active_line_index];
+                } else if (!layout.lines.empty()) {
+                    cursor_line = &layout.lines.back();
+                }
+
+                if (cursor_line != nullptr && cursor_line->logical_bounds.height > 0.0f) {
                     ResolvedGlyphPaint c_paint;
-                    c_paint.glyph = c_glyph;
+                    c_paint.glyph = nullptr;
+                    c_paint.is_cursor = true;
                     c_paint.base_x = last_active_x + static_cast<float>(animator.cursor.offset_x);
-                    c_paint.base_y = last_active_y;
-                    c_paint.target_width = static_cast<float>(c_glyph->width) * static_cast<float>(layout.scale);
-                    c_paint.target_height = static_cast<float>(c_glyph->height) * static_cast<float>(layout.scale);
+                    c_paint.base_y = cursor_line->logical_bounds.y;
+                    c_paint.target_width = std::max(2.0f, static_cast<float>(layout.scale) * 2.0f);
+                    c_paint.target_height = cursor_line->logical_bounds.height;
                     c_paint.opacity = 1.0f;
                     c_paint.fill_color = animator.cursor.color_override.value_or(
                         !paints.empty() ? paints.back().fill_color : ::tachyon::ColorSpec{255, 255, 255, 255});

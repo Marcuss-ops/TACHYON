@@ -3,6 +3,7 @@
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 #include "tachyon/text/layout/layout.h"
 #include <optional>
+#include <string_view>
 #include <vector>
 #include <span>
 
@@ -52,6 +53,22 @@ double sample_scalar_kfs(
 float compute_coverage(const TextAnimatorSelectorSpec& selector, const TextAnimatorContext& ctx);
 float evaluate_expression_wrapper(const std::string& expr, const TextAnimatorContext& ctx);
 
+inline bool uses_character_stagger_layout(const TextAnimatorSpec& animator) {
+    return animator.selector.stagger_mode == "character" &&
+           (animator.selector.based_on == "characters" ||
+            animator.selector.based_on == "characters_excluding_spaces" ||
+            animator.selector.based_on == "clusters");
+}
+
+inline bool prefers_fixed_pitch_layout(std::span<const TextAnimatorSpec> animators) {
+    for (const auto& animator : animators) {
+        if (uses_character_stagger_layout(animator)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 struct ResolvedGlyphPaint {
     const GlyphBitmap* glyph{nullptr};
     float base_x{0.0f};
@@ -66,6 +83,7 @@ struct ResolvedGlyphPaint {
     ::tachyon::ColorSpec stroke_color{0, 0, 0, 0};
     float stroke_width{0.0f};
     float tracking_offset{0.0f}; // Accumulated tracking
+    bool is_cursor{false};
     
     std::size_t glyph_index{0};
 };

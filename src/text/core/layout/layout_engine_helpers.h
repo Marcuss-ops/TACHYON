@@ -32,6 +32,7 @@ bool rect_is_empty(const math::RectF& rect);
 std::uint32_t choose_scale(const BitmapFont& font, const TextStyle& style);
 bool is_breakable_space(std::uint32_t codepoint);
 float aligned_x_offset(HorizontalAlign alignment, float box_width, float line_width);
+float resolved_glyph_advance(const Font& font, const ::tachyon::renderer2d::text::shaping::ShapedGlyphRun::Glyph& gr, std::uint32_t scale, bool fixed_pitch);
 void finalize_line(TextLayoutResult& result, std::size_t start_index, std::size_t glyph_count, float line_width, float line_y, HorizontalAlign alignment, float box_width, bool last_line, float tracking_advance);
 float compute_vertical_offset(float box_height, float content_height, VerticalAlign align);
 float place_shaped_run(
@@ -50,4 +51,3 @@ void sync_resolved_layout(TextLayoutResult& result, const BitmapFont& font, cons
 } // namespace tachyon::text
 
 #endif
-

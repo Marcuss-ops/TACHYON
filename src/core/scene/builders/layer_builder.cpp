@@ -1,5 +1,6 @@
 #include "tachyon/scene/builder.h"
 #include <algorithm>
+#include <iostream>
 #include <limits>
 #include <cmath>
 #include "tachyon/presets/transition/transition_preset_registry.h"
@@ -18,6 +19,7 @@ LayerBuilder::LayerBuilder(LayerSpec spec, const presets::EffectPresetRegistry& 
     : spec_(std::move(spec)), preset_registry_(preset_registry) {}
 
 LayerBuilder& LayerBuilder::type(LayerType t) {
+    std::cerr << "!!! LayerBuilder::type: id='" << spec_.id << "' setting type to " << static_cast<int>(t) << " !!!" << std::endl;
     spec_.type = t;
     return *this;
 }

@@ -30,6 +30,7 @@ struct TextBoxSpec {
     VerticalAlign vertical_align = VerticalAlign::Top;
     float line_height_factor = 1.0f;
     float tracking_amount = 0.0f;
+    bool fixed_pitch = false;
 };
 
 } // namespace tachyon

@@ -124,6 +124,7 @@ struct TextParams : LayerParams {
     text.font_id = opts.font_id;
     text.font_size.value = opts.font_size;
     text.fill_color = AnimatedColorSpec(opts.fill_color);
+    text.text_box.fixed_pitch = true;
     text.transform.position_x = static_cast<double>(opts.position_x);
     text.transform.position_y = static_cast<double>(opts.position_y);
     text.text_animators.push_back(text::make_typewriter_animator(20.0, "|"));

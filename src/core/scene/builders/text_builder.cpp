@@ -2,8 +2,19 @@
 #include "tachyon/scene/builder.h"
 #include "tachyon/presets/text/text_registry.h"
 #include "tachyon/core/registry/parameter_bag.h"
+#include "tachyon/text/animation/text_animator_utils.h"
 
 namespace tachyon::scene {
+
+namespace {
+
+void mark_fixed_pitch_if_needed(tachyon::LayerSpec& spec, const TextAnimatorSpec& anim) {
+    if (::tachyon::text::uses_character_stagger_layout(anim)) {
+        spec.text_box.fixed_pitch = true;
+    }
+}
+
+} // namespace
 
 TextBuilder& TextBuilder::content(std::string t) {
     parent_.spec_.type = LayerType::Text;
@@ -48,6 +59,11 @@ TextBuilder& TextBuilder::tracking(float amount) {
     return *this;
 }
 
+TextBuilder& TextBuilder::fixed_pitch(bool enabled) {
+    parent_.spec_.text_box.fixed_pitch = enabled;
+    return *this;
+}
+
 TextBuilder& TextBuilder::fill(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
     parent_.spec_.fill_color.value = {r, g, b, a};
     return *this;
@@ -66,10 +82,14 @@ TextBuilder& TextBuilder::subtitle_path(std::string path) {
 
 TextBuilder& TextBuilder::animator(const TextAnimatorSpec& anim) {
     parent_.spec_.text_animators.push_back(anim);
+    mark_fixed_pitch_if_needed(parent_.spec_, anim);
     return *this;
 }
 
 TextBuilder& TextBuilder::animators(std::vector<TextAnimatorSpec> anims) {
+    for (const auto& anim : anims) {
+        mark_fixed_pitch_if_needed(parent_.spec_, anim);
+    }
     parent_.spec_.text_animators.insert(parent_.spec_.text_animators.end(), anims.begin(), anims.end());
     return *this;
 }
@@ -91,6 +111,9 @@ TextBuilder& TextBuilder::animation_preset(const std::string& id, const presets:
         presets::TextManifest text_manifest;
         presets::TextRegistry local_registry(text_manifest);
         parent_.spec_.text_animators = local_registry.create_animators(id, registry::ParameterBag{});
+    }
+    for (const auto& anim : parent_.spec_.text_animators) {
+        mark_fixed_pitch_if_needed(parent_.spec_, anim);
     }
     return *this;
 }

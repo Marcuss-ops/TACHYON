@@ -154,19 +154,11 @@ void Avx2TextAnimBackend::apply(
 
     const int n = static_cast<int>(glyphs.size());
     const int n8 = n & ~7;
-    
+
     const bool is_char_stagger = (stagger_mode == "character");
-    
-    const float sel_start = static_cast<float>(animator.selector.start) / 100.0f;
-    const float sel_end = static_cast<float>(animator.selector.end) / 100.0f;
-    const float sel_span = sel_end - sel_start;
-    
-    const __m256 v_one = _mm256_set1_ps(1.0f);
     const __m256 v_zero = _mm256_set1_ps(0.0f);
     const __m256 v_t = _mm256_set1_ps(t);
     const __m256 v_stagger_delay = _mm256_set1_ps(stagger_delay);
-    const __m256 v_sel_start = _mm256_set1_ps(sel_start);
-    const __m256 v_sel_inv_span = _mm256_set1_ps(1.0f / (std::abs(sel_span) < 1e-6f ? 1e-6f : sel_span));
     
     for (int i = 0; i < n8; i += 8) {
         __m256 v_idx;
@@ -183,21 +175,29 @@ void Avx2TextAnimBackend::apply(
         }
         
         const __m256 v_staggered_t = _mm256_max_ps(v_zero, _mm256_sub_ps(v_t, _mm256_mul_ps(v_idx, v_stagger_delay)));
-        
-        const float inv_total = 1.0f / std::max(1.0f, static_cast<float>(glyphs.size() - 1));
-        __m256 v_t_norm = _mm256_mul_ps(v_idx, _mm256_set1_ps(inv_total));
-        __m256 v_coverage = _mm256_min_ps(v_one, _mm256_max_ps(v_zero, _mm256_mul_ps(_mm256_sub_ps(v_t_norm, v_sel_start), v_sel_inv_span)));
-        
-        float* cov_ptr = (float*)&v_coverage;
-        float* t_ptr = (float*)&v_staggered_t;
+        alignas(32) float staggered_t_lanes[8];
+        _mm256_storeu_ps(staggered_t_lanes, v_staggered_t);
         for (int j = 0; j < 8; ++j) {
-            float cov = cov_ptr[j];
-            if (cov <= 0.0f) continue;
-            
             auto& g = glyphs[i + j];
-            float staggered_t = t_ptr[j];
+            const float staggered_t = staggered_t_lanes[j];
+            const TextAnimatorContext ctx = make_context_from_precomp(
+                static_cast<std::size_t>(i + j),
+                staggered_t,
+                base_ctx.total_glyphs,
+                base_ctx.total_clusters,
+                base_ctx.total_words,
+                base_ctx.total_lines,
+                base_ctx.total_non_space_glyphs,
+                precomp[static_cast<std::size_t>(i + j)],
+                g);
+
+            const float coverage = compute_coverage(animator.selector, ctx);
+            if (coverage <= 0.0f) {
+                continue;
+            }
+
             for (const auto& resolved_prop : plan.resolved_properties) {
-                resolved_prop.apply_to_glyph(g, staggered_t, cov);
+                resolved_prop.apply_to_glyph(g, staggered_t, coverage);
             }
         }
     }
@@ -240,17 +240,6 @@ std::unique_ptr<TextAnimExecutionBackend> TextAnimExecutionBackend::create_avx2(
 }
 
 std::unique_ptr<TextAnimExecutionBackend> TextAnimExecutionBackend::create_best() {
-    auto& registry = TextAnimPropertyRegistry::instance();
-    
-#ifdef TACHYON_AVX2
-    bool all_simd_compatible = true;
-    // Check if all registered properties support SIMD
-    // In practice, would check against resolved plan properties
-    if (all_simd_compatible) {
-        return create_avx2();
-    }
-#endif
-
 #ifdef _OPENMP
     return create_openmp();
 #else

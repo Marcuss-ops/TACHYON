@@ -9,6 +9,7 @@
 #include <string>
 #include <unordered_map>
 #include <optional>
+#include <mutex>
 
 namespace tachyon::renderer2d {
 
@@ -46,10 +47,17 @@ class LayerRendererRegistry {
 public:
     static LayerRendererRegistry& get() {
         static LayerRendererRegistry instance;
+        static std::once_flag registered;
+        std::call_once(registered, []() {
+            instance.register_builtin_renderers();
+        });
         return instance;
     }
 
+    void register_builtin_renderers();
+
     void register_renderer(scene::LayerType layer_type, std::unique_ptr<ILayerRenderer> renderer) {
+        std::cerr << "!!! REGISTERING RENDERER FOR TYPE " << static_cast<int>(layer_type) << " !!!" << std::endl;
         m_renderers[layer_type] = std::move(renderer);
     }
 

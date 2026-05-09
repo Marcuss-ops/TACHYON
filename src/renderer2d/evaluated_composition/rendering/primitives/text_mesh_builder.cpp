@@ -92,6 +92,7 @@ TextMeshBuildResult build_text_extrusion_mesh(
 
     ::tachyon::text::TextLayoutOptions layout_options;
     layout_options.word_wrap = true;
+    layout_options.fixed_pitch = ::tachyon::text::prefers_fixed_pitch_layout(animation.animators);
 
     const auto layout = ::tachyon::text::layout_text(*font, layer.text_content, style, box, layout_options);
     if (layout.glyphs.empty()) {

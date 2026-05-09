@@ -48,7 +48,6 @@ std::optional<std::filesystem::path> AuthoringService::find_vswhere_exe() {
     }
     return std::nullopt;
 }
-
 std::optional<std::filesystem::path> AuthoringService::find_vcvars64_bat() {
     const std::string configured_vcvars = TACHYON_VCVARS64_BAT;
     if (!configured_vcvars.empty()) {
@@ -182,9 +181,8 @@ std::string AuthoringService::get_compiler_command(
     if (const auto vcvars = find_vcvars64_bat(); vcvars.has_value()) {
         ss << "call \"" << vcvars->string() << "\" >nul && ";
     }
-
     // MSVC cl.exe command
-    ss << "cl.exe /nologo /O2 /MD /EHsc /LD /std:c++20 /DTACHYON_USE_DLL ";
+    ss << "cl.exe /nologo /O2 /MD /EHsc /LD /std:c++20 /openmp /DNDEBUG /DTACHYON_USE_DLL ";
     ss << "/I\"" << TACHYON_INCLUDE_DIR << "\" ";
     ss << "\"" << cpp_path.string() << "\" ";
     ss << "/Fe:\"" << dll_path.string() << "\" ";
@@ -244,6 +242,7 @@ AuthoringService::CompileResult AuthoringService::compile_to_shared_lib(
 
     const std::string cmd = get_compiler_command(cpp_path, dll_path);
     result.command = cmd;
+    std::cerr << "!!! JIT Command: " << cmd << " !!!" << std::endl;
     
     using namespace tachyon::core::platform;
     ProcessSpec spec;

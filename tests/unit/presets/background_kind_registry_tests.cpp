@@ -31,6 +31,24 @@ bool run_background_registry_tests() {
 
     {
         BackgroundParams params;
+        params.kind = "tachyon.background.kind.galaxy";
+        auto layer = build_background(params);
+        assert(layer.preset_id == "tachyon.background.kind.galaxy");
+        assert(layer.procedural.has_value());
+        assert(layer.procedural->kind == "tachyon.background.kind.galaxy");
+    }
+
+    {
+        BackgroundParams params;
+        params.kind = "neon_waves"; // test alias
+        auto layer = build_background(params);
+        assert(layer.preset_id == "neon_waves");
+        assert(layer.procedural.has_value());
+        assert(layer.procedural->kind == "tachyon.background.kind.neon_waves");
+    }
+
+    {
+        BackgroundParams params;
         params.kind = "tachyon.background.kind.unknown_kind";
         auto layer = build_background(params);
         assert(layer.preset_id == "tachyon.background.kind.unknown_kind");

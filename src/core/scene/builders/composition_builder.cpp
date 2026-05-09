@@ -2,6 +2,7 @@
 #include "tachyon/presets/background/background_manifest.h"
 #include "tachyon/presets/background/background_preset_registry.h"
 #include "tachyon/core/registry/parameter_bag.h"
+#include <iostream>
 
 namespace tachyon::scene {
 
@@ -68,6 +69,7 @@ CompositionBuilder& CompositionBuilder::add_typed_layer(
 }
 
 CompositionBuilder& CompositionBuilder::layer(std::string id, std::function<void(LayerBuilder&)> fn) {
+    std::cerr << "!!! CompositionBuilder::layer: adding layer with id='" << id << "' !!!" << std::endl;
     LayerBuilder lb(std::move(id), preset_registry_);
     fn(lb);
     spec_.layers.push_back(std::move(lb).build());

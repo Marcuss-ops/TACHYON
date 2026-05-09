@@ -10,7 +10,6 @@
 #include <chrono>
 #include <filesystem>
 #include <cmath>
-
 namespace tachyon {
 
 namespace {

@@ -2,8 +2,10 @@
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/core.h"
 #include "cli/cli_internal.h"
-#include "tachyon/core/transition/transition_descriptor.h"
 #include "tachyon/transition_registry.h"
+#include "tachyon/renderer2d/effects/core/transitions/basic_transitions.h"
+#include "tachyon/renderer2d/effects/core/transitions/artistic_transitions.h"
+#include "tachyon/renderer2d/effects/core/transitions/light_leak_transitions.h"
 #include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
 #include <functional>
 #include <iostream>
@@ -212,6 +214,13 @@ int run_cli(int argc, char** argv) {
     // Initialize all built-in systems (Transitions, Presets, etc.)
     // Note: We do this here instead of in each DLL to avoid circular link dependencies.
     ::tachyon::register_builtin_transitions(g_cli_transition_registry);
+    
+    // Attach implementation pointers
+    for (auto* desc : g_cli_transition_registry.list_all()) {
+        renderer2d::resolve_basic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
+        renderer2d::resolve_artistic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
+        renderer2d::resolve_light_leak_implementations(const_cast<TransitionDescriptor&>(*desc));
+    }
 
     // Dispatch through registry
     for (const auto& cmd : kCommands) {

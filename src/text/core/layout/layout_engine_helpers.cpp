@@ -2,12 +2,14 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <iostream>
 #include <limits>
 #include <string_view>
 #include <vector>
 
 namespace tachyon::text {
+
+namespace {
+} // namespace
 
 ::tachyon::ColorSpec to_color_spec(const renderer2d::Color& color) {
     auto to_channel = [](float value) -> std::uint8_t {
@@ -39,6 +41,22 @@ std::uint32_t choose_scale(const BitmapFont& font, const TextStyle& style) {
     const std::uint32_t requested = style.pixel_size == 0 ? static_cast<std::uint32_t>(font.line_height()) : style.pixel_size;
     const std::uint32_t base = static_cast<std::uint32_t>(std::max(1, font.line_height()));
     return std::max<std::uint32_t>(1, requested / base);
+}
+
+float resolved_glyph_advance(
+    const Font& font,
+    const ::tachyon::renderer2d::text::shaping::ShapedGlyphRun::Glyph& gr,
+    std::uint32_t scale,
+    bool fixed_pitch) {
+
+    if (!fixed_pitch) {
+        return static_cast<float>(gr.advance_x);
+    }
+
+    const float cell_advance = std::max(
+        1.0f,
+        static_cast<float>(font.default_advance()) * static_cast<float>(scale));
+    return cell_advance;
 }
 
 bool is_breakable_space(std::uint32_t codepoint) {
@@ -127,7 +145,7 @@ void finalize_line(TextLayoutResult& result, std::size_t start_index, std::size_
         float ink_center_x = line.ink_bounds.x + line.ink_bounds.width * 0.5f;
         float desired_center_x = box_width * 0.5f;
         float shift_x = desired_center_x - ink_center_x;
-        
+
         for (std::size_t i = start_index; i < result.glyphs.size(); ++i) {
             result.glyphs[i].position.x += shift_x;
             result.glyphs[i].bounds.x += shift_x;
@@ -166,20 +184,26 @@ float place_shaped_run(
     const SubRun& sub,
     const ShapedGlyphRun& shaped,
     std::uint32_t scale,
+    bool fixed_pitch,
     float tracking_advance,
     std::size_t& current_word_index,
     bool& last_was_space,
     const std::vector<GraphemeCluster>& clusters) {
     const bool rtl = sub.direction == CharacterDirection::RTL;
     const float s = static_cast<float>(scale);
-    float cursor = rtl ? pen_x + static_cast<float>(shaped.width) : pen_x;
+    float logical_run_width = 0.0f;
+    for (const auto& gr : shaped.glyphs) {
+        logical_run_width += resolved_glyph_advance(*sub.font, gr, scale, fixed_pitch) + tracking_advance;
+    }
+    float cursor = rtl ? pen_x + logical_run_width : pen_x;
     float consumed = 0.0f;
     for (const auto& gr : shaped.glyphs) {
         const bool ws = is_breakable_space(gr.codepoint);
         if (!ws && last_was_space && !result.glyphs.empty()) ++current_word_index;
         const auto* g = sub.font->find_glyph_by_index(gr.font_glyph_index);
         if (!g) continue;
-        const float glyph_advance = static_cast<float>(std::abs(gr.advance_x) + tracking_advance);
+        const float logical_advance = resolved_glyph_advance(*sub.font, gr, scale, fixed_pitch);
+        const float glyph_advance = logical_advance + tracking_advance;
         if (rtl) cursor -= glyph_advance;
         std::size_t global_cp_index = sub.start_index + gr.cluster;
         std::size_t cluster_idx = 0, cp_count = 1, cp_start = global_cp_index;
@@ -197,7 +221,7 @@ float place_shaped_run(
         pg.position.y = pen_y + static_cast<float>(sub.font->ascent() - static_cast<std::int32_t>(g->height) - g->y_offset) * s + static_cast<float>(gr.offset_y);
         pg.width = static_cast<float>(g->width) * s;
         pg.height = static_cast<float>(g->height) * s;
-        pg.advance_x = static_cast<float>(gr.advance_x);
+        pg.advance_x = logical_advance;
         pg.glyph_index = result.glyphs.size();
         pg.word_index = current_word_index;
         pg.cluster_index = cluster_idx;
@@ -213,7 +237,7 @@ float place_shaped_run(
         consumed += glyph_advance;
         last_was_space = ws;
     }
-    return rtl ? pen_x + std::max<float>(consumed, std::abs(shaped.width)) : std::max(pen_x, cursor);
+    return rtl ? pen_x + std::max(consumed, logical_run_width) : std::max(pen_x, cursor);
 }
 
 TextHitTestResult TextLayoutResult::hit_test(std::int32_t x, std::int32_t y) const {

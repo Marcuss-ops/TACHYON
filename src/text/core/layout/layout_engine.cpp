@@ -1,4 +1,3 @@
-#include <iostream>
 #include "layout_engine_helpers.h"
 #include "tachyon/text/core/low_level/utf8/utf8_decoder.h"
 #include "tachyon/text/layout/line_breaker.h"
@@ -10,6 +9,16 @@ namespace tachyon::text {
 using namespace tachyon::renderer2d::text::shaping;
 
 namespace {
+
+float compute_fixed_pitch_cell_advance(
+    const Font& font,
+    std::uint32_t scale) {
+
+    // Use the font's nominal advance as the shared cell width, then tighten it a bit.
+    // This keeps the typewriter rhythm consistent without over-spacing wide glyphs.
+    const float nominal_advance = static_cast<float>(font.default_advance()) * static_cast<float>(scale);
+    return std::max(1.0f, nominal_advance * 0.96f);
+}
 } // namespace
 
 void place_shaped_glyph(
@@ -19,6 +28,7 @@ void place_shaped_glyph(
     const SubRun& sub,
     const ShapedGlyphRun::Glyph& gr,
     std::uint32_t scale,
+    float logical_advance,
     float tracking_advance,
     std::size_t& current_word_index,
     bool& last_was_space,
@@ -37,7 +47,7 @@ void place_shaped_glyph(
     }
 
     const float s = static_cast<float>(scale);
-    const float glyph_advance = static_cast<float>(std::abs(gr.advance_x)) + tracking_advance;
+    const float glyph_advance = logical_advance + tracking_advance;
     if (rtl) {
         cursor -= glyph_advance;
     }
@@ -64,7 +74,7 @@ void place_shaped_glyph(
     pg.position.y = pen_y + static_cast<float>(sub.font->ascent() - static_cast<std::int32_t>(g->height) - g->y_offset) * s + static_cast<float>(gr.offset_y);
     pg.width = static_cast<float>(g->width) * s;
     pg.height = static_cast<float>(g->height) * s;
-    pg.advance_x = static_cast<float>(gr.advance_x);
+    pg.advance_x = logical_advance;
     pg.glyph_index = result.glyphs.size();
     pg.word_index = current_word_index;
     pg.cluster_index = cluster_idx;
@@ -102,14 +112,16 @@ public:
         const std::uint32_t scale = choose_scale(primary_font, style);
         const float scaled_line_height = static_cast<float>(primary_font.line_height()) * static_cast<float>(scale);
         const float wrap_width = text_box.width;
-        
+        const bool fixed_pitch = options.fixed_pitch || text_box.fixed_pitch;
+
         result.scale = scale;
+        result.source_text = std::string(utf8_text);
         result.line_height = static_cast<std::int32_t>(std::lround(scaled_line_height));
 
         float pen_x = 0.0f, pen_y = 0.0f, current_line_width = 0.0f;
         std::size_t line_start = 0, current_word_index = 0;
         bool last_was_space = true;
-        const float tracking_advance = options.tracking * static_cast<float>(scale);
+        const float tracking_advance = options.tracking + text_box.tracking_amount;
 
         auto& cache = ShapingCache::get_instance();
         const auto clusters = ClusterIterator::segment(codepoints);
@@ -192,11 +204,16 @@ public:
                 };
 
                 std::vector<Word> words;
+                const float fixed_pitch_cell_advance = fixed_pitch
+                    ? compute_fixed_pitch_cell_advance(*sub.font, scale)
+                    : 0.0f;
+                const bool rtl = sub.direction == CharacterDirection::RTL;
+
                 Word current_word;
                 for (std::size_t i = 0; i < shaped.glyphs.size(); ++i) {
                     const auto& gr = shaped.glyphs[i];
                     current_word.glyph_indices.push_back(i);
-                    current_word.width += static_cast<float>(std::abs(gr.advance_x)) + tracking_advance;
+                    current_word.width += (fixed_pitch ? fixed_pitch_cell_advance : resolved_glyph_advance(*sub.font, gr, scale, false)) + tracking_advance;
                     if (is_breakable_space(gr.codepoint) || gr.codepoint == '-') {
                         current_word.ends_with_break = true;
                         words.push_back(std::move(current_word));
@@ -204,8 +221,6 @@ public:
                     }
                 }
                 if (!current_word.glyph_indices.empty()) words.push_back(std::move(current_word));
-
-                const bool rtl = sub.direction == CharacterDirection::RTL;
 
                 for (const auto& word : words) {
                     bool wrap_needed = (wrap_width > 0.0f && text_box.mode == TextBoxMode::Fixed && options.word_wrap && pen_x > 0.0f && (pen_x + word.width) > wrap_width);
@@ -224,10 +239,15 @@ public:
                         const auto& gr = shaped.glyphs[idx];
                         if (is_start_of_line && is_breakable_space(gr.codepoint)) continue;
                         
-                        float glyph_width = gr.advance_x + tracking_advance;
+                        const float logical_advance = fixed_pitch
+                            ? fixed_pitch_cell_advance
+                            : resolved_glyph_advance(*sub.font, gr, scale, false);
+                        float glyph_width = logical_advance + tracking_advance;
                         float cursor = rtl ? pen_x + glyph_width : pen_x;
                         
-                        place_shaped_glyph(result, cursor, pen_y, sub, gr, scale, tracking_advance, current_word_index, last_was_space, clusters);
+                        const float cursor_before = cursor;
+                        place_shaped_glyph(result, cursor, pen_y, sub, gr, scale, logical_advance, tracking_advance, current_word_index, last_was_space, clusters);
+
                         pen_x += glyph_width;
                         is_start_of_line = false;
                     }
@@ -294,6 +314,8 @@ public:
             result.logical_bounds.y += result.offset_y;
             result.ink_bounds.y += result.offset_y;
         }
+
+        result.total_bounds = result.ink_bounds;
 
         result.width = static_cast<uint32_t>(std::lround(result.box_width));
         result.height = static_cast<uint32_t>(std::lround(result.box_height));

@@ -1,4 +1,5 @@
 #include "tachyon/media/decoding/video_decoder.h"
+#include <iostream>
 
 #include <algorithm>
 #include <cmath>
@@ -112,6 +113,7 @@ bool VideoDecoder::open(const std::filesystem::path& path) {
     }
 
     if (avformat_open_input(&m_format_context, path.string().c_str(), nullptr, nullptr) != 0 || !m_format_context) {
+        std::cerr << "[DEBUG] VideoDecoder: avformat_open_input FAILED for '" << path.string() << "'" << std::endl;
         close();
         return false;
     }
@@ -219,7 +221,13 @@ bool VideoDecoder::convert_to_surface(AVFrame* frame, renderer2d::SurfaceRGBA& t
         dst_linesize);
 
     if (scaled <= 0) {
+        std::cerr << "[DEBUG] VideoDecoder: sws_scale failed or returned zero lines" << std::endl;
         return false;
+    }
+    
+    // Quick check: is the first pixel non-zero?
+    if (scratch_buffer[0] == 0 && scratch_buffer[1] == 0 && scratch_buffer[2] == 0) {
+        // Maybe it's just a black pixel, but let's log it if we suspect total blackness
     }
 
     // Convert from RGBA8 to Float32 into target surface
@@ -238,7 +246,7 @@ bool VideoDecoder::convert_to_surface(AVFrame* frame, renderer2d::SurfaceRGBA& t
         dst_pixels[dst_idx + 0] = static_cast<float>(src_bytes[src_idx + 0]) / 255.0f;
         dst_pixels[dst_idx + 1] = static_cast<float>(src_bytes[src_idx + 1]) / 255.0f;
         dst_pixels[dst_idx + 2] = static_cast<float>(src_bytes[src_idx + 2]) / 255.0f;
-        dst_pixels[dst_idx + 3] = static_cast<float>(src_bytes[src_idx + 3]) / 255.0f;
+        dst_pixels[dst_idx + 3] = 1.0f;
     }
 
     return true;

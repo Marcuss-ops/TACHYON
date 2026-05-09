@@ -83,6 +83,7 @@ struct TextLayoutOptions {
     float tracking{0.0f};
     bool word_wrap{true};
     bool use_sdf{false};
+    bool fixed_pitch{false};
 };
 
 struct TextHighlightSpan {
@@ -180,6 +181,7 @@ struct TextHitTestResult {
 };
 
 struct TextLayoutResult {
+    std::string source_text;
     // Layout metrics
     float content_width{0.0f};
     float content_height{0.0f};
@@ -201,6 +203,7 @@ struct TextLayoutResult {
     
     math::RectF logical_bounds;
     math::RectF ink_bounds;
+    math::RectF total_bounds;
     bool is_on_path{false};
 
     // Backward compatibility

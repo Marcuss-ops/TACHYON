@@ -155,5 +155,6 @@ inline SceneSpec build_minimal_text_scene() {
 SceneSpec build_scene_a();
 SceneSpec build_scene_b();
 SceneSpec build_text_3d_helpers_scene();
+SceneSpec build_video_transition_scene();
 
 } // namespace tachyon::presets::scene

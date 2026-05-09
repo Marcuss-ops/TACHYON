@@ -27,9 +27,12 @@ struct LayoutCacheKey {
                box.mode == other.box.mode &&
                box.horizontal_align == other.box.horizontal_align &&
                box.vertical_align == other.box.vertical_align &&
+               box.tracking_amount == other.box.tracking_amount &&
+               box.fixed_pitch == other.box.fixed_pitch &&
                options.tracking == other.options.tracking &&
                options.word_wrap == other.options.word_wrap &&
                options.use_sdf == other.options.use_sdf &&
+               options.fixed_pitch == other.options.fixed_pitch &&
                features.size() == other.features.size() &&
                std::equal(features.begin(), features.end(), other.features.begin(),
                     [](const auto& a, const auto& b) { return a.tag == b.tag && a.value == b.value; });
