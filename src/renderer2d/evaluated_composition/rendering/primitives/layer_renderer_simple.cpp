@@ -180,6 +180,68 @@ public:
             " glyphs=" + std::to_string(layout.glyphs.size()) +
             " size=" + std::to_string(layout.box_width) + "x" + std::to_string(layout.box_height));
 
+        if (layout.glyphs.empty()) {
+            return true;
+        }
+
+        const bool has_animations = !layer.text_animators.empty();
+        const bool has_highlights = !layer.text_highlights.empty();
+
+        if (!has_animations && !has_highlights) {
+            int min_x = std::numeric_limits<int>::max();
+            int min_y = std::numeric_limits<int>::max();
+            int max_x = std::numeric_limits<int>::min();
+            int max_y = std::numeric_limits<int>::min();
+
+            for (const auto& glyph : layout.glyphs) {
+                if (glyph.resolved_glyph == nullptr) {
+                    continue;
+                }
+                math::Vector2 wp = resolved.apply({glyph.position.x, glyph.position.y});
+                const int dx = static_cast<int>(std::lround(wp.x)) - origin_x;
+                const int dy = static_cast<int>(std::lround(wp.y)) - origin_y;
+                const int dw = std::max(1, static_cast<int>(std::lround(glyph.width * resolved.scale.x)));
+                const int dh = std::max(1, static_cast<int>(std::lround(glyph.height * resolved.scale.y)));
+                min_x = std::min(min_x, dx);
+                min_y = std::min(min_y, dy);
+                max_x = std::max(max_x, dx + dw);
+                max_y = std::max(max_y, dy + dh);
+            }
+
+            if (min_x == std::numeric_limits<int>::max() || min_y == std::numeric_limits<int>::max()) {
+                return true;
+            }
+
+            const int pad = 4;
+            min_x -= pad;
+            min_y -= pad;
+            max_x += pad;
+            max_y += pad;
+
+            const int raster_width = std::max(1, max_x - min_x);
+            const int raster_height = std::max(1, max_y - min_y);
+            ::tachyon::text::TextRasterSurface text_surface(
+                static_cast<std::uint32_t>(raster_width),
+                static_cast<std::uint32_t>(raster_height));
+
+            for (const auto& glyph : layout.glyphs) {
+                const auto* bitmap = glyph.resolved_glyph;
+                if (bitmap == nullptr) {
+                    continue;
+                }
+
+                math::Vector2 wp = resolved.apply({glyph.position.x, glyph.position.y});
+                const int dx = static_cast<int>(std::lround(wp.x)) - origin_x - min_x;
+                const int dy = static_cast<int>(std::lround(wp.y)) - origin_y - min_y;
+                const int dw = std::max(1, static_cast<int>(std::lround(glyph.width * resolved.scale.x)));
+                const int dh = std::max(1, static_cast<int>(std::lround(glyph.height * resolved.scale.y)));
+                text_surface.render_glyph(*bitmap, dx, dy, dw, dh, to_color(layer.fill_color));
+            }
+
+            blit_text_surface(*surface, text_surface, min_x, min_y);
+            return true;
+        }
+
         if (!layout.glyphs.empty()) {
             const float time_seconds = static_cast<float>(layer.local_time_seconds);
             ::tachyon::text::TextAnimationOptions animation{};
@@ -342,7 +404,6 @@ public:
         RenderContext2D& context,
         const std::optional<RectI>& target_rect,
         std::shared_ptr<SurfaceRGBA>& surface) const override {
-        std::cerr << "[DEBUG] VideoLayerRenderer::render ENTRY for " << layer.name << std::endl;
         (void)intent;
 
         (void)state;
@@ -357,16 +418,13 @@ public:
             return false;
         }
 
-        std::cerr << "!!! VideoLayerRenderer::render for " << layer.name << " at time " << layer.local_time_seconds << " !!!" << std::endl;
         const auto* frame = context.media_manager->get_video_frame(*media_source, layer.local_time_seconds);
         if (frame == nullptr) {
-            std::cerr << "  -> get_video_frame FAILED" << std::endl;
             surface->clear({0, 0, 1, 1}); // BLUE
             return true;
         }
 
         if (frame) {
-            std::cerr << "  -> get_video_frame SUCCESS, size: " << frame->width() << "x" << frame->height() << std::endl;
             *surface = *frame;
         }
         return true;
@@ -420,7 +478,6 @@ public:
 } // namespace
 
 void LayerRendererRegistry::register_builtin_renderers() {
-    std::cerr << "!!! REGISTERING LAYER RENDERERS !!!" << std::endl;
     register_renderer(scene::LayerType::Image, std::make_unique<ImageLayerRenderer>());
     register_renderer(scene::LayerType::Solid, std::make_unique<SolidLayerRenderer>());
     register_renderer(scene::LayerType::Video, std::make_unique<VideoLayerRenderer>());
@@ -478,7 +535,6 @@ std::shared_ptr<SurfaceRGBA> render_simple_layer_surface(
     }
 
     auto* renderer = LayerRendererRegistry::get().get_renderer(layer.type);
-    std::cerr << "!!! render_simple_layer_surface: layer=" << layer.id << " type=" << static_cast<int>(layer.type) << " renderer=" << (renderer ? "FOUND" : "NULL") << " !!!" << std::endl;
     if (renderer) {
         render_trace(
             "layer dispatch begin id=" + layer.id +

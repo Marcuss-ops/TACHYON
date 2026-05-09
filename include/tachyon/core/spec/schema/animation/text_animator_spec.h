@@ -10,7 +10,7 @@ namespace tachyon {
 struct TextAnimatorSelectorSpec {
     std::string type{"range"}; // "range" | "index" | "expression" | "all" | "random" | "wiggly" | "wave"
     
-    // For "range" (percentage 0.0-1.0)
+    // For "range" (normalized 0.0-1.0)
     double start{0.0};
     double end{1.0};
     
@@ -44,6 +44,7 @@ struct TextAnimatorSelectorSpec {
 
     // Selector shaping/easing used by coverage computations.
     std::string shape{"square"};
+    // Normalized shift applied to the selector domain.
     double offset{0.0};
     double ease_high{0.0};
     double ease_low{0.0};

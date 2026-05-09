@@ -128,6 +128,7 @@ struct PositionedGlyph {
     bool whitespace{false};
     bool is_rtl{false};
     const Font* resolved_font{nullptr};
+    const GlyphBitmap* resolved_glyph{nullptr};
 
     // Animatable properties
     math::Vector2 scale{1.0f, 1.0f};

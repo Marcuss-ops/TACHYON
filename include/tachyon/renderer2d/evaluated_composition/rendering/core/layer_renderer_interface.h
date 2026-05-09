@@ -57,7 +57,6 @@ public:
     void register_builtin_renderers();
 
     void register_renderer(scene::LayerType layer_type, std::unique_ptr<ILayerRenderer> renderer) {
-        std::cerr << "!!! REGISTERING RENDERER FOR TYPE " << static_cast<int>(layer_type) << " !!!" << std::endl;
         m_renderers[layer_type] = std::move(renderer);
     }
 

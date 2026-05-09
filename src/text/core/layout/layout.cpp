@@ -85,7 +85,7 @@ TextRasterSurface rasterize_text_rgba(
     if (!font.is_loaded() || layout.width == 0U || layout.height == 0U) return surface;
 
     for (const PositionedGlyph& positioned : layout.glyphs) {
-        const GlyphBitmap* glyph = font.has_freetype_face() ? font.find_glyph_by_index(positioned.font_glyph_index) : font.find_scaled_glyph(positioned.codepoint, layout.scale);
+        const GlyphBitmap* glyph = positioned.resolved_glyph ? positioned.resolved_glyph : (font.has_freetype_face() ? font.find_glyph_by_index(positioned.font_glyph_index) : font.find_scaled_glyph(positioned.codepoint, layout.scale));
         if (!glyph || glyph->width == 0U || glyph->height == 0U) continue;
 
         float ox = 0.0f, oy = 0.0f, sc = 1.0f, op = 1.0f;
@@ -158,9 +158,9 @@ TextRasterSurface rasterize_text_rgba(
     }
 
     for (const PositionedGlyph& positioned : layout.glyphs) {
-        const GlyphBitmap* glyph = font.has_freetype_face()
+        const GlyphBitmap* glyph = positioned.resolved_glyph ? positioned.resolved_glyph : (font.has_freetype_face()
             ? font.find_glyph_by_index(positioned.font_glyph_index)
-            : font.find_scaled_glyph(positioned.codepoint, layout.scale);
+            : font.find_scaled_glyph(positioned.codepoint, layout.scale));
         if (!glyph || glyph->width == 0U || glyph->height == 0U) {
             continue;
         }
@@ -247,7 +247,7 @@ TextRasterSurface rasterize_text_rgba(
     }
 
     for (const PositionedGlyph& positioned : layout.glyphs) {
-        const GlyphBitmap* glyph = font.has_freetype_face() ? font.find_glyph_by_index(positioned.font_glyph_index) : font.find_scaled_glyph(positioned.codepoint, layout.scale);
+        const GlyphBitmap* glyph = positioned.resolved_glyph ? positioned.resolved_glyph : (font.has_freetype_face() ? font.find_glyph_by_index(positioned.font_glyph_index) : font.find_scaled_glyph(positioned.codepoint, layout.scale));
         if (!glyph || glyph->width == 0U || glyph->height == 0U) continue;
 
         float ox = 0.0f, oy = 0.0f, sc = 1.0f, op = 1.0f;
@@ -313,7 +313,7 @@ TextRasterSurface rasterize_text_rgba(
     if (!font.is_loaded() || layout.width == 0U || layout.height == 0U) return surface;
 
     for (const PositionedGlyph& positioned : layout.glyphs) {
-        const GlyphBitmap* glyph = font.has_freetype_face() ? font.find_glyph_by_index(positioned.font_glyph_index) : font.find_scaled_glyph(positioned.codepoint, layout.scale);
+        const GlyphBitmap* glyph = positioned.resolved_glyph ? positioned.resolved_glyph : (font.has_freetype_face() ? font.find_glyph_by_index(positioned.font_glyph_index) : font.find_scaled_glyph(positioned.codepoint, layout.scale));
         if (!glyph || glyph->width == 0U || glyph->height == 0U) continue;
         
         renderer2d::Color color = style.fill_color;

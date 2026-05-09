@@ -177,9 +177,11 @@ std::vector<ResolvedGlyphPaint> resolve_glyph_paints(
 
     for (std::size_t idx = 0; idx < animated_layout.glyphs.size(); ++idx) {
         const PositionedGlyph& positioned = animated_layout.glyphs[idx];
-        const GlyphBitmap* glyph = font.has_freetype_face()
-            ? font.find_glyph_by_index(positioned.font_glyph_index)
-            : font.find_scaled_glyph(positioned.codepoint, layout.scale);
+        const GlyphBitmap* glyph = positioned.resolved_glyph
+            ? positioned.resolved_glyph
+            : (font.has_freetype_face()
+                ? font.find_glyph_by_index(positioned.font_glyph_index)
+                : font.find_scaled_glyph(positioned.codepoint, layout.scale));
         
         if (glyph == nullptr || glyph->width == 0U || glyph->height == 0U) {
             continue;

@@ -83,6 +83,7 @@ void place_shaped_glyph(
     pg.whitespace = ws;
     pg.is_rtl = rtl;
     pg.resolved_font = sub.font;
+    pg.resolved_glyph = g;
     pg.bounds = {pg.position.x, pg.position.y, pg.width, pg.height};
 
     result.glyphs.push_back(pg);
@@ -422,7 +423,23 @@ TextLayoutResult layout_text(
             return {};
         }
     }
-    return InternalLayoutEngine::layout(fallback_chain, utf8_text, style, text_box, options);
+
+    LayoutCacheKey key;
+    key.text = std::string(utf8_text);
+    key.font_id = fallback_chain.front() ? fallback_chain.front()->font_id() : 0U;
+    key.pixel_size = style.pixel_size;
+    key.box = text_box;
+    key.options = options;
+    key.features = style.features;
+
+    TextLayoutResult result;
+    if (LayoutCache::get_instance().get(key, result)) {
+        return result;
+    }
+
+    result = InternalLayoutEngine::layout(fallback_chain, utf8_text, style, text_box, options);
+    LayoutCache::get_instance().put(key, result);
+    return result;
 }
 
 TextLayoutResult layout_text(const BitmapFont& font, std::string_view utf8_text, const TextStyle& style, const TextBox& text_box, TextAlignment alignment, const TextLayoutOptions& options) {
@@ -461,7 +478,23 @@ TextLayoutResult layout_text(
     spec.height = static_cast<float>(text_box.height);
     spec.horizontal_align = alignment;
     spec.vertical_align = VerticalAlign::Top;
-    return InternalLayoutEngine::layout(fallback_chain, utf8_text, style, spec, options);
+
+    LayoutCacheKey key;
+    key.text = std::string(utf8_text);
+    key.font_id = fallback_chain.front() ? fallback_chain.front()->font_id() : 0U;
+    key.pixel_size = style.pixel_size;
+    key.box = spec;
+    key.options = options;
+    key.features = style.features;
+
+    TextLayoutResult result;
+    if (LayoutCache::get_instance().get(key, result)) {
+        return result;
+    }
+
+    result = InternalLayoutEngine::layout(fallback_chain, utf8_text, style, spec, options);
+    LayoutCache::get_instance().put(key, result);
+    return result;
 }
 
 TextRasterSurface rasterize_layout_debug(const TextLayoutResult& layout) {

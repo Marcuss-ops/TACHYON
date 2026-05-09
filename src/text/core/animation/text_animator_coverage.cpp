@@ -121,9 +121,9 @@ float compute_coverage(const TextAnimatorSelectorSpec& selector, const TextAnima
         t = (ctx.total_glyphs > kOne) ? static_cast<float>(ctx.glyph_index) / static_cast<float>(ctx.total_glyphs - kOne) : kZero;
     }
 
-    const float start_p = static_cast<float>(selector.start) / kPercent;
-    const float end_p   = static_cast<float>(selector.end) / kPercent;
-    const float offset_p = static_cast<float>(selector.offset) / kPercent;
+    const float start_p = static_cast<float>(selector.start);
+    const float end_p   = static_cast<float>(selector.end);
+    const float offset_p = static_cast<float>(selector.offset);
 
     // Adjusted t by offset (wrap around 0-1)
     float t_adj = t - offset_p;
