@@ -4,7 +4,7 @@
 using namespace tachyon;
 using namespace tachyon::scene;
 
-extern "C" __declspec(dllexport) void build_scene(tachyon::SceneSpec& scene) {
+extern "C" tachyon::SceneSpec build_scene() {
     presets::EffectPresetRegistry effects;
 
     auto main_comp = Composition("main", effects)
@@ -32,5 +32,7 @@ extern "C" __declspec(dllexport) void build_scene(tachyon::SceneSpec& scene) {
         })
         .build();
 
+    tachyon::SceneSpec scene;
     scene.compositions.push_back(std::move(main_comp));
+    return scene;
 }

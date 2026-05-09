@@ -1,89 +1,181 @@
 #include "tachyon/renderer2d/surface/surface_blur.h"
-#include "tachyon/renderer2d/surface/surface_composite.h" // for to_premultiplied etc
-#include <cmath>
+#include <vector>
 #include <algorithm>
+#include <cmath>
+
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 namespace tachyon::renderer2d {
 
-std::vector<float> gaussian_kernel(float sigma) {
-    const int radius = std::max(1, static_cast<int>(std::ceil(sigma * 3.0f)));
-    std::vector<float> kernel(static_cast<std::size_t>(radius * 2 + 1), 0.0f);
-    float sum = 0.0f;
-    for (int i = -radius; i <= radius; ++i) {
-        const float w = std::exp(-(static_cast<float>(i * i)) / (2.0f * sigma * sigma));
-        kernel[static_cast<std::size_t>(i + radius)] = w;
-        sum += w;
-    }
-    for (float& w : kernel) w /= sum;
-    return kernel;
-}
+namespace {
 
-std::vector<PremultipliedPixel> convolve_h(const std::vector<PremultipliedPixel>& in, std::uint32_t w, std::uint32_t h, const std::vector<float>& k) {
-    const int r = static_cast<int>(k.size() / 2U);
-    std::vector<PremultipliedPixel> out(in.size());
-    for (std::uint32_t y = 0; y < h; ++y) {
-        for (std::uint32_t x = 0; x < w; ++x) {
-            PremultipliedPixel acc{};
-            for (int d = -r; d <= r; ++d) {
-                const int sx = std::clamp(static_cast<int>(x) + d, 0, static_cast<int>(w) - 1);
-                const float wt = k[static_cast<std::size_t>(d + r)];
-                const auto& s = in[y * w + static_cast<std::uint32_t>(sx)];
-                acc.r += s.r * wt; acc.g += s.g * wt; acc.b += s.b * wt; acc.a += s.a * wt;
-            }
-            out[y * w + x] = acc;
+// Fast separable box blur implementation (linear time O(N))
+void box_blur_h(const float* src, float* dst, int w, int h, int r) {
+    float iarr = 1.0f / (r + r + 1.0f);
+    for (int i = 0; i < h; i++) {
+        int ti = i * w * 4;
+        int li = ti;
+        int ri = ti + r * 4;
+        
+        float fvr = src[ti + 0];
+        float fvg = src[ti + 1];
+        float fvb = src[ti + 2];
+        float fva = src[ti + 3];
+        
+        float lvr = src[ti + (w - 1) * 4 + 0];
+        float lvg = src[ti + (w - 1) * 4 + 1];
+        float lvb = src[ti + (w - 1) * 4 + 2];
+        float lva = src[ti + (w - 1) * 4 + 3];
+        
+        float valr = (r + 1) * fvr;
+        float valg = (r + 1) * fvg;
+        float valb = (r + 1) * fvb;
+        float vala = (r + 1) * fva;
+        
+        for (int j = 0; j < r; j++) {
+            valr += src[ti + j * 4 + 0];
+            valg += src[ti + j * 4 + 1];
+            valb += src[ti + j * 4 + 2];
+            vala += src[ti + j * 4 + 3];
+        }
+        
+        for (int j = 0; j <= r; j++) {
+            valr += src[ri + 0] - fvr;
+            valg += src[ri + 1] - fvg;
+            valb += src[ri + 2] - fvb;
+            vala += src[ri + 3] - fva;
+            dst[ti + 0] = valr * iarr;
+            dst[ti + 1] = valg * iarr;
+            dst[ti + 2] = valb * iarr;
+            dst[ti + 3] = vala * iarr;
+            ri += 4; ti += 4;
+        }
+        
+        for (int j = r + 1; j < w - r; j++) {
+            valr += src[ri + 0] - src[li + 0];
+            valg += src[ri + 1] - src[li + 1];
+            valb += src[ri + 2] - src[li + 2];
+            vala += src[ri + 3] - src[li + 3];
+            dst[ti + 0] = valr * iarr;
+            dst[ti + 1] = valg * iarr;
+            dst[ti + 2] = valb * iarr;
+            dst[ti + 3] = vala * iarr;
+            li += 4; ri += 4; ti += 4;
+        }
+        
+        for (int j = w - r; j < w; j++) {
+            valr += lvr - src[li + 0];
+            valg += lvg - src[li + 1];
+            valb += lvb - src[li + 2];
+            vala += lva - src[li + 3];
+            dst[ti + 0] = valr * iarr;
+            dst[ti + 1] = valg * iarr;
+            dst[ti + 2] = valb * iarr;
+            dst[ti + 3] = vala * iarr;
+            li += 4; ti += 4;
         }
     }
-    return out;
 }
 
-std::vector<PremultipliedPixel> convolve_v(const std::vector<PremultipliedPixel>& in, std::uint32_t w, std::uint32_t h, const std::vector<float>& k) {
-    const int r = static_cast<int>(k.size() / 2U);
-    std::vector<PremultipliedPixel> out(in.size());
-    for (std::uint32_t y = 0; y < h; ++y) {
-        for (std::uint32_t x = 0; x < w; ++x) {
-            PremultipliedPixel acc{};
-            for (int d = -r; d <= r; ++d) {
-                const int sy = std::clamp(static_cast<int>(y) + d, 0, static_cast<int>(h) - 1);
-                const float wt = k[static_cast<std::size_t>(d + r)];
-                const auto& s = in[static_cast<std::uint32_t>(sy) * w + x];
-                acc.r += s.r * wt; acc.g += s.g * wt; acc.b += s.b * wt; acc.a += s.a * wt;
-            }
-            out[y * w + x] = acc;
+void box_blur_v(const float* src, float* dst, int w, int h, int r) {
+    float iarr = 1.0f / (r + r + 1.0f);
+    for (int i = 0; i < w; i++) {
+        int ti = i * 4;
+        int li = ti;
+        int ri = ti + r * w * 4;
+        
+        float fvr = src[ti + 0];
+        float fvg = src[ti + 1];
+        float fvb = src[ti + 2];
+        float fva = src[ti + 3];
+        
+        float lvr = src[ti + (h - 1) * w * 4 + 0];
+        float lvg = src[ti + (h - 1) * w * 4 + 1];
+        float lvb = src[ti + (h - 1) * w * 4 + 2];
+        float lva = src[ti + (h - 1) * w * 4 + 3];
+        
+        float valr = (r + 1) * fvr;
+        float valg = (r + 1) * fvg;
+        float valb = (r + 1) * fvb;
+        float vala = (r + 1) * fva;
+        
+        for (int j = 0; j < r; j++) {
+            valr += src[ti + j * w * 4 + 0];
+            valg += src[ti + j * w * 4 + 1];
+            valb += src[ti + j * w * 4 + 2];
+            vala += src[ti + j * w * 4 + 3];
+        }
+        
+        for (int j = 0; j <= r; j++) {
+            valr += src[ri + 0] - fvr;
+            valg += src[ri + 1] - fvg;
+            valb += src[ri + 2] - fvb;
+            vala += src[ri + 3] - fva;
+            dst[ti + 0] = valr * iarr;
+            dst[ti + 1] = valg * iarr;
+            dst[ti + 2] = valb * iarr;
+            dst[ti + 3] = vala * iarr;
+            ri += w * 4; ti += w * 4;
+        }
+        
+        for (int j = r + 1; j < h - r; j++) {
+            valr += src[ri + 0] - src[li + 0];
+            valg += src[ri + 1] - src[li + 1];
+            valb += src[ri + 2] - src[li + 2];
+            vala += src[ri + 3] - src[li + 3];
+            dst[ti + 0] = valr * iarr;
+            dst[ti + 1] = valg * iarr;
+            dst[ti + 2] = valb * iarr;
+            dst[ti + 3] = vala * iarr;
+            li += w * 4; ri += w * 4; ti += w * 4;
+        }
+        
+        for (int j = h - r; j < h; j++) {
+            valr += lvr - src[li + 0];
+            valg += lvg - src[li + 1];
+            valb += lvb - src[li + 2];
+            vala += lva - src[li + 3];
+            dst[ti + 0] = valr * iarr;
+            dst[ti + 1] = valg * iarr;
+            dst[ti + 2] = valb * iarr;
+            dst[ti + 3] = vala * iarr;
+            li += w * 4; ti += w * 4;
         }
     }
-    return out;
 }
 
-SurfaceRGBA blur_surface(const SurfaceRGBA& input, float sigma) {
-    if (sigma <= 0.0f || input.width() == 0U || input.height() == 0U) return input;
-    const auto k = gaussian_kernel(sigma);
-    std::vector<PremultipliedPixel> px;
-    px.reserve(static_cast<std::size_t>(input.width()) * input.height());
-    for (std::uint32_t y = 0; y < input.height(); ++y)
-        for (std::uint32_t x = 0; x < input.width(); ++x)
-            px.push_back(to_premultiplied(input.get_pixel(x, y)));
-    const auto blurred = convolve_v(convolve_h(px, input.width(), input.height(), k), input.width(), input.height(), k);
-    SurfaceRGBA out(input.width(), input.height());
-    for (std::uint32_t y = 0; y < input.height(); ++y)
-        for (std::uint32_t x = 0; x < input.width(); ++x)
-            out.set_pixel(x, y, from_premultiplied(blurred[y * input.width() + x]));
-    return out;
+} // namespace
+
+void apply_box_blur(SurfaceRGBA& surface, int radius, int thread_count) {
+    if (radius <= 0) return;
+    int w = static_cast<int>(surface.width());
+    int h = static_cast<int>(surface.height());
+    radius = std::min(radius, std::min(w, h) / 2 - 1);
+    
+    std::vector<float> temp_pixels(surface.pixels().size());
+    float* pixels = surface.mutable_pixels().data();
+    float* temp = temp_pixels.data();
+    
+    // Horizontal pass
+    box_blur_h(pixels, temp, w, h, radius);
+    // Vertical pass
+    box_blur_v(temp, pixels, w, h, radius);
 }
 
-SurfaceRGBA blur_alpha_mask(const SurfaceRGBA& input, float sigma) {
-    if (sigma <= 0.0f || input.width() == 0U || input.height() == 0U) return input;
-    const auto k = gaussian_kernel(sigma);
-    std::vector<PremultipliedPixel> px;
-    px.reserve(static_cast<std::size_t>(input.width()) * input.height());
-    for (std::uint32_t y = 0; y < input.height(); ++y)
-        for (std::uint32_t x = 0; x < input.width(); ++x)
-            px.push_back({0.0f, 0.0f, 0.0f, static_cast<float>(input.get_pixel(x, y).a)});
-    const auto blurred = convolve_v(convolve_h(px, input.width(), input.height(), k), input.width(), input.height(), k);
-    SurfaceRGBA out(input.width(), input.height());
-    for (std::uint32_t y = 0; y < input.height(); ++y)
-        for (std::uint32_t x = 0; x < input.width(); ++x)
-            out.set_pixel(x, y, Color{0.0f, 0.0f, 0.0f, std::clamp(blurred[y * input.width() + x].a, 0.0f, 1.0f)});
-    return out;
+void apply_fast_gaussian_blur(SurfaceRGBA& surface, float sigma, int passes, int thread_count) {
+    if (sigma <= 0.0f) return;
+    
+    // Heuristic: convert sigma to box radius
+    // For 3 passes, it approximates a Gaussian with sigma = sqrt(n*(r*r-1)/12)
+    // We simplify for performance.
+    int radius = static_cast<int>(std::round(sigma * 1.5f)); 
+    if (radius < 1) radius = 1;
+    
+    for (int i = 0; i < passes; ++i) {
+        apply_box_blur(surface, radius, thread_count);
+    }
 }
 
 } // namespace tachyon::renderer2d

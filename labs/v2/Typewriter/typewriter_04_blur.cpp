@@ -2,7 +2,7 @@
 #include "tachyon/presets/text/fluent.h"
 using namespace tachyon;
 using namespace tachyon::scene;
-extern "C" __declspec(dllexport) void build_scene(tachyon::SceneSpec& scene) {
+extern "C" tachyon::SceneSpec build_scene() {
     presets::EffectPresetRegistry effects;
     auto main_comp = Composition("main", effects).size(1920, 1080).duration(5.0).fps(30)
         .layer("bg", [](LayerBuilder& l) { l.solid("black").color({0,0,0,255}).in(0).out(5.0); })
@@ -12,5 +12,7 @@ extern "C" __declspec(dllexport) void build_scene(tachyon::SceneSpec& scene) {
              .done()
              .color({255, 255, 255, 255}).position(960, 540).in(0).out(5.0);
         }).build();
+    tachyon::SceneSpec scene;
     scene.compositions.push_back(std::move(main_comp));
+    return scene;
 }

@@ -1,6 +1,9 @@
 #include "tachyon/renderer2d/effects/core/transitions/transition_fast_paths.h"
+#include "tachyon/renderer2d/effects/core/transitions/transition_downsampler.h"
+#include "tachyon/renderer2d/surface/surface_blur.h"
 #include "tachyon/core/ids/builtin_ids.h"
 #include "tachyon/core/transition/transition_simd_kernels.h"
+#include "tachyon/renderer2d/effects/core/transitions/basic_transitions.h"
 #include <algorithm>
 #include <cstring>
 
@@ -158,6 +161,56 @@ void apply_pixelate_direct(
     }
 }
 
+void apply_rgb_split_direct(
+    float* out,
+    const float* from,
+    const float* to,
+    uint32_t width,
+    uint32_t height,
+    float t,
+    int thread_count) {
+    
+    const float offset_norm = 0.01f * t;
+    const int offset_px = static_cast<int>(offset_norm * static_cast<float>(width));
+    const float inv_t = 1.0f - t;
+    
+    const int omp_threads = thread_count > 0 ? thread_count : 1;
+
+#ifdef _OPENMP
+    #pragma omp parallel for schedule(dynamic) num_threads(omp_threads)
+#endif
+    for (int y = 0; y < static_cast<int>(height); ++y) {
+        float* row_out = out + (static_cast<size_t>(y) * width * 4);
+        const float* row_from = from + (static_cast<size_t>(y) * width * 4);
+        const float* row_to = to ? (to + (static_cast<size_t>(y) * width * 4)) : row_from;
+
+        for (uint32_t x = 0; x < width; ++x) {
+            // Source pixel
+            const float sr = row_from[x * 4 + 0];
+            const float sg = row_from[x * 4 + 1];
+            const float sb = row_from[x * 4 + 2];
+            const float sa = row_from[x * 4 + 3];
+
+            // Target channels (R shifted right, G centered, B shifted left)
+            // matching: u + 0.01*t (R), u (G), u - 0.01*t (B)
+            // note: u+offset in UV means sampling a pixel to the right.
+            const int xr = std::clamp(static_cast<int>(x) + offset_px, 0, static_cast<int>(width) - 1);
+            const int xb = std::clamp(static_cast<int>(x) - offset_px, 0, static_cast<int>(width) - 1);
+
+            const float tr = row_to[xr * 4 + 0];
+            const float tg = row_to[x * 4 + 1];
+            const float tb = row_to[xb * 4 + 2];
+            const float ta = row_to[x * 4 + 3];
+
+            // Final composite
+            row_out[x * 4 + 0] = sr * inv_t + tr * t;
+            row_out[x * 4 + 1] = sg * inv_t + tg * t;
+            row_out[x * 4 + 2] = sb * inv_t + tb * t;
+            row_out[x * 4 + 3] = sa * inv_t + ta * t;
+        }
+    }
+}
+
 } // namespace
 
 
@@ -216,6 +269,37 @@ bool apply_transition_fast_path(
             w, h, t,
             thread_count);
         return true;
+    }
+    
+    if (transition_id == ids::transition::rgb_split) {
+        apply_rgb_split_direct(
+            output.mutable_pixels().data(),
+            from.pixels().data(),
+            to ? to->pixels().data() : nullptr,
+            w, h, t,
+            thread_count);
+        return true;
+    }
+
+    if (transition_id == ids::transition::soft_zoom_blur) {
+        // Use general downsampled runner for this heavy effect
+        TransitionDescriptor d;
+        d.id = ids::transition::soft_zoom_blur;
+        resolve_basic_transition_implementations(d);
+        if (d.cpu_fn) {
+            return apply_transition_downsampled(d.cpu_fn, output, from, to, t, 2, thread_count);
+        }
+    }
+
+    if (transition_id == ids::transition::blur) {
+        // Blur is simple enough to optimize directly or via separable utility
+        // For now, let's use the downsampler as it's a general solution for 'heavy' feel
+        TransitionDescriptor d;
+        d.id = ids::transition::blur;
+        resolve_basic_transition_implementations(d);
+        if (d.cpu_fn) {
+            return apply_transition_downsampled(d.cpu_fn, output, from, to, t, 2, thread_count);
+        }
     }
     
     return false;
