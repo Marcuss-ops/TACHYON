@@ -119,6 +119,7 @@ endfunction()
 
 add_library(TachyonCore STATIC ${TachyonCoreSources})
 tachyon_configure_common(TachyonCore)
+tachyon_link_omp(TachyonCore)
 target_include_directories(TachyonCore
     PUBLIC
         $<BUILD_INTERFACE:${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/include>

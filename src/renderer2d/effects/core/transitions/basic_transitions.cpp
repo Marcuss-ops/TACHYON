@@ -131,6 +131,7 @@ Color transition_soft_zoom_blur(float u, float v, float t, const SurfaceRGBA& in
     constexpr int samples = 7;
 
     const float eased = smoothstep01(t);
+    const float blur_phase = 0.12f * std::sin(eased * 3.1415926535f);
     const float cx = 0.5f;
     const float cy = 0.5f;
 
@@ -138,7 +139,7 @@ Color transition_soft_zoom_blur(float u, float v, float t, const SurfaceRGBA& in
 
     for (int i = 0; i < samples; ++i) {
         const float s = static_cast<float>(i) / static_cast<float>(samples - 1);
-        const float blur = (s - 0.5f) * 0.12f * std::sin(eased * 3.1415926535f);
+        const float blur = (s - 0.5f) * blur_phase;
 
         const float su = cx + (u - cx) * (1.0f + blur);
         const float sv = cy + (v - cy) * (1.0f + blur);

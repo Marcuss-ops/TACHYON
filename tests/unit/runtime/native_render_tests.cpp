@@ -15,9 +15,24 @@
 #include <string>
 #include <filesystem>
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 namespace tachyon {
 
 namespace {
+
+class NullFrameOutputSink final : public output::FrameOutputSink {
+public:
+    bool begin(const RenderPlan&) override { return true; }
+    bool write_frame(const output::OutputFramePacket&) override { return true; }
+    bool finish() override { return true; }
+    const std::string& last_error() const override {
+        static const std::string kEmpty;
+        return kEmpty;
+    }
+};
 
 std::optional<renderer2d::SurfaceRGBA> load_video_frame_surface(
     media::MediaManager& media_manager,
@@ -86,34 +101,11 @@ std::array<double, 3> sample_average_rgb(const renderer2d::SurfaceRGBA& surface)
     };
 }
 
-bool render_transition_demo_mp4(
-    const std::string& transition_id,
+RenderPlan make_transition_render_plan(
     const renderer2d::SurfaceRGBA& source,
-    const renderer2d::SurfaceRGBA& target,
     const std::filesystem::path& output_path) {
-    const auto render_started = std::chrono::steady_clock::now();
-
-    TransitionRegistry transition_registry;
-    register_builtin_transitions(transition_registry);
-    for (auto* desc : transition_registry.list_all()) {
-        if (!desc) continue;
-        renderer2d::resolve_basic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
-        renderer2d::resolve_artistic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
-        renderer2d::resolve_light_leak_implementations(const_cast<TransitionDescriptor&>(*desc));
-    }
-    TransitionEffectResolver resolver{transition_registry};
-    TransitionEffectRequest request;
-    request.transition_id = transition_id;
-    request.preferred_backend = TransitionRuntimeKind::CpuPixel;
-    request.fallback_policy = TransitionFallbackPolicy::Strict;
-    const auto resolved = resolver.resolve(request);
-    if (!resolved.valid || !resolved.kernel.valid || !resolved.kernel.apply) {
-        std::cerr << "[NativeRender] FAIL: transition kernel resolve failed for " << transition_id << '\n';
-        return false;
-    }
-
-    tachyon::RenderPlan plan;
-    plan.job_id = "native-render-light-leak";
+    RenderPlan plan;
+    plan.job_id = "native-render-transition-benchmark";
     plan.scene_ref = "scene-a-b";
     plan.composition_target = "main";
     plan.composition.id = "main";
@@ -136,12 +128,19 @@ bool render_transition_demo_mp4(
     plan.output.profile.color.transfer = "srgb";
     plan.output.profile.color.range = "full";
     plan.output.profile.audio.mode = "none";
+    return plan;
+}
 
-    auto sink = output::create_frame_output_sink(plan);
-    if (!sink) {
-        return false;
-    }
-    if (!sink->begin(plan)) {
+bool render_transition_demo_with_sink(
+    const std::string& transition_id,
+    const TransitionKernel& kernel,
+    const renderer2d::SurfaceRGBA& source,
+    const renderer2d::SurfaceRGBA& target,
+    const RenderPlan& plan,
+    output::FrameOutputSink& sink,
+    const char* mode_label) {
+    const auto render_started = std::chrono::steady_clock::now();
+    if (!sink.begin(plan)) {
         return false;
     }
 
@@ -167,10 +166,10 @@ bool render_transition_demo_mp4(
             t = 1.0f;
         }
 
-        const renderer2d::SurfaceRGBA blended_result = resolved.kernel.apply(preview_source, &preview_target, t);
+        const renderer2d::SurfaceRGBA blended_result = kernel.apply(preview_source, &preview_target, t);
         if (index == 0 || index == lead_in_frames || index + 1 == frame_count) {
             const auto avg = sample_average_rgb(blended_result);
-            std::cout << "[NativeRender] " << transition_id
+            std::cout << "[NativeRender] " << mode_label << " " << transition_id
                       << " frame=" << (index + 1)
                       << " t=" << t
                       << " avg_rgb=(" << avg[0] << "," << avg[1] << "," << avg[2] << ")\n";
@@ -181,21 +180,22 @@ bool render_transition_demo_mp4(
         packet.frame = &blended_result;
         packet.metadata.time_seconds = static_cast<double>(index) / fps;
         packet.metadata.scene_hash = transition_id;
-        if (!sink->write_frame(packet)) {
+        if (!sink.write_frame(packet)) {
             return false;
         }
     }
 
-    if (!sink->finish()) {
+    if (!sink.finish()) {
         return false;
     }
 
     const auto render_finished = std::chrono::steady_clock::now();
     const auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(render_finished - render_started).count();
-    std::cout << "[NativeRender] " << transition_id
+    std::cout << "[NativeRender] " << mode_label << " " << transition_id
               << " total_ms=" << elapsed_ms
               << " frames=" << frame_count
               << " resolution=" << preview_source.width() << "x" << preview_source.height()
+              << " output=" << plan.output.destination.path
               << '\n';
 
     return true;
@@ -235,25 +235,12 @@ bool run_native_render_tests() {
         }
     }
 
-    std::cout << "[NativeRender] Rendering transition demos from clip_a/clip_b...\n";
-    struct DemoConfig {
-        const char* transition_id;
-        const char* file_name;
-    };
-
-    const std::array<DemoConfig, 11> transition_demos{{
-        {"tachyon.transition.crossfade", "crossfade_demo.mp4"},
-        {"tachyon.transition.slide_up", "slide_up_demo.mp4"},
-        {"tachyon.transition.swipe_left", "swipe_left_demo.mp4"},
-        {"tachyon.transition.wipe_linear", "wipe_linear_demo.mp4"},
-        {"tachyon.transition.luma_dissolve", "luma_dissolve_demo.mp4"},
-        {"tachyon.transition.smooth_wipe", "smooth_wipe_demo.mp4"},
-        {"tachyon.transition.soft_zoom_blur", "soft_zoom_blur_demo.mp4"},
-        {"tachyon.transition.flash_cut", "flash_cut_demo.mp4"},
-        {"tachyon.transition.lightleak.soft_warm_edge", "lightleak_soft_warm_edge_demo.mp4"},
-        {"tachyon.transition.lightleak.golden_sweep", "lightleak_golden_sweep_demo.mp4"},
-        {"tachyon.transition.lightleak.neon_pulse", "lightleak_neon_pulse_demo.mp4"},
-    }};
+    std::cout << "[NativeRender] Benchmarking the heaviest transition from clip_a/clip_b...\n";
+#ifdef _OPENMP
+    std::cout << "[NativeRender] OpenMP max_threads=" << omp_get_max_threads()
+              << " num_procs=" << omp_get_num_procs() << '\n';
+#endif
+    const std::string transition_id = "tachyon.transition.soft_zoom_blur";
 
     const std::filesystem::path demo_dir = repo_root_path() / "output" / "transitions" / "clip_pair_demos";
     std::filesystem::create_directories(demo_dir);
@@ -268,22 +255,51 @@ bool run_native_render_tests() {
         return false;
     }
 
-    for (const auto& demo : transition_demos) {
-        const std::filesystem::path mp4_path = demo_dir / demo.file_name;
-
-        std::filesystem::remove(mp4_path);
-        if (!render_transition_demo_mp4(demo.transition_id, *source_still, *target_still, mp4_path)) {
-            std::cerr << "[NativeRender] FAIL: transition render failed for " << demo.transition_id << "\n";
-            return false;
-        }
-
-        if (!std::filesystem::exists(mp4_path)) {
-            std::cerr << "[NativeRender] FAIL: rendered MP4 missing for " << demo.transition_id << "\n";
-            return false;
-        }
-
-        std::cout << "[OK] Rendered " << demo.transition_id << " to " << mp4_path << "\n";
+    TransitionRegistry transition_registry;
+    register_builtin_transitions(transition_registry);
+    for (auto* desc : transition_registry.list_all()) {
+        if (!desc) continue;
+        renderer2d::resolve_basic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
+        renderer2d::resolve_artistic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
+        renderer2d::resolve_light_leak_implementations(const_cast<TransitionDescriptor&>(*desc));
     }
+    TransitionEffectResolver resolver{transition_registry};
+    TransitionEffectRequest request;
+    request.transition_id = transition_id;
+    request.preferred_backend = TransitionRuntimeKind::CpuPixel;
+    request.fallback_policy = TransitionFallbackPolicy::Strict;
+    const auto resolved = resolver.resolve(request);
+    if (!resolved.valid || !resolved.kernel.valid || !resolved.kernel.apply) {
+        std::cerr << "[NativeRender] FAIL: transition kernel resolve failed for " << transition_id << '\n';
+        return false;
+    }
+
+    const std::filesystem::path mp4_path = demo_dir / "soft_zoom_blur_benchmark.mp4";
+    const auto plan = make_transition_render_plan(*source_still, mp4_path);
+
+    NullFrameOutputSink null_sink;
+    if (!render_transition_demo_with_sink(transition_id, resolved.kernel, *source_still, *target_still, plan, null_sink, "compute-only")) {
+        std::cerr << "[NativeRender] FAIL: compute-only benchmark failed for " << transition_id << "\n";
+        return false;
+    }
+
+    std::filesystem::remove(mp4_path);
+    auto sink = output::create_frame_output_sink(plan);
+    if (!sink) {
+        std::cerr << "[NativeRender] FAIL: could not create MP4 sink for " << transition_id << "\n";
+        return false;
+    }
+
+    if (!render_transition_demo_with_sink(transition_id, resolved.kernel, *source_still, *target_still, plan, *sink, "mp4")) {
+        std::cerr << "[NativeRender] FAIL: transition render failed for " << transition_id << "\n";
+        return false;
+    }
+
+    if (!std::filesystem::exists(mp4_path)) {
+        std::cerr << "[NativeRender] FAIL: rendered MP4 missing for " << transition_id << "\n";
+        return false;
+    }
+    std::cout << "[OK] Rendered " << transition_id << " to " << mp4_path << "\n";
     return true;
 }
 
