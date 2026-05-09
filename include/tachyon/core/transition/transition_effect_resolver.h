@@ -30,7 +30,12 @@ struct TransitionEffectRequest {
  * @brief Transition kernel function signature.
  * Takes input surfaces and progress (0.0 to 1.0) and returns output surface.
  */
-using TransitionKernelFn = std::function<renderer2d::SurfaceRGBA(const renderer2d::SurfaceRGBA&, const renderer2d::SurfaceRGBA*, float, int thread_count)>;
+using TransitionKernelFn = std::function<void(
+    renderer2d::SurfaceRGBA& output,
+    const renderer2d::SurfaceRGBA& input_a,
+    const renderer2d::SurfaceRGBA* input_b,
+    float progress,
+    int thread_count)>;
 
 /**
  * @brief Kernel wrapper for executing a resolved transition.

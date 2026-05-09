@@ -28,3 +28,18 @@ include(cmake/RuntimeTests.cmake)
 include(cmake/ContentTests.cmake)
 include(cmake/RenderTests.cmake)
 include(cmake/SmokeTests.cmake)
+
+# Labs
+add_executable(transition_perf_lab labs/transition_perf_lab.cpp)
+target_link_libraries(transition_perf_lab PRIVATE 
+    TachyonCore 
+    TachyonMedia 
+    TachyonOutput 
+    TachyonRenderer2D
+    TachyonPresets
+    TachyonRuntimeTelemetry
+    TachyonPlatform
+    TachyonTimeline
+)
+tachyon_configure_common(transition_perf_lab)
+
