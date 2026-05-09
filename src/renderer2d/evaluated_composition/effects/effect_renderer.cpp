@@ -11,7 +11,6 @@
 namespace tachyon::renderer2d {
 
 EffectHost& effect_host_for(RenderContext2D& context) {
-    std::cerr << "[DEBUG] effect_host_for entry\n";
     if (!context.effects) {
         throw std::runtime_error("RenderContext2D::effects is not initialized. "
                                "Ensure RenderSession is used to properly initialize the context.");

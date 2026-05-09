@@ -59,6 +59,7 @@ set(TachyonRenderer2DEffectsSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/transitions/light_leak_transitions.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/transitions/artistic_transitions.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/transitions/transition_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/transitions/transition_fast_paths.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/utility_effects.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/glitch.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/distort/warp_stabilizer_effect.cpp
