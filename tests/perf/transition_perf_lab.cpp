@@ -64,11 +64,15 @@ int main() {
     renderer2d::register_builtin_effects(effect_registry, effect_manifest, transition_registry);
     auto host = renderer2d::create_effect_host(effect_registry);
 
-    std::vector<std::string> transitions_to_test = {
-        "tachyon.transition.crossfade",
-        "tachyon.transition.light_leak",
-        "tachyon.transition.pixelate"
-    };
+    std::vector<std::string> transitions_to_test;
+    for (auto* desc : transition_registry.list_all()) {
+        if (desc) {
+            transitions_to_test.push_back(desc->id);
+        }
+    }
+    
+    // Sort for consistent output
+    std::sort(transitions_to_test.begin(), transitions_to_test.end());
 
     std::filesystem::create_directories("output/transitions/clip_pair_demos");
 
@@ -95,9 +99,9 @@ int main() {
 
         auto start_time = std::chrono::high_resolution_clock::now();
         
-        const int frame_count = 60; // 2 seconds at 30fps
-        const int transition_frames = 15; // 0.5 second transition
-        const int start_transition = 22; // Centered (approx)
+        const int frame_count = 10;
+        const int transition_frames = 5;
+        const int start_transition = 3; 
         
         for (int i = 0; i < frame_count; ++i) {
             float t = 0.0f;
