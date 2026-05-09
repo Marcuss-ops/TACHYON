@@ -230,6 +230,7 @@ float place_shaped_run(
         pg.whitespace = ws;
         pg.is_rtl = rtl;
         pg.resolved_font = sub.font;
+        pg.resolved_glyph = g;
         pg.bounds = {pg.position.x, pg.position.y, pg.width, pg.height};
         
         result.glyphs.push_back(pg);

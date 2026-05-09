@@ -469,7 +469,7 @@ TextStyle make_minimal_text_style(
     animator.name = "SlideMaskLeft";
     animator.selector.shape = "ramp_up";
     animator.selector.start = 0.0;
-    animator.selector.end = 100.0;
+    animator.selector.end = 1.0;
     animator.selector.stagger_mode = "character";
     animator.selector.stagger_delay = 0.02;
     return animator;

@@ -8,6 +8,9 @@ extern "C" tachyon::SceneSpec build_scene() {
         .layer("bg", [](LayerBuilder& l) { l.solid("black").color({0,0,0,255}).in(0).out(5.0); })
         .layer("text_layer", [](LayerBuilder& l) {
             l.text().content("TYPEWRITER BLUR FOCUS").font("SFPro").font_size(120)
+             .box(1920, 1080, TextBoxMode::Fixed)
+             .align(HorizontalAlign::Center)
+             .valign(VerticalAlign::Middle)
              .animator(presets::text::kind_typewriter_soft(16.0, "|"))
              .done()
              .color({255, 255, 255, 255}).position(960, 540).in(0).out(5.0);

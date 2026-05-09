@@ -16,7 +16,11 @@ extern "C" tachyon::SceneSpec build_scene() {
             v2_anim.selector.offset = 1.0; 
             v2_anim.properties.opacity_value = 0.0;
             v2_anim.properties.blur_radius_value = 30.0;
-            l.text().content("TYPEWRITER STAGGER BLUR").font("SFPro").font_size(120).animator(v2_anim).done()
+            l.text().content("TYPEWRITER STAGGER BLUR").font("SFPro").font_size(120)
+             .box(1920, 1080, TextBoxMode::Fixed)
+             .align(HorizontalAlign::Center)
+             .valign(VerticalAlign::Middle)
+             .animator(v2_anim).done()
              .color({255, 255, 255, 255}).position(960, 540).in(0).out(5.0);
         }).build();
     tachyon::SceneSpec scene;
