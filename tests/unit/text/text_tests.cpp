@@ -68,9 +68,9 @@ bool run_text_tests() {
         TextBox box;
         box.width = 200;
         box.height = 64;
-        box.multiline = false;
+        box.mode = TextBoxMode::Fixed;
 
-        const TextLayoutResult layout = layout_text(font, "TACHYON", style, box, TextAlignment::Left);
+        const TextLayoutResult layout = layout_text(font, "TACHYON", style, box, HorizontalAlign::Left);
         std::cerr << "DEBUG: layout.scale=" << layout.scale << ", layout.lines=" << layout.lines.size() << ", layout.width=" << layout.width << ", glyphs=" << layout.glyphs.size() << "\n";
         check_true(layout.scale == 2, "Layout scale derived from pixel size");
         check_true(layout.lines.size() == 1, "Single-line layout stays on one line");
@@ -83,13 +83,12 @@ bool run_text_tests() {
         TextBox box;
         box.width = 200;
         box.height = 64;
-        box.multiline = false;
-
+        box.mode = TextBoxMode::Fixed;
         TextLayoutOptions tracking;
         tracking.tracking = 1.0f;
 
-        const TextLayoutResult base_layout = layout_text(font, "TA", style, box, TextAlignment::Left);
-        const TextLayoutResult tracked_layout = layout_text(font, "TA", style, box, TextAlignment::Left, tracking);
+        const TextLayoutResult base_layout = layout_text(font, "TA", style, box, HorizontalAlign::Left);
+        const TextLayoutResult tracked_layout = layout_text(font, "TA", style, box, HorizontalAlign::Left, tracking);
         check_true(tracked_layout.width > base_layout.width, "Tracking increases laid-out width");
     }
 
@@ -97,11 +96,10 @@ bool run_text_tests() {
         TextBox box;
         box.width = 100;
         box.height = 64;
-        box.multiline = true;
-
-        const TextLayoutResult layout = layout_text(font, "TACHYON TACHYON", style, box, TextAlignment::Center);
+        box.mode = TextBoxMode::Fixed;
+        const TextLayoutResult layout = layout_text(font, "TACHYON TACHYON", style, box, HorizontalAlign::Center);
         check_true(layout.lines.size() >= 2, "Wrapping creates multiple lines");
-        check_true(layout.glyphs.front().x > 0, "Center alignment offsets the first glyph");
+        check_true(layout.glyphs.front().position.x > 0, "Center alignment offsets the first glyph");
         if (!layout.lines.empty() && layout.lines.front().glyph_count > 0) {
             check_true(!layout.glyphs[layout.lines.front().glyph_count - 1].whitespace, "Wrapping should prefer a word boundary");
         }
@@ -111,9 +109,8 @@ bool run_text_tests() {
         TextBox box;
         box.width = 84;
         box.height = 32;
-        box.multiline = false;
-
-        const TextRasterSurface surface = rasterize_text_rgba(font, "TACHYON", style, box, TextAlignment::Left);
+        box.mode = TextBoxMode::Fixed;
+        const TextRasterSurface surface = rasterize_text_rgba(font, "TACHYON", style, box, TextLayoutOptions{});
         check_true(surface.width() == 84, "Raster surface width matches layout");
         check_true(surface.height() == 14, "Raster surface height matches layout");
 
@@ -160,12 +157,12 @@ bool run_text_tests() {
         TextBox box;
         box.width = 200;
         box.height = 64;
-        box.multiline = false;
+        box.mode = TextBoxMode::Fixed;
 
         TextLayoutOptions layout_options;
         layout_options.tracking = 1.0f;
-        const TextLayoutResult layout = tachyon::text::layout_text(font, "TA", style, box, tachyon::text::TextAlignment::Left, layout_options);
-        const TextRasterSurface base_surface = tachyon::text::rasterize_text_rgba(font, "TA", style, box, tachyon::text::TextAlignment::Left, layout_options);
+        const TextLayoutResult layout = tachyon::text::layout_text(font, "TA", style, box, HorizontalAlign::Left, layout_options);
+        const TextRasterSurface base_surface = tachyon::text::rasterize_text_rgba(font, "TA", style, box, layout_options);
 
         tachyon::text::TextAnimationOptions animation;
         animation.enabled = true;
@@ -177,7 +174,7 @@ bool run_text_tests() {
         std::vector<tachyon::TextAnimatorSpec> local_animators = {opacity_anim};
         animation.animators = local_animators;
  
-        const TextRasterSurface animated_surface = tachyon::text::rasterize_text_rgba(font, "TA", style, box, tachyon::text::TextAlignment::Left, layout_options, animation);
+        const TextRasterSurface animated_surface = tachyon::text::rasterize_text_rgba(font, "TA", style, box, layout_options, animation);
 
         std::size_t base_opaque = 0;
         std::size_t animated_opaque = 0;
@@ -195,8 +192,8 @@ bool run_text_tests() {
         check_true(animated_opaque < base_opaque, "Per-glyph opacity animation reduces visible pixels");
         if (layout.glyphs.size() >= 2) {
             const auto& second = layout.glyphs[1];
-            const std::uint32_t sample_x = static_cast<std::uint32_t>(std::max<std::int32_t>(0, second.x + std::max<std::int32_t>(1, second.width / 2)));
-            const std::uint32_t sample_y = static_cast<std::uint32_t>(std::max<std::int32_t>(0, second.y + std::max<std::int32_t>(1, second.height / 2)));
+            const std::uint32_t sample_x = static_cast<std::uint32_t>(std::max<std::int32_t>(0, second.position.x + std::max<std::int32_t>(1, second.width / 2)));
+            const std::uint32_t sample_y = static_cast<std::uint32_t>(std::max<std::int32_t>(0, second.position.y + std::max<std::int32_t>(1, second.height / 2)));
             check_true(animated_surface.get_pixel(sample_x, sample_y).a == 0, "Per-glyph opacity can hide later glyphs");
         }
     }
@@ -205,11 +202,11 @@ bool run_text_tests() {
         TextBox box;
         box.width = 200;
         box.height = 64;
-        box.multiline = false;
+        box.mode = TextBoxMode::Fixed;
 
         const TextLayoutOptions layout_options;
-        const TextLayoutResult layout = layout_text(font, "HIGHLIGHT", style, box, TextAlignment::Center, layout_options);
-        const TextRasterSurface base_surface = rasterize_text_rgba(font, "HIGHLIGHT", style, box, TextAlignment::Center, layout_options);
+        const TextLayoutResult layout = layout_text(font, "HIGHLIGHT", style, box, HorizontalAlign::Center, layout_options);
+        const TextRasterSurface base_surface = rasterize_text_rgba(font, "HIGHLIGHT", style, box, layout_options);
 
         std::vector<TextHighlightSpan> highlights;
         highlights.push_back(TextHighlightSpan{0, 3, tachyon::renderer2d::Color{255, 236, 59, 96}, 3, 2});
@@ -219,7 +216,6 @@ bool run_text_tests() {
             "HIGHLIGHT",
             style,
             box,
-            TextAlignment::Center,
             std::span<const TextHighlightSpan>(highlights.data(), highlights.size()),
             layout_options,
             TextAnimationOptions{});
@@ -227,8 +223,8 @@ bool run_text_tests() {
         check_true(layout.glyphs.size() >= 3, "Highlight layout emits enough glyphs");
         if (layout.glyphs.size() >= 1) {
             const auto& first = layout.glyphs.front();
-            const std::uint32_t sample_x = static_cast<std::uint32_t>(std::max<std::int32_t>(0, first.x - 1));
-            const std::uint32_t sample_y = static_cast<std::uint32_t>(std::max<std::int32_t>(0, first.y - 1));
+            const std::uint32_t sample_x = static_cast<std::uint32_t>(std::max<std::int32_t>(0, first.position.x - 1));
+            const std::uint32_t sample_y = static_cast<std::uint32_t>(std::max<std::int32_t>(0, first.position.y - 1));
             check_true(base_surface.get_pixel(sample_x, sample_y).a == 0, "Base surface keeps highlight area transparent");
             check_true(highlighted_surface.get_pixel(sample_x, sample_y).a > 0, "Highlight span paints a visible background");
         }
@@ -251,9 +247,8 @@ bool run_text_tests() {
                 TextBox box;
                 box.width = 220;
                 box.height = 64;
-                box.multiline = false;
-
-                const TextLayoutResult layout = layout_text(ttf_font, "HarfBuzz", style, box, TextAlignment::Left);
+                box.mode = TextBoxMode::Fixed;
+                const TextLayoutResult layout = layout_text(ttf_font, "HarfBuzz", style, box, HorizontalAlign::Left);
                 check_true(!layout.glyphs.empty(), "TTF layout emits glyphs");
                 if (!layout.glyphs.empty()) {
                     check_true(layout.glyphs.front().font_glyph_index != 0U, "TTF layout stores shaped glyph indices");
@@ -267,8 +262,8 @@ bool run_text_tests() {
         using namespace tachyon;
         using namespace tachyon::text;
 
-        // Create a simple ResolvedTextLayout with a few glyphs
-        ResolvedTextLayout layout;
+        // Create a simple TextLayoutResult with a few glyphs
+        TextLayoutResult layout;
         layout.glyphs.resize(3);
         layout.glyphs[0].position = {0.0f, 0.0f};
         layout.glyphs[0].opacity = 1.0f;
@@ -319,20 +314,20 @@ bool run_text_tests() {
         using namespace tachyon;
         using namespace tachyon::text;
 
-        ResolvedTextLayout layout;
+        TextLayoutResult layout;
         layout.glyphs.resize(4);
         
         // Simulate a cluster: glyphs 0,1 are part of same cluster (e.g., base + combining mark)
         layout.glyphs[0].position = {0.0f, 0.0f};
         layout.glyphs[0].cluster_index = 0;
-        layout.glyphs[0].source_index = 0;
+        layout.glyphs[0].cluster_codepoint_start = 0;
         layout.glyphs[0].opacity = 1.0f;
         layout.glyphs[0].scale = {1.0f, 1.0f};
         layout.glyphs[0].rotation = 0.0f;
 
         layout.glyphs[1].position = {10.0f, 0.0f};
         layout.glyphs[1].cluster_index = 0;  // Same cluster!
-        layout.glyphs[1].source_index = 0;
+        layout.glyphs[1].cluster_codepoint_start = 0;
         layout.glyphs[1].opacity = 1.0f;
         layout.glyphs[1].scale = {1.0f, 1.0f};
         layout.glyphs[1].rotation = 0.0f;
@@ -340,12 +335,12 @@ bool run_text_tests() {
         // Glyph 2,3 are separate clusters
         layout.glyphs[2].position = {20.0f, 0.0f};
         layout.glyphs[2].cluster_index = 1;
-        layout.glyphs[2].source_index = 1;
+        layout.glyphs[2].cluster_codepoint_start = 1;
         layout.glyphs[2].opacity = 1.0f;
 
         layout.glyphs[3].position = {30.0f, 0.0f};
         layout.glyphs[3].cluster_index = 2;
-        layout.glyphs[3].source_index = 2;
+        layout.glyphs[3].cluster_codepoint_start = 2;
         layout.glyphs[3].opacity = 1.0f;
 
         // Animate with per-character selector
@@ -377,7 +372,7 @@ bool run_text_tests() {
         using namespace tachyon;
         using namespace tachyon::text;
 
-        ResolvedTextLayout layout;
+        TextLayoutResult layout;
         layout.glyphs.resize(5);
         
         // Word 0: glyphs 0,1 ("He")
@@ -434,19 +429,19 @@ bool run_text_tests() {
         using namespace tachyon;
         using namespace tachyon::text;
 
-        ResolvedTextLayout layout;
+        TextLayoutResult layout;
         layout.glyphs.resize(3);
         
         // Non-space glyph
-        layout.glyphs[0].is_space = false;
+        layout.glyphs[0].whitespace = false;
         layout.glyphs[0].opacity = 1.0f;
 
         // Space glyph (simulated)
-        layout.glyphs[1].is_space = true;
+        layout.glyphs[1].whitespace = true;
         layout.glyphs[1].opacity = 1.0f;
 
         // Non-space glyph
-        layout.glyphs[2].is_space = false;
+        layout.glyphs[2].whitespace = false;
         layout.glyphs[2].opacity = 1.0f;
 
         // Animate with characters_excluding_spaces
@@ -466,7 +461,7 @@ bool run_text_tests() {
         TextAnimatorPipeline::apply_animators(layout, animators_list, ctx);
 
         // Non-space glyphs should be affected
-        // Note: is_space flag needs to be set properly in context
+        // Note: whitespace flag needs to be set properly in context
         check_true(layout.glyphs[0].opacity <= 0.01f || layout.glyphs[0].opacity > 0.9f, 
                   "Non-space glyph handling verified");
     }
@@ -476,7 +471,7 @@ bool run_text_tests() {
         using namespace tachyon;
         using namespace tachyon::text;
 
-        ResolvedTextLayout layout;
+        TextLayoutResult layout;
         layout.glyphs.resize(3);
         layout.is_on_path = false;
 
@@ -506,7 +501,7 @@ bool run_text_tests() {
         using namespace tachyon;
         using namespace tachyon::text;
 
-        ResolvedTextLayout layout;
+        TextLayoutResult layout;
         layout.glyphs.resize(2);
         
         // Simulate RTL glyph
@@ -544,7 +539,7 @@ bool run_text_tests() {
         using namespace tachyon;
         using namespace tachyon::text;
 
-        ResolvedTextLayout layout;
+        TextLayoutResult layout;
         layout.glyphs.resize(2);
         
         layout.glyphs[0].position = {0.0f, 0.0f};

@@ -99,6 +99,7 @@ void configure_render_context(
     RenderSessionWorkspace& workspace,
     profiling::RenderProfiler* profiler,
     runtime::RuntimeSurfacePool* surface_pool,
+    std::shared_ptr<renderer2d::SurfacePool> renderer2d_surface_pool,
     const renderer2d::EffectRegistry& effect_registry,
     const renderer3d::Modifier3DRegistry& modifier_registry,
     const TransitionRegistry& transition_registry,
@@ -114,6 +115,7 @@ void configure_render_context(
         const_cast<text::FontRegistry*>(workspace.context.renderer2d.font_registry));
 
     workspace.context.surface_pool = surface_pool;
+    workspace.context.renderer2d.surface_pool = renderer2d_surface_pool;
     workspace.context.profiler = profiler;
     workspace.context.renderer2d.profiler = profiler;
     workspace.context.renderer2d.effects = renderer2d::create_effect_host(effect_registry);
@@ -156,7 +158,7 @@ void execute_render_loop(
     RenderSessionWorkspace& workspace,
     const CompiledScene& compiled_scene,
     FrameCache& cache,
-    std::size_t worker_count,
+    const ::tachyon::runtime::RenderWorkerBudget& budget,
     CancelFlag* cancel_flag,
     RenderSessionResult* result) {
     profiling::ProfileScope scope(
@@ -167,7 +169,7 @@ void execute_render_loop(
         compiled_scene,
         workspace.effective_plan,
         cache,
-        worker_count,
+        budget,
         workspace.context,
         workspace.prefetcher,
         nullptr,
@@ -245,7 +247,7 @@ RenderSessionResult RenderSession::render(
     const CompiledScene& compiled_scene,
     const RenderExecutionPlan& execution_plan,
     const std::filesystem::path& output_path,
-    std::size_t worker_count,
+    const ::tachyon::runtime::RenderWorkerBudget& budget,
     CancelFlag* cancel_flag) {
 
     (void)scene;
@@ -264,11 +266,11 @@ RenderSessionResult RenderSession::render(
     std::uint32_t h = static_cast<std::uint32_t>(workspace.effective_plan.render_plan.composition.height);
     
     runtime::SurfacePoolPolicy surface_policy;
-    const auto surface_count = surface_policy.resolve(w, h, worker_count);
+    const auto surface_count = surface_policy.resolve(w, h, budget.frame_concurrency);
     m_surface_pool = std::make_unique<runtime::RuntimeSurfacePool>(w, h, surface_count);
 
     const TransitionRegistry& transition_registry = m_transition_registry_ptr ? *m_transition_registry_ptr : m_transition_registry;
-    configure_render_context(workspace, m_profiler, m_surface_pool.get(), m_effect_registry, m_modifier_registry, transition_registry, m_text_registry_ptr);
+    configure_render_context(workspace, m_profiler, m_surface_pool.get(), m_renderer2d_surface_pool, m_effect_registry, m_modifier_registry, transition_registry, m_text_registry_ptr);
 
     workspace.sink = output::create_frame_output_sink(workspace.effective_plan.render_plan);
     
@@ -285,7 +287,7 @@ RenderSessionResult RenderSession::render(
 
     workspace.frame_times.resize(workspace.effective_plan.frame_tasks.size());
     const auto frame_exec_start = std::chrono::high_resolution_clock::now();
-    execute_render_loop(workspace, compiled_scene, m_cache, worker_count, cancel_flag, &result);
+    execute_render_loop(workspace, compiled_scene, m_cache, budget, cancel_flag, &result);
     const auto frame_exec_end = std::chrono::high_resolution_clock::now();
     result.frame_execution_ms = std::chrono::duration<double, std::milli>(frame_exec_end - frame_exec_start).count();
     result.frame_times_ms = std::move(workspace.frame_times);
@@ -317,7 +319,7 @@ RenderSessionResult RenderSession::render(
     const RenderExecutionPlan& execution_plan,
     const std::filesystem::path& output_path) {
     
-    runtime::WorkerPolicy policy;
+    runtime::RenderWorkerPolicy policy;
     return render(scene, compiled_scene, execution_plan, output_path, 
                   policy.resolve(std::thread::hardware_concurrency()));
 }

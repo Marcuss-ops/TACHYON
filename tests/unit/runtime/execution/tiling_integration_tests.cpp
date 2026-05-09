@@ -4,6 +4,7 @@
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 
+#include "tachyon/runtime/policy/worker_budget.h"
 #include <iostream>
 #include <string>
 #include <memory>
@@ -11,6 +12,14 @@
 namespace {
 
 int g_failures = 0;
+
+tachyon::runtime::RenderWorkerBudget make_test_budget() {
+    tachyon::runtime::RenderWorkerBudget budget;
+    budget.frame_concurrency = 1;
+    budget.pixel_concurrency = 1;
+    budget.total_threads = 1;
+    return budget;
+}
 
 void check(bool condition, const std::string& message) {
     if (!condition) {
@@ -102,11 +111,11 @@ bool run_tiling_integration_tests() {
         const CompiledScene& compiled = *compiled_result.value;
 
         RenderSession full_session;
-        const auto full_result = full_session.render(scene, compiled, make_exec_plan(64, 64, 0), "");
+        const auto full_result = full_session.render(scene, compiled, make_exec_plan(64, 64, 0), "", make_test_budget());
         check(!full_result.frames.empty(), "Full-frame render produces a frame");
 
         RenderSession tiled_session;
-        const auto tiled_result = tiled_session.render(scene, compiled, make_exec_plan(64, 64, 16), "");
+        const auto tiled_result = tiled_session.render(scene, compiled, make_exec_plan(64, 64, 16), "", make_test_budget());
         check(!tiled_result.frames.empty(), "Tiled render produces a frame");
 
         if (!full_result.frames.empty() && !tiled_result.frames.empty()) {
@@ -150,7 +159,7 @@ bool run_tiling_integration_tests() {
         } else {
             const CompiledScene& compiled = *compiled_result.value;
             RenderSession session;
-            const auto result = session.render(scene, compiled, make_exec_plan(100, 100, 64), "");
+            const auto result = session.render(scene, compiled, make_exec_plan(100, 100, 64), "", make_test_budget());
             check(!result.frames.empty(), "Border test produces a frame");
 
             if (!result.frames.empty()) {

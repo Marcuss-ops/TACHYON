@@ -19,7 +19,7 @@ protected:
             g.blur_radius = 0.0f;
             
             if (text[i] == ' ') {
-                g.is_space = true;
+                g.whitespace = true;
                 word_idx++;
             }
             layout.glyphs.push_back(g);

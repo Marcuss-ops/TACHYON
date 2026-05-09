@@ -1,12 +1,13 @@
 #include "tachyon/runtime/execution/compiled_frame_program.h"
 #include "tachyon/runtime/execution/session/render_session.h"
+#include "tachyon/runtime/policy/worker_budget.h"
 #include <fstream>
 
 namespace tachyon {
 
 RenderSessionResult CompiledFrameProgram::render_frame(double /*time_sec*/, const std::string& output_path) const {
     RenderSession session;
-    return session.render(scene, compiled_scene, exec_plan, output_path);
+    return session.render(scene, compiled_scene, exec_plan, output_path, runtime::RenderWorkerBudget{});
 }
 
 ResolutionResult<CompiledFrameProgram> build_compiled_frame_program(

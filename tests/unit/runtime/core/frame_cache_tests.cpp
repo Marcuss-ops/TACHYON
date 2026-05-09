@@ -22,20 +22,19 @@ bool run_frame_cache_tests() {
     g_failures = 0;
 
     FrameCache cache;
-    CachedFrame frame{
-        FrameCacheEntry{FrameCacheKey{"frame:A"}, "frame A"},
-        12345ULL, // scene_hash instead of "scene:v1"
-        tachyon::renderer2d::Framebuffer(16, 16),
-        {"scene.parameter"}
-    };
-    frame.frame.clear(tachyon::renderer2d::Color::red());
-    cache.store(frame);
+    auto fb = std::make_shared<tachyon::renderer2d::Framebuffer>(16, 16);
+    fb->clear(tachyon::renderer2d::Color::red());
+    
+    FrameCacheKey key(12345ULL, "frame:A");
+    cache.store_frame(key, fb);
 
-    check_true(cache.lookup(FrameCacheKey{"frame:A"}, 12345ULL) != nullptr, "Cache hit with matching scene hash");
-    check_true(cache.lookup(FrameCacheKey{"frame:A"}, 67890ULL) == nullptr, "Cache miss when scene hash changes");
+    check_true(cache.lookup_frame(key) != nullptr, "Cache hit with matching key");
+    
+    FrameCacheKey other_key(67890ULL, "frame:A");
+    check_true(cache.lookup_frame(other_key) == nullptr, "Cache miss when hash changes");
 
-    cache.invalidate("scene.parameter");
-    check_true(cache.lookup(FrameCacheKey{"frame:A"}, 12345ULL) == nullptr, "Invalidation removes dependent entry");
+    cache.clear();
+    check_true(cache.lookup_frame(key) == nullptr, "Clear removes entries");
 
     return g_failures == 0;
 }

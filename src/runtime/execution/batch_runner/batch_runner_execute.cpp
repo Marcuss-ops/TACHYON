@@ -3,6 +3,7 @@
 #include "tachyon/runtime/compiler/preset_compiler.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/execution/session/render_session.h"
+#include "tachyon/runtime/policy/worker_policy.h"
 #include "tachyon/runtime/telemetry/render_telemetry_record.h"
 #include "tachyon/media/resolution/asset_resolution.h"
 #include <atomic>
@@ -161,10 +162,14 @@ ResolutionResult<RenderBatchResult> run_render_batch(const RenderBatchSpec& spec
                     RenderSession session;
                     const std::filesystem::path output_path = job.output.destination.path.empty() ? std::filesystem::path{} : std::filesystem::path(job.output.destination.path);
                     
+                    ::tachyon::runtime::RenderWorkerPolicy policy;
+                    policy.requested_workers = 1; // Default to serial frame execution per job in batch mode to avoid oversubscription
+                    const auto budget = policy.resolve(std::thread::hardware_concurrency());
+
                     CancelFlag cancel_flag{false};
                     {
                         TimeoutGuard timeout_guard(cancel_flag, timeout);
-                        job_result.session_result = session.render(scene, *compiled_result.value, *execution_result.value, output_path, concurrency, &cancel_flag);
+                        job_result.session_result = session.render(scene, *compiled_result.value, *execution_result.value, output_path, budget, &cancel_flag);
                     }
                     
                     job_result.success = job_result.session_result.output_error.empty() && !cancel_flag;

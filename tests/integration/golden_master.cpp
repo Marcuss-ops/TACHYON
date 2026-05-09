@@ -3,10 +3,12 @@
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/runtime/compiler/scene_compiler.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
+#include "tachyon/runtime/policy/worker_budget.h"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <cstring>
 
 namespace tachyon::test {
 
@@ -49,7 +51,12 @@ protected:
         execution_plan.frame_tasks.push_back(task);
 
         // 4. Render
-        auto result = session.render(scene, compiled, execution_plan, "");
+        runtime::RenderWorkerBudget budget;
+        budget.frame_concurrency = 1;
+        budget.pixel_concurrency = 1;
+        budget.total_threads = 1;
+
+        auto result = session.render(scene, compiled, execution_plan, "", budget);
         if (result.frames.empty()) {
             FAIL() << "No frames rendered for " << name;
         }

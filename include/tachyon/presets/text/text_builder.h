@@ -47,7 +47,7 @@ public:
         spec_.font_size = AnimatedScalarSpec{72.0};
         spec_.width = 1920;
         spec_.height = 200;
-        spec_.alignment = "center";
+        spec_.text_box.horizontal_align = HorizontalAlign::Center;
         spec_.transform.position_x = 960.0;
         spec_.transform.position_y = 540.0;
     }
@@ -82,13 +82,13 @@ public:
     }
 
     TextBuilder& left() {
-        spec_.alignment = "left";
+        spec_.text_box.horizontal_align = HorizontalAlign::Left;
         anchor_.reset();
         return *this;
     }
 
     TextBuilder& right() {
-        spec_.alignment = "right";
+        spec_.text_box.horizontal_align = HorizontalAlign::Right;
         anchor_.reset();
         return *this;
     }

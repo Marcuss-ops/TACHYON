@@ -4,6 +4,8 @@
 #include "tachyon/renderer2d/effects/effect_host.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
 #include "tachyon/transition_registry.h"
+#include "tachyon/presets/effects/effect_manifest.h"
+#include "tachyon/renderer2d/resource/render_context.h"
 
 #include <filesystem>
 #include <iostream>
@@ -147,7 +149,8 @@ bool run_rasterizer_tests() {
         });
         commands.push_back(textured);
 
-        RasterizedFrame2D frame = render_frame_2d(plan, task, commands);
+        renderer2d::RenderContext2D context;
+        RasterizedFrame2D frame = render_frame_2d(plan, task, commands, context);
         check_true(frame.surface != nullptr, "Frame renderer returns a surface");
         check_true(frame.estimated_draw_ops == commands.size(), "Frame renderer reports executed command count");
         check_true(frame.surface->width() == 64, "Frame surface width matches render plan");
@@ -161,8 +164,9 @@ bool run_rasterizer_tests() {
         // Initialize effect host for draw list rasterizer
         static tachyon::TransitionRegistry s_transition_registry;
         static tachyon::renderer2d::EffectRegistry s_effect_registry;
+        static tachyon::presets::EffectManifest s_manifest;
         tachyon::register_builtin_transitions(s_transition_registry);
-        tachyon::renderer2d::register_builtin_effects(s_effect_registry, s_transition_registry);
+        tachyon::renderer2d::register_builtin_effects(s_effect_registry, s_manifest, s_transition_registry);
         static auto s_effect_host = tachyon::renderer2d::create_effect_host(s_effect_registry);
         
         RenderPlan plan;

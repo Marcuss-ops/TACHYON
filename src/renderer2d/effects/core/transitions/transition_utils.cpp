@@ -17,14 +17,23 @@ void apply_pixel_transition(
 {
     if (!transition_fn) return;
 
+    auto& pixels = result.mutable_pixels();
+    const std::size_t stride = static_cast<std::size_t>(result.width()) * 4;
+
     #pragma omp parallel for schedule(static)
     for (int y = 0; y < static_cast<int>(result.height()); ++y) {
         if (cancel_flag && cancel_flag->load()) continue;
+        const std::size_t row_start = static_cast<std::size_t>(y) * stride;
         for (std::uint32_t x = 0; x < result.width(); ++x) {
             const float u = (static_cast<float>(x) + offset_x + 0.5f) / layer_w;
             const float v = (static_cast<float>(y) + offset_y + 0.5f) / layer_h;
             const Color out = transition_fn(u, v, progress, from, to);
-            result.set_pixel(x, static_cast<std::uint32_t>(y), out);
+            
+            const std::size_t idx = row_start + (static_cast<std::size_t>(x) * 4);
+            pixels[idx] = out.r;
+            pixels[idx + 1] = out.g;
+            pixels[idx + 2] = out.b;
+            pixels[idx + 3] = out.a;
         }
     }
 }

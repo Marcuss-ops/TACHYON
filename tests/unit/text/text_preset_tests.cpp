@@ -74,7 +74,7 @@ bool run_text_preset_tests() {
             .height(400)
             .anchor(tachyon::presets::text::TextAnchor::MiddleCenter)
             .build();
-        check_true(layer.alignment == "center", "anchor middle center alignment");
+        check_true(layer.text_box.horizontal_align == HorizontalAlign::Center, "anchor middle center alignment");
         check_true(layer.transform.position_x == 400.0, "anchor middle center x");
         check_true(layer.transform.position_y == 200.0, "anchor middle center y");
     }

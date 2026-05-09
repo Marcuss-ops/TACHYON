@@ -125,6 +125,7 @@ struct RenderContext2D {
     // Non-owning if borrowed from a session-level backend; owning if created per-context.
     std::shared_ptr<ComputeBackend> compute_backend;
 
+    std::size_t pixel_concurrency{1};
     std::atomic<bool>* cancel_flag{nullptr};
 };
 

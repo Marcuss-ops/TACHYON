@@ -130,6 +130,13 @@ target_sources(TachyonCore PRIVATE
     ${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/src/clipper.rectclip.cpp
 )
 
+if(MSVC)
+    set_source_files_properties(core/transition/transition_effect_resolver.cpp PROPERTIES COMPILE_FLAGS "/arch:AVX2")
+else()
+    set_source_files_properties(core/transition/transition_effect_resolver.cpp PROPERTIES COMPILE_FLAGS "-mavx2")
+endif()
+target_compile_definitions(TachyonCore PRIVATE "TACHYON_AVX2")
+
 add_library(TachyonColor STATIC ${TachyonColorSources})
 tachyon_configure_common(TachyonColor)
 target_link_libraries(TachyonColor PUBLIC TachyonCore)
@@ -255,11 +262,16 @@ endif()
 
 # CLI libraries removed. Sources are added directly to executables to allow different compile-time configurations.
 
+add_library(TachyonCLICore STATIC ${TachyonCLICoreSources} ${TachyonCLILibrarySources})
+tachyon_configure_common(TachyonCLICore)
+target_link_libraries(TachyonCLICore PUBLIC TachyonRuntimeEngine TachyonLibrary TachyonDiagnostics)
+
 add_library(TachyonTools INTERFACE)
 target_link_libraries(TachyonTools INTERFACE
     TachyonRuntimeEngine
     TachyonPresets
     TachyonDiagnostics
+    TachyonCLICore
 )
 
 if(TACHYON_ENABLE_TRACKER)
@@ -269,7 +281,6 @@ endif()
 # Minimal render-focused executable
 add_executable(tachyon
     main.cpp
-    ${TachyonCLICoreSources}
     ${TachyonCLILibrarySources}
 )
 tachyon_configure_common(tachyon)
@@ -280,7 +291,7 @@ endif()
 
 target_link_libraries(tachyon
     PRIVATE
-        TachyonRuntimeEngine
+        TachyonCLICore
         TachyonLibrary
         TachyonPresets
         TachyonDiagnostics

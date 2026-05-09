@@ -118,7 +118,7 @@ void render_frames_parallel_internal(
     const CompiledScene& compiled_scene,
     const RenderExecutionPlan& execution_plan,
     FrameCache& cache,
-    std::size_t worker_count,
+    const ::tachyon::runtime::RenderWorkerBudget& budget,
     ::tachyon::RenderContext& context,
     media::MediaPrefetcher& prefetcher,
     media::PlaybackScheduler* scheduler,
@@ -143,7 +143,7 @@ void render_frames_parallel_internal(
         result->frame_diagnostics.resize(task_count);
     }
 
-    const std::size_t thread_count = std::max<std::size_t>(1, std::min(worker_count, task_count));
+    const std::size_t thread_count = std::max<std::size_t>(1, std::min(budget.frame_concurrency, task_count));
     std::atomic<std::size_t> next_index{0};
     std::atomic<std::size_t> completed_count{0};
     std::unique_ptr<FrameQueue> frame_queue;
@@ -159,7 +159,7 @@ void render_frames_parallel_internal(
         workers.push_back(std::future<void>(std::async(std::launch::async, [&, worker_index]() {
             FrameArena arena;
             FrameExecutor executor(arena, cache, nullptr);
-            executor.set_parallel_worker_count(thread_count);
+            executor.set_parallel_worker_count(budget.pixel_concurrency);
 
              // Create a thread-local context
               ::tachyon::RenderContext local_context(context.renderer2d.precomp_cache);
@@ -184,6 +184,7 @@ void render_frames_parallel_internal(
               local_context.renderer2d.compute_backend = context.renderer2d.compute_backend;
               local_context.renderer2d.surface_pool = context.renderer2d.surface_pool;
               local_context.renderer2d.subtitle_entries = context.renderer2d.subtitle_entries;
+              local_context.renderer2d.pixel_concurrency = budget.pixel_concurrency;
               local_context.cancel_flag = cancel_flag;
               local_context.renderer2d.cancel_flag = cancel_flag;
 
@@ -238,15 +239,19 @@ void render_frames_parallel_internal(
                     const auto frame_start = std::chrono::high_resolution_clock::now();
                     
                     executed_frame = executor.execute(compiled_scene, frame_plan, task, snapshot, local_context);
+                    
+                    const auto frame_end = std::chrono::high_resolution_clock::now();
+                    const double render_ms = std::chrono::duration<double, std::milli>(frame_end - frame_start).count();
+                    executed_frame.diagnostics.add_timing(FrameDiagnostics::kCategoryRender, "frame_execute", render_ms);
+
                     cache_hit = cache_hit || executed_frame.cache_hit;
                     render_trace(
                         "frame end index=" + std::to_string(index) +
                         " frame=" + std::to_string(task.frame_number) +
                         " cached=" + std::string(cache_hit ? "1" : "0"));
 
-                    const auto frame_end = std::chrono::high_resolution_clock::now();
                     if (frame_times_out) {
-                        (*frame_times_out)[index] = std::chrono::duration<double, std::milli>(frame_end - frame_start).count();
+                        (*frame_times_out)[index] = render_ms;
                     }
 
                     if (executed_frame.frame) {
@@ -282,7 +287,15 @@ void render_frames_parallel_internal(
                             packet.metadata.time_seconds = execution_plan.frame_tasks[frame_idx].time_seconds;
                             packet.metadata.scene_hash = std::to_string(compiled_scene.scene_hash);
                             packet.metadata.color_space = context.renderer2d.cms.output_profile.to_string();
-                            if (!sink->write_frame(packet)) {
+                            
+                            const auto write_start = std::chrono::high_resolution_clock::now();
+                            const bool write_ok = sink->write_frame(packet);
+                            const auto write_end = std::chrono::high_resolution_clock::now();
+                            
+                            const double write_ms = std::chrono::duration<double, std::milli>(write_end - write_start).count();
+                            result->frame_diagnostics[frame_idx].add_timing(FrameDiagnostics::kCategoryOutputWrite, "sink_write", write_ms);
+
+                            if (!write_ok) {
                                 if (result) {
                                     result->output_error = sink->last_error();
                                 }

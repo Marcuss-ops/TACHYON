@@ -4,6 +4,7 @@
 #include "tachyon/renderer2d/resource/render_context.h"
 #include "tachyon/renderer2d/raster/rasterizer.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
+#include "tachyon/presets/effects/effect_manifest.h"
 
 #include <iostream>
 #include <memory>
@@ -33,7 +34,8 @@ bool run_effect_host_tests() {
 
     EffectRegistry registry;
     TransitionRegistry transition_registry;
-    register_builtin_effects(registry, transition_registry);
+    presets::EffectManifest manifest;
+    register_builtin_effects(registry, manifest, transition_registry);
     
     auto host_ptr = create_effect_host(registry);
     EffectHost& host = *host_ptr;

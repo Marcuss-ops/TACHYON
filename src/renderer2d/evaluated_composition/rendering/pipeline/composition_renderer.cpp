@@ -684,30 +684,41 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 if ((in_transition || out_transition) && transition_t > 0.0) {
                     if (resolution.valid && resolution.cpu_function != nullptr) {
                         // Use registry transition (pixel-level)
-                        SurfaceRGBA transition_input(layer_surface->width(), layer_surface->height());
-                        SurfaceRGBA transition_to(layer_surface->width(), layer_surface->height());
+                        const std::uint32_t sw = layer_surface->width();
+                        const std::uint32_t sh = layer_surface->height();
+
+                        auto transition_input = render_context.surface_pool 
+                            ? render_context.surface_pool->acquire(sw, sh)
+                            : std::make_shared<SurfaceRGBA>(sw, sh);
+                        
+                        auto transition_to = render_context.surface_pool 
+                            ? render_context.surface_pool->acquire(sw, sh)
+                            : std::make_shared<SurfaceRGBA>(sw, sh);
 
                         if (in_transition) {
                             // Transition in: from nothing (transparent) to layer
-                            transition_input.clear(Color::transparent());
-                            transition_to = *layer_surface;
+                            transition_input->clear(Color::transparent());
+                            *transition_to = *layer_surface;
                         } else {
                             // Transition out: from layer to nothing (transparent)
-                            transition_input = *layer_surface;
-                            transition_to.clear(Color::transparent());
+                            *transition_input = *layer_surface;
+                            transition_to->clear(Color::transparent());
                         }
 
                         // Apply transition using the unified helper
-                        SurfaceRGBA transition_result(layer_surface->width(), layer_surface->height());
+                        auto transition_result = render_context.surface_pool 
+                            ? render_context.surface_pool->acquire(sw, sh)
+                            : std::make_shared<SurfaceRGBA>(sw, sh);
+
                         const float layer_w = static_cast<float>(layer.width);
                         const float layer_h = static_cast<float>(layer.height);
                         const float offset_x = tile_rect ? static_cast<float>(tile_rect->x) : 0.0f;
                         const float offset_y = tile_rect ? static_cast<float>(tile_rect->y) : 0.0f;
 
                         apply_pixel_transition(
-                            transition_result,
-                            transition_input,
-                            &transition_to,
+                            *transition_result,
+                            *transition_input,
+                            transition_to.get(),
                             resolution.cpu_function,
                             static_cast<float>(transition_t),
                             layer_w,
@@ -716,7 +727,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                             offset_y,
                             render_context.cancel_flag);
 
-                        *layer_surface = std::move(transition_result);
+                        layer_surface = transition_result;
                         render_trace(
                             "frame " + std::to_string(task.frame_number) +
                             " layer=" + layer.id +

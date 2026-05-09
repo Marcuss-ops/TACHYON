@@ -4,12 +4,21 @@
 #include "tachyon/runtime/compiler/scene_compiler.h"
 #include "tachyon/runtime/policy/worker_policy.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/runtime/policy/worker_budget.h"
 #include <iostream>
 #include <vector>
 
 namespace tachyon {
 
 namespace {
+
+runtime::RenderWorkerBudget make_test_budget(std::size_t frame_concurrency) {
+    runtime::RenderWorkerBudget budget;
+    budget.frame_concurrency = frame_concurrency;
+    budget.pixel_concurrency = 1;
+    budget.total_threads = frame_concurrency;
+    return budget;
+}
 
 SceneSpec create_complex_test_scene() {
     SceneSpec scene;
@@ -46,7 +55,7 @@ bool check_determinism() {
 
     // 1. Sequential Render (1 worker)
     RenderSession seq_session;
-    auto seq_result = seq_session.render(scene, compiled, execution_plan, "", 1);
+    auto seq_result = seq_session.render(scene, compiled, execution_plan, "", make_test_budget(1));
 
     // 2. Parallel Render (with different worker counts)
     std::vector<int> worker_counts = {2, 4, 8};
@@ -56,7 +65,7 @@ bool check_determinism() {
 
     for (int workers : worker_counts) {
         RenderSession par_session;
-        auto par_result = par_session.render(scene, compiled, execution_plan, "", workers);
+        auto par_result = par_session.render(scene, compiled, execution_plan, "", make_test_budget(workers));
 
         if (seq_result.frames.size() != par_result.frames.size()) {
             std::cerr << "Frame count mismatch with " << workers << " workers\n";

@@ -2,13 +2,23 @@
 #include "tachyon/runtime/compiler/scene_compiler.h"
 #include "tachyon/runtime/core/data/compiled_scene.h"
 
+#include "tachyon/runtime/policy/worker_budget.h"
 #include <filesystem>
 #include <iostream>
 #include <string>
+#include <thread>
 
 namespace {
 
 int g_failures = 0;
+
+tachyon::runtime::RenderWorkerBudget make_test_budget(std::size_t frame_concurrency) {
+    tachyon::runtime::RenderWorkerBudget budget;
+    budget.frame_concurrency = frame_concurrency;
+    budget.pixel_concurrency = 1;
+    budget.total_threads = frame_concurrency;
+    return budget;
+}
 
 void check_true(bool condition, const std::string& message) {
     if (!condition) {
@@ -188,7 +198,7 @@ bool run_render_session_tests() {
 
     std::filesystem::remove_all("tests/output/runtime_seq");
     std::filesystem::create_directories("tests/output/runtime_seq");
-    const RenderSessionResult first = session.render(scene, *compiled_result.value, execution_plan, "tests/output/runtime_seq");
+    const RenderSessionResult first = session.render(scene, *compiled_result.value, execution_plan, "tests/output/runtime_seq", make_test_budget(1));
     check_true(first.frames.empty(), "Render session in streaming mode should not store frames in memory");
     check_true(first.cache_misses == 3, "First pass is all cache misses");
     check_true(first.frames_written == 3, "First pass writes three output frames");
@@ -196,7 +206,7 @@ bool run_render_session_tests() {
     check_true(std::filesystem::exists("tests/output/runtime_seq/frame_000001.png"), "First PNG output exists");
     check_true(std::filesystem::exists("tests/output/runtime_seq/frame_000003.png"), "Third PNG output exists");
 
-    const RenderSessionResult second = session.render(scene, *compiled_result.value, execution_plan, "tests/output/runtime_seq", 2);
+    const RenderSessionResult second = session.render(scene, *compiled_result.value, execution_plan, "tests/output/runtime_seq", make_test_budget(2));
     check_true(second.cache_hits == 3, "Second pass reuses cache for all frames");
     check_true(second.frames_written == 3, "Second pass also writes three output frames");
     check_true(second.output_error.empty(), "Second pass completes without output error");
@@ -212,12 +222,12 @@ bool run_render_session_tests() {
         return false;
     }
 
-    const RenderSessionResult precomp_first = session.render(precomp_scene, *compiled_precomp.value, precomp_plan, "tests/output/runtime_precomp");
+    const RenderSessionResult precomp_first = session.render(precomp_scene, *compiled_precomp.value, precomp_plan, "tests/output/runtime_precomp", make_test_budget(1));
     const std::size_t precomp_entries_after_first = session.precomp_cache()->entry_count();
     check_true(precomp_first.output_error.empty(), "Precomp pass completes without output error");
     check_true(precomp_entries_after_first > 0, "Precomp cache should store at least one entry");
 
-    const RenderSessionResult precomp_second = session.render(precomp_scene, *compiled_precomp.value, precomp_plan, "tests/output/runtime_precomp");
+    const RenderSessionResult precomp_second = session.render(precomp_scene, *compiled_precomp.value, precomp_plan, "tests/output/runtime_precomp", make_test_budget(1));
     const std::size_t precomp_entries_after_second = session.precomp_cache()->entry_count();
     check_true(precomp_second.output_error.empty(), "Second precomp pass completes without output error");
     check_true(precomp_entries_after_second == precomp_entries_after_first, "Precomp cache should persist across render calls");

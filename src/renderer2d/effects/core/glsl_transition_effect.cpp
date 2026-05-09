@@ -112,7 +112,15 @@ SurfaceRGBA GlslTransitionEffect::apply(const SurfaceRGBA& input, const EffectPa
 
     if (resolved.kernel.valid && resolved.kernel.apply) {
         // Use resolved kernel (surface-level)
-        output = resolved.kernel.apply(input, to_surface, t);
+        const auto start = std::chrono::high_resolution_clock::now();
+        int thread_count = params.context ? static_cast<int>(params.context->pixel_concurrency) : 1;
+        output = resolved.kernel.apply(input, to_surface, t, thread_count);
+        const auto end = std::chrono::high_resolution_clock::now();
+        
+        if (params.context && params.context->diagnostics) {
+            const double transition_ms = std::chrono::duration<double, std::milli>(end - start).count();
+            params.context->diagnostics->add_timing(FrameDiagnostics::kCategoryTransition, transition_id, transition_ms);
+        }
     } else {
         // Fallback: return input unchanged
         output = input;

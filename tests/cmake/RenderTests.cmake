@@ -49,6 +49,12 @@ if(TACHYON_ENABLE_3D)
         unit/renderer2d/pipeline/scene3d_bridge_tests.cpp
         unit/renderer3d/motion_blur_tests.cpp
         unit/renderer3d/modifiers/modifier_tests.cpp
+        unit/renderer3d/temporal/time_remap_tests.cpp
+        unit/renderer3d/temporal/frame_blend_tests.cpp
+        unit/renderer3d/temporal/rolling_shutter_tests.cpp
+        integration/render_session_tests.cpp
+        integration/parallax_cards_tests.cpp
+        integration/png_3d_validation_tests.cpp
     )
     target_link_libraries(TachyonRenderTests PRIVATE TachyonRenderer3D)
     

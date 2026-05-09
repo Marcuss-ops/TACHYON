@@ -70,6 +70,8 @@ target_link_libraries(TachyonNativeRenderTests
         TachyonTestUtils
         TachyonPresets
         TachyonRuntime
+        TachyonCore
+        TachyonSceneEval
 )
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)

@@ -53,12 +53,8 @@ struct ResolutionResult {
     }
 };
 
-struct TimingSample {
-    std::string category;
-    std::string label;
-    double milliseconds{0.0};
-};
-
+// TimingSample has been moved to tachyon/core/types/diagnostics.h
+ 
 struct FrameDiagnostics {
     std::size_t property_hits{0};
     std::size_t property_misses{0};
@@ -71,12 +67,25 @@ struct FrameDiagnostics {
     std::size_t layers_evaluated{0};
     std::size_t compositions_evaluated{0};
 
+    // Canonical timing categories
+    static constexpr const char* kCategoryRender = "render";
+    static constexpr const char* kCategoryTransition = "transition";
+    static constexpr const char* kCategoryDecode = "decode";
+    static constexpr const char* kCategoryOutputWrite = "output_write";
+    static constexpr const char* kCategoryEncode = "encode";
+    static constexpr const char* kCategoryCache = "cache";
+    static constexpr const char* kCategorySurfacePool = "surface_pool";
+
     std::vector<TimingSample> timings;
     DiagnosticBag diagnostics;
 
     // Cache key manifests for debugging
     std::string frame_key_manifest;
     std::string composition_key_manifest;
+
+    void add_timing(std::string category, std::string label, double milliseconds) {
+        timings.push_back({std::move(category), std::move(label), milliseconds});
+    }
 
     // Ergonomic proxies for internal diagnostics bag
     void add_info(std::string code, std::string message, std::string path = {}) {
