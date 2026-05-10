@@ -138,10 +138,13 @@ Color apply_light_leak_style(
     const SurfaceRGBA* to_surface,
     const LightLeakStyle& style
 ) {
+    float mask = 0.0f;
     const bool overlay_mode = (to_surface == nullptr);
     Color base;
-    // Use a sharper curve for the background switch to avoid "dirty" mixed colors
-    const float color_t = smoothstep01(std::clamp((t - 0.25f) / 0.5f, 0.0f, 1.0f));
+    // --- CINEMATIC CUT STRATEGY ---
+    // Instead of a soft cross-fade that creates "pastels", we do a sharp cut
+    // at the peak of the light leak to preserve color saturation.
+    const float color_t = (t > 0.5f) ? 1.0f : 0.0f;
 
     if (overlay_mode) {
         base = sample_uv(input, u, v);
@@ -153,11 +156,33 @@ Color apply_light_leak_style(
         );
     }
 
-    float mask = evaluate_light_leak_mask(u, v, t, style);
-    float flicker = 1.0f + style.flicker_amount * (cheap_noise(u, v, t * 10.0f) - 0.5f);
+    // Optimization: Cache frame-constant values to avoid re-calculating trig/noise for millions of pixels
+    static thread_local float last_t = -1.0f;
+    static thread_local const char* last_style_id = nullptr;
+    static thread_local float cached_cos_a, cached_sin_a, cached_center, cached_flicker;
+
+    if (t != last_t || style.id != last_style_id) {
+        const float angle_rad = radians(style.angle_degrees);
+        cached_cos_a = std::cos(angle_rad);
+        cached_sin_a = std::sin(angle_rad);
+        cached_center = -style.offset + t * style.speed;
+        // Temporal flicker calculated once per frame
+        cached_flicker = 1.0f + style.flicker_amount * (cheap_noise(0.5f, 0.5f, t * 10.0f) - 0.5f);
+        last_t = t;
+        last_style_id = style.id;
+    }
+
+    // Inline the most common shape (Sweep) for performance, fallback for others
+    if (style.shape == LightLeakStyle::Shape::Sweep) {
+        float proj = u * cached_cos_a + v * cached_sin_a;
+        mask = soft_band(proj, cached_center, style.width, style.softness);
+    } else {
+        mask = evaluate_light_leak_mask(u, v, t, style);
+    }
     
-    // Boost intensity significantly to cover the "cut"
-    float intensity = style.intensity * 1.5f * mask * flicker;
+    // Use a more aggressive mask for "meatier" color presence
+    float meat_mask = std::pow(mask, 0.4f); // Ultra fat/strong
+    float intensity = style.intensity * 10.0f * meat_mask * cached_flicker; // Max power
 
     // Pulse effect
     if (style.pulse_amount > 0.0f) {
@@ -165,9 +190,31 @@ Color apply_light_leak_style(
     }
 
     Color leak = Color::lerp(style.color_a, style.color_b, mask);
-    leak = Color::lerp(leak, style.highlight, std::pow(mask, 3.0f));
+    // Force saturation by ensuring green/blue are low relative to red
+    leak.g = std::min(leak.g, 0.4f);
+    leak.b = 0.0f;
+    
+    // Sharper highlight
+    leak = Color::lerp(leak, style.highlight, mask * mask * mask);
 
-    return screen_over(base, leak, intensity);
+    // --- SATURATION TRICK: Background Suppression ---
+    // If the leak is active (mask > 0.05), we suppress the background to prevent "pink" ghosting
+    float kill_factor = smoothstep01(std::clamp((mask - 0.05f) / 0.2f, 0.0f, 1.0f));
+    base.r *= (1.0f - kill_factor);
+    base.g *= (1.0f - kill_factor);
+    base.b *= (1.0f - kill_factor);
+
+    // Cinematic intensity boost for vibrancy
+    float final_intensity = intensity * 1.8f; 
+
+    // Custom additive blend to preserve Amber ratio (R > G >> B)
+    Color result;
+    result.r = std::min(leak.r * final_intensity, 1.0f);
+    result.g = std::min(leak.g * final_intensity * 0.40f, 0.75f); // Warm amber balance
+    result.b = 0.0f; // Pure amber dominance
+    result.a = 1.0f; // Force opaque for professional look
+
+    return result;
 }
 
 // --- Style Definitions ---
@@ -221,11 +268,11 @@ static constexpr LightLeakStyle kSoftWarmEdge{
     0.0f, 0.50f, 2.0f, 1.2f, 1.0f, 0.0f, -1.0f, 0.04f, 0.0f, LightLeakStyle::Shape::Edge
 };
 
-// 8. Golden Sweep
+// 8. Golden Sweep (Saturated for Additive)
 static constexpr LightLeakStyle kGoldenSweep{
     "tachyon.transition.lightleak.golden_sweep", "Golden Sweep", "Premium golden sweep",
-    {1.0f, 0.8f, 0.1f, 1.0f}, {1.0f, 0.95f, 0.5f, 1.0f}, {1.0f, 1.0f, 0.9f, 1.0f},
-    90.0f, 0.35f, 2.5f, 2.0f, 1.6f, 0.5f, 1.0f, 0.03f, 0.0f, LightLeakStyle::Shape::Sweep
+    {1.0f, 0.7f, 0.0f, 1.0f}, {1.0f, 0.9f, 0.2f, 1.0f}, {1.0f, 1.0f, 0.5f, 1.0f},
+    25.0f, 0.65f, 1.5f, 4.0f, 2.0f, 0.4f, 1.0f, 0.12f, 0.0f, LightLeakStyle::Shape::Sweep
 };
 
 // 9. Creamy White
@@ -249,12 +296,13 @@ static constexpr LightLeakStyle kLensFlarePass{
     15.0f, 0.04f, 1.2f, 3.0f, 4.0f, 1.8f, 1.0f, 0.05f, 0.0f, LightLeakStyle::Shape::Sweep
 };
 
-// 12. Amber Multi-Sweep (Refactored to be compatible)
+// 12. Amber Multi-Sweep (Fire Amber - High Saturation)
 static constexpr LightLeakStyle kAmberSweep{
-    "tachyon.transition.lightleak.amber_sweep", "Amber Sweep", "Dynamic amber sweep",
-    {1.0f, 0.5f, 0.1f, 1.0f}, {1.0f, 0.8f, 0.3f, 1.0f}, {1.0f, 1.0f, 0.9f, 1.0f},
-    -15.0f, 0.40f, 2.0f, 1.6f, 1.8f, 0.4f, 1.0f, 0.05f, 0.0f, LightLeakStyle::Shape::Sweep
+    "tachyon.transition.lightleak.amber_sweep", "Amber Sweep", "Rich fiery amber sweep",
+    {1.0f, 0.2f, 0.0f, 1.0f}, {1.0f, 0.4f, 0.0f, 1.0f}, {1.0f, 0.6f, 0.0f, 1.0f},
+    -15.0f, 0.85f, 0.4f, 4.0f, 2.2f, 0.3f, 1.0f, 0.10f, 0.0f, LightLeakStyle::Shape::Sweep
 };
+
 
 // 13. Neon Pulse
 static constexpr LightLeakStyle kNeonPulse{
