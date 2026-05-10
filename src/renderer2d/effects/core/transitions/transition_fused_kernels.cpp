@@ -1,7 +1,10 @@
 #include "tachyon/renderer2d/core/framebuffer.h"
+#include "tachyon/core/transition/transition_simd_kernels.h"
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 #include <omp.h>
+#include <iostream>
 
 namespace tachyon::renderer2d {
 
@@ -114,5 +117,151 @@ void apply_soft_zoom_blur_fused_direct(
     }
 }
 
+
+void apply_crossfade_fused_direct(
+    SurfaceRGBA& output,
+    const SurfaceRGBA& from,
+    const SurfaceRGBA* to,
+    float progress,
+    int thread_count) {
+
+    const uint32_t width = output.width();
+    const uint32_t height = output.height();
+    
+    // Fast path: dimensions match exactly - use SIMD
+    if (to && to->width() == width && to->height() == height && from.width() == width && from.height() == height) {
+        std::cout << "[debug] crossfade FAST PATH hit (" << width << "x" << height << ")" << std::endl;
+        const float t = std::clamp(progress, 0.0f, 1.0f);
+        const float* from_data = from.pixels().data();
+        const float* to_data = to->pixels().data();
+        float* out_data = output.mutable_pixels().data();
+        
+        #pragma omp parallel for num_threads(thread_count) schedule(static)
+        for (int y = 0; y < static_cast<int>(height); ++y) {
+            const std::size_t offset = static_cast<std::size_t>(y) * width * 4;
+            tachyon::runtime::simd::lerp_pixels_best(
+                out_data + offset,
+                from_data + offset,
+                to_data + offset,
+                static_cast<std::size_t>(width) * 4,
+                t);
+        }
+        return;
+    }
+
+    std::cout << "[debug] crossfade FALLBACK hit (mismatch: out=" << width << "x" << height 
+              << " from=" << from.width() << "x" << from.height() 
+              << " to=" << (to ? to->width() : 0) << "x" << (to ? to->height() : 0) << ")" << std::endl;
+
+    // Fallback: Bilinear sampling for mismatched sizes
+    const float* from_data = from.pixels().data();
+    const float* to_data = to ? to->pixels().data() : nullptr;
+    float* out_data = output.mutable_pixels().data();
+    const float inv_width = 1.0f / static_cast<float>(width);
+    const float inv_height = 1.0f / static_cast<float>(height);
+
+    #pragma omp parallel for num_threads(thread_count) schedule(dynamic, 16)
+    for (int y = 0; y < static_cast<int>(height); ++y) {
+        for (int x = 0; x < static_cast<int>(width); ++x) {
+            const float u = (static_cast<float>(x) + 0.5f) * inv_width;
+            const float v = (static_cast<float>(y) + 0.5f) * inv_height;
+            
+            float src[4];
+            sample_bilinear_raw(from_data, from.width(), from.height(), u, v, src);
+            
+            float dst[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+            if (to_data) {
+                sample_bilinear_raw(to_data, to->width(), to->height(), u, v, dst);
+            }
+            
+            float* out_pixel = &out_data[(y * width + x) * 4];
+            out_pixel[0] = src[0] * (1.0f - progress) + dst[0] * progress;
+            out_pixel[1] = src[1] * (1.0f - progress) + dst[1] * progress;
+            out_pixel[2] = src[2] * (1.0f - progress) + dst[2] * progress;
+            out_pixel[3] = src[3] * (1.0f - progress) + dst[3] * progress;
+        }
+    }
+}
+
+void apply_slide_fused_direct(
+    SurfaceRGBA& output,
+    const SurfaceRGBA& from,
+    const SurfaceRGBA* to,
+    float progress,
+    int thread_count) {
+
+    const uint32_t width = output.width();
+    const uint32_t height = output.height();
+    
+    // Fast path: dimensions match exactly - use Row-based memcpy
+    if (to && to->width() == width && to->height() == height && from.width() == width && from.height() == height) {
+        std::cout << "[debug] slide FAST PATH hit (" << width << "x" << height << ")" << std::endl;
+        const float t = std::clamp(progress, 0.0f, 1.0f);
+        const int offset_x = static_cast<int>(t * static_cast<float>(width));
+        
+        const float* from_data = from.pixels().data();
+        const float* to_data = to->pixels().data();
+        float* out_data = output.mutable_pixels().data();
+        
+        #pragma omp parallel for num_threads(thread_count) schedule(static)
+        for (int y = 0; y < static_cast<int>(height); ++y) {
+            const std::size_t row_offset = static_cast<std::size_t>(y) * width * 4;
+            
+            // Source part (moves to the left)
+            if (offset_x < static_cast<int>(width)) {
+                const int remaining_width = static_cast<int>(width) - offset_x;
+                std::memcpy(
+                    out_data + row_offset, 
+                    from_data + row_offset + (static_cast<std::size_t>(offset_x) * 4), 
+                    static_cast<std::size_t>(remaining_width) * 4 * sizeof(float)
+                );
+            }
+            
+            // Target part (comes from the right)
+            if (offset_x > 0) {
+                const int target_dest_offset = static_cast<int>(width) - offset_x;
+                std::memcpy(
+                    out_data + row_offset + (static_cast<std::size_t>(target_dest_offset) * 4), 
+                    to_data + row_offset, 
+                    static_cast<std::size_t>(offset_x) * 4 * sizeof(float)
+                );
+            }
+        }
+        return;
+    }
+
+    std::cout << "[debug] slide FALLBACK hit" << std::endl;
+
+    // Fallback: Bilinear sampling for mismatched sizes
+    const float* from_data = from.pixels().data();
+    const float* to_data = to ? to->pixels().data() : nullptr;
+    float* out_data = output.mutable_pixels().data();
+    const float inv_width = 1.0f / static_cast<float>(width);
+    const float inv_height = 1.0f / static_cast<float>(height);
+
+    #pragma omp parallel for num_threads(thread_count) schedule(dynamic, 16)
+    for (int y = 0; y < static_cast<int>(height); ++y) {
+        for (int x = 0; x < static_cast<int>(width); ++x) {
+            const float u = (static_cast<float>(x) + 0.5f) * inv_width;
+            const float v = (static_cast<float>(y) + 0.5f) * inv_height;
+            
+            const float su = u + progress;
+            float src[4];
+            sample_bilinear_raw(from_data, from.width(), from.height(), su, v, src);
+            
+            const float tu = u + progress - 1.0f;
+            float dst[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+            if (to_data) {
+                sample_bilinear_raw(to_data, to->width(), to->height(), tu, v, dst);
+            }
+            
+            float* out_pixel = &out_data[(y * width + x) * 4];
+            out_pixel[0] = src[0] * (1.0f - progress) + dst[0] * progress;
+            out_pixel[1] = src[1] * (1.0f - progress) + dst[1] * progress;
+            out_pixel[2] = src[2] * (1.0f - progress) + dst[2] * progress;
+            out_pixel[3] = src[3] * (1.0f - progress) + dst[3] * progress;
+        }
+    }
+}
 
 } // namespace tachyon::renderer2d

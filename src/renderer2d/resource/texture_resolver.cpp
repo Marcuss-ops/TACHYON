@@ -31,6 +31,8 @@ const ::tachyon::text::FontRegistry* get_default_font_registry() {
             {"Calibri", R"(C:\Windows\Fonts\calibri.ttf)"},
             {"Consolas", R"(C:\Windows\Fonts\consola.ttf)"},
             {"Cambria", R"(C:\Windows\Fonts\cambria.ttc)"},
+            {"Impact", R"(C:\Windows\Fonts\impact.ttf)"},
+            {"Courier New", R"(C:\Windows\Fonts\cour.ttf)"},
             
             // Windows system fonts
             {"Arial", R"(C:\Windows\Fonts\arial.ttf)"},

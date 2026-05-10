@@ -21,6 +21,33 @@ using namespace renderer2d;
 using renderer2d::Color;
 using renderer2d::SurfaceRGBA;
 
+namespace core::transition {
+
+TransitionFastPathRegistry::FastPathFn& TransitionFastPathRegistry::get_handler_internal() {
+    static FastPathFn handler;
+    return handler;
+}
+
+void TransitionFastPathRegistry::set_handler(FastPathFn handler) {
+    get_handler_internal() = std::move(handler);
+}
+
+bool TransitionFastPathRegistry::apply(
+    const std::string& transition_id,
+    renderer2d::SurfaceRGBA& output,
+    const renderer2d::SurfaceRGBA& from,
+    const renderer2d::SurfaceRGBA* to,
+    float progress,
+    int thread_count) {
+    auto& handler = get_handler_internal();
+    if (handler) {
+        return handler(transition_id, output, from, to, progress, thread_count);
+    }
+    return false;
+}
+
+} // namespace core::transition
+
 namespace {
 
 // Helper to create a "none" kernel that performs simple lerp
@@ -93,9 +120,9 @@ TransitionKernel create_cpu_kernel(const std::string& transition_id, CpuTransiti
 
     TransitionKernel kernel;
     kernel.apply = [transition_id, cpu_fn](SurfaceRGBA& output, const SurfaceRGBA& input_a, const SurfaceRGBA* input_b, float progress, int thread_count) {
+        std::cout << "[debug] Transition Kernel Apply: " << transition_id << " progress=" << progress << std::endl;
         // Attempt fast path first
         if (core::transition::TransitionFastPathRegistry::apply(transition_id, output, input_a, input_b, progress, thread_count)) {
-
             return;
         }
 
@@ -140,9 +167,9 @@ TransitionKernel create_cpu_kernel(const std::string& transition_id, CpuTransiti
 ResolvedTransitionEffect TransitionEffectResolver::resolve(const TransitionEffectRequest& request) const {
     ResolvedTransitionEffect result;
 
-    // Handle empty transition_id or "none" - these are valid "no transition" cases
     if (request.transition_id.empty() || request.transition_id == "none" ||
         request.transition_id == "tachyon.transition.none") {
+        std::cout << "[debug] TransitionEffectResolver: using NONE kernel for " << request.transition_id << std::endl;
         result.kernel = create_none_kernel();
         result.valid = true;
         return result;
@@ -152,12 +179,15 @@ ResolvedTransitionEffect TransitionEffectResolver::resolve(const TransitionEffec
     const auto* desc = m_registry.resolve(request.transition_id);
 
     if (!desc) {
+        std::cout << "[debug] TransitionEffectResolver: registry MISS for " << request.transition_id << std::endl;
         // Transition not found - this is an error
         result.diagnostics.has_error = true;
         result.diagnostics.transition_id = request.transition_id;
         result.diagnostics.error_message = "Transition '" + request.transition_id + "' is not registered in the canonical registry.";
         return result;
     }
+
+    std::cout << "[debug] TransitionEffectResolver: resolved " << desc->id << " (cpu_fn=" << (desc->cpu_fn ? "VALID" : "NULL") << ")" << std::endl;
 
     result.descriptor = desc;
     result.diagnostics.transition_id = desc->id;

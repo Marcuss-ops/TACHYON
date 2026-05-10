@@ -76,15 +76,57 @@ void render_glyph_direct(
     const std::uint32_t sh = bitmap.height;
     if (sw == 0 || sh == 0) return;
 
+    if (dw == static_cast<int>(sw) && dh == static_cast<int>(sh)) {
+        // Fast path for 1:1 rendering
+        for (int y = 0; y < dh; ++y) {
+            if (dy + y < 0 || dy + y >= static_cast<int>(surface.height())) continue;
+            const std::uint8_t* src_row = &bitmap.alpha_mask[y * sw];
+            for (int x = 0; x < dw; ++x) {
+                if (dx + x < 0 || dx + x >= static_cast<int>(surface.width())) continue;
+                const std::uint8_t alpha = src_row[x];
+                if (alpha == 0) continue;
+                surface.blend_pixel(static_cast<std::uint32_t>(dx + x), static_cast<std::uint32_t>(dy + y), color, alpha);
+            }
+        }
+        return;
+    }
+
+    // Bilinear path for smooth scaling
+    const float x_ratio = static_cast<float>(sw) / static_cast<float>(dw);
+    const float y_ratio = static_cast<float>(sh) / static_cast<float>(dh);
+
     for (int y = 0; y < dh; ++y) {
-        const int sy = (y * sh) / dh;
-        const std::uint8_t* src_row = &bitmap.alpha_mask[sy * sw];
+        const int target_y = dy + y;
+        if (target_y < 0 || target_y >= static_cast<int>(surface.height())) continue;
+
+        const float sy = (static_cast<float>(y) + 0.5f) * y_ratio - 0.5f;
+        const int y0 = std::clamp(static_cast<int>(std::floor(sy)), 0, static_cast<int>(sh) - 1);
+        const int y1 = std::clamp(y0 + 1, 0, static_cast<int>(sh) - 1);
+        const float fy = sy - std::floor(sy);
+
         for (int x = 0; x < dw; ++x) {
-            const int sx = (x * sw) / dw;
-            const std::uint8_t alpha = src_row[sx];
+            const int target_x = dx + x;
+            if (target_x < 0 || target_x >= static_cast<int>(surface.width())) continue;
+
+            const float sx = (static_cast<float>(x) + 0.5f) * x_ratio - 0.5f;
+            const int x0 = std::clamp(static_cast<int>(std::floor(sx)), 0, static_cast<int>(sw) - 1);
+            const int x1 = std::clamp(x0 + 1, 0, static_cast<int>(sw) - 1);
+            const float fx = sx - std::floor(sx);
+
+            const float a00 = static_cast<float>(bitmap.alpha_mask[y0 * sw + x0]);
+            const float a10 = static_cast<float>(bitmap.alpha_mask[y0 * sw + x1]);
+            const float a01 = static_cast<float>(bitmap.alpha_mask[y1 * sw + x0]);
+            const float a11 = static_cast<float>(bitmap.alpha_mask[y1 * sw + x1]);
+
+            const float alpha_f = a00 * (1.0f - fx) * (1.0f - fy) +
+                                  a10 * fx * (1.0f - fy) +
+                                  a01 * (1.0f - fx) * fy +
+                                  a11 * fx * fy;
+
+            const std::uint8_t alpha = static_cast<std::uint8_t>(std::clamp(alpha_f, 0.0f, 255.0f));
             if (alpha == 0) continue;
             
-            surface.blend_pixel(static_cast<std::uint32_t>(dx + x), static_cast<std::uint32_t>(dy + y), color, alpha);
+            surface.blend_pixel(static_cast<std::uint32_t>(target_x), static_cast<std::uint32_t>(target_y), color, alpha);
         }
     }
 }
@@ -180,7 +222,11 @@ public:
 
         const ::tachyon::text::Font* font = nullptr;
         if (!layer.font_id.empty()) font = registry->find(layer.font_id);
-        if (font == nullptr) font = registry->default_font();
+        
+        if (font == nullptr) {
+            std::cerr << "[error] Font NOT FOUND: " << layer.font_id << ". Falling back to default." << std::endl;
+            font = registry->default_font();
+        }
         if (font == nullptr) return false;
 
         ::tachyon::text::TextStyle style;

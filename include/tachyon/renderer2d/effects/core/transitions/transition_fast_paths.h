@@ -33,5 +33,18 @@ void apply_soft_zoom_blur_fused_direct(
     float progress,
     int thread_count);
 
+void apply_crossfade_fused_direct(
+    SurfaceRGBA& output,
+    const SurfaceRGBA& from,
+    const SurfaceRGBA* to,
+    float progress,
+    int thread_count);
+
+void apply_slide_fused_direct(
+    SurfaceRGBA& output,
+    const SurfaceRGBA& from,
+    const SurfaceRGBA* to,
+    float progress,
+    int thread_count);
 
 } // namespace tachyon::renderer2d

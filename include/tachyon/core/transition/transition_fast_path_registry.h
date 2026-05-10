@@ -1,5 +1,5 @@
 #pragma once
-
+#include "tachyon/core/api.h"
 #include <string>
 #include <functional>
 
@@ -12,7 +12,7 @@ namespace tachyon::core::transition {
 /**
  * @brief Registry for transition fast-paths to avoid circular dependencies between Core and Renderer.
  */
-class TransitionFastPathRegistry {
+class TACHYON_API TransitionFastPathRegistry {
 public:
     using FastPathFn = std::function<bool(
         const std::string& transition_id,
@@ -22,9 +22,7 @@ public:
         float progress,
         int thread_count)>;
 
-    static void set_handler(FastPathFn handler) {
-        get_handler_internal() = std::move(handler);
-    }
+    static void set_handler(FastPathFn handler);
 
     static bool apply(
         const std::string& transition_id,
@@ -32,19 +30,10 @@ public:
         const renderer2d::SurfaceRGBA& from,
         const renderer2d::SurfaceRGBA* to,
         float progress,
-        int thread_count) {
-        auto& handler = get_handler_internal();
-        if (handler) {
-            return handler(transition_id, output, from, to, progress, thread_count);
-        }
-        return false;
-    }
+        int thread_count);
 
 private:
-    static FastPathFn& get_handler_internal() {
-        static FastPathFn handler;
-        return handler;
-    }
+    static FastPathFn& get_handler_internal();
 };
 
 } // namespace tachyon::core::transition

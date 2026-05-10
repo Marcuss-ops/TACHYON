@@ -1,4 +1,5 @@
 #include "tachyon/renderer2d/effects/core/transitions/transition_fast_paths.h"
+#include <iostream>
 
 
 namespace tachyon::renderer2d {
@@ -11,14 +12,29 @@ bool apply_transition_fast_path(
     float progress,
     int thread_count) {
     
-    // Check if we have a fast path for this transition
-    if (transition_id == "soft_zoom_blur") {
+    // Normalize ID by stripping tachyon.transition. prefix if present
+    std::string_view tid = transition_id;
+    const std::string_view prefix = "tachyon.transition.";
+    if (tid.starts_with(prefix)) {
+        tid.remove_prefix(prefix.length());
+    }
+
+    std::cout << "[debug] fast-path attempt for: " << tid << " (original: " << transition_id << ")" << std::endl;
+
+    if (tid == "soft_zoom_blur") {
         apply_soft_zoom_blur_fused_direct(output, from, to, progress, thread_count);
         return true;
     }
     
-    // Future fast paths: fade, wipe, etc.
-    // if (transition_id == "fade") { ... }
+    if (tid == "crossfade") {
+        apply_crossfade_fused_direct(output, from, to, progress, thread_count);
+        return true;
+    }
+
+    if (tid == "slide" || tid == "push_left" || tid == "swipe_left") {
+        apply_slide_fused_direct(output, from, to, progress, thread_count);
+        return true;
+    }
 
     return false;
 }

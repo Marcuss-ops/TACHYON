@@ -33,6 +33,7 @@
 #include "tachyon/renderer2d/evaluated_composition/rendering/pipeline/scene3d_bridge.h"
 #include "tachyon/core/math/algebra/vector2.h"
 #include "tachyon/media/management/media_manager.h"
+#include "tachyon/core/transition/transition_fast_path_registry.h"
 #include "tachyon/renderer2d/deform/mesh_deform.h"
 #include <algorithm>
 #include <cmath>
@@ -42,6 +43,10 @@
 #include <filesystem>
 #include <cstdlib>
 #include <unordered_map>
+
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 namespace tachyon {
 
@@ -687,25 +692,30 @@ RasterizedFrame2D render_evaluated_composition_2d(
                         const std::uint32_t sw = layer_surface->width();
                         const std::uint32_t sh = layer_surface->height();
 
-                        auto transition_input = render_context.surface_pool 
-                            ? render_context.surface_pool->acquire(sw, sh)
-                            : std::make_shared<SurfaceRGBA>(sw, sh);
-                        
-                        auto transition_to = render_context.surface_pool 
-                            ? render_context.surface_pool->acquire(sw, sh)
-                            : std::make_shared<SurfaceRGBA>(sw, sh);
+                        // Prepare inputs for transition
+                        const SurfaceRGBA* from_ptr = nullptr;
+                        const SurfaceRGBA* to_ptr = nullptr;
+                        std::shared_ptr<SurfaceRGBA> temp_from;
+                        std::shared_ptr<SurfaceRGBA> temp_to;
 
                         if (in_transition) {
                             // Transition in: from nothing (transparent) to layer
-                            transition_input->clear(Color::transparent());
-                            *transition_to = *layer_surface;
+                            temp_from = render_context.surface_pool 
+                                ? render_context.surface_pool->acquire(sw, sh)
+                                : std::make_shared<SurfaceRGBA>(sw, sh);
+                            temp_from->clear(Color::transparent());
+                            from_ptr = temp_from.get();
+                            to_ptr = layer_surface.get();
                         } else {
                             // Transition out: from layer to nothing (transparent)
-                            *transition_input = *layer_surface;
-                            transition_to->clear(Color::transparent());
+                            from_ptr = layer_surface.get();
+                            temp_to = render_context.surface_pool 
+                                ? render_context.surface_pool->acquire(sw, sh)
+                                : std::make_shared<SurfaceRGBA>(sw, sh);
+                            temp_to->clear(Color::transparent());
+                            to_ptr = temp_to.get();
                         }
 
-                        // Apply transition using the unified helper
                         auto transition_result = render_context.surface_pool 
                             ? render_context.surface_pool->acquire(sw, sh)
                             : std::make_shared<SurfaceRGBA>(sw, sh);
@@ -715,17 +725,41 @@ RasterizedFrame2D render_evaluated_composition_2d(
                         const float offset_x = tile_rect ? static_cast<float>(tile_rect->x) : 0.0f;
                         const float offset_y = tile_rect ? static_cast<float>(tile_rect->y) : 0.0f;
 
-                        apply_pixel_transition(
-                            *transition_result,
-                            *transition_input,
-                            transition_to.get(),
-                            resolution.cpu_function,
-                            static_cast<float>(transition_t),
-                            layer_w,
-                            layer_h,
-                            offset_x,
-                            offset_y,
-                            render_context.cancel_flag);
+                        // Try fast-path first if no offset/scaling is applied
+                        bool fast_path_applied = false;
+                        if (offset_x == 0.0f && offset_y == 0.0f && 
+                            static_cast<std::uint32_t>(layer_w) == sw && 
+                            static_cast<std::uint32_t>(layer_h) == sh && 
+                            resolution.descriptor) {
+                            
+                            int thread_count = 1;
+#ifdef _OPENMP
+                            thread_count = omp_get_max_threads();
+#endif
+                            if (core::transition::TransitionFastPathRegistry::apply(
+                                resolution.descriptor->id, 
+                                *transition_result, 
+                                *from_ptr, 
+                                to_ptr, 
+                                static_cast<float>(transition_t), 
+                                thread_count)) {
+                                fast_path_applied = true;
+                            }
+                        }
+
+                        if (!fast_path_applied) {
+                            apply_pixel_transition(
+                                *transition_result,
+                                *from_ptr,
+                                to_ptr,
+                                resolution.cpu_function,
+                                static_cast<float>(transition_t),
+                                layer_w,
+                                layer_h,
+                                offset_x,
+                                offset_y,
+                                render_context.cancel_flag);
+                        }
 
                         layer_surface = transition_result;
                         render_trace(
