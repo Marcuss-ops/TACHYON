@@ -15,6 +15,7 @@
 #include "tachyon/renderer2d/effects/effect_registry.h"
 #include "tachyon/runtime/execution/session/render_internal.h"
 #include "tachyon/core/scene/transform_resolver.h"
+#include "tachyon/renderer2d/evaluated_composition/utilities/composition_utils.h"
 
 
 #include <algorithm>
