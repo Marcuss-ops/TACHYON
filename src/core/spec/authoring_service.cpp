@@ -216,8 +216,10 @@ std::string AuthoringService::get_compiler_command(
     const std::filesystem::path lib_path = TACHYON_LIB_PATH;
     for (std::size_t i = 0; i < libs.size(); ++i) {
         if (i != 0) ss << ' ';
-        ss << "\"" << (lib_path / ("lib" + libs[i] + ".a")).string() << "\"";
+        std::string ext = (libs[i] == "TachyonScene") ? ".so" : ".a";
+        ss << "\"" << (lib_path / ("lib" + libs[i] + ext)).string() << "\"";
     }
+
 #endif
     return ss.str();
 }

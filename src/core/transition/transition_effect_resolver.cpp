@@ -3,7 +3,8 @@
 #include "tachyon/core/policy/engine_policy.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/renderer2d/effects/core/transitions/transition_utils.h"
-#include "tachyon/renderer2d/effects/core/transitions/transition_fast_paths.h"
+#include "tachyon/core/transition/transition_fast_path_registry.h"
+
 #include "tachyon/core/transition/transition_simd_kernels.h"
 #include <algorithm>
 #include <cstdlib>
@@ -93,7 +94,8 @@ TransitionKernel create_cpu_kernel(const std::string& transition_id, CpuTransiti
     TransitionKernel kernel;
     kernel.apply = [transition_id, cpu_fn](SurfaceRGBA& output, const SurfaceRGBA& input_a, const SurfaceRGBA* input_b, float progress, int thread_count) {
         // Attempt fast path first
-        if (renderer2d::apply_transition_fast_path(transition_id, output, input_a, input_b, progress, thread_count)) {
+        if (core::transition::TransitionFastPathRegistry::apply(transition_id, output, input_a, input_b, progress, thread_count)) {
+
             return;
         }
 

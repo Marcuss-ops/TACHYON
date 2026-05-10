@@ -26,4 +26,12 @@ bool apply_transition_fast_path(
     float progress,
     int thread_count);
 
+void apply_soft_zoom_blur_fused_direct(
+    SurfaceRGBA& output,
+    const SurfaceRGBA& from,
+    const SurfaceRGBA* to,
+    float progress,
+    int thread_count);
+
+
 } // namespace tachyon::renderer2d

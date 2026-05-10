@@ -1,4 +1,6 @@
 #include "tachyon/text/animation/text_animator.h"
+#include "tachyon/text/animation/text_animator_utils.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -26,20 +28,28 @@ void TextAnimationSampler::sample(TextLayoutResult& layout,
                                   double time) {
     if (layout.glyphs.empty()) return;
 
-    SelectionContext ctx;
-    ctx.glyph_count = layout.glyphs.size();
+    TextAnimatorContext ctx;
     ctx.time = static_cast<float>(time);
+    ctx.total_glyphs = static_cast<float>(layout.glyphs.size());
     
+    // Count words and lines
+    std::size_t max_word = 0;
     for (const auto& g : layout.glyphs) {
-        ctx.word_count = std::max(ctx.word_count, g.word_index + 1);
-        ctx.line_count = std::max(ctx.line_count, layout.lines.size());
+        max_word = std::max(max_word, g.word_index);
     }
+    ctx.total_words = static_cast<float>(max_word + 1);
+    ctx.total_lines = static_cast<float>(layout.lines.size());
 
     for (const auto& anim : animators) {
         for (std::size_t i = 0; i < layout.glyphs.size(); ++i) {
             auto& glyph = layout.glyphs[i];
             
-            float coverage = compute_coverage(ctx, anim.selector, glyph, i);
+            ctx.glyph_index = i;
+            ctx.word_index = glyph.word_index;
+            ctx.line_index = 0; // TODO: populate line_index if needed
+            ctx.is_space = (glyph.codepoint == ' ' || glyph.codepoint == '\t' || glyph.codepoint == '\n');
+            
+            float coverage = compute_coverage(anim.selector, ctx);
             if (coverage <= 0.0f) continue;
 
             if (anim.properties.opacity_value.has_value()) {
@@ -72,39 +82,5 @@ void TextAnimationSampler::sample(TextLayoutResult& layout,
     }
 }
 
-float TextAnimationSampler::compute_coverage(const SelectionContext& ctx,
-                                             const TextAnimatorSelectorSpec& selector,
-                                             const PositionedGlyph& glyph,
-                                             std::size_t glyph_index) {
-    float index = 0.0f;
-
-    if (selector.based_on == "characters" || selector.based_on == "characters_excluding_spaces") {
-        index = static_cast<float>(glyph_index);
-    } else if (selector.based_on == "words") {
-        index = static_cast<float>(glyph.word_index);
-    } else if (selector.based_on == "lines") {
-        // Line index would need to be calculated or passed in ctx
-        index = 0.0f; 
-    }
-
-    float start_time = static_cast<float>(selector.offset);
-    float time_since_start = ctx.time - start_time;
-    
-    if (time_since_start < 0.0f) {
-        return 1.0f;
-    }
-
-    float glyph_delay = index * static_cast<float>(selector.stagger_delay);
-    float progress = time_since_start - glyph_delay;
-    float duration = 0.1f; 
-    
-    float factor = 1.0f - std::clamp(progress / duration, 0.0f, 1.0f);
-    
-    if (selector.shape == "square") {
-        return progress >= 0.0f ? 0.0f : 1.0f;
-    }
-    
-    return factor;
-}
 
 } // namespace tachyon::text

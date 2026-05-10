@@ -1,7 +1,10 @@
 #include "tachyon/renderer2d/effects/effect_registry.h"
 #include "tachyon/presets/effects/effect_manifest.h"
 #include "tachyon/transition_registry.h"
+#include "tachyon/core/transition/transition_fast_path_registry.h"
+#include "tachyon/renderer2d/effects/core/transitions/transition_fast_paths.h"
 #include <unordered_map>
+
 #include <iterator>
 #include <algorithm>
 
@@ -34,7 +37,11 @@ std::vector<std::string> EffectRegistry::list_ids() const {
 }
 
 void register_builtin_effects(EffectRegistry& registry, const presets::EffectManifest& manifest, const TransitionRegistry& transition_registry) {
+    // 0. Register fast-path handler for Core to resolve circular dependency
+    core::transition::TransitionFastPathRegistry::set_handler(apply_transition_fast_path);
+
     // 1. Collect all implementations
+
     std::vector<EffectImplementation> all_impls;
     
     auto blur = get_blur_effect_implementations();

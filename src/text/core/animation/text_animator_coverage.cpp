@@ -9,7 +9,7 @@ constexpr float kZero = 0.0f;
 constexpr float kOne = 1.0f;
 constexpr float kHalf = 0.5f;
 constexpr float kQuarter = 0.25f;
-constexpr float kPercent = 100.0f;
+constexpr float kPercent = 1.0f;
 constexpr float kCoverageEpsilon = 1.0e-6f;
 constexpr float kMinWavePeriod = 0.001f;
 constexpr float kMinGlyphScale = 0.05f;
@@ -161,8 +161,8 @@ float compute_coverage(const TextAnimatorSelectorSpec& selector, const TextAnima
 
     // Apply AE-style easing (High/Low)
     if (selector.ease_high != 0.0 || selector.ease_low != 0.0) {
-        float eh = std::clamp(static_cast<float>(selector.ease_high) / 100.0f, -1.0f, 1.0f);
-        float el = std::clamp(static_cast<float>(selector.ease_low) / 100.0f, -1.0f, 1.0f);
+        float eh = std::clamp(static_cast<float>(selector.ease_high), -1.0f, 1.0f);
+        float el = std::clamp(static_cast<float>(selector.ease_low), -1.0f, 1.0f);
         
         // Simple power-based easing approximation for AE's Ease High/Low
         if (coverage > 0.0f && coverage < 1.0f) {
