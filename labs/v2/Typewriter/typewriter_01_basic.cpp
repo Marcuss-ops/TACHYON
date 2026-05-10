@@ -16,22 +16,22 @@ extern "C" tachyon::SceneSpec build_scene() {
             l.solid("black").color({0,0,0,255}).in(0).out(5.0);
         })
         .camera3d_layer("cam", [](LayerBuilder& l) {
-            l.transform3d().position(0.0, 0.0, -1350.0).done()
+            l.transform3d().position(0.0, -120.0, -980.0).done()
              .camera().type("two_node")
-             .poi(960.0, 540.0, 0.0)
-             .zoom(42.0)
+             .poi(0.0, 70.0, 0.0)
+             .zoom(48.0)
              .done();
         })
         .light_layer("ambient", [](LayerBuilder& l) {
             l.light().type("ambient")
              .color({255, 255, 255, 255})
-             .intensity(0.9)
+             .intensity(0.32)
              .done();
         })
         .light_layer("key", [](LayerBuilder& l) {
             l.light().type("point")
              .color({255, 242, 225, 255})
-             .intensity(2.6)
+             .intensity(1.45)
              .done()
              .transform3d().position(-220.0, 180.0, -220.0).done();
         })
@@ -43,25 +43,15 @@ extern "C" tachyon::SceneSpec build_scene() {
                 .stroke_color({0, 0, 0, 0})
                 .stroke_width(0.0)
                 .center()
+                .position(960.0, 540.0)
                 .text_box(1920, 1080)
                 .animate(presets::text::kind_typewriter(20.0, "|"))
                 .build());
-            l.in(0).out(5.0);
+            l.rotation3d(-12.0, 8.0, 0.0)
+             .extrude3d(0.18)
+             .bevel3d(0.02)
+             .in(0).out(5.0);
             tachyon::presets::animation3d::tilt(l, 12.0, 5.0, 0.65);
-        })
-        .layer("text_layer_fallback", [](LayerBuilder& l) {
-            l.text()
-             .content("TYPEWRITER BASIC")
-             .font("Default")
-             .font_size(104)
-             .box(1920, 1080, TextBoxMode::Fixed)
-             .align(HorizontalAlign::Center)
-             .valign(VerticalAlign::Middle)
-             .tracking(1.5f)
-             .animator(presets::text::kind_typewriter(20.0, "|"))
-             .done()
-             .color({255, 255, 255, 255});
-            l.in(0).out(5.0);
         })
         .build();
 

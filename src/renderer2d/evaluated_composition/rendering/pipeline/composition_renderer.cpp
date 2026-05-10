@@ -23,6 +23,7 @@
 #include "tachyon/core/render/dof_settings.h"
 #include "tachyon/core/render/motion_blur_settings.h"
 #include "tachyon/core/render/visibility.h"
+#include "tachyon/renderer3d/visibility/culling.h"
 #include "tachyon/renderer2d/raster/tile_grid.h"
 #include "tachyon/output/frame_aov.h"
 #include "tachyon/transition_registry.h"
@@ -235,6 +236,13 @@ RasterizedFrame2D render_evaluated_composition_2d(
             " type=" + std::to_string(static_cast<int>(layer.type)) +
             " t=" + std::to_string(layer.local_time_seconds) +
             " begin");
+        render_trace(
+            "frame " + std::to_string(task.frame_number) +
+            " layer=" + layer.id +
+            " flags is_3d=" + std::string(layer.is_3d ? "1" : "0") +
+            " visible=" + std::string(layer.visible ? "1" : "0") +
+            " enabled=" + std::string(layer.enabled ? "1" : "0") +
+            " active=" + std::string(layer.active ? "1" : "0"));
 
         // Skip 3D layers for now (they're handled separately)
         if (layer.is_3d && layer.visible) {
@@ -322,6 +330,9 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
             if (layer.is_3d && layer.visible) {
 #ifdef TACHYON_ENABLE_3D
+                render_trace(
+                    "frame " + std::to_string(task.frame_number) +
+                    " 3d-block enter layer=" + layer.id);
                 // Found a 3D block. Collect contiguous 3D layers in stack order.
                 std::vector<std::size_t> block_indices;
                 block_indices.push_back(i);
@@ -347,11 +358,6 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 bridge_input.visible_3d_layers = &visible_3d_layers;
 
                 const auto bridge_output = build_evaluated_scene_3d(bridge_input);
-                if (!bridge_output.has_instances) {
-                    i = last_block_idx;
-                    continue;
-                }
-
                 const std::uint32_t w = static_cast<std::uint32_t>(state.width);
                 const std::uint32_t h = static_cast<std::uint32_t>(state.height);
                 auto world_3d = std::make_shared<SurfaceRGBA>(w, h);
@@ -362,7 +368,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 bool world_has_visible_pixels = false;
 
                 // Convergence: Prefer high-quality ray tracing if IRayTracer is provided.
-                if (render_context.ray_tracer) {
+                if (bridge_output.has_instances && render_context.ray_tracer) {
                     const auto ray_start = std::chrono::high_resolution_clock::now();
                     
                     AOVBuffer aovs;
@@ -389,8 +395,14 @@ RasterizedFrame2D render_evaluated_composition_2d(
                             c.g = aovs.beauty_rgba[idx+1];
                             c.b = aovs.beauty_rgba[idx+2];
                             c.a = aovs.beauty_rgba[idx+3];
-                            
-                            if (c.a > 0.0f) {
+
+                            const bool has_hit = (aovs.depth_z[z_idx] > 0.0f) ||
+                                                 (c.r > 0.0f || c.g > 0.0f || c.b > 0.0f) ||
+                                                 (c.a > 0.0f);
+                            if (has_hit) {
+                                if (c.a == 0.0f) {
+                                    c.a = 255;
+                                }
                                 world_3d->set_pixel(x, static_cast<std::uint32_t>(y), c);
                                 if (aovs.depth_z[z_idx] > 0.0f) {
                                     world_3d->test_and_write_depth(x, static_cast<std::uint32_t>(y), 1.0f / aovs.depth_z[z_idx]);
@@ -845,7 +857,18 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 && (!layer.effects.empty() || !layer.animated_effects.empty() || has_transition);
         });
 
-    if (context.policy.tile_size > 0 && !has_effectful_layers) {
+#ifdef TACHYON_ENABLE_3D
+    const bool should_tile = context.policy.tile_size > 0
+        && !has_effectful_layers
+        && !std::any_of(
+            state.layers.begin(),
+            state.layers.end(),
+            [](const auto& l) { return l.is_3d && l.visible; });
+#else
+    const bool should_tile = context.policy.tile_size > 0 && !has_effectful_layers;
+#endif
+
+    if (should_tile) {
         TileGrid grid = build_tile_grid({0, 0, static_cast<int>(working_width), static_cast<int>(working_height)}, working_width, working_height, context.policy.tile_size);
         if (std::getenv("TACHYON_DIAGNOSTICS")) {
             std::cerr << "DIAG: Tiling " << working_width << "x" << working_height << " into " << grid.tiles.size() << " tiles (size " << context.policy.tile_size << ")\n";

@@ -101,16 +101,32 @@ EvaluatedLayerState make_layer_state(
 
     const bool use_3d_transform = layer.is_3d || evaluated.type == LayerType::Camera;
     if (use_3d_transform) {
-        const math::Vector3 position_fallback = layer.transform3d.position_property.value.value_or(math::Vector3{0.0f, 0.0f, 0.0f});
-        const math::Vector3 rotation_fallback = layer.transform3d.rotation_property.value.value_or(math::Vector3{0.0f, 0.0f, 0.0f});
-        const math::Vector3 scale_fallback_3d = layer.transform3d.scale_property.value.value_or(math::Vector3{1.0f, 1.0f, 1.0f});
+        const math::Vector3 position_fallback = layer.transform3d.position_property.value.value_or(math::Vector3{
+            static_cast<float>(layer.transform.position_x.value_or(0.0)),
+            static_cast<float>(layer.transform.position_y.value_or(0.0)),
+            0.0f
+        });
+        const math::Vector3 rotation_fallback = layer.transform3d.rotation_property.value.value_or(math::Vector3{
+            0.0f,
+            0.0f,
+            static_cast<float>(layer.transform.rotation.value_or(0.0))
+        });
+        const math::Vector3 scale_fallback_3d = layer.transform3d.scale_property.value.value_or(math::Vector3{
+            static_cast<float>(layer.transform.scale_x.value_or(1.0)),
+            static_cast<float>(layer.transform.scale_y.value_or(1.0)),
+            1.0f
+        });
         const math::Vector3 pos3 = sample_vector3(layer.transform3d.position_property, position_fallback, local_t, context.audio_analyzer);
         const math::Vector3 rot3 = sample_vector3(layer.transform3d.rotation_property, rotation_fallback, local_t, context.audio_analyzer);
         const math::Vector3 scale3 = sample_vector3(layer.transform3d.scale_property, scale_fallback_3d, local_t, context.audio_analyzer);
 
         const math::Vector3 anchor3 = sample_vector3(
             layer.transform3d.anchor_point_property,
-            math::Vector3{static_cast<float>(layer.width) * 0.5f, static_cast<float>(layer.height) * 0.5f, 0.0f},
+            math::Vector3{
+                static_cast<float>(layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->x : static_cast<float>(layer.width) * 0.5f),
+                static_cast<float>(layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->y : static_cast<float>(layer.height) * 0.5f),
+                0.0f
+            },
             local_t,
             context.audio_analyzer);
 
@@ -135,7 +151,11 @@ EvaluatedLayerState make_layer_state(
         const math::Vector3 prev_scale3 = sample_vector3(layer.transform3d.scale_property, scale_fallback_3d, prev_local_t, context.audio_analyzer);
         const math::Vector3 prev_anchor3 = sample_vector3(
             layer.transform3d.anchor_point_property,
-            math::Vector3{static_cast<float>(layer.width) * 0.5f, static_cast<float>(layer.height) * 0.5f, 0.0f},
+            math::Vector3{
+                static_cast<float>(layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->x : static_cast<float>(layer.width) * 0.5f),
+                static_cast<float>(layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->y : static_cast<float>(layer.height) * 0.5f),
+                0.0f
+            },
             prev_local_t,
             context.audio_analyzer);
         evaluated.previous_world_matrix = build_layer_transform_3d({
