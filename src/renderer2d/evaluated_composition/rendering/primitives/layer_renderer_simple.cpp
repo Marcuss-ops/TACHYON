@@ -86,31 +86,41 @@ void blit_text_surface(
     const auto& pixels = src.rgba_pixels();
     const std::uint32_t src_w = src.width();
     const std::uint32_t src_h = src.height();
+    const std::uint32_t dst_w = dst.width();
+    const std::uint32_t dst_h = dst.height();
 
-    for (std::uint32_t y = 0; y < src_h; ++y) {
-        for (std::uint32_t x = 0; x < src_w; ++x) {
-            const std::size_t idx = (static_cast<std::size_t>(y) * src_w + x) * 4U;
-            const std::uint8_t a = pixels[idx + 3U];
-            if (a == 0U) {
-                continue;
-            }
+    // Optimization: Skip entire rows if they are out of bounds
+    const int y_start = std::max(0, -offset_y);
+    const int y_end = std::min<int>(src_h, static_cast<int>(dst_h) - offset_y);
+    const int x_start = std::max(0, -offset_x);
+    const int x_end = std::min<int>(src_w, static_cast<int>(dst_w) - offset_x);
 
-            const int dx = offset_x + static_cast<int>(x);
-            const int dy = offset_y + static_cast<int>(y);
-            if (dx < 0 || dy < 0) {
-                continue;
-            }
+    for (int y = y_start; y < y_end; ++y) {
+        const std::uint8_t* src_row = &pixels[(static_cast<std::size_t>(y) * src_w) * 4U];
+        const std::uint32_t dy = static_cast<std::uint32_t>(offset_y + y);
+        
+        for (int x = x_start; x < x_end; ++x) {
+            const std::size_t src_idx = static_cast<std::size_t>(x) * 4U;
+            const std::uint8_t a = src_row[src_idx + 3U];
+            if (a == 0U) continue;
 
-            dst.blend_pixel(
-                static_cast<std::uint32_t>(dx),
-                static_cast<std::uint32_t>(dy),
-                Color{
-                    static_cast<float>(pixels[idx + 0U]) / 255.0f,
-                    static_cast<float>(pixels[idx + 1U]) / 255.0f,
-                    static_cast<float>(pixels[idx + 2U]) / 255.0f,
+            const std::uint32_t dx = static_cast<std::uint32_t>(offset_x + x);
+            
+            if (a == 255U) {
+                dst.set_pixel(dx, dy, Color{
+                    static_cast<float>(src_row[src_idx + 0U]) / 255.0f,
+                    static_cast<float>(src_row[src_idx + 1U]) / 255.0f,
+                    static_cast<float>(src_row[src_idx + 2U]) / 255.0f,
+                    1.0f
+                });
+            } else {
+                dst.blend_pixel(dx, dy, Color{
+                    static_cast<float>(src_row[src_idx + 0U]) / 255.0f,
+                    static_cast<float>(src_row[src_idx + 1U]) / 255.0f,
+                    static_cast<float>(src_row[src_idx + 2U]) / 255.0f,
                     static_cast<float>(a) / 255.0f
-                }
-            );
+                });
+            }
         }
     }
 }
@@ -230,9 +240,9 @@ public:
                     continue;
                 }
 
-                math::Vector2 wp = resolved.apply({glyph.position.x, glyph.position.y});
-                const int dx = static_cast<int>(std::lround(wp.x)) - origin_x - min_x;
-                const int dy = static_cast<int>(std::lround(wp.y)) - origin_y - min_y;
+                math::Vector2 wp_base = resolved.apply({glyph.position.x, glyph.position.y});
+                const int dx = static_cast<int>(std::lround(wp_base.x)) - origin_x - min_x;
+                const int dy = static_cast<int>(std::lround(wp_base.y)) - origin_y - min_y;
                 const int dw = std::max(1, static_cast<int>(std::lround(glyph.width * resolved.scale.x)));
                 const int dh = std::max(1, static_cast<int>(std::lround(glyph.height * resolved.scale.y)));
                 text_surface.render_glyph(*bitmap, dx, dy, dw, dh, to_color(layer.fill_color));
@@ -336,9 +346,9 @@ public:
             }
 
             for (const auto& paint : paints) {
-                math::Vector2 wp = resolved.apply({paint.base_x, paint.base_y});
-                const int dx = static_cast<int>(std::lround(wp.x)) - origin_x - min_x;
-                const int dy = static_cast<int>(std::lround(wp.y)) - origin_y - min_y;
+                math::Vector2 wp_base = resolved.apply({paint.base_x, paint.base_y});
+                const int dx = static_cast<int>(std::lround(wp_base.x)) - origin_x - min_x;
+                const int dy = static_cast<int>(std::lround(wp_base.y)) - origin_y - min_y;
                 const int dw = std::max(1, static_cast<int>(std::lround(paint.target_width * resolved.scale.x)));
                 const int dh = std::max(1, static_cast<int>(std::lround(paint.target_height * resolved.scale.y)));
                 renderer2d::Color final_color = to_color(paint.fill_color);

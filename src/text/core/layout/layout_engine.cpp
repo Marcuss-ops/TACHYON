@@ -14,10 +14,8 @@ float compute_fixed_pitch_cell_advance(
     const Font& font,
     std::uint32_t scale) {
 
-    // Use the font's nominal advance as the shared cell width, then tighten it a bit.
-    // This keeps the typewriter rhythm consistent without over-spacing wide glyphs.
     const float nominal_advance = static_cast<float>(font.default_advance()) * static_cast<float>(scale);
-    return std::max(1.0f, nominal_advance * 0.96f);
+    return std::max(1.0f, nominal_advance);
 }
 } // namespace
 
@@ -133,11 +131,14 @@ public:
             for (std::size_t i = 0; i < run.length; ) {
                 std::size_t cp_index = run.start + i;
                 const GraphemeCluster* current_cluster = nullptr;
-                for (const auto& c : clusters) {
-                    if (cp_index >= c.start_index && cp_index < c.start_index + c.length) {
-                        current_cluster = &c;
-                        break;
-                    }
+                // Optimization: Clusters are ordered, we can find the one for cp_index faster
+                // But for now, just ensure we don't restart the search from zero if possible.
+                // Actually, given typical text size, even O(N) is fine if we only do it once.
+                auto it = std::find_if(clusters.begin(), clusters.end(), [cp_index](const auto& c) {
+                    return cp_index >= c.start_index && cp_index < c.start_index + c.length;
+                });
+                if (it != clusters.end()) {
+                    current_cluster = &(*it);
                 }
                 
                 if (!current_cluster) { i++; continue; }

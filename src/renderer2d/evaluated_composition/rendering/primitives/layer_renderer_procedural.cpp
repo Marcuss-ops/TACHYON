@@ -20,6 +20,7 @@ enum class ProceduralFamily {
     GridLines,
     Galaxy,
     Stars,
+    Solid,
 };
 
 ProceduralFamily resolve_family(const ProceduralSpec& spec) {
@@ -29,6 +30,7 @@ ProceduralFamily resolve_family(const ProceduralSpec& spec) {
     if (spec.kind == "tachyon.background.kind.ripple_grid") return ProceduralFamily::GridLines;
     if (spec.kind == "tachyon.background.kind.galaxy") return ProceduralFamily::Galaxy;
     if (spec.kind == "tachyon.background.kind.stars") return ProceduralFamily::Stars;
+    if (spec.kind == "tachyon.background.kind.solid" || spec.kind == "solid") return ProceduralFamily::Solid;
     
     // Legacy support or fallback
     if (spec.kind == "aura") return ProceduralFamily::AuraLike;
@@ -411,11 +413,15 @@ void render_procedural_pattern(
                         float twinkle_st = std::sin(t * 3.0f + n * 10.0f) * 0.5f + 0.5f;
                         value = ((n - 0.8f) / 0.2f) * twinkle_st * amp;
                     }
+                } else if (family == ProceduralFamily::Solid) {
+                    value = 0.0f; // Solid uses col_a directly, handled below
                 } else {
                     value = (noise.noise3d(u * freq * scale, v * freq * scale, t) + 1.0f) * 0.5f * amp;
                 }
 
-                if (has_color_c) {
+                if (family == ProceduralFamily::Solid) {
+                    final_color = col_a;
+                } else if (has_color_c) {
                     if (value < 0.5f) {
                         float t_blend = value * 2.0f;
                         final_color = Color::lerp(col_a, col_b, t_blend);

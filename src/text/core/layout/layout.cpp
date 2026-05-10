@@ -122,8 +122,8 @@ TextRasterSurface rasterize_text_rgba(
             }
         }
         color.a *= op;
-        const int dx = static_cast<int>(std::lround(positioned.position.x + ox));
-        const int dy = static_cast<int>(std::lround(positioned.position.y + oy));
+        const int dx = static_cast<int>(std::lround(positioned.position.x)) + static_cast<int>(std::lround(ox));
+        const int dy = static_cast<int>(std::lround(positioned.position.y)) + static_cast<int>(std::lround(oy));
         const int dw = std::max(1, static_cast<int>(std::lround(static_cast<float>(glyph->width) * layout.scale * sc)));
         const int dh = std::max(1, static_cast<int>(std::lround(static_cast<float>(glyph->height) * layout.scale * sc)));
         surface.render_glyph(*glyph, dx, dy, dw, dh, color);
@@ -200,8 +200,8 @@ TextRasterSurface rasterize_text_rgba(
         }
         color.a *= std::clamp(opacity, 0.0f, 1.0f);
 
-        const int dx = static_cast<int>(std::lround(positioned.position.x + offset_x));
-        const int dy = static_cast<int>(std::lround(positioned.position.y + offset_y));
+        const int dx = static_cast<int>(std::lround(positioned.position.x)) + static_cast<int>(std::lround(offset_x));
+        const int dy = static_cast<int>(std::lround(positioned.position.y)) + static_cast<int>(std::lround(offset_y));
         const int dw = std::max(1, static_cast<int>(std::lround(static_cast<float>(glyph->width) * layout.scale * scale)));
         const int dh = std::max(1, static_cast<int>(std::lround(static_cast<float>(glyph->height) * layout.scale * scale)));
         surface.render_glyph(*glyph, dx, dy, dw, dh, color);
@@ -282,8 +282,8 @@ TextRasterSurface rasterize_text_rgba(
             }
         }
         color.a *= op;
-        const int dx = static_cast<int>(std::lround(positioned.position.x + ox));
-        const int dy = static_cast<int>(std::lround(positioned.position.y + oy));
+        const int dx = static_cast<int>(std::lround(positioned.position.x)) + static_cast<int>(std::lround(ox));
+        const int dy = static_cast<int>(std::lround(positioned.position.y)) + static_cast<int>(std::lround(oy));
         const int dw = std::max(1, static_cast<int>(std::lround(static_cast<float>(glyph->width) * layout.scale * sc)));
         const int dh = std::max(1, static_cast<int>(std::lround(static_cast<float>(glyph->height) * layout.scale * sc)));
         surface.render_glyph(*glyph, dx, dy, dw, dh, color);

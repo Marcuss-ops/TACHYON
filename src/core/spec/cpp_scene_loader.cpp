@@ -31,6 +31,7 @@ using JitBuildSceneFunc = int(*)(const TachyonHostApi*, TachyonSceneHandle);
 struct LoadedLib {
     void* handle{nullptr};
     JitBuildSceneFunc jit_build_fn{nullptr};
+    BuildSceneFunc build_scene_v1_fn{nullptr};
     std::string error;
 };
 
@@ -110,14 +111,18 @@ LoadedLib load_scene_library(const std::filesystem::path& dll_path) {
     HMODULE h = LoadLibraryW(dll_path.wstring().c_str());
     if (!h) { lib.error = "LoadLibrary failed: " + std::to_string(GetLastError()); return lib; }
     lib.jit_build_fn = (JitBuildSceneFunc)GetProcAddress(h, "tachyon_jit_build_scene");
+    lib.build_scene_v1_fn = (BuildSceneFunc)GetProcAddress(h, "build_scene");
     lib.handle = h;
 #else
     void* h = dlopen(dll_path.string().c_str(), RTLD_NOW);
     if (!h) { lib.error = std::string("dlopen: ") + dlerror(); return lib; }
     lib.jit_build_fn = (JitBuildSceneFunc)dlsym(h, "tachyon_jit_build_scene");
+    lib.build_scene_v1_fn = (BuildSceneFunc)dlsym(h, "build_scene");
     lib.handle = h;
 #endif
-    if (!lib.jit_build_fn) lib.error = "Symbol 'tachyon_jit_build_scene' not found";
+    if (!lib.jit_build_fn && !lib.build_scene_v1_fn) {
+        lib.error = "No valid JIT entry point found (expected 'tachyon_jit_build_scene' or 'build_scene')";
+    }
     return lib;
 }
 
@@ -150,27 +155,32 @@ CppSceneLoader::Result CppSceneLoader::load_from_file(
     if (!compiled.success) { result.diagnostics = compiled.error; return result; }
 
     auto lib = load_scene_library(compiled.output_path);
-    if (!lib.jit_build_fn) { result.diagnostics = lib.error; return result; }
+    if (!lib.jit_build_fn && !lib.build_scene_v1_fn) { result.diagnostics = lib.error; return result; }
 
     try {
-        HostContext host_ctx;
-        TachyonHostApi api = {};
-        api.abi_version = TACHYON_JIT_ABI_VERSION;
-        api.struct_size = sizeof(TachyonHostApi);
-        api.ctx = &host_ctx;
-        api.log = host_log;
-        api.begin_scene = host_begin_scene;
-        api.end_scene = host_end_scene;
-        api.add_background = host_add_background;
-        api.add_text = host_add_text;
-        api.set_float = host_set_float;
+        if (lib.jit_build_fn) {
+            HostContext host_ctx;
+            TachyonHostApi api = {};
+            api.abi_version = TACHYON_JIT_ABI_VERSION;
+            api.struct_size = sizeof(TachyonHostApi);
+            api.ctx = &host_ctx;
+            api.log = host_log;
+            api.begin_scene = host_begin_scene;
+            api.end_scene = host_end_scene;
+            api.add_background = host_add_background;
+            api.add_text = host_add_text;
+            api.set_float = host_set_float;
 
-        int jit_res = lib.jit_build_fn(&api, 0 /* Handle not used yet */);
-        if (jit_res == TACHYON_JIT_OK) {
-            result.scene = host_ctx.current_comp.build_scene();
+            int jit_res = lib.jit_build_fn(&api, 0 /* Handle not used yet */);
+            if (jit_res == TACHYON_JIT_OK) {
+                result.scene = host_ctx.current_comp.build_scene();
+                result.success = true;
+            } else {
+                result.diagnostics = "JIT build failed with error code: " + std::to_string(jit_res);
+            }
+        } else if (lib.build_scene_v1_fn) {
+            result.scene = lib.build_scene_v1_fn();
             result.success = true;
-        } else {
-            result.diagnostics = "JIT build failed with error code: " + std::to_string(jit_res);
         }
     } catch (const std::exception& e) {
         result.diagnostics = std::string("JIT execution threw: ") + e.what();

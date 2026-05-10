@@ -2,6 +2,7 @@
 #include "tachyon/tachyon_build_config.h"
 #include "tachyon/core/platform/process.h"
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -157,7 +158,9 @@ std::vector<std::string> AuthoringService::get_link_libs() {
     // scene-authoring surface. Do not pull renderer/runtime/media/output
     // modules into the plugin boundary.
     return {
-        "TachyonScene"
+        "TachyonScene",
+        "TachyonPresets",
+        "TachyonText"
     };
 }
 
@@ -171,7 +174,7 @@ std::string AuthoringService::get_compiler_command(
         ss << "call \"" << vcvars->string() << "\" >nul && ";
     }
     // MSVC cl.exe command
-    ss << "cl.exe /nologo /O2 /MD /EHsc /LD /std:c++20 /openmp /DNDEBUG /DTACHYON_USE_DLL /DTACHYON_SHARED ";
+    ss << "cl.exe /nologo /O2 /MD /EHsc /LD /std:c++20 /openmp /DNDEBUG /DTACHYON_USE_DLL /DTACHYON_SHARED /wd4190 ";
     ss << "/I\"" << TACHYON_INCLUDE_DIR << "\" ";
     ss << "\"" << cpp_path.string() << "\" ";
     ss << "/Fe:\"" << dll_path.string() << "\" ";
@@ -188,7 +191,19 @@ std::string AuthoringService::get_compiler_command(
         }
     }
 
-    ss << "/link /EXPORT:tachyon_jit_build_scene /EXPORT:tachyon_jit_get_manifest ";
+    // Heuristic to detect which entry points are present
+    bool has_build_scene = false;
+    bool has_jit_api = false;
+    {
+        std::ifstream ifs(cpp_path);
+        std::string content{std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>()};
+        has_build_scene = content.find("build_scene") != std::string::npos;
+        has_jit_api = content.find("tachyon_jit_build_scene") != std::string::npos;
+    }
+
+    ss << "/link ";
+    if (has_build_scene) ss << "/EXPORT:build_scene ";
+    if (has_jit_api) ss << "/EXPORT:tachyon_jit_build_scene /EXPORT:tachyon_jit_get_manifest ";
     const auto libs = get_link_libs();
     for (std::size_t i = 0; i < libs.size(); ++i) {
         if (i != 0) ss << ' ';

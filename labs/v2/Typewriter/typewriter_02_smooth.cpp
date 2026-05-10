@@ -1,4 +1,4 @@
-﻿#include "tachyon/scene/builder.h"
+#include "tachyon/scene/builder.h"
 #include "tachyon/presets/text/fluent.h"
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 using namespace tachyon;
@@ -10,11 +10,13 @@ extern "C" tachyon::SceneSpec build_scene() {
         .layer("text_layer", [](LayerBuilder& l) {
             TextAnimatorSpec v2_anim;
             v2_anim.name = "v2_smooth";
+            v2_anim.selector.type = "all";
             v2_anim.selector.based_on = "characters";
-            v2_anim.selector.stagger_delay = 0.1;
-            v2_anim.selector.shape = "ramp_up";
-            v2_anim.selector.offset = 1.0; 
-            v2_anim.properties.opacity_value = 0.0;
+            v2_anim.selector.stagger_delay = 0.15;
+            v2_anim.properties.opacity_keyframes.push_back({0.0, 0.0});
+            v2_anim.properties.opacity_keyframes.push_back({0.8, 1.0});
+            v2_anim.properties.position_offset_keyframes.push_back({0.0, {0.0, 40.0}});
+            v2_anim.properties.position_offset_keyframes.push_back({0.8, {0.0, 0.0}});
             l.text().content("TYPEWRITER SMOOTH").font("SFPro").font_size(120)
              .box(1920, 1080, TextBoxMode::Fixed)
              .align(HorizontalAlign::Center)
