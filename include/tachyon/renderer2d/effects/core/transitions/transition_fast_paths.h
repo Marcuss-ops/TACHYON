@@ -47,4 +47,18 @@ void apply_slide_fused_direct(
     float progress,
     int thread_count);
 
+void apply_wipe_linear_fused_direct(
+    SurfaceRGBA& output,
+    const SurfaceRGBA& from,
+    const SurfaceRGBA* to,
+    float progress,
+    int thread_count);
+
+void apply_smooth_wipe_fused_direct(
+    SurfaceRGBA& output,
+    const SurfaceRGBA& from,
+    const SurfaceRGBA* to,
+    float progress,
+    int thread_count);
+
 } // namespace tachyon::renderer2d

@@ -86,13 +86,16 @@ struct RenderSessionWorkspace {
 
     RenderSessionWorkspace(
         std::shared_ptr<renderer2d::PrecompCache> precomp_cache,
+        std::shared_ptr<renderer2d::PrecompCache> text_surface_cache,
         const RenderExecutionPlan& execution_plan,
         const std::filesystem::path& output_path,
         media::MediaPrefetcher& prefetcher_ref)
         : effective_plan(execution_plan),
           resolved_output_path(output_path_or_plan(output_path, execution_plan.render_plan)),
           context(std::move(precomp_cache)),
-          prefetcher(prefetcher_ref) {}
+          prefetcher(prefetcher_ref) {
+        context.renderer2d.text_surface_cache = std::move(text_surface_cache);
+    }
 };
 
 void configure_render_context(
@@ -257,7 +260,7 @@ RenderSessionResult RenderSession::render(
     ScopedProcessSampler sampler(telemetry_policy.should_sample_process());
 
     RenderSessionResult result;
-    RenderSessionWorkspace workspace(m_precomp_cache, execution_plan, output_path, m_prefetcher);
+    RenderSessionWorkspace workspace(m_precomp_cache, m_text_surface_cache, execution_plan, output_path, m_prefetcher);
     if (!workspace.resolved_output_path.empty()) {
         workspace.effective_plan.render_plan.output.destination.path = workspace.resolved_output_path;
     }

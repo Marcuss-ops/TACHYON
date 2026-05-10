@@ -51,6 +51,7 @@ struct CliOptions {
     double machine_cost_per_hour{0.0};
 
     bool show_version{false};
+    bool render_all_compositions{false};
 };
 
 ParseResult<CliOptions> parse_cli_options(int argc, char** argv);

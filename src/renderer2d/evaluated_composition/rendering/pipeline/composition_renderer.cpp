@@ -104,24 +104,20 @@ std::optional<std::filesystem::path> resolve_media_source(
 
         auto path = context.media_manager->resolve_media_path(reference);
         if (!path.empty()) {
-            std::cerr << "[DEBUG] resolve_media_source: resolved '" << reference << "' to '" << path.string() << "'" << std::endl;
             return path;
         }
 
         // Fallback: check if the reference is already a valid absolute path
         std::filesystem::path candidate(reference);
         if (candidate.is_absolute() && std::filesystem::exists(candidate)) {
-             std::cerr << "[DEBUG] resolve_media_source: direct absolute path '" << reference << "'" << std::endl;
              return candidate;
         }
         
         // Fallback: check if it's a relative path that exists
         if (std::filesystem::exists(candidate)) {
-             std::cerr << "[DEBUG] resolve_media_source: direct relative path '" << reference << "'" << std::endl;
              return std::filesystem::absolute(candidate);
         }
 
-        std::cerr << "[DEBUG] resolve_media_source: failed to resolve '" << reference << "'" << std::endl;
     }
 
     return std::nullopt;

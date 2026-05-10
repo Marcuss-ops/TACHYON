@@ -35,11 +35,22 @@ void ensure_native_render_registries() {
     });
 }
 
-const CompiledComposition* find_compiled_composition(const CompiledScene& scene, [[maybe_unused]] const std::string& composition_id) {
+const CompiledComposition* find_compiled_composition(const CompiledScene& scene, const std::string& composition_id) {
     if (scene.compositions.empty()) {
         return nullptr;
     }
 
+    if (composition_id.empty()) {
+        return &scene.compositions.front();
+    }
+
+    for (const auto& comp : scene.compositions) {
+        if (comp.composition_id == composition_id || comp.name == composition_id) {
+            return &comp;
+        }
+    }
+
+    // Fallback if ID not found but we have compositions
     return &scene.compositions.front();
 }
 

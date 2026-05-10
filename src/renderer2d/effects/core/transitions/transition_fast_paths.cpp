@@ -36,6 +36,16 @@ bool apply_transition_fast_path(
         return true;
     }
 
+    if (tid == "wipe_linear" || tid == "linear_wipe") {
+        apply_wipe_linear_fused_direct(output, from, to, progress, thread_count);
+        return true;
+    }
+
+    if (tid == "smooth_wipe" || tid == "wipe_soft") {
+        apply_smooth_wipe_fused_direct(output, from, to, progress, thread_count);
+        return true;
+    }
+
     return false;
 }
 

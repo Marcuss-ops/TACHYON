@@ -307,6 +307,11 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
             continue;
         }
 
+        if (arg == "--all") {
+            options.render_all_compositions = true;
+            continue;
+        }
+
         result.diagnostics.add_error("cli.flag_unknown", "unknown flag: " + arg, arg);
         return result;
     }

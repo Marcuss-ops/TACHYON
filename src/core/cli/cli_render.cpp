@@ -245,61 +245,89 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
     SceneSpec& scene = loaded.context->scene;
     AssetResolutionTable& assets = loaded.context->assets;
 
-    RenderJob job;
-    {
-        // Default job logic
+    std::vector<CompositionSpec*> targets;
+    if (options.render_all_compositions) {
+        for (auto& comp : scene.compositions) {
+            targets.push_back(&comp);
+        }
+    } else {
         if (scene.compositions.empty()) {
             err << "Scene has no compositions.\n";
             return false;
         }
-        const auto& comp = scene.compositions.front();
-        FrameRange range = {0, static_cast<std::int64_t>(comp.duration * comp.frame_rate.value())};
-        std::string output = !options.output_override.empty() ? options.output_override.string() : "output.mp4";
-        job = RenderJobBuilder::video_export(comp.id, range, output);
+        targets.push_back(&scene.compositions.front());
     }
 
-    if (!options.output_override.empty()) job.output.destination.path = options.output_override.string();
-    if (options.output_preset_id.has_value()) job.output.profile.name = *options.output_preset_id;
-    if (options.frame_range_override.has_value()) job.frame_range = *options.frame_range_override;
-
-    NativeRenderOptions native_options;
-    native_options.worker_count = options.worker_count;
-    native_options.memory_budget_bytes = options.memory_budget_bytes;
-    native_options.verbose = true;
-
-    presets::TextManifest text_manifest;
-    presets::TextRegistry text_registry(text_manifest);
-    const RenderSessionResult session_result = NativeRenderer::render(
-        scene,
-        job,
-        transition_registry,
-        modifier_registry,
-        text_registry,
-        native_options);
-    
-    if (!session_result.output_error.empty()) {
-        err << "Render error: " << session_result.output_error << "\n";
-    }
-
-    print_diagnostics(session_result.diagnostics, err);
-
-    {
-        RasterizedFrame2D first_frame;
-        if (!session_result.frames.empty()) {
-            first_frame.backend_name = "cpu-frame-executor";
+    bool all_success = true;
+    for (auto* comp_ptr : targets) {
+        const auto& comp = *comp_ptr;
+        RenderJob job;
+        {
+            FrameRange range = {0, static_cast<std::int64_t>(comp.duration * comp.frame_rate.value())};
+            std::string output_path;
+            
+            if (options.render_all_compositions) {
+                std::filesystem::path base_dir = options.output_override.empty() ? "output" : options.output_override;
+                if (!std::filesystem::exists(base_dir)) {
+                    std::filesystem::create_directories(base_dir);
+                }
+                
+                std::string filename = comp.id;
+                // Clean up ID for filename if it contains dots
+                std::replace(filename.begin(), filename.end(), '.', '_');
+                output_path = (base_dir / (filename + ".mp4")).string();
+            } else {
+                output_path = !options.output_override.empty() ? options.output_override.string() : "output.mp4";
+            }
+            
+            job = RenderJobBuilder::video_export(comp.id, range, output_path);
         }
+
+        if (options.output_preset_id.has_value()) job.output.profile.name = *options.output_preset_id;
+        if (options.frame_range_override.has_value()) job.frame_range = *options.frame_range_override;
+
+        NativeRenderOptions native_options;
+        native_options.worker_count = options.worker_count;
+        native_options.memory_budget_bytes = options.memory_budget_bytes;
+        native_options.verbose = true;
+
+        presets::TextManifest text_manifest;
+        presets::TextRegistry text_registry(text_manifest);
         
-        // We need a RenderExecutionPlan for the execution plan printout
-        const auto plan_result = build_render_plan(scene, job);
-        if (plan_result.value.has_value()) {
-            const auto execution_result = build_render_execution_plan(*plan_result.value, assets.size());
-            if (execution_result.value.has_value()) {
-                const std::size_t workers = (options.worker_count > 0) ? options.worker_count : std::thread::hardware_concurrency();
-                print_execution_plan(*execution_result.value, first_frame, session_result, out, workers);
+        out << "Rendering composition: " << comp.id << " -> " << job.output.destination.path << "\n";
+        
+        const RenderSessionResult session_result = NativeRenderer::render(
+            scene,
+            job,
+            transition_registry,
+            modifier_registry,
+            text_registry,
+            native_options);
+        
+        if (!session_result.output_error.empty()) {
+            err << "Render error for " << comp.id << ": " << session_result.output_error << "\n";
+            all_success = false;
+        }
+
+        print_diagnostics(session_result.diagnostics, err);
+
+        {
+            RasterizedFrame2D first_frame;
+            if (!session_result.frames.empty()) {
+                first_frame.backend_name = "cpu-frame-executor";
+            }
+            
+            const auto plan_result = build_render_plan(scene, job);
+            if (plan_result.value.has_value()) {
+                const auto execution_result = build_render_execution_plan(*plan_result.value, assets.size());
+                if (execution_result.value.has_value()) {
+                    const std::size_t workers = (options.worker_count > 0) ? options.worker_count : std::thread::hardware_concurrency();
+                    print_execution_plan(*execution_result.value, first_frame, session_result, out, workers);
+                }
             }
         }
     }
-    return session_result.output_error.empty();
+    return all_success;
 }
 
 bool run_preview_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry) {

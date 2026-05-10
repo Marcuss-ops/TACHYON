@@ -264,4 +264,68 @@ void apply_slide_fused_direct(
     }
 }
 
+
+void apply_wipe_linear_fused_direct(
+    SurfaceRGBA& output,
+    const SurfaceRGBA& from,
+    const SurfaceRGBA* to,
+    float progress,
+    int thread_count) {
+
+    const uint32_t width = output.width();
+    const uint32_t height = output.height();
+    const float* from_data = from.pixels().data();
+    const float* to_data = to ? to->pixels().data() : nullptr;
+    float* out_data = output.mutable_pixels().data();
+
+    #pragma omp parallel for num_threads(thread_count) schedule(static)
+    for (int y = 0; y < static_cast<int>(height); ++y) {
+        for (int x = 0; x < static_cast<int>(width); ++x) {
+            const float u = (static_cast<float>(x) + 0.5f) / static_cast<float>(width);
+            const std::size_t offset = (static_cast<std::size_t>(y) * width + x) * 4;
+            
+            if (u < progress && to_data) {
+                std::memcpy(out_data + offset, to_data + offset, 4 * sizeof(float));
+            } else {
+                std::memcpy(out_data + offset, from_data + offset, 4 * sizeof(float));
+            }
+        }
+    }
+}
+
+void apply_smooth_wipe_fused_direct(
+    SurfaceRGBA& output,
+    const SurfaceRGBA& from,
+    const SurfaceRGBA* to,
+    float progress,
+    int thread_count) {
+
+    const uint32_t width = output.width();
+    const uint32_t height = output.height();
+    const float* from_data = from.pixels().data();
+    const float* to_data = to ? to->pixels().data() : nullptr;
+    float* out_data = output.mutable_pixels().data();
+    const float smoothness = 0.1f;
+
+    #pragma omp parallel for num_threads(thread_count) schedule(static)
+    for (int y = 0; y < static_cast<int>(height); ++y) {
+        for (int x = 0; x < static_cast<int>(width); ++x) {
+            const float u = (static_cast<float>(x) + 0.5f) / static_cast<float>(width);
+            const std::size_t offset = (static_cast<std::size_t>(y) * width + x) * 4;
+            
+            float edge = std::clamp((progress - u) / smoothness + 0.5f, 0.0f, 1.0f);
+            float eased_edge = smoothstep01(edge);
+            
+            const float* src = from_data + offset;
+            const float* dst = to_data ? (to_data + offset) : src;
+            float* out = out_data + offset;
+
+            out[0] = src[0] * (1.0f - eased_edge) + dst[0] * eased_edge;
+            out[1] = src[1] * (1.0f - eased_edge) + dst[1] * eased_edge;
+            out[2] = src[2] * (1.0f - eased_edge) + dst[2] * eased_edge;
+            out[3] = src[3] * (1.0f - eased_edge) + dst[3] * eased_edge;
+        }
+    }
+}
+
 } // namespace tachyon::renderer2d

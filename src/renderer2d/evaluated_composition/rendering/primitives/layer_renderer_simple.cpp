@@ -217,6 +217,23 @@ public:
         const int origin_x = target_rect.has_value() ? target_rect->x : 0;
         const int origin_y = target_rect.has_value() ? target_rect->y : 0;
 
+        // --- CACHE LOOKUP ---
+        std::string cache_key;
+        if (context.text_surface_cache && layer.text_animators.empty()) {
+            cache_key = "text_layer:" + (layer.id.empty() ? layer.layer_id : layer.id) + ":" + 
+                        layer.text_content + ":" + layer.font_id + ":" + 
+                        std::to_string(layer.font_size) + ":" +
+                        std::to_string(layer.fill_color.r) + "," + std::to_string(layer.fill_color.g) + "," + 
+                        std::to_string(layer.fill_color.b) + "," + std::to_string(layer.fill_color.a) + ":" +
+                        std::to_string(layer.local_transform.scale.x) + "," + std::to_string(layer.local_transform.scale.y);
+            
+            auto cached = context.text_surface_cache->get(cache_key);
+            if (cached) {
+                composite_surface(*surface, *cached, -origin_x, -origin_y, BlendMode::Normal);
+                return true;
+            }
+        }
+
         const auto* registry = context.font_registry;
         if (registry == nullptr) return false;
 
@@ -268,6 +285,27 @@ public:
                 
                 render_glyph_direct(*surface, *bitmap, dx, dy, dw, dh, to_color(layer.fill_color));
             }
+
+            // --- CACHE STORE ---
+            if (context.text_surface_cache && !cache_key.empty()) {
+                auto text_surface = std::make_shared<SurfaceRGBA>(surface->width(), surface->height());
+                text_surface->set_profile(surface->profile());
+                text_surface->clear(Color::transparent());
+                
+                // Redo render to the dedicated surface for caching
+                for (const auto& glyph : layout.glyphs) {
+                    const auto* bitmap = glyph.resolved_glyph;
+                    if (bitmap == nullptr) continue;
+                    math::Vector2 wp_base = resolved.apply({glyph.position.x, glyph.position.y});
+                    const int dx = static_cast<int>(std::lround(wp_base.x)) - origin_x;
+                    const int dy = static_cast<int>(std::lround(wp_base.y)) - origin_y;
+                    const int dw = std::max(1, static_cast<int>(std::lround(glyph.width * resolved.scale.x)));
+                    const int dh = std::max(1, static_cast<int>(std::lround(glyph.height * resolved.scale.y)));
+                    render_glyph_direct(*text_surface, *bitmap, dx, dy, dw, dh, to_color(layer.fill_color));
+                }
+                context.text_surface_cache->put(cache_key, text_surface);
+            }
+
             return true;
         }
 

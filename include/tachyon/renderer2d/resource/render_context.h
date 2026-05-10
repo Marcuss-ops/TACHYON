@@ -99,6 +99,7 @@ struct RenderContext2D {
 
     std::shared_ptr<SurfaceRGBA> framebuffer;
     std::shared_ptr<PrecompCache> precomp_cache;
+    std::shared_ptr<PrecompCache> text_surface_cache;
     std::shared_ptr<SurfacePool> surface_pool;
     std::shared_ptr<EffectHost> effects;
     AccumulationBuffers accumulation_buffer;
