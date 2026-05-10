@@ -10,6 +10,8 @@
 #include "tachyon/media/management/media_manager.h"
 #if defined(TACHYON_ENABLE_3D) && __has_include(<embree4/rtcore.h>)
 #include <embree4/rtcore.h>
+#elif defined(TACHYON_ENABLE_3D) && __has_include(<embree3/rtcore.h>)
+#include <embree3/rtcore.h>
 #else
 #include "tachyon/third_party/embree_stub.h"
 #endif

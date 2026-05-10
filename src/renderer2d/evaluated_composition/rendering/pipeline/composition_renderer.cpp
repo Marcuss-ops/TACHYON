@@ -378,6 +378,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 // Convergence: Prefer high-quality ray tracing if IRayTracer is provided.
                 if (bridge_output.has_instances && render_context.ray_tracer) {
                     const auto ray_start = std::chrono::high_resolution_clock::now();
+                    constexpr float kRayMissDepth = 999999.0f;
                     
                     AOVBuffer aovs;
                     aovs.resize(w, h);
@@ -407,26 +408,31 @@ RasterizedFrame2D render_evaluated_composition_2d(
                             c.b = aovs.beauty_rgba[idx + 2];
                             c.a = aovs.beauty_rgba[idx + 3];
 
-                            const bool has_hit = (aovs.depth_z[z_idx] > 0.0f) ||
-                                                 (c.r > 0.0f || c.g > 0.0f || c.b > 0.0f) ||
-                                                 (c.a > 0.0f);
-                            if (has_hit) {
+                            const bool has_hit = std::isfinite(aovs.depth_z[z_idx]) &&
+                                                 aovs.depth_z[z_idx] > 0.0f &&
+                                                 aovs.depth_z[z_idx] < kRayMissDepth;
+                            const bool has_color = (c.r > 0.0f || c.g > 0.0f || c.b > 0.0f || c.a > 0.0f);
+                            if (has_hit || has_color) {
                                 if (c.a == 0.0f) {
                                     c.a = 255;
                                 }
                                 world_3d->set_pixel(x, y, c);
-                                if (aovs.depth_z[z_idx] > 0.0f) {
+                                if (has_hit) {
                                     world_3d->test_and_write_depth(x, y, 1.0f / aovs.depth_z[z_idx]);
                                 }
-                                world_has_visible_pixels.store(true, std::memory_order_relaxed);
+                                world_has_visible_pixels.store(world_has_visible_pixels.load(std::memory_order_relaxed) || has_hit, std::memory_order_relaxed);
                             }
                         }
                     }
                     record_timing(diagnostics, "ray_tracing_block", std::to_string(i), ray_start);
                 }
 
+                std::shared_ptr<SurfaceRGBA> fallback_preview_surface;
                 if (!world_has_visible_pixels.load(std::memory_order_relaxed)) {
                     const auto view_matrix = state.camera.camera.get_view_matrix();
+                    auto fallback_stack_surface = std::make_shared<SurfaceRGBA>(w, h);
+                    fallback_stack_surface->set_profile(render_context.cms.working_profile);
+                    fallback_stack_surface->clear(renderer2d::Color::transparent());
                 for (std::size_t block_idx : block_indices) {
                     if (block_idx >= state.layers.size()) {
                         continue;
@@ -448,6 +454,13 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     }
                     if (!block_surface) {
                         continue;
+                    }
+
+                    if (block_layer.type != scene::LayerType::Camera &&
+                        block_layer.type != scene::LayerType::Light &&
+                        block_layer.type != scene::LayerType::NullLayer) {
+                        composite_surface(*fallback_stack_surface, *block_surface, 0, 0, BlendMode::Normal);
+                        fallback_preview_surface = fallback_stack_surface;
                     }
 
                     const float half_w = static_cast<float>(block_layer.width) * 0.5f;
@@ -526,46 +539,9 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     composite_surface(target_surface, *world_3d, 0, 0, BlendMode::Normal);
                 } else if (composite_layer_it != block_indices.end()) {
                     frame.note += " [3D ray pass empty; using fallback 2D card preview]";
-                    const auto& fallback_layer = state.layers[*composite_layer_it];
-                    auto fallback_surface = std::make_shared<SurfaceRGBA>(state.width, state.height);
-                    fallback_surface->set_profile(render_context.cms.working_profile);
-                    fallback_surface->clear(renderer2d::Color{0.04f, 0.05f, 0.08f, 1.0f});
-
-                    const int card_w = std::max(1, std::min(static_cast<int>(fallback_layer.width), static_cast<int>(state.width) - 160));
-                    const int card_h = std::max(1, std::min(static_cast<int>(fallback_layer.height), static_cast<int>(state.height) - 160));
-                    const int card_x = std::max(0, (static_cast<int>(state.width) - card_w) / 2);
-                    const int card_y = std::max(0, (static_cast<int>(state.height) - card_h) / 2);
-                    const auto fill = from_color_spec(fallback_layer.fill_color, render_context.cms.working_profile);
-                    const renderer2d::Color border{0.92f, 0.95f, 1.0f, 1.0f};
-                    const renderer2d::Color shadow{0.0f, 0.0f, 0.0f, 0.28f};
-
-                    for (int y = card_y - 18; y < card_y + card_h + 18; ++y) {
-                        if (y < 0 || y >= static_cast<int>(state.height)) continue;
-                        for (int x = card_x - 18; x < card_x + card_w + 18; ++x) {
-                            if (x < 0 || x >= static_cast<int>(state.width)) continue;
-                            const bool in_shadow = x >= card_x - 8 && x < card_x + card_w + 8 && y >= card_y - 8 && y < card_y + card_h + 8;
-                            if (in_shadow) {
-                                auto px = fallback_surface->get_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y));
-                                fallback_surface->set_pixel(
-                                    static_cast<std::uint32_t>(x),
-                                    static_cast<std::uint32_t>(y),
-                                    renderer2d::blend_mode_color(shadow, px, renderer2d::BlendMode::Normal));
-                            }
-                        }
+                    if (fallback_preview_surface) {
+                        composite_surface(target_surface, *fallback_preview_surface, 0, 0, BlendMode::Normal);
                     }
-
-                    for (int y = card_y; y < card_y + card_h; ++y) {
-                        if (y < 0 || y >= static_cast<int>(state.height)) continue;
-                        for (int x = card_x; x < card_x + card_w; ++x) {
-                            if (x < 0 || x >= static_cast<int>(state.width)) continue;
-                            const bool is_border = x == card_x || x == card_x + card_w - 1 || y == card_y || y == card_y + card_h - 1;
-                            fallback_surface->set_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y),
-                                is_border ? border : fill);
-                        }
-                    }
-
-                    multiply_surface_alpha(*fallback_surface, static_cast<float>(fallback_layer.opacity));
-                    composite_surface(target_surface, *fallback_surface, 0, 0, BlendMode::Normal);
                 }
                 i = last_block_idx;
 #else

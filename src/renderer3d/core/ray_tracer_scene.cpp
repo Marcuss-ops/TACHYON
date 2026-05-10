@@ -2,6 +2,11 @@
 #include "tachyon/core/math/matrix4x4.h"
 #include "tachyon/media/management/media_manager.h"
 #include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
+#if defined(TACHYON_ENABLE_3D) && __has_include(<embree4/rtcore_geometry.h>)
+#include <embree4/rtcore_geometry.h>
+#elif defined(TACHYON_ENABLE_3D) && __has_include(<embree3/rtcore_geometry.h>)
+#include <embree3/rtcore_geometry.h>
+#endif
 #include <filesystem>
 
 namespace tachyon::renderer3d {
@@ -113,6 +118,7 @@ void RayTracer::build_scene(const EvaluatedScene3D& scene) {
                     if (cached_submesh.vertices.empty() || cached_submesh.indices.empty()) continue;
 
                     RTCGeometry geom = rtcNewGeometry(device_, RTC_GEOMETRY_TYPE_TRIANGLE);
+                    rtcSetGeometryMask(geom, 0xFFFFFFFFu);
                     
                     float* v = static_cast<float*>(rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, 3 * sizeof(float), cached_submesh.vertices.size()));
                     for (std::size_t j = 0; j < cached_submesh.vertices.size(); ++j) {
@@ -139,19 +145,29 @@ void RayTracer::build_scene(const EvaluatedScene3D& scene) {
         }
         
         RTCGeometry inst = rtcNewGeometry(device_, RTC_GEOMETRY_TYPE_INSTANCE);
+        rtcSetGeometryMask(inst, 0xFFFFFFFFu);
         rtcSetGeometryInstancedScene(inst, sub_scene);
         
         const auto& m_curr = instance.world_transform;
         if (instance.previous_world_transform.has_value()) {
             const auto& m_prev = *instance.previous_world_transform;
             rtcSetGeometryTimeStepCount(inst, 2);
-            float t_prev[12] = { m_prev[0], m_prev[1], m_prev[2], m_prev[4], m_prev[5], m_prev[6], m_prev[8], m_prev[9], m_prev[10], m_prev[12], m_prev[13], m_prev[14] };
-            float t_curr[12] = { m_curr[0], m_curr[1], m_curr[2], m_curr[4], m_curr[5], m_curr[6], m_curr[8], m_curr[9], m_curr[10], m_curr[12], m_curr[13], m_curr[14] };
-            rtcSetGeometryTransform(inst, 0, RTC_FORMAT_FLOAT3X4_ROW_MAJOR, t_prev);
-            rtcSetGeometryTransform(inst, 1, RTC_FORMAT_FLOAT3X4_ROW_MAJOR, t_curr);
+            rtcSetGeometryTransform(
+                inst,
+                0,
+                RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,
+                m_prev.data.data());
+            rtcSetGeometryTransform(
+                inst,
+                1,
+                RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,
+                m_curr.data.data());
         } else {
-            float t[12] = { m_curr[0], m_curr[1], m_curr[2], m_curr[4], m_curr[5], m_curr[6], m_curr[8], m_curr[9], m_curr[10], m_curr[12], m_curr[13], m_curr[14] };
-            rtcSetGeometryTransform(inst, 0, RTC_FORMAT_FLOAT3X4_ROW_MAJOR, t);
+            rtcSetGeometryTransform(
+                inst,
+                0,
+                RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,
+                m_curr.data.data());
         }
         rtcCommitGeometry(inst);
         

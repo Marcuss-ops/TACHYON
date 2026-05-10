@@ -298,21 +298,34 @@ bool run_text3d_preview_tests() {
     check_true(static_cast<bool>(mesh.mesh), "text extrusion mesh should be generated");
     if (mesh.mesh) {
         check_true(!mesh.mesh->sub_meshes.empty(), "text extrusion mesh should contain submeshes");
+        double sum_x = 0.0;
+        double sum_y = 0.0;
+        for (const auto& submesh : mesh.mesh->sub_meshes) {
+            sum_x += submesh.transform[12];
+            sum_y += submesh.transform[13];
+        }
+        const double avg_x = sum_x / static_cast<double>(mesh.mesh->sub_meshes.size());
+        const double avg_y = sum_y / static_cast<double>(mesh.mesh->sub_meshes.size());
+        check_true(std::abs(avg_x) < 250.0 && std::abs(avg_y) < 250.0,
+            "text extrusion mesh should be centered near local origin");
     }
 
-    ::tachyon::text::TextAnimationOptions animation;
-    animation.time_seconds = 0.0f;
-    std::vector<::tachyon::TextAnimatorSpec> animators = {
-        ::tachyon::text::make_slide_in_animator("characters_excluding_spaces", 0.03, 18.0, 0.7)
+    ::tachyon::text::TextAnimationOptions hidden_animation;
+    hidden_animation.time_seconds = 0.0f;
+    std::vector<::tachyon::TextAnimatorSpec> typewriter_animators = {
+        ::tachyon::text::make_typewriter_minimal_animator(18.0, false)
     };
-    animation.animators = std::span<const ::tachyon::TextAnimatorSpec>(animators.data(), animators.size());
+    hidden_animation.animators = std::span<const ::tachyon::TextAnimatorSpec>(typewriter_animators.data(), typewriter_animators.size());
 
-    const auto animated_mesh = renderer2d::build_text_extrusion_mesh(state.layers.front(), state, font_registry, animation);
-    check_true(static_cast<bool>(animated_mesh.mesh), "animated text extrusion mesh should be generated");
-    if (mesh.mesh && animated_mesh.mesh) {
-        check_true(animated_mesh.cache_key != mesh.cache_key, "animated mesh cache key should change with animation");
-        check_true(animated_mesh.mesh->sub_meshes.front().material.base_color_factor.x < mesh.mesh->sub_meshes.front().material.base_color_factor.x,
-                   "animated text mesh should reflect opacity at start of the reveal");
+    const auto hidden_mesh = renderer2d::build_text_extrusion_mesh(state.layers.front(), state, font_registry, hidden_animation);
+    check_true(!hidden_mesh.mesh || hidden_mesh.mesh->sub_meshes.empty(), "typewriter 3D should not emit hidden glyph geometry at reveal start");
+
+    hidden_animation.time_seconds = 1.0f;
+    const auto revealed_mesh = renderer2d::build_text_extrusion_mesh(state.layers.front(), state, font_registry, hidden_animation);
+    check_true(static_cast<bool>(revealed_mesh.mesh), "revealed typewriter 3D mesh should be generated");
+    if (revealed_mesh.mesh) {
+        check_true(!revealed_mesh.mesh->sub_meshes.empty(), "revealed typewriter 3D mesh should contain submeshes");
+        check_true(revealed_mesh.cache_key != mesh.cache_key, "animated mesh cache key should change with animation");
     }
 
     if (mesh.mesh) {

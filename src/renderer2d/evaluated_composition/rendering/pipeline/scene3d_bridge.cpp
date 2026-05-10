@@ -108,6 +108,16 @@ static LayerMeshResult build_layer_mesh(
             std::cerr << "[Scene3DBridge] text extrusion ok id=" << l.id
                       << " submeshes=" << text_mesh.mesh->sub_meshes.size()
                       << " cache=" << text_mesh.cache_key << "\n";
+            if (std::getenv("TACHYON_DIAGNOSTICS") && !text_mesh.mesh->sub_meshes.empty()) {
+                const auto& sub = text_mesh.mesh->sub_meshes.front();
+                std::cerr << "[Scene3DBridge] text mesh origin id=" << l.id
+                          << " submesh_t=(" << sub.transform[12] << ","
+                          << sub.transform[13] << ","
+                          << sub.transform[14] << ")"
+                          << " layer_world=(" << l.world_matrix[12] << ","
+                          << l.world_matrix[13] << ","
+                          << l.world_matrix[14] << ")\n";
+            }
             result.mesh_asset = text_mesh.mesh;
             result.mesh_asset_id = text_mesh.cache_key;
             return result;
@@ -159,6 +169,15 @@ static EvaluatedMeshInstance3D build_instance_for_layer(
     inst.material_id = 0;
     inst.world_transform = l.world_matrix;
     inst.previous_world_transform = l.previous_world_matrix;
+
+    if (std::getenv("TACHYON_DIAGNOSTICS") &&
+        l.type == LayerType::Text &&
+        !l.id.empty()) {
+        std::cerr << "[Scene3DBridge] instance transform id=" << l.id
+                  << " world=(" << inst.world_transform[12] << ","
+                  << inst.world_transform[13] << ","
+                  << inst.world_transform[14] << ")\n";
+    }
 
     inst.material.base_color = l.fill_color;
     inst.material.opacity = static_cast<float>(l.opacity);
