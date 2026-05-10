@@ -15,23 +15,26 @@ inline float smoothstep01(float x) {
 }
 
 // Optimized bilinear sampling with raw data access
-inline void sample_bilinear_raw(const float* pixels, uint32_t width, uint32_t height, float u, float v, float* out_rgba) {
+inline void sample_bilinear_raw(const float* __restrict pixels, uint32_t width, uint32_t height, float u, float v, float* __restrict out_rgba) {
     const float fw = static_cast<float>(width);
     const float fh = static_cast<float>(height);
     
-    float x = u * fw - 0.5f;
-    float y = v * fh - 0.5f;
+    const float x = u * fw - 0.5f;
+    const float y = v * fh - 0.5f;
     
-    int x0 = static_cast<int>(std::floor(x));
-    int y0 = static_cast<int>(std::floor(y));
+    // Fast floor for positive numbers
+    int x0 = static_cast<int>(x);
+    if (x < 0 && x != static_cast<float>(x0)) x0--;
+    int y0 = static_cast<int>(y);
+    if (y < 0 && y != static_cast<float>(y0)) y0--;
     
-    float dx = x - static_cast<float>(x0);
-    float dy = y - static_cast<float>(y0);
+    const float dx = x - static_cast<float>(x0);
+    const float dy = y - static_cast<float>(y0);
     
     x0 = std::clamp(x0, 0, static_cast<int>(width - 1));
     y0 = std::clamp(y0, 0, static_cast<int>(height - 1));
-    int x1 = std::min(x0 + 1, static_cast<int>(width - 1));
-    int y1 = std::min(y0 + 1, static_cast<int>(height - 1));
+    const int x1 = std::min(x0 + 1, static_cast<int>(width - 1));
+    const int y1 = std::min(y0 + 1, static_cast<int>(height - 1));
     
     const float* p00 = &pixels[(y0 * width + x0) * 4];
     const float* p10 = &pixels[(y0 * width + x1) * 4];
@@ -70,49 +73,53 @@ void apply_soft_zoom_blur_fused_direct(
     const float* to_data = to ? to->pixels().data() : nullptr;
     float* out_data = output.mutable_pixels().data();
 
-    constexpr int samples = 7;
     const float eased = smoothstep01(progress);
     const float inv_eased = 1.0f - eased;
     const float blur_phase = 0.12f * std::sin(eased * 3.1415926535f);
     const float cx = 0.5f;
     const float cy = 0.5f;
 
-    #pragma omp parallel for num_threads(thread_count) schedule(dynamic, 16)
+    const uint32_t from_w = from.width();
+    const uint32_t from_h = from.height();
+    const uint32_t to_w = to ? to->width() : 0;
+    const uint32_t to_h = to ? to->height() : 0;
+
+    #pragma omp parallel for num_threads(thread_count) schedule(static)
     for (int y = 0; y < static_cast<int>(height); ++y) {
+        const float v = (static_cast<float>(y) + 0.5f) * inv_height;
+        float* row_out = &out_data[static_cast<size_t>(y) * width * 4];
+
         for (int x = 0; x < static_cast<int>(width); ++x) {
             const float u = (static_cast<float>(x) + 0.5f) * inv_width;
-            const float v = (static_cast<float>(y) + 0.5f) * inv_height;
 
             float acc_r = 0.0f, acc_g = 0.0f, acc_b = 0.0f, acc_a = 0.0f;
 
-            for (int i = 0; i < samples; ++i) {
-                const float s = static_cast<float>(i) / static_cast<float>(samples - 1);
+            // Unroll 7 samples
+            for (int i = 0; i < 7; ++i) {
+                const float s = static_cast<float>(i) / 6.0f;
                 const float blur = (s - 0.5f) * blur_phase;
 
                 const float su = cx + (u - cx) * (1.0f + blur);
                 const float sv = cy + (v - cy) * (1.0f + blur);
 
                 float src[4];
-                sample_bilinear_raw(from_data, from.width(), from.height(), su, sv, src);
+                sample_bilinear_raw(from_data, from_w, from_h, su, sv, src);
                 
                 float dst[4] = {0.0f, 0.0f, 0.0f, 0.0f};
                 if (to_data) {
-                    sample_bilinear_raw(to_data, to->width(), to->height(), su, sv, dst);
+                    sample_bilinear_raw(to_data, to_w, to_h, su, sv, dst);
                 }
 
-                // Inline lerp and accumulation
                 acc_r += (src[0] * inv_eased + dst[0] * eased);
                 acc_g += (src[1] * inv_eased + dst[1] * eased);
                 acc_b += (src[2] * inv_eased + dst[2] * eased);
                 acc_a += (src[3] * inv_eased + dst[3] * eased);
             }
 
-            const float inv_samples = 1.0f / static_cast<float>(samples);
-            float* out_pixel = &out_data[(y * width + x) * 4];
-            out_pixel[0] = acc_r * inv_samples;
-            out_pixel[1] = acc_g * inv_samples;
-            out_pixel[2] = acc_b * inv_samples;
-            out_pixel[3] = acc_a * inv_samples;
+            row_out[x * 4 + 0] = acc_r * (1.0f / 7.0f);
+            row_out[x * 4 + 1] = acc_g * (1.0f / 7.0f);
+            row_out[x * 4 + 2] = acc_b * (1.0f / 7.0f);
+            row_out[x * 4 + 3] = acc_a * (1.0f / 7.0f);
         }
     }
 }
@@ -392,7 +399,7 @@ void apply_flash_cut_fused_direct(
             out[0] = r * (1.0f - flash_amount) + flash_amount;
             out[1] = g * (1.0f - flash_amount) + flash_amount;
             out[2] = b * (1.0f - flash_amount) + flash_amount;
-            out[3] = a;
+            out[3] = std::clamp(a + flash_amount, 0.0f, 1.0f);
         }
     }
 }
