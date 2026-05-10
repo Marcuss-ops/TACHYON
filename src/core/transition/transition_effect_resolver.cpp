@@ -120,9 +120,14 @@ TransitionKernel create_cpu_kernel(const std::string& transition_id, CpuTransiti
 
     TransitionKernel kernel;
     kernel.apply = [transition_id, cpu_fn](SurfaceRGBA& output, const SurfaceRGBA& input_a, const SurfaceRGBA* input_b, float progress, int thread_count) {
-        std::cout << "[debug] Transition Kernel Apply: " << transition_id << " progress=" << progress << std::endl;
         // Attempt fast path first
         if (core::transition::TransitionFastPathRegistry::apply(transition_id, output, input_a, input_b, progress, thread_count)) {
+            return;
+        }
+
+        if (!cpu_fn) {
+            // No fallback available, just clear to prevent garbage
+            output.clear(Color::transparent());
             return;
         }
 
@@ -200,8 +205,8 @@ ResolvedTransitionEffect TransitionEffectResolver::resolve(const TransitionEffec
         return result;
     }
 
-    // Create kernel function from the descriptor's CPU function
-    if (desc->cpu_fn != nullptr) {
+    // Create kernel function from the descriptor's CPU function or fused direct function
+    if (desc->cpu_fn != nullptr || desc->direct_cpu_fn != nullptr) {
         result.kernel = create_cpu_kernel(desc->id, desc->cpu_fn);
         result.valid = result.kernel.valid;
     } else {

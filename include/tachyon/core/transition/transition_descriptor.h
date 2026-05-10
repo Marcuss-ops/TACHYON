@@ -27,7 +27,8 @@ enum class TransitionRuntimeKind {
     StateOnly,    ///< Affects only layer properties (opacity, transform)
     CpuPixel,     ///< Pixel-level manipulation on CPU (SurfaceRGBA)
     Glsl,         ///< GPU-accelerated shader transition
-    CompositePlan ///< Multi-layer complex orchestration
+    CompositePlan, ///< Multi-layer complex orchestration
+    FusedKernel   ///< Fused whole-surface CPU kernel (SIMD optimized)
 };
 
 /**

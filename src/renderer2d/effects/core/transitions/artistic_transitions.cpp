@@ -19,6 +19,8 @@ Color transition_zoom_in(float u, float v, float t, const SurfaceRGBA& input, co
     return Color::lerp(source, target, t);
 }
 
+} // namespace
+
 Color transition_zoom_blur(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
     const float zoom = std::max(0.001f, 1.0f - t);
     const float su = 0.5f + (u - 0.5f) / zoom;
@@ -32,6 +34,8 @@ Color transition_zoom_blur(float u, float v, float t, const SurfaceRGBA& input, 
     }
     return Color::lerp(sample_uv(input, u, v), acc, t);
 }
+
+namespace {
 
 Color transition_spin(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
     const float angle = t * 6.28318530718f;
@@ -92,6 +96,8 @@ Color transition_directional_blur_wipe(float u, float v, float t, const SurfaceR
     return Color::lerp(sample_uv(input, u, v), acc, t);
 }
 
+} // namespace
+
 Color transition_flash(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
     const Color a = sample_uv(input, u, v);
     const Color b = sample_transition_target(input, to_surface, u, v);
@@ -107,6 +113,8 @@ Color transition_flash(float u, float v, float t, const SurfaceRGBA& input, cons
     const Color flash_color = {1.0f, 1.0f, 1.0f, 1.0f};
     return Color::lerp(base, flash_color, flash * 0.8f);
 }
+
+namespace {
 
 Color transition_kaleidoscope(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface) {
     const float dx = u - 0.5f;

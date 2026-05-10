@@ -1,5 +1,5 @@
 #include "tachyon/renderer2d/effects/core/transitions/transition_fast_paths.h"
-#include <iostream>
+
 
 
 namespace tachyon::renderer2d {
@@ -19,7 +19,7 @@ bool apply_transition_fast_path(
         tid.remove_prefix(prefix.length());
     }
 
-    std::cout << "[debug] fast-path attempt for: " << tid << " (original: " << transition_id << ")" << std::endl;
+
 
     if (tid == "soft_zoom_blur") {
         apply_soft_zoom_blur_fused_direct(output, from, to, progress, thread_count);

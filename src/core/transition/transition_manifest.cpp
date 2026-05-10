@@ -44,7 +44,8 @@ const std::vector<TransitionDescriptor>& get_transition_manifest() {
         make_desc(std::string(ids::transition::wipe_angular), "Angular Wipe", "Angular wipe around center", TransitionKind::Wipe, TransitionRuntimeKind::CpuPixel, true, false),
         make_desc(std::string(ids::transition::push_left), "Push Left", "Push image to the left", TransitionKind::Slide, TransitionRuntimeKind::CpuPixel, true, false),
         make_desc(std::string(ids::transition::slide_easing), "Slide Easing", "Slide with easing", TransitionKind::Slide, TransitionRuntimeKind::CpuPixel, true, false),
-        make_desc(std::string(ids::transition::circle_iris), "Circle Iris", "Circular iris opener", TransitionKind::Wipe, TransitionRuntimeKind::CpuPixel, true, false),
+        make_desc(std::string(ids::transition::circle_iris), "Circle Iris", "Circular iris opener", TransitionKind::Wipe, TransitionRuntimeKind::FusedKernel, true, false),
+        make_desc("iris", "Iris", "Circular iris opener (alias)", TransitionKind::Wipe, TransitionRuntimeKind::FusedKernel, true, false),
 
         // --- Artistic Transitions ---
         make_desc(std::string(ids::transition::glitch_slice), "Glitch Slice", "Digital glitch slice transition", TransitionKind::Custom, TransitionRuntimeKind::CpuPixel, true, false),
@@ -79,8 +80,8 @@ const std::vector<TransitionDescriptor>& get_transition_manifest() {
         
         // --- Modern Transitions (V2) ---
         make_desc(std::string(ids::transition::smooth_wipe), "Smooth Wipe", "Soft feathered wipe transition", TransitionKind::Wipe, TransitionRuntimeKind::CpuPixel, true, false),
-        make_desc(std::string(ids::transition::soft_zoom_blur), "Soft Zoom Blur", "Smooth zoom blur transition", TransitionKind::Zoom, TransitionRuntimeKind::CpuPixel, true, false),
-        make_desc(std::string(ids::transition::flash_cut), "Flash Cut", "Fast bright flash transition", TransitionKind::Fade, TransitionRuntimeKind::CpuPixel, true, false)
+        make_desc(std::string(ids::transition::soft_zoom_blur), "Soft Zoom Blur", "Smooth zoom blur transition", TransitionKind::Zoom, TransitionRuntimeKind::FusedKernel, true, false),
+        make_desc(std::string(ids::transition::flash_cut), "Flash Cut", "Fast bright flash transition", TransitionKind::Fade, TransitionRuntimeKind::FusedKernel, true, false)
     };
     return manifest;
 }

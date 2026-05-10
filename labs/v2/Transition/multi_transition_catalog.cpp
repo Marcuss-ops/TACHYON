@@ -66,14 +66,7 @@ extern "C" __declspec(dllexport) SceneSpec build_scene() {
     SceneBuilder scene;
     
     std::vector<std::string> transitions = {
-        "tachyon.transition.crossfade",
-        "tachyon.transition.wipe_linear",
-        "tachyon.transition.slide",
-        "tachyon.transition.circle_iris",
-        "tachyon.transition.soft_zoom_blur",
-        "tachyon.transition.flash_cut",
-        "tachyon.transition.smooth_wipe",
-        "tachyon.transition.push_left"
+        "tachyon.transition.crossfade"
     };
 
     for (const auto& t : transitions) {
