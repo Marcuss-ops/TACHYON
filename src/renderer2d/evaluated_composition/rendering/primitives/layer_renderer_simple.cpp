@@ -78,7 +78,7 @@ void render_glyph_direct(
 
     for (int y = 0; y < dh; ++y) {
         const int sy = (y * sh) / dh;
-        const std::uint8_t* src_row = &bitmap.pixels[sy * sw];
+        const std::uint8_t* src_row = &bitmap.alpha_mask[sy * sw];
         for (int x = 0; x < dw; ++x) {
             const int sx = (x * sw) / dw;
             const std::uint8_t alpha = src_row[sx];
