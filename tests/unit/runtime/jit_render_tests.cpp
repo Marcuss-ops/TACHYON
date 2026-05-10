@@ -24,32 +24,6 @@ std::filesystem::path make_temp_dir() {
     return dir;
 }
 
-std::filesystem::path write_jit_scene_source(const std::filesystem::path& dir) {
-    const auto cpp_path = dir / "jit_render_scene.cpp";
-    std::ofstream out(cpp_path);
-    out << R"cpp(
-#include "tachyon/scene/builder.h"
-#include "tachyon/presets/background/fluent.h"
-
-using namespace tachyon;
-using namespace tachyon::scene;
-using namespace tachyon::presets;
-
-extern "C" SceneSpec build_scene() {
-    return Scene()
-        .project("jit_render", "JIT Render")
-        .composition("main", [](CompositionBuilder& c) {
-            c.size(256, 144)
-             .fps(30)
-             .duration(1.0)
-             .clear({240, 240, 240, 255})
-             .layer(background::solid({255, 255, 255, 255}, 256, 144, 1.0));
-        })
-        .build();
-}
-)cpp";
-    return cpp_path;
-}
 
 std::size_t count_visible_pixels(const tachyon::renderer2d::Framebuffer& frame) {
     std::size_t count = 0;
@@ -114,25 +88,8 @@ bool run_jit_render_tests() {
 
     const auto temp_dir = make_temp_dir();
     
-    // 1. Test Legacy ABI
-    {
-        const auto cpp_path = write_jit_scene_source(temp_dir);
-        const auto loaded = CppSceneLoader::load_from_file(cpp_path, temp_dir / "build_legacy");
-        check_true(loaded.success, "Legacy JIT scene should compile and load");
-        if (loaded.success && loaded.scene.has_value()) {
-            const auto compiled = RuntimeFacade::instance().compile_scene(*loaded.scene);
-            check_true(compiled.ok(), "Legacy JIT compiled scene should be valid");
-            if (compiled.ok() && compiled.value.has_value()) {
-                const auto rendered = RuntimeFacade::instance().render_frame(*compiled.value, 0);
-                check_true(rendered.ok(), "Legacy JIT scene should render");
-                if (rendered.ok() && rendered.value.has_value() && rendered.value->frame) {
-                    check_true(count_visible_pixels(*rendered.value->frame) > 0, "Legacy JIT frame should not be black");
-                }
-            }
-        }
-    }
 
-    // 2. Test New C ABI
+    // Test JIT C ABI
     {
         const auto cpp_path = write_jit_abi_scene_source(temp_dir);
         const auto loaded = CppSceneLoader::load_from_file(cpp_path, temp_dir / "build_abi");

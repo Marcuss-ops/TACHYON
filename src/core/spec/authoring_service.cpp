@@ -188,7 +188,7 @@ std::string AuthoringService::get_compiler_command(
         }
     }
 
-    ss << "/link /EXPORT:build_scene /EXPORT:tachyon_jit_build_scene /EXPORT:tachyon_jit_get_manifest ";
+    ss << "/link /EXPORT:tachyon_jit_build_scene /EXPORT:tachyon_jit_get_manifest ";
     const auto libs = get_link_libs();
     for (std::size_t i = 0; i < libs.size(); ++i) {
         if (i != 0) ss << ' ';
