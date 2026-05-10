@@ -23,6 +23,12 @@ scene::LayerType resolve_layer_type(std::uint32_t type_id) {
         case 4: return scene::LayerType::Text;
         case 5: return scene::LayerType::Precomp;
         case 6: return scene::LayerType::Procedural;
+        case 7: return scene::LayerType::Mesh;
+        case 8: return scene::LayerType::Video;
+        case 9: return scene::LayerType::Camera;
+        case 10: return scene::LayerType::Light;
+        case 11: return scene::LayerType::Mask;
+        case 12: return scene::LayerType::NullLayer;
         default: return scene::LayerType::NullLayer;
     }
 }
@@ -204,8 +210,8 @@ void evaluate_layer(
             static_cast<float>(sample_property(CompiledLayer::ScaleZ, 1.0))
         };
         const math::Vector3 anchor3{
-            static_cast<float>(sample_property(CompiledLayer::AnchorX, static_cast<double>(state->width) * 0.5)),
-            static_cast<float>(sample_property(CompiledLayer::AnchorY, static_cast<double>(state->height) * 0.5)),
+            static_cast<float>(sample_property(CompiledLayer::AnchorX, 0.0)),
+            static_cast<float>(sample_property(CompiledLayer::AnchorY, 0.0)),
             static_cast<float>(sample_property(CompiledLayer::AnchorZ, 0.0))
         };
 
@@ -252,8 +258,8 @@ void evaluate_layer(
             static_cast<float>(sample_prev(CompiledLayer::ScaleZ, 1.0))
         };
         const math::Vector3 prev_anchor3{
-            static_cast<float>(sample_prev(CompiledLayer::AnchorX, static_cast<double>(state->width) * 0.5)),
-            static_cast<float>(sample_prev(CompiledLayer::AnchorY, static_cast<double>(state->height) * 0.5)),
+            static_cast<float>(sample_prev(CompiledLayer::AnchorX, 0.0)),
+            static_cast<float>(sample_prev(CompiledLayer::AnchorY, 0.0)),
             static_cast<float>(sample_prev(CompiledLayer::AnchorZ, 0.0))
         };
         state->previous_world_matrix = scene::build_layer_transform_3d({

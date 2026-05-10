@@ -2,8 +2,11 @@
 #include "tachyon/renderer2d/evaluated_composition/layer_renderer.h"
 #include "tachyon/renderer2d/evaluated_composition/rendering/pipeline/pipeline_helpers.h"
 #include "tachyon/renderer2d/evaluated_composition/rendering/primitives/media_card_mesh_builder.h"
+#include "tachyon/renderer2d/evaluated_composition/rendering/primitives/text_mesh_builder.h"
 #include "tachyon/renderer2d/resource/render_context.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
+#include "tachyon/media/loading/mesh_asset.h"
+#include "tachyon/text/animation/text_animation_options.h"
 
 #include "tachyon/core/animation/property_sampler.h"
 #include "tachyon/core/animation/property_adapter.h"
@@ -89,6 +92,31 @@ static LayerMeshResult build_layer_mesh(
     const scene::EvaluatedLayerState& l,
     const Scene3DBridgeInput& input) {
     LayerMeshResult result;
+
+    if (l.type == LayerType::Text && input.context && input.context->font_registry) {
+        ::tachyon::text::TextAnimationOptions animation;
+        animation.time_seconds = static_cast<float>(l.local_time_seconds);
+        animation.animators = l.text_animators;
+
+        const auto text_mesh = renderer2d::build_text_extrusion_mesh(
+            l,
+            *input.state,
+            *input.context->font_registry,
+            animation);
+
+        if (text_mesh.mesh) {
+            std::cerr << "[Scene3DBridge] text extrusion ok id=" << l.id
+                      << " submeshes=" << text_mesh.mesh->sub_meshes.size()
+                      << " cache=" << text_mesh.cache_key << "\n";
+            result.mesh_asset = text_mesh.mesh;
+            result.mesh_asset_id = text_mesh.cache_key;
+            return result;
+        }
+
+        std::cerr << "[Scene3DBridge] text extrusion fallback id=" << l.id
+                  << " content_len=" << l.text_content.size()
+                  << " font_id=" << l.font_id << "\n";
+    }
 
     const auto layer_surface = build_layer_surface_impl(l, input);
 
@@ -221,6 +249,150 @@ static ColorSpec to_color(const math::Vector3& color) {
     };
 }
 
+static EvaluatedCamera3D build_camera_3d_from_layer(const scene::EvaluatedLayerState& layer) {
+    EvaluatedCamera3D cam;
+    cam.position = layer.world_position3;
+    cam.target = layer.poi;
+    cam.up = {0.0f, 1.0f, 0.0f};
+    cam.fov_y = 2.0f * 180.0f / 3.14159f * std::atan(720.0f / (2.0f * std::max(layer.zoom, 1.0f)));
+    cam.focal_distance = layer.camera_focus_distance.value_or(std::max(1.0f, (cam.target - cam.position).length()));
+    cam.aperture = layer.camera_aperture.value_or(0.0f);
+    cam.camera_id = layer.layer_id;
+    cam.is_active_camera = layer.active;
+    cam.previous_position = layer.previous_world_matrix.to_transform().position;
+    cam.previous_target = layer.poi;
+    cam.previous_up = cam.up;
+    cam.blur_level = 100.0f;
+    cam.dof_enabled = layer.camera_aperture.has_value();
+    return cam;
+}
+
+static EvaluatedCamera3D build_camera_3d_from_spec_layer(
+    const LayerSpec& layer,
+    int comp_width,
+    int comp_height) {
+    EvaluatedCamera3D cam;
+    cam.position = layer.transform3d.position_property.value.value_or(math::Vector3{0.0f, 0.0f, 0.0f});
+    cam.target = layer.camera_poi.value.value_or(math::Vector3{0.0f, 0.0f, 0.0f});
+    cam.up = {0.0f, 1.0f, 0.0f};
+    const float zoom = static_cast<float>(layer.camera_zoom.value.value_or(877.0));
+    const float safe_h = static_cast<float>(std::max(1, comp_height));
+    cam.fov_y = 2.0f * 180.0f / 3.14159f * std::atan(safe_h / (2.0f * std::max(zoom, 1.0f)));
+    cam.focal_distance = static_cast<float>(layer.camera_focus_distance.value.value_or((cam.target - cam.position).length()));
+    cam.aperture = static_cast<float>(layer.camera_aperture.value.value_or(0.0));
+    cam.camera_id = layer.id;
+    cam.is_active_camera = layer.enabled && layer.visible;
+    cam.previous_position = cam.position;
+    cam.previous_target = cam.target;
+    cam.previous_up = cam.up;
+    cam.blur_level = 100.0f;
+    cam.dof_enabled = layer.camera_aperture.value.has_value();
+    (void)comp_width;
+    return cam;
+}
+
+static EvaluatedCamera3D build_default_perspective_camera(int comp_width, int comp_height) {
+    EvaluatedCamera3D cam;
+
+    const float w = static_cast<float>(std::max(1, comp_width));
+    const float h = static_cast<float>(std::max(1, comp_height));
+    const float depth = std::max(w, h) * 0.95f;
+
+    cam.position = {w * 0.44f, h * 0.36f, -depth};
+    cam.target = {w * 0.52f, h * 0.50f, 0.0f};
+    cam.up = {0.0f, 1.0f, 0.0f};
+    cam.fov_y = 2.0f * 180.0f / 3.14159f * std::atan(h / (2.0f * 877.0f));
+    cam.focal_distance = std::max(1.0f, (cam.target - cam.position).length());
+    cam.aperture = 0.0f;
+    cam.camera_id = "default_perspective";
+    cam.is_active_camera = true;
+    cam.previous_position = cam.position;
+    cam.previous_target = cam.target;
+    cam.previous_up = cam.up;
+    cam.blur_level = 100.0f;
+    cam.dof_enabled = false;
+    return cam;
+}
+
+static std::shared_ptr<const media::MeshAsset> build_floor_grid_mesh(int comp_width, int comp_height) {
+    auto mesh = std::make_shared<media::MeshAsset>();
+    media::MeshAsset::SubMesh sub;
+
+    const float w = static_cast<float>(std::max(1, comp_width));
+    const float h = static_cast<float>(std::max(1, comp_height));
+    const float cx = w * 0.5f;
+    const float cy = h * 0.5f;
+    const float span_x = w * 1.35f;
+    const float span_y = h * 1.35f;
+    const float thickness = std::max(8.0f, std::min(w, h) * 0.0060f);
+    const float spacing = std::max(96.0f, std::min(w, h) / 10.0f);
+    const math::Vector3 grid_color{0.28f, 0.29f, 0.32f};
+
+    const auto add_quad = [&](float x0, float y0, float x1, float y1) {
+        const std::uint32_t base = static_cast<std::uint32_t>(sub.vertices.size());
+        sub.vertices.push_back({{x0, y0, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}});
+        sub.vertices.push_back({{x1, y0, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}});
+        sub.vertices.push_back({{x1, y1, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}});
+        sub.vertices.push_back({{x0, y1, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}});
+        sub.indices.insert(sub.indices.end(), {
+            base + 0, base + 1, base + 2,
+            base + 0, base + 2, base + 3
+        });
+    };
+
+    for (float x = cx - span_x * 0.5f; x <= cx + span_x * 0.5f + 0.5f; x += spacing) {
+        add_quad(x - thickness * 0.5f, cy - span_y * 0.5f, x + thickness * 0.5f, cy + span_y * 0.5f);
+    }
+    for (float y = cy - span_y * 0.5f; y <= cy + span_y * 0.5f + 0.5f; y += spacing) {
+        add_quad(cx - span_x * 0.5f, y - thickness * 0.5f, cx + span_x * 0.5f, y + thickness * 0.5f);
+    }
+
+    sub.material.base_color_factor = grid_color;
+    sub.material.metallic_factor = 0.0f;
+    sub.material.roughness_factor = 1.0f;
+    mesh->sub_meshes.push_back(std::move(sub));
+    return mesh;
+}
+
+static std::optional<LayerSpec> find_camera_layer_spec(const SceneSpec* scene_spec, const std::string& composition_id) {
+    if (!scene_spec) {
+        return std::nullopt;
+    }
+
+    auto find_in_composition = [](const CompositionSpec& comp) -> std::optional<LayerSpec> {
+        const auto camera_it = std::find_if(
+            comp.layers.begin(),
+            comp.layers.end(),
+            [](const LayerSpec& layer) {
+                return layer.type == LayerType::Camera && layer.enabled;
+            });
+        if (camera_it == comp.layers.end()) {
+            return std::nullopt;
+        }
+        return *camera_it;
+    };
+
+    if (!composition_id.empty()) {
+        const auto comp_it = std::find_if(
+            scene_spec->compositions.begin(),
+            scene_spec->compositions.end(),
+            [&](const CompositionSpec& comp) { return comp.id == composition_id; });
+        if (comp_it != scene_spec->compositions.end()) {
+            if (auto camera = find_in_composition(*comp_it)) {
+                return camera;
+            }
+        }
+    }
+
+    for (const auto& comp : scene_spec->compositions) {
+        if (auto camera = find_in_composition(comp)) {
+            return camera;
+        }
+    }
+
+    return std::nullopt;
+}
+
 } // anonymous namespace
 
 EvaluatedCamera3D build_camera_3d(
@@ -288,6 +460,24 @@ std::vector<EvaluatedMeshInstance3D> build_instances_3d(
 #ifdef TACHYON_ENABLE_3D
     std::size_t instance_counter = 0;
 
+    const bool has_visible_3d_layer = std::any_of(
+        input.state->layers.begin(),
+        input.state->layers.end(),
+        [](const auto& layer) { return layer.is_3d && layer.visible && layer.enabled && layer.active; });
+    if (has_visible_3d_layer) {
+        EvaluatedMeshInstance3D grid;
+        grid.object_id = static_cast<std::uint32_t>(instance_counter++);
+        grid.world_transform = math::Matrix4x4::identity();
+        grid.previous_world_transform = grid.world_transform;
+        grid.material.base_color = ColorSpec{189, 191, 199, 255};
+        grid.material.opacity = 1.0f;
+        grid.material.roughness = 1.0f;
+        grid.material.metallic = 0.0f;
+        grid.mesh_asset = build_floor_grid_mesh(input.state->width, input.state->height);
+        grid.mesh_asset_id = "floor_grid";
+        instances.push_back(std::move(grid));
+    }
+
     for (std::size_t block_idx : *input.block_indices) {
         if (block_idx >= input.state->layers.size()) {
             continue;
@@ -336,7 +526,56 @@ Scene3DBridgeOutput build_evaluated_scene_3d(const Scene3DBridgeInput& input) {
     Scene3DBridgeOutput output;
 
 #ifdef TACHYON_ENABLE_3D
-    output.scene3d.camera = build_camera_3d(input.state->camera, *input.state);
+    if (input.state->camera.available) {
+        output.scene3d.camera = build_camera_3d(input.state->camera, *input.state);
+    } else {
+        if (const auto camera_spec = find_camera_layer_spec(
+                input.plan ? input.plan->scene_spec : nullptr,
+                input.plan ? input.plan->composition_target : std::string{})) {
+            output.scene3d.camera = build_camera_3d_from_spec_layer(
+                *camera_spec,
+                input.state->width,
+                input.state->height);
+        } else {
+            const auto camera_it = std::find_if(
+                input.state->layers.begin(),
+                input.state->layers.end(),
+                [](const auto& layer) { return layer.type == LayerType::Camera && layer.enabled && layer.active; });
+            if (camera_it != input.state->layers.end()) {
+                output.scene3d.camera = build_camera_3d_from_layer(*camera_it);
+                output.scene3d.camera.is_active_camera = true;
+            } else {
+                output.scene3d.camera = build_camera_3d(input.state->camera, *input.state);
+            }
+        }
+    }
+
+    const auto camera_position_length = output.scene3d.camera.position.length();
+    const auto camera_target_length = output.scene3d.camera.target.length();
+    if (camera_position_length < 1e-3f && camera_target_length < 1e-3f) {
+        output.scene3d.camera = build_default_perspective_camera(input.state->width, input.state->height);
+    }
+
+    std::cerr << "[Scene3DBridge] camera pos=("
+              << output.scene3d.camera.position.x << ","
+              << output.scene3d.camera.position.y << ","
+              << output.scene3d.camera.position.z << ") target=("
+              << output.scene3d.camera.target.x << ","
+              << output.scene3d.camera.target.y << ","
+              << output.scene3d.camera.target.z << ") type="
+              << input.state->camera.camera_type
+              << " available=" << (input.state->camera.available ? 1 : 0)
+              << "\n";
+    for (const auto& layer : input.state->layers) {
+        if (layer.type == LayerType::Camera || layer.is_3d) {
+            std::cerr << "[Scene3DBridge] layer id=" << layer.id
+                      << " type=" << static_cast<int>(layer.type)
+                      << " is_3d=" << (layer.is_3d ? 1 : 0)
+                      << " enabled=" << (layer.enabled ? 1 : 0)
+                      << " active=" << (layer.active ? 1 : 0)
+                      << "\n";
+        }
+    }
     output.scene3d.lights = build_lights_3d(input.state->lights);
 
     if (input.plan && input.plan->scene_spec) {
