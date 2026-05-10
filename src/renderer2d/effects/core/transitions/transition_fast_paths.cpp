@@ -46,6 +46,16 @@ bool apply_transition_fast_path(
         return true;
     }
 
+    if (tid == "circle_iris" || tid == "iris_circle" || tid == "iris") {
+        apply_circle_iris_fused_direct(output, from, to, progress, thread_count);
+        return true;
+    }
+
+    if (tid == "flash_cut" || tid == "flash") {
+        apply_flash_cut_fused_direct(output, from, to, progress, thread_count);
+        return true;
+    }
+
     return false;
 }
 

@@ -218,9 +218,14 @@ tachyon_assert_no_duplicate_sources(TachyonCLILibrarySources)
 tachyon_assert_no_duplicate_sources(TachyonLibrarySources)
 
 tachyon_check_source_registration(${CMAKE_CURRENT_SOURCE_DIR}/text TachyonTextSources)
+tachyon_check_source_registration(${CMAKE_CURRENT_SOURCE_DIR}/media TachyonMediaSources)
+tachyon_check_source_registration(${CMAKE_CURRENT_SOURCE_DIR}/renderer2d TachyonRenderer2DAllSources)
+tachyon_check_source_registration(${CMAKE_CURRENT_SOURCE_DIR}/runtime TachyonRuntimeSources)
+tachyon_check_source_registration(${CMAKE_CURRENT_SOURCE_DIR}/core/scene TachyonSceneAllSources)
 
 if(TACHYON_ENABLE_TRACKER)
     include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonTrackerSources.cmake)
+    tachyon_check_source_registration(${CMAKE_CURRENT_SOURCE_DIR}/tracker TachyonTrackerSources)
     tachyon_assert_no_duplicate_sources(TachyonTrackerSources)
 endif()
 

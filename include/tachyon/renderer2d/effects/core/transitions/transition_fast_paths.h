@@ -61,4 +61,18 @@ void apply_smooth_wipe_fused_direct(
     float progress,
     int thread_count);
 
+void apply_circle_iris_fused_direct(
+    SurfaceRGBA& output,
+    const SurfaceRGBA& from,
+    const SurfaceRGBA* to,
+    float progress,
+    int thread_count);
+
+void apply_flash_cut_fused_direct(
+    SurfaceRGBA& output,
+    const SurfaceRGBA& from,
+    const SurfaceRGBA* to,
+    float progress,
+    int thread_count);
+
 } // namespace tachyon::renderer2d

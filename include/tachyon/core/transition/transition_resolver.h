@@ -14,6 +14,7 @@ struct ResolvedTransition {
     const TransitionDescriptor* descriptor{nullptr};
     LayerTransitionSpec layer_spec;
     CpuTransitionFn cpu_function{nullptr};   ///< For CPU transitions
+    DirectCpuTransitionFn direct_cpu_function{nullptr}; ///< For fused CPU transitions
     GlslTransitionFn glsl_function{nullptr}; ///< For GLSL transitions
     bool valid{false};
     std::string error_message;

@@ -136,6 +136,11 @@ if(TACHYON_ENABLE_VULKAN)
     )
 endif()
 
+set(TachyonRenderer2DAllSources
+    ${TachyonRenderer2DSources}
+    ${TachyonRenderer2DExtrasSources}
+)
+
 # --- Targets ---
 
 add_library(TachyonRenderer2DColor STATIC ${TachyonRenderer2DColorSources})

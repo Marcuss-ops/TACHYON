@@ -5,6 +5,8 @@
 #include "tachyon/core/ids/builtin_ids.h"
 #include <cmath>
 #include <algorithm>
+#include <iostream>
+#include "tachyon/renderer2d/effects/core/transitions/transition_fast_paths.h"
 
 namespace tachyon::renderer2d {
 
@@ -158,7 +160,7 @@ Color transition_soft_zoom_blur(float u, float v, float t, const SurfaceRGBA& in
 
 void resolve_basic_transition_implementations(tachyon::TransitionDescriptor& d) {
     using namespace tachyon;
-    // std::cout << "[debug] resolving basic transition: " << d.id << std::endl;
+    std::cout << "[debug] resolving basic transition: " << d.id << std::endl;
 
     if (d.id == ids::transition::crossfade) d.cpu_fn = transition_crossfade;
     else if (d.id == ids::transition::slide) d.cpu_fn = transition_slide;
@@ -172,10 +174,16 @@ void resolve_basic_transition_implementations(tachyon::TransitionDescriptor& d) 
     else if (d.id == ids::transition::wipe_angular) d.cpu_fn = transition_wipe_angular;
     else if (d.id == ids::transition::push_left) d.cpu_fn = transition_push_left;
     else if (d.id == ids::transition::slide_easing) d.cpu_fn = transition_slide_easing;
-    else if (d.id == ids::transition::circle_iris) d.cpu_fn = transition_circle_iris;
+    else if (d.id == ids::transition::circle_iris || d.id == "iris") {
+        d.direct_cpu_fn = apply_circle_iris_fused_direct;
+    }
+    else if (d.id == ids::transition::flash_cut) {
+        d.direct_cpu_fn = apply_flash_cut_fused_direct;
+    }
+    else if (d.id == ids::transition::soft_zoom_blur) {
+        d.direct_cpu_fn = apply_soft_zoom_blur_fused_direct;
+    }
     else if (d.id == ids::transition::smooth_wipe) d.cpu_fn = transition_smooth_wipe;
-    else if (d.id == ids::transition::soft_zoom_blur) d.cpu_fn = transition_soft_zoom_blur;
-    else if (d.id == ids::transition::flash_cut) d.cpu_fn = transition_flash_cut;
 }
 
 } // namespace tachyon::renderer2d

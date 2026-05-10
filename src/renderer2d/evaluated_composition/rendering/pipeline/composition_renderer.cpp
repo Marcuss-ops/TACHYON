@@ -683,7 +683,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
                 // Apply transition if active
                 if ((in_transition || out_transition) && transition_t > 0.0) {
-                    if (resolution.valid && resolution.cpu_function != nullptr) {
+                    if (resolution.valid) {
                         // Use registry transition (pixel-level)
                         const std::uint32_t sw = layer_surface->width();
                         const std::uint32_t sh = layer_surface->height();
@@ -721,6 +721,11 @@ RasterizedFrame2D render_evaluated_composition_2d(
                         const float offset_x = tile_rect ? static_cast<float>(tile_rect->x) : 0.0f;
                         const float offset_y = tile_rect ? static_cast<float>(tile_rect->y) : 0.0f;
 
+                        int thread_count = 1;
+#ifdef _OPENMP
+                        thread_count = omp_get_max_threads();
+#endif
+
                         // Try fast-path first if no offset/scaling is applied
                         bool fast_path_applied = false;
                         if (offset_x == 0.0f && offset_y == 0.0f && 
@@ -728,10 +733,6 @@ RasterizedFrame2D render_evaluated_composition_2d(
                             static_cast<std::uint32_t>(layer_h) == sh && 
                             resolution.descriptor) {
                             
-                            int thread_count = 1;
-#ifdef _OPENMP
-                            thread_count = omp_get_max_threads();
-#endif
                             if (core::transition::TransitionFastPathRegistry::apply(
                                 resolution.descriptor->id, 
                                 *transition_result, 
@@ -741,6 +742,11 @@ RasterizedFrame2D render_evaluated_composition_2d(
                                 thread_count)) {
                                 fast_path_applied = true;
                             }
+                        }
+                        
+                        if (!fast_path_applied && resolution.direct_cpu_function) {
+                            resolution.direct_cpu_function(*transition_result, *from_ptr, to_ptr, static_cast<float>(transition_t), thread_count);
+                            fast_path_applied = true;
                         }
 
                         if (!fast_path_applied) {

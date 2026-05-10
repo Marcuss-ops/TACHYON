@@ -189,6 +189,8 @@ struct CompiledLayer {
 
 struct CompiledComposition {
     CompiledNode node;
+    std::string composition_id;
+    std::string name;
     std::uint32_t width{0};
     std::uint32_t height{0};
     std::uint32_t fps{60};

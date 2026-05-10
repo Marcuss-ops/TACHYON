@@ -40,6 +40,8 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
     for (const auto& composition : scene.compositions) {
         CompiledComposition compiled_composition;
         compiled_composition.node = registry.create_node(CompiledNodeType::Composition);
+        compiled_composition.composition_id = composition.id;
+        compiled_composition.name = composition.name;
         compiled.graph.add_node(compiled_composition.node.node_id);
         compiled_composition.width = static_cast<std::uint32_t>(std::max<std::int64_t>(0, composition.width));
         compiled_composition.height = static_cast<std::uint32_t>(std::max<std::int64_t>(0, composition.height));

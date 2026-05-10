@@ -18,6 +18,7 @@ The audit script treats the fields below as the current non-core ownership map. 
 | `alignment` | Text | `TextLayerSpec.layout` |
 | `font_axes` | Text | `TextLayerSpec.font_axes` |
 | `fill_color` | Text | `TextLayerSpec.fill` |
+| `text_box` | Text | `TextLayerSpec.layout` |
 | `stroke_color` | Text | `TextLayerSpec.stroke` |
 | `stroke_width` | Text | `TextLayerSpec.stroke` |
 | `stroke_width_property` | Text | `TextLayerSpec.stroke` |
@@ -142,6 +143,7 @@ The audit script treats the fields below as the current non-core ownership map. 
 | --- | --- | --- |
 | `procedural` | Procedural | `ProceduralLayerSpec` |
 | `particle_spec` | Procedural | `ProceduralLayerSpec` |
+| `mesh_deform_id` | Deform/Mesh | `MeshDeformBinding` |
 | `extrude` | 3D text | `MeshLayerSpec.geometry` |
 | `bevel` | 3D text | `MeshLayerSpec.geometry` |
 | `extrusion_depth` | 3D text | `MeshLayerSpec.geometry` |

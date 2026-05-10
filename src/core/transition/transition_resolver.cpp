@@ -33,6 +33,7 @@ ResolvedTransition resolve_transition_spec(const LayerTransitionSpec& spec, cons
     // Set appropriate function based on backend capabilities
     if (desc->runtime_kind == TransitionRuntimeKind::CpuPixel && desc->capabilities.supports_cpu) {
         result.cpu_function = desc->cpu_fn;
+        result.direct_cpu_function = desc->direct_cpu_fn;
     } else if (desc->runtime_kind == TransitionRuntimeKind::Glsl && desc->capabilities.supports_gpu) {
         result.glsl_function = desc->glsl_fn;
     }

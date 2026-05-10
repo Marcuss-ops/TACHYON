@@ -60,6 +60,11 @@ set(TachyonSceneSources
     ${TachyonSceneShapeSources}
 )
 
+set(TachyonSceneAllSources
+    ${TachyonSceneSources}
+    ${TachyonSceneEvalSources}
+)
+
 # --- Targets ---
 
 add_library(TachyonSceneEval STATIC ${TachyonSceneEvalSources})

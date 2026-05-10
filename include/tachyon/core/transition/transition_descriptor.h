@@ -38,6 +38,15 @@ using CpuTransitionFn = renderer2d::Color(*)(float u, float v, float t,
                                               const renderer2d::SurfaceRGBA* to_surface);
 
 /**
+ * @brief Whole-surface CPU transition function signature (for fused/SIMD optimizations).
+ */
+using DirectCpuTransitionFn = void(*)(renderer2d::SurfaceRGBA& output,
+                                      const renderer2d::SurfaceRGBA& from,
+                                      const renderer2d::SurfaceRGBA* to,
+                                      float progress,
+                                      int thread_count);
+
+/**
  * @brief GLSL transition function, returns shader source string
  */
 using GlslTransitionFn = std::string(*)(const std::unordered_map<std::string, registry::ParameterValue>& params);
@@ -67,6 +76,7 @@ struct TransitionResolutionResult {
     
     // Resolved implementation
     CpuTransitionFn cpu_function{nullptr};   ///< For CPU transitions
+    DirectCpuTransitionFn direct_cpu_function{nullptr}; ///< For fused CPU transitions
     GlslTransitionFn glsl_function{nullptr}; ///< For GLSL transitions
     TransitionRuntimeKind backend{TransitionRuntimeKind::StateOnly};
 };
@@ -85,6 +95,7 @@ struct TransitionDescriptor {
     TransitionCapabilities capabilities; ///< Supported backends
 
     CpuTransitionFn cpu_fn{nullptr};   ///< CPU implementation function
+    DirectCpuTransitionFn direct_cpu_fn{nullptr}; ///< Direct CPU implementation function (fused)
     GlslTransitionFn glsl_fn{nullptr}; ///< GLSL shader function
 
     std::string display_name;          ///< UI display name

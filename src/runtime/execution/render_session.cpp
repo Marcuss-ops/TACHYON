@@ -16,6 +16,9 @@
 #include "tachyon/runtime/execution/session/render_internal.h"
 #include "tachyon/runtime/profiling/render_profiler.h"
 #include "tachyon/media/management/asset_resolver.h"
+#include "tachyon/renderer2d/effects/core/transitions/basic_transitions.h"
+#include "tachyon/renderer2d/effects/core/transitions/artistic_transitions.h"
+#include "tachyon/renderer2d/effects/core/transitions/light_leak_transitions.h"
 #include "tachyon/runtime/telemetry/process_resource_sampler.h"
 #include "tachyon/runtime/policy/worker_policy.h"
 #include "tachyon/runtime/policy/surface_pool_policy.h"
@@ -243,6 +246,13 @@ RenderSession::RenderSession() {
     presets::EffectManifest effect_manifest;
     renderer2d::register_builtin_effects(m_effect_registry, effect_manifest, m_transition_registry);
     register_builtin_transitions(m_transition_registry);
+
+    // Resolve implementation pointers for built-in transitions
+    for (auto* desc : m_transition_registry.list_all()) {
+        renderer2d::resolve_basic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
+        renderer2d::resolve_artistic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
+        renderer2d::resolve_light_leak_implementations(const_cast<TransitionDescriptor&>(*desc));
+    }
 }
 
 RenderSessionResult RenderSession::render(

@@ -237,6 +237,7 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
     load_opts.preset_id = options.preset_id;
 
     auto loaded = load_scene_for_cli(load_opts, SceneLoadMode::Render, out, err);
+    out << "Scene loaded. Success: " << (loaded.success ? "YES" : "NO") << "\n";
     if (!loaded.success) {
         print_diagnostics(loaded.diagnostics, err);
         return false;
