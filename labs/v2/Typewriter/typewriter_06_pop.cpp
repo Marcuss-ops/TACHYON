@@ -1,28 +1,38 @@
-﻿#include "tachyon/scene/builder.h"
+#include "tachyon/scene/builder.h"
 #include "tachyon/presets/text/fluent.h"
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
+
 using namespace tachyon;
 using namespace tachyon::scene;
+
 extern "C" tachyon::SceneSpec build_scene() {
     presets::EffectPresetRegistry effects;
+
     auto main_comp = Composition("main", effects).size(1920, 1080).duration(5.0).fps(30)
-        .layer("bg", [](LayerBuilder& l) { l.solid("black").color({0,0,0,255}).in(0).out(5.0); })
+        .layer("bg", [](LayerBuilder& l) { l.solid("black").color({0, 0, 0, 255}).in(0).out(5.0); })
         .layer("text_layer", [](LayerBuilder& l) {
-            TextAnimatorSpec v2_anim;
-            v2_anim.name = "v2_pop";
-            v2_anim.selector.based_on = "characters";
-            v2_anim.selector.stagger_delay = 0.08;
-            v2_anim.selector.shape = "ramp_up";
-            v2_anim.selector.offset = 1.0; 
-            v2_anim.properties.opacity_value = 0.0;
-            v2_anim.properties.scale_value = 0.0;
-            l.text().content("TYPEWRITER POP SCALE").font("SFPro").font_size(120)
+            TextAnimatorSpec anim;
+            anim.name = "pop_in";
+            anim.selector.type = "all";
+            anim.selector.based_on = "characters";
+            anim.selector.stagger_delay = 0.06;
+            
+            anim.properties.opacity_keyframes.push_back({0.0, 0.0});
+            anim.properties.opacity_keyframes.push_back({0.3, 1.0});
+            
+            anim.properties.scale_keyframes.push_back({0.0, 0.8});
+            anim.properties.scale_keyframes.push_back({0.3, 1.1});
+            anim.properties.scale_keyframes.push_back({0.5, 1.0});
+
+            l.text().content("ELEGANT POP IN").font("SFPro").font_size(110)
              .box(1920, 1080, TextBoxMode::Fixed)
              .align(HorizontalAlign::Center)
              .valign(VerticalAlign::Middle)
-             .animator(v2_anim).done()
+             .tracking(-3.5f)
+             .animator(anim).done()
              .color({255, 255, 255, 255}).position(960, 540).in(0).out(5.0);
         }).build();
+
     tachyon::SceneSpec scene;
     scene.compositions.push_back(std::move(main_comp));
     return scene;

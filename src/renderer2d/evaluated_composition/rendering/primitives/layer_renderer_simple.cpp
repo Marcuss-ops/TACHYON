@@ -61,18 +61,30 @@ std::shared_ptr<SurfaceRGBA> make_canvas(
     return surface;
 }
 
-void fill_rect(::tachyon::text::TextRasterSurface& surface, int x, int y, int w, int h, renderer2d::Color color) {
-    if (w <= 0 || h <= 0) {
-        return;
-    }
-    for (int py = 0; py < h; ++py) {
-        for (int px = 0; px < w; ++px) {
-            const int sx = x + px;
-            const int sy = y + py;
-            if (sx < 0 || sy < 0) {
-                continue;
-            }
-            surface.blend_pixel(static_cast<std::uint32_t>(sx), static_cast<std::uint32_t>(sy), color, 255);
+void fill_rect_direct(SurfaceRGBA& surface, int x, int y, int w, int h, renderer2d::Color color) {
+    if (w <= 0 || h <= 0) return;
+    surface.fill_rect(RectI{x, y, w, h}, color, true);
+}
+
+void render_glyph_direct(
+    SurfaceRGBA& surface,
+    const ::tachyon::text::GlyphBitmap& bitmap,
+    int dx, int dy, int dw, int dh,
+    renderer2d::Color color) {
+    
+    const std::uint32_t sw = bitmap.width;
+    const std::uint32_t sh = bitmap.height;
+    if (sw == 0 || sh == 0) return;
+
+    for (int y = 0; y < dh; ++y) {
+        const int sy = (y * sh) / dh;
+        const std::uint8_t* src_row = &bitmap.pixels[sy * sw];
+        for (int x = 0; x < dw; ++x) {
+            const int sx = (x * sw) / dw;
+            const std::uint8_t alpha = src_row[sx];
+            if (alpha == 0) continue;
+            
+            surface.blend_pixel(static_cast<std::uint32_t>(dx + x), static_cast<std::uint32_t>(dy + y), color, alpha);
         }
     }
 }
@@ -198,57 +210,18 @@ public:
         const bool has_highlights = !layer.text_highlights.empty();
 
         if (!has_animations && !has_highlights) {
-            int min_x = std::numeric_limits<int>::max();
-            int min_y = std::numeric_limits<int>::max();
-            int max_x = std::numeric_limits<int>::min();
-            int max_y = std::numeric_limits<int>::min();
-
-            for (const auto& glyph : layout.glyphs) {
-                if (glyph.resolved_glyph == nullptr) {
-                    continue;
-                }
-                math::Vector2 wp = resolved.apply({glyph.position.x, glyph.position.y});
-                const int dx = static_cast<int>(std::lround(wp.x)) - origin_x;
-                const int dy = static_cast<int>(std::lround(wp.y)) - origin_y;
-                const int dw = std::max(1, static_cast<int>(std::lround(glyph.width * resolved.scale.x)));
-                const int dh = std::max(1, static_cast<int>(std::lround(glyph.height * resolved.scale.y)));
-                min_x = std::min(min_x, dx);
-                min_y = std::min(min_y, dy);
-                max_x = std::max(max_x, dx + dw);
-                max_y = std::max(max_y, dy + dh);
-            }
-
-            if (min_x == std::numeric_limits<int>::max() || min_y == std::numeric_limits<int>::max()) {
-                return true;
-            }
-
-            const int pad = 4;
-            min_x -= pad;
-            min_y -= pad;
-            max_x += pad;
-            max_y += pad;
-
-            const int raster_width = std::max(1, max_x - min_x);
-            const int raster_height = std::max(1, max_y - min_y);
-            ::tachyon::text::TextRasterSurface text_surface(
-                static_cast<std::uint32_t>(raster_width),
-                static_cast<std::uint32_t>(raster_height));
-
             for (const auto& glyph : layout.glyphs) {
                 const auto* bitmap = glyph.resolved_glyph;
-                if (bitmap == nullptr) {
-                    continue;
-                }
+                if (bitmap == nullptr) continue;
 
                 math::Vector2 wp_base = resolved.apply({glyph.position.x, glyph.position.y});
-                const int dx = static_cast<int>(std::lround(wp_base.x)) - origin_x - min_x;
-                const int dy = static_cast<int>(std::lround(wp_base.y)) - origin_y - min_y;
+                const int dx = static_cast<int>(std::lround(wp_base.x)) - origin_x;
+                const int dy = static_cast<int>(std::lround(wp_base.y)) - origin_y;
                 const int dw = std::max(1, static_cast<int>(std::lround(glyph.width * resolved.scale.x)));
                 const int dh = std::max(1, static_cast<int>(std::lround(glyph.height * resolved.scale.y)));
-                text_surface.render_glyph(*bitmap, dx, dy, dw, dh, to_color(layer.fill_color));
+                
+                render_glyph_direct(*surface, *bitmap, dx, dy, dw, dh, to_color(layer.fill_color));
             }
-
-            blit_text_surface(*surface, text_surface, min_x, min_y);
             return true;
         }
 
@@ -259,68 +232,6 @@ public:
             animation.animators = layer.text_animators;
             
             const auto paints = ::tachyon::text::resolve_glyph_paints(*font, layout, animation);
-
-            int min_x = std::numeric_limits<int>::max();
-            int min_y = std::numeric_limits<int>::max();
-            int max_x = std::numeric_limits<int>::min();
-            int max_y = std::numeric_limits<int>::min();
-
-            for (const auto& paint : paints) {
-                if (paint.glyph == nullptr) continue;
-                math::Vector2 wp = resolved.apply({paint.base_x, paint.base_y});
-                const int dx = static_cast<int>(std::lround(wp.x)) - origin_x;
-                const int dy = static_cast<int>(std::lround(wp.y)) - origin_y;
-                const int dw = std::max(1, static_cast<int>(std::lround(paint.target_width * resolved.scale.x)));
-                const int dh = std::max(1, static_cast<int>(std::lround(paint.target_height * resolved.scale.y)));
-                min_x = std::min(min_x, dx);
-                min_y = std::min(min_y, dy);
-                max_x = std::max(max_x, dx + dw);
-                max_y = std::max(max_y, dy + dh);
-            }
-
-            for (const auto& highlight : layer.text_highlights) {
-                if (highlight.end_glyph <= highlight.start_glyph || highlight.start_glyph >= layout.glyphs.size()) continue;
-                const std::size_t end = std::min(highlight.end_glyph, layout.glyphs.size());
-                float local_f_min_x = std::numeric_limits<float>::max();
-                float local_f_min_y = std::numeric_limits<float>::max();
-                float local_f_max_x = std::numeric_limits<float>::lowest();
-                float local_f_max_y = std::numeric_limits<float>::lowest();
-                for (std::size_t i = highlight.start_glyph; i < end; ++i) {
-                    const auto& g = layout.glyphs[i];
-                    local_f_min_x = std::min(local_f_min_x, g.position.x);
-                    local_f_min_y = std::min(local_f_min_y, g.position.y);
-                    local_f_max_x = std::max(local_f_max_x, g.position.x + g.width);
-                    local_f_max_y = std::max(local_f_max_y, g.position.y + g.height);
-                }
-                if (local_f_min_x < local_f_max_x && local_f_min_y < local_f_max_y) {
-                    math::Vector2 wp0 = resolved.apply({local_f_min_x, local_f_min_y});
-                    math::Vector2 wp1 = resolved.apply({local_f_max_x, local_f_max_y});
-                    const int hx0 = static_cast<int>(std::lround(wp0.x)) - origin_x - highlight.padding_x;
-                    const int hy0 = static_cast<int>(std::lround(wp0.y)) - origin_y - highlight.padding_y;
-                    const int hx1 = static_cast<int>(std::lround(wp1.x)) - origin_x + highlight.padding_x;
-                    const int hy1 = static_cast<int>(std::lround(wp1.y)) - origin_y + highlight.padding_y;
-                    min_x = std::min(min_x, hx0);
-                    min_y = std::min(min_y, hy0);
-                    max_x = std::max(max_x, hx1);
-                    max_y = std::max(max_y, hy1);
-                }
-            }
-
-            if (min_x == std::numeric_limits<int>::max() || min_y == std::numeric_limits<int>::max()) {
-                return true;
-            }
-
-            const int pad = 4;
-            min_x -= pad;
-            min_y -= pad;
-            max_x += pad;
-            max_y += pad;
-
-            const int raster_width = std::max(1, max_x - min_x);
-            const int raster_height = std::max(1, max_y - min_y);
-            ::tachyon::text::TextRasterSurface text_surface(
-                static_cast<std::uint32_t>(raster_width),
-                static_cast<std::uint32_t>(raster_height));
 
             for (const auto& highlight : layer.text_highlights) {
                 if (highlight.end_glyph <= highlight.start_glyph || highlight.start_glyph >= layout.glyphs.size()) continue;
@@ -336,9 +247,9 @@ public:
                 if (f_min_x < f_max_x && f_min_y < f_max_y) {
                     math::Vector2 wp0 = resolved.apply({f_min_x, f_min_y});
                     math::Vector2 wp1 = resolved.apply({f_max_x, f_max_y});
-                    fill_rect(text_surface,
-                        static_cast<int>(std::lround(wp0.x)) - origin_x - highlight.padding_x - min_x,
-                        static_cast<int>(std::lround(wp0.y)) - origin_y - highlight.padding_y - min_y,
+                    fill_rect_direct(*surface,
+                        static_cast<int>(std::lround(wp0.x)) - origin_x - highlight.padding_x,
+                        static_cast<int>(std::lround(wp0.y)) - origin_y - highlight.padding_y,
                         static_cast<int>(std::lround(wp1.x - wp0.x)) + highlight.padding_x * 2,
                         static_cast<int>(std::lround(wp1.y - wp0.y)) + highlight.padding_y * 2,
                         to_color(highlight.color));
@@ -346,22 +257,25 @@ public:
             }
 
             for (const auto& paint : paints) {
+                const auto* bitmap = paint.glyph;
+                if (bitmap == nullptr) continue;
+
                 math::Vector2 wp_base = resolved.apply({paint.base_x, paint.base_y});
-                const int dx = static_cast<int>(std::lround(wp_base.x)) - origin_x - min_x;
-                const int dy = static_cast<int>(std::lround(wp_base.y)) - origin_y - min_y;
+                const int dx = static_cast<int>(std::lround(wp_base.x)) - origin_x;
+                const int dy = static_cast<int>(std::lround(wp_base.y)) - origin_y;
                 const int dw = std::max(1, static_cast<int>(std::lround(paint.target_width * resolved.scale.x)));
                 const int dh = std::max(1, static_cast<int>(std::lround(paint.target_height * resolved.scale.y)));
+                
                 renderer2d::Color final_color = to_color(paint.fill_color);
                 final_color.a *= paint.opacity;
+                
                 if (paint.is_cursor) {
-                    fill_rect(text_surface, dx, dy, dw, dh, final_color);
+                    fill_rect_direct(*surface, dx, dy, dw, dh, final_color);
                 } else {
-                    if (paint.glyph == nullptr) continue;
-                    text_surface.render_glyph(*paint.glyph, dx, dy, dw, dh, final_color);
+                    render_glyph_direct(*surface, *bitmap, dx, dy, dw, dh, final_color);
                 }
             }
-
-            blit_text_surface(*surface, text_surface, min_x, min_y);
+            return true;
         }
         return true;
     }
