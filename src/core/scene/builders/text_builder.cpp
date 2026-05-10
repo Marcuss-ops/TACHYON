@@ -27,6 +27,12 @@ TextBuilder& TextBuilder::font(std::string f) {
     return *this;
 }
 
+TextBuilder& TextBuilder::font(std::string f, double sz) {
+    parent_.spec_.font_id = std::move(f);
+    parent_.spec_.font_size = sz;
+    return *this;
+}
+
 TextBuilder& TextBuilder::font_size(double sz) {
     parent_.spec_.font_size = sz;
     return *this;
@@ -59,6 +65,17 @@ TextBuilder& TextBuilder::tracking(float amount) {
     return *this;
 }
 
+TextBuilder& TextBuilder::centerText() {
+    parent_.spec_.text_box.mode = TextBoxMode::Fixed;
+    parent_.spec_.text_box.width = static_cast<float>(parent_.spec_.width);
+    parent_.spec_.text_box.height = static_cast<float>(parent_.spec_.height);
+    parent_.spec_.text_box.horizontal_align = HorizontalAlign::Center;
+    parent_.spec_.text_box.vertical_align = VerticalAlign::Middle;
+    parent_.spec_.transform.position_x = static_cast<double>(parent_.spec_.width) * 0.5;
+    parent_.spec_.transform.position_y = static_cast<double>(parent_.spec_.height) * 0.5;
+    return *this;
+}
+
 TextBuilder& TextBuilder::fixed_pitch(bool enabled) {
     parent_.spec_.text_box.fixed_pitch = enabled;
     return *this;
@@ -66,6 +83,15 @@ TextBuilder& TextBuilder::fixed_pitch(bool enabled) {
 
 TextBuilder& TextBuilder::fill(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
     parent_.spec_.fill_color.value = {r, g, b, a};
+    return *this;
+}
+
+TextBuilder& TextBuilder::color(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+    return fill(r, g, b, a);
+}
+
+TextBuilder& TextBuilder::color(const ColorSpec& c) {
+    parent_.spec_.fill_color.value = c;
     return *this;
 }
 
@@ -92,6 +118,14 @@ TextBuilder& TextBuilder::animators(std::vector<TextAnimatorSpec> anims) {
     }
     parent_.spec_.text_animators.insert(parent_.spec_.text_animators.end(), anims.begin(), anims.end());
     return *this;
+}
+
+TextBuilder& TextBuilder::animate(const TextAnimatorSpec& anim) {
+    return animator(anim);
+}
+
+TextBuilder& TextBuilder::animate(std::vector<TextAnimatorSpec> anims) {
+    return animators(std::move(anims));
 }
 
 TextBuilder& TextBuilder::highlight(const TextHighlightSpec& hl) {

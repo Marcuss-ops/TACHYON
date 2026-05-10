@@ -25,4 +25,5 @@ set(TachyonCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/transition/transition_manifest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/transition/transition_simd_kernels.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/library/background_registry.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/library/backgrounds/background_catalog.cpp
 )
