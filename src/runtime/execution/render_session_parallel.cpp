@@ -161,9 +161,9 @@ void render_frames_parallel_internal(
             FrameExecutor executor(arena, cache, nullptr);
             executor.set_parallel_worker_count(budget.pixel_concurrency);
 
-             // Create a thread-local context
-              ::tachyon::RenderContext local_context(context.renderer2d.precomp_cache);
-              local_context.media = context.media;
+              // Create a thread-local context sharing the media manager
+              ::tachyon::RenderContext local_context(context.renderer2d.precomp_cache, context.media);
+
               local_context.prefetcher = &prefetcher;
               local_context.scheduler = scheduler;
               local_context.ray_tracer = context.ray_tracer;
@@ -172,8 +172,8 @@ void render_frames_parallel_internal(
               local_context.surface_pool = context.surface_pool;
               local_context.renderer2d.font_registry = context.renderer2d.font_registry;
               local_context.renderer2d.transition_registry = context.renderer2d.transition_registry;
-              local_context.renderer2d.media_manager = context.renderer2d.media_manager;
               local_context.renderer2d.cms = context.renderer2d.cms;
+
               local_context.renderer2d.diagnostics = context.renderer2d.diagnostics;
               local_context.renderer2d.effects = context.renderer2d.effects;
               local_context.renderer2d.asset_resolver = context.renderer2d.asset_resolver;

@@ -35,7 +35,10 @@ struct RenderContext {
     profiling::RenderProfiler* profiler{nullptr};
     std::atomic<bool>* cancel_flag{nullptr};
 
-    explicit RenderContext(std::shared_ptr<renderer2d::PrecompCache> precomp_cache = nullptr);
+    explicit RenderContext(
+        std::shared_ptr<renderer2d::PrecompCache> precomp_cache = nullptr,
+        std::shared_ptr<media::MediaManager> media_mgr = nullptr);
+
 };
 
 } // namespace tachyon

@@ -3,8 +3,10 @@
 
 namespace tachyon {
 
-RenderContext::RenderContext(std::shared_ptr<renderer2d::PrecompCache> precomp_cache)
-    : media(std::make_shared<media::MediaManager>()),
+RenderContext::RenderContext(
+    std::shared_ptr<renderer2d::PrecompCache> precomp_cache,
+    std::shared_ptr<media::MediaManager> media_mgr)
+    : media(media_mgr ? std::move(media_mgr) : std::make_shared<media::MediaManager>()),
       renderer2d(std::move(precomp_cache)),
       policy{} {
 
@@ -15,5 +17,6 @@ RenderContext::RenderContext(std::shared_ptr<renderer2d::PrecompCache> precomp_c
     oidn_filter = oidn_device.newFilter("RT");
 #endif
 }
+
 
 } // namespace tachyon

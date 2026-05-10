@@ -189,6 +189,11 @@ EvaluatedLayerState make_layer_state(
         }
     }
 
+    evaluated.transition_in = layer.transition_in;
+    evaluated.transition_out = layer.transition_out;
+    evaluated.in_time = layer.in_point;
+    evaluated.out_time = layer.out_point;
+
     // Camera specific
     if (evaluated.type == LayerType::Camera) {
         evaluated.camera_type = layer.camera_type;

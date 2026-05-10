@@ -164,14 +164,19 @@ void resolve_basic_transition_implementations(tachyon::TransitionDescriptor& d) 
     using namespace tachyon;
 
     if (d.id == ids::transition::crossfade) d.cpu_fn = transition_crossfade;
-    else if (d.id == ids::transition::slide) d.cpu_fn = transition_slide;
     else if (d.id == ids::transition::slide_up) d.cpu_fn = transition_slide_up;
     else if (d.id == ids::transition::swipe_left) d.cpu_fn = transition_swipe_left;
-    else if (d.id == ids::transition::zoom) d.cpu_fn = transition_zoom;
+    else if (d.id == ids::transition::zoom) {
+        d.cpu_fn = transition_zoom;
+        // Zoom doesn't have a fused direct kernel yet, but we can add one or use the generic path
+    }
     else if (d.id == ids::transition::flip) d.cpu_fn = transition_flip;
     else if (d.id == ids::transition::blur) d.cpu_fn = transition_blur;
     else if (d.id == ids::transition::fade_to_black) d.cpu_fn = transition_fade_to_black;
-    else if (d.id == ids::transition::wipe_linear) d.cpu_fn = transition_wipe_linear;
+    else if (d.id == ids::transition::wipe_linear) {
+        d.cpu_fn = transition_wipe_linear;
+        d.direct_cpu_fn = apply_wipe_linear_fused_direct;
+    }
     else if (d.id == ids::transition::wipe_angular) d.cpu_fn = transition_wipe_angular;
     else if (d.id == ids::transition::push_left) d.cpu_fn = transition_push_left;
     else if (d.id == ids::transition::slide_easing) d.cpu_fn = transition_slide_easing;
@@ -187,7 +192,14 @@ void resolve_basic_transition_implementations(tachyon::TransitionDescriptor& d) 
         d.cpu_fn = transition_zoom_blur;
         d.direct_cpu_fn = apply_soft_zoom_blur_fused_direct;
     }
-    else if (d.id == ids::transition::smooth_wipe) d.cpu_fn = transition_smooth_wipe;
+    else if (d.id == ids::transition::smooth_wipe) {
+        d.cpu_fn = transition_smooth_wipe;
+        d.direct_cpu_fn = apply_smooth_wipe_fused_direct;
+    }
+    else if (d.id == ids::transition::slide) {
+        d.cpu_fn = transition_slide;
+        d.direct_cpu_fn = apply_slide_fused_direct;
+    }
 }
 
 } // namespace tachyon::renderer2d
