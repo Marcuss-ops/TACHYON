@@ -35,7 +35,8 @@ struct LightLeakStyle {
         HorizontalBand,
         WindowBands,
         DualBeam,
-        Prism
+        Prism,
+        Blobs
     } shape;
 };
 
@@ -115,6 +116,27 @@ float prism_mask(float u, float v, float t, const LightLeakStyle& s) {
     return std::clamp(m1 + m2 + m3, 0.0f, 1.0f);
 }
 
+float blobs_mask(float u, float v, float t, const LightLeakStyle& s) {
+    auto field = [&](float cx, float cy, float w) {
+        float dx = u - cx;
+        float dy = v - cy;
+        float d2 = dx * dx + dy * dy;
+        return w * std::exp(-d2 * 3.0f); // Replaced 12.0f with 3.0f for massive wide blobs
+    };
+    
+    const float phase = t * 2.8f * s.speed; 
+    float m = 0.0f;
+    m += field(0.5f + 0.40f * std::cos(phase + 0.3f), 0.5f + 0.30f * std::sin(phase * 0.9f), 2.2f);
+    m += field(0.3f + 0.35f * std::sin(phase * 1.3f), 0.3f + 0.35f * std::cos(phase * 0.8f + 0.4f), 1.8f);
+    m += field(0.7f + 0.25f * std::cos(phase * 1.1f), 0.6f + 0.35f * std::sin(phase * 1.2f), 2.0f);
+    m += field(0.5f + 0.45f * std::sin(phase * 0.7f), 0.8f + 0.25f * std::cos(phase * 1.4f), 1.6f);
+
+    const float dist_mid = t - 0.5f;
+    const float boost = 1.0f + 4.0f * std::exp(-(dist_mid * dist_mid) / 0.06f); 
+    
+    return std::pow(std::clamp(m * boost * 0.3f, 0.0f, 1.0f), s.softness);
+}
+
 float evaluate_light_leak_mask(float u, float v, float t, const LightLeakStyle& style) {
     switch (style.shape) {
         case LightLeakStyle::Shape::Edge:           return edge_mask(u, v, t, style);
@@ -124,6 +146,7 @@ float evaluate_light_leak_mask(float u, float v, float t, const LightLeakStyle& 
         case LightLeakStyle::Shape::WindowBands:    return window_bands_mask(u, v, t, style);
         case LightLeakStyle::Shape::DualBeam:       return dual_beam_mask(u, v, t, style);
         case LightLeakStyle::Shape::Prism:          return prism_mask(u, v, t, style);
+        case LightLeakStyle::Shape::Blobs:          return blobs_mask(u, v, t, style);
         default: return 0.0f;
     }
 }
@@ -141,10 +164,9 @@ Color apply_light_leak_style(
     float mask = 0.0f;
     const bool overlay_mode = (to_surface == nullptr);
     Color base;
-    // --- CINEMATIC CUT STRATEGY ---
-    // Instead of a soft cross-fade that creates "pastels", we do a sharp cut
-    // at the peak of the light leak to preserve color saturation.
-    const float color_t = (t > 0.5f) ? 1.0f : 0.0f;
+    // --- CINEMATIC TRANSITION LOGIC ---
+    // Fast but smooth transition to avoid "dirty" color mixing while preventing pops
+    const float color_t = smoothstep01(std::clamp((t - 0.2f) / 0.6f, 0.0f, 1.0f));
 
     if (overlay_mode) {
         base = sample_uv(input, u, v);
@@ -162,12 +184,14 @@ Color apply_light_leak_style(
     static thread_local float cached_cos_a, cached_sin_a, cached_center, cached_flicker;
 
     if (t != last_t || style.id != last_style_id) {
+        std::cout << "[KERNEL DEBUG] apply_light_leak_style fired for " << style.id << " at t=" << t << std::endl;
         const float angle_rad = radians(style.angle_degrees);
         cached_cos_a = std::cos(angle_rad);
         cached_sin_a = std::sin(angle_rad);
         cached_center = -style.offset + t * style.speed;
-        // Temporal flicker calculated once per frame
-        cached_flicker = 1.0f + style.flicker_amount * (cheap_noise(0.5f, 0.5f, t * 10.0f) - 0.5f);
+        // Smooth temporal flicker instead of frame-by-frame random jumps to maintain continuity
+        const float continuous_flicker = 0.5f + 0.35f * std::sin(t * 41.0f) + 0.15f * std::sin(t * 97.0f);
+        cached_flicker = 1.0f + style.flicker_amount * (continuous_flicker - 0.5f);
         last_t = t;
         last_style_id = style.id;
     }
@@ -180,9 +204,9 @@ Color apply_light_leak_style(
         mask = evaluate_light_leak_mask(u, v, t, style);
     }
     
-    // Use a more aggressive mask for "meatier" color presence
-    float meat_mask = std::pow(mask, 0.4f); // Ultra fat/strong
-    float intensity = style.intensity * 10.0f * meat_mask * cached_flicker; // Max power
+    // Trust style softness: enforce linear mask falloff to isolate the sweep
+    // and prevent background pollution across the entire frame.
+    float intensity = style.intensity * mask * cached_flicker * 5.0f;
 
     // Pulse effect
     if (style.pulse_amount > 0.0f) {
@@ -190,29 +214,30 @@ Color apply_light_leak_style(
     }
 
     Color leak = Color::lerp(style.color_a, style.color_b, mask);
-    // Force saturation by ensuring green/blue are low relative to red
-    leak.g = std::min(leak.g, 0.4f);
-    leak.b = 0.0f;
     
     // Sharper highlight
     leak = Color::lerp(leak, style.highlight, mask * mask * mask);
 
-    // --- SATURATION TRICK: Background Suppression ---
-    // If the leak is active (mask > 0.05), we suppress the background to prevent "pink" ghosting
-    float kill_factor = smoothstep01(std::clamp((mask - 0.05f) / 0.2f, 0.0f, 1.0f));
-    base.r *= (1.0f - kill_factor);
-    base.g *= (1.0f - kill_factor);
-    base.b *= (1.0f - kill_factor);
+    // --- ABSOLUTE SATURATION ENGINE ---
+    // Replicates the high-contrast 'Black Render' environment on ANY background.
+    // Dims the background beneath the leak mask, allowing pure additive saturation
+    // to define the visual output, preventing washout on white/light scenes.
+    float hole_factor = smoothstep01(std::clamp(mask / 0.4f, 0.0f, 1.0f));
+    base.r *= (1.0f - hole_factor);
+    base.g *= (1.0f - hole_factor);
+    base.b *= (1.0f - hole_factor);
 
-    // Cinematic intensity boost for vibrancy
-    float final_intensity = intensity * 1.8f; 
+    // Clean raw intensity now that blending is corrected
+    float final_intensity = intensity; 
 
-    // Custom additive blend to preserve Amber ratio (R > G >> B)
+    // Custom additive blend: respect style structs
     Color result;
-    result.r = std::min(leak.r * final_intensity, 1.0f);
-    result.g = std::min(leak.g * final_intensity * 0.40f, 0.75f); // Warm amber balance
-    result.b = 0.0f; // Pure amber dominance
-    result.a = 1.0f; // Force opaque for professional look
+    result.r = std::min(base.r + leak.r * final_intensity, 1.0f);
+    result.g = std::min(base.g + leak.g * final_intensity, 1.0f);
+    result.b = std::min(base.b + leak.b * final_intensity, 1.0f);
+    
+    // Maintain background alpha
+    result.a = base.a;
 
     return result;
 }
@@ -325,6 +350,13 @@ static constexpr LightLeakStyle kVintageSepia{
     -10.0f, 0.80f, 3.5f, 1.2f, 1.0f, 0.2f, -1.0f, 0.15f, 0.0f, LightLeakStyle::Shape::Edge
 };
 
+// 16. Organic Blobs
+static constexpr LightLeakStyle kOrganicBlobs{
+    "tachyon.transition.lightleak.organic_blobs", "Organic Blobs", "Fluid Gaussian light blobs",
+    {1.0f, 0.3f, 0.6f, 1.0f}, {1.0f, 0.6f, 0.1f, 1.0f}, {1.0f, 1.0f, 0.8f, 1.0f},
+    0.0f, 1.0f, 1.0f, 4.5f, 1.3f, 0.0f, 1.0f, 0.05f, 0.1f, LightLeakStyle::Shape::Blobs
+};
+
 // --- Wrapper functions ---
 
 #define DEFINE_LEAK_WRAPPER(name, style) \
@@ -348,6 +380,7 @@ DEFINE_LEAK_WRAPPER(lightleak_amber_sweep, kAmberSweep)
 DEFINE_LEAK_WRAPPER(lightleak_neon_pulse, kNeonPulse)
 DEFINE_LEAK_WRAPPER(lightleak_prism_shatter, kPrismShatter)
 DEFINE_LEAK_WRAPPER(lightleak_vintage_sepia, kVintageSepia)
+DEFINE_LEAK_WRAPPER(lightleak_organic_blobs, kOrganicBlobs)
 
 void resolve_light_leak_implementations(tachyon::TransitionDescriptor& d) {
     using namespace tachyon;
@@ -356,7 +389,7 @@ void resolve_light_leak_implementations(tachyon::TransitionDescriptor& d) {
     else if (d.id == ids::transition::light_leak_solar) d.cpu_fn = transition_light_leak_solar;
     else if (d.id == ids::transition::light_leak_nebula) d.cpu_fn = transition_light_leak_nebula;
     else if (d.id == ids::transition::light_leak_sunset) d.cpu_fn = transition_light_leak_sunset;
-    else if (d.id == ids::transition::light_leak_ghost) d.cpu_fn = transition_light_leak_ghost;
+    else if (d.id == ids::transition::light_leak_ghost) d.cpu_fn = transition_lightleak_organic_blobs;
     else if (d.id == ids::transition::film_burn) d.cpu_fn = transition_film_burn;
     else if (d.id == ids::transition::lightleak_soft_warm_edge) d.cpu_fn = transition_lightleak_soft_warm_edge;
     else if (d.id == ids::transition::lightleak_golden_sweep) d.cpu_fn = transition_lightleak_golden_sweep;
@@ -367,6 +400,7 @@ void resolve_light_leak_implementations(tachyon::TransitionDescriptor& d) {
     else if (d.id == ids::transition::lightleak_neon_pulse) d.cpu_fn = transition_lightleak_neon_pulse;
     else if (d.id == ids::transition::lightleak_prism_shatter) d.cpu_fn = transition_lightleak_prism_shatter;
     else if (d.id == ids::transition::lightleak_vintage_sepia) d.cpu_fn = transition_lightleak_vintage_sepia;
+    else if (d.id == ids::transition::lightleak_organic_blobs) d.cpu_fn = transition_lightleak_organic_blobs;
 }
 
 } // namespace tachyon::renderer2d

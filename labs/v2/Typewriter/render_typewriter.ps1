@@ -10,7 +10,8 @@ $demos = @(
     "typewriter_07_overlap",
     "typewriter_08_stagger_blur",
     "typewriter_09_scale",
-    "typewriter_10_glow"
+    "typewriter_10_glow",
+    "typewriter_11_tilt"
 )
 
 $tachyon = ".\build\src\RelWithDebInfo\tachyon.exe"

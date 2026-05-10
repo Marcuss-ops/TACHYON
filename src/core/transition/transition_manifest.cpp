@@ -77,6 +77,7 @@ const std::vector<TransitionDescriptor>& get_transition_manifest() {
         make_desc(std::string(ids::transition::lightleak_neon_pulse), "Neon Pulse", "Futuristic neon pink leak", TransitionKind::Fade, TransitionRuntimeKind::CpuPixel, true, false),
         make_desc(std::string(ids::transition::lightleak_prism_shatter), "Prism Shatter", "Rainbow refractive prism", TransitionKind::Fade, TransitionRuntimeKind::CpuPixel, true, false),
         make_desc(std::string(ids::transition::lightleak_vintage_sepia), "Vintage Sepia", "Warm sepia memory leak", TransitionKind::Fade, TransitionRuntimeKind::CpuPixel, true, false),
+        make_desc(std::string(ids::transition::lightleak_organic_blobs), "Organic Blobs", "Fluid Gaussian light blobs", TransitionKind::Fade, TransitionRuntimeKind::CpuPixel, true, false),
         
         // --- Modern Transitions (V2) ---
         make_desc(std::string(ids::transition::smooth_wipe), "Smooth Wipe", "Soft feathered wipe transition", TransitionKind::Wipe, TransitionRuntimeKind::CpuPixel, true, false),

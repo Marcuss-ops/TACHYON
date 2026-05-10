@@ -74,6 +74,38 @@ tachyon::SceneSpec make_procedural_scene() {
     return scene;
 }
 
+tachyon::SceneSpec make_3d_scene() {
+    tachyon::LayerSpec layer;
+    layer.id = "text_3d";
+    layer.type = tachyon::LayerType::Text;
+    layer.name = "3D Text";
+    layer.start_time = 0.0;
+    layer.in_point = 0.0;
+    layer.out_point = 2.0;
+    layer.opacity = 1.0;
+    layer.is_3d = true;
+    layer.text_content = "TILT";
+    layer.font_size.value = 128.0;
+    layer.three_d.emplace();
+    layer.three_d->extrusion_depth = 24.0;
+    layer.three_d->bevel_size = 2.0;
+
+    tachyon::CompositionSpec comp;
+    comp.id = "main";
+    comp.name = "Main";
+    comp.width = 160;
+    comp.height = 90;
+    comp.duration = 2.0;
+    comp.frame_rate = {30, 1};
+    comp.layers.push_back(layer);
+
+    tachyon::SceneSpec scene;
+    scene.project.id = "proj";
+    scene.project.name = "Runtime";
+    scene.compositions.push_back(comp);
+    return scene;
+}
+
 tachyon::RenderPlan make_plan() {
     tachyon::RenderPlan plan;
     plan.job_id = "job_1";
@@ -139,6 +171,15 @@ bool run_frame_executor_tests() {
                "Procedural layers compile to type_id 6");
     check_true(compiled_procedural.value->compositions[0].layers[0].procedural.has_value(),
                "Procedural layers preserve procedural payload");
+
+    const auto scene_3d = make_3d_scene();
+    const auto compiled_3d = compiler.compile(scene_3d);
+    if (!compiled_3d.ok()) {
+        std::cerr << "FAIL: 3D scene compilation failed\n";
+        return false;
+    }
+    check_true((compiled_3d.value->compositions[0].layers[0].flags & 0x04U) != 0U,
+               "3D layers preserve the 3D runtime flag");
 
     const ExecutedFrame first = execute_frame_task(scene, *compiled_result.value, plan, make_task(0), cache, render_context);
     const ExecutedFrame second = execute_frame_task(scene, *compiled_result.value, plan, make_task(0), cache, render_context);

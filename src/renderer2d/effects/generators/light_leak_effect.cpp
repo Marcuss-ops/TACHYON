@@ -141,11 +141,14 @@ SurfaceRGBA LightLeakEffect::apply(const SurfaceRGBA& input, const EffectParams&
             const Color base = input.get_pixel(x, y);
             const Color add = blurredLeak.get_pixel(x, y);
             
+            // Screen blend with alpha accumulation (prevents black frames on transparent backgrounds)
+            const float leakAlpha = std::clamp(add.r + add.g + add.b, 0.0f, 1.0f); // Estimate leak intensity for alpha
+            
             Color res;
             res.r = 1.0f - (1.0f - base.r) * (1.0f - add.r);
             res.g = 1.0f - (1.0f - base.g) * (1.0f - add.g);
             res.b = 1.0f - (1.0f - base.b) * (1.0f - add.b);
-            res.a = 1.0f;
+            res.a = std::clamp(base.a + leakAlpha, 0.0f, 1.0f);
             
             out.set_pixel(x, y, res);
         }

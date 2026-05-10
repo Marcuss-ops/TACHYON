@@ -44,6 +44,8 @@
 #include <filesystem>
 #include <cstdlib>
 #include <unordered_map>
+#include <atomic>
+#include <mutex>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -81,6 +83,11 @@ std::optional<double> compute_transition_progress(double elapsed_seconds, double
         return std::nullopt;
     }
     return std::clamp(elapsed_seconds / duration_seconds, 0.0, 1.0);
+}
+
+std::mutex& scene3d_mutex() {
+    static std::mutex mutex;
+    return mutex;
 }
 
 } // namespace
@@ -330,6 +337,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
             if (layer.is_3d && layer.visible) {
 #ifdef TACHYON_ENABLE_3D
+                const std::lock_guard<std::mutex> lock(scene3d_mutex());
                 render_trace(
                     "frame " + std::to_string(task.frame_number) +
                     " 3d-block enter layer=" + layer.id);
@@ -365,7 +373,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 world_3d->clear(renderer2d::Color::transparent());
                 world_3d->clear_depth(0.0f);
 
-                bool world_has_visible_pixels = false;
+                std::atomic_bool world_has_visible_pixels{false};
 
                 // Convergence: Prefer high-quality ray tracing if IRayTracer is provided.
                 if (bridge_output.has_instances && render_context.ray_tracer) {
@@ -374,27 +382,30 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     AOVBuffer aovs;
                     aovs.resize(w, h);
                     
+                    render_trace("3d bridge build_scene begin");
                     render_context.ray_tracer->build_scene(bridge_output.scene3d);
+                    render_trace("3d bridge build_scene end");
                     
                     double dt = 1.0 / 60.0;
                     if (plan.quality_policy.motion_blur_samples > 0) {
                         // FPS is used for temporal sample spacing
                     }
 
+                    render_trace("3d bridge render begin");
                     render_context.ray_tracer->render(bridge_output.scene3d, aovs, task.time_seconds, dt);
+                    render_trace("3d bridge render end");
                     
-                    // Transfer AOVs to SurfaceRGBA
-                    #pragma omp parallel for schedule(static)
-                    for (int y = 0; y < static_cast<int>(h); ++y) {
+                    // Transfer AOVs to SurfaceRGBA sequentially.
+                    for (std::uint32_t y = 0; y < h; ++y) {
                         for (std::uint32_t x = 0; x < w; ++x) {
                             const std::size_t idx = (static_cast<std::size_t>(y) * w + x) * 4;
                             const std::size_t z_idx = static_cast<std::size_t>(y) * w + x;
-                            
+
                             Color c;
                             c.r = aovs.beauty_rgba[idx];
-                            c.g = aovs.beauty_rgba[idx+1];
-                            c.b = aovs.beauty_rgba[idx+2];
-                            c.a = aovs.beauty_rgba[idx+3];
+                            c.g = aovs.beauty_rgba[idx + 1];
+                            c.b = aovs.beauty_rgba[idx + 2];
+                            c.a = aovs.beauty_rgba[idx + 3];
 
                             const bool has_hit = (aovs.depth_z[z_idx] > 0.0f) ||
                                                  (c.r > 0.0f || c.g > 0.0f || c.b > 0.0f) ||
@@ -403,18 +414,18 @@ RasterizedFrame2D render_evaluated_composition_2d(
                                 if (c.a == 0.0f) {
                                     c.a = 255;
                                 }
-                                world_3d->set_pixel(x, static_cast<std::uint32_t>(y), c);
+                                world_3d->set_pixel(x, y, c);
                                 if (aovs.depth_z[z_idx] > 0.0f) {
-                                    world_3d->test_and_write_depth(x, static_cast<std::uint32_t>(y), 1.0f / aovs.depth_z[z_idx]);
+                                    world_3d->test_and_write_depth(x, y, 1.0f / aovs.depth_z[z_idx]);
                                 }
-                                world_has_visible_pixels = true;
+                                world_has_visible_pixels.store(true, std::memory_order_relaxed);
                             }
                         }
                     }
                     record_timing(diagnostics, "ray_tracing_block", std::to_string(i), ray_start);
                 }
 
-                if (!world_has_visible_pixels) {
+                if (!world_has_visible_pixels.load(std::memory_order_relaxed)) {
                     const auto view_matrix = state.camera.camera.get_view_matrix();
                 for (std::size_t block_idx : block_indices) {
                     if (block_idx >= state.layers.size()) {
