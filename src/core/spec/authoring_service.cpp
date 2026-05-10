@@ -153,23 +153,12 @@ bool AuthoringService::is_compiler_available() {
 }
 
 std::vector<std::string> AuthoringService::get_link_libs() {
-    std::vector<std::string> libs = {
-        "TachyonCore",
-        "TachyonScene",
-        "TachyonRenderer2D",
-#ifdef TACHYON_ENABLE_3D
-        "TachyonRenderer3D",
-#endif
-        "TachyonColor",
-        "TachyonPlatform",
-        "TachyonAudio",
-        "TachyonMedia",
-        "TachyonOutput",
-        "TachyonText",
-        "TachyonPresets",
-        "TachyonLibrary"
+    // The JIT authoring path should stay as close as possible to a single
+    // scene-authoring surface. Do not pull renderer/runtime/media/output
+    // modules into the plugin boundary.
+    return {
+        "TachyonScene"
     };
-    return libs;
 }
 
 std::string AuthoringService::get_compiler_command(
@@ -182,7 +171,7 @@ std::string AuthoringService::get_compiler_command(
         ss << "call \"" << vcvars->string() << "\" >nul && ";
     }
     // MSVC cl.exe command
-    ss << "cl.exe /nologo /O2 /MD /EHsc /LD /std:c++20 /openmp /DNDEBUG /DTACHYON_USE_DLL ";
+    ss << "cl.exe /nologo /O2 /MD /EHsc /LD /std:c++20 /openmp /DNDEBUG /DTACHYON_USE_DLL /DTACHYON_SHARED ";
     ss << "/I\"" << TACHYON_INCLUDE_DIR << "\" ";
     ss << "\"" << cpp_path.string() << "\" ";
     ss << "/Fe:\"" << dll_path.string() << "\" ";
@@ -199,7 +188,7 @@ std::string AuthoringService::get_compiler_command(
         }
     }
 
-    ss << "/link /EXPORT:build_scene ";
+    ss << "/link /EXPORT:build_scene /EXPORT:tachyon_jit_build_scene /EXPORT:tachyon_jit_get_manifest ";
     const auto libs = get_link_libs();
     for (std::size_t i = 0; i < libs.size(); ++i) {
         if (i != 0) ss << ' ';

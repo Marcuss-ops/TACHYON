@@ -28,18 +28,24 @@ public:
 
     TextBuilder& content(std::string t);
     TextBuilder& font(std::string f);
+    TextBuilder& font(std::string f, double sz);
     TextBuilder& font_size(double sz);
     TextBuilder& box(float w, float h, TextBoxMode mode = TextBoxMode::Fixed);
     TextBuilder& align(HorizontalAlign h);
     TextBuilder& valign(VerticalAlign v);
     TextBuilder& line_height(float factor);
     TextBuilder& tracking(float amount);
+    TextBuilder& centerText();
     TextBuilder& fixed_pitch(bool enabled = true);
     TextBuilder& fill(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255);
+    TextBuilder& color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255);
+    TextBuilder& color(const ColorSpec& c);
     TextBuilder& stroke(uint8_t r, uint8_t g, uint8_t b, uint8_t a, float width);
     TextBuilder& subtitle_path(std::string path);
     TextBuilder& animator(const TextAnimatorSpec& anim);
     TextBuilder& animators(std::vector<TextAnimatorSpec> anims);
+    TextBuilder& animate(const TextAnimatorSpec& anim);
+    TextBuilder& animate(std::vector<TextAnimatorSpec> anims);
     TextBuilder& highlight(const TextHighlightSpec& hl);
     TextBuilder& highlights(std::vector<TextHighlightSpec> hls);
     TextBuilder& animation_preset(const std::string& id, const presets::TextRegistry* registry = nullptr);

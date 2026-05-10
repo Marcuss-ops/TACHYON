@@ -42,6 +42,15 @@ LayerBuilder& LayerBuilder::preset(std::string name) {
     return *this;
 }
 
+LayerBuilder& LayerBuilder::background(const LayerSpec& spec) {
+    spec_ = spec;
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::custom_layer(const LayerSpec& spec) {
+    return background(spec);
+}
+
 LayerBuilder& LayerBuilder::asset_id(std::string id) {
     spec_.asset_id = std::move(id);
     return *this;
@@ -178,6 +187,12 @@ LightBuilder LayerBuilder::light() {
 TextBuilder LayerBuilder::text() {
     spec_.type = LayerType::Text;
     return TextBuilder(*this);
+}
+
+TextBuilder LayerBuilder::text(std::string content) {
+    TextBuilder builder(*this);
+    builder.content(std::move(content));
+    return builder;
 }
 
 EffectBuilder LayerBuilder::effects() {

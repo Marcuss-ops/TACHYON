@@ -148,6 +148,8 @@ public:
     LayerBuilder& image(std::string path);
     LayerBuilder& mesh(std::string path);
     LayerBuilder& preset(std::string name);
+    LayerBuilder& background(const LayerSpec& spec);
+    LayerBuilder& custom_layer(const LayerSpec& spec);
     LayerBuilder& asset_id(std::string id);
     LayerBuilder& mesh_deform_id(std::optional<std::string> id);
     LayerBuilder& clear_mesh_deform_id();
@@ -184,6 +186,7 @@ public:
     CameraBuilder camera();
     LightBuilder light();
     TextBuilder text();
+    TextBuilder text(std::string content);
     EffectBuilder effects();
     Transform3DBuilder transform3d();
 

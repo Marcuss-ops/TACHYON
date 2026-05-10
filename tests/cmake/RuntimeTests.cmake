@@ -97,6 +97,7 @@ endif()
 add_executable(TachyonRenderProfilerTests
     unit/test_main_render_profiler.cpp
     unit/runtime/profiling/render_profiler_tests.cpp
+    unit/runtime/jit_render_tests.cpp
 )
 
 target_compile_definitions(TachyonRenderProfilerTests
