@@ -52,4 +52,14 @@ inline Color screen_over(const Color& base, const Color& overlay, float intensit
     };
 }
 
+inline Color additive_over(const Color& base, const Color& overlay, float intensity) {
+    const float alpha = std::max(0.0f, intensity);
+    return {
+        std::min(1.0f, base.r + overlay.r * alpha),
+        std::min(1.0f, base.g + overlay.g * alpha),
+        std::min(1.0f, base.b + overlay.b * alpha),
+        std::clamp(base.a + alpha, 0.0f, 1.0f)
+    };
+}
+
 } // namespace tachyon::renderer2d

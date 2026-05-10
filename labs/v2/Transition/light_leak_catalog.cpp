@@ -1,80 +1,68 @@
-#include "tachyon/scene/builder.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
-#include <vector>
+#include "tachyon/scene/builder.h"
 #include <string>
+#include <vector>
 
 using namespace tachyon;
 using namespace tachyon::scene;
 
-void add_light_leak_composition(SceneBuilder& scene, const std::string& transition_id) {
-    std::string name = transition_id;
-    size_t last_dot = name.find_last_of('.');
-    if (last_dot != std::string::npos) name = name.substr(last_dot + 1);
+void add_light_leak_composition(SceneBuilder &scene,
+                                const std::string &transition_id) {
+  std::string name = transition_id;
+  size_t last_dot = name.find_last_of('.');
+  if (last_dot != std::string::npos)
+    name = name.substr(last_dot + 1);
 
-    scene.composition(name, [id = transition_id, name](CompositionBuilder& comp) {
-        comp.size(1280, 720)
-            .fps(30)
-            .duration(8.0);
-        
-        // 1. Scene A (Bottom): Vibrant Red
-        comp.layer("scena_a", [](LayerBuilder& l) {
-            l.solid("fill")
-             .color({235, 100, 110, 255})
-             .in(0.0)
-             .out(6.0);
-            
-            l.exit().id("tachyon.transition.crossfade").duration(2.0);
-        });
+  scene.composition(name, [id = transition_id, name](CompositionBuilder &comp) {
+    comp.size(1920, 1080).fps(30).duration(4.0);
 
-        // 2. Scene B (Middle): Vibrant Blue (Fades in)
-        comp.layer("scena_b", [](LayerBuilder& l) {
-            l.solid("fill")
-             .color({100, 160, 230, 255})
-             .in(4.0)
-             .out(8.0);
-            
-            l.enter().id("tachyon.transition.crossfade").duration(2.0);
-        });
-
-        // 3. Light Leak Overlay (Top): Flashes over everything
-        comp.layer("light_leak_overlay", [id](LayerBuilder& l) {
-            l.solid("transparent_base")
-             .color({0, 0, 0, 0}) // Fully transparent
-             .in(4.0)
-             .out(6.0);
-            
-            l.enter().id(id).duration(1.0); // Flash in
-            l.exit().id(id).duration(1.0);  // Flash out
-        });
-
-        // Title text
-        comp.layer("title", [name](LayerBuilder& l) {
-            l.text("label")
-             .content(name)
-             .font_size(60.0)
-             .color(255, 255, 255, 255)
-             .align(HorizontalAlign::Center)
-             .done()
-             .position(640, 680)
-             .in(0.0)
-             .out(8.0);
-        });
+    comp.layer("scena_a", [](LayerBuilder &l) {
+      l.solid("fill").color({10, 15, 30, 255}).in(0.0).out(1.5);
     });
+
+    // 2. Scene B (Middle): Dark Brown
+    comp.layer("scena_b", [id](LayerBuilder &l) {
+      l.solid("fill").color({30, 20, 10, 255}).in(1.5).out(4.0);
+
+      l.enter().id(id).duration(1.0);
+    });
+
+    // Title text
+    comp.layer("title", [name](LayerBuilder &l) {
+      l.text(name)
+          .font("SFPro", 48)
+          .color({255, 255, 255, 255})
+          .done()
+          .position(100, 650)
+          .in(0.0)
+          .out(5.0);
+    });
+  });
 }
 
 extern "C" __declspec(dllexport) SceneSpec build_scene() {
-    SceneBuilder scene;
-    
-    std::vector<std::string> light_leaks = {
-        "tachyon.transition.light_leak",
-        "tachyon.transition.light_leak_solar",
-        "tachyon.transition.light_leak_nebula",
-        "tachyon.transition.film_burn"
-    };
+  SceneBuilder scene;
 
-    for (const auto& leak : light_leaks) {
-        add_light_leak_composition(scene, leak);
-    }
+  std::vector<std::string> light_leaks = {
+      "tachyon.transition.light_leak",
+      "tachyon.transition.light_leak_solar",
+      "tachyon.transition.light_leak_nebula",
+      "tachyon.transition.light_leak_sunset",
+      "tachyon.transition.light_leak_ghost",
+      "tachyon.transition.film_burn",
+      "tachyon.transition.lightleak.soft_warm_edge",
+      "tachyon.transition.lightleak.golden_sweep",
+      "tachyon.transition.lightleak.creamy_white",
+      "tachyon.transition.lightleak.dusty_archive",
+      "tachyon.transition.lightleak.lens_flare_pass",
+      "tachyon.transition.lightleak.amber_sweep",
+      "tachyon.transition.lightleak.neon_pulse",
+      "tachyon.transition.lightleak.prism_shatter",
+      "tachyon.transition.lightleak.vintage_sepia"};
 
-    return scene.build();
+  for (const auto &leak : light_leaks) {
+    add_light_leak_composition(scene, leak);
+  }
+
+  return scene.build();
 }
