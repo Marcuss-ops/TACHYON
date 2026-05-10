@@ -14,9 +14,10 @@
 #include "tachyon/renderer2d/effects/core/transitions/basic_transitions.h"
 #include "tachyon/renderer2d/effects/core/transitions/artistic_transitions.h"
 #include "tachyon/renderer2d/effects/core/transitions/light_leak_transitions.h"
-#include <iostream>
-#include <thread>
 #include <chrono>
+#include <string>
+#include <vector>
+#include <thread>
 #include <mutex>
 
 namespace tachyon {
@@ -35,18 +36,16 @@ void ensure_native_render_registries() {
     });
 }
 
-const CompiledComposition* find_compiled_composition(const CompiledScene& scene, const std::string& composition_id) {
+const CompiledComposition* find_compiled_composition(const CompiledScene& scene, const std::string& target_id) {
     if (scene.compositions.empty()) {
         return nullptr;
     }
 
-    if (composition_id.empty()) {
-        return &scene.compositions.front();
-    }
-
-    for (const auto& comp : scene.compositions) {
-        if (comp.composition_id == composition_id || comp.name == composition_id) {
-            return &comp;
+    if (!target_id.empty()) {
+        for (const auto& comp : scene.compositions) {
+            if (comp.composition_id == target_id) {
+                return &comp;
+            }
         }
     }
 

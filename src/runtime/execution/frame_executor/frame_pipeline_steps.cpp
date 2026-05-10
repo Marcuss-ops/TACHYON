@@ -122,7 +122,20 @@ void evaluate_and_rasterize_root_composition_step(
     const FrameTimingState& timing_state) {
 
     if (!compiled_scene.compositions.empty()) {
-        const CompiledComposition& root_comp = compiled_scene.compositions.front();
+        const CompiledComposition* root_comp_ptr = nullptr;
+        if (!plan.composition_target.empty()) {
+            for (const auto& comp : compiled_scene.compositions) {
+                if (comp.composition_id == plan.composition_target) {
+                    root_comp_ptr = &comp;
+                    break;
+                }
+            }
+        }
+        if (!root_comp_ptr) {
+            root_comp_ptr = &compiled_scene.compositions.front();
+        }
+
+        const CompiledComposition& root_comp = *root_comp_ptr;
         const std::uint64_t root_key = build_node_key(cache_state.frame_key, root_comp.node);
         render_trace("evaluate composition frame=" + std::to_string(task.frame_number) + " begin");
         ::tachyon::evaluate_composition(

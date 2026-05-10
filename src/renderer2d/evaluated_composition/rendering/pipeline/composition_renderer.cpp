@@ -733,12 +733,6 @@ RasterizedFrame2D render_evaluated_composition_2d(
                             static_cast<std::uint32_t>(layer_h) == sh && 
                             resolution.descriptor) {
                             
-                            if (task.frame_number % 10 == 0) {
-                                std::cout << "[debug] Rendering frame " << task.frame_number 
-                                          << " layer=" << layer.id 
-                                          << " with transition: " << resolution.descriptor->id << std::endl;
-                            }
-
                             if (core::transition::TransitionFastPathRegistry::apply(
                                 resolution.descriptor->id, 
                                 *transition_result, 

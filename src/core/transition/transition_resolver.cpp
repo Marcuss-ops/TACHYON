@@ -11,6 +11,7 @@ ResolvedTransition resolve_transition_spec(const LayerTransitionSpec& spec, cons
     
     // Resolve the transition id
     std::string id = spec.transition_id.empty() ? spec.type : spec.transition_id;
+    
     if (id.empty()) {
         result.valid = false;
         result.error_message = "Transition ID is empty.";

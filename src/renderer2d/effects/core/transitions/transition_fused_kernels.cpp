@@ -130,7 +130,6 @@ void apply_crossfade_fused_direct(
     
     // Fast path: dimensions match exactly - use SIMD
     if (to && to->width() == width && to->height() == height && from.width() == width && from.height() == height) {
-        std::cout << "[debug] crossfade FAST PATH hit (" << width << "x" << height << ")" << std::endl;
         const float t = std::clamp(progress, 0.0f, 1.0f);
         const float* from_data = from.pixels().data();
         const float* to_data = to->pixels().data();
@@ -149,9 +148,6 @@ void apply_crossfade_fused_direct(
         return;
     }
 
-    std::cout << "[debug] crossfade FALLBACK hit (mismatch: out=" << width << "x" << height 
-              << " from=" << from.width() << "x" << from.height() 
-              << " to=" << (to ? to->width() : 0) << "x" << (to ? to->height() : 0) << ")" << std::endl;
 
     // Fallback: Bilinear sampling for mismatched sizes
     const float* from_data = from.pixels().data();
@@ -195,7 +191,6 @@ void apply_slide_fused_direct(
     
     // Fast path: dimensions match exactly - use Row-based memcpy
     if (to && to->width() == width && to->height() == height && from.width() == width && from.height() == height) {
-        std::cout << "[debug] slide FAST PATH hit (" << width << "x" << height << ")" << std::endl;
         const float t = std::clamp(progress, 0.0f, 1.0f);
         const int offset_x = static_cast<int>(t * static_cast<float>(width));
         

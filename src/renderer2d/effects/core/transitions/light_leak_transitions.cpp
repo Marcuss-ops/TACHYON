@@ -139,19 +139,25 @@ Color apply_light_leak_style(
     const LightLeakStyle& style
 ) {
     const bool overlay_mode = (to_surface == nullptr);
-    const float eased_t = smoothstep01(t);
+    Color base;
+    // Use a sharper curve for the background switch to avoid "dirty" mixed colors
+    const float color_t = smoothstep01(std::clamp((t - 0.25f) / 0.5f, 0.0f, 1.0f));
 
-    Color base = overlay_mode
-        ? sample_uv(input, u, v)
-        : Color::lerp(
+    if (overlay_mode) {
+        base = sample_uv(input, u, v);
+    } else {
+        base = Color::lerp(
             sample_uv(input, u, v),
             sample_transition_target(input, to_surface, u, v),
-            eased_t
+            color_t
         );
+    }
 
     float mask = evaluate_light_leak_mask(u, v, t, style);
     float flicker = 1.0f + style.flicker_amount * (cheap_noise(u, v, t * 10.0f) - 0.5f);
-    float intensity = style.intensity * mask * flicker;
+    
+    // Boost intensity significantly to cover the "cut"
+    float intensity = style.intensity * 1.5f * mask * flicker;
 
     // Pulse effect
     if (style.pulse_amount > 0.0f) {

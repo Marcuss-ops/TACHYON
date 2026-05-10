@@ -122,14 +122,15 @@ TEST(SceneBuilder, Common3DMethodsWorkOnAnyLayer) {
     ASSERT_TRUE(layer.transform3d.rotation_property.value.has_value());
     ASSERT_TRUE(layer.transform3d.scale_property.value.has_value());
     ASSERT_TRUE(layer.transform3d.anchor_point_property.value.has_value());
+    ASSERT_TRUE(layer.three_d.has_value());
     EXPECT_EQ(layer.transform3d.position_property.value->x, 10.0f);
     EXPECT_EQ(layer.transform3d.position_property.value->y, 20.0f);
     EXPECT_EQ(layer.transform3d.position_property.value->z, 30.0f);
     EXPECT_EQ(layer.transform3d.rotation_property.value->y, 45.0f);
     EXPECT_EQ(layer.transform3d.scale_property.value->x, 1.2f);
     EXPECT_EQ(layer.transform3d.anchor_point_property.value->z, 7.0f);
-    EXPECT_EQ(layer.extrusion_depth, 0.25);
-    EXPECT_EQ(layer.bevel_size, 0.03);
+    EXPECT_EQ(layer.three_d->extrusion_depth, 0.25);
+    EXPECT_EQ(layer.three_d->bevel_size, 0.03);
 }
 
 TEST(SceneBuilder, Animation3DHelpersMarkLayer3DAndAttachModifiers) {

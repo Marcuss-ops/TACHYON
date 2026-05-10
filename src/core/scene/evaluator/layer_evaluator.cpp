@@ -1,6 +1,7 @@
 #include "tachyon/core/scene/evaluator/layer_evaluator.h"
 #include "tachyon/core/scene/evaluator/property_sampler.h"
 #include "tachyon/core/scene/evaluator/layer_utils.h"
+#include "tachyon/core/scene/evaluator/layer_transform_3d.h"
 #include "tachyon/core/scene/evaluator/templates.h"
 #include "tachyon/core/scene/math/evaluator_math.h"
 #include "tachyon/core/scene/evaluator/hashing.h"
@@ -9,6 +10,7 @@
 #include <algorithm>
 #include <cmath>
 #include <optional>
+#include <iostream>
 
 namespace tachyon::scene {
 
@@ -20,6 +22,10 @@ EvaluatedLayerState make_layer_state(
     const EvaluationVariables& vars) {
 
     EvaluatedLayerState evaluated;
+    
+    // DEBUG PRINT
+    std::cout << "[debug] LayerEvaluator: layer.id='" << layer.id << "', name='" << layer.name << "'" << std::endl;
+    
     evaluated.layer_id = layer.id;
     evaluated.id = layer.id;
     evaluated.name = layer.name;
@@ -102,29 +108,43 @@ EvaluatedLayerState make_layer_state(
         const math::Vector3 rot3 = sample_vector3(layer.transform3d.rotation_property, rotation_fallback, local_t, context.audio_analyzer);
         const math::Vector3 scale3 = sample_vector3(layer.transform3d.scale_property, scale_fallback_3d, local_t, context.audio_analyzer);
 
-        // Sample anchor point for 3D
-        const math::Vector3 anchor3 = sample_vector3(layer.transform3d.anchor_point_property,
+        const math::Vector3 anchor3 = sample_vector3(
+            layer.transform3d.anchor_point_property,
             math::Vector3{static_cast<float>(layer.width) * 0.5f, static_cast<float>(layer.height) * 0.5f, 0.0f},
-            local_t, context.audio_analyzer);
+            local_t,
+            context.audio_analyzer);
 
-
-        evaluated.world_position3 = pos3;
+        const LayerTransform3DResult current_transform = build_layer_transform_3d({
+            pos3,
+            math::Vector3{0.0f, 0.0f, 0.0f},
+            rot3,
+            scale3,
+            anchor3
+        });
+        evaluated.world_position3 = current_transform.world_position3;
         evaluated.scale_3d = scale3;
-        evaluated.local_transform.position = {pos3.x, pos3.y};
+        evaluated.local_transform.position = {current_transform.world_position3.x, current_transform.world_position3.y};
         evaluated.local_transform.rotation_rad = 0.0f;
         evaluated.local_transform.scale = {scale3.x, scale3.y};
-        evaluated.world_matrix = math::compose_trs(
-            pos3,
-            math::Quaternion::from_euler(rot3),
-            scale3);
+        evaluated.local_transform.anchor_point = {anchor3.x, anchor3.y};
+        evaluated.world_matrix = current_transform.world_matrix;
+        evaluated.world_normal = current_transform.world_normal;
 
         const math::Vector3 prev_pos3 = sample_vector3(layer.transform3d.position_property, position_fallback, prev_local_t, context.audio_analyzer);
         const math::Vector3 prev_rot3 = sample_vector3(layer.transform3d.rotation_property, rotation_fallback, prev_local_t, context.audio_analyzer);
         const math::Vector3 prev_scale3 = sample_vector3(layer.transform3d.scale_property, scale_fallback_3d, prev_local_t, context.audio_analyzer);
-        evaluated.previous_world_matrix = math::compose_trs(
+        const math::Vector3 prev_anchor3 = sample_vector3(
+            layer.transform3d.anchor_point_property,
+            math::Vector3{static_cast<float>(layer.width) * 0.5f, static_cast<float>(layer.height) * 0.5f, 0.0f},
+            prev_local_t,
+            context.audio_analyzer);
+        evaluated.previous_world_matrix = build_layer_transform_3d({
             prev_pos3,
-            math::Quaternion::from_euler(prev_rot3),
-            prev_scale3);
+            math::Vector3{0.0f, 0.0f, 0.0f},
+            prev_rot3,
+            prev_scale3,
+            prev_anchor3
+        }).world_matrix;
     } else {
         const auto position_fallback = math::Vector2{
             static_cast<float>(layer.transform.position_x.value_or(0.0)),

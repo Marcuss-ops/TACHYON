@@ -190,6 +190,14 @@ public:
     EffectBuilder effects();
     Transform3DBuilder transform3d();
 
+    // 3D convenience helpers
+    LayerBuilder& position3d(double x, double y, double z);
+    LayerBuilder& rotation3d(double x, double y, double z);
+    LayerBuilder& scale3d(double x, double y, double z);
+    LayerBuilder& pivot3d(double x, double y, double z);
+    LayerBuilder& extrude3d(double depth);
+    LayerBuilder& bevel3d(double size);
+
     // 2D Animation preset
     LayerBuilder& animation2d_preset(const std::string& id, const registry::ParameterBag& params = {});
 

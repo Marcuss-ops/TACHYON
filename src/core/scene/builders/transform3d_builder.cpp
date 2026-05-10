@@ -23,6 +23,12 @@ Transform3DBuilder& Transform3DBuilder::scale(double x, double y, double z) {
     return *this;
 }
 
+Transform3DBuilder& Transform3DBuilder::anchor(double x, double y, double z) {
+    parent_.spec_.is_3d = true;
+    parent_.spec_.transform3d.anchor_point_property.value = math::Vector3(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z));
+    return *this;
+}
+
 Transform3DBuilder& Transform3DBuilder::is_3d(bool v) {
     parent_.spec_.is_3d = v;
     return *this;

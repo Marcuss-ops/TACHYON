@@ -23,6 +23,7 @@ public:
     Transform3DBuilder& position(double x, double y, double z);
     Transform3DBuilder& rotation(double x, double y, double z);
     Transform3DBuilder& scale(double x, double y, double z);
+    Transform3DBuilder& anchor(double x, double y, double z);
     Transform3DBuilder& is_3d(bool v);
     Transform3DBuilder& modifier(const std::string& id, const std::map<std::string, double>& scalars = {});
     Transform3DBuilder& animation_preset(const std::string& id, double duration = 1.0, double delay = 0.0, double intensity = 1.0);

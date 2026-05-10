@@ -16,8 +16,6 @@ void add_transition_composition(SceneBuilder& scene, const std::string& transiti
         comp.size(1920, 1080)
             .fps(30)
             .duration(4.0);
-
-        std::cerr << "!!! Building composition '" << name << "' with transition_id='" << id << "' !!!" << std::endl;
         
         // Scena A (0-2s)
         comp.layer("scena_a_solid", [id](LayerBuilder& l) {
@@ -71,8 +69,11 @@ extern "C" __declspec(dllexport) SceneSpec build_scene() {
     std::vector<std::string> transitions = {
         "tachyon.transition.crossfade",
         "tachyon.transition.slide",
-        "tachyon.transition.zoom",
-        "tachyon.transition.soft_zoom_blur"
+        "tachyon.transition.soft_zoom_blur",
+        "tachyon.transition.wipe_linear",
+        "tachyon.transition.smooth_wipe",
+        "tachyon.transition.circle_iris",
+        "tachyon.transition.flash_cut"
     };
 
 

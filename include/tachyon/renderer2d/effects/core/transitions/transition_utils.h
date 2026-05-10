@@ -48,7 +48,7 @@ inline Color screen_over(const Color& base, const Color& overlay, float intensit
         1.0f - (1.0f - base.r) * (1.0f - overlay.r * alpha),
         1.0f - (1.0f - base.g) * (1.0f - overlay.g * alpha),
         1.0f - (1.0f - base.b) * (1.0f - overlay.b * alpha),
-        1.0f
+        std::clamp(base.a + alpha, 0.0f, 1.0f) // Combine base alpha and leak visibility
     };
 }
 

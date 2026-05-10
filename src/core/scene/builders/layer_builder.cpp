@@ -9,6 +9,18 @@
 
 namespace tachyon::scene {
 
+namespace {
+
+ThreeDSpec& ensure_three_d(LayerSpec& spec) {
+    if (!spec.three_d.has_value()) {
+        spec.three_d = ThreeDSpec{};
+    }
+    spec.three_d->enabled = true;
+    return *spec.three_d;
+}
+
+} // namespace
+
 // LayerBuilder implementation
 LayerBuilder::LayerBuilder(std::string id, const presets::EffectPresetRegistry& preset_registry) 
     : spec_(), preset_registry_(preset_registry) {
@@ -202,6 +214,42 @@ EffectBuilder LayerBuilder::effects() {
 Transform3DBuilder LayerBuilder::transform3d() {
     spec_.is_3d = true;
     return Transform3DBuilder(*this);
+}
+
+LayerBuilder& LayerBuilder::position3d(double x, double y, double z) {
+    transform3d().position(x, y, z).done();
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::rotation3d(double x, double y, double z) {
+    transform3d().rotation(x, y, z).done();
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::scale3d(double x, double y, double z) {
+    transform3d().scale(x, y, z).done();
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::pivot3d(double x, double y, double z) {
+    transform3d().anchor(x, y, z).done();
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::extrude3d(double depth) {
+    spec_.is_3d = true;
+    auto& three_d = ensure_three_d(spec_);
+    three_d.extrusion_depth = depth;
+    spec_.extrude = depth;
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::bevel3d(double size) {
+    spec_.is_3d = true;
+    auto& three_d = ensure_three_d(spec_);
+    three_d.bevel_size = size;
+    spec_.bevel = size;
+    return *this;
 }
 
 TransitionBuilder LayerBuilder::enter() {
