@@ -129,9 +129,9 @@ ShadingResult RayTracer::trace_ray(
     rh.ray.time = time;
     rh.hit.geomID = RTC_INVALID_GEOMETRY_ID;
 
-    RTCIntersectArguments args;
-    rtcInitIntersectArguments(&args);
-    rtcIntersect1(scene_, &rh, &args);
+    RTCIntersectContext context;
+    rtcInitIntersectContext(&context);
+    rtcIntersect1(scene_, &context, &rh);
 
     if (rh.hit.geomID == RTC_INVALID_GEOMETRY_ID) {
         // Miss - sample environment
@@ -359,9 +359,9 @@ ShadingResult RayTracer::trace_ray(
                               << ") tfar=" << shadow_ray.tfar << "\n";
                 }
 
-                RTCOccludedArguments o_args;
-                rtcInitOccludedArguments(&o_args);
-            rtcOccluded1(scene_, (RTCRay*)&shadow_ray, &o_args);
+                RTCIntersectContext occluded_context;
+                rtcInitIntersectContext(&occluded_context);
+            rtcOccluded1(scene_, &occluded_context, (RTCRay*)&shadow_ray);
 
             if (shadow_ray.tfar < 0.0f) {
                 in_shadow = true;

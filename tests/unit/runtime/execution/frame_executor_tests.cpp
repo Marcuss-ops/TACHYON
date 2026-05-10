@@ -2,6 +2,7 @@
 #include "tachyon/runtime/compiler/scene_compiler.h"
 #include "tachyon/runtime/core/data/compiled_scene.h"
 
+#include <cmath>
 #include <iostream>
 #include <string>
 
@@ -86,6 +87,8 @@ tachyon::SceneSpec make_3d_scene() {
     layer.is_3d = true;
     layer.text_content = "TILT";
     layer.font_size.value = 128.0;
+    layer.transform.position_x = 42.0;
+    layer.transform.position_y = 24.0;
     layer.three_d.emplace();
     layer.three_d->extrusion_depth = 24.0;
     layer.three_d->bevel_size = 2.0;
@@ -180,6 +183,17 @@ bool run_frame_executor_tests() {
     }
     check_true((compiled_3d.value->compositions[0].layers[0].flags & 0x04U) != 0U,
                "3D layers preserve the 3D runtime flag");
+
+    const EvaluatedFrameState evaluated_3d = evaluate_frame_state(scene_3d, *compiled_3d.value, plan, make_task(0));
+    check_true(evaluated_3d.composition_state.layers.size() == 1,
+               "3D frame state should contain one evaluated layer");
+    if (!evaluated_3d.composition_state.layers.empty()) {
+        const auto& eval_layer = evaluated_3d.composition_state.layers[0];
+        check_true(std::abs(eval_layer.local_transform.position.x - 42.0f) < 0.001f,
+                   "3D layers keep the 2D X position when evaluated");
+        check_true(std::abs(eval_layer.local_transform.position.y - 24.0f) < 0.001f,
+                   "3D layers keep the 2D Y position when evaluated");
+    }
 
     const ExecutedFrame first = execute_frame_task(scene, *compiled_result.value, plan, make_task(0), cache, render_context);
     const ExecutedFrame second = execute_frame_task(scene, *compiled_result.value, plan, make_task(0), cache, render_context);

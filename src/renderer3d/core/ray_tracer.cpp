@@ -101,13 +101,13 @@ void RayTracer::render_with_motion_blur(
     }
     cam_forward = cam_forward.normalized();
 
-    math::Vector3 cam_right = math::Vector3::cross(cam_forward, cam.up);
+    math::Vector3 cam_right = math::Vector3::cross(cam.up, cam_forward);
     if (!is_finite_vector3(cam_right) || cam_right.length_squared() <= 1e-8f) {
         cam_right = {1.0f, 0.0f, 0.0f};
     }
     cam_right = cam_right.normalized();
 
-    math::Vector3 cam_up = math::Vector3::cross(cam_right, cam_forward);
+    math::Vector3 cam_up = math::Vector3::cross(cam_forward, cam_right);
     if (!is_finite_vector3(cam_up) || cam_up.length_squared() <= 1e-8f) {
         cam_up = {0.0f, 1.0f, 0.0f};
     }
@@ -177,15 +177,14 @@ void RayTracer::render_with_motion_blur(
                               << ")\n";
                 }
 
-                // Motion blur time jitter
-                float sample_time = time;
+                // Embree motion blur expects normalized ray times in [0, 1].
+                float sample_time = 1.0f;
                 if (motion_blur && motion_blur->is_enabled()) {
                     const auto& mb_config = motion_blur->get_config();
-                    const float shutter_duration = static_cast<float>(frame_duration_seconds * (mb_config.shutter_angle / 360.0));
-                    const float shutter_offset = static_cast<float>(frame_duration_seconds * (mb_config.shutter_phase / 360.0));
-                    
-                    const float jitter_t = (static_cast<float>(pixel_rng() & 0xFFFF) / 65535.0f);
-                    sample_time += shutter_offset + jitter_t * shutter_duration;
+                    const float jitter_t = static_cast<float>(pixel_rng() & 0xFFFF) / 65535.0f;
+                    const float shutter_phase = static_cast<float>(mb_config.shutter_phase / 360.0);
+                    const float shutter_angle = static_cast<float>(mb_config.shutter_angle / 360.0);
+                    sample_time = std::clamp(shutter_phase + jitter_t * shutter_angle, 0.0f, 1.0f);
                 }
 
                 ShadingResult sample = trace_ray(origin, direction, scene, pixel_rng, 0, sample_time);

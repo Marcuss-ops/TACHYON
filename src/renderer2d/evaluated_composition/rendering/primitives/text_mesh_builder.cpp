@@ -14,6 +14,8 @@
 namespace tachyon::renderer2d {
 namespace {
 
+constexpr float kVisibleGlyphThreshold = 0.01f;
+
 ::tachyon::renderer2d::Color to_color(const ColorSpec& color) {
     return {
         static_cast<float>(color.r) / 255.0f,
@@ -123,6 +125,12 @@ TextMeshBuildResult build_text_extrusion_mesh(
     ::tachyon::text::apply_text_animators(animated_layout, animation);
 
     for (const auto& glyph : animated_layout.glyphs) {
+        const float opacity_raw = static_cast<float>(glyph.opacity * glyph.reveal_factor);
+        const float opacity_factor = std::clamp(opacity_raw, 0.0f, 1.0f);
+        if (opacity_factor <= kVisibleGlyphThreshold) {
+            continue;
+        }
+
         const auto glyph_paths = ::tachyon::text::OutlineExtractor::extract_glyph_outline(
             *font,
             glyph.font_glyph_index,
@@ -139,23 +147,20 @@ TextMeshBuildResult build_text_extrusion_mesh(
 
         const math::Quaternion rotation = math::Quaternion::from_axis_angle({0.0f, 0.0f, 1.0f}, glyph.rotation * 3.1415926535f / 180.0f);
         submesh.transform = math::compose_trs(
-            {static_cast<float>(glyph.position.x), static_cast<float>(glyph.position.y), 0.0f},
+            {
+                static_cast<float>(glyph.position.x) - static_cast<float>(box.width) * 0.5f,
+                static_cast<float>(box.height) * 0.5f - static_cast<float>(glyph.position.y),
+                0.0f
+            },
             rotation,
             {glyph.scale.x, glyph.scale.y, 1.0f});
         submesh.material.base_color_factor = {
-            static_cast<float>(layer.fill_color.r) / 255.0f,
-            static_cast<float>(layer.fill_color.g) / 255.0f,
-            static_cast<float>(layer.fill_color.b) / 255.0f
+            static_cast<float>(glyph.fill_color.r) / 255.0f,
+            static_cast<float>(glyph.fill_color.g) / 255.0f,
+            static_cast<float>(glyph.fill_color.b) / 255.0f
         };
         submesh.material.roughness_factor = 0.45f;
         submesh.material.metallic_factor = 0.0f;
-        const float opacity_raw = static_cast<float>(glyph.opacity * glyph.reveal_factor);
-        const float opacity_factor = opacity_raw < 0.0f ? 0.0f : (opacity_raw > 1.0f ? 1.0f : opacity_raw);
-        submesh.material.base_color_factor = {
-            submesh.material.base_color_factor.x * opacity_factor,
-            submesh.material.base_color_factor.y * opacity_factor,
-            submesh.material.base_color_factor.z * opacity_factor
-        };
         mesh->sub_meshes.push_back(std::move(submesh));
     }
 

@@ -30,7 +30,8 @@ enum RTCBufferType {
 enum RTCFormat {
     RTC_FORMAT_FLOAT3 = 0,
     RTC_FORMAT_UINT3 = 1,
-    RTC_FORMAT_FLOAT3X4_ROW_MAJOR = 2
+    RTC_FORMAT_FLOAT3X4_ROW_MAJOR = 2,
+    RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR = 3
 };
 
 static constexpr unsigned int RTC_INVALID_GEOMETRY_ID = 0xFFFFFFFFu;
@@ -104,6 +105,7 @@ inline unsigned int rtcAttachGeometry(RTCScene, RTCGeometry) {
 
 inline void rtcSetGeometryInstancedScene(RTCGeometry, RTCScene) {}
 inline void rtcSetGeometryTimeStepCount(RTCGeometry, unsigned int) {}
+inline void rtcSetGeometryMask(RTCGeometry, unsigned int) {}
 inline void rtcSetGeometryTransform(RTCGeometry, unsigned int, RTCFormat, const float*) {}
 inline void rtcCommitScene(RTCScene) {}
 inline void rtcReleaseGeometry(RTCGeometry geom) {
