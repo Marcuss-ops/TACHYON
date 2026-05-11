@@ -13,6 +13,8 @@ CompositionBuilder::CompositionBuilder(std::string id, const presets::EffectPres
     spec_.name = spec_.id;
 }
 
+CompositionBuilder::~CompositionBuilder() = default;
+
 CompositionBuilder& CompositionBuilder::size(int w, int h) {
     spec_.width = w;
     spec_.height = h;

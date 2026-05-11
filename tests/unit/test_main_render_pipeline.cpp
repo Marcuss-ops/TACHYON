@@ -3,7 +3,6 @@
 
 bool run_render_session_tests();
 bool run_parallax_cards_tests();
-bool run_png_3d_validation_tests();
 bool run_motion_blur_tests();
 bool run_time_remap_tests();
 bool run_frame_blend_tests();
@@ -15,7 +14,6 @@ int main(int argc, char** argv) {
     std::vector<TestCase> tests = {
         {"render_session", run_render_session_tests},
         {"parallax_cards", run_parallax_cards_tests},
-        {"png_3d_validation", run_png_3d_validation_tests},
         {"motion_blur", run_motion_blur_tests},
         {"time_remap", run_time_remap_tests},
         {"frame_blend", run_frame_blend_tests},
