@@ -45,6 +45,14 @@ void start_json_trace(const std::string& output_path) {
 #endif
 }
 
+void start_perfetto_trace(const std::string& output_path) {
+#if defined(TACHYON_ENABLE_PERFETTO)
+    TraceSession::instance().start(&perfetto_trace_backend(), output_path);
+#else
+    TraceSession::instance().start(&noop_trace_backend(), output_path);
+#endif
+}
+
 void stop_trace() {
     TraceSession::instance().stop();
 }

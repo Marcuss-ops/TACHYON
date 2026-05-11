@@ -26,6 +26,7 @@ private:
 };
 
 void start_json_trace(const std::string& output_path);
+void start_perfetto_trace(const std::string& output_path);
 void stop_trace();
 
 } // namespace tachyon::diagnostics

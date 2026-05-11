@@ -21,4 +21,8 @@ TraceBackend& noop_trace_backend();
 TraceBackend& json_trace_backend();
 #endif
 
+#if defined(TACHYON_ENABLE_PERFETTO)
+TraceBackend& perfetto_trace_backend();
+#endif
+
 } // namespace tachyon::diagnostics
