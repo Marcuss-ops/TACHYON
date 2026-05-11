@@ -1,18 +1,19 @@
 #pragma once
 
 #include "tachyon/core/spec/schema/contracts/shared_contracts.h"
+
+#include <filesystem>
+#include <optional>
 #include <string>
 #include <vector>
-#include <optional>
-#include <filesystem>
 
 namespace tachyon::audio {
 
 /**
  * @brief Registry for managing and resolving sound effects from the filesystem.
- * 
- * Replaces the legacy free functions with a structured, instance-based registry
- * that can be integrated with the AssetResolver and engine lifecycle.
+ *
+ * Instance-based registry that can be integrated with the AssetResolver and
+ * engine lifecycle without relying on global helpers.
  */
 class SoundEffectRegistry {
 public:
@@ -56,13 +57,5 @@ public:
 private:
     std::filesystem::path m_root;
 };
-
-// --- Backward Compatibility Shim (using default global instance) ---
-
-std::vector<std::string> getAvailableSoundCategories();
-std::optional<std::string> getRandomSoundEffect(const std::string& category);
-std::vector<std::string> getSoundEffectsInCategory(const std::string& category);
-std::optional<spec::AudioTrackSpec> createRandomSoundTrack(
-    const std::string& category, float volume = 1.0f);
 
 } // namespace tachyon::audio

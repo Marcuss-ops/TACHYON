@@ -200,22 +200,13 @@ void test_manifest_reject_absolute_paths() {
     }
 
     tachyon::media::AssetPackManifest result;
-    if (!tachyon::media::read_asset_pack_manifest(path, result)) {
-        std::cerr << "FAIL: Should succeed (absolute paths should be replaced with empty)" << std::endl;
+    if (tachyon::media::read_asset_pack_manifest(path, result)) {
+        std::cerr << "FAIL: Should have failed for absolute paths" << std::endl;
         g_failures++;
         std::filesystem::remove(path);
         return;
     }
-
-    if (!result.meshes.empty()) {
-        const auto& m = result.meshes[0];
-        if (m.source_path.empty() && m.packed_path.empty()) {
-            std::cout << "PASS: test_manifest_reject_absolute_paths" << std::endl;
-        } else {
-            std::cerr << "FAIL: absolute paths should have been rejected, got source='" << m.source_path << "' packed='" << m.packed_path << "'" << std::endl;
-            g_failures++;
-        }
-    }
+    std::cout << "PASS: test_manifest_reject_absolute_paths" << std::endl;
 
     std::filesystem::remove(path);
 }
@@ -236,21 +227,13 @@ void test_manifest_reject_dotdot_paths() {
     }
 
     tachyon::media::AssetPackManifest result;
-    if (!tachyon::media::read_asset_pack_manifest(path, result)) {
-        std::cerr << "FAIL: Should succeed (dotdot paths should be replaced with empty)" << std::endl;
+    if (tachyon::media::read_asset_pack_manifest(path, result)) {
+        std::cerr << "FAIL: Should have failed for dotdot paths" << std::endl;
         g_failures++;
         std::filesystem::remove(path);
         return;
     }
-
-    if (!result.meshes.empty()) {
-        if (result.meshes[0].packed_path.empty()) {
-            std::cout << "PASS: test_manifest_reject_dotdot_paths" << std::endl;
-        } else {
-            std::cerr << "FAIL: dotdot paths should have been rejected" << std::endl;
-            g_failures++;
-        }
-    }
+    std::cout << "PASS: test_manifest_reject_dotdot_paths" << std::endl;
 
     std::filesystem::remove(path);
 }

@@ -202,31 +202,31 @@ bool AudioEncoder::encode_interleaved_float(const std::vector<float>& interleave
 
         if (m_codec_context->sample_fmt == AV_SAMPLE_FMT_FLTP) {
             for (int ch = 0; ch < m_channels; ++ch) {
-                float* dst = reinterpret_cast<float*>(m_frame->data[ch]);
+                auto* dst = static_cast<float*>(static_cast<void*>(m_frame->data[ch]));
                 for (int i = 0; i < required_samples; ++i) {
                     dst[i] = m_input_buffer[i * m_channels + ch];
                 }
             }
         } else if (m_codec_context->sample_fmt == AV_SAMPLE_FMT_S16) {
-            int16_t* dst = reinterpret_cast<int16_t*>(m_frame->data[0]);
+            auto* dst = static_cast<int16_t*>(static_cast<void*>(m_frame->data[0]));
             for (int i = 0; i < required_samples * m_channels; ++i) {
                 dst[i] = static_cast<int16_t>(std::clamp(m_input_buffer[i], -1.0f, 1.0f) * 32767.0f);
             }
         } else if (m_codec_context->sample_fmt == AV_SAMPLE_FMT_S16P) {
             for (int ch = 0; ch < m_channels; ++ch) {
-                int16_t* dst = reinterpret_cast<int16_t*>(m_frame->data[ch]);
+                auto* dst = static_cast<int16_t*>(static_cast<void*>(m_frame->data[ch]));
                 for (int i = 0; i < required_samples; ++i) {
                     dst[i] = static_cast<int16_t>(std::clamp(m_input_buffer[i * m_channels + ch], -1.0f, 1.0f) * 32767.0f);
                 }
             }
         } else if (m_codec_context->sample_fmt == AV_SAMPLE_FMT_S32) {
-            int32_t* dst = reinterpret_cast<int32_t*>(m_frame->data[0]);
+            auto* dst = static_cast<int32_t*>(static_cast<void*>(m_frame->data[0]));
             for (int i = 0; i < required_samples * m_channels; ++i) {
                 dst[i] = static_cast<int32_t>(std::clamp(m_input_buffer[i], -1.0f, 1.0f) * 2147483647.0f);
             }
         } else if (m_codec_context->sample_fmt == AV_SAMPLE_FMT_S32P) {
             for (int ch = 0; ch < m_channels; ++ch) {
-                int32_t* dst = reinterpret_cast<int32_t*>(m_frame->data[ch]);
+                auto* dst = static_cast<int32_t*>(static_cast<void*>(m_frame->data[ch]));
                 for (int i = 0; i < required_samples; ++i) {
                     dst[i] = static_cast<int32_t>(std::clamp(m_input_buffer[i * m_channels + ch], -1.0f, 1.0f) * 2147483647.0f);
                 }
@@ -294,4 +294,3 @@ bool AudioEncoder::flush() {
 }
 
 } // namespace tachyon::audio
-

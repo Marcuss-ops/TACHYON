@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/audio/audio_decoder.h"
-#include "tachyon/audio/audio_graph.h"
+#include "tachyon/audio/core/audio_graph.h"
 #include "tachyon/audio/audio_processor.h"
 #include "tachyon/audio/dsp_nodes.h"
 

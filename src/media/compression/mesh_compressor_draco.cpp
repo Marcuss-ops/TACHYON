@@ -13,6 +13,23 @@ public:
         MeshCompressionOutput output;
         output.codec = "draco";
 
+        if (!input.positions.empty() && (input.positions.size() % 3) != 0) {
+            output.codec.clear();
+            return output;
+        }
+        if (!input.normals.empty() && (input.normals.size() % 3) != 0) {
+            output.codec.clear();
+            return output;
+        }
+        if (!input.uvs.empty() && (input.uvs.size() % 2) != 0) {
+            output.codec.clear();
+            return output;
+        }
+        if (!input.indices.empty() && (input.indices.size() % 3) != 0) {
+            output.codec.clear();
+            return output;
+        }
+
         draco::Mesh mesh;
 
         // Add positions
@@ -76,6 +93,8 @@ public:
         draco::EncoderBuffer buffer;
         if (encoder.EncodeMeshToBuffer(mesh, &buffer).ok()) {
             output.bytes.assign(buffer.data(), buffer.data() + buffer.size());
+        } else {
+            output.codec.clear();
         }
 
         return output;

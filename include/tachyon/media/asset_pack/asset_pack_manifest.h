@@ -2,14 +2,47 @@
 
 #include <cstdint>
 #include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 
 namespace tachyon::media {
 
+template <typename Tag>
+struct ManifestPath {
+    std::string value;
+
+    ManifestPath() = default;
+    ManifestPath(const char* s) : value(s ? s : "") {}
+    ManifestPath(std::string s) : value(std::move(s)) {}
+    ManifestPath(std::string_view s) : value(s) {}
+
+    ManifestPath& operator=(std::string s) {
+        value = std::move(s);
+        return *this;
+    }
+
+    ManifestPath& operator=(const char* s) {
+        value = s ? s : "";
+        return *this;
+    }
+
+    [[nodiscard]] const std::string& str() const { return value; }
+    [[nodiscard]] bool empty() const { return value.empty(); }
+    explicit operator bool() const { return !value.empty(); }
+    operator std::string_view() const noexcept { return value; }
+};
+
+struct SourcePathTag {};
+struct PackedPathTag {};
+
+using SourcePath = ManifestPath<SourcePathTag>;
+using PackedPath = ManifestPath<PackedPathTag>;
+
 struct PackedMeshEntry {
     std::string id;
-    std::string source_path;
-    std::string packed_path;
+    SourcePath source_path;
+    PackedPath packed_path;
     std::string codec;
     std::uint64_t source_bytes = 0;
     std::uint64_t packed_bytes = 0;
@@ -18,8 +51,8 @@ struct PackedMeshEntry {
 
 struct PackedTextureEntry {
     std::string id;
-    std::string source_path;
-    std::string packed_path;
+    SourcePath source_path;
+    PackedPath packed_path;
     std::string codec;
     std::uint64_t source_bytes = 0;
     std::uint64_t packed_bytes = 0;
@@ -27,8 +60,8 @@ struct PackedTextureEntry {
 
 struct PackedFontEntry {
     std::string id;
-    std::string source_path;
-    std::string packed_path;
+    SourcePath source_path;
+    PackedPath packed_path;
     std::uint64_t source_bytes = 0;
     std::uint64_t packed_bytes = 0;
 };

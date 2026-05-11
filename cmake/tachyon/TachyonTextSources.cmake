@@ -32,7 +32,7 @@ set(TachyonTextSources
     ${CMAKE_CURRENT_SOURCE_DIR}/text/core/fonts/management/font_resolver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/text/core/fonts/utils/font_coverage_reporter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/text/core/fonts/utils/glyph_atlas.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/text/editing/text_editor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/experimental/text_editor/text_editor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/text/core/low_level/freetype/freetype_manager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/text/core/low_level/glyph/glyph_loader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/text/core/low_level/utils/font_utils.cpp

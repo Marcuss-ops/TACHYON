@@ -21,6 +21,15 @@ public:
     }
 
     TextureCompressionOutput compress(const TextureCompressionInput& input) override {
+        if (input.width <= 0 || input.height <= 0) {
+            return { {}, "" };
+        }
+
+        const std::size_t expected_bytes = static_cast<std::size_t>(input.width) * static_cast<std::size_t>(input.height) * 4;
+        if (input.rgba.size() != expected_bytes) {
+            return { {}, "" };
+        }
+
         basisu::basis_compressor_params params;
         params.m_uastc = true;
         params.m_pack_uastc_flags = basisu::cPackUASTCLevelDefault;
@@ -47,11 +56,11 @@ public:
 
         basisu::basis_compressor compressor;
         if (!compressor.init(params)) {
-            return { {}, "none" };
+            return { {}, "" };
         }
 
         if (compressor.process() != basisu::basis_compressor::cECSuccess) {
-            return { {}, "none" };
+            return { {}, "" };
         }
 
         TextureCompressionOutput output;

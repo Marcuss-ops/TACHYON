@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <sstream>
 
 // Use the nlohmann JSON library bundled with tinygltf.
@@ -38,6 +39,35 @@ std::string escape_json(const std::string& s) {
     return out;
 }
 
+bool is_safe_packed_path(const std::string& value) {
+    if (value.empty()) {
+        return false;
+    }
+
+    const std::filesystem::path path(value);
+    if (path.is_absolute() || path.has_root_path()) {
+        return false;
+    }
+
+    for (const auto& part : path) {
+        const std::string part_text = part.string();
+        if (part_text == "." || part_text == "..") {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool parse_required_string(const json& obj, const std::string& key, std::string& out) {
+    if (!obj.contains(key) || !obj[key].is_string()) {
+        return false;
+    }
+
+    out = obj[key].get<std::string>();
+    return !out.empty();
+}
+
 } // namespace
 
 bool write_asset_pack_manifest(const AssetPackManifest& manifest, const std::string& path) {
@@ -66,8 +96,8 @@ bool write_asset_pack_manifest(const AssetPackManifest& manifest, const std::str
 
     write_array("meshes", manifest.meshes, [&write_str](std::ostream& out, const PackedMeshEntry& m) {
         out << "      \"id\": " << write_str(m.id) << ",\n"
-            << "      \"source_path\": " << write_str(m.source_path) << ",\n"
-            << "      \"packed_path\": " << write_str(m.packed_path) << ",\n"
+            << "      \"source_path\": " << write_str(m.source_path.str()) << ",\n"
+            << "      \"packed_path\": " << write_str(m.packed_path.str()) << ",\n"
             << "      \"codec\": " << write_str(m.codec) << ",\n"
             << "      \"source_bytes\": " << m.source_bytes << ",\n"
             << "      \"packed_bytes\": " << m.packed_bytes << ",\n"
@@ -81,8 +111,8 @@ bool write_asset_pack_manifest(const AssetPackManifest& manifest, const std::str
 
     write_array("textures", manifest.textures, [&write_str](std::ostream& out, const PackedTextureEntry& t) {
         out << "      \"id\": " << write_str(t.id) << ",\n"
-            << "      \"source_path\": " << write_str(t.source_path) << ",\n"
-            << "      \"packed_path\": " << write_str(t.packed_path) << ",\n"
+            << "      \"source_path\": " << write_str(t.source_path.str()) << ",\n"
+            << "      \"packed_path\": " << write_str(t.packed_path.str()) << ",\n"
             << "      \"codec\": " << write_str(t.codec) << ",\n"
             << "      \"source_bytes\": " << t.source_bytes << ",\n"
             << "      \"packed_bytes\": " << t.packed_bytes << "\n";
@@ -91,8 +121,8 @@ bool write_asset_pack_manifest(const AssetPackManifest& manifest, const std::str
 
     write_array("fonts", manifest.fonts, [&write_str](std::ostream& out, const PackedFontEntry& f) {
         out << "      \"id\": " << write_str(f.id) << ",\n"
-            << "      \"source_path\": " << write_str(f.source_path) << ",\n"
-            << "      \"packed_path\": " << write_str(f.packed_path) << ",\n"
+            << "      \"source_path\": " << write_str(f.source_path.str()) << ",\n"
+            << "      \"packed_path\": " << write_str(f.packed_path.str()) << ",\n"
             << "      \"source_bytes\": " << f.source_bytes << ",\n"
             << "      \"packed_bytes\": " << f.packed_bytes << "\n";
     });
@@ -129,31 +159,31 @@ bool read_asset_pack_manifest(const std::string& path, AssetPackManifest& out) {
         return false;
     }
 
-    // Helper to parse a path string: reject absolute paths and ".."
-    auto parse_path = [](const json& obj, const std::string& key) -> std::string {
-        if (!obj.contains(key) || !obj[key].is_string()) return {};
-        std::string val = obj[key].get<std::string>();
-        // Reject absolute paths
-        if (!val.empty() && val[0] == '/') return {};
-        // Reject paths containing ".."
-        if (val.find("..") != std::string::npos) return {};
-        return val;
-    };
-
     // Parse meshes
     if (root.contains("meshes") && root["meshes"].is_array()) {
         for (const auto& item : root["meshes"]) {
             if (!item.is_object()) continue;
             PackedMeshEntry entry;
-            if (item.contains("id") && item["id"].is_string()) {
-                entry.id = item["id"].get<std::string>();
-            } else {
+            if (!parse_required_string(item, "id", entry.id)) {
                 continue; // id is required
             }
-            entry.source_path = parse_path(item, "source_path");
-            entry.packed_path = parse_path(item, "packed_path");
+            std::string source_path;
+            if (!parse_required_string(item, "source_path", source_path)) {
+                std::cerr << "Error: manifest mesh missing required field 'source_path'" << std::endl;
+                return false;
+            }
+            entry.source_path = std::move(source_path);
+            std::string packed_path;
+            if (!parse_required_string(item, "packed_path", packed_path) || !is_safe_packed_path(packed_path)) {
+                std::cerr << "Error: manifest mesh has unsafe 'packed_path'" << std::endl;
+                return false;
+            }
+            entry.packed_path = std::move(packed_path);
             if (item.contains("codec") && item["codec"].is_string()) {
                 entry.codec = item["codec"].get<std::string>();
+            } else {
+                std::cerr << "Error: manifest mesh missing required field 'codec'" << std::endl;
+                return false;
             }
             if (item.contains("source_bytes") && item["source_bytes"].is_number()) {
                 entry.source_bytes = item["source_bytes"].get<std::uint64_t>();
@@ -178,15 +208,26 @@ bool read_asset_pack_manifest(const std::string& path, AssetPackManifest& out) {
         for (const auto& item : root["textures"]) {
             if (!item.is_object()) continue;
             PackedTextureEntry entry;
-            if (item.contains("id") && item["id"].is_string()) {
-                entry.id = item["id"].get<std::string>();
-            } else {
+            if (!parse_required_string(item, "id", entry.id)) {
                 continue;
             }
-            entry.source_path = parse_path(item, "source_path");
-            entry.packed_path = parse_path(item, "packed_path");
+            std::string source_path;
+            if (!parse_required_string(item, "source_path", source_path)) {
+                std::cerr << "Error: manifest texture missing required field 'source_path'" << std::endl;
+                return false;
+            }
+            entry.source_path = std::move(source_path);
+            std::string packed_path;
+            if (!parse_required_string(item, "packed_path", packed_path) || !is_safe_packed_path(packed_path)) {
+                std::cerr << "Error: manifest texture has unsafe 'packed_path'" << std::endl;
+                return false;
+            }
+            entry.packed_path = std::move(packed_path);
             if (item.contains("codec") && item["codec"].is_string()) {
                 entry.codec = item["codec"].get<std::string>();
+            } else {
+                std::cerr << "Error: manifest texture missing required field 'codec'" << std::endl;
+                return false;
             }
             if (item.contains("source_bytes") && item["source_bytes"].is_number()) {
                 entry.source_bytes = item["source_bytes"].get<std::uint64_t>();
@@ -203,13 +244,21 @@ bool read_asset_pack_manifest(const std::string& path, AssetPackManifest& out) {
         for (const auto& item : root["fonts"]) {
             if (!item.is_object()) continue;
             PackedFontEntry entry;
-            if (item.contains("id") && item["id"].is_string()) {
-                entry.id = item["id"].get<std::string>();
-            } else {
+            if (!parse_required_string(item, "id", entry.id)) {
                 continue;
             }
-            entry.source_path = parse_path(item, "source_path");
-            entry.packed_path = parse_path(item, "packed_path");
+            std::string source_path;
+            if (!parse_required_string(item, "source_path", source_path)) {
+                std::cerr << "Error: manifest font missing required field 'source_path'" << std::endl;
+                return false;
+            }
+            entry.source_path = std::move(source_path);
+            std::string packed_path;
+            if (!parse_required_string(item, "packed_path", packed_path) || !is_safe_packed_path(packed_path)) {
+                std::cerr << "Error: manifest font has unsafe 'packed_path'" << std::endl;
+                return false;
+            }
+            entry.packed_path = std::move(packed_path);
             if (item.contains("source_bytes") && item["source_bytes"].is_number()) {
                 entry.source_bytes = item["source_bytes"].get<std::uint64_t>();
             }

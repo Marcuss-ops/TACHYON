@@ -1,4 +1,4 @@
-#include "tachyon/text/animation/text_editor.h"
+#include "../../src/experimental/text_editor/text_editor.h"
 #include <gtest/gtest.h>
 
 namespace tachyon::text {

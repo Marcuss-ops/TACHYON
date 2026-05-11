@@ -2,8 +2,8 @@
 
 #include "tachyon/renderer2d/effects/core/effect_host.h"
 #include "tachyon/renderer2d/effects/core/effect_params.h"
-#include <string>
 #include <cstdio>
+#include <string>
 
 namespace tachyon::renderer2d {
 
@@ -22,20 +22,6 @@ inline std::string format_number_counter(double time_seconds, double rate, const
     double value = time_seconds * rate;
     char buffer[256];
     std::snprintf(buffer, sizeof(buffer), format.c_str(), value);
-    return buffer;
-}
-
-/**
- * @brief Formats current date/time as string.
- * 
- * @param format strftime-style format string (default: "%Y-%m-%d %H:%M:%S")
- * @return Formatted date string
- */
-inline std::string format_current_date(const std::string& format = "%Y-%m-%d %H:%M:%S") {
-    auto now = std::chrono::system_clock::now();
-    auto time_t_now = std::chrono::system_clock::to_time_t(now);
-    char buffer[256];
-    std::strftime(buffer, sizeof(buffer), format.c_str(), std::localtime(&time_t_now));
     return buffer;
 }
 

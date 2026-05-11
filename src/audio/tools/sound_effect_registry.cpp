@@ -1,4 +1,4 @@
-#include "tachyon/audio/sound_effect_registry.h"
+#include "sound_effect_registry.h"
 
 #include <algorithm>
 #include <filesystem>
@@ -45,13 +45,7 @@ std::optional<T> pick_random_entry(const std::vector<T>& values) {
     return values[dist(rng)];
 }
 
-SoundEffectRegistry& global_registry() {
-    static SoundEffectRegistry instance(default_sound_effect_root());
-    return instance;
-}
-
 } // namespace
-
 SoundEffectRegistry::SoundEffectRegistry(std::filesystem::path root)
     : m_root(root.empty() ? default_sound_effect_root() : std::move(root)) {}
 
@@ -93,24 +87,6 @@ std::optional<spec::AudioTrackSpec> SoundEffectRegistry::createRandomTrack(const
     spec.source_path = *path;
     spec.volume = volume;
     return spec;
-}
-
-// --- Backward Compatibility Shim ---
-
-std::vector<std::string> getAvailableSoundCategories() {
-    return global_registry().getAvailableCategories();
-}
-
-std::vector<std::string> getSoundEffectsInCategory(const std::string& category) {
-    return global_registry().getSoundsInCategory(category);
-}
-
-std::optional<std::string> getRandomSoundEffect(const std::string& category) {
-    return global_registry().getRandomSound(category);
-}
-
-std::optional<spec::AudioTrackSpec> createRandomSoundTrack(const std::string& category, float volume) {
-    return global_registry().createRandomTrack(category, volume);
 }
 
 } // namespace tachyon::audio

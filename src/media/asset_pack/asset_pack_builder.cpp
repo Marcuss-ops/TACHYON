@@ -2,10 +2,10 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <regex>
 #include <stdexcept>
 #include <string>
 
@@ -94,10 +94,15 @@ std::vector<float> read_float_accessor(const tinygltf::Model& model,
     const auto& buf = model.buffers[bv.buffer];
     std::size_t byte_stride = (bv.byteStride > 0)
                                   ? static_cast<std::size_t>(bv.byteStride)
-                                  : static_cast<std::size_t>(acc.type) * sizeof(float);
+                                  : static_cast<std::size_t>(expected_components) * sizeof(float);
     std::size_t byte_offset = bv.byteOffset + acc.byteOffset;
 
-    if (byte_offset + acc.count * byte_stride > buf.data.size()) {
+    if (acc.count == 0) {
+        return {};
+    }
+
+    const std::size_t required_bytes = byte_offset + ((acc.count - 1) * byte_stride) + (static_cast<std::size_t>(expected_components) * sizeof(float));
+    if (required_bytes > buf.data.size()) {
         std::cerr << "Error: accessor data exceeds buffer size" << std::endl;
         return {};
     }
@@ -106,9 +111,10 @@ std::vector<float> read_float_accessor(const tinygltf::Model& model,
     result.reserve(acc.count * expected_components);
 
     for (std::size_t i = 0; i < acc.count; ++i) {
-        const float* src = reinterpret_cast<const float*>(&buf.data[byte_offset + i * byte_stride]);
         for (int c = 0; c < expected_components; ++c) {
-            result.push_back(src[c]);
+            float value{};
+            std::memcpy(&value, &buf.data[byte_offset + i * byte_stride + static_cast<std::size_t>(c) * sizeof(float)], sizeof(float));
+            result.push_back(value);
         }
     }
 
@@ -342,6 +348,9 @@ AssetPackBuilderResult AssetPackBuilder::build(const AssetPackBuilderOptions& op
                 if (primitive.mode != TINYGLTF_MODE_TRIANGLES) continue;
 
                 MeshCompressionInput minput;
+                PackedMeshEntry entry;
+                entry.id = sanitize_asset_id(mesh.name, i * 1000 + j);
+                entry.source_path = options.input_path + "#mesh" + std::to_string(i) + "prim" + std::to_string(j);
 
                 // Extract positions (VEC3 FLOAT)
                 if (primitive.attributes.count("POSITION")) {
@@ -352,6 +361,10 @@ AssetPackBuilderResult AssetPackBuilder::build(const AssetPackBuilderOptions& op
                         result.error = "Failed to read POSITION accessor";
                         return result;
                     }
+                } else {
+                    result.ok = false;
+                    result.error = "Triangle primitive is missing POSITION attribute";
+                    return result;
                 }
 
                 // Extract normals (VEC3 FLOAT)
@@ -366,16 +379,66 @@ AssetPackBuilderResult AssetPackBuilder::build(const AssetPackBuilderOptions& op
                         model, primitive.attributes.at("TEXCOORD_0"), TINYGLTF_TYPE_VEC2);
                 }
 
-                // Extract indices with robust reader
+                const std::size_t vertex_count = minput.positions.size() / 3;
+                if (minput.positions.size() != vertex_count * 3) {
+                    result.ok = false;
+                    result.error = "POSITION attribute size is not a multiple of 3";
+                    return result;
+                }
+                if (!minput.normals.empty() && minput.normals.size() != vertex_count * 3) {
+                    result.ok = false;
+                    result.error = "NORMAL attribute count does not match POSITION count";
+                    return result;
+                }
+                if (!minput.uvs.empty() && minput.uvs.size() != vertex_count * 2) {
+                    result.ok = false;
+                    result.error = "TEXCOORD_0 attribute count does not match POSITION count";
+                    return result;
+                }
+
+                // Extract indices with robust reader or synthesize them for non-indexed triangles.
                 if (primitive.indices >= 0) {
                     minput.indices = read_indices_accessor(model, primitive.indices);
+                } else if (!minput.positions.empty()) {
+                    if ((vertex_count % 3) != 0) {
+                        result.ok = false;
+                        result.error = "Non-indexed triangle primitive vertex count is not a multiple of 3";
+                        return result;
+                    }
+
+                    minput.indices.reserve(vertex_count);
+                    for (std::uint32_t v = 0; v < static_cast<std::uint32_t>(vertex_count); ++v) {
+                        minput.indices.push_back(v);
+                    }
+                }
+
+                if (!minput.positions.empty() && (minput.positions.size() % 3) != 0) {
+                    result.ok = false;
+                    result.error = "POSITION attribute size is not a multiple of 3";
+                    return result;
+                }
+                if (!minput.normals.empty() && (minput.normals.size() % 3) != 0) {
+                    result.ok = false;
+                    result.error = "NORMAL attribute size is not a multiple of 3";
+                    return result;
+                }
+                if (!minput.uvs.empty() && (minput.uvs.size() % 2) != 0) {
+                    result.ok = false;
+                    result.error = "TEXCOORD_0 attribute size is not a multiple of 2";
+                    return result;
+                }
+                if (!minput.indices.empty() && (minput.indices.size() % 3) != 0) {
+                    result.ok = false;
+                    result.error = "Triangle indices are not a multiple of 3";
+                    return result;
                 }
 
                 auto moutput = mesh_comp.compress(minput);
-
-                PackedMeshEntry entry;
-                entry.id = sanitize_asset_id(mesh.name, i * 1000 + j);
-                entry.source_path = options.input_path + "#mesh" + std::to_string(i) + "prim" + std::to_string(j);
+                if (moutput.codec.empty()) {
+                    result.ok = false;
+                    result.error = "Mesh compression failed for " + entry.id;
+                    return result;
+                }
                 entry.codec = moutput.codec;
                 entry.source_bytes = minput.positions.size() * sizeof(float)
                                    + minput.normals.size() * sizeof(float)
@@ -408,9 +471,9 @@ AssetPackBuilderResult AssetPackBuilder::build(const AssetPackBuilderOptions& op
                 }
 
                 // Write mesh data to disk
-                if (!write_blob(out_dir / entry.packed_path, moutput.bytes)) {
+                if (!write_blob(out_dir / entry.packed_path.str(), moutput.bytes)) {
                     result.ok = false;
-                    result.error = "Failed to write mesh: " + entry.packed_path;
+                    result.error = "Failed to write mesh: " + entry.packed_path.str();
                     return result;
                 }
 
@@ -421,6 +484,9 @@ AssetPackBuilderResult AssetPackBuilder::build(const AssetPackBuilderOptions& op
         // 2. Process Textures
         for (size_t i = 0; i < model.images.size(); ++i) {
             const auto& image = model.images[i];
+            PackedTextureEntry entry;
+            entry.id = sanitize_asset_id(image.name, i);
+            entry.source_path = options.input_path + "#image" + std::to_string(i);
 
             // Normalize to RGBA before compression
             std::vector<std::uint8_t> rgba = convert_to_rgba(
@@ -433,10 +499,11 @@ AssetPackBuilderResult AssetPackBuilder::build(const AssetPackBuilderOptions& op
             tinput.rgba = std::move(rgba);
 
             auto toutput = tex_comp.compress(tinput);
-
-            PackedTextureEntry entry;
-            entry.id = sanitize_asset_id(image.name, i);
-            entry.source_path = options.input_path + "#image" + std::to_string(i);
+            if (toutput.codec.empty()) {
+                result.ok = false;
+                result.error = "Texture compression failed for " + entry.id;
+                return result;
+            }
             entry.codec = toutput.codec;
             entry.source_bytes = tinput.rgba.size();
             entry.packed_bytes = toutput.bytes.size();
@@ -445,9 +512,9 @@ AssetPackBuilderResult AssetPackBuilder::build(const AssetPackBuilderOptions& op
             entry.packed_path = "textures/" + entry.id + texture_extension(toutput.codec);
 
             // Write texture data to disk
-            if (!write_blob(out_dir / entry.packed_path, toutput.bytes)) {
+            if (!write_blob(out_dir / entry.packed_path.str(), toutput.bytes)) {
                 result.ok = false;
-                result.error = "Failed to write texture: " + entry.packed_path;
+                result.error = "Failed to write texture: " + entry.packed_path.str();
                 return result;
             }
 

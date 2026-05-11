@@ -12,7 +12,6 @@ struct BackgroundRegistry::Impl {
 };
 
 BackgroundRegistry::BackgroundRegistry() : m_impl(std::make_unique<Impl>()) {
-    register_all_builtins();
 }
 
 BackgroundRegistry::~BackgroundRegistry() = default;

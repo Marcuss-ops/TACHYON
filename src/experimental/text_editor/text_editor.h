@@ -2,6 +2,7 @@
 
 #include "tachyon/text/layout/layout.h"
 #include "tachyon/text/layout/cluster_iterator.h"
+
 #include <string>
 #include <vector>
 
@@ -28,15 +29,15 @@ public:
     void set_utf8(const std::string& utf8_text);
     std::string get_utf8() const;
     static std::string encode_utf8(const std::vector<std::uint32_t>& codepoints);
-    
+
     const std::vector<std::uint32_t>& get_codepoints() const { return m_codepoints; }
     const std::vector<GraphemeCluster>& get_clusters() const { return m_clusters; }
-    
+
     std::size_t cluster_count() const { return m_clusters.size(); }
-    
+
     // Deletes clusters in range [start_cluster, end_cluster)
     void delete_clusters(std::size_t start_cluster, std::size_t end_cluster);
-    
+
     // Inserts codepoints at the given cluster boundary
     void insert_at_cluster(std::size_t cluster_index, const std::vector<std::uint32_t>& codepoints);
 
