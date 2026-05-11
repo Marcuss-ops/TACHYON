@@ -17,3 +17,22 @@ if(TACHYON_ENABLE_PERFETTO)
         find_package(perfetto CONFIG REQUIRED)
     endif()
 endif()
+
+if(TACHYON_ENABLE_TRACY)
+    if(TACHYON_FETCH_DEPS)
+        FetchContent_Declare(
+            tracy
+            GIT_REPOSITORY https://github.com/wolfpld/tracy.git
+            GIT_TAG        v0.11.1
+            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        )
+        
+        # Tracy options
+        set(TRACY_ENABLE ON CACHE BOOL "" FORCE)
+        set(TRACY_ON_DEMAND ON CACHE BOOL "" FORCE)
+        
+        FetchContent_MakeAvailable(tracy)
+    else()
+        find_package(Tracy CONFIG REQUIRED)
+    endif()
+endif()

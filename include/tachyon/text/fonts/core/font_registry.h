@@ -9,8 +9,8 @@
 #include <limits>
 #include <optional>
 #include <string>
-#include <unordered_map>
 #include <vector>
+#include <absl/container/flat_hash_map.h>
 
 namespace tachyon::text {
 
@@ -35,10 +35,9 @@ public:
 private:
     bool can_add_new_font(const std::string& name) const;
 
-    std::unordered_map<std::string, Font> m_fonts;
-    std::unordered_map<std::string, std::vector<std::string>> m_fallbacks;
+    absl::flat_hash_map<std::string, Font> m_fonts;
+    absl::flat_hash_map<std::string, std::vector<std::string>> m_fallbacks;
     std::string m_default_name;
 };
 
 } // namespace tachyon::text
-

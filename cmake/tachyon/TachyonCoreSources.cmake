@@ -42,5 +42,6 @@ list(APPEND TachyonCoreSources
 if(TACHYON_ENABLE_HIGHWAY)
     list(APPEND TachyonCoreSources
         ${CMAKE_CURRENT_SOURCE_DIR}/core/transition/transition_simd_kernels_highway.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/core/simd/conversion_highway.cpp
     )
 endif()

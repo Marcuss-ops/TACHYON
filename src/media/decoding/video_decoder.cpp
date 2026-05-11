@@ -1,4 +1,6 @@
 #include "tachyon/media/decoding/video_decoder.h"
+#include "tachyon/core/simd/conversion.h"
+#include "tachyon/core/profiling.h"
 #include <iostream>
 
 #include <algorithm>
@@ -201,7 +203,6 @@ bool VideoDecoder::convert_to_surface(AVFrame* frame, renderer2d::SurfaceRGBA& t
         return false;
     }
 
-    // Reuse a static or thread-local buffer to avoid allocations
     static thread_local std::vector<std::uint8_t> scratch_buffer;
     const std::size_t required_size = static_cast<std::size_t>(m_width) * static_cast<std::size_t>(m_height) * 4U;
     if (scratch_buffer.size() < required_size) {
@@ -221,16 +222,9 @@ bool VideoDecoder::convert_to_surface(AVFrame* frame, renderer2d::SurfaceRGBA& t
         dst_linesize);
 
     if (scaled <= 0) {
-        std::cerr << "[DEBUG] VideoDecoder: sws_scale failed or returned zero lines" << std::endl;
         return false;
     }
     
-    // Quick check: is the first pixel non-zero?
-    if (scratch_buffer[0] == 0 && scratch_buffer[1] == 0 && scratch_buffer[2] == 0) {
-        // Maybe it's just a black pixel, but let's log it if we suspect total blackness
-    }
-
-    // Convert from RGBA8 to Float32 into target surface
     if (target.width() != static_cast<uint32_t>(m_width) || target.height() != static_cast<uint32_t>(m_height)) {
         target.reset(static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height));
     }
@@ -239,15 +233,8 @@ bool VideoDecoder::convert_to_surface(AVFrame* frame, renderer2d::SurfaceRGBA& t
     const std::uint8_t* src_bytes = scratch_buffer.data();
     const std::size_t pixel_count = static_cast<std::size_t>(m_width) * m_height;
 
-    // Fast conversion loop
-    for (std::size_t i = 0; i < pixel_count; ++i) {
-        const std::size_t src_idx = i * 4;
-        const std::size_t dst_idx = i * 4;
-        dst_pixels[dst_idx + 0] = static_cast<float>(src_bytes[src_idx + 0]) / 255.0f;
-        dst_pixels[dst_idx + 1] = static_cast<float>(src_bytes[src_idx + 1]) / 255.0f;
-        dst_pixels[dst_idx + 2] = static_cast<float>(src_bytes[src_idx + 2]) / 255.0f;
-        dst_pixels[dst_idx + 3] = 1.0f;
-    }
+    // Fast conversion using SIMD
+    core::simd::rgba8_to_float32(dst_pixels, src_bytes, pixel_count);
 
     return true;
 #endif
@@ -262,6 +249,7 @@ std::optional<renderer2d::SurfaceRGBA> VideoDecoder::get_frame_at_time(double se
 }
 
 bool VideoDecoder::get_frame_into(double seconds, renderer2d::SurfaceRGBA& target) {
+    TACHYON_ZONE_F;
 #if !defined(TACHYON_HAS_FFMPEG)
     (void)seconds; (void)target;
     return false;
@@ -271,8 +259,7 @@ bool VideoDecoder::get_frame_into(double seconds, renderer2d::SurfaceRGBA& targe
         return false;
     }
 
-    // Optimization: avoid seeking if we are within a reasonable forward window
-    const double sequential_window = 2.0; // seconds
+    const double sequential_window = 2.0; 
     bool needs_seek = true;
     if (m_last_pts >= 0.0 && seconds >= m_last_pts && seconds <= m_last_pts + sequential_window) {
         needs_seek = false;
@@ -300,8 +287,6 @@ bool VideoDecoder::get_frame_into(double seconds, renderer2d::SurfaceRGBA& targe
                 const double pts_seconds = frame_timestamp_seconds(m_frame, m_stream_time_base);
                 m_last_pts = pts_seconds;
                 
-                // We want the frame closest to 'seconds' but not before it if possible, 
-                // or just the first frame after seek.
                 if (pts_seconds >= seconds - 0.01) {
                     bool success = convert_to_surface(m_frame, target);
                     av_frame_unref(m_frame);

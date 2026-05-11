@@ -35,4 +35,20 @@ if(TACHYON_FETCH_DEPS)
         set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
         FetchContent_MakeAvailable(googletest)
     endif()
+
+    # Abseil for high-performance data structures and logging
+    if(EXISTS "${CMAKE_SOURCE_DIR}/third_party/abseil/CMakeLists.txt")
+        set(absl_SOURCE_DIR "${CMAKE_SOURCE_DIR}/third_party/abseil")
+        set(absl_BINARY_DIR "${CMAKE_BINARY_DIR}/_deps/abseil-build")
+        add_subdirectory(${absl_SOURCE_DIR} ${absl_BINARY_DIR} EXCLUDE_FROM_ALL)
+    else()
+        FetchContent_Declare(
+            absl
+            GIT_REPOSITORY https://github.com/abseil/abseil-cpp.git
+            GIT_TAG        20240116.2 # LTS 2024
+            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        )
+        set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
+        FetchContent_MakeAvailable(absl)
+    endif()
 endif()

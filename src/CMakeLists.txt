@@ -52,6 +52,10 @@ function(tachyon_configure_common target)
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../third_party/stb/include>
             $<INSTALL_INTERFACE:include>
     )
+    
+    if(absl_SOURCE_DIR)
+        target_include_directories(${target} PUBLIC ${absl_SOURCE_DIR})
+    endif()
 
     if(MSVC)
         target_compile_options(${target} PRIVATE /W4 /permissive- /utf-8 /FS)
@@ -67,6 +71,18 @@ function(tachyon_configure_common target)
 
     set_target_properties(${target} PROPERTIES POSITION_INDEPENDENT_CODE ON)
     target_compile_definitions(${target} PRIVATE TACHYON_BUILD_DLL)
+endfunction()
+
+message(STATUS "[DEBUG] absl_SOURCE_DIR: ${absl_SOURCE_DIR}")
+function(tachyon_link_absl target)
+    target_link_libraries(${target} PUBLIC 
+        absl_flat_hash_map
+        absl_strings
+        absl_str_format
+    )
+    if(absl_SOURCE_DIR)
+        target_include_directories(${target} PUBLIC ${absl_SOURCE_DIR})
+    endif()
 endfunction()
 
 function(tachyon_link_text_deps target)
@@ -113,6 +129,12 @@ endfunction()
 add_library(TachyonCore STATIC ${TachyonCoreSources})
 tachyon_configure_common(TachyonCore)
 tachyon_link_omp(TachyonCore)
+tachyon_link_absl(TachyonCore)
+
+if(TACHYON_ENABLE_TRACY)
+    target_link_libraries(TachyonCore PUBLIC TracyClient)
+    target_compile_definitions(TachyonCore PUBLIC TACHYON_ENABLE_TRACY)
+endif()
 
 if(TACHYON_ENABLE_SIMDJSON)
     target_compile_definitions(TachyonCore PUBLIC TACHYON_ENABLE_SIMDJSON)

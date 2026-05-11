@@ -12,10 +12,7 @@
 #include "tachyon/media/streaming/media_prefetcher.h"
 #include "tachyon/runtime/execution/session/render_internal.h"
 #include "tachyon/runtime/execution/parallel/taskflow_runtime.h"
-
-#ifdef TACHYON_TRACY_ENABLED
-#include <tracy/Tracy.hpp>
-#endif
+#include "tachyon/core/profiling.h"
 
 #include <iostream>
 #include <future>
@@ -185,9 +182,7 @@ void render_frames_parallel_internal(
         local_context.cancel_flag = cancel_flag;
         local_context.renderer2d.cancel_flag = cancel_flag;
 
-#ifdef TACHYON_TRACY_ENABLED
-        ZoneScopedN("RenderSession::WorkerLoop::Frame");
-#endif
+        TACHYON_ZONE("ExecuteFrame");
 
         const auto& task = execution_plan.frame_tasks[index];
         RenderPlan frame_plan = execution_plan.render_plan;
@@ -313,6 +308,7 @@ void render_frames_parallel_internal(
         if (progress_callback) {
             progress_callback(completed, task_count);
         }
+        TACHYON_FRAME_MARK;
     };
 
     runtime::TaskflowRuntime tf_runtime(thread_count);
@@ -352,20 +348,13 @@ void render_frames_parallel_internal(
               local_context.cancel_flag = cancel_flag;
               local_context.renderer2d.cancel_flag = cancel_flag;
 
-            for (;;) {
-                // Check for cancellation
-                if (cancel_flag && cancel_flag->load()) {
-                    return;
+            while (true) {
+                std::size_t index = next_index.fetch_add(1);
+                if (index >= task_count || (cancel_flag && cancel_flag->load())) {
+                    break;
                 }
 
-#ifdef TACHYON_TRACY_ENABLED
-                ZoneScopedN("RenderSession::WorkerLoop::Frame");
-#endif
-
-                const std::size_t index = next_index.fetch_add(1);
-                if (index >= task_count) {
-                    return;
-                }
+                TACHYON_ZONE("ExecuteFrame");
 
                 const auto& task = execution_plan.frame_tasks[index];
                 RenderPlan frame_plan = execution_plan.render_plan;
@@ -378,13 +367,13 @@ void render_frames_parallel_internal(
                 bool cache_hit = false;
                 ExecutedFrame executed_frame;
 
-                // Try to load from disk cache (checkpoint/resume)
+                // Try to load from disk cache
                 if (disk_cache) {
                     runtime::CacheKey key = runtime::CacheKey::build(
                         compiled_scene.scene_hash,
                         task.layer_filters.empty() ? "" : task.layer_filters.front(),
                         task.time_seconds,
-                        1, // quality_tier
+                        1,
                         "beauty"
                     );
 
@@ -397,7 +386,6 @@ void render_frames_parallel_internal(
                     }
                 }
 
-                // Render if not loaded from cache
                 if (!framebuffer) {
                     DataSnapshot snapshot;
                     const auto frame_start = std::chrono::high_resolution_clock::now();
@@ -421,13 +409,12 @@ void render_frames_parallel_internal(
                     if (executed_frame.frame) {
                         framebuffer = std::move(executed_frame.frame);
 
-                        // Save to disk cache for checkpoint/resume
                         if (disk_cache) {
                             runtime::CacheKey key = runtime::CacheKey::build(
                                 compiled_scene.scene_hash,
                                 task.layer_filters.empty() ? "" : task.layer_filters.front(),
                                 task.time_seconds,
-                                1, // quality_tier
+                                1,
                                 "beauty"
                             );
 
@@ -438,11 +425,9 @@ void render_frames_parallel_internal(
                 }
 
                 if (streaming_mode && frame_queue && result) {
-                    // Streaming mode: submit to queue for immediate writing
                     frame_queue->submit(index, framebuffer, cache_hit);
                     result->frame_diagnostics[index] = executed_frame.diagnostics;
 
-                    // Try to write ready frames in order
                     frame_queue->write_ready_frames([&](std::size_t frame_idx, const std::shared_ptr<const renderer2d::Framebuffer>& fb) {
                         if (fb) {
                             output::OutputFramePacket packet;
@@ -459,29 +444,27 @@ void render_frames_parallel_internal(
                             const double write_ms = std::chrono::duration<double, std::milli>(write_end - write_start).count();
                             result->frame_diagnostics[frame_idx].add_timing(FrameDiagnostics::kCategoryOutputWrite, "sink_write", write_ms);
 
-                    if (!write_ok) {
-                        if (result) {
-                            result->output_error = sink->last_error();
+                            if (!write_ok) {
+                                if (result) {
+                                    result->output_error = sink->last_error();
+                                }
+                                if (cancel_flag) {
+                                    cancel_flag->store(true);
+                                }
+                            }
                         }
-                        if (cancel_flag) {
-                            cancel_flag->store(true);
-                        }
+                    }, *result);
+                } else {
+                    executed_frame.frame_number = static_cast<std::int64_t>(task.frame_number);
+                    executed_frame.frame = framebuffer;
+                    executed_frame.cache_hit = cache_hit;
+                    executed_frame.scene_hash = compiled_scene.scene_hash;
+                    if (result) {
+                        result->frame_diagnostics[index] = executed_frame.diagnostics;
                     }
+                    rendered_frames[index] = std::move(executed_frame);
                 }
-            }, *result);
-        } else {
-            // Buffered mode: store in vector (original behavior)
-            executed_frame.frame_number = static_cast<std::int64_t>(task.frame_number);
-            executed_frame.frame = framebuffer;
-            executed_frame.cache_hit = cache_hit;
-            executed_frame.scene_hash = compiled_scene.scene_hash;
-            if (result) {
-                result->frame_diagnostics[index] = executed_frame.diagnostics;
-            }
-            rendered_frames[index] = std::move(executed_frame);
-        }
 
-                // Update progress
                 std::size_t completed = 0;
                 if (frame_queue) {
                     completed = frame_queue->completed_count.fetch_add(1) + 1;
@@ -491,40 +474,15 @@ void render_frames_parallel_internal(
                 if (progress_callback) {
                     progress_callback(completed, task_count);
                 }
+                TACHYON_FRAME_MARK;
             }
         })));
     }
 
-    const auto session_start = std::chrono::high_resolution_clock::now();
-    const auto timeout_duration = std::chrono::seconds(15);
-
-    for (auto& w : workers) {
-        if (w.valid()) {
-            const auto now = std::chrono::high_resolution_clock::now();
-            const auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(now - session_start);
-            if (elapsed >= timeout_duration) {
-                if (cancel_flag) cancel_flag->store(true);
-                render_trace("Hard timeout of 15s reached! Aborting session.");
-                break;
-            }
-
-            if (w.wait_for(timeout_duration - elapsed) == std::future_status::timeout) {
-                if (cancel_flag) cancel_flag->store(true);
-                render_trace("Hard timeout of 15s reached! Aborting session.");
-                break;
-            }
-        }
+    for (auto& worker : workers) {
+        worker.wait();
     }
 #endif
-
-    // In streaming mode, wait for any remaining frames to be written
-    if (streaming_mode && frame_queue && sink && result) {
-        // Wait for all frames to be written, but respect cancellation
-        std::unique_lock<std::mutex> lock(frame_queue->mutex);
-        frame_queue->cv.wait(lock, [&]() { 
-            return (frame_queue->next_to_write >= task_count) || (cancel_flag && cancel_flag->load()); 
-        });
-    }
 }
 
 } // namespace tachyon

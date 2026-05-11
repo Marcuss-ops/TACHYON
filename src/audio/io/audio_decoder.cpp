@@ -1,4 +1,5 @@
 #include "tachyon/audio/io/audio_decoder.h"
+#include "tachyon/core/profiling.h"
 
 #include <algorithm>
 #include <cmath>

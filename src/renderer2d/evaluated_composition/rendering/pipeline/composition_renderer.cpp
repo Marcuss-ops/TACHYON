@@ -47,6 +47,8 @@
 #include <atomic>
 #include <mutex>
 
+#include "tachyon/core/profiling.h"
+
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -635,6 +637,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
 #pragma omp parallel for schedule(dynamic)
 #endif
         for (int i = 0; i < static_cast<int>(grid.tiles.size()); ++i) {
+            TACHYON_ZONE("RenderTile");
             const auto& tile = grid.tiles[i];
             
             auto tile_surface_ptr = context.surface_pool 
