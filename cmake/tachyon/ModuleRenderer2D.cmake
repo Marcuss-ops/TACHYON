@@ -56,7 +56,9 @@ set(TachyonRenderer2DEffectsSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/glsl_transition_effect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/diagnostics/diagnostic_surface.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/transitions/basic_transitions.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/transitions/light_leak_transitions.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/transitions/light_leaks/light_leak_engine.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/transitions/light_leaks/light_leak_masks.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/transitions/light_leaks/light_leak_presets.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/transitions/artistic_transitions.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/transitions/transition_utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/core/transitions/transition_downsampler.cpp

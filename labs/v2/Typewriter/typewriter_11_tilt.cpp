@@ -13,67 +13,69 @@ extern "C" tachyon::SceneSpec build_scene() {
         .duration(5.0)
         .fps(30)
         .layer("bg", [](LayerBuilder& l) {
-            l.solid("bg").color({35, 35, 41, 255}).in(0).out(5.0);
+            l.solid("bg")
+             .size(1920.0, 1080.0)
+             .position(960.0, 540.0)
+             .color({214, 214, 216, 255})
+             .in(0).out(5.0);
         })
         .camera3d_layer("cam", [](LayerBuilder& l) {
-            l.transform3d().position(0.0, -120.0, -980.0).done()
-             .camera().type("two_node")
-             .poi(0.0, 70.0, 0.0)
-             .zoom(48.0)
-             .done();
+            l.position3d(0.0, -180.0, 1200.0)
+             .camera_poi(0.0, 40.0, 0.0)
+             .camera_type("two_node")
+             .camera_zoom(48.0);
         })
         .light_layer("ambient", [](LayerBuilder& l) {
-            l.light().type("ambient")
-             .color({255, 255, 255, 255})
-             .intensity(0.38)
-             .done();
+            l.light_type("ambient")
+             .light_color({255, 255, 255, 255})
+             .light_intensity(0.75);
         })
         .light_layer("key", [](LayerBuilder& l) {
-            l.light().type("point")
-             .color({255, 245, 230, 255})
-             .intensity(1.65)
-             .done()
-             .transform3d().position(-260.0, 200.0, -180.0).done();
+            l.light_type("point")
+             .position3d(-500.0, 500.0, 400.0)
+             .light_color({255, 235, 210, 255})
+             .light_intensity(7800000.0);
         })
         .light_layer("rim", [](LayerBuilder& l) {
-            l.light().type("point")
-             .color({190, 210, 255, 255})
-             .intensity(0.85)
-             .done()
-             .transform3d().position(220.0, 60.0, -220.0).done();
+            l.light_type("point")
+             .position3d(600.0, -100.0, -200.0)
+             .light_color({180, 120, 255, 255})
+             .light_intensity(2500000.0);
         })
         .layer("plate", [](LayerBuilder& l) {
             l.solid("plate")
-             .color({62, 66, 80, 255})
-             .size(1500.0, 560.0)
+             .color({80, 80, 85, 255})
+             .size(1000.0, 300.0)
              .anchor(0.0, 0.0)
-             .position(960.0, 540.0)
-             .rotation3d(-10.0, 18.0, 0.0)
-             .position3d(0.0, 0.0, 40.0)
+             .position(960.0, 610.0)
+             .rotation3d(-20.0, 0.0, 0.0)
+             .position3d(0.0, 0.0, 80.0)
+             .material()
+                .base_color({80, 80, 85, 255})
+                .metallic(0.0)
+                .roughness(0.55)
+                .emission_color({128, 128, 136, 255})
+                .emission_strength(0.18)
+                .done()
              .extrude3d(0.08)
              .bevel3d(0.02)
              .in(0).out(5.0);
         })
         .layer("title", [](LayerBuilder& l) {
-            l.from_spec(tachyon::presets::text::headline("TILT")
-                .font("Default")
-                .font_size(120)
-                .color({255, 255, 255, 255})
-                .stroke_color({0, 0, 0, 0})
-                .stroke_width(0.0)
-                .center()
-                .position(960.0, 540.0)
-                .text_box(1920, 1080)
-                .animate(presets::text::kind_typewriter(18.0, "|"))
-                .build());
+            l.text()
+             .content("TILT")
+             .font("default")
+             .font_size(220.0)
+             .box(1920.0f, 1080.0f)
+             .align(HorizontalAlign::Center)
+             .valign(VerticalAlign::Middle)
+             .color({255, 255, 255, 255})
+             .stroke(0, 0, 0, 255, 6.0f)
+             .animate(presets::text::kind_typewriter(18.0, "|"))
+             .done();
 
-            l.rotation3d(-14.0, 18.0, 0.0)
-             .position3d(0.0, 0.0, 92.0)
-             .extrude3d(0.40)
-             .bevel3d(0.06)
-             .scale3d(1.35, 1.35, 1.0)
+            l.position(960.0, 470.0)
              .in(0).out(5.0);
-            tachyon::presets::animation3d::tilt(l, 18.0, 5.0, 0.75);
         })
         .build();
 
