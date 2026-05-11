@@ -2,7 +2,6 @@
 
 #include "tachyon/core/api.h"
 #include "tachyon/core/spec/schema/contracts/shared_contracts.h"
-#include "tachyon/tracker/optical_flow.h"
 #include <vector>
 #include <utility>
 #include <string>
@@ -44,41 +43,29 @@ struct FrameBlendParams {
     float frame_duration);
 
 /**
- * @brief Evaluator for time remapping with optical flow support.
+ * @brief Evaluator for time remapping.
  */
 class TACHYON_API TimeRemapEvaluator {
 public:
     struct Config {
-        float optical_flow_confidence_threshold;
         bool enable_pixel_motion;
-        bool enable_optical_flow_warping;
-        Config() : optical_flow_confidence_threshold(0.5f), enable_pixel_motion(true), enable_optical_flow_warping(true) {}
+        Config() : enable_pixel_motion(true) {}
     };
 
     explicit TimeRemapEvaluator(const Config& config = Config());
     
     /**
-     * @brief Evaluate source time with fallback based on confidence.
+     * @brief Evaluate source time.
      */
     float evaluate(const TimeRemapCurve& curve, float dest_time, float frame_duration) const;
     
     /**
-     * @brief Get frame blend result with optical flow warping if enabled.
+     * @brief Get frame blend result.
      */
-    FrameBlendResult evaluate_with_flow(
+    FrameBlendResult evaluate_blend(
         const TimeRemapCurve& curve,
         float dest_time,
-        float frame_duration,
-        const tracker::OpticalFlowResult* flow_result = nullptr) const;
-    
-    /**
-     * @brief Warp pixels using optical flow for pixel motion blending.
-     */
-    std::vector<float> warp_frame(
-        const std::vector<float>& frame,
-        int width, int height, int channels,
-        const tracker::OpticalFlowResult& flow,
-        float warp_factor = 1.0f) const;
+        float frame_duration) const;
 
 private:
     Config config_;

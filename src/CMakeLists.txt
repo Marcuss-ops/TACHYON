@@ -6,12 +6,10 @@ include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonPlatformSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonSceneEvalSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonTimelineSources.cmake)
 
-include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonRenderer3DSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonMediaSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonAudioSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonOutputSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonTextSources.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonEditorSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonCLISources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonLibrarySources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonColorSources.cmake)
@@ -93,15 +91,6 @@ function(tachyon_link_media_deps target)
     endif()
 endfunction()
 
-function(tachyon_link_3d_deps target)
-    if(TACHYON_ENABLE_3D)
-        target_compile_definitions(${target} PUBLIC TACHYON_ENABLE_3D)
-        if(TACHYON_ENABLE_FILAMENT)
-            target_compile_definitions(${target} PUBLIC TACHYON_ENABLE_FILAMENT)
-        endif()
-    endif()
-endfunction()
-
 function(tachyon_link_omp target)
     if(TACHYON_HAS_OPENMP AND TARGET OpenMP::OpenMP_CXX)
         target_link_libraries(${target} PUBLIC OpenMP::OpenMP_CXX)
@@ -112,7 +101,7 @@ function(tachyon_link_output_deps target)
     if(TACHYON_ENABLE_OUTPUT)
         target_compile_definitions(${target} PUBLIC TACHYON_ENABLE_OUTPUT)
 
-        if(TACHYON_ENABLE_OIDN AND WIN32 AND TACHYON_ENABLE_3D)
+        if(TACHYON_ENABLE_OIDN AND WIN32)
             target_include_directories(${target} PUBLIC $<BUILD_INTERFACE:${oidn_SOURCE_DIR}/include>)
             target_link_libraries(${target} PUBLIC OpenImageDenoise)
         endif()
@@ -124,6 +113,16 @@ endfunction()
 add_library(TachyonCore STATIC ${TachyonCoreSources})
 tachyon_configure_common(TachyonCore)
 tachyon_link_omp(TachyonCore)
+
+if(TACHYON_ENABLE_SIMDJSON)
+    target_compile_definitions(TachyonCore PUBLIC TACHYON_ENABLE_SIMDJSON)
+
+    if(TARGET simdjson::simdjson)
+        target_link_libraries(TachyonCore PUBLIC simdjson::simdjson)
+    elseif(TARGET simdjson)
+        target_link_libraries(TachyonCore PUBLIC simdjson)
+    endif()
+endif()
 
 if(TACHYON_ENABLE_HIGHWAY)
     if(TARGET hwy)
@@ -192,37 +191,36 @@ endif()
 add_library(TachyonTimeline STATIC ${TachyonTimelineSources})
 tachyon_configure_common(TachyonTimeline)
 target_link_libraries(TachyonTimeline PUBLIC TachyonCore)
-if(TACHYON_ENABLE_TRACKER)
-    target_link_libraries(TachyonTimeline PUBLIC TachyonTracker)
-endif()
 
 # --- Module Includes (Collected sources and module targets) ---
 
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/ModuleScene.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/ModuleRenderer2D.cmake)
 
-add_library(TachyonMedia STATIC ${TachyonMediaSources})
-tachyon_configure_common(TachyonMedia)
+if(TACHYON_ENABLE_MEDIA)
+    add_library(TachyonMedia STATIC ${TachyonMediaSources})
+    tachyon_configure_common(TachyonMedia)
 
-if(TACHYON_ENABLE_DRACO)
-    target_compile_definitions(TachyonMedia PUBLIC TACHYON_ENABLE_DRACO)
-    target_link_libraries(TachyonMedia PRIVATE draco_static)
-    target_include_directories(TachyonMedia PRIVATE ${draco_SOURCE_DIR}/src ${CMAKE_BINARY_DIR})
-endif()
+    if(TACHYON_ENABLE_DRACO)
+        target_compile_definitions(TachyonMedia PUBLIC TACHYON_ENABLE_DRACO)
+        target_link_libraries(TachyonMedia PRIVATE draco_static)
+        target_include_directories(TachyonMedia PRIVATE ${draco_SOURCE_DIR}/src ${CMAKE_BINARY_DIR})
+    endif()
 
-if(TACHYON_ENABLE_BASIS)
-    target_compile_definitions(TachyonMedia PUBLIC TACHYON_ENABLE_BASIS)
-    target_link_libraries(TachyonMedia PRIVATE basisu_lib)
-    target_include_directories(TachyonMedia PRIVATE ${basis_universal_SOURCE_DIR})
+    if(TACHYON_ENABLE_BASIS)
+        target_compile_definitions(TachyonMedia PUBLIC TACHYON_ENABLE_BASIS)
+        target_link_libraries(TachyonMedia PRIVATE basisu_lib)
+        target_include_directories(TachyonMedia PRIVATE ${basis_universal_SOURCE_DIR})
+    endif()
+    target_include_directories(TachyonMedia
+        PRIVATE
+            ${tinygltf_SOURCE_DIR}
+            ${pugixml_SOURCE_DIR}/src
+            ${TACHYON_EARCUT_INCLUDE_DIR}
+    )
+    tachyon_link_media_deps(TachyonMedia)
+    target_link_libraries(TachyonMedia PUBLIC pugixml TachyonText TachyonRenderer2D)
 endif()
-target_include_directories(TachyonMedia
-    PRIVATE
-        ${tinygltf_SOURCE_DIR}
-        ${pugixml_SOURCE_DIR}/src
-        ${TACHYON_EARCUT_INCLUDE_DIR}
-)
-tachyon_link_media_deps(TachyonMedia)
-target_link_libraries(TachyonMedia PUBLIC pugixml TachyonText TachyonRenderer2D)
 
 add_library(TachyonAudio STATIC ${TachyonAudioSources})
 tachyon_configure_common(TachyonAudio)
@@ -251,12 +249,10 @@ tachyon_assert_no_duplicate_sources(TachyonPresetsSources)
 tachyon_assert_no_duplicate_sources(TachyonRuntimeSources)
 tachyon_assert_no_duplicate_sources(TachyonRenderer2DSources)
 tachyon_assert_no_duplicate_sources(TachyonRenderer2DExtrasSources)
-tachyon_assert_no_duplicate_sources(TachyonRenderer3DSources)
 tachyon_assert_no_duplicate_sources(TachyonMediaSources)
 tachyon_assert_no_duplicate_sources(TachyonAudioSources)
 tachyon_assert_no_duplicate_sources(TachyonOutputSources)
 tachyon_assert_no_duplicate_sources(TachyonTextSources)
-tachyon_assert_no_duplicate_sources(TachyonEditorSources)
 tachyon_assert_no_duplicate_sources(TachyonCLICoreSources)
 tachyon_assert_no_duplicate_sources(TachyonCLILibrarySources)
 tachyon_assert_no_duplicate_sources(TachyonLibrarySources)
@@ -266,12 +262,6 @@ tachyon_check_source_registration(${CMAKE_CURRENT_SOURCE_DIR}/media TachyonMedia
 tachyon_check_source_registration(${CMAKE_CURRENT_SOURCE_DIR}/renderer2d TachyonRenderer2DAllSources)
 tachyon_check_source_registration(${CMAKE_CURRENT_SOURCE_DIR}/runtime TachyonRuntimeSources)
 tachyon_check_source_registration(${CMAKE_CURRENT_SOURCE_DIR}/core/scene TachyonSceneAllSources)
-
-if(TACHYON_ENABLE_TRACKER)
-    include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonTrackerSources.cmake)
-    tachyon_check_source_registration(${CMAKE_CURRENT_SOURCE_DIR}/tracker TachyonTrackerSources)
-    tachyon_assert_no_duplicate_sources(TachyonTrackerSources)
-endif()
 
 # Global check for cross-target source duplication
 set(GlobalTachyonSources
@@ -296,9 +286,7 @@ add_library(TachyonText STATIC ${TachyonTextSources})
 tachyon_configure_common(TachyonText)
 tachyon_link_text_deps(TachyonText)
 
-add_library(TachyonEditor STATIC ${TachyonEditorSources})
-tachyon_configure_common(TachyonEditor)
-target_link_libraries(TachyonEditor PUBLIC TachyonCore)
+
 
 add_library(TachyonPlatform STATIC ${TachyonPlatformSources})
 tachyon_configure_common(TachyonPlatform)
@@ -306,11 +294,6 @@ tachyon_configure_common(TachyonPlatform)
 add_library(TachyonLibrary STATIC ${TachyonLibrarySources})
 tachyon_configure_common(TachyonLibrary)
 target_link_libraries(TachyonLibrary PUBLIC TachyonPresets)
-
-if(TACHYON_ENABLE_TRACKER)
-    add_library(TachyonTracker STATIC ${TachyonTrackerSources})
-    tachyon_configure_common(TachyonTracker)
-endif()
 
 # CLI libraries removed. Sources are added directly to executables to allow different compile-time configurations.
 
@@ -337,10 +320,6 @@ target_link_libraries(TachyonTools INTERFACE
     TachyonCLICore
 )
 
-if(TACHYON_ENABLE_TRACKER)
-    target_link_libraries(TachyonTools INTERFACE TachyonTracker)
-endif()
-
 # Minimal render-focused executable
 add_executable(tachyon
     main.cpp
@@ -359,9 +338,7 @@ target_link_libraries(tachyon
         TachyonPresets
         TachyonDiagnostics
 )
-if(TARGET TachyonRenderer3D)
-    target_link_libraries(tachyon PRIVATE TachyonRenderer3D)
-endif()
+tachyon_link_mimalloc(tachyon)
 
 # Full tooling/library executable (optional)
 if(TACHYON_BUILD_LIBRARY_TOOLS)
@@ -380,13 +357,10 @@ if(TACHYON_BUILD_LIBRARY_TOOLS)
         PRIVATE
             TachyonRuntimeEngine
             TachyonLibrary
-            TachyonEditor
             TachyonPresets
             TachyonDiagnostics
     )
-    if(TARGET TachyonRenderer3D)
-        target_link_libraries(tachyon-library PRIVATE TachyonRenderer3D)
-    endif()
+    tachyon_link_mimalloc(tachyon-library)
 endif()
 
 if(MSVC)

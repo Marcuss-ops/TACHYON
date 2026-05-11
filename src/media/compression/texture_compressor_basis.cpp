@@ -1,5 +1,6 @@
 #include "tachyon/media/compression/texture_compressor.h"
 
+#ifdef TACHYON_ENABLE_BASIS
 #include <cstring>
 #include <mutex>
 #include <thread>
@@ -67,3 +68,13 @@ TextureCompressor& basis_texture_compressor() {
 }
 
 } // namespace tachyon::media
+
+#else
+
+namespace tachyon::media {
+TextureCompressor& basis_texture_compressor() {
+    return none_texture_compressor();
+}
+} // namespace tachyon::media
+
+#endif

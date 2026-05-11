@@ -1,5 +1,6 @@
 #include "tachyon/media/compression/mesh_compressor.h"
 
+#ifdef TACHYON_ENABLE_DRACO
 #include <draco/compression/encode.h>
 #include <draco/core/cycle_timer.h>
 #include <draco/mesh/mesh.h>
@@ -87,3 +88,13 @@ MeshCompressor& draco_mesh_compressor() {
 }
 
 } // namespace tachyon::media
+
+#else
+
+namespace tachyon::media {
+MeshCompressor& draco_mesh_compressor() {
+    return none_mesh_compressor();
+}
+} // namespace tachyon::media
+
+#endif

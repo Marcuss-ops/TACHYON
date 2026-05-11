@@ -3,10 +3,6 @@
 #include "tachyon/renderer2d/effects/effect_registry.h"
 #include "tachyon/runtime/profiling/render_profiler.h"
 
-#ifdef TACHYON_ENABLE_3D
-#include "tachyon/renderer3d/core/renderer3d_backend_factory.h"
-#include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
-#endif
 
 namespace tachyon {
 
@@ -26,14 +22,6 @@ RasterizationResult RasterizationStep::execute(
     const renderer2d::DrawList2D draw_list = builder.build(cached_comp);
     result.draw_command_count = draw_list.commands.size();
 
-#ifdef TACHYON_ENABLE_3D
-    // Inject ray tracer if scene has 3D layers and none has been injected yet
-    if (!context.renderer2d.ray_tracer) {
-        context.renderer2d.ray_tracer = renderer3d::create_renderer3d_backend(
-            context.renderer2d.media_manager,
-            context.renderer2d.modifier_registry);
-    }
-#endif
 
     RasterizedFrame2D rasterized;
     {

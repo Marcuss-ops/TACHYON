@@ -1,6 +1,8 @@
 #pragma once
 
+#ifdef TACHYON_ENABLE_MEDIA
 #include "tachyon/media/management/media_manager.h"
+#endif
 #include "tachyon/renderer2d/resource/render_context.h"
 #include "tachyon/core/render/iray_tracer.h"
 #include "tachyon/runtime/execution/planning/quality_policy.h"
@@ -16,13 +18,21 @@
 
 namespace tachyon {
 
-namespace media { class MediaPrefetcher; class PlaybackScheduler; }
+namespace media { 
+#ifdef TACHYON_ENABLE_MEDIA
+class MediaManager; 
+class MediaPrefetcher; 
+class PlaybackScheduler; 
+#endif
+}
 namespace profiling { class RenderProfiler; }
 
 struct RenderContext {
+#ifdef TACHYON_ENABLE_MEDIA
     std::shared_ptr<media::MediaManager> media;
     media::MediaPrefetcher* prefetcher{nullptr};
     media::PlaybackScheduler* scheduler{nullptr};
+#endif
     renderer2d::RenderContext2D renderer2d;
     QualityPolicy policy;
     std::shared_ptr<IRayTracer> ray_tracer;
@@ -36,8 +46,11 @@ struct RenderContext {
     std::atomic<bool>* cancel_flag{nullptr};
 
     explicit RenderContext(
-        std::shared_ptr<renderer2d::PrecompCache> precomp_cache = nullptr,
-        std::shared_ptr<media::MediaManager> media_mgr = nullptr);
+        std::shared_ptr<renderer2d::PrecompCache> precomp_cache = nullptr
+#ifdef TACHYON_ENABLE_MEDIA
+        , std::shared_ptr<media::MediaManager> media_mgr = nullptr
+#endif
+    );
 
 };
 

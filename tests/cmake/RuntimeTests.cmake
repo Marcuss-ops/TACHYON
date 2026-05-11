@@ -17,8 +17,10 @@ add_executable(TachyonRuntimeTests
     unit/runtime/execution/frame_executor_tests.cpp
     unit/runtime/execution/frame_range_tests.cpp
     unit/runtime/execution/tile_scheduler_tests.cpp
+    unit/runtime/execution/taskflow_runtime_tests.cpp
     unit/runtime/frame_adapter_tests.cpp
     unit/runtime/telemetry_industrial_tests.cpp
+    unit/runtime/jit_render_tests.cpp
 )
 
 target_compile_definitions(TachyonRuntimeTests
@@ -33,6 +35,7 @@ target_link_libraries(TachyonRuntimeTests
         TachyonCore
         TachyonPlatform
         TachyonSceneEval
+        TachyonPresets
 )
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)

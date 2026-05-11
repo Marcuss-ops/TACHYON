@@ -1,7 +1,6 @@
 #include "tachyon/runtime/compiler/scene_compiler.h"
 #include "tachyon/runtime/compiler/scene_hash_builder.h"
 #include "tachyon/runtime/compiler/property_track_compiler.h"
-#include "tachyon/importer/scene_importer.h"
 #include "tachyon/core/string_utils.h"
 
 #include <algorithm>
@@ -291,27 +290,7 @@ bool SceneCompiler::update_compiled_scene(CompiledScene& existing, const SceneSp
     
 ResolutionResult<SceneSpec> SceneCompiler::import_external_scene(const std::filesystem::path& path) {
     ResolutionResult<SceneSpec> result;
-    std::string ext = path.extension().string();
-    ascii_lower_inplace(ext);
-
-    std::unique_ptr<importer::SceneImporter> imp;
-    if (ext == ".usd" || ext == ".usda" || ext == ".usdc") {
-        imp = importer::create_usd_importer();
-    } else if (ext == ".abc") {
-        imp = importer::create_alembic_importer();
-    }
-
-    if (!imp) {
-        result.diagnostics.add_error("IMPORT_ERR", "No importer available for format: " + ext);
-        return result;
-    }
-
-    if (!imp->load(path.string())) {
-        result.diagnostics.add_error("IMPORT_ERR", "Failed to load scene: " + imp->last_error());
-        return result;
-    }
-
-    result.value = imp->build_scene_spec();
+    result.diagnostics.add_error("IMPORT_ERR", "External scene import is currently disabled in this build.");
     return result;
 }
 

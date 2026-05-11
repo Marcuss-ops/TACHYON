@@ -35,11 +35,6 @@ set(TachyonRuntimeCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/diagnostics/report.cpp
 )
 
-if(NOT TACHYON_ENABLE_3D)
-    list(APPEND TachyonRuntimeCoreSources
-        ${CMAKE_CURRENT_SOURCE_DIR}/renderer3d/modifiers/modifier3d_registry_stub.cpp
-    )
-endif()
 
 set(TachyonRuntimeExecutionSources
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/compiled_frame_program.cpp
@@ -54,6 +49,7 @@ set(TachyonRuntimeExecutionSources
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_session.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_session_audio.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_session_parallel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/parallel/taskflow_runtime.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_session_serialization.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/batch_runner/batch_runner_execute.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/batch_runner/batch_runner_validate.cpp
@@ -128,20 +124,33 @@ target_link_libraries(TachyonRuntimeExecution
         TachyonRuntimeCore
         TachyonScene
         TachyonRenderer2D
-        TachyonMedia
         TachyonOutput
     PRIVATE
         TachyonPlatform
-        TachyonAudio
         TachyonText
-        $<$<BOOL:${TACHYON_ENABLE_3D}>:TachyonRenderer3D>
-        $<$<BOOL:${TACHYON_ENABLE_3D}>:TachyonScene3DBridge>
 )
-tachyon_link_3d_deps(TachyonRuntimeExecution)
+if(TACHYON_ENABLE_MEDIA)
+    target_link_libraries(TachyonRuntimeExecution PUBLIC TachyonMedia)
+endif()
+if(TACHYON_ENABLE_AUDIO_MUX)
+    target_link_libraries(TachyonRuntimeExecution PRIVATE TachyonAudio)
+endif()
 tachyon_link_text_deps(TachyonRuntimeExecution)
 tachyon_link_media_deps(TachyonRuntimeExecution)
 tachyon_link_output_deps(TachyonRuntimeExecution)
 tachyon_link_omp(TachyonRuntimeExecution)
+
+if(TACHYON_ENABLE_TASKFLOW)
+    target_compile_definitions(TachyonRuntimeExecution PUBLIC TACHYON_ENABLE_TASKFLOW)
+
+    if(TARGET Taskflow)
+        target_link_libraries(TachyonRuntimeExecution PUBLIC Taskflow)
+    elseif(TARGET Taskflow::Taskflow)
+        target_link_libraries(TachyonRuntimeExecution PUBLIC Taskflow::Taskflow)
+    elseif(TARGET taskflow)
+        target_link_libraries(TachyonRuntimeExecution PUBLIC taskflow)
+    endif()
+endif()
 
 # 3. TachyonRuntimeCompiler: Scene compilation logic
 add_library(TachyonRuntimeCompiler STATIC ${TachyonRuntimeCompilerSources})
