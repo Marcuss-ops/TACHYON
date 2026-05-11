@@ -178,7 +178,8 @@ bool render_transition_demo_with_sink(
         }
 
         const int thread_count = static_cast<int>(std::thread::hardware_concurrency());
-        const renderer2d::SurfaceRGBA blended_result = kernel.apply(preview_source, &preview_target, t, thread_count);
+        renderer2d::SurfaceRGBA blended_result(preview_source.width(), preview_source.height());
+        kernel.apply(blended_result, preview_source, &preview_target, t, thread_count);
         if (index == 0 || index == lead_in_frames || index + 1 == frame_count) {
             const auto avg = sample_average_rgb(blended_result);
             std::cout << "[NativeRender] " << mode_label << " " << transition_id

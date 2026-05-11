@@ -46,6 +46,74 @@ std::filesystem::path validation_root() {
     return root;
 }
 
+tachyon::renderer2d::SurfaceRGBA resize_surface(
+    const tachyon::renderer2d::SurfaceRGBA& src,
+    std::uint32_t width,
+    std::uint32_t height) {
+
+    tachyon::renderer2d::SurfaceRGBA out(width, height);
+    out.set_profile(src.profile());
+    if (width == 0U || height == 0U || src.width() == 0U || src.height() == 0U) {
+        return out;
+    }
+
+    for (std::uint32_t y = 0; y < height; ++y) {
+        for (std::uint32_t x = 0; x < width; ++x) {
+            const std::uint32_t src_x = static_cast<std::uint32_t>(
+                (static_cast<std::uint64_t>(x) * src.width()) / std::max<std::uint32_t>(1U, width));
+            const std::uint32_t src_y = static_cast<std::uint32_t>(
+                (static_cast<std::uint64_t>(y) * src.height()) / std::max<std::uint32_t>(1U, height));
+            out.set_pixel(
+                x,
+                y,
+                src.get_pixel(
+                    std::min(src_x, src.width() - 1U),
+                    std::min(src_y, src.height() - 1U)));
+        }
+    }
+
+    return out;
+}
+
+void save_contact_sheet(
+    const std::filesystem::path& path,
+    const std::vector<const tachyon::renderer2d::SurfaceRGBA*>& surfaces,
+    std::uint32_t columns) {
+
+    if (surfaces.empty() || columns == 0U) {
+        return;
+    }
+
+    const std::uint32_t rows = static_cast<std::uint32_t>((surfaces.size() + columns - 1U) / columns);
+    const std::uint32_t cell_w = 640U;
+    const std::uint32_t cell_h = 360U;
+    tachyon::renderer2d::SurfaceRGBA sheet(columns * cell_w, rows * cell_h);
+    sheet.clear(tachyon::renderer2d::Color{0.05f, 0.06f, 0.08f, 1.0f});
+
+    for (std::size_t i = 0; i < surfaces.size(); ++i) {
+        if (!surfaces[i]) {
+            continue;
+        }
+        const std::uint32_t row = static_cast<std::uint32_t>(i) / columns;
+        const std::uint32_t col = static_cast<std::uint32_t>(i) % columns;
+        const auto resized = resize_surface(*surfaces[i], cell_w - 12U, cell_h - 12U);
+        sheet.fill_rect(
+            tachyon::renderer2d::RectI{
+                static_cast<int>(col * cell_w),
+                static_cast<int>(row * cell_h),
+                static_cast<int>(cell_w),
+                static_cast<int>(cell_h)},
+            tachyon::renderer2d::Color{0.09f, 0.10f, 0.14f, 1.0f},
+            false);
+        sheet.blit(
+            resized,
+            static_cast<int>(col * cell_w + 6U),
+            static_cast<int>(row * cell_h + 6U));
+    }
+
+    sheet.save_png(path);
+}
+
 float smoothstep(float edge0, float edge1, float x) {
     if (edge0 == edge1) {
         return x < edge0 ? 0.0f : 1.0f;
@@ -261,6 +329,13 @@ std::filesystem::path font_path() {
     return tests_root() / ".." / "assets" / "fonts" / "SFPRODISPLAYBOLD.OTF";
 }
 
+void initialize_render_context(tachyon::RenderContext& context) {
+    if (!context.media) {
+        context.media = std::make_shared<tachyon::media::MediaManager>();
+    }
+    context.renderer2d.media_manager = context.media.get();
+}
+
 tachyon::SceneSpec make_scene_with_image(const std::filesystem::path& image_path, float camera_x = 0.0f) {
     using namespace tachyon::scene;
 
@@ -368,6 +443,40 @@ tachyon::SceneSpec make_parallax_layer_scene(const std::filesystem::path& image_
              .material().emission_strength(4.0).done();
         })
         .build_scene();
+}
+
+void set_camera_zoom(tachyon::scene::EvaluatedCompositionState& state, float zoom) {
+    state.camera.zoom = zoom;
+    state.camera.fov_y_rad = 2.0f * std::atan(static_cast<float>(state.height) / (2.0f * std::max(zoom, 1.0f)));
+    state.camera.camera.fov_y_rad = state.camera.fov_y_rad;
+    state.camera.camera.focal_length_mm = std::max(1.0f, zoom / 25.0f);
+}
+
+void set_light_intensity(tachyon::scene::EvaluatedCompositionState& state, float ambient_intensity, float key_intensity) {
+    for (auto& light : state.lights) {
+        if (light.type == "ambient") {
+            light.intensity = ambient_intensity;
+        } else if (light.type == "point") {
+            light.intensity = key_intensity;
+        }
+    }
+}
+
+void set_image_material(
+    tachyon::scene::EvaluatedCompositionState& state,
+    float roughness,
+    float metallic,
+    float opacity,
+    float emission) {
+
+    for (auto& layer : state.layers) {
+        if (layer.type == tachyon::LayerType::Image) {
+            layer.material.roughness = roughness;
+            layer.material.metallic = metallic;
+            layer.opacity = opacity;
+            layer.material.emission = emission;
+        }
+    }
 }
 
 tachyon::RasterizedFrame2D render_scene(
@@ -478,6 +587,7 @@ bool run_png_3d_validation_tests() {
 
     {
         RenderContext context;
+        initialize_render_context(context);
         const auto rendered = render_scene(
             make_scene_with_image(logo_alpha),
             "png_3d_smoke",
@@ -508,6 +618,8 @@ bool run_png_3d_validation_tests() {
     {
         RenderContext first_context;
         RenderContext second_context;
+        initialize_render_context(first_context);
+        initialize_render_context(second_context);
         const auto first = render_scene(
             make_scene_with_image(logo_alpha),
             "png_3d_smoke",
@@ -541,7 +653,204 @@ bool run_png_3d_validation_tests() {
     }
 
     {
+        RenderContext camera_context;
+        initialize_render_context(camera_context);
+        const auto zoom_20 = render_scene(
+            make_scene_with_image(logo_alpha),
+            "png_3d_camera_zoom_20",
+            0,
+            camera_context.renderer2d,
+            [](tachyon::scene::EvaluatedCompositionState& state) {
+                set_camera_zoom(state, 20.0f);
+            });
+        const auto zoom_35 = render_scene(
+            make_scene_with_image(logo_alpha),
+            "png_3d_camera_zoom_35",
+            0,
+            camera_context.renderer2d,
+            [](tachyon::scene::EvaluatedCompositionState& state) {
+                set_camera_zoom(state, 35.0f);
+            });
+        const auto zoom_70 = render_scene(
+            make_scene_with_image(logo_alpha),
+            "png_3d_camera_zoom_70",
+            0,
+            camera_context.renderer2d,
+            [](tachyon::scene::EvaluatedCompositionState& state) {
+                set_camera_zoom(state, 70.0f);
+            });
+
+        check_true(zoom_20.surface != nullptr && zoom_35.surface != nullptr && zoom_70.surface != nullptr, "Camera zoom renders should produce surfaces");
+        if (zoom_20.surface && zoom_35.surface && zoom_70.surface) {
+            save_contact_sheet(
+                validation_root() / "camera_zoom_contactsheet.png",
+                {zoom_20.surface.get(), zoom_35.surface.get(), zoom_70.surface.get()},
+                3U);
+        }
+    }
+
+    {
+        RenderContext light_context;
+        initialize_render_context(light_context);
+        const auto ambient_0 = render_scene(
+            make_scene_with_image(logo_alpha),
+            "png_3d_light_ambient_0",
+            0,
+            light_context.renderer2d,
+            [](tachyon::scene::EvaluatedCompositionState& state) {
+                set_light_intensity(state, 0.0f, 2.8f);
+            });
+        const auto ambient_1 = render_scene(
+            make_scene_with_image(logo_alpha),
+            "png_3d_light_ambient_1",
+            0,
+            light_context.renderer2d,
+            [](tachyon::scene::EvaluatedCompositionState& state) {
+                set_light_intensity(state, 1.0f, 2.8f);
+            });
+        const auto ambient_5 = render_scene(
+            make_scene_with_image(logo_alpha),
+            "png_3d_light_ambient_5",
+            0,
+            light_context.renderer2d,
+            [](tachyon::scene::EvaluatedCompositionState& state) {
+                set_light_intensity(state, 5.0f, 2.8f);
+            });
+
+        check_true(ambient_0.surface && ambient_1.surface && ambient_5.surface, "Ambient light renders should produce surfaces");
+        if (ambient_0.surface && ambient_1.surface && ambient_5.surface) {
+            save_contact_sheet(
+                validation_root() / "ambient_contactsheet.png",
+                {ambient_0.surface.get(), ambient_1.surface.get(), ambient_5.surface.get()},
+                3U);
+        }
+    }
+
+    {
+        RenderContext material_context;
+        initialize_render_context(material_context);
+        const auto rough_005 = render_scene(
+            make_scene_with_image(logo_alpha),
+            "png_3d_material_rough_005",
+            0,
+            material_context.renderer2d,
+            [](tachyon::scene::EvaluatedCompositionState& state) {
+                set_image_material(state, 0.05f, 0.0f, 1.0f, 0.0f);
+            });
+        const auto rough_05 = render_scene(
+            make_scene_with_image(logo_alpha),
+            "png_3d_material_rough_05",
+            0,
+            material_context.renderer2d,
+            [](tachyon::scene::EvaluatedCompositionState& state) {
+                set_image_material(state, 0.5f, 0.0f, 1.0f, 0.0f);
+            });
+        const auto rough_1 = render_scene(
+            make_scene_with_image(logo_alpha),
+            "png_3d_material_rough_1",
+            0,
+            material_context.renderer2d,
+            [](tachyon::scene::EvaluatedCompositionState& state) {
+                set_image_material(state, 1.0f, 0.0f, 1.0f, 0.0f);
+            });
+        const auto metal_0 = render_scene(
+            make_scene_with_image(logo_alpha),
+            "png_3d_material_metal_0",
+            0,
+            material_context.renderer2d,
+            [](tachyon::scene::EvaluatedCompositionState& state) {
+                set_image_material(state, 0.5f, 0.0f, 1.0f, 0.0f);
+            });
+        const auto metal_1 = render_scene(
+            make_scene_with_image(logo_alpha),
+            "png_3d_material_metal_1",
+            0,
+            material_context.renderer2d,
+            [](tachyon::scene::EvaluatedCompositionState& state) {
+                set_image_material(state, 0.5f, 1.0f, 1.0f, 0.0f);
+            });
+        const auto opacity_1 = render_scene(
+            make_scene_with_image(logo_alpha),
+            "png_3d_material_opacity_1",
+            0,
+            material_context.renderer2d,
+            [](tachyon::scene::EvaluatedCompositionState& state) {
+                set_image_material(state, 0.5f, 0.0f, 1.0f, 0.0f);
+            });
+        const auto opacity_05 = render_scene(
+            make_scene_with_image(logo_alpha),
+            "png_3d_material_opacity_05",
+            0,
+            material_context.renderer2d,
+            [](tachyon::scene::EvaluatedCompositionState& state) {
+                set_image_material(state, 0.5f, 0.0f, 0.5f, 0.0f);
+            });
+        const auto opacity_0 = render_scene(
+            make_scene_with_image(logo_alpha),
+            "png_3d_material_opacity_0",
+            0,
+            material_context.renderer2d,
+            [](tachyon::scene::EvaluatedCompositionState& state) {
+                set_image_material(state, 0.5f, 0.0f, 0.0f, 0.0f);
+            });
+        const auto emission_0 = render_scene(
+            make_scene_with_image(logo_alpha),
+            "png_3d_material_emission_0",
+            0,
+            material_context.renderer2d,
+            [](tachyon::scene::EvaluatedCompositionState& state) {
+                set_image_material(state, 0.5f, 0.0f, 1.0f, 0.0f);
+            });
+        const auto emission_5 = render_scene(
+            make_scene_with_image(logo_alpha),
+            "png_3d_material_emission_5",
+            0,
+            material_context.renderer2d,
+            [](tachyon::scene::EvaluatedCompositionState& state) {
+                set_image_material(state, 0.5f, 0.0f, 1.0f, 5.0f);
+            });
+        const auto emission_20 = render_scene(
+            make_scene_with_image(logo_alpha),
+            "png_3d_material_emission_20",
+            0,
+            material_context.renderer2d,
+            [](tachyon::scene::EvaluatedCompositionState& state) {
+                set_image_material(state, 0.5f, 0.0f, 1.0f, 20.0f);
+            });
+
+        check_true(rough_005.surface && rough_05.surface && rough_1.surface, "Roughness renders should produce surfaces");
+        check_true(metal_0.surface && metal_1.surface, "Metallic renders should produce surfaces");
+        check_true(opacity_1.surface && opacity_05.surface && opacity_0.surface, "Opacity renders should produce surfaces");
+        check_true(emission_0.surface && emission_5.surface && emission_20.surface, "Emission renders should produce surfaces");
+        if (rough_005.surface && rough_05.surface && rough_1.surface) {
+            save_contact_sheet(
+                validation_root() / "roughness_contactsheet.png",
+                {rough_005.surface.get(), rough_05.surface.get(), rough_1.surface.get()},
+                3U);
+        }
+        if (metal_0.surface && metal_1.surface) {
+            save_contact_sheet(
+                validation_root() / "metallic_contactsheet.png",
+                {metal_0.surface.get(), metal_1.surface.get()},
+                2U);
+        }
+        if (opacity_1.surface && opacity_05.surface && opacity_0.surface) {
+            save_contact_sheet(
+                validation_root() / "opacity_contactsheet.png",
+                {opacity_1.surface.get(), opacity_05.surface.get(), opacity_0.surface.get()},
+                3U);
+        }
+        if (emission_0.surface && emission_5.surface && emission_20.surface) {
+            save_contact_sheet(
+                validation_root() / "emission_contactsheet.png",
+                {emission_0.surface.get(), emission_5.surface.get(), emission_20.surface.get()},
+                3U);
+        }
+    }
+
+    {
         RenderContext context;
+        initialize_render_context(context);
         text::FontRegistry font_registry;
         const std::filesystem::path font_file = font_path();
         check_true(std::filesystem::exists(font_file), "Test font should exist for 3D text reuse test");
@@ -598,6 +907,8 @@ bool run_png_3d_validation_tests() {
     {
         RenderContext left_context;
         RenderContext right_context;
+        initialize_render_context(left_context);
+        initialize_render_context(right_context);
 
         const auto project_card_x = [&](float z, float camera_x, const std::filesystem::path& path, RenderContext& ctx) {
             const auto scene = make_parallax_layer_scene(path, z, camera_x, "png_3d_parallax_projection");

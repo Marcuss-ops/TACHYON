@@ -321,6 +321,10 @@ RasterizedFrame2D render_evaluated_composition_2d(
     auto render_pass = [&](SurfaceRGBA& target_surface, RenderContext2D& render_context, const std::optional<RectI>& tile_rect = std::nullopt) {
         render_trace("render_pass entry");
         render_trace("render_pass clear ok");
+        if (!render_context.effects) {
+            render_context.effects = renderer2d::create_effect_host(effect_registry);
+            render_trace("render_pass auto-init effects");
+        }
         EffectHost& host = effect_host_for(render_context);
         render_trace("render_pass host ok");
         render_trace(
@@ -365,7 +369,18 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 bridge_input.block_indices = &block_indices;
                 bridge_input.visible_3d_layers = &visible_3d_layers;
 
+                render_trace(
+                    "3d bridge state frame=" + std::to_string(task.frame_number) +
+                    " layers=" + std::to_string(state.layers.size()) +
+                    " block_indices=" + std::to_string(block_indices.size()) +
+                    " ray_tracer=" + (render_context.ray_tracer ? std::string("1") : std::string("0")));
                 const auto bridge_output = build_evaluated_scene_3d(bridge_input);
+                render_trace(
+                    "3d bridge built frame=" + std::to_string(task.frame_number) +
+                    " has_instances=" + (bridge_output.has_instances ? std::string("1") : std::string("0")) +
+                    " instances=" + std::to_string(bridge_output.scene3d.instances.size()) +
+                    " lights=" + std::to_string(bridge_output.scene3d.lights.size()) +
+                    " camera_id=" + bridge_output.scene3d.camera.camera_id);
                 const std::uint32_t w = static_cast<std::uint32_t>(state.width);
                 const std::uint32_t h = static_cast<std::uint32_t>(state.height);
                 auto world_3d = std::make_shared<SurfaceRGBA>(w, h);
@@ -426,6 +441,9 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     }
                     record_timing(diagnostics, "ray_tracing_block", std::to_string(i), ray_start);
                 }
+                render_trace(
+                    "3d bridge fallback enter frame=" + std::to_string(task.frame_number) +
+                    " world_has_visible_pixels=" + (world_has_visible_pixels.load(std::memory_order_relaxed) ? std::string("1") : std::string("0")));
 
                 std::shared_ptr<SurfaceRGBA> fallback_preview_surface;
                 if (!world_has_visible_pixels.load(std::memory_order_relaxed)) {

@@ -222,6 +222,7 @@ class TACHYON_API CompositionBuilder {
         std::function<void(LayerBuilder&)> fn);
 public:
     explicit CompositionBuilder(std::string id, const presets::EffectPresetRegistry& preset_registry);
+    ~CompositionBuilder();
 
     CompositionBuilder& size(int w, int h);
     CompositionBuilder& fps(int f);

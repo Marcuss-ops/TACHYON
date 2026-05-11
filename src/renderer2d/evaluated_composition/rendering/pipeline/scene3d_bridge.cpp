@@ -4,6 +4,7 @@
 #include "tachyon/renderer2d/evaluated_composition/rendering/primitives/media_card_mesh_builder.h"
 #include "tachyon/renderer2d/evaluated_composition/rendering/primitives/text_mesh_builder.h"
 #include "tachyon/renderer2d/resource/render_context.h"
+#include "tachyon/runtime/execution/session/render_internal.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/media/loading/mesh_asset.h"
 #include "tachyon/text/animation/text_animation_options.h"
@@ -545,6 +546,12 @@ Scene3DBridgeOutput build_evaluated_scene_3d(const Scene3DBridgeInput& input) {
     Scene3DBridgeOutput output;
 
 #ifdef TACHYON_ENABLE_3D
+    render_trace(
+        "3d bridge begin comp=" +
+        (input.plan ? input.plan->composition_target : std::string{}) +
+        " frame=" + std::to_string(input.task ? input.task->frame_number : 0) +
+        " state_layers=" + std::to_string(input.state ? input.state->layers.size() : 0) +
+        " block_indices=" + std::to_string(input.block_indices ? input.block_indices->size() : 0));
     if (input.state->camera.available) {
         output.scene3d.camera = build_camera_3d(input.state->camera, *input.state);
     } else {
@@ -609,6 +616,13 @@ Scene3DBridgeOutput build_evaluated_scene_3d(const Scene3DBridgeInput& input) {
 
     output.scene3d.instances = build_instances_3d(input);
     output.has_instances = !output.scene3d.instances.empty();
+    render_trace(
+        "3d bridge end comp=" +
+        (input.plan ? input.plan->composition_target : std::string{}) +
+        " frame=" + std::to_string(input.task ? input.task->frame_number : 0) +
+        " camera_id=" + output.scene3d.camera.camera_id +
+        " instances=" + std::to_string(output.scene3d.instances.size()) +
+        " has_instances=" + (output.has_instances ? std::string("1") : std::string("0")));
 #endif
 
     return output;

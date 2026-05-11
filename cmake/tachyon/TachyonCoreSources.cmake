@@ -19,6 +19,7 @@ set(TachyonCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/expressions/expression_vm.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/io/path_resolution.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/schema/common/common_spec.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/scene_spec_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/transition/transition_descriptor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/transition/transition_resolver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/transition/transition_effect_resolver.cpp

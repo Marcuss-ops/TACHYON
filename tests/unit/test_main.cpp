@@ -35,7 +35,6 @@ namespace tachyon::editor { bool run_autosave_manager_tests(); }
 bool run_scene_evaluator_tests();
 bool run_render_session_tests();
 bool run_parallax_cards_tests();
-bool run_png_3d_validation_tests();
 bool run_library_tests();
 bool run_timeline_tests();
 bool run_camera_cuts_tests();
@@ -102,7 +101,6 @@ int main(int argc, char** argv) {
         {"scene_evaluator", run_scene_evaluator_tests},
         {"render_session", run_render_session_tests},
         {"parallax_cards", run_parallax_cards_tests},
-        {"png_3d_validation", run_png_3d_validation_tests},
         {"vertical_slice", tachyon::run_vertical_slice_tests},
         {"timeline", run_timeline_tests},
         {"camera_cuts", run_camera_cuts_tests},
