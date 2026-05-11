@@ -10,6 +10,7 @@ bool run_bezier_interpolator_tests();
 bool run_scene_builder_preset_tests();
 bool run_blend_kernel_tests();
 bool run_property_sampler_tests();
+bool run_transition_simd_kernels_tests();
 
 int main(int argc, char** argv) {
     using namespace tachyon::test;
@@ -23,6 +24,7 @@ int main(int argc, char** argv) {
         {"builder_preset", run_scene_builder_preset_tests},
         {"blend_kernel", run_blend_kernel_tests},
         {"property_sampler", run_property_sampler_tests},
+        {"transition_simd", run_transition_simd_kernels_tests},
     };
 
     return run_test_suite(argc, argv, tests);

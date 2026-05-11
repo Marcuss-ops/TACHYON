@@ -12,6 +12,8 @@ endif()
 
 option(TACHYON_ENABLE_COMPILER_CACHE "Enable sccache/clcache when available" ON)
 option(TACHYON_ENABLE_OPENMP "Enable OpenMP parallelism when available" ON)
+option(TACHYON_ENABLE_HIGHWAY "Enable Highway portable SIMD kernels" ON)
+option(TACHYON_ENABLE_MANUAL_AVX2 "Enable legacy manual AVX2 kernels" ON)
 option(TACHYON_ENABLE_PCH "Enable precompiled headers when supported" ON)
 option(TACHYON_ENABLE_ASAN "Enable AddressSanitizer on Tachyon targets" OFF)
 option(TACHYON_TREAT_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)

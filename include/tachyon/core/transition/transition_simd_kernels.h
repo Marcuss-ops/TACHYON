@@ -9,6 +9,15 @@ namespace tachyon::runtime::simd {
  */
 void lerp_pixels_scalar(float* out, const float* a, const float* b, std::size_t count, float t);
 
+#if defined(TACHYON_ENABLE_HIGHWAY)
+/**
+ * @brief Highway portable SIMD linear blend.
+ *
+ * Uses Highway's target dispatch to select the best available SIMD target.
+ */
+void lerp_pixels_highway(float* out, const float* a, const float* b, std::size_t count, float t);
+#endif
+
 /**
  * @brief Check if AVX2 is available on the current CPU.
  */
