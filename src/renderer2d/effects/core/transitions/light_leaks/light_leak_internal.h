@@ -55,4 +55,13 @@ Color apply_light_leak_style(
     const LightLeakStyle& style
 );
 
+void apply_light_leak_batch(
+    SurfaceRGBA& output,
+    const SurfaceRGBA& from,
+    const SurfaceRGBA* to,
+    float progress,
+    const LightLeakStyle& style,
+    int thread_count
+);
+
 } // namespace tachyon::renderer2d

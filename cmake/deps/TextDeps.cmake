@@ -69,33 +69,52 @@ if(TACHYON_ENABLE_TEXT)
         set(TACHYON_FREETYPE_TARGET TachyonFreeType)
         set(TACHYON_HARFBUZZ_TARGET TachyonHarfbuzz)
     elseif(TACHYON_FETCH_DEPS)
-        FetchContent_Declare(
-            freetype
-            GIT_REPOSITORY https://github.com/freetype/freetype.git
-            GIT_TAG        ${TACHYON_FREETYPE_GIT_TAG}
-            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-        )
-        set(SKIP_INSTALL_ALL ON CACHE BOOL "Skip FreeType install" FORCE)
-        set(FT_WITH_ZLIB OFF CACHE BOOL "Disable ZLib for FreeType" FORCE)
-        set(FT_WITH_BZIP2 OFF CACHE BOOL "Disable BZip2 for FreeType" FORCE)
-        set(FT_WITH_PNG OFF CACHE BOOL "Disable PNG for FreeType" FORCE)
-        set(FT_WITH_HARFBUZZ OFF CACHE BOOL "Disable HarfBuzz for FreeType" FORCE)
-        set(FT_WITH_BROTLI OFF CACHE BOOL "Disable Brotli for FreeType" FORCE)
-        set(CMAKE_POLICY_DEFAULT_CMP0048 NEW)
-        FetchContent_MakeAvailable(freetype)
+        if(EXISTS "${CMAKE_SOURCE_DIR}/third_party/freetype/CMakeLists.txt")
+            set(SKIP_INSTALL_ALL ON CACHE BOOL "Skip FreeType install" FORCE)
+            set(FT_WITH_ZLIB OFF CACHE BOOL "Disable ZLib for FreeType" FORCE)
+            set(FT_WITH_BZIP2 OFF CACHE BOOL "Disable BZip2 for FreeType" FORCE)
+            set(FT_WITH_PNG OFF CACHE BOOL "Disable PNG for FreeType" FORCE)
+            set(FT_WITH_HARFBUZZ OFF CACHE BOOL "Disable HarfBuzz for FreeType" FORCE)
+            set(FT_WITH_BROTLI OFF CACHE BOOL "Disable Brotli for FreeType" FORCE)
+            add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/freetype" "${CMAKE_BINARY_DIR}/_deps/freetype-build" EXCLUDE_FROM_ALL)
+        else()
+            FetchContent_Declare(
+                freetype
+                GIT_REPOSITORY https://github.com/freetype/freetype.git
+                GIT_TAG        ${TACHYON_FREETYPE_GIT_TAG}
+                DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+            )
+            set(SKIP_INSTALL_ALL ON CACHE BOOL "Skip FreeType install" FORCE)
+            set(FT_WITH_ZLIB OFF CACHE BOOL "Disable ZLib for FreeType" FORCE)
+            set(FT_WITH_BZIP2 OFF CACHE BOOL "Disable BZip2 for FreeType" FORCE)
+            set(FT_WITH_PNG OFF CACHE BOOL "Disable PNG for FreeType" FORCE)
+            set(FT_WITH_HARFBUZZ OFF CACHE BOOL "Disable HarfBuzz for FreeType" FORCE)
+            set(FT_WITH_BROTLI OFF CACHE BOOL "Disable Brotli for FreeType" FORCE)
+            set(CMAKE_POLICY_DEFAULT_CMP0048 NEW)
+            FetchContent_MakeAvailable(freetype)
+        endif()
 
-        FetchContent_Declare(
-            harfbuzz
-            GIT_REPOSITORY https://github.com/harfbuzz/harfbuzz.git
-            GIT_TAG        ${TACHYON_HARFBUZZ_GIT_TAG}
-            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-        )
-        set(HB_BUILD_UTILS OFF CACHE BOOL "Disable HarfBuzz command line utilities" FORCE)
-        set(HB_BUILD_TESTS OFF CACHE BOOL "Disable HarfBuzz tests" FORCE)
-        set(HB_BUILD_DOCS OFF CACHE BOOL "Disable HarfBuzz docs" FORCE)
-        set(HB_BUILD_SUBSET OFF CACHE BOOL "Disable HarfBuzz subset library" FORCE)
-        set(HB_HAVE_FREETYPE ON CACHE BOOL "Enable HarfBuzz FreeType integration" FORCE)
-        FetchContent_MakeAvailable(harfbuzz)
+        if(EXISTS "${CMAKE_SOURCE_DIR}/third_party/harfbuzz/CMakeLists.txt")
+            set(HB_BUILD_UTILS OFF CACHE BOOL "Disable HarfBuzz command line utilities" FORCE)
+            set(HB_BUILD_TESTS OFF CACHE BOOL "Disable HarfBuzz tests" FORCE)
+            set(HB_BUILD_DOCS OFF CACHE BOOL "Disable HarfBuzz docs" FORCE)
+            set(HB_BUILD_SUBSET OFF CACHE BOOL "Disable HarfBuzz subset library" FORCE)
+            set(HB_HAVE_FREETYPE ON CACHE BOOL "Enable HarfBuzz FreeType integration" FORCE)
+            add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/harfbuzz" "${CMAKE_BINARY_DIR}/_deps/harfbuzz-build" EXCLUDE_FROM_ALL)
+        else()
+            FetchContent_Declare(
+                harfbuzz
+                GIT_REPOSITORY https://github.com/harfbuzz/harfbuzz.git
+                GIT_TAG        ${TACHYON_HARFBUZZ_GIT_TAG}
+                DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+            )
+            set(HB_BUILD_UTILS OFF CACHE BOOL "Disable HarfBuzz command line utilities" FORCE)
+            set(HB_BUILD_TESTS OFF CACHE BOOL "Disable HarfBuzz tests" FORCE)
+            set(HB_BUILD_DOCS OFF CACHE BOOL "Disable HarfBuzz docs" FORCE)
+            set(HB_BUILD_SUBSET OFF CACHE BOOL "Disable HarfBuzz subset library" FORCE)
+            set(HB_HAVE_FREETYPE ON CACHE BOOL "Enable HarfBuzz FreeType integration" FORCE)
+            FetchContent_MakeAvailable(harfbuzz)
+        endif()
     else()
         find_package(FreeType REQUIRED)
     endif()

@@ -54,8 +54,12 @@ if [[ "$BASE_PRESET" == "dev" ]]; then
     PRESET="dev-linux"
 elif [[ "$BASE_PRESET" == "dev-fast" ]]; then
     PRESET="dev-linux-fast"
+elif [[ "$BASE_PRESET" == "release" ]]; then
+    PRESET="release"
+elif [[ "$BASE_PRESET" == "debug" ]]; then
+    PRESET="dev-linux" # Fallback for debug if not present
 else
-    PRESET="linux-$GENERATOR_TYPE-$BASE_PRESET"
+    PRESET="$BASE_PRESET"
 fi
 
 # Map preset to binary directory (should match CMakePresets.json)
@@ -66,8 +70,15 @@ if [[ $CLEAN -eq 1 && -d "$BUILD_DIR" ]]; then
     rm -rf "$BUILD_DIR"
 fi
 
+EMBREE_DIR="$PWD/third_party/embree"
+if [ ! -d "$EMBREE_DIR" ]; then
+    echo "[INFO] Downloading precompiled Embree 3.13.5..."
+    mkdir -p "$EMBREE_DIR"
+    curl -L https://github.com/embree/embree/releases/download/v3.13.5/embree-3.13.5.x86_64.linux.tar.gz | tar -xz -C "$EMBREE_DIR" --strip-components=1
+fi
+
 echo "[INFO] Configuring with preset: $PRESET (Generator: $GENERATOR_TYPE)"
-cmake --preset "$PRESET"
+cmake --preset "$PRESET" -DTACHYON_EMBREE_ROOT="$EMBREE_DIR"
 
 if [[ $CHECK -eq 1 ]]; then
     echo "[INFO] Running syntax check..."

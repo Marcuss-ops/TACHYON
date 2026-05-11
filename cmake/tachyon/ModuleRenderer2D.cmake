@@ -155,6 +155,14 @@ target_link_libraries(TachyonRenderer2DExtras PUBLIC TachyonCore)
 
 add_library(TachyonRenderer2D STATIC ${TachyonRenderer2DSources})
 tachyon_configure_common(TachyonRenderer2D)
+
+if(MSVC)
+    set_source_files_properties(renderer2d/effects/core/transitions/light_leaks/light_leak_engine.cpp PROPERTIES COMPILE_FLAGS "/arch:AVX2")
+else()
+    set_source_files_properties(renderer2d/effects/core/transitions/light_leaks/light_leak_engine.cpp PROPERTIES COMPILE_FLAGS "-mavx2")
+endif()
+target_compile_definitions(TachyonRenderer2D PRIVATE "TACHYON_AVX2")
+
 tachyon_link_text_deps(TachyonRenderer2D)
 tachyon_link_3d_deps(TachyonRenderer2D)
 tachyon_link_omp(TachyonRenderer2D)
