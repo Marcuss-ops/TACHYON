@@ -124,6 +124,19 @@ endfunction()
 add_library(TachyonCore STATIC ${TachyonCoreSources})
 tachyon_configure_common(TachyonCore)
 tachyon_link_omp(TachyonCore)
+
+if(TACHYON_ENABLE_HIGHWAY)
+    if(TARGET hwy)
+        target_link_libraries(TachyonCore PUBLIC hwy)
+    elseif(TARGET hwy::hwy)
+        target_link_libraries(TachyonCore PUBLIC hwy::hwy)
+    else()
+        message(FATAL_ERROR "[Tachyon] Highway enabled but no Highway CMake target was found")
+    endif()
+
+    target_compile_definitions(TachyonCore PUBLIC TACHYON_ENABLE_HIGHWAY)
+endif()
+
 target_include_directories(TachyonCore
     PUBLIC
         $<BUILD_INTERFACE:${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/include>
@@ -134,15 +147,17 @@ target_sources(TachyonCore PRIVATE
     ${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/src/clipper.rectclip.cpp
 )
 
-target_sources(TachyonCore PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/transition/transition_simd_kernels_avx2.cpp
-)
-if(MSVC)
-    set_source_files_properties(core/transition/transition_simd_kernels_avx2.cpp PROPERTIES COMPILE_FLAGS "/arch:AVX2")
-else()
-    set_source_files_properties(core/transition/transition_simd_kernels_avx2.cpp PROPERTIES COMPILE_FLAGS "-mavx2")
+if(TACHYON_ENABLE_MANUAL_AVX2)
+    target_sources(TachyonCore PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/core/transition/transition_simd_kernels_avx2.cpp
+    )
+    if(MSVC)
+        set_source_files_properties(core/transition/transition_simd_kernels_avx2.cpp PROPERTIES COMPILE_FLAGS "/arch:AVX2")
+    else()
+        set_source_files_properties(core/transition/transition_simd_kernels_avx2.cpp PROPERTIES COMPILE_FLAGS "-mavx2")
+    endif()
+    target_compile_definitions(TachyonCore PRIVATE "TACHYON_AVX2")
 endif()
-target_compile_definitions(TachyonCore PRIVATE "TACHYON_AVX2")
 
 add_library(TachyonColor STATIC ${TachyonColorSources})
 tachyon_configure_common(TachyonColor)
