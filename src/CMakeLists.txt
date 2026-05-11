@@ -184,6 +184,11 @@ if(TACHYON_ENABLE_JSON_TRACE)
     target_compile_definitions(TachyonDiagnostics PUBLIC TACHYON_ENABLE_JSON_TRACE)
 endif()
 
+if(TACHYON_ENABLE_PERFETTO)
+    target_compile_definitions(TachyonDiagnostics PUBLIC TACHYON_ENABLE_PERFETTO)
+    target_link_libraries(TachyonDiagnostics PRIVATE perfetto)
+endif()
+
 add_library(TachyonTimeline STATIC ${TachyonTimelineSources})
 tachyon_configure_common(TachyonTimeline)
 target_link_libraries(TachyonTimeline PUBLIC TachyonCore)
