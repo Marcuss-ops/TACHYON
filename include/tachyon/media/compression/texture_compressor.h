@@ -26,7 +26,7 @@ public:
 
 TextureCompressor& none_texture_compressor();
 
-#if defined(TACHYON_ENABLE_BASISU)
+#if defined(TACHYON_ENABLE_BASIS)
 TextureCompressor& basis_texture_compressor();
 #endif
 

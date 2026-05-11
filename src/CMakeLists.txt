@@ -209,6 +209,12 @@ if(TACHYON_ENABLE_DRACO)
     target_link_libraries(TachyonMedia PRIVATE draco_static)
     target_include_directories(TachyonMedia PRIVATE ${draco_SOURCE_DIR}/src ${CMAKE_BINARY_DIR})
 endif()
+
+if(TACHYON_ENABLE_BASIS)
+    target_compile_definitions(TachyonMedia PUBLIC TACHYON_ENABLE_BASIS)
+    target_link_libraries(TachyonMedia PRIVATE basisu_lib)
+    target_include_directories(TachyonMedia PRIVATE ${basis_universal_SOURCE_DIR})
+endif()
 target_include_directories(TachyonMedia
     PRIVATE
         ${tinygltf_SOURCE_DIR}

@@ -60,6 +60,24 @@ void test_draco_compressor() {
 #endif
 }
 
+void test_basis_compressor() {
+#if defined(TACHYON_ENABLE_BASIS)
+    tachyon::media::TextureCompressionInput tinput;
+    tinput.width = 16;
+    tinput.height = 16;
+    tinput.channels = 4;
+    tinput.rgba.resize(16 * 16 * 4, 255); // Solid white
+    
+    auto toutput = tachyon::media::basis_texture_compressor().compress(tinput);
+    if (toutput.codec != "basis" || toutput.bytes.empty()) {
+        std::cerr << "Basis texture compressor failed." << std::endl;
+        g_failures++;
+    } else {
+        std::cout << "Basis compression successful: " << toutput.bytes.size() << " bytes." << std::endl;
+    }
+#endif
+}
+
 } // namespace
 
 bool run_asset_pack_manifest_tests() {
@@ -69,6 +87,7 @@ bool run_asset_pack_manifest_tests() {
     test_manifest_write();
     test_noop_compressors();
     test_draco_compressor();
+    test_basis_compressor();
 
     if (g_failures == 0) {
         std::cout << "All Asset Pack Manifest tests passed!" << std::endl;
