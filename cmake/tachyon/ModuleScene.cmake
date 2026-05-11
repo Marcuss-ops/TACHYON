@@ -113,6 +113,7 @@ target_link_libraries(TachyonScene
         TachyonColor
         TachyonPlatform
         TachyonPresets
+        TachyonLibrary
         TachyonAudio
     )
 
