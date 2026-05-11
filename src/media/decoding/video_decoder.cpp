@@ -262,6 +262,10 @@ std::optional<renderer2d::SurfaceRGBA> VideoDecoder::get_frame_at_time(double se
 }
 
 bool VideoDecoder::get_frame_into(double seconds, renderer2d::SurfaceRGBA& target) {
+#if !defined(TACHYON_HAS_FFMPEG)
+    (void)seconds; (void)target;
+    return false;
+#else
     std::lock_guard<std::mutex> lock(m_mutex);
     if (seconds < 0.0 || !m_format_context) {
         return false;
@@ -311,6 +315,7 @@ bool VideoDecoder::get_frame_into(double seconds, renderer2d::SurfaceRGBA& targe
     }
 
     return false;
+#endif
 }
 
 std::future<std::optional<renderer2d::SurfaceRGBA>> VideoDecoder::request_frame_async(double seconds) {

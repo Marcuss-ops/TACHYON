@@ -62,4 +62,13 @@ inline Color additive_over(const Color& base, const Color& overlay, float intens
     };
 }
 
+inline float smoothstep01(float x) {
+    x = std::clamp(x, 0.0f, 1.0f);
+    return x * x * (3.0f - 2.0f * x);
+}
+
+inline float radians(float degrees) {
+    return degrees * 3.1415926535f / 180.0f;
+}
+
 } // namespace tachyon::renderer2d

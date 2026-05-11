@@ -1,5 +1,5 @@
 {
-  "version": 6,
+  "version": 3,
   "configurePresets": [
     {
       "name": "base-vs",
@@ -37,6 +37,17 @@
       "inherits": "base-vs",
       "description": "Faster inner loop preset with the smallest useful default build set",
       "cacheVariables": {
+        "TACHYON_ENABLE_ASAN": "OFF"
+      }
+    },
+    {
+      "name": "dev-3d",
+      "inherits": "base-vs",
+      "description": "3D-enabled preset using the checked-in local Embree package",
+      "binaryDir": "${sourceDir}/build-3d",
+      "cacheVariables": {
+        "TACHYON_ENABLE_3D": "ON",
+        "TACHYON_EMBREE_ROOT": "${sourceDir}/embree/embree-4.4.1.sycl.x64.windows",
         "TACHYON_ENABLE_ASAN": "OFF"
       }
     },
@@ -119,6 +130,14 @@
       "targets": [
         "TachyonCore",
         "TachyonTests"
+      ]
+    },
+    {
+      "name": "dev-3d",
+      "configurePreset": "dev-3d",
+      "configuration": "RelWithDebInfo",
+      "targets": [
+        "three_d_validation_lab"
       ]
     },
     {

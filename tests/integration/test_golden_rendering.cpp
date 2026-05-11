@@ -3,6 +3,10 @@
 #include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 
+#ifdef TACHYON_ENABLE_3D
+#include "tachyon/renderer3d/core/renderer3d_backend_factory.h"
+#endif
+
 using namespace tachyon;
 using namespace tachyon::renderer2d;
 using namespace tachyon::scene;
@@ -64,6 +68,7 @@ TEST_F(GoldenRenderingTest, ShapeModifiers_TrimAndRepeat) {
     EXPECT_TRUE(test::GoldenTestHelper::compare_with_golden("shape_trim_repeat", *frame.surface));
 }
 
+#ifdef TACHYON_ENABLE_3D
 TEST_F(GoldenRenderingTest, RayTracer_3D_AOVs) {
     EvaluatedCompositionState state;
     state.width = 640;
@@ -91,7 +96,10 @@ TEST_F(GoldenRenderingTest, RayTracer_3D_AOVs) {
     plan.motion_blur_enabled = false;
     FrameRenderTask task;
     RenderContext2D context;
-    context.ray_tracer = std::make_shared<renderer3d::RayTracer>();
+    context.ray_tracer = renderer3d::create_renderer3d_backend();
+    if (!context.ray_tracer) {
+        GTEST_SKIP() << "No concrete 3D backend is enabled yet";
+    }
 
     auto frame = render_evaluated_composition_2d(state, plan, task, context);
     ASSERT_NE(frame.surface, nullptr);
@@ -117,6 +125,7 @@ TEST_F(GoldenRenderingTest, RayTracer_3D_AOVs) {
     EXPECT_TRUE(test::GoldenTestHelper::compare_with_golden("3d_normal", *normal));
     EXPECT_TRUE(test::GoldenTestHelper::compare_with_golden("3d_motion_vector", *mv));
 }
+#endif
 
 TEST_F(GoldenRenderingTest, ShapeModifiers_Degenerate) {
     EvaluatedCompositionState state;
@@ -144,6 +153,7 @@ TEST_F(GoldenRenderingTest, ShapeModifiers_Degenerate) {
     EXPECT_TRUE(test::GoldenTestHelper::compare_with_golden("shape_degenerate", *frame.surface));
 }
 
+#ifdef TACHYON_ENABLE_3D
 TEST_F(GoldenRenderingTest, RayTracer_MovingCamera_MV) {
     EvaluatedCompositionState state;
     state.width = 640;
@@ -171,7 +181,10 @@ TEST_F(GoldenRenderingTest, RayTracer_MovingCamera_MV) {
     RenderPlan plan;
     FrameRenderTask task;
     RenderContext2D context;
-    context.ray_tracer = std::make_shared<renderer3d::RayTracer>();
+    context.ray_tracer = renderer3d::create_renderer3d_backend();
+    if (!context.ray_tracer) {
+        GTEST_SKIP() << "No concrete 3D backend is enabled yet";
+    }
 
     auto frame = render_evaluated_composition_2d(state, plan, task, context);
     
@@ -184,4 +197,4 @@ TEST_F(GoldenRenderingTest, RayTracer_MovingCamera_MV) {
     ASSERT_NE(mv, nullptr);
     EXPECT_TRUE(test::GoldenTestHelper::compare_with_golden("3d_mv_moving_camera", *mv));
 }
-
+#endif

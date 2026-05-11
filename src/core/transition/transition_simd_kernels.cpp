@@ -36,7 +36,10 @@ bool avx2_available() {
 #endif
 
 void lerp_pixels_best(float* out, const float* a, const float* b, std::size_t count, float t) {
-#ifdef TACHYON_AVX2
+#if defined(TACHYON_ENABLE_HIGHWAY)
+    lerp_pixels_highway(out, a, b, count, t);
+    return;
+#elif defined(TACHYON_AVX2)
     // AVX2 is compiled in and available at runtime
     if (avx2_available()) {
         lerp_pixels_avx2(out, a, b, count, t);

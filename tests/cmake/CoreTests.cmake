@@ -10,6 +10,8 @@ add_executable(TachyonTests
     unit/core/animation/property_sampler_tests.cpp
     unit/core/camera/camera_shake_tests.cpp
     unit/core/properties/bezier_interpolator_tests.cpp
+    unit/core/transition_simd_kernels_tests.cpp
+    unit/diagnostics/trace_test.cpp
     unit/timeline/camera_cuts_tests.cpp
     unit/core/scene/builder_preset_tests.cpp
     unit/color/blend_kernel_tests.cpp
@@ -24,6 +26,7 @@ target_link_libraries(TachyonTests
     PRIVATE
         TachyonTestUtils
         TachyonRuntimeEngine
+        TachyonDiagnostics
 )
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)

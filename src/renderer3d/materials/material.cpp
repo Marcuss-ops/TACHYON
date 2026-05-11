@@ -43,6 +43,8 @@ MaterialSystem::MaterialInputs MaterialSystem::evaluate_with_textures(
         return inputs;
     }
 
+    inputs.base_color = inputs.base_color * sub_mesh->material.base_color_factor;
+
     if (sub_mesh->material.base_color_texture_idx >= 0 && 
         sub_mesh->material.base_color_texture_idx < (int)asset->textures.size()) {
         const auto& tex = asset->textures[sub_mesh->material.base_color_texture_idx];

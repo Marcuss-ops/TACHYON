@@ -48,6 +48,10 @@ endif()
 
 # Dependency groups
 include(${CMAKE_SOURCE_DIR}/cmake/deps/CoreDeps.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/deps/SimdDeps.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/deps/TracingDeps.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/deps/DracoDeps.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/deps/BasisDeps.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/deps/TextDeps.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/deps/Renderer3DDeps.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/deps/MediaDeps.cmake)

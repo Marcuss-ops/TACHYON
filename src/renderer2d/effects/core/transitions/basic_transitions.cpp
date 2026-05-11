@@ -169,7 +169,7 @@ struct BasicTransitionRegistryEntry {
 };
 
 static constexpr std::array<BasicTransitionRegistryEntry, 17> kBasicTransitionsRegistry = {{
-    { ids::transition::crossfade, transition_crossfade, nullptr },
+    { ids::transition::crossfade, transition_crossfade, apply_crossfade_fused_direct },
     { ids::transition::slide_up, transition_slide_up, nullptr },
     { ids::transition::swipe_left, transition_swipe_left, nullptr },
     { ids::transition::zoom, transition_zoom, nullptr },

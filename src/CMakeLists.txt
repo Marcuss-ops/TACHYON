@@ -81,19 +81,23 @@ endfunction()
 
 function(tachyon_link_media_deps target)
     if(TACHYON_ENABLE_MEDIA)
-        target_link_libraries(${target} PUBLIC avcodec avformat avutil swscale swresample)
+        find_package(PkgConfig QUIET)
+        if(PKG_CONFIG_FOUND)
+            pkg_check_modules(FFMPEG QUIET libavcodec libavformat libavutil libswscale libswresample)
+            if(FFMPEG_FOUND)
+                target_link_libraries(${target} PUBLIC ${FFMPEG_LIBRARIES})
+                target_include_directories(${target} PUBLIC ${FFMPEG_INCLUDE_DIRS})
+            endif()
+        endif()
         target_compile_definitions(${target} PUBLIC TACHYON_ENABLE_MEDIA)
     endif()
 endfunction()
 
 function(tachyon_link_3d_deps target)
     if(TACHYON_ENABLE_3D)
-        target_link_libraries(${target} PUBLIC embree)
         target_compile_definitions(${target} PUBLIC TACHYON_ENABLE_3D)
-        if(TACHYON_ENABLE_OIDN AND WIN32)
-            target_include_directories(${target} PUBLIC $<BUILD_INTERFACE:${oidn_SOURCE_DIR}/include>)
-            target_link_libraries(${target} PUBLIC OpenImageDenoise)
-            target_compile_definitions(${target} PUBLIC TACHYON_ENABLE_OIDN)
+        if(TACHYON_ENABLE_FILAMENT)
+            target_compile_definitions(${target} PUBLIC TACHYON_ENABLE_FILAMENT)
         endif()
     endif()
 endfunction()
@@ -120,6 +124,19 @@ endfunction()
 add_library(TachyonCore STATIC ${TachyonCoreSources})
 tachyon_configure_common(TachyonCore)
 tachyon_link_omp(TachyonCore)
+
+if(TACHYON_ENABLE_HIGHWAY)
+    if(TARGET hwy)
+        target_link_libraries(TachyonCore PUBLIC hwy)
+    elseif(TARGET hwy::hwy)
+        target_link_libraries(TachyonCore PUBLIC hwy::hwy)
+    else()
+        message(FATAL_ERROR "[Tachyon] Highway enabled but no Highway CMake target was found")
+    endif()
+
+    target_compile_definitions(TachyonCore PUBLIC TACHYON_ENABLE_HIGHWAY)
+endif()
+
 target_include_directories(TachyonCore
     PUBLIC
         $<BUILD_INTERFACE:${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/include>
@@ -130,15 +147,17 @@ target_sources(TachyonCore PRIVATE
     ${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/src/clipper.rectclip.cpp
 )
 
-target_sources(TachyonCore PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/transition/transition_simd_kernels_avx2.cpp
-)
-if(MSVC)
-    set_source_files_properties(core/transition/transition_simd_kernels_avx2.cpp PROPERTIES COMPILE_FLAGS "/arch:AVX2")
-else()
-    set_source_files_properties(core/transition/transition_simd_kernels_avx2.cpp PROPERTIES COMPILE_FLAGS "-mavx2")
+if(TACHYON_ENABLE_MANUAL_AVX2)
+    target_sources(TachyonCore PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/core/transition/transition_simd_kernels_avx2.cpp
+    )
+    if(MSVC)
+        set_source_files_properties(core/transition/transition_simd_kernels_avx2.cpp PROPERTIES COMPILE_FLAGS "/arch:AVX2")
+    else()
+        set_source_files_properties(core/transition/transition_simd_kernels_avx2.cpp PROPERTIES COMPILE_FLAGS "-mavx2")
+    endif()
+    target_compile_definitions(TachyonCore PRIVATE "TACHYON_AVX2")
 endif()
-target_compile_definitions(TachyonCore PRIVATE "TACHYON_AVX2")
 
 add_library(TachyonColor STATIC ${TachyonColorSources})
 tachyon_configure_common(TachyonColor)
@@ -157,6 +176,19 @@ add_library(TachyonDiagnostics STATIC ${TachyonDiagnosticsSources})
 tachyon_configure_common(TachyonDiagnostics)
 target_link_libraries(TachyonDiagnostics PUBLIC TachyonCore)
 
+if(TACHYON_ENABLE_TRACE)
+    target_compile_definitions(TachyonDiagnostics PUBLIC TACHYON_ENABLE_TRACE)
+endif()
+
+if(TACHYON_ENABLE_JSON_TRACE)
+    target_compile_definitions(TachyonDiagnostics PUBLIC TACHYON_ENABLE_JSON_TRACE)
+endif()
+
+if(TACHYON_ENABLE_PERFETTO)
+    target_compile_definitions(TachyonDiagnostics PUBLIC TACHYON_ENABLE_PERFETTO)
+    target_link_libraries(TachyonDiagnostics PRIVATE perfetto)
+endif()
+
 add_library(TachyonTimeline STATIC ${TachyonTimelineSources})
 tachyon_configure_common(TachyonTimeline)
 target_link_libraries(TachyonTimeline PUBLIC TachyonCore)
@@ -171,6 +203,18 @@ include(${CMAKE_SOURCE_DIR}/cmake/tachyon/ModuleRenderer2D.cmake)
 
 add_library(TachyonMedia STATIC ${TachyonMediaSources})
 tachyon_configure_common(TachyonMedia)
+
+if(TACHYON_ENABLE_DRACO)
+    target_compile_definitions(TachyonMedia PUBLIC TACHYON_ENABLE_DRACO)
+    target_link_libraries(TachyonMedia PRIVATE draco_static)
+    target_include_directories(TachyonMedia PRIVATE ${draco_SOURCE_DIR}/src ${CMAKE_BINARY_DIR})
+endif()
+
+if(TACHYON_ENABLE_BASIS)
+    target_compile_definitions(TachyonMedia PUBLIC TACHYON_ENABLE_BASIS)
+    target_link_libraries(TachyonMedia PRIVATE basisu_lib)
+    target_include_directories(TachyonMedia PRIVATE ${basis_universal_SOURCE_DIR})
+endif()
 target_include_directories(TachyonMedia
     PRIVATE
         ${tinygltf_SOURCE_DIR}
@@ -273,6 +317,17 @@ endif()
 add_library(TachyonCLICore STATIC ${TachyonCLICoreSources} ${TachyonCLILibrarySources})
 tachyon_configure_common(TachyonCLICore)
 target_link_libraries(TachyonCLICore PUBLIC TachyonRuntimeEngine TachyonLibrary TachyonDiagnostics)
+
+add_executable(tachyon-asset-pack
+    tools/tachyon_asset_pack_main.cpp
+)
+tachyon_configure_common(tachyon-asset-pack)
+target_link_libraries(tachyon-asset-pack
+    PRIVATE
+        TachyonMedia
+        TachyonDiagnostics
+        TachyonCore
+)
 
 add_library(TachyonTools INTERFACE)
 target_link_libraries(TachyonTools INTERFACE

@@ -1,19 +1,11 @@
 #include "light_leak_internal.h"
+#include "tachyon/renderer2d/effects/core/transitions/transition_utils.h"
 #include <cmath>
 #include <algorithm>
 
 namespace tachyon::renderer2d {
 
 namespace {
-
-float smoothstep01(float x) {
-    x = std::clamp(x, 0.0f, 1.0f);
-    return x * x * (3.0f - 2.0f * x);
-}
-
-float radians(float degrees) {
-    return degrees * 3.1415926535f / 180.0f;
-}
 
 float soft_band(float value, float center, float width, float softness) {
     const float d = std::abs(value - center);
