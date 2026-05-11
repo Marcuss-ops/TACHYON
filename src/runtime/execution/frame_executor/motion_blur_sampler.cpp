@@ -13,7 +13,7 @@
 #include <cstdlib>
 
 #ifdef TACHYON_ENABLE_3D
-#include "tachyon/renderer3d/core/ray_tracer.h"
+#include "tachyon/renderer3d/core/renderer3d_backend_factory.h"
 #endif
 
 #include <omp.h>
@@ -87,7 +87,9 @@ std::optional<std::shared_ptr<renderer2d::Framebuffer>> MotionBlurSampler::sampl
         RenderContext thread_context = context;
         thread_context.renderer2d.accumulation_buffer.resize(0);
 #ifdef TACHYON_ENABLE_3D
-        thread_context.ray_tracer = std::make_shared<renderer3d::RayTracer>(thread_context.renderer2d.media_manager);
+        thread_context.ray_tracer = renderer3d::create_renderer3d_backend(
+            thread_context.renderer2d.media_manager,
+            thread_context.renderer2d.modifier_registry);
         thread_context.renderer2d.ray_tracer = thread_context.ray_tracer;
 #endif
 

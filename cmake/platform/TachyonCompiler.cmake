@@ -3,7 +3,7 @@
 if(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
     add_definitions(-DNOMINMAX)
-    add_compile_options(/wd4324) # structure was padded due to alignment specifier (Embree)
+    add_compile_options(/wd4324) # structure padding warning from 3D math types
     set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>")
     add_compile_options(/FS)
 else()

@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <optional>
 #include <iostream>
 
@@ -22,9 +23,11 @@ EvaluatedLayerState make_layer_state(
     const EvaluationVariables& vars) {
 
     EvaluatedLayerState evaluated;
-    
-    // DEBUG PRINT
-    std::cout << "[debug] LayerEvaluator: layer.id='" << layer.id << "', name='" << layer.name << "'" << std::endl;
+    if (const char* diagnostics = std::getenv("TACHYON_DIAGNOSTICS");
+        diagnostics != nullptr && diagnostics[0] != '\0' && diagnostics[0] != '0') {
+        std::cerr << "[LayerEvaluator] layer.id='" << layer.id
+                  << "', name='" << layer.name << "'" << std::endl;
+    }
     
     evaluated.layer_id = layer.id;
     evaluated.id = layer.id;
@@ -120,15 +123,17 @@ EvaluatedLayerState make_layer_state(
         const math::Vector3 rot3 = sample_vector3(layer.transform3d.rotation_property, rotation_fallback, local_t, context.audio_analyzer);
         const math::Vector3 scale3 = sample_vector3(layer.transform3d.scale_property, scale_fallback_3d, local_t, context.audio_analyzer);
 
-        const math::Vector3 anchor3 = sample_vector3(
-            layer.transform3d.anchor_point_property,
-            math::Vector3{
-                static_cast<float>(layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->x : static_cast<float>(layer.width) * 0.5f),
-                static_cast<float>(layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->y : static_cast<float>(layer.height) * 0.5f),
-                0.0f
-            },
-            local_t,
-            context.audio_analyzer);
+        const math::Vector3 anchor3 = (evaluated.type == LayerType::Camera)
+            ? math::Vector3{0.0f, 0.0f, 0.0f}
+            : sample_vector3(
+                layer.transform3d.anchor_point_property,
+                math::Vector3{
+                    static_cast<float>(layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->x : static_cast<float>(layer.width) * 0.5f),
+                    static_cast<float>(layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->y : static_cast<float>(layer.height) * 0.5f),
+                    0.0f
+                },
+                local_t,
+                context.audio_analyzer);
 
         const LayerTransform3DResult current_transform = build_layer_transform_3d({
             pos3,
@@ -149,15 +154,17 @@ EvaluatedLayerState make_layer_state(
         const math::Vector3 prev_pos3 = sample_vector3(layer.transform3d.position_property, position_fallback, prev_local_t, context.audio_analyzer);
         const math::Vector3 prev_rot3 = sample_vector3(layer.transform3d.rotation_property, rotation_fallback, prev_local_t, context.audio_analyzer);
         const math::Vector3 prev_scale3 = sample_vector3(layer.transform3d.scale_property, scale_fallback_3d, prev_local_t, context.audio_analyzer);
-        const math::Vector3 prev_anchor3 = sample_vector3(
-            layer.transform3d.anchor_point_property,
-            math::Vector3{
-                static_cast<float>(layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->x : static_cast<float>(layer.width) * 0.5f),
-                static_cast<float>(layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->y : static_cast<float>(layer.height) * 0.5f),
-                0.0f
-            },
-            prev_local_t,
-            context.audio_analyzer);
+        const math::Vector3 prev_anchor3 = (evaluated.type == LayerType::Camera)
+            ? math::Vector3{0.0f, 0.0f, 0.0f}
+            : sample_vector3(
+                layer.transform3d.anchor_point_property,
+                math::Vector3{
+                    static_cast<float>(layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->x : static_cast<float>(layer.width) * 0.5f),
+                    static_cast<float>(layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->y : static_cast<float>(layer.height) * 0.5f),
+                    0.0f
+                },
+                prev_local_t,
+                context.audio_analyzer);
         evaluated.previous_world_matrix = build_layer_transform_3d({
             prev_pos3,
             math::Vector3{0.0f, 0.0f, 0.0f},

@@ -15,6 +15,7 @@
 #include <map>
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <optional>
 #include <vector>
 #include <iostream>
@@ -27,6 +28,16 @@ struct LayerMeshResult {
     std::shared_ptr<const media::MeshAsset> mesh_asset;
     std::string mesh_asset_id;
 };
+
+static bool diagnostics_enabled() {
+    const char* value = std::getenv("TACHYON_DIAGNOSTICS");
+    return value != nullptr && value[0] != '\0' && value[0] != '0';
+}
+
+static bool debug_grid_enabled() {
+    const char* value = std::getenv("TACHYON_3D_DEBUG_GRID");
+    return value != nullptr && value[0] != '\0' && value[0] != '0';
+}
 
 static bool is_bridge_renderable_layer(const scene::EvaluatedLayerState& layer) {
     if (!layer.is_3d || !layer.visible || !layer.enabled || !layer.active) {
@@ -180,7 +191,7 @@ static EvaluatedMeshInstance3D build_instance_for_layer(
                   << inst.world_transform[14] << ")\n";
     }
 
-    inst.material.base_color = l.fill_color;
+    inst.material.base_color = ColorSpec{255, 255, 255, 255};
     inst.material.opacity = static_cast<float>(l.opacity);
     inst.material.metallic = l.material.metallic;
     inst.material.roughness = std::max(0.05f, l.material.roughness);
@@ -484,7 +495,7 @@ std::vector<EvaluatedMeshInstance3D> build_instances_3d(
         input.state->layers.begin(),
         input.state->layers.end(),
         [](const auto& layer) { return layer.is_3d && layer.visible && layer.enabled && layer.active; });
-    if (has_visible_3d_layer) {
+    if (has_visible_3d_layer && debug_grid_enabled()) {
         EvaluatedMeshInstance3D grid;
         grid.object_id = static_cast<std::uint32_t>(instance_counter++);
         grid.world_transform = math::Matrix4x4::identity();
@@ -546,12 +557,14 @@ Scene3DBridgeOutput build_evaluated_scene_3d(const Scene3DBridgeInput& input) {
     Scene3DBridgeOutput output;
 
 #ifdef TACHYON_ENABLE_3D
-    render_trace(
-        "3d bridge begin comp=" +
-        (input.plan ? input.plan->composition_target : std::string{}) +
-        " frame=" + std::to_string(input.task ? input.task->frame_number : 0) +
-        " state_layers=" + std::to_string(input.state ? input.state->layers.size() : 0) +
-        " block_indices=" + std::to_string(input.block_indices ? input.block_indices->size() : 0));
+    if (diagnostics_enabled()) {
+        render_trace(
+            "3d bridge begin comp=" +
+            (input.plan ? input.plan->composition_target : std::string{}) +
+            " frame=" + std::to_string(input.task ? input.task->frame_number : 0) +
+            " state_layers=" + std::to_string(input.state ? input.state->layers.size() : 0) +
+            " block_indices=" + std::to_string(input.block_indices ? input.block_indices->size() : 0));
+    }
     if (input.state->camera.available) {
         output.scene3d.camera = build_camera_3d(input.state->camera, *input.state);
     } else {
@@ -582,24 +595,26 @@ Scene3DBridgeOutput build_evaluated_scene_3d(const Scene3DBridgeInput& input) {
         output.scene3d.camera = build_default_perspective_camera(input.state->width, input.state->height);
     }
 
-    std::cerr << "[Scene3DBridge] camera pos=("
-              << output.scene3d.camera.position.x << ","
-              << output.scene3d.camera.position.y << ","
-              << output.scene3d.camera.position.z << ") target=("
-              << output.scene3d.camera.target.x << ","
-              << output.scene3d.camera.target.y << ","
-              << output.scene3d.camera.target.z << ") type="
-              << input.state->camera.camera_type
-              << " available=" << (input.state->camera.available ? 1 : 0)
-              << "\n";
-    for (const auto& layer : input.state->layers) {
-        if (layer.type == LayerType::Camera || layer.is_3d) {
-            std::cerr << "[Scene3DBridge] layer id=" << layer.id
-                      << " type=" << static_cast<int>(layer.type)
-                      << " is_3d=" << (layer.is_3d ? 1 : 0)
-                      << " enabled=" << (layer.enabled ? 1 : 0)
-                      << " active=" << (layer.active ? 1 : 0)
-                      << "\n";
+    if (diagnostics_enabled()) {
+        std::cerr << "[Scene3DBridge] camera pos=("
+                  << output.scene3d.camera.position.x << ","
+                  << output.scene3d.camera.position.y << ","
+                  << output.scene3d.camera.position.z << ") target=("
+                  << output.scene3d.camera.target.x << ","
+                  << output.scene3d.camera.target.y << ","
+                  << output.scene3d.camera.target.z << ") type="
+                  << input.state->camera.camera_type
+                  << " available=" << (input.state->camera.available ? 1 : 0)
+                  << "\n";
+        for (const auto& layer : input.state->layers) {
+            if (layer.type == LayerType::Camera || layer.is_3d) {
+                std::cerr << "[Scene3DBridge] layer id=" << layer.id
+                          << " type=" << static_cast<int>(layer.type)
+                          << " is_3d=" << (layer.is_3d ? 1 : 0)
+                          << " enabled=" << (layer.enabled ? 1 : 0)
+                          << " active=" << (layer.active ? 1 : 0)
+                          << "\n";
+            }
         }
     }
     output.scene3d.lights = build_lights_3d(input.state->lights);
@@ -616,13 +631,15 @@ Scene3DBridgeOutput build_evaluated_scene_3d(const Scene3DBridgeInput& input) {
 
     output.scene3d.instances = build_instances_3d(input);
     output.has_instances = !output.scene3d.instances.empty();
-    render_trace(
-        "3d bridge end comp=" +
-        (input.plan ? input.plan->composition_target : std::string{}) +
-        " frame=" + std::to_string(input.task ? input.task->frame_number : 0) +
-        " camera_id=" + output.scene3d.camera.camera_id +
-        " instances=" + std::to_string(output.scene3d.instances.size()) +
-        " has_instances=" + (output.has_instances ? std::string("1") : std::string("0")));
+    if (diagnostics_enabled()) {
+        render_trace(
+            "3d bridge end comp=" +
+            (input.plan ? input.plan->composition_target : std::string{}) +
+            " frame=" + std::to_string(input.task ? input.task->frame_number : 0) +
+            " camera_id=" + output.scene3d.camera.camera_id +
+            " instances=" + std::to_string(output.scene3d.instances.size()) +
+            " has_instances=" + (output.has_instances ? std::string("1") : std::string("0")));
+    }
 #endif
 
     return output;

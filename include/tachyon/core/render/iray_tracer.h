@@ -8,9 +8,9 @@
 namespace tachyon {
 
 /**
- * @brief Abstract interface for the 3D RayTracer.
- * Allows the 2D core and runtime to use 3D rendering without a direct 
- * dependency on the renderer3d implementation (Embree, etc.).
+ * @brief Abstract interface for the 3D renderer backend.
+ * Allows the 2D core and runtime to use 3D rendering without a direct
+ * dependency on a specific renderer3d implementation.
  */
 class IRayTracer {
 public:
