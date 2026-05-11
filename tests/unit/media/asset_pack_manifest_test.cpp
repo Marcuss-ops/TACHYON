@@ -43,6 +43,23 @@ void test_noop_compressors() {
     }
 }
 
+void test_draco_compressor() {
+#if defined(TACHYON_ENABLE_DRACO)
+    tachyon::media::MeshCompressionInput minput;
+    // A simple triangle
+    minput.positions = {0.0f, 0.0f, 0.0f,  1.0f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f};
+    minput.indices = {0, 1, 2};
+    
+    auto moutput = tachyon::media::draco_mesh_compressor().compress(minput);
+    if (moutput.codec != "draco" || moutput.bytes.empty()) {
+        std::cerr << "Draco mesh compressor failed." << std::endl;
+        g_failures++;
+    } else {
+        std::cout << "Draco compression successful: " << moutput.bytes.size() << " bytes." << std::endl;
+    }
+#endif
+}
+
 } // namespace
 
 bool run_asset_pack_manifest_tests() {
@@ -51,6 +68,7 @@ bool run_asset_pack_manifest_tests() {
 
     test_manifest_write();
     test_noop_compressors();
+    test_draco_compressor();
 
     if (g_failures == 0) {
         std::cout << "All Asset Pack Manifest tests passed!" << std::endl;

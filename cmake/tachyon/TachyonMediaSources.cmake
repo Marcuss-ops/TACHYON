@@ -29,5 +29,6 @@ set(TachyonMediaSources
     ${CMAKE_CURRENT_SOURCE_DIR}/media/asset_pack/asset_pack_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/media/asset_pack/asset_pack_reader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/media/compression/mesh_compressor_none.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/media/compression/mesh_compressor_draco.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/media/compression/texture_compressor_none.cpp
 )

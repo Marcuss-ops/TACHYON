@@ -203,6 +203,12 @@ include(${CMAKE_SOURCE_DIR}/cmake/tachyon/ModuleRenderer2D.cmake)
 
 add_library(TachyonMedia STATIC ${TachyonMediaSources})
 tachyon_configure_common(TachyonMedia)
+
+if(TACHYON_ENABLE_DRACO)
+    target_compile_definitions(TachyonMedia PUBLIC TACHYON_ENABLE_DRACO)
+    target_link_libraries(TachyonMedia PRIVATE draco_static)
+    target_include_directories(TachyonMedia PRIVATE ${draco_SOURCE_DIR}/src ${CMAKE_BINARY_DIR})
+endif()
 target_include_directories(TachyonMedia
     PRIVATE
         ${tinygltf_SOURCE_DIR}
