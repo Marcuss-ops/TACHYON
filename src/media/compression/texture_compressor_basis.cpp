@@ -3,9 +3,16 @@
 #include <mutex>
 #include <vector>
 #include <thread>
+#include <cstring>
 
 #include "encoder/basisu_comp.h"
 #include "encoder/basisu_enc.h"
+
+#if defined(TACHYON_ENABLE_HIGHWAY)
+namespace tachyon::media::simd {
+    void copy_rgba_to_basisu(uint8_t* dst, const uint8_t* src, std::size_t num_pixels);
+}
+#endif
 
 namespace tachyon::media {
 
@@ -36,12 +43,25 @@ public:
         params.m_multithreading = (num_threads > 1);
         
         basisu::image img(input.width, input.height);
-        for (int y = 0; y < input.height; ++y) {
-            for (int x = 0; x < input.width; ++x) {
-                int idx = (y * input.width + x) * 4;
-                img(x, y).set(input.rgba[idx], input.rgba[idx+1], input.rgba[idx+2], input.rgba[idx+3]);
+        
+        if (input.rgba.size() == input.width * input.height * 4) {
+#if defined(TACHYON_ENABLE_HIGHWAY)
+            simd::copy_rgba_to_basisu(reinterpret_cast<uint8_t*>(img.get_ptr()), input.rgba.data(), input.width * input.height);
+#else
+            std::memcpy(img.get_ptr(), input.rgba.data(), input.rgba.size());
+#endif
+        } else {
+            // Fallback for non-RGBA or mismatched sizes
+            for (int y = 0; y < input.height; ++y) {
+                for (int x = 0; x < input.width; ++x) {
+                    int idx = (y * input.width + x) * 4;
+                    if (idx + 3 < input.rgba.size()) {
+                        img(x, y).set(input.rgba[idx], input.rgba[idx+1], input.rgba[idx+2], input.rgba[idx+3]);
+                    }
+                }
             }
         }
+        
         params.m_source_images.push_back(img);
 
         basisu::basis_compressor compressor;

@@ -36,8 +36,14 @@ if(TACHYON_ENABLE_BASIS)
             )
             
             target_include_directories(basisu_lib PUBLIC ${BASISU_SRC_DIR})
-            # Default to no SSE to avoid build issues, can be optimized later
-            target_compile_definitions(basisu_lib PUBLIC BASISU_SUPPORT_SSE=0)
+            # Enable SSE support
+            target_compile_definitions(basisu_lib PUBLIC BASISU_SUPPORT_SSE=1)
+            
+            if(MSVC)
+                target_compile_options(basisu_lib PRIVATE /arch:SSE2)
+            else()
+                target_compile_options(basisu_lib PRIVATE -msse4.1)
+            endif()
             
             if(UNIX)
                 target_link_libraries(basisu_lib PRIVATE m pthread)

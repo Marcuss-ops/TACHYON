@@ -29,10 +29,15 @@ bool run_scene_validator_normalization_tests() {
     // Test 1: Validator accepts canonical LayerType
     {
         SceneSpec scene;
+        scene.schema_version = {1, 0, 0};
         scene.project.id = "test_scene";
 
         CompositionSpec comp;
         comp.id = "comp1";
+        comp.width = 1920;
+        comp.height = 1080;
+        comp.fps = 30.0f;
+        comp.duration = 5.0f;
 
         LayerSpec layer;
         layer.id = "layer1";
@@ -46,6 +51,12 @@ bool run_scene_validator_normalization_tests() {
 
         core::SceneValidator validator;
         auto result = validator.validate(scene);
+
+        if (!result.is_valid()) {
+            for (const auto& issue : result.issues) {
+                std::cerr << "Validation issue: " << issue.message << " at " << issue.path << "\n";
+            }
+        }
 
         check_true(result.is_valid(), "Scene with canonical LayerType::Text passes validation");
     }

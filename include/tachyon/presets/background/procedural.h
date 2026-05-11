@@ -458,4 +458,18 @@ inline ProceduralSpec make_ripple_grid_spec(const ProceduralParams &params = pal
   return spec;
 }
 
+inline ProceduralSpec make_neon_waves_spec(const ProceduralParams &params = palettes::neon_ripple()) {
+  ProceduralSpec spec;
+  spec.kind = "tachyon.background.kind.neon_waves";
+  spec.seed = params.seed;
+  spec.color_a = AnimatedColorSpec{params.palette_a};
+  spec.color_b = AnimatedColorSpec{params.palette_b};
+  spec.color_c = AnimatedColorSpec{params.palette_c};
+  spec.speed = AnimatedScalarSpec{params.motion_speed};
+  spec.frequency = AnimatedScalarSpec{5.0};
+  spec.amplitude = AnimatedScalarSpec{1.5};
+  spec.contrast = AnimatedScalarSpec{params.contrast};
+  return spec;
+}
+
 } // namespace tachyon::presets::background::procedural_bg

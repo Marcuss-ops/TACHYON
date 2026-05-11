@@ -29,7 +29,12 @@ bool write_asset_pack_manifest(const AssetPackManifest& manifest, const std::str
             << "      \"packed_path\": \"" << m.packed_path << "\",\n"
             << "      \"codec\": \"" << m.codec << "\",\n"
             << "      \"source_bytes\": " << m.source_bytes << ",\n"
-            << "      \"packed_bytes\": " << m.packed_bytes << "\n";
+            << "      \"packed_bytes\": " << m.packed_bytes << ",\n"
+            << "      \"texture_ids\": [";
+        for (std::size_t i = 0; i < m.texture_ids.size(); ++i) {
+            out << "\"" << m.texture_ids[i] << "\"" << (i + 1 < m.texture_ids.size() ? ", " : "");
+        }
+        out << "]\n";
     });
     file << ",\n";
 
