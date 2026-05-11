@@ -23,6 +23,7 @@ add_executable(TachyonRenderTests
     unit/renderer2d/composition/draw_list_builder_tests.cpp
     unit/renderer2d/effects/blend_modes_tests.cpp
     unit/renderer2d/effects/transition_fast_paths_tests.cpp
+    unit/renderer2d/effects/light_leak_transitions_tests.cpp
     unit/renderer2d/rasterization/path_rasterizer_tests.cpp
     unit/renderer2d/rasterization/path_rasterizer_aa_tests.cpp
     unit/renderer2d/utilities/tiling_tests.cpp
