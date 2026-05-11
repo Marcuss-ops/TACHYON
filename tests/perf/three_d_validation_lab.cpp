@@ -1,11 +1,17 @@
+#ifndef TACHYON_TESTS_SOURCE_DIR
+#define TACHYON_TESTS_SOURCE_DIR "."
+#endif
+
 #ifndef TACHYON_ENABLE_3D
 #define TACHYON_ENABLE_3D 1
 #endif
 
 #include "tachyon/scene/builder.h"
 #include "tachyon/core/scene/evaluation/evaluator.h"
+#include "tachyon/core/render/aov_buffer.h"
 #include "tachyon/renderer2d/evaluated_composition/layer_renderer.h"
 #include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"
+#include "tachyon/renderer2d/evaluated_composition/rendering/pipeline/scene3d_bridge.h"
 #include "tachyon/renderer2d/evaluated_composition/utilities/composition_utils.h"
 #include "tachyon/renderer2d/effects/effect_host.h"
 #include "tachyon/runtime/execution/jobs/render_job.h"
@@ -21,6 +27,7 @@
 #include "tachyon/presets/text/text_builder.h"
 #include "tachyon/presets/text/text_manifest.h"
 #include "tachyon/presets/text/text_registry.h"
+#include "tachyon/text/layout/layout.h"
 #include "tachyon/transition_registry.h"
 #include "tachyon/renderer2d/effects/core/transitions/basic_transitions.h"
 #include "tachyon/renderer2d/effects/core/transitions/artistic_transitions.h"
@@ -34,14 +41,16 @@
 
 #include <filesystem>
 #include <functional>
+#include <array>
 #include <algorithm>
 #include <cmath>
+#include <fstream>
 #include <iostream>
 #include <memory>
+#include <limits>
 #include <optional>
 #include <cstdio>
 #include <cstdlib>
-#include <limits>
 #include <string>
 #include <string_view>
 #include <vector>
