@@ -95,6 +95,22 @@ static LayerMeshResult build_layer_mesh(
     LayerMeshResult result;
 
     if (l.type == LayerType::Text && input.context && input.context->font_registry) {
+        if (std::getenv("TACHYON_DIAGNOSTICS")) {
+            const auto* direct_font = input.context->font_registry->find(l.font_id);
+            const auto* default_font = input.context->font_registry->default_font();
+            std::cerr << "[Scene3DBridge] text bridge precheck id=" << l.id
+                      << " font_id=" << l.font_id
+                      << " registry_size=" << input.context->font_registry->size()
+                      << " direct_font=" << static_cast<bool>(direct_font)
+                      << " default_font=" << static_cast<bool>(default_font)
+                      << " loaded=" << (direct_font && direct_font->is_loaded())
+                      << " face=" << (direct_font && direct_font->has_freetype_face())
+                      << " text_len=" << l.text_content.size()
+                      << " box=(" << l.text_box.width << "," << l.text_box.height << ")"
+                      << " font_size=" << l.font_size
+                      << " is_3d=" << l.is_3d
+                      << "\n";
+        }
         ::tachyon::text::TextAnimationOptions animation;
         animation.time_seconds = static_cast<float>(l.local_time_seconds);
         animation.animators = l.text_animators;

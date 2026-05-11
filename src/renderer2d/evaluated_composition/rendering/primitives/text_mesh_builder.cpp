@@ -9,7 +9,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <span>
+#include <iostream>
 
 namespace tachyon::renderer2d {
 namespace {
@@ -81,6 +83,14 @@ TextMeshBuildResult build_text_extrusion_mesh(
         font = font_registry.default_font();
     }
     if (font == nullptr || !font->is_loaded() || !font->has_freetype_face()) {
+        if (std::getenv("TACHYON_DIAGNOSTICS")) {
+            std::cerr << "[Scene3DBridge] text mesh font unavailable id=" << layer.id
+                      << " font_id=" << layer.font_id
+                      << " has_font=" << static_cast<bool>(font)
+                      << " loaded=" << (font && font->is_loaded())
+                      << " face=" << (font && font->has_freetype_face())
+                      << "\n";
+        }
         return result;
     }
 
@@ -98,6 +108,16 @@ TextMeshBuildResult build_text_extrusion_mesh(
 
     const auto layout = ::tachyon::text::layout_text(*font, layer.text_content, style, box, layout_options);
     if (layout.glyphs.empty()) {
+        if (std::getenv("TACHYON_DIAGNOSTICS")) {
+            std::cerr << "[Scene3DBridge] text mesh empty layout id=" << layer.id
+                      << " text_len=" << layer.text_content.size()
+                      << " box=(" << box.width << "," << box.height << ")"
+                      << " align=(" << static_cast<int>(box.horizontal_align) << "," << static_cast<int>(box.vertical_align) << ")"
+                      << " mode=" << static_cast<int>(box.mode)
+                      << " fixed_pitch=" << box.fixed_pitch
+                      << " scale=" << layout.scale
+                      << "\n";
+        }
         return result;
     }
 
@@ -142,6 +162,14 @@ TextMeshBuildResult build_text_extrusion_mesh(
 
         auto submesh = ::tachyon::media::Extruder::extrude_shape(glyph_paths, depth, bevel);
         if (submesh.vertices.empty() || submesh.indices.empty()) {
+            if (std::getenv("TACHYON_DIAGNOSTICS")) {
+                std::cerr << "[Scene3DBridge] text mesh empty submesh id=" << layer.id
+                          << " glyph_cp=" << glyph.codepoint
+                          << " depth=" << depth
+                          << " bevel=" << bevel
+                          << " paths=" << glyph_paths.size()
+                          << "\n";
+            }
             continue;
         }
 
