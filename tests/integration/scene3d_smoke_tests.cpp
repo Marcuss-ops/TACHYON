@@ -2,7 +2,6 @@
 #include "tachyon/core/scene/evaluation/evaluator.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/renderer2d/evaluated_composition/rendering/pipeline/scene3d_bridge.h"
-#include "tachyon/renderer3d/core/ray_tracer.h"
 #include "tachyon/media/management/media_manager.h"
 #include "tachyon/media/loading/mesh_asset.h"
 #include "tachyon/core/math/algebra/vector3.h"

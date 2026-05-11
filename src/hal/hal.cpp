@@ -28,7 +28,6 @@ void HAL::refresh() {
     devices_.clear();
     detect_cpu();
     detect_vulkan();
-    detect_embree();
 }
 
 void HAL::detect_cpu() {
@@ -49,22 +48,6 @@ void HAL::detect_vulkan() {
 #ifdef TACHYON_VULKAN
     // Vulkan detection would go here
     // For now, we add a placeholder that would be filled by actual Vulkan queries
-#endif
-}
-
-void HAL::detect_embree() {
-#ifdef TACHYON_EMBREE
-    HardwareDevice embree_dev;
-    embree_dev.name = "Embree Ray Tracer";
-    embree_dev.type = DeviceType::CPU;
-    embree_dev.vendor = GPUVendor::Intel;
-    embree_dev.caps.compute = true;
-    embree_dev.caps.ray_tracing = true;
-    embree_dev.caps.denoising = true;
-    embree_dev.caps.max_compute_units = static_cast<uint32_t>(std::thread::hardware_concurrency());
-    embree_dev.is_available = true;
-    embree_dev.device_id = "embree";
-    devices_.push_back(embree_dev);
 #endif
 }
 

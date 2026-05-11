@@ -21,7 +21,6 @@ private:
     HAL() = default;
     void detect_cpu();
     void detect_vulkan();
-    void detect_embree();
 
     std::vector<HardwareDevice> devices_;
 };
