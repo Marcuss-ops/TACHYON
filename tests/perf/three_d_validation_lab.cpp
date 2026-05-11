@@ -97,19 +97,37 @@ tachyon::SceneSpec make_camera_default_scene() {
         .duration(1.0)
         .clear({16, 18, 24, 255})
         .camera3d_layer("cam", [](LayerBuilder& l) {
-            l.transform3d().position(640.0, 360.0, -1000.0).done()
+            l.transform3d().position(640.0, 360.0, -1216.0).done()
              .camera().type("two_node").poi(640.0, 360.0, 0.0).zoom(877.0).done();
         })
         .light_layer("ambient", [](LayerBuilder& l) {
             l.light().type("ambient")
              .color({255, 255, 255, 255})
-             .intensity(0.8).done();
+             .intensity(0.4).done();
+        })
+        .light_layer("key", [](LayerBuilder& l) {
+            l.position3d(1200.0, 800.0, -800.0)
+             .rotation3d(-35.0, 45.0, 0.0)
+             .light().type("directional")
+             .color({255, 252, 245, 255})
+             .intensity(1.5).done();
         })
         .layer("plate", [](LayerBuilder& l) {
             l.solid("plate")
              .size(420, 240)
              .fill_color({208, 120, 52, 255})
-             .position3d(0.0, 0.0, 0.0);
+             .position3d(640.0, 360.0, 0.0)
+             .anchor(0.0, 0.0)
+             .material().roughness(0.2).metallic(0.2).done();
+        })
+        .layer("floor", [](LayerBuilder& l) {
+            l.solid("floor")
+             .size(4000, 4000)
+             .fill_color({30, 32, 40, 255})
+             .position3d(640.0, 800.0, 1000.0)
+             .rotation3d(90.0, 0.0, 0.0)
+             .anchor(0.0, 0.0)
+             .material().roughness(0.9).done();
         })
         .build_scene();
 #else
@@ -147,7 +165,7 @@ tachyon::SceneSpec make_camera_fallback_scene() {
             l.solid("plate")
              .size(420, 240)
              .fill_color({42, 140, 210, 255})
-             .position3d(0.0, 0.0, 0.0);
+             .position3d(640.0, 360.0, 0.0);
         })
         .build_scene();
 #else
@@ -175,7 +193,10 @@ tachyon::SceneSpec make_explicit_camera_scene() {
         .fps(30)
         .duration(1.0)
         .clear({14, 16, 22, 255})
-        .camera3d_layer("cam", [](LayerBuilder& l) {})
+        .camera3d_layer("cam", [](LayerBuilder& l) {
+             l.transform3d().position(640.0, 360.0, -1000.0).done()
+              .camera().type("two_node").poi(640.0, 360.0, 0.0).zoom(877.0).done();
+        })
         .light_layer("ambient", [](LayerBuilder& l) {
             l.light().type("ambient")
              .color({255, 255, 255, 255})
@@ -185,7 +206,7 @@ tachyon::SceneSpec make_explicit_camera_scene() {
             l.solid("plate")
              .size(380, 220)
              .fill_color({226, 88, 82, 255})
-             .position3d(0.0, 0.0, 0.0);
+             .position3d(640.0, 360.0, 0.0);
         })
         .build_scene();
 #else
@@ -213,7 +234,10 @@ tachyon::SceneSpec make_depth_scene(bool swap_layers) {
         .fps(30)
         .duration(1.0)
         .clear({9, 10, 15, 255})
-        .camera3d_layer("cam", [](LayerBuilder& l) {})
+        .camera3d_layer("cam", [](LayerBuilder& l) {
+             l.transform3d().position(640.0, 360.0, -1000.0).done()
+              .camera().type("two_node").poi(640.0, 360.0, 0.0).zoom(877.0).done();
+        })
         .light_layer("ambient", [](LayerBuilder& l) {
             l.light().type("ambient")
              .color({255, 255, 255, 255})
@@ -223,13 +247,13 @@ tachyon::SceneSpec make_depth_scene(bool swap_layers) {
             l.solid("red")
              .size(460, 260)
              .fill_color({235, 52, 72, 255})
-             .position3d(0.0, 0.0, swap_layers ? 50.0 : -50.0);
+             .position3d(640.0, 360.0, swap_layers ? 50.0 : -50.0);
         })
         .layer("blue", [swap_layers](LayerBuilder& l) {
             l.solid("blue")
              .size(460, 260)
              .fill_color({64, 118, 235, 255})
-             .position3d(0.0, 0.0, swap_layers ? -50.0 : 50.0);
+             .position3d(640.0, 360.0, swap_layers ? -50.0 : 50.0);
         })
         .build_scene();
 #else
@@ -263,12 +287,15 @@ tachyon::SceneSpec make_emission_scene() {
         .fps(30)
         .duration(1.0)
         .clear({6, 6, 8, 255})
-        .camera3d_layer("cam", [](LayerBuilder& l) {})
+        .camera3d_layer("cam", [](LayerBuilder& l) {
+             l.transform3d().position(640.0, 360.0, -1000.0).done()
+              .camera().type("two_node").poi(640.0, 360.0, 0.0).zoom(877.0).done();
+        })
         .layer("glow", [](LayerBuilder& l) {
             l.solid("glow")
              .size(360, 180)
              .fill_color({245, 245, 250, 255})
-             .position3d(0.0, 0.0, 0.0)
+             .position3d(640.0, 360.0, 0.0)
              .material().emission_strength(20.0).emission_color({245, 245, 250, 255}).done();
         })
         .build_scene();
@@ -296,6 +323,7 @@ tachyon::LayerSpec make_text_spec(const std::string& text, bool typewriter) {
     spec.height = 220;
     spec.transform.position_x = 640.0;
     spec.transform.position_y = 360.0;
+    spec.transform.anchor_point.value = tachyon::math::Vector2{0.0f, 0.0f};
     if (typewriter) {
         spec.text_animators.push_back(tachyon::text::make_typewriter_minimal_animator(0.8, false));
     }
@@ -313,26 +341,38 @@ tachyon::SceneSpec make_text_scene(bool behind_plate, bool typewriter) {
         .fps(30)
         .duration(6.0)
         .clear({12, 13, 18, 255})
-        .camera3d_layer("cam", [](LayerBuilder& l) {})
+        .camera3d_layer("cam", [](LayerBuilder& l) {
+             l.transform3d().position(640.0, 360.0, -1000.0).done()
+              .camera().type("two_node").poi(640.0, 360.0, 0.0).zoom(877.0).done();
+        })
         .light_layer("ambient", [](LayerBuilder& l) {
             l.light().type("ambient")
              .color({255, 255, 255, 255})
-             .intensity(0.45).done();
+             .intensity(0.4).done();
+        })
+        .light_layer("key", [](LayerBuilder& l) {
+             l.position3d(-800.0, 600.0, -600.0)
+              .rotation3d(-30.0, -45.0, 0.0)
+              .light().type("directional")
+              .color({250, 255, 255, 255})
+              .intensity(1.0).done();
         })
         .layer("plate", [](LayerBuilder& l) {
             l.solid("plate")
              .size(540, 300)
              .fill_color({172, 84, 44, 255})
-             .position3d(0.0, 0.0, 40.0);
+             .position3d(640.0, 360.0, 40.0)
+             .anchor(0.0, 0.0);
         })
         .layer("title", [text_z, typewriter](LayerBuilder& l) {
             tachyon::LayerSpec spec = make_text_spec("TILT", typewriter);
             l.from_spec(spec);
-            l.position3d(0.0, 0.0, text_z)
+            l.position3d(640.0, 360.0, text_z)
              .rotation3d(-20.0, 0.0, 0.0)
-             .extrude3d(0.18)
-             .bevel3d(0.02)
-             .material().emission_strength(10.0).emission_color({246, 247, 252, 255}).done();
+             .anchor(0.0, 0.0)
+             .extrude3d(20.0)
+             .bevel3d(2.0)
+             .material().emission_strength(5.0).emission_color({246, 247, 252, 255}).done();
         })
         .build_scene();
 #else
@@ -380,27 +420,37 @@ void force_3d_state(tachyon::scene::EvaluatedCompositionState& state) {
     const float cy = static_cast<float>(state.height) * 0.5f;
     const float depth = std::max(static_cast<float>(state.width), static_cast<float>(state.height)) * 0.95f;
 
-    state.camera.available = true;
-    state.camera.camera_type = "two_node";
-    state.camera.position = {cx, cy, -depth};
-    state.camera.point_of_interest = {cx, cy, 0.0f};
-    state.camera.up = {0.0f, 1.0f, 0.0f};
-    state.camera.roll = 0.0f;
-    state.camera.zoom = 877.0f;
-    state.camera.aspect = state.height > 0 ? static_cast<float>(state.width) / static_cast<float>(state.height) : 1.777778f;
-    state.camera.fov_y_rad = 2.0f * std::atan(static_cast<float>(state.height) / (2.0f * std::max(877.0f, 1.0f)));
-    state.camera.camera.transform.position = state.camera.position;
-    state.camera.camera.target_position = state.camera.point_of_interest;
-    state.camera.camera.up = state.camera.up;
-    state.camera.camera.use_target = true;
-    state.camera.camera.focal_length_mm = 35.0f;
-    state.camera.camera.fov_y_rad = state.camera.fov_y_rad;
-    state.camera.camera.aspect = state.camera.aspect;
+    // Only set default camera if no camera is available
+    if (!state.camera.available) {
+        state.camera.available = true;
+        state.camera.camera_type = "two_node";
+        state.camera.position = {cx, cy, -depth};
+        state.camera.point_of_interest = {cx, cy, 0.0f};
+        state.camera.up = {0.0f, 1.0f, 0.0f};
+        state.camera.roll = 0.0f;
+        state.camera.zoom = 877.0f;
+        state.camera.aspect = state.height > 0 ? static_cast<float>(state.width) / static_cast<float>(state.height) : 1.777778f;
+        state.camera.fov_y_rad = 2.0f * std::atan(static_cast<float>(state.height) / (2.0f * std::max(877.0f, 1.0f)));
+        state.camera.camera.transform.position = state.camera.position;
+        state.camera.camera.target_position = state.camera.point_of_interest;
+        state.camera.camera.up = state.camera.up;
+        state.camera.camera.use_target = true;
+        state.camera.camera.focal_length_mm = 35.0f;
+        state.camera.camera.fov_y_rad = state.camera.fov_y_rad;
+        state.camera.camera.aspect = state.camera.aspect;
+    }
 
     for (auto& layer : state.layers) {
         if (layer.type != tachyon::LayerType::Light &&
-            layer.type != tachyon::LayerType::NullLayer) {
+            layer.type != tachyon::LayerType::NullLayer &&
+            layer.type != tachyon::LayerType::Camera) {
             layer.is_3d = true;
+            
+            // Fix: 3D meshes (solids, text) are already centered at (0,0) in local space.
+            // The world_matrix should simply be the translation to the desired world position.
+            if (layer.world_matrix.is_identity()) {
+                layer.world_matrix = tachyon::math::Matrix4x4::translation(layer.world_position3);
+            }
         }
     }
 }

@@ -129,9 +129,17 @@ ShadingResult RayTracer::trace_ray(
     rh.ray.time = time;
     rh.hit.geomID = RTC_INVALID_GEOMETRY_ID;
 
+#if defined(TACHYON_ENABLE_3D) && __has_include(<embree4/rtcore.h>)
     RTCIntersectArguments context{};
     rtcInitIntersectArguments(&context);
     rtcIntersect1(scene_, &rh, &context);
+#elif defined(TACHYON_ENABLE_3D) && __has_include(<embree3/rtcore.h>)
+    RTCIntersectContext context;
+    rtcInitIntersectContext(&context);
+    rtcIntersect1(scene_, &context, &rh);
+#else
+    (void)scene_;
+#endif
 
     if (rh.hit.geomID == RTC_INVALID_GEOMETRY_ID) {
         // Miss - sample environment
@@ -359,9 +367,15 @@ ShadingResult RayTracer::trace_ray(
                               << ") tfar=" << shadow_ray.tfar << "\n";
                 }
 
+#if defined(TACHYON_ENABLE_3D) && __has_include(<embree4/rtcore.h>)
                 RTCOccludedArguments occluded_context{};
                 rtcInitOccludedArguments(&occluded_context);
-            rtcOccluded1(scene_, (RTCRay*)&shadow_ray, &occluded_context);
+                rtcOccluded1(scene_, (RTCRay*)&shadow_ray, &occluded_context);
+#elif defined(TACHYON_ENABLE_3D) && __has_include(<embree3/rtcore.h>)
+                RTCIntersectContext occluded_context;
+                rtcInitIntersectContext(&occluded_context);
+                rtcOccluded1(scene_, &occluded_context, (RTCRay*)&shadow_ray);
+#endif
 
             if (shadow_ray.tfar < 0.0f) {
                 in_shadow = true;
