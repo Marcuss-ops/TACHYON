@@ -24,4 +24,10 @@ set(TachyonMediaSources
     ${CMAKE_CURRENT_SOURCE_DIR}/media/decoding/svg_decoder_impl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/media/decoding/stb_image_impl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/media/decoding/tinygltf_impl.cpp
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/media/asset_pack/asset_pack_manifest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/media/asset_pack/asset_pack_builder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/media/asset_pack/asset_pack_reader.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/media/compression/mesh_compressor_none.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/media/compression/texture_compressor_none.cpp
 )

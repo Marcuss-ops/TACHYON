@@ -23,6 +23,7 @@ bool run_layerspec_schema_tests();
 bool run_missing_transition_fallback_tests();
 bool run_scene_validator_normalization_tests();
 bool run_preview_dev_workflow_tests();
+bool run_asset_pack_manifest_tests();
 
 int main(int argc, char** argv) {
     using namespace tachyon::test;
@@ -48,6 +49,7 @@ int main(int argc, char** argv) {
         {"missing_transition_fallback", run_missing_transition_fallback_tests},
         {"scene_validator_normalization", run_scene_validator_normalization_tests},
         {"preview_dev_workflow", run_preview_dev_workflow_tests},
+        {"asset_pack_manifest", run_asset_pack_manifest_tests},
     };
 
     return run_test_suite(argc, argv, tests);

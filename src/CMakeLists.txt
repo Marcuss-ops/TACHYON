@@ -278,6 +278,17 @@ add_library(TachyonCLICore STATIC ${TachyonCLICoreSources} ${TachyonCLILibrarySo
 tachyon_configure_common(TachyonCLICore)
 target_link_libraries(TachyonCLICore PUBLIC TachyonRuntimeEngine TachyonLibrary TachyonDiagnostics)
 
+add_executable(tachyon-asset-pack
+    tools/tachyon_asset_pack_main.cpp
+)
+tachyon_configure_common(tachyon-asset-pack)
+target_link_libraries(tachyon-asset-pack
+    PRIVATE
+        TachyonMedia
+        TachyonDiagnostics
+        TachyonCore
+)
+
 add_library(TachyonTools INTERFACE)
 target_link_libraries(TachyonTools INTERFACE
     TachyonRuntimeEngine

@@ -27,6 +27,7 @@ add_executable(TachyonContentTests
     unit/presets/transition_preset_registry_tests.cpp
     unit/presets/transition_runtime_tests.cpp
     unit/presets/preset_audit_tests.cpp
+    unit/media/asset_pack_manifest_test.cpp
 )
 
 target_compile_definitions(TachyonContentTests
