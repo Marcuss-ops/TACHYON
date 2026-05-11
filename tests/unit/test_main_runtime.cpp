@@ -15,6 +15,7 @@ bool run_tiling_integration_tests();
 bool run_runtime_policy_tests();
 bool run_determinism_tests();
 bool run_jit_render_tests();
+bool run_taskflow_runtime_tests();
 
 int main(int argc, char** argv) {
     using namespace tachyon::test;
@@ -33,6 +34,7 @@ int main(int argc, char** argv) {
         {"runtime_policy", run_runtime_policy_tests},
         {"determinism", run_determinism_tests},
         {"jit_render", run_jit_render_tests},
+        {"taskflow", run_taskflow_runtime_tests},
     };
 
     return run_test_suite(argc, argv, tests);

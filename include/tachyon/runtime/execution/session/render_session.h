@@ -10,7 +10,6 @@
 #include "tachyon/runtime/execution/framebuffer_playback_queue.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
 #include "tachyon/transition_registry.h"
-#include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
 #include "tachyon/presets/text/text_registry.h"
 #include "tachyon/runtime/execution/compiled_frame_program.h"
 #include "tachyon/runtime/policy/worker_budget.h"
@@ -101,7 +100,6 @@ public:
     void set_memory_budget_bytes(std::size_t bytes) { m_memory_budget_bytes = bytes; }
     void set_profiler(profiling::RenderProfiler* profiler) { m_profiler = profiler; }
     void set_transition_registry(const TransitionRegistry* registry) { m_transition_registry_ptr = registry; }
-    void set_modifier_3d_registry(const renderer3d::Modifier3DRegistry* registry) { m_modifier_registry_ptr = registry; }
     void set_text_registry(const presets::TextRegistry* registry) { m_text_registry_ptr = registry; }
 
     FrameCache& cache() { return m_cache; }
@@ -122,13 +120,11 @@ private:
     std::unique_ptr<runtime::FramebufferPlaybackQueue> m_playback_queue;
 
     renderer2d::EffectRegistry m_effect_registry;
-    renderer3d::Modifier3DRegistry m_modifier_registry;
     TransitionRegistry m_transition_registry;
 
     std::optional<std::size_t> m_memory_budget_bytes;
     profiling::RenderProfiler* m_profiler{nullptr};
     const TransitionRegistry* m_transition_registry_ptr{nullptr};
-    const renderer3d::Modifier3DRegistry* m_modifier_registry_ptr{nullptr};
     const presets::TextRegistry* m_text_registry_ptr{nullptr};
 };
 

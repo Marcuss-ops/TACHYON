@@ -93,7 +93,6 @@ set(TachyonRenderer2DEvaluatedCompositionSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/primitives/mask_renderer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/primitives/text_mesh_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/utilities/composition_utils.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/pipeline/scene3d_bridge.cpp
 )
 
 set(TachyonRenderer2DExtrasSources
@@ -164,21 +163,9 @@ endif()
 target_compile_definitions(TachyonRenderer2D PRIVATE "TACHYON_AVX2")
 
 tachyon_link_text_deps(TachyonRenderer2D)
-tachyon_link_3d_deps(TachyonRenderer2D)
 tachyon_link_omp(TachyonRenderer2D)
 target_link_libraries(TachyonRenderer2D PUBLIC TachyonColor TachyonRenderer2DColor)
 target_link_libraries(TachyonRenderer2D PUBLIC TachyonRenderer2DExtras)
 target_link_libraries(TachyonRenderer2D PUBLIC TachyonText)
+target_link_libraries(TachyonRenderer2D PUBLIC TachyonPresets)
 
-if(TACHYON_ENABLE_3D)
-    add_library(TachyonRenderer3D STATIC ${TachyonRenderer3DSources})
-    tachyon_configure_common(TachyonRenderer3D)
-    tachyon_link_3d_deps(TachyonRenderer3D)
-    tachyon_link_omp(TachyonRenderer3D)
-    target_link_libraries(TachyonRenderer3D PUBLIC TachyonColor)
-
-    add_library(TachyonScene3DBridge STATIC ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/pipeline/scene3d_bridge.cpp)
-    tachyon_configure_common(TachyonScene3DBridge)
-    tachyon_link_3d_deps(TachyonScene3DBridge)
-    target_link_libraries(TachyonScene3DBridge PUBLIC TachyonCore TachyonRenderer2D TachyonRenderer3D)
-endif()

@@ -11,6 +11,7 @@
 #include "tachyon/output/frame_output_sink.h"
 #include "tachyon/media/streaming/media_prefetcher.h"
 #include "tachyon/runtime/execution/session/render_internal.h"
+#include "tachyon/runtime/execution/parallel/taskflow_runtime.h"
 
 #ifdef TACHYON_TRACY_ENABLED
 #include <tracy/Tracy.hpp>
@@ -152,6 +153,173 @@ void render_frames_parallel_internal(
         frame_queue = std::make_unique<FrameQueue>(task_count);
     }
 
+#if defined(TACHYON_ENABLE_TASKFLOW)
+    auto execute_frame_at_index = [&](std::size_t index) {
+        if (cancel_flag && cancel_flag->load()) {
+            return;
+        }
+
+        FrameArena arena;
+        FrameExecutor executor(arena, cache, nullptr);
+        executor.set_parallel_worker_count(budget.pixel_concurrency);
+
+        ::tachyon::RenderContext local_context(context.renderer2d.precomp_cache, context.media);
+        local_context.prefetcher = &prefetcher;
+        local_context.scheduler = scheduler;
+        local_context.ray_tracer = context.ray_tracer;
+        local_context.policy = context.policy;
+        local_context.renderer2d.policy = context.policy;
+        local_context.surface_pool = context.surface_pool;
+        local_context.renderer2d.font_registry = context.renderer2d.font_registry;
+        local_context.renderer2d.transition_registry = context.renderer2d.transition_registry;
+        local_context.renderer2d.cms = context.renderer2d.cms;
+        local_context.renderer2d.diagnostics = context.renderer2d.diagnostics;
+        local_context.renderer2d.effects = context.renderer2d.effects;
+        local_context.renderer2d.asset_resolver = context.renderer2d.asset_resolver;
+        local_context.renderer2d.working_color_space = context.renderer2d.working_color_space;
+        local_context.renderer2d.modifier_registry = context.renderer2d.modifier_registry;
+        local_context.renderer2d.text_registry = context.renderer2d.text_registry;
+        local_context.renderer2d.profiler = context.renderer2d.profiler;
+        local_context.renderer2d.compute_backend = context.renderer2d.compute_backend;
+        local_context.renderer2d.surface_pool = context.renderer2d.surface_pool;
+        local_context.renderer2d.subtitle_entries = context.renderer2d.subtitle_entries;
+        local_context.renderer2d.pixel_concurrency = budget.pixel_concurrency;
+        local_context.cancel_flag = cancel_flag;
+        local_context.renderer2d.cancel_flag = cancel_flag;
+
+#ifdef TACHYON_TRACY_ENABLED
+        ZoneScopedN("RenderSession::WorkerLoop::Frame");
+#endif
+
+        const auto& task = execution_plan.frame_tasks[index];
+        RenderPlan frame_plan = execution_plan.render_plan;
+        render_trace(
+            "frame start index=" + std::to_string(index) +
+            " frame=" + std::to_string(task.frame_number) +
+            " t=" + std::to_string(task.time_seconds));
+
+        std::shared_ptr<const renderer2d::Framebuffer> framebuffer;
+        bool cache_hit = false;
+        ExecutedFrame executed_frame;
+
+        // Try to load from disk cache (checkpoint/resume)
+        if (disk_cache) {
+            runtime::CacheKey key = runtime::CacheKey::build(
+                compiled_scene.scene_hash,
+                task.layer_filters.empty() ? "" : task.layer_filters.front(),
+                task.time_seconds,
+                1, // quality_tier
+                "beauty"
+            );
+
+            auto cached_data = disk_cache->load(key);
+            if (cached_data) {
+                framebuffer = deserialize_framebuffer(*cached_data);
+                if (framebuffer) {
+                    cache_hit = true;
+                }
+            }
+        }
+
+        // Render if not loaded from cache
+        if (!framebuffer) {
+            DataSnapshot snapshot;
+            const auto frame_start = std::chrono::high_resolution_clock::now();
+            
+            executed_frame = executor.execute(compiled_scene, frame_plan, task, snapshot, local_context);
+            
+            const auto frame_end = std::chrono::high_resolution_clock::now();
+            const double render_ms = std::chrono::duration<double, std::milli>(frame_end - frame_start).count();
+            executed_frame.diagnostics.add_timing(FrameDiagnostics::kCategoryRender, "frame_execute", render_ms);
+
+            cache_hit = cache_hit || executed_frame.cache_hit;
+            render_trace(
+                "frame end index=" + std::to_string(index) +
+                " frame=" + std::to_string(task.frame_number) +
+                " cached=" + std::string(cache_hit ? "1" : "0"));
+
+            if (frame_times_out) {
+                (*frame_times_out)[index] = render_ms;
+            }
+
+            if (executed_frame.frame) {
+                framebuffer = std::move(executed_frame.frame);
+
+                // Save to disk cache for checkpoint/resume
+                if (disk_cache) {
+                    runtime::CacheKey key = runtime::CacheKey::build(
+                        compiled_scene.scene_hash,
+                        task.layer_filters.empty() ? "" : task.layer_filters.front(),
+                        task.time_seconds,
+                        1, // quality_tier
+                        "beauty"
+                    );
+
+                    auto frame_data = serialize_framebuffer(*framebuffer);
+                    disk_cache->store(key, frame_data);
+                }
+            }
+        }
+
+        if (streaming_mode && frame_queue && result) {
+            // Streaming mode: submit to queue for immediate writing
+            frame_queue->submit(index, framebuffer, cache_hit);
+            result->frame_diagnostics[index] = executed_frame.diagnostics;
+
+            // Try to write ready frames in order
+            frame_queue->write_ready_frames([&](std::size_t frame_idx, const std::shared_ptr<const renderer2d::Framebuffer>& fb) {
+                if (fb) {
+                    output::OutputFramePacket packet;
+                    packet.frame_number = static_cast<std::int64_t>(execution_plan.frame_tasks[frame_idx].frame_number);
+                    packet.frame = fb.get();
+                    packet.metadata.time_seconds = execution_plan.frame_tasks[frame_idx].time_seconds;
+                    packet.metadata.scene_hash = std::to_string(compiled_scene.scene_hash);
+                    packet.metadata.color_space = context.renderer2d.cms.output_profile.to_string();
+                    
+                    const auto write_start = std::chrono::high_resolution_clock::now();
+                    const bool write_ok = sink->write_frame(packet);
+                    const auto write_end = std::chrono::high_resolution_clock::now();
+                    
+                    const double write_ms = std::chrono::duration<double, std::milli>(write_end - write_start).count();
+                    result->frame_diagnostics[frame_idx].add_timing(FrameDiagnostics::kCategoryOutputWrite, "sink_write", write_ms);
+
+                    if (!write_ok) {
+                        if (result) {
+                            result->output_error = sink->last_error();
+                        }
+                        if (cancel_flag) {
+                            cancel_flag->store(true);
+                        }
+                    }
+                }
+            }, *result);
+        } else {
+            // Buffered mode: store in vector (original behavior)
+            executed_frame.frame_number = static_cast<std::int64_t>(task.frame_number);
+            executed_frame.frame = framebuffer;
+            executed_frame.cache_hit = cache_hit;
+            executed_frame.scene_hash = compiled_scene.scene_hash;
+            if (result) {
+                result->frame_diagnostics[index] = executed_frame.diagnostics;
+            }
+            rendered_frames[index] = std::move(executed_frame);
+        }
+
+        // Update progress
+        std::size_t completed = 0;
+        if (frame_queue) {
+            completed = frame_queue->completed_count.fetch_add(1) + 1;
+        } else {
+            completed = completed_count.fetch_add(1) + 1;
+        }
+        if (progress_callback) {
+            progress_callback(completed, task_count);
+        }
+    };
+
+    runtime::TaskflowRuntime tf_runtime(thread_count);
+    tf_runtime.parallel_for_frames(task_count, execute_frame_at_index);
+#else
     std::vector<std::future<void>> workers;
     workers.reserve(thread_count);
 
@@ -295,27 +463,27 @@ void render_frames_parallel_internal(
                             const double write_ms = std::chrono::duration<double, std::milli>(write_end - write_start).count();
                             result->frame_diagnostics[frame_idx].add_timing(FrameDiagnostics::kCategoryOutputWrite, "sink_write", write_ms);
 
-                            if (!write_ok) {
-                                if (result) {
-                                    result->output_error = sink->last_error();
-                                }
-                                if (cancel_flag) {
-                                    cancel_flag->store(true);
-                                }
-                            }
+                    if (!write_ok) {
+                        if (result) {
+                            result->output_error = sink->last_error();
                         }
-                    }, *result);
-                } else {
-                    // Buffered mode: store in vector (original behavior)
-                    executed_frame.frame_number = static_cast<std::int64_t>(task.frame_number);
-                    executed_frame.frame = framebuffer;
-                    executed_frame.cache_hit = cache_hit;
-                    executed_frame.scene_hash = compiled_scene.scene_hash;
-                    if (result) {
-                        result->frame_diagnostics[index] = executed_frame.diagnostics;
+                        if (cancel_flag) {
+                            cancel_flag->store(true);
+                        }
                     }
-                    rendered_frames[index] = std::move(executed_frame);
                 }
+            }, *result);
+        } else {
+            // Buffered mode: store in vector (original behavior)
+            executed_frame.frame_number = static_cast<std::int64_t>(task.frame_number);
+            executed_frame.frame = framebuffer;
+            executed_frame.cache_hit = cache_hit;
+            executed_frame.scene_hash = compiled_scene.scene_hash;
+            if (result) {
+                result->frame_diagnostics[index] = executed_frame.diagnostics;
+            }
+            rendered_frames[index] = std::move(executed_frame);
+        }
 
                 // Update progress
                 std::size_t completed = 0;
@@ -351,6 +519,7 @@ void render_frames_parallel_internal(
             }
         }
     }
+#endif
 
     // In streaming mode, wait for any remaining frames to be written
     if (streaming_mode && frame_queue && sink && result) {

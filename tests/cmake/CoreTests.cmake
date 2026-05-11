@@ -11,6 +11,7 @@ add_executable(TachyonTests
     unit/core/camera/camera_shake_tests.cpp
     unit/core/properties/bezier_interpolator_tests.cpp
     unit/core/transition_simd_kernels_tests.cpp
+    unit/core/json_parser_tests.cpp
     unit/diagnostics/trace_test.cpp
     unit/timeline/camera_cuts_tests.cpp
     unit/core/scene/builder_preset_tests.cpp
@@ -28,6 +29,7 @@ target_link_libraries(TachyonTests
         TachyonRuntimeEngine
         TachyonDiagnostics
 )
+tachyon_link_mimalloc(TachyonTests)
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
     target_precompile_headers(TachyonTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")

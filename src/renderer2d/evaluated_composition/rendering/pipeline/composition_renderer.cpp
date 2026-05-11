@@ -23,7 +23,7 @@
 #include "tachyon/core/render/dof_settings.h"
 #include "tachyon/core/render/motion_blur_settings.h"
 #include "tachyon/core/render/visibility.h"
-#include "tachyon/renderer3d/visibility/culling.h"
+#include "tachyon/core/render/visibility.h"
 #include "tachyon/renderer2d/raster/tile_grid.h"
 #include "tachyon/output/frame_aov.h"
 #include "tachyon/transition_registry.h"
@@ -31,7 +31,7 @@
 #include "tachyon/core/transition/transition_resolver.h"
 #include "tachyon/renderer2d/effects/core/glsl_transition_effect.h"
 #include "tachyon/core/animation/easing.h"
-#include "tachyon/renderer2d/evaluated_composition/rendering/pipeline/scene3d_bridge.h"
+#include "tachyon/core/animation/easing.h"
 #include "tachyon/core/math/algebra/vector2.h"
 #include "tachyon/media/management/media_manager.h"
 #include "tachyon/core/transition/transition_fast_path_registry.h"
@@ -175,32 +175,6 @@ RasterizedFrame2D render_evaluated_composition_2d(
         " composition=" + state.composition_id +
         " layers=" + std::to_string(state.layers.size()));
 
-#ifdef TACHYON_ENABLE_3D
-    bool has_any_3d = std::any_of(state.layers.begin(), state.layers.end(), [](const auto& l) { return l.is_3d && l.visible; });
-#endif
-
-    std::vector<bool> visible_3d_layers(state.layers.size(), true);
-#ifdef TACHYON_ENABLE_3D
-    if (has_any_3d && state.camera.available) {
-        renderer3d::SceneCulling culling;
-        culling.set_camera(state.camera.camera, state.camera.position);
-        const auto culling_result = culling.cull_layers(state, &intent);
-        visible_3d_layers.assign(state.layers.size(), false);
-        if (culling_result.visibleIndices.empty()) {
-            for (std::size_t i = 0; i < state.layers.size(); ++i) {
-                if (state.layers[i].is_3d && state.layers[i].visible) {
-                    visible_3d_layers[i] = true;
-                }
-            }
-        } else {
-            for (const auto index : culling_result.visibleIndices) {
-                if (index < visible_3d_layers.size()) {
-                    visible_3d_layers[index] = true;
-                }
-            }
-        }
-    }
-#endif
 
     // First pass: collect rendered surfaces for matte resolution
     // Second pass: composite with resolved mattes
@@ -340,231 +314,6 @@ RasterizedFrame2D render_evaluated_composition_2d(
             }
 
             if (layer.is_3d && layer.visible) {
-#ifdef TACHYON_ENABLE_3D
-                const std::lock_guard<std::mutex> lock(scene3d_mutex());
-                render_trace(
-                    "frame " + std::to_string(task.frame_number) +
-                    " 3d-block enter layer=" + layer.id);
-                // Found a 3D block. Collect contiguous 3D layers in stack order.
-                std::vector<std::size_t> block_indices;
-                block_indices.push_back(i);
-                std::size_t last_block_idx = i;
-                for (std::size_t j = i + 1; j < state.layers.size(); ++j) {
-                    const auto& scan_layer = state.layers[j];
-                    if (scan_layer.is_3d && scan_layer.visible && scan_layer.enabled && scan_layer.active) {
-                        block_indices.push_back(j);
-                        last_block_idx = j;
-                    } else if (scan_layer.enabled && scan_layer.active) {
-                        break;
-                    }
-                }
-
-                // Construct EvaluatedScene3D bridge from the composition subset
-                Scene3DBridgeInput bridge_input;
-                bridge_input.state = &state;
-                bridge_input.intent = &intent;
-                bridge_input.plan = &plan;
-                bridge_input.task = &task;
-                bridge_input.context = &render_context;
-                bridge_input.block_indices = &block_indices;
-                bridge_input.visible_3d_layers = &visible_3d_layers;
-
-                render_trace(
-                    "3d bridge state frame=" + std::to_string(task.frame_number) +
-                    " layers=" + std::to_string(state.layers.size()) +
-                    " block_indices=" + std::to_string(block_indices.size()) +
-                    " ray_tracer=" + (render_context.ray_tracer ? std::string("1") : std::string("0")));
-                const auto bridge_output = build_evaluated_scene_3d(bridge_input);
-                render_trace(
-                    "3d bridge built frame=" + std::to_string(task.frame_number) +
-                    " has_instances=" + (bridge_output.has_instances ? std::string("1") : std::string("0")) +
-                    " instances=" + std::to_string(bridge_output.scene3d.instances.size()) +
-                    " lights=" + std::to_string(bridge_output.scene3d.lights.size()) +
-                    " camera_id=" + bridge_output.scene3d.camera.camera_id);
-                const std::uint32_t w = static_cast<std::uint32_t>(state.width);
-                const std::uint32_t h = static_cast<std::uint32_t>(state.height);
-                auto world_3d = std::make_shared<SurfaceRGBA>(w, h);
-                world_3d->set_profile(render_context.cms.working_profile);
-                world_3d->clear(renderer2d::Color::transparent());
-                world_3d->clear_depth(0.0f);
-
-                std::atomic_bool world_has_visible_pixels{false};
-
-                // Convergence: Prefer high-quality ray tracing if IRayTracer is provided.
-                if (bridge_output.has_instances && render_context.ray_tracer) {
-                    const auto ray_start = std::chrono::high_resolution_clock::now();
-                    constexpr float kRayMissDepth = 999999.0f;
-                    
-                    AOVBuffer aovs;
-                    aovs.resize(w, h);
-                    
-                    render_trace("3d bridge build_scene begin");
-                    render_context.ray_tracer->build_scene(bridge_output.scene3d);
-                    render_trace("3d bridge build_scene end");
-                    
-                    double dt = 1.0 / 60.0;
-                    if (plan.quality_policy.motion_blur_samples > 0) {
-                        // FPS is used for temporal sample spacing
-                    }
-
-                    render_trace("3d bridge render begin");
-                    render_context.ray_tracer->render(bridge_output.scene3d, aovs, task.time_seconds, dt);
-                    render_trace("3d bridge render end");
-                    
-                    // Transfer AOVs to SurfaceRGBA sequentially.
-                    for (std::uint32_t y = 0; y < h; ++y) {
-                        for (std::uint32_t x = 0; x < w; ++x) {
-                            const std::size_t idx = (static_cast<std::size_t>(y) * w + x) * 4;
-                            const std::size_t z_idx = static_cast<std::size_t>(y) * w + x;
-
-                            Color c;
-                            c.r = aovs.beauty_rgba[idx];
-                            c.g = aovs.beauty_rgba[idx + 1];
-                            c.b = aovs.beauty_rgba[idx + 2];
-                            c.a = aovs.beauty_rgba[idx + 3];
-
-                            const bool has_hit = std::isfinite(aovs.depth_z[z_idx]) &&
-                                                 aovs.depth_z[z_idx] > 0.0f &&
-                                                 aovs.depth_z[z_idx] < kRayMissDepth;
-                            const bool has_color = (c.r > 0.0f || c.g > 0.0f || c.b > 0.0f || c.a > 0.0f);
-                            if (has_hit || has_color) {
-                                if (c.a == 0.0f) {
-                                    c.a = 255;
-                                }
-                                world_3d->set_pixel(x, y, c);
-                                if (has_hit) {
-                                    world_3d->test_and_write_depth(x, y, 1.0f / aovs.depth_z[z_idx]);
-                                }
-                                world_has_visible_pixels.store(world_has_visible_pixels.load(std::memory_order_relaxed) || has_hit, std::memory_order_relaxed);
-                            }
-                        }
-                    }
-                    record_timing(diagnostics, "ray_tracing_block", std::to_string(i), ray_start);
-                }
-                render_trace(
-                    "3d bridge fallback enter frame=" + std::to_string(task.frame_number) +
-                    " world_has_visible_pixels=" + (world_has_visible_pixels.load(std::memory_order_relaxed) ? std::string("1") : std::string("0")));
-
-                std::shared_ptr<SurfaceRGBA> fallback_preview_surface;
-                if (!world_has_visible_pixels.load(std::memory_order_relaxed)) {
-                    const auto view_matrix = state.camera.camera.get_view_matrix();
-                    auto fallback_stack_surface = std::make_shared<SurfaceRGBA>(w, h);
-                    fallback_stack_surface->set_profile(render_context.cms.working_profile);
-                    fallback_stack_surface->clear(renderer2d::Color::transparent());
-                for (std::size_t block_idx : block_indices) {
-                    if (block_idx >= state.layers.size()) {
-                        continue;
-                    }
-                    const auto& block_layer = state.layers[block_idx];
-                    if (!block_layer.visible || !block_layer.enabled || !block_layer.active || block_layer.width <= 0 || block_layer.height <= 0) {
-                        continue;
-                    }
-
-                    std::shared_ptr<SurfaceRGBA> block_surface;
-                    auto rendered_surface_it = rendered_surfaces.find(block_layer.id);
-                    if (rendered_surface_it != rendered_surfaces.end()) {
-                        block_surface = rendered_surface_it->second;
-                    }
-                    if (!block_surface) {
-                        const auto block_surface_start = std::chrono::high_resolution_clock::now();
-                        block_surface = render_layer_surface(block_layer, state, intent, plan, task, render_context, tile_rect);
-                        record_timing(diagnostics, "layer_surface", block_layer.id.empty() ? std::to_string(block_idx) : block_layer.id, block_surface_start);
-                    }
-                    if (!block_surface) {
-                        continue;
-                    }
-
-                    if (block_layer.type != scene::LayerType::Camera &&
-                        block_layer.type != scene::LayerType::Light &&
-                        block_layer.type != scene::LayerType::NullLayer) {
-                        composite_surface(*fallback_stack_surface, *block_surface, 0, 0, BlendMode::Normal);
-                        fallback_preview_surface = fallback_stack_surface;
-                    }
-
-                    const float half_w = static_cast<float>(block_layer.width) * 0.5f;
-                    const float half_h = static_cast<float>(block_layer.height) * 0.5f;
-                    const math::Vector3 local_p0{-half_w, -half_h, 0.0f};
-                    const math::Vector3 local_p1{ half_w, -half_h, 0.0f};
-                    const math::Vector3 local_p2{ half_w,  half_h, 0.0f};
-                    const math::Vector3 local_p3{-half_w,  half_h, 0.0f};
-
-                    const math::Vector3 world_p0 = block_layer.world_matrix.transform_point(local_p0);
-                    const math::Vector3 world_p1 = block_layer.world_matrix.transform_point(local_p1);
-                    const math::Vector3 world_p2 = block_layer.world_matrix.transform_point(local_p2);
-                    const math::Vector3 world_p3 = block_layer.world_matrix.transform_point(local_p3);
-
-                    const math::Vector3 cam_p0 = view_matrix.transform_point(world_p0);
-                    const math::Vector3 cam_p1 = view_matrix.transform_point(world_p1);
-                    const math::Vector3 cam_p2 = view_matrix.transform_point(world_p2);
-                    const math::Vector3 cam_p3 = view_matrix.transform_point(world_p3);
-
-                    if (cam_p0.z > -state.camera.camera.near_z &&
-                        cam_p1.z > -state.camera.camera.near_z &&
-                        cam_p2.z > -state.camera.camera.near_z &&
-                        cam_p3.z > -state.camera.camera.near_z) {
-                        continue;
-                    }
-
-                    const math::Vector2 screen_p0 = state.camera.camera.project_point(world_p0, static_cast<float>(w), static_cast<float>(h));
-                    const math::Vector2 screen_p1 = state.camera.camera.project_point(world_p1, static_cast<float>(w), static_cast<float>(h));
-                    const math::Vector2 screen_p2 = state.camera.camera.project_point(world_p2, static_cast<float>(w), static_cast<float>(h));
-                    const math::Vector2 screen_p3 = state.camera.camera.project_point(world_p3, static_cast<float>(w), static_cast<float>(h));
-
-                    if ((screen_p0.x < 0.0f && screen_p0.y < 0.0f) &&
-                        (screen_p1.x < 0.0f && screen_p1.y < 0.0f) &&
-                        (screen_p2.x < 0.0f && screen_p2.y < 0.0f) &&
-                        (screen_p3.x < 0.0f && screen_p3.y < 0.0f)) {
-                        continue;
-                    }
-
-                    auto make_vertex = [&](const math::Vector3& cam_p, const math::Vector2& screen_p) {
-                        renderer2d::raster::Vertex3D v;
-                        v.position = {screen_p.x, screen_p.y, 0.0f};
-                        v.uv = {0.0f, 0.0f};
-                        v.one_over_w = cam_p.z != 0.0f ? 1.0f / std::max(0.001f, -cam_p.z) : 1.0f;
-                        return v;
-                    };
-
-                    renderer2d::raster::PerspectiveWarpQuad quad;
-                    quad.v0 = make_vertex(cam_p0, screen_p0);
-                    quad.v1 = make_vertex(cam_p1, screen_p1);
-                    quad.v2 = make_vertex(cam_p2, screen_p2);
-                    quad.v3 = make_vertex(cam_p3, screen_p3);
-                    quad.v0.uv = {0.0f, 1.0f};
-                    quad.v1.uv = {1.0f, 1.0f};
-                    quad.v2.uv = {1.0f, 0.0f};
-                    quad.v3.uv = {0.0f, 0.0f};
-                    quad.texture = block_surface.get();
-                    quad.opacity = static_cast<float>(block_layer.opacity);
-                    renderer2d::raster::PerspectiveRasterizer::draw_quad(*world_3d, quad);
-                    world_has_visible_pixels = true;
-                }
-                } // end if (!world_has_visible_pixels)
-
-                const auto composite_layer_it = std::find_if(
-                    block_indices.begin(),
-                    block_indices.end(),
-                    [&](std::size_t block_idx) {
-                        const auto& candidate = state.layers[block_idx];
-                        return candidate.visible
-                            && candidate.enabled
-                            && candidate.active
-                            && candidate.type != scene::LayerType::Camera
-                            && candidate.type != scene::LayerType::Light
-                            && candidate.type != scene::LayerType::NullLayer;
-                    });
-                if (composite_layer_it != block_indices.end() && world_has_visible_pixels) {
-                    composite_surface(target_surface, *world_3d, 0, 0, BlendMode::Normal);
-                } else if (composite_layer_it != block_indices.end()) {
-                    frame.note += " [3D ray pass empty; using fallback 2D card preview]";
-                    if (fallback_preview_surface) {
-                        composite_surface(target_surface, *fallback_preview_surface, 0, 0, BlendMode::Normal);
-                    }
-                }
-                i = last_block_idx;
-#else
-                // 3D disabled: skip layer
-#endif
                 continue;
             }
 

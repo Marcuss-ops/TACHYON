@@ -30,13 +30,11 @@ namespace tachyon::profiling { class RenderProfiler; }
 
 namespace tachyon {
 class TransitionRegistry;
-class IRayTracer;
 
 namespace media { 
     class AssetResolver; 
     class MediaManager;
 }
-namespace renderer3d { class Modifier3DRegistry; }
 namespace presets { class TextRegistry; }
 }
 
@@ -104,7 +102,6 @@ struct RenderContext2D {
     std::shared_ptr<EffectHost> effects;
     AccumulationBuffers accumulation_buffer;
     QualityPolicy policy;
-    std::shared_ptr<IRayTracer> ray_tracer;
     ColorManagementSystem cms;
     WorkingColorSpace working_color_space;
     int width{0};
@@ -116,7 +113,6 @@ struct RenderContext2D {
     const ::tachyon::text::FontRegistry* font_registry = nullptr;
     const std::vector<::tachyon::text::SubtitleEntry>* subtitle_entries = nullptr;
     const ::tachyon::TransitionRegistry* transition_registry = nullptr;
-    const ::tachyon::renderer3d::Modifier3DRegistry* modifier_registry = nullptr;
     const ::tachyon::presets::TextRegistry* text_registry = nullptr;
     ::tachyon::media::MediaManager* media_manager = nullptr;
     std::shared_ptr<::tachyon::media::AssetResolver> asset_resolver;

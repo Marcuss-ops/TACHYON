@@ -107,7 +107,6 @@ void configure_render_context(
     runtime::RuntimeSurfacePool* surface_pool,
     std::shared_ptr<renderer2d::SurfacePool> renderer2d_surface_pool,
     const renderer2d::EffectRegistry& effect_registry,
-    const renderer3d::Modifier3DRegistry& modifier_registry,
     const TransitionRegistry& transition_registry,
     const presets::TextRegistry* text_registry) {
     workspace.context.policy = workspace.effective_plan.render_plan.quality_policy;
@@ -125,7 +124,6 @@ void configure_render_context(
     workspace.context.profiler = profiler;
     workspace.context.renderer2d.profiler = profiler;
     workspace.context.renderer2d.effects = renderer2d::create_effect_host(effect_registry);
-    workspace.context.renderer2d.modifier_registry = &modifier_registry;
     workspace.context.renderer2d.transition_registry = &transition_registry;
     workspace.context.renderer2d.text_registry = text_registry;
 }
@@ -283,7 +281,7 @@ RenderSessionResult RenderSession::render(
     m_surface_pool = std::make_unique<runtime::RuntimeSurfacePool>(w, h, surface_count);
 
     const TransitionRegistry& transition_registry = m_transition_registry_ptr ? *m_transition_registry_ptr : m_transition_registry;
-    configure_render_context(workspace, m_profiler, m_surface_pool.get(), m_renderer2d_surface_pool, m_effect_registry, m_modifier_registry, transition_registry, m_text_registry_ptr);
+    configure_render_context(workspace, m_profiler, m_surface_pool.get(), m_renderer2d_surface_pool, m_effect_registry, transition_registry, m_text_registry_ptr);
 
     workspace.sink = output::create_frame_output_sink(workspace.effective_plan.render_plan);
     

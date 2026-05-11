@@ -6,7 +6,6 @@
 #include "tachyon/runtime/profiling/render_profiler.h"
 #include "tachyon/runtime/policy/worker_policy.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
-#include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
 #include "tachyon/presets/text/text_registry.h"
 #include "tachyon/presets/text/text_manifest.h"
 #include "tachyon/transition_registry.h"
@@ -182,10 +181,9 @@ RenderSessionResult NativeRenderer::render(
         renderer2d::resolve_artistic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
         renderer2d::resolve_light_leak_implementations(const_cast<TransitionDescriptor&>(*desc));
     }
-    renderer3d::Modifier3DRegistry modifier_registry;
     presets::TextManifest text_manifest;
     presets::TextRegistry text_registry(text_manifest);
-    return render(scene, job, transition_registry, modifier_registry, text_registry, options);
+    return render(scene, job, transition_registry, text_registry, options);
 }
 
 RenderSessionResult NativeRenderer::render(
@@ -199,17 +197,15 @@ RenderSessionResult NativeRenderer::render(
         renderer2d::resolve_artistic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
         renderer2d::resolve_light_leak_implementations(const_cast<TransitionDescriptor&>(*desc));
     }
-    renderer3d::Modifier3DRegistry modifier_registry;
     presets::TextManifest text_manifest;
     presets::TextRegistry text_registry(text_manifest);
-    return render(scene, job, transition_registry, modifier_registry, text_registry, options);
+    return render(scene, job, transition_registry, text_registry, options);
 }
 
 RenderSessionResult NativeRenderer::render(
     const SceneSpec& scene,
     const RenderJob& job,
     TransitionRegistry& transition_registry,
-    renderer3d::Modifier3DRegistry& modifier_registry,
     presets::TextRegistry& text_registry,
     const NativeRenderOptions& options) {
     ensure_native_render_registries();
@@ -233,7 +229,6 @@ RenderSessionResult NativeRenderer::render(
 
     RenderSession session;
     session.set_transition_registry(&transition_registry);
-    session.set_modifier_3d_registry(&modifier_registry);
     session.set_text_registry(&text_registry);
     return render_with_session(*compiled_result.value, resolved_job, options, session);
 }
@@ -242,13 +237,11 @@ RenderSessionResult NativeRenderer::render(
     const CompiledScene& scene,
     const RenderJob& job,
     TransitionRegistry& transition_registry,
-    renderer3d::Modifier3DRegistry& modifier_registry,
     presets::TextRegistry& text_registry,
     const NativeRenderOptions& options) {
     ensure_native_render_registries();
     RenderSession session;
     session.set_transition_registry(&transition_registry);
-    session.set_modifier_3d_registry(&modifier_registry);
     session.set_text_registry(&text_registry);
     return render_with_session(scene, job, options, session);
 }
@@ -259,12 +252,11 @@ bool NativeRenderer::render_still(
     std::int64_t frame_number,
     const std::filesystem::path& output_path,
     TransitionRegistry& transition_registry,
-    renderer3d::Modifier3DRegistry& modifier_registry,
     presets::TextRegistry& text_registry) {
     
     RenderJob job = RenderJobBuilder::still_image(composition_id, frame_number, output_path.string());
     
-    const auto result = render(scene, job, transition_registry, modifier_registry, text_registry);
+    const auto result = render(scene, job, transition_registry, text_registry);
     return result.output_error.empty() && (!result.frames.empty() || result.frames_written > 0);
 }
 

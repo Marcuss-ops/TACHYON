@@ -41,10 +41,6 @@ set(TachyonSceneValidationSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/validation/scene_validator_utils.cpp
 )
 
-set(TachyonSceneImportSources
-    ${CMAKE_CURRENT_SOURCE_DIR}/importer/alembic_importer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/importer/usd_importer.cpp
-)
 
 set(TachyonSceneShapeSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/shapes/shape_spec_builder.cpp
@@ -55,7 +51,6 @@ set(TachyonSceneSources
     ${TachyonSceneAuthoringSources}
     ${TachyonSceneSchemaSources}
     ${TachyonSceneValidationSources}
-    ${TachyonSceneImportSources}
     ${TachyonSceneShapeSources}
 )
 
@@ -74,13 +69,16 @@ target_link_libraries(TachyonSceneEval
     PRIVATE
         TachyonCore
         TachyonColor
-        TachyonText
         TachyonAudio
-        TachyonMedia
-)
+        TachyonText
+    )
+
+    if(TACHYON_ENABLE_MEDIA)
+        target_link_libraries(TachyonSceneEval PRIVATE TachyonMedia)
+    endif()
+
 tachyon_link_text_deps(TachyonSceneEval)
 tachyon_link_media_deps(TachyonSceneEval)
-tachyon_link_3d_deps(TachyonSceneEval)
 tachyon_link_omp(TachyonSceneEval)
 
 add_library(TachyonPresets STATIC ${TachyonPresetsSources})
@@ -88,10 +86,14 @@ tachyon_configure_common(TachyonPresets)
 target_link_libraries(TachyonPresets
     PUBLIC
         TachyonCore
-        TachyonText
         TachyonAudio
-        TachyonMedia
-)
+        TachyonText
+    )
+
+    if(TACHYON_ENABLE_MEDIA)
+        target_link_libraries(TachyonPresets PRIVATE TachyonMedia)
+    endif()
+
 tachyon_link_text_deps(TachyonPresets)
 tachyon_link_media_deps(TachyonPresets)
 tachyon_link_omp(TachyonPresets)
@@ -112,9 +114,9 @@ target_link_libraries(TachyonScene
         TachyonPlatform
         TachyonPresets
         TachyonAudio
-        TachyonMedia
-)
-if(TACHYON_ENABLE_TRACKER)
-    target_link_libraries(TachyonScene PRIVATE TachyonTracker)
-endif()
+    )
+
+    if(TACHYON_ENABLE_MEDIA)
+        target_link_libraries(TachyonScene PRIVATE TachyonMedia)
+    endif()
 tachyon_link_omp(TachyonScene)

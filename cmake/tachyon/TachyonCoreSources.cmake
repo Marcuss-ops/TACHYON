@@ -29,6 +29,16 @@ set(TachyonCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/library/backgrounds/background_catalog.cpp
 )
 
+if(TACHYON_ENABLE_SIMDJSON)
+    list(APPEND TachyonCoreSources
+        ${CMAKE_CURRENT_SOURCE_DIR}/core/json/json_parser_simdjson.cpp
+    )
+endif()
+
+list(APPEND TachyonCoreSources
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/memory/allocator_config.cpp
+)
+
 if(TACHYON_ENABLE_HIGHWAY)
     list(APPEND TachyonCoreSources
         ${CMAKE_CURRENT_SOURCE_DIR}/core/transition/transition_simd_kernels_highway.cpp
