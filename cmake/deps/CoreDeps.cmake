@@ -2,6 +2,10 @@ include_guard(GLOBAL)
 
 if(TACHYON_FETCH_DEPS)
     # Clipper2 for boolean shape operations (Merge Paths)
+    set(CLIPPER2_UTILS OFF CACHE BOOL "Disable Clipper2 utils" FORCE)
+    set(CLIPPER2_EXAMPLES OFF CACHE BOOL "Disable Clipper2 examples" FORCE)
+    set(CLIPPER2_TESTS OFF CACHE BOOL "Disable Clipper2 tests" FORCE)
+    
     if(EXISTS "${CMAKE_SOURCE_DIR}/third_party/clipper2/CPP/CMakeLists.txt")
         set(clipper2_SOURCE_DIR "${CMAKE_SOURCE_DIR}/third_party/clipper2")
         set(clipper2_BINARY_DIR "${CMAKE_BINARY_DIR}/_deps/clipper2-build")
@@ -15,10 +19,6 @@ if(TACHYON_FETCH_DEPS)
         )
         FetchContent_MakeAvailable(clipper2)
     endif()
-    
-    set(CLIPPER2_UTILS OFF CACHE BOOL "Disable Clipper2 utils" FORCE)
-    set(CLIPPER2_EXAMPLES OFF CACHE BOOL "Disable Clipper2 examples" FORCE)
-    set(CLIPPER2_TESTS OFF CACHE BOOL "Disable Clipper2 tests" FORCE)
 
     # GoogleTest for unit testing
     if(EXISTS "${CMAKE_SOURCE_DIR}/third_party/googletest/CMakeLists.txt")

@@ -67,6 +67,8 @@ void record_timing(
         return;
     }
     const auto end = std::chrono::high_resolution_clock::now();
+    static std::mutex s_timing_mutex;
+    std::lock_guard<std::mutex> lock(s_timing_mutex);
     diagnostics->timings.push_back(TimingSample{
         category,
         label,
@@ -152,7 +154,9 @@ RasterizedFrame2D render_evaluated_composition_2d(
     const std::uint32_t working_width = static_cast<std::uint32_t>(std::max<std::int64_t>(1, static_cast<std::int64_t>(std::round(static_cast<float>(state.width) * res_scale))));
     const std::uint32_t working_height = static_cast<std::uint32_t>(std::max<std::int64_t>(1, static_cast<std::int64_t>(std::round(static_cast<float>(state.height) * res_scale))));
 
-    frame.surface = std::make_shared<SurfaceRGBA>(working_width, working_height);
+    frame.surface = context.surface_pool
+        ? context.surface_pool->acquire(working_width, working_height)
+        : std::make_shared<SurfaceRGBA>(working_width, working_height);
     if (!frame.surface) {
         frame.note += " [ERROR: failed to allocate surface of size " + 
                      std::to_string(working_width) + "x" + std::to_string(working_height) + "]";
@@ -627,21 +631,24 @@ RasterizedFrame2D render_evaluated_composition_2d(
         if (std::getenv("TACHYON_DIAGNOSTICS")) {
             std::cerr << "DIAG: Tiling " << working_width << "x" << working_height << " into " << grid.tiles.size() << " tiles (size " << context.policy.tile_size << ")\n";
         }
+#ifdef _OPENMP
+#pragma omp parallel for schedule(dynamic)
+#endif
         for (int i = 0; i < static_cast<int>(grid.tiles.size()); ++i) {
             const auto& tile = grid.tiles[i];
-            if (std::getenv("TACHYON_DIAGNOSTICS")) {
-                std::cerr << "DIAG:   Tile " << i << ": {" << tile.x << "," << tile.y << "," << tile.width << "," << tile.height << "}\n";
-            }
-            SurfaceRGBA tile_surface(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height));
-            tile_surface.clear(Color::transparent());
+            
+            auto tile_surface_ptr = context.surface_pool 
+                ? context.surface_pool->acquire(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height))
+                : std::make_shared<SurfaceRGBA>(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height));
+            tile_surface_ptr->clear(Color::transparent());
             
             RenderContext2D thread_context = context;
             render_trace(
                 "frame " + std::to_string(task.frame_number) +
                 " render_pass tile invoke=" + std::to_string(tile.x) + "," + std::to_string(tile.y) +
                 " size=" + std::to_string(tile.width) + "x" + std::to_string(tile.height));
-            render_pass(tile_surface, thread_context, tile);
-            composite_surface(dst, tile_surface, tile.x, tile.y, BlendMode::Normal);
+            render_pass(*tile_surface_ptr, thread_context, tile);
+            composite_surface(dst, *tile_surface_ptr, tile.x, tile.y, BlendMode::Normal);
         }
     } else {
         render_trace(

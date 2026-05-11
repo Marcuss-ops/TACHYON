@@ -165,12 +165,23 @@ void composite_surface(
 
     if (start_x >= end_x || start_y >= end_y) return;
 
+    const float* src_pixels = src.pixels().data();
+    float* dst_pixels = dst.mutable_pixels().data();
+    const float* src_depth = src.depth_buffer().empty() ? nullptr : src.depth_buffer().data();
+    
+    const uint32_t src_w = src.width();
+    const uint32_t dst_w = dst.width();
+
     for (int y = start_y; y < end_y; ++y) {
         const std::uint32_t dy = static_cast<std::uint32_t>(offset_y + y);
+        const std::size_t src_row_idx = static_cast<std::size_t>(y) * src_w;
+        const std::size_t dst_row_idx = static_cast<std::size_t>(dy) * dst_w;
+
         for (int x = start_x; x < end_x; ++x) {
             const std::uint32_t dx = static_cast<std::uint32_t>(offset_x + x);
             
-            float src_z = constant_src_depth >= 0.0f ? constant_src_depth : src.get_depth(static_cast<uint32_t>(x), static_cast<uint32_t>(y));
+            float src_z = constant_src_depth >= 0.0f ? constant_src_depth : 
+                (src_depth ? src_depth[src_row_idx + x] : 0.0f);
             
             // Depth test
             if (src_z > 0.0f) {
@@ -179,14 +190,48 @@ void composite_surface(
                 }
             }
 
-            const renderer2d::Color src_color = src.get_pixel(static_cast<uint32_t>(x), static_cast<uint32_t>(y));
-            if (src_color.a <= 0.0f) continue;
+            const std::size_t s_idx = (src_row_idx + x) * 4U;
+            const float sa = src_pixels[s_idx + 3];
+            
+            if (sa <= 0.0f) continue;
+            
+            const renderer2d::Color src_color{
+                src_pixels[s_idx + 0],
+                src_pixels[s_idx + 1],
+                src_pixels[s_idx + 2],
+                sa
+            };
+
+            const std::size_t d_idx = (dst_row_idx + dx) * 4U;
 
             if (blend_mode == renderer2d::BlendMode::Normal) {
-                dst.blend_pixel(dx, dy, src_color);
+                const renderer2d::Color dst_color{
+                    dst_pixels[d_idx + 0],
+                    dst_pixels[d_idx + 1],
+                    dst_pixels[d_idx + 2],
+                    dst_pixels[d_idx + 3]
+                };
+                
+                // Fast premultiplied src-over
+                // src is already premultiplied in Tachyon's internal logic, but blend_premultiplied expects straight?
+                // Actually, the previous code called dst.blend_pixel(dx, dy, src_color) which does blend_src_over_premultiplied
+                const float inv_sa = 1.0f - sa;
+                dst_pixels[d_idx + 0] = src_color.r + dst_color.r * inv_sa;
+                dst_pixels[d_idx + 1] = src_color.g + dst_color.g * inv_sa;
+                dst_pixels[d_idx + 2] = src_color.b + dst_color.b * inv_sa;
+                dst_pixels[d_idx + 3] = src_color.a + dst_color.a * inv_sa;
             } else {
-                const renderer2d::Color dst_color = dst.get_pixel(dx, dy);
-                dst.set_pixel(dx, dy, renderer2d::blend_mode_color(src_color, dst_color, blend_mode));
+                const renderer2d::Color dst_color{
+                    dst_pixels[d_idx + 0],
+                    dst_pixels[d_idx + 1],
+                    dst_pixels[d_idx + 2],
+                    dst_pixels[d_idx + 3]
+                };
+                const renderer2d::Color out_color = renderer2d::blend_mode_color(src_color, dst_color, blend_mode);
+                dst_pixels[d_idx + 0] = out_color.r;
+                dst_pixels[d_idx + 1] = out_color.g;
+                dst_pixels[d_idx + 2] = out_color.b;
+                dst_pixels[d_idx + 3] = out_color.a;
             }
         }
     }
