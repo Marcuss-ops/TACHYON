@@ -166,7 +166,6 @@ void render_frames_parallel_internal(
         ::tachyon::RenderContext local_context(context.renderer2d.precomp_cache, context.media);
         local_context.prefetcher = &prefetcher;
         local_context.scheduler = scheduler;
-        local_context.ray_tracer = context.ray_tracer;
         local_context.policy = context.policy;
         local_context.renderer2d.policy = context.policy;
         local_context.surface_pool = context.surface_pool;
@@ -177,7 +176,6 @@ void render_frames_parallel_internal(
         local_context.renderer2d.effects = context.renderer2d.effects;
         local_context.renderer2d.asset_resolver = context.renderer2d.asset_resolver;
         local_context.renderer2d.working_color_space = context.renderer2d.working_color_space;
-        local_context.renderer2d.modifier_registry = context.renderer2d.modifier_registry;
         local_context.renderer2d.text_registry = context.renderer2d.text_registry;
         local_context.renderer2d.profiler = context.renderer2d.profiler;
         local_context.renderer2d.compute_backend = context.renderer2d.compute_backend;
@@ -334,7 +332,6 @@ void render_frames_parallel_internal(
 
               local_context.prefetcher = &prefetcher;
               local_context.scheduler = scheduler;
-              local_context.ray_tracer = context.ray_tracer;
               local_context.policy = context.policy;
               local_context.renderer2d.policy = context.policy;
               local_context.surface_pool = context.surface_pool;
@@ -346,7 +343,6 @@ void render_frames_parallel_internal(
               local_context.renderer2d.effects = context.renderer2d.effects;
               local_context.renderer2d.asset_resolver = context.renderer2d.asset_resolver;
               local_context.renderer2d.working_color_space = context.renderer2d.working_color_space;
-              local_context.renderer2d.modifier_registry = context.renderer2d.modifier_registry;
               local_context.renderer2d.text_registry = context.renderer2d.text_registry;
               local_context.renderer2d.profiler = context.renderer2d.profiler;
               local_context.renderer2d.compute_backend = context.renderer2d.compute_backend;
