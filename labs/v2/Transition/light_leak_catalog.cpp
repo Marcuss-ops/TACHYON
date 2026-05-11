@@ -58,7 +58,13 @@ extern "C" __declspec(dllexport) SceneSpec build_scene() {
       "tachyon.transition.lightleak.amber_sweep",
       "tachyon.transition.lightleak.neon_pulse",
       "tachyon.transition.lightleak.prism_shatter",
-      "tachyon.transition.lightleak.vintage_sepia"};
+      "tachyon.transition.lightleak.vintage_sepia",
+      "tachyon.transition.lightleak.organic_blobs",
+      "tachyon.transition.lightleak.lava_flow",
+      "tachyon.transition.lightleak.liquid_fission",
+      "tachyon.transition.lightleak.cosmic_swirl",
+      "tachyon.transition.lightleak.cinematic_amber",
+      "tachyon.transition.lightleak.procedural_remotion"};
 
   for (const auto &leak : light_leaks) {
     add_light_leak_composition(scene, leak);

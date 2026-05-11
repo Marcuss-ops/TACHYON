@@ -26,6 +26,7 @@ bool run_rolling_shutter_tests();
 bool run_3d_modifier_tests();
 bool run_2d_3d_bridge_tests();
 bool run_transition_fast_paths_tests();
+bool run_light_leak_transitions_tests();
 
 int main(int argc, char** argv) {
     using namespace tachyon::test;
@@ -41,6 +42,7 @@ int main(int argc, char** argv) {
         {"draw_list_builder", run_draw_list_builder_tests},
         {"blend_modes", run_blend_modes_tests},
         {"transition_fast_paths", run_transition_fast_paths_tests},
+        {"light_leak_transitions", run_light_leak_transitions_tests},
         {"evaluated_composition_renderer", run_evaluated_composition_renderer_tests},
         {"path_rasterizer", run_path_rasterizer_tests},
         {"path_rasterizer_aa", run_path_rasterizer_aa_tests},

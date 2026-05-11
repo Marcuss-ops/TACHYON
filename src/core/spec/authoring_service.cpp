@@ -240,6 +240,13 @@ AuthoringService::CompileResult AuthoringService::compile_to_shared_lib(
     dll_path.replace_extension(".so");
 #endif
     std::filesystem::create_directories(output_dir);
+    
+    // Optimization: reuse existing DLL if it exists to bypass redundant JIT recompiles
+    if (std::filesystem::exists(dll_path)) {
+        result.success = true;
+        result.output_path = dll_path;
+        return result;
+    }
 
     if (!is_compiler_available()) {
         result.error = "Compiler tools not found.";

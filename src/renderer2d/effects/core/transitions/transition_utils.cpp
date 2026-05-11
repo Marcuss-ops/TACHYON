@@ -1,5 +1,6 @@
 #include "tachyon/renderer2d/effects/core/transitions/transition_utils.h"
 #include "tachyon/core/transition/transition_descriptor.h"
+#include <iostream>
 
 namespace tachyon::renderer2d {
 
