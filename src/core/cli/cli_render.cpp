@@ -6,6 +6,7 @@
 #include "tachyon/runtime/execution/native_render.h"
 #include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
 #include "tachyon/presets/text/text_registry.h"
+#include "tachyon/diagnostics/trace.h"
 #include "cli_internal.h"
 #include <iomanip>
 #include <iostream>
@@ -261,6 +262,7 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
 
     bool all_success = true;
     for (auto* comp_ptr : targets) {
+        TACHYON_TRACE_SCOPE("cli.render.composition");
         const auto& comp = *comp_ptr;
         RenderJob job;
         {

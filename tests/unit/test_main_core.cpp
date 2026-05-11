@@ -11,10 +11,12 @@ bool run_scene_builder_preset_tests();
 bool run_blend_kernel_tests();
 bool run_property_sampler_tests();
 bool run_transition_simd_kernels_tests();
+bool run_trace_tests();
 
 int main(int argc, char** argv) {
     using namespace tachyon::test;
     std::vector<TestCase> tests = {
+        {"trace", run_trace_tests},
         {"math", run_math_tests},
         {"property", run_property_tests},
         {"expression", run_expression_tests},
@@ -26,6 +28,5 @@ int main(int argc, char** argv) {
         {"property_sampler", run_property_sampler_tests},
         {"transition_simd", run_transition_simd_kernels_tests},
     };
-
     return run_test_suite(argc, argv, tests);
 }
