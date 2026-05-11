@@ -180,7 +180,7 @@ void evaluate_layer(
             return sampled;
         }
         if (context.diagnostic_tracker) context.diagnostic_tracker->property_misses++;
-        return fallback;
+        return static_cast<double>(runtime::sample_compiled_property_track(track, static_cast<float>(frame_time_seconds)));
     };
 
     state->opacity = static_cast<float>(sample_property(CompiledLayer::Opacity, 1.0));
@@ -195,8 +195,8 @@ void evaluate_layer(
 
     if (state->is_3d) {
         const math::Vector3 pos3{
-            static_cast<float>(sample_property(CompiledLayer::PosX, 0.0)),
-            static_cast<float>(sample_property(CompiledLayer::PosY, 0.0)),
+            state->local_transform.position.x,
+            state->local_transform.position.y,
             static_cast<float>(sample_property(CompiledLayer::PosZ, 0.0))
         };
         const math::Vector3 rot3{
@@ -205,13 +205,13 @@ void evaluate_layer(
             static_cast<float>(sample_property(CompiledLayer::RotationZ, 0.0))
         };
         const math::Vector3 scale3{
-            static_cast<float>(sample_property(CompiledLayer::ScaleX, 1.0)),
-            static_cast<float>(sample_property(CompiledLayer::ScaleY, 1.0)),
+            state->local_transform.scale.x,
+            state->local_transform.scale.y,
             static_cast<float>(sample_property(CompiledLayer::ScaleZ, 1.0))
         };
         const math::Vector3 anchor3{
-            static_cast<float>(sample_property(CompiledLayer::AnchorX, 0.0)),
-            static_cast<float>(sample_property(CompiledLayer::AnchorY, 0.0)),
+            state->local_transform.anchor_point.x,
+            state->local_transform.anchor_point.y,
             static_cast<float>(sample_property(CompiledLayer::AnchorZ, 0.0))
         };
 
@@ -243,8 +243,8 @@ void evaluate_layer(
         };
 
         const math::Vector3 prev_pos3{
-            static_cast<float>(sample_prev(CompiledLayer::PosX, 0.0)),
-            static_cast<float>(sample_prev(CompiledLayer::PosY, 0.0)),
+            static_cast<float>(sample_prev(CompiledLayer::PosX, state->local_transform.position.x)),
+            static_cast<float>(sample_prev(CompiledLayer::PosY, state->local_transform.position.y)),
             static_cast<float>(sample_prev(CompiledLayer::PosZ, 0.0))
         };
         const math::Vector3 prev_rot3{
@@ -253,13 +253,13 @@ void evaluate_layer(
             static_cast<float>(sample_prev(CompiledLayer::RotationZ, 0.0))
         };
         const math::Vector3 prev_scale3{
-            static_cast<float>(sample_prev(CompiledLayer::ScaleX, 1.0)),
-            static_cast<float>(sample_prev(CompiledLayer::ScaleY, 1.0)),
+            static_cast<float>(sample_prev(CompiledLayer::ScaleX, state->local_transform.scale.x)),
+            static_cast<float>(sample_prev(CompiledLayer::ScaleY, state->local_transform.scale.y)),
             static_cast<float>(sample_prev(CompiledLayer::ScaleZ, 1.0))
         };
         const math::Vector3 prev_anchor3{
-            static_cast<float>(sample_prev(CompiledLayer::AnchorX, 0.0)),
-            static_cast<float>(sample_prev(CompiledLayer::AnchorY, 0.0)),
+            state->local_transform.anchor_point.x,
+            state->local_transform.anchor_point.y,
             static_cast<float>(sample_prev(CompiledLayer::AnchorZ, 0.0))
         };
         state->previous_world_matrix = scene::build_layer_transform_3d({
@@ -291,14 +291,23 @@ void evaluate_layer(
         state->previous_world_matrix = state->world_matrix;
     }
 
+    // Only apply automatic linear alpha fading for simple "fade" transitions or default legacy IDs.
+    // Named plugin transitions (e.g., "tachyon.transition.light_leak") handle opacity themselves or within their pixel kernel.
+    const auto is_auto_fade = [](const std::string& type) {
+        if (type == "fade" || type.empty()) return true;
+        // If it contains a plugin namespace, we assume it has rich pixel logic and do NOT apply automatic global fade.
+        if (type.find("tachyon.transition.") != std::string::npos) return false;
+        return true; // Fallback fallback legacy
+    };
+
     float transition_opacity = 1.0f;
-    if (layer.transition_in.duration > 0.0 && layer.transition_in.type != "none") {
+    if (layer.transition_in.duration > 0.0 && layer.transition_in.type != "none" && is_auto_fade(layer.transition_in.type)) {
         double t = frame_time_seconds - layer.in_time;
         if (t >= 0.0 && t < layer.transition_in.duration) {
             transition_opacity = static_cast<float>(std::clamp(t / layer.transition_in.duration, 0.0, 1.0));
         }
     }
-    if (layer.transition_out.duration > 0.0 && layer.transition_out.type != "none") {
+    if (layer.transition_out.duration > 0.0 && layer.transition_out.type != "none" && is_auto_fade(layer.transition_out.type)) {
         double t = layer.out_time - frame_time_seconds;
         if (t >= 0.0 && t < layer.transition_out.duration) {
             transition_opacity *= static_cast<float>(std::clamp(t / layer.transition_out.duration, 0.0, 1.0));

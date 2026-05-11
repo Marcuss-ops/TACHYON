@@ -35,10 +35,14 @@ TACHYON_RENDERER2D_API Color transition_lightleak_amber_sweep(float u, float v, 
 TACHYON_RENDERER2D_API Color transition_lightleak_neon_pulse(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface);
 TACHYON_RENDERER2D_API Color transition_lightleak_prism_shatter(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface);
 TACHYON_RENDERER2D_API Color transition_lightleak_vintage_sepia(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface);
+TACHYON_RENDERER2D_API Color transition_lightleak_organic_blobs(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface);
+TACHYON_RENDERER2D_API Color transition_lightleak_lava_flow(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface);
+TACHYON_RENDERER2D_API Color transition_lightleak_liquid_fission(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface);
+TACHYON_RENDERER2D_API Color transition_lightleak_cosmic_swirl(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface);
+TACHYON_RENDERER2D_API Color transition_lightleak_cinematic_amber(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface);
+TACHYON_RENDERER2D_API Color transition_lightleak_procedural_remotion(float u, float v, float t, const SurfaceRGBA& input, const SurfaceRGBA* to_surface);
 
-/**
- * Attaches CPU implementation functions to light leak transition descriptors.
- */
-TACHYON_RENDERER2D_API void resolve_light_leak_implementations(tachyon::TransitionDescriptor& descriptor);
+// Utility resolution helper
+void resolve_light_leak_implementations(tachyon::TransitionDescriptor& descriptor);
 
 } // namespace tachyon::renderer2d
