@@ -1,6 +1,9 @@
 #include "tachyon/transition_registry.h"
 #include "tachyon/core/transition/transition_descriptor.h"
 #include "tachyon/renderer2d/effects/core/glsl_transition_effect.h"
+#include "tachyon/renderer2d/effects/core/transitions/basic_transitions.h"
+#include "tachyon/renderer2d/effects/core/transitions/artistic_transitions.h"
+#include "tachyon/renderer2d/effects/core/transitions/light_leak_transitions.h"
 #include "tachyon/presets/transition/transition_preset_registry.h"
 #include "tachyon/core/ids/builtin_ids.h"
 #include <cassert>
@@ -16,6 +19,16 @@ bool run_transition_runtime_tests() {
     // Runtime Registry Alignment Audit
     TransitionRegistry registry;
     register_builtin_transitions(registry);
+
+    // Resolve implementations (attach functions to descriptors)
+    for (const auto& id : registry.list_all_ids()) {
+        auto* desc = const_cast<TransitionDescriptor*>(registry.find_by_id(id));
+        if (desc) {
+            renderer2d::resolve_basic_transition_implementations(*desc);
+            renderer2d::resolve_artistic_transition_implementations(*desc);
+            renderer2d::resolve_light_leak_implementations(*desc);
+        }
+    }
 
     // 1. Registry must not be empty after init.
     const auto runtime_ids = registry.list_all_ids();

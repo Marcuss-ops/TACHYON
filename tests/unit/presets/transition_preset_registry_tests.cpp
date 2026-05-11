@@ -13,8 +13,8 @@ bool run_transition_preset_registry_tests() {
 
     {
         auto ids = preset_registry.list_ids();
-        // 19 original GLSL presets + 'none' + 5 new premium light leaks = 25
-        assert(ids.size() == 25);
+        // 19 original GLSL presets + 'none' + 3 modern v2 + 5 new premium light leaks = 28
+        assert(ids.size() == 28);
         assert(preset_registry.find("tachyon.transition.crossfade") != nullptr);
         assert(preset_registry.find("tachyon.transition.slide_up") != nullptr);
         assert(preset_registry.find("tachyon.transition.swipe_left") != nullptr);

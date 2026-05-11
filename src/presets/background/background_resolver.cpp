@@ -33,6 +33,7 @@ BackgroundResolutionResult resolve_background(
                     bag.set("duration", duration);
                     auto layer = desc->build(bag);
                     if (layer.type != LayerType::NullLayer) {
+                        if (layer.id.empty()) layer.id = "bg_solid_" + bg.value;
                         result.layers = { layer };
                         return result;
                     }
@@ -57,6 +58,7 @@ BackgroundResolutionResult resolve_background(
                     bag.set("duration", duration);
                     auto layer = desc->build(bag);
                     if (layer.type != LayerType::NullLayer) {
+                        if (layer.id.empty()) layer.id = "bg_image_" + bg.value;
                         result.layers = { layer };
                         return result;
                     }

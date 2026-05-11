@@ -13,6 +13,7 @@ struct PackedMeshEntry {
     std::string codec;
     std::uint64_t source_bytes = 0;
     std::uint64_t packed_bytes = 0;
+    std::vector<std::string> texture_ids;
 };
 
 struct PackedTextureEntry {

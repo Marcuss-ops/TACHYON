@@ -74,6 +74,26 @@ void BackgroundRegistry::register_all_builtins() {
         desc.build = make_procedural_builder([](const ProceduralParams& p) { return make_stars_spec(p); });
         register_descriptor(desc);
     }
+
+    // Galaxy
+    {
+        BackgroundDescriptor desc;
+        desc.id = "tachyon.background.kind.galaxy";
+        desc.aliases = {"galaxy", "Galaxy"};
+        desc.kind = BackgroundKind::Procedural;
+        desc.build = make_procedural_builder([](const ProceduralParams& p) { return make_galaxy_spec(p); });
+        register_descriptor(desc);
+    }
+
+    // Neon Waves
+    {
+        BackgroundDescriptor desc;
+        desc.id = "tachyon.background.kind.neon_waves";
+        desc.aliases = {"neon_waves", "NeonWaves"};
+        desc.kind = BackgroundKind::Procedural;
+        desc.build = make_procedural_builder([](const ProceduralParams& p) { return make_neon_waves_spec(p); });
+        register_descriptor(desc);
+    }
 }
 
 } // namespace tachyon

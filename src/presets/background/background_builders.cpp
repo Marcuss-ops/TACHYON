@@ -81,7 +81,7 @@ LayerSpec build_background(const BackgroundParams& p) {
 
     std::optional<ProceduralSpec> spec;
     if (!p.kind.empty()) {
-        auto* desc = registry.find_by_id(p.kind);
+        auto* desc = registry.resolve(p.kind);
         if (desc && desc->build) {
             registry::ParameterBag bag;
             bag.set("palette.a", palette.palette_a);

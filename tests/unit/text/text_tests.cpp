@@ -66,11 +66,10 @@ bool run_text_tests() {
 
     {
         TextBox box;
-        box.width = 200;
-        box.height = 64;
-        box.mode = TextBoxMode::Fixed;
+        box.mode = TextBoxMode::Auto;
+        box.horizontal_align = HorizontalAlign::Left;
 
-        const TextLayoutResult layout = layout_text(font, "TACHYON", style, box, HorizontalAlign::Left);
+        const TextLayoutResult layout = layout_text(font, "TACHYON", style, box, TextLayoutOptions{});
         std::cerr << "DEBUG: layout.scale=" << layout.scale << ", layout.lines=" << layout.lines.size() << ", layout.width=" << layout.width << ", glyphs=" << layout.glyphs.size() << "\n";
         check_true(layout.scale == 2, "Layout scale derived from pixel size");
         check_true(layout.lines.size() == 1, "Single-line layout stays on one line");
@@ -81,14 +80,13 @@ bool run_text_tests() {
 
     {
         TextBox box;
-        box.width = 200;
-        box.height = 64;
-        box.mode = TextBoxMode::Fixed;
+        box.mode = TextBoxMode::Auto;
+        box.horizontal_align = HorizontalAlign::Left;
         TextLayoutOptions tracking;
         tracking.tracking = 1.0f;
 
-        const TextLayoutResult base_layout = layout_text(font, "TA", style, box, HorizontalAlign::Left);
-        const TextLayoutResult tracked_layout = layout_text(font, "TA", style, box, HorizontalAlign::Left, tracking);
+        const TextLayoutResult base_layout = layout_text(font, "TA", style, box, TextLayoutOptions{});
+        const TextLayoutResult tracked_layout = layout_text(font, "TA", style, box, tracking);
         check_true(tracked_layout.width > base_layout.width, "Tracking increases laid-out width");
     }
 
@@ -97,7 +95,8 @@ bool run_text_tests() {
         box.width = 100;
         box.height = 64;
         box.mode = TextBoxMode::Fixed;
-        const TextLayoutResult layout = layout_text(font, "TACHYON TACHYON", style, box, HorizontalAlign::Center);
+        box.horizontal_align = HorizontalAlign::Center;
+        const TextLayoutResult layout = layout_text(font, "TACHYON TACHYON", style, box, TextLayoutOptions{});
         check_true(layout.lines.size() >= 2, "Wrapping creates multiple lines");
         check_true(layout.glyphs.front().position.x > 0, "Center alignment offsets the first glyph");
         if (!layout.lines.empty() && layout.lines.front().glyph_count > 0) {
@@ -108,8 +107,8 @@ bool run_text_tests() {
     {
         TextBox box;
         box.width = 84;
-        box.height = 32;
-        box.mode = TextBoxMode::Fixed;
+        box.height = 14;
+        box.mode = TextBoxMode::Auto;
         const TextRasterSurface surface = rasterize_text_rgba(font, "TACHYON", style, box, TextLayoutOptions{});
         check_true(surface.width() == 84, "Raster surface width matches layout");
         check_true(surface.height() == 14, "Raster surface height matches layout");
@@ -203,9 +202,10 @@ bool run_text_tests() {
         box.width = 200;
         box.height = 64;
         box.mode = TextBoxMode::Fixed;
+        box.horizontal_align = HorizontalAlign::Center;
 
         const TextLayoutOptions layout_options;
-        const TextLayoutResult layout = layout_text(font, "HIGHLIGHT", style, box, HorizontalAlign::Center, layout_options);
+        const TextLayoutResult layout = layout_text(font, "HIGHLIGHT", style, box, layout_options);
         const TextRasterSurface base_surface = rasterize_text_rgba(font, "HIGHLIGHT", style, box, layout_options);
 
         std::vector<TextHighlightSpan> highlights;
@@ -224,7 +224,7 @@ bool run_text_tests() {
         if (layout.glyphs.size() >= 1) {
             const auto& first = layout.glyphs.front();
             const std::uint32_t sample_x = static_cast<std::uint32_t>(std::max<std::int32_t>(0, first.position.x - 1));
-            const std::uint32_t sample_y = static_cast<std::uint32_t>(std::max<std::int32_t>(0, first.position.y - 1));
+            const std::uint32_t sample_y = static_cast<std::uint32_t>(std::max<std::int32_t>(0, first.position.y));
             check_true(base_surface.get_pixel(sample_x, sample_y).a == 0, "Base surface keeps highlight area transparent");
             check_true(highlighted_surface.get_pixel(sample_x, sample_y).a > 0, "Highlight span paints a visible background");
         }

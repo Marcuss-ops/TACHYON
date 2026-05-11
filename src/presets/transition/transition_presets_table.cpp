@@ -68,6 +68,13 @@ void TransitionPresetRegistry::load_builtins() {
     register_builtin(*this, "tachyon.transition.smooth_wipe", "Smooth Wipe", std::string(smooth_wipe), {"wipe", "modern", "smooth"});
     register_builtin(*this, "tachyon.transition.soft_zoom_blur", "Soft Zoom Blur", std::string(soft_zoom_blur), {"zoom", "modern", "blur"});
     register_builtin(*this, "tachyon.transition.flash_cut", "Flash Cut", std::string(flash_cut), {"flash", "cinematic", "fast"});
+
+    // Premium Light Leaks
+    register_builtin(*this, "tachyon.transition.lightleak.soft_warm_edge", "Soft Warm Edge", std::string(lightleak_soft_warm_edge), {"lightleak", "premium", "vfx"});
+    register_builtin(*this, "tachyon.transition.lightleak.golden_sweep", "Golden Sweep", std::string(lightleak_golden_sweep), {"lightleak", "premium", "vfx"});
+    register_builtin(*this, "tachyon.transition.lightleak.creamy_white", "Creamy White", std::string(lightleak_creamy_white), {"lightleak", "premium", "vfx"});
+    register_builtin(*this, "tachyon.transition.lightleak.dusty_archive", "Dusty Archive", std::string(lightleak_dusty_archive), {"lightleak", "premium", "vfx"});
+    register_builtin(*this, "tachyon.transition.lightleak.lens_flare_pass", "Lens Flare Pass", std::string(lightleak_lens_flare_pass), {"lightleak", "premium", "vfx"});
 }
 
 } // namespace tachyon::presets

@@ -53,7 +53,9 @@ bool run_text_preset_tests() {
 
         const auto layer = build_text(params);
         check_true(layer.text_animators.size() == 1, "build_text bounce_in animator count");
-        check_true(layer.text_animators[0].name == "BounceIn", "build_text bounce_in animator name");
+        if (!layer.text_animators.empty()) {
+            check_true(layer.text_animators[0].name == "BounceIn", "build_text bounce_in animator name");
+        }
     }
 
     {
@@ -65,7 +67,9 @@ bool run_text_preset_tests() {
 
         const auto layer = build_text(params);
         check_true(layer.text_animators.size() == 1, "build_text word_punch animator count");
-        check_true(layer.text_animators[0].name == "WordPunch", "build_text word_punch animator name");
+        if (!layer.text_animators.empty()) {
+            check_true(layer.text_animators[0].name == "WordPunch", "build_text word_punch animator name");
+        }
     }
 
     {
