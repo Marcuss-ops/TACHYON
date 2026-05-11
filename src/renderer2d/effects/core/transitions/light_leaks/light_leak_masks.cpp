@@ -25,53 +25,53 @@ float soft_band(float value, float center, float width, float softness) {
 float edge_mask(float u, float v, float t, const LightLeakStyle& s) {
     float side = s.direction < 0 ? u : 1.0f - u;
     float drift = 0.08f * std::sin(t * 3.0f + v * 2.0f);
-    return std::pow(1.0f - std::clamp((side + drift) / s.width, 0.0f, 1.0f), s.softness);
+    return std::pow(1.0f - std::clamp((side + drift) / s.spread, 0.0f, 1.0f), s.softness);
 }
 
 float sweep_mask(float u, float v, float t, const LightLeakStyle& s) {
-    float a = radians(s.angle_degrees);
+    float a = radians(s.angle);
     float proj = u * std::cos(a) + v * std::sin(a);
     float center = -s.offset + t * s.speed;
-    return soft_band(proj, center, s.width, s.softness);
+    return soft_band(proj, center, s.spread, s.softness);
 }
 
 float radial_corner_mask(float u, float v, float t, const LightLeakStyle& s) {
     float dx = (s.direction < 0) ? u : 1.0f - u;
     float dy = (s.direction < 0) ? v : 1.0f - v;
     float d = std::sqrt(dx * dx + dy * dy);
-    float pulse = 1.0f + s.pulse_amount * std::sin(t * 3.14159f);
-    return std::pow(1.0f - std::clamp(d / (s.width * pulse), 0.0f, 1.0f), s.softness);
+    float pulse = 1.0f + s.pulse * std::sin(t * 3.14159f);
+    return std::pow(1.0f - std::clamp(d / (s.spread * pulse), 0.0f, 1.0f), s.softness);
 }
 
 float horizontal_band_mask(float u, float v, float t, const LightLeakStyle& s) {
     float center = 0.5f + (s.direction * 0.1f) * std::sin(t * 2.0f);
-    return soft_band(v, center, s.width, s.softness);
+    return soft_band(v, center, s.spread, s.softness);
 }
 
 float window_bands_mask(float u, float v, float t, const LightLeakStyle& s) {
     float drift = 0.03f * std::sin(t * 2.0f);
-    float m1 = soft_band(u, 0.20f + drift, s.width, s.softness);
-    float m2 = soft_band(u, 0.48f + drift, s.width, s.softness);
-    float m3 = soft_band(u, 0.76f + drift, s.width, s.softness);
+    float m1 = soft_band(u, 0.20f + drift, s.spread, s.softness);
+    float m2 = soft_band(u, 0.48f + drift, s.spread, s.softness);
+    float m3 = soft_band(u, 0.76f + drift, s.spread, s.softness);
     return std::clamp(m1 + m2 * 0.7f + m3 * 0.5f, 0.0f, 1.0f);
 }
 
 float dual_beam_mask(float u, float v, float t, const LightLeakStyle& s) {
-    float a1 = radians(s.angle_degrees);
-    float a2 = radians(s.angle_degrees + 20.0f);
+    float a1 = radians(s.angle);
+    float a2 = radians(s.angle + 20.0f);
     float proj1 = u * std::cos(a1) + v * std::sin(a1);
     float proj2 = u * std::cos(a2) - v * std::sin(a2);
     float center = -s.offset + t * s.speed;
-    return 0.7f * soft_band(proj1, center, s.width, s.softness) + 
-           0.5f * soft_band(proj2, center * 0.9f, s.width * 0.8f, s.softness);
+    return 0.7f * soft_band(proj1, center, s.spread, s.softness) + 
+           0.5f * soft_band(proj2, center * 0.9f, s.spread * 0.8f, s.softness);
 }
 
 float prism_mask(float u, float v, float t, const LightLeakStyle& s) {
     float proj = u * 0.8f + v * 0.2f;
     float center = -s.offset + t * s.speed;
-    float m1 = soft_band(proj, center - 0.05f, s.width * 0.5f, s.softness);
-    float m2 = soft_band(proj, center,         s.width * 0.5f, s.softness);
-    float m3 = soft_band(proj, center + 0.05f, s.width * 0.5f, s.softness);
+    float m1 = soft_band(proj, center - 0.05f, s.spread * 0.5f, s.softness);
+    float m2 = soft_band(proj, center,         s.spread * 0.5f, s.softness);
+    float m3 = soft_band(proj, center + 0.05f, s.spread * 0.5f, s.softness);
     return std::clamp(m1 + m2 + m3, 0.0f, 1.0f);
 }
 

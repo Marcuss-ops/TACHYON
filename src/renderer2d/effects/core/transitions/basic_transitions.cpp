@@ -5,6 +5,8 @@
 #include "tachyon/core/ids/builtin_ids.h"
 #include <cmath>
 #include <algorithm>
+#include <array>
+#include <string_view>
 #include "tachyon/renderer2d/effects/core/transitions/transition_fast_paths.h"
 
 namespace tachyon::renderer2d {
@@ -160,46 +162,54 @@ Color transition_soft_zoom_blur(float u, float v, float t, const SurfaceRGBA& in
 
 } // namespace
 
-void resolve_basic_transition_implementations(tachyon::TransitionDescriptor& d) {
-    using namespace tachyon;
+struct BasicTransitionRegistryEntry {
+    std::string_view id;
+    CpuTransitionFn cpu_fn;
+    DirectCpuTransitionFn direct_cpu_fn;
+};
 
-    if (d.id == ids::transition::crossfade) d.cpu_fn = transition_crossfade;
-    else if (d.id == ids::transition::slide_up) d.cpu_fn = transition_slide_up;
-    else if (d.id == ids::transition::swipe_left) d.cpu_fn = transition_swipe_left;
-    else if (d.id == ids::transition::zoom) {
-        d.cpu_fn = transition_zoom;
-        // Zoom doesn't have a fused direct kernel yet, but we can add one or use the generic path
+static constexpr std::array<BasicTransitionRegistryEntry, 17> kBasicTransitionsRegistry = {{
+    { ids::transition::crossfade, transition_crossfade, nullptr },
+    { ids::transition::slide_up, transition_slide_up, nullptr },
+    { ids::transition::swipe_left, transition_swipe_left, nullptr },
+    { ids::transition::zoom, transition_zoom, nullptr },
+    { ids::transition::flip, transition_flip, nullptr },
+    { ids::transition::blur, transition_blur, nullptr },
+    { ids::transition::fade_to_black, transition_fade_to_black, nullptr },
+    { ids::transition::wipe_linear, transition_wipe_linear, apply_wipe_linear_fused_direct },
+    { ids::transition::wipe_angular, transition_wipe_angular, nullptr },
+    { ids::transition::push_left, transition_push_left, nullptr },
+    { ids::transition::slide_easing, transition_slide_easing, nullptr },
+    { ids::transition::circle_iris, transition_circle_iris, apply_circle_iris_fused_direct },
+    { "iris", transition_circle_iris, apply_circle_iris_fused_direct },
+    { ids::transition::flash_cut, transition_flash, apply_flash_cut_fused_direct },
+    { ids::transition::soft_zoom_blur, transition_zoom_blur, apply_soft_zoom_blur_fused_direct },
+    { ids::transition::smooth_wipe, transition_smooth_wipe, apply_smooth_wipe_fused_direct },
+    { ids::transition::slide, transition_slide, apply_slide_fused_direct }
+}};
+
+consteval bool has_basic_registry_duplicates() {
+    for (size_t i = 0; i < kBasicTransitionsRegistry.size(); ++i) {
+        for (size_t j = i + 1; j < kBasicTransitionsRegistry.size(); ++j) {
+            if (kBasicTransitionsRegistry[i].id == kBasicTransitionsRegistry[j].id) return true;
+        }
     }
-    else if (d.id == ids::transition::flip) d.cpu_fn = transition_flip;
-    else if (d.id == ids::transition::blur) d.cpu_fn = transition_blur;
-    else if (d.id == ids::transition::fade_to_black) d.cpu_fn = transition_fade_to_black;
-    else if (d.id == ids::transition::wipe_linear) {
-        d.cpu_fn = transition_wipe_linear;
-        d.direct_cpu_fn = apply_wipe_linear_fused_direct;
-    }
-    else if (d.id == ids::transition::wipe_angular) d.cpu_fn = transition_wipe_angular;
-    else if (d.id == ids::transition::push_left) d.cpu_fn = transition_push_left;
-    else if (d.id == ids::transition::slide_easing) d.cpu_fn = transition_slide_easing;
-    else if (d.id == ids::transition::circle_iris || d.id == "iris") {
-        d.cpu_fn = transition_circle_iris;
-        d.direct_cpu_fn = apply_circle_iris_fused_direct;
-    }
-    else if (d.id == ids::transition::flash_cut) {
-        d.cpu_fn = transition_flash;
-        d.direct_cpu_fn = apply_flash_cut_fused_direct;
-    }
-    else if (d.id == ids::transition::soft_zoom_blur) {
-        d.cpu_fn = transition_zoom_blur;
-        d.direct_cpu_fn = apply_soft_zoom_blur_fused_direct;
-    }
-    else if (d.id == ids::transition::smooth_wipe) {
-        d.cpu_fn = transition_smooth_wipe;
-        d.direct_cpu_fn = apply_smooth_wipe_fused_direct;
-    }
-    else if (d.id == ids::transition::slide) {
-        d.cpu_fn = transition_slide;
-        d.direct_cpu_fn = apply_slide_fused_direct;
+    return false;
+}
+
+static_assert(!has_basic_registry_duplicates(), "FATAL: Duplicate transition identifier detected within the Basic Transitions Registry.");
+
+void resolve_basic_transition_implementations(tachyon::TransitionDescriptor& d) {
+    for (const auto& entry : kBasicTransitionsRegistry) {
+        if (entry.id == d.id) {
+            d.cpu_fn = entry.cpu_fn;
+            if (entry.direct_cpu_fn) {
+                d.direct_cpu_fn = entry.direct_cpu_fn;
+            }
+            return;
+        }
     }
 }
 
 } // namespace tachyon::renderer2d
+

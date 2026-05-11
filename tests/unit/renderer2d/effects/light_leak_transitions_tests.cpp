@@ -25,10 +25,11 @@ bool run_light_leak_transitions_tests() {
     // Running the same exact function twice must yield 100% identical bits.
     {
         LightLeakStyle test_style = {
-            "test", "test", "test",
-            {1,0,0,1}, {0,1,0,1}, {1,1,1,1},
-            0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-            0.0f, 0.0f, LightLeakStyle::Shape::ProceduralRemotion
+            .id = "test", .name = "test", .description = "test",
+            .inner_color = {1,0,0,1}, .mid_color = {0,1,0,1}, .outer_color = {1,1,1,1},
+            .angle = 0.0f, .spread = 1.0f, .softness = 1.0f, .intensity = 1.0f, 
+            .speed = 1.0f, .offset = 0.0f, .direction = 1.0f,
+            .grain = 0.0f, .pulse = 0.0f, .shape = LightLeakStyle::Shape::ProceduralRemotion
         };
         
         Color c1 = apply_light_leak_style(0.5f, 0.5f, 0.5f, dummy_src, &dummy_dst, test_style);
@@ -47,10 +48,11 @@ bool run_light_leak_transitions_tests() {
     // Coordinates MUST be away from center (0.9, 0.9) to escape center vignette suppression
     {
         LightLeakStyle test_style = {
-            "test", "test", "test",
-            {1,1,1,1}, {1,1,1,1}, {1,1,1,1},
-            0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-            0.0f, 0.0f, LightLeakStyle::Shape::ProceduralRemotion
+            .id = "test", .name = "test", .description = "test",
+            .inner_color = {1,1,1,1}, .mid_color = {1,1,1,1}, .outer_color = {1,1,1,1},
+            .angle = 0.0f, .spread = 1.0f, .softness = 1.0f, .intensity = 1.0f, 
+            .speed = 1.0f, .offset = 0.0f, .direction = 1.0f,
+            .grain = 0.0f, .pulse = 0.0f, .shape = LightLeakStyle::Shape::ProceduralRemotion
         };
         
         float mask_start = evaluate_light_leak_mask(0.9f, 0.9f, 0.0f, test_style);
@@ -72,17 +74,19 @@ bool run_light_leak_transitions_tests() {
     // --- TEST 3: Procedural Noise Seeding ---
     // Changing 'direction' (our seed) must yield DIFFERENT noise outputs
     {
-         LightLeakStyle s1 = {
-            "test", "test", "test",
-            {1,1,1,1}, {1,1,1,1}, {1,1,1,1},
-            0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, // Seed 1
-            0.0f, 0.0f, LightLeakStyle::Shape::ProceduralRemotion
+        LightLeakStyle s1 = {
+            .id = "test", .name = "test", .description = "test",
+            .inner_color = {1,1,1,1}, .mid_color = {1,1,1,1}, .outer_color = {1,1,1,1},
+            .angle = 0.0f, .spread = 1.0f, .softness = 1.0f, .intensity = 1.0f, 
+            .speed = 1.0f, .offset = 0.0f, .direction = 1.0f,
+            .grain = 0.0f, .pulse = 0.0f, .shape = LightLeakStyle::Shape::ProceduralRemotion
         };
         LightLeakStyle s2 = {
-            "test", "test", "test",
-            {1,1,1,1}, {1,1,1,1}, {1,1,1,1},
-            0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 4.2f, // Seed 4.2
-            0.0f, 0.0f, LightLeakStyle::Shape::ProceduralRemotion
+            .id = "test", .name = "test", .description = "test",
+            .inner_color = {1,1,1,1}, .mid_color = {1,1,1,1}, .outer_color = {1,1,1,1},
+            .angle = 0.0f, .spread = 1.0f, .softness = 1.0f, .intensity = 1.0f, 
+            .speed = 1.0f, .offset = 0.0f, .direction = 4.2f,
+            .grain = 0.0f, .pulse = 0.0f, .shape = LightLeakStyle::Shape::ProceduralRemotion
         };
         
         float m1 = evaluate_light_leak_mask(0.9f, 0.9f, 0.5f, s1);
@@ -97,19 +101,21 @@ bool run_light_leak_transitions_tests() {
     }
 
     // --- TEST 4: HueShift Spectral Synthesis ---
-    // Changing angle_degrees MUST change the resulting RGB balance dynamically
+    // Changing angle MUST change the resulting RGB balance dynamically
     {
-         LightLeakStyle h0 = {
-            "test", "test", "test",
-            {1,0,0,1}, {1,0,0,1}, {1,0,0,1},
-            0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, // 0 deg = Default Amber/Orange
-            0.0f, 0.0f, LightLeakStyle::Shape::ProceduralRemotion
+        LightLeakStyle h0 = {
+            .id = "test", .name = "test", .description = "test",
+            .inner_color = {1,0,0,1}, .mid_color = {1,0,0,1}, .outer_color = {1,0,0,1},
+            .angle = 0.0f, .spread = 1.0f, .softness = 1.0f, .intensity = 1.0f, 
+            .speed = 1.0f, .offset = 0.0f, .direction = 1.0f,
+            .grain = 0.0f, .pulse = 0.0f, .shape = LightLeakStyle::Shape::ProceduralRemotion
         };
         LightLeakStyle h120 = {
-            "test", "test", "test",
-            {1,0,0,1}, {1,0,0,1}, {1,0,0,1},
-            120.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, // 120 deg shift = Green/Teal territory
-            0.0f, 0.0f, LightLeakStyle::Shape::ProceduralRemotion
+            .id = "test", .name = "test", .description = "test",
+            .inner_color = {1,0,0,1}, .mid_color = {1,0,0,1}, .outer_color = {1,0,0,1},
+            .angle = 120.0f, .spread = 1.0f, .softness = 1.0f, .intensity = 1.0f, 
+            .speed = 1.0f, .offset = 0.0f, .direction = 1.0f,
+            .grain = 0.0f, .pulse = 0.0f, .shape = LightLeakStyle::Shape::ProceduralRemotion
         };
         
         Color c0 = apply_light_leak_style(0.9f, 0.9f, 0.5f, dummy_src, nullptr, h0);
@@ -131,10 +137,11 @@ bool run_light_leak_transitions_tests() {
     // The leak should mathematically aggregate additively onto the underlying base
     {
         LightLeakStyle s = {
-            "test", "test", "test",
-            {1,1,1,1}, {1,1,1,1}, {1,1,1,1},
-            0.0f, 0.2f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, // Narrow width 0.2 so at t=0 center is empty!
-            0.0f, 0.0f, LightLeakStyle::Shape::Sweep
+            .id = "test", .name = "test", .description = "test",
+            .inner_color = {1,1,1,1}, .mid_color = {1,1,1,1}, .outer_color = {1,1,1,1},
+            .angle = 0.0f, .spread = 0.2f, .softness = 1.0f, .intensity = 1.0f, 
+            .speed = 1.0f, .offset = 0.0f, .direction = 1.0f,
+            .grain = 0.0f, .pulse = 0.0f, .shape = LightLeakStyle::Shape::Sweep
         };
         
         // Base is completely black

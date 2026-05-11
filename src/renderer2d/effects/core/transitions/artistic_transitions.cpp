@@ -5,6 +5,8 @@
 #include "tachyon/core/ids/builtin_ids.h"
 #include <cmath>
 #include <algorithm>
+#include <array>
+#include <string_view>
 
 namespace tachyon::renderer2d {
 
@@ -153,20 +155,43 @@ Color transition_ripple(float u, float v, float t, const SurfaceRGBA& input, con
 
 } // namespace
 
-void resolve_artistic_transition_implementations(tachyon::TransitionDescriptor& d) {
-    using namespace tachyon;
+struct ArtisticTransitionRegistryEntry {
+    std::string_view id;
+    CpuTransitionFn cpu_fn;
+};
 
-    if (d.id == ids::transition::zoom_in) d.cpu_fn = transition_zoom_in;
-    else if (d.id == ids::transition::zoom_blur) d.cpu_fn = transition_zoom_blur;
-    else if (d.id == ids::transition::spin) d.cpu_fn = transition_spin;
-    else if (d.id == ids::transition::pixelate) d.cpu_fn = transition_pixelate;
-    else if (d.id == ids::transition::glitch_slice) d.cpu_fn = transition_glitch_slice;
-    else if (d.id == ids::transition::rgb_split) d.cpu_fn = transition_rgb_split;
-    else if (d.id == ids::transition::luma_dissolve) d.cpu_fn = transition_luma_dissolve;
-    else if (d.id == ids::transition::directional_blur_wipe) d.cpu_fn = transition_directional_blur_wipe;
-    else if (d.id == ids::transition::flash) d.cpu_fn = transition_flash;
-    else if (d.id == ids::transition::kaleidoscope) d.cpu_fn = transition_kaleidoscope;
-    else if (d.id == ids::transition::ripple) d.cpu_fn = transition_ripple;
+static constexpr std::array<ArtisticTransitionRegistryEntry, 11> kArtisticTransitionsRegistry = {{
+    { ids::transition::zoom_in, transition_zoom_in },
+    { ids::transition::zoom_blur, transition_zoom_blur },
+    { ids::transition::spin, transition_spin },
+    { ids::transition::pixelate, transition_pixelate },
+    { ids::transition::glitch_slice, transition_glitch_slice },
+    { ids::transition::rgb_split, transition_rgb_split },
+    { ids::transition::luma_dissolve, transition_luma_dissolve },
+    { ids::transition::directional_blur_wipe, transition_directional_blur_wipe },
+    { ids::transition::flash, transition_flash },
+    { ids::transition::kaleidoscope, transition_kaleidoscope },
+    { ids::transition::ripple, transition_ripple }
+}};
+
+consteval bool has_artistic_registry_duplicates() {
+    for (size_t i = 0; i < kArtisticTransitionsRegistry.size(); ++i) {
+        for (size_t j = i + 1; j < kArtisticTransitionsRegistry.size(); ++j) {
+            if (kArtisticTransitionsRegistry[i].id == kArtisticTransitionsRegistry[j].id) return true;
+        }
+    }
+    return false;
+}
+
+static_assert(!has_artistic_registry_duplicates(), "FATAL: Duplicate transition identifier detected within the Artistic Transitions Registry.");
+
+void resolve_artistic_transition_implementations(tachyon::TransitionDescriptor& d) {
+    for (const auto& entry : kArtisticTransitionsRegistry) {
+        if (entry.id == d.id) {
+            d.cpu_fn = entry.cpu_fn;
+            return;
+        }
+    }
 }
 
 } // namespace tachyon::renderer2d

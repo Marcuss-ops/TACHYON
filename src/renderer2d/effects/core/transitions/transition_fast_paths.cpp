@@ -1,8 +1,43 @@
 #include "tachyon/renderer2d/effects/core/transitions/transition_fast_paths.h"
-
-
+#include <array>
+#include <string_view>
 
 namespace tachyon::renderer2d {
+
+using FastPathKernelFn = void(*)(SurfaceRGBA&, const SurfaceRGBA&, const SurfaceRGBA*, float, int);
+
+struct FastPathRegistryEntry {
+    std::string_view id;
+    FastPathKernelFn kernel;
+};
+
+static constexpr std::array<FastPathRegistryEntry, 14> kFastPathRegistry = {{
+    { "soft_zoom_blur", apply_soft_zoom_blur_fused_direct },
+    { "crossfade", apply_crossfade_fused_direct },
+    { "slide", apply_slide_fused_direct },
+    { "push_left", apply_slide_fused_direct },
+    { "swipe_left", apply_slide_fused_direct },
+    { "wipe_linear", apply_wipe_linear_fused_direct },
+    { "linear_wipe", apply_wipe_linear_fused_direct },
+    { "smooth_wipe", apply_smooth_wipe_fused_direct },
+    { "wipe_soft", apply_smooth_wipe_fused_direct },
+    { "circle_iris", apply_circle_iris_fused_direct },
+    { "iris_circle", apply_circle_iris_fused_direct },
+    { "iris", apply_circle_iris_fused_direct },
+    { "flash_cut", apply_flash_cut_fused_direct },
+    { "flash", apply_flash_cut_fused_direct }
+}};
+
+consteval bool has_fast_path_registry_duplicates() {
+    for (size_t i = 0; i < kFastPathRegistry.size(); ++i) {
+        for (size_t j = i + 1; j < kFastPathRegistry.size(); ++j) {
+            if (kFastPathRegistry[i].id == kFastPathRegistry[j].id) return true;
+        }
+    }
+    return false;
+}
+
+static_assert(!has_fast_path_registry_duplicates(), "FATAL: Duplicate transition identifier detected within the Fast Path Registry.");
 
 bool apply_transition_fast_path(
     const std::string& transition_id,
@@ -19,41 +54,11 @@ bool apply_transition_fast_path(
         tid.remove_prefix(prefix.length());
     }
 
-
-
-    if (tid == "soft_zoom_blur") {
-        apply_soft_zoom_blur_fused_direct(output, from, to, progress, thread_count);
-        return true;
-    }
-    
-    if (tid == "crossfade") {
-        apply_crossfade_fused_direct(output, from, to, progress, thread_count);
-        return true;
-    }
-
-    if (tid == "slide" || tid == "push_left" || tid == "swipe_left") {
-        apply_slide_fused_direct(output, from, to, progress, thread_count);
-        return true;
-    }
-
-    if (tid == "wipe_linear" || tid == "linear_wipe") {
-        apply_wipe_linear_fused_direct(output, from, to, progress, thread_count);
-        return true;
-    }
-
-    if (tid == "smooth_wipe" || tid == "wipe_soft") {
-        apply_smooth_wipe_fused_direct(output, from, to, progress, thread_count);
-        return true;
-    }
-
-    if (tid == "circle_iris" || tid == "iris_circle" || tid == "iris") {
-        apply_circle_iris_fused_direct(output, from, to, progress, thread_count);
-        return true;
-    }
-
-    if (tid == "flash_cut" || tid == "flash") {
-        apply_flash_cut_fused_direct(output, from, to, progress, thread_count);
-        return true;
+    for (const auto& entry : kFastPathRegistry) {
+        if (entry.id == tid) {
+            entry.kernel(output, from, to, progress, thread_count);
+            return true;
+        }
     }
 
     return false;

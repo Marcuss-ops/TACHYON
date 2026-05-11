@@ -8,20 +8,20 @@ struct LightLeakStyle {
     const char* name;
     const char* description;
 
-    Color color_a;
-    Color color_b;
-    Color highlight;
+    Color inner_color;
+    Color mid_color;
+    Color outer_color;
 
-    float angle_degrees;
-    float width;
+    float angle;
+    float spread;
     float softness;
     float intensity;
     float speed;
     float offset;
-    float direction; // -1 for left/top, 1 for right/bottom
+    float direction; 
 
-    float flicker_amount;
-    float pulse_amount;
+    float grain;
+    float pulse;
 
     enum class Shape {
         Edge,

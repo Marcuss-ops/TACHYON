@@ -45,6 +45,9 @@
 namespace {
 
 std::filesystem::path diagnostics_root() {
+    if (const char* env_path = std::getenv("TACHYON_3D_LAB_OUTPUT_ROOT")) {
+        return std::filesystem::path(env_path) / "3d_validation";
+    }
     return std::filesystem::path(TACHYON_TESTS_SOURCE_DIR) / ".." / "output" / "3d_validation";
 }
 
@@ -94,8 +97,8 @@ tachyon::SceneSpec make_camera_default_scene() {
         .duration(1.0)
         .clear({16, 18, 24, 255})
         .camera3d_layer("cam", [](LayerBuilder& l) {
-            l.transform3d().position(0.0, 0.0, -1000.0).done()
-             .camera().type("two_node").poi(0.0, 0.0, 0.0).zoom(877.0).done();
+            l.transform3d().position(640.0, 360.0, -1000.0).done()
+             .camera().type("two_node").poi(640.0, 360.0, 0.0).zoom(877.0).done();
         })
         .light_layer("ambient", [](LayerBuilder& l) {
             l.light().type("ambient")
@@ -373,10 +376,14 @@ bool save_rendered_surface(
 }
 
 void force_3d_state(tachyon::scene::EvaluatedCompositionState& state) {
+    const float cx = static_cast<float>(state.width) * 0.5f;
+    const float cy = static_cast<float>(state.height) * 0.5f;
+    const float depth = std::max(static_cast<float>(state.width), static_cast<float>(state.height)) * 0.95f;
+
     state.camera.available = true;
     state.camera.camera_type = "two_node";
-    state.camera.position = {0.0f, 0.0f, -1000.0f};
-    state.camera.point_of_interest = {0.0f, 0.0f, 0.0f};
+    state.camera.position = {cx, cy, -depth};
+    state.camera.point_of_interest = {cx, cy, 0.0f};
     state.camera.up = {0.0f, 1.0f, 0.0f};
     state.camera.roll = 0.0f;
     state.camera.zoom = 877.0f;
@@ -398,55 +405,7 @@ void force_3d_state(tachyon::scene::EvaluatedCompositionState& state) {
     }
 }
 
-tachyon::scene::EvaluatedCompositionState make_manual_camera_default_state() {
-    tachyon::scene::EvaluatedCompositionState state;
-    state.width = 1280;
-    state.height = 720;
-    state.composition_id = "camera_default";
-    state.composition_name = "camera_default";
-    state.background_color = tachyon::ColorSpec{16, 18, 24, 255};
 
-    state.camera.available = true;
-    state.camera.camera_type = "two_node";
-    state.camera.position = {0.0f, 0.0f, 500.0f};
-    state.camera.point_of_interest = {0.0f, 0.0f, 0.0f};
-    state.camera.up = {0.0f, 1.0f, 0.0f};
-    state.camera.zoom = 877.0f;
-    state.camera.aspect = 1280.0f / 720.0f;
-    state.camera.fov_y_rad = 0.68f;
-    state.camera.camera.transform.position = state.camera.position;
-    state.camera.camera.target_position = state.camera.point_of_interest;
-    state.camera.camera.up = state.camera.up;
-    state.camera.camera.use_target = true;
-    state.camera.camera.focal_length_mm = 35.0f;
-    state.camera.camera.fov_y_rad = state.camera.fov_y_rad;
-    state.camera.camera.aspect = state.camera.aspect;
-
-    tachyon::scene::EvaluatedLightState ambient;
-    ambient.id = "ambient";
-    ambient.layer_id = "ambient";
-    ambient.type = "ambient";
-    ambient.color = {1.0f, 1.0f, 1.0f};
-    ambient.intensity = 0.8f;
-    state.lights.push_back(ambient);
-
-    tachyon::scene::EvaluatedLayerState plate;
-    plate.id = "plate";
-    plate.layer_id = "plate";
-    plate.type = tachyon::LayerType::Solid;
-    plate.width = 420;
-    plate.height = 240;
-    plate.fill_color = tachyon::ColorSpec{208, 120, 52, 255};
-    plate.visible = true;
-    plate.enabled = true;
-    plate.active = true;
-    plate.is_3d = true;
-    plate.world_matrix = tachyon::math::Matrix4x4::translation({0.0f, 0.0f, 0.0f});
-    plate.previous_world_matrix = plate.world_matrix;
-    state.layers.push_back(plate);
-
-    return state;
-}
 
 bool render_scene_to_png(
     tachyon::RenderContext& context,
@@ -477,9 +436,6 @@ bool render_scene_to_png(
     }
 
     force_3d_state(*state);
-    if (composition_id == "camera_default") {
-        *state = make_manual_camera_default_state();
-    }
 
     tachyon::RenderPlan plan;
     plan.job_id = "three_d_validation_" + composition_id + "_" + std::to_string(frame_number);

@@ -60,3 +60,12 @@ benchmarks/output/
 # Local editor history
 .history/
 
+# Build artifacts
+*.lib
+*.exp
+*.obj
+*.pdb
+*.ilk
+*.exe
+build-3d/
+embree/

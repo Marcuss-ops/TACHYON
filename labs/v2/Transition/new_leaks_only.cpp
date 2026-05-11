@@ -14,28 +14,26 @@ void add_light_leak_composition(SceneBuilder &scene,
     name = name.substr(last_dot + 1);
 
   scene.composition(name, [id = transition_id, name](CompositionBuilder &comp) {
-    comp.size(1920, 1080).fps(30).duration(4.0);
+    comp.size(1280, 720).fps(30).duration(3.0);
 
-    comp.layer("scena_a", [](LayerBuilder &l) {
-      l.solid("fill").color({230, 230, 230, 255}).in(0.0).out(2.5);
+    comp.layer("scene_a", [](LayerBuilder &l) {
+      l.solid("fill").color({30, 30, 30, 255}).in(0.0).out(2.0);
     });
 
-    // 2. Scene B (Middle): Dark Brown
-    comp.layer("scena_b", [id](LayerBuilder &l) {
-      l.solid("fill").color({230, 230, 230, 255}).in(1.5).out(4.0);
-
+    comp.layer("scene_b", [id](LayerBuilder &l) {
+      l.solid("fill").color({220, 220, 220, 255}).in(1.0).out(3.0);
       l.enter().id(id).duration(1.0);
     });
 
     // Title text
     comp.layer("title", [name](LayerBuilder &l) {
       l.text(name)
-          .font("SFPro", 48)
+          .font("SFPro", 36)
           .color({255, 255, 255, 255})
           .done()
-          .position(100, 650)
+          .position(50, 50)
           .in(0.0)
-          .out(5.0);
+          .out(3.0);
     });
   });
 }
@@ -44,21 +42,6 @@ extern "C" __declspec(dllexport) SceneSpec build_scene() {
   SceneBuilder scene;
 
   std::vector<std::string> light_leaks = {
-      "tachyon.transition.light_leak",
-      "tachyon.transition.light_leak_solar",
-      "tachyon.transition.light_leak_nebula",
-      "tachyon.transition.light_leak_sunset",
-      "tachyon.transition.light_leak_ghost",
-      "tachyon.transition.film_burn",
-      "tachyon.transition.lightleak.soft_warm_edge",
-      "tachyon.transition.lightleak.golden_sweep",
-      "tachyon.transition.lightleak.creamy_white",
-      "tachyon.transition.lightleak.dusty_archive",
-      "tachyon.transition.lightleak.lens_flare_pass",
-      "tachyon.transition.lightleak.amber_sweep",
-      "tachyon.transition.lightleak.neon_pulse",
-      "tachyon.transition.lightleak.prism_shatter",
-      "tachyon.transition.lightleak.vintage_sepia",
       "tachyon.transition.lightleak.organic_blobs",
       "tachyon.transition.lightleak.lava_flow",
       "tachyon.transition.lightleak.liquid_fission",

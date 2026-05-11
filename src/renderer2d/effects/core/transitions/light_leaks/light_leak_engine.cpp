@@ -56,12 +56,12 @@ Color apply_light_leak_style(
     static thread_local float cached_cos_a, cached_sin_a, cached_center, cached_flicker;
 
     if (t != last_t || style.id != last_style_id) {
-        const float angle_rad = radians(style.angle_degrees);
+        const float angle_rad = radians(style.angle);
         cached_cos_a = std::cos(angle_rad);
         cached_sin_a = std::sin(angle_rad);
         cached_center = -style.offset + t * style.speed;
         const float continuous_flicker = 0.5f + 0.35f * std::sin(t * 41.0f) + 0.15f * std::sin(t * 97.0f);
-        cached_flicker = 1.0f + style.flicker_amount * (continuous_flicker - 0.5f);
+        cached_flicker = 1.0f + style.grain * (continuous_flicker - 0.5f);
         last_t = t;
         last_style_id = style.id;
     }
@@ -69,7 +69,7 @@ Color apply_light_leak_style(
     // Inline the most common shape (Sweep) for performance, fallback to external lookup
     if (style.shape == LightLeakStyle::Shape::Sweep) {
         float proj = u * cached_cos_a + v * cached_sin_a;
-        mask = soft_band(proj, cached_center, style.width, style.softness);
+        mask = soft_band(proj, cached_center, style.spread, style.softness);
     } else {
         mask = evaluate_light_leak_mask(u, v, t, style);
     }
@@ -77,14 +77,14 @@ Color apply_light_leak_style(
     float intensity = style.intensity * mask * cached_flicker * 5.0f;
 
     // Pulse effect
-    if (style.pulse_amount > 0.0f) {
-        intensity *= (1.0f + style.pulse_amount * std::sin(t * 12.0f));
+    if (style.pulse > 0.0f) {
+        intensity *= (1.0f + style.pulse * std::sin(t * 12.0f));
     }
 
-    Color leak = Color::lerp(style.color_a, style.color_b, mask);
+    Color leak = Color::lerp(style.inner_color, style.mid_color, mask);
     
     // Sharper highlight
-    leak = Color::lerp(leak, style.highlight, mask * mask * mask);
+    leak = Color::lerp(leak, style.outer_color, mask * mask * mask);
 
     // --- DYNAMIC FLUID HUE SHIFT ENGINE ---
     if (style.shape == LightLeakStyle::Shape::CinematicAmber) {
@@ -97,7 +97,7 @@ Color apply_light_leak_style(
     // Overrides pre-mixed leak color with dynamic HSL spectral synthesis per uniform hueShift request
     if (style.shape == LightLeakStyle::Shape::ProceduralRemotion) {
         // Ensure continuous wrapping of hue value [0..1]
-        float normalized_hue = std::fmod((40.0f + style.angle_degrees) / 360.0f, 1.0f);
+        float normalized_hue = std::fmod((40.0f + style.angle) / 360.0f, 1.0f);
         if (normalized_hue < 0.0f) normalized_hue += 1.0f;
 
         // Replicating the GLSL hsl2rgb(vec3(hue, 0.9, 0.6)) * 1.8;
