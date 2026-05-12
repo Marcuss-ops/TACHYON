@@ -71,7 +71,7 @@ std::string severity_to_string(analysis::InspectionSeverity severity) {
 
 } // namespace
  
-bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& transition_registry, renderer3d::Modifier3DRegistry& modifier_registry) {
+bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& transition_registry) {
     if (options.command == "inspect-fonts") {
         return run_inspect_fonts_command(options, out, err, transition_registry, modifier_registry);
     }
@@ -108,7 +108,7 @@ bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostr
     return inspection.ok();
 }
 
-bool run_inspect_fonts_command(const CliOptions& /*options*/, std::ostream& /*out*/, std::ostream& err, TransitionRegistry& /*registry*/, renderer3d::Modifier3DRegistry& /*modifier_registry*/) {
+bool run_inspect_fonts_command(const CliOptions& /*options*/, std::ostream& /*out*/, std::ostream& err, TransitionRegistry& /*registry*//*modifier_registry*/) {
     err << "Font manifest inspection is no longer supported. Please use the C++ Font API.\n";
     return false;
 }

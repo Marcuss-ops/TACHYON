@@ -10,7 +10,7 @@ set(TachyonSceneAuthoringSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/builders/light_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/builders/text_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/builders/effect_builder.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/builders/transform3d_builder.cpp
+
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/builders/layer_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/builders/composition_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/builders/scene_builder.cpp

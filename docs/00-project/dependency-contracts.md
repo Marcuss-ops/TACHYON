@@ -6,7 +6,6 @@
 ## Allowed Direction
 
 - `Core` stays dependency-light and should not directly depend on renderer or output internals.
-- `Renderer2D` should not depend on `Renderer3D` except through narrow bridge types.
 - `Media` should resolve assets and decode content, not own renderer policy.
 - `Runtime` orchestrates the session and execution plan, but should not become the home for subsystem-specific policy.
 

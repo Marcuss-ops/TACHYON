@@ -59,7 +59,6 @@ struct LayerContext {
   std::optional<std::string> precomp_id;
   std::optional<std::uint32_t> precomp_index;
   std::optional<std::uint32_t> track_index;
-  bool is_3d;
   bool is_adjustment_layer;
   bool visible;
   bool enabled;

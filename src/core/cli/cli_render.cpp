@@ -4,7 +4,6 @@
 #include "tachyon/scene/builder.h"
 #include "tachyon/runtime/execution/session/render_session.h"
 #include "tachyon/runtime/execution/native_render.h"
-#include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
 #include "tachyon/presets/text/text_registry.h"
 #include "tachyon/diagnostics/trace.h"
 #include "cli_internal.h"
@@ -232,7 +231,7 @@ void print_execution_plan(
 
 }
 
-bool run_render_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& transition_registry, renderer3d::Modifier3DRegistry& modifier_registry) {
+bool run_render_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& transition_registry) {
     SceneLoadOptions load_opts;
     load_opts.cpp_path = options.cpp_path;
     load_opts.preset_id = options.preset_id;
@@ -333,7 +332,7 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
     return all_success;
 }
 
-bool run_preview_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry, renderer3d::Modifier3DRegistry& modifier_registry) {
+bool run_preview_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry) {
     return run_preview_internal(options, out, err, "NativePreview", registry, modifier_registry);
 }
 

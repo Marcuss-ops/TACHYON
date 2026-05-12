@@ -2,7 +2,6 @@
 
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/presets/background/background_builders.h"
-#include "tachyon/presets/animation3d/fluent.h"
 #include "tachyon/presets/image/image_builders.h"
 #include "tachyon/presets/text/fluent.h"
 #include "tachyon/presets/scene/scene_params.h"
@@ -154,7 +153,7 @@ inline SceneSpec build_minimal_text_scene() {
 // Declarations for complex scenes (implemented in common_scenes.cpp)
 SceneSpec build_scene_a();
 SceneSpec build_scene_b();
-SceneSpec build_text_3d_helpers_scene();
+SceneSpec build_text_helpers_scene();
 SceneSpec build_video_transition_scene();
 
 } // namespace tachyon::presets::scene

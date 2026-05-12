@@ -17,7 +17,6 @@
 #include "tachyon/core/library/library.h"
 #include "tachyon/media/management/media_manager.h"
 #include "cli_internal.h"
-#include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
 
 #include <cmath>
 #include <functional>
@@ -216,8 +215,7 @@ std::optional<renderer2d::SurfaceRGBA> render_scene_still(
         renderer2d::resolve_artistic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
         renderer2d::resolve_light_leak_implementations(const_cast<TransitionDescriptor&>(*desc));
     }
-    renderer3d::Modifier3DRegistry modifier_registry;
-    presets::TextManifest text_manifest;
+        presets::TextManifest text_manifest;
     presets::TextRegistry text_registry(text_manifest);
     if (!NativeRenderer::render_still(scene, composition.id, 0, temp_output, transition_registry, modifier_registry, text_registry)) {
         err << "scene rendered no frames: " << scene_path.string() << '\n';
@@ -274,8 +272,7 @@ std::optional<renderer2d::SurfaceRGBA> render_scene_still(
         renderer2d::resolve_artistic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
         renderer2d::resolve_light_leak_implementations(const_cast<TransitionDescriptor&>(*desc));
     }
-    renderer3d::Modifier3DRegistry modifier_registry;
-    presets::TextManifest text_manifest;
+        presets::TextManifest text_manifest;
     presets::TextRegistry text_registry(text_manifest);
     err << "[library-demo] render_still start: " << label << " to " << temp_output.string() << std::endl;
     if (!NativeRenderer::render_still(scene, composition.id, 0, temp_output, transition_registry, modifier_registry, text_registry)) {
@@ -528,7 +525,7 @@ bool render_transition_demo(
 
 }  // namespace
 
-bool run_library_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*/, renderer3d::Modifier3DRegistry& /*modifier_registry*/) {
+bool run_library_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*//*modifier_registry*/) {
     err << "[library-demo] command start" << std::endl;
     const std::filesystem::path library_root = resolve_library_root(options.library_path);
     err << "[library-demo] library root: " << library_root.string() << std::endl;

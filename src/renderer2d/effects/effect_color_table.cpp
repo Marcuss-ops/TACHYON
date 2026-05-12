@@ -70,15 +70,6 @@ std::vector<EffectImplementation> get_color_effect_implementations() {
         }
     });
 
-    // 3D LUT (.cube)
-    implementations.push_back({
-        "tachyon.effect.color.lut3d",
-        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
-            Lut3DCubeEffect effect;
-            output = effect.apply(input, params);
-        }
-    });
-
     // Chroma Key
     implementations.push_back({
         "tachyon.effect.color.chroma_key",

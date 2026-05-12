@@ -1,6 +1,5 @@
 #include "tachyon/renderer2d/effects/core/effect_host.h"
 #include "tachyon/renderer2d/effects/core/effect_utils.h"
-#include "tachyon/renderer2d/color/lut3d.h"
 
 namespace tachyon::renderer2d {
 
@@ -160,11 +159,6 @@ SurfaceRGBA ColorBalanceEffect::apply(const SurfaceRGBA& input, const EffectPara
 }
 
 SurfaceRGBA LUTEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
-    (void)params;
-    return input; // Stub implementation
-}
-
-SurfaceRGBA Lut3DCubeEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
     (void)params;
     return input; // Stub implementation
 }

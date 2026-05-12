@@ -2,7 +2,7 @@
 
 #include "tachyon/renderer2d/raster/draw_command.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
-#include "tachyon/renderer2d/color/lut3d.h"
+
 #include "tachyon/renderer2d/raster/rasterizer.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 
@@ -150,14 +150,7 @@ public:
     SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
 };
 
-class Lut3DCubeEffect : public Effect {
-public:
-    SurfaceRGBA apply(const SurfaceRGBA& input, const EffectParams& params) const override;
 
-private:
-    mutable std::mutex m_cache_mutex;
-    mutable std::unordered_map<std::string, Lut3D> m_lut_cache;
-};
 
 class ChromaKeyEffect : public Effect {
 public:

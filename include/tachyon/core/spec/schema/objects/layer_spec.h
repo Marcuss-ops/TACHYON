@@ -5,7 +5,7 @@
 #include "tachyon/core/spec/schema/objects/text_box_spec.h"
 
 #include "tachyon/core/spec/schema/common/common_spec.h"
-#include "tachyon/core/spec/schema/3d/three_d_spec.h"
+
 #include "tachyon/core/spec/schema/properties/property_spec.h"
 #include "tachyon/core/spec/schema/transform/transform_spec.h"
 #include "tachyon/core/spec/schema/contracts/shared_contracts.h"
@@ -57,7 +57,6 @@ struct LayerSpec {
     
     bool enabled{true};
     bool visible{true};
-    bool is_3d{false};
     bool is_adjustment_layer{false};
     bool motion_blur{false};
 
@@ -70,9 +69,8 @@ struct LayerSpec {
     int height{1080};
 
     Transform2D transform;
-    Transform3D transform3d;
+
     
-    // 3D mesh generation
     std::optional<double> extrude; // Extrude depth for text layers
     std::optional<double> bevel;   // Bevel size for text layers
     
@@ -208,8 +206,6 @@ struct LayerSpec {
     // Procedural generation
     std::optional<ProceduralSpec> procedural;
     std::optional<ParticleSpec> particle_spec;
-    
-    std::optional<ThreeDSpec> three_d;
 };
 
 } // namespace tachyon

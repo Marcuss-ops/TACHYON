@@ -16,12 +16,5 @@ struct Transform2D {
     AnimatedVector2Spec scale_property;
 };
 
-struct Transform3D {
-    AnimatedVector3Spec position_property;
-    AnimatedVector3Spec orientation_property; // AE-style orientation (degrees)
-    AnimatedVector3Spec rotation_property;    // Euler angles (degrees)
-    AnimatedVector3Spec scale_property;
-    AnimatedVector3Spec anchor_point_property;
-};
 
 } // namespace tachyon

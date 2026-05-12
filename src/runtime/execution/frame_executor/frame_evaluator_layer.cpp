@@ -7,7 +7,6 @@
 #include "tachyon/core/math/matrix4x4.h"
 #include "tachyon/core/math/quaternion.h"
 #include "tachyon/core/scene/evaluator/layer_utils.h"
-#include "tachyon/core/scene/evaluator/layer_transform_3d.h"
 #include <chrono>
 #include <filesystem>
 #include <cmath>
@@ -108,7 +107,6 @@ void evaluate_layer(
 
     state->enabled = (layer.flags == 0U) || ((layer.flags & 0x01U) != 0U);
     state->visible = (layer.flags == 0U) || ((layer.flags & 0x02U) != 0U);
-    state->is_3d = (layer.flags & 0x04U) != 0U;
     state->is_adjustment_layer = (layer.flags & 0x08U) != 0U;
 
     state->width = layer.width;
@@ -189,107 +187,19 @@ void evaluate_layer(
     state->local_transform.scale.x = static_cast<float>(sample_property(CompiledLayer::ScaleX, 1.0));
     state->local_transform.scale.y = static_cast<float>(sample_property(CompiledLayer::ScaleY, 1.0));
     state->local_transform.rotation_rad = static_cast<float>(sample_property(CompiledLayer::Rotation, 0.0) * (kPi / 180.0f));
-    state->local_transform.anchor_point.x = static_cast<float>(sample_property(CompiledLayer::AnchorX, 0.0));
-    state->local_transform.anchor_point.y = static_cast<float>(sample_property(CompiledLayer::AnchorY, 0.0));
+    state->local_transform.anchor_point = {
+        static_cast<float>(layer.width) * 0.5f,
+        static_cast<float>(layer.height) * 0.5f
+    };
     state->mask_feather = static_cast<float>(sample_property(CompiledLayer::MaskFeather, 0.0));
 
-    if (state->is_3d) {
-        const math::Vector3 pos3{
-            state->local_transform.position.x,
-            state->local_transform.position.y,
-            static_cast<float>(sample_property(CompiledLayer::PosZ, 0.0))
-        };
-        const math::Vector3 rot3{
-            static_cast<float>(sample_property(CompiledLayer::RotationX, 0.0)),
-            static_cast<float>(sample_property(CompiledLayer::RotationY, 0.0)),
-            static_cast<float>(sample_property(CompiledLayer::RotationZ, 0.0))
-        };
-        const math::Vector3 scale3{
-            state->local_transform.scale.x,
-            state->local_transform.scale.y,
-            static_cast<float>(sample_property(CompiledLayer::ScaleZ, 1.0))
-        };
-        const math::Vector3 anchor3{
-            state->local_transform.anchor_point.x,
-            state->local_transform.anchor_point.y,
-            static_cast<float>(sample_property(CompiledLayer::AnchorZ, 0.0))
-        };
-
-        const scene::LayerTransform3DResult current_transform = scene::build_layer_transform_3d({
-            pos3,
-            math::Vector3{0.0f, 0.0f, 0.0f},
-            rot3,
-            scale3,
-            anchor3
-        });
-
-        state->world_position3 = current_transform.world_position3;
-        state->scale_3d = scale3;
-        state->local_transform.position.x = current_transform.world_position3.x;
-        state->local_transform.position.y = current_transform.world_position3.y;
-        state->local_transform.anchor_point.x = anchor3.x;
-        state->local_transform.anchor_point.y = anchor3.y;
-        state->world_matrix = current_transform.world_matrix;
-        state->world_normal = current_transform.world_normal;
-
-        // Previous state
-        const double frame_duration = 1.0 / (scene.compositions.empty() ? 60.0 : scene.compositions[0].fps);
-        const double prev_t = frame_time_seconds - frame_duration;
-        auto sample_prev = [&](std::size_t index, double fallback) -> double {
-            if (index >= layer.property_indices.size()) return fallback;
-            return static_cast<double>(runtime::sample_compiled_property_track(
-                scene.property_tracks[layer.property_indices[index]],
-                static_cast<float>(prev_t)));
-        };
-
-        const math::Vector3 prev_pos3{
-            static_cast<float>(sample_prev(CompiledLayer::PosX, state->local_transform.position.x)),
-            static_cast<float>(sample_prev(CompiledLayer::PosY, state->local_transform.position.y)),
-            static_cast<float>(sample_prev(CompiledLayer::PosZ, 0.0))
-        };
-        const math::Vector3 prev_rot3{
-            static_cast<float>(sample_prev(CompiledLayer::RotationX, 0.0)),
-            static_cast<float>(sample_prev(CompiledLayer::RotationY, 0.0)),
-            static_cast<float>(sample_prev(CompiledLayer::RotationZ, 0.0))
-        };
-        const math::Vector3 prev_scale3{
-            static_cast<float>(sample_prev(CompiledLayer::ScaleX, state->local_transform.scale.x)),
-            static_cast<float>(sample_prev(CompiledLayer::ScaleY, state->local_transform.scale.y)),
-            static_cast<float>(sample_prev(CompiledLayer::ScaleZ, 1.0))
-        };
-        const math::Vector3 prev_anchor3{
-            state->local_transform.anchor_point.x,
-            state->local_transform.anchor_point.y,
-            static_cast<float>(sample_prev(CompiledLayer::AnchorZ, 0.0))
-        };
-        state->previous_world_matrix = scene::build_layer_transform_3d({
-            prev_pos3,
-            math::Vector3{0.0f, 0.0f, 0.0f},
-            prev_rot3,
-            prev_scale3,
-            prev_anchor3
-        }).world_matrix;
-
-        // Populate mesh identifiers for primitives; the concrete mesh is resolved later.
-        if (state->type == scene::LayerType::Solid || state->type == scene::LayerType::Image || state->type == scene::LayerType::Video) {
-            state->mesh_asset_id = "quad";
-        }
-
-        // Material properties
-        state->material.metallic = static_cast<float>(sample_property(CompiledLayer::Metallic, 0.0));
-        state->material.roughness = static_cast<float>(sample_property(CompiledLayer::Roughness, 0.5));
-        state->material.ior = static_cast<float>(sample_property(CompiledLayer::IOR, 1.45));
-        state->material.transmission = static_cast<float>(sample_property(CompiledLayer::Transmission, 0.0));
-        state->material.emission = static_cast<float>(sample_property(CompiledLayer::EmissionStrength, 0.0));
-    } else {
-        state->world_position3 = {state->local_transform.position.x, state->local_transform.position.y, 0.0f};
-        state->scale_3d = {state->local_transform.scale.x, state->local_transform.scale.y, 1.0f};
-        state->world_matrix = math::compose_trs(
-            state->world_position3,
-            math::Quaternion::from_euler({0.0f, 0.0f, static_cast<float>(sample_property(CompiledLayer::Rotation, 0.0))}),
-            state->scale_3d);
-        state->previous_world_matrix = state->world_matrix;
-    }
+    state->world_position3 = {state->local_transform.position.x, state->local_transform.position.y, 0.0f};
+    state->scale_3d = {state->local_transform.scale.x, state->local_transform.scale.y, 1.0f};
+    state->world_matrix = math::compose_trs(
+        state->world_position3,
+        math::Quaternion::from_euler({0.0f, 0.0f, static_cast<float>(sample_property(CompiledLayer::Rotation, 0.0))}),
+        state->scale_3d);
+    state->previous_world_matrix = state->world_matrix;
 
     // Only apply automatic linear alpha fading for simple "fade" transitions or default legacy IDs.
     // Named plugin transitions (e.g., "tachyon.transition.light_leak") handle opacity themselves or within their pixel kernel.

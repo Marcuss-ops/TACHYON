@@ -65,13 +65,6 @@ void ScenePresetRegistry::load_builtins() {
     });
 
     register_spec({
-        "tachyon.scene.text_3d_helpers",
-        {"tachyon.scene.text_3d_helpers", "Text 3D Helpers", "Text layer driven by generic 3D helpers.", "scene.built-in", {"text", "3d", "helpers"}, 1, registry::Stability::Stable, {}},
-        {},
-        [](const registry::ParameterBag&) { return scene::build_text_3d_helpers_scene(); }
-    });
-
-    register_spec({
         "tachyon.scene.a",
         {"tachyon.scene.a", "Scene A", "Blue background with centered text.", "scene.built-in", {"blue", "test"}, 1, registry::Stability::Stable, {}},
         {},
@@ -90,6 +83,13 @@ void ScenePresetRegistry::load_builtins() {
         {"video_transition", "Video Transition", "Transition between two video clips.", "scene.built-in", {"video", "transition"}, 1, registry::Stability::Stable, {}},
         {},
         [](const registry::ParameterBag&) { return scene::build_video_transition_scene(); }
+    });
+
+    register_spec({
+        "tachyon.scene.text_helpers",
+        {"tachyon.scene.text_helpers", "Text Helpers", "Text layer built for 2D presentation presets.", "scene.built-in", {"text", "helpers"}, 1, registry::Stability::Stable, {}},
+        {},
+        [](const registry::ParameterBag&) { return scene::build_text_helpers_scene(); }
     });
 }
 

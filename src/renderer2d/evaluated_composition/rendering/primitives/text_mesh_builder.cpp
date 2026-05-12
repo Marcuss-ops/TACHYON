@@ -71,7 +71,7 @@ TextMeshBuildResult build_text_extrusion_mesh(
     const ::tachyon::text::TextAnimationOptions& animation) {
 
     TextMeshBuildResult result;
-    if (layer.type != scene::LayerType::Text || !layer.is_3d || layer.text_content.empty()) {
+    if (layer.type != scene::LayerType::Text || layer.text_content.empty()) {
         return result;
     }
 
@@ -84,7 +84,7 @@ TextMeshBuildResult build_text_extrusion_mesh(
     }
     if (font == nullptr || !font->is_loaded() || !font->has_freetype_face()) {
         if (std::getenv("TACHYON_DIAGNOSTICS")) {
-            std::cerr << "[Scene3DBridge] text mesh font unavailable id=" << layer.id
+            std::cerr << "[SceneTextBridge] text mesh font unavailable id=" << layer.id
                       << " font_id=" << layer.font_id
                       << " has_font=" << static_cast<bool>(font)
                       << " loaded=" << (font && font->is_loaded())
@@ -109,7 +109,7 @@ TextMeshBuildResult build_text_extrusion_mesh(
     const auto layout = ::tachyon::text::layout_text(*font, layer.text_content, style, box, layout_options);
     if (layout.glyphs.empty()) {
         if (std::getenv("TACHYON_DIAGNOSTICS")) {
-            std::cerr << "[Scene3DBridge] text mesh empty layout id=" << layer.id
+            std::cerr << "[SceneTextBridge] text mesh empty layout id=" << layer.id
                       << " text_len=" << layer.text_content.size()
                       << " box=(" << box.width << "," << box.height << ")"
                       << " align=(" << static_cast<int>(box.horizontal_align) << "," << static_cast<int>(box.vertical_align) << ")"
@@ -122,10 +122,10 @@ TextMeshBuildResult build_text_extrusion_mesh(
     }
 
     auto mesh = std::make_shared<::tachyon::media::MeshAsset>();
-    mesh->path = "inline:text3d:" + layer.id;
+    mesh->path = "inline:textmesh:" + layer.id;
 
-    const float depth = std::max(0.01f, layer.three_d.has_value() ? static_cast<float>(layer.three_d->extrusion_depth) : 0.0f);
-    const float bevel = std::max(0.0f, layer.three_d.has_value() ? static_cast<float>(layer.three_d->bevel_size) : 0.0f);
+    const float depth = std::max(0.01f, layer.extrusion_depth);
+    const float bevel = std::max(0.0f, layer.bevel_size);
     std::uint64_t seed = ::tachyon::scene::stable_string_hash(layer.id);
     seed = ::tachyon::scene::hash_combine(seed, ::tachyon::scene::stable_string_hash(layer.text_content));
     seed = ::tachyon::scene::hash_combine(seed, ::tachyon::scene::stable_string_hash(layer.font_id.empty() ? std::string("default") : layer.font_id));
@@ -139,7 +139,7 @@ TextMeshBuildResult build_text_extrusion_mesh(
     seed = ::tachyon::scene::hash_combine(seed, static_cast<std::uint64_t>(std::llround(animation.time_seconds * 1000.0f)));
     const std::uint64_t anim_hash = hash_animators(animation.animators);
     seed = ::tachyon::scene::hash_combine(seed, anim_hash);
-    result.cache_key = "text3d:" + layer.id + ":" + std::to_string(seed);
+    result.cache_key = "textmesh:" + layer.id + ":" + std::to_string(seed);
 
     ::tachyon::text::TextLayoutResult animated_layout = layout;
     ::tachyon::text::apply_text_animators(animated_layout, animation);
@@ -163,7 +163,7 @@ TextMeshBuildResult build_text_extrusion_mesh(
         auto submesh = ::tachyon::media::Extruder::extrude_shape(glyph_paths, depth, bevel);
         if (submesh.vertices.empty() || submesh.indices.empty()) {
             if (std::getenv("TACHYON_DIAGNOSTICS")) {
-                std::cerr << "[Scene3DBridge] text mesh empty submesh id=" << layer.id
+                std::cerr << "[SceneTextBridge] text mesh empty submesh id=" << layer.id
                           << " glyph_cp=" << glyph.codepoint
                           << " depth=" << depth
                           << " bevel=" << bevel

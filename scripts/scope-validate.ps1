@@ -36,7 +36,6 @@ $scopeMappings = @{
     "Component" = @("core/spec", "core/scene")
     "Scene" = @("core/scene", "core/spec/schema")
     "Renderer2D" = @("renderer2d")
-    "Renderer3D" = @("renderer3d")
     "Text" = @("text", "renderer2d/text")
     "Audio" = @("audio", "renderer2d/audio")
     "Media" = @("media")

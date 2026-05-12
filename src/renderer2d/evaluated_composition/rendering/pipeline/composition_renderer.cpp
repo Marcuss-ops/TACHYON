@@ -18,8 +18,7 @@
 #include "tachyon/renderer2d/raster/mesh_rasterizer.h"
 #include "tachyon/renderer2d/raster/perspective_rasterizer.h"
 #include "tachyon/renderer2d/raster/mesh_deform_apply.h"
-#include "tachyon/core/render/iray_tracer.h"
-#include "tachyon/core/render/aov_buffer.h"
+
 #include "tachyon/core/render/dof_settings.h"
 #include "tachyon/core/render/motion_blur_settings.h"
 #include "tachyon/core/render/visibility.h"
@@ -87,11 +86,6 @@ std::optional<double> compute_transition_progress(double elapsed_seconds, double
         return std::nullopt;
     }
     return std::clamp(elapsed_seconds / duration_seconds, 0.0, 1.0);
-}
-
-std::mutex& scene3d_mutex() {
-    static std::mutex mutex;
-    return mutex;
 }
 
 } // namespace
@@ -226,15 +220,9 @@ RasterizedFrame2D render_evaluated_composition_2d(
         render_trace(
             "frame " + std::to_string(task.frame_number) +
             " layer=" + layer.id +
-            " flags is_3d=" + std::string(layer.is_3d ? "1" : "0") +
             " visible=" + std::string(layer.visible ? "1" : "0") +
             " enabled=" + std::string(layer.enabled ? "1" : "0") +
             " active=" + std::string(layer.active ? "1" : "0"));
-
-        // Skip 3D layers for now (they're handled separately)
-        if (layer.is_3d && layer.visible) {
-            continue;
-        }
 
         const auto layer_surface_start = std::chrono::high_resolution_clock::now();
         render_trace(
@@ -316,10 +304,6 @@ RasterizedFrame2D render_evaluated_composition_2d(
             const auto& layer = state.layers[i];
             
             if (!layer.enabled || !layer.active || layer.id.empty()) {
-                continue;
-            }
-
-            if (layer.is_3d && layer.visible) {
                 continue;
             }
 
@@ -617,16 +601,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 && (!layer.effects.empty() || !layer.animated_effects.empty() || has_transition);
         });
 
-#ifdef TACHYON_ENABLE_3D
-    const bool should_tile = context.policy.tile_size > 0
-        && !has_effectful_layers
-        && !std::any_of(
-            state.layers.begin(),
-            state.layers.end(),
-            [](const auto& l) { return l.is_3d && l.visible; });
-#else
     const bool should_tile = context.policy.tile_size > 0 && !has_effectful_layers;
-#endif
 
     if (should_tile) {
         TileGrid grid = build_tile_grid({0, 0, static_cast<int>(working_width), static_cast<int>(working_height)}, working_width, working_height, context.policy.tile_size);

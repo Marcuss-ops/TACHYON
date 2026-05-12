@@ -18,7 +18,7 @@ Welcome to the Tachyon engine documentation.
 - [Transitions](30-scene-and-animation/transitions.md) - Transition authoring and registries
 - [Masking](40-2d-compositing/masking.md) - Layer masking and mattes
 - [2D Compositing](40-2d-compositing/README.md) - Layer compositing pipeline
-- [3D Rendering](50-3d/README.md) - 3D subsystem overview
+
 - [Caching](60-runtime/caching.md) - Frame and resource caching
 - [Output Pipeline](70-media-io/output-pipeline.md) - Encoding and delivery
 - [Golden Tests](90-testing/golden-tests.md) - Visual regression testing
@@ -30,7 +30,7 @@ Welcome to the Tachyon engine documentation.
 - `docs/20-contracts/` — cross-cutting engine contracts
 - `docs/30-scene-and-animation/` — scene spec, layers, properties, animation
 - `docs/40-2d-compositing/` — shapes, masks, effects, text, motion blur
-- `docs/50-3d/` — cameras, lights, backend strategy, path tracing
+
 - `docs/60-runtime/` — caching, memory policy, quality tiers, profiling
 - `docs/70-media-io/` — asset pipeline, decode/encode, output delivery
 - `docs/80-audio/` — audio reactivity and audio-driven animation
@@ -38,6 +38,4 @@ Welcome to the Tachyon engine documentation.
 
 ## For Contributors
 
-Before changing code, read:
-1. `TACHYON_ENGINEERING_RULES.md`
-2. The relevant contract and subsystem folders for the area being worked on
+Before changing code, read the relevant contract and subsystem folders for the area being worked on.

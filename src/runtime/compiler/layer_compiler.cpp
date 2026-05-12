@@ -44,16 +44,6 @@ CompiledLayer LayerCompiler::compile_layer(
     compiled_layer.fill_color = layer.fill_color.value.has_value() ? *layer.fill_color.value : ColorSpec{255, 255, 255, 255};
     compiled_layer.stroke_color = layer.stroke_color.value.has_value() ? *layer.stroke_color.value : ColorSpec{255, 255, 255, 255};
     compiled_layer.stroke_width = layer.stroke_width_property.value.has_value() ? static_cast<float>(*layer.stroke_width_property.value) : static_cast<float>(layer.stroke_width);
-    if (layer.three_d.has_value()) {
-        compiled_layer.extrusion_depth = static_cast<float>(layer.three_d->extrusion_depth);
-        compiled_layer.bevel_size = static_cast<float>(layer.three_d->bevel_size);
-        compiled_layer.hole_bevel_ratio = static_cast<float>(layer.three_d->hole_bevel_ratio);
-    } else {
-        compiled_layer.extrusion_depth = 0.0f;
-        compiled_layer.bevel_size = 0.0f;
-        compiled_layer.hole_bevel_ratio = 0.0f;
-    }
-    
     compiled_layer.shape_path = layer.shape_path;
     compiled_layer.effects = layer.effects;
     compiled_layer.animated_effects = layer.animated_effects;
@@ -81,7 +71,6 @@ CompiledLayer LayerCompiler::compile_layer(
     compiled_layer.flags = 0;
     if (layer.enabled) compiled_layer.flags |= 0x01;
     if (layer.visible) compiled_layer.flags |= 0x02;
-    if (layer.is_3d) compiled_layer.flags |= 0x04;
     if (layer.is_adjustment_layer) compiled_layer.flags |= 0x08;
     if (layer.motion_blur) compiled_layer.flags |= 0x10;
 
@@ -104,17 +93,9 @@ CompiledLayer LayerCompiler::compile_layer(
     add_track(".rotation", layer.transform.rotation_property, layer.transform.rotation.value_or(0.0));
     add_track(".mask_feather", layer.mask_feather, 0.0);
     
-    // 3D properties (placeholder tracks if not 3D)
-    add_track(".position_z", layer.transform3d.position_property, 0.0);
-    add_track(".rotation_x", layer.transform3d.rotation_property, 0.0);
-    add_track(".rotation_y", layer.transform3d.rotation_property, 0.0);
-    add_track(".rotation_z", layer.transform3d.rotation_property, 0.0);
-    add_track(".scale_z", layer.transform3d.scale_property, 1.0);
-
     // Anchor points
     add_track(".anchor_point_x", layer.transform.anchor_point, layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->x : 0.0);
     add_track(".anchor_point_y", layer.transform.anchor_point, layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->y : 0.0);
-    add_track(".anchor_point_z", layer.transform3d.anchor_point_property, 0.0);
 
     // Material properties
     add_track(".metallic", layer.metallic, 0.0);

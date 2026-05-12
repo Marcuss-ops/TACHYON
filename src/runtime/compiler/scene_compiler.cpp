@@ -142,7 +142,6 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
             compiled_layer.flags = 0;
             if (layer.enabled) compiled_layer.flags |= 0x01;
             if (layer.visible) compiled_layer.flags |= 0x02;
-            if (layer.is_3d) compiled_layer.flags |= 0x04;
             if (layer.is_adjustment_layer) compiled_layer.flags |= 0x08;
             if (layer.motion_blur) compiled_layer.flags |= 0x10;
 
@@ -174,20 +173,7 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
             // 6: Mask Feather
             add_track(".mask_feather", layer.mask_feather, 0.0);
 
-            // 7: Position Z
-            add_track(".position_z", layer.transform3d.position_property, 0.0);
-            // 8-10: Rotation 3D
-            add_track(".rotation_x", layer.transform3d.rotation_property, 0.0);
-            add_track(".rotation_y", layer.transform3d.rotation_property, 0.0);
-            add_track(".rotation_z", layer.transform3d.rotation_property, 0.0);
-            // 11: Scale Z
-            add_track(".scale_z", layer.transform3d.scale_property, 1.0);
-            // 12-14: Anchor 3D
-            add_track(".anchor_x", layer.transform3d.anchor_point_property, static_cast<double>(layer.width) * 0.5);
-            add_track(".anchor_y", layer.transform3d.anchor_point_property, static_cast<double>(layer.height) * 0.5);
-            add_track(".anchor_z", layer.transform3d.anchor_point_property, 0.0);
-
-            // Material properties (15-19)
+            // Material properties
             add_track(".metallic", layer.metallic, 0.0);
             add_track(".roughness", layer.roughness, 0.5);
             add_track(".ior", layer.ior, 1.45);

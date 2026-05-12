@@ -8,7 +8,7 @@ set(TachyonTrackerTestSources
 
 # ---------------------------------------------------------
 # 6. RENDER DOMAIN: TachyonRenderTests
-# renderer2d/*, renderer3d/*, asset resolution
+# renderer2d/*, asset resolution
 # ---------------------------------------------------------
 add_executable(TachyonRenderTests
     unit/test_main_render.cpp
@@ -36,7 +36,6 @@ add_executable(TachyonRenderTests
 target_compile_definitions(TachyonRenderTests
     PRIVATE
         TACHYON_TESTS_SOURCE_DIR="${TACHYON_TESTS_SOURCE_DIR}"
-        $<$<BOOL:${TACHYON_ENABLE_3D}>:TACHYON_ENABLE_3D>
 )
 
 target_link_libraries(TachyonRenderTests
@@ -49,45 +48,6 @@ target_link_libraries(TachyonRenderTests
         TachyonTimeline
 )
 
-if(TACHYON_ENABLE_3D)
-    target_sources(TachyonRenderTests PRIVATE
-        unit/renderer2d/pipeline/scene3d_bridge_tests.cpp
-        unit/renderer3d/motion_blur_tests.cpp
-        unit/renderer3d/modifiers/modifier_tests.cpp
-        unit/renderer3d/temporal/time_remap_tests.cpp
-        unit/renderer3d/temporal/frame_blend_tests.cpp
-        unit/renderer3d/temporal/rolling_shutter_tests.cpp
-        integration/render_session_tests.cpp
-        integration/parallax_cards_tests.cpp
-    )
-    target_link_libraries(TachyonRenderTests PRIVATE TachyonRenderer3D)
-    
-    add_executable(TachyonRenderPipelineTests
-        unit/test_main_render_pipeline.cpp
-        integration/render_session_tests.cpp
-        integration/parallax_cards_tests.cpp
-        unit/renderer3d/motion_blur_tests.cpp
-        unit/renderer3d/temporal/time_remap_tests.cpp
-        unit/renderer3d/temporal/frame_blend_tests.cpp
-        unit/renderer3d/temporal/rolling_shutter_tests.cpp
-        unit/renderer3d/modifiers/modifier_tests.cpp
-    )
-    
-    target_compile_definitions(TachyonRenderPipelineTests
-        PRIVATE
-            TACHYON_TESTS_SOURCE_DIR="${TACHYON_TESTS_SOURCE_DIR}"
-            TACHYON_ENABLE_3D
-    )
-
-    target_link_libraries(TachyonRenderPipelineTests
-        PRIVATE
-            TachyonTestUtils
-            TachyonRuntime
-            TachyonRenderer2D
-            TachyonRenderer3D
-    )
-endif()
-
 if(TACHYON_ENABLE_TRACKER)
     target_sources(TachyonRenderTests PRIVATE ${TachyonTrackerTestSources})
     target_link_libraries(TachyonRenderTests PRIVATE TachyonTracker)
@@ -98,17 +58,3 @@ add_test(
     COMMAND TachyonRenderTests
 )
 tachyon_set_test_labels(TachyonRenderTests render)
-
-if(TACHYON_ENABLE_3D)
-    add_test(
-        NAME TachyonRenderPipelineTests
-        COMMAND TachyonRenderPipelineTests
-    )
-    tachyon_set_test_labels(TachyonRenderPipelineTests render deterministic)
-
-    add_test(
-        NAME TachyonScene3DSmokeTests
-        COMMAND TachyonScene3DSmokeTests
-    )
-    tachyon_set_test_labels(TachyonScene3DSmokeTests render)
-endif()

@@ -28,8 +28,8 @@ Tests are tracked here for one of four reasons:
 - **GitHub Issue**: #63
 
 ### motion_blur_tests
-- **File**: `tests/unit/renderer3d/temporal/motion_blur_tests.cpp`
-- **Reason**: 3D temporal pipeline contract still needs a tighter baseline
+- **File**: `tests/unit/render/motion_blur_tests.cpp`
+- **Reason**: Temporal render contract still needs a tighter baseline
 - **Status**: Covered by the render and render-pipeline lanes
 - **Action needed**: Keep the dedicated temporal contract test visible in CI
 - **GitHub Issue**: #64

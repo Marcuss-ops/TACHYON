@@ -66,7 +66,6 @@ void build_compositions(const SceneSpec& scene, CompiledScene& compiled, tachyon
             compiled_layer.flags = 0;
             if (layer.enabled) compiled_layer.flags |= 0x01;
             if (layer.visible) compiled_layer.flags |= 0x02;
-            if (layer.is_3d) compiled_layer.flags |= 0x04;
             if (layer.is_adjustment_layer) compiled_layer.flags |= 0x08;
             if (layer.motion_blur) compiled_layer.flags |= 0x10;
 
@@ -91,16 +90,6 @@ void build_compositions(const SceneSpec& scene, CompiledScene& compiled, tachyon
             add_track(".scale_y", layer.transform.scale_property, layer.transform.scale_y.value_or(1.0));
             add_track(".rotation", layer.transform.rotation_property, layer.transform.rotation.value_or(0.0));
             add_track(".mask_feather", layer.mask_feather, 0.0);
-
-            // 3D Transforms
-            add_track(".position_z", layer.transform3d.position_property, 0.0);
-            add_track(".rotation_x", layer.transform3d.rotation_property, 0.0);
-            add_track(".rotation_y", layer.transform3d.rotation_property, 0.0);
-            add_track(".rotation_z", layer.transform3d.rotation_property, 0.0);
-            add_track(".scale_z", layer.transform3d.scale_property, 1.0);
-            add_track(".anchor_x", layer.transform3d.anchor_point_property, static_cast<double>(layer.width) * 0.5);
-            add_track(".anchor_y", layer.transform3d.anchor_point_property, static_cast<double>(layer.height) * 0.5);
-            add_track(".anchor_z", layer.transform3d.anchor_point_property, 0.0);
 
             // Material properties
             add_track(".metallic", layer.metallic, 0.0);

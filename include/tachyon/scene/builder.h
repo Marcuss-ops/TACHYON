@@ -28,7 +28,6 @@
 #include "tachyon/scene/light_builder.h"
 #include "tachyon/scene/text_builder.h"
 #include "tachyon/scene/effect_builder.h"
-#include "tachyon/scene/transform3d_builder.h"
 
 namespace tachyon::scene {
 using renderer2d::LightLeakPreset;
@@ -40,7 +39,6 @@ class CameraBuilder;
 class LightBuilder;
 class TextBuilder;
 class EffectBuilder;
-class Transform3DBuilder;
 
 namespace expr {
 
@@ -108,7 +106,7 @@ public:
 };
 
 /**
- * @brief Helper for the 3D material-related fields exposed on LayerSpec.
+ * @brief Helper for material-related fields exposed on LayerSpec.
  */
 class TACHYON_API MaterialBuilder {
     LayerBuilder& parent_;
@@ -135,7 +133,6 @@ class TACHYON_API LayerBuilder {
     friend class LightBuilder;
     friend class TextBuilder;
     friend class EffectBuilder;
-    friend class Transform3DBuilder;
     LayerSpec spec_;
     const presets::EffectPresetRegistry& preset_registry_;
 public:
@@ -179,7 +176,7 @@ public:
     TransitionBuilder enter();
     TransitionBuilder exit();
 
-    // Material (for 3D)
+    // Material
     MaterialBuilder material();
 
     // Domain-specific builders
@@ -188,16 +185,6 @@ public:
     TextBuilder text();
     TextBuilder text(std::string content);
     EffectBuilder effects();
-    Transform3DBuilder transform3d();
-
-    // 3D convenience helpers
-    LayerBuilder& position3d(double x, double y, double z);
-    LayerBuilder& rotation3d(double x, double y, double z);
-    LayerBuilder& scale3d(double x, double y, double z);
-    LayerBuilder& pivot3d(double x, double y, double z);
-    LayerBuilder& extrude3d(double depth);
-    LayerBuilder& bevel3d(double size);
-
     // 2D Animation preset
     LayerBuilder& animation2d_preset(const std::string& id, const registry::ParameterBag& params = {});
 
@@ -238,9 +225,7 @@ public:
     CompositionBuilder& null_layer(std::string id, std::function<void(LayerBuilder&)> fn);
     CompositionBuilder& precomp_layer(std::string id, std::string composition_id, std::function<void(LayerBuilder&)> fn);
 
-    CompositionBuilder& camera3d_layer(std::string id, std::function<void(LayerBuilder&)> fn);
     CompositionBuilder& light_layer(std::string id, std::function<void(LayerBuilder&)> fn);
-    CompositionBuilder& mesh_layer(std::string id, std::function<void(LayerBuilder&)> fn);
     CompositionBuilder& audio(std::string path, double volume = 1.0);
     CompositionBuilder& audio(const AudioTrackSpec& track);  // Accept AudioTrackSpec directly
 

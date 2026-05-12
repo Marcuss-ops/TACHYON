@@ -30,8 +30,6 @@ QualityPolicy make_quality_policy(QualityTier tier) {
             policy.max_coc_radius_px        = 8.0f;
             policy.dof_sample_count         = 4;
             policy.dof_fg_bg_separate       = false;
-            policy.ray_tracer_spp           = 1;
-            policy.ray_tracer_max_bounces   = 1;
             policy.denoiser_enabled         = false;
             policy.shadow_map_resolution    = 256;
             policy.soft_shadows             = false;
@@ -49,8 +47,6 @@ QualityPolicy make_quality_policy(QualityTier tier) {
             policy.max_coc_radius_px        = 16.0f;
             policy.dof_sample_count         = 8;
             policy.dof_fg_bg_separate       = false;
-            policy.ray_tracer_spp           = 1;
-            policy.ray_tracer_max_bounces   = 2;
             policy.denoiser_enabled         = false;
             policy.shadow_map_resolution    = 512;
             policy.soft_shadows             = false;
@@ -68,8 +64,6 @@ QualityPolicy make_quality_policy(QualityTier tier) {
             policy.max_coc_radius_px        = 24.0f;
             policy.dof_sample_count         = 16;
             policy.dof_fg_bg_separate       = true;
-            policy.ray_tracer_spp           = 4;
-            policy.ray_tracer_max_bounces   = 4;
             policy.denoiser_enabled         = true;
             policy.shadow_map_resolution    = 1024;
             policy.soft_shadows             = true;
@@ -87,8 +81,7 @@ QualityPolicy make_quality_policy(QualityTier tier) {
             policy.max_coc_radius_px        = 32.0f;
             policy.dof_sample_count         = 32;
             policy.dof_fg_bg_separate       = true;
-            policy.ray_tracer_spp           = 16;
-            policy.ray_tracer_max_bounces   = 8;
+
             policy.denoiser_enabled         = true;
             policy.shadow_map_resolution    = 2048;
             policy.soft_shadows             = true;

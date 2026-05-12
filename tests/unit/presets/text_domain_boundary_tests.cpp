@@ -37,19 +37,6 @@ bool run_text_domain_boundary_tests() {
         }
     }
 
-    // Test 2: Text layer does not directly add ThreeDSpec
-    {
-        TextManifest text_manifest;
-        TextRegistry registry(text_manifest);
-        registry::ParameterBag params;
-        params.set("content", std::string("Test"));
-
-        auto layer_opt = registry.create_layer("tachyon.text.layer.classic_title", params);
-        if (layer_opt) {
-            check_true(!layer_opt->three_d.has_value(), "Text preset does not directly add ThreeDSpec");
-        }
-    }
-
     // Test 3: Verify text presets produce text layers
     {
         LayerSpec layer;
@@ -57,14 +44,6 @@ bool run_text_domain_boundary_tests() {
         layer.text_content = "Test";
         check_true(layer.type == LayerType::Text, "Text layer has correct type");
         check_true(layer.text_content == "Test", "Text layer has text_content set");
-    }
-
-    // Test 4: Text layer has 3D disabled by default
-    {
-        LayerSpec layer;
-        layer.type = LayerType::Text;
-        check_true(layer.three_d == std::nullopt, "Text layer does not have three_d set by default");
-        check_true(!layer.is_3d, "Text layer is_3d is false by default");
     }
 
     std::cout << "Text domain boundary tests: " << (g_failures == 0 ? "PASSED" : "FAILED")

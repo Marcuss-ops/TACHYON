@@ -46,7 +46,7 @@ While Tachyon may optionally use GPU acceleration:
 ├─────────────────────────────────┤
 │   2D Compositing Engine        │  (Layers, effects, text)
 ├─────────────────────────────────┤
-│   3D Rendering (CPU Path)      │  (Meshes, cameras, lights)
+│   Rendering (CPU Path)         │  (Frames, encoding)
 ├─────────────────────────────────┤
 │   Media I/O Layer              │  (Decode, encode, frame buffers)
 ├─────────────────────────────────┤

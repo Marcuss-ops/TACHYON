@@ -36,7 +36,7 @@
 # Check if you're within scope
 .\scripts\scope-validate.ps1 -Scope "Component"
 
-# Known scopes: Component, Scene, Renderer2D, Renderer3D, Text, Audio, Media, Timeline, Tracker, Runtime, Editor, Build
+# Known scopes: Component, Scene, Renderer2D, Text, Audio, Media, Timeline, Tracker, Runtime, Editor, Build
 ```
 
 ## Pre-commit Checklist

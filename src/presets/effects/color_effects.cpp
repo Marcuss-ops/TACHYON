@@ -86,10 +86,10 @@ std::vector<EffectKindSpec> get_color_effect_kind_specs() {
         })
     });
 
-    // 3D LUT (.cube)
+    // LUT Cube (.cube)
     specs.push_back({
-        "tachyon.effect.color.lut3d",
-        {"tachyon.effect.color.lut3d", "3D LUT (.cube)", "Professional color effect.", "effect.color", {"color"}},
+        "tachyon.effect.color.lut_cube",
+        {"tachyon.effect.color.lut_cube", "LUT Cube", "Professional color effect.", "effect.color", {"color"}},
         registry::ParameterSchema({
             {"lut_file", "LUT File", "Path to .cube file", ""},
             {"intensity", "Intensity", "LUT blend amount", 1.0, 0.0, 1.0}
@@ -272,17 +272,17 @@ std::vector<EffectPresetSpec> get_color_effect_preset_specs() {
         }
     });
 
-    // 3D LUT Preset
+    // LUT Cube Preset
     specs.push_back({
-        "tachyon.effect.color.lut3d",
-        {"tachyon.effect.color.lut3d", "3D LUT (.cube)", "Professional color effect.", "effect.color", {"color"}},
+        "tachyon.effect.color.lut_cube",
+        {"tachyon.effect.color.lut_cube", "LUT Cube", "Professional color effect.", "effect.color", {"color"}},
         registry::ParameterSchema({
             {"lut_file", "LUT File", "Path to .cube file", ""},
             {"intensity", "Intensity", "LUT blend amount", 1.0, 0.0, 1.0}
         }),
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
-            effect.type = "tachyon.effect.color.lut3d";
+            effect.type = "tachyon.effect.color.lut";
             effect.strings["lut_file"] = p.get_or<std::string>("lut_file", "");
             effect.scalars["intensity"] = p.get_or<double>("intensity", 1.0);
             return effect;
