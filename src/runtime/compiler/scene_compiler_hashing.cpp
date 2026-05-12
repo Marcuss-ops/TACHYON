@@ -84,7 +84,6 @@ std::uint64_t hash_scene_spec(const SceneSpec& scene, const DeterminismContract&
             add_string(builder, layer.blend_mode);
             builder.add_bool(layer.enabled);
             builder.add_bool(layer.visible);
-            builder.add_bool(layer.is_3d);
             builder.add_bool(layer.is_adjustment_layer);
             builder.add_u64(static_cast<std::uint64_t>(layer.start_time * 1000.0));
             builder.add_u64(static_cast<std::uint64_t>(layer.in_point * 1000.0));

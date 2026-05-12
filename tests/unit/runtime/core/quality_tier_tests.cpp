@@ -177,15 +177,7 @@ TEST(QualityTierTests, RayTracingParametersDifferByTier) {
     const auto production = make_quality_policy(QualityTier::Production);
     const auto cinematic = make_quality_policy(QualityTier::Cinematic);
 
-    EXPECT_EQ(draft.ray_tracer_spp, 1);
-    EXPECT_EQ(preview.ray_tracer_spp, 1);
-    EXPECT_EQ(production.ray_tracer_spp, 4);
-    EXPECT_EQ(cinematic.ray_tracer_spp, 16);
 
-    EXPECT_EQ(draft.ray_tracer_max_bounces, 1);
-    EXPECT_EQ(preview.ray_tracer_max_bounces, 2);
-    EXPECT_EQ(production.ray_tracer_max_bounces, 4);
-    EXPECT_EQ(cinematic.ray_tracer_max_bounces, 8);
 
     EXPECT_FALSE(draft.denoiser_enabled);
     EXPECT_FALSE(preview.denoiser_enabled);
@@ -227,6 +219,13 @@ TEST(QualityTierTests, RoundTripStringConversion) {
 
     EXPECT_EQ(quality_tier_from_string("draft"), QualityTier::Draft);
     EXPECT_EQ(quality_tier_from_string("preview"), QualityTier::Preview);
+    EXPECT_EQ(quality_tier_from_string("production"), QualityTier::Production);
+    EXPECT_EQ(quality_tier_from_string("cinematic"), QualityTier::Cinematic);
+    EXPECT_EQ(quality_tier_from_string("high"), QualityTier::Production);
+}
+
+} // namespace tachyon
+r_from_string("preview"), QualityTier::Preview);
     EXPECT_EQ(quality_tier_from_string("production"), QualityTier::Production);
     EXPECT_EQ(quality_tier_from_string("cinematic"), QualityTier::Cinematic);
     EXPECT_EQ(quality_tier_from_string("high"), QualityTier::Production);

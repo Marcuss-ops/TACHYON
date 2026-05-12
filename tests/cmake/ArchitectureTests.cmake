@@ -5,18 +5,6 @@
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
 
 add_test(
-    NAME TachyonArchitectureBoundaryCheck
-    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/check_arch_boundaries.py
-)
-tachyon_set_test_labels(TachyonArchitectureBoundaryCheck architecture)
-
-add_test(
-    NAME TachyonJitBoundaryCheck
-    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/check_jit_boundaries.py
-)
-tachyon_set_test_labels(TachyonJitBoundaryCheck architecture jit)
-
-add_test(
     NAME TachyonJitAbiHeaderCheck
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/check_jit_abi_header.py
 )

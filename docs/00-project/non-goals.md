@@ -22,5 +22,5 @@ Tachyon focuses on:
 Tachyon explicitly avoids:
 - Interactive editing features
 - Real-time preview (unless added as separate tool)
-- General-purpose 3D gaming features
+- General-purpose gaming features
 - Browser-based rendering

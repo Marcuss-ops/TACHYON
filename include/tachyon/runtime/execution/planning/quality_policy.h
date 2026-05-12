@@ -46,8 +46,7 @@ struct QualityPolicy {
     bool dof_fg_bg_separate{false};    ///< Separate foreground/background blur handling.
 
     // Ray Tracing
-    int ray_tracer_spp{1};             ///< Samples per pixel.
-    int ray_tracer_max_bounces{2};     ///< Max recursive bounces.
+
     bool denoiser_enabled{false};      ///< Post-render denoise pass.
 
     // Shadows

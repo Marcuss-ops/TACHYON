@@ -32,7 +32,6 @@ TACHYON_FIELD(mesh_deform_id, mesh_deform_id, string, "")
 // Flags
 TACHYON_FIELD(enabled, enabled, bool, true)
 TACHYON_FIELD(visible, visible, bool, true)
-TACHYON_FIELD(is_3d, is_3d, bool, false)
 TACHYON_FIELD(is_adjustment_layer, is_adjustment_layer, bool, false)
 TACHYON_FIELD(motion_blur, motion_blur, bool, false)
 

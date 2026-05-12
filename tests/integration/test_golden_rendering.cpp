@@ -3,9 +3,6 @@
 #include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 
-#ifdef TACHYON_ENABLE_3D
-#include "tachyon/renderer3d/core/renderer3d_backend_factory.h"
-#endif
 
 using namespace tachyon;
 using namespace tachyon::renderer2d;
@@ -68,64 +65,6 @@ TEST_F(GoldenRenderingTest, ShapeModifiers_TrimAndRepeat) {
     EXPECT_TRUE(test::GoldenTestHelper::compare_with_golden("shape_trim_repeat", *frame.surface));
 }
 
-#ifdef TACHYON_ENABLE_3D
-TEST_F(GoldenRenderingTest, RayTracer_3D_AOVs) {
-    EvaluatedCompositionState state;
-    state.width = 640;
-    state.height = 360;
-    state.camera.available = true;
-    state.camera.camera.position = {0, 0, 500};
-    state.camera.camera.target = {0, 0, 0};
-    state.camera.camera.up = {0, 1, 0};
-    state.camera.camera.fov = 45.0f;
-
-    EvaluatedLayerState box_layer;
-    box_layer.type = LayerType::Solid;
-    box_layer.is_3d = true;
-    box_layer.width = 100;
-    box_layer.height = 100;
-    box_layer.fill_color = {255, 0, 0, 255};
-    box_layer.world_matrix = math::Matrix4x4::identity();
-    box_layer.previous_world_matrix = math::Matrix4x4::translation({-10, 0, 0}); // Object moving right
-    box_layer.visible = true;
-    box_layer.enabled = true;
-    box_layer.active = true;
-    state.layers.push_back(box_layer);
-
-    RenderPlan plan;
-    plan.motion_blur_enabled = false;
-    FrameRenderTask task;
-    RenderContext2D context;
-    context.ray_tracer = renderer3d::create_renderer3d_backend();
-    if (!context.ray_tracer) {
-        GTEST_SKIP() << "No concrete 3D backend is enabled yet";
-    }
-
-    auto frame = render_evaluated_composition_2d(state, plan, task, context);
-    ASSERT_NE(frame.surface, nullptr);
-    
-    // Check Beauty
-    EXPECT_TRUE(test::GoldenTestHelper::compare_with_golden("3d_beauty", *frame.surface));
-    
-    // Check AOVs
-    auto find_aov = [&](const std::string& name) -> std::shared_ptr<SurfaceRGBA> {
-        for (const auto& aov : frame.aovs) if (aov.name == name) return aov.surface;
-        return nullptr;
-    };
-    
-    auto depth = find_aov("depth");
-    auto normal = find_aov("normal");
-    auto mv = find_aov("motion_vector");
-    
-    ASSERT_NE(depth, nullptr);
-    ASSERT_NE(normal, nullptr);
-    ASSERT_NE(mv, nullptr);
-    
-    EXPECT_TRUE(test::GoldenTestHelper::compare_with_golden("3d_depth", *depth));
-    EXPECT_TRUE(test::GoldenTestHelper::compare_with_golden("3d_normal", *normal));
-    EXPECT_TRUE(test::GoldenTestHelper::compare_with_golden("3d_motion_vector", *mv));
-}
-#endif
 
 TEST_F(GoldenRenderingTest, ShapeModifiers_Degenerate) {
     EvaluatedCompositionState state;
@@ -153,48 +92,3 @@ TEST_F(GoldenRenderingTest, ShapeModifiers_Degenerate) {
     EXPECT_TRUE(test::GoldenTestHelper::compare_with_golden("shape_degenerate", *frame.surface));
 }
 
-#ifdef TACHYON_ENABLE_3D
-TEST_F(GoldenRenderingTest, RayTracer_MovingCamera_MV) {
-    EvaluatedCompositionState state;
-    state.width = 640;
-    state.height = 360;
-    
-    // Current camera
-    state.camera.available = true;
-    state.camera.camera.position = {0, 0, 500};
-    state.camera.camera.target = {0, 0, 0};
-    
-    // Previous camera (moved slightly left)
-    state.camera.previous_position = {-20, 0, 500};
-    state.camera.previous_target = {-20, 0, 0};
-
-    EvaluatedLayerState box_layer;
-    box_layer.type = LayerType::Solid;
-    box_layer.is_3d = true;
-    box_layer.width = 200;
-    box_layer.height = 200;
-    box_layer.world_matrix = math::Matrix4x4::identity();
-    box_layer.previous_world_matrix = math::Matrix4x4::identity(); // Object is static
-    box_layer.visible = true;
-    state.layers.push_back(box_layer);
-
-    RenderPlan plan;
-    FrameRenderTask task;
-    RenderContext2D context;
-    context.ray_tracer = renderer3d::create_renderer3d_backend();
-    if (!context.ray_tracer) {
-        GTEST_SKIP() << "No concrete 3D backend is enabled yet";
-    }
-
-    auto frame = render_evaluated_composition_2d(state, plan, task, context);
-    
-    auto find_aov = [&](const std::string& name) -> std::shared_ptr<SurfaceRGBA> {
-        for (const auto& aov : frame.aovs) if (aov.name == name) return aov.surface;
-        return nullptr;
-    };
-    
-    auto mv = find_aov("motion_vector");
-    ASSERT_NE(mv, nullptr);
-    EXPECT_TRUE(test::GoldenTestHelper::compare_with_golden("3d_mv_moving_camera", *mv));
-}
-#endif

@@ -50,7 +50,6 @@ bool run_effect_host_tests();
 bool run_precomp_mask_tests();
 namespace tachyon { bool run_tiling_tests(); }
 bool run_optical_flow_tests();
-bool run_scene3d_bridge_tests();
 namespace tachyon { bool run_native_render_tests(); }
 namespace tachyon { bool run_vertical_slice_tests(); }
 bool run_sfx_contract_tests();
@@ -60,8 +59,6 @@ bool run_frame_blend_tests();
 bool run_motion_blur_tests();
 bool run_rolling_shutter_tests();
 bool run_audio_trim_tests();
-bool run_scene3d_smoke_tests();
-bool run_3d_modifier_tests();
 void run_default_camera_tests();
 void run_parallax_tests();
 void run_look_at_tests();
@@ -123,8 +120,6 @@ int main(int argc, char** argv) {
         {"time_remap", run_time_remap_tests},
         {"frame_blend", run_frame_blend_tests},
         {"rolling_shutter", run_rolling_shutter_tests},
-        {"scene3d_smoke", run_scene3d_smoke_tests},
-        {"three_d_modifier", run_3d_modifier_tests},
         {"default_camera", run_default_camera_tests_adapter},
         {"profiling", tachyon::profiling::run_profiler_tests},
         {"library", run_library_tests},

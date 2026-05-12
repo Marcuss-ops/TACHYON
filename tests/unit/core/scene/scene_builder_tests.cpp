@@ -1,5 +1,4 @@
 #include "tachyon/scene/builder.h"
-#include "tachyon/presets/animation3d/fluent.h"
 #include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include "tachyon/core/spec/scene_spec_serialize.h"
 #include <gtest/gtest.h>
@@ -101,58 +100,45 @@ TEST(SceneBuilder, MaterialBuilder) {
     EXPECT_EQ(*layer.roughness.value, 0.25);
 }
 
-TEST(SceneBuilder, Common3DMethodsWorkOnAnyLayer) {
+TEST(SceneBuilder, 2DTransformHelpersWorkOnAnyLayer) {
     auto comp = Composition("main")
         .layer("title", [](LayerBuilder& l) {
             l.type("text")
-             .text("Hello 3D")
-             .position3d(10.0, 20.0, 30.0)
-             .rotation3d(0.0, 45.0, 0.0)
-             .scale3d(1.2, 1.2, 1.2)
-             .pivot3d(5.0, 6.0, 7.0)
-             .extrude3d(0.25)
-             .bevel3d(0.03);
+             .text("Hello 2D")
+             .position(10.0, 20.0)
+             .anchor(5.0, 7.0);
         })
         .build();
 
     ASSERT_EQ(comp.layers.size(), 1);
     const auto& layer = comp.layers[0];
-    EXPECT_TRUE(layer.is_3d);
-    ASSERT_TRUE(layer.transform3d.position_property.value.has_value());
-    ASSERT_TRUE(layer.transform3d.rotation_property.value.has_value());
-    ASSERT_TRUE(layer.transform3d.scale_property.value.has_value());
-    ASSERT_TRUE(layer.transform3d.anchor_point_property.value.has_value());
-    ASSERT_TRUE(layer.three_d.has_value());
-    EXPECT_EQ(layer.transform3d.position_property.value->x, 10.0f);
-    EXPECT_EQ(layer.transform3d.position_property.value->y, 20.0f);
-    EXPECT_EQ(layer.transform3d.position_property.value->z, 30.0f);
-    EXPECT_EQ(layer.transform3d.rotation_property.value->y, 45.0f);
-    EXPECT_EQ(layer.transform3d.scale_property.value->x, 1.2f);
-    EXPECT_EQ(layer.transform3d.anchor_point_property.value->z, 7.0f);
-    EXPECT_EQ(layer.three_d->extrusion_depth, 0.25);
-    EXPECT_EQ(layer.three_d->bevel_size, 0.03);
+    ASSERT_TRUE(layer.transform.position_property.value.has_value());
+    ASSERT_TRUE(layer.transform.anchor_point.value.has_value());
+    EXPECT_EQ(layer.transform.position_property.value->x, 10.0f);
+    EXPECT_EQ(layer.transform.position_property.value->y, 20.0f);
+    EXPECT_EQ(layer.transform.anchor_point.value->x, 5.0f);
+    EXPECT_EQ(layer.transform.anchor_point.value->y, 7.0f);
 }
 
-TEST(SceneBuilder, Animation3DHelpersMarkLayer3DAndAttachModifiers) {
+TEST(SceneBuilder, MaterialBuilderKeepsLayerMaterialFields) {
     auto comp = Composition("main")
         .layer("title", [](LayerBuilder& l) {
             l.type("text")
-             .text("Hello 3D");
-            tachyon::presets::animation3d::tilt(l, 12.0, 4.0);
-            tachyon::presets::animation3d::parallax(l, 28.0);
-            tachyon::presets::animation3d::camera_push_in(l, 0.75, 0.1, 1.2);
+             .text("Hello")
+             .material()
+                 .base_color(ColorSpec(12, 24, 36, 255))
+                 .metallic(0.2)
+                 .roughness(0.7)
+                 .done();
         })
         .build();
 
     ASSERT_EQ(comp.layers.size(), 1);
     const auto& layer = comp.layers[0];
-    EXPECT_TRUE(layer.is_3d);
-    ASSERT_TRUE(layer.three_d.has_value());
-    EXPECT_TRUE(layer.three_d->enabled);
-    ASSERT_EQ(layer.three_d->modifiers.size(), 2U);
-    EXPECT_EQ(layer.three_d->modifiers[0].type, "tachyon.modifier3d.tilt");
-    EXPECT_EQ(layer.three_d->modifiers[1].type, "tachyon.modifier3d.parallax");
-    EXPECT_FALSE(layer.transform3d.position_property.keyframes.empty());
+    ASSERT_TRUE(layer.fill_color.value.has_value());
+    EXPECT_EQ(*layer.fill_color.value, ColorSpec(12, 24, 36, 255));
+    ASSERT_TRUE(layer.metallic.value.has_value());
+    ASSERT_TRUE(layer.roughness.value.has_value());
 }
 
 TEST(SceneBuilder, RoundTrip) {

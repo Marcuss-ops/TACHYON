@@ -20,10 +20,9 @@ The Minimum Viable Product (v1) for Tachyon focuses on core rendering capabiliti
 
 ### Experimental
 
-- Camera and 3D mesh support
 - Motion blur
-- Basic 3D rendering path tracing
-- Basic lighting and glTF mesh loading
+- Basic lighting support
+- Basic mesh loading
 - Material system (metallic, roughness, etc.)
 
 ### Stubbed or Transitional
@@ -41,7 +40,7 @@ The Minimum Viable Product (v1) for Tachyon focuses on core rendering capabiliti
 
 ## Success Criteria
 
-- Can render a basic 3D product promo video from C++ code
+- Can render a basic product promo video from C++ code
 - Deterministic output (same code = same video)
 - Clean C++ Builder API
 - Robust CI test coverage (Smoke, Core, Render tiers)

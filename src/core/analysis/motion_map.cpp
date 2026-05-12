@@ -208,9 +208,6 @@ MotionMapReport build_motion_map(const SceneSpec& scene, const MotionMapOptions&
             if (layer.loop) {
                 append_unique(layer_summary.animations, "loop");
             }
-            if (layer.is_3d) {
-                append_unique(layer_summary.animations, "3d_transform");
-            }
             if (layer.type == LayerType::Text && !layer.text_content.empty()) {
                 append_unique(layer_summary.animations, "text_content");
             }

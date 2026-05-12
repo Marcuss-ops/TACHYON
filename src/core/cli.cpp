@@ -6,7 +6,6 @@
 #include "tachyon/renderer2d/effects/core/transitions/basic_transitions.h"
 #include "tachyon/renderer2d/effects/core/transitions/artistic_transitions.h"
 #include "tachyon/renderer2d/effects/core/transitions/light_leak_transitions.h"
-#include "tachyon/renderer3d/modifiers/modifier3d_registry.h"
 #include <functional>
 #include <iostream>
 #include <string>
@@ -16,8 +15,7 @@ namespace tachyon {
 
 // Canonical transition registry for CLI operations
 static TransitionRegistry g_cli_transition_registry;
-static renderer3d::Modifier3DRegistry g_cli_modifier_registry;
-
+static 
 namespace {
 
 // ── Command registry ──────────────────────────────────────────────────────────
@@ -32,7 +30,7 @@ struct CommandEntry {
     const char* usage;
     // Returns false (+ prints to err) when required args are missing.
     std::function<bool(const CliOptions&, std::ostream&)> validate;
-    std::function<bool(const CliOptions&, std::ostream&, std::ostream&, TransitionRegistry&, renderer3d::Modifier3DRegistry&)> handler;
+    std::function<bool(const CliOptions&, std::ostream&, std::ostream&, TransitionRegistry&)> handler;
 };
 
 static const std::vector<CommandEntry> kCommands = {

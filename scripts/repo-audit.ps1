@@ -158,9 +158,9 @@ Write-Section "LayerSpec audit"
 $auditFields = Get-LayerSpecAuditFields
 $layerFields = Get-LayerSpecFields
 $coreAllowlist = @(
-    'id','name','type','type_string','asset_id','preset_id','blend_mode','enabled','visible','is_3d',
+    'id','name','type','type_string','asset_id','preset_id','blend_mode','enabled','visible',
     'is_adjustment_layer','motion_blur','start_time','in_point','out_point','opacity','width','height',
-    'transform','transform3d','opacity_property','mask_feather','time_remap_property','parent',
+    'transform','opacity_property','mask_feather','time_remap_property','parent',
     'track_matte_layer_id','track_matte_type','precomp_id','duration','loop','hold_last_frame'
 )
 $tracked = New-Object System.Collections.Generic.List[string]

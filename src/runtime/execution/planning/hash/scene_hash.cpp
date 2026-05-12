@@ -48,7 +48,6 @@ std::uint64_t hash_scene_content(const SceneSpec& scene) {
             builder.add_string(layer.blend_mode);
             builder.add_bool(layer.enabled);
             builder.add_bool(layer.visible);
-            builder.add_bool(layer.is_3d);
             builder.add_bool(layer.is_adjustment_layer);
             builder.add_bool(layer.motion_blur);
             builder.add_u64(static_cast<std::uint64_t>(layer.start_time * 1000.0));

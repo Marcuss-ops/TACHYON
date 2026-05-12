@@ -6,28 +6,9 @@
     ]
   },
   {
-    "target": "TachyonRenderPipelineTests",
-    "patterns": [
-      "rendersession",
-      "png3dvalidation",
-      "motionblur",
-      "frameblend",
-      "timeremap",
-      "rollingshutter",
-      "threedmodifier",
-      "parallaxcards"
-    ]
-  },
-  {
     "target": "TachyonRenderProfilerTests",
     "patterns": [
       "renderprofiler"
-    ]
-  },
-  {
-    "target": "TachyonScene3DSmokeTests",
-    "patterns": [
-      "scene3dsmoke"
     ]
   },
   {

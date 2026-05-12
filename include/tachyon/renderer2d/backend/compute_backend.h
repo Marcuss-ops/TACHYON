@@ -14,7 +14,6 @@ struct BackendCaps {
     bool resize{false};
     bool color_matrix{false};
     bool gaussian_blur{false};
-    bool lut3d{false};
 };
 
 class ComputeBackend {

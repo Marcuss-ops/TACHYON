@@ -152,20 +152,11 @@ struct CompiledLayer {
         ScaleY = 4,
         Rotation = 5,
         MaskFeather = 6,
-        // 3D properties
-        PosZ = 7,
-        RotationX = 8,
-        RotationY = 9,
-        RotationZ = 10,
-        ScaleZ = 11,
-        AnchorX = 12,
-        AnchorY = 13,
-        AnchorZ = 14,
-        Metallic = 15,
-        Roughness = 16,
-        IOR = 17,
-        Transmission = 18,
-        EmissionStrength = 19
+        Metallic = 7,
+        Roughness = 8,
+        IOR = 9,
+        Transmission = 10,
+        EmissionStrength = 11
     };
 
     // Masking and Matte (resolved into indices)
@@ -179,7 +170,7 @@ struct CompiledLayer {
     ColorSpec emission_color{0, 0, 0, 255};
     
     // Visibility flags (bitmask preferred for industrial minimality)
-    std::uint8_t flags{0x01}; // 0x01 = enabled, 0x02 = visible, 0x04 = is_3d, 0x08 = adjustment
+    std::uint8_t flags{0x01}; // 0x01 = enabled, 0x02 = visible, 0x08 = adjustment
     
     // Unified Temporal & Tracking
     std::vector<spec::TrackBinding> track_bindings;

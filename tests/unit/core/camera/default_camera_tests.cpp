@@ -100,7 +100,8 @@ void run_parallax_tests() {
     LayerSpec cam_layer;
     cam_layer.id = "camera";
     cam_layer.type = LayerType::Camera;
-    cam_layer.transform3d.position_property.value = math::Vector3{960.0f, 540.0f, -1000.0f};
+    cam_layer.transform.position_x = 960.0;
+    cam_layer.transform.position_y = 540.0;
     cam_layer.camera_zoom.value = 1000.0;
     cam_layer.camera_type = "one_node";
 

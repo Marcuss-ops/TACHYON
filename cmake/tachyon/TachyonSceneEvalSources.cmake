@@ -6,7 +6,7 @@ set(TachyonSceneEvalSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/camera2d_evaluator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/hashing.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/layer_evaluator.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/layer_transform_3d.cpp
+
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/layer_utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/effect_evaluator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/light_evaluator.cpp

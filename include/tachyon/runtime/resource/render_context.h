@@ -4,7 +4,7 @@
 #include "tachyon/media/management/media_manager.h"
 #endif
 #include "tachyon/renderer2d/resource/render_context.h"
-#include "tachyon/core/render/iray_tracer.h"
+
 #include "tachyon/runtime/execution/planning/quality_policy.h"
 #include "tachyon/runtime/resource/runtime_surface_pool.h"
 
@@ -35,7 +35,7 @@ struct RenderContext {
 #endif
     renderer2d::RenderContext2D renderer2d;
     QualityPolicy policy;
-    std::shared_ptr<IRayTracer> ray_tracer;
+
 #ifdef _WIN32
     oidn::DeviceRef oidn_device;
     oidn::FilterRef oidn_filter;

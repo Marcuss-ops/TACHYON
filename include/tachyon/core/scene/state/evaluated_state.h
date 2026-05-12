@@ -2,7 +2,7 @@
 
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/core/spec/schema/objects/procedural_spec.h"
-#include "tachyon/core/spec/schema/3d/three_d_spec.h"
+
 #include "tachyon/core/scene/constraints/constraints.h"
 #include "tachyon/core/math/matrix4x4.h"
 #include "tachyon/core/math/transform2.h"
@@ -92,7 +92,6 @@ struct EvaluatedLayerState {
     bool visible{true};
     bool enabled{true};
     bool active{true};
-    bool is_3d{false};
     bool is_adjustment_layer{false};
     float opacity{1.0f};
     std::string blend_mode{"normal"};
@@ -190,9 +189,6 @@ struct EvaluatedLayerState {
 
     // Procedural generation
     std::optional<ProceduralSpec> procedural;
-    
-    // 3D modifiers
-    std::optional<ThreeDSpec> three_d;
 };
 
 struct EvaluatedCompositionState {

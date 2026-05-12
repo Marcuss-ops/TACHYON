@@ -7,7 +7,6 @@ bool run_motion_blur_tests();
 bool run_time_remap_tests();
 bool run_frame_blend_tests();
 bool run_rolling_shutter_tests();
-bool run_3d_modifier_tests();
 
 int main(int argc, char** argv) {
     using namespace tachyon::test;
@@ -18,7 +17,6 @@ int main(int argc, char** argv) {
         {"time_remap", run_time_remap_tests},
         {"frame_blend", run_frame_blend_tests},
         {"rolling_shutter", run_rolling_shutter_tests},
-        {"three_d_modifier", run_3d_modifier_tests},
     };
 
     return run_test_suite(argc, argv, tests);

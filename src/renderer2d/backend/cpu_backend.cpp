@@ -16,7 +16,7 @@ public:
     BackendType type()  const override { return BackendType::CPU; }
     std::string name()  const override { return "CPU (Reference)"; }
     bool is_available() const override { return true; }
-    BackendCaps caps()  const override { return {true, true, true, false}; }
+    BackendCaps caps()  const override { return {true, true, true}; }
 
     void* upload(const SurfaceRGBA& surface) override {
         size_t pixel_count = surface.width() * surface.height();

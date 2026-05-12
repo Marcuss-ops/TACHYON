@@ -17,14 +17,6 @@ bool run_path_rasterizer_aa_tests();
 namespace tachyon { bool run_tiling_tests(); }
 bool run_effect_host_tests();
 bool run_matte_resolver_tests();
-bool run_render_session_tests();
-bool run_parallax_cards_tests();
-bool run_motion_blur_tests();
-bool run_time_remap_tests();
-bool run_frame_blend_tests();
-bool run_rolling_shutter_tests();
-bool run_3d_modifier_tests();
-bool run_2d_3d_bridge_tests();
 bool run_transition_fast_paths_tests();
 bool run_light_leak_transitions_tests();
 
@@ -49,16 +41,6 @@ int main(int argc, char** argv) {
         {"tiling", tachyon::run_tiling_tests},
         {"effect_host", run_effect_host_tests},
         {"matte_resolver", run_matte_resolver_tests},
-#ifdef TACHYON_ENABLE_3D
-        {"render_session", run_render_session_tests},
-        {"parallax_cards", run_parallax_cards_tests},
-        {"motion_blur", run_motion_blur_tests},
-        {"time_remap", run_time_remap_tests},
-        {"frame_blend", run_frame_blend_tests},
-        {"rolling_shutter", run_rolling_shutter_tests},
-        {"three_d_modifier", run_3d_modifier_tests},
-        {"2d_3d_bridge", run_2d_3d_bridge_tests},
-#endif
     };
 
     return run_test_suite(argc, argv, tests);

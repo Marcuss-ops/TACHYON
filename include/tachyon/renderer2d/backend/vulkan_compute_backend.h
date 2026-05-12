@@ -64,7 +64,7 @@ public:
     std::string name()  const override { return "Vulkan Compute"; }
     bool is_available() const override { return m_ctx && m_ctx->valid; }
     BackendCaps caps()  const override {
-        return {.resize=true, .color_matrix=true, .gaussian_blur=true, .lut3d=false};
+        return {.resize=true, .color_matrix=true, .gaussian_blur=true};
     }
 
     void* upload(const SurfaceRGBA& surface) override;

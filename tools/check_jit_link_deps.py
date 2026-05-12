@@ -11,7 +11,6 @@ TARGET = REPO_ROOT / "src" / "core" / "spec" / "authoring_service.cpp"
 
 FORBIDDEN_LIBS = [
     "TachyonRenderer2D",
-    "TachyonRenderer3D",
     "TachyonRuntime",
     "TachyonRuntimeEngine",
     "TachyonMedia",

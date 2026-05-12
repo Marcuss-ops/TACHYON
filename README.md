@@ -7,13 +7,13 @@ Supersedes: N/A
 
 # TACHYON
 
-**High-performance, deterministic, headless motion graphics and 3D rendering engine.**
+**High-performance, deterministic, headless motion graphics and compositing engine.**
 
 `cpp`, `rendering-engine`, `motion-graphics`, `headless`, `video`, `compositing`, `cpu-renderer`
 
 ---
 
-TACHYON is a deterministic, headless motion graphics, compositing, and 3D rendering engine for automated and personal video production.
+TACHYON is a deterministic, headless motion graphics and compositing engine for automated and personal video production.
 
 ## Core idea
 
@@ -28,9 +28,8 @@ It is a native engine designed to consume declarative scene specifications and p
 - CPU-first architecture
 - No browser in the render path
 - No JavaScript or TypeScript in the render core
-- Hybrid rendering strategy for 2D compositing and offline 3D rendering
 - No intermediate frame dumps by default
-- Strong scene, camera, compositing, and timeline foundations
+- Strong scene, compositing, and timeline foundations
 - Programmatic, data-driven motion workflows
 - Explicit execution, caching, memory, and parallelism models
 - Native media decode and encode integration
@@ -38,7 +37,6 @@ It is a native engine designed to consume declarative scene specifications and p
 ## Programmatic Scene Authoring (C++)
     
 TACHYON promotes a **type-safe, programmatic authoring workflow** using a native C++ Builder API. This ensures deterministic scene construction with compile-time validation, bypassing the ambiguity of manual JSON editing.
-
 ```cpp
 #include "tachyon/scene/builder.h"
 
@@ -46,21 +44,9 @@ auto scene = tachyon::scene::SceneBuilder()
     .project("promo", "Product Promo")
     .composition("main", [](auto& comp) {
         comp.size(1920, 1080).fps(30).duration(5.0);
-        
-        comp.camera3d_layer("cam", [](auto& l) {
-            l.position3d(0, 0, -1500).camera_poi(0, 0, 0);
-        });
-        
-        comp.mesh_layer("product", [](auto& l) {
-            l.mesh("assets/models/product.glb")
-             .position3d(0, 0, 0)
-             .material().metallic(0.8).roughness(0.2).done();
-        });
     })
     .build();
 ```
-
-See [3d_showcase.cpp](examples/authoring/3d_showcase.cpp) for a full demonstration.
 
 ## Current status
 
@@ -122,7 +108,6 @@ The documentation is organized with a numbered structure so contributors can mov
 - `docs/20-contracts/` — cross-cutting engine contracts such as rendering, surfaces, output, CLI/API, and compatibility
 - `docs/30-scene-and-animation/` — scene spec, layers, properties, animation, templates, expressions, and timing
 - `docs/40-2d-compositing/` — shapes, masks, effects, text, motion blur, and color-related compositing behavior
-- `docs/50-3d/` — cameras, lights, backend strategy, path tracing, and 2D/3D boundaries
 - `docs/60-runtime/` — caching, memory policy, quality tiers, profiling, and low-end execution strategy
 - `docs/70-media-io/` — asset pipeline, decode/encode, render jobs, and output delivery
 - `docs/80-audio/` — audio reactivity and audio-driven animation
@@ -143,7 +128,6 @@ For a new contributor, the best path is:
 
 ## Direction summary
 
-TACHYON is a scene engine first, then a compositing and media engine, then a hybrid renderer and encoder.
-Specialized render backends may exist, including a CPU-first physically based 3D path, but they remain subordinate to the engine's declarative scene, compositing, and determinism contracts.
+TACHYON is a scene engine first, then a compositing and media engine, then a renderer and encoder.
 
-At its core, the project should evaluate properties in time, derive explicit render work, choose the appropriate 2D or 3D rendering path, and produce deterministic output that scales with compute and benefits from caching and parallel execution.
+At its core, the project should evaluate properties in time, derive explicit render work, and produce deterministic output that scales with compute and benefits from caching and parallel execution.

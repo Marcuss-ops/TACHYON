@@ -107,13 +107,12 @@ bool run_scene_evaluator_tests() {
         camera_layer.type = tachyon::LayerType::Camera;
         camera_layer.name = "Camera";
         camera_layer.enabled = true;
-        camera_layer.is_3d = true;
         camera_layer.start_time = 0.0;
         camera_layer.in_point = 0.0;
         camera_layer.out_point = 10.0;
-        camera_layer.transform3d.position_property.value = tachyon::math::Vector3{15.0f, 25.0f, 0.0f};
-        camera_layer.transform3d.rotation_property.value = tachyon::math::Vector3{0.0f, 0.0f, 30.0f};
-        camera_layer.transform3d.scale_property.value = tachyon::math::Vector3{1.5f, 1.5f, 1.0f};
+        camera_layer.transform.position_x = 15.0;
+        camera_layer.transform.position_y = 25.0;
+        camera_layer.camera_zoom.value = 877.0;
 
         tachyon::CompositionSpec composition;
         composition.id = "camera_comp";

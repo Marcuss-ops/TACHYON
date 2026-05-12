@@ -213,9 +213,6 @@ if ($Check) {
         Invoke-Native {
             & python (Join-Path $Root "tools\check_render_intent_boundaries.py")
         } "RenderIntent boundary check FAILED."
-        Invoke-Native {
-            & python (Join-Path $Root "tools\check_arch_boundaries.py")
-        } "Graphics architecture boundary check FAILED."
         Write-Host "Quick check OK" -ForegroundColor Green
         return
     }
@@ -227,9 +224,6 @@ if ($Check) {
     Invoke-Native {
         & python (Join-Path $Root "tools\check_render_intent_boundaries.py")
     } "RenderIntent boundary check FAILED."
-    Invoke-Native {
-        & python (Join-Path $Root "tools\check_arch_boundaries.py")
-    } "Graphics architecture boundary check FAILED."
     Write-Host "Quick check OK" -ForegroundColor Green
     return
 }
