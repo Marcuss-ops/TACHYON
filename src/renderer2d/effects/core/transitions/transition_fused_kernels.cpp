@@ -232,7 +232,6 @@ void apply_slide_fused_direct(
         return;
     }
 
-    std::cout << "[debug] slide FALLBACK hit" << std::endl;
 
     // Fallback: Bilinear sampling for mismatched sizes
     const float* from_data = from.pixels().data();

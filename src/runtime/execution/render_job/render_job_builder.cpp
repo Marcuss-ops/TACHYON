@@ -63,4 +63,53 @@ RenderJob RenderJobBuilder::video_export(
     return job;
 }
 
+OutputProfile make_png_sequence_profile() {
+    OutputProfile profile;
+    profile.name = "png_sequence";
+    profile.container = "png";
+    profile.format = OutputFormat::ImageSequence;
+    profile.video.codec = "png";
+    profile.video.pixel_format = "rgba8";
+    profile.video.rate_control_mode = "fixed";
+    profile.class_name = "image-sequence";
+    profile.buffering.strategy = "default";
+    profile.color.transfer = "srgb";
+    profile.color.range = "full";
+    profile.color.space = "bt709";
+    profile.alpha_mode = "preserved";
+    return profile;
+}
+
+OutputProfile make_h264_mp4_profile() {
+    OutputProfile profile;
+    profile.name = "h264_high";
+    profile.container = "mp4";
+    profile.format = OutputFormat::Video;
+    profile.video.codec = "libx264";
+    profile.video.pixel_format = "yuv420p";
+    profile.video.rate_control_mode = "crf";
+    profile.video.crf = 18.0;
+    profile.class_name = "video-export";
+    profile.buffering.strategy = "default";
+    profile.color.transfer = "bt709";
+    profile.color.range = "limited";
+    profile.color.space = "bt709";
+    profile.alpha_mode = "discarded";
+    return profile;
+}
+
+OutputProfile resolve_output_profile(const std::string& name) {
+    if (name == "png_sequence" || name == "png") {
+        return make_png_sequence_profile();
+    } else if (name == "h264" || name == "mp4" || name == "video") {
+        return make_h264_mp4_profile();
+    }
+    
+    // Default to H.264
+    OutputProfile profile = make_h264_mp4_profile();
+    profile.name = name;
+    apply_output_preset(profile);
+    return profile;
+}
+
 } // namespace tachyon

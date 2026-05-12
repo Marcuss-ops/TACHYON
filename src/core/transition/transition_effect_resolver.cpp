@@ -174,7 +174,6 @@ ResolvedTransitionEffect TransitionEffectResolver::resolve(const TransitionEffec
 
     if (request.transition_id.empty() || request.transition_id == "none" ||
         request.transition_id == "tachyon.transition.none") {
-        std::cout << "[debug] TransitionEffectResolver: using NONE kernel for " << request.transition_id << std::endl;
         result.kernel = create_none_kernel();
         result.valid = true;
         return result;
@@ -184,7 +183,6 @@ ResolvedTransitionEffect TransitionEffectResolver::resolve(const TransitionEffec
     const auto* desc = m_registry.resolve(request.transition_id);
 
     if (!desc) {
-        std::cout << "[debug] TransitionEffectResolver: registry MISS for " << request.transition_id << std::endl;
         // Transition not found - this is an error
         result.diagnostics.has_error = true;
         result.diagnostics.transition_id = request.transition_id;
@@ -192,7 +190,6 @@ ResolvedTransitionEffect TransitionEffectResolver::resolve(const TransitionEffec
         return result;
     }
 
-    std::cout << "[debug] TransitionEffectResolver: resolved " << desc->id << " (cpu_fn=" << (desc->cpu_fn ? "VALID" : "NULL") << ")" << std::endl;
 
     result.descriptor = desc;
     result.diagnostics.transition_id = desc->id;

@@ -131,4 +131,9 @@ ValidationResult validate_render_job(const RenderJob& job);
 ValidationResult validate_render_preflight(const SceneSpec& scene, const RenderJob& job);
 void apply_output_preset(OutputProfile& profile);
 
+// Output Profile Factories
+OutputProfile make_png_sequence_profile();
+OutputProfile make_h264_mp4_profile();
+OutputProfile resolve_output_profile(const std::string& name);
+
 } // namespace tachyon

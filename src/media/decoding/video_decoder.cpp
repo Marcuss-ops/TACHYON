@@ -116,7 +116,6 @@ bool VideoDecoder::open(const std::filesystem::path& path) {
     }
 
     if (avformat_open_input(&m_format_context, path.string().c_str(), nullptr, nullptr) != 0 || !m_format_context) {
-        std::cerr << "[DEBUG] VideoDecoder: avformat_open_input FAILED for '" << path.string() << "'" << std::endl;
         close();
         return false;
     }

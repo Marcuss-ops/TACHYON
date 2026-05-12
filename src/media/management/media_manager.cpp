@@ -94,7 +94,6 @@ const renderer2d::SurfaceRGBA* MediaManager::get_video_frame(const std::filesyst
 
     PooledVideoDecoder decoder = acquire_video_decoder(resolved);
     if (!decoder) {
-        std::cerr << "[DEBUG] MediaManager: FAILED to acquire decoder for '" << resolved.string() << "'" << std::endl;
         if (diagnostics) {
             diagnostics->add_error("media.video.decode_failed", "failed to acquire video decoder", resolved.string());
         }
@@ -123,7 +122,6 @@ const renderer2d::SurfaceRGBA* MediaManager::get_video_frame(const std::filesyst
         return ptr;
     }
 
-    std::cerr << "[DEBUG] MediaManager: get_frame_into FAILED for '" << resolved.string() << "' at t=" << time << std::endl;
 
     if (diagnostics) {
         diagnostics->add_error("media.video.decode_failed", "failed to decode video frame", resolved.string());

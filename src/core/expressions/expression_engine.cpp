@@ -138,9 +138,6 @@ private:
             return std::make_unique<FunctionCallNode>(name, std::move(args));
         }
         
-        // Check if it's a property access (e.g. thisComp.layer...)
-        // For simplicity, we just treat the whole "thisComp.layer.transform.position" as a single VariableNode here
-        // A true AST would split it into PropertyAccessNode. Let's stick to VariableNode for the entire path.
         return std::make_unique<VariableNode>(name);
     }
 };
@@ -199,8 +196,7 @@ public:
                 break;
             }
             case ASTNodeType::PropertyAccess: {
-                // Not implemented in this basic compiler pass, fall back to variable string index
-                break;
+                throw std::runtime_error("Property access not implemented in expression compiler");
             }
         }
     }
