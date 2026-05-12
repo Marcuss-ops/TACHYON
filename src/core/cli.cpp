@@ -2,10 +2,7 @@
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/core.h"
 #include "cli/cli_internal.h"
-#include "tachyon/transition_registry.h"
-#include "tachyon/renderer2d/effects/core/transitions/basic_transitions.h"
-#include "tachyon/renderer2d/effects/core/transitions/artistic_transitions.h"
-#include "tachyon/renderer2d/effects/core/transitions/light_leak_transitions.h"
+#include "tachyon/runtime/registry/runtime_registry_bundle.h"
 #include <functional>
 #include <iostream>
 #include <string>
@@ -13,8 +10,8 @@
 
 namespace tachyon {
 
-// Canonical transition registry for CLI operations
-static TransitionRegistry g_cli_transition_registry;
+// Canonical registry bundle for CLI operations
+static std::unique_ptr<runtime::RuntimeRegistryBundle> g_cli_bundle;
 
 namespace {
 
@@ -175,12 +172,6 @@ static const std::vector<CommandEntry> kCommands = {
         run_doctor_command
     },
     {
-        "library-demo",
-        "tachyon library-demo [--transition <id>] [--library <path>] [--out <dir>]",
-        nullptr,
-        run_library_demo_command
-    },
-    {
         "probe",
         "tachyon probe --input <file> [--json]",
         [](const CliOptions& o, std::ostream& e) {
@@ -233,22 +224,16 @@ int run_cli(int argc, char** argv) {
         return 0;
     }
 
-    // Initialize all built-in systems (Transitions, Presets, etc.)
-    // Note: We do this here instead of in each DLL to avoid circular link dependencies.
-    ::tachyon::register_builtin_transitions(g_cli_transition_registry);
-    
-    // Attach implementation pointers
-    for (auto* desc : g_cli_transition_registry.list_all()) {
-        renderer2d::resolve_basic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
-        renderer2d::resolve_artistic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
-        renderer2d::resolve_light_leak_implementations(const_cast<TransitionDescriptor&>(*desc));
+    // Initialize unified runtime registry bundle
+    if (!g_cli_bundle) {
+        g_cli_bundle = std::make_unique<runtime::RuntimeRegistryBundle>(runtime::create_default_runtime_registry_bundle());
     }
 
     // Dispatch through registry
     for (const auto& cmd : kCommands) {
         if (options.command != cmd.name) continue;
         if (cmd.validate && !cmd.validate(options, std::cerr)) return 1;
-        return cmd.handler(options, std::cout, std::cerr, g_cli_transition_registry) ? 0 : 2;
+        return cmd.handler(options, std::cout, std::cerr, g_cli_bundle->transitions) ? 0 : 2;
     }
 
     print_help(std::cerr);

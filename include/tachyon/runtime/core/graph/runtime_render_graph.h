@@ -49,11 +49,10 @@ public:
      * @brief Returns the nodes sorted in topological order.
      */
     [[nodiscard]] const std::vector<std::uint32_t>& topo_order() const noexcept { return m_topo_order; }
+    [[nodiscard]] std::vector<std::uint32_t>& topo_order() noexcept { return m_topo_order; }
     
-    /**
-     * @brief Returns all edges in the graph.
-     */
     [[nodiscard]] const std::vector<Edge>& edges() const noexcept { return m_edges; }
+    [[nodiscard]] std::vector<Edge>& edges() noexcept { return m_edges; }
 
     /**
      * @brief Clears the graph state.

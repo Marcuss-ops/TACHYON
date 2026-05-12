@@ -64,6 +64,14 @@ public:
     TransitionRegistry();
     ~TransitionRegistry();
 
+    // Non-copyable
+    TransitionRegistry(const TransitionRegistry&) = delete;
+    TransitionRegistry& operator=(const TransitionRegistry&) = delete;
+
+    // Movable
+    TransitionRegistry(TransitionRegistry&&) noexcept;
+    TransitionRegistry& operator=(TransitionRegistry&&) noexcept;
+
 private:
     RegistryDuplicatePolicy m_duplicate_policy{RegistryDuplicatePolicy::Warn}; ///< Default: warn on duplicates
     struct Impl;

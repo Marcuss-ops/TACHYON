@@ -6,6 +6,7 @@
 #include <optional>
 #include <cstdint>
 #include <filesystem>
+#include <mutex>
 
 namespace tachyon::runtime {
 
@@ -98,6 +99,7 @@ public:
 
 private:
     std::filesystem::path m_root;
+    mutable std::mutex m_mutex;
     mutable Stats m_stats;
 };
 

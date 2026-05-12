@@ -3,7 +3,7 @@
 # runtime/execution/*
 # ---------------------------------------------------------
 add_executable(TachyonRuntimeTests
-    unit/test_main_runtime.cpp
+    unit/mains/test_main_runtime.cpp
     unit/core/spec/render_job_tests.cpp
     unit/runtime/core/frame_cache_tests.cpp
     unit/runtime/core/frame_cache_budget_tests.cpp
@@ -59,7 +59,7 @@ if(MSVC)
 endif()
 
 add_executable(TachyonNativeRenderTests
-    unit/test_main_native_render.cpp
+    unit/mains/test_main_native_render.cpp
     unit/runtime/native_render_tests.cpp
 )
 
@@ -98,7 +98,7 @@ if(MSVC)
 endif()
 
 add_executable(TachyonRenderProfilerTests
-    unit/test_main_render_profiler.cpp
+    unit/mains/test_main_render_profiler.cpp
     unit/runtime/profiling/render_profiler_tests.cpp
     unit/runtime/jit_render_tests.cpp
 )

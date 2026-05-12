@@ -1,10 +1,7 @@
 #pragma once
 
 #include "tachyon/renderer2d/core/framebuffer.h"
-#include "tachyon/renderer2d/core/renderer2d_surface_pool.h"
-
-// For backward compatibility
-using SurfacePool = tachyon::renderer2d::SurfacePool;
+namespace tachyon { class SurfacePool; }
 #include "tachyon/renderer2d/resource/precomp_cache.h"
 #include "tachyon/renderer2d/effects/effect_host.h"
 #include "tachyon/renderer2d/backend/compute_backend.h"
@@ -97,7 +94,7 @@ struct RenderContext2D {
     std::shared_ptr<SurfaceRGBA> framebuffer;
     std::shared_ptr<PrecompCache> precomp_cache;
     std::shared_ptr<PrecompCache> text_surface_cache;
-    std::shared_ptr<SurfacePool> surface_pool;
+    std::shared_ptr<::tachyon::SurfacePool> surface_pool;
     std::shared_ptr<EffectHost> effects;
     AccumulationBuffers accumulation_buffer;
     QualityPolicy policy;

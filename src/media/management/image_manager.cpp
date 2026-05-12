@@ -33,28 +33,42 @@ void record_missing_image(DiagnosticBag& diagnostics, const std::string& key, co
 
 } // namespace
 
-static std::unique_ptr<renderer2d::SurfaceRGBA> decode_image(const std::filesystem::path& path, AlphaMode alpha_mode) {
+static std::unique_ptr<renderer2d::SurfaceRGBA> decode_image(const std::filesystem::path& path, AlphaMode alpha_mode, std::string& error_out) {
     int w, h, channels;
     unsigned char* data = stbi_load(path.string().c_str(), &w, &h, &channels, 4);
-    if (!data) return nullptr;
+    if (!data) {
+        const char* reason = stbi_failure_reason();
+        error_out = reason ? reason : "unknown stb error";
+        return nullptr;
+    }
+
+    if (w <= 0 || h <= 0) {
+        stbi_image_free(data);
+        error_out = "invalid dimensions";
+        return nullptr;
+    }
+
+    const std::size_t pixel_count = static_cast<std::size_t>(w) * h;
+    if (pixel_count > 4096 * 4096) { // Arbitrary limit for now
+        stbi_image_free(data);
+        error_out = "image too large";
+        return nullptr;
+    }
 
     const uint32_t uw = static_cast<uint32_t>(w);
     const uint32_t uh = static_cast<uint32_t>(h);
     auto surface = std::make_unique<renderer2d::SurfaceRGBA>(uw, uh);
     
-    // Direct access to pixels if possible, but SurfaceRGBA doesn't expose a mutable ref to the whole vector
-    // So we use a faster loop
     for (uint32_t i = 0; i < uw * uh; ++i) {
-        const float r = renderer2d::detail::sRGB_to_Linear_f(static_cast<float>(data[i * 4 + 0]) / 255.0f);
-        const float g = renderer2d::detail::sRGB_to_Linear_f(static_cast<float>(data[i * 4 + 1]) / 255.0f);
-        const float b = renderer2d::detail::sRGB_to_Linear_f(static_cast<float>(data[i * 4 + 2]) / 255.0f);
-        float a = static_cast<float>(data[i * 4 + 3]) / 255.0f;
+        const float r = renderer2d::detail::sRGB_to_Linear_f(static_cast<float>(data[i * 4 + 0]) * (1.0f / 255.0f));
+        const float g = renderer2d::detail::sRGB_to_Linear_f(static_cast<float>(data[i * 4 + 1]) * (1.0f / 255.0f));
+        const float b = renderer2d::detail::sRGB_to_Linear_f(static_cast<float>(data[i * 4 + 2]) * (1.0f / 255.0f));
+        float a = static_cast<float>(data[i * 4 + 3]) * (1.0f / 255.0f);
 
         if (alpha_mode == AlphaMode::Ignore) {
             a = 1.0f;
         }
 
-        // Convert sRGB (from STB) to Linear
         renderer2d::Color linear_color{r, g, b, a};
 
         if (alpha_mode == AlphaMode::Premultiplied) {
@@ -70,17 +84,33 @@ static std::unique_ptr<renderer2d::SurfaceRGBA> decode_image(const std::filesyst
     return surface;
 }
 
-static std::unique_ptr<HDRTextureData> decode_hdr_image(const std::filesystem::path& path) {
+static std::unique_ptr<HDRTextureData> decode_hdr_image(const std::filesystem::path& path, std::string& error_out) {
     int w, h, channels;
-    // Environment maps are usually RGB, using 3 channels to save memory
     float* data = stbi_loadf(path.string().c_str(), &w, &h, &channels, 3);
-    if (!data) return nullptr;
+    if (!data) {
+        const char* reason = stbi_failure_reason();
+        error_out = reason ? reason : "unknown stb error";
+        return nullptr;
+    }
+
+    if (w <= 0 || h <= 0) {
+        stbi_image_free(data);
+        error_out = "invalid dimensions";
+        return nullptr;
+    }
+
+    const std::size_t pixel_count = static_cast<std::size_t>(w) * h;
+    if (pixel_count > 4096 * 4096) {
+        stbi_image_free(data);
+        error_out = "image too large";
+        return nullptr;
+    }
 
     auto hdr = std::make_unique<HDRTextureData>();
     hdr->width = w;
     hdr->height = h;
     hdr->channels = 3;
-    hdr->data.assign(data, data + (w * h * 3));
+    hdr->data.assign(data, data + (pixel_count * 3));
 
     stbi_image_free(data);
     return hdr;
@@ -96,25 +126,24 @@ std::shared_ptr<const renderer2d::SurfaceRGBA> ImageManager::get_image_shared(co
     if (alpha_mode == AlphaMode::Premultiplied) key += ":premultiplied";
     else if (alpha_mode == AlphaMode::Ignore) key += ":ignore";
 
-    { // lookup cached image
+    { 
         std::lock_guard<std::mutex> lock(m_mutex);
         auto it = m_cache.find(key);
         if (it != m_cache.end()) return it->second;
     }
 
-    // decode outside the lock (expensive)
-    auto surface = decode_image(path, alpha_mode);
+    std::string error_msg;
+    auto surface = decode_image(path, alpha_mode, error_msg);
     if (!surface) {
         surface = make_fallback_surface();
         std::lock_guard<std::mutex> lock(m_mutex);
-        record_missing_image(m_diagnostics, key, kDecodeFailedCode, (std::string(kDecodeFailedMessage) + ": " + (stbi_failure_reason() ? stbi_failure_reason() : "unknown")).c_str());
+        record_missing_image(m_diagnostics, key, kDecodeFailedCode, (std::string(kDecodeFailedMessage) + ": " + error_msg).c_str());
         if (diagnostics) {
             record_missing_image(*diagnostics, key, kDecodeFailedCode, kDecodeFailedMessage);
         }
     }
 
     std::lock_guard<std::mutex> lock(m_mutex);
-    // double-check: another thread might have loaded it in the meantime
     auto it = m_cache.find(key);
     if (it != m_cache.end()) return it->second;
 
@@ -132,10 +161,11 @@ const HDRTextureData* ImageManager::get_hdr_image(const std::filesystem::path& p
         if (it != m_hdr_cache.end()) return it->second.get();
     }
 
-    auto hdr = decode_hdr_image(path);
+    std::string error_msg;
+    auto hdr = decode_hdr_image(path, error_msg);
     if (!hdr) {
         std::lock_guard<std::mutex> lock(m_mutex);
-        record_missing_image(m_diagnostics, key, kDecodeFailedCode, (std::string(kDecodeFailedMessage) + " (HDR): " + (stbi_failure_reason() ? stbi_failure_reason() : "unknown")).c_str());
+        record_missing_image(m_diagnostics, key, kDecodeFailedCode, (std::string(kDecodeFailedMessage) + " (HDR): " + error_msg).c_str());
         if (diagnostics) {
             record_missing_image(*diagnostics, key, kDecodeFailedCode, kDecodeFailedMessage);
         }

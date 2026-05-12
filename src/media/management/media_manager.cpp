@@ -246,17 +246,26 @@ void MediaManager::release_video_decoder(const std::filesystem::path& path, Vide
 
 std::shared_ptr<const MeshAsset> MediaManager::get_mesh(const std::filesystem::path& path, DiagnosticBag* diagnostics) {
     const std::string key = path.string();
-    std::lock_guard<std::mutex> lock(m_mutex);
     
-    auto it = m_mesh_cache.find(key);
-    if (it != m_mesh_cache.end()) {
-        return it->second;
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        auto it = m_mesh_cache.find(key);
+        if (it != m_mesh_cache.end()) {
+            return it->second;
+        }
     }
 
     auto mesh = MeshLoader::load_from_gltf(path, diagnostics);
     if (!mesh) return nullptr;
 
     std::shared_ptr<MeshAsset> shared_mesh = std::move(mesh);
+    
+    std::lock_guard<std::mutex> lock(m_mutex);
+    auto it = m_mesh_cache.find(key);
+    if (it != m_mesh_cache.end()) {
+        return it->second;
+    }
+    
     m_mesh_cache[key] = shared_mesh;
     return shared_mesh;
 }

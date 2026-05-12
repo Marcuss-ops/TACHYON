@@ -9,7 +9,7 @@
 #include "tachyon/runtime/core/data/data_snapshot.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/runtime/frame_arena.h"
-#include "tachyon/runtime/resource/runtime_surface_pool.h"
+#include "tachyon/runtime/resource/surface_pool.h"
 
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include "tachyon/output/frame_aov.h"
@@ -57,7 +57,7 @@ struct EvaluatedFrameState {
  */
 class FrameExecutor {
 public:
-    explicit FrameExecutor(FrameArena& arena, FrameCache& cache, runtime::RuntimeSurfacePool* pool = nullptr)
+    explicit FrameExecutor(FrameArena& arena, FrameCache& cache, SurfacePool* pool = nullptr)
         : m_arena(arena), m_cache(cache), m_pool(pool) {}
 
     void set_parallel_worker_count(size_t worker_count) {
@@ -70,7 +70,7 @@ public:
 
     FrameCache& cache() { return m_cache; }
     const FrameCache& cache() const { return m_cache; }
-    runtime::RuntimeSurfacePool* surface_pool() const { return m_pool; }
+    SurfacePool* surface_pool() const { return m_pool; }
 
     /**
      * @brief Executes evaluation for a specific frame.
@@ -91,7 +91,7 @@ public:
 private:
     FrameArena& m_arena;
     FrameCache& m_cache;
-    runtime::RuntimeSurfacePool* m_pool{nullptr};
+    SurfacePool* m_pool{nullptr};
     size_t m_parallel_worker_count{1};
     bool m_parallel_frames{false};
 

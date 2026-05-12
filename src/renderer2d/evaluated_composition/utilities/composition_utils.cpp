@@ -1,6 +1,7 @@
 #include "tachyon/renderer2d/evaluated_composition/utilities/composition_utils.h"
 #include "tachyon/renderer2d/color/blending.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
+#include "tachyon/runtime/resource/surface_pool.h"
 #include <algorithm>
 #include <cmath>
 #include <iostream>

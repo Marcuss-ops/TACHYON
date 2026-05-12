@@ -3,7 +3,7 @@
 # integration/*, spec/cli
 # ---------------------------------------------------------
 add_executable(TachyonCliTests
-    unit/test_main_cli.cpp
+    unit/mains/test_main_cli.cpp
     unit/core/spec/cli_tests.cpp
     unit/core/spec/scene_spec_tests.cpp
     integration/vertical_slice_tests.cpp

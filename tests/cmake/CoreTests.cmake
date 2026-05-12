@@ -3,7 +3,7 @@
 # core/* (math, spec, logic)
 # ---------------------------------------------------------
 add_executable(TachyonTests
-    unit/test_main_core.cpp
+    unit/mains/test_main_core.cpp
     unit/core/math_tests.cpp
     unit/core/property_tests.cpp
     unit/core/expression_tests.cpp

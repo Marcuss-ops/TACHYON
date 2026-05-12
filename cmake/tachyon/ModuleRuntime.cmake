@@ -29,10 +29,12 @@ set(TachyonRuntimeCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/cache/disk_cache.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/cache/frame_cache.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/resource/render_context.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/resource/surface_pool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/policy/worker_policy.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/policy/surface_pool_policy.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/policy/telemetry_policy.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/diagnostics/report.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/registry/runtime_registry_bundle.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/server.cpp
 )
 

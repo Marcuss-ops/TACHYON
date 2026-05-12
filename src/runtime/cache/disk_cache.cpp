@@ -13,6 +13,14 @@ std::string CacheKey::to_filename() const {
     std::ostringstream oss;
     oss << std::hex << std::setfill('0');
     oss << "frame_" << std::setw(16) << identity;
+    
+    // Sanitize and include node_path for invalidation support
+    std::string safe_path = node_path;
+    std::replace_if(safe_path.begin(), safe_path.end(), [](char c) {
+        return !std::isalnum(c) && c != '_';
+    }, '_');
+    if (!safe_path.empty()) oss << "_" << safe_path;
+
     oss << "_t" << std::setw(8) << static_cast<std::uint64_t>(frame_time * 10000.0);
     oss << "_q" << quality_tier;
     
@@ -92,6 +100,7 @@ void DiskCacheStore::store(const CacheKey& key, const std::vector<uint8_t>& fram
     if (ofs) {
         ofs.write(reinterpret_cast<const char*>(frame_data.data()), 
                   static_cast<std::streamsize>(frame_data.size()));
+        std::lock_guard<std::mutex> lock(m_mutex);
         m_stats.total_size_bytes += frame_data.size();
         m_stats.entry_count++;
     }
@@ -100,27 +109,39 @@ void DiskCacheStore::store(const CacheKey& key, const std::vector<uint8_t>& fram
 std::optional<std::vector<uint8_t>> DiskCacheStore::load(const CacheKey& key) {
     auto path = m_root / key.to_filename();
     
-    if (!fs::exists(path)) {
-        m_stats.misses++;
-        return std::nullopt;
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (!fs::exists(path)) {
+            m_stats.misses++;
+            return std::nullopt;
+        }
     }
     
     std::ifstream ifs(path, std::ios::binary | std::ios::ate);
     if (!ifs) {
+        std::lock_guard<std::mutex> lock(m_mutex);
         m_stats.misses++;
         return std::nullopt;
     }
     
-    auto size = static_cast<std::size_t>(ifs.tellg());
+    auto end = ifs.tellg();
+    if (end <= 0) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_stats.misses++;
+        return std::nullopt;
+    }
+    auto size = static_cast<std::size_t>(end);
     ifs.seekg(0, std::ios::beg);
     
     std::vector<uint8_t> buffer(size);
     if (ifs.read(reinterpret_cast<char*>(buffer.data()), 
                  static_cast<std::streamsize>(size))) {
+        std::lock_guard<std::mutex> lock(m_mutex);
         m_stats.hits++;
         return buffer;
     }
     
+    std::lock_guard<std::mutex> lock(m_mutex);
     m_stats.misses++;
     return std::nullopt;
 }
@@ -139,22 +160,27 @@ void DiskCacheStore::invalidate(const std::string& node_path_prefix) {
     
     for (const auto& path : to_delete) {
         auto size = fs::file_size(path);
-        fs::remove(path);
-        if (m_stats.total_size_bytes >= size) {
-            m_stats.total_size_bytes -= size;
-        } else {
-            m_stats.total_size_bytes = 0;
-        }
-        if (m_stats.entry_count > 0) {
-            m_stats.entry_count--;
+        if (fs::remove(path)) {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            if (m_stats.total_size_bytes >= size) {
+                m_stats.total_size_bytes -= size;
+            } else {
+                m_stats.total_size_bytes = 0;
+            }
+            if (m_stats.entry_count > 0) {
+                m_stats.entry_count--;
+            }
         }
     }
 }
 
 void DiskCacheStore::purge_to_budget(std::size_t max_bytes) {
+    std::unique_lock<std::mutex> lock(m_mutex);
     if (m_stats.total_size_bytes <= max_bytes) {
         return;
     }
+    std::size_t current_total = m_stats.total_size_bytes;
+    lock.unlock();
     
     // Collect all entries with their modification times
     struct Entry {
@@ -182,16 +208,19 @@ void DiskCacheStore::purge_to_budget(std::size_t max_bytes) {
     
     // Delete oldest files until under budget
     std::size_t freed = 0;
-    std::size_t target = m_stats.total_size_bytes - max_bytes;
+    std::size_t target = current_total > max_bytes ? current_total - max_bytes : 0;
     
     for (const auto& entry : entries) {
         if (freed >= target) break;
         
-        fs::remove(entry.path);
-        freed += entry.size;
-        m_stats.entry_count--;
+        if (fs::remove(entry.path)) {
+            freed += entry.size;
+            std::lock_guard<std::mutex> lock2(m_mutex);
+            if (m_stats.entry_count > 0) m_stats.entry_count--;
+        }
     }
     
+    std::lock_guard<std::mutex> lock3(m_mutex);
     if (freed <= m_stats.total_size_bytes) {
         m_stats.total_size_bytes -= freed;
     } else {
@@ -200,6 +229,7 @@ void DiskCacheStore::purge_to_budget(std::size_t max_bytes) {
 }
 
 DiskCacheStore::Stats DiskCacheStore::get_stats() const {
+    std::lock_guard<std::mutex> lock(m_mutex);
     return m_stats;
 }
 

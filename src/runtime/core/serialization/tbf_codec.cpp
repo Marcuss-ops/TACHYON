@@ -1,232 +1,54 @@
 #include "tachyon/runtime/core/serialization/tbf_codec.h"
+#include "binary_io.h"
 #include <fstream>
 #include <cstring>
+#include <algorithm>
 
 namespace tachyon::runtime {
 
 namespace {
 
-// Migration from version 1 to 2: Added mask_feather to CompiledLayer
-CompiledLayer migrate_layer_v1_to_v2(const CompiledLayer& old) {
-    CompiledLayer layer;
-    layer.node = old.node;
-    layer.type_id = old.type_id;
-    layer.width = old.width;
-    layer.height = old.height;
-    layer.text_content = old.text_content;
-    layer.font_id = old.font_id;
-    layer.font_size = old.font_size;
-    layer.fill_color = old.fill_color;
-    layer.property_indices = old.property_indices;
-    layer.flags = old.flags;
-    layer.mask_feather = 0.0f; // Default value added in v2
-    return layer;
+// Enum validation helpers
+template<typename E>
+bool is_valid_enum(std::uint8_t value) {
+    if constexpr (std::is_same_v<E, CompiledNodeType>) {
+        return value <= static_cast<std::uint8_t>(CompiledNodeType::Unknown);
+    } else if constexpr (std::is_same_v<E, CompiledPropertyTrack::Kind>) {
+        return value <= static_cast<std::uint8_t>(CompiledPropertyTrack::Kind::Binding);
+    } else if constexpr (std::is_same_v<E, spec::FrameBlendMode>) {
+        return value <= static_cast<std::uint8_t>(spec::FrameBlendMode::OpticalFlow);
+    } else if constexpr (std::is_same_v<E, spec::TimeRemapMode>) {
+        return value <= static_cast<std::uint8_t>(spec::TimeRemapMode::OpticalFlow);
+    } else if constexpr (std::is_same_v<E, DeterminismContract::FloatingPointMode>) {
+        return value <= static_cast<std::uint8_t>(DeterminismContract::FloatingPointMode::Relaxed);
+    } else if constexpr (std::is_same_v<E, DeterminismContract::FmaPolicy>) {
+        return value <= static_cast<std::uint8_t>(DeterminismContract::FmaPolicy::Enable);
+    } else if constexpr (std::is_same_v<E, DeterminismContract::DenormalPolicy>) {
+        return value <= static_cast<std::uint8_t>(DeterminismContract::DenormalPolicy::Preserve);
+    } else if constexpr (std::is_same_v<E, DeterminismContract::RoundingMode>) {
+        return value <= static_cast<std::uint8_t>(DeterminismContract::RoundingMode::Downward);
+    } else if constexpr (std::is_same_v<E, DeterminismContract::PrngKind>) {
+        return value <= static_cast<std::uint8_t>(DeterminismContract::PrngKind::PCG32);
+    }
+    return true;
 }
 
-// Migration from version 2 to 3: Added audio tracks to CompiledComposition
-CompiledComposition migrate_composition_v2_to_v3(const CompiledComposition& old) {
-    CompiledComposition comp;
-    comp.node = old.node;
-    comp.width = old.width;
-    comp.height = old.height;
-    comp.fps = old.fps;
-    comp.duration = old.duration;
-    comp.layers = old.layers;
-    comp.camera_cuts = old.camera_cuts;
-    // Audio tracks are initialized as empty in v3 for v2 scenes
-    comp.audio_tracks = {}; 
-    return comp;
-}
+// Robust Serialization Helpers
+struct TBFReader : public BinaryReader {
+    using BinaryReader::BinaryReader;
 
-} // namespace
-
-CompiledScene TBFCodec::migrate(const CompiledScene& scene, std::uint16_t from_version) {
-    CompiledScene migrated = scene;
-    std::uint16_t ver = from_version;
-    
-    if (ver == 1) {
-        // Migrate layers from v1 to v2
-        for (auto& comp : migrated.compositions) {
-            for (auto& layer : comp.layers) {
-                // Re-create with default mask_feather
-                layer.mask_feather = 0.0f;
-            }
-        }
-        ver = 2;
-    }
-    
-    if (ver == 2) {
-        // Migrate compositions from v2 to v3
-        for (auto& comp : migrated.compositions) {
-            comp.audio_tracks = {}; // Explicitly initialize
-        }
-        ver = 3;
-    }
-
-    if (ver == 3) {
-        // Migrate from v3 to v4: AudioTrackSpec gained playback_speed, pitch_shift, pitch_correct.
-        // Default values already match the spec (1.0f, 1.0f, false), so this is a no-op structural migration.
-        ver = 4;
-    }
-    
-    migrated.header.version = current_version();
-    return migrated;
-}
-
-namespace {
-
-struct BinaryWriter {
-    std::vector<std::uint8_t> buffer;
-
-    template<typename T>
-    void write(const T& value) {
-        static_assert(std::is_trivially_copyable_v<T>);
-        const auto* ptr = reinterpret_cast<const std::uint8_t*>(&value);
-        buffer.insert(buffer.end(), ptr, ptr + sizeof(T));
-    }
-
-    void write_string(const std::string& str) {
-        write<std::uint32_t>(static_cast<std::uint32_t>(str.size()));
-        buffer.insert(buffer.end(), str.begin(), str.end());
-    }
-
-    template<typename T>
-    void write_vector(const std::vector<T>& vec) {
-        write<std::uint32_t>(static_cast<std::uint32_t>(vec.size()));
-        if constexpr (std::is_trivially_copyable_v<T>) {
-            const auto* ptr = reinterpret_cast<const std::uint8_t*>(vec.data());
-            buffer.insert(buffer.end(), ptr, ptr + (vec.size() * sizeof(T)));
-        } else {
-            for (const auto& item : vec) {
-                // Manual serialization for non-POD vector elements would go here.
-                // For simplicity in this DSL implementation, we'll assume most core structs 
-                // in CompiledScene are either POD or have specific handlers.
-            }
-        }
-    }
-    
-    // Specific handlers for complex types
-    void write_node(const CompiledNode& node) {
-        write(node.node_id);
-        write(node.version);
-        write(node.topo_index);
-        write(node.dirty_mask);
-        write(node.type);
-        write_vector(node.dependencies);
-        write_vector(node.dependents);
-    }
-
-    void write_track_binding(const spec::TrackBinding& b) {
-        write_string(b.property_path);
-        write_string(b.source_id);
-        write_string(b.source_track_name);
-        write(b.influence);
-        write(b.enabled);
-    }
-
-    void write_time_remap(const spec::TimeRemapCurve& tr) {
-        write(tr.enabled);
-        write(tr.mode);
-        write<std::uint32_t>(static_cast<std::uint32_t>(tr.keyframes.size()));
-        for (const auto& kf : tr.keyframes) {
-            write(kf.first);
-            write(kf.second);
-        }
-    }
-
-    void write_camera_cut(const spec::CameraCut& cut) {
-        write_string(cut.camera_id);
-        write(cut.start_seconds);
-        write(cut.end_seconds);
-    }
-
-    void write_audio_effect(const spec::AudioEffectSpec& effect) {
-        write_string(effect.type);
-        write(effect.start_time.has_value());
-        if (effect.start_time) write(*effect.start_time);
-        write(effect.duration.has_value());
-        if (effect.duration) write(*effect.duration);
-        write(effect.gain_db.has_value());
-        if (effect.gain_db) write(*effect.gain_db);
-        write(effect.cutoff_freq_hz.has_value());
-        if (effect.cutoff_freq_hz) write(*effect.cutoff_freq_hz);
-    }
-
-    void write_audio_track(const spec::AudioTrackSpec& track) {
-        write_string(track.id);
-        write_string(track.source_path);
-        write(track.volume);
-        write(track.pan);
-        write(track.start_offset_seconds);
-        
-        write_vector(track.volume_keyframes);
-        write_vector(track.pan_keyframes);
-        
-        write<std::uint32_t>(static_cast<std::uint32_t>(track.effects.size()));
-        for (const auto& effect : track.effects) write_audio_effect(effect);
-
-        // Version 4 fields
-        write(track.playback_speed);
-        write(track.pitch_shift);
-        write(track.pitch_correct);
-    }
-};
-
-struct BinaryReader {
-    const std::vector<std::uint8_t>& buffer;
-    std::size_t pos{0};
-    bool error{false};
-    std::uint16_t file_version{0};
-
-    template<typename T>
-    T read() {
-        if (pos + sizeof(T) > buffer.size()) {
-            error = true;
-            return T{};
-        }
-        T value;
-        std::memcpy(&value, &buffer[pos], sizeof(T));
-        pos += sizeof(T);
-        return value;
-    }
-
-    std::string read_string() {
-        std::uint32_t size = read<std::uint32_t>();
-        if (pos + size > buffer.size()) {
-            error = true;
-            return "";
-        }
-        std::string str(reinterpret_cast<const char*>(&buffer[pos]), size);
-        pos += size;
-        return str;
-    }
-    
-    template<typename T>
-    std::vector<T> read_vector() {
-        std::uint32_t size = read<std::uint32_t>();
-        if (error) return {};
-        std::vector<T> vec;
-        if constexpr (std::is_trivially_copyable_v<T>) {
-            if (pos + (size * sizeof(T)) > buffer.size()) {
-                error = true;
-                return {};
-            }
-            vec.resize(size);
-            std::memcpy(vec.data(), &buffer[pos], size * sizeof(T));
-            pos += size * sizeof(T);
-        } else {
-            // Manual deserialization...
-        }
-        return vec;
+    template<typename E>
+    E read_enum() {
+        return read_enum_checked<E>(is_valid_enum<E>);
     }
 
     CompiledNode read_node() {
         CompiledNode node;
-        node.node_id = read<std::uint32_t>();
-        node.version = read<std::uint32_t>();
-        node.topo_index = read<std::uint32_t>();
-        node.dirty_mask = read<std::uint64_t>();
-        node.type = read<CompiledNodeType>();
+        node.node_id = read_u32();
+        node.version = read_u32();
+        node.topo_index = read_u32();
+        node.dirty_mask = read_u64();
+        node.type = read_enum<CompiledNodeType>();
         node.dependencies = read_vector<std::uint32_t>();
         node.dependents = read_vector<std::uint32_t>();
         return node;
@@ -237,19 +59,20 @@ struct BinaryReader {
         b.property_path = read_string();
         b.source_id = read_string();
         b.source_track_name = read_string();
-        b.influence = read<float>();
-        b.enabled = read<bool>();
+        b.influence = read_f32();
+        b.enabled = read_bool();
         return b;
     }
 
     spec::TimeRemapCurve read_time_remap() {
         spec::TimeRemapCurve tr;
-        tr.enabled = read<bool>();
-        tr.mode = read<spec::TimeRemapMode>();
-        std::uint32_t kf_count = read<std::uint32_t>();
+        tr.enabled = read_bool();
+        tr.mode = read_enum<spec::TimeRemapMode>();
+        std::uint32_t kf_count = read_u32();
+        if (kf_count > kMaxVectorItems) { error = true; return tr; }
         for (std::uint32_t i = 0; i < kf_count; ++i) {
-            float first = read<float>();
-            float second = read<float>();
+            float first = read_f32();
+            float second = read_f32();
             tr.keyframes.push_back({first, second});
         }
         return tr;
@@ -258,18 +81,18 @@ struct BinaryReader {
     spec::CameraCut read_camera_cut() {
         spec::CameraCut cut;
         cut.camera_id = read_string();
-        cut.start_seconds = read<double>();
-        cut.end_seconds = read<double>();
+        cut.start_seconds = read_f64();
+        cut.end_seconds = read_f64();
         return cut;
     }
 
     spec::AudioEffectSpec read_audio_effect() {
         spec::AudioEffectSpec effect;
         effect.type = read_string();
-        if (read<bool>()) effect.start_time = read<double>();
-        if (read<bool>()) effect.duration = read<double>();
-        if (read<bool>()) effect.gain_db = read<float>();
-        if (read<bool>()) effect.cutoff_freq_hz = read<float>();
+        if (read_bool()) effect.start_time = read_f64();
+        if (read_bool()) effect.duration = read_f64();
+        if (read_bool()) effect.gain_db = read_f32();
+        if (read_bool()) effect.cutoff_freq_hz = read_f32();
         return effect;
     }
 
@@ -277,107 +100,268 @@ struct BinaryReader {
         spec::AudioTrackSpec track;
         track.id = read_string();
         track.source_path = read_string();
-        track.volume = read<float>();
-        track.pan = read<float>();
-        track.start_offset_seconds = read<double>();
+        track.volume = read_f32();
+        track.pan = read_f32();
+        track.start_offset_seconds = read_f64();
         
-        track.volume_keyframes = read_vector<animation::Keyframe<float>>();
-        track.pan_keyframes = read_vector<animation::Keyframe<float>>();
+        track.volume_keyframes = read_vector<animation::Keyframe<float>>([](BinaryReader& r) {
+             animation::Keyframe<float> kf;
+             kf.time = r.read_f64();
+             kf.value = r.read_f32();
+             return kf;
+        });
+        track.pan_keyframes = read_vector<animation::Keyframe<float>>([](BinaryReader& r) {
+             animation::Keyframe<float> kf;
+             kf.time = r.read_f64();
+             kf.value = r.read_f32();
+             return kf;
+        });
         
-        std::uint32_t effect_count = read<std::uint32_t>();
+        std::uint32_t effect_count = read_u32();
+        if (effect_count > kMaxVectorItems) { error = true; return track; }
         for (std::uint32_t i = 0; i < effect_count; ++i) track.effects.push_back(read_audio_effect());
 
         if (file_version >= 4) {
-            track.playback_speed = read<float>();
-            track.pitch_shift = read<float>();
-            track.pitch_correct = read<bool>();
+            track.playback_speed = read_f32();
+            track.pitch_shift = read_f32();
+            track.pitch_correct = read_bool();
         }
         return track;
     }
 };
 
+struct TBFWriter : public BinaryWriter {
+    using BinaryWriter::BinaryWriter;
+
+    void write_node(const CompiledNode& node) {
+        write_u32(node.node_id);
+        write_u32(node.version);
+        write_u32(node.topo_index);
+        write_u64(node.dirty_mask);
+        write_u8(static_cast<std::uint8_t>(node.type));
+        write_vector(node.dependencies);
+        write_vector(node.dependents);
+    }
+
+    void write_track_binding(const spec::TrackBinding& b) {
+        write_string(b.property_path);
+        write_string(b.source_id);
+        write_string(b.source_track_name);
+        write_f32(b.influence);
+        write_bool(b.enabled);
+    }
+
+    void write_time_remap(const spec::TimeRemapCurve& tr) {
+        write_bool(tr.enabled);
+        write_u8(static_cast<std::uint8_t>(tr.mode));
+        write_u32(static_cast<std::uint32_t>(std::min<std::size_t>(tr.keyframes.size(), kMaxVectorItems)));
+        for (const auto& kf : tr.keyframes) {
+            write_f32(kf.first);
+            write_f32(kf.second);
+        }
+    }
+
+    void write_camera_cut(const spec::CameraCut& cut) {
+        write_string(cut.camera_id);
+        write_f64(cut.start_seconds);
+        write_f64(cut.end_seconds);
+    }
+
+    void write_audio_effect(const spec::AudioEffectSpec& effect) {
+        write_string(effect.type);
+        write_bool(effect.start_time.has_value());
+        if (effect.start_time) write_f64(*effect.start_time);
+        write_bool(effect.duration.has_value());
+        if (effect.duration) write_f64(*effect.duration);
+        write_bool(effect.gain_db.has_value());
+        if (effect.gain_db) write_f32(*effect.gain_db);
+        write_bool(effect.cutoff_freq_hz.has_value());
+        if (effect.cutoff_freq_hz) write_f32(*effect.cutoff_freq_hz);
+    }
+
+    void write_audio_track(const spec::AudioTrackSpec& track) {
+        write_string(track.id);
+        write_string(track.source_path);
+        write_f32(track.volume);
+        write_f32(track.pan);
+        write_f64(track.start_offset_seconds);
+        
+        write_vector(track.volume_keyframes, [](BinaryWriter& w, const animation::Keyframe<float>& kf) {
+            w.write_f64(kf.time);
+            w.write_f32(kf.value);
+        });
+        write_vector(track.pan_keyframes, [](BinaryWriter& w, const animation::Keyframe<float>& kf) {
+            w.write_f64(kf.time);
+            w.write_f32(kf.value);
+        });
+        
+        write_u32(static_cast<std::uint32_t>(std::min<std::size_t>(track.effects.size(), kMaxVectorItems)));
+        for (const auto& effect : track.effects) write_audio_effect(effect);
+
+        write_f32(track.playback_speed);
+        write_f32(track.pitch_shift);
+        write_bool(track.pitch_correct);
+    }
+};
+
 } // namespace
 
-std::vector<std::uint8_t> TBFCodec::encode(const CompiledScene& scene) {
-    BinaryWriter writer;
+CompiledScene TBFCodec::migrate(const CompiledScene& scene, std::uint16_t from_version) {
+    CompiledScene migrated = scene;
+    std::uint16_t ver = from_version;
     
-    // 1. Header
-    writer.write(scene.header);
+    if (ver == 1) {
+        for (auto& comp : migrated.compositions) {
+            for (auto& layer : comp.layers) {
+                layer.mask_feather = 0.0f;
+            }
+        }
+        ver = 2;
+    }
+    
+    if (ver == 2) {
+        for (auto& comp : migrated.compositions) {
+            comp.audio_tracks = {}; 
+        }
+        ver = 3;
+    }
+
+    if (ver == 3) {
+        ver = 4;
+    }
+    
+    migrated.header.version = current_version();
+    return migrated;
+}
+
+std::vector<std::uint8_t> TBFCodec::encode(const CompiledScene& scene) {
+    TBFWriter writer;
+    
+    // 1. Header (Partial write to avoid fragile struct copy)
+    writer.write_u32(scene.header.magic);
+    writer.write_u16(scene.header.version);
+    writer.write_u16(scene.header.flags);
+    writer.write_u32(scene.header.layout_version);
+    writer.write_u32(scene.header.compiler_version);
+    writer.write_u64(scene.header.layout_checksum);
     
     // 2. Metadata
     writer.write_string(scene.project_id);
     writer.write_string(scene.project_name);
-    writer.write(scene.scene_hash);
+    writer.write_u64(scene.scene_hash);
     
     // 3. Determinism
-    writer.write(scene.determinism);
+    writer.write_u16(static_cast<std::uint16_t>(scene.determinism.fp_mode));
+    writer.write_u16(static_cast<std::uint16_t>(scene.determinism.fma_policy));
+    writer.write_u16(static_cast<std::uint16_t>(scene.determinism.denormal_policy));
+    writer.write_u16(static_cast<std::uint16_t>(scene.determinism.rounding_mode));
+    writer.write_u16(static_cast<std::uint16_t>(scene.determinism.prng));
+    writer.write_u64(scene.determinism.seed);
     
     // 4. Graph
-    writer.write_vector(scene.graph.edges());
+    writer.write_vector(scene.graph.edges(), [](BinaryWriter& w, const RuntimeRenderGraph::Edge& e) {
+        w.write_u32(e.from);
+        w.write_u32(e.to);
+        w.write_bool(e.structural);
+    });
     writer.write_vector(scene.graph.topo_order());
     
     // 5. Compositions
-    writer.write<std::uint32_t>(static_cast<std::uint32_t>(scene.compositions.size()));
+    writer.write_u32(static_cast<std::uint32_t>(std::min<std::size_t>(scene.compositions.size(), kMaxCompositions)));
     for (const auto& comp : scene.compositions) {
         writer.write_node(comp.node);
-        writer.write(comp.width);
-        writer.write(comp.height);
-        writer.write(comp.fps);
-        writer.write(comp.duration);
+        writer.write_string(comp.composition_id);
+        writer.write_string(comp.name);
+        writer.write_u32(comp.width);
+        writer.write_u32(comp.height);
+        writer.write_u32(comp.fps);
+        writer.write_f64(comp.duration);
         
-        writer.write<std::uint32_t>(static_cast<std::uint32_t>(comp.layers.size()));
+        writer.write_u32(static_cast<std::uint32_t>(std::min<std::size_t>(comp.layers.size(), kMaxLayers)));
         for (const auto& layer : comp.layers) {
             writer.write_node(layer.node);
-            writer.write(layer.type_id);
-            writer.write(layer.width);
-            writer.write(layer.height);
+            writer.write_string(layer.name);
+            writer.write_string(layer.asset_id);
+            writer.write_u32(layer.type_id);
+            writer.write_u32(layer.width);
+            writer.write_u32(layer.height);
             writer.write_string(layer.text_content);
             writer.write_string(layer.font_id);
-            writer.write(layer.font_size);
-            writer.write(layer.fill_color);
+            writer.write_f32(layer.font_size);
+            // ColorSpec
+            writer.write_u8(layer.fill_color.r); writer.write_u8(layer.fill_color.g); writer.write_u8(layer.fill_color.b); writer.write_u8(layer.fill_color.a);
+            writer.write_u8(layer.stroke_color.r); writer.write_u8(layer.stroke_color.g); writer.write_u8(layer.stroke_color.b); writer.write_u8(layer.stroke_color.a);
+            writer.write_f32(layer.stroke_width);
             writer.write_vector(layer.property_indices);
-            writer.write(layer.flags);
+            writer.write_u8(layer.flags);
+            writer.write_f32(layer.mask_feather);
+            writer.write_string(layer.blend_mode);
+            writer.write_f64(layer.in_time);
+            writer.write_f64(layer.out_time);
+            writer.write_f64(layer.start_time);
 
             // Unified Temporal & Tracking
-            writer.write<std::uint32_t>(static_cast<std::uint32_t>(layer.track_bindings.size()));
-            for (const auto& b : layer.track_bindings) writer.write_track_binding(b);
+            writer.write_vector(layer.track_bindings, [](BinaryWriter& w, const spec::TrackBinding& b) {
+                TBFWriter& tw = static_cast<TBFWriter&>(w);
+                tw.write_track_binding(b);
+            });
             writer.write_time_remap(layer.time_remap);
-            writer.write(layer.frame_blend);
+            writer.write_u8(static_cast<std::uint8_t>(layer.frame_blend));
         }
 
-        writer.write<std::uint32_t>(static_cast<std::uint32_t>(comp.camera_cuts.size()));
-        for (const auto& cut : comp.camera_cuts) writer.write_camera_cut(cut);
+        writer.write_vector(comp.camera_cuts, [](BinaryWriter& w, const spec::CameraCut& c) {
+            TBFWriter& tw = static_cast<TBFWriter&>(w);
+            tw.write_camera_cut(c);
+        });
 
-        writer.write<std::uint32_t>(static_cast<std::uint32_t>(comp.audio_tracks.size()));
-        for (const auto& track : comp.audio_tracks) writer.write_audio_track(track);
+        writer.write_vector(comp.audio_tracks, [](BinaryWriter& w, const spec::AudioTrackSpec& t) {
+            TBFWriter& tw = static_cast<TBFWriter&>(w);
+            tw.write_audio_track(t);
+        });
     }
     
     // 6. Property Tracks
-    writer.write<std::uint32_t>(static_cast<std::uint32_t>(scene.property_tracks.size()));
-    for (const auto& track : scene.property_tracks) {
-        writer.write_node(track.node);
-        writer.write_string(track.property_id);
-        writer.write(track.kind);
-        writer.write(track.constant_value);
-        writer.write_vector(track.keyframes);
-    }
+    writer.write_vector(scene.property_tracks, [](BinaryWriter& w, const CompiledPropertyTrack& t) {
+        TBFWriter& tw = static_cast<TBFWriter&>(w);
+        tw.write_node(t.node);
+        tw.write_string(t.property_id);
+        tw.write_u8(static_cast<std::uint8_t>(t.kind));
+        tw.write_f64(t.constant_value);
+        tw.write_vector(t.keyframes, [](BinaryWriter& w2, const CompiledKeyframe& kf) {
+            w2.write_f64(kf.time); w2.write_f64(kf.value); w2.write_u32(kf.easing);
+            w2.write_f64(kf.cx1); w2.write_f64(kf.cy1); w2.write_f64(kf.cx2); w2.write_f64(kf.cy2);
+            w2.write_f64(kf.spring_stiffness); w2.write_f64(kf.spring_damping); w2.write_f64(kf.spring_mass);
+        });
+    });
     
     // 7. Expressions
-    writer.write<std::uint32_t>(static_cast<std::uint32_t>(scene.expressions.size()));
-    for (const auto& expr : scene.expressions) {
-        writer.write_vector(expr.instructions);
-        writer.write_vector(expr.constants);
-    }
+    writer.write_vector(scene.expressions, [](BinaryWriter& w, const expressions::Bytecode& e) {
+        w.write_vector(e.instructions);
+        w.write_vector(e.constants);
+    });
+
+    // 8. Assets
+    writer.write_vector(scene.assets, [](BinaryWriter& w, const AssetSpec& a) {
+        w.write_string(a.id);
+        w.write_string(a.path);
+        w.write_string(a.type);
+    });
     
     return std::move(writer.buffer);
 }
 
 std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& buffer) {
-    BinaryReader reader{buffer};
+    TBFReader reader{buffer};
     CompiledScene scene;
     
     // 1. Header & Validation
-    scene.header = reader.read<CompiledSceneHeader>();
+    scene.header.magic = reader.read_u32();
+    scene.header.version = reader.read_u16();
+    scene.header.flags = reader.read_u16();
+    scene.header.layout_version = reader.read_u32();
+    scene.header.compiler_version = reader.read_u32();
+    scene.header.layout_checksum = reader.read_u64();
+    
     if (scene.header.magic != 0x54414348U) return std::nullopt;
     if (scene.header.layout_checksum != CompiledScene::calculate_layout_checksum()) return std::nullopt;
     reader.file_version = scene.header.version;
@@ -385,84 +369,123 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
     // 2. Metadata
     scene.project_id = reader.read_string();
     scene.project_name = reader.read_string();
-    scene.scene_hash = reader.read<std::uint64_t>();
+    scene.scene_hash = reader.read_u64();
     
     // 3. Determinism
-    scene.determinism = reader.read<DeterminismContract>();
+    scene.determinism.fp_mode = reader.read_enum<DeterminismContract::FloatingPointMode>();
+    scene.determinism.fma_policy = reader.read_enum<DeterminismContract::FmaPolicy>();
+    scene.determinism.denormal_policy = reader.read_enum<DeterminismContract::DenormalPolicy>();
+    scene.determinism.rounding_mode = reader.read_enum<DeterminismContract::RoundingMode>();
+    scene.determinism.prng = reader.read_enum<DeterminismContract::PrngKind>();
+    scene.determinism.seed = reader.read_u64();
     
     // 4. Graph
-    auto edges = reader.read_vector<RuntimeRenderGraph::Edge>();
-    auto topo = reader.read_vector<std::uint32_t>();
-    for (const auto& edge : edges) {
-        scene.graph.add_edge(edge.from, edge.to, edge.structural);
-    }
-    (void)topo;
+    scene.graph.edges() = static_cast<std::vector<RuntimeRenderGraph::Edge>>(reader.read_vector<RuntimeRenderGraph::Edge>([](BinaryReader& r) {
+        RuntimeRenderGraph::Edge e;
+        e.from = r.read_u32();
+        e.to = r.read_u32();
+        e.structural = r.read_bool();
+        return e;
+    }));
+    scene.graph.topo_order() = static_cast<std::vector<std::uint32_t>>(reader.read_vector<std::uint32_t>());
     
-    // 5. Compositions (Partial implementation for DSL demo)
-    std::uint32_t comp_count = reader.read<std::uint32_t>();
+    // 5. Compositions
+    std::uint32_t comp_count = reader.read_u32();
+    if (comp_count > kMaxCompositions) return std::nullopt;
     for (std::uint32_t i = 0; i < comp_count; ++i) {
         CompiledComposition comp;
         comp.node = reader.read_node();
         scene.graph.add_node(comp.node.node_id);
-        comp.width = reader.read<std::uint32_t>();
-        comp.height = reader.read<std::uint32_t>();
-        comp.fps = reader.read<std::uint32_t>();
-        comp.duration = reader.read<double>();
+        comp.composition_id = reader.read_string();
+        comp.name = reader.read_string();
+        comp.width = reader.read_u32();
+        comp.height = reader.read_u32();
+        comp.fps = reader.read_u32();
+        comp.duration = reader.read_f64();
         
-        std::uint32_t layer_count = reader.read<std::uint32_t>();
+        std::uint32_t layer_count = reader.read_u32();
+        if (layer_count > kMaxLayers) return std::nullopt;
         for (std::uint32_t j = 0; j < layer_count; ++j) {
             CompiledLayer layer;
             layer.node = reader.read_node();
             scene.graph.add_node(layer.node.node_id);
-            layer.type_id = reader.read<std::uint32_t>();
-            layer.width = reader.read<std::uint32_t>();
-            layer.height = reader.read<std::uint32_t>();
+            layer.name = reader.read_string();
+            layer.asset_id = reader.read_string();
+            layer.type_id = reader.read_u32();
+            layer.width = reader.read_u32();
+            layer.height = reader.read_u32();
             layer.text_content = reader.read_string();
             layer.font_id = reader.read_string();
-            layer.font_size = reader.read<float>();
-            layer.fill_color = reader.read<ColorSpec>();
+            layer.font_size = reader.read_f32();
+            // ColorSpec
+            layer.fill_color.r = reader.read_u8(); layer.fill_color.g = reader.read_u8(); layer.fill_color.b = reader.read_u8(); layer.fill_color.a = reader.read_u8();
+            layer.stroke_color.r = reader.read_u8(); layer.stroke_color.g = reader.read_u8(); layer.stroke_color.b = reader.read_u8(); layer.stroke_color.a = reader.read_u8();
+            layer.stroke_width = reader.read_f32();
             layer.property_indices = reader.read_vector<std::uint32_t>();
-            layer.flags = reader.read<std::uint8_t>();
+            layer.flags = reader.read_u8();
+            layer.mask_feather = reader.read_f32();
+            layer.blend_mode = reader.read_string();
+            layer.in_time = reader.read_f64();
+            layer.out_time = reader.read_f64();
+            layer.start_time = reader.read_f64();
 
             // Unified Temporal & Tracking
-            std::uint32_t binding_count = reader.read<std::uint32_t>();
-            for (std::uint32_t k = 0; k < binding_count; ++k) layer.track_bindings.push_back(reader.read_track_binding());
+            layer.track_bindings = reader.read_vector<spec::TrackBinding>([](BinaryReader& r) {
+                return static_cast<TBFReader&>(r).read_track_binding();
+            });
             layer.time_remap = reader.read_time_remap();
-            layer.frame_blend = reader.read<spec::FrameBlendMode>();
+            layer.frame_blend = reader.read_enum<spec::FrameBlendMode>();
 
             comp.layers.push_back(std::move(layer));
         }
 
-        std::uint32_t cut_count = reader.read<std::uint32_t>();
-        for (std::uint32_t k = 0; k < cut_count; ++k) comp.camera_cuts.push_back(reader.read_camera_cut());
+        comp.camera_cuts = reader.read_vector<spec::CameraCut>([](BinaryReader& r) {
+            return static_cast<TBFReader&>(r).read_camera_cut();
+        });
 
-        std::uint32_t audio_count = reader.read<std::uint32_t>();
-        for (std::uint32_t k = 0; k < audio_count; ++k) comp.audio_tracks.push_back(reader.read_audio_track());
+        comp.audio_tracks = reader.read_vector<spec::AudioTrackSpec>([](BinaryReader& r) {
+            return static_cast<TBFReader&>(r).read_audio_track();
+        });
 
         scene.compositions.push_back(std::move(comp));
     }
 
     // 6. Property Tracks
-    std::uint32_t track_count = reader.read<std::uint32_t>();
-    for (std::uint32_t i = 0; i < track_count; ++i) {
+    scene.property_tracks = reader.read_vector<CompiledPropertyTrack>([](BinaryReader& r) {
+        TBFReader& tr = static_cast<TBFReader&>(r);
         CompiledPropertyTrack track;
-        track.node = reader.read_node();
-        scene.graph.add_node(track.node.node_id);
-        track.property_id = reader.read_string();
-        track.kind = reader.read<CompiledPropertyTrack::Kind>();
-        track.constant_value = reader.read<double>();
-        track.keyframes = reader.read_vector<CompiledKeyframe>();
-        scene.property_tracks.push_back(std::move(track));
-    }
+        track.node = tr.read_node();
+        track.property_id = tr.read_string();
+        track.kind = tr.read_enum<CompiledPropertyTrack::Kind>();
+        track.constant_value = tr.read_f64();
+        track.keyframes = tr.read_vector<CompiledKeyframe>([](BinaryReader& r2) {
+            CompiledKeyframe kf;
+            kf.time = r2.read_f64(); kf.value = r2.read_f64(); kf.easing = r2.read_u32();
+            kf.cx1 = r2.read_f64(); kf.cy1 = r2.read_f64(); kf.cx2 = r2.read_f64(); kf.cy2 = r2.read_f64();
+            kf.spring_stiffness = r2.read_f64(); kf.spring_damping = r2.read_f64(); kf.spring_mass = r2.read_f64();
+            return kf;
+        });
+        return track;
+    });
 
     // 7. Expressions
-    std::uint32_t expression_count = reader.read<std::uint32_t>();
+    std::uint32_t expression_count = reader.read_u32();
+    if (expression_count > kMaxVectorItems) return std::nullopt;
     for (std::uint32_t i = 0; i < expression_count; ++i) {
         expressions::Bytecode expr;
         expr.instructions = reader.read_vector<expressions::Instruction>();
         expr.constants = reader.read_vector<double>();
         scene.expressions.push_back(std::move(expr));
     }
+
+    // 8. Assets
+    scene.assets = reader.read_vector<AssetSpec>([](BinaryReader& r) {
+        AssetSpec a;
+        a.id = r.read_string();
+        a.path = r.read_string();
+        a.type = r.read_string();
+        return a;
+    });
 
     if (reader.error) return std::nullopt;
 
@@ -486,9 +509,11 @@ bool TBFCodec::save_to_file(const CompiledScene& scene, const std::filesystem::p
 std::optional<CompiledScene> TBFCodec::load_from_file(const std::filesystem::path& path) {
     std::ifstream file(path, std::ios::binary | std::ios::ate);
     if (!file) return std::nullopt;
-    std::streamsize size = file.tellg();
+    auto end = file.tellg();
+    if (end <= 0) return std::nullopt;
+    std::streamsize size = end;
     file.seekg(0, std::ios::beg);
-    std::vector<std::uint8_t> buffer(size);
+    std::vector<std::uint8_t> buffer(static_cast<std::size_t>(size));
     if (!file.read(reinterpret_cast<char*>(buffer.data()), size)) return std::nullopt;
     return decode(buffer);
 }

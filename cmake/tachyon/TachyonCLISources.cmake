@@ -19,7 +19,3 @@ set(TachyonCLICoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/cli.cpp
 )
 
-# TachyonCLI library-specific sources
-set(TachyonCLILibrarySources
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/cli_demo.cpp
-)

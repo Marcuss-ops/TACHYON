@@ -3,7 +3,7 @@
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/cache/frame_cache.h"
 #include "tachyon/runtime/resource/render_context.h"
-#include "tachyon/runtime/resource/runtime_surface_pool.h"
+#include "tachyon/runtime/resource/surface_pool.h"
 #include "tachyon/runtime/cache/disk_cache.h"
 #include "tachyon/renderer2d/resource/precomp_cache.h"
 #include "tachyon/renderer2d/resource/texture_resolver.h"

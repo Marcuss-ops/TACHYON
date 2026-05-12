@@ -11,7 +11,7 @@ set(TachyonTrackerTestSources
 # renderer2d/*, asset resolution
 # ---------------------------------------------------------
 add_executable(TachyonRenderTests
-    unit/test_main_render.cpp
+    unit/mains/test_main_render.cpp
     unit/render/render_intent_tests.cpp
     unit/media/asset_resolution_tests.cpp
     unit/media/image_manager_tests.cpp

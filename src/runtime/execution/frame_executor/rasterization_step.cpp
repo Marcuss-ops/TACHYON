@@ -12,7 +12,7 @@ RasterizationResult RasterizationStep::execute(
     const RenderPlan& plan,
     const FrameRenderTask& task,
     RenderContext& context,
-    runtime::RuntimeSurfacePool* pool,
+    SurfacePool* pool,
     profiling::RenderProfiler* profiler,
     std::uint64_t frame_number
 ) {
@@ -32,12 +32,10 @@ RasterizationResult RasterizationStep::execute(
 
     if (rasterized.surface) {
         if (pool) {
-            auto pooled = pool->acquire();
+            auto pooled = pool->acquire_prepared();
             if (pooled) {
                 pooled->blit(*rasterized.surface, 0, 0);
-                result.frame = std::shared_ptr<renderer2d::SurfaceRGBA>(pooled.release(), [pool](renderer2d::SurfaceRGBA* s) {
-                    pool->release(std::unique_ptr<renderer2d::SurfaceRGBA>(s));
-                });
+                result.frame = std::static_pointer_cast<renderer2d::Framebuffer>(pooled);
             } else {
                 result.frame = std::make_shared<renderer2d::Framebuffer>(std::move(*rasterized.surface));
             }

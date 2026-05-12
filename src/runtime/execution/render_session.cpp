@@ -1,10 +1,11 @@
 #include "tachyon/runtime/execution/session/render_session.h"
+#include "tachyon/runtime/registry/runtime_registry_bundle.h"
 #include "tachyon/presets/effects/effect_manifest.h"
 #include "tachyon/runtime/execution/frames/frame_executor.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/cache/frame_cache.h"
 #include "tachyon/runtime/resource/render_context.h"
-#include "tachyon/runtime/resource/runtime_surface_pool.h"
+#include "tachyon/runtime/resource/surface_pool.h"
 #include "tachyon/renderer2d/resource/precomp_cache.h"
 #include "tachyon/renderer2d/resource/texture_resolver.h"
 #include "tachyon/output/frame_output_sink.h"
@@ -104,8 +105,7 @@ struct RenderSessionWorkspace {
 void configure_render_context(
     RenderSessionWorkspace& workspace,
     profiling::RenderProfiler* profiler,
-    runtime::RuntimeSurfacePool* surface_pool,
-    std::shared_ptr<renderer2d::SurfacePool> renderer2d_surface_pool,
+    std::shared_ptr<SurfacePool> surface_pool,
     const renderer2d::EffectRegistry& effect_registry,
     const TransitionRegistry& transition_registry,
     const presets::TextRegistry* text_registry) {
@@ -119,8 +119,8 @@ void configure_render_context(
         workspace.context.media ? &workspace.context.media->image_manager() : nullptr,
         const_cast<text::FontRegistry*>(workspace.context.renderer2d.font_registry));
 
-    workspace.context.surface_pool = surface_pool;
-    workspace.context.renderer2d.surface_pool = renderer2d_surface_pool;
+    workspace.context.surface_pool = surface_pool.get();
+    workspace.context.renderer2d.surface_pool = surface_pool;
     workspace.context.profiler = profiler;
     workspace.context.renderer2d.profiler = profiler;
     workspace.context.renderer2d.effects = renderer2d::create_effect_host(effect_registry);
@@ -249,7 +249,15 @@ RenderSession::RenderSession() {
     for (auto* desc : m_transition_registry.list_all()) {
         renderer2d::resolve_basic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
         renderer2d::resolve_artistic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
-        renderer2d::resolve_light_leak_implementations(const_cast<TransitionDescriptor&>(*desc));
+    }
+}
+
+void RenderSession::set_registry_bundle(const runtime::RuntimeRegistryBundle* bundle) {
+    if (bundle) {
+        set_transition_registry(&bundle->transitions);
+        set_text_registry(bundle->text_registry.get());
+        // Note: Effects are currently managed internally by RenderSession via m_effect_registry,
+        // but they depend on the transition registry passed here.
     }
 }
 
@@ -277,11 +285,11 @@ RenderSessionResult RenderSession::render(
     std::uint32_t h = static_cast<std::uint32_t>(workspace.effective_plan.render_plan.composition.height);
     
     runtime::SurfacePoolPolicy surface_policy;
-    const auto surface_count = surface_policy.resolve(w, h, budget.frame_concurrency);
-    m_surface_pool = std::make_unique<runtime::RuntimeSurfacePool>(w, h, surface_count);
+    m_surface_pool->set_policy(surface_policy);
+    m_surface_pool->prepare(w, h, budget.frame_concurrency);
 
     const TransitionRegistry& transition_registry = m_transition_registry_ptr ? *m_transition_registry_ptr : m_transition_registry;
-    configure_render_context(workspace, m_profiler, m_surface_pool.get(), m_renderer2d_surface_pool, m_effect_registry, transition_registry, m_text_registry_ptr);
+    configure_render_context(workspace, m_profiler, m_surface_pool, m_effect_registry, transition_registry, m_text_registry_ptr);
 
     workspace.sink = output::create_frame_output_sink(workspace.effective_plan.render_plan);
     

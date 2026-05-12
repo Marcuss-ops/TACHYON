@@ -3,7 +3,7 @@
 # content/presets/*, library, text presets
 # ---------------------------------------------------------
 add_executable(TachyonContentTests
-    unit/test_main_content.cpp
+    unit/mains/test_main_content.cpp
     unit/core/library/library_tests.cpp
     unit/core/library/transition_manifest_audit_tests.cpp
     unit/core/library/transition_descriptor_alignment_tests.cpp

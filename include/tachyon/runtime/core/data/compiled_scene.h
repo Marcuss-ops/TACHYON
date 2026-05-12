@@ -248,23 +248,11 @@ struct CompiledScene {
 
     /**
      * @brief Calculates a stable checksum representing the binary layout of internal structures.
+     * This must be updated MANUALLY when the TBF serialization layout changes.
      */
     [[nodiscard]] static constexpr std::uint64_t calculate_layout_checksum() noexcept {
-        std::uint64_t h = 0x9e3779b97f4a7c15ULL;
-        const auto mix = [&h](std::size_t s) noexcept {
-            h ^= static_cast<std::uint64_t>(s) + 0x9e3779b97f4a7c15ULL + (h << 6U) + (h >> 2U);
-        };
-        
-        mix(sizeof(CompiledSceneHeader));
-        mix(sizeof(CompiledScene));
-        mix(sizeof(CompiledComposition));
-        mix(sizeof(CompiledLayer));
-        mix(sizeof(CompiledPropertyTrack));
-        mix(sizeof(CompiledKeyframe));
-        mix(sizeof(DeterminismContract));
-        mix(sizeof(CompiledNode));
-        
-        return h;
+        // Version 5 Stable Layout Checksum
+        return 0x5441434800000005ULL;
     }
 };
 

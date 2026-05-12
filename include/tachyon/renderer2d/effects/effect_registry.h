@@ -25,6 +25,14 @@ public:
     const EffectDescriptor* find(std::string_view id) const;
 
     std::vector<std::string> list_ids() const;
+    
+    // Non-copyable
+    EffectRegistry(const EffectRegistry&) = delete;
+    EffectRegistry& operator=(const EffectRegistry&) = delete;
+
+    // Movable
+    EffectRegistry(EffectRegistry&&) noexcept = default;
+    EffectRegistry& operator=(EffectRegistry&&) noexcept = default;
 private:
     registry::TypedRegistry<EffectDescriptor> registry_;
 };

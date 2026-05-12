@@ -7,12 +7,10 @@
 namespace tachyon::renderer2d {
 
 const ::tachyon::text::FontRegistry* get_default_font_registry() {
+    static ::tachyon::text::FontRegistry default_registry;
     static std::once_flag once;
-    static ::tachyon::text::FontRegistry* default_registry = nullptr;
     
     std::call_once(once, []() {
-        default_registry = new ::tachyon::text::FontRegistry();
-        
         struct FontCandidate {
             std::string name;
             std::filesystem::path path;
@@ -52,14 +50,14 @@ const ::tachyon::text::FontRegistry* get_default_font_registry() {
         for (const auto& candidate : candidates) {
             if (std::filesystem::exists(candidate.path)) {
                 // Register with its specific name if not already registered
-                if (!default_registry->find(candidate.name)) {
-                    default_registry->load_ttf(candidate.name, candidate.path, 48U);
+                if (!default_registry.find(candidate.name)) {
+                    default_registry.load_ttf(candidate.name, candidate.path, 48U);
                 }
 
                 // Use the first successful high-quality font as "Default"
                 if (!default_set) {
-                    if (default_registry->load_ttf("Default", candidate.path, 48U)) {
-                        default_registry->set_default("Default");
+                    if (default_registry.load_ttf("Default", candidate.path, 48U)) {
+                        default_registry.set_default("Default");
                         default_set = true;
                     }
                 }
@@ -67,7 +65,7 @@ const ::tachyon::text::FontRegistry* get_default_font_registry() {
         }
     });
     
-    return default_registry;
+    return &default_registry;
 }
 
 media::AlphaMode TextureResolver::parse_alpha_mode(const std::optional<std::string>& mode) {

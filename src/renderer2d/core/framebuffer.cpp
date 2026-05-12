@@ -30,7 +30,9 @@ void SurfaceRGBA::reset(uint32_t width, uint32_t height) {
     m_height = height;
     const std::size_t size = static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4U;
     if (m_pixels.size() != size) {
-        m_pixels.resize(size);
+        m_pixels.assign(size, 0.0f);
+    } else {
+        clear(Color::transparent());
     }
     m_clip_rect = RectI{0, 0, static_cast<int>(width), static_cast<int>(height)};
 }
@@ -288,7 +290,7 @@ FramebufferRGBA8::FramebufferRGBA8(uint32_t width, uint32_t height)
 void FramebufferRGBA8::reset(uint32_t width, uint32_t height) {
     m_width = width;
     m_height = height;
-    m_pixels.resize(static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4);
+    m_pixels.assign(static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4, 0);
 }
 
 bool FramebufferRGBA8::in_bounds(uint32_t x, uint32_t y) const {
@@ -350,7 +352,7 @@ FramebufferRGBA16::FramebufferRGBA16(uint32_t width, uint32_t height)
 void FramebufferRGBA16::reset(uint32_t width, uint32_t height) {
     m_width = width;
     m_height = height;
-    m_pixels.resize(static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4);
+    m_pixels.assign(static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4, 0);
 }
 
 bool FramebufferRGBA16::in_bounds(uint32_t x, uint32_t y) const {

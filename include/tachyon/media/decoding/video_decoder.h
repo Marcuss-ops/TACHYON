@@ -21,13 +21,15 @@ namespace tachyon::media {
 
 class VideoDecoder {
 public:
+    VideoDecoder() = default;
+    ~VideoDecoder() { close(); }
+
     bool open(const std::filesystem::path& path);
     void close();
 
     std::optional<renderer2d::SurfaceRGBA> get_frame_at_time(double seconds);
     bool get_frame_into(double seconds, renderer2d::SurfaceRGBA& target);
-    std::future<std::optional<renderer2d::SurfaceRGBA>> request_frame_async(double seconds);
-
+    
     [[nodiscard]] double duration() const noexcept { return m_duration_seconds; }
     [[nodiscard]] double frame_rate() const noexcept { return m_frame_rate; }
     [[nodiscard]] int width() const noexcept { return m_width; }

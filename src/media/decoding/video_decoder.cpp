@@ -54,6 +54,7 @@ double frame_timestamp_seconds(const AVFrame* frame, double stream_time_base) {
 renderer2d::SurfaceRGBA surface_from_rgba_buffer(const std::vector<std::uint8_t>& buffer, int width, int height) {
     renderer2d::SurfaceRGBA surface(static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height));
     const std::size_t stride = static_cast<std::size_t>(width) * 4U;
+    const float inv_255 = 1.0f / 255.0f;
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
             const std::size_t index = static_cast<std::size_t>(y) * stride + static_cast<std::size_t>(x) * 4U;
@@ -61,10 +62,10 @@ renderer2d::SurfaceRGBA surface_from_rgba_buffer(const std::vector<std::uint8_t>
                 static_cast<std::uint32_t>(x),
                 static_cast<std::uint32_t>(y),
                 renderer2d::Color{
-                    static_cast<float>(buffer[index + 0U]),
-                    static_cast<float>(buffer[index + 1U]),
-                    static_cast<float>(buffer[index + 2U]),
-                    static_cast<float>(buffer[index + 3U])
+                    static_cast<float>(buffer[index + 0U]) * inv_255,
+                    static_cast<float>(buffer[index + 1U]) * inv_255,
+                    static_cast<float>(buffer[index + 2U]) * inv_255,
+                    static_cast<float>(buffer[index + 3U]) * inv_255
                 });
         }
     }
@@ -301,12 +302,6 @@ bool VideoDecoder::get_frame_into(double seconds, renderer2d::SurfaceRGBA& targe
 
     return false;
 #endif
-}
-
-std::future<std::optional<renderer2d::SurfaceRGBA>> VideoDecoder::request_frame_async(double seconds) {
-    return std::async(std::launch::async, [this, seconds]() {
-        return get_frame_at_time(seconds);
-    });
 }
 
 } // namespace tachyon::media

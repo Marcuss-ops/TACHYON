@@ -320,7 +320,7 @@ target_link_libraries(TachyonLibrary PUBLIC TachyonPresets)
 
 # CLI libraries removed. Sources are added directly to executables to allow different compile-time configurations.
 
-add_library(TachyonCLICore STATIC ${TachyonCLICoreSources} ${TachyonCLILibrarySources})
+add_library(TachyonCLICore STATIC ${TachyonCLICoreSources})
 tachyon_configure_common(TachyonCLICore)
 target_link_libraries(TachyonCLICore PUBLIC TachyonRuntimeEngine TachyonLibrary TachyonDiagnostics)
 
@@ -346,7 +346,6 @@ target_link_libraries(TachyonTools INTERFACE
 # Minimal render-focused executable
 add_executable(tachyon
     main.cpp
-    ${TachyonCLILibrarySources}
 )
 tachyon_configure_common(tachyon)
 
@@ -362,6 +361,20 @@ target_link_libraries(tachyon
         TachyonDiagnostics
 )
 tachyon_link_mimalloc(tachyon)
+
+# Standalone library demo tool
+add_executable(tachyon-library-demo
+    ${CMAKE_SOURCE_DIR}/tools/library_demo/main.cpp
+)
+tachyon_configure_common(tachyon-library-demo)
+target_link_libraries(tachyon-library-demo
+    PRIVATE
+        TachyonCLICore
+        TachyonLibrary
+        TachyonPresets
+        TachyonDiagnostics
+)
+tachyon_link_mimalloc(tachyon-library-demo)
 
 # Full tooling/library executable (optional)
 if(TACHYON_BUILD_LIBRARY_TOOLS)

@@ -5,7 +5,7 @@
 #include "tachyon/renderer2d/resource/render_context.h"
 #include "tachyon/media/streaming/media_prefetcher.h"
 #include "tachyon/media/playback_scheduler.h"
-#include "tachyon/runtime/resource/runtime_surface_pool.h"
+#include "tachyon/runtime/resource/surface_pool.h"
 #include "tachyon/runtime/execution/presentation_clock.h"
 #include "tachyon/runtime/execution/framebuffer_playback_queue.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
@@ -23,6 +23,7 @@
 
 namespace tachyon {
 
+namespace runtime { struct RuntimeRegistryBundle; }
 namespace presets { class TextRegistry; }
 namespace profiling { class RenderProfiler; }
     
@@ -101,6 +102,7 @@ public:
     void set_profiler(profiling::RenderProfiler* profiler) { m_profiler = profiler; }
     void set_transition_registry(const TransitionRegistry* registry) { m_transition_registry_ptr = registry; }
     void set_text_registry(const presets::TextRegistry* registry) { m_text_registry_ptr = registry; }
+    void set_registry_bundle(const runtime::RuntimeRegistryBundle* bundle);
 
     FrameCache& cache() { return m_cache; }
     const FrameCache& cache() const { return m_cache; }
@@ -114,8 +116,7 @@ private:
     media::MediaPrefetcher m_prefetcher;
     std::unique_ptr<media::PlaybackScheduler> m_scheduler;
     
-    std::unique_ptr<runtime::RuntimeSurfacePool> m_surface_pool;
-    std::shared_ptr<renderer2d::SurfacePool> m_renderer2d_surface_pool{std::make_shared<renderer2d::SurfacePool>()};
+    std::shared_ptr<SurfacePool> m_surface_pool{std::make_shared<SurfacePool>()};
     std::unique_ptr<runtime::PresentationClock> m_clock;
     std::unique_ptr<runtime::FramebufferPlaybackQueue> m_playback_queue;
 

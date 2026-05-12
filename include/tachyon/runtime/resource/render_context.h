@@ -6,7 +6,7 @@
 #include "tachyon/renderer2d/resource/render_context.h"
 
 #include "tachyon/runtime/execution/planning/quality_policy.h"
-#include "tachyon/runtime/resource/runtime_surface_pool.h"
+#include "tachyon/runtime/resource/surface_pool.h"
 
 #ifdef _WIN32
 #include <OpenImageDenoise/oidn.hpp>
@@ -40,7 +40,7 @@ struct RenderContext {
     oidn::DeviceRef oidn_device;
     oidn::FilterRef oidn_filter;
 #endif
-    runtime::RuntimeSurfacePool* surface_pool{nullptr};
+    SurfacePool* surface_pool{nullptr};
     FrameDiagnostics* diagnostic_tracker{nullptr};
     profiling::RenderProfiler* profiler{nullptr};
     std::atomic<bool>* cancel_flag{nullptr};

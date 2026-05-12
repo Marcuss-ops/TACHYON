@@ -126,6 +126,24 @@ public:
     }
 
     TypedRegistry() = default;
+    
+    // Non-copyable
+    TypedRegistry(const TypedRegistry&) = delete;
+    TypedRegistry& operator=(const TypedRegistry&) = delete;
+
+    // Movable
+    TypedRegistry(TypedRegistry&& other) noexcept {
+        std::lock_guard<std::mutex> lock(other.mutex_);
+        specs_ = std::move(other.specs_);
+    }
+
+    TypedRegistry& operator=(TypedRegistry&& other) noexcept {
+        if (this != &other) {
+            std::scoped_lock lock(mutex_, other.mutex_);
+            specs_ = std::move(other.specs_);
+        }
+        return *this;
+    }
 
 private:
     mutable std::mutex mutex_;

@@ -6,7 +6,7 @@
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
-#include "tachyon/runtime/resource/runtime_surface_pool.h"
+#include "tachyon/runtime/resource/surface_pool.h"
 
 #include "tachyon/render/render_intent.h"
 #include <memory>
@@ -32,7 +32,7 @@ public:
         const RenderPlan& plan,
         const FrameRenderTask& task,
         RenderContext& context,
-        runtime::RuntimeSurfacePool* pool,
+        SurfacePool* pool,
         profiling::RenderProfiler* profiler,
         std::uint64_t frame_number
     );

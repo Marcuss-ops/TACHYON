@@ -1,6 +1,6 @@
 #include "tachyon/renderer2d/resource/render_context.h"
 #include "tachyon/renderer2d/resource/precomp_cache.h"
-#include "tachyon/renderer2d/core/renderer2d_surface_pool.h"
+#include "tachyon/runtime/resource/surface_pool.h"
 #include "tachyon/renderer2d/effects/core/effect_host.h"
 namespace tachyon::renderer2d {
 

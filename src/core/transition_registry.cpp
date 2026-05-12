@@ -14,6 +14,9 @@ struct TransitionRegistry::Impl {
 TransitionRegistry::TransitionRegistry() : m_impl(std::make_unique<Impl>()) {}
 TransitionRegistry::~TransitionRegistry() = default;
 
+TransitionRegistry::TransitionRegistry(TransitionRegistry&&) noexcept = default;
+TransitionRegistry& TransitionRegistry::operator=(TransitionRegistry&&) noexcept = default;
+
 void TransitionRegistry::register_descriptor(const TransitionDescriptor& descriptor) {
     if (descriptor.id.empty()) {
         return;
