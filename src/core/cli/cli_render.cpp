@@ -302,7 +302,6 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
             scene,
             job,
             transition_registry,
-            modifier_registry,
             text_registry,
             native_options);
         
@@ -333,7 +332,7 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
 }
 
 bool run_preview_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry) {
-    return run_preview_internal(options, out, err, "NativePreview", registry, modifier_registry);
+    return run_preview_internal(options, out, err, "NativePreview", registry);
 }
 
 } // namespace tachyon

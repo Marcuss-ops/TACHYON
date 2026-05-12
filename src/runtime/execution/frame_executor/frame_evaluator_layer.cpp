@@ -188,8 +188,8 @@ void evaluate_layer(
     state->local_transform.scale.y = static_cast<float>(sample_property(CompiledLayer::ScaleY, 1.0));
     state->local_transform.rotation_rad = static_cast<float>(sample_property(CompiledLayer::Rotation, 0.0) * (kPi / 180.0f));
     state->local_transform.anchor_point = {
-        static_cast<float>(layer.width) * 0.5f,
-        static_cast<float>(layer.height) * 0.5f
+        static_cast<float>(sample_property(CompiledLayer::AnchorX, 0.0)),
+        static_cast<float>(sample_property(CompiledLayer::AnchorY, 0.0))
     };
     state->mask_feather = static_cast<float>(sample_property(CompiledLayer::MaskFeather, 0.0));
 

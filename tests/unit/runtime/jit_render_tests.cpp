@@ -51,15 +51,17 @@ extern "C" TACHYON_JIT_API int tachyon_jit_build_scene(const TachyonHostApi* hos
 
     host->begin_scene(host->ctx, scene);
     
-    // Background - use a known procedural ID or solid
-    // For this test, let's just use "tachyon.background.kind.aura" or similar
-    TachyonLayerHandle bg = host->add_background(host->ctx, scene, "tachyon.background.kind.aura");
+    // Background - use a solid color for robustness in test
+    TachyonLayerHandle bg = host->add_background(host->ctx, scene, "solid_bg");
     if (bg) {
         host->set_float(host->ctx, bg, "opacity", 1.0f);
+        // We don't have a set_color in TachyonHostApi yet, 
+        // but solid should default to white or we can use set_float for components if supported.
+        // For now, let's just see if it's not black.
     }
 
     // Text
-    host->add_text(host->ctx, scene, "JIT ABI Works!", 50.0f, 50.0f);
+    host->add_text(host->ctx, scene, "JIT ABI Works!", 960.0f, 540.0f);
 
     host->end_scene(host->ctx, scene);
     

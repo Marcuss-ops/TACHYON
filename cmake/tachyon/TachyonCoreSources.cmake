@@ -20,6 +20,7 @@ set(TachyonCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/io/path_resolution.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/timeline/timeline_plan.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/render_graph/pipeline_orchestrator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/render_graph/instrumentation.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/schema/common/common_spec.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/scene_spec_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/transition/transition_descriptor.cpp

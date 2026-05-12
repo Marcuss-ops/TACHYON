@@ -217,7 +217,7 @@ std::optional<renderer2d::SurfaceRGBA> render_scene_still(
     }
         presets::TextManifest text_manifest;
     presets::TextRegistry text_registry(text_manifest);
-    if (!NativeRenderer::render_still(scene, composition.id, 0, temp_output, transition_registry, modifier_registry, text_registry)) {
+    if (!NativeRenderer::render_still(scene, composition.id, 0, temp_output, transition_registry, text_registry)) {
         err << "scene rendered no frames: " << scene_path.string() << '\n';
         return std::nullopt;
     }
@@ -275,7 +275,7 @@ std::optional<renderer2d::SurfaceRGBA> render_scene_still(
         presets::TextManifest text_manifest;
     presets::TextRegistry text_registry(text_manifest);
     err << "[library-demo] render_still start: " << label << " to " << temp_output.string() << std::endl;
-    if (!NativeRenderer::render_still(scene, composition.id, 0, temp_output, transition_registry, modifier_registry, text_registry)) {
+    if (!NativeRenderer::render_still(scene, composition.id, 0, temp_output, transition_registry, text_registry)) {
         err << "scene rendered no frames: " << label << '\n';
         return std::nullopt;
     }
@@ -525,7 +525,7 @@ bool render_transition_demo(
 
 }  // namespace
 
-bool run_library_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*//*modifier_registry*/) {
+bool run_library_demo_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*/) {
     err << "[library-demo] command start" << std::endl;
     const std::filesystem::path library_root = resolve_library_root(options.library_path);
     err << "[library-demo] library root: " << library_root.string() << std::endl;

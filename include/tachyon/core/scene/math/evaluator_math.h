@@ -10,6 +10,9 @@
 #include "tachyon/audio/audio_analyzer.h"
 #include "tachyon/timeline/time.h"
 
+#include <type_traits>
+#include <optional>
+
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 
 namespace tachyon {
@@ -35,21 +38,40 @@ double sample_scalar(
     const Spec& property,
     double fallback,
     double local_time_seconds,
-    const ::tachyon::audio::AudioAnalyzer* audio_analyzer = nullptr);
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer = nullptr) {
+    if constexpr (std::is_same_v<Spec, std::optional<double>>) {
+        return property.value_or(fallback);
+    } else {
+        // This will call the AnimatedScalarSpec overload from property_sampler.h
+        return sample_scalar(property, fallback, local_time_seconds, audio_analyzer);
+    }
+}
 
 template <typename Spec>
 math::Vector2 sample_vector2(
     const Spec& property,
     const math::Vector2& fallback,
     double local_time_seconds,
-    const ::tachyon::audio::AudioAnalyzer* audio_analyzer = nullptr);
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer = nullptr) {
+    if constexpr (std::is_same_v<Spec, std::optional<math::Vector2>>) {
+        return property.value_or(fallback);
+    } else {
+        return sample_vector2(property, fallback, local_time_seconds, audio_analyzer);
+    }
+}
 
 template <typename Spec>
 math::Vector3 sample_vector3(
     const Spec& property,
     const math::Vector3& fallback,
     double local_time_seconds,
-    const ::tachyon::audio::AudioAnalyzer* audio_analyzer = nullptr);
+    const ::tachyon::audio::AudioAnalyzer* audio_analyzer = nullptr) {
+    if constexpr (std::is_same_v<Spec, std::optional<math::Vector3>>) {
+        return property.value_or(fallback);
+    } else {
+        return sample_vector3(property, fallback, local_time_seconds, audio_analyzer);
+    }
+}
 
 math::Transform2 make_transform2(
     const math::Vector2& position,

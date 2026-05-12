@@ -10,6 +10,7 @@
 #include <utility>
 #include <type_traits>
 #include <unordered_map>
+#include <iostream>
 
 namespace tachyon {
 namespace {
@@ -73,8 +74,6 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
             } else if (composition.background->type == BackgroundType::Component) {
                 bg_layer.type_id = compiled_type_id_from_layer_type(LayerType::Precomp);
                 bg_layer.name = composition.background->value;
-                // Precomp ID is stored in asset_id or a dedicated field in CompiledLayer
-                // For now we use name as reference
             } else {
                 bg_layer.type_id = compiled_type_id_from_layer_type(LayerType::Solid);
                 bg_layer.fill_color = ColorSpec{0,0,0,255};
@@ -132,12 +131,6 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
 
             compiled_layer.miter_limit = static_cast<float>(layer.miter_limit);
             
-            compiled_layer.in_time = layer.in_point;
-            compiled_layer.out_time = layer.out_point;
-            compiled_layer.start_time = layer.start_time;
-            compiled_layer.transition_in = layer.transition_in;
-            compiled_layer.transition_out = layer.transition_out;
-            
             // Build flags bitmask
             compiled_layer.flags = 0;
             if (layer.enabled) compiled_layer.flags |= 0x01;
@@ -172,6 +165,10 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
             add_track(".rotation", layer.transform.rotation_property, layer.transform.rotation.value_or(0.0));
             // 6: Mask Feather
             add_track(".mask_feather", layer.mask_feather, 0.0);
+            
+            // Anchor points
+            add_track(".anchor_point_x", layer.transform.anchor_point, layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->x : 0.0);
+            add_track(".anchor_point_y", layer.transform.anchor_point, layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->y : 0.0);
 
             // Material properties
             add_track(".metallic", layer.metallic, 0.0);

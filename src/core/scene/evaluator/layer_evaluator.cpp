@@ -114,7 +114,7 @@ EvaluatedLayerState make_layer_state(
     const math::Vector2 scale2 = sample_vector2(layer.transform.scale_property, scale_fallback, local_t, context.audio_analyzer);
 
     const math::Vector2 anchor2 = sample_vector2(layer.transform.anchor_point,
-        math::Vector2{static_cast<float>(layer.width) * 0.5f, static_cast<float>(layer.height) * 0.5f},
+        math::Vector2{0.0f, 0.0f},
         local_t, context.audio_analyzer);
 
     evaluated.local_transform.position = pos2;

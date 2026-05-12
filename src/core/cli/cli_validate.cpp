@@ -7,7 +7,7 @@
 
 namespace tachyon {
 
-bool run_validate_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*//*modifier_registry*/) {
+bool run_validate_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*/) {
     SceneLoadOptions load_opts;
     load_opts.cpp_path = options.cpp_path;
     load_opts.preset_id = options.preset_id;

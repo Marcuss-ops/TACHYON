@@ -9,7 +9,7 @@
 namespace tachyon {
 
 bool run_preview_frame_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry) {
-    return run_preview_internal(options, out, err, "PreviewFrame", registry, modifier_registry);
+    return run_preview_internal(options, out, err, "PreviewFrame", registry);
 }
 
 } // namespace tachyon

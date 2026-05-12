@@ -1,5 +1,5 @@
 # TachyonRuntime sources and targets
-# This file is consolidated from former fragmented .cmake files
+# This file is consolidated for robust static linking
 
 set(TachyonRuntimeCompilerSources
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/compiler/component_library.cpp
@@ -103,26 +103,19 @@ set(TachyonRuntimeSources
     ${TachyonRuntimeTelemetrySources}
 )
 
-# --- Targets ---
+# --- Consolidated Target ---
 
-# 1. TachyonRuntimeCore: The base foundation
-add_library(TachyonRuntimeCore STATIC ${TachyonRuntimeCoreSources})
-tachyon_configure_common(TachyonRuntimeCore)
-target_link_libraries(TachyonRuntimeCore
+add_library(TachyonRuntime STATIC ${TachyonRuntimeSources})
+tachyon_configure_common(TachyonRuntime)
+
+if(TACHYON_ENABLE_AUDIO_MUX)
+    target_compile_definitions(TachyonRuntime PRIVATE TACHYON_ENABLE_AUDIO_MUX)
+endif()
+
+target_link_libraries(TachyonRuntime
     PUBLIC
         TachyonCore
         TachyonColor
-)
-
-# 2. TachyonRuntimeExecution: The rendering pipeline and engine logic
-add_library(TachyonRuntimeExecution STATIC ${TachyonRuntimeExecutionSources})
-tachyon_configure_common(TachyonRuntimeExecution)
-if(TACHYON_ENABLE_AUDIO_MUX)
-    target_compile_definitions(TachyonRuntimeExecution PRIVATE TACHYON_ENABLE_AUDIO_MUX)
-endif()
-target_link_libraries(TachyonRuntimeExecution
-    PUBLIC
-        TachyonRuntimeCore
         TachyonScene
         TachyonRenderer2D
         TachyonOutput
@@ -130,70 +123,46 @@ target_link_libraries(TachyonRuntimeExecution
         TachyonPlatform
         TachyonText
 )
+
 if(TACHYON_ENABLE_MEDIA)
-    target_link_libraries(TachyonRuntimeExecution PUBLIC TachyonMedia)
+    target_link_libraries(TachyonRuntime PUBLIC TachyonMedia)
 endif()
+
 if(TACHYON_ENABLE_AUDIO_MUX)
-    target_link_libraries(TachyonRuntimeExecution PRIVATE TachyonAudio)
+    target_link_libraries(TachyonRuntime PRIVATE TachyonAudio)
 endif()
-tachyon_link_text_deps(TachyonRuntimeExecution)
-tachyon_link_media_deps(TachyonRuntimeExecution)
-tachyon_link_output_deps(TachyonRuntimeExecution)
-tachyon_link_omp(TachyonRuntimeExecution)
+
+tachyon_link_text_deps(TachyonRuntime)
+tachyon_link_media_deps(TachyonRuntime)
+tachyon_link_output_deps(TachyonRuntime)
+tachyon_link_omp(TachyonRuntime)
 
 if(TACHYON_ENABLE_TASKFLOW)
-    target_compile_definitions(TachyonRuntimeExecution PUBLIC TACHYON_ENABLE_TASKFLOW)
-
+    target_compile_definitions(TachyonRuntime PUBLIC TACHYON_ENABLE_TASKFLOW)
     if(TARGET Taskflow)
-        target_link_libraries(TachyonRuntimeExecution PUBLIC Taskflow)
+        target_link_libraries(TachyonRuntime PUBLIC Taskflow)
     elseif(TARGET Taskflow::Taskflow)
-        target_link_libraries(TachyonRuntimeExecution PUBLIC Taskflow::Taskflow)
+        target_link_libraries(TachyonRuntime PUBLIC Taskflow::Taskflow)
     elseif(TARGET taskflow)
-        target_link_libraries(TachyonRuntimeExecution PUBLIC taskflow)
+        target_link_libraries(TachyonRuntime PUBLIC taskflow)
     endif()
 endif()
 
-# 3. TachyonRuntimeCompiler: Scene compilation logic
-add_library(TachyonRuntimeCompiler STATIC ${TachyonRuntimeCompilerSources})
-tachyon_configure_common(TachyonRuntimeCompiler)
-target_link_libraries(TachyonRuntimeCompiler
-    PUBLIC
-        TachyonRuntimeCore
-        TachyonScene
-)
+# Legacy compatibility targets
+add_library(TachyonRuntimeCore INTERFACE)
+target_link_libraries(TachyonRuntimeCore INTERFACE TachyonRuntime)
 
-# 4. TachyonRuntimeTelemetry: Profiling and diagnostics
-add_library(TachyonRuntimeTelemetry STATIC 
-    ${TachyonRuntimeProfilingSources}
-    ${TachyonRuntimeTelemetrySources}
-)
-tachyon_configure_common(TachyonRuntimeTelemetry)
-target_link_libraries(TachyonRuntimeTelemetry
-    PUBLIC
-        TachyonRuntimeCore
-)
+add_library(TachyonRuntimeExecution INTERFACE)
+target_link_libraries(TachyonRuntimeExecution INTERFACE TachyonRuntime)
 
-# 5. TachyonRuntimePlayback: Playback engine and queue
-add_library(TachyonRuntimePlayback STATIC ${TachyonRuntimePlaybackSources})
-tachyon_configure_common(TachyonRuntimePlayback)
-target_link_libraries(TachyonRuntimePlayback
-    PUBLIC
-        TachyonRuntimeCore
-        TachyonAudio
-)
+add_library(TachyonRuntimeCompiler INTERFACE)
+target_link_libraries(TachyonRuntimeCompiler INTERFACE TachyonRuntime)
 
-# 6. TachyonRuntime: The aggregate interface
-add_library(TachyonRuntime INTERFACE)
-target_link_libraries(TachyonRuntime INTERFACE
-    TachyonRuntimeCore
-    TachyonRuntimeExecution
-    TachyonRuntimeCompiler
-    TachyonRuntimeTelemetry
-    TachyonRuntimePlayback
-)
+add_library(TachyonRuntimeTelemetry INTERFACE)
+target_link_libraries(TachyonRuntimeTelemetry INTERFACE TachyonRuntime)
 
-# Legacy compatibility target
+add_library(TachyonRuntimePlayback INTERFACE)
+target_link_libraries(TachyonRuntimePlayback INTERFACE TachyonRuntime)
+
 add_library(TachyonRuntimeEngine INTERFACE)
-target_link_libraries(TachyonRuntimeEngine INTERFACE
-    TachyonRuntime
-)
+target_link_libraries(TachyonRuntimeEngine INTERFACE TachyonRuntime)

@@ -15,7 +15,7 @@ namespace tachyon {
 
 // Canonical transition registry for CLI operations
 static TransitionRegistry g_cli_transition_registry;
-static 
+
 namespace {
 
 // ── Command registry ──────────────────────────────────────────────────────────
@@ -248,7 +248,7 @@ int run_cli(int argc, char** argv) {
     for (const auto& cmd : kCommands) {
         if (options.command != cmd.name) continue;
         if (cmd.validate && !cmd.validate(options, std::cerr)) return 1;
-        return cmd.handler(options, std::cout, std::cerr, g_cli_transition_registry, g_cli_modifier_registry) ? 0 : 2;
+        return cmd.handler(options, std::cout, std::cerr, g_cli_transition_registry) ? 0 : 2;
     }
 
     print_help(std::cerr);

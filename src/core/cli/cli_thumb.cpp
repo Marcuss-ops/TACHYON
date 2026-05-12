@@ -64,7 +64,7 @@ bool run_thumb_command(const CliOptions& options, std::ostream& out, std::ostrea
     // Render single frame as thumbnail (JPEG)
     // This would call the actual render pipeline with single frame + JPEG output
     // For now, we use the preview infrastructure
-    return run_preview_internal(options, out, err, "Thumbnail", registry, modifier_registry);
+    return run_preview_internal(options, out, err, "Thumbnail", registry);
 }
 
 } // namespace tachyon

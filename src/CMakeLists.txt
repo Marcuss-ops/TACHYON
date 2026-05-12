@@ -307,6 +307,7 @@ tachyon_assert_no_duplicate_sources(GlobalTachyonSources)
 add_library(TachyonText STATIC ${TachyonTextSources})
 tachyon_configure_common(TachyonText)
 tachyon_link_text_deps(TachyonText)
+target_link_libraries(TachyonText PUBLIC TachyonCore)
 
 
 

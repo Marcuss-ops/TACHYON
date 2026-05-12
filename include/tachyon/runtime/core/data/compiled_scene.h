@@ -152,11 +152,13 @@ struct CompiledLayer {
         ScaleY = 4,
         Rotation = 5,
         MaskFeather = 6,
-        Metallic = 7,
-        Roughness = 8,
-        IOR = 9,
-        Transmission = 10,
-        EmissionStrength = 11
+        AnchorX = 7,
+        AnchorY = 8,
+        Metallic = 9,
+        Roughness = 10,
+        IOR = 11,
+        Transmission = 12,
+        EmissionStrength = 13
     };
 
     // Masking and Matte (resolved into indices)

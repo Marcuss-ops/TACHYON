@@ -90,6 +90,10 @@ void build_compositions(const SceneSpec& scene, CompiledScene& compiled, tachyon
             add_track(".scale_y", layer.transform.scale_property, layer.transform.scale_y.value_or(1.0));
             add_track(".rotation", layer.transform.rotation_property, layer.transform.rotation.value_or(0.0));
             add_track(".mask_feather", layer.mask_feather, 0.0);
+            
+            // Anchor points
+            add_track(".anchor_point_x", layer.transform.anchor_point, layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->x : 0.0);
+            add_track(".anchor_point_y", layer.transform.anchor_point, layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->y : 0.0);
 
             // Material properties
             add_track(".metallic", layer.metallic, 0.0);

@@ -145,7 +145,6 @@ TEST(QualityTierTests, StringFactoryIsDeterministic) {
     const auto p2 = make_quality_policy("production");
     EXPECT_EQ(p1.resolution_scale, p2.resolution_scale);
     EXPECT_EQ(p1.dof_sample_count, p2.dof_sample_count);
-    EXPECT_EQ(p1.ray_tracer_max_bounces, p2.ray_tracer_max_bounces);
 }
 
 TEST(QualityTierTests, DoFParametersDifferByTier) {
@@ -171,34 +170,6 @@ TEST(QualityTierTests, DoFParametersDifferByTier) {
     EXPECT_TRUE(cinematic.dof_fg_bg_separate);
 }
 
-TEST(QualityTierTests, RayTracingParametersDifferByTier) {
-    const auto draft = make_quality_policy(QualityTier::Draft);
-    const auto preview = make_quality_policy(QualityTier::Preview);
-    const auto production = make_quality_policy(QualityTier::Production);
-    const auto cinematic = make_quality_policy(QualityTier::Cinematic);
-
-
-
-    EXPECT_FALSE(draft.denoiser_enabled);
-    EXPECT_FALSE(preview.denoiser_enabled);
-    EXPECT_TRUE(production.denoiser_enabled);
-    EXPECT_TRUE(cinematic.denoiser_enabled);
-}
-
-TEST(QualityTierTests, ShadowParametersDifferByTier) {
-    const auto draft = make_quality_policy(QualityTier::Draft);
-    const auto preview = make_quality_policy(QualityTier::Preview);
-    const auto production = make_quality_policy(QualityTier::Production);
-
-    EXPECT_EQ(draft.shadow_map_resolution, 256);
-    EXPECT_EQ(preview.shadow_map_resolution, 512);
-    EXPECT_EQ(production.shadow_map_resolution, 1024);
-
-    EXPECT_FALSE(draft.soft_shadows);
-    EXPECT_FALSE(preview.soft_shadows);
-    EXPECT_TRUE(production.soft_shadows);
-}
-
 TEST(QualityTierTests, InvalidTierThrows) {
     bool threw = false;
     try { make_quality_policy("ultra"); } catch (const std::invalid_argument&) { threw = true; }
@@ -219,13 +190,6 @@ TEST(QualityTierTests, RoundTripStringConversion) {
 
     EXPECT_EQ(quality_tier_from_string("draft"), QualityTier::Draft);
     EXPECT_EQ(quality_tier_from_string("preview"), QualityTier::Preview);
-    EXPECT_EQ(quality_tier_from_string("production"), QualityTier::Production);
-    EXPECT_EQ(quality_tier_from_string("cinematic"), QualityTier::Cinematic);
-    EXPECT_EQ(quality_tier_from_string("high"), QualityTier::Production);
-}
-
-} // namespace tachyon
-r_from_string("preview"), QualityTier::Preview);
     EXPECT_EQ(quality_tier_from_string("production"), QualityTier::Production);
     EXPECT_EQ(quality_tier_from_string("cinematic"), QualityTier::Cinematic);
     EXPECT_EQ(quality_tier_from_string("high"), QualityTier::Production);

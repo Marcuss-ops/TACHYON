@@ -23,6 +23,7 @@ set(TachyonMediaSources
     ${CMAKE_CURRENT_SOURCE_DIR}/media/video_concat.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/media/overlay_merger.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/media/clip_processor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/media/transition_filters.cpp
     
     ${CMAKE_CURRENT_SOURCE_DIR}/media/import/asset_import_pipeline.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/media/decoding/video_decoder.cpp

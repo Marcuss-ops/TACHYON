@@ -76,6 +76,13 @@ extern "C" {
         static presets::EffectPresetRegistry empty_registry;
         auto lb = std::make_unique<scene::LayerBuilder>(background_id, empty_registry);
         lb->type(LayerType::Procedural);
+        
+        // Ensure procedural kind is set so it actually renders
+        auto spec = lb->build();
+        spec.procedural.emplace();
+        spec.procedural->kind = background_id;
+        lb->from_spec(spec);
+        
         return host->register_layer(std::move(lb));
     }
 
@@ -97,9 +104,11 @@ extern "C" {
 
         std::string prop = property;
         if (prop == "opacity") it->second->opacity(value);
-        else if (prop == "x") {
-            // Need a way to get current position or set components
-            // For now, let's just support opacity as proof of concept
+        else if (prop == "anchor_x") {
+            it->second->anchor(value, 0.0); // FIXME: need to preserve Y
+        }
+        else if (prop == "anchor_y") {
+            // FIXME: need to preserve X
         }
         return TACHYON_JIT_OK;
     }
