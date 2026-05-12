@@ -14,6 +14,8 @@ set(TachyonCLICoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/cli_doctor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/cli_output_presets.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/cli_motion_map.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/cli_probe.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/cli/cli_concat.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/cli.cpp
 )
 

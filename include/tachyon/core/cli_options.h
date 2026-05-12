@@ -52,6 +52,13 @@ struct CliOptions {
 
     bool show_version{false};
     bool render_all_compositions{false};
+
+    // probe command options
+    std::filesystem::path probe_input;
+
+    // concat command options
+    std::vector<std::filesystem::path> concat_inputs;
+    std::filesystem::path concat_output;
 };
 
 ParseResult<CliOptions> parse_cli_options(int argc, char** argv);

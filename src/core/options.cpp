@@ -248,6 +248,27 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
                 return result;
             }
             options.metrics_input = value;
+            if (options.command == "probe") {
+                options.probe_input = value;
+            }
+            continue;
+        }
+        if (arg == "--inputs") {
+            const std::string value = require_argument(args, index);
+            if (value.empty()) {
+                result.diagnostics.add_error("cli.inputs_missing", "missing value for --inputs");
+                return result;
+            }
+            // Comma separated list
+            std::string item;
+            std::size_t start = 0;
+            std::size_t end = value.find(',');
+            while (end != std::string::npos) {
+                options.concat_inputs.push_back(value.substr(start, end - start));
+                start = end + 1;
+                end = value.find(',', start);
+            }
+            options.concat_inputs.push_back(value.substr(start));
             continue;
         }
         if (arg == "--top") {

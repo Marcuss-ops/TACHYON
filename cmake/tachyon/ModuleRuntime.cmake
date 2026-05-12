@@ -33,6 +33,7 @@ set(TachyonRuntimeCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/policy/surface_pool_policy.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/policy/telemetry_policy.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/diagnostics/report.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/server.cpp
 )
 
 

@@ -180,6 +180,30 @@ static const std::vector<CommandEntry> kCommands = {
         nullptr,
         run_library_demo_command
     },
+    {
+        "probe",
+        "tachyon probe --input <file> [--json]",
+        [](const CliOptions& o, std::ostream& e) {
+            if (o.probe_input.empty()) {
+                e << "--input is required for probe\n";
+                return false;
+            }
+            return true;
+        },
+        run_probe_command
+    },
+    {
+        "concat",
+        "tachyon concat --inputs <file1,file2,...> --out <file>",
+        [](const CliOptions& o, std::ostream& e) {
+            if (o.concat_inputs.empty() || o.output_override.empty()) {
+                e << "--inputs and --out are required for concat\n";
+                return false;
+            }
+            return true;
+        },
+        run_concat_command
+    },
 };
 
 void print_help(std::ostream& out) {
