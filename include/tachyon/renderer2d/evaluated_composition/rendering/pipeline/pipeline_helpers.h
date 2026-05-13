@@ -4,7 +4,7 @@
 #include <filesystem>
 
 #include "tachyon/core/scene/state/evaluated_state.h"
-#include "tachyon/renderer2d/resource/render_context.h"
+#include "tachyon/runtime/resource/render_context.h"
 
 namespace tachyon {
 
@@ -13,6 +13,6 @@ namespace tachyon {
  */
 std::optional<std::filesystem::path> resolve_media_source(
     const scene::EvaluatedLayerState& layer,
-    const renderer2d::RenderContext2D& context);
+    const RenderContext& context);
 
 } // namespace tachyon

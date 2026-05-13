@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/renderer2d/raster/rasterizer.h"
-#include "tachyon/renderer2d/resource/render_context.h"
+#include "tachyon/runtime/resource/render_context.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include <vector>
 
@@ -18,7 +18,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
     const render::RenderIntent& intent,
     const RenderPlan& plan,
     const FrameRenderTask& task,
-    renderer2d::RenderContext2D& context,
+    RenderContext& context,
     const renderer2d::EffectRegistry& effect_registry);
 
 } // namespace tachyon

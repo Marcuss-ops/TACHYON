@@ -27,7 +27,7 @@ RasterizationResult RasterizationStep::execute(
     {
         profiling::ProfileScope raster_scope(profiler, profiling::ProfileEventType::Phase, "composition_raster", frame_number);
         renderer2d::EffectRegistry effect_reg;
-        rasterized = render_evaluated_composition_2d(cached_comp, intent, plan, task, context.renderer2d, effect_reg);
+        rasterized = render_evaluated_composition_2d(cached_comp, intent, plan, task, context, effect_reg);
     }
 
     if (rasterized.surface) {

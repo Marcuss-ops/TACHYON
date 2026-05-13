@@ -1,7 +1,7 @@
 #include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
-#include "tachyon/renderer2d/resource/render_context.h"
+#include "tachyon/runtime/resource/render_context.h"
 #include "tachyon/render/intent_builder.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
 #include <iostream>
@@ -50,7 +50,7 @@ bool run_tiling_tests() {
     task.frame_number = 0;
     task.cache_key.value = "tiling-test";
     
-    renderer2d::RenderContext2D context;
+    RenderContext context;
     render::RenderIntent intent;
     renderer2d::EffectRegistry effect_registry;
     

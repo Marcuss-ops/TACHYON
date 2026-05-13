@@ -35,5 +35,5 @@ Color hsl_to_rgb(float h, float s, float l, float alpha = 1.0f);
 std::array<float, 256> build_channel_lut(std::function<float(float)> mapper);
 SurfaceRGBA apply_channel_lut(const SurfaceRGBA& input, const std::array<float, 256>& lut);
 
-} // namespace tachyon::renderer2d
+} // namespace renderer2d
 } // namespace tachyon

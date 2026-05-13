@@ -65,11 +65,11 @@ void evaluate_layer(
 
     const auto timing_start = std::chrono::high_resolution_clock::now();
     auto record_timing = [&]() {
-        if (!context.diagnostic_tracker) {
+        if (!context.diagnostics) {
             return;
         }
         const auto timing_end = std::chrono::high_resolution_clock::now();
-        context.diagnostic_tracker->timings.push_back(TimingSample{
+        context.diagnostics->timings.push_back(TimingSample{
             "layer",
             std::to_string(layer.node.node_id),
             std::chrono::duration<double, std::milli>(timing_end - timing_start).count()
@@ -90,14 +90,14 @@ void evaluate_layer(
 
     const std::uint64_t node_key = build_node_key(frame_key, layer.node);
     if (executor.m_cache.lookup_layer(node_key)) {
-        if (context.diagnostic_tracker) context.diagnostic_tracker->layer_hits++;
+        if (context.diagnostics) context.diagnostics->layer_hits++;
         record_timing();
         return;
     }
 
-    if (context.diagnostic_tracker) {
-        context.diagnostic_tracker->layer_misses++;
-        context.diagnostic_tracker->layers_evaluated++;
+    if (context.diagnostics) {
+        context.diagnostics->layer_misses++;
+        context.diagnostics->layers_evaluated++;
     }
 
     auto state = std::make_shared<scene::EvaluatedLayerState>();
@@ -174,10 +174,10 @@ void evaluate_layer(
         const std::uint64_t prop_cache_key = prop_builder.finish();
         double sampled = fallback;
         if (executor.m_cache.lookup_property(prop_cache_key, sampled)) {
-            if (context.diagnostic_tracker) context.diagnostic_tracker->property_hits++;
+            if (context.diagnostics) context.diagnostics->property_hits++;
             return sampled;
         }
-        if (context.diagnostic_tracker) context.diagnostic_tracker->property_misses++;
+        if (context.diagnostics) context.diagnostics->property_misses++;
         return static_cast<double>(runtime::sample_compiled_property_track(track, static_cast<float>(frame_time_seconds)));
     };
 

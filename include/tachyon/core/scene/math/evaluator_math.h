@@ -78,5 +78,5 @@ math::Transform2 make_transform2(
     double rotation_degrees,
     const math::Vector2& scale);
 
-} // namespace
 } // namespace scene
+} // namespace tachyon

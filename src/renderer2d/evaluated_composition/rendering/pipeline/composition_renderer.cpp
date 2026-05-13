@@ -1,4 +1,5 @@
 #include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"
+#include "tachyon/renderer2d/resource/precomp_cache.h"
 #include "tachyon/renderer2d/effects/core/transitions/transition_utils.h"
 #include "tachyon/core/spec/schema/objects/background_spec.h"
 #include "tachyon/runtime/execution/session/render_internal.h"
@@ -93,9 +94,9 @@ using namespace renderer2d;
 
 std::optional<std::filesystem::path> resolve_media_source(
     const scene::EvaluatedLayerState& layer,
-    const RenderContext2D& context) {
+    const RenderContext& context) {
 
-    if (!context.media_manager) {
+    if (!context.media) {
         return std::nullopt;
     }
 
@@ -108,7 +109,7 @@ std::optional<std::filesystem::path> resolve_media_source(
     for (const auto& reference : references) {
         if (reference.empty()) continue;
 
-        auto path = context.media_manager->resolve_media_path(reference);
+        auto path = context.media->resolve_media_path(reference);
         if (!path.empty()) {
             return path;
         }
@@ -134,7 +135,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
     [[maybe_unused]] const render::RenderIntent& intent,
     const RenderPlan& plan,
     const FrameRenderTask& task,
-    RenderContext2D& context,
+    RenderContext& context,
     [[maybe_unused]] const renderer2d::EffectRegistry& effect_registry) {
 
     RasterizedFrame2D frame;
@@ -286,7 +287,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
             " matte=resolve end");
     }
 
-    auto render_pass = [&](SurfaceRGBA& target_surface, RenderContext2D& render_context, const std::optional<RectI>& tile_rect = std::nullopt) {
+    auto render_pass = [&](SurfaceRGBA& target_surface, RenderContext& render_context, const std::optional<RectI>& tile_rect = std::nullopt) {
         render_trace("render_pass entry");
         render_trace("render_pass clear ok");
         if (!render_context.effects) {
@@ -620,7 +621,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 : std::make_shared<SurfaceRGBA>(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height));
             tile_surface_ptr->clear(Color::transparent());
             
-            RenderContext2D thread_context = context;
+            RenderContext thread_context = context;
             render_trace(
                 "frame " + std::to_string(task.frame_number) +
                 " render_pass tile invoke=" + std::to_string(tile.x) + "," + std::to_string(tile.y) +

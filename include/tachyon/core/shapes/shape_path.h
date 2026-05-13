@@ -4,7 +4,8 @@
 
 #include <vector>
 
-namespace tachyon::shapes {
+namespace tachyon {
+namespace shapes {
 
 using Point2D = math::Vector2;
 
@@ -36,7 +37,8 @@ struct ShapePathSpec {
 
 using ShapePath = ShapePathSpec;
 
-} // namespace tachyon::shapes
+} // namespace shapes
+} // namespace tachyon
 
 namespace tachyon {
 using Point2D = shapes::Point2D;

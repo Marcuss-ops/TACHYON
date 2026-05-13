@@ -9,7 +9,8 @@
 
 namespace tachyon::presets { class EffectManifest; }
 
-namespace tachyon::renderer2d {
+namespace tachyon {
+namespace renderer2d {
 
 /**
  * @brief Central registry for all rendering effects.
@@ -36,12 +37,15 @@ public:
 private:
     registry::TypedRegistry<EffectDescriptor> registry_;
 };
-} // namespace tachyon::renderer2d
+} // namespace renderer2d
+} // namespace tachyon
 
 namespace tachyon { class TransitionRegistry; }
 
-namespace tachyon::renderer2d {
+namespace tachyon {
+namespace renderer2d {
 
 void register_builtin_effects(EffectRegistry& registry, const presets::EffectManifest& manifest, const TransitionRegistry& transition_registry);
 
-} // namespace tachyon::renderer2d
+} // namespace renderer2d
+} // namespace tachyon

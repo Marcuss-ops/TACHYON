@@ -22,9 +22,6 @@ set(TachyonRuntimeCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/core/graph/dependency_graph.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/core/graph/render_graph.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/core/serialization/tbf_codec.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/core/serialization/tbf_migration.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/core/serialization/tbf_read_helpers.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/core/serialization/tbf_write_helpers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/cache/cache_key_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/cache/disk_cache.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/cache/frame_cache.cpp
@@ -53,7 +50,6 @@ set(TachyonRuntimeExecutionSources
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_session_audio.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_session_parallel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/parallel/taskflow_runtime.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_session_serialization.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/batch_runner/batch_runner_execute.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/batch_runner/batch_runner_validate.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/batch_runner/batch_registry.cpp

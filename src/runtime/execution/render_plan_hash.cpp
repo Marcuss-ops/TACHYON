@@ -1,6 +1,6 @@
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/cache/cache_key_builder.h"
-#include "src/runtime/execution/planning/hash/hash_utils.h"
+#include "planning/hash/hash_utils.h"
 
 #include <algorithm>
 #include <string_view>

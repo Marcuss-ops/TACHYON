@@ -9,4 +9,4 @@ void add_string(CacheKeyBuilder& builder, const std::string& value) {
     builder.add_string(std::string_view{value});
 }
 
-} // namespace
+} // namespace tachyon

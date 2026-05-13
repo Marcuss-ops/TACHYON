@@ -403,4 +403,62 @@ void apply_flash_cut_fused_direct(
     }
 }
 
+void apply_pixelate_fused_direct(
+    SurfaceRGBA& output,
+    const SurfaceRGBA& from,
+    const SurfaceRGBA* to,
+    float progress,
+    int thread_count) {
+
+    const uint32_t width = output.width();
+    const uint32_t height = output.height();
+    const float inv_width = 1.0f / static_cast<float>(width);
+    const float inv_height = 1.0f / static_cast<float>(height);
+
+    const float* from_data = from.pixels().data();
+    const float* to_data = to ? to->pixels().data() : nullptr;
+    float* out_data = output.mutable_pixels().data();
+
+    const float grid = std::max(2.0f, 20.0f - 19.0f * progress);
+
+    #pragma omp parallel for num_threads(thread_count) schedule(static)
+    for (int y = 0; y < static_cast<int>(height); ++y) {
+        const float v = (static_cast<float>(y) + 0.5f) * inv_height;
+        const float pv = std::floor(v * grid) / grid;
+        const uint32_t sy = std::clamp(static_cast<uint32_t>(pv * height), 0U, height - 1);
+        
+        float* row_out = &out_data[static_cast<size_t>(y) * width * 4];
+
+        for (int x = 0; x < static_cast<int>(width); ++x) {
+            const float u = (static_cast<float>(x) + 0.5f) * inv_width;
+            const float pu = std::floor(u * grid) / grid;
+            const uint32_t sx = std::clamp(static_cast<uint32_t>(pu * width), 0U, width - 1);
+
+            const size_t src_idx = (static_cast<size_t>(sy) * width + sx) * 4;
+            
+            const float fr = from_data[src_idx];
+            const float fg = from_data[src_idx + 1];
+            const float fb = from_data[src_idx + 2];
+            const float fa = from_data[src_idx + 3];
+
+            if (to_data) {
+                const float tr = to_data[src_idx];
+                const float tg = to_data[src_idx + 1];
+                const float tb = to_data[src_idx + 2];
+                const float ta = to_data[src_idx + 3];
+
+                row_out[x * 4]     = fr + (tr - fr) * progress;
+                row_out[x * 4 + 1] = fg + (tg - fg) * progress;
+                row_out[x * 4 + 2] = fb + (tb - fb) * progress;
+                row_out[x * 4 + 3] = fa + (ta - fa) * progress;
+            } else {
+                row_out[x * 4]     = fr;
+                row_out[x * 4 + 1] = fg;
+                row_out[x * 4 + 2] = fb;
+                row_out[x * 4 + 3] = fa;
+            }
+        }
+    }
+}
+
 } // namespace tachyon::renderer2d

@@ -17,7 +17,7 @@ namespace {
 constexpr float kDefaultCameraReferenceFovRad = 0.683f;
 constexpr float kDefaultCameraZoom1080p = 877.7778f;
 constexpr float kDefaultCameraZoom720p = 585.1852f;
-constexpr float kDefaultCameraZoomFallbackScale = 0.8127f;
+constexpr float kDefaultCameraZoomFallbackScale = 0.812767f;
 
 float default_camera_zoom(float comp_h) {
     const float safe_height = comp_h > 0.0f ? comp_h : 1.0f;
@@ -35,7 +35,7 @@ float default_camera_zoom(float comp_h) {
 }
 
 math::Vector3 default_camera_up() {
-    return {0.0f, 1.0f, 0.0f};
+    return {0.0f, -1.0f, 0.0f};
 }
 
 } // namespace

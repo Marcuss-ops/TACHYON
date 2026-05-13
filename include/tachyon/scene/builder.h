@@ -246,6 +246,8 @@ public:
     SceneBuilder(std::string id, std::string name, const presets::EffectPresetRegistry& preset_registry);
 
     SceneBuilder& project(std::string id, std::string name);
+    SceneBuilder& authoring_tool(std::string tool);
+    SceneBuilder& root_seed(std::int64_t seed);
     SceneBuilder& composition(std::string id, std::function<void(CompositionBuilder&)> fn);
     
     [[nodiscard]] SceneSpec build();

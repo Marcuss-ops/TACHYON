@@ -1,9 +1,11 @@
 #pragma once
 
 #include "tachyon/core/scene/state/evaluated_state.h"
+#include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
-#include "tachyon/renderer2d/resource/render_context.h"
-
+#include "tachyon/renderer2d/core/render_types.h"
+#include "tachyon/renderer2d/color/blending.h"
+#include "tachyon/runtime/resource/render_context.h"
 #include <cstdint>
 #include <memory>
 
@@ -24,7 +26,7 @@ renderer2d::RectI shape_bounds_from_path(const scene::EvaluatedShapePath& path);
 std::shared_ptr<renderer2d::SurfaceRGBA> make_surface(
     std::int64_t width,
     std::int64_t height,
-    renderer2d::RenderContext2D& context);
+    RenderContext& context);
 
 void multiply_surface_alpha(renderer2d::SurfaceRGBA& surface, float factor);
 
@@ -38,7 +40,7 @@ void composite_surface(
     const renderer2d::SurfaceRGBA& src,
     int offset_x,
     int offset_y,
-    renderer2d::BlendMode blend_mode,
-    float constant_src_depth = -1.0f); // if >= 0, uses this depth for all pixels
+    renderer2d::BlendMode blend_mode = renderer2d::BlendMode::Normal,
+    float constant_src_depth = -1.0f);
 
 } // namespace tachyon

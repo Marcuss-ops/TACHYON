@@ -28,14 +28,20 @@ struct BinaryWriter {
     void write_bool(bool value) { write_u8(value ? 1 : 0); }
 
     void write_string(const std::string& str) {
-        std::uint32_t size = static_cast<std::uint32_t>(std::min<std::size_t>(str.size(), kMaxStringBytes));
+        if (str.size() > kMaxStringBytes) {
+            throw std::runtime_error("BinaryWriter: string too large (" + std::to_string(str.size()) + " bytes)");
+        }
+        std::uint32_t size = static_cast<std::uint32_t>(str.size());
         write_u32(size);
-        buffer.insert(buffer.end(), str.begin(), str.begin() + size);
+        buffer.insert(buffer.end(), str.begin(), str.end());
     }
 
     template<typename T, typename Serializer>
     void write_vector(const std::vector<T>& vec, Serializer serializer) {
-        std::uint32_t size = static_cast<std::uint32_t>(std::min<std::size_t>(vec.size(), kMaxVectorItems));
+        if (vec.size() > kMaxVectorItems) {
+            throw std::runtime_error("BinaryWriter: vector too large (" + std::to_string(vec.size()) + " items)");
+        }
+        std::uint32_t size = static_cast<std::uint32_t>(vec.size());
         write_u32(size);
         for (std::uint32_t i = 0; i < size; ++i) {
             serializer(*this, vec[i]);
@@ -44,11 +50,17 @@ struct BinaryWriter {
 
     template<typename T>
     void write_vector(const std::vector<T>& vec) {
-        std::uint32_t size = static_cast<std::uint32_t>(std::min<std::size_t>(vec.size(), kMaxVectorItems));
+        if (vec.size() > kMaxVectorItems) {
+            throw std::runtime_error("BinaryWriter: vector too large (" + std::to_string(vec.size()) + " items)");
+        }
+        std::uint32_t size = static_cast<std::uint32_t>(vec.size());
         write_u32(size);
         if constexpr (std::is_trivially_copyable_v<T>) {
             const auto* ptr = reinterpret_cast<const std::uint8_t*>(vec.data());
             buffer.insert(buffer.end(), ptr, ptr + (static_cast<std::size_t>(size) * sizeof(T)));
+        } else {
+            // Force compiler error for non-trivially copyable types without a serializer
+            static_assert(std::is_trivially_copyable_v<T>, "Type must be trivially copyable or provide a serializer");
         }
     }
 
@@ -95,7 +107,14 @@ struct BinaryReader {
     std::uint64_t read_u64() { return read_raw<std::uint64_t>(); }
     float read_f32() { return read_raw<float>(); }
     double read_f64() { return read_raw<double>(); }
-    bool read_bool() { return read_u8() != 0; }
+    bool read_bool() { 
+        auto val = read_u8();
+        if (val > 1) {
+            error = true;
+            return false;
+        }
+        return val != 0; 
+    }
 
     std::string read_string() {
         std::uint32_t size = read_u32();
@@ -146,9 +165,10 @@ struct BinaryReader {
     }
 
     template<typename E>
-    E read_enum_checked(bool (*validator)(std::uint8_t)) {
-        auto raw = read_u8();
-        if (!validator(raw)) {
+    E read_enum_checked(bool (*validator)(std::uint64_t)) {
+        using T = std::underlying_type_t<E>;
+        T raw = read<T>();
+        if (!validator(static_cast<std::uint64_t>(raw))) {
             error = true;
             return static_cast<E>(0);
         }

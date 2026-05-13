@@ -1,4 +1,4 @@
-#include "src/runtime/execution/planning/hash/hash_utils.h"
+#include "hash_utils.h"
 
 namespace tachyon::hash {
 

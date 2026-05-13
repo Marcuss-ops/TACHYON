@@ -1,12 +1,16 @@
 #include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"
 #include "tachyon/render/render_intent.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
+#include "tachyon/presets/effects/effect_manifest.h"
+#include "tachyon/transition_registry.h"
+#include "tachyon/renderer2d/effects/core/transitions/transition_fast_paths.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/renderer2d/raster/rasterizer.h"
 #include "tachyon/renderer2d/raster/rasterizer_ops.h"
-#include "tachyon/renderer2d/resource/render_context.h"
+#include "tachyon/runtime/resource/render_context.h"
+#include "tachyon/renderer2d/resource/precomp_cache.h"
 #include "tachyon/renderer2d/raster/draw_command.h"
 
 #include <cmath>
@@ -60,8 +64,12 @@ bool run_evaluated_composition_renderer_tests() {
     task.frame_number = 0;
     task.cache_key.value = "renderer-test";
 
-    renderer2d::RenderContext2D render_context;
+    RenderContext render_context;
     renderer2d::EffectRegistry effect_reg;
+    presets::EffectManifest manifest;
+    TransitionRegistry transition_reg;
+    register_builtin_effects(effect_reg, manifest, transition_reg);
+
     RenderIntent intent;
     const RasterizedFrame2D frame = tachyon::render_evaluated_composition_2d(state, intent, plan, task, render_context, effect_reg);
     check_true(frame.surface != nullptr, "evaluated renderer should produce a surface");
@@ -137,7 +145,7 @@ bool run_evaluated_composition_renderer_tests() {
     adjustment_layer.layer_index = 1;
     adjustment_layer.effects.clear();
     EffectSpec fill_effect;
-    fill_effect.type = "fill";
+    fill_effect.type = "tachyon.effect.color.fill";
     fill_effect.enabled = true;
     fill_effect.colors["color"] = ColorSpec{255, 0, 0, 255};
     adjustment_layer.effects.push_back(fill_effect);
@@ -257,7 +265,7 @@ bool run_evaluated_composition_renderer_tests() {
         check_true(mask_surface.get_pixel(8, 8).a == 0, "vector mask should clear pixels outside the shape");
     }
 
-    renderer2d::RenderContext2D precomp_context;
+    RenderContext precomp_context;
     precomp_context.policy = make_quality_policy("draft");
     check_true(precomp_context.precomp_cache != nullptr, "precomp cache should exist");
 

@@ -225,13 +225,13 @@ InspectionReport inspect_scene(const SceneSpec& scene, const TransitionRegistry&
             }
 
             if (!layer.animation_in_preset.empty()) {
-                add_info(report, options, "layer.animation_in_preset", layer_path, "Layer uses in preset: " + layer.animation_in_preset);
+                add_issue(report, InspectionSeverity::Warning, "layer.in_preset", layer_path, "Layer uses legacy in preset: " + layer.animation_in_preset);
             }
             if (!layer.animation_during_preset.empty()) {
-                add_info(report, options, "layer.animation_during_preset", layer_path, "Layer uses during preset: " + layer.animation_during_preset);
+                add_issue(report, InspectionSeverity::Warning, "layer.during_preset", layer_path, "Layer uses legacy during preset: " + layer.animation_during_preset);
             }
             if (!layer.animation_out_preset.empty()) {
-                add_info(report, options, "layer.animation_out_preset", layer_path, "Layer uses out preset: " + layer.animation_out_preset);
+                add_issue(report, InspectionSeverity::Warning, "layer.out_preset", layer_path, "Layer uses legacy out preset: " + layer.animation_out_preset);
             }
 
             if (layer.transition_in.kind != TransitionKind::None || !layer.transition_in.transition_id.empty()) {

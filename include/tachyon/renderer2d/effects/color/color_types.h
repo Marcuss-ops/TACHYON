@@ -16,7 +16,7 @@ struct PremultipliedPixel {
     float g{0.0f};
     float b{0.0f};
     float a{0.0f};
-};
+    };
 
-} // namespace tachyon::renderer2d
-} // namespace tachyon
+    } // namespace renderer2d
+    } // namespace tachyon

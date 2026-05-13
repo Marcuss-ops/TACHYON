@@ -82,7 +82,7 @@ std::optional<std::shared_ptr<renderer2d::Framebuffer>> MotionBlurSampler::sampl
         const std::uint64_t root_sample_key = build_node_key(sample_key, scene.compositions.front().node);
 
         RenderContext thread_context = context;
-        thread_context.renderer2d.accumulation_buffer.resize(0);
+        thread_context.accumulation_buffer.resize(0);
 
         const auto& topo_order = scene.graph.topo_order();
         for (std::uint32_t node_id : topo_order) {
@@ -94,10 +94,10 @@ std::optional<std::shared_ptr<renderer2d::Framebuffer>> MotionBlurSampler::sampl
         }
         auto sub_comp = executor.cache().lookup_composition(root_sample_key);
         if (sub_comp) {
-            renderer2d::RendererResourceProvider provider(thread_context.renderer2d);
+            renderer2d::RendererResourceProvider provider(thread_context);
             const auto intent_result = render::build_render_intent(*sub_comp, &provider);
             renderer2d::EffectRegistry effect_reg;
-            RasterizedFrame2D rasterized = render_evaluated_composition_2d(*sub_comp, intent_result.intent, plan, task, thread_context.renderer2d, effect_reg);
+            RasterizedFrame2D rasterized = render_evaluated_composition_2d(*sub_comp, intent_result.intent, plan, task, thread_context, effect_reg);
             if (rasterized.surface) samples_surfaces[s] = rasterized.surface;
         }
     }

@@ -4,9 +4,14 @@
 #include <memory>
 #include <vector>
 
+#include "tachyon/text/core/low_level/freetype/freetype_manager.h"
+
 namespace tachyon::renderer2d {
 
 const ::tachyon::text::FontRegistry* get_default_font_registry() {
+    // Mandate: Initialize FreeType BEFORE FontRegistry so it is destroyed AFTER it.
+    ::tachyon::renderer2d::text::get_ft_library();
+    
     static ::tachyon::text::FontRegistry default_registry;
     static std::once_flag once;
     

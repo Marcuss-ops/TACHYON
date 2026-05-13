@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/renderer2d/raster/rasterizer.h"
-#include "tachyon/renderer2d/resource/render_context.h"
+#include "tachyon/runtime/resource/render_context.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 
 #include <vector>
@@ -9,7 +9,6 @@
 namespace tachyon {
 namespace renderer2d {
 
-struct RenderContext2D;
 
 class MaskRenderer {
 public:
@@ -20,7 +19,7 @@ public:
      */
     static void applyMask(
         const scene::EvaluatedCompositionState& state,
-        RenderContext2D& context,
+        RenderContext& context,
         std::vector<float>& accum_r,
         std::vector<float>& accum_g,
         std::vector<float>& accum_b,
@@ -47,7 +46,7 @@ public:
      */
     static void applyMaskMotionBlur(
         const std::vector<const scene::EvaluatedCompositionState*>& states,
-        RenderContext2D& context,
+        RenderContext& context,
         std::vector<float>& accum_r,
         std::vector<float>& accum_g,
         std::vector<float>& accum_b,

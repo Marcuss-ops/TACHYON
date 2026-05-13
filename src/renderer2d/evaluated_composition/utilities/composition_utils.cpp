@@ -76,7 +76,7 @@ renderer2d::RectI shape_bounds_from_path(const scene::EvaluatedShapePath& path) 
     };
 }
 
-std::shared_ptr<renderer2d::SurfaceRGBA> make_surface(std::int64_t width, std::int64_t height, renderer2d::RenderContext2D& context) {
+std::shared_ptr<renderer2d::SurfaceRGBA> make_surface(std::int64_t width, std::int64_t height, RenderContext& context) {
     const std::uint32_t w = static_cast<std::uint32_t>(std::max<std::int64_t>(1, width));
     const std::uint32_t h = static_cast<std::uint32_t>(std::max<std::int64_t>(1, height));
     

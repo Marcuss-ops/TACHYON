@@ -214,7 +214,7 @@ void FeatheredMaskRenderer::renderMask(const MaskPath& mask,
 // Static wrapper functions for backward compatibility
 void MaskRenderer::applyMask(
     const scene::EvaluatedCompositionState& state,
-    RenderContext2D& context,
+    RenderContext& context,
     std::vector<float>& accum_r,
     std::vector<float>& accum_g,
     std::vector<float>& accum_b,
@@ -246,7 +246,7 @@ void MaskRenderer::applyMask(
 
 void MaskRenderer::applyMaskMotionBlur(
     const std::vector<const scene::EvaluatedCompositionState*>& states,
-    RenderContext2D& context,
+    RenderContext& context,
     std::vector<float>& accum_r,
     std::vector<float>& accum_g,
     std::vector<float>& accum_b,

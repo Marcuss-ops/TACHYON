@@ -64,10 +64,10 @@ std::shared_ptr<renderer2d::SurfaceRGBA> render_frame_at_time(
     // Render the evaluated composition
     auto cached_comp = executor.cache().lookup_composition(build_node_key(temp_key, compiled_scene.compositions.front().node));
     if (cached_comp) {
-        renderer2d::RendererResourceProvider provider(context.renderer2d);
+        renderer2d::RendererResourceProvider provider(context);
         const auto intent_result = render::build_render_intent(*cached_comp, &provider);
         renderer2d::EffectRegistry effect_reg;
-        RasterizedFrame2D rasterized = render_evaluated_composition_2d(*cached_comp, intent_result.intent, plan, temp_task, context.renderer2d, effect_reg);
+        RasterizedFrame2D rasterized = render_evaluated_composition_2d(*cached_comp, intent_result.intent, plan, temp_task, context, effect_reg);
         return rasterized.surface;
     }
     return nullptr;

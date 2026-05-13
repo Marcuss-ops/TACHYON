@@ -89,10 +89,10 @@ ExecutedFrame FrameExecutor::execute(
 
     const char* diag_env = std::getenv("TACHYON_DIAGNOSTICS");
     const bool diagnostics_enabled = (diag_env && std::string_view(diag_env) == "1");
-    context.diagnostic_tracker = nullptr;
-    context.renderer2d.diagnostics = nullptr;
+    context.diagnostics = nullptr;
+    context.diagnostics = nullptr;
     context.policy = plan.quality_policy;
-    context.renderer2d.policy = plan.quality_policy;
+    context.policy = plan.quality_policy;
 
     if (m_node_lookup.empty()) {
         build_lookup_table(compiled_scene);
@@ -108,8 +108,8 @@ ExecutedFrame FrameExecutor::execute(
     if (diagnostics_enabled) {
         result.diagnostics.composition_key_manifest = cache_state.composition_builder.manifest();
         result.diagnostics.frame_key_manifest = cache_state.frame_builder.manifest();
-        context.diagnostic_tracker = &result.diagnostics;
-        context.renderer2d.diagnostics = &result.diagnostics;
+        context.diagnostics = &result.diagnostics;
+        context.diagnostics = &result.diagnostics;
     }
 
     if (task.cacheable) {

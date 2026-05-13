@@ -11,4 +11,4 @@ std::string version_string() {
 void print_version(std::ostream& out) {
     out << "TACHYON Version: " << TACHYON_VERSION_STR << std::endl;
 }
-}
+} // namespace tachyon

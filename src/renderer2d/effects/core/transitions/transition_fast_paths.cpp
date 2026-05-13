@@ -11,7 +11,7 @@ struct FastPathRegistryEntry {
     FastPathKernelFn kernel;
 };
 
-static constexpr std::array<FastPathRegistryEntry, 14> kFastPathRegistry = {{
+static constexpr std::array<FastPathRegistryEntry, 15> kFastPathRegistry = {{
     { "soft_zoom_blur", apply_soft_zoom_blur_fused_direct },
     { "crossfade", apply_crossfade_fused_direct },
     { "slide", apply_slide_fused_direct },
@@ -25,8 +25,11 @@ static constexpr std::array<FastPathRegistryEntry, 14> kFastPathRegistry = {{
     { "iris_circle", apply_circle_iris_fused_direct },
     { "iris", apply_circle_iris_fused_direct },
     { "flash_cut", apply_flash_cut_fused_direct },
-    { "flash", apply_flash_cut_fused_direct }
+    { "flash", apply_flash_cut_fused_direct },
+    { "pixelate", apply_pixelate_fused_direct }
 }};
+
+static_assert(kFastPathRegistry.size() == 15, "Update kFastPathRegistry size");
 
 consteval bool has_fast_path_registry_duplicates() {
     for (size_t i = 0; i < kFastPathRegistry.size(); ++i) {
@@ -47,6 +50,14 @@ bool apply_transition_fast_path(
     float progress,
     int thread_count) {
     
+    // Dimension check: Fast-paths require matching dimensions
+    if (output.width() != from.width() || output.height() != from.height()) {
+        return false;
+    }
+    if (to && (output.width() != to->width() || output.height() != to->height())) {
+        return false;
+    }
+
     // Normalize ID by stripping tachyon.transition. prefix if present
     std::string_view tid = transition_id;
     const std::string_view prefix = "tachyon.transition.";

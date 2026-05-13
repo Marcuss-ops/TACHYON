@@ -29,7 +29,6 @@ set(TachyonRenderer2DPathSources
 
 set(TachyonRenderer2DResourceSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/resource/precomp_cache.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/resource/render_context.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/resource/texture_resolver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/resource/resource_provider.cpp
 )
@@ -41,7 +40,6 @@ set(TachyonRenderer2DCoreSources
     ${TachyonRenderer2DResourceSources}
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/audio/audio_sampling.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/deform/mesh_deform.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/math/math_utils.cpp
 )
 
 set(TachyonRenderer2DEffectsSources
@@ -149,6 +147,7 @@ target_link_libraries(TachyonRenderer2DColor PUBLIC TachyonColor)
 
 add_library(TachyonRenderer2DExtras STATIC ${TachyonRenderer2DExtrasSources})
 tachyon_configure_common(TachyonRenderer2DExtras)
+target_include_directories(TachyonRenderer2DExtras SYSTEM PUBLIC "${CMAKE_SOURCE_DIR}/include")
 target_link_libraries(TachyonRenderer2DExtras PUBLIC TachyonCore)
 
 add_library(TachyonRenderer2D STATIC ${TachyonRenderer2DSources})
@@ -163,7 +162,7 @@ target_compile_definitions(TachyonRenderer2D PRIVATE "TACHYON_AVX2")
 
 tachyon_link_text_deps(TachyonRenderer2D)
 tachyon_link_omp(TachyonRenderer2D)
-target_link_libraries(TachyonRenderer2D PUBLIC TachyonColor TachyonRenderer2DColor)
+target_link_libraries(TachyonRenderer2D PUBLIC TachyonCore TachyonColor TachyonRenderer2DColor)
 target_link_libraries(TachyonRenderer2D PUBLIC TachyonRenderer2DExtras)
 target_link_libraries(TachyonRenderer2D PUBLIC TachyonText)
 target_link_libraries(TachyonRenderer2D PUBLIC TachyonPresets)

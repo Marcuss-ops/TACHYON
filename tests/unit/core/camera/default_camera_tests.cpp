@@ -64,6 +64,9 @@ void run_default_camera_tests() {
     math::Vector2 top_left_proj = camera.camera.project_point(top_left_world, 1920.0f, 1080.0f);
     math::Vector2 bottom_right_proj = camera.camera.project_point(bottom_right_world, 1920.0f, 1080.0f);
 
+    std::cout << "DEBUG: top_left_proj=(" << top_left_proj.x << "," << top_left_proj.y << ")\n";
+    std::cout << "DEBUG: bottom_right_proj=(" << bottom_right_proj.x << "," << bottom_right_proj.y << ")\n";
+    std::cout << "DEBUG: camera.zoom=" << camera.zoom << "\n";
 
     check_true(nearly_equal(top_left_proj.x, 0.0f) && nearly_equal(top_left_proj.y, 0.0f), 
         "World (0,0,0) should project to Screen (0,0) with Default Camera");

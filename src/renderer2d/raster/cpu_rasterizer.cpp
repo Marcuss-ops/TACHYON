@@ -163,7 +163,7 @@ RasterizedFrame2D render_frame_2d(
     const RenderPlan& plan,
     const FrameRenderTask& task,
     std::span<const renderer2d::DrawCommand2D> commands,
-    renderer2d::RenderContext2D& context) {
+    RenderContext& context) {
 
     RasterizedFrame2D frame;
     frame.frame_number = task.frame_number;
@@ -247,7 +247,7 @@ RasterizedFrame2D render_frame_2d(
 }
 
 RasterizedFrame2D render_frame_2d_stub(const RenderPlan& plan, const FrameRenderTask& task) {
-    renderer2d::RenderContext2D context;
+    RenderContext context;
     auto frame = render_frame_2d(plan, task, {}, context);
     frame.estimated_draw_ops = plan.composition.layer_count * 5;
     return frame;

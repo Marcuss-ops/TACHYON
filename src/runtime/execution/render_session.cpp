@@ -6,6 +6,7 @@
 #include "tachyon/runtime/cache/frame_cache.h"
 #include "tachyon/runtime/resource/render_context.h"
 #include "tachyon/runtime/resource/surface_pool.h"
+#include "tachyon/renderer2d/effects/effect_host.h"
 #include "tachyon/renderer2d/resource/precomp_cache.h"
 #include "tachyon/renderer2d/resource/texture_resolver.h"
 #include "tachyon/output/frame_output_sink.h"
@@ -98,7 +99,7 @@ struct RenderSessionWorkspace {
           resolved_output_path(output_path_or_plan(output_path, execution_plan.render_plan)),
           context(std::move(precomp_cache)),
           prefetcher(prefetcher_ref) {
-        context.renderer2d.text_surface_cache = std::move(text_surface_cache);
+        context.text_surface_cache = std::move(text_surface_cache);
     }
 };
 
@@ -110,22 +111,20 @@ void configure_render_context(
     const TransitionRegistry& transition_registry,
     const presets::TextRegistry* text_registry) {
     workspace.context.policy = workspace.effective_plan.render_plan.quality_policy;
-    workspace.context.renderer2d.font_registry = ::tachyon::renderer2d::get_default_font_registry();
+    workspace.context.font_registry = ::tachyon::renderer2d::get_default_font_registry();
 
     const auto resolver_config = build_asset_resolver_config(workspace.effective_plan);
-    workspace.context.renderer2d.asset_resolver = std::make_shared<media::AssetResolver>(
+    workspace.context.asset_resolver = std::make_shared<media::AssetResolver>(
         resolver_config,
         nullptr,
         workspace.context.media ? &workspace.context.media->image_manager() : nullptr,
-        const_cast<text::FontRegistry*>(workspace.context.renderer2d.font_registry));
+        const_cast<text::FontRegistry*>(workspace.context.font_registry));
 
-    workspace.context.surface_pool = surface_pool.get();
-    workspace.context.renderer2d.surface_pool = surface_pool;
+    workspace.context.surface_pool = surface_pool;
     workspace.context.profiler = profiler;
-    workspace.context.renderer2d.profiler = profiler;
-    workspace.context.renderer2d.effects = renderer2d::create_effect_host(effect_registry);
-    workspace.context.renderer2d.transition_registry = &transition_registry;
-    workspace.context.renderer2d.text_registry = text_registry;
+    workspace.context.effects = renderer2d::create_effect_host(effect_registry);
+    workspace.context.transition_registry = &transition_registry;
+    workspace.context.text_registry = text_registry;
 }
 
 bool begin_output_sink(
@@ -241,24 +240,11 @@ void finalize_session_metrics(
 
 
 RenderSession::RenderSession() {
-    presets::EffectManifest effect_manifest;
-    renderer2d::register_builtin_effects(m_effect_registry, effect_manifest, m_transition_registry);
-    register_builtin_transitions(m_transition_registry);
-
-    // Resolve implementation pointers for built-in transitions
-    for (auto* desc : m_transition_registry.list_all()) {
-        renderer2d::resolve_basic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
-        renderer2d::resolve_artistic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
-    }
+    m_bundle = std::make_unique<runtime::RuntimeRegistryBundle>(runtime::create_default_runtime_registry_bundle());
 }
 
 void RenderSession::set_registry_bundle(const runtime::RuntimeRegistryBundle* bundle) {
-    if (bundle) {
-        set_transition_registry(&bundle->transitions);
-        set_text_registry(bundle->text_registry.get());
-        // Note: Effects are currently managed internally by RenderSession via m_effect_registry,
-        // but they depend on the transition registry passed here.
-    }
+    m_bundle_ptr = bundle;
 }
 
 RenderSessionResult RenderSession::render(
@@ -288,8 +274,25 @@ RenderSessionResult RenderSession::render(
     m_surface_pool->set_policy(surface_policy);
     m_surface_pool->prepare(w, h, budget.frame_concurrency);
 
-    const TransitionRegistry& transition_registry = m_transition_registry_ptr ? *m_transition_registry_ptr : m_transition_registry;
-    configure_render_context(workspace, m_profiler, m_surface_pool, m_effect_registry, transition_registry, m_text_registry_ptr);
+    const TransitionRegistry* transition_registry = m_transition_registry_ptr;
+    const renderer2d::EffectRegistry* effect_registry = nullptr;
+    const presets::TextRegistry* text_registry = m_text_registry_ptr;
+
+    if (m_bundle_ptr) {
+        if (!transition_registry) transition_registry = &m_bundle_ptr->transitions;
+        effect_registry = &m_bundle_ptr->effects;
+        if (!text_registry) text_registry = m_bundle_ptr->text_registry.get();
+    } else if (m_bundle) {
+        if (!transition_registry) transition_registry = &m_bundle->transitions;
+        effect_registry = &m_bundle->effects;
+        if (!text_registry) text_registry = m_bundle->text_registry.get();
+    }
+    
+    if (!effect_registry || !transition_registry) {
+        throw std::runtime_error("RenderSession: No registry bundle or registries provided");
+    }
+
+    configure_render_context(workspace, m_profiler, m_surface_pool, *effect_registry, *transition_registry, text_registry);
 
     workspace.sink = output::create_frame_output_sink(workspace.effective_plan.render_plan);
     

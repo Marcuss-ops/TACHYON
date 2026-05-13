@@ -12,6 +12,7 @@
 #include "tachyon/media/streaming/media_prefetcher.h"
 #include "tachyon/runtime/execution/session/render_internal.h"
 #include "tachyon/runtime/execution/parallel/taskflow_runtime.h"
+#include "tachyon/runtime/core/serialization/tbf_codec.h"
 #include "tachyon/core/profiling.h"
 
 #include <iostream>
@@ -61,9 +62,8 @@ void render_trace(const std::string& message) {
     }
 }
 
-// Forward declarations for serialization helpers
-std::vector<uint8_t> serialize_framebuffer(const renderer2d::Framebuffer& fb);
-std::shared_ptr<renderer2d::Framebuffer> deserialize_framebuffer(const std::vector<uint8_t>& data);
+// Forward declarations for serialization helpers removed (using TBFCodec)
+using runtime::TBFCodec;
 
 // Frame queue for streaming output - holds frames until they can be written in order
 struct FrameQueue {
@@ -160,27 +160,11 @@ void render_frames_parallel_internal(
         FrameExecutor executor(arena, cache, nullptr);
         executor.set_parallel_worker_count(budget.pixel_concurrency);
 
-        ::tachyon::RenderContext local_context(context.renderer2d.precomp_cache, context.media);
+        ::tachyon::RenderContext local_context = context;
         local_context.prefetcher = &prefetcher;
         local_context.scheduler = scheduler;
-        local_context.policy = context.policy;
-        local_context.renderer2d.policy = context.policy;
-        local_context.surface_pool = context.surface_pool;
-        local_context.renderer2d.font_registry = context.renderer2d.font_registry;
-        local_context.renderer2d.transition_registry = context.renderer2d.transition_registry;
-        local_context.renderer2d.cms = context.renderer2d.cms;
-        local_context.renderer2d.diagnostics = context.renderer2d.diagnostics;
-        local_context.renderer2d.effects = context.renderer2d.effects;
-        local_context.renderer2d.asset_resolver = context.renderer2d.asset_resolver;
-        local_context.renderer2d.working_color_space = context.renderer2d.working_color_space;
-        local_context.renderer2d.text_registry = context.renderer2d.text_registry;
-        local_context.renderer2d.profiler = context.renderer2d.profiler;
-        local_context.renderer2d.compute_backend = context.renderer2d.compute_backend;
-        local_context.renderer2d.surface_pool = context.renderer2d.surface_pool;
-        local_context.renderer2d.subtitle_entries = context.renderer2d.subtitle_entries;
-        local_context.renderer2d.pixel_concurrency = budget.pixel_concurrency;
+        local_context.pixel_concurrency = budget.pixel_concurrency;
         local_context.cancel_flag = cancel_flag;
-        local_context.renderer2d.cancel_flag = cancel_flag;
 
         TACHYON_ZONE("ExecuteFrame");
 
@@ -207,7 +191,7 @@ void render_frames_parallel_internal(
 
             auto cached_data = disk_cache->load(key);
             if (cached_data) {
-                framebuffer = deserialize_framebuffer(*cached_data);
+                framebuffer = TBFCodec::decode_framebuffer(*cached_data);
                 if (framebuffer) {
                     cache_hit = true;
                 }
@@ -248,7 +232,7 @@ void render_frames_parallel_internal(
                         "beauty"
                     );
 
-                    auto frame_data = serialize_framebuffer(*framebuffer);
+                    auto frame_data = TBFCodec::encode_framebuffer(*framebuffer);
                     disk_cache->store(key, frame_data);
                 }
             }
@@ -267,7 +251,7 @@ void render_frames_parallel_internal(
                     packet.frame = fb.get();
                     packet.metadata.time_seconds = execution_plan.frame_tasks[frame_idx].time_seconds;
                     packet.metadata.scene_hash = std::to_string(compiled_scene.scene_hash);
-                    packet.metadata.color_space = context.renderer2d.cms.output_profile.to_string();
+                    packet.metadata.color_space = context.cms.output_profile.to_string();
                     
                     const auto write_start = std::chrono::high_resolution_clock::now();
                     const bool write_ok = sink->write_frame(packet);
@@ -324,29 +308,29 @@ void render_frames_parallel_internal(
             executor.set_parallel_worker_count(budget.pixel_concurrency);
 
               // Create a thread-local context sharing the media manager
-              ::tachyon::RenderContext local_context(context.renderer2d.precomp_cache, context.media);
+              ::tachyon::RenderContext local_context(context.precomp_cache, context.media);
 
               local_context.prefetcher = &prefetcher;
               local_context.scheduler = scheduler;
               local_context.policy = context.policy;
-              local_context.renderer2d.policy = context.policy;
+              local_context.policy = context.policy;
               local_context.surface_pool = context.surface_pool;
-              local_context.renderer2d.font_registry = context.renderer2d.font_registry;
-              local_context.renderer2d.transition_registry = context.renderer2d.transition_registry;
-              local_context.renderer2d.cms = context.renderer2d.cms;
+              local_context.font_registry = context.font_registry;
+              local_context.transition_registry = context.transition_registry;
+              local_context.cms = context.cms;
 
-              local_context.renderer2d.diagnostics = context.renderer2d.diagnostics;
-              local_context.renderer2d.effects = context.renderer2d.effects;
-              local_context.renderer2d.asset_resolver = context.renderer2d.asset_resolver;
-              local_context.renderer2d.working_color_space = context.renderer2d.working_color_space;
-              local_context.renderer2d.text_registry = context.renderer2d.text_registry;
-              local_context.renderer2d.profiler = context.renderer2d.profiler;
-              local_context.renderer2d.compute_backend = context.renderer2d.compute_backend;
-              local_context.renderer2d.surface_pool = context.renderer2d.surface_pool;
-              local_context.renderer2d.subtitle_entries = context.renderer2d.subtitle_entries;
-              local_context.renderer2d.pixel_concurrency = budget.pixel_concurrency;
+              local_context.diagnostics = context.diagnostics;
+              local_context.effects = context.effects;
+              local_context.asset_resolver = context.asset_resolver;
+              local_context.working_color_space = context.working_color_space;
+              local_context.text_registry = context.text_registry;
+              local_context.profiler = context.profiler;
+              local_context.compute_backend = context.compute_backend;
+              local_context.surface_pool = context.surface_pool;
+              local_context.subtitle_entries = context.subtitle_entries;
+              local_context.pixel_concurrency = budget.pixel_concurrency;
               local_context.cancel_flag = cancel_flag;
-              local_context.renderer2d.cancel_flag = cancel_flag;
+              local_context.cancel_flag = cancel_flag;
 
             while (true) {
                 std::size_t index = next_index.fetch_add(1);
@@ -379,7 +363,7 @@ void render_frames_parallel_internal(
 
                     auto cached_data = disk_cache->load(key);
                     if (cached_data) {
-                        framebuffer = deserialize_framebuffer(*cached_data);
+                        framebuffer = TBFCodec::decode_framebuffer(*cached_data);
                         if (framebuffer) {
                             cache_hit = true;
                         }
@@ -418,7 +402,7 @@ void render_frames_parallel_internal(
                                 "beauty"
                             );
 
-                            auto frame_data = serialize_framebuffer(*framebuffer);
+                            auto frame_data = TBFCodec::encode_framebuffer(*framebuffer);
                             disk_cache->store(key, frame_data);
                         }
                     }
@@ -435,7 +419,7 @@ void render_frames_parallel_internal(
                             packet.frame = fb.get();
                             packet.metadata.time_seconds = execution_plan.frame_tasks[frame_idx].time_seconds;
                             packet.metadata.scene_hash = std::to_string(compiled_scene.scene_hash);
-                            packet.metadata.color_space = context.renderer2d.cms.output_profile.to_string();
+                            packet.metadata.color_space = context.cms.output_profile.to_string();
                             
                             const auto write_start = std::chrono::high_resolution_clock::now();
                             const bool write_ok = sink->write_frame(packet);

@@ -5,7 +5,7 @@
 #include <utility>
 #include <vector>
 
-#include "tachyon/core/types/diagnostics.h"
+#include <tachyon/core/types/diagnostics.h>
 
 namespace tachyon {
 

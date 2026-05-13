@@ -154,18 +154,18 @@ void evaluate_and_rasterize_root_composition_step(
 
         auto cached_comp = executor.cache().lookup_composition(root_key);
         if (cached_comp) {
-            renderer2d::RendererResourceProvider provider(context.renderer2d);
+            renderer2d::RendererResourceProvider provider(context);
             const auto intent_result = render::build_render_intent(*cached_comp, &provider);
 
-            if (context.renderer2d.diagnostics) {
+            if (context.diagnostics) {
                 for (const auto& diag : intent_result.diagnostics.diagnostics) {
                     if (diag.severity == DiagnosticSeverity::Error) {
-                        context.renderer2d.diagnostics->diagnostics.add_error(
+                        context.diagnostics->diagnostics.add_error(
                             "render.intent.build_error",
                             diag.message,
                             diag.path);
                     } else if (diag.severity == DiagnosticSeverity::Warning) {
-                        context.renderer2d.diagnostics->diagnostics.add_warning(
+                        context.diagnostics->diagnostics.add_warning(
                             "render.intent.build_warning",
                             diag.message,
                             diag.path);
@@ -206,8 +206,8 @@ void finalize_frame_step(
         executor.cache().store_frame(cache_state.frame_key, result.frame);
     }
 
-    context.diagnostic_tracker = nullptr;
-    context.renderer2d.diagnostics = nullptr;
+    context.diagnostics = nullptr;
+    context.diagnostics = nullptr;
 }
 
 } // namespace tachyon

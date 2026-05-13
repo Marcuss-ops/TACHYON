@@ -32,7 +32,7 @@ TEST_F(GoldenRenderingTest, TextPro_BasicLayout) {
 
     RenderPlan plan;
     FrameRenderTask task;
-    RenderContext2D context; // Mocked or minimal for test
+    RenderContext context; // Mocked or minimal for test
 
     auto frame = render_evaluated_composition_2d(state, plan, task, context);
     ASSERT_NE(frame.surface, nullptr);
@@ -57,7 +57,7 @@ TEST_F(GoldenRenderingTest, ShapeModifiers_TrimAndRepeat) {
 
     RenderPlan plan;
     FrameRenderTask task;
-    RenderContext2D context;
+    RenderContext context;
 
     auto frame = render_evaluated_composition_2d(state, plan, task, context);
     ASSERT_NE(frame.surface, nullptr);
@@ -86,7 +86,7 @@ TEST_F(GoldenRenderingTest, ShapeModifiers_Degenerate) {
 
     RenderPlan plan;
     FrameRenderTask task;
-    RenderContext2D context;
+    RenderContext context;
 
     auto frame = render_evaluated_composition_2d(state, plan, task, context);
     EXPECT_TRUE(test::GoldenTestHelper::compare_with_golden("shape_degenerate", *frame.surface));

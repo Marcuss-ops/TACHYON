@@ -407,6 +407,6 @@ std::uint64_t hash_scene_content(const SceneSpec& scene) {
     return builder.finish();
 }
 
-} // namespace tachyon
+} // namespace
 
 } // namespace tachyon

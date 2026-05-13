@@ -15,7 +15,7 @@ std::shared_ptr<SurfaceRGBA> render_layer_surface(
     const render::RenderIntent& intent,
     const RenderPlan& plan,
     const FrameRenderTask& task,
-    RenderContext2D& context,
+    RenderContext& context,
     const std::optional<RectI>& target_rect) {
 
     if (layer.type == scene::LayerType::Precomp) {

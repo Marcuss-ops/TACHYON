@@ -27,13 +27,13 @@ void evaluate_property(
 
     double cached_value = 0.0;
     if (executor.m_cache.lookup_property(prop_cache_key, cached_value)) {
-        if (context.diagnostic_tracker) context.diagnostic_tracker->property_hits++;
+        if (context.diagnostics) context.diagnostics->property_hits++;
         return;
     }
 
-    if (context.diagnostic_tracker) {
-        context.diagnostic_tracker->property_misses++;
-        context.diagnostic_tracker->properties_evaluated++;
+    if (context.diagnostics) {
+        context.diagnostics->property_misses++;
+        context.diagnostics->properties_evaluated++;
     }
 
     double value = track.constant_value;

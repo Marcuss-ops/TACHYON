@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/renderer2d/effects/core/effect_host.h"
-#include "tachyon/renderer2d/resource/render_context.h"
+#include "tachyon/runtime/resource/render_context.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 
@@ -14,7 +14,7 @@ namespace renderer2d {
 
 class EffectRegistry;
 
-EffectHost& effect_host_for(RenderContext2D& context);
+EffectHost& effect_host_for(RenderContext& context);
 
 EffectParams effect_params_from_spec(const EffectSpec& spec, const ColorProfile& working_profile);
 EffectParams effect_params_from_spec(const EffectSpec& spec);

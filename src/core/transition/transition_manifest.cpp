@@ -58,6 +58,7 @@ const std::vector<TransitionDescriptor>& get_transition_manifest() {
         make_desc(std::string(ids::transition::zoom_blur), "Zoom Blur", "Radial zoom blur expansion", TransitionKind::Zoom, TransitionRuntimeKind::CpuPixel, true, false),
         make_desc(std::string(ids::transition::zoom_in), "Zoom In", "Fast zoom in transition", TransitionKind::Zoom, TransitionRuntimeKind::CpuPixel, true, false),
         make_desc(std::string(ids::transition::directional_blur_wipe), "Blur Wipe", "Motion blur directional wipe", TransitionKind::Wipe, TransitionRuntimeKind::CpuPixel, true, false),
+        make_desc(std::string(ids::transition::flash), "Flash", "Bright flash transition", TransitionKind::Fade, TransitionRuntimeKind::CpuPixel, true, false),
 
         // --- Light Leaks Pack ---
         make_desc(std::string(ids::transition::light_leak), "Classic Leak", "Wide amber cinematic leak", TransitionKind::Fade, TransitionRuntimeKind::CpuPixel, true, false),

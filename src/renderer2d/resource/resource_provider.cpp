@@ -5,19 +5,19 @@
 namespace tachyon::renderer2d {
 
 std::shared_ptr<::tachyon::media::MeshAsset> RendererResourceProvider::get_mesh(const std::string& id) {
-    if (!m_context.media_manager) return nullptr;
+    if (!m_context.media) return nullptr;
     
     // Convert const shared_ptr<const MeshAsset> to shared_ptr<MeshAsset> 
     // This is safe here because the renderer is allowed to observe but we might need non-const
     // actually RenderIntent uses shared_ptr<MeshAsset>.
-    auto const_mesh = m_context.media_manager->get_mesh(id);
+    auto const_mesh = m_context.media->get_mesh(id);
     return std::const_pointer_cast<::tachyon::media::MeshAsset>(const_mesh);
 }
 
 std::shared_ptr<std::uint8_t[]> RendererResourceProvider::get_texture_rgba(const std::string& id) {
-    if (!m_context.media_manager) return nullptr;
+    if (!m_context.media) return nullptr;
     
-    auto img = m_context.media_manager->get_image(id);
+    auto img = m_context.media->get_image(id);
     if (!img) {
         return nullptr;
     }

@@ -16,6 +16,69 @@ namespace {
 
 constexpr float kTangentEpsilon = 1.0e-6f;
 
+template<typename K, typename T, typename LerpFn>
+T internal_sample_keyframes(
+    const std::vector<K>& keyframes,
+    const T& fallback,
+    double time,
+    LerpFn lerp) {
+    if (keyframes.empty()) return fallback;
+    
+    if (time <= keyframes.front().time) return keyframes.front().value;
+    if (time >= keyframes.back().time) return keyframes.back().value;
+
+    auto it = std::lower_bound(keyframes.begin(), keyframes.end(), time,
+        [](const K& k, double t) { return k.time < t; });
+
+    const auto& k1 = *(it - 1);
+    const auto& k2 = *it;
+
+    if (k1.interpolation == animation::InterpolationMode::Hold) return k1.value;
+
+    double duration = k2.time - k1.time;
+    double t = (duration > 1e-8) ? (time - k1.time) / duration : 0.0;
+    double remapped_t = animation::apply_easing(t, k1.easing, k1.bezier);
+    return lerp(k1.value, k2.value, remapped_t);
+}
+
+template<typename K, typename T, typename LerpFn, typename BezierFn>
+T internal_sample_spatial_keyframes(
+    const std::vector<K>& keyframes,
+    const T& fallback,
+    double time,
+    LerpFn lerp,
+    BezierFn bezier_sample) {
+    if (keyframes.empty()) return fallback;
+
+    if (time <= keyframes.front().time) return keyframes.front().value;
+    if (time >= keyframes.back().time) return keyframes.back().value;
+
+    auto it = std::lower_bound(keyframes.begin(), keyframes.end(), time,
+        [](const K& k, double t) { return k.time < t; });
+
+    const auto& k1 = *(it - 1);
+    const auto& k2 = *it;
+
+    if (k1.interpolation == animation::InterpolationMode::Hold) return k1.value;
+
+    double duration = k2.time - k1.time;
+    double t = (duration > 1e-8) ? (time - k1.time) / duration : 0.0;
+    double remapped_t = animation::apply_easing(t, k1.easing, k1.bezier);
+    float weight = static_cast<float>(remapped_t);
+
+    if (k1.tangent_out.length_squared() > kTangentEpsilon || k2.tangent_in.length_squared() > kTangentEpsilon) {
+        return bezier_sample(
+            k1.value,
+            k1.value + k1.tangent_out,
+            k2.value + k2.tangent_in,
+            k2.value,
+            weight
+        );
+    }
+
+    return lerp(k1.value, k2.value, weight);
+}
+
 } // namespace
 
 double sample_scalar(
@@ -76,8 +139,7 @@ double sample_scalar(
         return property.value.value_or(fallback);
     }
 
-    auto generic_prop = animation::to_generic(property);
-    return animation::sample_keyframes(generic_prop.keyframes, property.value.value_or(fallback), local_time_seconds, animation::lerp_scalar);
+    return internal_sample_keyframes(property.keyframes, property.value.value_or(fallback), local_time_seconds, animation::lerp_scalar);
 }
 
 math::Vector2 sample_vector2(
@@ -113,10 +175,8 @@ math::Vector2 sample_vector2(
         return property.value.value_or(fallback);
     }
 
-    auto generic_prop = animation::to_spatial_generic(property);
-    
-    return animation::sample_spatial_keyframes(
-        generic_prop.keyframes, 
+    return internal_sample_spatial_keyframes(
+        property.keyframes, 
         property.value.value_or(fallback), 
         local_time_seconds, 
         animation::lerp_vector2,
@@ -157,10 +217,8 @@ math::Vector3 sample_vector3(
         return property.value.value_or(fallback);
     }
 
-    auto generic_prop = animation::to_spatial_generic(property);
-
-    return animation::sample_spatial_keyframes(
-        generic_prop.keyframes, 
+    return internal_sample_spatial_keyframes(
+        property.keyframes, 
         property.value.value_or(fallback), 
         local_time_seconds, 
         animation::lerp_vector3,
@@ -174,8 +232,7 @@ ColorSpec sample_color(const AnimatedColorSpec& property, const ColorSpec& fallb
         return property.value.value_or(fallback);
     }
 
-    auto generic_prop = animation::to_generic(property);
-    return animation::sample_keyframes(generic_prop.keyframes, property.value.value_or(fallback), local_time_seconds, animation::lerp_color);
+    return internal_sample_keyframes(property.keyframes, property.value.value_or(fallback), local_time_seconds, animation::lerp_color);
 }
 
 } // namespace tachyon::scene

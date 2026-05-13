@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/renderer2d/raster/rasterizer.h"
-#include "tachyon/renderer2d/resource/render_context.h"
+#include "tachyon/runtime/resource/render_context.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/render/render_intent.h"
@@ -20,13 +20,13 @@ std::shared_ptr<SurfaceRGBA> render_precomp_surface(
     const render::RenderIntent& intent,
     const RenderPlan& plan,
     const FrameRenderTask& task,
-    RenderContext2D& context);
+    RenderContext& context);
 
 std::shared_ptr<SurfaceRGBA> render_simple_layer_surface(
     const scene::EvaluatedLayerState& layer,
     const scene::EvaluatedCompositionState& state,
     const render::RenderIntent& intent,
-    RenderContext2D& context,
+    RenderContext& context,
     const std::optional<RectI>& target_rect = std::nullopt);
 
 std::shared_ptr<SurfaceRGBA> render_layer_surface(
@@ -35,7 +35,7 @@ std::shared_ptr<SurfaceRGBA> render_layer_surface(
     const render::RenderIntent& intent,
     const RenderPlan& plan,
     const FrameRenderTask& task,
-    RenderContext2D& context,
+    RenderContext& context,
     const std::optional<RectI>& target_rect = std::nullopt);
 
 } // namespace renderer2d

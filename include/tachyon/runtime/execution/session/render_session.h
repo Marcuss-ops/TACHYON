@@ -2,13 +2,16 @@
 
 #include "tachyon/runtime/execution/frames/frame_executor.h"
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
-#include "tachyon/renderer2d/resource/render_context.h"
+#include "tachyon/runtime/resource/render_context.h"
+#include "tachyon/renderer2d/resource/precomp_cache.h"
 #include "tachyon/media/streaming/media_prefetcher.h"
 #include "tachyon/media/playback_scheduler.h"
 #include "tachyon/runtime/resource/surface_pool.h"
 #include "tachyon/runtime/execution/presentation_clock.h"
 #include "tachyon/runtime/execution/framebuffer_playback_queue.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
+#include "tachyon/renderer2d/resource/precomp_cache.h"
+#include "tachyon/runtime/registry/runtime_registry_bundle.h"
 #include "tachyon/transition_registry.h"
 #include "tachyon/presets/text/text_registry.h"
 #include "tachyon/runtime/execution/compiled_frame_program.h"
@@ -107,7 +110,7 @@ public:
     FrameCache& cache() { return m_cache; }
     const FrameCache& cache() const { return m_cache; }
     std::shared_ptr<renderer2d::PrecompCache> precomp_cache() { return m_precomp_cache; }
-    std::shared_ptr<const renderer2d::PrecompCache> precomp_cache() const { return m_precomp_cache; }
+    const std::shared_ptr<renderer2d::PrecompCache>& precomp_cache() const { return m_precomp_cache; }
 
 private:
     FrameCache m_cache;
@@ -120,11 +123,11 @@ private:
     std::unique_ptr<runtime::PresentationClock> m_clock;
     std::unique_ptr<runtime::FramebufferPlaybackQueue> m_playback_queue;
 
-    renderer2d::EffectRegistry m_effect_registry;
-    TransitionRegistry m_transition_registry;
+    std::unique_ptr<runtime::RuntimeRegistryBundle> m_bundle;
 
     std::optional<std::size_t> m_memory_budget_bytes;
     profiling::RenderProfiler* m_profiler{nullptr};
+    const runtime::RuntimeRegistryBundle* m_bundle_ptr{nullptr};
     const TransitionRegistry* m_transition_registry_ptr{nullptr};
     const presets::TextRegistry* m_text_registry_ptr{nullptr};
 };

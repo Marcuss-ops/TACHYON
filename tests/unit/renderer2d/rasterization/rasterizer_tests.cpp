@@ -5,7 +5,7 @@
 #include "tachyon/renderer2d/effects/effect_registry.h"
 #include "tachyon/transition_registry.h"
 #include "tachyon/presets/effects/effect_manifest.h"
-#include "tachyon/renderer2d/resource/render_context.h"
+#include "tachyon/runtime/resource/render_context.h"
 
 #include <filesystem>
 #include <iostream>
@@ -149,7 +149,7 @@ bool run_rasterizer_tests() {
         });
         commands.push_back(textured);
 
-        renderer2d::RenderContext2D context;
+        RenderContext context;
         RasterizedFrame2D frame = render_frame_2d(plan, task, commands, context);
         check_true(frame.surface != nullptr, "Frame renderer returns a surface");
         check_true(frame.estimated_draw_ops == commands.size(), "Frame renderer reports executed command count");

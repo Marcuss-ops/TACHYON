@@ -85,7 +85,8 @@ private:
 #include "tachyon/properties/animatable_property.h"
 #include "tachyon/core/properties/expression_property.h"
 
-namespace tachyon::properties {
+namespace tachyon {
+namespace properties {
 
 template <typename T>
 T Property<T>::sample(const PropertyEvaluationContext& ctx) const {
@@ -119,4 +120,5 @@ uint64_t Property<T>::hash_identity(const PropertyEvaluationContext& ctx) const 
     return 0xCAFEBABEDEADBEEFULL ^ std::hash<std::string>{}(m_name);
 }
 
-} // namespace tachyon::properties
+} // namespace properties
+} // namespace tachyon

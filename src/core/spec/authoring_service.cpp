@@ -158,9 +158,7 @@ std::vector<std::string> AuthoringService::get_link_libs() {
     // scene-authoring surface. Do not pull renderer/runtime/media/output
     // modules into the plugin boundary.
     return {
-        "TachyonScene",
-        "TachyonPresets",
-        "TachyonText"
+        "TachyonScene"
     };
 }
 

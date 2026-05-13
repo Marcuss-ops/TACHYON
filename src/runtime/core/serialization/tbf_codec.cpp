@@ -3,6 +3,7 @@
 #include <fstream>
 #include <cstring>
 #include <algorithm>
+#include <iostream>
 
 namespace tachyon::runtime {
 
@@ -10,25 +11,25 @@ namespace {
 
 // Enum validation helpers
 template<typename E>
-bool is_valid_enum(std::uint8_t value) {
+bool is_valid_enum(std::uint64_t value) {
     if constexpr (std::is_same_v<E, CompiledNodeType>) {
-        return value <= static_cast<std::uint8_t>(CompiledNodeType::Unknown);
+        return value <= static_cast<std::uint64_t>(CompiledNodeType::Unknown);
     } else if constexpr (std::is_same_v<E, CompiledPropertyTrack::Kind>) {
-        return value <= static_cast<std::uint8_t>(CompiledPropertyTrack::Kind::Binding);
+        return value <= static_cast<std::uint64_t>(CompiledPropertyTrack::Kind::Binding);
     } else if constexpr (std::is_same_v<E, spec::FrameBlendMode>) {
-        return value <= static_cast<std::uint8_t>(spec::FrameBlendMode::OpticalFlow);
+        return value <= static_cast<std::uint64_t>(spec::FrameBlendMode::OpticalFlow);
     } else if constexpr (std::is_same_v<E, spec::TimeRemapMode>) {
-        return value <= static_cast<std::uint8_t>(spec::TimeRemapMode::OpticalFlow);
+        return value <= static_cast<std::uint64_t>(spec::TimeRemapMode::OpticalFlow);
     } else if constexpr (std::is_same_v<E, DeterminismContract::FloatingPointMode>) {
-        return value <= static_cast<std::uint8_t>(DeterminismContract::FloatingPointMode::Relaxed);
+        return value <= static_cast<std::uint64_t>(DeterminismContract::FloatingPointMode::Relaxed);
     } else if constexpr (std::is_same_v<E, DeterminismContract::FmaPolicy>) {
-        return value <= static_cast<std::uint8_t>(DeterminismContract::FmaPolicy::Enable);
+        return value <= static_cast<std::uint64_t>(DeterminismContract::FmaPolicy::Enable);
     } else if constexpr (std::is_same_v<E, DeterminismContract::DenormalPolicy>) {
-        return value <= static_cast<std::uint8_t>(DeterminismContract::DenormalPolicy::Preserve);
+        return value <= static_cast<std::uint64_t>(DeterminismContract::DenormalPolicy::Preserve);
     } else if constexpr (std::is_same_v<E, DeterminismContract::RoundingMode>) {
-        return value <= static_cast<std::uint8_t>(DeterminismContract::RoundingMode::Downward);
+        return value <= static_cast<std::uint64_t>(DeterminismContract::RoundingMode::Downward);
     } else if constexpr (std::is_same_v<E, DeterminismContract::PrngKind>) {
-        return value <= static_cast<std::uint8_t>(DeterminismContract::PrngKind::PCG32);
+        return value <= static_cast<std::uint64_t>(DeterminismContract::PrngKind::PCG32);
     }
     return true;
 }
@@ -257,6 +258,8 @@ std::vector<std::uint8_t> TBFCodec::encode(const CompiledScene& scene) {
     writer.write_u16(static_cast<std::uint16_t>(scene.determinism.rounding_mode));
     writer.write_u16(static_cast<std::uint16_t>(scene.determinism.prng));
     writer.write_u64(scene.determinism.seed);
+    writer.write_u32(scene.determinism.layout_version);
+    writer.write_u32(scene.determinism.compiler_version);
     
     // 4. Graph
     writer.write_vector(scene.graph.edges(), [](BinaryWriter& w, const RuntimeRenderGraph::Edge& e) {
@@ -300,6 +303,37 @@ std::vector<std::uint8_t> TBFCodec::encode(const CompiledScene& scene) {
             writer.write_f64(layer.out_time);
             writer.write_f64(layer.start_time);
 
+            // Version 5 additions
+            writer.write_bool(layer.parent_index.has_value());
+            if (layer.parent_index) writer.write_u32(*layer.parent_index);
+            writer.write_bool(layer.precomp_index.has_value());
+            if (layer.precomp_index) writer.write_u32(*layer.precomp_index);
+
+            // Version 5: Basic Effects
+            writer.write_u32(static_cast<std::uint32_t>(std::min<std::size_t>(layer.effects.size(), kMaxVectorItems)));
+            for (const auto& effect : layer.effects) {
+                writer.write_bool(effect.enabled);
+                writer.write_string(effect.type);
+                
+                writer.write_u32(static_cast<std::uint32_t>(effect.scalars.size()));
+                for (const auto& [k, v] : effect.scalars) {
+                    writer.write_string(k);
+                    writer.write_f64(v);
+                }
+                
+                writer.write_u32(static_cast<std::uint32_t>(effect.colors.size()));
+                for (const auto& [k, v] : effect.colors) {
+                    writer.write_string(k);
+                    writer.write_u8(v.r); writer.write_u8(v.g); writer.write_u8(v.b); writer.write_u8(v.a);
+                }
+                
+                writer.write_u32(static_cast<std::uint32_t>(effect.strings.size()));
+                for (const auto& [k, v] : effect.strings) {
+                    writer.write_string(k);
+                    writer.write_string(v);
+                }
+            }
+
             // Unified Temporal & Tracking
             writer.write_vector(layer.track_bindings, [](BinaryWriter& w, const spec::TrackBinding& b) {
                 TBFWriter& tw = static_cast<TBFWriter&>(w);
@@ -336,8 +370,14 @@ std::vector<std::uint8_t> TBFCodec::encode(const CompiledScene& scene) {
     
     // 7. Expressions
     writer.write_vector(scene.expressions, [](BinaryWriter& w, const expressions::Bytecode& e) {
-        w.write_vector(e.instructions);
+        w.write_vector(e.instructions, [](BinaryWriter& w2, const expressions::Instruction& instr) {
+            w2.write_u8(static_cast<std::uint8_t>(instr.op));
+            w2.write_u32(instr.data);
+        });
         w.write_vector(e.constants);
+        w.write_vector(e.names, [](BinaryWriter& w3, const std::string& name) {
+            w3.write_string(name);
+        });
     });
 
     // 8. Assets
@@ -371,6 +411,8 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
     scene.project_name = reader.read_string();
     scene.scene_hash = reader.read_u64();
     
+    if (reader.error) return std::nullopt;
+    
     // 3. Determinism
     scene.determinism.fp_mode = reader.read_enum<DeterminismContract::FloatingPointMode>();
     scene.determinism.fma_policy = reader.read_enum<DeterminismContract::FmaPolicy>();
@@ -378,17 +420,23 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
     scene.determinism.rounding_mode = reader.read_enum<DeterminismContract::RoundingMode>();
     scene.determinism.prng = reader.read_enum<DeterminismContract::PrngKind>();
     scene.determinism.seed = reader.read_u64();
+    scene.determinism.layout_version = reader.read_u32();
+    scene.determinism.compiler_version = reader.read_u32();
     
+    if (reader.error) { std::cerr << "TBF: Error reading determinism\n"; return std::nullopt; }
+
     // 4. Graph
-    scene.graph.edges() = static_cast<std::vector<RuntimeRenderGraph::Edge>>(reader.read_vector<RuntimeRenderGraph::Edge>([](BinaryReader& r) {
+    scene.graph.edges() = reader.read_vector<RuntimeRenderGraph::Edge>([](BinaryReader& r) {
         RuntimeRenderGraph::Edge e;
         e.from = r.read_u32();
         e.to = r.read_u32();
         e.structural = r.read_bool();
         return e;
-    }));
-    scene.graph.topo_order() = static_cast<std::vector<std::uint32_t>>(reader.read_vector<std::uint32_t>());
+    });
+    scene.graph.topo_order() = reader.read_vector<std::uint32_t>();
     
+    if (reader.error) { std::cerr << "TBF: Error reading graph\n"; return std::nullopt; }
+
     // 5. Compositions
     std::uint32_t comp_count = reader.read_u32();
     if (comp_count > kMaxCompositions) return std::nullopt;
@@ -429,6 +477,41 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
             layer.out_time = reader.read_f64();
             layer.start_time = reader.read_f64();
 
+            if (reader.file_version >= 5) {
+                if (reader.read_bool()) layer.parent_index = reader.read_u32();
+                if (reader.read_bool()) layer.precomp_index = reader.read_u32();
+
+                std::uint32_t effect_count = reader.read_u32();
+                if (effect_count > kMaxVectorItems) { reader.error = true; return std::nullopt; }
+                for (std::uint32_t k = 0; k < effect_count; ++k) {
+                    EffectSpec eff;
+                    eff.enabled = reader.read_bool();
+                    eff.type = reader.read_string();
+                    
+                    std::uint32_t scalar_count = reader.read_u32();
+                    for (std::uint32_t s = 0; s < scalar_count; ++s) {
+                        std::string key = reader.read_string();
+                        eff.scalars[key] = reader.read_f64();
+                    }
+                    
+                    std::uint32_t color_count = reader.read_u32();
+                    for (std::uint32_t c = 0; c < color_count; ++c) {
+                        std::string key = reader.read_string();
+                        ColorSpec col;
+                        col.r = reader.read_u8(); col.g = reader.read_u8(); col.b = reader.read_u8(); col.a = reader.read_u8();
+                        eff.colors[key] = col;
+                    }
+                    
+                    std::uint32_t string_count = reader.read_u32();
+                    for (std::uint32_t st = 0; st < string_count; ++st) {
+                        std::string key = reader.read_string();
+                        eff.strings[key] = reader.read_string();
+                    }
+
+                    layer.effects.push_back(std::move(eff));
+                }
+            }
+
             // Unified Temporal & Tracking
             layer.track_bindings = reader.read_vector<spec::TrackBinding>([](BinaryReader& r) {
                 return static_cast<TBFReader&>(r).read_track_binding();
@@ -450,6 +533,8 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
         scene.compositions.push_back(std::move(comp));
     }
 
+    if (reader.error) { std::cerr << "TBF: Error reading compositions\n"; return std::nullopt; }
+
     // 6. Property Tracks
     scene.property_tracks = reader.read_vector<CompiledPropertyTrack>([](BinaryReader& r) {
         TBFReader& tr = static_cast<TBFReader&>(r);
@@ -468,15 +553,27 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
         return track;
     });
 
+    if (reader.error) { std::cerr << "TBF: Error reading property tracks\n"; return std::nullopt; }
+
     // 7. Expressions
     std::uint32_t expression_count = reader.read_u32();
     if (expression_count > kMaxVectorItems) return std::nullopt;
     for (std::uint32_t i = 0; i < expression_count; ++i) {
         expressions::Bytecode expr;
-        expr.instructions = reader.read_vector<expressions::Instruction>();
+        expr.instructions = reader.read_vector<expressions::Instruction>([](BinaryReader& r) {
+            expressions::Instruction instr;
+            instr.op = static_cast<expressions::OpCode>(r.read_u8());
+            instr.data = r.read_u32();
+            return instr;
+        });
         expr.constants = reader.read_vector<double>();
+        expr.names = reader.read_vector<std::string>([](BinaryReader& r) {
+            return r.read_string();
+        });
         scene.expressions.push_back(std::move(expr));
     }
+
+    if (reader.error) { std::cerr << "TBF: Error reading expressions\n"; return std::nullopt; }
 
     // 8. Assets
     scene.assets = reader.read_vector<AssetSpec>([](BinaryReader& r) {
@@ -487,7 +584,7 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
         return a;
     });
 
-    if (reader.error) return std::nullopt;
+    if (reader.error) { std::cerr << "TBF: Error reading assets\n"; return std::nullopt; }
 
     scene.graph.compile();
 
@@ -516,6 +613,29 @@ std::optional<CompiledScene> TBFCodec::load_from_file(const std::filesystem::pat
     std::vector<std::uint8_t> buffer(static_cast<std::size_t>(size));
     if (!file.read(reinterpret_cast<char*>(buffer.data()), size)) return std::nullopt;
     return decode(buffer);
+}
+
+std::vector<std::uint8_t> TBFCodec::encode_framebuffer(const renderer2d::Framebuffer& fb) {
+    BinaryWriter writer;
+    writer.write_u32(fb.width());
+    writer.write_u32(fb.height());
+    writer.write_vector(fb.pixels());
+    return std::move(writer.buffer);
+}
+
+std::shared_ptr<renderer2d::Framebuffer> TBFCodec::decode_framebuffer(const std::vector<std::uint8_t>& data) {
+    BinaryReader reader{data};
+    std::uint32_t w = reader.read_u32();
+    std::uint32_t h = reader.read_u32();
+    auto pixels = reader.read_vector<float>();
+    
+    if (reader.error || pixels.size() != static_cast<std::size_t>(w) * h * 4U) {
+        return nullptr;
+    }
+    
+    auto fb = std::make_shared<renderer2d::Framebuffer>(w, h);
+    fb->mutable_pixels() = std::move(pixels);
+    return fb;
 }
 
 } // namespace tachyon::runtime

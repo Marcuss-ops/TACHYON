@@ -1,3 +1,4 @@
+#include "tachyon/renderer2d/resource/precomp_cache.h"
 #include "tachyon/renderer2d/evaluated_composition/layer_renderer.h"
 
 #include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"
@@ -5,6 +6,9 @@
 #include "tachyon/text/animation/text_animator_utils.h"
 #include "tachyon/text/layout/layout.h"
 #include "tachyon/text/rendering/text_raster_surface.h"
+#include "layer_renderer_simple.h"
+
+#include "tachyon/renderer2d/evaluated_composition/layer_renderer.h"
 #include "tachyon/renderer2d/evaluated_composition/rendering/primitives/layer_renderer_procedural.h"
 #include <iostream>
 #include "tachyon/renderer2d/evaluated_composition/rendering/core/layer_renderer_interface.h"
@@ -42,7 +46,7 @@ renderer2d::Color to_color(const ::tachyon::ColorSpec& spec) {
 std::shared_ptr<SurfaceRGBA> make_canvas(
     const scene::EvaluatedCompositionState& state,
     const std::optional<RectI>& target_rect,
-    RenderContext2D& context) {
+    RenderContext& context) {
 
     const std::uint32_t width = target_rect.has_value()
         ? static_cast<std::uint32_t>(std::max(1, target_rect->width))
@@ -210,7 +214,7 @@ public:
         const scene::EvaluatedLayerState& layer,
         const scene::EvaluatedCompositionState& state,
         const render::RenderIntent& intent,
-        RenderContext2D& context,
+        RenderContext& context,
         const std::optional<RectI>& target_rect,
         std::shared_ptr<SurfaceRGBA>& surface) const override {
         (void)intent;
@@ -372,7 +376,7 @@ public:
         const scene::EvaluatedLayerState& layer,
         const scene::EvaluatedCompositionState& state,
         const render::RenderIntent& intent,
-        RenderContext2D& context,
+        RenderContext& context,
         const std::optional<RectI>& target_rect,
         std::shared_ptr<SurfaceRGBA>& surface) const override {
         (void)intent;
@@ -410,7 +414,7 @@ public:
         const scene::EvaluatedLayerState& layer,
         const scene::EvaluatedCompositionState& state,
         const render::RenderIntent& intent,
-        RenderContext2D& context,
+        RenderContext& context,
         const std::optional<RectI>& target_rect,
         std::shared_ptr<SurfaceRGBA>& surface) const override {
         (void)intent;
@@ -418,7 +422,7 @@ public:
         (void)state;
         (void)target_rect;
 
-        if (context.media_manager == nullptr) {
+        if (context.media == nullptr) {
             return false;
         }
 
@@ -427,7 +431,7 @@ public:
             return false;
         }
 
-        const auto* frame = context.media_manager->get_video_frame(*media_source, layer.local_time_seconds);
+        const auto* frame = context.media->get_video_frame(*media_source, layer.local_time_seconds);
         if (frame == nullptr) {
             surface->clear({0, 0, 1, 1}); // BLUE
             return true;
@@ -446,7 +450,7 @@ public:
         const scene::EvaluatedLayerState& layer,
         const scene::EvaluatedCompositionState& state,
         const render::RenderIntent& intent,
-        RenderContext2D& context,
+        RenderContext& context,
         const std::optional<RectI>& target_rect,
         std::shared_ptr<SurfaceRGBA>& surface) const override {
         (void)intent;
@@ -473,7 +477,7 @@ public:
         const scene::EvaluatedLayerState& layer,
         const scene::EvaluatedCompositionState& state,
         const render::RenderIntent& intent,
-        RenderContext2D& context,
+        RenderContext& context,
         const std::optional<RectI>& target_rect,
         std::shared_ptr<SurfaceRGBA>& surface) const override {
         (void)intent;
@@ -500,7 +504,7 @@ std::shared_ptr<SurfaceRGBA> render_precomp_surface(
     const render::RenderIntent& intent,
     const RenderPlan& plan,
     const FrameRenderTask& task,
-    RenderContext2D& context) {
+    RenderContext& context) {
     (void)intent;
 
     if (context.precomp_cache && layer.nested_composition) {
@@ -535,7 +539,7 @@ std::shared_ptr<SurfaceRGBA> render_simple_layer_surface(
     const scene::EvaluatedLayerState& layer,
     const scene::EvaluatedCompositionState& state,
     const render::RenderIntent& intent,
-    RenderContext2D& context,
+    RenderContext& context,
     const std::optional<RectI>& target_rect) {
 
     auto surface = make_canvas(state, target_rect, context);

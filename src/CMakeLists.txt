@@ -41,16 +41,18 @@ function(tachyon_assert_no_duplicate_sources var_name)
     endif()
 endfunction()
 
+include_directories("${CMAKE_SOURCE_DIR}/src")
+include_directories("${CMAKE_SOURCE_DIR}/include")
+
 function(tachyon_configure_common target)
     target_include_directories(${target}
         PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/..
+            "${CMAKE_SOURCE_DIR}/src"
         PUBLIC
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
-            $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../third_party>
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../third_party/stb/include>
-            $<INSTALL_INTERFACE:include>
+            "${CMAKE_SOURCE_DIR}/include"
+            "${CMAKE_BINARY_DIR}/include"
+            "${CMAKE_SOURCE_DIR}/third_party"
+            "${CMAKE_SOURCE_DIR}/third_party/stb/include"
     )
     
     if(absl_SOURCE_DIR)
@@ -73,7 +75,6 @@ function(tachyon_configure_common target)
     target_compile_definitions(${target} PRIVATE TACHYON_BUILD_DLL)
 endfunction()
 
-message(STATUS "[DEBUG] absl_SOURCE_DIR: ${absl_SOURCE_DIR}")
 function(tachyon_link_absl target)
     target_link_libraries(${target} PUBLIC 
         absl_flat_hash_map
@@ -318,7 +319,8 @@ add_library(TachyonLibrary STATIC ${TachyonLibrarySources})
 tachyon_configure_common(TachyonLibrary)
 target_link_libraries(TachyonLibrary PUBLIC TachyonPresets)
 
-# CLI libraries removed. Sources are added directly to executables to allow different compile-time configurations.
+# Core CLI is built as a reusable static library.
+# Optional/demo tools are built as standalone executables.
 
 add_library(TachyonCLICore STATIC ${TachyonCLICoreSources})
 tachyon_configure_common(TachyonCLICore)

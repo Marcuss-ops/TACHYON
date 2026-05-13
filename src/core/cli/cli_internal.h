@@ -25,7 +25,6 @@ bool run_doctor_command(const CliOptions& options, std::ostream& out, std::ostre
 bool run_output_presets_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry);
 bool run_thumb_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry);
 bool run_preview_internal(const CliOptions& options, std::ostream& out, std::ostream& err, const char* label, TransitionRegistry& registry);
-bool run_transition_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry);
 bool run_probe_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry);
 bool run_concat_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry);
 

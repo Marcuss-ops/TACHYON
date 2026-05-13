@@ -29,11 +29,11 @@ void evaluate_composition(
 
     const auto timing_start = std::chrono::high_resolution_clock::now();
     auto record_timing = [&]() {
-        if (!context.diagnostic_tracker) {
+        if (!context.diagnostics) {
             return;
         }
         const auto timing_end = std::chrono::high_resolution_clock::now();
-        context.diagnostic_tracker->timings.push_back(TimingSample{
+        context.diagnostics->timings.push_back(TimingSample{
             "composition",
             std::to_string(comp.node.node_id),
             std::chrono::duration<double, std::milli>(timing_end - timing_start).count()
@@ -41,14 +41,14 @@ void evaluate_composition(
     };
 
     if (executor.m_cache.lookup_composition(node_key)) {
-        if (context.diagnostic_tracker) context.diagnostic_tracker->composition_hits++;
+        if (context.diagnostics) context.diagnostics->composition_hits++;
         record_timing();
         return;
     }
 
-    if (context.diagnostic_tracker) {
-        context.diagnostic_tracker->composition_misses++;
-        context.diagnostic_tracker->compositions_evaluated++;
+    if (context.diagnostics) {
+        context.diagnostics->composition_misses++;
+        context.diagnostics->compositions_evaluated++;
     }
 
     auto state = std::make_shared<scene::EvaluatedCompositionState>();

@@ -30,6 +30,16 @@ SceneBuilder& SceneBuilder::project(std::string id, std::string name) {
     return *this;
 }
 
+SceneBuilder& SceneBuilder::authoring_tool(std::string tool) {
+    spec_.project.authoring_tool = std::move(tool);
+    return *this;
+}
+
+SceneBuilder& SceneBuilder::root_seed(std::int64_t seed) {
+    spec_.project.root_seed = seed;
+    return *this;
+}
+
 SceneBuilder& SceneBuilder::composition(std::string id, std::function<void(CompositionBuilder&)> fn) {
     CompositionBuilder cb(std::move(id), preset_registry_);
     fn(cb);
