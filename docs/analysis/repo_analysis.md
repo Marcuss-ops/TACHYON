@@ -1,7 +1,7 @@
 # TACHYON Repository Analysis
 
 ## Overview
-TACHYON is a high-performance, deterministic, headless motion graphics and spatial composition engine. It is designed to consume declarative scene specifications and produce encoded video output with minimal overhead. The project heavily relies on C++ (C++20 standard) and avoids browser/DOM-based rendering, prioritizing a native, CPU-first, and deterministic architecture.
+TACHYON is a high-performance, deterministic, headless motion graphics and compositing engine. It is designed to consume declarative scene specifications and produce encoded video output with minimal overhead. The project heavily relies on C++ (C++20 standard) and avoids browser/DOM-based rendering, prioritizing a native, CPU-first, and deterministic architecture.
 
 ## Primary Engine Components
 The source code under `src/` and headers under `include/` are logically divided into the following primary components:

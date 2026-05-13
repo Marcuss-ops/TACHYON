@@ -7,8 +7,6 @@
 #include <string_view>
 #include <vector>
 
-namespace tachyon::presets { class EffectManifest; }
-
 namespace tachyon {
 namespace renderer2d {
 
@@ -45,7 +43,7 @@ namespace tachyon { class TransitionRegistry; }
 namespace tachyon {
 namespace renderer2d {
 
-void register_builtin_effects(EffectRegistry& registry, const presets::EffectManifest& manifest, const TransitionRegistry& transition_registry);
+void register_builtin_effects(EffectRegistry& registry, const TransitionRegistry& transition_registry);
 
 } // namespace renderer2d
 } // namespace tachyon

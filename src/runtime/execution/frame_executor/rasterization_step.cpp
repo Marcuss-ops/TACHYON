@@ -22,26 +22,23 @@ RasterizationResult RasterizationStep::execute(
     const renderer2d::DrawList2D draw_list = builder.build(cached_comp);
     result.draw_command_count = draw_list.commands.size();
 
+    // Acquire the output surface before rendering so composition writes directly into it,
+    // eliminating the full-frame blit that previously copied rasterized.surface → pooled.
+    std::shared_ptr<renderer2d::SurfaceRGBA> output_surface;
+    if (pool) {
+        output_surface = pool->acquire_prepared();
+    }
 
     RasterizedFrame2D rasterized;
     {
         profiling::ProfileScope raster_scope(profiler, profiling::ProfileEventType::Phase, "composition_raster", frame_number);
         renderer2d::EffectRegistry effect_reg;
-        rasterized = render_evaluated_composition_2d(cached_comp, intent, plan, task, context, effect_reg);
+        rasterized = render_evaluated_composition_2d(cached_comp, intent, plan, task, context, effect_reg,
+                                                     std::move(output_surface));
     }
 
     if (rasterized.surface) {
-        if (pool) {
-            auto pooled = pool->acquire_prepared();
-            if (pooled) {
-                pooled->blit(*rasterized.surface, 0, 0);
-                result.frame = std::static_pointer_cast<renderer2d::Framebuffer>(pooled);
-            } else {
-                result.frame = std::make_shared<renderer2d::Framebuffer>(std::move(*rasterized.surface));
-            }
-        } else {
-            result.frame = std::make_shared<renderer2d::Framebuffer>(std::move(*rasterized.surface));
-        }
+        result.frame = std::static_pointer_cast<renderer2d::Framebuffer>(rasterized.surface);
     }
 
     result.aovs = std::move(rasterized.aovs);

@@ -2,6 +2,7 @@
 #include "tachyon/content/preset_catalog.h"
 #include "tachyon/core/registry/parameter_bag.h"
 #include <iostream>
+#include <stdexcept>
 
 namespace tachyon::scene {
 
@@ -60,18 +61,32 @@ CompositionBuilder& CompositionBuilder::add_typed_layer(
     std::string id,
     std::function<void(LayerBuilder&)> defaults,
     std::function<void(LayerBuilder&)> fn) {
-    LayerBuilder lb(std::move(id), preset_registry_);
-    defaults(lb);
-    fn(lb);
-    spec_.layers.push_back(std::move(lb).build());
+    const std::string layer_id = id;
+    try {
+        LayerBuilder lb(std::move(id), preset_registry_);
+        defaults(lb);
+        fn(lb);
+        spec_.layers.push_back(std::move(lb).build());
+    } catch (const std::exception& e) {
+        throw std::runtime_error(
+            "Composition '" + spec_.id + "', layer '" + layer_id + "': " + e.what()
+        );
+    }
     return *this;
 }
 
 CompositionBuilder& CompositionBuilder::layer(std::string id, std::function<void(LayerBuilder&)> fn) {
     std::cerr << "!!! CompositionBuilder::layer: adding layer with id='" << id << "' !!!" << std::endl;
-    LayerBuilder lb(std::move(id), preset_registry_);
-    fn(lb);
-    spec_.layers.push_back(std::move(lb).build());
+    const std::string layer_id = id;
+    try {
+        LayerBuilder lb(std::move(id), preset_registry_);
+        fn(lb);
+        spec_.layers.push_back(std::move(lb).build());
+    } catch (const std::exception& e) {
+        throw std::runtime_error(
+            "Composition '" + spec_.id + "', layer '" + layer_id + "': " + e.what()
+        );
+    }
     return *this;
 }
 

@@ -66,8 +66,8 @@ public:
     virtual void gaussian_blur(void* device_ptr, uint32_t w, uint32_t h,
                                 float sigma_x, float sigma_y) = 0;
 
-    // Apply 3D LUT (size^3 * 3 floats, row-major R-G-B). In-place.
-    virtual void apply_lut3d(void* device_ptr, uint32_t w, uint32_t h,
+    // Apply LUT (size^3 * 3 floats, row-major R-G-B). In-place.
+    virtual void apply_lut(void* device_ptr, uint32_t w, uint32_t h,
                               const float* lut, uint32_t lut_size) = 0;
 
     // --- Convenience: round-trip helpers ---

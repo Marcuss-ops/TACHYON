@@ -76,11 +76,6 @@ Improve efficiency of motion blur sampling.
 *   **Strategy:** Use accumulation buffers and adaptive sampling; skip blur for low velocity.
 *   **Expected Gain:** 2x-10x.
 
-### 15. Ray Tracer Spatial
-Optimize the Spatial backend traversal and sampling.
-*   **Strategy:** Use Embree for CPU ray tracing or OptiX for GPU acceleration.
-*   **Expected Gain:** 5x-30x.
-
 ---
 
 ## Implementation Roadmap
@@ -105,9 +100,9 @@ Optimize the Spatial backend traversal and sampling.
 13. Per-job memory budgeting.
 14. Intelligent batch worker policy.
 
-### Phase 4: Heavyweight Backend
-15. Embree for Spatial ray tracing.
-16. Optional compute shaders for heavy effects.
+### Phase 4: Advanced Effects
+15. Optional compute shaders for heavy effects.
+
 
 ## Zero Waste Philosophy: The Five Pillars of Performance
 
@@ -213,50 +208,4 @@ Search for and optimize these areas:
 | 9 | Effects | Effect cache + SIMD | 2x-5x |
 | 10 | Resize | libswscale/SIMD | 2x-4x |
 | 11 | Asset Decode | Decoded asset cache | 2x-8x |
-| 12 | Ray Tracer | Embree/OptiX | 5x-30x |
 
----
-
-# Spatial Cinematography Engine Vision
-
-Tachyon's ultimate differentiator in the Spatial space is to move away from the manual "layer dragging" paradigm of After Effects and Premiere Pro. Instead, Tachyon should evolve into a **programmable, automatic, verifiable, and generative cinematography engine**, designed for mass video production.
-
-## Core Philosophical Shift
-Instead of imperative commands (`place camera here`, `rotate layer X`), Tachyon uses declarative intent:
-```cpp
-// "I want a dramatic push-in on the title, and ensure it remains readable."
-.camera_director()
-    .focus("title")
-    .style("cinematic_push_in")
-    .avoid_occlusion(true)
-    .done();
-```
-
-## Key Architectural Features
-
-### 1. Auto Camera Director
-A programmatic director that automatically calculates camera position, FOV, and motion based on the requested style and subjects. It ensures safe framing and avoids occluding critical elements.
-
-### 2. Visibility Contracts (Occlusion Guard)
-Layers have semantic roles and guarantees. A "hero_text" layer can assert `must_be_readable(true)`. The engine validates depth, contrast, and occlusion before rendering.
-*   **Validation:** Checks if text is behind a plate, lacks contrast, or is out of frame.
-*   **Auto-Fix Engine:** Automatically adjusts Z-depth, boosts emission, adds rim lights, or drops plate opacity if a visibility contract fails.
-
-### 3. Semantic Spatial Layout Solver
-Instead of manual X/Y/Z placement, the user provides a list of semantic elements (title, portrait, document) and a layout style (`cinematic_news_wall`). The solver mathematically positions them to avoid overlap and maximize depth separation.
-
-### 4. Depth-Aware Text System
-Spatial text is intelligent. It auto-extrudes based on font size, applies safe bevels, auto-emits if background contrast is low, and dynamically corrects its Z-position if occluded.
-
-### 5. Integrated Render Validation
-The engine acts as a self-checking system. After a frame is generated, it produces a validation report (`PASS render_not_empty`, `FAIL title_occluded_by_plate`). This is critical for headless, automated workflows.
-
-### 6. Procedural Scene Templates
-Parametric data (JSON) drives complex Spatial behaviors rather than static visual presets. Examples include `evidence_wall`, `Spatial_timeline`, or `documentary_reveal`, where the engine handles the choreography of multiple assets dynamically.
-
-## Spatial Implementation Roadmap
-
-*   **Phase 1: Spatial Core Stability** (Accurate camera, depth, materials, lights, Spatial text, debug passes).
-*   **Phase 2: Validation Engine** (Automated checks for visibility, contrast, and framing).
-*   **Phase 3: Auto-Fix Pipeline** (Algorithmic corrections for failed validations).
-*   **Phase 4: Semantic Layout & Auto Director** (Algorithmic layout solvers and programmatic camera movement).

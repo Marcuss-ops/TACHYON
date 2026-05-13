@@ -7,7 +7,6 @@
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/renderer2d/effects/effect_host.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
-#include "tachyon/presets/effects/effect_manifest.h"
 #include "tachyon/transition_registry.h"
 #include <cmath>
 #include <algorithm>
@@ -37,7 +36,6 @@ bool run_transition_fast_paths_tests() {
     const std::vector<float> tests = {0.1f, 0.3f, 0.5f, 0.8f};
     
     EffectRegistry registry;
-    presets::EffectManifest manifest;
     TransitionRegistry transition_registry;
     register_builtin_transitions(transition_registry);
     for (auto* desc : transition_registry.list_all()) {
@@ -46,7 +44,7 @@ bool run_transition_fast_paths_tests() {
         resolve_basic_transition_implementations(d);
         resolve_artistic_transition_implementations(d);
     }
-    register_builtin_effects(registry, manifest, transition_registry);
+    register_builtin_effects(registry, transition_registry);
     auto host = create_effect_host(registry);
 
     bool all_ok = true;

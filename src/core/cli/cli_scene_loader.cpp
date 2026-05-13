@@ -1,11 +1,13 @@
 #include "tachyon/core/cli_scene_loader.h"
 #include "tachyon/core/spec/cpp_scene_loader.h"
 #include "tachyon/media/resolution/asset_resolution.h"
-#include "tachyon/core/spec/schema/objects/scene_spec_core.h"
+#include "tachyon/presets/scene/scene_preset_registry.h"
 #include "tachyon/presets/preset_scene_resolver.h"
 #include "tachyon/scene/builder.h"
 #include "cli_internal.h"
 
+#include <filesystem>
+#include <exception>
 #include <iostream>
 
 namespace tachyon {
@@ -24,18 +26,22 @@ LoadSceneResult load_scene_for_cli(
 
     if (options.preset_id.has_value()) {
         const auto& pid = *options.preset_id;
+        try {
+            if (auto scene = presets::PresetSceneResolver::instantiate_scene_or_background(pid)) {
+                LoadedSceneContext context;
+                context.scene = std::move(*scene);
+                context.from_preset = true;
+                result.context = std::move(context);
+                result.success = true;
+                return result;
+            }
 
-        if (auto scene = presets::PresetSceneResolver::instantiate_scene_or_background(pid)) {
-            LoadedSceneContext context;
-            context.scene = std::move(*scene);
-            context.from_preset = true;
-            result.context = std::move(context);
-            result.success = true;
+            result.diagnostics.add_error("preset_not_found", "Unknown preset: " + pid);
+            return result;
+        } catch (const std::exception& e) {
+            result.diagnostics.add_error("preset_build_failed", e.what());
             return result;
         }
-
-        result.diagnostics.add_error("preset_not_found", "Unknown preset: " + pid);
-        return result;
     }
 
     if (!options.cpp_path.empty()) {
@@ -48,9 +54,13 @@ LoadSceneResult load_scene_for_cli(
             context.source_path = options.cpp_path;
             context.from_cpp = true;
 
+            std::filesystem::path asset_root = std::filesystem::path(options.cpp_path).parent_path();
+            if (asset_root.empty()) {
+                asset_root = std::filesystem::current_path();
+            }
             const auto resolved = resolve_assets(
                 context.scene,
-                tachyon::scene_asset_root(options.cpp_path)
+                asset_root
             );
 
             if (resolved.value.has_value()) {

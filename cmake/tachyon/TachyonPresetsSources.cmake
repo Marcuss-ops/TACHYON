@@ -24,7 +24,6 @@ set(TachyonPresetsSources
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/effects/generator_effects.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/effects/stylize_effects.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/effects/transition_effects.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/presets/effects/effect_manifest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/scene/scene_preset_registry.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/preset_scene_resolver.cpp

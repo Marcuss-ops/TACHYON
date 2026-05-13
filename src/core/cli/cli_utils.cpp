@@ -2,7 +2,6 @@
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/media/resolution/asset_resolution.h"
-#include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include "tachyon/core/cli_scene_loader.h"
 #include "tachyon/runtime/execution/native_render.h"
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"

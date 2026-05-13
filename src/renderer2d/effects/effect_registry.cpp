@@ -1,5 +1,5 @@
 #include "tachyon/renderer2d/effects/effect_registry.h"
-#include "tachyon/presets/effects/effect_manifest.h"
+#include "tachyon/presets/effects/effect_specs.h"
 #include "tachyon/transition_registry.h"
 #include "tachyon/core/transition/transition_fast_path_registry.h"
 #include "tachyon/renderer2d/effects/core/transitions/transition_fast_paths.h"
@@ -11,6 +11,13 @@
 namespace tachyon::renderer2d {
 
 // External implementation tables
+std::vector<::tachyon::presets::EffectKindSpec> get_blur_effect_kind_specs();
+std::vector<::tachyon::presets::EffectKindSpec> get_color_effect_kind_specs();
+std::vector<::tachyon::presets::EffectKindSpec> get_distortion_effect_kind_specs();
+std::vector<::tachyon::presets::EffectKindSpec> get_generator_effect_kind_specs();
+std::vector<::tachyon::presets::EffectKindSpec> get_stylize_effect_kind_specs();
+std::vector<::tachyon::presets::EffectKindSpec> get_transition_effect_kind_specs();
+
 std::vector<EffectImplementation> get_blur_effect_implementations();
 std::vector<EffectImplementation> get_color_effect_implementations();
 std::vector<EffectImplementation> get_transition_effect_implementations(const tachyon::TransitionRegistry& transition_registry);
@@ -36,7 +43,29 @@ std::vector<std::string> EffectRegistry::list_ids() const {
     return registry_.list_ids();
 }
 
-void register_builtin_effects(EffectRegistry& registry, const presets::EffectManifest& manifest, const TransitionRegistry& transition_registry) {
+namespace {
+
+std::vector<::tachyon::presets::EffectKindSpec> collect_builtin_kind_specs() {
+    std::vector<::tachyon::presets::EffectKindSpec> specs;
+
+    auto append = [](std::vector<::tachyon::presets::EffectKindSpec>& into, std::vector<::tachyon::presets::EffectKindSpec> from) {
+        into.insert(into.end(),
+            std::make_move_iterator(from.begin()),
+            std::make_move_iterator(from.end()));
+    };
+
+    append(specs, get_blur_effect_kind_specs());
+    append(specs, get_color_effect_kind_specs());
+    append(specs, get_distortion_effect_kind_specs());
+    append(specs, get_generator_effect_kind_specs());
+    append(specs, get_stylize_effect_kind_specs());
+    append(specs, get_transition_effect_kind_specs());
+    return specs;
+}
+
+} // namespace
+
+void register_builtin_effects(EffectRegistry& registry, const TransitionRegistry& transition_registry) {
     // 0. Register fast-path handler for Core to resolve circular dependency
     core::transition::TransitionFastPathRegistry::set_handler(apply_transition_fast_path);
 
@@ -74,7 +103,8 @@ void register_builtin_effects(EffectRegistry& registry, const presets::EffectMan
     }
     
     // 2. Join with Kind Specs from presets
-    auto kind_specs = manifest.generate_kind_specs();
+    (void)transition_registry;
+    auto kind_specs = collect_builtin_kind_specs();
     for (auto& kind : kind_specs) {
         auto it = impl_map.find(kind.id);
         if (it != impl_map.end()) {

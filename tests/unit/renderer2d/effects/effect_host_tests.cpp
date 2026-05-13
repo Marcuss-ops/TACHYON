@@ -5,7 +5,6 @@
 #include "tachyon/runtime/resource/render_context.h"
 #include "tachyon/renderer2d/raster/rasterizer.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
-#include "tachyon/presets/effects/effect_manifest.h"
 #include "tachyon/renderer2d/effects/core/transitions/basic_transitions.h"
 #include "tachyon/renderer2d/effects/core/transitions/artistic_transitions.h"
 #include "tachyon/renderer2d/effects/core/transitions/light_leak_transitions.h"
@@ -48,8 +47,7 @@ bool run_effect_host_tests() {
         resolve_light_leak_implementations(d);
     }
     
-    presets::EffectManifest manifest;
-    register_builtin_effects(registry, manifest, transition_registry);
+    register_builtin_effects(registry, transition_registry);
     
     auto host_ptr = create_effect_host(registry);
     EffectHost& host = *host_ptr;

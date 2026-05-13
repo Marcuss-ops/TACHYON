@@ -3,7 +3,6 @@
 #include "tachyon/renderer2d/effects/core/transitions/artistic_transitions.h"
 #include "tachyon/renderer2d/effects/core/transitions/light_leak_transitions.h"
 #include "tachyon/renderer2d/effects/effect_utils.h"
-#include "tachyon/presets/effects/effect_manifest.h"
 
 namespace tachyon::runtime {
 
@@ -30,8 +29,7 @@ RuntimeRegistryBundle create_default_runtime_registry_bundle() {
     }
 
     // 3. Register Effects
-    presets::EffectManifest effect_manifest;
-    renderer2d::register_builtin_effects(bundle.effects, effect_manifest, bundle.transitions);
+    renderer2d::register_builtin_effects(bundle.effects, bundle.transitions);
 
     return bundle;
 }

@@ -1,7 +1,6 @@
 #include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"
 #include "tachyon/render/render_intent.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
-#include "tachyon/presets/effects/effect_manifest.h"
 #include "tachyon/transition_registry.h"
 #include "tachyon/renderer2d/effects/core/transitions/transition_fast_paths.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
@@ -66,9 +65,8 @@ bool run_evaluated_composition_renderer_tests() {
 
     RenderContext render_context;
     renderer2d::EffectRegistry effect_reg;
-    presets::EffectManifest manifest;
     TransitionRegistry transition_reg;
-    register_builtin_effects(effect_reg, manifest, transition_reg);
+    register_builtin_effects(effect_reg, transition_reg);
 
     RenderIntent intent;
     const RasterizedFrame2D frame = tachyon::render_evaluated_composition_2d(state, intent, plan, task, render_context, effect_reg);

@@ -7,7 +7,7 @@ Supersedes: N/A
 
 # Universal LayerSurface Rule
 
-Tachyon's reusable spatial composition pipeline is split into two stages.
+Tachyon's reusable 2D compositing pipeline is split into two stages.
 
 1. Source-to-surface
    - image decode
@@ -19,20 +19,18 @@ Tachyon's reusable spatial composition pipeline is split into two stages.
 
    This is the only stage where layer-type branching is allowed.
 
-2. Surface-to-Spatial
-   - `LayerSurface` promotion to a textured spatial plane
-   - `SpatialTransform`
-   - camera
-   - lights
-   - compositing
+2. Surface-to-Compositor
+   - `LayerSurface` promotion to a renderable surface
+   - Transform application (Position, Scale, Rotation)
+   - Alpha blending
+   - Compositing
 
    This stage must be source-agnostic.
 
 Rules:
 - Source-specific logic ends at `LayerSurface`.
-- Spatial logic starts at `LayerSurface`.
-- No source-type checks are allowed inside the spatial bridge.
+- Compositing logic starts at `LayerSurface`.
+- No source-type checks are allowed inside the compositor bridge.
 - The bridge may only reason about shared rendering data, transforms, and compositing state.
-- True extrusion or mesh-generation paths stay separate from the universal plane path.
 
-The intent is to keep one reusable spatial contract for every renderable layer without adding per-type wrapper code.
+The intent is to keep one reusable contract for every renderable layer without adding per-type wrapper code.

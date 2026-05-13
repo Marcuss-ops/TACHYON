@@ -15,7 +15,9 @@
 #include "tachyon/renderer2d/color/blending.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
 
+#include "tachyon/core/render/dof_settings.h"
 #include "tachyon/core/render/motion_blur_settings.h"
+#include "tachyon/core/render/visibility.h"
 #include "tachyon/renderer2d/raster/tile_grid.h"
 #include "tachyon/output/frame_aov.h"
 #include "tachyon/transition_registry.h"
@@ -124,7 +126,8 @@ RasterizedFrame2D render_evaluated_composition_2d(
     const RenderPlan& plan,
     const FrameRenderTask& task,
     RenderContext& context,
-    [[maybe_unused]] const renderer2d::EffectRegistry& effect_registry) {
+    [[maybe_unused]] const renderer2d::EffectRegistry& effect_registry,
+    std::shared_ptr<renderer2d::SurfaceRGBA> output_surface) {
 
     RasterizedFrame2D frame;
     frame.frame_number = task.frame_number;
@@ -139,20 +142,28 @@ RasterizedFrame2D render_evaluated_composition_2d(
     const std::uint32_t working_width = static_cast<std::uint32_t>(std::max<std::int64_t>(1, static_cast<std::int64_t>(std::round(static_cast<float>(state.width) * res_scale))));
     const std::uint32_t working_height = static_cast<std::uint32_t>(std::max<std::int64_t>(1, static_cast<std::int64_t>(std::round(static_cast<float>(state.height) * res_scale))));
 
-    frame.surface = context.surface_pool
-        ? context.surface_pool->acquire(working_width, working_height)
-        : std::make_shared<SurfaceRGBA>(working_width, working_height);
+    // Use the pre-allocated output surface when the caller provides one at the right size.
+    // This eliminates the full-frame blit in RasterizationStep.
+    if (output_surface
+        && output_surface->width() == working_width
+        && output_surface->height() == working_height) {
+        frame.surface = std::move(output_surface);
+    } else {
+        frame.surface = context.surface_pool
+            ? context.surface_pool->acquire(working_width, working_height)
+            : std::make_shared<SurfaceRGBA>(working_width, working_height);
+    }
     if (!frame.surface) {
-        frame.note += " [ERROR: failed to allocate surface of size " + 
+        frame.note += " [ERROR: failed to allocate surface of size " +
                      std::to_string(working_width) + "x" + std::to_string(working_height) + "]";
         return frame;
     }
 
-    // Clear background to transparent.
     frame.surface->clear(Color::transparent());
-    
+
     auto& dst = *frame.surface;
     dst.set_profile(context.cms.working_profile);
+    dst.clear_depth(0.0f);
 
     FrameDiagnostics* diagnostics = context.diagnostics;
 
@@ -442,8 +453,16 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 ::tachyon::renderer2d::apply_matte_buffer(*layer_surface, matte_buffers[i], state.width, state.height);
             }
 
+            // Final Composite
+            float layer_inv_z = -1.0f;
+            if (layer.world_position3.z != 0.0f) {
+                float z = std::abs(layer.world_position3.z);
+                if (z > 0.001f) {
+                    layer_inv_z = 1.0f / z;
+                }
+            }
 
-            composite_surface(target_surface, *layer_surface, 0, 0, parse_blend_mode(layer.blend_mode));
+            composite_surface(target_surface, *layer_surface, 0, 0, parse_blend_mode(layer.blend_mode), layer_inv_z);
         }
     };
 
@@ -462,21 +481,28 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
     if (should_tile) {
         TileGrid grid = build_tile_grid({0, 0, static_cast<int>(working_width), static_cast<int>(working_height)}, working_width, working_height, context.policy.tile_size);
-#ifdef _OPENMP
-#pragma omp parallel for schedule(dynamic)
-#endif
-        for (int i = 0; i < static_cast<int>(grid.tiles.size()); ++i) {
+
+        auto render_tile = [&](std::size_t i) {
             TACHYON_ZONE("RenderTile");
             const auto& tile = grid.tiles[i];
-            
-            auto tile_surface_ptr = context.surface_pool 
+            auto tile_surface_ptr = context.surface_pool
                 ? context.surface_pool->acquire(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height))
                 : std::make_shared<SurfaceRGBA>(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height));
             tile_surface_ptr->clear(Color::transparent());
-            
             RenderContext thread_context = context;
             render_pass(*tile_surface_ptr, thread_context, tile);
             composite_surface(dst, *tile_surface_ptr, tile.x, tile.y, BlendMode::Normal);
+        };
+
+        if (context.tile_executor) {
+            context.tile_executor(grid.tiles.size(), render_tile);
+        } else {
+#ifdef _OPENMP
+#pragma omp parallel for schedule(dynamic)
+#endif
+            for (int i = 0; i < static_cast<int>(grid.tiles.size()); ++i) {
+                render_tile(static_cast<std::size_t>(i));
+            }
         }
     } else {
         render_pass(dst, context);

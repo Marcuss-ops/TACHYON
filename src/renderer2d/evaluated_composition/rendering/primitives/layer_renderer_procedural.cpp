@@ -282,8 +282,8 @@ void render_procedural_pattern(
             
             // STAGE 1: WARP
             if (do_warp) {
-                float n1 = noise.noise3d(u * warp_freq, v * warp_freq, t * warp_speed) * warp * 0.1f;
-                float n2 = noise.noise3d(v * warp_freq + 0.5f, u * warp_freq + 0.5f, t * warp_speed) * warp * 0.1f;
+                float n1 = noise.noise3(u * warp_freq, v * warp_freq, t * warp_speed) * warp * 0.1f;
+                float n2 = noise.noise3(v * warp_freq + 0.5f, u * warp_freq + 0.5f, t * warp_speed) * warp * 0.1f;
                 u += n1;
                 v += n2;
             }
@@ -385,8 +385,8 @@ void render_procedural_pattern(
             } else {
                 float value = 0.0f;
                 if (family == ProceduralFamily::AuraLike) {
-                    float n1 = noise.noise3d(u * freq, v * freq, t * 0.2f);
-                    float n2 = noise.noise3d(u * freq * 2.0f + n1, v * freq * 2.0f, t * 0.5f) * octave_decay;
+                    float n1 = noise.noise3(u * freq, v * freq, t * 0.2f);
+                    float n2 = noise.noise3(u * freq * 2.0f + n1, v * freq * 2.0f, t * 0.5f) * octave_decay;
                     value = (n2 + 1.0f) * 0.5f * amp;
                 } else if (family == ProceduralFamily::Grid) {
                     float rad = static_cast<float>(spec.angle.value.value_or(0.0) * 3.14159265358979323846 / 180.0);
@@ -408,7 +408,7 @@ void render_procedural_pattern(
                     }
                     value *= amp;
                 } else if (family == ProceduralFamily::Stars) {
-                    float n = noise.noise3d(u * freq * 100.0f, v * freq * 100.0f, 0.0f);
+                    float n = noise.noise3(u * freq * 100.0f, v * freq * 100.0f, 0.0f);
                     if (n > 0.8f) {
                         float twinkle_st = std::sin(t * 3.0f + n * 10.0f) * 0.5f + 0.5f;
                         value = ((n - 0.8f) / 0.2f) * twinkle_st * amp;
@@ -416,7 +416,7 @@ void render_procedural_pattern(
                 } else if (family == ProceduralFamily::Solid) {
                     value = 0.0f; // Solid uses col_a directly, handled below
                 } else {
-                    value = (noise.noise3d(u * freq * scale, v * freq * scale, t) + 1.0f) * 0.5f * amp;
+                    value = (noise.noise3(u * freq * scale, v * freq * scale, t) + 1.0f) * 0.5f * amp;
                 }
 
                 if (family == ProceduralFamily::Solid) {
