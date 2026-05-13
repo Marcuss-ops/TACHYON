@@ -20,6 +20,7 @@ set(TachyonRenderer2DSurfaceSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/surface/surface_sampling.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/surface/surface_blur.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/surface/surface_composite.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/surface/surface_composite_avx2.cpp
 )
 
 set(TachyonRenderer2DPathSources
@@ -153,8 +154,10 @@ tachyon_configure_common(TachyonRenderer2D)
 
 if(MSVC)
     set_source_files_properties(renderer2d/effects/core/transitions/light_leaks/light_leak_engine.cpp PROPERTIES COMPILE_FLAGS "/arch:AVX2")
+    set_source_files_properties(renderer2d/surface/surface_composite_avx2.cpp PROPERTIES COMPILE_FLAGS "/arch:AVX2")
 else()
     set_source_files_properties(renderer2d/effects/core/transitions/light_leaks/light_leak_engine.cpp PROPERTIES COMPILE_FLAGS "-mavx2")
+    set_source_files_properties(renderer2d/surface/surface_composite_avx2.cpp PROPERTIES COMPILE_FLAGS "-mavx2 -mfma")
 endif()
 target_compile_definitions(TachyonRenderer2D PRIVATE "TACHYON_AVX2")
 

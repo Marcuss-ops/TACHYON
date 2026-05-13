@@ -5,10 +5,14 @@
 
 namespace tachyon::renderer2d {
 
-/**
- * @brief Composites a source surface onto a destination surface with an offset.
- */
+// Porter-Duff "over" composite, straight alpha.
 void composite_with_offset(SurfaceRGBA& dst, const SurfaceRGBA& src, int ox, int oy);
+
+// Tiled version: clips the source ROI once, then processes in tile_w x tile_h blocks
+// for better cache locality. Replaces composite_with_offset in hot paths.
+void composite_with_offset_tiled(SurfaceRGBA& dst, const SurfaceRGBA& src,
+                                  int ox, int oy,
+                                  int tile_w = 128, int tile_h = 64);
 
 /**
  * @brief Converts a standard RGBA color to a premultiplied pixel.

@@ -1,7 +1,6 @@
 #include "tachyon/presets/preset_scene_resolver.h"
 #include "tachyon/presets/scene/scene_preset_registry.h"
-#include "tachyon/presets/background/background_preset_registry.h"
-#include "tachyon/presets/background/background_manifest.h"
+#include "tachyon/content/preset_catalog.h"
 #include "tachyon/scene/builder.h"
 #include "tachyon/presets/effects/effect_preset_registry.h"
 
@@ -30,9 +29,7 @@ std::optional<SceneSpec> PresetSceneResolver::instantiate_scene_preset(const std
 }
 
 std::optional<SceneSpec> PresetSceneResolver::instantiate_background_preset_as_scene(const std::string& preset_id) {
-    presets::BackgroundManifest bg_manifest;
-    presets::BackgroundPresetRegistry bg_registry(bg_manifest);
-    auto bg = bg_registry.create(preset_id, {});
+    auto bg = content::PresetCatalog::instance().create_background(preset_id, {});
     if (!bg) {
         return std::nullopt;
     }
@@ -56,9 +53,8 @@ bool PresetSceneResolver::exists_scene_preset(const std::string& preset_id) {
 }
 
 bool PresetSceneResolver::exists_background_preset(const std::string& preset_id) {
-    presets::BackgroundManifest bg_manifest;
-    presets::BackgroundPresetRegistry bg_registry(bg_manifest);
-    return bg_registry.find(preset_id) != nullptr;
+    auto entry = content::PresetCatalog::instance().find(preset_id);
+    return entry != nullptr && entry->kind == content::ContentKind::Background;
 }
 
 bool PresetSceneResolver::exists(const std::string& preset_id) {

@@ -10,7 +10,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$Root = Split-Path -Parent $PSScriptRoot
+$Root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 
 if ($Quick -and -not $Mode) { $Mode = 'quick' }
 if (-not $Mode -and $env:TACHYON_VALIDATE_MODE) { $Mode = $env:TACHYON_VALIDATE_MODE }

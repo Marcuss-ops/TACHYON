@@ -49,7 +49,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 $global:LASTEXITCODE = 0
 $Root = $PSScriptRoot
-. "$Root\scripts\test-router.ps1"
+. "$Root\scripts\tools\test-router.ps1"
 
 # Auto-enable KillStaleTests on Windows
 if (-not $KillStaleTests -and $env:OS -eq 'Windows_NT') {
@@ -155,7 +155,7 @@ if ($SkipBuild) {
 
 if ($env:OS -eq 'Windows_NT') {
     # Load tools into PATH
-    & "$Root\scripts\Enable-DevTools.ps1"
+    & "$Root\scripts\tools\Enable-DevTools.ps1"
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
     # Load VS compiler environment (cached)

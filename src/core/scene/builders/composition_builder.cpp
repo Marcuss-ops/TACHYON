@@ -1,6 +1,5 @@
 #include "tachyon/scene/builder.h"
-#include "tachyon/presets/background/background_manifest.h"
-#include "tachyon/presets/background/background_preset_registry.h"
+#include "tachyon/content/preset_catalog.h"
 #include "tachyon/core/registry/parameter_bag.h"
 #include <iostream>
 
@@ -37,15 +36,13 @@ CompositionBuilder& CompositionBuilder::background(BackgroundSpec background) {
     spec_.background = std::move(background);
     return *this;
 }
-
-CompositionBuilder& CompositionBuilder::background_preset(const std::string& id, double duration) {
+CompositionBuilder& CompositionBuilder::background_preset(const std::string& id) {
     registry::ParameterBag bag;
-    bag.set("width", static_cast<int>(spec_.width));
-    bag.set("height", static_cast<int>(spec_.height));
-    bag.set("duration", duration);
-    presets::BackgroundManifest bg_manifest;
-    presets::BackgroundPresetRegistry registry(bg_manifest);
-    if (auto bg_layer = registry.create(id, bag)) {
+    bag.set("width", static_cast<float>(spec_.width));
+    bag.set("height", static_cast<float>(spec_.height));
+    bag.set("duration", spec_.duration);
+
+    if (auto bg_layer = content::PresetCatalog::instance().create_background(id, bag)) {
         spec_.layers.insert(spec_.layers.begin(), std::move(*bg_layer));
     }
     return *this;

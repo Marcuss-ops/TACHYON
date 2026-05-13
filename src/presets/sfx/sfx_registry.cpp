@@ -6,6 +6,60 @@
 
 namespace tachyon::presets {
 
+struct SfxAssetDef {
+    const char* relative_path;
+    SfxCategory category;
+};
+
+static constexpr SfxAssetDef kSfxAssets[] = {
+    {"MoneySound/0.m4a", SfxCategory::MoneySound},
+    {"MoneySound/Best SFX Sound Effects Catalog to Download Artlist-23.m4a", SfxCategory::MoneySound},
+    {"MoneySound/Best SFX Sound Effects Catalog to Download Artlist-24.m4a", SfxCategory::MoneySound},
+    {"MoneySound/Best SFX Sound Effects Catalog to Download Artlist-25.m4a", SfxCategory::MoneySound},
+    {"Mouse/0.m4a", SfxCategory::Mouse},
+    {"Mouse/Best SFX Sound Effects Catalog to Download Artlist-26.m4a", SfxCategory::Mouse},
+    {"Mouse/Best SFX Sound Effects Catalog to Download Artlist-27.m4a", SfxCategory::Mouse},
+    {"Mouse/Best SFX Sound Effects Catalog to Download Artlist-32.m4a", SfxCategory::Mouse},
+    {"Mouse/Best SFX Sound Effects Catalog to Download Artlist-33.m4a", SfxCategory::Mouse},
+    {"Mouse/Best SFX Sound Effects Catalog to Download Artlist-34.m4a", SfxCategory::Mouse},
+    {"Mouse/Best SFX Sound Effects Catalog to Download Artlist-35.m4a", SfxCategory::Mouse},
+    {"Mouse/Best SFX Sound Effects Catalog to Download Artlist-36.m4a", SfxCategory::Mouse},
+    {"Mouse/Best SFX Sound Effects Catalog to Download Artlist-37.m4a", SfxCategory::Mouse},
+    {"Mouse/Best SFX Sound Effects Catalog to Download Artlist-38.m4a", SfxCategory::Mouse},
+    {"Photo/0.m4a", SfxCategory::Photo},
+    {"Photo/Best SFX Sound Effects Catalog to Download Artlist-08.m4a", SfxCategory::Photo},
+    {"Photo/Best SFX Sound Effects Catalog to Download Artlist-09.m4a", SfxCategory::Photo},
+    {"Photo/Best SFX Sound Effects Catalog to Download Artlist-10.m4a", SfxCategory::Photo},
+    {"Photo/Best SFX Sound Effects Catalog to Download Artlist-11.m4a", SfxCategory::Photo},
+    {"Photo/Best SFX Sound Effects Catalog to Download Artlist-12.m4a", SfxCategory::Photo},
+    {"Photo/Best SFX Sound Effects Catalog to Download Artlist-13.m4a", SfxCategory::Photo},
+    {"Photo/Best SFX Sound Effects Catalog to Download Artlist-14.m4a", SfxCategory::Photo},
+    {"Photo/Best SFX Sound Effects Catalog to Download Artlist-15.m4a", SfxCategory::Photo},
+    {"Photo/Best SFX Sound Effects Catalog to Download Artlist-16.m4a", SfxCategory::Photo},
+    {"Photo/Best SFX Sound Effects Catalog to Download Artlist-17.m4a", SfxCategory::Photo},
+    {"Soosh/0.m4a", SfxCategory::Soosh},
+    {"Soosh/Artlist Studios - Sound Effects Albums Artlist.m4a", SfxCategory::Soosh},
+    {"Soosh/Best SFX Sound Effects Catalog to Download Artlist-19.m4a", SfxCategory::Soosh},
+    {"Soosh/Best SFX Sound Effects Catalog to Download Artlist-20.m4a", SfxCategory::Soosh},
+    {"Soosh/Best SFX Sound Effects Catalog to Download Artlist-21.m4a", SfxCategory::Soosh},
+    {"Soosh/Best SFX Sound Effects Catalog to Download Artlist-22.m4a", SfxCategory::Soosh},
+    {"Soosh/Best SFX Sound Effects Catalog to Download Artlist-28.m4a", SfxCategory::Soosh},
+    {"Soosh/Best SFX Sound Effects Catalog to Download Artlist-29.m4a", SfxCategory::Soosh},
+    {"Soosh/Best SFX Sound Effects Catalog to Download Artlist-31.m4a", SfxCategory::Soosh},
+    {"Soosh/Best SFX Sound Effects Catalog to Download Artlist.m4a", SfxCategory::Soosh},
+    {"TypeWriting/0.m4a", SfxCategory::TypeWriting},
+    {"TypeWriting/1.m4a", SfxCategory::TypeWriting},
+    {"TypeWriting/2.m4a", SfxCategory::TypeWriting},
+    {"TypeWriting/Best SFX Sound Effects Catalog to Download Artlist-01.m4a", SfxCategory::TypeWriting},
+    {"TypeWriting/Best SFX Sound Effects Catalog to Download Artlist-02.m4a", SfxCategory::TypeWriting},
+    {"TypeWriting/Best SFX Sound Effects Catalog to Download Artlist-03.m4a", SfxCategory::TypeWriting},
+    {"TypeWriting/Best SFX Sound Effects Catalog to Download Artlist-04.m4a", SfxCategory::TypeWriting},
+    {"TypeWriting/Best SFX Sound Effects Catalog to Download Artlist-05.m4a", SfxCategory::TypeWriting},
+    {"TypeWriting/Best SFX Sound Effects Catalog to Download Artlist-06.m4a", SfxCategory::TypeWriting},
+    {"TypeWriting/Best SFX Sound Effects Catalog to Download Artlist-07.m4a", SfxCategory::TypeWriting},
+    {"TypeWriting/Best SFX Sound Effects Catalog to Download Artlist-18.m4a", SfxCategory::TypeWriting}
+};
+
 struct SfxRegistry::Impl {
     registry::TypedRegistry<SfxCategoryInfo> categories;
     std::unordered_map<SfxCategory, std::string> category_ids;
@@ -53,26 +107,19 @@ std::vector<std::string> SfxRegistry::list_ids() const {
 std::vector<std::string> SfxRegistry::list_sound_effects(
     const media::AssetResolver& resolver,
     SfxCategory category) const {
+    
     std::vector<std::string> files;
-    const auto* info = get_info(category);
-    if (!info) return files;
-
     auto sfx_root = resolver.config().sfx_root;
     if (sfx_root.empty()) return files;
-
-    auto dir = std::filesystem::path(sfx_root) / info->folder;
-    if (!std::filesystem::exists(dir)) return files;
-
-    for (const auto& entry : std::filesystem::directory_iterator(dir)) {
-        if (entry.is_regular_file()) {
-            std::string ext = entry.path().extension().string();
-            std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-            if (ext == ".m4a" || ext == ".mp3" || ext == ".wav") {
-                files.push_back(entry.path().string());
-            }
+    
+    std::filesystem::path root_path(sfx_root);
+    
+    for (const auto& asset : kSfxAssets) {
+        if (asset.category == category) {
+            files.push_back((root_path / asset.relative_path).string());
         }
     }
-    std::sort(files.begin(), files.end());
+    
     return files;
 }
 

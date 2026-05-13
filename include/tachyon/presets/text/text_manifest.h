@@ -2,6 +2,10 @@
  
 #include <vector>
  
+namespace tachyon::content {
+class PresetCatalog;
+}
+
 namespace tachyon::presets {
  
 struct TextLayerPresetSpec;
@@ -27,5 +31,8 @@ public:
      */
     std::vector<TextAnimatorPresetSpec> generate_animator_preset_specs() const;
 };
+
+void register_text_presets(content::PresetCatalog& catalog);
+void register_text_legacy_aliases(content::PresetCatalog& catalog);
  
 } // namespace tachyon::presets

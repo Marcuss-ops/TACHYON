@@ -10,6 +10,10 @@ struct PresetCatalog::Impl {
     mutable std::mutex mutex;
     std::unordered_map<std::string, PresetEntry> entries_map;
     std::unordered_map<std::string, AliasEntry> aliases_map;
+
+    std::unordered_map<std::string, std::function<std::vector<tachyon::TextAnimatorSpec>(const registry::ParameterBag&)>> text_animator_factories;
+    std::unordered_map<std::string, std::function<tachyon::LayerSpec(const registry::ParameterBag&)>> background_factories;
+    std::unordered_map<std::string, std::function<tachyon::spec::AudioTrackSpec(const registry::ParameterBag&)>> sfx_factories;
 };
 
 PresetCatalog& PresetCatalog::instance() {
@@ -20,10 +24,25 @@ PresetCatalog& PresetCatalog::instance() {
 PresetCatalog::PresetCatalog() : m_impl(std::make_unique<Impl>()) {}
 PresetCatalog::~PresetCatalog() = default;
 
-void PresetCatalog::register_preset(PresetEntry entry) {
+void PresetCatalog::register_entry(PresetEntry entry) {
     std::lock_guard<std::mutex> lock(m_impl->mutex);
     std::string id_str = entry.id;
     m_impl->entries_map[id_str] = std::move(entry);
+}
+
+void PresetCatalog::register_text_animator(std::string_view id, std::function<std::vector<tachyon::TextAnimatorSpec>(const registry::ParameterBag&)> factory) {
+    std::lock_guard<std::mutex> lock(m_impl->mutex);
+    m_impl->text_animator_factories[std::string(id)] = std::move(factory);
+}
+
+void PresetCatalog::register_background(std::string_view id, std::function<tachyon::LayerSpec(const registry::ParameterBag&)> factory) {
+    std::lock_guard<std::mutex> lock(m_impl->mutex);
+    m_impl->background_factories[std::string(id)] = std::move(factory);
+}
+
+void PresetCatalog::register_sfx(std::string_view id, std::function<tachyon::spec::AudioTrackSpec(const registry::ParameterBag&)> factory) {
+    std::lock_guard<std::mutex> lock(m_impl->mutex);
+    m_impl->sfx_factories[std::string(id)] = std::move(factory);
 }
 
 const PresetEntry* PresetCatalog::find(std::string_view id) const {
@@ -79,12 +98,41 @@ PresetCatalog::ResolutionResult PresetCatalog::resolve(std::string_view id, cons
     ResolutionResult result;
     if (entry_it != m_impl->entries_map.end()) {
         result.entry = &entry_it->second;
-        result.merged_params = std::move(merged);
-    } else {
-        result.entry = nullptr;
-        result.merged_params = merged;
     }
+    result.resolved_id = current_id;
+    result.merged_params = std::move(merged);
+    
     return result;
+}
+
+std::optional<std::vector<tachyon::TextAnimatorSpec>> PresetCatalog::create_text_animator(std::string_view id, const registry::ParameterBag& params) const {
+    auto res = resolve(id, params);
+    std::lock_guard<std::mutex> lock(m_impl->mutex);
+    auto it = m_impl->text_animator_factories.find(res.resolved_id);
+    if (it != m_impl->text_animator_factories.end()) {
+        return it->second(res.merged_params);
+    }
+    return std::nullopt;
+}
+
+std::optional<tachyon::LayerSpec> PresetCatalog::create_background(std::string_view id, const registry::ParameterBag& params) const {
+    auto res = resolve(id, params);
+    std::lock_guard<std::mutex> lock(m_impl->mutex);
+    auto it = m_impl->background_factories.find(res.resolved_id);
+    if (it != m_impl->background_factories.end()) {
+        return it->second(res.merged_params);
+    }
+    return std::nullopt;
+}
+
+std::optional<tachyon::spec::AudioTrackSpec> PresetCatalog::create_sfx(std::string_view id, const registry::ParameterBag& params) const {
+    auto res = resolve(id, params);
+    std::lock_guard<std::mutex> lock(m_impl->mutex);
+    auto it = m_impl->sfx_factories.find(res.resolved_id);
+    if (it != m_impl->sfx_factories.end()) {
+        return it->second(res.merged_params);
+    }
+    return std::nullopt;
 }
 
 } // namespace tachyon::content

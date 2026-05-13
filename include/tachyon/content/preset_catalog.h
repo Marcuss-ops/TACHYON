@@ -2,10 +2,15 @@
 
 #include "tachyon/api.h"
 #include "tachyon/content/preset_entry.h"
+#include "tachyon/core/spec/schema/objects/layer_spec.h"
+#include "tachyon/core/spec/schema/animation/text_animator_spec.h"
+#include "tachyon/core/spec/schema/contracts/shared_contracts.h"
 #include <memory>
 #include <optional>
 #include <string_view>
 #include <unordered_map>
+#include <vector>
+#include <functional>
 
 namespace tachyon::content {
 
@@ -18,9 +23,24 @@ public:
     static PresetCatalog& instance();
 
     /**
-     * @brief Register a new preset entry.
+     * @brief Register a new preset metadata entry.
      */
-    void register_preset(PresetEntry entry);
+    void register_entry(PresetEntry entry);
+
+    /**
+     * @brief Register a typed factory for a text animator.
+     */
+    void register_text_animator(std::string_view id, std::function<std::vector<tachyon::TextAnimatorSpec>(const registry::ParameterBag&)> factory);
+
+    /**
+     * @brief Register a typed factory for a background layer.
+     */
+    void register_background(std::string_view id, std::function<tachyon::LayerSpec(const registry::ParameterBag&)> factory);
+
+    /**
+     * @brief Register a typed factory for a sound effect.
+     */
+    void register_sfx(std::string_view id, std::function<tachyon::spec::AudioTrackSpec(const registry::ParameterBag&)> factory);
 
     /**
      * @brief Find an entry by ID.
@@ -44,24 +64,24 @@ public:
     struct ResolutionResult {
         const PresetEntry* entry = nullptr;
         registry::ParameterBag merged_params;
+        std::string resolved_id;
     };
     ResolutionResult resolve(std::string_view id, const registry::ParameterBag& user_params) const;
 
     /**
-     * @brief Instantiates a preset.
+     * @brief Create a Text Animator preset.
      */
-    template <typename T>
-    std::optional<T> instantiate(std::string_view id, const registry::ParameterBag& params = {}) const {
-        auto res = resolve(id, params);
-        if (!res.entry || !res.entry->factory) return std::nullopt;
-        
-        try {
-            auto result = res.entry->factory(res.merged_params);
-            return std::any_cast<T>(result);
-        } catch (const std::bad_any_cast&) {
-            return std::nullopt;
-        }
-    }
+    std::optional<std::vector<tachyon::TextAnimatorSpec>> create_text_animator(std::string_view id, const registry::ParameterBag& params = {}) const;
+
+    /**
+     * @brief Create a Background preset.
+     */
+    std::optional<tachyon::LayerSpec> create_background(std::string_view id, const registry::ParameterBag& params = {}) const;
+
+    /**
+     * @brief Create an SFX preset.
+     */
+    std::optional<tachyon::spec::AudioTrackSpec> create_sfx(std::string_view id, const registry::ParameterBag& params = {}) const;
 
 private:
     PresetCatalog();

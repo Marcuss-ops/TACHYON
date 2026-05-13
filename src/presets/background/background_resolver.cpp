@@ -1,6 +1,6 @@
 #include "tachyon/presets/background/background_resolver.h"
-#include "tachyon/presets/background/background_preset_registry.h"
-#include "tachyon/presets/background/fluent.h"
+#include "tachyon/content/preset_catalog.h"
+#include "tachyon/presets/background/background_builders.h"
 #include "tachyon/background_registry.h"
 #include "tachyon/core/registry/parameter_bag.h"
 #include "tachyon/core/policy/engine_policy.h"
@@ -70,14 +70,12 @@ BackgroundResolutionResult resolve_background(
             }
 
         case BackgroundType::Preset: {
-            presets::BackgroundManifest bg_manifest;
-            presets::BackgroundPresetRegistry registry(bg_manifest);
             registry::ParameterBag bag;
             bag.set("width", static_cast<float>(width));
             bag.set("height", static_cast<float>(height));
             bag.set("duration", duration);
 
-            auto layer = registry.create(bg.value, bag);
+            auto layer = content::PresetCatalog::instance().create_background(bg.value, bag);
             if (layer) {
                 result.layers = { *layer };
                 return result;

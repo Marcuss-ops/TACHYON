@@ -214,9 +214,32 @@ std::vector<TextLayerPresetSpec> TextManifest::generate_layer_preset_specs() con
 }
 
 std::vector<TextAnimatorPresetSpec> TextManifest::generate_animator_preset_specs() const {
-    // Register aliases in the unified catalog for legacy support
-    auto& catalog = content::PresetCatalog::instance();
-    
+    return {
+        create_fade_in_animator_preset(),
+        create_fade_up_animator_preset(),
+        create_slide_in_animator_preset(),
+        create_pop_in_animator_preset(),
+        create_blur_to_focus_animator_preset(),
+        create_bounce_in_animator_preset(),
+        create_word_punch_animator_preset(),
+        create_typewriter_preset()
+    };
+}
+
+void register_text_presets(content::PresetCatalog& catalog) {
+    TextManifest manifest;
+    for (auto& spec : manifest.generate_animator_preset_specs()) {
+        content::PresetEntry entry;
+        entry.id = spec.id;
+        entry.kind = content::ContentKind::TextAnimator;
+        entry.metadata = spec.metadata;
+        entry.schema = spec.schema;
+        catalog.register_entry(std::move(entry));
+        catalog.register_text_animator(spec.id, spec.factory);
+    }
+}
+
+void register_text_legacy_aliases(content::PresetCatalog& catalog) {
     catalog.register_alias("tachyon.textanim.typewriter.classic", "tachyon.textanim.typewriter");
     catalog.register_alias("tachyon.textanim.typewriter.cursor", "tachyon.textanim.typewriter", []{ 
         tachyon::registry::ParameterBag b; b.set("show_cursor", true); return b; 
@@ -242,17 +265,6 @@ std::vector<TextAnimatorPresetSpec> TextManifest::generate_animator_preset_specs
     catalog.register_alias("tachyon.textanim.typewriter.sentence", "tachyon.textanim.typewriter", []{ 
         tachyon::registry::ParameterBag b; b.set("unit", "sentence"); return b; 
     }());
-
-    return {
-        create_fade_in_animator_preset(),
-        create_fade_up_animator_preset(),
-        create_slide_in_animator_preset(),
-        create_pop_in_animator_preset(),
-        create_blur_to_focus_animator_preset(),
-        create_bounce_in_animator_preset(),
-        create_word_punch_animator_preset(),
-        create_typewriter_preset()
-    };
 }
 
 } // namespace tachyon::presets
