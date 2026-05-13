@@ -3,9 +3,12 @@
 #include "tachyon/media/asset_manager.h"
 #include "tachyon/media/management/media_manager.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
-#include "tachyon/media/loading/mesh_asset.h"
+#include "tachyon/renderer2d/core/render_types.h"
+
+
 #include <filesystem>
 #include <string>
+#include <memory>
 
 namespace tachyon::media {
 
@@ -28,8 +31,7 @@ struct ImportResult {
 
     Status status{Success};
     const renderer2d::SurfaceRGBA* surface{nullptr};
-    const HDRTextureData* hdr_surface{nullptr};
-    std::shared_ptr<const MeshAsset> mesh{nullptr};
+    const renderer2d::HDRTextureData* hdr_surface{nullptr};
     std::filesystem::path resolved_path;
     std::string error_message;
 };
@@ -47,9 +49,6 @@ private:
                               const std::filesystem::path& resolved);
     ImportResult import_video(const ImportRequest& request,
                               const std::filesystem::path& resolved);
-    ImportResult import_mesh(const ImportRequest& request,
-                             const std::filesystem::path& resolved);
 };
 
 } // namespace tachyon::media
-

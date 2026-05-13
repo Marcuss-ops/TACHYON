@@ -4,6 +4,8 @@
 #include "tachyon/media/decoding/video_decoder.h"
 #include "tachyon/audio/audio_mixer.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
+#include "tachyon/renderer2d/core/render_types.h"
+
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 
 #include "tachyon/media/management/media_asset.h"

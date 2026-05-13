@@ -1,6 +1,7 @@
 #include "tachyon/media/management/asset_resolver.h"
 #include "tachyon/media/resolution/asset_collector.h"
 #include <iostream>
+#include <algorithm>
 
 namespace tachyon::media {
 
@@ -122,14 +123,12 @@ AssetResolutionTable AssetResolver::resolve_all(const SceneSpec& scene) const {
     auto refs = collect_asset_references(scene);
     
     for (const auto& ref : refs) {
-        // Only interested in assets with IDs for the table
         if (ref.id.empty()) continue;
 
         ResolvedAsset resolved;
-        resolved.asset_id = ref.id;
-        const std::string tag = (ref.kind == media::AssetKind::Audio) ? "audio" : 
-                        (ref.kind == media::AssetKind::Video) ? "video" : "image";
-        resolved.type = tag;
+        resolved.id = ref.id;
+        resolved.type_name = (ref.kind == media::AssetKind::Audio) ? "audio" : 
+                            (ref.kind == media::AssetKind::Video) ? "video" : "image";
 
         media::AssetType media_type = media::AssetType::IMAGE;
         if (ref.kind == media::AssetKind::Audio) media_type = media::AssetType::AUDIO;
@@ -138,10 +137,12 @@ AssetResolutionTable AssetResolver::resolve_all(const SceneSpec& scene) const {
 
         auto path = resolve_path(ref.source, media_type);
         if (path) {
-            resolved.absolute_path = *path;
+            resolved.source_path = *path;
+            resolved.runtime_path = *path;
             resolved.exists = true;
         } else {
-            resolved.absolute_path = ref.source;
+            resolved.source_path = ref.source;
+            resolved.runtime_path = ref.source;
             resolved.exists = false;
         }
         table[ref.id] = std::move(resolved);
@@ -152,12 +153,10 @@ AssetResolutionTable AssetResolver::resolve_all(const SceneSpec& scene) const {
 const text::Font* AssetResolver::resolve_font(const std::string& spec, std::uint32_t pixel_size, ResolveMode mode) {
     if (!m_font_registry) return nullptr;
 
-    // First try if it's already loaded in the registry by name
     if (const auto* existing = m_font_registry->find(spec)) {
         return existing;
     }
 
-    // If not, try to resolve path and load it
     auto res = resolve_path_strict(spec, AssetType::FONT, mode);
     if (res.value.has_value()) {
         std::filesystem::path path = *res.value;
@@ -175,7 +174,6 @@ const text::Font* AssetResolver::resolve_font(const std::string& spec, std::uint
         }
     }
 
-    // Fallback logic
     if (mode == ResolveMode::Strict) {
         return nullptr;
     }

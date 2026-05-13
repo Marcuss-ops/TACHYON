@@ -90,6 +90,7 @@ tachyon_configure_common(TachyonPresets)
 target_link_libraries(TachyonPresets
     PUBLIC
         TachyonCore
+        TachyonContent
     )
 
     if(TACHYON_ENABLE_AUDIO)

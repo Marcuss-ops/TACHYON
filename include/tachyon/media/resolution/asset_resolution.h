@@ -2,21 +2,16 @@
 
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/media/resolved_asset.h"
 
 #include <filesystem>
 #include <map>
 #include <string>
+#include <vector>
 
 namespace tachyon {
 
-struct ResolvedAsset {
-    std::string asset_id;
-    std::string type;
-    std::filesystem::path absolute_path;
-    bool exists{false};
-};
-
-using AssetResolutionTable = std::map<std::string, ResolvedAsset>;
+using AssetResolutionTable = std::map<std::string, media::ResolvedAsset>;
 
 /**
  * Resolves all assets in a SceneSpec relative to a root directory.

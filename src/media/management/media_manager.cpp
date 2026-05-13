@@ -65,7 +65,7 @@ const renderer2d::SurfaceRGBA* MediaManager::get_image(
     return nullptr;
 }
 
-const HDRTextureData* MediaManager::get_hdr_image(
+const renderer2d::HDRTextureData* MediaManager::get_hdr_image(
     const std::filesystem::path& path,
     DiagnosticBag* diagnostics) {
     (void)diagnostics;
@@ -275,7 +275,7 @@ const renderer2d::SurfaceRGBA* MediaManager::get_video_frame(
     return get_video_frame(asset.runtime_path, time, diagnostics);
 }
 
-const HDRTextureData* MediaManager::get_hdr_image(
+const renderer2d::HDRTextureData* MediaManager::get_hdr_image(
     const ResolvedAsset& asset,
     DiagnosticBag* diagnostics) {
     return get_hdr_image(asset.runtime_path, diagnostics);

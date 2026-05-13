@@ -27,8 +27,6 @@ ImportResult AssetImportPipeline::import(const ImportRequest& request) {
             return import_image(request, resolved);
         case AssetType::VIDEO:
             return import_video(request, resolved);
-        case AssetType::MESH:
-            return import_mesh(request, resolved);
         case AssetType::AUDIO:
             // Audio handled separately by AudioMixer
             result.status = ImportResult::DecodeError;
@@ -36,7 +34,7 @@ ImportResult AssetImportPipeline::import(const ImportRequest& request) {
             return result;
         default:
             result.status = ImportResult::DecodeError;
-            result.error_message = "Unknown asset type";
+            result.error_message = "Unknown or unsupported asset type";
             return result;
     }
 }
@@ -77,25 +75,6 @@ ImportResult AssetImportPipeline::import_video(const ImportRequest& request,
     }
 
     result.surface = surface;
-    result.status = ImportResult::Success;
-    return result;
-}
-
-ImportResult AssetImportPipeline::import_mesh(const ImportRequest& request,
-                                              const std::filesystem::path& resolved) {
-    ImportResult result;
-    result.resolved_path = resolved;
-
-    DiagnosticBag diagnostics;
-    auto mesh = m_media_manager.get_mesh(resolved, &diagnostics);
-
-    if (!mesh) {
-        result.status = ImportResult::DecodeError;
-        result.error_message = "Failed to load mesh: " + resolved.string();
-        return result;
-    }
-
-    result.mesh = mesh;
     result.status = ImportResult::Success;
     return result;
 }

@@ -1,5 +1,7 @@
 #include "tachyon/media/management/image_manager.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
+#include "tachyon/renderer2d/core/render_types.h"
+
 
 #include <stb_image.h>
 
@@ -84,7 +86,7 @@ static std::unique_ptr<renderer2d::SurfaceRGBA> decode_image(const std::filesyst
     return surface;
 }
 
-static std::unique_ptr<HDRTextureData> decode_hdr_image(const std::filesystem::path& path, std::string& error_out) {
+static std::unique_ptr<renderer2d::HDRTextureData> decode_hdr_image(const std::filesystem::path& path, std::string& error_out) {
     int w, h, channels;
     float* data = stbi_loadf(path.string().c_str(), &w, &h, &channels, 3);
     if (!data) {
@@ -106,7 +108,7 @@ static std::unique_ptr<HDRTextureData> decode_hdr_image(const std::filesystem::p
         return nullptr;
     }
 
-    auto hdr = std::make_unique<HDRTextureData>();
+    auto hdr = std::make_unique<renderer2d::HDRTextureData>();
     hdr->width = w;
     hdr->height = h;
     hdr->channels = 3;
@@ -152,7 +154,7 @@ std::shared_ptr<const renderer2d::SurfaceRGBA> ImageManager::get_image_shared(co
     return shared;
 }
 
-const HDRTextureData* ImageManager::get_hdr_image(const std::filesystem::path& path, DiagnosticBag* diagnostics) {
+const renderer2d::HDRTextureData* ImageManager::get_hdr_image(const std::filesystem::path& path, DiagnosticBag* diagnostics) {
     const std::string key = path.string();
 
     {
@@ -176,7 +178,7 @@ const HDRTextureData* ImageManager::get_hdr_image(const std::filesystem::path& p
     auto it = m_hdr_cache.find(key);
     if (it != m_hdr_cache.end()) return it->second.get();
 
-    const HDRTextureData* ptr = hdr.get();
+    const renderer2d::HDRTextureData* ptr = hdr.get();
     m_hdr_cache[key] = std::move(hdr);
     return ptr;
 }

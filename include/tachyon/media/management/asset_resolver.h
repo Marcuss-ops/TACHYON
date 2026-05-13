@@ -4,7 +4,7 @@
 #include "tachyon/media/management/image_manager.h"
 #include "tachyon/text/fonts/core/font_registry.h"
 #include "tachyon/media/resolution/asset_resolution.h"
-#include "tachyon/media/resolution/project_context.h"
+
 #include <filesystem>
 #include <string>
 #include <memory>
@@ -28,11 +28,6 @@ public:
         std::filesystem::path fonts_root;      ///< Root for font files
 
         Config() = default;
-        Config(const ProjectResolutionContext& ctx)
-            : project_root(ctx.project_root)
-            , assets_root(ctx.assets_root)
-            , sfx_root(ctx.sfx_root)
-            , fonts_root(ctx.fonts_root) {}
     };
 
     AssetResolver(Config config,

@@ -1,4 +1,5 @@
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonPresetsSources.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/tachyon/ModuleContent.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonCoreSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonBindingsCSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonDiagnosticsSources.cmake)
@@ -131,6 +132,10 @@ add_library(TachyonCore STATIC ${TachyonCoreSources})
 tachyon_configure_common(TachyonCore)
 tachyon_link_omp(TachyonCore)
 tachyon_link_absl(TachyonCore)
+
+add_library(TachyonContent STATIC ${TACHYON_CONTENT_SOURCES})
+tachyon_configure_common(TachyonContent)
+target_link_libraries(TachyonContent PUBLIC TachyonCore)
 
 if(TACHYON_ENABLE_TRACY)
     target_link_libraries(TachyonCore PUBLIC TracyClient)

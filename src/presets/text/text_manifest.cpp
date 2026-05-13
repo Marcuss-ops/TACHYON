@@ -1,7 +1,11 @@
-#include "tachyon/presets/text/text_manifest.h"
-#include "tachyon/presets/text/text_registry.h"
 #include "tachyon/text/animation/text_presets.h"
+#include "tachyon/content/preset_catalog.h"
+#include "tachyon/content/typed_params.h"
+#include "tachyon/core/registry/parameter_bag.h"
+#include "tachyon/presets/text/text_registry.h"
 #include "tachyon/text/core/TextLayerSpec.h"
+
+
 #include <vector>
 #include <functional>
 
@@ -10,6 +14,25 @@ namespace tachyon::presets {
 using namespace tachyon;
 
 namespace {
+
+content::TypewriterParams parse_typewriter_params(const registry::ParameterBag& p) {
+    content::TypewriterParams params;
+    params.speed = p.get_or<double>("cps", p.get_or<double>("wps", p.get_or<double>("lps", 20.0)));
+    params.cursor = p.get_or<std::string>("cursor", "|");
+    
+    std::string unit_str = p.get_or<std::string>("unit", "character");
+    if (unit_str == "word") params.unit = content::TypewriterUnit::Word;
+    else if (unit_str == "line") params.unit = content::TypewriterUnit::Line;
+    else if (unit_str == "sentence") params.unit = content::TypewriterUnit::Sentence;
+    
+    std::string style_str = p.get_or<std::string>("style", "classic");
+    if (style_str == "soft") params.style = content::TypewriterStyle::Soft;
+    else if (style_str == "archive") params.style = content::TypewriterStyle::Archive;
+    else if (style_str == "terminal") params.style = content::TypewriterStyle::Terminal;
+    
+    params.show_cursor = p.get_or<bool>("show_cursor", true);
+    return params;
+}
 
 // --- Layer Presets ---
 
@@ -164,88 +187,25 @@ TextAnimatorPresetSpec create_word_punch_animator_preset() {
     return spec;
 }
 
-// --- Typewriter Family ---
-
-TextAnimatorPresetSpec create_typewriter_animator_preset_base(const std::string& id, const std::string& name, const std::string& description) {
+TextAnimatorPresetSpec create_typewriter_preset() {
     TextAnimatorPresetSpec spec;
-    spec.id = id;
-    spec.metadata = {id, name, description, "text.animator", {"typewriter"}, 1, registry::Stability::Stable, {}};
+    spec.id = "tachyon.textanim.typewriter";
+    spec.metadata = {"tachyon.textanim.typewriter", "Typewriter", "Parametric typewriter effect", "text.animator", {"typewriter"}, 1, registry::Stability::Stable, {}};
     spec.schema = registry::ParameterSchema({
-        {"cps", "Chars/Sec", "Characters per second", 20.0, 1.0, 100.0},
+        {"cps", "Chars/Sec", "Characters per second", 20.0},
+        {"unit", "Unit", "Reveal unit (character, word, line, sentence)", "character"},
+        {"style", "Style", "Visual style (classic, soft, archive, terminal)", "classic"},
         {"cursor", "Cursor", "Cursor character", "|"}
     });
-    return spec;
-}
-
-TextAnimatorPresetSpec create_typewriter_classic() {
-    auto spec = create_typewriter_animator_preset_base("tachyon.textanim.typewriter", "Typewriter", "Classic effect");
     spec.factory = [](const registry::ParameterBag& p) {
-        return std::vector<TextAnimatorSpec>{ tachyon::text::make_typewriter_animator(p.get_or<double>("cps", 20.0), p.get_or<std::string>("cursor", "|")) };
-    };
-    return spec;
-}
-
-TextAnimatorPresetSpec create_typewriter_sub_preset(const std::string& id, const std::string& name, std::function<TextAnimatorSpec(double, std::string)> factory_fn) {
-    auto spec = create_typewriter_animator_preset_base(id, name, name);
-    spec.factory = [factory_fn](const registry::ParameterBag& p) {
-        return std::vector<TextAnimatorSpec>{ factory_fn(p.get_or<double>("cps", 20.0), p.get_or<std::string>("cursor", "|")) };
-    };
-    return spec;
-}
-
-TextAnimatorPresetSpec create_typewriter_classic_explicit() {
-    return create_typewriter_sub_preset("tachyon.textanim.typewriter.classic", "Classic Typewriter", [](double cps, std::string c) { return tachyon::text::make_typewriter_animator(cps, c); });
-}
-
-TextAnimatorPresetSpec create_typewriter_cursor() {
-    return create_typewriter_sub_preset("tachyon.textanim.typewriter.cursor", "Typewriter w/ Cursor", [](double cps, std::string c) { return tachyon::text::make_typewriter_cursor_animator(cps, c); });
-}
-
-TextAnimatorPresetSpec create_typewriter_soft() {
-    return create_typewriter_sub_preset("tachyon.textanim.typewriter.soft", "Soft Typewriter", [](double cps, std::string c) { return tachyon::text::make_typewriter_soft_animator(cps, c); });
-}
-
-TextAnimatorPresetSpec create_typewriter_archive() {
-    return create_typewriter_sub_preset("tachyon.textanim.typewriter.archive", "Archive Typewriter", [](double cps, std::string c) { return tachyon::text::make_typewriter_archive_animator(cps, c); });
-}
-
-TextAnimatorPresetSpec create_typewriter_terminal() {
-    return create_typewriter_sub_preset("tachyon.textanim.typewriter.terminal", "Terminal Typewriter", [](double cps, std::string c) { return tachyon::text::make_typewriter_terminal_animator(cps, c); });
-}
-
-TextAnimatorPresetSpec create_typewriter_word() {
-    auto spec = create_typewriter_animator_preset_base("tachyon.textanim.typewriter.word", "Word Typewriter", "Reveal word by word");
-    spec.factory = [](const registry::ParameterBag& p) {
-        return std::vector<TextAnimatorSpec>{ tachyon::text::make_typewriter_word_animator(p.get_or<double>("wps", 4.0), false, p.get_or<std::string>("cursor", "|")) };
-    };
-    return spec;
-}
-
-TextAnimatorPresetSpec create_typewriter_word_cursor() {
-    auto spec = create_typewriter_animator_preset_base("tachyon.textanim.typewriter.word_cursor", "Word Typewriter w/ Cursor", "Reveal word by word with cursor");
-    spec.factory = [](const registry::ParameterBag& p) {
-        return std::vector<TextAnimatorSpec>{ tachyon::text::make_typewriter_word_cursor_animator(p.get_or<double>("wps", 4.0), p.get_or<std::string>("cursor", "|")) };
-    };
-    return spec;
-}
-
-TextAnimatorPresetSpec create_typewriter_line() {
-    auto spec = create_typewriter_animator_preset_base("tachyon.textanim.typewriter.line", "Line Typewriter", "Reveal line by line");
-    spec.factory = [](const registry::ParameterBag& p) {
-        return std::vector<TextAnimatorSpec>{ tachyon::text::make_typewriter_line_animator(p.get_or<double>("lps", 2.0), false, p.get_or<std::string>("cursor", "|")) };
-    };
-    return spec;
-}
-
-TextAnimatorPresetSpec create_typewriter_sentence() {
-    auto spec = create_typewriter_animator_preset_base("tachyon.textanim.typewriter.sentence", "Sentence Typewriter", "Reveal sentence by sentence");
-    spec.factory = [](const registry::ParameterBag& p) {
-        return std::vector<TextAnimatorSpec>{ tachyon::text::make_typewriter_sentence_animator(p.get_or<double>("wps", 2.5), p.get_or<std::string>("cursor", "|")) };
+        auto params = parse_typewriter_params(p);
+        return std::vector<TextAnimatorSpec>{ tachyon::text::make_typewriter(params) };
     };
     return spec;
 }
 
 } // namespace
+
 
 std::vector<TextLayerPresetSpec> TextManifest::generate_layer_preset_specs() const {
     return {
@@ -254,6 +214,35 @@ std::vector<TextLayerPresetSpec> TextManifest::generate_layer_preset_specs() con
 }
 
 std::vector<TextAnimatorPresetSpec> TextManifest::generate_animator_preset_specs() const {
+    // Register aliases in the unified catalog for legacy support
+    auto& catalog = content::PresetCatalog::instance();
+    
+    catalog.register_alias("tachyon.textanim.typewriter.classic", "tachyon.textanim.typewriter");
+    catalog.register_alias("tachyon.textanim.typewriter.cursor", "tachyon.textanim.typewriter", []{ 
+        tachyon::registry::ParameterBag b; b.set("show_cursor", true); return b; 
+    }());
+    catalog.register_alias("tachyon.textanim.typewriter.soft", "tachyon.textanim.typewriter", []{ 
+        tachyon::registry::ParameterBag b; b.set("style", "soft"); return b; 
+    }());
+    catalog.register_alias("tachyon.textanim.typewriter.terminal", "tachyon.textanim.typewriter", []{ 
+        tachyon::registry::ParameterBag b; b.set("style", "terminal"); return b; 
+    }());
+    catalog.register_alias("tachyon.textanim.typewriter.archive", "tachyon.textanim.typewriter", []{ 
+        tachyon::registry::ParameterBag b; b.set("style", "archive"); return b; 
+    }());
+    catalog.register_alias("tachyon.textanim.typewriter.word", "tachyon.textanim.typewriter", []{ 
+        tachyon::registry::ParameterBag b; b.set("unit", "word"); b.set("show_cursor", false); return b; 
+    }());
+    catalog.register_alias("tachyon.textanim.typewriter.word_cursor", "tachyon.textanim.typewriter", []{ 
+        tachyon::registry::ParameterBag b; b.set("unit", "word"); b.set("show_cursor", true); return b; 
+    }());
+    catalog.register_alias("tachyon.textanim.typewriter.line", "tachyon.textanim.typewriter", []{ 
+        tachyon::registry::ParameterBag b; b.set("unit", "line"); return b; 
+    }());
+    catalog.register_alias("tachyon.textanim.typewriter.sentence", "tachyon.textanim.typewriter", []{ 
+        tachyon::registry::ParameterBag b; b.set("unit", "sentence"); return b; 
+    }());
+
     return {
         create_fade_in_animator_preset(),
         create_fade_up_animator_preset(),
@@ -262,16 +251,7 @@ std::vector<TextAnimatorPresetSpec> TextManifest::generate_animator_preset_specs
         create_blur_to_focus_animator_preset(),
         create_bounce_in_animator_preset(),
         create_word_punch_animator_preset(),
-        create_typewriter_classic(),
-        create_typewriter_classic_explicit(),
-        create_typewriter_cursor(),
-        create_typewriter_soft(),
-        create_typewriter_archive(),
-        create_typewriter_terminal(),
-        create_typewriter_word(),
-        create_typewriter_word_cursor(),
-        create_typewriter_line(),
-        create_typewriter_sentence()
+        create_typewriter_preset()
     };
 }
 

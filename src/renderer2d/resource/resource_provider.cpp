@@ -4,8 +4,6 @@
 
 namespace tachyon::renderer2d {
 
-
-
 std::shared_ptr<std::uint8_t[]> RendererResourceProvider::get_texture_rgba(const std::string& id) {
     if (!m_context.media) return nullptr;
     
@@ -29,11 +27,6 @@ std::shared_ptr<std::uint8_t[]> RendererResourceProvider::get_texture_rgba(const
     }
     
     return data;
-}
-
-std::shared_ptr<const render::IDeformMesh> RendererResourceProvider::get_deform(const std::string& id) {
-    // Implement when DeformMesh registry is available
-    return nullptr;
 }
 
 } // namespace tachyon::renderer2d

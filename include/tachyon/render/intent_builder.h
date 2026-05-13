@@ -17,7 +17,7 @@ enum class IntentBuildStatus {
     Ok,
     Success = Ok,
     PartialSuccess,      ///< Some layers failed to resolve resources
-    AssetResolutionError, ///< Critical assets (meshes, textures) could not be resolved
+    AssetResolutionError, ///< Critical assets (textures) could not be resolved
     PolicyViolation,     ///< Strict mode triggered a failure
     InternalError
 };
@@ -54,9 +54,7 @@ class IResourceProvider {
 public:
     virtual ~IResourceProvider() = default;
     
-    virtual std::shared_ptr<::tachyon::media::MeshAsset> get_mesh(const std::string& id) = 0;
     virtual std::shared_ptr<std::uint8_t[]> get_texture_rgba(const std::string& id) = 0;
-    virtual std::shared_ptr<const IDeformMesh> get_deform(const std::string& id) = 0;
 };
 
 } // namespace tachyon::render

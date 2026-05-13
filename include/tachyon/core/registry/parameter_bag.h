@@ -43,6 +43,19 @@ public:
 
     [[nodiscard]] bool empty() const noexcept { return values_.empty(); }
 
+    void set_raw(std::string key, ParameterValue value) {
+        values_[std::move(key)] = std::move(value);
+    }
+
+    [[nodiscard]] std::vector<std::string> list_keys() const {
+        std::vector<std::string> keys;
+        keys.reserve(values_.size());
+        for (const auto& [key, _] : values_) {
+            keys.push_back(key);
+        }
+        return keys;
+    }
+
     /// Merge values from another ParameterBag, overriding existing values with those from other.
     void merge_from(const ParameterBag& other) {
         for (const auto& [key, value] : other.values_) {

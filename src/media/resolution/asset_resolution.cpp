@@ -1,8 +1,7 @@
 #include "tachyon/media/resolution/asset_resolution.h"
 #include "tachyon/media/resolution/asset_collector.h"
-#include "tachyon/media/resolution/project_context.h"
 #include "tachyon/media/management/asset_resolver.h"
-
+#include <filesystem>
 #include <algorithm>
 
 namespace tachyon {
@@ -11,7 +10,6 @@ ResolutionResult<AssetResolutionTable> resolve_assets(const SceneSpec& scene, co
     ResolutionResult<AssetResolutionTable> result;
     AssetResolutionTable table;
 
-    // Use AssetResolver for consistent logic
     media::AssetResolver::Config config;
     config.project_root = root_dir;
     config.assets_root = root_dir;
@@ -22,21 +20,24 @@ ResolutionResult<AssetResolutionTable> resolve_assets(const SceneSpec& scene, co
     
     auto refs = media::collect_asset_references(scene);
     for (const auto& ref : refs) {
-        ResolvedAsset resolved;
-        resolved.asset_id = ref.id;
-        resolved.type = (ref.kind == media::AssetKind::Audio) ? "audio" : 
-                        (ref.kind == media::AssetKind::Video) ? "video" : "image";
+        media::ResolvedAsset resolved;
+        resolved.id = ref.id;
+        resolved.type_name = (ref.kind == media::AssetKind::Audio) ? "audio" : 
+                            (ref.kind == media::AssetKind::Video) ? "video" : "image";
 
         media::AssetType media_type = media::AssetType::IMAGE;
         if (ref.kind == media::AssetKind::Audio) media_type = media::AssetType::AUDIO;
         else if (ref.kind == media::AssetKind::Font) media_type = media::AssetType::FONT;
+        else if (ref.kind == media::AssetKind::Video) media_type = media::AssetType::VIDEO;
 
         auto path = resolver.resolve_path(ref.source, media_type);
         if (path) {
-            resolved.absolute_path = *path;
+            resolved.source_path = *path;
+            resolved.runtime_path = *path;
             resolved.exists = true;
         } else {
-            resolved.absolute_path = ref.source; // Fallback to raw string
+            resolved.source_path = ref.source;
+            resolved.runtime_path = ref.source;
             resolved.exists = false;
             
             result.diagnostics.add_error(
@@ -46,7 +47,6 @@ ResolutionResult<AssetResolutionTable> resolve_assets(const SceneSpec& scene, co
             );
         }
 
-        // Only add to table if it has an ID
         if (!ref.id.empty()) {
             table[ref.id] = std::move(resolved);
         }

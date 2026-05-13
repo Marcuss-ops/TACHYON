@@ -3,10 +3,14 @@
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 #include "tachyon/text/layout/layout.h"
 
+#include "tachyon/content/typed_params.h"
 #include <string>
 #include <vector>
 
 namespace tachyon::text {
+
+[[nodiscard]] ::tachyon::TextAnimatorSpec make_typewriter(const content::TypewriterParams& p);
+
 
 [[nodiscard]] TextBackgroundBox make_minimal_text_background_box(
     renderer2d::Color fill_color = renderer2d::Color{0.06f, 0.07f, 0.09f, 0.38f},

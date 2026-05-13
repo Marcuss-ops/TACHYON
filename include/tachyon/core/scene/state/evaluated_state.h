@@ -25,41 +25,6 @@ namespace tachyon::scene {
 using LayerType = ::tachyon::LayerType;
 using TrackMatteType = ::tachyon::TrackMatteType;
 
-struct EvaluatedMaterialState {
-    float metallic{0.0f};
-    float roughness{0.5f};
-    float ior{1.45f};
-    float emission{0.0f};
-    float subsurface{0.0f};
-    float specular{0.5f};
-    float specular_tint{0.0f};
-    float anisotropic{0.0f};
-    float sheen{0.0f};
-    float sheen_tint{0.0f};
-    float clearcoat{0.0f};
-    float clearcoat_roughness{0.03f};
-    float transmission{0.0f};
-};
-
-struct EvaluatedLightState {
-    std::string id;
-    std::string layer_id;
-    std::string type;
-    math::Vector3 position;
-    math::Vector3 direction;
-    math::Vector3 color;
-    float intensity;
-    float attenuation_near{0.0f};
-    float attenuation_far{0.0f};
-    float cone_angle{45.0f};
-    float cone_feather{0.0f};
-    bool casts_shadows{true};
-    float shadow_darkness{0.0f};
-    float shadow_radius{0.0f};
-    std::string falloff_type{"inverse_square"};
-    float range{0.0f};
-};
-
 struct EvaluatedShapePathPoint {
     math::Vector2 position;
     math::Vector2 tangent_in;
@@ -82,10 +47,6 @@ struct EvaluatedLayerState {
     
     math::Matrix4x4 world_matrix{math::Matrix4x4::identity()};
     math::Vector3 world_position3{0.0f, 0.0f, 0.0f};
-    math::Vector3 world_normal{0.0f, 0.0f, 1.0f};
-    math::Vector3 scale_3d{1.0f, 1.0f, 1.0f};
-    float extrusion_depth{0.0f};
-    float bevel_size{0.0f};
     math::Transform2 local_transform{math::Transform2::identity()};
     bool motion_blur{false};
     
@@ -129,14 +90,8 @@ struct EvaluatedLayerState {
     std::string text_content;
     std::string font_id;
     float font_size{0.0f};
-    // Renderer-specific resource references (ID-based instead of pointers)
-    std::optional<std::string> mesh_asset_id;
-    std::optional<std::string> texture_asset_id;
-    EvaluatedMaterialState material;
     
-    // Animation/Rigging state
-    std::vector<math::Matrix4x4> joint_matrices;
-    std::vector<float> morph_weights;
+    std::optional<std::string> texture_asset_id;
 
     std::optional<std::size_t> track_matte_layer_index;
     TrackMatteType track_matte_type{TrackMatteType::None};
@@ -201,7 +156,6 @@ struct EvaluatedCompositionState {
     double composition_time_seconds{0.0};
     
     std::vector<EvaluatedLayerState> layers;
-    std::vector<EvaluatedLightState> lights;
     EvaluatedCameraState camera;
     
     ColorSpec background_color{0, 0, 0, 0};

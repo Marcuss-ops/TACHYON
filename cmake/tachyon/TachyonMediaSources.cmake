@@ -8,6 +8,7 @@ set(TachyonMediaSources
     ${CMAKE_CURRENT_SOURCE_DIR}/media/management/asset_resolver.cpp
     
     ${CMAKE_CURRENT_SOURCE_DIR}/media/resolution/asset_resolution.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/media/resolution/asset_collector.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/media/streaming/media_prefetcher.cpp
     
     ${CMAKE_CURRENT_SOURCE_DIR}/media/path_resolver.cpp

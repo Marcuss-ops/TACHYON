@@ -751,4 +751,61 @@ TextStyle make_minimal_text_style(
 
 
 
+::tachyon::TextAnimatorSpec make_typewriter(const content::TypewriterParams& p) {
+    ::tachyon::TextAnimatorSpec animator;
+    animator.name = "Typewriter";
+    animator.selector.type = "all";
+    
+    // Set based_on and stagger_mode based on unit
+    switch (p.unit) {
+        case content::TypewriterUnit::Character:
+            animator.selector.based_on = "characters";
+            animator.selector.stagger_mode = "character";
+            break;
+        case content::TypewriterUnit::Word:
+            animator.selector.based_on = "words";
+            animator.selector.stagger_mode = "word";
+            break;
+        case content::TypewriterUnit::Line:
+            animator.selector.based_on = "lines";
+            animator.selector.stagger_mode = "line";
+            break;
+        case content::TypewriterUnit::Sentence:
+            animator.selector.based_on = "sentences";
+            animator.selector.stagger_mode = "word"; // Often word-based for sentences
+            break;
+    }
+    
+    animator.selector.stagger_delay = p.speed > 0.0 ? 1.0 / p.speed : 0.05;
+    
+    // Style adjustments
+    switch (p.style) {
+        case content::TypewriterStyle::Classic:
+            add_scalar_ramp(animator.properties.opacity_keyframes, 0.0, 0.0, 0.01, 1.0);
+            break;
+        case content::TypewriterStyle::Soft:
+            add_scalar_ramp(animator.properties.opacity_keyframes, 0.0, 0.0, 0.12, 1.0);
+            add_scalar_ramp(animator.properties.blur_radius_keyframes, 0.0, 3.0, 0.75, 0.0);
+            add_scalar_ramp(animator.properties.scale_keyframes, 0.0, 0.98, 0.75, 1.0);
+            add_scalar_ramp(animator.properties.tracking_amount_keyframes, 0.0, 10.0, 0.75, 0.0);
+            break;
+        case content::TypewriterStyle::Archive:
+            add_scalar_ramp(animator.properties.opacity_keyframes, 0.0, 0.0, 0.01, 1.0);
+            animator.properties.fill_color_value = ColorSpec{220, 224, 232, 255};
+            break;
+        case content::TypewriterStyle::Terminal:
+            add_scalar_ramp(animator.properties.opacity_keyframes, 0.0, 0.0, 0.01, 1.0);
+            animator.properties.fill_color_value = ColorSpec{0, 255, 128, 255};
+            animator.properties.stroke_width_value = 0.0;
+            break;
+    }
+    
+    // Cursor settings
+    animator.cursor.enabled = p.show_cursor;
+    animator.cursor.cursor_char = p.cursor;
+    animator.cursor.blink_rate = p.show_cursor ? 4.0 : 0.0;
+    
+    return animator;
+}
+
 } // namespace tachyon::text
