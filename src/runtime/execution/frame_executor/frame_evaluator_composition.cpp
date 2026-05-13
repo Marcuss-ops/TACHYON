@@ -115,35 +115,6 @@ void evaluate_composition(
         break;
     }
 
-    if (state->lights.empty()) {
-        for (const auto& layer_state : state->layers) {
-            if (layer_state.type != scene::LayerType::Light || !layer_state.enabled || !layer_state.active) {
-                continue;
-            }
-
-            scene::EvaluatedLightState light;
-            light.layer_id = layer_state.id;
-            light.type = "point";
-            light.position = layer_state.world_position3;
-            light.direction = layer_state.world_matrix.transform_vector({0.0f, 0.0f, -1.0f}).normalized();
-            light.color = math::Vector3{
-                layer_state.fill_color.r / 255.0f,
-                layer_state.fill_color.g / 255.0f,
-                layer_state.fill_color.b / 255.0f
-            };
-            light.intensity = 1.0f;
-            light.attenuation_near = 0.0f;
-            light.attenuation_far = 2000.0f;
-            light.cone_angle = 90.0f;
-            light.cone_feather = 0.0f;
-            light.casts_shadows = false;
-            light.shadow_darkness = 0.0f;
-            light.shadow_radius = 0.0f;
-            light.falloff_type = "inverse_square";
-            state->lights.push_back(std::move(light));
-        }
-    }
-
     executor.m_cache.store_composition(node_key, std::move(state));
     record_timing();
 }

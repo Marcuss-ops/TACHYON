@@ -22,6 +22,8 @@
 namespace tachyon {
 namespace scene {
 
+// 3D rigging was removed in the 2D-only refactor; constraints are a no-op.
+void solve_constraints(std::vector<EvaluatedLayerState>&) {}
 
 const EvaluatedLayerState& resolve_layer_state(
     std::size_t layer_index,

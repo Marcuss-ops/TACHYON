@@ -122,20 +122,19 @@ EvaluatedLayerState make_layer_state(
     evaluated.local_transform.scale = scale2;
     evaluated.local_transform.anchor_point = anchor2;
     evaluated.world_position3 = {pos2.x, pos2.y, 0.0f};
-    evaluated.scale_3d = {scale2.x, scale2.y, 1.0f};
-    evaluated.world_matrix = math::compose_trs(
+    evaluated.world_matrix = math::Transform3(
         evaluated.world_position3,
         math::Quaternion::from_euler({0.0f, 0.0f, static_cast<float>(rot_deg)}),
-        evaluated.scale_3d);
+        {scale2.x, scale2.y, 1.0f}).to_matrix();
 
     const math::Vector2 prev_pos2 = sample_vector2(layer.transform.position_property, position_fallback, prev_local_t, context.audio_analyzer);
     const double prev_rot_deg = sample_scalar(layer.transform.rotation_property, layer.transform.rotation.value_or(0.0), prev_local_t, context.audio_analyzer);
     const math::Vector2 prev_scale2 = sample_vector2(layer.transform.scale_property, scale_fallback, prev_local_t, context.audio_analyzer);
 
-    evaluated.previous_world_matrix = math::compose_trs(
+    evaluated.previous_world_matrix = math::Transform3(
         {prev_pos2.x, prev_pos2.y, 0.0f},
         math::Quaternion::from_euler({0.0f, 0.0f, static_cast<float>(prev_rot_deg)}),
-        {prev_scale2.x, prev_scale2.y, 1.0f});
+        {prev_scale2.x, prev_scale2.y, 1.0f}).to_matrix();
 
     if (layer.has_parallax && !context.composition.cameras_2d.empty()) {
         std::string camera_id = layer.camera2d_id.value_or(context.composition.active_camera2d_id.value_or(""));
@@ -145,10 +144,10 @@ EvaluatedLayerState make_layer_state(
                 const Camera2DSpec& camera_spec = context.composition.cameras_2d[it->second];
                 EvaluatedCamera2D camera = evaluate_camera2d(camera_spec, local_t);
                 math::Vector2 transformed_pos = apply_camera2d_transform(camera, layer, layer.parallax_factor, pos2);
-                evaluated.world_matrix = math::compose_trs(
+                evaluated.world_matrix = math::Transform3(
                     {transformed_pos.x, transformed_pos.y, 0.0f},
                     math::Quaternion::from_euler({0.0f, 0.0f, static_cast<float>(rot_deg)}),
-                    {scale2.x, scale2.y, 1.0f});
+                    {scale2.x, scale2.y, 1.0f}).to_matrix();
                 evaluated.local_transform.position = transformed_pos;
             }
         }
@@ -189,16 +188,6 @@ EvaluatedLayerState make_layer_state(
     evaluated.fill_color = sample_color(layer.fill_color, {255,255,255,255}, local_t);
     evaluated.stroke_color = sample_color(layer.stroke_color, {0,0,0,255}, local_t);
     evaluated.stroke_width = static_cast<float>(sample_scalar(layer.stroke_width_property, layer.stroke_width, local_t, context.audio_analyzer));
-    evaluated.extrusion_depth = static_cast<float>(sample_scalar(
-        layer.extrude,
-        layer.extrude.value_or(0.0),
-        local_t,
-        context.audio_analyzer));
-    evaluated.bevel_size = static_cast<float>(sample_scalar(
-        layer.bevel,
-        layer.bevel.value_or(0.0),
-        local_t,
-        context.audio_analyzer));
     evaluated.text_animators = layer.text_animators;
     evaluated.text_highlights = layer.text_highlights;
 

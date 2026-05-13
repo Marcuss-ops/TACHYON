@@ -14,7 +14,6 @@
 #include "tachyon/output/output_planner.h"
 #include "tachyon/media/streaming/media_prefetcher.h"
 #include "tachyon/audio/audio_export.h"
-#include "tachyon/media/resolution/asset_path_utils.h"
 #include "tachyon/runtime/execution/session/render_internal.h"
 #include "tachyon/runtime/profiling/render_profiler.h"
 #include "tachyon/media/management/asset_resolver.h"
@@ -76,7 +75,14 @@ private:
 };
 
 media::AssetResolver::Config build_asset_resolver_config(const RenderExecutionPlan& plan) {
-    return media::AssetResolver::Config(media::ProjectResolutionContext::from_scene(plan.render_plan.scene_ref));
+    media::AssetResolver::Config config;
+    if (!plan.render_plan.scene_ref.empty()) {
+        std::filesystem::path scene_path(plan.render_plan.scene_ref);
+        config.project_root = scene_path.has_parent_path()
+            ? scene_path.parent_path()
+            : std::filesystem::current_path();
+    }
+    return config;
 }
 
 struct RenderSessionWorkspace {

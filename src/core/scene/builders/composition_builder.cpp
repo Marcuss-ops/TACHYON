@@ -36,11 +36,11 @@ CompositionBuilder& CompositionBuilder::background(BackgroundSpec background) {
     spec_.background = std::move(background);
     return *this;
 }
-CompositionBuilder& CompositionBuilder::background_preset(const std::string& id) {
+CompositionBuilder& CompositionBuilder::background_preset(const std::string& id, double duration) {
     registry::ParameterBag bag;
     bag.set("width", static_cast<float>(spec_.width));
     bag.set("height", static_cast<float>(spec_.height));
-    bag.set("duration", spec_.duration);
+    bag.set("duration", duration > 0.0 ? duration : spec_.duration);
 
     if (auto bg_layer = content::PresetCatalog::instance().create_background(id, bag)) {
         spec_.layers.insert(spec_.layers.begin(), std::move(*bg_layer));

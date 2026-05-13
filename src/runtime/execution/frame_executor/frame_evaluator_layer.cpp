@@ -6,6 +6,7 @@
 #include "tachyon/runtime/execution/property_sampling.h"
 #include "tachyon/core/math/matrix4x4.h"
 #include "tachyon/core/math/quaternion.h"
+#include "tachyon/core/math/transform3.h"
 #include "tachyon/core/scene/evaluator/layer_utils.h"
 #include <chrono>
 #include <filesystem>
@@ -194,11 +195,10 @@ void evaluate_layer(
     state->mask_feather = static_cast<float>(sample_property(CompiledLayer::MaskFeather, 0.0));
 
     state->world_position3 = {state->local_transform.position.x, state->local_transform.position.y, 0.0f};
-    state->scale_3d = {state->local_transform.scale.x, state->local_transform.scale.y, 1.0f};
-    state->world_matrix = math::compose_trs(
+    state->world_matrix = math::Transform3(
         state->world_position3,
         math::Quaternion::from_euler({0.0f, 0.0f, static_cast<float>(sample_property(CompiledLayer::Rotation, 0.0))}),
-        state->scale_3d);
+        {state->local_transform.scale.x, state->local_transform.scale.y, 1.0f}).to_matrix();
     state->previous_world_matrix = state->world_matrix;
 
     // Only apply automatic linear alpha fading for simple "fade" transitions or default legacy IDs.

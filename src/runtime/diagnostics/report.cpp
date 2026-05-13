@@ -28,7 +28,7 @@ void print_inspect_report_text(
     out << "assets\n";
     out << "  resolved: " << assets.size() << '\n';
     for (const auto& [asset_id, asset] : assets) {
-        out << "  - " << asset_id << " [" << asset.type << "] -> " << asset.absolute_path.string() << '\n';
+        out << "  - " << asset_id << " [" << asset.type_name << "] -> " << asset.source_path.string() << '\n';
     }
 
     if (render_plan.has_value()) {
