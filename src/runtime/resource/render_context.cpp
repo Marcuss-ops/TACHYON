@@ -27,11 +27,7 @@ RenderContext::RenderContext(
     working_color_space.profile = cms.working_profile;
     working_color_space.linear = (cms.working_profile.curve == renderer2d::TransferCurve::Linear);
 
-#if defined(_WIN32) && defined(TACHYON_ENABLE_OIDN)
-    oidn_device = oidn::newDevice();
-    oidn_device.commit();
-    oidn_filter = oidn_device.newFilter("RT");
-#endif
+
 }
 
 } // namespace tachyon

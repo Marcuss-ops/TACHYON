@@ -42,17 +42,7 @@ if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
     target_precompile_headers(TachyonRuntimeTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")
 endif()
 
-if(MSVC)
-    file(GLOB OIDN_RUNTIME_DLLS CONFIGURE_DEPENDS "${oidn_SOURCE_DIR}/bin/*.dll")
-    if(OIDN_RUNTIME_DLLS)
-        add_custom_command(TARGET TachyonRuntimeTests POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    ${OIDN_RUNTIME_DLLS}
-                    $<TARGET_FILE_DIR:TachyonRuntimeTests>
-            COMMAND_EXPAND_LISTS
-        )
-    endif()
-endif()
+
 
 if(MSVC)
     target_compile_options(TachyonRuntimeTests PRIVATE /FS)
@@ -81,17 +71,7 @@ if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
     target_precompile_headers(TachyonNativeRenderTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")
 endif()
 
-if(MSVC)
-    file(GLOB OIDN_RUNTIME_DLLS CONFIGURE_DEPENDS "${oidn_SOURCE_DIR}/bin/*.dll")
-    if(OIDN_RUNTIME_DLLS)
-        add_custom_command(TARGET TachyonNativeRenderTests POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    ${OIDN_RUNTIME_DLLS}
-                    $<TARGET_FILE_DIR:TachyonNativeRenderTests>
-            COMMAND_EXPAND_LISTS
-        )
-    endif()
-endif()
+
 
 if(MSVC)
     target_compile_options(TachyonNativeRenderTests PRIVATE /FS)
@@ -122,17 +102,7 @@ if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
     target_precompile_headers(TachyonRenderProfilerTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")
 endif()
 
-if(MSVC)
-    file(GLOB OIDN_RUNTIME_DLLS CONFIGURE_DEPENDS "${oidn_SOURCE_DIR}/bin/*.dll")
-    if(OIDN_RUNTIME_DLLS)
-        add_custom_command(TARGET TachyonRenderProfilerTests POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    ${OIDN_RUNTIME_DLLS}
-                    $<TARGET_FILE_DIR:TachyonRenderProfilerTests>
-            COMMAND_EXPAND_LISTS
-        )
-    endif()
-endif()
+
 
 if(MSVC)
     target_compile_options(TachyonRenderProfilerTests PRIVATE /FS)

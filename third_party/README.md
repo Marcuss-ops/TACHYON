@@ -13,8 +13,9 @@ This directory contains vendored or mirrored dependencies that are checked in be
 
 - `stb/` - Single-header image helpers used by rendering and tests.
 - `libavutil/` - FFmpeg-related headers mirrored for media integration.
-- `embree-3.13.5.x86_64.linux/` - Intel Embree ray tracing library (Linux x64).
-- `oneapi-tbb-2021.5.0/` - Intel oneAPI Threading Building Blocks (TBB).
+- `clipper2/` - Boolean shape operations library.
+- `pugixml/` - XML parser for background presets and metadata.
+
 
 ## Update Checklist
 

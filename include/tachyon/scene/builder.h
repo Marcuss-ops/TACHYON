@@ -25,7 +25,6 @@
 #include "tachyon/renderer2d/effects/generators/light_leak_types.h"
 
 #include "tachyon/scene/camera_builder.h"
-#include "tachyon/scene/light_builder.h"
 #include "tachyon/scene/text_builder.h"
 #include "tachyon/scene/effect_builder.h"
 
@@ -36,7 +35,6 @@ class LayerBuilder;
 class CompositionBuilder;
 class SceneBuilder;
 class CameraBuilder;
-class LightBuilder;
 class TextBuilder;
 class EffectBuilder;
 
@@ -105,32 +103,13 @@ public:
     LayerBuilder& done();
 };
 
-/**
- * @brief Helper for material-related fields exposed on LayerSpec.
- */
-class TACHYON_API MaterialBuilder {
-    LayerBuilder& parent_;
-public:
-    explicit MaterialBuilder(LayerBuilder& parent) : parent_(parent) {}
 
-    MaterialBuilder& base_color(const ColorSpec& c);
-    MaterialBuilder& metallic(double v);
-    MaterialBuilder& roughness(double v);
-    MaterialBuilder& transmission(double v);
-    MaterialBuilder& ior(double v);
-    MaterialBuilder& emission_strength(double v);
-    MaterialBuilder& emission_color(const ColorSpec& c);
-    
-    LayerBuilder& done();
-};
 
 /**
  * @brief Ergonomic builder for LayerSpec.
  */
 class TACHYON_API LayerBuilder {
-    friend class MaterialBuilder;
     friend class CameraBuilder;
-    friend class LightBuilder;
     friend class TextBuilder;
     friend class EffectBuilder;
     LayerSpec spec_;
@@ -176,12 +155,8 @@ public:
     TransitionBuilder enter();
     TransitionBuilder exit();
 
-    // Material
-    MaterialBuilder material();
 
-    // Domain-specific builders
     CameraBuilder camera();
-    LightBuilder light();
     TextBuilder text();
     TextBuilder text(std::string content);
     EffectBuilder effects();
@@ -225,7 +200,6 @@ public:
     CompositionBuilder& null_layer(std::string id, std::function<void(LayerBuilder&)> fn);
     CompositionBuilder& precomp_layer(std::string id, std::string composition_id, std::function<void(LayerBuilder&)> fn);
 
-    CompositionBuilder& light_layer(std::string id, std::function<void(LayerBuilder&)> fn);
     CompositionBuilder& audio(std::string path, double volume = 1.0);
     CompositionBuilder& audio(const AudioTrackSpec& track);  // Accept AudioTrackSpec directly
 

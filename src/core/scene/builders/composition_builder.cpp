@@ -91,14 +91,7 @@ CompositionBuilder& CompositionBuilder::precomp_layer(std::string id, std::strin
     return add_typed_layer(std::move(id), [&](LayerBuilder& l) { l.precomp(std::move(composition_id)); }, fn);
 }
 
-CompositionBuilder& CompositionBuilder::light_layer(std::string id, std::function<void(LayerBuilder&)> fn) {
-    return add_typed_layer(std::move(id),
-        [](LayerBuilder& l) {
-            l.type(LayerType::Light);
-            l.light().type("point").done();
-        },
-        fn);
-}
+
 
 CompositionBuilder& CompositionBuilder::audio(std::string path, double volume) {
     tachyon::spec::AudioTrackSpec track;

@@ -32,9 +32,7 @@ LayerBuilder& LayerBuilder::image(std::string path) {
     return type(LayerType::Image).asset_id(std::move(path));
 }
 
-LayerBuilder& LayerBuilder::mesh(std::string path) {
-    return type(LayerType::Mesh).asset_id(std::move(path));
-}
+
 
 LayerBuilder& LayerBuilder::preset(std::string name) {
     type(LayerType::Procedural);
@@ -173,15 +171,11 @@ LayerBuilder& LayerBuilder::from_spec(const LayerSpec& spec) {
     return *this;
 }
 
+
 // Domain builder accessors
 CameraBuilder LayerBuilder::camera() {
     spec_.type = LayerType::Camera;
     return CameraBuilder(*this);
-}
-
-LightBuilder LayerBuilder::light() {
-    spec_.type = LayerType::Light;
-    return LightBuilder(*this);
 }
 
 TextBuilder LayerBuilder::text() {
@@ -207,9 +201,6 @@ TransitionBuilder LayerBuilder::exit() {
     return TransitionBuilder(spec_.transition_out, *this);
 }
 
-MaterialBuilder LayerBuilder::material() {
-    return MaterialBuilder(*this);
-}
 
 LayerSpec LayerBuilder::build() && {
     return std::move(spec_);
