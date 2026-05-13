@@ -1,7 +1,6 @@
 #pragma once
 
 #include "tachyon/core/math/vector2.h"
-#include "tachyon/core/math/vector3.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 
 #include <vector>

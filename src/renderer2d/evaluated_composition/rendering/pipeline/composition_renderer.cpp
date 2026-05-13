@@ -453,15 +453,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
             }
 
             // Final Composite
-            float layer_inv_z = -1.0f;
-            if (layer.world_position3.z != 0.0f) {
-                float z = std::abs(layer.world_position3.z);
-                if (z > 0.001f) {
-                    layer_inv_z = 1.0f / z;
-                }
-            }
-
-            composite_surface(target_surface, *layer_surface, 0, 0, parse_blend_mode(layer.blend_mode), layer_inv_z);
+            composite_surface(target_surface, *layer_surface, 0, 0, parse_blend_mode(layer.blend_mode), -1.0f);
         }
     };
 
