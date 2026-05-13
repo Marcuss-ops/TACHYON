@@ -36,9 +36,6 @@ TACHYON_PROPERTY_SCALAR(repeater_offset_scale_y, repeater_offset_scale_y, 1.0)
 TACHYON_PROPERTY_SCALAR(repeater_start_opacity, repeater_start_opacity, 1.0)
 TACHYON_PROPERTY_SCALAR(repeater_end_opacity, repeater_end_opacity, 0.0)
 
-// Camera Properties
-TACHYON_PROPERTY_SCALAR(camera_zoom, camera_zoom, 1000.0)
-
 // Clean up macros if they were provided as default fallbacks
 #undef TACHYON_PROPERTY_SCALAR
 #undef TACHYON_PROPERTY_COLOR

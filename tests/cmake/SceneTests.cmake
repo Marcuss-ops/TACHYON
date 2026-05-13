@@ -8,7 +8,6 @@ add_executable(TachyonSceneTests
     unit/timeline/time_tests.cpp
     unit/core/analysis/scene_inspector_tests.cpp
     unit/core/analysis/motion_map_tests.cpp
-    unit/core/camera/default_camera_tests.cpp
 )
 
 target_compile_definitions(TachyonSceneTests

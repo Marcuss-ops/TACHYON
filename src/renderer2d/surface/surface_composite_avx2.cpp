@@ -24,8 +24,8 @@ namespace tachyon::renderer2d {
 //   result   = fmadd(dst, inv_sa, s_premul)
 
 void composite_tile_avx2(
-    float* __restrict dst_pixels, uint32_t dst_stride,
-    const float* __restrict src_pixels, uint32_t src_stride,
+    float* dst_pixels, unsigned int dst_stride,
+    const float* src_pixels, unsigned int src_stride,
     int x0, int y0, int x1, int y1,
     int ox, int oy
 ) {

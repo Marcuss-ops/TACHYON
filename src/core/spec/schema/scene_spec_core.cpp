@@ -12,6 +12,11 @@ std::string make_path(const std::string& parent, const std::string& child) {
     return parent + "." + child;
 }
 
+std::filesystem::path scene_asset_root(const std::filesystem::path& scene_path) {
+    if (scene_path.empty()) return "";
+    return scene_path.parent_path() / "assets";
+}
+
 bool is_asset_alpha_mode_valid(const std::string& mode) {
     return mode == "premultiplied" || mode == "straight" || mode == "opaque";
 }
