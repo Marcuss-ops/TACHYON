@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/core/math/vector2.h"
-#include "tachyon/core/math/matrix4x4.h"
+#include "tachyon/core/math/matrix3x3.h"
 
 namespace tachyon {
 namespace math {
@@ -14,16 +14,16 @@ struct Transform2 {
 
     static Transform2 identity() { return {}; }
 
-    [[nodiscard]] Matrix4x4 to_matrix() const {
-        const Matrix4x4 t = Matrix4x4::translation({position.x, position.y, 0.0f});
-        const Matrix4x4 r = Matrix4x4::rotation_z(rotation_rad);
-        const Matrix4x4 s = Matrix4x4::scaling({scale.x, scale.y, 1.0f});
-        const Matrix4x4 a = Matrix4x4::translation({-anchor_point.x, -anchor_point.y, 0.0f});
+    [[nodiscard]] Matrix3x3 to_matrix() const {
+        const Matrix3x3 t = Matrix3x3::make_translation(position);
+        const Matrix3x3 r = Matrix3x3::make_rotation(rotation_rad);
+        const Matrix3x3 s = Matrix3x3::make_scale(scale.x, scale.y);
+        const Matrix3x3 a = Matrix3x3::make_translation({-anchor_point.x, -anchor_point.y});
         return t * (r * (s * a));
     }
 
-    [[nodiscard]] Matrix4x4 to_inverse_matrix() const {
-        return to_matrix().inverse_affine();
+    [[nodiscard]] Matrix3x3 to_inverse_matrix() const {
+        return to_matrix().inverse();
     }
 };
 

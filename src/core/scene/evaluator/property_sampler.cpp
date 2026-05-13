@@ -185,47 +185,6 @@ math::Vector2 sample_vector2(
         });
 }
 
-math::Vector3 sample_vector3(
-    const AnimatedVector3Spec& property,
-    const math::Vector3& fallback,
-    double local_time_seconds,
-    const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
-    std::uint64_t expression_seed,
-    const std::unordered_map<std::string, double>* job_variables,
-    const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables) {
-    if (property.expression.has_value() && !property.expression->empty()) {
-        expressions::ExpressionContextInput input;
-        input.time = local_time_seconds;
-        input.seed = expression_seed;
-        input.audio_analyzer = audio_analyzer;
-        input.job_variables = job_variables;
-        input.tables = tables;
-        
-        if (!property.keyframes.empty()) {
-            input.prop_start = property.keyframes.front().time;
-            input.prop_end = property.keyframes.back().time;
-        }
-
-        auto expr_ctx = expressions::build_context(input);
-        auto result = expressions::CoreExpressionEvaluator::evaluate(*property.expression, expr_ctx);
-        if (result.success) {
-            return { static_cast<float>(result.value), static_cast<float>(result.value), static_cast<float>(result.value) };
-        }
-    }
-
-    if (property.keyframes.empty()) {
-        return property.value.value_or(fallback);
-    }
-
-    return internal_sample_spatial_keyframes(
-        property.keyframes, 
-        property.value.value_or(fallback), 
-        local_time_seconds, 
-        animation::lerp_vector3,
-        [](const math::Vector3& p0, const math::Vector3& p1, const math::Vector3& p2, const math::Vector3& p3, float t) {
-            return math::sample_bezier_spatial(p0, p1, p2, p3, t);
-        });
-}
 
 ColorSpec sample_color(const AnimatedColorSpec& property, const ColorSpec& fallback, double local_time_seconds) {
     if (property.keyframes.empty()) {

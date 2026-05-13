@@ -13,7 +13,7 @@
 
 ## Experimental
 
-- 3D rendering and temporal features that are still gated by feature flags.
+- Spatial rendering and temporal features that are still gated by feature flags.
 - Tracker-based features.
 - Audio muxing and other runtime output paths that depend on optional integration points.
 - Catalog tooling and editor-adjacent utilities.

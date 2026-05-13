@@ -2,7 +2,6 @@
 
 #include "tachyon/core/types/color_spec.h"
 #include "tachyon/core/math/vector2.h"
-#include "tachyon/core/math/vector3.h"
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -19,7 +18,6 @@ enum class ParameterType {
     String,
     Color,
     Vector2,
-    Vector3,
     Enum,
     AssetPath,
     Easing,
@@ -32,8 +30,7 @@ using ParameterValue = std::variant<
     bool,
     std::string,
     ColorSpec,
-    math::Vector2,
-    math::Vector3
+    math::Vector2
 >;
 
 struct EnumOption {
@@ -64,7 +61,6 @@ struct ParameterDef {
         else if (std::holds_alternative<std::string>(default_value)) type = ParameterType::String;
         else if (std::holds_alternative<ColorSpec>(default_value)) type = ParameterType::Color;
         else if (std::holds_alternative<math::Vector2>(default_value)) type = ParameterType::Vector2;
-        else if (std::holds_alternative<math::Vector3>(default_value)) type = ParameterType::Vector3;
     }
 
     ParameterDef(std::string id, std::string label, std::string description, ParameterType type, ParameterValue def, std::optional<double> min = std::nullopt, std::optional<double> max = std::nullopt)

@@ -6,7 +6,7 @@ Make Tachyon buildable, testable, and maintainable before adding new rendering f
 
 ## Non-goals
 
-- No new 3D features
+- No new Spatial features
 - No new tracker features
 - No new preview window work
 - No GUI work

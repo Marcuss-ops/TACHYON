@@ -32,6 +32,10 @@ LayerBuilder& LayerBuilder::image(std::string path) {
     return type(LayerType::Image).asset_id(std::move(path));
 }
 
+LayerBuilder& LayerBuilder::video(std::string path) {
+    return type(LayerType::Video).asset_id(std::move(path));
+}
+
 
 
 LayerBuilder& LayerBuilder::preset(std::string name) {
@@ -54,15 +58,6 @@ LayerBuilder& LayerBuilder::asset_id(std::string id) {
     return *this;
 }
 
-LayerBuilder& LayerBuilder::mesh_deform_id(std::optional<std::string> id) {
-    spec_.mesh_deform_id = std::move(id);
-    return *this;
-}
-
-LayerBuilder& LayerBuilder::clear_mesh_deform_id() {
-    spec_.mesh_deform_id.reset();
-    return *this;
-}
 
 LayerBuilder& LayerBuilder::in(double t) {
     spec_.in_point = t;
@@ -172,11 +167,6 @@ LayerBuilder& LayerBuilder::from_spec(const LayerSpec& spec) {
 }
 
 
-// Domain builder accessors
-CameraBuilder LayerBuilder::camera() {
-    spec_.type = LayerType::Camera;
-    return CameraBuilder(*this);
-}
 
 TextBuilder LayerBuilder::text() {
     spec_.type = LayerType::Text;

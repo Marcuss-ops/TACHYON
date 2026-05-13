@@ -2,13 +2,11 @@
 
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/core/spec/schema/objects/procedural_spec.h"
+#include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 
-#include "tachyon/core/scene/constraints/constraints.h"
-#include "tachyon/core/math/matrix4x4.h"
+#include "tachyon/core/math/matrix3x3.h"
 #include "tachyon/core/math/transform2.h"
-#include "tachyon/core/math/vector3.h"
 #include "tachyon/core/shapes/shape_path.h"
-#include "tachyon/core/scene/state/evaluated_camera_state.h"
 #include "tachyon/core/spec/schema/common/gradient_spec.h"
 #include "tachyon/core/spec/schema/objects/mask_spec.h"
 #include "tachyon/core/spec/schema/objects/path_spec.h"
@@ -45,8 +43,7 @@ struct EvaluatedLayerState {
     std::size_t layer_index{0};
     LayerType type{LayerType::Solid};
     
-    math::Matrix4x4 world_matrix{math::Matrix4x4::identity()};
-    math::Vector3 world_position3{0.0f, 0.0f, 0.0f};
+    math::Matrix3x3 world_matrix{math::Matrix3x3()};
     math::Transform2 local_transform{math::Transform2::identity()};
     bool motion_blur{false};
     
@@ -70,11 +67,8 @@ struct EvaluatedLayerState {
     std::optional<ShapePathSpec> shape_path;
     std::optional<ShapeSpec> shape_spec;
     std::optional<spec::MaskPath> mask_path;
+    std::vector<EffectSpec> animated_effects;
     std::vector<EffectSpec> effects;
-    std::vector<TextAnimatorSpec> text_animators;
-    std::vector<TextHighlightSpec> text_highlights;
-    std::vector<ConstraintSpec> constraints;
-    std::vector<IKSpec> ik_chains;
     std::optional<std::string> asset_path;
     std::optional<GradientSpec> gradient_fill;
     std::optional<GradientSpec> gradient_stroke;
@@ -101,25 +95,9 @@ struct EvaluatedLayerState {
     std::shared_ptr<EvaluatedCompositionState> nested_composition;
     std::vector<math::Vector2> corner_pin;
     
-    // Camera properties (if type == Camera)
-    std::string camera_type{"one_node"};
-    float zoom{877.0f};
-    float camera_roll{0.0f};
-    math::Vector3 poi{0.0f, 0.0f, 0.0f};
-    
-    // Camera Shake state
-    uint64_t camera_shake_seed{0};
-    float camera_shake_amplitude_pos{0.0f};
-    float camera_shake_amplitude_rot{0.0f};
-    float camera_shake_frequency{0.0f};
-    float camera_shake_roughness{0.0f};
-
-    // Camera Depth of Field
-    std::optional<float> camera_aperture;
-    std::optional<float> camera_focus_distance;
 
     // Previous state for motion blur calculation
-    math::Matrix4x4 previous_world_matrix{math::Matrix4x4::identity()};
+    math::Matrix3x3 previous_world_matrix{math::Matrix3x3()};
 
     // Masks
     std::vector<spec::MaskPath> masks;
@@ -130,11 +108,9 @@ struct EvaluatedLayerState {
 
     bool text_on_path_enabled{false};
 
-    // Mesh deformation resource reference; empty means no deform is applied.
-    std::optional<std::string> mesh_deform_id;
-
-    // Effects
-    std::vector<EffectSpec> animated_effects;
+    // Text Animation
+    std::vector<TextAnimatorSpec> text_animators;
+    std::vector<TextHighlightSpec> text_highlights;
 
     // Transitions
     LayerTransitionSpec transition_in;
@@ -156,12 +132,10 @@ struct EvaluatedCompositionState {
     double composition_time_seconds{0.0};
     
     std::vector<EvaluatedLayerState> layers;
-    EvaluatedCameraState camera;
     
     ColorSpec background_color{0, 0, 0, 0};
 
-    // Neutral environment reference resolved later by renderers.
-    std::optional<std::string> environment_map_id;
+
 };
 
 } // namespace tachyon::scene

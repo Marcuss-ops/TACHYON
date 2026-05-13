@@ -73,8 +73,6 @@ void SceneValidator::validate_composition(const ::tachyon::CompositionSpec& comp
     // Validate duplicate IDs within composition
     validate_duplicate_ids(comp, out);
     
-    // Validate camera cuts
-    validate_camera_cuts(comp, out);
 
     for (std::size_t i = 0; i < comp.layers.size(); ++i) {
         validate_layer(comp.layers[i], comp, scene, "composition." + comp.id + ".layers[" + std::to_string(i) + "]", out);
@@ -130,57 +128,6 @@ void SceneValidator::validate_duplicate_ids(const ::tachyon::CompositionSpec& co
     validate_audio_files(comp, "composition." + comp.id, out);
 }
 
-void SceneValidator::validate_camera_cuts(const ::tachyon::CompositionSpec& comp, ValidationResult& out) const {
-    // Check for overlapping camera cuts
-    for (std::size_t i = 0; i < comp.camera_cuts.size(); ++i) {
-        const auto& cut_i = comp.camera_cuts[i];
-        
-        // Validate time range
-        if (cut_i.start_seconds < 0) {
-            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error,
-                "composition." + comp.id + ".camera_cuts[" + std::to_string(i) + "].start_seconds",
-                "Camera cut start time cannot be negative."});
-            out.error_count++;
-        }
-        
-        if (cut_i.end_seconds < cut_i.start_seconds) {
-            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error,
-                "composition." + comp.id + ".camera_cuts[" + std::to_string(i) + "]",
-                "Camera cut end time must be >= start time."});
-            out.error_count++;
-        }
-        
-        // Check for overlaps with other cuts
-        for (std::size_t j = i + 1; j < comp.camera_cuts.size(); ++j) {
-            const auto& cut_j = comp.camera_cuts[j];
-            
-            // Two cuts overlap if one starts before the other ends
-            bool overlaps = (cut_i.start_seconds < cut_j.end_seconds) && (cut_j.start_seconds < cut_i.end_seconds);
-            
-            if (overlaps) {
-                out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error,
-                    "composition." + comp.id + ".camera_cuts",
-                    "Overlapping camera cuts at indices " + std::to_string(i) + " and " + std::to_string(j)});
-                out.error_count++;
-            }
-        }
-        
-        // Validate camera reference exists
-        bool camera_found = false;
-        for (const auto& cam : comp.cameras_2d) {
-            if (cam.id == cut_i.camera_id) {
-                camera_found = true;
-                break;
-            }
-        }
-        if (!camera_found && !cut_i.camera_id.empty()) {
-            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error,
-                "composition." + comp.id + ".camera_cuts[" + std::to_string(i) + "].camera_id",
-                "Camera cut references non-existent camera: " + cut_i.camera_id});
-            out.error_count++;
-        }
-    }
-}
 
 void SceneValidator::validate_track_bindings(const ::tachyon::LayerSpec& layer, const std::string& path, ValidationResult& out) const {
     // Validate track bindings reference valid sources

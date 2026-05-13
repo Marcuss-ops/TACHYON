@@ -126,9 +126,6 @@ struct CompiledLayer {
     float subtitle_outline_width{0.0f};
     std::optional<std::string> word_timestamp_path;
     bool asset_offline{false};
-    float extrusion_depth{0.0f};
-    float bevel_size{0.0f};
-    float hole_bevel_ratio{0.0f};
     std::string blend_mode{"normal"};
     std::vector<AnimatedEffectSpec> animated_effects;
     std::optional<ProceduralSpec> procedural;
@@ -153,12 +150,7 @@ struct CompiledLayer {
         Rotation = 5,
         MaskFeather = 6,
         AnchorX = 7,
-        AnchorY = 8,
-        Metallic = 9,
-        Roughness = 10,
-        IOR = 11,
-        Transmission = 12,
-        EmissionStrength = 13
+        AnchorY = 8
     };
 
     // Masking and Matte (resolved into indices)
@@ -169,7 +161,6 @@ struct CompiledLayer {
     renderer2d::LineCap line_cap{renderer2d::LineCap::Butt};
     renderer2d::LineJoin line_join{renderer2d::LineJoin::Miter};
     float miter_limit{4.0f};
-    ColorSpec emission_color{0, 0, 0, 255};
     
     // Visibility flags (bitmask preferred for industrial minimality)
     std::uint8_t flags{0x01}; // 0x01 = enabled, 0x02 = visible, 0x08 = adjustment
@@ -189,7 +180,6 @@ struct CompiledComposition {
     std::uint32_t fps{60};
     double duration{0.0};
     std::vector<CompiledLayer> layers;
-    std::vector<spec::CameraCut> camera_cuts;
     std::vector<spec::AudioTrackSpec> audio_tracks;
 };
 
@@ -251,8 +241,8 @@ struct CompiledScene {
      * This must be updated MANUALLY when the TBF serialization layout changes.
      */
     [[nodiscard]] static constexpr std::uint64_t calculate_layout_checksum() noexcept {
-        // Version 5 Stable Layout Checksum
-        return 0x5441434800000005ULL;
+        // Version 6 Stable Layout Checksum (2D Only Refactor)
+        return 0x5441434800000006ULL;
     }
 };
 

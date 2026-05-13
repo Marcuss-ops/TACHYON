@@ -79,13 +79,6 @@ struct TBFReader : public BinaryReader {
         return tr;
     }
 
-    spec::CameraCut read_camera_cut() {
-        spec::CameraCut cut;
-        cut.camera_id = read_string();
-        cut.start_seconds = read_f64();
-        cut.end_seconds = read_f64();
-        return cut;
-    }
 
     spec::AudioEffectSpec read_audio_effect() {
         spec::AudioEffectSpec effect;
@@ -162,11 +155,6 @@ struct TBFWriter : public BinaryWriter {
         }
     }
 
-    void write_camera_cut(const spec::CameraCut& cut) {
-        write_string(cut.camera_id);
-        write_f64(cut.start_seconds);
-        write_f64(cut.end_seconds);
-    }
 
     void write_audio_effect(const spec::AudioEffectSpec& effect) {
         write_string(effect.type);
@@ -343,10 +331,6 @@ std::vector<std::uint8_t> TBFCodec::encode(const CompiledScene& scene) {
             writer.write_u8(static_cast<std::uint8_t>(layer.frame_blend));
         }
 
-        writer.write_vector(comp.camera_cuts, [](BinaryWriter& w, const spec::CameraCut& c) {
-            TBFWriter& tw = static_cast<TBFWriter&>(w);
-            tw.write_camera_cut(c);
-        });
 
         writer.write_vector(comp.audio_tracks, [](BinaryWriter& w, const spec::AudioTrackSpec& t) {
             TBFWriter& tw = static_cast<TBFWriter&>(w);
@@ -522,9 +506,6 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
             comp.layers.push_back(std::move(layer));
         }
 
-        comp.camera_cuts = reader.read_vector<spec::CameraCut>([](BinaryReader& r) {
-            return static_cast<TBFReader&>(r).read_camera_cut();
-        });
 
         comp.audio_tracks = reader.read_vector<spec::AudioTrackSpec>([](BinaryReader& r) {
             return static_cast<TBFReader&>(r).read_audio_track();

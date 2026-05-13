@@ -8,7 +8,6 @@
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/core/types/diagnostics.h"
 #include "tachyon/core/math/vector2.h"
-#include "tachyon/core/math/vector3.h"
 #include "tachyon/core/spec/schema/common/gradient_spec.h"
 
 namespace tachyon {

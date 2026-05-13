@@ -170,15 +170,6 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
             add_track(".anchor_point_x", layer.transform.anchor_point, layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->x : 0.0);
             add_track(".anchor_point_y", layer.transform.anchor_point, layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->y : 0.0);
 
-            // Material properties
-            add_track(".metallic", layer.metallic, 0.0);
-            add_track(".roughness", layer.roughness, 0.5);
-            add_track(".ior", layer.ior, 1.45);
-            add_track(".transmission", layer.transmission, 0.0);
-            add_track(".emission_strength", layer.emission_strength, 0.0);
-            
-            compiled_layer.emission_color = layer.emission_color.value.has_value() ? *layer.emission_color.value : ColorSpec{0, 0, 0, 255};
-
             // Populate Unified Fields
             compiled_layer.track_bindings = layer.track_bindings;
             compiled_layer.time_remap = layer.time_remap;
@@ -187,7 +178,6 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
             compiled_composition.layers.push_back(std::move(compiled_layer));
         }
         
-        compiled_composition.camera_cuts = composition.camera_cuts;
         compiled_composition.audio_tracks = composition.audio_tracks;
 
         compiled.compositions.push_back(std::move(compiled_composition));

@@ -5,7 +5,6 @@ set(TachyonSceneAuthoringSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/builders/expr_helpers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/builders/anim_helpers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/builders/transition_builder.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/builders/camera_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/builders/text_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/builders/effect_builder.cpp
 
@@ -58,7 +57,6 @@ set(TachyonSceneAllSources
 )
 
 # --- Targets ---
-
 add_library(TachyonSceneEval STATIC ${TachyonSceneEvalSources})
 tachyon_configure_common(TachyonSceneEval)
 target_link_libraries(TachyonSceneEval

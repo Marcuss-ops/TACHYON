@@ -3,7 +3,7 @@
 To prevent technical debt and maintain architectural integrity, all new features and extensions must follow these mandatory rules.
 
 ## 1. Single Source of Truth (Canonical Model)
-- Every domain must have a single canonical specification (e.g., `TextAnimatorSpec`, `EffectBuiltinSpec`, `Modifier3DSpec`).
+- Every domain must have a single canonical specification (e.g., `TextAnimatorSpec`, `EffectBuiltinSpec`, `ModifierSpatialSpec`).
 - **DO NOT** add ad-hoc fields to runtime structures (like `TextAnimationOptions` or `RenderSession`).
 - All state must derive from the declarative spec and its associated sampling logic.
 
@@ -14,7 +14,7 @@ To prevent technical debt and maintain architectural integrity, all new features
 
 ## 3. No Runtime Fallbacks
 - The rendering loop must only understand the canonical model.
-- **DO NOT** implement "legacy support" logic inside the hot paths of `layout.cpp` or `renderer2d/3d` modules.
+- **DO NOT** implement "legacy support" logic inside the hot paths of `layout.cpp` or `renderer2d/Spatial` modules.
 - If backward compatibility is required, implement it as a **Shim/Adapter** that translates old data into the new canonical spec *before* it reaches the runtime.
 
 ## 4. Single Execution Pipeline

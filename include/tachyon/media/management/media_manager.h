@@ -57,9 +57,6 @@ public:
         AlphaMode alpha_mode = AlphaMode::Straight,
         DiagnosticBag* diagnostics = nullptr);
 
-    const renderer2d::HDRTextureData* get_hdr_image(
-        const std::filesystem::path& path,
-        DiagnosticBag* diagnostics = nullptr);
 
     /**
      * @brief Registers an asset in the manager.
@@ -99,9 +96,6 @@ public:
     /**
      * @brief Get HDR image from resolved asset.
      */
-    const renderer2d::HDRTextureData* get_hdr_image(
-        const ResolvedAsset& asset,
-        DiagnosticBag* diagnostics = nullptr);
 
     // Mesh loading removed to streamline core.
 

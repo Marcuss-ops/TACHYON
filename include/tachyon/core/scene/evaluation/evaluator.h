@@ -37,12 +37,6 @@ struct EvaluationVariables {
     media::MediaManager* media = nullptr
 );
 
-[[nodiscard]] EvaluatedCameraState evaluate_camera_state(
-    const CompositionSpec& composition,
-    const std::vector<EvaluatedLayerState>& layers,
-    std::int64_t frame_number,
-    double composition_time_seconds
-);
 
 [[nodiscard]] EvaluatedCompositionState evaluate_composition_state(
     const CompositionSpec& composition,

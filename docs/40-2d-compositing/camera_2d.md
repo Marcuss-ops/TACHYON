@@ -399,8 +399,8 @@ tests/integration/parallax_cards_tests.cpp                # MODIFY: Use real cam
 
 ## Notes
 
-- Camera2D uses 3x3 matrices (2D affine transform) unlike Camera3D which uses 4x4
-- Parallax is a simplification of 3D depth for 2D compositions
+- Camera2D uses 3x3 matrices (2D affine transform)
+- Parallax is a spatial depth effect for 2D compositions
 - Multiple cameras can exist; active camera is either per-layer or composition-wide
 - Zoom is equivalent to focal length but in 2D screen space
 - No near/far planes needed — 2D camera is always orthographic

@@ -86,37 +86,6 @@ static std::unique_ptr<renderer2d::SurfaceRGBA> decode_image(const std::filesyst
     return surface;
 }
 
-static std::unique_ptr<renderer2d::HDRTextureData> decode_hdr_image(const std::filesystem::path& path, std::string& error_out) {
-    int w, h, channels;
-    float* data = stbi_loadf(path.string().c_str(), &w, &h, &channels, 3);
-    if (!data) {
-        const char* reason = stbi_failure_reason();
-        error_out = reason ? reason : "unknown stb error";
-        return nullptr;
-    }
-
-    if (w <= 0 || h <= 0) {
-        stbi_image_free(data);
-        error_out = "invalid dimensions";
-        return nullptr;
-    }
-
-    const std::size_t pixel_count = static_cast<std::size_t>(w) * h;
-    if (pixel_count > 4096 * 4096) {
-        stbi_image_free(data);
-        error_out = "image too large";
-        return nullptr;
-    }
-
-    auto hdr = std::make_unique<renderer2d::HDRTextureData>();
-    hdr->width = w;
-    hdr->height = h;
-    hdr->channels = 3;
-    hdr->data.assign(data, data + (pixel_count * 3));
-
-    stbi_image_free(data);
-    return hdr;
-}
 
 const renderer2d::SurfaceRGBA* ImageManager::get_image(const std::filesystem::path& path, AlphaMode alpha_mode, DiagnosticBag* diagnostics) {
     auto shared = get_image_shared(path, alpha_mode, diagnostics);
@@ -154,34 +123,6 @@ std::shared_ptr<const renderer2d::SurfaceRGBA> ImageManager::get_image_shared(co
     return shared;
 }
 
-const renderer2d::HDRTextureData* ImageManager::get_hdr_image(const std::filesystem::path& path, DiagnosticBag* diagnostics) {
-    const std::string key = path.string();
-
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        auto it = m_hdr_cache.find(key);
-        if (it != m_hdr_cache.end()) return it->second.get();
-    }
-
-    std::string error_msg;
-    auto hdr = decode_hdr_image(path, error_msg);
-    if (!hdr) {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        record_missing_image(m_diagnostics, key, kDecodeFailedCode, (std::string(kDecodeFailedMessage) + " (HDR): " + error_msg).c_str());
-        if (diagnostics) {
-            record_missing_image(*diagnostics, key, kDecodeFailedCode, kDecodeFailedMessage);
-        }
-        return nullptr;
-    }
-
-    std::lock_guard<std::mutex> lock(m_mutex);
-    auto it = m_hdr_cache.find(key);
-    if (it != m_hdr_cache.end()) return it->second.get();
-
-    const renderer2d::HDRTextureData* ptr = hdr.get();
-    m_hdr_cache[key] = std::move(hdr);
-    return ptr;
-}
 
 DiagnosticBag ImageManager::consume_diagnostics() {
     std::lock_guard<std::mutex> lock(m_mutex);
@@ -198,7 +139,6 @@ void ImageManager::store_image(const std::string& key, std::shared_ptr<renderer2
 void ImageManager::clear_cache() {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_cache.clear();
-    m_hdr_cache.clear();
     m_diagnostics.diagnostics.clear();
 }
 

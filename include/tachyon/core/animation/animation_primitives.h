@@ -90,7 +90,7 @@ namespace tachyon {
 }
 
 //------------------------------------------------------------------------------
-// Noise 2D/3D/4D - Built on existing math_contract::noise (1D)
+// Noise - Built on existing math_contract::noise (1D)
 //------------------------------------------------------------------------------
 
 /**

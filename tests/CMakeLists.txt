@@ -47,3 +47,20 @@ if(TACHYON_ENABLE_OUTPUT)
     tachyon_configure_common(transition_perf_lab)
 endif()
 
+if(TACHYON_ENABLE_OUTPUT)
+    add_executable(tachyon_bench perf/tachyon_bench.cpp)
+    target_link_libraries(tachyon_bench PRIVATE 
+        TachyonCore 
+        TachyonOutput 
+        TachyonRenderer2D
+        TachyonPresets
+        TachyonRuntimeTelemetry
+        TachyonPlatform
+        TachyonTimeline
+    )
+    if(TACHYON_ENABLE_MEDIA)
+        target_link_libraries(tachyon_bench PRIVATE TachyonMedia)
+    endif()
+    tachyon_configure_common(tachyon_bench)
+endif()
+

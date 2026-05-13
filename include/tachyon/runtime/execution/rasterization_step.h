@@ -24,7 +24,7 @@ class RasterizationStep {
 public:
     /**
      * @brief Rasterize an evaluated composition into a framebuffer.
-     * Handles 3D injection, pooling, and profiling.
+     * Handles pooling and profiling.
      */
     static RasterizationResult execute(
         const scene::EvaluatedCompositionState& cached_comp,

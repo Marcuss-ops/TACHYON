@@ -36,10 +36,6 @@ std::uint64_t hash_scene_content(const SceneSpec& scene) {
                 builder.add_u32(c.a);
             }
         }
-        builder.add_bool(comp.environment_path.has_value());
-        if (comp.environment_path.has_value()) {
-            builder.add_string(*comp.environment_path);
-        }
         builder.add_u64(static_cast<std::uint64_t>(comp.layers.size()));
         for (const auto& layer : comp.layers) {
             builder.add_string(layer.id);
@@ -73,11 +69,6 @@ std::uint64_t hash_scene_content(const SceneSpec& scene) {
             builder.add_string(layer.line_cap);
             builder.add_string(layer.line_join);
             builder.add_u64(static_cast<std::uint64_t>(layer.miter_limit * 1000.0));
-            builder.add_string(layer.camera_type);
-            builder.add_u64(static_cast<std::uint64_t>(layer.camera_shake_seed));
-            builder.add_string(layer.light_type);
-            builder.add_string(layer.falloff_type);
-            builder.add_bool(layer.casts_shadows);
             hash::hash_animated_scalar(builder, layer.opacity_property);
             hash::hash_animated_scalar(builder, layer.mask_feather);
             hash::hash_animated_scalar(builder, layer.time_remap_property);
@@ -92,22 +83,8 @@ std::uint64_t hash_scene_content(const SceneSpec& scene) {
             hash::hash_animated_scalar(builder, layer.repeater_offset_scale_y);
             hash::hash_animated_scalar(builder, layer.repeater_start_opacity);
             hash::hash_animated_scalar(builder, layer.repeater_end_opacity);
-            hash::hash_animated_scalar(builder, layer.light_intensity);
-            hash::hash_animated_scalar(builder, layer.attenuation_near);
-            hash::hash_animated_scalar(builder, layer.attenuation_far);
-            hash::hash_animated_scalar(builder, layer.cone_angle);
-            hash::hash_animated_scalar(builder, layer.cone_feather);
-            hash::hash_animated_scalar(builder, layer.shadow_darkness);
-            hash::hash_animated_scalar(builder, layer.shadow_radius);
-            hash::hash_animated_scalar(builder, layer.camera_zoom);
-            hash::hash_animated_vector3(builder, layer.camera_poi);
-            hash::hash_animated_scalar(builder, layer.camera_shake_amplitude_pos);
-            hash::hash_animated_scalar(builder, layer.camera_shake_amplitude_rot);
-            hash::hash_animated_scalar(builder, layer.camera_shake_frequency);
-            hash::hash_animated_scalar(builder, layer.camera_shake_roughness);
             hash::hash_animated_color(builder, layer.fill_color);
             hash::hash_animated_color(builder, layer.stroke_color);
-            hash::hash_animated_color(builder, layer.light_color);
             builder.add_u64(static_cast<std::uint64_t>(layer.effects.size()));
             for (const auto& effect : layer.effects) hash::hash_effect(builder, effect);
             builder.add_u64(static_cast<std::uint64_t>(layer.text_animators.size()));

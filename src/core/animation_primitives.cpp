@@ -7,7 +7,7 @@
 
 namespace tachyon {
 
-// ---- Simplex Noise 2D/3D/4D Implementation ----
+// ---- Simplex Noise Implementation (Deterministic) ----
 
 // Gradient tables for Simplex noise
 static const float grad2[8][2] = {

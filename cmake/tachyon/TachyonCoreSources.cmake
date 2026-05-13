@@ -4,15 +4,9 @@ set(TachyonCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/animation/property_interpolation.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/animation/property_sampler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/options.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/math/matrix4x4.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/math/quaternion.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/math/transform3.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/math/deterministic_random.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/properties/bezier_interpolator.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/properties/spatial_keyframe.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/shapes/shape_modifiers.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/camera/camera_shake.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/camera/camera_state.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/model/tachyon.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/expressions/context_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/expressions/expression_engine.cpp

@@ -88,31 +88,6 @@ inline AnimatedSpatialProperty<math::Vector2> to_spatial_generic(const AnimatedV
     return prop;
 }
 
-/**
- * @brief Converts an AnimatedVector3Spec to the generic AnimatedSpatialProperty template.
- */
-inline AnimatedSpatialProperty<math::Vector3> to_spatial_generic(const AnimatedVector3Spec& spec) {
-    AnimatedSpatialProperty<math::Vector3> prop;
-    prop.value = spec.value;
-    prop.expression = spec.expression;
-    prop.keyframes.reserve(spec.keyframes.size());
-    for (const auto& k : spec.keyframes) {
-        SpatialKeyframeSpec<math::Vector3> gk;
-        gk.time = k.time;
-        gk.value = k.value;
-        gk.tangent_in = k.tangent_in;
-        gk.tangent_out = k.tangent_out;
-        gk.timing.easing = k.easing;
-        gk.timing.interpolation = k.interpolation;
-        gk.timing.bezier = k.bezier;
-        gk.timing.speed_in = k.speed_in;
-        gk.timing.influence_in = k.influence_in;
-        gk.timing.speed_out = k.speed_out;
-        gk.timing.influence_out = k.influence_out;
-        prop.keyframes.push_back(gk);
-    }
-    return prop;
-}
 
 /**
  * @brief Converts a CompiledPropertyTrack to the generic AnimatedProperty template.

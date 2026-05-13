@@ -39,12 +39,6 @@ public:
         AlphaMode alpha_mode = AlphaMode::Straight,
         DiagnosticBag* diagnostics = nullptr);
 
-    /**
-     * Get or load an HDR image (environment map).
-     */
-    const renderer2d::HDRTextureData* get_hdr_image(
-        const std::filesystem::path& path,
-        DiagnosticBag* diagnostics = nullptr);
 
     /**
      * Consume and clear accumulated media diagnostics.
@@ -63,7 +57,6 @@ public:
 
 private:
     std::map<std::string, std::shared_ptr<renderer2d::SurfaceRGBA>> m_cache;
-    std::map<std::string, std::shared_ptr<renderer2d::HDRTextureData>> m_hdr_cache;
     DiagnosticBag m_diagnostics;
     mutable std::mutex m_mutex;
 };

@@ -47,7 +47,6 @@ void hash_keyframes(CacheKeyBuilder& builder, const std::vector<T>& keyframes) {
 
 void hash_animated_scalar(CacheKeyBuilder& builder, const AnimatedScalarSpec& spec);
 void hash_animated_vector2(CacheKeyBuilder& builder, const AnimatedVector2Spec& spec);
-void hash_animated_vector3(CacheKeyBuilder& builder, const AnimatedVector3Spec& spec);
 void hash_animated_color(CacheKeyBuilder& builder, const AnimatedColorSpec& spec);
 
 void hash_effect(CacheKeyBuilder& builder, const EffectSpec& effect);

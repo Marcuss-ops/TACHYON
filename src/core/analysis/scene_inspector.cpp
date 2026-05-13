@@ -69,9 +69,7 @@ bool has_motion(const AnimatedScalarSpec& spec) {
 }
 
 
-bool has_motion(const AnimatedVector3Spec& spec) {
-    return !spec.empty();
-}
+
 
 bool has_text_motion(const TextAnimatorSpec& animator) {
     const auto& p = animator.properties;
@@ -180,9 +178,6 @@ InspectionReport inspect_scene(const SceneSpec& scene, const TransitionRegistry&
                 add_issue(report, InspectionSeverity::Warning, "precomp.missing_id", layer_path, "Precomp layer has no precomp_id.");
             }
 
-            if (layer.type == LayerType::Camera && layer.camera_type.empty()) {
-                add_issue(report, InspectionSeverity::Warning, "camera.missing_type", layer_path, "Camera layer has no camera type.");
-            }
 
             if (comp.width > 0 && comp.height > 0 && layer.width > 0 && layer.height > 0) {
                 const double safe_w = static_cast<double>(comp.width) * options.safe_area_ratio;
@@ -203,18 +198,6 @@ InspectionReport inspect_scene(const SceneSpec& scene, const TransitionRegistry&
             }
             if (has_motion(layer.stroke_width_property)) {
                 add_info(report, options, "text.stroke_width_animated", layer_path, "Stroke width is animated.");
-            }
-            if (has_motion(layer.light_intensity)) {
-                add_info(report, options, "light.intensity_animated", layer_path, "Light intensity is animated.");
-            }
-            if (has_motion(layer.camera_zoom)) {
-                add_info(report, options, "camera.zoom_animated", layer_path, "Camera zoom is animated.");
-            }
-            if (has_motion(layer.camera_poi)) {
-                add_info(report, options, "camera.poi_animated", layer_path, "Camera point of interest is animated.");
-            }
-            if (has_motion(layer.camera_shake_amplitude_pos) || has_motion(layer.camera_shake_amplitude_rot)) {
-                add_info(report, options, "camera.shake_animated", layer_path, "Camera shake is animated.");
             }
             if (has_motion(layer.repeater_count) || has_motion(layer.repeater_stagger_delay) || has_motion(layer.repeater_offset_position_x)
                 || has_motion(layer.repeater_offset_position_y) || has_motion(layer.repeater_offset_rotation) || has_motion(layer.repeater_offset_scale_x)

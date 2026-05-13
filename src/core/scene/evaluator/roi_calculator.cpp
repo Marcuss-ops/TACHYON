@@ -23,8 +23,8 @@ math::RectF compute_roi(
         const auto& l_curr = curr.layers[i];
 
         // Check for changes (simplified: position, scale, opacity, visibility)
-        bool changed = (l_prev.world_position3.x != l_curr.world_position3.x ||
-                        l_prev.world_position3.y != l_curr.world_position3.y ||
+        bool changed = (l_prev.world_matrix.m[0][2] != l_curr.world_matrix.m[0][2] ||
+                        l_prev.world_matrix.m[1][2] != l_curr.world_matrix.m[1][2] ||
                         l_prev.opacity != l_curr.opacity ||
                         l_prev.visible != l_curr.visible ||
                         l_prev.local_transform.position.x != l_curr.local_transform.position.x); // etc
@@ -34,8 +34,8 @@ math::RectF compute_roi(
             // Bounding box of the layer (simplified: based on center and size)
             float half_w = static_cast<float>(l_curr.width) * 0.5f / static_cast<float>(curr.width);
             float half_h = static_cast<float>(l_curr.height) * 0.5f / static_cast<float>(curr.height);
-            float cx = l_curr.world_position3.x / static_cast<float>(curr.width) + 0.5f;
-            float cy = l_curr.world_position3.y / static_cast<float>(curr.height) + 0.5f;
+            float cx = l_curr.world_matrix.m[0][2] / static_cast<float>(curr.width) + 0.5f;
+            float cy = l_curr.world_matrix.m[1][2] / static_cast<float>(curr.height) + 0.5f;
 
             xmin = std::min(xmin, cx - half_w);
             ymin = std::min(ymin, cy - half_h);

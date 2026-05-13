@@ -15,9 +15,7 @@
 #include "tachyon/renderer2d/color/blending.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
 
-#include "tachyon/core/render/dof_settings.h"
 #include "tachyon/core/render/motion_blur_settings.h"
-#include "tachyon/core/render/visibility.h"
 #include "tachyon/renderer2d/raster/tile_grid.h"
 #include "tachyon/output/frame_aov.h"
 #include "tachyon/transition_registry.h"
@@ -155,7 +153,6 @@ RasterizedFrame2D render_evaluated_composition_2d(
     
     auto& dst = *frame.surface;
     dst.set_profile(context.cms.working_profile);
-    dst.clear_depth(0.0f); // Initialize depth buffer for hybrid compositing
 
     FrameDiagnostics* diagnostics = context.diagnostics;
 
@@ -445,16 +442,8 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 ::tachyon::renderer2d::apply_matte_buffer(*layer_surface, matte_buffers[i], state.width, state.height);
             }
 
-            // Final Composite
-            float layer_inv_z = -1.0f;
-            if (layer.world_position3.z != 0.0f) {
-                float z = std::abs(layer.world_position3.z);
-                if (z > 0.001f) {
-                    layer_inv_z = 1.0f / z;
-                }
-            }
 
-            composite_surface(target_surface, *layer_surface, 0, 0, parse_blend_mode(layer.blend_mode), layer_inv_z);
+            composite_surface(target_surface, *layer_surface, 0, 0, parse_blend_mode(layer.blend_mode));
         }
     };
 

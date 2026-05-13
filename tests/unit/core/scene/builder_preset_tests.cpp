@@ -44,43 +44,6 @@ bool run_scene_builder_preset_tests() {
         assert(layer.transition_out.duration == 0.3);
     }
 
-    // 3. Test camera defaults and overrides through the 2D builder path
-    {
-        auto comp = Composition("camera_comp")
-            .layer("cam", [](LayerBuilder& l) {
-                l.type(LayerType::Camera);
-                l.camera().type("two_node").done();
-            })
-            .build();
-
-        assert(comp.layers.size() == 1);
-        const auto& layer = comp.layers[0];
-        assert(layer.type == LayerType::Camera);
-        assert(layer.camera_type == "two_node");
-        assert(!layer.camera_poi.value.has_value());
-        assert(!layer.camera_zoom.value.has_value());
-    }
-
-    {
-        auto comp = Composition("camera_override_comp")
-            .layer("cam", [](LayerBuilder& l) {
-                l.type(LayerType::Camera);
-                l.camera().type("one_node").poi(0.0, 0.0, 0.0).zoom(877.0).done();
-            })
-            .build();
-
-        assert(comp.layers.size() == 1);
-        const auto& layer = comp.layers[0];
-        assert(layer.type == LayerType::Camera);
-        assert(layer.camera_type == "one_node");
-        assert(layer.camera_poi.value.has_value());
-        assert(layer.camera_zoom.value.has_value());
-        assert(layer.camera_poi.value->x == 0.0f);
-        assert(layer.camera_poi.value->y == 0.0f);
-        assert(layer.camera_poi.value->z == 0.0f);
-        assert(layer.camera_zoom.value.value() == 877.0);
-    }
-
     std::cout << "SceneBuilder preset extension tests passed!" << std::endl;
     return true;
 }

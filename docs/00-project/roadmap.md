@@ -12,7 +12,7 @@
 
 ## Phase 3: Shading & Shaders (In Progress)
 - Adjustment Layers
-- Recursive Reflections in RayTracer
+- Blur & Effects optimization
 - Masking & Matte improvements
 - Motion blur baseline hardening for the v1 contract
 
@@ -25,7 +25,7 @@
 ## Phase 5: High-End Features (Post-Scaling / v2+)
 - Motion Blur (advanced sub-sampling and quality polish)
 - AI-assisted RotoBrush
-- Physically-based physical camera
+- Advanced 2D Animation tools
 - Multi-channel Audio Mixer
 
 ## Phase 6: Ecosystem & DX

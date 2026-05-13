@@ -6,7 +6,6 @@
 #include <string>
 
 #include "tachyon/core/math/vector2.h"
-#include "tachyon/core/math/vector3.h"
 
 namespace tachyon {
 

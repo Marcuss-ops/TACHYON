@@ -9,6 +9,26 @@ namespace math {
 struct Matrix3x3 {
     float m[3][3] = {{1,0,0},{0,1,0},{0,0,1}};
     
+    static Matrix3x3 identity() { return Matrix3x3(); }
+
+    Vector2 transform_point(const Vector2& v) const {
+        float x = v.x * m[0][0] + v.y * m[0][1] + m[0][2];
+        float y = v.x * m[1][0] + v.y * m[1][1] + m[1][2];
+        float w = v.x * m[2][0] + v.y * m[2][1] + m[2][2];
+        if (std::abs(w) > 1e-7f) {
+            float inv_w = 1.0f / w;
+            return {x * inv_w, y * inv_w};
+        }
+        return {x, y};
+    }
+
+    Vector2 transform_vector(const Vector2& v) const {
+        return {
+            v.x * m[0][0] + v.y * m[0][1],
+            v.x * m[1][0] + v.y * m[1][1]
+        };
+    }
+    
     Matrix3x3 operator*(const Matrix3x3& other) const {
         Matrix3x3 result;
         for(int i=0;i<3;i++) for(int j=0;j<3;j++) { result.m[i][j]=0; for(int k=0;k<3;k++) result.m[i][j]+=m[i][k]*other.m[k][j]; }

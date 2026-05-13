@@ -136,8 +136,6 @@ std::vector<MotionCompositionSummary::RuntimeSample> build_runtime_samples(
             : static_cast<double>(frame_number) / std::max(1.0, comp.frame_rate.value());
 
         if (state.has_value()) {
-            sample.camera_available = state->camera.available;
-            sample.camera_type = state->camera.camera_type;
             sample.active_layers = state->layers.size();
             sample.visible_layers = std::count_if(
                 state->layers.begin(),
@@ -234,15 +232,6 @@ MotionMapReport build_motion_map(const SceneSpec& scene, const MotionMapOptions&
             if (layer.particle_spec.has_value()) {
                 append_unique(layer_summary.animations, "particles");
             }
-            if (has_motion(layer.camera_zoom)) {
-                append_unique(layer_summary.animations, "camera_zoom");
-            }
-            if (has_motion(layer.camera_poi)) {
-                append_unique(layer_summary.animations, "camera_poi");
-            }
-            if (has_motion(layer.light_intensity)) {
-                append_unique(layer_summary.animations, "light_intensity");
-            }
             if (has_motion(layer.repeater_count) || has_motion(layer.repeater_stagger_delay) || has_motion(layer.repeater_offset_position_x)
                 || has_motion(layer.repeater_offset_position_y) || has_motion(layer.repeater_offset_rotation)
                 || has_motion(layer.repeater_offset_scale_x) || has_motion(layer.repeater_offset_scale_y)
@@ -288,7 +277,7 @@ void print_motion_map_text(const MotionMapReport& report, std::ostream& out) {
                 out << "      @ frame " << sample.frame_number << " (" << sample.time_seconds << "s)"
                     << " active=" << sample.active_layers
                     << " visible=" << sample.visible_layers
-                    << " camera=" << (sample.camera_available ? sample.camera_type : "default") << '\n';
+                    << " visible=" << sample.visible_layers << '\n';
                 if (!sample.active_layer_ids.empty()) {
                     out << "        active layers: ";
                     for (std::size_t i = 0; i < sample.active_layer_ids.size(); ++i) {
@@ -345,8 +334,7 @@ void print_motion_map_json(const MotionMapReport& report, std::ostream& out) {
             out << "          \"time_seconds\": " << sample.time_seconds << ",\n";
             out << "          \"active_layers\": " << sample.active_layers << ",\n";
             out << "          \"visible_layers\": " << sample.visible_layers << ",\n";
-            out << "          \"camera_available\": " << (sample.camera_available ? "true" : "false") << ",\n";
-            out << "          \"camera_type\": \"" << escape_json(sample.camera_type) << "\",\n";
+            out << "          \"visible_layers\": " << sample.visible_layers << ",\n";
             out << "          \"active_layer_ids\": [";
             for (std::size_t k = 0; k < sample.active_layer_ids.size(); ++k) {
                 if (k > 0) {

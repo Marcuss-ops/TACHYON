@@ -2,7 +2,6 @@
 
 #include "tachyon/core/api.h"
 #include "tachyon/core/math/vector2.h"
-#include "tachyon/core/math/vector3.h"
 #include "tachyon/core/animation/easing.h"
 #include "tachyon/core/animation/keyframe.h"
 #include "tachyon/core/spec/schema/objects/path_spec.h"
@@ -109,44 +108,6 @@ struct AnimatedVector2Spec {
 
     AnimatedVector2Spec() = default;
     explicit AnimatedVector2Spec(const math::Vector2& v) : value(v) {}
-
-    [[nodiscard]] bool empty() const noexcept {
-        return !value.has_value() && keyframes.empty() && !expression.has_value();
-    }
-};
-
-struct AnimatedVector3Spec {
-    std::optional<math::Vector3> value;
-    struct Keyframe {
-        double time{0.0};
-        math::Vector3 value{math::Vector3::zero()};
-        math::Vector3 tangent_in{math::Vector3::zero()};
-        math::Vector3 tangent_out{math::Vector3::zero()};
-
-        animation::EasingPreset easing{animation::EasingPreset::None};
-        animation::InterpolationMode interpolation{animation::InterpolationMode::Linear};
-        animation::CubicBezierEasing bezier{animation::CubicBezierEasing::linear()};
-        struct SpringSpec {
-            double stiffness{200.0};
-            double damping{20.0};
-            double mass{1.0};
-            double velocity{0.0};
-        } spring;
-
-        double speed_in{0.0};
-        double influence_in{33.333333333};
-        double speed_out{0.0};
-        double influence_out{33.333333333};
-    };
-    std::vector<Keyframe> keyframes;
-    std::optional<std::string> expression;
-
-    AnimatedVector3Spec() = default;
-    AnimatedVector3Spec(const math::Vector3& v) : value(v) {}
-
-    void set_value(const math::Vector3& v) { value = v; }
-    void add_keyframe(const Keyframe& kf) { keyframes.push_back(kf); }
-    void set_expression(std::string expr) { expression = std::move(expr); }
 
     [[nodiscard]] bool empty() const noexcept {
         return !value.has_value() && keyframes.empty() && !expression.has_value();

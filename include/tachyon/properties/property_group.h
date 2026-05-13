@@ -2,7 +2,6 @@
 
 #include "tachyon/properties/animatable_property.h"
 #include "tachyon/core/math/vector2.h"
-#include "tachyon/core/math/vector3.h"
 #include "tachyon/core/animation/animation_curve.h"
 
 #include <string>
@@ -104,23 +103,8 @@ private:
 };
 
 // ---------------------------------------------------------------------------
-// Convenience: a standard Transform3 property group
+// Convenience: a standard SpatialTransform property group
 // ---------------------------------------------------------------------------
-
-/**
- * Creates a PropertyGroup pre-populated with the standard 3D transform
- * properties: "position", "rotation_euler", "scale".
- * These names are the canonical engine-wide keys for transform state on any
- * 3D scene node.
- */
-inline PropertyGroup make_transform3_group(const std::string& group_name = "transform") {
-    PropertyGroup g(group_name);
-    g.declare_static<math::Vector3>("position",        math::Vector3::zero());
-    g.declare_static<math::Vector3>("rotation_euler",  math::Vector3::zero()); // degrees, YXZ
-    g.declare_static<math::Vector3>("scale",           math::Vector3::one());
-    return g;
-}
-
 /**
  * Creates a PropertyGroup pre-populated with the standard 2D compositing
  * properties: "position", "rotation", "scale", "opacity".
@@ -134,20 +118,6 @@ inline PropertyGroup make_layer_group(const std::string& group_name = "layer") {
     return g;
 }
 
-/**
- * Creates a PropertyGroup for a camera node:
- * fov_y_deg, near_clip, far_clip, focal_length, focus_distance, aperture.
- */
-inline PropertyGroup make_camera_group(const std::string& group_name = "camera") {
-    PropertyGroup g(group_name);
-    g.declare_static<float>("fov_y_deg",       60.0f);
-    g.declare_static<float>("near_clip",        0.1f);
-    g.declare_static<float>("far_clip",      1000.0f);
-    g.declare_static<float>("focal_length",    50.0f);  // mm
-    g.declare_static<float>("focus_distance", 10.0f);   // world units
-    g.declare_static<float>("aperture",        2.8f);   // f-stop
-    return g;
-}
 
 } // namespace properties
 } // namespace tachyon

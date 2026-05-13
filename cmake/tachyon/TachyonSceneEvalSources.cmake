@@ -13,6 +13,5 @@ set(TachyonSceneEvalSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/templates.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/property_sampler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/transform_resolver.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/timeline/camera_cut_contract.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/render/intent_builder.cpp
 )

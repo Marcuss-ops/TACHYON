@@ -18,7 +18,7 @@
 | 6 | Audio mux | Contratto only | Media | Two-pass ffmpeg consigliato |
 | 7 | Low-end policy | Stringa only | Bassa | Logica semplice, alta copertura |
 | 8 | Timeline (time remap) | Compatibilità | Bassa | Usa evaluator esistente |
-| 9 | 3D CPU | Parziale | Alta | Depth buffer primo passo |
+| 9 | Spatial CPU | Parziale | Alta | Depth buffer primo passo |
 
 ---
 
@@ -51,7 +51,7 @@
 
 ### Sprint 5
 
-- 3D CPU: depth buffer e luci base
+- Spatial CPU: depth buffer e luci base
 - Shadow map e geometria estrusa solo dopo la base stabile
 
 ---
@@ -279,7 +279,7 @@ sRGB e Rec.709 hanno le stesse primaries — differiscono solo in transfer curve
 // In color_transfer.h
 enum class ColorPrimaries {
     Rec709,   // = sRGB primaries
-    DciP3D65, // Display P3
+    DciPSpatial65, // Display P3
     Rec2020,
     AcesAP1,
     AcesAP0
@@ -371,7 +371,7 @@ if (tile_size == 0) {
 
 Vantaggio memoria: picco = `tile_size² * 4 bytes` invece di `width * height * 4 bytes`.
 
-**Path 3D**: aggiungere clip post-projection nel perspective rasterizer. Se tutti i vertici proiettati sono fuori tile, skip prima del rasterize.
+**Path Spatial**: aggiungere clip post-projection nel perspective rasterizer. Se tutti i vertici proiettati sono fuori tile, skip prima del rasterize.
 
 ### 4B. Inter-frame precomp cache
 
@@ -677,11 +677,11 @@ const auto child_state = scene::evaluate_composition_state(
 
 ---
 
-## 9. 3D CPU
+## 9. Spatial CPU
 
 ### Scope realistico (AE-style)
 
-Non un renderer 3D general-purpose. Layer = card planari in 3D spazio. Camera proiettiva. Luci flat-shaded (per layer, non per pixel).
+Non un renderer Spatial general-purpose. Layer = card planari in Spatial spazio. Camera proiettiva. Luci flat-shaded (per layer, non per pixel).
 
 ### A) Depth buffer (prerequisito)
 
@@ -755,12 +755,12 @@ Color apply_lighting(Color base_color,
 }
 ```
 
-`layer_normal` = Z-forward del layer dopo la sua rotazione 3D.
+`layer_normal` = Z-forward del layer dopo la sua rotazione Spatial.
 
 ### C) Shape extrusion
 
 ```
-ShapeLayer 3D → extrude_path(path, depth) → TriMesh:
+ShapeLayer Spatial → extrude_path(path, depth) → TriMesh:
     front face: path triangolato (earcut o fan su poly convessa)
     back face:  front traslato di -depth sul Z
     sides:      quad per ogni segmento del path border
@@ -800,7 +800,7 @@ Considerando dipendenze e ritorno sul valore:
 
 ```
 Sprint 1 (bassa complessità, alto ritorno):
-  - Blend mode in composite_surface_at  [prerequisito per blur e 3D]
+  - Blend mode in composite_surface_at  [prerequisito per blur e Spatial]
   - Motion blur completamento (curve, guard)
   - Color management primaries + range
   - Low-end policy engine
@@ -812,7 +812,7 @@ Sprint 2 (media complessità):
   - Tiling ROI
 
 Sprint 3 (alta complessità / dipendenze esterne):
-  - 3D: depth buffer + luci
+  - Spatial: depth buffer + luci
   - Text shaping (HarfBuzz)
   - Audio mux
 

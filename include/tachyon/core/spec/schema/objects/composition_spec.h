@@ -4,7 +4,6 @@
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 #include "tachyon/core/spec/schema/objects/camera2d_spec.h"
 #include "tachyon/core/spec/schema/audio/audio_spec.h"
-#include "tachyon/camera_cut_contract.h"
 #include "tachyon/core/spec/schema/contracts/shared_contracts.h"
 #include <string>
 #include <vector>
@@ -35,10 +34,8 @@ struct CompositionSpec {
     FrameRate frame_rate;
     std::optional<std::int64_t> fps;
     std::optional<BackgroundSpec> background;
-    std::optional<std::string> environment_path;
     std::vector<LayerSpec> layers;
     std::vector<AudioTrackSpec> audio_tracks;
-    std::vector<CameraCut> camera_cuts;
     std::vector<Camera2DSpec> cameras_2d;
     std::optional<std::string> active_camera2d_id;
 };
