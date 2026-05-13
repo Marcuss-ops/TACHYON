@@ -4,6 +4,7 @@ This document explicitly states what Tachyon is NOT trying to be.
 
 ## What Tachyon Is Not
 
+- **Not a 3D Engine** — Strictly 2D (compositing-focused) engine
 - **Not a Video Editor** — No timeline GUI, no interactive editing
 - **Not a Browser-Based Tool** — No DOM, no HTML/CSS rendering
 - **Not a General-Purpose Game Engine** — Focused on video production, not real-time interaction

@@ -22,8 +22,6 @@
 namespace tachyon {
 namespace scene {
 
-// 3D rigging was removed in the 2D-only refactor; constraints are a no-op.
-void solve_constraints(std::vector<EvaluatedLayerState>&) {}
 
 const EvaluatedLayerState& resolve_layer_state(
     std::size_t layer_index,
@@ -55,8 +53,6 @@ const EvaluatedLayerState& resolve_layer_state(
         if (parent_it != context.layer_indices.end() && parent_it->second != layer_index) {
             const auto& parent = resolve_layer_state(parent_it->second, context);
             evaluated.world_matrix = parent.world_matrix * evaluated.world_matrix;
-            const auto wp3 = evaluated.world_matrix.transform_point({0.0f, 0.0f, 0.0f});
-            evaluated.world_position3 = wp3;
             evaluated.visible = evaluated.enabled && evaluated.active && parent.visible && evaluated.opacity > 0.0;
         }
     }
@@ -216,12 +212,10 @@ EvaluatedCompositionState evaluate_composition_internal(
             const float start_op = static_cast<float>(sample_scalar(composition.layers[index].repeater_start_opacity, 100.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_op_start")))) / 100.0f;
             const float end_op = static_cast<float>(sample_scalar(composition.layers[index].repeater_end_opacity, 100.0, remapped_time, audio_analyzer, hash_combine(layer_seed, stable_string_hash("rep_op_end")))) / 100.0f;
 
-            const math::Matrix4x4 step_transform = math::compose_trs(
-                {off_x, off_y, 0.0f},
-                math::Quaternion::from_euler({0, 0, off_rot}),
-                {off_sx, off_sy, 1.0f}
-            );
-            math::Matrix4x4 current_offset_transform = math::Matrix4x4::identity();
+            const math::Matrix3x3 step_transform = math::Matrix3x3::make_translation(math::Vector2{off_x, off_y}) *
+                math::Matrix3x3::make_rotation(static_cast<float>(degrees_to_radians(off_rot))) *
+                math::Matrix3x3::make_scale(off_sx, off_sy);
+            math::Matrix3x3 current_offset_transform = math::Matrix3x3::identity();
 
             for (int r = 0; r < iterations; ++r) {
                 EvaluatedLayerState repeated = (stagger_delay != 0.0) 
@@ -232,8 +226,6 @@ EvaluatedCompositionState evaluate_composition_internal(
                 
                 repeated.world_matrix = repeated.world_matrix * current_offset_transform;
                 current_offset_transform = current_offset_transform * step_transform;
-                const auto wp3 = repeated.world_matrix.transform_point({0.0f, 0.0f, 0.0f});
-                repeated.world_position3 = wp3;
                 
                 const float t_ramp = iterations > 1 ? static_cast<float>(r) / static_cast<float>(iterations - 1) : 0.0f;
                 repeated.opacity *= (start_op * (1.0f - t_ramp) + end_op * t_ramp);
@@ -245,12 +237,6 @@ EvaluatedCompositionState evaluate_composition_internal(
         }
     }
 
-    solve_constraints(evaluated.layers);
-    evaluated.camera = evaluate_camera_state(composition, evaluated.layers, frame_number, composition_time_seconds);
-
-    if (composition.environment_path.has_value() && !composition.environment_path->empty() && media) {
-        evaluated.environment_map_id = composition.environment_path;
-    }
 
     return evaluated;
 }

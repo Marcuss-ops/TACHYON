@@ -88,16 +88,16 @@ void TextureResolver::resolve_textures(
     (void)time_seconds;
 
     for (auto& command : draw_list.commands) {
-        if (command.kind != DrawCommandKind::TexturedQuad || !command.textured_quad.has_value()) {
+        if (command.kind != DrawCommandKind::TexturedRect || !command.textured_rect.has_value()) {
             continue;
         }
 
-        auto& quad = *command.textured_quad;
-        if (quad.texture.surface != nullptr || quad.texture.id.empty()) {
+        auto& tex_rect = *command.textured_rect;
+        if (tex_rect.texture.surface != nullptr || tex_rect.texture.id.empty()) {
             continue;
         }
 
-        const std::string& id = quad.texture.id;
+        const std::string& id = tex_rect.texture.id;
         
         if (id.compare(0, 6, "image:") == 0) {
             std::string layer_id = id.substr(6);
@@ -108,7 +108,7 @@ void TextureResolver::resolve_textures(
                         for (const auto& asset : scene.assets) {
                             if (asset.id == layer.id || asset.id == layer.name) {
                                 const media::AlphaMode mode = parse_alpha_mode(asset.alpha_mode);
-                                quad.texture.surface = media_manager.get_image(asset.path, mode);
+                                tex_rect.texture.surface = media_manager.get_image(asset.path, mode);
                                 found = true;
                                 break;
                             }

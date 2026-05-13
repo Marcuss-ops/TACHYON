@@ -221,18 +221,14 @@ RasterizedFrame2D render_frame_2d(
                     renderer2d::CPURasterizer::draw_line(*frame.surface, p);
                 }
                 break;
-            case renderer2d::DrawCommandKind::TexturedQuad:
-                if (cmd.textured_quad) {
-                    const auto& t = cmd.textured_quad;
+            case renderer2d::DrawCommandKind::TexturedRect:
+                if (cmd.textured_rect) {
+                    const auto& t = cmd.textured_rect;
                     if (t->texture.surface) {
-                        renderer2d::TexturedQuadPrimitive p;
-                        p.texture = t->texture.surface;
-                        p.use_custom_vertices = true;
-                        p.vertices[0] = {t->p0.x, t->p0.y, 0, 0, t->w0};
-                        p.vertices[1] = {t->p1.x, t->p1.y, 1, 0, t->w1};
-                        p.vertices[2] = {t->p2.x, t->p2.y, 1, 1, t->w2};
-                        p.vertices[3] = {t->p3.x, t->p3.y, 0, 1, t->w3};
-                        p.tint = renderer2d::Color::white();
+                        renderer2d::TexturedQuadPrimitive p = renderer2d::TexturedQuadPrimitive::axis_aligned(
+                            t->rect.x, t->rect.y, t->rect.width, t->rect.height,
+                            t->texture.surface, renderer2d::Color::white()
+                        );
                         renderer2d::CPURasterizer::draw_textured_quad(*frame.surface, p);
                     }
                 }

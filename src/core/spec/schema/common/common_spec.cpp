@@ -11,13 +11,10 @@ std::string_view to_canonical_layer_type_string(LayerType type) {
         case LayerType::Image:      return "image";
         case LayerType::Video:      return "video";
         case LayerType::Text:       return "text";
-        case LayerType::Camera:      return "camera";
         case LayerType::Precomp:     return "precomp";
-        case LayerType::Light:       return "light";
         case LayerType::Mask:        return "mask";
         case LayerType::NullLayer:   return "null";
         case LayerType::Procedural:  return "procedural";
-        case LayerType::Mesh:        return "mesh";
         default:                     return "unknown";
     }
 }
@@ -29,13 +26,10 @@ LayerType layer_type_from_string(std::string_view type_string) {
         {"image",      LayerType::Image},
         {"video",      LayerType::Video},
         {"text",       LayerType::Text},
-        {"camera",     LayerType::Camera},
         {"precomp",    LayerType::Precomp},
-        {"light",      LayerType::Light},
         {"mask",       LayerType::Mask},
         {"null",       LayerType::NullLayer},
         {"procedural", LayerType::Procedural},
-        {"mesh",       LayerType::Mesh},
     };
 
     auto it = mapping.find(type_string);

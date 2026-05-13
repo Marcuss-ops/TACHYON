@@ -1,7 +1,6 @@
 #include "tachyon/renderer2d/raster/draw_list_rasterizer.h"
 
 #include "tachyon/renderer2d/raster/rasterizer_ops.h"
-#include "tachyon/renderer2d/raster/perspective_rasterizer.h"
 #include "tachyon/renderer2d/effects/effect_host.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
 #include "tachyon/transition_registry.h"
@@ -175,23 +174,7 @@ RasterizedFrame2D render_draw_list_2d(
                         working_curve);
                 }
                 break;
-            case renderer2d::DrawCommandKind::TexturedQuad:
-                if (command->textured_quad.has_value()) {
-                    const auto& q = *command->textured_quad;
-                    if (q.texture.valid()) {
-                        renderer2d::raster::PerspectiveWarpQuad warp;
-                        warp.v0 = {math::Vector3{q.p0.x, q.p0.y, 0.0f}, math::Vector2{0.0f, 0.0f}, q.w0};
-                        warp.v1 = {math::Vector3{q.p1.x, q.p1.y, 0.0f}, math::Vector2{1.0f, 0.0f}, q.w1};
-                        warp.v2 = {math::Vector3{q.p2.x, q.p2.y, 0.0f}, math::Vector2{1.0f, 1.0f}, q.w2};
-                        warp.v3 = {math::Vector3{q.p3.x, q.p3.y, 0.0f}, math::Vector2{0.0f, 1.0f}, q.w3};
-                        warp.texture = q.texture.surface;
-                        warp.opacity = q.opacity;
-
-                        warp.opacity = q.opacity;
-
-                        renderer2d::raster::PerspectiveRasterizer::draw_quad(*frame.surface, warp);
-                    }
-                }
+            case renderer2d::DrawCommandKind::TexturedRect:
                 break;
             case renderer2d::DrawCommandKind::MaskRect:
                 break;
@@ -200,8 +183,7 @@ RasterizedFrame2D render_draw_list_2d(
                     const auto& s = *command->shape;
                     PathGeometry transformed_geom = s.geometry;
                     const auto transform_point_2d = [&s](const math::Vector2& point) {
-                        const math::Vector3 projected = s.transform.to_matrix().transform_point({point.x, point.y, 0.0f});
-                        return math::Vector2{projected.x, projected.y};
+                        return s.transform.to_matrix().transform_point(point);
                     };
                     for (auto& cmd : transformed_geom.commands) {
                          cmd.p0 = transform_point_2d(cmd.p0);

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "tachyon/core/math/vector3.h"
 #include <string>
 #include <cstdint>
 #include <map>
@@ -27,10 +26,7 @@ enum class LayerType {
     Text = 4,
     Precomp = 5,
     Procedural = 6,
-    Mesh = 7,
     Video = 8,
-    Camera = 9,
-    Light = 10,
     Mask = 11,
     NullLayer = 12
 };

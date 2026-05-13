@@ -66,7 +66,7 @@ std::shared_ptr<SurfaceRGBA> make_canvas(
     return surface;
 }
 
-void fill_rect_direct(SurfaceRGBA& surface, int x, int y, int w, int h, renderer2d::Color color) {
+void fill_rect_direct_worker(SurfaceRGBA& surface, int x, int y, int w, int h, renderer2d::Color color) {
     if (w <= 0 || h <= 0) return;
     surface.fill_rect(RectI{x, y, w, h}, color, true);
 }
@@ -324,24 +324,27 @@ public:
 
             for (const auto& highlight : layer.text_highlights) {
                 if (highlight.end_glyph <= highlight.start_glyph || highlight.start_glyph >= layout.glyphs.size()) continue;
-                const std::size_t end = std::min(highlight.end_glyph, layout.glyphs.size());
-                float f_min_x = std::numeric_limits<float>::max(), f_min_y = std::numeric_limits<float>::max();
-                float f_max_x = std::numeric_limits<float>::lowest(), f_max_y = std::numeric_limits<float>::lowest();
+                std::size_t h_end_idx = highlight.end_glyph;
+                if (h_end_idx > layout.glyphs.size()) h_end_idx = layout.glyphs.size();
+                float h_min_x = 1e30f, h_min_y = 1e30f;
+                float h_max_x = -1e30f, h_max_y = -1e30f;
                 
-                for (std::size_t i = highlight.start_glyph; i < end; ++i) {
+                for (std::size_t i = highlight.start_glyph; i < h_end_idx; ++i) {
                     const auto& g = layout.glyphs[i];
-                    f_min_x = std::min(f_min_x, g.position.x); f_min_y = std::min(f_min_y, g.position.y);
-                    f_max_x = std::max(f_max_x, g.position.x + g.width); f_max_y = std::max(f_max_y, g.position.y + g.height);
+                    h_min_x = (std::min)(h_min_x, g.position.x); h_min_y = (std::min)(h_min_y, g.position.y);
+                    h_max_x = (std::max)(h_max_x, g.position.x + g.width); h_max_y = (std::max)(h_max_y, g.position.y + g.height);
                 }
-                if (f_min_x < f_max_x && f_min_y < f_max_y) {
-                    math::Vector2 wp0 = resolved.apply({f_min_x, f_min_y});
-                    math::Vector2 wp1 = resolved.apply({f_max_x, f_max_y});
-                    fill_rect_direct(*surface,
-                        static_cast<int>(std::lround(wp0.x)) - origin_x - highlight.padding_x,
-                        static_cast<int>(std::lround(wp0.y)) - origin_y - highlight.padding_y,
-                        static_cast<int>(std::lround(wp1.x - wp0.x)) + highlight.padding_x * 2,
-                        static_cast<int>(std::lround(wp1.y - wp0.y)) + highlight.padding_y * 2,
-                        to_color(highlight.color));
+                if (h_min_x < h_max_x && h_min_y < h_max_y) {
+                    math::Vector2 h_wp0 = resolved.apply({h_min_x, h_min_y});
+                    math::Vector2 h_wp1 = resolved.apply({h_max_x, h_max_y});
+                    
+                    int h_final_x = (int)(h_wp0.x + 0.5f) - origin_x - (int)highlight.padding_x;
+                    int h_final_y = (int)(h_wp0.y + 0.5f) - origin_y - (int)highlight.padding_y;
+                    int h_final_w = (int)(h_wp1.x - h_wp0.x + 0.5f) + (int)highlight.padding_x * 2;
+                    int h_final_h = (int)(h_wp1.y - h_wp0.y + 0.5f) + (int)highlight.padding_y * 2;
+                    renderer2d::Color h_final_color = to_color(highlight.color);
+                    
+                    fill_rect_direct_worker(*surface, h_final_x, h_final_y, h_final_w, h_final_h, h_final_color);
                 }
             }
 
@@ -359,7 +362,7 @@ public:
                 final_color.a *= paint.opacity;
                 
                 if (paint.is_cursor) {
-                    fill_rect_direct(*surface, dx, dy, dw, dh, final_color);
+                    fill_rect_direct_worker(*surface, dx, dy, dw, dh, final_color);
                 } else {
                     render_glyph_direct(*surface, *bitmap, dx, dy, dw, dh, final_color);
                 }

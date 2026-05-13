@@ -42,4 +42,4 @@ The 2D stack stays inside the existing scene and renderer boundaries:
 - Do not introduce a second compositing pipeline.
 - Do not hide layer logic inside unrelated subsystems.
 - Do not bypass the existing effect host for a new 2D effect.
-- Do not move 3D logic into 2D just to get a faster implementation.
+- Do not move Spatial logic into 2D just to get a faster implementation.

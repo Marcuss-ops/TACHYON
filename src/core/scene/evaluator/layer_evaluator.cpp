@@ -121,20 +121,19 @@ EvaluatedLayerState make_layer_state(
     evaluated.local_transform.rotation_rad = static_cast<float>(degrees_to_radians(rot_deg));
     evaluated.local_transform.scale = scale2;
     evaluated.local_transform.anchor_point = anchor2;
-    evaluated.world_position3 = {pos2.x, pos2.y, 0.0f};
-    evaluated.world_matrix = math::Transform3(
-        evaluated.world_position3,
-        math::Quaternion::from_euler({0.0f, 0.0f, static_cast<float>(rot_deg)}),
-        {scale2.x, scale2.y, 1.0f}).to_matrix();
+
+    evaluated.world_matrix = math::Matrix3x3::make_translation(pos2) * 
+                             math::Matrix3x3::make_rotation(evaluated.local_transform.rotation_rad) * 
+                             math::Matrix3x3::make_scale(scale2.x, scale2.y) *
+                             math::Matrix3x3::make_translation(anchor2 * -1.0f);
 
     const math::Vector2 prev_pos2 = sample_vector2(layer.transform.position_property, position_fallback, prev_local_t, context.audio_analyzer);
     const double prev_rot_deg = sample_scalar(layer.transform.rotation_property, layer.transform.rotation.value_or(0.0), prev_local_t, context.audio_analyzer);
     const math::Vector2 prev_scale2 = sample_vector2(layer.transform.scale_property, scale_fallback, prev_local_t, context.audio_analyzer);
 
-    evaluated.previous_world_matrix = math::Transform3(
-        {prev_pos2.x, prev_pos2.y, 0.0f},
-        math::Quaternion::from_euler({0.0f, 0.0f, static_cast<float>(prev_rot_deg)}),
-        {prev_scale2.x, prev_scale2.y, 1.0f}).to_matrix();
+    evaluated.previous_world_matrix = math::Matrix3x3::make_translation(prev_pos2) * 
+                                      math::Matrix3x3::make_rotation(static_cast<float>(degrees_to_radians(prev_rot_deg))) * 
+                                      math::Matrix3x3::make_scale(prev_scale2.x, prev_scale2.y);
 
     if (layer.has_parallax && !context.composition.cameras_2d.empty()) {
         std::string camera_id = layer.camera2d_id.value_or(context.composition.active_camera2d_id.value_or(""));
@@ -144,10 +143,10 @@ EvaluatedLayerState make_layer_state(
                 const Camera2DSpec& camera_spec = context.composition.cameras_2d[it->second];
                 EvaluatedCamera2D camera = evaluate_camera2d(camera_spec, local_t);
                 math::Vector2 transformed_pos = apply_camera2d_transform(camera, layer, layer.parallax_factor, pos2);
-                evaluated.world_matrix = math::Transform3(
-                    {transformed_pos.x, transformed_pos.y, 0.0f},
-                    math::Quaternion::from_euler({0.0f, 0.0f, static_cast<float>(rot_deg)}),
-                    {scale2.x, scale2.y, 1.0f}).to_matrix();
+                evaluated.world_matrix = math::Matrix3x3::make_translation(transformed_pos) * 
+                                         math::Matrix3x3::make_rotation(evaluated.local_transform.rotation_rad) * 
+                                         math::Matrix3x3::make_scale(scale2.x, scale2.y) *
+                                         math::Matrix3x3::make_translation(anchor2 * -1.0f);
                 evaluated.local_transform.position = transformed_pos;
             }
         }
@@ -157,29 +156,6 @@ EvaluatedLayerState make_layer_state(
     evaluated.transition_out = layer.transition_out;
     evaluated.in_time = layer.in_point;
     evaluated.out_time = layer.out_point;
-
-    // Camera specific
-    if (evaluated.type == LayerType::Camera) {
-        evaluated.camera_type = layer.camera_type;
-        evaluated.zoom = static_cast<float>(sample_scalar(layer.camera_zoom, 877.0, local_t, context.audio_analyzer));
-        evaluated.camera_roll = static_cast<float>(sample_scalar(
-            layer.transform.rotation_property,
-            layer.transform.rotation.value_or(0.0),
-            local_t,
-            context.audio_analyzer));
-        evaluated.poi = sample_vector3(layer.camera_poi, {0,0,0}, local_t, context.audio_analyzer);
-        
-        // NEW: Camera Shake
-        evaluated.camera_shake_seed = layer.camera_shake_seed;
-        evaluated.camera_shake_amplitude_pos = static_cast<float>(sample_scalar(layer.camera_shake_amplitude_pos, 0.0, local_t, context.audio_analyzer));
-        evaluated.camera_shake_amplitude_rot = static_cast<float>(sample_scalar(layer.camera_shake_amplitude_rot, 0.0, local_t, context.audio_analyzer));
-        evaluated.camera_shake_frequency = static_cast<float>(sample_scalar(layer.camera_shake_frequency, 1.0, local_t, context.audio_analyzer));
-        evaluated.camera_shake_roughness = static_cast<float>(sample_scalar(layer.camera_shake_roughness, 0.5, local_t, context.audio_analyzer));
-
-        // NEW: Depth of Field
-        evaluated.camera_aperture = sample_scalar(layer.camera_aperture, 2.8, local_t, context.audio_analyzer);
-        evaluated.camera_focus_distance = sample_scalar(layer.camera_focus_distance, 10.0, local_t, context.audio_analyzer);
-    }
 
     // Text specific
     evaluated.text_content = resolve_template(layer.text_content, vars.strings, vars.numeric);
@@ -197,10 +173,6 @@ EvaluatedLayerState make_layer_state(
         evaluated.animated_effects.push_back(animated_effect.evaluate(local_t));
     }
 
-    if (layer.mesh_deform_id.has_value()) {
-        evaluated.mesh_deform_id = layer.mesh_deform_id;
-    }
-    
     // Procedural specific
     if (layer.procedural.has_value()) {
         const ProceduralSpec& spec = *layer.procedural;

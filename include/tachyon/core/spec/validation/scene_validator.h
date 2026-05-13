@@ -35,7 +35,6 @@ struct ValidationResult {
  * - Dangling reference detection (precomps, assets, matte sources)
  * - Matte dependency cycle detection
  * - Precomp reference cycle detection
- * - Overlapping camera cuts
  * - Track binding validation
  */
 class TACHYON_API SceneValidator {
@@ -56,7 +55,6 @@ private:
     void validate_layer(const ::tachyon::LayerSpec& layer, const ::tachyon::CompositionSpec& comp, const ::tachyon::SceneSpec& scene, const std::string& path, ValidationResult& out) const;
     void validate_safe_area(const ::tachyon::LayerSpec& layer, const ::tachyon::CompositionSpec& comp, const std::string& path, ValidationResult& out) const;
     void validate_duplicate_ids(const ::tachyon::CompositionSpec& comp, ValidationResult& out) const;
-    void validate_camera_cuts(const ::tachyon::CompositionSpec& comp, ValidationResult& out) const;
     void validate_track_bindings(const ::tachyon::LayerSpec& layer, const std::string& path, ValidationResult& out) const;
     void validate_keyframes(const ::tachyon::LayerSpec& layer, const std::string& path, ValidationResult& out) const;
     void validate_font_reference(const ::tachyon::LayerSpec& layer, const ::tachyon::SceneSpec& scene, const std::string& path, ValidationResult& out) const;

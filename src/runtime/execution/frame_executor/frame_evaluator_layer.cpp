@@ -4,9 +4,6 @@
 #include "tachyon/text/content/word_timestamps.h"
 #include "tachyon/runtime/core/data/compiled_scene.h"
 #include "tachyon/runtime/execution/property_sampling.h"
-#include "tachyon/core/math/matrix4x4.h"
-#include "tachyon/core/math/quaternion.h"
-#include "tachyon/core/math/transform3.h"
 #include "tachyon/core/scene/evaluator/layer_utils.h"
 #include <chrono>
 #include <filesystem>
@@ -23,10 +20,7 @@ scene::LayerType resolve_layer_type(std::uint32_t type_id) {
         case 4: return scene::LayerType::Text;
         case 5: return scene::LayerType::Precomp;
         case 6: return scene::LayerType::Procedural;
-        case 7: return scene::LayerType::Mesh;
         case 8: return scene::LayerType::Video;
-        case 9: return scene::LayerType::Camera;
-        case 10: return scene::LayerType::Light;
         case 11: return scene::LayerType::Mask;
         case 12: return scene::LayerType::NullLayer;
         default: return scene::LayerType::NullLayer;
@@ -194,11 +188,10 @@ void evaluate_layer(
     };
     state->mask_feather = static_cast<float>(sample_property(CompiledLayer::MaskFeather, 0.0));
 
-    state->world_position3 = {state->local_transform.position.x, state->local_transform.position.y, 0.0f};
-    state->world_matrix = math::Transform3(
-        state->world_position3,
-        math::Quaternion::from_euler({0.0f, 0.0f, static_cast<float>(sample_property(CompiledLayer::Rotation, 0.0))}),
-        {state->local_transform.scale.x, state->local_transform.scale.y, 1.0f}).to_matrix();
+    state->world_matrix = math::Matrix3x3::make_translation(math::Vector2{state->local_transform.position.x, state->local_transform.position.y}) *
+        math::Matrix3x3::make_rotation(state->local_transform.rotation_rad) *
+        math::Matrix3x3::make_scale(state->local_transform.scale.x, state->local_transform.scale.y) *
+        math::Matrix3x3::make_translation(math::Vector2{-state->local_transform.anchor_point.x, -state->local_transform.anchor_point.y});
     state->previous_world_matrix = state->world_matrix;
 
     // Only apply automatic linear alpha fading for simple "fade" transitions or default legacy IDs.

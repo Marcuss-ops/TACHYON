@@ -1,13 +1,13 @@
 # TACHYON Repository Analysis
 
 ## Overview
-TACHYON is a high-performance, deterministic, headless motion graphics and 3D rendering engine. It is designed to consume declarative scene specifications and produce encoded video output with minimal overhead. The project heavily relies on C++ (C++20 standard) and avoids browser/DOM-based rendering, prioritizing a native, CPU-first, and deterministic architecture.
+TACHYON is a high-performance, deterministic, headless motion graphics and spatial composition engine. It is designed to consume declarative scene specifications and produce encoded video output with minimal overhead. The project heavily relies on C++ (C++20 standard) and avoids browser/DOM-based rendering, prioritizing a native, CPU-first, and deterministic architecture.
 
 ## Primary Engine Components
 The source code under `src/` and headers under `include/` are logically divided into the following primary components:
 - **core**: Contains foundational modules like math, animation, properties, camera, and the scene builder (`src/core/scene`). This reflects the project's transition to a C++-first builder architecture.
 - **render**: The generic rendering interface/framework.
-- **renderer2d** / **renderer3d**: Specialized subsystems handling 2D compositing/vector shapes and 3D paths (though 3D features may be disabled by default as per CMake outputs).
+- **renderer2d**: Specialized subsystem handling 2D compositing and vector shapes.
 - **text**: Handling font rendering and glyphs, backed by FreeType and HarfBuzz.
 - **media**: Handles native media decoding and encoding integration (utilizes FFmpeg-related dependencies like libavcodec).
 - **audio**: Audio reactivity and audio-driven animation capabilities.

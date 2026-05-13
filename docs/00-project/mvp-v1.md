@@ -21,14 +21,10 @@ The Minimum Viable Product (v1) for Tachyon focuses on core rendering capabiliti
 ### Experimental
 
 - Motion blur
-- Basic lighting support
-- Basic mesh loading
-- Material system (metallic, roughness, etc.)
 
 ### Stubbed or Transitional
 
 - Audio reactivity
-- Advanced 3D features
 - Browser-based preview
 - Complex particle systems
 - Advanced text layout (RTL, vertical text)

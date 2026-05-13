@@ -41,13 +41,6 @@ std::uint64_t hash_scene_spec(const SceneSpec& scene, const DeterminismContract&
             }
         }
 
-        builder.add_u64(static_cast<std::uint64_t>(composition.camera_cuts.size()));
-        for (const auto& cut : composition.camera_cuts) {
-            add_string(builder, cut.camera_id);
-            builder.add_u64(static_cast<std::uint64_t>(cut.start_seconds * 1000.0));
-            builder.add_u64(static_cast<std::uint64_t>(cut.end_seconds * 1000.0));
-        }
-
         builder.add_u64(static_cast<std::uint64_t>(composition.audio_tracks.size()));
         for (const auto& track : composition.audio_tracks) {
             add_string(builder, track.id);

@@ -59,7 +59,7 @@ SceneSpec build_text_helpers_scene() {
         .fps(30)
         .clear(ColorSpec{16, 18, 28, 255})
         .layer("title", [](LayerBuilder& l) {
-            l.from_spec(tachyon::presets::text::headline("TEXT + 3D HELPERS")
+            l.from_spec(tachyon::presets::text::headline("TEXT + 2D HELPERS")
                 .font("Default")
                 .font_size(92)
                 .color(ColorSpec{248, 248, 252, 255})

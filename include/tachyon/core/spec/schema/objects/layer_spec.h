@@ -49,7 +49,6 @@ struct LayerSpec {
     std::string id;
     std::string name;
     std::string asset_id; // For image/video layers
-    std::optional<std::string> mesh_deform_id; // Explicit deform resource reference
     std::string preset_id; // For procedural/preset layers
     LayerType type{LayerType::NullLayer}; // Canonical Source of Truth
     std::string type_string; // Legacy / Authoring fallback
@@ -69,10 +68,6 @@ struct LayerSpec {
     int height{1080};
 
     Transform2D transform;
-
-    
-    std::optional<double> extrude; // Extrude depth for text layers
-    std::optional<double> bevel;   // Bevel size for text layers
     
     AnimatedScalarSpec opacity_property;
     AnimatedScalarSpec mask_feather;
@@ -93,12 +88,6 @@ struct LayerSpec {
     AnimatedColorSpec stroke_color;
     double stroke_width{0.0};
     AnimatedScalarSpec stroke_width_property;
-    AnimatedScalarSpec metallic;
-    AnimatedScalarSpec roughness;
-    AnimatedScalarSpec ior;
-    AnimatedScalarSpec transmission;
-    AnimatedScalarSpec emission_strength;
-    AnimatedColorSpec emission_color;
 
     // Repeater (from evaluator_composition.cpp)
     std::string repeater_type{"linear"};
@@ -131,37 +120,11 @@ struct LayerSpec {
     std::string line_join{"miter"};
     double miter_limit{4.0};
     
-    // Camera specific
-    std::string camera_type{"one_node"}; // "one_node" | "two_node"
-    AnimatedScalarSpec camera_zoom;
-    AnimatedVector3Spec camera_poi;
-    AnimatedScalarSpec camera_aperture;
-    AnimatedScalarSpec camera_focus_distance;
 
     // 2D Camera integration
     bool has_parallax{true};
     float parallax_factor{1.0f};
     std::optional<std::string> camera2d_id;
-
-    // Camera Shake
-    uint64_t camera_shake_seed{0};
-    AnimatedScalarSpec camera_shake_amplitude_pos;
-    AnimatedScalarSpec camera_shake_amplitude_rot;
-    AnimatedScalarSpec camera_shake_frequency;
-    AnimatedScalarSpec camera_shake_roughness;
-
-    // Light specific
-    std::string light_type{"point"}; // "point", "spot", "ambient", "parallel"
-    AnimatedColorSpec light_color;
-    AnimatedScalarSpec light_intensity;
-    AnimatedScalarSpec attenuation_near;
-    AnimatedScalarSpec attenuation_far;
-    AnimatedScalarSpec cone_angle;
-    AnimatedScalarSpec cone_feather;
-    std::string falloff_type{"inverse_square"};
-    bool casts_shadows{true};
-    AnimatedScalarSpec shadow_darkness;
-    AnimatedScalarSpec shadow_radius;
 
     // Effects & Animators (Skeletons)
     std::vector<EffectSpec> effects;  // Backward compatible static effects

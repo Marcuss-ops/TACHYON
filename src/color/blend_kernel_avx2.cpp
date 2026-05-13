@@ -1,4 +1,5 @@
 #include "tachyon/color/blend_kernel.h"
+#include "tachyon/color/blending.h"
 #include <immintrin.h>
 #include <algorithm>
 
@@ -92,35 +93,72 @@ void additive_avx2(const LinearRGBA* src, LinearRGBA* dst, std::size_t count) {
 
 void multiply_avx2(const LinearRGBA* src, LinearRGBA* dst, std::size_t count) {
     std::size_t i = 0;
+    const __m256 one = _mm256_set1_ps(1.0f);
+    const __m256 zero = _mm256_setzero_ps();
+
     for (; i + 1 < count; i += 2) {
         __m256 s = _mm256_loadu_ps(reinterpret_cast<const float*>(&src[i]));
         __m256 d = _mm256_loadu_ps(reinterpret_cast<const float*>(&dst[i]));
-        __m256 res = _mm256_mul_ps(s, d);
+
+        __m256 sa = broadcast_alpha(s);
+        __m256 da = broadcast_alpha(d);
+        __m256 inv_sa = _mm256_sub_ps(one, sa);
+        __m256 inv_da = _mm256_sub_ps(one, da);
+
+        // out_a = sa + da * (1 - sa)
+        __m256 out_a = _mm256_add_ps(sa, _mm256_mul_ps(da, inv_sa));
+        
+        // out_rgb = ((1 - sa) * d + (1 - da) * s + sa * da * (s * d)) / out_a
+        __m256 term1 = _mm256_mul_ps(inv_sa, d);
+        __m256 term2 = _mm256_mul_ps(inv_da, s);
+        __m256 term3 = _mm256_mul_ps(_mm256_mul_ps(sa, da), _mm256_mul_ps(s, d));
+        __m256 out_rgb = _mm256_div_ps(_mm256_add_ps(_mm256_add_ps(term1, term2), term3), out_a);
+
+        __m256 res = _mm256_blend_ps(out_rgb, out_a, 0x88);
+        __m256 a_zero_mask = _mm256_cmp_ps(out_a, zero, _CMP_LE_OQ);
+        res = _mm256_andnot_ps(a_zero_mask, res);
+
         _mm256_storeu_ps(reinterpret_cast<float*>(&dst[i]), res);
     }
     for (; i < count; ++i) {
-        dst[i].r *= src[i].r;
-        dst[i].g *= src[i].g;
-        dst[i].b *= src[i].b;
-        dst[i].a *= src[i].a;
+        dst[i] = blend_multiply(src[i], dst[i]);
     }
 }
 
 void screen_avx2(const LinearRGBA* src, LinearRGBA* dst, std::size_t count) {
     std::size_t i = 0;
     const __m256 one = _mm256_set1_ps(1.0f);
+    const __m256 zero = _mm256_setzero_ps();
+
     for (; i + 1 < count; i += 2) {
         __m256 s = _mm256_loadu_ps(reinterpret_cast<const float*>(&src[i]));
         __m256 d = _mm256_loadu_ps(reinterpret_cast<const float*>(&dst[i]));
-        // res = s + d - s * d
-        __m256 res = _mm256_sub_ps(_mm256_add_ps(s, d), _mm256_mul_ps(s, d));
+
+        __m256 sa = broadcast_alpha(s);
+        __m256 da = broadcast_alpha(d);
+        __m256 inv_sa = _mm256_sub_ps(one, sa);
+        __m256 inv_da = _mm256_sub_ps(one, da);
+
+        // out_a = sa + da * (1 - sa)
+        __m256 out_a = _mm256_add_ps(sa, _mm256_mul_ps(da, inv_sa));
+
+        // screen_op = s + d - s * d
+        __m256 screen_op = _mm256_sub_ps(_mm256_add_ps(s, d), _mm256_mul_ps(s, d));
+        
+        // out_rgb = ((1 - sa) * d + (1 - da) * s + sa * da * screen_op) / out_a
+        __m256 term1 = _mm256_mul_ps(inv_sa, d);
+        __m256 term2 = _mm256_mul_ps(inv_da, s);
+        __m256 term3 = _mm256_mul_ps(_mm256_mul_ps(sa, da), screen_op);
+        __m256 out_rgb = _mm256_div_ps(_mm256_add_ps(_mm256_add_ps(term1, term2), term3), out_a);
+
+        __m256 res = _mm256_blend_ps(out_rgb, out_a, 0x88);
+        __m256 a_zero_mask = _mm256_cmp_ps(out_a, zero, _CMP_LE_OQ);
+        res = _mm256_andnot_ps(a_zero_mask, res);
+
         _mm256_storeu_ps(reinterpret_cast<float*>(&dst[i]), res);
     }
     for (; i < count; ++i) {
-        dst[i].r = src[i].r + dst[i].r - src[i].r * dst[i].r;
-        dst[i].g = src[i].g + dst[i].g - src[i].g * dst[i].g;
-        dst[i].b = src[i].b + dst[i].b - src[i].b * dst[i].b;
-        dst[i].a = src[i].a + dst[i].a - src[i].a * dst[i].a;
+        dst[i] = blend_screen(src[i], dst[i]);
     }
 }
 

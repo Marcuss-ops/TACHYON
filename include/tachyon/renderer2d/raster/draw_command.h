@@ -20,10 +20,10 @@ enum class DrawCommandKind {
     Clear,
     SolidRect,
     MaskRect,
-    TexturedQuad,
     Line,
     Shape,
-    Adjustment
+    Adjustment,
+    TexturedRect
 };
 
 
@@ -41,18 +41,6 @@ struct MaskRectCommand {
     RectI rect;
 };
 
-struct TexturedQuadCommand {
-    TextureHandle texture;
-    math::Vector2 p0{math::Vector2::zero()};
-    math::Vector2 p1{math::Vector2::zero()};
-    math::Vector2 p2{math::Vector2::zero()};
-    math::Vector2 p3{math::Vector2::zero()};
-    float w0{1.0f};
-    float w1{1.0f};
-    float w2{1.0f};
-    float w3{1.0f};
-    float opacity{1.0f};
-};
 
 struct LineCommand {
     int x0{0};
@@ -81,6 +69,12 @@ struct AdjustmentCommand {
     std::vector<std::pair<std::string, EffectParams>> effects;
 };
 
+struct TexturedRectCommand {
+    RectI rect;
+    TextureHandle texture;
+    float opacity{1.0f};
+};
+
 struct DrawCommand2D {
     DrawCommandKind kind{DrawCommandKind::Clear};
     int z_order{0};
@@ -89,10 +83,10 @@ struct DrawCommand2D {
     std::optional<ClearCommand> clear;
     std::optional<SolidRectCommand> solid_rect;
     std::optional<MaskRectCommand> mask_rect;
-    std::optional<TexturedQuadCommand> textured_quad;
     std::optional<LineCommand> line;
     std::optional<ShapeCommand> shape;
     std::optional<AdjustmentCommand> adjustment;
+    std::optional<TexturedRectCommand> textured_rect;
 };
 
 struct DrawList2D {

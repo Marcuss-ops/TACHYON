@@ -97,13 +97,6 @@ CompiledLayer LayerCompiler::compile_layer(
     add_track(".anchor_point_x", layer.transform.anchor_point, layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->x : 0.0);
     add_track(".anchor_point_y", layer.transform.anchor_point, layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->y : 0.0);
 
-    // Material properties
-    add_track(".metallic", layer.metallic, 0.0);
-    add_track(".roughness", layer.roughness, 0.5);
-    add_track(".ior", layer.ior, 1.45);
-    add_track(".transmission", layer.transmission, 0.0);
-    add_track(".emission_strength", layer.emission_strength, 0.0);
-
     // Populate Unified Fields
     compiled_layer.track_bindings = layer.track_bindings;
     compiled_layer.time_remap = layer.time_remap;

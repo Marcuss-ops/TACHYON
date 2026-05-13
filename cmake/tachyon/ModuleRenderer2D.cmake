@@ -21,6 +21,7 @@ set(TachyonRenderer2DSurfaceSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/surface/surface_blur.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/surface/surface_composite.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/surface/surface_composite_avx2.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/surface/surface_ops_highway.cpp
 )
 
 set(TachyonRenderer2DPathSources
@@ -40,7 +41,6 @@ set(TachyonRenderer2DCoreSources
     ${TachyonRenderer2DPathSources}
     ${TachyonRenderer2DResourceSources}
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/audio/audio_sampling.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/deform/mesh_deform.cpp
 )
 
 set(TachyonRenderer2DEffectsSources
@@ -98,7 +98,6 @@ set(TachyonRenderer2DExtrasSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/generators/light_leak_presets.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/generators/particle_effects.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/utility/number_counter_effect.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/spec/project_card.cpp
 )
 
 set(TachyonRenderer2DRasterSources
@@ -107,13 +106,10 @@ set(TachyonRenderer2DRasterSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/draw_list_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/draw_list_rasterizer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/mask_rasterizer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/mesh_deform_apply.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/mesh_rasterizer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/path/fill_rasterizer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/path/path_flattener.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/path/path_trimmer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/path/stroke_rasterizer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/perspective_rasterizer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/sdf_rasterizer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/tile_grid.cpp
 )

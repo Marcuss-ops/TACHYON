@@ -1,7 +1,6 @@
 #pragma once
 
 #include "tachyon/core/math/vector2.h"
-#include "tachyon/core/math/vector3.h"
 #include "tachyon/runtime/core/contracts/math_contract.h"
 #include <cmath>
 #include <cstdint>
@@ -23,9 +22,6 @@ inline Vector2 lerp(const Vector2& a, const Vector2& b, float t) {
     return a * (1.0f - t) + b * t;
 }
 
-inline Vector3 lerp(const Vector3& a, const Vector3& b, float t) {
-    return a * (1.0f - t) + b * t;
-}
 
 /**
  * @brief Performs cubic bezier sampling for spatial paths.
@@ -39,14 +35,6 @@ inline Vector2 sample_bezier_spatial(const Vector2& p0, const Vector2& p1, const
     return p0 * it3 + p1 * (3.0f * it2 * t) + p2 * (3.0f * it * t2) + p3 * t3;
 }
 
-inline Vector3 sample_bezier_spatial(const Vector3& p0, const Vector3& p1, const Vector3& p2, const Vector3& p3, float t) {
-    const float it = 1.0f - t;
-    const float it2 = it * it;
-    const float it3 = it2 * it;
-    const float t2 = t * t;
-    const float t3 = t2 * t;
-    return p0 * it3 + p1 * (3.0f * it2 * t) + p2 * (3.0f * it * t2) + p3 * t3;
-}
 
 inline double noise(float x, std::uint64_t seed) {
     const std::uint64_t i = static_cast<std::uint64_t>(std::floor(x));

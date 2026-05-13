@@ -10,9 +10,6 @@
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 #include "tachyon/core/types/colors.h"
 #include "tachyon/core/animation/easing.h"
-#include "tachyon/core/math/algebra/vector3.h"
-#include "tachyon/core/math/algebra/matrix4x4.h"
-
 #include <initializer_list>
 #include <functional>
 #include <string>
@@ -24,7 +21,6 @@
 
 #include "tachyon/renderer2d/effects/generators/light_leak_types.h"
 
-#include "tachyon/scene/camera_builder.h"
 #include "tachyon/scene/text_builder.h"
 #include "tachyon/scene/effect_builder.h"
 
@@ -34,7 +30,6 @@ using renderer2d::LightLeakPreset;
 class LayerBuilder;
 class CompositionBuilder;
 class SceneBuilder;
-class CameraBuilder;
 class TextBuilder;
 class EffectBuilder;
 
@@ -109,7 +104,6 @@ public:
  * @brief Ergonomic builder for LayerSpec.
  */
 class TACHYON_API LayerBuilder {
-    friend class CameraBuilder;
     friend class TextBuilder;
     friend class EffectBuilder;
     LayerSpec spec_;
@@ -122,13 +116,11 @@ public:
     LayerBuilder& type(LayerType t);
     LayerBuilder& solid(std::string name);
     LayerBuilder& image(std::string path);
-    LayerBuilder& mesh(std::string path);
+    LayerBuilder& video(std::string path);
+    LayerBuilder& asset_id(std::string id);
     LayerBuilder& preset(std::string name);
     LayerBuilder& background(const LayerSpec& spec);
     LayerBuilder& custom_layer(const LayerSpec& spec);
-    LayerBuilder& asset_id(std::string id);
-    LayerBuilder& mesh_deform_id(std::optional<std::string> id);
-    LayerBuilder& clear_mesh_deform_id();
     LayerBuilder& in(double t);
     LayerBuilder& out(double t);
 
@@ -156,7 +148,6 @@ public:
     TransitionBuilder exit();
 
 
-    CameraBuilder camera();
     TextBuilder text();
     TextBuilder text(std::string content);
     EffectBuilder effects();

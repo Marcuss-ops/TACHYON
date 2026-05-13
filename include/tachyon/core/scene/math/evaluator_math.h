@@ -1,9 +1,6 @@
 #pragma once
 
 #include "tachyon/core/math/vector2.h"
-#include "tachyon/core/math/vector3.h"
-#include "tachyon/core/math/matrix4x4.h"
-#include "tachyon/core/math/quaternion.h"
 #include "tachyon/core/math/transform2.h"
 #include "tachyon/core/animation/easing.h"
 #include "tachyon/core/expressions/expression_engine.h"
@@ -57,19 +54,6 @@ math::Vector2 sample_vector2(
         return property.value_or(fallback);
     } else {
         return sample_vector2(property, fallback, local_time_seconds, audio_analyzer);
-    }
-}
-
-template <typename Spec>
-math::Vector3 sample_vector3(
-    const Spec& property,
-    const math::Vector3& fallback,
-    double local_time_seconds,
-    const ::tachyon::audio::AudioAnalyzer* audio_analyzer = nullptr) {
-    if constexpr (std::is_same_v<Spec, std::optional<math::Vector3>>) {
-        return property.value_or(fallback);
-    } else {
-        return sample_vector3(property, fallback, local_time_seconds, audio_analyzer);
     }
 }
 

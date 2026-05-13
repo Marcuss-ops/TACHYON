@@ -88,7 +88,7 @@ The file `tests/golden/golden_hashes.json` stores expected hashes:
 
 ```json
 {
-  "shape_basic": "abc123def456...",
+  "shape_basic": "abc12Spatialef456...",
   "text_basic": "789xyz...",
   "my_feature": "newhash..."
 }

@@ -1,5 +1,4 @@
 #include "tachyon/renderer2d/raster/draw_list_builder.h"
-#include "tachyon/renderer2d/spec/project_card.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -55,37 +54,6 @@ Color color_with_opacity(float opacity) {
     return color;
 }
 
-bool is_camera_aware_card(const scene::EvaluatedLayerState& layer, const scene::EvaluatedCompositionState& composition_state) {
-    return composition_state.camera.available && (layer.type == scene::LayerType::Image || layer.type == scene::LayerType::Text);
-}
-
-float camera_card_depth(const scene::EvaluatedLayerState& layer, int z_order) {
-    if (layer.type == scene::LayerType::Text) {
-        return -120.0f - static_cast<float>(z_order * 20);
-    }
-    return -360.0f - static_cast<float>(z_order * 40);
-}
-
-RenderableCard3D make_camera_card(
-    const scene::EvaluatedLayerState& layer,
-    int z_order,
-    const char* prefix,
-    int base_width,
-    int base_height) {
-
-    RenderableCard3D card;
-    card.texture = TextureHandle{std::string(prefix) + layer.id};
-    card.center_world = {
-        layer.world_position3.x,
-        layer.world_position3.y,
-        camera_card_depth(layer, z_order)
-    };
-    card.width = static_cast<float>(base_width) * std::max(0.1f, layer.local_transform.scale.x);
-    card.height = static_cast<float>(base_height) * std::max(0.1f, layer.local_transform.scale.y);
-    card.rotation_degrees = 0.0f; // Default flat card orientation.
-    card.opacity = static_cast<float>(layer.opacity);
-    return card;
-}
 
 DrawCommand2D solid_command(const scene::EvaluatedLayerState& layer, const scene::EvaluatedCompositionState& composition_state, int z_order) {
     const RectI rect = scaled_rect(layer, 100, 100);
@@ -110,36 +78,18 @@ DrawCommand2D mask_command(const scene::EvaluatedLayerState& layer, const scene:
 
 DrawCommand2D image_command(const scene::EvaluatedLayerState& layer, const scene::EvaluatedCompositionState& composition_state, int z_order, const char* prefix, int base_width, int base_height) {
     DrawCommand2D command;
-    command.kind = DrawCommandKind::TexturedQuad;
+    command.kind = DrawCommandKind::TexturedRect;
     command.blend_mode = parse_blend_mode(layer.blend_mode);
     command.clip = full_clip(composition_state);
 
-    if (is_camera_aware_card(layer, composition_state)) {
-        const RenderableCard3D card = make_camera_card(layer, z_order, prefix, base_width, base_height);
-        const ProjectedCard3D projected = project_card_to_screen(
-            card,
-            composition_state.camera.camera,
-            static_cast<float>(composition_state.width),
-            static_cast<float>(composition_state.height));
-        if (!projected.visible) {
-            return DrawCommand2D{};
-        }
-        command.z_order = projected.depth_sort_key;
-        command.textured_quad = projected.quad;
-        return command;
-    }
-
     const RectI rect = scaled_rect(layer, base_width, base_height);
-    TexturedQuadCommand quad;
-    quad.texture = TextureHandle{std::string(prefix) + layer.id};
-    quad.p0 = {static_cast<float>(rect.x), static_cast<float>(rect.y)};
-    quad.p1 = {static_cast<float>(rect.x + rect.width), static_cast<float>(rect.y)};
-    quad.p2 = {static_cast<float>(rect.x + rect.width), static_cast<float>(rect.y + rect.height)};
-    quad.p3 = {static_cast<float>(rect.x), static_cast<float>(rect.y + rect.height)};
-    quad.opacity = static_cast<float>(layer.opacity);
+    TexturedRectCommand tex_rect;
+    tex_rect.texture = TextureHandle{std::string(prefix) + layer.id};
+    tex_rect.rect = rect;
+    tex_rect.opacity = static_cast<float>(layer.opacity);
 
     command.z_order = z_order;
-    command.textured_quad = quad;
+    command.textured_rect = tex_rect;
     return command;
 }
 
@@ -158,11 +108,9 @@ DrawList2D DrawListBuilder::build(const scene::EvaluatedCompositionState& compos
 
     for (std::size_t index = 0; index < composition_state.layers.size(); ++index) {
         const auto& layer = composition_state.layers[index];
-        if (!layer.enabled || !layer.active || layer.type == scene::LayerType::Camera) {
+        if (!layer.enabled || !layer.active) {
             continue;
         }
-
-        using scene::LayerType;
 
         if (layer.type == LayerType::Solid || layer.type == LayerType::Shape) {
             draw_list.commands.push_back(solid_command(layer, composition_state, static_cast<int>(index)));
@@ -170,12 +118,12 @@ DrawList2D DrawListBuilder::build(const scene::EvaluatedCompositionState& compos
             draw_list.commands.push_back(mask_command(layer, composition_state, static_cast<int>(index)));
         } else if (layer.type == LayerType::Image) {
             auto command = image_command(layer, composition_state, static_cast<int>(index), "image:", 256, 256);
-            if (command.textured_quad.has_value()) {
+            if (command.textured_rect.has_value()) {
                 draw_list.commands.push_back(std::move(command));
             }
         } else if (layer.type == LayerType::Text) {
             auto command = image_command(layer, composition_state, static_cast<int>(index), "text:", 256, 64);
-            if (command.textured_quad.has_value()) {
+            if (command.textured_rect.has_value()) {
                 draw_list.commands.push_back(std::move(command));
             }
         } else if (layer.type == LayerType::Procedural) {

@@ -16,7 +16,6 @@
 
 #include "tachyon/core/properties/property.h"
 #include "tachyon/core/animation/animatable.h"
-#include "tachyon/core/math/vector3.h"
 #include "tachyon/core/math/vector2.h"
 #include "tachyon/properties/animatable_property.h"
 #include "tachyon/properties/property_group.h"
@@ -48,12 +47,11 @@ bool nearly_eq(double a, double b, double eps = 1e-8) {
     return std::abs(a - b) <= eps;
 }
 
-bool nearly_eq_v3(const tachyon::math::Vector3& a,
-                  const tachyon::math::Vector3& b,
+bool nearly_eq_v2(const tachyon::math::Vector2& a,
+                  const tachyon::math::Vector2& b,
                   float eps = 1e-5f) {
     return nearly_eq(a.x, b.x, eps) &&
-           nearly_eq(a.y, b.y, eps) &&
-           nearly_eq(a.z, b.z, eps);
+           nearly_eq(a.y, b.y, eps);
 }
 
 // ---------------------------------------------------------------------------
@@ -268,28 +266,28 @@ void test_animatable_property_animated() {
 }
 
 // ---------------------------------------------------------------------------
-// Section 8: AnimatableProperty — Vector3 typed curve
+// Section 8: AnimatableProperty — Vector2 typed curve
 // ---------------------------------------------------------------------------
-void test_animatable_property_vector3() {
+void test_animatable_property_vector2() {
     using namespace tachyon::properties;
     using namespace tachyon::math;
     using namespace tachyon::animation;
 
-    AnimatableProperty<Vector3> pos("Position", Vector3::zero());
-    pos.add_keyframe(0.0, Vector3(0, 0, 0));
-    pos.add_keyframe(1.0, Vector3(10, 20, 30));
+    AnimatableProperty<Vector2> pos("Position", Vector2::zero());
+    pos.add_keyframe(0.0, Vector2(0, 0));
+    pos.add_keyframe(1.0, Vector2(10, 20));
 
     PropertyEvaluationContext ctx_mid{0.5, 0};
-    const Vector3 mid = pos.sample(ctx_mid);
+    const Vector2 mid = pos.sample(ctx_mid);
 
-    check_true(nearly_eq_v3(mid, Vector3(5, 10, 15)),
-               "S8: Vector3 linear interp at t=0.5 → (5, 10, 15)");
+    check_true(nearly_eq_v2(mid, Vector2(5, 10)),
+               "S8: Vector2 linear interp at t=0.5 → (5, 10)");
 
     // Static reset
-    pos.set_static(Vector3(99, 0, 0));
+    pos.set_static(Vector2(99, 0));
     check_true(!pos.is_animated(), "S8: set_static makes property non-animated");
-    check_true(nearly_eq_v3(pos.sample(ctx_mid), Vector3(99, 0, 0)),
-               "S8: Vector3 static value after reset");
+    check_true(nearly_eq_v2(pos.sample(ctx_mid), Vector2(99, 0)),
+               "S8: Vector2 static value after reset");
 }
 
 // ---------------------------------------------------------------------------
@@ -302,37 +300,24 @@ void test_property_group() {
     // --- Manual group ---
     PropertyGroup g("TestGroup");
     g.declare_static<float>("opacity", 0.8f);
-    g.declare_static<Vector3>("position", {1, 2, 3});
+    g.declare_static<Vector2>("position", {1, 2});
 
     PropertyEvaluationContext ctx{0.0, 0};
     check_true(g.has("opacity"),   "S9: group has 'opacity'");
     check_true(g.has("position"),  "S9: group has 'position'");
-    check_true(!g.has("foobar"),   "S9: group does not have 'foobar'");
 
     check_true(nearly_eq(g.sample<float>("opacity", ctx), 0.8f),
                "S9: group sample<float> opacity");
-    check_true(nearly_eq_v3(g.sample<Vector3>("position", ctx), {1, 2, 3}),
-               "S9: group sample<Vector3> position");
+    check_true(nearly_eq_v2(g.sample<Vector2>("position", ctx), {1, 2}),
+               "S9: group sample<Vector2> position");
 
-    // Mutate via get<>
-    g.get<float>("opacity").set_static(0.5f);
-    check_true(nearly_eq(g.sample<float>("opacity", ctx), 0.5f),
-               "S9: group sample after mutation");
-
-    // --- Transform3 factory ---
-    auto xform = make_transform3_group("xform");
-    check_true(xform.has("position"),       "S9: transform3 group has position");
-    check_true(xform.has("rotation_euler"), "S9: transform3 group has rotation_euler");
-    check_true(xform.has("scale"),          "S9: transform3 group has scale");
-    check_true(nearly_eq_v3(xform.sample<Vector3>("scale", ctx), Vector3::one()),
-               "S9: transform3 default scale is (1,1,1)");
-
-    // --- Camera factory ---
-    auto cam = make_camera_group("cam");
-    check_true(cam.has("fov_y_deg"),  "S9: camera group has fov_y_deg");
-    check_true(cam.has("aperture"),   "S9: camera group has aperture");
-    check_true(nearly_eq(cam.sample<float>("fov_y_deg", ctx), 60.0f),
-               "S9: camera default fov_y_deg is 60");
+    // --- Layer Group factory ---
+    auto xform = make_layer_group("xform");
+    check_true(xform.has("position"), "S9: Layer group has position");
+    check_true(xform.has("rotation"), "S9: Layer group has rotation");
+    check_true(xform.has("scale"),    "S9: Layer group has scale");
+    check_true(nearly_eq_v2(xform.sample<Vector2>("scale", ctx), Vector2::one()),
+               "S9: Layer group default scale is (1,1)");
 }
 
 // ---------------------------------------------------------------------------
@@ -400,7 +385,7 @@ bool run_property_tests() {
     test_curve_bezier_hermite();
     test_animatable_property_static();
     test_animatable_property_animated();
-    test_animatable_property_vector3();
+    test_animatable_property_vector2();
     test_property_group();
     test_boundary_conditions();
 

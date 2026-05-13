@@ -26,15 +26,6 @@ CompiledPropertyTrack PropertyCompiler::compile_track(
         } else {
             track.constant_value = fallback_value;
         }
-    } else if constexpr (std::is_same_v<T, AnimatedVector3Spec>) {
-        if (property_spec.value.has_value()) {
-            if (id_suffix.find("_x") != std::string::npos) track.constant_value = property_spec.value->x;
-            else if (id_suffix.find("_y") != std::string::npos) track.constant_value = property_spec.value->y;
-            else if (id_suffix.find("_z") != std::string::npos) track.constant_value = property_spec.value->z;
-            else track.constant_value = fallback_value;
-        } else {
-            track.constant_value = fallback_value;
-        }
     } else {
         track.constant_value = property_spec.value.has_value() ? static_cast<double>(*property_spec.value) : fallback_value;
     }
@@ -48,10 +39,6 @@ CompiledPropertyTrack PropertyCompiler::compile_track(
             if constexpr (std::is_same_v<T, AnimatedVector2Spec>) {
                 if (id_suffix.find("_x") != std::string::npos) val = keyframe.value.x;
                 else if (id_suffix.find("_y") != std::string::npos) val = keyframe.value.y;
-            } else if constexpr (std::is_same_v<T, AnimatedVector3Spec>) {
-                if (id_suffix.find("_x") != std::string::npos) val = keyframe.value.x;
-                else if (id_suffix.find("_y") != std::string::npos) val = keyframe.value.y;
-                else if (id_suffix.find("_z") != std::string::npos) val = keyframe.value.z;
             } else {
                 val = static_cast<double>(keyframe.value);
             }
@@ -75,10 +62,6 @@ CompiledPropertyTrack PropertyCompiler::compile_track(
                 if constexpr (std::is_same_v<T, AnimatedVector2Spec>) {
                     if (id_suffix.find("_x") != std::string::npos) next_val = next_kf.value.x;
                     else if (id_suffix.find("_y") != std::string::npos) next_val = next_kf.value.y;
-                } else if constexpr (std::is_same_v<T, AnimatedVector3Spec>) {
-                    if (id_suffix.find("_x") != std::string::npos) next_val = next_kf.value.x;
-                    else if (id_suffix.find("_y") != std::string::npos) next_val = next_kf.value.y;
-                    else if (id_suffix.find("_z") != std::string::npos) next_val = next_kf.value.z;
                 } else {
                     next_val = static_cast<double>(next_kf.value);
                 }
@@ -129,8 +112,5 @@ template CompiledPropertyTrack PropertyCompiler::compile_track<AnimatedScalarSpe
 
 template CompiledPropertyTrack PropertyCompiler::compile_track<AnimatedVector2Spec>(
     CompilationRegistry&, const std::string&, const std::string&, const AnimatedVector2Spec&, double, std::vector<expressions::Bytecode>&, DiagnosticBag&);
-
-template CompiledPropertyTrack PropertyCompiler::compile_track<AnimatedVector3Spec>(
-    CompilationRegistry&, const std::string&, const std::string&, const AnimatedVector3Spec&, double, std::vector<expressions::Bytecode>&, DiagnosticBag&);
 
 } // namespace tachyon

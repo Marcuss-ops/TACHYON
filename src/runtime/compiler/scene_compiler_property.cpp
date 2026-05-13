@@ -9,7 +9,5 @@ template CompiledPropertyTrack compile_property_track<AnimatedScalarSpec>(
 template CompiledPropertyTrack compile_property_track<AnimatedVector2Spec>(
     CompilationRegistry&, const std::string&, const std::string&, const AnimatedVector2Spec&, double);
 
-template CompiledPropertyTrack compile_property_track<AnimatedVector3Spec>(
-    CompilationRegistry&, const std::string&, const std::string&, const AnimatedVector3Spec&, double);
 
 } // namespace tachyon

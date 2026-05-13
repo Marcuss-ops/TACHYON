@@ -1,6 +1,5 @@
 #pragma once
 
-#include "tachyon/core/math/vector3.h"
 #include <cstdint>
 
 namespace tachyon {
@@ -16,9 +15,6 @@ struct ColorSpec {
         return !(*this == other);
     }
 
-    [[nodiscard]] math::Vector3 to_vector3() const {
-        return {r / 255.0f, g / 255.0f, b / 255.0f};
-    }
 };
 
 } // namespace tachyon

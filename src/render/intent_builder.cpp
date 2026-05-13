@@ -54,11 +54,6 @@ RenderIntentBuildResult build_render_intent(
         }
     }
     
-    // Final environment map resolution
-    if (state.environment_map_id.has_value()) {
-        result.intent.environment_map_id = state.environment_map_id;
-    }
-    
     if (result.has_errors()) {
         if (EngineValidationPolicy::instance().strict_assets) {
             result.status = IntentBuildStatus::AssetResolutionError;

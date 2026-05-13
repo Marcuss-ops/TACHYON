@@ -2,7 +2,6 @@
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/runtime/compiler/scene_compiler.h"
 #include "tachyon/core/math/vector2.h"
-#include "tachyon/core/math/vector3.h"
 #include "tachyon/core/animation/easing.h"
 #include "tachyon/runtime/compiler/scene_compiler_internal.h"
 #include <type_traits>
@@ -16,9 +15,6 @@ template <typename VecT>
 double component_from_suffix(const VecT& vec, std::string_view suffix, double fallback = 0.0) {
     if (suffix.find("_x") != std::string::npos) return static_cast<double>(vec.x);
     if (suffix.find("_y") != std::string::npos) return static_cast<double>(vec.y);
-    if constexpr (std::is_same_v<VecT, math::Vector3>) {
-        if (suffix.find("_z") != std::string::npos) return static_cast<double>(vec.z);
-    }
     return fallback;
 }
 
@@ -41,12 +37,6 @@ CompiledPropertyTrack compile_property_track(
             track.constant_value = fallback_value;
         }
 
-    } else if constexpr (std::is_same_v<T, AnimatedVector3Spec>) {
-        if (property_spec.value.has_value()) {
-            track.constant_value = component_from_suffix(*property_spec.value, id_suffix, fallback_value);
-        } else {
-            track.constant_value = fallback_value;
-        }
     } else {
         track.constant_value = property_spec.value.has_value() ? static_cast<double>(*property_spec.value) : fallback_value;
     }
@@ -61,10 +51,6 @@ CompiledPropertyTrack compile_property_track(
                 if (id_suffix.find("_x") != std::string::npos) val = keyframe.value.x;
                 else if (id_suffix.find("_y") != std::string::npos) val = keyframe.value.y;
 
-            } else if constexpr (std::is_same_v<T, AnimatedVector3Spec>) {
-                if (id_suffix.find("_x") != std::string::npos) val = keyframe.value.x;
-                else if (id_suffix.find("_y") != std::string::npos) val = keyframe.value.y;
-                else if (id_suffix.find("_z") != std::string::npos) val = keyframe.value.z;
             } else {
                 val = static_cast<double>(keyframe.value);
             }
@@ -86,10 +72,6 @@ CompiledPropertyTrack compile_property_track(
                     if (id_suffix.find("_x") != std::string::npos) next_val = next_kf.value.x;
                     else if (id_suffix.find("_y") != std::string::npos) next_val = next_kf.value.y;
 
-                } else if constexpr (std::is_same_v<T, AnimatedVector3Spec>) {
-                    if (id_suffix.find("_x") != std::string::npos) next_val = next_kf.value.x;
-                    else if (id_suffix.find("_y") != std::string::npos) next_val = next_kf.value.y;
-                    else if (id_suffix.find("_z") != std::string::npos) next_val = next_kf.value.z;
                 } else {
                     next_val = static_cast<double>(next_kf.value);
                 }

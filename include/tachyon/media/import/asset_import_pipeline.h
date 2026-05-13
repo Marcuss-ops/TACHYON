@@ -31,7 +31,6 @@ struct ImportResult {
 
     Status status{Success};
     const renderer2d::SurfaceRGBA* surface{nullptr};
-    const renderer2d::HDRTextureData* hdr_surface{nullptr};
     std::filesystem::path resolved_path;
     std::string error_message;
 };
