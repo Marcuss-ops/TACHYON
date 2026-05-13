@@ -237,7 +237,6 @@ if(TACHYON_ENABLE_MEDIA)
     endif()
     target_include_directories(TachyonMedia
         PRIVATE
-            ${tinygltf_SOURCE_DIR}
             ${pugixml_SOURCE_DIR}/src
             ${TACHYON_EARCUT_INCLUDE_DIR}
     )
@@ -245,19 +244,23 @@ if(TACHYON_ENABLE_MEDIA)
     target_link_libraries(TachyonMedia PUBLIC pugixml TachyonText TachyonRenderer2D)
 endif()
 
-add_library(TachyonAudio STATIC ${TachyonAudioSources})
-tachyon_configure_common(TachyonAudio)
-tachyon_link_media_deps(TachyonAudio)
+if(TACHYON_ENABLE_AUDIO)
+    add_library(TachyonAudio STATIC ${TachyonAudioSources})
+    tachyon_configure_common(TachyonAudio)
+    tachyon_link_media_deps(TachyonAudio)
+endif()
 
-add_library(TachyonOutput STATIC ${TachyonOutputSources})
-tachyon_configure_common(TachyonOutput)
-target_include_directories(TachyonOutput
-    PRIVATE
-        ${tinyexr_SOURCE_DIR}
-)
-tachyon_link_media_deps(TachyonOutput)
-tachyon_link_output_deps(TachyonOutput)
-target_link_libraries(TachyonOutput PUBLIC TachyonColor)
+if(TACHYON_ENABLE_OUTPUT)
+    add_library(TachyonOutput STATIC ${TachyonOutputSources})
+    tachyon_configure_common(TachyonOutput)
+    target_include_directories(TachyonOutput
+        PRIVATE
+            ${tinyexr_SOURCE_DIR}
+    )
+    tachyon_link_media_deps(TachyonOutput)
+    tachyon_link_output_deps(TachyonOutput)
+    target_link_libraries(TachyonOutput PUBLIC TachyonColor)
+endif()
 
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/ModuleRuntime.cmake)
 
@@ -294,21 +297,33 @@ set(GlobalTachyonSources
     ${TachyonSceneSources}
     ${TachyonRuntimeSources}
     ${TachyonRenderer2DSources}
-    ${TachyonMediaSources}
-    ${TachyonAudioSources}
-    ${TachyonOutputSources}
-    ${TachyonTextSources}
     ${TachyonDiagnosticsSources}
     ${TachyonPresetsSources}
     ${TachyonPlatformSources}
     ${TachyonColorSources}
 )
+
+if(TACHYON_ENABLE_MEDIA)
+    list(APPEND GlobalTachyonSources ${TachyonMediaSources})
+endif()
+if(TACHYON_ENABLE_AUDIO)
+    list(APPEND GlobalTachyonSources ${TachyonAudioSources})
+endif()
+if(TACHYON_ENABLE_OUTPUT)
+    list(APPEND GlobalTachyonSources ${TachyonOutputSources})
+endif()
+if(TACHYON_ENABLE_TEXT)
+    list(APPEND GlobalTachyonSources ${TachyonTextSources})
+endif()
+
 tachyon_assert_no_duplicate_sources(GlobalTachyonSources)
 
-add_library(TachyonText STATIC ${TachyonTextSources})
-tachyon_configure_common(TachyonText)
-tachyon_link_text_deps(TachyonText)
-target_link_libraries(TachyonText PUBLIC TachyonCore)
+if(TACHYON_ENABLE_TEXT)
+    add_library(TachyonText STATIC ${TachyonTextSources})
+    tachyon_configure_common(TachyonText)
+    tachyon_link_text_deps(TachyonText)
+    target_link_libraries(TachyonText PUBLIC TachyonCore)
+endif()
 
 
 
@@ -326,16 +341,7 @@ add_library(TachyonCLICore STATIC ${TachyonCLICoreSources})
 tachyon_configure_common(TachyonCLICore)
 target_link_libraries(TachyonCLICore PUBLIC TachyonRuntimeEngine TachyonLibrary TachyonDiagnostics)
 
-add_executable(tachyon-asset-pack
-    tools/tachyon_asset_pack_main.cpp
-)
-tachyon_configure_common(tachyon-asset-pack)
-target_link_libraries(tachyon-asset-pack
-    PRIVATE
-        TachyonMedia
-        TachyonDiagnostics
-        TachyonCore
-)
+
 
 add_library(TachyonTools INTERFACE)
 target_link_libraries(TachyonTools INTERFACE

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "tachyon/media/management/image_manager.h"
-#include "tachyon/media/loading/mesh_asset.h"
 #include "tachyon/media/decoding/video_decoder.h"
 #include "tachyon/audio/audio_mixer.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
@@ -56,7 +55,7 @@ public:
         AlphaMode alpha_mode = AlphaMode::Straight,
         DiagnosticBag* diagnostics = nullptr);
 
-    const HDRTextureData* get_hdr_image(
+    const renderer2d::HDRTextureData* get_hdr_image(
         const std::filesystem::path& path,
         DiagnosticBag* diagnostics = nullptr);
 
@@ -98,16 +97,12 @@ public:
     /**
      * @brief Get HDR image from resolved asset.
      */
-    const HDRTextureData* get_hdr_image(
+    const renderer2d::HDRTextureData* get_hdr_image(
         const ResolvedAsset& asset,
         DiagnosticBag* diagnostics = nullptr);
 
-    /**
-     * @brief Get mesh from resolved asset.
-     */
-    std::shared_ptr<const MeshAsset> get_mesh(
-        const ResolvedAsset& asset,
-        DiagnosticBag* diagnostics = nullptr);
+    // Mesh loading removed to streamline core.
+
 
     /**
      * Acquires a VideoDecoder for the given path from a pool.
@@ -116,9 +111,7 @@ public:
     PooledVideoDecoder acquire_video_decoder(const std::filesystem::path& path);
     void release_video_decoder(const std::filesystem::path& path, VideoDecoder* decoder);
 
-    std::shared_ptr<const MeshAsset> get_mesh(
-        const std::filesystem::path& path,
-        DiagnosticBag* diagnostics = nullptr);
+
 
     DiagnosticBag consume_diagnostics();
     void store_video_frame(const std::filesystem::path& path, double time, std::unique_ptr<renderer2d::SurfaceRGBA> frame);
@@ -158,8 +151,8 @@ private:
     ImageManager m_image_manager;
     std::map<std::string, std::shared_ptr<VideoPool>> m_video_pools;
     std::unique_ptr<ResourceCache<std::string, renderer2d::SurfaceRGBA>> m_frame_cache;
-    std::map<std::string, std::shared_ptr<MeshAsset>> m_mesh_cache;
     std::unordered_map<std::string, std::shared_ptr<MediaAsset>> m_assets;
+
     
     MediaFallbackPolicy m_fallback_policy{MediaFallbackPolicy::UseProxy};
     std::shared_ptr<renderer2d::SurfaceRGBA> m_offline_placeholder;

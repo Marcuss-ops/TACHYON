@@ -30,18 +30,20 @@ include(cmake/RenderTests.cmake)
 include(cmake/SmokeTests.cmake)
 
 # Labs
-add_executable(transition_perf_lab perf/transition_perf_lab.cpp)
-target_link_libraries(transition_perf_lab PRIVATE 
-    TachyonCore 
-    TachyonOutput 
-    TachyonRenderer2D
-    TachyonPresets
-    TachyonRuntimeTelemetry
-    TachyonPlatform
-    TachyonTimeline
-)
-if(TACHYON_ENABLE_MEDIA)
-    target_link_libraries(transition_perf_lab PRIVATE TachyonMedia)
+if(TACHYON_ENABLE_OUTPUT)
+    add_executable(transition_perf_lab perf/transition_perf_lab.cpp)
+    target_link_libraries(transition_perf_lab PRIVATE 
+        TachyonCore 
+        TachyonOutput 
+        TachyonRenderer2D
+        TachyonPresets
+        TachyonRuntimeTelemetry
+        TachyonPlatform
+        TachyonTimeline
+    )
+    if(TACHYON_ENABLE_MEDIA)
+        target_link_libraries(transition_perf_lab PRIVATE TachyonMedia)
+    endif()
+    tachyon_configure_common(transition_perf_lab)
 endif()
-tachyon_configure_common(transition_perf_lab)
 

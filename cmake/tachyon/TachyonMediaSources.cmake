@@ -8,15 +8,8 @@ set(TachyonMediaSources
     ${CMAKE_CURRENT_SOURCE_DIR}/media/management/asset_resolver.cpp
     
     ${CMAKE_CURRENT_SOURCE_DIR}/media/resolution/asset_resolution.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/media/resolution/asset_path_utils.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/media/resolution/asset_collector.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/media/resolution/project_context.cpp
-    
-    ${CMAKE_CURRENT_SOURCE_DIR}/media/processing/extruder.cpp
-    
     ${CMAKE_CURRENT_SOURCE_DIR}/media/streaming/media_prefetcher.cpp
     
-    ${CMAKE_CURRENT_SOURCE_DIR}/media/loading/mesh_loader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/media/path_resolver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/media/probe.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/media/probe_cache.cpp
@@ -29,13 +22,7 @@ set(TachyonMediaSources
     ${CMAKE_CURRENT_SOURCE_DIR}/media/decoding/video_decoder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/media/decoding/svg_decoder_impl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/media/decoding/stb_image_impl.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/media/decoding/tinygltf_impl.cpp
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/media/asset_pack/asset_pack_manifest.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/media/asset_pack/asset_pack_builder.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/media/asset_pack/asset_pack_reader.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/media/compression/mesh_compressor_none.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/media/compression/mesh_compressor_draco.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/media/compression/texture_compressor_none.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/media/compression/texture_compressor_basis.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/media/compression/compression_simd_kernels_highway.cpp

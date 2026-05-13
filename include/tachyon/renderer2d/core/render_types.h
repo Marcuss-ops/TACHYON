@@ -1,6 +1,8 @@
 #pragma once
 
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/core/math/vector2.h"
+#include "tachyon/core/math/matrix4x4.h"
 #include <vector>
 #include <string>
 #include <optional>
@@ -55,6 +57,45 @@ struct AccumulationBuffers {
         b.assign(size, 0.0f);
         a.assign(size, 0.0f);
     }
+};
+
+struct PrimitiveVertex {
+    math::Vector3 position;
+    math::Vector3 normal;
+    math::Vector2 uv;
+};
+
+struct PrimitiveMaterial {
+    math::Vector3 base_color_factor{1.0f, 1.0f, 1.0f};
+    float metallic_factor{0.0f};
+    float roughness_factor{0.5f};
+    std::optional<std::uint32_t> base_color_texture_idx;
+};
+
+struct HDRTextureData {
+    std::uint32_t width = 0;
+    std::uint32_t height = 0;
+    std::uint32_t channels = 0;
+    std::vector<float> data;
+};
+
+struct PrimitiveSubMesh {
+    std::vector<PrimitiveVertex> vertices;
+    std::vector<std::uint32_t> indices;
+    PrimitiveMaterial material;
+    math::Matrix4x4 transform{math::Matrix4x4::identity()};
+};
+
+struct PrimitiveMesh {
+    std::string path;
+    std::vector<PrimitiveSubMesh> sub_meshes;
+    struct TextureData {
+        int width;
+        int height;
+        int channels;
+        std::vector<std::uint8_t> data;
+    };
+    std::vector<TextureData> textures;
 };
 
 } // namespace tachyon::renderer2d

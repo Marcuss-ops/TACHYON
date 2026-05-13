@@ -29,7 +29,12 @@
       "inherits": "base-vs",
       "description": "Daily iteration preset with RelWithDebInfo symbols and the core test loop",
       "cacheVariables": {
-        "TACHYON_ENABLE_ASAN": "OFF"
+        "TACHYON_ENABLE_ASAN": "OFF",
+        "TACHYON_ENABLE_MEDIA": "ON",
+        "TACHYON_ENABLE_TEXT": "ON",
+        "TACHYON_ENABLE_OUTPUT": "ON",
+        "TACHYON_ENABLE_AUDIO": "ON",
+        "TACHYON_BUILD_TESTS": "ON"
       }
     },
     {
@@ -37,6 +42,27 @@
       "inherits": "base-vs",
       "description": "Faster inner loop preset with the smallest useful default build set",
       "cacheVariables": {
+        "TACHYON_ENABLE_ASAN": "OFF",
+        "TACHYON_ENABLE_MEDIA": "ON",
+        "TACHYON_ENABLE_TEXT": "ON",
+        "TACHYON_ENABLE_OUTPUT": "ON",
+        "TACHYON_ENABLE_AUDIO": "ON",
+        "TACHYON_BUILD_TESTS": "ON"
+      }
+    },
+    {
+      "name": "core-fast",
+      "inherits": "base-vs",
+      "description": "Fastest inner loop: core only, no media, no text, no output, no tests",
+      "cacheVariables": {
+        "TACHYON_ENABLE_MEDIA": "OFF",
+        "TACHYON_ENABLE_TEXT": "OFF",
+        "TACHYON_ENABLE_OUTPUT": "OFF",
+        "TACHYON_ENABLE_TRACE": "OFF",
+        "TACHYON_ENABLE_JSON_TRACE": "OFF",
+        "TACHYON_BUILD_TESTS": "OFF",
+        "TACHYON_BUILD_EXAMPLES": "OFF",
+        "TACHYON_BUILD_CATALOG_TOOLS": "OFF",
         "TACHYON_ENABLE_ASAN": "OFF"
       }
     },
@@ -119,6 +145,14 @@
       "targets": [
         "TachyonCore",
         "TachyonTests"
+      ]
+    },
+    {
+      "name": "core-fast",
+      "configurePreset": "core-fast",
+      "configuration": "RelWithDebInfo",
+      "targets": [
+        "TachyonCore"
       ]
     },
     {

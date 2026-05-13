@@ -70,3 +70,5 @@ benchmarks/output/
 *.exe
 build-3d/
 embree/
+gallery/
+assets/fonts/NotoColorEmoji.ttf

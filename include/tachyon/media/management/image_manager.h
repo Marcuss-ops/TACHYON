@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/renderer2d/core/framebuffer.h"
-#include "tachyon/media/loading/mesh_asset.h"
+#include "tachyon/renderer2d/core/render_types.h"
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include <string>
 #include <map>
@@ -42,7 +42,7 @@ public:
     /**
      * Get or load an HDR image (environment map).
      */
-    const HDRTextureData* get_hdr_image(
+    const renderer2d::HDRTextureData* get_hdr_image(
         const std::filesystem::path& path,
         DiagnosticBag* diagnostics = nullptr);
 
@@ -63,7 +63,7 @@ public:
 
 private:
     std::map<std::string, std::shared_ptr<renderer2d::SurfaceRGBA>> m_cache;
-    std::map<std::string, std::shared_ptr<HDRTextureData>> m_hdr_cache;
+    std::map<std::string, std::shared_ptr<renderer2d::HDRTextureData>> m_hdr_cache;
     DiagnosticBag m_diagnostics;
     mutable std::mutex m_mutex;
 };

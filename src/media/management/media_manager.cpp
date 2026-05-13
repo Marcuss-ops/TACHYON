@@ -1,5 +1,4 @@
 #include "tachyon/media/management/media_manager.h"
-#include "tachyon/media/loading/mesh_loader.h"
 #include <cmath>
 #include <chrono>
 #include <iostream>
@@ -242,31 +241,7 @@ void MediaManager::release_video_decoder(const std::filesystem::path& path, Vide
     pool->available.emplace_back(std::unique_ptr<VideoDecoder>(decoder));
 }
 
-std::shared_ptr<const MeshAsset> MediaManager::get_mesh(const std::filesystem::path& path, DiagnosticBag* diagnostics) {
-    const std::string key = path.string();
-    
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        auto it = m_mesh_cache.find(key);
-        if (it != m_mesh_cache.end()) {
-            return it->second;
-        }
-    }
 
-    auto mesh = MeshLoader::load_from_gltf(path, diagnostics);
-    if (!mesh) return nullptr;
-
-    std::shared_ptr<MeshAsset> shared_mesh = std::move(mesh);
-    
-    std::lock_guard<std::mutex> lock(m_mutex);
-    auto it = m_mesh_cache.find(key);
-    if (it != m_mesh_cache.end()) {
-        return it->second;
-    }
-    
-    m_mesh_cache[key] = shared_mesh;
-    return shared_mesh;
-}
 
 void MediaManager::store_video_frame(const std::filesystem::path& path, double time, std::unique_ptr<renderer2d::SurfaceRGBA> frame) {
     const std::filesystem::path resolved = resolve_media_path(path, ResolutionPurpose::Playback);
@@ -279,7 +254,6 @@ void MediaManager::clear_cache() {
     m_image_manager.clear_cache();
     m_video_pools.clear();
     m_frame_cache->clear();
-    m_mesh_cache.clear();
 }
 
 DiagnosticBag MediaManager::consume_diagnostics() {
@@ -307,10 +281,6 @@ const HDRTextureData* MediaManager::get_hdr_image(
     return get_hdr_image(asset.runtime_path, diagnostics);
 }
 
-std::shared_ptr<const MeshAsset> MediaManager::get_mesh(
-    const ResolvedAsset& asset,
-    DiagnosticBag* diagnostics) {
-    return get_mesh(asset.runtime_path, diagnostics);
-}
+
 
 } // namespace tachyon::media

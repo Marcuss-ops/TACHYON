@@ -27,8 +27,6 @@ add_executable(TachyonContentTests
     unit/presets/transition_preset_registry_tests.cpp
     unit/presets/transition_runtime_tests.cpp
     unit/presets/preset_audit_tests.cpp
-    unit/media/asset_pack_manifest_test.cpp
-    unit/media/asset_pack_builder_test.cpp
 )
 
 target_compile_definitions(TachyonContentTests
@@ -41,13 +39,19 @@ target_link_libraries(TachyonContentTests
         TachyonTestUtils
         TachyonCore
         TachyonScene
-        TachyonText
-        TachyonAudio
         TachyonLibrary
         TachyonRenderer2D
         TachyonPlatform
         TachyonRuntime
 )
+
+if(TACHYON_ENABLE_TEXT)
+    target_link_libraries(TachyonContentTests PRIVATE TachyonText)
+endif()
+
+if(TACHYON_ENABLE_AUDIO)
+    target_link_libraries(TachyonContentTests PRIVATE TachyonAudio)
+endif()
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
     target_precompile_headers(TachyonContentTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")

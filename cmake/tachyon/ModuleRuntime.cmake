@@ -116,17 +116,23 @@ target_link_libraries(TachyonRuntime
         TachyonColor
         TachyonScene
         TachyonRenderer2D
-        TachyonOutput
     PRIVATE
         TachyonPlatform
-        TachyonText
 )
+
+if(TACHYON_ENABLE_OUTPUT)
+    target_link_libraries(TachyonRuntime PUBLIC TachyonOutput)
+endif()
+
+if(TACHYON_ENABLE_TEXT)
+    target_link_libraries(TachyonRuntime PRIVATE TachyonText)
+endif()
 
 if(TACHYON_ENABLE_MEDIA)
     target_link_libraries(TachyonRuntime PUBLIC TachyonMedia)
 endif()
 
-if(TACHYON_ENABLE_AUDIO_MUX)
+if(TACHYON_ENABLE_AUDIO_MUX AND TACHYON_ENABLE_AUDIO)
     target_link_libraries(TachyonRuntime PRIVATE TachyonAudio)
 endif()
 

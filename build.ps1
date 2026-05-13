@@ -2,7 +2,7 @@
 .SYNOPSIS
     Tachyon build entry point.
 .PARAMETER Preset
-    CMake preset: dev | dev-fast | asan | linux-ci | windows-ci | release  (default: dev on Windows, linux-ci on Linux)
+    CMake preset: dev | dev-fast | core-fast | asan | linux-ci | windows-ci | release  (default: dev on Windows, linux-ci on Linux)
 .PARAMETER Config
     Debug | RelWithDebInfo | Release  (default: RelWithDebInfo)
 .PARAMETER Target
@@ -29,7 +29,7 @@
     .\build.ps1 -Clean -Config Release
 #>
 param(
-    [ValidateSet("dev","dev-fast","asan","linux-ci","windows-ci","release")]
+    [ValidateSet("dev","dev-fast","core-fast","asan","linux-ci","windows-ci","release")]
     [string]$Preset   = "",
     [ValidateSet("Debug","RelWithDebInfo","Release")]
     [string]$Config   = "RelWithDebInfo",
@@ -122,7 +122,7 @@ if (-not $Preset) {
 
 function Test-IsWindowsPreset {
     param([string]$Name)
-    return $Name -in @("dev", "dev-fast", "asan")
+    return $Name -in @("dev", "dev-fast", "core-fast", "asan")
 }
 
 # Determine build directory based on preset

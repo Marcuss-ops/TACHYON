@@ -69,9 +69,15 @@ target_link_libraries(TachyonSceneEval
     PRIVATE
         TachyonCore
         TachyonColor
-        TachyonAudio
-        TachyonText
     )
+
+    if(TACHYON_ENABLE_AUDIO)
+        target_link_libraries(TachyonSceneEval PRIVATE TachyonAudio)
+    endif()
+
+    if(TACHYON_ENABLE_TEXT)
+        target_link_libraries(TachyonSceneEval PRIVATE TachyonText)
+    endif()
 
     if(TACHYON_ENABLE_MEDIA)
         target_link_libraries(TachyonSceneEval PRIVATE TachyonMedia)
@@ -86,9 +92,15 @@ tachyon_configure_common(TachyonPresets)
 target_link_libraries(TachyonPresets
     PUBLIC
         TachyonCore
-        TachyonAudio
-        TachyonText
     )
+
+    if(TACHYON_ENABLE_AUDIO)
+        target_link_libraries(TachyonPresets PUBLIC TachyonAudio)
+    endif()
+
+    if(TACHYON_ENABLE_TEXT)
+        target_link_libraries(TachyonPresets PUBLIC TachyonText)
+    endif()
 
     if(TACHYON_ENABLE_MEDIA)
         target_link_libraries(TachyonPresets PRIVATE TachyonMedia)
@@ -114,8 +126,11 @@ target_link_libraries(TachyonScene
         TachyonPlatform
         TachyonPresets
         TachyonLibrary
-        TachyonAudio
     )
+
+    if(TACHYON_ENABLE_AUDIO)
+        target_link_libraries(TachyonScene PRIVATE TachyonAudio)
+    endif()
 
     if(TACHYON_ENABLE_MEDIA)
         target_link_libraries(TachyonScene PRIVATE TachyonMedia)

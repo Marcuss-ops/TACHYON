@@ -41,7 +41,7 @@ jobs:
         run: ctest --test-dir build/linux-ci --output-on-failure -L core
 
       - name: Build render tests
-        run: cmake --build --preset linux-ci --target TachyonNativeRenderTests TachyonRenderTests TachyonRenderPipelineTests TachyonScene3DSmokeTests -j$(nproc)
+        run: cmake --build --preset linux-ci --target TachyonNativeRenderTests TachyonRenderTests TachyonRenderPipelineTests -j$(nproc)
 
       - name: Run render tests
         run: ctest --test-dir build/linux-ci --output-on-failure -L render

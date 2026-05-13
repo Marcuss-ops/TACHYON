@@ -88,7 +88,6 @@ set(TachyonRenderer2DEvaluatedCompositionSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/primitives/layer_renderer_procedural.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/primitives/layer_renderer_simple.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/primitives/mask_renderer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/primitives/text_mesh_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/utilities/composition_utils.cpp
 )
 
@@ -98,7 +97,6 @@ set(TachyonRenderer2DExtrasSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/generators/light_leak_presets.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/generators/particle_effects.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/effects/utility/number_counter_effect.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/evaluated_composition/rendering/primitives/media_card_mesh_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/spec/project_card.cpp
 )
 

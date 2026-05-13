@@ -2,17 +2,7 @@ include_guard(GLOBAL)
 
 if(TACHYON_ENABLE_MEDIA)
     if(TACHYON_FETCH_DEPS)
-        if(EXISTS "${CMAKE_SOURCE_DIR}/third_party/tinygltf/CMakeLists.txt")
-            add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/tinygltf" "${CMAKE_BINARY_DIR}/_deps/tinygltf-build" EXCLUDE_FROM_ALL)
-        else()
-            FetchContent_Declare(
-                tinygltf
-                GIT_REPOSITORY https://github.com/syoyo/tinygltf.git
-                GIT_TAG        ${TACHYON_TINYGLTF_GIT_TAG}
-                DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-            )
-            FetchContent_MakeAvailable(tinygltf)
-        endif()
+
 
         if(EXISTS "${CMAKE_SOURCE_DIR}/third_party/pugixml/CMakeLists.txt")
             add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/pugixml" "${CMAKE_BINARY_DIR}/_deps/pugixml-build" EXCLUDE_FROM_ALL)
@@ -29,7 +19,7 @@ if(TACHYON_ENABLE_MEDIA)
         find_package(pugixml REQUIRED)
     endif()
 else()
-    message(STATUS "[Tachyon] Media feature disabled; skipping tinygltf and pugixml fetches")
+    message(STATUS "[Tachyon] Media feature disabled; skipping pugixml fetches")
 endif()
 
 if(TACHYON_ENABLE_MEDIA)

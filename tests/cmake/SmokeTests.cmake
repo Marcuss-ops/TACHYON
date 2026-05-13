@@ -19,9 +19,11 @@ add_custom_target(HeaderSmokeTests
     COMMENT "Running header smoke tests to catch compilation errors early"
 )
 
-add_executable(Phase1Tests unit/text/phase1_tests.cpp)
-target_link_libraries(Phase1Tests PRIVATE TachyonCore TachyonScene TachyonText)
-target_compile_definitions(Phase1Tests PRIVATE TACHYON_TESTS_SOURCE_DIR="${TACHYON_TESTS_SOURCE_DIR}")
+if(TACHYON_ENABLE_TEXT)
+    add_executable(Phase1Tests unit/text/phase1_tests.cpp)
+    target_link_libraries(Phase1Tests PRIVATE TachyonCore TachyonScene TachyonText)
+    target_compile_definitions(Phase1Tests PRIVATE TACHYON_TESTS_SOURCE_DIR="${TACHYON_TESTS_SOURCE_DIR}")
+endif()
 
 add_test(
     NAME TachyonSmokeTests
