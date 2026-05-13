@@ -10,14 +10,6 @@
 
 namespace tachyon::renderer2d {
 
-// External implementation tables
-std::vector<::tachyon::presets::EffectKindSpec> get_blur_effect_kind_specs();
-std::vector<::tachyon::presets::EffectKindSpec> get_color_effect_kind_specs();
-std::vector<::tachyon::presets::EffectKindSpec> get_distortion_effect_kind_specs();
-std::vector<::tachyon::presets::EffectKindSpec> get_generator_effect_kind_specs();
-std::vector<::tachyon::presets::EffectKindSpec> get_stylize_effect_kind_specs();
-std::vector<::tachyon::presets::EffectKindSpec> get_transition_effect_kind_specs();
-
 std::vector<EffectImplementation> get_blur_effect_implementations();
 std::vector<EffectImplementation> get_color_effect_implementations();
 std::vector<EffectImplementation> get_transition_effect_implementations(const tachyon::TransitionRegistry& transition_registry);
@@ -54,12 +46,12 @@ std::vector<::tachyon::presets::EffectKindSpec> collect_builtin_kind_specs() {
             std::make_move_iterator(from.end()));
     };
 
-    append(specs, get_blur_effect_kind_specs());
-    append(specs, get_color_effect_kind_specs());
-    append(specs, get_distortion_effect_kind_specs());
-    append(specs, get_generator_effect_kind_specs());
-    append(specs, get_stylize_effect_kind_specs());
-    append(specs, get_transition_effect_kind_specs());
+    append(specs, ::tachyon::presets::get_blur_effect_kind_specs());
+    append(specs, ::tachyon::presets::get_color_effect_kind_specs());
+    append(specs, ::tachyon::presets::get_distortion_effect_kind_specs());
+    append(specs, ::tachyon::presets::get_generator_effect_kind_specs());
+    append(specs, ::tachyon::presets::get_stylize_effect_kind_specs());
+    append(specs, ::tachyon::presets::get_transition_effect_kind_specs());
     return specs;
 }
 

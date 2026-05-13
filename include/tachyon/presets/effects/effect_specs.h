@@ -40,4 +40,11 @@ struct EffectPresetSpec {
     std::function<::tachyon::EffectSpec(const registry::ParameterBag&)> factory;
 };
 
+std::vector<EffectKindSpec> get_blur_effect_kind_specs();
+std::vector<EffectKindSpec> get_color_effect_kind_specs();
+std::vector<EffectKindSpec> get_distortion_effect_kind_specs();
+std::vector<EffectKindSpec> get_generator_effect_kind_specs();
+std::vector<EffectKindSpec> get_stylize_effect_kind_specs();
+std::vector<EffectKindSpec> get_transition_effect_kind_specs();
+
 } // namespace tachyon::presets
