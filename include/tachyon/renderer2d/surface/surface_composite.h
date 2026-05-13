@@ -14,6 +14,14 @@ void composite_with_offset_tiled(SurfaceRGBA& dst, const SurfaceRGBA& src,
                                   int ox, int oy,
                                   int tile_w = 128, int tile_h = 64);
 
+#ifdef TACHYON_AVX2
+void composite_tile_avx2(
+    float* dst_pixels, unsigned int dst_stride,
+    const float* src_pixels, unsigned int src_stride,
+    int x0, int y0, int x1, int y1,
+    int ox, int oy);
+#endif
+
 /**
  * @brief Converts a standard RGBA color to a premultiplied pixel.
  */

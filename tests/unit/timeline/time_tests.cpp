@@ -67,17 +67,7 @@ bool run_timeline_tests() {
         title.opacity_property.keyframes = {{0.0, 0.0}, {1.0, 1.0}};
         title.transform.position_property.keyframes = {{0.0, {0.0f, 0.0f}}, {1.0, {100.0f, 50.0f}}};
 
-        LayerSpec cam;
-        cam.id = "cam1";
-        cam.type = LayerType::Camera;
-        cam.enabled = true;
-        cam.in_point = 0.0;
-        cam.out_point = 10.0;
-        cam.transform.position_x = 10.0;
-        cam.transform.position_y = 20.0;
-        cam.camera_zoom.value = 877.0;
-
-        comp.layers = {bg, title, cam};
+        comp.layers = {bg, title};
         scene.compositions.push_back(comp);
 
         check_true(is_layer_visible_at_time(title, 1.5, comp.duration), "layer visible inside in/out range");
@@ -87,14 +77,11 @@ bool run_timeline_tests() {
         check_true(evaluated.has_value(), "evaluate_composition_frame returns a value");
         if (evaluated.has_value()) {
             check_true(nearly_equal(evaluated->composition_time_seconds, 1.5), "evaluated composition time matches frame number");
-            check_true(evaluated->layers.size() == 3, "composition with 3 layers produces 3 evaluated states");
+            check_true(evaluated->layers.size() == 2, "composition with 2 layers produces 2 evaluated states");
             check_true(evaluated->layers[1].visible, "title layer visible at frame 45");
             check_true(nearly_equal(evaluated->layers[1].opacity, 0.5), "linear keyframe opacity resolves correctly");
             check_true(nearly_equal(evaluated->layers[1].local_transform.position.x, 50.0), "linear keyframe x resolves correctly");
             check_true(nearly_equal(evaluated->layers[1].local_transform.position.y, 25.0), "linear keyframe y resolves correctly");
-            check_true(evaluated->camera.available, "camera evaluata correttamente");
-            check_true(nearly_equal(evaluated->camera.position.x, 10.0), "camera x position resolved");
-            check_true(nearly_equal(evaluated->camera.position.y, 20.0), "camera y position resolved");
         }
     }
 

@@ -1,9 +1,7 @@
 #include "tachyon/core/cli_scene_loader.h"
 #include "tachyon/core/spec/cpp_scene_loader.h"
 #include "tachyon/media/resolution/asset_resolution.h"
-#include "tachyon/media/resolution/asset_path_utils.h"
-#include "tachyon/presets/background/background_preset_registry.h"
-#include "tachyon/presets/scene/scene_preset_registry.h"
+#include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include "tachyon/presets/preset_scene_resolver.h"
 #include "tachyon/scene/builder.h"
 #include "cli_internal.h"
@@ -52,7 +50,7 @@ LoadSceneResult load_scene_for_cli(
 
             const auto resolved = resolve_assets(
                 context.scene,
-                tachyon::media::scene_asset_root(options.cpp_path)
+                tachyon::scene_asset_root(options.cpp_path)
             );
 
             if (resolved.value.has_value()) {

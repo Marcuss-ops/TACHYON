@@ -1,16 +1,6 @@
 #include "tachyon/renderer2d/surface/surface_composite.h"
 #include <algorithm>
 
-#ifdef TACHYON_AVX2
-namespace tachyon::renderer2d {
-    extern void composite_tile_avx2(
-        float* dst_pixels, uint32_t dst_stride,
-        const float* src_pixels, uint32_t src_stride,
-        int x0, int y0, int x1, int y1,
-        int ox, int oy);
-}
-#endif
-
 namespace tachyon::renderer2d {
 
 // ---------------------------------------------------------------------------

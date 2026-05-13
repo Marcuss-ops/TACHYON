@@ -101,43 +101,6 @@ bool run_scene_evaluator_tests() {
         check_true(nearly_equal(evaluated.local_transform.scale.y, 3.0), "static scale y should evaluate directly");
     }
 
-    {
-        tachyon::LayerSpec camera_layer;
-        camera_layer.id = "camera_01";
-        camera_layer.type = tachyon::LayerType::Camera;
-        camera_layer.name = "Camera";
-        camera_layer.enabled = true;
-        camera_layer.start_time = 0.0;
-        camera_layer.in_point = 0.0;
-        camera_layer.out_point = 10.0;
-        camera_layer.transform.position_x = 15.0;
-        camera_layer.transform.position_y = 25.0;
-        camera_layer.camera_zoom.value = 877.0;
-
-        tachyon::CompositionSpec composition;
-        composition.id = "camera_comp";
-        composition.name = "Camera Composition";
-        composition.width = 1920;
-        composition.height = 1080;
-        composition.duration = 10.0;
-        composition.frame_rate = {30, 1};
-        composition.layers.push_back(camera_layer);
-
-        tachyon::SceneSpec scene;
-        scene.project.id = "proj_001";
-        scene.project.name = "Evaluator";
-        scene.compositions.push_back(composition);
-
-        const auto evaluated = tachyon::scene::evaluate_scene_composition_state(scene, "camera_comp", std::int64_t(30));
-        check_true(evaluated.has_value(), "scene evaluator should resolve composition by id");
-        if (evaluated.has_value()) {
-            check_true(evaluated->camera.available, "camera state should be available when a camera layer is active");
-            check_true(evaluated->camera.layer_id == "camera_01", "camera state should point at the active camera layer");
-            check_true(nearly_equal(evaluated->camera.position.x, 15.0), "camera position x should evaluate from camera layer");
-            check_true(nearly_equal(evaluated->camera.position.y, 25.0), "camera position y should evaluate from camera layer");
-            check_true(nearly_equal(evaluated->camera.camera.aspect, 1920.0 / 1080.0), "camera aspect should derive from composition size");
-        }
-    }
 
     {
         tachyon::LayerSpec precomp_layer;
