@@ -25,10 +25,10 @@ Owner: Core Team
 |--------|---------|
 | `.\scripts\setup-dev.ps1` | One-time development environment setup |
 | `.\scripts\enable-vs-env.ps1` | Load VS environment into current session (run once per shell) |
-| `.\scripts\agent-validate.ps1 -Scope "X"` | Full validation (header + core + targeted + full) |
+| `.\scripts\agents\agent-validate.ps1 -Scope "X"` | Full validation (header + core + targeted + full) |
 | `.\scripts\pre-commit.ps1 -Install` | Install pre-commit hook |
-| `.\scripts\check-test-naming.ps1` | Check test naming conventions |
-| `.\scripts\scope-validate.ps1 -Scope "X"` | Verify only scope files modified |
+| `.\scripts\validation\check-test-naming.ps1` | Check test naming conventions |
+| `.\scripts\agents\scope-validate.ps1 -Scope "X"` | Verify only scope files modified |
 
 ## Windows Build Friction Fixes
 
@@ -111,7 +111,7 @@ cmake --build build --preset dev --target HeaderSmokeTests
 Full validation script for agents:
 
 ```powershell
-.\scripts\agent-validate.ps1 -Scope "Component"
+.\scripts\agents\agent-validate.ps1 -Scope "Component"
 ```
 
 ## Rendering presets
