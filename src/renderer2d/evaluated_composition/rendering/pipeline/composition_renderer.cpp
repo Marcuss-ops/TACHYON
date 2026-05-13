@@ -159,9 +159,10 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
     FrameDiagnostics* diagnostics = context.diagnostics;
 
-    // First pass: collect rendered surfaces for matte resolution
-    // Second pass: composite with resolved mattes
+    // First pass: collect rendered surfaces for matte resolution and cross-layer effect references.
+    // Second pass: composite with resolved mattes, reusing first-pass surfaces where possible.
     std::unordered_map<std::string, std::shared_ptr<SurfaceRGBA>> rendered_surfaces;
+    std::vector<std::shared_ptr<SurfaceRGBA>> layer_surface_cache(state.layers.size());
     std::vector<MatteDependency> matte_dependencies;
 
     // Build matte dependency list from layers
@@ -186,20 +187,31 @@ RasterizedFrame2D render_evaluated_composition_2d(
         }
     }
 
-    // Render all layers and collect surfaces
-    for (std::size_t i = 0; i < state.layers.size(); ++i) {
-        if (context.cancel_flag && context.cancel_flag->load()) break;
-        const auto& layer = state.layers[i];
-        if (!layer.enabled || !layer.active || layer.id.empty()) {
-            continue;
-        }
+    // The first pass is only needed when matte dependencies exist or when effects / adjustment
+    // layers require access to other layers' rendered output via the rendered_surfaces map.
+    const bool needs_first_pass = !matte_dependencies.empty() || std::any_of(
+        state.layers.begin(), state.layers.end(),
+        [](const auto& l) {
+            return l.enabled && l.active
+                && (!l.effects.empty() || !l.animated_effects.empty() || l.is_adjustment_layer);
+        });
 
-        const auto layer_surface_start = std::chrono::high_resolution_clock::now();
-        auto layer_surface = render_layer_surface(layer, state, intent, plan, task, context, std::nullopt);
-        record_timing(diagnostics, "layer_surface", layer.id.empty() ? std::to_string(i) : layer.id, layer_surface_start);
-        
-        if (layer_surface) {
-            rendered_surfaces[layer.id] = layer_surface;
+    if (needs_first_pass) {
+        for (std::size_t i = 0; i < state.layers.size(); ++i) {
+            if (context.cancel_flag && context.cancel_flag->load()) break;
+            const auto& layer = state.layers[i];
+            if (!layer.enabled || !layer.active || layer.id.empty()) {
+                continue;
+            }
+
+            const auto layer_surface_start = std::chrono::high_resolution_clock::now();
+            auto layer_surface = render_layer_surface(layer, state, intent, plan, task, context, std::nullopt);
+            record_timing(diagnostics, "layer_surface", layer.id.empty() ? std::to_string(i) : layer.id, layer_surface_start);
+
+            if (layer_surface) {
+                rendered_surfaces[layer.id] = layer_surface;
+                layer_surface_cache[i] = layer_surface;
+            }
         }
     }
 
@@ -233,9 +245,31 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 continue;
             }
 
-            auto layer_surface = render_layer_surface(layer, state, intent, plan, task, render_context, tile_rect);
-            if (!layer_surface) {
-                continue;
+            // Adjustment layers operate on target_surface directly — no per-layer surface needed.
+            // For all other layers: reuse the first-pass surface when available (non-tiled path only).
+            // Surfaces that will be mutated in-place are shallow-copied to preserve the cache.
+            std::shared_ptr<SurfaceRGBA> layer_surface;
+            if (!layer.is_adjustment_layer) {
+                if (!tile_rect.has_value() && i < layer_surface_cache.size() && layer_surface_cache[i]) {
+                    const bool has_transition_spec =
+                        (!layer.transition_in.transition_id.empty()
+                         || (!layer.transition_in.type.empty() && layer.transition_in.type != "none"))
+                        || (!layer.transition_out.transition_id.empty()
+                         || (!layer.transition_out.type.empty() && layer.transition_out.type != "none"));
+                    const bool will_mutate = !layer.effects.empty()
+                        || !layer.animated_effects.empty()
+                        || has_transition_spec
+                        || layer.opacity < 0.9999f
+                        || (i < matte_buffers.size() && !matte_buffers[i].empty());
+                    layer_surface = will_mutate
+                        ? std::make_shared<SurfaceRGBA>(*layer_surface_cache[i])
+                        : layer_surface_cache[i];
+                } else {
+                    layer_surface = render_layer_surface(layer, state, intent, plan, task, render_context, tile_rect);
+                }
+                if (!layer_surface) {
+                    continue;
+                }
             }
 
             if (layer.is_adjustment_layer) {

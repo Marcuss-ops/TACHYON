@@ -75,6 +75,12 @@ public:
     std::vector<float>& mutable_pixels() { return m_pixels; }
     const std::vector<float>& depth_buffer() const { return m_depth_buffer; }
 
+    // Raw pointer access for SIMD/bulk kernels — stride is width*4 floats.
+    float*       data()                  { return m_pixels.data(); }
+    const float* data()            const { return m_pixels.data(); }
+    float*       row_ptr(uint32_t y)       { return m_pixels.data() + static_cast<std::size_t>(y) * m_width * 4; }
+    const float* row_ptr(uint32_t y) const { return m_pixels.data() + static_cast<std::size_t>(y) * m_width * 4; }
+
     ColorProfile profile() const { return m_profile; }
     void set_profile(ColorProfile profile) { m_profile = profile; }
 

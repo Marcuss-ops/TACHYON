@@ -98,15 +98,10 @@ void multiply_surface_alpha(renderer2d::SurfaceRGBA& surface, float factor) {
         return;
     }
 
-    auto& pixels = surface.mutable_pixels();
-    const std::size_t count = pixels.size();
-    for (std::size_t i = 0; i < count; i += 4) {
-        if (pixels[i + 3] > 0.0f) {
-            pixels[i] *= clamped;
-            pixels[i + 1] *= clamped;
-            pixels[i + 2] *= clamped;
-            pixels[i + 3] *= clamped;
-        }
+    float* __restrict px = surface.data();
+    const std::size_t count = surface.width() * surface.height() * 4;
+    for (std::size_t i = 0; i < count; ++i) {
+        px[i] *= clamped;
     }
 }
 
