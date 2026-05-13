@@ -7,6 +7,7 @@ bool run_text_tests();
 bool run_audio_trim_tests();
 bool run_audio_pitch_correct_tests();
 bool run_transition_builder_tests();
+bool run_effect_preset_registry_tests();
 bool run_text_preset_tests();
 bool run_text_registry_tests();
 bool run_sfx_contract_tests();
@@ -35,6 +36,7 @@ int main(int argc, char** argv) {
         {"audio_trim", run_audio_trim_tests},
         {"audio_pitch_correct", run_audio_pitch_correct_tests},
         {"transition_builder", run_transition_builder_tests},
+        {"effect_preset_registry", run_effect_preset_registry_tests},
         {"text_preset", run_text_preset_tests},
         {"text_registry", run_text_registry_tests},
         {"sfx", run_sfx_contract_tests},

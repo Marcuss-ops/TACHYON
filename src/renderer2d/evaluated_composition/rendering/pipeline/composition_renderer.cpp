@@ -15,7 +15,9 @@
 #include "tachyon/renderer2d/color/blending.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
 
+#include "tachyon/core/render/dof_settings.h"
 #include "tachyon/core/render/motion_blur_settings.h"
+#include "tachyon/core/render/visibility.h"
 #include "tachyon/renderer2d/raster/tile_grid.h"
 #include "tachyon/output/frame_aov.h"
 #include "tachyon/transition_registry.h"
@@ -124,7 +126,8 @@ RasterizedFrame2D render_evaluated_composition_2d(
     const RenderPlan& plan,
     const FrameRenderTask& task,
     RenderContext& context,
-    [[maybe_unused]] const renderer2d::EffectRegistry& effect_registry) {
+    [[maybe_unused]] const renderer2d::EffectRegistry& effect_registry,
+    std::shared_ptr<renderer2d::SurfaceRGBA> output_surface) {
 
     RasterizedFrame2D frame;
     frame.frame_number = task.frame_number;
@@ -139,20 +142,28 @@ RasterizedFrame2D render_evaluated_composition_2d(
     const std::uint32_t working_width = static_cast<std::uint32_t>(std::max<std::int64_t>(1, static_cast<std::int64_t>(std::round(static_cast<float>(state.width) * res_scale))));
     const std::uint32_t working_height = static_cast<std::uint32_t>(std::max<std::int64_t>(1, static_cast<std::int64_t>(std::round(static_cast<float>(state.height) * res_scale))));
 
-    frame.surface = context.surface_pool
-        ? context.surface_pool->acquire(working_width, working_height)
-        : std::make_shared<SurfaceRGBA>(working_width, working_height);
+    // Use the pre-allocated output surface when the caller provides one at the right size.
+    // This eliminates the full-frame blit in RasterizationStep.
+    if (output_surface
+        && output_surface->width() == working_width
+        && output_surface->height() == working_height) {
+        frame.surface = std::move(output_surface);
+    } else {
+        frame.surface = context.surface_pool
+            ? context.surface_pool->acquire(working_width, working_height)
+            : std::make_shared<SurfaceRGBA>(working_width, working_height);
+    }
     if (!frame.surface) {
-        frame.note += " [ERROR: failed to allocate surface of size " + 
+        frame.note += " [ERROR: failed to allocate surface of size " +
                      std::to_string(working_width) + "x" + std::to_string(working_height) + "]";
         return frame;
     }
 
-    // Clear background to transparent.
     frame.surface->clear(Color::transparent());
-    
+
     auto& dst = *frame.surface;
     dst.set_profile(context.cms.working_profile);
+    dst.clear_depth(0.0f);
 
     FrameDiagnostics* diagnostics = context.diagnostics;
 
@@ -316,121 +327,120 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 }
             }
 
-            // Layer Transitions
-            if (render_context.policy.effects_enabled) {
-                const double layer_time = task.time_seconds;
-                bool in_transition = false;
-                bool out_transition = false;
-                double transition_t = 0.0;
-                ResolvedTransition resolution;
+            // Layer transitions are semantic, not optional post effects.
+            // Keep them active even when the quality policy disables heavier effect passes.
+            const double layer_time = task.time_seconds;
+            bool in_transition = false;
+            bool out_transition = false;
+            double transition_t = 0.0;
+            ResolvedTransition resolution;
 
-                // Check transition_in
-                if (!layer.transition_in.transition_id.empty() || layer.transition_in.type != "none") {
-                    const double relative_time = layer_time - layer.in_time;
-                    const double transition_duration = layer.transition_in.duration;
-                    const double start_time = layer.transition_in.delay;
-                    const auto progress = compute_transition_progress(relative_time - start_time, transition_duration);
-                    if (progress.has_value()) {
-                        in_transition = true;
-                        transition_t = animation::apply_easing(*progress, layer.transition_in.easing, {});
-                        static TransitionRegistry s_dummy;
-                        const TransitionRegistry& registry = render_context.transition_registry ? *render_context.transition_registry : s_dummy;
-                        resolution = resolve_layer_transition(layer.transition_in, registry);
-                    }
+            // Check transition_in
+            if (!layer.transition_in.transition_id.empty() || layer.transition_in.type != "none") {
+                const double relative_time = layer_time - layer.in_time;
+                const double transition_duration = layer.transition_in.duration;
+                const double start_time = layer.transition_in.delay;
+                const auto progress = compute_transition_progress(relative_time - start_time, transition_duration);
+                if (progress.has_value()) {
+                    in_transition = true;
+                    transition_t = animation::apply_easing(*progress, layer.transition_in.easing, {});
+                    static TransitionRegistry s_dummy;
+                    const TransitionRegistry& registry = render_context.transition_registry ? *render_context.transition_registry : s_dummy;
+                    resolution = resolve_layer_transition(layer.transition_in, registry);
                 }
+            }
 
-                // Check transition_out
-                if (!in_transition && (!layer.transition_out.transition_id.empty() || layer.transition_out.type != "none")) {
-                    const double time_until_end = layer.out_time - layer_time;
-                    const double transition_duration = layer.transition_out.duration;
-                    const auto progress = compute_transition_progress(time_until_end, transition_duration);
-                    if (progress.has_value()) {
-                        out_transition = true;
-                        transition_t = animation::apply_easing(*progress, layer.transition_out.easing, {});
-                        static TransitionRegistry s_dummy;
-                        const TransitionRegistry& registry = render_context.transition_registry ? *render_context.transition_registry : s_dummy;
-                        resolution = resolve_layer_transition(layer.transition_out, registry);
-                    }
+            // Check transition_out
+            if (!in_transition && (!layer.transition_out.transition_id.empty() || layer.transition_out.type != "none")) {
+                const double time_until_end = layer.out_time - layer_time;
+                const double transition_duration = layer.transition_out.duration;
+                const auto progress = compute_transition_progress(time_until_end, transition_duration);
+                if (progress.has_value()) {
+                    out_transition = true;
+                    transition_t = animation::apply_easing(*progress, layer.transition_out.easing, {});
+                    static TransitionRegistry s_dummy;
+                    const TransitionRegistry& registry = render_context.transition_registry ? *render_context.transition_registry : s_dummy;
+                    resolution = resolve_layer_transition(layer.transition_out, registry);
                 }
+            }
 
-                if ((in_transition || out_transition) && transition_t > 0.0) {
-                    if (resolution.valid) {
-                        const std::uint32_t sw = layer_surface->width();
-                        const std::uint32_t sh = layer_surface->height();
+            if ((in_transition || out_transition) && transition_t > 0.0) {
+                if (resolution.valid) {
+                    const std::uint32_t sw = layer_surface->width();
+                    const std::uint32_t sh = layer_surface->height();
 
-                        const SurfaceRGBA* from_ptr = nullptr;
-                        const SurfaceRGBA* to_ptr = nullptr;
-                        std::shared_ptr<SurfaceRGBA> temp_from;
-                        std::shared_ptr<SurfaceRGBA> temp_to;
+                    const SurfaceRGBA* from_ptr = nullptr;
+                    const SurfaceRGBA* to_ptr = nullptr;
+                    std::shared_ptr<SurfaceRGBA> temp_from;
+                    std::shared_ptr<SurfaceRGBA> temp_to;
 
-                        if (in_transition) {
-                            temp_from = render_context.surface_pool 
-                                ? render_context.surface_pool->acquire(sw, sh)
-                                : std::make_shared<SurfaceRGBA>(sw, sh);
-                            temp_from->clear(Color::transparent());
-                            from_ptr = temp_from.get();
-                            to_ptr = layer_surface.get();
-                        } else {
-                            from_ptr = layer_surface.get();
-                            temp_to = render_context.surface_pool 
-                                ? render_context.surface_pool->acquire(sw, sh)
-                                : std::make_shared<SurfaceRGBA>(sw, sh);
-                            temp_to->clear(Color::transparent());
-                            to_ptr = temp_to.get();
-                        }
-
-                        auto transition_result = render_context.surface_pool 
+                    if (in_transition) {
+                        temp_from = render_context.surface_pool 
                             ? render_context.surface_pool->acquire(sw, sh)
                             : std::make_shared<SurfaceRGBA>(sw, sh);
+                        temp_from->clear(Color::transparent());
+                        from_ptr = temp_from.get();
+                        to_ptr = layer_surface.get();
+                    } else {
+                        from_ptr = layer_surface.get();
+                        temp_to = render_context.surface_pool 
+                            ? render_context.surface_pool->acquire(sw, sh)
+                            : std::make_shared<SurfaceRGBA>(sw, sh);
+                        temp_to->clear(Color::transparent());
+                        to_ptr = temp_to.get();
+                    }
 
-                        const float layer_w = static_cast<float>(layer.width);
-                        const float layer_h = static_cast<float>(layer.height);
-                        const float offset_x = tile_rect ? static_cast<float>(tile_rect->x) : 0.0f;
-                        const float offset_y = tile_rect ? static_cast<float>(tile_rect->y) : 0.0f;
+                    auto transition_result = render_context.surface_pool 
+                        ? render_context.surface_pool->acquire(sw, sh)
+                        : std::make_shared<SurfaceRGBA>(sw, sh);
 
-                        int thread_count = 1;
+                    const float layer_w = static_cast<float>(layer.width);
+                    const float layer_h = static_cast<float>(layer.height);
+                    const float offset_x = tile_rect ? static_cast<float>(tile_rect->x) : 0.0f;
+                    const float offset_y = tile_rect ? static_cast<float>(tile_rect->y) : 0.0f;
+
+                    int thread_count = 1;
 #ifdef _OPENMP
-                        thread_count = omp_get_max_threads();
+                    thread_count = omp_get_max_threads();
 #endif
 
-                        bool fast_path_applied = false;
-                        if (offset_x == 0.0f && offset_y == 0.0f && 
-                            static_cast<std::uint32_t>(layer_w) == sw && 
-                            static_cast<std::uint32_t>(layer_h) == sh && 
-                            resolution.descriptor) {
-                            
-                            if (core::transition::TransitionFastPathRegistry::apply(
-                                resolution.descriptor->id, 
-                                *transition_result, 
-                                *from_ptr, 
-                                to_ptr, 
-                                static_cast<float>(transition_t), 
-                                thread_count)) {
-                                fast_path_applied = true;
-                            }
-                        }
+                    bool fast_path_applied = false;
+                    if (offset_x == 0.0f && offset_y == 0.0f && 
+                        static_cast<std::uint32_t>(layer_w) == sw && 
+                        static_cast<std::uint32_t>(layer_h) == sh && 
+                        resolution.descriptor) {
                         
-                        if (!fast_path_applied && resolution.direct_cpu_function) {
-                            resolution.direct_cpu_function(*transition_result, *from_ptr, to_ptr, static_cast<float>(transition_t), thread_count);
+                        if (core::transition::TransitionFastPathRegistry::apply(
+                            resolution.descriptor->id, 
+                            *transition_result, 
+                            *from_ptr, 
+                            to_ptr, 
+                            static_cast<float>(transition_t), 
+                            thread_count)) {
                             fast_path_applied = true;
                         }
-
-                        if (!fast_path_applied) {
-                            apply_pixel_transition(
-                                *transition_result,
-                                *from_ptr,
-                                to_ptr,
-                                resolution.cpu_function,
-                                static_cast<float>(transition_t),
-                                layer_w,
-                                layer_h,
-                                offset_x,
-                                offset_y,
-                                render_context.cancel_flag);
-                        }
-
-                        layer_surface = transition_result;
                     }
+                    
+                    if (!fast_path_applied && resolution.direct_cpu_function) {
+                        resolution.direct_cpu_function(*transition_result, *from_ptr, to_ptr, static_cast<float>(transition_t), thread_count);
+                        fast_path_applied = true;
+                    }
+
+                    if (!fast_path_applied) {
+                        apply_pixel_transition(
+                            *transition_result,
+                            *from_ptr,
+                            to_ptr,
+                            resolution.cpu_function,
+                            static_cast<float>(transition_t),
+                            layer_w,
+                            layer_h,
+                            offset_x,
+                            offset_y,
+                            render_context.cancel_flag);
+                    }
+
+                    layer_surface = transition_result;
                 }
             }
 
@@ -442,8 +452,8 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 ::tachyon::renderer2d::apply_matte_buffer(*layer_surface, matte_buffers[i], state.width, state.height);
             }
 
-
-            composite_surface(target_surface, *layer_surface, 0, 0, parse_blend_mode(layer.blend_mode));
+            // Final Composite
+            composite_surface(target_surface, *layer_surface, 0, 0, parse_blend_mode(layer.blend_mode), -1.0f);
         }
     };
 
@@ -462,21 +472,28 @@ RasterizedFrame2D render_evaluated_composition_2d(
 
     if (should_tile) {
         TileGrid grid = build_tile_grid({0, 0, static_cast<int>(working_width), static_cast<int>(working_height)}, working_width, working_height, context.policy.tile_size);
-#ifdef _OPENMP
-#pragma omp parallel for schedule(dynamic)
-#endif
-        for (int i = 0; i < static_cast<int>(grid.tiles.size()); ++i) {
+
+        auto render_tile = [&](std::size_t i) {
             TACHYON_ZONE("RenderTile");
             const auto& tile = grid.tiles[i];
-            
-            auto tile_surface_ptr = context.surface_pool 
+            auto tile_surface_ptr = context.surface_pool
                 ? context.surface_pool->acquire(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height))
                 : std::make_shared<SurfaceRGBA>(static_cast<std::uint32_t>(tile.width), static_cast<std::uint32_t>(tile.height));
             tile_surface_ptr->clear(Color::transparent());
-            
             RenderContext thread_context = context;
             render_pass(*tile_surface_ptr, thread_context, tile);
             composite_surface(dst, *tile_surface_ptr, tile.x, tile.y, BlendMode::Normal);
+        };
+
+        if (context.tile_executor) {
+            context.tile_executor(grid.tiles.size(), render_tile);
+        } else {
+#ifdef _OPENMP
+#pragma omp parallel for schedule(dynamic)
+#endif
+            for (int i = 0; i < static_cast<int>(grid.tiles.size()); ++i) {
+                render_tile(static_cast<std::size_t>(i));
+            }
         }
     } else {
         render_pass(dst, context);

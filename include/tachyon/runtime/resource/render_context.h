@@ -14,6 +14,7 @@
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include <memory>
 #include <atomic>
+#include <functional>
 #include <vector>
 
 #include "tachyon/renderer2d/core/render_types.h"
@@ -83,6 +84,10 @@ struct RenderContext {
     int width{0};
     int height{0};
     std::size_t pixel_concurrency{1};
+    // Optional tile-level parallel executor. When set, composition_renderer uses it
+    // instead of the raw OpenMP pragma for tile dispatch.
+    // Signature: executor(tile_count, fn) where fn(tile_index) renders one tile.
+    std::function<void(std::size_t, const std::function<void(std::size_t)>&)> tile_executor;
 
     // 5. External Services
 #ifdef _WIN32

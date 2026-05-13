@@ -41,4 +41,12 @@ void TaskflowRuntime::parallel_for_frames(
 #endif
 }
 
+void TaskflowRuntime::parallel_for_tiles(
+    std::size_t tile_count,
+    const std::function<void(std::size_t index)>& fn
+) {
+    // Delegates to parallel_for_frames — same persistent executor, different semantic label.
+    parallel_for_frames(tile_count, fn);
+}
+
 } // namespace tachyon::runtime

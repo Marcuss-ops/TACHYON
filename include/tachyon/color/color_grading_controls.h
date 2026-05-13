@@ -46,13 +46,13 @@ public:
     void set_secondary(const SecondaryGrading& secondary) { m_secondary = secondary; }
 
     /**
-     * @brief Builds a 3D LUT or parameters array for the render engine.
+     * @brief Builds a LUT or parameters array for the render engine.
      */
     void build_transform_pipeline() {
         // Implementation stub: 
         // 1. Map exposure/contrast to a CDL (Color Decision List)
         // 2. Map Lift/Gamma/Gain/Offset to ASC CDL
-        // 3. Compile curves into a 1D or 3D LUT
+        // 3. Compile curves into a 1D or LUT
     }
 
 private:

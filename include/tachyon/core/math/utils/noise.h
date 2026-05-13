@@ -66,7 +66,7 @@ public:
      * @param z Z coordinate.
      * @return Noise value in range [-1, 1].
      */
-    float noise3d(float x, float y, float z) const {
+    float noise3(float x, float y, float z) const {
         int ix = floor_int(x);
         int iy = floor_int(y);
         int iz = floor_int(z);
@@ -88,12 +88,12 @@ public:
         int bab = perm_[(ix + 1 + perm_[(iy + perm_[(iz + 1) & 255]) & 255]) & 255];
         int bbb = perm_[(ix + 1 + perm_[(iy + 1 + perm_[(iz + 1) & 255]) & 255]) & 255];
 
-        float x1 = lerp(grad3d(aaa, fx, fy, fz), grad3d(baa, fx - 1.0f, fy, fz), u);
-        float x2 = lerp(grad3d(aba, fx, fy - 1.0f, fz), grad3d(bba, fx - 1.0f, fy - 1.0f, fz), u);
+        float x1 = lerp(grad3(aaa, fx, fy, fz), grad3(baa, fx - 1.0f, fy, fz), u);
+        float x2 = lerp(grad3(aba, fx, fy - 1.0f, fz), grad3(bba, fx - 1.0f, fy - 1.0f, fz), u);
         float y1 = lerp(x1, x2, v);
 
-        float x3 = lerp(grad3d(aab, fx, fy, fz - 1.0f), grad3d(bab, fx - 1.0f, fy, fz - 1.0f), u);
-        float x4 = lerp(grad3d(abb, fx, fy - 1.0f, fz - 1.0f), grad3d(bbb, fx - 1.0f, fy - 1.0f, fz - 1.0f), u);
+        float x3 = lerp(grad3(aab, fx, fy, fz - 1.0f), grad3(bab, fx - 1.0f, fy, fz - 1.0f), u);
+        float x4 = lerp(grad3(abb, fx, fy - 1.0f, fz - 1.0f), grad3(bbb, fx - 1.0f, fy - 1.0f, fz - 1.0f), u);
         float y2 = lerp(x3, x4, v);
 
         return lerp(y1, y2, w);
@@ -168,7 +168,7 @@ private:
         return u + v;
     }
 
-    static float grad3d(int hash, float x, float y, float z) {
+    static float grad3(int hash, float x, float y, float z) {
         int h = hash & 15;
         float u = (h < 8) ? x : y;
         float v = (h < 4) ? y : ((h == 12 || h == 14) ? x : z);

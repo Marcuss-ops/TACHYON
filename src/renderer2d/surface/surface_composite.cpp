@@ -48,11 +48,7 @@ void composite_with_offset_tiled(SurfaceRGBA& dst, const SurfaceRGBA& src,
         const int ty1 = std::min(ty + tile_h, y1);
         for (int tx = x0; tx < x1; tx += tile_w) {
             const int tx1 = std::min(tx + tile_w, x1);
-#ifdef TACHYON_AVX2
-            composite_tile_avx2(dp, dw, sp, sw, tx, ty, tx1, ty1, ox, oy);
-#else
             composite_tile_scalar(dp, dw, sp, sw, tx, ty, tx1, ty1, ox, oy);
-#endif
         }
     }
 }

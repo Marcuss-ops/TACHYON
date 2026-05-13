@@ -4,7 +4,6 @@
 #include "tachyon/renderer2d/effects/effect_host.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
 #include "tachyon/transition_registry.h"
-#include "tachyon/presets/effects/effect_manifest.h"
 #include "tachyon/runtime/resource/render_context.h"
 
 #include <filesystem>
@@ -164,9 +163,8 @@ bool run_rasterizer_tests() {
         // Initialize effect host for draw list rasterizer
         static tachyon::TransitionRegistry s_transition_registry;
         static tachyon::renderer2d::EffectRegistry s_effect_registry;
-        static tachyon::presets::EffectManifest s_manifest;
         tachyon::register_builtin_transitions(s_transition_registry);
-        tachyon::renderer2d::register_builtin_effects(s_effect_registry, s_manifest, s_transition_registry);
+        tachyon::renderer2d::register_builtin_effects(s_effect_registry, s_transition_registry);
         static auto s_effect_host = tachyon::renderer2d::create_effect_host(s_effect_registry);
         
         RenderPlan plan;

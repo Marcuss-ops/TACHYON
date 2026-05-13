@@ -111,6 +111,7 @@ set(TachyonRenderer2DRasterSources
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/path/path_trimmer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/path/stroke_rasterizer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/sdf_rasterizer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/perspective_rasterizer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/raster/tile_grid.cpp
 )
 
@@ -163,4 +164,3 @@ target_link_libraries(TachyonRenderer2D PUBLIC TachyonCore TachyonColor TachyonR
 target_link_libraries(TachyonRenderer2D PUBLIC TachyonRenderer2DExtras)
 target_link_libraries(TachyonRenderer2D PUBLIC TachyonText)
 target_link_libraries(TachyonRenderer2D PUBLIC TachyonPresets)
-

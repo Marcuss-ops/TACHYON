@@ -80,9 +80,8 @@ public:
     void gaussian_blur(void* device_ptr, uint32_t w, uint32_t h,
                        float sigma_x, float sigma_y) override;
 
-    void apply_lut3d(void* device_ptr, uint32_t w, uint32_t h,
-                     const float* lut, uint32_t lut_size) override;
-
+    void apply_lut(void* device_ptr, uint32_t w, uint32_t h,
+                      const float* lut, uint32_t lut_size) override;
 private:
     std::unique_ptr<VulkanContext>  m_ctx;
     VulkanPipeline                  m_pipeline_resize;

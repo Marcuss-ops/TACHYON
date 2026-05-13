@@ -1,7 +1,6 @@
 #include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"
 #include "tachyon/render/render_intent.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
-#include "tachyon/presets/effects/effect_manifest.h"
 #include "tachyon/transition_registry.h"
 #include "tachyon/renderer2d/effects/core/transitions/transition_fast_paths.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
@@ -66,9 +65,8 @@ bool run_evaluated_composition_renderer_tests() {
 
     RenderContext render_context;
     renderer2d::EffectRegistry effect_reg;
-    presets::EffectManifest manifest;
     TransitionRegistry transition_reg;
-    register_builtin_effects(effect_reg, manifest, transition_reg);
+    register_builtin_effects(effect_reg, transition_reg);
 
     RenderIntent intent;
     const RasterizedFrame2D frame = tachyon::render_evaluated_composition_2d(state, intent, plan, task, render_context, effect_reg);
@@ -160,6 +158,62 @@ bool run_evaluated_composition_renderer_tests() {
         const auto pixel = adjustment_frame.surface->get_pixel(16, 16);
         check_true(pixel.r > pixel.b, "adjustment layer should bias the composite toward red");
         check_true(pixel.b > 0, "adjustment layer should preserve some of the original image");
+    }
+
+    scene::EvaluatedCompositionState transition_state;
+    transition_state.composition_id = "transition";
+    transition_state.width = 64;
+    transition_state.height = 64;
+
+    scene::EvaluatedLayerState transition_layer = base_layer;
+    transition_layer.id = "transition_layer";
+    transition_layer.width = 64;
+    transition_layer.height = 64;
+    transition_layer.fill_color = ColorSpec{255, 0, 0, 255};
+    transition_layer.transition_in.transition_id = "tachyon.transition.crossfade";
+    transition_layer.transition_in.type = "tachyon.transition.crossfade";
+    transition_layer.transition_in.duration = 1.0;
+    transition_layer.in_time = 0.0;
+    transition_layer.layer_index = 0;
+
+    transition_state.layers.push_back(transition_layer);
+
+    RenderPlan transition_plan = plan;
+    transition_plan.composition.id = transition_state.composition_id;
+    transition_plan.composition.width = transition_state.width;
+    transition_plan.composition.height = transition_state.height;
+    transition_plan.composition.layer_count = transition_state.layers.size();
+
+    RenderContext transition_context = render_context;
+    transition_context.policy = make_quality_policy("draft");
+    transition_context.transition_registry = &transition_reg;
+
+    RenderIntent intent_transition;
+    FrameRenderTask transition_task = task;
+    transition_task.time_seconds = 0.0;
+    const RasterizedFrame2D transition_start = tachyon::render_evaluated_composition_2d(
+        transition_state,
+        intent_transition,
+        transition_plan,
+        transition_task,
+        transition_context,
+        effect_reg);
+    transition_task.time_seconds = 0.5;
+    const RasterizedFrame2D transition_mid = tachyon::render_evaluated_composition_2d(
+        transition_state,
+        intent_transition,
+        transition_plan,
+        transition_task,
+        transition_context,
+        effect_reg);
+    check_true(transition_start.surface != nullptr, "transition renderer should produce a start frame");
+    check_true(transition_mid.surface != nullptr, "transition renderer should produce a mid frame");
+    if (transition_start.surface && transition_mid.surface) {
+        const auto start_pixel = transition_start.surface->get_pixel(16, 16);
+        const auto mid_pixel = transition_mid.surface->get_pixel(16, 16);
+        check_true(
+            std::abs(mid_pixel.r - start_pixel.r) > 0.01f || std::abs(mid_pixel.a - start_pixel.a) > 0.01f,
+            "layer transitions should animate even when draft quality disables heavier effects");
     }
 
     scene::EvaluatedCompositionState timeline_state;

@@ -19,14 +19,10 @@
 #include <utility>
 #include <optional>
 
-#include "tachyon/renderer2d/effects/generators/light_leak_types.h"
-
 #include "tachyon/scene/text_builder.h"
 #include "tachyon/scene/effect_builder.h"
 
 namespace tachyon::scene {
-using renderer2d::LightLeakPreset;
-
 class LayerBuilder;
 class CompositionBuilder;
 class SceneBuilder;

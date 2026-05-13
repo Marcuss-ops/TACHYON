@@ -90,7 +90,7 @@ namespace tachyon {
 }
 
 //------------------------------------------------------------------------------
-// Noise - Built on existing math_contract::noise (1D)
+// Multi-dimensional Noise - Built on existing math_contract::noise (1D)
 //------------------------------------------------------------------------------
 
 /**
@@ -100,13 +100,13 @@ namespace tachyon {
 [[nodiscard]] float noise2d(float x, float y) noexcept;
 
 /**
- * Simplex noise 3D.
+ * Simplex noise (3 inputs).
  */
-[[nodiscard]] float noise3d(float x, float y, float z) noexcept;
+[[nodiscard]] float noise3(float x, float y, float z) noexcept;
 
 /**
- * Simplex noise 4D.
+ * Simplex noise (4 inputs).
  */
-[[nodiscard]] float noise4d(float x, float y, float z, float w) noexcept;
+[[nodiscard]] float noise4(float x, float y, float z, float w) noexcept;
 
 }  // namespace tachyon

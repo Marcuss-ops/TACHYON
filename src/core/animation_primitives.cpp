@@ -7,7 +7,7 @@
 
 namespace tachyon {
 
-// ---- Simplex Noise Implementation (Deterministic) ----
+// ---- Simplex Noise Implementation ----
 
 // Gradient tables for Simplex noise
 static const float grad2[8][2] = {
@@ -102,8 +102,8 @@ float noise2d(float x, float y) noexcept {
     return (70.0f * (n0 + n1 + n2)) * 0.5f + 0.5f;
 }
 
-// ---- Noise 3D ----
-float noise3d(float x, float y, float z) noexcept {
+// ---- Noise 3 ----
+float noise3(float x, float y, float z) noexcept {
     // Skew factor for 3D
     const float F3 = 1.0f / 3.0f;
     float s = (x + y + z) * F3;
@@ -173,8 +173,8 @@ float noise3d(float x, float y, float z) noexcept {
     return (32.0f * (n0 + n1 + n2 + n3)) * 0.5f + 0.5f;
 }
 
-// ---- Noise 4D ----
-float noise4d(float x, float y, float z, float w) noexcept {
+// ---- Noise 4 ----
+float noise4(float x, float y, float z, float w) noexcept {
     // Skew factor for 4D
     const float F4 = (std::sqrt(5.0f) - 1.0f) / 4.0f;
     float s = (x + y + z + w) * F4;

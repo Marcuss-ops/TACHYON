@@ -3,11 +3,9 @@ set(TachyonCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/animation_primitives.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/animation/property_interpolation.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/animation/property_sampler.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/options.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/math/deterministic_random.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/properties/bezier_interpolator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/shapes/shape_modifiers.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/model/tachyon.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/expressions/context_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/expressions/expression_engine.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/expressions/expression_vm.cpp
@@ -30,10 +28,6 @@ if(TACHYON_ENABLE_SIMDJSON)
         ${CMAKE_CURRENT_SOURCE_DIR}/core/json/json_parser_simdjson.cpp
     )
 endif()
-
-list(APPEND TachyonCoreSources
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/memory/allocator_config.cpp
-)
 
 if(TACHYON_ENABLE_HIGHWAY)
     list(APPEND TachyonCoreSources

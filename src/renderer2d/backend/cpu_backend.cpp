@@ -120,8 +120,9 @@ public:
                 }
     }
 
-    void apply_lut3d(void* device_ptr, uint32_t w, uint32_t h,
-                     const float* lut, uint32_t lut_size) override {
+    void apply_lut(void* device_ptr, uint32_t w, uint32_t h,
+                      const float* lut, uint32_t lut_size) override {
+
         auto* hnd = static_cast<CpuHandle*>(device_ptr);
         const float scale = (float)(lut_size - 1);
         for (uint32_t i = 0; i < w * h; ++i) {

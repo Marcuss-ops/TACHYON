@@ -318,6 +318,11 @@ void test_property_group() {
     check_true(xform.has("scale"),    "S9: Layer group has scale");
     check_true(nearly_eq_v2(xform.sample<Vector2>("scale", ctx), Vector2::one()),
                "S9: Layer group default scale is (1,1)");
+
+    // Mutate via get<>
+    g.get<float>("opacity").set_static(0.5f);
+    check_true(nearly_eq(g.sample<float>("opacity", ctx), 0.5f),
+               "S9: group sample after mutation");
 }
 
 // ---------------------------------------------------------------------------

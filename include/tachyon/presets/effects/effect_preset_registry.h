@@ -8,29 +8,17 @@
 
 namespace tachyon::presets {
 
-class EffectManifest;
-
 /**
- * @brief Registry for effect presets, using EffectManifest as the canonical source.
+ * @brief Registry for effect presets.
  */
 class EffectPresetRegistry : public registry::TypedRegistry<EffectPresetSpec> {
 public:
     /**
-     * @brief Construct an empty registry.
+     * @brief Construct a registry preloaded with builtin effect presets.
      */
-    EffectPresetRegistry() = default;
+    EffectPresetRegistry();
 
-    /**
-     * @brief Construct with EffectManifest to load presets from the canonical source.
-     * @param manifest Reference to the EffectManifest that generates preset specs.
-     */
-    explicit EffectPresetRegistry(const EffectManifest& manifest);
     ~EffectPresetRegistry() = default;
-
-    /**
-     * @brief Load presets from the specified manifest.
-     */
-    void load_from_manifest(const EffectManifest& manifest);
 
     /**
      * @brief Creates an EffectSpec instance from the specified preset.

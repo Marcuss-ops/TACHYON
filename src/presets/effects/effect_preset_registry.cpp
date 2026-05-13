@@ -1,10 +1,43 @@
 #include "tachyon/presets/effects/effect_preset_registry.h"
-#include "tachyon/presets/effects/effect_manifest.h"
+#include <stdexcept>
+#include <iterator>
 
 namespace tachyon::presets {
 
-EffectPresetRegistry::EffectPresetRegistry(const presets::EffectManifest& manifest) {
-    load_from_manifest(manifest);
+std::vector<EffectPresetSpec> get_blur_effect_preset_specs();
+std::vector<EffectPresetSpec> get_color_effect_preset_specs();
+std::vector<EffectPresetSpec> get_distortion_effect_preset_specs();
+std::vector<EffectPresetSpec> get_generator_effect_preset_specs();
+std::vector<EffectPresetSpec> get_stylize_effect_preset_specs();
+std::vector<EffectPresetSpec> get_transition_effect_preset_specs();
+
+namespace {
+
+std::vector<EffectPresetSpec> collect_builtin_preset_specs() {
+    std::vector<EffectPresetSpec> specs;
+
+    auto append = [](std::vector<EffectPresetSpec>& into, std::vector<EffectPresetSpec> from) {
+        into.insert(into.end(),
+            std::make_move_iterator(from.begin()),
+            std::make_move_iterator(from.end()));
+    };
+
+    append(specs, get_blur_effect_preset_specs());
+    append(specs, get_color_effect_preset_specs());
+    append(specs, get_distortion_effect_preset_specs());
+    append(specs, get_generator_effect_preset_specs());
+    append(specs, get_stylize_effect_preset_specs());
+    append(specs, get_transition_effect_preset_specs());
+    return specs;
+}
+
+} // namespace
+
+EffectPresetRegistry::EffectPresetRegistry() {
+    auto specs = collect_builtin_preset_specs();
+    for (auto& spec : specs) {
+        register_spec(std::move(spec));
+    }
 }
 
 EffectSpec EffectPresetRegistry::create(std::string_view id, const registry::ParameterBag& params) const {
@@ -12,18 +45,7 @@ EffectSpec EffectPresetRegistry::create(std::string_view id, const registry::Par
         return spec->factory(params);
     }
 
-    // Default to a no-op effect if not found
-    EffectSpec effect;
-    effect.type = std::string(id);
-    effect.enabled = false;
-    return effect;
-}
-
-void EffectPresetRegistry::load_from_manifest(const presets::EffectManifest& manifest) {
-    auto specs = manifest.generate_preset_specs();
-    for (auto& spec : specs) {
-        register_spec(std::move(spec));
-    }
+    throw std::runtime_error("Unknown effect '" + std::string(id) + "'");
 }
 
 } // namespace tachyon::presets

@@ -6,7 +6,6 @@
 #include "tachyon/renderer2d/effects/core/transitions/artistic_transitions.h"
 #include "tachyon/renderer2d/effects/core/transitions/light_leak_transitions.h"
 #include "tachyon/output/frame_output_sink.h"
-#include "tachyon/presets/effects/effect_manifest.h"
 #include "tachyon/renderer2d/surface/surface_sampling.h"
 #include <iostream>
 #include <chrono>
@@ -60,8 +59,7 @@ int main() {
     }
 
     renderer2d::EffectRegistry effect_registry;
-    presets::EffectManifest effect_manifest;
-    renderer2d::register_builtin_effects(effect_registry, effect_manifest, transition_registry);
+    renderer2d::register_builtin_effects(effect_registry, transition_registry);
     auto host = renderer2d::create_effect_host(effect_registry);
 
     std::vector<std::string> transitions_to_test;

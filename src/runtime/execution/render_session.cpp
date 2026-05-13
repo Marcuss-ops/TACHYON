@@ -1,6 +1,5 @@
 #include "tachyon/runtime/execution/session/render_session.h"
 #include "tachyon/runtime/registry/runtime_registry_bundle.h"
-#include "tachyon/presets/effects/effect_manifest.h"
 #include "tachyon/runtime/execution/frames/frame_executor.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/cache/frame_cache.h"

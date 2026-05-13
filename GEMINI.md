@@ -10,11 +10,11 @@ Tachyon is designed for the absolute limit of hardware performance.
 *   **Zero Allocations:** No memory allocations (`new`, `malloc`, `std::vector::resize`) are allowed within the hot render path. All temporary surfaces must come from a pre-allocated **SurfacePool**.
 *   **Saturation:** Use a **Work-Stealing Tiling** architecture to ensure 100% core saturation.
 
-## 2. 2D Motion Graphics / Procedural Compositing Engine
+## 2. Automated Motion Graphics Engine
 Tachyon is not a manual editor; it is a **procedural director**.
 *   **Declarative Intent:** API should focus on *what* to achieve (e.g., "dramatic reveal"), not *how* to transform layers.
 *   **Visibility Contracts:** Every critical asset must have a contract (e.g., "must be readable", "cannot be occluded"). The engine is responsible for enforcing these via validation.
-*   **Procedural Motion:** Composition and movement must be programmatically derived from scene semantics.
+*   **Auto-Director:** Scene composition and movement must be programmatically derived from scene semantics.
 *   **Integrated Validation:** Every render output must be accompanied by a validation report confirming architectural and visual integrity.
 
 ## 3. Tooling & Engineering Standards
