@@ -3,6 +3,7 @@
 namespace tachyon::renderer2d {
     void test_crossfade_transition();
     void generate_transition_gallery();
+    void render_remotion_demo();
 }
 
 int main() {
@@ -11,8 +12,11 @@ int main() {
     // Run the validation test
     tachyon::renderer2d::test_crossfade_transition();
     
-    // Generate the gallery for the user
-    tachyon::renderer2d::generate_transition_gallery();
+    // Generate the demo for the user
+    tachyon::renderer2d::render_remotion_demo();
+    
+    // Generate the gallery for the user (Disabled for speed, focus on remotion demo)
+    // tachyon::renderer2d::generate_transition_gallery();
     
     std::cout << "[CANARY] All Tests Finished.\n";
     return 0;

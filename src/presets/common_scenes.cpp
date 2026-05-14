@@ -8,6 +8,18 @@ namespace tachyon::presets::scene {
 using namespace tachyon;
 using namespace tachyon::scene;
 
+namespace {
+std::filesystem::path resolve_asset(const std::string& path) {
+    std::filesystem::path p(path);
+    if (p.is_absolute()) return p;
+    
+    // Professional asset resolution: env var -> local assets -> absolute fallback
+    const char* env_root = std::getenv("TACHYON_ASSETS");
+    std::filesystem::path root = env_root ? env_root : std::filesystem::current_path() / "assets";
+    return root / p;
+}
+}
+
 SceneSpec build_scene_a() {
 
     return Composition("main")
@@ -83,12 +95,12 @@ SceneSpec build_video_transition_scene() {
         .fps(30)
         .layer("clip_a", [](LayerBuilder& l) {
             l.type(static_cast<LayerType>(8))
-             .asset_id("C:/Users/pater/Pyt/Tachyon/output/transitions/clip_a.mp4")
+             .asset_id(resolve_asset("transitions/clip_a.mp4").string())
              .in(0).out(1.5);
         })
         .layer("clip_b", [](LayerBuilder& l) {
             l.type(static_cast<LayerType>(8))
-             .asset_id("C:/Users/pater/Pyt/Tachyon/output/transitions/clip_b.mp4")
+             .asset_id(resolve_asset("transitions/clip_b.mp4").string())
              .in(1.5).out(3.0);
         })
         .layer("label", [](LayerBuilder& l) {

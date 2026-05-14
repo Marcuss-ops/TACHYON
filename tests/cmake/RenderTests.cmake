@@ -6,6 +6,7 @@ add_executable(TachyonRenderTests
     unit/mains/test_canary_main.cpp
     unit/render/transition_canary_tests.cpp
     unit/render/transition_gallery.cpp
+    unit/render/remotion_demo_test.cpp
 )
 
 target_compile_definitions(TachyonRenderTests

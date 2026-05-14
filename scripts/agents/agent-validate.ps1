@@ -121,7 +121,7 @@ if ($Mode -eq 'quick') {
     exit 0
 }
 
-if (-not (Invoke-Step "Tests build" { & (Join-Path $Root "build.ps1") -Target TachyonTests -Config RelWithDebInfo })) {
+if (-not (Invoke-Step "Tests build" { & (Join-Path $Root "build.ps1") -Target TachyonRenderTests -Config RelWithDebInfo })) {
     exit 1
 }
 
@@ -131,7 +131,7 @@ if ($Mode -eq 'normal') {
 }
 
 if (-not (Invoke-Step "Run tests" {
-    & (Join-Path $Root "build\tests\RelWithDebInfo\TachyonTests.exe")
+    & (Join-Path $Root "build\tests\RelWithDebInfo\TachyonRenderTests.exe")
 })) {
     exit 1
 }
