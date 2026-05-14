@@ -224,25 +224,25 @@ EffectSpec TachyonLibrary::build_transition_effect(
 
     effect.enabled = true;
     effect.type = "tachyon.effect.transition.glsl";
-    effect.scalars["t"] = progress;
-    effect.scalars["duration_seconds"] = transition->duration_seconds;
-    effect.strings["transition_id"] = transition->id;
-    effect.strings["from_layer_id"] = from_layer_id;
-    effect.strings["transition_to_layer_id"] = to_layer_id;
+    effect.params["t"] = progress;
+    effect.params["duration_seconds"] = transition->duration_seconds;
+    effect.params["transition_id"] = transition->id;
+    effect.params["from_layer_id"] = from_layer_id;
+    effect.params["transition_to_layer_id"] = to_layer_id;
 
     if (std::filesystem::exists(transition->shader_path)) {
-        effect.strings["shader_path"] = transition->shader_path.generic_string();
+        effect.params["shader_path"] = transition->shader_path.generic_string();
     } else {
         const auto fallback_shader = m_root / "transitions" / "shaders" / "crossfade.glsl";
         if (std::filesystem::exists(fallback_shader)) {
-            effect.strings["shader_path"] = fallback_shader.generic_string();
+            effect.params["shader_path"] = fallback_shader.generic_string();
         } else {
             effect.enabled = false;
         }
     }
 
-    effect.strings["manifest_path"] = transition->manifest_path.generic_string();
-    effect.strings["pack_id"] = transition->pack_id;
+    effect.params["manifest_path"] = transition->manifest_path.generic_string();
+    effect.params["pack_id"] = transition->pack_id;
     return effect;
 }
 

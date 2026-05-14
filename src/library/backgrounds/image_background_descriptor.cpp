@@ -25,7 +25,7 @@ BackgroundDescriptor make_image_background_descriptor() {
         
         spec.width = static_cast<int>(params.get_or<float>("width", 1920.0f));
         spec.height = static_cast<int>(params.get_or<float>("height", 1080.0f));
-        spec.out_point = params.get_or<double>("duration", 10.0);
+        spec.timing.duration = params.get_or<double>("duration", 10.0);
         
         spec.asset_id = params.get_or<std::string>("path", params.get_or<std::string>("asset_path", ""));
         

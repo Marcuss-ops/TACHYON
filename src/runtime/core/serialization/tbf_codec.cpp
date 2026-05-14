@@ -365,26 +365,40 @@ std::vector<std::uint8_t> TBFCodec::encode(const CompiledScene& scene) {
                 writer.write_bool(effect.enabled);
                 writer.write_string(effect.type);
                 
-                writer.write_u32(static_cast<std::uint32_t>(effect.scalars.size()));
-                for (const auto& [k, v] : effect.scalars) {
+                std::vector<std::pair<std::string, AnimatedScalarSpec>> temp_scalars;
+                std::vector<std::pair<std::string, AnimatedColorSpec>> temp_colors;
+                std::vector<std::pair<std::string, std::string>> temp_strings;
+                std::vector<std::pair<std::string, bool>> temp_bools;
+                
+                for (const auto& [k, v] : effect.params) {
+                    if (std::holds_alternative<AnimatedScalarSpec>(v)) temp_scalars.push_back({k, std::get<AnimatedScalarSpec>(v)});
+                    else if (std::holds_alternative<double>(v)) { AnimatedScalarSpec s; s.value = std::get<double>(v); temp_scalars.push_back({k, s}); }
+                    else if (std::holds_alternative<AnimatedColorSpec>(v)) temp_colors.push_back({k, std::get<AnimatedColorSpec>(v)});
+                    else if (std::holds_alternative<ColorSpec>(v)) { AnimatedColorSpec c; c.value = std::get<ColorSpec>(v); temp_colors.push_back({k, c}); }
+                    else if (std::holds_alternative<std::string>(v)) temp_strings.push_back({k, std::get<std::string>(v)});
+                    else if (std::holds_alternative<bool>(v)) temp_bools.push_back({k, std::get<bool>(v)});
+                }
+
+                writer.write_u32(static_cast<std::uint32_t>(temp_scalars.size()));
+                for (const auto& [k, v] : temp_scalars) {
                     writer.write_string(k);
                     writer.write_animated_scalar(v);
                 }
                 
-                writer.write_u32(static_cast<std::uint32_t>(effect.colors.size()));
-                for (const auto& [k, v] : effect.colors) {
+                writer.write_u32(static_cast<std::uint32_t>(temp_colors.size()));
+                for (const auto& [k, v] : temp_colors) {
                     writer.write_string(k);
                     writer.write_animated_color(v);
                 }
                 
-                writer.write_u32(static_cast<std::uint32_t>(effect.strings.size()));
-                for (const auto& [k, v] : effect.strings) {
+                writer.write_u32(static_cast<std::uint32_t>(temp_strings.size()));
+                for (const auto& [k, v] : temp_strings) {
                     writer.write_string(k);
                     writer.write_string(v);
                 }
                 
-                writer.write_u32(static_cast<std::uint32_t>(effect.bools.size()));
-                for (const auto& [k, v] : effect.bools) {
+                writer.write_u32(static_cast<std::uint32_t>(temp_bools.size()));
+                for (const auto& [k, v] : temp_bools) {
                     writer.write_string(k);
                     writer.write_bool(v);
                 }
@@ -543,25 +557,25 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
                     std::uint32_t scalar_count = reader.read_u32();
                     for (std::uint32_t s = 0; s < scalar_count; ++s) {
                         std::string key = reader.read_string();
-                        eff.scalars[key] = reader.read_animated_scalar();
+                        eff.params[key] = reader.read_animated_scalar();
                     }
                     
                     std::uint32_t color_count = reader.read_u32();
                     for (std::uint32_t c = 0; c < color_count; ++c) {
                         std::string key = reader.read_string();
-                        eff.colors[key] = reader.read_animated_color();
+                        eff.params[key] = reader.read_animated_color();
                     }
                     
                     std::uint32_t string_count = reader.read_u32();
                     for (std::uint32_t st = 0; st < string_count; ++st) {
                         std::string key = reader.read_string();
-                        eff.strings[key] = reader.read_string();
+                        eff.params[key] = reader.read_string();
                     }
                     
                     std::uint32_t bool_count = reader.read_u32();
                     for (std::uint32_t b = 0; b < bool_count; ++b) {
                         std::string key = reader.read_string();
-                        eff.bools[key] = reader.read_bool();
+                        eff.params[key] = reader.read_bool();
                     }
 
                     layer.effects.push_back(std::move(eff));

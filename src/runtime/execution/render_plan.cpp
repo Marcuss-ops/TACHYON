@@ -113,35 +113,36 @@ void hash_animated_vector2(CacheKeyBuilder& builder, const AnimatedVector2Spec& 
 void hash_effect(CacheKeyBuilder& builder, const EffectSpec& effect) {
     builder.add_string(effect.type);
     builder.add_bool(effect.enabled);
-    // Hash scalars
-    builder.add_u64(static_cast<std::uint64_t>(effect.scalars.size()));
-    for (const auto& [key, val] : effect.scalars) {
+    builder.add_u64(static_cast<std::uint64_t>(effect.params.size()));
+    for (const auto& [key, val] : effect.params) {
         builder.add_string(key);
-        if (val.value) builder.add_f64(*val.value);
-        builder.add_u32(static_cast<std::uint32_t>(val.keyframes.size()));
-    }
-    // Hash colors
-    builder.add_u64(static_cast<std::uint64_t>(effect.colors.size()));
-    for (const auto& [key, val] : effect.colors) {
-        builder.add_string(key);
-        if (val.value) {
-            builder.add_u64(val.value->r);
-            builder.add_u64(val.value->g);
-            builder.add_u64(val.value->b);
-            builder.add_u64(val.value->a);
+        if (std::holds_alternative<double>(val)) {
+            builder.add_f64(std::get<double>(val));
+        } else if (std::holds_alternative<bool>(val)) {
+            builder.add_bool(std::get<bool>(val));
+        } else if (std::holds_alternative<std::string>(val)) {
+            builder.add_string(std::get<std::string>(val));
+        } else if (std::holds_alternative<ColorSpec>(val)) {
+            auto c = std::get<ColorSpec>(val);
+            builder.add_u64(c.r); builder.add_u64(c.g); builder.add_u64(c.b); builder.add_u64(c.a);
+        } else if (std::holds_alternative<AnimatedScalarSpec>(val)) {
+            auto& s = std::get<AnimatedScalarSpec>(val);
+            if (s.value) builder.add_f64(*s.value);
+            builder.add_u32(static_cast<std::uint32_t>(s.keyframes.size()));
+        } else if (std::holds_alternative<AnimatedColorSpec>(val)) {
+            auto& c = std::get<AnimatedColorSpec>(val);
+            if (c.value) {
+                builder.add_u64(c.value->r); builder.add_u64(c.value->g); builder.add_u64(c.value->b); builder.add_u64(c.value->a);
+            }
+            builder.add_u32(static_cast<std::uint32_t>(c.keyframes.size()));
+        } else if (std::holds_alternative<math::Vector2>(val)) {
+            auto v = std::get<math::Vector2>(val);
+            builder.add_f64(v.x); builder.add_f64(v.y);
+        } else if (std::holds_alternative<AnimatedVector2Spec>(val)) {
+            auto& v = std::get<AnimatedVector2Spec>(val);
+            if (v.value) { builder.add_f64(v.value->x); builder.add_f64(v.value->y); }
+            builder.add_u32(static_cast<std::uint32_t>(v.keyframes.size()));
         }
-    }
-    // Hash strings
-    builder.add_u64(static_cast<std::uint64_t>(effect.strings.size()));
-    for (const auto& [key, val] : effect.strings) {
-        builder.add_string(key);
-        builder.add_string(val);
-    }
-    // Hash bools
-    builder.add_u64(static_cast<std::uint64_t>(effect.bools.size()));
-    for (const auto& [key, val] : effect.bools) {
-        builder.add_string(key);
-        builder.add_bool(val);
     }
 }
 

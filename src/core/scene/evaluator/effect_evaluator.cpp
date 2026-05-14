@@ -5,10 +5,6 @@
 
 namespace tachyon {
 
-void EffectSpec::set_param(const std::string& key, ParameterValue value) {
-    params[key] = std::move(value);
-}
-
 EvaluatedEffect EffectSpec::evaluate(double time_seconds) const {
     EvaluatedEffect result;
     result.enabled = enabled;

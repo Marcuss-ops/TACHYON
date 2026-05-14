@@ -26,7 +26,9 @@ struct EffectSpec {
     
     std::map<std::string, ParameterValue> params;
 
-    TACHYON_API void set_param(const std::string& key, ParameterValue value);
+    inline void set_param(const std::string& key, ParameterValue value) {
+        params[key] = std::move(value);
+    }
 
     [[nodiscard]] TACHYON_API EvaluatedEffect evaluate(double time_seconds) const;
 };
