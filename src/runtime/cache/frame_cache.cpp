@@ -1,27 +1,42 @@
 #include "tachyon/runtime/cache/frame_cache.h"
-
 #include <algorithm>
 
 namespace tachyon {
 
 namespace {
+
 std::size_t estimate_layer_size(const scene::EvaluatedLayerState& layer) {
     std::size_t size = sizeof(scene::EvaluatedLayerState);
-    size += layer.id.capacity();
-    size += layer.blend_mode.capacity();
+    
+    // strings
+    size += layer.identity.id.capacity();
+    size += layer.identity.layer_id.capacity();
+    size += layer.identity.name.capacity();
+    size += layer.transform.blend_mode.capacity();
     size += layer.text.content.capacity();
     size += layer.text.font_id.capacity();
-    if (layer.subtitles.path) size += layer.subtitles.path->capacity();
+    
+    // vectors
     if (layer.vector.shape_path.has_value()) {
-        size += layer.vector.shape_path->points.capacity() * sizeof(scene::EvaluatedShapePathPoint);
+        size += layer.vector.shape_path->points.capacity() * sizeof(scene::EvaluatedShapePoint);
     }
-    size += layer.effects.capacity() * sizeof(EffectSpec);
+    
+    // collections
+    size += layer.effects.capacity() * sizeof(EvaluatedEffect);
+    size += layer.text.animators.capacity() * sizeof(TextAnimatorSpec);
+    size += layer.text.highlights.capacity() * sizeof(TextHighlightSpec);
+    size += layer.masks.list.capacity() * sizeof(spec::MaskPath);
+    
     return size;
 }
 
 std::size_t estimate_comp_size(const scene::EvaluatedCompositionState& comp) {
     std::size_t size = sizeof(scene::EvaluatedCompositionState);
-    size += comp.layers.capacity() * sizeof(std::shared_ptr<scene::EvaluatedLayerState>);
+    size += comp.composition_id.capacity();
+    size += comp.layers.capacity() * sizeof(scene::EvaluatedLayerState);
+    for (const auto& layer : comp.layers) {
+        size += estimate_layer_size(layer);
+    }
     return size;
 }
 
@@ -47,9 +62,7 @@ bool FrameCache::lookup_property(std::uint64_t key, double& out_value) const {
 void FrameCache::store_property(std::uint64_t key, double value) {
     std::scoped_lock lock(m_mutex);
     const std::size_t size = sizeof(double);
-    if (m_entries.contains(key)) {
-        remove_entry(key);
-    }
+    if (m_entries.contains(key)) remove_entry(key);
 
     m_properties[key] = value;
     m_current_usage_bytes += size;
@@ -75,9 +88,7 @@ void FrameCache::store_layer(std::uint64_t key, std::shared_ptr<const scene::Eva
     if (!state) return;
     std::scoped_lock lock(m_mutex);
     const std::size_t size = estimate_layer_size(*state);
-    if (m_entries.contains(key)) {
-        remove_entry(key);
-    }
+    if (m_entries.contains(key)) remove_entry(key);
 
     m_layers.insert_or_assign(key, state);
     m_current_usage_bytes += size;
@@ -103,9 +114,7 @@ void FrameCache::store_composition(std::uint64_t key, std::shared_ptr<const scen
     if (!state) return;
     std::scoped_lock lock(m_mutex);
     const std::size_t size = estimate_comp_size(*state);
-    if (m_entries.contains(key)) {
-        remove_entry(key);
-    }
+    if (m_entries.contains(key)) remove_entry(key);
 
     m_compositions.insert_or_assign(key, state);
     m_current_usage_bytes += size;
@@ -131,9 +140,7 @@ void FrameCache::store_frame(const FrameCacheKey& key, std::shared_ptr<const ren
     if (!frame) return;
     std::scoped_lock lock(m_mutex);
     const std::size_t size = estimate_frame_size(*frame);
-    if (m_entries.contains(key.hash)) {
-        remove_entry(key.hash);
-    }
+    if (m_entries.contains(key.hash)) remove_entry(key.hash);
 
     m_frames.insert_or_assign(key.hash, FrameEntry{key.value, frame});
     m_current_usage_bytes += size;
@@ -159,9 +166,7 @@ void FrameCache::store_frame(std::uint64_t key, std::shared_ptr<const renderer2d
     if (!frame) return;
     std::scoped_lock lock(m_mutex);
     const std::size_t size = estimate_frame_size(*frame);
-    if (m_entries.contains(key)) {
-        remove_entry(key);
-    }
+    if (m_entries.contains(key)) remove_entry(key);
 
     m_frames.insert_or_assign(key, FrameEntry{"", frame});
     m_current_usage_bytes += size;
@@ -187,31 +192,25 @@ void FrameCache::set_budget_bytes(std::size_t bytes) {
 }
 
 void FrameCache::evict_if_needed() {
-    if (m_max_budget_bytes == 0) {
-        return;
-    }
-
+    if (m_max_budget_bytes == 0) return;
     while (m_current_usage_bytes > m_max_budget_bytes && !m_lru_list.empty()) {
-        const std::uint64_t oldest = m_lru_list.front();
-        remove_entry(oldest);
+        remove_entry(m_lru_list.front());
     }
 }
 
 void FrameCache::remove_entry(std::uint64_t key) {
-    const auto entry_it = m_entries.find(key);
-    if (entry_it == m_entries.end()) {
-        return;
-    }
+    const auto it = m_entries.find(key);
+    if (it == m_entries.end()) return;
 
-    switch (entry_it->second.type) {
+    switch (it->second.type) {
         case EntryType::Property: m_properties.erase(key); break;
         case EntryType::Layer: m_layers.erase(key); break;
         case EntryType::Composition: m_compositions.erase(key); break;
         case EntryType::Frame: m_frames.erase(key); break;
     }
 
-    m_current_usage_bytes -= entry_it->second.size;
-    m_entries.erase(entry_it);
+    m_current_usage_bytes -= it->second.size;
+    m_entries.erase(it);
 
     auto lru_it = m_lru_iterators.find(key);
     if (lru_it != m_lru_iterators.end()) {
@@ -225,19 +224,11 @@ std::size_t FrameCache::current_usage_bytes() const {
     return m_current_usage_bytes;
 }
 
-
 void FrameCache::clear() {
     std::scoped_lock lock(m_mutex);
-    m_properties.clear();
-    m_layers.clear();
-    m_compositions.clear();
-    m_frames.clear();
-    m_entries.clear();
-    m_lru_list.clear();
-    m_lru_iterators.clear();
-    m_current_usage_bytes = 0;
-    m_hit_count = 0;
-    m_miss_count = 0;
+    m_properties.clear(); m_layers.clear(); m_compositions.clear(); m_frames.clear();
+    m_entries.clear(); m_lru_list.clear(); m_lru_iterators.clear();
+    m_current_usage_bytes = 0; m_hit_count = 0; m_miss_count = 0;
 }
 
 } // namespace tachyon

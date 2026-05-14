@@ -17,23 +17,23 @@ std::vector<AssetReference> collect_asset_references(const SceneSpec& scene) {
 
         for (const auto& layer : comp.layers) {
             // Image layers
-            if (layer.type == LayerType::Image) {
-                refs.push_back({layer.asset_id, layer.asset_id, AssetKind::Image, layer.id});
+            if (layer.identity.type == LayerType::Image) {
+                refs.push_back({layer.source.asset_id, layer.source.asset_id, AssetKind::Image, layer.identity.id});
             }
             // Video layers
-            else if (layer.type == LayerType::Video) {
-                refs.push_back({layer.asset_id, layer.asset_id, AssetKind::Video, layer.id});
+            else if (layer.identity.type == LayerType::Video) {
+                refs.push_back({layer.source.asset_id, layer.source.asset_id, AssetKind::Video, layer.identity.id});
             }
             // Text layers (fonts)
-            else if (layer.type == LayerType::Text) {
+            else if (layer.identity.type == LayerType::Text) {
                 if (!layer.text.font_id.empty()) {
-                    refs.push_back({"", layer.text.font_id, AssetKind::Font, layer.id});
+                    refs.push_back({"", layer.text.font_id, AssetKind::Font, layer.identity.id});
                 }
             }
             
             // Subtitles
             if (!layer.subtitles.path.empty()) {
-                refs.push_back({"", layer.subtitles.path, AssetKind::Subtitle, layer.id});
+                refs.push_back({"", layer.subtitles.path, AssetKind::Subtitle, layer.identity.id});
             }
         }
 

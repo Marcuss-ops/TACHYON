@@ -118,48 +118,48 @@ inline void apply_text_anchor(LayerSpec& spec, TextAnchor anchor) {
         return;
     }
 
-    spec.text_box.horizontal_align = horizontal_align_for(anchor);
-    spec.text_box.vertical_align = vertical_align_for(anchor);
+    spec.text.box.horizontal_align = horizontal_align_for(anchor);
+    spec.text.box.vertical_align = vertical_align_for(anchor);
 
-    const auto half_w = static_cast<float>(spec.width) * 0.5f;
-    const auto half_h = static_cast<float>(spec.height) * 0.5f;
+    const auto half_w = static_cast<float>(spec.transform.width) * 0.5f;
+    const auto half_h = static_cast<float>(spec.transform.height) * 0.5f;
 
     switch (anchor) {
         case TextAnchor::TopLeft:
-            spec.transform.position_x = 0.0f;
-            spec.transform.position_y = 0.0f;
+            spec.transform.transform.position_x = 0.0f;
+            spec.transform.transform.position_y = 0.0f;
             break;
         case TextAnchor::TopCenter:
-            spec.transform.position_x = half_w;
-            spec.transform.position_y = 0.0f;
+            spec.transform.transform.position_x = half_w;
+            spec.transform.transform.position_y = 0.0f;
             break;
         case TextAnchor::TopRight:
-            spec.transform.position_x = static_cast<float>(spec.width);
-            spec.transform.position_y = 0.0f;
+            spec.transform.transform.position_x = static_cast<float>(spec.transform.width);
+            spec.transform.transform.position_y = 0.0f;
             break;
         case TextAnchor::MiddleLeft:
-            spec.transform.position_x = 0.0f;
-            spec.transform.position_y = half_h;
+            spec.transform.transform.position_x = 0.0f;
+            spec.transform.transform.position_y = half_h;
             break;
         case TextAnchor::MiddleCenter:
-            spec.transform.position_x = half_w;
-            spec.transform.position_y = half_h;
+            spec.transform.transform.position_x = half_w;
+            spec.transform.transform.position_y = half_h;
             break;
         case TextAnchor::MiddleRight:
-            spec.transform.position_x = static_cast<float>(spec.width);
-            spec.transform.position_y = half_h;
+            spec.transform.transform.position_x = static_cast<float>(spec.transform.width);
+            spec.transform.transform.position_y = half_h;
             break;
         case TextAnchor::BottomLeft:
-            spec.transform.position_x = 0.0f;
-            spec.transform.position_y = static_cast<float>(spec.height);
+            spec.transform.transform.position_x = 0.0f;
+            spec.transform.transform.position_y = static_cast<float>(spec.transform.height);
             break;
         case TextAnchor::BottomCenter:
-            spec.transform.position_x = half_w;
-            spec.transform.position_y = static_cast<float>(spec.height);
+            spec.transform.transform.position_x = half_w;
+            spec.transform.transform.position_y = static_cast<float>(spec.transform.height);
             break;
         case TextAnchor::BottomRight:
-            spec.transform.position_x = static_cast<float>(spec.width);
-            spec.transform.position_y = static_cast<float>(spec.height);
+            spec.transform.transform.position_x = static_cast<float>(spec.transform.width);
+            spec.transform.transform.position_y = static_cast<float>(spec.transform.height);
             break;
         case TextAnchor::None:
             break;

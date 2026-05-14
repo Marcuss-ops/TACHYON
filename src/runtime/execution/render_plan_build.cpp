@@ -30,7 +30,7 @@ std::size_t count_layers_with_type(const CompositionSpec& composition, LayerType
     return static_cast<std::size_t>(std::count_if(
         composition.layers.begin(),
         composition.layers.end(),
-        [&](const LayerSpec& layer) { return layer.type == type; }));
+        [&](const LayerSpec& layer) { return layer.identity.type == type; }));
 }
 
 std::size_t count_layers_with_track_matte(const CompositionSpec& composition) {

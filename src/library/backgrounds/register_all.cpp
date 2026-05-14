@@ -36,8 +36,8 @@ void BackgroundRegistry::register_all_builtins() {
     auto make_procedural_builder = [get_procedural_params](auto make_spec_fn) {
         return [get_procedural_params, make_spec_fn](const ParameterBag& bag) -> LayerSpec {
             LayerSpec layer;
-            layer.type = LayerType::Procedural;
-            layer.procedural = make_spec_fn(get_procedural_params(bag));
+            layer.identity.type = LayerType::Procedural;
+            layer.source.procedural = make_spec_fn(get_procedural_params(bag));
             return layer;
         };
     };

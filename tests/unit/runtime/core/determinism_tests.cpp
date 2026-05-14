@@ -28,15 +28,16 @@ SceneSpec create_complex_test_scene() {
     comp.width = 1280;
     comp.height = 720;
     comp.duration = 1.0;
+    comp.frame_rate = {30, 1};
 
     for (int i = 0; i < 5; ++i) {
         comp.layers.push_back({});
         auto& layer = comp.layers.back();
-        layer.id = "L" + std::to_string(i);
-        layer.type = LayerType::Solid;
-        layer.transform.position_x = 100.0 * i;
-        layer.transform.position_y = 50.0 * i;
-        layer.opacity = 0.5 + (0.05 * i);
+        layer.identity.id = "L" + std::to_string(i);
+        layer.identity.type = LayerType::Solid;
+        layer.transform.transform.position_x = 100.0 * i;
+        layer.transform.transform.position_y = 50.0 * i;
+        layer.transform.opacity = 0.5 + (0.05 * i);
     }
     return scene;
 }
@@ -56,6 +57,10 @@ bool check_determinism() {
     // 1. Sequential Render (1 worker)
     RenderSession seq_session;
     auto seq_result = seq_session.render(scene, compiled, execution_plan, "", make_test_budget(1));
+    if (seq_result.frames.empty() || !seq_result.frames[0].frame) {
+        std::cerr << "Sequential render failed or returned no frames\n";
+        return false;
+    }
 
     // 2. Parallel Render (with different worker counts)
     std::vector<int> worker_counts = {2, 4, 8};

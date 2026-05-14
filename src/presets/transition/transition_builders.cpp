@@ -3,16 +3,23 @@
 
 namespace tachyon::presets {
 
+static const char* direction_to_string(Direction d) {
+    switch (d) {
+        case Direction::Left: return "left";
+        case Direction::Right: return "right";
+        case Direction::Up: return "up";
+        case Direction::Down: return "down";
+        case Direction::In: return "in";
+        case Direction::Out: return "out";
+        default: return "none";
+    }
+}
+
 static registry::ParameterBag to_bag(const TransitionParams& p) {
     registry::ParameterBag bag;
-    bag.set("id", p.id);
-    bag.set("duration", p.duration);
-    bag.set("delay", p.delay);
-    bag.set("easing", static_cast<int>(p.easing));
-    bag.set("direction", p.direction);
-    for (const auto& [k, v] : p.parameters) {
-        bag.set(k, v);
-    }
+    if (p.duration.has_value()) bag.set("duration", *p.duration);
+    bag.set("direction", direction_to_string(p.direction));
+    if (p.easing.has_value()) bag.set("easing", static_cast<int>(*p.easing));
     return bag;
 }
 

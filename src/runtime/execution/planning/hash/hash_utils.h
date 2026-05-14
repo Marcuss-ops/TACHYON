@@ -56,7 +56,6 @@ void hash_text_highlight(CacheKeyBuilder& builder, const TextHighlightSpec& spec
 
 void hash_transition(CacheKeyBuilder& builder, const LayerTransitionSpec& spec);
 void hash_procedural(CacheKeyBuilder& builder, const ProceduralSpec& spec);
-void hash_particle(CacheKeyBuilder& builder, const ParticleSpec& spec);
 void hash_shape(CacheKeyBuilder& builder, const ShapeSpec& spec);
 
 } // namespace tachyon::hash

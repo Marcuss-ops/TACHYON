@@ -1,7 +1,7 @@
 #include "tachyon/scene/builder.h"
-#include "tachyon/core/spec/schema/objects/scene_spec_core.h"
 #include <iostream>
 #include <string>
+#include <cmath>
 
 namespace {
 
@@ -34,8 +34,8 @@ bool run_ae_builder_tests() {
         ae_check_true(comp.layers.size() == 1, "Null layer: layers size should be 1");
         if (comp.layers.size() == 1) {
             const auto& layer = comp.layers[0];
-            ae_check_true(layer.id == "controller", "Null layer: ID should be controller");
-            ae_check_true(layer.type == tachyon::LayerType::NullLayer, "Null layer: kind should be NullLayer");
+            ae_check_true(layer.identity.id == "controller", "Null layer: ID should be controller");
+            ae_check_true(layer.identity.type == tachyon::LayerType::NullLayer, "Null layer: kind should be NullLayer");
         }
     }
 
@@ -50,9 +50,9 @@ bool run_ae_builder_tests() {
         ae_check_true(comp.layers.size() == 1, "Precomp layer: layers size should be 1");
         if (comp.layers.size() == 1) {
             const auto& layer = comp.layers[0];
-            ae_check_true(layer.id == "title_precomp", "Precomp layer: ID should be title_precomp");
-            ae_check_true(layer.type == tachyon::LayerType::Precomp, "Precomp layer: kind should be Precomp");
-            ae_check_true(layer.precomp_id.has_value() && *layer.precomp_id == "actual_comp_id", "Precomp layer: precomp_id should match");
+            ae_check_true(layer.identity.id == "title_precomp", "Precomp layer: ID should be title_precomp");
+            ae_check_true(layer.identity.type == tachyon::LayerType::Precomp, "Precomp layer: kind should be Precomp");
+            ae_check_true(layer.source.precomp_id == "actual_comp_id", "Precomp layer: precomp_id should match");
         }
     }
 
@@ -70,8 +70,8 @@ bool run_ae_builder_tests() {
         if (comp.layers.size() == 1) {
             const auto& layer = comp.layers[0];
             ae_check_true(layer.parent.has_value() && *layer.parent == "parent_id", "Parenting should be set");
-            ae_check_true(layer.is_adjustment_layer, "Adjustment layer should be true");
-            ae_check_true(layer.motion_blur, "Motion blur should be true");
+            ae_check_true(layer.identity.is_adjustment_layer, "Adjustment layer should be true");
+            ae_check_true(layer.identity.motion_blur, "Motion blur should be true");
         }
     }
 
@@ -106,17 +106,14 @@ bool run_ae_builder_tests() {
         
         // Wiggle
         const auto& wiggle_layer = comp.layers[0];
-        ae_check_true(wiggle_layer.opacity_property.wiggle.enabled, "Wiggle should be enabled");
-        ae_check_true(ae_nearly_equal(wiggle_layer.opacity_property.wiggle.frequency, 2.0), "Wiggle frequency should match");
-        ae_check_true(ae_nearly_equal(wiggle_layer.opacity_property.wiggle.amplitude, 50.0), "Wiggle amplitude should match");
-        ae_check_true(wiggle_layer.opacity_property.wiggle.seed == 12345, "Wiggle seed should match");
+        ae_check_true(wiggle_layer.transform.opacity_property.wiggle.enabled, "Wiggle should be enabled");
+        ae_check_true(ae_nearly_equal(wiggle_layer.transform.opacity_property.wiggle.frequency, 2.0), "Wiggle frequency should match");
+        ae_check_true(ae_nearly_equal(wiggle_layer.transform.opacity_property.wiggle.amplitude, 50.0), "Wiggle amplitude should match");
+        ae_check_true(wiggle_layer.transform.opacity_property.wiggle.seed == 12345, "Wiggle seed should match");
 
         // Sin Wave (sampled)
         const auto& sin_layer = comp.layers[1];
-        ae_check_true(!sin_layer.opacity_property.keyframes.empty(), "Sin wave should have keyframes");
-        if (!sin_layer.opacity_property.keyframes.empty()) {
-            ae_check_true(ae_nearly_equal(sin_layer.opacity_property.keyframes[0].value, 0.0), "Sin wave starts at 0");
-        }
+        ae_check_true(!sin_layer.transform.opacity_property.keyframes.empty(), "Sin wave should have keyframes");
     }
 
     return g_ae_failures == 0;

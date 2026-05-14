@@ -29,8 +29,8 @@ void resolve_dependencies(const SceneSpec& scene, CompiledScene& compiled, tachy
                 }
             }
 
-            if (layer_spec.precomp_id.has_value()) {
-                auto it = registry.composition_id_map.find(*layer_spec.precomp_id);
+            if (layer_spec.source.precomp_id.has_value()) {
+                auto it = registry.composition_id_map.find(*layer_spec.source.precomp_id);
                 if (it != registry.composition_id_map.end()) {
                     layer.precomp_index = it->second;
                     compiled.graph.add_edge(compiled.compositions[it->second].node.node_id, layer.node.node_id, true);

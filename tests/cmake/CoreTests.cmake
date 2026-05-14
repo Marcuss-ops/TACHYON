@@ -26,6 +26,7 @@ target_link_libraries(TachyonTests
         TachyonTestUtils
         TachyonRuntimeEngine
         TachyonDiagnostics
+        TachyonPresets
 )
 tachyon_link_mimalloc(TachyonTests)
 

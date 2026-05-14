@@ -26,14 +26,14 @@ bool run_transition_builder_tests() {
         p.duration = 0.5;
         p.easing = tachyon::animation::EasingPreset::EaseInOut;
         p.delay = 0.1;
-        p.direction = "up";
+        p.direction = Direction::Up;
 
         const auto spec = build_transition_enter(p);
         check_true(spec.transition_id == "tachyon.transition.crossfade", "Enter copies transition id");
         check_true(std::abs(spec.duration - 0.5) < 1e-9, "Enter copies duration");
         check_true(spec.easing == tachyon::animation::EasingPreset::EaseInOut, "Enter copies easing");
         check_true(std::abs(spec.delay - 0.1) < 1e-9, "Enter copies delay");
-        check_true(spec.direction == "up", "Enter copies direction");
+        check_true(spec.direction == Direction::Up, "Enter copies direction");
     }
 
     {

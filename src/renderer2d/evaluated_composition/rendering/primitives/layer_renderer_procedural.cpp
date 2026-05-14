@@ -479,8 +479,8 @@ void render_procedural_layer(
     const std::optional<RectI>& target_rect) {
     
     if (!evaluated.procedural.has_value()) return;
-    uint32_t comp_w = static_cast<uint32_t>(evaluated.width);
-    uint32_t comp_h = static_cast<uint32_t>(evaluated.height);
+    uint32_t comp_w = static_cast<uint32_t>(evaluated.transform.width);
+    uint32_t comp_h = static_cast<uint32_t>(evaluated.transform.height);
     render_procedural_pattern(fb, *evaluated.procedural, time_seconds, target_rect, comp_w, comp_h);
 }
 

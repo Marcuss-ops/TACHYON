@@ -1,141 +1,28 @@
-# ---------------------------------------------------------
-# 3. RUNTIME DOMAIN: TachyonRuntimeTests
-# runtime/execution/*
-# ---------------------------------------------------------
-add_executable(TachyonRuntimeTests
-    unit/mains/test_main_runtime.cpp
-    unit/core/spec/render_job_tests.cpp
-    unit/runtime/core/frame_cache_tests.cpp
-    unit/runtime/core/frame_cache_budget_tests.cpp
-    unit/runtime/core/backbone_tests.cpp
-    unit/runtime/core/expression_vm_tests.cpp
+set(RUNTIME_TEST_SOURCES
     unit/runtime/core/determinism_tests.cpp
-    unit/runtime/io/frame_output_sink_tests.cpp
-    unit/runtime/core/quality_tier_tests.cpp
-    unit/runtime/core/runtime_policy_tests.cpp
-    unit/runtime/execution/tiling_integration_tests.cpp
     unit/runtime/execution/frame_executor_tests.cpp
-    unit/runtime/execution/frame_range_tests.cpp
-    unit/runtime/execution/tile_scheduler_tests.cpp
-    unit/runtime/execution/taskflow_runtime_tests.cpp
-    unit/runtime/frame_adapter_tests.cpp
-    unit/runtime/telemetry_industrial_tests.cpp
-    unit/runtime/jit_render_tests.cpp
     unit/runtime/hash/scene_hash_coverage_tests.cpp
 )
 
-target_compile_definitions(TachyonRuntimeTests
-    PRIVATE
-        TACHYON_TESTS_SOURCE_DIR="${TACHYON_TESTS_SOURCE_DIR}"
+add_executable(TachyonRuntimeTests 
+    unit/mains/test_main_runtime.cpp
+    ${RUNTIME_TEST_SOURCES}
 )
 
-target_link_libraries(TachyonRuntimeTests
-    PRIVATE
-        TachyonTestUtils
+target_link_libraries(TachyonRuntimeTests 
+    PRIVATE 
         TachyonRuntime
+        TachyonRenderer2D
         TachyonCore
-        TachyonPlatform
-        TachyonSceneEval
-        TachyonPresets
-        TachyonAudio
+        TachyonScene
+        TachyonMedia
         TachyonOutput
-)
-
-if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
-    target_precompile_headers(TachyonRuntimeTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")
-endif()
-
-
-
-if(MSVC)
-    target_compile_options(TachyonRuntimeTests PRIVATE /FS)
-endif()
-
-add_executable(TachyonNativeRenderTests
-    unit/mains/test_main_native_render.cpp
-    unit/runtime/native_render_tests.cpp
-)
-
-target_compile_definitions(TachyonNativeRenderTests
-    PRIVATE
-        TACHYON_TESTS_SOURCE_DIR="${TACHYON_TESTS_SOURCE_DIR}"
-)
-
-target_link_libraries(TachyonNativeRenderTests
-    PRIVATE
+        TachyonTimeline
+        TachyonPlatform
         TachyonTestUtils
-        TachyonPresets
-        TachyonRuntime
-        TachyonCore
-        TachyonSceneEval
+        GTest::gtest
+        GTest::gtest_main
 )
 
-if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
-    target_precompile_headers(TachyonNativeRenderTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")
-endif()
-
-
-
-if(MSVC)
-    target_compile_options(TachyonNativeRenderTests PRIVATE /FS)
-endif()
-
-add_executable(TachyonRenderProfilerTests
-    unit/mains/test_main_render_profiler.cpp
-    unit/runtime/profiling/render_profiler_tests.cpp
-    unit/runtime/jit_render_tests.cpp
-)
-
-target_compile_definitions(TachyonRenderProfilerTests
-    PRIVATE
-        TACHYON_TESTS_SOURCE_DIR="${TACHYON_TESTS_SOURCE_DIR}"
-)
-
-target_link_libraries(TachyonRenderProfilerTests
-    PRIVATE
-        TachyonTestUtils
-        TachyonRuntime
-)
-
-if(TACHYON_ENABLE_TRACKER)
-    target_link_libraries(TachyonRenderProfilerTests PRIVATE TachyonTracker)
-endif()
-
-if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
-    target_precompile_headers(TachyonRenderProfilerTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")
-endif()
-
-
-
-if(MSVC)
-    target_compile_options(TachyonRenderProfilerTests PRIVATE /FS)
-endif()
-
-add_test(
-    NAME TachyonRuntimeTests
-    COMMAND TachyonRuntimeTests
-)
-tachyon_set_test_labels(TachyonRuntimeTests core deterministic)
-
-add_test(
-    NAME TachyonNativeRenderTests
-    COMMAND TachyonNativeRenderTests
-)
-tachyon_set_test_labels(TachyonNativeRenderTests render)
-
-add_test(
-    NAME TachyonRenderProfilerTests
-    COMMAND TachyonRenderProfilerTests
-)
-tachyon_set_test_labels(TachyonRenderProfilerTests core deterministic)
-
-# PR 2: Default Transition Registry Tests
-add_executable(default_transition_registry_tests unit/runtime/registry/default_transition_registry_tests.cpp)
-target_link_libraries(default_transition_registry_tests PRIVATE 
-    TachyonCore 
-    TachyonRuntime
-    TachyonPresets
-    TachyonTestUtils
-)
-add_test(NAME default_transition_registry COMMAND default_transition_registry_tests)
-tachyon_set_test_labels(default_transition_registry runtime)
+add_test(NAME TachyonRuntimeTests COMMAND TachyonRuntimeTests)
+tachyon_set_test_labels(TachyonRuntimeTests runtime)

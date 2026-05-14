@@ -30,7 +30,7 @@ void register_builtin(
     });
     spec.factory = [canonical_id](const registry::ParameterBag& p) {
         // Presets are now pure aliases to canonical transition IDs
-        return TransitionPresetRegistry::build_spec_from_params(p, TransitionKind::Custom, canonical_id);
+        return TransitionPresetRegistry::build_spec_from_params(p, canonical_id);
     };
     registry.register_spec(std::move(spec));
 }

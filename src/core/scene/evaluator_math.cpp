@@ -31,19 +31,19 @@ double degrees_to_radians(double degrees) {
 
 math::Vector2 fallback_position(const LayerSpec& layer) {
     return {
-        static_cast<float>(layer.transform.position_x.value_or(0.0)),
-        static_cast<float>(layer.transform.position_y.value_or(0.0))
+        static_cast<float>(layer.transform.transform.position_x.value_or(0.0)),
+        static_cast<float>(layer.transform.transform.position_y.value_or(0.0))
     };
 }
 
 double fallback_rotation(const LayerSpec& layer) {
-    return layer.transform.rotation.value_or(0.0);
+    return layer.transform.transform.rotation.value_or(0.0);
 }
 
 math::Vector2 fallback_scale(const LayerSpec& layer) {
     return {
-        static_cast<float>(layer.transform.scale_x.value_or(1.0)),
-        static_cast<float>(layer.transform.scale_y.value_or(1.0))
+        static_cast<float>(layer.transform.transform.scale_x.value_or(100.0) / 100.0),
+        static_cast<float>(layer.transform.transform.scale_y.value_or(100.0) / 100.0)
     };
 }
 

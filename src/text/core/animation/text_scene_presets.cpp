@@ -85,26 +85,26 @@ LayerSpec make_enhance_text_background_layer(const TextScenePresetOptions& optio
 
 LayerSpec make_enhance_text_layer(const TextScenePresetOptions& options) {
     LayerSpec text;
-    text.id = "headline";
-    text.name = "Headline";
-    text.type = LayerType::Text;
-    text.enabled = true;
-    text.visible = true;
-    text.timing.start = 0.0;
-    text.timing.source_in = 0.0;
-    text.timing.source_out = options.duration_seconds;
-    text.timing.duration = options.duration_seconds;
-    text.text_box.width = static_cast<float>(options.text_width);
-    text.text_box.height = static_cast<float>(options.text_height);
-    text.text_box.mode = TextBoxMode::Fixed;
-    text.text_box.horizontal_align = HorizontalAlign::Center;
-    text.text_box.vertical_align = VerticalAlign::Middle;
-    text.text_content = options.text;
-    text.font_id = options.font_id;
-    text.font_size.value = static_cast<double>(options.font_size);
-    text.fill_color = AnimatedColorSpec(ColorSpec{238, 242, 248, 245});
-    text.transform.position_x = static_cast<double>(options.text_position_x);
-    text.transform.position_y = static_cast<double>(options.text_position_y);
+    text.identity.id = "headline";
+    text.identity.name = "Headline";
+    text.identity.type = LayerType::Text;
+    text.identity.enabled = true;
+    text.identity.visible = true;
+    text.playback.timing.start = 0.0;
+    text.playback.timing.source_in = 0.0;
+    text.playback.timing.source_out = options.duration_seconds;
+    text.playback.timing.duration = options.duration_seconds;
+    text.text.box.width = static_cast<float>(options.text_width);
+    text.text.box.height = static_cast<float>(options.text_height);
+    text.text.box.mode = TextBoxMode::Fixed;
+    text.text.box.horizontal_align = HorizontalAlign::Center;
+    text.text.box.vertical_align = VerticalAlign::Middle;
+    text.text.content = options.text;
+    text.text.font_id = options.font_id;
+    text.text.font_size.value = static_cast<double>(options.font_size);
+    text.text.fill_color = AnimatedColorSpec(ColorSpec{238, 242, 248, 245});
+    text.transform.transform.position_x = static_cast<double>(options.text_position_x);
+    text.transform.transform.position_y = static_cast<double>(options.text_position_y);
 
     if (!options.text_animators.empty()) {
         text.text_animators = options.text_animators;

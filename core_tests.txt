@@ -1,0 +1,13 @@
+Running Trace tests...
+All Trace tests passed!
+Running 2D Math Tests...
+All 2D math tests passed.
+--- Property System Tests ---
+  all property tests passed
+Running SceneBuilder preset extension tests...
+SceneBuilder preset extension tests passed!
+Running Blend Kernel tests...
+All Blend Kernel tests passed!
+--- Property Sampler Tests ---
+  all property sampler tests passed
+All tests passed! (seed=769688259)

@@ -18,14 +18,14 @@ RenderIntentBuildResult build_render_intent(
     }
     
     for (const auto& layer : state.layers) {
-        if (!layer.active || !layer.visible) continue;
+        if (!layer.identity.active || !layer.identity.visible) continue;
         
         RenderIntent::LayerResources resources;
         bool layer_ok = true;
         
         // Resolve Texture / Image
-        if (layer.texture_asset_id.has_value()) {
-            const std::string& asset_id = *layer.texture_asset_id;
+        if (layer.source.asset_path.has_value()) {
+            const std::string& asset_id = *layer.source.asset_path;
             resources.texture_rgba = resource_provider->get_texture_rgba(asset_id);
 
             if (!resources.texture_rgba && !asset_id.empty()) {
@@ -34,19 +34,19 @@ RenderIntentBuildResult build_render_intent(
                     result.diagnostics.add_error(
                         "render.intent.texture_missing",
                         "Strict Mode: Failed to resolve texture asset: " + asset_id,
-                        layer.id);
+                        layer.id());
                 } else {
                     result.diagnostics.add_warning(
                         "render.intent.texture_missing",
                         "Missing texture asset: " + asset_id,
-                        layer.id);
+                        layer.id());
                 }
             }
         }
         
         // Add to intent if we found something useful
         if (resources.texture_rgba) {
-            result.intent.layer_resources[layer.id] = std::move(resources);
+            result.intent.layer_resources[layer.id()] = std::move(resources);
         }
         
         if (!layer_ok) {

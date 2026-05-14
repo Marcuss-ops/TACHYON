@@ -41,9 +41,9 @@ public:
      * @return Signed distance (negative inside, positive outside)
      */
     static float signedDistanceWithFeather(const math::Vector2& p,
-                                          const MaskPath& mask,
-                                          float& out_feather_inner,
-                                          float& out_feather_outer);
+                                           const MaskPath& mask,
+                                           float& out_feather_inner,
+                                           float& out_feather_outer);
     
     /**
      * @brief Compute alpha from signed distance and feather values.
@@ -227,9 +227,9 @@ void MaskRenderer::applyMask(
     const int height = context.height;
     
     for (const auto& layer : state.layers) {
-        if (layer.masks.empty()) continue;
+        if (layer.masks.list.empty()) continue;
         
-        for (const auto& mask : layer.masks) {
+        for (const auto& mask : layer.masks.list) {
             if (mask.vertices.size() < 2) continue;
             
             // Compute rendering bounds
@@ -275,9 +275,9 @@ void MaskRenderer::applyMaskMotionBlur(
         
         // Apply all masks for this sample
         for (const auto& layer : state->layers) {
-            if (layer.masks.empty()) continue;
+            if (layer.masks.list.empty()) continue;
             
-            for (const auto& mask : layer.masks) {
+            for (const auto& mask : layer.masks.list) {
                 if (mask.vertices.size() < 2) continue;
                 
                 int x0, y0, x1, y1;
@@ -303,7 +303,7 @@ void MaskRenderer::computeMaskBounds(
     float min_x = 1e6f, min_y = 1e6f, max_x = -1e6f, max_y = -1e6f;
     bool has_any = false;
     
-    for (const auto& mask : layer_state.masks) {
+    for (const auto& mask : layer_state.masks.list) {
         for (const auto& v : mask.vertices) {
             // Pad by maximum feather extent plus small margin
             float pad = std::max(v.feather_outer, std::abs(v.feather_inner)) + 2.0f;

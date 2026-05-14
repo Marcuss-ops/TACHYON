@@ -22,20 +22,20 @@ ColorSpec parse_hex_color(const std::string& hex) {
 
 LayerSpec make_shape_layer_base(const ShapeParams& p) {
     LayerSpec l;
-    l.id          = "shape_layer";
-    l.name        = "Shape";
-    l.type        = LayerType::Shape;
-    l.enabled     = true;
-    l.visible     = true;
-    l.timing.start     = p.in_point;
-    l.timing.source_in = p.in_point;
-    l.timing.duration  = std::max(0.01, p.out_point - p.in_point);
-    l.width       = static_cast<int>(p.w);
-    l.height      = static_cast<int>(p.h);
-    l.opacity     = static_cast<double>(p.opacity);
-    l.transform.position_x = static_cast<double>(p.x);
-    l.transform.position_y = static_cast<double>(p.y);
-    l.shape_spec.emplace(ShapeSpec{});
+    l.identity.id          = "shape_layer";
+    l.identity.name        = "Shape";
+    l.identity.type        = LayerType::Shape;
+    l.identity.enabled     = true;
+    l.identity.visible     = true;
+    l.playback.timing.start     = p.in_point;
+    l.playback.timing.source_in = p.in_point;
+    l.playback.timing.duration  = std::max(0.01, p.out_point - p.in_point);
+    l.transform.width       = static_cast<int>(p.w);
+    l.transform.height      = static_cast<int>(p.h);
+    l.transform.opacity     = static_cast<double>(p.opacity);
+    l.transform.transform.position_x = static_cast<double>(p.x);
+    l.transform.transform.position_y = static_cast<double>(p.y);
+    l.vector.shape_spec.emplace(ShapeSpec{});
 
     return l;
 }
@@ -51,37 +51,37 @@ LayerSpec build_shape(const ShapeParams& p) {
 
 LayerSpec build_shape_rect(const ShapeParams& p) {
     LayerSpec l = make_shape_layer_base(p);
-    l.shape_spec->type = "rectangle";
-    l.shape_spec->fill_color = parse_hex_color(p.fill_color);
-    l.shape_spec->stroke_color = parse_hex_color(p.stroke_color);
-    l.shape_spec->stroke_width = p.stroke_width;
-    l.shape_spec->radius = p.corner_radius;
+    l.vector.shape_spec->type = "rectangle";
+    l.vector.shape_spec->fill_color = parse_hex_color(p.fill_color);
+    l.vector.shape_spec->stroke_color = parse_hex_color(p.stroke_color);
+    l.vector.shape_spec->stroke_width = p.stroke_width;
+    l.vector.shape_spec->radius = p.corner_radius;
     return l;
 }
 
 LayerSpec build_shape_circle(const ShapeParams& p) {
     LayerSpec l = make_shape_layer_base(p);
-    l.shape_spec->type = "circle";
-    l.shape_spec->fill_color = parse_hex_color(p.fill_color);
-    l.shape_spec->stroke_color = parse_hex_color(p.stroke_color);
-    l.shape_spec->stroke_width = p.stroke_width;
+    l.vector.shape_spec->type = "circle";
+    l.vector.shape_spec->fill_color = parse_hex_color(p.fill_color);
+    l.vector.shape_spec->stroke_color = parse_hex_color(p.stroke_color);
+    l.vector.shape_spec->stroke_width = p.stroke_width;
     return l;
 }
 
 LayerSpec build_shape_ellipse(const ShapeParams& p) {
     LayerSpec l = make_shape_layer_base(p);
-    l.shape_spec->type = "ellipse";
-    l.shape_spec->fill_color = parse_hex_color(p.fill_color);
-    l.shape_spec->stroke_color = parse_hex_color(p.stroke_color);
-    l.shape_spec->stroke_width = p.stroke_width;
+    l.vector.shape_spec->type = "ellipse";
+    l.vector.shape_spec->fill_color = parse_hex_color(p.fill_color);
+    l.vector.shape_spec->stroke_color = parse_hex_color(p.stroke_color);
+    l.vector.shape_spec->stroke_width = p.stroke_width;
     return l;
 }
 
 LayerSpec build_shape_line(const ShapeParams& p) {
     LayerSpec l = make_shape_layer_base(p);
-    l.shape_spec->type = "line";
-    l.shape_spec->stroke_color = parse_hex_color(p.stroke_color);
-    l.shape_spec->stroke_width = p.stroke_width;
+    l.vector.shape_spec->type = "line";
+    l.vector.shape_spec->stroke_color = parse_hex_color(p.stroke_color);
+    l.vector.shape_spec->stroke_width = p.stroke_width;
     return l;
 }
 

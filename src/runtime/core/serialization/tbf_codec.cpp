@@ -348,7 +348,7 @@ std::vector<std::uint8_t> TBFCodec::encode(const CompiledScene& scene) {
             writer.write_vector(layer.property_indices);
             writer.write_u8(layer.flags);
             writer.write_f32(layer.masks.feather);
-            writer.write_string(layer.blend_mode);
+            writer.write_u32(static_cast<std::uint32_t>(layer.blend_mode));
             writer.write_f64(layer.in_time);
             writer.write_f64(layer.out_time);
             writer.write_f64(layer.start_time);
@@ -405,12 +405,12 @@ std::vector<std::uint8_t> TBFCodec::encode(const CompiledScene& scene) {
             }
 
             // Unified Temporal & Tracking
-            writer.write_vector(layer.temporal.track_bindings, [](BinaryWriter& w, const spec::TrackBinding& b) {
+            writer.write_vector(layer.track_bindings, [](BinaryWriter& w, const spec::TrackBinding& b) {
                 TBFWriter& tw = static_cast<TBFWriter&>(w);
                 tw.write_track_binding(b);
             });
-            writer.write_time_remap(layer.temporal.time_remap);
-            writer.write_u8(static_cast<std::uint8_t>(layer.temporal.frame_blend));
+            writer.write_time_remap(layer.time_remap);
+            writer.write_u8(static_cast<std::uint8_t>(layer.frame_blend));
         }
 
 
@@ -431,6 +431,7 @@ std::vector<std::uint8_t> TBFCodec::encode(const CompiledScene& scene) {
             w2.write_f64(kf.time); w2.write_f64(kf.value); w2.write_u32(kf.easing);
             w2.write_f64(kf.cx1); w2.write_f64(kf.cy1); w2.write_f64(kf.cx2); w2.write_f64(kf.cy2);
             w2.write_f64(kf.spring_stiffness); w2.write_f64(kf.spring_damping); w2.write_f64(kf.spring_mass);
+            return kf;
         });
     });
     
@@ -538,7 +539,7 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
             layer.property_indices = reader.read_vector<std::uint32_t>();
             layer.flags = reader.read_u8();
             layer.masks.feather = reader.read_f32();
-            layer.blend_mode = reader.read_string();
+            layer.blend_mode = static_cast<decltype(layer.blend_mode)>(reader.read_u32());
             layer.in_time = reader.read_f64();
             layer.out_time = reader.read_f64();
             layer.start_time = reader.read_f64();
@@ -583,11 +584,11 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
             }
 
             // Unified Temporal & Tracking
-            layer.temporal.track_bindings = reader.read_vector<spec::TrackBinding>([](BinaryReader& r) {
+            layer.track_bindings = reader.read_vector<spec::TrackBinding>([](BinaryReader& r) {
                 return static_cast<TBFReader&>(r).read_track_binding();
             });
-            layer.temporal.time_remap = reader.read_time_remap();
-            layer.temporal.frame_blend = reader.read_enum<spec::FrameBlendMode>();
+            layer.time_remap = reader.read_time_remap();
+            layer.frame_blend = reader.read_enum<spec::FrameBlendMode>();
 
             comp.layers.push_back(std::move(layer));
         }

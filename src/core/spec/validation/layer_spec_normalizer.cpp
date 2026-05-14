@@ -5,8 +5,8 @@
 namespace tachyon::core {
 
 LayerType canonical_layer_type(const ::tachyon::LayerSpec& layer) {
-    if (layer.type != LayerType::Unknown && layer.type != LayerType::NullLayer) {
-        return layer.type;
+    if (layer.identity.type != LayerType::Unknown && layer.identity.type != LayerType::NullLayer) {
+        return layer.identity.type;
     }
     
     return LayerType::Unknown;
@@ -15,10 +15,10 @@ LayerType canonical_layer_type(const ::tachyon::LayerSpec& layer) {
 NormalizedLayerView normalize_layer_view(const ::tachyon::LayerSpec& layer) {
     NormalizedLayerView view;
     view.source = &layer;
-    view.type = layer.type;
-    view.asset_reference = layer.asset_id;
-    view.preset_reference = layer.preset_id;
-    view.precomp_reference = layer.precomp_id.has_value() ? std::string_view(*layer.precomp_id) : std::string_view{};
+    view.type = layer.identity.type;
+    view.asset_reference = layer.source.asset_id;
+    view.preset_reference = layer.source.preset_id;
+    view.precomp_reference = layer.source.precomp_id.has_value() ? std::string_view(*layer.source.precomp_id) : std::string_view{};
     
     return view;
 }

@@ -2,7 +2,9 @@
 
 #include "tachyon/presets/preset_base.h"
 #include "tachyon/core/animation/easing.h"
+#include "tachyon/core/spec/schema/common/common_spec.h"
 #include <map>
+#include <optional>
 #include <string>
 
 namespace tachyon::presets {
@@ -11,10 +13,10 @@ namespace tachyon::presets {
 
 struct TransitionParams : LayerParams {
     std::string id;
-    double      duration{0.4};
-    animation::EasingPreset easing{animation::EasingPreset::EaseOut};
+    std::optional<double> duration;
+    std::optional<animation::EasingPreset> easing;
     double      delay{0.0};
-    std::string direction{"none"}; // "up", "down", "left", "right", "random"
+    Direction direction{Direction::None};
     std::map<std::string, double> parameters;
 };
 

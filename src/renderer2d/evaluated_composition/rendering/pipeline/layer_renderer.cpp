@@ -18,7 +18,7 @@ std::shared_ptr<SurfaceRGBA> render_layer_surface(
     RenderContext& context,
     const std::optional<RectI>& target_rect) {
 
-    if (layer.type == scene::LayerType::Precomp) {
+    if (layer.identity.type == LayerType::Precomp) {
         return render_precomp_surface(layer, state, intent, plan, task, context);
     } else {
         return render_simple_layer_surface(layer, state, intent, context, target_rect);

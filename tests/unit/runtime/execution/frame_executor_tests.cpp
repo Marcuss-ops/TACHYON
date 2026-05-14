@@ -19,18 +19,18 @@ void check_true(bool condition, const std::string& message) {
 
 tachyon::SceneSpec make_scene(double x_offset = 0.0) {
     tachyon::LayerSpec layer;
-    layer.id = "solid_1";
-    layer.type = tachyon::LayerType::Solid;
-    layer.name = "Solid One";
-    layer.timing.start = 0.0;
-    layer.timing.source_in = 0.0;
-    layer.timing.source_out = 2.0;
-    layer.timing.duration = 2.0;
-    layer.opacity = 1.0;
-    layer.transform.position_x = x_offset;
-    layer.transform.position_y = 0.0;
-    layer.transform.scale_x = 1.0;
-    layer.transform.scale_y = 1.0;
+    layer.identity.id = "solid_1";
+    layer.identity.type = tachyon::LayerType::Solid;
+    layer.identity.name = "Solid One";
+    layer.playback.timing.start = 0.0;
+    layer.playback.timing.source_in = 0.0;
+    layer.playback.timing.source_out = 2.0;
+    layer.playback.timing.duration = 2.0;
+    layer.transform.opacity = 1.0;
+    layer.transform.transform.position_x = x_offset;
+    layer.transform.transform.position_y = 0.0;
+    layer.transform.transform.scale_x = 1.0;
+    layer.transform.transform.scale_y = 1.0;
 
     tachyon::CompositionSpec comp;
     comp.id = "main";
@@ -50,16 +50,16 @@ tachyon::SceneSpec make_scene(double x_offset = 0.0) {
 
 tachyon::SceneSpec make_procedural_scene() {
     tachyon::LayerSpec layer;
-    layer.id = "bg";
-    layer.type = tachyon::LayerType::Procedural;
-    layer.name = "Procedural Background";
-    layer.timing.start = 0.0;
-    layer.timing.source_in = 0.0;
-    layer.timing.source_out = 2.0;
-    layer.timing.duration = 2.0;
-    layer.opacity = 1.0;
-    layer.procedural = tachyon::ProceduralSpec{};
-    layer.procedural->kind = "tachyon.background.kind.grid_modern";
+    layer.identity.id = "bg";
+    layer.identity.type = tachyon::LayerType::Procedural;
+    layer.identity.name = "Procedural Background";
+    layer.playback.timing.start = 0.0;
+    layer.playback.timing.source_in = 0.0;
+    layer.playback.timing.source_out = 2.0;
+    layer.playback.timing.duration = 2.0;
+    layer.transform.opacity = 1.0;
+    layer.source.procedural = tachyon::ProceduralSpec{};
+    layer.source.procedural->kind = "tachyon.background.kind.grid_modern";
 
     tachyon::CompositionSpec comp;
     comp.id = "main";

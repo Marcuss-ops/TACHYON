@@ -69,19 +69,19 @@ LayerSpec make_layer_from_text_spec(const TextLayerSpec& spec) {
 
     LayerSpec l = presets::make_base_layer(spec.id, spec.name, "text", p);
 
-    l.text_box = spec.text_box;
-    l.text_content = spec.text_content;
-    l.font_id = spec.font_id;
-    l.font_size.value = spec.font_size;
-    l.fill_color = spec.fill_color;
-    l.stroke_color = spec.stroke_color;
-    l.stroke_width = spec.stroke_width;
+    l.text.box = spec.text_box;
+    l.text.content = spec.text_content;
+    l.text.font_id = spec.font_id;
+    l.text.font_size.value = spec.font_size;
+    l.text.fill_color = spec.fill_color;
+    l.text.stroke_color = spec.stroke_color;
+    l.text.stroke_width = spec.stroke_width;
     l.text_animators = spec.text_animators;
     l.text_highlights = spec.text_highlights;
-    l.subtitle_path = spec.subtitle_path;
-    l.subtitle_outline_color = spec.subtitle_outline_color;
-    l.subtitle_outline_width = spec.subtitle_outline_width;
-    l.word_timestamp_path = spec.word_timestamp_path;
+    l.subtitles.path = spec.subtitle_path;
+    l.subtitles.outline_color = spec.subtitle_outline_color;
+    l.subtitles.outline_width = spec.subtitle_outline_width;
+    l.subtitles.word_timestamp_path = spec.word_timestamp_path;
 
     return l;
 }

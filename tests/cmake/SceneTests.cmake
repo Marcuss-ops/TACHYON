@@ -5,6 +5,8 @@
 add_executable(TachyonSceneTests
     unit/mains/test_main_scene.cpp
     unit/core/scene/evaluator_tests.cpp
+    unit/core/scene/ae_concepts_tests.cpp
+    unit/core/scene/precomp_mask_tests.cpp
     unit/timeline/time_tests.cpp
     unit/core/analysis/scene_inspector_tests.cpp
     unit/core/analysis/motion_map_tests.cpp

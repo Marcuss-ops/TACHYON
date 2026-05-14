@@ -31,8 +31,8 @@ void SceneValidator::validate_layer(const NormalizedLayerView& normalized, const
         return;
     }
 
-    if (layer->id.empty()) {
-        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".id", "Layer ID cannot be empty."});
+    if (layer->identity.id.empty()) {
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".identity.id", "Layer ID cannot be empty."});
         out.error_count++;
     }
 
@@ -40,37 +40,37 @@ void SceneValidator::validate_layer(const NormalizedLayerView& normalized, const
     if (normalized.type == LayerType::Unknown) {
         out.issues.push_back(ValidationIssue{
             ValidationIssue::Severity::Error,
-            path + ".type",
+            path + ".identity.type",
             "Layer type is missing or unsupported."
         });
         out.error_count++;
     }
 
-    if (layer->timing.duration <= 0.0) {
-        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".timing.duration", "Layer duration must be greater than 0."});
+    if (layer->playback.timing.duration <= 0.0) {
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".playback.timing.duration", "Layer duration must be greater than 0."});
         out.error_count++;
     }
 
-    if (layer->timing.start < 0.0) {
-        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".timing.start", "Layer start time cannot be negative."});
+    if (layer->playback.timing.start < 0.0) {
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".playback.timing.start", "Layer start time cannot be negative."});
         out.error_count++;
     }
 
-    float layer_end = static_cast<float>(layer->timing.start + layer->timing.duration);
+    float layer_end = static_cast<float>(layer->playback.timing.start + layer->playback.timing.duration);
     if (layer_end > comp.duration + 0.001f) {
-        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning, path + ".timing.duration",
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning, path + ".playback.timing.duration",
             "Layer extends beyond composition duration (layer ends at " + std::to_string(layer_end) +
             "s, composition is " + std::to_string(comp.duration) + "s)."});
         out.warning_count++;
     }
 
-    if (layer->opacity < 0.0 || layer->opacity > 1.0) {
-        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".opacity", "Layer opacity must be between 0 and 1."});
+    if (layer->transform.opacity < 0.0 || layer->transform.opacity > 1.0) {
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".transform.opacity", "Layer opacity must be between 0 and 1."});
         out.error_count++;
     }
 
-    if (layer->width < 0 || layer->height < 0) {
-        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".dimensions", "Layer dimensions cannot be negative."});
+    if (layer->transform.width < 0 || layer->transform.height < 0) {
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".transform.dimensions", "Layer dimensions cannot be negative."});
         out.error_count++;
     }
 
@@ -88,13 +88,13 @@ void SceneValidator::validate_layer(const NormalizedLayerView& normalized, const
     }
 
     if (layer->track_matte_layer_id.has_value() && !layer->track_matte_layer_id->empty()) {
-        if (*layer->track_matte_layer_id == layer->id) {
+        if (*layer->track_matte_layer_id == layer->identity.id) {
             out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".track_matte_layer_id", "Track matte layer cannot reference itself."});
             out.error_count++;
         } else {
             bool found = false;
             for (const auto& l : comp.layers) {
-                if (l.id == *layer->track_matte_layer_id) {
+                if (l.identity.id == *layer->track_matte_layer_id) {
                     found = true;
                     break;
                 }
@@ -110,19 +110,19 @@ void SceneValidator::validate_layer(const NormalizedLayerView& normalized, const
     }
 
     if (normalized.type == LayerType::Precomp) {
-        if (!layer->precomp_id.has_value() || layer->precomp_id->empty()) {
-            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".precomp_id", "Precomp layer requires a composition reference."});
+        if (!layer->source.precomp_id.has_value() || layer->source.precomp_id->empty()) {
+            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".source.precomp_id", "Precomp layer requires a composition reference."});
             out.error_count++;
         } else {
             bool found = false;
             for (const auto& c : scene.compositions) {
-                if (c.id == *layer->precomp_id) {
+                if (c.id == *layer->source.precomp_id) {
                     found = true;
                     break;
                 }
             }
             if (!found) {
-                out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".precomp_id", "References non-existent composition: " + *layer->precomp_id});
+                out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".source.precomp_id", "References non-existent composition: " + *layer->source.precomp_id});
                 out.error_count++;
             }
         }
@@ -138,7 +138,7 @@ void SceneValidator::validate_safe_area(const ::tachyon::LayerSpec& layer, const
     // Se layer ha testo E posizione fuori dall'area sicura → Warning
     
     // Applica solo a layer di tipo text
-    if (canonical_layer_type(layer) != LayerType::Text) {
+    if (layer.identity.type != LayerType::Text) {
         return;
     }
     
@@ -148,10 +148,10 @@ void SceneValidator::validate_safe_area(const ::tachyon::LayerSpec& layer, const
     const float safe_height = comp.height - 2.0f * safe_y;
     
     // Calcola bounding box del layer
-    const float layer_left = static_cast<float>(layer.transform.position_x.value_or(0.0));
-    const float layer_top = static_cast<float>(layer.transform.position_y.value_or(0.0));
-    const float layer_right = layer_left + layer.width;
-    const float layer_bottom = layer_top + layer.height;
+    const float layer_left = static_cast<float>(layer.transform.transform.position_x.value_or(0.0));
+    const float layer_top = static_cast<float>(layer.transform.transform.position_y.value_or(0.0));
+    const float layer_right = layer_left + layer.transform.width;
+    const float layer_bottom = layer_top + layer.transform.height;
     
     // Controlla se il layer esce dalla safe area
     bool outside_safe = false;
@@ -176,7 +176,7 @@ void SceneValidator::validate_safe_area(const ::tachyon::LayerSpec& layer, const
     
     if (outside_safe) {
         out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning, 
-            path + ".transform.position",
+            path + ".transform.transform.position",
             "Text layer may be outside YouTube safe area (10% margin). " + violation_details});
         out.warning_count++;
     }
@@ -184,26 +184,26 @@ void SceneValidator::validate_safe_area(const ::tachyon::LayerSpec& layer, const
 
 void SceneValidator::validate_track_bindings(const ::tachyon::LayerSpec& layer, const std::string& path, ValidationResult& out) const {
     // Validate track bindings reference valid sources
-    for (std::size_t i = 0; i < layer.temporal.track_bindings.size(); ++i) {
-        const auto& binding = layer.temporal.track_bindings[i];
+    for (std::size_t i = 0; i < layer.playback.temporal.track_bindings.size(); ++i) {
+        const auto& binding = layer.playback.temporal.track_bindings[i];
         
         if (binding.source_id.empty()) {
             out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error,
-                path + ".temporal.track_bindings[" + std::to_string(i) + "].source_id",
+                path + ".playback.temporal.track_bindings[" + std::to_string(i) + "].source_id",
                 "Track binding source_id cannot be empty."});
             out.error_count++;
         }
         
         if (binding.source_track_name.empty()) {
             out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error,
-                path + ".temporal.track_bindings[" + std::to_string(i) + "].source_track_name",
+                path + ".playback.temporal.track_bindings[" + std::to_string(i) + "].source_track_name",
                 "Track binding source_track_name cannot be empty."});
             out.error_count++;
         }
         
         if (binding.influence < 0.0f || binding.influence > 1.0f) {
             out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning,
-                path + ".temporal.track_bindings[" + std::to_string(i) + "].influence",
+                path + ".playback.temporal.track_bindings[" + std::to_string(i) + "].influence",
                 "Track binding influence should be between 0.0 and 1.0."});
             out.warning_count++;
         }
@@ -212,42 +212,42 @@ void SceneValidator::validate_track_bindings(const ::tachyon::LayerSpec& layer, 
 
 void SceneValidator::validate_keyframes(const ::tachyon::LayerSpec& layer, const std::string& path, ValidationResult& out) const {
     // Validate that keyframe times are within the layer's time range
-    float layer_start = static_cast<float>(layer.timing.start);
-    float layer_end = static_cast<float>(layer_start + layer.timing.duration);
+    float layer_start = static_cast<float>(layer.playback.timing.start);
+    float layer_end = static_cast<float>(layer_start + layer.playback.timing.duration);
     
     // Check transform keyframes
-    for (const auto& kf : layer.transform.position_property.keyframes) {
+    for (const auto& kf : layer.transform.transform.position_property.keyframes) {
         if (kf.time < layer_start - 0.001f || kf.time > layer_end + 0.001f) {
             out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning, 
-                path + ".transform.position_property.keyframes",
+                path + ".transform.transform.position_property.keyframes",
                 "Keyframe at time " + std::to_string(kf.time) + "s is outside layer time range [" + 
                 std::to_string(layer_start) + "s, " + std::to_string(layer_end) + "s]."});
             out.warning_count++;
         }
     }
     
-    for (const auto& kf : layer.transform.scale_property.keyframes) {
+    for (const auto& kf : layer.transform.transform.scale_property.keyframes) {
         if (kf.time < layer_start - 0.001f || kf.time > layer_end + 0.001f) {
             out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning, 
-                path + ".transform.scale_property.keyframes",
+                path + ".transform.transform.scale_property.keyframes",
                 "Keyframe at time " + std::to_string(kf.time) + "s is outside layer time range."});
             out.warning_count++;
         }
     }
     
-    for (const auto& kf : layer.transform.rotation_property.keyframes) {
+    for (const auto& kf : layer.transform.transform.rotation_property.keyframes) {
         if (kf.time < layer_start - 0.001f || kf.time > layer_end + 0.001f) {
             out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning, 
-                path + ".transform.rotation_property.keyframes",
+                path + ".transform.transform.rotation_property.keyframes",
                 "Keyframe at time " + std::to_string(kf.time) + "s is outside layer time range."});
             out.warning_count++;
         }
     }
     
-    for (const auto& kf : layer.opacity_property.keyframes) {
+    for (const auto& kf : layer.transform.opacity_property.keyframes) {
         if (kf.time < layer_start - 0.001f || kf.time > layer_end + 0.001f) {
             out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning, 
-                path + ".opacity_property.keyframes",
+                path + ".transform.opacity_property.keyframes",
                 "Keyframe at time " + std::to_string(kf.time) + "s is outside layer time range."});
             out.warning_count++;
         }
@@ -281,7 +281,7 @@ void SceneValidator::validate_file_reference(const ::tachyon::LayerSpec& layer, 
     if (normalized.asset_reference.empty()) {
         out.issues.push_back(ValidationIssue{
             ValidationIssue::Severity::Error,
-            path + ".asset_id",
+            path + ".source.asset_id",
             "asset_id is required for image/video layers."
         });
         out.error_count++;
@@ -299,7 +299,7 @@ void SceneValidator::validate_file_reference(const ::tachyon::LayerSpec& layer, 
     if (!asset_found && !looks_like_media_reference(std::string(normalized.asset_reference))) {
         out.issues.push_back(ValidationIssue{
             ValidationIssue::Severity::Error,
-            path + ".asset_id",
+            path + ".source.asset_id",
             "asset id '" + std::string(normalized.asset_reference) + "' not found in scene assets."
         });
         out.error_count++;

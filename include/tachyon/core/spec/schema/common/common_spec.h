@@ -42,6 +42,61 @@ enum class TransitionKind {
     Custom
 };
 
+/**
+ * @brief Compositing blend modes for layers.
+ *
+ * Must be kept in sync with renderer2d::BlendMode (blending.h).
+ */
+enum class BlendMode {
+    Normal,
+    Multiply,
+    Screen,
+    Overlay,
+    Darken,
+    Lighten,
+    ColorDodge,
+    ColorBurn,
+    HardLight,
+    SoftLight,
+    Difference,
+    Exclusion,
+    Hue,
+    Saturation,
+    Color,
+    Luminosity,
+    Additive,
+    LinearDodge,
+    Subtract,
+    Divide,
+    LinearBurn,
+    VividLight,
+    LinearLight,
+    PinLight,
+    HardMix,
+    DarkerColor,
+    LighterColor,
+    StencilAlpha,
+    StencilLuma,
+    SilhouetteAlpha,
+    SilhouetteLuma,
+    AlphaAdd,
+    LuminescentPremult,
+    Count             ///< Sentinel value — not a real blend mode
+};
+
+/**
+ * @brief Direction for transitions and animations.
+ */
+enum class Direction {
+    None,
+    Left,
+    Right,
+    Up,
+    Down,
+    In,
+    Out
+};
+
 enum class AudioBandType {
     Bass,
     Mid,

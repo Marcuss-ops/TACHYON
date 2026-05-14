@@ -298,20 +298,6 @@ private:
         {TextAnimPropertyId::Tracking, "tracking_amount", true, false, true, &apply_tracking, &apply_batch_tracking},
     };
     
-    TextAnimPropertyRegistry() {
-        for (const auto& entry : kPropertyTable) {
-            register_property({
-                entry.id,
-                entry.name,
-                entry.supports_scalar,
-                entry.supports_simd,
-                entry.supports_parallel,
-                entry.apply_to_glyph,
-                entry.apply_batch
-            });
-        }
-    }
-
     std::vector<TextAnimPropertyDescriptor> properties_;
 };
 

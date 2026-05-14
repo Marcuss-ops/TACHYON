@@ -1,6 +1,4 @@
 #include "tachyon/core/scene/evaluation/evaluator.h"
-#include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"
-
 #include <iostream>
 #include <string>
 #include <vector>
@@ -31,11 +29,11 @@ bool run_precomp_mask_tests() {
         sub_comp.frame_rate = {30, 1};
         
         LayerSpec sub_layer;
-        sub_layer.id = "sub_layer";
-        sub_layer.type = LayerType::Solid;
-        sub_layer.enabled = true;
-        sub_layer.in_point = 0.0;
-        sub_layer.out_point = 10.0;
+        sub_layer.identity.id = "sub_layer";
+        sub_layer.identity.type = LayerType::Solid;
+        sub_layer.identity.enabled = true;
+        sub_layer.playback.timing.start = 0.0;
+        sub_layer.playback.timing.duration = 10.0;
         sub_comp.layers.push_back(sub_layer);
         
         scene.compositions.push_back(sub_comp);
@@ -47,12 +45,12 @@ bool run_precomp_mask_tests() {
         main_comp.frame_rate = {30, 1};
         
         LayerSpec precomp_layer;
-        precomp_layer.id = "precomp";
-        precomp_layer.type = LayerType::Precomp;
-        precomp_layer.precomp_id = "sub";
-        precomp_layer.enabled = true;
-        precomp_layer.in_point = 0.0;
-        precomp_layer.out_point = 10.0;
+        precomp_layer.identity.id = "precomp";
+        precomp_layer.identity.type = LayerType::Precomp;
+        precomp_layer.source.precomp_id = "sub";
+        precomp_layer.identity.enabled = true;
+        precomp_layer.playback.timing.start = 0.0;
+        precomp_layer.playback.timing.duration = 10.0;
         main_comp.layers.push_back(precomp_layer);
         
         scene.compositions.push_back(main_comp);
@@ -77,13 +75,13 @@ bool run_precomp_mask_tests() {
         comp.height = 100;
         
         LayerSpec matte_layer;
-        matte_layer.id = "matte";
-        matte_layer.type = LayerType::Solid;
+        matte_layer.identity.id = "matte";
+        matte_layer.identity.type = LayerType::Solid;
         comp.layers.push_back(matte_layer);
         
         LayerSpec masked_layer;
-        masked_layer.id = "masked";
-        masked_layer.type = LayerType::Solid;
+        masked_layer.identity.id = "masked";
+        masked_layer.identity.type = LayerType::Solid;
         masked_layer.track_matte_type = TrackMatteType::Alpha;
         masked_layer.track_matte_layer_id = "matte";
         comp.layers.push_back(masked_layer);
@@ -92,6 +90,7 @@ bool run_precomp_mask_tests() {
         check_true(evaluated.layers.size() == 2, "evaluated comp should have 2 layers");
         check_true(evaluated.layers[1].track_matte_layer_index.has_value(), "masked layer should have matte layer index");
         if (evaluated.layers[1].track_matte_layer_index) {
+            // Note: matte layer index is relative to ALL layers in composition
             check_true(*evaluated.layers[1].track_matte_layer_index == 0, "matte index should be 0");
         }
     }

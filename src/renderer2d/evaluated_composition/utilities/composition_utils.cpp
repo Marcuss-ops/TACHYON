@@ -38,15 +38,15 @@ renderer2d::Color apply_opacity(renderer2d::Color color, double opacity) {
 }
 
 renderer2d::RectI layer_rect(const scene::EvaluatedLayerState& layer, std::int64_t comp_width, std::int64_t comp_height, float resolution_scale) {
-    const std::int64_t base_width = layer.width > 0 ? layer.width : comp_width;
-    const std::int64_t base_height = layer.height > 0 ? layer.height : comp_height;
-    const float scale_x = std::max(0.0f, std::abs(layer.local_transform.scale.x)) * resolution_scale;
-    const float scale_y = std::max(0.0f, std::abs(layer.local_transform.scale.y)) * resolution_scale;
+    const std::int64_t base_width = layer.transform.width > 0 ? layer.transform.width : comp_width;
+    const std::int64_t base_height = layer.transform.height > 0 ? layer.transform.height : comp_height;
+    const float scale_x = std::max(0.0f, std::abs(layer.transform.local_transform.scale.x)) * resolution_scale;
+    const float scale_y = std::max(0.0f, std::abs(layer.transform.local_transform.scale.y)) * resolution_scale;
     const int width = std::max(1, static_cast<int>(std::lround(static_cast<double>(base_width) * static_cast<double>(scale_x))));
     const int height = std::max(1, static_cast<int>(std::lround(static_cast<double>(base_height) * static_cast<double>(scale_y))));
     return renderer2d::RectI{
-        static_cast<int>(std::lround(layer.local_transform.position.x * resolution_scale)),
-        static_cast<int>(std::lround(layer.local_transform.position.y * resolution_scale)),
+        static_cast<int>(std::lround(layer.transform.local_transform.position.x * resolution_scale)),
+        static_cast<int>(std::lround(layer.transform.local_transform.position.y * resolution_scale)),
         width,
         height
     };

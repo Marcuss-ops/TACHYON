@@ -21,7 +21,8 @@ void SceneValidator::validate_composition(const NormalizedCompositionView& comp,
         out.error_count++;
     }
 
-    if (source->fps <= 0.0f) {
+    double fps = source->fps.has_value() ? static_cast<double>(*source->fps) : source->frame_rate.value();
+    if (fps <= 0.0) {
         out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, "composition." + source->id + ".fps", "FPS must be greater than 0."});
         out.error_count++;
     }
@@ -48,14 +49,14 @@ void SceneValidator::validate_duplicate_ids(const ::tachyon::CompositionSpec& co
     // Check layer IDs
     for (std::size_t i = 0; i < comp.layers.size(); ++i) {
         const auto& layer = comp.layers[i];
-        if (!layer.id.empty()) {
-            if (seen_ids.count(layer.id)) {
+        if (!layer.identity.id.empty()) {
+            if (seen_ids.count(layer.identity.id)) {
                 out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, 
                     "composition." + comp.id + ".layers[" + std::to_string(i) + "].id",
-                    "Duplicate layer ID: " + layer.id});
+                    "Duplicate layer ID: " + layer.identity.id});
                 out.error_count++;
             }
-            seen_ids.insert(layer.id);
+            seen_ids.insert(layer.identity.id);
         }
     }
     

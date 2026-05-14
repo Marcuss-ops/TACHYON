@@ -3,6 +3,7 @@
 #include "tachyon/core/spec/schema/common/common_spec.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
+#include "tachyon/presets/scene/scene_preset_registry.h"
 
 #include <filesystem>
 #include <optional>
@@ -14,6 +15,7 @@ namespace tachyon {
 struct LibrarySceneEntry {
     std::string id;
     std::string name;
+    std::string description;
     std::filesystem::path path;
     bool is_cpp_preset{false};
 };
@@ -73,4 +75,3 @@ private:
 };
 
 }  // namespace tachyon
-achyon

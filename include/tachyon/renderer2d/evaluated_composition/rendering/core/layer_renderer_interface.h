@@ -56,18 +56,18 @@ public:
 
     void register_builtin_renderers();
 
-    void register_renderer(scene::LayerType layer_type, std::unique_ptr<ILayerRenderer> renderer) {
+    void register_renderer(LayerType layer_type, std::unique_ptr<ILayerRenderer> renderer) {
         m_renderers[layer_type] = std::move(renderer);
     }
 
-    const ILayerRenderer* get_renderer(scene::LayerType layer_type) const {
+    const ILayerRenderer* get_renderer(LayerType layer_type) const {
         auto it = m_renderers.find(layer_type);
         return it != m_renderers.end() ? it->second.get() : nullptr;
     }
 
 private:
     LayerRendererRegistry() = default;
-    std::unordered_map<scene::LayerType, std::unique_ptr<ILayerRenderer>> m_renderers;
+    std::unordered_map<LayerType, std::unique_ptr<ILayerRenderer>> m_renderers;
 };
 
 } // namespace tachyon::renderer2d

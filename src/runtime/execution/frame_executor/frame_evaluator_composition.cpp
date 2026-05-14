@@ -1,5 +1,4 @@
 #include "frame_executor_internal.h"
-
 #include <chrono>
 
 namespace tachyon {
@@ -29,9 +28,7 @@ void evaluate_composition(
 
     const auto timing_start = std::chrono::high_resolution_clock::now();
     auto record_timing = [&]() {
-        if (!context.diagnostics) {
-            return;
-        }
+        if (!context.diagnostics) return;
         const auto timing_end = std::chrono::high_resolution_clock::now();
         context.diagnostics->timings.push_back(TimingSample{
             "composition",
@@ -52,12 +49,12 @@ void evaluate_composition(
     }
 
     auto state = std::make_shared<scene::EvaluatedCompositionState>();
+    state->composition_id = std::to_string(comp.node.node_id);
     state->width = comp.width;
     state->height = comp.height;
-    state->frame_rate.numerator = comp.fps;
-    state->frame_rate.denominator = 1;
     state->frame_number = task.frame_number;
     state->composition_time_seconds = frame_time_seconds;
+    state->duration_seconds = comp.duration;
 
     state->layers.reserve(comp.layers.size());
     for (const auto& layer : comp.layers) {

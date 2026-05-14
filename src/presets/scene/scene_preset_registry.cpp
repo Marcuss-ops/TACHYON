@@ -3,6 +3,16 @@
 
 namespace tachyon::presets {
 
+ScenePresetRegistry& ScenePresetRegistry::instance() {
+    static ScenePresetRegistry registry;
+    static bool loaded = false;
+    if (!loaded) {
+        registry.load_builtins();
+        loaded = true;
+    }
+    return registry;
+}
+
 void ScenePresetRegistry::register_spec(ScenePresetSpec spec) {
     if (spec.id.empty()) {
         return;

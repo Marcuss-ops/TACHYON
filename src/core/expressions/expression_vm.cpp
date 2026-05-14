@@ -139,6 +139,14 @@ double ExpressionVM::execute(const Bytecode& code, const ExpressionContext& cont
                     double decay = std::exp(-damping * t);
                     stack.push_back(from + (to - from) * (1.0 - decay * std::cos(omega * t)));
                 }
+                else if (name == "radiansToDegrees") {
+                    check_args(1);
+                    stack.push_back(args[0] * 57.29577951308232);
+                }
+                else if (name == "degreesToRadians") {
+                    check_args(1);
+                    stack.push_back(args[0] * 0.017453292519943295);
+                }
                 else {
                     stack.push_back(0.0);
                 }

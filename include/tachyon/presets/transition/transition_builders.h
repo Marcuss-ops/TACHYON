@@ -2,6 +2,7 @@
 
 #include "tachyon/presets/transition/transition_params.h"
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
+#include "tachyon/core/spec/schema/common/common_spec.h"
 
 namespace tachyon::presets {
 

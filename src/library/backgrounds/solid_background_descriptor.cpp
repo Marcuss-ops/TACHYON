@@ -20,15 +20,15 @@ BackgroundDescriptor make_solid_background_descriptor() {
     // Build function
     desc.build = [](const registry::ParameterBag& params) -> LayerSpec {
         LayerSpec spec;
-        spec.type = LayerType::Solid;
-        spec.name = "Solid Background";
+        spec.identity.type = LayerType::Solid;
+        spec.identity.name = "Solid Background";
         
-        spec.width = static_cast<int>(params.get_or<float>("width", 1920.0f));
-        spec.height = static_cast<int>(params.get_or<float>("height", 1080.0f));
-        spec.timing.duration = params.get_or<double>("duration", 10.0);
+        spec.transform.width = static_cast<int>(params.get_or<float>("width", 1920.0f));
+        spec.transform.height = static_cast<int>(params.get_or<float>("height", 1080.0f));
+        spec.playback.timing.duration = params.get_or<double>("duration", 10.0);
         
         auto color = params.get_or<ColorSpec>("color", ColorSpec(0, 0, 0));
-        spec.fill_color.keyframes = {{0.0, color}};
+        spec.text.fill_color.keyframes = {{0.0, color}};
         
         return spec;
     };

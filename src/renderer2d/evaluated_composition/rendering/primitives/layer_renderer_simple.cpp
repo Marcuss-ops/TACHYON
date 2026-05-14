@@ -50,10 +50,10 @@ std::shared_ptr<SurfaceRGBA> make_canvas(
 
     const std::uint32_t width = target_rect.has_value()
         ? static_cast<std::uint32_t>(std::max(1, target_rect->width))
-        : static_cast<std::uint32_t>(std::max(1, state.width));
+        : static_cast<std::uint32_t>(std::max(1u, state.width));
     const std::uint32_t height = target_rect.has_value()
         ? static_cast<std::uint32_t>(std::max(1, target_rect->height))
-        : static_cast<std::uint32_t>(std::max(1, state.height));
+        : static_cast<std::uint32_t>(std::max(1u, state.height));
 
     auto surface = context.surface_pool 
         ? context.surface_pool->acquire(width, height)
@@ -136,54 +136,6 @@ void render_glyph_direct(
     }
 }
 
-void blit_text_surface(
-    SurfaceRGBA& dst,
-    const ::tachyon::text::TextRasterSurface& src,
-    int offset_x,
-    int offset_y) {
-
-    const auto& pixels = src.rgba_pixels();
-    const std::uint32_t src_w = src.width();
-    const std::uint32_t src_h = src.height();
-    const std::uint32_t dst_w = dst.width();
-    const std::uint32_t dst_h = dst.height();
-
-    // Optimization: Skip entire rows if they are out of bounds
-    const int y_start = std::max(0, -offset_y);
-    const int y_end = std::min<int>(src_h, static_cast<int>(dst_h) - offset_y);
-    const int x_start = std::max(0, -offset_x);
-    const int x_end = std::min<int>(src_w, static_cast<int>(dst_w) - offset_x);
-
-    for (int y = y_start; y < y_end; ++y) {
-        const std::uint8_t* src_row = &pixels[(static_cast<std::size_t>(y) * src_w) * 4U];
-        const std::uint32_t dy = static_cast<std::uint32_t>(offset_y + y);
-        
-        for (int x = x_start; x < x_end; ++x) {
-            const std::size_t src_idx = static_cast<std::size_t>(x) * 4U;
-            const std::uint8_t a = src_row[src_idx + 3U];
-            if (a == 0U) continue;
-
-            const std::uint32_t dx = static_cast<std::uint32_t>(offset_x + x);
-            
-            if (a == 255U) {
-                dst.set_pixel(dx, dy, Color{
-                    static_cast<float>(src_row[src_idx + 0U]) / 255.0f,
-                    static_cast<float>(src_row[src_idx + 1U]) / 255.0f,
-                    static_cast<float>(src_row[src_idx + 2U]) / 255.0f,
-                    1.0f
-                });
-            } else {
-                dst.blend_pixel(dx, dy, Color{
-                    static_cast<float>(src_row[src_idx + 0U]) / 255.0f,
-                    static_cast<float>(src_row[src_idx + 1U]) / 255.0f,
-                    static_cast<float>(src_row[src_idx + 2U]) / 255.0f,
-                    static_cast<float>(a) / 255.0f
-                });
-            }
-        }
-    }
-}
-
 std::string make_precomp_cache_key(
     const scene::EvaluatedLayerState& layer,
     const scene::EvaluatedCompositionState& state,
@@ -194,9 +146,9 @@ std::string make_precomp_cache_key(
     key += "precomp:";
     key += state.composition_id;
     key += ':';
-    key += layer.id.empty() ? layer.layer_id : layer.id;
+    key += layer.identity.id;
     key += ':';
-    key += layer.precomp_id.value_or("");
+    key += layer.source.precomp_id.value_or("");
     key += ":f";
     key += std::to_string(task.frame_number);
     key += ":k";
@@ -218,26 +170,10 @@ public:
         const std::optional<RectI>& target_rect,
         std::shared_ptr<SurfaceRGBA>& surface) const override {
         (void)intent;
+        (void)state;
 
         const int origin_x = target_rect.has_value() ? target_rect->x : 0;
         const int origin_y = target_rect.has_value() ? target_rect->y : 0;
-
-        // --- CACHE LOOKUP ---
-        std::string cache_key;
-        if (context.text_surface_cache && layer.text_animators.empty()) {
-            cache_key = "text_layer:" + (layer.id.empty() ? layer.layer_id : layer.id) + ":" + 
-                        layer.text.content + ":" + layer.text.font_id + ":" + 
-                        std::to_string(layer.text.font_size) + ":" +
-                        std::to_string(layer.text.fill_color.r) + "," + std::to_string(layer.text.fill_color.g) + "," + 
-                        std::to_string(layer.text.fill_color.b) + "," + std::to_string(layer.text.fill_color.a) + ":" +
-                        std::to_string(layer.local_transform.scale.x) + "," + std::to_string(layer.local_transform.scale.y);
-            
-            auto cached = context.text_surface_cache->get(cache_key);
-            if (cached) {
-                composite_surface(*surface, *cached, -origin_x, -origin_y, BlendMode::Normal);
-                return true;
-            }
-        }
 
         const auto* registry = context.font_registry;
         if (registry == nullptr) return false;
@@ -246,43 +182,35 @@ public:
         if (!layer.text.font_id.empty()) font = registry->find(layer.text.font_id);
         
         if (font == nullptr) {
-            std::cerr << "[error] Font NOT FOUND: " << layer.text.font_id << ". Falling back to default." << std::endl;
             font = registry->default_font();
         }
         if (font == nullptr) return false;
 
         ::tachyon::text::TextStyle style;
         style.pixel_size = static_cast<std::uint32_t>(std::max(1.0f, layer.text.font_size));
-        style.text.fill_color = to_color(layer.text.fill_color);
+        style.fill_color = to_color(layer.text.fill_color);
 
         ::tachyon::text::TextLayoutOptions layout_options;
-        layout_options.fixed_pitch = ::tachyon::text::prefers_fixed_pitch_layout(layer.text_animators);
+        layout_options.fixed_pitch = ::tachyon::text::prefers_fixed_pitch_layout(layer.text.animators);
         
         const auto layout = ::tachyon::text::layout_text(*font, layer.text.content, style, layer.text.box, layout_options);
         
-        // Resolve world transform using the layout bounds
-        const math::Vector2 bounds = {layout.box_width, layout.box_height};
-        const auto resolved = resolve_transform_2d(layer.local_transform, bounds);
-
-        render_trace(
-            "text layer=" + layer.id +
-            " t=" + std::to_string(layer.local_time_seconds) +
-            " glyphs=" + std::to_string(layout.glyphs.size()) +
-            " size=" + std::to_string(layout.box_width) + "x" + std::to_string(layout.box_height));
+        const math::Vector2 bounds = {static_cast<float>(layout.box_width), static_cast<float>(layout.box_height)};
+        const auto resolved = resolve_transform_2d(layer.transform.local_transform, bounds);
 
         if (layout.glyphs.empty()) {
             return true;
         }
 
-        const bool has_animations = !layer.text_animators.empty();
-        const bool has_highlights = !layer.text_highlights.empty();
+        const bool has_animations = !layer.text.animators.empty();
+        const bool has_highlights = !layer.text.highlights.empty();
 
         if (!has_animations && !has_highlights) {
             for (const auto& glyph : layout.glyphs) {
                 const auto* bitmap = glyph.resolved_glyph;
                 if (bitmap == nullptr) continue;
 
-                math::Vector2 wp_base = resolved.apply({glyph.position.x, glyph.position.y});
+                math::Vector2 wp_base = resolved.apply(math::Vector2{static_cast<float>(glyph.position.x), static_cast<float>(glyph.position.y)});
                 const int dx = static_cast<int>(std::lround(wp_base.x)) - origin_x;
                 const int dy = static_cast<int>(std::lround(wp_base.y)) - origin_y;
                 const int dw = std::max(1, static_cast<int>(std::lround(glyph.width * resolved.scale.x)));
@@ -290,84 +218,60 @@ public:
                 
                 render_glyph_direct(*surface, *bitmap, dx, dy, dw, dh, to_color(layer.text.fill_color));
             }
-
-            // --- CACHE STORE ---
-            if (context.text_surface_cache && !cache_key.empty()) {
-                auto text_surface = std::make_shared<SurfaceRGBA>(surface->width(), surface->height());
-                text_surface->set_profile(surface->profile());
-                text_surface->clear(Color::transparent());
-                
-                // Redo render to the dedicated surface for caching
-                for (const auto& glyph : layout.glyphs) {
-                    const auto* bitmap = glyph.resolved_glyph;
-                    if (bitmap == nullptr) continue;
-                    math::Vector2 wp_base = resolved.apply({glyph.position.x, glyph.position.y});
-                    const int dx = static_cast<int>(std::lround(wp_base.x)) - origin_x;
-                    const int dy = static_cast<int>(std::lround(wp_base.y)) - origin_y;
-                    const int dw = std::max(1, static_cast<int>(std::lround(glyph.width * resolved.scale.x)));
-                    const int dh = std::max(1, static_cast<int>(std::lround(glyph.height * resolved.scale.y)));
-                    render_glyph_direct(*text_surface, *bitmap, dx, dy, dw, dh, to_color(layer.text.fill_color));
-                }
-                context.text_surface_cache->put(cache_key, text_surface);
-            }
-
             return true;
         }
 
-        if (!layout.glyphs.empty()) {
-            const float time_seconds = static_cast<float>(layer.local_time_seconds);
-            ::tachyon::text::TextAnimationOptions animation{};
-            animation.time_seconds = time_seconds;
-            animation.animators = layer.text_animators;
+        const float time_seconds = static_cast<float>(layer.playback.local_time_seconds);
+        ::tachyon::text::TextAnimationOptions animation_opts{};
+        animation_opts.time_seconds = time_seconds;
+        animation_opts.animators = layer.text.animators;
+        
+        const auto paints = ::tachyon::text::resolve_glyph_paints(*font, layout, animation_opts);
+
+        for (const auto& highlight : layer.text.highlights) {
+            if (highlight.end_glyph <= highlight.start_glyph || highlight.start_glyph >= layout.glyphs.size()) continue;
+            std::size_t h_end_idx = highlight.end_glyph;
+            if (h_end_idx > layout.glyphs.size()) h_end_idx = layout.glyphs.size();
+            float h_min_x = 1e30f, h_min_y = 1e30f;
+            float h_max_x = -1e30f, h_max_y = -1e30f;
             
-            const auto paints = ::tachyon::text::resolve_glyph_paints(*font, layout, animation);
-
-            for (const auto& highlight : layer.text_highlights) {
-                if (highlight.end_glyph <= highlight.start_glyph || highlight.start_glyph >= layout.glyphs.size()) continue;
-                std::size_t h_end_idx = highlight.end_glyph;
-                if (h_end_idx > layout.glyphs.size()) h_end_idx = layout.glyphs.size();
-                float h_min_x = 1e30f, h_min_y = 1e30f;
-                float h_max_x = -1e30f, h_max_y = -1e30f;
-                
-                for (std::size_t i = highlight.start_glyph; i < h_end_idx; ++i) {
-                    const auto& g = layout.glyphs[i];
-                    h_min_x = (std::min)(h_min_x, g.position.x); h_min_y = (std::min)(h_min_y, g.position.y);
-                    h_max_x = (std::max)(h_max_x, g.position.x + g.width); h_max_y = (std::max)(h_max_y, g.position.y + g.height);
-                }
-                if (h_min_x < h_max_x && h_min_y < h_max_y) {
-                    math::Vector2 h_wp0 = resolved.apply({h_min_x, h_min_y});
-                    math::Vector2 h_wp1 = resolved.apply({h_max_x, h_max_y});
-                    
-                    int h_final_x = (int)(h_wp0.x + 0.5f) - origin_x - (int)highlight.padding_x;
-                    int h_final_y = (int)(h_wp0.y + 0.5f) - origin_y - (int)highlight.padding_y;
-                    int h_final_w = (int)(h_wp1.x - h_wp0.x + 0.5f) + (int)highlight.padding_x * 2;
-                    int h_final_h = (int)(h_wp1.y - h_wp0.y + 0.5f) + (int)highlight.padding_y * 2;
-                    renderer2d::Color h_final_color = to_color(highlight.color);
-                    
-                    fill_rect_direct_worker(*surface, h_final_x, h_final_y, h_final_w, h_final_h, h_final_color);
-                }
+            for (std::size_t i = highlight.start_glyph; i < h_end_idx; ++i) {
+                const auto& g = layout.glyphs[i];
+                h_min_x = (std::min)(h_min_x, g.position.x); h_min_y = (std::min)(h_min_y, g.position.y);
+                h_max_x = (std::max)(h_max_x, g.position.x + g.width); h_max_y = (std::max)(h_max_y, g.position.y + g.height);
             }
-
-            for (const auto& paint : paints) {
-                const auto* bitmap = paint.glyph;
-                if (bitmap == nullptr) continue;
-
-                math::Vector2 wp_base = resolved.apply({paint.base_x, paint.base_y});
-                const int dx = static_cast<int>(std::lround(wp_base.x)) - origin_x;
-                const int dy = static_cast<int>(std::lround(wp_base.y)) - origin_y;
-                const int dw = std::max(1, static_cast<int>(std::lround(paint.target_width * resolved.scale.x)));
-                const int dh = std::max(1, static_cast<int>(std::lround(paint.target_height * resolved.scale.y)));
+            if (h_min_x < h_max_x && h_min_y < h_max_y) {
+                math::Vector2 h_wp0 = resolved.apply(math::Vector2{h_min_x, h_min_y});
+                math::Vector2 h_wp1 = resolved.apply(math::Vector2{h_max_x, h_max_y});
                 
-                renderer2d::Color final_color = to_color(paint.text.fill_color);
-                final_color.a *= paint.opacity;
+                int h_final_x = (int)(h_wp0.x + 0.5f) - origin_x - (int)highlight.padding_x;
+                int h_final_y = (int)(h_wp0.y + 0.5f) - origin_y - (int)highlight.padding_y;
+                int h_final_w = (int)(h_wp1.x - h_wp0.x + 0.5f) + (int)highlight.padding_x * 2;
+                int h_final_h = (int)(h_wp1.y - h_wp0.y + 0.5f) + (int)highlight.padding_y * 2;
+                renderer2d::Color h_final_color = to_color(highlight.color);
                 
-                if (paint.is_cursor) {
-                    fill_rect_direct_worker(*surface, dx, dy, dw, dh, final_color);
-                } else {
-                    render_glyph_direct(*surface, *bitmap, dx, dy, dw, dh, final_color);
-                }
+                fill_rect_direct_worker(*surface, h_final_x, h_final_y, h_final_w, h_final_h, h_final_color);
             }
-            return true;
+        }
+
+        for (const auto& paint : paints) {
+            const auto* bitmap = paint.glyph;
+            if (bitmap == nullptr) continue;
+
+            math::Vector2 wp_base = resolved.apply(math::Vector2{static_cast<float>(paint.base_x), static_cast<float>(paint.base_y)});
+            const int dx = static_cast<int>(std::lround(wp_base.x)) - origin_x;
+            const int dy = static_cast<int>(std::lround(wp_base.y)) - origin_y;
+            const int dw = std::max(1, static_cast<int>(std::lround(paint.target_width * resolved.scale.x)));
+            const int dh = std::max(1, static_cast<int>(std::lround(paint.target_height * resolved.scale.y)));
+            
+            renderer2d::Color final_color = to_color(paint.fill_color);
+            final_color.a *= paint.opacity;
+            
+            if (paint.is_cursor) {
+                fill_rect_direct_worker(*surface, dx, dy, dw, dh, final_color);
+            } else {
+                render_glyph_direct(*surface, *bitmap, dx, dy, dw, dh, final_color);
+            }
         }
         return true;
     }
@@ -383,7 +287,6 @@ public:
         const std::optional<RectI>& target_rect,
         std::shared_ptr<SurfaceRGBA>& surface) const override {
         (void)intent;
-
         (void)state;
         (void)target_rect;
 
@@ -402,8 +305,6 @@ public:
         }
 
         surface = std::const_pointer_cast<SurfaceRGBA>(std::static_pointer_cast<const SurfaceRGBA>(image));
-        // Note: we might need to copy if the renderer expects a mutable surface, 
-        // but often images are read-only sources.
         if (surface) {
             surface = std::make_shared<SurfaceRGBA>(*image);
         }
@@ -421,7 +322,6 @@ public:
         const std::optional<RectI>& target_rect,
         std::shared_ptr<SurfaceRGBA>& surface) const override {
         (void)intent;
-
         (void)state;
         (void)target_rect;
 
@@ -434,7 +334,7 @@ public:
             return false;
         }
 
-        const auto* frame = context.media->get_video_frame(*media_source, layer.local_time_seconds);
+        const auto* frame = context.media->get_video_frame(*media_source, layer.playback.local_time_seconds);
         if (frame == nullptr) {
             surface->clear({0, 0, 1, 1}); // BLUE
             return true;
@@ -457,18 +357,17 @@ public:
         const std::optional<RectI>& target_rect,
         std::shared_ptr<SurfaceRGBA>& surface) const override {
         (void)intent;
-        
         (void)state; (void)context;
         
         const int origin_x = target_rect.has_value() ? target_rect->x : 0;
         const int origin_y = target_rect.has_value() ? target_rect->y : 0;
-        const float scale_x = std::max(0.001f, layer.local_transform.scale.x);
-        const float scale_y = std::max(0.001f, layer.local_transform.scale.y);
-        const int base_x = static_cast<int>(std::lround(layer.local_transform.position.x - layer.local_transform.anchor_point.x * scale_x)) - origin_x;
-        const int base_y = static_cast<int>(std::lround(layer.local_transform.position.y - layer.local_transform.anchor_point.y * scale_y)) - origin_y;
+        const float scale_x = std::max(0.001f, layer.transform.local_transform.scale.x);
+        const float scale_y = std::max(0.001f, layer.transform.local_transform.scale.y);
+        const int base_x = static_cast<int>(std::lround(layer.transform.local_transform.position.x - layer.transform.local_transform.anchor_point.x * scale_x)) - origin_x;
+        const int base_y = static_cast<int>(std::lround(layer.transform.local_transform.position.y - layer.transform.local_transform.anchor_point.y * scale_y)) - origin_y;
 
-        const int width = std::max(1, static_cast<int>(std::lround(static_cast<float>(layer.width) * scale_x)));
-        const int height = std::max(1, static_cast<int>(std::lround(static_cast<float>(layer.height) * scale_y)));
+        const int width = std::max(1, static_cast<int>(std::lround(static_cast<float>(layer.transform.width) * scale_x)));
+        const int height = std::max(1, static_cast<int>(std::lround(static_cast<float>(layer.transform.height) * scale_y)));
         surface->fill_rect(RectI{base_x, base_y, width, height}, to_color(layer.text.fill_color), true);
         return true;
     }
@@ -484,9 +383,8 @@ public:
         const std::optional<RectI>& target_rect,
         std::shared_ptr<SurfaceRGBA>& surface) const override {
         (void)intent;
-        
         (void)state; (void)context;
-        render_procedural_layer(*surface, layer, layer.local_time_seconds, target_rect);
+        render_procedural_layer(*surface, layer, layer.playback.local_time_seconds, target_rect);
         return true;
     }
 };
@@ -494,11 +392,11 @@ public:
 } // namespace
 
 void LayerRendererRegistry::register_builtin_renderers() {
-    register_renderer(scene::LayerType::Image, std::make_unique<ImageLayerRenderer>());
-    register_renderer(scene::LayerType::Solid, std::make_unique<SolidLayerRenderer>());
-    register_renderer(scene::LayerType::Video, std::make_unique<VideoLayerRenderer>());
-    register_renderer(scene::LayerType::Text, std::make_unique<TextLayerRenderer>());
-    register_renderer(scene::LayerType::Procedural, std::make_unique<ProceduralLayerRenderer>());
+    register_renderer(LayerType::Image, std::make_unique<ImageLayerRenderer>());
+    register_renderer(LayerType::Solid, std::make_unique<SolidLayerRenderer>());
+    register_renderer(LayerType::Video, std::make_unique<VideoLayerRenderer>());
+    register_renderer(LayerType::Text, std::make_unique<TextLayerRenderer>());
+    register_renderer(LayerType::Procedural, std::make_unique<ProceduralLayerRenderer>());
 }
 
 std::shared_ptr<SurfaceRGBA> render_precomp_surface(
@@ -508,7 +406,6 @@ std::shared_ptr<SurfaceRGBA> render_precomp_surface(
     const RenderPlan& plan,
     const FrameRenderTask& task,
     RenderContext& context) {
-    (void)intent;
 
     if (context.precomp_cache && layer.nested_composition) {
         const std::string cache_key = make_precomp_cache_key(layer, state, task);
@@ -550,15 +447,9 @@ std::shared_ptr<SurfaceRGBA> render_simple_layer_surface(
         return surface;
     }
 
-    auto* renderer = LayerRendererRegistry::get().get_renderer(layer.type);
+    auto* renderer = LayerRendererRegistry::get().get_renderer(layer.identity.type);
     if (renderer) {
-        render_trace(
-            "layer dispatch begin id=" + layer.id +
-            " type=" + std::to_string(static_cast<int>(layer.type)));
         renderer->render(layer, state, intent, context, target_rect, surface);
-        render_trace(
-            "layer dispatch end id=" + layer.id +
-            " type=" + std::to_string(static_cast<int>(layer.type)));
     }
 
     return surface;

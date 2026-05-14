@@ -29,4 +29,5 @@ set(TachyonPresetsSources
 
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/preset_scene_resolver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/common_scenes.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/presets/preset_applier.cpp
 )

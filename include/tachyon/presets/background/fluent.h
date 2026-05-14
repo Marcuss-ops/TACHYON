@@ -12,17 +12,6 @@ namespace tachyon::presets::background {
 
 /**
  * @brief Fluent builder for procedural backgrounds (Remotion-style API).
- * 
- * Usage:
- * @code
- * auto bg = kind_aura()
- *     .width(1920).height(1080)
- *     .duration(8.0)
- *     .seed(42)
- *     .palette(palettes::neon_night())
- *     .grain(0.12)
- *     .build();
- * @endcode
  */ 
 class BackgroundBuilder {
     procedural_bg::ProceduralParams params_;
@@ -79,10 +68,6 @@ public:
     [[nodiscard]] operator LayerSpec() const { return build(); }
 };
 
-// ---------------------------------------------------------------------------
-// Factory functions for Remotion-style background creation
-// ---------------------------------------------------------------------------
-
 inline BackgroundBuilder kind_aura(const procedural_bg::ProceduralParams& params = procedural_bg::palettes::neon_night()) {
     BackgroundBuilder b("tachyon.background.kind.aura");
     b.palette(params);
@@ -90,12 +75,6 @@ inline BackgroundBuilder kind_aura(const procedural_bg::ProceduralParams& params
 }
 
 inline BackgroundBuilder kind_grid(const procedural_bg::ProceduralParams& params = procedural_bg::palettes::dark_tech()) {
-    BackgroundBuilder b("tachyon.background.kind.grid");
-    b.palette(params);
-    return b;
-}
-
-inline BackgroundBuilder kind_shapegrid(const procedural_bg::ProceduralParams& params = procedural_bg::palettes::dark_tech()) {
     BackgroundBuilder b("tachyon.background.kind.grid");
     b.palette(params);
     return b;
@@ -113,29 +92,30 @@ inline BackgroundBuilder kind_noise(const procedural_bg::ProceduralParams& param
     return b;
 }
 
-inline BackgroundBuilder kind_grid_modern(const procedural_bg::ProceduralParams& params = procedural_bg::palettes::neon_grid()) {
-    BackgroundBuilder b("tachyon.background.kind.grid_modern");
-    b.palette(params);
-    return b;
-}
-
 // ---------------------------------------------------------------------------
 // Solid color background helper
 // ---------------------------------------------------------------------------
 
 inline LayerSpec solid(const ColorSpec& color, int width = 1920, int height = 1080, double duration = 5.0) {
     LayerSpec bg;
-    bg.id = "bg_solid";
-    bg.name = "Solid Background";
-    bg.type = LayerType::Solid;
-    bg.enabled = true;
-    bg.visible = true;
-    bg.timing.source_in = 0.0;
-    bg.timing.source_out = duration;
-    bg.width = width;
-    bg.height = height;
-    bg.opacity = 1.0;
-    bg.fill_color = AnimatedColorSpec(color);
+    bg.identity.id = "bg_solid";
+    bg.identity.name = "Solid Background";
+    bg.identity.type = LayerType::Solid;
+    bg.identity.enabled = true;
+    bg.identity.visible = true;
+    bg.playback.timing.source_in = 0.0;
+    bg.playback.timing.source_out = duration;
+    bg.playback.timing.duration = duration;
+    bg.transform.width = width;
+    bg.transform.height = height;
+    bg.transform.opacity = 1.0;
+    
+    // For solids, we use a procedural spec with kind "solid"
+    ProceduralSpec p;
+    p.kind = "tachyon.background.kind.solid";
+    p.color_a = AnimatedColorSpec(color);
+    bg.source.procedural = std::move(p);
+    
     return bg;
 }
 
@@ -145,17 +125,18 @@ inline LayerSpec solid(const ColorSpec& color, int width = 1920, int height = 10
 
 inline LayerSpec image(std::string path, int width = 1920, int height = 1080, double duration = 5.0) {
     LayerSpec bg;
-    bg.id = "bg_image";
-    bg.name = "Image Background";
-    bg.type = LayerType::Image;
-    bg.enabled = true;
-    bg.visible = true;
-    bg.timing.source_in = 0.0;
-    bg.timing.source_out = duration;
-    bg.width = width;
-    bg.height = height;
-    bg.opacity = 1.0;
-    bg.asset_id = std::move(path);
+    bg.identity.id = "bg_image";
+    bg.identity.name = "Image Background";
+    bg.identity.type = LayerType::Image;
+    bg.identity.enabled = true;
+    bg.identity.visible = true;
+    bg.playback.timing.source_in = 0.0;
+    bg.playback.timing.source_out = duration;
+    bg.playback.timing.duration = duration;
+    bg.transform.width = width;
+    bg.transform.height = height;
+    bg.transform.opacity = 1.0;
+    bg.source.asset_id = std::move(path);
     return bg;
 }
 
@@ -164,18 +145,20 @@ inline LayerSpec image(std::string path, int width = 1920, int height = 1080, do
 // ---------------------------------------------------------------------------
 
 inline LayerSpec video(std::string path, int width = 1920, int height = 1080, double duration = 5.0, double playback_speed = 1.0) {
+    (void)playback_speed;
     LayerSpec bg;
-    bg.id = "bg_video";
-    bg.name = "Video Background";
-    bg.type = LayerType::Video;
-    bg.enabled = true;
-    bg.visible = true;
-    bg.timing.source_in = 0.0;
-    bg.timing.source_out = duration;
-    bg.width = width;
-    bg.height = height;
-    bg.opacity = 1.0;
-    bg.asset_id = std::move(path);
+    bg.identity.id = "bg_video";
+    bg.identity.name = "Video Background";
+    bg.identity.type = LayerType::Video;
+    bg.identity.enabled = true;
+    bg.identity.visible = true;
+    bg.playback.timing.source_in = 0.0;
+    bg.playback.timing.source_out = duration;
+    bg.playback.timing.duration = duration;
+    bg.transform.width = width;
+    bg.transform.height = height;
+    bg.transform.opacity = 1.0;
+    bg.source.asset_id = std::move(path);
     return bg;
 }
 

@@ -101,6 +101,7 @@ void TachyonLibrary::register_cpp_presets() {
                 spec->id,
                 spec->metadata.display_name,
                 spec->metadata.description,
+                "", // path
                 true // is_cpp_preset
             });
         }

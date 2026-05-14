@@ -142,7 +142,7 @@ struct CompiledLayer {
     std::vector<TextAnimatorSpec> text_animators;
     std::vector<TextHighlightSpec> text_highlights;
     bool asset_offline{false};
-    std::string blend_mode{"normal"};
+    BlendMode blend_mode{BlendMode::Normal};
     std::optional<ProceduralSpec> procedural;
     double in_time{0.0};
     double out_time{10.0};
@@ -181,6 +181,27 @@ struct CompiledLayer {
     spec::FrameBlendMode frame_blend{spec::FrameBlendMode::Linear};
 };
 
+struct CompiledCamera {
+    CompiledNode node;
+    std::string id;
+    std::string name;
+    
+    std::vector<std::uint32_t> property_indices;
+    
+    enum PropertyIndex : std::uint32_t {
+        Zoom = 0,
+        PosX = 1,
+        PosY = 2,
+        Rotation = 3,
+        ScaleX = 4,
+        ScaleY = 5,
+        AnchorX = 6,
+        AnchorY = 7
+    };
+    
+    bool enabled{true};
+};
+
 struct CompiledComposition {
     CompiledNode node;
     std::string composition_id;
@@ -190,6 +211,8 @@ struct CompiledComposition {
     std::uint32_t fps{60};
     double duration{0.0};
     std::vector<CompiledLayer> layers;
+    std::vector<CompiledCamera> cameras;
+    std::optional<std::uint32_t> active_camera_index;
     std::vector<spec::AudioTrackSpec> audio_tracks;
 };
 
@@ -224,6 +247,9 @@ struct CompiledScene {
             lookup[comp.node.node_id] = &comp.node;
             for (auto& layer : comp.layers) {
                 lookup[layer.node.node_id] = &layer.node;
+            }
+            for (auto& cam : comp.cameras) {
+                lookup[cam.node.node_id] = &cam.node;
             }
         }
         for (auto& track : property_tracks) {

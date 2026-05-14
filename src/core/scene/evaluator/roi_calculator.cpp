@@ -23,19 +23,19 @@ math::RectF compute_roi(
         const auto& l_curr = curr.layers[i];
 
         // Check for changes (simplified: position, scale, opacity, visibility)
-        bool changed = (l_prev.world_matrix.m[0][2] != l_curr.world_matrix.m[0][2] ||
-                        l_prev.world_matrix.m[1][2] != l_curr.world_matrix.m[1][2] ||
-                        l_prev.opacity != l_curr.opacity ||
-                        l_prev.visible != l_curr.visible ||
-                        l_prev.local_transform.position.x != l_curr.local_transform.position.x); // etc
+        bool changed = (l_prev.transform.world_matrix.m[0][2] != l_curr.transform.world_matrix.m[0][2] ||
+                        l_prev.transform.world_matrix.m[1][2] != l_curr.transform.world_matrix.m[1][2] ||
+                        l_prev.transform.opacity != l_curr.transform.opacity ||
+                        l_prev.identity.visible != l_curr.identity.visible ||
+                        l_prev.transform.local_transform.position.x != l_curr.transform.local_transform.position.x); 
 
         if (changed) {
             any_change = true;
             // Bounding box of the layer (simplified: based on center and size)
-            float half_w = static_cast<float>(l_curr.width) * 0.5f / static_cast<float>(curr.width);
-            float half_h = static_cast<float>(l_curr.height) * 0.5f / static_cast<float>(curr.height);
-            float cx = l_curr.world_matrix.m[0][2] / static_cast<float>(curr.width) + 0.5f;
-            float cy = l_curr.world_matrix.m[1][2] / static_cast<float>(curr.height) + 0.5f;
+            float half_w = static_cast<float>(l_curr.transform.width) * 0.5f / static_cast<float>(curr.width);
+            float half_h = static_cast<float>(l_curr.transform.height) * 0.5f / static_cast<float>(curr.height);
+            float cx = l_curr.transform.world_matrix.m[0][2] / static_cast<float>(curr.width) + 0.5f;
+            float cy = l_curr.transform.world_matrix.m[1][2] / static_cast<float>(curr.height) + 0.5f;
 
             xmin = std::min(xmin, cx - half_w);
             ymin = std::min(ymin, cy - half_h);

@@ -2,6 +2,7 @@
 
 #include "tachyon/core/spec/schema/common/common_spec.h"
 #include "tachyon/core/spec/schema/common/gradient_spec.h"
+#include "tachyon/core/spec/schema/objects/path_spec.h"
 #include <string>
 #include <vector>
 #include <optional>
@@ -33,8 +34,8 @@ struct ShapeSpec {
 
     // Stroke
     float stroke_width{0};
-    std::string line_cap{"butt"};
-    std::string line_join{"miter"};
+    spec::LineCap line_cap{spec::LineCap::Butt};
+    spec::LineJoin line_join{spec::LineJoin::Miter};
     std::vector<float> dash_array;
     float dash_offset{0};
     float sdf_threshold{0.5f};

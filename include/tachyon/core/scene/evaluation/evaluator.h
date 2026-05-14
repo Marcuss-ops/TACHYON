@@ -3,6 +3,8 @@
 #include "tachyon/core/api.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/runtime/execution/jobs/render_job.h"
+#include "tachyon/core/spec/schema/objects/composition_spec.h"
+#include "tachyon/core/spec/schema/objects/scene_spec.h"
 
 #include <optional>
 #include <string>

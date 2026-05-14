@@ -255,6 +255,18 @@ EvaluationResult CoreExpressionEvaluator::evaluate(const std::string& expression
         resolved.variables["value"] = resolved.value;
     }
 
+    resolved.variables["PI"] = 3.14159265358979323846;
+    resolved.variables["E"] = 2.71828182845904523536;
+    resolved.variables["deg2rad"] = 0.017453292519943295;
+    resolved.variables["rad2deg"] = 57.29577951308232;
+
+    if (resolved.variables.find("time") == resolved.variables.end()) {
+        resolved.variables["time"] = resolved.time;
+    }
+    if (resolved.variables.find("t") == resolved.variables.end()) {
+        resolved.variables["t"] = resolved.time;
+    }
+
     // Populate audio analysis variables for expression access
     resolved.variables["audio.bass"] = resolved.audio_analysis.bass;
     resolved.variables["audio.mid"] = resolved.audio_analysis.mid;

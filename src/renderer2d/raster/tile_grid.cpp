@@ -28,19 +28,19 @@ RectI clamp_to_frame(const RectI& rect, std::int64_t width, std::int64_t height)
 }
 
 RectI layer_bounds(const scene::EvaluatedLayerState& layer, std::int64_t composition_width, std::int64_t composition_height) {
-    if (!layer.visible || !layer.active) return RectI{0, 0, 0, 0};
+    if (!layer.identity.visible || !layer.identity.active) return RectI{0, 0, 0, 0};
 
-    int base_width = static_cast<int>(layer.width);
-    int base_height = static_cast<int>(layer.height);
+    int base_width = static_cast<int>(layer.transform.width);
+    int base_height = static_cast<int>(layer.transform.height);
 
     if (base_width <= 0 || base_height <= 0) {
-        if (layer.type == LayerType::Text) {
+        if (layer.type() == LayerType::Text) {
             base_width = std::max(64, static_cast<int>(composition_width / 6));
             base_height = std::max(32, static_cast<int>(composition_height / 10));
-        } else if (layer.type == LayerType::Solid || layer.type == LayerType::Shape || layer.type == LayerType::Mask) {
+        } else if (layer.type() == LayerType::Solid || layer.type() == LayerType::Shape || layer.type() == LayerType::Mask) {
             base_width = std::max(64, static_cast<int>(composition_width / 4));
             base_height = std::max(32, static_cast<int>(composition_height / 8));
-        } else if (layer.precomp_id.has_value() && layer.nested_composition) {
+        } else if (layer.source.precomp_id.has_value() && layer.nested_composition) {
             base_width = static_cast<int>(layer.nested_composition->width);
             base_height = static_cast<int>(layer.nested_composition->height);
         } else {
@@ -50,10 +50,10 @@ RectI layer_bounds(const scene::EvaluatedLayerState& layer, std::int64_t composi
     }
 
     return RectI{
-        static_cast<int>(std::round(layer.local_transform.position.x)),
-        static_cast<int>(std::round(layer.local_transform.position.y)),
-        std::max(1, static_cast<int>(std::round(static_cast<float>(base_width) * layer.local_transform.scale.x))),
-        std::max(1, static_cast<int>(std::round(static_cast<float>(base_height) * layer.local_transform.scale.y)))
+        static_cast<int>(std::round(layer.transform.local_transform.position.x)),
+        static_cast<int>(std::round(layer.transform.local_transform.position.y)),
+        std::max(1, static_cast<int>(std::round(static_cast<float>(base_width) * layer.transform.local_transform.scale.x))),
+        std::max(1, static_cast<int>(std::round(static_cast<float>(base_height) * layer.transform.local_transform.scale.y)))
     };
 }
 

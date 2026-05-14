@@ -1,158 +1,73 @@
 #include "tachyon/runtime/compiler/scene_compiler_hashing.h"
 #include "tachyon/runtime/cache/cache_key_builder.h"
 
+#include <algorithm>
+
 namespace tachyon {
+
+void add_string(CacheKeyBuilder& builder, const std::string& value) {
+    builder.add_string(value);
+}
+
+namespace {
+
+void hash_transition_internal(CacheKeyBuilder& builder, const LayerTransitionSpec& spec) {
+    builder.add_string(spec.transition_id);
+    builder.add_f64(spec.duration);
+    builder.add_f64(spec.delay);
+}
+
+} // namespace
 
 std::uint64_t hash_scene_spec(const SceneSpec& scene, const DeterminismContract& contract) {
     CacheKeyBuilder builder;
-    builder.add_string(scene.schema_version.to_string());
-    add_string(builder, scene.project.id);
-    add_string(builder, scene.project.name);
-    add_string(builder, scene.project.authoring_tool);
-    if (scene.project.root_seed.has_value()) {
-        builder.add_bool(true);
-        builder.add_u64(static_cast<std::uint64_t>(*scene.project.root_seed));
-    } else {
-        builder.add_bool(false);
-    }
-
+    builder.add_string(scene.project.id);
     builder.add_u64(contract.fingerprint());
-    builder.add_u64(static_cast<std::uint64_t>(scene.assets.size()));
-    builder.add_u64(static_cast<std::uint64_t>(scene.compositions.size()));
-
-    for (const auto& composition : scene.compositions) {
-        add_string(builder, composition.id);
-        add_string(builder, composition.name);
-        builder.add_u64(static_cast<std::uint64_t>(composition.width));
-        builder.add_u64(static_cast<std::uint64_t>(composition.height));
-        builder.add_u64(static_cast<std::uint64_t>(composition.duration * 1000.0));
-        builder.add_u64(static_cast<std::uint64_t>(composition.frame_rate.numerator));
-        builder.add_u64(static_cast<std::uint64_t>(composition.frame_rate.denominator));
-        builder.add_bool(composition.background.has_value());
-        if (composition.background.has_value()) {
-            builder.add_u32(static_cast<std::uint32_t>(composition.background->type));
-            add_string(builder, composition.background->value);
-            if (composition.background->parsed_color.has_value()) {
-                const auto& c = *composition.background->parsed_color;
-                builder.add_u32(c.r);
-                builder.add_u32(c.g);
-                builder.add_u32(c.b);
-                builder.add_u32(c.a);
-            }
-        }
-
-        builder.add_u64(static_cast<std::uint64_t>(composition.audio_tracks.size()));
-        for (const auto& track : composition.audio_tracks) {
-            add_string(builder, track.id);
-            add_string(builder, track.source_path);
-            builder.add_u64(static_cast<std::uint64_t>(track.volume * 1000.0f));
-            builder.add_u64(static_cast<std::uint64_t>(track.pan * 1000.0f));
-            builder.add_u64(static_cast<std::uint64_t>(track.start_offset_seconds * 1000.0));
+    
+    for (const auto& comp : scene.compositions) {
+        builder.add_string(comp.id);
+        builder.add_f64(comp.duration);
+        
+        for (const auto& layer : comp.layers) {
+            builder.add_string(layer.identity.id);
+            builder.add_u32(static_cast<std::uint32_t>(layer.identity.type));
+            builder.add_u32(static_cast<std::uint32_t>(layer.blend_mode));
             
-            builder.add_u64(static_cast<std::uint64_t>(track.volume_keyframes.size()));
-            for (const auto& kf : track.volume_keyframes) {
-                builder.add_u64(static_cast<std::uint64_t>(kf.time * 1000.0));
-                builder.add_u64(static_cast<std::uint64_t>(kf.value * 1000.0f));
+            builder.add_f64(layer.playback.timing.start);
+            builder.add_f64(layer.playback.timing.duration);
+            
+            builder.add_f64(layer.transform.opacity);
+            builder.add_u32(layer.transform.width);
+            builder.add_u32(layer.transform.height);
+
+            // Hash nested transform
+            builder.add_f64(layer.transform.transform.position_x.value_or(0.0));
+            builder.add_f64(layer.transform.transform.position_y.value_or(0.0));
+            builder.add_f64(layer.transform.transform.scale_x.value_or(100.0));
+            builder.add_f64(layer.transform.transform.scale_y.value_or(100.0));
+            builder.add_f64(layer.transform.transform.rotation.value_or(0.0));
+            builder.add_f64(layer.transform.transform.anchor_point.value.value_or(math::Vector2::zero()).x);
+            builder.add_f64(layer.transform.transform.anchor_point.value.value_or(math::Vector2::zero()).y);
+
+            hash_transition_internal(builder, layer.transition_in);
+            hash_transition_internal(builder, layer.transition_out);
+            
+            if (layer.identity.type == LayerType::Image || layer.identity.type == LayerType::Video) {
+                builder.add_string(layer.source.asset_id);
+            } else if (layer.identity.type == LayerType::Precomp) {
+                if (layer.source.precomp_id.has_value()) {
+                    builder.add_string(*layer.source.precomp_id);
+                }
             }
             
-            builder.add_u64(static_cast<std::uint64_t>(track.pan_keyframes.size()));
-            for (const auto& kf : track.pan_keyframes) {
-                builder.add_u64(static_cast<std::uint64_t>(kf.time * 1000.0));
-                builder.add_u64(static_cast<std::uint64_t>(kf.value * 1000.0f));
+            builder.add_u32(static_cast<std::uint32_t>(layer.effects.size()));
+            for (const auto& effect : layer.effects) {
+                builder.add_string(effect.type);
+                builder.add_bool(effect.enabled);
             }
-
-            builder.add_u64(static_cast<std::uint64_t>(track.effects.size()));
-            for (const auto& effect : track.effects) {
-                add_string(builder, effect.type);
-                if (effect.gain_db) builder.add_u64(static_cast<std::uint64_t>(*effect.gain_db * 1000.0f));
-                if (effect.cutoff_freq_hz) builder.add_u64(static_cast<std::uint64_t>(*effect.cutoff_freq_hz * 1000.0f));
-            }
-        }
-
-        builder.add_u64(static_cast<std::uint64_t>(composition.layers.size()));
-        for (const auto& layer : composition.layers) {
-            add_string(builder, layer.id);
-            add_string(builder, layer.name);
-            add_string(builder, std::string(to_canonical_layer_type_string(layer.type)));
-            add_string(builder, layer.blend_mode);
-            builder.add_bool(layer.enabled);
-            builder.add_bool(layer.visible);
-            builder.add_bool(layer.is_adjustment_layer);
-            builder.add_u64(static_cast<std::uint64_t>(layer.timing.start * 1000.0));
-            builder.add_u64(static_cast<std::uint64_t>(layer.timing.start * 1000.0)); // legacy in_point
-            builder.add_u64(static_cast<std::uint64_t>((layer.timing.start + layer.timing.duration) * 1000.0)); // legacy out_point
-            builder.add_u64(static_cast<std::uint64_t>(layer.opacity * 1000000.0));
-            
-            builder.add_bool(layer.transform.position_x.has_value());
-            if (layer.transform.position_x) builder.add_u64(static_cast<std::uint64_t>(*layer.transform.position_x * 1000.0));
-            builder.add_bool(layer.transform.position_y.has_value());
-            if (layer.transform.position_y) builder.add_u64(static_cast<std::uint64_t>(*layer.transform.position_y * 1000.0));
-            builder.add_bool(layer.transform.scale_x.has_value());
-            if (layer.transform.scale_x) builder.add_u64(static_cast<std::uint64_t>(*layer.transform.scale_x * 1000.0));
-            builder.add_bool(layer.transform.scale_y.has_value());
-            if (layer.transform.scale_y) builder.add_u64(static_cast<std::uint64_t>(*layer.transform.scale_y * 1000.0));
-            builder.add_bool(layer.transform.rotation.has_value());
-            if (layer.transform.rotation) builder.add_u64(static_cast<std::uint64_t>(*layer.transform.rotation * 1000.0));
-            builder.add_bool(layer.masks.feather.value.has_value());
-            if (layer.masks.feather.value) builder.add_u64(static_cast<std::uint64_t>(*layer.masks.feather.value * 1000.0));
-            builder.add_bool(layer.masks.feather.expression.has_value());
-            if (layer.masks.feather.expression) add_string(builder, *layer.masks.feather.expression);
-
-            builder.add_bool(layer.opacity_property.expression.has_value());
-            if (layer.opacity_property.expression) add_string(builder, *layer.opacity_property.expression);
-            builder.add_bool(layer.transform.position_property.expression.has_value());
-            if (layer.transform.position_property.expression) add_string(builder, *layer.transform.position_property.expression);
-            builder.add_bool(layer.transform.scale_property.expression.has_value());
-            if (layer.transform.scale_property.expression) add_string(builder, *layer.transform.scale_property.expression);
-            builder.add_bool(layer.transform.rotation_property.expression.has_value());
-            if (layer.transform.rotation_property.expression) add_string(builder, *layer.transform.rotation_property.expression);
-
-            builder.add_bool(layer.parent.has_value());
-            if (layer.parent.has_value()) {
-                add_string(builder, *layer.parent);
-            }
-
-            builder.add_u64(static_cast<std::uint64_t>(layer.temporal.track_bindings.size()));
-            for (const auto& binding : layer.temporal.track_bindings) {
-                add_string(builder, binding.property_path);
-                add_string(builder, binding.source_id);
-                add_string(builder, binding.source_track_name);
-                builder.add_u64(static_cast<std::uint64_t>(binding.influence * 1000.0f));
-                builder.add_bool(binding.enabled);
-            }
-            builder.add_bool(layer.temporal.time_remap.enabled);
-            builder.add_u64(static_cast<std::uint64_t>(layer.temporal.time_remap.mode));
-            builder.add_u64(static_cast<std::uint64_t>(layer.temporal.time_remap.keyframes.size()));
-            for (const auto& kf : layer.temporal.time_remap.keyframes) {
-                builder.add_u64(static_cast<std::uint64_t>(kf.first * 1000.0f));
-                builder.add_u64(static_cast<std::uint64_t>(kf.second * 1000.0f));
-            }
-            builder.add_u64(static_cast<std::uint64_t>(layer.temporal.frame_blend));
         }
     }
-
-    return builder.finish();
-}
-
-// Hashes only graph topology: composition/layer IDs, types, and structural relationships.
-// Changes here require full recompilation. Changes only to property values do not.
-std::uint64_t hash_scene_structure(const SceneSpec& scene) {
-    CacheKeyBuilder builder;
-    builder.add_u64(static_cast<std::uint64_t>(scene.compositions.size()));
-    for (const auto& composition : scene.compositions) {
-        add_string(builder, composition.id);
-        builder.add_u64(static_cast<std::uint64_t>(composition.layers.size()));
-        for (const auto& layer : composition.layers) {
-            add_string(builder, layer.id);
-            add_string(builder, std::string(to_canonical_layer_type_string(layer.type)));
-            builder.add_bool(layer.parent.has_value());
-            if (layer.parent.has_value()) add_string(builder, *layer.parent);
-            builder.add_bool(layer.precomp_id.has_value());
-            if (layer.precomp_id.has_value()) add_string(builder, *layer.precomp_id);
-            builder.add_bool(layer.track_matte_layer_id.has_value());
-            if (layer.track_matte_layer_id.has_value()) add_string(builder, *layer.track_matte_layer_id);
-        }
-    }
+    
     return builder.finish();
 }
 

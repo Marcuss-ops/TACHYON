@@ -31,8 +31,8 @@ std::uint64_t make_property_expression_seed(
     const LayerSpec& layer,
     const char* property_name) {
     std::uint64_t seed = make_base_expression_seed(scene, composition);
-    seed = hash_combine(seed, stable_string_hash(layer.id));
-    seed = hash_combine(seed, stable_string_hash(layer.name));
+    seed = hash_combine(seed, stable_string_hash(layer.identity.id));
+    seed = hash_combine(seed, stable_string_hash(layer.identity.name));
     seed = hash_combine(seed, stable_string_hash(property_name));
     return seed;
 }

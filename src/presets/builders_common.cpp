@@ -10,23 +10,25 @@ LayerSpec make_base_layer(
     const LayerParams& p) {
     
     LayerSpec l;
-    l.id          = id;
-    l.name        = name;
-    l.type        = layer_type_from_string(type);
-    l.enabled     = true;
-    l.visible     = true;
-    l.timing.start     = p.in_point;
-    l.timing.source_in = p.in_point;
-    l.timing.duration  = std::max(0.01, p.out_point - p.in_point);
-    l.width            = static_cast<int>(p.w);
-    l.height           = static_cast<int>(p.h);
-    l.opacity          = static_cast<double>(p.opacity);
+    l.identity.id      = id;
+    l.identity.name    = name;
+    l.identity.type    = layer_type_from_string(type);
+    l.identity.enabled = true;
+    l.identity.visible = true;
     
-    l.transform.position_x = static_cast<double>(p.x);
-    l.transform.position_y = static_cast<double>(p.y);
-    l.transform.scale_x    = 1.0;
-    l.transform.scale_y    = 1.0;
-    l.transform.rotation   = 0.0;
+    l.playback.timing.start     = p.in_point;
+    l.playback.timing.source_in = p.in_point;
+    l.playback.timing.duration  = std::max(0.01, p.out_point - p.in_point);
+    
+    l.transform.width            = static_cast<int>(p.w);
+    l.transform.height           = static_cast<int>(p.h);
+    l.transform.opacity          = static_cast<double>(p.opacity);
+    
+    l.transform.transform.position_x = static_cast<double>(p.x);
+    l.transform.transform.position_y = static_cast<double>(p.y);
+    l.transform.transform.scale_x    = 1.0;
+    l.transform.transform.scale_y    = 1.0;
+    l.transform.transform.rotation   = 0.0;
 
     return l;
 }

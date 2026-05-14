@@ -24,7 +24,7 @@ inline SceneSpec minimal(const SceneParams& params) {
     comp.height = params.height;
     comp.duration = params.duration;
     comp.frame_rate = FrameRate{static_cast<std::int64_t>(params.fps), 1};
-    comp.fps = params.fps;
+    comp.fps = static_cast<double>(params.fps);
 
     scene.compositions.push_back(std::move(comp));
     return scene;
@@ -44,7 +44,7 @@ inline SceneSpec minimal(const EnhancedSceneParams& params) {
     comp.height = params.height;
     comp.duration = params.duration;
     comp.frame_rate = FrameRate{static_cast<std::int64_t>(params.fps), 1};
-    comp.fps = params.fps;
+    comp.fps = static_cast<double>(params.fps);
 
     if (params.background.has_value()) {
         comp.layers.push_back(tachyon::presets::build_background(*params.background));
@@ -73,7 +73,7 @@ inline SceneSpec enhance(const EnhancedSceneParams& params) {
     comp.height = params.height;
     comp.duration = params.duration;
     comp.frame_rate = FrameRate{static_cast<std::int64_t>(params.fps), 1};
-    comp.fps = params.fps;
+    comp.fps = static_cast<double>(params.fps);
 
     // Background
     if (params.background.has_value()) {
@@ -83,11 +83,11 @@ inline SceneSpec enhance(const EnhancedSceneParams& params) {
     // Main Content (e.g., Image)
     if (params.main_asset_id.has_value()) {
         LayerSpec layer;
-        layer.id = "main_content";
-        layer.type = LayerType::Image;
-        layer.asset_id = *params.main_asset_id;
-        layer.width = params.width;
-        layer.height = params.height;
+        layer.identity.id = "main_content";
+        layer.identity.type = LayerType::Image;
+        layer.source.asset_id = *params.main_asset_id;
+        layer.transform.width = params.width;
+        layer.transform.height = params.height;
         comp.layers.push_back(std::move(layer));
     }
 
@@ -95,10 +95,10 @@ inline SceneSpec enhance(const EnhancedSceneParams& params) {
     if (!params.main_text.empty()) {
         comp.layers.push_back(tachyon::presets::text::headline(params.main_text)
             .font("Inter")
-            .text.font_size(96)
+            .font_size(96)
             .center()
-            .text.box(params.width, params.height)
-            .position(params.width / 2.0, params.height / 2.0)
+            .text_box(static_cast<double>(params.width), static_cast<double>(params.height))
+            .position(static_cast<double>(params.width) / 2.0, static_cast<double>(params.height) / 2.0)
             .duration(params.duration)
             .build());
     }
@@ -113,6 +113,7 @@ inline SceneSpec build_enhanced_text_scene() {
     params.width = 1920;
     params.height = 1080;
     params.duration = 5.0;
+    params.fps = 30;
     params.main_text = "Hello Tachyon";
     return enhance(params);
 }
@@ -123,6 +124,7 @@ inline SceneSpec build_modern_grid_scene() {
     params.width = 1920;
     params.height = 1080;
     params.duration = 5.0;
+    params.fps = 30;
     params.background = BackgroundParams{};
     params.background->kind = "color";
     return minimal(params);
@@ -134,6 +136,7 @@ inline SceneSpec build_classico_premium_scene() {
     params.width = 1920;
     params.height = 1080;
     params.duration = 5.0;
+    params.fps = 30;
     params.background = BackgroundParams{};
     params.background->kind = "color";
     return minimal(params);
@@ -145,6 +148,7 @@ inline SceneSpec build_minimal_text_scene() {
     params.width = 1920;
     params.height = 1080;
     params.duration = 5.0;
+    params.fps = 30;
     params.background = BackgroundParams{};
     params.background->kind = "color";
     return minimal(params);

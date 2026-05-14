@@ -97,8 +97,8 @@ extern "C" {
         
         // Ensure procedural kind is set so it actually renders
         auto spec = lb->build();
-        spec.procedural.emplace();
-        spec.procedural->kind = background_id;
+        spec.source.procedural.emplace();
+        spec.source.procedural->kind = background_id;
         lb->from_spec(spec);
         
         return host->register_layer(std::move(lb));
@@ -123,10 +123,10 @@ extern "C" {
         if (prop == "opacity") {
             it->second->opacity(value);
         } else if (prop == "anchor_x") {
-            float y = it->second->spec().transform.anchor_point.value ? it->second->spec().transform.anchor_point.value->y : 0.0f;
+            float y = it->second->spec().transform.transform.anchor_point.value ? it->second->spec().transform.transform.anchor_point.value->y : 0.0f;
             it->second->anchor(value, y);
         } else if (prop == "anchor_y") {
-            float x = it->second->spec().transform.anchor_point.value ? it->second->spec().transform.anchor_point.value->x : 0.0f;
+            float x = it->second->spec().transform.transform.anchor_point.value ? it->second->spec().transform.transform.anchor_point.value->x : 0.0f;
             it->second->anchor(x, value);
         } else {
             return TACHYON_JIT_ERROR_UNSUPPORTED;
@@ -215,6 +215,7 @@ CppSceneLoader::Result CppSceneLoader::load_from_file(
                 result.diagnostics = "JIT build failed with error code: " + std::to_string(jit_res);
             }
         } else if (lib.build_scene_v1_fn) {
+            std::cerr << "[TACHYON][WARN] Scene uses legacy 'build_scene' entry point. Please migrate to 'tachyon_jit_build_scene' for full JIT API support." << std::endl;
             result.scene = lib.build_scene_v1_fn();
             result.success = true;
         }

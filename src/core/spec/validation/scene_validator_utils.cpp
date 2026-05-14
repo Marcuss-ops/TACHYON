@@ -44,14 +44,14 @@ void SceneValidator::check_cycles(const NormalizedSceneView& scene, ValidationRe
         std::unordered_map<std::string, int> matte_in_degree;
         std::unordered_set<std::string> layer_ids;
         for (const auto& l : comp.layers) {
-            if (l.source != nullptr && !l.source->id.empty()) layer_ids.insert(l.source->id);
+            if (l.source != nullptr && !l.source->identity.id.empty()) layer_ids.insert(l.source->identity.id);
         }
 
         for (const auto& layer : comp.layers) {
             const auto* source_layer = layer.source;
             if (source_layer != nullptr && source_layer->track_matte_layer_id.has_value() && !source_layer->track_matte_layer_id->empty()) {
                 const std::string& src = *source_layer->track_matte_layer_id;
-                const std::string& tgt = source_layer->id;
+                const std::string& tgt = source_layer->identity.id;
                 if (layer_ids.count(src) && layer_ids.count(tgt)) {
                     matte_adj[src].push_back(tgt);
                     matte_in_degree[tgt]++;
@@ -101,9 +101,9 @@ void SceneValidator::check_cycles(const NormalizedSceneView& scene, ValidationRe
         }
         for (const auto& layer : comp.layers) {
             const auto* source_layer = layer.source;
-            if (source_layer != nullptr && layer.type == LayerType::Precomp && source_layer->precomp_id.has_value() && !source_layer->precomp_id->empty()) {
+            if (source_layer != nullptr && layer.type == LayerType::Precomp && source_layer->source.precomp_id.has_value() && !source_layer->source.precomp_id->empty()) {
                 const std::string& src = source_comp->id;
-                const std::string& tgt = *source_layer->precomp_id;
+                const std::string& tgt = *source_layer->source.precomp_id;
                 if (comp_ids.count(src) && comp_ids.count(tgt)) {
                     precomp_adj[src].push_back(tgt);
                     precomp_in_degree[tgt]++;

@@ -159,9 +159,9 @@ public:
         }
         LayerSpec l = tachyon::presets::build_text(p);
         if (stroke_width_ > 0.0) {
-            l.stroke_width = stroke_width_;
-            l.stroke_width_property = AnimatedScalarSpec{stroke_width_};
-            l.stroke_color = AnimatedColorSpec(stroke_color_);
+            l.text.stroke_width = stroke_width_;
+            l.text.stroke_width_property = AnimatedScalarSpec{stroke_width_};
+            l.text.stroke_color = AnimatedColorSpec(stroke_color_);
         }
         return l;
     }

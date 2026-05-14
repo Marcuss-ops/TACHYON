@@ -22,11 +22,11 @@ BackgroundDescriptor make_video_background_descriptor() {
     // Build function
     desc.build = [](const registry::ParameterBag& params) -> LayerSpec {
         LayerSpec spec;
-        spec.type = LayerType::Video;
-        spec.name = "Video Background";
+        spec.identity.type = LayerType::Video;
+        spec.identity.name = "Video Background";
         
-        spec.asset_id = params.get_or<std::string>("path", "");
-        spec.loop = params.get_or<bool>("loop", true);
+        spec.source.asset_id = params.get_or<std::string>("path", "");
+        spec.playback.loop = params.get_or<bool>("loop", true);
         
         return spec;
     };

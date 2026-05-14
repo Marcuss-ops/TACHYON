@@ -104,9 +104,9 @@ void TextureResolver::resolve_textures(
             bool found = false;
             for (const auto& comp : scene.compositions) {
                 for (const auto& layer : comp.layers) {
-                    if (layer.id == layer_id) {
+                    if (layer.identity.id == layer_id) {
                         for (const auto& asset : scene.assets) {
-                            if (asset.id == layer.id || asset.id == layer.name) {
+                            if (asset.id == layer.identity.id || asset.id == layer.identity.name) {
                                 const media::AlphaMode mode = parse_alpha_mode(asset.alpha_mode);
                                 tex_rect.texture.surface = media_manager.get_image(asset.path, mode);
                                 found = true;

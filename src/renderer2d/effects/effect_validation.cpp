@@ -38,15 +38,14 @@ std::string find_suggestion(const std::string& input, const std::vector<registry
 }
 
 bool check_type(const registry::ParameterValue& value, registry::ParameterType expected) {
-    using namespace registry;
     switch (expected) {
-        case ParameterType::Float:  return std::holds_alternative<float>(value);
-        case ParameterType::Double: return std::holds_alternative<double>(value);
-        case ParameterType::Int:    return std::holds_alternative<int>(value);
-        case ParameterType::Bool:   return std::holds_alternative<bool>(value);
-        case ParameterType::String: return std::holds_alternative<std::string>(value);
-        case ParameterType::Color:  return std::holds_alternative<ColorSpec>(value);
-        case ParameterType::Vector2: return std::holds_alternative<math::Vector2>(value);
+        case registry::ParameterType::Float:  return std::holds_alternative<float>(value);
+        case registry::ParameterType::Double: return std::holds_alternative<double>(value);
+        case registry::ParameterType::Int:    return std::holds_alternative<int>(value);
+        case registry::ParameterType::Bool:   return std::holds_alternative<bool>(value);
+        case registry::ParameterType::String: return std::holds_alternative<std::string>(value);
+        case registry::ParameterType::Color:  return std::holds_alternative<ColorSpec>(value);
+        case registry::ParameterType::Vector2: return std::holds_alternative<math::Vector2>(value);
         default: return true; // Complex types or placeholders
     }
 }

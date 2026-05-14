@@ -52,7 +52,7 @@ void Animation2DPresetRegistry::load_builtins() {
         anim2d_schema,
         [get_anim_params](LayerSpec& layer, const ParameterBag& p) {
             auto params = get_anim_params(p);
-            auto& scale = layer.transform.scale_property;
+            auto& scale = layer.transform.transform.scale_property;
             scale.keyframes.clear();
             add_keyframe_v2(scale.keyframes, params.delay, 0.0, 0.0, animation::EasingPreset::EaseOut);
             add_keyframe_v2(scale.keyframes, params.delay + params.duration * 0.7, 1.1 * params.intensity, 1.1 * params.intensity, animation::EasingPreset::EaseInOut);
@@ -67,7 +67,7 @@ void Animation2DPresetRegistry::load_builtins() {
         anim2d_schema,
         [get_anim_params](LayerSpec& layer, const ParameterBag& p) {
             auto params = get_anim_params(p);
-            auto& scale = layer.transform.scale_property;
+            auto& scale = layer.transform.transform.scale_property;
             scale.keyframes.clear();
             double t = params.delay;
             double step = params.duration / 2.0;
@@ -84,7 +84,7 @@ void Animation2DPresetRegistry::load_builtins() {
         anim2d_schema,
         [get_anim_params](LayerSpec& layer, const ParameterBag& p) {
             auto params = get_anim_params(p);
-            auto& pos = layer.transform.position_property;
+            auto& pos = layer.transform.transform.position_property;
             pos.keyframes.clear();
             double offset = 20.0 * params.intensity;
             add_keyframe_v2(pos.keyframes, params.delay, 0.0, 0.0, animation::EasingPreset::EaseInOut);
@@ -100,7 +100,7 @@ void Animation2DPresetRegistry::load_builtins() {
         anim2d_schema,
         [get_anim_params](LayerSpec& layer, const ParameterBag& p) {
             auto params = get_anim_params(p);
-            auto& rot = layer.transform.rotation_property;
+            auto& rot = layer.transform.transform.rotation_property;
             rot.keyframes.clear();
             double angle = 5.0 * params.intensity;
             add_keyframe(rot.keyframes, params.delay, 0.0, animation::EasingPreset::EaseInOut);

@@ -147,17 +147,17 @@ SceneSpec build_text_scene(const TextParams& text, const SceneParams& scene) {
 
     // Solid background layer
     LayerSpec bg_layer;
-    bg_layer.id = "bg_solid";
-    bg_layer.name = "Background";
-    bg_layer.type = LayerType::Solid;
-    bg_layer.enabled = true;
-    bg_layer.visible = true;
-    bg_layer.timing.start     = 0.0;
-    bg_layer.timing.source_in = 0.0;
-    bg_layer.timing.duration  = scene.duration;
-    bg_layer.width = scene.width;
-    bg_layer.height = scene.height;
-    bg_layer.opacity = 1.0;
+    bg_layer.identity.id = "bg_solid";
+    bg_layer.identity.name = "Background";
+    bg_layer.identity.type = LayerType::Solid;
+    bg_layer.identity.enabled = true;
+    bg_layer.identity.visible = true;
+    bg_layer.playback.timing.start     = 0.0;
+    bg_layer.playback.timing.source_in = 0.0;
+    bg_layer.playback.timing.duration  = scene.duration;
+    bg_layer.transform.width = scene.width;
+    bg_layer.transform.height = scene.height;
+    bg_layer.transform.opacity = 1.0;
     bg_layer.text.fill_color = AnimatedColorSpec(ColorSpec{13, 17, 23, 255});
     
     comp.layers.push_back(std::move(bg_layer));
@@ -174,8 +174,8 @@ LayerSpec build_text_layer(const std::string& text,
                            double duration) {
     TextParams p;
     p.text = text;
-    p.text.font_id = font_id;
-    p.text.font_size = static_cast<uint32_t>(font_size);
+    p.font_id = font_id;
+    p.font_size = static_cast<uint32_t>(font_size);
     p.animation = animation_style;
     p.in_point = 0.0;
     p.out_point = duration;

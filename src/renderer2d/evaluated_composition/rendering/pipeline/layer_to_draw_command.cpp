@@ -32,11 +32,13 @@ BlendMode map_blend_mode(const std::string& mode) {
 }
 
 RectI scaled_rect(const scene::EvaluatedLayerState& layer, int base_width, int base_height) {
-    const int width = std::max(1, static_cast<int>(std::round(static_cast<float>(base_width) * layer.local_transform.scale.x)));
-    const int height = std::max(1, static_cast<int>(std::round(static_cast<float>(base_height) * layer.local_transform.scale.y)));
+    const float scale_x = layer.transform.local_transform.scale.x;
+    const float scale_y = layer.transform.local_transform.scale.y;
+    const int width = std::max(1, static_cast<int>(std::round(static_cast<float>(base_width) * scale_x)));
+    const int height = std::max(1, static_cast<int>(std::round(static_cast<float>(base_height) * scale_y)));
     return RectI{
-        static_cast<int>(std::round(layer.local_transform.position.x)),
-        static_cast<int>(std::round(layer.local_transform.position.y)),
+        static_cast<int>(std::round(layer.transform.local_transform.position.x)),
+        static_cast<int>(std::round(layer.transform.local_transform.position.y)),
         width, height};
 }
 
@@ -48,16 +50,16 @@ Color color_with_opacity(const ColorSpec& spec, float opacity) {
 
 
 DrawCommand2D solid_command(const scene::EvaluatedLayerState& layer, const scene::EvaluatedCompositionState& composition_state, int z_order) {
-    const int base_width = layer.width > 0 ? layer.width : static_cast<int>(composition_state.width);
-    const int base_height = layer.height > 0 ? layer.height : static_cast<int>(composition_state.height);
+    const int base_width = layer.transform.width > 0 ? layer.transform.width : static_cast<int>(composition_state.width);
+    const int base_height = layer.transform.height > 0 ? layer.transform.height : static_cast<int>(composition_state.height);
     const RectI rect = scaled_rect(layer, base_width, base_height);
-    const Color color = color_with_opacity(layer.text.fill_color, static_cast<float>(layer.opacity));
+    const Color color = color_with_opacity(layer.text.fill_color, static_cast<float>(layer.transform.opacity));
     DrawCommand2D command;
     command.kind = DrawCommandKind::SolidRect;
     command.z_order = z_order;
     command.blend_mode = BlendMode::Normal;
     command.clip = full_clip(composition_state);
-    command.solid_rect.emplace(SolidRectCommand{rect, color, static_cast<float>(layer.opacity)});
+    command.solid_rect.emplace(SolidRectCommand{rect, color, static_cast<float>(layer.transform.opacity)});
     return command;
 }
 
@@ -79,9 +81,9 @@ DrawCommand2D image_command(const scene::EvaluatedLayerState& layer, const scene
 
     const RectI rect = scaled_rect(layer, base_width, base_height);
     TexturedRectCommand tex_rect;
-    tex_rect.texture = TextureHandle{std::string(prefix) + layer.id};
+    tex_rect.texture = TextureHandle{std::string(prefix) + layer.identity.id};
     tex_rect.rect = rect;
-    tex_rect.opacity = static_cast<float>(layer.opacity);
+    tex_rect.opacity = static_cast<float>(layer.transform.opacity);
 
     command.z_order = z_order;
     command.textured_rect = tex_rect;
@@ -92,18 +94,18 @@ DrawCommand2D shape_command(const scene::EvaluatedLayerState& layer, const scene
     DrawCommand2D command;
     command.kind = DrawCommandKind::Shape;
     command.z_order = z_order;
-    command.blend_mode = map_blend_mode(layer.blend_mode);
+    command.blend_mode = map_blend_mode(layer.transform.blend_mode);
     command.clip = full_clip(composition_state);
     
     ShapeCommand shape;
-    shape.text.fill_color = map_color(layer.text.fill_color);
-    shape.text.stroke_color = map_color(layer.text.stroke_color);
-    shape.text.stroke_width = layer.text.stroke_width;
-    shape.vector.line_cap = layer.vector.line_cap;
-    shape.vector.line_join = layer.vector.line_join;
-    shape.vector.miter_limit = layer.vector.miter_limit;
-    shape.opacity = static_cast<float>(layer.opacity);
-    shape.transform = layer.local_transform;
+    shape.fill_color = map_color(layer.text.fill_color);
+    shape.stroke_color = map_color(layer.text.stroke_color);
+    shape.stroke_width = layer.text.stroke_width;
+    shape.line_cap = layer.vector.line_cap;
+    shape.line_join = layer.vector.line_join;
+    shape.miter_limit = layer.vector.miter_limit;
+    shape.opacity = static_cast<float>(layer.transform.opacity);
+    shape.transform = layer.transform.local_transform;
     
     if (layer.vector.shape_path.has_value()) {
         const auto& points = layer.vector.shape_path->points;
@@ -153,23 +155,23 @@ DrawList2D generate_draw_list(const scene::EvaluatedCompositionState& state) {
     int z_order = 0;
     
     for (const auto& layer : state.layers) {
-        if (!layer.visible) {
+        if (!layer.identity.visible) {
             z_order++;
             continue;
         }
 
-        switch (layer.type) {
-            case scene::LayerType::Solid:
+        switch (layer.identity.type) {
+            case LayerType::Solid:
                 list.commands.push_back(solid_command(layer, state, z_order));
                 break;
-            case scene::LayerType::Mask:
+            case LayerType::Mask:
                 list.commands.push_back(mask_command(layer, state, z_order));
                 break;
-            case scene::LayerType::Image:
-            case scene::LayerType::Video:
-                list.commands.push_back(image_command(layer, state, z_order, "asset:", static_cast<int>(layer.width), static_cast<int>(layer.height)));
+            case LayerType::Image:
+            case LayerType::Video:
+                list.commands.push_back(image_command(layer, state, z_order, "asset:", static_cast<int>(layer.transform.width), static_cast<int>(layer.transform.height)));
                 break;
-            case scene::LayerType::Shape:
+            case LayerType::Shape:
                 list.commands.push_back(shape_command(layer, state, z_order));
                 break;
             default:
@@ -183,21 +185,19 @@ DrawList2D generate_draw_list(const scene::EvaluatedCompositionState& state) {
 
 std::vector<DrawCommand2D> map_layer_to_draw_commands(const scene::EvaluatedLayerState& layer, const scene::EvaluatedCompositionState& composition_state, int z_order) {
     std::vector<DrawCommand2D> commands;
-    if (!layer.enabled || !layer.active) {
+    if (!layer.identity.enabled || !layer.identity.active) {
         return commands;
     }
     
-    using scene::LayerType;
-    
-    if (layer.is_adjustment_layer) {
+    if (layer.identity.is_adjustment_layer) {
         DrawCommand2D adjustment;
         adjustment.kind = DrawCommandKind::Adjustment;
         adjustment.z_order = z_order;
-        adjustment.blend_mode = map_blend_mode(layer.blend_mode);
+        adjustment.blend_mode = map_blend_mode(layer.transform.blend_mode);
         adjustment.clip = full_clip(composition_state);
         
         AdjustmentCommand adj_cmd;
-        adj_cmd.layer_id = layer.id;
+        adj_cmd.layer_id = layer.identity.id;
         for (const auto& effect : layer.effects) {
             EffectParams params;
             for (const auto& [k, v] : effect.params) {
@@ -228,18 +228,18 @@ std::vector<DrawCommand2D> map_layer_to_draw_commands(const scene::EvaluatedLaye
         return commands;
     }
 
-    if (layer.type == LayerType::Solid) {
+    if (layer.identity.type == LayerType::Solid) {
         commands.push_back(solid_command(layer, composition_state, z_order));
-    } else if (layer.type == LayerType::Shape) {
+    } else if (layer.identity.type == LayerType::Shape) {
         commands.push_back(shape_command(layer, composition_state, z_order));
-    } else if (layer.type == LayerType::Mask) {
+    } else if (layer.identity.type == LayerType::Mask) {
         commands.push_back(mask_command(layer, composition_state, z_order));
-    } else if (layer.type == LayerType::Image) {
+    } else if (layer.identity.type == LayerType::Image) {
         auto command = image_command(layer, composition_state, z_order, "image:", 256, 256);
         if (command.textured_rect.has_value()) {
             commands.push_back(std::move(command));
         }
-    } else if (layer.type == LayerType::Text) {
+    } else if (layer.identity.type == LayerType::Text) {
         auto command = image_command(layer, composition_state, z_order, "text:", 256, 64);
         if (command.textured_rect.has_value()) {
             commands.push_back(std::move(command));

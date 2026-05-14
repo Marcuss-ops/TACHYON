@@ -18,8 +18,8 @@ bool Renderer2DMatteResolver::validate(
     // Build ID -> index map
     std::unordered_map<std::string, std::size_t> id_to_index;
     for (std::size_t i = 0; i < layers.size(); ++i) {
-        if (!layers[i].id.empty()) {
-            id_to_index[layers[i].id] = i;
+        if (!layers[i].id().empty()) {
+            id_to_index[layers[i].id()] = i;
         }
     }
     
@@ -158,8 +158,8 @@ void Renderer2DMatteResolver::resolve(
     // Build ID -> index map
     std::unordered_map<std::string, std::size_t> id_to_index;
     for (std::size_t i = 0; i < layer_count; ++i) {
-        if (!layers[i].id.empty()) {
-            id_to_index[layers[i].id] = i;
+        if (!layers[i].id().empty()) {
+            id_to_index[layers[i].id()] = i;
         }
     }
 
@@ -228,7 +228,7 @@ void Renderer2DMatteResolver::resolve(
         // Fallback: if no surface available, use layer opacity
         if (surface_it == rendered_surfaces.end() || !surface_it->second) {
             // Use a deterministic placeholder matte when the source was not rendered.
-            const float placeholder = (layers[src_idx].active && layers[src_idx].visible) ? 0.5f : 0.0f;
+            const float placeholder = (layers[src_idx].identity.active && layers[src_idx].identity.visible) ? 0.5f : 0.0f;
             std::vector<float> source_a(pixel_count, placeholder);
             switch (dep.mode) {
                 case MatteMode::Alpha:

@@ -4,6 +4,7 @@
 #include "tachyon/core/spec/schema/effects/effect_spec.h"
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 #include "tachyon/core/spec/schema/objects/text_box_spec.h"
+#include "tachyon/core/spec/schema/objects/path_spec.h"
 
 #include "tachyon/core/spec/schema/common/common_spec.h"
 
@@ -21,19 +22,9 @@
 
 namespace tachyon {
 
-struct ParticleSpec {
-    std::string type;
-    bool enabled{true};
-
-    [[nodiscard]] bool empty() const noexcept {
-        return type.empty() || !enabled;
-    }
-};
-
 struct LayerTransitionSpec {
     std::string transition_id{"none"};
-    TransitionKind kind{TransitionKind::None}; 
-    std::string direction; 
+    Direction direction{Direction::None};
     double duration{0.4};
     double delay{0.0};
     animation::EasingPreset easing{animation::EasingPreset::EaseOut};
@@ -84,8 +75,8 @@ struct LayerRepeaterSpec {
 struct LayerVectorSpec {
     std::optional<ShapePathSpec> shape_path;
     std::optional<ShapeSpec> shape_spec;
-    std::string line_cap{"butt"};
-    std::string line_join{"miter"};
+    spec::LineCap line_cap{spec::LineCap::Butt};
+    spec::LineJoin line_join{spec::LineJoin::Miter};
     double miter_limit{4.0};
 };
 
@@ -101,35 +92,57 @@ struct LayerTemporalSpec {
     AnimatedScalarSpec time_remap_property;
 };
 
-struct LayerSpec {
+struct LayerIdentity {
     std::string id;
     std::string name;
-    LayerType type{LayerType::NullLayer}; 
-    
-    std::string asset_id; // For image/video layers
-    std::string preset_id; // For procedural/preset layers
-    std::optional<std::string> precomp_id;
-    
-    std::string blend_mode{"normal"};
-    
+    LayerType type{LayerType::NullLayer};
     bool enabled{true};
     bool visible{true};
     bool is_adjustment_layer{false};
     bool motion_blur{false};
+};
 
-    LayerTiming timing;
-    double opacity{1.0};
-    AnimatedScalarSpec opacity_property;
+struct LayerSource {
+    std::string asset_id; // For image/video layers
+    std::string preset_id; // For procedural/preset layers
+    std::optional<std::string> precomp_id;
+    std::optional<ProceduralSpec> procedural;
+};
 
+struct LayerTransform {
+    Transform2D transform;
     int width{1920};
     int height{1080};
-
-    Transform2D transform;
+    double opacity{1.0};
+    AnimatedScalarSpec opacity_property;
     
     // Camera integration
     bool has_parallax{true};
     float parallax_factor{1.0f};
     std::optional<std::string> camera2d_id;
+};
+
+struct LayerPlayback {
+    LayerTiming timing;
+    LayerTemporalSpec temporal;
+    bool loop{false};
+    bool hold_last_frame{false};
+    
+    struct MarkerSpec {
+        double time{0.0};
+        std::string label;
+        std::string color{"#ffffff"};
+    };
+    std::vector<MarkerSpec> markers;
+};
+
+struct LayerSpec {
+    LayerIdentity identity;
+    LayerSource source;
+    LayerTransform transform;
+    LayerPlayback playback;
+
+    BlendMode blend_mode{BlendMode::Normal};
 
     // Component Specs
     LayerTextSpec text;
@@ -137,7 +150,6 @@ struct LayerSpec {
     LayerRepeaterSpec repeater;
     LayerVectorSpec vector;
     LayerMaskSpec masks;
-    LayerTemporalSpec temporal;
 
     // Effects & Animators
     std::vector<EffectSpec> effects;
@@ -151,22 +163,6 @@ struct LayerSpec {
 
     LayerTransitionSpec transition_in;
     LayerTransitionSpec transition_out;
-
-    // Playback behavior
-    bool loop{false};
-    bool hold_last_frame{false};
-
-    // Markers
-    struct MarkerSpec {
-        double time{0.0};
-        std::string label;
-        std::string color{"#ffffff"};
-    };
-    std::vector<MarkerSpec> markers;
-
-    // Procedural generation
-    std::optional<ProceduralSpec> procedural;
-    std::optional<ParticleSpec> particle_spec;
 
     std::optional<std::string> parent;
     std::optional<std::string> track_matte_layer_id;

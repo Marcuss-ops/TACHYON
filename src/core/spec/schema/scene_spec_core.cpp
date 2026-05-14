@@ -21,10 +21,6 @@ bool is_asset_alpha_mode_valid(const std::string& mode) {
     return mode == "premultiplied" || mode == "straight" || mode == "opaque";
 }
 
-bool is_layer_blend_mode_valid(const std::string& mode) {
-    return mode == "normal" || mode == "additive" || mode == "multiply" || mode == "screen" || mode == "overlay" || mode == "soft_light" || mode == "softLight";
-}
-
 bool looks_like_media_path(const std::string& value) {
     if (value.empty()) {
         return false;
@@ -69,10 +65,10 @@ ValidationResult validate_scene_spec(const SceneSpec& scene) {
         for (std::size_t j = 0; j < comp.layers.size(); ++j) {
             const auto& layer = comp.layers[j];
             const std::string lpath = path + ".layers[" + std::to_string(j) + "]";
-            if (layer.id.empty()) {
+            if (layer.identity.id.empty()) {
                 continue;
             }
-            if (!layer_ids.insert(layer.id).second) {
+            if (!layer_ids.insert(layer.identity.id).second) {
                 result.diagnostics.add_error("scene.layer.id_duplicate", "layer id must be unique within a composition", lpath + ".id");
             }
         }
@@ -81,19 +77,22 @@ ValidationResult validate_scene_spec(const SceneSpec& scene) {
             const auto& layer = comp.layers[j];
             std::string lpath = path + ".layers[" + std::to_string(j) + "]";
             
-            if (layer.id.empty()) result.diagnostics.add_error("scene.layer.id_missing", "id required", lpath + ".id");
-            if (!is_layer_blend_mode_valid(layer.blend_mode)) result.diagnostics.add_error("scene.layer.blend_mode_invalid", "blend_mode invalid", lpath + ".blend_mode");
+            if (layer.identity.id.empty()) result.diagnostics.add_error("scene.layer.id_missing", "id required", lpath + ".id");
+            // BlendMode is already validated by enum type, just check it's within range
+            if (static_cast<int>(layer.blend_mode) < 0 || static_cast<int>(layer.blend_mode) >= static_cast<int>(BlendMode::Count)) {
+                result.diagnostics.add_error("scene.layer.blend_mode_invalid", "blend_mode invalid", lpath + ".blend_mode");
+            }
 
             // Parenting Validation with Cycle Detection
             if (layer.parent.has_value() && !layer.parent->empty()) {
-                if (*layer.parent == layer.id) {
+                if (*layer.parent == layer.identity.id) {
                     result.diagnostics.add_error("scene.layer.parent_cycle.direct", "layer.parent cannot reference itself", lpath + ".parent");
                 } else if (!layer_ids.count(*layer.parent)) {
                     result.diagnostics.add_error("scene.layer.parent_invalid", "layer.parent must reference an existing layer id", lpath + ".parent");
                 } else {
                     // Industrial cycle detection
                     std::string current = *layer.parent;
-                    std::set<std::string> visited = { layer.id };
+                    std::set<std::string> visited = { layer.identity.id };
                     bool cycle = false;
                     while (true) {
                         if (visited.count(current)) {
@@ -101,7 +100,7 @@ ValidationResult validate_scene_spec(const SceneSpec& scene) {
                             break;
                         }
                         visited.insert(current);
-                        auto pit = std::find_if(comp.layers.begin(), comp.layers.end(), [&](const auto& l) { return l.id == current; });
+                        auto pit = std::find_if(comp.layers.begin(), comp.layers.end(), [&](const auto& l) { return l.identity.id == current; });
                         if (pit != comp.layers.end() && pit->parent.has_value() && !pit->parent->empty()) {
                             current = *pit->parent;
                         } else {
@@ -118,23 +117,23 @@ ValidationResult validate_scene_spec(const SceneSpec& scene) {
                 result.diagnostics.add_error("scene.layer.track_matte_layer_id_invalid", "track_matte_layer_id invalid", lpath + ".track_matte_layer_id");
             }
 
-            if (layer.precomp_id.has_value() && !layer.precomp_id->empty() && !composition_ids.count(*layer.precomp_id)) {
+            if (layer.source.precomp_id.has_value() && !layer.source.precomp_id->empty() && !composition_ids.count(*layer.source.precomp_id)) {
                 result.diagnostics.add_error("scene.layer.precomp_id_invalid", "precomp_id invalid", lpath + ".precomp_id");
             }
 
-            if (layer.type == LayerType::Image || layer.type == LayerType::Video) {
-                if (layer.asset_id.empty()) {
+            if (layer.identity.type == LayerType::Image || layer.identity.type == LayerType::Video) {
+                if (layer.source.asset_id.empty()) {
                     result.diagnostics.add_error("scene.layer.asset_id_missing", "asset_id is required for image/video layers", lpath + ".asset_id");
                 } else {
                     bool asset_found = false;
                     for (const auto& asset : scene.assets) {
-                        if (asset.id == layer.asset_id) {
+                        if (asset.id == layer.source.asset_id) {
                             asset_found = true;
                             break;
                         }
                     }
-                    if (!asset_found && !looks_like_media_path(layer.asset_id)) {
-                        result.diagnostics.add_error("scene.layer.asset_reference_invalid", "asset id '" + layer.asset_id + "' not found in scene assets", lpath + ".asset_id");
+                    if (!asset_found && !looks_like_media_path(layer.source.asset_id)) {
+                        result.diagnostics.add_error("scene.layer.asset_reference_invalid", "asset id '" + layer.source.asset_id + "' not found in scene assets", lpath + ".asset_id");
                     }
                 }
             }
@@ -146,7 +145,7 @@ ValidationResult validate_scene_spec(const SceneSpec& scene) {
         bool has_text_layer = false;
         for (const auto& comp : scene.compositions) {
             for (const auto& layer : comp.layers) {
-                if (layer.type == LayerType::Text) {
+                if (layer.identity.type == LayerType::Text) {
                     has_text_layer = true;
                     break;
                 }

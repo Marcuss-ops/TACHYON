@@ -29,6 +29,13 @@ enum TachyonJitError {
     TACHYON_JIT_ERROR_UNSUPPORTED = 3
 };
 
+enum TachyonJitLogLevel {
+    TACHYON_JIT_LOG_ERROR = 0,
+    TACHYON_JIT_LOG_WARN = 1,
+    TACHYON_JIT_LOG_INFO = 2,
+    TACHYON_JIT_LOG_DEBUG = 3
+};
+
 struct TachyonHostApi {
     uint32_t abi_version;
     uint32_t struct_size;

@@ -48,12 +48,12 @@ TextLayerPresetSpec create_basic_text_preset() {
     });
     spec.factory = [](const registry::ParameterBag& p) {
         LayerSpec layer;
-        layer.type = LayerType::Text;
-        layer.name = "Text Layer";
+        layer.identity.type = LayerType::Text;
+        layer.identity.name = "Text Layer";
         layer.text.content = p.get_or<std::string>("text", "Hello World");
-        layer.text.text.font_id = p.get_or<std::string>("font_id", "default");
-        layer.text.text.font_size = p.get_or<double>("font_size", 48.0);
-        layer.text.text.fill_color = p.get_or<ColorSpec>("color", ColorSpec{255, 255, 255, 255});
+        layer.text.font_id = p.get_or<std::string>("font_id", "default");
+        layer.text.font_size = p.get_or<double>("font_size", 48.0);
+        layer.text.fill_color = p.get_or<ColorSpec>("color", ColorSpec{255, 255, 255, 255});
         return layer;
     };
     return spec;

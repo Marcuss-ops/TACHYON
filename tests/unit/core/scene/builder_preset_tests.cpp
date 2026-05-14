@@ -20,8 +20,8 @@ bool run_scene_builder_preset_tests() {
         PresetApplier::apply_background(spec, "aurora_mesh");
         
         assert(!spec.layers.empty());
-        assert(spec.layers[0].id == "bg_aurora_mesh");
-        assert(spec.layers[0].type == LayerType::Procedural);
+        assert(spec.layers[0].identity.id == "bg_aurora_mesh");
+        assert(spec.layers[0].identity.type == LayerType::Procedural);
     }
 
     // 2. Test text_animation_preset and transitions (now via PresetApplier)
@@ -30,8 +30,8 @@ bool run_scene_builder_preset_tests() {
         cb.size(1920, 1080);
         
         LayerSpec text_layer;
-        text_layer.id = "title";
-        text_layer.type = LayerType::Text;
+        text_layer.identity.id = "title";
+        text_layer.identity.type = LayerType::Text;
         text_layer.text.content = "Hello World";
         
         // Applying preset and transitions
@@ -46,12 +46,11 @@ bool run_scene_builder_preset_tests() {
         CompositionSpec comp = cb.build();
         
         assert(!comp.layers.empty());
-        const auto& layer = comp.layers[0];
-        assert(!layer.text_animators.empty());
-        assert(layer.transition_in.transition_id == "tachyon.transition.crossfade");
-        assert(layer.transition_in.duration == 0.5);
-        assert(layer.transition_out.transition_id == "tachyon.transition.zoom");
-        assert(layer.transition_out.duration == 0.3);
+        assert(!comp.layers[0].text_animators.empty());
+        assert(comp.layers[0].transition_in.transition_id == "tachyon.transition.crossfade");
+        assert(comp.layers[0].transition_in.duration == 0.5);
+        assert(comp.layers[0].transition_out.transition_id == "tachyon.transition.zoom");
+        assert(comp.layers[0].transition_out.duration == 0.3);
     }
 
     std::cout << "SceneBuilder preset extension tests passed!" << std::endl;

@@ -22,15 +22,15 @@ BackgroundDescriptor make_gradient_background_descriptor() {
     // Build function
     desc.build = [](const registry::ParameterBag& params) -> LayerSpec {
         LayerSpec spec;
-        spec.type = LayerType::Procedural;
-        spec.name = "Linear Gradient Background";
+        spec.identity.type = LayerType::Procedural;
+        spec.identity.name = "Linear Gradient Background";
         
         ProceduralSpec proc;
         proc.kind = "tachyon.background.kind.linear_gradient";
         proc.color_a.keyframes = {{0.0, params.get_or<ColorSpec>("color_start", ColorSpec(0, 0, 0))}};
         proc.color_b.keyframes = {{0.0, params.get_or<ColorSpec>("color_end", ColorSpec(255, 255, 255))}};
         proc.angle.keyframes = {{0.0, params.get_or<double>("angle", 0.0)}};
-        spec.procedural = proc;
+        spec.source.procedural = proc;
         
         return spec;
     };

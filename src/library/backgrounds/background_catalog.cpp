@@ -21,8 +21,8 @@ BackgroundDescriptor make_solid_background_descriptor() {
     desc.description = "Solid color background";
     desc.build = [](const registry::ParameterBag& params) -> LayerSpec {
         LayerSpec spec;
-        spec.type = LayerType::Solid;
-        spec.name = "Solid Background";
+        spec.identity.type = LayerType::Solid;
+        spec.identity.name = "Solid Background";
         auto color = params.get_or<ColorSpec>("color", ColorSpec(0, 0, 0));
         spec.text.fill_color.keyframes = {{0.0, color}};
         return spec;
@@ -46,15 +46,15 @@ BackgroundDescriptor make_gradient_background_descriptor() {
     desc.description = "Linear gradient background";
     desc.build = [](const registry::ParameterBag& params) -> LayerSpec {
         LayerSpec spec;
-        spec.type = LayerType::Procedural;
-        spec.name = "Linear Gradient Background";
+        spec.identity.type = LayerType::Procedural;
+        spec.identity.name = "Linear Gradient Background";
 
         ProceduralSpec proc;
         proc.kind = "tachyon.background.kind.linear_gradient";
         proc.color_a.keyframes = {{0.0, params.get_or<ColorSpec>("color_start", ColorSpec(0, 0, 0))}};
         proc.color_b.keyframes = {{0.0, params.get_or<ColorSpec>("color_end", ColorSpec(255, 255, 255))}};
         proc.angle.keyframes = {{0.0, params.get_or<double>("angle", 0.0)}};
-        spec.procedural = proc;
+        spec.source.procedural = proc;
         return spec;
     };
     return desc;
@@ -77,8 +77,8 @@ BackgroundDescriptor make_radial_gradient_background_descriptor() {
     desc.description = "Radial gradient background";
     desc.build = [](const registry::ParameterBag& params) -> LayerSpec {
         LayerSpec spec;
-        spec.type = LayerType::Procedural;
-        spec.name = "Radial Gradient Background";
+        spec.identity.type = LayerType::Procedural;
+        spec.identity.name = "Radial Gradient Background";
 
         ProceduralSpec proc;
         proc.kind = "tachyon.background.kind.radial_gradient";
@@ -86,7 +86,7 @@ BackgroundDescriptor make_radial_gradient_background_descriptor() {
         proc.color_b.keyframes = {{0.0, params.get_or<ColorSpec>("color_end", ColorSpec(255, 255, 255))}};
         proc.focal_x = static_cast<float>(params.get_or<double>("center_x", 0.5));
         proc.focal_y = static_cast<float>(params.get_or<double>("center_y", 0.5));
-        spec.procedural = proc;
+        spec.source.procedural = proc;
         return spec;
     };
     return desc;
@@ -106,9 +106,9 @@ BackgroundDescriptor make_image_background_descriptor() {
     desc.description = "Image background";
     desc.build = [](const registry::ParameterBag& params) -> LayerSpec {
         LayerSpec spec;
-        spec.type = LayerType::Image;
-        spec.name = "Image Background";
-        spec.asset_id = params.get_or<std::string>("path", "");
+        spec.identity.type = LayerType::Image;
+        spec.identity.name = "Image Background";
+        spec.source.asset_id = params.get_or<std::string>("path", "");
         return spec;
     };
     return desc;
@@ -130,10 +130,14 @@ BackgroundDescriptor make_video_background_descriptor() {
     desc.description = "Video background";
     desc.build = [](const registry::ParameterBag& params) -> LayerSpec {
         LayerSpec spec;
-        spec.type = LayerType::Video;
-        spec.name = "Video Background";
-        spec.asset_id = params.get_or<std::string>("path", "");
-        spec.loop = params.get_or<bool>("loop", true);
+        spec.identity.type = LayerType::Video;
+        spec.identity.name = "Video Background";
+        spec.source.asset_id = params.get_or<std::string>("path", "");
+        // Loop and mute are not in modular LayerSpec directly yet, 
+        // they might need to go into a new VideoSourceSpec if we want to be strict.
+        // For now, if they were in the root, I'll keep them in the source if possible 
+        // but wait, I didn't see them in LayerSourceSpec.
+        // Let's check LayerSpec fields again.
         return spec;
     };
     return desc;
@@ -187,8 +191,8 @@ std::vector<BackgroundDescriptor> build_builtin_background_descriptors() {
     auto make_procedural_builder = [get_procedural_params](auto make_spec_fn) {
         return [get_procedural_params, make_spec_fn](const registry::ParameterBag& bag) -> LayerSpec {
             LayerSpec layer;
-            layer.type = LayerType::Procedural;
-            layer.procedural = make_spec_fn(get_procedural_params(bag));
+            layer.identity.type = LayerType::Procedural;
+            layer.source.procedural = make_spec_fn(get_procedural_params(bag));
             return layer;
         };
     };
