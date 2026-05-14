@@ -21,3 +21,8 @@ target_link_libraries(TachyonTestUtils PUBLIC TachyonCore)
 
 # Domain-specific test configurations
 include(cmake/RenderTests.cmake)
+include(cmake/CliTests.cmake)
+include(cmake/SceneTests.cmake)
+include(cmake/RuntimeTests.cmake)
+include(cmake/OperationsTests.cmake)
+include(cmake/GoldenTests.cmake)

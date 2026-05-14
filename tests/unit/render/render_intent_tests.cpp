@@ -26,7 +26,7 @@ bool run_render_intent_tests() {
     {
         auto state = make_test_composition();
         auto layer = make_test_layer("layer_1");
-        layer.texture_asset_id = std::string("assets/logo.png");
+        layer.source.definition = MediaSource{AssetHandle{std::string("assets/logo.png")}};
         state.layers.push_back(layer);
 
         FakeResourceProvider provider;
@@ -41,11 +41,11 @@ bool run_render_intent_tests() {
         auto state = make_test_composition();
         
         auto layer1 = make_test_layer("layer_1");
-        layer1.enabled = false; // Should be filtered out
+        layer1.identity.enabled = false; // Should be filtered out
         state.layers.push_back(layer1);
 
         auto layer2 = make_test_layer("layer_2");
-        layer2.visible = false; // Should be filtered out
+        layer2.identity.visible = false; // Should be filtered out
         state.layers.push_back(layer2);
 
         auto result = build_test_render_intent(state);

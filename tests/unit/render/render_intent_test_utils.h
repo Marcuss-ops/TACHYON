@@ -47,11 +47,11 @@ inline scene::EvaluatedCompositionState make_test_composition(const std::string&
  */
 inline scene::EvaluatedLayerState make_test_layer(const std::string& id = "test_layer") {
     scene::EvaluatedLayerState layer;
-    layer.id = id;
-    layer.active = true;
-    layer.visible = true;
-    layer.enabled = true;
-    layer.opacity = 1.0f;
+    layer.identity.layer_id = id;
+    layer.identity.active = true;
+    layer.identity.visible = true;
+    layer.identity.enabled = true;
+    layer.transform.opacity = 1.0;
     return layer;
 }
 
