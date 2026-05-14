@@ -64,7 +64,7 @@ bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostrea
     }
     
     RenderContext context;
-    context.media = std::make_shared<media::MediaManager>();
+    context.media = nullptr; // MediaManager is in operations, CLI Core is decoupled.
     
     auto last_time = std::filesystem::last_write_time(watch_path);
     std::int64_t current_frame = plan.frame_range.start;

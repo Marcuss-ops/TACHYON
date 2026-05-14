@@ -7,8 +7,8 @@ include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonPlatformSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonSceneEvalSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonTimelineSources.cmake)
 
-include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonMediaSources.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonAudioSources.cmake)
+# include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonMediaSources.cmake)
+# include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonAudioSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonOutputSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonTextSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonCLISources.cmake)
@@ -132,6 +132,7 @@ add_library(TachyonCore STATIC ${TachyonCoreSources})
 tachyon_configure_common(TachyonCore)
 tachyon_link_omp(TachyonCore)
 tachyon_link_absl(TachyonCore)
+add_subdirectory(${CMAKE_SOURCE_DIR}/operations ${CMAKE_BINARY_DIR}/operations)
 
 add_library(TachyonContent STATIC ${TACHYON_CONTENT_SOURCES})
 tachyon_configure_common(TachyonContent)
@@ -225,34 +226,7 @@ target_link_libraries(TachyonTimeline PUBLIC TachyonCore)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/ModuleScene.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/ModuleRenderer2D.cmake)
 
-if(TACHYON_ENABLE_MEDIA)
-    add_library(TachyonMedia STATIC ${TachyonMediaSources})
-    tachyon_configure_common(TachyonMedia)
-
-    if(TACHYON_ENABLE_DRACO)
-        target_compile_definitions(TachyonMedia PUBLIC TACHYON_ENABLE_DRACO)
-        target_link_libraries(TachyonMedia PRIVATE draco_static)
-        target_include_directories(TachyonMedia PRIVATE ${draco_SOURCE_DIR}/src ${CMAKE_BINARY_DIR})
-    endif()
-
-    if(TACHYON_ENABLE_BASIS)
-        target_compile_definitions(TachyonMedia PUBLIC TACHYON_ENABLE_BASIS)
-        target_link_libraries(TachyonMedia PRIVATE basisu_lib)
-        target_include_directories(TachyonMedia PRIVATE ${basis_universal_SOURCE_DIR})
-    endif()
-    target_include_directories(TachyonMedia
-        PRIVATE
-            ${pugixml_SOURCE_DIR}/src
-            ${TACHYON_EARCUT_INCLUDE_DIR}
-    )
-    target_link_libraries(TachyonMedia PUBLIC pugixml TachyonText TachyonRenderer2D TachyonPlatform)
-endif()
-
-if(TACHYON_ENABLE_AUDIO)
-    add_library(TachyonAudio STATIC ${TachyonAudioSources})
-    tachyon_configure_common(TachyonAudio)
-    tachyon_link_media_deps(TachyonAudio)
-endif()
+# TachyonMedia and TachyonAudio moved to operations/
 
 if(TACHYON_ENABLE_OUTPUT)
     add_library(TachyonOutput STATIC ${TachyonOutputSources})
@@ -279,8 +253,8 @@ tachyon_assert_no_duplicate_sources(TachyonPresetsSources)
 tachyon_assert_no_duplicate_sources(TachyonRuntimeSources)
 tachyon_assert_no_duplicate_sources(TachyonRenderer2DSources)
 tachyon_assert_no_duplicate_sources(TachyonRenderer2DExtrasSources)
-tachyon_assert_no_duplicate_sources(TachyonMediaSources)
-tachyon_assert_no_duplicate_sources(TachyonAudioSources)
+# tachyon_assert_no_duplicate_sources(TachyonMediaSources)
+# tachyon_assert_no_duplicate_sources(TachyonAudioSources)
 tachyon_assert_no_duplicate_sources(TachyonOutputSources)
 tachyon_assert_no_duplicate_sources(TachyonTextSources)
 tachyon_assert_no_duplicate_sources(TachyonCLICoreSources)
@@ -288,7 +262,7 @@ tachyon_assert_no_duplicate_sources(TachyonCLILibrarySources)
 tachyon_assert_no_duplicate_sources(TachyonLibrarySources)
 
 tachyon_check_source_registration(${CMAKE_CURRENT_SOURCE_DIR}/text TachyonTextSources)
-tachyon_check_source_registration(${CMAKE_CURRENT_SOURCE_DIR}/media TachyonMediaSources)
+# tachyon_check_source_registration(${CMAKE_CURRENT_SOURCE_DIR}/media TachyonMediaSources)
 tachyon_check_source_registration(${CMAKE_CURRENT_SOURCE_DIR}/renderer2d TachyonRenderer2DAllSources)
 tachyon_check_source_registration(${CMAKE_CURRENT_SOURCE_DIR}/runtime TachyonRuntimeSources)
 tachyon_check_source_registration(${CMAKE_CURRENT_SOURCE_DIR}/core/scene TachyonSceneAllSources)
@@ -307,12 +281,6 @@ set(GlobalTachyonSources
     ${TachyonColorSources}
 )
 
-if(TACHYON_ENABLE_MEDIA)
-    list(APPEND GlobalTachyonSources ${TachyonMediaSources})
-endif()
-if(TACHYON_ENABLE_AUDIO)
-    list(APPEND GlobalTachyonSources ${TachyonAudioSources})
-endif()
 if(TACHYON_ENABLE_OUTPUT)
     list(APPEND GlobalTachyonSources ${TachyonOutputSources})
 endif()
@@ -371,6 +339,7 @@ target_link_libraries(tachyon
         TachyonLibrary
         TachyonPresets
         TachyonDiagnostics
+        TachyonOperations
 )
 tachyon_link_mimalloc(tachyon)
 

@@ -141,7 +141,7 @@ void evaluate_layer(
     } else if (layer.precomp_index.has_value()) {
         state->source.definition = PrecompSource{std::to_string(*layer.precomp_index)};
     } else if (!layer.asset_path.empty()) {
-        state->source.definition = MediaSource{layer.asset_path};
+        state->source.definition = MediaSource{ { layer.asset_path } };
     } else {
         state->source.definition = EmptySource{};
     }

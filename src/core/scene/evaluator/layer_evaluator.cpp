@@ -3,6 +3,7 @@
 #include "tachyon/core/scene/evaluator/templates.h"
 #include "tachyon/core/scene/evaluator/layer_utils.h"
 #include "tachyon/core/scene/evaluator/hashing.h"
+#include "tachyon/core/scene/math/evaluator_math.h"
 #include <algorithm>
 
 namespace tachyon::scene {
@@ -11,8 +12,7 @@ EvaluatedLayerState make_layer_state(
     EvaluationContext& context,
     const LayerSpec& spec,
     std::size_t layer_index,
-    double time_offset,
-    const EvaluationVariables& vars) {
+    double time_offset) {
     
     // 1. Timing & Playback Base
     double composition_time = context.composition_time_seconds + time_offset;
@@ -33,10 +33,13 @@ EvaluatedLayerState make_layer_state(
     // Local time (relative to layer start)
     double layer_local_time = composition_time - spec.playback.timing.start;
     
+    // Audio bands for expressions/bindings
+    ::tachyon::audio::AudioBands bands = context.audio_analyzer ? context.audio_analyzer->analyze_frame(composition_time) : ::tachyon::audio::AudioBands{};
+
     // Time Remap
     double sampled_local_time = layer_local_time;
     if (!spec.playback.temporal.time_remap_property.empty()) {
-        sampled_local_time = sample_scalar(spec.playback.temporal.time_remap_property, layer_local_time, layer_local_time, context.audio_analyzer);
+        sampled_local_time = sample_scalar(spec.playback.temporal.time_remap_property, layer_local_time, layer_local_time, bands);
     }
     
     state.playback.local_time_seconds = sampled_local_time;
@@ -57,10 +60,10 @@ EvaluatedLayerState make_layer_state(
         spec.transform.opacity_property, 
         spec.transform.opacity, 
         sampled_local_time, 
-        context.audio_analyzer,
+        bands,
         hash_combine(layer_seed, stable_string_hash("opacity")),
-        vars.numeric,
-        nullptr,
+        context.vars.numeric,
+        context.vars.tables,
         static_cast<uint32_t>(layer_index)));
     
     // Position, Scale, Rotation
@@ -68,33 +71,37 @@ EvaluatedLayerState make_layer_state(
         spec.transform.transform.position_property,
         {static_cast<float>(spec.transform.transform.position_x.value_or(0.0)), static_cast<float>(spec.transform.transform.position_y.value_or(0.0))},
         sampled_local_time,
-        context.audio_analyzer,
+        bands,
         hash_combine(layer_seed, stable_string_hash("position")),
-        vars.numeric);
+        context.vars.numeric,
+        context.vars.tables);
     
     math::Vector2 scale = sample_vector2(
         spec.transform.transform.scale_property,
         {static_cast<float>(spec.transform.transform.scale_x.value_or(100.0)), static_cast<float>(spec.transform.transform.scale_y.value_or(100.0))},
         sampled_local_time,
-        context.audio_analyzer,
+        bands,
         hash_combine(layer_seed, stable_string_hash("scale")),
-        vars.numeric);
+        context.vars.numeric,
+        context.vars.tables);
         
     double rotation = sample_scalar(
         spec.transform.transform.rotation_property,
         spec.transform.transform.rotation.value_or(0.0),
         sampled_local_time,
-        context.audio_analyzer,
+        bands,
         hash_combine(layer_seed, stable_string_hash("rotation")),
-        vars.numeric);
+        context.vars.numeric,
+        context.vars.tables);
         
     math::Vector2 anchor = sample_vector2(
         spec.transform.transform.anchor_point,
         spec.transform.transform.anchor_point.value.value_or(math::Vector2::zero()),
         sampled_local_time,
-        context.audio_analyzer,
+        bands,
         hash_combine(layer_seed, stable_string_hash("anchor")),
-        vars.numeric);
+        context.vars.numeric,
+        context.vars.tables);
 
     // Build local matrix
     state.transform.local_transform.position = pos;
@@ -114,12 +121,12 @@ EvaluatedLayerState make_layer_state(
     }
 
     // 3. Text
-    state.text.content = resolve_template(spec.text.content, vars.strings, vars.numeric);
+    state.text.content = resolve_template(spec.text.content, context.vars.strings, context.vars.numeric);
     state.text.font_id = spec.text.font_id;
-    state.text.font_size = static_cast<float>(sample_scalar(spec.text.font_size, 24.0, sampled_local_time, context.audio_analyzer));
+    state.text.font_size = static_cast<float>(sample_scalar(spec.text.font_size, 24.0, sampled_local_time, bands));
     state.text.fill_color = sample_color(spec.text.fill_color, spec.text.fill_color.value.value_or(ColorSpec{255,255,255,255}), sampled_local_time);
     state.text.stroke_color = sample_color(spec.text.stroke_color, spec.text.stroke_color.value.value_or(ColorSpec{0,0,0,0}), sampled_local_time);
-    state.text.stroke_width = static_cast<float>(sample_scalar(spec.text.stroke_width_property, spec.text.stroke_width, sampled_local_time, context.audio_analyzer));
+    state.text.stroke_width = static_cast<float>(sample_scalar(spec.text.stroke_width_property, spec.text.stroke_width, sampled_local_time, bands));
     state.text.box = spec.text.box;
     state.text.animators = spec.text_animators;
     state.text.highlights = spec.text_highlights;

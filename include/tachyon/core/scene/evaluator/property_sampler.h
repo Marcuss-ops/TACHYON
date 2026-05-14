@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/core/scene/evaluation/evaluator.h"
-#include "tachyon/audio/audio_analyzer.h"
+#include "tachyon/audio/audio_types.h"
 #include "tachyon/core/math/vector2.h"
 
 #include <unordered_map>
@@ -14,7 +14,7 @@ double sample_scalar(
     const AnimatedScalarSpec& property,
     double fallback,
     double local_time_seconds,
-    const ::tachyon::audio::AudioAnalyzer* audio_analyzer = nullptr,
+    const ::tachyon::audio::AudioBands& audio_bands = {},
     std::uint64_t expression_seed = 0,
     const std::unordered_map<std::string, double>* job_variables = nullptr,
     const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables = nullptr,
@@ -26,7 +26,7 @@ math::Vector2 sample_vector2(
     const AnimatedVector2Spec& property,
     const math::Vector2& fallback,
     double local_time_seconds,
-    const ::tachyon::audio::AudioAnalyzer* audio_analyzer = nullptr,
+    const ::tachyon::audio::AudioBands& audio_bands = {},
     std::uint64_t expression_seed = 0,
     const std::unordered_map<std::string, double>* job_variables = nullptr,
     const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables = nullptr);

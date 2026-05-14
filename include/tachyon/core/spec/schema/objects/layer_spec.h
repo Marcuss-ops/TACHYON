@@ -107,7 +107,7 @@ struct LayerIdentity {
 struct EmptySource {};
 
 struct MediaSource {
-    std::string asset_path;
+    AssetHandle asset;
 };
 
 struct PrecompSource {

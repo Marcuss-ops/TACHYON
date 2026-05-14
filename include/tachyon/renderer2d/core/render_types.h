@@ -7,6 +7,17 @@
 #include <optional>
 #include <cstdint>
 
+namespace tachyon {
+/**
+ * @brief Alpha compositing mode.
+ */
+enum class AlphaMode {
+    Straight,
+    Premultiplied,
+    Ignore
+};
+} // namespace tachyon
+
 namespace tachyon::renderer2d {
 
 struct EvaluatorContext {

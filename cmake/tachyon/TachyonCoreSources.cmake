@@ -11,8 +11,6 @@ set(TachyonCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/expressions/expression_vm.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/io/path_resolution.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/timeline/timeline_plan.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/render_graph/pipeline_orchestrator.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/render_graph/instrumentation.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/schema/common/common_spec.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/transition/transition_descriptor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/transition/transition_resolver.cpp
@@ -23,6 +21,7 @@ set(TachyonCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/model/tachyon.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/library/background_registry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/library/backgrounds/background_catalog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/audio/audio_utils.cpp
 )
 
 if(TACHYON_ENABLE_SIMDJSON)

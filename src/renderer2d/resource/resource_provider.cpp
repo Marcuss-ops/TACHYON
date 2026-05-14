@@ -1,5 +1,5 @@
 #include "tachyon/renderer2d/resource/resource_provider.h"
-#include "tachyon/media/management/media_manager.h"
+#include "tachyon/core/media/media_provider.h"
 #include <algorithm>
 
 namespace tachyon::renderer2d {

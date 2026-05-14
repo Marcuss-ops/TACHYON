@@ -111,7 +111,7 @@ tachyon_configure_common(TachyonRuntime)
 if(TACHYON_ENABLE_AUDIO_MUX)
     target_compile_definitions(TachyonRuntime PRIVATE TACHYON_ENABLE_AUDIO_MUX)
     if(TACHYON_ENABLE_AUDIO)
-        target_link_libraries(TachyonRuntime PRIVATE TachyonAudio)
+        target_link_libraries(TachyonRuntime PRIVATE TachyonOperations)
     endif()
 endif()
 
@@ -128,7 +128,7 @@ if(TACHYON_ENABLE_OUTPUT)
 endif()
 
 if(TACHYON_ENABLE_MEDIA)
-    target_link_libraries(TachyonRuntime PUBLIC TachyonMedia)
+    target_link_libraries(TachyonRuntime PUBLIC TachyonOperations)
 endif()
 
 tachyon_link_text_deps(TachyonRuntime)

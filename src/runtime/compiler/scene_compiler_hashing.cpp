@@ -55,7 +55,7 @@ std::uint64_t hash_scene_spec(const SceneSpec& scene, const DeterminismContract&
             std::visit([&](auto&& source) {
                 using T = std::decay_t<decltype(source)>;
                 if constexpr (std::is_same_v<T, MediaSource>) {
-                    builder.add_string(source.asset_path);
+                    builder.add_string(source.asset.id);
                 } else if constexpr (std::is_same_v<T, PrecompSource>) {
                     builder.add_string(source.precomp_id);
                 } else if constexpr (std::is_same_v<T, ProceduralSource>) {

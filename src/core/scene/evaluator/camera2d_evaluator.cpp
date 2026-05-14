@@ -10,7 +10,7 @@ EvaluatedCameraState evaluate_camera2d_state(
     const SceneSpec* scene,
     const CompositionSpec& composition,
     double time_seconds,
-    const audio::AudioAnalyzer* audio_analyzer,
+    const audio::IAudioAnalyzer* audio_analyzer,
     const EvaluationVariables& vars) {
     
     EvaluatedCameraState cam_state;
@@ -38,11 +38,14 @@ EvaluatedCameraState evaluate_camera2d_state(
         const double t = time_seconds;
         const std::uint64_t cam_seed = stable_string_hash(active_cam->id);
         
-        const float zoom = static_cast<float>(sample_scalar(active_cam->zoom, 1.0, t, audio_analyzer, hash_combine(cam_seed, stable_string_hash("zoom"))));
-        const math::Vector2 pos = sample_vector2(active_cam->position, {static_cast<float>(composition.width)/2.0f, static_cast<float>(composition.height)/2.0f}, t, audio_analyzer, hash_combine(cam_seed, stable_string_hash("pos")));
-        const float rot = static_cast<float>(sample_scalar(active_cam->rotation, 0.0, t, audio_analyzer, hash_combine(cam_seed, stable_string_hash("rot"))));
-        const math::Vector2 scale = sample_vector2(active_cam->scale, {100.0f, 100.0f}, t, audio_analyzer, hash_combine(cam_seed, stable_string_hash("scale")));
-        const math::Vector2 anchor = sample_vector2(active_cam->anchor_point, {0.0f, 0.0f}, t, audio_analyzer, hash_combine(cam_seed, stable_string_hash("anchor")));
+        // Resolve audio bands once
+        ::tachyon::audio::AudioBands bands = audio_analyzer ? audio_analyzer->analyze_frame(t) : ::tachyon::audio::AudioBands{};
+
+        const float zoom = static_cast<float>(sample_scalar(active_cam->zoom, 1.0, t, bands, hash_combine(cam_seed, stable_string_hash("zoom"))));
+        const math::Vector2 pos = sample_vector2(active_cam->position, {static_cast<float>(composition.width)/2.0f, static_cast<float>(composition.height)/2.0f}, t, bands, hash_combine(cam_seed, stable_string_hash("pos")));
+        const float rot = static_cast<float>(sample_scalar(active_cam->rotation, 0.0, t, bands, hash_combine(cam_seed, stable_string_hash("rot"))));
+        const math::Vector2 scale = sample_vector2(active_cam->scale, {100.0f, 100.0f}, t, bands, hash_combine(cam_seed, stable_string_hash("scale")));
+        const math::Vector2 anchor = sample_vector2(active_cam->anchor_point, {0.0f, 0.0f}, t, bands, hash_combine(cam_seed, stable_string_hash("anchor")));
 
         cam_state.zoom = zoom;
 
@@ -66,6 +69,9 @@ EvaluatedCameraState evaluate_camera2d_state(
 
         cam_state.view_projection = cam_state.view_projection * cam_state.view_matrix;
     }
+    
+    (void)scene; // Unused
+    (void)vars;  // Unused
     
     return cam_state;
 }

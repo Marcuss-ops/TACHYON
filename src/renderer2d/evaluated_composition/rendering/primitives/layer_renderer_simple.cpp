@@ -12,14 +12,15 @@
 #include "tachyon/renderer2d/evaluated_composition/rendering/primitives/layer_renderer_procedural.h"
 #include <iostream>
 #include "tachyon/renderer2d/evaluated_composition/rendering/core/layer_renderer_interface.h"
-#include "tachyon/media/management/media_manager.h"
-#include "tachyon/media/management/asset_resolver.h"
+#include "tachyon/core/media/media_provider.h"
+#include "tachyon/core/media/asset_resolver_interface.h"
 #include "tachyon/render/intent_builder.h"
 #include "tachyon/renderer2d/resource/resource_provider.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
 #include "tachyon/runtime/execution/session/render_internal.h"
 #include "tachyon/core/scene/transform_resolver.h"
 #include "tachyon/renderer2d/evaluated_composition/utilities/composition_utils.h"
+#include "tachyon/text/fonts/core/font_registry.h"
 
 
 #include <algorithm>

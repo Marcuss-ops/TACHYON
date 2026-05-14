@@ -4,7 +4,7 @@
 #include "tachyon/core/math/transform2.h"
 #include "tachyon/timeline/time.h"
 #include "tachyon/core/expressions/expression_engine.h"
-#include "tachyon/audio/audio_analyzer.h"
+#include "tachyon/core/audio/audio_interfaces.h"
 
 #include <algorithm>
 #include <cmath>
@@ -34,6 +34,5 @@ math::Vector2 fallback_scale(const class LayerSpec& layer);
 double fallback_rotation(const class LayerSpec& layer);
 double sample_audio_band(const ::tachyon::audio::AudioBands& bands, int band);
 
-} // namespace
 } // namespace scene
 } // namespace tachyon

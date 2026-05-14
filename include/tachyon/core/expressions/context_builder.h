@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/core/expressions/expression_engine.h"
-#include "tachyon/audio/audio_analyzer.h"
+#include "tachyon/audio/audio_types.h"
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -18,7 +18,7 @@ struct ExpressionContextInput {
     std::uint32_t layer_index{0};
     double fallback_value{0.0};
     
-    const audio::AudioAnalyzer* audio_analyzer{nullptr};
+    audio::AudioBands audio_bands;
     const std::unordered_map<std::string, double>* job_variables{nullptr};
     const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables{nullptr};
     

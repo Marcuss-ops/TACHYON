@@ -72,8 +72,8 @@ ExpressionContext build_context(const ExpressionContextInput& input) {
     }
 
     // Audio Analysis
-    if (input.audio_analyzer) {
-        const audio::AudioBands bands = input.audio_analyzer->analyze_frame(input.time);
+    {
+        const auto& bands = input.audio_bands;
         
         // Legacy variable access
         ctx.variables["music.bass"] = bands.bass;
@@ -87,7 +87,6 @@ ExpressionContext build_context(const ExpressionContextInput& input) {
         ctx.audio_analysis.mid = bands.mid;
         ctx.audio_analysis.treble = bands.high; // Map high to treble
         ctx.audio_analysis.rms = bands.rms;
-        // beat is not yet implemented in AudioBands
     }
 
     // Property Boundaries

@@ -125,18 +125,18 @@ ValidationResult validate_scene_spec(const SceneSpec& scene) {
 
             if (layer.identity.type == LayerType::Image || layer.identity.type == LayerType::Video) {
                 if (auto* media = std::get_if<MediaSource>(&layer.source)) {
-                    if (media->asset_path.empty()) {
+                    if (media->asset.id.empty()) {
                         result.diagnostics.add_error("scene.layer.asset_id_missing", "asset_path is required for image/video layers", lpath + ".asset_id");
                     } else {
                         bool asset_found = false;
                         for (const auto& asset : scene.assets) {
-                            if (asset.id == media->asset_path) {
+                            if (asset.id == media->asset.id) {
                                 asset_found = true;
                                 break;
                             }
                         }
-                        if (!asset_found && !looks_like_media_path(media->asset_path)) {
-                            result.diagnostics.add_error("scene.layer.asset_reference_invalid", "asset id '" + media->asset_path + "' not found in scene assets", lpath + ".asset_id");
+                        if (!asset_found && !looks_like_media_path(media->asset.id)) {
+                            result.diagnostics.add_error("scene.layer.asset_reference_invalid", "asset id '" + media->asset.id + "' not found in scene assets", lpath + ".asset_id");
                         }
                     }
                 }

@@ -1,0 +1,63 @@
+#pragma once
+
+#include "tachyon/core/audio/audio_export_interface.h"
+#include "tachyon/core/spec/schema/audio/audio_spec.h"
+#include "tachyon/audio/audio_encoder.h"
+#include "tachyon/audio/loudness_meter.h"
+
+#include <memory>
+#include <vector>
+#include <string>
+#include <atomic>
+
+namespace tachyon {
+struct CompiledScene;
+struct RenderPlan;
+
+namespace audio {
+
+class AudioDecoder;
+
+bool export_scene_audio(const CompiledScene& scene, const std::filesystem::path& output_path);
+bool export_plan_audio(const RenderPlan& plan, const std::filesystem::path& output_path, std::atomic<bool>* cancel_flag = nullptr);
+
+class AudioExporter : public IAudioExporter {
+public:
+    AudioExporter();
+    ~AudioExporter();
+
+    void add_track(const AudioTrackSpec& track_spec);
+    bool export_to(const std::filesystem::path& output_path, const AudioExportConfig& config, double start_time = 0.0, double duration = -1.0, std::atomic<bool>* cancel_flag = nullptr);
+
+    bool export_plan_audio(const RenderPlan& plan, const std::filesystem::path& output_path, std::atomic<bool>* cancel_flag = nullptr) override;
+
+    void clear_tracks();
+    
+    // Get loudness measurement after export
+    LoudnessMeasurement get_loudness_measurement() const { return m_loudness_measurement; }
+
+private:
+    struct TrackInstance {
+        std::shared_ptr<AudioDecoder> decoder;
+        AudioTrackSpec spec;
+    };
+
+    std::vector<TrackInstance> m_tracks;
+    LoudnessMeter m_loudness_meter;
+    LoudnessMeasurement m_loudness_measurement;
+
+    float evaluate_volume_at_time(const AudioTrackSpec& track, double time) const;
+    float evaluate_pan_at_time(const AudioTrackSpec& track, double time) const;
+    float evaluate_fade_at_time(const AudioTrackSpec& track, double time, double chunk_duration) const;
+    double get_track_end_time(const AudioTrackSpec& track, double decoder_duration) const;
+    void apply_pan(float* interleaved_samples, std::size_t sample_count, float pan);
+    void apply_trim_and_speed(AudioDecoder* decoder, const AudioTrackSpec& spec, 
+                             double chunk_start, double chunk_duration, 
+                             std::vector<float>& output_buffer);
+
+    static constexpr int kTargetSampleRate = 48000;
+    static constexpr int kTargetChannels = 2;
+};
+
+} // namespace audio
+} // namespace tachyon

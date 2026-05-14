@@ -105,6 +105,10 @@ enum class AudioBandType {
     Rms
 };
 
+struct AssetHandle {
+    std::string id;
+};
+
 /**
  * @brief Unified timing for layers.
  * 
