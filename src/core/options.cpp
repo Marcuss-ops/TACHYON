@@ -61,6 +61,114 @@ std::optional<FrameRange> parse_frame_range(const std::string& value, Diagnostic
     }
 }
 
+bool parse_render_option(const std::string& arg, const std::vector<std::string>& args, std::size_t& index, CliOptions& options, DiagnosticBag& diagnostics) {
+    if (arg == "--cpp") {
+        options.cpp_path = require_argument(args, index);
+        if (options.cpp_path.empty()) diagnostics.add_error("cli.cpp_missing", "missing value for --cpp");
+        return true;
+    }
+    if (arg == "--preset") {
+        options.preset_id = require_argument(args, index);
+        if (options.preset_id->empty()) diagnostics.add_error("cli.preset_missing", "missing value for --preset");
+        return true;
+    }
+    if (arg == "--out") {
+        options.output_override = require_argument(args, index);
+        if (options.output_override.empty()) diagnostics.add_error("cli.out_missing", "missing value for --out");
+        if (options.command == "preview" || options.command == "preview-frame") options.preview_output = options.output_override;
+        return true;
+    }
+    if (arg == "--workers") {
+        std::string val = require_argument(args, index);
+        if (val.empty()) diagnostics.add_error("cli.workers_missing", "missing value for --workers");
+        else options.worker_count = parse_worker_count(val, diagnostics);
+        return true;
+    }
+    if (arg == "--frames") {
+        std::string val = require_argument(args, index);
+        if (val.empty()) diagnostics.add_error("cli.frames_missing", "missing value for --frames");
+        else options.frame_range_override = parse_frame_range(val, diagnostics);
+        return true;
+    }
+    if (arg == "--frame") {
+        std::string val = require_argument(args, index);
+        if (val.empty()) diagnostics.add_error("cli.frame_missing", "missing value for --frame");
+        else {
+            try { options.preview_frame_number = std::stoi(val); }
+            catch (...) { diagnostics.add_error("cli.frame_invalid", "invalid value for --frame: " + val); }
+        }
+        return true;
+    }
+    if (arg == "--quality") {
+        options.quality = require_argument(args, index);
+        if (options.quality.empty()) diagnostics.add_error("cli.quality_missing", "missing value for --quality");
+        return true;
+    }
+    return false;
+}
+
+bool parse_inspect_option(const std::string& arg, const std::vector<std::string>& args, std::size_t& index, CliOptions& options, DiagnosticBag& diagnostics) {
+    if (arg == "--json") { options.json_output = true; return true; }
+    if (arg == "--info") { options.inspect_include_info = true; return true; }
+    if (arg == "--samples") {
+        std::string val = require_argument(args, index);
+        if (val.empty()) diagnostics.add_error("cli.samples_missing", "missing value for --samples");
+        else {
+            try {
+                options.inspect_samples = std::stoi(val);
+                if (options.inspect_samples <= 0) diagnostics.add_error("cli.samples_invalid", "--samples must be greater than zero");
+                else options.samples_explicitly_set = true;
+            } catch (...) { diagnostics.add_error("cli.samples_invalid", "invalid value for --samples: " + val); }
+        }
+        return true;
+    }
+    return false;
+}
+
+bool parse_metrics_option(const std::string& arg, const std::vector<std::string>& args, std::size_t& index, CliOptions& options, DiagnosticBag& diagnostics) {
+    if (arg == "--input" && (options.command == "metrics" || options.command == "probe")) {
+        options.metrics_input = require_argument(args, index);
+        if (options.metrics_input.empty()) diagnostics.add_error("cli.input_missing", "missing value for --input");
+        if (options.command == "probe") options.probe_input = options.metrics_input;
+        return true;
+    }
+    if (arg == "--top") {
+        std::string val = require_argument(args, index);
+        if (val.empty()) diagnostics.add_error("cli.top_missing", "missing value for --top");
+        else {
+            try { options.metrics_top = std::stoi(val); }
+            catch (...) { diagnostics.add_error("cli.top_invalid", "invalid value for --top: " + val); }
+        }
+        return true;
+    }
+    if (index == 1 && options.command == "metrics") {
+        if (arg == "summary" || arg == "failures" || arg == "slowest") {
+            options.metrics_command = arg;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool parse_tool_option(const std::string& arg, const std::vector<std::string>& args, std::size_t& index, CliOptions& options, DiagnosticBag& diagnostics) {
+    if (arg == "--inputs") {
+        std::string val = require_argument(args, index);
+        if (val.empty()) diagnostics.add_error("cli.inputs_missing", "missing value for --inputs");
+        else {
+            std::size_t start = 0;
+            std::size_t end = val.find(',');
+            while (end != std::string::npos) {
+                options.concat_inputs.push_back(val.substr(start, end - start));
+                start = end + 1;
+                end = val.find(',', start);
+            }
+            options.concat_inputs.push_back(val.substr(start));
+        }
+        return true;
+    }
+    return false;
+}
+
 } // namespace
 
 ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
@@ -82,222 +190,56 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
 
     for (std::size_t index = 1; index < args.size(); ++index) {
         const std::string& arg = args[index];
+
         if (arg == "--scene") {
             result.diagnostics.add_error("cli.scene_deprecated", "--scene loading is no longer supported. Use --cpp for C++ scenes or --preset.");
             return result;
         }
+
+        if (parse_render_option(arg, args, index, options, result.diagnostics)) continue;
+        if (parse_inspect_option(arg, args, index, options, result.diagnostics)) continue;
+        if (parse_metrics_option(arg, args, index, options, result.diagnostics)) continue;
+        if (parse_tool_option(arg, args, index, options, result.diagnostics)) continue;
+
+        // Remaining standalone options
         if (arg == "--library") {
-            const std::string value = require_argument(args, index);
-            if (value.empty()) {
-                result.diagnostics.add_error("cli.library_missing", "missing value for " + arg);
-                return result;
-            }
-            options.library_path = value;
-            continue;
-        }
-        if (arg == "--transition") {
-            const std::string value = require_argument(args, index);
-            if (value.empty()) {
-                result.diagnostics.add_error("cli.transition_missing", "missing value for --transition");
-                return result;
-            }
-            options.transition_id = value;
-            continue;
-        }
-        if (arg == "--out") {
-            const std::string value = require_argument(args, index);
-            if (value.empty()) {
-                result.diagnostics.add_error("cli.out_missing", "missing value for --out");
-                return result;
-            }
-            options.output_override = value;
-            if (options.command == "preview" || options.command == "preview-frame") {
-                options.preview_output = value;
-            }
+            options.library_path = require_argument(args, index);
+            if (options.library_path.empty()) result.diagnostics.add_error("cli.library_missing", "missing value for --library");
             continue;
         }
         if (arg == "--output-preset") {
-            const std::string value = require_argument(args, index);
-            if (value.empty()) {
-                result.diagnostics.add_error("cli.output_preset_missing", "missing value for --output-preset");
-                return result;
-            }
-            options.output_preset_id = value;
-            continue;
-        }
-        if (arg == "--preset") {
-            const std::string value = require_argument(args, index);
-            if (value.empty()) {
-                result.diagnostics.add_error("cli.preset_missing", "missing value for --preset");
-                return result;
-            }
-            options.preset_id = value;
-            continue;
-        }
-        if (arg == "--workers") {
-            const std::string value = require_argument(args, index);
-            if (value.empty()) {
-                result.diagnostics.add_error("cli.workers_missing", "missing value for --workers");
-                return result;
-            }
-            options.worker_count = parse_worker_count(value, result.diagnostics);
+            options.output_preset_id = require_argument(args, index);
+            if (options.output_preset_id->empty()) result.diagnostics.add_error("cli.output_preset_missing", "missing value for --output-preset");
             continue;
         }
         if (arg == "--memory-budget-mb") {
-            const std::string value = require_argument(args, index);
-            if (value.empty()) {
-                result.diagnostics.add_error("cli.memory_budget_missing", "missing value for --memory-budget-mb");
-                return result;
-            }
-            const auto parsed_budget = parse_memory_budget_mb(value, result.diagnostics);
-            if (parsed_budget.has_value()) {
-                options.memory_budget_bytes = (*parsed_budget) * 1024ULL * 1024ULL;
+            std::string val = require_argument(args, index);
+            if (val.empty()) result.diagnostics.add_error("cli.memory_budget_missing", "missing value for --memory-budget-mb");
+            else {
+                auto parsed = parse_memory_budget_mb(val, result.diagnostics);
+                if (parsed) options.memory_budget_bytes = (*parsed) * 1024ULL * 1024ULL;
             }
             continue;
         }
         if (arg == "--output-dir") {
-            const std::string value = require_argument(args, index);
-            if (value.empty()) {
-                result.diagnostics.add_error("cli.output_dir_missing", "missing value for --output-dir");
-                return result;
-            }
-            options.output_dir = value;
-            continue;
-        }
-        if (arg == "--frames") {
-            const std::string value = require_argument(args, index);
-            if (value.empty()) {
-                result.diagnostics.add_error("cli.frames_missing", "missing value for --frames");
-                return result;
-            }
-            options.frame_range_override = parse_frame_range(value, result.diagnostics);
-            continue;
-        }
-        if (arg == "--frame") {
-            const std::string value = require_argument(args, index);
-            if (value.empty()) {
-                result.diagnostics.add_error("cli.frame_missing", "missing value for --frame");
-                return result;
-            }
-            try {
-                options.preview_frame_number = std::stoi(value);
-            } catch (const std::exception&) {
-                result.diagnostics.add_error("cli.frame_invalid", "invalid value for --frame: " + value);
-                return result;
-            }
-            continue;
-        }
-        if (arg == "--cpp") {
-            const std::string value = require_argument(args, index);
-            if (value.empty()) {
-                result.diagnostics.add_error("cli.cpp_missing", "missing value for --cpp");
-                return result;
-            }
-            options.cpp_path = value;
-            continue;
-        }
-        if (arg == "--quality") {
-            const std::string value = require_argument(args, index);
-            if (value.empty()) {
-                result.diagnostics.add_error("cli.quality_missing", "missing value for --quality");
-                return result;
-            }
-            options.quality = value;
+            options.output_dir = require_argument(args, index);
+            if (options.output_dir.empty()) result.diagnostics.add_error("cli.output_dir_missing", "missing value for --output-dir");
             continue;
         }
         if (arg == "--format") {
-            const std::string value = require_argument(args, index);
-            if (value.empty()) {
-                result.diagnostics.add_error("cli.format_missing", "missing value for --format");
-                return result;
-            }
-            options.output_format = value;
+            options.output_format = require_argument(args, index);
+            if (options.output_format.empty()) result.diagnostics.add_error("cli.format_missing", "missing value for --format");
             continue;
         }
-        if (arg == "--json") {
-            options.json_output = true;
+        if (arg == "--transition") {
+            options.transition_id = require_argument(args, index);
+            if (options.transition_id->empty()) result.diagnostics.add_error("cli.transition_missing", "missing value for --transition");
             continue;
         }
-        if (arg == "--info") {
-            options.inspect_include_info = true;
-            continue;
-        }
-        if (arg == "--samples") {
-            const std::string value = require_argument(args, index);
-            if (value.empty()) {
-                result.diagnostics.add_error("cli.samples_missing", "missing value for --samples");
-                return result;
-            }
-            try {
-                options.inspect_samples = std::stoi(value);
-                if (options.inspect_samples <= 0) {
-                    result.diagnostics.add_error("cli.samples_invalid", "--samples must be greater than zero");
-                    return result;
-                }
-                options.samples_explicitly_set = true;
-            } catch (const std::exception&) {
-                result.diagnostics.add_error("cli.samples_invalid", "invalid value for --samples: " + value);
-                return result;
-            }
-            continue;
-        }
-        if (arg == "--input") {
-            const std::string value = require_argument(args, index);
-            if (value.empty()) {
-                result.diagnostics.add_error("cli.input_missing", "missing value for --input");
-                return result;
-            }
-            options.metrics_input = value;
-            if (options.command == "probe") {
-                options.probe_input = value;
-            }
-            continue;
-        }
-        if (arg == "--inputs") {
-            const std::string value = require_argument(args, index);
-            if (value.empty()) {
-                result.diagnostics.add_error("cli.inputs_missing", "missing value for --inputs");
-                return result;
-            }
-            // Comma separated list
-            std::string item;
-            std::size_t start = 0;
-            std::size_t end = value.find(',');
-            while (end != std::string::npos) {
-                options.concat_inputs.push_back(value.substr(start, end - start));
-                start = end + 1;
-                end = value.find(',', start);
-            }
-            options.concat_inputs.push_back(value.substr(start));
-            continue;
-        }
-        if (arg == "--top") {
-            const std::string value = require_argument(args, index);
-            if (value.empty()) {
-                result.diagnostics.add_error("cli.top_missing", "missing value for --top");
-                return result;
-            }
-            try {
-                options.metrics_top = std::stoi(value);
-            } catch (const std::exception&) {
-                result.diagnostics.add_error("cli.top_invalid", "invalid value for --top: " + value);
-                return result;
-            }
-            continue;
-        }
-
-        // Subcommands (for metrics)
-        if (index == 1 && options.command == "metrics") {
-            if (arg == "summary" || arg == "failures" || arg == "slowest") {
-                options.metrics_command = arg;
-                continue;
-            }
-        }
+        
+        // Output-presets subcommands
         if (index == 1 && options.command == "output-presets") {
-            if (arg == "list" || arg == "info") {
-                options.output_presets_command = arg;
-                continue;
-            }
+            if (arg == "list" || arg == "info") { options.output_presets_command = arg; continue; }
             if (!arg.empty() && arg.front() != '-') {
                 result.diagnostics.add_error("cli.output_presets_subcommand_invalid", "unknown output-presets subcommand: " + arg);
                 return result;
@@ -308,28 +250,15 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
             continue;
         }
 
-        if (arg == "--version" || arg == "-v") {
-            options.show_version = true;
-            continue;
-        }
-
+        if (arg == "--version" || arg == "-v") { options.show_version = true; continue; }
+        if (arg == "--all") { options.render_all_compositions = true; continue; }
         if (arg == "--cost-per-hour") {
-            const std::string value = require_argument(args, index);
-            if (value.empty()) {
-                result.diagnostics.add_error("cli.cost_missing", "missing value for --cost-per-hour");
-                return result;
+            std::string val = require_argument(args, index);
+            if (val.empty()) result.diagnostics.add_error("cli.cost_missing", "missing value for --cost-per-hour");
+            else {
+                try { options.machine_cost_per_hour = std::stod(val); }
+                catch (...) { result.diagnostics.add_error("cli.cost_invalid", "invalid value for --cost-per-hour: " + val); }
             }
-            try {
-                options.machine_cost_per_hour = std::stod(value);
-            } catch (const std::exception&) {
-                result.diagnostics.add_error("cli.cost_invalid", "invalid value for --cost-per-hour: " + value);
-                return result;
-            }
-            continue;
-        }
-
-        if (arg == "--all") {
-            options.render_all_compositions = true;
             continue;
         }
 
@@ -337,9 +266,7 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
         return result;
     }
 
-    if (result.diagnostics.ok()) {
-        result.value = std::move(options);
-    }
+    if (result.diagnostics.ok()) result.value = std::move(options);
     return result;
 }
 

@@ -1,3 +1,4 @@
+#include "tachyon/runtime/registry/runtime_registry_bundle.h"
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/cli_scene_loader.h"
@@ -7,8 +8,9 @@
 #include <algorithm>
 
 namespace tachyon {
+#include "tachyon/runtime/registry/runtime_registry_bundle.h"
 
-bool run_motion_map_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*/) {
+bool run_motion_map_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::RuntimeRegistryBundle& /*bundle*/) {
     SceneLoadOptions load_opts;
     load_opts.cpp_path = options.cpp_path;
     load_opts.preset_id = options.preset_id;

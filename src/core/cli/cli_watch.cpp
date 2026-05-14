@@ -1,3 +1,4 @@
+#include "tachyon/runtime/registry/runtime_registry_bundle.h"
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/cli_scene_loader.h"
@@ -7,6 +8,7 @@
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/execution/jobs/render_job.h"
 #include "tachyon/runtime/resource/render_context.h"
+#include "tachyon/runtime/registry/runtime_registry_bundle.h"
 #include "cli_internal.h"
 #include <iostream>
 #include <filesystem>
@@ -15,7 +17,7 @@
 
 namespace tachyon {
 
-bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*/) {
+bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::RuntimeRegistryBundle& /*bundle*/) {
     if (options.cpp_path.empty()) {
         err << "--cpp is required for watch\n";
         return false;

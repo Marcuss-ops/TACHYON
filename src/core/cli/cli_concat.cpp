@@ -1,12 +1,14 @@
+#include "tachyon/runtime/registry/runtime_registry_bundle.h"
 #include "cli_internal.h"
 #include "tachyon/media/video_concat.h"
 #include <iostream>
 
 namespace tachyon {
 
-bool run_concat_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry&) {
+bool run_concat_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::RuntimeRegistryBundle& /*bundle*/) {
     if (options.concat_inputs.empty()) {
         err << "Error: --inputs is required for concat command\n";
+#include "tachyon/runtime/registry/runtime_registry_bundle.h"
         return false;
     }
     if (options.output_override.empty()) {

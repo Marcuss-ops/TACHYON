@@ -1,3 +1,4 @@
+#include "tachyon/runtime/registry/runtime_registry_bundle.h"
 #include "tachyon/core/cli_options.h"
 #include "tachyon/text/fonts/management/font_downloader.h"
 #include "cli_internal.h"
@@ -6,7 +7,8 @@
 
 namespace tachyon {
 
-bool run_fetch_fonts_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*/) {
+bool run_fetch_fonts_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::RuntimeRegistryBundle& /*bundle*/) {
+#include "tachyon/runtime/registry/runtime_registry_bundle.h"
     if (options.font_family.empty()) {
         err << "Error: --family is required for fetch-fonts command\n";
         return false;

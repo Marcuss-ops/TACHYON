@@ -1,3 +1,4 @@
+#include "tachyon/runtime/registry/runtime_registry_bundle.h"
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/library/library.h"
@@ -7,21 +8,19 @@
 #include "tachyon/core/transition/transition_descriptor.h"
 #include "cli_internal.h"
 #include <iostream>
+#include "tachyon/runtime/registry/runtime_registry_bundle.h"
 #include <iomanip>
 #include <algorithm>
 
 namespace tachyon {
 
-bool run_doctor_command(const CliOptions&, std::ostream& out, std::ostream& err, TransitionRegistry& registry) {
+bool run_doctor_command(const CliOptions&, std::ostream& out, std::ostream& err, runtime::RuntimeRegistryBundle& bundle) {
     out << "TACHYON Doctor - System Diagnostic\n";
     out << "==================================\n\n";
 
     // Audit Transition Registries
     out << "[1/2] Auditing Transition Registry alignment...\n";
     presets::TransitionPresetRegistry preset_reg;
-
-    // Use the caller-provided registry so diagnostics match the live CLI setup.
-    register_builtin_transitions(registry);
 
     auto preset_ids = preset_reg.list_ids();
     int preset_errors = 0;
@@ -35,7 +34,7 @@ bool run_doctor_command(const CliOptions&, std::ostream& out, std::ostream& err,
             continue;
         }
         
-        const auto* desc = registry.resolve(spec.transition_id);
+        const auto* desc = bundle.transitions.resolve(spec.transition_id);
         if (desc == nullptr) {
             err << "      [ERROR] Preset '" << id << "' resolves to unknown runtime ID: " << spec.transition_id << "\n";
             preset_errors++;

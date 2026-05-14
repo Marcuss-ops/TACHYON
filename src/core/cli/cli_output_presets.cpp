@@ -1,3 +1,4 @@
+#include "tachyon/runtime/registry/runtime_registry_bundle.h"
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
 #include "tachyon/output/output_presets.h"
@@ -7,6 +8,7 @@
 #include <iostream>
 #include <string>
 
+#include "tachyon/runtime/registry/runtime_registry_bundle.h"
 namespace tachyon {
 
 namespace {
@@ -29,7 +31,7 @@ void print_preset_info(const tachyon::output::OutputPreset& preset, const std::s
 
 } // namespace
 
-bool run_output_presets_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*/) {
+bool run_output_presets_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::RuntimeRegistryBundle& /*bundle*/) {
     const auto command = options.output_presets_command;
     if (command.empty()) {
         err << "Use `tachyon output-presets list` or `tachyon output-presets info <id>`\n";

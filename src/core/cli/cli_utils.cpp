@@ -1,3 +1,4 @@
+#include "tachyon/runtime/registry/runtime_registry_bundle.h"
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
@@ -7,6 +8,7 @@
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include "tachyon/presets/text/text_registry.h"
 #include <iostream>
+#include "tachyon/runtime/registry/runtime_registry_bundle.h"
 #include <filesystem>
 
 namespace tachyon {
@@ -18,7 +20,7 @@ void print_diagnostics(const DiagnosticBag& diagnostics, std::ostream& out) {
 }
 
 
-bool run_preview_internal(const ::tachyon::CliOptions& options, std::ostream& out, std::ostream& err, const char* label, TransitionRegistry& transition_registry) {
+bool run_preview_internal(const ::tachyon::CliOptions& options, std::ostream& out, std::ostream& err, const char* label, runtime::RuntimeRegistryBundle& bundle) {
     SceneLoadOptions load_opts;
     load_opts.cpp_path = options.cpp_path;
     load_opts.preset_id = options.preset_id;
@@ -41,9 +43,10 @@ bool run_preview_internal(const ::tachyon::CliOptions& options, std::ostream& ou
 
     out << "[" << label << "] Rendering frame " << frame << " to " << output.string() << "\n";
 
-    presets::TextManifest text_manifest;
-    presets::TextRegistry text_registry(text_manifest);
-    const bool success = NativeRenderer::render_still(scene, composition_id, frame, output, transition_registry, text_registry);
+    if (!bundle.text_registry) {
+        bundle.text_registry = std::make_unique<presets::TextRegistry>(bundle.text_manifest);
+    }
+    const bool success = NativeRenderer::render_still(scene, composition_id, frame, output, bundle.transitions, *bundle.text_registry);
     if (!success) {
         err << "Preview render failed.\n";
     } else {

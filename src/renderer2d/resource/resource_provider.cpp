@@ -5,6 +5,7 @@
 namespace tachyon::renderer2d {
 
 std::shared_ptr<std::uint8_t[]> RendererResourceProvider::get_texture_rgba(const std::string& id) {
+#ifdef TACHYON_ENABLE_MEDIA
     if (!m_context.media) return nullptr;
     
     auto img = m_context.media->get_image(id);
@@ -27,6 +28,10 @@ std::shared_ptr<std::uint8_t[]> RendererResourceProvider::get_texture_rgba(const
     }
     
     return data;
+#else
+    (void)id;
+    return nullptr;
+#endif
 }
 
 } // namespace tachyon::renderer2d
