@@ -12,6 +12,7 @@
 #include "tachyon/runtime/core/contracts/determinism_contract.h"
 #include "tachyon/runtime/core/data/data_binding.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/core/spec/schema/effects/effect_spec.h"
 #include "tachyon/core/spec/schema/objects/text_box_spec.h"
 #include "tachyon/core/shapes/shape_path.h"
 #include "tachyon/core/expressions/expression_vm.h"
@@ -127,7 +128,6 @@ struct CompiledLayer {
     std::optional<std::string> word_timestamp_path;
     bool asset_offline{false};
     std::string blend_mode{"normal"};
-    std::vector<AnimatedEffectSpec> animated_effects;
     std::optional<ProceduralSpec> procedural;
     double in_time{0.0};
     double out_time{10.0};

@@ -10,7 +10,7 @@ std::vector<EffectImplementation> get_blur_effect_implementations() {
     // Gaussian Blur
     implementations.push_back({
         "tachyon.effect.blur.gaussian",
-        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             GaussianBlurEffect effect;
             output = effect.apply(input, params);
         }
@@ -19,7 +19,7 @@ std::vector<EffectImplementation> get_blur_effect_implementations() {
     // Directional Blur
     implementations.push_back({
         "tachyon.effect.blur.directional",
-        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             DirectionalBlurEffect effect;
             output = effect.apply(input, params);
         }
@@ -28,7 +28,7 @@ std::vector<EffectImplementation> get_blur_effect_implementations() {
     // Radial Blur
     implementations.push_back({
         "tachyon.effect.blur.radial",
-        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             RadialBlurEffect effect;
             output = effect.apply(input, params);
         }
@@ -37,7 +37,7 @@ std::vector<EffectImplementation> get_blur_effect_implementations() {
     // Vector Blur
     implementations.push_back({
         "tachyon.effect.blur.vector",
-        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             VectorBlurEffect effect;
             output = effect.apply(input, params);
         }
@@ -46,7 +46,7 @@ std::vector<EffectImplementation> get_blur_effect_implementations() {
     // Motion Blur 2D
     implementations.push_back({
         "tachyon.effect.blur.motion_2d",
-        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             MotionBlur2DEffect effect;
             output = effect.apply(input, params);
         }

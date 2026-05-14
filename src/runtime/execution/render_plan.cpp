@@ -117,22 +117,31 @@ void hash_effect(CacheKeyBuilder& builder, const EffectSpec& effect) {
     builder.add_u64(static_cast<std::uint64_t>(effect.scalars.size()));
     for (const auto& [key, val] : effect.scalars) {
         builder.add_string(key);
-        builder.add_f64(val);
+        if (val.value) builder.add_f64(*val.value);
+        builder.add_u32(static_cast<std::uint32_t>(val.keyframes.size()));
     }
     // Hash colors
     builder.add_u64(static_cast<std::uint64_t>(effect.colors.size()));
     for (const auto& [key, val] : effect.colors) {
         builder.add_string(key);
-        builder.add_u64(val.r);
-        builder.add_u64(val.g);
-        builder.add_u64(val.b);
-        builder.add_u64(val.a);
+        if (val.value) {
+            builder.add_u64(val.value->r);
+            builder.add_u64(val.value->g);
+            builder.add_u64(val.value->b);
+            builder.add_u64(val.value->a);
+        }
     }
     // Hash strings
     builder.add_u64(static_cast<std::uint64_t>(effect.strings.size()));
     for (const auto& [key, val] : effect.strings) {
         builder.add_string(key);
         builder.add_string(val);
+    }
+    // Hash bools
+    builder.add_u64(static_cast<std::uint64_t>(effect.bools.size()));
+    for (const auto& [key, val] : effect.bools) {
+        builder.add_string(key);
+        builder.add_bool(val);
     }
 }
 
@@ -223,13 +232,13 @@ std::uint64_t hash_scene_content(const SceneSpec& scene) {
             builder.add_string(layer.name);
             builder.add_string(to_canonical_layer_type_string(layer.type));
             builder.add_string(layer.blend_mode);
-            builder.add_bool(layer.enabled);
+        builder.add_bool(layer.enabled);
             builder.add_bool(layer.visible);
             builder.add_bool(layer.is_adjustment_layer);
             builder.add_bool(layer.motion_blur);
-            builder.add_u64(static_cast<std::uint64_t>(layer.start_time * 1000.0));
-            builder.add_u64(static_cast<std::uint64_t>(layer.in_point * 1000.0));
-            builder.add_u64(static_cast<std::uint64_t>(layer.out_point * 1000.0));
+            builder.add_u64(static_cast<std::uint64_t>(layer.timing.start * 1000.0));
+            builder.add_u64(static_cast<std::uint64_t>(layer.timing.start * 1000.0)); // legacy in_point
+            builder.add_u64(static_cast<std::uint64_t>((layer.timing.start + layer.timing.duration) * 1000.0)); // legacy out_point
             builder.add_u64(static_cast<std::uint64_t>(layer.opacity * 1000000.0));
             builder.add_u64(static_cast<std::uint64_t>(layer.width));
             builder.add_u64(static_cast<std::uint64_t>(layer.height));

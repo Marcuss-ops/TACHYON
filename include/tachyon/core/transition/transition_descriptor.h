@@ -121,9 +121,4 @@ struct TransitionLibraryEntry {
  */
 TransitionResolutionResult resolve_transition(const std::string& id, const TransitionRegistry& registry);
 
-/**
- * @brief Registers all built-in transitions.
- */
-void register_builtin_transitions(TransitionRegistry& registry);
-
 } // namespace tachyon

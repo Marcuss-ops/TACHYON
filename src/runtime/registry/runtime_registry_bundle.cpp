@@ -17,18 +17,10 @@ RuntimeRegistryBundle& RuntimeRegistryBundle::operator=(RuntimeRegistryBundle&&)
 RuntimeRegistryBundle create_default_runtime_registry_bundle() {
     RuntimeRegistryBundle bundle;
 
-    // 1. Register Transitions
-    ::tachyon::register_builtin_transitions(bundle.transitions);
+    // 1. Create and fully initialize transitions
+    bundle.transitions = ::tachyon::create_default_transition_registry();
 
-    // 2. Resolve Transition Implementations
-    for (auto* desc : bundle.transitions.list_all()) {
-        if (!desc) continue;
-        renderer2d::resolve_basic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
-        renderer2d::resolve_artistic_transition_implementations(const_cast<TransitionDescriptor&>(*desc));
-        renderer2d::resolve_light_leak_implementations(const_cast<TransitionDescriptor&>(*desc));
-    }
-
-    // 3. Register Effects
+    // 2. Register Effects
     renderer2d::register_builtin_effects(bundle.effects, bundle.transitions);
 
     return bundle;

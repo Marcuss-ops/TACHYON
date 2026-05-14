@@ -22,11 +22,22 @@ void TransitionRegistry::register_descriptor(const TransitionDescriptor& descrip
         return;
     }
     
-    // Check for duplicates - always warn and keep first registration
+    // Check for duplicates based on policy
     auto it = m_impl->descriptors.find(descriptor.id);
     if (it != m_impl->descriptors.end()) {
-        std::cerr << "WARNING: Duplicate transition '" << descriptor.id << "' ignored\n";
-        return;
+        switch (m_duplicate_policy) {
+            case RegistryDuplicatePolicy::Reject:
+                throw RegistryError("Duplicate transition '" + descriptor.id + "'");
+            case RegistryDuplicatePolicy::Warn:
+                std::cerr << "WARNING: Duplicate transition '" << descriptor.id << "' ignored\n";
+                return;
+            case RegistryDuplicatePolicy::Replace:
+                // Remove associated aliases before replacing
+                for (const auto& alias : it->second.aliases) {
+                    m_impl->alias_to_id.erase(alias);
+                }
+                break;
+        }
     }
     
     // Register main descriptor

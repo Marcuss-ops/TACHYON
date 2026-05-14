@@ -75,7 +75,7 @@ std::vector<EffectPresetSpec> get_blur_effect_preset_specs() {
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.blur.gaussian";
-            effect.scalars["radius"] = p.get_or<double>("radius", 4.0);
+            effect.params["radius"] = p.get_or<double>("radius", 4.0);
             return effect;
         }
     });
@@ -91,8 +91,8 @@ std::vector<EffectPresetSpec> get_blur_effect_preset_specs() {
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.blur.directional";
-            effect.scalars["angle"] = p.get_or<double>("angle", 0.0);
-            effect.scalars["distance"] = p.get_or<double>("distance", 10.0);
+            effect.params["angle"] = p.get_or<double>("angle", 0.0);
+            effect.params["distance"] = p.get_or<double>("distance", 10.0);
             return effect;
         }
     });
@@ -109,9 +109,9 @@ std::vector<EffectPresetSpec> get_blur_effect_preset_specs() {
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.blur.radial";
-            effect.scalars["center_x"] = p.get_or<double>("center_x", 0.5);
-            effect.scalars["center_y"] = p.get_or<double>("center_y", 0.5);
-            effect.scalars["strength"] = p.get_or<double>("strength", 10.0);
+            effect.params["center_x"] = p.get_or<double>("center_x", 0.5);
+            effect.params["center_y"] = p.get_or<double>("center_y", 0.5);
+            effect.params["strength"] = p.get_or<double>("strength", 10.0);
             return effect;
         }
     });
@@ -128,9 +128,9 @@ std::vector<EffectPresetSpec> get_blur_effect_preset_specs() {
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.blur.vector";
-            effect.scalars["angle"] = p.get_or<double>("angle", 0.0);
-            effect.scalars["distance"] = p.get_or<double>("distance", 10.0);
-            effect.scalars["samples"] = p.get_or<double>("samples", 8.0);
+            effect.params["angle"] = p.get_or<double>("angle", 0.0);
+            effect.params["distance"] = p.get_or<double>("distance", 10.0);
+            effect.params["samples"] = p.get_or<double>("samples", 8.0);
             return effect;
         }
     });
@@ -148,10 +148,10 @@ std::vector<EffectPresetSpec> get_blur_effect_preset_specs() {
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.blur.motion_2d";
-            effect.scalars["angle"] = p.get_or<double>("angle", 0.0);
-            effect.scalars["distance"] = p.get_or<double>("distance", 10.0);
-            effect.scalars["samples"] = p.get_or<double>("samples", 8.0);
-            effect.scalars["shutter_angle"] = p.get_or<double>("shutter_angle", 180.0);
+            effect.params["angle"] = p.get_or<double>("angle", 0.0);
+            effect.params["distance"] = p.get_or<double>("distance", 10.0);
+            effect.params["samples"] = p.get_or<double>("samples", 8.0);
+            effect.params["shutter_angle"] = p.get_or<double>("shutter_angle", 180.0);
             return effect;
         }
     });

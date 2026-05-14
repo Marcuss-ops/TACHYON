@@ -23,10 +23,11 @@ LayerTransitionSpec make_noop_transition_from_params(const registry::ParameterBa
 } // namespace
 
 LayerTransitionSpec TransitionPresetRegistry::create(std::string_view id, const registry::ParameterBag& params) const {
-    if (id.empty() || id == "none") {
+    if (id.empty() || id == "none" || id == "tachyon.transition.none") {
         LayerTransitionSpec spec;
         spec.type = "none";
         spec.kind = TransitionKind::None;
+        spec.transition_id = "tachyon.transition.none";
         return spec;
     }
 
@@ -34,7 +35,10 @@ LayerTransitionSpec TransitionPresetRegistry::create(std::string_view id, const 
         return spec->factory(params);
     }
 
-    return make_noop_transition_from_params(params);
+    throw std::runtime_error(
+        "Unknown transition preset '" + std::string(id) + "'. "
+        "Use 'none' explicitly for no transition."
+    );
 }
 
 } // namespace tachyon::presets

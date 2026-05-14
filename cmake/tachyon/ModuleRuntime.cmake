@@ -48,6 +48,7 @@ set(TachyonRuntimeExecutionSources
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_plan_hash.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_progress_sink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_session.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/session/render_preflight.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_session_audio.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/render_session_parallel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/execution/parallel/taskflow_runtime.cpp
@@ -109,12 +110,13 @@ tachyon_configure_common(TachyonRuntime)
 
 if(TACHYON_ENABLE_AUDIO_MUX)
     target_compile_definitions(TachyonRuntime PRIVATE TACHYON_ENABLE_AUDIO_MUX)
+    if(TACHYON_ENABLE_AUDIO)
+        target_link_libraries(TachyonRuntime PRIVATE TachyonAudio)
+    endif()
 endif()
 
 target_link_libraries(TachyonRuntime
     PUBLIC
-        TachyonCore
-        TachyonColor
         TachyonScene
         TachyonRenderer2D
     PRIVATE
@@ -125,16 +127,8 @@ if(TACHYON_ENABLE_OUTPUT)
     target_link_libraries(TachyonRuntime PUBLIC TachyonOutput)
 endif()
 
-if(TACHYON_ENABLE_TEXT)
-    target_link_libraries(TachyonRuntime PRIVATE TachyonText)
-endif()
-
 if(TACHYON_ENABLE_MEDIA)
     target_link_libraries(TachyonRuntime PUBLIC TachyonMedia)
-endif()
-
-if(TACHYON_ENABLE_AUDIO_MUX AND TACHYON_ENABLE_AUDIO)
-    target_link_libraries(TachyonRuntime PRIVATE TachyonAudio)
 endif()
 
 tachyon_link_text_deps(TachyonRuntime)

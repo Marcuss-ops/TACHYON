@@ -21,6 +21,7 @@ add_executable(TachyonRuntimeTests
     unit/runtime/frame_adapter_tests.cpp
     unit/runtime/telemetry_industrial_tests.cpp
     unit/runtime/jit_render_tests.cpp
+    unit/runtime/hash/scene_hash_coverage_tests.cpp
 )
 
 target_compile_definitions(TachyonRuntimeTests
@@ -36,6 +37,8 @@ target_link_libraries(TachyonRuntimeTests
         TachyonPlatform
         TachyonSceneEval
         TachyonPresets
+        TachyonAudio
+        TachyonOutput
 )
 
 if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
@@ -125,3 +128,14 @@ add_test(
     COMMAND TachyonRenderProfilerTests
 )
 tachyon_set_test_labels(TachyonRenderProfilerTests core deterministic)
+
+# PR 2: Default Transition Registry Tests
+add_executable(default_transition_registry_tests unit/runtime/registry/default_transition_registry_tests.cpp)
+target_link_libraries(default_transition_registry_tests PRIVATE 
+    TachyonCore 
+    TachyonRuntime
+    TachyonPresets
+    TachyonTestUtils
+)
+add_test(NAME default_transition_registry COMMAND default_transition_registry_tests)
+tachyon_set_test_labels(default_transition_registry runtime)

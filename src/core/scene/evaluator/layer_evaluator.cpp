@@ -46,10 +46,10 @@ EvaluatedLayerState make_layer_state(
     evaluated.blend_mode = layer.blend_mode;
 
     const double t = context.composition_time_seconds + time_offset;
-    double local_t = t - layer.start_time;
+    double local_t = t - layer.timing.start;
 
     // Apply loop and hold_last_frame behavior
-    const double layer_duration = layer.out_point - layer.in_point;
+    const double layer_duration = layer.timing.duration;
     if (layer.loop && layer_duration > 0.0) {
         local_t = std::fmod(local_t, layer_duration);
     }
@@ -68,9 +68,9 @@ EvaluatedLayerState make_layer_state(
         vars.tables,
         static_cast<std::uint32_t>(layer_index));
 
-    evaluated.active = layer.enabled && (t >= layer.in_point && t < layer.out_point);
+    evaluated.active = layer.enabled && (t >= layer.timing.start && t < layer.timing.start + layer.timing.duration);
     const double frame_duration = 1.0 / context.composition.frame_rate.value();
-    double prev_local_t = (t - frame_duration) - layer.start_time;
+    double prev_local_t = (t - frame_duration) - layer.timing.start;
 
     // Apply loop and hold_last_frame to prev_local_t as well
     if (layer.loop && layer_duration > 0.0) {
@@ -154,8 +154,8 @@ EvaluatedLayerState make_layer_state(
 
     evaluated.transition_in = layer.transition_in;
     evaluated.transition_out = layer.transition_out;
-    evaluated.in_time = layer.in_point;
-    evaluated.out_time = layer.out_point;
+    evaluated.in_time = layer.timing.start;
+    evaluated.out_time = layer.timing.start + layer.timing.duration;
 
     // Text specific
     evaluated.text_content = resolve_template(layer.text_content, vars.strings, vars.numeric);
@@ -167,10 +167,9 @@ EvaluatedLayerState make_layer_state(
     evaluated.text_animators = layer.text_animators;
     evaluated.text_highlights = layer.text_highlights;
 
-    evaluated.effects = layer.effects;
-    evaluated.animated_effects.reserve(layer.animated_effects.size());
-    for (const auto& animated_effect : layer.animated_effects) {
-        evaluated.animated_effects.push_back(animated_effect.evaluate(local_t));
+    evaluated.effects.reserve(layer.effects.size());
+    for (const auto& effect : layer.effects) {
+        evaluated.effects.push_back(effect.evaluate(local_t));
     }
 
     // Procedural specific

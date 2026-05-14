@@ -113,6 +113,13 @@ public:
     const std::shared_ptr<renderer2d::PrecompCache>& precomp_cache() const { return m_precomp_cache; }
 
 private:
+    bool preflight(
+        const SceneSpec& scene,
+        const CompiledScene& compiled_scene,
+        const RenderExecutionPlan& execution_plan,
+        const RenderContext& context,
+        RenderSessionResult& result);
+
     FrameCache m_cache;
     std::shared_ptr<renderer2d::PrecompCache> m_precomp_cache{std::make_shared<renderer2d::PrecompCache>()};
     std::shared_ptr<renderer2d::PrecompCache> m_text_surface_cache{std::make_shared<renderer2d::PrecompCache>()};

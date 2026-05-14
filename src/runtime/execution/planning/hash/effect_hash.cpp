@@ -5,26 +5,37 @@ namespace tachyon::hash {
 void hash_effect(CacheKeyBuilder& builder, const EffectSpec& effect) {
     builder.add_string(effect.type);
     builder.add_bool(effect.enabled);
-    // Hash scalars
-    builder.add_u64(static_cast<std::uint64_t>(effect.scalars.size()));
-    for (const auto& [key, val] : effect.scalars) {
+    
+    // Unified parameters
+    builder.add_u64(static_cast<std::uint64_t>(effect.params.size()));
+    for (const auto& [key, value] : effect.params) {
         builder.add_string(key);
-        builder.add_f64(val);
-    }
-    // Hash colors
-    builder.add_u64(static_cast<std::uint64_t>(effect.colors.size()));
-    for (const auto& [key, val] : effect.colors) {
-        builder.add_string(key);
-        builder.add_u64(val.r);
-        builder.add_u64(val.g);
-        builder.add_u64(val.b);
-        builder.add_u64(val.a);
-    }
-    // Hash strings
-    builder.add_u64(static_cast<std::uint64_t>(effect.strings.size()));
-    for (const auto& [key, val] : effect.strings) {
-        builder.add_string(key);
-        builder.add_string(val);
+        std::visit([&](auto&& arg) {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr (std::is_same_v<T, double>) {
+                builder.add_f64(arg);
+            } else if constexpr (std::is_same_v<T, bool>) {
+                builder.add_bool(arg);
+            } else if constexpr (std::is_same_v<T, std::string>) {
+                builder.add_string(arg);
+            } else if constexpr (std::is_same_v<T, ColorSpec>) {
+                builder.add_u32(arg.r);
+                builder.add_u32(arg.g);
+                builder.add_u32(arg.b);
+                builder.add_u32(arg.a);
+            } else if constexpr (std::is_same_v<T, math::Vector2>) {
+                builder.add_f32(arg.x);
+                builder.add_f32(arg.y);
+            } else if constexpr (std::is_same_v<T, AnimatedScalarSpec>) {
+                hash_animated_scalar(builder, arg);
+            } else if constexpr (std::is_same_v<T, AnimatedColorSpec>) {
+                hash_animated_color(builder, arg);
+            } else if constexpr (std::is_same_v<T, AnimatedVector2Spec>) {
+                hash_animated_vector2(builder, arg);
+            } else if constexpr (std::is_same_v<T, AnimatedMaskPathSpec>) {
+                hash_animated_mask_path(builder, arg);
+            }
+        }, value);
     }
 }
 
@@ -55,7 +66,6 @@ void hash_text_animator(CacheKeyBuilder& builder, const TextAnimatorSpec& spec) 
     builder.add_f64(spec.selector.offset);
     builder.add_f64(spec.selector.ease_high);
     builder.add_f64(spec.selector.ease_low);
-    builder.add_string(spec.selector.mode);
 
     // Hash properties - opacity
     builder.add_bool(spec.properties.opacity_value.has_value());

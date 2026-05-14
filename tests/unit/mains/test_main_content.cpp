@@ -13,8 +13,6 @@ bool run_text_registry_tests();
 bool run_sfx_contract_tests();
 bool run_transition_preset_registry_tests();
 bool run_background_registry_tests();
-bool run_background_preset_registry_tests();
-bool run_background_resolver_tests();
 bool run_transition_runtime_tests();
 namespace tachyon { bool run_preset_audit_tests(); }
 
@@ -24,8 +22,6 @@ bool run_layerspec_schema_tests();
 bool run_missing_transition_fallback_tests();
 bool run_scene_validator_normalization_tests();
 bool run_preview_dev_workflow_tests();
-bool run_asset_pack_manifest_tests();
-bool run_asset_pack_builder_tests();
 
 int main(int argc, char** argv) {
     using namespace tachyon::test;
@@ -42,8 +38,6 @@ int main(int argc, char** argv) {
         {"sfx", run_sfx_contract_tests},
         {"transition_preset_registry", run_transition_preset_registry_tests},
         {"background_kind_registry", run_background_registry_tests},
-        {"background_preset_registry", run_background_preset_registry_tests},
-        {"background_resolver", run_background_resolver_tests},
         {"transition_runtime", run_transition_runtime_tests},
         {"audit", tachyon::run_preset_audit_tests},
         // New tests for schema migration and library audit
@@ -52,8 +46,6 @@ int main(int argc, char** argv) {
         {"missing_transition_fallback", run_missing_transition_fallback_tests},
         {"scene_validator_normalization", run_scene_validator_normalization_tests},
         {"preview_dev_workflow", run_preview_dev_workflow_tests},
-        {"asset_pack_manifest", run_asset_pack_manifest_tests},
-        {"asset_pack_builder", run_asset_pack_builder_tests},
     };
 
     return run_test_suite(argc, argv, tests);

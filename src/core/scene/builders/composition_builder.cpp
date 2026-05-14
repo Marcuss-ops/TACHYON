@@ -76,7 +76,6 @@ CompositionBuilder& CompositionBuilder::add_typed_layer(
 }
 
 CompositionBuilder& CompositionBuilder::layer(std::string id, std::function<void(LayerBuilder&)> fn) {
-    std::cerr << "!!! CompositionBuilder::layer: adding layer with id='" << id << "' !!!" << std::endl;
     const std::string layer_id = id;
     try {
         LayerBuilder lb(std::move(id), preset_registry_);

@@ -76,7 +76,7 @@ std::vector<EffectPresetSpec> get_distortion_effect_preset_specs() {
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.distort.chromatic_aberration";
-            effect.scalars["strength"] = p.get_or<double>("strength", 2.0);
+            effect.params["strength"] = p.get_or<double>("strength", 2.0);
             return effect;
         }
     });
@@ -93,9 +93,9 @@ std::vector<EffectPresetSpec> get_distortion_effect_preset_specs() {
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.distort.vignette";
-            effect.scalars["radius"] = p.get_or<double>("radius", 0.5);
-            effect.scalars["softness"] = p.get_or<double>("softness", 0.5);
-            effect.scalars["strength"] = p.get_or<double>("strength", 1.0);
+            effect.params["radius"] = p.get_or<double>("radius", 0.5);
+            effect.params["softness"] = p.get_or<double>("softness", 0.5);
+            effect.params["strength"] = p.get_or<double>("strength", 1.0);
             return effect;
         }
     });
@@ -112,9 +112,9 @@ std::vector<EffectPresetSpec> get_distortion_effect_preset_specs() {
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.distort.displacement";
-            effect.strings["map_layer"] = p.get_or<std::string>("map_layer", "");
-            effect.scalars["strength_x"] = p.get_or<double>("strength_x", 10.0);
-            effect.scalars["strength_y"] = p.get_or<double>("strength_y", 10.0);
+            effect.params["map_layer"] = p.get_or<std::string>("map_layer", "");
+            effect.params["strength_x"] = p.get_or<double>("strength_x", 10.0);
+            effect.params["strength_y"] = p.get_or<double>("strength_y", 10.0);
             return effect;
         }
     });
@@ -130,8 +130,8 @@ std::vector<EffectPresetSpec> get_distortion_effect_preset_specs() {
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.distort.warp_stabilizer";
-            effect.scalars["crop_percent"] = p.get_or<double>("crop_percent", 10.0);
-            effect.scalars["smoothing"] = p.get_or<double>("smoothing", 50.0);
+            effect.params["crop_percent"] = p.get_or<double>("crop_percent", 10.0);
+            effect.params["smoothing"] = p.get_or<double>("smoothing", 50.0);
             return effect;
         }
     });
@@ -150,11 +150,11 @@ std::vector<EffectPresetSpec> get_distortion_effect_preset_specs() {
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.distort.glitch";
-            effect.scalars["intensity"] = p.get_or<double>("intensity", 0.5);
-            effect.scalars["seed"] = p.get_or<double>("seed", 0.0);
-            effect.scalars["rgb_shift_px"] = p.get_or<double>("rgb_shift_px", 2.0);
-            effect.scalars["block_size"] = p.get_or<double>("block_size", 16.0);
-            effect.scalars["scan_line_chance"] = p.get_or<double>("scan_line_chance", 0.1);
+            effect.params["intensity"] = p.get_or<double>("intensity", 0.5);
+            effect.params["seed"] = p.get_or<double>("seed", 0.0);
+            effect.params["rgb_shift_px"] = p.get_or<double>("rgb_shift_px", 2.0);
+            effect.params["block_size"] = p.get_or<double>("block_size", 16.0);
+            effect.params["scan_line_chance"] = p.get_or<double>("scan_line_chance", 0.1);
             return effect;
         }
     });

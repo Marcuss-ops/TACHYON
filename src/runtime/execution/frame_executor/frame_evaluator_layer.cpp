@@ -134,11 +134,12 @@ void evaluate_layer(
     state->word_timestamp_path = layer.word_timestamp_path;
     state->shape_path = to_shape_path_spec(layer.shape_path);
     state->shape_spec = layer.shape_spec;
-    state->effects = layer.effects;
-    state->animated_effects.reserve(layer.animated_effects.size());
-    for (const auto& animated_effect : layer.animated_effects) {
-        state->animated_effects.push_back(animated_effect.evaluate(frame_time_seconds));
+    
+    state->effects.reserve(layer.effects.size());
+    for (const auto& effect : layer.effects) {
+        state->effects.push_back(effect.evaluate(frame_time_seconds));
     }
+
     state->procedural = layer.procedural;
     state->precomp_id = layer.precomp_index.has_value() ? std::make_optional(std::to_string(*layer.precomp_index)) : std::nullopt;
     state->track_matte_type = layer.matte_type;

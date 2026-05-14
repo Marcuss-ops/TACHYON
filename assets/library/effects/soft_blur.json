@@ -1,0 +1,12 @@
+{
+  "id": "tachyon.effect.blur.soft_json",
+  "name": "Soft Blur (JSON)",
+  "category": "effect.blur",
+  "kind": "tachyon.effect.blur.gaussian",
+  "parameters": [
+    { "name": "radius", "label": "Radius", "type": "float", "default": 20.0, "min": 0.0, "max": 100.0 }
+  ],
+  "mappings": {
+    "radius": "radius"
+  }
+}

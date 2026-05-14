@@ -18,27 +18,34 @@ EffectHost& effect_host_for(RenderContext& context) {
     return *context.effects;
 }
 
-EffectParams effect_params_from_spec(const EffectSpec& spec, const ColorProfile& working_profile) {
+EffectParams effect_params_from_spec(const EvaluatedEffect& spec, const ColorProfile& working_profile) {
     EffectParams params;
-    for (const auto& [key, value] : spec.scalars) {
-        params.scalars.emplace(key, static_cast<float>(value));
-    }
-    for (const auto& [key, value] : spec.colors) {
-        params.colors.emplace(key, from_color_spec(value, working_profile));
-    }
-    for (const auto& [key, value] : spec.strings) {
-        params.strings.emplace(key, value);
+    for (const auto& [key, value] : spec.params) {
+        std::visit([&](auto&& arg) {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr (std::is_same_v<T, double>) {
+                params.scalars.emplace(key, static_cast<float>(arg));
+            } else if constexpr (std::is_same_v<T, ColorSpec>) {
+                params.colors.emplace(key, from_color_spec(arg, working_profile));
+            } else if constexpr (std::is_same_v<T, std::string>) {
+                params.strings.emplace(key, arg);
+            } else if constexpr (std::is_same_v<T, bool>) {
+                params.bools.emplace(key, arg);
+            } else if constexpr (std::is_same_v<T, math::Vector2>) {
+                params.vectors.emplace(key, arg);
+            }
+        }, value);
     }
     return params;
 }
 
-EffectParams effect_params_from_spec(const EffectSpec& spec) {
+EffectParams effect_params_from_spec(const EvaluatedEffect& spec) {
     return effect_params_from_spec(spec, ColorProfile::Rec709());
 }
 
 ResolutionResult<SurfaceRGBA> apply_effect_pipeline(
     const SurfaceRGBA& input,
-    const std::vector<EffectSpec>& effects,
+    const std::vector<EvaluatedEffect>& effects,
     EffectHost& host,
     const ColorProfile& working_profile,
     FrameDiagnostics* diagnostics,
@@ -48,7 +55,7 @@ ResolutionResult<SurfaceRGBA> apply_effect_pipeline(
 
 ResolutionResult<SurfaceRGBA> apply_effect_pipeline(
     const SurfaceRGBA& input,
-    const std::vector<EffectSpec>& effects,
+    const std::vector<EvaluatedEffect>& effects,
     EffectHost& host,
     const ColorProfile& working_profile,
     const std::unordered_map<std::string, std::shared_ptr<SurfaceRGBA>>& surfaces,
@@ -82,8 +89,10 @@ ResolutionResult<SurfaceRGBA> apply_effect_pipeline(
                 
                 // 1. Try to get ID from defined source_key in spec
                 if (!req.source_key.empty()) {
-                    if (const auto it = effect.strings.find(req.source_key); it != effect.strings.end()) {
-                        target_layer_id = it->second;
+                    if (const auto it = effect.params.find(req.source_key); it != effect.params.end()) {
+                        if (auto* str = std::get_if<std::string>(&it->second)) {
+                            target_layer_id = *str;
+                        }
                     }
                 }
                 

@@ -78,9 +78,9 @@ std::uint64_t hash_scene_spec(const SceneSpec& scene, const DeterminismContract&
             builder.add_bool(layer.enabled);
             builder.add_bool(layer.visible);
             builder.add_bool(layer.is_adjustment_layer);
-            builder.add_u64(static_cast<std::uint64_t>(layer.start_time * 1000.0));
-            builder.add_u64(static_cast<std::uint64_t>(layer.in_point * 1000.0));
-            builder.add_u64(static_cast<std::uint64_t>(layer.out_point * 1000.0));
+            builder.add_u64(static_cast<std::uint64_t>(layer.timing.start * 1000.0));
+            builder.add_u64(static_cast<std::uint64_t>(layer.timing.start * 1000.0)); // legacy in_point
+            builder.add_u64(static_cast<std::uint64_t>((layer.timing.start + layer.timing.duration) * 1000.0)); // legacy out_point
             builder.add_u64(static_cast<std::uint64_t>(layer.opacity * 1000000.0));
             
             builder.add_bool(layer.transform.position_x.has_value());

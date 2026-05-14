@@ -119,6 +119,8 @@ public:
     LayerBuilder& custom_layer(const LayerSpec& spec);
     LayerBuilder& in(double t);
     LayerBuilder& out(double t);
+    LayerBuilder& start(double t);
+    LayerBuilder& duration(double d);
 
     // 2D Transform
     LayerBuilder& opacity(double v);
@@ -153,6 +155,7 @@ public:
     // Update from existing spec
     LayerBuilder& from_spec(const LayerSpec& spec);
 
+    [[nodiscard]] const LayerSpec& spec() const { return spec_; }
     [[nodiscard]] LayerSpec build() &&;
     [[nodiscard]] LayerSpec build() const &;
 };

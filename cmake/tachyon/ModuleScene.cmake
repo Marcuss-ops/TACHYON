@@ -31,6 +31,7 @@ set(TachyonSceneSchemaSources
 
 set(TachyonSceneValidationSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/validation/layer_spec_normalizer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/validation/scene_normalizer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/validation/scene_validator_composition.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/validation/scene_validator_layer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/spec/validation/scene_validator_schema.cpp
@@ -106,12 +107,9 @@ tachyon_link_text_deps(TachyonPresets)
 tachyon_link_media_deps(TachyonPresets)
 tachyon_link_omp(TachyonPresets)
 
-add_library(TachyonScene SHARED ${TachyonSceneSources})
+add_library(TachyonScene STATIC ${TachyonSceneSources})
 tachyon_configure_common(TachyonScene)
-target_compile_definitions(TachyonScene 
-    PRIVATE TACHYON_BUILD_DLL
-    INTERFACE TACHYON_USE_DLL
-)
+
 target_link_libraries(TachyonScene
     PUBLIC
         TachyonSceneEval
@@ -122,8 +120,7 @@ target_link_libraries(TachyonScene
         TachyonPlatform
         TachyonPresets
         TachyonLibrary
-    )
-
+)
     if(TACHYON_ENABLE_AUDIO)
         target_link_libraries(TachyonScene PRIVATE TachyonAudio)
     endif()

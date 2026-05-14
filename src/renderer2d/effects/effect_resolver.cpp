@@ -4,7 +4,7 @@
 
 namespace tachyon::renderer2d {
 
-ResolvedEffect resolve_effect(const EffectSpec& spec, const EffectRegistry& registry) {
+ResolvedEffect resolve_effect(const EvaluatedEffect& spec, const EffectRegistry& registry) {
     ResolvedEffect result;
     result.spec = spec;
     
@@ -32,7 +32,7 @@ ResolvedEffect resolve_effect(const EffectSpec& spec, const EffectRegistry& regi
 }
 
 ResolvedEffect resolve_effect_by_id(const std::string& id, const EffectRegistry& registry) {
-    EffectSpec spec;
+    EvaluatedEffect spec;
     spec.enabled = true;
     spec.type = id;
     return resolve_effect(spec, registry);

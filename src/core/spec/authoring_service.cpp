@@ -231,14 +231,35 @@ AuthoringService::CompileResult AuthoringService::compile_to_shared_lib(
     const std::filesystem::path& output_dir) {
     
     CompileResult result;
-    std::filesystem::path dll_path = output_dir / cpp_path.filename();
-#ifdef _WIN32
-    dll_path.replace_extension(".dll");
-#else
-    dll_path.replace_extension(".so");
-#endif
     std::filesystem::create_directories(output_dir);
     
+    // 1. Calculate content hash
+    std::string hash_str = "jit_fallback";
+    {
+        std::ifstream ifs(cpp_path, std::ios::binary);
+        if (ifs) {
+            std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+            // Simple stable hash (FNV-1a 64-bit) for content-addressing
+            uint64_t hash_val = 0xcbf29ce484222325ULL;
+            for (char c : content) {
+                hash_val ^= static_cast<uint8_t>(c);
+                hash_val *= 0x100000001b3ULL;
+            }
+            std::stringstream hss;
+            hss << std::hex << hash_val;
+            hash_str = hss.str();
+        }
+    }
+
+    // 2. Generate content-addressed DLL path
+    std::string dll_filename = cpp_path.stem().string() + "_" + hash_str;
+#ifdef _WIN32
+    dll_filename += ".dll";
+#else
+    dll_filename += ".so";
+#endif
+    std::filesystem::path dll_path = output_dir / dll_filename;
+
     // Optimization: reuse existing DLL if it exists to bypass redundant JIT recompiles
     if (std::filesystem::exists(dll_path)) {
         result.success = true;
@@ -253,7 +274,6 @@ AuthoringService::CompileResult AuthoringService::compile_to_shared_lib(
 
     const std::string cmd = get_compiler_command(cpp_path, dll_path);
     result.command = cmd;
-    std::cerr << "!!! JIT Command: " << cmd << " !!!" << std::endl;
     
     using namespace tachyon::core::platform;
     ProcessSpec spec;

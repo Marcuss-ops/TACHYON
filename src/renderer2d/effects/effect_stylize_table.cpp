@@ -10,7 +10,7 @@ std::vector<EffectImplementation> get_stylize_effect_implementations() {
     // Drop Shadow
     implementations.push_back({
         "tachyon.effect.stylize.drop_shadow",
-        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             DropShadowEffect effect;
             output = effect.apply(input, params);
         }
@@ -19,7 +19,7 @@ std::vector<EffectImplementation> get_stylize_effect_implementations() {
     // Glow
     implementations.push_back({
         "tachyon.effect.stylize.glow",
-        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             GlowEffect effect;
             output = effect.apply(input, params);
         }
@@ -28,7 +28,7 @@ std::vector<EffectImplementation> get_stylize_effect_implementations() {
     // Motion Blur 2D
     implementations.push_back({
         "tachyon.effect.stylize.motion_blur_2d",
-        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             MotionBlur2DEffect effect;
             output = effect.apply(input, params);
         }
@@ -37,7 +37,7 @@ std::vector<EffectImplementation> get_stylize_effect_implementations() {
     // Keying (Chroma Key)
     implementations.push_back({
         "tachyon.effect.keying.chroma_key",
-        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             ChromaKeyEffect effect;
             output = effect.apply(input, params);
         }

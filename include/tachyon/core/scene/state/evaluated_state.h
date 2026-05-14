@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/core/spec/schema/effects/effect_spec.h"
 #include "tachyon/core/spec/schema/objects/procedural_spec.h"
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 
@@ -67,8 +68,7 @@ struct EvaluatedLayerState {
     std::optional<ShapePathSpec> shape_path;
     std::optional<ShapeSpec> shape_spec;
     std::optional<spec::MaskPath> mask_path;
-    std::vector<EffectSpec> animated_effects;
-    std::vector<EffectSpec> effects;
+    std::vector<EvaluatedEffect> effects;
     std::optional<std::string> asset_path;
     std::optional<GradientSpec> gradient_fill;
     std::optional<GradientSpec> gradient_stroke;

@@ -10,7 +10,7 @@ std::vector<EffectImplementation> get_generator_effect_implementations() {
     // Light Leak
     implementations.push_back({
         "tachyon.effect.generator.light_leak",
-        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             LightLeakEffect effect;
             output = effect.apply(input, params);
         }
@@ -19,7 +19,7 @@ std::vector<EffectImplementation> get_generator_effect_implementations() {
     // Particle Emitter
     implementations.push_back({
         "tachyon.effect.generator.particle_emitter",
-        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             ParticleEmitterEffect effect;
             output = effect.apply(input, params);
         }
@@ -28,7 +28,7 @@ std::vector<EffectImplementation> get_generator_effect_implementations() {
     // Lens Flare
     implementations.push_back({
         "tachyon.effect.generator.lens_flare",
-        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             LensFlareEffect effect;
             output = effect.apply(input, params);
         }

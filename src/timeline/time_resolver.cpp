@@ -17,8 +17,9 @@ bool is_layer_visible_at_time(const LayerSpec& layer, double composition_time_se
         return false;
     }
 
-    const double effective_in = std::max(0.0, layer.in_point);
-    const double effective_out = (layer.out_point > effective_in) ? layer.out_point : composition_duration_seconds;
+    const double effective_in = std::max(0.0, layer.timing.start);
+    const double out_point = layer.timing.start + layer.timing.duration;
+    const double effective_out = (out_point > effective_in) ? out_point : composition_duration_seconds;
     return composition_time_seconds >= effective_in && composition_time_seconds < effective_out;
 }
 

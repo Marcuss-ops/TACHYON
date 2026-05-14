@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tachyon/core/spec/schema/objects/procedural_spec.h"
+#include "tachyon/core/spec/schema/effects/effect_spec.h"
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 #include "tachyon/core/spec/schema/objects/text_box_spec.h"
 
@@ -51,7 +52,6 @@ struct LayerSpec {
     std::string asset_id; // For image/video layers
     std::string preset_id; // For procedural/preset layers
     LayerType type{LayerType::NullLayer}; // Canonical Source of Truth
-    std::string type_string; // Legacy / Authoring fallback
     std::string blend_mode{"normal"};
     
     bool enabled{true};
@@ -59,9 +59,7 @@ struct LayerSpec {
     bool is_adjustment_layer{false};
     bool motion_blur{false};
 
-    double start_time{0.0};
-    double in_point{0.0};
-    double out_point{10.0};
+    LayerTiming timing;
     double opacity{1.0};
 
     int width{1920};
@@ -127,8 +125,7 @@ struct LayerSpec {
     std::optional<std::string> camera2d_id;
 
     // Effects & Animators (Skeletons)
-    std::vector<EffectSpec> effects;  // Backward compatible static effects
-    std::vector<AnimatedEffectSpec> animated_effects;  // Keyframeable effects
+    std::vector<EffectSpec> effects;
     std::vector<TextAnimatorSpec> text_animators;
     std::vector<TextHighlightSpec> text_highlights;
 
@@ -139,9 +136,6 @@ struct LayerSpec {
     std::vector<spec::TrackBinding> track_bindings;
     spec::TimeRemapCurve time_remap;
     spec::FrameBlendMode frame_blend{spec::FrameBlendMode::Linear};
-
-    // Timing shorthand
-    std::optional<double> duration;
 
     // Animation preset durations (inject transform/opacity keyframes via PresetCompiler)
     // Animation presets (inject transform/opacity keyframes via PresetCompiler)
