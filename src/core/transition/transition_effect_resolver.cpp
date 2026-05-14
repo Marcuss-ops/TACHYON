@@ -195,21 +195,33 @@ ResolvedTransitionEffect TransitionEffectResolver::resolve(const TransitionEffec
     result.diagnostics.transition_id = desc->id;
 
     // Check backend compatibility
-    if (desc->runtime_kind != request.preferred_backend &&
-        request.preferred_backend != TransitionRuntimeKind::StateOnly) {
-        result.diagnostics.has_error = true;
-        result.diagnostics.error_message = "Transition '" + desc->id + "' does not support requested backend.";
-        return result;
+    if (desc->runtime_kind == request.preferred_backend ||
+        request.preferred_backend == TransitionRuntimeKind::StateOnly) {
+        if (desc->direct_cpu_fn != nullptr) {
+            result.kernel.apply = desc->direct_cpu_fn;
+            result.kernel.valid = true;
+            result.valid = true;
+        } else if (desc->cpu_fn != nullptr) {
+            result.kernel = create_cpu_kernel(desc->id, desc->cpu_fn);
+            result.valid = result.kernel.valid;
+        }
     }
 
-    // Create kernel function from the descriptor's CPU function or fused direct function
-    if (desc->cpu_fn != nullptr || desc->direct_cpu_fn != nullptr) {
-        result.kernel = create_cpu_kernel(desc->id, desc->cpu_fn);
-        result.valid = result.kernel.valid;
-    } else {
-        // No CPU function available - this is an error for CpuPixel backend
+    // Fallback logic: try to find ANY working implementation if preferred fails
+    if (!result.valid) {
+        if (desc->direct_cpu_fn != nullptr) {
+            result.kernel.apply = desc->direct_cpu_fn;
+            result.kernel.valid = true;
+            result.valid = true;
+        } else if (desc->cpu_fn != nullptr) {
+            result.kernel = create_cpu_kernel(desc->id, desc->cpu_fn);
+            result.valid = result.kernel.valid;
+        }
+    }
+
+    if (!result.valid) {
         result.diagnostics.has_error = true;
-        result.diagnostics.error_message = "Transition '" + desc->id + "' has no CPU implementation.";
+        result.diagnostics.error_message = "Transition '" + request.transition_id + "' has no valid implementation for any backend.";
     }
 
     return result;

@@ -182,7 +182,7 @@ static constexpr std::array<BasicTransitionRegistryEntry, 17> kBasicTransitionsR
     { ids::transition::slide_easing, transition_slide_easing, nullptr },
     { ids::transition::circle_iris, transition_circle_iris, apply_circle_iris_fused_direct },
     { "iris", transition_circle_iris, apply_circle_iris_fused_direct },
-    { ids::transition::flash_cut, transition_flash, apply_flash_cut_fused_direct },
+    { ids::transition::flash_cut, transition_flash_cut, apply_flash_cut_fused_direct },
     { ids::transition::soft_zoom_blur, transition_zoom_blur, apply_soft_zoom_blur_fused_direct },
     { ids::transition::smooth_wipe, transition_smooth_wipe, apply_smooth_wipe_fused_direct },
     { ids::transition::slide, transition_slide, apply_slide_fused_direct }
