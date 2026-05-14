@@ -124,6 +124,7 @@ set(TachyonRenderer2DSources
     ${TachyonRenderer2DRasterSources}
     ${TachyonRenderer2DColorSources}
     ${CMAKE_CURRENT_SOURCE_DIR}/core/transition_registry.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer2d/transition_registry_factory.cpp
 )
 
 if(TACHYON_ENABLE_VULKAN)

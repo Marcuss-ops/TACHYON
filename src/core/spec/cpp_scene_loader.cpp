@@ -97,8 +97,9 @@ extern "C" {
         
         // Ensure procedural kind is set so it actually renders
         auto spec = lb->build();
-        spec.source.procedural.emplace();
-        spec.source.procedural->kind = background_id;
+        ProceduralSpec proc;
+        proc.kind = background_id;
+        spec.source = ProceduralSource{proc.kind, proc};
         lb->from_spec(spec);
         
         return host->register_layer(std::move(lb));

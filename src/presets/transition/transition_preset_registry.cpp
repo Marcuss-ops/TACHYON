@@ -3,13 +3,15 @@
 namespace tachyon::presets {
 
 static Direction direction_from_string(const std::string& s) {
+    if (s.empty() || s == "none") return Direction::None;
     if (s == "left") return Direction::Left;
     if (s == "right") return Direction::Right;
     if (s == "up") return Direction::Up;
     if (s == "down") return Direction::Down;
     if (s == "in") return Direction::In;
     if (s == "out") return Direction::Out;
-    return Direction::None;
+
+    throw std::runtime_error("Unknown transition direction '" + s + "'");
 }
 
 LayerTransitionSpec TransitionPresetRegistry::build_spec_from_params(const registry::ParameterBag& p, const std::string& transition_id) {
@@ -21,10 +23,6 @@ LayerTransitionSpec TransitionPresetRegistry::build_spec_from_params(const regis
     spec.direction = direction_from_string(p.get_or<std::string>("direction", "none"));
     return spec;
 }
-
-namespace {
-
-} // namespace
 
 LayerTransitionSpec TransitionPresetRegistry::create(std::string_view id, const registry::ParameterBag& params) const {
     if (id.empty() || id == "none" || id == "tachyon.transition.none") {

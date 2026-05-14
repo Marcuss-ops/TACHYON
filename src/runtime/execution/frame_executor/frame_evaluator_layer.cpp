@@ -136,8 +136,15 @@ void evaluate_layer(
         state->effects.push_back(effect.evaluate(frame_time_seconds));
     }
 
-    state->procedural = layer.procedural;
-    state->source.precomp_id = layer.precomp_index.has_value() ? std::make_optional(std::to_string(*layer.precomp_index)) : std::nullopt;
+    if (layer.procedural.has_value()) {
+        state->source.definition = ProceduralSource{layer.procedural->kind, *layer.procedural};
+    } else if (layer.precomp_index.has_value()) {
+        state->source.definition = PrecompSource{std::to_string(*layer.precomp_index)};
+    } else if (!layer.asset_path.empty()) {
+        state->source.definition = MediaSource{layer.asset_path};
+    } else {
+        state->source.definition = EmptySource{};
+    }
     state->track_matte_type = layer.matte_type;
     state->track_matte_layer_index = layer.matte_layer_index.has_value()
         ? std::make_optional(static_cast<std::size_t>(*layer.matte_layer_index))

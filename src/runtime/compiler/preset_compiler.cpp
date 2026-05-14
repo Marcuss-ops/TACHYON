@@ -36,10 +36,11 @@ PresetCompiler::ResolvedLayerAnimationPresets
 PresetCompiler::resolve_layer_animation_presets(const LayerSpec& layer) const {
     ResolvedLayerAnimationPresets resolved;
 
-    // Modern fields only
-    resolved.in_id = layer.animation_in_preset;
-    resolved.during_id = layer.animation_during_preset;
-    resolved.out_id = layer.animation_out_preset;
+    resolved.in_id = layer.transition_in.transition_id;
+    resolved.in_duration = layer.transition_in.duration;
+    resolved.out_id = layer.transition_out.transition_id;
+    resolved.out_duration = layer.transition_out.duration;
+    resolved.during_id = "";
 
     return resolved;
 }

@@ -43,6 +43,7 @@ const EvaluatedLayerState& resolve_layer_state(
     }
 
     context.visiting[layer_index] = true;
+    context.current_layer_index = layer_index;
 
         const auto& layer = context.composition.layers[layer_index];
         EvaluatedLayerState evaluated = make_layer_state(
@@ -54,7 +55,7 @@ const EvaluatedLayerState& resolve_layer_state(
 
     resolve_layer_dependencies(layer_index, context, evaluated);
 
-    evaluate_precomp_layer(context.scene, evaluated, context, evaluated);
+    attach_nested_precomp(context, evaluated);
 
     context.visiting[layer_index] = false;
     context.cache[layer_index] = std::move(evaluated);

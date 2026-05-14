@@ -117,23 +117,27 @@ ValidationResult validate_scene_spec(const SceneSpec& scene) {
                 result.diagnostics.add_error("scene.layer.track_matte_layer_id_invalid", "track_matte_layer_id invalid", lpath + ".track_matte_layer_id");
             }
 
-            if (layer.source.precomp_id.has_value() && !layer.source.precomp_id->empty() && !composition_ids.count(*layer.source.precomp_id)) {
-                result.diagnostics.add_error("scene.layer.precomp_id_invalid", "precomp_id invalid", lpath + ".precomp_id");
+            if (auto* precomp = std::get_if<PrecompSource>(&layer.source)) {
+                if (!precomp->precomp_id.empty() && !composition_ids.count(precomp->precomp_id)) {
+                    result.diagnostics.add_error("scene.layer.precomp_id_invalid", "precomp_id invalid", lpath + ".precomp_id");
+                }
             }
 
             if (layer.identity.type == LayerType::Image || layer.identity.type == LayerType::Video) {
-                if (layer.source.asset_id.empty()) {
-                    result.diagnostics.add_error("scene.layer.asset_id_missing", "asset_id is required for image/video layers", lpath + ".asset_id");
-                } else {
-                    bool asset_found = false;
-                    for (const auto& asset : scene.assets) {
-                        if (asset.id == layer.source.asset_id) {
-                            asset_found = true;
-                            break;
+                if (auto* media = std::get_if<MediaSource>(&layer.source)) {
+                    if (media->asset_path.empty()) {
+                        result.diagnostics.add_error("scene.layer.asset_id_missing", "asset_path is required for image/video layers", lpath + ".asset_id");
+                    } else {
+                        bool asset_found = false;
+                        for (const auto& asset : scene.assets) {
+                            if (asset.id == media->asset_path) {
+                                asset_found = true;
+                                break;
+                            }
                         }
-                    }
-                    if (!asset_found && !looks_like_media_path(layer.source.asset_id)) {
-                        result.diagnostics.add_error("scene.layer.asset_reference_invalid", "asset id '" + layer.source.asset_id + "' not found in scene assets", lpath + ".asset_id");
+                        if (!asset_found && !looks_like_media_path(media->asset_path)) {
+                            result.diagnostics.add_error("scene.layer.asset_reference_invalid", "asset id '" + media->asset_path + "' not found in scene assets", lpath + ".asset_id");
+                        }
                     }
                 }
             }

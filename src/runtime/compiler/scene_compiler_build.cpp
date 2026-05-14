@@ -43,7 +43,15 @@ void build_compositions(const SceneSpec& scene, CompiledScene& compiled, tachyon
             
             compiled_layer.vector.shape_path = layer.vector.shape_path;
             compiled_layer.effects = layer.effects;
-            compiled_layer.procedural = layer.source.procedural;
+            // Resolve Source via variant
+            std::visit([&](auto&& source) {
+                using T = std::decay_t<decltype(source)>;
+                if constexpr (std::is_same_v<T, MediaSource>) {
+                    compiled_layer.asset_path = source.asset_path;
+                } else if constexpr (std::is_same_v<T, ProceduralSource>) {
+                    compiled_layer.procedural = source.spec;
+                }
+            }, layer.source);
             
             compiled_layer.masks.feather = static_cast<float>(layer.masks.feather.value.has_value() ? *layer.masks.feather.value : 0.0);
             compiled_layer.subtitles.path = layer.subtitles.path;

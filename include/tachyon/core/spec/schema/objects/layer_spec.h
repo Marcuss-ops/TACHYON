@@ -102,11 +102,29 @@ struct LayerIdentity {
     bool motion_blur{false};
 };
 
-struct LayerSource {
-    std::string asset_path; // For image/video layers
-    std::optional<std::string> precomp_id;
-    std::optional<ProceduralSpec> procedural;
+#include <variant>
+
+struct EmptySource {};
+
+struct MediaSource {
+    std::string asset_path;
 };
+
+struct PrecompSource {
+    std::string precomp_id;
+};
+
+struct ProceduralSource {
+    std::string kind;
+    ProceduralSpec spec;
+};
+
+using LayerSource = std::variant<
+    EmptySource,
+    MediaSource,
+    PrecompSource,
+    ProceduralSource
+>;
 
 struct LayerTransform {
     Transform2D transform;

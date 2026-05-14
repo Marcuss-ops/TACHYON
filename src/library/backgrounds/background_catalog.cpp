@@ -54,7 +54,7 @@ BackgroundDescriptor make_gradient_background_descriptor() {
         proc.color_a.keyframes = {{0.0, params.get_or<ColorSpec>("color_start", ColorSpec(0, 0, 0))}};
         proc.color_b.keyframes = {{0.0, params.get_or<ColorSpec>("color_end", ColorSpec(255, 255, 255))}};
         proc.angle.keyframes = {{0.0, params.get_or<double>("angle", 0.0)}};
-        spec.source.procedural = proc;
+        spec.source = ProceduralSource{ proc.kind, std::move(proc) };
         return spec;
     };
     return desc;
@@ -86,7 +86,7 @@ BackgroundDescriptor make_radial_gradient_background_descriptor() {
         proc.color_b.keyframes = {{0.0, params.get_or<ColorSpec>("color_end", ColorSpec(255, 255, 255))}};
         proc.focal_x = static_cast<float>(params.get_or<double>("center_x", 0.5));
         proc.focal_y = static_cast<float>(params.get_or<double>("center_y", 0.5));
-        spec.source.procedural = proc;
+        spec.source = ProceduralSource{ proc.kind, std::move(proc) };
         return spec;
     };
     return desc;
@@ -108,7 +108,7 @@ BackgroundDescriptor make_image_background_descriptor() {
         LayerSpec spec;
         spec.identity.type = LayerType::Image;
         spec.identity.name = "Image Background";
-        spec.source.asset_id = params.get_or<std::string>("path", "");
+        spec.source = MediaSource{ params.get_or<std::string>("path", "") };
         return spec;
     };
     return desc;
@@ -132,12 +132,7 @@ BackgroundDescriptor make_video_background_descriptor() {
         LayerSpec spec;
         spec.identity.type = LayerType::Video;
         spec.identity.name = "Video Background";
-        spec.source.asset_id = params.get_or<std::string>("path", "");
-        // Loop and mute are not in modular LayerSpec directly yet, 
-        // they might need to go into a new VideoSourceSpec if we want to be strict.
-        // For now, if they were in the root, I'll keep them in the source if possible 
-        // but wait, I didn't see them in LayerSourceSpec.
-        // Let's check LayerSpec fields again.
+        spec.source = MediaSource{ params.get_or<std::string>("path", "") };
         return spec;
     };
     return desc;
@@ -192,7 +187,8 @@ std::vector<BackgroundDescriptor> build_builtin_background_descriptors() {
         return [get_procedural_params, make_spec_fn](const registry::ParameterBag& bag) -> LayerSpec {
             LayerSpec layer;
             layer.identity.type = LayerType::Procedural;
-            layer.source.procedural = make_spec_fn(get_procedural_params(bag));
+            auto proc = make_spec_fn(get_procedural_params(bag));
+            layer.source = ProceduralSource{ proc.kind, std::move(proc) };
             return layer;
         };
     };

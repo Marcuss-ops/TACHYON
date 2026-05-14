@@ -25,7 +25,7 @@ BackgroundDescriptor make_video_background_descriptor() {
         spec.identity.type = LayerType::Video;
         spec.identity.name = "Video Background";
         
-        spec.source.asset_id = params.get_or<std::string>("path", "");
+        spec.source = MediaSource{params.get_or<std::string>("path", "")};
         spec.playback.loop = params.get_or<bool>("loop", true);
         
         return spec;

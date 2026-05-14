@@ -169,8 +169,7 @@ std::uint64_t hash_scene_content(const SceneSpec& scene) {
             builder.add_bool(layer.track_matte_layer_id.has_value());
             if (layer.track_matte_layer_id.has_value()) builder.add_string(*layer.track_matte_layer_id);
             builder.add_u32(static_cast<std::uint32_t>(layer.track_matte_type));
-            builder.add_bool(layer.source.precomp_id.has_value());
-            if (layer.source.precomp_id.has_value()) builder.add_string(*layer.source.precomp_id);
+            // Source handled via variant below
             builder.add_string(layer.text.content);
             builder.add_string(layer.text.font_id);
             builder.add_u32(static_cast<std::uint32_t>(layer.text.box.horizontal_align));
@@ -190,9 +189,7 @@ std::uint64_t hash_scene_content(const SceneSpec& scene) {
             hash::hash_animated_color(builder, layer.subtitles.outline_color);
             builder.add_f64(layer.subtitles.outline_width);
             
-            builder.add_string(layer.animation_in_preset);
-            builder.add_string(layer.animation_during_preset);
-            builder.add_string(layer.animation_out_preset);
+            // Presets removed
             builder.add_bool(layer.playback.loop);
             builder.add_bool(layer.playback.hold_last_frame);
             
@@ -224,12 +221,24 @@ std::uint64_t hash_scene_content(const SceneSpec& scene) {
             builder.add_u64(static_cast<std::uint64_t>(layer.effects.size()));
             for (const auto& effect : layer.effects) hash::hash_effect(builder, effect);
             
-            if (layer.source.procedural.has_value()) {
-                builder.add_bool(true);
-                hash::hash_procedural(builder, *layer.source.procedural);
-            } else {
-                builder.add_bool(false);
-            }
+            std::visit([&](auto&& s) {
+                using T = std::decay_t<decltype(s)>;
+                if constexpr (std::is_same_v<T, MediaSource>) {
+                    builder.add_bool(true);
+                    builder.add_u32(1); // Media
+                    builder.add_string(s.asset_path);
+                } else if constexpr (std::is_same_v<T, PrecompSource>) {
+                    builder.add_bool(true);
+                    builder.add_u32(2); // Precomp
+                    builder.add_string(s.precomp_id);
+                } else if constexpr (std::is_same_v<T, ProceduralSource>) {
+                    builder.add_bool(true);
+                    builder.add_u32(3); // Procedural
+                    hash::hash_procedural(builder, s.spec);
+                } else {
+                    builder.add_bool(false);
+                }
+            }, layer.source);
 
             if (layer.vector.shape_spec.has_value()) {
                 builder.add_bool(true);

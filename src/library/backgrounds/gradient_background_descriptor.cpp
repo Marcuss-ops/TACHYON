@@ -30,7 +30,7 @@ BackgroundDescriptor make_gradient_background_descriptor() {
         proc.color_a.keyframes = {{0.0, params.get_or<ColorSpec>("color_start", ColorSpec(0, 0, 0))}};
         proc.color_b.keyframes = {{0.0, params.get_or<ColorSpec>("color_end", ColorSpec(255, 255, 255))}};
         proc.angle.keyframes = {{0.0, params.get_or<double>("angle", 0.0)}};
-        spec.source.procedural = proc;
+        spec.source = ProceduralSource{proc.kind, proc};
         
         return spec;
     };

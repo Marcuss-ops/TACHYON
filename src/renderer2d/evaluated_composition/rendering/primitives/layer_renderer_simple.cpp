@@ -148,7 +148,7 @@ std::string make_precomp_cache_key(
     key += ':';
     key += layer.identity.id;
     key += ':';
-    key += layer.source.precomp_id.value_or("");
+    key += layer.source.precomp_id().value_or("");
     key += ":f";
     key += std::to_string(task.frame_number);
     key += ":k";

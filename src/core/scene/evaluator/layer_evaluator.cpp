@@ -103,7 +103,15 @@ EvaluatedLayerState make_layer_state(
     state.transform.local_transform.anchor_point = anchor;
     
     state.transform.world_matrix = state.transform.local_transform.to_matrix();
-    state.transform.blend_mode = spec.blend_mode == BlendMode::Normal ? "normal" : "additive";
+    
+    switch (spec.blend_mode) {
+        case BlendMode::Normal: state.transform.blend_mode = "normal"; break;
+        case BlendMode::Additive: state.transform.blend_mode = "additive"; break;
+        case BlendMode::Multiply: state.transform.blend_mode = "multiply"; break;
+        case BlendMode::Screen:   state.transform.blend_mode = "screen"; break;
+        case BlendMode::Overlay:  state.transform.blend_mode = "overlay"; break;
+        default: state.transform.blend_mode = "normal"; break;
+    }
 
     // 3. Text
     state.text.content = resolve_template(spec.text.content, vars.strings, vars.numeric);
@@ -115,10 +123,9 @@ EvaluatedLayerState make_layer_state(
     state.text.box = spec.text.box;
     state.text.animators = spec.text_animators;
     state.text.highlights = spec.text_highlights;
-
+    
     // 4. Source
-    state.source.asset_path = spec.source.asset_path;
-    state.source.precomp_id = spec.source.precomp_id;
+    state.source.definition = spec.source;
     state.source.loop = spec.playback.loop;
 
     // 5. Effects

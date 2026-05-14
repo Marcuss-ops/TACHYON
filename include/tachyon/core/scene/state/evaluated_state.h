@@ -72,11 +72,24 @@ struct EvaluatedLayerState {
 
     // 4. Source & Media
     struct Source {
-        std::optional<std::string> asset_path;
-        std::optional<std::string> precomp_id;
+        LayerSource definition;
         double start_time{0.0};
         double duration{0.0};
         bool loop{false};
+
+        // Compatibility helpers
+        std::optional<std::string> asset_path() const {
+            if (const auto* m = std::get_if<MediaSource>(&definition)) return m->asset_path;
+            return std::nullopt;
+        }
+        std::optional<std::string> precomp_id() const {
+            if (const auto* p = std::get_if<PrecompSource>(&definition)) return p->precomp_id;
+            return std::nullopt;
+        }
+        const ProceduralSpec* procedural() const {
+            if (const auto* p = std::get_if<ProceduralSource>(&definition)) return &p->spec;
+            return nullptr;
+        }
     } source;
 
     // 5. Vector & Shape
@@ -107,9 +120,6 @@ struct EvaluatedLayerState {
         LayerTransitionSpec transition_in;
         LayerTransitionSpec transition_out;
     } playback;
-
-    // 9. Procedural
-    std::optional<ProceduralSpec> procedural;
 
     // Effects Pipeline
     std::vector<EvaluatedEffect> effects;

@@ -102,7 +102,9 @@ LayerSpec build_background(const BackgroundParams& p) {
             if (p.shape) bag.set("shape", *p.shape);
 
             LayerSpec result = desc->build(bag);
-            spec = result.source.procedural;
+            if (auto* proc = std::get_if<ProceduralSource>(&result.source)) {
+                spec = proc->spec;
+            }
         }
         
         if (!spec) {
@@ -113,14 +115,13 @@ LayerSpec build_background(const BackgroundParams& p) {
 
     if (spec) {
         apply_background_overrides(*spec, p);
-        layer.source.procedural = std::move(spec);
+        layer.source = ProceduralSource{ p.kind, std::move(*spec) };
         layer.identity.type = LayerType::Procedural;
     } else {
         layer.identity.type = LayerType::NullLayer;
         layer.identity.enabled = false;
+        layer.source = EmptySource{};
     }
-
-    layer.source.preset_id = p.kind;
     return layer;
 }
 

@@ -66,19 +66,16 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene_sp
             
             if (composition.background->type == BackgroundType::Color) {
                 bg_layer.type_id = compiled_type_id_from_layer_type(LayerType::Solid);
-                bg_layer.text.fill_color = composition.background->get_color().value_or(ColorSpec{0,0,0,255});
+                bg_layer.text.fill_color = composition.background->get_color().value_or(ColorSpec{255,255,255,255});
             } else if (composition.background->type == BackgroundType::Asset) {
                 bg_layer.type_id = compiled_type_id_from_layer_type(LayerType::Image);
                 bg_layer.name = composition.background->value;
                 bg_layer.asset_path = composition.background->value;
-            } else if (composition.background->type == BackgroundType::Preset) {
+            } else if (composition.background->type == BackgroundType::Preset || composition.background->type == BackgroundType::Component) {
                 bg_layer.type_id = compiled_type_id_from_layer_type(LayerType::Procedural);
                 bg_layer.name = composition.background->value;
                 bg_layer.procedural.emplace();
                 bg_layer.procedural->kind = composition.background->value;
-            } else if (composition.background->type == BackgroundType::Component) {
-                bg_layer.type_id = compiled_type_id_from_layer_type(LayerType::Precomp);
-                bg_layer.name = composition.background->value;
             } else {
                 bg_layer.type_id = compiled_type_id_from_layer_type(LayerType::Solid);
                 bg_layer.text.fill_color = ColorSpec{0,0,0,255};
@@ -97,7 +94,16 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene_sp
             CompiledLayer compiled_layer;
             compiled_layer.node = registry.create_node(CompiledNodeType::Layer);
             compiled_layer.name = layer.identity.name;
-            compiled_layer.asset_path = layer.source.asset_path;
+            
+            // Resolve Source via variant
+            std::visit([&](auto&& source) {
+                using T = std::decay_t<decltype(source)>;
+                if constexpr (std::is_same_v<T, MediaSource>) {
+                    compiled_layer.asset_path = source.asset_path;
+                } else if constexpr (std::is_same_v<T, ProceduralSource>) {
+                    compiled_layer.procedural = source.spec;
+                }
+            }, layer.source);
             compiled.graph.add_node(compiled_layer.node.node_id);
             
             // Resolve Type using robust LayerType enum (Canonical Source of Truth)
@@ -117,7 +123,6 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene_sp
             
             compiled_layer.vector.shape_path = layer.vector.shape_path;
             compiled_layer.effects = layer.effects;
-            compiled_layer.procedural = layer.source.procedural;
             
             compiled_layer.masks.feather = static_cast<float>(layer.masks.feather.value.has_value() ? *layer.masks.feather.value : 0.0);
             compiled_layer.subtitles.path = layer.subtitles.path;
@@ -268,8 +273,8 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene_sp
                 }
             }
 
-            if (layer_spec.source.precomp_id.has_value()) {
-                auto it = registry.composition_id_map.find(*layer_spec.source.precomp_id);
+            if (const auto* precomp = std::get_if<PrecompSource>(&layer_spec.source)) {
+                auto it = registry.composition_id_map.find(precomp->precomp_id);
                 if (it != registry.composition_id_map.end()) {
                     layer.precomp_index = it->second;
                     compiled.graph.add_edge(compiled.compositions[it->second].node.node_id, layer.node.node_id, true);

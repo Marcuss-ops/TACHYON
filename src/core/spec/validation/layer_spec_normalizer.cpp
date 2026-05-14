@@ -16,9 +16,16 @@ NormalizedLayerView normalize_layer_view(const ::tachyon::LayerSpec& layer) {
     NormalizedLayerView view;
     view.source = &layer;
     view.type = layer.identity.type;
-    view.asset_reference = layer.source.asset_id;
-    view.preset_reference = layer.source.preset_id;
-    view.precomp_reference = layer.source.precomp_id.has_value() ? std::string_view(*layer.source.precomp_id) : std::string_view{};
+    std::visit([&](auto&& s) {
+        using T = std::decay_t<decltype(s)>;
+        if constexpr (std::is_same_v<T, MediaSource>) {
+            view.asset_reference = s.asset_path;
+        } else if constexpr (std::is_same_v<T, ProceduralSource>) {
+            view.preset_reference = s.kind;
+        } else if constexpr (std::is_same_v<T, PrecompSource>) {
+            view.precomp_reference = s.precomp_id;
+        }
+    }, layer.source);
     
     return view;
 }

@@ -20,9 +20,10 @@ void SceneNormalizer::normalize(SceneSpec& scene) {
                 if (color) {
                     bg_layer.text.fill_color = *color;
                 }
+                bg_layer.source = EmptySource{};
             } else {
                 bg_layer.identity.type = LayerType::Image;
-                bg_layer.source.asset_path = comp.background->value;
+                bg_layer.source = MediaSource{ comp.background->value };
             }
 
             bg_layer.transform.width = comp.width;
@@ -35,7 +36,8 @@ void SceneNormalizer::normalize(SceneSpec& scene) {
         }
 
         for (auto& layer : comp.layers) {
-            // ... existing layer normalization ...
+            // Validation is now implicit via std::variant structure.
+            // We just ensure it's not EmptySource for critical layers if needed.
         }
     }
 }

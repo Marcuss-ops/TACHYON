@@ -32,7 +32,7 @@ BackgroundDescriptor make_radial_gradient_background_descriptor() {
         proc.color_b.keyframes = {{0.0, params.get_or<ColorSpec>("color_end", ColorSpec(255, 255, 255))}};
         proc.focal_x = params.get_or<double>("center_x", 0.5);
         proc.focal_y = params.get_or<double>("center_y", 0.5);
-        spec.source.procedural = proc;
+        spec.source = ProceduralSource{proc.kind, proc};
         
         return spec;
     };

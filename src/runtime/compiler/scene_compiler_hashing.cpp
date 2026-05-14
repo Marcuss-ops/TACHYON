@@ -52,13 +52,16 @@ std::uint64_t hash_scene_spec(const SceneSpec& scene, const DeterminismContract&
             hash_transition_internal(builder, layer.transition_in);
             hash_transition_internal(builder, layer.transition_out);
             
-            if (layer.identity.type == LayerType::Image || layer.identity.type == LayerType::Video) {
-                builder.add_string(layer.source.asset_path);
-            } else if (layer.identity.type == LayerType::Precomp) {
-                if (layer.source.precomp_id.has_value()) {
-                    builder.add_string(*layer.source.precomp_id);
+            std::visit([&](auto&& source) {
+                using T = std::decay_t<decltype(source)>;
+                if constexpr (std::is_same_v<T, MediaSource>) {
+                    builder.add_string(source.asset_path);
+                } else if constexpr (std::is_same_v<T, PrecompSource>) {
+                    builder.add_string(source.precomp_id);
+                } else if constexpr (std::is_same_v<T, ProceduralSource>) {
+                    builder.add_string(source.kind);
                 }
-            }
+            }, layer.source);
             
             builder.add_u32(static_cast<std::uint32_t>(layer.effects.size()));
             for (const auto& effect : layer.effects) {

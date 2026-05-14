@@ -101,14 +101,18 @@ void SceneValidator::check_cycles(const NormalizedSceneView& scene, ValidationRe
         }
         for (const auto& layer : comp.layers) {
             const auto* source_layer = layer.source;
-            if (source_layer != nullptr && layer.type == LayerType::Precomp && source_layer->source.precomp_id.has_value() && !source_layer->source.precomp_id->empty()) {
-                const std::string& src = source_comp->id;
-                const std::string& tgt = *source_layer->source.precomp_id;
-                if (comp_ids.count(src) && comp_ids.count(tgt)) {
-                    precomp_adj[src].push_back(tgt);
-                    precomp_in_degree[tgt]++;
-                    if (precomp_in_degree.find(src) == precomp_in_degree.end()) {
-                        precomp_in_degree[src] = 0;
+            if (source_layer != nullptr && layer.type == LayerType::Precomp) {
+                if (auto* precomp = std::get_if<PrecompSource>(&source_layer->source)) {
+                    if (!precomp->precomp_id.empty()) {
+                        const std::string& src = source_comp->id;
+                        const std::string& tgt = precomp->precomp_id;
+                        if (comp_ids.count(src) && comp_ids.count(tgt)) {
+                            precomp_adj[src].push_back(tgt);
+                            precomp_in_degree[tgt]++;
+                            if (precomp_in_degree.find(src) == precomp_in_degree.end()) {
+                                precomp_in_degree[src] = 0;
+                            }
+                        }
                     }
                 }
             }

@@ -334,7 +334,6 @@ std::vector<std::uint8_t> TBFCodec::encode(const CompiledScene& scene) {
         for (const auto& layer : comp.layers) {
             writer.write_node(layer.node);
             writer.write_string(layer.name);
-            writer.write_string(layer.asset_path);
             writer.write_u32(layer.type_id);
             writer.write_u32(layer.width);
             writer.write_u32(layer.height);
@@ -353,11 +352,17 @@ std::vector<std::uint8_t> TBFCodec::encode(const CompiledScene& scene) {
             writer.write_f64(layer.out_time);
             writer.write_f64(layer.start_time);
 
-            // Version 5 additions
-            writer.write_bool(layer.parent_index.has_value());
-            if (layer.parent_index) writer.write_u32(*layer.parent_index);
+            // Source Serialization
+            writer.write_string(layer.asset_path);
             writer.write_bool(layer.precomp_index.has_value());
             if (layer.precomp_index) writer.write_u32(*layer.precomp_index);
+            writer.write_bool(layer.procedural.has_value());
+            if (layer.procedural) {
+                writer.write_string(layer.procedural->kind);
+            }
+
+            writer.write_bool(layer.parent_index.has_value());
+            if (layer.parent_index) writer.write_u32(*layer.parent_index);
 
             // Version 5: Unified Effects
             writer.write_u32(static_cast<std::uint32_t>(std::min<std::size_t>(layer.effects.size(), kMaxVectorItems)));
@@ -525,7 +530,6 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
             layer.node = reader.read_node();
             scene.graph.add_node(layer.node.node_id);
             layer.name = reader.read_string();
-            layer.asset_path = reader.read_string();
             layer.type_id = reader.read_u32();
             layer.width = reader.read_u32();
             layer.height = reader.read_u32();
@@ -545,8 +549,15 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
             layer.start_time = reader.read_f64();
 
             if (reader.file_version >= 5) {
-                if (reader.read_bool()) layer.parent_index = reader.read_u32();
+                layer.asset_path = reader.read_string();
                 if (reader.read_bool()) layer.precomp_index = reader.read_u32();
+                if (reader.read_bool()) {
+                    ProceduralSpec ps;
+                    ps.kind = reader.read_string();
+                    layer.procedural = std::move(ps);
+                }
+
+                if (reader.read_bool()) layer.parent_index = reader.read_u32();
 
                 std::uint32_t effect_count = reader.read_u32();
                 if (effect_count > kMaxVectorItems) { reader.error = true; return std::nullopt; }

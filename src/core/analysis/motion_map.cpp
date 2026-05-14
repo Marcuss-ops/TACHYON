@@ -47,10 +47,7 @@ MotionMapReport build_motion_map(const SceneSpec& scene, const MotionMapOptions&
                 append_unique(layer_summary.animations, "transition_out:" + layer.transition_out.transition_id);
             }
 
-            // Check presets
-            if (!layer.animation_in_preset.empty()) append_unique(layer_summary.animations, "preset_in:" + layer.animation_in_preset);
-            if (!layer.animation_during_preset.empty()) append_unique(layer_summary.animations, "preset_during:" + layer.animation_during_preset);
-            if (!layer.animation_out_preset.empty()) append_unique(layer_summary.animations, "preset_out:" + layer.animation_out_preset);
+
 
             // Check animated properties
             if (!layer.transform.opacity_property.keyframes.empty()) append_unique(layer_summary.animations, "opacity");

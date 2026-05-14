@@ -40,7 +40,7 @@ RectI layer_bounds(const scene::EvaluatedLayerState& layer, std::int64_t composi
         } else if (layer.type() == LayerType::Solid || layer.type() == LayerType::Shape || layer.type() == LayerType::Mask) {
             base_width = std::max(64, static_cast<int>(composition_width / 4));
             base_height = std::max(32, static_cast<int>(composition_height / 8));
-        } else if (layer.source.precomp_id.has_value() && layer.nested_composition) {
+        } else if (layer.source.precomp_id().has_value() && layer.nested_composition) {
             base_width = static_cast<int>(layer.nested_composition->width);
             base_height = static_cast<int>(layer.nested_composition->height);
         } else {

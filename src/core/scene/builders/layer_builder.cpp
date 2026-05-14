@@ -34,7 +34,7 @@ LayerBuilder& LayerBuilder::video(std::string path) {
 
 LayerBuilder& LayerBuilder::preset(std::string name) {
     type(LayerType::Procedural);
-    spec_.source.preset_id = std::move(name);
+    spec_.source = ProceduralSource{ name, {} };
     return *this;
 }
 
@@ -48,7 +48,7 @@ LayerBuilder& LayerBuilder::custom_layer(const LayerSpec& spec) {
 }
 
 LayerBuilder& LayerBuilder::asset_id(std::string id) {
-    spec_.source.asset_id = std::move(id);
+    spec_.source = MediaSource{ std::move(id) };
     return *this;
 }
 
@@ -134,7 +134,7 @@ LayerBuilder& LayerBuilder::null_layer() {
 
 LayerBuilder& LayerBuilder::precomp(std::string composition_id) {
     type(LayerType::Precomp);
-    spec_.source.precomp_id = std::move(composition_id);
+    spec_.source = PrecompSource{ std::move(composition_id) };
     return *this;
 }
 

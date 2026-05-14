@@ -16,16 +16,17 @@ std::vector<AssetReference> collect_asset_references(const SceneSpec& scene) {
         }
 
         for (const auto& layer : comp.layers) {
-            // Image layers
-            if (layer.identity.type == LayerType::Image) {
-                refs.push_back({layer.source.asset_id, layer.source.asset_id, AssetKind::Image, layer.identity.id});
+            // Source-based assets
+            if (auto* media = std::get_if<MediaSource>(&layer.source)) {
+                if (layer.identity.type == LayerType::Image) {
+                    refs.push_back({media->asset_path, media->asset_path, AssetKind::Image, layer.identity.id});
+                } else if (layer.identity.type == LayerType::Video) {
+                    refs.push_back({media->asset_path, media->asset_path, AssetKind::Video, layer.identity.id});
+                }
             }
-            // Video layers
-            else if (layer.identity.type == LayerType::Video) {
-                refs.push_back({layer.source.asset_id, layer.source.asset_id, AssetKind::Video, layer.identity.id});
-            }
+            
             // Text layers (fonts)
-            else if (layer.identity.type == LayerType::Text) {
+            if (layer.identity.type == LayerType::Text) {
                 if (!layer.text.font_id.empty()) {
                     refs.push_back({"", layer.text.font_id, AssetKind::Font, layer.identity.id});
                 }

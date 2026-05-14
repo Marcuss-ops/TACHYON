@@ -27,7 +27,7 @@ BackgroundDescriptor make_image_background_descriptor() {
         spec.transform.height = static_cast<int>(params.get_or<float>("height", 1080.0f));
         spec.playback.timing.duration = params.get_or<double>("duration", 10.0);
         
-        spec.source.asset_id = params.get_or<std::string>("path", params.get_or<std::string>("asset_path", ""));
+        spec.source = MediaSource{params.get_or<std::string>("path", params.get_or<std::string>("asset_path", ""))};
         
         return spec;
     };

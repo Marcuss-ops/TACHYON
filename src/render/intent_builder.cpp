@@ -24,8 +24,9 @@ RenderIntentBuildResult build_render_intent(
         bool layer_ok = true;
         
         // Resolve Texture / Image
-        if (layer.source.asset_path.has_value()) {
-            const std::string& asset_id = *layer.source.asset_path;
+        auto asset_path = layer.source.asset_path();
+        if (asset_path.has_value()) {
+            const std::string& asset_id = *asset_path;
             resources.texture_rgba = resource_provider->get_texture_rgba(asset_id);
 
             if (!resources.texture_rgba && !asset_id.empty()) {

@@ -4,42 +4,41 @@
 
 namespace tachyon::scene {
 
-void evaluate_precomp_layer(
-    const SceneSpec* scene,
-    const EvaluatedLayerState& base_layer,
+void attach_nested_precomp(
     EvaluationContext& context,
-    EvaluatedLayerState& output_layer) {
+    EvaluatedLayerState& layer_state) {
     
-    if (!output_layer.source.precomp_id.has_value() || output_layer.source.precomp_id->empty() || !scene) {
+    const auto* precomp = std::get_if<PrecompSource>(&context.composition.layers[context.current_layer_index].source);
+    if (!precomp || precomp->precomp_id.empty() || !context.scene) {
         return;
     }
 
     bool circular = false;
     for (const auto& id : context.composition_stack) {
-        if (id == *output_layer.source.precomp_id) {
+        if (id == precomp->precomp_id) {
             circular = true;
             break;
         }
     }
 
     if (!circular) {
-        for (const auto& comp : scene->compositions) {
-            if (comp.id == *output_layer.source.precomp_id) {
+        for (const auto& comp : context.scene->compositions) {
+            if (comp.id == precomp->precomp_id) {
                 std::vector<std::string> next_stack = context.composition_stack;
                 next_stack.push_back(context.composition.id);
                 
                 const std::int64_t child_frame_number = static_cast<std::int64_t>(std::llround(
-                    output_layer.playback.local_time_seconds * 
+                    layer_state.playback.local_time_seconds * 
                     static_cast<double>(comp.frame_rate.numerator) / 
                     static_cast<double>(comp.frame_rate.denominator)
                 ));
 
-                output_layer.nested_composition = std::make_unique<EvaluatedCompositionState>(
+                layer_state.nested_composition = std::make_unique<EvaluatedCompositionState>(
                     evaluate_composition_internal(
-                        scene, 
+                        context.scene, 
                         comp, 
                         child_frame_number, 
-                        output_layer.playback.local_time_seconds, 
+                        layer_state.playback.local_time_seconds, 
                         std::move(next_stack), 
                         context.audio_analyzer, 
                         context.vars, 

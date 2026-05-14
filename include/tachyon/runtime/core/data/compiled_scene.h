@@ -101,7 +101,6 @@ struct CompiledPropertyTrack {
 struct CompiledLayer {
     CompiledNode node;
     std::string name;
-    std::string asset_path;
     std::uint32_t type_id{0}; // Resolved enum or index
     
     // Boundary data
@@ -143,6 +142,10 @@ struct CompiledLayer {
     std::vector<TextHighlightSpec> text_highlights;
     bool asset_offline{false};
     BlendMode blend_mode{BlendMode::Normal};
+    
+    // Resolved Source
+    std::string asset_path; // Only populated for Media layers
+    std::optional<std::uint32_t> precomp_index;
     std::optional<ProceduralSpec> procedural;
     double in_time{0.0};
     double out_time{10.0};
@@ -152,7 +155,6 @@ struct CompiledLayer {
     
     // Evaluation state indices
     std::optional<std::uint32_t> parent_index;
-    std::optional<std::uint32_t> precomp_index;
     std::vector<std::uint32_t> property_indices; // Indices into CompiledScene::property_tracks
     
     // Property indices mapping for convenience

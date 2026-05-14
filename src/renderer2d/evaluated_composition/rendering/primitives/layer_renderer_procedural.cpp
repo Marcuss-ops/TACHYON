@@ -478,10 +478,11 @@ void render_procedural_layer(
     double time_seconds,
     const std::optional<RectI>& target_rect) {
     
-    if (!evaluated.procedural.has_value()) return;
+    const auto* proc = evaluated.source.procedural();
+    if (!proc) return;
     uint32_t comp_w = static_cast<uint32_t>(evaluated.transform.width);
     uint32_t comp_h = static_cast<uint32_t>(evaluated.transform.height);
-    render_procedural_pattern(fb, *evaluated.procedural, time_seconds, target_rect, comp_w, comp_h);
+    render_procedural_pattern(fb, *proc, time_seconds, target_rect, comp_w, comp_h);
 }
 
 } // namespace tachyon::renderer2d

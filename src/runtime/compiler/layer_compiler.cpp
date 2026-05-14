@@ -24,18 +24,28 @@ CompiledLayer LayerCompiler::compile_layer(
             layer_path);
     }
 
-    // Asset resolution check for image/video layers
-    if (compiled_layer.type_id == 3) { // Image/Video
-        const bool found_in_assets = std::any_of(scene.assets.begin(), scene.assets.end(),
-            [&](const AssetSpec& a) { return a.id == layer.source.asset_path || a.id == layer.identity.name; });
-        if (!found_in_assets) {
-            compiled_layer.asset_offline = true;
-            diagnostics.add_warning("COMPILER_W004",
-                "Image layer '" + layer.identity.id + "' has no matching asset in scene.assets — will render as transparent.",
-                layer_path);
+    // Resolve Source via variant
+    std::visit([&](auto&& source) {
+        using T = std::decay_t<decltype(source)>;
+        if constexpr (std::is_same_v<T, MediaSource>) {
+            compiled_layer.asset_path = source.asset_path;
+            // Asset resolution check
+            const bool found_in_assets = std::any_of(scene.assets.begin(), scene.assets.end(),
+                [&](const AssetSpec& a) { return a.id == source.asset_path; });
+            if (!found_in_assets) {
+                compiled_layer.asset_offline = true;
+                diagnostics.add_warning("COMPILER_W004",
+                    "Image layer '" + layer.identity.id + "' has no matching asset in scene.assets: " + source.asset_path,
+                    layer_path);
+            }
+        } else if constexpr (std::is_same_v<T, PrecompSource>) {
+            // Precomp index will be resolved in SceneCompiler pass
+            // but we can store the ID temporarily or find it if available
+        } else if constexpr (std::is_same_v<T, ProceduralSource>) {
+            compiled_layer.procedural = source.spec;
         }
-    }
-    
+    }, layer.source);
+
     compiled_layer.width = static_cast<std::uint32_t>(layer.transform.width);
     compiled_layer.height = static_cast<std::uint32_t>(layer.transform.height);
     compiled_layer.text.content = layer.text.content;
@@ -56,7 +66,6 @@ CompiledLayer LayerCompiler::compile_layer(
     compiled_layer.subtitles.outline_color = layer.subtitles.outline_color;
     compiled_layer.subtitles.outline_width = static_cast<float>(layer.subtitles.outline_width);
     compiled_layer.subtitles.word_timestamp_path = layer.subtitles.word_timestamp_path;
-    compiled_layer.procedural = layer.source.procedural;
     
     switch (layer.vector.line_cap) {
         case spec::LineCap::Round: compiled_layer.vector.line_cap = renderer2d::LineCap::Round; break;

@@ -85,7 +85,7 @@ inline SceneSpec enhance(const EnhancedSceneParams& params) {
         LayerSpec layer;
         layer.identity.id = "main_content";
         layer.identity.type = LayerType::Image;
-        layer.source.asset_id = *params.main_asset_id;
+        layer.source = MediaSource{*params.main_asset_id};
         layer.transform.width = params.width;
         layer.transform.height = params.height;
         comp.layers.push_back(std::move(layer));

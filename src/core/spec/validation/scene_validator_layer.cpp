@@ -110,21 +110,26 @@ void SceneValidator::validate_layer(const NormalizedLayerView& normalized, const
     }
 
     if (normalized.type == LayerType::Precomp) {
-        if (!layer->source.precomp_id.has_value() || layer->source.precomp_id->empty()) {
-            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".source.precomp_id", "Precomp layer requires a composition reference."});
-            out.error_count++;
-        } else {
-            bool found = false;
-            for (const auto& c : scene.compositions) {
-                if (c.id == *layer->source.precomp_id) {
-                    found = true;
-                    break;
+        if (auto* precomp = std::get_if<PrecompSource>(&layer->source)) {
+            if (precomp->precomp_id.empty()) {
+                out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".source.precomp_id", "Precomp layer requires a composition reference."});
+                out.error_count++;
+            } else {
+                bool found = false;
+                for (const auto& c : scene.compositions) {
+                    if (c.id == precomp->precomp_id) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".source.precomp_id", "References non-existent composition: " + precomp->precomp_id});
+                    out.error_count++;
                 }
             }
-            if (!found) {
-                out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".source.precomp_id", "References non-existent composition: " + *layer->source.precomp_id});
-                out.error_count++;
-            }
+        } else {
+            out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".source", "Precomp layer is missing PrecompSource data."});
+            out.error_count++;
         }
     }
 }

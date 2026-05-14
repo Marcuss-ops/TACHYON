@@ -68,21 +68,25 @@ InspectionReport inspect_scene(const SceneSpec& scene, const TransitionRegistry&
 
             // Asset checks
             if (layer.identity.type == LayerType::Image || layer.identity.type == LayerType::Video) {
-                if (layer.source.asset_id.empty()) {
-                    add_issue(report, InspectionSeverity::Error, "layer.missing_asset", layer_path, "Image/Video layer missing asset_id.");
-                } else {
-                    auto asset_it = std::find_if(scene.assets.begin(), scene.assets.end(), [&](const AssetSpec& a) {
-                        return a.id == layer.source.asset_id;
-                    });
-                    if (asset_it == scene.assets.end()) {
-                        add_issue(report, InspectionSeverity::Error, "layer.unresolved_asset", layer_path, "Asset '" + layer.source.asset_id + "' not found in scene assets.");
+                if (auto* media = std::get_if<MediaSource>(&layer.source)) {
+                    if (media->asset_path.empty()) {
+                        add_issue(report, InspectionSeverity::Error, "layer.missing_asset", layer_path, "Image/Video layer missing asset_path.");
+                    } else {
+                        auto asset_it = std::find_if(scene.assets.begin(), scene.assets.end(), [&](const AssetSpec& a) {
+                            return a.id == media->asset_path;
+                        });
+                        if (asset_it == scene.assets.end()) {
+                            add_issue(report, InspectionSeverity::Error, "layer.unresolved_asset", layer_path, "Asset '" + media->asset_path + "' not found in scene assets.");
+                        }
                     }
                 }
             } else if (layer.identity.type == LayerType::Precomp) {
-                if (!layer.source.precomp_id.has_value() || layer.source.precomp_id->empty()) {
-                    add_issue(report, InspectionSeverity::Error, "layer.missing_precomp", layer_path, "Precomp layer missing precomp_id.");
-                } else if (!comp_ids.count(*layer.source.precomp_id)) {
-                    add_issue(report, InspectionSeverity::Error, "layer.unresolved_precomp", layer_path, "Precomp composition '" + *layer.source.precomp_id + "' not found.");
+                if (auto* precomp = std::get_if<PrecompSource>(&layer.source)) {
+                    if (precomp->precomp_id.empty()) {
+                        add_issue(report, InspectionSeverity::Error, "layer.missing_precomp", layer_path, "Precomp layer missing precomp_id.");
+                    } else if (!comp_ids.count(precomp->precomp_id)) {
+                        add_issue(report, InspectionSeverity::Error, "layer.unresolved_precomp", layer_path, "Precomp composition '" + precomp->precomp_id + "' not found.");
+                    }
                 }
             }
 
@@ -107,17 +111,46 @@ InspectionReport inspect_scene(const SceneSpec& scene, const TransitionRegistry&
                     add_issue(report, InspectionSeverity::Error, "text.empty", layer_path, "Text layer has no content.");
                 }
             }
-
-            if (!layer.animation_in_preset.empty()) {
-                add_issue(report, InspectionSeverity::Warning, "layer.in_preset", layer_path, "Layer using legacy in_preset: " + layer.animation_in_preset);
-            }
-            if (!layer.animation_out_preset.empty()) {
-                add_issue(report, InspectionSeverity::Warning, "layer.out_preset", layer_path, "Layer using legacy out_preset: " + layer.animation_out_preset);
-            }
         }
     }
 
     return report;
+}
+
+void print_inspection_report_text(const InspectionReport& report, std::ostream& out) {
+    if (report.issues.empty()) {
+        out << "[OK] No issues found.\n";
+        return;
+    }
+
+    int errors = 0;
+    int warnings = 0;
+    for (const auto& issue : report.issues) {
+        if (issue.severity == InspectionSeverity::Error) errors++;
+        else if (issue.severity == InspectionSeverity::Warning) warnings++;
+
+        std::string sev_str = "INFO";
+        if (issue.severity == InspectionSeverity::Error) sev_str = "ERROR";
+        else if (issue.severity == InspectionSeverity::Warning) sev_str = "WARN";
+
+        out << "[" << sev_str << "] " << issue.code << " at " << issue.path << ": " << issue.message << "\n";
+    }
+
+    out << "\nSummary: " << errors << " errors, " << warnings << " warnings.\n";
+}
+
+void print_inspection_report_json(const InspectionReport& report, std::ostream& out) {
+    out << "{\n  \"schema_version\": \"" << report.schema_version << "\",\n  \"issues\": [\n";
+    for (size_t i = 0; i < report.issues.size(); ++i) {
+        const auto& issue = report.issues[i];
+        out << "    {\n";
+        out << "      \"severity\": " << static_cast<int>(issue.severity) << ",\n";
+        out << "      \"code\": \"" << issue.code << "\",\n";
+        out << "      \"path\": \"" << issue.path << "\",\n";
+        out << "      \"message\": \"" << issue.message << "\"\n";
+        out << "    }" << (i == report.issues.size() - 1 ? "" : ",") << "\n";
+    }
+    out << "  ]\n}\n";
 }
 
 } // namespace tachyon::analysis
