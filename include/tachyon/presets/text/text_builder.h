@@ -37,19 +37,19 @@ class TextBuilder {
     }
 public:
     explicit TextBuilder(std::string id, std::string content) {
-        spec_.id = std::move(id);
-        spec_.name = "Text Layer";
-        spec_.type = ::tachyon::LayerType::Text;
-        spec_.enabled = true;
-        spec_.visible = true;
+        spec_.identity.id = std::move(id);
+        spec_.identity.name = "Text Layer";
+        spec_.identity.type = ::tachyon::LayerType::Text;
+        spec_.identity.enabled = true;
+        spec_.identity.visible = true;
         spec_.text.content = std::move(content);
         spec_.text.fill_color = AnimatedColorSpec{ColorSpec{238, 242, 248, 255}};
         spec_.text.font_size = AnimatedScalarSpec{72.0};
-        spec_.width = 1920;
-        spec_.height = 200;
+        spec_.transform.width = 1920;
+        spec_.transform.height = 200;
         spec_.text.box.horizontal_align = HorizontalAlign::Center;
-        spec_.transform.position_x = 960.0;
-        spec_.transform.position_y = 540.0;
+        spec_.transform.transform.position_x = 960.0;
+        spec_.transform.transform.position_y = 540.0;
     }
 
     TextBuilder& font(std::string f) {
@@ -69,8 +69,8 @@ public:
     }
 
     TextBuilder& position(double x, double y) {
-        spec_.transform.position_x = x;
-        spec_.transform.position_y = y;
+        spec_.transform.transform.position_x = x;
+        spec_.transform.transform.position_y = y;
         anchor_.reset();
         return *this;
     }
@@ -100,13 +100,13 @@ public:
     }
 
     TextBuilder& width(int w) {
-        spec_.width = w;
+        spec_.transform.width = w;
         apply_anchor();
         return *this;
     }
 
     TextBuilder& height(int h) {
-        spec_.height = h;
+        spec_.transform.height = h;
         apply_anchor();
         return *this;
     }
@@ -117,18 +117,19 @@ public:
     }
 
     TextBuilder& start_time(double t) {
-        spec_.timing.start = t;
-        spec_.timing.source_in = t;
+        spec_.playback.timing.start = t;
+        spec_.playback.timing.source_in = t;
         return *this;
     }
 
     TextBuilder& duration(double d) {
-        spec_.timing.source_out = spec_.timing.source_in + d;
+        spec_.playback.timing.duration = d;
+        spec_.playback.timing.source_out = spec_.playback.timing.source_in + d;
         return *this;
     }
 
     TextBuilder& opacity(double o) {
-        spec_.opacity = o;
+        spec_.transform.opacity = o;
         return *this;
     }
 
