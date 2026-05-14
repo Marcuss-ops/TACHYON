@@ -32,11 +32,8 @@ struct LightLeakStyle {
         DualBeam,
         Prism,
         Blobs,
-        LavaFlow,
-        LiquidFission,
-        CosmicSwirl,
-        CinematicAmber,
-        ProceduralRemotion
+        ProceduralRemotion,
+        Remotion
     } shape;
 };
 
@@ -44,6 +41,8 @@ struct LightLeakStyle {
 
 // From light_leak_masks.cpp
 float evaluate_light_leak_mask(float u, float v, float t, const LightLeakStyle& style);
+void evaluate_remotion_color(float u, float v, float t, const LightLeakStyle& style,
+                              float& out_r, float& out_g, float& out_b);
 
 // From light_leak_engine.cpp
 Color apply_light_leak_style(

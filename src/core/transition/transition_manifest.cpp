@@ -48,13 +48,8 @@ const std::vector<TransitionDescriptor>& get_transition_manifest() {
         make_desc("iris", "Iris", "Circular iris opener (alias)", TransitionKind::Wipe, TransitionRuntimeKind::FusedKernel, true, false),
 
         // --- Artistic Transitions ---
-        make_desc(std::string(ids::transition::glitch_slice), "Glitch Slice", "Digital glitch slice transition", TransitionKind::Custom, TransitionRuntimeKind::CpuPixel, true, false),
-        make_desc(std::string(ids::transition::pixelate), "Pixelate", "Mosaic pixelation transition", TransitionKind::Custom, TransitionRuntimeKind::CpuPixel, true, false),
-        make_desc(std::string(ids::transition::rgb_split), "RGB Split", "Chromatic aberration split", TransitionKind::Custom, TransitionRuntimeKind::CpuPixel, true, false),
-        make_desc(std::string(ids::transition::kaleidoscope), "Kaleidoscope", "Radial mirror kaleidoscope", TransitionKind::Custom, TransitionRuntimeKind::CpuPixel, true, false),
         make_desc(std::string(ids::transition::ripple), "Ripple", "Water ripple distortion", TransitionKind::Custom, TransitionRuntimeKind::CpuPixel, true, false),
         make_desc(std::string(ids::transition::spin), "Spin", "Spinning rotation transition", TransitionKind::Custom, TransitionRuntimeKind::CpuPixel, true, false),
-        make_desc(std::string(ids::transition::luma_dissolve), "Luma Dissolve", "Luminance-based dissolve", TransitionKind::Dissolve, TransitionRuntimeKind::CpuPixel, true, false),
         make_desc(std::string(ids::transition::zoom_blur), "Zoom Blur", "Radial zoom blur expansion", TransitionKind::Zoom, TransitionRuntimeKind::CpuPixel, true, false),
         make_desc(std::string(ids::transition::zoom_in), "Zoom In", "Fast zoom in transition", TransitionKind::Zoom, TransitionRuntimeKind::CpuPixel, true, false),
         make_desc(std::string(ids::transition::directional_blur_wipe), "Blur Wipe", "Motion blur directional wipe", TransitionKind::Wipe, TransitionRuntimeKind::CpuPixel, true, false),
@@ -63,10 +58,8 @@ const std::vector<TransitionDescriptor>& get_transition_manifest() {
         // --- Light Leaks Pack ---
         make_desc(std::string(ids::transition::light_leak), "Classic Leak", "Wide amber cinematic leak", TransitionKind::Fade, TransitionRuntimeKind::CpuPixel, true, false),
         make_desc(std::string(ids::transition::light_leak_solar), "Solar Flare", "Bright golden solar flare", TransitionKind::Fade, TransitionRuntimeKind::CpuPixel, true, false),
-        make_desc(std::string(ids::transition::light_leak_nebula), "Blue Nebula", "Cosmic blue and purple leak", TransitionKind::Fade, TransitionRuntimeKind::CpuPixel, true, false),
         make_desc(std::string(ids::transition::light_leak_sunset), "Sunset Dual", "Warm dual-beam sunset leak", TransitionKind::Fade, TransitionRuntimeKind::CpuPixel, true, false),
         make_desc(std::string(ids::transition::light_leak_ghost), "Pale Ghost", "Ethereal pale white leak", TransitionKind::Fade, TransitionRuntimeKind::CpuPixel, true, false),
-        make_desc(std::string(ids::transition::film_burn), "Film Burn", "Classic fiery film burn", TransitionKind::Fade, TransitionRuntimeKind::CpuPixel, true, false),
 
         // --- Premium Light Leaks ---
         make_desc(std::string(ids::transition::lightleak_soft_warm_edge), "Soft Warm Edge", "Gentle warm edge leak", TransitionKind::Fade, TransitionRuntimeKind::CpuPixel, true, false),
@@ -79,11 +72,8 @@ const std::vector<TransitionDescriptor>& get_transition_manifest() {
         make_desc(std::string(ids::transition::lightleak_prism_shatter), "Prism Shatter", "Rainbow refractive prism", TransitionKind::Fade, TransitionRuntimeKind::CpuPixel, true, false),
         make_desc(std::string(ids::transition::lightleak_vintage_sepia), "Vintage Sepia", "Warm sepia memory leak", TransitionKind::Fade, TransitionRuntimeKind::CpuPixel, true, false),
         make_desc(std::string(ids::transition::lightleak_organic_blobs), "Organic Blobs", "Fluid Gaussian light blobs", TransitionKind::Fade, TransitionRuntimeKind::CpuPixel, true, false),
-        make_desc(std::string(ids::transition::lightleak_lava_flow), "Lava Flow", "Intense rising magma blobs", TransitionKind::Fade, TransitionRuntimeKind::CpuPixel, true, false),
-        make_desc(std::string(ids::transition::lightleak_liquid_fission), "Liquid Fission", "Gigantic colliding super-blobs", TransitionKind::Fade, TransitionRuntimeKind::CpuPixel, true, false),
-        make_desc(std::string(ids::transition::lightleak_cosmic_swirl), "Cosmic Swirl", "Ethereal spiraling galaxy blobs", TransitionKind::Fade, TransitionRuntimeKind::CpuPixel, true, false),
-        make_desc(std::string(ids::transition::lightleak_cinematic_amber), "Cinematic Amber", "Dynamically shifting warm amber fluid", TransitionKind::Fade, TransitionRuntimeKind::CpuPixel, true, false),
         make_desc(std::string(ids::transition::lightleak_procedural_remotion), "Procedural Remotion", "Cinematic procedural noise-driven light leak", TransitionKind::Fade, TransitionRuntimeKind::CpuPixel, true, false),
+        make_desc(std::string(ids::transition::lightleak_remotion), "Remotion", "Faithful reproduction of the soft organic Remotion light leak", TransitionKind::Fade, TransitionRuntimeKind::CpuPixel, true, false),
         
         // --- Modern Transitions (V2) ---
         make_desc(std::string(ids::transition::smooth_wipe), "Smooth Wipe", "Soft feathered wipe transition", TransitionKind::Wipe, TransitionRuntimeKind::CpuPixel, true, false),

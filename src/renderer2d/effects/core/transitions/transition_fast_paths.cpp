@@ -11,7 +11,7 @@ struct FastPathRegistryEntry {
     FastPathKernelFn kernel;
 };
 
-static constexpr std::array<FastPathRegistryEntry, 15> kFastPathRegistry = {{
+static constexpr std::array<FastPathRegistryEntry, 14> kFastPathRegistry = {{
     { "soft_zoom_blur", apply_soft_zoom_blur_fused_direct },
     { "crossfade", apply_crossfade_fused_direct },
     { "slide", apply_slide_fused_direct },
@@ -25,11 +25,10 @@ static constexpr std::array<FastPathRegistryEntry, 15> kFastPathRegistry = {{
     { "iris_circle", apply_circle_iris_fused_direct },
     { "iris", apply_circle_iris_fused_direct },
     { "flash_cut", apply_flash_cut_fused_direct },
-    { "flash", apply_flash_cut_fused_direct },
-    { "pixelate", apply_pixelate_fused_direct }
+    { "flash", apply_flash_cut_fused_direct }
 }};
 
-static_assert(kFastPathRegistry.size() == 15, "Update kFastPathRegistry size");
+static_assert(kFastPathRegistry.size() == 14, "Update kFastPathRegistry size");
 
 consteval bool has_fast_path_registry_duplicates() {
     for (size_t i = 0; i < kFastPathRegistry.size(); ++i) {

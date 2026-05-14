@@ -7,10 +7,10 @@ namespace tachyon::ids::transition {
 // Basic Light Leaks
 inline constexpr std::string_view light_leak = "tachyon.transition.light_leak";
 inline constexpr std::string_view light_leak_solar = "tachyon.transition.light_leak_solar";
-inline constexpr std::string_view light_leak_nebula = "tachyon.transition.light_leak_nebula";
+
 inline constexpr std::string_view light_leak_sunset = "tachyon.transition.light_leak_sunset";
 inline constexpr std::string_view light_leak_ghost = "tachyon.transition.light_leak_ghost";
-inline constexpr std::string_view film_burn = "tachyon.transition.film_burn";
+
 
 // Premium Light Leaks (Enhanced VFX)
 inline constexpr std::string_view lightleak_soft_warm_edge = "tachyon.transition.lightleak.soft_warm_edge";
@@ -25,10 +25,8 @@ inline constexpr std::string_view lightleak_vintage_sepia = "tachyon.transition.
 
 // Fluid dynamic light leak systems
 inline constexpr std::string_view lightleak_organic_blobs = "tachyon.transition.lightleak.organic_blobs";
-inline constexpr std::string_view lightleak_lava_flow = "tachyon.transition.lightleak.lava_flow";
-inline constexpr std::string_view lightleak_liquid_fission = "tachyon.transition.lightleak.liquid_fission";
-inline constexpr std::string_view lightleak_cosmic_swirl = "tachyon.transition.lightleak.cosmic_swirl";
-inline constexpr std::string_view lightleak_cinematic_amber = "tachyon.transition.lightleak.cinematic_amber";
+
 inline constexpr std::string_view lightleak_procedural_remotion = "tachyon.transition.lightleak.procedural_remotion";
+inline constexpr std::string_view lightleak_remotion = "tachyon.transition.lightleak.remotion";
 
 } // namespace tachyon::ids::transition

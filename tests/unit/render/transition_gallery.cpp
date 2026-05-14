@@ -1,3 +1,4 @@
+#include "render_test_utils.h"
 #include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"
 #include "tachyon/core/scene/evaluation/evaluator.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
@@ -7,10 +8,8 @@
 #include "tachyon/core/transition/transition_resolver.h"
 #include "tachyon/transition_registry.h"
 #include <iostream>
-#include <iomanip>
 #include <filesystem>
 #include <vector>
-#include <cstdio>
 
 namespace fs = std::filesystem;
 
@@ -20,10 +19,12 @@ TransitionRegistry create_default_transition_registry();
 
 namespace tachyon::renderer2d {
 
+using namespace tachyon::scene;
+
 void generate_transition_gallery() {
-    std::cout << "[GALLERY] Starting Full HD (1080p) Video Gallery Generation with Procedural Aura...\n";
+    std::cout << "[GALLERY] Starting Full HD (1080p) Video Gallery Generation with Robust Pipeline...\n";
     
-    fs::path base_output = "/home/pierone/Pyt/Tachyon/output";
+    fs::path base_output = fs::current_path() / "output" / "gallery";
     if (!fs::exists(base_output)) {
         fs::create_directories(base_output);
     }
@@ -31,24 +32,16 @@ void generate_transition_gallery() {
     TransitionRegistry trans_reg = tachyon::create_default_transition_registry();
     auto all_transitions = trans_reg.list_all();
 
-    EffectRegistry effect_reg;
-    render::RenderIntent intent;
-    RenderPlan plan;
-
     const int W = 1920;
     const int H = 1080;
     const int FPS = 30;
     const int DURATION_SEC = 2;
-    const int TOTAL_FRAMES = FPS * DURATION_SEC;
 
     for (const auto* desc : all_transitions) {
         if (!desc) continue;
         
-        std::cout << "[PROCESS] Rendering " << desc->id << "...\n";
+        std::cout << "\n[PROCESS] Rendering " << desc->id << "...\n";
         
-        fs::path trans_dir = base_output / (desc->id + "_frames");
-        fs::create_directories(trans_dir);
-
         SceneSpec scene;
         CompositionSpec comp;
         comp.id = "comp";
@@ -94,33 +87,20 @@ void generate_transition_gallery() {
         comp.layers.push_back(l2);
         scene.compositions.push_back(comp);
 
-        for (int i = 0; i < TOTAL_FRAMES; ++i) {
-            double t = (double)i / (double)FPS;
-            auto evaluated = scene::evaluate_scene_composition_state(scene, "comp", t);
-            
-            RenderContext context;
-            context.transition_registry = &trans_reg;
-            
-            FrameRenderTask task;
-            task.time_seconds = t;
-            task.frame_number = i;
-            
-            auto result = render_evaluated_composition_2d(*evaluated, intent, plan, task, context, effect_reg);
-            
-            char buf[128];
-            std::sprintf(buf, "frame_%03d.png", i);
-            fs::path frame_path = trans_dir / buf;
-            result.surface->save_png(frame_path);
-        }
-        
         fs::path video_path = base_output / (desc->id + ".mp4");
-        std::string cmd = "ffmpeg -y -i " + trans_dir.string() + "/frame_%03d.png -c:v libx264 -preset ultrafast -crf 15 -pix_fmt yuv420p " + video_path.string() + " > /dev/null 2>&1";
         
-        std::system(cmd.c_str());
-        fs::remove_all(trans_dir);
+        RobustRenderConfig config;
+        config.width = W;
+        config.height = H;
+        config.fps = FPS;
+        config.duration = (double)DURATION_SEC;
+        config.crf = 18;
+        config.preset = "medium";
+
+        render_scene_to_mp4(scene, "comp", video_path.string(), trans_reg, config);
     }
     
-    std::cout << "[GALLERY] Generation Complete.\n";
+    std::cout << "\n[GALLERY] Generation Complete.\n";
 }
 
 } // namespace tachyon::renderer2d

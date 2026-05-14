@@ -56,12 +56,9 @@ void TransitionPresetRegistry::load_builtins() {
     register_builtin(*this, "tachyon.transition.zoom_blur", "Zoom Blur", std::string(zoom_blur));
     register_builtin(*this, "tachyon.transition.spin", "Spin", std::string(spin));
     register_builtin(*this, "tachyon.transition.circle_iris", "Circle Iris", std::string(circle_iris));
-    register_builtin(*this, "tachyon.transition.pixelate", "Pixelate", std::string(pixelate));
-    register_builtin(*this, "tachyon.transition.glitch_slice", "Glitch Slice", std::string(glitch_slice));
-    register_builtin(*this, "tachyon.transition.rgb_split", "RGB Split", std::string(rgb_split));
-    register_builtin(*this, "tachyon.transition.luma_dissolve", "Luma Dissolve", std::string(luma_dissolve));
+
     register_builtin(*this, "tachyon.transition.directional_blur_wipe", "Directional Blur Wipe", std::string(directional_blur_wipe));
-    register_builtin(*this, "tachyon.transition.kaleidoscope", "Kaleidoscope", std::string(kaleidoscope));
+
     register_builtin(*this, "tachyon.transition.ripple", "Ripple", std::string(ripple));
 
     // Modern V2

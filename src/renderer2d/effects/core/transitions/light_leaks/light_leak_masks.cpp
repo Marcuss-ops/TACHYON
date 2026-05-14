@@ -91,98 +91,7 @@ float blobs_mask(float u, float v, float t, const LightLeakStyle& s) {
     return std::clamp(core + glow, 0.0f, 1.0f);
 }
 
-float lava_flow_mask(float u, float v, float t, const LightLeakStyle& s) {
-    float sum = 0.0f;
-    auto blob = [&](float cx, float cy, float rad) {
-        float dx = u - cx;
-        float dy = (v - cy) * 0.5625f;
-        sum += std::exp(-(dx * dx + dy * dy) / (rad * rad));
-    };
-    float progression = -0.25f + t * 1.5f; 
-    blob(0.20f + 0.06f * std::sin(t * 1.9f), 1.35f - progression * 1.6f, 0.17f);
-    blob(0.38f + 0.08f * std::cos(t * 2.1f), 1.50f - progression * 1.8f, 0.14f);
-    blob(0.50f + 0.03f * std::sin(t * 3.2f), 1.25f - progression * 1.5f, 0.21f);
-    blob(0.65f + 0.09f * std::sin(t * 2.6f), 1.60f - progression * 1.9f, 0.13f);
-    blob(0.82f + 0.05f * std::cos(t * 2.3f), 1.45f - progression * 1.7f, 0.18f);
-    if (t > 0.20f && t < 0.80f) {
-         float dist_from_center = std::abs(t - 0.5f);
-         float density_boost = 1.0f - (dist_from_center / 0.30f);
-         blob(0.5f, 0.5f, 0.24f * std::max(0.0f, density_boost));
-    }
-    float core = smoothstep01((sum - 0.36f) / 0.16f);
-    float glow = sum * 0.40f;
-    return std::clamp(core + glow, 0.0f, 1.0f);
-}
 
-float liquid_fission_mask(float u, float v, float t, const LightLeakStyle& s) {
-    float dist_mapped = std::abs(t - 0.5f) * 2.0f; 
-    float offset = std::pow(dist_mapped, 1.7f) * 1.3f; 
-    float interaction = 1.0f - dist_mapped;
-    interaction = std::clamp(interaction, 0.0f, 1.0f);
-    float base_rad = 0.14f;
-    float fusion_rad = base_rad + 0.25f * smoothstep01(interaction);
-    float sum = 0.0f;
-    auto blob = [&](float cx, float cy, float rad) {
-        float dx = u - cx;
-        float dy = (v - cy) * 0.5625f;
-        sum += std::exp(-(dx * dx + dy * dy) / (rad * rad));
-    };
-    blob(0.5f - offset, 0.5f, fusion_rad);
-    blob(0.5f + offset, 0.5f, fusion_rad);
-    float angle = std::atan2((v - 0.5f) * 0.5625f, u - 0.5f);
-    float turbulence = 0.03f * std::sin(angle * 5.0f + t * 6.0f) * smoothstep01(interaction);
-    float core = smoothstep01((sum - 0.33f + turbulence) / 0.18f);
-    float glow = sum * 0.50f;
-    return std::clamp(core + glow, 0.0f, 1.0f);
-}
-
-float cosmic_swirl_mask(float u, float v, float t, const LightLeakStyle& s) {
-    float sum = 0.0f;
-    auto blob = [&](float cx, float cy, float rad) {
-        float dx = u - cx;
-        float dy = (v - cy) * 0.5625f;
-        sum += std::exp(-(dx * dx + dy * dy) / (rad * rad));
-    };
-    float angle_base = t * 5.5f; 
-    float dist_mapped = std::abs(t - 0.5f) * 2.0f; 
-    for (int i = 0; i < 3; ++i) {
-        float phase = (i * 2.0944f) + angle_base;
-        float orbit_rad = 0.1f + 0.5f * std::pow(dist_mapped, 1.2f);
-        float cx = 0.5f + std::cos(phase) * orbit_rad;
-        float cy = 0.5f + std::sin(phase) * orbit_rad;
-        float local_rad = 0.11f + 0.18f * (1.0f - smoothstep01(dist_mapped));
-        blob(cx, cy, local_rad);
-    }
-    if (dist_mapped < 0.35f) {
-         float magnetism = 1.0f - (dist_mapped / 0.35f);
-         blob(0.5f, 0.5f, 0.28f * smoothstep01(magnetism));
-    }
-    float core = smoothstep01((sum - 0.40f) / 0.18f);
-    float glow = sum * 0.60f;
-    return std::clamp(core + glow, 0.0f, 1.0f);
-}
-
-float cinematic_amber_mask(float u, float v, float t, const LightLeakStyle& s) {
-    float sum = 0.0f;
-    auto blob = [&](float cx, float cy, float rad) {
-        float dx = u - cx;
-        float dy = (v - cy) * 0.5625f;
-        sum += std::exp(-(dx * dx + dy * dy) / (rad * rad));
-    };
-    
-    // Tuned radii applied from the earlier optimized fix
-    float slow_t = t * 0.75f;
-    blob(0.5f + 0.35f * std::cos(slow_t * 1.2f), 0.5f + 0.25f * std::sin(slow_t * 1.5f), 0.28f);
-    blob(0.3f + 0.25f * std::sin(slow_t * 1.4f), 0.7f - 0.35f * std::cos(slow_t * 1.1f), 0.24f);
-    blob(0.8f - 0.45f * std::cos(slow_t * 1.3f), 0.2f + 0.35f * std::sin(slow_t * 1.7f), 0.26f);
-    
-    float angle = std::atan2((v - 0.5f) * 0.5625f, u - 0.5f);
-    float flow = 0.025f * std::sin(angle * 3.0f + t * 2.2f);
-    
-    float core = smoothstep01((sum - 0.45f + flow) / 0.25f);
-    float glow = sum * 0.60f;
-    return std::clamp(core + glow, 0.0f, 1.0f);
-}
 
 // Fast procedural hash noise exactly matching the requested GLSL algorithm
 inline float noise_hash(float x, float y) {
@@ -211,7 +120,8 @@ float value_noise_2d(float x, float y) {
 
 float procedural_remotion_mask(float u, float v, float t, const LightLeakStyle& s) {
     // Reveal / Retract curve: peak exactly at the transition midpoint
-    float p = (t < 0.5f) ? (t * 2.0f) : ((1.0f - t) * 2.0f);
+    // Power of 1.3 provides a smoother, more cinematic start than 0.8 or 1.1
+    float p = (t < 0.5f) ? std::pow(t * 2.0f, 1.3f) : ((1.0f - t) * 2.0f);
     p = smoothstep01(p);
 
     // Replicate the exact 3-octave composite noise with directional drifts
@@ -231,12 +141,78 @@ float procedural_remotion_mask(float u, float v, float t, const LightLeakStyle& 
     float dist = std::sqrt(dx * dx + dy * dy);
 
     // Remotion edge logic: light enters and blooms from edges
-    // Remap dist into [0..1] approximate and smoothstep
-    float edge_factor = std::clamp((dist - 0.2f) / 0.6f, 0.0f, 1.0f);
+    // Reduced dead-zone (0.05f) to ensure light hits the center earlier
+    float edge_factor = std::clamp((dist - 0.05f) / 0.6f, 0.0f, 1.0f);
     float vignette = edge_factor * edge_factor * (3.0f - 2.0f * edge_factor);
 
     // High concentration multiplication + apply envelope
     return leak * vignette * p * 2.0f; // 2.0x boost for intensity alignment
+}
+
+// Exact Remotion shader pattern: first-half reveal, second-half retract.
+static void remotion_pattern(float u, float v, float seed, float t,
+                             float& out_brightness, float& out_blend, float& out_pattern) {
+    float x = u * 0.8f;
+    float y = v * 0.8f;
+    x += std::sin(seed * 1.61803f) * 5.0f;
+    y += std::cos(seed * 2.71828f) * 5.0f;
+
+    for (int i = 1; i < 5; ++i) {
+        float fi = static_cast<float>(i);
+        float phase = seed * 0.7f * fi;
+        float nx = x + (0.6f / fi) * std::cos(fi * y + t * 0.7f + 0.3f * fi + phase) + 20.0f;
+        float ny = y + (0.6f / fi) * std::cos(fi * x + t * 0.7f + 0.3f * static_cast<float>(i + 10) + phase) - 20.0f + 15.0f;
+        x = nx;
+        y = ny;
+    }
+
+    float v1 = 0.5f * std::sin(2.0f * x) + 0.5f;
+    float v2 = 0.5f * std::sin(2.0f * y) + 0.5f;
+    out_blend = std::sin(x + y) * 0.5f + 0.5f;
+    out_brightness = v1 * 0.5f + v2 * 0.5f;
+    out_pattern = out_brightness * 0.6f + out_blend * 0.4f;
+}
+
+float remotion_mask(float u, float v, float t, const LightLeakStyle& s) {
+    float aspect = 0.5625f;
+    float refScale = 1.92f;
+    float motion_scale = std::max(0.1f, s.speed);
+
+    float speed_factor = 1.5f * motion_scale; 
+    // Use a power curve for the reveal to make it less "direct"
+    float evolve_progress = std::clamp(t * speed_factor, 0.0f, 1.0f);
+    float evolve = std::pow(evolve_progress, 1.4f);
+    evolve = smoothstep01(evolve);
+
+    float retract = smoothstep01(std::clamp(t * speed_factor - 1.2f, 0.0f, 1.0f));
+
+    float su = u * refScale;
+    float sv = v * refScale * aspect;
+
+    float b1, bl1, pv1;
+    remotion_pattern(su, sv, s.direction, evolve * 3.14159265f * motion_scale, b1, bl1, pv1);
+
+    float threshA = 1.0f - evolve;
+    float revealAlpha = std::clamp((pv1 - threshA) / 0.3f, 0.0f, 1.0f);
+    revealAlpha = revealAlpha * revealAlpha * (3.0f - 2.0f * revealAlpha);
+
+    float maxU = refScale;
+    float maxV = refScale * aspect;
+    float ru = maxU - su;
+    float rv = maxV - sv;
+
+    float b2, bl2, pv2;
+    remotion_pattern(ru, rv, s.direction + 42.0f, retract * 3.14159265f * motion_scale, b2, bl2, pv2);
+
+    float threshB = 1.0f - retract;
+    float eraseAlpha = std::clamp((pv2 - threshB) / 0.3f, 0.0f, 1.0f);
+    eraseAlpha = eraseAlpha * eraseAlpha * (3.0f - 2.0f * eraseAlpha);
+
+    float mask = std::clamp(revealAlpha * (1.0f - eraseAlpha), 0.0f, 1.0f);
+    
+    // Balanced fade: visible at frame 5 (t=0.033 -> fade ~0.1) but gradual until frame 75
+    float global_fade = std::pow(std::clamp(t * 2.0f, 0.0f, 1.0f), 1.2f); 
+    return mask * global_fade;
 }
 
 } // namespace
@@ -251,13 +227,53 @@ float evaluate_light_leak_mask(float u, float v, float t, const LightLeakStyle& 
         case LightLeakStyle::Shape::DualBeam:       return dual_beam_mask(u, v, t, style);
         case LightLeakStyle::Shape::Prism:          return prism_mask(u, v, t, style);
         case LightLeakStyle::Shape::Blobs:          return blobs_mask(u, v, t, style);
-        case LightLeakStyle::Shape::LavaFlow:       return lava_flow_mask(u, v, t, style);
-        case LightLeakStyle::Shape::LiquidFission:  return liquid_fission_mask(u, v, t, style);
-        case LightLeakStyle::Shape::CosmicSwirl:    return cosmic_swirl_mask(u, v, t, style);
-        case LightLeakStyle::Shape::CinematicAmber: return cinematic_amber_mask(u, v, t, style);
         case LightLeakStyle::Shape::ProceduralRemotion: return procedural_remotion_mask(u, v, t, style);
+        case LightLeakStyle::Shape::Remotion:       return remotion_mask(u, v, t, style);
         default: return 0.0f;
     }
+}
+
+void evaluate_remotion_color(float u, float v, float t, const LightLeakStyle& style,
+                              float& out_r, float& out_g, float& out_b) {
+    float aspect = 0.5625f;
+    float refScale = 1.92f;
+    float motion_scale = std::max(0.1f, style.speed);
+    float evolve = std::min(1.0f, t * 2.4f * motion_scale);
+
+    float su = u * refScale;
+    float sv = v * refScale * aspect;
+
+    float brightness, blend, pattern;
+    remotion_pattern(su, sv, style.direction, evolve * 3.14159265f * motion_scale, brightness, blend, pattern);
+
+    float base_r = 1.0f;
+    float base_g = 0.93f + (0.62f - 0.93f) * blend;
+    float base_b = 0.12f + (0.03f - 0.12f) * blend;
+
+    float brightness_factor = 0.65f + 0.55f * brightness;
+    base_r *= brightness_factor;
+    base_g *= brightness_factor;
+    base_b *= brightness_factor;
+
+    float angle = style.angle * 3.14159265f / 180.0f;
+    float cosA = std::cos(angle);
+    float sinA = std::sin(angle);
+    float inv3 = 1.0f / 3.0f;
+    float sqrt3 = 0.57735f;
+
+    float m00 = cosA + (1.0f - cosA) * inv3;
+    float m01 = (1.0f - cosA) * inv3 - sinA * sqrt3;
+    float m02 = (1.0f - cosA) * inv3 + sinA * sqrt3;
+    float m10 = (1.0f - cosA) * inv3 + sinA * sqrt3;
+    float m11 = cosA + (1.0f - cosA) * inv3;
+    float m12 = (1.0f - cosA) * inv3 - sinA * sqrt3;
+    float m20 = (1.0f - cosA) * inv3 - sinA * sqrt3;
+    float m21 = (1.0f - cosA) * inv3 + sinA * sqrt3;
+    float m22 = cosA + (1.0f - cosA) * inv3;
+
+    out_r = std::clamp(m00 * base_r + m01 * base_g + m02 * base_b, 0.0f, 1.0f);
+    out_g = std::clamp(m10 * base_r + m11 * base_g + m12 * base_b, 0.0f, 1.0f);
+    out_b = std::clamp(m20 * base_r + m21 * base_g + m22 * base_b, 0.0f, 1.0f);
 }
 
 } // namespace tachyon::renderer2d

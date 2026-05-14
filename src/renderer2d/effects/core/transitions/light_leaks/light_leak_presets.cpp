@@ -49,24 +49,7 @@ inline constexpr LightLeakStyle kSolarFlare{
     .shape = LightLeakStyle::Shape::RadialCorner
 };
 
-inline constexpr LightLeakStyle kBlueNebula{
-    .id = "tachyon.transition.light_leak_nebula",
-    .name = "Blue Nebula",
-    .description = "Cosmic blue and purple leak",
-    .inner_color = {0.0f, 0.3f, 1.0f, 1.0f},
-    .mid_color = {0.6f, 0.2f, 1.0f, 1.0f},
-    .outer_color = {0.8f, 0.9f, 1.0f, 1.0f},
-    .angle = 0.0f,
-    .spread = 0.60f,
-    .softness = 2.5f,
-    .intensity = 2.2f,
-    .speed = 1.2f,
-    .offset = 0.2f,
-    .direction = -1.0f,
-    .grain = 0.02f,
-    .pulse = 0.05f,
-    .shape = LightLeakStyle::Shape::RadialCorner
-};
+
 
 inline constexpr LightLeakStyle kSunsetDual{
     .id = "tachyon.transition.light_leak_sunset",
@@ -106,24 +89,7 @@ inline constexpr LightLeakStyle kPaleGhost{
     .shape = LightLeakStyle::Shape::Sweep
 };
 
-inline constexpr LightLeakStyle kFilmBurn{
-    .id = "tachyon.transition.film_burn",
-    .name = "Film Burn",
-    .description = "Classic fiery film burn",
-    .inner_color = {1.0f, 0.2f, 0.0f, 1.0f},
-    .mid_color = {1.0f, 0.6f, 0.1f, 1.0f},
-    .outer_color = {1.0f, 0.9f, 0.2f, 1.0f},
-    .angle = -20.0f,
-    .spread = 0.20f,
-    .softness = 1.2f,
-    .intensity = 4.0f,
-    .speed = 2.5f,
-    .offset = 0.3f,
-    .direction = -1.0f,
-    .grain = 0.15f,
-    .pulse = 0.0f,
-    .shape = LightLeakStyle::Shape::Sweep
-};
+
 
 inline constexpr LightLeakStyle kSoftWarmEdge{
     .id = "tachyon.transition.lightleak.soft_warm_edge",
@@ -315,81 +281,7 @@ inline constexpr LightLeakStyle kOrganicBlobs{
     .shape = LightLeakStyle::Shape::Blobs
 };
 
-inline constexpr LightLeakStyle kLavaFlow{
-    .id = "tachyon.transition.lightleak.lava_flow",
-    .name = "Lava Flow",
-    .description = "Intense rising magma blobs",
-    .inner_color = {0.90f, 0.02f, 0.0f, 1.0f},
-    .mid_color = {1.0f, 0.40f, 0.05f, 1.0f},
-    .outer_color = {1.0f, 0.90f, 0.4f, 1.0f},
-    .angle = 0.0f,
-    .spread = 1.0f,
-    .softness = 1.0f,
-    .intensity = 5.2f,
-    .speed = 1.0f,
-    .offset = 0.0f,
-    .direction = 1.0f,
-    .grain = 0.05f,
-    .pulse = 0.15f,
-    .shape = LightLeakStyle::Shape::LavaFlow
-};
 
-inline constexpr LightLeakStyle kLiquidFission{
-    .id = "tachyon.transition.lightleak.liquid_fission",
-    .name = "Liquid Fission",
-    .description = "Gigantic colliding super-blobs",
-    .inner_color = {1.00f, 0.30f, 0.02f, 1.0f},
-    .mid_color = {1.0f, 0.70f, 0.05f, 1.0f},
-    .outer_color = {1.0f, 1.0f, 0.92f, 1.0f},
-    .angle = 0.0f,
-    .spread = 1.0f,
-    .softness = 1.0f,
-    .intensity = 6.5f,
-    .speed = 0.9f,
-    .offset = 0.0f,
-    .direction = 1.0f,
-    .grain = 0.08f,
-    .pulse = 0.0f,
-    .shape = LightLeakStyle::Shape::LiquidFission
-};
-
-inline constexpr LightLeakStyle kCosmicSwirl{
-    .id = "tachyon.transition.lightleak.cosmic_swirl",
-    .name = "Cosmic Swirl",
-    .description = "Ethereal spiraling galaxy blobs",
-    .inner_color = {0.15f, 0.02f, 0.85f, 1.0f},
-    .mid_color = {0.75f, 0.05f, 0.9f, 1.0f},
-    .outer_color = {0.5f, 0.85f, 1.0f, 1.0f},
-    .angle = 0.0f,
-    .spread = 1.0f,
-    .softness = 1.0f,
-    .intensity = 4.5f,
-    .speed = 1.1f,
-    .offset = 0.0f,
-    .direction = 1.0f,
-    .grain = 0.04f,
-    .pulse = 0.1f,
-    .shape = LightLeakStyle::Shape::CosmicSwirl
-};
-
-inline constexpr LightLeakStyle kCinematicAmber{
-    .id = "tachyon.transition.lightleak.cinematic_amber",
-    .name = "Cinematic Amber",
-    .description = "Dynamically shifting warm amber fluid",
-    .inner_color = {1.00f, 0.25f, 0.0f, 1.0f},
-    .mid_color = {1.0f, 0.45f, 0.02f, 1.0f},
-    .outer_color = {1.0f, 0.85f, 0.25f, 1.0f},
-    .angle = 0.0f,
-    .spread = 1.0f,
-    .softness = 1.0f,
-    .intensity = 6.0f,
-    .speed = 0.8f,
-    .offset = 0.0f,
-    .direction = 1.0f,
-    .grain = 0.04f,
-    .pulse = 0.0f,
-    .shape = LightLeakStyle::Shape::CinematicAmber
-};
 
 inline constexpr LightLeakStyle kProceduralRemotion{
     .id = "tachyon.transition.lightleak.procedural_remotion",
@@ -408,6 +300,25 @@ inline constexpr LightLeakStyle kProceduralRemotion{
     .grain = 0.0f,
     .pulse = 0.0f,
     .shape = LightLeakStyle::Shape::ProceduralRemotion
+};
+
+inline constexpr LightLeakStyle kRemotionLeak{
+    .id = "tachyon.transition.lightleak.remotion",
+    .name = "Remotion",
+    .description = "Faithful reproduction of the soft organic Remotion light leak",
+    .inner_color = {1.0f, 0.93f, 0.12f, 1.0f},
+    .mid_color = {1.0f, 0.62f, 0.03f, 1.0f},
+    .outer_color = {1.0f, 0.94f, 0.34f, 1.0f},
+    .angle = 0.0f,
+    .spread = 1.0f,
+    .softness = 1.0f,
+    .intensity = 1.0f,
+    .speed = 1.35f,
+    .offset = 0.0f,
+    .direction = 3.0f,
+    .grain = 0.0f,
+    .pulse = 0.0f,
+    .shape = LightLeakStyle::Shape::Remotion
 };
 
 // --- Unified Template Logic & Table Registry ---
@@ -429,13 +340,11 @@ struct LightLeakRegistryEntry {
 };
 
 // The single comprehensive registry powering dynamic resolution
-static constexpr std::array<LightLeakRegistryEntry, 21> kLightLeakRegistry = {{
+static constexpr std::array<LightLeakRegistryEntry, 16> kLightLeakRegistry = {{
     { ids::transition::light_leak,                  &transition_light_leak_template<kClassicLeak>, &transition_light_leak_direct_template<kClassicLeak> },
     { ids::transition::light_leak_solar,            &transition_light_leak_template<kSolarFlare>, &transition_light_leak_direct_template<kSolarFlare> },
-    { ids::transition::light_leak_nebula,           &transition_light_leak_template<kBlueNebula>, &transition_light_leak_direct_template<kBlueNebula> },
     { ids::transition::light_leak_sunset,           &transition_light_leak_template<kSunsetDual>, &transition_light_leak_direct_template<kSunsetDual> },
     { ids::transition::light_leak_ghost,            &transition_light_leak_template<kPaleGhost>, &transition_light_leak_direct_template<kPaleGhost> },
-    { ids::transition::film_burn,                   &transition_light_leak_template<kFilmBurn>, &transition_light_leak_direct_template<kFilmBurn> },
     { ids::transition::lightleak_soft_warm_edge,    &transition_light_leak_template<kSoftWarmEdge>, &transition_light_leak_direct_template<kSoftWarmEdge> },
     { ids::transition::lightleak_golden_sweep,      &transition_light_leak_template<kGoldenSweep>, &transition_light_leak_direct_template<kGoldenSweep> },
     { ids::transition::lightleak_creamy_white,      &transition_light_leak_template<kCreamyWhite>, &transition_light_leak_direct_template<kCreamyWhite> },
@@ -446,11 +355,8 @@ static constexpr std::array<LightLeakRegistryEntry, 21> kLightLeakRegistry = {{
     { ids::transition::lightleak_prism_shatter,     &transition_light_leak_template<kPrismShatter>, &transition_light_leak_direct_template<kPrismShatter> },
     { ids::transition::lightleak_vintage_sepia,     &transition_light_leak_template<kVintageSepia>, &transition_light_leak_direct_template<kVintageSepia> },
     { ids::transition::lightleak_organic_blobs,     &transition_light_leak_template<kOrganicBlobs>, &transition_light_leak_direct_template<kOrganicBlobs> },
-    { ids::transition::lightleak_lava_flow,         &transition_light_leak_template<kLavaFlow>, &transition_light_leak_direct_template<kLavaFlow> },
-    { ids::transition::lightleak_liquid_fission,    &transition_light_leak_template<kLiquidFission>, &transition_light_leak_direct_template<kLiquidFission> },
-    { ids::transition::lightleak_cosmic_swirl,      &transition_light_leak_template<kCosmicSwirl>, &transition_light_leak_direct_template<kCosmicSwirl> },
-    { ids::transition::lightleak_cinematic_amber,   &transition_light_leak_template<kCinematicAmber>, &transition_light_leak_direct_template<kCinematicAmber> },
-    { ids::transition::lightleak_procedural_remotion,&transition_light_leak_template<kProceduralRemotion>, &transition_light_leak_direct_template<kProceduralRemotion> }
+    { ids::transition::lightleak_procedural_remotion,&transition_light_leak_template<kProceduralRemotion>, &transition_light_leak_direct_template<kProceduralRemotion> },
+    { ids::transition::lightleak_remotion,          &transition_light_leak_template<kRemotionLeak>, &transition_light_leak_direct_template<kRemotionLeak> }
 }};
 
 // --- Compile-Time Static Safety Guarantees ---

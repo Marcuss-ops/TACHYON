@@ -83,35 +83,19 @@ Color apply_light_leak_style(
     leak = Color::lerp(leak, style.outer_color, mask * mask * mask);
 
     // --- DYNAMIC FLUID HUE SHIFT ENGINE ---
-    if (style.shape == LightLeakStyle::Shape::CinematicAmber) {
-        float modulation = 0.5f + 0.5f * std::sin(t * 2.0f + (u + v) * 1.2f);
-        leak.g = std::clamp(leak.g * (0.5f + 0.7f * modulation), 0.18f, 0.65f);
-        leak.b *= 0.05f; // Purge cold tones
-    }
 
-    // --- PROCEDURAL REMOTION HUE SHIFT ENGINE ---
-    if (style.shape == LightLeakStyle::Shape::ProceduralRemotion) {
-        float normalized_hue = std::fmod((40.0f + style.angle) / 360.0f, 1.0f);
-        if (normalized_hue < 0.0f) normalized_hue += 1.0f;
 
-        const float sat = 0.9f;
-        const float light = 0.6f;
+    if (style.shape == LightLeakStyle::Shape::Remotion) {
+        float remotion_alpha = evaluate_light_leak_mask(u, v, t, style);
+        float remotion_r, remotion_g, remotion_b;
+        evaluate_remotion_color(u, v, t, style, remotion_r, remotion_g, remotion_b);
 
-        auto hue_to_rgb_channel = [](float p, float q, float t) {
-            if (t < 0.0f) t += 1.0f;
-            if (t > 1.0f) t -= 1.0f;
-            if (t < 1.0f/6.0f) return p + (q - p) * 6.0f * t;
-            if (t < 1.0f/2.0f) return q;
-            if (t < 2.0f/3.0f) return p + (q - p) * (2.0f/3.0f - t) * 6.0f;
-            return p;
-        };
-
-        float var_q = (light < 0.5f) ? (light * (1.0f + sat)) : (light + sat - light * sat);
-        float var_p = 2.0f * light - var_q;
-
-        leak.r = hue_to_rgb_channel(var_p, var_q, normalized_hue + 1.0f/3.0f) * 1.8f;
-        leak.g = hue_to_rgb_channel(var_p, var_q, normalized_hue) * 1.8f;
-        leak.b = hue_to_rgb_channel(var_p, var_q, normalized_hue - 1.0f/3.0f) * 1.8f;
+        Color result;
+        result.r = std::clamp(base.r * (1.0f - remotion_alpha) + remotion_r * remotion_alpha, 0.0f, 1.0f);
+        result.g = std::clamp(base.g * (1.0f - remotion_alpha) + remotion_g * remotion_alpha, 0.0f, 1.0f);
+        result.b = std::clamp(base.b * (1.0f - remotion_alpha) + remotion_b * remotion_alpha, 0.0f, 1.0f);
+        result.a = base.a;
+        return result;
     }
 
     // --- ABSOLUTE SATURATION ENGINE ---

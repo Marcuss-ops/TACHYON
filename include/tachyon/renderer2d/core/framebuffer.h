@@ -67,6 +67,9 @@ public:
 
     bool save_png(const std::filesystem::path& path) const;
     bool save_png(const std::filesystem::path& path, TransferCurve transfer_curve) const;
+    
+    // Converts to packed 8-bit RGBA for streaming/piping
+    void to_rgba8(std::vector<uint8_t>& out, TransferCurve transfer_curve = TransferCurve::sRGB) const;
 
 
     uint32_t width() const { return m_width; }

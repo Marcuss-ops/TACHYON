@@ -254,6 +254,28 @@ bool SurfaceRGBA::save_png(const std::filesystem::path& path, TransferCurve tran
                           static_cast<int>(m_width * 4U)) != 0;
 }
 
+void SurfaceRGBA::to_rgba8(std::vector<uint8_t>& out, TransferCurve transfer_curve) const {
+    if (m_width == 0 || m_height == 0) {
+        out.clear();
+        return;
+    }
+
+    out.resize(m_pixels.size());
+    const auto to_u8 = [](float f) -> std::uint8_t {
+        return static_cast<std::uint8_t>(std::clamp(f * 255.0f, 0.0f, 255.0f));
+    };
+
+    for (std::size_t i = 0; i < m_pixels.size(); i += 4U) {
+        const auto convert = [&](float value) -> std::uint8_t {
+            return static_cast<std::uint8_t>(std::clamp(detail::linear_to_transfer_component(value, transfer_curve) * 255.0f, 0.0f, 255.0f));
+        };
+        out[i]     = convert(m_pixels[i]);
+        out[i + 1] = convert(m_pixels[i + 1]);
+        out[i + 2] = convert(m_pixels[i + 2]);
+        out[i + 3] = to_u8(m_pixels[i + 3]);
+    }
+}
+
 bool SurfaceRGBA::in_bounds(uint32_t x, uint32_t y) const {
     return x < m_width && y < m_height;
 }
