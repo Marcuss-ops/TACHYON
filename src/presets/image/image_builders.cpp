@@ -19,7 +19,7 @@ LayerSpec make_image_layer_base(const ImageParams& p) {
     l.transform.width       = static_cast<int>(p.w);
     l.transform.height      = static_cast<int>(p.h);
     l.transform.opacity     = static_cast<double>(p.opacity);
-    l.source = MediaSource{p.path};
+    l.source = MediaSource{ { p.path } };
     
     l.transform.transform.position_x = static_cast<double>(p.x);
     l.transform.transform.position_y = static_cast<double>(p.y);

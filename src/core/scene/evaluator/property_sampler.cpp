@@ -3,7 +3,7 @@
 #include "tachyon/core/animation/property_interpolation.h"
 #include "tachyon/core/animation/property_adapter.h"
 #include "tachyon/core/expressions/context_builder.h"
-#include "tachyon/audio/audio_analyzer.h"
+#include "tachyon/audio/audio_types.h"
 #include "tachyon/core/animation/easing.h"
 #include "tachyon/core/math/math_utils.h"
 #include <algorithm>
@@ -85,7 +85,7 @@ double sample_scalar(
     const AnimatedScalarSpec& property,
     double fallback,
     double local_time_seconds,
-    const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
+    const ::tachyon::audio::AudioBands& audio_bands,
     std::uint64_t expression_seed,
     const std::unordered_map<std::string, double>* job_variables,
     const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables,
@@ -99,7 +99,7 @@ double sample_scalar(
         input.seed = expression_seed;
         input.layer_index = layer_index;
         input.fallback_value = fallback;
-        input.audio_analyzer = audio_analyzer;
+        input.audio_bands = audio_bands;
         input.job_variables = job_variables;
         input.tables = tables;
         input.property_sampler = sampler;
@@ -116,8 +116,8 @@ double sample_scalar(
         }
     }
 
-    if (property.audio_band.has_value() && audio_analyzer) {
-        const ::tachyon::audio::AudioBands bands = audio_analyzer->analyze_frame(local_time_seconds);
+    if (property.audio_band.has_value()) {
+        const auto& bands = audio_bands;
         // Note: sample_audio_band is still in renderer2d/audio, but AudioBands is core.
         // We might want to move sample_audio_band too, but for now we keep it.
         // Actually, I'll just use the bands data directly to avoid the dependency if possible.
@@ -146,7 +146,7 @@ math::Vector2 sample_vector2(
     const AnimatedVector2Spec& property,
     const math::Vector2& fallback,
     double local_time_seconds,
-    const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
+    const ::tachyon::audio::AudioBands& audio_bands,
     std::uint64_t expression_seed,
     const std::unordered_map<std::string, double>* job_variables,
     const std::unordered_map<std::string, std::vector<std::vector<std::string>>>* tables) {
@@ -155,7 +155,7 @@ math::Vector2 sample_vector2(
         input.time = local_time_seconds;
         input.seed = expression_seed;
         input.fallback_value = 0.0; // Vector fallback logic is complex
-        input.audio_analyzer = audio_analyzer;
+        input.audio_bands = audio_bands;
         input.job_variables = job_variables;
         input.tables = tables;
         

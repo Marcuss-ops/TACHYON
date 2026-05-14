@@ -79,7 +79,7 @@ struct EvaluatedLayerState {
 
         // Compatibility helpers
         std::optional<std::string> asset_path() const {
-            if (const auto* m = std::get_if<MediaSource>(&definition)) return m->asset_path;
+            if (const auto* m = std::get_if<MediaSource>(&definition)) return m->asset.id;
             return std::nullopt;
         }
         std::optional<std::string> precomp_id() const {

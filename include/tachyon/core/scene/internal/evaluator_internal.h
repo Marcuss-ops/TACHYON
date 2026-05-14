@@ -1,9 +1,9 @@
 #pragma once
 
 #include "tachyon/core/scene/evaluation/evaluator.h"
-#include "tachyon/audio/audio_analyzer.h"
+#include "tachyon/core/audio/audio_interfaces.h"
+#include "tachyon/core/media/media_provider.h"
 #include "tachyon/text/content/subtitle.h"
-#include "tachyon/media/management/media_manager.h"
 
 #include <unordered_map>
 #include <vector>
@@ -24,10 +24,10 @@ struct EvaluationContext {
     std::vector<bool> visiting;
     std::size_t current_layer_index{0};
     std::vector<std::string> composition_stack;
-    const ::tachyon::audio::AudioAnalyzer* audio_analyzer{nullptr};
+    const ::tachyon::audio::IAudioAnalyzer* audio_analyzer{nullptr};
     EvaluationVariables vars;
     std::unordered_map<std::string, std::vector<::tachyon::text::SubtitleEntry>> subtitle_cache;
-    ::tachyon::media::MediaManager* media{nullptr};
+    ::tachyon::media::IMediaProvider* media{nullptr};
     PropertySampler sampler{nullptr};
     
     // Temporal context for selective motion blur

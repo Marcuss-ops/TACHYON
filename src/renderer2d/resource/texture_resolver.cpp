@@ -73,17 +73,17 @@ const ::tachyon::text::FontRegistry* get_default_font_registry() {
     return &default_registry;
 }
 
-media::AlphaMode TextureResolver::parse_alpha_mode(const std::optional<std::string>& mode) {
-    if (!mode.has_value()) return media::AlphaMode::Straight;
-    if (*mode == "premultiplied") return media::AlphaMode::Premultiplied;
-    if (*mode == "ignore") return media::AlphaMode::Ignore;
-    return media::AlphaMode::Straight;
+::tachyon::AlphaMode TextureResolver::parse_alpha_mode(const std::optional<std::string>& mode) {
+    if (!mode.has_value()) return ::tachyon::AlphaMode::Straight;
+    if (*mode == "premultiplied") return ::tachyon::AlphaMode::Premultiplied;
+    if (*mode == "ignore") return ::tachyon::AlphaMode::Ignore;
+    return ::tachyon::AlphaMode::Straight;
 }
 
 void TextureResolver::resolve_textures(
     DrawList2D& draw_list, 
     const SceneSpec& scene,
-    media::MediaManager& media_manager,
+    media::IMediaProvider& media_manager,
     double time_seconds) {
     (void)time_seconds;
 
@@ -107,7 +107,7 @@ void TextureResolver::resolve_textures(
                     if (layer.identity.id == layer_id) {
                         for (const auto& asset : scene.assets) {
                             if (asset.id == layer.identity.id || asset.id == layer.identity.name) {
-                                const media::AlphaMode mode = parse_alpha_mode(asset.alpha_mode);
+                                const ::tachyon::AlphaMode mode = parse_alpha_mode(asset.alpha_mode);
                                 tex_rect.texture.surface = media_manager.get_image(asset.path, mode);
                                 found = true;
                                 break;

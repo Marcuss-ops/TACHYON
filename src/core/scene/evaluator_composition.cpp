@@ -50,8 +50,7 @@ const EvaluatedLayerState& resolve_layer_state(
             context,
             layer,
             layer_index,
-            0.0,
-            context.vars);
+            0.0);
 
     resolve_layer_dependencies(layer_index, context, evaluated);
 
@@ -68,9 +67,9 @@ EvaluatedCompositionState evaluate_composition_internal(
     std::int64_t frame_number,
     double composition_time_seconds,
     std::vector<std::string> stack,
-    const ::tachyon::audio::AudioAnalyzer* audio_analyzer,
+    const ::tachyon::audio::IAudioAnalyzer* audio_analyzer,
     EvaluationVariables vars,
-    media::MediaManager* media,
+    media::IMediaProvider* media,
     std::optional<std::int64_t> main_frame_number,
     std::optional<double> main_frame_time_seconds) {
     

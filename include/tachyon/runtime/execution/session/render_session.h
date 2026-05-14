@@ -4,8 +4,7 @@
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include "tachyon/runtime/resource/render_context.h"
 #include "tachyon/renderer2d/resource/precomp_cache.h"
-#include "tachyon/media/streaming/media_prefetcher.h"
-#include "tachyon/media/playback_scheduler.h"
+#include "tachyon/core/media/media_interfaces.h"
 #include "tachyon/runtime/resource/surface_pool.h"
 #include "tachyon/runtime/execution/presentation_clock.h"
 #include "tachyon/runtime/execution/framebuffer_playback_queue.h"
@@ -29,6 +28,7 @@ namespace tachyon {
 namespace runtime { struct RuntimeRegistryBundle; }
 namespace presets { class TextRegistry; }
 namespace profiling { class RenderProfiler; }
+namespace audio { class IAudioExporter; }
     
 /**
  * @brief Progress callback for long-running render operations.
@@ -111,6 +111,10 @@ public:
     const FrameCache& cache() const { return m_cache; }
     std::shared_ptr<renderer2d::PrecompCache> precomp_cache() { return m_precomp_cache; }
     const std::shared_ptr<renderer2d::PrecompCache>& precomp_cache() const { return m_precomp_cache; }
+    
+    void set_media_prefetcher(std::unique_ptr<media::IMediaPrefetcher> prefetcher) { m_prefetcher = std::move(prefetcher); }
+    void set_playback_scheduler(std::unique_ptr<media::IPlaybackScheduler> scheduler) { m_scheduler = std::move(scheduler); }
+    void set_audio_exporter(audio::IAudioExporter* exporter) { m_audio_exporter = exporter; }
 
 private:
     bool preflight(
@@ -123,8 +127,8 @@ private:
     FrameCache m_cache;
     std::shared_ptr<renderer2d::PrecompCache> m_precomp_cache{std::make_shared<renderer2d::PrecompCache>()};
     std::shared_ptr<renderer2d::PrecompCache> m_text_surface_cache{std::make_shared<renderer2d::PrecompCache>()};
-    media::MediaPrefetcher m_prefetcher;
-    std::unique_ptr<media::PlaybackScheduler> m_scheduler;
+    std::unique_ptr<media::IMediaPrefetcher> m_prefetcher;
+    std::unique_ptr<media::IPlaybackScheduler> m_scheduler;
     
     std::shared_ptr<SurfacePool> m_surface_pool{std::make_shared<SurfacePool>()};
     std::unique_ptr<runtime::PresentationClock> m_clock;
@@ -137,6 +141,7 @@ private:
     const runtime::RuntimeRegistryBundle* m_bundle_ptr{nullptr};
     const TransitionRegistry* m_transition_registry_ptr{nullptr};
     const presets::TextRegistry* m_text_registry_ptr{nullptr};
+    audio::IAudioExporter* m_audio_exporter{nullptr};
 };
 
 } // namespace tachyon

@@ -47,7 +47,7 @@ void build_compositions(const SceneSpec& scene, CompiledScene& compiled, tachyon
             std::visit([&](auto&& source) {
                 using T = std::decay_t<decltype(source)>;
                 if constexpr (std::is_same_v<T, MediaSource>) {
-                    compiled_layer.asset_path = source.asset_path;
+                    compiled_layer.asset_path = source.asset.id;
                 } else if constexpr (std::is_same_v<T, ProceduralSource>) {
                     compiled_layer.procedural = source.spec;
                 }

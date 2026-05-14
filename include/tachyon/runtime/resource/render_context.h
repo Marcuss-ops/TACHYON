@@ -1,8 +1,5 @@
 #pragma once
 
-#ifdef TACHYON_ENABLE_MEDIA
-#include "tachyon/media/management/media_manager.h"
-#endif
 
 #include "tachyon/runtime/execution/planning/quality_policy.h"
 #include "tachyon/runtime/resource/surface_pool.h"
@@ -40,13 +37,14 @@ class TextRegistry;
 class TransitionRegistry;
 
 namespace profiling { class RenderProfiler; }
+namespace audio { class IAudioExporter; }
 
 namespace media { 
 #ifdef TACHYON_ENABLE_MEDIA
-class MediaManager; 
-class MediaPrefetcher; 
-class PlaybackScheduler; 
-class AssetResolver;
+class IMediaProvider;
+class IMediaPrefetcher; 
+class IPlaybackScheduler; 
+class IAssetResolver;
 #endif
 }
 namespace profiling { class RenderProfiler; }
@@ -68,10 +66,11 @@ struct RenderContext {
 
     // 3. Media & Audio
 #ifdef TACHYON_ENABLE_MEDIA
-    std::shared_ptr<media::MediaManager> media;
-    std::shared_ptr<media::AssetResolver> asset_resolver;
-    media::MediaPrefetcher* prefetcher{nullptr};
-    media::PlaybackScheduler* scheduler{nullptr};
+    std::shared_ptr<media::IMediaProvider> media;
+    std::shared_ptr<media::IAssetResolver> asset_resolver;
+    media::IMediaPrefetcher* prefetcher{nullptr};
+    media::IPlaybackScheduler* scheduler{nullptr};
+    audio::IAudioExporter* audio_exporter{nullptr};
 #endif
     const std::vector<text::SubtitleEntry>* subtitle_entries{nullptr};
 
@@ -104,7 +103,7 @@ struct RenderContext {
     explicit RenderContext(
         std::shared_ptr<renderer2d::PrecompCache> precomp_cache = nullptr
 #ifdef TACHYON_ENABLE_MEDIA
-        , std::shared_ptr<media::MediaManager> media_mgr = nullptr
+        , std::shared_ptr<media::IMediaProvider> media_mgr = nullptr
 #endif
     );
 };

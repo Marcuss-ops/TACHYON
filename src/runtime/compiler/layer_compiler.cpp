@@ -28,14 +28,14 @@ CompiledLayer LayerCompiler::compile_layer(
     std::visit([&](auto&& source) {
         using T = std::decay_t<decltype(source)>;
         if constexpr (std::is_same_v<T, MediaSource>) {
-            compiled_layer.asset_path = source.asset_path;
+            compiled_layer.asset_path = source.asset.id;
             // Asset resolution check
             const bool found_in_assets = std::any_of(scene.assets.begin(), scene.assets.end(),
-                [&](const AssetSpec& a) { return a.id == source.asset_path; });
+                [&](const AssetSpec& a) { return a.id == source.asset.id; });
             if (!found_in_assets) {
                 compiled_layer.asset_offline = true;
                 diagnostics.add_warning("COMPILER_W004",
-                    "Image layer '" + layer.identity.id + "' has no matching asset in scene.assets: " + source.asset_path,
+                    "Image layer '" + layer.identity.id + "' has no matching asset in scene.assets: " + source.asset.id,
                     layer_path);
             }
         } else if constexpr (std::is_same_v<T, PrecompSource>) {

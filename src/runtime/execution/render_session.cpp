@@ -11,11 +11,13 @@
 #include "tachyon/output/frame_output_sink.h"
 #include "tachyon/output/output_utils.h"
 #include "tachyon/output/output_planner.h"
-#include "tachyon/media/streaming/media_prefetcher.h"
-#include "tachyon/audio/audio_export.h"
+#include "tachyon/core/media/media_interfaces.h"
+#include "tachyon/core/media/media_provider.h"
+#include "tachyon/core/media/asset_resolver_interface.h"
+#include "tachyon/core/audio/audio_export_interface.h"
 #include "tachyon/runtime/execution/session/render_internal.h"
 #include "tachyon/runtime/profiling/render_profiler.h"
-#include "tachyon/media/management/asset_resolver.h"
+// Forward declarations or interfaces already included
 #include "tachyon/renderer2d/effects/core/transitions/basic_transitions.h"
 #include "tachyon/renderer2d/effects/core/transitions/artistic_transitions.h"
 #include "tachyon/renderer2d/effects/core/transitions/light_leak_transitions.h"
@@ -73,16 +75,7 @@ private:
     ProcessResourceSampler sampler_;
 };
 
-media::AssetResolver::Config build_asset_resolver_config(const RenderExecutionPlan& plan) {
-    media::AssetResolver::Config config;
-    if (!plan.render_plan.scene_ref.empty()) {
-        std::filesystem::path scene_path(plan.render_plan.scene_ref);
-        config.project_root = scene_path.has_parent_path()
-            ? scene_path.parent_path()
-            : std::filesystem::current_path();
-    }
-    return config;
-}
+// Removed concrete AssetResolver usage
 
 struct RenderSessionWorkspace {
     RenderExecutionPlan effective_plan;
@@ -90,7 +83,7 @@ struct RenderSessionWorkspace {
     ::tachyon::RenderContext context;
     std::unique_ptr<output::FrameOutputSink> sink;
     output::AudioExportPlan audio_plan;
-    media::MediaPrefetcher& prefetcher;
+    media::IMediaPrefetcher* prefetcher;
     std::vector<double> frame_times;
     std::vector<ExecutedFrame> rendered_frames;
 
@@ -99,11 +92,11 @@ struct RenderSessionWorkspace {
         std::shared_ptr<renderer2d::PrecompCache> text_surface_cache,
         const RenderExecutionPlan& execution_plan,
         const std::filesystem::path& output_path,
-        media::MediaPrefetcher& prefetcher_ref)
+        media::IMediaPrefetcher* prefetcher_ptr)
         : effective_plan(execution_plan),
           resolved_output_path(output_path_or_plan(output_path, execution_plan.render_plan)),
           context(std::move(precomp_cache)),
-          prefetcher(prefetcher_ref) {
+          prefetcher(prefetcher_ptr) {
         context.text_surface_cache = std::move(text_surface_cache);
     }
 };
@@ -114,22 +107,21 @@ void configure_render_context(
     std::shared_ptr<SurfacePool> surface_pool,
     const renderer2d::EffectRegistry& effect_registry,
     const TransitionRegistry& transition_registry,
-    const presets::TextRegistry* text_registry) {
+    const presets::TextRegistry* text_registry,
+    audio::IAudioExporter* audio_exporter) {
     workspace.context.policy = workspace.effective_plan.render_plan.quality_policy;
     workspace.context.font_registry = ::tachyon::renderer2d::get_default_font_registry();
 
-    const auto resolver_config = build_asset_resolver_config(workspace.effective_plan);
-    workspace.context.asset_resolver = std::make_shared<media::AssetResolver>(
-        resolver_config,
-        nullptr,
-        workspace.context.media ? &workspace.context.media->image_manager() : nullptr,
-        const_cast<text::FontRegistry*>(workspace.context.font_registry));
+    // AssetResolver should be injected or handled by the caller who knows about Operations
 
     workspace.context.surface_pool = surface_pool;
     workspace.context.profiler = profiler;
     workspace.context.effects = renderer2d::create_effect_host(effect_registry);
     workspace.context.transition_registry = &transition_registry;
     workspace.context.text_registry = text_registry;
+#ifdef TACHYON_ENABLE_MEDIA
+    workspace.context.audio_exporter = audio_exporter;
+#endif
 }
 
 bool begin_output_sink(
@@ -199,7 +191,9 @@ void finalize_render_output(
             workspace.context.profiler,
             profiling::ProfileEventType::AudioMux,
             "audio_export");
-        audio::export_plan_audio(workspace.effective_plan.render_plan, workspace.audio_plan.path, cancel_flag);
+        if (workspace.context.audio_exporter) {
+            workspace.context.audio_exporter->export_plan_audio(workspace.effective_plan.render_plan, workspace.audio_plan.path, cancel_flag);
+        }
     }
 
     if (workspace.sink) {
@@ -267,7 +261,7 @@ RenderSessionResult RenderSession::render(
     ScopedProcessSampler sampler(telemetry_policy.should_sample_process());
 
     RenderSessionResult result;
-    RenderSessionWorkspace workspace(m_precomp_cache, m_text_surface_cache, execution_plan, output_path, m_prefetcher);
+    RenderSessionWorkspace workspace(m_precomp_cache, m_text_surface_cache, execution_plan, output_path, m_prefetcher.get());
     if (!workspace.resolved_output_path.empty()) {
         workspace.effective_plan.render_plan.output.destination.path = workspace.resolved_output_path;
     }
@@ -297,7 +291,7 @@ RenderSessionResult RenderSession::render(
         throw std::runtime_error("RenderSession: No registry bundle or registries provided");
     }
 
-    configure_render_context(workspace, m_profiler, m_surface_pool, *effect_registry, *transition_registry, text_registry);
+    configure_render_context(workspace, m_profiler, m_surface_pool, *effect_registry, *transition_registry, text_registry, m_audio_exporter);
 
     // Phase 0: Preflight (Asset/Font/Writability checks)
     if (!preflight(scene, compiled_scene, execution_plan, workspace.context, result)) {

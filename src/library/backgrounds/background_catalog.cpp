@@ -108,7 +108,7 @@ BackgroundDescriptor make_image_background_descriptor() {
         LayerSpec spec;
         spec.identity.type = LayerType::Image;
         spec.identity.name = "Image Background";
-        spec.source = MediaSource{ params.get_or<std::string>("path", "") };
+        spec.source = MediaSource{ { params.get_or<std::string>("path", "") } };
         return spec;
     };
     return desc;
@@ -132,7 +132,7 @@ BackgroundDescriptor make_video_background_descriptor() {
         LayerSpec spec;
         spec.identity.type = LayerType::Video;
         spec.identity.name = "Video Background";
-        spec.source = MediaSource{ params.get_or<std::string>("path", "") };
+        spec.source = MediaSource{ { params.get_or<std::string>("path", "") } };
         return spec;
     };
     return desc;

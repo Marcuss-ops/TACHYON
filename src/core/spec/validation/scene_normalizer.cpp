@@ -23,7 +23,7 @@ void SceneNormalizer::normalize(SceneSpec& scene) {
                 bg_layer.source = EmptySource{};
             } else {
                 bg_layer.identity.type = LayerType::Image;
-                bg_layer.source = MediaSource{ comp.background->value };
+                bg_layer.source = MediaSource{ { comp.background->value } };
             }
 
             bg_layer.transform.width = comp.width;

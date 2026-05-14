@@ -1,5 +1,5 @@
 #include "tachyon/output/output_planner.h"
-#include "tachyon/audio/audio_export.h"
+#include "tachyon/core/audio/audio_export_interface.h"
 #include "tachyon/output/output_utils.h"
 #include <system_error>
 

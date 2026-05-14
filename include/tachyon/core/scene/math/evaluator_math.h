@@ -4,11 +4,14 @@
 #include "tachyon/core/math/transform2.h"
 #include "tachyon/core/animation/easing.h"
 #include "tachyon/core/expressions/expression_engine.h"
-#include "tachyon/audio/audio_analyzer.h"
+#include "tachyon/core/audio/audio_interfaces.h"
 #include "tachyon/timeline/time.h"
 
 #include <type_traits>
 #include <optional>
+#include <unordered_map>
+#include <vector>
+#include <string>
 
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
 
@@ -35,12 +38,13 @@ double sample_scalar(
     const Spec& property,
     double fallback,
     double local_time_seconds,
-    const ::tachyon::audio::AudioAnalyzer* audio_analyzer = nullptr) {
+    const ::tachyon::audio::IAudioAnalyzer* audio_analyzer = nullptr,
+    std::uint64_t expression_seed = 0) {
     if constexpr (std::is_same_v<Spec, std::optional<double>>) {
         return property.value_or(fallback);
     } else {
-        // This will call the AnimatedScalarSpec overload from property_sampler.h
-        return sample_scalar(property, fallback, local_time_seconds, audio_analyzer);
+        ::tachyon::audio::AudioBands bands = audio_analyzer ? audio_analyzer->analyze_frame(local_time_seconds) : ::tachyon::audio::AudioBands{};
+        return sample_scalar(property, fallback, local_time_seconds, bands, expression_seed);
     }
 }
 
@@ -49,11 +53,13 @@ math::Vector2 sample_vector2(
     const Spec& property,
     const math::Vector2& fallback,
     double local_time_seconds,
-    const ::tachyon::audio::AudioAnalyzer* audio_analyzer = nullptr) {
+    const ::tachyon::audio::IAudioAnalyzer* audio_analyzer = nullptr,
+    std::uint64_t expression_seed = 0) {
     if constexpr (std::is_same_v<Spec, std::optional<math::Vector2>>) {
         return property.value_or(fallback);
     } else {
-        return sample_vector2(property, fallback, local_time_seconds, audio_analyzer);
+        ::tachyon::audio::AudioBands bands = audio_analyzer ? audio_analyzer->analyze_frame(local_time_seconds) : ::tachyon::audio::AudioBands{};
+        return sample_vector2(property, fallback, local_time_seconds, bands, expression_seed);
     }
 }
 

@@ -9,16 +9,15 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <functional>
 
 namespace tachyon::media {
-class MediaManager;
+class IMediaProvider;
 }
 
 namespace tachyon::audio {
-class AudioAnalyzer;
+class IAudioAnalyzer;
 }
-
-#include <functional>
 
 namespace tachyon::scene {
 
@@ -35,43 +34,43 @@ struct EvaluationVariables {
     const LayerSpec& layer,
     std::int64_t frame_number,
     double composition_time_seconds,
-    const audio::AudioAnalyzer* audio_analyzer = nullptr,
-    media::MediaManager* media = nullptr
+    const audio::IAudioAnalyzer* audio_analyzer = nullptr,
+    media::IMediaProvider* media = nullptr
 );
 
 
 [[nodiscard]] EvaluatedCompositionState evaluate_composition_state(
     const CompositionSpec& composition,
     std::int64_t frame_number,
-    const audio::AudioAnalyzer* audio_analyzer = nullptr,
+    const audio::IAudioAnalyzer* audio_analyzer = nullptr,
     EvaluationVariables vars = {},
-    media::MediaManager* media = nullptr
+    media::IMediaProvider* media = nullptr
 );
 
 [[nodiscard]] EvaluatedCompositionState evaluate_composition_state(
     const CompositionSpec& composition,
     double composition_time_seconds,
-    const audio::AudioAnalyzer* audio_analyzer = nullptr,
+    const audio::IAudioAnalyzer* audio_analyzer = nullptr,
     EvaluationVariables vars = {},
-    media::MediaManager* media = nullptr
+    media::IMediaProvider* media = nullptr
 );
 
 [[nodiscard]] std::optional<EvaluatedCompositionState> evaluate_scene_composition_state(
     const SceneSpec& scene,
     const std::string& composition_id,
     std::int64_t frame_number,
-    const audio::AudioAnalyzer* audio_analyzer = nullptr,
+    const audio::IAudioAnalyzer* audio_analyzer = nullptr,
     EvaluationVariables vars = {},
-    media::MediaManager* media = nullptr
+    media::IMediaProvider* media = nullptr
 );
 
 [[nodiscard]] std::optional<EvaluatedCompositionState> evaluate_scene_composition_state(
     const SceneSpec& scene,
     const std::string& composition_id,
     double composition_time_seconds,
-    const audio::AudioAnalyzer* audio_analyzer = nullptr,
+    const audio::IAudioAnalyzer* audio_analyzer = nullptr,
     EvaluationVariables vars = {},
-    media::MediaManager* media = nullptr
+    media::IMediaProvider* media = nullptr
 );
 
 } // namespace tachyon::scene

@@ -69,14 +69,14 @@ InspectionReport inspect_scene(const SceneSpec& scene, const TransitionRegistry&
             // Asset checks
             if (layer.identity.type == LayerType::Image || layer.identity.type == LayerType::Video) {
                 if (auto* media = std::get_if<MediaSource>(&layer.source)) {
-                    if (media->asset_path.empty()) {
+                    if (media->asset.id.empty()) {
                         add_issue(report, InspectionSeverity::Error, "layer.missing_asset", layer_path, "Image/Video layer missing asset_path.");
                     } else {
                         auto asset_it = std::find_if(scene.assets.begin(), scene.assets.end(), [&](const AssetSpec& a) {
-                            return a.id == media->asset_path;
+                            return a.id == media->asset.id;
                         });
                         if (asset_it == scene.assets.end()) {
-                            add_issue(report, InspectionSeverity::Error, "layer.unresolved_asset", layer_path, "Asset '" + media->asset_path + "' not found in scene assets.");
+                            add_issue(report, InspectionSeverity::Error, "layer.unresolved_asset", layer_path, "Asset '" + media->asset.id + "' not found in scene assets.");
                         }
                     }
                 }

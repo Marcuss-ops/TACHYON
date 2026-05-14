@@ -9,7 +9,8 @@
 #include "tachyon/renderer2d/resource/texture_resolver.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/output/frame_output_sink.h"
-#include "tachyon/media/streaming/media_prefetcher.h"
+#include "tachyon/core/media/media_interfaces.h"
+#include "tachyon/core/media/media_provider.h"
 #include "tachyon/runtime/execution/session/render_internal.h"
 #include "tachyon/runtime/execution/parallel/taskflow_runtime.h"
 #include "tachyon/runtime/core/serialization/tbf_codec.h"
@@ -118,8 +119,8 @@ void render_frames_parallel_internal(
     FrameCache& cache,
     const ::tachyon::runtime::RenderWorkerBudget& budget,
     ::tachyon::RenderContext& context,
-    media::MediaPrefetcher& prefetcher,
-    media::PlaybackScheduler* scheduler,
+    media::IMediaPrefetcher* prefetcher,
+    media::IPlaybackScheduler* scheduler,
     std::vector<ExecutedFrame>& rendered_frames,
     RenderProgressCallback progress_callback,
     CancelFlag* cancel_flag,
@@ -161,7 +162,7 @@ void render_frames_parallel_internal(
         executor.set_parallel_worker_count(budget.pixel_concurrency);
 
         ::tachyon::RenderContext local_context = context;
-        local_context.prefetcher = &prefetcher;
+        local_context.prefetcher = prefetcher;
         local_context.scheduler = scheduler;
         local_context.pixel_concurrency = budget.pixel_concurrency;
         local_context.cancel_flag = cancel_flag;
@@ -310,7 +311,7 @@ void render_frames_parallel_internal(
               // Create a thread-local context sharing the media manager
               ::tachyon::RenderContext local_context(context.precomp_cache, context.media);
 
-              local_context.prefetcher = &prefetcher;
+              local_context.prefetcher = prefetcher;
               local_context.scheduler = scheduler;
               local_context.policy = context.policy;
               local_context.policy = context.policy;

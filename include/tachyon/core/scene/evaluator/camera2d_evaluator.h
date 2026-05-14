@@ -3,7 +3,7 @@
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/core/spec/schema/objects/composition_spec.h"
 #include "tachyon/core/scene/evaluation/evaluator.h"
-#include "tachyon/audio/audio_analyzer.h"
+#include "tachyon/core/audio/audio_interfaces.h"
 
 namespace tachyon::scene {
 
@@ -14,7 +14,7 @@ EvaluatedCameraState evaluate_camera2d_state(
     const SceneSpec* scene,
     const CompositionSpec& composition,
     double time_seconds,
-    const audio::AudioAnalyzer* audio_analyzer,
+    const audio::IAudioAnalyzer* audio_analyzer,
     const EvaluationVariables& vars);
 
 } // namespace tachyon::scene

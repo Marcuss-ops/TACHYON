@@ -48,7 +48,7 @@ LayerBuilder& LayerBuilder::custom_layer(const LayerSpec& spec) {
 }
 
 LayerBuilder& LayerBuilder::asset_id(std::string id) {
-    spec_.source = MediaSource{ std::move(id) };
+    spec_.source = MediaSource{ { std::move(id) } };
     return *this;
 }
 

@@ -1,5 +1,6 @@
 #include "tachyon/renderer2d/evaluated_composition/rendering/pipeline/pipeline_helpers.h"
-#include "tachyon/media/management/asset_resolver.h"
+#include "tachyon/core/media/asset_resolver_interface.h"
+#include "tachyon/core/media/media_interfaces.h"
 
 namespace tachyon {
 

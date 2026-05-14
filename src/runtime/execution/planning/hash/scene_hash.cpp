@@ -226,7 +226,7 @@ std::uint64_t hash_scene_content(const SceneSpec& scene) {
                 if constexpr (std::is_same_v<T, MediaSource>) {
                     builder.add_bool(true);
                     builder.add_u32(1); // Media
-                    builder.add_string(s.asset_path);
+                    builder.add_string(s.asset.id);
                 } else if constexpr (std::is_same_v<T, PrecompSource>) {
                     builder.add_bool(true);
                     builder.add_u32(2); // Precomp
