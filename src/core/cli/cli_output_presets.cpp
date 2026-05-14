@@ -1,7 +1,7 @@
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
 #include "tachyon/output/output_presets.h"
-#include "cli_internal.h"
+#include "command.h"
 
 #include <iomanip>
 #include <iostream>
@@ -29,7 +29,11 @@ void print_preset_info(const tachyon::output::OutputPreset& preset, const std::s
 
 } // namespace
 
-bool run_output_presets_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*/) {
+bool run_output_presets_command(const CommandContext& context) {
+    const auto& options = context.options;
+    auto& out = context.out;
+    auto& err = context.err;
+
     const auto command = options.output_presets_command;
     if (command.empty()) {
         err << "Use `tachyon output-presets list` or `tachyon output-presets info <id>`\n";

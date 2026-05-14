@@ -6,7 +6,7 @@
 #include "tachyon/runtime/execution/native_render.h"
 #include "tachyon/presets/text/text_registry.h"
 #include "tachyon/diagnostics/trace.h"
-#include "cli_internal.h"
+#include "command.h"
 #include <iomanip>
 #include <iostream>
 #include <thread>
@@ -231,7 +231,13 @@ void print_execution_plan(
 
 }
 
-bool run_render_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& transition_registry) {
+bool run_render_command(const CommandContext& context) {
+    const auto& options = context.options;
+    auto& out = context.out;
+    auto& err = context.err;
+    auto& transition_registry = context.runtime.transitions;
+    auto& text_registry = *context.runtime.text_registry;
+
     SceneLoadOptions load_opts;
     load_opts.cpp_path = options.cpp_path;
     load_opts.preset_id = options.preset_id;
@@ -293,9 +299,6 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
         native_options.memory_budget_bytes = options.memory_budget_bytes;
         native_options.verbose = true;
 
-        presets::TextManifest text_manifest;
-        presets::TextRegistry text_registry(text_manifest);
-        
         out << "Rendering composition: " << comp.id << " -> " << job.output.destination.path << "\n";
         
         const RenderSessionResult session_result = NativeRenderer::render(
@@ -331,8 +334,8 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
     return all_success;
 }
 
-bool run_preview_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry) {
-    return run_preview_internal(options, out, err, "NativePreview", registry);
+bool run_preview_command(const CommandContext& context) {
+    return run_preview_internal(context, "NativePreview");
 }
 
 } // namespace tachyon

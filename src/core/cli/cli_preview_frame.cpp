@@ -2,14 +2,15 @@
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/cli_scene_loader.h"
 #include "tachyon/runtime/execution/native_render.h"
-#include "cli_internal.h"
 
 #include <ostream>
 
+#include "command.h"
+
 namespace tachyon {
 
-bool run_preview_frame_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry) {
-    return run_preview_internal(options, out, err, "PreviewFrame", registry);
+bool run_preview_frame_command(const CommandContext& context) {
+    return run_preview_internal(context, "PreviewFrame");
 }
 
 } // namespace tachyon

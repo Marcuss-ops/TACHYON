@@ -5,7 +5,7 @@
 #include "tachyon/runtime/execution/session/render_session.h"
 #include "tachyon/runtime/policy/worker_policy.h"
 #include "tachyon/runtime/telemetry/render_telemetry_record.h"
-#include "tachyon/media/resolution/asset_resolution.h"
+#include "tachyon/core/media/resolution/asset_resolution.h"
 #include <atomic>
 #include <future>
 #include <algorithm>

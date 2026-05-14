@@ -2,13 +2,18 @@
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/cli_scene_loader.h"
 #include "tachyon/core/analysis/motion_map.h"
-#include "cli_internal.h"
 
 #include <algorithm>
 
+#include "command.h"
+
 namespace tachyon {
 
-bool run_motion_map_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*/) {
+bool run_motion_map_command(const CommandContext& context) {
+    const auto& options = context.options;
+    auto& out = context.out;
+    auto& err = context.err;
+
     SceneLoadOptions load_opts;
     load_opts.cpp_path = options.cpp_path;
     load_opts.preset_id = options.preset_id;

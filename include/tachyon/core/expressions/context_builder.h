@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/core/expressions/expression_engine.h"
-#include "tachyon/audio/audio_types.h"
+#include "tachyon/core/media/audio_types.h"
 #include <string>
 #include <unordered_map>
 #include <vector>

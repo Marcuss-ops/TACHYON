@@ -5,7 +5,7 @@
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/cache/frame_cache.h"
 #include "tachyon/runtime/resource/render_context.h"
-#include "tachyon/media/streaming/media_prefetcher.h"
+#include "tachyon/core/media/streaming/media_prefetcher.h"
 #include "tachyon/output/frame_output_sink.h"
 
 #include <vector>

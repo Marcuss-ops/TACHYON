@@ -7,15 +7,20 @@
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/execution/jobs/render_job.h"
 #include "tachyon/runtime/resource/render_context.h"
-#include "cli_internal.h"
 #include <iostream>
 #include <filesystem>
 #include <thread>
 #include <chrono>
 
+#include "command.h"
+
 namespace tachyon {
 
-bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& /*registry*/) {
+bool run_watch_command(const CommandContext& context) {
+    const auto& options = context.options;
+    auto& out = context.out;
+    auto& err = context.err;
+
     if (options.cpp_path.empty()) {
         err << "--cpp is required for watch\n";
         return false;
@@ -63,8 +68,8 @@ bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostrea
         session.set_memory_budget_bytes(*options.memory_budget_bytes);
     }
     
-    RenderContext context;
-    context.media = nullptr; // MediaManager is in operations, CLI Core is decoupled.
+    RenderContext render_context;
+    render_context.media = nullptr; // MediaManager is in operations, CLI Core is decoupled.
     
     auto last_time = std::filesystem::last_write_time(watch_path);
     std::int64_t current_frame = plan.frame_range.start;
@@ -96,7 +101,7 @@ bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostrea
         task.frame_number = current_frame;
         task.time_seconds = static_cast<double>(current_frame) / plan.composition.frame_rate.value();
 
-        auto executed_frame = execute_frame_task(scene, compiled, plan, task, session.cache(), context);
+        auto executed_frame = execute_frame_task(scene, compiled, plan, task, session.cache(), render_context);
 
         current_frame++;
         if (current_frame > plan.frame_range.end) {

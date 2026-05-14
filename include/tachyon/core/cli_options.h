@@ -1,7 +1,6 @@
 #pragma once
 
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
-
 #include "tachyon/runtime/execution/jobs/render_job.h"
 
 #include <cstdint>
@@ -9,56 +8,44 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 namespace tachyon {
 
+/**
+ * Core CLI options shared across most render-related commands.
+ */
 struct CliOptions {
     std::string command;
-    std::filesystem::path library_path;
-    std::optional<std::string> transition_id;
-    std::filesystem::path job_path;
-    std::filesystem::path batch_path;
+    std::filesystem::path cpp_path;           // Path to .cpp scene script
+    std::optional<std::string> preset_id;
+    
     std::filesystem::path output_override;
     std::optional<std::string> output_preset_id;
-    std::filesystem::path output_dir;  // Common output directory for library-demo
-    std::string output_format;         // Output format override (mp4, png, etc.)
-    std::filesystem::path font_manifest_path;  // For inspect-fonts command
+    std::filesystem::path output_dir;
+    std::string output_format;
+    
     std::size_t worker_count{0};
     std::optional<std::size_t> memory_budget_bytes;
     std::optional<FrameRange> frame_range_override;
-    std::optional<int> preview_frame_number;  // For preview-frame command
-    std::filesystem::path preview_output;     // Output PNG path for preview-frame
-    std::optional<std::string> preset_id;
-    std::filesystem::path cpp_path;           // Path to .cpp scene script
-    std::string quality{"draft"};            // Rendering quality tier
-    std::string output_presets_command;       // list/info for output presets
-    std::string output_preset_name;           // preset argument for info
-    bool json_output{false};
-    int inspect_samples{5};
-    bool inspect_include_info{false};
-    bool samples_explicitly_set{false};
-
-    // fetch-fonts command options
-    std::string font_family;
-    std::vector<std::uint32_t> font_weights;
-    std::vector<std::string> font_subsets;
-    std::filesystem::path font_dest{"assets/fonts"};
-    bool font_overwrite{false};
-    // metrics command options
-    std::string metrics_command;
-    std::filesystem::path metrics_input;
-    int metrics_top{20};
-    double machine_cost_per_hour{0.0};
-
-    bool show_version{false};
+    std::optional<int> preview_frame_number;
+    std::filesystem::path preview_output;
+    
+    std::string quality{"draft"};
     bool render_all_compositions{false};
+    bool json_output{false};
+    bool show_version{false};
 
-    // probe command options
-    std::filesystem::path probe_input;
-
-    // concat command options
-    std::vector<std::filesystem::path> concat_inputs;
-    std::filesystem::path concat_output;
+    // Extension options for specialized commands (Modularized)
+    std::unordered_map<std::string, std::string> values;
+    std::unordered_map<std::string, std::vector<std::string>> list_values;
+    
+    // Helper to get optional values
+    std::optional<std::string> get_value(const std::string& key) const {
+        auto it = values.find(key);
+        if (it != values.end()) return it->second;
+        return std::nullopt;
+    }
 };
 
 ParseResult<CliOptions> parse_cli_options(int argc, char** argv);
