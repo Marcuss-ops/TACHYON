@@ -1,4 +1,5 @@
 #include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"
+#include <iostream>
 #include "tachyon/renderer2d/resource/precomp_cache.h"
 #include "tachyon/renderer2d/effects/core/transitions/transition_utils.h"
 #include "tachyon/renderer2d/effects/core/transitions/transition_apply.h"
@@ -166,15 +167,17 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 double layer_duration = layer.playback.out_time - layer.playback.in_time;
                 
                 TransitionApplyRequest apply_request;
-                apply_request.from = layer_surface.get();
-                apply_request.progress = 0.0f;
-                
                 std::string trans_id = "none";
+                
                 if (has_in_trans && layer_time < layer.playback.transition_in.duration) {
                     trans_id = layer.playback.transition_in.transition_id;
+                    apply_request.from = nullptr;
+                    apply_request.to = layer_surface.get();
                     apply_request.progress = static_cast<float>(layer_time / layer.playback.transition_in.duration);
                 } else if (has_out_trans && layer_time > (layer_duration - layer.playback.transition_out.duration)) {
                     trans_id = layer.playback.transition_out.transition_id;
+                    apply_request.from = layer_surface.get();
+                    apply_request.to = nullptr;
                     apply_request.progress = static_cast<float>((layer_time - (layer_duration - layer.playback.transition_out.duration)) / layer.playback.transition_out.duration);
                 }
 
@@ -185,6 +188,8 @@ RasterizedFrame2D render_evaluated_composition_2d(
                     auto apply_res = apply_transition(apply_request, registry);
                     if (apply_res.ok) {
                         layer_surface = std::make_shared<renderer2d::SurfaceRGBA>(std::move(apply_res.output));
+                    } else {
+                        std::cerr << "[RENDER ERROR] Transition failed for layer " << layer.identity.id << ": " << apply_res.error_message << " (id: " << trans_id << ")\n";
                     }
                 }
             }

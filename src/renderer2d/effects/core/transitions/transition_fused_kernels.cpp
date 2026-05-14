@@ -172,7 +172,7 @@ void apply_crossfade_fused_direct(
             float src[4];
             sample_bilinear_raw(from_data, from.width(), from.height(), u, v, src);
             
-            float dst[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+            float dst[4] = {0.0f, 0.0f, 0.0f, 0.0f};
             if (to_data) {
                 sample_bilinear_raw(to_data, to->width(), to->height(), u, v, dst);
             }
@@ -251,7 +251,7 @@ void apply_slide_fused_direct(
             sample_bilinear_raw(from_data, from.width(), from.height(), su, v, src);
             
             const float tu = u + progress - 1.0f;
-            float dst[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+            float dst[4] = {0.0f, 0.0f, 0.0f, 0.0f};
             if (to_data) {
                 sample_bilinear_raw(to_data, to->width(), to->height(), tu, v, dst);
             }

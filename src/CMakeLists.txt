@@ -245,8 +245,7 @@ if(TACHYON_ENABLE_MEDIA)
             ${pugixml_SOURCE_DIR}/src
             ${TACHYON_EARCUT_INCLUDE_DIR}
     )
-    tachyon_link_media_deps(TachyonMedia)
-    target_link_libraries(TachyonMedia PUBLIC pugixml TachyonText TachyonRenderer2D)
+    target_link_libraries(TachyonMedia PUBLIC pugixml TachyonText TachyonRenderer2D TachyonPlatform)
 endif()
 
 if(TACHYON_ENABLE_AUDIO)

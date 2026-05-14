@@ -279,7 +279,7 @@ EvaluatedCompositionState evaluate_composition_internal(
             // View matrix is the inverse of the camera's world transform
             math::Transform2 cam_xform;
             cam_xform.position = pos;
-            cam_xform.rotation = static_cast<float>(degrees_to_radians(rot));
+            cam_xform.rotation_rad = static_cast<float>(degrees_to_radians(rot));
             cam_xform.scale = {scale.x / 100.0f, scale.y / 100.0f};
             cam_xform.anchor_point = anchor;
 
