@@ -8,6 +8,9 @@ set(TachyonSceneEvalSources
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/layer_evaluator.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/layer_utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/repeater_evaluator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/precomp_evaluator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/layer_dependency_resolver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/effect_evaluator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/roi_calculator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/scene/evaluator/templates.cpp

@@ -103,8 +103,7 @@ struct LayerIdentity {
 };
 
 struct LayerSource {
-    std::string asset_id; // For image/video layers
-    std::string preset_id; // For procedural/preset layers
+    std::string asset_path; // For image/video layers
     std::optional<std::string> precomp_id;
     std::optional<ProceduralSpec> procedural;
 };
@@ -156,10 +155,7 @@ struct LayerSpec {
     std::vector<TextAnimatorSpec> text_animators;
     std::vector<TextHighlightSpec> text_highlights;
 
-    // Presets & Transitions
-    std::string animation_in_preset;
-    std::string animation_during_preset;
-    std::string animation_out_preset;
+    // Authoring-only presets removed from runtime spec
 
     LayerTransitionSpec transition_in;
     LayerTransitionSpec transition_out;

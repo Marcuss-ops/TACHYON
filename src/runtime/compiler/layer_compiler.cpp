@@ -27,7 +27,7 @@ CompiledLayer LayerCompiler::compile_layer(
     // Asset resolution check for image/video layers
     if (compiled_layer.type_id == 3) { // Image/Video
         const bool found_in_assets = std::any_of(scene.assets.begin(), scene.assets.end(),
-            [&](const AssetSpec& a) { return a.id == layer.source.asset_id || a.id == layer.identity.name; });
+            [&](const AssetSpec& a) { return a.id == layer.source.asset_path || a.id == layer.identity.name; });
         if (!found_in_assets) {
             compiled_layer.asset_offline = true;
             diagnostics.add_warning("COMPILER_W004",

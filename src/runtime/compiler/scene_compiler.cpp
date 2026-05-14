@@ -70,7 +70,7 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene_sp
             } else if (composition.background->type == BackgroundType::Asset) {
                 bg_layer.type_id = compiled_type_id_from_layer_type(LayerType::Image);
                 bg_layer.name = composition.background->value;
-                bg_layer.asset_id = composition.background->value;
+                bg_layer.asset_path = composition.background->value;
             } else if (composition.background->type == BackgroundType::Preset) {
                 bg_layer.type_id = compiled_type_id_from_layer_type(LayerType::Procedural);
                 bg_layer.name = composition.background->value;
@@ -97,7 +97,7 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene_sp
             CompiledLayer compiled_layer;
             compiled_layer.node = registry.create_node(CompiledNodeType::Layer);
             compiled_layer.name = layer.identity.name;
-            compiled_layer.asset_id = layer.source.asset_id;
+            compiled_layer.asset_path = layer.source.asset_path;
             compiled.graph.add_node(compiled_layer.node.node_id);
             
             // Resolve Type using robust LayerType enum (Canonical Source of Truth)

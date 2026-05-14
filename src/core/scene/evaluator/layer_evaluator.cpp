@@ -117,7 +117,7 @@ EvaluatedLayerState make_layer_state(
     state.text.highlights = spec.text_highlights;
 
     // 4. Source
-    state.source.asset_path = spec.source.asset_id;
+    state.source.asset_path = spec.source.asset_path;
     state.source.precomp_id = spec.source.precomp_id;
     state.source.loop = spec.playback.loop;
 

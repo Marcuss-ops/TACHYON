@@ -334,7 +334,7 @@ std::vector<std::uint8_t> TBFCodec::encode(const CompiledScene& scene) {
         for (const auto& layer : comp.layers) {
             writer.write_node(layer.node);
             writer.write_string(layer.name);
-            writer.write_string(layer.asset_id);
+            writer.write_string(layer.asset_path);
             writer.write_u32(layer.type_id);
             writer.write_u32(layer.width);
             writer.write_u32(layer.height);
@@ -525,7 +525,7 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
             layer.node = reader.read_node();
             scene.graph.add_node(layer.node.node_id);
             layer.name = reader.read_string();
-            layer.asset_id = reader.read_string();
+            layer.asset_path = reader.read_string();
             layer.type_id = reader.read_u32();
             layer.width = reader.read_u32();
             layer.height = reader.read_u32();

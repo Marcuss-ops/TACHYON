@@ -8,13 +8,14 @@
 namespace tachyon::scene {
 
 /**
- * @brief Evaluates a 2D camera for a given composition and time.
+ * @brief Evaluates and expands repeaters for a given layer.
  */
-EvaluatedCameraState evaluate_camera2d_state(
+void evaluate_repeater_expansion(
     const SceneSpec* scene,
     const CompositionSpec& composition,
-    double time_seconds,
-    const audio::AudioAnalyzer* audio_analyzer,
-    const EvaluationVariables& vars);
+    std::size_t layer_index,
+    const EvaluatedLayerState& base_layer,
+    EvaluationContext& context,
+    std::vector<EvaluatedLayerState>& output_layers);
 
 } // namespace tachyon::scene

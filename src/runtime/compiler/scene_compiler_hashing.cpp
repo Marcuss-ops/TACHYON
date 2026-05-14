@@ -53,7 +53,7 @@ std::uint64_t hash_scene_spec(const SceneSpec& scene, const DeterminismContract&
             hash_transition_internal(builder, layer.transition_out);
             
             if (layer.identity.type == LayerType::Image || layer.identity.type == LayerType::Video) {
-                builder.add_string(layer.source.asset_id);
+                builder.add_string(layer.source.asset_path);
             } else if (layer.identity.type == LayerType::Precomp) {
                 if (layer.source.precomp_id.has_value()) {
                     builder.add_string(*layer.source.precomp_id);

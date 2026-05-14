@@ -101,7 +101,7 @@ struct CompiledPropertyTrack {
 struct CompiledLayer {
     CompiledNode node;
     std::string name;
-    std::string asset_id;
+    std::string asset_path;
     std::uint32_t type_id{0}; // Resolved enum or index
     
     // Boundary data
