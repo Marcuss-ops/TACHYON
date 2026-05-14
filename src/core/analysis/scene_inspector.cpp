@@ -75,9 +75,9 @@ bool has_text_motion(const TextAnimatorSpec& animator) {
         || p.scale_value.has_value() || !p.scale_keyframes.empty()
         || p.rotation_value.has_value() || !p.rotation_keyframes.empty()
         || p.tracking_amount_value.has_value() || !p.tracking_amount_keyframes.empty()
-        || p.fill_color_value.has_value() || !p.fill_color_keyframes.empty()
-        || p.stroke_color_value.has_value() || !p.stroke_color_keyframes.empty()
-        || p.stroke_width_value.has_value() || !p.stroke_width_keyframes.empty()
+        || p.text.fill_color_value.has_value() || !p.text.fill_color_keyframes.empty()
+        || p.text.stroke_color_value.has_value() || !p.text.stroke_color_keyframes.empty()
+        || p.text.stroke_width_value.has_value() || !p.text.stroke_width_keyframes.empty()
         || p.blur_radius_value.has_value() || !p.blur_radius_keyframes.empty()
         || p.reveal_value.has_value() || !p.reveal_keyframes.empty();
 }
@@ -155,12 +155,12 @@ InspectionReport inspect_scene(const SceneSpec& scene, const TransitionRegistry&
             }
 
             if (layer.type == LayerType::Text) {
-                if (layer.text_content.empty()) {
+                if (layer.text.content.empty()) {
                     add_issue(report, InspectionSeverity::Warning, "text.empty", layer_path, "Text layer has empty content.");
                 }
-                if (layer.font_size.empty()) {
-                    add_info(report, options, "text.font_size_default", layer_path, "Text layer uses the default font size.");
-                } else if (layer.font_size.value.has_value() && *layer.font_size.value < options.min_text_px) {
+                if (layer.text.text.font_size.empty()) {
+                    add_info(report, options, "text.text.font_size_default", layer_path, "Text layer uses the default font size.");
+                } else if (layer.text.text.font_size.value.has_value() && *layer.text.text.font_size.value < options.min_text_px) {
                     add_issue(report, InspectionSeverity::Warning, "text.font_too_small", layer_path, "Text layer font size is very small.");
                 }
             }
@@ -187,20 +187,20 @@ InspectionReport inspect_scene(const SceneSpec& scene, const TransitionRegistry&
             if (has_motion(layer.opacity_property)) {
                 add_info(report, options, "layer.opacity_animated", layer_path, "Opacity is animated.");
             }
-            if (has_motion(layer.time_remap_property)) {
-                add_info(report, options, "layer.time_remap", layer_path, "Time remapping is enabled.");
+            if (has_motion(layer.temporal.temporal.time_remap_property)) {
+                add_info(report, options, "layer.temporal.time_remap", layer_path, "Time remapping is enabled.");
             }
-            if (has_motion(layer.font_size)) {
-                add_info(report, options, "text.font_size_animated", layer_path, "Font size is animated.");
+            if (has_motion(layer.text.text.font_size)) {
+                add_info(report, options, "text.text.font_size_animated", layer_path, "Font size is animated.");
             }
-            if (has_motion(layer.stroke_width_property)) {
-                add_info(report, options, "text.stroke_width_animated", layer_path, "Stroke width is animated.");
+            if (has_motion(layer.text.text.text.stroke_width_property)) {
+                add_info(report, options, "text.text.stroke_width_animated", layer_path, "Stroke width is animated.");
             }
-            if (has_motion(layer.repeater_count) || has_motion(layer.repeater_stagger_delay) || has_motion(layer.repeater_offset_position_x)
-                || has_motion(layer.repeater_offset_position_y) || has_motion(layer.repeater_offset_rotation) || has_motion(layer.repeater_offset_scale_x)
-                || has_motion(layer.repeater_offset_scale_y) || has_motion(layer.repeater_start_opacity) || has_motion(layer.repeater_end_opacity)
-                || has_motion(layer.repeater_grid_cols) || has_motion(layer.repeater_radial_radius) || has_motion(layer.repeater_radial_start_angle)
-                || has_motion(layer.repeater_radial_end_angle)) {
+            if (has_motion(layer.repeater.count) || has_motion(layer.repeater.stagger_delay) || has_motion(layer.repeater.offset_position_x)
+                || has_motion(layer.repeater.offset_position_y) || has_motion(layer.repeater.offset_rotation) || has_motion(layer.repeater.offset_scale_x)
+                || has_motion(layer.repeater.offset_scale_y) || has_motion(layer.repeater.start_opacity) || has_motion(layer.repeater.end_opacity)
+                || has_motion(layer.repeater.grid_cols) || has_motion(layer.repeater.radial_radius) || has_motion(layer.repeater.radial_start_angle)
+                || has_motion(layer.repeater.radial_end_angle)) {
                 add_info(report, options, "layer.repeater_animated", layer_path, "Repeater settings are animated.");
             }
 

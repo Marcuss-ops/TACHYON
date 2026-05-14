@@ -88,7 +88,7 @@ bool run_evaluated_composition_renderer_tests() {
     red_layer.id = "red";
     red_layer.type = scene::LayerType::Solid;
     red_layer.blend_mode = "normal";
-    red_layer.fill_color = ColorSpec{255, 0, 0, 255};
+    red_layer.text.fill_color = ColorSpec{255, 0, 0, 255};
     red_layer.width = 32;
     red_layer.height = 32;
     red_layer.local_transform.position = {8.0f, 8.0f};
@@ -97,7 +97,7 @@ bool run_evaluated_composition_renderer_tests() {
     scene::EvaluatedLayerState green_layer = red_layer;
     green_layer.id = "green";
     green_layer.blend_mode = "additive";
-    green_layer.fill_color = ColorSpec{0, 255, 0, 255};
+    green_layer.text.fill_color = ColorSpec{0, 255, 0, 255};
     green_layer.layer_index = 1;
 
     blend_state.layers.push_back(red_layer);
@@ -130,7 +130,7 @@ bool run_evaluated_composition_renderer_tests() {
 
     scene::EvaluatedLayerState base_layer = red_layer;
     base_layer.id = "base";
-    base_layer.fill_color = ColorSpec{0, 0, 255, 255};
+    base_layer.text.fill_color = ColorSpec{0, 0, 255, 255};
     base_layer.blend_mode = "normal";
     base_layer.layer_index = 0;
 
@@ -138,7 +138,7 @@ bool run_evaluated_composition_renderer_tests() {
     adjustment_layer.id = "adjustment_layer";
     adjustment_layer.type = scene::LayerType::Solid;
     adjustment_layer.is_adjustment_layer = true;
-    adjustment_layer.fill_color = ColorSpec{255, 255, 255, 255};
+    adjustment_layer.text.fill_color = ColorSpec{255, 255, 255, 255};
     adjustment_layer.opacity = 0.75;
     adjustment_layer.layer_index = 1;
     adjustment_layer.effects.clear();
@@ -169,7 +169,7 @@ bool run_evaluated_composition_renderer_tests() {
     transition_layer.id = "transition_layer";
     transition_layer.width = 64;
     transition_layer.height = 64;
-    transition_layer.fill_color = ColorSpec{255, 0, 0, 255};
+    transition_layer.text.fill_color = ColorSpec{255, 0, 0, 255};
     transition_layer.transition_in.transition_id = "tachyon.transition.crossfade";
     transition_layer.transition_in.duration = 1.0;
     transition_layer.in_time = 0.0;
@@ -254,7 +254,7 @@ bool run_evaluated_composition_renderer_tests() {
     matte_layer.opacity = 1.0;
     matte_layer.width = 24;
     matte_layer.height = 24;
-    matte_layer.fill_color = ColorSpec{255, 255, 255, 255};
+    matte_layer.text.fill_color = ColorSpec{255, 255, 255, 255};
     matte_layer.local_transform.position = {16.0f, 16.0f};
     matte_layer.layer_index = 0;
 
@@ -262,7 +262,7 @@ bool run_evaluated_composition_renderer_tests() {
     matte_target.id = "matte_target";
     matte_target.width = 64;
     matte_target.height = 64;
-    matte_target.fill_color = ColorSpec{255, 0, 0, 255};
+    matte_target.text.fill_color = ColorSpec{255, 0, 0, 255};
     matte_target.track_matte_type = TrackMatteType::Alpha;
     matte_target.track_matte_layer_index = 0;
     matte_target.layer_index = 1;
@@ -300,7 +300,7 @@ bool run_evaluated_composition_renderer_tests() {
     scene::EvaluatedLayerState masked_layer = matte_target;
     masked_layer.id = "masked_by_vector";
     masked_layer.type = scene::LayerType::Solid;
-    masked_layer.fill_color = ColorSpec{0, 255, 0, 255};
+    masked_layer.text.fill_color = ColorSpec{0, 255, 0, 255};
     masked_layer.track_matte_type = TrackMatteType::None;
     masked_layer.track_matte_layer_index.reset();
     masked_layer.layer_index = 1;

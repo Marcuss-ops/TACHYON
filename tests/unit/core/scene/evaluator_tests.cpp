@@ -112,7 +112,7 @@ bool run_scene_evaluator_tests() {
         precomp_layer.timing.source_in = 0.0;
         precomp_layer.timing.source_out = 10.0;
         precomp_layer.precomp_id = std::string{"child_comp"};
-        precomp_layer.time_remap_property.value = 1.5;
+        precomp_layer.temporal.temporal.time_remap_property.value = 1.5;
 
         tachyon::LayerSpec child_solid;
         child_solid.id = "child_solid";
@@ -164,7 +164,7 @@ bool run_scene_evaluator_tests() {
         text_layer.id = "caption";
         text_layer.type = tachyon::LayerType::Text;
         text_layer.name = "Caption";
-        text_layer.text_content = "Hello {{shot.name}} / {{music.bass}}";
+        text_layer.text.content = "Hello {{shot.name}} / {{music.bass}}";
 
         tachyon::CompositionSpec composition;
         composition.id = "template_comp";
@@ -191,7 +191,7 @@ bool run_scene_evaluator_tests() {
         const auto evaluated = tachyon::scene::evaluate_scene_composition_state(scene, "template_comp", std::int64_t(0), nullptr, vars);
         check_true(evaluated.has_value(), "template scene should evaluate");
         if (evaluated.has_value()) {
-            check_true(evaluated->layers.front().text_content == "Hello Intro / 0.750000", "template resolver should expand dotted identifiers");
+            check_true(evaluated->layers.front().text.content == "Hello Intro / 0.750000", "template resolver should expand dotted identifiers");
         }
     }
 

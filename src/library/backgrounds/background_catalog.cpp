@@ -24,7 +24,7 @@ BackgroundDescriptor make_solid_background_descriptor() {
         spec.type = LayerType::Solid;
         spec.name = "Solid Background";
         auto color = params.get_or<ColorSpec>("color", ColorSpec(0, 0, 0));
-        spec.fill_color.keyframes = {{0.0, color}};
+        spec.text.fill_color.keyframes = {{0.0, color}};
         return spec;
     };
     return desc;

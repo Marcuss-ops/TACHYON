@@ -109,23 +109,38 @@ struct CompiledLayer {
     std::uint32_t height{0};
 
     // Render-relevant authoring data preserved for execution.
-    std::string text_content;
-    std::string font_id;
-    float font_size{48.0f};
-    TextBoxSpec text_box;
-    ColorSpec fill_color{255, 255, 255, 255};
-    ColorSpec stroke_color{255, 255, 255, 255};
-    float stroke_width{0.0f};
-    std::optional<ShapePathSpec> shape_path;
-    std::optional<ShapeSpec> shape_spec;
+    struct {
+        std::string content;
+        std::string font_id;
+        float font_size{48.0f};
+        TextBoxSpec box;
+        ColorSpec fill_color{255, 255, 255, 255};
+        ColorSpec stroke_color{255, 255, 255, 255};
+        float stroke_width{0.0f};
+    } text;
+
+    struct {
+        std::optional<ShapePathSpec> shape_path;
+        std::optional<ShapeSpec> shape_spec;
+        renderer2d::LineCap line_cap{renderer2d::LineCap::Butt};
+        renderer2d::LineJoin line_join{renderer2d::LineJoin::Miter};
+        float miter_limit{4.0f};
+    } vector;
+
+    struct {
+        float feather{0.0f};
+    } masks;
+
+    struct {
+        std::optional<std::string> path;
+        AnimatedColorSpec outline_color;
+        float outline_width{0.0f};
+        std::optional<std::string> word_timestamp_path;
+    } subtitles;
+
     std::vector<EffectSpec> effects;
     std::vector<TextAnimatorSpec> text_animators;
     std::vector<TextHighlightSpec> text_highlights;
-    float mask_feather{0.0f};
-    std::optional<std::string> subtitle_path;
-    AnimatedColorSpec subtitle_outline_color;
-    float subtitle_outline_width{0.0f};
-    std::optional<std::string> word_timestamp_path;
     bool asset_offline{false};
     std::string blend_mode{"normal"};
     std::optional<ProceduralSpec> procedural;
@@ -156,11 +171,6 @@ struct CompiledLayer {
     // Masking and Matte (resolved into indices)
     TrackMatteType matte_type{TrackMatteType::None};
     std::optional<std::uint32_t> matte_layer_index;
-    
-    // Style (captured for DrawList emission)
-    renderer2d::LineCap line_cap{renderer2d::LineCap::Butt};
-    renderer2d::LineJoin line_join{renderer2d::LineJoin::Miter};
-    float miter_limit{4.0f};
     
     // Visibility flags (bitmask preferred for industrial minimality)
     std::uint8_t flags{0x01}; // 0x01 = enabled, 0x02 = visible, 0x08 = adjustment

@@ -59,7 +59,7 @@ EvaluatedLayerState make_layer_state(
 
     evaluated.local_time_seconds = local_t;
     evaluated.child_time_seconds = sample_scalar(
-        layer.time_remap_property,
+        layer.temporal.temporal.time_remap_property,
         local_t,
         local_t,
         context.audio_analyzer,
@@ -81,8 +81,8 @@ EvaluatedLayerState make_layer_state(
     }
 
     // Sample Properties
-    evaluated.mask_feather = static_cast<float>(sample_scalar(
-        layer.mask_feather,
+    evaluated.masks.feather = static_cast<float>(sample_scalar(
+        layer.masks.feather,
         0.0,
         local_t,
         context.audio_analyzer,
@@ -158,12 +158,12 @@ EvaluatedLayerState make_layer_state(
     evaluated.out_time = layer.timing.start + layer.timing.duration;
 
     // Text specific
-    evaluated.text_content = resolve_template(layer.text_content, vars.strings, vars.numeric);
-    evaluated.font_id = layer.font_id;
-    evaluated.font_size = static_cast<float>(sample_scalar(layer.font_size, 24.0, local_t, context.audio_analyzer));
-    evaluated.fill_color = sample_color(layer.fill_color, {255,255,255,255}, local_t);
-    evaluated.stroke_color = sample_color(layer.stroke_color, {0,0,0,255}, local_t);
-    evaluated.stroke_width = static_cast<float>(sample_scalar(layer.stroke_width_property, layer.stroke_width, local_t, context.audio_analyzer));
+    evaluated.text.content = resolve_template(layer.text.content, vars.strings, vars.numeric);
+    evaluated.text.font_id = layer.text.text.font_id;
+    evaluated.text.font_size = static_cast<float>(sample_scalar(layer.text.text.font_size, 24.0, local_t, context.audio_analyzer));
+    evaluated.text.fill_color = sample_color(layer.text.text.fill_color, {255,255,255,255}, local_t);
+    evaluated.text.stroke_color = sample_color(layer.text.text.stroke_color, {0,0,0,255}, local_t);
+    evaluated.text.stroke_width = static_cast<float>(sample_scalar(layer.text.text.text.stroke_width_property, layer.text.text.stroke_width, local_t, context.audio_analyzer));
     evaluated.text_animators = layer.text_animators;
     evaluated.text_highlights = layer.text_highlights;
 

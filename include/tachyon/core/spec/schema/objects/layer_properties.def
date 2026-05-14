@@ -18,7 +18,7 @@ TACHYON_PROPERTY_SCALAR(time_remap, time_remap_property, 0.0)
 TACHYON_PROPERTY_SCALAR(font_size, font_size, 48.0)
 TACHYON_PROPERTY_COLOR(fill_color, fill_color, ColorSpec(255, 255, 255, 255))
 TACHYON_PROPERTY_COLOR(stroke_color, stroke_color, ColorSpec(255, 255, 255, 255))
-TACHYON_PROPERTY_SCALAR(stroke_width, stroke_width_property, layer.stroke_width)
+TACHYON_PROPERTY_SCALAR(stroke_width, stroke_width_property, layer.text.stroke_width)
 TACHYON_PROPERTY_COLOR(subtitle_outline_color, subtitle_outline_color, ColorSpec(0, 0, 0, 255))
 
 // Repeater Properties

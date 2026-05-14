@@ -45,12 +45,71 @@ struct LayerTransitionSpec {
     } spring;
 };
 
+struct LayerTextSpec {
+    std::string content;
+    std::string font_id;
+    AnimatedScalarSpec font_size;
+    TextBoxSpec box;
+    std::map<std::string, AnimatedScalarSpec> font_axes;
+    AnimatedColorSpec fill_color;
+    AnimatedColorSpec stroke_color;
+    double stroke_width{0.0};
+    AnimatedScalarSpec stroke_width_property;
+};
+
+struct LayerSubtitleSpec {
+    std::string path;
+    AnimatedColorSpec outline_color;
+    double outline_width{2.0};
+    std::string word_timestamp_path;
+};
+
+struct LayerRepeaterSpec {
+    std::string type{"linear"};
+    AnimatedScalarSpec count;
+    AnimatedScalarSpec stagger_delay;
+    AnimatedScalarSpec offset_position_x;
+    AnimatedScalarSpec offset_position_y;
+    AnimatedScalarSpec offset_rotation;
+    AnimatedScalarSpec offset_scale_x;
+    AnimatedScalarSpec offset_scale_y;
+    AnimatedScalarSpec start_opacity;
+    AnimatedScalarSpec end_opacity;
+    AnimatedScalarSpec grid_cols;
+    AnimatedScalarSpec radial_radius;
+    AnimatedScalarSpec radial_start_angle;
+    AnimatedScalarSpec radial_end_angle;
+};
+
+struct LayerVectorSpec {
+    std::optional<ShapePathSpec> shape_path;
+    std::optional<ShapeSpec> shape_spec;
+    std::string line_cap{"butt"};
+    std::string line_join{"miter"};
+    double miter_limit{4.0};
+};
+
+struct LayerMaskSpec {
+    std::vector<spec::MaskPath> paths;
+    AnimatedScalarSpec feather;
+};
+
+struct LayerTemporalSpec {
+    std::vector<spec::TrackBinding> track_bindings;
+    spec::TimeRemapCurve time_remap;
+    spec::FrameBlendMode frame_blend{spec::FrameBlendMode::Linear};
+    AnimatedScalarSpec time_remap_property;
+};
+
 struct LayerSpec {
     std::string id;
     std::string name;
+    LayerType type{LayerType::NullLayer}; 
+    
     std::string asset_id; // For image/video layers
     std::string preset_id; // For procedural/preset layers
-    LayerType type{LayerType::NullLayer}; // Canonical Source of Truth
+    std::optional<std::string> precomp_id;
+    
     std::string blend_mode{"normal"};
     
     bool enabled{true};
@@ -60,90 +119,36 @@ struct LayerSpec {
 
     LayerTiming timing;
     double opacity{1.0};
+    AnimatedScalarSpec opacity_property;
 
     int width{1920};
     int height{1080};
 
     Transform2D transform;
     
-    AnimatedScalarSpec opacity_property;
-    AnimatedScalarSpec mask_feather;
-    AnimatedScalarSpec time_remap_property;
-
-    std::optional<std::string> parent;
-    std::optional<std::string> track_matte_layer_id;
-    TrackMatteType track_matte_type{TrackMatteType::None};
-    std::optional<std::string> precomp_id;
-
-    // Text specific
-    std::string text_content;
-    std::string font_id;
-    AnimatedScalarSpec font_size;
-    TextBoxSpec text_box;
-    std::map<std::string, AnimatedScalarSpec> font_axes;
-    AnimatedColorSpec fill_color;
-    AnimatedColorSpec stroke_color;
-    double stroke_width{0.0};
-    AnimatedScalarSpec stroke_width_property;
-
-    // Repeater (from evaluator_composition.cpp)
-    std::string repeater_type{"linear"};
-    AnimatedScalarSpec repeater_count;
-    AnimatedScalarSpec repeater_stagger_delay;
-    AnimatedScalarSpec repeater_offset_position_x;
-    AnimatedScalarSpec repeater_offset_position_y;
-    AnimatedScalarSpec repeater_offset_rotation;
-    AnimatedScalarSpec repeater_offset_scale_x;
-    AnimatedScalarSpec repeater_offset_scale_y;
-    AnimatedScalarSpec repeater_start_opacity;
-    AnimatedScalarSpec repeater_end_opacity;
-    AnimatedScalarSpec repeater_grid_cols;
-    AnimatedScalarSpec repeater_radial_radius;
-    AnimatedScalarSpec repeater_radial_start_angle;
-    AnimatedScalarSpec repeater_radial_end_angle;
-
-    // Subtitles
-    std::string subtitle_path;
-    AnimatedColorSpec subtitle_outline_color;
-    double subtitle_outline_width{2.0};
-
-    // Word timestamps for text highlight animation (word_highlight mode)
-    std::string word_timestamp_path;
-
-    // Vector Graphics
-    std::optional<ShapePathSpec> shape_path;
-    std::optional<ShapeSpec> shape_spec;
-    std::string line_cap{"butt"};
-    std::string line_join{"miter"};
-    double miter_limit{4.0};
-    
-
-    // 2D Camera integration
+    // Camera integration
     bool has_parallax{true};
     float parallax_factor{1.0f};
     std::optional<std::string> camera2d_id;
 
-    // Effects & Animators (Skeletons)
+    // Component Specs
+    LayerTextSpec text;
+    LayerSubtitleSpec subtitles;
+    LayerRepeaterSpec repeater;
+    LayerVectorSpec vector;
+    LayerMaskSpec masks;
+    LayerTemporalSpec temporal;
+
+    // Effects & Animators
     std::vector<EffectSpec> effects;
     std::vector<TextAnimatorSpec> text_animators;
     std::vector<TextHighlightSpec> text_highlights;
 
-    // Mask paths (roto / vector masks)
-    std::vector<spec::MaskPath> mask_paths;
-
-    // Temporal & Tracking (Unified)
-    std::vector<spec::TrackBinding> track_bindings;
-    spec::TimeRemapCurve time_remap;
-    spec::FrameBlendMode frame_blend{spec::FrameBlendMode::Linear};
-
-    // Animation preset durations (inject transform/opacity keyframes via PresetCompiler)
-    // Animation presets (inject transform/opacity keyframes via PresetCompiler)
-    // Modern animation preset names
+    // Presets & Transitions
     std::string animation_in_preset;
     std::string animation_during_preset;
     std::string animation_out_preset;
 
-    // Typed transitions
     LayerTransitionSpec transition_in;
     LayerTransitionSpec transition_out;
 
@@ -162,6 +167,10 @@ struct LayerSpec {
     // Procedural generation
     std::optional<ProceduralSpec> procedural;
     std::optional<ParticleSpec> particle_spec;
+
+    std::optional<std::string> parent;
+    std::optional<std::string> track_matte_layer_id;
+    TrackMatteType track_matte_type{TrackMatteType::None};
 };
 
 } // namespace tachyon

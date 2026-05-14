@@ -26,14 +26,14 @@ std::vector<AssetReference> collect_asset_references(const SceneSpec& scene) {
             }
             // Text layers (fonts)
             else if (layer.type == LayerType::Text) {
-                if (!layer.font_id.empty()) {
-                    refs.push_back({"", layer.font_id, AssetKind::Font, layer.id});
+                if (!layer.text.font_id.empty()) {
+                    refs.push_back({"", layer.text.font_id, AssetKind::Font, layer.id});
                 }
             }
             
             // Subtitles
-            if (!layer.subtitle_path.empty()) {
-                refs.push_back({"", layer.subtitle_path, AssetKind::Subtitle, layer.id});
+            if (!layer.subtitles.path.empty()) {
+                refs.push_back({"", layer.subtitles.path, AssetKind::Subtitle, layer.id});
             }
         }
 

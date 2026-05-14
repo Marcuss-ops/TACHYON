@@ -95,9 +95,9 @@ inline SceneSpec enhance(const EnhancedSceneParams& params) {
     if (!params.main_text.empty()) {
         comp.layers.push_back(tachyon::presets::text::headline(params.main_text)
             .font("Inter")
-            .font_size(96)
+            .text.font_size(96)
             .center()
-            .text_box(params.width, params.height)
+            .text.box(params.width, params.height)
             .position(params.width / 2.0, params.height / 2.0)
             .duration(params.duration)
             .build());

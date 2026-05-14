@@ -4,7 +4,7 @@
 
 namespace tachyon::test {
 
-TEST(EffectParamValidationTest, TypoFails) {
+TEST(EffectParamValidationTest, TypoFailsWithSuggestion) {
     renderer2d::EffectRegistry registry;
     renderer2d::EffectDescriptor desc;
     desc.id = "tachyon.effect.blur";
@@ -18,13 +18,13 @@ TEST(EffectParamValidationTest, TypoFails) {
     auto result = renderer2d::validate_effect(fx, registry);
     EXPECT_FALSE(result.valid);
     
-    bool found_typo_error = false;
+    bool found_suggestion = false;
     for (const auto& issue : result.issues) {
-        if (issue.message.find("Unknown parameter 'raduis'") != std::string::npos) {
-            found_typo_error = true;
+        if (issue.message.find("Did you mean 'radius'?") != std::string::npos) {
+            found_suggestion = true;
         }
     }
-    EXPECT_TRUE(found_typo_error);
+    EXPECT_TRUE(found_suggestion) << "Should have suggested 'radius'";
 }
 
 TEST(EffectParamValidationTest, UnknownEffectFails) {

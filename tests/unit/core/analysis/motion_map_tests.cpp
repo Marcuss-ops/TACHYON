@@ -27,7 +27,7 @@ bool run_motion_map_tests() {
     LayerSpec layer;
     layer.id = "title";
     layer.type = LayerType::Text;
-    layer.text_content = "Hello";
+    layer.text.content = "Hello";
     layer.timing.start = 0.0;
     layer.timing.duration = 3.0;
     layer.transition_in.kind = TransitionKind::Fade;

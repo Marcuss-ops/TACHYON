@@ -184,26 +184,26 @@ void SceneValidator::validate_safe_area(const ::tachyon::LayerSpec& layer, const
 
 void SceneValidator::validate_track_bindings(const ::tachyon::LayerSpec& layer, const std::string& path, ValidationResult& out) const {
     // Validate track bindings reference valid sources
-    for (std::size_t i = 0; i < layer.track_bindings.size(); ++i) {
-        const auto& binding = layer.track_bindings[i];
+    for (std::size_t i = 0; i < layer.temporal.track_bindings.size(); ++i) {
+        const auto& binding = layer.temporal.track_bindings[i];
         
         if (binding.source_id.empty()) {
             out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error,
-                path + ".track_bindings[" + std::to_string(i) + "].source_id",
+                path + ".temporal.track_bindings[" + std::to_string(i) + "].source_id",
                 "Track binding source_id cannot be empty."});
             out.error_count++;
         }
         
         if (binding.source_track_name.empty()) {
             out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error,
-                path + ".track_bindings[" + std::to_string(i) + "].source_track_name",
+                path + ".temporal.track_bindings[" + std::to_string(i) + "].source_track_name",
                 "Track binding source_track_name cannot be empty."});
             out.error_count++;
         }
         
         if (binding.influence < 0.0f || binding.influence > 1.0f) {
             out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning,
-                path + ".track_bindings[" + std::to_string(i) + "].influence",
+                path + ".temporal.track_bindings[" + std::to_string(i) + "].influence",
                 "Track binding influence should be between 0.0 and 1.0."});
             out.warning_count++;
         }
@@ -255,18 +255,18 @@ void SceneValidator::validate_keyframes(const ::tachyon::LayerSpec& layer, const
 }
 
 void SceneValidator::validate_font_reference(const ::tachyon::LayerSpec& layer, const ::tachyon::SceneSpec& scene, const std::string& path, ValidationResult& out) const {
-    if (!layer.font_id.empty() && scene.font_manifest) {
+    if (!layer.text.font_id.empty() && scene.font_manifest) {
         bool font_found = false;
         for (const auto& font : scene.font_manifest->fonts) {
-            if (font.id == layer.font_id) {
+            if (font.id == layer.text.font_id) {
                 font_found = true;
                 break;
             }
         }
         if (!font_found) {
             out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, 
-                path + ".font_id",
-                "Font ID '" + layer.font_id + "' not found in font manifest."});
+                path + ".text.font_id",
+                "Font ID '" + layer.text.font_id + "' not found in font manifest."});
             out.error_count++;
         }
     }

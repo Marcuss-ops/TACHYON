@@ -11,7 +11,7 @@ namespace tachyon::presets {
 namespace {
 void mark_fixed_pitch_if_needed(tachyon::LayerSpec& spec, const TextAnimatorSpec& anim) {
     if (::tachyon::text::uses_character_stagger_layout(anim)) {
-        spec.text_box.fixed_pitch = true;
+        spec.text.box.fixed_pitch = true;
     }
 }
 }

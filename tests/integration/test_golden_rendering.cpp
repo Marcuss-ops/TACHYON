@@ -22,8 +22,8 @@ TEST_F(GoldenRenderingTest, TextPro_BasicLayout) {
     
     EvaluatedLayerState text_layer;
     text_layer.type = LayerType::Text;
-    text_layer.text_content = "Tachyon Engine Golden Test";
-    text_layer.font_size = 72.0f;
+    text_layer.text.content = "Tachyon Engine Golden Test";
+    text_layer.text.font_size = 72.0f;
     text_layer.visible = true;
     text_layer.enabled = true;
     text_layer.active = true;

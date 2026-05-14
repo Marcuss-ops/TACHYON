@@ -50,7 +50,7 @@ bool run_scene_inspector_tests() {
         LayerSpec text_layer;
         text_layer.id = "title";
         text_layer.type = LayerType::Text;
-        text_layer.text_content.clear();
+        text_layer.text.content.clear();
         text_layer.timing.start = 0.0;
         text_layer.timing.source_out = 1.0;
         comp.layers.push_back(text_layer);
@@ -82,13 +82,13 @@ bool run_scene_inspector_tests() {
         LayerSpec text_layer;
         text_layer.id = "label";
         text_layer.type = LayerType::Text;
-        text_layer.text_content = "Hello";
+        text_layer.text.content = "Hello";
         text_layer.transition_in.kind = TransitionKind::Fade;
         comp.layers.push_back(text_layer);
         scene.compositions.push_back(comp);
 
         const auto report = inspect_scene(scene, registry);
-        if (has_issue_with_severity(report, "text.font_size_default", InspectionSeverity::Info)) {
+        if (has_issue_with_severity(report, "text.text.font_size_default", InspectionSeverity::Info)) {
             std::cerr << "scene_inspector: info issues should be hidden by default\n";
             ok = false;
         }
@@ -111,7 +111,7 @@ bool run_scene_inspector_tests() {
         LayerSpec text_layer;
         text_layer.id = "title";
         text_layer.type = LayerType::Text;
-        text_layer.text_content = "Hello";
+        text_layer.text.content = "Hello";
         text_layer.animation_in_preset = "tachyon.textanim.fade_in";
         text_layer.animation_out_preset = "tachyon.textanim.fade_out";
         comp.layers.push_back(text_layer);

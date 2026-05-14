@@ -111,29 +111,29 @@ void evaluate_layer(
     state->child_time_seconds = frame_time_seconds;
     state->opacity = 1.0;
     state->local_transform = math::Transform2::identity();
-    state->fill_color = layer.fill_color;
-    state->stroke_color = layer.stroke_color;
-    state->stroke_width = layer.stroke_width;
-    state->line_cap = layer.line_cap;
-    state->line_join = layer.line_join;
-    state->miter_limit = layer.miter_limit;
-    state->text_content = layer.text_content;
-    state->font_id = layer.font_id;
-    state->font_size = layer.font_size;
-    state->text_box = layer.text_box;
+    state->fill_color = layer.text.fill_color;
+    state->stroke_color = layer.text.stroke_color;
+    state->stroke_width = layer.text.stroke_width;
+    state->line_cap = layer.vector.line_cap;
+    state->line_join = layer.vector.line_join;
+    state->miter_limit = layer.vector.miter_limit;
+    state->text_content = layer.text.content;
+    state->font_id = layer.text.font_id;
+    state->font_size = layer.text.font_size;
+    state->text_box = layer.text.box;
     state->text_animators = layer.text_animators;
     state->text_highlights = layer.text_highlights;
-    state->subtitle_path = layer.subtitle_path;
+    state->subtitle_path = layer.subtitles.path;
     // Sample animated subtitle outline color to static ColorSpec
-    if (layer.subtitle_outline_color.value.has_value()) {
-        state->subtitle_outline_color = layer.subtitle_outline_color.value;
+    if (layer.subtitles.outline_color.value.has_value()) {
+        state->subtitle_outline_color = layer.subtitles.outline_color.value;
     } else {
         state->subtitle_outline_color = std::nullopt;
     }
-    state->subtitle_outline_width = layer.subtitle_outline_width;
-    state->word_timestamp_path = layer.word_timestamp_path;
-    state->shape_path = to_shape_path_spec(layer.shape_path);
-    state->shape_spec = layer.shape_spec;
+    state->subtitle_outline_width = layer.subtitles.outline_width;
+    state->word_timestamp_path = layer.subtitles.word_timestamp_path;
+    state->shape_path = to_shape_path_spec(layer.vector.shape_path);
+    state->shape_spec = layer.vector.shape_spec;
     
     state->effects.reserve(layer.effects.size());
     for (const auto& effect : layer.effects) {

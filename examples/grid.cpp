@@ -20,7 +20,13 @@ tachyon::LayerSpec make_solid_layer(
     layer.height = static_cast<int>(h);
     layer.transform.position_x = x;
     layer.transform.position_y = y;
-    layer.fill_color = tachyon::AnimatedColorSpec{fill};
+    
+    tachyon::ShapeSpec solid_rect;
+    solid_rect.type = "rectangle";
+    solid_rect.width = w;
+    solid_rect.height = h;
+    solid_rect.fill_color = fill;
+    layer.vector.shape_spec = solid_rect;
     return layer;
 }
 
@@ -99,10 +105,9 @@ tachyon::LayerSpec make_text_layer(
     layer.visible = true;
     layer.width = static_cast<int>(w);
     layer.height = static_cast<int>(h);
-    layer.text_content = content;
-    layer.font_size = tachyon::AnimatedScalarSpec{font_size};
-    layer.fill_color = tachyon::AnimatedColorSpec{color};
-    layer.alignment = "left";
+    layer.text.content = content;
+    layer.text.font_size = tachyon::AnimatedScalarSpec{font_size};
+    layer.text.fill_color = tachyon::AnimatedColorSpec{color};
     layer.transform.position_x = x;
     layer.transform.position_y = y;
     layer.transform.position_property = tachyon::AnimatedVector2Spec{tachyon::math::Vector2{x, y}};

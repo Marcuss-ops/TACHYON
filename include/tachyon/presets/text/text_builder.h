@@ -42,29 +42,29 @@ public:
         spec_.type = ::tachyon::LayerType::Text;
         spec_.enabled = true;
         spec_.visible = true;
-        spec_.text_content = std::move(content);
-        spec_.fill_color = AnimatedColorSpec{ColorSpec{238, 242, 248, 255}};
-        spec_.font_size = AnimatedScalarSpec{72.0};
+        spec_.text.content = std::move(content);
+        spec_.text.fill_color = AnimatedColorSpec{ColorSpec{238, 242, 248, 255}};
+        spec_.text.font_size = AnimatedScalarSpec{72.0};
         spec_.width = 1920;
         spec_.height = 200;
-        spec_.text_box.horizontal_align = HorizontalAlign::Center;
+        spec_.text.box.horizontal_align = HorizontalAlign::Center;
         spec_.transform.position_x = 960.0;
         spec_.transform.position_y = 540.0;
     }
 
     TextBuilder& font(std::string f) {
-        spec_.font_id = std::move(f);
+        spec_.text.font_id = std::move(f);
         return *this;
     }
 
     TextBuilder& size(double s) {
-        spec_.font_size = AnimatedScalarSpec{s};
+        spec_.text.font_size = AnimatedScalarSpec{s};
         apply_anchor();
         return *this;
     }
 
     TextBuilder& color(const ColorSpec& c) {
-        spec_.fill_color = AnimatedColorSpec{c};
+        spec_.text.fill_color = AnimatedColorSpec{c};
         return *this;
     }
 
@@ -82,13 +82,13 @@ public:
     }
 
     TextBuilder& left() {
-        spec_.text_box.horizontal_align = HorizontalAlign::Left;
+        spec_.text.box.horizontal_align = HorizontalAlign::Left;
         anchor_.reset();
         return *this;
     }
 
     TextBuilder& right() {
-        spec_.text_box.horizontal_align = HorizontalAlign::Right;
+        spec_.text.box.horizontal_align = HorizontalAlign::Right;
         anchor_.reset();
         return *this;
     }
@@ -112,7 +112,7 @@ public:
     }
 
     TextBuilder& fixed_pitch(bool enabled = true) {
-        spec_.text_box.fixed_pitch = enabled;
+        spec_.text.box.fixed_pitch = enabled;
         return *this;
     }
 
@@ -135,14 +135,14 @@ public:
     TextBuilder& animate(const TextAnimatorSpec& animator) {
         spec_.text_animators.push_back(animator);
         if (::tachyon::text::uses_character_stagger_layout(animator)) {
-            spec_.text_box.fixed_pitch = true;
+            spec_.text.box.fixed_pitch = true;
         }
         return *this;
     }
 
     TextBuilder& animate(TextAnimatorSpec&& animator) {
         if (::tachyon::text::uses_character_stagger_layout(animator)) {
-            spec_.text_box.fixed_pitch = true;
+            spec_.text.box.fixed_pitch = true;
         }
         spec_.text_animators.push_back(std::move(animator));
         return *this;

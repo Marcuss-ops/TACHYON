@@ -37,34 +37,34 @@ CompiledLayer LayerCompiler::compile_layer(
     
     compiled_layer.width = static_cast<std::uint32_t>(layer.width);
     compiled_layer.height = static_cast<std::uint32_t>(layer.height);
-    compiled_layer.text_content = layer.text_content;
-    compiled_layer.font_id = layer.font_id;
-    compiled_layer.font_size = static_cast<float>(layer.font_size.value.has_value() ? *layer.font_size.value : 48.0);
-    compiled_layer.text_box = layer.text_box;
-    compiled_layer.fill_color = layer.fill_color.value.has_value() ? *layer.fill_color.value : ColorSpec{255, 255, 255, 255};
-    compiled_layer.stroke_color = layer.stroke_color.value.has_value() ? *layer.stroke_color.value : ColorSpec{255, 255, 255, 255};
-    compiled_layer.stroke_width = layer.stroke_width_property.value.has_value() ? static_cast<float>(*layer.stroke_width_property.value) : static_cast<float>(layer.stroke_width);
-    compiled_layer.shape_path = layer.shape_path;
+    compiled_layer.text.content = layer.text.content;
+    compiled_layer.text.font_id = layer.text.text.font_id;
+    compiled_layer.text.font_size = static_cast<float>(layer.text.text.font_size.value.has_value() ? *layer.text.text.font_size.value : 48.0);
+    compiled_layer.text.box = layer.text.box;
+    compiled_layer.text.fill_color = layer.text.text.fill_color.value.has_value() ? *layer.text.text.fill_color.value : ColorSpec{255, 255, 255, 255};
+    compiled_layer.text.stroke_color = layer.text.text.stroke_color.value.has_value() ? *layer.text.text.stroke_color.value : ColorSpec{255, 255, 255, 255};
+    compiled_layer.text.stroke_width = layer.text.text.text.stroke_width_property.value.has_value() ? static_cast<float>(*layer.text.text.text.stroke_width_property.value) : static_cast<float>(layer.text.text.stroke_width);
+    compiled_layer.vector.shape_path = layer.vector.vector.shape_path;
     compiled_layer.effects = layer.effects;
     compiled_layer.text_animators = layer.text_animators;
     compiled_layer.text_highlights = layer.text_highlights;
 
-    compiled_layer.mask_feather = static_cast<float>(layer.mask_feather.value.has_value() ? *layer.mask_feather.value : 0.0);
-    compiled_layer.subtitle_path = layer.subtitle_path;
-    compiled_layer.subtitle_outline_color = layer.subtitle_outline_color;
-    compiled_layer.subtitle_outline_width = static_cast<float>(layer.subtitle_outline_width);
-    compiled_layer.word_timestamp_path = layer.word_timestamp_path;
+    compiled_layer.masks.feather = static_cast<float>(layer.masks.feather.value.has_value() ? *layer.masks.feather.value : 0.0);
+    compiled_layer.subtitles.path = layer.subtitles.path;
+    compiled_layer.subtitles.outline_color = layer.subtitles.outline_color;
+    compiled_layer.subtitles.outline_width = static_cast<float>(layer.subtitles.outline_width);
+    compiled_layer.subtitles.word_timestamp_path = layer.subtitles.subtitles.word_timestamp_path;
     compiled_layer.procedural = layer.procedural;
     
-    if (layer.line_cap == "round") compiled_layer.line_cap = renderer2d::LineCap::Round;
-    else if (layer.line_cap == "square") compiled_layer.line_cap = renderer2d::LineCap::Square;
-    else compiled_layer.line_cap = renderer2d::LineCap::Butt;
+    if (layer.vector.vector.line_cap == "round") compiled_layer.vector.line_cap = renderer2d::LineCap::Round;
+    else if (layer.vector.vector.line_cap == "square") compiled_layer.vector.line_cap = renderer2d::LineCap::Square;
+    else compiled_layer.vector.line_cap = renderer2d::LineCap::Butt;
 
-    if (layer.line_join == "round") compiled_layer.line_join = renderer2d::LineJoin::Round;
-    else if (layer.line_join == "bevel") compiled_layer.line_join = renderer2d::LineJoin::Bevel;
-    else compiled_layer.line_join = renderer2d::LineJoin::Miter;
+    if (layer.vector.vector.line_join == "round") compiled_layer.vector.line_join = renderer2d::LineJoin::Round;
+    else if (layer.vector.vector.line_join == "bevel") compiled_layer.vector.line_join = renderer2d::LineJoin::Bevel;
+    else compiled_layer.vector.line_join = renderer2d::LineJoin::Miter;
 
-    compiled_layer.miter_limit = static_cast<float>(layer.miter_limit);
+    compiled_layer.vector.miter_limit = static_cast<float>(layer.vector.vector.miter_limit);
     
     // Build flags bitmask
     compiled_layer.flags = 0;
@@ -90,23 +90,23 @@ CompiledLayer LayerCompiler::compile_layer(
     add_track(".scale_x", layer.transform.scale_property, layer.transform.scale_x.value_or(1.0));
     add_track(".scale_y", layer.transform.scale_property, layer.transform.scale_y.value_or(1.0));
     add_track(".rotation", layer.transform.rotation_property, layer.transform.rotation.value_or(0.0));
-    add_track(".mask_feather", layer.mask_feather, 0.0);
+    add_track(".masks.feather", layer.masks.feather, 0.0);
     
     // Anchor points
     add_track(".anchor_point_x", layer.transform.anchor_point, layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->x : 0.0);
     add_track(".anchor_point_y", layer.transform.anchor_point, layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->y : 0.0);
 
     // Additional canonical tracks
-    add_track(".time_remap", layer.time_remap_property, 0.0);
-    add_track(".font_size", layer.font_size, 48.0);
-    add_track(".stroke_width", layer.stroke_width_property, layer.stroke_width);
-    add_track(".repeater_count", layer.repeater_count, 1.0);
-    add_track(".repeater_stagger_delay", layer.repeater_stagger_delay, 0.0);
+    add_track(".temporal.time_remap", layer.temporal.temporal.temporal.time_remap_property, 0.0);
+    add_track(".text.font_size", layer.text.text.font_size, 48.0);
+    add_track(".text.stroke_width", layer.text.text.text.stroke_width_property, layer.text.text.stroke_width);
+    add_track(".repeater.count", layer.repeater.count, 1.0);
+    add_track(".repeater.stagger_delay", layer.repeater.stagger_delay, 0.0);
 
     // Populate Unified Fields
-    compiled_layer.track_bindings = layer.track_bindings;
-    compiled_layer.time_remap = layer.time_remap;
-    compiled_layer.frame_blend = layer.frame_blend;
+    compiled_layer.temporal.track_bindings = layer.temporal.temporal.track_bindings;
+    compiled_layer.temporal.time_remap = layer.temporal.temporal.time_remap;
+    compiled_layer.temporal.frame_blend = layer.temporal.temporal.frame_blend;
 
     compiled_layer.in_time = layer.timing.start;
     compiled_layer.out_time = layer.timing.start + layer.timing.duration;
@@ -114,6 +114,12 @@ CompiledLayer LayerCompiler::compile_layer(
     compiled_layer.blend_mode = layer.blend_mode;
     compiled_layer.transition_in = layer.transition_in;
     compiled_layer.transition_out = layer.transition_out;
+
+    return compiled_layer;
+}
+
+} // namespace tachyon
+
 
     return compiled_layer;
 }

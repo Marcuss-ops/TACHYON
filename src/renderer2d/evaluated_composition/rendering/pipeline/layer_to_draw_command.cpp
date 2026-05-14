@@ -51,7 +51,7 @@ DrawCommand2D solid_command(const scene::EvaluatedLayerState& layer, const scene
     const int base_width = layer.width > 0 ? layer.width : static_cast<int>(composition_state.width);
     const int base_height = layer.height > 0 ? layer.height : static_cast<int>(composition_state.height);
     const RectI rect = scaled_rect(layer, base_width, base_height);
-    const Color color = color_with_opacity(layer.fill_color, static_cast<float>(layer.opacity));
+    const Color color = color_with_opacity(layer.text.fill_color, static_cast<float>(layer.opacity));
     DrawCommand2D command;
     command.kind = DrawCommandKind::SolidRect;
     command.z_order = z_order;
@@ -96,17 +96,17 @@ DrawCommand2D shape_command(const scene::EvaluatedLayerState& layer, const scene
     command.clip = full_clip(composition_state);
     
     ShapeCommand shape;
-    shape.fill_color = map_color(layer.fill_color);
-    shape.stroke_color = map_color(layer.stroke_color);
-    shape.stroke_width = layer.stroke_width;
-    shape.line_cap = layer.line_cap;
-    shape.line_join = layer.line_join;
-    shape.miter_limit = layer.miter_limit;
+    shape.text.fill_color = map_color(layer.text.fill_color);
+    shape.text.stroke_color = map_color(layer.text.stroke_color);
+    shape.text.stroke_width = layer.text.stroke_width;
+    shape.vector.line_cap = layer.vector.line_cap;
+    shape.vector.line_join = layer.vector.line_join;
+    shape.vector.miter_limit = layer.vector.miter_limit;
     shape.opacity = static_cast<float>(layer.opacity);
     shape.transform = layer.local_transform;
     
-    if (layer.shape_path.has_value()) {
-        const auto& points = layer.shape_path->points;
+    if (layer.vector.shape_path.has_value()) {
+        const auto& points = layer.vector.shape_path->points;
         for (std::size_t i = 0; i < points.size(); ++i) {
             const auto& pt = points[i];
             if (i == 0) {
@@ -126,7 +126,7 @@ DrawCommand2D shape_command(const scene::EvaluatedLayerState& layer, const scene
                 }
             }
         }
-        if (layer.shape_path->closed && !points.empty()) {
+        if (layer.vector.shape_path->closed && !points.empty()) {
              const auto& last = points.back();
              const auto& first = points.front();
              if ((last.tangent_out.x != 0.0f || last.tangent_out.y != 0.0f) || 

@@ -16,7 +16,7 @@ TEST(TextPresetTests, BuildEnhanced) {
     text::TextParams params;
     params.text = "Test Text";
     auto layer = text::build_enhanced(params);
-    EXPECT_EQ(layer.text_content, "Test Text");
+    EXPECT_EQ(layer.text.content, "Test Text");
     EXPECT_EQ(layer.name, "Enhanced Text");
 }
 

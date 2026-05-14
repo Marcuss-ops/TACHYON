@@ -264,7 +264,7 @@ CompiledScene TBFCodec::migrate(const CompiledScene& scene, std::uint16_t from_v
     if (ver == 1) {
         for (auto& comp : migrated.compositions) {
             for (auto& layer : comp.layers) {
-                layer.mask_feather = 0.0f;
+                layer.masks.feather = 0.0f;
             }
         }
         ver = 2;
@@ -338,16 +338,16 @@ std::vector<std::uint8_t> TBFCodec::encode(const CompiledScene& scene) {
             writer.write_u32(layer.type_id);
             writer.write_u32(layer.width);
             writer.write_u32(layer.height);
-            writer.write_string(layer.text_content);
-            writer.write_string(layer.font_id);
-            writer.write_f32(layer.font_size);
+            writer.write_string(layer.text.content);
+            writer.write_string(layer.text.font_id);
+            writer.write_f32(layer.text.font_size);
             // ColorSpec
-            writer.write_u8(layer.fill_color.r); writer.write_u8(layer.fill_color.g); writer.write_u8(layer.fill_color.b); writer.write_u8(layer.fill_color.a);
-            writer.write_u8(layer.stroke_color.r); writer.write_u8(layer.stroke_color.g); writer.write_u8(layer.stroke_color.b); writer.write_u8(layer.stroke_color.a);
-            writer.write_f32(layer.stroke_width);
+            writer.write_u8(layer.text.fill_color.r); writer.write_u8(layer.text.fill_color.g); writer.write_u8(layer.text.fill_color.b); writer.write_u8(layer.text.fill_color.a);
+            writer.write_u8(layer.text.stroke_color.r); writer.write_u8(layer.text.stroke_color.g); writer.write_u8(layer.text.stroke_color.b); writer.write_u8(layer.text.stroke_color.a);
+            writer.write_f32(layer.text.stroke_width);
             writer.write_vector(layer.property_indices);
             writer.write_u8(layer.flags);
-            writer.write_f32(layer.mask_feather);
+            writer.write_f32(layer.masks.feather);
             writer.write_string(layer.blend_mode);
             writer.write_f64(layer.in_time);
             writer.write_f64(layer.out_time);
@@ -405,12 +405,12 @@ std::vector<std::uint8_t> TBFCodec::encode(const CompiledScene& scene) {
             }
 
             // Unified Temporal & Tracking
-            writer.write_vector(layer.track_bindings, [](BinaryWriter& w, const spec::TrackBinding& b) {
+            writer.write_vector(layer.temporal.track_bindings, [](BinaryWriter& w, const spec::TrackBinding& b) {
                 TBFWriter& tw = static_cast<TBFWriter&>(w);
                 tw.write_track_binding(b);
             });
-            writer.write_time_remap(layer.time_remap);
-            writer.write_u8(static_cast<std::uint8_t>(layer.frame_blend));
+            writer.write_time_remap(layer.temporal.time_remap);
+            writer.write_u8(static_cast<std::uint8_t>(layer.temporal.frame_blend));
         }
 
 
@@ -528,16 +528,16 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
             layer.type_id = reader.read_u32();
             layer.width = reader.read_u32();
             layer.height = reader.read_u32();
-            layer.text_content = reader.read_string();
-            layer.font_id = reader.read_string();
-            layer.font_size = reader.read_f32();
+            layer.text.content = reader.read_string();
+            layer.text.font_id = reader.read_string();
+            layer.text.font_size = reader.read_f32();
             // ColorSpec
-            layer.fill_color.r = reader.read_u8(); layer.fill_color.g = reader.read_u8(); layer.fill_color.b = reader.read_u8(); layer.fill_color.a = reader.read_u8();
-            layer.stroke_color.r = reader.read_u8(); layer.stroke_color.g = reader.read_u8(); layer.stroke_color.b = reader.read_u8(); layer.stroke_color.a = reader.read_u8();
-            layer.stroke_width = reader.read_f32();
+            layer.text.fill_color.r = reader.read_u8(); layer.text.fill_color.g = reader.read_u8(); layer.text.fill_color.b = reader.read_u8(); layer.text.fill_color.a = reader.read_u8();
+            layer.text.stroke_color.r = reader.read_u8(); layer.text.stroke_color.g = reader.read_u8(); layer.text.stroke_color.b = reader.read_u8(); layer.text.stroke_color.a = reader.read_u8();
+            layer.text.stroke_width = reader.read_f32();
             layer.property_indices = reader.read_vector<std::uint32_t>();
             layer.flags = reader.read_u8();
-            layer.mask_feather = reader.read_f32();
+            layer.masks.feather = reader.read_f32();
             layer.blend_mode = reader.read_string();
             layer.in_time = reader.read_f64();
             layer.out_time = reader.read_f64();
@@ -583,11 +583,11 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
             }
 
             // Unified Temporal & Tracking
-            layer.track_bindings = reader.read_vector<spec::TrackBinding>([](BinaryReader& r) {
+            layer.temporal.track_bindings = reader.read_vector<spec::TrackBinding>([](BinaryReader& r) {
                 return static_cast<TBFReader&>(r).read_track_binding();
             });
-            layer.time_remap = reader.read_time_remap();
-            layer.frame_blend = reader.read_enum<spec::FrameBlendMode>();
+            layer.temporal.time_remap = reader.read_time_remap();
+            layer.temporal.frame_blend = reader.read_enum<spec::FrameBlendMode>();
 
             comp.layers.push_back(std::move(layer));
         }

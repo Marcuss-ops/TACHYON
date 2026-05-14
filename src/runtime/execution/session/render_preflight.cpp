@@ -44,8 +44,8 @@ PreflightResult perform_preflight(
     if (context.font_registry) {
         for (const auto& comp : compiled_scene.compositions) {
             for (const auto& layer : comp.layers) {
-                if (!layer.font_id.empty() && !context.font_registry->find(layer.font_id)) {
-                     return {false, "Font not found: " + layer.font_id};
+                if (!layer.text.font_id.empty() && !context.font_registry->find(layer.text.font_id)) {
+                     return {false, "Font not found: " + layer.text.font_id};
                 }
             }
         }

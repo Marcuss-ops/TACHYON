@@ -92,8 +92,8 @@ TEST(SceneBuilder, MaterialBuilder) {
 
     ASSERT_EQ(comp.layers.size(), 1);
     const auto& layer = comp.layers[0];
-    ASSERT_TRUE(layer.fill_color.value.has_value());
-    EXPECT_EQ(*layer.fill_color.value, ColorSpec(10, 20, 30, 255));
+    ASSERT_TRUE(layer.text.fill_color.value.has_value());
+    EXPECT_EQ(*layer.text.fill_color.value, ColorSpec(10, 20, 30, 255));
     ASSERT_TRUE(layer.metallic.value.has_value());
     ASSERT_TRUE(layer.roughness.value.has_value());
     EXPECT_EQ(*layer.metallic.value, 0.8);
@@ -135,8 +135,8 @@ TEST(SceneBuilder, MaterialBuilderKeepsLayerMaterialFields) {
 
     ASSERT_EQ(comp.layers.size(), 1);
     const auto& layer = comp.layers[0];
-    ASSERT_TRUE(layer.fill_color.value.has_value());
-    EXPECT_EQ(*layer.fill_color.value, ColorSpec(12, 24, 36, 255));
+    ASSERT_TRUE(layer.text.fill_color.value.has_value());
+    EXPECT_EQ(*layer.text.fill_color.value, ColorSpec(12, 24, 36, 255));
     ASSERT_TRUE(layer.metallic.value.has_value());
     ASSERT_TRUE(layer.roughness.value.has_value());
 }

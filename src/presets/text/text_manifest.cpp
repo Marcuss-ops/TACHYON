@@ -50,10 +50,10 @@ TextLayerPresetSpec create_basic_text_preset() {
         LayerSpec layer;
         layer.type = LayerType::Text;
         layer.name = "Text Layer";
-        layer.text_content = p.get_or<std::string>("text", "Hello World");
-        layer.font_id = p.get_or<std::string>("font_id", "default");
-        layer.font_size = static_cast<uint32_t>(p.get_or<double>("font_size", 48.0));
-        layer.fill_color = AnimatedColorSpec(p.get_or<ColorSpec>("color", ColorSpec{255, 255, 255, 255}));
+        layer.text.content = p.get_or<std::string>("text", "Hello World");
+        layer.text.text.font_id = p.get_or<std::string>("font_id", "default");
+        layer.text.text.font_size = p.get_or<double>("font_size", 48.0);
+        layer.text.text.fill_color = p.get_or<ColorSpec>("color", ColorSpec{255, 255, 255, 255});
         return layer;
     };
     return spec;

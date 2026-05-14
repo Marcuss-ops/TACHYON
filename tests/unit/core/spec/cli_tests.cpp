@@ -194,7 +194,7 @@ bool run_cli_tests() {
         tachyon::LayerSpec text_layer;
         text_layer.id = "title";
         text_layer.type = tachyon::LayerType::Text;
-        text_layer.text_content = "Hello";
+        text_layer.text.content = "Hello";
         text_layer.timing.start = 0.0;
         text_layer.timing.source_out = 1.0;
         comp.layers.push_back(text_layer);

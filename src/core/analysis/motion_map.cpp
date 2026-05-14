@@ -62,13 +62,13 @@ std::vector<std::string> summarize_text_motion(const TextAnimatorSpec& animator)
     if (animator.properties.tracking_amount_value.has_value() || !animator.properties.tracking_amount_keyframes.empty()) {
         hints.push_back("tracking");
     }
-    if (animator.properties.fill_color_value.has_value() || !animator.properties.fill_color_keyframes.empty()) {
+    if (animator.properties.text.fill_color_value.has_value() || !animator.properties.text.fill_color_keyframes.empty()) {
         hints.push_back("fill_color");
     }
-    if (animator.properties.stroke_color_value.has_value() || !animator.properties.stroke_color_keyframes.empty()) {
+    if (animator.properties.text.stroke_color_value.has_value() || !animator.properties.text.stroke_color_keyframes.empty()) {
         hints.push_back("stroke_color");
     }
-    if (animator.properties.stroke_width_value.has_value() || !animator.properties.stroke_width_keyframes.empty()) {
+    if (animator.properties.text.stroke_width_value.has_value() || !animator.properties.text.stroke_width_keyframes.empty()) {
         hints.push_back("stroke_width");
     }
     if (animator.properties.blur_radius_value.has_value() || !animator.properties.blur_radius_keyframes.empty()) {
@@ -179,7 +179,7 @@ MotionMapReport build_motion_map(const SceneSpec& scene, const MotionMapOptions&
             if (has_motion(layer.opacity_property)) {
                 append_unique(layer_summary.animations, "opacity");
             }
-            if (has_motion(layer.time_remap_property)) {
+            if (has_motion(layer.temporal.temporal.time_remap_property)) {
                 append_unique(layer_summary.animations, "time_remap");
             }
             if (!layer.animation_in_preset.empty()) {
@@ -203,7 +203,7 @@ MotionMapReport build_motion_map(const SceneSpec& scene, const MotionMapOptions&
             if (layer.loop) {
                 append_unique(layer_summary.animations, "loop");
             }
-            if (layer.type == LayerType::Text && !layer.text_content.empty()) {
+            if (layer.type == LayerType::Text && !layer.text.content.empty()) {
                 append_unique(layer_summary.animations, "text_content");
             }
             if (!layer.text_animators.empty()) {
@@ -229,19 +229,19 @@ MotionMapReport build_motion_map(const SceneSpec& scene, const MotionMapOptions&
             if (layer.particle_spec.has_value()) {
                 append_unique(layer_summary.animations, "particles");
             }
-            if (has_motion(layer.repeater_count) || has_motion(layer.repeater_stagger_delay) || has_motion(layer.repeater_offset_position_x)
-                || has_motion(layer.repeater_offset_position_y) || has_motion(layer.repeater_offset_rotation)
-                || has_motion(layer.repeater_offset_scale_x) || has_motion(layer.repeater_offset_scale_y)
-                || has_motion(layer.repeater_start_opacity) || has_motion(layer.repeater_end_opacity)
-                || has_motion(layer.repeater_grid_cols) || has_motion(layer.repeater_radial_radius)
-                || has_motion(layer.repeater_radial_start_angle) || has_motion(layer.repeater_radial_end_angle)) {
+            if (has_motion(layer.repeater.count) || has_motion(layer.repeater.stagger_delay) || has_motion(layer.repeater.offset_position_x)
+                || has_motion(layer.repeater.offset_position_y) || has_motion(layer.repeater.offset_rotation)
+                || has_motion(layer.repeater.offset_scale_x) || has_motion(layer.repeater.offset_scale_y)
+                || has_motion(layer.repeater.start_opacity) || has_motion(layer.repeater.end_opacity)
+                || has_motion(layer.repeater.grid_cols) || has_motion(layer.repeater.radial_radius)
+                || has_motion(layer.repeater.radial_start_angle) || has_motion(layer.repeater.radial_end_angle)) {
                 append_unique(layer_summary.animations, "repeater");
             }
 
             if (!layer.enabled || !layer.visible) {
                 layer_summary.warnings.push_back("disabled_or_invisible");
             }
-            if (layer.type == LayerType::Text && layer.text_content.empty()) {
+            if (layer.type == LayerType::Text && layer.text.content.empty()) {
                 layer_summary.warnings.push_back("empty_text");
             }
             if ((layer.type == LayerType::Image || layer.type == LayerType::Video) && layer.asset_id.empty()) {

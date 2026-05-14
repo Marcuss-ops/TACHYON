@@ -9,11 +9,11 @@ std::size_t estimate_layer_size(const scene::EvaluatedLayerState& layer) {
     std::size_t size = sizeof(scene::EvaluatedLayerState);
     size += layer.id.capacity();
     size += layer.blend_mode.capacity();
-    size += layer.text_content.capacity();
-    size += layer.font_id.capacity();
-    if (layer.subtitle_path) size += layer.subtitle_path->capacity();
-    if (layer.shape_path.has_value()) {
-        size += layer.shape_path->points.capacity() * sizeof(scene::EvaluatedShapePathPoint);
+    size += layer.text.content.capacity();
+    size += layer.text.font_id.capacity();
+    if (layer.subtitles.path) size += layer.subtitles.path->capacity();
+    if (layer.vector.shape_path.has_value()) {
+        size += layer.vector.shape_path->points.capacity() * sizeof(scene::EvaluatedShapePathPoint);
     }
     size += layer.effects.capacity() * sizeof(EffectSpec);
     return size;

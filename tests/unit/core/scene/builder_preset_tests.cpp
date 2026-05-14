@@ -32,7 +32,7 @@ bool run_scene_builder_preset_tests() {
         LayerSpec text_layer;
         text_layer.id = "title";
         text_layer.type = LayerType::Text;
-        text_layer.text_content = "Hello World";
+        text_layer.text.content = "Hello World";
         
         // Applying preset and transitions
         PresetApplier::apply_text_animation(text_layer, "tachyon.textanim.fade_up");

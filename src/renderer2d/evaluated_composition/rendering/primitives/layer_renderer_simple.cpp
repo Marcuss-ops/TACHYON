@@ -226,10 +226,10 @@ public:
         std::string cache_key;
         if (context.text_surface_cache && layer.text_animators.empty()) {
             cache_key = "text_layer:" + (layer.id.empty() ? layer.layer_id : layer.id) + ":" + 
-                        layer.text_content + ":" + layer.font_id + ":" + 
-                        std::to_string(layer.font_size) + ":" +
-                        std::to_string(layer.fill_color.r) + "," + std::to_string(layer.fill_color.g) + "," + 
-                        std::to_string(layer.fill_color.b) + "," + std::to_string(layer.fill_color.a) + ":" +
+                        layer.text.content + ":" + layer.text.font_id + ":" + 
+                        std::to_string(layer.text.font_size) + ":" +
+                        std::to_string(layer.text.fill_color.r) + "," + std::to_string(layer.text.fill_color.g) + "," + 
+                        std::to_string(layer.text.fill_color.b) + "," + std::to_string(layer.text.fill_color.a) + ":" +
                         std::to_string(layer.local_transform.scale.x) + "," + std::to_string(layer.local_transform.scale.y);
             
             auto cached = context.text_surface_cache->get(cache_key);
@@ -243,22 +243,22 @@ public:
         if (registry == nullptr) return false;
 
         const ::tachyon::text::Font* font = nullptr;
-        if (!layer.font_id.empty()) font = registry->find(layer.font_id);
+        if (!layer.text.font_id.empty()) font = registry->find(layer.text.font_id);
         
         if (font == nullptr) {
-            std::cerr << "[error] Font NOT FOUND: " << layer.font_id << ". Falling back to default." << std::endl;
+            std::cerr << "[error] Font NOT FOUND: " << layer.text.font_id << ". Falling back to default." << std::endl;
             font = registry->default_font();
         }
         if (font == nullptr) return false;
 
         ::tachyon::text::TextStyle style;
-        style.pixel_size = static_cast<std::uint32_t>(std::max(1.0f, layer.font_size));
-        style.fill_color = to_color(layer.fill_color);
+        style.pixel_size = static_cast<std::uint32_t>(std::max(1.0f, layer.text.font_size));
+        style.text.fill_color = to_color(layer.text.fill_color);
 
         ::tachyon::text::TextLayoutOptions layout_options;
         layout_options.fixed_pitch = ::tachyon::text::prefers_fixed_pitch_layout(layer.text_animators);
         
-        const auto layout = ::tachyon::text::layout_text(*font, layer.text_content, style, layer.text_box, layout_options);
+        const auto layout = ::tachyon::text::layout_text(*font, layer.text.content, style, layer.text.box, layout_options);
         
         // Resolve world transform using the layout bounds
         const math::Vector2 bounds = {layout.box_width, layout.box_height};
@@ -288,7 +288,7 @@ public:
                 const int dw = std::max(1, static_cast<int>(std::lround(glyph.width * resolved.scale.x)));
                 const int dh = std::max(1, static_cast<int>(std::lround(glyph.height * resolved.scale.y)));
                 
-                render_glyph_direct(*surface, *bitmap, dx, dy, dw, dh, to_color(layer.fill_color));
+                render_glyph_direct(*surface, *bitmap, dx, dy, dw, dh, to_color(layer.text.fill_color));
             }
 
             // --- CACHE STORE ---
@@ -306,7 +306,7 @@ public:
                     const int dy = static_cast<int>(std::lround(wp_base.y)) - origin_y;
                     const int dw = std::max(1, static_cast<int>(std::lround(glyph.width * resolved.scale.x)));
                     const int dh = std::max(1, static_cast<int>(std::lround(glyph.height * resolved.scale.y)));
-                    render_glyph_direct(*text_surface, *bitmap, dx, dy, dw, dh, to_color(layer.fill_color));
+                    render_glyph_direct(*text_surface, *bitmap, dx, dy, dw, dh, to_color(layer.text.fill_color));
                 }
                 context.text_surface_cache->put(cache_key, text_surface);
             }
@@ -358,7 +358,7 @@ public:
                 const int dw = std::max(1, static_cast<int>(std::lround(paint.target_width * resolved.scale.x)));
                 const int dh = std::max(1, static_cast<int>(std::lround(paint.target_height * resolved.scale.y)));
                 
-                renderer2d::Color final_color = to_color(paint.fill_color);
+                renderer2d::Color final_color = to_color(paint.text.fill_color);
                 final_color.a *= paint.opacity;
                 
                 if (paint.is_cursor) {
@@ -469,7 +469,7 @@ public:
 
         const int width = std::max(1, static_cast<int>(std::lround(static_cast<float>(layer.width) * scale_x)));
         const int height = std::max(1, static_cast<int>(std::lround(static_cast<float>(layer.height) * scale_y)));
-        surface->fill_rect(RectI{base_x, base_y, width, height}, to_color(layer.fill_color), true);
+        surface->fill_rect(RectI{base_x, base_y, width, height}, to_color(layer.text.fill_color), true);
         return true;
     }
 };

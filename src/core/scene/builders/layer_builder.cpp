@@ -112,23 +112,23 @@ LayerBuilder& LayerBuilder::size(double w, double h) {
 }
 
 LayerBuilder& LayerBuilder::color(const ColorSpec& c) {
-    spec_.fill_color.value = c;
+    spec_.text.fill_color.value = c;
     return *this;
 }
 
 LayerBuilder& LayerBuilder::fill_color(const ColorSpec& c) {
-    spec_.fill_color.value = c;
+    spec_.text.fill_color.value = c;
     return *this;
 }
 
 LayerBuilder& LayerBuilder::stroke_color(const ColorSpec& c) {
-    spec_.stroke_color.value = c;
+    spec_.text.stroke_color.value = c;
     return *this;
 }
 
 LayerBuilder& LayerBuilder::stroke_width(double w) {
-    spec_.stroke_width = w;
-    spec_.stroke_width_property = anim::scalar(w);
+    spec_.text.stroke_width = w;
+    spec_.text.stroke_width_property = anim::scalar(w);
     return *this;
 }
 

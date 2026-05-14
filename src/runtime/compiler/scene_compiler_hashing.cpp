@@ -93,10 +93,10 @@ std::uint64_t hash_scene_spec(const SceneSpec& scene, const DeterminismContract&
             if (layer.transform.scale_y) builder.add_u64(static_cast<std::uint64_t>(*layer.transform.scale_y * 1000.0));
             builder.add_bool(layer.transform.rotation.has_value());
             if (layer.transform.rotation) builder.add_u64(static_cast<std::uint64_t>(*layer.transform.rotation * 1000.0));
-            builder.add_bool(layer.mask_feather.value.has_value());
-            if (layer.mask_feather.value) builder.add_u64(static_cast<std::uint64_t>(*layer.mask_feather.value * 1000.0));
-            builder.add_bool(layer.mask_feather.expression.has_value());
-            if (layer.mask_feather.expression) add_string(builder, *layer.mask_feather.expression);
+            builder.add_bool(layer.masks.feather.value.has_value());
+            if (layer.masks.feather.value) builder.add_u64(static_cast<std::uint64_t>(*layer.masks.feather.value * 1000.0));
+            builder.add_bool(layer.masks.feather.expression.has_value());
+            if (layer.masks.feather.expression) add_string(builder, *layer.masks.feather.expression);
 
             builder.add_bool(layer.opacity_property.expression.has_value());
             if (layer.opacity_property.expression) add_string(builder, *layer.opacity_property.expression);
@@ -112,22 +112,22 @@ std::uint64_t hash_scene_spec(const SceneSpec& scene, const DeterminismContract&
                 add_string(builder, *layer.parent);
             }
 
-            builder.add_u64(static_cast<std::uint64_t>(layer.track_bindings.size()));
-            for (const auto& binding : layer.track_bindings) {
+            builder.add_u64(static_cast<std::uint64_t>(layer.temporal.track_bindings.size()));
+            for (const auto& binding : layer.temporal.track_bindings) {
                 add_string(builder, binding.property_path);
                 add_string(builder, binding.source_id);
                 add_string(builder, binding.source_track_name);
                 builder.add_u64(static_cast<std::uint64_t>(binding.influence * 1000.0f));
                 builder.add_bool(binding.enabled);
             }
-            builder.add_bool(layer.time_remap.enabled);
-            builder.add_u64(static_cast<std::uint64_t>(layer.time_remap.mode));
-            builder.add_u64(static_cast<std::uint64_t>(layer.time_remap.keyframes.size()));
-            for (const auto& kf : layer.time_remap.keyframes) {
+            builder.add_bool(layer.temporal.time_remap.enabled);
+            builder.add_u64(static_cast<std::uint64_t>(layer.temporal.time_remap.mode));
+            builder.add_u64(static_cast<std::uint64_t>(layer.temporal.time_remap.keyframes.size()));
+            for (const auto& kf : layer.temporal.time_remap.keyframes) {
                 builder.add_u64(static_cast<std::uint64_t>(kf.first * 1000.0f));
                 builder.add_u64(static_cast<std::uint64_t>(kf.second * 1000.0f));
             }
-            builder.add_u64(static_cast<std::uint64_t>(layer.frame_blend));
+            builder.add_u64(static_cast<std::uint64_t>(layer.temporal.frame_blend));
         }
     }
 

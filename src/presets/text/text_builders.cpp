@@ -158,7 +158,7 @@ SceneSpec build_text_scene(const TextParams& text, const SceneParams& scene) {
     bg_layer.width = scene.width;
     bg_layer.height = scene.height;
     bg_layer.opacity = 1.0;
-    bg_layer.fill_color = AnimatedColorSpec(ColorSpec{13, 17, 23, 255});
+    bg_layer.text.fill_color = AnimatedColorSpec(ColorSpec{13, 17, 23, 255});
     
     comp.layers.push_back(std::move(bg_layer));
     comp.layers.push_back(build_text(text));
@@ -174,8 +174,8 @@ LayerSpec build_text_layer(const std::string& text,
                            double duration) {
     TextParams p;
     p.text = text;
-    p.font_id = font_id;
-    p.font_size = static_cast<uint32_t>(font_size);
+    p.text.font_id = font_id;
+    p.text.font_size = static_cast<uint32_t>(font_size);
     p.animation = animation_style;
     p.in_point = 0.0;
     p.out_point = duration;

@@ -41,9 +41,9 @@ bool run_text_domain_boundary_tests() {
     {
         LayerSpec layer;
         layer.type = LayerType::Text;
-        layer.text_content = "Test";
+        layer.text.content = "Test";
         check_true(layer.type == LayerType::Text, "Text layer has correct type");
-        check_true(layer.text_content == "Test", "Text layer has text_content set");
+        check_true(layer.text.content == "Test", "Text layer has text_content set");
     }
 
     std::cout << "Text domain boundary tests: " << (g_failures == 0 ? "PASSED" : "FAILED")

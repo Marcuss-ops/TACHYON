@@ -38,7 +38,7 @@ bool run_tiling_tests() {
         layer.width = 512;
         layer.height = 512;
         layer.local_transform.position = {static_cast<float>(i * 50), static_cast<float>(i * 50)};
-        layer.fill_color = {255, static_cast<uint8_t>(i * 20), 0, 255};
+        layer.text.fill_color = {255, static_cast<uint8_t>(i * 20), 0, 255};
         layer.blend_mode = "normal";
         state.layers.push_back(layer);
     }

@@ -42,7 +42,7 @@ bool run_scene_validator_normalization_tests() {
         LayerSpec layer;
         layer.id = "layer1";
         layer.type = LayerType::Text;
-        layer.text_content = "Hello";
+        layer.text.content = "Hello";
         layer.timing.source_in = 0.0;
         layer.timing.source_out = 5.0;
 

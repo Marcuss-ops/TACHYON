@@ -1,9 +1,7 @@
 #pragma once
 
 #include "tachyon/core/api.h"
-#include "tachyon/core/registry/parameter_bag.h"
-#include "tachyon/presets/effects/effect_preset_registry.h"
-#include <string_view>
+#include "tachyon/core/spec/schema/effects/effect_spec.h"
 
 namespace tachyon::scene {
 
