@@ -73,10 +73,15 @@ private:
 // --- Robust Rendering Utility ---
 
 struct RobustRenderConfig {
-    int width = 1920;
-    int height = 1080;
-    int fps = 30;
-    double duration = 2.0;
+    static constexpr int DefaultWidth = 1920;
+    static constexpr int DefaultHeight = 1080;
+    static constexpr int DefaultFPS = 60; // Upgraded to 60fps as new standard
+    static constexpr double DefaultDuration = 2.0;
+
+    int width = DefaultWidth;
+    int height = DefaultHeight;
+    int fps = DefaultFPS;
+    double duration = DefaultDuration;
     int crf = 18;
     std::string preset = "medium";
 };

@@ -17,9 +17,9 @@ int main() {
     tachyon::renderer2d::render_transition_lookbook();
     
     // Generate the demo for the user
-    // tachyon::renderer2d::render_remotion_demo();
+    tachyon::renderer2d::render_remotion_demo();
     
-    // Generate the gallery for the user (Disabled for speed, focus on remotion demo)
+    // Generate the gallery for the user
     // tachyon::renderer2d::generate_transition_gallery();
     
     std::cout << "[CANARY] All Tests Finished.\n";

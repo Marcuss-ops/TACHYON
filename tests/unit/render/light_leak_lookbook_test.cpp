@@ -31,20 +31,15 @@ void render_lookbook_item(const std::string& transition_id, const std::string& n
         fs::create_directories(base_output);
     }
 
-    const int W = 1280;
-    const int H = 720;
-    const int FPS = 30;
-    const double DURATION = 2.0;
-
     auto comp = Composition("comp")
-        .size(W, H)
-        .fps(FPS)
-        .duration(DURATION)
+        .size(RobustRenderConfig::DefaultWidth, RobustRenderConfig::DefaultHeight)
+        .fps(RobustRenderConfig::DefaultFPS)
+        .duration(RobustRenderConfig::DefaultDuration)
         .layer("bg", [&](LayerBuilder& l) {
-            l.solid("bg").color({20, 20, 25, 255}).duration(DURATION).size(W, H);
+            l.solid("bg").color({20, 20, 25, 255}).duration(RobustRenderConfig::DefaultDuration).size(RobustRenderConfig::DefaultWidth, RobustRenderConfig::DefaultHeight);
         })
         .layer("fg", [&](LayerBuilder& l) {
-            l.solid("fg").color({200, 150, 50, 255}).start(0.5).duration(1.5).size(W, H)
+            l.solid("fg").color({200, 150, 50, 255}).start(0.5).duration(1.5).size(RobustRenderConfig::DefaultWidth, RobustRenderConfig::DefaultHeight)
              .enter().id(transition_id).duration(1.0).done();
         })
         .build();
@@ -55,11 +50,6 @@ void render_lookbook_item(const std::string& transition_id, const std::string& n
     fs::path video_path = base_output / (name + ".mp4");
 
     RobustRenderConfig config;
-    config.width = W;
-    config.height = H;
-    config.fps = FPS;
-    config.duration = DURATION;
-    config.crf = 18;
 
     render_scene_to_mp4(scene, "comp", video_path.string(), trans_reg, config);
 }

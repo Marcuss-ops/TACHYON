@@ -32,11 +32,6 @@ void generate_transition_gallery() {
     TransitionRegistry trans_reg = tachyon::create_default_transition_registry();
     auto all_transitions = trans_reg.list_all();
 
-    const int W = 1920;
-    const int H = 1080;
-    const int FPS = 30;
-    const int DURATION_SEC = 2;
-
     for (const auto* desc : all_transitions) {
         if (!desc) continue;
         
@@ -45,8 +40,8 @@ void generate_transition_gallery() {
         SceneSpec scene;
         CompositionSpec comp;
         comp.id = "comp";
-        comp.width = W;
-        comp.height = H;
+        comp.width = RobustRenderConfig::DefaultWidth;
+        comp.height = RobustRenderConfig::DefaultHeight;
 
         // Layer 1: Aura Blueish (Background)
         LayerSpec l1;
@@ -60,9 +55,9 @@ void generate_transition_gallery() {
         ps1.seed = 123;
         l1.source = ProceduralSource{ps1.kind, ps1};
         l1.playback.timing.start = 0.0;
-        l1.playback.timing.duration = (double)DURATION_SEC;
-        l1.transform.width = W;
-        l1.transform.height = H;
+        l1.playback.timing.duration = RobustRenderConfig::DefaultDuration;
+        l1.transform.width = RobustRenderConfig::DefaultWidth;
+        l1.transform.height = RobustRenderConfig::DefaultHeight;
         
         // Layer 2: Aura Golden (Foreground with Transition)
         LayerSpec l2;
@@ -76,12 +71,12 @@ void generate_transition_gallery() {
         ps2.seed = 456;
         l2.source = ProceduralSource{ps2.kind, ps2};
         l2.playback.timing.start = 0.0;
-        l2.playback.timing.duration = (double)DURATION_SEC;
-        l2.transform.width = W;
-        l2.transform.height = H;
+        l2.playback.timing.duration = RobustRenderConfig::DefaultDuration;
+        l2.transform.width = RobustRenderConfig::DefaultWidth;
+        l2.transform.height = RobustRenderConfig::DefaultHeight;
         
         l2.transition_in.transition_id = desc->id;
-        l2.transition_in.duration = (double)DURATION_SEC;
+        l2.transition_in.duration = RobustRenderConfig::DefaultDuration;
 
         comp.layers.push_back(l1);
         comp.layers.push_back(l2);
@@ -90,13 +85,6 @@ void generate_transition_gallery() {
         fs::path video_path = base_output / (desc->id + ".mp4");
         
         RobustRenderConfig config;
-        config.width = W;
-        config.height = H;
-        config.fps = FPS;
-        config.duration = (double)DURATION_SEC;
-        config.crf = 18;
-        config.preset = "medium";
-
         render_scene_to_mp4(scene, "comp", video_path.string(), trans_reg, config);
     }
     

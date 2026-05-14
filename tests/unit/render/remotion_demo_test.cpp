@@ -31,21 +31,16 @@ void render_remotion_demo() {
 
     TransitionRegistry trans_reg = tachyon::create_default_transition_registry();
     
-    const int W = 1920;
-    const int H = 1080;
-    const int FPS = 30;
-    const double DURATION = 2.0;
-
     auto comp = Composition("comp")
-        .size(W, H)
-        .fps(FPS)
-        .duration(DURATION)
+        .size(RobustRenderConfig::DefaultWidth, RobustRenderConfig::DefaultHeight)
+        .fps(RobustRenderConfig::DefaultFPS)
+        .duration(RobustRenderConfig::DefaultDuration)
         .layer("bg", [&](LayerBuilder& l) {
-            l.solid("bg").color({0, 0, 0, 255}).duration(DURATION).size(W, H);
+            l.solid("bg").color({0, 0, 0, 255}).duration(RobustRenderConfig::DefaultDuration).size(RobustRenderConfig::DefaultWidth, RobustRenderConfig::DefaultHeight);
         })
         .layer("fg", [&](LayerBuilder& l) {
-            l.solid("fg").color({0, 0, 0, 255}).start(0.0).duration(DURATION).size(W, H)
-             .enter().id("tachyon.transition.lightleak.remotion").duration(DURATION).done();
+            l.solid("fg").color({0, 0, 0, 255}).start(0.0).duration(RobustRenderConfig::DefaultDuration).size(RobustRenderConfig::DefaultWidth, RobustRenderConfig::DefaultHeight)
+             .enter().id("tachyon.transition.lightleak.remotion").duration(RobustRenderConfig::DefaultDuration).done();
         })
         .build();
 
@@ -55,13 +50,6 @@ void render_remotion_demo() {
     fs::path video_path = base_output / "remotion_demo.mp4";
 
     RobustRenderConfig config;
-    config.width = W;
-    config.height = H;
-    config.fps = FPS;
-    config.duration = DURATION;
-    config.crf = 18;
-    config.preset = "medium";
-
     render_scene_to_mp4(scene, "comp", video_path.string(), trans_reg, config);
 }
 
