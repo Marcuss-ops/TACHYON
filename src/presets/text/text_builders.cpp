@@ -152,8 +152,9 @@ SceneSpec build_text_scene(const TextParams& text, const SceneParams& scene) {
     bg_layer.type = LayerType::Solid;
     bg_layer.enabled = true;
     bg_layer.visible = true;
-    bg_layer.in_point = 0.0;
-    bg_layer.out_point = scene.duration;
+    bg_layer.timing.start     = 0.0;
+    bg_layer.timing.source_in = 0.0;
+    bg_layer.timing.duration  = scene.duration;
     bg_layer.width = scene.width;
     bg_layer.height = scene.height;
     bg_layer.opacity = 1.0;

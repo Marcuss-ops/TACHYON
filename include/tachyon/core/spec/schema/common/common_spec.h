@@ -50,6 +50,21 @@ enum class AudioBandType {
     Rms
 };
 
+/**
+ * @brief Unified timing for layers.
+ * 
+ * start: Time in composition when layer begins (seconds)
+ * duration: Visible duration in composition (seconds)
+ * source_in: Starting offset within the source asset (seconds)
+ * source_out: Ending offset within the source asset (seconds)
+ */
+struct LayerTiming {
+    double start{0.0};
+    double duration{10.0};
+    double source_in{0.0};
+    double source_out{10.0};
+};
+
 // --- Layer Type Helpers ---
 /**
  * @brief Get the canonical string representation of a LayerType.
@@ -66,15 +81,5 @@ TACHYON_API LayerType layer_type_from_string(std::string_view type_string);
  * @brief Map a LayerType to the internal compiled type ID.
  */
 TACHYON_API std::uint32_t compiled_type_id_from_layer_type(LayerType type);
-
-struct EffectSpec {
-    bool enabled{true};
-    std::string type;
-    std::map<std::string, double> scalars;
-    std::map<std::string, ColorSpec> colors;
-    std::map<std::string, std::string> strings;
-
-    [[nodiscard]] EffectSpec evaluate(double time_seconds) const;
-};
 
 } // namespace tachyon

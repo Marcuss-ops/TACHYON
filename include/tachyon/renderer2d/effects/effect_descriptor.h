@@ -2,7 +2,7 @@
 
 #include "tachyon/core/registry/parameter_schema.h"
 #include "tachyon/core/registry/registry_metadata.h"
-#include "tachyon/core/spec/schema/common/common_spec.h"
+#include "tachyon/core/spec/schema/effects/effect_spec.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 
 namespace tachyon::renderer2d {
@@ -30,7 +30,7 @@ struct AuxSurfaceRequirement {
  */
 struct EffectDescriptor {
     using Factory = std::function<void(
-        const EffectSpec& spec,
+        const EvaluatedEffect& spec,
         const SurfaceRGBA& input,
         SurfaceRGBA& output,
         const std::vector<const SurfaceRGBA*>& aux_surfaces,

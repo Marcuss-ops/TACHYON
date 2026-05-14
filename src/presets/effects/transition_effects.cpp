@@ -12,7 +12,7 @@ std::vector<EffectKindSpec> get_transition_effect_kind_specs() {
         {"tachyon.effect.transition.glsl", "GLSL Transition", "GPU-accelerated GLSL transition kernel.", "effect.transition", {"glsl", "transition", "gpu"}},
         registry::ParameterSchema({
             {"progress", "Progress", "Transition progress", 0.0, 0.0, 1.0},
-            {"transition_id", "Transition", "ID of the GLSL transition", "fade"}
+            {"transition_id", "Transition", "ID of the GLSL transition", "tachyon.transition.crossfade"}
         })
     });
 
@@ -28,13 +28,13 @@ std::vector<EffectPresetSpec> get_transition_effect_preset_specs() {
         {"tachyon.effect.transition.glsl", "GLSL Transition", "GPU-accelerated GLSL transition kernel.", "effect.transition", {"glsl", "transition", "gpu"}},
         registry::ParameterSchema({
             {"progress", "Progress", "Transition progress", 0.0, 0.0, 1.0},
-            {"transition_id", "Transition", "ID of the GLSL transition", "fade"}
+            {"transition_id", "Transition", "ID of the GLSL transition", "tachyon.transition.crossfade"}
         }),
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.transition.glsl";
-            effect.scalars["progress"] = p.get_or<double>("progress", 0.0);
-            effect.strings["transition_id"] = p.get_or<std::string>("transition_id", "fade");
+            effect.params["progress"] = p.get_or<double>("progress", 0.0);
+            effect.params["transition_id"] = p.get_or<std::string>("transition_id", "tachyon.transition.crossfade");
             return effect;
         }
     });

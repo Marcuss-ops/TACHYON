@@ -46,7 +46,6 @@ CompiledLayer LayerCompiler::compile_layer(
     compiled_layer.stroke_width = layer.stroke_width_property.value.has_value() ? static_cast<float>(*layer.stroke_width_property.value) : static_cast<float>(layer.stroke_width);
     compiled_layer.shape_path = layer.shape_path;
     compiled_layer.effects = layer.effects;
-    compiled_layer.animated_effects = layer.animated_effects;
     compiled_layer.text_animators = layer.text_animators;
     compiled_layer.text_highlights = layer.text_highlights;
 
@@ -97,14 +96,21 @@ CompiledLayer LayerCompiler::compile_layer(
     add_track(".anchor_point_x", layer.transform.anchor_point, layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->x : 0.0);
     add_track(".anchor_point_y", layer.transform.anchor_point, layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->y : 0.0);
 
+    // Additional canonical tracks
+    add_track(".time_remap", layer.time_remap_property, 0.0);
+    add_track(".font_size", layer.font_size, 48.0);
+    add_track(".stroke_width", layer.stroke_width_property, layer.stroke_width);
+    add_track(".repeater_count", layer.repeater_count, 1.0);
+    add_track(".repeater_stagger_delay", layer.repeater_stagger_delay, 0.0);
+
     // Populate Unified Fields
     compiled_layer.track_bindings = layer.track_bindings;
     compiled_layer.time_remap = layer.time_remap;
     compiled_layer.frame_blend = layer.frame_blend;
 
-    compiled_layer.in_time = layer.in_point;
-    compiled_layer.out_time = layer.out_point;
-    compiled_layer.start_time = layer.start_time;
+    compiled_layer.in_time = layer.timing.start;
+    compiled_layer.out_time = layer.timing.start + layer.timing.duration;
+    compiled_layer.start_time = layer.timing.start;
     compiled_layer.blend_mode = layer.blend_mode;
     compiled_layer.transition_in = layer.transition_in;
     compiled_layer.transition_out = layer.transition_out;

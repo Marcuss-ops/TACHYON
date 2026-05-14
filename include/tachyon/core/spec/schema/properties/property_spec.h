@@ -13,8 +13,32 @@
 #include <optional>
 #include <string>
 #include <utility>
+#include <variant>
 
 namespace tachyon {
+
+struct ScalarKeyframeSpec;
+struct Vector2KeyframeSpec;
+struct ColorKeyframeSpec;
+struct AnimatedScalarSpec;
+struct AnimatedVector2Spec;
+struct AnimatedColorSpec;
+struct AnimatedMaskPathSpec;
+
+/**
+ * @brief Unified variant for any effect or property parameter.
+ */
+using ParameterValue = std::variant<
+    double,
+    bool,
+    std::string,
+    ColorSpec,
+    math::Vector2,
+    AnimatedScalarSpec,
+    AnimatedColorSpec,
+    AnimatedVector2Spec,
+    AnimatedMaskPathSpec
+>;
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -151,45 +175,6 @@ struct AnimatedMaskPathSpec {
         return !value.has_value() && keyframes.empty();
     }
 };
-
-/**
- * @brief Effect specification with support for animated parameters over time.
- * 
- * Allows effects to have keyframed scalar/color/string parameters instead of static values.
- * Example: Blur radius animating from 0 to 50 over 2 seconds.
- */
-struct AnimatedEffectSpec {
-    bool enabled{true};
-    std::string type;
-    
-    // Static values (backward compatible with EffectSpec)
-    std::map<std::string, double> static_scalars;
-    std::map<std::string, ColorSpec> static_colors;
-    std::map<std::string, std::string> static_strings;
-    
-    // Animated parameters (keyframed)
-    std::map<std::string, AnimatedScalarSpec> animated_scalars;
-    std::map<std::string, AnimatedColorSpec> animated_colors;
-    
-    /**
-     * @brief Evaluate effect parameters at a specific time.
-     * @param time_seconds Time in seconds to evaluate.
-     * @return EffectSpec with evaluated values at the given time.
-     */
-    [[nodiscard]] TACHYON_API EffectSpec evaluate(double time_seconds) const;
-    
-    /**
-     * @brief Check if this effect has any animated parameters.
-     */
-    [[nodiscard]] bool is_animated() const noexcept {
-        return !animated_scalars.empty() || !animated_colors.empty();
-    }
-};
-
-// Backward compatibility: allow using EffectSpec where AnimatedEffectSpec is expected
-inline EffectSpec EffectSpec::evaluate(double /*time_seconds*/) const {
-    return *this;
-}
 
 } // namespace tachyon
 

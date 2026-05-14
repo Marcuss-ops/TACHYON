@@ -15,12 +15,12 @@ LayerSpec make_base_layer(
     l.type        = layer_type_from_string(type);
     l.enabled     = true;
     l.visible     = true;
-    l.start_time  = p.in_point;
-    l.in_point    = p.in_point;
-    l.out_point   = p.out_point;
-    l.width       = static_cast<int>(p.w);
-    l.height      = static_cast<int>(p.h);
-    l.opacity     = static_cast<double>(p.opacity);
+    l.timing.start     = p.in_point;
+    l.timing.source_in = p.in_point;
+    l.timing.duration  = std::max(0.01, p.out_point - p.in_point);
+    l.width            = static_cast<int>(p.w);
+    l.height           = static_cast<int>(p.h);
+    l.opacity          = static_cast<double>(p.opacity);
     
     l.transform.position_x = static_cast<double>(p.x);
     l.transform.position_y = static_cast<double>(p.y);

@@ -46,7 +46,7 @@ void TextAnimationSampler::sample(TextLayoutResult& layout,
             
             ctx.glyph_index = i;
             ctx.word_index = glyph.word_index;
-            ctx.line_index = 0; // TODO: populate line_index if needed
+            ctx.line_index = glyph.line_index;
             ctx.is_space = (glyph.codepoint == ' ' || glyph.codepoint == '\t' || glyph.codepoint == '\n');
             
             float coverage = compute_coverage(anim.selector, ctx);

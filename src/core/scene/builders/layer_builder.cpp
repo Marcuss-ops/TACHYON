@@ -19,7 +19,6 @@ LayerBuilder::LayerBuilder(LayerSpec spec, const presets::EffectPresetRegistry& 
     : spec_(std::move(spec)), preset_registry_(preset_registry) {}
 
 LayerBuilder& LayerBuilder::type(LayerType t) {
-    std::cerr << "!!! LayerBuilder::type: id='" << spec_.id << "' setting type to " << static_cast<int>(t) << " !!!" << std::endl;
     spec_.type = t;
     return *this;
 }
@@ -60,12 +59,22 @@ LayerBuilder& LayerBuilder::asset_id(std::string id) {
 
 
 LayerBuilder& LayerBuilder::in(double t) {
-    spec_.in_point = t;
+    spec_.timing.source_in = t;
     return *this;
 }
 
 LayerBuilder& LayerBuilder::out(double t) {
-    spec_.out_point = t;
+    spec_.timing.source_out = t;
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::start(double t) {
+    spec_.timing.start = t;
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::duration(double d) {
+    spec_.timing.duration = d;
     return *this;
 }
 

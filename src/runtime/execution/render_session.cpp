@@ -299,6 +299,11 @@ RenderSessionResult RenderSession::render(
 
     configure_render_context(workspace, m_profiler, m_surface_pool, *effect_registry, *transition_registry, text_registry);
 
+    // Phase 0: Preflight (Asset/Font/Writability checks)
+    if (!preflight(scene, compiled_scene, execution_plan, workspace.context, result)) {
+        return result;
+    }
+
     workspace.sink = output::create_frame_output_sink(workspace.effective_plan.render_plan);
     
     const bool is_video = output::output_requests_video_file(workspace.effective_plan.render_plan.output);

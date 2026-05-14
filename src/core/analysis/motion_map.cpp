@@ -38,14 +38,11 @@ void append_unique(std::vector<std::string>& list, std::string value) {
 }
 
 double layer_start_time(const LayerSpec& layer) {
-    return layer.start_time;
+    return layer.timing.start;
 }
 
 double layer_end_time(const LayerSpec& layer) {
-    if (layer.duration.has_value()) {
-        return layer.start_time + *layer.duration;
-    }
-    return layer.out_point;
+    return layer.timing.start + layer.timing.duration;
 }
 
 std::vector<std::string> summarize_text_motion(const TextAnimatorSpec& animator) {

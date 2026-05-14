@@ -48,9 +48,15 @@ void hash_keyframes(CacheKeyBuilder& builder, const std::vector<T>& keyframes) {
 void hash_animated_scalar(CacheKeyBuilder& builder, const AnimatedScalarSpec& spec);
 void hash_animated_vector2(CacheKeyBuilder& builder, const AnimatedVector2Spec& spec);
 void hash_animated_color(CacheKeyBuilder& builder, const AnimatedColorSpec& spec);
+void hash_animated_mask_path(CacheKeyBuilder& builder, const AnimatedMaskPathSpec& spec);
 
 void hash_effect(CacheKeyBuilder& builder, const EffectSpec& effect);
 void hash_text_animator(CacheKeyBuilder& builder, const TextAnimatorSpec& spec);
 void hash_text_highlight(CacheKeyBuilder& builder, const TextHighlightSpec& spec);
+
+void hash_transition(CacheKeyBuilder& builder, const LayerTransitionSpec& spec);
+void hash_procedural(CacheKeyBuilder& builder, const ProceduralSpec& spec);
+void hash_particle(CacheKeyBuilder& builder, const ParticleSpec& spec);
+void hash_shape(CacheKeyBuilder& builder, const ShapeSpec& spec);
 
 } // namespace tachyon::hash

@@ -18,6 +18,7 @@ set(TachyonPresetsSources
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/transition/transition_builders.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/transition/transition_presets_table.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/effects/effect_preset_registry.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/presets/effects/json_preset_loader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/effects/blur_effects.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/effects/color_effects.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/presets/effects/distortion_effects.cpp

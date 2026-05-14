@@ -1,5 +1,110 @@
 #include "hash_utils.h"
 
+namespace tachyon::hash {
+
+void hash_transition(CacheKeyBuilder& builder, const LayerTransitionSpec& spec) {
+    builder.add_string(spec.type);
+    builder.add_string(spec.transition_id);
+    builder.add_u32(static_cast<std::uint32_t>(spec.kind));
+    builder.add_string(spec.direction);
+    builder.add_f64(spec.duration);
+    builder.add_f64(spec.delay);
+    builder.add_u32(static_cast<std::uint32_t>(spec.easing));
+    builder.add_f64(spec.spring.stiffness);
+    builder.add_f64(spec.spring.damping);
+    builder.add_f64(spec.spring.mass);
+    builder.add_f64(spec.spring.velocity);
+}
+
+void hash_procedural(CacheKeyBuilder& builder, const ProceduralSpec& spec) {
+    builder.add_string(spec.kind);
+    builder.add_u64(spec.seed);
+    hash_animated_scalar(builder, spec.frequency);
+    hash_animated_scalar(builder, spec.speed);
+    hash_animated_scalar(builder, spec.amplitude);
+    hash_animated_scalar(builder, spec.scale);
+    hash_animated_scalar(builder, spec.angle);
+    hash_animated_color(builder, spec.color_a);
+    hash_animated_color(builder, spec.color_b);
+    hash_animated_color(builder, spec.color_c);
+    builder.add_string(spec.shape);
+    hash_animated_scalar(builder, spec.spacing);
+    hash_animated_scalar(builder, spec.border_width);
+    hash_animated_color(builder, spec.border_color);
+    hash_animated_scalar(builder, spec.warp_strength);
+    hash_animated_scalar(builder, spec.warp_frequency);
+    hash_animated_scalar(builder, spec.warp_speed);
+    hash_animated_scalar(builder, spec.grain_amount);
+    hash_animated_scalar(builder, spec.grain_scale);
+    hash_animated_scalar(builder, spec.scanline_intensity);
+    hash_animated_scalar(builder, spec.scanline_frequency);
+    hash_animated_scalar(builder, spec.contrast);
+    hash_animated_scalar(builder, spec.gamma);
+    hash_animated_scalar(builder, spec.saturation);
+    hash_animated_scalar(builder, spec.softness);
+    hash_animated_scalar(builder, spec.glow_intensity);
+    hash_animated_scalar(builder, spec.vignette_intensity);
+    hash_animated_scalar(builder, spec.fisheye_strength);
+    hash_animated_scalar(builder, spec.ripple_intensity);
+    hash_animated_scalar(builder, spec.mouse_influence);
+    hash_animated_scalar(builder, spec.mouse_radius);
+    builder.add_f32(spec.mouse_x);
+    builder.add_f32(spec.mouse_y);
+    hash_animated_scalar(builder, spec.octave_decay);
+    hash_animated_scalar(builder, spec.band_height);
+    hash_animated_scalar(builder, spec.band_spread);
+    hash_animated_scalar(builder, spec.star_speed);
+    hash_animated_scalar(builder, spec.density);
+    hash_animated_scalar(builder, spec.hue_shift);
+    hash_animated_scalar(builder, spec.twinkle_intensity);
+    hash_animated_scalar(builder, spec.rotation_speed);
+    hash_animated_scalar(builder, spec.repulsion_strength);
+    hash_animated_scalar(builder, spec.auto_center_repulsion);
+    builder.add_f32(spec.focal_x);
+    builder.add_f32(spec.focal_y);
+    builder.add_bool(spec.transparent);
+}
+
+void hash_particle(CacheKeyBuilder& builder, const ParticleSpec& spec) {
+    builder.add_string(spec.type);
+    builder.add_bool(spec.enabled);
+}
+
+void hash_shape(CacheKeyBuilder& builder, const ShapeSpec& spec) {
+    builder.add_string(spec.type);
+    builder.add_f32(spec.x);
+    builder.add_f32(spec.y);
+    builder.add_f32(spec.width);
+    builder.add_f32(spec.height);
+    builder.add_f32(spec.radius);
+    builder.add_u32(static_cast<std::uint32_t>(spec.sides));
+    builder.add_f32(spec.inner_radius);
+    builder.add_f32(spec.outer_radius);
+    builder.add_f32(spec.x1);
+    builder.add_f32(spec.y1);
+    builder.add_f32(spec.head_size);
+    builder.add_f32(spec.tail_x);
+    builder.add_f32(spec.tail_y);
+    builder.add_f32(spec.stroke_width);
+    builder.add_string(spec.line_cap);
+    builder.add_string(spec.line_join);
+    builder.add_u64(static_cast<std::uint64_t>(spec.dash_array.size()));
+    for (float d : spec.dash_array) builder.add_f32(d);
+    builder.add_f32(spec.dash_offset);
+    builder.add_f32(spec.sdf_threshold);
+    builder.add_u32(spec.fill_color.r);
+    builder.add_u32(spec.fill_color.g);
+    builder.add_u32(spec.fill_color.b);
+    builder.add_u32(spec.fill_color.a);
+    builder.add_u32(spec.stroke_color.r);
+    builder.add_u32(spec.stroke_color.g);
+    builder.add_u32(spec.stroke_color.b);
+    builder.add_u32(spec.stroke_color.a);
+    builder.add_f32(spec.opacity);
+}
+
+} // namespace tachyon::hash
+
 namespace tachyon {
 
 std::uint64_t hash_scene_content(const SceneSpec& scene) {
@@ -46,12 +151,28 @@ std::uint64_t hash_scene_content(const SceneSpec& scene) {
             builder.add_bool(layer.visible);
             builder.add_bool(layer.is_adjustment_layer);
             builder.add_bool(layer.motion_blur);
-            builder.add_u64(static_cast<std::uint64_t>(layer.start_time * 1000.0));
-            builder.add_u64(static_cast<std::uint64_t>(layer.in_point * 1000.0));
-            builder.add_u64(static_cast<std::uint64_t>(layer.out_point * 1000.0));
+            
+            // Timing
+            builder.add_f64(layer.timing.start);
+            builder.add_f64(layer.timing.duration);
+            builder.add_f64(layer.timing.source_in);
+            builder.add_f64(layer.timing.source_out);
+
             builder.add_u64(static_cast<std::uint64_t>(layer.opacity * 1000000.0));
             builder.add_u64(static_cast<std::uint64_t>(layer.width));
             builder.add_u64(static_cast<std::uint64_t>(layer.height));
+            
+            // Transform
+            if (layer.transform.position_x.has_value()) builder.add_f64(*layer.transform.position_x);
+            if (layer.transform.position_y.has_value()) builder.add_f64(*layer.transform.position_y);
+            if (layer.transform.rotation.has_value()) builder.add_f64(*layer.transform.rotation);
+            if (layer.transform.scale_x.has_value()) builder.add_f64(*layer.transform.scale_x);
+            if (layer.transform.scale_y.has_value()) builder.add_f64(*layer.transform.scale_y);
+            hash::hash_animated_vector2(builder, layer.transform.position_property);
+            hash::hash_animated_vector2(builder, layer.transform.anchor_point);
+            hash::hash_animated_scalar(builder, layer.transform.rotation_property);
+            hash::hash_animated_vector2(builder, layer.transform.scale_property);
+
             builder.add_bool(layer.parent.has_value());
             if (layer.parent.has_value()) builder.add_string(*layer.parent);
             builder.add_bool(layer.track_matte_layer_id.has_value());
@@ -69,6 +190,24 @@ std::uint64_t hash_scene_content(const SceneSpec& scene) {
             builder.add_string(layer.line_cap);
             builder.add_string(layer.line_join);
             builder.add_u64(static_cast<std::uint64_t>(layer.miter_limit * 1000.0));
+            builder.add_bool(layer.camera2d_id.has_value());
+            if (layer.camera2d_id.has_value()) builder.add_string(*layer.camera2d_id);
+            
+            builder.add_f64(layer.parallax_factor);
+            builder.add_bool(layer.has_parallax);
+            
+            hash::hash_animated_color(builder, layer.subtitle_outline_color);
+            builder.add_f64(layer.subtitle_outline_width);
+            
+            builder.add_string(layer.animation_in_preset);
+            builder.add_string(layer.animation_during_preset);
+            builder.add_string(layer.animation_out_preset);
+            builder.add_bool(layer.loop);
+            builder.add_bool(layer.hold_last_frame);
+            
+            hash::hash_transition(builder, layer.transition_in);
+            hash::hash_transition(builder, layer.transition_out);
+
             hash::hash_animated_scalar(builder, layer.opacity_property);
             hash::hash_animated_scalar(builder, layer.mask_feather);
             hash::hash_animated_scalar(builder, layer.time_remap_property);
@@ -83,10 +222,45 @@ std::uint64_t hash_scene_content(const SceneSpec& scene) {
             hash::hash_animated_scalar(builder, layer.repeater_offset_scale_y);
             hash::hash_animated_scalar(builder, layer.repeater_start_opacity);
             hash::hash_animated_scalar(builder, layer.repeater_end_opacity);
+            
+            hash::hash_animated_scalar(builder, layer.repeater_grid_cols);
+            hash::hash_animated_scalar(builder, layer.repeater_radial_radius);
+            hash::hash_animated_scalar(builder, layer.repeater_radial_start_angle);
+            hash::hash_animated_scalar(builder, layer.repeater_radial_end_angle);
+
             hash::hash_animated_color(builder, layer.fill_color);
             hash::hash_animated_color(builder, layer.stroke_color);
             builder.add_u64(static_cast<std::uint64_t>(layer.effects.size()));
             for (const auto& effect : layer.effects) hash::hash_effect(builder, effect);
+            
+            if (layer.procedural.has_value()) {
+                builder.add_bool(true);
+                hash::hash_procedural(builder, *layer.procedural);
+            } else {
+                builder.add_bool(false);
+            }
+
+            if (layer.particle_spec.has_value()) {
+                builder.add_bool(true);
+                hash::hash_particle(builder, *layer.particle_spec);
+            } else {
+                builder.add_bool(false);
+            }
+
+            if (layer.shape_spec.has_value()) {
+                builder.add_bool(true);
+                hash::hash_shape(builder, *layer.shape_spec);
+            } else {
+                builder.add_bool(false);
+            }
+
+            builder.add_u64(static_cast<std::uint64_t>(layer.markers.size()));
+            for (const auto& marker : layer.markers) {
+                builder.add_f64(marker.time);
+                builder.add_string(marker.label);
+                builder.add_string(marker.color);
+            }
+
             builder.add_u64(static_cast<std::uint64_t>(layer.text_animators.size()));
             for (const auto& animator : layer.text_animators) hash::hash_text_animator(builder, animator);
             builder.add_u64(static_cast<std::uint64_t>(layer.text_highlights.size()));

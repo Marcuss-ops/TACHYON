@@ -1,6 +1,7 @@
 #include "tachyon/runtime/compiler/scene_compiler.h"
 #include "tachyon/runtime/compiler/scene_hash_builder.h"
 #include "tachyon/runtime/compiler/property_track_compiler.h"
+#include "tachyon/core/spec/validation/scene_normalizer.h"
 #include "tachyon/core/string_utils.h"
 
 #include <algorithm>
@@ -20,7 +21,11 @@ namespace {
 SceneCompiler::SceneCompiler(SceneCompilerOptions options)
     : m_options(std::move(options)) {}
 
-ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) const {
+ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene_spec) const {
+    // Take a copy to normalize
+    SceneSpec scene = scene_spec;
+    core::SceneNormalizer::normalize(scene);
+
     ResolutionResult<CompiledScene> result;
     CompiledScene compiled;
     CompilationRegistry registry;
@@ -112,7 +117,6 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
             
             compiled_layer.shape_path = layer.shape_path;
             compiled_layer.effects = layer.effects;
-            compiled_layer.animated_effects = layer.animated_effects;
             compiled_layer.procedural = layer.procedural;
             
             compiled_layer.mask_feather = static_cast<float>(layer.mask_feather.value.has_value() ? *layer.mask_feather.value : 0.0);
@@ -170,10 +174,24 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene) c
             add_track(".anchor_point_x", layer.transform.anchor_point, layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->x : 0.0);
             add_track(".anchor_point_y", layer.transform.anchor_point, layer.transform.anchor_point.value.has_value() ? layer.transform.anchor_point.value->y : 0.0);
 
+            // Additional canonical tracks
+            add_track(".time_remap", layer.time_remap_property, 0.0);
+            add_track(".font_size", layer.font_size, 48.0);
+            add_track(".stroke_width", layer.stroke_width_property, layer.stroke_width);
+            add_track(".repeater_count", layer.repeater_count, 1.0);
+            add_track(".repeater_stagger_delay", layer.repeater_stagger_delay, 0.0);
+
             // Populate Unified Fields
             compiled_layer.track_bindings = layer.track_bindings;
             compiled_layer.time_remap = layer.time_remap;
             compiled_layer.frame_blend = layer.frame_blend;
+
+            compiled_layer.in_time = layer.timing.source_in;
+            compiled_layer.out_time = layer.timing.source_out;
+            compiled_layer.start_time = layer.timing.start;
+            compiled_layer.blend_mode = layer.blend_mode;
+            compiled_layer.transition_in = layer.transition_in;
+            compiled_layer.transition_out = layer.transition_out;
 
             compiled_composition.layers.push_back(std::move(compiled_layer));
         }

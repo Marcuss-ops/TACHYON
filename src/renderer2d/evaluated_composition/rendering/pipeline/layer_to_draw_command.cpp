@@ -200,19 +200,26 @@ std::vector<DrawCommand2D> map_layer_to_draw_commands(const scene::EvaluatedLaye
         adj_cmd.layer_id = layer.id;
         for (const auto& effect : layer.effects) {
             EffectParams params;
-            for (const auto& [k, v] : effect.scalars) {
-                params.scalars[k] = static_cast<float>(v);
-            }
-            for (const auto& [k, v] : effect.colors) {
-                params.colors[k] = Color{
-                    static_cast<float>(v.r) / 255.0f,
-                    static_cast<float>(v.g) / 255.0f,
-                    static_cast<float>(v.b) / 255.0f,
-                    static_cast<float>(v.a) / 255.0f
-                };
-            }
-            for (const auto& [k, v] : effect.strings) {
-                params.strings[k] = v;
+            for (const auto& [k, v] : effect.params) {
+                std::visit([&](auto&& val) {
+                    using T = std::decay_t<decltype(val)>;
+                    if constexpr (std::is_same_v<T, float>) {
+                        params.scalars[k] = val;
+                    } else if constexpr (std::is_same_v<T, bool>) {
+                        params.bools[k] = val;
+                    } else if constexpr (std::is_same_v<T, std::string>) {
+                        params.strings[k] = val;
+                    } else if constexpr (std::is_same_v<T, ColorSpec>) {
+                        params.colors[k] = Color{
+                            static_cast<float>(val.r) / 255.0f,
+                            static_cast<float>(val.g) / 255.0f,
+                            static_cast<float>(val.b) / 255.0f,
+                            static_cast<float>(val.a) / 255.0f
+                        };
+                    } else if constexpr (std::is_same_v<T, math::Vector2>) {
+                        params.vectors[k] = val;
+                    }
+                }, v);
             }
             adj_cmd.effects.push_back({effect.type, std::move(params)});
         }

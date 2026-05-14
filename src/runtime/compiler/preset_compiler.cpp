@@ -45,13 +45,8 @@ PresetCompiler::resolve_layer_animation_presets(const LayerSpec& layer) const {
 }
 
 void PresetCompiler::expand_layer(LayerSpec& layer) const {
-    // Handle duration -> out_point
-    if (layer.duration.has_value()) {
-        layer.out_point = layer.start_time + *layer.duration;
-    }
-
-    const double in_point = layer.in_point;
-    const double out_point = layer.out_point;
+    const double in_point = layer.timing.start;
+    const double out_point = layer.timing.start + layer.timing.duration;
 
     const auto presets = resolve_layer_animation_presets(layer);
 

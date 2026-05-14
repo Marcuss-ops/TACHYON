@@ -147,11 +147,11 @@ std::vector<EffectPresetSpec> get_color_effect_preset_specs() {
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.color.levels";
-            effect.scalars["input_black"] = p.get_or<double>("input_black", 0.0);
-            effect.scalars["input_white"] = p.get_or<double>("input_white", 255.0);
-            effect.scalars["gamma"] = p.get_or<double>("gamma", 1.0);
-            effect.scalars["output_black"] = p.get_or<double>("output_black", 0.0);
-            effect.scalars["output_white"] = p.get_or<double>("output_white", 255.0);
+            effect.params["input_black"] = p.get_or<double>("input_black", 0.0);
+            effect.params["input_white"] = p.get_or<double>("input_white", 255.0);
+            effect.params["gamma"] = p.get_or<double>("gamma", 1.0);
+            effect.params["output_black"] = p.get_or<double>("output_black", 0.0);
+            effect.params["output_white"] = p.get_or<double>("output_white", 255.0);
             return effect;
         }
     });
@@ -166,7 +166,7 @@ std::vector<EffectPresetSpec> get_color_effect_preset_specs() {
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.color.curves";
-            effect.strings["curve_points"] = p.get_or<std::string>("curve_points", "[]");
+            effect.params["curve_points"] = p.get_or<std::string>("curve_points", "[]");
             return effect;
         }
     });
@@ -182,8 +182,8 @@ std::vector<EffectPresetSpec> get_color_effect_preset_specs() {
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.color.fill";
-            effect.colors["color"] = p.get_or<ColorSpec>("color", ColorSpec{255, 255, 255, 255});
-            effect.strings["blend_mode"] = p.get_or<std::string>("blend_mode", "normal");
+            effect.params["color"] = p.get_or<ColorSpec>("color", ColorSpec{255, 255, 255, 255});
+            effect.params["blend_mode"] = p.get_or<std::string>("blend_mode", "normal");
             return effect;
         }
     });
@@ -199,8 +199,8 @@ std::vector<EffectPresetSpec> get_color_effect_preset_specs() {
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.color.tint";
-            effect.scalars["amount"] = p.get_or<double>("amount", 1.0);
-            effect.colors["color"] = p.get_or<ColorSpec>("color", ColorSpec{255, 128, 0, 255});
+            effect.params["amount"] = p.get_or<double>("amount", 1.0);
+            effect.params["color"] = p.get_or<ColorSpec>("color", ColorSpec{255, 128, 0, 255});
             return effect;
         }
     });
@@ -217,9 +217,9 @@ std::vector<EffectPresetSpec> get_color_effect_preset_specs() {
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.color.hue_saturation";
-            effect.scalars["hue_shift"] = p.get_or<double>("hue_shift", 0.0);
-            effect.scalars["saturation"] = p.get_or<double>("saturation", 0.0);
-            effect.scalars["lightness"] = p.get_or<double>("lightness", 0.0);
+            effect.params["hue_shift"] = p.get_or<double>("hue_shift", 0.0);
+            effect.params["saturation"] = p.get_or<double>("saturation", 0.0);
+            effect.params["lightness"] = p.get_or<double>("lightness", 0.0);
             return effect;
         }
     });
@@ -242,15 +242,15 @@ std::vector<EffectPresetSpec> get_color_effect_preset_specs() {
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.color.balance";
-            effect.scalars["shadows_r"] = p.get_or<double>("shadows_r", 0.0);
-            effect.scalars["shadows_g"] = p.get_or<double>("shadows_g", 0.0);
-            effect.scalars["shadows_b"] = p.get_or<double>("shadows_b", 0.0);
-            effect.scalars["midtones_r"] = p.get_or<double>("midtones_r", 0.0);
-            effect.scalars["midtones_g"] = p.get_or<double>("midtones_g", 0.0);
-            effect.scalars["midtones_b"] = p.get_or<double>("midtones_b", 0.0);
-            effect.scalars["highlights_r"] = p.get_or<double>("highlights_r", 0.0);
-            effect.scalars["highlights_g"] = p.get_or<double>("highlights_g", 0.0);
-            effect.scalars["highlights_b"] = p.get_or<double>("highlights_b", 0.0);
+            effect.params["shadows_r"] = p.get_or<double>("shadows_r", 0.0);
+            effect.params["shadows_g"] = p.get_or<double>("shadows_g", 0.0);
+            effect.params["shadows_b"] = p.get_or<double>("shadows_b", 0.0);
+            effect.params["midtones_r"] = p.get_or<double>("midtones_r", 0.0);
+            effect.params["midtones_g"] = p.get_or<double>("midtones_g", 0.0);
+            effect.params["midtones_b"] = p.get_or<double>("midtones_b", 0.0);
+            effect.params["highlights_r"] = p.get_or<double>("highlights_r", 0.0);
+            effect.params["highlights_g"] = p.get_or<double>("highlights_g", 0.0);
+            effect.params["highlights_b"] = p.get_or<double>("highlights_b", 0.0);
             return effect;
         }
     });
@@ -266,8 +266,8 @@ std::vector<EffectPresetSpec> get_color_effect_preset_specs() {
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.color.lut";
-            effect.strings["lut_file"] = p.get_or<std::string>("lut_file", "");
-            effect.scalars["intensity"] = p.get_or<double>("intensity", 1.0);
+            effect.params["lut_file"] = p.get_or<std::string>("lut_file", "");
+            effect.params["intensity"] = p.get_or<double>("intensity", 1.0);
             return effect;
         }
     });
@@ -283,8 +283,8 @@ std::vector<EffectPresetSpec> get_color_effect_preset_specs() {
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.color.lut";
-            effect.strings["lut_file"] = p.get_or<std::string>("lut_file", "");
-            effect.scalars["intensity"] = p.get_or<double>("intensity", 1.0);
+            effect.params["lut_file"] = p.get_or<std::string>("lut_file", "");
+            effect.params["intensity"] = p.get_or<double>("intensity", 1.0);
             return effect;
         }
     });
@@ -301,9 +301,9 @@ std::vector<EffectPresetSpec> get_color_effect_preset_specs() {
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.color.chroma_key";
-            effect.colors["key_color"] = p.get_or<ColorSpec>("key_color", ColorSpec{0, 255, 0, 255});
-            effect.scalars["similarity"] = p.get_or<double>("similarity", 0.1);
-            effect.scalars["smoothness"] = p.get_or<double>("smoothness", 0.1);
+            effect.params["key_color"] = p.get_or<ColorSpec>("key_color", ColorSpec{0, 255, 0, 255});
+            effect.params["similarity"] = p.get_or<double>("similarity", 0.1);
+            effect.params["smoothness"] = p.get_or<double>("smoothness", 0.1);
             return effect;
         }
     });
@@ -319,8 +319,8 @@ std::vector<EffectPresetSpec> get_color_effect_preset_specs() {
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.color.light_wrap";
-            effect.scalars["width"] = p.get_or<double>("width", 10.0);
-            effect.scalars["intensity"] = p.get_or<double>("intensity", 1.0);
+            effect.params["width"] = p.get_or<double>("width", 10.0);
+            effect.params["intensity"] = p.get_or<double>("intensity", 1.0);
             return effect;
         }
     });
@@ -336,8 +336,8 @@ std::vector<EffectPresetSpec> get_color_effect_preset_specs() {
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.color.matte_refinement";
-            effect.scalars["choke"] = p.get_or<double>("choke", 0.0);
-            effect.scalars["feather"] = p.get_or<double>("feather", 0.0);
+            effect.params["choke"] = p.get_or<double>("choke", 0.0);
+            effect.params["feather"] = p.get_or<double>("feather", 0.0);
             return effect;
         }
     });

@@ -20,8 +20,6 @@ add_executable(TachyonContentTests
     unit/audio/test_audio_pitch_correct.cpp
     unit/audio/test_audio_trim.cpp
     unit/presets/background_kind_registry_tests.cpp
-    unit/presets/background_preset_registry_tests.cpp
-    unit/presets/background_resolver_tests.cpp
     unit/presets/transition_builder_tests.cpp
     unit/presets/sfx_contract_tests.cpp
     unit/presets/effect_preset_registry_tests.cpp
@@ -40,6 +38,7 @@ target_link_libraries(TachyonContentTests
         TachyonTestUtils
         TachyonCore
         TachyonScene
+        TachyonPresets
         TachyonLibrary
         TachyonRenderer2D
         TachyonPlatform
@@ -67,3 +66,16 @@ add_test(
     COMMAND TachyonContentTests
 )
 tachyon_set_test_labels(TachyonContentTests core)
+
+# PR 1: Strict Preset Tests
+add_executable(transition_preset_strict_tests unit/presets/transition/transition_preset_strict_tests.cpp)
+target_link_libraries(transition_preset_strict_tests PRIVATE 
+    TachyonCore 
+    TachyonScene 
+    TachyonPresets 
+    TachyonTestUtils
+    TachyonRenderer2D
+    TachyonPlatform
+)
+add_test(NAME transition_preset_strict COMMAND transition_preset_strict_tests)
+tachyon_set_test_labels(transition_preset_strict content)

@@ -12,7 +12,7 @@ std::vector<EffectImplementation> get_distortion_effect_implementations() {
     // Chromatic Aberration
     implementations.push_back({
         "tachyon.effect.distort.chromatic_aberration",
-        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             ChromaticAberrationEffect effect;
             output = effect.apply(input, params);
         }
@@ -21,7 +21,7 @@ std::vector<EffectImplementation> get_distortion_effect_implementations() {
     // Vignette
     implementations.push_back({
         "tachyon.effect.distort.vignette",
-        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             VignetteEffect effect;
             output = effect.apply(input, params);
         }
@@ -30,7 +30,7 @@ std::vector<EffectImplementation> get_distortion_effect_implementations() {
     // Displacement Map
     implementations.push_back({
         "tachyon.effect.distort.displacement",
-        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             DisplacementMapEffect effect;
             output = effect.apply(input, params);
         }
@@ -39,7 +39,7 @@ std::vector<EffectImplementation> get_distortion_effect_implementations() {
     // Warp Stabilizer
     implementations.push_back({
         "tachyon.effect.distort.warp_stabilizer",
-        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             WarpStabilizerEffect effect;
             output = effect.apply(input, params);
         }
@@ -48,7 +48,7 @@ std::vector<EffectImplementation> get_distortion_effect_implementations() {
     // Digital Glitch
     implementations.push_back({
         "tachyon.effect.distort.glitch",
-        [](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             GlitchEffect effect;
             effect.intensity = get_scalar(params, "intensity", 0.5f);
             effect.seed = static_cast<uint64_t>(get_scalar(params, "seed", 0.0f));

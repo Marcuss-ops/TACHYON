@@ -48,10 +48,10 @@ std::vector<EffectPresetSpec> get_stylize_effect_preset_specs() {
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.stylize.drop_shadow";
-            effect.scalars["blur_radius"] = p.get_or<double>("blur_radius", 4.0);
-            effect.scalars["offset_x"] = p.get_or<double>("offset_x", 4.0);
-            effect.scalars["offset_y"] = p.get_or<double>("offset_y", 4.0);
-            effect.colors["shadow_color"] = p.get_or<ColorSpec>("shadow_color", ColorSpec{0, 0, 0, 160});
+            effect.params["blur_radius"] = p.get_or<double>("blur_radius", 4.0);
+            effect.params["offset_x"] = p.get_or<double>("offset_x", 4.0);
+            effect.params["offset_y"] = p.get_or<double>("offset_y", 4.0);
+            effect.params["shadow_color"] = p.get_or<ColorSpec>("shadow_color", ColorSpec{0, 0, 0, 160});
             return effect;
         }
     });
@@ -68,9 +68,9 @@ std::vector<EffectPresetSpec> get_stylize_effect_preset_specs() {
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.stylize.glow";
-            effect.scalars["radius"] = p.get_or<double>("radius", 4.0);
-            effect.scalars["strength"] = p.get_or<double>("strength", 1.0);
-            effect.scalars["threshold"] = p.get_or<double>("threshold", 0.0);
+            effect.params["radius"] = p.get_or<double>("radius", 4.0);
+            effect.params["strength"] = p.get_or<double>("strength", 1.0);
+            effect.params["threshold"] = p.get_or<double>("threshold", 0.0);
             return effect;
         }
     });

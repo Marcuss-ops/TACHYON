@@ -62,9 +62,9 @@ bool run_layerspec_schema_tests() {
     // Test 5: NormalizedLayerView has correct type
     {
         LayerSpec layer;
-        layer.type = LayerType::Camera;
+        layer.type = LayerType::Mask;
         auto normalized = normalize_layer_view(layer);
-        check_true(normalized.type == LayerType::Camera,
+        check_true(normalized.type == LayerType::Mask,
             "NormalizedLayerView.type matches LayerSpec::type");
     }
 

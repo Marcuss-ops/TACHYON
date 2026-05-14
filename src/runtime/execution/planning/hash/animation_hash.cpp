@@ -91,4 +91,23 @@ void hash_animated_color(CacheKeyBuilder& builder, const AnimatedColorSpec& spec
     }
 }
 
+void hash_animated_mask_path(CacheKeyBuilder& builder, const AnimatedMaskPathSpec& spec) {
+    builder.add_bool(spec.value.has_value());
+    if (spec.value.has_value()) {
+        builder.add_u64(static_cast<std::uint64_t>(spec.value->vertices.size()));
+        builder.add_bool(spec.value->is_closed);
+        builder.add_bool(spec.value->is_inverted);
+        for (const auto& v : spec.value->vertices) {
+            builder.add_f64(v.position.x);
+            builder.add_f64(v.position.y);
+        }
+    }
+    builder.add_u64(static_cast<std::uint64_t>(spec.keyframes.size()));
+    for (const auto& kf : spec.keyframes) {
+        builder.add_f64(kf.time);
+        builder.add_u64(static_cast<std::uint64_t>(kf.value.vertices.size()));
+        builder.add_u32(static_cast<std::uint32_t>(kf.easing));
+    }
+}
+
 } // namespace tachyon::hash

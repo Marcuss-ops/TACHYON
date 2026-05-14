@@ -23,7 +23,7 @@ enum class ParameterType {
 /**
  * @brief Value holder for parameter values.
  */
-using ParameterValue = std::variant<std::string, double, ColorSpec, math::Vector2, bool>;
+using TemplateParamValue = std::variant<std::string, double, ColorSpec, math::Vector2, bool>;
 
 /**
  * @brief Definition of a template parameter.
@@ -31,7 +31,7 @@ using ParameterValue = std::variant<std::string, double, ColorSpec, math::Vector
 struct ParameterDefinition {
     std::string name;
     ParameterType type;
-    ParameterValue default_value;
+    TemplateParamValue default_value;
 };
 
 /**

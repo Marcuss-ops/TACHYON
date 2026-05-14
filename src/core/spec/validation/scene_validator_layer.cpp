@@ -36,6 +36,7 @@ void SceneValidator::validate_layer(const NormalizedLayerView& normalized, const
         out.error_count++;
     }
 
+
     if (normalized.type == LayerType::Unknown) {
         out.issues.push_back(ValidationIssue{
             ValidationIssue::Severity::Error,
@@ -45,25 +46,19 @@ void SceneValidator::validate_layer(const NormalizedLayerView& normalized, const
         out.error_count++;
     }
 
-    auto layer_duration = layer->duration.has_value() ? layer->duration.value() : (layer->out_point - layer->in_point);
-    if (layer_duration <= 0.0) {
-        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".duration", "Layer duration must be greater than 0."});
+    if (layer->timing.duration <= 0.0) {
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".timing.duration", "Layer duration must be greater than 0."});
         out.error_count++;
     }
 
-    if (layer->start_time < 0.0f) {
-        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".start_time", "Layer start time cannot be negative."});
+    if (layer->timing.start < 0.0) {
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Error, path + ".timing.start", "Layer start time cannot be negative."});
         out.error_count++;
     }
 
-    float layer_end = static_cast<float>(layer->start_time);
-    if (layer->duration.has_value()) {
-        layer_end += static_cast<float>(layer->duration.value());
-    } else {
-        layer_end += static_cast<float>(layer->out_point - layer->in_point);
-    }
+    float layer_end = static_cast<float>(layer->timing.start + layer->timing.duration);
     if (layer_end > comp.duration + 0.001f) {
-        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning, path + ".duration",
+        out.issues.push_back(ValidationIssue{ValidationIssue::Severity::Warning, path + ".timing.duration",
             "Layer extends beyond composition duration (layer ends at " + std::to_string(layer_end) +
             "s, composition is " + std::to_string(comp.duration) + "s)."});
         out.warning_count++;
@@ -82,6 +77,7 @@ void SceneValidator::validate_layer(const NormalizedLayerView& normalized, const
     validate_keyframes(*layer, path, out);
     validate_track_bindings(*layer, path, out);
     validate_safe_area(*layer, comp, path, out);
+    validate_effects(*layer, path, out);
 
     if (normalized.type == LayerType::Text) {
         validate_font_reference(*layer, scene, path, out);
@@ -216,13 +212,8 @@ void SceneValidator::validate_track_bindings(const ::tachyon::LayerSpec& layer, 
 
 void SceneValidator::validate_keyframes(const ::tachyon::LayerSpec& layer, const std::string& path, ValidationResult& out) const {
     // Validate that keyframe times are within the layer's time range
-    float layer_start = static_cast<float>(layer.start_time);
-    float layer_end = layer_start;
-    if (layer.duration.has_value()) {
-        layer_end += static_cast<float>(layer.duration.value());
-    } else {
-        layer_end += static_cast<float>(layer.out_point - layer.in_point);
-    }
+    float layer_start = static_cast<float>(layer.timing.start);
+    float layer_end = static_cast<float>(layer_start + layer.timing.duration);
     
     // Check transform keyframes
     for (const auto& kf : layer.transform.position_property.keyframes) {
@@ -312,6 +303,16 @@ void SceneValidator::validate_file_reference(const ::tachyon::LayerSpec& layer, 
             "asset id '" + std::string(normalized.asset_reference) + "' not found in scene assets."
         });
         out.error_count++;
+    }
+}
+
+void SceneValidator::validate_effects(const ::tachyon::LayerSpec& layer, const std::string& path, ValidationResult& out) const {
+    for (std::size_t i = 0; i < layer.effects.size(); ++i) {
+        const auto& effect = layer.effects[i];
+        if (effect.type.empty()) {
+            out.issues.push_back({ValidationIssue::Severity::Error, path + ".effects[" + std::to_string(i) + "].type", "Effect type cannot be empty."});
+            out.error_count++;
+        }
     }
 }
 

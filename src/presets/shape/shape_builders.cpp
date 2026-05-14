@@ -27,9 +27,9 @@ LayerSpec make_shape_layer_base(const ShapeParams& p) {
     l.type        = LayerType::Shape;
     l.enabled     = true;
     l.visible     = true;
-    l.start_time  = p.in_point;
-    l.in_point    = p.in_point;
-    l.out_point   = p.out_point;
+    l.timing.start     = p.in_point;
+    l.timing.source_in = p.in_point;
+    l.timing.duration  = std::max(0.01, p.out_point - p.in_point);
     l.width       = static_cast<int>(p.w);
     l.height      = static_cast<int>(p.h);
     l.opacity     = static_cast<double>(p.opacity);

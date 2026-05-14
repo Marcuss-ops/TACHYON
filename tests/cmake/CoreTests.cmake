@@ -63,3 +63,56 @@ add_test(
     COMMAND TachyonColorTests
 )
 tachyon_set_test_labels(TachyonColorTests core)
+
+# PR 1: Strict Registry Tests
+add_executable(transition_registry_duplicate_policy_tests unit/core/transition/transition_registry_duplicate_policy_tests.cpp)
+target_link_libraries(transition_registry_duplicate_policy_tests PRIVATE TachyonCore TachyonTestUtils)
+add_test(NAME transition_registry_duplicate_policy COMMAND transition_registry_duplicate_policy_tests)
+
+# PR 3: Transition Apply Tests
+add_executable(transition_apply_equivalence_tests unit/core/transition/transition_apply_equivalence_tests.cpp)
+target_link_libraries(transition_apply_equivalence_tests PRIVATE 
+    TachyonCore 
+    TachyonRuntime
+    TachyonPresets
+    TachyonTestUtils
+    TachyonRenderer2D
+    TachyonPlatform
+)
+add_test(NAME transition_apply_equivalence COMMAND transition_apply_equivalence_tests)
+tachyon_set_test_labels(transition_apply_equivalence core)
+
+# PR 4: JIT and Smoke Tests
+add_executable(authoring_service_cache_tests unit/core/spec/authoring_service_cache_tests.cpp)
+target_link_libraries(authoring_service_cache_tests PRIVATE 
+    TachyonCore 
+    TachyonScene
+    TachyonAudio
+    TachyonColor
+    TachyonPlatform
+    TachyonTestUtils
+)
+add_test(NAME authoring_service_cache COMMAND authoring_service_cache_tests)
+tachyon_set_test_labels(authoring_service_cache core jit)
+
+add_executable(cpp_scene_loader_host_api_tests unit/core/spec/cpp_scene_loader_host_api_tests.cpp)
+target_link_libraries(cpp_scene_loader_host_api_tests PRIVATE 
+    TachyonCore 
+    TachyonScene
+    TachyonTestUtils
+)
+add_test(NAME cpp_scene_loader_host_api COMMAND cpp_scene_loader_host_api_tests)
+tachyon_set_test_labels(cpp_scene_loader_host_api core jit)
+
+add_executable(transition_clip_pair_smoke_tests smoke/transitions/transition_clip_pair_smoke_tests.cpp)
+target_link_libraries(transition_clip_pair_smoke_tests PRIVATE 
+    TachyonCore 
+    TachyonRuntime
+    TachyonPresets
+    TachyonTestUtils
+    TachyonRenderer2D
+    TachyonPlatform
+)
+add_test(NAME transition_clip_pair_smoke COMMAND transition_clip_pair_smoke_tests)
+tachyon_set_test_labels(transition_clip_pair_smoke smoke transitions)
+tachyon_set_test_labels(transition_registry_duplicate_policy core)

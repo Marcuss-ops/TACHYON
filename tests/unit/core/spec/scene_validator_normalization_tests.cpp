@@ -61,6 +61,39 @@ bool run_scene_validator_normalization_tests() {
         check_true(result.is_valid(), "Scene with canonical LayerType::Text passes validation");
     }
 
+    // Test 2: Validator rejects legacy type_string
+    {
+        SceneSpec scene;
+        CompositionSpec comp;
+        comp.id = "comp1";
+        comp.width = 1920;
+        comp.height = 1080;
+        comp.duration = 5.0f;
+
+        LayerSpec layer;
+        layer.id = "layer2";
+        layer.type = LayerType::Text;
+        layer.type_string = "legacy_image";
+        layer.in_point = 0.0;
+        layer.out_point = 5.0;
+
+        comp.layers.push_back(layer);
+        scene.compositions.push_back(comp);
+
+        core::SceneValidator validator;
+        auto result = validator.validate(scene);
+
+        check_true(!result.is_valid(), "Scene with legacy type_string fails validation");
+        bool found_expected_error = false;
+        for (const auto& issue : result.issues) {
+            if (issue.message.find("type_string is no longer accepted") != std::string::npos) {
+                found_expected_error = true;
+                break;
+            }
+        }
+        check_true(found_expected_error, "Found expected error message for type_string");
+    }
+
     std::cout << "Scene validator normalization tests: " << (g_failures == 0 ? "PASSED" : "FAILED")
               << " (" << g_failures << " failures)\\n";
 

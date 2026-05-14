@@ -90,9 +90,10 @@ LayerSpec make_enhance_text_layer(const TextScenePresetOptions& options) {
     text.type = LayerType::Text;
     text.enabled = true;
     text.visible = true;
-    text.start_time = 0.0;
-    text.in_point = 0.0;
-    text.out_point = options.duration_seconds;
+    text.timing.start = 0.0;
+    text.timing.source_in = 0.0;
+    text.timing.source_out = options.duration_seconds;
+    text.timing.duration = options.duration_seconds;
     text.text_box.width = static_cast<float>(options.text_width);
     text.text_box.height = static_cast<float>(options.text_height);
     text.text_box.mode = TextBoxMode::Fixed;

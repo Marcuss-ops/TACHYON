@@ -16,12 +16,12 @@ class EffectRegistry;
 
 EffectHost& effect_host_for(RenderContext& context);
 
-EffectParams effect_params_from_spec(const EffectSpec& spec, const ColorProfile& working_profile);
-EffectParams effect_params_from_spec(const EffectSpec& spec);
+EffectParams effect_params_from_spec(const EvaluatedEffect& spec, const ColorProfile& working_profile);
+EffectParams effect_params_from_spec(const EvaluatedEffect& spec);
 
 ResolutionResult<SurfaceRGBA> apply_effect_pipeline(
     const SurfaceRGBA& input,
-    const std::vector<EffectSpec>& effects,
+    const std::vector<EvaluatedEffect>& effects,
     EffectHost& host,
     const ColorProfile& working_profile,
     FrameDiagnostics* diagnostics = nullptr,
@@ -29,7 +29,7 @@ ResolutionResult<SurfaceRGBA> apply_effect_pipeline(
 
 ResolutionResult<SurfaceRGBA> apply_effect_pipeline(
     const SurfaceRGBA& input,
-    const std::vector<EffectSpec>& effects,
+    const std::vector<EvaluatedEffect>& effects,
     EffectHost& host,
     const ColorProfile& working_profile,
     const std::unordered_map<std::string, std::shared_ptr<SurfaceRGBA>>& surfaces,

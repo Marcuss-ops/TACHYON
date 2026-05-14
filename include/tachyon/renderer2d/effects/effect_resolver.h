@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/renderer2d/effects/effect_descriptor.h"
-#include "tachyon/core/spec/schema/common/common_spec.h"
+#include "tachyon/core/spec/schema/effects/effect_spec.h"
 #include <string>
 
 namespace tachyon::renderer2d {
@@ -17,22 +17,15 @@ class EffectRegistry;
 struct ResolvedEffect {
     std::string id;
     const EffectDescriptor* descriptor{nullptr};
-    EffectSpec spec;
+    EvaluatedEffect spec;
     bool valid{false};
     std::string error_message;
 };
 
 /**
- * @brief Resolves an EffectSpec into a ready-to-use effect.
- * 
- * This is the SINGLE PATH for effect resolution. Renderers must not
- * implement their own id lookup or switch-case logic.
- * 
- * @param spec The effect specification from the layer.
- * @param registry The effect registry to look up descriptors.
- * @return ResolvedEffect with all needed information.
+ * @brief Resolves an EvaluatedEffect into a ready-to-use effect descriptor.
  */
-ResolvedEffect resolve_effect(const EffectSpec& spec, const EffectRegistry& registry);
+ResolvedEffect resolve_effect(const EvaluatedEffect& spec, const EffectRegistry& registry);
 
 /**
  * @brief Resolves an effect by id string (convenience overload).

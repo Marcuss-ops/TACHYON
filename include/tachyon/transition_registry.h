@@ -78,4 +78,14 @@ private:
     std::unique_ptr<Impl> m_impl;
 };
 
+/**
+ * @brief Registers all built-in transitions.
+ */
+void register_builtin_transitions(TransitionRegistry& registry);
+
+/**
+ * @brief Creates and fully initializes a default transition registry with built-in implementations.
+ */
+TransitionRegistry create_default_transition_registry();
+
 } // namespace tachyon

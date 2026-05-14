@@ -53,7 +53,7 @@ struct HostContext {
 
 extern "C" {
     static void host_log(void* ctx, int level, const char* message) {
-        std::cerr << "[JIT] " << message << std::endl;
+        // Silenced for production paths.
     }
 
     static int host_begin_scene(void* ctx, TachyonSceneHandle scene) {
@@ -103,12 +103,16 @@ extern "C" {
         if (it == host->layers.end()) return TACHYON_JIT_ERROR_INVALID_ARGUMENT;
 
         std::string prop = property;
-        if (prop == "opacity") it->second->opacity(value);
-        else if (prop == "anchor_x") {
-            it->second->anchor(value, 0.0); // FIXME: need to preserve Y
-        }
-        else if (prop == "anchor_y") {
-            // FIXME: need to preserve X
+        if (prop == "opacity") {
+            it->second->opacity(value);
+        } else if (prop == "anchor_x") {
+            float y = it->second->spec().transform.anchor_point.value ? it->second->spec().transform.anchor_point.value->y : 0.0f;
+            it->second->anchor(value, y);
+        } else if (prop == "anchor_y") {
+            float x = it->second->spec().transform.anchor_point.value ? it->second->spec().transform.anchor_point.value->x : 0.0f;
+            it->second->anchor(x, value);
+        } else {
+            return TACHYON_JIT_ERROR_UNSUPPORTED;
         }
         return TACHYON_JIT_OK;
     }

@@ -80,5 +80,25 @@ bool run_effect_preset_registry_tests() {
         }
     }
 
+    // Test JSON Preset Loading
+    {
+        const std::string json_id = "tachyon.effect.blur.soft_json";
+        const auto ids = registry.list_ids();
+        bool found = std::find(ids.begin(), ids.end(), json_id) != ids.end();
+        check_true(found, "JSON-based preset is loaded in the registry");
+        
+        if (found) {
+            registry::ParameterBag params;
+            params.set("radius", 42.0);
+            const EffectSpec effect = registry.create(json_id, params);
+            check_true(effect.type == "tachyon.effect.blur.gaussian", "JSON preset maps to correct kind");
+            if (effect.scalars.contains("radius")) {
+                check_true(effect.scalars.at("radius").value == 42.0, "JSON preset correctly maps parameter value");
+            } else {
+                check_true(false, "JSON preset missing radius parameter");
+            }
+        }
+    }
+
     return g_failures == 0;
 }

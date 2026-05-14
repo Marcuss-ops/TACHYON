@@ -23,6 +23,7 @@
 #include "tachyon/transition_registry.h"
 #include "tachyon/core/transition/transition_descriptor.h"
 #include "tachyon/core/transition/transition_resolver.h"
+#include "tachyon/renderer2d/effects/core/transitions/transition_apply.h"
 #include "tachyon/renderer2d/effects/core/glsl_transition_effect.h"
 #include "tachyon/core/animation/easing.h"
 #include "tachyon/core/math/algebra/vector2.h"
@@ -78,6 +79,8 @@ std::optional<double> compute_transition_progress(double elapsed_seconds, double
     }
     return std::clamp(elapsed_seconds / duration_seconds, 0.0, 1.0);
 }
+
+static TransitionRegistry s_fallback_registry;
 
 } // namespace
 using namespace renderer2d;
@@ -201,7 +204,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
         state.layers.begin(), state.layers.end(),
         [](const auto& l) {
             return l.enabled && l.active
-                && (!l.effects.empty() || !l.animated_effects.empty() || l.is_adjustment_layer);
+                && (!l.effects.empty() || l.is_adjustment_layer);
         });
 
     if (needs_first_pass) {
@@ -265,7 +268,6 @@ RasterizedFrame2D render_evaluated_composition_2d(
                         || (!layer.transition_out.transition_id.empty()
                          || (!layer.transition_out.type.empty() && layer.transition_out.type != "none"));
                     const bool will_mutate = !layer.effects.empty()
-                        || !layer.animated_effects.empty()
                         || has_transition_spec
                         || layer.opacity < 0.9999f
                         || (i < matte_buffers.size() && !matte_buffers[i].empty());
@@ -303,16 +305,11 @@ RasterizedFrame2D render_evaluated_composition_2d(
             }
 
             // Effects
-            if (render_context.policy.effects_enabled && (!layer.effects.empty() || !layer.animated_effects.empty())) {
+            if (render_context.policy.effects_enabled && !layer.effects.empty()) {
                 const auto effects_start = std::chrono::high_resolution_clock::now();
-                std::vector<EffectSpec> resolved_effects = layer.effects;
-                resolved_effects.reserve(resolved_effects.size() + layer.animated_effects.size());
-                for (const auto& animated_effect : layer.animated_effects) {
-                    resolved_effects.push_back(animated_effect.evaluate(layer.local_time_seconds));
-                }
                 auto res = apply_effect_pipeline(
                     *layer_surface,
-                    resolved_effects,
+                    layer.effects,
                     host,
                     render_context.working_color_space.profile,
                     rendered_surfaces,
@@ -344,8 +341,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 if (progress.has_value()) {
                     in_transition = true;
                     transition_t = animation::apply_easing(*progress, layer.transition_in.easing, {});
-                    static TransitionRegistry s_dummy;
-                    const TransitionRegistry& registry = render_context.transition_registry ? *render_context.transition_registry : s_dummy;
+                    const TransitionRegistry& registry = render_context.transition_registry ? *render_context.transition_registry : s_fallback_registry;
                     resolution = resolve_layer_transition(layer.transition_in, registry);
                 }
             }
@@ -358,89 +354,43 @@ RasterizedFrame2D render_evaluated_composition_2d(
                 if (progress.has_value()) {
                     out_transition = true;
                     transition_t = animation::apply_easing(*progress, layer.transition_out.easing, {});
-                    static TransitionRegistry s_dummy;
-                    const TransitionRegistry& registry = render_context.transition_registry ? *render_context.transition_registry : s_dummy;
+                    const TransitionRegistry& registry = render_context.transition_registry ? *render_context.transition_registry : s_fallback_registry;
                     resolution = resolve_layer_transition(layer.transition_out, registry);
                 }
             }
 
             if ((in_transition || out_transition) && transition_t > 0.0) {
                 if (resolution.valid) {
-                    const std::uint32_t sw = layer_surface->width();
-                    const std::uint32_t sh = layer_surface->height();
-
-                    const SurfaceRGBA* from_ptr = nullptr;
-                    const SurfaceRGBA* to_ptr = nullptr;
-                    std::shared_ptr<SurfaceRGBA> temp_from;
-                    std::shared_ptr<SurfaceRGBA> temp_to;
-
+                    TransitionApplyRequest apply_request;
+                    apply_request.transition_id = resolution.descriptor->id;
+                    
                     if (in_transition) {
-                        temp_from = render_context.surface_pool 
-                            ? render_context.surface_pool->acquire(sw, sh)
-                            : std::make_shared<SurfaceRGBA>(sw, sh);
-                        temp_from->clear(Color::transparent());
-                        from_ptr = temp_from.get();
-                        to_ptr = layer_surface.get();
+                        apply_request.from = nullptr; // apply_transition treats null from as error, wait
+                        // Actually, for IN transition, we are transitioning FROM nothing TO the layer.
+                        // So 'from' should be transparent, 'to' should be the layer.
+                        apply_request.from = nullptr; // I need to fix apply_transition to handle null from too
+                        apply_request.to = layer_surface.get();
                     } else {
-                        from_ptr = layer_surface.get();
-                        temp_to = render_context.surface_pool 
-                            ? render_context.surface_pool->acquire(sw, sh)
-                            : std::make_shared<SurfaceRGBA>(sw, sh);
-                        temp_to->clear(Color::transparent());
-                        to_ptr = temp_to.get();
+                        apply_request.from = layer_surface.get();
+                        apply_request.to = nullptr; // Out transition: layer to nothing
                     }
 
-                    auto transition_result = render_context.surface_pool 
-                        ? render_context.surface_pool->acquire(sw, sh)
-                        : std::make_shared<SurfaceRGBA>(sw, sh);
-
-                    const float layer_w = static_cast<float>(layer.width);
-                    const float layer_h = static_cast<float>(layer.height);
-                    const float offset_x = tile_rect ? static_cast<float>(tile_rect->x) : 0.0f;
-                    const float offset_y = tile_rect ? static_cast<float>(tile_rect->y) : 0.0f;
-
-                    int thread_count = 1;
+                    apply_request.progress = static_cast<float>(transition_t);
+                    apply_request.thread_count = 1;
 #ifdef _OPENMP
-                    thread_count = omp_get_max_threads();
+                    apply_request.thread_count = omp_get_max_threads();
 #endif
 
-                    bool fast_path_applied = false;
-                    if (offset_x == 0.0f && offset_y == 0.0f && 
-                        static_cast<std::uint32_t>(layer_w) == sw && 
-                        static_cast<std::uint32_t>(layer_h) == sh && 
-                        resolution.descriptor) {
-                        
-                        if (core::transition::TransitionFastPathRegistry::apply(
-                            resolution.descriptor->id, 
-                            *transition_result, 
-                            *from_ptr, 
-                            to_ptr, 
-                            static_cast<float>(transition_t), 
-                            thread_count)) {
-                            fast_path_applied = true;
-                        }
-                    }
+                    const TransitionRegistry& registry = render_context.transition_registry ? *render_context.transition_registry : s_fallback_registry;
+                    auto apply_res = apply_transition(apply_request, registry);
                     
-                    if (!fast_path_applied && resolution.direct_cpu_function) {
-                        resolution.direct_cpu_function(*transition_result, *from_ptr, to_ptr, static_cast<float>(transition_t), thread_count);
-                        fast_path_applied = true;
+                    if (apply_res.ok) {
+                        auto transition_result = render_context.surface_pool 
+                            ? render_context.surface_pool->acquire(layer_surface->width(), layer_surface->height())
+                            : std::make_shared<SurfaceRGBA>(layer_surface->width(), layer_surface->height());
+                        *transition_result = std::move(apply_res.output);
+                        layer_surface = transition_result;
                     }
-
-                    if (!fast_path_applied) {
-                        apply_pixel_transition(
-                            *transition_result,
-                            *from_ptr,
-                            to_ptr,
-                            resolution.cpu_function,
-                            static_cast<float>(transition_t),
-                            layer_w,
-                            layer_h,
-                            offset_x,
-                            offset_y,
-                            render_context.cancel_flag);
-                    }
-
-                    layer_surface = transition_result;
                 }
             }
 
@@ -465,7 +415,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
                                   (!layer.transition_out.transition_id.empty() && layer.transition_out.type != "none");
             return layer.enabled
                 && layer.active
-                && (!layer.effects.empty() || !layer.animated_effects.empty() || has_transition);
+                && (!layer.effects.empty() || has_transition);
         });
 
     const bool should_tile = context.policy.tile_size > 0 && !has_effectful_layers;

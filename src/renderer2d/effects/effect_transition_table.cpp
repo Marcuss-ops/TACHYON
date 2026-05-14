@@ -11,7 +11,7 @@ std::vector<EffectImplementation> get_transition_effect_implementations(const ta
     implementations.push_back({
         "tachyon.effect.transition.glsl",
         // apply_fn (captures transition_registry by reference)
-        [&transition_registry](const EffectSpec&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
+        [&transition_registry](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
             GlslTransitionEffect effect(transition_registry);
             output = effect.apply(input, params);
         }

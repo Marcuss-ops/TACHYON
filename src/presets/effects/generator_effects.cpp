@@ -78,14 +78,14 @@ std::vector<EffectPresetSpec> get_generator_effect_preset_specs() {
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.generator.light_leak";
-            effect.scalars["progress"] = p.get_or<double>("progress", 0.0);
-            effect.scalars["speed"] = p.get_or<double>("speed", 1.0);
-            effect.scalars["seed"] = p.get_or<double>("seed", 3.0);
-            effect.scalars["preset"] = p.get_or<double>("preset", 0.0);
-            effect.scalars["intensity"] = p.get_or<double>("intensity", 1.0);
-            effect.scalars["width"] = p.get_or<double>("width", 0.5);
-            effect.colors["color_a"] = p.get_or<ColorSpec>("color_a", ColorSpec{255, 204, 153, 255});
-            effect.colors["color_b"] = p.get_or<ColorSpec>("color_b", ColorSpec{255, 102, 51, 255});
+            effect.params["progress"] = p.get_or<double>("progress", 0.0);
+            effect.params["speed"] = p.get_or<double>("speed", 1.0);
+            effect.params["seed"] = p.get_or<double>("seed", 3.0);
+            effect.params["preset"] = p.get_or<double>("preset", 0.0);
+            effect.params["intensity"] = p.get_or<double>("intensity", 1.0);
+            effect.params["width"] = p.get_or<double>("width", 0.5);
+            effect.params["color_a"] = p.get_or<ColorSpec>("color_a", ColorSpec{255, 204, 153, 255});
+            effect.params["color_b"] = p.get_or<ColorSpec>("color_b", ColorSpec{255, 102, 51, 255});
             return effect;
         }
     });
@@ -115,22 +115,22 @@ std::vector<EffectPresetSpec> get_generator_effect_preset_specs() {
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.generator.particle_emitter";
-            effect.scalars["time"] = p.get_or<double>("time", 0.0);
-            effect.scalars["seed"] = p.get_or<double>("seed", 1.0);
-            effect.scalars["count"] = p.get_or<double>("count", 48.0);
-            effect.scalars["lifetime"] = p.get_or<double>("lifetime", 1.0);
-            effect.scalars["speed"] = p.get_or<double>("speed", 18.0);
-            effect.scalars["gravity"] = p.get_or<double>("gravity", 0.0);
-            effect.scalars["spread_x"] = p.get_or<double>("spread_x", 1.0);
-            effect.scalars["spread_y"] = p.get_or<double>("spread_y", 1.0);
-            effect.scalars["radius_min"] = p.get_or<double>("radius_min", 1.0);
-            effect.scalars["radius_max"] = p.get_or<double>("radius_max", 3.0);
-            effect.colors["color"] = p.get_or<ColorSpec>("color", ColorSpec{255, 255, 255, 166});
-            effect.scalars["opacity"] = p.get_or<double>("opacity", 1.0);
-            effect.scalars["center_x"] = p.get_or<double>("center_x", 0.5);
-            effect.scalars["center_y"] = p.get_or<double>("center_y", 0.5);
-            effect.scalars["emit_width"] = p.get_or<double>("emit_width", 1920.0);
-            effect.scalars["emit_height"] = p.get_or<double>("emit_height", 1080.0);
+            effect.params["time"] = p.get_or<double>("time", 0.0);
+            effect.params["seed"] = p.get_or<double>("seed", 1.0);
+            effect.params["count"] = p.get_or<double>("count", 48.0);
+            effect.params["lifetime"] = p.get_or<double>("lifetime", 1.0);
+            effect.params["speed"] = p.get_or<double>("speed", 18.0);
+            effect.params["gravity"] = p.get_or<double>("gravity", 0.0);
+            effect.params["spread_x"] = p.get_or<double>("spread_x", 1.0);
+            effect.params["spread_y"] = p.get_or<double>("spread_y", 1.0);
+            effect.params["radius_min"] = p.get_or<double>("radius_min", 1.0);
+            effect.params["radius_max"] = p.get_or<double>("radius_max", 3.0);
+            effect.params["color"] = p.get_or<ColorSpec>("color", ColorSpec{255, 255, 255, 166});
+            effect.params["opacity"] = p.get_or<double>("opacity", 1.0);
+            effect.params["center_x"] = p.get_or<double>("center_x", 0.5);
+            effect.params["center_y"] = p.get_or<double>("center_y", 0.5);
+            effect.params["emit_width"] = p.get_or<double>("emit_width", 1920.0);
+            effect.params["emit_height"] = p.get_or<double>("emit_height", 1080.0);
             return effect;
         }
     });
@@ -145,7 +145,7 @@ std::vector<EffectPresetSpec> get_generator_effect_preset_specs() {
         [](const registry::ParameterBag& p) {
             EffectSpec effect;
             effect.type = "tachyon.effect.generator.lens_flare";
-            effect.strings["lights"] = p.get_or<std::string>("lights", "");
+            effect.params["lights"] = p.get_or<std::string>("lights", "");
             return effect;
         }
     });
