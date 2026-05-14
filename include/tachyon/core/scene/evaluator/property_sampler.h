@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/core/scene/evaluation/evaluator.h"
-#include "tachyon/core/media/audio_types.h"
+#include "tachyon/audio/audio_types.h"
 #include "tachyon/core/math/vector2.h"
 
 #include <unordered_map>

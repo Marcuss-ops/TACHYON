@@ -132,8 +132,7 @@ add_library(TachyonCore STATIC ${TachyonCoreSources})
 tachyon_configure_common(TachyonCore)
 tachyon_link_omp(TachyonCore)
 tachyon_link_absl(TachyonCore)
-# Operations layer purged and consolidated into Core.
-
+add_subdirectory(${CMAKE_SOURCE_DIR}/operations ${CMAKE_BINARY_DIR}/operations)
 
 add_library(TachyonContent STATIC ${TACHYON_CONTENT_SOURCES})
 tachyon_configure_common(TachyonContent)

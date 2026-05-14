@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/core/media/audio_graph.h"
+#include "tachyon/audio/core/audio_graph.h"
 #include <algorithm>
 #include <cmath>
 #include <string>

@@ -3,7 +3,7 @@
 #include "tachyon/core/animation/property_interpolation.h"
 #include "tachyon/core/animation/property_adapter.h"
 #include "tachyon/core/expressions/context_builder.h"
-#include "tachyon/core/media/audio_types.h"
+#include "tachyon/audio/audio_types.h"
 #include "tachyon/core/animation/easing.h"
 #include "tachyon/core/math/math_utils.h"
 #include <algorithm>

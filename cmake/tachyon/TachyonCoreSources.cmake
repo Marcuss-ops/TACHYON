@@ -22,13 +22,6 @@ set(TachyonCoreSources
     ${CMAKE_CURRENT_SOURCE_DIR}/library/background_registry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/library/backgrounds/background_catalog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/audio/audio_utils.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/media/audio_processor.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/media/waveform.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/media/audio_decoder.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/media/probe.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/media/probe_cache.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/media/audio_graph.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/media/audio_mixer.cpp
 )
 
 if(TACHYON_ENABLE_SIMDJSON)

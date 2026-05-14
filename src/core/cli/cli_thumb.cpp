@@ -2,12 +2,11 @@
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/cli_scene_loader.h"
 #include "tachyon/runtime/execution/native_render.h"
+#include "cli_internal.h"
 
 #include <ostream>
 #include <string>
 #include <filesystem>
-
-#include "command.h"
 
 namespace tachyon {
 
@@ -23,11 +22,7 @@ std::string make_default_thumb_path(const std::string& cpp_path) {
 }
 } // namespace
 
-bool run_thumb_command(const CommandContext& context) {
-    const auto& options = context.options;
-    auto& out = context.out;
-    auto& err = context.err;
-
+bool run_thumb_command(const CliOptions& options, std::ostream& out, std::ostream& err, TransitionRegistry& registry) {
     if (options.cpp_path.empty() && !options.preset_id.has_value()) {
         err << "Either --cpp or --preset is required for thumb\n";
         return false;
@@ -69,7 +64,7 @@ bool run_thumb_command(const CommandContext& context) {
     // Render single frame as thumbnail (JPEG)
     // This would call the actual render pipeline with single frame + JPEG output
     // For now, we use the preview infrastructure
-    return run_preview_internal(context, "Thumbnail");
+    return run_preview_internal(options, out, err, "Thumbnail", registry);
 }
 
 } // namespace tachyon

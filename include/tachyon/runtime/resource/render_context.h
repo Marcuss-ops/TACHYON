@@ -1,5 +1,6 @@
 #pragma once
 
+
 #include "tachyon/runtime/execution/planning/quality_policy.h"
 #include "tachyon/runtime/resource/surface_pool.h"
 
@@ -15,7 +16,6 @@
 
 #include "tachyon/renderer2d/core/render_types.h"
 #include "tachyon/renderer2d/color/color_management_system.h"
-#include "tachyon/core/media/media_interfaces.h"
 
 namespace tachyon {
 
@@ -37,6 +37,17 @@ class TextRegistry;
 class TransitionRegistry;
 
 namespace profiling { class RenderProfiler; }
+namespace audio { class IAudioExporter; }
+
+namespace media { 
+#ifdef TACHYON_ENABLE_MEDIA
+class IMediaProvider;
+class IMediaPrefetcher; 
+class IPlaybackScheduler; 
+class IAssetResolver;
+#endif
+}
+namespace profiling { class RenderProfiler; }
 
 /**
  * @brief Unified Render Context for both Runtime and Renderer2D.
@@ -53,9 +64,14 @@ struct RenderContext {
     const presets::TextRegistry* text_registry{nullptr};
     const text::FontRegistry* font_registry{nullptr};
 
-    // 3. Media (Essential interface)
+    // 3. Media & Audio
+#ifdef TACHYON_ENABLE_MEDIA
     std::shared_ptr<media::IMediaProvider> media;
-    
+    std::shared_ptr<media::IAssetResolver> asset_resolver;
+    media::IMediaPrefetcher* prefetcher{nullptr};
+    media::IPlaybackScheduler* scheduler{nullptr};
+    audio::IAudioExporter* audio_exporter{nullptr};
+#endif
     const std::vector<text::SubtitleEntry>* subtitle_entries{nullptr};
 
     // 4. State & Configuration
@@ -67,7 +83,9 @@ struct RenderContext {
     int width{0};
     int height{0};
     std::size_t pixel_concurrency{1};
-    
+    // Optional tile-level parallel executor. When set, composition_renderer uses it
+    // instead of the raw OpenMP pragma for tile dispatch.
+    // Signature: executor(tile_count, fn) where fn(tile_index) renders one tile.
     std::function<void(std::size_t, const std::function<void(std::size_t)>&)> tile_executor;
 
     // 5. External Services
@@ -83,8 +101,10 @@ struct RenderContext {
     std::shared_ptr<renderer2d::ComputeBackend> compute_backend;
 
     explicit RenderContext(
-        std::shared_ptr<renderer2d::PrecompCache> precomp_cache = nullptr,
-        std::shared_ptr<media::IMediaProvider> media_mgr = nullptr
+        std::shared_ptr<renderer2d::PrecompCache> precomp_cache = nullptr
+#ifdef TACHYON_ENABLE_MEDIA
+        , std::shared_ptr<media::IMediaProvider> media_mgr = nullptr
+#endif
     );
 };
 
