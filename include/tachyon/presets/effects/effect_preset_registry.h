@@ -14,6 +14,11 @@ namespace tachyon::presets {
 class EffectPresetRegistry : public registry::TypedRegistry<EffectPresetSpec> {
 public:
     /**
+     * @brief Access the global singleton instance.
+     */
+    TACHYON_API static const EffectPresetRegistry& instance();
+
+    /**
      * @brief Construct a registry preloaded with builtin effect presets.
      */
     EffectPresetRegistry();

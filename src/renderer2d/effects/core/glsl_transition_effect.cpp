@@ -28,12 +28,17 @@ namespace {
 float transition_progress(const EffectParams& params) {
     float raw_t = clamp01(get_scalar(params, "t", get_scalar(params, "progress", 0.0f)));
 
-    const auto preset_it = params.scalars.find("easing_preset");
-    if (preset_it == params.scalars.end()) {
+    auto it = params.params.find("easing_preset");
+    if (it == params.params.end()) {
         return raw_t;
     }
 
-    const int preset_val = static_cast<int>(preset_it->second);
+    const auto* preset_ptr = std::get_if<float>(&it->second);
+    if (!preset_ptr) {
+        return raw_t;
+    }
+
+    const int preset_val = static_cast<int>(*preset_ptr);
     if (preset_val < 0 || preset_val > static_cast<int>(animation::EasingPreset::Custom)) {
         return raw_t;
     }
@@ -60,19 +65,15 @@ SurfaceRGBA GlslTransitionEffect::apply(const SurfaceRGBA& input, const EffectPa
     const float t = transition_progress(params);
 
     // Get transition ID from params
-    std::string transition_id;
-    const auto transition_it = params.strings.find("transition_id");
-    if (transition_it != params.strings.end()) {
-        transition_id = transition_it->second;
-    }
+    std::string transition_id = get_string(params, "transition_id", "");
 
     const SurfaceRGBA* to_surface = nullptr;
-    if (const auto to_it = params.aux_surfaces.find("transition_to"); to_it != params.aux_surfaces.end()) {
-        to_surface = to_it->second;
-    } else if (const auto to_fallback_it = params.aux_surfaces.find("to"); to_fallback_it != params.aux_surfaces.end()) {
-        to_surface = to_fallback_it->second;
-    } else if (const auto bg_it = params.aux_surfaces.find("background"); bg_it != params.aux_surfaces.end()) {
-        to_surface = bg_it->second;
+    if (auto it = params.params.find("transition_to"); it != params.params.end()) {
+        if (auto* const* s = std::get_if<const SurfaceRGBA*>(&it->second)) to_surface = *s;
+    } else if (auto it_to = params.params.find("to"); it_to != params.params.end()) {
+        if (auto* const* s = std::get_if<const SurfaceRGBA*>(&it_to->second)) to_surface = *s;
+    } else if (auto it_bg = params.params.find("background"); it_bg != params.params.end()) {
+        if (auto* const* s = std::get_if<const SurfaceRGBA*>(&it_bg->second)) to_surface = *s;
     }
 
     TransitionApplyRequest request;

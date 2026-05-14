@@ -39,9 +39,26 @@ struct HostContext {
     scene::CompositionBuilder current_comp;
     std::map<TachyonLayerHandle, std::unique_ptr<scene::LayerBuilder>> layers;
     uint64_t next_layer_handle{1};
+    std::vector<std::string> logs;
 
     HostContext() : current_comp(scene::Composition("main")) {
         current_comp.size(1920, 1080).fps(30).duration(10.0);
+    }
+    
+    void log(int level, const std::string& msg) {
+        std::string prefix;
+        switch(level) {
+            case TACHYON_JIT_LOG_ERROR: prefix = "[ERROR] "; break;
+            case TACHYON_JIT_LOG_WARN:  prefix = "[WARN]  "; break;
+            case TACHYON_JIT_LOG_INFO:  prefix = "[INFO]  "; break;
+            case TACHYON_JIT_LOG_DEBUG: prefix = "[DEBUG] "; break;
+            default: prefix = "[LOG]   "; break;
+        }
+        logs.push_back(prefix + msg);
+        
+        if (const char* v = std::getenv("TACHYON_JIT_VERBOSE"); v && v[0] != '0') {
+            std::cerr << "  JIT: " << prefix << msg << std::endl;
+        }
     }
 
     TachyonLayerHandle register_layer(std::unique_ptr<scene::LayerBuilder> lb) {
@@ -53,7 +70,9 @@ struct HostContext {
 
 extern "C" {
     static void host_log(void* ctx, int level, const char* message) {
-        // Silenced for production paths.
+        if (ctx && message) {
+            static_cast<HostContext*>(ctx)->log(level, message);
+        }
     }
 
     static int host_begin_scene(void* ctx, TachyonSceneHandle scene) {
@@ -73,8 +92,7 @@ extern "C" {
     static TachyonLayerHandle host_add_background(void* ctx, TachyonSceneHandle scene, const char* background_id) {
         auto* host = static_cast<HostContext*>(ctx);
         
-        static presets::EffectPresetRegistry empty_registry;
-        auto lb = std::make_unique<scene::LayerBuilder>(background_id, empty_registry);
+        auto lb = std::make_unique<scene::LayerBuilder>(background_id);
         lb->type(LayerType::Procedural);
         
         // Ensure procedural kind is set so it actually renders
@@ -89,8 +107,7 @@ extern "C" {
     static TachyonLayerHandle host_add_text(void* ctx, TachyonSceneHandle scene, const char* text, float x, float y) {
         auto* host = static_cast<HostContext*>(ctx);
 
-        static presets::EffectPresetRegistry empty_registry;
-        auto lb = std::make_unique<scene::LayerBuilder>("text_layer", empty_registry);
+        auto lb = std::make_unique<scene::LayerBuilder>("text_layer");
         lb->type(LayerType::Text);
         lb->position(x, y);
         lb->text(text);
@@ -185,6 +202,12 @@ CppSceneLoader::Result CppSceneLoader::load_from_file(
             api.set_float = host_set_float;
 
             int jit_res = lib.jit_build_fn(&api, 0 /* Handle not used yet */);
+            
+            // Collect logs into diagnostics
+            for (const auto& log_line : host_ctx.logs) {
+                result.diagnostics += log_line + "\n";
+            }
+
             if (jit_res == TACHYON_JIT_OK) {
                 result.scene = host_ctx.current_comp.build_scene();
                 result.success = true;

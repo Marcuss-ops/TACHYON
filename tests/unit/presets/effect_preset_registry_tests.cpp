@@ -47,7 +47,7 @@ bool run_effect_preset_registry_tests() {
         const EffectSpec effect = registry.create(canonical_id, params);
         check_true(effect.enabled, "canonical preset is enabled");
         check_true(effect.type == canonical_id, "canonical preset returns canonical effect type");
-        check_true(effect.scalars.contains("progress"), "canonical preset keeps progress parameter");
+        check_true(effect.params.contains("progress"), "canonical preset keeps progress parameter");
     }
 
     {
@@ -61,7 +61,7 @@ bool run_effect_preset_registry_tests() {
     }
 
     {
-        auto comp = tachyon::scene::Composition("effect_builder_comp", registry)
+        auto comp = tachyon::scene::Composition("effect_builder_comp")
             .size(640, 360)
             .layer("leak", [](LayerBuilder& l) {
                 registry::ParameterBag params;
@@ -92,8 +92,9 @@ bool run_effect_preset_registry_tests() {
             params.set("radius", 42.0);
             const EffectSpec effect = registry.create(json_id, params);
             check_true(effect.type == "tachyon.effect.blur.gaussian", "JSON preset maps to correct kind");
-            if (effect.scalars.contains("radius")) {
-                check_true(effect.scalars.at("radius").value == 42.0, "JSON preset correctly maps parameter value");
+            if (effect.params.contains("radius")) {
+                const auto val = std::get<double>(effect.params.at("radius"));
+                check_true(val == 42.0, "JSON preset correctly maps parameter value");
             } else {
                 check_true(false, "JSON preset missing radius parameter");
             }

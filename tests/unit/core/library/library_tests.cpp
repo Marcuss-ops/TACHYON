@@ -67,7 +67,7 @@ bool run_library_tests() {
     if (crossfade.has_value()) {
         const auto effect = library.build_transition_effect("tachyon.transition.crossfade", "a", "b", 0.5);
         check_true(effect.enabled, "Crossfade effect is enabled (even with fallback)");
-        check_true(!effect.strings.at("shader_path").empty(), "Shader path is set (real or fallback)");
+        check_true(!std::get<std::string>(effect.params.at("shader_path")).empty(), "Shader path is set (real or fallback)");
     }
 
     return g_failures == 0;

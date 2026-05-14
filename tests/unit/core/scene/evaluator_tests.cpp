@@ -39,9 +39,9 @@ bool run_scene_evaluator_tests() {
         layer.id = "title";
         layer.type = tachyon::LayerType::Text;
         layer.name = "Title";
-        layer.start_time = 1.0;
-        layer.in_point = 0.0;
-        layer.out_point = 10.0;
+        layer.timing.start = 1.0;
+        layer.timing.source_in = 0.0;
+        layer.timing.source_out = 10.0;
         layer.opacity_property.keyframes = {
             {0.0, 0.0},
             {2.0, 1.0}
@@ -83,9 +83,9 @@ bool run_scene_evaluator_tests() {
         layer.id = "solid_01";
         layer.type = tachyon::LayerType::Solid;
         layer.name = "Solid";
-        layer.start_time = 0.0;
-        layer.in_point = 0.0;
-        layer.out_point = 10.0;
+        layer.timing.start = 0.0;
+        layer.timing.source_in = 0.0;
+        layer.timing.source_out = 10.0;
         layer.opacity = 0.75;
         layer.transform.position_x = 10.0;
         layer.transform.position_y = 20.0;
@@ -108,9 +108,9 @@ bool run_scene_evaluator_tests() {
         precomp_layer.type = tachyon::LayerType::Precomp;
         precomp_layer.name = "Precomp";
         precomp_layer.enabled = true;
-        precomp_layer.start_time = 0.0;
-        precomp_layer.in_point = 0.0;
-        precomp_layer.out_point = 10.0;
+        precomp_layer.timing.start = 0.0;
+        precomp_layer.timing.source_in = 0.0;
+        precomp_layer.timing.source_out = 10.0;
         precomp_layer.precomp_id = std::string{"child_comp"};
         precomp_layer.time_remap_property.value = 1.5;
 
@@ -119,9 +119,9 @@ bool run_scene_evaluator_tests() {
         child_solid.type = tachyon::LayerType::Solid;
         child_solid.name = "Child Solid";
         child_solid.enabled = true;
-        child_solid.start_time = 0.0;
-        child_solid.in_point = 0.0;
-        child_solid.out_point = 10.0;
+        child_solid.timing.start = 0.0;
+        child_solid.timing.source_in = 0.0;
+        child_solid.timing.source_out = 10.0;
         child_solid.opacity = 1.0;
 
         tachyon::CompositionSpec child_comp;

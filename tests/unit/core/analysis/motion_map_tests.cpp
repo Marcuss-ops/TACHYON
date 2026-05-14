@@ -28,8 +28,8 @@ bool run_motion_map_tests() {
     layer.id = "title";
     layer.type = LayerType::Text;
     layer.text_content = "Hello";
-    layer.start_time = 0.0;
-    layer.duration = 3.0;
+    layer.timing.start = 0.0;
+    layer.timing.duration = 3.0;
     layer.transition_in.kind = TransitionKind::Fade;
     layer.transition_out.kind = TransitionKind::Dissolve;
     layer.animation_in_preset = "tachyon.textanim.fade_in";

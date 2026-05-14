@@ -33,9 +33,10 @@ tachyon::SceneSpec make_solid_scene(std::int64_t width, std::int64_t height) {
     bg.id = "bg";
     bg.type = tachyon::LayerType::Solid;
     bg.name = "BG";
-    bg.start_time = 0.0;
-    bg.in_point = 0.0;
-    bg.out_point = 1.0;
+    bg.timing.start = 0.0;
+    bg.timing.source_in = 0.0;
+    bg.timing.source_out = 1.0;
+    bg.timing.duration = 1.0;
     bg.opacity = 1.0;
     bg.width = width;
     bg.height = height;
@@ -45,9 +46,10 @@ tachyon::SceneSpec make_solid_scene(std::int64_t width, std::int64_t height) {
     red.id = "red";
     red.type = tachyon::LayerType::Solid;
     red.name = "Red";
-    red.start_time = 0.0;
-    red.in_point = 0.0;
-    red.out_point = 1.0;
+    red.timing.start = 0.0;
+    red.timing.source_in = 0.0;
+    red.timing.source_out = 1.0;
+    red.timing.duration = 1.0;
     red.opacity = 0.5;
     red.width = width;
     red.height = height;

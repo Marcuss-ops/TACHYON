@@ -51,15 +51,15 @@ bool run_scene_inspector_tests() {
         text_layer.id = "title";
         text_layer.type = LayerType::Text;
         text_layer.text_content.clear();
-        text_layer.start_time = 0.0;
-        text_layer.out_point = 1.0;
+        text_layer.timing.start = 0.0;
+        text_layer.timing.source_out = 1.0;
         comp.layers.push_back(text_layer);
 
         LayerSpec media_layer;
         media_layer.id = "image";
         media_layer.type = LayerType::Image;
-        media_layer.start_time = 0.0;
-        media_layer.out_point = 1.0;
+        media_layer.timing.start = 0.0;
+        media_layer.timing.source_out = 1.0;
         comp.layers.push_back(media_layer);
 
         scene.compositions.push_back(comp);

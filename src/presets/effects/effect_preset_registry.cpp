@@ -37,6 +37,11 @@ std::vector<EffectPresetSpec> collect_builtin_preset_specs() {
 
 } // namespace
 
+const EffectPresetRegistry& EffectPresetRegistry::instance() {
+    static const EffectPresetRegistry registry;
+    return registry;
+}
+
 EffectPresetRegistry::EffectPresetRegistry() {
     auto specs = collect_builtin_preset_specs();
     for (auto& spec : specs) {

@@ -1,7 +1,5 @@
 #include "tachyon/scene/text_builder.h"
 #include "tachyon/scene/builder.h"
-#include "tachyon/presets/text/text_registry.h"
-#include "tachyon/core/registry/parameter_bag.h"
 #include "tachyon/text/animation/text_animator_utils.h"
 
 namespace tachyon::scene {
@@ -135,20 +133,6 @@ TextBuilder& TextBuilder::highlight(const TextHighlightSpec& hl) {
 
 TextBuilder& TextBuilder::highlights(std::vector<TextHighlightSpec> hls) {
     parent_.spec_.text_highlights.insert(parent_.spec_.text_highlights.end(), hls.begin(), hls.end());
-    return *this;
-}
-
-TextBuilder& TextBuilder::animation_preset(const std::string& id, const presets::TextRegistry* registry) {
-    if (registry) {
-        parent_.spec_.text_animators = registry->create_animators(id, registry::ParameterBag{});
-    } else {
-        presets::TextManifest text_manifest;
-        presets::TextRegistry local_registry(text_manifest);
-        parent_.spec_.text_animators = local_registry.create_animators(id, registry::ParameterBag{});
-    }
-    for (const auto& anim : parent_.spec_.text_animators) {
-        mark_fixed_pitch_if_needed(parent_.spec_, anim);
-    }
     return *this;
 }
 

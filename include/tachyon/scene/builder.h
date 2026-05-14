@@ -103,10 +103,9 @@ class TACHYON_API LayerBuilder {
     friend class TextBuilder;
     friend class EffectBuilder;
     LayerSpec spec_;
-    const presets::EffectPresetRegistry& preset_registry_;
 public:
-    explicit LayerBuilder(std::string id, const presets::EffectPresetRegistry& preset_registry);
-    explicit LayerBuilder(LayerSpec spec, const presets::EffectPresetRegistry& preset_registry);
+    explicit LayerBuilder(std::string id);
+    explicit LayerBuilder(LayerSpec spec);
 
     // Basic properties
     LayerBuilder& type(LayerType t);
@@ -149,9 +148,7 @@ public:
     TextBuilder text();
     TextBuilder text(std::string content);
     EffectBuilder effects();
-    // 2D Animation preset
-    LayerBuilder& animation2d_preset(const std::string& id, const registry::ParameterBag& params = {});
-
+    
     // Update from existing spec
     LayerBuilder& from_spec(const LayerSpec& spec);
 
@@ -165,7 +162,6 @@ public:
  */
 class TACHYON_API CompositionBuilder {
     CompositionSpec spec_;
-    const presets::EffectPresetRegistry& preset_registry_;
 
     // Private helper for typed layer methods
     CompositionBuilder& add_typed_layer(
@@ -173,14 +169,13 @@ class TACHYON_API CompositionBuilder {
         std::function<void(LayerBuilder&)> defaults,
         std::function<void(LayerBuilder&)> fn);
 public:
-    explicit CompositionBuilder(std::string id, const presets::EffectPresetRegistry& preset_registry);
+    explicit CompositionBuilder(std::string id);
     ~CompositionBuilder();
 
     CompositionBuilder& size(int w, int h);
     CompositionBuilder& fps(int f);
     CompositionBuilder& duration(double d);
     CompositionBuilder& background(BackgroundSpec spec);
-    CompositionBuilder& background_preset(const std::string& id, double duration = 8.0);
     CompositionBuilder& clear(const ColorSpec& color);
 
     CompositionBuilder& layer(std::string id, std::function<void(LayerBuilder&)> fn);
@@ -204,10 +199,9 @@ public:
  */
 class TACHYON_API SceneBuilder {
     SceneSpec spec_;
-    const presets::EffectPresetRegistry& preset_registry_;
 public:
     SceneBuilder();
-    SceneBuilder(std::string id, std::string name, const presets::EffectPresetRegistry& preset_registry);
+    SceneBuilder(std::string id, std::string name);
 
     SceneBuilder& project(std::string id, std::string name);
     SceneBuilder& authoring_tool(std::string tool);
@@ -220,13 +214,11 @@ public:
 /**
  * @brief Main entry point for creating a composition.
  */
-TACHYON_API CompositionBuilder Composition(std::string id, const presets::EffectPresetRegistry& preset_registry);
 TACHYON_API CompositionBuilder Composition(std::string id);
 
 /**
  * @brief Main entry point for creating a multi-composition scene.
  */
-TACHYON_API SceneBuilder Scene(const presets::EffectPresetRegistry& preset_registry);
 TACHYON_API SceneBuilder Scene();
 
 } // namespace tachyon::scene

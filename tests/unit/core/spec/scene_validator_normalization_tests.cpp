@@ -43,8 +43,8 @@ bool run_scene_validator_normalization_tests() {
         layer.id = "layer1";
         layer.type = LayerType::Text;
         layer.text_content = "Hello";
-        layer.in_point = 0.0;
-        layer.out_point = 5.0;
+        layer.timing.source_in = 0.0;
+        layer.timing.source_out = 5.0;
 
         comp.layers.push_back(layer);
         scene.compositions.push_back(comp);
@@ -73,9 +73,9 @@ bool run_scene_validator_normalization_tests() {
         LayerSpec layer;
         layer.id = "layer2";
         layer.type = LayerType::Text;
-        layer.type_string = "legacy_image";
-        layer.in_point = 0.0;
-        layer.out_point = 5.0;
+        layer.type = LayerType::Image;
+        layer.timing.source_in = 0.0;
+        layer.timing.source_out = 5.0;
 
         comp.layers.push_back(layer);
         scene.compositions.push_back(comp);

@@ -9,9 +9,7 @@ namespace tachyon::presets {
 namespace {
 
 std::optional<SceneSpec> wrap_background_as_scene(const LayerSpec& background_layer) {
-    presets::EffectPresetRegistry effects;
-
-    return ::tachyon::scene::Composition("preset_render", effects)
+    return ::tachyon::scene::Composition("preset_render")
         .size(1280, 720)
         .duration(2.0)
         .fps(30)

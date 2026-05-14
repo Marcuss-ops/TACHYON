@@ -3,20 +3,18 @@
 #include <iostream>
 #include <limits>
 #include <cmath>
-#include "tachyon/presets/transition/transition_preset_registry.h"
-#include "tachyon/presets/animation2d/animation2d_preset_registry.h"
 #include "tachyon/core/registry/parameter_bag.h"
 
 namespace tachyon::scene {
 
 // LayerBuilder implementation
-LayerBuilder::LayerBuilder(std::string id, const presets::EffectPresetRegistry& preset_registry) 
-    : spec_(), preset_registry_(preset_registry) {
+LayerBuilder::LayerBuilder(std::string id) 
+    : spec_() {
     spec_.id = std::move(id);
 }
 
-LayerBuilder::LayerBuilder(LayerSpec spec, const presets::EffectPresetRegistry& preset_registry) 
-    : spec_(std::move(spec)), preset_registry_(preset_registry) {}
+LayerBuilder::LayerBuilder(LayerSpec spec) 
+    : spec_(std::move(spec)) {}
 
 LayerBuilder& LayerBuilder::type(LayerType t) {
     spec_.type = t;
@@ -165,11 +163,6 @@ LayerBuilder& LayerBuilder::motion_blur(bool enabled) {
     return *this;
 }
 
-LayerBuilder& LayerBuilder::animation2d_preset(const std::string& id, const registry::ParameterBag& params) {
-    presets::Animation2DPresetRegistry::instance().apply(id, spec_, params);
-    return *this;
-}
-
 LayerBuilder& LayerBuilder::from_spec(const LayerSpec& spec) {
     spec_ = spec;
     return *this;
@@ -189,7 +182,7 @@ TextBuilder LayerBuilder::text(std::string content) {
 }
 
 EffectBuilder LayerBuilder::effects() {
-    return EffectBuilder(*this, preset_registry_);
+    return EffectBuilder(*this);
 }
 
 TransitionBuilder LayerBuilder::enter() {

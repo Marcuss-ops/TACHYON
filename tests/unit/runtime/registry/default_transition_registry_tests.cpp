@@ -33,7 +33,7 @@ int main() {
     }
 
     // Verify key transitions
-    static const char* kKeys[] = {
+    static const std::string_view kKeys[] = {
         ids::transition::crossfade,
         ids::transition::luma_dissolve,
         ids::transition::slide_up,
@@ -41,7 +41,7 @@ int main() {
         "tachyon.transition.lightleak.golden_sweep"
     };
 
-    for (const char* id : kKeys) {
+    for (const auto id : kKeys) {
         auto* desc = registry.resolve(id);
         if (!desc) {
             std::cerr << "FAILED: Key transition '" << id << "' not found in registry.\n";

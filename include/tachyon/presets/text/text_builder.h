@@ -117,13 +117,13 @@ public:
     }
 
     TextBuilder& start_time(double t) {
-        spec_.start_time = t;
-        spec_.in_point = t;
+        spec_.timing.start = t;
+        spec_.timing.source_in = t;
         return *this;
     }
 
     TextBuilder& duration(double d) {
-        spec_.out_point = spec_.in_point + d;
+        spec_.timing.source_out = spec_.timing.source_in + d;
         return *this;
     }
 

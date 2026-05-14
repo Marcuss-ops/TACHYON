@@ -38,9 +38,13 @@ public:
         // Resolve auxiliary surfaces
         std::vector<const SurfaceRGBA*> aux_surfaces;
         for (const auto& req : resolved.descriptor->aux_requirements) {
-            auto aux_it = params.aux_surfaces.find(req.param_name);
-            if (aux_it != params.aux_surfaces.end()) {
-                aux_surfaces.push_back(aux_it->second);
+            const SurfaceRGBA* aux_ptr = nullptr;
+            if (auto it = params.params.find(req.param_name); it != params.params.end()) {
+                if (auto* const* s = std::get_if<const SurfaceRGBA*>(&it->second)) aux_ptr = *s;
+            }
+
+            if (aux_ptr) {
+                aux_surfaces.push_back(aux_ptr);
             } else if (req.is_required) {
                 std::string msg = "Effect '" + name + "' requires auxiliary surface '" + req.param_name + "' (" + req.semantic + ") which was not provided.";
                 result.diagnostics.add_error("EFFECT_AUX_MISSING", msg);

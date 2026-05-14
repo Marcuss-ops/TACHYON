@@ -10,7 +10,7 @@ ResolvedTransition resolve_transition_spec(const LayerTransitionSpec& spec, cons
     result.layer_spec = spec;
     
     // Resolve the transition id
-    std::string id = spec.transition_id.empty() ? spec.type : spec.transition_id;
+    std::string id = spec.transition_id;
     
     if (id.empty()) {
         result.valid = false;
@@ -46,7 +46,6 @@ ResolvedTransition resolve_transition_spec(const LayerTransitionSpec& spec, cons
 ResolvedTransition resolve_transition_by_id(const std::string& id, const TransitionRegistry& registry) {
     LayerTransitionSpec spec;
     spec.transition_id = id;
-    spec.type = id;
     return resolve_transition_spec(spec, registry);
 }
 

@@ -4,14 +4,8 @@
 
 namespace tachyon::scene {
 
-EffectBuilder& EffectBuilder::preset(std::string_view id, const registry::ParameterBag& params) {
-    try {
-        parent_.spec_.effects.push_back(preset_registry_.create(id, params));
-    } catch (const std::exception& e) {
-        throw std::runtime_error(
-            "Layer '" + parent_.spec_.id + "': " + e.what()
-        );
-    }
+EffectBuilder& EffectBuilder::add(EffectSpec effect) {
+    parent_.spec_.effects.push_back(std::move(effect));
     return *this;
 }
 

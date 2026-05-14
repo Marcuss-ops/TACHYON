@@ -12,22 +12,10 @@ namespace tachyon::test {
  * It tracks the last IDs requested to verify normalization and lookups.
  */
 struct FakeResourceProvider final : public render::IResourceProvider {
-    std::string last_mesh_id;
     std::string last_texture_id;
-    std::string last_deform_id;
-
-    std::shared_ptr<media::MeshAsset> get_mesh(const std::string& id) override {
-        last_mesh_id = id;
-        return nullptr;
-    }
 
     std::shared_ptr<std::uint8_t[]> get_texture_rgba(const std::string& id) override {
         last_texture_id = id;
-        return nullptr;
-    }
-
-    std::shared_ptr<const render::IDeformMesh> get_deform(const std::string& id) override {
-        last_deform_id = id;
         return nullptr;
     }
 };

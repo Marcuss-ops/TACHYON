@@ -7,8 +7,7 @@
 namespace tachyon::scene {
 
 // CompositionBuilder implementation
-CompositionBuilder::CompositionBuilder(std::string id, const presets::EffectPresetRegistry& preset_registry)
-    : preset_registry_(preset_registry) {
+CompositionBuilder::CompositionBuilder(std::string id) {
     spec_.id = std::move(id);
     spec_.name = spec_.id;
 }
@@ -37,18 +36,6 @@ CompositionBuilder& CompositionBuilder::background(BackgroundSpec background) {
     spec_.background = std::move(background);
     return *this;
 }
-CompositionBuilder& CompositionBuilder::background_preset(const std::string& id, double duration) {
-    registry::ParameterBag bag;
-    bag.set("width", static_cast<float>(spec_.width));
-    bag.set("height", static_cast<float>(spec_.height));
-    bag.set("duration", duration > 0.0 ? duration : spec_.duration);
-
-    if (auto bg_layer = content::PresetCatalog::instance().create_background(id, bag)) {
-        spec_.layers.insert(spec_.layers.begin(), std::move(*bg_layer));
-    }
-    return *this;
-}
-
 CompositionBuilder& CompositionBuilder::clear(const ColorSpec& color) {
     spec_.background = BackgroundSpec{};
     spec_.background->type = BackgroundType::Color;
@@ -63,7 +50,7 @@ CompositionBuilder& CompositionBuilder::add_typed_layer(
     std::function<void(LayerBuilder&)> fn) {
     const std::string layer_id = id;
     try {
-        LayerBuilder lb(std::move(id), preset_registry_);
+        LayerBuilder lb(std::move(id));
         defaults(lb);
         fn(lb);
         spec_.layers.push_back(std::move(lb).build());
@@ -78,7 +65,7 @@ CompositionBuilder& CompositionBuilder::add_typed_layer(
 CompositionBuilder& CompositionBuilder::layer(std::string id, std::function<void(LayerBuilder&)> fn) {
     const std::string layer_id = id;
     try {
-        LayerBuilder lb(std::move(id), preset_registry_);
+        LayerBuilder lb(std::move(id));
         fn(lb);
         spec_.layers.push_back(std::move(lb).build());
     } catch (const std::exception& e) {

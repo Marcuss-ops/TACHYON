@@ -25,13 +25,19 @@ struct PreflightResult {
     }
 };
 
+namespace renderer2d { class EffectRegistry; }
+class TransitionRegistry;
+
 /**
  * @brief Validates a scene before rendering to ensure all assets, effects, and 
  * configurations are valid for the current execution environment.
  */
 class TACHYON_API RenderPreflight {
 public:
-    static PreflightResult validate(const SceneSpec& scene);
+    static PreflightResult validate(
+        const SceneSpec& scene,
+        const renderer2d::EffectRegistry* effect_registry = nullptr,
+        const TransitionRegistry* transition_registry = nullptr);
 };
 
 } // namespace tachyon::runtime

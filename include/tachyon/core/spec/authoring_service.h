@@ -31,6 +31,11 @@ public:
         const std::filesystem::path& output_dir
     );
 
+    /**
+     * @brief Computes a stable hash for JIT caching based on content and build context.
+     */
+    static std::string compute_cache_hash(const std::string& content);
+
 private:
 #ifdef _WIN32
     static bool msvc_environment_is_ready();

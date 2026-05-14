@@ -60,8 +60,7 @@ bool TextAnimExecutionBackend::is_openmp_available() {
 #endif
 }
 
-void TextAnimExecutionBackend::verify_backend_support(const ResolvedTextAnimPlan& plan) {
-    auto& registry = TextAnimPropertyRegistry::instance();
+void TextAnimExecutionBackend::verify_backend_support(const ResolvedTextAnimPlan& plan, const TextAnimPropertyRegistry& registry) {
     for (const auto& resolved : plan.resolved_properties) {
         if (resolved.descriptor) {
             if (!resolved.descriptor->supports_scalar) {

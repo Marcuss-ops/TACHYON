@@ -2,7 +2,6 @@
 #include "tachyon/runtime/execution/native_render.h"
 #include "tachyon/runtime/execution/jobs/render_job.h"
 #include "tachyon/core/cli.h"
-#include "tachyon/presets/background/background_preset_registry.h"
 #include "tachyon/core/platform/process.h"
 
 #include <iostream>

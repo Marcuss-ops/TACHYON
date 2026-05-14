@@ -263,10 +263,8 @@ RasterizedFrame2D render_evaluated_composition_2d(
             if (!layer.is_adjustment_layer) {
                 if (!tile_rect.has_value() && i < layer_surface_cache.size() && layer_surface_cache[i]) {
                     const bool has_transition_spec =
-                        (!layer.transition_in.transition_id.empty()
-                         || (!layer.transition_in.type.empty() && layer.transition_in.type != "none"))
-                        || (!layer.transition_out.transition_id.empty()
-                         || (!layer.transition_out.type.empty() && layer.transition_out.type != "none"));
+                        !layer.transition_in.transition_id.empty() && layer.transition_in.transition_id != "none"
+                        || !layer.transition_out.transition_id.empty() && layer.transition_out.transition_id != "none";
                     const bool will_mutate = !layer.effects.empty()
                         || has_transition_spec
                         || layer.opacity < 0.9999f
@@ -333,7 +331,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
             ResolvedTransition resolution;
 
             // Check transition_in
-            if (!layer.transition_in.transition_id.empty() || layer.transition_in.type != "none") {
+            if (!layer.transition_in.transition_id.empty() && layer.transition_in.transition_id != "none") {
                 const double relative_time = layer_time - layer.in_time;
                 const double transition_duration = layer.transition_in.duration;
                 const double start_time = layer.transition_in.delay;
@@ -347,7 +345,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
             }
 
             // Check transition_out
-            if (!in_transition && (!layer.transition_out.transition_id.empty() || layer.transition_out.type != "none")) {
+            if (!in_transition && (!layer.transition_out.transition_id.empty() && layer.transition_out.transition_id != "none")) {
                 const double time_until_end = layer.out_time - layer_time;
                 const double transition_duration = layer.transition_out.duration;
                 const auto progress = compute_transition_progress(time_until_end, transition_duration);
@@ -411,8 +409,8 @@ RasterizedFrame2D render_evaluated_composition_2d(
         state.layers.begin(),
         state.layers.end(),
         [](const auto& layer) {
-            bool has_transition = (!layer.transition_in.transition_id.empty() && layer.transition_in.type != "none") ||
-                                  (!layer.transition_out.transition_id.empty() && layer.transition_out.type != "none");
+            bool has_transition = (!layer.transition_in.transition_id.empty() && layer.transition_in.transition_id != "none") ||
+                                  (!layer.transition_out.transition_id.empty() && layer.transition_out.transition_id != "none");
             return layer.enabled
                 && layer.active
                 && (!layer.effects.empty() || has_transition);

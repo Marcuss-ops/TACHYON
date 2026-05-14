@@ -145,8 +145,8 @@ bool run_evaluated_composition_renderer_tests() {
     EffectSpec fill_effect;
     fill_effect.type = "tachyon.effect.color.fill";
     fill_effect.enabled = true;
-    fill_effect.colors["color"] = ColorSpec{255, 0, 0, 255};
-    adjustment_layer.effects.push_back(fill_effect);
+    fill_effect.params["color"] = ParameterValue{ColorSpec{255, 0, 0, 255}};
+    adjustment_layer.effects.push_back(fill_effect.evaluate(0.0));
 
     adjustment_state.layers.push_back(base_layer);
     adjustment_state.layers.push_back(adjustment_layer);
@@ -171,7 +171,6 @@ bool run_evaluated_composition_renderer_tests() {
     transition_layer.height = 64;
     transition_layer.fill_color = ColorSpec{255, 0, 0, 255};
     transition_layer.transition_in.transition_id = "tachyon.transition.crossfade";
-    transition_layer.transition_in.type = "tachyon.transition.crossfade";
     transition_layer.transition_in.duration = 1.0;
     transition_layer.in_time = 0.0;
     transition_layer.layer_index = 0;
@@ -297,7 +296,6 @@ bool run_evaluated_composition_renderer_tests() {
     mask_path.points.push_back({{48.0f, 16.0f}, {}, {}});
     mask_path.points.push_back({{48.0f, 48.0f}, {}, {}});
     mask_path.points.push_back({{16.0f, 48.0f}, {}, {}});
-    // vector_mask.shape_path = mask_path; // Type mismatch: EvaluatedShapePath vs optional<ShapePathSpec>
 
     scene::EvaluatedLayerState masked_layer = matte_target;
     masked_layer.id = "masked_by_vector";
@@ -345,7 +343,7 @@ bool run_evaluated_composition_renderer_tests() {
     precomp_layer.id = "precomp";
     precomp_layer.type = scene::LayerType::Precomp;
     precomp_layer.precomp_id = std::string{"child"};
-    precomp_layer.nested_composition = std::make_unique<scene::EvaluatedCompositionState>(child_state);
+    precomp_layer.nested_composition = std::make_shared<scene::EvaluatedCompositionState>(child_state);
     precomp_layer.width = child_state.width;
     precomp_layer.height = child_state.height;
     precomp_layer.local_transform.position = {32.0f, 32.0f};

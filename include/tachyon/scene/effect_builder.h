@@ -14,12 +14,11 @@ class LayerBuilder;
  */
 class TACHYON_API EffectBuilder {
     LayerBuilder& parent_;
-    const presets::EffectPresetRegistry& preset_registry_;
 public:
-    explicit EffectBuilder(LayerBuilder& parent, const presets::EffectPresetRegistry& preset_registry) 
-        : parent_(parent), preset_registry_(preset_registry) {}
+    explicit EffectBuilder(LayerBuilder& parent) 
+        : parent_(parent) {}
 
-    EffectBuilder& preset(std::string_view id, const registry::ParameterBag& params);
+    EffectBuilder& add(EffectSpec effect);
 
     LayerBuilder& done();
 };

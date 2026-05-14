@@ -65,6 +65,7 @@ private:
     void register_transition_assets();
 
     std::filesystem::path m_root;
+    presets::ScenePresetRegistry m_scene_presets;
     bool m_ok{false};
     DiagnosticBag m_diagnostics;
     std::vector<LibrarySceneEntry> m_scenes;
@@ -72,3 +73,4 @@ private:
 };
 
 }  // namespace tachyon
+achyon

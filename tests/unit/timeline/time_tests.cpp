@@ -53,17 +53,17 @@ bool run_timeline_tests() {
         LayerSpec bg;
         bg.id = "bg";
         bg.type = LayerType::Solid;
-        bg.in_point = 0.0;
-        bg.out_point = 10.0;
+        bg.timing.source_in = 0.0;
+        bg.timing.source_out = 10.0;
         bg.opacity = 1.0;
 
         LayerSpec title;
         title.id = "title";
         title.type = LayerType::Text;
         title.name = "Hello";
-        title.start_time = 1.0;
-        title.in_point = 1.0;
-        title.out_point = 3.0;
+        title.timing.start = 1.0;
+        title.timing.source_in = 1.0;
+        title.timing.source_out = 3.0;
         title.opacity_property.keyframes = {{0.0, 0.0}, {1.0, 1.0}};
         title.transform.position_property.keyframes = {{0.0, {0.0f, 0.0f}}, {1.0, {100.0f, 50.0f}}};
 

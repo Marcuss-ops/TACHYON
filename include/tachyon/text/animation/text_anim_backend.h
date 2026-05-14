@@ -22,9 +22,8 @@ struct PrecompGlyphCtx {
 struct ResolvedTextAnimPlan {
     std::vector<ResolvedTextAnimProperty> resolved_properties;
     
-    static ResolvedTextAnimPlan resolve(const TextAnimatorSpec& animator) {
+    static ResolvedTextAnimPlan resolve(const TextAnimatorSpec& animator, const TextAnimPropertyRegistry& registry) {
         ResolvedTextAnimPlan plan;
-        const auto& registry = TextAnimPropertyRegistry::instance();
         plan.resolved_properties = registry.resolve_properties(animator.properties);
         return plan;
     }
@@ -58,7 +57,7 @@ public:
     
     static bool is_avx2_available();
     static bool is_openmp_available();
-    static void verify_backend_support(const ResolvedTextAnimPlan& plan);
+    static void verify_backend_support(const ResolvedTextAnimPlan& plan, const TextAnimPropertyRegistry& registry);
 };
 
 class ScalarTextAnimBackend : public TextAnimExecutionBackend {

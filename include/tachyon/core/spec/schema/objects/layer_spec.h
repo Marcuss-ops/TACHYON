@@ -31,8 +31,7 @@ struct ParticleSpec {
 };
 
 struct LayerTransitionSpec {
-    std::string type{"none"};
-    std::string transition_id;
+    std::string transition_id{"none"};
     TransitionKind kind{TransitionKind::None}; 
     std::string direction; 
     double duration{0.4};

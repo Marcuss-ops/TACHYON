@@ -204,20 +204,20 @@ std::vector<DrawCommand2D> map_layer_to_draw_commands(const scene::EvaluatedLaye
                 std::visit([&](auto&& val) {
                     using T = std::decay_t<decltype(val)>;
                     if constexpr (std::is_same_v<T, float>) {
-                        params.scalars[k] = val;
+                        params.params[k] = val;
                     } else if constexpr (std::is_same_v<T, bool>) {
-                        params.bools[k] = val;
+                        params.params[k] = val;
                     } else if constexpr (std::is_same_v<T, std::string>) {
-                        params.strings[k] = val;
+                        params.params[k] = val;
                     } else if constexpr (std::is_same_v<T, ColorSpec>) {
-                        params.colors[k] = Color{
+                        params.params[k] = Color{
                             static_cast<float>(val.r) / 255.0f,
                             static_cast<float>(val.g) / 255.0f,
                             static_cast<float>(val.b) / 255.0f,
                             static_cast<float>(val.a) / 255.0f
                         };
                     } else if constexpr (std::is_same_v<T, math::Vector2>) {
-                        params.vectors[k] = val;
+                        params.params[k] = val;
                     }
                 }, v);
             }

@@ -3,7 +3,6 @@
 namespace tachyon::hash {
 
 void hash_transition(CacheKeyBuilder& builder, const LayerTransitionSpec& spec) {
-    builder.add_string(spec.type);
     builder.add_string(spec.transition_id);
     builder.add_u32(static_cast<std::uint32_t>(spec.kind));
     builder.add_string(spec.direction);

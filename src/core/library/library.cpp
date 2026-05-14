@@ -94,9 +94,9 @@ bool TachyonLibrary::reload() {
 }
 
 void TachyonLibrary::register_cpp_presets() {
-    const auto& registry = presets::ScenePresetRegistry::instance();
-    for (const auto& id : registry.list_ids()) {
-        if (const auto* spec = registry.find(id)) {
+    m_scene_presets.load_builtins();
+    for (const auto& id : m_scene_presets.list_ids()) {
+        if (const auto* spec = m_scene_presets.find(id)) {
             m_scenes.push_back({
                 spec->id,
                 spec->metadata.display_name,
@@ -204,7 +204,7 @@ SceneSpec TachyonLibrary::instantiate_scene(const std::string& id) const {
     auto entry = find_scene(id);
     if (!entry) return {};
 
-    if (auto scene = presets::ScenePresetRegistry::instance().create(id, {})) {
+    if (auto scene = m_scene_presets.create(id, {})) {
         return std::move(*scene);
     }
     return {};

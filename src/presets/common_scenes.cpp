@@ -9,9 +9,8 @@ using namespace tachyon;
 using namespace tachyon::scene;
 
 SceneSpec build_scene_a() {
-    presets::EffectPresetRegistry effects;
 
-    return Composition("main", effects)
+    return Composition("main")
         .size(1920, 1080)
         .duration(5.0)
         .fps(30)
@@ -30,9 +29,8 @@ SceneSpec build_scene_a() {
 }
 
 SceneSpec build_scene_b() {
-    presets::EffectPresetRegistry effects;
 
-    return Composition("main", effects)
+    return Composition("main")
         .size(1920, 1080)
         .duration(5.0)
         .fps(30)
@@ -51,9 +49,8 @@ SceneSpec build_scene_b() {
 }
 
 SceneSpec build_text_helpers_scene() {
-    presets::EffectPresetRegistry effects;
 
-    return Composition("main", effects)
+    return Composition("main")
         .size(1280, 720)
         .duration(5.0)
         .fps(30)
@@ -79,9 +76,8 @@ SceneSpec build_text_helpers_scene() {
 }
 
 SceneSpec build_video_transition_scene() {
-    presets::EffectPresetRegistry effects;
 
-    return Composition("video_transition", effects)
+    return Composition("video_transition")
         .size(1920, 1080)
         .duration(3.0)
         .fps(30)

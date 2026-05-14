@@ -1,6 +1,7 @@
 #include "tachyon/core/spec/authoring_service.h"
 #include "tachyon/tachyon_build_config.h"
 #include "tachyon/core/platform/process.h"
+#include "tachyon/jit/tachyon_jit_api.h"
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
@@ -226,6 +227,42 @@ std::string AuthoringService::get_compiler_command(
     return ss.str();
 }
 
+std::string AuthoringService::compute_cache_hash(const std::string& content) {
+    uint64_t hash_val = 0xcbf29ce484222325ULL;
+    
+    auto hash_string = [&](const std::string& s) {
+        for (char c : s) {
+            hash_val ^= static_cast<uint8_t>(c);
+            hash_val *= 0x100000001b3ULL;
+        }
+    };
+
+    hash_string(content);
+    hash_string(std::to_string(TACHYON_JIT_ABI_VERSION));
+    hash_string(TACHYON_INCLUDE_DIR);
+    hash_string(TACHYON_LIB_PATH);
+
+    // Add TachyonScene library fingerprint to hash
+    const std::vector<std::string> libs = get_link_libs();
+    std::filesystem::path lib_dir = TACHYON_LIB_PATH;
+    for (const auto& lib_name : libs) {
+#ifdef _WIN32
+        std::filesystem::path lp = lib_dir / (lib_name + ".lib");
+#else
+        std::filesystem::path lp = lib_dir / ("lib" + lib_name + ".so");
+        if (!std::filesystem::exists(lp)) lp = lib_dir / ("lib" + lib_name + ".a");
+#endif
+        if (std::filesystem::exists(lp)) {
+            hash_string(std::to_string(std::filesystem::file_size(lp)));
+            hash_string(std::to_string(std::filesystem::last_write_time(lp).time_since_epoch().count()));
+        }
+    }
+
+    std::stringstream hss;
+    hss << std::hex << hash_val;
+    return hss.str();
+}
+
 AuthoringService::CompileResult AuthoringService::compile_to_shared_lib(
     const std::filesystem::path& cpp_path,
     const std::filesystem::path& output_dir) {
@@ -239,15 +276,7 @@ AuthoringService::CompileResult AuthoringService::compile_to_shared_lib(
         std::ifstream ifs(cpp_path, std::ios::binary);
         if (ifs) {
             std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
-            // Simple stable hash (FNV-1a 64-bit) for content-addressing
-            uint64_t hash_val = 0xcbf29ce484222325ULL;
-            for (char c : content) {
-                hash_val ^= static_cast<uint8_t>(c);
-                hash_val *= 0x100000001b3ULL;
-            }
-            std::stringstream hss;
-            hss << std::hex << hash_val;
-            hash_str = hss.str();
+            hash_str = compute_cache_hash(content);
         }
     }
 

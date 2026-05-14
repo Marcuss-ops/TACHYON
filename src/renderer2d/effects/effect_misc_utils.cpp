@@ -16,8 +16,8 @@ inline float lerp(float a, float b, float t) {
 
 bool has_scalar(const EffectParams& params, const std::initializer_list<const char*> keys) {
     for (const char* key : keys) {
-        if (params.scalars.find(key) != params.scalars.end()) {
-            return true;
+        if (auto it = params.params.find(key); it != params.params.end()) {
+            if (std::holds_alternative<float>(it->second)) return true;
         }
     }
     return false;
@@ -25,24 +25,27 @@ bool has_scalar(const EffectParams& params, const std::initializer_list<const ch
 
 bool has_color(const EffectParams& params, const std::initializer_list<const char*> keys) {
     for (const char* key : keys) {
-        if (params.colors.find(key) != params.colors.end()) {
-            return true;
+        if (auto it = params.params.find(key); it != params.params.end()) {
+            if (std::holds_alternative<Color>(it->second)) return true;
         }
     }
     return false;
 }
 
 float get_scalar(const EffectParams& params, const std::string& key, float fallback) {
-    const auto it = params.scalars.find(key);
-    return it != params.scalars.end() ? static_cast<float>(it->second) : fallback;
+    auto it = params.params.find(key);
+    if (it != params.params.end()) {
+        if (const auto* val = std::get_if<float>(&it->second)) return *val;
+    }
+    return fallback;
 }
 
 Color get_color(const EffectParams& params, const std::string& key, Color fallback) {
-    const auto it = params.colors.find(key);
-    if (it == params.colors.end()) {
-        return fallback;
+    auto it = params.params.find(key);
+    if (it != params.params.end()) {
+        if (const auto* val = std::get_if<Color>(&it->second)) return *val;
     }
-    return Color{it->second.r, it->second.g, it->second.b, it->second.a};
+    return fallback;
 }
 
 static std::uint64_t splitmix64(std::uint64_t x) {

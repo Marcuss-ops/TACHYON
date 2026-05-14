@@ -30,8 +30,6 @@ struct ScenePresetSpec {
  */
 class ScenePresetRegistry {
 public:
-    static ScenePresetRegistry& instance();
-
     ScenePresetRegistry() = default;
     ~ScenePresetRegistry() = default;
     

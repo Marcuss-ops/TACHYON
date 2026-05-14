@@ -141,8 +141,8 @@ bool run_cli_tests() {
         image_layer.id = "hero";
         image_layer.type = tachyon::LayerType::Image;
         image_layer.asset_id = "hero-image";
-        image_layer.start_time = 0.0;
-        image_layer.out_point = 1.0;
+        image_layer.timing.start = 0.0;
+        image_layer.timing.source_out = 1.0;
         comp.layers.push_back(image_layer);
 
         scene.compositions.push_back(comp);
@@ -166,8 +166,8 @@ bool run_cli_tests() {
         tachyon::LayerSpec missing_image;
         missing_image.id = "missing";
         missing_image.type = tachyon::LayerType::Image;
-        missing_image.start_time = 0.0;
-        missing_image.out_point = 1.0;
+        missing_image.timing.start = 0.0;
+        missing_image.timing.source_out = 1.0;
         comp.layers.push_back(missing_image);
 
         scene.compositions.push_back(comp);
@@ -195,8 +195,8 @@ bool run_cli_tests() {
         text_layer.id = "title";
         text_layer.type = tachyon::LayerType::Text;
         text_layer.text_content = "Hello";
-        text_layer.start_time = 0.0;
-        text_layer.out_point = 1.0;
+        text_layer.timing.start = 0.0;
+        text_layer.timing.source_out = 1.0;
         comp.layers.push_back(text_layer);
 
         scene.compositions.push_back(comp);

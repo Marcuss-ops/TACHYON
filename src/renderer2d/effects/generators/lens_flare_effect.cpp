@@ -114,11 +114,7 @@ SurfaceRGBA LensFlareEffect::apply(const SurfaceRGBA& input, const EffectParams&
     SurfaceRGBA out = input;
     
     // Get light sources from parameters (using a simple string format instead of JSON)
-    std::string lights_config;
-    auto it = params.strings.find("lights");
-    if (it != params.strings.end()) {
-        lights_config = it->second;
-    }
+    std::string lights_config = get_string(params, "lights", "");
     
     auto lights = parse_lights(lights_config);
     if (lights.empty()) {

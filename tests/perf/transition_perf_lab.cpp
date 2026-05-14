@@ -112,9 +112,9 @@ int main() {
             }
             
             renderer2d::EffectParams params;
-            params.scalars["t"] = t;
-            params.strings["transition_id"] = tid;
-            params.aux_surfaces["transition_to"] = &surface_b;
+            params.params["t"] = t;
+            params.params["transition_id"] = std::string(tid);
+            params.params["transition_to"] = static_cast<const renderer2d::SurfaceRGBA*>(&surface_b);
 
             auto result = host->apply("tachyon.effect.transition.glsl", surface_a, params);
             if (result.value.has_value()) {

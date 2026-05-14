@@ -1,10 +1,17 @@
 #include "tachyon/runtime/execution/planning/render_preflight.h"
 #include "tachyon/core/spec/validation/scene_validator.h"
+#include "tachyon/renderer2d/effects/effect_registry.h"
+#include "tachyon/renderer2d/effects/effect_validation.h"
+#include "tachyon/transition_registry.h"
 #include <filesystem>
 
 namespace tachyon::runtime {
 
-PreflightResult RenderPreflight::validate(const SceneSpec& scene) {
+PreflightResult RenderPreflight::validate(
+    const SceneSpec& scene,
+    const renderer2d::EffectRegistry* effect_registry,
+    const TransitionRegistry* transition_registry) {
+    
     PreflightResult result;
     
     // 1. Structural Validation via SceneValidator
@@ -30,8 +37,41 @@ PreflightResult RenderPreflight::validate(const SceneSpec& scene) {
         }
     }
     
-    // 3. Effect availability check (placeholder - requires registry access)
-    // In a real implementation, we'd pass the EffectRegistry to this method.
+    // 3. Registry-aware Validation
+    for (const auto& comp : scene.compositions) {
+        for (const auto& layer : comp.layers) {
+            const std::string layer_path = "composition(" + comp.id + ").layer(" + layer.id + ")";
+            
+            // Check transitions
+            if (transition_registry) {
+                if (layer.transition_in.transition_id != "none" && 
+                    layer.transition_in.transition_id != "tachyon.transition.none") {
+                    if (!transition_registry->resolve(layer.transition_in.transition_id)) {
+                        result.add_error(layer_path + ": Transition in not found: " + layer.transition_in.transition_id);
+                    }
+                }
+                if (layer.transition_out.transition_id != "none" && 
+                    layer.transition_out.transition_id != "tachyon.transition.none") {
+                    if (!transition_registry->resolve(layer.transition_out.transition_id)) {
+                        result.add_error(layer_path + ": Transition out not found: " + layer.transition_out.transition_id);
+                    }
+                }
+            }
+            
+            // Check effects
+            if (effect_registry) {
+                for (std::size_t i = 0; i < layer.effects.size(); ++i) {
+                    const auto& effect = layer.effects[i];
+                    auto fx_res = renderer2d::validate_effect(effect, *effect_registry);
+                    if (!fx_res.valid) {
+                        for (const auto& issue : fx_res.issues) {
+                            result.add_error(layer_path + ".effects[" + std::to_string(i) + "]: " + issue.message);
+                        }
+                    }
+                }
+            }
+        }
+    }
     
     return result;
 }

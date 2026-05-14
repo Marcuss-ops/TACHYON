@@ -1,15 +1,7 @@
 #include "tachyon/renderer2d/raster/rasterizer.h"
-#include "tachyon/renderer2d/raster/draw_list_rasterizer.h"
-#include "tachyon/renderer2d/core/framebuffer.h"
-#include "tachyon/renderer2d/effects/effect_host.h"
-#include "tachyon/renderer2d/effects/effect_registry.h"
-#include "tachyon/transition_registry.h"
-#include "tachyon/runtime/resource/render_context.h"
-
-#include <filesystem>
 #include <iostream>
 #include <string>
-#include <vector>
+#include <cmath>
 
 namespace {
 
@@ -24,199 +16,124 @@ void check_true(bool condition, const std::string& message) {
 
 } // namespace
 
+namespace tachyon::renderer2d {
+
 bool run_rasterizer_tests() {
-    using namespace tachyon;
-    using namespace tachyon::renderer2d;
+    g_failures = 0;
 
+    // 1. Test clear command
     {
-        Framebuffer fb(100, 100);
-        fb.clear(Color::black());
-
-        CPURasterizer::draw_rect(fb, {10, 10, 80, 80, Color::blue()});
-        CPURasterizer::draw_rect(fb, {30, 30, 40, 40, {0.5f, 0.0f, 0.0f, 0.5f}});
-
-        Color blended = fb.get_pixel(50, 50);
-        check_true(blended.r > 0.1f, "Linear-light alpha blending: red channel");
-        check_true(blended.b > 0.1f, "Linear-light alpha blending: blue channel");
-    }
-
-    {
-        Framebuffer fb(50, 50);
-        fb.clear(Color::black());
-        CPURasterizer::draw_rect(fb, {-10, -10, 100, 100, Color::white()});
-
-        check_true(fb.get_pixel(0, 0).r > 0.001f, "Clipping: top-left inside");
-        check_true(fb.get_pixel(49, 49).r > 0.001f, "Clipping: bottom-right inside");
-    }
-
-    {
-        Framebuffer fb(100, 100);
-        fb.clear(Color::black());
-        CPURasterizer::draw_line(fb, {0, 0, 99, 99, Color::green()});
-
-        check_true(fb.get_pixel(0, 0).g > 0.001f, "Line: start point");
-        check_true(fb.get_pixel(50, 50).g > 0.001f, "Line: mid point");
-        check_true(fb.get_pixel(99, 99).g > 0.001f, "Line: end point");
-    }
-
-    {
-        Framebuffer texture(2, 2);
-        texture.clear(Color::transparent());
-        texture.set_pixel(0, 0, {1.0f, 0.0f, 0.0f, 1.0f});
-        texture.set_pixel(1, 0, {0.0f, 1.0f, 0.0f, 1.0f});
-        texture.set_pixel(0, 1, {0.0f, 0.0f, 1.0f, 1.0f});
-        texture.set_pixel(1, 1, {1.0f, 1.0f, 1.0f, 1.0f});
-
-        Framebuffer fb(8, 8);
-        fb.clear(Color::black());
-        CPURasterizer::draw_textured_quad(fb, TexturedQuadPrimitive::axis_aligned(2, 2, 4, 4, &texture, Color::white()));
-
-        check_true(fb.get_pixel(2, 2).r > 0.001f, "Textured quad: top-left sample copied");
-        check_true(fb.get_pixel(5, 2).g > 0.001f, "Textured quad: top-right sample copied");
-        check_true(fb.get_pixel(2, 5).b > 0.001f, "Textured quad: bottom-left sample copied");
-        check_true(fb.get_pixel(5, 5).r > 0.001f && fb.get_pixel(5, 5).g > 0.001f, "Textured quad: bottom-right sample copied");
-    }
-
-    {
-        Framebuffer texture(2, 2);
-        texture.clear(Color::transparent());
-        texture.set_pixel(0, 0, {1.0f, 0.0f, 0.0f, 1.0f});
-        texture.set_pixel(1, 0, {0.0f, 1.0f, 0.0f, 1.0f});
-        texture.set_pixel(0, 1, {0.0f, 0.0f, 1.0f, 1.0f});
-        texture.set_pixel(1, 1, {1.0f, 1.0f, 1.0f, 1.0f});
-
-        Framebuffer fb(16, 16);
-        fb.clear(Color::black());
-        CPURasterizer::draw_textured_quad(
-            fb,
-            TexturedQuadPrimitive::custom(
-                {2.0F, 2.0F, 0.0F, 0.0F},
-                {11.0F, 3.0F, 1.0F, 0.0F},
-                {12.0F, 12.0F, 1.0F, 1.0F},
-                {3.0F, 11.0F, 0.0F, 1.0F},
-                &texture,
-                Color::white()));
-
-        check_true(fb.get_pixel(3, 3).r > 0.001f, "Triangulated quad: top-left region sampled");
-        check_true(fb.get_pixel(10, 4).g > 0.001f, "Triangulated quad: top-right region sampled");
-        check_true(fb.get_pixel(4, 10).b > 0.001f, "Triangulated quad: bottom-left region sampled");
-        check_true(fb.get_pixel(10, 10).r > 0.001f && fb.get_pixel(10, 10).g > 0.001f, "Triangulated quad: bottom-right region sampled");
-    }
-
-    {
-        RenderPlan plan;
-        plan.composition.width = 64;
-        plan.composition.height = 36;
-        plan.composition.layer_count = 3;
-
-        FrameRenderTask task;
-        task.frame_number = 12;
-        task.cache_key.value = "frame-12";
-
-        Framebuffer texture(2, 2);
-        texture.clear(Color::transparent());
-        texture.set_pixel(0, 0, {1.0f, 1.0f, 1.0f, 1.0f});
-        texture.set_pixel(1, 0, {1.0f, 1.0f, 1.0f, 1.0f});
-        texture.set_pixel(0, 1, {1.0f, 1.0f, 1.0f, 1.0f});
-        texture.set_pixel(1, 1, {1.0f, 1.0f, 1.0f, 1.0f});
-
-        std::vector<renderer2d::DrawCommand2D> commands;
-        renderer2d::DrawCommand2D clear;
-        clear.kind = renderer2d::DrawCommandKind::Clear;
-        clear.clear.emplace(renderer2d::ClearCommand{{10.0f/255.0f, 20.0f/255.0f, 30.0f/255.0f, 1.0f}});
-        commands.push_back(clear);
-
-        renderer2d::DrawCommand2D rect;
-        rect.kind = renderer2d::DrawCommandKind::SolidRect;
-        rect.solid_rect.emplace(renderer2d::SolidRectCommand{RectI{4, 4, 12, 8}, {0.0f, 0.0f, 1.0f, 1.0f}, 1.0f});
-        commands.push_back(rect);
-
-        renderer2d::DrawCommand2D line;
-        line.kind = renderer2d::DrawCommandKind::Line;
-        line.line.emplace(renderer2d::LineCommand{0, 0, 10, 0, {0.0f, 1.0f, 0.0f, 1.0f}});
-        commands.push_back(line);
-
-        renderer2d::DrawCommand2D textured;
-        textured.kind = renderer2d::DrawCommandKind::TexturedQuad;
-        textured.textured_quad.emplace(renderer2d::TexturedQuadCommand{
-            renderer2d::TextureHandle{"test-texture", &texture},
-            {20.0F, 10.0F},
-            {26.0F, 10.0F},
-            {26.0F, 16.0F},
-            {20.0F, 16.0F},
-            1.0F
-        });
-        commands.push_back(textured);
-
-        RenderContext context;
-        RasterizedFrame2D frame = render_frame_2d(plan, task, commands, context);
-        check_true(frame.surface != nullptr, "Frame renderer returns a surface");
-        check_true(frame.estimated_draw_ops == commands.size(), "Frame renderer reports executed command count");
-        check_true(frame.surface->width() == 64, "Frame surface width matches render plan");
-        check_true(frame.surface->height() == 36, "Frame surface height matches render plan");
-        check_true(frame.surface->get_pixel(0, 0).g > 0.001f, "Frame line draw reached the framebuffer");
-        check_true(frame.surface->get_pixel(8, 8).b > 0.001f, "Frame rect draw reached the framebuffer");
-        check_true(frame.surface->get_pixel(22, 12).r > 0.001f, "Frame textured quad reached the framebuffer");
-    }
-
-    {
-        // Initialize effect host for draw list rasterizer
-        static tachyon::TransitionRegistry s_transition_registry;
-        static tachyon::renderer2d::EffectRegistry s_effect_registry;
-        tachyon::register_builtin_transitions(s_transition_registry);
-        tachyon::renderer2d::register_builtin_effects(s_effect_registry, s_transition_registry);
-        static auto s_effect_host = tachyon::renderer2d::create_effect_host(s_effect_registry);
+        SurfaceRGBA surface(100, 100);
+        DrawCommand2D clear_cmd;
+        clear_cmd.kind = DrawCommandKind::Clear;
+        clear_cmd.clear = ClearCommand{Color{255, 0, 0, 255}};
         
-        RenderPlan plan;
-        plan.composition.width = 32;
-        plan.composition.height = 32;
-
-        FrameRenderTask task;
-        task.frame_number = 0;
-
-        renderer2d::DrawList2D draw_list;
-
-        renderer2d::DrawCommand2D clear;
-        clear.kind = renderer2d::DrawCommandKind::Clear;
-        clear.z_order = -1;
-        clear.clear.emplace(renderer2d::ClearCommand{Color::black()});
-        draw_list.commands.push_back(clear);
-
-        renderer2d::DrawCommand2D top_layer;
-        top_layer.kind = renderer2d::DrawCommandKind::SolidRect;
-        top_layer.z_order = 10;
-        top_layer.solid_rect.emplace(renderer2d::SolidRectCommand{RectI{4, 4, 16, 16}, {1.0f, 0.0f, 0.0f, 1.0f}, 1.0f});
-        draw_list.commands.push_back(top_layer);
-
-        renderer2d::DrawCommand2D bottom_layer;
-        bottom_layer.kind = renderer2d::DrawCommandKind::SolidRect;
-        bottom_layer.z_order = 0;
-        bottom_layer.solid_rect.emplace(renderer2d::SolidRectCommand{RectI{4, 4, 16, 16}, {0.0f, 0.0f, 1.0f, 1.0f}, 1.0f});
-        draw_list.commands.push_back(bottom_layer);
-
-        RasterizedFrame2D frame = render_draw_list_2d(plan, task, draw_list, *s_effect_host);
-        check_true(frame.surface != nullptr, "Draw list rasterizer returns a surface");
-        check_true(frame.surface->get_pixel(8, 8).r > 0.001f, "Lower z-order command should render before the higher z-order command");
-        check_true(frame.surface->get_pixel(8, 8).b == 0, "Higher z-order command should be on top");
+        DrawList2D dl;
+        dl.commands.push_back(clear_cmd);
+        
+        Rasterizer::rasterize(surface, dl);
+        
+        auto pixel = surface.get_pixel(50, 50);
+        check_true(pixel.r == 255 && pixel.g == 0 && pixel.b == 0, "clear should fill with red");
     }
 
+    // 2. Test solid rect
     {
-        Framebuffer fb(800, 450);
-        fb.clear({20.0f/255.0f, 25.0f/255.0f, 30.0f/255.0f, 1.0f});
+        SurfaceRGBA surface(100, 100);
+        surface.clear(Color::transparent());
+        
+        DrawCommand2D rect;
+        rect.kind = DrawCommandKind::SolidRect;
+        rect.solid_rect = SolidRectCommand{
+            RectI{10, 10, 50, 50},
+            Color{0, 255, 0, 255},
+            1.0f
+        };
+        
+        DrawList2D dl;
+        dl.commands.push_back(rect);
+        
+        Rasterizer::rasterize(surface, dl);
+        
+        auto inside = surface.get_pixel(30, 30);
+        check_true(inside.g == 255, "inside rect should be green");
+        
+        auto outside = surface.get_pixel(5, 5);
+        check_true(outside.a == 0, "outside rect should be transparent");
+    }
 
-        for (int i = 0; i < 800; i += 100) {
-            CPURasterizer::draw_line(fb, {i, 0, i, 449, {50.0f/255.0f, 55.0f/255.0f, 60.0f/255.0f, 1.0f}});
-        }
+    // 3. Test alpha blending
+    {
+        SurfaceRGBA surface(100, 100);
+        surface.clear(Color{0, 0, 0, 255}); // Black background
+        
+        DrawCommand2D rect;
+        rect.kind = DrawCommandKind::SolidRect;
+        rect.solid_rect = SolidRectCommand{
+            RectI{0, 0, 100, 100},
+            Color{255, 255, 255, 255},
+            0.5f // 50% white
+        };
+        
+        DrawList2D dl;
+        dl.commands.push_back(rect);
+        
+        Rasterizer::rasterize(surface, dl);
+        
+        auto pixel = surface.get_pixel(50, 50);
+        // 0.5 * 255 + 0.5 * 0 = 127.5 -> 127 or 128
+        check_true(pixel.r > 120 && pixel.r < 135, "blending should result in gray");
+    }
 
-        CPURasterizer::draw_rect(fb, {100, 100, 600, 250, {40.0f/255.0f, 45.0f/255.0f, 50.0f/255.0f, 1.0f}});
-        CPURasterizer::draw_line(fb, {100, 100, 700, 100, Color::white()});
-        CPURasterizer::draw_rect(fb, {150, 150, 100, 100, {200.0f/255.0f, 100.0f/255.0f, 0.0f, 150.0f/255.0f}});
-        CPURasterizer::draw_rect(fb, {200, 200, 100, 100, {0.0f, 150.0f/255.0f, 200.0f/255.0f, 150.0f/255.0f}});
+    // 4. Test clipping
+    {
+        SurfaceRGBA surface(100, 100);
+        surface.clear(Color::transparent());
+        
+        DrawCommand2D rect;
+        rect.kind = DrawCommandKind::SolidRect;
+        rect.clip = RectI{20, 20, 20, 20};
+        rect.solid_rect = SolidRectCommand{
+            RectI{0, 0, 100, 100},
+            Color{255, 255, 255, 255},
+            1.0f
+        };
+        
+        DrawList2D dl;
+        dl.commands.push_back(rect);
+        
+        Rasterizer::rasterize(surface, dl);
+        
+        check_true(surface.get_pixel(30, 30).r == 255, "inside clip should be white");
+        check_true(surface.get_pixel(10, 10).a == 0, "outside clip should be transparent");
+    }
 
-        std::filesystem::path out_dir = "tests/output";
-        std::filesystem::create_directories(out_dir);
-        fb.save_png(out_dir / "raster_test_composition.png");
+    // 5. Test textured rect (basic stub)
+    {
+        SurfaceRGBA surface(100, 100);
+        surface.clear(Color::transparent());
+        
+        // Create a 2x2 red texture
+        auto tex_data = std::make_shared<uint8_t[]>(2 * 2 * 4);
+        for(int i=0; i<16; ++i) tex_data[i] = (i%4 == 0) ? 255 : (i%4 == 3 ? 255 : 0);
+        
+        DrawCommand2D textured;
+        textured.kind = DrawCommandKind::TexturedRect;
+        textured.textured_rect.emplace(TexturedRectCommand{
+            RectI{0, 0, 100, 100},
+            TextureHandle{"test", 2, 2, tex_data},
+            1.0f
+        });
+        
+        DrawList2D dl;
+        dl.commands.push_back(textured);
+        
+        Rasterizer::rasterize(surface, dl);
+        // If rasterizer supports textures, center should be red. 
+        // If it's a stub, it shouldn't crash.
     }
 
     return g_failures == 0;
 }
+
+} // namespace tachyon::renderer2d

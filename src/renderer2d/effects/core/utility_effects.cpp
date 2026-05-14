@@ -114,10 +114,14 @@ SurfaceRGBA VignetteEffect::apply(const SurfaceRGBA& input, const EffectParams& 
 }
 
 SurfaceRGBA DisplacementMapEffect::apply(const SurfaceRGBA& input, const EffectParams& params) const {
-    const auto it = params.textures.find("displacement_source");
-    if (it == params.textures.end() || !it->second) return input;
+    const SurfaceRGBA* source_ptr = nullptr;
+    if (auto it = params.params.find("displacement_source"); it != params.params.end()) {
+        if (auto* const* s = std::get_if<const SurfaceRGBA*>(&it->second)) source_ptr = *s;
+    }
     
-    const SurfaceRGBA& source = *it->second;
+    if (!source_ptr) return input;
+    
+    const SurfaceRGBA& source = *source_ptr;
     const float max_displace_x = get_scalar(params, "max_displacement_x", 10.0f);
     const float max_displace_y = get_scalar(params, "max_displacement_y", 10.0f);
     

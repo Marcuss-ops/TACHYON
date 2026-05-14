@@ -24,15 +24,15 @@ EffectParams effect_params_from_spec(const EvaluatedEffect& spec, const ColorPro
         std::visit([&](auto&& arg) {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, double>) {
-                params.scalars.emplace(key, static_cast<float>(arg));
+                params.params.emplace(key, static_cast<float>(arg));
             } else if constexpr (std::is_same_v<T, ColorSpec>) {
-                params.colors.emplace(key, from_color_spec(arg, working_profile));
+                params.params.emplace(key, from_color_spec(arg, working_profile));
             } else if constexpr (std::is_same_v<T, std::string>) {
-                params.strings.emplace(key, arg);
+                params.params.emplace(key, arg);
             } else if constexpr (std::is_same_v<T, bool>) {
-                params.bools.emplace(key, arg);
+                params.params.emplace(key, arg);
             } else if constexpr (std::is_same_v<T, math::Vector2>) {
-                params.vectors.emplace(key, arg);
+                params.params.emplace(key, arg);
             }
         }, value);
     }
@@ -71,7 +71,7 @@ ResolutionResult<SurfaceRGBA> apply_effect_pipeline(
         }
         
         EffectParams params = effect_params_from_spec(effect, working_profile);
-        params.strings.emplace("layer_id", current_layer_id);
+        params.params.emplace("layer_id", current_layer_id);
         
         // Use centralized effect resolver with injected registry
         auto resolved = resolve_effect(effect, host.registry());
@@ -105,7 +105,7 @@ ResolutionResult<SurfaceRGBA> apply_effect_pipeline(
                 if (!target_layer_id.empty()) {
                     const auto surface_it = surfaces.find(target_layer_id);
                     if (surface_it != surfaces.end() && surface_it->second) {
-                        params.aux_surfaces.emplace(req.param_name, surface_it->second.get());
+                        params.params.emplace(req.param_name, surface_it->second.get());
                     }
                 }
             }

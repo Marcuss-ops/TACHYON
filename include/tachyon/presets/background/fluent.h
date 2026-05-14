@@ -130,8 +130,8 @@ inline LayerSpec solid(const ColorSpec& color, int width = 1920, int height = 10
     bg.type = LayerType::Solid;
     bg.enabled = true;
     bg.visible = true;
-    bg.in_point = 0.0;
-    bg.out_point = duration;
+    bg.timing.source_in = 0.0;
+    bg.timing.source_out = duration;
     bg.width = width;
     bg.height = height;
     bg.opacity = 1.0;
@@ -150,8 +150,8 @@ inline LayerSpec image(std::string path, int width = 1920, int height = 1080, do
     bg.type = LayerType::Image;
     bg.enabled = true;
     bg.visible = true;
-    bg.in_point = 0.0;
-    bg.out_point = duration;
+    bg.timing.source_in = 0.0;
+    bg.timing.source_out = duration;
     bg.width = width;
     bg.height = height;
     bg.opacity = 1.0;
@@ -170,8 +170,8 @@ inline LayerSpec video(std::string path, int width = 1920, int height = 1080, do
     bg.type = LayerType::Video;
     bg.enabled = true;
     bg.visible = true;
-    bg.in_point = 0.0;
-    bg.out_point = duration;
+    bg.timing.source_in = 0.0;
+    bg.timing.source_out = duration;
     bg.width = width;
     bg.height = height;
     bg.opacity = 1.0;

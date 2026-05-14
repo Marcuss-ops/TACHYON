@@ -59,9 +59,9 @@ bool run_transition_fast_paths_tests() {
         
         // Generic Path
         EffectParams params;
-        params.scalars["t"] = t;
-        params.strings["transition_id"] = std::string(ids::transition::pixelate);
-        params.aux_surfaces["transition_to"] = &to;
+        params.params["t"] = t;
+        params.params["transition_id"] = std::string(ids::transition::pixelate);
+        params.params["transition_to"] = static_cast<const SurfaceRGBA*>(&to);
         
         auto result = host->apply("tachyon.effect.transition.glsl", from, params);
         if (!result.value.has_value()) {

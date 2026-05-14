@@ -197,21 +197,21 @@ void evaluate_layer(
 
     // Only apply automatic linear alpha fading for simple "fade" transitions or default legacy IDs.
     // Named plugin transitions (e.g., "tachyon.transition.light_leak") handle opacity themselves or within their pixel kernel.
-    const auto is_auto_fade = [](const std::string& type) {
-        if (type == "fade" || type.empty()) return true;
+    const auto is_auto_fade = [](const std::string& transition_id) {
+        if (transition_id == "fade" || transition_id.empty() || transition_id == "none") return true;
         // If it contains a plugin namespace, we assume it has rich pixel logic and do NOT apply automatic global fade.
-        if (type.find("tachyon.transition.") != std::string::npos) return false;
+        if (transition_id.find("tachyon.transition.") != std::string::npos) return false;
         return true; // Fallback fallback legacy
     };
 
     float transition_opacity = 1.0f;
-    if (layer.transition_in.duration > 0.0 && layer.transition_in.type != "none" && is_auto_fade(layer.transition_in.type)) {
+    if (layer.transition_in.duration > 0.0 && layer.transition_in.transition_id != "none" && is_auto_fade(layer.transition_in.transition_id)) {
         double t = frame_time_seconds - layer.in_time;
         if (t >= 0.0 && t < layer.transition_in.duration) {
             transition_opacity = static_cast<float>(std::clamp(t / layer.transition_in.duration, 0.0, 1.0));
         }
     }
-    if (layer.transition_out.duration > 0.0 && layer.transition_out.type != "none" && is_auto_fade(layer.transition_out.type)) {
+    if (layer.transition_out.duration > 0.0 && layer.transition_out.transition_id != "none" && is_auto_fade(layer.transition_out.transition_id)) {
         double t = layer.out_time - frame_time_seconds;
         if (t >= 0.0 && t < layer.transition_out.duration) {
             transition_opacity *= static_cast<float>(std::clamp(t / layer.transition_out.duration, 0.0, 1.0));

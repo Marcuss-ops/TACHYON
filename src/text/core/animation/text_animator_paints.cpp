@@ -140,7 +140,8 @@ void apply_text_animators(
             }
         }
 
-        const auto plan = ResolvedTextAnimPlan::resolve(animator);
+        static TextAnimPropertyRegistry s_registry; // Local static is acceptable for now, or pass from caller
+        const auto plan = ResolvedTextAnimPlan::resolve(animator, s_registry);
         
         backend->apply(
             plan,

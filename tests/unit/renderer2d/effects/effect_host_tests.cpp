@@ -69,7 +69,7 @@ bool run_effect_host_tests() {
     check_true(context.effects->has_effect("tachyon.effect.color.hue_saturation"), "RenderContext auto-registers hue_saturation");
 
     EffectParams blur_params;
-    blur_params.scalars["blur_radius"] = 1.5f;
+    blur_params.params["blur_radius"] = 1.5f;
     const auto blurred_res = host.apply("tachyon.effect.blur.gaussian", source, blur_params);
     check_true(blurred_res.ok(), "Blur application successful");
     const SurfaceRGBA& blurred = *blurred_res.value;
@@ -77,21 +77,21 @@ bool run_effect_host_tests() {
     check_true(blurred.get_pixel(9, 8).a > 0, "Blur spreads to neighboring pixel");
 
     EffectParams hue_params;
-    hue_params.scalars["hue"] = 180.0f;
+    hue_params.params["hue"] = 180.0f;
     const auto hued_res = host.apply("tachyon.effect.color.hue_saturation", source, hue_params);
     check_true(hued_res.ok(), "Hue application successful");
     const SurfaceRGBA& hued = *hued_res.value;
     check_true(hued.get_pixel(8, 8).a == source.get_pixel(8, 8).a, "HueSaturation preserves alpha");
 
     EffectParams particle_params;
-    particle_params.scalars["seed"] = 1234.0f;
-    particle_params.scalars["count"] = 32.0f;
-    particle_params.scalars["time"] = 0.5f;
-    particle_params.scalars["lifetime"] = 2.0f;
-    particle_params.scalars["speed"] = 20.0f;
-    particle_params.scalars["radius_min"] = 1.0f;
-    particle_params.scalars["radius_max"] = 2.0f;
-    particle_params.colors["color"] = Color{1.0f, 180.0f/255.0f, 64.0f/255.0f, 200.0f/255.0f};
+    particle_params.params["seed"] = 1234.0f;
+    particle_params.params["count"] = 32.0f;
+    particle_params.params["time"] = 0.5f;
+    particle_params.params["lifetime"] = 2.0f;
+    particle_params.params["speed"] = 20.0f;
+    particle_params.params["radius_min"] = 1.0f;
+    particle_params.params["radius_max"] = 2.0f;
+    particle_params.params["color"] = Color{1.0f, 180.0f/255.0f, 64.0f/255.0f, 200.0f/255.0f};
     const auto particles_a_res = host.apply("tachyon.effect.generator.particle_emitter", source, particle_params);
     const auto particles_b_res = host.apply("tachyon.effect.generator.particle_emitter", source, particle_params);
     check_true(particles_a_res.ok(), "Particle A successful");
@@ -122,7 +122,7 @@ bool run_effect_host_tests() {
     check_true(particle_frames_match, "Particle emitter is deterministic for fixed seed");
 
     EffectParams fill_params;
-    fill_params.colors["color"] = Color{200.0f/255.0f, 100.0f/255.0f, 50.0f/255.0f, 128.0f/255.0f};
+    fill_params.params["color"] = Color{200.0f/255.0f, 100.0f/255.0f, 50.0f/255.0f, 128.0f/255.0f};
     const auto filled_res = host.apply("tachyon.effect.color.fill", source, fill_params);
     check_true(filled_res.ok(), "Fill successful");
     const SurfaceRGBA& filled = *filled_res.value;
@@ -136,10 +136,10 @@ bool run_effect_host_tests() {
     transition_to.clear(Color::blue());
 
     EffectParams transition_params;
-    transition_params.scalars["t"] = 1.0f;
-    transition_params.strings["transition_id"] = "tachyon.transition.crossfade";
-    transition_params.strings["shader_path"] = "assets/library/transitions/crossfade.glsl";
-    transition_params.aux_surfaces["transition_to"] = &transition_to;
+    transition_params.params["t"] = 1.0f;
+    transition_params.params["transition_id"] = std::string("tachyon.transition.crossfade");
+    transition_params.params["shader_path"] = std::string("assets/library/transitions/crossfade.glsl");
+    transition_params.params["transition_to"] = static_cast<const SurfaceRGBA*>(&transition_to);
     const auto transitioned_res = host.apply("tachyon.effect.transition.glsl", transition_from, transition_params);
     check_true(transitioned_res.ok(), "Transition successful");
     const SurfaceRGBA& transitioned = *transitioned_res.value;
@@ -148,18 +148,18 @@ bool run_effect_host_tests() {
     check_true(transition_center.r < 0.3f, "Glsl transition reduces the source surface when t=1");
 
     EffectParams slide_up_params;
-    slide_up_params.scalars["t"] = 1.0f;
-    slide_up_params.strings["transition_id"] = "tachyon.transition.slide_up";
-    slide_up_params.aux_surfaces["transition_to"] = &transition_to;
+    slide_up_params.params["t"] = 1.0f;
+    slide_up_params.params["transition_id"] = std::string("tachyon.transition.slide_up");
+    slide_up_params.params["transition_to"] = static_cast<const SurfaceRGBA*>(&transition_to);
     const auto slide_up_res = host.apply("tachyon.effect.transition.glsl", transition_from, slide_up_params);
     check_true(slide_up_res.ok(), "Slide up transition successful");
     const SurfaceRGBA& slide_up = *slide_up_res.value;
     check_true(slide_up.get_pixel(4, 4).b > 0.8f, "Slide up transition reaches the target surface");
 
     EffectParams swipe_left_params;
-    swipe_left_params.scalars["t"] = 1.0f;
-    swipe_left_params.strings["transition_id"] = "tachyon.transition.swipe_left";
-    swipe_left_params.aux_surfaces["transition_to"] = &transition_to;
+    swipe_left_params.params["t"] = 1.0f;
+    swipe_left_params.params["transition_id"] = std::string("tachyon.transition.swipe_left");
+    swipe_left_params.params["transition_to"] = static_cast<const SurfaceRGBA*>(&transition_to);
     const auto swipe_left_res = host.apply("tachyon.effect.transition.glsl", transition_from, swipe_left_params);
     check_true(swipe_left_res.ok(), "Swipe left transition successful");
     const SurfaceRGBA& swipe_left = *swipe_left_res.value;
@@ -200,17 +200,17 @@ bool run_effect_host_tests() {
 
     // Test new transitions: light_leak, film_burn, flash
     EffectParams leak_params;
-    leak_params.scalars["t"] = 0.5f;
-    leak_params.strings["transition_id"] = "tachyon.transition.light_leak";
-    leak_params.aux_surfaces["transition_to"] = &transition_to;
+    leak_params.params["t"] = 0.5f;
+    leak_params.params["transition_id"] = std::string("tachyon.transition.light_leak");
+    leak_params.params["transition_to"] = static_cast<const SurfaceRGBA*>(&transition_to);
     const auto leaked_res = host.apply("tachyon.effect.transition.glsl", transition_from, leak_params);
     check_true(leaked_res.ok(), "Leaked successful");
     const SurfaceRGBA& leaked = *leaked_res.value;
     check_true(leaked.get_pixel(4, 4).a > 0, "Light leak transition produces visible output");
 
     EffectParams leak_overlay_params;
-    leak_overlay_params.scalars["t"] = 0.5f;
-    leak_overlay_params.strings["transition_id"] = "tachyon.transition.light_leak";
+    leak_overlay_params.params["t"] = 0.5f;
+    leak_overlay_params.params["transition_id"] = std::string("tachyon.transition.light_leak");
     const auto leak_overlay_res = host.apply("tachyon.effect.transition.glsl", SurfaceRGBA(8, 8), leak_overlay_params);
     check_true(leak_overlay_res.ok(), "Leak overlay successful");
     const SurfaceRGBA& leak_overlay = *leak_overlay_res.value;
@@ -219,18 +219,18 @@ bool run_effect_host_tests() {
         "Light leak overlay mode produces visible amber output on black");
 
     EffectParams burn_params;
-    burn_params.scalars["t"] = 0.5f;
-    burn_params.strings["transition_id"] = "tachyon.transition.film_burn";
-    burn_params.aux_surfaces["transition_to"] = &transition_to;
+    burn_params.params["t"] = 0.5f;
+    burn_params.params["transition_id"] = std::string("tachyon.transition.film_burn");
+    burn_params.params["transition_to"] = static_cast<const SurfaceRGBA*>(&transition_to);
     const auto burned_res = host.apply("tachyon.effect.transition.glsl", transition_from, burn_params);
     check_true(burned_res.ok(), "Burn successful");
     const SurfaceRGBA& burned = *burned_res.value;
     check_true(burned.get_pixel(4, 4).a > 0, "Film burn transition produces visible output");
 
     EffectParams flash_params;
-    flash_params.scalars["t"] = 0.5f;
-    flash_params.strings["transition_id"] = "tachyon.transition.flash";
-    flash_params.aux_surfaces["transition_to"] = &transition_to;
+    flash_params.params["t"] = 0.5f;
+    flash_params.params["transition_id"] = std::string("tachyon.transition.flash");
+    flash_params.params["transition_to"] = static_cast<const SurfaceRGBA*>(&transition_to);
     const auto flashed_res = host.apply("tachyon.effect.transition.glsl", transition_from, flash_params);
     check_true(flashed_res.ok(), "Flash successful");
     const SurfaceRGBA& flashed = *flashed_res.value;
