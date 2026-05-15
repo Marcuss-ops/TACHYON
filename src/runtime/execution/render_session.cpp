@@ -346,9 +346,9 @@ RenderSessionResult RenderSession::render(
     stat.composite_ms = result.frame_execution_ms;
     stat.blur_ms = 0; // TODO: Split effect timings in frame_executor
     stat.encode_ms = result.encode_ms;
-    stat.w = workspace.effective_plan.render_plan.output.width;
-    stat.h = workspace.effective_plan.render_plan.output.height;
-    stat.preset = workspace.effective_plan.render_plan.output.preset_name;
+    stat.w = static_cast<int>(workspace.effective_plan.render_plan.output.profile.width.value_or(0));
+    stat.h = static_cast<int>(workspace.effective_plan.render_plan.output.profile.height.value_or(0));
+    stat.preset = workspace.effective_plan.render_plan.output.profile.name;
     
     runtime::SimpleRenderLogger::instance().log(stat);
 
