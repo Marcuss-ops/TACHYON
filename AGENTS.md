@@ -136,6 +136,7 @@ Use the documented render workflow instead of guessing paths or editing runtime 
 
 ## Architecture rules
 
+- **Mantra: core only builds, adapters only call, data only flows in.**
 - Prefer small, local changes.
 - Do not introduce new subsystems unless explicitly requested.
 - Do not duplicate existing parsers, serializers, registries, caches, or render paths.

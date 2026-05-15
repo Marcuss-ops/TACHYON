@@ -1,0 +1,8 @@
+is_global = true
+build_property.RootNamespace = Clipper2.SVG
+build_property.ProjectDir = C:\Users\pater\Pyt\Tachyon\third_party\clipper2\CSharp\Utils\SVG\
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 
+build_property.CsWinRTUseWindowsUIXamlProjections = false
+build_property.EffectiveAnalysisLevelStyle = 
+build_property.EnableCodeStyleSeverity = 

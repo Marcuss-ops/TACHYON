@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "dgSpecHash": "Z6FTU1vpnEQ=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\pater\\Pyt\\Tachyon\\third_party\\clipper2\\DLL\\CSharp_TestApp\\CSharp_TestApp.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\pater\\.nuget\\packages\\microsoft.netcore.app.ref\\6.0.36\\microsoft.netcore.app.ref.6.0.36.nupkg.sha512",
+    "C:\\Users\\pater\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\6.0.36\\microsoft.windowsdesktop.app.ref.6.0.36.nupkg.sha512",
+    "C:\\Users\\pater\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\6.0.36\\microsoft.aspnetcore.app.ref.6.0.36.nupkg.sha512",
+    "C:\\Users\\pater\\.nuget\\packages\\microsoft.netcore.app.host.win-x64\\6.0.36\\microsoft.netcore.app.host.win-x64.6.0.36.nupkg.sha512"
+  ],
+  "logs": []
+}

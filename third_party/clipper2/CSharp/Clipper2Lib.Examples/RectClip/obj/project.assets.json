@@ -1,0 +1,187 @@
+{
+  "version": 3,
+  "targets": {
+    "net6.0": {
+      "Clipper.Colors/1.0.0": {
+        "type": "project",
+        "framework": ".NETStandard,Version=v2.0",
+        "dependencies": {
+          "Clipper2": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/Clipper.Colors.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Clipper.Colors.dll": {}
+        }
+      },
+      "Clipper.FileIO/1.0.0": {
+        "type": "project",
+        "framework": ".NETStandard,Version=v2.0",
+        "dependencies": {
+          "Clipper2": "1.0.0",
+          "Clipper2.SVG": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/Clipper.FileIO.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Clipper.FileIO.dll": {}
+        }
+      },
+      "Clipper2/1.0.0": {
+        "type": "project",
+        "framework": ".NETStandard,Version=v2.0",
+        "compile": {
+          "bin/placeholder/Clipper2.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Clipper2.dll": {}
+        }
+      },
+      "Clipper2.SVG/1.0.0": {
+        "type": "project",
+        "framework": ".NETStandard,Version=v2.0",
+        "dependencies": {
+          "Clipper2": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/Clipper2.SVG.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Clipper2.SVG.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Clipper.Colors/1.0.0": {
+      "type": "project",
+      "path": "../../Utils/Colors/Clipper.Colors.csproj",
+      "msbuildProject": "../../Utils/Colors/Clipper.Colors.csproj"
+    },
+    "Clipper.FileIO/1.0.0": {
+      "type": "project",
+      "path": "../../Utils/ClipFileIO/Clipper.FileIO.csproj",
+      "msbuildProject": "../../Utils/ClipFileIO/Clipper.FileIO.csproj"
+    },
+    "Clipper2/1.0.0": {
+      "type": "project",
+      "path": "../../Clipper2Lib/Clipper2Lib.csproj",
+      "msbuildProject": "../../Clipper2Lib/Clipper2Lib.csproj"
+    },
+    "Clipper2.SVG/1.0.0": {
+      "type": "project",
+      "path": "../../Utils/SVG/Clipper2.SVG.csproj",
+      "msbuildProject": "../../Utils/SVG/Clipper2.SVG.csproj"
+    }
+  },
+  "projectFileDependencyGroups": {
+    "net6.0": [
+      "Clipper.Colors >= 1.0.0",
+      "Clipper.FileIO >= 1.0.0",
+      "Clipper2 >= 1.0.0",
+      "Clipper2.SVG >= 1.0.0"
+    ]
+  },
+  "packageFolders": {
+    "C:\\Users\\pater\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
+  },
+  "project": {
+    "version": "1.0.0",
+    "restore": {
+      "projectUniqueName": "C:\\Users\\pater\\Pyt\\Tachyon\\third_party\\clipper2\\CSharp\\Clipper2Lib.Examples\\RectClip\\RectClipDemo.csproj",
+      "projectName": "RectClipDemo",
+      "projectPath": "C:\\Users\\pater\\Pyt\\Tachyon\\third_party\\clipper2\\CSharp\\Clipper2Lib.Examples\\RectClip\\RectClipDemo.csproj",
+      "packagesPath": "C:\\Users\\pater\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\pater\\Pyt\\Tachyon\\third_party\\clipper2\\CSharp\\Clipper2Lib.Examples\\RectClip\\obj\\",
+      "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
+      "configFilePaths": [
+        "C:\\Users\\pater\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+      ],
+      "originalTargetFrameworks": [
+        "net6.0"
+      ],
+      "sources": {
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+        "https://api.nuget.org/v3/index.json": {}
+      },
+      "frameworks": {
+        "net6.0": {
+          "targetAlias": "net6.0",
+          "projectReferences": {
+            "C:\\Users\\pater\\Pyt\\Tachyon\\third_party\\clipper2\\CSharp\\Clipper2Lib\\Clipper2Lib.csproj": {
+              "projectPath": "C:\\Users\\pater\\Pyt\\Tachyon\\third_party\\clipper2\\CSharp\\Clipper2Lib\\Clipper2Lib.csproj"
+            },
+            "C:\\Users\\pater\\Pyt\\Tachyon\\third_party\\clipper2\\CSharp\\Utils\\ClipFileIO\\Clipper.FileIO.csproj": {
+              "projectPath": "C:\\Users\\pater\\Pyt\\Tachyon\\third_party\\clipper2\\CSharp\\Utils\\ClipFileIO\\Clipper.FileIO.csproj"
+            },
+            "C:\\Users\\pater\\Pyt\\Tachyon\\third_party\\clipper2\\CSharp\\Utils\\Colors\\Clipper.Colors.csproj": {
+              "projectPath": "C:\\Users\\pater\\Pyt\\Tachyon\\third_party\\clipper2\\CSharp\\Utils\\Colors\\Clipper.Colors.csproj"
+            },
+            "C:\\Users\\pater\\Pyt\\Tachyon\\third_party\\clipper2\\CSharp\\Utils\\SVG\\Clipper2.SVG.csproj": {
+              "projectPath": "C:\\Users\\pater\\Pyt\\Tachyon\\third_party\\clipper2\\CSharp\\Utils\\SVG\\Clipper2.SVG.csproj"
+            }
+          }
+        }
+      },
+      "warningProperties": {
+        "warnAsError": [
+          "NU1605"
+        ]
+      },
+      "restoreAuditProperties": {
+        "enableAudit": "true",
+        "auditLevel": "low",
+        "auditMode": "direct"
+      },
+      "SdkAnalysisLevel": "10.0.200"
+    },
+    "frameworks": {
+      "net6.0": {
+        "targetAlias": "net6.0",
+        "imports": [
+          "net461",
+          "net462",
+          "net47",
+          "net471",
+          "net472",
+          "net48",
+          "net481"
+        ],
+        "assetTargetFallback": true,
+        "warn": true,
+        "downloadDependencies": [
+          {
+            "name": "Microsoft.AspNetCore.App.Ref",
+            "version": "[6.0.36, 6.0.36]"
+          },
+          {
+            "name": "Microsoft.NETCore.App.Host.win-x64",
+            "version": "[6.0.36, 6.0.36]"
+          },
+          {
+            "name": "Microsoft.NETCore.App.Ref",
+            "version": "[6.0.36, 6.0.36]"
+          },
+          {
+            "name": "Microsoft.WindowsDesktop.App.Ref",
+            "version": "[6.0.36, 6.0.36]"
+          }
+        ],
+        "frameworkReferences": {
+          "Microsoft.NETCore.App": {
+            "privateAssets": "all"
+          }
+        },
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.201\\RuntimeIdentifierGraph.json"
+      }
+    }
+  }
+}

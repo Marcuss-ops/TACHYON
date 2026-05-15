@@ -1,34 +1,37 @@
 #pragma once
 
-namespace tachyon::media {
+#include <string>
+#include <optional>
+#include <cstdint>
 
-/**
- * @brief Types of assets that can be resolved and managed.
- */
-enum class AssetType {
-    VIDEO,
-    AUDIO,
-    IMAGE,
-    MESH,
-    FONT,
-    PRESET,
-    PROJECT,
-    JSON,
-    DATA,
-    OTHER
+namespace tachyon::core::media {
+
+struct VideoMetadata {
+    std::string codec;
+    int width{0};
+    int height{0};
+    double fps{0.0};
+    double duration_seconds{0.0};
+    std::int64_t bit_rate{0};
 };
 
-/**
- * @brief Kind of asset reference in a scene.
- */
-enum class AssetKind {
-    Image,
-    Video,
-    Audio,
-    Font,
-    DataSource,
-    Subtitle,
-    Unknown
+struct AudioMetadata {
+    std::string codec;
+    int sample_rate{0};
+    int channels{0};
+    int bit_depth{0};
+    double duration_seconds{0.0};
+    std::int64_t bit_rate{0};
 };
 
-} // namespace tachyon::media
+struct FullMetadata {
+    std::string path;
+    std::string format;
+    double duration_seconds{0.0};
+    std::int64_t size_bytes{0};
+    std::int64_t bit_rate{0};
+    std::optional<VideoMetadata> video;
+    std::optional<AudioMetadata> audio;
+};
+
+} // namespace tachyon::core::media
