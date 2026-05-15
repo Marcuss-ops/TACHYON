@@ -97,6 +97,7 @@
         "TACHYON_ENABLE_TEXT": "ON",
         "TACHYON_ENABLE_OUTPUT": "ON",
         "TACHYON_ENABLE_AUDIO": "ON",
+        "TACHYON_ENABLE_MIMALLOC": "ON",
         "TACHYON_BUILD_TESTS": "ON"
       }
     },
