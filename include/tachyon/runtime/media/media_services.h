@@ -19,6 +19,7 @@ struct MediaServices {
     core::media::IAudioExtractor& audio_extractor;
     core::media::IAudioAnalyzer& audio_analyzer;
     core::media::IVideoConcat& video_concat;
+    core::media::ITransitionRenderer& transition_renderer;
 };
 
 } // namespace tachyon::runtime::media

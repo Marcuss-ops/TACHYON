@@ -1,5 +1,5 @@
 #include "tachyon/runtime/registry/engine_registry.h"
-#include "tachyon/backends/media_backend_bundle.h"
+#include "tachyon/backends/backend_registry.h"
 #include "cli/support/cli_internal.h"
 #include "command_registry.h"
 #include <iostream>
@@ -12,9 +12,13 @@ bool run_probe_command(const CliOptions& options, std::ostream& out, std::ostrea
         return false;
     }
 
-    backends::MediaBackendBundle media_bundle;
-    auto services = media_bundle.services();
-    auto result = services.probe.probe_file(options.probe.input);
+    auto probe = backends::BackendRegistry::instance().create_probe();
+    if (!probe) {
+        err << "Error: No probe backend registered in BackendRegistry\n";
+        return false;
+    }
+
+    auto result = probe->probe_file(options.probe.input);
     if (!result.ok()) {
         err << "Error probing file: " << result.error->to_diagnostic_string() << "\n";
         return false;

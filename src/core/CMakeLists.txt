@@ -29,9 +29,6 @@ set(TachyonCoreSources
     profiles/execution_profile.cpp
 )
 
-if(TACHYON_ENABLE_SIMDJSON)
-    list(APPEND TachyonCoreSources json/json_parser_simdjson.cpp)
-endif()
 
 # We keep the target definition here as recommended.
 add_library(TachyonCore STATIC ${TachyonCoreSources})
@@ -45,14 +42,6 @@ if(TACHYON_ENABLE_TRACY)
     target_compile_definitions(TachyonCore PUBLIC TACHYON_ENABLE_TRACY)
 endif()
 
-if(TACHYON_ENABLE_SIMDJSON)
-    target_compile_definitions(TachyonCore PUBLIC TACHYON_ENABLE_SIMDJSON)
-    if(TARGET simdjson::simdjson)
-        target_link_libraries(TachyonCore PUBLIC simdjson::simdjson)
-    elseif(TARGET simdjson)
-        target_link_libraries(TachyonCore PUBLIC simdjson)
-    endif()
-endif()
 
 # Clipper2 integration
 target_include_directories(TachyonCore PUBLIC $<BUILD_INTERFACE:${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/include>)

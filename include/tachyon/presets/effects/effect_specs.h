@@ -48,9 +48,5 @@ std::vector<EffectKindSpec> get_generator_effect_kind_specs();
 std::vector<EffectKindSpec> get_stylize_effect_kind_specs();
 std::vector<EffectKindSpec> get_transition_effect_kind_specs();
 
-/**
- * @brief Loads data-driven effect presets from a directory.
- */
-void load_presets_from_directory(const std::filesystem::path& dir, std::vector<EffectPresetSpec>& out_specs);
 
 } // namespace tachyon::presets

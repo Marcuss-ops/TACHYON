@@ -16,7 +16,6 @@ set(TachyonPresetsSources
     transition/transition_builders.cpp
     transition/transition_presets_table.cpp
     effects/effect_preset_registry.cpp
-    effects/json_preset_loader.cpp
     effects/blur_effects.cpp
     effects/color_effects.cpp
     effects/distortion_effects.cpp

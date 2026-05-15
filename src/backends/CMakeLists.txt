@@ -1,10 +1,20 @@
 # Tachyon Backends Module
 
-add_subdirectory(ffmpeg)
-add_subdirectory(whisper)
+if(TACHYON_ENABLE_MEDIA)
+    add_subdirectory(ffmpeg)
+endif()
+
+if(TACHYON_ENABLE_WHISPER)
+    add_subdirectory(whisper)
+endif()
+
 add_subdirectory(compression)
 add_subdirectory(decoding)
-add_subdirectory(simd)
+
+if(TACHYON_ENABLE_HIGHWAY)
+    add_subdirectory(simd)
+endif()
+
 add_subdirectory(registry)
 
 # TachyonBackends is now an interface aggregator to decouple the engine
@@ -15,10 +25,19 @@ target_link_libraries(TachyonBackends
     INTERFACE
         TachyonCore
         TachyonPlatform
-        TachyonBackendSimd
         TachyonBackendsCompression
         TachyonBackendsDecoding
-        TachyonBackendFfmpeg
-        TachyonBackendWhisper
         TachyonBackendRegistry
 )
+
+if(TACHYON_ENABLE_MEDIA)
+    target_link_libraries(TachyonBackends INTERFACE TachyonBackendFfmpeg)
+endif()
+
+if(TACHYON_ENABLE_WHISPER)
+    target_link_libraries(TachyonBackends INTERFACE TachyonBackendWhisper)
+endif()
+
+if(TACHYON_ENABLE_HIGHWAY)
+    target_link_libraries(TachyonBackends INTERFACE TachyonBackendSimd)
+endif()

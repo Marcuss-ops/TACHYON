@@ -3,8 +3,10 @@
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/transition_registry.h"
 #include "tachyon/core/media/media_error.h"
+#include "tachyon/core/media/media_interfaces.h"
 #include <string>
 #include <unordered_map>
+#include <memory>
 
 namespace tachyon::runtime::transitions {
 
@@ -50,5 +52,7 @@ apply_transition(
     std::string_view id,
     float progress
 );
+
+std::unique_ptr<core::media::ITransitionRenderer> create_builtin_transition_renderer();
 
 } // namespace tachyon::runtime::transitions

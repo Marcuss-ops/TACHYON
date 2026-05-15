@@ -7,7 +7,6 @@
 #include <system_error>
 #include <stdexcept>
 
-#include "tachyon/core/json/json_document.h"
 #include "tachyon/core/spec/authoring_service.h"
 #include "tachyon/tachyon_build_config.h"
 #include "tachyon/core/platform/process.h"
@@ -186,47 +185,9 @@ struct JitConfig {
 };
 
 std::optional<JitConfig> load_jit_config() {
-    const std::filesystem::path config_dir = std::filesystem::path(TACHYON_LIB_PATH).parent_path();
-    
-    std::vector<std::filesystem::path> search_paths;
-#ifdef TACHYON_BUILD_CONFIG_NAME
-    search_paths.push_back(config_dir / ("tachyon_jit_config_" + std::string(TACHYON_BUILD_CONFIG_NAME) + ".json"));
-#endif
-    search_paths.push_back(config_dir / "tachyon_jit_config.json");
-
-    std::filesystem::path config_path;
-    for (const auto& p : search_paths) {
-        if (std::filesystem::exists(p)) {
-            config_path = p;
-            break;
-        }
-    }
-
-    if (config_path.empty()) {
-        return std::nullopt;
-    }
-
-    using namespace tachyon::core::json;
-    JsonDocument doc;
-    if (!doc.parse_file(config_path.string())) {
-        return std::nullopt;
-    }
-
-    auto root = doc.root();
-    JitConfig cfg;
-    cfg.generator = root.get_string("generator").value_or("");
-    cfg.multi_config = root.get_bool("multi_config").value_or(false);
-    cfg.active_config = root.get_string("active_config").value_or("");
-    cfg.compiler = root.get_string("compiler").value_or("");
-    cfg.cxx_standard = root.get_string("cxx_standard").value_or("20");
-    cfg.include_dirs = root.get_string_array("include_dirs").value_or(std::vector<std::string>{});
-    cfg.link_libraries = root.get_string_array("link_libraries").value_or(std::vector<std::string>{});
-    cfg.compile_definitions = root.get_string_array("compile_definitions").value_or(std::vector<std::string>{});
-    cfg.vcvars64_bat = root.get_string("vcvars64_bat").value_or("");
-    cfg.platform = root.get_string("platform").value_or("");
-    cfg.module_suffix = root.get_string("module_suffix").value_or("");
-    
-    return cfg;
+    // Mandate: Zero JSON. Fallback to macros or TOML.
+    // For now, return nullopt to force the robust fallback path which uses build macros.
+    return std::nullopt;
 }
 }
 
@@ -245,12 +206,14 @@ std::string AuthoringService::get_compiler_command(
         } else if (const auto vcvars = find_vcvars64_bat(); vcvars.has_value()) {
             ss << "call \"" << vcvars->string() << "\" >nul && ";
         }
-        ss << "cl.exe /nologo /O2 /MD /EHsc /LD /std:c++" << cfg.cxx_standard << " /openmp /DNDEBUG /DTACHYON_USE_DLL /DTACHYON_SHARED /wd4190 ";
+        ss << "cl.exe /nologo /O2 /MD /EHsc /LD /std:c++" << cfg.cxx_standard << " /openmp /DNDEBUG /DTACHYON_JIT_EXPORTS /wd4190 ";
         for (const auto& d : cfg.compile_definitions) ss << "/D" << d << " ";
         for (const auto& i : cfg.include_dirs) ss << "/I\"" << i << "\" ";
         ss << "\"" << cpp_path.string() << "\" ";
         ss << "/Fe:\"" << dll_path.string() << "\" ";
-        ss << "/Fo:\"" << (dll_path.parent_path() / cpp_path.filename()).replace_extension(".obj").string() << "\" ";
+        auto obj_path = dll_path;
+        obj_path.replace_extension(".obj");
+        ss << "/Fo:\"" << obj_path.string() << "\" ";
 
         ss << "/link ";
         // Handshake symbols
@@ -279,11 +242,13 @@ std::string AuthoringService::get_compiler_command(
         ss << "call \"" << vcvars->string() << "\" >nul && ";
     }
     // MSVC cl.exe command
-    ss << "cl.exe /nologo /O2 /MD /EHsc /LD /std:c++20 /openmp /DNDEBUG /DTACHYON_USE_DLL /DTACHYON_SHARED /wd4190 ";
+    ss << "cl.exe /nologo /O2 /MD /EHsc /LD /std:c++20 /openmp /DNDEBUG /DTACHYON_JIT_EXPORTS /wd4190 ";
     ss << "/I\"" << TACHYON_INCLUDE_DIR << "\" ";
     ss << "\"" << cpp_path.string() << "\" ";
     ss << "/Fe:\"" << dll_path.string() << "\" ";
-    ss << "/Fo:\"" << (dll_path.parent_path() / cpp_path.filename()).replace_extension(".obj").string() << "\" ";
+    auto obj_path = dll_path;
+    obj_path.replace_extension(".obj");
+    ss << "/Fo:\"" << obj_path.string() << "\" ";
 
     std::filesystem::path lib_path = TACHYON_LIB_PATH;
     if (!std::filesystem::exists(lib_path / (get_link_libs()[0] + ".lib"))) {

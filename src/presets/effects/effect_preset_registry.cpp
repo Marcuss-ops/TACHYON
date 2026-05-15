@@ -29,8 +29,6 @@ std::vector<EffectPresetSpec> collect_builtin_preset_specs() {
     append(specs, get_stylize_effect_preset_specs());
     append(specs, get_transition_effect_preset_specs());
 
-    // Load data-driven presets
-    load_presets_from_directory("assets/library/effects", specs);
 
     return specs;
 }

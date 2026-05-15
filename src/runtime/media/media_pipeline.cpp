@@ -154,8 +154,17 @@ core::MediaResult<void> MediaPipeline::stage_decode(const core::RenderGraph& gra
     return core::MediaResult<void>::success();
 }
 
-core::MediaResult<void> MediaPipeline::stage_effects(const core::RenderGraph&, core::RenderResult& result, const MediaJobContext&, MediaServices&) {
+core::MediaResult<void> MediaPipeline::stage_effects(const core::RenderGraph& graph, core::RenderResult& result, const MediaJobContext&, MediaServices& services) {
     update_metrics(result, "effects", true);
+    
+    // For now, we only handle transitions if they are explicitly mentioned in the timeline
+    // This is a simplified implementation of what will be a full effects engine
+    if (graph.timeline->effects.empty()) {
+        return core::MediaResult<void>::success();
+    }
+
+    // Example logic: if we have a transition effect, we would use services.transition_renderer
+    // For now, we just log that we are ready to process them
     return core::MediaResult<void>::success();
 }
 

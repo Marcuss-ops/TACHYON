@@ -20,6 +20,8 @@
 
 // Feature Flags
 #cmakedefine01 TACHYON_ENABLE_MEDIA
+#cmakedefine01 TACHYON_ENABLE_AUDIO
+#cmakedefine01 TACHYON_ENABLE_WHISPER
 #cmakedefine01 TACHYON_ENABLE_HIGHWAY
 #cmakedefine01 TACHYON_ENABLE_MIMALLOC
 

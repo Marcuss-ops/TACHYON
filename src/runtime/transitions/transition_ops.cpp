@@ -1,6 +1,7 @@
 #include "tachyon/runtime/transitions/transition_ops.h"
 #include "tachyon/core/transition/transition_resolver.h"
 #include <algorithm>
+#include <memory>
 
 namespace tachyon::runtime::transitions {
 
@@ -68,6 +69,23 @@ apply_transition(
     req.thread_count = 1;
     
     return TransitionOps::render_builtin(req);
+}
+
+class BuiltinTransitionRenderer : public core::media::ITransitionRenderer {
+public:
+    core::MediaResult<renderer2d::SurfaceRGBA> render(
+        const renderer2d::SurfaceRGBA& from,
+        const renderer2d::SurfaceRGBA* to,
+        float progress
+    ) override {
+        // Note: For now, we use a fixed transition "crossfade" if ID is not specified.
+        // In a real scenario, the ID would be part of the request or the renderer instance.
+        return apply_transition(from, to, "crossfade", progress);
+    }
+};
+
+std::unique_ptr<core::media::ITransitionRenderer> create_builtin_transition_renderer() {
+    return std::make_unique<BuiltinTransitionRenderer>();
 }
 
 } // namespace tachyon::runtime::transitions

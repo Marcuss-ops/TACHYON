@@ -13,6 +13,5 @@ set(TACHYON_TINYEXR_GIT_TAG "v1.0.8")
 set(TACHYON_CLIPPER2_GIT_TAG "Clipper2_1.3.0")
 set(TACHYON_GTEST_URL "https://github.com/google/googletest/archive/refs/tags/v1.15.2.tar.gz")
 set(TACHYON_TASKFLOW_GIT_TAG "v3.8.0")
-set(TACHYON_SIMDJSON_GIT_TAG "v3.12.0")
 set(TACHYON_MIMALLOC_GIT_TAG "v2.1.7")
 
