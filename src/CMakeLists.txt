@@ -241,6 +241,7 @@ if(TACHYON_ENABLE_OUTPUT)
 endif()
 
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/ModuleRuntime.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/tachyon/ModuleServer.cmake)
 
 # --- Post-Module Configuration & Asserts ---
 
@@ -313,7 +314,9 @@ add_library(TachyonCLICore STATIC ${TachyonCLICoreSources})
 tachyon_configure_common(TachyonCLICore)
 target_link_libraries(TachyonCLICore PUBLIC TachyonRuntimeEngine TachyonLibrary TachyonDiagnostics)
 
-
+add_library(TachyonCLITools STATIC ${TachyonCLIToolSources})
+tachyon_configure_common(TachyonCLITools)
+target_link_libraries(TachyonCLITools PUBLIC TachyonCLICore)
 
 add_library(TachyonTools INTERFACE)
 target_link_libraries(TachyonTools INTERFACE
@@ -321,6 +324,7 @@ target_link_libraries(TachyonTools INTERFACE
     TachyonPresets
     TachyonDiagnostics
     TachyonCLICore
+    TachyonCLITools
 )
 
 # Minimal render-focused executable
@@ -335,7 +339,7 @@ endif()
 
 target_link_libraries(tachyon
     PRIVATE
-        $<$<PLATFORM_ID:Linux>:-Wl,--whole-archive> TachyonCLICore $<$<PLATFORM_ID:Linux>:-Wl,--no-whole-archive>
+        $<$<PLATFORM_ID:Linux>:-Wl,--whole-archive> TachyonCLICore TachyonCLITools $<$<PLATFORM_ID:Linux>:-Wl,--no-whole-archive>
         TachyonLibrary
         TachyonPresets
         TachyonDiagnostics
@@ -350,7 +354,7 @@ add_executable(tachyon-library-demo
 tachyon_configure_common(tachyon-library-demo)
 target_link_libraries(tachyon-library-demo
     PRIVATE
-        $<$<PLATFORM_ID:Linux>:-Wl,--whole-archive> TachyonCLICore $<$<PLATFORM_ID:Linux>:-Wl,--no-whole-archive>
+        $<$<PLATFORM_ID:Linux>:-Wl,--whole-archive> TachyonCLICore TachyonCLITools $<$<PLATFORM_ID:Linux>:-Wl,--no-whole-archive>
         TachyonLibrary
         TachyonPresets
         TachyonDiagnostics
