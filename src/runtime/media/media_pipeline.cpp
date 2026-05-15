@@ -1,11 +1,10 @@
 #include "tachyon/runtime/media/media_pipeline.h"
 #include "tachyon/runtime/media/media_job_context.h"
 #include "tachyon/runtime/media/media_services.h"
-#include "tachyon/core/media/probe.h"
+#include "tachyon/core/media/media_interfaces.h"
 #include "tachyon/core/media/clip_processor.h"
 #include "tachyon/core/media/overlay_merger.h"
 #include "tachyon/core/media/video_concat.h"
-#include "tachyon/core/media/audio_analyzer.h"
 #include "tachyon/core/media/audio_extract.h"
 #include "tachyon/core/audio_graph/audio_graph.h"
 #include "tachyon/core/platform/process.h"
@@ -30,37 +29,47 @@ core::RenderResult MediaPipeline::run(const core::RenderGraph& graph, MediaServi
         std::filesystem::create_directories(job_ctx.work_dir);
     }
 
+    // Map MediaResult to RenderResult failure
+    auto to_render_res = [](const core::MediaResult<void>& res) -> core::RenderResult {
+        core::RenderResult rr;
+        rr.success = false;
+        if (res.error) {
+            rr.error_message = res.error->message;
+        }
+        return rr;
+    };
+
     // Stage 1: Validate
     auto res_validate = stage_validate(graph, result, job_ctx, services);
-    if (!res_validate.ok()) return core::RenderResult::failure(*res_validate.error);
+    if (!res_validate.ok()) return to_render_res(res_validate);
     
     // Stage 2: Probe
     auto res_probe = stage_probe(graph, result, job_ctx, services);
-    if (!res_probe.ok()) return core::RenderResult::failure(*res_probe.error);
+    if (!res_probe.ok()) return to_render_res(res_probe);
     
     // Stage 3: Audio
     auto res_audio = stage_audio(graph, result, job_ctx, services);
-    if (!res_audio.ok()) return core::RenderResult::failure(*res_audio.error);
+    if (!res_audio.ok()) return to_render_res(res_audio);
 
     // Stage 3.5: Transcription
     auto res_transcribe = stage_transcribe(graph, result, job_ctx, services);
-    if (!res_transcribe.ok()) return core::RenderResult::failure(*res_transcribe.error);
+    if (!res_transcribe.ok()) return to_render_res(res_transcribe);
 
     // Stage 4: Decode / Prepare Clips
     auto res_decode = stage_decode(graph, result, job_ctx, services);
-    if (!res_decode.ok()) return core::RenderResult::failure(*res_decode.error);
+    if (!res_decode.ok()) return to_render_res(res_decode);
     
     // Stage 5: Effects
     auto res_effects = stage_effects(graph, result, job_ctx, services);
-    if (!res_effects.ok()) return core::RenderResult::failure(*res_effects.error);
+    if (!res_effects.ok()) return to_render_res(res_effects);
     
     // Stage 6: Overlay & Final Mux
     auto res_overlay = stage_overlay(graph, result, job_ctx, services);
-    if (!res_overlay.ok()) return core::RenderResult::failure(*res_overlay.error);
+    if (!res_overlay.ok()) return to_render_res(res_overlay);
     
     // Stage 7: Encode (Cleanup)
     auto res_encode = stage_encode(graph, result, job_ctx, services);
-    if (!res_encode.ok()) return core::RenderResult::failure(*res_encode.error);
+    if (!res_encode.ok()) return to_render_res(res_encode);
     
     auto end_time = std::chrono::steady_clock::now();
     result.drift = std::chrono::duration<double>(end_time - start_time).count();
@@ -157,7 +166,7 @@ core::MediaResult<void> MediaPipeline::stage_audio(const core::RenderGraph& grap
     if (!primary_track || primary_track->segments.empty()) {
         return core::MediaResult<void>::success();
     }
-
+ 
     core::media::AudioExtractConfig config;
     config.input_file = primary_track->segments[0].path;
     config.output_wav = ctx.work_dir / "audio_extracted.wav";
