@@ -5,6 +5,7 @@ set(TachyonBackendSources
     ffmpeg/ffmpeg_clip_processor.cpp
     ffmpeg/ffmpeg_overlay_merger.cpp
     ffmpeg/ffmpeg_transition_filters.cpp
+    ffmpeg/ffmpeg_audio.cpp
     ffmpeg/ffmpeg_video_concat.cpp
     whisper/whisper_audio_analyzer.cpp
 )

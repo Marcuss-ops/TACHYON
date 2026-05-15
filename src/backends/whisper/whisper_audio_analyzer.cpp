@@ -10,8 +10,6 @@
 namespace tachyon::core::media {
 
 MediaResult<std::string> AudioAnalyzer::transcribe(const std::filesystem::path& audio_path) {
-    std::cout << "[Backend::Whisper] Analyzing: " << audio_path.filename() << std::endl;
-    
     std::filesystem::path output_dir = audio_path.parent_path();
     
     std::vector<std::string> args = {

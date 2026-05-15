@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tachyon/core/render_graph/render_graph.h"
+#include "tachyon/runtime/media/media_job_context.h"
 #include <string>
 #include <future>
 
@@ -33,42 +34,42 @@ private:
     /**
      * @brief Stage: Validation of inputs and configuration.
      */
-    static core::MediaResult<void> stage_validate(const core::RenderGraph& graph, core::RenderResult& result);
+    static core::MediaResult<void> stage_validate(const core::RenderGraph& graph, core::RenderResult& result, const MediaJobContext& ctx);
     
     /**
      * @brief Stage: Probing of source media metadata.
      */
-    static core::MediaResult<void> stage_probe(const core::RenderGraph& graph, core::RenderResult& result);
+    static core::MediaResult<void> stage_probe(const core::RenderGraph& graph, core::RenderResult& result, const MediaJobContext& ctx);
     
     /**
      * @brief Stage: Decoding and preparation of source clips.
      */
-    static core::MediaResult<void> stage_decode(const core::RenderGraph& graph, core::RenderResult& result);
+    static core::MediaResult<void> stage_decode(const core::RenderGraph& graph, core::RenderResult& result, const MediaJobContext& ctx);
     
     /**
      * @brief Stage: Application of video effects.
      */
-    static core::MediaResult<void> stage_effects(const core::RenderGraph& graph, core::RenderResult& result);
+    static core::MediaResult<void> stage_effects(const core::RenderGraph& graph, core::RenderResult& result, const MediaJobContext& ctx);
     
     /**
      * @brief Stage: Merging of overlays and subtitles.
      */
-    static core::MediaResult<void> stage_overlay(const core::RenderGraph& graph, core::RenderResult& result);
+    static core::MediaResult<void> stage_overlay(const core::RenderGraph& graph, core::RenderResult& result, const MediaJobContext& ctx);
     
     /**
      * @brief Stage: Master audio mixdown (baking).
      */
-    static core::MediaResult<void> stage_audio(const core::RenderGraph& graph, core::RenderResult& result);
-
+    static core::MediaResult<void> stage_audio(const core::RenderGraph& graph, core::RenderResult& result, const MediaJobContext& ctx);
+ 
     /**
      * @brief Stage: Audio transcription and STT.
      */
-    static core::MediaResult<void> stage_transcribe(const core::RenderGraph& graph, core::RenderResult& result);
+    static core::MediaResult<void> stage_transcribe(const core::RenderGraph& graph, core::RenderResult& result, const MediaJobContext& ctx);
     
     /**
      * @brief Stage: Final encoding and muxing.
      */
-    static core::MediaResult<void> stage_encode(const core::RenderGraph& graph, core::RenderResult& result);
+    static core::MediaResult<void> stage_encode(const core::RenderGraph& graph, core::RenderResult& result, const MediaJobContext& ctx);
     
     /**
      * @brief Helper to update component-level telemetry.

@@ -20,7 +20,6 @@ set(TachyonCoreSources
     transition/transition_simd_kernels.cpp
     model/tachyon.cpp
     audio/audio_utils.cpp
-    audio/audio_utils.cpp
 )
 
 if(TACHYON_ENABLE_SIMDJSON)

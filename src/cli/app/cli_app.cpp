@@ -1,7 +1,8 @@
 #include "cli_app.h"
 #include "tachyon/core/core.h"
-#include "cli/cli_internal.h"
-#include "cli/command_registry.h"
+#include "cli/support/cli_internal.h"
+#include "cli/commands/command.h"
+#include "cli/commands/command_registry.h"
 #include "tachyon/runtime/registry/engine_registry.h"
 #include <iostream>
 

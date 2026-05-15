@@ -2,35 +2,35 @@
 
 # TachyonCLI sources
 set(TachyonCLISources
-    cli.cpp
-    cli_app.cpp
-    options.cpp
-    command_registry.cpp
-    command_manifest.cpp
-    cli_utils.cpp
-    cli_scene_loader.cpp
-    cli_render.cpp
-    cli_validate.cpp
-    cli_inspect.cpp
-    cli_preview_frame.cpp
-    cli_watch.cpp
-    cli_motion_map.cpp
-    cli_version.cpp
+    app/cli.cpp
+    app/cli_app.cpp
+    app/options.cpp
+    
+    commands/command_registry.cpp
+    commands/command_manifest.cpp
+    commands/render.cpp
+    commands/validate.cpp
+    commands/inspect.cpp
+    commands/preview_frame.cpp
+    commands/watch.cpp
+    commands/motion_map.cpp
+    commands/version.cpp
+    commands/thumb.cpp
+    commands/metrics.cpp
+    commands/fetch_fonts.cpp
+    commands/doctor.cpp
+    commands/output_presets.cpp
+    commands/probe.cpp
+    commands/concat.cpp
+
+    support/utils.cpp
+    support/scene_loader.cpp
     
     parsing/parse_helpers.cpp
     parsing/parse_render.cpp
     parsing/parse_inspect.cpp
     parsing/parse_metrics.cpp
     parsing/parse_tool.cpp
-
-    # Secondary tools
-    cli_thumb.cpp
-    cli_metrics.cpp
-    cli_fetch_fonts.cpp
-    cli_doctor.cpp
-    cli_output_presets.cpp
-    cli_probe.cpp
-    cli_concat.cpp
 )
 
 # Source assertions
@@ -41,4 +41,12 @@ tachyon_add_module(
     NAME CLI
     SOURCES ${TachyonCLISources}
     PUBLIC_DEPS TachyonRuntime TachyonCatalog TachyonDiagnostics TachyonOperations
+)
+
+target_include_directories(TachyonCLI PRIVATE 
+    .
+    app
+    commands
+    parsing
+    support
 )

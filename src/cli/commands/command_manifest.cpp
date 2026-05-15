@@ -1,5 +1,5 @@
-#include "cli/cli_internal.h"
-#include "cli/command.h"
+#include "cli/support/cli_internal.h"
+#include "cli/commands/command.h"
 #include <vector>
 
 namespace tachyon {
