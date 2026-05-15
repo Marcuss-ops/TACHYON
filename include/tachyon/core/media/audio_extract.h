@@ -17,15 +17,15 @@ struct AudioExtractConfig {
  * @brief Contract for extracting audio from video files.
  * Implementation is provided by Backends (e.g., FFmpeg).
  */
-class AudioExtractor {
+class IAudioExtractor {
 public:
-    virtual ~AudioExtractor() = default;
+    virtual ~IAudioExtractor() = default;
     
     /**
      * @brief Extracts audio from the input file to a WAV file.
      * @return MediaResult<void>
      */
-    static MediaResult<void> extract(const AudioExtractConfig& config);
+    virtual MediaResult<void> extract(const AudioExtractConfig& config) = 0;
 };
 
 } // namespace tachyon::core::media

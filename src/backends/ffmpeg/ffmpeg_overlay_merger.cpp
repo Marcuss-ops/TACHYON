@@ -1,11 +1,16 @@
-#include "tachyon/core/media/overlay_merger.h"
+#include "tachyon/backends/ffmpeg/ffmpeg_overlay_merger.h"
 #include "tachyon/core/platform/process.h"
 #include <sstream>
 #include <iomanip>
 
-namespace tachyon::core::media {
+namespace tachyon::backends::ffmpeg {
 
-MediaResult<void> OverlayMerger::merge_overlays(const OverlayMergeConfig& config) {
+using namespace core::media;
+using core::MediaResult;
+using core::MediaError;
+using core::MediaErrorCode;
+
+MediaResult<void> FFmpegOverlayMerger::merge_overlays(const OverlayMergeConfig& config) {
     if (config.base_video_path.empty()) {
         return MediaResult<void>::failure(
             MediaError(MediaErrorCode::IO, "Base video path is empty")
@@ -49,12 +54,12 @@ MediaResult<void> OverlayMerger::merge_overlays(const OverlayMergeConfig& config
     
     args.push_back(config.output_path.string());
 
-    platform::ProcessSpec spec;
+    core::platform::ProcessSpec spec;
     spec.executable = "ffmpeg";
     spec.args = args;
     spec.timeout = std::chrono::minutes(15);
     
-    auto result = platform::run_process(spec);
+    auto result = core::platform::run_process(spec);
     
     if (!result.success || result.exit_code != 0) {
         return MediaResult<void>::failure(
@@ -66,7 +71,7 @@ MediaResult<void> OverlayMerger::merge_overlays(const OverlayMergeConfig& config
     return MediaResult<void>::success();
 }
 
-std::string OverlayMerger::build_filter_complex(const OverlayMergeConfig& config) {
+std::string FFmpegOverlayMerger::build_filter_complex(const OverlayMergeConfig& config) {
     std::stringstream ss;
     ss << std::fixed << std::setprecision(3);
     
@@ -104,7 +109,7 @@ std::string OverlayMerger::build_filter_complex(const OverlayMergeConfig& config
     return ss.str();
 }
 
-std::string OverlayMerger::build_enable_condition(
+std::string FFmpegOverlayMerger::build_enable_condition(
     const OverlaySpec& overlay, 
     const std::vector<std::pair<double, double>>& middle_clips) 
 {
@@ -121,4 +126,4 @@ std::string OverlayMerger::build_enable_condition(
     return ss.str();
 }
 
-} // namespace tachyon::core::media
+} // namespace tachyon::backends::ffmpeg

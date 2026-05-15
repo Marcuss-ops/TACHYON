@@ -8,19 +8,21 @@
 namespace tachyon::core::media {
 
 /**
- * @brief Utility for probing media files and extracting metadata.
+ * @brief Contract for probing media files and extracting metadata.
  */
-class MediaProbe {
+class IMediaProbe {
 public:
+    virtual ~IMediaProbe() = default;
+
     /**
      * @brief Probes a file and returns its metadata.
      */
-    static MediaResult<FullMetadata> probe_file(const std::filesystem::path& path);
+    virtual MediaResult<FullMetadata> probe_file(const std::filesystem::path& path) = 0;
     
     /**
      * @brief Performs a full probe with deep metadata extraction.
      */
-    static MediaResult<FullMetadata> probe_full(const std::filesystem::path& path);
+    virtual MediaResult<FullMetadata> probe_full(const std::filesystem::path& path) = 0;
 };
 
 } // namespace tachyon::core::media

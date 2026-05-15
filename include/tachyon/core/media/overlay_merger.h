@@ -34,15 +34,17 @@ struct OverlayMergeConfig {
 };
 
 /**
- * @brief Utility for merging overlays and subtitles into a base video.
+ * @brief Contract for merging overlays and subtitles into a base video.
  */
-class OverlayMerger {
+class IOverlayMerger {
 public:
-    static MediaResult<void> merge_overlays(const OverlayMergeConfig& config);
+    virtual ~IOverlayMerger() = default;
 
-private:
-    static std::string build_filter_complex(const OverlayMergeConfig& config);
-    static std::string build_enable_condition(const OverlaySpec& overlay, const std::vector<std::pair<double, double>>& middle_clips);
+    /**
+     * @brief Merges overlays and subtitles into the base video.
+     * @return MediaResult<void>
+     */
+    virtual MediaResult<void> merge_overlays(const OverlayMergeConfig& config) = 0;
 };
 
 } // namespace tachyon::core::media

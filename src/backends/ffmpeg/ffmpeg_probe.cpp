@@ -1,6 +1,5 @@
-#include "tachyon/core/media/probe.h"
+#include "tachyon/backends/ffmpeg/ffmpeg_probe.h"
 #include <filesystem>
-#include <iostream>
 
 #if __has_include(<libavcodec/avcodec.h>) && __has_include(<libavformat/avformat.h>) && __has_include(<libavutil/channel_layout.h>)
 extern "C" {
@@ -11,9 +10,14 @@ extern "C" {
 #define TACHYON_HAS_FFMPEG 1
 #endif
 
-namespace tachyon::core::media {
+namespace tachyon::backends::ffmpeg {
 
-core::MediaResult<FullMetadata> MediaProbe::probe_file(const std::filesystem::path& path) {
+using namespace core::media;
+using core::MediaResult;
+using core::MediaError;
+using core::MediaErrorCode;
+
+core::MediaResult<FullMetadata> FFmpegProbe::probe_file(const std::filesystem::path& path) {
     if (!std::filesystem::exists(path)) {
         return core::MediaResult<FullMetadata>::failure(
             core::MediaError(core::MediaErrorCode::IO, "File not found: " + path.string())
@@ -23,7 +27,7 @@ core::MediaResult<FullMetadata> MediaProbe::probe_file(const std::filesystem::pa
     return probe_full(path);
 }
 
-core::MediaResult<FullMetadata> MediaProbe::probe_full(const std::filesystem::path& path) {
+core::MediaResult<FullMetadata> FFmpegProbe::probe_full(const std::filesystem::path& path) {
 #if !defined(TACHYON_HAS_FFMPEG)
     return core::MediaResult<FullMetadata>::failure(
         core::MediaError(core::MediaErrorCode::Init, "FFmpeg support is not compiled into this build")
@@ -118,4 +122,4 @@ core::MediaResult<FullMetadata> MediaProbe::probe_full(const std::filesystem::pa
 #endif
 }
 
-} // namespace tachyon::core::media
+} // namespace tachyon::backends::ffmpeg

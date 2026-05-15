@@ -1,11 +1,16 @@
-#include "tachyon/core/media/audio_extract.h"
+#include "tachyon/backends/ffmpeg/ffmpeg_audio_extractor.h"
 #include "tachyon/core/platform/process.h"
 #include <vector>
 #include <string>
 
-namespace tachyon::core::media {
+namespace tachyon::backends::ffmpeg {
 
-MediaResult<void> AudioExtractor::extract(const AudioExtractConfig& config) {
+using namespace core::media;
+using core::MediaResult;
+using core::MediaError;
+using core::MediaErrorCode;
+
+MediaResult<void> FFmpegAudioExtractor::extract(const AudioExtractConfig& config) {
     std::vector<std::string> args = {
         "-y",
         "-i", config.input_file.string(),
@@ -28,4 +33,4 @@ MediaResult<void> AudioExtractor::extract(const AudioExtractConfig& config) {
     return MediaResult<void>::success();
 }
 
-} // namespace tachyon::core::media
+} // namespace tachyon::backends::ffmpeg

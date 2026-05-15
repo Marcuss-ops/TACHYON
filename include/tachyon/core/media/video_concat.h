@@ -19,14 +19,16 @@ struct ConcatConfig {
 };
 
 /**
- * @brief Utility for concatenating multiple video files using FFmpeg.
+ * @brief Contract for concatenating multiple video files.
  */
-class VideoConcat {
+class IVideoConcat {
 public:
+    virtual ~IVideoConcat() = default;
+
     /**
      * @brief Concatenates videos and returns success or failure.
      */
-    static MediaResult<void> concat_videos(const ConcatConfig& config);
+    virtual MediaResult<void> concat_videos(const ConcatConfig& config) = 0;
 };
 
 } // namespace tachyon::core::media

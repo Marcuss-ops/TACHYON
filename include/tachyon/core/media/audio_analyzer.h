@@ -7,16 +7,18 @@
 namespace tachyon::core::media {
 
 /**
- * @brief Utility for audio analysis and transcription.
+ * @brief Contract for audio analysis and transcription.
  */
-class AudioAnalyzer {
+class IAudioAnalyzer {
 public:
+    virtual ~IAudioAnalyzer() = default;
+
     /**
-     * @brief Transcribes an audio file using the configured backend (e.g. Whisper).
+     * @brief Transcribes an audio file using a backend (e.g. Whisper).
      * @param audio_path Path to the audio file.
-     * @return Success message or MediaError.
+     * @return Success result containing transcription or MediaError.
      */
-    static MediaResult<std::string> transcribe(const std::filesystem::path& audio_path);
+    virtual MediaResult<std::string> transcribe(const std::filesystem::path& audio_path) = 0;
 };
 
 } // namespace tachyon::core::media

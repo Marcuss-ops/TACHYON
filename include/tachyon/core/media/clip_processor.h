@@ -33,14 +33,17 @@ struct ClipProcessingConfig {
 };
 
 /**
- * @brief Processes individual video clips (transcoding, scaling, fades).
+ * @brief Contract for processing individual video clips (transcoding, scaling, fades).
  */
-class ClipProcessor {
+class IClipProcessor {
 public:
-    static MediaResult<void> process_clip(const ClipProcessingConfig& config);
+    virtual ~IClipProcessor() = default;
 
-private:
-    static std::string build_filter_complex(const ClipProcessingConfig& config, double duration);
+    /**
+     * @brief Processes an individual video clip.
+     * @return MediaResult<void>
+     */
+    virtual MediaResult<void> process_clip(const ClipProcessingConfig& config) = 0;
 };
 
 } // namespace tachyon::core::media

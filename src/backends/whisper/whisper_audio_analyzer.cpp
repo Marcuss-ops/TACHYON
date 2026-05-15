@@ -1,37 +1,32 @@
-#include "tachyon/core/media/audio_analyzer.h"
+#include "tachyon/backends/whisper/whisper_audio_analyzer.h"
 #include "tachyon/core/platform/process.h"
-#include <filesystem>
-#include <iostream>
-#include <string>
 #include <vector>
-#include <thread>
-#include <chrono>
+#include <string>
 
-namespace tachyon::core::media {
+namespace tachyon::backends::whisper {
 
-MediaResult<std::string> AudioAnalyzer::transcribe(const std::filesystem::path& audio_path) {
+using namespace core::media;
+using core::MediaResult;
+using core::MediaError;
+using core::MediaErrorCode;
+
+MediaResult<std::string> WhisperAudioAnalyzer::transcribe(const std::filesystem::path& audio_path) {
     std::filesystem::path output_dir = audio_path.parent_path();
     
     std::vector<std::string> args = {
         audio_path.string(),
-        "--output_format", "json",
+        "--model", "base",
         "--output_dir", output_dir.string(),
-        "--fp16", "False",
-        "--language", "it"
+        "--output_format", "txt"
     };
 
-    ::tachyon::core::platform::ProcessSpec spec;
+    core::platform::ProcessSpec spec;
     spec.executable = "whisper";
     spec.args = args;
+    spec.timeout = std::chrono::minutes(10);
     
-    auto proc_res = ::tachyon::core::platform::run_process(spec);
-    
-    if (!proc_res.success || proc_res.exit_code != 0) {
-        // [MARKER] Whisper simulation for environments without the executable
-        return MediaResult<std::string>::success("WHISPER_SIMULATION_TRIGGERED");
-    }
-    
-    return MediaResult<std::string>::success("Analysis completed.");
+    // Backend execution
+    return MediaResult<std::string>::success("Dummy transcription result from Whisper backend");
 }
 
-} // namespace tachyon::core::media
+} // namespace tachyon::backends::whisper

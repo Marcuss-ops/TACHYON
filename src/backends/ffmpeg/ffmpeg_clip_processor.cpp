@@ -1,45 +1,42 @@
-#include "tachyon/core/media/clip_processor.h"
-#include "tachyon/core/media/probe.h"
+#include "tachyon/backends/ffmpeg/ffmpeg_clip_processor.h"
+#include "tachyon/backends/ffmpeg/ffmpeg_probe.h"
 #include "tachyon/core/platform/process.h"
 #include <sstream>
 #include <iomanip>
 
-namespace tachyon::core::media {
+namespace tachyon::backends::ffmpeg {
 
-MediaResult<void> ClipProcessor::process_clip(const ClipProcessingConfig& config) {
-    if (config.input_path.empty()) {
-        return MediaResult<void>::failure(
-            MediaError(MediaErrorCode::IO, "Input path is empty")
-        );
-    }
+using namespace core::media;
+using core::MediaResult;
+using core::MediaError;
+using core::MediaErrorCode;
 
-    // Probe duration
-    auto probe_result = MediaProbe::probe_file(config.input_path);
-    if (!probe_result.ok()) {
-        return MediaResult<void>::failure(probe_result.error.value());
-    }
-    double duration = probe_result.value->duration_seconds;
+MediaResult<void> FFmpegClipProcessor::process_clip(const ClipProcessingConfig& config) {
+    // 1. Probe for duration
+    FFmpegProbe probe;
+    auto meta_res = probe.probe_file(config.input_path);
+    if (!meta_res.ok()) return MediaResult<void>::failure(*meta_res.error);
+    
+    double duration = meta_res.value->duration_seconds;
 
     std::vector<std::string> args;
     args.push_back("-y");
-    
-    // Main input
     args.push_back("-i");
     args.push_back(config.input_path.string());
     
-    // SFX inputs
+    // Add SFX inputs
     for (const auto& sfx : config.sfx) {
         args.push_back("-i");
         args.push_back(sfx.path.string());
     }
-    
+
     args.push_back("-filter_complex");
     args.push_back(build_filter_complex(config, duration));
     
     args.push_back("-map");
-    args.push_back("[out_v]");
+    args.push_back("[v_out]");
     args.push_back("-map");
-    args.push_back("[out_a]");
+    args.push_back("[a_out]");
     
     args.push_back("-c:v");
     args.push_back("libx264");
@@ -47,42 +44,36 @@ MediaResult<void> ClipProcessor::process_clip(const ClipProcessingConfig& config
     args.push_back(std::to_string(config.crf));
     args.push_back("-preset");
     args.push_back("fast");
-    args.push_back("-r");
-    args.push_back(std::to_string(config.fps));
     
     args.push_back("-c:a");
     args.push_back("aac");
     args.push_back("-b:a");
-    args.push_back("256k");
+    args.push_back("192k");
     
     args.push_back(config.output_path.string());
 
-    platform::ProcessSpec spec;
+    core::platform::ProcessSpec spec;
     spec.executable = "ffmpeg";
     spec.args = args;
-    spec.timeout = std::chrono::minutes(10);
     
-    auto result = platform::run_process(spec);
-    
+    auto result = core::platform::run_process(spec);
     if (!result.success || result.exit_code != 0) {
         return MediaResult<void>::failure(
-            MediaError(MediaErrorCode::Encode, "FFmpeg clip processing failed: " + result.error)
-                .with_stage("process_clip")
+            MediaError(MediaErrorCode::Decode, "FFmpeg clip processing failed: " + result.error)
+                .with_stage("clip_process")
         );
     }
 
     return MediaResult<void>::success();
 }
 
-std::string ClipProcessor::build_filter_complex(const ClipProcessingConfig& config, double duration) {
+std::string FFmpegClipProcessor::build_filter_complex(const ClipProcessingConfig& config, double duration) {
     std::stringstream ss;
     ss << std::fixed << std::setprecision(3);
     
-    // 1. Video scaling and padding to match target resolution
-    ss << "[0:v]scale=" << config.width << ":" << config.height << ":force_original_aspect_ratio=decrease,";
-    ss << "pad=" << config.width << ":" << config.height << ":(ow-iw)/2:(oh-ih)/2,setsar=1";
+    // Video: scaling and fades
+    ss << "[0:v]scale=" << config.width << ":" << config.height << ":force_original_aspect_ratio=decrease,pad=" << config.width << ":" << config.height << ":(ow-iw)/2:(oh-ih)/2";
     
-    // 2. Video fades
     if (config.fade_in_seconds > 0) {
         ss << ",fade=t=in:st=0:d=" << config.fade_in_seconds;
     }
@@ -90,7 +81,6 @@ std::string ClipProcessor::build_filter_complex(const ClipProcessingConfig& conf
         ss << ",fade=t=out:st=" << (duration - config.fade_out_seconds) << ":d=" << config.fade_out_seconds;
     }
     
-    // 3. Subtitles
     if (config.subtitles_srt) {
         ss << ",subtitles='" << config.subtitles_srt->string() << "'";
         if (config.font_path) {
@@ -98,26 +88,26 @@ std::string ClipProcessor::build_filter_complex(const ClipProcessingConfig& conf
         }
     }
     
-    ss << "[out_v];";
+    ss << "[v_out];";
     
-    // 4. Audio processing (original + SFX)
-    ss << "[0:a]volume=1.0[main_a];";
-    
-    int sfx_count = static_cast<int>(config.sfx.size());
-    for (int i = 0; i < sfx_count; ++i) {
-        int input_idx = i + 1;
-        long ms = static_cast<long>(config.sfx[i].start_time * 1000.0);
-        ss << "[" << input_idx << ":a]volume=" << config.sfx[i].volume << ",adelay=" << ms << "|" << ms << "[sfx" << i << "];";
+    // Audio: mixdown and SFX
+    std::string last_audio = "0:a";
+    for (size_t i = 0; i < config.sfx.size(); ++i) {
+        const auto& sfx = config.sfx[i];
+        int sfx_idx = static_cast<int>(i) + 1;
+        std::string current_audio = "amix" + std::to_string(i);
+        
+        // Delay SFX
+        ss << "[" << sfx_idx << ":a]adelay=" << static_cast<int>(sfx.start_time * 1000) << "|" << static_cast<int>(sfx.start_time * 1000) << "[sfx" << i << "];";
+        
+        // Mix
+        ss << "[" << last_audio << "][sfx" << i << "]amix=inputs=2:duration=first[ " << current_audio << "];";
+        last_audio = current_audio;
     }
     
-    // Mix audio
-    ss << "[main_a]";
-    for (int i = 0; i < sfx_count; ++i) {
-        ss << "[sfx" << i << "]";
-    }
-    ss << "amix=inputs=" << (sfx_count + 1) << ":duration=longest[out_a]";
+    ss << "[" << last_audio << "]volume=1.0[a_out]";
     
     return ss.str();
 }
 
-} // namespace tachyon::core::media
+} // namespace tachyon::backends::ffmpeg

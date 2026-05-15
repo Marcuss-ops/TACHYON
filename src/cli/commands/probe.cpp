@@ -1,7 +1,7 @@
 #include "tachyon/runtime/registry/engine_registry.h"
+#include "tachyon/backends/ffmpeg/ffmpeg_probe.h"
 #include "cli_internal.h"
 #include "command_registry.h"
-#include "tachyon/core/media/probe.h"
 #include <iostream>
 
 namespace tachyon {
@@ -12,7 +12,8 @@ bool run_probe_command(const CliOptions& options, std::ostream& out, std::ostrea
         return false;
     }
 
-    auto result = core::media::MediaProbe::probe_file(options.probe.input);
+    backends::ffmpeg::FFmpegProbe probe;
+    auto result = probe.probe_file(options.probe.input);
     if (!result.ok()) {
         err << "Error probing file: " << result.error->to_diagnostic_string() << "\n";
         return false;

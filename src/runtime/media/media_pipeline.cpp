@@ -8,11 +8,21 @@
 #include "tachyon/core/media/audio_extract.h"
 #include "tachyon/core/audio_graph/audio_graph.h"
 #include "tachyon/core/platform/process.h"
+
+// Backends
+#include "tachyon/backends/ffmpeg/ffmpeg_probe.h"
+#include "tachyon/backends/ffmpeg/ffmpeg_overlay_merger.h"
+#include "tachyon/backends/ffmpeg/ffmpeg_clip_processor.h"
+#include "tachyon/backends/ffmpeg/ffmpeg_audio_extractor.h"
+#include "tachyon/backends/whisper/whisper_audio_analyzer.h"
+
 #include <chrono>
 #include <filesystem>
 #include <future>
 
 namespace tachyon::runtime::media {
+
+using namespace core::media;
 
 core::RenderResult MediaPipeline::run(const core::RenderGraph& graph) {
     core::RenderResult result;
@@ -34,19 +44,19 @@ core::RenderResult MediaPipeline::run(const core::RenderGraph& graph) {
     auto res_probe = stage_probe(graph, result, job_ctx);
     if (!res_probe.ok()) return core::RenderResult::failure(*res_probe.error);
     
-    // Stage 3: Audio (Prioritize audio extraction for faster results)
+    // Stage 3: Audio
     auto res_audio = stage_audio(graph, result, job_ctx);
     if (!res_audio.ok()) return core::RenderResult::failure(*res_audio.error);
 
-    // Stage 3.5: Transcription (Whisper Analysis)
+    // Stage 3.5: Transcription
     auto res_transcribe = stage_transcribe(graph, result, job_ctx);
     if (!res_transcribe.ok()) return core::RenderResult::failure(*res_transcribe.error);
 
-    // Stage 4: Decode / Prepare Clips (Video processing)
+    // Stage 4: Decode / Prepare Clips
     auto res_decode = stage_decode(graph, result, job_ctx);
     if (!res_decode.ok()) return core::RenderResult::failure(*res_decode.error);
     
-    // Stage 5: Effects (Internal Tachyon Renderer)
+    // Stage 5: Effects
     auto res_effects = stage_effects(graph, result, job_ctx);
     if (!res_effects.ok()) return core::RenderResult::failure(*res_effects.error);
     
@@ -54,7 +64,7 @@ core::RenderResult MediaPipeline::run(const core::RenderGraph& graph) {
     auto res_overlay = stage_overlay(graph, result, job_ctx);
     if (!res_overlay.ok()) return core::RenderResult::failure(*res_overlay.error);
     
-    // Stage 7: Encode (Cleanup and Finalization)
+    // Stage 7: Encode (Cleanup)
     auto res_encode = stage_encode(graph, result, job_ctx);
     if (!res_encode.ok()) return core::RenderResult::failure(*res_encode.error);
     
@@ -92,10 +102,11 @@ core::MediaResult<void> MediaPipeline::stage_validate(const core::RenderGraph& g
 
 core::MediaResult<void> MediaPipeline::stage_probe(const core::RenderGraph& graph, core::RenderResult& result, const MediaJobContext&) {
     update_metrics(result, "probe", true);
+    backends::ffmpeg::FFmpegProbe probe;
     
     for (const auto& track : graph.timeline->video_tracks) {
         for (const auto& segment : track.segments) {
-            auto probe_res = core::media::MediaProbe::probe_file(segment.path);
+            auto probe_res = probe.probe_file(segment.path);
             if (!probe_res.ok()) {
                 return core::MediaResult<void>::failure(probe_res.error->with_stage("probe_segment"));
             }
@@ -103,7 +114,7 @@ core::MediaResult<void> MediaPipeline::stage_probe(const core::RenderGraph& grap
     }
     
     for (const auto& overlay : graph.timeline->overlays) {
-        auto probe_res = core::media::MediaProbe::probe_file(overlay.path);
+        auto probe_res = probe.probe_file(overlay.path);
         if (!probe_res.ok()) {
             return core::MediaResult<void>::failure(probe_res.error->with_stage("probe_overlay"));
         }
@@ -119,22 +130,20 @@ core::MediaResult<void> MediaPipeline::stage_decode(const core::RenderGraph& gra
         return core::MediaResult<void>::success();
     }
     
+    backends::ffmpeg::FFmpegClipProcessor processor;
     for (const auto& track : graph.timeline->video_tracks) {
         for (size_t i = 0; i < track.segments.size(); ++i) {
             const auto& segment = track.segments[i];
             
             core::media::ClipProcessingConfig config;
             config.input_path = segment.path;
-            
-            // Use job work directory for intermediate segments
             config.output_path = ctx.work_dir / ("segment_" + std::to_string(i) + ".mp4");
-            
-            config.width = graph.timeline->output.width;
-            config.height = graph.timeline->output.height;
+            config.width = (int)graph.timeline->output.width;
+            config.height = (int)graph.timeline->output.height;
             config.fps = graph.timeline->output.fps;
-            config.crf = graph.timeline->output.crf;
+            config.crf = (int)graph.timeline->output.crf;
             
-            auto proc_res = core::media::ClipProcessor::process_clip(config);
+            auto proc_res = processor.process_clip(config);
             if (!proc_res.ok()) {
                 return core::MediaResult<void>::failure(proc_res.error->with_stage("decode_clip"));
             }
@@ -157,13 +166,14 @@ core::MediaResult<void> MediaPipeline::stage_audio(const core::RenderGraph& grap
         return core::MediaResult<void>::success();
     }
 
+    backends::ffmpeg::FFmpegAudioExtractor extractor;
     core::media::AudioExtractConfig config;
     config.input_file = primary_track->segments[0].path;
     config.output_wav = ctx.work_dir / "audio_extracted.wav";
     config.sample_rate = graph.timeline->output.sample_rate;
-    config.channels = 2; // Stereo mixdown
+    config.channels = 2;
 
-    return core::media::AudioExtractor::extract(config);
+    return extractor.extract(config);
 }
 
 core::MediaResult<void> MediaPipeline::stage_transcribe(const core::RenderGraph&, core::RenderResult& result, const MediaJobContext& ctx) {
@@ -174,7 +184,8 @@ core::MediaResult<void> MediaPipeline::stage_transcribe(const core::RenderGraph&
         return core::MediaResult<void>::success();
     }
 
-    auto trans_res = core::media::AudioAnalyzer::transcribe(audio_path);
+    backends::whisper::WhisperAudioAnalyzer analyzer;
+    auto trans_res = analyzer.transcribe(audio_path);
     if (!trans_res.ok()) {
         return core::MediaResult<void>::failure(trans_res.error->with_stage("transcribe"));
     }
@@ -189,6 +200,7 @@ core::MediaResult<void> MediaPipeline::stage_overlay(const core::RenderGraph& gr
         return core::MediaResult<void>::success();
     }
 
+    backends::ffmpeg::FFmpegOverlayMerger merger;
     core::media::OverlayMergeConfig config;
     
     const auto* primary_track = graph.timeline->find_primary_track();
@@ -207,20 +219,20 @@ core::MediaResult<void> MediaPipeline::stage_overlay(const core::RenderGraph& gr
     config.width = (int)graph.timeline->output.width;
     config.height = (int)graph.timeline->output.height;
     config.fps = graph.timeline->output.fps;
-    config.crf = graph.timeline->output.crf;
+    config.crf = (int)graph.timeline->output.crf;
     
     for (const auto& ovl : graph.timeline->overlays) {
         core::media::OverlaySpec spec;
         spec.path = ovl.path;
         spec.start_time = graph.timeline->timebase.to_seconds(ovl.start_time);
         spec.duration = graph.timeline->timebase.to_seconds(ovl.duration);
-        spec.x = ovl.x;
-        spec.y = ovl.y;
+        spec.x = (int)ovl.x;
+        spec.y = (int)ovl.y;
         spec.opacity = ovl.opacity;
         config.overlays.push_back(spec);
     }
     
-    auto merge_res = core::media::OverlayMerger::merge_overlays(config);
+    auto merge_res = merger.merge_overlays(config);
     if (!merge_res.ok()) {
         return core::MediaResult<void>::failure(merge_res.error->with_stage("overlay_merge"));
     }
