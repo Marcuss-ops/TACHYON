@@ -259,7 +259,7 @@ tachyon_assert_no_duplicate_sources(TachyonRenderer2DExtrasSources)
 tachyon_assert_no_duplicate_sources(TachyonOutputSources)
 tachyon_assert_no_duplicate_sources(TachyonTextSources)
 tachyon_assert_no_duplicate_sources(TachyonCLICoreSources)
-tachyon_assert_no_duplicate_sources(TachyonCLILibrarySources)
+tachyon_assert_no_duplicate_sources(TachyonCLIToolSources)
 tachyon_assert_no_duplicate_sources(TachyonLibrarySources)
 
 tachyon_check_source_registration(${CMAKE_CURRENT_SOURCE_DIR}/text TachyonTextSources)
@@ -365,8 +365,6 @@ tachyon_link_mimalloc(tachyon-library-demo)
 if(TACHYON_BUILD_LIBRARY_TOOLS)
     add_executable(tachyon-library
         main.cpp
-        ${TachyonCLICoreSources}
-        ${TachyonCLILibrarySources}
     )
     tachyon_configure_common(tachyon-library)
     
@@ -376,6 +374,7 @@ if(TACHYON_BUILD_LIBRARY_TOOLS)
 
     target_link_libraries(tachyon-library
         PRIVATE
+            $<$<PLATFORM_ID:Linux>:-Wl,--whole-archive> TachyonCLICore TachyonCLITools $<$<PLATFORM_ID:Linux>:-Wl,--no-whole-archive>
             TachyonRuntimeEngine
             TachyonLibrary
             TachyonPresets
