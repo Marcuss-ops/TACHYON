@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/api.h"
 #include <atomic>
 #include <thread>
 #include <vector>
@@ -11,7 +12,7 @@ namespace tachyon {
 /**
  * @brief Background sampler for CPU and Memory usage of the current process.
  */
-class ProcessResourceSampler {
+class TACHYON_API ProcessResourceSampler {
 public:
     ProcessResourceSampler(int interval_ms = 250);
     ~ProcessResourceSampler();

@@ -1,4 +1,5 @@
 #include "tachyon/runtime/profiling/render_profiler.h"
+#include "tachyon/api.h"
 
 #include <chrono>
 #include <fstream>
@@ -11,18 +12,6 @@
 namespace tachyon::profiling {
 
 namespace {
-
-std::string escape_json_string(const std::string& s) {
-    std::ostringstream o;
-    for (auto c : s) {
-        if (c == '"' || c == '\\' || ('\x00' <= c && c <= '\x1f')) {
-            o << "\\u" << std::hex << std::setw(4) << std::setfill('0') << (int)c;
-        } else {
-            o << c;
-        }
-    }
-    return o.str();
-}
 
 double get_now_ms() {
     static auto start_time = std::chrono::high_resolution_clock::now();
@@ -178,93 +167,6 @@ ProfileSummary RenderProfiler::summarize() const {
     }
 
     return summary;
-}
-
-bool RenderProfiler::write_trace_json(const std::filesystem::path& path) const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    std::ofstream out(path);
-    if (!out) return false;
-
-    out << "{\n  \"events\": [\n";
-    for (std::size_t i = 0; i < m_events.size(); ++i) {
-        const auto& e = m_events[i];
-        out << "    {\n";
-        out << "      \"type\": \"" << event_type_to_string(e.type) << "\",\n";
-        out << "      \"name\": \"" << escape_json_string(e.name) << "\",\n";
-        if (e.frame_number >= 0) out << "      \"frame\": " << e.frame_number << ",\n";
-        if (!e.layer_id.empty()) out << "      \"layer_id\": \"" << escape_json_string(e.layer_id) << "\",\n";
-        if (!e.effect_id.empty()) out << "      \"effect_id\": \"" << escape_json_string(e.effect_id) << "\",\n";
-        out << "      \"thread\": " << e.thread_id << ",\n";
-        out << "      \"start_ms\": " << e.start_ms << ",\n";
-        out << "      \"duration_ms\": " << e.duration_ms << "\n";
-        out << "    }" << (i == m_events.size() - 1 ? "" : ",") << "\n";
-    }
-    out << "  ]\n}";
-    return true;
-}
-
-bool RenderProfiler::write_chrome_trace_json(const std::filesystem::path& path) const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    std::ofstream out(path);
-    if (!out) return false;
-
-    out << "{\"traceEvents\": [\n";
-    for (std::size_t i = 0; i < m_events.size(); ++i) {
-        const auto& e = m_events[i];
-        out << "  {";
-        out << "\"name\": \"" << escape_json_string(e.name) << "\", ";
-        out << "\"cat\": \"" << event_type_to_string(e.type) << "\", ";
-        out << "\"ph\": \"X\", ";
-        out << "\"ts\": " << static_cast<std::int64_t>(e.start_ms * 1000.0) << ", ";
-        out << "\"dur\": " << static_cast<std::int64_t>(e.duration_ms * 1000.0) << ", ";
-        out << "\"pid\": 1, ";
-        out << "\"tid\": " << e.thread_id;
-        
-        if (e.frame_number >= 0 || !e.layer_id.empty()) {
-            out << ", \"args\": {";
-            bool first_arg = true;
-            if (e.frame_number >= 0) {
-                out << "\"frame\": " << e.frame_number;
-                first_arg = false;
-            }
-            if (!e.layer_id.empty()) {
-                if (!first_arg) out << ", ";
-                out << "\"layer\": \"" << escape_json_string(e.layer_id) << "\"";
-            }
-            out << "}";
-        }
-        
-        out << "}" << (i == m_events.size() - 1 ? "" : ",\n");
-    }
-    out << "\n]}";
-    return true;
-}
-
-bool RenderProfiler::write_summary_json(const std::filesystem::path& path) const {
-    auto summary = summarize();
-    std::ofstream out(path);
-    if (!out) return false;
-
-    out << "{\n";
-    out << "  \"total_ms\": " << summary.total_ms << ",\n";
-    out << "  \"avg_frame_ms\": " << summary.avg_frame_ms << ",\n";
-    out << "  \"p95_frame_ms\": " << summary.p95_frame_ms << ",\n";
-    out << "  \"slowest_frame\": " << summary.slowest_frame << ",\n";
-    out << "  \"slowest_frame_ms\": " << summary.slowest_frame_ms << ",\n";
-    
-    out << "  \"bottlenecks\": [\n";
-    auto sorted_effects = summary.effects;
-    std::sort(sorted_effects.begin(), sorted_effects.end(), [](const auto& a, const auto& b) {
-        return a.total_ms > b.total_ms;
-    });
-    
-    for (std::size_t i = 0; i < std::min<std::size_t>(sorted_effects.size(), 10); ++i) {
-        const auto& ep = sorted_effects[i];
-        out << "    { \"id\": \"" << escape_json_string(ep.effect_id) << "\", \"total_ms\": " << ep.total_ms << " }" << (i == sorted_effects.size() - 1 || i == 9 ? "" : ",") << "\n";
-    }
-    out << "  ]\n";
-    out << "}";
-    return true;
 }
 
 } // namespace tachyon::profiling

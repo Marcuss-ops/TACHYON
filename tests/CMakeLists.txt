@@ -19,6 +19,11 @@ add_library(TachyonTestUtils STATIC
 target_include_directories(TachyonTestUtils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/unit)
 target_link_libraries(TachyonTestUtils PUBLIC TachyonCore)
 
+# Loadable Scene Modules
+add_library(remotion_demo MODULE render/remotion_demo.cpp)
+target_link_libraries(remotion_demo PRIVATE TachyonScene TachyonCore TachyonPresets TachyonCatalog)
+set_target_properties(remotion_demo PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests/render")
+
 # Domain-specific test configurations
 include(cmake/RenderTests.cmake)
 include(cmake/CliTests.cmake)

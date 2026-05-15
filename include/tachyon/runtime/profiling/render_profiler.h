@@ -3,6 +3,7 @@
 #include "tachyon/runtime/profiling/profile_event.h"
 #include "tachyon/runtime/profiling/profile_summary.h"
 
+#include "tachyon/api.h"
 #include <mutex>
 #include <vector>
 #include <optional>
@@ -11,7 +12,7 @@
 
 namespace tachyon::profiling {
 
-class RenderProfiler {
+class TACHYON_API RenderProfiler {
 public:
     explicit RenderProfiler(bool enabled = false);
     ~RenderProfiler() = default;
@@ -36,10 +37,6 @@ public:
     void record_frame_result(FrameProfile profile);
 
     ProfileSummary summarize() const;
-
-    bool write_trace_json(const std::filesystem::path& path) const;
-    bool write_chrome_trace_json(const std::filesystem::path& path) const;
-    bool write_summary_json(const std::filesystem::path& path) const;
 
 private:
     mutable std::mutex m_mutex;

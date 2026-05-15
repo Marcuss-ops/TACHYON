@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/api.h"
 #include "tachyon/runtime/policy/worker_budget.h"
 #include <cstddef>
 
@@ -11,7 +12,7 @@ namespace tachyon::runtime {
  * This ensures that hardware concurrency is not used directly in the runtime logic,
  * allowing for overrides, constraints, and deterministic defaults.
  */
-struct RenderWorkerPolicy {
+struct TACHYON_API RenderWorkerPolicy {
     std::size_t requested_workers{0};  // 0 means use hardware defaults
     std::size_t max_workers{0};        // 0 means no limit
     std::size_t min_workers{1};        // absolute minimum
