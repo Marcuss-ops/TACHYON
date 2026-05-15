@@ -4,7 +4,7 @@
 #include "tachyon/core/cli_scene_loader.h"
 #include "tachyon/core/analysis/motion_map.h"
 #include "cli_internal.h"
-
+#include "command_registry.h"
 #include <algorithm>
 
 namespace tachyon {
@@ -34,5 +34,18 @@ bool run_motion_map_command(const CliOptions& options, std::ostream& out, std::o
     }
     return true;
 }
+
+REGISTER_COMMAND(
+    "motion-map",
+    "tachyon motion-map --cpp <scene.cpp> [--preset <id>] [--json] [--samples <n>]",
+    [](const CliOptions& o, std::ostream& e) {
+        if (o.cpp_path.empty() && !o.preset_id.has_value()) {
+            e << "Either --cpp or --preset is required for motion-map\n";
+            return false;
+        }
+        return true;
+    },
+    run_motion_map_command
+);
 
 } // namespace tachyon

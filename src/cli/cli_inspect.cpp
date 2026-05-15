@@ -5,6 +5,7 @@
 #include "tachyon/core/cli_scene_loader.h"
 #include "tachyon/core/analysis/scene_inspector.h"
 #include "cli_internal.h"
+#include "command_registry.h"
 #include "tachyon/text/fonts/management/font_manifest.h"
 #include "tachyon/text/fonts/utils/font_coverage_reporter.h"
 #include <iostream>
@@ -114,5 +115,18 @@ bool run_inspect_fonts_command(const CliOptions& /*options*/, std::ostream& /*ou
     err << "Font manifest inspection is no longer supported. Please use the C++ Font API.\n";
     return false;
 }
+
+REGISTER_COMMAND(
+    "inspect",
+    "tachyon inspect --cpp <scene.cpp> [--job <file>] [--json] [--info] [--samples <n>]",
+    [](const CliOptions& o, std::ostream& e) {
+        if (o.cpp_path.empty() && !o.preset_id.has_value()) {
+            e << "Either --cpp or --preset is required for inspect\n";
+            return false;
+        }
+        return true;
+    },
+    run_inspect_command
+);
 
 } // namespace tachyon

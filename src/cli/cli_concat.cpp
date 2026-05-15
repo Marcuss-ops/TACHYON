@@ -1,5 +1,6 @@
 #include "tachyon/runtime/registry/runtime_registry_bundle.h"
 #include "cli_internal.h"
+#include "command_registry.h"
 #include "tachyon/media/video_concat.h"
 #include <iostream>
 
@@ -31,5 +32,18 @@ bool run_concat_command(const CliOptions& options, std::ostream& out, std::ostre
     out << "Concatenation successful.\n";
     return true;
 }
+
+REGISTER_COMMAND(
+    "concat",
+    "tachyon concat --inputs <file1,file2,...> --out <file>",
+    [](const CliOptions& o, std::ostream& e) {
+        if (o.concat_inputs.empty() || o.output_override.empty()) {
+            e << "--inputs and --out are required for concat\n";
+            return false;
+        }
+        return true;
+    },
+    run_concat_command
+);
 
 } // namespace tachyon

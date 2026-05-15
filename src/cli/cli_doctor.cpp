@@ -7,6 +7,7 @@
 #include "tachyon/transition_registry.h"
 #include "tachyon/core/transition/transition_descriptor.h"
 #include "cli_internal.h"
+#include "command_registry.h"
 #include <iostream>
 #include "tachyon/runtime/registry/runtime_registry_bundle.h"
 #include <iomanip>
@@ -87,5 +88,12 @@ bool run_doctor_command(const CliOptions&, std::ostream& out, std::ostream& err,
 
     return ok;
 }
+
+REGISTER_COMMAND(
+    "doctor",
+    "tachyon doctor",
+    nullptr,
+    run_doctor_command
+);
 
 } // namespace tachyon

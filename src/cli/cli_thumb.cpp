@@ -4,7 +4,7 @@
 #include "tachyon/core/cli_scene_loader.h"
 #include "tachyon/runtime/execution/native_render.h"
 #include "cli_internal.h"
-
+#include "command_registry.h"
 #include <ostream>
 #include <string>
 #include <filesystem>
@@ -68,5 +68,19 @@ bool run_thumb_command(const CliOptions& options, std::ostream& out, std::ostrea
     // For now, we use the preview infrastructure
     return run_preview_internal(options, out, err, "Thumbnail", bundle);
 }
+
+REGISTER_COMMAND(
+    "thumb",
+    "tachyon thumb --cpp <scene.cpp> [--out <file.jpg>] [--frame <n>]\n"
+    "        tachyon thumb --preset <id> [--out <file.jpg>] [--frame <n>]",
+    [](const CliOptions& o, std::ostream& e) {
+        if (o.cpp_path.empty() && !o.preset_id.has_value()) {
+            e << "Either --cpp or --preset is required for thumb\n";
+            return false;
+        }
+        return true;
+    },
+    run_thumb_command
+);
 
 } // namespace tachyon

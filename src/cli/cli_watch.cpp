@@ -10,6 +10,7 @@
 #include "tachyon/runtime/resource/render_context.h"
 #include "tachyon/runtime/registry/runtime_registry_bundle.h"
 #include "cli_internal.h"
+#include "command_registry.h"
 #include <iostream>
 #include <filesystem>
 #include <thread>
@@ -111,5 +112,12 @@ bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostrea
     out << "Watch mode terminated.\n";
     return true;
 }
+
+REGISTER_COMMAND(
+    "watch",
+    "tachyon watch --cpp <scene.cpp> --job <file> [--workers <n>]",
+    nullptr,
+    run_watch_command
+);
 
 } // namespace tachyon

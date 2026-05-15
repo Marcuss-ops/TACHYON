@@ -1,5 +1,6 @@
 #include "tachyon/runtime/registry/runtime_registry_bundle.h"
 #include "cli_internal.h"
+#include "command_registry.h"
 #include "tachyon/media/probe.h"
 #include <iostream>
 
@@ -69,5 +70,18 @@ bool run_probe_command(const CliOptions& options, std::ostream& out, std::ostrea
 
     return true;
 }
+
+REGISTER_COMMAND(
+    "probe",
+    "tachyon probe --input <file> [--json]",
+    [](const CliOptions& o, std::ostream& e) {
+        if (o.probe_input.empty()) {
+            e << "--input is required for probe\n";
+            return false;
+        }
+        return true;
+    },
+    run_probe_command
+);
 
 } // namespace tachyon

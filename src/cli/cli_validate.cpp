@@ -4,6 +4,7 @@
 #include "tachyon/runtime/runtime_facade.h"
 #include "tachyon/core/cli_scene_loader.h"
 #include "cli_internal.h"
+#include "command_registry.h"
 #include <iostream>
 
 namespace tachyon {
@@ -42,5 +43,18 @@ bool run_validate_command(const CliOptions& options, std::ostream& out, std::ost
     }
     return true;
 }
+
+REGISTER_COMMAND(
+    "validate",
+    "tachyon validate --cpp <scene.cpp> [--job <file>]",
+    [](const CliOptions& o, std::ostream& e) {
+        if (o.cpp_path.empty() && !o.preset_id.has_value()) {
+            e << "Either --cpp or --preset is required for validate\n";
+            return false;
+        }
+        return true;
+    },
+    run_validate_command
+);
 
 } // namespace tachyon

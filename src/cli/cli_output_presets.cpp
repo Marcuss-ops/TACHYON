@@ -3,7 +3,7 @@
 #include "tachyon/core/cli_options.h"
 #include "tachyon/output/output_presets.h"
 #include "cli_internal.h"
-
+#include "command_registry.h"
 #include <iomanip>
 #include <iostream>
 #include <string>
@@ -65,5 +65,23 @@ bool run_output_presets_command(const CliOptions& options, std::ostream& out, st
     err << "Unknown output-presets subcommand: " << command << '\n';
     return false;
 }
+
+REGISTER_COMMAND(
+    "output-presets",
+    "tachyon output-presets list\n"
+    "        tachyon output-presets info <name>",
+    [](const CliOptions& o, std::ostream& e) {
+        if (o.output_presets_command.empty()) {
+            e << "Use output-presets list or output-presets info <name>\n";
+            return false;
+        }
+        if (o.output_presets_command == "info" && o.output_preset_name.empty()) {
+            e << "output-presets info requires a preset name\n";
+            return false;
+        }
+        return true;
+    },
+    run_output_presets_command
+);
 
 } // namespace tachyon

@@ -1,5 +1,6 @@
 #include "tachyon/runtime/registry/runtime_registry_bundle.h"
 #include "cli_internal.h"
+#include "command_registry.h"
 #include "tachyon/runtime/telemetry/render_telemetry_record.h"
 #include "tachyon/runtime/telemetry/batch_telemetry_aggregator.h"
 #include <fstream>
@@ -162,5 +163,20 @@ bool run_metrics_command(const CliOptions& options, std::ostream& out, std::ostr
 
     return true;
 }
+
+REGISTER_COMMAND(
+    "metrics",
+    "tachyon metrics summary --input <file.jsonl> [--json]\n"
+    "        metrics failures --input <file.jsonl>\n"
+    "        metrics slowest --input <file.jsonl> [--top <n>]",
+    [](const CliOptions& o, std::ostream& e) {
+        if (o.metrics_input.empty()) {
+            e << "--input is required for metrics command\n";
+            return false;
+        }
+        return true;
+    },
+    run_metrics_command
+);
 
 } // namespace tachyon

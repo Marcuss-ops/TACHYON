@@ -2,6 +2,7 @@
 #include "tachyon/core/cli_options.h"
 #include "tachyon/text/fonts/management/font_downloader.h"
 #include "cli_internal.h"
+#include "command_registry.h"
 #include <iostream>
 #include <sstream>
 
@@ -70,5 +71,12 @@ bool run_fetch_fonts_command(const CliOptions& options, std::ostream& out, std::
 
     return true;
 }
+
+REGISTER_COMMAND(
+    "fetch-fonts",
+    "tachyon fetch-fonts --family <name> [--weights <w1,w2,...>] [--subsets <s1,...>] [--dest <dir>] [--overwrite]",
+    nullptr,
+    run_fetch_fonts_command
+);
 
 } // namespace tachyon

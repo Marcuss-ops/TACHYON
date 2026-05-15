@@ -8,6 +8,7 @@
 #include "tachyon/presets/text/text_registry.h"
 #include "tachyon/diagnostics/trace.h"
 #include "cli_internal.h"
+#include "command_registry.h"
 #include "tachyon/runtime/registry/runtime_registry_bundle.h"
 #include <iomanip>
 #include <iostream>
@@ -337,5 +338,33 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
 bool run_preview_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::RuntimeRegistryBundle& bundle) {
     return run_preview_internal(options, out, err, "NativePreview", bundle);
 }
+
+REGISTER_COMMAND(
+    "render",
+    "tachyon render --cpp <scene.cpp> --out <file> [--frames <s-e>] [--quality draft|high|production] [--workers <n>]\n"
+    "        tachyon render --preset <id> --out <file> [--output-preset <name>]",
+    [](const CliOptions& o, std::ostream& e) {
+        if (o.cpp_path.empty() && !o.preset_id.has_value()) {
+            e << "Either --cpp or --preset required for render\n";
+            return false;
+        }
+        return true;
+    },
+    run_render_command
+);
+
+REGISTER_COMMAND(
+    "preview",
+    "tachyon preview --cpp <scene.cpp> [--out <file.png>] [--frame <n>]\n"
+    "        preview --preset <id>  [--out <file.png>] [--frame <n>]",
+    [](const CliOptions& o, std::ostream& e) {
+        if (o.cpp_path.empty() && !o.preset_id.has_value()) {
+            e << "Either --cpp or --preset is required for preview\n";
+            return false;
+        }
+        return true;
+    },
+    run_preview_command
+);
 
 } // namespace tachyon
