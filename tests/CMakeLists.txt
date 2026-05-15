@@ -25,11 +25,13 @@ target_link_libraries(remotion_demo PRIVATE TachyonScene TachyonCore TachyonPres
 set_target_properties(remotion_demo PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests/render")
 
 # Domain-specific test configurations
+include(cmake/CoreTests.cmake)
 include(cmake/RenderTests.cmake)
 include(cmake/CliTests.cmake)
 include(cmake/SceneTests.cmake)
 include(cmake/RuntimeTests.cmake)
 include(cmake/OperationsTests.cmake)
+include(cmake/BackendTests.cmake)
 include(cmake/GoldenTests.cmake)
 
 # --- Header Smoke Tests ---

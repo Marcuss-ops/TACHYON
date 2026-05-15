@@ -1,6 +1,7 @@
 set(TACHYON_MEDIA_OPS_SOURCES
     src/media_ops.cpp
     src/audio_ops.cpp
+    src/transition_ops.cpp
 )
 
 add_library(TachyonMediaOps STATIC ${TACHYON_MEDIA_OPS_SOURCES})

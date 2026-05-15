@@ -1,5 +1,5 @@
 #include "tachyon/runtime/registry/engine_registry.h"
-#include "tachyon/backends/media_backend_bundle.h"
+#include "tachyon/backends/backend_registry.h"
 #include "cli/support/cli_internal.h"
 #include "command_registry.h"
 #include <iostream>
@@ -22,9 +22,13 @@ bool run_concat_command(const CliOptions& options, std::ostream& out, std::ostre
     
     out << "Concatenating " << config.inputs.size() << " files into " << config.output.string() << "...\n";
 
-    backends::MediaBackendBundle media_bundle;
-    auto services = media_bundle.services();
-    auto result = services.video_concat.concat_videos(config);
+    auto concat = backends::BackendRegistry::instance().create_video_concat();
+    if (!concat) {
+        err << "Error: No video concat backend registered in BackendRegistry\n";
+        return false;
+    }
+
+    auto result = concat->concat_videos(config);
     if (!result.ok()) {
         err << "Error concatenating files: " << result.error->to_diagnostic_string() << "\n";
         return false;

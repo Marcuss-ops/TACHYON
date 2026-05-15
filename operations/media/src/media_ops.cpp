@@ -1,26 +1,48 @@
 #include "tachyon/ops/media_ops.h"
 #include "tachyon/runtime/media/media_pipeline.h"
-#include "tachyon/backends/media_backend_bundle.h"
+#include "tachyon/backends/backend_registry.h"
+#include <memory>
 
 namespace tachyon::ops {
 
-core::RenderResult MediaOps::run_pipeline(const core::RenderGraph& graph) {
-    // Operations provide the concrete implementation bundle
-    backends::MediaBackendBundle bundle;
-    auto services = bundle.services();
+core::RenderResult MediaOps::run_pipeline(const core::RenderGraph& graph, const core::profiles::ExecutionProfile& profile) {
+    auto& reg = backends::BackendRegistry::instance();
+
+    // Resolve services based on profile
+    auto probe = reg.create_probe(profile.metadata.count("probe") ? profile.metadata.at("probe") : "default");
+    auto clip_processor = reg.create_clip_processor();
+    auto overlay_merger = reg.create_overlay_merger();
+    auto audio_extractor = reg.create_audio_extractor();
+    auto audio_analyzer = reg.create_audio_analyzer(profile.audio_analyzer);
+    auto video_concat = reg.create_video_concat();
+    auto transition_renderer = reg.create_transition_renderer();
+
+    // Ensure all required services are available
+    if (!probe || !clip_processor || !overlay_merger || !audio_extractor || !audio_analyzer || !video_concat || !transition_renderer) {
+        core::RenderResult failure;
+        failure.success = false;
+        failure.error_message = "Failed to resolve required media services from BackendRegistry";
+        return failure;
+    }
+
+    // Bundle services for the runtime pipeline
+    runtime::media::MediaServices services {
+        *probe,
+        *clip_processor,
+        *overlay_merger,
+        *audio_extractor,
+        *audio_analyzer,
+        *video_concat,
+        *transition_renderer
+    };
     
-    // Delegate to the Runtime Orchestrator using injected services
+    // Delegate to the Runtime Orchestrator
     return runtime::media::MediaPipeline::run(graph, services);
 }
 
-std::future<core::RenderResult> MediaOps::run_pipeline_async(const core::RenderGraph& graph) {
-    // Note: bundle must live as long as the async task if we use references.
-    // In a real studio engine, services would be managed by a ServiceLocator or lifetime-managed container.
-    // For now, we instantiate inside the future or use a shared bundle.
-    return std::async(std::launch::async, [graph]() {
-        backends::MediaBackendBundle bundle;
-        auto services = bundle.services();
-        return runtime::media::MediaPipeline::run(graph, services);
+std::future<core::RenderResult> MediaOps::run_pipeline_async(const core::RenderGraph& graph, const core::profiles::ExecutionProfile& profile) {
+    return std::async(std::launch::async, [graph, profile]() {
+        return run_pipeline(graph, profile);
     });
 }
 

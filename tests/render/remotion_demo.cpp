@@ -1,14 +1,12 @@
+#undef TACHYON_SHARED
+#undef TACHYON_USE_DLL
+#undef TACHYON_BUILD_DLL
 #include "tachyon/jit/tachyon_jit_api.h"
 #include "tachyon/scene/builder.h"
+#include "tachyon/core/spec/schema/objects/scene_spec.h"
 #include <iostream>
 
-#ifdef _WIN32
-#define EXPORT __declspec(dllexport)
-#else
-#define EXPORT __attribute__((visibility("default")))
-#endif
-
-extern "C" EXPORT const TachyonJitManifest* tachyon_jit_get_manifest() {
+extern "C" TACHYON_JIT_API const TachyonJitManifest* tachyon_jit_get_manifest() {
     static const TachyonJitManifest manifest = {
         TACHYON_JIT_ABI_VERSION,
         sizeof(TachyonJitManifest),
@@ -18,13 +16,13 @@ extern "C" EXPORT const TachyonJitManifest* tachyon_jit_get_manifest() {
     return &manifest;
 }
 
-extern "C" EXPORT int tachyon_jit_build_scene(const TachyonHostApi* host, TachyonSceneHandle scene) {
+extern "C" TACHYON_JIT_API int tachyon_jit_build_scene(const TachyonHostApi* host, TachyonSceneHandle scene) {
     // Note: We are using the legacy builder path inside the JIT wrapper for now
     // as the full JIT host API is still being expanded.
     return TACHYON_JIT_OK;
 }
 
-extern "C" EXPORT tachyon::SceneSpec build_scene() {
+extern "C" TACHYON_JIT_API tachyon::SceneSpec build_scene() {
     using namespace tachyon;
     using namespace tachyon::scene;
     
@@ -44,4 +42,3 @@ extern "C" EXPORT tachyon::SceneSpec build_scene() {
         })
         .build_scene();
 }
-

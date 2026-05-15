@@ -61,7 +61,6 @@ endif()
 # Dependency groups
 include(${CMAKE_SOURCE_DIR}/cmake/deps/CoreDeps.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/deps/ParallelDeps.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/deps/JsonDeps.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/deps/MemoryDeps.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/deps/SimdDeps.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/deps/TracingDeps.cmake)
@@ -111,9 +110,6 @@ if(TACHYON_ENABLE_MEDIA)
 endif()
 if(TACHYON_ENABLE_TASKFLOW)
     add_compile_definitions(TACHYON_ENABLE_TASKFLOW)
-endif()
-if(TACHYON_ENABLE_SIMDJSON)
-    add_compile_definitions(TACHYON_ENABLE_SIMDJSON)
 endif()
 
 # Subdirectories

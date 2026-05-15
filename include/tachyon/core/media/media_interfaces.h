@@ -85,4 +85,21 @@ public:
     virtual void close() = 0;
 };
 
+/**
+ * @brief Interface for applying procedural transitions between frames.
+ */
+class ITransitionRenderer {
+public:
+    virtual ~ITransitionRenderer() = default;
+
+    /**
+     * @brief Renders a transition frame.
+     */
+    virtual MediaResult<renderer2d::SurfaceRGBA> render(
+        const renderer2d::SurfaceRGBA& from,
+        const renderer2d::SurfaceRGBA* to,
+        float progress
+    ) = 0;
+};
+
 } // namespace tachyon::core::media

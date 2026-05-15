@@ -101,6 +101,7 @@ set(TachyonRuntimeSources
     telemetry/process_resource_sampler.cpp
     telemetry/render_telemetry_record.cpp
     telemetry/telemetry_writer.cpp
+    telemetry/simple_logger.cpp
 )
 
 add_library(TachyonRuntime STATIC ${TachyonRuntimeSources})

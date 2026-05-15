@@ -29,8 +29,8 @@ AtomicOutputGuard::AtomicOutputGuard(std::filesystem::path final_destination)
             std::filesystem::create_directories(temp_root, ec);
         }
 
-        std::string filename = m_final_path.filename().string();
-        filename += "." + std::to_string(GETPID()) + ".tmp";
+        std::string filename = m_final_path.stem().string();
+        filename += "." + std::to_string(GETPID()) + ".tmp" + m_final_path.extension().string();
         m_temp_path = temp_root / filename;
     }
 }
