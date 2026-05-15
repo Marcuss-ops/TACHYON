@@ -7,7 +7,7 @@ namespace tachyon::backends::ffmpeg {
 
 class FFmpegEncoder : public core::media::IVideoEncoder {
 public:
-    FFmpegEncoder() = default;
+    FFmpegEncoder();
     ~FFmpegEncoder() override;
 
     core::MediaResult<void> open(const std::filesystem::path& output_path, int width, int height, double fps) override;

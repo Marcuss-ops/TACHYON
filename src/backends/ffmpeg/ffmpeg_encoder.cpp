@@ -10,6 +10,8 @@ struct FFmpegEncoder::Impl {
     double fps{0.0};
 };
 
+FFmpegEncoder::FFmpegEncoder() = default;
+
 FFmpegEncoder::~FFmpegEncoder() {
     close();
 }
