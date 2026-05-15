@@ -30,4 +30,6 @@ RenderContext::RenderContext(
 
 }
 
+RenderContext::~RenderContext() = default;
+
 } // namespace tachyon
