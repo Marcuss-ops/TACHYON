@@ -45,6 +45,7 @@ target_link_libraries(tachyon
         TachyonPresets
         TachyonDiagnostics
         TachyonOperations
+        TachyonBackends
 )
 tachyon_link_mimalloc(tachyon)
 
