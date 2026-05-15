@@ -7,19 +7,19 @@
 namespace tachyon {
 
 bool run_probe_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::RuntimeRegistryBundle& /*bundle*/) {
-    if (options.media.probe_input.empty()) {
+    if (options.probe.input.empty()) {
         err << "Error: --input is required for probe command\n";
         return false;
     }
 
-    auto result = media::MediaProbe::probe_file(options.media.probe_input);
+    auto result = media::MediaProbe::probe_file(options.probe.input);
     if (!result.ok()) {
         err << "Error probing file: " << result.error->to_diagnostic_string() << "\n";
         return false;
     }
 
     const auto& meta = *result.value;
-    if (options.media.json_output) {
+    if (options.probe.json_output) {
         out << "{\n";
         out << "  \"path\": \"" << meta.path << "\",\n";
         out << "  \"format\": \"" << meta.format << "\",\n";
@@ -70,17 +70,19 @@ bool run_probe_command(const CliOptions& options, std::ostream& out, std::ostrea
     return true;
 }
 
-REGISTER_COMMAND(
-    "probe",
-    "tachyon probe --input <file> [--json]",
-    [](const CliOptions& o, std::ostream& e) {
-        if (o.media.probe_input.empty()) {
-            e << "--input is required for probe\n";
-            return false;
-        }
-        return true;
-    },
-    run_probe_command
-);
+CommandDescriptor make_probe_command() {
+    return {
+        "probe",
+        "tachyon probe --input <file> [--json]",
+        [](const CliOptions& o, std::ostream& e) {
+            if (o.probe.input.empty()) {
+                e << "--input is required for probe\n";
+                return false;
+            }
+            return true;
+        },
+        run_probe_command
+    };
+}
 
 } // namespace tachyon

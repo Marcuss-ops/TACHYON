@@ -13,21 +13,23 @@ bool run_preview_frame_command(const CliOptions& options, std::ostream& out, std
     return run_preview_internal(options, out, err, "PreviewFrame", bundle);
 }
 
-REGISTER_COMMAND(
-    "preview-frame",
-    "tachyon preview-frame --cpp <scene.cpp>  --job <file> --frame <n> --out <file.png>",
-    [](const CliOptions& o, std::ostream& e) {
-        if (o.cpp_path.empty()) {
-            e << "--cpp is required for preview-frame\n";
-            return false;
-        }
-        if (o.inspect.job_path.empty() || !o.render.preview_frame_number.has_value() || o.render.preview_output.empty()) {
-            e << "--job, --frame and --out are required for preview-frame\n";
-            return false;
-        }
-        return true;
-    },
-    run_preview_frame_command
-);
+CommandDescriptor make_preview_frame_command() {
+    return {
+        "preview-frame",
+        "tachyon preview-frame --cpp <scene.cpp>  --job <file> --frame <n> --out <file.png>",
+        [](const CliOptions& o, std::ostream& e) {
+            if (o.cpp_path.empty()) {
+                e << "--cpp is required for preview-frame\n";
+                return false;
+            }
+            if (o.inspect.job_path.empty() || !o.render.preview_frame_number.has_value() || o.render.preview_output.empty()) {
+                e << "--job, --frame and --out are required for preview-frame\n";
+                return false;
+            }
+            return true;
+        },
+        run_preview_frame_command
+    };
+}
 
 } // namespace tachyon

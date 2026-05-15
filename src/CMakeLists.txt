@@ -319,7 +319,7 @@ endif()
 
 target_link_libraries(tachyon
     PRIVATE
-        $<$<PLATFORM_ID:Linux>:-Wl,--whole-archive> TachyonCLICore TachyonCLITools $<$<PLATFORM_ID:Linux>:-Wl,--no-whole-archive>
+        TachyonCLICore TachyonCLITools
         TachyonLibrary
         TachyonPresets
         TachyonDiagnostics
@@ -334,7 +334,7 @@ add_executable(tachyon-library-demo
 tachyon_configure_common(tachyon-library-demo)
 target_link_libraries(tachyon-library-demo
     PRIVATE
-        $<$<PLATFORM_ID:Linux>:-Wl,--whole-archive> TachyonCLICore TachyonCLITools $<$<PLATFORM_ID:Linux>:-Wl,--no-whole-archive>
+        TachyonCLICore TachyonCLITools
         TachyonLibrary
         TachyonPresets
         TachyonDiagnostics
@@ -354,7 +354,7 @@ if(TACHYON_BUILD_LIBRARY_TOOLS)
 
     target_link_libraries(tachyon-library
         PRIVATE
-            $<$<PLATFORM_ID:Linux>:-Wl,--whole-archive> TachyonCLICore TachyonCLITools $<$<PLATFORM_ID:Linux>:-Wl,--no-whole-archive>
+        TachyonCLICore TachyonCLITools
             TachyonRuntimeEngine
             TachyonLibrary
             TachyonPresets

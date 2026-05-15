@@ -39,30 +39,32 @@ struct MetricsOptions {
     bool json_output{false};
 };
 
-struct ToolOptions {
-    // Fonts
-    std::string font_family;
-    std::vector<std::uint32_t> font_weights;
-    std::vector<std::string> font_subsets;
-    std::filesystem::path font_dest{"assets/fonts"};
-    bool font_overwrite{false};
-    
-    // Output Presets
-    std::string output_presets_command;
-    std::string output_preset_name;
-    
-    // Thumb
-    std::optional<int> thumb_frame;
+struct FontOptions {
+    std::string family;
+    std::vector<std::uint32_t> weights;
+    std::vector<std::string> subsets;
+    std::filesystem::path dest{"assets/fonts"};
+    bool overwrite{false};
 };
 
-struct MediaToolOptions {
-    // Probe
-    std::filesystem::path probe_input;
+struct OutputPresetOptions {
+    std::string command;
+    std::string name;
+};
+
+struct ThumbOptions {
+    std::optional<int> frame;
+    std::filesystem::path output;
+};
+
+struct ProbeOptions {
+    std::filesystem::path input;
     bool json_output{false};
-    
-    // Concat
-    std::vector<std::filesystem::path> concat_inputs;
-    std::filesystem::path concat_output;
+};
+
+struct ConcatOptions {
+    std::vector<std::filesystem::path> inputs;
+    std::filesystem::path output;
 };
 
 struct CliOptions {
@@ -85,8 +87,12 @@ struct CliOptions {
     RenderOptions render;
     InspectOptions inspect;
     MetricsOptions metrics;
-    ToolOptions tools;
-    MediaToolOptions media;
+    
+    FontOptions fonts;
+    OutputPresetOptions output_presets;
+    ThumbOptions thumb;
+    ProbeOptions probe;
+    ConcatOptions concat;
 };
 
 ParseResult<CliOptions> parse_cli_options(int argc, char** argv);

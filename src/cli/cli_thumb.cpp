@@ -8,7 +8,6 @@
 #include <ostream>
 #include <string>
 #include <filesystem>
-#include "tachyon/runtime/registry/runtime_registry_bundle.h"
 
 namespace tachyon {
 
@@ -36,18 +35,18 @@ bool run_thumb_command(const CliOptions& options, std::ostream& out, std::ostrea
     }
 
     std::string output_path;
-    int frame_number = options.render.preview_frame_number.has_value()
-                           ? *options.render.preview_frame_number
+    int frame_number = options.thumb.frame.has_value()
+                           ? *options.thumb.frame
                            : 90; // Default to frame 90 (about 3 seconds at 30fps)
 
     const std::string source_name = options.cpp_path.empty()
                                          ? *options.preset_id
                                          : options.cpp_path.string();
 
-    if (options.render.preview_output.empty()) {
+    if (options.thumb.output.empty()) {
         output_path = make_default_thumb_path(source_name);
     } else {
-        output_path = options.render.preview_output.string();
+        output_path = options.thumb.output.string();
     }
 
     out << "Generating thumbnail from frame " << frame_number << "...\n";
@@ -69,18 +68,20 @@ bool run_thumb_command(const CliOptions& options, std::ostream& out, std::ostrea
     return run_preview_internal(options, out, err, "Thumbnail", bundle);
 }
 
-REGISTER_COMMAND(
-    "thumb",
-    "tachyon thumb --cpp <scene.cpp> [--out <file.jpg>] [--frame <n>]\n"
-    "        tachyon thumb --preset <id> [--out <file.jpg>] [--frame <n>]",
-    [](const CliOptions& o, std::ostream& e) {
-        if (o.cpp_path.empty() && !o.preset_id.has_value()) {
-            e << "Either --cpp or --preset is required for thumb\n";
-            return false;
-        }
-        return true;
-    },
-    run_thumb_command
-);
+CommandDescriptor make_thumb_command() {
+    return {
+        "thumb",
+        "tachyon thumb --cpp <scene.cpp> [--out <file.jpg>] [--frame <n>]\n"
+        "        tachyon thumb --preset <id> [--out <file.jpg>] [--frame <n>]",
+        [](const CliOptions& o, std::ostream& e) {
+            if (o.cpp_path.empty() && !o.preset_id.has_value()) {
+                e << "Either --cpp or --preset is required for thumb\n";
+                return false;
+            }
+            return true;
+        },
+        run_thumb_command
+    };
+}
 
 } // namespace tachyon

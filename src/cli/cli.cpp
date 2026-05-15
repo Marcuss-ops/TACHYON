@@ -19,17 +19,33 @@ namespace {
 void print_help(std::ostream& out) {
     out << "TACHYON " << version_string() << '\n';
     out << "Usage:\n";
-    out << "  tachyon version\n";
     for (const auto& cmd : CommandRegistry::instance().commands()) {
-        // Indent continuation lines
-        std::string usage = cmd.usage;
-        out << "  " << usage << '\n';
+        out << "  " << cmd.usage << '\n';
     }
+}
+
+bool run_version_command(const CliOptions&, std::ostream& out, std::ostream&, runtime::RuntimeRegistryBundle&) {
+    out << version_string() << '\n';
+    return true;
 }
 
 } // namespace
 
+CommandDescriptor make_version_command() {
+    return {
+        "version",
+        "tachyon version",
+        [](const CliOptions&, std::ostream&) { return true; },
+        run_version_command
+    };
+}
+
 int run_cli(int argc, char** argv) {
+    // 1. Register commands
+    CommandRegistry::register_builtins();
+    CommandRegistry::register_tools();
+
+    // 2. Parse global options and command name
     const auto parsed = parse_cli_options(argc, argv);
     if (!parsed.value.has_value()) {
         print_diagnostics(parsed.diagnostics, std::cerr);
@@ -38,9 +54,14 @@ int run_cli(int argc, char** argv) {
 
     const CliOptions& options = *parsed.value;
 
-    if (options.command == "version" || options.show_version) {
+    if (options.show_version) {
         std::cout << version_string() << '\n';
         return 0;
+    }
+
+    if (options.command.empty()) {
+        print_help(std::cerr);
+        return 1;
     }
 
     // Initialize unified runtime registry bundle
@@ -55,6 +76,7 @@ int run_cli(int argc, char** argv) {
         return cmd->handler(options, std::cout, std::cerr, *g_cli_bundle) ? 0 : 2;
     }
 
+    std::cerr << "Unknown command: " << options.command << "\n\n";
     print_help(std::cerr);
     return 1;
 }

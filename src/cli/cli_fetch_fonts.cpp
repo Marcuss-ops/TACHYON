@@ -5,21 +5,22 @@
 #include "command_registry.h"
 #include <iostream>
 #include <sstream>
+#include <filesystem>
 
 namespace tachyon {
 
 bool run_fetch_fonts_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::RuntimeRegistryBundle& /*bundle*/) {
-    if (options.tools.font_family.empty()) {
+    if (options.fonts.family.empty()) {
         err << "Error: --family is required for fetch-fonts command\n";
         return false;
     }
 
     text::FontFetchRequest request;
-    request.family = options.tools.font_family;
-    request.weights = options.tools.font_weights;
-    request.subsets = options.tools.font_subsets;
-    request.dest = options.tools.font_dest;
-    request.overwrite = options.tools.font_overwrite;
+    request.family = options.fonts.family;
+    request.weights = options.fonts.weights;
+    request.subsets = options.fonts.subsets;
+    request.dest = options.fonts.dest;
+    request.overwrite = options.fonts.overwrite;
 
     out << "Fetching font: " << request.family << '\n';
     if (!request.weights.empty()) {
@@ -36,7 +37,7 @@ bool run_fetch_fonts_command(const CliOptions& options, std::ostream& out, std::
         out << request.subsets[i];
     }
     out << '\n';
-    out << "Destination: " << request.dest << '\n';
+    out << "Destination: " << request.dest.string() << '\n';
     out << "---\n";
 
     auto callback = [&out](const std::string& family, std::uint32_t weight, const std::string& status) {
@@ -71,11 +72,13 @@ bool run_fetch_fonts_command(const CliOptions& options, std::ostream& out, std::
     return true;
 }
 
-REGISTER_COMMAND(
-    "fetch-fonts",
-    "tachyon fetch-fonts --family <name> [--weights <w1,w2,...>] [--subsets <s1,...>] [--dest <dir>] [--overwrite]",
-    nullptr,
-    run_fetch_fonts_command
-);
+CommandDescriptor make_fetch_fonts_command() {
+    return {
+        "fetch-fonts",
+        "tachyon fetch-fonts --family <name> [--weights <w1,w2,...>] [--subsets <s1,...>] [--dest <dir>] [--overwrite]",
+        nullptr,
+        run_fetch_fonts_command
+    };
+}
 
 } // namespace tachyon

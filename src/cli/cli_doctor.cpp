@@ -89,11 +89,13 @@ bool run_doctor_command(const CliOptions&, std::ostream& out, std::ostream& err,
     return ok;
 }
 
-REGISTER_COMMAND(
-    "doctor",
-    "tachyon doctor",
-    nullptr,
-    run_doctor_command
-);
+CommandDescriptor make_doctor_command() {
+    return {
+        "doctor",
+        "tachyon doctor",
+        nullptr,
+        run_doctor_command
+    };
+}
 
 } // namespace tachyon

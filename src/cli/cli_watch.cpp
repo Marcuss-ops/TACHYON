@@ -113,11 +113,13 @@ bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostrea
     return true;
 }
 
-REGISTER_COMMAND(
-    "watch",
-    "tachyon watch --cpp <scene.cpp> --job <file> [--workers <n>]",
-    nullptr,
-    run_watch_command
-);
+CommandDescriptor make_watch_command() {
+    return {
+        "watch",
+        "tachyon watch --cpp <scene.cpp> --job <file> [--workers <n>]",
+        nullptr,
+        run_watch_command
+    };
+}
 
 } // namespace tachyon

@@ -164,19 +164,21 @@ bool run_metrics_command(const CliOptions& options, std::ostream& out, std::ostr
     return true;
 }
 
-REGISTER_COMMAND(
-    "metrics",
-    "tachyon metrics summary --input <file.jsonl> [--json]\n"
-    "        metrics failures --input <file.jsonl>\n"
-    "        metrics slowest --input <file.jsonl> [--top <n>]",
-    [](const CliOptions& o, std::ostream& e) {
-        if (o.metrics.input.empty()) {
-            e << "--input is required for metrics command\n";
-            return false;
-        }
-        return true;
-    },
-    run_metrics_command
-);
+CommandDescriptor make_metrics_command() {
+    return {
+        "metrics",
+        "tachyon metrics summary --input <file.jsonl> [--json]\n"
+        "        metrics failures --input <file.jsonl>\n"
+        "        metrics slowest --input <file.jsonl> [--top <n>]",
+        [](const CliOptions& o, std::ostream& e) {
+            if (o.metrics.input.empty()) {
+                e << "--input is required for metrics command\n";
+                return false;
+            }
+            return true;
+        },
+        run_metrics_command
+    };
+}
 
 } // namespace tachyon

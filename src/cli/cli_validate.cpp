@@ -9,7 +9,6 @@
 
 namespace tachyon {
 
-#include "tachyon/runtime/registry/runtime_registry_bundle.h"
 bool run_validate_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::RuntimeRegistryBundle& /*bundle*/) {
     SceneLoadOptions load_opts;
     load_opts.cpp_path = options.cpp_path;
@@ -44,17 +43,19 @@ bool run_validate_command(const CliOptions& options, std::ostream& out, std::ost
     return true;
 }
 
-REGISTER_COMMAND(
-    "validate",
-    "tachyon validate --cpp <scene.cpp> [--job <file>]",
-    [](const CliOptions& o, std::ostream& e) {
-        if (o.cpp_path.empty() && !o.preset_id.has_value()) {
-            e << "Either --cpp or --preset is required for validate\n";
-            return false;
-        }
-        return true;
-    },
-    run_validate_command
-);
+CommandDescriptor make_validate_command() {
+    return {
+        "validate",
+        "tachyon validate --cpp <scene.cpp> [--job <file>]",
+        [](const CliOptions& o, std::ostream& e) {
+            if (o.cpp_path.empty() && !o.preset_id.has_value()) {
+                e << "Either --cpp or --preset is required for validate\n";
+                return false;
+            }
+            return true;
+        },
+        run_validate_command
+    };
+}
 
 } // namespace tachyon

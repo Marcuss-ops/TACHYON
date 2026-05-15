@@ -4,14 +4,9 @@
 namespace tachyon {
 
 bool parse_metrics_option(const std::string& arg, const std::vector<std::string>& args, std::size_t& index, CliOptions& options, DiagnosticBag& diagnostics) {
-    if (arg == "--input" && (options.command == "metrics" || options.command == "probe")) {
-        if (options.command == "metrics") {
-            options.metrics.input = require_argument(args, index);
-            if (options.metrics.input.empty()) diagnostics.add_error("cli.input_missing", "missing value for --input");
-        } else {
-            options.media.probe_input = require_argument(args, index);
-            if (options.media.probe_input.empty()) diagnostics.add_error("cli.input_missing", "missing value for --input");
-        }
+    if (arg == "--input" && options.command == "metrics") {
+        options.metrics.input = require_argument(args, index);
+        if (options.metrics.input.empty()) diagnostics.add_error("cli.input_missing", "missing value for --input");
         return true;
     }
     if (arg == "--top") {
@@ -23,9 +18,8 @@ bool parse_metrics_option(const std::string& arg, const std::vector<std::string>
         }
         return true;
     }
-    if (arg == "--json" && (options.command == "metrics" || options.command == "probe")) {
-        if (options.command == "metrics") options.metrics.json_output = true;
-        else options.media.json_output = true;
+    if (arg == "--json" && options.command == "metrics") {
+        options.metrics.json_output = true;
         return true;
     }
     if (index == 1 && options.command == "metrics") {

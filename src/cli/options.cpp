@@ -91,14 +91,14 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
         
         // Output-presets subcommands
         if (index == 1 && options.command == "output-presets") {
-            if (arg == "list" || arg == "info") { options.tools.output_presets_command = arg; continue; }
+            if (arg == "list" || arg == "info") { options.output_presets.command = arg; continue; }
             if (!arg.empty() && arg.front() != '-') {
                 result.diagnostics.add_error("cli.output_presets_subcommand_invalid", "unknown output-presets subcommand: " + arg);
                 return result;
             }
         }
-        if (options.command == "output-presets" && options.tools.output_presets_command == "info" && index == 2 && options.tools.output_preset_name.empty()) {
-            options.tools.output_preset_name = arg;
+        if (options.command == "output-presets" && options.output_presets.command == "info" && index == 2 && options.output_presets.name.empty()) {
+            options.output_presets.name = arg;
             continue;
         }
 

@@ -339,32 +339,36 @@ bool run_preview_command(const CliOptions& options, std::ostream& out, std::ostr
     return run_preview_internal(options, out, err, "NativePreview", bundle);
 }
 
-REGISTER_COMMAND(
-    "render",
-    "tachyon render --cpp <scene.cpp> --out <file> [--frames <s-e>] [--quality draft|high|production] [--workers <n>]\n"
-    "        tachyon render --preset <id> --out <file> [--output-preset <name>]",
-    [](const CliOptions& o, std::ostream& e) {
-        if (o.cpp_path.empty() && !o.preset_id.has_value()) {
-            e << "Either --cpp or --preset required for render\n";
-            return false;
-        }
-        return true;
-    },
-    run_render_command
-);
+CommandDescriptor make_render_command() {
+    return {
+        "render",
+        "tachyon render --cpp <scene.cpp> --out <file> [--frames <s-e>] [--quality draft|high|production] [--workers <n>]\n"
+        "        tachyon render --preset <id> --out <file> [--output-preset <name>]",
+        [](const CliOptions& o, std::ostream& e) {
+            if (o.cpp_path.empty() && !o.preset_id.has_value()) {
+                e << "Either --cpp or --preset required for render\n";
+                return false;
+            }
+            return true;
+        },
+        run_render_command
+    };
+}
 
-REGISTER_COMMAND(
-    "preview",
-    "tachyon preview --cpp <scene.cpp> [--out <file.png>] [--frame <n>]\n"
-    "        preview --preset <id>  [--out <file.png>] [--frame <n>]",
-    [](const CliOptions& o, std::ostream& e) {
-        if (o.cpp_path.empty() && !o.preset_id.has_value()) {
-            e << "Either --cpp or --preset is required for preview\n";
-            return false;
-        }
-        return true;
-    },
-    run_preview_command
-);
+CommandDescriptor make_preview_command() {
+    return {
+        "preview",
+        "tachyon preview --cpp <scene.cpp> [--out <file.png>] [--frame <n>]\n"
+        "        preview --preset <id>  [--out <file.png>] [--frame <n>]",
+        [](const CliOptions& o, std::ostream& e) {
+            if (o.cpp_path.empty() && !o.preset_id.has_value()) {
+                e << "Either --cpp or --preset is required for preview\n";
+                return false;
+            }
+            return true;
+        },
+        run_preview_command
+    };
+}
 
 } // namespace tachyon

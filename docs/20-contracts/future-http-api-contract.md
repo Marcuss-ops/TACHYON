@@ -1,8 +1,7 @@
-# Runtime API Contract
+# Future HTTP API Contract (Experimental)
 
-> **Status**: Draft
-> **Scope**: Defines the stable contract between TACHYON runtime and external consumers
-> (CLI, HTTP API, PipelineGen, n8n, Gradio, etc.)
+> **Status**: Experimental / Future Work
+> **Scope**: Defines the proposed JSON/HTTP contract for remote TACHYON workers.
 
 ---
 

@@ -28,4 +28,22 @@ bool run_preview_internal(const CliOptions& options, std::ostream& out, std::ost
 bool run_probe_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::RuntimeRegistryBundle& bundle);
 bool run_concat_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::RuntimeRegistryBundle& bundle);
 
+struct CommandDescriptor;
+CommandDescriptor make_render_command();
+CommandDescriptor make_preview_command();
+CommandDescriptor make_preview_frame_command();
+CommandDescriptor make_validate_command();
+CommandDescriptor make_inspect_command();
+CommandDescriptor make_motion_map_command();
+CommandDescriptor make_watch_command();
+CommandDescriptor make_metrics_command();
+CommandDescriptor make_doctor_command();
+CommandDescriptor make_output_presets_command();
+CommandDescriptor make_thumb_command();
+CommandDescriptor make_probe_command();
+CommandDescriptor make_concat_command();
+CommandDescriptor make_fetch_fonts_command();
+CommandDescriptor make_inspect_fonts_command();
+CommandDescriptor make_version_command();
+
 } // namespace tachyon

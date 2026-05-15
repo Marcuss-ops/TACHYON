@@ -75,10 +75,6 @@ std::string severity_to_string(analysis::InspectionSeverity severity) {
 } // namespace
  
 bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::RuntimeRegistryBundle& bundle) {
-    if (options.command == "inspect-fonts") {
-        return run_inspect_fonts_command(options, out, err, bundle);
-    }
- 
     SceneLoadOptions load_opts;
     load_opts.cpp_path = options.cpp_path;
     load_opts.preset_id = options.preset_id;
@@ -116,17 +112,28 @@ bool run_inspect_fonts_command(const CliOptions& /*options*/, std::ostream& /*ou
     return false;
 }
 
-REGISTER_COMMAND(
-    "inspect",
-    "tachyon inspect --cpp <scene.cpp> [--job <file>] [--json] [--info] [--samples <n>]",
-    [](const CliOptions& o, std::ostream& e) {
-        if (o.cpp_path.empty() && !o.preset_id.has_value()) {
-            e << "Either --cpp or --preset is required for inspect\n";
-            return false;
-        }
-        return true;
-    },
-    run_inspect_command
-);
+CommandDescriptor make_inspect_command() {
+    return {
+        "inspect",
+        "tachyon inspect --cpp <scene.cpp> [--job <file>] [--json] [--info] [--samples <n>]",
+        [](const CliOptions& o, std::ostream& e) {
+            if (o.cpp_path.empty() && !o.preset_id.has_value()) {
+                e << "Either --cpp or --preset is required for inspect\n";
+                return false;
+            }
+            return true;
+        },
+        run_inspect_command
+    };
+}
+
+CommandDescriptor make_inspect_fonts_command() {
+    return {
+        "inspect-fonts",
+        "tachyon inspect-fonts (Deprecated)",
+        [](const CliOptions&, std::ostream&) { return true; },
+        run_inspect_fonts_command
+    };
+}
 
 } // namespace tachyon
