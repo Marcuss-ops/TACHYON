@@ -1,9 +1,9 @@
 #include "tachyon/core/cli_options.h"
-#include "parsing/parse_helpers.h"
-#include "parsing/parse_render.h"
-#include "parsing/parse_inspect.h"
-#include "parsing/parse_metrics.h"
-#include "parsing/parse_tool.h"
+#include "cli/parsing/parse_helpers.h"
+#include "cli/parsing/parse_render.h"
+#include "cli/parsing/parse_inspect.h"
+#include "cli/parsing/parse_metrics.h"
+#include "cli/parsing/parse_tool.h"
 #include <exception>
 #include <string>
 #include <vector>

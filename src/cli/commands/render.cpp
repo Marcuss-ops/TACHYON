@@ -7,7 +7,7 @@
 #include "tachyon/runtime/execution/native_render.h"
 #include "tachyon/presets/text/text_registry.h"
 #include "tachyon/diagnostics/trace.h"
-#include "cli_internal.h"
+#include "cli/support/cli_internal.h"
 #include "command_registry.h"
 #include "tachyon/runtime/registry/engine_registry.h"
 #include <iomanip>

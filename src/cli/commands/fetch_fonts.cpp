@@ -1,7 +1,7 @@
 #include "tachyon/runtime/registry/engine_registry.h"
 #include "tachyon/core/cli_options.h"
 #include "tachyon/text/fonts/management/font_downloader.h"
-#include "cli_internal.h"
+#include "cli/support/cli_internal.h"
 #include "command_registry.h"
 #include <iostream>
 #include <sstream>

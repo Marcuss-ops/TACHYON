@@ -42,7 +42,8 @@ const CompiledComposition* find_compiled_composition(const CompiledScene& scene,
 RenderPlan make_compiled_scene_plan(
     const CompiledScene& scene,
     const RenderJob& job,
-    ResolutionResult<RenderPlan>& result) {
+    ResolutionResult<RenderPlan>& result,
+    const SceneSpec* spec) {
     RenderPlan plan;
     const CompiledComposition* composition = find_compiled_composition(scene, job.composition_target);
     if (!composition) {
@@ -72,7 +73,7 @@ RenderPlan make_compiled_scene_plan(
     plan.motion_blur_curve = job.motion_blur_curve;
     plan.seed_policy_mode = job.seed_policy_mode;
     plan.compatibility_mode = job.compatibility_mode;
-    plan.scene_spec = nullptr;
+    plan.scene_spec = spec;
     plan.scene_hash = scene.scene_hash;
     plan.contract_version = scene.header.version;
     plan.proxy_enabled = job.proxy_enabled;
@@ -86,7 +87,8 @@ RenderSessionResult render_with_session(
     const CompiledScene& compiled_scene,
     const RenderJob& job,
     const NativeRenderOptions& options,
-    RenderSession& session) {
+    RenderSession& session,
+    const SceneSpec* spec = nullptr) {
     RenderSessionResult result;
     RenderProgressSink* sink = get_sink(options.progress_sink);
     const auto total_start = std::chrono::high_resolution_clock::now();
@@ -99,7 +101,7 @@ RenderSessionResult render_with_session(
     ResolutionResult<RenderPlan> plan_result;
     {
         profiling::ProfileScope scope(options.profiler, profiling::ProfileEventType::Phase, "build_render_plan");
-        plan_result.value = make_compiled_scene_plan(compiled_scene, resolved_job, plan_result);
+        plan_result.value = make_compiled_scene_plan(compiled_scene, resolved_job, plan_result, spec);
     }
     if (!plan_result.diagnostics.ok() || !plan_result.value.has_value()) {
         sink->on_message("Render plan build failed!");
@@ -140,7 +142,7 @@ RenderSessionResult render_with_session(
 
     sink->on_phase_start(RenderPhase::Render);
     result = session.render(
-        SceneSpec{},
+        spec ? *spec : SceneSpec{},
         compiled_scene,
         *execution_result.value,
         resolved_job.output.destination.path,
@@ -200,7 +202,7 @@ RenderSessionResult NativeRenderer::render(
     RenderSession session;
     session.set_transition_registry(&transition_registry);
     session.set_text_registry(&text_registry);
-    return render_with_session(*compiled_result.value, resolved_job, options, session);
+    return render_with_session(*compiled_result.value, resolved_job, options, session, &scene);
 }
 
 RenderSessionResult NativeRenderer::render(

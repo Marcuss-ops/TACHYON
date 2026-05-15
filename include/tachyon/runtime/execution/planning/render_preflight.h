@@ -5,6 +5,11 @@
 #include <vector>
 #include <string>
 
+namespace tachyon {
+    class TransitionRegistry;
+    namespace renderer2d { class EffectRegistry; }
+}
+
 namespace tachyon::runtime {
 
 /**
@@ -24,9 +29,6 @@ struct PreflightResult {
         warnings.push_back(std::move(msg));
     }
 };
-
-namespace renderer2d { class EffectRegistry; }
-class TransitionRegistry;
 
 /**
  * @brief Validates a scene before rendering to ensure all assets, effects, and 

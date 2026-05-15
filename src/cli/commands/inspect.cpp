@@ -4,7 +4,7 @@
 #include "tachyon/runtime/diagnostics/report.h"
 #include "tachyon/core/cli_scene_loader.h"
 #include "tachyon/core/analysis/scene_inspector.h"
-#include "cli_internal.h"
+#include "cli/support/cli_internal.h"
 #include "command_registry.h"
 #include "tachyon/text/fonts/management/font_manifest.h"
 #include "tachyon/text/fonts/utils/font_coverage_reporter.h"

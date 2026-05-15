@@ -2,6 +2,7 @@
 
 #include "tachyon/runtime/telemetry/render_telemetry_record.h"
 #include "tachyon/runtime/telemetry/batch_telemetry_aggregator.h"
+#include "tachyon/api.h"
 #include <string>
 #include <filesystem>
 
@@ -12,7 +13,7 @@ namespace tachyon {
 /**
  * @brief Modern telemetry writer supporting JSONL and TSV formats.
  */
-class TelemetryWriter {
+class TACHYON_API TelemetryWriter {
 public:
     static std::filesystem::path get_default_directory();
     

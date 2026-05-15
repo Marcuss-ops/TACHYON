@@ -4,13 +4,17 @@
 #include <memory>
 #include <vector>
 
+#ifdef TACHYON_ENABLE_TEXT
 #include "tachyon/text/core/low_level/freetype/freetype_manager.h"
+#endif
 
 namespace tachyon::renderer2d {
 
 const ::tachyon::text::FontRegistry* get_default_font_registry() {
+#ifdef TACHYON_ENABLE_TEXT
     // Mandate: Initialize FreeType BEFORE FontRegistry so it is destroyed AFTER it.
     ::tachyon::renderer2d::text::get_ft_library();
+#endif
     
     static ::tachyon::text::FontRegistry default_registry;
     static std::once_flag once;

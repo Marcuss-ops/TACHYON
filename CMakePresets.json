@@ -92,7 +92,12 @@
       "binaryDir": "${sourceDir}/build/dev-linux",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "TACHYON_ENABLE_ASAN": "OFF"
+        "TACHYON_ENABLE_ASAN": "OFF",
+        "TACHYON_ENABLE_MEDIA": "ON",
+        "TACHYON_ENABLE_TEXT": "ON",
+        "TACHYON_ENABLE_OUTPUT": "ON",
+        "TACHYON_ENABLE_AUDIO": "ON",
+        "TACHYON_BUILD_TESTS": "ON"
       }
     },
     {
@@ -102,7 +107,12 @@
       "binaryDir": "${sourceDir}/build/dev-linux-fast",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "TACHYON_ENABLE_ASAN": "OFF"
+        "TACHYON_ENABLE_ASAN": "OFF",
+        "TACHYON_ENABLE_MEDIA": "ON",
+        "TACHYON_ENABLE_TEXT": "ON",
+        "TACHYON_ENABLE_OUTPUT": "ON",
+        "TACHYON_ENABLE_AUDIO": "ON",
+        "TACHYON_BUILD_TESTS": "ON"
       }
     },
     {

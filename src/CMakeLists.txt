@@ -17,8 +17,15 @@ add_subdirectory(catalog)
 add_subdirectory(presets)
 add_subdirectory(core/scene)
 add_subdirectory(renderer2d)
-add_subdirectory(output)
-add_subdirectory(text)
+
+if(TACHYON_ENABLE_OUTPUT)
+    add_subdirectory(output)
+endif()
+
+if(TACHYON_ENABLE_TEXT)
+    add_subdirectory(text)
+endif()
+
 add_subdirectory(runtime)
 add_subdirectory(backends)
 
@@ -47,6 +54,7 @@ target_link_libraries(tachyon
         TachyonOperations
         TachyonBackends
         TachyonRuntime
+        TachyonOutput
 )
 tachyon_link_mimalloc(tachyon)
 

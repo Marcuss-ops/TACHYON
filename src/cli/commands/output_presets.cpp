@@ -2,7 +2,7 @@
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
 #include "tachyon/output/output_presets.h"
-#include "cli_internal.h"
+#include "cli/support/cli_internal.h"
 #include "command_registry.h"
 #include <iomanip>
 #include <iostream>

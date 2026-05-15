@@ -9,7 +9,7 @@
 #include "tachyon/runtime/execution/jobs/render_job.h"
 #include "tachyon/runtime/resource/render_context.h"
 #include "tachyon/runtime/registry/engine_registry.h"
-#include "cli_internal.h"
+#include "cli/support/cli_internal.h"
 #include "command_registry.h"
 #include <iostream>
 #include <filesystem>

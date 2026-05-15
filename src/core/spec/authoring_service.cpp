@@ -159,7 +159,8 @@ std::vector<std::string> AuthoringService::get_link_libs() {
     // scene-authoring surface. Do not pull renderer/runtime/media/output
     // modules into the plugin boundary.
     return {
-        "TachyonScene"
+        "TachyonScene",
+        "TachyonCore"
     };
 }
 
@@ -216,11 +217,39 @@ std::string AuthoringService::get_compiler_command(
     ss << "-o \"" << dll_path.string() << "\" ";
     
     const auto libs = get_link_libs();
-    const std::filesystem::path lib_path = TACHYON_LIB_PATH;
+    const std::filesystem::path lib_root = TACHYON_LIB_PATH;
+    
     for (std::size_t i = 0; i < libs.size(); ++i) {
         if (i != 0) ss << ' ';
-        std::string ext = (libs[i] == "TachyonScene") ? ".so" : ".a";
-        ss << "\"" << (lib_path / ("lib" + libs[i] + ext)).string() << "\"";
+        
+        // Search for the library in common subdirectories
+        std::vector<std::filesystem::path> search_paths = {
+            lib_root,
+            lib_root / "core" / "scene",
+            lib_root / "core",
+            lib_root / "renderer2d"
+        };
+        
+        std::filesystem::path found_path;
+        for (const auto& p : search_paths) {
+            std::filesystem::path static_lib = p / ("lib" + libs[i] + ".a");
+            std::filesystem::path shared_lib = p / ("lib" + libs[i] + ".so");
+            
+            if (std::filesystem::exists(shared_lib)) {
+                found_path = shared_lib;
+                break;
+            } else if (std::filesystem::exists(static_lib)) {
+                found_path = static_lib;
+                break;
+            }
+        }
+        
+        if (!found_path.empty()) {
+            ss << "\"" << found_path.string() << "\"";
+        } else {
+            // Fallback to old behavior if not found
+            ss << "\"" << (lib_root / ("lib" + libs[i] + ".a")).string() << "\"";
+        }
     }
 
 #endif

@@ -6,7 +6,7 @@
 #include "tachyon/presets/transition/transition_preset_registry.h"
 #include "tachyon/transition_registry.h"
 #include "tachyon/core/transition/transition_descriptor.h"
-#include "cli_internal.h"
+#include "cli/support/cli_internal.h"
 #include "command_registry.h"
 #include <iostream>
 #include "tachyon/runtime/registry/engine_registry.h"

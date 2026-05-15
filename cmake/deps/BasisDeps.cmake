@@ -18,7 +18,6 @@ if(TACHYON_ENABLE_BASIS)
                 ${BASISU_SRC_DIR}/encoder/basisu_enc.cpp
                 ${BASISU_SRC_DIR}/encoder/basisu_etc.cpp
                 ${BASISU_SRC_DIR}/encoder/basisu_frontend.cpp
-                ${BASISU_SRC_DIR}/encoder/basisu_global_selector_palette_helpers.cpp
                 ${BASISU_SRC_DIR}/encoder/basisu_gpu_texture.cpp
                 ${BASISU_SRC_DIR}/encoder/basisu_pvrtc1_4.cpp
                 ${BASISU_SRC_DIR}/encoder/basisu_resampler.cpp

@@ -40,7 +40,7 @@ PreflightResult RenderPreflight::validate(
     // 3. Registry-aware Validation
     for (const auto& comp : scene.compositions) {
         for (const auto& layer : comp.layers) {
-            const std::string layer_path = "composition(" + comp.id + ").layer(" + layer.id + ")";
+            const std::string layer_path = "composition(" + comp.id + ").layer(" + layer.identity.id + ")";
             
             // Check transitions
             if (transition_registry) {
@@ -62,7 +62,7 @@ PreflightResult RenderPreflight::validate(
             if (effect_registry) {
                 for (std::size_t i = 0; i < layer.effects.size(); ++i) {
                     const auto& effect = layer.effects[i];
-                    auto fx_res = renderer2d::validate_effect(effect, *effect_registry);
+                    auto fx_res = ::tachyon::renderer2d::validate_effect(effect, *effect_registry);
                     if (!fx_res.valid) {
                         for (const auto& issue : fx_res.issues) {
                             result.add_error(layer_path + ".effects[" + std::to_string(i) + "]: " + issue.message);

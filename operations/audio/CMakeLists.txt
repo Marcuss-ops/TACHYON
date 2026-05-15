@@ -23,16 +23,6 @@ target_include_directories(TachyonAudioOps
 )
 target_link_libraries(TachyonAudioOps PUBLIC TachyonCore TachyonPlatform TachyonPresets pugixml)
 
-if(TACHYON_ENABLE_MEDIA)
-    find_package(PkgConfig QUIET)
-    if(PKG_CONFIG_FOUND)
-        pkg_check_modules(FFMPEG QUIET libavcodec libavformat libavutil libswscale libswresample)
-        if(FFMPEG_FOUND)
-            target_link_libraries(TachyonAudioOps PUBLIC ${FFMPEG_LIBRARIES})
-            target_include_directories(TachyonAudioOps PUBLIC ${FFMPEG_INCLUDE_DIRS})
-        endif()
-    endif()
-    target_compile_definitions(TachyonAudioOps PUBLIC TACHYON_ENABLE_MEDIA)
-endif()
+tachyon_link_media_deps(TachyonAudioOps)
 
 set_target_properties(TachyonAudioOps PROPERTIES POSITION_INDEPENDENT_CODE ON)

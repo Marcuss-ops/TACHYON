@@ -1,6 +1,6 @@
 #include "tachyon/runtime/registry/engine_registry.h"
 #include "tachyon/backends/media_backend_bundle.h"
-#include "cli_internal.h"
+#include "cli/support/cli_internal.h"
 #include "command_registry.h"
 #include <iostream>
 

@@ -13,16 +13,6 @@ target_include_directories(TachyonDecodingOps
 )
 target_link_libraries(TachyonDecodingOps PUBLIC TachyonCore TachyonPlatform pugixml)
 
-if(TACHYON_ENABLE_MEDIA)
-    find_package(PkgConfig QUIET)
-    if(PKG_CONFIG_FOUND)
-        pkg_check_modules(FFMPEG QUIET libavcodec libavformat libavutil libswscale libswresample)
-        if(FFMPEG_FOUND)
-            target_link_libraries(TachyonDecodingOps PUBLIC ${FFMPEG_LIBRARIES})
-            target_include_directories(TachyonDecodingOps PUBLIC ${FFMPEG_INCLUDE_DIRS})
-        endif()
-    endif()
-    target_compile_definitions(TachyonDecodingOps PUBLIC TACHYON_ENABLE_MEDIA)
-endif()
+tachyon_link_media_deps(TachyonDecodingOps)
 
 set_target_properties(TachyonDecodingOps PROPERTIES POSITION_INDEPENDENT_CODE ON)

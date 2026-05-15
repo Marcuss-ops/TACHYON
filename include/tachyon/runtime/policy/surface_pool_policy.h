@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/api.h"
 #include <cstddef>
 #include <cstdint>
 
@@ -10,7 +11,7 @@ namespace tachyon::runtime {
  * 
  * Balances concurrency needs against memory pressure, especially for high-resolution frames.
  */
-struct SurfacePoolPolicy {
+struct TACHYON_API SurfacePoolPolicy {
     std::size_t min_surfaces{2};
     std::size_t max_surfaces{16};
     std::size_t extra_surfaces{2}; // buffer for precomps/output

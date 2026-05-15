@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tachyon/runtime/telemetry/render_telemetry_record.h"
+#include "tachyon/api.h"
 #include <vector>
 #include <map>
 
@@ -9,7 +10,7 @@ namespace tachyon {
 /**
  * @brief Summary of telemetry records for a batch of jobs.
  */
-struct BatchTelemetrySummary {
+struct TACHYON_API BatchTelemetrySummary {
     std::string batch_id;
     int total_jobs{0};
     int succeeded{0};
@@ -46,6 +47,6 @@ struct BatchTelemetrySummary {
     std::map<std::string, int> failures_by_preset_id;
 };
 
-BatchTelemetrySummary aggregate_telemetry(const std::vector<RenderTelemetryRecord>& records, double machine_hourly_cost_usd = 0.0);
+TACHYON_API BatchTelemetrySummary aggregate_telemetry(const std::vector<RenderTelemetryRecord>& records, double machine_hourly_cost_usd = 0.0);
 
 } // namespace tachyon

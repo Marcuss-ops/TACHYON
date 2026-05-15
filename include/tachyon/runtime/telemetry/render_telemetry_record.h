@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/api.h"
 #include <string>
 #include <vector>
 #include <chrono>
@@ -13,7 +14,7 @@ struct RenderSessionResult;
 /**
  * @brief Standardized error codes for render failures.
  */
-enum class RenderErrorCode {
+enum class TACHYON_API RenderErrorCode {
     None,
     SceneCompileFailed,
     PlanBuildFailed,
@@ -30,53 +31,14 @@ enum class RenderErrorCode {
     Unknown
 };
 
-inline std::string to_string(RenderErrorCode code) {
-    switch (code) {
-        case RenderErrorCode::None: return "None";
-        case RenderErrorCode::SceneCompileFailed: return "SceneCompileFailed";
-        case RenderErrorCode::PlanBuildFailed: return "PlanBuildFailed";
-        case RenderErrorCode::MissingAsset: return "MissingAsset";
-        case RenderErrorCode::MissingFont: return "MissingFont";
-        case RenderErrorCode::DecodeFailed: return "DecodeFailed";
-        case RenderErrorCode::RenderFailed: return "RenderFailed";
-        case RenderErrorCode::EncodeFailed: return "EncodeFailed";
-        case RenderErrorCode::OutputWriteFailed: return "OutputWriteFailed";
-        case RenderErrorCode::AudioMuxFailed: return "AudioMuxFailed";
-        case RenderErrorCode::Timeout: return "Timeout";
-        case RenderErrorCode::OutOfMemory: return "OutOfMemory";
-        case RenderErrorCode::Cancelled: return "Cancelled";
-        case RenderErrorCode::Unknown:
-        default: return "Unknown";
-    }
-}
+TACHYON_API std::string to_string(RenderErrorCode code);
 
-inline bool is_retryable(RenderErrorCode code) {
-    switch (code) {
-        case RenderErrorCode::EncodeFailed:
-        case RenderErrorCode::OutputWriteFailed:
-        case RenderErrorCode::AudioMuxFailed:
-        case RenderErrorCode::Timeout:
-        case RenderErrorCode::Unknown:
-            return true;
-        
-        case RenderErrorCode::SceneCompileFailed:
-        case RenderErrorCode::PlanBuildFailed:
-        case RenderErrorCode::MissingAsset:
-        case RenderErrorCode::MissingFont:
-        case RenderErrorCode::OutOfMemory:
-        case RenderErrorCode::Cancelled:
-        case RenderErrorCode::None:
-            return false;
-            
-        default:
-            return false;
-    }
-}
+TACHYON_API bool is_retryable(RenderErrorCode code);
 
 /**
  * @brief Contextual information for a render job that isn't known by the session itself.
  */
-struct RenderTelemetryContext {
+struct TACHYON_API RenderTelemetryContext {
     std::string run_id;
     std::string job_id;
     std::string scene_id;
@@ -92,7 +54,7 @@ struct RenderTelemetryContext {
 /**
  * @brief Industrial-grade telemetry record for a single render job.
  */
-struct RenderTelemetryRecord {
+struct TACHYON_API RenderTelemetryRecord {
     // Identity
     std::string run_id;
     std::string job_id;
@@ -155,7 +117,7 @@ struct RenderTelemetryRecord {
     std::string tachyon_version;
 };
 
-RenderTelemetryRecord make_render_telemetry_record(
+TACHYON_API RenderTelemetryRecord make_render_telemetry_record(
     const RenderJob& job,
     const RenderSessionResult& result,
     const RenderTelemetryContext& context);

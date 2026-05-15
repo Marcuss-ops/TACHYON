@@ -8,6 +8,49 @@
 
 namespace tachyon {
 
+std::string to_string(RenderErrorCode code) {
+    switch (code) {
+        case RenderErrorCode::None: return "None";
+        case RenderErrorCode::SceneCompileFailed: return "SceneCompileFailed";
+        case RenderErrorCode::PlanBuildFailed: return "PlanBuildFailed";
+        case RenderErrorCode::MissingAsset: return "MissingAsset";
+        case RenderErrorCode::MissingFont: return "MissingFont";
+        case RenderErrorCode::DecodeFailed: return "DecodeFailed";
+        case RenderErrorCode::RenderFailed: return "RenderFailed";
+        case RenderErrorCode::EncodeFailed: return "EncodeFailed";
+        case RenderErrorCode::OutputWriteFailed: return "OutputWriteFailed";
+        case RenderErrorCode::AudioMuxFailed: return "AudioMuxFailed";
+        case RenderErrorCode::Timeout: return "Timeout";
+        case RenderErrorCode::OutOfMemory: return "OutOfMemory";
+        case RenderErrorCode::Cancelled: return "Cancelled";
+        case RenderErrorCode::Unknown:
+        default: return "Unknown";
+    }
+}
+
+bool is_retryable(RenderErrorCode code) {
+    switch (code) {
+        case RenderErrorCode::EncodeFailed:
+        case RenderErrorCode::OutputWriteFailed:
+        case RenderErrorCode::AudioMuxFailed:
+        case RenderErrorCode::Timeout:
+        case RenderErrorCode::Unknown:
+            return true;
+        
+        case RenderErrorCode::SceneCompileFailed:
+        case RenderErrorCode::PlanBuildFailed:
+        case RenderErrorCode::MissingAsset:
+        case RenderErrorCode::MissingFont:
+        case RenderErrorCode::OutOfMemory:
+        case RenderErrorCode::Cancelled:
+        case RenderErrorCode::None:
+            return false;
+            
+        default:
+            return false;
+    }
+}
+
 static std::string get_iso_8601_time() {
     auto now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(now);

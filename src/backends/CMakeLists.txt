@@ -19,8 +19,5 @@ target_link_libraries(TachyonBackends
         TachyonPlatform
 )
 
-# FFmpeg integration if enabled
-if(TACHYON_ENABLE_FFMPEG)
-    # FindFFmpeg should be handled in root or here
-    # target_link_libraries(TachyonBackends PRIVATE FFmpeg::avcodec FFmpeg::avformat FFmpeg::avutil)
-endif()
+# Media/FFmpeg integration
+tachyon_link_media_deps(TachyonBackends)

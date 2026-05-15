@@ -3,7 +3,7 @@
 #include "tachyon/core/cli_options.h"
 #include "tachyon/runtime/runtime_facade.h"
 #include "tachyon/core/cli_scene_loader.h"
-#include "cli_internal.h"
+#include "cli/support/cli_internal.h"
 #include "command_registry.h"
 #include <iostream>
 

@@ -1,5 +1,5 @@
 #include "command_registry.h"
-#include "cli_internal.h"
+#include "cli/support/cli_internal.h"
 #include <algorithm>
 
 namespace tachyon {
