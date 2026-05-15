@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/core/media/probe.h"
+#include "tachyon/core/media/media_interfaces.h"
 
 namespace tachyon::backends::ffmpeg {
 

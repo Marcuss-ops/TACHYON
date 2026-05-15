@@ -6,7 +6,6 @@ add_subdirectory(media)
 add_subdirectory(decoding)
 add_subdirectory(compression)
 add_subdirectory(audio)
-add_subdirectory(transitions)
 
 # --- Compatibility Target ---
 # Legacy Interface target for backward compatibility with targets that still link to TachyonOperations
@@ -16,5 +15,4 @@ target_link_libraries(TachyonOperations INTERFACE
     TachyonDecodingOps
     TachyonAudioOps 
     TachyonCompressionOps
-    TachyonTransitionOps
 )

@@ -80,7 +80,6 @@ if(TACHYON_ENABLE_TEXT)
 endif()
 
 tachyon_link_text_deps(TachyonSceneEval)
-tachyon_link_media_deps(TachyonSceneEval)
 tachyon_link_omp(TachyonSceneEval)
 
 add_library(TachyonScene STATIC ${TachyonSceneSources})

@@ -6,7 +6,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace tachyon::ops {
+namespace tachyon::runtime::transitions {
 
 /**
  * @brief Parameters for a single transition render call.
@@ -40,6 +40,9 @@ public:
     render_builtin(const TransitionRenderRequest& request);
 };
 
+/**
+ * @brief Helper to apply a transition easily.
+ */
 core::MediaResult<renderer2d::SurfaceRGBA>
 apply_transition(
     const renderer2d::SurfaceRGBA& from,
@@ -48,4 +51,4 @@ apply_transition(
     float progress
 );
 
-} // namespace tachyon::ops
+} // namespace tachyon::runtime::transitions

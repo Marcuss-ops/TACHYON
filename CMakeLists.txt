@@ -7,6 +7,7 @@ project(TACHYON VERSION 0.1.0 LANGUAGES C CXX)
 
 include(FetchContent)
 include(CTest)
+find_package(Python3 REQUIRED)
 include(${CMAKE_SOURCE_DIR}/cmake/options/TachyonOptions.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/deps/DependencyVersions.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/platform/Windows.cmake)
@@ -148,3 +149,9 @@ message(STATUS "-------------------------------------------------------")
 
 # --- JIT Build Contract ---
 include(cmake/tachyon/TachyonJitConfig.cmake)
+
+# --- Architectural Guardrails ---
+add_test(
+    NAME architecture_forbidden_includes
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/check_architecture_includes.py
+)

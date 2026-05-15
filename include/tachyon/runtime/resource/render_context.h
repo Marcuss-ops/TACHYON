@@ -106,6 +106,7 @@ struct RenderContext {
         , std::shared_ptr<media::IMediaProvider> media_mgr = nullptr
 #endif
     );
+    ~RenderContext();
 };
 
 using RenderContext2D = RenderContext;

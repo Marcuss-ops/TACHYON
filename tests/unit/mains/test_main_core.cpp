@@ -1,28 +1,15 @@
 #include "test_utils.h"
 #include <vector>
 
-bool run_math_tests();
-bool run_property_tests();
-bool run_expression_tests();
-bool run_bezier_interpolator_tests();
-bool run_scene_builder_preset_tests();
-bool run_blend_kernel_tests();
-bool run_property_sampler_tests();
-bool run_transition_simd_kernels_tests();
-bool run_trace_tests();
+namespace tachyon::core::assets {
+bool run_asset_resolution_tests();
+}
 
 int main(int argc, char** argv) {
     using namespace tachyon::test;
     std::vector<TestCase> tests = {
-        {"trace", run_trace_tests},
-        {"math", run_math_tests},
-        {"property", run_property_tests},
-        {"expression", run_expression_tests},
-        {"bezier_interpolator", run_bezier_interpolator_tests},
-        {"builder_preset", run_scene_builder_preset_tests},
-        {"blend_kernel", run_blend_kernel_tests},
-        {"property_sampler", run_property_sampler_tests},
-        {"transition_simd", run_transition_simd_kernels_tests},
+        {"asset_resolution", tachyon::core::assets::run_asset_resolution_tests},
     };
+
     return run_test_suite(argc, argv, tests);
 }

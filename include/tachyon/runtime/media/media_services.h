@@ -1,10 +1,9 @@
 #pragma once
 
-#include "tachyon/core/media/probe.h"
+#include "tachyon/core/media/media_interfaces.h"
 #include "tachyon/core/media/clip_processor.h"
 #include "tachyon/core/media/overlay_merger.h"
 #include "tachyon/core/media/audio_extract.h"
-#include "tachyon/core/media/audio_analyzer.h"
 #include "tachyon/core/media/video_concat.h"
 
 namespace tachyon::runtime::media {
