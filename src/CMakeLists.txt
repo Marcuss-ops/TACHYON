@@ -11,7 +11,6 @@ include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonTimelineSources.cmake)
 # include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonAudioSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonOutputSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonTextSources.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonCLISources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonLibrarySources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonColorSources.cmake)
 
@@ -258,8 +257,6 @@ tachyon_assert_no_duplicate_sources(TachyonRenderer2DExtrasSources)
 # tachyon_assert_no_duplicate_sources(TachyonAudioSources)
 tachyon_assert_no_duplicate_sources(TachyonOutputSources)
 tachyon_assert_no_duplicate_sources(TachyonTextSources)
-tachyon_assert_no_duplicate_sources(TachyonCLICoreSources)
-tachyon_assert_no_duplicate_sources(TachyonCLIToolSources)
 tachyon_assert_no_duplicate_sources(TachyonLibrarySources)
 
 tachyon_check_source_registration(${CMAKE_CURRENT_SOURCE_DIR}/text TachyonTextSources)
@@ -307,25 +304,8 @@ add_library(TachyonLibrary STATIC ${TachyonLibrarySources})
 tachyon_configure_common(TachyonLibrary)
 target_link_libraries(TachyonLibrary PUBLIC TachyonPresets)
 
-# Core CLI is built as a reusable static library.
-# Optional/demo tools are built as standalone executables.
-
-add_library(TachyonCLICore STATIC ${TachyonCLICoreSources})
-tachyon_configure_common(TachyonCLICore)
-target_link_libraries(TachyonCLICore PUBLIC TachyonRuntimeEngine TachyonLibrary TachyonDiagnostics)
-
-add_library(TachyonCLITools STATIC ${TachyonCLIToolSources})
-tachyon_configure_common(TachyonCLITools)
-target_link_libraries(TachyonCLITools PUBLIC TachyonCLICore)
-
-add_library(TachyonTools INTERFACE)
-target_link_libraries(TachyonTools INTERFACE
-    TachyonRuntimeEngine
-    TachyonPresets
-    TachyonDiagnostics
-    TachyonCLICore
-    TachyonCLITools
-)
+# CLI Module
+add_subdirectory(cli)
 
 # Minimal render-focused executable
 add_executable(tachyon
