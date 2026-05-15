@@ -10,6 +10,12 @@ using core::MediaResult;
 using core::MediaError;
 using core::MediaErrorCode;
 
+MediaResult<std::vector<float>> WhisperAudioAnalyzer::analyze_waveform(const std::filesystem::path& path) {
+    (void)path;
+    // Placeholder implementation
+    return MediaResult<std::vector<float>>::success({0.1f, 0.2f, 0.1f});
+}
+
 MediaResult<std::string> WhisperAudioAnalyzer::transcribe(const std::filesystem::path& audio_path) {
     std::filesystem::path output_dir = audio_path.parent_path();
     

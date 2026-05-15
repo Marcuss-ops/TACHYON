@@ -1,26 +1,24 @@
 # Tachyon Backends Module
 
-set(TachyonBackendSources
-    ffmpeg/ffmpeg_probe.cpp
-    ffmpeg/ffmpeg_clip_processor.cpp
-    ffmpeg/ffmpeg_overlay_merger.cpp
-    ffmpeg/ffmpeg_transition_filters.cpp
-    ffmpeg/ffmpeg_audio.cpp
-    ffmpeg/ffmpeg_video_concat.cpp
-    whisper/whisper_audio_analyzer.cpp
-)
-
-add_library(TachyonBackends STATIC ${TachyonBackendSources})
-tachyon_configure_common(TachyonBackends)
-
-target_link_libraries(TachyonBackends
-    PUBLIC
-        TachyonCore
-        TachyonPlatform
-)
-
-# Media/FFmpeg integration
-tachyon_link_media_deps(TachyonBackends)
-
+add_subdirectory(ffmpeg)
+add_subdirectory(whisper)
 add_subdirectory(compression)
 add_subdirectory(decoding)
+add_subdirectory(simd)
+add_subdirectory(registry)
+
+# TachyonBackends is now an interface aggregator to decouple the engine
+# from concrete implementation details.
+add_library(TachyonBackends INTERFACE)
+
+target_link_libraries(TachyonBackends
+    INTERFACE
+        TachyonCore
+        TachyonPlatform
+        TachyonBackendSimd
+        TachyonBackendsCompression
+        TachyonBackendsDecoding
+        TachyonBackendFfmpeg
+        TachyonBackendWhisper
+        TachyonBackendRegistry
+)

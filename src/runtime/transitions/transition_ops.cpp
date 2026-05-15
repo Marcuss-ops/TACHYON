@@ -1,8 +1,8 @@
-#include "tachyon/ops/transition_ops.h"
+#include "tachyon/runtime/transitions/transition_ops.h"
 #include "tachyon/core/transition/transition_resolver.h"
 #include <algorithm>
 
-namespace tachyon::ops {
+namespace tachyon::runtime::transitions {
 
 core::MediaResult<renderer2d::SurfaceRGBA>
 TransitionOps::render(const TransitionRenderRequest& request, const TransitionRegistry& registry) {
@@ -70,4 +70,4 @@ apply_transition(
     return TransitionOps::render_builtin(req);
 }
 
-} // namespace tachyon::ops
+} // namespace tachyon::runtime::transitions

@@ -26,23 +26,17 @@ set(TachyonCoreSources
     presets/sfx/sfx_builders.cpp
     presets/sfx/sfx_registry.cpp
     presets/sfx/sfx_registry_table.cpp
-
+    profiles/execution_profile.cpp
 )
 
 if(TACHYON_ENABLE_SIMDJSON)
     list(APPEND TachyonCoreSources json/json_parser_simdjson.cpp)
 endif()
 
-if(TACHYON_ENABLE_HIGHWAY)
-    list(APPEND TachyonCoreSources
-        transition/transition_simd_kernels_highway.cpp
-        simd/conversion_highway.cpp
-    )
-endif()
-
 # We keep the target definition here as recommended.
 add_library(TachyonCore STATIC ${TachyonCoreSources})
 tachyon_configure_common(TachyonCore)
+target_compile_definitions(TachyonCore PUBLIC TACHYON_BUILD_CONFIG_NAME="$<CONFIG>")
 tachyon_link_omp(TachyonCore)
 tachyon_link_absl(TachyonCore)
 
@@ -58,15 +52,6 @@ if(TACHYON_ENABLE_SIMDJSON)
     elseif(TARGET simdjson)
         target_link_libraries(TachyonCore PUBLIC simdjson)
     endif()
-endif()
-
-if(TACHYON_ENABLE_HIGHWAY)
-    if(TARGET hwy)
-        target_link_libraries(TachyonCore PUBLIC hwy)
-    elseif(TARGET hwy::hwy)
-        target_link_libraries(TachyonCore PUBLIC hwy::hwy)
-    endif()
-    target_compile_definitions(TachyonCore PUBLIC TACHYON_ENABLE_HIGHWAY)
 endif()
 
 # Clipper2 integration

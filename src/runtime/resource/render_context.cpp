@@ -3,7 +3,7 @@
 
 #ifdef TACHYON_ENABLE_MEDIA
 #include "tachyon/core/media/media_provider.h"
-#include "tachyon/media/management/asset_resolver.h"
+#include "tachyon/runtime/media/resolution/asset_resolver.h"
 #endif
 
 #include "tachyon/renderer2d/effects/effect_host.h"

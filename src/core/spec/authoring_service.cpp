@@ -172,20 +172,37 @@ std::vector<std::string> AuthoringService::get_link_libs() {
 
 namespace {
 struct JitConfig {
+    std::string generator;
+    bool multi_config = false;
+    std::string active_config;
     std::string compiler;
     std::string cxx_standard;
-    std::string build_type;
     std::vector<std::string> include_dirs;
-    std::vector<std::string> library_dirs;
-    std::vector<std::string> libraries;
+    std::vector<std::string> link_libraries;
     std::vector<std::string> compile_definitions;
+    std::string vcvars64_bat;
     std::string platform;
     std::string module_suffix;
 };
 
 std::optional<JitConfig> load_jit_config() {
-    std::filesystem::path config_path = std::filesystem::path(TACHYON_LIB_PATH).parent_path() / "tachyon_jit_config.json";
-    if (!std::filesystem::exists(config_path)) {
+    const std::filesystem::path config_dir = std::filesystem::path(TACHYON_LIB_PATH).parent_path();
+    
+    std::vector<std::filesystem::path> search_paths;
+#ifdef TACHYON_BUILD_CONFIG_NAME
+    search_paths.push_back(config_dir / ("tachyon_jit_config_" + std::string(TACHYON_BUILD_CONFIG_NAME) + ".json"));
+#endif
+    search_paths.push_back(config_dir / "tachyon_jit_config.json");
+
+    std::filesystem::path config_path;
+    for (const auto& p : search_paths) {
+        if (std::filesystem::exists(p)) {
+            config_path = p;
+            break;
+        }
+    }
+
+    if (config_path.empty()) {
         return std::nullopt;
     }
 
@@ -197,13 +214,15 @@ std::optional<JitConfig> load_jit_config() {
 
     auto root = doc.root();
     JitConfig cfg;
+    cfg.generator = root.get_string("generator").value_or("");
+    cfg.multi_config = root.get_bool("multi_config").value_or(false);
+    cfg.active_config = root.get_string("active_config").value_or("");
     cfg.compiler = root.get_string("compiler").value_or("");
     cfg.cxx_standard = root.get_string("cxx_standard").value_or("20");
-    cfg.build_type = root.get_string("build_type").value_or("Release");
     cfg.include_dirs = root.get_string_array("include_dirs").value_or(std::vector<std::string>{});
-    cfg.library_dirs = root.get_string_array("library_dirs").value_or(std::vector<std::string>{});
-    cfg.libraries = root.get_string_array("libraries").value_or(std::vector<std::string>{});
+    cfg.link_libraries = root.get_string_array("link_libraries").value_or(std::vector<std::string>{});
     cfg.compile_definitions = root.get_string_array("compile_definitions").value_or(std::vector<std::string>{});
+    cfg.vcvars64_bat = root.get_string("vcvars64_bat").value_or("");
     cfg.platform = root.get_string("platform").value_or("");
     cfg.module_suffix = root.get_string("module_suffix").value_or("");
     
@@ -221,7 +240,9 @@ std::string AuthoringService::get_compiler_command(
     if (cfg_opt) {
         const auto& cfg = *cfg_opt;
 #ifdef _WIN32
-        if (const auto vcvars = find_vcvars64_bat(); vcvars.has_value()) {
+        if (!cfg.vcvars64_bat.empty() && std::filesystem::exists(cfg.vcvars64_bat)) {
+            ss << "call \"" << cfg.vcvars64_bat << "\" >nul && ";
+        } else if (const auto vcvars = find_vcvars64_bat(); vcvars.has_value()) {
             ss << "call \"" << vcvars->string() << "\" >nul && ";
         }
         ss << "cl.exe /nologo /O2 /MD /EHsc /LD /std:c++" << cfg.cxx_standard << " /openmp /DNDEBUG /DTACHYON_USE_DLL /DTACHYON_SHARED /wd4190 ";
@@ -235,8 +256,7 @@ std::string AuthoringService::get_compiler_command(
         // Handshake symbols
         ss << "/EXPORT:tachyon_jit_build_scene /EXPORT:tachyon_jit_get_manifest ";
         
-        for (const auto& ld : cfg.library_dirs) ss << "/LIBPATH:\"" << ld << "\" ";
-        for (const auto& l : cfg.libraries) ss << "\"" << l << ".lib\" ";
+        for (const auto& l : cfg.link_libraries) ss << "\"" << l << "\" ";
 #else
         ss << cfg.compiler << " -O3 -shared -fPIC -std=c++" << cfg.cxx_standard << " -DTACHYON_USE_DLL ";
         for (const auto& d : cfg.compile_definitions) ss << "-D" << d << " ";
@@ -244,10 +264,9 @@ std::string AuthoringService::get_compiler_command(
         ss << "\"" << cpp_path.string() << "\" ";
         ss << "-o \"" << dll_path.string() << "\" ";
         
-        for (const auto& ld : cfg.library_dirs) ss << "-L\"" << ld << "\" ";
         ss << "-Wl,--whole-archive ";
-        for (const auto& l : cfg.libraries) {
-            ss << "-l" << l << " ";
+        for (const auto& l : cfg.link_libraries) {
+            ss << "\"" << l << "\" ";
         }
         ss << "-Wl,--no-whole-archive ";
 #endif

@@ -79,6 +79,8 @@ set(TachyonRuntimeSources
     media/resolution/path_resolver.cpp
     media/resolution/asset_resolver.cpp
     
+    transitions/transition_ops.cpp
+    
     playback/audio_preview_buffer.cpp
     playback/playback_engine.cpp
     playback/playback_queue.cpp
