@@ -1,5 +1,5 @@
 #include "tachyon/presets/background/background_resolver.h"
-#include "tachyon/content/preset_catalog.h"
+#include "tachyon/catalog/presets/preset_catalog.h"
 #include "tachyon/presets/background/background_builders.h"
 #include "tachyon/background_registry.h"
 #include "tachyon/core/registry/parameter_bag.h"

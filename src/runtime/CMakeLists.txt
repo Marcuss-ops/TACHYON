@@ -5,7 +5,11 @@ set(TachyonRuntimeSources
     compiler/scene_compiler.cpp
     execution/render_session.cpp
     execution/frame_executor.cpp
-    registry/runtime_registry_bundle.cpp
+    registry/engine_registry.cpp
+    resource/render_context.cpp
+    resource/surface_pool.cpp
+    resource/surface_pool_fast.cpp
+    policy/surface_pool_policy.cpp
 )
 
 add_library(TachyonRuntime STATIC ${TachyonRuntimeSources})
@@ -18,11 +22,3 @@ target_link_libraries(TachyonRuntime
     PRIVATE
         TachyonPlatform
 )
-
-# Compatibility aliases
-tachyon_deprecate_target(TachyonRuntimeCore TachyonRuntime)
-tachyon_deprecate_target(TachyonRuntimeExecution TachyonRuntime)
-tachyon_deprecate_target(TachyonRuntimeCompiler TachyonRuntime)
-tachyon_deprecate_target(TachyonRuntimeTelemetry TachyonRuntime)
-tachyon_deprecate_target(TachyonRuntimePlayback TachyonRuntime)
-tachyon_deprecate_target(TachyonRuntimeEngine TachyonRuntime)

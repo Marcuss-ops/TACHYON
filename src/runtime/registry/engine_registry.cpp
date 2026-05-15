@@ -1,4 +1,4 @@
-#include "tachyon/runtime/registry/runtime_registry_bundle.h"
+#include "tachyon/runtime/registry/engine_registry.h"
 #include "tachyon/renderer2d/effects/core/transitions/basic_transitions.h"
 #include "tachyon/renderer2d/effects/core/transitions/artistic_transitions.h"
 #include "tachyon/renderer2d/effects/core/transitions/light_leak_transitions.h"
@@ -6,16 +6,16 @@
 
 namespace tachyon::runtime {
 
-RuntimeRegistryBundle::RuntimeRegistryBundle() 
+EngineRegistry::EngineRegistry() 
     : text_registry(std::make_unique<presets::TextRegistry>(text_manifest)) {}
 
-RuntimeRegistryBundle::~RuntimeRegistryBundle() = default;
+EngineRegistry::~EngineRegistry() = default;
 
-RuntimeRegistryBundle::RuntimeRegistryBundle(RuntimeRegistryBundle&&) noexcept = default;
-RuntimeRegistryBundle& RuntimeRegistryBundle::operator=(RuntimeRegistryBundle&&) noexcept = default;
+EngineRegistry::EngineRegistry(EngineRegistry&&) noexcept = default;
+EngineRegistry& EngineRegistry::operator=(EngineRegistry&&) noexcept = default;
 
-RuntimeRegistryBundle create_default_runtime_registry_bundle() {
-    RuntimeRegistryBundle bundle;
+EngineRegistry create_default_engine_registry() {
+    EngineRegistry bundle;
 
     // 1. Create and fully initialize transitions
     bundle.transitions = ::tachyon::create_default_transition_registry();

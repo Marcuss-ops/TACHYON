@@ -4,17 +4,17 @@
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonMacros.cmake)
 
 # --- Subdirectories (In dependency order) ---
+# --- Subdirectories (In dependency order)
 
 # Core and Base
 add_subdirectory(core)
 add_subdirectory(color)
 add_subdirectory(timeline)
 add_subdirectory(diagnostics)
-add_subdirectory(content)
+add_subdirectory(catalog)
 
 # Domain logic
 add_subdirectory(presets)
-add_subdirectory(library)
 add_subdirectory(core/scene)
 add_subdirectory(renderer2d)
 add_subdirectory(output)
@@ -40,46 +40,12 @@ endif()
 target_link_libraries(tachyon
     PRIVATE
         TachyonCLI
-        TachyonLibrary
+        TachyonCatalog
         TachyonPresets
         TachyonDiagnostics
         TachyonOperations
 )
 tachyon_link_mimalloc(tachyon)
-
-# Standalone library demo tool
-add_executable(tachyon-library-demo
-    ${CMAKE_SOURCE_DIR}/tools/library_demo/main.cpp
-)
-tachyon_configure_common(tachyon-library-demo)
-target_link_libraries(tachyon-library-demo
-    PRIVATE
-        TachyonCLI
-        TachyonLibrary
-        TachyonPresets
-        TachyonDiagnostics
-)
-tachyon_link_mimalloc(tachyon-library-demo)
-
-# Library Tools (optional)
-if(TACHYON_BUILD_LIBRARY_TOOLS)
-    add_executable(tachyon-library main.cpp)
-    tachyon_configure_common(tachyon-library)
-    
-    if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
-        target_precompile_headers(tachyon-library PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")
-    endif()
-
-    target_link_libraries(tachyon-library
-        PRIVATE
-            TachyonCLI
-            TachyonRuntime
-            TachyonLibrary
-            TachyonPresets
-            TachyonDiagnostics
-    )
-    tachyon_link_mimalloc(tachyon-library)
-endif()
 
 # Platform-specific post-build
 if(MSVC)

@@ -94,6 +94,6 @@ target_link_libraries(TachyonScene
         TachyonColor
         TachyonPlatform
         TachyonPresets
-        TachyonLibrary
+        TachyonCatalog
 )
 tachyon_link_omp(TachyonScene)

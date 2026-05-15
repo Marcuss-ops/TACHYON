@@ -6,7 +6,7 @@
 
 namespace tachyon {
 
-namespace runtime { struct RuntimeRegistryBundle; }
+namespace runtime { struct EngineRegistry; }
 
 /**
  * @brief Descriptor for a CLI command.
@@ -19,7 +19,7 @@ struct CommandDescriptor {
     std::function<bool(const CliOptions&, std::ostream&)> validate;
     
     // Executes the command.
-    std::function<bool(const CliOptions&, std::ostream&, std::ostream&, runtime::RuntimeRegistryBundle&)> handler;
+    std::function<bool(const CliOptions&, std::ostream&, std::ostream&, runtime::EngineRegistry&)> handler;
 };
 
 } // namespace tachyon

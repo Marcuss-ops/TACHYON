@@ -1,4 +1,4 @@
-#include "tachyon/runtime/registry/runtime_registry_bundle.h"
+#include "tachyon/runtime/registry/engine_registry.h"
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/cli_scene_loader.h"
@@ -23,7 +23,7 @@ std::string make_default_thumb_path(const std::string& cpp_path) {
 }
 } // namespace
 
-bool run_thumb_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::RuntimeRegistryBundle& bundle) {
+bool run_thumb_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::EngineRegistry& bundle) {
     if (options.cpp_path.empty() && !options.preset_id.has_value()) {
         err << "Either --cpp or --preset is required for thumb\n";
         return false;

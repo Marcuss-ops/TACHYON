@@ -21,7 +21,7 @@
 #include "tachyon/core/types/diagnostics.h"
 
 // Registration & Utilities
-#include "tachyon/runtime/registry/runtime_registry_bundle.h"
+#include "tachyon/runtime/registry/engine_registry.h"
 
 namespace tachyon {
 

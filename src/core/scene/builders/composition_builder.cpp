@@ -1,5 +1,5 @@
 #include "tachyon/scene/builder.h"
-#include "tachyon/content/preset_catalog.h"
+#include "tachyon/catalog/presets/preset_catalog.h"
 #include "tachyon/core/registry/parameter_bag.h"
 #include <iostream>
 #include <stdexcept>

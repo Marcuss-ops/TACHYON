@@ -1,4 +1,4 @@
-#include "tachyon/runtime/registry/runtime_registry_bundle.h"
+#include "tachyon/runtime/registry/engine_registry.h"
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
 #include "tachyon/runtime/runtime_facade.h"
@@ -9,7 +9,7 @@
 
 namespace tachyon {
 
-bool run_validate_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::RuntimeRegistryBundle& /*bundle*/) {
+bool run_validate_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::EngineRegistry& /*bundle*/) {
     SceneLoadOptions load_opts;
     load_opts.cpp_path = options.cpp_path;
     load_opts.preset_id = options.preset_id;

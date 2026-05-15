@@ -3,7 +3,7 @@
 #include "tachyon/presets/effects/effect_preset_registry.h"
 #include "tachyon/presets/background/background_resolver.h"
 #include "tachyon/presets/text/text_registry.h"
-#include "tachyon/content/preset_catalog.h"
+#include "tachyon/catalog/presets/preset_catalog.h"
 #include "tachyon/text/animation/text_animator_utils.h"
 
 namespace tachyon::presets {

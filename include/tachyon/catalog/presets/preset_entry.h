@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/content/content_kind.h"
+#include "tachyon/catalog/presets/content_kind.h"
 #include "tachyon/core/registry/parameter_bag.h"
 #include "tachyon/core/registry/parameter_schema.h"
 #include "tachyon/core/registry/registry_metadata.h"

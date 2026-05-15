@@ -1,4 +1,4 @@
-#include "tachyon/runtime/registry/runtime_registry_bundle.h"
+#include "tachyon/runtime/registry/engine_registry.h"
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
 #include "tachyon/runtime/diagnostics/report.h"
@@ -9,7 +9,7 @@
 #include "tachyon/text/fonts/management/font_manifest.h"
 #include "tachyon/text/fonts/utils/font_coverage_reporter.h"
 #include <iostream>
-#include "tachyon/runtime/registry/runtime_registry_bundle.h"
+#include "tachyon/runtime/registry/engine_registry.h"
 #include <iomanip>
 #include <string_view>
 
@@ -74,7 +74,7 @@ std::string severity_to_string(analysis::InspectionSeverity severity) {
 
 } // namespace
  
-bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::RuntimeRegistryBundle& bundle) {
+bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::EngineRegistry& bundle) {
     SceneLoadOptions load_opts;
     load_opts.cpp_path = options.cpp_path;
     load_opts.preset_id = options.preset_id;
@@ -107,7 +107,7 @@ bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostr
     return inspection.ok();
 }
 
-bool run_inspect_fonts_command(const CliOptions& /*options*/, std::ostream& /*out*/, std::ostream& err, runtime::RuntimeRegistryBundle& /*bundle*/) {
+bool run_inspect_fonts_command(const CliOptions& /*options*/, std::ostream& /*out*/, std::ostream& err, runtime::EngineRegistry& /*bundle*/) {
     err << "Font manifest inspection is no longer supported. Please use the C++ Font API.\n";
     return false;
 }

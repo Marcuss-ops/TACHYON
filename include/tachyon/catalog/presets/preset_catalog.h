@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/api.h"
-#include "tachyon/content/preset_entry.h"
+#include "tachyon/catalog/presets/preset_entry.h"
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 #include "tachyon/core/spec/schema/contracts/shared_contracts.h"

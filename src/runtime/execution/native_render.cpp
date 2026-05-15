@@ -5,7 +5,7 @@
 #include "tachyon/runtime/execution/jobs/render_job.h"
 #include "tachyon/runtime/profiling/render_profiler.h"
 #include "tachyon/runtime/policy/worker_policy.h"
-#include "tachyon/runtime/registry/runtime_registry_bundle.h"
+#include "tachyon/runtime/registry/engine_registry.h"
 #include <chrono>
 #include <string>
 #include <vector>

@@ -1,7 +1,7 @@
 #include "tachyon/presets/background/procedural.h"
 #include "tachyon/presets/background/background_builders.h"
-#include "tachyon/content/preset_catalog.h"
-#include "tachyon/content/preset_entry.h"
+#include "tachyon/catalog/presets/preset_catalog.h"
+#include "tachyon/catalog/presets/preset_entry.h"
 #include "tachyon/core/registry/parameter_bag.h"
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 

@@ -1,6 +1,6 @@
 #include "tachyon/text/animation/text_presets.h"
-#include "tachyon/content/preset_catalog.h"
-#include "tachyon/content/typed_params.h"
+#include "tachyon/catalog/presets/preset_catalog.h"
+#include "tachyon/catalog/presets/typed_params.h"
 #include "tachyon/core/registry/parameter_bag.h"
 #include "tachyon/presets/text/text_registry.h"
 #include "tachyon/text/core/TextLayerSpec.h"

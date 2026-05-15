@@ -1,4 +1,4 @@
-#include "tachyon/runtime/registry/runtime_registry_bundle.h"
+#include "tachyon/runtime/registry/engine_registry.h"
 #include "cli_internal.h"
 #include "command_registry.h"
 #include "tachyon/media/probe.h"
@@ -6,7 +6,7 @@
 
 namespace tachyon {
 
-bool run_probe_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::RuntimeRegistryBundle& /*bundle*/) {
+bool run_probe_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::EngineRegistry& /*bundle*/) {
     if (options.probe.input.empty()) {
         err << "Error: --input is required for probe command\n";
         return false;

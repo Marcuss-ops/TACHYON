@@ -18,8 +18,7 @@ target_link_libraries(TachyonCliTests
         TachyonPlatform
         TachyonTestUtils
         TachyonCore
-        TachyonCLICore
-        TachyonCLITools
+        TachyonCLI
         TachyonOperations
 )
 

@@ -3,7 +3,7 @@
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
 #include "tachyon/text/layout/layout.h"
 
-#include "tachyon/content/typed_params.h"
+#include "tachyon/catalog/presets/typed_params.h"
 #include <string>
 #include <vector>
 

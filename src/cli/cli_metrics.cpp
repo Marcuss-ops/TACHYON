@@ -1,4 +1,4 @@
-#include "tachyon/runtime/registry/runtime_registry_bundle.h"
+#include "tachyon/runtime/registry/engine_registry.h"
 #include "cli_internal.h"
 #include "command_registry.h"
 #include "tachyon/runtime/telemetry/render_telemetry_record.h"
@@ -9,7 +9,7 @@
 #include <vector>
 #include <iomanip>
 #include <algorithm>
-#include "tachyon/runtime/registry/runtime_registry_bundle.h"
+#include "tachyon/runtime/registry/engine_registry.h"
 
 namespace tachyon {
 
@@ -72,7 +72,7 @@ static RenderTelemetryRecord parse_json_line(const std::string& line) {
     return r;
 }
 
-bool run_metrics_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::RuntimeRegistryBundle& /*bundle*/) {
+bool run_metrics_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::EngineRegistry& /*bundle*/) {
     std::ifstream ifs(options.metrics.input);
     if (!ifs) {
         err << "Failed to open input file: " << options.metrics.input << "\n";

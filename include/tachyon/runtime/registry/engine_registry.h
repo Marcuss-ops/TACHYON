@@ -8,43 +8,44 @@
 
 namespace tachyon::runtime {
 
-struct RuntimeRegistryBundle {
+struct EngineRegistry {
     TransitionRegistry transitions;
     renderer2d::EffectRegistry effects;
     presets::TextManifest text_manifest;
     std::unique_ptr<presets::TextRegistry> text_registry;
 
-    RuntimeRegistryBundle();
-    ~RuntimeRegistryBundle();
+    EngineRegistry();
+    ~EngineRegistry();
 
     // Prevent copying because of unique_ptr and registry state
-    RuntimeRegistryBundle(const RuntimeRegistryBundle&) = delete;
-    RuntimeRegistryBundle& operator=(const RuntimeRegistryBundle&) = delete;
+    EngineRegistry(const EngineRegistry&) = delete;
+    EngineRegistry& operator=(const EngineRegistry&) = delete;
 
     // Allow moving
-    RuntimeRegistryBundle(RuntimeRegistryBundle&&) noexcept;
-    RuntimeRegistryBundle& operator=(RuntimeRegistryBundle&&) noexcept;
+    EngineRegistry(EngineRegistry&&) noexcept;
+    EngineRegistry& operator=(EngineRegistry&&) noexcept;
 };
 
 /**
  * Creates a bundle with all built-in transitions, effects, and text presets registered and resolved.
  */
-RuntimeRegistryBundle create_default_runtime_registry_bundle();
+EngineRegistry create_default_engine_registry();
 
 /**
- * @brief Canonical Engine Registry containing all built-in services.
+ * @brief Legacy alias for the engine registry.
  */
-using EngineRegistry = RuntimeRegistryBundle;
+using EngineRegistry = EngineRegistry;
 
 /**
- * @brief Canonical factory for the engine registry.
+ * @brief Legacy factory alias.
  */
-inline EngineRegistry create_default_engine_registry() {
-    return create_default_runtime_registry_bundle();
+inline EngineRegistry create_default_runtime_registry_bundle() {
+    return create_default_engine_registry();
 }
 
 } // namespace tachyon::runtime
 
 namespace tachyon {
+    using EngineRegistry = runtime::EngineRegistry;
     using EngineRegistry = runtime::EngineRegistry;
 }

@@ -134,7 +134,12 @@
       "configuration": "RelWithDebInfo",
       "targets": [
         "TachyonCore",
-        "TachyonTests",
+        "TachyonRenderTests",
+        "TachyonCliTests",
+        "TachyonSceneTests",
+        "TachyonRuntimeTests",
+        "TachyonOperationsTests",
+        "TachyonGoldenTests",
         "tachyon"
       ]
     },
@@ -144,7 +149,12 @@
       "configuration": "RelWithDebInfo",
       "targets": [
         "TachyonCore",
-        "TachyonTests"
+        "TachyonRenderTests",
+        "TachyonCliTests",
+        "TachyonSceneTests",
+        "TachyonRuntimeTests",
+        "TachyonOperationsTests",
+        "TachyonGoldenTests"
       ]
     },
     {
@@ -161,7 +171,12 @@
       "configuration": "RelWithDebInfo",
       "targets": [
         "TachyonCore",
-        "TachyonTests"
+        "TachyonRenderTests",
+        "TachyonCliTests",
+        "TachyonSceneTests",
+        "TachyonRuntimeTests",
+        "TachyonOperationsTests",
+        "TachyonGoldenTests"
       ]
     },
     {
@@ -169,7 +184,12 @@
       "configurePreset": "linux-ci",
       "targets": [
         "TachyonCore",
-        "TachyonTests",
+        "TachyonRenderTests",
+        "TachyonCliTests",
+        "TachyonSceneTests",
+        "TachyonRuntimeTests",
+        "TachyonOperationsTests",
+        "TachyonGoldenTests",
         "tachyon"
       ]
     },
@@ -178,7 +198,12 @@
       "configurePreset": "dev-linux",
       "targets": [
         "TachyonCore",
-        "TachyonTests",
+        "TachyonRenderTests",
+        "TachyonCliTests",
+        "TachyonSceneTests",
+        "TachyonRuntimeTests",
+        "TachyonOperationsTests",
+        "TachyonGoldenTests",
         "tachyon"
       ]
     },
@@ -187,7 +212,12 @@
       "configurePreset": "dev-linux-fast",
       "targets": [
         "TachyonCore",
-        "TachyonTests"
+        "TachyonRenderTests",
+        "TachyonCliTests",
+        "TachyonSceneTests",
+        "TachyonRuntimeTests",
+        "TachyonOperationsTests",
+        "TachyonGoldenTests"
       ]
     },
     {
@@ -195,7 +225,12 @@
       "configurePreset": "windows-ci",
       "targets": [
         "TachyonCore",
-        "TachyonTests",
+        "TachyonRenderTests",
+        "TachyonCliTests",
+        "TachyonSceneTests",
+        "TachyonRuntimeTests",
+        "TachyonOperationsTests",
+        "TachyonGoldenTests",
         "tachyon"
       ]
     },

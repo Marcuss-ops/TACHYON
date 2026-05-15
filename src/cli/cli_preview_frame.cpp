@@ -1,4 +1,4 @@
-#include "tachyon/runtime/registry/runtime_registry_bundle.h"
+#include "tachyon/runtime/registry/engine_registry.h"
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/cli_scene_loader.h"
@@ -9,7 +9,7 @@
 
 namespace tachyon {
 
-bool run_preview_frame_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::RuntimeRegistryBundle& bundle) {
+bool run_preview_frame_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::EngineRegistry& bundle) {
     return run_preview_internal(options, out, err, "PreviewFrame", bundle);
 }
 

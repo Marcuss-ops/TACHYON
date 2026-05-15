@@ -10,7 +10,7 @@
 #include "tachyon/runtime/execution/framebuffer_playback_queue.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
 #include "tachyon/renderer2d/resource/precomp_cache.h"
-#include "tachyon/runtime/registry/runtime_registry_bundle.h"
+#include "tachyon/runtime/registry/engine_registry.h"
 #include "tachyon/transition_registry.h"
 #include "tachyon/presets/text/text_registry.h"
 #include "tachyon/runtime/execution/compiled_frame_program.h"
@@ -25,7 +25,7 @@
 
 namespace tachyon {
 
-namespace runtime { struct RuntimeRegistryBundle; }
+namespace runtime { struct EngineRegistry; }
 namespace presets { class TextRegistry; }
 namespace profiling { class RenderProfiler; }
 namespace audio { class IAudioExporter; }
@@ -105,7 +105,7 @@ public:
     void set_profiler(profiling::RenderProfiler* profiler) { m_profiler = profiler; }
     void set_transition_registry(const TransitionRegistry* registry) { m_transition_registry_ptr = registry; }
     void set_text_registry(const presets::TextRegistry* registry) { m_text_registry_ptr = registry; }
-    void set_registry_bundle(const runtime::RuntimeRegistryBundle* bundle);
+    void set_registry_bundle(const runtime::EngineRegistry* bundle);
 
     FrameCache& cache() { return m_cache; }
     const FrameCache& cache() const { return m_cache; }
@@ -134,11 +134,11 @@ private:
     std::unique_ptr<runtime::PresentationClock> m_clock;
     std::unique_ptr<runtime::FramebufferPlaybackQueue> m_playback_queue;
 
-    std::unique_ptr<runtime::RuntimeRegistryBundle> m_bundle;
+    std::unique_ptr<runtime::EngineRegistry> m_bundle;
 
     std::optional<std::size_t> m_memory_budget_bytes;
     profiling::RenderProfiler* m_profiler{nullptr};
-    const runtime::RuntimeRegistryBundle* m_bundle_ptr{nullptr};
+    const runtime::EngineRegistry* m_bundle_ptr{nullptr};
     const TransitionRegistry* m_transition_registry_ptr{nullptr};
     const presets::TextRegistry* m_text_registry_ptr{nullptr};
     audio::IAudioExporter* m_audio_exporter{nullptr};

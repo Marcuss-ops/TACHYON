@@ -6,6 +6,7 @@ set(TachyonCLISources
     cli_app.cpp
     options.cpp
     command_registry.cpp
+    command_manifest.cpp
     cli_utils.cpp
     cli_scene_loader.cpp
     cli_render.cpp
@@ -39,10 +40,5 @@ tachyon_assert_no_duplicate_sources(TachyonCLISources)
 tachyon_add_module(
     NAME CLI
     SOURCES ${TachyonCLISources}
-    PUBLIC_DEPS TachyonRuntime TachyonLibrary TachyonDiagnostics TachyonOperations
+    PUBLIC_DEPS TachyonRuntime TachyonCatalog TachyonDiagnostics TachyonOperations
 )
-
-# Compatibility aliases
-tachyon_deprecate_target(TachyonCLICore TachyonCLI)
-tachyon_deprecate_target(TachyonCLITools TachyonCLI)
-tachyon_deprecate_target(TachyonTools TachyonCLI)

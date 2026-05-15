@@ -32,7 +32,7 @@ set(TachyonPresetsSources
 tachyon_add_module(
     NAME Presets
     SOURCES ${TachyonPresetsSources}
-    PUBLIC_DEPS TachyonCore TachyonContent
+    PUBLIC_DEPS TachyonCore TachyonCatalog
 )
 
 if(TACHYON_ENABLE_TEXT)

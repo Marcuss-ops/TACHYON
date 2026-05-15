@@ -10,7 +10,7 @@ CommandDescriptor make_version_command() {
         "version",
         "version               - Print version information",
         nullptr, // No extra validation needed
-        [](const CliOptions&, std::ostream& out, std::ostream&, runtime::RuntimeRegistryBundle&) {
+        [](const CliOptions&, std::ostream& out, std::ostream&, runtime::EngineRegistry&) {
             out << "TACHYON " << version_string() << "\n";
             return true;
         }

@@ -1,6 +1,6 @@
 #include "tachyon/presets/preset_scene_resolver.h"
 #include "tachyon/presets/scene/scene_preset_registry.h"
-#include "tachyon/content/preset_catalog.h"
+#include "tachyon/catalog/presets/preset_catalog.h"
 #include "tachyon/scene/builder.h"
 #include "tachyon/presets/effects/effect_preset_registry.h"
 

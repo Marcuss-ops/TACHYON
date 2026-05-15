@@ -1,4 +1,4 @@
-#include "tachyon/runtime/registry/runtime_registry_bundle.h"
+#include "tachyon/runtime/registry/engine_registry.h"
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/cli_scene_loader.h"
@@ -9,7 +9,7 @@
 #include "tachyon/diagnostics/trace.h"
 #include "cli_internal.h"
 #include "command_registry.h"
-#include "tachyon/runtime/registry/runtime_registry_bundle.h"
+#include "tachyon/runtime/registry/engine_registry.h"
 #include <iomanip>
 #include <iostream>
 #include <thread>
@@ -234,7 +234,7 @@ void print_execution_plan(
 
 }
 
-bool run_render_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::RuntimeRegistryBundle& bundle) {
+bool run_render_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::EngineRegistry& bundle) {
     SceneLoadOptions load_opts;
     load_opts.cpp_path = options.cpp_path;
     load_opts.preset_id = options.preset_id;
@@ -335,7 +335,7 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
     return all_success;
 }
 
-bool run_preview_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::RuntimeRegistryBundle& bundle) {
+bool run_preview_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::EngineRegistry& bundle) {
     return run_preview_internal(options, out, err, "NativePreview", bundle);
 }
 

@@ -1,4 +1,4 @@
-#include "tachyon/runtime/registry/runtime_registry_bundle.h"
+#include "tachyon/runtime/registry/engine_registry.h"
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/library/library.h"
@@ -9,13 +9,13 @@
 #include "cli_internal.h"
 #include "command_registry.h"
 #include <iostream>
-#include "tachyon/runtime/registry/runtime_registry_bundle.h"
+#include "tachyon/runtime/registry/engine_registry.h"
 #include <iomanip>
 #include <algorithm>
 
 namespace tachyon {
 
-bool run_doctor_command(const CliOptions&, std::ostream& out, std::ostream& err, runtime::RuntimeRegistryBundle& bundle) {
+bool run_doctor_command(const CliOptions&, std::ostream& out, std::ostream& err, runtime::EngineRegistry& bundle) {
     out << "TACHYON Doctor - System Diagnostic\n";
     out << "==================================\n\n";
 

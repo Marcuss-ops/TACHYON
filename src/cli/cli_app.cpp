@@ -2,7 +2,7 @@
 #include "tachyon/core/core.h"
 #include "cli/cli_internal.h"
 #include "cli/command_registry.h"
-#include "tachyon/runtime/registry/runtime_registry_bundle.h"
+#include "tachyon/runtime/registry/engine_registry.h"
 #include <iostream>
 
 namespace tachyon {
@@ -46,8 +46,8 @@ int CliApp::run(int argc, char** argv) {
     }
 
     // 3. Initialize unified engine registry
-    if (!m_registry) {
-        m_registry = std::make_unique<EngineRegistry>(runtime::create_default_engine_registry());
+    if (!m_registry.has_value()) {
+        m_registry = runtime::create_default_engine_registry();
     }
 
     // 4. Dispatch through registry

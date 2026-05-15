@@ -1,5 +1,5 @@
 #include "tachyon/runtime/execution/session/render_session.h"
-#include "tachyon/runtime/registry/runtime_registry_bundle.h"
+#include "tachyon/runtime/registry/engine_registry.h"
 #include "tachyon/runtime/execution/frames/frame_executor.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/cache/frame_cache.h"
@@ -239,10 +239,10 @@ void finalize_session_metrics(
 
 
 RenderSession::RenderSession() {
-    m_bundle = std::make_unique<runtime::RuntimeRegistryBundle>(runtime::create_default_runtime_registry_bundle());
+    m_bundle = std::make_unique<runtime::EngineRegistry>(runtime::create_default_runtime_registry_bundle());
 }
 
-void RenderSession::set_registry_bundle(const runtime::RuntimeRegistryBundle* bundle) {
+void RenderSession::set_registry_bundle(const runtime::EngineRegistry* bundle) {
     m_bundle_ptr = bundle;
 }
 

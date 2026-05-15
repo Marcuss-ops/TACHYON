@@ -141,6 +141,7 @@ add_library(TachyonRenderer2D STATIC ${TachyonRenderer2DSources})
 tachyon_configure_common(TachyonRenderer2D)
 
 if(MSVC)
+    target_compile_options(TachyonRenderer2D PRIVATE /bigobj)
     set_source_files_properties(effects/core/transitions/light_leaks/light_leak_engine.cpp PROPERTIES COMPILE_FLAGS "/arch:AVX2")
     set_source_files_properties(surface/surface_composite_avx2.cpp PROPERTIES COMPILE_FLAGS "/arch:AVX2")
 else()
