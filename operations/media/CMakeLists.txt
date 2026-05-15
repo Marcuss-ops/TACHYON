@@ -10,6 +10,6 @@ target_include_directories(TachyonMediaOps
         ${CMAKE_SOURCE_DIR}/include
         ${CMAKE_BINARY_DIR}/include
 )
-target_link_libraries(TachyonMediaOps PUBLIC TachyonCore TachyonPlatform)
+target_link_libraries(TachyonMediaOps PUBLIC TachyonCore TachyonPlatform TachyonRuntime)
 
 set_target_properties(TachyonMediaOps PROPERTIES POSITION_INDEPENDENT_CODE ON)

@@ -10,6 +10,8 @@ set(TachyonRuntimeSources
     resource/surface_pool.cpp
     resource/surface_pool_fast.cpp
     policy/surface_pool_policy.cpp
+    media/media_pipeline.cpp
+    media/probe_cache.cpp
 )
 
 add_library(TachyonRuntime STATIC ${TachyonRuntimeSources})
@@ -18,7 +20,8 @@ target_link_libraries(TachyonRuntime
     PUBLIC
         TachyonScene
         TachyonRenderer2D
-        TachyonOperations
+        TachyonBackends
+        TachyonAssetOps
     PRIVATE
         TachyonPlatform
 )

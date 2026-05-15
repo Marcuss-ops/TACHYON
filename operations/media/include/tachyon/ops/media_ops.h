@@ -6,18 +6,18 @@
 namespace tachyon::ops {
 
 /**
- * @brief High-level media pipeline operations for external consumers.
- * Wraps the core PipelineOrchestrator nervous system.
+ * @brief High-level media operations for external consumers.
+ * Delegating all logic to the Tachyon Core Media system.
  */
 class MediaOps {
 public:
     /**
-     * @brief Run a full media pipeline job.
+     * @brief Executes the full pipeline for a given RenderGraph.
      */
     static core::RenderResult run_pipeline(const core::RenderGraph& graph);
 
     /**
-     * @brief Run a full media pipeline job asynchronously.
+     * @brief Executes the full pipeline asynchronously.
      */
     static std::future<core::RenderResult> run_pipeline_async(const core::RenderGraph& graph);
 };

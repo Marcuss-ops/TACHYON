@@ -1,0 +1,25 @@
+# Tachyon Backends Module
+
+set(TachyonBackendSources
+    ffmpeg/ffmpeg_probe.cpp
+    ffmpeg/ffmpeg_clip_processor.cpp
+    ffmpeg/ffmpeg_overlay_merger.cpp
+    ffmpeg/ffmpeg_transition_filters.cpp
+    ffmpeg/ffmpeg_video_concat.cpp
+    whisper/whisper_audio_analyzer.cpp
+)
+
+add_library(TachyonBackends STATIC ${TachyonBackendSources})
+tachyon_configure_common(TachyonBackends)
+
+target_link_libraries(TachyonBackends
+    PUBLIC
+        TachyonCore
+        TachyonPlatform
+)
+
+# FFmpeg integration if enabled
+if(TACHYON_ENABLE_FFMPEG)
+    # FindFFmpeg should be handled in root or here
+    # target_link_libraries(TachyonBackends PRIVATE FFmpeg::avcodec FFmpeg::avformat FFmpeg::avutil)
+endif()

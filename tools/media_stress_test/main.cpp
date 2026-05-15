@@ -1,18 +1,36 @@
-#include "tachyon/media/pipeline_orchestrator.h"
+#include "tachyon/ops/media_ops.h"
 #include "tachyon/core/render_graph/render_graph.h"
 #include <iostream>
 #include <memory>
 #include <vector>
 #include <future>
 #include <chrono>
+#include <filesystem>
 
 using namespace tachyon::core;
 using namespace tachyon::ops;
 
-int main() {
+int main(int argc, char* argv[]) {
+    if (argc < 3) {
+        std::cerr << "Usage: tachyon-media-test <input-video> <output-dir>\n";
+        return 1;
+    }
+
+    std::filesystem::path video_path = argv[1];
+    std::filesystem::path output_dir = argv[2];
+
+    if (!std::filesystem::exists(video_path)) {
+        std::cerr << "Error: Input video does not exist: " << video_path << "\n";
+        return 1;
+    }
+
+    if (!std::filesystem::exists(output_dir)) {
+        std::filesystem::create_directories(output_dir);
+    }
+
     std::cout << "=== Tachyon Media Test Tool (via Operations) ===" << std::endl;
-    
-    std::string video_path = "C:\\Users\\pater\\Downloads\\New Youtube Video .mp4";
+    std::cout << "Input: " << video_path << std::endl;
+    std::cout << "Output Dir: " << output_dir << std::endl;
     
     // 3. Run Pipeline in Parallel (10 Instances)
     const int NUM_JOBS = 10;
@@ -23,12 +41,12 @@ int main() {
 
     for (int i = 0; i < NUM_JOBS; ++i) {
         auto plan_p = std::make_shared<MediaTimelinePlan>("job_" + std::to_string(i));
-        plan_p->output.path = "C:\\Users\\pater\\Downloads\\output_parallel_" + std::to_string(i) + ".mp4";
+        plan_p->output.path = (output_dir / ("output_parallel_" + std::to_string(i) + ".mp4")).string();
         plan_p->output.sample_rate = 48000;
         
         VideoTrack vtrack("primary");
         vtrack.is_primary = true;
-        vtrack.add_segment(VideoSegment(video_path, 0, 0, 0));
+        vtrack.add_segment(VideoSegment(video_path.string(), 0, 0, 0));
         plan_p->add_track(std::move(vtrack));
         
         RenderGraph g("graph_" + std::to_string(i), plan_p);

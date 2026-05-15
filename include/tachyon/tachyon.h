@@ -17,7 +17,7 @@
 #include "tachyon/runtime/runtime_facade.h"
 
 // Common Types & Results
-#include "tachyon/core/types/media_error.h"
+#include "tachyon/core/media/media_error.h"
 #include "tachyon/core/types/diagnostics.h"
 
 // Registration & Utilities

@@ -115,6 +115,8 @@ if(TACHYON_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
 
+add_subdirectory(tools)
+
 # Build configuration summary
 message(STATUS "-------------------------------------------------------")
 message(STATUS " Tachyon Engine Configuration Summary")

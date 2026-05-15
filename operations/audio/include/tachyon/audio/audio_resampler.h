@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/core/types/media_error.h"
+#include "tachyon/core/media/media_error.h"
 #include <string>
 #include <vector>
 #include <filesystem>

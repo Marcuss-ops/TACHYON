@@ -1,7 +1,7 @@
 #include "tachyon/runtime/registry/engine_registry.h"
 #include "cli_internal.h"
 #include "command_registry.h"
-#include "tachyon/media/video_concat.h"
+#include "tachyon/core/media/video_concat.h"
 #include <iostream>
 
 namespace tachyon {
@@ -16,13 +16,13 @@ bool run_concat_command(const CliOptions& options, std::ostream& out, std::ostre
         return false;
     }
 
-    media::ConcatConfig config;
+    core::media::ConcatConfig config;
     config.inputs = options.concat.inputs;
     config.output = options.concat.output;
     
     out << "Concatenating " << config.inputs.size() << " files into " << config.output.string() << "...\n";
 
-    auto result = media::VideoConcat::concat_videos(config);
+    auto result = core::media::VideoConcat::concat_videos(config);
     if (!result.ok()) {
         err << "Error concatenating files: " << result.error->to_diagnostic_string() << "\n";
         return false;

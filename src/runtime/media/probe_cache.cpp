@@ -1,7 +1,7 @@
-#include "tachyon/core/media/probe_cache.h"
+#include "tachyon/runtime/media/probe_cache.h"
 #include <fstream>
 
-namespace tachyon::core::media {
+namespace tachyon::runtime::media {
 
 ProbeCache::ProbeCache(const std::filesystem::path& cache_dir) 
     : cache_dir_(cache_dir) {
@@ -10,7 +10,7 @@ ProbeCache::ProbeCache(const std::filesystem::path& cache_dir)
     }
 }
 
-std::optional<FullMetadata> ProbeCache::get(const std::filesystem::path& path) {
+std::optional<core::media::FullMetadata> ProbeCache::get(const std::filesystem::path& path) {
     auto cache_path = get_cache_path(path);
     if (!std::filesystem::exists(cache_path)) return std::nullopt;
     
@@ -18,7 +18,7 @@ std::optional<FullMetadata> ProbeCache::get(const std::filesystem::path& path) {
     return std::nullopt;
 }
 
-void ProbeCache::put(const std::filesystem::path& path, const FullMetadata& meta) {
+void ProbeCache::put(const std::filesystem::path& path, const core::media::FullMetadata& meta) {
     // Implementation for caching metadata
 }
 
@@ -27,4 +27,4 @@ std::filesystem::path ProbeCache::get_cache_path(const std::filesystem::path& pa
     return cache_dir_ / (hash + ".json");
 }
 
-} // namespace tachyon::core::media
+} // namespace tachyon::runtime::media

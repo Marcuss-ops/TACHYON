@@ -1,11 +1,11 @@
-#include "tachyon/media/audio_ops.h"
-#include "tachyon/core/audio/audio_analyzer.h"
+#include "tachyon/ops/audio_ops.h"
+#include "tachyon/core/media/audio_analyzer.h"
 
 namespace tachyon::ops {
 
 core::MediaResult<std::string> AudioOps::transcribe(const std::filesystem::path& path) {
-    // Delega al cuore di Tachyon
-    return core::audio::AudioAnalyzer::transcribe(path);
+    // Operations delegate to the Core Media analyzer
+    return core::media::AudioAnalyzer::transcribe(path);
 }
 
 } // namespace tachyon::ops

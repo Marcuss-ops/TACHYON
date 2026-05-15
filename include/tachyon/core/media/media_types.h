@@ -4,6 +4,31 @@
 #include <optional>
 #include <cstdint>
 
+namespace tachyon::media {
+
+enum class AssetType {
+    IMAGE,
+    VIDEO,
+    AUDIO,
+    FONT,
+    PROJECT,
+    SUBTITLE,
+    DATA_SOURCE,
+    UNKNOWN
+};
+
+enum class AssetKind {
+    Image,
+    Video,
+    Audio,
+    Font,
+    Subtitle,
+    DataSource,
+    Unknown
+};
+
+} // namespace tachyon::media
+
 namespace tachyon::core::media {
 
 struct VideoMetadata {

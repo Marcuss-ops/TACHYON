@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/core/media/media_types.h"
-#include "tachyon/core/types/media_error.h"
+#include "tachyon/core/media/media_error.h"
 #include <filesystem>
 #include <string>
 

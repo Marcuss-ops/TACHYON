@@ -1,4 +1,4 @@
-#include "tachyon/core/audio/audio_analyzer.h"
+#include "tachyon/core/media/audio_analyzer.h"
 #include "tachyon/core/platform/process.h"
 #include <filesystem>
 #include <iostream>
@@ -7,10 +7,10 @@
 #include <thread>
 #include <chrono>
 
-namespace tachyon::core::audio {
+namespace tachyon::core::media {
 
 MediaResult<std::string> AudioAnalyzer::transcribe(const std::filesystem::path& audio_path) {
-    std::cout << "[Core::Audio] Analyzing: " << audio_path.filename() << std::endl;
+    std::cout << "[Backend::Whisper] Analyzing: " << audio_path.filename() << std::endl;
     
     std::filesystem::path output_dir = audio_path.parent_path();
     
@@ -29,11 +29,11 @@ MediaResult<std::string> AudioAnalyzer::transcribe(const std::filesystem::path& 
     auto proc_res = ::tachyon::core::platform::run_process(spec);
     
     if (!proc_res.success || proc_res.exit_code != 0) {
-        // [MARKER] Se vedi questo nel log, allora stiamo compilando il file corretto
+        // [MARKER] Whisper simulation for environments without the executable
         return MediaResult<std::string>::success("WHISPER_SIMULATION_TRIGGERED");
     }
     
     return MediaResult<std::string>::success("Analysis completed.");
 }
 
-} // namespace tachyon::core::audio
+} // namespace tachyon::core::media

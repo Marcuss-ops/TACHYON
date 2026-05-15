@@ -1,9 +1,9 @@
-#include "tachyon/core/media/pipeline_orchestrator.h"
+#include "tachyon/runtime/media/media_pipeline.h"
 #include "tachyon/core/media/probe.h"
 #include "tachyon/core/media/clip_processor.h"
 #include "tachyon/core/media/overlay_merger.h"
 #include "tachyon/core/media/video_concat.h"
-#include "tachyon/core/audio/audio_analyzer.h"
+#include "tachyon/core/media/audio_analyzer.h"
 #include "tachyon/core/audio_graph/audio_graph.h"
 #include "tachyon/core/platform/process.h"
 #include <chrono>
@@ -11,47 +11,45 @@
 #include <iostream>
 #include <future>
 
-namespace tachyon::core {
+namespace tachyon::runtime::media {
 
-using namespace tachyon::core::media;
-
-RenderResult PipelineOrchestrator::run(const RenderGraph& graph) {
-    RenderResult result;
+core::RenderResult MediaPipeline::run(const core::RenderGraph& graph) {
+    core::RenderResult result;
     result.success = true;
     
     auto start_time = std::chrono::steady_clock::now();
     
     // Stage 1: Validate
     auto res_validate = stage_validate(graph, result);
-    if (!res_validate.ok()) return RenderResult::failure(*res_validate.error);
+    if (!res_validate.ok()) return core::RenderResult::failure(*res_validate.error);
     
     // Stage 2: Probe
     auto res_probe = stage_probe(graph, result);
-    if (!res_probe.ok()) return RenderResult::failure(*res_probe.error);
+    if (!res_probe.ok()) return core::RenderResult::failure(*res_probe.error);
     
     // Stage 3: Audio (Prioritize audio extraction for faster results)
     auto res_audio = stage_audio(graph, result);
-    if (!res_audio.ok()) return RenderResult::failure(*res_audio.error);
+    if (!res_audio.ok()) return core::RenderResult::failure(*res_audio.error);
 
     // Stage 3.5: Transcription (Whisper Analysis)
     auto res_transcribe = stage_transcribe(graph, result);
-    if (!res_transcribe.ok()) return RenderResult::failure(*res_transcribe.error);
+    if (!res_transcribe.ok()) return core::RenderResult::failure(*res_transcribe.error);
 
     // Stage 4: Decode / Prepare Clips (Video processing)
     auto res_decode = stage_decode(graph, result);
-    if (!res_decode.ok()) return RenderResult::failure(*res_decode.error);
+    if (!res_decode.ok()) return core::RenderResult::failure(*res_decode.error);
     
     // Stage 5: Effects (Internal Tachyon Renderer)
     auto res_effects = stage_effects(graph, result);
-    if (!res_effects.ok()) return RenderResult::failure(*res_effects.error);
+    if (!res_effects.ok()) return core::RenderResult::failure(*res_effects.error);
     
     // Stage 6: Overlay & Final Mux
     auto res_overlay = stage_overlay(graph, result);
-    if (!res_overlay.ok()) return RenderResult::failure(*res_overlay.error);
+    if (!res_overlay.ok()) return core::RenderResult::failure(*res_overlay.error);
     
     // Stage 7: Encode (Cleanup and Finalization)
     auto res_encode = stage_encode(graph, result);
-    if (!res_encode.ok()) return RenderResult::failure(*res_encode.error);
+    if (!res_encode.ok()) return core::RenderResult::failure(*res_encode.error);
     
     auto end_time = std::chrono::steady_clock::now();
     result.drift = std::chrono::duration<double>(end_time - start_time).count();
@@ -60,14 +58,14 @@ RenderResult PipelineOrchestrator::run(const RenderGraph& graph) {
     return result;
 }
 
-std::future<RenderResult> PipelineOrchestrator::run_async(const RenderGraph& graph) {
+std::future<core::RenderResult> MediaPipeline::run_async(const core::RenderGraph& graph) {
     // Launch the run method in a separate thread
     return std::async(std::launch::async, [graph]() {
         return run(graph);
     });
 }
 
-void PipelineOrchestrator::update_metrics(RenderResult& result, const std::string& stage, bool success, bool fallback) {
+void MediaPipeline::update_metrics(core::RenderResult& result, const std::string& stage, bool success, bool fallback) {
     auto& m = result.metrics[stage];
     m.attempts++;
     if (success) m.successes++;
@@ -78,44 +76,44 @@ void PipelineOrchestrator::update_metrics(RenderResult& result, const std::strin
     }
 }
 
-MediaResult<void> PipelineOrchestrator::stage_validate(const RenderGraph& graph, RenderResult& result) {
+core::MediaResult<void> MediaPipeline::stage_validate(const core::RenderGraph& graph, core::RenderResult& result) {
     update_metrics(result, "validate", true);
     if (!graph.validate()) {
-        return MediaResult<void>::failure(MediaError(MediaErrorCode::Timeline, "Graph validation failed"));
+        return core::MediaResult<void>::failure(core::MediaError(core::MediaErrorCode::Timeline, "Graph validation failed"));
     }
-    return MediaResult<void>::success();
+    return core::MediaResult<void>::success();
 }
 
-MediaResult<void> PipelineOrchestrator::stage_probe(const RenderGraph& graph, RenderResult& result) {
+core::MediaResult<void> MediaPipeline::stage_probe(const core::RenderGraph& graph, core::RenderResult& result) {
     update_metrics(result, "probe", true);
     
     // Probe all video segments
     for (const auto& track : graph.timeline->video_tracks) {
         for (const auto& segment : track.segments) {
-            auto probe_res = MediaProbe::probe_file(segment.path);
+            auto probe_res = core::media::MediaProbe::probe_file(segment.path);
             if (!probe_res.ok()) {
-                return MediaResult<void>::failure(probe_res.error->with_stage("probe_segment"));
+                return core::MediaResult<void>::failure(probe_res.error->with_stage("probe_segment"));
             }
         }
     }
     
     // Probe all overlays
     for (const auto& overlay : graph.timeline->overlays) {
-        auto probe_res = MediaProbe::probe_file(overlay.path);
+        auto probe_res = core::media::MediaProbe::probe_file(overlay.path);
         if (!probe_res.ok()) {
-            return MediaResult<void>::failure(probe_res.error->with_stage("probe_overlay"));
+            return core::MediaResult<void>::failure(probe_res.error->with_stage("probe_overlay"));
         }
     }
     
-    return MediaResult<void>::success();
+    return core::MediaResult<void>::success();
 }
 
-MediaResult<void> PipelineOrchestrator::stage_decode(const RenderGraph& graph, RenderResult& result) {
+core::MediaResult<void> MediaPipeline::stage_decode(const core::RenderGraph& graph, core::RenderResult& result) {
     update_metrics(result, "decode", true);
     
-    if (graph.config.mode == RenderMode::Fast) {
-        std::cout << "[Core::Media] Fast Mode: Skipping video decode stage." << std::endl;
-        return MediaResult<void>::success();
+    if (graph.config.mode == core::RenderMode::Fast) {
+        std::cout << "[Runtime::Media] Fast Mode: Skipping video decode stage." << std::endl;
+        return core::MediaResult<void>::success();
     }
     
     // Prepare each segment (transcode if necessary, apply fades)
@@ -123,7 +121,7 @@ MediaResult<void> PipelineOrchestrator::stage_decode(const RenderGraph& graph, R
         for (size_t i = 0; i < track.segments.size(); ++i) {
             const auto& segment = track.segments[i];
             
-            ClipProcessingConfig config;
+            core::media::ClipProcessingConfig config;
             config.input_path = segment.path;
             
             // Generate intermediate path
@@ -135,28 +133,28 @@ MediaResult<void> PipelineOrchestrator::stage_decode(const RenderGraph& graph, R
             config.fps = graph.timeline->output.fps;
             config.crf = graph.timeline->output.crf;
             
-            auto proc_res = ClipProcessor::process_clip(config);
+            auto proc_res = core::media::ClipProcessor::process_clip(config);
             if (!proc_res.ok()) {
-                return MediaResult<void>::failure(proc_res.error->with_stage("decode_clip"));
+                return core::MediaResult<void>::failure(proc_res.error->with_stage("decode_clip"));
             }
         }
     }
     
-    return MediaResult<void>::success();
+    return core::MediaResult<void>::success();
 }
 
-MediaResult<void> PipelineOrchestrator::stage_effects(const RenderGraph& graph, RenderResult& result) {
+core::MediaResult<void> MediaPipeline::stage_effects(const core::RenderGraph& graph, core::RenderResult& result) {
     update_metrics(result, "effects", true);
     // TODO: Integrate TachyonRenderer2D for procedural effects
-    return MediaResult<void>::success();
+    return core::MediaResult<void>::success();
 }
 
-MediaResult<void> PipelineOrchestrator::stage_audio(const RenderGraph& graph, RenderResult& result) {
+core::MediaResult<void> MediaPipeline::stage_audio(const core::RenderGraph& graph, core::RenderResult& result) {
     update_metrics(result, "audio", true);
     
     const auto* primary_track = graph.timeline->find_primary_track();
     if (!primary_track || primary_track->segments.empty()) {
-        return MediaResult<void>::success(); // No audio to extract
+        return core::MediaResult<void>::success(); // No audio to extract
     }
 
     // Extract audio from the first segment of the primary track as a test
@@ -179,43 +177,43 @@ MediaResult<void> PipelineOrchestrator::stage_audio(const RenderGraph& graph, Re
     
     auto proc_res = ::tachyon::core::platform::run_process(spec);
     if (!proc_res.success || proc_res.exit_code != 0) {
-        return MediaResult<void>::failure(
-            MediaError(MediaErrorCode::Audio, "Audio extraction failed: " + proc_res.error)
+        return core::MediaResult<void>::failure(
+            core::MediaError(core::MediaErrorCode::Audio, "Audio extraction failed: " + proc_res.error)
         );
     }
     
-    std::cout << "[Core::Media] Audio extracted successfully to: " << output_audio << std::endl;
-    return MediaResult<void>::success();
+    std::cout << "[Runtime::Media] Audio extracted successfully to: " << output_audio << std::endl;
+    return core::MediaResult<void>::success();
 }
 
-MediaResult<void> PipelineOrchestrator::stage_transcribe(const RenderGraph& graph, RenderResult& result) {
+core::MediaResult<void> MediaPipeline::stage_transcribe(const core::RenderGraph& graph, core::RenderResult& result) {
     update_metrics(result, "transcribe", true);
     
     // We transcribe the audio extracted in the previous stage
     std::filesystem::path audio_path = graph.timeline->output.path + ".wav";
     
     if (!std::filesystem::exists(audio_path)) {
-        return MediaResult<void>::success(); // Nothing to transcribe
+        return core::MediaResult<void>::success(); // Nothing to transcribe
     }
 
-    auto trans_res = audio::AudioAnalyzer::transcribe(audio_path);
+    auto trans_res = core::media::AudioAnalyzer::transcribe(audio_path);
     if (!trans_res.ok()) {
-        return MediaResult<void>::failure(trans_res.error->with_stage("transcribe"));
+        return core::MediaResult<void>::failure(trans_res.error->with_stage("transcribe"));
     }
 
-    std::cout << "[Core::Media] Transcription completed: " << *trans_res << std::endl;
-    return MediaResult<void>::success();
+    std::cout << "[Runtime::Media] Transcription completed: " << *trans_res << std::endl;
+    return core::MediaResult<void>::success();
 }
 
-MediaResult<void> PipelineOrchestrator::stage_overlay(const RenderGraph& graph, RenderResult& result) {
+core::MediaResult<void> MediaPipeline::stage_overlay(const core::RenderGraph& graph, core::RenderResult& result) {
     update_metrics(result, "overlay", true);
     
     if (graph.timeline->overlays.empty()) {
-        std::cout << "[Core::Media] No overlays to merge. Skipping overlay stage." << std::endl;
-        return MediaResult<void>::success();
+        std::cout << "[Runtime::Media] No overlays to merge. Skipping overlay stage." << std::endl;
+        return core::MediaResult<void>::success();
     }
 
-    OverlayMergeConfig config;
+    core::media::OverlayMergeConfig config;
     
     // Determine base video path: use prepared segment if available, otherwise original
     const auto* primary_track = graph.timeline->find_primary_track();
@@ -227,7 +225,7 @@ MediaResult<void> PipelineOrchestrator::stage_overlay(const RenderGraph& graph, 
             config.base_video_path = primary_track->segments[0].path;
         }
     } else {
-        return MediaResult<void>::failure(MediaError(MediaErrorCode::Overlay, "No base video track found for overlays"));
+        return core::MediaResult<void>::failure(core::MediaError(core::MediaErrorCode::Overlay, "No base video track found for overlays"));
     }
 
     config.output_path = graph.timeline->output.path;
@@ -237,7 +235,7 @@ MediaResult<void> PipelineOrchestrator::stage_overlay(const RenderGraph& graph, 
     config.crf = graph.timeline->output.crf;
     
     for (const auto& ovl : graph.timeline->overlays) {
-        OverlaySpec spec;
+        core::media::OverlaySpec spec;
         spec.path = ovl.path;
         spec.start_time = graph.timeline->timebase.to_seconds(ovl.start_time);
         spec.duration = graph.timeline->timebase.to_seconds(ovl.duration);
@@ -247,18 +245,18 @@ MediaResult<void> PipelineOrchestrator::stage_overlay(const RenderGraph& graph, 
         config.overlays.push_back(spec);
     }
     
-    auto merge_res = OverlayMerger::merge_overlays(config);
+    auto merge_res = core::media::OverlayMerger::merge_overlays(config);
     if (!merge_res.ok()) {
-        return MediaResult<void>::failure(merge_res.error->with_stage("overlay_merge"));
+        return core::MediaResult<void>::failure(merge_res.error->with_stage("overlay_merge"));
     }
     
-    return MediaResult<void>::success();
+    return core::MediaResult<void>::success();
 }
 
-MediaResult<void> PipelineOrchestrator::stage_encode(const RenderGraph& graph, RenderResult& result) {
+core::MediaResult<void> MediaPipeline::stage_encode(const core::RenderGraph& graph, core::RenderResult& result) {
     update_metrics(result, "encode", true);
     // Cleanup intermediate files
-    return MediaResult<void>::success();
+    return core::MediaResult<void>::success();
 }
 
-} // namespace tachyon::core
+} // namespace tachyon::runtime::media

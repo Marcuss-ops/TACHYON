@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/core/types/media_error.h"
+#include "tachyon/core/media/media_error.h"
 #include <filesystem>
 #include <string>
 
@@ -8,6 +8,7 @@ namespace tachyon::ops {
 
 /**
  * @brief Simplified audio operations for external consumers.
+ * Delegating all logic to the Tachyon Core Audio system.
  */
 class AudioOps {
 public:

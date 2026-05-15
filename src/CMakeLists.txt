@@ -20,6 +20,7 @@ add_subdirectory(renderer2d)
 add_subdirectory(output)
 add_subdirectory(text)
 add_subdirectory(runtime)
+add_subdirectory(backends)
 
 # External/Operations
 add_subdirectory(${CMAKE_SOURCE_DIR}/operations ${CMAKE_BINARY_DIR}/operations)

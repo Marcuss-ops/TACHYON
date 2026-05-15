@@ -1,8 +1,0 @@
-{
-  "events": [
-    {"type":"scope_begin","name":"test_scope_json","time_ns":107237799602539,"thread":10101884903057530534,"value":0},
-    {"type":"instant","name":"test_instant_json","time_ns":107237799612804,"thread":10101884903057530534,"value":0},
-    {"type":"counter","name":"test_counter_json","time_ns":107237799617839,"thread":10101884903057530534,"value":42},
-    {"type":"scope_end","name":"test_scope_json","time_ns":107237799622347,"thread":10101884903057530534,"value":0}
-  ]
-}
