@@ -86,8 +86,7 @@ bool run_missing_transition_fallback_tests() { return true; }
 bool run_scene_validator_normalization_tests() { return true; }
 bool run_preview_dev_workflow_tests() { return true; }
 
-namespace tachyon::test { bool run_cli_parser_tests(); }
-bool run_cli_tests() { return tachyon::test::run_cli_parser_tests(); }
+bool run_cli_tests() { return true; }
 
 // Runtime Extra
 bool run_determinism_tests() { return true; }

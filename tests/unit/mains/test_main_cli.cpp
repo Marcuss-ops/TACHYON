@@ -1,13 +1,13 @@
 #include "test_utils.h"
 #include <vector>
 
-bool run_cli_tests();
+namespace tachyon::test { bool run_cli_parser_tests(); }
 bool run_scene_spec_tests();
 
 int main(int argc, char** argv) {
     using namespace tachyon::test;
     std::vector<TestCase> tests = {
-        {"cli", run_cli_tests},
+        {"cli", run_cli_parser_tests},
         {"scene_spec", run_scene_spec_tests},
     };
 

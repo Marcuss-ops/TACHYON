@@ -13,6 +13,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonOutputSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonTextSources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonLibrarySources.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonColorSources.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonMacros.cmake)
 
 include(${CMAKE_SOURCE_DIR}/cmake/tachyon/SourceRegistrationCheck.cmake)
 
@@ -186,22 +187,28 @@ if(TACHYON_ENABLE_MANUAL_AVX2)
     target_compile_definitions(TachyonCore PRIVATE "TACHYON_AVX2")
 endif()
 
-add_library(TachyonColor STATIC ${TachyonColorSources})
-tachyon_configure_common(TachyonColor)
-target_link_libraries(TachyonColor PUBLIC TachyonCore)
+tachyon_add_module(
+    NAME Color
+    SOURCES ${TachyonColorSources}
+    PUBLIC_DEPS TachyonCore
+)
 
 if(MSVC)
     set_source_files_properties(color/blend_kernel_avx2.cpp PROPERTIES COMPILE_FLAGS "/arch:AVX2")
     target_compile_definitions(TachyonColor PRIVATE "TACHYON_AVX2")
 endif()
 
-add_library(TachyonBindingsC STATIC ${TachyonBindingsCSources})
-tachyon_configure_common(TachyonBindingsC)
-target_link_libraries(TachyonBindingsC PUBLIC TachyonCore)
+tachyon_add_module(
+    NAME BindingsC
+    SOURCES ${TachyonBindingsCSources}
+    PUBLIC_DEPS TachyonCore
+)
 
-add_library(TachyonDiagnostics STATIC ${TachyonDiagnosticsSources})
-tachyon_configure_common(TachyonDiagnostics)
-target_link_libraries(TachyonDiagnostics PUBLIC TachyonCore)
+tachyon_add_module(
+    NAME Diagnostics
+    SOURCES ${TachyonDiagnosticsSources}
+    PUBLIC_DEPS TachyonCore
+)
 
 if(TACHYON_ENABLE_TRACE)
     target_compile_definitions(TachyonDiagnostics PUBLIC TACHYON_ENABLE_TRACE)
@@ -216,9 +223,11 @@ if(TACHYON_ENABLE_PERFETTO)
     target_link_libraries(TachyonDiagnostics PRIVATE perfetto)
 endif()
 
-add_library(TachyonTimeline STATIC ${TachyonTimelineSources})
-tachyon_configure_common(TachyonTimeline)
-target_link_libraries(TachyonTimeline PUBLIC TachyonCore)
+tachyon_add_module(
+    NAME Timeline
+    SOURCES ${TachyonTimelineSources}
+    PUBLIC_DEPS TachyonCore
+)
 
 # --- Module Includes (Collected sources and module targets) ---
 
@@ -297,12 +306,16 @@ endif()
 
 
 
-add_library(TachyonPlatform STATIC ${TachyonPlatformSources})
-tachyon_configure_common(TachyonPlatform)
+tachyon_add_module(
+    NAME Platform
+    SOURCES ${TachyonPlatformSources}
+)
 
-add_library(TachyonLibrary STATIC ${TachyonLibrarySources})
-tachyon_configure_common(TachyonLibrary)
-target_link_libraries(TachyonLibrary PUBLIC TachyonPresets)
+tachyon_add_module(
+    NAME Library
+    SOURCES ${TachyonLibrarySources}
+    PUBLIC_DEPS TachyonPresets
+)
 
 # CLI Module
 add_subdirectory(cli)

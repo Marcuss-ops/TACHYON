@@ -30,8 +30,8 @@ namespace tachyon {
  * 
  * Returns a default registry bundle containing all built-in effects and transitions.
  */
-inline runtime::RuntimeRegistryBundle create_default_context() {
-    return runtime::create_default_runtime_registry_bundle();
+inline EngineRegistry create_default_context() {
+    return runtime::create_default_engine_registry();
 }
 
 } // namespace tachyon

@@ -31,4 +31,20 @@ struct RuntimeRegistryBundle {
  */
 RuntimeRegistryBundle create_default_runtime_registry_bundle();
 
+/**
+ * @brief Canonical Engine Registry containing all built-in services.
+ */
+using EngineRegistry = RuntimeRegistryBundle;
+
+/**
+ * @brief Canonical factory for the engine registry.
+ */
+inline EngineRegistry create_default_engine_registry() {
+    return create_default_runtime_registry_bundle();
+}
+
 } // namespace tachyon::runtime
+
+namespace tachyon {
+    using EngineRegistry = runtime::EngineRegistry;
+}

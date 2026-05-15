@@ -28,12 +28,19 @@ public:
     const CommandDescriptor* find_command(const std::string& name) const;
 
     /**
+     * @brief Registers all known commands (Builtins + Tools).
+     */
+    static void register_all_commands();
+
+    /**
      * @brief Registers all built-in commands.
+     * @deprecated Use register_all_commands()
      */
     static void register_builtins();
 
     /**
      * @brief Registers all tool-based commands.
+     * @deprecated Use register_all_commands()
      */
     static void register_tools();
 

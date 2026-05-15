@@ -147,20 +147,10 @@ if(TACHYON_ENABLE_TASKFLOW)
 endif()
 
 # Legacy compatibility targets
-add_library(TachyonRuntimeCore INTERFACE)
-target_link_libraries(TachyonRuntimeCore INTERFACE TachyonRuntime)
-
-add_library(TachyonRuntimeExecution INTERFACE)
-target_link_libraries(TachyonRuntimeExecution INTERFACE TachyonRuntime)
-
-add_library(TachyonRuntimeCompiler INTERFACE)
-target_link_libraries(TachyonRuntimeCompiler INTERFACE TachyonRuntime)
-
-add_library(TachyonRuntimeTelemetry INTERFACE)
-target_link_libraries(TachyonRuntimeTelemetry INTERFACE TachyonRuntime)
-
-add_library(TachyonRuntimePlayback INTERFACE)
-target_link_libraries(TachyonRuntimePlayback INTERFACE TachyonRuntime)
-
-add_library(TachyonRuntimeEngine INTERFACE)
-target_link_libraries(TachyonRuntimeEngine INTERFACE TachyonRuntime)
+include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonMacros.cmake)
+tachyon_deprecate_target(TachyonRuntimeCore TachyonRuntime)
+tachyon_deprecate_target(TachyonRuntimeExecution TachyonRuntime)
+tachyon_deprecate_target(TachyonRuntimeCompiler TachyonRuntime)
+tachyon_deprecate_target(TachyonRuntimeTelemetry TachyonRuntime)
+tachyon_deprecate_target(TachyonRuntimePlayback TachyonRuntime)
+tachyon_deprecate_target(TachyonRuntimeEngine TachyonRuntime)
