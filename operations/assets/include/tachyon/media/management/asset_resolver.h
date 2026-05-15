@@ -3,7 +3,7 @@
 #include "tachyon/media/asset_manager.h"
 #include "tachyon/media/management/image_manager.h"
 #include "tachyon/text/fonts/core/font_registry.h"
-#include "tachyon/media/resolution/asset_resolution.h"
+#include "tachyon/core/assets/asset_resolution.h"
 
 #include <filesystem>
 #include <string>
@@ -23,14 +23,6 @@ namespace tachyon::media {
  */
 class AssetResolver : public IAssetResolver {
 public:
-    struct Config {
-        std::filesystem::path project_root;    ///< Root of the current project/scene
-        std::filesystem::path assets_root;     ///< Global assets directory
-        std::filesystem::path sfx_root;        ///< Root for sound effects
-        std::filesystem::path fonts_root;      ///< Root for font files
-
-        Config() = default;
-    };
 
     AssetResolver(Config config,
                   AssetManager* asset_manager = nullptr,
@@ -62,7 +54,7 @@ public:
     /**
      * @brief Resolves all assets in a SceneSpec.
      */
-    AssetResolutionTable resolve_all(const SceneSpec& scene) const;
+    core::assets::AssetResolutionTable resolve_all(const SceneSpec& scene) const;
 
     /**
      * @brief Resolves and loads a font.
@@ -76,7 +68,7 @@ public:
     ImageManager* image_manager() const { return m_image_manager; }
     text::FontRegistry* font_registry() const { return m_font_registry; }
 
-    const Config& config() const { return m_config; }
+    const Config& config() const override { return m_config; }
 
 private:
     Config m_config;
@@ -86,3 +78,4 @@ private:
 };
 
 } // namespace tachyon::media
+

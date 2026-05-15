@@ -20,6 +20,13 @@ set(TachyonCoreSources
     transition/transition_simd_kernels.cpp
     model/tachyon.cpp
     audio/audio_utils.cpp
+    audio/audio_filter_utils.cpp
+    assets/asset_collector.cpp
+    assets/asset_resolution.cpp
+    presets/sfx/sfx_builders.cpp
+    presets/sfx/sfx_registry.cpp
+    presets/sfx/sfx_registry_table.cpp
+
 )
 
 if(TACHYON_ENABLE_SIMDJSON)

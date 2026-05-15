@@ -1,16 +1,11 @@
-#include "tachyon/runtime/registry/engine_registry.h"
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/cli_scene_loader.h"
-#include "tachyon/runtime/compiler/scene_compiler.h"
-#include "tachyon/runtime/execution/session/render_session.h"
-#include "tachyon/runtime/execution/frames/frame_executor.h"
-#include "tachyon/runtime/execution/planning/render_plan.h"
-#include "tachyon/runtime/execution/jobs/render_job.h"
-#include "tachyon/runtime/resource/render_context.h"
+#include "tachyon/core/assets/asset_resolution.h"
+#include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include "tachyon/runtime/registry/engine_registry.h"
-#include "cli/support/cli_internal.h"
-#include "command_registry.h"
+#include "cli/commands/command.h"
+
 #include <iostream>
 #include <filesystem>
 #include <thread>
@@ -18,105 +13,61 @@
 
 namespace tachyon {
 
-bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::EngineRegistry& /*bundle*/) {
-    if (options.cpp_path.empty()) {
-        err << "--cpp is required for watch\n";
-        return false;
-    }
+int run_watch(const CliOptions& options, std::ostream& out, std::ostream& err) {
+    out << "watching scene: " << options.cpp_path << "\n";
+    out << "press Ctrl+C to stop\n";
 
-    std::filesystem::path watch_path = options.cpp_path;
-    out << "Starting Resident Render Session with Native Preview (C++ mode)...\n";
+    std::filesystem::file_time_type last_write_time;
+    bool first_run = true;
 
-    auto load_watch_scene = [&](SceneSpec& sc) -> bool {
-        SceneLoadOptions opts;
-        opts.cpp_path = options.cpp_path;
-        auto r = load_scene_for_cli(opts, SceneLoadMode::Watch, out, err);
-        if (!r.success) return false;
-        sc = std::move(r.context->scene);
-        return true;
-    };
-
-    SceneSpec scene;
-    if (!load_watch_scene(scene)) return false;
-
-    if (scene.compositions.empty()) {
-        err << "Scene has no compositions.\n";
-        return false;
-    }
-    const auto& comp = scene.compositions.front();
-    RenderJob job = RenderJobBuilder::video_export(comp.id, {0, static_cast<std::int64_t>(comp.duration * comp.frame_rate.value())}, "preview.mp4");
-
-
-    auto plan_result = build_render_plan(scene, job);
-    if (!plan_result.value.has_value()) {
-        err << "Failed to build render plan\n";
-        return false;
-    }
-    RenderPlan plan = *plan_result.value;
-
-    SceneCompiler compiler;
-    auto compiled_result = compiler.compile(scene);
-    if (!compiled_result.ok()) return false;
-    CompiledScene compiled = std::move(*compiled_result.value);
-
-    AssetResolutionTable assets;
-
-    RenderSession session;
-    if (options.memory_budget_bytes.has_value()) {
-        session.set_memory_budget_bytes(*options.memory_budget_bytes);
-    }
-    
-    RenderContext context;
-    context.media = nullptr; // MediaManager is in operations, CLI Core is decoupled.
-    
-    auto last_time = std::filesystem::last_write_time(watch_path);
-    std::int64_t current_frame = plan.frame_range.start;
-
-    out << "Preview ready. Watching for changes...\n";
-    
     while (true) {
         try {
-            auto current_time = std::filesystem::last_write_time(watch_path);
-            if (current_time > last_time) {
-                out << "Change detected. Hot-reloading...\n";
-                last_time = current_time;
-                
-                if (load_watch_scene(scene)) {
-                    if (compiler.update_compiled_scene(compiled, scene)) {
-                        out << "Instant update successful.\n";
-                        plan_result = build_render_plan(scene, job);
-                        if (plan_result.value.has_value()) {
-                            plan = *plan_result.value;
-                        }
+            if (!std::filesystem::exists(options.cpp_path)) {
+                err << "error: scene path does not exist: " << options.cpp_path << "\n";
+                std::this_thread::sleep_for(std::chrono::seconds(2));
+                continue;
+            }
+
+            auto current_write_time = std::filesystem::last_write_time(options.cpp_path);
+            if (first_run || current_write_time != last_write_time) {
+                last_write_time = current_write_time;
+                first_run = false;
+
+                out << "\n--- change detected, reloading ---\n";
+
+                SceneLoadOptions load_opts;
+                load_opts.cpp_path = options.cpp_path;
+                load_opts.preset_id = options.preset_id;
+
+                auto loaded = load_scene_for_cli(load_opts, SceneLoadMode::Watch, out, err);
+                if (loaded.success) {
+                    out << "scene loaded successfully.\n";
+                    out << "assets resolved: " << loaded.context->assets.size() << "\n";
+                } else {
+                    err << "failed to load scene.\n";
+                    for (const auto& d : loaded.diagnostics.diagnostics) {
+                        err << "  [" << diagnostic_severity_string(d.severity) << "] " << d.message << "\n";
                     }
                 }
             }
         } catch (const std::exception& e) {
-            err << "Watch error: " << e.what() << "\n";
+            err << "error during watch: " << e.what() << "\n";
         }
 
-        FrameRenderTask task;
-        task.frame_number = current_frame;
-        task.time_seconds = static_cast<double>(current_frame) / plan.composition.frame_rate.value();
-
-        auto executed_frame = execute_frame_task(scene, compiled, plan, task, session.cache(), context);
-
-        current_frame++;
-        if (current_frame > plan.frame_range.end) {
-            current_frame = plan.frame_range.start;
-        }
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(16));
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
-    
-    out << "Watch mode terminated.\n";
-    return true;
+
+    return 0;
 }
 
-CommandDescriptor make_watch_command() {
+bool run_watch_command(const CliOptions& options, std::ostream& out, std::ostream& err, ::tachyon::runtime::EngineRegistry& /*bundle*/) {
+    return run_watch(options, out, err) == 0;
+}
+
+::tachyon::CommandDescriptor make_watch_command() {
     return {
         "watch",
-        "tachyon watch --cpp <scene.cpp> --job <file> [--workers <n>]",
+        "tachyon watch --cpp <path> [--preset <id>]",
         nullptr,
         run_watch_command
     };

@@ -13,7 +13,7 @@
 #include "tachyon/media/management/proxy_worker.h"
 #include "tachyon/media/management/resource_cache.h"
 #include "tachyon/media/path_resolver.h"
-#include "tachyon/media/resolved_asset.h"
+#include "tachyon/core/media/resolved_asset.h"
 #include <filesystem>
 #include <map>
 #include <memory>

@@ -2,10 +2,9 @@
 
 #include <filesystem>
 #include <string>
-#include "tachyon/media/asset_manager.h"
+#include "tachyon/core/media/media_types.h"
 
-namespace tachyon {
-namespace media {
+namespace tachyon::media {
 
 /**
  * Result of resolving an asset reference to concrete filesystem paths.
@@ -21,5 +20,4 @@ struct ResolvedAsset {
     bool uses_proxy{false};
 };
 
-} // namespace media
-} // namespace tachyon
+} // namespace tachyon::media

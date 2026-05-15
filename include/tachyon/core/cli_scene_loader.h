@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
-#include "tachyon/media/resolution/asset_resolution.h"
+#include "tachyon/core/assets/asset_resolution.h"
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 
 #include <filesystem>
@@ -26,7 +26,7 @@ struct SceneLoadOptions {
 
 struct LoadedSceneContext {
     SceneSpec scene;
-    AssetResolutionTable assets;
+    core::assets::AssetResolutionTable assets;
     std::filesystem::path source_path;
     bool from_cpp{false};
     bool from_preset{false};
@@ -47,3 +47,4 @@ LoadSceneResult load_scene_for_cli(
 );
 
 } // namespace tachyon
+

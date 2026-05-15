@@ -14,7 +14,7 @@ namespace tachyon {
 
 void print_inspect_report_text(
     const SceneSpec& scene,
-    const AssetResolutionTable& assets,
+    const core::assets::AssetResolutionTable& assets,
     const std::optional<RenderPlan>& render_plan,
     const std::optional<RenderExecutionPlan>& execution_plan,
     std::ostream& out) {

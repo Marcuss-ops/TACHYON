@@ -1,7 +1,7 @@
 #pragma once
 #include "tachyon/core/cli_options.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
-#include "tachyon/media/resolution/asset_resolution.h"
+#include "tachyon/core/assets/asset_resolution.h"
 #include <iostream>
 #include <filesystem>
 
@@ -14,7 +14,6 @@ void print_diagnostics(const DiagnosticBag& diagnostics, std::ostream& out);
 bool run_validate_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::EngineRegistry& bundle);
 bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::EngineRegistry& bundle);
 bool run_motion_map_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::EngineRegistry& bundle);
-bool run_inspect_fonts_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::EngineRegistry& bundle);
 bool run_render_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::EngineRegistry& bundle);
 bool run_preview_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::EngineRegistry& bundle);
 bool run_preview_frame_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::EngineRegistry& bundle);
@@ -43,7 +42,7 @@ CommandDescriptor make_thumb_command();
 CommandDescriptor make_probe_command();
 CommandDescriptor make_concat_command();
 CommandDescriptor make_fetch_fonts_command();
-CommandDescriptor make_inspect_fonts_command();
 CommandDescriptor make_version_command();
 
 } // namespace tachyon
+

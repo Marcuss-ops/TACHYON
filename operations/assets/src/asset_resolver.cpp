@@ -1,7 +1,10 @@
 #include "tachyon/media/management/asset_resolver.h"
-#include "tachyon/media/resolution/asset_collector.h"
+#include "tachyon/core/assets/asset_collector.h"
+#include "tachyon/core/media/resolved_asset.h"
 #include <iostream>
 #include <algorithm>
+#include <string>
+#include <map>
 
 namespace tachyon::media {
 
@@ -73,8 +76,8 @@ std::optional<std::filesystem::path> AssetResolver::resolve_path(const std::stri
         else if (type == AssetType::FONT) extensions = {".ttf", ".otf"};
 
         for (const auto& ext : extensions) {
-            auto path_with_ext = resolve_path(spec + ext, type);
-            if (path_with_ext) return path_with_ext;
+            auto path_with_ext = this->resolve_path(spec + ext, type);
+            if (path_with_ext.has_value()) return path_with_ext;
         }
     }
 
@@ -83,7 +86,7 @@ std::optional<std::filesystem::path> AssetResolver::resolve_path(const std::stri
 
 ResolutionResult<std::filesystem::path> AssetResolver::resolve_path_strict(const std::string& spec, AssetType type, ::tachyon::ResolveMode mode) const {
     ResolutionResult<std::filesystem::path> result;
-    auto path = resolve_path(spec, type);
+    auto path = this->resolve_path(spec, type);
     
     if (path.has_value()) {
         result.value = path;
@@ -103,49 +106,51 @@ ResolutionResult<std::filesystem::path> AssetResolver::resolve_path_strict(const
 }
 
 const renderer2d::SurfaceRGBA* AssetResolver::resolve_image(const std::string& spec, ::tachyon::AlphaMode alpha_mode, ::tachyon::ResolveMode mode) {
-    auto shared = resolve_image_shared(spec, alpha_mode, mode);
+    auto shared = this->resolve_image_shared(spec, alpha_mode, mode);
     return shared.get();
 }
 
 std::shared_ptr<const renderer2d::SurfaceRGBA> AssetResolver::resolve_image_shared(const std::string& spec, ::tachyon::AlphaMode alpha_mode, ::tachyon::ResolveMode mode) {
     if (!m_image_manager) return nullptr;
 
-    auto res = resolve_path_strict(spec, AssetType::IMAGE, mode);
+    auto res = this->resolve_path_strict(spec, AssetType::IMAGE, mode);
     if (!res.value.has_value()) {
         return nullptr;
     }
     
-    return m_image_manager->get_image_shared(*res.value, alpha_mode);
+    return m_image_manager->get_image_shared(res.value.value(), alpha_mode);
 }
 
-AssetResolutionTable AssetResolver::resolve_all(const SceneSpec& scene) const {
-    AssetResolutionTable table;
-    auto refs = collect_asset_references(scene);
+core::assets::AssetResolutionTable AssetResolver::resolve_all(const SceneSpec& scene) const {
+    core::assets::AssetResolutionTable table;
+    auto refs = core::assets::collect_asset_references(scene);
     
     for (const auto& ref : refs) {
         if (ref.id.empty()) continue;
 
-        ResolvedAsset resolved;
+        ::tachyon::media::ResolvedAsset resolved;
         resolved.id = ref.id;
-        resolved.type_name = (ref.kind == media::AssetKind::Audio) ? "audio" : 
-                            (ref.kind == media::AssetKind::Video) ? "video" : "image";
+        resolved.type_name = (ref.kind == ::tachyon::media::AssetKind::Audio) ? "audio" : 
+                            (ref.kind == ::tachyon::media::AssetKind::Video) ? "video" : "image";
 
-        media::AssetType media_type = media::AssetType::IMAGE;
-        if (ref.kind == media::AssetKind::Audio) media_type = media::AssetType::AUDIO;
-        else if (ref.kind == media::AssetKind::Font) media_type = media::AssetType::FONT;
-        else if (ref.kind == media::AssetKind::Video) media_type = media::AssetType::VIDEO;
+        ::tachyon::media::AssetType media_type = ::tachyon::media::AssetType::IMAGE;
+        if (ref.kind == ::tachyon::media::AssetKind::Audio) media_type = ::tachyon::media::AssetType::AUDIO;
+        else if (ref.kind == ::tachyon::media::AssetKind::Font) media_type = ::tachyon::media::AssetType::FONT;
+        else if (ref.kind == ::tachyon::media::AssetKind::Video) media_type = ::tachyon::media::AssetType::VIDEO;
 
-        auto path = resolve_path(ref.source, media_type);
-        if (path) {
-            resolved.source_path = *path;
-            resolved.runtime_path = *path;
+        auto path_opt = this->resolve_path(ref.source, media_type);
+        if (path_opt.has_value()) {
+            resolved.source_path = path_opt.value();
+            resolved.runtime_path = path_opt.value();
             resolved.exists = true;
         } else {
             resolved.source_path = ref.source;
             resolved.runtime_path = ref.source;
             resolved.exists = false;
         }
-        table[ref.id] = std::move(resolved);
+        
+        const std::string key = ref.id;
+        table[key] = std::move(resolved);
     }
     return table;
 }
@@ -157,9 +162,9 @@ const text::Font* AssetResolver::resolve_font(const std::string& spec, std::uint
         return existing;
     }
 
-    auto res = resolve_path_strict(spec, AssetType::FONT, mode);
+    auto res = this->resolve_path_strict(spec, AssetType::FONT, mode);
     if (res.value.has_value()) {
-        std::filesystem::path path = *res.value;
+        std::filesystem::path path = res.value.value();
         std::string ext = path.extension().string();
         std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
         

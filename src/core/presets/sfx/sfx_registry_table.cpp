@@ -1,6 +1,6 @@
-#include "tachyon/presets/sfx/sfx_registry.h"
+#include "tachyon/core/presets/sfx/sfx_registry.h"
 
-namespace tachyon::presets {
+namespace tachyon::core::presets::sfx {
 
 void SfxRegistry::load_builtins() {
     register_category({"tachyon.sfx.typewriting", SfxCategory::TypeWriting, "TypeWriting", ".m4a", true});
@@ -10,4 +10,4 @@ void SfxRegistry::load_builtins() {
     register_category({"tachyon.sfx.money", SfxCategory::MoneySound, "MoneySound", ".m4a", true});
 }
 
-} // namespace tachyon::presets
+} // namespace tachyon::core::presets::sfx

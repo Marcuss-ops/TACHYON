@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tachyon/media/resolution/asset_resolution.h"
+#include "tachyon/core/assets/asset_resolution.h"
 #include "tachyon/runtime/core/graph/runtime_render_graph.h"
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
@@ -22,10 +22,11 @@ constexpr const char* REPORT_STATUS_ERROR = "error";
 
 void print_inspect_report_text(
     const SceneSpec& scene,
-    const AssetResolutionTable& assets,
+    const core::assets::AssetResolutionTable& assets,
     const std::optional<RenderPlan>& render_plan,
     const std::optional<RenderExecutionPlan>& execution_plan,
     std::ostream& out);
 
 
 } // namespace tachyon
+

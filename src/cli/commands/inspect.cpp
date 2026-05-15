@@ -1,138 +1,76 @@
-#include "tachyon/runtime/registry/engine_registry.h"
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
-#include "tachyon/runtime/diagnostics/report.h"
+#include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/core/assets/asset_resolution.h"
 #include "tachyon/core/cli_scene_loader.h"
-#include "tachyon/core/analysis/scene_inspector.h"
-#include "cli/support/cli_internal.h"
-#include "command_registry.h"
-#include "tachyon/text/fonts/management/font_manifest.h"
-#include "tachyon/text/fonts/utils/font_coverage_reporter.h"
-#include <iostream>
+#include "tachyon/runtime/diagnostics/report.h"
+#include "tachyon/runtime/execution/planning/render_plan.h"
+#include "tachyon/runtime/core/diagnostics/diagnostics.h"
+#include "tachyon/runtime/execution/jobs/render_job.h"
 #include "tachyon/runtime/registry/engine_registry.h"
-#include <iomanip>
-#include <string_view>
+#include "tachyon/api.h"
+#include "cli/commands/command.h"
+
+#include <iostream>
+#include <filesystem>
+#include <optional>
 
 namespace tachyon {
 
-namespace {
+int run_inspect(const CliOptions& options, std::ostream& out, std::ostream& err) {
+    out << "inspecting scene: " << options.cpp_path << "\n";
 
-std::string escape_json(std::string_view value) {
-    std::string out;
-    out.reserve(value.size() + 8);
-    for (const char c : value) {
-        switch (c) {
-            case '\\': out += "\\\\"; break;
-            case '"': out += "\\\""; break;
-            case '\n': out += "\\n"; break;
-            case '\r': out += "\\r"; break;
-            case '\t': out += "\\t"; break;
-            default: out.push_back(c); break;
-        }
-    }
-    return out;
-}
-
-std::string severity_to_string(analysis::InspectionSeverity severity) {
-    switch (severity) {
-        case analysis::InspectionSeverity::Info: return "info";
-        case analysis::InspectionSeverity::Warning: return "warning";
-        case analysis::InspectionSeverity::Error: return "error";
-    }
-    return "info";
-}
-
-[[maybe_unused]] void print_inspect_json(
-    const SceneSpec& scene,
-    const AssetResolutionTable& assets,
-    const analysis::InspectionReport& inspection,
-    std::ostream& out) {
-    out << "{\n";
-    out << "  \"project\": {\n";
-    out << "    \"id\": \"" << escape_json(scene.project.id) << "\",\n";
-    out << "    \"name\": \"" << escape_json(scene.project.name) << "\",\n";
-    out << "    \"authoring_tool\": \"" << escape_json(scene.project.authoring_tool) << "\"\n";
-    out << "  },\n";
-    out << "  \"schema_version\": \"" << escape_json(scene.schema_version.to_string()) << "\",\n";
-    out << "  \"assets\": " << assets.size() << ",\n";
-    out << "  \"compositions\": " << scene.compositions.size() << ",\n";
-    out << "  \"ok\": " << (inspection.ok() ? "true" : "false") << ",\n";
-    out << "  \"issues\": [\n";
-    for (std::size_t i = 0; i < inspection.issues.size(); ++i) {
-        const auto& issue = inspection.issues[i];
-        out << "    {\n";
-        out << "      \"severity\": \"" << severity_to_string(issue.severity) << "\",\n";
-        out << "      \"code\": \"" << escape_json(issue.code) << "\",\n";
-        out << "      \"path\": \"" << escape_json(issue.path) << "\",\n";
-        out << "      \"message\": \"" << escape_json(issue.message) << "\",\n";
-        out << "      \"time\": " << issue.time << "\n";
-        out << "    }" << (i + 1 < inspection.issues.size() ? "," : "") << "\n";
-    }
-    out << "  ]\n";
-    out << "}\n";
-}
-
-} // namespace
- 
-bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::EngineRegistry& bundle) {
     SceneLoadOptions load_opts;
     load_opts.cpp_path = options.cpp_path;
     load_opts.preset_id = options.preset_id;
 
     auto loaded = load_scene_for_cli(load_opts, SceneLoadMode::Inspect, out, err);
     if (!loaded.success) {
-        print_diagnostics(loaded.diagnostics, err);
-        return false;
+        err << "failed to load scene for inspection.\n";
+        for (const auto& d : loaded.diagnostics.diagnostics) {
+            err << "  [" << diagnostic_severity_string(d.severity) << "] " << d.message << "\n";
+        }
+        return 1;
     }
 
-    SceneSpec& scene = loaded.context->scene;
-    AssetResolutionTable& assets = loaded.context->assets;
- 
-    std::optional<RenderPlan> render_plan;
+    const SceneSpec& scene = loaded.context->scene;
+    const core::assets::AssetResolutionTable& assets = loaded.context->assets;
+
+    std::optional<RenderPlan> plan;
     std::optional<RenderExecutionPlan> execution_plan;
 
-
-    analysis::InspectionOptions inspect_options;
-    inspect_options.samples = options.inspect.samples;
-    inspect_options.include_info = options.inspect.include_info;
-    const auto inspection = analysis::inspect_scene(scene, bundle.transitions, inspect_options);
-
-    if (options.inspect.json_output) {
-        print_inspect_json(scene, assets, inspection, out);
-    } else {
-        print_inspect_report_text(scene, assets, render_plan, execution_plan, out);
-        analysis::print_inspection_report_text(inspection, out);
+    // Try to build a dummy render plan for inspection if we have enough info
+    if (!scene.compositions.empty()) {
+        RenderJob job;
+        job.composition_target = scene.compositions.front().id;
+        job.frame_range = {0, static_cast<int>(scene.compositions.front().duration * 60.0)}; // Default 60fps estimate
+        
+        auto plan_res = build_render_plan(scene, job);
+        if (plan_res.value.has_value()) {
+            plan = std::move(*plan_res.value);
+            
+            auto exec_res = build_render_execution_plan(*plan, assets.size());
+            if (exec_res.value.has_value()) {
+                execution_plan = std::move(*exec_res.value);
+            }
+        }
     }
 
-    return inspection.ok();
+    print_inspect_report_text(scene, assets, plan, execution_plan, out);
+
+    return 0;
 }
 
-bool run_inspect_fonts_command(const CliOptions& /*options*/, std::ostream& /*out*/, std::ostream& err, runtime::EngineRegistry& /*bundle*/) {
-    err << "Font manifest inspection is no longer supported. Please use the C++ Font API.\n";
-    return false;
+bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostream& err, ::tachyon::runtime::EngineRegistry& /*bundle*/) {
+    return run_inspect(options, out, err) == 0;
 }
 
-CommandDescriptor make_inspect_command() {
+::tachyon::CommandDescriptor make_inspect_command() {
     return {
         "inspect",
-        "tachyon inspect --cpp <scene.cpp> [--job <file>] [--json] [--info] [--samples <n>]",
-        [](const CliOptions& o, std::ostream& e) {
-            if (o.cpp_path.empty() && !o.preset_id.has_value()) {
-                e << "Either --cpp or --preset is required for inspect\n";
-                return false;
-            }
-            return true;
-        },
+        "tachyon inspect --cpp <path> [--preset <id>] [--json] [--info] [--samples <n>]",
+        nullptr,
         run_inspect_command
-    };
-}
-
-CommandDescriptor make_inspect_fonts_command() {
-    return {
-        "inspect-fonts",
-        "tachyon inspect-fonts (Deprecated)",
-        [](const CliOptions&, std::ostream&) { return true; },
-        run_inspect_fonts_command
     };
 }
 

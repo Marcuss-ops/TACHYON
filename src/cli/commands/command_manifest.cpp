@@ -21,7 +21,6 @@ std::vector<CommandDescriptor> make_all_commands() {
         make_probe_command(),
         make_concat_command(),
         make_fetch_fonts_command(),
-        make_inspect_fonts_command(),
     };
 }
 

@@ -1,17 +1,15 @@
-#include "tachyon/presets/sfx/sfx_builders.h"
-#include "tachyon/presets/sfx/sfx_registry.h"
-#include "tachyon/media/management/asset_resolver.h"
+#include "tachyon/core/presets/sfx/sfx_builders.h"
+#include "tachyon/core/presets/sfx/sfx_registry.h"
+#include "tachyon/core/media/asset_resolver_interface.h"
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include <vector>
 #include <algorithm>
+#include <filesystem>
 
-namespace tachyon::presets {
+namespace tachyon::core::presets::sfx {
 
-namespace spec = tachyon::spec;
-using spec::AudioTrackSpec;
-
-AudioTrackSpec build_sfx(const media::AssetResolver& resolver, const SfxParams& p, ::tachyon::DiagnosticBag* diagnostics) {
-    AudioTrackSpec spec;
+spec::AudioTrackSpec build_sfx(const ::tachyon::media::IAssetResolver& resolver, const SfxParams& p, ::tachyon::DiagnosticBag* diagnostics) {
+    spec::AudioTrackSpec spec;
     
     auto& registry = SfxRegistry::instance();
     const auto* info = registry.get_info(p.category);
@@ -46,19 +44,21 @@ AudioTrackSpec build_sfx(const media::AssetResolver& resolver, const SfxParams& 
         }
     }
 
-    spec.in_point_seconds = static_cast<double>(p.in_point);
-    spec.out_point_seconds = static_cast<double>(p.out_point);
     spec.volume = p.volume;
+    spec.in_point_seconds = p.in_point;
+    spec.out_point_seconds = p.out_point;
     return spec;
 }
 
-AudioTrackSpec build_sfx(const media::AssetResolver& resolver, SfxCategory cat, double trigger_time, float volume, ::tachyon::DiagnosticBag* diagnostics) {
+spec::AudioTrackSpec build_sfx(const ::tachyon::media::IAssetResolver& resolver, SfxCategory cat, double trigger_time, float volume, ::tachyon::DiagnosticBag* diagnostics) {
     SfxParams p;
     p.category = cat;
-    p.in_point = trigger_time;
     p.volume = volume;
     p.seed = 0; // Default seed
-    return build_sfx(resolver, p, diagnostics);
+    
+    auto spec = build_sfx(resolver, p, diagnostics);
+    spec.start_offset_seconds = trigger_time;
+    return spec;
 }
 
-} // namespace tachyon::presets
+} // namespace tachyon::core::presets::sfx

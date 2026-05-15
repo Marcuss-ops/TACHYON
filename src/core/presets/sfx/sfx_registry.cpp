@@ -1,11 +1,16 @@
-#include "tachyon/presets/sfx/sfx_registry.h"
-#include "tachyon/media/management/asset_resolver.h"
+#include "tachyon/core/presets/sfx/sfx_registry.h"
+#include "tachyon/core/media/asset_resolver_interface.h"
+#include "tachyon/core/registry/typed_registry.h"
 
 #include <utility>
 #include <algorithm>
 #include <random>
+#include <unordered_map>
+#include <filesystem>
 
-namespace tachyon::presets {
+namespace tachyon::core::presets::sfx {
+
+namespace spec = tachyon::spec;
 
 struct SfxAssetDef {
     const char* relative_path;
@@ -67,8 +72,8 @@ struct SfxRegistry::Impl {
 };
 
 SfxRegistry& SfxRegistry::instance() {
-    static SfxRegistry instance;
-    return instance;
+    static SfxRegistry instance_val;
+    return instance_val;
 }
 
 SfxRegistry::SfxRegistry() : m_impl(std::make_unique<Impl>()) {
@@ -106,40 +111,41 @@ std::vector<std::string> SfxRegistry::list_ids() const {
 }
 
 std::vector<std::string> SfxRegistry::list_sound_effects(
-    const media::AssetResolver& resolver,
+    const ::tachyon::media::IAssetResolver& resolver,
     SfxCategory category) const {
     
-    std::vector<std::string> files;
-    auto sfx_root = resolver.config().sfx_root;
-    if (sfx_root.empty()) return files;
+    std::vector<std::string> results;
+    auto sfx_root_path = resolver.config().sfx_root;
+    if (sfx_root_path.empty()) return results;
     
-    std::filesystem::path root_path(sfx_root);
+    std::filesystem::path root_fs_path(sfx_root_path);
     
-    for (const auto& asset : kSfxAssets) {
-        if (asset.category == category) {
-            files.push_back((root_path / asset.relative_path).string());
+    for (const auto& asset_def : kSfxAssets) {
+        if (asset_def.category == category) {
+            results.push_back((root_fs_path / asset_def.relative_path).string());
         }
     }
     
-    return files;
+    return results;
 }
 
 std::optional<spec::AudioTrackSpec> SfxRegistry::create_random_sound_track(
-    const media::AssetResolver& resolver,
+    const ::tachyon::media::IAssetResolver& resolver,
     SfxCategory category,
     std::uint64_t seed,
-    float volume) const {
-    auto files = list_sound_effects(resolver, category);
-    if (files.empty()) return std::nullopt;
+    float volume_param) const {
+    
+    std::vector<std::string> sound_files = list_sound_effects(resolver, category);
+    if (sound_files.empty()) return std::nullopt;
 
-    std::mt19937_64 rng(seed);
-    std::uniform_int_distribution<size_t> dist(0, files.size() - 1);
-    auto path = files[dist(rng)];
+    std::mt19937_64 random_gen(seed);
+    std::uniform_int_distribution<size_t> dist_indices(0, sound_files.size() - 1);
+    std::string selected_path = sound_files.at(dist_indices(random_gen));
 
-    spec::AudioTrackSpec spec;
-    spec.source_path = path;
-    spec.volume = volume;
-    return spec;
+    spec::AudioTrackSpec result_spec;
+    result_spec.source_path = selected_path;
+    result_spec.volume = volume_param;
+    return result_spec;
 }
 
-} // namespace tachyon::presets
+} // namespace tachyon::core::presets::sfx

@@ -16,7 +16,18 @@ namespace tachyon::media {
  */
 class IAssetResolver {
 public:
+    struct Config {
+        std::filesystem::path project_root;    ///< Root of the current project/scene
+        std::filesystem::path assets_root;     ///< Global assets directory
+        std::filesystem::path sfx_root;        ///< Root for sound effects
+        std::filesystem::path fonts_root;      ///< Root for font files
+
+        Config() = default;
+    };
+
     virtual ~IAssetResolver() = default;
+
+    virtual const Config& config() const = 0;
 
     /**
      * @brief Resolves a specification into an absolute filesystem path.

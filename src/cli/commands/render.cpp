@@ -1,372 +1,138 @@
-#include "tachyon/runtime/registry/engine_registry.h"
 #include "tachyon/core/cli.h"
 #include "tachyon/core/cli_options.h"
+#include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/core/assets/asset_resolution.h"
 #include "tachyon/core/cli_scene_loader.h"
-#include "tachyon/scene/builder.h"
+#include "tachyon/runtime/compiler/scene_compiler.h"
+#include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/execution/session/render_session.h"
-#include "tachyon/runtime/execution/native_render.h"
-#include "tachyon/presets/text/text_registry.h"
-#include "tachyon/diagnostics/trace.h"
-#include "cli/support/cli_internal.h"
-#include "command_registry.h"
+#include "tachyon/runtime/core/diagnostics/diagnostics.h"
+#include "tachyon/runtime/execution/jobs/render_job.h"
 #include "tachyon/runtime/registry/engine_registry.h"
-#include <iomanip>
+#include "tachyon/api.h"
+#include "cli/commands/command.h"
+#include "cli/support/cli_internal.h"
+
 #include <iostream>
-#include <thread>
-#include <string_view>
-#include <unordered_map>
-#include <vector>
-#include <algorithm>
-#include <cmath>
-#include <numeric>
-#include <sstream>
+#include <filesystem>
+#include <optional>
+#include <chrono>
 
 namespace tachyon {
 
-namespace {
-struct TimingSummary {
-    std::string category;
-    std::string label;
-    double total_ms{0.0};
-    double max_ms{0.0};
-    std::size_t samples{0};
-};
+int run_render(const CliOptions& options, std::ostream& out, std::ostream& err) {
+    out << "rendering scene: " << options.cpp_path << "\n";
 
-std::vector<TimingSummary> aggregate_timings(const std::vector<FrameDiagnostics>& frames) {
-    std::unordered_map<std::string, TimingSummary> buckets;
-    for (const auto& frame : frames) {
-        for (const auto& timing : frame.timings) {
-            const std::string key = timing.category + "\n" + timing.label;
-            auto& bucket = buckets[key];
-            if (bucket.samples == 0) {
-                bucket.category = timing.category;
-                bucket.label = timing.label;
-            }
-            bucket.total_ms += timing.milliseconds;
-            bucket.max_ms = std::max(bucket.max_ms, timing.milliseconds);
-            bucket.samples++;
-        }
-    }
-
-    std::vector<TimingSummary> summaries;
-    summaries.reserve(buckets.size());
-    for (auto& [_, bucket] : buckets) {
-        summaries.push_back(std::move(bucket));
-    }
-    std::sort(summaries.begin(), summaries.end(), [](const auto& a, const auto& b) {
-        if (a.total_ms != b.total_ms) return a.total_ms > b.total_ms;
-        return a.samples > b.samples;
-    });
-    return summaries;
-}
-
-double percentile_from_sorted(const std::vector<double>& sorted, double p) {
-    if (sorted.empty()) {
-        return 0.0;
-    }
-    const double clamped = std::clamp(p, 0.0, 1.0);
-    const double pos = clamped * static_cast<double>(sorted.size() - 1);
-    const std::size_t lo = static_cast<std::size_t>(std::floor(pos));
-    const std::size_t hi = static_cast<std::size_t>(std::ceil(pos));
-    if (lo == hi) {
-        return sorted[lo];
-    }
-    const double t = pos - static_cast<double>(lo);
-    return sorted[lo] * (1.0 - t) + sorted[hi] * t;
-}
-
-void print_timing_hotspots(const RenderSessionResult& session_result, std::ostream& out) {
-    const auto hotspots = aggregate_timings(session_result.frame_diagnostics);
-    if (hotspots.empty()) {
-        return;
-    }
-
-    out << "\n  render hotspots\n";
-    out << "  ─────────────────────────────────────────\n";
-    out << "  bucket                      total      avg     peak   samples\n";
-    out << "  ───────────────────────────────────────────────────────────────\n";
-
-    const std::size_t limit = std::min<std::size_t>(8, hotspots.size());
-    for (std::size_t i = 0; i < limit; ++i) {
-        const auto& bucket = hotspots[i];
-        const double avg = bucket.samples > 0 ? bucket.total_ms / static_cast<double>(bucket.samples) : 0.0;
-        std::ostringstream line;
-        line << bucket.category;
-        if (!bucket.label.empty()) {
-            line << ":" << bucket.label;
-        }
-        const std::string name = line.str();
-        out << "  " << std::left << std::setw(27) << name.substr(0, 27)
-            << std::right << std::setw(8) << std::fixed << std::setprecision(1) << bucket.total_ms << "ms"
-            << std::setw(8) << avg << "ms"
-            << std::setw(8) << bucket.max_ms << "ms"
-            << std::setw(8) << bucket.samples << '\n';
-    }
-}
-
-void print_speed_hints(const RenderExecutionPlan& execution_plan, const RenderSessionResult& session_result, std::ostream& out) {
-    const std::size_t frame_count = session_result.frame_times_ms.size();
-    if (frame_count == 0) {
-        return;
-    }
-
-    std::vector<double> sorted = session_result.frame_times_ms;
-    std::sort(sorted.begin(), sorted.end());
-    const double avg = std::accumulate(sorted.begin(), sorted.end(), 0.0) / static_cast<double>(sorted.size());
-    const double p95 = percentile_from_sorted(sorted, 0.95);
-    const double p50 = percentile_from_sorted(sorted, 0.50);
-
-    out << "\n  speed hints\n";
-    out << "  ─────────────────────────────────────────\n";
-    out << "  frame median " << std::fixed << std::setprecision(1) << p50
-        << "ms  p95 " << p95 << "ms  avg " << avg << "ms\n";
-
-    const double cache_hit_rate = session_result.cache_hit_rate();
-    if (cache_hit_rate < 35.0) {
-        out << "  cache pressure: " << static_cast<int>(cache_hit_rate)
-            << "% hit rate. Precomp more, reuse assets, and avoid over-animating properties.\n";
-    }
-
-    const auto hotspots = aggregate_timings(session_result.frame_diagnostics);
-    if (!hotspots.empty()) {
-        const auto& slowest = hotspots.front();
-        const double slowest_avg = slowest.samples > 0 ? slowest.total_ms / static_cast<double>(slowest.samples) : 0.0;
-        if (slowest.category == "effect") {
-            out << "  slowest effect: " << slowest.label << " (~" << std::fixed << std::setprecision(1) << slowest_avg
-                << "ms per call). Trim blur radius, glow strength, or chain length.\n";
-        } else if (slowest.category == "layer_surface") {
-            out << "  slowest layer: " << slowest.label << " (~" << std::fixed << std::setprecision(1) << slowest_avg
-                << "ms per render). Flatten precomps, cut source resolution, or simplify masks/text.\n";
-        } else if (slowest.category == "adjustment") {
-            out << "  slowest adjustment layer: " << slowest.label << " (~" << std::fixed << std::setprecision(1) << slowest_avg
-                << "ms). Move heavy effects earlier or reduce full-frame passes.\n";
-        }
-    }
-
-    if (execution_plan.render_plan.composition.layer_count > 0 && session_result.frame_execution_ms > 0.0) {
-        if (session_result.encode_ms < session_result.frame_execution_ms * 0.25) {
-            out << "  render time is dominated by frame execution, not encode. Focus on layer counts, effects, and cache hits first.\n";
-        }
-    }
-}
-
-void print_execution_plan(
-    const RenderExecutionPlan& execution_plan,
-    const RasterizedFrame2D& rasterized_first_frame,
-    const RenderSessionResult& session_result,
-    std::ostream& out,
-    std::size_t worker_count = 1) {
-    out << "render execution plan valid\n";
-    out << "composition: " << execution_plan.render_plan.composition_target << " (" << execution_plan.render_plan.composition.width << "x"
-        << execution_plan.render_plan.composition.height << " @ " << execution_plan.render_plan.composition.frame_rate.value() << " fps, "
-        << execution_plan.render_plan.composition.layer_count << " layers)\n";
-    out << "frames: " << execution_plan.render_plan.frame_range.start << " -> " << execution_plan.render_plan.frame_range.end << '\n';
-
-    // Phase timing table
-    const double total_phase_time = session_result.scene_compile_ms + session_result.plan_build_ms 
-                                 + session_result.execution_plan_build_ms + session_result.frame_execution_ms 
-                                 + session_result.encode_ms;
-    
-    out << "\n  phase                      time        %\n";
-    out << "  ─────────────────────────────────────────\n";
-    constexpr std::size_t kPhaseColumnWidth = 27;
-    constexpr std::size_t kTimeColumnWidth = 8;
-
-    auto print_phase = [&](std::string_view name, double ms) {
-        const double pct = total_phase_time > 0 ? (ms / total_phase_time) * 100.0 : 0.0;
-        const std::size_t pad = name.size() < kPhaseColumnWidth ? (kPhaseColumnWidth - name.size()) : 1;
-        out << "  " << name << std::string(pad, ' ')
-            << std::fixed << std::setprecision(1) << std::setw(kTimeColumnWidth) << ms << "ms  "
-            << std::fixed << std::setprecision(0) << std::setw(3) << pct << "%\n";
-    };
-
-    print_phase("scene compile",        session_result.scene_compile_ms);
-    print_phase("plan build",           session_result.plan_build_ms);
-    print_phase("execution plan build", session_result.execution_plan_build_ms);
-    print_phase("frame execution",      session_result.frame_execution_ms);
-
-    std::string encode_phase = "encode";
-    if (!execution_plan.render_plan.output.profile.video.codec.empty())
-        encode_phase += " (" + execution_plan.render_plan.output.profile.video.codec + ")";
-    print_phase(encode_phase, session_result.encode_ms);
-
-    out << "  ─────────────────────────────────────────\n";
-    print_phase("total", total_phase_time);
-    out << "\n";
-
-    // Frame stats
-    if (!session_result.frame_times_ms.empty()) {
-        double sum = 0.0;
-        double peak = 0.0;
-        std::size_t peak_frame = 0;
-        for (std::size_t i = 0; i < session_result.frame_times_ms.size(); ++i) {
-            const double t = session_result.frame_times_ms[i];
-            sum += t;
-            if (t > peak) {
-                peak = t;
-                peak_frame = i;
-            }
-        }
-        const double avg = sum / session_result.frame_times_ms.size();
-        out << "  frames: " << session_result.frames_written << "  avg " << avg << "ms/frame  peak " 
-            << peak << "ms (frame " << peak_frame << ")\n";
-    }
-
-    // Cache stats
-    out << "  cache: " << session_result.cache_hits << " hits / " << session_result.cache_misses << " misses ("
-        << static_cast<int>(session_result.cache_hit_rate()) << "%)\n";
-
-    // Memory and workers
-    const std::size_t peak_memory_bytes = std::max(session_result.peak_working_set_bytes, session_result.peak_private_bytes);
-    if (peak_memory_bytes > 0) {
-        out << "  memory: peak " << (peak_memory_bytes / (1024 * 1024)) << "MB";
-        if (session_result.peak_working_set_bytes > 0 && session_result.peak_private_bytes > 0) {
-            out << " (working set " << (session_result.peak_working_set_bytes / (1024 * 1024))
-                << "MB, private " << (session_result.peak_private_bytes / (1024 * 1024)) << "MB)";
-        }
-        out << '\n';
-    }
-    out << "  workers: " << worker_count << " threads\n";
-    out << "  2d runtime backend: " << rasterized_first_frame.backend_name << '\n';
-    print_timing_hotspots(session_result, out);
-    print_speed_hints(execution_plan, session_result, out);
-}
-
-}
-
-bool run_render_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::EngineRegistry& bundle) {
     SceneLoadOptions load_opts;
     load_opts.cpp_path = options.cpp_path;
     load_opts.preset_id = options.preset_id;
 
     auto loaded = load_scene_for_cli(load_opts, SceneLoadMode::Render, out, err);
-    out << "Scene loaded. Success: " << (loaded.success ? "YES" : "NO") << "\n";
     if (!loaded.success) {
-        print_diagnostics(loaded.diagnostics, err);
-        return false;
+        err << "failed to load scene for rendering.\n";
+        for (const auto& d : loaded.diagnostics.diagnostics) {
+            err << "  [" << diagnostic_severity_string(d.severity) << "] " << d.message << "\n";
+        }
+        return 1;
     }
 
-    SceneSpec& scene = loaded.context->scene;
-    AssetResolutionTable& assets = loaded.context->assets;
+    const SceneSpec& scene = loaded.context->scene;
+    const core::assets::AssetResolutionTable& assets = loaded.context->assets;
 
-    std::vector<CompositionSpec*> targets;
-    if (options.render.render_all_compositions) {
-        for (auto& comp : scene.compositions) {
-            targets.push_back(&comp);
-        }
+    if (scene.compositions.empty()) {
+        err << "error: scene contains no compositions.\n";
+        return 1;
+    }
+    
+    // For now, always render the first composition since the CLI doesn't have a flag to select it
+    std::string comp_id = scene.compositions.front().id;
+
+    RenderJob job;
+    job.composition_target = comp_id;
+    
+    // Set frame range from options if provided, otherwise use composition duration
+    if (options.render.frame_range_override.has_value()) {
+        job.frame_range = *options.render.frame_range_override;
     } else {
-        if (scene.compositions.empty()) {
-            err << "Scene has no compositions.\n";
-            return false;
-        }
-        targets.push_back(&scene.compositions.front());
+        // Default to whole composition at 60fps
+        job.frame_range = {0, static_cast<int>(scene.compositions.front().duration * 60.0)};
     }
 
-    bool all_success = true;
-    for (auto* comp_ptr : targets) {
-        TACHYON_TRACE_SCOPE("cli.render.composition");
-        const auto& comp = *comp_ptr;
-        RenderJob job;
-        {
-            FrameRange range = {0, static_cast<std::int64_t>(comp.duration * comp.frame_rate.value())};
-            std::string output_path;
-            
-            if (options.render.render_all_compositions) {
-                std::filesystem::path base_dir = options.render.output_override.empty() ? "output" : options.render.output_override;
-                if (!std::filesystem::exists(base_dir)) {
-                    std::filesystem::create_directories(base_dir);
-                }
-                
-                std::string filename = comp.id;
-                // Clean up ID for filename if it contains dots
-                std::replace(filename.begin(), filename.end(), '.', '_');
-                output_path = (base_dir / (filename + ".mp4")).string();
-            } else {
-                output_path = !options.render.output_override.empty() ? options.render.output_override.string() : "output.mp4";
-            }
-            
-            job = RenderJobBuilder::video_export(comp.id, range, output_path);
-        }
-
-        if (options.render.output_preset_id.has_value()) job.output.profile.name = *options.render.output_preset_id;
-        if (options.render.frame_range_override.has_value()) job.frame_range = *options.render.frame_range_override;
-
-        NativeRenderOptions native_options;
-        native_options.worker_count = options.worker_count;
-        native_options.memory_budget_bytes = options.memory_budget_bytes;
-        native_options.verbose = true;
-
-        if (!bundle.text_registry) {
-            bundle.text_registry = std::make_unique<presets::TextRegistry>(bundle.text_manifest);
-        }
-        
-        out << "Rendering composition: " << comp.id << " -> " << job.output.destination.path << "\n";
-        
-        const RenderSessionResult session_result = NativeRenderer::render(
-            scene,
-            job,
-            bundle.transitions,
-            *bundle.text_registry,
-            native_options);
-        
-        if (!session_result.output_error.empty()) {
-            err << "Render error for " << comp.id << ": " << session_result.output_error << "\n";
-            all_success = false;
-        }
-
-        print_diagnostics(session_result.diagnostics, err);
-
-        {
-            RasterizedFrame2D first_frame;
-            if (!session_result.frames.empty()) {
-                first_frame.backend_name = "cpu-frame-executor";
-            }
-            
-            const auto plan_result = build_render_plan(scene, job);
-            if (plan_result.value.has_value()) {
-                const auto execution_result = build_render_execution_plan(*plan_result.value, assets.size());
-                if (execution_result.value.has_value()) {
-                    const std::size_t workers = (options.worker_count > 0) ? options.worker_count : std::thread::hardware_concurrency();
-                    print_execution_plan(*execution_result.value, first_frame, session_result, out, workers);
-                }
-            }
-        }
+    if (!options.render.output_override.empty()) {
+        job.output.destination.path = options.render.output_override.string();
+    } else if (!options.output_dir.empty()) {
+        job.output.destination.path = (options.output_dir / (comp_id + ".mp4")).string();
     }
-    return all_success;
+    
+    // Build plan
+    auto plan_res = build_render_plan(scene, job);
+    if (!plan_res.value.has_value()) {
+        err << "failed to build render plan.\n";
+        return 1;
+    }
+
+    // Build execution plan
+    auto exec_res = build_render_execution_plan(*plan_res.value, assets.size());
+    if (!exec_res.value.has_value()) {
+        err << "failed to build execution plan.\n";
+        return 1;
+    }
+
+    // Compile scene
+    SceneCompiler compiler;
+    auto compiled = compiler.compile(scene);
+    if (!compiled.ok()) {
+        err << "failed to compile scene.\n";
+        return 1;
+    }
+
+    // Render session
+    RenderSession session;
+    const std::filesystem::path output_path = job.output.destination.path.empty() ? std::filesystem::path{} : std::filesystem::path(job.output.destination.path);
+    
+    out << "starting render: " << (job.frame_range.end - job.frame_range.start) << " frames\n";
+    auto start_time = std::chrono::high_resolution_clock::now();
+
+    // Call with 6 arguments to avoid ambiguity in RenderSession::render overloads
+    auto session_res = session.render(scene, *compiled.value, *exec_res.value, output_path, ::tachyon::runtime::RenderWorkerBudget{}, nullptr);
+
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+
+    if (session_res.output_error.empty()) {
+        out << "render completed successfully in " << (duration.count() / 1000.0) << "s\n";
+        if (!output_path.empty()) {
+            out << "output: " << output_path.string() << "\n";
+        }
+        return 0;
+    } else {
+        err << "render failed: " << session_res.output_error << "\n";
+        return 1;
+    }
 }
 
-bool run_preview_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::EngineRegistry& bundle) {
-    return run_preview_internal(options, out, err, "NativePreview", bundle);
+bool run_render_command(const CliOptions& options, std::ostream& out, std::ostream& err, ::tachyon::runtime::EngineRegistry& /*bundle*/) {
+    return run_render(options, out, err) == 0;
 }
 
-CommandDescriptor make_render_command() {
+::tachyon::CommandDescriptor make_render_command() {
     return {
         "render",
-        "tachyon render --cpp <scene.cpp> --out <file> [--frames <s-e>] [--quality draft|high|production] [--workers <n>]\n"
-        "        tachyon render --preset <id> --out <file> [--output-preset <name>]",
-        [](const CliOptions& o, std::ostream& e) {
-            if (o.cpp_path.empty() && !o.preset_id.has_value()) {
-                e << "Either --cpp or --preset required for render\n";
-                return false;
-            }
-            return true;
-        },
+        "tachyon render --cpp <path> [--preset <id>] [--out <path>] [--frames <range>] [--workers <n>]",
+        nullptr,
         run_render_command
     };
 }
 
-CommandDescriptor make_preview_command() {
+bool run_preview_command(const CliOptions& options, std::ostream& out, std::ostream& err, ::tachyon::runtime::EngineRegistry& bundle) {
+    return run_preview_internal(options, out, err, "Preview", bundle);
+}
+
+::tachyon::CommandDescriptor make_preview_command() {
     return {
         "preview",
-        "tachyon preview --cpp <scene.cpp> [--out <file.png>] [--frame <n>]\n"
-        "        preview --preset <id>  [--out <file.png>] [--frame <n>]",
-        [](const CliOptions& o, std::ostream& e) {
-            if (o.cpp_path.empty() && !o.preset_id.has_value()) {
-                e << "Either --cpp or --preset is required for preview\n";
-                return false;
-            }
-            return true;
-        },
+        "tachyon preview --cpp <path> [--preset <id>] [--frame <n>] [--out <path>]",
+        nullptr,
         run_preview_command
     };
 }

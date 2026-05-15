@@ -2,7 +2,7 @@
 
 #include <optional>
 #include "tachyon/media/asset_ref.h"
-#include "tachyon/media/resolved_asset.h"
+#include "tachyon/core/media/resolved_asset.h"
 
 namespace tachyon {
 namespace media {

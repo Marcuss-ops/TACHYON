@@ -1,18 +1,18 @@
 #pragma once
 
-#include "tachyon/core/registry/typed_registry.h"
-#include "tachyon/presets/sfx/sfx_params.h"
+#include "tachyon/core/presets/sfx/sfx_params.h"
 #include "tachyon/core/spec/schema/contracts/shared_contracts.h"
-namespace tachyon::media { class AssetResolver; }
+#include "tachyon/api.h"
 #include <memory>
 #include <string>
-#include <string_view>
 #include <vector>
-#include <unordered_map>
 #include <optional>
-#include <filesystem>
 
-namespace tachyon::presets {
+namespace tachyon::media { class IAssetResolver; }
+
+namespace tachyon::core::presets::sfx {
+
+namespace spec = tachyon::spec;
 
 /**
  * @brief Metadata for a sound effect category.
@@ -28,7 +28,7 @@ struct SfxCategoryInfo {
 /**
  * @brief Central registry for SFX categories and metadata.
  */
-class SfxRegistry {
+class TACHYON_API SfxRegistry {
 public:
     static SfxRegistry& instance();
 
@@ -39,13 +39,13 @@ public:
     void load_builtins();
 
     std::optional<spec::AudioTrackSpec> create_random_sound_track(
-        const media::AssetResolver& resolver,
+        const media::IAssetResolver& resolver,
         SfxCategory category,
         std::uint64_t seed,
         float volume = 1.0f) const;
 
     std::vector<std::string> list_sound_effects(
-        const media::AssetResolver& resolver,
+        const media::IAssetResolver& resolver,
         SfxCategory category) const;
 
 private:
@@ -56,4 +56,4 @@ private:
     std::unique_ptr<Impl> m_impl;
 };
 
-} // namespace tachyon::presets
+} // namespace tachyon::core::presets::sfx

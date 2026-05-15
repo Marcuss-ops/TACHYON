@@ -5,7 +5,8 @@
 #include "tachyon/runtime/execution/session/render_session.h"
 #include "tachyon/runtime/policy/worker_policy.h"
 #include "tachyon/runtime/telemetry/render_telemetry_record.h"
-#include "tachyon/media/resolution/asset_resolution.h"
+#include "tachyon/core/assets/asset_resolution.h"
+#include "tachyon/media/management/asset_resolver.h"
 #include <atomic>
 #include <future>
 #include <algorithm>
@@ -35,14 +36,18 @@ std::string get_machine_id() {
     return "local-dev";
 }
 
-bool load_scene_context(const std::filesystem::path& scene_path, SceneSpec& scene, AssetResolutionTable& assets, DiagnosticBag& diagnostics) {
+bool load_scene_context(const std::filesystem::path& scene_path, SceneSpec& scene, core::assets::AssetResolutionTable& assets, DiagnosticBag& diagnostics) {
     const std::string id = scene_path.string();
     if (auto spec = runtime::BatchRegistry::instance().create_scene(id)) {
         scene = std::move(*spec);
         
         // Resolve assets relative to current directory for registry scenes
         // or a project root if we had one. For now, use current path.
-        auto res = resolve_assets(scene, std::filesystem::current_path());
+        media::AssetResolver::Config resolver_config;
+        resolver_config.project_root = std::filesystem::current_path();
+        media::AssetResolver resolver(resolver_config);
+
+        auto res = core::assets::resolve_assets(scene, resolver);
         if (res.value.has_value()) {
             assets = std::move(*res.value);
         }
@@ -125,7 +130,7 @@ ResolutionResult<RenderBatchResult> run_render_batch(const RenderBatchSpec& spec
                     
                     DiagnosticBag diagnostics;
                     SceneSpec scene;
-                    AssetResolutionTable assets;
+                    core::assets::AssetResolutionTable assets;
                     if (!load_scene_context(request.scene_path, scene, assets, diagnostics)) {
                         job_result.error = summarize_diagnostics(diagnostics, "failed to load scene");
                         break; // Scene loading error is usually not retryable

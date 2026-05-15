@@ -1,6 +1,7 @@
 #include "tachyon/core/cli_scene_loader.h"
 #include "tachyon/core/spec/cpp_scene_loader.h"
-#include "tachyon/media/resolution/asset_resolution.h"
+#include "tachyon/media/management/asset_resolver.h"
+#include "tachyon/core/assets/asset_resolution.h"
 #include "tachyon/presets/scene/scene_preset_registry.h"
 #include "tachyon/presets/preset_scene_resolver.h"
 #include "tachyon/scene/builder.h"
@@ -58,9 +59,13 @@ LoadSceneResult load_scene_for_cli(
             if (asset_root.empty()) {
                 asset_root = std::filesystem::current_path();
             }
-            const auto resolved = resolve_assets(
+            media::AssetResolver::Config resolver_config;
+            resolver_config.project_root = asset_root;
+            media::AssetResolver resolver(resolver_config);
+
+            const auto resolved = core::assets::resolve_assets(
                 context.scene,
-                asset_root
+                resolver
             );
 
             if (resolved.value.has_value()) {
@@ -89,3 +94,4 @@ LoadSceneResult load_scene_for_cli(
 }
 
 } // namespace tachyon
+

@@ -42,16 +42,6 @@ public:
      */
     static core::MediaResult<void> bake_master_audio(const AudioBakeConfig& config);
 
-private:
-    /**
-     * @brief Constructs the complex filtergraph string for FFmpeg.
-     */
-    static std::string build_bake_filter(const AudioBakeConfig& config);
-    
-    /**
-     * @brief Constructs the full FFmpeg command as a list of arguments.
-     */
-    static std::vector<std::string> build_bake_command(const AudioBakeConfig& config);
 };
 
 } // namespace tachyon::audio

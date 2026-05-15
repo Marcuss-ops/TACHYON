@@ -1,8 +1,7 @@
 set(TACHYON_AUDIO_OPS_SOURCES
     src/audio_baker.cpp
-    src/audio_filter_builder.cpp
     src/audio_resampler.cpp
-    src/gate_utils.cpp
+
     src/audio/core/audio_graph.cpp
     src/audio/core/audio_mixer.cpp
     src/audio/processing/waveform.cpp

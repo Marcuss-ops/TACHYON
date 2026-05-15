@@ -1,9 +1,9 @@
 #pragma once
 
-#include "tachyon/presets/preset_base.h"
+#include "tachyon/core/spec/schema/common/common_spec.h"
 #include <cstdint>
 
-namespace tachyon::presets {
+namespace tachyon::core::presets {
 
 enum class SfxCategory {
     TypeWriting,
@@ -13,11 +13,13 @@ enum class SfxCategory {
     MoneySound,
 };
 
-struct SfxParams : LayerParams {
+struct SfxParams {
     SfxCategory category{SfxCategory::TypeWriting};
     int variant{-1};
     uint64_t seed{0};
     float volume{1.0f};
+    double in_point{0.0};
+    double out_point{-1.0};
 };
 
-} // namespace tachyon::presets
+} // namespace tachyon::core::presets
