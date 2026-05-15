@@ -53,7 +53,7 @@ function(tachyon_configure_common target)
     endif()
 
     set_target_properties(${target} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    target_compile_definitions(${target} PRIVATE TACHYON_BUILD_DLL)
+
 endfunction()
 
 function(tachyon_link_absl target)
