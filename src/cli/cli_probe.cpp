@@ -7,20 +7,19 @@
 namespace tachyon {
 
 bool run_probe_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::RuntimeRegistryBundle& /*bundle*/) {
-    if (options.probe_input.empty()) {
+    if (options.media.probe_input.empty()) {
         err << "Error: --input is required for probe command\n";
-#include "tachyon/runtime/registry/runtime_registry_bundle.h"
         return false;
     }
 
-    auto result = media::MediaProbe::probe_file(options.probe_input);
+    auto result = media::MediaProbe::probe_file(options.media.probe_input);
     if (!result.ok()) {
         err << "Error probing file: " << result.error->to_diagnostic_string() << "\n";
         return false;
     }
 
     const auto& meta = *result.value;
-    if (options.json_output) {
+    if (options.media.json_output) {
         out << "{\n";
         out << "  \"path\": \"" << meta.path << "\",\n";
         out << "  \"format\": \"" << meta.format << "\",\n";
@@ -75,7 +74,7 @@ REGISTER_COMMAND(
     "probe",
     "tachyon probe --input <file> [--json]",
     [](const CliOptions& o, std::ostream& e) {
-        if (o.probe_input.empty()) {
+        if (o.media.probe_input.empty()) {
             e << "--input is required for probe\n";
             return false;
         }

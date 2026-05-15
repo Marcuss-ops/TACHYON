@@ -97,11 +97,11 @@ bool run_inspect_command(const CliOptions& options, std::ostream& out, std::ostr
 
 
     analysis::InspectionOptions inspect_options;
-    inspect_options.samples = options.inspect_samples;
-    inspect_options.include_info = options.inspect_include_info;
+    inspect_options.samples = options.inspect.samples;
+    inspect_options.include_info = options.inspect.include_info;
     const auto inspection = analysis::inspect_scene(scene, bundle.transitions, inspect_options);
 
-    if (options.json_output) {
+    if (options.inspect.json_output) {
         print_inspect_json(scene, assets, inspection, out);
     } else {
         print_inspect_report_text(scene, assets, render_plan, execution_plan, out);

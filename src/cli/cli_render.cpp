@@ -250,7 +250,7 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
     AssetResolutionTable& assets = loaded.context->assets;
 
     std::vector<CompositionSpec*> targets;
-    if (options.render_all_compositions) {
+    if (options.render.render_all_compositions) {
         for (auto& comp : scene.compositions) {
             targets.push_back(&comp);
         }
@@ -271,8 +271,8 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
             FrameRange range = {0, static_cast<std::int64_t>(comp.duration * comp.frame_rate.value())};
             std::string output_path;
             
-            if (options.render_all_compositions) {
-                std::filesystem::path base_dir = options.output_override.empty() ? "output" : options.output_override;
+            if (options.render.render_all_compositions) {
+                std::filesystem::path base_dir = options.render.output_override.empty() ? "output" : options.render.output_override;
                 if (!std::filesystem::exists(base_dir)) {
                     std::filesystem::create_directories(base_dir);
                 }
@@ -282,14 +282,14 @@ bool run_render_command(const CliOptions& options, std::ostream& out, std::ostre
                 std::replace(filename.begin(), filename.end(), '.', '_');
                 output_path = (base_dir / (filename + ".mp4")).string();
             } else {
-                output_path = !options.output_override.empty() ? options.output_override.string() : "output.mp4";
+                output_path = !options.render.output_override.empty() ? options.render.output_override.string() : "output.mp4";
             }
             
             job = RenderJobBuilder::video_export(comp.id, range, output_path);
         }
 
-        if (options.output_preset_id.has_value()) job.output.profile.name = *options.output_preset_id;
-        if (options.frame_range_override.has_value()) job.frame_range = *options.frame_range_override;
+        if (options.render.output_preset_id.has_value()) job.output.profile.name = *options.render.output_preset_id;
+        if (options.render.frame_range_override.has_value()) job.frame_range = *options.render.frame_range_override;
 
         NativeRenderOptions native_options;
         native_options.worker_count = options.worker_count;

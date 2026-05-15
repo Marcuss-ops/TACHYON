@@ -21,7 +21,7 @@ REGISTER_COMMAND(
             e << "--cpp is required for preview-frame\n";
             return false;
         }
-        if (o.job_path.empty() || !o.preview_frame_number.has_value() || o.preview_output.empty()) {
+        if (o.inspect.job_path.empty() || !o.render.preview_frame_number.has_value() || o.render.preview_output.empty()) {
             e << "--job, --frame and --out are required for preview-frame\n";
             return false;
         }

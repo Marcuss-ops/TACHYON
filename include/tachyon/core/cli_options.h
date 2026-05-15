@@ -1,7 +1,6 @@
 #pragma once
 
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
-
 #include "tachyon/runtime/execution/jobs/render_job.h"
 
 #include <cstdint>
@@ -12,53 +11,82 @@
 
 namespace tachyon {
 
-struct CliOptions {
-    std::string command;
-    std::filesystem::path library_path;
-    std::optional<std::string> transition_id;
-    std::filesystem::path job_path;
-    std::filesystem::path batch_path;
+struct RenderOptions {
+    std::string quality{"draft"};
+    std::optional<FrameRange> frame_range_override;
     std::filesystem::path output_override;
     std::optional<std::string> output_preset_id;
-    std::filesystem::path output_dir;  // Common output directory for library-demo
-    std::string output_format;         // Output format override (mp4, png, etc.)
-    std::filesystem::path font_manifest_path;  // For inspect-fonts command
-    std::size_t worker_count{0};
-    std::optional<std::size_t> memory_budget_bytes;
-    std::optional<FrameRange> frame_range_override;
-    std::optional<int> preview_frame_number;  // For preview-frame command
-    std::filesystem::path preview_output;     // Output PNG path for preview-frame
-    std::optional<std::string> preset_id;
-    std::filesystem::path cpp_path;           // Path to .cpp scene script
-    std::string quality{"draft"};            // Rendering quality tier
-    std::string output_presets_command;       // list/info for output presets
-    std::string output_preset_name;           // preset argument for info
-    bool json_output{false};
-    int inspect_samples{5};
-    bool inspect_include_info{false};
-    bool samples_explicitly_set{false};
+    bool render_all_compositions{false};
+    
+    // Preview specific
+    std::optional<int> preview_frame_number;
+    std::filesystem::path preview_output;
+};
 
-    // fetch-fonts command options
+struct InspectOptions {
+    std::filesystem::path job_path;
+    bool json_output{false};
+    int samples{5};
+    bool include_info{false};
+    bool samples_explicitly_set{false};
+};
+
+struct MetricsOptions {
+    std::string subcommand;
+    std::filesystem::path input;
+    int top{20};
+    double machine_cost_per_hour{0.0};
+    bool json_output{false};
+};
+
+struct ToolOptions {
+    // Fonts
     std::string font_family;
     std::vector<std::uint32_t> font_weights;
     std::vector<std::string> font_subsets;
     std::filesystem::path font_dest{"assets/fonts"};
     bool font_overwrite{false};
-    // metrics command options
-    std::string metrics_command;
-    std::filesystem::path metrics_input;
-    int metrics_top{20};
-    double machine_cost_per_hour{0.0};
+    
+    // Output Presets
+    std::string output_presets_command;
+    std::string output_preset_name;
+    
+    // Thumb
+    std::optional<int> thumb_frame;
+};
 
-    bool show_version{false};
-    bool render_all_compositions{false};
-
-    // probe command options
+struct MediaToolOptions {
+    // Probe
     std::filesystem::path probe_input;
-
-    // concat command options
+    bool json_output{false};
+    
+    // Concat
     std::vector<std::filesystem::path> concat_inputs;
     std::filesystem::path concat_output;
+};
+
+struct CliOptions {
+    std::string command;
+    bool show_version{false};
+    
+    // Core selection
+    std::filesystem::path cpp_path;
+    std::optional<std::string> preset_id;
+
+    // Global overrides
+    std::size_t worker_count{0};
+    std::optional<std::size_t> memory_budget_bytes;
+    std::filesystem::path library_path;
+    std::filesystem::path output_dir;
+    std::string output_format;
+    std::optional<std::string> transition_id;
+
+    // Domain options
+    RenderOptions render;
+    InspectOptions inspect;
+    MetricsOptions metrics;
+    ToolOptions tools;
+    MediaToolOptions media;
 };
 
 ParseResult<CliOptions> parse_cli_options(int argc, char** argv);

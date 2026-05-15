@@ -1,5 +1,9 @@
 #include "tachyon/core/cli_options.h"
 #include "parsing/parse_helpers.h"
+#include "parsing/parse_render.h"
+#include "parsing/parse_inspect.h"
+#include "parsing/parse_metrics.h"
+#include "parsing/parse_tool.h"
 #include <exception>
 #include <string>
 #include <vector>
@@ -49,15 +53,10 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
         if (parse_metrics_option(arg, args, index, options, result.diagnostics)) continue;
         if (parse_tool_option(arg, args, index, options, result.diagnostics)) continue;
 
-        // Remaining standalone options
+        // Global overrides
         if (arg == "--library") {
             options.library_path = require_argument(args, index);
             if (options.library_path.empty()) result.diagnostics.add_error("cli.library_missing", "missing value for --library");
-            continue;
-        }
-        if (arg == "--output-preset") {
-            options.output_preset_id = require_argument(args, index);
-            if (options.output_preset_id->empty()) result.diagnostics.add_error("cli.output_preset_missing", "missing value for --output-preset");
             continue;
         }
         if (arg == "--memory-budget-mb") {
@@ -84,27 +83,32 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
             if (options.transition_id->empty()) result.diagnostics.add_error("cli.transition_missing", "missing value for --transition");
             continue;
         }
+        if (arg == "--output-preset") {
+            options.render.output_preset_id = require_argument(args, index);
+            if (options.render.output_preset_id->empty()) result.diagnostics.add_error("cli.output_preset_missing", "missing value for --output-preset");
+            continue;
+        }
         
         // Output-presets subcommands
         if (index == 1 && options.command == "output-presets") {
-            if (arg == "list" || arg == "info") { options.output_presets_command = arg; continue; }
+            if (arg == "list" || arg == "info") { options.tools.output_presets_command = arg; continue; }
             if (!arg.empty() && arg.front() != '-') {
                 result.diagnostics.add_error("cli.output_presets_subcommand_invalid", "unknown output-presets subcommand: " + arg);
                 return result;
             }
         }
-        if (options.command == "output-presets" && options.output_presets_command == "info" && index == 2 && options.output_preset_name.empty()) {
-            options.output_preset_name = arg;
+        if (options.command == "output-presets" && options.tools.output_presets_command == "info" && index == 2 && options.tools.output_preset_name.empty()) {
+            options.tools.output_preset_name = arg;
             continue;
         }
 
         if (arg == "--version" || arg == "-v") { options.show_version = true; continue; }
-        if (arg == "--all") { options.render_all_compositions = true; continue; }
+        if (arg == "--all") { options.render.render_all_compositions = true; continue; }
         if (arg == "--cost-per-hour") {
             std::string val = require_argument(args, index);
             if (val.empty()) result.diagnostics.add_error("cli.cost_missing", "missing value for --cost-per-hour");
             else {
-                try { options.machine_cost_per_hour = std::stod(val); }
+                try { options.metrics.machine_cost_per_hour = std::stod(val); }
                 catch (...) { result.diagnostics.add_error("cli.cost_invalid", "invalid value for --cost-per-hour: " + val); }
             }
             continue;

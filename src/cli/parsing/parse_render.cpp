@@ -1,3 +1,4 @@
+#include "parse_render.h"
 #include "parse_helpers.h"
 #include <exception>
 
@@ -56,9 +57,9 @@ bool parse_render_option(const std::string& arg, const std::vector<std::string>&
         return true;
     }
     if (arg == "--out") {
-        options.output_override = require_argument(args, index);
-        if (options.output_override.empty()) diagnostics.add_error("cli.out_missing", "missing value for --out");
-        if (options.command == "preview" || options.command == "preview-frame") options.preview_output = options.output_override;
+        options.render.output_override = require_argument(args, index);
+        if (options.render.output_override.empty()) diagnostics.add_error("cli.out_missing", "missing value for --out");
+        if (options.command == "preview" || options.command == "thumb") options.render.preview_output = options.render.output_override;
         return true;
     }
     if (arg == "--workers") {
@@ -70,21 +71,21 @@ bool parse_render_option(const std::string& arg, const std::vector<std::string>&
     if (arg == "--frames") {
         std::string val = require_argument(args, index);
         if (val.empty()) diagnostics.add_error("cli.frames_missing", "missing value for --frames");
-        else options.frame_range_override = parse_frame_range(val, diagnostics);
+        else options.render.frame_range_override = parse_frame_range(val, diagnostics);
         return true;
     }
     if (arg == "--frame") {
         std::string val = require_argument(args, index);
         if (val.empty()) diagnostics.add_error("cli.frame_missing", "missing value for --frame");
         else {
-            try { options.preview_frame_number = std::stoi(val); }
+            try { options.render.preview_frame_number = std::stoi(val); }
             catch (...) { diagnostics.add_error("cli.frame_invalid", "invalid value for --frame: " + val); }
         }
         return true;
     }
     if (arg == "--quality") {
-        options.quality = require_argument(args, index);
-        if (options.quality.empty()) diagnostics.add_error("cli.quality_missing", "missing value for --quality");
+        options.render.quality = require_argument(args, index);
+        if (options.render.quality.empty()) diagnostics.add_error("cli.quality_missing", "missing value for --quality");
         return true;
     }
     return false;

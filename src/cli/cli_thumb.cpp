@@ -36,18 +36,18 @@ bool run_thumb_command(const CliOptions& options, std::ostream& out, std::ostrea
     }
 
     std::string output_path;
-    int frame_number = options.preview_frame_number.has_value()
-                           ? *options.preview_frame_number
+    int frame_number = options.render.preview_frame_number.has_value()
+                           ? *options.render.preview_frame_number
                            : 90; // Default to frame 90 (about 3 seconds at 30fps)
 
     const std::string source_name = options.cpp_path.empty()
-                                        ? *options.preset_id
-                                        : options.cpp_path.string();
+                                         ? *options.preset_id
+                                         : options.cpp_path.string();
 
-    if (options.preview_output.empty()) {
+    if (options.render.preview_output.empty()) {
         output_path = make_default_thumb_path(source_name);
     } else {
-        output_path = options.preview_output.string();
+        output_path = options.render.preview_output.string();
     }
 
     out << "Generating thumbnail from frame " << frame_number << "...\n";

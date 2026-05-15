@@ -38,8 +38,8 @@ bool run_preview_internal(const ::tachyon::CliOptions& options, std::ostream& ou
     }
 
     std::string composition_id = scene.compositions.front().id;
-    std::int64_t frame = options.preview_frame_number.has_value() ? *options.preview_frame_number : 0;
-    std::filesystem::path output = !options.preview_output.empty() ? options.preview_output : "preview.png";
+    std::int64_t frame = options.render.preview_frame_number.has_value() ? *options.render.preview_frame_number : 0;
+    std::filesystem::path output = !options.render.preview_output.empty() ? options.render.preview_output : "preview.png";
 
     out << "[" << label << "] Rendering frame " << frame << " to " << output.string() << "\n";
 

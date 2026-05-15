@@ -73,9 +73,9 @@ static RenderTelemetryRecord parse_json_line(const std::string& line) {
 }
 
 bool run_metrics_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::RuntimeRegistryBundle& /*bundle*/) {
-    std::ifstream ifs(options.metrics_input);
+    std::ifstream ifs(options.metrics.input);
     if (!ifs) {
-        err << "Failed to open input file: " << options.metrics_input << "\n";
+        err << "Failed to open input file: " << options.metrics.input << "\n";
         return false;
     }
 
@@ -91,13 +91,13 @@ bool run_metrics_command(const CliOptions& options, std::ostream& out, std::ostr
     }
 
     if (records.empty()) {
-        err << "No records found in " << options.metrics_input << "\n";
+        err << "No records found in " << options.metrics.input << "\n";
         return false;
     }
 
     auto summary = aggregate_telemetry(records);
 
-    if (options.metrics_command == "summary" || options.metrics_command.empty()) {
+    if (options.metrics.subcommand == "summary" || options.metrics.subcommand.empty()) {
         out << "--------------------------------------------------\n";
         out << " TACHYON BATCH TELEMETRY SUMMARY\n";
         out << "--------------------------------------------------\n";
@@ -118,13 +118,13 @@ bool run_metrics_command(const CliOptions& options, std::ostream& out, std::ostr
         out << "Avg CPU:        " << std::fixed << std::setprecision(1) << summary.avg_cpu_percent_machine << "%\n";
         out << "--------------------------------------------------\n";
         
-        if (options.machine_cost_per_hour > 0.0) {
+        if (options.metrics.machine_cost_per_hour > 0.0) {
             double total_hours = summary.total_wall_time_ms / 3600000.0;
-            double total_cost = total_hours * options.machine_cost_per_hour;
+            double total_cost = total_hours * options.metrics.machine_cost_per_hour;
             double cost_per_video = summary.succeeded > 0 ? total_cost / summary.succeeded : 0.0;
             
             out << "Business Metrics:\n";
-            out << "Machine Cost/h: $" << std::fixed << std::setprecision(2) << options.machine_cost_per_hour << "\n";
+            out << "Machine Cost/h: $" << std::fixed << std::setprecision(2) << options.metrics.machine_cost_per_hour << "\n";
             out << "Total Eff. Cost:$" << total_cost << " (Effort)\n";
             out << "Cost / Video:   $" << std::setprecision(4) << cost_per_video << "\n";
             out << "Cost / 1000:    $" << std::setprecision(2) << cost_per_video * 1000.0 << "\n";
@@ -138,20 +138,20 @@ bool run_metrics_command(const CliOptions& options, std::ostream& out, std::ostr
             }
             out << "--------------------------------------------------\n";
         }
-    } else if (options.metrics_command == "slowest") {
+    } else if (options.metrics.subcommand == "slowest") {
         std::sort(records.begin(), records.end(), [](const RenderTelemetryRecord& a, const RenderTelemetryRecord& b) {
             return a.wall_time_ms > b.wall_time_ms;
         });
 
-        out << "Top " << options.metrics_top << " Slowest Jobs:\n";
+        out << "Top " << options.metrics.top << " Slowest Jobs:\n";
         out << std::left << std::setw(30) << "Job ID" << std::setw(15) << "Wall Time" << "Scene\n";
         int count = 0;
         for (const auto& r : records) {
-            if (++count > options.metrics_top) break;
+            if (++count > options.metrics.top) break;
             out << std::left << std::setw(30) << r.job_id 
                 << std::fixed << std::setprecision(2) << std::setw(15) << r.wall_time_ms / 1000.0 << r.scene_id << "\n";
         }
-    } else if (options.metrics_command == "failures") {
+    } else if (options.metrics.subcommand == "failures") {
         out << "Failed Jobs:\n";
         out << std::left << std::setw(30) << "Job ID" << std::setw(20) << "Error Code" << "Message\n";
         for (const auto& r : records) {
@@ -170,7 +170,7 @@ REGISTER_COMMAND(
     "        metrics failures --input <file.jsonl>\n"
     "        metrics slowest --input <file.jsonl> [--top <n>]",
     [](const CliOptions& o, std::ostream& e) {
-        if (o.metrics_input.empty()) {
+        if (o.metrics.input.empty()) {
             e << "--input is required for metrics command\n";
             return false;
         }

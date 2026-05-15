@@ -32,7 +32,7 @@ void print_preset_info(const tachyon::output::OutputPreset& preset, const std::s
 } // namespace
 
 bool run_output_presets_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::RuntimeRegistryBundle& /*bundle*/) {
-    const auto command = options.output_presets_command;
+    const auto command = options.tools.output_presets_command;
     if (command.empty()) {
         err << "Use `tachyon output-presets list` or `tachyon output-presets info <id>`\n";
         return false;
@@ -47,18 +47,18 @@ bool run_output_presets_command(const CliOptions& options, std::ostream& out, st
     }
 
     if (command == "info") {
-        if (options.output_preset_name.empty()) {
+        if (options.tools.output_preset_name.empty()) {
             err << "Missing preset id. Use `tachyon output-presets info <id>`\n";
             return false;
         }
 
-        const auto* preset = output::find_preset(options.output_preset_name);
+        const auto* preset = output::find_preset(options.tools.output_preset_name);
         if (preset == nullptr) {
-            err << "Unknown output preset: " << options.output_preset_name << '\n';
+            err << "Unknown output preset: " << options.tools.output_preset_name << '\n';
             return false;
         }
 
-        print_preset_info(*preset, options.output_preset_name, out);
+        print_preset_info(*preset, options.tools.output_preset_name, out);
         return true;
     }
 
@@ -71,11 +71,11 @@ REGISTER_COMMAND(
     "tachyon output-presets list\n"
     "        tachyon output-presets info <name>",
     [](const CliOptions& o, std::ostream& e) {
-        if (o.output_presets_command.empty()) {
+        if (o.tools.output_presets_command.empty()) {
             e << "Use output-presets list or output-presets info <name>\n";
             return false;
         }
-        if (o.output_presets_command == "info" && o.output_preset_name.empty()) {
+        if (o.tools.output_presets_command == "info" && o.tools.output_preset_name.empty()) {
             e << "output-presets info requires a preset name\n";
             return false;
         }

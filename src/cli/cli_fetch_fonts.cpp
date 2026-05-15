@@ -9,18 +9,17 @@
 namespace tachyon {
 
 bool run_fetch_fonts_command(const CliOptions& options, std::ostream& out, std::ostream& err, runtime::RuntimeRegistryBundle& /*bundle*/) {
-#include "tachyon/runtime/registry/runtime_registry_bundle.h"
-    if (options.font_family.empty()) {
+    if (options.tools.font_family.empty()) {
         err << "Error: --family is required for fetch-fonts command\n";
         return false;
     }
 
     text::FontFetchRequest request;
-    request.family = options.font_family;
-    request.weights = options.font_weights;
-    request.subsets = options.font_subsets;
-    request.dest = options.font_dest;
-    request.overwrite = options.font_overwrite;
+    request.family = options.tools.font_family;
+    request.weights = options.tools.font_weights;
+    request.subsets = options.tools.font_subsets;
+    request.dest = options.tools.font_dest;
+    request.overwrite = options.tools.font_overwrite;
 
     out << "Fetching font: " << request.family << '\n';
     if (!request.weights.empty()) {
