@@ -1,23 +1,48 @@
 # Tachyon CLI Module
-include(${CMAKE_SOURCE_DIR}/cmake/tachyon/TachyonCLISources.cmake)
+
+# TachyonCLI sources
+set(TachyonCLISources
+    cli.cpp
+    cli_app.cpp
+    options.cpp
+    command_registry.cpp
+    cli_utils.cpp
+    cli_scene_loader.cpp
+    cli_render.cpp
+    cli_validate.cpp
+    cli_inspect.cpp
+    cli_preview_frame.cpp
+    cli_watch.cpp
+    cli_motion_map.cpp
+    cli_version.cpp
+    
+    parsing/parse_helpers.cpp
+    parsing/parse_render.cpp
+    parsing/parse_inspect.cpp
+    parsing/parse_metrics.cpp
+    parsing/parse_tool.cpp
+
+    # Secondary tools
+    cli_thumb.cpp
+    cli_metrics.cpp
+    cli_fetch_fonts.cpp
+    cli_doctor.cpp
+    cli_output_presets.cpp
+    cli_probe.cpp
+    cli_concat.cpp
+)
 
 # Source assertions
-tachyon_assert_no_duplicate_sources(TachyonCLICoreSources)
-tachyon_assert_no_duplicate_sources(TachyonCLIToolSources)
+tachyon_assert_no_duplicate_sources(TachyonCLISources)
 
-# Core CLI is built as a reusable static library.
+# Unified CLI library
 tachyon_add_module(
-    NAME CLICore
-    SOURCES ${TachyonCLICoreSources}
-    PUBLIC_DEPS TachyonRuntimeEngine TachyonLibrary TachyonDiagnostics
+    NAME CLI
+    SOURCES ${TachyonCLISources}
+    PUBLIC_DEPS TachyonRuntime TachyonLibrary TachyonDiagnostics TachyonOperations
 )
 
-# Optional/demo tools are built as auxiliary static library.
-tachyon_add_module(
-    NAME CLITools
-    SOURCES ${TachyonCLIToolSources}
-    PUBLIC_DEPS TachyonCLICore
-)
-
-# Interface target for easier linking
-tachyon_deprecate_target(TachyonTools TachyonCLITools)
+# Compatibility aliases
+tachyon_deprecate_target(TachyonCLICore TachyonCLI)
+tachyon_deprecate_target(TachyonCLITools TachyonCLI)
+tachyon_deprecate_target(TachyonTools TachyonCLI)
