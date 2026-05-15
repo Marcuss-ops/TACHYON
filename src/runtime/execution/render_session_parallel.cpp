@@ -240,37 +240,9 @@ void render_frames_parallel_internal(
         }
 
         if (streaming_mode && frame_queue && result) {
-            // Streaming mode: submit to queue for immediate writing
+            // Streaming mode: submit to queue. The dedicated dispatcher thread will handle the writing.
             frame_queue->submit(index, framebuffer, cache_hit);
             result->frame_diagnostics[index] = executed_frame.diagnostics;
-
-            // Try to write ready frames in order
-            frame_queue->write_ready_frames([&](std::size_t frame_idx, const std::shared_ptr<const renderer2d::Framebuffer>& fb) {
-                if (fb) {
-                    output::OutputFramePacket packet;
-                    packet.frame_number = static_cast<std::int64_t>(execution_plan.frame_tasks[frame_idx].frame_number);
-                    packet.frame = fb.get();
-                    packet.metadata.time_seconds = execution_plan.frame_tasks[frame_idx].time_seconds;
-                    packet.metadata.scene_hash = std::to_string(compiled_scene.scene_hash);
-                    packet.metadata.color_space = context.cms.output_profile.to_string();
-                    
-                    const auto write_start = std::chrono::high_resolution_clock::now();
-                    const bool write_ok = sink->write_frame(packet);
-                    const auto write_end = std::chrono::high_resolution_clock::now();
-                    
-                    const double write_ms = std::chrono::duration<double, std::milli>(write_end - write_start).count();
-                    result->frame_diagnostics[frame_idx].add_timing(FrameDiagnostics::kCategoryOutputWrite, "sink_write", write_ms);
-
-                    if (!write_ok) {
-                        if (result) {
-                            result->output_error = sink->last_error();
-                        }
-                        if (cancel_flag) {
-                            cancel_flag->store(true);
-                        }
-                    }
-                }
-            }, *result);
         } else {
             // Buffered mode: store in vector (original behavior)
             executed_frame.frame_number = static_cast<std::int64_t>(task.frame_number);
@@ -282,7 +254,7 @@ void render_frames_parallel_internal(
             }
             rendered_frames[index] = std::move(executed_frame);
         }
-
+        
         // Update progress
         std::size_t completed = 0;
         if (frame_queue) {
@@ -296,8 +268,57 @@ void render_frames_parallel_internal(
         TACHYON_FRAME_MARK;
     };
 
+    std::unique_ptr<std::thread> dispatcher_thread;
+    if (streaming_mode && frame_queue) {
+        dispatcher_thread = std::make_unique<std::thread>([&]() {
+            while (true) {
+                {
+                    std::unique_lock<std::mutex> lock(frame_queue->mutex);
+                    frame_queue->cv.wait(lock, [&]() { 
+                        return (frame_queue->next_to_write < task_count && frame_queue->ready[frame_queue->next_to_write]) || 
+                               frame_queue->completed_count.load() >= task_count || 
+                               (cancel_flag && cancel_flag->load()); 
+                    });
+
+                    if ((frame_queue->completed_count.load() >= task_count && frame_queue->next_to_write >= task_count) || 
+                        (cancel_flag && cancel_flag->load())) {
+                        break;
+                    }
+                } // Unlock mutex here before calling write_ready_frames
+
+                frame_queue->write_ready_frames([&](std::size_t frame_idx, const std::shared_ptr<const renderer2d::Framebuffer>& fb) {
+                    if (fb) {
+                        output::OutputFramePacket packet;
+                        packet.frame_number = static_cast<std::int64_t>(execution_plan.frame_tasks[frame_idx].frame_number);
+                        packet.frame = fb;
+                        packet.metadata.time_seconds = execution_plan.frame_tasks[frame_idx].time_seconds;
+                        packet.metadata.scene_hash = std::to_string(compiled_scene.scene_hash);
+                        packet.metadata.color_space = context.cms.output_profile.to_string();
+                        
+                        const auto write_start = std::chrono::high_resolution_clock::now();
+                        const bool write_ok = sink->write_frame(packet);
+                        const auto write_end = std::chrono::high_resolution_clock::now();
+                        
+                        const double write_ms = std::chrono::duration<double, std::milli>(write_end - write_start).count();
+                        result->frame_diagnostics[frame_idx].add_timing(FrameDiagnostics::kCategoryOutputWrite, "sink_write", write_ms);
+
+                        if (!write_ok) {
+                            if (result) result->output_error = sink->last_error();
+                            if (cancel_flag) cancel_flag->store(true);
+                        }
+                    }
+                }, *result);
+            }
+        });
+    }
+
     runtime::TaskflowRuntime tf_runtime(thread_count);
     tf_runtime.parallel_for_frames(task_count, execute_frame_at_index);
+
+    if (dispatcher_thread && dispatcher_thread->joinable()) {
+        dispatcher_thread->join();
+    }
+
 #else
     std::vector<std::future<void>> workers;
     workers.reserve(thread_count);
@@ -417,7 +438,7 @@ void render_frames_parallel_internal(
                         if (fb) {
                             output::OutputFramePacket packet;
                             packet.frame_number = static_cast<std::int64_t>(execution_plan.frame_tasks[frame_idx].frame_number);
-                            packet.frame = fb.get();
+                            packet.frame = fb;
                             packet.metadata.time_seconds = execution_plan.frame_tasks[frame_idx].time_seconds;
                             packet.metadata.scene_hash = std::to_string(compiled_scene.scene_hash);
                             packet.metadata.color_space = context.cms.output_profile.to_string();

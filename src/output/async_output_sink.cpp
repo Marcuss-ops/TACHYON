@@ -46,15 +46,15 @@ public:
             if (!m_running || m_has_error) return false;
         }
 
-        // Clone the frame and AOVs immediately on the render thread
-        auto owned_frame = std::make_unique<renderer2d::Framebuffer>(*packet.frame);
+        // Pass the shared_ptr to the background queue, enabling zero-copy and automatic surface pool recycling
+        auto owned_frame = packet.frame;
         std::vector<FrameAOV> owned_aovs;
         owned_aovs.reserve(packet.aovs.size());
         for (const auto& aov : packet.aovs) {
             if (aov.surface) {
                 owned_aovs.push_back({
                     aov.name,
-                    std::make_shared<renderer2d::SurfaceRGBA>(*aov.surface)
+                    aov.surface // Just share the pointer, no need to deep copy AOVs either
                 });
             }
         }
@@ -118,7 +118,7 @@ public:
 
 private:
     struct QueuedPacket {
-        std::unique_ptr<renderer2d::Framebuffer> frame;
+        std::shared_ptr<const renderer2d::Framebuffer> frame;
         std::vector<FrameAOV> aovs;
         FrameMetadata metadata;
         std::int64_t frame_number;
@@ -139,7 +139,7 @@ private:
             m_cv_can_push.notify_one();
 
             OutputFramePacket packet;
-            packet.frame = qp.frame.get();
+            packet.frame = qp.frame;
             packet.aovs = qp.aovs;
             packet.metadata = qp.metadata;
             packet.frame_number = qp.frame_number;

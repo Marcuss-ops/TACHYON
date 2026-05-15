@@ -22,7 +22,7 @@ struct FrameMetadata {
 
 struct OutputFramePacket {
     std::int64_t frame_number{0};
-    const renderer2d::Framebuffer* frame{nullptr};
+    std::shared_ptr<const renderer2d::Framebuffer> frame;
     std::vector<FrameAOV> aovs;   // optional: multi-layer AOVs for EXR output
     FrameMetadata metadata;
 };
