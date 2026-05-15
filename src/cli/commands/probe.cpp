@@ -1,5 +1,5 @@
 #include "tachyon/runtime/registry/engine_registry.h"
-#include "tachyon/backends/ffmpeg/ffmpeg_probe.h"
+#include "tachyon/backends/media_backend_bundle.h"
 #include "cli_internal.h"
 #include "command_registry.h"
 #include <iostream>
@@ -12,8 +12,9 @@ bool run_probe_command(const CliOptions& options, std::ostream& out, std::ostrea
         return false;
     }
 
-    backends::ffmpeg::FFmpegProbe probe;
-    auto result = probe.probe_file(options.probe.input);
+    backends::MediaBackendBundle media_bundle;
+    auto services = media_bundle.services();
+    auto result = services.probe.probe_file(options.probe.input);
     if (!result.ok()) {
         err << "Error probing file: " << result.error->to_diagnostic_string() << "\n";
         return false;

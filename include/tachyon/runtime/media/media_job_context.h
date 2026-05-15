@@ -1,6 +1,10 @@
 #pragma once
 
 #include <filesystem>
+#include <chrono>
+#include <random>
+#include <sstream>
+#include <iomanip>
 
 namespace tachyon::runtime::media {
 
@@ -18,13 +22,20 @@ struct MediaJobContext {
     bool keep_intermediates{false};
     
     /**
-     * @brief Creates a context with a specific work directory.
-     * If work_dir is empty, a temporary directory should be used.
+     * @brief Creates a context with a unique work directory to avoid collisions.
      */
     static MediaJobContext create_default(const std::filesystem::path& output) {
         MediaJobContext ctx;
         ctx.output_path = output;
-        ctx.work_dir = output.parent_path() / ".tachyon_work";
+        
+        // Generate a simple unique job ID
+        auto now = std::chrono::system_clock::now();
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+        
+        std::stringstream ss;
+        ss << ".tachyon_work_" << std::hex << ms;
+        
+        ctx.work_dir = output.parent_path() / ss.str();
         return ctx;
     }
 };

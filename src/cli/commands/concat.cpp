@@ -1,5 +1,5 @@
 #include "tachyon/runtime/registry/engine_registry.h"
-#include "tachyon/backends/ffmpeg/ffmpeg_video_concat.h"
+#include "tachyon/backends/media_backend_bundle.h"
 #include "cli_internal.h"
 #include "command_registry.h"
 #include <iostream>
@@ -22,8 +22,9 @@ bool run_concat_command(const CliOptions& options, std::ostream& out, std::ostre
     
     out << "Concatenating " << config.inputs.size() << " files into " << config.output.string() << "...\n";
 
-    backends::ffmpeg::FFmpegVideoConcat concat;
-    auto result = concat.concat_videos(config);
+    backends::MediaBackendBundle media_bundle;
+    auto services = media_bundle.services();
+    auto result = services.video_concat.concat_videos(config);
     if (!result.ok()) {
         err << "Error concatenating files: " << result.error->to_diagnostic_string() << "\n";
         return false;
