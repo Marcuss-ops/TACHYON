@@ -4,7 +4,6 @@
 #include "tachyon/runtime/execution/frames/frame_executor.h"
 #include "tachyon/runtime/execution/jobs/render_job.h"
 #include "tachyon/core/spec/validation/scene_validator.h"
-#include "tachyon/core/cli_scene_loader.h"
 #include "tachyon/runtime/frame_arena.h"
 #include "tachyon/runtime/cache/frame_cache.h"
 #include "tachyon/runtime/execution/session/render_session.h"
