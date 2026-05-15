@@ -1,0 +1,145 @@
+#include "tachyon/runtime/media/management/image_manager.h"
+#include "tachyon/renderer2d/color/color_transfer.h"
+#include "tachyon/renderer2d/core/render_types.h"
+
+
+#include <stb_image.h>
+
+namespace tachyon::media {
+
+namespace {
+
+constexpr std::uint32_t kFallbackSurfaceWidth = 256U;
+constexpr std::uint32_t kFallbackSurfaceHeight = 256U;
+constexpr std::uint32_t kFallbackCheckerSize = 16U;
+constexpr renderer2d::Color kFallbackCheckerLight{1.0f, 0.0f, 1.0f, 1.0f};
+constexpr renderer2d::Color kFallbackCheckerDark{0.25f, 0.0f, 0.25f, 1.0f};
+constexpr const char* kDecodeFailedCode = "media.image.decode_failed";
+constexpr const char* kDecodeFailedMessage = "failed to decode image, using fallback surface";
+
+std::unique_ptr<renderer2d::SurfaceRGBA> make_fallback_surface() {
+    auto surface = std::make_unique<renderer2d::SurfaceRGBA>(kFallbackSurfaceWidth, kFallbackSurfaceHeight);
+    for (std::uint32_t y = 0; y < kFallbackSurfaceHeight; ++y) {
+        for (std::uint32_t x = 0; x < kFallbackSurfaceWidth; ++x) {
+            const bool checker = ((x / kFallbackCheckerSize) + (y / kFallbackCheckerSize)) % 2U == 0U;
+            const renderer2d::Color color = checker ? kFallbackCheckerLight : kFallbackCheckerDark;
+            surface->set_pixel(x, y, color);
+        }
+    }
+    return surface;
+}
+
+void record_missing_image(DiagnosticBag& diagnostics, const std::string& key, const char* code, const char* message) {
+    diagnostics.add_warning(code, message, key);
+}
+
+} // namespace
+
+static std::unique_ptr<renderer2d::SurfaceRGBA> decode_image(const std::filesystem::path& path, ::tachyon::AlphaMode alpha_mode, std::string& error_out) {
+    int w, h, channels;
+    unsigned char* data = stbi_load(path.string().c_str(), &w, &h, &channels, 4);
+    if (!data) {
+        const char* reason = stbi_failure_reason();
+        error_out = reason ? reason : "unknown stb error";
+        return nullptr;
+    }
+
+    if (w <= 0 || h <= 0) {
+        stbi_image_free(data);
+        error_out = "invalid dimensions";
+        return nullptr;
+    }
+
+    const std::size_t pixel_count = static_cast<std::size_t>(w) * h;
+    if (pixel_count > 4096 * 4096) { // Arbitrary limit for now
+        stbi_image_free(data);
+        error_out = "image too large";
+        return nullptr;
+    }
+
+    const uint32_t uw = static_cast<uint32_t>(w);
+    const uint32_t uh = static_cast<uint32_t>(h);
+    auto surface = std::make_unique<renderer2d::SurfaceRGBA>(uw, uh);
+    
+    for (uint32_t i = 0; i < uw * uh; ++i) {
+        const float r = renderer2d::detail::sRGB_to_Linear_f(static_cast<float>(data[i * 4 + 0]) * (1.0f / 255.0f));
+        const float g = renderer2d::detail::sRGB_to_Linear_f(static_cast<float>(data[i * 4 + 1]) * (1.0f / 255.0f));
+        const float b = renderer2d::detail::sRGB_to_Linear_f(static_cast<float>(data[i * 4 + 2]) * (1.0f / 255.0f));
+        float a = static_cast<float>(data[i * 4 + 3]) * (1.0f / 255.0f);
+
+        if (alpha_mode == ::tachyon::AlphaMode::Ignore) {
+            a = 1.0f;
+        }
+
+        renderer2d::Color linear_color{r, g, b, a};
+
+        if (alpha_mode == ::tachyon::AlphaMode::Premultiplied) {
+            linear_color.r *= a;
+            linear_color.g *= a;
+            linear_color.b *= a;
+        }
+
+        surface->set_pixel(i % uw, i / uw, linear_color);
+    }
+
+    stbi_image_free(data);
+    return surface;
+}
+
+
+const renderer2d::SurfaceRGBA* ImageManager::get_image(const std::filesystem::path& path, ::tachyon::AlphaMode alpha_mode, DiagnosticBag* diagnostics) {
+    auto shared = get_image_shared(path, alpha_mode, diagnostics);
+    return shared.get();
+}
+
+std::shared_ptr<const renderer2d::SurfaceRGBA> ImageManager::get_image_shared(const std::filesystem::path& path, ::tachyon::AlphaMode alpha_mode, DiagnosticBag* diagnostics) {
+    std::string key = path.string();
+    if (alpha_mode == ::tachyon::AlphaMode::Premultiplied) key += ":premultiplied";
+    else if (alpha_mode == ::tachyon::AlphaMode::Ignore) key += ":ignore";
+
+    { 
+        std::lock_guard<std::mutex> lock(m_mutex);
+        auto it = m_cache.find(key);
+        if (it != m_cache.end()) return it->second;
+    }
+
+    std::string error_msg;
+    auto surface = decode_image(path, alpha_mode, error_msg);
+    if (!surface) {
+        surface = make_fallback_surface();
+        std::lock_guard<std::mutex> lock(m_mutex);
+        record_missing_image(m_diagnostics, key, kDecodeFailedCode, (std::string(kDecodeFailedMessage) + ": " + error_msg).c_str());
+        if (diagnostics) {
+            record_missing_image(*diagnostics, key, kDecodeFailedCode, kDecodeFailedMessage);
+        }
+    }
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+    auto it = m_cache.find(key);
+    if (it != m_cache.end()) return it->second;
+
+    std::shared_ptr<renderer2d::SurfaceRGBA> shared = std::move(surface);
+    m_cache[key] = shared;
+    return shared;
+}
+
+
+DiagnosticBag ImageManager::consume_diagnostics() {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    DiagnosticBag diagnostics;
+    diagnostics.diagnostics = std::move(m_diagnostics.diagnostics);
+    return diagnostics;
+}
+
+void ImageManager::store_image(const std::string& key, std::shared_ptr<renderer2d::SurfaceRGBA> image) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_cache[key] = std::move(image);
+}
+
+void ImageManager::clear_cache() {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_cache.clear();
+    m_diagnostics.diagnostics.clear();
+}
+
+} // namespace tachyon::media

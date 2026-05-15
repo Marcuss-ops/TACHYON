@@ -1,12 +1,10 @@
 #pragma once
 
-// Redirect to core interface
 #include "tachyon/core/media/compression/texture_compressor.h"
+#include "tachyon/tachyon_build_config.h"
 
-namespace tachyon::media {
+namespace tachyon::backends::compression {
 
-using TextureCompressionInput = ::tachyon::core::media::TextureCompressionInput;
-using TextureCompressionOutput = ::tachyon::core::media::TextureCompressionOutput;
 using TextureCompressor = ::tachyon::core::media::TextureCompressor;
 
 TextureCompressor& none_texture_compressor();
@@ -15,4 +13,4 @@ TextureCompressor& none_texture_compressor();
 TextureCompressor& basis_texture_compressor();
 #endif
 
-} // namespace tachyon::media
+} // namespace tachyon::backends::compression

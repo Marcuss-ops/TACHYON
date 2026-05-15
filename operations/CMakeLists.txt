@@ -3,7 +3,6 @@ project(TachyonOperations LANGUAGES CXX)
 
 # --- Subdirectories ---
 add_subdirectory(media)
-add_subdirectory(assets)
 add_subdirectory(decoding)
 add_subdirectory(compression)
 add_subdirectory(audio)
@@ -14,7 +13,6 @@ add_subdirectory(transitions)
 add_library(TachyonOperations INTERFACE)
 target_link_libraries(TachyonOperations INTERFACE 
     TachyonMediaOps 
-    TachyonAssetOps 
     TachyonDecodingOps
     TachyonAudioOps 
     TachyonCompressionOps

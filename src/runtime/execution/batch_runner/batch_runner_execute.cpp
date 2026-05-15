@@ -6,7 +6,7 @@
 #include "tachyon/runtime/policy/worker_policy.h"
 #include "tachyon/runtime/telemetry/render_telemetry_record.h"
 #include "tachyon/core/assets/asset_resolution.h"
-#include "tachyon/media/management/asset_resolver.h"
+#include "tachyon/runtime/media/resolution/asset_resolver.h"
 #include <atomic>
 #include <future>
 #include <algorithm>

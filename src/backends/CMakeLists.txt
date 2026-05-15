@@ -21,3 +21,6 @@ target_link_libraries(TachyonBackends
 
 # Media/FFmpeg integration
 tachyon_link_media_deps(TachyonBackends)
+
+add_subdirectory(compression)
+add_subdirectory(decoding)

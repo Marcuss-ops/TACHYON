@@ -68,6 +68,16 @@ set(TachyonRuntimeSources
     
     media/media_pipeline.cpp
     media/probe_cache.cpp
+    media/management/media_manager.cpp
+    media/management/image_manager.cpp
+    media/management/proxy_manifest.cpp
+    media/management/proxy_worker.cpp
+    media/management/instrumentation.cpp
+    media/management/asset_manager.cpp
+    media/import/asset_import_pipeline.cpp
+    media/streaming/media_prefetcher.cpp
+    media/resolution/path_resolver.cpp
+    media/resolution/asset_resolver.cpp
     
     playback/audio_preview_buffer.cpp
     playback/playback_engine.cpp
@@ -101,8 +111,8 @@ target_link_libraries(TachyonRuntime
         TachyonScene
         TachyonRenderer2D
         TachyonBackends
-        TachyonAssetOps
         TachyonOutput
+        TachyonOperations
     PRIVATE
         TachyonPlatform
 )

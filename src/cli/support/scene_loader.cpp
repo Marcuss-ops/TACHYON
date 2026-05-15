@@ -1,6 +1,6 @@
 #include "tachyon/core/cli_scene_loader.h"
 #include "tachyon/core/spec/cpp_scene_loader.h"
-#include "tachyon/media/management/asset_resolver.h"
+#include "tachyon/runtime/media/resolution/asset_resolver.h"
 #include "tachyon/core/assets/asset_resolution.h"
 #include "tachyon/presets/scene/scene_preset_registry.h"
 #include "tachyon/presets/preset_scene_resolver.h"

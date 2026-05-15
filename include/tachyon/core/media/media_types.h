@@ -27,6 +27,15 @@ enum class AssetKind {
     Unknown
 };
 
+/**
+ * Lightweight reference to an asset, used as input for resolution.
+ */
+struct AssetRef {
+    std::string id;
+    std::string uri;
+    AssetType type{AssetType::PROJECT};
+};
+
 } // namespace tachyon::media
 
 namespace tachyon::core::media {
