@@ -172,23 +172,55 @@ void unload_scene_library(LoadedLib& lib) {
 } // namespace
 
 CppSceneLoader::Result CppSceneLoader::load_from_file(
-    const std::filesystem::path& cpp_path,
+    const std::filesystem::path& path,
     const std::filesystem::path& output_dir) {
 
     Result result;
-    if (!std::filesystem::exists(cpp_path)) {
-        result.diagnostics = "C++ file does not exist: " + cpp_path.string();
+    if (!std::filesystem::exists(path)) {
+        result.diagnostics = "File does not exist: " + path.string();
         return result;
     }
 
-    using namespace tachyon::core::spec;
-    const auto compiled = AuthoringService::get_instance().compile_to_shared_lib(cpp_path, output_dir);
-    if (!compiled.success) { result.diagnostics = compiled.error; return result; }
+    std::filesystem::path module_path = path;
+    const std::string ext = path.extension().string();
+    const bool is_source = (ext == ".cpp" || ext == ".cc" || ext == ".cxx");
 
-    auto lib = load_scene_library(compiled.output_path);
-    if (!lib.jit_build_fn && !lib.build_scene_v1_fn) { result.diagnostics = lib.error; return result; }
+    if (is_source) {
+        using namespace tachyon::core::spec;
+        const auto compiled = AuthoringService::get_instance().compile_to_shared_lib(path, output_dir);
+        if (!compiled.success) { 
+            result.diagnostics = compiled.error; 
+            return result; 
+        }
+        module_path = compiled.output_path;
+    }
+
+    auto lib = load_scene_library(module_path);
+    if (!lib.handle) {
+        result.diagnostics = lib.error;
+        return result;
+    }
 
     try {
+        // ABI Handshake
+        typedef const TachyonJitManifest* (*GetManifestFunc)();
+        GetManifestFunc get_manifest = nullptr;
+#ifdef _WIN32
+        get_manifest = (GetManifestFunc)GetProcAddress((HMODULE)lib.handle, "tachyon_jit_get_manifest");
+#else
+        get_manifest = (GetManifestFunc)dlsym(lib.handle, "tachyon_jit_get_manifest");
+#endif
+
+        if (get_manifest) {
+            const auto* manifest = get_manifest();
+            if (manifest->abi_version != TACHYON_JIT_ABI_VERSION) {
+                result.diagnostics = "ABI mismatch: module version " + std::to_string(manifest->abi_version) + 
+                                   ", engine version " + std::to_string(TACHYON_JIT_ABI_VERSION);
+                unload_scene_library(lib);
+                return result;
+            }
+        }
+
         if (lib.jit_build_fn) {
             HostContext host_ctx;
             TachyonHostApi api = {};
@@ -202,9 +234,8 @@ CppSceneLoader::Result CppSceneLoader::load_from_file(
             api.add_text = host_add_text;
             api.set_float = host_set_float;
 
-            int jit_res = lib.jit_build_fn(&api, 0 /* Handle not used yet */);
+            int jit_res = lib.jit_build_fn(&api, 0);
             
-            // Collect logs into diagnostics
             for (const auto& log_line : host_ctx.logs) {
                 result.diagnostics += log_line + "\n";
             }
@@ -219,6 +250,8 @@ CppSceneLoader::Result CppSceneLoader::load_from_file(
             std::cerr << "[TACHYON][WARN] Scene uses legacy 'build_scene' entry point. Please migrate to 'tachyon_jit_build_scene' for full JIT API support." << std::endl;
             result.scene = lib.build_scene_v1_fn();
             result.success = true;
+        } else {
+            result.diagnostics = "No valid JIT entry point found (expected 'tachyon_jit_build_scene' or 'build_scene')";
         }
     } catch (const std::exception& e) {
         result.diagnostics = std::string("JIT execution threw: ") + e.what();

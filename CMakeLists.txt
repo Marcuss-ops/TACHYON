@@ -15,6 +15,17 @@ include(${CMAKE_SOURCE_DIR}/cmake/platform/Linux.cmake)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+# --- RPATH Settings ---
+if(APPLE)
+    set(CMAKE_INSTALL_RPATH "@loader_path;@loader_path/../lib")
+    set(CMAKE_BUILD_RPATH "${CMAKE_BINARY_DIR}/src")
+    set(CMAKE_MACOSX_RPATH ON)
+elseif(UNIX)
+    set(CMAKE_INSTALL_RPATH "$ORIGIN;$ORIGIN/../lib")
+    set(CMAKE_BUILD_RPATH "${CMAKE_BINARY_DIR}/src")
+endif()
+
 set(TACHYON_HAS_OPENMP OFF)
 if(TACHYON_ENABLE_OPENMP)
     find_package(OpenMP QUIET)
@@ -134,3 +145,6 @@ message(STATUS "    - Tracker:        ${TACHYON_ENABLE_TRACKER}")
 message(STATUS "    - Catalog Tools:  ${TACHYON_BUILD_CATALOG_TOOLS}")
 message(STATUS "    - Tests:          ${TACHYON_BUILD_TESTS}")
 message(STATUS "-------------------------------------------------------")
+
+# --- JIT Build Contract ---
+include(cmake/tachyon/TachyonJitConfig.cmake)

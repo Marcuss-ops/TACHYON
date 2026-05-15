@@ -43,11 +43,15 @@ public:
      */
     std::optional<bool> get_bool(std::string_view key) const;
 
+    /**
+     * @brief Get a string array value by key (for objects).
+     */
+    std::optional<std::vector<std::string>> get_string_array(std::string_view key) const;
+
 private:
     friend class JsonDocument;
-    
-    // Internal implementation details would go here
-    // For now, this is a skeleton as requested.
+    struct Impl;
+    std::shared_ptr<Impl> impl_;
 };
 
 /**

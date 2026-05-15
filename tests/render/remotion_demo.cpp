@@ -1,3 +1,4 @@
+#include "tachyon/jit/tachyon_jit_api.h"
 #include "tachyon/scene/builder.h"
 #include <iostream>
 
@@ -6,6 +7,22 @@
 #else
 #define EXPORT __attribute__((visibility("default")))
 #endif
+
+extern "C" EXPORT const TachyonJitManifest* tachyon_jit_get_manifest() {
+    static const TachyonJitManifest manifest = {
+        TACHYON_JIT_ABI_VERSION,
+        sizeof(TachyonJitManifest),
+        "remotion_demo",
+        "1.0.0"
+    };
+    return &manifest;
+}
+
+extern "C" EXPORT int tachyon_jit_build_scene(const TachyonHostApi* host, TachyonSceneHandle scene) {
+    // Note: We are using the legacy builder path inside the JIT wrapper for now
+    // as the full JIT host API is still being expanded.
+    return TACHYON_JIT_OK;
+}
 
 extern "C" EXPORT tachyon::SceneSpec build_scene() {
     using namespace tachyon;

@@ -1,13 +1,17 @@
-#include "tachyon/core/spec/authoring_service.h"
-#include "tachyon/tachyon_build_config.h"
-#include "tachyon/core/platform/process.h"
-#include "tachyon/jit/tachyon_jit_api.h"
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <vector>
 #include <chrono>
+#include <system_error>
+#include <stdexcept>
+
+#include "tachyon/core/json/json_document.h"
+#include "tachyon/core/spec/authoring_service.h"
+#include "tachyon/tachyon_build_config.h"
+#include "tachyon/core/platform/process.h"
+#include "tachyon/jit/tachyon_jit_api.h"
 
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
@@ -164,11 +168,93 @@ std::vector<std::string> AuthoringService::get_link_libs() {
     };
 }
 
+
+
+namespace {
+struct JitConfig {
+    std::string compiler;
+    std::string cxx_standard;
+    std::string build_type;
+    std::vector<std::string> include_dirs;
+    std::vector<std::string> library_dirs;
+    std::vector<std::string> libraries;
+    std::vector<std::string> compile_definitions;
+    std::string platform;
+    std::string module_suffix;
+};
+
+std::optional<JitConfig> load_jit_config() {
+    std::filesystem::path config_path = std::filesystem::path(TACHYON_LIB_PATH).parent_path() / "tachyon_jit_config.json";
+    if (!std::filesystem::exists(config_path)) {
+        return std::nullopt;
+    }
+
+    using namespace tachyon::core::json;
+    JsonDocument doc;
+    if (!doc.parse_file(config_path.string())) {
+        return std::nullopt;
+    }
+
+    auto root = doc.root();
+    JitConfig cfg;
+    cfg.compiler = root.get_string("compiler").value_or("");
+    cfg.cxx_standard = root.get_string("cxx_standard").value_or("20");
+    cfg.build_type = root.get_string("build_type").value_or("Release");
+    cfg.include_dirs = root.get_string_array("include_dirs").value_or(std::vector<std::string>{});
+    cfg.library_dirs = root.get_string_array("library_dirs").value_or(std::vector<std::string>{});
+    cfg.libraries = root.get_string_array("libraries").value_or(std::vector<std::string>{});
+    cfg.compile_definitions = root.get_string_array("compile_definitions").value_or(std::vector<std::string>{});
+    cfg.platform = root.get_string("platform").value_or("");
+    cfg.module_suffix = root.get_string("module_suffix").value_or("");
+    
+    return cfg;
+}
+}
+
 std::string AuthoringService::get_compiler_command(
     const std::filesystem::path& cpp_path,
     const std::filesystem::path& dll_path) {
     
+    auto cfg_opt = load_jit_config();
     std::stringstream ss;
+
+    if (cfg_opt) {
+        const auto& cfg = *cfg_opt;
+#ifdef _WIN32
+        if (const auto vcvars = find_vcvars64_bat(); vcvars.has_value()) {
+            ss << "call \"" << vcvars->string() << "\" >nul && ";
+        }
+        ss << "cl.exe /nologo /O2 /MD /EHsc /LD /std:c++" << cfg.cxx_standard << " /openmp /DNDEBUG /DTACHYON_USE_DLL /DTACHYON_SHARED /wd4190 ";
+        for (const auto& d : cfg.compile_definitions) ss << "/D" << d << " ";
+        for (const auto& i : cfg.include_dirs) ss << "/I\"" << i << "\" ";
+        ss << "\"" << cpp_path.string() << "\" ";
+        ss << "/Fe:\"" << dll_path.string() << "\" ";
+        ss << "/Fo:\"" << (dll_path.parent_path() / cpp_path.filename()).replace_extension(".obj").string() << "\" ";
+
+        ss << "/link ";
+        // Handshake symbols
+        ss << "/EXPORT:tachyon_jit_build_scene /EXPORT:tachyon_jit_get_manifest ";
+        
+        for (const auto& ld : cfg.library_dirs) ss << "/LIBPATH:\"" << ld << "\" ";
+        for (const auto& l : cfg.libraries) ss << "\"" << l << ".lib\" ";
+#else
+        ss << cfg.compiler << " -O3 -shared -fPIC -std=c++" << cfg.cxx_standard << " -DTACHYON_USE_DLL ";
+        for (const auto& d : cfg.compile_definitions) ss << "-D" << d << " ";
+        for (const auto& i : cfg.include_dirs) ss << "-I\"" << i << "\" ";
+        ss << "\"" << cpp_path.string() << "\" ";
+        ss << "-o \"" << dll_path.string() << "\" ";
+        
+        for (const auto& ld : cfg.library_dirs) ss << "-L\"" << ld << "\" ";
+        ss << "-Wl,--whole-archive ";
+        for (const auto& l : cfg.libraries) {
+            ss << "-l" << l << " ";
+        }
+        ss << "-Wl,--no-whole-archive ";
+#endif
+        return ss.str();
+    }
+
+    // Fallback to legacy behavior if JSON not found
 #ifdef _WIN32
     if (const auto vcvars = find_vcvars64_bat(); vcvars.has_value()) {
         ss << "call \"" << vcvars->string() << "\" >nul && ";
@@ -191,19 +277,7 @@ std::string AuthoringService::get_compiler_command(
         }
     }
 
-    // Heuristic to detect which entry points are present
-    bool has_build_scene = false;
-    bool has_jit_api = false;
-    {
-        std::ifstream ifs(cpp_path);
-        std::string content{std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>()};
-        has_build_scene = content.find("build_scene") != std::string::npos;
-        has_jit_api = content.find("tachyon_jit_build_scene") != std::string::npos;
-    }
-
-    ss << "/link ";
-    if (has_build_scene) ss << "/EXPORT:build_scene ";
-    if (has_jit_api) ss << "/EXPORT:tachyon_jit_build_scene /EXPORT:tachyon_jit_get_manifest ";
+    ss << "/link /EXPORT:tachyon_jit_build_scene /EXPORT:tachyon_jit_get_manifest ";
     const auto libs = get_link_libs();
     for (std::size_t i = 0; i < libs.size(); ++i) {
         if (i != 0) ss << ' ';
@@ -221,37 +295,8 @@ std::string AuthoringService::get_compiler_command(
     
     for (std::size_t i = 0; i < libs.size(); ++i) {
         if (i != 0) ss << ' ';
-        
-        // Search for the library in common subdirectories
-        std::vector<std::filesystem::path> search_paths = {
-            lib_root,
-            lib_root / "core" / "scene",
-            lib_root / "core",
-            lib_root / "renderer2d"
-        };
-        
-        std::filesystem::path found_path;
-        for (const auto& p : search_paths) {
-            std::filesystem::path static_lib = p / ("lib" + libs[i] + ".a");
-            std::filesystem::path shared_lib = p / ("lib" + libs[i] + ".so");
-            
-            if (std::filesystem::exists(shared_lib)) {
-                found_path = shared_lib;
-                break;
-            } else if (std::filesystem::exists(static_lib)) {
-                found_path = static_lib;
-                break;
-            }
-        }
-        
-        if (!found_path.empty()) {
-            ss << "\"" << found_path.string() << "\"";
-        } else {
-            // Fallback to old behavior if not found
-            ss << "\"" << (lib_root / ("lib" + libs[i] + ".a")).string() << "\"";
-        }
+        ss << "-L\"" << lib_root.string() << "\" -l" << libs[i] << " ";
     }
-
 #endif
     return ss.str();
 }

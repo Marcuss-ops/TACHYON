@@ -57,6 +57,7 @@ target_link_libraries(tachyon
         TachyonOutput
 )
 tachyon_link_mimalloc(tachyon)
+set_target_properties(tachyon PROPERTIES ENABLE_EXPORTS TRUE)
 
 # Platform-specific post-build
 if(MSVC)
@@ -68,5 +69,23 @@ if(MSVC)
                     $<TARGET_FILE_DIR:tachyon>
             COMMAND_EXPAND_LISTS
         )
+    endif()
+
+    if(TACHYON_ENABLE_MEDIA AND TACHYON_FFMPEG_ROOT)
+        file(GLOB TACHYON_FFMPEG_DLLS CONFIGURE_DEPENDS
+            "${TACHYON_FFMPEG_ROOT}/bin/avcodec*.dll"
+            "${TACHYON_FFMPEG_ROOT}/bin/avformat*.dll"
+            "${TACHYON_FFMPEG_ROOT}/bin/avutil*.dll"
+            "${TACHYON_FFMPEG_ROOT}/bin/swscale*.dll"
+            "${TACHYON_FFMPEG_ROOT}/bin/swresample*.dll"
+        )
+        if(TACHYON_FFMPEG_DLLS)
+            add_custom_command(TARGET tachyon POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        ${TACHYON_FFMPEG_DLLS}
+                        $<TARGET_FILE_DIR:tachyon>
+                COMMAND_EXPAND_LISTS
+            )
+        endif()
     endif()
 endif()

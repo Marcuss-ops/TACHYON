@@ -8,10 +8,11 @@
 #include "tachyon/core/transition/transition_descriptor.h"
 #include "cli/support/cli_internal.h"
 #include "command_registry.h"
+#include "tachyon/tachyon_build_config.h"
 #include <iostream>
-#include "tachyon/runtime/registry/engine_registry.h"
 #include <iomanip>
 #include <algorithm>
+#include <thread>
 
 namespace tachyon {
 
@@ -19,8 +20,28 @@ bool run_doctor_command(const CliOptions&, std::ostream& out, std::ostream& err,
     out << "TACHYON Doctor - System Diagnostic\n";
     out << "==================================\n\n";
 
-    // Audit Transition Registries
-    out << "[1/2] Auditing Transition Registry alignment...\n";
+    // 1. Build & Environment Info
+    out << "[1/3] Environment Metadata...\n";
+    out << "      Compiler:      " << TACHYON_COMPILER_ID << " " << TACHYON_COMPILER_VERSION << "\n";
+    out << "      Build Type:    " << TACHYON_BUILD_TYPE << "\n";
+    out << "      Threads:       " << std::thread::hardware_concurrency() << " available\n";
+    
+    out << "      Features:\n";
+    out << "        Media:       " << (TACHYON_MEDIA_ENABLED ? "ENABLED" : "DISABLED") << "\n";
+    out << "        SIMD:        " << (TACHYON_SIMD_ENABLED ? "ENABLED" : "DISABLED") << "\n";
+    out << "        mimalloc:    " << (TACHYON_MIMALLOC_ENABLED ? "LINKED" : "NO") << "\n";
+
+    if (TACHYON_MEDIA_ENABLED) {
+        std::string mode = TACHYON_FFMPEG_DISCOVERY_MODE;
+        if (mode.empty()) mode = "unknown";
+        out << "      FFmpeg:\n";
+        out << "        Found:       YES\n";
+        out << "        Discovery:   " << mode << "\n";
+    }
+    out << "\n";
+
+    // 2. Audit Transition Registries
+    out << "[2/3] Auditing Transition Registry alignment...\n";
     presets::TransitionPresetRegistry preset_reg;
 
     auto preset_ids = preset_reg.list_ids();
@@ -58,8 +79,8 @@ bool run_doctor_command(const CliOptions&, std::ostream& out, std::ostream& err,
     }
     out << "\n";
 
-    // 2. Audit Library Discovery
-    out << "[2/2] Auditing Library Discovery...\n";
+    // 3. Audit Library Discovery
+    out << "[3/3] Auditing Library Discovery...\n";
     // We provide a default root if needed, but the library constructor handles it.
     TachyonLibrary library(""); 
     int library_errors = 0;

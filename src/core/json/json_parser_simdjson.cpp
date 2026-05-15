@@ -1,14 +1,84 @@
+#include <fstream>
+#include <sstream>
+#include <filesystem>
+#include <stdexcept>
+#include <system_error>
+
 #include "tachyon/core/json/json_document.h"
 
 #if defined(TACHYON_ENABLE_SIMDJSON)
 #include <simdjson.h>
 #endif
 
-#include <fstream>
-#include <sstream>
-#include <filesystem>
-
 namespace tachyon::core::json {
+
+struct JsonValue::Impl {
+#if defined(TACHYON_ENABLE_SIMDJSON)
+    simdjson::dom::element element;
+#endif
+    bool valid = false;
+};
+
+bool JsonValue::valid() const noexcept { return impl_ && impl_->valid; }
+
+std::optional<std::string> JsonValue::get_string(std::string_view key) const {
+#if defined(TACHYON_ENABLE_SIMDJSON)
+    if (!valid()) return std::nullopt;
+    auto val = impl_->element[key];
+    if (val.error()) return std::nullopt;
+    std::string_view sv;
+    if (val.get(sv) == simdjson::SUCCESS) return std::string(sv);
+#endif
+    return std::nullopt;
+}
+
+std::optional<double> JsonValue::get_double(std::string_view key) const {
+#if defined(TACHYON_ENABLE_SIMDJSON)
+    if (!valid()) return std::nullopt;
+    auto val = impl_->element[key];
+    if (val.error()) return std::nullopt;
+    double d;
+    if (val.get(d) == simdjson::SUCCESS) return d;
+#endif
+    return std::nullopt;
+}
+
+std::optional<std::int64_t> JsonValue::get_int(std::string_view key) const {
+#if defined(TACHYON_ENABLE_SIMDJSON)
+    if (!valid()) return std::nullopt;
+    auto val = impl_->element[key];
+    if (val.error()) return std::nullopt;
+    std::int64_t i;
+    if (val.get(i) == simdjson::SUCCESS) return i;
+#endif
+    return std::nullopt;
+}
+
+std::optional<bool> JsonValue::get_bool(std::string_view key) const {
+#if defined(TACHYON_ENABLE_SIMDJSON)
+    if (!valid()) return std::nullopt;
+    auto val = impl_->element[key];
+    if (val.error()) return std::nullopt;
+    bool b;
+    if (val.get(b) == simdjson::SUCCESS) return b;
+#endif
+    return std::nullopt;
+}
+
+std::optional<std::vector<std::string>> JsonValue::get_string_array(std::string_view key) const {
+#if defined(TACHYON_ENABLE_SIMDJSON)
+    if (!valid()) return std::nullopt;
+    auto val = impl_->element[key];
+    if (val.error() || !val.is_array()) return std::nullopt;
+    std::vector<std::string> result;
+    for (auto item : val.get_array()) {
+        std::string_view sv;
+        if (item.get(sv) == simdjson::SUCCESS) result.push_back(std::string(sv));
+    }
+    return result;
+#endif
+    return std::nullopt;
+}
 
 struct JsonDocument::Impl {
 #if defined(TACHYON_ENABLE_SIMDJSON)
@@ -18,13 +88,6 @@ struct JsonDocument::Impl {
     std::string buffer;
     bool valid = false;
 };
-
-// JsonValue implementation (skeleton)
-bool JsonValue::valid() const noexcept { return false; }
-std::optional<std::string> JsonValue::get_string(std::string_view) const { return std::nullopt; }
-std::optional<double> JsonValue::get_double(std::string_view) const { return std::nullopt; }
-std::optional<std::int64_t> JsonValue::get_int(std::string_view) const { return std::nullopt; }
-std::optional<bool> JsonValue::get_bool(std::string_view) const { return std::nullopt; }
 
 JsonDocument::JsonDocument()
     : impl_(std::make_unique<Impl>()) {}
@@ -47,21 +110,22 @@ bool JsonDocument::parse_file(const std::string& path, std::string* error) {
     }
 
     std::size_t file_size = std::filesystem::file_size(path);
-    impl_->buffer.resize(file_size);
+    impl_->buffer.resize(file_size + simdjson::SIMDJSON_PADDING);
     file.read(impl_->buffer.data(), file_size);
     
-    return parse_string(impl_->buffer, error);
+    return parse_string(std::string_view(impl_->buffer.data(), file_size), error);
 }
 
 bool JsonDocument::parse_string(std::string_view json, std::string* error) {
 #if defined(TACHYON_ENABLE_SIMDJSON)
-    // If not using the internal buffer from parse_file, we must copy it
-    // because simdjson needs a padded buffer or we need to manage lifetime.
+    // simdjson needs padding. If the input view doesn't have it (likely),
+    // we copy to our internal buffer which has it.
     if (impl_->buffer.data() != json.data()) {
         impl_->buffer.assign(json.data(), json.size());
+        impl_->buffer.resize(json.size() + simdjson::SIMDJSON_PADDING);
     }
 
-    auto result = impl_->parser.parse(impl_->buffer);
+    auto result = impl_->parser.parse(impl_->buffer.data(), json.size());
     if (result.error()) {
         if (error) *error = simdjson::error_message(result.error());
         impl_->valid = false;
@@ -79,7 +143,15 @@ bool JsonDocument::parse_string(std::string_view json, std::string* error) {
 }
 
 JsonValue JsonDocument::root() const {
-    return JsonValue();
+    JsonValue v;
+    if (impl_->valid) {
+        v.impl_ = std::make_shared<JsonValue::Impl>();
+#if defined(TACHYON_ENABLE_SIMDJSON)
+        v.impl_->element = impl_->root;
+#endif
+        v.impl_->valid = true;
+    }
+    return v;
 }
 
 } // namespace tachyon::core::json
