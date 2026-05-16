@@ -1,5 +1,4 @@
 #include "tachyon/runtime/execution/session/render_session.h"
-#include "tachyon/runtime/telemetry/simple_logger.h"
 #include "tachyon/runtime/registry/engine_registry.h"
 #include "tachyon/runtime/execution/frames/frame_executor.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
@@ -26,6 +25,7 @@
 #include "tachyon/runtime/policy/worker_policy.h"
 #include "tachyon/runtime/policy/surface_pool_policy.h"
 #include "tachyon/runtime/policy/telemetry_policy.h"
+#include "tachyon/core/render_telemetry.h"
 
 #include <iostream>
 #include <future>
@@ -319,6 +319,18 @@ RenderSessionResult RenderSession::render(
     result.frame_execution_ms = std::chrono::duration<double, std::milli>(frame_exec_end - frame_exec_start).count();
     result.frame_times_ms = std::move(workspace.frame_times);
 
+    // New Structured Telemetry logging for each frame
+    for (size_t i = 0; i < result.frame_times_ms.size(); ++i) {
+        TelemetryEvent fe;
+        fe.event = is_video ? "video_frame" : "frame_render";
+        fe.frame = static_cast<int>(workspace.effective_plan.frame_tasks[i].frame_number);
+        fe.w = w;
+        fe.h = h;
+        fe.total_ms = result.frame_times_ms[i];
+        // Note: finer-grained timings (setup/composite/blur) are currently aggregated in frame_executor
+        RenderTelemetry::get().log(fe);
+    }
+
     if (!workspace.sink) {
         result.frames = std::move(workspace.rendered_frames);
         result.cache_hits = 0;
@@ -337,20 +349,18 @@ RenderSessionResult RenderSession::render(
     const auto session_end = std::chrono::steady_clock::now();
     finalize_session_metrics(result, sampler, session_start, session_end);
 
-    // Mandate: Every render must report to SimpleRenderLogger
-    runtime::RenderStat stat;
-    stat.ts = std::chrono::duration_cast<std::chrono::seconds>(
-        std::chrono::system_clock::now().time_since_epoch()).count();
-    stat.total_ms = result.wall_time_total_ms;
-    stat.load_ms = result.io_read_ms;
-    stat.composite_ms = result.frame_execution_ms;
-    stat.blur_ms = 0; // TODO: Split effect timings in frame_executor
-    stat.encode_ms = result.encode_ms;
-    stat.w = static_cast<int>(workspace.effective_plan.render_plan.output.profile.width.value_or(0));
-    stat.h = static_cast<int>(workspace.effective_plan.render_plan.output.profile.height.value_or(0));
-    stat.preset = workspace.effective_plan.render_plan.output.profile.name;
-    
-    runtime::SimpleRenderLogger::instance().log(stat);
+    // Telemetry finalization
+    TelemetryEvent se;
+    se.event = "render_session_end";
+    se.w = workspace.effective_plan.render_plan.output.profile.width.value_or(0);
+    se.h = workspace.effective_plan.render_plan.output.profile.height.value_or(0);
+    se.total_ms = result.wall_time_total_ms;
+    se.setup_ms = result.io_read_ms;
+    se.composite_ms = result.frame_execution_ms;
+    se.encode_ms = result.encode_ms;
+    RenderTelemetry::get().log(se);
+
+    return result;
 
     return result;
 }

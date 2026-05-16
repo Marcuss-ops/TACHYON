@@ -34,8 +34,7 @@ std::vector<TextAnimatorSpec> resolve_text_animators(const presets::TextParams& 
 
 TextLayerSpec build_text_spec(const presets::TextParams& p, const presets::TextRegistry* registry) {
     TextLayerSpec spec;
-    spec.in_point = p.in_point;
-    spec.out_point = p.out_point;
+    spec.timing = p.timing;
     spec.x = p.x;
     spec.y = p.y;
     spec.width = p.text_w;
@@ -59,8 +58,7 @@ TextLayerSpec build_text_spec(const presets::TextParams& p, const presets::TextR
 
 LayerSpec make_layer_from_text_spec(const TextLayerSpec& spec) {
     presets::LayerParams p;
-    p.in_point = spec.in_point;
-    p.out_point = spec.out_point;
+    p.timing = spec.timing;
     p.x = static_cast<float>(spec.x);
     p.y = static_cast<float>(spec.y);
     p.w = static_cast<float>(spec.width);

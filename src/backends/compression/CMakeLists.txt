@@ -1,8 +1,14 @@
 set(TACHYON_BACKEND_COMPRESSION_SOURCES
     texture_compressor_none.cpp
-    texture_compressor_basis.cpp
-    compression_simd_kernels_highway.cpp
 )
+
+if(TACHYON_ENABLE_BASIS)
+    list(APPEND TACHYON_BACKEND_COMPRESSION_SOURCES texture_compressor_basis.cpp)
+endif()
+
+if(TACHYON_ENABLE_HIGHWAY)
+    list(APPEND TACHYON_BACKEND_COMPRESSION_SOURCES compression_simd_kernels_highway.cpp)
+endif()
 
 add_library(TachyonBackendsCompression STATIC ${TACHYON_BACKEND_COMPRESSION_SOURCES})
 

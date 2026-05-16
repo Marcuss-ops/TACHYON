@@ -61,6 +61,12 @@ TransitionKernel create_none_kernel() {
         if (output.width() != width_u32 || output.height() != height_u32) {
             output.reset(width_u32, height_u32);
         }
+
+        // Attempt SIMD/Hardware fast path via registry
+        if (core::transition::TransitionFastPathRegistry::apply("none", output, input_a, input_b, progress, thread_count)) {
+            return;
+        }
+
         output.set_profile(input_a.profile());
         auto& pixels = output.mutable_pixels();
 
@@ -75,7 +81,7 @@ TransitionKernel create_none_kernel() {
 #endif
             for (int y = 0; y < static_cast<int>(height_u32); ++y) {
                 const std::size_t offset = static_cast<std::size_t>(y) * width_u32 * 4;
-                tachyon::runtime::simd::lerp_pixels_best(
+                tachyon::runtime::simd::lerp_pixels_scalar(
                     pixels.data() + offset, 
                     input_a.pixels().data() + offset, 
                     input_b->pixels().data() + offset, 

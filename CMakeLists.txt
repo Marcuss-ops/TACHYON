@@ -105,13 +105,6 @@ configure_file(
 
 # Binary dir include directory is added to TachyonCore target in src/CMakeLists.txt
 
-if(TACHYON_ENABLE_MEDIA)
-    add_compile_definitions(TACHYON_ENABLE_MEDIA)
-endif()
-if(TACHYON_ENABLE_TASKFLOW)
-    add_compile_definitions(TACHYON_ENABLE_TASKFLOW)
-endif()
-
 # Subdirectories
 add_subdirectory(src)
 

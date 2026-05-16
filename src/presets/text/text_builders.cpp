@@ -152,9 +152,7 @@ SceneSpec build_text_scene(const TextParams& text, const SceneParams& scene) {
     bg_layer.identity.type = LayerType::Solid;
     bg_layer.identity.enabled = true;
     bg_layer.identity.visible = true;
-    bg_layer.playback.timing.start     = 0.0;
-    bg_layer.playback.timing.source_in = 0.0;
-    bg_layer.playback.timing.duration  = scene.duration;
+    bg_layer.playback.timing = {0.0, scene.duration, 0.0, scene.duration};
     bg_layer.transform.width = scene.width;
     bg_layer.transform.height = scene.height;
     bg_layer.transform.opacity = 1.0;
@@ -177,8 +175,8 @@ LayerSpec build_text_layer(const std::string& text,
     p.font_id = font_id;
     p.font_size = static_cast<uint32_t>(font_size);
     p.animation = animation_style;
-    p.in_point = 0.0;
-    p.out_point = duration;
+    p.timing.start = 0.0;
+    p.timing.duration = duration;
     p.reveal_duration = 0.5;
     
     return build_text(p);

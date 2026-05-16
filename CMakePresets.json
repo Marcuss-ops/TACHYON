@@ -136,6 +136,41 @@
         "TACHYON_ENABLE_PCH": "ON",
         "TACHYON_ENABLE_ASAN": "OFF"
       }
+    },
+    {
+      "name": "media-off",
+      "inherits": "base-unix",
+      "description": "Validation: Build with MEDIA=OFF",
+      "binaryDir": "${sourceDir}/build/media-off",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "TACHYON_ENABLE_MEDIA": "OFF",
+        "TACHYON_BUILD_TESTS": "ON"
+      }
+    },
+    {
+      "name": "highway-off",
+      "inherits": "base-unix",
+      "description": "Validation: Build with HIGHWAY=OFF",
+      "binaryDir": "${sourceDir}/build/highway-off",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "TACHYON_ENABLE_HIGHWAY": "OFF",
+        "TACHYON_ENABLE_MANUAL_AVX2": "OFF",
+        "TACHYON_BUILD_TESTS": "ON"
+      }
+    },
+    {
+      "name": "audio-off",
+      "inherits": "base-unix",
+      "description": "Validation: Build with AUDIO=OFF",
+      "binaryDir": "${sourceDir}/build/audio-off",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "TACHYON_ENABLE_AUDIO": "OFF",
+        "TACHYON_ENABLE_WHISPER": "OFF",
+        "TACHYON_BUILD_TESTS": "ON"
+      }
     }
   ],
   "buildPresets": [
@@ -250,6 +285,30 @@
       "configurePreset": "release",
       "targets": [
         "tachyon"
+      ]
+    },
+    {
+      "name": "media-off",
+      "configurePreset": "media-off",
+      "targets": [
+        "TachyonCore",
+        "HeaderSmokeTests"
+      ]
+    },
+    {
+      "name": "highway-off",
+      "configurePreset": "highway-off",
+      "targets": [
+        "TachyonCore",
+        "HeaderSmokeTests"
+      ]
+    },
+    {
+      "name": "audio-off",
+      "configurePreset": "audio-off",
+      "targets": [
+        "TachyonCore",
+        "HeaderSmokeTests"
       ]
     }
   ]

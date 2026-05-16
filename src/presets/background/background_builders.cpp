@@ -73,9 +73,7 @@ LayerSpec build_background(const BackgroundParams& p) {
     palette.motion_speed *= static_cast<double>(p.speed);
     
     // LayerParams order: in_point, out_point, x, y, w, h, opacity
-    LayerSpec layer = make_base_layer("bg_layer", "Background", "procedural", {
-        p.in_point, p.out_point, p.x, p.y, p.w, p.h, p.opacity
-    });
+    LayerSpec layer = make_base_layer("bg_layer", "Background", "procedural", p);
 
     const auto& registry = BackgroundRegistry::instance();
 

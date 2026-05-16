@@ -3,6 +3,7 @@
 set(TachyonBackendRegistrySources
     backend_registry.cpp
     backend_init.cpp
+    profile_resolver.cpp
 )
 
 add_library(TachyonBackendRegistry STATIC ${TachyonBackendRegistrySources})

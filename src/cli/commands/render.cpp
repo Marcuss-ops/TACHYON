@@ -12,6 +12,8 @@
 #include "tachyon/api.h"
 #include "cli/commands/command.h"
 #include "cli/support/cli_internal.h"
+#include "tachyon/core/render_telemetry.h"
+#include "tachyon/diagnostics/trace.h"
 
 #include <iostream>
 #include <filesystem>
@@ -21,6 +23,8 @@
 namespace tachyon {
 
 int run_render(const CliOptions& options, std::ostream& out, std::ostream& err) {
+    TACHYON_TRACE_SCOPE("render.total");
+    RenderTelemetry::get().init();
     out << "rendering scene: " << options.cpp_path << "\n";
 
     SceneLoadOptions load_opts;
@@ -104,6 +108,16 @@ int run_render(const CliOptions& options, std::ostream& out, std::ostream& err) 
         if (!output_path.empty()) {
             out << "output: " << output_path.string() << "\n";
         }
+
+        TelemetryEvent e;
+        e.event = "video_export";
+        e.total_ms = static_cast<double>(duration.count());
+        e.w = scene.compositions.front().width;
+        e.h = scene.compositions.front().height;
+        e.layer_count = static_cast<int>(scene.compositions.front().layers.size());
+        RenderTelemetry::get().log(e);
+        RenderTelemetry::get().save_summary();
+
         return 0;
     } else {
         err << "render failed: " << session_res.output_error << "\n";

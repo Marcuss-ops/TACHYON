@@ -13,7 +13,9 @@ BackgroundParams get_base_params(const registry::ParameterBag& bag) {
     BackgroundParams p;
     p.w = bag.get_or<float>("width", 1920.0f);
     p.h = bag.get_or<float>("height", 1080.0f);
-    p.out_point = bag.get_or<double>("duration", 8.0);
+    double duration = bag.get_or<double>("duration", 8.0);
+    p.timing.duration = duration;
+    p.timing.source_out = duration;
     return p;
 }
 

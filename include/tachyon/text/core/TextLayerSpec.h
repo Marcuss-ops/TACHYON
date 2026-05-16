@@ -26,8 +26,7 @@ struct TextLayerSpec {
     std::string name{"Text"};
 
     // Timing
-    double in_point{0.0};
-    double out_point{10.0};
+    LayerTiming timing{0.0, 10.0, 0.0, 10.0};
     double opacity{1.0};
 
     // Position & dimensions

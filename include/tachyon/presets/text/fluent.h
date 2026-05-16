@@ -137,7 +137,8 @@ public:
     }
     
     TextBuilder& duration(double d) {
-        params_.out_point = static_cast<float>(d);
+        params_.timing.duration = d;
+        params_.timing.source_out = d;
         return *this;
     }
     
