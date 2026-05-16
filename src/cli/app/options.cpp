@@ -83,6 +83,11 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
             if (options.transition_id->empty()) result.diagnostics.add_error("cli.transition_missing", "missing value for --transition");
             continue;
         }
+        if (arg == "--trace-json") {
+            options.trace_json = require_argument(args, index);
+            if (options.trace_json.empty()) result.diagnostics.add_error("cli.trace_json_missing", "missing value for --trace-json");
+            continue;
+        }
         if (arg == "--output-preset") {
             options.render.output_preset_id = require_argument(args, index);
             if (options.render.output_preset_id->empty()) result.diagnostics.add_error("cli.output_preset_missing", "missing value for --output-preset");

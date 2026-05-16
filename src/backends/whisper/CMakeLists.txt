@@ -19,6 +19,8 @@ target_link_libraries(TachyonBackendWhisper
         TachyonPlatform
 )
 
+target_compile_definitions(TachyonBackendWhisper PRIVATE TACHYON_ENABLE_WHISPER)
+
 # Placeholder for whisper specific deps if needed
 # target_link_libraries(TachyonBackendWhisper PRIVATE whisper_lib)
 

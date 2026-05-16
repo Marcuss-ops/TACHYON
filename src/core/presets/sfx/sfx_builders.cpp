@@ -45,8 +45,8 @@ spec::AudioTrackSpec build_sfx(const ::tachyon::media::IAssetResolver& resolver,
     }
 
     spec.volume = p.volume;
-    spec.in_point_seconds = p.in_point;
-    spec.out_point_seconds = p.out_point;
+    spec.in_point_seconds = p.timing.source_in;
+    spec.out_point_seconds = p.timing.source_out;
     return spec;
 }
 

@@ -1,13 +1,13 @@
 #pragma once
 
+#include "tachyon/core/spec/schema/common/common_spec.h"
 #include <optional>
 #include <string>
 
 namespace tachyon::presets {
 
 struct LayerParams {
-    double in_point{0.0};
-    double out_point{5.0};
+    LayerTiming timing{0.0, 5.0, 0.0, 5.0};
     float  x{0.0f};
     float  y{0.0f};
     float  w{1920.0f};
@@ -19,7 +19,7 @@ struct LayerParams {
     std::string exit_preset;
     double      exit_duration{0.3};
 
-    [[nodiscard]] double duration() const { return out_point - in_point; }
+    [[nodiscard]] double duration() const { return timing.duration; }
 };
 
 struct SceneParams {

@@ -10,8 +10,7 @@ namespace {
 ::tachyon::presets::BackgroundParams make_background_params(const TextScenePresetOptions& options) {
     ::tachyon::presets::BackgroundParams params;
     params.kind = options.procedural_kind;
-    params.in_point = 0.0;
-    params.out_point = options.duration_seconds;
+    params.timing = {0.0, options.duration_seconds, 0.0, options.duration_seconds};
     params.x = 0.0f;
     params.y = 0.0f;
     params.w = static_cast<float>(options.width);
@@ -90,10 +89,7 @@ LayerSpec make_enhance_text_layer(const TextScenePresetOptions& options) {
     text.identity.type = LayerType::Text;
     text.identity.enabled = true;
     text.identity.visible = true;
-    text.playback.timing.start = 0.0;
-    text.playback.timing.source_in = 0.0;
-    text.playback.timing.source_out = options.duration_seconds;
-    text.playback.timing.duration = options.duration_seconds;
+    text.playback.timing = {0.0, options.duration_seconds, 0.0, options.duration_seconds};
     text.text.box.width = static_cast<float>(options.text_width);
     text.text.box.height = static_cast<float>(options.text_height);
     text.text.box.mode = TextBoxMode::Fixed;

@@ -16,9 +16,7 @@ LayerSpec make_base_layer(
     l.identity.enabled = true;
     l.identity.visible = true;
     
-    l.playback.timing.start     = p.in_point;
-    l.playback.timing.source_in = p.in_point;
-    l.playback.timing.duration  = std::max(0.01, p.out_point - p.in_point);
+    l.playback.timing = p.timing;
     
     l.transform.width            = static_cast<int>(p.w);
     l.transform.height           = static_cast<int>(p.h);

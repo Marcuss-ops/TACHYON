@@ -27,6 +27,7 @@ set(TachyonCoreSources
     presets/sfx/sfx_registry.cpp
     presets/sfx/sfx_registry_table.cpp
     profiles/execution_profile.cpp
+    render_telemetry.cpp
 )
 
 
@@ -50,16 +51,6 @@ target_sources(TachyonCore PRIVATE
     ${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/src/clipper.offset.cpp
     ${clipper2_SOURCE_DIR}/CPP/Clipper2Lib/src/clipper.rectclip.cpp
 )
-
-if(TACHYON_ENABLE_MANUAL_AVX2)
-    target_sources(TachyonCore PRIVATE transition/transition_simd_kernels_avx2.cpp)
-    if(MSVC)
-        set_source_files_properties(transition/transition_simd_kernels_avx2.cpp PROPERTIES COMPILE_FLAGS "/arch:AVX2")
-    else()
-        set_source_files_properties(transition/transition_simd_kernels_avx2.cpp PROPERTIES COMPILE_FLAGS "-mavx2")
-    endif()
-    target_compile_definitions(TachyonCore PRIVATE "TACHYON_AVX2")
-endif()
 
 # Additional Core-related modules
 add_subdirectory(platform)

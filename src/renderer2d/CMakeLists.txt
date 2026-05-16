@@ -160,3 +160,16 @@ target_link_libraries(TachyonRenderer2D PUBLIC
     TachyonText
     TachyonPresets
 )
+
+if(TACHYON_ENABLE_HIGHWAY)
+    if(TARGET hwy)
+        target_link_libraries(TachyonRenderer2D PUBLIC hwy)
+    elseif(TARGET hwy::hwy)
+        target_link_libraries(TachyonRenderer2D PUBLIC hwy::hwy)
+    endif()
+    target_compile_definitions(TachyonRenderer2D PUBLIC TACHYON_ENABLE_HIGHWAY)
+endif()
+
+if(TARGET TachyonBackendSimd)
+    target_link_libraries(TachyonRenderer2D PUBLIC TachyonBackendSimd)
+endif()

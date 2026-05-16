@@ -1,4 +1,4 @@
-#include "tachyon/core/transition/transition_simd_kernels.h"
+#include "simd_kernels_internal.h"
 
 #if defined(TACHYON_ENABLE_HIGHWAY)
 

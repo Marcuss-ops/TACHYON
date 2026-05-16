@@ -52,6 +52,10 @@ function(tachyon_configure_common target)
         endif()
     endif()
 
+    if(TACHYON_ENABLE_MEDIA)
+        target_compile_definitions(${target} PUBLIC TACHYON_ENABLE_MEDIA)
+    endif()
+
     set_target_properties(${target} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 endfunction()

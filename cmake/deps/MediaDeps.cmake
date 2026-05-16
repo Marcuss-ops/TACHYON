@@ -108,6 +108,6 @@ function(tachyon_link_media_deps target)
         endif()
     endif()
 
-    target_link_libraries(${target} PUBLIC Tachyon::FFmpeg)
-    target_compile_definitions(${target} PUBLIC TACHYON_ENABLE_MEDIA)
+    target_link_libraries(${target} PRIVATE Tachyon::FFmpeg)
+    target_compile_definitions(${target} PRIVATE TACHYON_ENABLE_MEDIA)
 endfunction()

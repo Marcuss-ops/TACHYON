@@ -13,9 +13,7 @@ LayerSpec make_image_layer_base(const ImageParams& p) {
     l.identity.type        = LayerType::Image;
     l.identity.enabled     = true;
     l.identity.visible     = true;
-    l.playback.timing.start     = p.in_point;
-    l.playback.timing.source_in = p.in_point;
-    l.playback.timing.duration  = std::max(0.01, p.out_point - p.in_point);
+    l.playback.timing       = p.timing;
     l.transform.width       = static_cast<int>(p.w);
     l.transform.height      = static_cast<int>(p.h);
     l.transform.opacity     = static_cast<double>(p.opacity);
@@ -51,10 +49,10 @@ LayerSpec build_image_slow_zoom(const ImageParams& p) {
     auto l = make_image_layer_base(p);
     l.transform.transform.scale_property.value = { p.zoom_from * 100.0f, p.zoom_from * 100.0f };
     l.transform.transform.scale_property.keyframes.push_back(Vector2KeyframeSpec{
-        static_cast<double>(p.in_point), { p.zoom_from * 100.0f, p.zoom_from * 100.0f }
+        p.timing.start, { p.zoom_from * 100.0f, p.zoom_from * 100.0f }
     });
     l.transform.transform.scale_property.keyframes.push_back(Vector2KeyframeSpec{
-        static_cast<double>(p.out_point), { p.zoom_to * 100.0f, p.zoom_to * 100.0f }
+        p.timing.start + p.timing.duration, { p.zoom_to * 100.0f, p.zoom_to * 100.0f }
     });
     return l;
 }
@@ -64,10 +62,10 @@ LayerSpec build_image_pan_left(const ImageParams& p) {
     float dist = p.w * p.pan_distance;
     l.transform.transform.position_property.value = { p.x + dist, p.y };
     l.transform.transform.position_property.keyframes.push_back(Vector2KeyframeSpec{
-        static_cast<double>(p.in_point), { p.x + dist, p.y }
+        p.timing.start, { p.x + dist, p.y }
     });
     l.transform.transform.position_property.keyframes.push_back(Vector2KeyframeSpec{
-        static_cast<double>(p.out_point), { p.x - dist, p.y }
+        p.timing.start + p.timing.duration, { p.x - dist, p.y }
     });
     return l;
 }
@@ -77,10 +75,10 @@ LayerSpec build_image_pan_right(const ImageParams& p) {
     float dist = p.w * p.pan_distance;
     l.transform.transform.position_property.value = { p.x - dist, p.y };
     l.transform.transform.position_property.keyframes.push_back(Vector2KeyframeSpec{
-        static_cast<double>(p.in_point), { p.x - dist, p.y }
+        p.timing.start, { p.x - dist, p.y }
     });
     l.transform.transform.position_property.keyframes.push_back(Vector2KeyframeSpec{
-        static_cast<double>(p.out_point), { p.x + dist, p.y }
+        p.timing.start + p.timing.duration, { p.x + dist, p.y }
     });
     return l;
 }
@@ -90,10 +88,10 @@ LayerSpec build_image_pan_up(const ImageParams& p) {
     float dist = p.h * p.pan_distance;
     l.transform.transform.position_property.value = { p.x, p.y + dist };
     l.transform.transform.position_property.keyframes.push_back(Vector2KeyframeSpec{
-        static_cast<double>(p.in_point), { p.x, p.y + dist }
+        p.timing.start, { p.x, p.y + dist }
     });
     l.transform.transform.position_property.keyframes.push_back(Vector2KeyframeSpec{
-        static_cast<double>(p.out_point), { p.x, p.y - dist }
+        p.timing.start + p.timing.duration, { p.x, p.y - dist }
     });
     return l;
 }
@@ -103,10 +101,10 @@ LayerSpec build_image_pan_down(const ImageParams& p) {
     float dist = p.h * p.pan_distance;
     l.transform.transform.position_property.value = { p.x, p.y - dist };
     l.transform.transform.position_property.keyframes.push_back(Vector2KeyframeSpec{
-        static_cast<double>(p.in_point), { p.x, p.y - dist }
+        p.timing.start, { p.x, p.y - dist }
     });
     l.transform.transform.position_property.keyframes.push_back(Vector2KeyframeSpec{
-        static_cast<double>(p.out_point), { p.x, p.y + dist }
+        p.timing.start + p.timing.duration, { p.x, p.y + dist }
     });
     return l;
 }
@@ -118,16 +116,16 @@ LayerSpec build_image_ken_burns(const ImageParams& p) {
     float dist_y = p.h * 0.02f;
     
     l.transform.transform.scale_property.keyframes.push_back(Vector2KeyframeSpec{
-        static_cast<double>(p.in_point), { 105.0f, 105.0f }
+        p.timing.start, { 105.0f, 105.0f }
     });
     l.transform.transform.scale_property.keyframes.push_back(Vector2KeyframeSpec{
-        static_cast<double>(p.out_point), { 115.0f, 115.0f }
+        p.timing.start + p.timing.duration, { 115.0f, 115.0f }
     });
     l.transform.transform.position_property.keyframes.push_back(Vector2KeyframeSpec{
-        static_cast<double>(p.in_point), { p.x - dist_x, p.y - dist_y }
+        p.timing.start, { p.x - dist_x, p.y - dist_y }
     });
     l.transform.transform.position_property.keyframes.push_back(Vector2KeyframeSpec{
-        static_cast<double>(p.out_point), { p.x + dist_x, p.y + dist_y }
+        p.timing.start + p.timing.duration, { p.x + dist_x, p.y + dist_y }
     });
     return l;
 }

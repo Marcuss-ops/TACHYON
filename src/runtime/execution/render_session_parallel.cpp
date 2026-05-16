@@ -15,6 +15,7 @@
 #include "tachyon/runtime/execution/parallel/taskflow_runtime.h"
 #include "tachyon/runtime/core/serialization/tbf_codec.h"
 #include "tachyon/core/profiling.h"
+#include "tachyon/diagnostics/trace.h"
 
 #include <iostream>
 #include <future>
@@ -157,6 +158,15 @@ void render_frames_parallel_internal(
             return;
         }
 
+        const auto& task = execution_plan.frame_tasks[index];
+        RenderPlan frame_plan = execution_plan.render_plan;
+
+        TACHYON_ZONE("ExecuteFrame");
+        TACHYON_TRACE_SCOPE("render.frame");
+        TACHYON_TRACE_COUNTER("render.frame_index", static_cast<std::int64_t>(task.frame_number));
+        TACHYON_TRACE_COUNTER("render.width", static_cast<std::int64_t>(frame_plan.composition.width));
+        TACHYON_TRACE_COUNTER("render.height", static_cast<std::int64_t>(frame_plan.composition.height));
+
         FrameArena arena;
         FrameExecutor executor(arena, cache, nullptr);
         executor.set_parallel_worker_count(budget.pixel_concurrency);
@@ -167,10 +177,6 @@ void render_frames_parallel_internal(
         local_context.pixel_concurrency = budget.pixel_concurrency;
         local_context.cancel_flag = cancel_flag;
 
-        TACHYON_ZONE("ExecuteFrame");
-
-        const auto& task = execution_plan.frame_tasks[index];
-        RenderPlan frame_plan = execution_plan.render_plan;
         render_trace(
             "frame start index=" + std::to_string(index) +
             " frame=" + std::to_string(task.frame_number) +
@@ -204,7 +210,10 @@ void render_frames_parallel_internal(
             DataSnapshot snapshot;
             const auto frame_start = std::chrono::high_resolution_clock::now();
             
-            executed_frame = executor.execute(compiled_scene, frame_plan, task, snapshot, local_context);
+            {
+                TACHYON_TRACE_SCOPE("render.frame.draw");
+                executed_frame = executor.execute(compiled_scene, frame_plan, task, snapshot, local_context);
+            }
             
             const auto frame_end = std::chrono::high_resolution_clock::now();
             const double render_ms = std::chrono::duration<double, std::milli>(frame_end - frame_start).count();
@@ -296,7 +305,11 @@ void render_frames_parallel_internal(
                         packet.metadata.color_space = context.cms.output_profile.to_string();
                         
                         const auto write_start = std::chrono::high_resolution_clock::now();
-                        const bool write_ok = sink->write_frame(packet);
+                        bool write_ok = false;
+                        {
+                            TACHYON_TRACE_SCOPE("render.frame.encode");
+                            write_ok = sink->write_frame(packet);
+                        }
                         const auto write_end = std::chrono::high_resolution_clock::now();
                         
                         const double write_ms = std::chrono::duration<double, std::milli>(write_end - write_start).count();

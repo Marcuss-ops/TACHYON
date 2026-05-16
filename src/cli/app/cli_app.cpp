@@ -4,6 +4,7 @@
 #include "cli/commands/command.h"
 #include "cli/commands/command_registry.h"
 #include "tachyon/runtime/registry/engine_registry.h"
+#include "tachyon/diagnostics/trace_session.h"
 #include <iostream>
 
 namespace tachyon {
@@ -51,16 +52,32 @@ int CliApp::run(int argc, char** argv) {
         m_registry = runtime::create_default_engine_registry();
     }
 
-    // 4. Dispatch through registry
-    const auto* cmd = CommandRegistry::instance().find_command(options.command);
-    if (cmd) {
-        if (cmd->validate && !cmd->validate(options, std::cerr)) return 1;
-        return cmd->handler(options, std::cout, std::cerr, *m_registry) ? 0 : 2;
+    // 4. Initialize tracing if requested
+    if (!options.trace_json.empty()) {
+        diagnostics::start_json_trace(options.trace_json.string());
     }
 
-    std::cerr << "Unknown command: " << options.command << "\n\n";
-    print_help(std::cerr);
-    return 1;
+    // 5. Dispatch through registry
+    int exit_code = 1;
+    const auto* cmd = CommandRegistry::instance().find_command(options.command);
+    if (cmd) {
+        if (cmd->validate && !cmd->validate(options, std::cerr)) {
+            exit_code = 1;
+        } else {
+            exit_code = cmd->handler(options, std::cout, std::cerr, *m_registry) ? 0 : 2;
+        }
+    } else {
+        std::cerr << "Unknown command: " << options.command << "\n\n";
+        print_help(std::cerr);
+        exit_code = 1;
+    }
+
+    // 6. Finalize tracing
+    if (!options.trace_json.empty()) {
+        diagnostics::stop_trace();
+    }
+
+    return exit_code;
 }
 
 } // namespace tachyon

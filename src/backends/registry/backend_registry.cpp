@@ -1,4 +1,5 @@
 #include "tachyon/backends/backend_registry.h"
+#include <algorithm>
 
 namespace tachyon::backends {
 
@@ -94,24 +95,28 @@ std::unique_ptr<core::media::IVideoConcat> BackendRegistry::create_video_concat(
 std::vector<std::string> BackendRegistry::list_probes() const {
     std::vector<std::string> names;
     for (const auto& [name, _] : m_probes) names.push_back(name);
+    std::sort(names.begin(), names.end());
     return names;
 }
 
 std::vector<std::string> BackendRegistry::list_audio_analyzers() const {
     std::vector<std::string> names;
     for (const auto& [name, _] : m_audio_analyzers) names.push_back(name);
+    std::sort(names.begin(), names.end());
     return names;
 }
 
 std::vector<std::string> BackendRegistry::list_video_encoders() const {
     std::vector<std::string> names;
     for (const auto& [name, _] : m_video_encoders) names.push_back(name);
+    std::sort(names.begin(), names.end());
     return names;
 }
 
 std::vector<std::string> BackendRegistry::list_transition_renderers() const {
     std::vector<std::string> names;
     for (const auto& [name, _] : m_transition_renderers) names.push_back(name);
+    std::sort(names.begin(), names.end());
     return names;
 }
 

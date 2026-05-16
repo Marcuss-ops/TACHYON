@@ -82,6 +82,7 @@ struct CliOptions {
     std::filesystem::path output_dir;
     std::string output_format;
     std::optional<std::string> transition_id;
+    std::filesystem::path trace_json;
 
     // Domain options
     RenderOptions render;
