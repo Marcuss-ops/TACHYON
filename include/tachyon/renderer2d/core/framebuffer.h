@@ -41,6 +41,10 @@ class SurfaceRGBA {
 public:
     SurfaceRGBA() = default;
     SurfaceRGBA(uint32_t width, uint32_t height);
+    SurfaceRGBA(SurfaceRGBA&&) noexcept = default;
+    SurfaceRGBA& operator=(SurfaceRGBA&&) noexcept = default;
+    SurfaceRGBA(const SurfaceRGBA&) = default;
+    SurfaceRGBA& operator=(const SurfaceRGBA&) = default;
 
     void reset(uint32_t width, uint32_t height);
 
@@ -110,6 +114,10 @@ class FramebufferRGBA8 {
 public:
     FramebufferRGBA8() = default;
     FramebufferRGBA8(uint32_t width, uint32_t height);
+    FramebufferRGBA8(FramebufferRGBA8&&) noexcept = default;
+    FramebufferRGBA8& operator=(FramebufferRGBA8&&) noexcept = default;
+    FramebufferRGBA8(const FramebufferRGBA8&) = default;
+    FramebufferRGBA8& operator=(const FramebufferRGBA8&) = default;
 
     void reset(uint32_t width, uint32_t height);
 
@@ -140,6 +148,10 @@ class FramebufferRGBA16 {
 public:
     FramebufferRGBA16() = default;
     FramebufferRGBA16(uint32_t width, uint32_t height);
+    FramebufferRGBA16(FramebufferRGBA16&&) noexcept = default;
+    FramebufferRGBA16& operator=(FramebufferRGBA16&&) noexcept = default;
+    FramebufferRGBA16(const FramebufferRGBA16&) = default;
+    FramebufferRGBA16& operator=(const FramebufferRGBA16&) = default;
 
     void reset(uint32_t width, uint32_t height);
 
