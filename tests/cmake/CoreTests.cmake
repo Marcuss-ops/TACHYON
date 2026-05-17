@@ -19,15 +19,13 @@ target_compile_definitions(TachyonCoreTests
 
 target_link_libraries(TachyonCoreTests
     PRIVATE
+        TachyonBindingsC
+        TachyonBackends
         TachyonPlatform
         TachyonTestUtils
         TachyonCore
         TachyonDiagnostics
 )
-
-if(TARGET TachyonBackendSimd)
-    target_link_libraries(TachyonCoreTests PRIVATE TachyonBackendSimd)
-endif()
 
 add_test(
     NAME TachyonCoreTests

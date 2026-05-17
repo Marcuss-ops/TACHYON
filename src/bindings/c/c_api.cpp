@@ -64,4 +64,66 @@ TACHYON_API int tachyon_run(int argc, const char** argv,
     }
 }
 
+TACHYON_API void tachyon_init_render_options(TachyonRenderOptions* options) {
+    if (!options) return;
+    std::memset(options, 0, sizeof(TachyonRenderOptions));
+    options->quality = "draft";
+    options->start_frame = -1;
+    options->end_frame = -1;
+}
+
+TACHYON_API int tachyon_render(const TachyonRenderOptions* options,
+                                char* error_out, int error_size) {
+    if (!options) {
+        write_error(error_out, error_size, "tachyon_render: options is null");
+        return 1;
+    }
+
+    std::vector<const char*> args;
+    args.push_back("tachyon");
+    args.push_back("render");
+
+    // Persistent storage for stringified numbers used by argc/argv proxy
+    std::string s_frames, s_workers;
+
+    if (options->preset_id) {
+        args.push_back("--preset");
+        args.push_back(options->preset_id);
+    } else if (options->cpp_path) {
+        args.push_back("--cpp");
+        args.push_back(options->cpp_path);
+    }
+
+    if (options->output_path) {
+        args.push_back("--out");
+        args.push_back(options->output_path);
+    }
+
+    if (options->quality) {
+        args.push_back("--quality");
+        args.push_back(options->quality);
+    }
+
+    if (options->start_frame >= 0 || options->end_frame >= 0) {
+        std::int64_t start = options->start_frame >= 0 ? options->start_frame : 0;
+        std::int64_t end = options->end_frame >= 0 ? options->end_frame : start;
+        s_frames = std::to_string(start) + "-" + std::to_string(end);
+        args.push_back("--frames");
+        args.push_back(s_frames.c_str());
+    }
+
+    if (options->worker_count > 0) {
+        args.push_back("--workers");
+        s_workers = std::to_string(options->worker_count);
+        args.push_back(s_workers.c_str());
+    }
+
+    if (options->library_path) {
+        args.push_back("--library");
+        args.push_back(options->library_path);
+    }
+
+    return tachyon_run(static_cast<int>(args.size()), args.data(), error_out, error_size);
+}
+
 } // extern "C"

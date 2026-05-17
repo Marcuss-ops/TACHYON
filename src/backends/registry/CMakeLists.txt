@@ -19,4 +19,16 @@ target_link_libraries(TachyonBackendRegistry
         TachyonCore
 )
 
+if(TACHYON_ENABLE_MEDIA)
+    target_link_libraries(TachyonBackendRegistry PUBLIC TachyonBackendFfmpeg)
+endif()
+
+if(TACHYON_ENABLE_WHISPER)
+    target_link_libraries(TachyonBackendRegistry PUBLIC TachyonBackendWhisper)
+endif()
+
+if(TACHYON_ENABLE_HIGHWAY OR TACHYON_ENABLE_MANUAL_AVX2)
+    target_link_libraries(TachyonBackendRegistry PUBLIC TachyonBackendSimd)
+endif()
+
 set_target_properties(TachyonBackendRegistry PROPERTIES POSITION_INDEPENDENT_CODE ON)

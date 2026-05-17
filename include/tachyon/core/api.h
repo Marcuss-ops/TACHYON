@@ -7,9 +7,9 @@
 
 #include "tachyon/api.h"
 
-// Versioning
+// Versioning is now handled by the generated tachyon/version.h
+// or should be guarded if still needed for some reason.
 #ifndef TACHYON_VERSION_MAJOR
-#define TACHYON_VERSION_MAJOR 1
-#define TACHYON_VERSION_MINOR 0
-#define TACHYON_VERSION_PATCH 0
+// Optional fallback if version.h is not included yet, 
+// but we prefer to include it where needed.
 #endif

@@ -40,6 +40,23 @@ bool run_c_api_smoke_test() {
         return false;
     }
 
+    // 5. Render test (smoke)
+    TachyonRenderOptions render_opts;
+    tachyon_init_render_options(&render_opts);
+    render_opts.preset_id = "tachyon.scene.modern_grid";
+    render_opts.start_frame = 0;
+    render_opts.end_frame = 1; // 2 frames (0 and 1)
+    render_opts.output_path = "c_api_test.mp4";
+    
+    // Clear error buffer before testing
+    std::memset(err, 0, sizeof(err));
+
+    int rc = tachyon_render(&render_opts, err, sizeof(err));
+    if (rc != 0) {
+        std::cerr << "tachyon_render(tachyon.scene.modern_grid) failed: " << err << "\n";
+        return false;
+    }
+
     return true;
 }
 

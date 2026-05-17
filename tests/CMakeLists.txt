@@ -12,11 +12,17 @@ function(tachyon_set_test_labels test_name)
     endif()
 endfunction()
 
-# Shared Test Utilities library
 add_library(TachyonTestUtils STATIC
     unit/test_utils.cpp
+    unit/image_comparison.cpp
 )
-target_include_directories(TachyonTestUtils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/unit)
+target_compile_definitions(TachyonTestUtils PRIVATE
+    TACHYON_TESTS_SOURCE_DIR="${TACHYON_TESTS_SOURCE_DIR}"
+)
+target_include_directories(TachyonTestUtils PUBLIC 
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit
+    ${CMAKE_SOURCE_DIR}/third_party/stb/include
+)
 target_link_libraries(TachyonTestUtils PUBLIC TachyonCore)
 
 # Loadable Scene Modules
@@ -32,6 +38,7 @@ include(cmake/SceneTests.cmake)
 include(cmake/RuntimeTests.cmake)
 include(cmake/OperationsTests.cmake)
 include(cmake/BackendTests.cmake)
+include(cmake/OutputTests.cmake)
 include(cmake/GoldenTests.cmake)
 
 # --- Header Smoke Tests ---

@@ -1,6 +1,7 @@
 #include "tachyon/output/frame_output_sink.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
 #include "tachyon/core/platform/shell_escape.h"
+#include "ffmpeg_capabilities.h"
 #include <sstream>
 #include <filesystem>
 #include <chrono>
@@ -9,6 +10,15 @@
 namespace tachyon::output {
 
 namespace {
+
+const FFmpegCapabilities& get_cached_capabilities() {
+    static FFmpegCapabilities caps = detect_ffmpeg_capabilities();
+    return caps;
+}
+
+std::string choose_encoder(const OutputProfile& profile, const FFmpegCapabilities& caps) {
+    return choose_ffmpeg_encoder(profile.video.encoder_backend, caps);
+}
 
 std::string ffmpeg_color_primaries(renderer2d::detail::ColorPrimaries primaries) {
     switch (primaries) {
@@ -97,13 +107,21 @@ std::string build_ffmpeg_video_command(const RenderPlan& plan, const std::filesy
         if (!plan.output.profile.video.codec.empty()) {
             command << " -c:v " << plan.output.profile.video.codec;
         } else {
-            command << " -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p";
+            const auto& caps = get_cached_capabilities();
+            std::string encoder = choose_encoder(plan.output.profile, caps);
+            command << " -c:v " << encoder;
+            
+            if (encoder == "libx264") {
+                command << " -preset slow -crf 18";
+            } else if (encoder.find("nvenc") != std::string::npos) {
+                command << " -preset p4 -rc vbr -cq 18";
+            }
+            
+            command << " -pix_fmt yuv420p";
         }
 
         if (!plan.output.profile.video.pixel_format.empty()) {
             command << " -pix_fmt " << plan.output.profile.video.pixel_format;
-        } else if (plan.output.profile.video.codec == "libx264" || plan.output.profile.video.codec == "libx265") {
-            command << " -pix_fmt yuv420p";
         }
     }
 

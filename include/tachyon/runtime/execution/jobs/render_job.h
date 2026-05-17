@@ -22,6 +22,7 @@ struct OutputVideoProfile {
     std::string pixel_format;
     std::string rate_control_mode;
     std::optional<double> crf;
+    std::string encoder_backend; // e.g. "nvenc", "vaapi", "software"
 };
 
 struct AudioTrack {
