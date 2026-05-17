@@ -361,8 +361,6 @@ RenderSessionResult RenderSession::render(
     RenderTelemetry::get().log(se);
 
     return result;
-
-    return result;
 }
 
 RenderSessionResult RenderSession::render(
