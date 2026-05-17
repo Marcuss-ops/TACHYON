@@ -27,7 +27,8 @@ namespace tachyon::output {
  * @param output_range Desired output color range (limited/full)
  * @return Vector of bytes in RGBA order
  */
-std::vector<unsigned char> convert_and_pack_ffmpeg_frame(
+void convert_and_pack_ffmpeg_frame(
+    std::vector<unsigned char>& out_bytes,
     const renderer2d::Framebuffer& frame,
     uint32_t target_width,
     uint32_t target_height,

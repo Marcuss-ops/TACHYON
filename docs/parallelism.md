@@ -1,200 +1,82 @@
----
-Status: Canonical
-Last reviewed: 2026-05-06
-Owner: Core Team
-Supersedes: N/A
----
+# Multi-Threaded Parallel Rendering
 
-# Parallel Rendering
-
-## Stato attuale
-
-### Cosa esiste
-| Componente | File | Stato |
-|---|---|---|
-| `TileGrid` + `build_tile_grid()` | `include/tachyon/runtime/execution/scheduling/tile_scheduler.h` | ✓ griglia tile 256px |
-| `RenderBatchSpec` + `run_render_batch()` | `include/tachyon/runtime/execution/batch/batch_runner.h` | ✓ multi-job, worker_count |
-| `RenderSession` | `include/tachyon/runtime/execution/session/render_session.h` | ✓ |
-| `FrameCache` thread-safe (mutex) | `frame_cache.h` | ✓ |
-| `SurfacePool` | `include/tachyon/runtime/resource/surface_pool.h` | ✓ |
-
-### Gap principali
-- **Frame parallelism**: i frame vengono renderizzati sequenzialmente — nessun thread pool per frame paralleli
-- **Layer parallelism**: i layer di una composizione vengono processati in sequenza
-- **Tile rendering**: `TileGrid` esiste ma non è usato nel loop di render
-- **Memory budget**: nessun limite esplicito sulla RAM usata dal frame renderer durante il batch
+TACHYON is designed from the ground up to achieve maximum multi-core CPU saturation. Since it bypasses browser DOM architectures, the engine utilizes high-fidelity multi-threaded pipelines to scale performance linearly with available processor cores.
 
 ---
 
-## Architettura di parallelismo da implementare
+## 1. Parallelization Architecture
 
-### Livello 1 — Batch parallelism (più importante per YouTube automatico)
+Tachyon processes parallel work at four distinct layers, starting from batch job execution down to tile-based pixel rasterization:
 
-**Già disponibile via `RenderBatchSpec::worker_count`.**
-
-```json
-{
-  "worker_count": 4,
-  "jobs": [
-    {"scene_path": "scene_a.cpp", "job_path": "job_a.cpp"},
-    {"scene_path": "scene_b.cpp", "job_path": "job_b.cpp"},
-    {"scene_path": "scene_c.cpp", "job_path": "job_c.cpp"},
-    {"scene_path": "scene_d.cpp", "job_path": "job_d.cpp"}
-  ]
-}
+```
+┌────────────────────────────────────────────────────────┐
+│  Level 1: Batch Parallelism (Multi-Video Rendering)    │
+└───────────────────────────┬────────────────────────────┘
+                            ▼
+┌────────────────────────────────────────────────────────┐
+│  Level 2: Frame Parallelism (Lookahead Queue)          │
+└───────────────────────────┬────────────────────────────┘
+                            ▼
+┌────────────────────────────────────────────────────────┐
+│  Level 3: Tile Parallelism (Work-Stealing Tile Grid)   │
+└───────────────────────────┬────────────────────────────┘
+                            ▼
+┌────────────────────────────────────────────────────────┐
+│  Level 4: Layer Parallelism (Independent Rasterization)│
+└────────────────────────────────────────────────────────┘
 ```
 
-**Verifica che `run_render_batch()` usi effettivamente worker_count thread.**
-Se usa 1 worker in serie, è sufficiente aggiungere un thread pool:
-
-```cpp
-ResolutionResult<RenderBatchResult> run_render_batch(const RenderBatchSpec& spec, size_t worker_count) {
-    BS::thread_pool pool(worker_count);  // o std::async
-    std::vector<std::future<RenderBatchJobResult>> futures;
-    
-    for (const auto& item : spec.jobs) {
-        futures.push_back(pool.submit([item]() {
-            return run_single_job(item);
-        }));
-    }
-    
-    RenderBatchResult result;
-    for (auto& f : futures) {
-        auto job_result = f.get();
-        result.jobs.push_back(job_result);
-        if (job_result.success) result.succeeded++;
-        else result.failed++;
-    }
-    return {result};
-}
-```
-
-**Attenzione:** ogni job deve avere il proprio `FrameCache`, `MediaManager` e `FontRegistry` — nessuno stato condiviso tra job.
-
 ---
 
-### Livello 2 — Frame parallelism (entro un singolo video)
+## 2. Technical Implementation Details
 
-Renderizzare frame N e N+1 in parallelo. **Funziona solo se non ci sono dipendenze inter-frame** (es. motion blur multi-frame, temporal denoising).
+### Level 1: Batch Parallelism
+For automated video workflows (e.g., generating multiple variations of ads, localized promos, or personalized content), multiple render jobs are executed concurrently using the `BatchRunner`:
+- **Scheduler**: Thread pool orchestrated via `RenderBatchSpec::worker_count`.
+- **Isolation**: Each worker threads its own execution context. To guarantee thread safety, `FrameCache`, `MediaManager`, and `FontRegistry` instances are strictly local to each running job (zero shared mutable state).
 
 ```cpp
-// In RenderSession::render_frames():
-const int lookahead = std::min(thread_count, 4);  // max 4 frame in parallel
-BS::thread_pool pool(lookahead);
-std::queue<std::future<RenderedFrame>> queue;
+// Orchestrated via run_render_batch()
+RenderBatchResult result;
+BS::thread_pool pool(worker_count);
+std::vector<std::future<RenderBatchJobResult>> futures;
 
-for (int64_t frame = start; frame <= end; ++frame) {
-    // Mantieni max `lookahead` frame in volo
-    while (queue.size() >= lookahead) {
-        auto rendered = queue.front().get();
-        queue.pop();
-        encoder.encode(rendered);
-    }
-    queue.push(pool.submit([frame, &scene]() {
-        return render_single_frame(scene, frame);
+for (const auto& job : spec.jobs) {
+    futures.push_back(pool.submit([job]() {
+        return run_single_job(job);
     }));
 }
-// Drain
-while (!queue.empty()) {
-    encoder.encode(queue.front().get());
-    queue.pop();
-}
 ```
 
-**Vincoli:**
-- `FrameCache` deve essere thread-safe (già ha mutex)
-- `MediaManager` deve avere un pool di `VideoDecoder` per frame (già ha pool)
-- L'encoder deve ricevere i frame **in ordine** — il queue garantisce questo
+### Level 2: Frame Parallelism
+Within a single video composition, multiple sequential frames are evaluated and rendered concurrently:
+- **Lookahead Queue**: A lock-free window queue schedules upcoming frames to stay ahead of the video encoder.
+- **Ordered Encoding**: While frame rendering is asynchronous, the final video encoder receives completed frames in strict sequential order via an ordering queue to prevent out-of-order writes.
+- **Thread Safety**: All access to external visual assets is locked via a thread-safe `FrameCache` (mutex-protected) and a thread-isolated decoder pool inside the `MediaManager`.
+
+### Level 3: Tile Parallelism
+For high-resolution outputs (such as 4K video streams), the screen framebuffer is subdivided into rectangular chunks called **Tiles**:
+- **Grid Layout**: Handled dynamically using `TileGrid` (default size: 256x256 pixels).
+- **Work-Stealing Scheduling**: Individual tiles are pushed onto a work queue where worker threads grab and render them independently.
+- **Clipping Boundaries**: The compositor limits rasterization strictly to the active tile viewport using hardware/SIMD bounding-box clipping, avoiding redundant pixel arithmetic.
+
+### Level 4: Layer Parallelism
+Individual compositing layers inside a single composition frame can be parallelized when there are no temporal or alpha blending dependencies:
+- **Dependency Graph**: The `DependencyGraph` dynamically inspects the layer hierarchy to group layers that can be rasterized independently (e.g. layers without active matte, mask, or track matte associations).
+- **Independent Buffers**: Independent layers are rasterized into separate isolated buffers concurrently before the main compositor performs final alpha blending onto the main framebuffer.
 
 ---
 
-### Livello 3 — Tile rendering (per frame ad alta risoluzione)
+## 3. Memory Budgeting & Pool Policies
 
-`TileGrid` esiste. L'obiettivo è dividere un frame 4K in tile e renderizzarle in parallelo.
-
-```cpp
-TileGrid grid = build_tile_grid(composition_state, 256);
-
-BS::thread_pool pool(std::thread::hardware_concurrency());
-std::vector<std::future<void>> tile_futures;
-
-for (const auto& tile_rect : grid.tiles) {
-    tile_futures.push_back(pool.submit([&, tile_rect]() {
-        render_tile(composition_state, tile_rect, output_framebuffer);
-    }));
-}
-for (auto& f : tile_futures) f.get();
-```
-
-**Vincoli:**
-- I layer devono essere renderizzati per ogni tile indipendentemente, o:
-- Renderi tutti i layer a dimensione piena e poi compositi per tile (più semplice ma meno efficiente)
-- Il compositor deve usare `clip` per limitare il lavoro al tile corrente
-
-**Approccio consigliato per prima implementazione:** renderizza l'intera composizione una volta sola (come ora), poi parallellizza solo la fase di encoding/downscale per output.
-
----
-
-### Livello 4 — Layer parallelism (avanzato)
-
-I layer di una composizione sono dipendenti (compositing in ordine). Non si parallelizzano direttamente. Si può parallelizzare:
-
-1. **Rasterizzazione pre-compositor**: ogni layer viene rasterizzato nel proprio buffer prima del compositing. La rasterizzazione di layer indipendenti (senza dipendenze matte) è parallelizzabile.
-
-2. **Precomp rendering**: le precomp nested possono essere renderizzate in parallelo prima del compositor principale.
-
-```cpp
-// Analisi dipendenze (dal DependencyGraph esistente):
-auto independent_layers = dependency_graph.get_independent_groups(layers);
-
-for (auto& group : independent_layers) {
-    // Tutti i layer nel gruppo non si dipendono tra loro → parallelo
-    pool.submit_group(group, [](LayerSpec& layer) {
-        return rasterize_layer(layer);
-    }).wait();
-}
-```
-
----
-
-## Memory budget per batch
-
-Quando si renderizzano N video in parallelo, la RAM può esplodere.
+To prevent out-of-memory crashes when rendering highly complex timelines with massive image assets, Tachyon enforces strict limits via the `BatchMemoryPolicy`:
 
 ```cpp
 struct BatchMemoryPolicy {
-    size_t max_total_ram_bytes{4ULL * 1024 * 1024 * 1024};  // 4GB
-    size_t per_job_frame_cache_bytes{512ULL * 1024 * 1024}; // 512MB per job
+    size_t max_total_ram_bytes{4ULL * 1024 * 1024 * 1024};       // 4GB global threshold
+    size_t per_job_frame_cache_bytes{512ULL * 1024 * 1024};      // 512MB per job
     size_t per_job_asset_cache_bytes{1ULL * 1024 * 1024 * 1024}; // 1GB per job
 };
 ```
 
-Prima di lanciare ogni job, verifica che la RAM stimata sia disponibile. Se non lo è, metti il job in attesa.
-
----
-
-## Ordine di implementazione
-
-```
-1. Verificare che run_render_batch() usi worker_count thread reali
-2. Frame parallelism con lookahead queue (4 frame in volo)
-3. Memory budget per job nel batch runner
-4. Tile rendering: usare TileGrid esistente nel compositor
-5. Layer parallelism per precomp nested (usa DependencyGraph esistente)
-```
-
-Per YouTube automatico (20+ video in batch), item 1 e 2 danno il 90% del beneficio.
-
----
-
-## CLI batch
-
-```bash
-# Renderizza 4 video in parallelo
-tachyon batch render_batch.json --workers 4
-
-# Oppure con override output
-tachyon batch render_batch.json --workers 4 --output-dir /output/
-```
-
-`parse_render_batch_file()` esiste già. Serve solo esporre `--workers` come argomento CLI.
+Before dispatching subsequent jobs or lookahead frame threads, the memory coordinator verifies current allocation usage. If resource limits are exceeded, lookahead threads are choked back and dynamic page flushing is triggered inside the `SurfacePool`.

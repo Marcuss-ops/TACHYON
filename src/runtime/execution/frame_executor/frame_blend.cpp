@@ -4,6 +4,7 @@
 #include "tachyon/timeline/frame_blend.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/runtime/profiling/render_profiler.h"
+#include "tachyon/core/transition/transition_simd_kernels.h"
 
 #include <optional>
 #include <memory>
@@ -42,19 +43,12 @@ std::optional<std::shared_ptr<renderer2d::Framebuffer>> FrameBlendRenderer::try_
             const std::size_t width = static_cast<std::size_t>(blended_surface->width());
             const std::size_t height = static_cast<std::size_t>(blended_surface->height());
             
-            for (std::size_t y = 0; y < height; ++y) {
-                for (std::size_t x = 0; x < width; ++x) {
-                    auto a = frame_a_surface->get_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y));
-                    auto b = frame_b_surface->get_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y));
-                    renderer2d::Color c(
-                        a.r * (1.0f - blend) + b.r * blend,
-                        a.g * (1.0f - blend) + b.g * blend,
-                        a.b * (1.0f - blend) + b.b * blend,
-                        a.a * (1.0f - blend) + b.a * blend
-                    );
-                    blended_surface->set_pixel(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y), c);
-                }
-            }
+            const float* a = frame_a_surface->data();
+            const float* b = frame_b_surface->data();
+            float* out = blended_surface->data();
+
+            runtime::simd::lerp_pixels_best(out, a, b, width * height * 4, blend);
+
             return std::make_shared<renderer2d::Framebuffer>(*blended_surface);
         }
     }
