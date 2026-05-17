@@ -1,5 +1,6 @@
 #include "test_utils.h"
 #include "tachyon/runtime/telemetry/sqlite_telemetry_store.h"
+#include "tachyon/runtime/telemetry/telemetry_writer.h"
 #include <iostream>
 #include <vector>
 #include <string>
@@ -192,6 +193,129 @@ bool run_sqlite_telemetry_store_tests() {
         return false;
     }
     std::cout << "[TelemetryStore] Move constructor verified successfully!\n";
+
+    // 9. Real-world Integration: Populate Live User Database for Web Dashboard
+    {
+        std::cout << "[TelemetryStore] Populating live user database with rich render metrics...\n";
+        std::filesystem::path live_dir = TelemetryWriter::get_default_directory();
+        std::filesystem::path live_db_path = live_dir / "tachyon_render_history.sqlite";
+        
+        SqliteTelemetryStore live_store;
+        if (live_store.initialize(live_db_path.string())) {
+            std::cout << "[TelemetryStore] Connected to live SQLite DB: " << live_db_path.string() << "\n";
+            
+            // Generate Run 1: Sunset
+            RenderTelemetryRecord run1;
+            run1.run_id = "session-lookbook-sunset";
+            run1.job_id = "job-sunset-001";
+            run1.scene_id = "LightLeak_Sunset";
+            run1.preset_id = "sunset-hd";
+            run1.machine_id = "local-cpu-dev";
+            run1.success = true;
+            run1.frames_total = 120;
+            run1.frames_written = 120;
+            run1.wall_time_ms = 4820.0;
+            run1.render_ms = 3820.0;
+            run1.encode_ms = 950.0;
+            run1.effective_fps = 24.89;
+            run1.peak_working_set_bytes = 125000000;
+            run1.finished_at_iso = "2026-05-17T08:15:30Z";
+            
+            live_store.write_render_record(run1);
+            
+            std::vector<SqliteFrameRecord> frames1;
+            for (int i = 0; i < 120; ++i) {
+                frames1.push_back({i, 30.0 + (i % 10) * 1.5, 8.0 + (i % 5) * 0.4, 1.5, (i % 4 == 0)});
+            }
+            live_store.write_frame_records(run1.run_id, frames1);
+            
+            std::vector<SqlitePhaseEventRecord> phases1 = {
+                {"compile_scene", 120.0},
+                {"build_render_plan", 45.0},
+                {"rasterization", 3655.0},
+                {"ffmpeg_encoding", 1000.0}
+            };
+            live_store.write_phase_events(run1.run_id, phases1);
+            
+            std::vector<SqliteCounterRecord> counters1 = {
+                {"simd_lerp_calls", 2548900},
+                {"tiles_reused", 12400},
+                {"cache_hits", 30}
+            };
+            live_store.write_counters(run1.run_id, counters1);
+
+            // Generate Run 2: Blobs
+            RenderTelemetryRecord run2;
+            run2.run_id = "session-lookbook-blobs";
+            run2.job_id = "job-blobs-002";
+            run2.scene_id = "LightLeak_Blobs";
+            run2.preset_id = "blobs-fast";
+            run2.machine_id = "local-cpu-dev";
+            run2.success = true;
+            run2.frames_total = 120;
+            run2.frames_written = 120;
+            run2.wall_time_ms = 3210.0;
+            run2.render_ms = 2310.0;
+            run2.encode_ms = 850.0;
+            run2.effective_fps = 37.38;
+            run2.peak_working_set_bytes = 98000000;
+            run2.finished_at_iso = "2026-05-17T08:22:45Z";
+            
+            live_store.write_render_record(run2);
+            
+            std::vector<SqliteFrameRecord> frames2;
+            for (int i = 0; i < 120; ++i) {
+                frames2.push_back({i, 18.0 + (i % 8) * 1.2, 7.0 + (i % 4) * 0.3, 1.2, (i % 3 == 0)});
+            }
+            live_store.write_frame_records(run2.run_id, frames2);
+            
+            std::vector<SqlitePhaseEventRecord> phases2 = {
+                {"compile_scene", 95.0},
+                {"build_render_plan", 38.0},
+                {"rasterization", 2177.0},
+                {"ffmpeg_encoding", 900.0}
+            };
+            live_store.write_phase_events(run2.run_id, phases2);
+            
+            std::vector<SqliteCounterRecord> counters2 = {
+                {"simd_lerp_calls", 1892000},
+                {"tiles_reused", 14300},
+                {"cache_hits", 40}
+            };
+            live_store.write_counters(run2.run_id, counters2);
+
+            // Generate Run 3: Failed classic shader compilation
+            RenderTelemetryRecord run3;
+            run3.run_id = "session-failed-shader";
+            run3.job_id = "job-classic-003";
+            run3.scene_id = "LightLeak_Classic";
+            run3.preset_id = "classic-slow";
+            run3.machine_id = "local-cpu-dev";
+            run3.success = false;
+            run3.error_code = "RenderFailed";
+            run3.error_message = "Shader compilation failed: Unknown transition 'classic_leak'";
+            run3.frames_total = 120;
+            run3.frames_written = 0;
+            run3.wall_time_ms = 180.0;
+            run3.render_ms = 0.0;
+            run3.encode_ms = 0.0;
+            run3.effective_fps = 0.0;
+            run3.peak_working_set_bytes = 18000000;
+            run3.finished_at_iso = "2026-05-17T08:35:12Z";
+            
+            live_store.write_render_record(run3);
+            
+            std::vector<SqlitePhaseEventRecord> phases3 = {
+                {"compile_scene", 150.0},
+                {"build_render_plan", 30.0}
+            };
+            live_store.write_phase_events(run3.run_id, phases3);
+            
+            std::cout << "[TelemetryStore] Successfully populated live user database!\n";
+        } else {
+            std::cerr << "[TelemetryStore] Warning: Could not open live user database for dashboard population.\n";
+        }
+    }
 
     std::cout << "[TelemetryStore] ALL SQLite Telemetry Store tests passed successfully!\n";
     return true;

@@ -22,10 +22,14 @@
 #include "tachyon/renderer2d/effects/core/transitions/artistic_transitions.h"
 #include "tachyon/renderer2d/effects/core/transitions/light_leak_transitions.h"
 #include "tachyon/runtime/telemetry/process_resource_sampler.h"
+#include "tachyon/runtime/telemetry/telemetry_writer.h"
+#include "tachyon/runtime/telemetry/render_telemetry_record.h"
 #include "tachyon/runtime/policy/worker_policy.h"
 #include "tachyon/runtime/policy/surface_pool_policy.h"
 #include "tachyon/runtime/policy/telemetry_policy.h"
 #include "tachyon/core/render_telemetry.h"
+#include <iomanip>
+#include <sstream>
 
 #include <iostream>
 #include <future>
@@ -348,6 +352,77 @@ RenderSessionResult RenderSession::render(
 
     const auto session_end = std::chrono::steady_clock::now();
     finalize_session_metrics(result, sampler, session_start, session_end);
+
+    // SQLite Telemetry Persistence
+    {
+        RenderTelemetryRecord record;
+        
+        // Identity
+        record.run_id = "session-" + std::to_string(std::chrono::system_clock::now().time_since_epoch().count());
+        record.job_id = "job-" + std::to_string(std::chrono::system_clock::now().time_since_epoch().count());
+        record.scene_id = workspace.resolved_output_path.empty() ? "anonymous_scene" : std::filesystem::path(workspace.resolved_output_path).stem().string();
+        record.preset_id = "default";
+        record.machine_id = "local";
+
+        // Status
+        record.success = (result.output_error.empty() && result.diagnostics.ok());
+        if (!record.success) {
+            record.error_code = "RenderFailed";
+            record.error_message = result.output_error.empty() ? "Diagnostics error" : result.output_error;
+        }
+
+        // Output stats
+        record.frames_total = static_cast<int>(workspace.effective_plan.frame_tasks.size());
+        record.frames_written = static_cast<int>(result.frames_written);
+        record.duration_seconds = static_cast<double>(record.frames_total) / 30.0; // fallback standard 30fps
+        record.fps_target = 30.0;
+
+        // Timings (ms)
+        record.wall_time_ms = result.wall_time_total_ms;
+        record.render_ms = result.frame_execution_ms;
+        record.encode_ms = result.encode_ms;
+        record.io_read_ms = result.io_read_ms;
+        record.io_write_ms = result.io_write_ms;
+        record.setup_ms = result.scene_compile_ms + result.plan_build_ms + result.execution_plan_build_ms;
+
+        // Performance Metrics
+        if (record.wall_time_ms > 0.0) {
+            record.effective_fps = (static_cast<double>(record.frames_written) / (record.wall_time_ms / 1000.0));
+            record.videos_per_hour = 3600000.0 / record.wall_time_ms;
+        }
+        
+        if (record.duration_seconds > 0.0 && record.wall_time_ms > 0.0) {
+            record.video_seconds_per_render_second = record.duration_seconds / (record.wall_time_ms / 1000.0);
+        }
+
+        // Resources
+        record.peak_working_set_bytes = result.peak_working_set_bytes;
+        record.avg_working_set_bytes = result.avg_working_set_bytes;
+        record.peak_private_bytes = result.peak_private_bytes;
+        record.avg_private_bytes = result.avg_private_bytes;
+        record.avg_cpu_percent_machine = result.avg_cpu_percent_machine;
+        record.avg_cpu_cores_used = result.avg_cpu_cores_used;
+
+        // I/O
+        record.input_bytes = result.input_bytes;
+        record.output_bytes = result.output_bytes;
+
+        record.cache_hit_rate = result.cache_hit_rate();
+
+        // Metadata
+        record.output_path = workspace.resolved_output_path;
+        
+        // Finished Time
+        auto now = std::chrono::system_clock::now();
+        auto in_time_t = std::chrono::system_clock::to_time_t(now);
+        std::stringstream ss;
+        ss << std::put_time(std::gmtime(&in_time_t), "%Y-%m-%dT%H:%M:%SZ");
+        record.finished_at_iso = ss.str();
+
+        record.tachyon_version = "0.8.0-dev";
+        
+        TelemetryWriter::write_sqlite(record, result);
+    }
 
     // Telemetry finalization
     TelemetryEvent se;
