@@ -5,6 +5,7 @@
 add_executable(TachyonCoreTests
     unit/mains/test_main_core.cpp
     unit/core/assets/asset_resolution_tests.cpp
+    unit/core/transition/transition_simd_kernels_tests.cpp
     unit/mains/test_stubs.cpp
     unit/diagnostics/test_trace_scope.cpp
 )
@@ -21,6 +22,10 @@ target_link_libraries(TachyonCoreTests
         TachyonCore
         TachyonDiagnostics
 )
+
+if(TARGET TachyonBackendSimd)
+    target_link_libraries(TachyonCoreTests PRIVATE TachyonBackendSimd)
+endif()
 
 add_test(
     NAME TachyonCoreTests

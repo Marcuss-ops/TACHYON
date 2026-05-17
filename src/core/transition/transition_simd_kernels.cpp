@@ -9,4 +9,12 @@ void lerp_pixels_scalar(float* out, const float* a, const float* b, std::size_t 
     }
 }
 
+void lerp_pixels_best(float* out, const float* a, const float* b, std::size_t count, float t) {
+#if defined(TACHYON_ENABLE_HIGHWAY)
+    lerp_pixels_highway(out, a, b, count, t);
+#else
+    lerp_pixels_scalar(out, a, b, count, t);
+#endif
+}
+
 } // namespace tachyon::runtime::simd
