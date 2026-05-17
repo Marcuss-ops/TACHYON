@@ -1,6 +1,7 @@
 #pragma once
 #include <spdlog/spdlog.h>
 #include <string>
+#include <iosfwd>
 
 namespace tachyon::diag {
 
@@ -13,6 +14,7 @@ struct LogConfig {
     LogFormat format{LogFormat::Text};
     std::string level{"info"};
     bool stderr_output{true};
+    std::ostream* test_stream{nullptr};
 };
 
 /**

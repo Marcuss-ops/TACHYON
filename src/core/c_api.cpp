@@ -1,7 +1,6 @@
 #include "tachyon/core/c_api.h"
 #include "tachyon/core/cli.h"
 #include "tachyon/core/diag/log.h"
-#include "tachyon/backends/backend_init.h"
 #include "tachyon/version.h"
 
 #include <cstring>
@@ -25,6 +24,11 @@ std::once_flag g_init_flag;
 
 } // namespace
 
+namespace tachyon {
+run_cli_func_t g_run_cli_ptr = nullptr;
+init_backends_func_t g_init_backends_ptr = nullptr;
+}
+
 extern "C" {
 
 TACHYON_API const char* tachyon_version(void) {
@@ -34,7 +38,9 @@ TACHYON_API const char* tachyon_version(void) {
 TACHYON_API int tachyon_init(void) {
     std::call_once(g_init_flag, []() {
         tachyon::diag::init_logging();
-        tachyon::backends::initialize_all_backends();
+        if (tachyon::g_init_backends_ptr) {
+            tachyon::g_init_backends_ptr();
+        }
         g_initialized = true;
     });
     return g_initialized ? 0 : 1;
@@ -54,7 +60,12 @@ TACHYON_API int tachyon_run(int argc, const char** argv,
     for (auto& s : args) argv_mut.push_back(s.data());
 
     try {
-        return tachyon::run_cli(static_cast<int>(argv_mut.size()), argv_mut.data());
+        if (tachyon::g_run_cli_ptr) {
+            return tachyon::g_run_cli_ptr(static_cast<int>(argv_mut.size()), argv_mut.data());
+        } else {
+            write_error(error_out, error_size, "CLI module not loaded");
+            return 1;
+        }
     } catch (const std::exception& e) {
         write_error(error_out, error_size, e.what());
         return 1;

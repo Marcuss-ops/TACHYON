@@ -61,12 +61,13 @@ set_target_properties(tachyon PROPERTIES ENABLE_EXPORTS TRUE)
 
 # --- Shared library (libtachyon.so / tachyon.dll) for Python/FFI ---
 if(TACHYON_BUILD_SHARED_LIB)
-    add_library(tachyon_lib SHARED bindings/c/c_api.cpp)
+    add_library(tachyon_lib SHARED core/dummy.cpp)
     set_target_properties(tachyon_lib PROPERTIES OUTPUT_NAME "tachyon")
     target_compile_definitions(tachyon_lib PRIVATE TACHYON_EXPORTS)
     tachyon_configure_common(tachyon_lib)
     target_link_libraries(tachyon_lib
         PRIVATE
+            TachyonBindingsC
             TachyonCLI
             TachyonCatalog
             TachyonPresets
@@ -76,6 +77,13 @@ if(TACHYON_BUILD_SHARED_LIB)
             TachyonRuntime
             TachyonOutput
     )
+    if(UNIX AND NOT APPLE)
+        target_link_options(tachyon_lib PRIVATE "-Wl,--whole-archive" TachyonBindingsC "-Wl,--no-whole-archive")
+    elseif(APPLE)
+        target_link_options(tachyon_lib PRIVATE "-Wl,-force_load" $<TARGET_FILE:TachyonBindingsC>)
+    elseif(MSVC)
+        target_link_options(tachyon_lib PRIVATE "/WHOLEARCHIVE:TachyonBindingsC")
+    endif()
     tachyon_link_mimalloc(tachyon_lib)
 endif()
 
