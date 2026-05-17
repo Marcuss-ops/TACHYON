@@ -15,3 +15,8 @@ set(TACHYON_GTEST_URL "https://github.com/google/googletest/archive/refs/tags/v1
 set(TACHYON_TASKFLOW_GIT_TAG "v3.8.0")
 set(TACHYON_MIMALLOC_GIT_TAG "v2.1.7")
 
+# Infrastructure adapters
+set(TACHYON_SPDLOG_GIT_TAG "v1.14.1")
+set(TACHYON_XXHASH_GIT_TAG "v0.8.2")
+set(TACHYON_ZSTD_GIT_TAG "v1.5.6")
+

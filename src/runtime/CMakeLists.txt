@@ -107,6 +107,7 @@ add_library(TachyonRuntime STATIC ${TachyonRuntimeSources})
 tachyon_configure_common(TachyonRuntime)
 tachyon_link_taskflow(TachyonRuntime)
 tachyon_link_mimalloc(TachyonRuntime)
+tachyon_link_infra(TachyonRuntime)
 
 target_link_libraries(TachyonRuntime
     PUBLIC

@@ -1,9 +1,10 @@
 #include "tachyon/runtime/core/serialization/tbf_codec.h"
+#include "tachyon/core/diag/log.h"
+#include "tachyon/core/compression/compress.h"
 #include "binary_io.h"
 #include <fstream>
 #include <cstring>
 #include <algorithm>
-#include <iostream>
 
 namespace tachyon::runtime {
 
@@ -495,7 +496,7 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
     scene.determinism.layout_version = reader.read_u32();
     scene.determinism.compiler_version = reader.read_u32();
     
-    if (reader.error) { std::cerr << "TBF: Error reading determinism\n"; return std::nullopt; }
+    if (reader.error) { tachyon::diag::error("TBF: error reading determinism"); return std::nullopt; }
 
     // 4. Graph
     scene.graph.edges() = reader.read_vector<RuntimeRenderGraph::Edge>([](BinaryReader& r) {
@@ -507,7 +508,7 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
     });
     scene.graph.topo_order() = reader.read_vector<std::uint32_t>();
     
-    if (reader.error) { std::cerr << "TBF: Error reading graph\n"; return std::nullopt; }
+    if (reader.error) { tachyon::diag::error("TBF: error reading graph"); return std::nullopt; }
 
     // 5. Compositions
     std::uint32_t comp_count = reader.read_u32();
@@ -612,7 +613,7 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
         scene.compositions.push_back(std::move(comp));
     }
 
-    if (reader.error) { std::cerr << "TBF: Error reading compositions\n"; return std::nullopt; }
+    if (reader.error) { tachyon::diag::error("TBF: error reading compositions"); return std::nullopt; }
 
     // 6. Property Tracks
     scene.property_tracks = reader.read_vector<CompiledPropertyTrack>([](BinaryReader& r) {
@@ -632,7 +633,7 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
         return track;
     });
 
-    if (reader.error) { std::cerr << "TBF: Error reading property tracks\n"; return std::nullopt; }
+    if (reader.error) { tachyon::diag::error("TBF: error reading property tracks"); return std::nullopt; }
 
     // 7. Expressions
     std::uint32_t expression_count = reader.read_u32();
@@ -652,7 +653,7 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
         scene.expressions.push_back(std::move(expr));
     }
 
-    if (reader.error) { std::cerr << "TBF: Error reading expressions\n"; return std::nullopt; }
+    if (reader.error) { tachyon::diag::error("TBF: error reading expressions"); return std::nullopt; }
 
     // 8. Assets
     scene.assets = reader.read_vector<AssetSpec>([](BinaryReader& r) {
@@ -663,7 +664,7 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
         return a;
     });
 
-    if (reader.error) { std::cerr << "TBF: Error reading assets\n"; return std::nullopt; }
+    if (reader.error) { tachyon::diag::error("TBF: error reading assets"); return std::nullopt; }
 
     scene.graph.compile();
 
@@ -675,10 +676,13 @@ std::optional<CompiledScene> TBFCodec::decode(const std::vector<std::uint8_t>& b
 }
 
 bool TBFCodec::save_to_file(const CompiledScene& scene, const std::filesystem::path& path) {
-    auto buffer = encode(scene);
+    auto raw = encode(scene);
+    auto compressed = tachyon::compression::compress(raw);
+    if (compressed.empty()) return false;
     std::ofstream file(path, std::ios::binary);
     if (!file) return false;
-    file.write(reinterpret_cast<const char*>(buffer.data()), buffer.size());
+    file.write(reinterpret_cast<const char*>(compressed.data()),
+               static_cast<std::streamsize>(compressed.size()));
     return true;
 }
 
@@ -687,11 +691,12 @@ std::optional<CompiledScene> TBFCodec::load_from_file(const std::filesystem::pat
     if (!file) return std::nullopt;
     auto end = file.tellg();
     if (end <= 0) return std::nullopt;
-    std::streamsize size = end;
     file.seekg(0, std::ios::beg);
-    std::vector<std::uint8_t> buffer(static_cast<std::size_t>(size));
-    if (!file.read(reinterpret_cast<char*>(buffer.data()), size)) return std::nullopt;
-    return decode(buffer);
+    std::vector<std::uint8_t> raw(static_cast<std::size_t>(end));
+    if (!file.read(reinterpret_cast<char*>(raw.data()), end)) return std::nullopt;
+    // Transparent backward-compatibility: decompress if zstd, otherwise decode raw.
+    auto decompressed = tachyon::compression::try_decompress(raw);
+    return decode(decompressed ? *decompressed : raw);
 }
 
 std::vector<std::uint8_t> TBFCodec::encode_framebuffer(const renderer2d::Framebuffer& fb) {

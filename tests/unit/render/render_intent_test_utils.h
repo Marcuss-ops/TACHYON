@@ -16,7 +16,8 @@ struct FakeResourceProvider final : public render::IResourceProvider {
 
     std::shared_ptr<std::uint8_t[]> get_texture_rgba(const std::string& id) override {
         last_texture_id = id;
-        return nullptr;
+        // Return a mock non-null pointer for validation success
+        return std::shared_ptr<std::uint8_t[]>(new std::uint8_t[4], std::default_delete<std::uint8_t[]>());
     }
 };
 

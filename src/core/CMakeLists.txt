@@ -28,6 +28,9 @@ set(TachyonCoreSources
     presets/sfx/sfx_registry_table.cpp
     profiles/execution_profile.cpp
     render_telemetry.cpp
+    # Infrastructure adapters
+    diag/log.cpp
+    compression/compress.cpp
 )
 
 
@@ -37,6 +40,7 @@ tachyon_configure_common(TachyonCore)
 target_compile_definitions(TachyonCore PUBLIC TACHYON_BUILD_CONFIG_NAME="$<CONFIG>")
 tachyon_link_omp(TachyonCore)
 tachyon_link_absl(TachyonCore)
+tachyon_link_infra(TachyonCore)
 
 if(TACHYON_ENABLE_TRACY)
     target_link_libraries(TachyonCore PUBLIC TracyClient)

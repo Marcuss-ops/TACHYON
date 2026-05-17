@@ -1,4 +1,5 @@
 #include "tachyon/ops/media_ops.h"
+#include "tachyon/core/diag/log.h"
 #include "tachyon/runtime/media/media_pipeline.h"
 #include "tachyon/backends/backend_registry.h"
 #include <memory>
@@ -19,6 +20,11 @@ core::RenderResult MediaOps::run_pipeline(const core::RenderGraph& graph, const 
 
     // Ensure all required services are available
     if (!probe || !clip_processor || !overlay_merger || !audio_extractor || !audio_analyzer || !video_concat || !transition_renderer) {
+        diag::error("MediaOps: failed to resolve required services from BackendRegistry"
+                    " (probe={} clip={} merger={} audio_ext={} audio_ana={} concat={} transition={})",
+                    probe != nullptr, clip_processor != nullptr, overlay_merger != nullptr,
+                    audio_extractor != nullptr, audio_analyzer != nullptr,
+                    video_concat != nullptr, transition_renderer != nullptr);
         core::RenderResult failure;
         failure.success = false;
         failure.error_message = "Failed to resolve required media services from BackendRegistry";
