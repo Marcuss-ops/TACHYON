@@ -1,8 +1,7 @@
 #include "tachyon/runtime/telemetry/telemetry_writer.h"
+#include <spdlog/fmt/fmt.h>
 #include <fstream>
-#include <sstream>
-#include <iostream>
-#include <iomanip>
+#include <filesystem>
 
 namespace tachyon {
 
@@ -12,7 +11,7 @@ std::filesystem::path TelemetryWriter::get_default_directory() {
     const char* home = std::getenv("HOME");
     if (!home) home = std::getenv("USERPROFILE");
     if (!home) return ".tachyon/telemetry";
-    
+
     std::filesystem::path path(home);
     path /= ".tachyon";
     path /= "telemetry";
@@ -23,51 +22,39 @@ std::filesystem::path TelemetryWriter::get_default_directory() {
 }
 
 static std::string escape_json(const std::string& s) {
-    std::ostringstream o;
-    for (auto c : s) {
-        if (c == '"') o << "\\\"";
-        else if (c == '\\') o << "\\\\";
-        else if (c == '\b') o << "\\b";
-        else if (c == '\f') o << "\\f";
-        else if (c == '\n') o << "\\n";
-        else if (c == '\r') o << "\\r";
-        else if (c == '\t') o << "\\t";
-        else if (static_cast<unsigned char>(c) < 32) {
-            o << "\\u" << std::hex << std::setw(4) << std::setfill('0') << static_cast<int>(c);
-        } else {
-            o << c;
+    std::string out;
+    out.reserve(s.size() + 8);
+    for (unsigned char c : s) {
+        switch (c) {
+            case '"':  out += "\\\""; break;
+            case '\\': out += "\\\\"; break;
+            case '\b': out += "\\b";  break;
+            case '\f': out += "\\f";  break;
+            case '\n': out += "\\n";  break;
+            case '\r': out += "\\r";  break;
+            case '\t': out += "\\t";  break;
+            default:
+                if (c < 32) out += fmt::format("\\u{:04x}", c);
+                else        out += static_cast<char>(c);
         }
     }
-    return o.str();
+    return out;
 }
 
 static std::string record_to_json(const RenderTelemetryRecord& r) {
-    std::stringstream ss;
-    ss << "{";
-    ss << "\"run_id\":\"" << escape_json(r.run_id) << "\",";
-    ss << "\"job_id\":\"" << escape_json(r.job_id) << "\",";
-    ss << "\"scene_id\":\"" << escape_json(r.scene_id) << "\",";
-    ss << "\"preset_id\":\"" << escape_json(r.preset_id) << "\",";
-    ss << "\"machine_id\":\"" << escape_json(r.machine_id) << "\",";
-    ss << "\"success\":" << (r.success ? "true" : "false") << ",";
-    ss << "\"error_code\":\"" << escape_json(r.error_code) << "\",";
-    ss << "\"error_message\":\"" << escape_json(r.error_message) << "\",";
-    ss << "\"frames_total\":" << r.frames_total << ",";
-    ss << "\"frames_written\":" << r.frames_written << ",";
-    ss << "\"wall_time_ms\":" << std::fixed << std::setprecision(2) << r.wall_time_ms << ",";
-    ss << "\"render_ms\":" << r.render_ms << ",";
-    ss << "\"encode_ms\":" << r.encode_ms << ",";
-    ss << "\"effective_fps\":" << r.effective_fps << ",";
-    ss << "\"peak_working_set_bytes\":" << r.peak_working_set_bytes << ",";
-    ss << "\"avg_working_set_bytes\":" << r.avg_working_set_bytes << ",";
-    ss << "\"peak_private_bytes\":" << r.peak_private_bytes << ",";
-    ss << "\"avg_private_bytes\":" << r.avg_private_bytes << ",";
-    ss << "\"avg_cpu_percent_machine\":" << r.avg_cpu_percent_machine << ",";
-    ss << "\"avg_cpu_cores_used\":" << r.avg_cpu_cores_used << ",";
-    ss << "\"output_path\":\"" << escape_json(r.output_path) << "\",";
-    ss << "\"finished_at_iso\":\"" << escape_json(r.finished_at_iso) << "\"";
-    ss << "}";
-    return ss.str();
+    return fmt::format(
+        R"({{"run_id":"{}","job_id":"{}","scene_id":"{}","preset_id":"{}","machine_id":"{}","success":{},"error_code":"{}","error_message":"{}","frames_total":{},"frames_written":{},"wall_time_ms":{:.2f},"render_ms":{},"encode_ms":{},"effective_fps":{},"peak_working_set_bytes":{},"avg_working_set_bytes":{},"peak_private_bytes":{},"avg_private_bytes":{},"avg_cpu_percent_machine":{},"avg_cpu_cores_used":{},"output_path":"{}","finished_at_iso":"{}"}})",
+        escape_json(r.run_id), escape_json(r.job_id), escape_json(r.scene_id),
+        escape_json(r.preset_id), escape_json(r.machine_id),
+        r.success ? "true" : "false",
+        escape_json(r.error_code), escape_json(r.error_message),
+        r.frames_total, r.frames_written,
+        r.wall_time_ms, r.render_ms, r.encode_ms, r.effective_fps,
+        r.peak_working_set_bytes, r.avg_working_set_bytes,
+        r.peak_private_bytes, r.avg_private_bytes,
+        r.avg_cpu_percent_machine, r.avg_cpu_cores_used,
+        escape_json(r.output_path), escape_json(r.finished_at_iso)
+    );
 }
 
 bool TelemetryWriter::append_jsonl(const RenderTelemetryRecord& record, const std::filesystem::path& path) {
@@ -83,39 +70,41 @@ bool TelemetryWriter::append_tsv(const RenderTelemetryRecord& record, const std:
     bool exists = std::filesystem::exists(path);
     std::ofstream ofs(path, std::ios::app);
     if (!ofs) return false;
-    
+
     if (!exists) {
         ofs << "run_id\tjob_id\tscene_id\tsuccess\twall_time_ms\teffective_fps\tpeak_mem\n";
     }
-    
-    ofs << record.run_id << "\t"
-        << record.job_id << "\t"
-        << record.scene_id << "\t"
-        << (record.success ? "1" : "0") << "\t"
-        << std::fixed << std::setprecision(2) << record.wall_time_ms << "\t"
-        << record.effective_fps << "\t"
-        << record.peak_working_set_bytes << "\n";
-        
+    ofs << fmt::format("{}\t{}\t{}\t{}\t{:.2f}\t{}\t{}\n",
+                       record.run_id, record.job_id, record.scene_id,
+                       record.success ? 1 : 0,
+                       record.wall_time_ms, record.effective_fps,
+                       record.peak_working_set_bytes);
     return true;
 }
 
 bool TelemetryWriter::write_batch_summary(const BatchTelemetrySummary& summary, const std::filesystem::path& path) {
     std::ofstream ofs(path);
     if (!ofs) return false;
-    
-    ofs << "{\n";
-    ofs << "  \"batch_id\": \"" << escape_json(summary.batch_id) << "\",\n";
-    ofs << "  \"total_jobs\": " << summary.total_jobs << ",\n";
-    ofs << "  \"succeeded\": " << summary.succeeded << ",\n";
-    ofs << "  \"failed\": " << summary.failed << ",\n";
-    ofs << "  \"failure_rate_per_1000\": " << summary.failure_rate_per_1000 << ",\n";
-    ofs << "  \"avg_wall_time_ms\": " << summary.avg_wall_time_ms << ",\n";
-    ofs << "  \"avg_effective_fps\": " << summary.avg_effective_fps << ",\n";
-    ofs << "  \"peak_working_set_bytes\": " << summary.peak_working_set_bytes << ",\n";
-    ofs << "  \"peak_private_bytes\": " << summary.peak_private_bytes << ",\n";
-    ofs << "  \"estimated_total_cost_usd\": " << summary.estimated_total_cost_usd << "\n";
-    ofs << "}\n";
-    
+
+    ofs << fmt::format(
+        "{{\n"
+        "  \"batch_id\": \"{}\",\n"
+        "  \"total_jobs\": {},\n"
+        "  \"succeeded\": {},\n"
+        "  \"failed\": {},\n"
+        "  \"failure_rate_per_1000\": {},\n"
+        "  \"avg_wall_time_ms\": {},\n"
+        "  \"avg_effective_fps\": {},\n"
+        "  \"peak_working_set_bytes\": {},\n"
+        "  \"peak_private_bytes\": {},\n"
+        "  \"estimated_total_cost_usd\": {}\n"
+        "}}\n",
+        escape_json(summary.batch_id),
+        summary.total_jobs, summary.succeeded, summary.failed,
+        summary.failure_rate_per_1000, summary.avg_wall_time_ms,
+        summary.avg_effective_fps, summary.peak_working_set_bytes,
+        summary.peak_private_bytes, summary.estimated_total_cost_usd
+    );
     return true;
 }
 

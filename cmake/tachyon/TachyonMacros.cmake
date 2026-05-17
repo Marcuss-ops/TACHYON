@@ -60,6 +60,12 @@ function(tachyon_configure_common target)
 
 endfunction()
 
+function(tachyon_link_infra target)
+    tachyon_link_spdlog(${target})
+    tachyon_link_hash(${target})
+    tachyon_link_zstd(${target})
+endfunction()
+
 function(tachyon_link_absl target)
     target_link_libraries(${target} PUBLIC 
         absl_flat_hash_map

@@ -15,16 +15,14 @@
 #include "tachyon/runtime/execution/parallel/taskflow_runtime.h"
 #include "tachyon/runtime/core/serialization/tbf_codec.h"
 #include "tachyon/core/profiling.h"
+#include "tachyon/core/diag/log.h"
 #include "tachyon/diagnostics/trace.h"
 
-#include <iostream>
 #include <future>
 #include <atomic>
 #include <algorithm>
 #include <thread>
 #include <chrono>
-#include <iomanip>
-#include <sstream>
 #include <cstring>
 #include <cstdlib>
 #include <fstream>
@@ -45,22 +43,16 @@ void render_trace(const std::string& message) {
         static std::ofstream s_trace_file = []() {
             const char* temp_dir = std::getenv("TEMP");
             if (!temp_dir) temp_dir = std::getenv("TMP");
-            
-            std::filesystem::path path;
-            if (temp_dir) {
-                path = std::filesystem::path(temp_dir) / "tachyon_render_run.log";
-            } else {
-                path = std::filesystem::current_path() / "tachyon_render_run.log";
-            }
-            
-            std::ofstream f(path, std::ios::out | std::ios::trunc);
-            return f;
+            std::filesystem::path path = temp_dir
+                ? std::filesystem::path(temp_dir) / "tachyon_render_run.log"
+                : std::filesystem::current_path() / "tachyon_render_run.log";
+            return std::ofstream(path, std::ios::out | std::ios::trunc);
         }();
 
         if (s_trace_file.is_open()) {
-            s_trace_file << "[RenderTrace] " << message << std::endl;
+            s_trace_file << "[RenderTrace] " << message << "\n";
         }
-        std::cerr << "[RenderTrace] " << message << std::endl;
+        diag::trace("[RenderTrace] {}", message);
     }
 }
 

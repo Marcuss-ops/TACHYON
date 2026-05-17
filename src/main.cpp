@@ -1,19 +1,18 @@
 #include "tachyon/core/cli.h"
+#include "tachyon/core/diag/log.h"
 #include "tachyon/backends/backend_init.h"
-#include <iostream>
 #include <exception>
 
 int main(int argc, char** argv) {
+    tachyon::diag::init_logging();
     try {
-        // Initialize all compiled-in backends
         tachyon::backends::initialize_all_backends();
-
         return tachyon::run_cli(argc, argv);
     } catch (const std::exception& e) {
-        std::cerr << "FATAL ERROR: " << e.what() << std::endl;
+        tachyon::diag::critical("FATAL: {}", e.what());
         return 1;
     } catch (...) {
-        std::cerr << "FATAL ERROR: Unknown exception" << std::endl;
+        tachyon::diag::critical("FATAL: unknown exception");
         return 1;
     }
 }

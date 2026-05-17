@@ -59,6 +59,27 @@ target_link_libraries(tachyon
 tachyon_link_mimalloc(tachyon)
 set_target_properties(tachyon PROPERTIES ENABLE_EXPORTS TRUE)
 
+# --- Shared library (libtachyon.so / tachyon.dll) for Python/FFI ---
+if(TACHYON_BUILD_SHARED_LIB)
+    add_library(tachyon_lib SHARED core/c_api.cpp)
+    set_target_properties(tachyon_lib PROPERTIES OUTPUT_NAME "tachyon")
+    target_compile_definitions(tachyon_lib PRIVATE TACHYON_EXPORTS)
+    tachyon_configure_common(tachyon_lib)
+    target_link_libraries(tachyon_lib
+        PRIVATE
+            TachyonCLI
+            TachyonCatalog
+            TachyonPresets
+            TachyonDiagnostics
+            TachyonOperations
+            TachyonBackends
+            TachyonRuntime
+            TachyonOutput
+    )
+    tachyon_link_mimalloc(tachyon_lib)
+    message(STATUS "[Tachyon] Building shared library: libtachyon")
+endif()
+
 # Platform-specific post-build
 if(MSVC)
     file(GLOB OIDN_RUNTIME_DLLS CONFIGURE_DEPENDS "${oidn_SOURCE_DIR}/bin/*.dll")

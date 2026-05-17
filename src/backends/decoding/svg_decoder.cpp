@@ -1,6 +1,6 @@
 #include "tachyon/core/media/decoding/svg_decoder.h"
 #include "pugixml.hpp"
-#include "tachyon/runtime/core/diagnostics/diagnostics.h"
+#include "tachyon/core/types/diagnostics.h"
 #include <optional>
 #include <sstream>
 #include <vector>
