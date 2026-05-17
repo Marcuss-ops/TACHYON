@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import OverviewWidgets from './components/OverviewWidgets';
 import RunsTable from './components/RunsTable';
 import RunDetails from './components/RunDetails';
-import { Database, RefreshCw, Layers } from 'lucide-react';
+import { Database } from 'lucide-react';
 
 export default function App() {
   const [runs, setRuns] = useState([]);
@@ -14,6 +14,12 @@ export default function App() {
   const [dbOnline, setDbOnline] = useState(false);
   const [dbPath, setDbPath] = useState('Resolving DB...');
 
+  // Use a ref to prevent closure staleness in setInterval
+  const selectedRunIdRef = useRef(selectedRunId);
+  useEffect(() => {
+    selectedRunIdRef.current = selectedRunId;
+  }, [selectedRunId]);
+
   const getApiUrl = (path) => {
     if (window.location.port === '5173') {
       return `http://localhost:8080${path}`;
@@ -21,8 +27,8 @@ export default function App() {
     return path;
   };
 
-  const loadAllRuns = async () => {
-    setLoadingRuns(true);
+  const loadAllRuns = async (isSilent = false) => {
+    if (!isSilent) setLoadingRuns(true);
     try {
       const response = await fetch(getApiUrl('/api/runs'));
       if (!response.ok) {
@@ -30,7 +36,6 @@ export default function App() {
         setDbOnline(false);
         setDbPath(err.path || 'Error');
         setRuns([]);
-        setLoadingRuns(false);
         return;
       }
 
@@ -40,21 +45,21 @@ export default function App() {
       setDbPath('Connected: tachyon_render_history.sqlite');
       
       // Auto-select first run if none selected
-      if (data.length > 0 && !selectedRunId) {
-        handleSelectRun(data[0].run_id);
+      if (data.length > 0 && !selectedRunIdRef.current) {
+        handleSelectRun(data[0].run_id, isSilent);
       }
     } catch (e) {
       setDbOnline(false);
       setDbPath('Offline / Failed to connect');
       setRuns([]);
     } finally {
-      setLoadingRuns(false);
+      if (!isSilent) setLoadingRuns(false);
     }
   };
 
-  const handleSelectRun = async (runId) => {
+  const handleSelectRun = async (runId, isSilent = false) => {
     setSelectedRunId(runId);
-    setLoadingDetails(true);
+    if (!isSilent) setLoadingDetails(true);
     try {
       const res = await fetch(getApiUrl(`/api/runs/${runId}`));
       if (!res.ok) throw new Error('Failed to fetch detailed metrics');
@@ -64,12 +69,34 @@ export default function App() {
       console.error(err);
       setSelectedRunDetails(null);
     } finally {
-      setLoadingDetails(false);
+      if (!isSilent) setLoadingDetails(false);
     }
   };
 
   useEffect(() => {
+    // Initial fetch with spinner
     loadAllRuns();
+
+    // Auto-sync everything silently every 3 seconds
+    const interval = setInterval(async () => {
+      // 1. Silent sync of all runs
+      await loadAllRuns(true);
+      
+      // 2. Silent sync of current selected run details
+      if (selectedRunIdRef.current) {
+        try {
+          const res = await fetch(getApiUrl(`/api/runs/${selectedRunIdRef.current}`));
+          if (res.ok) {
+            const data = await res.json();
+            setSelectedRunDetails(data);
+          }
+        } catch (err) {
+          console.error('Auto-sync run details failure:', err);
+        }
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -100,14 +127,6 @@ export default function App() {
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
             />
-            <button
-              className="refresh-btn"
-              style={{ alignSelf: 'flex-start' }}
-              onClick={loadAllRuns}
-            >
-              <RefreshCw size={14} />
-              Sync DB Records
-            </button>
 
             {/* Full-width Run Details panel below the table */}
             <RunDetails details={selectedRunDetails} loading={loadingDetails} />
