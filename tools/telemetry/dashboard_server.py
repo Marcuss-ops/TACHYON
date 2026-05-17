@@ -49,6 +49,47 @@ class TelemetryAPIHandler(http.server.BaseHTTPRequestHandler):
         parsed_url = urllib.parse.urlparse(self.path)
         path_parts = [p for p in parsed_url.path.split("/") if p]
 
+        # API: Export Last 100 Render Runs with Complete Details
+        if len(path_parts) >= 2 and path_parts[0] == "api" and path_parts[1] == "export-last-100":
+            conn = self.get_db_connection()
+            if not conn:
+                self.send_json({"error": "Database not found or cannot be opened", "path": self.db_file_path}, 404)
+                return
+            try:
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM render_runs ORDER BY finished_at_iso DESC LIMIT 100;")
+                run_rows = cursor.fetchall()
+                
+                detailed_runs = []
+                for run_row in run_rows:
+                    run_id = run_row["run_id"]
+                    
+                    # Query Frame Info
+                    cursor.execute("SELECT * FROM render_frames WHERE run_id = ? ORDER BY frame_number ASC;", (run_id,))
+                    frames = [dict(r) for r in cursor.fetchall()]
+
+                    # Query Phase Events Info
+                    cursor.execute("SELECT * FROM render_phase_events WHERE run_id = ? ORDER BY duration_ms DESC;", (run_id,))
+                    phases = [dict(r) for r in cursor.fetchall()]
+
+                    # Query Counter Info
+                    cursor.execute("SELECT * FROM render_counters WHERE run_id = ? ORDER BY counter_name ASC;", (run_id,))
+                    counters = [dict(r) for r in cursor.fetchall()]
+                    
+                    detailed_runs.append({
+                        "run": dict(run_row),
+                        "frames": frames,
+                        "phases": phases,
+                        "counters": counters
+                    })
+                
+                self.send_json(detailed_runs)
+            except Exception as e:
+                self.send_json({"error": str(e)}, 500)
+            finally:
+                conn.close()
+            return
+
         # API: Get List of Render Runs
         if len(path_parts) >= 2 and path_parts[0] == "api" and path_parts[1] == "runs":
             if len(path_parts) == 2:

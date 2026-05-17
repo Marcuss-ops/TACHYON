@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import OverviewWidgets from './components/OverviewWidgets';
 import RunsTable from './components/RunsTable';
 import RunDetails from './components/RunDetails';
-import { Database } from 'lucide-react';
+import { Database, Download } from 'lucide-react';
 
 export default function App() {
   const [runs, setRuns] = useState([]);
@@ -73,6 +73,29 @@ export default function App() {
     }
   };
 
+  const handleDownloadLast100 = async () => {
+    try {
+      const response = await fetch(getApiUrl('/api/export-last-100'));
+      if (!response.ok) throw new Error('Failed to export telemetry data');
+      
+      const data = await response.json();
+      const jsonString = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `tachyon_detailed_telemetry_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert('Error exporting telemetry data: ' + err.message);
+    }
+  };
+
   useEffect(() => {
     // Initial fetch with spinner
     loadAllRuns();
@@ -105,10 +128,22 @@ export default function App() {
         <div className="logo-section">
           <h1>Tachyon</h1>
         </div>
-        <div className="db-info">
-          <span className={`db-dot ${dbOnline ? '' : 'offline'}`}></span>
-          <Database size={14} style={{ color: dbOnline ? 'var(--accent-green)' : 'var(--accent-red)' }} />
-          <span>{dbPath}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <button 
+            className="download-btn"
+            onClick={handleDownloadLast100}
+            disabled={runs.length === 0}
+            style={{ opacity: runs.length === 0 ? 0.5 : 1 }}
+            title="Download latest 100 render runs with complete details"
+          >
+            <Download size={14} style={{ color: 'var(--accent-cyan)' }} />
+            Export Last 100 Renders
+          </button>
+          <div className="db-info">
+            <span className={`db-dot ${dbOnline ? '' : 'offline'}`}></span>
+            <Database size={14} style={{ color: dbOnline ? 'var(--accent-green)' : 'var(--accent-red)' }} />
+            <span>{dbPath}</span>
+          </div>
         </div>
       </header>
 
