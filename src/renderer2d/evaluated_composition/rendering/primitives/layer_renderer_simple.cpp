@@ -161,6 +161,7 @@ std::string make_precomp_cache_key(
 // Decoupled Renderers
 // -------------------------------------------------------------------------------------------------
 
+#ifdef TACHYON_ENABLE_TEXT
 class TextLayerRenderer : public ILayerRenderer {
 public:
     bool render(
@@ -277,7 +278,9 @@ public:
         return true;
     }
 };
+#endif
 
+#ifdef TACHYON_ENABLE_MEDIA
 class ImageLayerRenderer : public ILayerRenderer {
 public:
     bool render(
@@ -347,6 +350,7 @@ public:
         return true;
     }
 };
+#endif
 
 class SolidLayerRenderer : public ILayerRenderer {
 public:
@@ -393,10 +397,16 @@ public:
 } // namespace
 
 void LayerRendererRegistry::register_builtin_renderers() {
+#ifdef TACHYON_ENABLE_MEDIA
     register_renderer(LayerType::Image, std::make_unique<ImageLayerRenderer>());
+#endif
     register_renderer(LayerType::Solid, std::make_unique<SolidLayerRenderer>());
+#ifdef TACHYON_ENABLE_MEDIA
     register_renderer(LayerType::Video, std::make_unique<VideoLayerRenderer>());
+#endif
+#ifdef TACHYON_ENABLE_TEXT
     register_renderer(LayerType::Text, std::make_unique<TextLayerRenderer>());
+#endif
     register_renderer(LayerType::Procedural, std::make_unique<ProceduralLayerRenderer>());
 }
 

@@ -82,7 +82,8 @@
       "binaryDir": "${sourceDir}/build/linux-ci",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "TACHYON_ENABLE_PCH": "OFF"
+        "TACHYON_ENABLE_PCH": "OFF",
+        "TACHYON_BUILD_TESTS": "ON"
       }
     },
     {
@@ -123,7 +124,8 @@
       "binaryDir": "${sourceDir}/build/windows-ci",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "TACHYON_ENABLE_PCH": "OFF"
+        "TACHYON_ENABLE_PCH": "OFF",
+        "TACHYON_BUILD_TESTS": "ON"
       }
     },
     {
@@ -230,13 +232,15 @@
       "configurePreset": "linux-ci",
       "targets": [
         "TachyonCore",
+        "TachyonCoreTests",
         "TachyonRenderTests",
         "TachyonCliTests",
         "TachyonSceneTests",
         "TachyonRuntimeTests",
         "TachyonOperationsTests",
         "TachyonGoldenTests",
-        "tachyon"
+        "tachyon",
+        "HeaderSmokeTests"
       ]
     },
     {
@@ -244,13 +248,15 @@
       "configurePreset": "dev-linux",
       "targets": [
         "TachyonCore",
+        "TachyonCoreTests",
         "TachyonRenderTests",
         "TachyonCliTests",
         "TachyonSceneTests",
         "TachyonRuntimeTests",
         "TachyonOperationsTests",
         "TachyonGoldenTests",
-        "tachyon"
+        "tachyon",
+        "HeaderSmokeTests"
       ]
     },
     {
@@ -258,12 +264,14 @@
       "configurePreset": "dev-linux-fast",
       "targets": [
         "TachyonCore",
+        "TachyonCoreTests",
         "TachyonRenderTests",
         "TachyonCliTests",
         "TachyonSceneTests",
         "TachyonRuntimeTests",
         "TachyonOperationsTests",
-        "TachyonGoldenTests"
+        "TachyonGoldenTests",
+        "HeaderSmokeTests"
       ]
     },
     {
@@ -271,13 +279,15 @@
       "configurePreset": "windows-ci",
       "targets": [
         "TachyonCore",
+        "TachyonCoreTests",
         "TachyonRenderTests",
         "TachyonCliTests",
         "TachyonSceneTests",
         "TachyonRuntimeTests",
         "TachyonOperationsTests",
         "TachyonGoldenTests",
-        "tachyon"
+        "tachyon",
+        "HeaderSmokeTests"
       ]
     },
     {
@@ -292,6 +302,7 @@
       "configurePreset": "media-off",
       "targets": [
         "TachyonCore",
+        "TachyonCoreTests",
         "HeaderSmokeTests"
       ]
     },
@@ -300,6 +311,7 @@
       "configurePreset": "highway-off",
       "targets": [
         "TachyonCore",
+        "TachyonCoreTests",
         "HeaderSmokeTests"
       ]
     },
@@ -308,6 +320,7 @@
       "configurePreset": "audio-off",
       "targets": [
         "TachyonCore",
+        "TachyonCoreTests",
         "HeaderSmokeTests"
       ]
     }

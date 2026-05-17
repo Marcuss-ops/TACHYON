@@ -8,13 +8,15 @@ target_link_libraries(TachyonBackendImageDecoding PUBLIC TachyonCore TachyonPlat
 set_target_properties(TachyonBackendImageDecoding PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # Tachyon SVG Decoding (pugixml)
-add_library(TachyonBackendSvgDecoding STATIC svg_decoder.cpp)
-target_include_directories(TachyonBackendSvgDecoding PUBLIC 
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../../include>
-    ${CMAKE_BINARY_DIR}/include
-)
-target_link_libraries(TachyonBackendSvgDecoding PUBLIC TachyonCore TachyonPlatform pugixml)
-set_target_properties(TachyonBackendSvgDecoding PROPERTIES POSITION_INDEPENDENT_CODE ON)
+if(TACHYON_ENABLE_MEDIA)
+    add_library(TachyonBackendSvgDecoding STATIC svg_decoder.cpp)
+    target_include_directories(TachyonBackendSvgDecoding PUBLIC 
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../../include>
+        ${CMAKE_BINARY_DIR}/include
+    )
+    target_link_libraries(TachyonBackendSvgDecoding PUBLIC TachyonCore TachyonPlatform pugixml)
+    set_target_properties(TachyonBackendSvgDecoding PROPERTIES POSITION_INDEPENDENT_CODE ON)
+endif()
 
 # Tachyon FFmpeg Video Decoding
 if(TACHYON_ENABLE_MEDIA)
@@ -37,9 +39,11 @@ target_include_directories(TachyonBackendsDecoding PUBLIC
 )
 target_link_libraries(TachyonBackendsDecoding PUBLIC 
     TachyonBackendImageDecoding 
-    TachyonBackendSvgDecoding
 )
 if(TACHYON_ENABLE_MEDIA)
-    target_link_libraries(TachyonBackendsDecoding PUBLIC TachyonBackendFfmpegVideoDecoding)
+    target_link_libraries(TachyonBackendsDecoding PUBLIC 
+        TachyonBackendSvgDecoding
+        TachyonBackendFfmpegVideoDecoding
+    )
 endif()
 set_target_properties(TachyonBackendsDecoding PROPERTIES POSITION_INDEPENDENT_CODE ON)

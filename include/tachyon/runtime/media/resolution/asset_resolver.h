@@ -1,7 +1,9 @@
 #pragma once
 
 #include "tachyon/runtime/media/management/image_manager.h"
+#ifdef TACHYON_ENABLE_TEXT
 #include "tachyon/text/fonts/core/font_registry.h"
+#endif
 #include "tachyon/core/assets/asset_resolution.h"
 
 #include <filesystem>
@@ -28,7 +30,12 @@ public:
     AssetResolver(Config config,
                   AssetManager* asset_manager = nullptr,
                   ImageManager* image_manager = nullptr,
-                  text::FontRegistry* font_registry = nullptr);
+#ifdef TACHYON_ENABLE_TEXT
+                  text::FontRegistry* font_registry = nullptr
+#else
+                  void* font_registry = nullptr
+#endif
+    );
 
     /**
      * @brief Resolves a string specification into an absolute filesystem path.
@@ -60,14 +67,18 @@ public:
     /**
      * @brief Resolves and loads a font.
      */
+#ifdef TACHYON_ENABLE_TEXT
     const text::Font* resolve_font(const std::string& spec, std::uint32_t pixel_size = 48, ::tachyon::ResolveMode mode = ::tachyon::ResolveMode::PermissiveWithWarning);
+#endif
 
     /**
      * @brief Direct access to the underlying managers.
      */
     AssetManager* asset_manager() const { return m_asset_manager; }
     ImageManager* image_manager() const { return m_image_manager; }
+#ifdef TACHYON_ENABLE_TEXT
     text::FontRegistry* font_registry() const { return m_font_registry; }
+#endif
 
     const Config& config() const override { return m_config; }
 
@@ -75,7 +86,11 @@ private:
     Config m_config;
     AssetManager* m_asset_manager;
     ImageManager* m_image_manager;
+#ifdef TACHYON_ENABLE_TEXT
     text::FontRegistry* m_font_registry;
+#else
+    void* m_font_registry;
+#endif
 };
 
 } // namespace tachyon::media

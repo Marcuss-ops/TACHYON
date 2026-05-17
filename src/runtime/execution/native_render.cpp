@@ -164,7 +164,16 @@ RenderSessionResult NativeRenderer::render(
     const RenderJob& job,
     const NativeRenderOptions& options) {
     auto bundle = runtime::create_default_runtime_registry_bundle();
+#ifdef TACHYON_ENABLE_TEXT
     return render(scene, job, bundle.transitions, *bundle.text_registry, options);
+#else
+    RenderSession session;
+    session.set_transition_registry(&bundle.transitions);
+    SceneCompiler compiler;
+    const auto compiled_result = compiler.compile(scene);
+    if (!compiled_result.ok()) return {};
+    return render_with_session(*compiled_result.value, job, options, session, &scene);
+#endif
 }
 
 RenderSessionResult NativeRenderer::render(
@@ -172,7 +181,13 @@ RenderSessionResult NativeRenderer::render(
     const RenderJob& job,
     const NativeRenderOptions& options) {
     auto bundle = runtime::create_default_runtime_registry_bundle();
+#ifdef TACHYON_ENABLE_TEXT
     return render(scene, job, bundle.transitions, *bundle.text_registry, options);
+#else
+    RenderSession session;
+    session.set_transition_registry(&bundle.transitions);
+    return render_with_session(scene, job, options, session);
+#endif
 }
 
 RenderSessionResult NativeRenderer::render(
@@ -181,6 +196,7 @@ RenderSessionResult NativeRenderer::render(
     TransitionRegistry& transition_registry,
     presets::TextRegistry& text_registry,
     const NativeRenderOptions& options) {
+#ifdef TACHYON_ENABLE_TEXT
     RenderJob resolved_job = job;
     apply_output_preset(resolved_job.output.profile);
     RenderSessionResult result;
@@ -203,6 +219,10 @@ RenderSessionResult NativeRenderer::render(
     session.set_transition_registry(&transition_registry);
     session.set_text_registry(&text_registry);
     return render_with_session(*compiled_result.value, resolved_job, options, session, &scene);
+#else
+    (void)scene; (void)job; (void)transition_registry; (void)text_registry; (void)options;
+    return {};
+#endif
 }
 
 RenderSessionResult NativeRenderer::render(
@@ -211,10 +231,15 @@ RenderSessionResult NativeRenderer::render(
     TransitionRegistry& transition_registry,
     presets::TextRegistry& text_registry,
     const NativeRenderOptions& options) {
+#ifdef TACHYON_ENABLE_TEXT
     RenderSession session;
     session.set_transition_registry(&transition_registry);
     session.set_text_registry(&text_registry);
     return render_with_session(scene, job, options, session);
+#else
+    (void)scene; (void)job; (void)transition_registry; (void)text_registry; (void)options;
+    return {};
+#endif
 }
 
 bool NativeRenderer::render_still(
@@ -224,10 +249,33 @@ bool NativeRenderer::render_still(
     const std::filesystem::path& output_path,
     TransitionRegistry& transition_registry,
     presets::TextRegistry& text_registry) {
+#ifdef TACHYON_ENABLE_TEXT
+    RenderJob job = RenderJobBuilder::still_image(composition_id, frame_number, output_path.string());
+    const auto result = render(scene, job, transition_registry, text_registry);
+    return result.output_error.empty() && (!result.frames.empty() || result.frames_written > 0);
+#else
+    (void)scene; (void)composition_id; (void)frame_number; (void)output_path; (void)transition_registry; (void)text_registry;
+    return false;
+#endif
+}
+
+bool NativeRenderer::render_still(
+    const SceneSpec& scene,
+    const std::string& composition_id,
+    std::int64_t frame_number,
+    const std::filesystem::path& output_path,
+    TransitionRegistry& transition_registry) {
     
     RenderJob job = RenderJobBuilder::still_image(composition_id, frame_number, output_path.string());
     
-    const auto result = render(scene, job, transition_registry, text_registry);
+    RenderSession session;
+    session.set_transition_registry(&transition_registry);
+    
+    SceneCompiler compiler;
+    const auto compiled_result = compiler.compile(scene);
+    if (!compiled_result.ok()) return false;
+
+    const auto result = render_with_session(*compiled_result.value, job, NativeRenderOptions(), session, &scene);
     return result.output_error.empty() && (!result.frames.empty() || result.frames_written > 0);
 }
 

@@ -2,8 +2,10 @@
 
 #include "tachyon/transition_registry.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
+#ifdef TACHYON_ENABLE_TEXT
 #include "tachyon/presets/text/text_registry.h"
 #include "tachyon/presets/text/text_manifest.h"
+#endif
 #include <memory>
 
 namespace tachyon::runtime {
@@ -11,8 +13,10 @@ namespace tachyon::runtime {
 struct EngineRegistry {
     TransitionRegistry transitions;
     renderer2d::EffectRegistry effects;
+#ifdef TACHYON_ENABLE_TEXT
     presets::TextManifest text_manifest;
     std::unique_ptr<presets::TextRegistry> text_registry;
+#endif
 
     EngineRegistry();
     ~EngineRegistry();

@@ -6,8 +6,11 @@
 
 namespace tachyon::runtime {
 
-EngineRegistry::EngineRegistry() 
-    : text_registry(std::make_unique<presets::TextRegistry>(text_manifest)) {}
+EngineRegistry::EngineRegistry() {
+#ifdef TACHYON_ENABLE_TEXT
+    text_registry = std::make_unique<presets::TextRegistry>(text_manifest);
+#endif
+}
 
 EngineRegistry::~EngineRegistry() = default;
 

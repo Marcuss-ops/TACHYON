@@ -10,6 +10,7 @@
 
 namespace tachyon::renderer2d {
 
+#ifdef TACHYON_ENABLE_TEXT
 const ::tachyon::text::FontRegistry* get_default_font_registry() {
 #ifdef TACHYON_ENABLE_TEXT
     // Mandate: Initialize FreeType BEFORE FontRegistry so it is destroyed AFTER it.
@@ -76,6 +77,7 @@ const ::tachyon::text::FontRegistry* get_default_font_registry() {
     
     return &default_registry;
 }
+#endif
 
 ::tachyon::AlphaMode TextureResolver::parse_alpha_mode(const std::optional<std::string>& mode) {
     if (!mode.has_value()) return ::tachyon::AlphaMode::Straight;

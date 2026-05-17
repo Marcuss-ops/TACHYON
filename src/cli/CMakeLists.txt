@@ -17,7 +17,13 @@ set(TachyonCLISources
     commands/version.cpp
     commands/thumb.cpp
     commands/metrics.cpp
-    commands/fetch_fonts.cpp
+)
+
+if(TACHYON_ENABLE_TEXT)
+    list(APPEND TachyonCLISources commands/fetch_fonts.cpp)
+endif()
+
+list(APPEND TachyonCLISources
     commands/doctor.cpp
     commands/output_presets.cpp
     commands/probe.cpp

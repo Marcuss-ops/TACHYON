@@ -19,8 +19,11 @@ set(TachyonRenderer2DSurfaceSources
     surface/surface_blur.cpp
     surface/surface_composite.cpp
     surface/surface_composite_avx2.cpp
-    surface/surface_ops_highway.cpp
 )
+
+if(TACHYON_ENABLE_HIGHWAY)
+    list(APPEND TachyonRenderer2DSurfaceSources surface/surface_ops_highway.cpp)
+endif()
 
 set(TachyonRenderer2DPathSources
     path/contour/contour_processing.cpp
@@ -157,9 +160,12 @@ target_link_libraries(TachyonRenderer2D PUBLIC
     TachyonColor 
     TachyonRenderer2DColor
     TachyonRenderer2DExtras
-    TachyonText
     TachyonPresets
 )
+
+if(TACHYON_ENABLE_TEXT)
+    target_link_libraries(TachyonRenderer2D PUBLIC TachyonText)
+endif()
 
 if(TACHYON_ENABLE_HIGHWAY)
     if(TARGET hwy)

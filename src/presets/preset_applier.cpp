@@ -2,18 +2,22 @@
 #include "tachyon/presets/animation2d/animation2d_preset_registry.h"
 #include "tachyon/presets/effects/effect_preset_registry.h"
 #include "tachyon/presets/background/background_resolver.h"
+#ifdef TACHYON_ENABLE_TEXT
 #include "tachyon/presets/text/text_registry.h"
-#include "tachyon/catalog/presets/preset_catalog.h"
 #include "tachyon/text/animation/text_animator_utils.h"
+#endif
+#include "tachyon/catalog/presets/preset_catalog.h"
 
 namespace tachyon::presets {
 
 namespace {
+#ifdef TACHYON_ENABLE_TEXT
 void mark_fixed_pitch_if_needed(tachyon::LayerSpec& spec, const TextAnimatorSpec& anim) {
     if (::tachyon::text::uses_character_stagger_layout(anim)) {
         spec.text.box.fixed_pitch = true;
     }
 }
+#endif
 }
 
 void PresetApplier::apply_animation2d(LayerSpec& layer, const std::string& preset_id, const registry::ParameterBag& params) {
@@ -25,6 +29,7 @@ void PresetApplier::apply_effect(LayerSpec& layer, const std::string& preset_id,
 }
 
 void PresetApplier::apply_text_animation(LayerSpec& layer, const std::string& preset_id, const registry::ParameterBag& params) {
+#ifdef TACHYON_ENABLE_TEXT
     presets::TextManifest text_manifest;
     presets::TextRegistry local_registry(text_manifest);
     auto anims = local_registry.create_animators(preset_id, params);
@@ -32,6 +37,11 @@ void PresetApplier::apply_text_animation(LayerSpec& layer, const std::string& pr
         mark_fixed_pitch_if_needed(layer, anim);
     }
     layer.text_animators.insert(layer.text_animators.end(), anims.begin(), anims.end());
+#else
+    (void)layer;
+    (void)preset_id;
+    (void)params;
+#endif
 }
 
 void PresetApplier::apply_background(CompositionSpec& comp, const std::string& preset_id, const registry::ParameterBag& params) {

@@ -154,6 +154,7 @@ public:
     
     // Build the LayerSpec
     [[nodiscard]] LayerSpec build() const {
+#ifdef TACHYON_ENABLE_TEXT
         TextParams p = params_;
         if (!animators_.empty()) {
             p.animations = animators_;
@@ -165,6 +166,9 @@ public:
             l.text.stroke_color = AnimatedColorSpec(stroke_color_);
         }
         return l;
+#else
+        return {};
+#endif
     }
     
     // Implicit conversion to LayerSpec
@@ -311,6 +315,7 @@ public:
 // Preset animation factories (return TextAnimatorSpec for use with .animate())
 // ---------------------------------------------------------------------------
 
+#ifdef TACHYON_ENABLE_TEXT
 inline TextAnimatorSpec kind_fade_up(double y_offset = 12.0, double duration = 0.45, double /*stagger*/ = 0.03) {
     return ::tachyon::text::make_minimal_fade_up_animator("characters_excluding_spaces", duration, y_offset);
 }
@@ -358,6 +363,7 @@ inline TextAnimatorSpec kind_soft_scale(double duration = 0.55, double scale = 0
 inline TextAnimatorSpec kind_pop_in(double distance = 18.0, double stagger = 0.02, double duration = 0.55) {
     return ::tachyon::text::make_pop_in_animator("characters", stagger, distance, duration);
 }
+#endif
 
 // ---------------------------------------------------------------------------
 // Text preset factory functions (Remotion-style)

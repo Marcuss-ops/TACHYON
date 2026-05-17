@@ -72,3 +72,12 @@ build-3d/
 embree/
 gallery/
 assets/fonts/NotoColorEmoji.ttf
+
+# Local Vite, PyCache and Telemetry
+.vite/
+tools/telemetry/dashboard-ui/.vite/
+__pycache__/
+tools/telemetry/__pycache__/
+render_summary.txt
+render_telemetry.csv
+

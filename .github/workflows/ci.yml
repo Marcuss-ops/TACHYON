@@ -9,8 +9,12 @@ on:
 jobs:
   # ─── Linux build + tests ───────────────────────────────────────────────────
   build-linux:
-    name: "Linux (GCC Ninja, RelWithDebInfo)"
+    name: "Linux (${{ matrix.preset }})"
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [linux-ci, media-off, audio-off, highway-off]
 
     steps:
       - uses: actions/checkout@v4
@@ -29,26 +33,25 @@ jobs:
             libomp-dev
 
       - name: Configure
-        run: cmake --preset linux-ci
+        run: cmake --preset ${{ matrix.preset }}
 
-      - name: Build smoke and core tests
-        run: cmake --build --preset linux-ci --target TachyonCore TachyonTests TachyonSceneTests TachyonCliTests TachyonEditorTests TachyonRuntimeTests TachyonContentTests TachyonRenderProfilerTests -j$(nproc)
+      - name: Build
+        run: cmake --build --preset ${{ matrix.preset }} -j$(nproc)
 
-      - name: Run smoke tests
-        run: ctest --test-dir build/linux-ci --output-on-failure -L smoke
+      - name: Run Tests
+        run: ctest --test-dir build/${{ matrix.preset }} --output-on-failure --label-exclude "render|golden"
 
-      - name: Run core tests
-        run: ctest --test-dir build/linux-ci --output-on-failure -L core
+      - name: Run Render Tests (linux-ci only)
+        if: matrix.preset == 'linux-ci'
+        run: ctest --test-dir build/${{ matrix.preset }} --output-on-failure -L render
 
-      - name: Build render tests
-        run: cmake --build --preset linux-ci --target TachyonNativeRenderTests TachyonRenderTests TachyonRenderPipelineTests -j$(nproc)
-
-      - name: Run render tests
-        run: ctest --test-dir build/linux-ci --output-on-failure -L render
+      - name: Run Golden Tests (linux-ci only)
+        if: matrix.preset == 'linux-ci'
+        run: ctest --test-dir build/${{ matrix.preset }} --output-on-failure -L golden
 
   # ─── Windows build + tests ─────────────────────────────────────────────────
   build-windows:
-    name: "Windows (MSVC Ninja, RelWithDebInfo)"
+    name: "Windows (windows-ci)"
     runs-on: windows-latest
 
     steps:
@@ -68,17 +71,14 @@ jobs:
       - name: Configure
         run: cmake --preset windows-ci
 
-      - name: Build smoke and core tests
-        run: cmake --build --preset windows-ci --target TachyonCore TachyonTests TachyonSceneTests TachyonCliTests TachyonEditorTests TachyonRuntimeTests TachyonContentTests TachyonRenderProfilerTests -j4
+      - name: Build
+        run: cmake --build --preset windows-ci -j4
 
-      - name: Run smoke tests
-        run: ctest --test-dir build/windows-ci --output-on-failure -L smoke
+      - name: Run Tests
+        run: ctest --test-dir build/windows-ci --output-on-failure --label-exclude "render|golden"
 
-      - name: Run core tests
-        run: ctest --test-dir build/windows-ci --output-on-failure -L core
-
-      - name: Build render tests
-        run: cmake --build --preset windows-ci --target TachyonNativeRenderTests TachyonRenderTests -j4
-
-      - name: Run render tests
+      - name: Run Render Tests
         run: ctest --test-dir build/windows-ci --output-on-failure -L render
+
+      - name: Run Golden Tests
+        run: ctest --test-dir build/windows-ci --output-on-failure -L golden

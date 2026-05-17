@@ -9,9 +9,17 @@ set(TachyonPresetsSources
     builders_common.cpp
     image/image_builders.cpp
     shape/shape_builders.cpp
-    text/text_manifest.cpp
-    text/text_builders.cpp
-    text/text_registry.cpp
+)
+
+if(TACHYON_ENABLE_TEXT)
+    list(APPEND TachyonPresetsSources
+        text/text_manifest.cpp
+        text/text_builders.cpp
+        text/text_registry.cpp
+    )
+endif()
+
+list(APPEND TachyonPresetsSources
     transition/transition_preset_registry.cpp
     transition/transition_builders.cpp
     transition/transition_presets_table.cpp

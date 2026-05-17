@@ -88,7 +88,9 @@ struct RenderSessionWorkspace {
     ::tachyon::RenderContext context;
     std::unique_ptr<output::FrameOutputSink> sink;
     output::AudioExportPlan audio_plan;
+#ifdef TACHYON_ENABLE_MEDIA
     media::IMediaPrefetcher* prefetcher;
+#endif
     std::vector<double> frame_times;
     std::vector<ExecutedFrame> rendered_frames;
 
@@ -100,8 +102,12 @@ struct RenderSessionWorkspace {
         media::IMediaPrefetcher* prefetcher_ptr)
         : effective_plan(execution_plan),
           resolved_output_path(output_path_or_plan(output_path, execution_plan.render_plan)),
-          context(std::move(precomp_cache)),
-          prefetcher(prefetcher_ptr) {
+          context(std::move(precomp_cache))
+#ifdef TACHYON_ENABLE_MEDIA
+          , prefetcher(prefetcher_ptr)
+#endif
+    {
+        (void)prefetcher_ptr;
         context.text_surface_cache = std::move(text_surface_cache);
     }
 };
@@ -115,7 +121,11 @@ void configure_render_context(
     const presets::TextRegistry* text_registry,
     audio::IAudioExporter* audio_exporter) {
     workspace.context.policy = workspace.effective_plan.render_plan.quality_policy;
+#ifdef TACHYON_ENABLE_TEXT
     workspace.context.font_registry = ::tachyon::renderer2d::get_default_font_registry();
+#else
+    workspace.context.font_registry = nullptr;
+#endif
 
     // AssetResolver should be injected or handled by the caller who knows about Operations
 
@@ -176,7 +186,11 @@ void execute_render_loop(
         cache,
         budget,
         workspace.context,
+#ifdef TACHYON_ENABLE_MEDIA
         workspace.prefetcher,
+#else
+        nullptr,
+#endif
         nullptr,
         workspace.rendered_frames,
         nullptr,
@@ -196,9 +210,11 @@ void finalize_render_output(
             workspace.context.profiler,
             profiling::ProfileEventType::AudioMux,
             "audio_export");
+#ifdef TACHYON_ENABLE_MEDIA
         if (workspace.context.audio_exporter) {
             workspace.context.audio_exporter->export_plan_audio(workspace.effective_plan.render_plan, workspace.audio_plan.path, cancel_flag);
         }
+#endif
     }
 
     if (workspace.sink) {
@@ -285,11 +301,15 @@ RenderSessionResult RenderSession::render(
     if (m_bundle_ptr) {
         if (!transition_registry) transition_registry = &m_bundle_ptr->transitions;
         effect_registry = &m_bundle_ptr->effects;
+#ifdef TACHYON_ENABLE_TEXT
         if (!text_registry) text_registry = m_bundle_ptr->text_registry.get();
+#endif
     } else if (m_bundle) {
         if (!transition_registry) transition_registry = &m_bundle->transitions;
         effect_registry = &m_bundle->effects;
+#ifdef TACHYON_ENABLE_TEXT
         if (!text_registry) text_registry = m_bundle->text_registry.get();
+#endif
     }
     
     if (!effect_registry || !transition_registry) {

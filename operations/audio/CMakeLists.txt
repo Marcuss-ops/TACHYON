@@ -20,7 +20,11 @@ target_include_directories(TachyonAudioOps
         ${CMAKE_SOURCE_DIR}/include
         ${CMAKE_BINARY_DIR}/include
 )
-target_link_libraries(TachyonAudioOps PUBLIC TachyonCore TachyonPlatform TachyonPresets pugixml)
+target_link_libraries(TachyonAudioOps PUBLIC TachyonCore TachyonPlatform TachyonPresets)
+
+if(TACHYON_ENABLE_MEDIA)
+    target_link_libraries(TachyonAudioOps PUBLIC pugixml)
+endif()
 
 tachyon_link_media_deps(TachyonAudioOps)
 

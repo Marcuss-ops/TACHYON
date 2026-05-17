@@ -31,9 +31,9 @@ add_subdirectory(backends)
 
 # External/Operations
 add_subdirectory(${CMAKE_SOURCE_DIR}/operations ${CMAKE_BINARY_DIR}/operations)
-
 # CLI and Entry Points
 add_subdirectory(cli)
+add_subdirectory(bindings)
 
 # --- Main Executables ---
 
@@ -61,7 +61,7 @@ set_target_properties(tachyon PROPERTIES ENABLE_EXPORTS TRUE)
 
 # --- Shared library (libtachyon.so / tachyon.dll) for Python/FFI ---
 if(TACHYON_BUILD_SHARED_LIB)
-    add_library(tachyon_lib SHARED core/c_api.cpp)
+    add_library(tachyon_lib SHARED bindings/c/c_api.cpp)
     set_target_properties(tachyon_lib PROPERTIES OUTPUT_NAME "tachyon")
     target_compile_definitions(tachyon_lib PRIVATE TACHYON_EXPORTS)
     tachyon_configure_common(tachyon_lib)
@@ -77,7 +77,6 @@ if(TACHYON_BUILD_SHARED_LIB)
             TachyonOutput
     )
     tachyon_link_mimalloc(tachyon_lib)
-    message(STATUS "[Tachyon] Building shared library: libtachyon")
 endif()
 
 # Platform-specific post-build

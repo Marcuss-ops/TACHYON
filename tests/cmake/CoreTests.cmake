@@ -8,6 +8,8 @@ add_executable(TachyonCoreTests
     unit/core/transition/transition_simd_kernels_tests.cpp
     unit/mains/test_stubs.cpp
     unit/diagnostics/test_trace_scope.cpp
+    unit/diagnostics/test_logging.cpp
+    unit/core/test_c_api.cpp
 )
 
 target_compile_definitions(TachyonCoreTests

@@ -43,10 +43,17 @@ bool run_preview_internal(const ::tachyon::CliOptions& options, std::ostream& ou
 
     out << "[" << label << "] Rendering frame " << frame << " to " << output.string() << "\n";
 
+#ifdef TACHYON_ENABLE_TEXT
     if (!bundle.text_registry) {
         bundle.text_registry = std::make_unique<presets::TextRegistry>(bundle.text_manifest);
     }
+#endif
+    
+#ifdef TACHYON_ENABLE_TEXT
     const bool success = NativeRenderer::render_still(scene, composition_id, frame, output, bundle.transitions, *bundle.text_registry);
+#else
+    const bool success = NativeRenderer::render_still(scene, composition_id, frame, output, bundle.transitions);
+#endif
     if (!success) {
         err << "Preview render failed.\n";
     } else {

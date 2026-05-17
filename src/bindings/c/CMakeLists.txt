@@ -1,11 +1,11 @@
 # Tachyon BindingsC Module
 
 set(TachyonBindingsCSources
-    ../c_api.cpp
+    c_api.cpp
 )
 
 tachyon_add_module(
     NAME BindingsC
     SOURCES ${TachyonBindingsCSources}
-    PUBLIC_DEPS TachyonCore
+    PUBLIC_DEPS TachyonCore TachyonCLI TachyonBackends
 )

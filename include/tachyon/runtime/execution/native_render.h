@@ -63,6 +63,13 @@ public:
         const std::filesystem::path& output_path,
         TransitionRegistry& transition_registry,
         presets::TextRegistry& text_registry);
+
+    static bool render_still(
+        const SceneSpec& scene,
+        const std::string& composition_id,
+        std::int64_t frame_number,
+        const std::filesystem::path& output_path,
+        TransitionRegistry& transition_registry);
 };
 
 } // namespace tachyon

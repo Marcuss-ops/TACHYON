@@ -20,7 +20,9 @@ std::vector<CommandDescriptor> make_all_commands() {
         make_thumb_command(),
         make_probe_command(),
         make_concat_command(),
+#ifdef TACHYON_ENABLE_TEXT
         make_fetch_fonts_command(),
+#endif
     };
 }
 

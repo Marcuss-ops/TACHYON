@@ -166,8 +166,10 @@ void render_frames_parallel_internal(
         executor.set_parallel_worker_count(budget.pixel_concurrency);
 
         ::tachyon::RenderContext local_context = context;
+#ifdef TACHYON_ENABLE_MEDIA
         local_context.prefetcher = prefetcher;
         local_context.scheduler = scheduler;
+#endif
         local_context.pixel_concurrency = budget.pixel_concurrency;
         local_context.cancel_flag = cancel_flag;
         local_context.total_pixels_counter = pixels_counter;

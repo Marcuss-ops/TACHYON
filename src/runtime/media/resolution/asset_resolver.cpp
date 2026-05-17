@@ -12,11 +12,22 @@ namespace tachyon::media {
 AssetResolver::AssetResolver(Config config,
                              AssetManager* asset_manager,
                              ImageManager* image_manager,
-                             text::FontRegistry* font_registry)
-    : m_config(std::move(config))
-    , m_asset_manager(asset_manager)
-    , m_image_manager(image_manager)
-    , m_font_registry(font_registry) {
+#ifdef TACHYON_ENABLE_TEXT
+                             text::FontRegistry* font_registry
+#else
+                             void* font_registry
+#endif
+                             )
+    : m_config(std::move(config)),
+      m_asset_manager(asset_manager),
+      m_image_manager(image_manager),
+#ifdef TACHYON_ENABLE_TEXT
+      m_font_registry(font_registry)
+#else
+      m_font_registry(nullptr)
+#endif
+{
+    (void)font_registry;
 }
 
 std::optional<std::filesystem::path> AssetResolver::resolve_path(const std::string& spec, AssetType type) const {
@@ -155,7 +166,7 @@ core::assets::AssetResolutionTable AssetResolver::resolve_all(const SceneSpec& s
     }
     return table;
 }
-
+#ifdef TACHYON_ENABLE_TEXT
 const text::Font* AssetResolver::resolve_font(const std::string& spec, std::uint32_t pixel_size, ::tachyon::ResolveMode mode) {
     if (!m_font_registry) return nullptr;
 
@@ -168,7 +179,7 @@ const text::Font* AssetResolver::resolve_font(const std::string& spec, std::uint
         std::filesystem::path path = res.value.value();
         std::string ext = path.extension().string();
         std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-        
+
         if (ext == ".ttf" || ext == ".otf") {
             if (m_font_registry->load_ttf(spec, path, pixel_size)) {
                 return m_font_registry->find(spec);
@@ -180,11 +191,8 @@ const text::Font* AssetResolver::resolve_font(const std::string& spec, std::uint
         }
     }
 
-    if (mode == ResolveMode::Strict) {
-        return nullptr;
-    }
-    
     return m_font_registry->default_font();
 }
+#endif
 
 } // namespace tachyon::media

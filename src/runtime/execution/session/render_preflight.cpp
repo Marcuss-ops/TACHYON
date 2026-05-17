@@ -41,6 +41,7 @@ PreflightResult perform_preflight(
     }
 
     // 3. Font Check
+#ifdef TACHYON_ENABLE_TEXT
     if (context.font_registry) {
         for (const auto& comp : compiled_scene.compositions) {
             for (const auto& layer : comp.layers) {
@@ -50,6 +51,7 @@ PreflightResult perform_preflight(
             }
         }
     }
+#endif
 
     // 4. Effect & Transition Check
     if (context.effects && context.transition_registry) {

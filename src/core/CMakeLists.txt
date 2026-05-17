@@ -58,4 +58,3 @@ target_sources(TachyonCore PRIVATE
 
 # Additional Core-related modules
 add_subdirectory(platform)
-add_subdirectory(c_api)
