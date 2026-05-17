@@ -36,6 +36,7 @@ std::optional<std::shared_ptr<renderer2d::Framebuffer>> FrameBlendRenderer::try_
             blend_result->source_time_b, composition_key, frame_key);
 
         if (frame_a_surface && frame_b_surface) {
+            // Invariant: Both src (a, b) and dst (out) buffers must be 32-byte aligned for safe SIMD Highway bulk kernel processing.
             // Linear blend only for now
             auto blended_surface = std::make_shared<renderer2d::SurfaceRGBA>(
                 frame_a_surface->width(), frame_a_surface->height());

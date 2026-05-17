@@ -20,7 +20,7 @@ public:
      * If blending is not needed (no blend result, or blend factor is extreme),
      * returns std::nullopt. Otherwise, renders frame A and B and blends them.
      */
-    static std::optional<std::shared_ptr<renderer2d::Framebuffer>> try_render_blend(
+    [[nodiscard]] static std::optional<std::shared_ptr<renderer2d::Framebuffer>> try_render_blend(
         FrameExecutor& executor,
         const CompiledScene& scene,
         const RenderPlan& plan,

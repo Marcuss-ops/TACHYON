@@ -11,20 +11,15 @@ std::shared_ptr<renderer2d::SurfaceRGBA> SurfacePool::acquire(std::uint32_t widt
     PoolKey key{width, height};
     auto it = m_pool.find(key);
     
-    renderer2d::SurfaceRGBA* raw_surface = nullptr;
+    std::unique_ptr<renderer2d::SurfaceRGBA> surface;
     if (it != m_pool.end() && !it->second.empty()) {
-        raw_surface = it->second.back().release();
+        surface = std::move(it->second.back());
         it->second.pop_back();
     } else {
-        raw_surface = new renderer2d::SurfaceRGBA(width, height);
+        surface = std::make_unique<renderer2d::SurfaceRGBA>(width, height);
     }
     
-    try {
-        return std::shared_ptr<renderer2d::SurfaceRGBA>(raw_surface, SurfaceDeleter{shared_from_this()});
-    } catch (...) {
-        delete raw_surface;
-        throw;
-    }
+    return std::shared_ptr<renderer2d::SurfaceRGBA>(surface.release(), SurfaceDeleter{shared_from_this()});
 }
 
 void SurfacePool::prepare(std::uint32_t width, std::uint32_t height, std::size_t worker_count) {
@@ -54,10 +49,9 @@ void SurfacePool::release(renderer2d::SurfaceRGBA* surface) {
     PoolKey key{surface->width(), surface->height()};
     auto& bucket = m_pool[key];
     
+    std::unique_ptr<renderer2d::SurfaceRGBA> surface_ptr(surface);
     if (bucket.size() < m_policy.max_surfaces) {
-        bucket.push_back(std::unique_ptr<renderer2d::SurfaceRGBA>(surface));
-    } else {
-        delete surface;
+        bucket.push_back(std::move(surface_ptr));
     }
 }
 
