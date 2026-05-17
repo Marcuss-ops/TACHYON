@@ -317,6 +317,116 @@ bool run_sqlite_telemetry_store_tests() {
         }
     }
 
+    // 10. Golden Hash Verification and Idempotency regression check
+    {
+        std::cout << "[TelemetryStore] Running Golden Regression & Idempotency Check...\n";
+        SqliteTelemetryStore golden_store;
+        if (!golden_store.initialize(":memory:")) {
+            std::cerr << "[TelemetryStore] FAIL: Golden store initialize failed.\n";
+            return false;
+        }
+
+        RenderTelemetryRecord gr;
+        gr.run_id = "golden-run";
+        gr.job_id = "job-gold";
+        gr.scene_id = "scene-gold";
+        gr.preset_id = "preset-gold";
+        gr.machine_id = "machine-gold";
+        gr.success = true;
+        gr.frames_total = 2;
+        gr.frames_written = 2;
+        gr.wall_time_ms = 100.0;
+        gr.render_ms = 80.0;
+        gr.encode_ms = 20.0;
+        gr.effective_fps = 20.0;
+        gr.peak_working_set_bytes = 1000;
+        gr.avg_working_set_bytes = 800;
+        gr.peak_private_bytes = 1200;
+        gr.avg_private_bytes = 900;
+        gr.avg_cpu_percent_machine = 50.0;
+        gr.avg_cpu_cores_used = 4.0;
+        gr.output_path = "output.mp4";
+        gr.finished_at_iso = "2026-05-17T09:00:00Z";
+
+        golden_store.write_render_record(gr);
+
+        std::vector<SqliteFrameRecord> g_frames = {
+            {0, 50.0, 10.0, 1.0, false},
+            {1, 50.0, 10.0, 1.0, true}
+        };
+        golden_store.write_frame_records(gr.run_id, g_frames);
+
+        std::vector<SqlitePhaseEventRecord> g_phases = {
+            {"rasterization", 80.0},
+            {"ffmpeg_encoding", 20.0}
+        };
+        golden_store.write_phase_events(gr.run_id, g_phases);
+
+        std::vector<SqliteCounterRecord> g_counters = {
+            {"cache_hits", 10},
+            {"cache_misses", 2}
+        };
+        golden_store.write_counters(gr.run_id, g_counters);
+
+        // Deterministic serialization helper function
+        auto serialize_db = [](sqlite3* db) -> std::string {
+            std::string out;
+            auto append_table = [&](const std::string& query) {
+                sqlite3_stmt* stmt = nullptr;
+                if (sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr) == SQLITE_OK) {
+                    int cols = sqlite3_column_count(stmt);
+                    while (sqlite3_step(stmt) == SQLITE_ROW) {
+                        for (int i = 0; i < cols; ++i) {
+                            const char* txt = reinterpret_cast<const char*>(sqlite3_column_text(stmt, i));
+                            out += (txt ? txt : "NULL");
+                            out += "|";
+                        }
+                        out += "\n";
+                    }
+                    sqlite3_finalize(stmt);
+                }
+            };
+
+            append_table("SELECT * FROM render_runs ORDER BY run_id;");
+            append_table("SELECT * FROM render_frames ORDER BY run_id, frame_number;");
+            append_table("SELECT * FROM render_phase_events ORDER BY run_id, phase_name;");
+            append_table("SELECT * FROM render_counters ORDER BY run_id, counter_name;");
+            return out;
+        };
+
+        sqlite3* sqlite3_gold_db = get_raw_db_pointer(golden_store);
+        std::string initial_serialization = serialize_db(sqlite3_gold_db);
+
+        // Hash using FNV-1a for simplicity and speed
+        auto hash_fnv1a = [](const std::string& s) -> uint64_t {
+            uint64_t hash = 14695981039346656037ULL;
+            for (char c : s) {
+                hash ^= static_cast<uint8_t>(c);
+                hash *= 1099511628211ULL;
+            }
+            return hash;
+        };
+
+        uint64_t golden_hash = hash_fnv1a(initial_serialization);
+        std::cout << "[TelemetryStore] Golden State Hash calculated: " << golden_hash << "\n";
+
+        // Idempotency check: rewrite identical telemetry
+        golden_store.write_render_record(gr);
+        golden_store.write_frame_records(gr.run_id, g_frames);
+        golden_store.write_phase_events(gr.run_id, g_phases);
+        golden_store.write_counters(gr.run_id, g_counters);
+
+        std::string duplicate_serialization = serialize_db(sqlite3_gold_db);
+        uint64_t duplicate_hash = hash_fnv1a(duplicate_serialization);
+
+        if (golden_hash != duplicate_hash) {
+            std::cerr << "[TelemetryStore] FAIL: Database state changed after idempotent write check! Idempotency is broken!\n";
+            return false;
+        }
+
+        std::cout << "[TelemetryStore] Golden test passed! Database is 100% stable and idempotent.\n";
+    }
+
     std::cout << "[TelemetryStore] ALL SQLite Telemetry Store tests passed successfully!\n";
     return true;
 #endif

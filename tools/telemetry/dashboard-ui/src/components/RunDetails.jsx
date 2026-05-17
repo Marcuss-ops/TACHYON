@@ -63,16 +63,53 @@ export default function RunDetails({ details, loading }) {
 
   const { run, frames, phases, counters } = details;
 
+  // Peak-preserving frame downsampling to keep Chart.js running beautifully
+  const downsampleFrames = (rawFrames, maxPoints = 200) => {
+    if (!rawFrames || rawFrames.length <= maxPoints) {
+      return {
+        labels: (rawFrames || []).map(f => `F${f.frame_number}`),
+        renderDurations: (rawFrames || []).map(f => f.duration_ms),
+        encodeDurations: (rawFrames || []).map(f => f.encode_time_ms),
+        isDownsampled: false
+      };
+    }
+
+    const step = rawFrames.length / maxPoints;
+    const labels = [];
+    const renderDurations = [];
+    const encodeDurations = [];
+
+    for (let i = 0; i < maxPoints; i++) {
+      const start = Math.floor(i * step);
+      const end = Math.min(Math.floor((i + 1) * step), rawFrames.length);
+      if (start >= end) continue;
+
+      // Select the maximum peak frame in the bucket to preserve latency spikes
+      let peakIdx = start;
+      let maxVal = rawFrames[start].duration_ms;
+      for (let j = start + 1; j < end; j++) {
+        if (rawFrames[j].duration_ms > maxVal) {
+          maxVal = rawFrames[j].duration_ms;
+          peakIdx = j;
+        }
+      }
+
+      const peakFrame = rawFrames[peakIdx];
+      labels.push(`F${peakFrame.frame_number}`);
+      renderDurations.push(peakFrame.duration_ms);
+      encodeDurations.push(peakFrame.encode_time_ms);
+    }
+
+    return { labels, renderDurations, encodeDurations, isDownsampled: true };
+  };
+
+  const { labels: frameLabels, renderDurations, encodeDurations, isDownsampled } = downsampleFrames(frames);
+
   // Mini metrics grid
   const totalSec = (run.wall_time_ms / 1000).toFixed(2) + 's';
   const renderSec = (run.render_ms / 1000).toFixed(2) + 's';
   const encodeSec = (run.encode_ms / 1000).toFixed(2) + 's';
   const fpsText = run.effective_fps ? run.effective_fps.toFixed(2) : '0.00';
-
-  // 1. Line Chart: Frames Details
-  const frameLabels = (frames || []).map(f => `F${f.frame_number}`);
-  const renderDurations = (frames || []).map(f => f.duration_ms);
-  const encodeDurations = (frames || []).map(f => f.encode_time_ms);
 
   const lineData = {
     labels: frameLabels,
@@ -177,9 +214,16 @@ export default function RunDetails({ details, loading }) {
 
         {/* Frame Timeline Line Chart */}
         <div className="chart-box">
-          <div className="chart-title">
-            <Zap size={14} style={{ color: 'var(--accent-cyan)' }} />
-            Frame-by-Frame Duration Spikes (ms)
+          <div className="chart-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              <Zap size={14} style={{ color: 'var(--accent-cyan)' }} />
+              Frame-by-Frame Duration Spikes (ms)
+            </span>
+            {isDownsampled && (
+              <span style={{ fontSize: '0.7rem', color: 'var(--accent-amber)', opacity: 0.8, fontWeight: 'normal' }}>
+                [Peak-Preserved Downsampling Active]
+              </span>
+            )}
           </div>
           <div style={{ height: '200px', position: 'relative' }}>
             <Line data={lineData} options={lineOptions} />

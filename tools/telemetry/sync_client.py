@@ -12,12 +12,14 @@ def get_default_db_path():
     home = pathlib.Path.home()
     return home / ".tachyon" / "telemetry" / "tachyon_render_history.sqlite"
 
-def fetch_runs_from_server(server_url):
+def fetch_runs_from_server(server_url, token=None):
     """Fetch list of run IDs already stored on the central server."""
     url = f"{server_url.rstrip('/')}/api/runs"
     try:
         req = urllib.request.Request(url, method='GET')
         req.add_header('Accept', 'application/json')
+        if token:
+            req.add_header('X-Tachyon-Token', token)
         with urllib.request.urlopen(req, timeout=5) as response:
             if response.status == 200:
                 runs = json.loads(response.read().decode('utf-8'))
@@ -28,7 +30,7 @@ def fetch_runs_from_server(server_url):
         return set(), False
     return set(), False
 
-def upload_run_to_server(server_url, payload):
+def upload_run_to_server(server_url, payload, token=None):
     """POST a complete run telemetry payload to the central server."""
     url = f"{server_url.rstrip('/')}/api/telemetry"
     try:
@@ -36,6 +38,8 @@ def upload_run_to_server(server_url, payload):
         req = urllib.request.Request(url, data=data, method='POST')
         req.add_header('Content-Type', 'application/json')
         req.add_header('Accept', 'application/json')
+        if token:
+            req.add_header('X-Tachyon-Token', token)
         with urllib.request.urlopen(req, timeout=5) as response:
             if response.status == 200:
                 result = json.loads(response.read().decode('utf-8'))
@@ -57,6 +61,8 @@ def main():
                         help="Central telemetry server URL (default: http://localhost:8080 or TACHYON_CENTRAL_DB_URL)")
     parser.add_argument("--local-db", type=str, default=str(get_default_db_path()),
                         help="Path to the local SQLite database")
+    parser.add_argument("--token", type=str, default=os.environ.get("TACHYON_TELEMETRY_TOKEN"),
+                        help="Security token for API authentication (default: TACHYON_TELEMETRY_TOKEN)")
     parser.add_argument("--verbose", action="store_true", help="Print detailed logs during synchronization")
     args = parser.parse_args()
 
@@ -68,7 +74,7 @@ def main():
 
     # 1. Connect to Central Server
     print("📡 Connecting to Central Telemetry Server...")
-    existing_run_ids, connected = fetch_runs_from_server(args.server)
+    existing_run_ids, connected = fetch_runs_from_server(args.server, args.token)
     if not connected:
         print("⚠️  WARNING: Could not connect to the central server or server is offline.")
         print("💡 Your local telemetry remains 100% safe. Sync will retry when online. Exiting gracefully.")
@@ -136,7 +142,7 @@ def main():
             }
 
             # Upload
-            success, err_msg = upload_run_to_server(args.server, payload)
+            success, err_msg = upload_run_to_server(args.server, payload, args.token)
             if success:
                 print(" ✅ SUCCESS!")
                 success_count += 1

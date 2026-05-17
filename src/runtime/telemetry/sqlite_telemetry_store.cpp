@@ -92,71 +92,93 @@ bool SqliteTelemetryStore::initialize(const std::filesystem::path& db_path) {
         return false;
     }
 
+    // Enable WAL mode + synchronous=NORMAL for concurrent write performance
+    sqlite3_exec(m_db, "PRAGMA journal_mode=WAL;", nullptr, nullptr, nullptr);
+    sqlite3_exec(m_db, "PRAGMA synchronous=NORMAL;", nullptr, nullptr, nullptr);
+
     return setup_schema();
 }
 
 bool SqliteTelemetryStore::setup_schema() {
     if (!m_db) return false;
 
-    const char* SCHEMA_SQL = R"(
-        CREATE TABLE IF NOT EXISTS render_runs (
-            run_id TEXT PRIMARY KEY,
-            job_id TEXT,
-            scene_id TEXT,
-            preset_id TEXT,
-            machine_id TEXT,
-            success INTEGER,
-            error_code TEXT,
-            error_message TEXT,
-            frames_total INTEGER,
-            frames_written INTEGER,
-            wall_time_ms REAL,
-            render_ms REAL,
-            encode_ms REAL,
-            effective_fps REAL,
-            peak_working_set_bytes INTEGER,
-            avg_working_set_bytes INTEGER,
-            peak_private_bytes INTEGER,
-            avg_private_bytes INTEGER,
-            avg_cpu_percent_machine REAL,
-            avg_cpu_cores_used REAL,
-            output_path TEXT,
-            finished_at_iso TEXT
-        );
-
-        CREATE TABLE IF NOT EXISTS render_frames (
-            run_id TEXT,
-            frame_number INTEGER,
-            duration_ms REAL,
-            encode_time_ms REAL,
-            write_time_ms REAL,
-            cache_hit INTEGER,
-            PRIMARY KEY (run_id, frame_number)
-        );
-
-        CREATE TABLE IF NOT EXISTS render_phase_events (
-            run_id TEXT,
-            phase_name TEXT,
-            duration_ms REAL,
-            PRIMARY KEY (run_id, phase_name)
-        );
-
-        CREATE TABLE IF NOT EXISTS render_counters (
-            run_id TEXT,
-            counter_name TEXT,
-            counter_value INTEGER,
-            PRIMARY KEY (run_id, counter_name)
-        );
-    )";
-
-    char* errMsg = nullptr;
-    int rc = sqlite3_exec(m_db, SCHEMA_SQL, nullptr, nullptr, &errMsg);
-    if (rc != SQLITE_OK) {
-        std::cerr << "[SqliteTelemetryStore] Schema setup failed: " 
-                  << (errMsg ? errMsg : "Unknown error") << std::endl;
-        if (errMsg) sqlite3_free(errMsg);
-        return false;
+    // 1. Schema Version Check via user_version
+    sqlite3_stmt* version_stmt = nullptr;
+    int current_version = 0;
+    int rc = sqlite3_prepare_v2(m_db, "PRAGMA user_version;", -1, &version_stmt, nullptr);
+    if (rc == SQLITE_OK) {
+        if (sqlite3_step(version_stmt) == SQLITE_ROW) {
+            current_version = sqlite3_column_int(version_stmt, 0);
+        }
+        sqlite3_finalize(version_stmt);
     }
+
+    // 2. Migration Flow
+    if (current_version < 1) {
+        const char* SCHEMA_SQL = R"(
+            CREATE TABLE IF NOT EXISTS render_runs (
+                run_id TEXT PRIMARY KEY,
+                job_id TEXT,
+                scene_id TEXT,
+                preset_id TEXT,
+                machine_id TEXT,
+                success INTEGER,
+                error_code TEXT,
+                error_message TEXT,
+                frames_total INTEGER,
+                frames_written INTEGER,
+                wall_time_ms REAL,
+                render_ms REAL,
+                encode_ms REAL,
+                effective_fps REAL,
+                peak_working_set_bytes INTEGER,
+                avg_working_set_bytes INTEGER,
+                peak_private_bytes INTEGER,
+                avg_private_bytes INTEGER,
+                avg_cpu_percent_machine REAL,
+                avg_cpu_cores_used REAL,
+                output_path TEXT,
+                finished_at_iso TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS render_frames (
+                run_id TEXT,
+                frame_number INTEGER,
+                duration_ms REAL,
+                encode_time_ms REAL,
+                write_time_ms REAL,
+                cache_hit INTEGER,
+                PRIMARY KEY (run_id, frame_number)
+            );
+
+            CREATE TABLE IF NOT EXISTS render_phase_events (
+                run_id TEXT,
+                phase_name TEXT,
+                duration_ms REAL,
+                PRIMARY KEY (run_id, phase_name)
+            );
+
+            CREATE TABLE IF NOT EXISTS render_counters (
+                run_id TEXT,
+                counter_name TEXT,
+                counter_value INTEGER,
+                PRIMARY KEY (run_id, counter_name)
+            );
+        )";
+
+        char* errMsg = nullptr;
+        rc = sqlite3_exec(m_db, SCHEMA_SQL, nullptr, nullptr, &errMsg);
+        if (rc != SQLITE_OK) {
+            std::cerr << "[SqliteTelemetryStore] Schema setup failed: " 
+                      << (errMsg ? errMsg : "Unknown error") << std::endl;
+            if (errMsg) sqlite3_free(errMsg);
+            return false;
+        }
+
+        // Set to schema version 1
+        sqlite3_exec(m_db, "PRAGMA user_version = 1;", nullptr, nullptr, nullptr);
+    }
+
     return true;
 }
 

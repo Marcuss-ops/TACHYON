@@ -186,7 +186,7 @@ class TelemetryAPIHandler(http.server.BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Tachyon-Token")
         self.end_headers()
 
     def do_POST(self):
@@ -195,6 +195,18 @@ class TelemetryAPIHandler(http.server.BaseHTTPRequestHandler):
 
         # API: Ingest Telemetry Payload
         if len(path_parts) == 2 and path_parts[0] == "api" and path_parts[1] == "telemetry":
+            # Security token check if environment TACHYON_TELEMETRY_TOKEN is configured
+            auth_token = os.environ.get("TACHYON_TELEMETRY_TOKEN")
+            if auth_token:
+                request_token = self.headers.get("X-Tachyon-Token")
+                auth_header = self.headers.get("Authorization", "")
+                if auth_header.startswith("Bearer "):
+                    request_token = auth_header[7:].strip()
+                
+                if request_token != auth_token:
+                    self.send_json({"error": "Unauthorized: Invalid or missing telemetry token"}, 401)
+                    return
+
             content_length = int(self.headers.get('Content-Length', 0))
             if content_length == 0:
                 self.send_json({"error": "Empty payload"}, 400)
@@ -223,62 +235,71 @@ class TelemetryAPIHandler(http.server.BaseHTTPRequestHandler):
         try:
             # Connect or dynamically create DB and Schema
             conn = sqlite3.connect(self.db_file_path)
+            conn.execute("PRAGMA journal_mode=WAL;")
+            conn.execute("PRAGMA synchronous=NORMAL;")
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             
-            # Dynamically initialize target schema if database is new
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS render_runs (
-                    run_id TEXT PRIMARY KEY,
-                    job_id TEXT,
-                    scene_id TEXT,
-                    preset_id TEXT,
-                    success INTEGER,
-                    frames_written INTEGER,
-                    frames_total INTEGER,
-                    wall_time_ms REAL,
-                    render_ms REAL,
-                    encode_ms REAL,
-                    peak_working_set_bytes INTEGER,
-                    average_cpu_usage REAL,
-                    cache_hit_rate REAL,
-                    output_path TEXT,
-                    tachyon_version TEXT,
-                    os TEXT,
-                    cpu_model TEXT,
-                    logical_cores INTEGER,
-                    hostname TEXT,
-                    finished_at_iso TEXT
-                );
-            """)
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS render_frames (
-                    run_id TEXT,
-                    frame_number INTEGER,
-                    duration_ms REAL,
-                    encode_time_ms REAL,
-                    surface_pool_hits INTEGER,
-                    surface_pool_misses INTEGER,
-                    skipped_rendering INTEGER,
-                    PRIMARY KEY (run_id, frame_number)
-                );
-            """)
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS render_phase_events (
-                    run_id TEXT,
-                    phase_name TEXT,
-                    duration_ms REAL,
-                    PRIMARY KEY (run_id, phase_name)
-                );
-            """)
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS render_counters (
-                    run_id TEXT,
-                    counter_name TEXT,
-                    counter_value INTEGER,
-                    PRIMARY KEY (run_id, counter_name)
-                );
-            """)
+            # Check schema version
+            cursor.execute("PRAGMA user_version;")
+            current_version = cursor.fetchone()[0]
+
+            if current_version < 1:
+                # Dynamically initialize canonical target schema
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS render_runs (
+                        run_id TEXT PRIMARY KEY,
+                        job_id TEXT,
+                        scene_id TEXT,
+                        preset_id TEXT,
+                        machine_id TEXT,
+                        success INTEGER,
+                        error_code TEXT,
+                        error_message TEXT,
+                        frames_total INTEGER,
+                        frames_written INTEGER,
+                        wall_time_ms REAL,
+                        render_ms REAL,
+                        encode_ms REAL,
+                        effective_fps REAL,
+                        peak_working_set_bytes INTEGER,
+                        avg_working_set_bytes INTEGER,
+                        peak_private_bytes INTEGER,
+                        avg_private_bytes INTEGER,
+                        avg_cpu_percent_machine REAL,
+                        avg_cpu_cores_used REAL,
+                        output_path TEXT,
+                        finished_at_iso TEXT
+                    );
+                """)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS render_frames (
+                        run_id TEXT,
+                        frame_number INTEGER,
+                        duration_ms REAL,
+                        encode_time_ms REAL,
+                        write_time_ms REAL,
+                        cache_hit INTEGER,
+                        PRIMARY KEY (run_id, frame_number)
+                    );
+                """)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS render_phase_events (
+                        run_id TEXT,
+                        phase_name TEXT,
+                        duration_ms REAL,
+                        PRIMARY KEY (run_id, phase_name)
+                    );
+                """)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS render_counters (
+                        run_id TEXT,
+                        counter_name TEXT,
+                        counter_value INTEGER,
+                        PRIMARY KEY (run_id, counter_name)
+                    );
+                """)
+                cursor.execute("PRAGMA user_version = 1;")
             
             cursor.execute("BEGIN TRANSACTION;")
             
