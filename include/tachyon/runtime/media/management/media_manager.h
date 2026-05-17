@@ -2,7 +2,9 @@
 
 #include "tachyon/runtime/media/management/image_manager.h"
 #include "tachyon/media/decoding/video_decoder.h"
+#ifdef TACHYON_ENABLE_AUDIO
 #include "tachyon/audio/audio_mixer.h"
+#endif
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include "tachyon/renderer2d/core/render_types.h"
 
@@ -121,8 +123,10 @@ public:
     void store_video_frame(const std::filesystem::path& path, double time, std::unique_ptr<renderer2d::SurfaceRGBA> frame);
     void clear_cache();
 
+#ifdef TACHYON_ENABLE_AUDIO
     std::shared_ptr<audio::AudioMixer> audio_mixer() { return m_audio_mixer; }
     void set_audio_mixer(std::shared_ptr<audio::AudioMixer> mixer) { m_audio_mixer = mixer; }
+#endif
 
     ProxyManifest& proxy_manifest() { return m_proxy_manifest; }
     ProxyWorker& proxy_worker() { return *m_proxy_worker; }
@@ -165,7 +169,9 @@ private:
 
     mutable std::mutex m_mutex;
     bool m_use_proxies{true};
+#ifdef TACHYON_ENABLE_AUDIO
     std::shared_ptr<audio::AudioMixer> m_audio_mixer;
+#endif
 
     ProxyManifest m_proxy_manifest;
     std::unique_ptr<ProxyWorker> m_proxy_worker;

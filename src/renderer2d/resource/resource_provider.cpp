@@ -16,7 +16,7 @@ std::shared_ptr<std::uint8_t[]> RendererResourceProvider::get_texture_rgba(const
     size_t width = img->width();
     size_t height = img->height();
     size_t size = width * height * 4;
-    auto data = std::make_shared<std::uint8_t[]>(size);
+    auto data = std::shared_ptr<std::uint8_t[]>(new std::uint8_t[size]);
     
     const auto& pixels = img->pixels();
     for (size_t i = 0; i < width * height; ++i) {
