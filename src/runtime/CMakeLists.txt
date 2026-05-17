@@ -95,7 +95,6 @@ set(TachyonRuntimeSources
     
     resource/render_context.cpp
     resource/surface_pool.cpp
-    resource/surface_pool_fast.cpp
     
     telemetry/batch_telemetry_aggregator.cpp
     telemetry/process_resource_sampler.cpp

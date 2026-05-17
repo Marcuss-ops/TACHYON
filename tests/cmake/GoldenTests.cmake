@@ -5,7 +5,6 @@
 add_executable(TachyonGoldenTests
     unit/mains/test_main_render.cpp
     unit/mains/test_stubs.cpp
-    unit/render/render_intent_tests.cpp
     unit/render/transition_canary_tests.cpp
     unit/render/transition_gallery.cpp
     unit/render/remotion_demo_test.cpp

@@ -11,7 +11,8 @@ std::string build_ffmpeg_video_command(const RenderPlan& plan, const std::filesy
 std::string build_ffmpeg_mux_command(const RenderPlan& plan, const std::filesystem::path& video_path, const std::filesystem::path& audio_path);
 std::filesystem::path make_ffmpeg_temp_path(const std::filesystem::path& destination, const std::string& suffix, const std::string& extension);
 
-std::vector<unsigned char> convert_and_pack_ffmpeg_frame(
+void convert_and_pack_ffmpeg_frame(
+    std::vector<unsigned char>& out_bytes,
     const renderer2d::Framebuffer& frame,
     uint32_t target_width,
     uint32_t target_height,

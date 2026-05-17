@@ -36,13 +36,6 @@ public:
      */
     [[nodiscard]] std::uint64_t hash_values(std::span<const std::uint64_t> values) noexcept;
 
-private:
-    static constexpr std::uint64_t kPrime = 0x9e3779b97f4a7c15ULL;
-    
-    [[nodiscard]] static constexpr std::uint64_t mix(std::uint64_t h, std::uint64_t v) noexcept {
-        h ^= v + kPrime + (h << 6U) + (h >> 2U);
-        return h;
-    }
 };
 
 } // namespace tachyon

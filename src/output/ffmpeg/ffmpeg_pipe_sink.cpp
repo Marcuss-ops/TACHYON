@@ -73,10 +73,10 @@ public:
 
         profiling::ProfileScope total_scope(m_profiler, profiling::ProfileEventType::Encode, "ffmpeg_write_frame_total", packet.frame_number);
         
-        std::vector<unsigned char> bytes;
         {
             profiling::ProfileScope scope(m_profiler, profiling::ProfileEventType::Encode, "color_convert_rgba_to_output", packet.frame_number);
-            bytes = convert_and_pack_ffmpeg_frame(
+            convert_and_pack_ffmpeg_frame(
+                m_packed_bytes,
                 *packet.frame,
                 static_cast<uint32_t>(m_plan.composition.width),
                 static_cast<uint32_t>(m_plan.composition.height),
@@ -88,9 +88,9 @@ public:
         std::size_t written = 0;
         {
             profiling::ProfileScope scope(m_profiler, profiling::ProfileEventType::PipeWrite, "ffmpeg_pipe_write", packet.frame_number);
-            written = std::fwrite(bytes.data(), 1, bytes.size(), m_pipe);
+            written = std::fwrite(m_packed_bytes.data(), 1, m_packed_bytes.size(), m_pipe);
         }
-        if (written != bytes.size()) {
+        if (written != m_packed_bytes.size()) {
             m_last_error = "failed to write frame bytes to ffmpeg";
             return false;
         }
@@ -214,6 +214,7 @@ private:
     renderer2d::detail::ColorRange m_output_range{renderer2d::detail::ColorRange::Full};
     std::string m_last_error;
     profiling::RenderProfiler* m_profiler{nullptr};
+    std::vector<unsigned char> m_packed_bytes;
 };
 
 std::unique_ptr<FrameOutputSink> create_ffmpeg_pipe_sink() {
