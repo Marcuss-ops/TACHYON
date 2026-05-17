@@ -4,6 +4,10 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <thread>
+#include <fstream>
+
+#ifdef TACHYON_ENABLE_SQLITE_TELEMETRY
 
 #ifdef TACHYON_ENABLE_SQLITE_TELEMETRY
 #include <sqlite3.h>
@@ -98,6 +102,9 @@ bool run_sqlite_telemetry_store_tests() {
     run_record.scene_id = "scene-alpha";
     run_record.preset_id = "preset-hd";
     run_record.machine_id = "local-cpu-dev";
+    run_record.trace_id = "test-trace-001";
+    run_record.parent_span_id = "root";
+    run_record.frame_time_hist = "1,2,3,4";
     run_record.success = true;
     run_record.error_code = "None";
     run_record.error_message = "";
@@ -115,6 +122,27 @@ bool run_sqlite_telemetry_store_tests() {
     run_record.avg_cpu_cores_used = 8.0;
     run_record.output_path = "/home/pierone/output.mp4";
     run_record.finished_at_iso = "2026-05-17T08:00:00Z";
+
+    // New v3 fields
+    run_record.physical_cores = 8;
+    run_record.cpu_freq_mhz = 3600.0;
+    run_record.gpu_vendor = "NVIDIA Corporation";
+    run_record.gpu_driver = "560.94";
+    run_record.total_ram_bytes = 17179869184;  // 16GB
+    run_record.total_vram_bytes = 8589934592;   // 8GB
+    run_record.git_commit_short = "7be2343a";
+    run_record.build_type = "Release";
+    run_record.compiler_info = "clang-18";
+    run_record.exit_code = 0;
+    run_record.error_category = "";
+    run_record.total_pixels_processed = 8294400;  // 3840x2160
+    run_record.total_tiles = 120;
+    run_record.memory_samples = "120.5,122.3,125.1,128.7,130.2";
+    run_record.cpu_util_samples = "45.2,48.7,52.1";
+    run_record.gpu_util_samples = "30.1,35.6";
+    run_record.preset_json = R"({"width":3840,"height":2160,"samples":256,"denoise":true})";
+    run_record.time_to_first_frame_ms = 2450.5;
+    run_record.ffmpeg_queue_depth = 3;
 
     if (!store.write_render_record(run_record)) {
         std::cerr << "[TelemetryStore] FAIL: Failed to write render run record.\n";
@@ -211,6 +239,9 @@ bool run_sqlite_telemetry_store_tests() {
             run1.scene_id = "LightLeak_Sunset";
             run1.preset_id = "sunset-hd";
             run1.machine_id = "local-cpu-dev";
+            run1.trace_id = "trace-sunset-001";
+            run1.parent_span_id = "root";
+            run1.frame_time_hist = "1,1,1";
             run1.success = true;
             run1.frames_total = 120;
             run1.frames_written = 120;
@@ -251,6 +282,9 @@ bool run_sqlite_telemetry_store_tests() {
             run2.scene_id = "LightLeak_Blobs";
             run2.preset_id = "blobs-fast";
             run2.machine_id = "local-cpu-dev";
+            run2.trace_id = "trace-blobs-002";
+            run2.parent_span_id = "root";
+            run2.frame_time_hist = "2,2,2";
             run2.success = true;
             run2.frames_total = 120;
             run2.frames_written = 120;
@@ -291,6 +325,9 @@ bool run_sqlite_telemetry_store_tests() {
             run3.scene_id = "LightLeak_Classic";
             run3.preset_id = "classic-slow";
             run3.machine_id = "local-cpu-dev";
+            run3.trace_id = "trace-failed-003";
+            run3.parent_span_id = "root";
+            run3.frame_time_hist = "";
             run3.success = false;
             run3.error_code = "RenderFailed";
             run3.error_message = "Shader compilation failed: Unknown transition 'classic_leak'";
@@ -332,6 +369,9 @@ bool run_sqlite_telemetry_store_tests() {
         gr.scene_id = "scene-gold";
         gr.preset_id = "preset-gold";
         gr.machine_id = "machine-gold";
+        gr.trace_id = "trace-gold-999";
+        gr.parent_span_id = "root";
+        gr.frame_time_hist = "5,5,5";
         gr.success = true;
         gr.frames_total = 2;
         gr.frames_written = 2;
@@ -347,6 +387,27 @@ bool run_sqlite_telemetry_store_tests() {
         gr.avg_cpu_cores_used = 4.0;
         gr.output_path = "output.mp4";
         gr.finished_at_iso = "2026-05-17T09:00:00Z";
+
+        // New v3 fields
+        gr.physical_cores = 4;
+        gr.cpu_freq_mhz = 2400.0;
+        gr.gpu_vendor = "TestGPU";
+        gr.gpu_driver = "1.0";
+        gr.total_ram_bytes = 4096;
+        gr.total_vram_bytes = 1024;
+        gr.git_commit_short = "deadbeef";
+        gr.build_type = "Debug";
+        gr.compiler_info = "gcc-13";
+        gr.exit_code = 0;
+        gr.error_category = "";
+        gr.total_pixels_processed = 1000;
+        gr.total_tiles = 10;
+        gr.memory_samples = "100,200,150";
+        gr.cpu_util_samples = "50,60";
+        gr.gpu_util_samples = "30";
+        gr.preset_json = R"({"width":1920,"height":1080})";
+        gr.time_to_first_frame_ms = 100.0;
+        gr.ffmpeg_queue_depth = 2;
 
         golden_store.write_render_record(gr);
 
@@ -425,6 +486,36 @@ bool run_sqlite_telemetry_store_tests() {
         }
 
         std::cout << "[TelemetryStore] Golden test passed! Database is 100% stable and idempotent.\n";
+    }
+    // 11. collect_hardware_environment validation
+    {
+        std::cout << "[TelemetryStore] Testing collect_hardware_environment()...\n";
+        HardwareEnvironment hw = collect_hardware_environment();
+        if (hw.cpu_model.empty()) {
+            std::cerr << "[TelemetryStore] WARNING: CPU model is empty (may be running in restricted env)\n";
+        }
+        if (hw.logical_cores == 0) {
+            std::cerr << "[TelemetryStore] WARNING: logical_cores is 0\n";
+        }
+        if (hw.total_ram_bytes == 0) {
+            std::cerr << "[TelemetryStore] WARNING: total_ram_bytes is 0\n";
+        }
+        
+        BuildFingerprint fp = collect_build_fingerprint();
+        if (fp.compiler_info.empty()) {
+            std::cerr << "[TelemetryStore] FAIL: compiler_info is empty\n";
+            return false;
+        }
+        if (fp.build_type.empty()) {
+            std::cerr << "[TelemetryStore] FAIL: build_type is empty\n";
+            return false;
+        }
+        
+        std::cout << "[TelemetryStore] collect_hardware_environment() passed: cpu=" 
+                  << hw.cpu_model << ", cores=" << hw.logical_cores 
+                  << ", ram=" << hw.total_ram_bytes << "\n";
+        std::cout << "[TelemetryStore] collect_build_fingerprint() passed: compiler=" 
+                  << fp.compiler_info << ", build=" << fp.build_type << "\n";
     }
 
     std::cout << "[TelemetryStore] ALL SQLite Telemetry Store tests passed successfully!\n";

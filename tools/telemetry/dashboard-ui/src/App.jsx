@@ -89,10 +89,10 @@ export default function App() {
         {/* Overview Widgets */}
         <OverviewWidgets runs={runs} />
 
-        {/* Main Panels Workspace */}
+        {/* Main Panels Workspace - stacked layout */}
         <div className="dashboard-body">
-          {/* Left panel: List of Runs */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {/* Runs Table */}
             <RunsTable
               runs={runs}
               selectedRunId={selectedRunId}
@@ -108,10 +108,10 @@ export default function App() {
               <RefreshCw size={14} />
               Sync DB Records
             </button>
-          </div>
 
-          {/* Right panel: Detailed Insights */}
-          <RunDetails details={selectedRunDetails} loading={loadingDetails} />
+            {/* Full-width Run Details panel below the table */}
+            <RunDetails details={selectedRunDetails} loading={loadingDetails} />
+          </div>
         </div>
       </main>
     </div>

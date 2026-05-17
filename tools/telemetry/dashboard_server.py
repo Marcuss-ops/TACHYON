@@ -300,9 +300,40 @@ class TelemetryAPIHandler(http.server.BaseHTTPRequestHandler):
                     );
                 """)
                 cursor.execute("PRAGMA user_version = 1;")
+                current_version = 1
+
+            if current_version < 2:
+                # Migrate to version 2 (Trace ID context + HDR Histogram columns)
+                cursor.execute("ALTER TABLE render_runs ADD COLUMN trace_id TEXT NOT NULL DEFAULT '';")
+                cursor.execute("ALTER TABLE render_runs ADD COLUMN parent_span_id TEXT NOT NULL DEFAULT '';")
+                cursor.execute("ALTER TABLE render_runs ADD COLUMN frame_time_hist TEXT NOT NULL DEFAULT '';")
+                cursor.execute("PRAGMA user_version = 2;")
             
+            if current_version < 3:
+                # Migrate to version 3: hardware env, build fingerprint, failure details, time series, preset, KPIs
+                cursor.execute("ALTER TABLE render_runs ADD COLUMN physical_cores INTEGER NOT NULL DEFAULT 0;")
+                cursor.execute("ALTER TABLE render_runs ADD COLUMN cpu_freq_mhz REAL NOT NULL DEFAULT 0.0;")
+                cursor.execute("ALTER TABLE render_runs ADD COLUMN gpu_vendor TEXT NOT NULL DEFAULT '';")
+                cursor.execute("ALTER TABLE render_runs ADD COLUMN gpu_driver TEXT NOT NULL DEFAULT '';")
+                cursor.execute("ALTER TABLE render_runs ADD COLUMN total_ram_bytes INTEGER NOT NULL DEFAULT 0;")
+                cursor.execute("ALTER TABLE render_runs ADD COLUMN total_vram_bytes INTEGER NOT NULL DEFAULT 0;")
+                cursor.execute("ALTER TABLE render_runs ADD COLUMN git_commit_short TEXT NOT NULL DEFAULT '';")
+                cursor.execute("ALTER TABLE render_runs ADD COLUMN build_type TEXT NOT NULL DEFAULT '';")
+                cursor.execute("ALTER TABLE render_runs ADD COLUMN compiler_info TEXT NOT NULL DEFAULT '';")
+                cursor.execute("ALTER TABLE render_runs ADD COLUMN exit_code INTEGER NOT NULL DEFAULT 0;")
+                cursor.execute("ALTER TABLE render_runs ADD COLUMN error_category TEXT NOT NULL DEFAULT '';")
+                cursor.execute("ALTER TABLE render_runs ADD COLUMN total_pixels_processed INTEGER NOT NULL DEFAULT 0;")
+                cursor.execute("ALTER TABLE render_runs ADD COLUMN total_tiles INTEGER NOT NULL DEFAULT 0;")
+                cursor.execute("ALTER TABLE render_runs ADD COLUMN memory_samples TEXT NOT NULL DEFAULT '';")
+                cursor.execute("ALTER TABLE render_runs ADD COLUMN cpu_util_samples TEXT NOT NULL DEFAULT '';")
+                cursor.execute("ALTER TABLE render_runs ADD COLUMN gpu_util_samples TEXT NOT NULL DEFAULT '';")
+                cursor.execute("ALTER TABLE render_runs ADD COLUMN preset_json TEXT NOT NULL DEFAULT '';")
+                cursor.execute("ALTER TABLE render_runs ADD COLUMN time_to_first_frame_ms REAL NOT NULL DEFAULT 0.0;")
+                cursor.execute("ALTER TABLE render_runs ADD COLUMN ffmpeg_queue_depth INTEGER NOT NULL DEFAULT 0;")
+                cursor.execute("PRAGMA user_version = 3;")
+
             cursor.execute("BEGIN TRANSACTION;")
-            
+
             # 1. Insert Render Run
             run = payload.get("run", {})
             if not run or "run_id" not in run:
