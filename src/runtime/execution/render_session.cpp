@@ -335,16 +335,15 @@ RenderSessionResult RenderSession::render(
         RenderTelemetry::get().log(fe);
     }
 
-    if (!workspace.sink) {
-        result.frames = std::move(workspace.rendered_frames);
-        result.cache_hits = 0;
-        result.cache_misses = 0;
-        for (const auto& frame : result.frames) {
-            if (frame.cache_hit) {
-                ++result.cache_hits;
-            } else {
-                ++result.cache_misses;
-            }
+    // Always move the rendered frames (buffered or shell frames) to enable precise cache hits reporting
+    result.frames = std::move(workspace.rendered_frames);
+    result.cache_hits = 0;
+    result.cache_misses = 0;
+    for (const auto& frame : result.frames) {
+        if (frame.cache_hit) {
+            ++result.cache_hits;
+        } else {
+            ++result.cache_misses;
         }
     }
 
@@ -408,6 +407,8 @@ RenderSessionResult RenderSession::render(
         record.output_bytes = result.output_bytes;
 
         record.cache_hit_rate = result.cache_hit_rate();
+        record.total_pixels_processed = result.total_pixels_processed;
+        record.total_tiles = result.total_tiles;
 
         // Metadata
         record.output_path = workspace.resolved_output_path;

@@ -50,6 +50,21 @@ std::optional<std::shared_ptr<renderer2d::Framebuffer>> FrameBlendRenderer::try_
 
             runtime::simd::lerp_pixels_best(out, a, b, width * height * 4, blend);
 
+            // Populate the processed pixels & tiles telemetry counter for frame blend operation
+            if (context.total_pixels_counter) {
+                context.total_pixels_counter->fetch_add(width * height);
+            }
+            if (context.total_tiles_counter) {
+                int tile_size = plan.quality_policy.tile_size;
+                if (tile_size > 0) {
+                    int tiles_x = (width + tile_size - 1) / tile_size;
+                    int tiles_y = (height + tile_size - 1) / tile_size;
+                    context.total_tiles_counter->fetch_add(tiles_x * tiles_y);
+                } else {
+                    context.total_tiles_counter->fetch_add(1);
+                }
+            }
+
             return blended_frame;
         }
     }

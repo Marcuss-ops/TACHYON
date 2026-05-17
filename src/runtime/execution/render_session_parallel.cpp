@@ -128,12 +128,15 @@ void render_frames_parallel_internal(
     // Otherwise, use buffered mode (store all frames in rendered_frames)
     const bool streaming_mode = (sink != nullptr);
 
-    if (!streaming_mode) {
-        rendered_frames.resize(task_count);
-    }
+    // Always resize rendered_frames to preserve shell frame metadata for database logging & statistics
+    rendered_frames.resize(task_count);
     if (result) {
         result->frame_diagnostics.resize(task_count);
     }
+
+    // Thread-safe accumulators for processed pixels and tiles
+    auto pixels_counter = std::make_shared<std::atomic<std::size_t>>(0);
+    auto tiles_counter = std::make_shared<std::atomic<int>>(0);
 
     const std::size_t thread_count = std::max<std::size_t>(1, std::min(budget.frame_concurrency, task_count));
     std::atomic<std::size_t> next_index{0};
@@ -167,6 +170,8 @@ void render_frames_parallel_internal(
         local_context.scheduler = scheduler;
         local_context.pixel_concurrency = budget.pixel_concurrency;
         local_context.cancel_flag = cancel_flag;
+        local_context.total_pixels_counter = pixels_counter;
+        local_context.total_tiles_counter = tiles_counter;
 
         render_trace(
             "frame start index=" + std::to_string(index) +
@@ -204,6 +209,21 @@ void render_frames_parallel_internal(
             {
                 TACHYON_TRACE_SCOPE("render.frame.draw");
                 executed_frame = executor.execute(compiled_scene, frame_plan, task, snapshot, local_context);
+            }
+
+            // Track rasterized pixels and tiles processed for cache miss execution path
+            if (local_context.total_pixels_counter) {
+                local_context.total_pixels_counter->fetch_add(frame_plan.composition.width * frame_plan.composition.height);
+            }
+            if (local_context.total_tiles_counter) {
+                int tile_size = frame_plan.quality_policy.tile_size;
+                if (tile_size > 0) {
+                    int tiles_x = (frame_plan.composition.width + tile_size - 1) / tile_size;
+                    int tiles_y = (frame_plan.composition.height + tile_size - 1) / tile_size;
+                    local_context.total_tiles_counter->fetch_add(tiles_x * tiles_y);
+                } else {
+                    local_context.total_tiles_counter->fetch_add(1);
+                }
             }
             
             const auto frame_end = std::chrono::high_resolution_clock::now();
@@ -243,6 +263,15 @@ void render_frames_parallel_internal(
             // Streaming mode: submit to queue. The dedicated dispatcher thread will handle the writing.
             frame_queue->submit(index, framebuffer, cache_hit);
             result->frame_diagnostics[index] = executed_frame.diagnostics;
+
+            // Populate lightweight metadata shell in rendered_frames to preserve Zero Waste RAM footprints
+            ExecutedFrame shell_frame;
+            shell_frame.frame_number = static_cast<std::int64_t>(task.frame_number);
+            shell_frame.frame = nullptr; // keep frame buffer nullptr to prevent RAM growth
+            shell_frame.cache_hit = cache_hit;
+            shell_frame.scene_hash = compiled_scene.scene_hash;
+            shell_frame.diagnostics = executed_frame.diagnostics;
+            rendered_frames[index] = std::move(shell_frame);
         } else {
             // Buffered mode: store in vector (original behavior)
             executed_frame.frame_number = static_cast<std::int64_t>(task.frame_number);
@@ -342,6 +371,12 @@ void render_frames_parallel_internal(
 
     if (dispatcher_thread && dispatcher_thread->joinable()) {
         dispatcher_thread->join();
+    }
+
+    // Set aggregate telemetry metrics in the result structure
+    if (result) {
+        result->total_pixels_processed = pixels_counter->load();
+        result->total_tiles = tiles_counter->load();
     }
 }
 

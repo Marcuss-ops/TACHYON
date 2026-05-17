@@ -50,6 +50,8 @@ struct RenderSessionResult {
     std::string output_error;
     DiagnosticBag diagnostics;
     std::vector<FrameDiagnostics> frame_diagnostics;
+    std::size_t total_pixels_processed{0};
+    int total_tiles{0};
 
     // Phase timings (milliseconds)
     double scene_compile_ms{0.0};
