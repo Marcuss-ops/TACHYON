@@ -1,57 +1,115 @@
-# Tachyon Public API Contract
+# TACHYON Public API Contract
 
-TACHYON is a high-performance, deterministic, headless motion graphics engine. This document defines the canonical entry points for C++ developers.
+TACHYON is a high-performance, deterministic, headless 2D motion graphics engine. This document defines the canonical entry points and public builder APIs for C++ developers.
+
+---
 
 ## 1. Core Principles
 
-- **C++ First**: The primary way to use Tachyon is via the C++ API.
-- **Headless**: No UI dependencies in the core.
-- **Deterministic**: Given the same `SceneSpec` and `EngineRegistry`, the output is bit-identical.
-- **Stateless**: The engine core does not hold global state; context is passed via registries.
+- **C++ First**: The primary and canonical way to author scenes is via the C++ fluent API.
+- **Type-safe Builders**: Bypasses the ambiguity and error-proneness of direct JSON specifications.
+- **Stateless Runtime**: The rendering core maintains no global state; context is orchestrated via the `EngineRegistry`.
+- **Headless**: Zero GUI or browser engine requirements in the render loop.
 
-## 2. Canonical Pipeline
+---
 
-The engine follows a strict linear pipeline:
+## 2. Programmatic Scene Authoring (C++)
 
-1.  **Authoring Intent**: Use `SceneBuilder` to define layers, timing, and properties.
-2.  **Scene Specification**: `SceneBuilder::build()` generates a `SceneSpec`.
-3.  **Validation**: Use `RuntimeFacade::validate_scene(spec)` to ensure the spec is valid.
-4.  **Compilation**: Use `RuntimeFacade::compile_scene(spec)` to generate a `CompiledScene`.
-5.  **Execution**: Use `RuntimeFacade::render_frame()` or `RuntimeFacade::export_video()`.
+TACHYON provides a native, highly expressive, Remotion-style fluent API for assembling composition timelines, audio tracks, and layers programmatically.
 
 ```cpp
-#include <tachyon/tachyon.h>
+#include "tachyon/scene/builder.h"
+#include "tachyon/presets/text/fluent.h"
+#include "tachyon/presets/background/fluent.h"
+#include "tachyon/presets/audio/fluent.h"
 
-void example() {
-    // 1. Setup Registry
+// Entrypoint definition for C++ builder plugins
+extern "C" void build_scene(tachyon::SceneSpec& out) {
+    using namespace tachyon;
+    using namespace tachyon::presets;
+    
+    out = SceneBuilder()
+        .project("promo_001", "Product Reveal Video")
+        .composition("main", [](CompositionBuilder& c) {
+            c.size(1920, 1080)
+             .fps(30)
+             .duration(10.0);
+             
+            // 1. Procedural Aura Background Layer
+            c.layer(background::aura()
+                .width(1920)
+                .height(1080)
+                .duration(10.0)
+                .seed(42)
+                .palette(background::palettes::neon_night())
+                .grain(0.12)
+                .build());
+             
+            // 2. Reactive Audio Track
+            c.audio(audio::track("background_music")
+                .source("assets/music.wav")
+                .volume(0.85)
+                .fade_in(0.2)
+                .normalize_lufs(-14.0)
+                .build());
+             
+            // 3. Subtitle / Headline Layer with Animations
+            c.layer(text::headline("TACHYON NATIVE")
+                .font("Inter")
+                .font_size(96)
+                .color({255, 255, 255, 255})
+                .center()
+                .animate(text::fade_up().duration(0.5).build())
+                .animate(text::blur_to_focus().duration(0.8).build())
+                .build());
+        })
+        .build();
+}
+```
+
+---
+
+## 3. Canonical Compilation & Execution
+
+After building the declarative scene specification (`SceneSpec`), rendering and encoding jobs are dispatched through the stateless runtime:
+
+```cpp
+#include "tachyon/tachyon.h"
+#include "tachyon/runtime/runtime_facade.h"
+
+void execute_render_pipeline() {
+    // 1. Initialize the global Engine Registry (caches and configurations)
     auto registry = tachyon::create_default_context();
 
-    // 2. Build Scene
-    auto scene_spec = tachyon::scene::SceneBuilder()
-        .add_layer(...)
-        .build();
+    // 2. Generate scene specification via builder
+    tachyon::SceneSpec spec;
+    build_scene(spec);
 
-    // 3. Compile
-    auto compiled = tachyon::RuntimeFacade::instance().compile_scene(scene_spec);
+    // 3. Compile and optimize the scene timeline graph
+    auto compiled = tachyon::RuntimeFacade::instance().compile_scene(spec);
 
-    // 4. Render
     if (compiled.ok()) {
-        auto frame = tachyon::RuntimeFacade::instance().render_frame(*compiled.value, 0);
+        // 4. Render and encode composition directly to disk
+        tachyon::RuntimeFacade::instance().export_video(
+            *compiled.value, 
+            "output/rendered_promo.mp4"
+        );
     }
 }
 ```
 
-## 3. Public Header Boundary
+---
 
-Only headers in `include/tachyon/` are considered stable public API. Specifically:
+## 4. Public Header Boundary
 
-- `tachyon/tachyon.h`: Main umbrella header.
-- `tachyon/scene/builder.h`: Scene construction.
-- `tachyon/runtime/runtime_facade.h`: Engine execution.
-- `tachyon/core/spec/schema/objects/scene_spec.h`: Data model.
+Only headers located in the public `include/tachyon/` directory are considered stable APIs. Specifically:
 
-## 4. Stability Guarantees
+| Header | Description |
+|---|---|
+| `include/tachyon/tachyon.h` | Global initialization and umbrella header |
+| `include/tachyon/scene/builder.h` | Declarative timeline, track, and layer builders |
+| `include/tachyon/runtime/runtime_facade.h` | Scene compilation, validation, and rendering orchestration |
+| `include/tachyon/core/types/diagnostics.h` | Diagnostics and diagnostics reporting mechanisms |
 
-- **Stable**: The canonical pipeline and `SceneBuilder` methods.
-- **Experimental**: HTTP/JSON interfaces, `TachyonServer`, and advanced SIMD optimizations.
-- **Internal**: Anything in `src/` or `include/tachyon/detail/`.
+> [!WARNING]
+> Internal helper headers (located under `include/tachyon/detail/` or compiled directly inside the `src/` directory) do not provide stability guarantees and are subject to change without warning.

@@ -1,54 +1,88 @@
-# Rendering
+# Rendering Workflow & CLI Guide
 
-This page explains the safe path for rendering built-in presets.
+This page outlines the canonical, safe path for executing rendering jobs and exporting video compositions using the Tachyon command line interface.
 
-## Recommended workflow
+---
 
-1. Build the `tachyon` executable.
-2. Render a preset directly from the CLI.
-3. Write the result into `output/`.
-4. Verify the first or middle frame if the output looks flat.
+## 1. Safe Rendering Workflow
 
-## Build
+When exporting procedural graphics or testing visual regressions, follow this baseline workflow:
 
-Use the normal Tachyon build pipeline:
-
-```powershell
-.\build.ps1 -Target tachyon
+```
+┌───────────────────────────────────────┐
+│ 1. Compile 'tachyon' CLI executable   │
+└───────────────────┬───────────────────┘
+                    ▼
+┌───────────────────────────────────────┐
+│ 2. Dispatch render preset via CLI     │
+└───────────────────┬───────────────────┘
+                    ▼
+┌───────────────────────────────────────┐
+│ 3. Export video directly to output/   │
+└───────────────────┬───────────────────┘
+                    ▼
+┌───────────────────────────────────────┐
+│ 4. Verify output frame pixel contents │
+└───────────────────────────────────────┘
 ```
 
-The executable is typically available at:
+---
 
-```powershell
-.\build\src\RelWithDebInfo\tachyon.exe
+## 2. Compilation Target
+
+Compile the unified CLI target using the root script preset:
+
+```bash
+# Core incremental build check
+./build.ps1 -Check
+
+# Build the main CLI executable
+./build.ps1 -Target tachyon
 ```
 
-## Render a preset
+Upon successful compilation, the executable binary will be available at:
 
-Render the baseline preset to an MP4 file:
-
-```powershell
-.\build\src\RelWithDebInfo\tachyon.exe render --preset blank_canvas --out output\blank_canvas.mp4
+```
+./build/src/RelWithDebInfo/tachyon
 ```
 
-If you want to force a named output profile, add `--output-preset`:
+---
 
-```powershell
-.\build\src\RelWithDebInfo\tachyon.exe render --preset blank_canvas --out output\blank_canvas.mp4 --output-preset youtube_1080p_30
+## 3. Command Line Execution
+
+Render compositions directly to encoded video files using the standard CLI options.
+
+### Basic Render
+Render the baseline preset composition to a standard H.264 MP4 file:
+
+```bash
+./build/src/RelWithDebInfo/tachyon render --preset blank_canvas --out output/blank_canvas.mp4
 ```
 
-## Verify the render
+### Specifying Output Profiles
+Apply specific output rendering presets (handling dimensions, bitrates, and framerates) using the `--output-preset` flag:
 
-If a video looks black or gray, extract a frame and inspect it:
-
-```powershell
-ffmpeg -y -ss 1.0 -i output\blank_canvas.mp4 -frames:v 1 -update 1 output\blank_canvas_frame.png
+```bash
+./build/src/RelWithDebInfo/tachyon render --preset blank_canvas --out output/blank_canvas.mp4 --output-preset youtube_1080p_30
 ```
 
-Open the extracted PNG and confirm it has visible structure, not a uniform fill.
+### Available CLI Controls
+- `--preset <name>`: Specifies the declarative scene preset to load.
+- `--out <path>`: Output destination path for the compiled video.
+- `--output-preset <name>`: Hardware profile configuration (e.g. `youtube_1080p_30`, `instagram_vertical`).
+- `--workers <count>`: Number of concurrent threads to dispatch during batch pipelines.
 
-## Do not change code for a render-only task
+---
 
-If the task is only to regenerate MP4s, do not edit compiler, runtime, or renderer code.
+## 4. Visual Verification
 
-If the output is incorrect, stop and inspect the render path before making broader changes.
+To guarantee visual integrity and ensure the output contains actual render data (rather than uniform solid frames):
+
+1. Extract a specific timeline frame from the compiled video using FFmpeg:
+   ```bash
+   ffmpeg -y -ss 1.0 -i output/blank_canvas.mp4 -frames:v 1 -update 1 output/blank_canvas_frame.png
+   ```
+2. Inspect `output/blank_canvas_frame.png` using a visual browser or golden test comparator to confirm that textures, layouts, and alpha compositions rendered properly.
+
+> [!IMPORTANT]
+> **Operational Rule**: If the rendering output is black or empty, do not change renderer, builder, or compilation flags immediately. Run the targeted visual test suites first (`tests/TachyonGoldenTests`) to narrow down whether the issue resides in asset decoding or compositing pipeline steps.
