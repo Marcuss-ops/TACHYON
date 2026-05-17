@@ -189,35 +189,41 @@ bool SqliteTelemetryStore::setup_schema() {
     }
 
     if (current_version < 3) {
-        const char* ALTER_V3_SQL = R"(
-            ALTER TABLE render_runs ADD COLUMN physical_cores INTEGER NOT NULL DEFAULT 0;
-            ALTER TABLE render_runs ADD COLUMN cpu_freq_mhz REAL NOT NULL DEFAULT 0.0;
-            ALTER TABLE render_runs ADD COLUMN gpu_vendor TEXT NOT NULL DEFAULT '';
-            ALTER TABLE render_runs ADD COLUMN gpu_driver TEXT NOT NULL DEFAULT '';
-            ALTER TABLE render_runs ADD COLUMN total_ram_bytes INTEGER NOT NULL DEFAULT 0;
-            ALTER TABLE render_runs ADD COLUMN total_vram_bytes INTEGER NOT NULL DEFAULT 0;
-            ALTER TABLE render_runs ADD COLUMN git_commit_short TEXT NOT NULL DEFAULT '';
-            ALTER TABLE render_runs ADD COLUMN build_type TEXT NOT NULL DEFAULT '';
-            ALTER TABLE render_runs ADD COLUMN compiler_info TEXT NOT NULL DEFAULT '';
-            ALTER TABLE render_runs ADD COLUMN exit_code INTEGER NOT NULL DEFAULT 0;
-            ALTER TABLE render_runs ADD COLUMN error_category TEXT NOT NULL DEFAULT '';
-            ALTER TABLE render_runs ADD COLUMN total_pixels_processed INTEGER NOT NULL DEFAULT 0;
-            ALTER TABLE render_runs ADD COLUMN total_tiles INTEGER NOT NULL DEFAULT 0;
-            ALTER TABLE render_runs ADD COLUMN memory_samples TEXT NOT NULL DEFAULT '';
-            ALTER TABLE render_runs ADD COLUMN cpu_util_samples TEXT NOT NULL DEFAULT '';
-            ALTER TABLE render_runs ADD COLUMN gpu_util_samples TEXT NOT NULL DEFAULT '';
-            ALTER TABLE render_runs ADD COLUMN preset_json TEXT NOT NULL DEFAULT '';
-            ALTER TABLE render_runs ADD COLUMN time_to_first_frame_ms REAL NOT NULL DEFAULT 0.0;
-            ALTER TABLE render_runs ADD COLUMN ffmpeg_queue_depth INTEGER NOT NULL DEFAULT 0;
-        )";
+        // Individual alters to be highly robust and avoid multi-statement sqlite3_exec friction
+        const std::vector<std::string> ALTERS = {
+            "ALTER TABLE render_runs ADD COLUMN physical_cores INTEGER NOT NULL DEFAULT 0;",
+            "ALTER TABLE render_runs ADD COLUMN cpu_freq_mhz REAL NOT NULL DEFAULT 0.0;",
+            "ALTER TABLE render_runs ADD COLUMN gpu_vendor TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE render_runs ADD COLUMN gpu_driver TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE render_runs ADD COLUMN total_ram_bytes INTEGER NOT NULL DEFAULT 0;",
+            "ALTER TABLE render_runs ADD COLUMN total_vram_bytes INTEGER NOT NULL DEFAULT 0;",
+            "ALTER TABLE render_runs ADD COLUMN git_commit_short TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE render_runs ADD COLUMN build_type TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE render_runs ADD COLUMN compiler_info TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE render_runs ADD COLUMN exit_code INTEGER NOT NULL DEFAULT 0;",
+            "ALTER TABLE render_runs ADD COLUMN error_category TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE render_runs ADD COLUMN total_pixels_processed INTEGER NOT NULL DEFAULT 0;",
+            "ALTER TABLE render_runs ADD COLUMN total_tiles INTEGER NOT NULL DEFAULT 0;",
+            "ALTER TABLE render_runs ADD COLUMN memory_samples TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE render_runs ADD COLUMN cpu_util_samples TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE render_runs ADD COLUMN gpu_util_samples TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE render_runs ADD COLUMN preset_json TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE render_runs ADD COLUMN time_to_first_frame_ms REAL NOT NULL DEFAULT 0.0;",
+            "ALTER TABLE render_runs ADD COLUMN ffmpeg_queue_depth INTEGER NOT NULL DEFAULT 0;",
+            "ALTER TABLE render_runs ADD COLUMN hostname TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE render_runs ADD COLUMN os TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE render_runs ADD COLUMN cpu_model TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE render_runs ADD COLUMN logical_cores INTEGER NOT NULL DEFAULT 0;",
+            "ALTER TABLE render_runs ADD COLUMN tachyon_version TEXT NOT NULL DEFAULT '';"
+        };
 
-        char* errMsg = nullptr;
-        int rc = sqlite3_exec(m_db, ALTER_V3_SQL, nullptr, nullptr, &errMsg);
-        if (rc != SQLITE_OK) {
-            std::cerr << "[SqliteTelemetryStore] Migration v3 failed: "
-                      << (errMsg ? errMsg : "Unknown error") << std::endl;
-            if (errMsg) sqlite3_free(errMsg);
-            // Continue — columns may already exist
+        for (const auto& sql : ALTERS) {
+            char* errMsg = nullptr;
+            sqlite3_exec(m_db, sql.c_str(), nullptr, nullptr, &errMsg);
+            if (errMsg) {
+                // Column might already exist, which is fine
+                sqlite3_free(errMsg);
+            }
         }
 
         sqlite3_exec(m_db, "PRAGMA user_version = 3;", nullptr, nullptr, nullptr);
@@ -238,9 +244,11 @@ bool SqliteTelemetryStore::write_render_record(const RenderTelemetryRecord& reco
             physical_cores, cpu_freq_mhz, gpu_vendor, gpu_driver, total_ram_bytes, total_vram_bytes,
             git_commit_short, build_type, compiler_info, exit_code, error_category,
             total_pixels_processed, total_tiles, memory_samples, cpu_util_samples, gpu_util_samples,
-            preset_json, time_to_first_frame_ms, ffmpeg_queue_depth
+            preset_json, time_to_first_frame_ms, ffmpeg_queue_depth,
+            hostname, os, cpu_model, logical_cores, tachyon_version
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                  ?, ?, ?, ?, ?);
     )";
 
     sqlite3_stmt* stmt = nullptr;
@@ -296,6 +304,12 @@ bool SqliteTelemetryStore::write_render_record(const RenderTelemetryRecord& reco
     sqlite3_bind_text(stmt, 42, record.preset_json.c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_double(stmt, 43, record.time_to_first_frame_ms);
     sqlite3_bind_int(stmt, 44, record.ffmpeg_queue_depth);
+
+    sqlite3_bind_text(stmt, 45, record.hostname.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 46, record.os.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 47, record.cpu_model.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 48, record.logical_cores);
+    sqlite3_bind_text(stmt, 49, record.tachyon_version.c_str(), -1, SQLITE_TRANSIENT);
 
     rc = sqlite3_step(stmt);
     sqlite3_finalize(stmt);

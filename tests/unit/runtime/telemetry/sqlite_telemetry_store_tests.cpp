@@ -8,12 +8,7 @@
 #include <fstream>
 
 #ifdef TACHYON_ENABLE_SQLITE_TELEMETRY
-
-#ifdef TACHYON_ENABLE_SQLITE_TELEMETRY
 #include <sqlite3.h>
-#endif
-
-#ifdef TACHYON_ENABLE_SQLITE_TELEMETRY
 
 namespace {
 

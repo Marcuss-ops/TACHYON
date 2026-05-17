@@ -311,25 +311,37 @@ class TelemetryAPIHandler(http.server.BaseHTTPRequestHandler):
             
             if current_version < 3:
                 # Migrate to version 3: hardware env, build fingerprint, failure details, time series, preset, KPIs
-                cursor.execute("ALTER TABLE render_runs ADD COLUMN physical_cores INTEGER NOT NULL DEFAULT 0;")
-                cursor.execute("ALTER TABLE render_runs ADD COLUMN cpu_freq_mhz REAL NOT NULL DEFAULT 0.0;")
-                cursor.execute("ALTER TABLE render_runs ADD COLUMN gpu_vendor TEXT NOT NULL DEFAULT '';")
-                cursor.execute("ALTER TABLE render_runs ADD COLUMN gpu_driver TEXT NOT NULL DEFAULT '';")
-                cursor.execute("ALTER TABLE render_runs ADD COLUMN total_ram_bytes INTEGER NOT NULL DEFAULT 0;")
-                cursor.execute("ALTER TABLE render_runs ADD COLUMN total_vram_bytes INTEGER NOT NULL DEFAULT 0;")
-                cursor.execute("ALTER TABLE render_runs ADD COLUMN git_commit_short TEXT NOT NULL DEFAULT '';")
-                cursor.execute("ALTER TABLE render_runs ADD COLUMN build_type TEXT NOT NULL DEFAULT '';")
-                cursor.execute("ALTER TABLE render_runs ADD COLUMN compiler_info TEXT NOT NULL DEFAULT '';")
-                cursor.execute("ALTER TABLE render_runs ADD COLUMN exit_code INTEGER NOT NULL DEFAULT 0;")
-                cursor.execute("ALTER TABLE render_runs ADD COLUMN error_category TEXT NOT NULL DEFAULT '';")
-                cursor.execute("ALTER TABLE render_runs ADD COLUMN total_pixels_processed INTEGER NOT NULL DEFAULT 0;")
-                cursor.execute("ALTER TABLE render_runs ADD COLUMN total_tiles INTEGER NOT NULL DEFAULT 0;")
-                cursor.execute("ALTER TABLE render_runs ADD COLUMN memory_samples TEXT NOT NULL DEFAULT '';")
-                cursor.execute("ALTER TABLE render_runs ADD COLUMN cpu_util_samples TEXT NOT NULL DEFAULT '';")
-                cursor.execute("ALTER TABLE render_runs ADD COLUMN gpu_util_samples TEXT NOT NULL DEFAULT '';")
-                cursor.execute("ALTER TABLE render_runs ADD COLUMN preset_json TEXT NOT NULL DEFAULT '';")
-                cursor.execute("ALTER TABLE render_runs ADD COLUMN time_to_first_frame_ms REAL NOT NULL DEFAULT 0.0;")
-                cursor.execute("ALTER TABLE render_runs ADD COLUMN ffmpeg_queue_depth INTEGER NOT NULL DEFAULT 0;")
+                columns_to_add = [
+                    ("physical_cores", "INTEGER NOT NULL DEFAULT 0"),
+                    ("cpu_freq_mhz", "REAL NOT NULL DEFAULT 0.0"),
+                    ("gpu_vendor", "TEXT NOT NULL DEFAULT ''"),
+                    ("gpu_driver", "TEXT NOT NULL DEFAULT ''"),
+                    ("total_ram_bytes", "INTEGER NOT NULL DEFAULT 0"),
+                    ("total_vram_bytes", "INTEGER NOT NULL DEFAULT 0"),
+                    ("git_commit_short", "TEXT NOT NULL DEFAULT ''"),
+                    ("build_type", "TEXT NOT NULL DEFAULT ''"),
+                    ("compiler_info", "TEXT NOT NULL DEFAULT ''"),
+                    ("exit_code", "INTEGER NOT NULL DEFAULT 0"),
+                    ("error_category", "TEXT NOT NULL DEFAULT ''"),
+                    ("total_pixels_processed", "INTEGER NOT NULL DEFAULT 0"),
+                    ("total_tiles", "INTEGER NOT NULL DEFAULT 0"),
+                    ("memory_samples", "TEXT NOT NULL DEFAULT ''"),
+                    ("cpu_util_samples", "TEXT NOT NULL DEFAULT ''"),
+                    ("gpu_util_samples", "TEXT NOT NULL DEFAULT ''"),
+                    ("preset_json", "TEXT NOT NULL DEFAULT ''"),
+                    ("time_to_first_frame_ms", "REAL NOT NULL DEFAULT 0.0"),
+                    ("ffmpeg_queue_depth", "INTEGER NOT NULL DEFAULT 0"),
+                    ("hostname", "TEXT NOT NULL DEFAULT ''"),
+                    ("os", "TEXT NOT NULL DEFAULT ''"),
+                    ("cpu_model", "TEXT NOT NULL DEFAULT ''"),
+                    ("logical_cores", "INTEGER NOT NULL DEFAULT 0"),
+                    ("tachyon_version", "TEXT NOT NULL DEFAULT ''")
+                ]
+                for col_name, col_type in columns_to_add:
+                    try:
+                        cursor.execute(f"ALTER TABLE render_runs ADD COLUMN {col_name} {col_type};")
+                    except sqlite3.OperationalError:
+                        pass # Ignore if duplicate
                 cursor.execute("PRAGMA user_version = 3;")
 
             cursor.execute("BEGIN TRANSACTION;")

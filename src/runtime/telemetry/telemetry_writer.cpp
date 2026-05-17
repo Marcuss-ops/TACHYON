@@ -225,6 +225,25 @@ bool TelemetryWriter::write_sqlite(const RenderTelemetryRecord& record, const Re
     enriched_record.build_type = build.build_type;
     enriched_record.compiler_info = build.compiler_info;
     
+    // Populate hostname and OS
+    {
+        std::ifstream hostfile("/proc/sys/kernel/hostname");
+        if (hostfile) {
+            std::getline(hostfile, enriched_record.hostname);
+        } else {
+            enriched_record.hostname = "unknown-host";
+        }
+    }
+#if defined(__linux__)
+    enriched_record.os = "Linux";
+#elif defined(_WIN32)
+    enriched_record.os = "Windows";
+#elif defined(__APPLE__)
+    enriched_record.os = "macOS";
+#else
+    enriched_record.os = "Unknown";
+#endif
+    
     // Write Render Run Record
     if (!store.write_render_record(enriched_record)) {
         return false;
