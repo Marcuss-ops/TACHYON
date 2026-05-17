@@ -38,19 +38,34 @@ std::optional<std::shared_ptr<renderer2d::Framebuffer>> FrameBlendRenderer::try_
         if (frame_a_surface && frame_b_surface) {
             // Invariant: Both src (a, b) and dst (out) buffers must be 32-byte aligned for safe SIMD Highway bulk kernel processing.
             // Linear blend only for now
-            auto blended_surface = std::make_shared<renderer2d::SurfaceRGBA>(
+            auto blended_frame = std::make_shared<renderer2d::Framebuffer>(
                 frame_a_surface->width(), frame_a_surface->height());
             const float blend = blend_result->blend_factor;
-            const std::size_t width = static_cast<std::size_t>(blended_surface->width());
-            const std::size_t height = static_cast<std::size_t>(blended_surface->height());
+            const std::size_t width = static_cast<std::size_t>(blended_frame->width());
+            const std::size_t height = static_cast<std::size_t>(blended_frame->height());
             
             const float* a = frame_a_surface->data();
             const float* b = frame_b_surface->data();
-            float* out = blended_surface->data();
+            float* out = blended_frame->data();
 
             runtime::simd::lerp_pixels_best(out, a, b, width * height * 4, blend);
 
-            return std::make_shared<renderer2d::Framebuffer>(*blended_surface);
+            // Populate the processed pixels & tiles telemetry counter for frame blend operation
+            if (context.total_pixels_counter) {
+                context.total_pixels_counter->fetch_add(width * height);
+            }
+            if (context.total_tiles_counter) {
+                int tile_size = plan.quality_policy.tile_size;
+                if (tile_size > 0) {
+                    int tiles_x = (width + tile_size - 1) / tile_size;
+                    int tiles_y = (height + tile_size - 1) / tile_size;
+                    context.total_tiles_counter->fetch_add(tiles_x * tiles_y);
+                } else {
+                    context.total_tiles_counter->fetch_add(1);
+                }
+            }
+
+            return blended_frame;
         }
     }
     return std::nullopt;

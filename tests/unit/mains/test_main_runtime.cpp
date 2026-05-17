@@ -5,6 +5,7 @@
 bool run_frame_executor_tests();
 bool run_determinism_tests();
 bool run_scene_hash_coverage_tests();
+bool run_sqlite_telemetry_store_tests();
 
 // Temporarily disabled (stubs for linking)
 bool run_render_job_tests();
@@ -27,7 +28,9 @@ int main(int argc, char** argv) {
         {"frame_executor", run_frame_executor_tests},
         {"determinism", run_determinism_tests},
         {"scene_hash_coverage", run_scene_hash_coverage_tests},
+        {"sqlite_telemetry_store", run_sqlite_telemetry_store_tests},
     };
 
     return run_test_suite(argc, argv, tests);
 }
+

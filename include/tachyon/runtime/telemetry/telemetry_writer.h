@@ -5,13 +5,15 @@
 #include "tachyon/api.h"
 #include <string>
 #include <filesystem>
-
+#include <vector>
 #include <mutex>
 
 namespace tachyon {
 
+struct RenderSessionResult;
+
 /**
- * @brief Modern telemetry writer supporting JSONL and TSV formats.
+ * @brief Modern telemetry writer supporting JSONL, TSV, and SQLite formats.
  */
 class TACHYON_API TelemetryWriter {
 public:
@@ -32,8 +34,14 @@ public:
      */
     static bool write_batch_summary(const BatchTelemetrySummary& summary, const std::filesystem::path& path);
 
+    /**
+     * @brief Persists comprehensive session statistics, frame-by-frame latencies, phase breakdowns, and counters to SQLite.
+     */
+    static bool write_sqlite(const RenderTelemetryRecord& record, const RenderSessionResult& session_result);
+
 private:
     static std::mutex s_write_mutex;
 };
 
 } // namespace tachyon
+

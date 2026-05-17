@@ -17,6 +17,9 @@ void lerp_pixels_highway(float* out, const float* a, const float* b, std::size_t
 
 /**
  * @brief Best available linear blend implementation.
+ * 
+ * INVARIANT: out (dst), a (src), and b (src) must be at least 16-byte aligned
+ * to prevent runtime SIMD instructions faulting/crashing.
  */
 void lerp_pixels_best(float* out, const float* a, const float* b, std::size_t count, float t);
 

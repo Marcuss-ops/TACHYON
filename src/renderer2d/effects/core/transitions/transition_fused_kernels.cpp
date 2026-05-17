@@ -14,6 +14,20 @@ inline float smoothstep01(float x) {
     return x * x * (3.0f - 2.0f * x);
 }
 
+template <typename PixelOp>
+inline void for_each_pixel_parallel(SurfaceRGBA& output, int thread_count, PixelOp&& op) {
+    const uint32_t width = output.width();
+    const uint32_t height = output.height();
+    float* out_data = output.mutable_pixels().data();
+    #pragma omp parallel for num_threads(thread_count) schedule(static)
+    for (int y = 0; y < static_cast<int>(height); ++y) {
+        float* row_out = &out_data[static_cast<size_t>(y) * width * 4];
+        for (int x = 0; x < static_cast<int>(width); ++x) {
+            op(x, y, &row_out[x * 4]);
+        }
+    }
+}
+
 // Optimized bilinear sampling with raw data access
 inline void sample_bilinear_raw(const float* __restrict pixels, uint32_t width, uint32_t height, float u, float v, float* __restrict out_rgba) {
     const float fw = static_cast<float>(width);
@@ -274,24 +288,19 @@ void apply_wipe_linear_fused_direct(
     int thread_count) {
 
     const uint32_t width = output.width();
-    const uint32_t height = output.height();
     const float* from_data = from.pixels().data();
     const float* to_data = to ? to->pixels().data() : nullptr;
-    float* out_data = output.mutable_pixels().data();
 
-    #pragma omp parallel for num_threads(thread_count) schedule(static)
-    for (int y = 0; y < static_cast<int>(height); ++y) {
-        for (int x = 0; x < static_cast<int>(width); ++x) {
-            const float u = (static_cast<float>(x) + 0.5f) / static_cast<float>(width);
-            const std::size_t offset = (static_cast<std::size_t>(y) * width + x) * 4;
-            
-            if (u < progress && to_data) {
-                std::memcpy(out_data + offset, to_data + offset, 4 * sizeof(float));
-            } else {
-                std::memcpy(out_data + offset, from_data + offset, 4 * sizeof(float));
-            }
+    for_each_pixel_parallel(output, thread_count, [&](int x, int y, float* out_pixel) {
+        const float u = (static_cast<float>(x) + 0.5f) / static_cast<float>(width);
+        const std::size_t offset = (static_cast<std::size_t>(y) * width + x) * 4;
+        
+        if (u < progress && to_data) {
+            std::memcpy(out_pixel, to_data + offset, 4 * sizeof(float));
+        } else {
+            std::memcpy(out_pixel, from_data + offset, 4 * sizeof(float));
         }
-    }
+    });
 }
 
 void apply_smooth_wipe_fused_direct(
@@ -302,33 +311,26 @@ void apply_smooth_wipe_fused_direct(
     int thread_count) {
 
     const uint32_t width = output.width();
-    const uint32_t height = output.height();
     const float* from_data = from.pixels().data();
     const float* to_data = to ? to->pixels().data() : nullptr;
-    float* out_data = output.mutable_pixels().data();
     const float smoothness = 0.1f;
 
-    #pragma omp parallel for num_threads(thread_count) schedule(static)
-    for (int y = 0; y < static_cast<int>(height); ++y) {
-        for (int x = 0; x < static_cast<int>(width); ++x) {
-            const float u = (static_cast<float>(x) + 0.5f) / static_cast<float>(width);
-            const std::size_t offset = (static_cast<std::size_t>(y) * width + x) * 4;
-            
-            float edge = std::clamp((progress - u) / smoothness + 0.5f, 0.0f, 1.0f);
-            float eased_edge = smoothstep01(edge);
-            
-            const float* src = from_data + offset;
-            const float* dst = to_data ? (to_data + offset) : src;
-            float* out = out_data + offset;
+    for_each_pixel_parallel(output, thread_count, [&](int x, int y, float* out_pixel) {
+        const float u = (static_cast<float>(x) + 0.5f) / static_cast<float>(width);
+        const std::size_t offset = (static_cast<std::size_t>(y) * width + x) * 4;
+        
+        float edge = std::clamp((progress - u) / smoothness + 0.5f, 0.0f, 1.0f);
+        float eased_edge = smoothstep01(edge);
+        
+        const float* src = from_data + offset;
+        const float* dst = to_data ? (to_data + offset) : src;
 
-            out[0] = src[0] * (1.0f - eased_edge) + dst[0] * eased_edge;
-            out[1] = src[1] * (1.0f - eased_edge) + dst[1] * eased_edge;
-            out[2] = src[2] * (1.0f - eased_edge) + dst[2] * eased_edge;
-            out[3] = src[3] * (1.0f - eased_edge) + dst[3] * eased_edge;
-        }
-    }
+        out_pixel[0] = src[0] * (1.0f - eased_edge) + dst[0] * eased_edge;
+        out_pixel[1] = src[1] * (1.0f - eased_edge) + dst[1] * eased_edge;
+        out_pixel[2] = src[2] * (1.0f - eased_edge) + dst[2] * eased_edge;
+        out_pixel[3] = src[3] * (1.0f - eased_edge) + dst[3] * eased_edge;
+    });
 }
-
 
 void apply_circle_iris_fused_direct(
     SurfaceRGBA& output,
@@ -341,27 +343,23 @@ void apply_circle_iris_fused_direct(
     const uint32_t height = output.height();
     const float* from_data = from.pixels().data();
     const float* to_data = to ? to->pixels().data() : nullptr;
-    float* out_data = output.mutable_pixels().data();
     const float aspect = static_cast<float>(width) / static_cast<float>(height);
 
-    #pragma omp parallel for num_threads(thread_count) schedule(static)
-    for (int y = 0; y < static_cast<int>(height); ++y) {
-        for (int x = 0; x < static_cast<int>(width); ++x) {
-            const float u = (static_cast<float>(x) + 0.5f) / static_cast<float>(width);
-            const float v = (static_cast<float>(y) + 0.5f) / static_cast<float>(height);
-            const std::size_t offset = (static_cast<std::size_t>(y) * width + x) * 4;
-            
-            const float dx = (u - 0.5f) * aspect;
-            const float dy = (v - 0.5f);
-            const float dist = std::sqrt(dx * dx + dy * dy);
-            
-            if (dist < progress * 0.85f && to_data) {
-                std::memcpy(out_data + offset, to_data + offset, 4 * sizeof(float));
-            } else {
-                std::memcpy(out_data + offset, from_data + offset, 4 * sizeof(float));
-            }
+    for_each_pixel_parallel(output, thread_count, [&](int x, int y, float* out_pixel) {
+        const float u = (static_cast<float>(x) + 0.5f) / static_cast<float>(width);
+        const float v = (static_cast<float>(y) + 0.5f) / static_cast<float>(height);
+        const std::size_t offset = (static_cast<std::size_t>(y) * width + x) * 4;
+        
+        const float dx = (u - 0.5f) * aspect;
+        const float dy = (v - 0.5f);
+        const float dist = std::sqrt(dx * dx + dy * dy);
+        
+        if (dist < progress * 0.85f && to_data) {
+            std::memcpy(out_pixel, to_data + offset, 4 * sizeof(float));
+        } else {
+            std::memcpy(out_pixel, from_data + offset, 4 * sizeof(float));
         }
-    }
+    });
 }
 
 void apply_flash_cut_fused_direct(
@@ -372,38 +370,30 @@ void apply_flash_cut_fused_direct(
     int thread_count) {
 
     const uint32_t width = output.width();
-    const uint32_t height = output.height();
     const float* from_data = from.pixels().data();
     const float* to_data = to ? to->pixels().data() : nullptr;
-    float* out_data = output.mutable_pixels().data();
 
     const float flash = 1.0f - std::abs(progress - 0.5f) * 2.0f;
     const float flash_amount = smoothstep01(std::max(0.0f, flash)) * 0.9f;
     const float eased_progress = smoothstep01(progress);
 
-    #pragma omp parallel for num_threads(thread_count) schedule(static)
-    for (int y = 0; y < static_cast<int>(height); ++y) {
-        for (int x = 0; x < static_cast<int>(width); ++x) {
-            const std::size_t offset = (static_cast<std::size_t>(y) * width + x) * 4;
-            
-            const float* src = from_data + offset;
-            const float* dst = to_data ? (to_data + offset) : src;
-            float* out = out_data + offset;
+    for_each_pixel_parallel(output, thread_count, [&](int x, int y, float* out_pixel) {
+        const std::size_t offset = (static_cast<std::size_t>(y) * width + x) * 4;
+        
+        const float* src = from_data + offset;
+        const float* dst = to_data ? (to_data + offset) : src;
 
-            float r = src[0] * (1.0f - eased_progress) + dst[0] * eased_progress;
-            float g = src[1] * (1.0f - eased_progress) + dst[1] * eased_progress;
-            float b = src[2] * (1.0f - eased_progress) + dst[2] * eased_progress;
-            float a = src[3] * (1.0f - eased_progress) + dst[3] * eased_progress;
+        float r = src[0] * (1.0f - eased_progress) + dst[0] * eased_progress;
+        float g = src[1] * (1.0f - eased_progress) + dst[1] * eased_progress;
+        float b = src[2] * (1.0f - eased_progress) + dst[2] * eased_progress;
+        float a = src[3] * (1.0f - eased_progress) + dst[3] * eased_progress;
 
-            out[0] = r * (1.0f - flash_amount) + flash_amount;
-            out[1] = g * (1.0f - flash_amount) + flash_amount;
-            out[2] = b * (1.0f - flash_amount) + flash_amount;
-            out[3] = std::clamp(a + flash_amount, 0.0f, 1.0f);
-        }
-    }
+        out_pixel[0] = r * (1.0f - flash_amount) + flash_amount;
+        out_pixel[1] = g * (1.0f - flash_amount) + flash_amount;
+        out_pixel[2] = b * (1.0f - flash_amount) + flash_amount;
+        out_pixel[3] = std::clamp(a + flash_amount, 0.0f, 1.0f);
+    });
 }
-
-
 
 } // namespace tachyon::renderer2d
 

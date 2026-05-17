@@ -97,6 +97,9 @@ struct RenderContext {
     profiling::RenderProfiler* profiler{nullptr};
     std::atomic<bool>* cancel_flag{nullptr};
 
+    std::shared_ptr<std::atomic<std::size_t>> total_pixels_counter;
+    std::shared_ptr<std::atomic<int>> total_tiles_counter;
+
     // 6. Backend
     std::shared_ptr<renderer2d::ComputeBackend> compute_backend;
 

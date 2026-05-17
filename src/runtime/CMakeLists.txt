@@ -100,6 +100,7 @@ set(TachyonRuntimeSources
     telemetry/process_resource_sampler.cpp
     telemetry/render_telemetry_record.cpp
     telemetry/telemetry_writer.cpp
+    telemetry/sqlite_telemetry_store.cpp
 )
 
 add_library(TachyonRuntime STATIC ${TachyonRuntimeSources})
@@ -118,3 +119,9 @@ target_link_libraries(TachyonRuntime
     PRIVATE
         TachyonPlatform
 )
+
+if(TACHYON_ENABLE_SQLITE_TELEMETRY)
+    target_link_libraries(TachyonRuntime PRIVATE tachyon_sqlite)
+    target_compile_definitions(TachyonRuntime PUBLIC TACHYON_ENABLE_SQLITE_TELEMETRY)
+endif()
+

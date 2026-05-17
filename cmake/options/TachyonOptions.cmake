@@ -36,3 +36,5 @@ option(TACHYON_BUILD_TESTS "Build the Tachyon test suite" OFF)
 option(TACHYON_BUILD_EXAMPLES "Build example targets" OFF)
 option(TACHYON_BUILD_CATALOG_TOOLS "Build catalog/editor tooling targets" OFF)
 option(TACHYON_BUILD_SHARED_LIB   "Build libtachyon shared library (for Python/FFI)" OFF)
+option(TACHYON_ENABLE_SQLITE_TELEMETRY "Enable SQLite telemetry store" ON)
+

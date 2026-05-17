@@ -73,6 +73,8 @@ include(${CMAKE_SOURCE_DIR}/cmake/deps/BasisDeps.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/deps/TextDeps.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/deps/MediaDeps.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/deps/OutputDeps.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/deps/SqliteDeps.cmake)
+
 # Version header generation
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/include/tachyon/core/version.h.in
