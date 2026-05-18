@@ -93,6 +93,7 @@ set(TachyonRuntimeSources
     profiling/render_profiler.cpp
     
     registry/engine_registry.cpp
+    plugins/plugin_manager.cpp
     
     resource/render_context.cpp
     resource/surface_pool.cpp

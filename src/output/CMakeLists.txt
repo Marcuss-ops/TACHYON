@@ -12,6 +12,7 @@ set(TachyonOutputSources
     output_planner.cpp
     ffmpeg/ffmpeg_utils.cpp
     async_output_sink.cpp
+    shared_memory_sink.cpp
 )
 
 if(TACHYON_ENABLE_PRORES)

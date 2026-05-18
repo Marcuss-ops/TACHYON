@@ -20,7 +20,12 @@ static TemporalStability analyze_layer_stability(
     std::uint32_t c_idx,
     std::uint32_t l_idx,
     CompiledScene& compiled,
-    std::vector<std::vector<TemporalStability>>& memo) {
+    std::vector<std::vector<TemporalStability>>& memo,
+    std::vector<std::vector<bool>>& visiting) {
+    
+    if (visiting[c_idx][l_idx]) {
+        return TemporalStability::Static; // Break dependency cycles gracefully
+    }
     
     if (memo[c_idx][l_idx] != TemporalStability::Unknown) {
         return memo[c_idx][l_idx];
@@ -58,10 +63,13 @@ static TemporalStability analyze_layer_stability(
         return TemporalStability::Animated;
     }
 
+    visiting[c_idx][l_idx] = true;
+
     // Check parent layer stability
     if (layer.parent_index.has_value()) {
-        auto parent_stability = analyze_layer_stability(c_idx, *layer.parent_index, compiled, memo);
+        auto parent_stability = analyze_layer_stability(c_idx, *layer.parent_index, compiled, memo, visiting);
         if (parent_stability != TemporalStability::Static) {
+            visiting[c_idx][l_idx] = false;
             memo[c_idx][l_idx] = parent_stability;
             return parent_stability;
         }
@@ -69,8 +77,9 @@ static TemporalStability analyze_layer_stability(
 
     // Check track matte layer stability
     if (layer.matte_layer_index.has_value()) {
-        auto matte_stability = analyze_layer_stability(c_idx, *layer.matte_layer_index, compiled, memo);
+        auto matte_stability = analyze_layer_stability(c_idx, *layer.matte_layer_index, compiled, memo, visiting);
         if (matte_stability != TemporalStability::Static) {
+            visiting[c_idx][l_idx] = false;
             memo[c_idx][l_idx] = matte_stability;
             return matte_stability;
         }
@@ -83,7 +92,7 @@ static TemporalStability analyze_layer_stability(
         bool nested_static = true;
         TemporalStability worst_stability = TemporalStability::Static;
         for (std::uint32_t nl_idx = 0; nl_idx < nested_comp.layers.size(); ++nl_idx) {
-            auto nested_stability = analyze_layer_stability(nested_comp_idx, nl_idx, compiled, memo);
+            auto nested_stability = analyze_layer_stability(nested_comp_idx, nl_idx, compiled, memo, visiting);
             if (nested_stability != TemporalStability::Static) {
                 nested_static = false;
                 worst_stability = nested_stability;
@@ -91,11 +100,13 @@ static TemporalStability analyze_layer_stability(
             }
         }
         if (!nested_static) {
+            visiting[c_idx][l_idx] = false;
             memo[c_idx][l_idx] = worst_stability;
             return worst_stability;
         }
     }
 
+    visiting[c_idx][l_idx] = false;
     memo[c_idx][l_idx] = TemporalStability::Static;
     return TemporalStability::Static;
 }
@@ -337,9 +348,11 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene_sp
     for (std::uint32_t c_idx = 0; c_idx < compiled.compositions.size(); ++c_idx) {
         auto& comp = compiled.compositions[c_idx];
         const auto& comp_spec = scene.compositions[c_idx];
+        bool has_bg = comp_spec.background.has_value();
         
-        for (std::uint32_t l_idx = 0; l_idx < comp.layers.size(); ++l_idx) {
-            auto& layer = comp.layers[l_idx];
+        for (std::uint32_t l_idx = 0; l_idx < comp_spec.layers.size(); ++l_idx) {
+            std::uint32_t compiled_l_idx = l_idx + (has_bg ? 1 : 0);
+            auto& layer = comp.layers[compiled_l_idx];
             const auto& layer_spec = comp_spec.layers[l_idx];
 
             if (layer_spec.parent.has_value()) {
@@ -371,13 +384,15 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene_sp
     // 2b. Analyze Temporal Stability for all layers
     {
         std::vector<std::vector<TemporalStability>> memo(compiled.compositions.size());
+        std::vector<std::vector<bool>> visiting(compiled.compositions.size());
         for (std::uint32_t c_idx = 0; c_idx < compiled.compositions.size(); ++c_idx) {
             memo[c_idx].resize(compiled.compositions[c_idx].layers.size(), TemporalStability::Unknown);
+            visiting[c_idx].resize(compiled.compositions[c_idx].layers.size(), false);
         }
         for (std::uint32_t c_idx = 0; c_idx < compiled.compositions.size(); ++c_idx) {
             for (std::uint32_t l_idx = 0; l_idx < compiled.compositions[c_idx].layers.size(); ++l_idx) {
                 compiled.compositions[c_idx].layers[l_idx].temporal_stability =
-                    analyze_layer_stability(c_idx, l_idx, compiled, memo);
+                    analyze_layer_stability(c_idx, l_idx, compiled, memo, visiting);
             }
         }
     }

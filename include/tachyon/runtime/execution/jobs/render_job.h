@@ -55,7 +55,8 @@ enum class OutputFormat {
     Gif,
     ImageSequence,
     ProRes,
-    WebM
+    WebM,
+    SharedMemory
 };
 
 struct OutputProfile {

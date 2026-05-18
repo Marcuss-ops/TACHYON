@@ -274,12 +274,18 @@ std::string AuthoringService::get_compiler_command(
     ss << "\"" << cpp_path.string() << "\" ";
     ss << "-o \"" << dll_path.string() << "\" ";
     
-    const auto libs = get_link_libs();
     const std::filesystem::path lib_root = TACHYON_LIB_PATH;
+    std::filesystem::path scene_a = lib_root / "core/scene/libTachyonScene.a";
+    std::filesystem::path core_a = lib_root / "core/libTachyonCore.a";
     
-    for (std::size_t i = 0; i < libs.size(); ++i) {
-        if (i != 0) ss << ' ';
-        ss << "-L\"" << lib_root.string() << "\" -l" << libs[i] << " ";
+    if (std::filesystem::exists(scene_a) && std::filesystem::exists(core_a)) {
+        ss << "\"" << scene_a.string() << "\" \"" << core_a.string() << "\" ";
+    } else {
+        const auto libs = get_link_libs();
+        for (std::size_t i = 0; i < libs.size(); ++i) {
+            if (i != 0) ss << ' ';
+            ss << "-L\"" << lib_root.string() << "\" -l" << libs[i] << " ";
+        }
     }
 #endif
     return ss.str();

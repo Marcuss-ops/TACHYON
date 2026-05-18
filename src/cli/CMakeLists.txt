@@ -28,6 +28,8 @@ list(APPEND TachyonCLISources
     commands/output_presets.cpp
     commands/probe.cpp
     commands/concat.cpp
+    commands/bench.cpp
+    commands/plugins.cpp
 
     support/utils.cpp
     support/scene_loader.cpp
@@ -37,6 +39,7 @@ list(APPEND TachyonCLISources
     parsing/parse_inspect.cpp
     parsing/parse_metrics.cpp
     parsing/parse_tool.cpp
+    parsing/parse_bench.cpp
 )
 
 # Source assertions

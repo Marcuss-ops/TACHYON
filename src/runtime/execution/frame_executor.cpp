@@ -85,7 +85,13 @@ ExecutedFrame FrameExecutor::execute(
     const FrameRenderTask& task,
     const DataSnapshot& snapshot,
     RenderContext& context) {
-    profiling::ProfileScope frame_scope(context.profiler, profiling::ProfileEventType::Frame, "frame_render", task.frame_number);
+    FrameRenderTask active_task = task;
+    const char* cache_env = std::getenv("TACHYON_CACHE");
+    if (cache_env && std::string_view(cache_env) == "off") {
+        active_task.cacheable = false;
+    }
+
+    profiling::ProfileScope frame_scope(context.profiler, profiling::ProfileEventType::Frame, "frame_render", active_task.frame_number);
 
     const char* diag_env = std::getenv("TACHYON_DIAGNOSTICS");
     const bool diagnostics_enabled = (diag_env && std::string_view(diag_env) == "1");
@@ -96,11 +102,11 @@ ExecutedFrame FrameExecutor::execute(
         build_lookup_table(compiled_scene);
     }
 
-    const FrameCacheState cache_state = build_frame_cache_state(compiled_scene, plan, task, diagnostics_enabled);
-    const FrameTimingState timing_state = resolve_frame_timing(compiled_scene, plan, task);
+    const FrameCacheState cache_state = build_frame_cache_state(compiled_scene, plan, active_task, diagnostics_enabled);
+    const FrameTimingState timing_state = resolve_frame_timing(compiled_scene, plan, active_task);
 
     ExecutedFrame result;
-    result.frame_number = task.frame_number;
+    result.frame_number = active_task.frame_number;
     result.scene_hash = compiled_scene.scene_hash;
     result.cache_key = cache_state.frame_key;
     if (diagnostics_enabled) {
@@ -109,7 +115,7 @@ ExecutedFrame FrameExecutor::execute(
         context.diagnostics = &result.diagnostics;
     }
 
-    if (task.cacheable) {
+    if (active_task.cacheable) {
         auto cached = m_cache.lookup_frame(cache_state.frame_key);
         if (cached) {
             result.frame = cached;
@@ -118,7 +124,7 @@ ExecutedFrame FrameExecutor::execute(
         }
     }
 
-    return run_frame_execution_pipeline(*this, compiled_scene, plan, task, snapshot, context, cache_state, timing_state);
+    return run_frame_execution_pipeline(*this, compiled_scene, plan, active_task, snapshot, context, cache_state, timing_state);
 }
 
 // Delegate methods for backward compatibility

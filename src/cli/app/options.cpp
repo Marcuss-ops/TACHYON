@@ -4,6 +4,7 @@
 #include "cli/parsing/parse_inspect.h"
 #include "cli/parsing/parse_metrics.h"
 #include "cli/parsing/parse_tool.h"
+#include "cli/parsing/parse_bench.h"
 #include <exception>
 #include <string>
 #include <vector>
@@ -48,6 +49,8 @@ ParseResult<CliOptions> parse_cli_options(int argc, char** argv) {
             return result;
         }
 
+        if (parse_bench_option(arg, args, index, options, result.diagnostics)) continue;
+        if (parse_plugin_option(arg, args, index, options, result.diagnostics)) continue;
         if (parse_render_option(arg, args, index, options, result.diagnostics)) continue;
         if (parse_inspect_option(arg, args, index, options, result.diagnostics)) continue;
         if (parse_metrics_option(arg, args, index, options, result.diagnostics)) continue;

@@ -62,6 +62,23 @@ struct ProbeOptions {
     bool json_output{false};
 };
 
+struct BenchOptions {
+    std::filesystem::path cpp_path;
+    std::string preset_id;
+    std::string frame_range{"0-179"};
+    int runs{5};
+    int warmup{1};
+    std::filesystem::path out_dir{"benchmark_out"};
+    std::string formats{"json,csv"};
+    bool cache{true};
+};
+
+struct PluginOptions {
+    std::string subcommand; // "list", "validate", "reload"
+    std::filesystem::path dir{"examples/plugins/build"};
+    std::filesystem::path path;
+};
+
 struct ConcatOptions {
     std::vector<std::filesystem::path> inputs;
     std::filesystem::path output;
@@ -94,6 +111,8 @@ struct CliOptions {
     ThumbOptions thumb;
     ProbeOptions probe;
     ConcatOptions concat;
+    BenchOptions bench;
+    PluginOptions plugins;
 };
 
 ParseResult<CliOptions> parse_cli_options(int argc, char** argv);

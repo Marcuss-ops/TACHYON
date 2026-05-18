@@ -125,6 +125,7 @@ public:
     LayerBuilder& opacity(double v);
     LayerBuilder& opacity(const AnimatedScalarSpec& anim_spec);
     LayerBuilder& position(double x, double y);
+    LayerBuilder& position(const AnimatedVector2Spec& pos_spec);
     LayerBuilder& anchor(double x, double y);
     LayerBuilder& size(double w, double h);
     LayerBuilder& color(const ColorSpec& c);
@@ -139,6 +140,7 @@ public:
     LayerBuilder& track_matte(std::string layer_id, TrackMatteType type);
     LayerBuilder& parent(std::string parent_id);
     LayerBuilder& motion_blur(bool enabled = true);
+    LayerBuilder& blend_mode(BlendMode mode);
 
     // Transitions
     TransitionBuilder enter();
