@@ -1,6 +1,7 @@
 #include "tachyon/output/frame_output_sink.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
 #include "tachyon/core/platform/shell_escape.h"
+#include "tachyon/output/hardware_encoder_detector.h"
 #include "ffmpeg_capabilities.h"
 #include <sstream>
 #include <filesystem>
@@ -106,6 +107,28 @@ std::string build_ffmpeg_video_command(const RenderPlan& plan, const std::filesy
     } else {
         if (!plan.output.profile.video.codec.empty()) {
             command << " -c:v " << plan.output.profile.video.codec;
+        } else if (plan.output.profile.video.encoder_backend == "auto") {
+            auto caps = detect_hardware_encoders("ffmpeg");
+            auto chosen = choose_best_encoder(caps);
+            command << " -c:v " << chosen.ffmpeg_codec;
+            
+            if (chosen.backend == HardwareEncoderBackend::Nvenc) {
+                command << " -preset p4 -rc vbr -cq 18";
+            } else if (chosen.backend == HardwareEncoderBackend::Software) {
+                command << " -preset slow -crf 18";
+            }
+            
+            if (!chosen.filters.empty()) {
+                command << " -vf ";
+                for (size_t i = 0; i < chosen.filters.size(); ++i) {
+                    if (i > 0) command << ",";
+                    command << chosen.filters[i];
+                }
+            }
+            
+            if (!chosen.pixel_format.empty() && chosen.backend != HardwareEncoderBackend::Vaapi) {
+                command << " -pix_fmt " << chosen.pixel_format;
+            }
         } else {
             const auto& caps = get_cached_capabilities();
             std::string encoder = choose_encoder(plan.output.profile, caps);

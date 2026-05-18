@@ -22,6 +22,18 @@ bool run_c_api_smoke_test() {
         return false;
     }
 
+    // 2b. Options default verification
+    TachyonRenderOptions check_opts;
+    tachyon_init_render_options(&check_opts);
+    if (check_opts.start_frame != -1 || check_opts.end_frame != -1) {
+        std::cerr << "default frame range invalid\n";
+        return false;
+    }
+    if (!check_opts.quality || std::strcmp(check_opts.quality, "draft") != 0) {
+        std::cerr << "default quality invalid\n";
+        return false;
+    }
+
     // 3. Run invalid args test
     char err[1024] = {};
     if (tachyon_run(0, nullptr, err, sizeof(err)) == 0) {

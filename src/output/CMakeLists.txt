@@ -8,6 +8,7 @@ set(TachyonOutputSources
     ffmpeg/ffmpeg_command_builder.cpp
     ffmpeg/ffmpeg_capabilities.cpp
     ffmpeg/ffmpeg_pipe_sink.cpp
+    ffmpeg/hardware_encoder_detector.cpp
     output_planner.cpp
     ffmpeg/ffmpeg_utils.cpp
     async_output_sink.cpp

@@ -5,7 +5,7 @@ namespace tachyon {
 
 struct CliRegister {
     CliRegister() {
-        g_run_cli_ptr = &run_cli;
+        register_cli_entrypoint(&run_cli);
     }
 };
 static CliRegister g_cli_register;

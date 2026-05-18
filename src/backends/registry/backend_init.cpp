@@ -11,7 +11,7 @@ namespace tachyon::backends {
 
 struct BackendInitRegister {
     BackendInitRegister() {
-        g_init_backends_ptr = &initialize_all_backends;
+        register_backend_init(&initialize_all_backends);
     }
 };
 static BackendInitRegister g_backend_init_register;
