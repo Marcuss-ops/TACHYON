@@ -15,7 +15,18 @@ FFmpegCapabilities detect_ffmpeg_capabilities() {
         return FFmpegCapabilities{};
     }
 
-    return parse_ffmpeg_encoders(result.output);
+    auto caps = parse_ffmpeg_encoders(result.output);
+    if (caps.has_nvenc) {
+        // Run a real probe to check if NVENC actually works in this environment
+        core::platform::ProcessSpec probe_spec;
+        probe_spec.executable = "ffmpeg";
+        probe_spec.args = {"-nostdin", "-f", "lavfi", "-i", "color=c=black:s=16x16", "-c:v", "h264_nvenc", "-t", "0.01", "-f", "null", "-"};
+        auto probe_result = core::platform::run_process(probe_spec);
+        if (!probe_result.success) {
+            caps.has_nvenc = false;
+        }
+    }
+    return caps;
 }
 
 FFmpegCapabilities parse_ffmpeg_encoders(const std::string& output) {

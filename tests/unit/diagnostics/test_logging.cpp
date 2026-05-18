@@ -1,32 +1,72 @@
 #include <gtest/gtest.h>
 #include "tachyon/core/diag/log.h"
-#include <spdlog/sinks/ostream_sink.h>
 #include <sstream>
+#include <iostream>
 
 namespace tachyon::diagnostics {
 
 bool run_logging_test() {
-    std::ostringstream oss;
-    auto oss_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
-    
-    // We need to manually setup the logger to use our ostream sink for testing
-    auto test_logger = std::make_shared<spdlog::logger>("test_json", oss_sink);
-    test_logger->set_level(spdlog::level::info);
-    
-    // Pattern from log.cpp
-    test_logger->set_pattern("{\"ts\":\"%Y-%m-%dT%H:%M:%S.%fZ\",\"level\":\"%l\",\"component\":\"%n\",\"message\":\"%v\"}");
-    
-    test_logger->info("Test message with value {}", 42);
-    
-    std::string output = oss.str();
-    
-    if (output.empty()) return false;
-    if (output.front() != '{') return false;
-    if (output.find("\"level\":\"info\"") == std::string::npos) return false;
-    if (output.find("\"component\":\"test_json\"") == std::string::npos) return false;
-    if (output.find("\"message\":\"Test message with value 42\"") == std::string::npos) return false;
-    if (output.find("\"ts\":") == std::string::npos) return false;
-    
+    using namespace tachyon::diag;
+    // 1. Test standard logging formatting
+    {
+        std::ostringstream oss;
+        LogConfig config;
+        config.format = LogFormat::Json;
+        config.level = "info";
+        config.test_stream = &oss;
+
+        init_logging(config);
+
+        // Retrieve spdlog default logger and log through the facade
+        spdlog::info("Test message with value {}", 42);
+
+        std::string output = oss.str();
+        if (output.empty()) {
+            std::cerr << "[LoggingTest] FAIL: JSON output is empty\n";
+            return false;
+        }
+        if (output.front() != '{') {
+            std::cerr << "[LoggingTest] FAIL: JSON output does not start with {\n";
+            return false;
+        }
+        if (output.find("\"level\":\"info\"") == std::string::npos) {
+            std::cerr << "[LoggingTest] FAIL: Level not formatted as info\n";
+            return false;
+        }
+        if (output.find("\"component\":\"tachyon\"") == std::string::npos) {
+            std::cerr << "[LoggingTest] FAIL: Component not formatted as tachyon\n";
+            return false;
+        }
+        if (output.find("\"message\":\"Test message with value 42\"") == std::string::npos) {
+            std::cerr << "[LoggingTest] FAIL: Message content mismatch\n";
+            return false;
+        }
+    }
+
+    // 2. Test escape safety (quotes, backslashes, newlines)
+    {
+        std::ostringstream oss;
+        LogConfig config;
+        config.format = LogFormat::Json;
+        config.level = "info";
+        config.test_stream = &oss;
+
+        init_logging(config);
+
+        // Log a message containing JSON special characters
+        spdlog::info("Message with \"quotes\", \\backslashes\\ and\nnewlines");
+
+        std::string output = oss.str();
+        
+        // The expected escaped message payload is:
+        // "Message with \"quotes\", \\\\backslashes\\\\ and\\nnewlines"
+        if (output.find("Message with \\\"quotes\\\", \\\\backslashes\\\\ and\\nnewlines") == std::string::npos) {
+            std::cerr << "[LoggingTest] FAIL: Special characters were not escaped correctly in output: " << output << "\n";
+            return false;
+        }
+    }
+
+    std::cout << "[LoggingTest] ALL logging tests passed successfully!\n";
     return true;
 }
 

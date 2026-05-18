@@ -6,6 +6,7 @@ set(TachyonRuntimeSources
     cache/cache_key_builder.cpp
     cache/disk_cache.cpp
     cache/frame_cache.cpp
+    cache/node_cache.cpp
     
     compiler/component_library.cpp
     compiler/layer_compiler.cpp

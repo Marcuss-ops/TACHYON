@@ -42,6 +42,7 @@ enum class CompiledNodeType : std::uint8_t {
     Unknown
 };
 
+
 /**
  * @brief Base structure for any node in the compiled dependency graph.
  */
@@ -181,6 +182,7 @@ struct CompiledLayer {
     std::vector<spec::TrackBinding> track_bindings;
     spec::TimeRemapCurve time_remap;
     spec::FrameBlendMode frame_blend{spec::FrameBlendMode::Linear};
+    TemporalStability temporal_stability{TemporalStability::Unknown};
 };
 
 struct CompiledCamera {

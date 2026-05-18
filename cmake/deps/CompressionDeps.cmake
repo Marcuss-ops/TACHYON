@@ -1,6 +1,10 @@
 include_guard(GLOBAL)
 
-if(TACHYON_FETCH_DEPS)
+if(TACHYON_USE_SYSTEM_DEPS)
+    find_package(zstd CONFIG QUIET)
+endif()
+
+if(NOT zstd_FOUND AND NOT TARGET zstd)
     FetchContent_Declare(
         zstd
         GIT_REPOSITORY https://github.com/facebook/zstd.git
@@ -14,8 +18,6 @@ if(TACHYON_FETCH_DEPS)
     set(ZSTD_BUILD_SHARED   OFF CACHE BOOL "" FORCE)
     set(ZSTD_BUILD_STATIC   ON  CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(zstd)
-else()
-    find_package(zstd CONFIG REQUIRED)
 endif()
 
 function(tachyon_link_zstd target)

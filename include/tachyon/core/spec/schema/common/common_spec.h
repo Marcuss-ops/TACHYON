@@ -31,6 +31,15 @@ enum class LayerType {
     NullLayer = 12
 };
 
+enum class TemporalStability : std::uint8_t {
+    Static,
+    Animated,
+    DependsOnMediaTime,
+    DependsOnRandom,
+    Unknown
+};
+
+
 enum class TransitionKind {
     None,
     Fade,

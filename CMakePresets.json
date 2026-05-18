@@ -87,6 +87,41 @@
       }
     },
     {
+      "name": "linux-container",
+      "inherits": "base-unix",
+      "description": "Reproducible Linux container build using system dependencies",
+      "binaryDir": "${sourceDir}/build/linux-container",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "TACHYON_USE_SYSTEM_DEPS": "ON",
+        "TACHYON_FETCH_DEPS": "OFF",
+        "TACHYON_ENABLE_MEDIA": "ON",
+        "TACHYON_ENABLE_TEXT": "ON",
+        "TACHYON_ENABLE_OUTPUT": "ON",
+        "TACHYON_ENABLE_AUDIO": "ON",
+        "TACHYON_ENABLE_SQLITE_TELEMETRY": "ON",
+        "TACHYON_BUILD_TESTS": "ON"
+      }
+    },
+    {
+      "name": "linux-vcpkg",
+      "inherits": "base-unix",
+      "description": "Enterprise Linux build with vcpkg package manager integration",
+      "binaryDir": "${sourceDir}/build/linux-vcpkg",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "TACHYON_USE_SYSTEM_DEPS": "ON",
+        "TACHYON_FETCH_DEPS": "OFF",
+        "TACHYON_ENABLE_MEDIA": "ON",
+        "TACHYON_ENABLE_TEXT": "ON",
+        "TACHYON_ENABLE_OUTPUT": "ON",
+        "TACHYON_ENABLE_AUDIO": "ON",
+        "TACHYON_ENABLE_SQLITE_TELEMETRY": "ON",
+        "TACHYON_BUILD_TESTS": "ON"
+      }
+    },
+    {
       "name": "dev-linux",
       "inherits": "base-unix",
       "description": "Daily Linux iteration preset with RelWithDebInfo symbols",
@@ -182,6 +217,8 @@
       "configuration": "RelWithDebInfo",
       "targets": [
         "TachyonCore",
+        "TachyonBackendTests",
+        "TachyonOutputTests",
         "TachyonRenderTests",
         "TachyonCliTests",
         "TachyonSceneTests",
@@ -197,6 +234,8 @@
       "configuration": "RelWithDebInfo",
       "targets": [
         "TachyonCore",
+        "TachyonBackendTests",
+        "TachyonOutputTests",
         "TachyonRenderTests",
         "TachyonCliTests",
         "TachyonSceneTests",
@@ -219,6 +258,8 @@
       "configuration": "RelWithDebInfo",
       "targets": [
         "TachyonCore",
+        "TachyonBackendTests",
+        "TachyonOutputTests",
         "TachyonRenderTests",
         "TachyonCliTests",
         "TachyonSceneTests",
@@ -233,6 +274,44 @@
       "targets": [
         "TachyonCore",
         "TachyonCoreTests",
+        "TachyonBackendTests",
+        "TachyonOutputTests",
+        "TachyonRenderTests",
+        "TachyonCliTests",
+        "TachyonSceneTests",
+        "TachyonRuntimeTests",
+        "TachyonOperationsTests",
+        "TachyonGoldenTests",
+        "tachyon",
+        "HeaderSmokeTests"
+      ]
+    },
+    {
+      "name": "linux-container",
+      "configurePreset": "linux-container",
+      "targets": [
+        "TachyonCore",
+        "TachyonCoreTests",
+        "TachyonBackendTests",
+        "TachyonOutputTests",
+        "TachyonRenderTests",
+        "TachyonCliTests",
+        "TachyonSceneTests",
+        "TachyonRuntimeTests",
+        "TachyonOperationsTests",
+        "TachyonGoldenTests",
+        "tachyon",
+        "HeaderSmokeTests"
+      ]
+    },
+    {
+      "name": "linux-vcpkg",
+      "configurePreset": "linux-vcpkg",
+      "targets": [
+        "TachyonCore",
+        "TachyonCoreTests",
+        "TachyonBackendTests",
+        "TachyonOutputTests",
         "TachyonRenderTests",
         "TachyonCliTests",
         "TachyonSceneTests",
@@ -249,6 +328,8 @@
       "targets": [
         "TachyonCore",
         "TachyonCoreTests",
+        "TachyonBackendTests",
+        "TachyonOutputTests",
         "TachyonRenderTests",
         "TachyonCliTests",
         "TachyonSceneTests",
@@ -265,6 +346,8 @@
       "targets": [
         "TachyonCore",
         "TachyonCoreTests",
+        "TachyonBackendTests",
+        "TachyonOutputTests",
         "TachyonRenderTests",
         "TachyonCliTests",
         "TachyonSceneTests",
@@ -280,6 +363,8 @@
       "targets": [
         "TachyonCore",
         "TachyonCoreTests",
+        "TachyonBackendTests",
+        "TachyonOutputTests",
         "TachyonRenderTests",
         "TachyonCliTests",
         "TachyonSceneTests",

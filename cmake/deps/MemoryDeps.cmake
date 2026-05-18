@@ -1,7 +1,11 @@
 include_guard(GLOBAL)
 
 if(TACHYON_ENABLE_MIMALLOC)
-    if(TACHYON_FETCH_DEPS)
+    if(TACHYON_USE_SYSTEM_DEPS)
+        find_package(mimalloc CONFIG QUIET)
+    endif()
+
+    if(NOT mimalloc_FOUND AND NOT TARGET mimalloc)
         FetchContent_Declare(
             mimalloc
             GIT_REPOSITORY https://github.com/microsoft/mimalloc.git
@@ -15,8 +19,6 @@ if(TACHYON_ENABLE_MIMALLOC)
         set(MI_BUILD_STATIC ON CACHE BOOL "" FORCE)
 
         FetchContent_MakeAvailable(mimalloc)
-    else()
-        find_package(mimalloc CONFIG REQUIRED)
     endif()
 endif()
 

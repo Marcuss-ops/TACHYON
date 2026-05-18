@@ -19,12 +19,20 @@ target_compile_definitions(TachyonCoreTests
 
 target_link_libraries(TachyonCoreTests
     PRIVATE
-        TachyonBindingsC
+        -Wl,--start-group
         TachyonBackends
+        -Wl,--end-group
         TachyonPlatform
         TachyonTestUtils
-        TachyonCore
         TachyonDiagnostics
+        -Wl,--whole-archive
+        TachyonRenderer2D
+        TachyonCore
+        TachyonScene
+        TachyonCLI
+        TachyonBindingsC
+        -Wl,--no-whole-archive
+        TachyonRuntime
 )
 
 add_test(

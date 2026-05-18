@@ -1,5 +1,6 @@
 #include "tachyon/runtime/resource/render_context.h"
 #include "tachyon/runtime/resource/surface_pool.h"
+#include "tachyon/runtime/cache/node_cache.h"
 
 #ifdef TACHYON_ENABLE_MEDIA
 #include "tachyon/core/media/media_provider.h"
@@ -23,6 +24,7 @@ RenderContext::RenderContext(
 #ifdef TACHYON_ENABLE_MEDIA
     , media(std::move(media_mgr))
 #endif
+    , node_cache(std::make_shared<NodeCache>())
 {
     working_color_space.profile = cms.working_profile;
     working_color_space.linear = (cms.working_profile.curve == renderer2d::TransferCurve::Linear);

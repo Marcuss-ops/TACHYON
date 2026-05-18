@@ -67,11 +67,19 @@ function(tachyon_link_infra target)
 endfunction()
 
 function(tachyon_link_absl target)
-    target_link_libraries(${target} PUBLIC 
-        absl_flat_hash_map
-        absl_strings
-        absl_str_format
-    )
+    if(TARGET absl::strings)
+        target_link_libraries(${target} PUBLIC 
+            absl::flat_hash_map
+            absl::strings
+            absl::str_format
+        )
+    else()
+        target_link_libraries(${target} PUBLIC 
+            absl_flat_hash_map
+            absl_strings
+            absl_str_format
+        )
+    endif()
     if(absl_SOURCE_DIR)
         target_include_directories(${target} PUBLIC ${absl_SOURCE_DIR})
     endif()

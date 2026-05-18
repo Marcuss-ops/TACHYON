@@ -3,6 +3,13 @@
 
 namespace tachyon {
 
+struct CliRegister {
+    CliRegister() {
+        g_run_cli_ptr = &run_cli;
+    }
+};
+static CliRegister g_cli_register;
+
 int run_cli(int argc, char** argv) {
     CliApp app;
     return app.run(argc, argv);
