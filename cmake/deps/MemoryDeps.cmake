@@ -10,7 +10,6 @@ if(TACHYON_ENABLE_MIMALLOC)
             mimalloc
             GIT_REPOSITORY https://github.com/microsoft/mimalloc.git
             GIT_TAG ${TACHYON_MIMALLOC_GIT_TAG}
-            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         )
 
         set(MI_BUILD_TESTS OFF CACHE BOOL "" FORCE)

@@ -9,7 +9,6 @@ if(NOT spdlog_FOUND AND NOT TARGET spdlog)
         spdlog
         GIT_REPOSITORY https://github.com/gabime/spdlog.git
         GIT_TAG        ${TACHYON_SPDLOG_GIT_TAG}
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     )
     set(SPDLOG_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
     set(SPDLOG_BUILD_TESTS    OFF CACHE BOOL "" FORCE)

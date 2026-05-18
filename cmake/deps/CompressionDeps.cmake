@@ -9,7 +9,6 @@ if(NOT zstd_FOUND AND NOT TARGET zstd)
         zstd
         GIT_REPOSITORY https://github.com/facebook/zstd.git
         GIT_TAG        ${TACHYON_ZSTD_GIT_TAG}
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         SOURCE_SUBDIR  build/cmake
     )
     set(ZSTD_BUILD_PROGRAMS OFF CACHE BOOL "" FORCE)

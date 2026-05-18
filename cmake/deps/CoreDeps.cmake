@@ -23,7 +23,6 @@ if(NOT Clipper2_FOUND AND NOT TARGET clipper2)
             clipper2
             GIT_REPOSITORY https://github.com/AngusJohnson/Clipper2.git
             GIT_TAG        ${TACHYON_CLIPPER2_GIT_TAG}
-            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         )
         FetchContent_MakeAvailable(clipper2)
     endif()
@@ -40,7 +39,6 @@ if(NOT GTest_FOUND AND NOT TARGET gtest)
         FetchContent_Declare(
             googletest
             URL ${TACHYON_GTEST_URL}
-            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         )
         # For Windows: prevent gtest from overriding our compiler/linker options
         set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
@@ -60,7 +58,6 @@ if(NOT absl_FOUND AND NOT TARGET absl::strings)
             absl
             GIT_REPOSITORY https://github.com/abseil/abseil-cpp.git
             GIT_TAG        20240116.2 # LTS 2024
-            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         )
         set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
         FetchContent_MakeAvailable(absl)

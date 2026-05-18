@@ -5,7 +5,6 @@ if(TACHYON_FETCH_DEPS)
         crc32c
         GIT_REPOSITORY https://github.com/google/crc32c.git
         GIT_TAG        ${TACHYON_CRC32C_GIT_TAG}
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     )
     
     set(CRC32C_BUILD_TESTS OFF CACHE BOOL "" FORCE)

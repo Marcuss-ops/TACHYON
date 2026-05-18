@@ -6,8 +6,13 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/channel_layout.h>
+#include <libavutil/version.h>
 }
 #define TACHYON_HAS_FFMPEG 1
+#endif
+
+#ifndef AV_VERSION_INT
+#define AV_VERSION_INT(a, b, c) (((a) << 16) | ((b) << 8) | (c))
 #endif
 
 namespace tachyon::backends::ffmpeg {
@@ -90,8 +95,12 @@ core::MediaResult<FullMetadata> FFmpegProbe::probe_full(const std::filesystem::p
             a.codec = codec ? codec->name : "unknown";
             a.sample_rate = codec_par->sample_rate;
             
-            // Channel layout extraction (FFmpeg 5.1+)
+            // Channel layout extraction
+#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 28, 100)
             a.channels = codec_par->ch_layout.nb_channels;
+#else
+            a.channels = codec_par->channels;
+#endif
             
             a.duration_seconds = (stream->duration != AV_NOPTS_VALUE)
                 ? static_cast<double>(stream->duration) * av_q2d(stream->time_base)

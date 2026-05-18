@@ -5,7 +5,6 @@ if(TACHYON_FETCH_DEPS)
         xxhash
         GIT_REPOSITORY https://github.com/Cyan4973/xxHash.git
         GIT_TAG        ${TACHYON_XXHASH_GIT_TAG}
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     )
     # xxHash has its own CMakeLists; let it populate so we get the source dir.
     FetchContent_MakeAvailable(xxhash)

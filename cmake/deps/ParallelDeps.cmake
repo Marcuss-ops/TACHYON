@@ -10,7 +10,6 @@ if(TACHYON_ENABLE_TASKFLOW)
             taskflow
             GIT_REPOSITORY https://github.com/taskflow/taskflow.git
             GIT_TAG ${TACHYON_TASKFLOW_GIT_TAG}
-            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         )
         FetchContent_MakeAvailable(taskflow)
     endif()

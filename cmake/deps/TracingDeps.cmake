@@ -30,7 +30,6 @@ if(TACHYON_ENABLE_TRACY)
             tracy
             GIT_REPOSITORY https://github.com/wolfpld/tracy.git
             GIT_TAG        ${TACHYON_TRACY_GIT_TAG}
-            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         )
         
         # Tracy options

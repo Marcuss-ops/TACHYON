@@ -15,12 +15,17 @@ extern "C" {
 #include <libavformat/avformat.h>
 #include <libavutil/channel_layout.h>
 #include <libavutil/opt.h>
+#include <libavutil/version.h>
 #include <libswresample/swresample.h>
 }
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif
 #define TACHYON_HAS_FFMPEG 1
+#endif
+
+#ifndef AV_VERSION_INT
+#define AV_VERSION_INT(a, b, c) (((a) << 16) | ((b) << 8) | (c))
 #endif
 
 namespace tachyon::audio {
@@ -111,11 +116,16 @@ bool AudioDecoder::open(const std::filesystem::path& path) {
         return false;
     }
 
+#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 28, 100)
     m_channels = m_codec_context->ch_layout.nb_channels;
+#else
+    m_channels = m_codec_context->channels;
+#endif
     m_sample_rate = m_codec_context->sample_rate;
     m_duration_seconds = static_cast<double>(m_format_context->duration) / static_cast<double>(AV_TIME_BASE);
     m_stream_time_base = av_q2d(stream->time_base);
 
+#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 28, 100)
     AVChannelLayout out_layout;
     av_channel_layout_default(&out_layout, kTargetChannels);
 
@@ -132,6 +142,26 @@ bool AudioDecoder::open(const std::filesystem::path& path) {
         tachyon::diag::error("[AudioDecoder] could not initialize resampler for {}", path.string());
         return false;
     }
+#else
+    uint64_t out_layout = AV_CH_LAYOUT_STEREO;
+    if (kTargetChannels == 1) out_layout = AV_CH_LAYOUT_MONO;
+
+    m_swr_context = swr_alloc_set_opts(
+        nullptr,
+        out_layout,
+        AV_SAMPLE_FMT_FLT,
+        kTargetSampleRate,
+        m_codec_context->channel_layout,
+        m_codec_context->sample_fmt,
+        m_codec_context->sample_rate,
+        0,
+        nullptr);
+
+    if (!m_swr_context || swr_init(m_swr_context) < 0) {
+        tachyon::diag::error("[AudioDecoder] could not initialize resampler for {}", path.string());
+        return false;
+    }
+#endif
 
     m_packet = av_packet_alloc();
     m_frame = av_frame_alloc();

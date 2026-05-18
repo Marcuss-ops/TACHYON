@@ -13,7 +13,6 @@ if(TACHYON_ENABLE_SQLITE_TELEMETRY)
             FetchContent_Declare(
                 sqlite
                 URL "${TACHYON_SQLITE_URL}"
-                DOWNLOAD_EXTRACT_TIMESTAMP TRUE
             )
             FetchContent_MakeAvailable(sqlite)
             

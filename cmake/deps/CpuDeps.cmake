@@ -5,7 +5,6 @@ if(TACHYON_FETCH_DEPS)
         cpu_features
         GIT_REPOSITORY https://github.com/google/cpu_features.git
         GIT_TAG        ${TACHYON_CPU_FEATURES_GIT_TAG}
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     )
     
     # Disable building tests and executables for cpu_features

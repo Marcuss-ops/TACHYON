@@ -15,12 +15,17 @@ extern "C" {
 #include <libavformat/avformat.h>
 #include <libavutil/channel_layout.h>
 #include <libavutil/opt.h>
+#include <libavutil/version.h>
 #include <libswresample/swresample.h>
 }
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif
 #define TACHYON_HAS_FFMPEG 1
+#endif
+
+#ifndef AV_VERSION_INT
+#define AV_VERSION_INT(a, b, c) (((a) << 16) | ((b) << 8) | (c))
 #endif
 
 namespace tachyon::audio {
@@ -122,8 +127,17 @@ bool AudioEncoder::open(const std::filesystem::path& output_path, const AudioExp
     }
 
     m_codec_context->sample_rate = config.sample_rate;
+#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 28, 100)
     m_codec_context->ch_layout = AV_CHANNEL_LAYOUT_STEREO;
     if (config.channels == 1) m_codec_context->ch_layout = AV_CHANNEL_LAYOUT_MONO;
+#else
+    m_codec_context->channel_layout = AV_CH_LAYOUT_STEREO;
+    m_codec_context->channels = 2;
+    if (config.channels == 1) {
+        m_codec_context->channel_layout = AV_CH_LAYOUT_MONO;
+        m_codec_context->channels = 1;
+    }
+#endif
     m_codec_context->bit_rate = config.bitrate_kbps * 1000;
     m_codec_context->sample_fmt = AV_SAMPLE_FMT_FLTP;
     if (config.codec == "mp3") m_codec_context->sample_fmt = AV_SAMPLE_FMT_S16P;
@@ -145,8 +159,13 @@ bool AudioEncoder::open(const std::filesystem::path& output_path, const AudioExp
     m_stream->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     m_stream->codecpar->codec_id = codec->id;
     m_stream->codecpar->sample_rate = config.sample_rate;
+#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 28, 100)
     m_stream->codecpar->ch_layout.nb_channels = config.channels;
     av_channel_layout_copy(&m_stream->codecpar->ch_layout, &m_codec_context->ch_layout);
+#else
+    m_stream->codecpar->channels = config.channels;
+    m_stream->codecpar->channel_layout = m_codec_context->channel_layout;
+#endif
 
     if (!(m_codec_context->codec->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE)) {
         m_frame_size = m_codec_context->frame_size;
@@ -165,7 +184,12 @@ bool AudioEncoder::open(const std::filesystem::path& output_path, const AudioExp
     }
     m_frame->sample_rate = config.sample_rate;
     m_frame->format = m_codec_context->sample_fmt;
+#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 28, 100)
     av_channel_layout_copy(&m_frame->ch_layout, &m_codec_context->ch_layout);
+#else
+    m_frame->channels = m_codec_context->channels;
+    m_frame->channel_layout = m_codec_context->channel_layout;
+#endif
 
     m_packet = av_packet_alloc();
     if (!m_packet) {

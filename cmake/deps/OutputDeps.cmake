@@ -11,7 +11,6 @@ if(TACHYON_ENABLE_OUTPUT)
                 tinyexr
                 GIT_REPOSITORY https://github.com/syoyo/tinyexr.git
                 GIT_TAG        ${TACHYON_TINYEXR_GIT_TAG}
-                DOWNLOAD_EXTRACT_TIMESTAMP TRUE
             )
             FetchContent_MakeAvailable(tinyexr)
         endif()

@@ -11,7 +11,6 @@ if(TACHYON_ENABLE_MEDIA)
                 pugixml
                 GIT_REPOSITORY https://github.com/zeux/pugixml.git
                 GIT_TAG        ${TACHYON_PUGIXML_GIT_TAG}
-                DOWNLOAD_EXTRACT_TIMESTAMP TRUE
             )
             FetchContent_MakeAvailable(pugixml)
         endif()
@@ -31,7 +30,6 @@ if(TACHYON_ENABLE_MEDIA)
                 earcut
                 GIT_REPOSITORY https://github.com/mapbox/earcut.hpp.git
                 GIT_TAG        ${TACHYON_EARCUT_GIT_TAG}
-                DOWNLOAD_EXTRACT_TIMESTAMP TRUE
             )
 
             FetchContent_GetProperties(earcut)
