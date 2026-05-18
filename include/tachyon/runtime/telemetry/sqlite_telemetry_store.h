@@ -80,6 +80,7 @@ public:
      * @brief Test-only helpers to introspect database state cleanly.
      */
     int count_rows_for_test(const std::string& table) const;
+    int user_version_for_test() const;
     std::vector<uint8_t> serialize_db_for_test() const;
 
 private:

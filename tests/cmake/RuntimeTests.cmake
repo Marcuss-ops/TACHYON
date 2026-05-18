@@ -6,6 +6,7 @@ add_executable(TachyonRuntimeTests
     unit/mains/test_main_runtime.cpp
     unit/mains/test_stubs.cpp
     unit/runtime/telemetry/sqlite_telemetry_store_tests.cpp
+    unit/runtime/node_cache_tests.cpp
 )
 
 

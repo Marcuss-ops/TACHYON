@@ -1,7 +1,11 @@
 include_guard(GLOBAL)
 
 if(TACHYON_ENABLE_HIGHWAY)
-    if(TACHYON_FETCH_DEPS)
+    if(TACHYON_USE_SYSTEM_DEPS)
+        find_package(hwy CONFIG QUIET)
+    endif()
+
+    if(NOT hwy_FOUND AND NOT TARGET hwy)
         FetchContent_Declare(
             highway
             GIT_REPOSITORY https://github.com/google/highway.git
@@ -11,7 +15,5 @@ if(TACHYON_ENABLE_HIGHWAY)
         set(HWY_ENABLE_EXAMPLES OFF CACHE BOOL "Disable Highway examples" FORCE)
         set(HWY_ENABLE_TESTS OFF CACHE BOOL "Disable Highway tests" FORCE)
         FetchContent_MakeAvailable(highway)
-    else()
-        find_package(hwy CONFIG REQUIRED)
     endif()
 endif()

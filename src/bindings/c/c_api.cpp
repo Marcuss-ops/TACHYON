@@ -24,11 +24,6 @@ std::once_flag g_init_flag;
 
 } // namespace
 
-namespace tachyon {
-run_cli_func_t g_run_cli_ptr = nullptr;
-init_backends_func_t g_init_backends_ptr = nullptr;
-}
-
 extern "C" {
 
 TACHYON_API const char* tachyon_version(void) {

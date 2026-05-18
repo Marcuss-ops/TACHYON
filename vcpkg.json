@@ -1,27 +1,14 @@
 {
-  "name": "tachyon-skia",
+  "name": "tachyon",
+  "version-string": "0.1.0",
   "dependencies": [
-    {
-      "name": "skia",
-      "default-features": false,
-      "features": [
-        "freetype",
-        "harfbuzz"
-      ]
-    }
-  ],
-  "vcpkg-configuration": {
-    "default-registry": {
-      "kind": "git",
-      "baseline": "544a4c5c297e60e4ac4a5a1810df66748d908869",
-      "repository": "https://github.com/microsoft/vcpkg"
-    },
-    "registries": [
-      {
-        "kind": "artifact",
-        "location": "https://github.com/microsoft/vcpkg-ce-catalog/archive/refs/heads/main.zip",
-        "name": "microsoft"
-      }
-    ]
-  }
+    "sqlite3",
+    "ffmpeg",
+    "freetype",
+    "harfbuzz",
+    "zlib",
+    "xxhash",
+    "abseil",
+    "tracy"
+  ]
 }

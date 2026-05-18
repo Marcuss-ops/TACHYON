@@ -1,0 +1,33 @@
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    ninja-build \
+    git \
+    pkg-config \
+    python3 \
+    libavcodec-dev \
+    libavformat-dev \
+    libavutil-dev \
+    libswscale-dev \
+    libswresample-dev \
+    libfreetype6-dev \
+    libharfbuzz-dev \
+    libomp-dev \
+    libsqlite3-dev \
+    zlib1g-dev \
+    libspdlog-dev \
+    libxxhash-dev \
+    libhwy-dev \
+    libgtest-dev \
+    libpugixml-dev \
+    libzstd-dev \
+    libabsl-dev \
+    ffmpeg \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace

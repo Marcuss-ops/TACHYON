@@ -37,6 +37,12 @@ bool run_sqlite_telemetry_store_tests() {
         return false;
     }
 
+    // 2.5 Verify version
+    if (store.user_version_for_test() != 3) {
+        std::cerr << "[TelemetryStore] FAIL: User version should be 3 after initialization (got " << store.user_version_for_test() << ")\n";
+        return false;
+    }
+
     // 3. Verify Table Creation
     if (store.count_rows_for_test("render_runs") != 0 ||
         store.count_rows_for_test("render_frames") != 0 ||

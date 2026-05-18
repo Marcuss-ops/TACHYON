@@ -1,9 +1,14 @@
 #include "tachyon/core/core.h"
+#include "tachyon/core/cli.h"
 #include "tachyon/version.h"
 
 #include <iostream>
 
 namespace tachyon {
+
+run_cli_func_t g_run_cli_ptr = nullptr;
+init_backends_func_t g_init_backends_ptr = nullptr;
+
 std::string version_string() {
     return TACHYON_VERSION_STR;
 }
@@ -12,3 +17,4 @@ void print_version(std::ostream& out) {
     out << "TACHYON Version: " << TACHYON_VERSION_STR << std::endl;
 }
 } // namespace tachyon
+

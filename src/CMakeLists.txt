@@ -45,17 +45,36 @@ if(TACHYON_ENABLE_PCH AND COMMAND target_precompile_headers)
     target_precompile_headers(tachyon PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include/tachyon/pch.h")
 endif()
 
-target_link_libraries(tachyon
-    PRIVATE
-        TachyonCLI
-        TachyonCatalog
-        TachyonPresets
-        TachyonDiagnostics
-        TachyonOperations
-        TachyonBackends
-        TachyonRuntime
-        TachyonOutput
-)
+if(UNIX AND NOT APPLE)
+    target_link_libraries(tachyon
+        PRIVATE
+            -Wl,--start-group
+            TachyonCLI
+            TachyonCatalog
+            TachyonPresets
+            TachyonDiagnostics
+            TachyonOperations
+            TachyonBackends
+            TachyonRuntime
+            TachyonOutput
+            TachyonRenderer2D
+            TachyonCore
+            TachyonScene
+            -Wl,--end-group
+    )
+else()
+    target_link_libraries(tachyon
+        PRIVATE
+            TachyonCLI
+            TachyonCatalog
+            TachyonPresets
+            TachyonDiagnostics
+            TachyonOperations
+            TachyonBackends
+            TachyonRuntime
+            TachyonOutput
+    )
+endif()
 tachyon_link_mimalloc(tachyon)
 set_target_properties(tachyon PROPERTIES ENABLE_EXPORTS TRUE)
 

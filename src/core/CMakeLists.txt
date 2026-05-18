@@ -31,7 +31,6 @@ set(TachyonCoreSources
     # Infrastructure adapters
     diag/log.cpp
     compression/compress.cpp
-    c_api.cpp
 )
 
 

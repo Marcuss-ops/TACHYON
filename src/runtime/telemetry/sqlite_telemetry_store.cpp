@@ -461,6 +461,20 @@ int SqliteTelemetryStore::count_rows_for_test(const std::string& table) const {
     return count;
 }
 
+int SqliteTelemetryStore::user_version_for_test() const {
+    if (!m_db) return 0;
+    sqlite3_stmt* stmt = nullptr;
+    int rc = sqlite3_prepare_v2(m_db, "PRAGMA user_version;", -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) return 0;
+
+    int version = 0;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        version = sqlite3_column_int(stmt, 0);
+    }
+    sqlite3_finalize(stmt);
+    return version;
+}
+
 std::vector<uint8_t> SqliteTelemetryStore::serialize_db_for_test() const {
     std::vector<uint8_t> out;
     if (!m_db) return out;
@@ -494,6 +508,7 @@ bool SqliteTelemetryStore::write_frame_records(const std::string&, const std::ve
 bool SqliteTelemetryStore::write_phase_events(const std::string&, const std::vector<SqlitePhaseEventRecord>&) { return false; }
 bool SqliteTelemetryStore::write_counters(const std::string&, const std::vector<SqliteCounterRecord>&) { return false; }
 int SqliteTelemetryStore::count_rows_for_test(const std::string&) const { return 0; }
+int SqliteTelemetryStore::user_version_for_test() const { return 0; }
 std::vector<uint8_t> SqliteTelemetryStore::serialize_db_for_test() const { return {}; }
 
 #endif // TACHYON_ENABLE_SQLITE_TELEMETRY

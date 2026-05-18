@@ -131,6 +131,8 @@ struct EvaluatedLayerState {
     // Precompositions
     std::shared_ptr<EvaluatedCompositionState> nested_composition;
 
+    TemporalStability temporal_stability{TemporalStability::Unknown};
+
     // Compatibility Helpers (Read-only)
     const std::string& id() const { return identity.id.empty() ? identity.layer_id : identity.id; }
     const std::string& name() const { return identity.name; }

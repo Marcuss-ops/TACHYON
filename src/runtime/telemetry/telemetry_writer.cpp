@@ -14,6 +14,14 @@ namespace tachyon {
 std::mutex TelemetryWriter::s_write_mutex;
 
 std::filesystem::path TelemetryWriter::get_default_directory() {
+    if (const char* env_path = std::getenv("TACHYON_TELEMETRY_PATH")) {
+        std::filesystem::path path(env_path);
+        if (!std::filesystem::exists(path)) {
+            std::filesystem::create_directories(path);
+        }
+        return path;
+    }
+
     const char* home = std::getenv("HOME");
     if (!home) home = std::getenv("USERPROFILE");
     if (!home) return ".tachyon/telemetry";
@@ -282,8 +290,34 @@ bool TelemetryWriter::write_sqlite(const RenderTelemetryRecord& record, const Re
     std::vector<SqliteCounterRecord> counters;
     counters.push_back({"cache_hits", static_cast<int64_t>(session_result.cache_hits)});
     counters.push_back({"cache_misses", static_cast<int64_t>(session_result.cache_misses)});
+
+    std::size_t node_cache_lookups = 0;
+    std::size_t node_cache_hits = 0;
+    std::size_t node_cache_misses = 0;
+    std::size_t node_cache_bytes = 0;
+    std::size_t static_nodes_detected = 0;
+    std::size_t animated_nodes_detected = 0;
+
+    for (const auto& fd : session_result.frame_diagnostics) {
+        node_cache_lookups += fd.node_cache_lookups;
+        node_cache_hits += fd.node_cache_hits;
+        node_cache_misses += fd.node_cache_misses;
+        static_nodes_detected += fd.static_nodes_detected;
+        animated_nodes_detected += fd.animated_nodes_detected;
+        if (fd.node_cache_bytes > node_cache_bytes) {
+            node_cache_bytes = fd.node_cache_bytes;
+        }
+    }
+
+    counters.push_back({"node_cache_lookups", static_cast<int64_t>(node_cache_lookups)});
+    counters.push_back({"node_cache_hits", static_cast<int64_t>(node_cache_hits)});
+    counters.push_back({"node_cache_misses", static_cast<int64_t>(node_cache_misses)});
+    counters.push_back({"node_cache_bytes", static_cast<int64_t>(node_cache_bytes)});
+    counters.push_back({"static_nodes_detected", static_cast<int64_t>(static_nodes_detected)});
+    counters.push_back({"animated_nodes_detected", static_cast<int64_t>(animated_nodes_detected)});
+
     if (!counters.empty()) {
-        store.write_counters(record.run_id, counters);
+        store.write_counters(enriched_record.run_id, counters);
     }
     
     return true;

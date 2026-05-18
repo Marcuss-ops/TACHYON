@@ -94,6 +94,7 @@ void evaluate_layer(
     }
 
     auto state = std::make_shared<scene::EvaluatedLayerState>();
+    state->temporal_stability = layer.temporal_stability;
     state->identity.layer_id = std::to_string(layer.node.node_id);
     state->identity.id = ""; 
     state->identity.name = layer.name;

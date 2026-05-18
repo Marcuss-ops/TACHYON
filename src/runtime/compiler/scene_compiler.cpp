@@ -16,7 +16,92 @@
 namespace tachyon {
 namespace {
 
+static TemporalStability analyze_layer_stability(
+    std::uint32_t c_idx,
+    std::uint32_t l_idx,
+    CompiledScene& compiled,
+    std::vector<std::vector<TemporalStability>>& memo) {
+    
+    if (memo[c_idx][l_idx] != TemporalStability::Unknown) {
+        return memo[c_idx][l_idx];
+    }
+
+    auto& comp = compiled.compositions[c_idx];
+    auto& layer = comp.layers[l_idx];
+
+    // Video layers are dynamic because they depend on media time
+    if (layer.type_id == 8) { // 8 is Video
+        memo[c_idx][l_idx] = TemporalStability::DependsOnMediaTime;
+        return TemporalStability::DependsOnMediaTime;
+    }
+
+    // Check if any of the properties (tracks) of the layer is animated
+    for (auto track_idx : layer.property_indices) {
+        if (track_idx < compiled.property_tracks.size()) {
+            const auto& track = compiled.property_tracks[track_idx];
+            if (track.kind != CompiledPropertyTrack::Kind::Constant) {
+                memo[c_idx][l_idx] = TemporalStability::Animated;
+                return TemporalStability::Animated;
+            }
+        }
+    }
+
+    // Check if layer has active effects or text animators
+    if (!layer.effects.empty() || !layer.text_animators.empty()) {
+        memo[c_idx][l_idx] = TemporalStability::Animated;
+        return TemporalStability::Animated;
+    }
+
+    // Check if layer has track bindings
+    if (!layer.track_bindings.empty()) {
+        memo[c_idx][l_idx] = TemporalStability::Animated;
+        return TemporalStability::Animated;
+    }
+
+    // Check parent layer stability
+    if (layer.parent_index.has_value()) {
+        auto parent_stability = analyze_layer_stability(c_idx, *layer.parent_index, compiled, memo);
+        if (parent_stability != TemporalStability::Static) {
+            memo[c_idx][l_idx] = parent_stability;
+            return parent_stability;
+        }
+    }
+
+    // Check track matte layer stability
+    if (layer.matte_layer_index.has_value()) {
+        auto matte_stability = analyze_layer_stability(c_idx, *layer.matte_layer_index, compiled, memo);
+        if (matte_stability != TemporalStability::Static) {
+            memo[c_idx][l_idx] = matte_stability;
+            return matte_stability;
+        }
+    }
+
+    // Check precomp composition stability (if it's a nested composition)
+    if (layer.precomp_index.has_value() && *layer.precomp_index < compiled.compositions.size()) {
+        auto nested_comp_idx = *layer.precomp_index;
+        const auto& nested_comp = compiled.compositions[nested_comp_idx];
+        bool nested_static = true;
+        TemporalStability worst_stability = TemporalStability::Static;
+        for (std::uint32_t nl_idx = 0; nl_idx < nested_comp.layers.size(); ++nl_idx) {
+            auto nested_stability = analyze_layer_stability(nested_comp_idx, nl_idx, compiled, memo);
+            if (nested_stability != TemporalStability::Static) {
+                nested_static = false;
+                worst_stability = nested_stability;
+                break;
+            }
+        }
+        if (!nested_static) {
+            memo[c_idx][l_idx] = worst_stability;
+            return worst_stability;
+        }
+    }
+
+    memo[c_idx][l_idx] = TemporalStability::Static;
+    return TemporalStability::Static;
+}
+
 } // namespace
+
 
 SceneCompiler::SceneCompiler(SceneCompilerOptions options)
     : m_options(std::move(options)) {}
@@ -282,6 +367,21 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene_sp
             }
         }
     }
+
+    // 2b. Analyze Temporal Stability for all layers
+    {
+        std::vector<std::vector<TemporalStability>> memo(compiled.compositions.size());
+        for (std::uint32_t c_idx = 0; c_idx < compiled.compositions.size(); ++c_idx) {
+            memo[c_idx].resize(compiled.compositions[c_idx].layers.size(), TemporalStability::Unknown);
+        }
+        for (std::uint32_t c_idx = 0; c_idx < compiled.compositions.size(); ++c_idx) {
+            for (std::uint32_t l_idx = 0; l_idx < compiled.compositions[c_idx].layers.size(); ++l_idx) {
+                compiled.compositions[c_idx].layers[l_idx].temporal_stability =
+                    analyze_layer_stability(c_idx, l_idx, compiled, memo);
+            }
+        }
+    }
+
 
     // 3. Compile Graph and Assign Topological Indices
     compiled.graph.compile();

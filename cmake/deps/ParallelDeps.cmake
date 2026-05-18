@@ -1,7 +1,11 @@
 include_guard(GLOBAL)
 
 if(TACHYON_ENABLE_TASKFLOW)
-    if(TACHYON_FETCH_DEPS)
+    if(TACHYON_USE_SYSTEM_DEPS)
+        find_package(Taskflow CONFIG QUIET)
+    endif()
+
+    if(NOT Taskflow_FOUND AND NOT TARGET Taskflow)
         FetchContent_Declare(
             taskflow
             GIT_REPOSITORY https://github.com/taskflow/taskflow.git
@@ -9,8 +13,6 @@ if(TACHYON_ENABLE_TASKFLOW)
             DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         )
         FetchContent_MakeAvailable(taskflow)
-    else()
-        find_package(Taskflow CONFIG REQUIRED)
     endif()
 endif()
 

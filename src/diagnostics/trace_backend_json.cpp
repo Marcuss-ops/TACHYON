@@ -22,14 +22,24 @@ std::string escape_json(const std::string& input) {
     std::string out;
     out.reserve(input.size());
 
-    for (char c : input) {
+    for (unsigned char c : input) {
         switch (c) {
             case '\\': out += "\\\\"; break;
             case '"': out += "\\\""; break;
             case '\n': out += "\\n"; break;
             case '\r': out += "\\r"; break;
             case '\t': out += "\\t"; break;
-            default: out += c; break;
+            case '\b': out += "\\b"; break;
+            case '\f': out += "\\f"; break;
+            default:
+                if (c < 0x20) {
+                    char buf[7];
+                    std::snprintf(buf, sizeof(buf), "\\u%04x", c);
+                    out += buf;
+                } else {
+                    out += c;
+                }
+                break;
         }
     }
 

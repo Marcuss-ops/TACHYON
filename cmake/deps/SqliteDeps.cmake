@@ -12,7 +12,7 @@ if(TACHYON_ENABLE_SQLITE_TELEMETRY)
         if(TACHYON_FETCH_DEPS)
             FetchContent_Declare(
                 sqlite
-                URL "https://www.sqlite.org/2024/sqlite-amalgamation-3460100.zip"
+                URL "${TACHYON_SQLITE_URL}"
                 DOWNLOAD_EXTRACT_TIMESTAMP TRUE
             )
             FetchContent_MakeAvailable(sqlite)

@@ -28,7 +28,9 @@ target_link_libraries(TachyonCoreTests
         -Wl,--whole-archive
         TachyonRenderer2D
         TachyonCore
+        TachyonScene
         TachyonCLI
+        TachyonBindingsC
         -Wl,--no-whole-archive
         TachyonRuntime
 )

@@ -67,6 +67,13 @@ struct FrameDiagnostics {
     std::size_t layers_evaluated{0};
     std::size_t compositions_evaluated{0};
 
+    std::size_t node_cache_lookups{0};
+    std::size_t node_cache_hits{0};
+    std::size_t node_cache_misses{0};
+    std::size_t node_cache_bytes{0};
+    std::size_t static_nodes_detected{0};
+    std::size_t animated_nodes_detected{0};
+
     // Canonical timing categories
     static constexpr const char* kCategoryRender = "render";
     static constexpr const char* kCategoryTransition = "transition";

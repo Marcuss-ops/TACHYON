@@ -1,6 +1,10 @@
 include_guard(GLOBAL)
 
-if(TACHYON_FETCH_DEPS)
+if(TACHYON_USE_SYSTEM_DEPS)
+    find_package(spdlog CONFIG QUIET)
+endif()
+
+if(NOT spdlog_FOUND AND NOT TARGET spdlog)
     FetchContent_Declare(
         spdlog
         GIT_REPOSITORY https://github.com/gabime/spdlog.git
@@ -13,8 +17,6 @@ if(TACHYON_FETCH_DEPS)
     # Required when spdlog is linked into a shared library
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
     FetchContent_MakeAvailable(spdlog)
-else()
-    find_package(spdlog CONFIG REQUIRED)
 endif()
 
 function(tachyon_link_spdlog target)

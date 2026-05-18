@@ -1,7 +1,7 @@
 # Tachyon BindingsC Module
 
 set(TachyonBindingsCSources
-    ../../core/c_api.cpp
+    c_api.cpp
 )
 
 tachyon_add_module(
