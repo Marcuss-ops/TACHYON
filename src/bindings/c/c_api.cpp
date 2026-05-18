@@ -33,7 +33,7 @@ TACHYON_API const char* tachyon_version(void) {
 TACHYON_API int tachyon_init(void) {
     std::call_once(g_init_flag, []() {
         tachyon::diag::init_logging();
-        if (tachyon::g_init_backends_ptr) {
+        if (tachyon::has_backend_init()) {
             tachyon::g_init_backends_ptr();
         }
         g_initialized = true;
@@ -48,6 +48,12 @@ TACHYON_API int tachyon_run(int argc, const char** argv,
         return 1;
     }
 
+    if (!tachyon::has_cli_entrypoint()) {
+        write_error(error_out, error_size,
+            "tachyon_run: CLI entrypoint not registered. Ensure TachyonCLI is linked into tachyon_lib.");
+        return 1;
+    }
+
     // run_cli takes char** — make mutable copies on the stack
     std::vector<std::string> args(argv, argv + argc);
     std::vector<char*> argv_mut;
@@ -55,12 +61,7 @@ TACHYON_API int tachyon_run(int argc, const char** argv,
     for (auto& s : args) argv_mut.push_back(s.data());
 
     try {
-        if (tachyon::g_run_cli_ptr) {
-            return tachyon::g_run_cli_ptr(static_cast<int>(argv_mut.size()), argv_mut.data());
-        } else {
-            write_error(error_out, error_size, "CLI module not loaded");
-            return 1;
-        }
+        return tachyon::g_run_cli_ptr(static_cast<int>(argv_mut.size()), argv_mut.data());
     } catch (const std::exception& e) {
         write_error(error_out, error_size, e.what());
         return 1;
