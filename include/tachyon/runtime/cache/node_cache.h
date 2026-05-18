@@ -58,6 +58,14 @@ public:
     NodeCache() = default;
     ~NodeCache() = default;
 
+    // Delete copy semantics
+    NodeCache(const NodeCache&) = delete;
+    NodeCache& operator=(const NodeCache&) = delete;
+
+    // Thread-safe move semantics
+    NodeCache(NodeCache&& other) noexcept;
+    NodeCache& operator=(NodeCache&& other) noexcept;
+
     std::shared_ptr<const renderer2d::Framebuffer> lookup(const NodeCacheKey& key);
     void store(const NodeCacheKey& key, std::shared_ptr<const renderer2d::Framebuffer> surface);
     void clear();
@@ -81,6 +89,8 @@ private:
     std::size_t m_misses{0};
     std::size_t m_bytes_used{0};
     std::size_t m_capacity_bytes{1024 * 1024 * 128}; // Default 128MB
+
+    void rebuild_lru_iterators();
 };
 
 } // namespace tachyon

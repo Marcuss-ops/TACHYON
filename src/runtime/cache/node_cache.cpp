@@ -77,5 +77,40 @@ void NodeCache::evict_if_needed() {
     }
 }
 
+NodeCache::NodeCache(NodeCache&& other) noexcept {
+    std::scoped_lock lock(other.m_mutex);
+    m_cache = std::move(other.m_cache);
+    m_lru_list = std::move(other.m_lru_list);
+    m_lookups = other.m_lookups;
+    m_hits = other.m_hits;
+    m_misses = other.m_misses;
+    m_bytes_used = other.m_bytes_used;
+    m_capacity_bytes = other.m_capacity_bytes;
+    rebuild_lru_iterators();
+}
+
+NodeCache& NodeCache::operator=(NodeCache&& other) noexcept {
+    if (this == &other) return *this;
+    std::scoped_lock lock(m_mutex, other.m_mutex);
+    m_cache = std::move(other.m_cache);
+    m_lru_list = std::move(other.m_lru_list);
+    m_lookups = other.m_lookups;
+    m_hits = other.m_hits;
+    m_misses = other.m_misses;
+    m_bytes_used = other.m_bytes_used;
+    m_capacity_bytes = other.m_capacity_bytes;
+    rebuild_lru_iterators();
+    return *this;
+}
+
+void NodeCache::rebuild_lru_iterators() {
+    for (auto it = m_lru_list.begin(); it != m_lru_list.end(); ++it) {
+        auto found = m_cache.find(*it);
+        if (found != m_cache.end()) {
+            found->second.list_it = it;
+        }
+    }
+}
+
 } // namespace tachyon
 

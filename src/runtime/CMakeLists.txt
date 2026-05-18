@@ -106,6 +106,7 @@ set(TachyonRuntimeTelemetrySources
     telemetry/render_telemetry_record.cpp
     telemetry/telemetry_writer.cpp
     telemetry/sqlite_telemetry_store.cpp
+    telemetry/thread_local_telemetry.cpp
 )
 
 add_library(TachyonRuntimeTelemetry STATIC ${TachyonRuntimeTelemetrySources})

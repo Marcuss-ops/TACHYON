@@ -47,188 +47,110 @@ std::size_t estimate_frame_size(const renderer2d::Framebuffer& frame) {
 } // namespace
 
 bool FrameCache::lookup_property(std::uint64_t key, double& out_value) const {
-    std::scoped_lock lock(m_mutex);
-    auto it = m_properties.find(key);
-    if (it != m_properties.end()) {
-        out_value = it->second;
-        ++m_hit_count;
-        const_cast<FrameCache*>(this)->touch(key);
-        return true;
-    }
-    ++m_miss_count;
-    return false;
+    return m_properties.lookup(key, out_value);
 }
 
 void FrameCache::store_property(std::uint64_t key, double value) {
-    std::scoped_lock lock(m_mutex);
-    const std::size_t size = sizeof(double);
-    if (m_entries.contains(key)) remove_entry(key);
-
-    m_properties[key] = value;
-    m_current_usage_bytes += size;
-    m_entries[key] = EntryInfo{EntryType::Property, size};
-    m_lru_list.push_back(key);
-    m_lru_iterators[key] = std::prev(m_lru_list.end());
-    evict_if_needed();
+    m_properties.store(key, value, sizeof(double));
 }
 
 std::shared_ptr<const scene::EvaluatedLayerState> FrameCache::lookup_layer(std::uint64_t key) const {
-    std::scoped_lock lock(m_mutex);
-    auto it = m_layers.find(key);
-    if (it != m_layers.end()) {
-        ++m_hit_count;
-        const_cast<FrameCache*>(this)->touch(key);
-        return it->second;
-    }
-    ++m_miss_count;
-    return nullptr;
+    return m_layers.lookup(key);
 }
 
 void FrameCache::store_layer(std::uint64_t key, std::shared_ptr<const scene::EvaluatedLayerState> state) {
     if (!state) return;
-    std::scoped_lock lock(m_mutex);
-    const std::size_t size = estimate_layer_size(*state);
-    if (m_entries.contains(key)) remove_entry(key);
-
-    m_layers.insert_or_assign(key, state);
-    m_current_usage_bytes += size;
-    m_entries[key] = EntryInfo{EntryType::Layer, size};
-    m_lru_list.push_back(key);
-    m_lru_iterators[key] = std::prev(m_lru_list.end());
-    evict_if_needed();
+    m_layers.store(key, state, estimate_layer_size(*state));
 }
 
 std::shared_ptr<const scene::EvaluatedCompositionState> FrameCache::lookup_composition(std::uint64_t key) const {
-    std::scoped_lock lock(m_mutex);
-    auto it = m_compositions.find(key);
-    if (it != m_compositions.end()) {
-        ++m_hit_count;
-        const_cast<FrameCache*>(this)->touch(key);
-        return it->second;
-    }
-    ++m_miss_count;
-    return nullptr;
+    return m_compositions.lookup(key);
 }
 
 void FrameCache::store_composition(std::uint64_t key, std::shared_ptr<const scene::EvaluatedCompositionState> state) {
     if (!state) return;
-    std::scoped_lock lock(m_mutex);
-    const std::size_t size = estimate_comp_size(*state);
-    if (m_entries.contains(key)) remove_entry(key);
-
-    m_compositions.insert_or_assign(key, state);
-    m_current_usage_bytes += size;
-    m_entries[key] = EntryInfo{EntryType::Composition, size};
-    m_lru_list.push_back(key);
-    m_lru_iterators[key] = std::prev(m_lru_list.end());
-    evict_if_needed();
+    m_compositions.store(key, state, estimate_comp_size(*state));
 }
 
 std::shared_ptr<const renderer2d::Framebuffer> FrameCache::lookup_frame(const FrameCacheKey& key) const {
-    std::scoped_lock lock(m_mutex);
-    auto it = m_frames.find(key.hash);
-    if (it != m_frames.end() && it->second.key_value == key.value) {
-        ++m_hit_count;
-        const_cast<FrameCache*>(this)->touch(key.hash);
-        return it->second.framebuffer;
+    FrameEntry entry;
+    if (m_frames.lookup(key.hash, entry)) {
+        if (entry.key_value == key.value) {
+            return entry.framebuffer;
+        }
     }
-    ++m_miss_count;
     return nullptr;
 }
 
 void FrameCache::store_frame(const FrameCacheKey& key, std::shared_ptr<const renderer2d::Framebuffer> frame) {
     if (!frame) return;
-    std::scoped_lock lock(m_mutex);
-    const std::size_t size = estimate_frame_size(*frame);
-    if (m_entries.contains(key.hash)) remove_entry(key.hash);
-
-    m_frames.insert_or_assign(key.hash, FrameEntry{key.value, frame});
-    m_current_usage_bytes += size;
-    m_entries[key.hash] = EntryInfo{EntryType::Frame, size};
-    m_lru_list.push_back(key.hash);
-    m_lru_iterators[key.hash] = std::prev(m_lru_list.end());
-    evict_if_needed();
+    m_frames.store(key.hash, FrameEntry{key.value, frame}, estimate_frame_size(*frame));
 }
 
 std::shared_ptr<const renderer2d::Framebuffer> FrameCache::lookup_frame(std::uint64_t key) const {
-    std::scoped_lock lock(m_mutex);
-    auto it = m_frames.find(key);
-    if (it != m_frames.end()) {
-        ++m_hit_count;
-        const_cast<FrameCache*>(this)->touch(key);
-        return it->second.framebuffer;
+    FrameEntry entry;
+    if (m_frames.lookup(key, entry)) {
+        return entry.framebuffer;
     }
-    ++m_miss_count;
     return nullptr;
 }
 
 void FrameCache::store_frame(std::uint64_t key, std::shared_ptr<const renderer2d::Framebuffer> frame) {
     if (!frame) return;
-    std::scoped_lock lock(m_mutex);
-    const std::size_t size = estimate_frame_size(*frame);
-    if (m_entries.contains(key)) remove_entry(key);
-
-    m_frames.insert_or_assign(key, FrameEntry{"", frame});
-    m_current_usage_bytes += size;
-    m_entries[key] = EntryInfo{EntryType::Frame, size};
-    m_lru_list.push_back(key);
-    m_lru_iterators[key] = std::prev(m_lru_list.end());
-    evict_if_needed();
-}
-
-void FrameCache::touch(std::uint64_t key) {
-    auto it = m_lru_iterators.find(key);
-    if (it != m_lru_iterators.end()) {
-        m_lru_list.erase(it->second);
-        m_lru_list.push_back(key);
-        m_lru_iterators[key] = std::prev(m_lru_list.end());
-    }
+    m_frames.store(key, FrameEntry{"", frame}, estimate_frame_size(*frame));
 }
 
 void FrameCache::set_budget_bytes(std::size_t bytes) {
-    std::scoped_lock lock(m_mutex);
     m_max_budget_bytes = bytes;
-    evict_if_needed();
+    
+    // Redistribute budget dynamically:
+    // Properties: 5% (min 1MB)
+    // Layers: 15% (min 5MB)
+    // Compositions: 15% (min 5MB)
+    // Frames: remaining 65%
+    std::size_t prop_budget = std::max<std::size_t>(1024 * 1024, bytes * 0.05);
+    std::size_t layer_budget = std::max<std::size_t>(5 * 1024 * 1024, bytes * 0.15);
+    std::size_t comp_budget = std::max<std::size_t>(5 * 1024 * 1024, bytes * 0.15);
+    std::size_t frame_budget = (bytes > (prop_budget + layer_budget + comp_budget))
+        ? (bytes - (prop_budget + layer_budget + comp_budget))
+        : (10 * 1024 * 1024);
+
+    m_properties.set_capacity_bytes(prop_budget);
+    m_layers.set_capacity_bytes(layer_budget);
+    m_compositions.set_capacity_bytes(comp_budget);
+    m_frames.set_capacity_bytes(frame_budget);
 }
 
 void FrameCache::evict_if_needed() {
-    if (m_max_budget_bytes == 0) return;
-    while (m_current_usage_bytes > m_max_budget_bytes && !m_lru_list.empty()) {
-        remove_entry(m_lru_list.front());
-    }
-}
-
-void FrameCache::remove_entry(std::uint64_t key) {
-    const auto it = m_entries.find(key);
-    if (it == m_entries.end()) return;
-
-    switch (it->second.type) {
-        case EntryType::Property: m_properties.erase(key); break;
-        case EntryType::Layer: m_layers.erase(key); break;
-        case EntryType::Composition: m_compositions.erase(key); break;
-        case EntryType::Frame: m_frames.erase(key); break;
-    }
-
-    m_current_usage_bytes -= it->second.size;
-    m_entries.erase(it);
-
-    auto lru_it = m_lru_iterators.find(key);
-    if (lru_it != m_lru_iterators.end()) {
-        m_lru_list.erase(lru_it->second);
-        m_lru_iterators.erase(lru_it);
-    }
+    // No-op: Auto-eviction is handled inside individual ShardedLruCaches during store operations
 }
 
 std::size_t FrameCache::current_usage_bytes() const {
-    std::scoped_lock lock(m_mutex);
-    return m_current_usage_bytes;
+    return m_properties.current_usage_bytes() + 
+           m_layers.current_usage_bytes() + 
+           m_compositions.current_usage_bytes() + 
+           m_frames.current_usage_bytes();
+}
+
+std::size_t FrameCache::hit_count() const noexcept {
+    return m_properties.hit_count() + 
+           m_layers.hit_count() + 
+           m_compositions.hit_count() + 
+           m_frames.hit_count();
+}
+
+std::size_t FrameCache::miss_count() const noexcept {
+    return m_properties.miss_count() + 
+           m_layers.miss_count() + 
+           m_compositions.miss_count() + 
+           m_frames.miss_count();
 }
 
 void FrameCache::clear() {
-    std::scoped_lock lock(m_mutex);
-    m_properties.clear(); m_layers.clear(); m_compositions.clear(); m_frames.clear();
-    m_entries.clear(); m_lru_list.clear(); m_lru_iterators.clear();
-    m_current_usage_bytes = 0; m_hit_count = 0; m_miss_count = 0;
+    m_properties.clear();
+    m_layers.clear();
+    m_compositions.clear();
+    m_frames.clear();
 }
 
 } // namespace tachyon

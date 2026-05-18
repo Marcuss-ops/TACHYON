@@ -97,6 +97,16 @@ struct CompiledPropertyTrack {
     std::vector<CompiledKeyframe> keyframes;
     std::optional<std::uint32_t> expression_index;
     std::optional<DataBindingSpec> binding;
+
+    [[nodiscard]] bool should_cache() const noexcept {
+        if (kind == Kind::Constant || kind == Kind::Binding) {
+            return false;
+        }
+        if (kind == Kind::Keyframed && keyframes.size() <= 1) {
+            return false;
+        }
+        return true;
+    }
 };
 
 struct CompiledLayer {
