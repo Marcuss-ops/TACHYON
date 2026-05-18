@@ -1,4 +1,5 @@
 #include "tachyon/scene/builder.h"
+#include "tachyon/scene/builder_detail.h"
 #include <algorithm>
 #include <iostream>
 #include <limits>
@@ -99,16 +100,8 @@ LayerBuilder& LayerBuilder::anchor(double x, double y) {
 }
 
 LayerBuilder& LayerBuilder::size(double w, double h) {
-    const auto clamp_to_int = [](double value) -> int {
-        const double bounded = std::clamp(
-            value,
-            static_cast<double>(std::numeric_limits<int>::min()),
-            static_cast<double>(std::numeric_limits<int>::max()));
-        return static_cast<int>(bounded);
-    };
-
-    spec_.transform.width = clamp_to_int(w);
-    spec_.transform.height = clamp_to_int(h);
+    spec_.transform.width = builder_detail::clamp_to_int(w);
+    spec_.transform.height = builder_detail::clamp_to_int(h);
     return *this;
 }
 

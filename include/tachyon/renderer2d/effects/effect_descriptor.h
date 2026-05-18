@@ -67,6 +67,24 @@ EffectDescriptor::Factory make_effect_factory() {
     };
 }
 
+/**
+ * @brief Creates an EffectImplementation for a surface effect of type EffectT.
+ */
+template <typename EffectT>
+EffectImplementation make_surface_effect(std::string_view id) {
+    return {
+        std::string(id),
+        [](const EvaluatedEffect&,
+           const SurfaceRGBA& input,
+           SurfaceRGBA& output,
+           const std::vector<const SurfaceRGBA*>&,
+           const EffectParams& params) {
+            EffectT effect;
+            output = effect.apply(input, params);
+        }
+    };
+}
+
 // register_effect_from_spec removed - use register_builtin_effects bridge instead.
 
 } // namespace tachyon::renderer2d

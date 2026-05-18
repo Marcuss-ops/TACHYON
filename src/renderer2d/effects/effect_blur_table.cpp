@@ -5,54 +5,13 @@
 namespace tachyon::renderer2d {
 
 std::vector<EffectImplementation> get_blur_effect_implementations() {
-    std::vector<EffectImplementation> implementations;
-
-    // Gaussian Blur
-    implementations.push_back({
-        "tachyon.effect.blur.gaussian",
-        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
-            GaussianBlurEffect effect;
-            output = effect.apply(input, params);
-        }
-    });
-
-    // Directional Blur
-    implementations.push_back({
-        "tachyon.effect.blur.directional",
-        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
-            DirectionalBlurEffect effect;
-            output = effect.apply(input, params);
-        }
-    });
-
-    // Radial Blur
-    implementations.push_back({
-        "tachyon.effect.blur.radial",
-        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
-            RadialBlurEffect effect;
-            output = effect.apply(input, params);
-        }
-    });
-
-    // Vector Blur
-    implementations.push_back({
-        "tachyon.effect.blur.vector",
-        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
-            VectorBlurEffect effect;
-            output = effect.apply(input, params);
-        }
-    });
-
-    // Motion Blur 2D
-    implementations.push_back({
-        "tachyon.effect.blur.motion_2d",
-        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
-            MotionBlur2DEffect effect;
-            output = effect.apply(input, params);
-        }
-    });
-
-    return implementations;
+    return {
+        make_surface_effect<GaussianBlurEffect>("tachyon.effect.blur.gaussian"),
+        make_surface_effect<DirectionalBlurEffect>("tachyon.effect.blur.directional"),
+        make_surface_effect<RadialBlurEffect>("tachyon.effect.blur.radial"),
+        make_surface_effect<VectorBlurEffect>("tachyon.effect.blur.vector"),
+        make_surface_effect<MotionBlur2DEffect>("tachyon.effect.blur.motion_2d")
+    };
 }
 
 } // namespace tachyon::renderer2d
