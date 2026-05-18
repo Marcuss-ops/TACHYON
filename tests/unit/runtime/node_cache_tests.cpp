@@ -1,10 +1,13 @@
 #include "test_utils.h"
 #include "tachyon/runtime/cache/node_cache.h"
+#include "tachyon/runtime/cache/sharded_lru_cache.h"
 #include "tachyon/renderer2d/core/framebuffer.h"
 #include <iostream>
 #include <memory>
 #include <string>
 #include <cassert>
+#include <thread>
+#include <vector>
 
 bool run_node_cache_tests() {
     std::cout << "[NodeCacheTests] Starting NodeCache unit tests...\n";
@@ -141,6 +144,68 @@ bool run_node_cache_tests() {
             return false;
         }
         std::cout << "[NodeCacheTests] Cache clear verified!\n";
+    }
+
+    // 5. Test NodeCache Move Semantics and Iterator Correction
+    {
+        NodeCache cache;
+        cache.set_capacity_bytes(1024 * 1024 * 10);
+        NodeCacheKey key1{123, 1, 0, 10, 10, 0.0, "sRGB", "high"};
+        NodeCacheKey key2{123, 2, 0, 10, 10, 0.0, "sRGB", "high"};
+
+        cache.store(key1, std::make_shared<SurfaceRGBA>(10, 10));
+        cache.store(key2, std::make_shared<SurfaceRGBA>(10, 10));
+
+        NodeCache moved_cache = std::move(cache);
+
+        if (moved_cache.lookup(key1) == nullptr || moved_cache.lookup(key2) == nullptr) {
+            std::cerr << "[NodeCacheTests] FAIL: Move constructor failed to preserve cached items.\n";
+            return false;
+        }
+
+        // Verify that lookup touching works perfectly inside the moved cache (validating iterator correction)
+        moved_cache.lookup(key1);
+
+        // Lower capacity to trigger eviction of key2
+        moved_cache.set_capacity_bytes(static_cast<std::size_t>(10 * 10 * 4 * sizeof(float) * 1.5)); // Fits only 1 surface
+
+        if (moved_cache.lookup(key1) == nullptr) {
+            std::cerr << "[NodeCacheTests] FAIL: MRU key1 incorrect eviction after move and capacity adjustment.\n";
+            return false;
+        }
+        if (moved_cache.lookup(key2) != nullptr) {
+            std::cerr << "[NodeCacheTests] FAIL: LRU key2 was not evicted after move and capacity adjustment.\n";
+            return false;
+        }
+
+        std::cout << "[NodeCacheTests] NodeCache move semantics and iterator correction verified!\n";
+    }
+
+    // 6. Test ShardedLruCache Concurrency and Sharding Safety
+    {
+        ShardedLruCache<std::uint64_t, double> sharded_cache(1024 * 1024 * 10); // 10MB
+        constexpr int num_threads = 8;
+        constexpr int ops_per_thread = 500;
+        std::vector<std::thread> thread_pool;
+
+        for (int t = 0; t < num_threads; ++t) {
+            thread_pool.emplace_back([&sharded_cache, t]() {
+                for (int i = 0; i < ops_per_thread; ++i) {
+                    std::uint64_t key = t * 10000 + i;
+                    sharded_cache.store(key, static_cast<double>(key), sizeof(double));
+                    double val = 0.0;
+                    if (sharded_cache.lookup(key, val)) {
+                        assert(val == static_cast<double>(key));
+                    }
+                }
+            });
+        }
+
+        for (auto& thread : thread_pool) {
+            thread.join();
+        }
+
+        std::cout << "[NodeCacheTests] ShardedLruCache concurrency and sharding safety verified!\n";
     }
 
     std::cout << "[NodeCacheTests] All NodeCache unit tests passed successfully!\n";

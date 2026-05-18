@@ -5,99 +5,18 @@
 namespace tachyon::renderer2d {
 
 std::vector<EffectImplementation> get_color_effect_implementations() {
-    std::vector<EffectImplementation> implementations;
-
-    // Levels
-    implementations.push_back({
-        "tachyon.effect.color.levels",
-        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
-            LevelsEffect effect;
-            output = effect.apply(input, params);
-        }
-    });
-
-    // Curves
-    implementations.push_back({
-        "tachyon.effect.color.curves",
-        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
-            CurvesEffect effect;
-            output = effect.apply(input, params);
-        }
-    });
-
-    // Fill
-    implementations.push_back({
-        "tachyon.effect.color.fill",
-        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
-            FillEffect effect;
-            output = effect.apply(input, params);
-        }
-    });
-
-    // Tint
-    implementations.push_back({
-        "tachyon.effect.color.tint",
-        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
-            TintEffect effect;
-            output = effect.apply(input, params);
-        }
-    });
-
-    // Hue/Saturation
-    implementations.push_back({
-        "tachyon.effect.color.hue_saturation",
-        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
-            HueSaturationEffect effect;
-            output = effect.apply(input, params);
-        }
-    });
-
-    // Color Balance
-    implementations.push_back({
-        "tachyon.effect.color.balance",
-        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
-            ColorBalanceEffect effect;
-            output = effect.apply(input, params);
-        }
-    });
-
-    // LUT
-    implementations.push_back({
-        "tachyon.effect.color.lut",
-        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
-            LUTEffect effect;
-            output = effect.apply(input, params);
-        }
-    });
-
-    // Chroma Key
-    implementations.push_back({
-        "tachyon.effect.color.chroma_key",
-        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
-            ChromaKeyEffect effect;
-            output = effect.apply(input, params);
-        }
-    });
-
-    // Light Wrap
-    implementations.push_back({
-        "tachyon.effect.color.light_wrap",
-        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
-            LightWrapEffect effect;
-            output = effect.apply(input, params);
-        }
-    });
-
-    // Matte Refinement
-    implementations.push_back({
-        "tachyon.effect.color.matte_refinement",
-        [](const EvaluatedEffect&, const SurfaceRGBA& input, SurfaceRGBA& output, const std::vector<const SurfaceRGBA*>&, const EffectParams& params) {
-            MatteRefinementEffect effect;
-            output = effect.apply(input, params);
-        }
-    });
-
-    return implementations;
+    return {
+        make_surface_effect<LevelsEffect>("tachyon.effect.color.levels"),
+        make_surface_effect<CurvesEffect>("tachyon.effect.color.curves"),
+        make_surface_effect<FillEffect>("tachyon.effect.color.fill"),
+        make_surface_effect<TintEffect>("tachyon.effect.color.tint"),
+        make_surface_effect<HueSaturationEffect>("tachyon.effect.color.hue_saturation"),
+        make_surface_effect<ColorBalanceEffect>("tachyon.effect.color.balance"),
+        make_surface_effect<LUTEffect>("tachyon.effect.color.lut"),
+        make_surface_effect<ChromaKeyEffect>("tachyon.effect.color.chroma_key"),
+        make_surface_effect<LightWrapEffect>("tachyon.effect.color.light_wrap"),
+        make_surface_effect<MatteRefinementEffect>("tachyon.effect.color.matte_refinement")
+    };
 }
 
 } // namespace tachyon::renderer2d

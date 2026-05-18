@@ -127,3 +127,34 @@ macro(tachyon_deprecate_target legacy_name new_name)
         target_link_libraries(${legacy_name} INTERFACE ${new_name})
     endif()
 endmacro()
+
+# Standardizes the creation of a Tachyon test suite.
+macro(tachyon_add_test_suite)
+    set(options)
+    set(oneValueArgs TARGET LABELS)
+    set(multiValueArgs SOURCES LIBS DEFINITIONS)
+    cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    add_executable(${ARG_TARGET} ${ARG_SOURCES})
+
+    target_compile_definitions(${ARG_TARGET} PRIVATE TACHYON_TESTS_SOURCE_DIR="${TACHYON_TESTS_SOURCE_DIR}")
+    if(ARG_DEFINITIONS)
+        target_compile_definitions(${ARG_TARGET} PRIVATE ${ARG_DEFINITIONS})
+    endif()
+
+    tachyon_configure_common(${ARG_TARGET})
+
+    if(ARG_LIBS)
+        target_link_libraries(${ARG_TARGET} PRIVATE ${ARG_LIBS})
+    endif()
+
+    add_test(
+        NAME ${ARG_TARGET}
+        COMMAND ${ARG_TARGET}
+    )
+
+    if(ARG_LABELS)
+        tachyon_set_test_labels(${ARG_TARGET} ${ARG_LABELS})
+    endif()
+endmacro()
+

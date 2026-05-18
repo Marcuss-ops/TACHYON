@@ -5,26 +5,12 @@
 #include "tachyon/runtime/core/data/compiled_scene.h"
 #include "tachyon/runtime/execution/property_sampling.h"
 #include "tachyon/core/scene/evaluator/layer_utils.h"
+#include "tachyon/runtime/core/graph/layer_kind_resolver.h"
 #include <chrono>
 #include <filesystem>
 #include <cmath>
 
 namespace tachyon {
-
-static LayerType resolve_layer_type_internal(std::uint32_t type_id) {
-    switch (type_id) {
-        case 1: return LayerType::Solid;
-        case 2: return LayerType::Shape;
-        case 3: return LayerType::Image;
-        case 4: return LayerType::Text;
-        case 5: return LayerType::Precomp;
-        case 6: return LayerType::Procedural;
-        case 8: return LayerType::Video;
-        case 11: return LayerType::Mask;
-        case 12: return LayerType::NullLayer;
-        default: return LayerType::NullLayer;
-    }
-}
 
 static scene::EvaluatedShapePath to_evaluated_shape_path_internal(const std::optional<ShapePathSpec>& spec) {
     scene::EvaluatedShapePath result;
@@ -98,7 +84,7 @@ void evaluate_layer(
     state->identity.layer_id = std::to_string(layer.node.node_id);
     state->identity.id = ""; 
     state->identity.name = layer.name;
-    state->identity.type = resolve_layer_type_internal(layer.type_id);
+    state->identity.type = LayerKindResolver::resolve(layer.type_id);
     state->identity.enabled = (layer.flags & 0x01U) != 0U;
     state->identity.visible = (layer.flags & 0x02U) != 0U;
     state->identity.is_adjustment_layer = (layer.flags & 0x08U) != 0U;
@@ -162,6 +148,9 @@ void evaluate_layer(
     auto sample_property = [&](std::size_t index, double fallback) -> double {
         if (index >= layer.property_indices.size()) return fallback;
         const auto& track = scene.property_tracks[layer.property_indices[index]];
+        if (!track.should_cache()) {
+            return static_cast<double>(runtime::sample_compiled_property_track(track, static_cast<float>(frame_time_seconds)));
+        }
         const std::uint64_t prop_node_key = build_node_key(frame_key, track.node);
         CacheKeyBuilder prop_builder;
         prop_builder.add_u64(prop_node_key);
@@ -173,7 +162,9 @@ void evaluate_layer(
             return sampled;
         }
         if (context.diagnostics) context.diagnostics->property_misses++;
-        return static_cast<double>(runtime::sample_compiled_property_track(track, static_cast<float>(frame_time_seconds)));
+        double value = static_cast<double>(runtime::sample_compiled_property_track(track, static_cast<float>(frame_time_seconds)));
+        executor.m_cache.store_property(prop_cache_key, value);
+        return value;
     };
 
     state->transform.opacity = static_cast<float>(sample_property(CompiledLayer::Opacity, 1.0));

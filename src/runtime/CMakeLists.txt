@@ -97,13 +97,33 @@ set(TachyonRuntimeSources
     
     resource/render_context.cpp
     resource/surface_pool.cpp
-    
+)
+
+# Tachyon Runtime Telemetry Sub-Module
+set(TachyonRuntimeTelemetrySources
     telemetry/batch_telemetry_aggregator.cpp
     telemetry/process_resource_sampler.cpp
     telemetry/render_telemetry_record.cpp
     telemetry/telemetry_writer.cpp
     telemetry/sqlite_telemetry_store.cpp
+    telemetry/thread_local_telemetry.cpp
 )
+
+add_library(TachyonRuntimeTelemetry STATIC ${TachyonRuntimeTelemetrySources})
+tachyon_configure_common(TachyonRuntimeTelemetry)
+tachyon_link_infra(TachyonRuntimeTelemetry)
+
+target_link_libraries(TachyonRuntimeTelemetry
+    PUBLIC
+        TachyonCore
+    PRIVATE
+        TachyonPlatform
+)
+
+if(TACHYON_ENABLE_SQLITE_TELEMETRY)
+    target_link_libraries(TachyonRuntimeTelemetry PRIVATE tachyon_sqlite)
+    target_compile_definitions(TachyonRuntimeTelemetry PUBLIC TACHYON_ENABLE_SQLITE_TELEMETRY)
+endif()
 
 add_library(TachyonRuntime STATIC ${TachyonRuntimeSources})
 tachyon_configure_common(TachyonRuntime)
@@ -118,12 +138,9 @@ target_link_libraries(TachyonRuntime
         TachyonBackends
         TachyonOutput
         TachyonOperations
+        TachyonRuntimeTelemetry
     PRIVATE
         TachyonPlatform
 )
 
-if(TACHYON_ENABLE_SQLITE_TELEMETRY)
-    target_link_libraries(TachyonRuntime PRIVATE tachyon_sqlite)
-    target_compile_definitions(TachyonRuntime PUBLIC TACHYON_ENABLE_SQLITE_TELEMETRY)
-endif()
 

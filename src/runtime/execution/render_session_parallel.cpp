@@ -2,6 +2,7 @@
 #include "tachyon/runtime/execution/frames/frame_executor.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/cache/frame_cache.h"
+#include "tachyon/runtime/telemetry/thread_local_telemetry.h"
 #include "tachyon/runtime/resource/render_context.h"
 #include "tachyon/runtime/resource/surface_pool.h"
 #include "tachyon/runtime/cache/disk_cache.h"
@@ -213,19 +214,15 @@ void render_frames_parallel_internal(
                 executed_frame = executor.execute(compiled_scene, frame_plan, task, snapshot, local_context);
             }
 
-            // Track rasterized pixels and tiles processed for cache miss execution path
-            if (local_context.total_pixels_counter) {
-                local_context.total_pixels_counter->fetch_add(frame_plan.composition.width * frame_plan.composition.height);
-            }
-            if (local_context.total_tiles_counter) {
-                int tile_size = frame_plan.quality_policy.tile_size;
-                if (tile_size > 0) {
-                    int tiles_x = (frame_plan.composition.width + tile_size - 1) / tile_size;
-                    int tiles_y = (frame_plan.composition.height + tile_size - 1) / tile_size;
-                    local_context.total_tiles_counter->fetch_add(tiles_x * tiles_y);
-                } else {
-                    local_context.total_tiles_counter->fetch_add(1);
-                }
+            // Track rasterized pixels and tiles processed for cache miss execution path via thread-local telemetry
+            runtime::tl_telemetry.pixels_processed += frame_plan.composition.width * frame_plan.composition.height;
+            int tile_size = frame_plan.quality_policy.tile_size;
+            if (tile_size > 0) {
+                int tiles_x = (frame_plan.composition.width + tile_size - 1) / tile_size;
+                int tiles_y = (frame_plan.composition.height + tile_size - 1) / tile_size;
+                runtime::tl_telemetry.tiles_processed += tiles_x * tiles_y;
+            } else {
+                runtime::tl_telemetry.tiles_processed += 1;
             }
             
             const auto frame_end = std::chrono::high_resolution_clock::now();
@@ -296,6 +293,7 @@ void render_frames_parallel_internal(
         if (progress_callback) {
             progress_callback(completed, task_count);
         }
+        runtime::flush_thread_local_telemetry(pixels_counter, tiles_counter);
         TACHYON_FRAME_MARK;
     };
 

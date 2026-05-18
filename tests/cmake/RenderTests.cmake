@@ -2,21 +2,15 @@
 # 6. RENDER DOMAIN: TachyonRenderTests
 # renderer2d/*, asset resolution
 # ---------------------------------------------------------
-add_executable(TachyonRenderTests
-    unit/mains/test_canary_main.cpp
-    unit/render/transition_canary_tests.cpp
-    unit/render/transition_gallery.cpp
-    unit/render/remotion_demo_test.cpp
-    unit/render/light_leak_lookbook_test.cpp
-)
-
-target_compile_definitions(TachyonRenderTests
-    PRIVATE
-        TACHYON_TESTS_SOURCE_DIR="${TACHYON_TESTS_SOURCE_DIR}"
-)
-
-target_link_libraries(TachyonRenderTests
-    PRIVATE
+tachyon_add_test_suite(
+    TARGET TachyonRenderTests
+    SOURCES
+        unit/mains/test_canary_main.cpp
+        unit/render/transition_canary_tests.cpp
+        unit/render/transition_gallery.cpp
+        unit/render/remotion_demo_test.cpp
+        unit/render/light_leak_lookbook_test.cpp
+    LIBS
         TachyonPlatform
         TachyonTestUtils
         TachyonPresets
@@ -24,10 +18,5 @@ target_link_libraries(TachyonRenderTests
         TachyonRenderer2D
         TachyonRuntime
         TachyonTimeline
+    LABELS render
 )
-
-add_test(
-    NAME TachyonRenderTests
-    COMMAND TachyonRenderTests
-)
-tachyon_set_test_labels(TachyonRenderTests render)

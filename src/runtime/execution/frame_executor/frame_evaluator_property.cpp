@@ -13,6 +13,10 @@ void evaluate_property(
     std::uint64_t node_key,
     double frame_time_seconds) {
 
+    if (!track.should_cache()) {
+        return;
+    }
+
     CacheKeyBuilder prop_builder;
     const bool is_constant = (track.kind == CompiledPropertyTrack::Kind::Constant);
     

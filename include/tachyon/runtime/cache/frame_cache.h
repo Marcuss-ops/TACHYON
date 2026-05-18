@@ -4,14 +4,12 @@
 #include "tachyon/runtime/core/graph/runtime_render_graph.h"
 #include "tachyon/core/scene/state/evaluated_state.h"
 #include "tachyon/runtime/execution/planning/render_plan.h"
+#include "tachyon/runtime/cache/sharded_lru_cache.h"
 
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <list>
-#include <mutex>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 namespace tachyon {
@@ -46,42 +44,25 @@ public:
 
     void clear();
 
-    [[nodiscard]] std::size_t hit_count() const noexcept { return m_hit_count; }
-    [[nodiscard]] std::size_t miss_count() const noexcept { return m_miss_count; }
+    [[nodiscard]] std::size_t hit_count() const noexcept;
+    [[nodiscard]] std::size_t miss_count() const noexcept;
 
     void set_budget_bytes(std::size_t bytes);
     void evict_if_needed();
     [[nodiscard]] std::size_t current_usage_bytes() const;
 
-
-private:
-    mutable std::mutex m_mutex;
-    mutable std::size_t m_hit_count{0};
-    mutable std::size_t m_miss_count{0};
-
-    std::unordered_map<std::uint64_t, double> m_properties;
-    std::unordered_map<std::uint64_t, std::shared_ptr<const scene::EvaluatedLayerState>> m_layers;
-    std::unordered_map<std::uint64_t, std::shared_ptr<const scene::EvaluatedCompositionState>> m_compositions;
     struct FrameEntry {
         std::string key_value;
         std::shared_ptr<const renderer2d::Framebuffer> framebuffer;
     };
-    std::unordered_map<std::uint64_t, FrameEntry> m_frames;
 
-    enum class EntryType { Property, Layer, Composition, Frame };
-    struct EntryInfo {
-        EntryType type;
-        std::size_t size;
-    };
-    std::unordered_map<std::uint64_t, EntryInfo> m_entries;
-    std::list<std::uint64_t> m_lru_list;
-    std::unordered_map<std::uint64_t, std::list<std::uint64_t>::iterator> m_lru_iterators;
+private:
+    ShardedLruCache<std::uint64_t, double> m_properties{50 * 1024 * 1024}; // 50MB
+    ShardedLruCache<std::uint64_t, std::shared_ptr<const scene::EvaluatedLayerState>> m_layers{150 * 1024 * 1024}; // 150MB
+    ShardedLruCache<std::uint64_t, std::shared_ptr<const scene::EvaluatedCompositionState>> m_compositions{150 * 1024 * 1024}; // 150MB
+    ShardedLruCache<std::uint64_t, FrameEntry> m_frames{674 * 1024 * 1024}; // 674MB
 
     std::size_t m_max_budget_bytes{1024ULL * 1024 * 1024}; // 1GB default
-    std::size_t m_current_usage_bytes{0};
-
-    void touch(std::uint64_t key);
-    void remove_entry(std::uint64_t key);
 };
 
 
