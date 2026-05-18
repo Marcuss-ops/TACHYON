@@ -41,6 +41,15 @@ bool verify_golden_frame(const std::string& test_id, const SceneSpec& scene, int
     std::string baseline_dir = tests_src_dir + "/golden/baselines/";
     std::string baseline_path = baseline_dir + test_id + ".png";
 
+    const char* tol_env = std::getenv("TACHYON_GOLDEN_TOLERANCE");
+    if (tol_env) {
+        try {
+            tolerance_rms = std::stod(tol_env);
+        } catch (...) {
+            // Keep default if parsing fails
+        }
+    }
+
     const char* update_env = std::getenv("TACHYON_UPDATE_GOLDEN");
     if (update_env && std::string(update_env) == "1") {
         std::cout << "[Golden] Updating baseline: " << baseline_path << "\n";
@@ -120,10 +129,31 @@ ComparisonResult compare_to_golden(
 }
 
 bool save_image(const std::string& path, const uint8_t* data, int width, int height) {
+    try {
+        std::filesystem::create_directories(std::filesystem::path(path).parent_path());
+    } catch (const std::exception& e) {
+        std::cerr << "[Golden] Failed to create directories for: " << path << " (" << e.what() << ")\n";
+        return false;
+    }
     // Use project wrapper to avoid STB definition conflicts
     renderer2d::FramebufferRGBA8 fb(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
     std::memcpy(fb.mutable_pixels().data(), data, static_cast<size_t>(width) * height * 4);
     return fb.save_png(path);
+}
+
+bool verify_golden_sequence(
+    const std::string& test_id,
+    const SceneSpec& scene,
+    const std::vector<int>& frames,
+    double tolerance_rms) {
+    bool ok = true;
+    for (int frame : frames) {
+        char frame_str[32];
+        std::snprintf(frame_str, sizeof(frame_str), "frame_%06d", frame);
+        const std::string frame_id = test_id + "/" + frame_str;
+        ok = verify_golden_frame(frame_id, scene, frame, tolerance_rms) && ok;
+    }
+    return ok;
 }
 
 } // namespace tachyon::test

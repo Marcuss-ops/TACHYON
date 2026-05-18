@@ -138,6 +138,10 @@ std::unique_ptr<FrameOutputSink> create_frame_output_sink(const RenderPlan& plan
         return nullptr;
     }
 
+    if (plan.output.profile.format == OutputFormat::SharedMemory || plan.output.destination.path.rfind("shm://", 0) == 0) {
+        return create_shared_memory_sink();
+    }
+
     if (output_requests_video_file(plan.output)) {
         return create_async_output_sink(create_ffmpeg_pipe_sink());
     }

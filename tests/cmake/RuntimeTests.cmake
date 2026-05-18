@@ -7,6 +7,7 @@ add_executable(TachyonRuntimeTests
     unit/mains/test_stubs.cpp
     unit/runtime/telemetry/sqlite_telemetry_store_tests.cpp
     unit/runtime/node_cache_tests.cpp
+    unit/runtime/plugin_tests.cpp
 )
 
 
@@ -20,6 +21,8 @@ target_link_libraries(TachyonRuntimeTests
         TachyonPlatform
         TachyonTestUtils
         TachyonCore
+        TachyonScene
+        TachyonRenderer2D
         TachyonRuntime
 )
 

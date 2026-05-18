@@ -22,6 +22,16 @@ struct ComparisonResult {
 bool verify_golden_frame(const std::string& test_id, const SceneSpec& scene, int frame_number, double tolerance_rms = 0.01);
 
 /**
+ * @brief Helper to render a JIT scene over a sequence of strategic frames and verify them against golden baselines.
+ */
+bool verify_golden_sequence(
+    const std::string& test_id,
+    const SceneSpec& scene,
+    const std::vector<int>& frames,
+    double tolerance_rms = 0.01
+);
+
+/**
  * @brief Compares two images and returns detailed error metrics.
  * 
  * @param baseline_path Path to the reference "golden" image.

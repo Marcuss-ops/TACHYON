@@ -7,6 +7,8 @@
 #include "tachyon/runtime/frame_arena.h"
 #include "tachyon/runtime/cache/frame_cache.h"
 #include "tachyon/runtime/execution/session/render_session.h"
+#include "tachyon/runtime/registry/engine_registry.h"
+#include "tachyon/renderer2d/effects/effect_host.h"
 #include <iostream>
 #include <sstream>
 
@@ -32,7 +34,26 @@ ResolutionResult<ExecutedFrame> RuntimeFacade::render_frame(const CompiledScene&
     
     // Setup minimal execution context for a single frame
     FrameArena arena;
-    RenderContext context;
+    RenderContext context(session.precomp_cache());
+    
+    // Initialize surface pool size if not already prepared
+    if (session.surface_pool()) {
+        session.surface_pool()->prepare(
+            scene.compositions.empty() ? 1920U : static_cast<std::uint32_t>(scene.compositions.front().width),
+            scene.compositions.empty() ? 1080U : static_cast<std::uint32_t>(scene.compositions.front().height),
+            1U
+        );
+        context.surface_pool = session.surface_pool();
+    }
+
+    const auto* bundle = session.registry_bundle();
+    if (bundle) {
+        context.transition_registry = &bundle->transitions;
+#ifdef TACHYON_ENABLE_TEXT
+        context.text_registry = bundle->text_registry.get();
+#endif
+        context.effects = renderer2d::create_effect_host(bundle->effects);
+    }
     
     // We need a RenderPlan and FrameRenderTask
     // These are usually built by the higher-level pipeline.
@@ -57,7 +78,7 @@ ResolutionResult<ExecutedFrame> RuntimeFacade::render_frame(const CompiledScene&
     task.frame_number = frame;
     task.time_seconds = static_cast<double>(frame) / static_cast<double>(comp.fps > 0 ? comp.fps : 60U);
     
-    FrameExecutor executor(arena, session.cache());
+    FrameExecutor executor(arena, session.cache(), session.surface_pool().get());
     result.value = executor.execute(scene, plan, task, context);
     
     if (!result.value->success) {

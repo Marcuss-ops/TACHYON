@@ -43,6 +43,8 @@ CommandDescriptor make_probe_command();
 CommandDescriptor make_concat_command();
 CommandDescriptor make_fetch_fonts_command();
 CommandDescriptor make_version_command();
+CommandDescriptor make_bench_command();
+CommandDescriptor make_plugins_command();
 
 } // namespace tachyon
 

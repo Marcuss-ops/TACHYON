@@ -10,6 +10,7 @@ add_executable(TachyonGoldenTests
     unit/render/remotion_demo_test.cpp
     unit/render/light_leak_lookbook_test.cpp
     unit/render/golden_smoke_tests.cpp
+    unit/render/golden_sequence_tests.cpp
     golden/scenes/precomp_basic.cpp
     golden/scenes/text_basic.cpp
     golden/scenes/shape_basic.cpp

@@ -111,9 +111,11 @@ public:
 
     FrameCache& cache() { return m_cache; }
     const FrameCache& cache() const { return m_cache; }
+    const runtime::EngineRegistry* registry_bundle() const { return m_bundle_ptr ? m_bundle_ptr : m_bundle.get(); }
     std::shared_ptr<renderer2d::PrecompCache> precomp_cache() { return m_precomp_cache; }
     const std::shared_ptr<renderer2d::PrecompCache>& precomp_cache() const { return m_precomp_cache; }
     
+    std::shared_ptr<SurfacePool> surface_pool() { return m_surface_pool; }
     void set_media_prefetcher(std::unique_ptr<media::IMediaPrefetcher> prefetcher) { m_prefetcher = std::move(prefetcher); }
     void set_playback_scheduler(std::unique_ptr<media::IPlaybackScheduler> scheduler) { m_scheduler = std::move(scheduler); }
     void set_audio_exporter(audio::IAudioExporter* exporter) { m_audio_exporter = exporter; }

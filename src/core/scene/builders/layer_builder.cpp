@@ -88,6 +88,11 @@ LayerBuilder& LayerBuilder::position(double x, double y) {
     return *this;
 }
 
+LayerBuilder& LayerBuilder::position(const AnimatedVector2Spec& pos_spec) {
+    spec_.transform.transform.position_property = pos_spec;
+    return *this;
+}
+
 LayerBuilder& LayerBuilder::anchor(double x, double y) {
     spec_.transform.transform.anchor_point.value = math::Vector2{static_cast<float>(x), static_cast<float>(y)};
     return *this;
@@ -156,6 +161,11 @@ LayerBuilder& LayerBuilder::parent(std::string parent_id) {
 
 LayerBuilder& LayerBuilder::motion_blur(bool enabled) {
     spec_.identity.motion_blur = enabled;
+    return *this;
+}
+
+LayerBuilder& LayerBuilder::blend_mode(BlendMode mode) {
+    spec_.blend_mode = mode;
     return *this;
 }
 

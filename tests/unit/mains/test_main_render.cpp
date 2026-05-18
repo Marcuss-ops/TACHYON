@@ -21,6 +21,7 @@ bool run_light_leak_transitions_tests();
 
 namespace tachyon::test {
 bool run_golden_smoke_test();
+bool run_golden_sequence_tests();
 }
 
 int main(int argc, char** argv) {
@@ -38,6 +39,7 @@ int main(int argc, char** argv) {
         {"transition_fast_paths", run_transition_fast_paths_tests},
         {"light_leak_transitions", run_light_leak_transitions_tests},
         {"golden_smoke", tachyon::test::run_golden_smoke_test},
+        {"golden_sequence", tachyon::test::run_golden_sequence_tests},
         {"evaluated_composition_renderer", run_evaluated_composition_renderer_tests},
         {"path_rasterizer", run_path_rasterizer_tests},
         {"path_rasterizer_aa", run_path_rasterizer_aa_tests},
