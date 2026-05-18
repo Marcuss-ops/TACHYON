@@ -5,7 +5,6 @@
 #include "tachyon/runtime/core/data/compiled_scene.h"
 #include "tachyon/runtime/execution/property_sampling.h"
 #include "tachyon/core/scene/evaluator/layer_utils.h"
-#include "tachyon/runtime/core/graph/layer_kind_resolver.h"
 #include <chrono>
 #include <filesystem>
 #include <cmath>
@@ -84,7 +83,7 @@ void evaluate_layer(
     state->identity.layer_id = std::to_string(layer.node.node_id);
     state->identity.id = ""; 
     state->identity.name = layer.name;
-    state->identity.type = LayerKindResolver::resolve(layer.type_id);
+    state->identity.type = layer.kind;
     state->identity.enabled = (layer.flags & 0x01U) != 0U;
     state->identity.visible = (layer.flags & 0x02U) != 0U;
     state->identity.is_adjustment_layer = (layer.flags & 0x08U) != 0U;

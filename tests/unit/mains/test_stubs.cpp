@@ -37,7 +37,6 @@ bool run_image_decode_tests() { return true; }
 bool run_media_manager_cache_tests() { return true; }
 bool run_render_job_tests() { return true; }
 bool run_optical_flow_tests() { return true; }
-bool run_frame_cache_tests() { return true; }
 bool run_frame_cache_budget_tests() { return true; }
 bool run_tiling_integration_tests() { return true; }
 
@@ -89,7 +88,6 @@ bool run_preview_dev_workflow_tests() { return true; }
 bool run_cli_tests() { return true; }
 
 // Runtime Extra
-bool run_determinism_tests() { return true; }
 bool run_scene_hash_coverage_tests() { return true; }
 bool run_runtime_policy_tests() { return true; }
 bool run_jit_render_tests() { return true; }

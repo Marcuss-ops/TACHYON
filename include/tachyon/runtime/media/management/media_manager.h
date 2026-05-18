@@ -34,12 +34,6 @@ enum class MediaFallbackPolicy {
     UseOriginal       // Use original even if proxy requested
 };
 
-enum class ResolutionPurpose {
-    Playback,
-    Export,
-    Analysis
-};
-
 class MediaManager : public IMediaProvider {
 public:
     MediaManager();

@@ -13,6 +13,8 @@
 
 #include "tachyon/core/media/asset_resolver_interface.h"
 
+namespace tachyon { struct RenderContext; }
+
 namespace tachyon::media {
 
 class AssetManager;
@@ -36,6 +38,11 @@ public:
                   void* font_registry = nullptr
 #endif
     );
+
+    /**
+     * @brief Centralized resolution method for all asset requests.
+     */
+    ResolvedAsset resolve(const AssetRequest& request, RenderContext& context) const override;
 
     /**
      * @brief Resolves a string specification into an absolute filesystem path.

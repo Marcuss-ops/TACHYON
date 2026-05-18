@@ -1,5 +1,6 @@
 #include "layer_compiler.h"
 #include "tachyon/runtime/compiler/property_compiler.h"
+#include "tachyon/runtime/core/graph/layer_kind_resolver.h"
 #include <algorithm>
 
 namespace tachyon {
@@ -18,6 +19,7 @@ CompiledLayer LayerCompiler::compile_layer(
 
     // Resolve Type
     compiled_layer.type_id = compiled_type_id_from_layer_type(layer.identity.type);
+    compiled_layer.kind = LayerKindResolver::resolve(compiled_layer.type_id);
     if (compiled_layer.type_id == 0 && layer.identity.type != LayerType::Unknown) {
         diagnostics.add_warning("COMPILER_W001",
             "Layer '" + layer.identity.id + "' has unknown type '" + std::string(to_canonical_layer_type_string(layer.identity.type)) + "', will render as null layer.",

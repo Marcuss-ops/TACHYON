@@ -38,8 +38,8 @@ bool run_sqlite_telemetry_store_tests() {
     }
 
     // 2.5 Verify version
-    if (store.user_version_for_test() != 3) {
-        std::cerr << "[TelemetryStore] FAIL: User version should be 3 after initialization (got " << store.user_version_for_test() << ")\n";
+    if (store.user_version_for_test() != 4) {
+        std::cerr << "[TelemetryStore] FAIL: User version should be 4 after initialization (got " << store.user_version_for_test() << ")\n";
         return false;
     }
 
@@ -93,7 +93,10 @@ bool run_sqlite_telemetry_store_tests() {
     run_record.compiler_info = "clang-18";
     run_record.exit_code = 0;
     run_record.error_category = "";
-    run_record.total_pixels_processed = 8294400;  // 3840x2160
+    run_record.total_pixel_ops = 8294400;  // 3840x2160
+    run_record.rasterized_pixels = 7000000;
+    run_record.blend_pixel_ops = 1294400;
+    run_record.encoded_pixels = 8294400;
     run_record.total_tiles = 120;
     run_record.memory_samples = "120.5,122.3,125.1,128.7,130.2";
     run_record.cpu_util_samples = "45.2,48.7,52.1";
@@ -226,7 +229,10 @@ bool run_sqlite_telemetry_store_tests() {
         gr.compiler_info = "gcc-13";
         gr.exit_code = 0;
         gr.error_category = "";
-        gr.total_pixels_processed = 1000;
+        gr.total_pixel_ops = 1000;
+        gr.rasterized_pixels = 800;
+        gr.blend_pixel_ops = 200;
+        gr.encoded_pixels = 1000;
         gr.total_tiles = 10;
         gr.memory_samples = "100,200,150";
         gr.cpu_util_samples = "50,60";

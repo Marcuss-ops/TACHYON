@@ -2,12 +2,96 @@
 #include "tachyon/runtime/media/management/asset_manager.h"
 #include "tachyon/core/assets/asset_collector.h"
 #include "tachyon/core/media/resolved_asset.h"
+#include "tachyon/runtime/resource/render_context.h"
+#ifdef TACHYON_ENABLE_MEDIA
+#include "tachyon/runtime/media/management/media_manager.h"
+#endif
 #include <iostream>
 #include <algorithm>
 #include <string>
 #include <map>
 
 namespace tachyon::media {
+
+ResolvedAsset AssetResolver::resolve(const AssetRequest& request, RenderContext& context) const {
+    ResolvedAsset result;
+    result.id = request.id;
+    result.kind = request.kind;
+
+    AssetType type = AssetType::UNKNOWN;
+    switch (request.kind) {
+        case AssetKind::Image: type = AssetType::IMAGE; result.type_name = "image"; break;
+        case AssetKind::Video: type = AssetType::VIDEO; result.type_name = "video"; break;
+        case AssetKind::Audio: type = AssetType::AUDIO; result.type_name = "audio"; break;
+        case AssetKind::Font: type = AssetType::FONT; result.type_name = "font"; break;
+        default: break;
+    }
+    result.type = type;
+
+    // 1. Resolve Path
+    std::string path_spec = request.path.string();
+    if (path_spec.empty()) {
+        path_spec = request.id;
+    }
+
+    auto path_opt = this->resolve_path(path_spec, type);
+    if (!path_opt) {
+        result.exists = false;
+        result.source_path = path_spec;
+        result.diagnostics.add_error("ASSET_NOT_FOUND", "Failed to resolve asset path: " + path_spec);
+        return result;
+    }
+    
+    result.source_path = *path_opt;
+    result.runtime_path = *path_opt;
+    result.exists = true;
+
+#ifdef TACHYON_ENABLE_MEDIA
+    auto media_mgr = std::dynamic_pointer_cast<MediaManager>(context.media);
+    
+    // 2. Proxy Fallback (if applicable)
+    if (media_mgr && request.purpose == ResolutionPurpose::Playback && media_mgr->use_proxies()) {
+        if (type == AssetType::VIDEO || type == AssetType::IMAGE) {
+            std::string proxy_path = media_mgr->proxy_manifest().resolve_for_playback(result.source_path.string(), request.target_width ? request.target_width : 1280);
+            if (proxy_path != result.source_path.string()) {
+                result.runtime_path = proxy_path;
+                result.uses_proxy = true;
+            }
+        }
+    }
+
+    // 3. Decode & Load Data
+    if (type == AssetType::IMAGE) {
+        if (media_mgr) {
+            const renderer2d::SurfaceRGBA* img = media_mgr->get_image(result, request.alpha_mode, &result.diagnostics);
+            if (img) {
+                // Return a lightweight view or shared copy if it's cached.
+                // MediaManager usually caches it. But we need a shared_ptr for the API.
+                // Actually, our ImageManager provides shared_ptr.
+                result.image_frame = media_mgr->image_manager().get_image_shared(result.runtime_path, request.alpha_mode);
+            }
+        } else if (m_image_manager) {
+            result.image_frame = m_image_manager->get_image_shared(result.runtime_path, request.alpha_mode);
+        }
+    } else if (type == AssetType::VIDEO) {
+        if (media_mgr) {
+            const renderer2d::SurfaceRGBA* frame = media_mgr->get_video_frame(result, request.time_seconds, &result.diagnostics);
+            if (frame) {
+                // The frame is managed by MediaManager's cache. 
+                // We'd ideally return a shared_ptr, but for now we create a lightweight aliasing pointer or similar.
+                // To keep it safe, since MediaManager returns raw ptr, we might not have a shared_ptr natively.
+                // However, AssetResolver doesn't own MediaManager cache. We will leave image_frame null or wrap it dangerously if strictly needed,
+                // but usually Video layers use the MediaManager directly if image_frame is null.
+                // Better approach: make MediaManager return shared_ptr or let layers fetch it.
+                // For now, if we have a pool, we just wrap it with a no-op deleter for the API.
+                result.image_frame = std::shared_ptr<const renderer2d::SurfaceRGBA>(frame, [](const renderer2d::SurfaceRGBA*){});
+            }
+        }
+    }
+#endif
+
+    return result;
+}
 
 AssetResolver::AssetResolver(Config config,
                              AssetManager* asset_manager,

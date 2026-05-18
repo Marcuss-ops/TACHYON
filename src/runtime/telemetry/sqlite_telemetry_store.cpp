@@ -229,6 +229,25 @@ bool SqliteTelemetryStore::setup_schema() {
         sqlite3_exec(m_db, "PRAGMA user_version = 3;", nullptr, nullptr, nullptr);
     }
 
+    if (current_version < 4) {
+        // Upgrade DB to version 4 - Detailed pixel telemetry
+        const std::vector<std::string> ALTERS_V4 = {
+            "ALTER TABLE render_runs ADD COLUMN rasterized_pixels INTEGER NOT NULL DEFAULT 0;",
+            "ALTER TABLE render_runs ADD COLUMN blend_pixel_ops INTEGER NOT NULL DEFAULT 0;",
+            "ALTER TABLE render_runs ADD COLUMN encoded_pixels INTEGER NOT NULL DEFAULT 0;"
+        };
+
+        for (const auto& sql : ALTERS_V4) {
+            char* errMsg = nullptr;
+            sqlite3_exec(m_db, sql.c_str(), nullptr, nullptr, &errMsg);
+            if (errMsg) {
+                sqlite3_free(errMsg);
+            }
+        }
+
+        sqlite3_exec(m_db, "PRAGMA user_version = 4;", nullptr, nullptr, nullptr);
+    }
+
     return true;
 }
 
@@ -243,12 +262,13 @@ bool SqliteTelemetryStore::write_render_record(const RenderTelemetryRecord& reco
             avg_private_bytes, avg_cpu_percent_machine, avg_cpu_cores_used, output_path, finished_at_iso,
             physical_cores, cpu_freq_mhz, gpu_vendor, gpu_driver, total_ram_bytes, total_vram_bytes,
             git_commit_short, build_type, compiler_info, exit_code, error_category,
-            total_pixels_processed, total_tiles, memory_samples, cpu_util_samples, gpu_util_samples,
+            total_pixels_processed, total_tiles, rasterized_pixels, blend_pixel_ops, encoded_pixels,
+            memory_samples, cpu_util_samples, gpu_util_samples,
             preset_json, time_to_first_frame_ms, ffmpeg_queue_depth,
             hostname, os, cpu_model, logical_cores, tachyon_version
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                   ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                  ?, ?, ?, ?, ?);
+                  ?, ?, ?, ?, ?, ?, ?, ?);
     )";
 
     sqlite3_stmt* stmt = nullptr;
@@ -296,20 +316,23 @@ bool SqliteTelemetryStore::write_render_record(const RenderTelemetryRecord& reco
     sqlite3_bind_text(stmt, 34, record.compiler_info.c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_int(stmt, 35, record.exit_code);
     sqlite3_bind_text(stmt, 36, record.error_category.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int64(stmt, 37, static_cast<sqlite3_int64>(record.total_pixels_processed));
+    sqlite3_bind_int64(stmt, 37, static_cast<sqlite3_int64>(record.total_pixel_ops));
     sqlite3_bind_int(stmt, 38, record.total_tiles);
-    sqlite3_bind_text(stmt, 39, record.memory_samples.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 40, record.cpu_util_samples.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 41, record.gpu_util_samples.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 42, record.preset_json.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_double(stmt, 43, record.time_to_first_frame_ms);
-    sqlite3_bind_int(stmt, 44, record.ffmpeg_queue_depth);
+    sqlite3_bind_int64(stmt, 39, static_cast<sqlite3_int64>(record.rasterized_pixels));
+    sqlite3_bind_int64(stmt, 40, static_cast<sqlite3_int64>(record.blend_pixel_ops));
+    sqlite3_bind_int64(stmt, 41, static_cast<sqlite3_int64>(record.encoded_pixels));
+    sqlite3_bind_text(stmt, 42, record.memory_samples.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 43, record.cpu_util_samples.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 44, record.gpu_util_samples.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 45, record.preset_json.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_double(stmt, 46, record.time_to_first_frame_ms);
+    sqlite3_bind_int(stmt, 47, record.ffmpeg_queue_depth);
 
-    sqlite3_bind_text(stmt, 45, record.hostname.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 46, record.os.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 47, record.cpu_model.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int(stmt, 48, record.logical_cores);
-    sqlite3_bind_text(stmt, 49, record.tachyon_version.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 48, record.hostname.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 49, record.os.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 50, record.cpu_model.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 51, record.logical_cores);
+    sqlite3_bind_text(stmt, 52, record.tachyon_version.c_str(), -1, SQLITE_TRANSIENT);
 
     rc = sqlite3_step(stmt);
     sqlite3_finalize(stmt);

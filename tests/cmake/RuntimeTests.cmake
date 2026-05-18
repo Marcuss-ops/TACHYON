@@ -8,6 +8,12 @@ add_executable(TachyonRuntimeTests
     unit/runtime/telemetry/sqlite_telemetry_store_tests.cpp
     unit/runtime/node_cache_tests.cpp
     unit/runtime/plugin_tests.cpp
+    unit/runtime/sharded_lru_cache_tests.cpp
+    unit/runtime/frame_cache_tests.cpp
+    unit/runtime/thread_local_telemetry_tests.cpp
+    unit/runtime/layer_kind_resolver_tests.cpp
+    unit/runtime/render_determinism_tests.cpp
+    unit/runtime/render_streaming_tests.cpp
 )
 
 

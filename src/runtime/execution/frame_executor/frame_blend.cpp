@@ -52,12 +52,14 @@ std::optional<std::shared_ptr<renderer2d::Framebuffer>> FrameBlendRenderer::try_
             runtime::simd::lerp_pixels_best(out, a, b, width * height * 4, blend);
 
             // Populate the processed pixels & tiles telemetry counter for frame blend operation via thread-local telemetry
-            runtime::tl_telemetry.pixels_processed += width * height;
+            runtime::tl_telemetry.pixel_ops += width * height;
+            runtime::tl_telemetry.blend_pixel_ops += width * height;
+            
             int tile_size = plan.quality_policy.tile_size;
             if (tile_size > 0) {
                 int tiles_x = (width + tile_size - 1) / tile_size;
                 int tiles_y = (height + tile_size - 1) / tile_size;
-                runtime::tl_telemetry.tiles_processed += tiles_x * tiles_y;
+                runtime::tl_telemetry.tiles_processed += static_cast<std::uint64_t>(tiles_x) * tiles_y;
             } else {
                 runtime::tl_telemetry.tiles_processed += 1;
             }

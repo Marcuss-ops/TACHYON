@@ -25,7 +25,7 @@ if(TACHYON_ENABLE_MEDIA)
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../../include>
         ${CMAKE_BINARY_DIR}/include
     )
-    target_link_libraries(TachyonBackendFfmpegVideoDecoding PUBLIC TachyonCore TachyonPlatform)
+    target_link_libraries(TachyonBackendFfmpegVideoDecoding PUBLIC TachyonCore TachyonPlatform TachyonBackendSimd)
     target_compile_definitions(TachyonBackendFfmpegVideoDecoding PRIVATE TACHYON_ENABLE_MEDIA)
     tachyon_link_media_deps(TachyonBackendFfmpegVideoDecoding)
     set_target_properties(TachyonBackendFfmpegVideoDecoding PROPERTIES POSITION_INDEPENDENT_CODE ON)

@@ -427,7 +427,10 @@ RenderSessionResult RenderSession::render(
         record.output_bytes = result.output_bytes;
 
         record.cache_hit_rate = result.cache_hit_rate();
-        record.total_pixels_processed = result.total_pixels_processed;
+        record.total_pixel_ops = result.total_pixel_ops;
+        record.rasterized_pixels = result.rasterized_pixels;
+        record.blend_pixel_ops = result.blend_pixel_ops;
+        record.encoded_pixels = result.encoded_pixels;
         record.total_tiles = result.total_tiles;
 
         // Metadata

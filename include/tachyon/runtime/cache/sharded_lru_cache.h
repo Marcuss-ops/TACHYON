@@ -165,6 +165,37 @@ public:
         return total;
     }
 
+    [[nodiscard]] std::size_t shard_count() const noexcept {
+        return shards_.size();
+    }
+
+    [[nodiscard]] CacheStats stats() const noexcept {
+        CacheStats total;
+        for (const auto& shard : shards_) {
+            std::lock_guard<std::mutex> lock(shard.mutex);
+            total.hits += shard.hits;
+            total.misses += shard.misses;
+            total.lookups += shard.lookups;
+            total.bytes_used += shard.bytes_used;
+        }
+        return total;
+    }
+
+    [[nodiscard]] std::vector<CacheStats> shard_stats() const {
+        std::vector<CacheStats> result;
+        result.reserve(shards_.size());
+        for (const auto& shard : shards_) {
+            std::lock_guard<std::mutex> lock(shard.mutex);
+            CacheStats s;
+            s.hits = shard.hits;
+            s.misses = shard.misses;
+            s.lookups = shard.lookups;
+            s.bytes_used = shard.bytes_used;
+            result.push_back(s);
+        }
+        return result;
+    }
+
 private:
     struct Entry {
         Value value;

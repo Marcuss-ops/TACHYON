@@ -123,6 +123,16 @@ struct CacheKey {
 
 using FrameCacheKey = CacheKey;
 
+inline bool operator==(const CacheKey& lhs, const CacheKey& rhs) noexcept {
+    return lhs.hash == rhs.hash && lhs.value == rhs.value;
+}
+
+struct FrameCacheKeyHash {
+    std::size_t operator()(const CacheKey& key) const noexcept {
+        return static_cast<std::size_t>(key.hash);
+    }
+};
+
 struct FrameCacheEntry {
     FrameCacheKey key;
     std::string label;

@@ -104,6 +104,15 @@ struct FrameDiagnostics {
     void add_error(std::string code, std::string message, std::string path = {}) {
         diagnostics.add_error(std::move(code), std::move(message), std::move(path));
     }
+
+    bool has_category(const std::string& category, const std::string& label = {}) const {
+        for (const auto& t : timings) {
+            if (t.category == category) {
+                if (label.empty() || t.label == label) return true;
+            }
+        }
+        return false;
+    }
 };
 
 } // namespace tachyon

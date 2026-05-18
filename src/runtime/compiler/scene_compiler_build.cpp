@@ -1,6 +1,7 @@
 #include "tachyon/runtime/compiler/scene_compiler_detail.h"
 #include "tachyon/runtime/compiler/scene_compiler_internal.h"
 #include "tachyon/runtime/compiler/scene_compiler_hashing.h"
+#include "tachyon/runtime/core/graph/layer_kind_resolver.h"
 #include <algorithm>
 #include <cstdint>
 
@@ -28,6 +29,7 @@ void build_compositions(const SceneSpec& scene, CompiledScene& compiled, tachyon
             compiled.graph.add_node(compiled_layer.node.node_id);
             
             compiled_layer.type_id = compiled_type_id_from_layer_type(layer.identity.type);
+            compiled_layer.kind = LayerKindResolver::resolve(compiled_layer.type_id);
             
             compiled_layer.width = static_cast<std::uint32_t>(layer.transform.width);
             compiled_layer.height = static_cast<std::uint32_t>(layer.transform.height);

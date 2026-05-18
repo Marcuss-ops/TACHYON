@@ -28,7 +28,7 @@ void evaluate_node(
         case CompiledNodeType::Property: {
             auto prop_it = executor.m_property_lookup.find(node_id);
             if (prop_it != executor.m_property_lookup.end()) {
-                evaluate_property(executor, scene, *prop_it->second, plan, snapshot, context, node_key, frame_time_seconds);
+                warm_property_cache_if_needed(executor, scene, *prop_it->second, plan, snapshot, context, node_key, frame_time_seconds);
             }
             break;
         }

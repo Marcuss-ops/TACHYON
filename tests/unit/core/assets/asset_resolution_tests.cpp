@@ -2,6 +2,7 @@
 #include "tachyon/core/assets/asset_resolution.h"
 #include "tachyon/core/media/asset_resolver_interface.h"
 #include "tachyon/core/spec/schema/objects/scene_spec.h"
+#include "tachyon/runtime/resource/render_context.h"
 #include <filesystem>
 #include <iostream>
 #include <algorithm>
@@ -21,6 +22,21 @@ public:
             return std::filesystem::path("C:/fake/valid.png");
         }
         return std::nullopt;
+    }
+
+    ::tachyon::media::ResolvedAsset resolve(const ::tachyon::media::AssetRequest& request, RenderContext& context) const override {
+        (void)context;
+        ::tachyon::media::ResolvedAsset result;
+        result.id = request.id;
+        result.kind = request.kind;
+        if (request.id == "valid.png") {
+            result.exists = true;
+            result.source_path = "C:/fake/valid.png";
+            result.runtime_path = "C:/fake/valid.png";
+        } else {
+            result.exists = false;
+        }
+        return result;
     }
 
     std::shared_ptr<const renderer2d::SurfaceRGBA> resolve_image_shared(

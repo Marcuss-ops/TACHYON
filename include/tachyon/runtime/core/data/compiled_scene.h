@@ -113,6 +113,7 @@ struct CompiledLayer {
     CompiledNode node;
     std::string name;
     std::uint32_t type_id{0}; // Resolved enum or index
+    LayerType kind{LayerType::NullLayer};
     
     // Boundary data
     std::uint32_t width{0};

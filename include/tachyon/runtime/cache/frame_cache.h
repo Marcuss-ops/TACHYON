@@ -47,20 +47,21 @@ public:
     [[nodiscard]] std::size_t hit_count() const noexcept;
     [[nodiscard]] std::size_t miss_count() const noexcept;
 
+    // Domain-specific statistics
+    [[nodiscard]] ShardedLruCache<std::uint64_t, double>::CacheStats property_stats() const noexcept { return m_properties.stats(); }
+    [[nodiscard]] auto layer_stats() const noexcept { return m_layers.stats(); }
+    [[nodiscard]] auto composition_stats() const noexcept { return m_compositions.stats(); }
+    [[nodiscard]] auto frame_stats() const noexcept { return m_frames.stats(); }
+
     void set_budget_bytes(std::size_t bytes);
     void evict_if_needed();
     [[nodiscard]] std::size_t current_usage_bytes() const;
-
-    struct FrameEntry {
-        std::string key_value;
-        std::shared_ptr<const renderer2d::Framebuffer> framebuffer;
-    };
 
 private:
     ShardedLruCache<std::uint64_t, double> m_properties{50 * 1024 * 1024}; // 50MB
     ShardedLruCache<std::uint64_t, std::shared_ptr<const scene::EvaluatedLayerState>> m_layers{150 * 1024 * 1024}; // 150MB
     ShardedLruCache<std::uint64_t, std::shared_ptr<const scene::EvaluatedCompositionState>> m_compositions{150 * 1024 * 1024}; // 150MB
-    ShardedLruCache<std::uint64_t, FrameEntry> m_frames{674 * 1024 * 1024}; // 674MB
+    ShardedLruCache<FrameCacheKey, std::shared_ptr<const renderer2d::Framebuffer>, FrameCacheKeyHash> m_frames{674 * 1024 * 1024}; // 674MB
 
     std::size_t m_max_budget_bytes{1024ULL * 1024 * 1024}; // 1GB default
 };

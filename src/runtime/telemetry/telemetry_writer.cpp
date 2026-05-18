@@ -71,7 +71,7 @@ static std::string record_to_json(const RenderTelemetryRecord& r) {
         R"("physical_cores":{},"cpu_freq_mhz":{},"gpu_vendor":"{}","gpu_driver":"{}","total_ram_bytes":{},"total_vram_bytes":{},)"
         R"("git_commit_short":"{}","build_type":"{}","compiler_info":"{}",)"
         R"("exit_code":{},"error_category":"{}",)"
-        R"("total_pixels_processed":{},"total_tiles":{},)"
+        R"("total_pixel_ops":{},"rasterized_pixels":{},"blend_pixel_ops":{},"encoded_pixels":{},"total_tiles":{},)"
         R"("memory_samples":"{}","cpu_util_samples":"{}","gpu_util_samples":"{}",)"
         R"("preset_json":"{}",)"
         R"("time_to_first_frame_ms":{},"ffmpeg_queue_depth":{}}})",
@@ -109,7 +109,7 @@ static std::string record_to_json(const RenderTelemetryRecord& r) {
         // Failure Details (v3)
         r.exit_code, escape_json(r.error_category),
         // Detailed Metrics (v3)
-        r.total_pixels_processed, r.total_tiles,
+        r.total_pixel_ops, r.rasterized_pixels, r.blend_pixel_ops, r.encoded_pixels, r.total_tiles,
         // Time Series (v3)
         escape_json(r.memory_samples), escape_json(r.cpu_util_samples), escape_json(r.gpu_util_samples),
         // Preset Details (v3)

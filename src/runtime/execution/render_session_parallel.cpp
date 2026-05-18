@@ -31,32 +31,6 @@
 
 namespace tachyon {
 
-bool render_trace_enabled() {
-    static const bool enabled = []() {
-        const char* value = std::getenv("TACHYON_RENDER_TRACE");
-        return value != nullptr && value[0] != '\0' && value[0] != '0';
-    }();
-    return enabled;
-}
-
-void render_trace(const std::string& message) {
-    if (render_trace_enabled()) {
-        static std::ofstream s_trace_file = []() {
-            const char* temp_dir = std::getenv("TEMP");
-            if (!temp_dir) temp_dir = std::getenv("TMP");
-            std::filesystem::path path = temp_dir
-                ? std::filesystem::path(temp_dir) / "tachyon_render_run.log"
-                : std::filesystem::current_path() / "tachyon_render_run.log";
-            return std::ofstream(path, std::ios::out | std::ios::trunc);
-        }();
-
-        if (s_trace_file.is_open()) {
-            s_trace_file << "[RenderTrace] " << message << "\n";
-        }
-        diag::trace("[RenderTrace] {}", message);
-    }
-}
-
 // Forward declarations for serialization helpers removed (using TBFCodec)
 using runtime::TBFCodec;
 
@@ -136,7 +110,10 @@ void render_frames_parallel_internal(
     }
 
     // Thread-safe accumulators for processed pixels and tiles
-    auto pixels_counter = std::make_shared<std::atomic<std::size_t>>(0);
+    auto pixel_ops_counter = std::make_shared<std::atomic<std::size_t>>(0);
+    auto rasterized_pixels_counter = std::make_shared<std::atomic<std::size_t>>(0);
+    auto blend_pixels_counter = std::make_shared<std::atomic<std::size_t>>(0);
+    auto encoded_pixels_counter = std::make_shared<std::atomic<std::size_t>>(0);
     auto tiles_counter = std::make_shared<std::atomic<int>>(0);
 
     const std::size_t thread_count = std::max<std::size_t>(1, std::min(budget.frame_concurrency, task_count));
@@ -173,13 +150,13 @@ void render_frames_parallel_internal(
 #endif
         local_context.pixel_concurrency = budget.pixel_concurrency;
         local_context.cancel_flag = cancel_flag;
-        local_context.total_pixels_counter = pixels_counter;
+        local_context.total_pixel_ops_counter = pixel_ops_counter;
+        local_context.rasterized_pixels_counter = rasterized_pixels_counter;
+        local_context.blend_pixels_counter = blend_pixels_counter;
+        local_context.encoded_pixels_counter = encoded_pixels_counter;
         local_context.total_tiles_counter = tiles_counter;
 
-        render_trace(
-            "frame start index=" + std::to_string(index) +
-            " frame=" + std::to_string(task.frame_number) +
-            " t=" + std::to_string(task.time_seconds));
+
 
         std::shared_ptr<const renderer2d::Framebuffer> framebuffer;
         bool cache_hit = false;
@@ -214,15 +191,21 @@ void render_frames_parallel_internal(
                 executed_frame = executor.execute(compiled_scene, frame_plan, task, snapshot, local_context);
             }
 
-            // Track rasterized pixels and tiles processed for cache miss execution path via thread-local telemetry
-            runtime::tl_telemetry.pixels_processed += frame_plan.composition.width * frame_plan.composition.height;
-            int tile_size = frame_plan.quality_policy.tile_size;
-            if (tile_size > 0) {
-                int tiles_x = (frame_plan.composition.width + tile_size - 1) / tile_size;
-                int tiles_y = (frame_plan.composition.height + tile_size - 1) / tile_size;
-                runtime::tl_telemetry.tiles_processed += tiles_x * tiles_y;
-            } else {
-                runtime::tl_telemetry.tiles_processed += 1;
+            // Track rasterized pixels and tiles processed for cache miss execution path via thread-local telemetry.
+            // Note: If this was a blended frame, telemetry is already handled inside try_render_blend.
+            if (!executed_frame.cache_hit && !executed_frame.diagnostics.has_category(FrameDiagnostics::kCategoryRender, "frame_blend")) {
+                const std::uint64_t pixels = static_cast<std::uint64_t>(frame_plan.composition.width) * frame_plan.composition.height;
+                runtime::tl_telemetry.pixel_ops += pixels;
+                runtime::tl_telemetry.rasterized_pixels += pixels;
+                
+                int tile_size = frame_plan.quality_policy.tile_size;
+                if (tile_size > 0) {
+                    int tiles_x = (frame_plan.composition.width + tile_size - 1) / tile_size;
+                    int tiles_y = (frame_plan.composition.height + tile_size - 1) / tile_size;
+                    runtime::tl_telemetry.tiles_processed += static_cast<std::uint64_t>(tiles_x) * tiles_y;
+                } else {
+                    runtime::tl_telemetry.tiles_processed += 1;
+                }
             }
             
             const auto frame_end = std::chrono::high_resolution_clock::now();
@@ -230,10 +213,6 @@ void render_frames_parallel_internal(
             executed_frame.diagnostics.add_timing(FrameDiagnostics::kCategoryRender, "frame_execute", render_ms);
 
             cache_hit = cache_hit || executed_frame.cache_hit;
-            render_trace(
-                "frame end index=" + std::to_string(index) +
-                " frame=" + std::to_string(task.frame_number) +
-                " cached=" + std::string(cache_hit ? "1" : "0"));
 
             if (frame_times_out) {
                 (*frame_times_out)[index] = render_ms;
@@ -256,6 +235,11 @@ void render_frames_parallel_internal(
                     disk_cache->store(key, frame_data);
                 }
             }
+        }
+
+        if (framebuffer) {
+            // Track encoded/finalized pixels
+            runtime::tl_telemetry.encoded_pixels += static_cast<std::uint64_t>(framebuffer->width()) * framebuffer->height();
         }
 
         if (streaming_mode && frame_queue && result) {
@@ -293,7 +277,7 @@ void render_frames_parallel_internal(
         if (progress_callback) {
             progress_callback(completed, task_count);
         }
-        runtime::flush_thread_local_telemetry(pixels_counter, tiles_counter);
+        runtime::flush_thread_local_telemetry(pixel_ops_counter, tiles_counter, rasterized_pixels_counter, blend_pixels_counter, encoded_pixels_counter);
         TACHYON_FRAME_MARK;
     };
 
@@ -375,7 +359,10 @@ void render_frames_parallel_internal(
 
     // Set aggregate telemetry metrics in the result structure
     if (result) {
-        result->total_pixels_processed = pixels_counter->load();
+        result->total_pixel_ops = pixel_ops_counter->load();
+        result->rasterized_pixels = rasterized_pixels_counter->load();
+        result->blend_pixel_ops = blend_pixels_counter->load();
+        result->encoded_pixels = encoded_pixels_counter->load();
         result->total_tiles = tiles_counter->load();
     }
 }

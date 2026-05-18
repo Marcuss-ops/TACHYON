@@ -98,7 +98,10 @@ struct RenderContext {
     profiling::RenderProfiler* profiler{nullptr};
     std::atomic<bool>* cancel_flag{nullptr};
 
-    std::shared_ptr<std::atomic<std::size_t>> total_pixels_counter;
+    std::shared_ptr<std::atomic<std::size_t>> total_pixel_ops_counter;
+    std::shared_ptr<std::atomic<std::size_t>> rasterized_pixels_counter;
+    std::shared_ptr<std::atomic<std::size_t>> blend_pixels_counter;
+    std::shared_ptr<std::atomic<std::size_t>> encoded_pixels_counter;
     std::shared_ptr<std::atomic<int>> total_tiles_counter;
 
     // 6. Backend

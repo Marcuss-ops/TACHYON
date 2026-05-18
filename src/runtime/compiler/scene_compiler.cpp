@@ -3,6 +3,7 @@
 #include "tachyon/runtime/compiler/property_track_compiler.h"
 #include "tachyon/core/spec/validation/scene_normalizer.h"
 #include "tachyon/core/string_utils.h"
+#include "tachyon/runtime/core/graph/layer_kind_resolver.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -177,6 +178,7 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene_sp
                 bg_layer.text.fill_color = ColorSpec{0,0,0,255};
             }
             
+            bg_layer.kind = LayerKindResolver::resolve(bg_layer.type_id);
             bg_layer.width = compiled_composition.width;
             bg_layer.height = compiled_composition.height;
             bg_layer.in_time = 0.0;
@@ -204,6 +206,7 @@ ResolutionResult<CompiledScene> SceneCompiler::compile(const SceneSpec& scene_sp
             
             // Resolve Type using robust LayerType enum (Canonical Source of Truth)
             compiled_layer.type_id = compiled_type_id_from_layer_type(layer.identity.type);
+            compiled_layer.kind = LayerKindResolver::resolve(compiled_layer.type_id);
             
             compiled_layer.width = static_cast<std::uint32_t>(layer.transform.width);
             compiled_layer.height = static_cast<std::uint32_t>(layer.transform.height);

@@ -50,7 +50,12 @@ struct RenderSessionResult {
     std::string output_error;
     DiagnosticBag diagnostics;
     std::vector<FrameDiagnostics> frame_diagnostics;
-    std::size_t total_pixels_processed{0};
+    
+    // Telemetry & Throughput
+    std::size_t total_pixel_ops{0};
+    std::size_t rasterized_pixels{0};
+    std::size_t blend_pixel_ops{0};
+    std::size_t encoded_pixels{0};
     int total_tiles{0};
 
     // Phase timings (milliseconds)

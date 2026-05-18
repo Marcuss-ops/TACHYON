@@ -73,31 +73,29 @@ void FrameCache::store_composition(std::uint64_t key, std::shared_ptr<const scen
 }
 
 std::shared_ptr<const renderer2d::Framebuffer> FrameCache::lookup_frame(const FrameCacheKey& key) const {
-    FrameEntry entry;
-    if (m_frames.lookup(key.hash, entry)) {
-        if (entry.key_value == key.value) {
-            return entry.framebuffer;
-        }
+    std::shared_ptr<const renderer2d::Framebuffer> frame;
+    if (m_frames.lookup(key, frame)) {
+        return frame;
     }
     return nullptr;
 }
 
 void FrameCache::store_frame(const FrameCacheKey& key, std::shared_ptr<const renderer2d::Framebuffer> frame) {
     if (!frame) return;
-    m_frames.store(key.hash, FrameEntry{key.value, frame}, estimate_frame_size(*frame));
+    m_frames.store(key, frame, estimate_frame_size(*frame));
 }
 
 std::shared_ptr<const renderer2d::Framebuffer> FrameCache::lookup_frame(std::uint64_t key) const {
-    FrameEntry entry;
-    if (m_frames.lookup(key, entry)) {
-        return entry.framebuffer;
+    std::shared_ptr<const renderer2d::Framebuffer> frame;
+    if (m_frames.lookup(FrameCacheKey(key, ""), frame)) {
+        return frame;
     }
     return nullptr;
 }
 
 void FrameCache::store_frame(std::uint64_t key, std::shared_ptr<const renderer2d::Framebuffer> frame) {
     if (!frame) return;
-    m_frames.store(key, FrameEntry{"", frame}, estimate_frame_size(*frame));
+    m_frames.store(FrameCacheKey(key, ""), frame, estimate_frame_size(*frame));
 }
 
 void FrameCache::set_budget_bytes(std::size_t bytes) {

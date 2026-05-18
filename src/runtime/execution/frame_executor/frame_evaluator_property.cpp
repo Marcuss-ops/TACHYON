@@ -3,7 +3,7 @@
 
 namespace tachyon {
 
-void evaluate_property(
+void warm_property_cache_if_needed(
     FrameExecutor& executor,
     const CompiledScene& scene,
     const CompiledPropertyTrack& track,

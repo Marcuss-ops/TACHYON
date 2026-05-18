@@ -4,10 +4,13 @@
 #include "tachyon/renderer2d/core/render_types.h"
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include "tachyon/core/media/media_types.h"
+#include "tachyon/core/media/resolved_asset.h"
 #include <string>
 #include <memory>
 #include <filesystem>
 #include <optional>
+
+namespace tachyon { struct RenderContext; }
 
 namespace tachyon::media {
 
@@ -28,6 +31,11 @@ public:
     virtual ~IAssetResolver() = default;
 
     virtual const Config& config() const = 0;
+
+    /**
+     * @brief Centralized resolution method for all asset requests.
+     */
+    virtual ResolvedAsset resolve(const AssetRequest& request, RenderContext& context) const = 0;
 
     /**
      * @brief Resolves a specification into an absolute filesystem path.

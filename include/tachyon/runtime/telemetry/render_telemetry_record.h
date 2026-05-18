@@ -252,7 +252,10 @@ struct TACHYON_API RenderTelemetryRecord {
     std::string error_category;
 
     // Detailed Metrics (item 4)
-    std::size_t total_pixels_processed{0};
+    std::size_t total_pixel_ops{0};
+    std::size_t rasterized_pixels{0};
+    std::size_t blend_pixel_ops{0};
+    std::size_t encoded_pixels{0};
     int total_tiles{0};
 
     // Time Series (item 5) — comma-separated values

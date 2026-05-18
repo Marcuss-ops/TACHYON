@@ -20,6 +20,8 @@ enum class AlphaMode {
 
 namespace tachyon::renderer2d {
 
+struct Color;
+
 struct EvaluatorContext {
   std::vector<float> scalars;
   std::vector<Color> colors;

@@ -23,7 +23,7 @@ void evaluate_node(
     std::optional<std::uint64_t> main_frame_key = std::nullopt,
     std::optional<double> main_frame_time = std::nullopt);
 
-void evaluate_property(
+void warm_property_cache_if_needed(
     FrameExecutor& executor,
     const CompiledScene& scene,
     const CompiledPropertyTrack& track,

@@ -27,7 +27,7 @@ bool parse_path_d(const std::string& d, renderer2d::PathGeometry& out_geometry, 
         switch (cmd) {
             case 'M': { // MoveTo
                 if (!(iss >> x >> y)) {
-                    diag.diagnostics.push_back({DiagnosticSeverity::Error, "svg_parse", "", "Invalid M command arguments", ""});
+                    diag.add_error("svg_parse", "Invalid M command arguments");
                     return false;
                 }
                 out_geometry.commands.push_back({renderer2d::PathVerb::MoveTo, {x, y}, {}, {}});
@@ -35,7 +35,7 @@ bool parse_path_d(const std::string& d, renderer2d::PathGeometry& out_geometry, 
             }
             case 'L': { // LineTo
                 if (!(iss >> x >> y)) {
-                    diag.diagnostics.push_back({DiagnosticSeverity::Error, "svg_parse", "", "Invalid L command arguments", ""});
+                    diag.add_error("svg_parse", "Invalid L command arguments");
                     return false;
                 }
                 out_geometry.commands.push_back({renderer2d::PathVerb::LineTo, {x, y}, {}, {}});
@@ -43,7 +43,7 @@ bool parse_path_d(const std::string& d, renderer2d::PathGeometry& out_geometry, 
             }
             case 'C': { // CubicTo
                 if (!(iss >> x1 >> y1 >> x2 >> y2 >> x >> y)) {
-                    diag.diagnostics.push_back({DiagnosticSeverity::Error, "svg_parse", "", "Invalid C command arguments", ""});
+                    diag.add_error("svg_parse", "Invalid C command arguments");
                     return false;
                 }
                 renderer2d::PathCommand pc;
@@ -59,7 +59,7 @@ bool parse_path_d(const std::string& d, renderer2d::PathGeometry& out_geometry, 
                 break;
             }
             default: {
-                diag.diagnostics.push_back({DiagnosticSeverity::Error, "svg_parse", "", "Unsupported path command: " + std::string(1, cmd), ""});
+                diag.add_error("svg_parse", "Unsupported path command: " + std::string(1, cmd));
                 return false;
             }
         }
@@ -161,13 +161,13 @@ bool parse_svg_string(const std::string& svg_content, ParsedSvg& out_result, Dia
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_string(svg_content.c_str());
     if (!result) {
-        diagnostics.diagnostics.push_back({DiagnosticSeverity::Error, "svg_parse", "", "SVG parse failed: " + std::string(result.description()), ""});
+        diagnostics.add_error("svg_parse", "SVG parse failed: " + std::string(result.description()));
         return false;
     }
 
     pugi::xml_node svg = doc.child("svg");
     if (!svg) {
-        diagnostics.diagnostics.push_back({DiagnosticSeverity::Error, "svg_parse", "", "No root <svg> element found", ""});
+        diagnostics.add_error("svg_parse", "No root <svg> element found");
         return false;
     }
 
