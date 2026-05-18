@@ -7,8 +7,16 @@ namespace tachyon::renderer2d {
     void render_transition_lookbook();
 }
 
+bool run_geometry_tests();
+
 int main() {
     std::cout << "[CANARY] Starting Transition Tests...\n";
+    
+    // Run geometry tests
+    if (!run_geometry_tests()) {
+        std::cerr << "[CANARY] Geometry tests failed.\n";
+        return 1;
+    }
     
     // Run the validation test
     // tachyon::renderer2d::test_crossfade_transition();

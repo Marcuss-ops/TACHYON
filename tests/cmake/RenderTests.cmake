@@ -10,6 +10,7 @@ tachyon_add_test_suite(
         unit/render/transition_gallery.cpp
         unit/render/remotion_demo_test.cpp
         unit/render/light_leak_lookbook_test.cpp
+        unit/renderer2d/geometry_tests.cpp
     LIBS
         TachyonPlatform
         TachyonTestUtils

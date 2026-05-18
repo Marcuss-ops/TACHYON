@@ -31,6 +31,7 @@ set(TachyonRuntimeSources
     execution/batch_runner/batch_registry.cpp
     execution/batch_runner/batch_runner_execute.cpp
     execution/batch_runner/batch_runner_validate.cpp
+    execution/bounds/layer_bounds.cpp
     execution/compiled_frame_program.cpp
     execution/frame_executor.cpp
     execution/frame_executor/frame_blend.cpp

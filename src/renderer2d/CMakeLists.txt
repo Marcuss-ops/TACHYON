@@ -42,6 +42,7 @@ set(TachyonRenderer2DCoreSources
     ${TachyonRenderer2DPathSources}
     ${TachyonRenderer2DResourceSources}
     audio/audio_sampling.cpp
+    geometry/dirty_region.cpp
 )
 
 set(TachyonRenderer2DEffectsSources

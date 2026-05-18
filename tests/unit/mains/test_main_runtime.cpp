@@ -13,6 +13,7 @@ bool run_frame_cache_tests();
 bool run_thread_local_telemetry_tests();
 bool run_layer_kind_resolver_tests();
 bool run_render_streaming_tests();
+bool run_layer_bounds_tests();
 
 // Temporarily disabled (stubs for linking)
 bool run_render_job_tests();
@@ -42,6 +43,7 @@ int main(int argc, char** argv) {
         {"layer_kind_resolver", run_layer_kind_resolver_tests},
         {"determinism", run_determinism_tests},
         {"streaming", run_render_streaming_tests},
+        {"layer_bounds", run_layer_bounds_tests},
     };
 
     return run_test_suite(argc, argv, tests);
