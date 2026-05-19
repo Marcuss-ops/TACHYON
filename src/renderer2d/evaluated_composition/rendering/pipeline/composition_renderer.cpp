@@ -125,6 +125,20 @@ RasterizedFrame2D render_evaluated_composition_2d(
             const auto& layer = state.layers[i];
             if (!layer.identity.enabled || !layer.identity.active) continue;
 
+            // PR3: DirtyRect-aware layer skipping
+            if (plan.quality_policy.dirty_rect_enabled && context.diagnostics && context.diagnostics->invalidation) {
+                const auto& inv = *context.diagnostics->invalidation;
+                if (!inv.full_frame_invalidation) {
+                    const auto l_rect = layer_rect(layer, working_width, working_height, 1.0f);
+                    const renderer2d::IntRect layer_bounds{l_rect.x, l_rect.y, l_rect.width, l_rect.height};
+                    
+                    if (!inv.dirty_region.bounds().intersects(layer_bounds)) {
+                        // Skip rendering and compositing if layer doesn't touch the dirty area
+                        continue;
+                    }
+                }
+            }
+
             const auto layer_start = std::chrono::high_resolution_clock::now();
 
             std::shared_ptr<renderer2d::SurfaceRGBA> layer_surface;

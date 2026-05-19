@@ -59,6 +59,7 @@ struct QualityPolicy {
     std::size_t precomp_cache_budget{1ULL * 1024 * 1024 * 1024};
     int tile_size{0};                  ///< 0 = full frame, else tile dimension.
     std::size_t max_workers{0};        ///< 0 = use all cores.
+    bool dirty_rect_enabled{false};    ///< Enable DirtyRect-aware layer skipping.
 
     // Shutter
     float shutter_angle_deg{180.0f};   ///< 180° = half frame duration.

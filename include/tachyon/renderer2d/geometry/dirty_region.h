@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tachyon/renderer2d/core/framebuffer.h"
 #include <algorithm>
 #include <cstdint>
 #include <vector>
@@ -66,6 +67,10 @@ struct IntRect {
 
     [[nodiscard]] IntRect clipped_to(const IntRect& bounds) const noexcept {
         return intersection(bounds);
+    }
+    
+    [[nodiscard]] RectI to_rect_i() const noexcept {
+        return {x, y, width, height};
     }
     
     bool operator==(const IntRect& other) const noexcept {
