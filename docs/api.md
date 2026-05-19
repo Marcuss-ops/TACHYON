@@ -19,7 +19,7 @@ TACHYON provides a native, highly expressive, Remotion-style fluent API for asse
 
 ```cpp
 #include "tachyon/scene/builder.h"
-#include "tachyon/presets/text/fluent.h"
+#include "tachyon/presets/shape/fluent.h"
 #include "tachyon/presets/background/fluent.h"
 #include "tachyon/presets/audio/fluent.h"
 
@@ -53,14 +53,13 @@ extern "C" void build_scene(tachyon::SceneSpec& out) {
                 .normalize_lufs(-14.0)
                 .build());
              
-            // 3. Subtitle / Headline Layer with Animations
-            c.layer(text::headline("TACHYON NATIVE")
-                .font("Inter")
-                .font_size(96)
+            // 3. Dynamic Center Shape Overlay with Animations
+            c.layer(shape::rectangle()
+                .width(400)
+                .height(200)
                 .color({255, 255, 255, 255})
                 .center()
-                .animate(text::fade_up().duration(0.5).build())
-                .animate(text::blur_to_focus().duration(0.8).build())
+                .animate(shape::fade_in().duration(0.5).build())
                 .build());
         })
         .build();

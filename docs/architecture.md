@@ -44,7 +44,7 @@ While Tachyon may optionally use GPU acceleration:
 ├─────────────────────────────────┤
 │   Scene Specification           │  (JSON or C++-generated)
 ├─────────────────────────────────┤
-│   2D Compositing Engine        │  (Layers, effects, text)
+│   2D Compositing Engine        │  (Layers, effects)
 ├─────────────────────────────────┤
 │   Rendering (CPU Path)         │  (Frames, encoding)
 ├─────────────────────────────────┤

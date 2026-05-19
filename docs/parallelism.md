@@ -33,7 +33,7 @@ Tachyon processes parallel work at four distinct layers, starting from batch job
 ### Level 1: Batch Parallelism
 For automated video workflows (e.g., generating multiple variations of ads, localized promos, or personalized content), multiple render jobs are executed concurrently using the `BatchRunner`:
 - **Scheduler**: Thread pool orchestrated via `RenderBatchSpec::worker_count`.
-- **Isolation**: Each worker threads its own execution context. To guarantee thread safety, `FrameCache`, `MediaManager`, and `FontRegistry` instances are strictly local to each running job (zero shared mutable state).
+- **Isolation**: Each worker threads its own execution context. To guarantee thread safety, `FrameCache` and `MediaManager` instances are strictly local to each running job (zero shared mutable state).
 
 ```cpp
 // Orchestrated via run_render_batch()

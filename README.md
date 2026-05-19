@@ -107,7 +107,7 @@ The documentation is organized with a numbered structure so contributors can mov
 - `docs/10-architecture/` — architecture, execution model, determinism, parallelism, scene foundations
 - `docs/20-contracts/` — cross-cutting engine contracts such as rendering, surfaces, output, CLI/API, and compatibility
 - `docs/30-scene-and-animation/` — scene spec, layers, properties, animation, templates, expressions, and timing
-- `docs/40-2d-compositing/` — shapes, masks, effects, text, motion blur, and color-related compositing behavior
+- `docs/40-2d-compositing/` — shapes, masks, effects, motion blur, and color-related compositing behavior
 - `docs/60-runtime/` — caching, memory policy, quality tiers, profiling, and low-end execution strategy
 - `docs/70-media-io/` — asset pipeline, decode/encode, render jobs, and output delivery
 - `docs/80-audio/` — audio reactivity and audio-driven animation

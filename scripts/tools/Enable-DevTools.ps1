@@ -1,23 +1,74 @@
 <#
 .SYNOPSIS
-    Adds cmake and ninja to the current session PATH by scanning common install locations.
+    Adds cmake, ninja, and sccache to the current session PATH by scanning common install locations.
 .PARAMETER PersistUserPath
     Also persist found paths to the user-level PATH (survives terminal restart).
 #>
 param([switch]$PersistUserPath)
 
 function Find-Tool([string]$Exe) {
-    # Already in PATH?
+    # Already in PATH? (Ignore Android Sdk paths as they are non-preferred/slower)
     $found = Get-Command $Exe -ErrorAction SilentlyContinue
-    if ($found) { return (Split-Path $found.Source) }
+    if ($found) {
+        $foundPath = Split-Path $found.Source
+        if ($foundPath -notmatch "Android\\Sdk") {
+            return $foundPath
+        }
+    }
 
     $candidates = [System.Collections.Generic.List[string]]::new()
+
+    # Visual Studio 2022 Native Paths (vswhere discovery)
+    $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+    if (-not (Test-Path $vswhere)) {
+        $vswhere = "$env:PROGRAMFILES\Microsoft Visual Studio\Installer\vswhere.exe"
+    }
+    if (Test-Path $vswhere) {
+        $vsPath = & $vswhere -version "[17,18)" -products * -property installationPath 2>$null
+        if ($vsPath) {
+            if ($Exe -eq "cmake.exe") {
+                $candidates.Add("$vsPath\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin")
+            } elseif ($Exe -eq "ninja.exe") {
+                $candidates.Add("$vsPath\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja")
+            }
+        }
+    }
+
+    # VS Fallback Paths (in case vswhere doesn't return installation path)
+    foreach ($year in @(2022, 2019)) {
+        foreach ($ed in @("BuildTools", "Community", "Professional", "Enterprise")) {
+            $baseVs = "C:\Program Files\Microsoft Visual Studio\$year\$ed"
+            $baseVsX86 = "C:\Program Files (x86)\Microsoft Visual Studio\$year\$ed"
+            foreach ($base in @($baseVs, $baseVsX86)) {
+                if (Test-Path $base) {
+                    if ($Exe -eq "cmake.exe") {
+                        $candidates.Add("$base\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin")
+                    } elseif ($Exe -eq "ninja.exe") {
+                        $candidates.Add("$base\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja")
+                    }
+                }
+            }
+        }
+    }
 
     # WinGet packages (user + machine)
     foreach ($base in @("$env:LOCALAPPDATA\Microsoft\WinGet\Packages", "$env:PROGRAMFILES\WinGet\Packages")) {
         if (Test-Path $base) {
+            # Check standard bin folders
             Get-ChildItem $base -Directory -ErrorAction SilentlyContinue |
                 ForEach-Object { $candidates.Add((Join-Path $_.FullName "bin")) }
+            
+            # Check directories containing the target Exe directly or 1 level deep (e.g. sccache)
+            Get-ChildItem $base -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+                if (Test-Path (Join-Path $_.FullName $Exe)) {
+                    $candidates.Add($_.FullName)
+                }
+                Get-ChildItem $_.FullName -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+                    if (Test-Path (Join-Path $_.FullName $Exe)) {
+                        $candidates.Add($_.FullName)
+                    }
+                }
+            }
         }
     }
 
@@ -53,7 +104,10 @@ function Find-Tool([string]$Exe) {
 
 function Add-ToPath([string]$Dir) {
     if (-not $Dir) { return }
-    if (($env:PATH -split ';') -notcontains $Dir) { $env:PATH = "$Dir;$env:PATH" }
+    # Prepend path to ensure it overrides and bypasses any other/slower versions in the PATH
+    $current = $env:PATH -split ';'
+    $filtered = $current | Where-Object { $_ -and ($_ -ne $Dir) -and ($_ -notmatch "Android\\Sdk") }
+    $env:PATH = ($Dir, $filtered) -join ';'
 }
 
 $errors = 0
@@ -72,15 +126,23 @@ if ($ninjaDir) {
     Add-ToPath $ninjaDir
     Write-Host "  ninja : $ninjaDir" -ForegroundColor Green
 } else {
-    Write-Warning "ninja.exe not found.  Run: winget install Ninja-build.Ninja"
+    Write-Warning "ninja.exe not found. Run: winget install Ninja-build.Ninja"
     $errors++
+}
+
+$sccacheDir = Find-Tool "sccache.exe"
+if ($sccacheDir) {
+    Add-ToPath $sccacheDir
+    Write-Host "  sccache : $sccacheDir" -ForegroundColor Green
+} else {
+    Write-Warning "sccache.exe not found. Install from winget: winget install Mozilla.sccache"
 }
 
 if ($PersistUserPath) {
     $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
     if (-not $userPath) { $userPath = "" }
     $changed = $false
-    foreach ($dir in @($cmakeDir, $ninjaDir)) {
+    foreach ($dir in @($cmakeDir, $ninjaDir, $sccacheDir)) {
         if ($dir -and ($userPath -split ';') -notcontains $dir) {
             $userPath += ";$dir"; $changed = $true
         }

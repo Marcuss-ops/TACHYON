@@ -1,6 +1,6 @@
 if(MSVC)
     set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>")
-    add_compile_options(/FS)
+    add_compile_options(/FS /MP)
 
     if(TACHYON_ENABLE_SKIA)
         set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "MSVC runtime library" FORCE)
