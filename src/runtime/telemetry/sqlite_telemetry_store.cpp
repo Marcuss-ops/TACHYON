@@ -179,6 +179,8 @@ bool SqliteTelemetryStore::setup_schema() {
         current_version = 1;
     }
 
+
+
     if (current_version < 2) {
         // Upgrade DB to version 2
         sqlite3_exec(m_db, "ALTER TABLE render_runs ADD COLUMN trace_id TEXT NOT NULL DEFAULT '';", nullptr, nullptr, nullptr);
@@ -246,6 +248,15 @@ bool SqliteTelemetryStore::setup_schema() {
         }
 
         sqlite3_exec(m_db, "PRAGMA user_version = 4;", nullptr, nullptr, nullptr);
+    }
+
+    if (current_version < 5) {
+        // Upgrade DB to version 5 - Invalidation metrics
+        char* errMsg = nullptr;
+        sqlite3_exec(m_db, "ALTER TABLE render_frames ADD COLUMN dirty_area_ratio REAL NOT NULL DEFAULT 1.0;", nullptr, nullptr, &errMsg);
+        if (errMsg) sqlite3_free(errMsg);
+
+        sqlite3_exec(m_db, "PRAGMA user_version = 5;", nullptr, nullptr, nullptr);
     }
 
     return true;
@@ -351,8 +362,8 @@ bool SqliteTelemetryStore::write_frame_records(const std::string& run_id, const 
 
     const char* INSERT_FRAME_SQL = R"(
         INSERT OR REPLACE INTO render_frames (
-            run_id, frame_number, duration_ms, encode_time_ms, write_time_ms, cache_hit
-        ) VALUES (?, ?, ?, ?, ?, ?);
+            run_id, frame_number, duration_ms, encode_time_ms, write_time_ms, cache_hit, dirty_area_ratio
+        ) VALUES (?, ?, ?, ?, ?, ?, ?);
     )";
 
     sqlite3_stmt* stmt = nullptr;
@@ -372,6 +383,7 @@ bool SqliteTelemetryStore::write_frame_records(const std::string& run_id, const 
         sqlite3_bind_double(stmt, 4, f.encode_time_ms);
         sqlite3_bind_double(stmt, 5, f.write_time_ms);
         sqlite3_bind_int(stmt, 6, f.cache_hit ? 1 : 0);
+        sqlite3_bind_double(stmt, 7, f.dirty_area_ratio);
 
         rc = sqlite3_step(stmt);
         sqlite3_reset(stmt);

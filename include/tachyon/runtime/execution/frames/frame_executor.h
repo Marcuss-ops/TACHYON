@@ -13,6 +13,7 @@
 
 #include "tachyon/runtime/core/diagnostics/diagnostics.h"
 #include "tachyon/output/frame_aov.h"
+#include "tachyon/renderer2d/geometry/dirty_region.h"
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -68,6 +69,8 @@ public:
     size_t parallel_worker_count() const { return m_parallel_worker_count; }
     bool parallel_frames() const { return m_parallel_frames; }
 
+    std::unordered_map<std::uint32_t, renderer2d::IntRect>& previous_layer_bounds() { return m_previous_layer_bounds; }
+
     FrameCache& cache() { return m_cache; }
     const FrameCache& cache() const { return m_cache; }
     SurfacePool* surface_pool() const { return m_pool; }
@@ -100,6 +103,9 @@ private:
     std::unordered_map<std::uint32_t, const CompiledPropertyTrack*> m_property_lookup;
     std::unordered_map<std::uint32_t, const CompiledLayer*> m_layer_lookup;
     std::unordered_map<std::uint32_t, const CompiledComposition*> m_composition_lookup;
+    
+    // Bounds tracking for DirtyRegion calculation
+    std::unordered_map<std::uint32_t, renderer2d::IntRect> m_previous_layer_bounds;
 
     void build_lookup_table(const CompiledScene& scene);
 

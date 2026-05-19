@@ -1,4 +1,6 @@
 #include "tachyon/runtime/execution/frame_executor/frame_pipeline_steps.h"
+#include "tachyon/runtime/execution/bounds/layer_bounds.h"
+#include "tachyon/runtime/execution/bounds/invalidation_diagnostics.h"
 #include "frame_executor_internal.h"
 #include "tachyon/runtime/execution/frame_blend_renderer.h"
 #include "tachyon/runtime/execution/motion_blur_sampler.h"
@@ -108,6 +110,71 @@ void evaluate_frame_graph_step(
             task);
     }
 
+    // PR2: Calculate DirtyRegion and store in diagnostics
+    if (context.diagnostics) {
+        if (!context.diagnostics->invalidation) {
+            context.diagnostics->invalidation = std::make_unique<FrameInvalidationDiagnostics>();
+        }
+        auto& inv = *context.diagnostics->invalidation;
+        const int comp_width = static_cast<int>(plan.composition.width);
+        const int comp_height = static_cast<int>(plan.composition.height);
+        const renderer2d::IntRect frame_rect{0, 0, comp_width, comp_height};
+
+        auto& prev_bounds_map = executor.previous_layer_bounds();
+
+        // If it's the first frame, everything is dirty
+        if (task.frame_number == plan.frame_range.start) {
+            inv.full_frame_invalidation = true;
+        }
+
+        // Evaluate bounds for layers in the target composition
+        for (const auto& comp : compiled_scene.compositions) {
+            if (comp.composition_id != plan.composition_target && 
+                !(plan.composition_target.empty() && &comp == &compiled_scene.compositions.front())) {
+                continue;
+            }
+
+            for (const auto& layer : comp.layers) {
+                const auto bounds_res = LayerBoundsEvaluator::evaluate(
+                    layer, timing_state.frame_time_seconds, comp_width, comp_height);
+                
+                LayerFrameBounds frame_bounds;
+                frame_bounds.layer_id = layer.node.node_id;
+                frame_bounds.current_bounds = bounds_res.world_bounds.clipped_to(frame_rect);
+                frame_bounds.full_frame = bounds_res.full_frame;
+
+                auto it = prev_bounds_map.find(layer.node.node_id);
+                if (it != prev_bounds_map.end()) {
+                    frame_bounds.previous_bounds = it->second;
+                } else {
+                    frame_bounds.previous_bounds = renderer2d::IntRect{};
+                }
+
+                if (frame_bounds.full_frame) {
+                    frame_bounds.dirty_bounds = frame_rect;
+                    inv.full_frame_invalidation = true;
+                } else {
+                    frame_bounds.dirty_bounds = frame_bounds.current_bounds.united(frame_bounds.previous_bounds).clipped_to(frame_rect);
+                }
+
+                if (!frame_bounds.dirty_bounds.empty()) {
+                    inv.dirty_region.add(frame_bounds.dirty_bounds);
+                }
+
+                inv.layer_bounds.push_back(frame_bounds);
+                
+                // Update persistent state for next frame
+                prev_bounds_map[layer.node.node_id] = frame_bounds.current_bounds;
+            }
+        }
+        
+        if (inv.full_frame_invalidation) {
+            inv.dirty_region.clear();
+            inv.dirty_region.add(frame_rect);
+        }
+        
+        inv.dirty_region.optimize();
+    }
 }
 
 void evaluate_and_rasterize_root_composition_step(

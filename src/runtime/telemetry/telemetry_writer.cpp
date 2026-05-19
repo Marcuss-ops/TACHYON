@@ -207,6 +207,10 @@ bool TelemetryWriter::write_sqlite(const RenderTelemetryRecord& record, const Re
             f.frame_number = static_cast<int>(session_result.frames[i].frame_number);
             f.duration_ms = duration;
             f.cache_hit = session_result.frames[i].cache_hit;
+            f.dirty_area_ratio = session_result.frames[i].diagnostics.invalidation ? 
+                session_result.frames[i].diagnostics.invalidation->compute_dirty_area_ratio(
+                    session_result.frames[i].frame ? static_cast<int>(session_result.frames[i].frame->width()) : 0,
+                    session_result.frames[i].frame ? static_cast<int>(session_result.frames[i].frame->height()) : 0) : 0.0;
             f.encode_time_ms = session_result.frames.empty() ? 0.0 : (session_result.encode_ms / session_result.frames.size());
             f.write_time_ms = session_result.frames.empty() ? 0.0 : (session_result.io_write_ms / session_result.frames.size());
             frames.push_back(f);

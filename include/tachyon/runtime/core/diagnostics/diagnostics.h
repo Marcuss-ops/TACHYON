@@ -4,8 +4,10 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <memory>
 
 #include <tachyon/core/types/diagnostics.h>
+#include <tachyon/runtime/execution/bounds/invalidation_diagnostics.h>
 
 namespace tachyon {
 
@@ -56,6 +58,46 @@ struct ResolutionResult {
 // TimingSample has been moved to tachyon/core/types/diagnostics.h
  
 struct FrameDiagnostics {
+    FrameDiagnostics() = default;
+
+    FrameDiagnostics(const FrameDiagnostics& other) 
+        : property_hits(other.property_hits), property_misses(other.property_misses),
+          layer_hits(other.layer_hits), layer_misses(other.layer_misses),
+          composition_hits(other.composition_hits), composition_misses(other.composition_misses),
+          properties_evaluated(other.properties_evaluated), layers_evaluated(other.layers_evaluated),
+          compositions_evaluated(other.compositions_evaluated), node_cache_lookups(other.node_cache_lookups),
+          node_cache_hits(other.node_cache_hits), node_cache_misses(other.node_cache_misses),
+          node_cache_bytes(other.node_cache_bytes), static_nodes_detected(other.static_nodes_detected),
+          animated_nodes_detected(other.animated_nodes_detected), timings(other.timings), diagnostics(other.diagnostics),
+          frame_key_manifest(other.frame_key_manifest), composition_key_manifest(other.composition_key_manifest) {
+        if (other.invalidation) {
+            invalidation = std::make_unique<FrameInvalidationDiagnostics>(*other.invalidation);
+        }
+    }
+
+    FrameDiagnostics& operator=(const FrameDiagnostics& other) {
+        if (this != &other) {
+            property_hits = other.property_hits; property_misses = other.property_misses;
+            layer_hits = other.layer_hits; layer_misses = other.layer_misses;
+            composition_hits = other.composition_hits; composition_misses = other.composition_misses;
+            properties_evaluated = other.properties_evaluated; layers_evaluated = other.layers_evaluated;
+            compositions_evaluated = other.compositions_evaluated; node_cache_lookups = other.node_cache_lookups;
+            node_cache_hits = other.node_cache_hits; node_cache_misses = other.node_cache_misses;
+            node_cache_bytes = other.node_cache_bytes; static_nodes_detected = other.static_nodes_detected;
+            animated_nodes_detected = other.animated_nodes_detected; timings = other.timings; diagnostics = other.diagnostics;
+            frame_key_manifest = other.frame_key_manifest; composition_key_manifest = other.composition_key_manifest;
+            if (other.invalidation) {
+                invalidation = std::make_unique<FrameInvalidationDiagnostics>(*other.invalidation);
+            } else {
+                invalidation.reset();
+            }
+        }
+        return *this;
+    }
+
+    FrameDiagnostics(FrameDiagnostics&&) = default;
+    FrameDiagnostics& operator=(FrameDiagnostics&&) = default;
+
     std::size_t property_hits{0};
     std::size_t property_misses{0};
     std::size_t layer_hits{0};
@@ -89,6 +131,8 @@ struct FrameDiagnostics {
     // Cache key manifests for debugging
     std::string frame_key_manifest;
     std::string composition_key_manifest;
+
+    std::unique_ptr<FrameInvalidationDiagnostics> invalidation;
 
     void add_timing(std::string category, std::string label, double milliseconds) {
         timings.push_back({std::move(category), std::move(label), milliseconds});

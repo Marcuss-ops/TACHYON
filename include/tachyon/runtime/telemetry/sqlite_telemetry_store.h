@@ -18,6 +18,7 @@ struct TACHYON_API SqliteFrameRecord {
     double duration_ms{0.0};
     double encode_time_ms{0.0};
     double write_time_ms{0.0};
+    double dirty_area_ratio{0.0};
     bool cache_hit{false};
 };
 
