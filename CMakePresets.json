@@ -225,6 +225,7 @@
         "TachyonRuntimeTests",
         "TachyonOperationsTests",
         "TachyonGoldenTests",
+        "TachyonDeterminismTests",
         "tachyon"
       ]
     },
@@ -241,7 +242,8 @@
         "TachyonSceneTests",
         "TachyonRuntimeTests",
         "TachyonOperationsTests",
-        "TachyonGoldenTests"
+        "TachyonGoldenTests",
+        "TachyonDeterminismTests"
       ]
     },
     {
@@ -265,7 +267,8 @@
         "TachyonSceneTests",
         "TachyonRuntimeTests",
         "TachyonOperationsTests",
-        "TachyonGoldenTests"
+        "TachyonGoldenTests",
+        "TachyonDeterminismTests"
       ]
     },
     {

@@ -66,6 +66,13 @@ set(TachyonRuntimeSources
     execution/render_session_audio.cpp
     execution/render_session_parallel.cpp
     execution/session/render_preflight.cpp
+    execution/session/render_session_state.cpp
+    execution/session/render_session_preflight.cpp
+    execution/session/sink_lifecycle.cpp
+    execution/session/frame_execution_loop.cpp
+    execution/session/audio_export_step.cpp
+    execution/session/render_metrics_collector.cpp
+    execution/session/render_cleanup.cpp
     execution/tile_scheduler.cpp
     
     media/media_pipeline.cpp

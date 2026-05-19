@@ -40,6 +40,7 @@ include(cmake/OperationsTests.cmake)
 include(cmake/BackendTests.cmake)
 include(cmake/OutputTests.cmake)
 include(cmake/GoldenTests.cmake)
+include(cmake/DeterminismTests.cmake)
 
 # --- Header Smoke Tests ---
 # This target ensures that key headers compile in isolation.
