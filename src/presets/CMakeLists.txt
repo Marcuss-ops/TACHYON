@@ -11,13 +11,7 @@ set(TachyonPresetsSources
     shape/shape_builders.cpp
 )
 
-if(TACHYON_ENABLE_TEXT)
-    list(APPEND TachyonPresetsSources
-        text/text_manifest.cpp
-        text/text_builders.cpp
-        text/text_registry.cpp
-    )
-endif()
+
 
 list(APPEND TachyonPresetsSources
     transition/transition_preset_registry.cpp
@@ -42,9 +36,7 @@ tachyon_add_module(
     PUBLIC_DEPS TachyonCore TachyonCatalog
 )
 
-if(TACHYON_ENABLE_TEXT)
-    target_link_libraries(TachyonPresets PUBLIC TachyonText)
-endif()
+
 
 tachyon_link_text_deps(TachyonPresets)
 tachyon_link_media_deps(TachyonPresets)

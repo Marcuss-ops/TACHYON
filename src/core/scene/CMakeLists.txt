@@ -75,9 +75,7 @@ target_link_libraries(TachyonSceneEval
         TachyonColor
 )
 
-if(TACHYON_ENABLE_TEXT)
-    target_link_libraries(TachyonSceneEval PRIVATE TachyonText)
-endif()
+
 
 tachyon_link_text_deps(TachyonSceneEval)
 tachyon_link_omp(TachyonSceneEval)

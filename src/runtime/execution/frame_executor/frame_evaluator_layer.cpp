@@ -1,7 +1,9 @@
 #include "frame_executor_internal.h"
 #include "tachyon/core/shapes/shape_path.h"
 #include "tachyon/renderer2d/color/color_transfer.h"
+#ifdef TACHYON_ENABLE_TEXT
 #include "tachyon/text/content/word_timestamps.h"
+#endif
 #include "tachyon/runtime/core/data/compiled_scene.h"
 #include "tachyon/runtime/execution/property_sampling.h"
 #include "tachyon/core/scene/evaluator/layer_utils.h"

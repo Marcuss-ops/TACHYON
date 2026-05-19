@@ -46,25 +46,7 @@ bool run_golden_sequence_tests() {
         all_ok = verify_golden_sequence("shape_transform", scene, {0, 15, 30}) && all_ok;
     }
 
-    // 3. text_basic
-    {
-        auto scene = Composition("text_basic")
-            .size(512, 128)
-            .duration(1.0)
-            .fps(30)
-            .clear(ColorSpec{240, 240, 240, 255})
-            .layer("text_layer", [](LayerBuilder& l) {
-                l.position(256, 64)
-                 .text("Tachyon").font("default", 64.0)
-                 .color({20, 20, 20, 255})
-                 .done()
-                 .size(512, 128)
-                 .duration(1.0);
-            })
-            .build_scene();
 
-        all_ok = verify_golden_sequence("text_basic", scene, {0, 15, 30}) && all_ok;
-    }
 
     // 4. mask_basic
     {

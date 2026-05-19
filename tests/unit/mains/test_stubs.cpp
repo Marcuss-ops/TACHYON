@@ -35,9 +35,7 @@ bool run_asset_resolution_tests() { return true; }
 bool run_image_manager_tests() { return true; }
 bool run_image_decode_tests() { return true; }
 bool run_media_manager_cache_tests() { return true; }
-bool run_render_job_tests() { return true; }
 bool run_optical_flow_tests() { return true; }
-bool run_frame_cache_budget_tests() { return true; }
 bool run_tiling_integration_tests() { return true; }
 
 // Render

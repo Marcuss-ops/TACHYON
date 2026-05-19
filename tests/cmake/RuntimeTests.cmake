@@ -15,6 +15,7 @@ add_executable(TachyonRuntimeTests
     unit/runtime/render_determinism_tests.cpp
     unit/runtime/render_streaming_tests.cpp
     unit/runtime/layer_bounds_tests.cpp
+    unit/runtime/render_job_tests.cpp
 )
 
 

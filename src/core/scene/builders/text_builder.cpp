@@ -1,15 +1,21 @@
 #include "tachyon/scene/text_builder.h"
 #include "tachyon/scene/builder.h"
+#ifdef TACHYON_ENABLE_TEXT
 #include "tachyon/text/animation/text_animator_utils.h"
+#endif
 
 namespace tachyon::scene {
 
 namespace {
 
 void mark_fixed_pitch_if_needed(tachyon::LayerSpec& spec, const TextAnimatorSpec& anim) {
+#ifdef TACHYON_ENABLE_TEXT
     if (::tachyon::text::uses_character_stagger_layout(anim)) {
         spec.text.box.fixed_pitch = true;
     }
+#else
+    (void)spec; (void)anim;
+#endif
 }
 
 } // namespace

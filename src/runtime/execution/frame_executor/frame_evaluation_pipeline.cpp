@@ -12,18 +12,20 @@ ExecutedFrame run_frame_execution_pipeline(
     const FrameCacheState& cache_state,
     const FrameTimingState& timing_state) {
 
+    context.frame_cache = &executor.cache();
+
     // 1. Try to return a blended frame (time-stretching)
     if (auto result = try_frame_blend_step(
             executor, compiled_scene, plan, task, snapshot, context, cache_state, timing_state)) {
         finalize_frame_step(*result, executor, compiled_scene, plan, task, context, cache_state);
-        return *result;
+        return std::move(*result);
     }
 
     // 2. Try to return a motion-blurred frame
     if (auto result = try_motion_blur_step(
             executor, compiled_scene, plan, task, snapshot, context, cache_state, timing_state)) {
         finalize_frame_step(*result, executor, compiled_scene, plan, task, context, cache_state);
-        return *result;
+        return std::move(*result);
     }
 
     // 3. Normal execution pipeline

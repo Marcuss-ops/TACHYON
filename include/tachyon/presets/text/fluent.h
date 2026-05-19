@@ -2,7 +2,9 @@
 
 #include "tachyon/core/spec/schema/objects/layer_spec.h"
 #include "tachyon/core/spec/schema/animation/text_animator_spec.h"
+#ifdef TACHYON_ENABLE_TEXT
 #include "tachyon/text/animation/text_presets.h"
+#endif
 #include "tachyon/core/types/colors.h"
 #include "tachyon/presets/text/text_anchor.h"
 #include "tachyon/presets/text/text_params.h"

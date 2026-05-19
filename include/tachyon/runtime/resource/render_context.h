@@ -36,6 +36,7 @@ class TextRegistry;
 
 class TransitionRegistry;
 class NodeCache;
+class FrameCache;
 
 namespace profiling { class RenderProfiler; }
 namespace audio { class IAudioExporter; }
@@ -108,6 +109,7 @@ struct RenderContext {
     std::shared_ptr<renderer2d::ComputeBackend> compute_backend;
 
     std::shared_ptr<NodeCache> node_cache;
+    FrameCache* frame_cache{nullptr};
 
 
     explicit RenderContext(

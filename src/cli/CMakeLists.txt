@@ -19,9 +19,7 @@ set(TachyonCLISources
     commands/metrics.cpp
 )
 
-if(TACHYON_ENABLE_TEXT)
-    list(APPEND TachyonCLISources commands/fetch_fonts.cpp)
-endif()
+
 
 list(APPEND TachyonCLISources
     commands/doctor.cpp

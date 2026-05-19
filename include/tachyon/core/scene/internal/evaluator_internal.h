@@ -3,7 +3,9 @@
 #include "tachyon/core/scene/evaluation/evaluator.h"
 #include "tachyon/core/audio/audio_interfaces.h"
 #include "tachyon/core/media/media_provider.h"
+#ifdef TACHYON_ENABLE_TEXT
 #include "tachyon/text/content/subtitle.h"
+#endif
 
 #include <unordered_map>
 #include <vector>
@@ -26,7 +28,9 @@ struct EvaluationContext {
     std::vector<std::string> composition_stack;
     const ::tachyon::audio::IAudioAnalyzer* audio_analyzer{nullptr};
     EvaluationVariables vars;
+#ifdef TACHYON_ENABLE_TEXT
     std::unordered_map<std::string, std::vector<::tachyon::text::SubtitleEntry>> subtitle_cache;
+#endif
     ::tachyon::media::IMediaProvider* media{nullptr};
     PropertySampler sampler{nullptr};
     

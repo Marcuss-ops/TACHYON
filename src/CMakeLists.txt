@@ -22,9 +22,7 @@ if(TACHYON_ENABLE_OUTPUT)
     add_subdirectory(output)
 endif()
 
-if(TACHYON_ENABLE_TEXT)
-    add_subdirectory(text)
-endif()
+
 
 add_subdirectory(runtime)
 add_subdirectory(backends)

@@ -3,9 +3,6 @@
 
 #include "tachyon/renderer2d/evaluated_composition/composition_renderer.h"
 #include "tachyon/renderer2d/evaluated_composition/rendering/pipeline/pipeline_helpers.h"
-#include "tachyon/text/animation/text_animator_utils.h"
-#include "tachyon/text/layout/layout.h"
-#include "tachyon/text/rendering/text_raster_surface.h"
 #include "layer_renderer_simple.h"
 
 #include "tachyon/renderer2d/evaluated_composition/layer_renderer.h"
@@ -20,7 +17,6 @@
 #include "tachyon/runtime/execution/session/render_internal.h"
 #include "tachyon/core/scene/transform_resolver.h"
 #include "tachyon/renderer2d/evaluated_composition/utilities/composition_utils.h"
-#include "tachyon/text/fonts/core/font_registry.h"
 
 
 #include <algorithm>
@@ -72,6 +68,7 @@ void fill_rect_direct_worker(SurfaceRGBA& surface, int x, int y, int w, int h, r
     surface.fill_rect(RectI{x, y, w, h}, color, true);
 }
 
+#ifdef TACHYON_ENABLE_TEXT
 void render_glyph_direct(
     SurfaceRGBA& surface,
     const ::tachyon::text::GlyphBitmap& bitmap,
@@ -136,6 +133,7 @@ void render_glyph_direct(
         }
     }
 }
+#endif
 
 std::string make_precomp_cache_key(
     const scene::EvaluatedLayerState& layer,

@@ -98,6 +98,16 @@ void FrameCache::store_frame(std::uint64_t key, std::shared_ptr<const renderer2d
     m_frames.store(FrameCacheKey(key, ""), frame, estimate_frame_size(*frame));
 }
 
+std::shared_ptr<renderer2d::SurfaceRGBA> FrameCache::lookup_tile(std::uint64_t key) const {
+    return m_tiles.lookup(key);
+}
+
+void FrameCache::store_tile(std::uint64_t key, std::shared_ptr<renderer2d::SurfaceRGBA> tile) {
+    if (!tile) return;
+    std::size_t size = tile->width() * tile->height() * sizeof(float) * 4;
+    m_tiles.store(key, tile, size);
+}
+
 void FrameCache::set_budget_bytes(std::size_t bytes) {
     m_max_budget_bytes = bytes;
     
@@ -105,17 +115,20 @@ void FrameCache::set_budget_bytes(std::size_t bytes) {
     // Properties: 5% (min 1MB)
     // Layers: 15% (min 5MB)
     // Compositions: 15% (min 5MB)
-    // Frames: remaining 65%
+    // Tiles: 20% (min 10MB)
+    // Frames: remaining
     std::size_t prop_budget = std::max<std::size_t>(1024 * 1024, bytes * 0.05);
     std::size_t layer_budget = std::max<std::size_t>(5 * 1024 * 1024, bytes * 0.15);
     std::size_t comp_budget = std::max<std::size_t>(5 * 1024 * 1024, bytes * 0.15);
-    std::size_t frame_budget = (bytes > (prop_budget + layer_budget + comp_budget))
-        ? (bytes - (prop_budget + layer_budget + comp_budget))
+    std::size_t tile_budget = std::max<std::size_t>(10 * 1024 * 1024, bytes * 0.20);
+    std::size_t frame_budget = (bytes > (prop_budget + layer_budget + comp_budget + tile_budget))
+        ? (bytes - (prop_budget + layer_budget + comp_budget + tile_budget))
         : (10 * 1024 * 1024);
 
     m_properties.set_capacity_bytes(prop_budget);
     m_layers.set_capacity_bytes(layer_budget);
     m_compositions.set_capacity_bytes(comp_budget);
+    m_tiles.set_capacity_bytes(tile_budget);
     m_frames.set_capacity_bytes(frame_budget);
 }
 
@@ -127,21 +140,24 @@ std::size_t FrameCache::current_usage_bytes() const {
     return m_properties.current_usage_bytes() + 
            m_layers.current_usage_bytes() + 
            m_compositions.current_usage_bytes() + 
-           m_frames.current_usage_bytes();
+           m_frames.current_usage_bytes() +
+           m_tiles.current_usage_bytes();
 }
 
 std::size_t FrameCache::hit_count() const noexcept {
     return m_properties.hit_count() + 
            m_layers.hit_count() + 
            m_compositions.hit_count() + 
-           m_frames.hit_count();
+           m_frames.hit_count() +
+           m_tiles.hit_count();
 }
 
 std::size_t FrameCache::miss_count() const noexcept {
     return m_properties.miss_count() + 
            m_layers.miss_count() + 
            m_compositions.miss_count() + 
-           m_frames.miss_count();
+           m_frames.miss_count() +
+           m_tiles.miss_count();
 }
 
 void FrameCache::clear() {
@@ -149,6 +165,7 @@ void FrameCache::clear() {
     m_layers.clear();
     m_compositions.clear();
     m_frames.clear();
+    m_tiles.clear();
 }
 
 } // namespace tachyon

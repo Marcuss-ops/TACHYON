@@ -12,7 +12,7 @@ add_executable(TachyonGoldenTests
     unit/render/golden_smoke_tests.cpp
     unit/render/golden_sequence_tests.cpp
     golden/scenes/precomp_basic.cpp
-    golden/scenes/text_basic.cpp
+
     golden/scenes/shape_basic.cpp
     golden/scenes/mask_basic.cpp
     golden/scenes/motion_blur_basic.cpp

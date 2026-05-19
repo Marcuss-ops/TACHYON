@@ -5,6 +5,8 @@
 #include "tachyon/renderer2d/effects/core/transitions/transition_apply.h"
 #include "tachyon/core/spec/schema/objects/background_spec.h"
 #include "tachyon/runtime/execution/session/render_internal.h"
+#include "tachyon/runtime/cache/frame_cache.h"
+#include "tachyon/renderer2d/geometry/dirty_region.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable:4456)
@@ -37,6 +39,58 @@
 namespace tachyon {
 
 namespace {
+
+inline void hash_combine(std::uint64_t& seed, std::uint64_t value) {
+    seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
+struct TileState {
+    renderer2d::RectI rect;
+    int col{0};
+    int row{0};
+    bool is_dirty{false};
+};
+
+struct TiledFrameGrid {
+    int tile_size{128};
+    int cols{0};
+    int rows{0};
+    std::vector<TileState> tiles;
+};
+
+TiledFrameGrid build_tiled_frame_grid(int width, int height, const renderer2d::DirtyRegion& dirty_region, int tile_size) {
+    TiledFrameGrid grid;
+    grid.tile_size = tile_size;
+    grid.cols = (width + tile_size - 1) / tile_size;
+    grid.rows = (height + tile_size - 1) / tile_size;
+    grid.tiles.reserve(grid.cols * grid.rows);
+
+    for (int r = 0; r < grid.rows; ++r) {
+        for (int c = 0; c < grid.cols; ++c) {
+            int tx = c * tile_size;
+            int ty = r * tile_size;
+            int tw = std::min(tile_size, width - tx);
+            int th = std::min(tile_size, height - ty);
+            
+            TileState tile;
+            tile.rect = renderer2d::RectI{tx, ty, tw, th};
+            tile.col = c;
+            tile.row = r;
+            
+            renderer2d::IntRect tile_int_rect{tx, ty, tw, th};
+            tile.is_dirty = false;
+            
+            for (const auto& rect : dirty_region.rects()) {
+                if (rect.intersects(tile_int_rect)) {
+                    tile.is_dirty = true;
+                    break;
+                }
+            }
+            grid.tiles.push_back(tile);
+        }
+    }
+    return grid;
+}
 
 renderer2d::BlendMode resolve_blend_mode(const std::string& mode) {
     if (mode == "additive") return renderer2d::BlendMode::Additive;
@@ -218,7 +272,7 @@ RasterizedFrame2D render_evaluated_composition_2d(
         }
     };
 
-    const bool has_effectful_layers = std::any_of(
+    const bool has_complex_global_effects = std::any_of(
         state.layers.begin(),
         state.layers.end(),
         [](const auto& layer) {
@@ -226,11 +280,146 @@ RasterizedFrame2D render_evaluated_composition_2d(
                                    (!layer.playback.transition_out.transition_id.empty() && layer.playback.transition_out.transition_id != "none");
             return layer.identity.enabled
                 && layer.identity.active
-                && (!layer.effects.empty() || has_transition);
+                && (layer.identity.is_adjustment_layer || !layer.effects.empty() || has_transition || layer.identity.type == LayerType::Precomp);
         });
 
-    if (render_context.policy.tile_size > 0 && !has_effectful_layers) {
-        render_pass(*frame_surface, render_context, std::nullopt);
+    if (render_context.frame_cache && !has_complex_global_effects) {
+        int tile_size = render_context.policy.tile_size > 0 ? render_context.policy.tile_size : 128;
+        
+        // 1. Analyze and subdivide
+        renderer2d::DirtyRegion default_dirty;
+        const renderer2d::DirtyRegion* dirty_ptr = &default_dirty;
+        bool is_full_frame = true;
+        
+        if (render_context.diagnostics && render_context.diagnostics->invalidation) {
+            dirty_ptr = &render_context.diagnostics->invalidation->dirty_region;
+            is_full_frame = render_context.diagnostics->invalidation->full_frame_invalidation;
+        } else {
+            default_dirty.add(renderer2d::IntRect{0, 0, (int)working_width, (int)working_height});
+        }
+        
+        TiledFrameGrid grid = build_tiled_frame_grid(working_width, working_height, *dirty_ptr, tile_size);
+        if (is_full_frame) {
+            for (auto& tile : grid.tiles) {
+                tile.is_dirty = true;
+            }
+        }
+        
+        if (render_context.total_tiles_counter) {
+            render_context.total_tiles_counter->fetch_add(grid.tiles.size());
+        }
+        
+        // 2. Process tiles in parallel
+        #ifdef _OPENMP
+        #pragma omp parallel for schedule(dynamic)
+        #endif
+        for (int i = 0; i < static_cast<int>(grid.tiles.size()); ++i) {
+            auto& tile = grid.tiles[i];
+            
+            // Intersecting layers for this tile
+            std::vector<const scene::EvaluatedLayerState*> intersecting_layers;
+            for (const auto& layer : state.layers) {
+                if (!layer.identity.enabled || !layer.identity.active) continue;
+                
+                renderer2d::RectI l_rect = layer_rect(layer, working_width, working_height, 1.0f);
+                bool intersects = (l_rect.x < tile.rect.x + tile.rect.width) &&
+                                  (l_rect.x + l_rect.width > tile.rect.x) &&
+                                  (l_rect.y < tile.rect.y + tile.rect.height) &&
+                                  (l_rect.y + l_rect.height > tile.rect.y);
+                if (intersects) {
+                    intersecting_layers.push_back(&layer);
+                }
+            }
+            
+            // Compute TileKey
+            std::uint64_t tile_key = 0;
+            hash_combine(tile_key, tile.col);
+            hash_combine(tile_key, tile.row);
+            hash_combine(tile_key, tile_size);
+            hash_combine(tile_key, working_width);
+            hash_combine(tile_key, working_height);
+            
+            for (const auto* layer_ptr : intersecting_layers) {
+                const auto& layer = *layer_ptr;
+                hash_combine(tile_key, std::hash<std::string>{}(layer.identity.layer_id));
+                hash_combine(tile_key, static_cast<std::uint64_t>(layer.identity.type));
+                hash_combine(tile_key, std::hash<std::string>{}(layer.transform.blend_mode));
+                hash_combine(tile_key, std::hash<double>{}(layer.transform.opacity));
+                hash_combine(tile_key, std::hash<float>{}(layer.transform.local_transform.position.x));
+                hash_combine(tile_key, std::hash<float>{}(layer.transform.local_transform.position.y));
+                hash_combine(tile_key, std::hash<float>{}(layer.transform.local_transform.scale.x));
+                hash_combine(tile_key, std::hash<float>{}(layer.transform.local_transform.scale.y));
+                hash_combine(tile_key, std::hash<float>{}(layer.transform.local_transform.rotation_rad));
+                hash_combine(tile_key, std::hash<float>{}(layer.transform.local_transform.anchor_point.x));
+                hash_combine(tile_key, std::hash<float>{}(layer.transform.local_transform.anchor_point.y));
+                
+                if (layer.identity.type == LayerType::Solid) {
+                    hash_combine(tile_key, std::hash<float>{}(layer.text.fill_color.r));
+                    hash_combine(tile_key, std::hash<float>{}(layer.text.fill_color.g));
+                    hash_combine(tile_key, std::hash<float>{}(layer.text.fill_color.b));
+                    hash_combine(tile_key, std::hash<float>{}(layer.text.fill_color.a));
+                }
+                if (layer.identity.type == LayerType::Text) {
+                    hash_combine(tile_key, std::hash<std::string>{}(layer.text.content));
+                    hash_combine(tile_key, std::hash<std::string>{}(layer.text.font_id));
+                    hash_combine(tile_key, std::hash<float>{}(layer.text.font_size));
+                    hash_combine(tile_key, std::hash<float>{}(layer.text.fill_color.r));
+                    hash_combine(tile_key, std::hash<float>{}(layer.text.fill_color.g));
+                    hash_combine(tile_key, std::hash<float>{}(layer.text.fill_color.b));
+                    hash_combine(tile_key, std::hash<float>{}(layer.text.fill_color.a));
+                }
+                if (layer.identity.type == LayerType::Procedural) {
+                    hash_combine(tile_key, std::hash<double>{}(layer.playback.local_time_seconds));
+                }
+            }
+            
+            std::shared_ptr<renderer2d::SurfaceRGBA> cached_tile;
+            bool cache_hit = false;
+            
+            // Check cache
+            cached_tile = render_context.frame_cache->lookup_tile(tile_key);
+            if (cached_tile) {
+                cache_hit = true;
+            }
+            
+            if (cache_hit) {
+                // Fast-path: paste directly
+                frame_surface->blit(*cached_tile, tile.rect.x, tile.rect.y);
+                if (render_context.diagnostics) {
+                    #pragma omp critical
+                    {
+                        render_context.diagnostics->add_timing("tile", "cache_hit", 0.0);
+                    }
+                }
+            } else {
+                // Slow-path: render tile
+                auto tile_surface = std::make_shared<renderer2d::SurfaceRGBA>(tile.rect.width, tile.rect.height);
+                tile_surface->set_profile(render_context.working_color_space.profile);
+                tile_surface->clear(renderer2d::Color::transparent());
+                
+                for (const auto* layer_ptr : intersecting_layers) {
+                    const auto& layer = *layer_ptr;
+                    auto layer_tile_surf = renderer2d::render_layer_surface(layer, state, intent, plan, task, render_context, tile.rect);
+                    if (layer_tile_surf) {
+                        // Opacity & composite
+                        multiply_surface_alpha(*layer_tile_surf, static_cast<float>(layer.transform.opacity));
+                        composite_surface(*tile_surface, *layer_tile_surf, 0, 0, resolve_blend_mode(layer.transform.blend_mode), -1.0f);
+                    }
+                }
+                
+                // Store in cache
+                render_context.frame_cache->store_tile(tile_key, tile_surface);
+                
+                // Paste directly
+                frame_surface->blit(*tile_surface, tile.rect.x, tile.rect.y);
+                if (render_context.diagnostics) {
+                    #pragma omp critical
+                    {
+                        render_context.diagnostics->add_timing("tile", "cache_miss", 0.0);
+                    }
+                }
+            }
+        }
     } else {
         render_pass(*frame_surface, render_context, std::nullopt);
     }

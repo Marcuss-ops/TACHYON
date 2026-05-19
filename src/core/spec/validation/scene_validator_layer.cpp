@@ -1,6 +1,8 @@
 #include "tachyon/core/spec/validation/scene_validator.h"
 #include "tachyon/core/spec/validation/layer_spec_normalizer.h"
+#ifdef TACHYON_ENABLE_TEXT
 #include "tachyon/text/fonts/management/font_manifest.h"
+#endif
 #include <filesystem>
 #include <fstream>
 
@@ -260,6 +262,7 @@ void SceneValidator::validate_keyframes(const ::tachyon::LayerSpec& layer, const
 }
 
 void SceneValidator::validate_font_reference(const ::tachyon::LayerSpec& layer, const ::tachyon::SceneSpec& scene, const std::string& path, ValidationResult& out) const {
+#ifdef TACHYON_ENABLE_TEXT
     if (!layer.text.font_id.empty() && scene.font_manifest) {
         bool font_found = false;
         for (const auto& font : scene.font_manifest->fonts) {
@@ -275,6 +278,9 @@ void SceneValidator::validate_font_reference(const ::tachyon::LayerSpec& layer, 
             out.error_count++;
         }
     }
+#else
+    (void)layer; (void)scene; (void)path; (void)out;
+#endif
 }
 
 void SceneValidator::validate_file_reference(const ::tachyon::LayerSpec& layer, const ::tachyon::SceneSpec& scene, const std::string& path, ValidationResult& out) const {

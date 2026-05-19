@@ -38,8 +38,8 @@ bool run_sqlite_telemetry_store_tests() {
     }
 
     // 2.5 Verify version
-    if (store.user_version_for_test() != 4) {
-        std::cerr << "[TelemetryStore] FAIL: User version should be 4 after initialization (got " << store.user_version_for_test() << ")\n";
+    if (store.user_version_for_test() != 5) {
+        std::cerr << "[TelemetryStore] FAIL: User version should be 5 after initialization (got " << store.user_version_for_test() << ")\n";
         return false;
     }
 

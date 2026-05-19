@@ -117,6 +117,7 @@ tachyon_link_infra(TachyonRuntimeTelemetry)
 target_link_libraries(TachyonRuntimeTelemetry
     PUBLIC
         TachyonCore
+        TachyonRenderer2D
     PRIVATE
         TachyonPlatform
 )

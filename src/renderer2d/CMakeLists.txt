@@ -164,9 +164,7 @@ target_link_libraries(TachyonRenderer2D PUBLIC
     TachyonPresets
 )
 
-if(TACHYON_ENABLE_TEXT)
-    target_link_libraries(TachyonRenderer2D PUBLIC TachyonText)
-endif()
+
 
 if(TACHYON_ENABLE_HIGHWAY)
     if(TARGET hwy)

@@ -12,6 +12,8 @@
 #include <string>
 #include <vector>
 
+
+
 namespace tachyon {
 
 /**
@@ -42,6 +44,10 @@ public:
     std::shared_ptr<const renderer2d::Framebuffer> lookup_frame(std::uint64_t hash) const;
     void store_frame(std::uint64_t hash, std::shared_ptr<const renderer2d::Framebuffer> frame);
 
+    // Tile Level
+    std::shared_ptr<renderer2d::SurfaceRGBA> lookup_tile(std::uint64_t key) const;
+    void store_tile(std::uint64_t key, std::shared_ptr<renderer2d::SurfaceRGBA> tile);
+
     void clear();
 
     [[nodiscard]] std::size_t hit_count() const noexcept;
@@ -52,6 +58,7 @@ public:
     [[nodiscard]] auto layer_stats() const noexcept { return m_layers.stats(); }
     [[nodiscard]] auto composition_stats() const noexcept { return m_compositions.stats(); }
     [[nodiscard]] auto frame_stats() const noexcept { return m_frames.stats(); }
+    [[nodiscard]] auto tile_stats() const noexcept { return m_tiles.stats(); }
 
     void set_budget_bytes(std::size_t bytes);
     void evict_if_needed();
@@ -62,6 +69,7 @@ private:
     ShardedLruCache<std::uint64_t, std::shared_ptr<const scene::EvaluatedLayerState>> m_layers{150 * 1024 * 1024}; // 150MB
     ShardedLruCache<std::uint64_t, std::shared_ptr<const scene::EvaluatedCompositionState>> m_compositions{150 * 1024 * 1024}; // 150MB
     ShardedLruCache<FrameCacheKey, std::shared_ptr<const renderer2d::Framebuffer>, FrameCacheKeyHash> m_frames{674 * 1024 * 1024}; // 674MB
+    ShardedLruCache<std::uint64_t, std::shared_ptr<renderer2d::SurfaceRGBA>> m_tiles{256 * 1024 * 1024}; // 256MB for tiles
 
     std::size_t m_max_budget_bytes{1024ULL * 1024 * 1024}; // 1GB default
 };

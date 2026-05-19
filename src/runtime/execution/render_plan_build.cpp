@@ -1,7 +1,9 @@
 #include "tachyon/runtime/execution/planning/render_plan.h"
 #include "tachyon/runtime/execution/frames/frame_executor.h"
 #include "tachyon/runtime/cache/cache_key_builder.h"
+#ifdef TACHYON_ENABLE_TEXT
 #include "tachyon/text/fonts/management/font_manifest.h"
+#endif
 
 #include <algorithm>
 #include <array>
@@ -41,6 +43,7 @@ std::size_t count_layers_with_track_matte(const CompositionSpec& composition) {
 }
 
 std::uint64_t hash_font_content(const SceneSpec& scene) {
+#ifdef TACHYON_ENABLE_TEXT
     if (!scene.font_manifest) {
         return 0;
     }
@@ -73,6 +76,10 @@ std::uint64_t hash_font_content(const SceneSpec& scene) {
     }
 
     return builder.finish();
+#else
+    (void)scene;
+    return 0;
+#endif
 }
 
 CompositionSummary make_summary(const CompositionSpec& composition) {

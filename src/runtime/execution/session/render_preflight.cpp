@@ -6,7 +6,9 @@
 #include "tachyon/renderer2d/effects/effect_host.h"
 #include "tachyon/renderer2d/effects/effect_registry.h"
 #include "tachyon/transition_registry.h"
+#ifdef TACHYON_ENABLE_TEXT
 #include "tachyon/text/fonts/core/font_registry.h"
+#endif
 #include <filesystem>
 #include <iostream>
 #include <fstream>

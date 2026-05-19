@@ -21,7 +21,7 @@ std::shared_ptr<SurfaceRGBA> render_layer_surface(
     RenderContext& context,
     const std::optional<RectI>& target_rect) {
 
-    bool use_cache = (layer.temporal_stability == TemporalStability::Static) && context.node_cache;
+    bool use_cache = (layer.temporal_stability == TemporalStability::Static) && context.node_cache && !target_rect.has_value();
     NodeCacheKey key;
 
     if (use_cache) {
