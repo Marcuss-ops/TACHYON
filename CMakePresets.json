@@ -31,7 +31,7 @@
       "cacheVariables": {
         "TACHYON_ENABLE_ASAN": "OFF",
         "TACHYON_ENABLE_MEDIA": "ON",
-        "TACHYON_ENABLE_TEXT": "ON",
+        "TACHYON_ENABLE_TEXT": "OFF",
         "TACHYON_ENABLE_OUTPUT": "ON",
         "TACHYON_ENABLE_AUDIO": "ON",
         "TACHYON_BUILD_TESTS": "ON"
@@ -44,7 +44,7 @@
       "cacheVariables": {
         "TACHYON_ENABLE_ASAN": "OFF",
         "TACHYON_ENABLE_MEDIA": "ON",
-        "TACHYON_ENABLE_TEXT": "ON",
+        "TACHYON_ENABLE_TEXT": "OFF",
         "TACHYON_ENABLE_OUTPUT": "ON",
         "TACHYON_ENABLE_AUDIO": "ON",
         "TACHYON_BUILD_TESTS": "ON"
@@ -96,7 +96,7 @@
         "TACHYON_USE_SYSTEM_DEPS": "ON",
         "TACHYON_FETCH_DEPS": "OFF",
         "TACHYON_ENABLE_MEDIA": "ON",
-        "TACHYON_ENABLE_TEXT": "ON",
+        "TACHYON_ENABLE_TEXT": "OFF",
         "TACHYON_ENABLE_OUTPUT": "ON",
         "TACHYON_ENABLE_AUDIO": "ON",
         "TACHYON_ENABLE_SQLITE_TELEMETRY": "ON",
@@ -114,7 +114,7 @@
         "TACHYON_USE_SYSTEM_DEPS": "ON",
         "TACHYON_FETCH_DEPS": "OFF",
         "TACHYON_ENABLE_MEDIA": "ON",
-        "TACHYON_ENABLE_TEXT": "ON",
+        "TACHYON_ENABLE_TEXT": "OFF",
         "TACHYON_ENABLE_OUTPUT": "ON",
         "TACHYON_ENABLE_AUDIO": "ON",
         "TACHYON_ENABLE_SQLITE_TELEMETRY": "ON",
@@ -130,7 +130,7 @@
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "TACHYON_ENABLE_ASAN": "OFF",
         "TACHYON_ENABLE_MEDIA": "ON",
-        "TACHYON_ENABLE_TEXT": "ON",
+        "TACHYON_ENABLE_TEXT": "OFF",
         "TACHYON_ENABLE_OUTPUT": "ON",
         "TACHYON_ENABLE_AUDIO": "ON",
         "TACHYON_ENABLE_MIMALLOC": "ON",
@@ -146,7 +146,7 @@
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "TACHYON_ENABLE_ASAN": "OFF",
         "TACHYON_ENABLE_MEDIA": "ON",
-        "TACHYON_ENABLE_TEXT": "ON",
+        "TACHYON_ENABLE_TEXT": "OFF",
         "TACHYON_ENABLE_OUTPUT": "ON",
         "TACHYON_ENABLE_AUDIO": "ON",
         "TACHYON_BUILD_TESTS": "ON"
