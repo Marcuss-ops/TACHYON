@@ -85,6 +85,7 @@ struct RenderContext {
     int width{0};
     int height{0};
     std::size_t pixel_concurrency{1};
+    bool static_bake_proof{false};
     // Optional tile-level parallel executor. When set, composition_renderer uses it
     // instead of the raw OpenMP pragma for tile dispatch.
     // Signature: executor(tile_count, fn) where fn(tile_index) renders one tile.

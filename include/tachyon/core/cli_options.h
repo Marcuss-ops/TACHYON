@@ -21,6 +21,12 @@ struct RenderOptions {
     // Preview specific
     std::optional<int> preview_frame_number;
     std::filesystem::path preview_output;
+
+    // Warmup & Baking Proof
+    bool warmup{false};
+    std::size_t warmup_buffers{0};
+    int warmup_frame{0};
+    bool static_bake_proof{false};
 };
 
 struct InspectOptions {

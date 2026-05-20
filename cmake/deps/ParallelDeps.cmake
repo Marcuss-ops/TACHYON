@@ -11,6 +11,8 @@ if(TACHYON_ENABLE_TASKFLOW)
             GIT_REPOSITORY https://github.com/taskflow/taskflow.git
             GIT_TAG ${TACHYON_TASKFLOW_GIT_TAG}
         )
+        set(TF_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+        set(TF_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
         FetchContent_MakeAvailable(taskflow)
     endif()
 endif()

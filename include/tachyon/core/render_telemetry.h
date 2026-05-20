@@ -56,7 +56,44 @@ public:
     /**
      * @brief Returns the current run ID.
      */
+    /**
+     * @brief Returns the current run ID.
+     */
     int current_run_id() const { return m_run_id; }
+
+    /**
+     * @brief Set the warmup information.
+     */
+    void set_warmup_info(bool enabled, double duration_ms, std::size_t buffers, std::size_t bytes_after, std::size_t available_after) {
+        m_warmup_enabled = enabled;
+        m_warmup_duration_ms = duration_ms;
+        m_warmup_buffers = buffers;
+        m_pool_bytes_after_warmup = bytes_after;
+        m_pool_available_after_warmup = available_after;
+    }
+
+    /**
+     * @brief Set the static bake information.
+     */
+    void set_static_bake_info(bool enabled, std::size_t hits, std::size_t misses, std::size_t bytes, double build_ms) {
+        m_static_bake_enabled = enabled;
+        m_static_bake_hits = hits;
+        m_static_bake_misses = misses;
+        m_static_bake_bytes = bytes;
+        m_static_bake_build_ms = build_ms;
+    }
+
+    bool warmup_enabled() const { return m_warmup_enabled; }
+    double warmup_duration_ms() const { return m_warmup_duration_ms; }
+    std::size_t warmup_buffers() const { return m_warmup_buffers; }
+    std::size_t pool_bytes_after_warmup() const { return m_pool_bytes_after_warmup; }
+    std::size_t pool_available_after_warmup() const { return m_pool_available_after_warmup; }
+
+    bool static_bake_enabled() const { return m_static_bake_enabled; }
+    std::size_t static_bake_hits() const { return m_static_bake_hits; }
+    std::size_t static_bake_misses() const { return m_static_bake_misses; }
+    std::size_t static_bake_bytes() const { return m_static_bake_bytes; }
+    double static_bake_build_ms() const { return m_static_bake_build_ms; }
 
 private:
     RenderTelemetry() = default;
@@ -66,6 +103,18 @@ private:
     int m_run_id = 0;
     std::chrono::steady_clock::time_point m_start_time;
     bool m_initialized = false;
+
+    bool m_warmup_enabled{false};
+    double m_warmup_duration_ms{0.0};
+    std::size_t m_warmup_buffers{0};
+    std::size_t m_pool_bytes_after_warmup{0};
+    std::size_t m_pool_available_after_warmup{0};
+
+    bool m_static_bake_enabled{false};
+    std::size_t m_static_bake_hits{0};
+    std::size_t m_static_bake_misses{0};
+    std::size_t m_static_bake_bytes{0};
+    double m_static_bake_build_ms{0.0};
 
     // Current run statistics
     struct RunStats {

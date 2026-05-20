@@ -118,6 +118,24 @@ void RenderTelemetry::save_summary() {
     fs << "Max Layers:     " << m_stats.max_layers << "\n";
     fs << "Bottleneck:     " << bottleneck << "\n";
     fs << "========================================\n";
+
+    if (m_warmup_enabled) {
+        fs << "\n--- WARMUP ---\n";
+        fs << "warmup_enabled               : true\n";
+        fs << "warmup_duration_ms           : " << std::fixed << std::setprecision(1) << m_warmup_duration_ms << "\n";
+        fs << "warmup_buffers               : " << m_warmup_buffers << "\n";
+        fs << "pool_bytes_after_warmup      : " << m_pool_bytes_after_warmup << "\n";
+        fs << "pool_available_after_warmup  : " << m_pool_available_after_warmup << "\n";
+    }
+
+    if (m_static_bake_enabled) {
+        fs << "\n--- STATIC BAKE ---\n";
+        fs << "static_bake_enabled          : true\n";
+        fs << "static_bake_hits             : " << m_static_bake_hits << "\n";
+        fs << "static_bake_misses           : " << m_static_bake_misses << "\n";
+        fs << "static_bake_bytes            : " << m_static_bake_bytes << "\n";
+        fs << "static_bake_build_ms         : " << std::fixed << std::setprecision(1) << m_static_bake_build_ms << "\n";
+    }
 }
 
 int RenderTelemetry::resolve_next_run_id() {

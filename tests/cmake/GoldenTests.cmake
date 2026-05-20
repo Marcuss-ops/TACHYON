@@ -31,6 +31,8 @@ target_link_libraries(TachyonGoldenTests
         TachyonCore
         TachyonRenderer2D
         TachyonRuntime
+        TachyonRenderer2D
+        TachyonRuntime
 )
 
 add_test(

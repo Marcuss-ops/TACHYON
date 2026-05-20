@@ -22,7 +22,6 @@
 #include "tachyon/runtime/policy/worker_policy.h"
 #include "tachyon/runtime/policy/surface_pool_policy.h"
 #include "tachyon/runtime/policy/telemetry_policy.h"
-
 // Modular Session Pipeline Steps
 #include "tachyon/runtime/execution/session/render_session_state.h"
 #include "tachyon/runtime/execution/session/scoped_process_sampler.h"
@@ -32,7 +31,8 @@
 #include "tachyon/runtime/execution/session/audio_export_step.h"
 #include "tachyon/runtime/execution/session/render_metrics_collector.h"
 #include "tachyon/runtime/execution/session/render_cleanup.h"
-
+#include "tachyon/core/render_telemetry.h"
+#include "tachyon/runtime/telemetry/thread_local_telemetry.h"
 #include <iomanip>
 #include <sstream>
 #include <iostream>
@@ -139,6 +139,7 @@ RenderSessionResult RenderSession::render(
     }
 
     configure_render_context(state, m_profiler, m_surface_pool, *effect_registry, *transition_registry, text_registry, m_audio_exporter);
+    state.context.static_bake_proof = m_static_bake_proof;
 
     // Phase 0: Preflight (Asset/Font/Writability checks)
     RenderSessionPreflightInput preflight_input{
@@ -183,6 +184,92 @@ RenderSessionResult RenderSession::render(
     runtime::RenderWorkerPolicy policy;
     return render(scene, compiled_scene, execution_plan, output_path, 
                   policy.resolve(std::thread::hardware_concurrency()));
+}
+
+void RenderSession::warmup(
+    const SceneSpec& scene,
+    const CompiledScene& compiled_scene,
+    const RenderExecutionPlan& execution_plan,
+    const RenderWarmupOptions& options) {
+    
+    (void)scene;
+    if (!options.enabled) {
+        return;
+    }
+
+    RenderSessionState state;
+    state.effective_plan = execution_plan;
+    state.context = RenderContext(m_precomp_cache);
+    state.context.text_surface_cache = m_text_surface_cache;
+
+    std::uint32_t w = static_cast<std::uint32_t>(state.effective_plan.render_plan.composition.width);
+    std::uint32_t h = static_cast<std::uint32_t>(state.effective_plan.render_plan.composition.height);
+
+    // 1. Prewarm SurfacePool
+    if (options.warmup_buffers > 0 && m_surface_pool) {
+        m_surface_pool->prewarm(w, h, options.warmup_buffers);
+    }
+
+    // 2. Perform probe frame execution
+    const TransitionRegistry* transition_registry = m_transition_registry_ptr;
+    const renderer2d::EffectRegistry* effect_registry = nullptr;
+    const presets::TextRegistry* text_registry = m_text_registry_ptr;
+
+    if (m_bundle_ptr) {
+        if (!transition_registry) transition_registry = &m_bundle_ptr->transitions;
+        effect_registry = &m_bundle_ptr->effects;
+#ifdef TACHYON_ENABLE_TEXT
+        if (!text_registry) text_registry = m_bundle_ptr->text_registry.get();
+#endif
+    } else if (m_bundle) {
+        if (!transition_registry) transition_registry = &m_bundle->transitions;
+        effect_registry = &m_bundle->effects;
+#ifdef TACHYON_ENABLE_TEXT
+        if (!text_registry) text_registry = m_bundle->text_registry.get();
+#endif
+    }
+
+    if (!effect_registry || !transition_registry) {
+        return;
+    }
+
+    configure_render_context(state, nullptr, m_surface_pool, *effect_registry, *transition_registry, text_registry, nullptr);
+
+    FrameRenderTask task;
+    bool found = false;
+    for (const auto& t : execution_plan.frame_tasks) {
+        if (t.frame_number == options.warmup_frame) {
+            task = t;
+            found = true;
+            break;
+        }
+    }
+    if (!found && !execution_plan.frame_tasks.empty()) {
+        task = execution_plan.frame_tasks[0];
+    }
+
+    FrameArena arena;
+    FrameCache dummy_cache;
+    FrameExecutor executor(arena, dummy_cache, nullptr);
+
+    ::tachyon::RenderContext local_context = state.context;
+    local_context.profiler = nullptr;
+    local_context.diagnostics = nullptr;
+
+    local_context.total_pixel_ops_counter = std::make_shared<std::atomic<std::size_t>>(0);
+    local_context.rasterized_pixels_counter = std::make_shared<std::atomic<std::size_t>>(0);
+    local_context.blend_pixels_counter = std::make_shared<std::atomic<std::size_t>>(0);
+    local_context.encoded_pixels_counter = std::make_shared<std::atomic<std::size_t>>(0);
+    local_context.total_tiles_counter = std::make_shared<std::atomic<int>>(0);
+
+    DataSnapshot snapshot;
+    try {
+        executor.execute(compiled_scene, execution_plan.render_plan, task, snapshot, local_context);
+    } catch (...) {
+        // Suppress errors during warmup probe render
+    }
+
+    runtime::tl_telemetry.reset();
 }
 
 } // namespace tachyon

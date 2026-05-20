@@ -59,7 +59,6 @@ set(TachyonRuntimeSources
     execution/render_job/render_job_builder.cpp
     execution/render_job/render_job_validate.cpp
     execution/render_plan.cpp
-    execution/render_plan_build.cpp
     execution/render_plan_hash.cpp
     execution/render_progress_sink.cpp
     execution/render_session.cpp

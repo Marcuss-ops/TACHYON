@@ -26,6 +26,8 @@ target_link_libraries(TachyonDeterminismTests
         TachyonScene
         TachyonRenderer2D
         TachyonRuntime
+        TachyonRenderer2D
+        TachyonRuntime
 )
 
 add_test(

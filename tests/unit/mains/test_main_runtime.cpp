@@ -15,6 +15,8 @@ bool run_layer_kind_resolver_tests();
 bool run_render_streaming_tests();
 bool run_layer_bounds_tests();
 bool run_render_job_tests();
+bool run_surface_pool_tests();
+bool run_warmup_bake_tests();
 bool run_runtime_backbone_tests();
 bool run_expression_vm_tests();
 bool run_frame_range_tests();
@@ -42,6 +44,8 @@ int main(int argc, char** argv) {
         {"streaming", run_render_streaming_tests},
         {"layer_bounds", run_layer_bounds_tests},
         {"render_job", run_render_job_tests},
+        {"surface_pool", run_surface_pool_tests},
+        {"warmup_bake", run_warmup_bake_tests},
     };
 
     return run_test_suite(argc, argv, tests);

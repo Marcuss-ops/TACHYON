@@ -88,6 +88,32 @@ bool parse_render_option(const std::string& arg, const std::vector<std::string>&
         if (options.render.quality.empty()) diagnostics.add_error("cli.quality_missing", "missing value for --quality");
         return true;
     }
+    if (arg == "--warmup") {
+        options.render.warmup = true;
+        return true;
+    }
+    if (arg == "--warmup-buffers") {
+        std::string val = require_argument(args, index);
+        if (val.empty()) diagnostics.add_error("cli.warmup_buffers_missing", "missing value for --warmup-buffers");
+        else {
+            try { options.render.warmup_buffers = std::stoull(val); }
+            catch (...) { diagnostics.add_error("cli.warmup_buffers_invalid", "invalid value for --warmup-buffers: " + val); }
+        }
+        return true;
+    }
+    if (arg == "--warmup-frame") {
+        std::string val = require_argument(args, index);
+        if (val.empty()) diagnostics.add_error("cli.warmup_frame_missing", "missing value for --warmup-frame");
+        else {
+            try { options.render.warmup_frame = std::stoi(val); }
+            catch (...) { diagnostics.add_error("cli.warmup_frame_invalid", "invalid value for --warmup-frame: " + val); }
+        }
+        return true;
+    }
+    if (arg == "--static-bake-proof") {
+        options.render.static_bake_proof = true;
+        return true;
+    }
     return false;
 }
 

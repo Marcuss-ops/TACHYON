@@ -54,7 +54,7 @@ bool run_render_streaming_tests() {
     if (!compiled_res.diagnostics.ok() || !compiled_res.value.has_value()) return false;
     const auto& compiled = *compiled_res.value;
 
-    RenderJob job = RenderJobBuilder::video_export("streaming_test", {0, 10}, "dummy_output");
+    RenderJob job = RenderJobBuilder::video_export("streaming_test", {0, 9}, "dummy_output");
     auto plan_res = build_render_plan(scene_spec, job);
     if (!plan_res.diagnostics.ok() || !plan_res.value.has_value()) return false;
     

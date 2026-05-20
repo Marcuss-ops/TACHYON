@@ -31,7 +31,7 @@ bool run_deterministic_single_frame_test() {
     if (!compiled_res.diagnostics.ok() || !compiled_res.value.has_value()) return false;
     const auto& compiled = *compiled_res.value;
 
-    RenderJob job = RenderJobBuilder::video_export("determinism_single_frame", {0, 0}, "");
+    RenderJob job = RenderJobBuilder::still_image("determinism_single_frame", 0, "");
     auto plan_res = build_render_plan(scene_spec, job);
     if (!plan_res.diagnostics.ok() || !plan_res.value.has_value()) return false;
     

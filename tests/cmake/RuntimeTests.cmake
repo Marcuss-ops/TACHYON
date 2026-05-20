@@ -16,6 +16,8 @@ add_executable(TachyonRuntimeTests
     unit/runtime/render_streaming_tests.cpp
     unit/runtime/layer_bounds_tests.cpp
     unit/runtime/render_job_tests.cpp
+    unit/runtime/surface_pool_tests.cpp
+    unit/runtime/warmup_bake_tests.cpp
 )
 
 

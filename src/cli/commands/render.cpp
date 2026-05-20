@@ -22,7 +22,7 @@
 
 namespace tachyon {
 
-int run_render(const CliOptions& options, std::ostream& out, std::ostream& err) {
+int run_render(const CliOptions& options, std::ostream& out, std::ostream& err, ::tachyon::runtime::EngineRegistry& bundle) {
     TACHYON_TRACE_SCOPE("render.total");
     RenderTelemetry::get().init();
     out << "rendering scene: " << options.cpp_path << "\n";
@@ -92,8 +92,33 @@ int run_render(const CliOptions& options, std::ostream& out, std::ostream& err) 
 
     // Render session
     RenderSession session;
+    session.set_registry_bundle(&bundle);
     const std::filesystem::path output_path = job.output.destination.path.empty() ? std::filesystem::path{} : std::filesystem::path(job.output.destination.path);
     
+    // Warmup execution
+    auto warmup_start = std::chrono::high_resolution_clock::now();
+    bool warmup_enabled = options.render.warmup;
+    std::size_t warmup_buffers = options.render.warmup_buffers;
+    if (warmup_enabled) {
+        RenderWarmupOptions warmup_opts;
+        warmup_opts.enabled = true;
+        warmup_opts.warmup_buffers = warmup_buffers;
+        warmup_opts.warmup_frame = options.render.warmup_frame;
+        session.warmup(scene, *compiled.value, *exec_res.value, warmup_opts);
+    }
+    auto warmup_end = std::chrono::high_resolution_clock::now();
+    double warmup_duration = std::chrono::duration<double, std::milli>(warmup_end - warmup_start).count();
+
+    if (warmup_enabled) {
+        std::size_t pool_bytes_after = session.surface_pool() ? session.surface_pool()->current_bytes() : 0;
+        std::size_t pool_avail_after = session.surface_pool() ? session.surface_pool()->available_count() : 0;
+        RenderTelemetry::get().set_warmup_info(true, warmup_duration, warmup_buffers, pool_bytes_after, pool_avail_after);
+    }
+
+    if (options.render.static_bake_proof) {
+        session.set_static_bake_proof(true);
+    }
+
     out << "starting render: " << (job.frame_range.end - job.frame_range.start) << " frames\n";
     auto start_time = std::chrono::high_resolution_clock::now();
 
@@ -125,8 +150,8 @@ int run_render(const CliOptions& options, std::ostream& out, std::ostream& err) 
     }
 }
 
-bool run_render_command(const CliOptions& options, std::ostream& out, std::ostream& err, ::tachyon::runtime::EngineRegistry& /*bundle*/) {
-    return run_render(options, out, err) == 0;
+bool run_render_command(const CliOptions& options, std::ostream& out, std::ostream& err, ::tachyon::runtime::EngineRegistry& bundle) {
+    return run_render(options, out, err, bundle) == 0;
 }
 
 ::tachyon::CommandDescriptor make_render_command() {

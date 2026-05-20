@@ -60,4 +60,44 @@ void SurfacePool::clear() {
     m_pool.clear();
 }
 
+void SurfacePool::prewarm(std::uint32_t width, std::uint32_t height, std::size_t count) {
+    if (width == 0 || height == 0 || count == 0) {
+        return;
+    }
+
+    std::vector<std::shared_ptr<renderer2d::SurfaceRGBA>> temp;
+    temp.reserve(count);
+
+    for (std::size_t i = 0; i < count; ++i) {
+        auto fb = acquire(width, height);
+        if (fb) {
+            fb->clear(renderer2d::Color::transparent());
+            temp.push_back(std::move(fb));
+        }
+    }
+    // Destructing temp automatically returns the surfaces to the pool
+}
+
+std::size_t SurfacePool::available_count() const {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    std::size_t count = 0;
+    for (const auto& [key, bucket] : m_pool) {
+        count += bucket.size();
+    }
+    return count;
+}
+
+std::size_t SurfacePool::current_bytes() const {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    std::size_t bytes = 0;
+    for (const auto& [key, bucket] : m_pool) {
+        for (const auto& surface : bucket) {
+            if (surface) {
+                bytes += surface->pixels().size() * sizeof(float) + surface->depth_buffer().size() * sizeof(float);
+            }
+        }
+    }
+    return bytes;
+}
+
 } // namespace tachyon

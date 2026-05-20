@@ -44,6 +44,21 @@ public:
     void clear();
 
     /**
+     * @brief Prewarms the pool by allocating and clearing surfaces to touch memory.
+     */
+    void prewarm(std::uint32_t width, std::uint32_t height, std::size_t count);
+
+    /**
+     * @brief Returns the number of pooled/available surfaces.
+     */
+    [[nodiscard]] std::size_t available_count() const;
+
+    /**
+     * @brief Returns the total bytes allocated by the pooled surfaces.
+     */
+    [[nodiscard]] std::size_t current_bytes() const;
+
+    /**
      * @brief Updates the pool policy.
      */
     void set_policy(const runtime::SurfacePoolPolicy& policy) { m_policy = policy; }

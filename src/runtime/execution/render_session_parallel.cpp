@@ -18,6 +18,8 @@
 #include "tachyon/core/profiling.h"
 #include "tachyon/core/diag/log.h"
 #include "tachyon/diagnostics/trace.h"
+#include "tachyon/core/render_telemetry.h"
+#include <condition_variable>
 
 #include <future>
 #include <atomic>
@@ -125,6 +127,14 @@ void render_frames_parallel_internal(
         frame_queue = std::make_unique<FrameQueue>(task_count);
     }
 
+    std::mutex bake_mutex;
+    std::condition_variable bake_cv;
+    std::shared_ptr<const renderer2d::Framebuffer> baked_frame;
+    bool baked_frame_ready = false;
+    double bake_build_ms = 0.0;
+    std::atomic<std::size_t> bake_hits{0};
+    std::atomic<std::size_t> bake_misses{0};
+
     auto execute_frame_at_index = [&](std::size_t index) {
         if (cancel_flag && cancel_flag->load()) {
             return;
@@ -133,106 +143,178 @@ void render_frames_parallel_internal(
         const auto& task = execution_plan.frame_tasks[index];
         RenderPlan frame_plan = execution_plan.render_plan;
 
-        TACHYON_ZONE("ExecuteFrame");
-        TACHYON_TRACE_SCOPE("render.frame");
-        TACHYON_TRACE_COUNTER("render.frame_index", static_cast<std::int64_t>(task.frame_number));
-        TACHYON_TRACE_COUNTER("render.width", static_cast<std::int64_t>(frame_plan.composition.width));
-        TACHYON_TRACE_COUNTER("render.height", static_cast<std::int64_t>(frame_plan.composition.height));
-
-        FrameArena arena;
-        FrameExecutor executor(arena, cache, nullptr);
-        executor.set_parallel_worker_count(budget.pixel_concurrency);
-
-        ::tachyon::RenderContext local_context = context;
-#ifdef TACHYON_ENABLE_MEDIA
-        local_context.prefetcher = prefetcher;
-        local_context.scheduler = scheduler;
-#endif
-        local_context.pixel_concurrency = budget.pixel_concurrency;
-        local_context.cancel_flag = cancel_flag;
-        local_context.total_pixel_ops_counter = pixel_ops_counter;
-        local_context.rasterized_pixels_counter = rasterized_pixels_counter;
-        local_context.blend_pixels_counter = blend_pixels_counter;
-        local_context.encoded_pixels_counter = encoded_pixels_counter;
-        local_context.total_tiles_counter = tiles_counter;
-
-
-
         std::shared_ptr<const renderer2d::Framebuffer> framebuffer;
         bool cache_hit = false;
         ExecutedFrame executed_frame;
 
-        // Try to load from disk cache (checkpoint/resume)
-        if (disk_cache) {
-            runtime::CacheKey key = runtime::CacheKey::build(
-                compiled_scene.scene_hash,
-                task.layer_filters.empty() ? "" : task.layer_filters.front(),
-                task.time_seconds,
-                1, // quality_tier
-                "beauty"
-            );
-
-            auto cached_data = disk_cache->load(key);
-            if (cached_data) {
-                framebuffer = TBFCodec::decode_framebuffer(*cached_data);
-                if (framebuffer) {
-                    cache_hit = true;
-                }
-            }
-        }
-
-        // Render if not loaded from cache
-        if (!framebuffer) {
-            DataSnapshot snapshot;
-            const auto frame_start = std::chrono::high_resolution_clock::now();
-            
-            {
-                TACHYON_TRACE_SCOPE("render.frame.draw");
-                executed_frame = executor.execute(compiled_scene, frame_plan, task, snapshot, local_context);
-            }
-
-            // Track rasterized pixels and tiles processed for cache miss execution path via thread-local telemetry.
-            // Note: If this was a blended frame, telemetry is already handled inside try_render_blend.
-            if (!executed_frame.cache_hit && !executed_frame.diagnostics.has_category(FrameDiagnostics::kCategoryRender, "frame_blend")) {
-                const std::uint64_t pixels = static_cast<std::uint64_t>(frame_plan.composition.width) * frame_plan.composition.height;
-                runtime::tl_telemetry.pixel_ops += pixels;
-                runtime::tl_telemetry.rasterized_pixels += pixels;
+        if (context.static_bake_proof) {
+            if (index == 0) {
+                const auto bake_start = std::chrono::high_resolution_clock::now();
                 
-                int tile_size = frame_plan.quality_policy.tile_size;
-                if (tile_size > 0) {
-                    int tiles_x = (frame_plan.composition.width + tile_size - 1) / tile_size;
-                    int tiles_y = (frame_plan.composition.height + tile_size - 1) / tile_size;
-                    runtime::tl_telemetry.tiles_processed += static_cast<std::uint64_t>(tiles_x) * tiles_y;
-                } else {
-                    runtime::tl_telemetry.tiles_processed += 1;
+                FrameArena arena;
+                FrameExecutor executor(arena, cache, nullptr);
+                executor.set_parallel_worker_count(budget.pixel_concurrency);
+
+                ::tachyon::RenderContext local_context = context;
+#ifdef TACHYON_ENABLE_MEDIA
+                local_context.prefetcher = prefetcher;
+                local_context.scheduler = scheduler;
+#endif
+                local_context.pixel_concurrency = budget.pixel_concurrency;
+                local_context.cancel_flag = cancel_flag;
+                local_context.total_pixel_ops_counter = pixel_ops_counter;
+                local_context.rasterized_pixels_counter = rasterized_pixels_counter;
+                local_context.blend_pixels_counter = blend_pixels_counter;
+                local_context.encoded_pixels_counter = encoded_pixels_counter;
+                local_context.total_tiles_counter = tiles_counter;
+
+                {
+                    TACHYON_ZONE("ExecuteFrameBake");
+                    DataSnapshot snapshot;
+                    executed_frame = executor.execute(compiled_scene, frame_plan, task, snapshot, local_context);
+                }
+
+                if (!executed_frame.cache_hit && !executed_frame.diagnostics.has_category(FrameDiagnostics::kCategoryRender, "frame_blend")) {
+                    const std::uint64_t pixels = static_cast<std::uint64_t>(frame_plan.composition.width) * frame_plan.composition.height;
+                    runtime::tl_telemetry.pixel_ops += pixels;
+                    runtime::tl_telemetry.rasterized_pixels += pixels;
+                    
+                    int tile_size = frame_plan.quality_policy.tile_size;
+                    if (tile_size > 0) {
+                        int tiles_x = (frame_plan.composition.width + tile_size - 1) / tile_size;
+                        int tiles_y = (frame_plan.composition.height + tile_size - 1) / tile_size;
+                        runtime::tl_telemetry.tiles_processed += static_cast<std::uint64_t>(tiles_x) * tiles_y;
+                    } else {
+                        runtime::tl_telemetry.tiles_processed += 1;
+                    }
+                }
+
+                const auto bake_end = std::chrono::high_resolution_clock::now();
+                bake_build_ms = std::chrono::duration<double, std::milli>(bake_end - bake_start).count();
+                executed_frame.diagnostics.add_timing(FrameDiagnostics::kCategoryRender, "frame_execute", bake_build_ms);
+
+                if (frame_times_out) {
+                    (*frame_times_out)[index] = bake_build_ms;
+                }
+
+                if (executed_frame.frame) {
+                    framebuffer = executed_frame.frame;
+                }
+
+                {
+                    std::lock_guard<std::mutex> lock(bake_mutex);
+                    baked_frame = framebuffer;
+                    baked_frame_ready = true;
+                    bake_misses++;
+                }
+                bake_cv.notify_all();
+            } else {
+                std::shared_ptr<const renderer2d::Framebuffer> fb;
+                {
+                    std::unique_lock<std::mutex> lock(bake_mutex);
+                    bake_cv.wait(lock, [&] { return baked_frame_ready; });
+                    fb = baked_frame;
+                    bake_hits++;
+                }
+                framebuffer = fb;
+                cache_hit = true;
+            }
+        } else {
+            TACHYON_ZONE("ExecuteFrame");
+            TACHYON_TRACE_SCOPE("render.frame");
+            TACHYON_TRACE_COUNTER("render.frame_index", static_cast<std::int64_t>(task.frame_number));
+            TACHYON_TRACE_COUNTER("render.width", static_cast<std::int64_t>(frame_plan.composition.width));
+            TACHYON_TRACE_COUNTER("render.height", static_cast<std::int64_t>(frame_plan.composition.height));
+
+            FrameArena arena;
+            FrameExecutor executor(arena, cache, nullptr);
+            executor.set_parallel_worker_count(budget.pixel_concurrency);
+
+            ::tachyon::RenderContext local_context = context;
+#ifdef TACHYON_ENABLE_MEDIA
+            local_context.prefetcher = prefetcher;
+            local_context.scheduler = scheduler;
+#endif
+            local_context.pixel_concurrency = budget.pixel_concurrency;
+            local_context.cancel_flag = cancel_flag;
+            local_context.total_pixel_ops_counter = pixel_ops_counter;
+            local_context.rasterized_pixels_counter = rasterized_pixels_counter;
+            local_context.blend_pixels_counter = blend_pixels_counter;
+            local_context.encoded_pixels_counter = encoded_pixels_counter;
+            local_context.total_tiles_counter = tiles_counter;
+
+            // Try to load from disk cache (checkpoint/resume)
+            if (disk_cache) {
+                runtime::CacheKey key = runtime::CacheKey::build(
+                    compiled_scene.scene_hash,
+                    task.layer_filters.empty() ? "" : task.layer_filters.front(),
+                    task.time_seconds,
+                    1, // quality_tier
+                    "beauty"
+                );
+
+                auto cached_data = disk_cache->load(key);
+                if (cached_data) {
+                    framebuffer = TBFCodec::decode_framebuffer(*cached_data);
+                    if (framebuffer) {
+                        cache_hit = true;
+                    }
                 }
             }
-            
-            const auto frame_end = std::chrono::high_resolution_clock::now();
-            const double render_ms = std::chrono::duration<double, std::milli>(frame_end - frame_start).count();
-            executed_frame.diagnostics.add_timing(FrameDiagnostics::kCategoryRender, "frame_execute", render_ms);
 
-            cache_hit = cache_hit || executed_frame.cache_hit;
+            // Render if not loaded from cache
+            if (!framebuffer) {
+                DataSnapshot snapshot;
+                const auto frame_start = std::chrono::high_resolution_clock::now();
+                
+                {
+                    TACHYON_TRACE_SCOPE("render.frame.draw");
+                    executed_frame = executor.execute(compiled_scene, frame_plan, task, snapshot, local_context);
+                }
 
-            if (frame_times_out) {
-                (*frame_times_out)[index] = render_ms;
-            }
+                // Track rasterized pixels and tiles processed for cache miss execution path via thread-local telemetry.
+                // Note: If this was a blended frame, telemetry is already handled inside try_render_blend.
+                if (!executed_frame.cache_hit && !executed_frame.diagnostics.has_category(FrameDiagnostics::kCategoryRender, "frame_blend")) {
+                    const std::uint64_t pixels = static_cast<std::uint64_t>(frame_plan.composition.width) * frame_plan.composition.height;
+                    runtime::tl_telemetry.pixel_ops += pixels;
+                    runtime::tl_telemetry.rasterized_pixels += pixels;
+                    
+                    int tile_size = frame_plan.quality_policy.tile_size;
+                    if (tile_size > 0) {
+                        int tiles_x = (frame_plan.composition.width + tile_size - 1) / tile_size;
+                        int tiles_y = (frame_plan.composition.height + tile_size - 1) / tile_size;
+                        runtime::tl_telemetry.tiles_processed += static_cast<std::uint64_t>(tiles_x) * tiles_y;
+                    } else {
+                        runtime::tl_telemetry.tiles_processed += 1;
+                    }
+                }
+                
+                const auto frame_end = std::chrono::high_resolution_clock::now();
+                const double render_ms = std::chrono::duration<double, std::milli>(frame_end - frame_start).count();
+                executed_frame.diagnostics.add_timing(FrameDiagnostics::kCategoryRender, "frame_execute", render_ms);
 
-            if (executed_frame.frame) {
-                framebuffer = std::move(executed_frame.frame);
+                cache_hit = cache_hit || executed_frame.cache_hit;
 
-                // Save to disk cache for checkpoint/resume
-                if (disk_cache) {
-                    runtime::CacheKey key = runtime::CacheKey::build(
-                        compiled_scene.scene_hash,
-                        task.layer_filters.empty() ? "" : task.layer_filters.front(),
-                        task.time_seconds,
-                        1, // quality_tier
-                        "beauty"
-                    );
+                if (frame_times_out) {
+                    (*frame_times_out)[index] = render_ms;
+                }
 
-                    auto frame_data = TBFCodec::encode_framebuffer(*framebuffer);
-                    disk_cache->store(key, frame_data);
+                if (executed_frame.frame) {
+                    framebuffer = std::move(executed_frame.frame);
+
+                    // Save to disk cache for checkpoint/resume
+                    if (disk_cache) {
+                        runtime::CacheKey key = runtime::CacheKey::build(
+                            compiled_scene.scene_hash,
+                            task.layer_filters.empty() ? "" : task.layer_filters.front(),
+                            task.time_seconds,
+                            1, // quality_tier
+                            "beauty"
+                        );
+
+                        auto frame_data = TBFCodec::encode_framebuffer(*framebuffer);
+                        disk_cache->store(key, frame_data);
+                    }
                 }
             }
         }
@@ -364,6 +446,14 @@ void render_frames_parallel_internal(
         result->blend_pixel_ops = blend_pixels_counter->load();
         result->encoded_pixels = encoded_pixels_counter->load();
         result->total_tiles = tiles_counter->load();
+    }
+
+    if (context.static_bake_proof) {
+        std::size_t baked_bytes = 0;
+        if (baked_frame) {
+            baked_bytes = (baked_frame->pixels().size() + baked_frame->depth_buffer().size()) * sizeof(float);
+        }
+        RenderTelemetry::get().set_static_bake_info(true, bake_hits.load(), bake_misses.load(), baked_bytes, bake_build_ms);
     }
 }
 

@@ -94,6 +94,12 @@ struct RenderSessionResult {
 };
 
 
+struct RenderWarmupOptions {
+    bool enabled{false};
+    std::size_t warmup_buffers{0};
+    int warmup_frame{0};
+};
+
 class RenderSession {
 public:
     RenderSession();
@@ -107,6 +113,14 @@ public:
         CancelFlag* cancel_flag = nullptr);
     // 100x performance: render using precompiled frame program
     RenderSessionResult render(const CompiledFrameProgram& program, double time_sec, const std::filesystem::path& output_path = {});
+
+    void warmup(
+        const SceneSpec& scene,
+        const CompiledScene& compiled_scene,
+        const RenderExecutionPlan& execution_plan,
+        const RenderWarmupOptions& options);
+
+    void set_static_bake_proof(bool enabled) { m_static_bake_proof = enabled; }
 
     void set_memory_budget_bytes(std::size_t bytes) { m_memory_budget_bytes = bytes; }
     void set_profiler(profiling::RenderProfiler* profiler) { m_profiler = profiler; }
@@ -151,6 +165,7 @@ private:
     const TransitionRegistry* m_transition_registry_ptr{nullptr};
     const presets::TextRegistry* m_text_registry_ptr{nullptr};
     audio::IAudioExporter* m_audio_exporter{nullptr};
+    bool m_static_bake_proof{false};
 };
 
 } // namespace tachyon
